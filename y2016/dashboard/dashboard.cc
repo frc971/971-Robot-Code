@@ -16,7 +16,8 @@
 #include "aos/common/util/phased_loop.h"
 #include "aos/common/mutex.h"
 
-#include "y2016/actors/autonomous_action.q.h"
+#include "frc971/autonomous/auto.q.h"
+
 #include "y2016/vision/vision.q.h"
 #include "y2016/control_loops/superstructure/superstructure.q.h"
 #include "y2016/queues/ball_detector.q.h"
@@ -80,7 +81,7 @@ void DataCollector::RunIteration() {
   // gone wrong with reading the auto queue.
   int auto_mode_indicator = -1;
 
-  ::y2016::actors::auto_mode.FetchLatest();
+  ::frc971::autonomous::auto_mode.FetchLatest();
   ::y2016::control_loops::superstructure_queue.status.FetchLatest();
   ::y2016::sensors::ball_detector.FetchLatest();
   ::y2016::vision::vision_status.FetchLatest();
@@ -121,8 +122,8 @@ void DataCollector::RunIteration() {
     }
   }
 
-  if (::y2016::actors::auto_mode.get()) {
-    auto_mode_indicator = ::y2016::actors::auto_mode->mode;
+  if (::frc971::autonomous::auto_mode.get()) {
+    auto_mode_indicator = ::frc971::autonomous::auto_mode->mode;
   }
 
   AddPoint("big indicator", big_indicator);

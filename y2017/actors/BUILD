@@ -9,16 +9,6 @@ filegroup(
   ],
 )
 
-queue_library(
-  name = 'autonomous_action_queue',
-  srcs = [
-    'autonomous_action.q',
-  ],
-  deps = [
-    '//aos/common/actions:action_queue',
-  ],
-)
-
 cc_library(
   name = 'autonomous_action_lib',
   srcs = [
@@ -28,12 +18,13 @@ cc_library(
     'autonomous_actor.h',
   ],
   deps = [
-    ':autonomous_action_queue',
     '//aos/common/util:phased_loop',
     '//aos/common/logging',
     '//aos/common/actions:action_lib',
+    '//frc971/autonomous:base_autonomous_actor',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//frc971/control_loops/drivetrain:drivetrain_config',
+    '//y2017/control_loops/drivetrain:drivetrain_base',
   ],
 )
 
@@ -44,7 +35,7 @@ cc_binary(
   ],
   deps = [
     ':autonomous_action_lib',
-    ':autonomous_action_queue',
     '//aos/linux_code:init',
+    '//frc971/autonomous:auto_queue',
   ],
 )

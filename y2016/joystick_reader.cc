@@ -430,15 +430,16 @@ class Reader : public ::aos::input::JoystickInput {
   void StartAuto() {
     LOG(INFO, "Starting auto mode\n");
 
-    actors::AutonomousActionParams params;
-    actors::auto_mode.FetchLatest();
-    if (actors::auto_mode.get() != nullptr) {
-      params.mode = actors::auto_mode->mode;
+    ::frc971::autonomous::AutonomousActionParams params;
+    ::frc971::autonomous::auto_mode.FetchLatest();
+    if (::frc971::autonomous::auto_mode.get() != nullptr) {
+      params.mode = ::frc971::autonomous::auto_mode->mode;
     } else {
       LOG(WARNING, "no auto mode values\n");
       params.mode = 0;
     }
-    action_queue_.EnqueueAction(actors::MakeAutonomousAction(params));
+    action_queue_.EnqueueAction(
+        ::frc971::autonomous::MakeAutonomousAction(params));
   }
 
   void StopAuto() {

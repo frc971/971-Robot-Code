@@ -31,11 +31,11 @@
 #include "aos/common/messages/robot_state.q.h"
 #include "aos/common/commonmath.h"
 
+#include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2017/constants.h"
 #include "y2017/control_loops/superstructure/superstructure.q.h"
-#include "y2017/actors/autonomous_action.q.h"
 
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "frc971/wpilib/joystick_sender.h"
@@ -353,7 +353,7 @@ class SensorReader {
     }
 
     {
-      auto auto_mode_message = ::y2017::actors::auto_mode.MakeMessage();
+      auto auto_mode_message = ::frc971::autonomous::auto_mode.MakeMessage();
       auto_mode_message->mode = 0;
       for (size_t i = 0; i < autonomous_modes_.size(); ++i) {
         if (autonomous_modes_[i]->Get()) {

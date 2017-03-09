@@ -62,6 +62,7 @@ cc_binary(
     '//aos/common/util:wrapping_counter',
     '//aos/linux_code:init',
     '//third_party:wpilib',
+    '//frc971/autonomous:auto_queue',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//frc971/control_loops:queues',
     '//frc971/wpilib:joystick_sender',
@@ -77,7 +78,6 @@ cc_binary(
     '//frc971/wpilib:ADIS16448',
     '//frc971/wpilib:dma',
     '//y2017/control_loops/superstructure:superstructure_queue',
-    '//y2017/actors:autonomous_action_queue',
   ],
 )
 
