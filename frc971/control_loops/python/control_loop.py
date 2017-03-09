@@ -428,13 +428,13 @@ class HybridControlLoop(ControlLoop):
   def __init__(self, name):
     super(HybridControlLoop, self).__init__(name=name)
 
-  def Discritize(self, dt):
+  def Discretize(self, dt):
     [self.A, self.B, self.Q, self.R] = \
         controls.kalmd(self.A_continuous, self.B_continuous,
                        self.Q_continuous, self.R_continuous, dt)
 
   def PredictHybridObserver(self, U, dt):
-    self.Discritize(dt)
+    self.Discretize(dt)
     self.X_hat = self.A * self.X_hat + self.B * U
     self.P = (self.A * self.P * self.A.T + self.Q)
 
