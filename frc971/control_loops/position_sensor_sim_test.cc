@@ -370,6 +370,18 @@ TEST_F(PositionSensorSimTest, HallEffectAndPosition) {
   EXPECT_DOUBLE_EQ(0.75, position.posedge_value);
   EXPECT_EQ(4, position.negedge_count);
   EXPECT_DOUBLE_EQ(0.25, position.negedge_value);
+
+  for (int i = 0; i < 10; ++i) {
+    // Now, go over the lower edge, falling.
+    sim.MoveTo(-0.25 - i * 1.0e-6);
+    sim.GetSensorValues(&position);
+    EXPECT_FALSE(position.current);
+    EXPECT_NEAR(-i * 1.0e-6, position.position, 1e-8);
+    EXPECT_EQ(4, position.posedge_count);
+    EXPECT_DOUBLE_EQ(0.75, position.posedge_value);
+    EXPECT_EQ(4, position.negedge_count);
+    EXPECT_DOUBLE_EQ(0.25, position.negedge_value);
+  }
 }
 
 

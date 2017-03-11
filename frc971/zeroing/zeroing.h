@@ -121,6 +121,80 @@ class PotAndIndexPulseZeroingEstimator : public ZeroingEstimator {
   double first_start_pos_;
 };
 
+// Estimates the position with an incremental encoder with an index pulse and a
+// potentiometer.
+class HallEffectAndPositionZeroingEstimator : public ZeroingEstimator {
+ public:
+  using Position = HallEffectAndPosition;
+  using ZeroingConstants = constants::HallEffectZeroingConstants;
+  using State = HallEffectAndPositionEstimatorState;
+
+  explicit HallEffectAndPositionZeroingEstimator(const ZeroingConstants &constants);
+
+  // Update the internal logic with the next sensor values.
+  void UpdateEstimate(const Position &info);
+
+  // Reset the internal logic so it needs to be re-zeroed.
+  void Reset();
+
+  // Manually trigger an internal error. This is used for testing the error
+  // logic.
+  void TriggerError();
+
+  bool error() const override { return error_; }
+
+  bool zeroed() const override { return zeroed_; }
+
+  double offset() const override { return offset_; }
+
+  // Returns information about our current state.
+  State GetEstimatorState() const;
+
+ private:
+  // Sets the minimum and maximum posedge position values.
+  void StoreEncoderMaxAndMin(const HallEffectAndPosition &info);
+
+  // The zeroing constants used to describe the configuration of the system.
+  const ZeroingConstants constants_;
+
+  // The estimated state of the hall effect.
+  double current_ = 0.0;
+  // The estimated position.
+  double position_ = 0.0;
+  // The smallest and largest positions of the last set of encoder positions
+  // while the hall effect was low.
+  double min_low_position_;
+  double max_low_position_;
+  // If we've seen the hall effect high for enough times without going low, then
+  // we can be sure it isn't a false positive.
+  bool high_long_enough_;
+  size_t cycles_high_;
+
+  bool last_hall_ = false;
+
+  // The estimated starting position of the mechanism. We also call this the
+  // 'offset' in some contexts.
+  double offset_;
+  // Flag for triggering logic that takes note of the current posedge count
+  // after a reset. See `last_used_posedge_count_'.
+  bool initialized_;
+  // After a reset we keep track of the posedge count with this. Only after the
+  // posedge count changes (i.e. increments at least once or wraps around) will
+  // we consider the mechanism zeroed. We also use this to store the most recent
+  // `HallEffectAndPosition::posedge_count' value when the start position
+  // was calculated. It helps us calculate the start position only on posedges
+  // to reject corrupted intermediate data.
+  int32_t last_used_posedge_count_;
+  // Marker to track whether we're fully zeroed yet or not.
+  bool zeroed_;
+  // Marker to track whether an error has occurred. This gets reset to false
+  // whenever Reset() is called.
+  bool error_ = false;
+  // Stores the position "start_pos" variable the first time the program
+  // is zeroed.
+  double first_start_pos_;
+};
+
 // Estimates the position with an absolute encoder which also reports
 // incremental counts, and a potentiometer.
 class PotAndAbsEncoderZeroingEstimator : public ZeroingEstimator {

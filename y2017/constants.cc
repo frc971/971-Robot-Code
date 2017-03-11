@@ -62,6 +62,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   Values *const r = new Values();
   Values::Intake *const intake = &r->intake;
   Values::Hood *const hood = &r->hood;
+  Values::Column *const column = &r->column;
 
   r->drivetrain_max_speed = 5;
 
@@ -70,6 +71,9 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   intake->zeroing.zeroing_threshold = 0.0005;
   intake->zeroing.moving_buffer_size = 20;
   intake->zeroing.allowable_encoder_error = 0.3;
+
+  column->indexer_zeroing.index_difference = 2.0 * M_PI;
+  column->turret_zeroing.index_difference = 2.0 * M_PI;
 
   hood->zeroing.index_pulse_count = 2;
   hood->zeroing.index_difference = Values::kHoodEncoderIndexDifference;
@@ -80,6 +84,12 @@ const Values *DoGetValuesForTeam(uint16_t team) {
     case 1:
       intake->pot_offset = 0;
       intake->zeroing.measured_absolute_position = 0;
+
+      column->indexer_zeroing.lower_hall_position = 2.0;
+      column->indexer_zeroing.upper_hall_position = 2.1;
+
+      column->turret_zeroing.lower_hall_position = 0;
+      column->turret_zeroing.upper_hall_position = 0.1;
 
       hood->pot_offset = 0.1;
       hood->zeroing.measured_index_position = 0.05;
@@ -92,6 +102,12 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       intake->pot_offset = 0.26712;
       intake->zeroing.measured_absolute_position = 0.008913;
 
+      column->indexer_zeroing.lower_hall_position = 2.0;
+      column->indexer_zeroing.upper_hall_position = 2.1;
+
+      column->turret_zeroing.lower_hall_position = 0;
+      column->turret_zeroing.upper_hall_position = 0.1;
+
       hood->zeroing.measured_index_position = 0.652898 - 0.488117;
 
       r->down_error = 0;
@@ -101,6 +117,12 @@ const Values *DoGetValuesForTeam(uint16_t team) {
     case kPracticeTeamNumber:
       intake->pot_offset = 0.2921 + 0.00039 + 0.012236 - 0.023602;
       intake->zeroing.measured_absolute_position = 0.031437;
+
+      column->indexer_zeroing.lower_hall_position = 2.0;
+      column->indexer_zeroing.upper_hall_position = 2.1;
+
+      column->turret_zeroing.lower_hall_position = 0;
+      column->turret_zeroing.upper_hall_position = 0.1;
 
       hood->zeroing.measured_index_position = 0.655432 - 0.460505;
 

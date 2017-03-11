@@ -98,6 +98,20 @@ struct IndexEstimatorState {
   int32_t index_pulses_seen;
 };
 
+struct HallEffectAndPositionEstimatorState {
+  // If error.
+  bool error;
+  // If we've found a positive edge while moving backwards and is zeroed.
+  bool zeroed;
+  // Encoder angle relative to where we started.
+  double encoder;
+  // The positions of the extreme posedges we've seen.
+  // If we've gotten enough samples where the hall effect is high before can be
+  // certain it is not a false positive.
+  bool high_long_enough;
+  double offset;
+};
+
 // A left/right pair of PotAndIndexPositions.
 struct PotAndIndexPair {
   PotAndIndexPosition left;

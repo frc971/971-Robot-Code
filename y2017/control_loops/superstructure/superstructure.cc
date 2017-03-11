@@ -44,7 +44,6 @@ void Superstructure::RunIteration(
                   &(position->turret),
                   output != nullptr ? &(output->voltage_turret) : nullptr,
                   &(status->turret));
-
   intake_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->intake) : nullptr,
                   &(position->intake),
                   output != nullptr ? &(output->voltage_intake) : nullptr,
@@ -54,9 +53,9 @@ void Superstructure::RunIteration(
                    output != nullptr ? &(output->voltage_shooter) : nullptr,
                    &(status->shooter));
   indexer_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->indexer) : nullptr,
-                &(position->theta_indexer),
-                output != nullptr ? &(output->voltage_indexer) : nullptr,
-                &(status->indexer));
+                   &(position->theta_indexer),
+                   output != nullptr ? &(output->voltage_indexer) : nullptr,
+                   &(status->indexer));
 
   if (output && unsafe_goal) {
     output->voltage_intake_rollers =

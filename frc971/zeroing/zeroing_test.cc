@@ -55,6 +55,15 @@ class ZeroingTest : public ::testing::Test {
     estimator->UpdateEstimate(sensor_values_);
   }
 
+  void MoveTo(PositionSensorSimulator *simulator,
+              HallEffectAndPositionZeroingEstimator *estimator,
+              double new_position) {
+    HallEffectAndPosition sensor_values_;
+    simulator->MoveTo(new_position);
+    simulator->GetSensorValues(&sensor_values_);
+    estimator->UpdateEstimate(sensor_values_);
+  }
+
   ::aos::testing::TestSharedMemory my_shm_;
 };
 
@@ -437,6 +446,89 @@ TEST_F(ZeroingTest, TestRelativeEncoderZeroing) {
   ASSERT_DOUBLE_EQ(0.5 * constants.index_difference,
                    estimator.GetEstimatorState().position);
 }
+
+// Tests that an error is detected when the starting position changes too much.
+TEST_F(ZeroingTest, TestHallEffectZeroing) {
+  constants::HallEffectZeroingConstants constants;
+  constants.lower_hall_position = 0.25;
+  constants.upper_hall_position = 0.75;
+  constants.index_difference = 1.0;
+  constants.hall_trigger_zeroing_length = 2;
+  constants.zeroing_move_direction = false;
+
+  PositionSensorSimulator sim(constants.index_difference);
+
+  const double start_pos = 1.0;
+
+  sim.InitializeHallEffectAndPosition(start_pos, constants.lower_hall_position,
+                                      constants.upper_hall_position);
+
+  HallEffectAndPositionZeroingEstimator estimator(constants);
+
+  // Should not be zeroed when we stand still.
+  for (int i = 0; i < 300; ++i) {
+    MoveTo(&sim, &estimator, start_pos);
+    ASSERT_FALSE(estimator.zeroed());
+  }
+
+  MoveTo(&sim, &estimator, 0.9);
+  ASSERT_FALSE(estimator.zeroed());
+
+  // Move to where the hall effect is triggered and make sure it becomes zeroed.
+  MoveTo(&sim, &estimator, 0.5);
+  EXPECT_FALSE(estimator.zeroed());
+  MoveTo(&sim, &estimator, 0.5);
+  ASSERT_TRUE(estimator.zeroed());
+
+  // Check that the offset is calculated correctly.
+  EXPECT_DOUBLE_EQ(-0.25, estimator.offset());
+
+  // Make sure triggering errors works.
+  estimator.TriggerError();
+  ASSERT_TRUE(estimator.error());
+
+  // Ensure resetting resets the state of the estimator.
+  estimator.Reset();
+  ASSERT_FALSE(estimator.zeroed());
+  ASSERT_FALSE(estimator.error());
+
+  // Make sure we don't become zeroed if the hall effect doesn't trigger for
+  // long enough.
+  MoveTo(&sim, &estimator, 0.9);
+  EXPECT_FALSE(estimator.zeroed());
+  MoveTo(&sim, &estimator, 0.5);
+  EXPECT_FALSE(estimator.zeroed());
+  MoveTo(&sim, &estimator, 0.9);
+  EXPECT_FALSE(estimator.zeroed());
+
+  // Make sure we can zero moving in the opposite direction as before and stay
+  // zeroed once the hall effect is no longer triggered.
+
+  MoveTo(&sim, &estimator, 0.0);
+  ASSERT_FALSE(estimator.zeroed());
+  MoveTo(&sim, &estimator, 0.4);
+  EXPECT_FALSE(estimator.zeroed());
+  MoveTo(&sim, &estimator, 0.6);
+  EXPECT_FALSE(estimator.zeroed());
+  MoveTo(&sim, &estimator, 0.9);
+  EXPECT_FALSE(estimator.zeroed());
+
+  // Check that the offset is calculated correctly.
+  EXPECT_DOUBLE_EQ(-0.75, estimator.offset());
+
+  // Make sure we don't zero if we start in the hall effect's range, before we
+  // reset, we also check that there were no errors.
+  MoveTo(&sim, &estimator, 0.5);
+  ASSERT_TRUE(estimator.zeroed());
+  ASSERT_FALSE(estimator.error());
+  estimator.Reset();
+  EXPECT_FALSE(estimator.zeroed());
+  MoveTo(&sim, &estimator, 0.5);
+  EXPECT_FALSE(estimator.zeroed());
+  MoveTo(&sim, &estimator, 0.5);
+  EXPECT_FALSE(estimator.zeroed());
+}
+
 
 }  // namespace zeroing
 }  // namespace frc971

@@ -6,6 +6,21 @@
 namespace frc971 {
 namespace constants {
 
+struct HallEffectZeroingConstants {
+  // The absolute position of the lower edge of the hall effect sensor.
+  double lower_hall_position;
+  // The absolute position of the upper edge of the hall effect sensor.
+  double upper_hall_position;
+  // The difference in scaled units between two hall effect edges.  This is the
+  // number of units/cycle.
+  double index_difference;
+  // Number of cycles we need to see the hall effect high.
+  size_t hall_trigger_zeroing_length;
+  // Direction the system must be moving in order to zero. True is positive,
+  // False is negative direction.
+  bool zeroing_move_direction;
+};
+
 struct PotAndIndexPulseZeroingConstants {
   // The number of samples in the moving average filter.
   size_t average_filter_size;

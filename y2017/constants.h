@@ -32,14 +32,14 @@ struct Values {
     ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants zeroing;
   };
 
-  struct Turret {
-    double pot_offset;
-    ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants zeroing;
-  };
-
   struct Hood {
     double pot_offset;
     ::frc971::constants::EncoderPlusIndexZeroingConstants zeroing;
+  };
+
+  struct Column {
+    ::frc971::constants::HallEffectZeroingConstants indexer_zeroing;
+    ::frc971::constants::HallEffectZeroingConstants turret_zeroing;
   };
 
   static const int kZeroingSampleSize = 200;
@@ -110,6 +110,8 @@ struct Values {
   double drivetrain_max_speed;
 
   Intake intake;
+
+  Column column;
 
   Hood hood;
 
