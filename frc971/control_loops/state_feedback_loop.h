@@ -160,6 +160,11 @@ class StateFeedbackPlant {
     // that the plant should deal with.
     CheckU(U);
     X_ = Update(X(), U);
+    UpdateY(U);
+  }
+
+  // Computes the new Y given the control input.
+  void UpdateY(const Eigen::Matrix<double, number_of_inputs, 1> &U) {
     Y_ = C() * X() + D() * U;
   }
 

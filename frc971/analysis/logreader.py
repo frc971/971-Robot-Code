@@ -51,7 +51,7 @@ class CollectingLogReader(object):
             self.HandleLine(line)
         except Exception as ex:
             # It's common for the last line of the file to be malformed.
-            print("Ignoring malformed log entry: ", line)
+            print("Ignoring malformed log entry: ", line, ex)
 
   def HandleLine(self, line):
     """
@@ -70,13 +70,19 @@ class CollectingLogReader(object):
       binary = key[0]
       struct_instance_name = key[1]
       data_search_path = key[2]
-      boolean_multiplier = None
+      boolean_multiplier = False
+      multiplier = 1.0
 
       # If the plot definition line ends with a "-b X" where X is a number then
       # that number gets drawn when the value is True. Zero gets drawn when the
       # value is False.
       if len(data_search_path) >= 2 and data_search_path[-2] == '-b':
-        boolean_multiplier = float(data_search_path[-1])
+        multiplier = float(data_search_path[-1])
+        boolean_multiplier = True
+        data_search_path = data_search_path[:-2]
+
+      if len(data_search_path) >= 2 and data_search_path[-2] == '-m':
+        multiplier = float(data_search_path[-1])
         data_search_path = data_search_path[:-2]
 
       # Make sure that we're looking at the right binary structure instance.
@@ -88,10 +94,10 @@ class CollectingLogReader(object):
           for path in data_search_path:
             data = data[path]
 
-          if boolean_multiplier is not None:
+          if boolean_multiplier:
             if data == 'T':
-              value.Add(pline.time, boolean_multiplier)
+              value.Add(pline.time, multiplier)
             else:
               value.Add(pline.time, 0)
           else:
-            value.Add(pline.time, data)
+            value.Add(pline.time, float(data) * multiplier)
