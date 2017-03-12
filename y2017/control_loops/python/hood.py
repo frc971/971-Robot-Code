@@ -57,7 +57,7 @@ class Hood(control_loop.ControlLoop):
 
     # Moment of inertia, measured in CAD.
     # Extra mass to compensate for friction is added on.
-    self.J = 0.08 + \
+    self.J = 0.08 + 1.1 + \
              self.big_gear_inertia * ((self.G1 / self.G) ** 2) + \
              self.big_gear_inertia * ((self.G2 / self.G) ** 2) + \
              self.motor_inertia * ((1.0 / self.G) ** 2.0)
@@ -94,8 +94,8 @@ class Hood(control_loop.ControlLoop):
     glog.debug(repr(self.A_continuous))
 
     # Calculate the LQR controller gain
-    q_pos = 0.05
-    q_vel = 10.0
+    q_pos = 0.006
+    q_vel = 0.30
     self.Q = numpy.matrix([[(1.0 / (q_pos ** 2.0)), 0.0],
                            [0.0, (1.0 / (q_vel ** 2.0))]])
 

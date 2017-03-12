@@ -54,6 +54,7 @@ class VelocityIndexer(control_loop.ControlLoop):
         self.J_inner * self.G_inner * self.G_inner +
         self.J_outer * self.G_outer * self.G_outer) / (self.G_inner * self.G_inner) + \
         self.motor_inertia * ((1.0 / self.G_inner) ** 2.0)
+    glog.debug('Indexer J is %f', self.J)
     self.G = self.G_inner
 
     # Resistance of the motor, divided by 2 to account for the 2 motors
