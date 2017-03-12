@@ -21,27 +21,27 @@ class Turret(control_loop.ControlLoop):
   def __init__(self, name='Turret'):
     super(Turret, self).__init__(name)
     # Stall Torque in N m
-    self.stall_torque = 0.43
+    self.stall_torque = 0.71
     # Stall Current in Amps
-    self.stall_current = 53
-    self.free_speed_rpm = 13180
+    self.stall_current = 134
+    self.free_speed_rpm = 18730.0
     # Free Speed in rotations/second.
     self.free_speed = self.free_speed_rpm / 60.0
     # Free Current in Amps
-    self.free_current = 1.8
+    self.free_current = 0.7
 
     # Resistance of the motor
-    self.R = 12.0 / self.stall_current
+    self.resistance = 12.0 / self.stall_current
     # Motor velocity constant
     self.Kv = ((self.free_speed * 2.0 * numpy.pi) /
-               (12.0 - self.R * self.free_current))
+               (12.0 - self.resistance * self.free_current))
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Gear ratio
-    self.G = (1.0 / 7.0) * (1.0 / 5.0) * (16.0 / 92.0)
+    self.G = (12.0 / 60.0) * (11.0 / 94.0)
 
     # Motor inertia in kg * m^2
-    self.motor_inertia = 0.000006
+    self.motor_inertia = 0.00001187
 
     # Moment of inertia, measured in CAD.
     # Extra mass to compensate for friction is added on.
@@ -53,8 +53,8 @@ class Turret(control_loop.ControlLoop):
     # State is [position, velocity]
     # Input is [Voltage]
 
-    C1 = self.Kt / (self.R  * self.J * self.Kv * self.G * self.G)
-    C2 = self.Kt / (self.J * self.R * self.G)
+    C1 = self.Kt / (self.resistance * self.J * self.Kv * self.G * self.G)
+    C2 = self.Kt / (self.J * self.resistance * self.G)
 
     self.A_continuous = numpy.matrix(
         [[0, 1],
@@ -93,10 +93,6 @@ class Turret(control_loop.ControlLoop):
 
     self.Kff = controls.TwoStateFeedForwards(self.B, self.Qff)
 
-    glog.debug('K %s', repr(self.K))
-    glog.debug('Poles are %s',
-              repr(numpy.linalg.eig(self.A - self.B * self.K)[0]))
-
     q_pos = 0.10
     q_vel = 1.65
     self.Q = numpy.matrix([[(q_pos ** 2.0), 0.0],
@@ -107,10 +103,7 @@ class Turret(control_loop.ControlLoop):
 
     self.KalmanGain, self.Q_steady = controls.kalman(
         A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
-
-    glog.debug('Kal %s', repr(self.KalmanGain))
     self.L = self.A * self.KalmanGain
-    glog.debug('KalL is %s', repr(self.L))
 
     # The box formed by U_min and U_max must encompass all possible values,
     # or else Austin's code gets angry.
