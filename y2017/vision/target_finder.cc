@@ -105,7 +105,6 @@ std::vector<TargetComponent> TargetFinder::FillTargetComponentList(
 aos::vision::RangeImage TargetFinder::Threshold(aos::vision::ImagePtr image) {
   return aos::vision::DoThreshold(image, [&](aos::vision::PixelRef &px) {
     if (px.g > 88) {
-      return true;
       uint8_t min = std::min(px.b, px.r);
       uint8_t max = std::max(px.b, px.r);
       if (min >= px.g || max >= px.g) return false;

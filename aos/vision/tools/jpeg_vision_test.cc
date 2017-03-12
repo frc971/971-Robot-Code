@@ -42,7 +42,7 @@ void DrawHLine(ImagePtr ptr, int y, PixelRef color = {255, 0, 0}) {
 class ChannelImageStream : public ImageStreamEvent {
  public:
   ChannelImageStream(const std::string &fname,
-                     const camera::CameraParams &params)
+                     const aos::vision::CameraParams &params)
       : ImageStreamEvent(fname, params), view_(false) {
     // Lambda to record image data to a file on key press.
     view_.view()->key_press_event = [this](uint32_t keyval) {
@@ -117,12 +117,7 @@ int main(int argc, char *argv[]) {
   aos::events::EpollLoop loop;
   gtk_init(&argc, &argv);
 
-  camera::CameraParams params = {.width = 640 * 2,
-                                 .height = 480 * 2,
-                                 .exposure = 10,
-                                 .brightness = 128,
-                                 .gain = 0,
-                                 .fps = 25};
+  aos::vision::CameraParams params;
 
   aos::vision::ChannelImageStream strm1("/dev/video1", params);
 

@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+package aos.vision;
+
+message CameraParams {
+  // Width of the image.
+  optional int32 width = 1 [default = 1280];
+
+  // Height of the image.
+  optional int32 height = 2 [default = 960];
+
+  // Exposure setting.
+  optional int32 exposure = 3 [default = 10];
+
+  // Brightness setting.
+  optional int32 brightness = 4 [default = 128];
+
+  // Hardware gain multiplier on pixel values.
+  optional int32 gain = 5 [default = 0];
+
+  // Frames per second to run camera.
+  optional int32 fps = 6 [default = 30];
+}

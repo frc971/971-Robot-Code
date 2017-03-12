@@ -143,7 +143,7 @@ gtk_dependent_cc_binary(
     "//aos/vision/events:tcp_client",
     "//aos/vision/events:epoll_events",
     "//aos/vision/events:gtk_event",
-    "//aos/vision/debug:debug_viewer",
+    "//aos/vision/debug:debug_window",
     "//aos/vision/blob:range_image",
     "//aos/vision/blob:codec",
     "//aos/vision/blob:stream_view",

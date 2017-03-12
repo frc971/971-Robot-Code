@@ -1,4 +1,5 @@
 package(default_visibility = ['//visibility:public'])
+load('/tools/build_rules/protobuf', 'proto_cc_library')
 
 cc_library(
   name = 'image_types',
@@ -6,6 +7,11 @@ cc_library(
   deps = [
     '//aos/common/logging:logging',
   ],
+)
+
+proto_cc_library(
+  name = 'camera_params',
+  src = 'camera_params.proto',
 )
 
 cc_library(
@@ -16,6 +22,7 @@ cc_library(
     '//aos/common:time',
     '//aos/common/logging:logging',
     ':image_types',
+    ':camera_params',
   ],
 )
 

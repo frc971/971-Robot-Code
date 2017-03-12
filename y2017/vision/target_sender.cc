@@ -2,6 +2,7 @@
 #include <google/protobuf/text_format.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -76,13 +77,9 @@ class BlobLog {
   std::ofstream ofst_;
 };
 
-ImageFormat GetImageFormat(const CameraSettings &params) {
-  return ImageFormat{params.width(), params.height()};
-}
-
 class ImageSender : public ImageStreamEvent {
  public:
-  ImageSender(camera::CameraParams params, GameSpecific game_cfg,
+  ImageSender(aos::vision::CameraParams params, GameSpecific game_cfg,
               const std::string &fname, const std::string &ipadder, int port)
       : ImageStreamEvent(fname, params),
         game_cfg_(game_cfg),
@@ -181,17 +178,11 @@ class ImageSender : public ImageStreamEvent {
  private:
 };
 
-void RunCamera(CameraSettings settings, GameSpecific game_cfg,
+void RunCamera(aos::vision::CameraParams settings, GameSpecific game_cfg,
                const std::string &device, const std::string &ip_addr,
                int port) {
   printf("Creating camera (%dx%d).\n", settings.width(), settings.height());
-  camera::CameraParams params = {settings.width(),
-                                 settings.height(),
-                                 settings.exposure(),
-                                 settings.brightness(),
-                                 0,
-                                 (int32_t)settings.fps()};
-  ImageSender strm(params, game_cfg, device, ip_addr, port);
+  ImageSender strm(settings, game_cfg, device, ip_addr, port);
 
   aos::events::EpollLoop loop;
   loop.Add(strm.GetTCPServ());

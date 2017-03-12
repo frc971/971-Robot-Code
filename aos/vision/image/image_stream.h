@@ -2,6 +2,7 @@
 #define _AOS_VISION_IMAGE_IMAGE_STREAM_H_
 
 #include "aos/vision/events/epoll_events.h"
+#include "aos/vision/image/camera_params.pb.h"
 #include "aos/vision/image/reader.h"
 
 #include <memory>
@@ -15,7 +16,7 @@ class ImageStreamEvent : public ::aos::events::EpollEvent {
  public:
   static std::unique_ptr<::camera::Reader> GetCamera(
       const std::string &fname, ImageStreamEvent *obj,
-      camera::CameraParams params) {
+      aos::vision::CameraParams params) {
     using namespace std::placeholders;
     std::unique_ptr<::camera::Reader> camread(new ::camera::Reader(
         fname, std::bind(&ImageStreamEvent::ProcessHelper, obj, _1, _2),
@@ -28,7 +29,7 @@ class ImageStreamEvent : public ::aos::events::EpollEvent {
       : ::aos::events::EpollEvent(reader->fd()), reader_(std::move(reader)) {}
 
   explicit ImageStreamEvent(const std::string &fname,
-                            camera::CameraParams params)
+                            aos::vision::CameraParams params)
       : ImageStreamEvent(GetCamera(fname, this, params)) {}
 
   void ProcessHelper(DataRef data, aos::monotonic_clock::time_point timestamp) {

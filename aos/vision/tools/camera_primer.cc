@@ -5,7 +5,7 @@
 
 class ImageStream : public aos::vision::ImageStreamEvent {
  public:
-  ImageStream(const std::string &fname, camera::CameraParams params)
+  ImageStream(const std::string &fname, aos::vision::CameraParams params)
       : ImageStreamEvent(fname, params) {}
   void ProcessImage(aos::vision::DataRef /*data*/,
                     aos::monotonic_clock::time_point) override {
@@ -30,12 +30,7 @@ int main(int argc, char **argv) {
   ::aos::logging::AddImplementation(
       new ::aos::logging::StreamLogImplementation(stdout));
 
-  camera::CameraParams params = {.width = 640 * 2,
-                                 .height = 480 * 2,
-                                 .exposure = 10,
-                                 .brightness = 128,
-                                 .gain = 0,
-                                 .fps = 30};
+  aos::vision::CameraParams params;
 
   if (argc != 2) {
     fprintf(stderr, "usage: %s path_to_camera\n", argv[0]);

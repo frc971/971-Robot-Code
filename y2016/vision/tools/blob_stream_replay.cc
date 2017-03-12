@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <endian.h>
+#include <sys/stat.h>
 #include <fstream>
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
@@ -13,7 +14,6 @@
 #include "aos/vision/image/image_stream.h"
 #include "aos/vision/events/epoll_events.h"
 #include "aos/vision/events/tcp_server.h"
-#include "aos/vision/debug/debug_viewer.h"
 #include "aos/vision/blob/stream_view.h"
 #include "y2016/vision/blob_filters.h"
 // #include "y2016/vision/process_targets.h"
@@ -362,57 +362,57 @@ class NetworkForwardingImageStream : public aos::events::EpollWait {
   void DrawSuperSpeed() {
     PixelRef color = {0, 255, 255};
     // S
-    overlay_.add_line(Vector<2>(200, 100), Vector<2>(100, 100), color);
-    overlay_.add_line(Vector<2>(100, 100), Vector<2>(100, 300), color);
-    overlay_.add_line(Vector<2>(100, 300), Vector<2>(200, 300), color);
-    overlay_.add_line(Vector<2>(200, 300), Vector<2>(200, 500), color);
-    overlay_.add_line(Vector<2>(200, 500), Vector<2>(100, 500), color);
+    overlay_.AddLine(Vector<2>(200, 100), Vector<2>(100, 100), color);
+    overlay_.AddLine(Vector<2>(100, 100), Vector<2>(100, 300), color);
+    overlay_.AddLine(Vector<2>(100, 300), Vector<2>(200, 300), color);
+    overlay_.AddLine(Vector<2>(200, 300), Vector<2>(200, 500), color);
+    overlay_.AddLine(Vector<2>(200, 500), Vector<2>(100, 500), color);
     // U
-    overlay_.add_line(Vector<2>(250, 100), Vector<2>(250, 500), color);
-    overlay_.add_line(Vector<2>(250, 500), Vector<2>(350, 500), color);
-    overlay_.add_line(Vector<2>(350, 500), Vector<2>(350, 100), color);
+    overlay_.AddLine(Vector<2>(250, 100), Vector<2>(250, 500), color);
+    overlay_.AddLine(Vector<2>(250, 500), Vector<2>(350, 500), color);
+    overlay_.AddLine(Vector<2>(350, 500), Vector<2>(350, 100), color);
     // P
-    overlay_.add_line(Vector<2>(400, 100), Vector<2>(400, 500), color);
-    overlay_.add_line(Vector<2>(400, 100), Vector<2>(500, 100), color);
-    overlay_.add_line(Vector<2>(500, 100), Vector<2>(500, 300), color);
-    overlay_.add_line(Vector<2>(500, 300), Vector<2>(400, 300), color);
+    overlay_.AddLine(Vector<2>(400, 100), Vector<2>(400, 500), color);
+    overlay_.AddLine(Vector<2>(400, 100), Vector<2>(500, 100), color);
+    overlay_.AddLine(Vector<2>(500, 100), Vector<2>(500, 300), color);
+    overlay_.AddLine(Vector<2>(500, 300), Vector<2>(400, 300), color);
     // E
-    overlay_.add_line(Vector<2>(550, 100), Vector<2>(550, 500), color);
-    overlay_.add_line(Vector<2>(550, 100), Vector<2>(650, 100), color);
-    overlay_.add_line(Vector<2>(550, 300), Vector<2>(650, 300), color);
-    overlay_.add_line(Vector<2>(550, 500), Vector<2>(650, 500), color);
+    overlay_.AddLine(Vector<2>(550, 100), Vector<2>(550, 500), color);
+    overlay_.AddLine(Vector<2>(550, 100), Vector<2>(650, 100), color);
+    overlay_.AddLine(Vector<2>(550, 300), Vector<2>(650, 300), color);
+    overlay_.AddLine(Vector<2>(550, 500), Vector<2>(650, 500), color);
     // R
-    overlay_.add_line(Vector<2>(700, 100), Vector<2>(700, 500), color);
-    overlay_.add_line(Vector<2>(700, 100), Vector<2>(800, 100), color);
-    overlay_.add_line(Vector<2>(800, 100), Vector<2>(800, 300), color);
-    overlay_.add_line(Vector<2>(800, 300), Vector<2>(700, 300), color);
-    overlay_.add_line(Vector<2>(700, 350), Vector<2>(800, 500), color);
+    overlay_.AddLine(Vector<2>(700, 100), Vector<2>(700, 500), color);
+    overlay_.AddLine(Vector<2>(700, 100), Vector<2>(800, 100), color);
+    overlay_.AddLine(Vector<2>(800, 100), Vector<2>(800, 300), color);
+    overlay_.AddLine(Vector<2>(800, 300), Vector<2>(700, 300), color);
+    overlay_.AddLine(Vector<2>(700, 350), Vector<2>(800, 500), color);
     // S
-    overlay_.add_line(Vector<2>(200, 550), Vector<2>(100, 550), color);
-    overlay_.add_line(Vector<2>(100, 550), Vector<2>(100, 750), color);
-    overlay_.add_line(Vector<2>(100, 750), Vector<2>(200, 750), color);
-    overlay_.add_line(Vector<2>(200, 750), Vector<2>(200, 950), color);
-    overlay_.add_line(Vector<2>(200, 950), Vector<2>(100, 950), color);
+    overlay_.AddLine(Vector<2>(200, 550), Vector<2>(100, 550), color);
+    overlay_.AddLine(Vector<2>(100, 550), Vector<2>(100, 750), color);
+    overlay_.AddLine(Vector<2>(100, 750), Vector<2>(200, 750), color);
+    overlay_.AddLine(Vector<2>(200, 750), Vector<2>(200, 950), color);
+    overlay_.AddLine(Vector<2>(200, 950), Vector<2>(100, 950), color);
     // P
-    overlay_.add_line(Vector<2>(250, 550), Vector<2>(250, 950), color);
-    overlay_.add_line(Vector<2>(250, 550), Vector<2>(350, 550), color);
-    overlay_.add_line(Vector<2>(350, 550), Vector<2>(350, 750), color);
-    overlay_.add_line(Vector<2>(350, 750), Vector<2>(250, 750), color);
+    overlay_.AddLine(Vector<2>(250, 550), Vector<2>(250, 950), color);
+    overlay_.AddLine(Vector<2>(250, 550), Vector<2>(350, 550), color);
+    overlay_.AddLine(Vector<2>(350, 550), Vector<2>(350, 750), color);
+    overlay_.AddLine(Vector<2>(350, 750), Vector<2>(250, 750), color);
     // E
-    overlay_.add_line(Vector<2>(400, 550), Vector<2>(400, 950), color);
-    overlay_.add_line(Vector<2>(400, 550), Vector<2>(500, 550), color);
-    overlay_.add_line(Vector<2>(400, 750), Vector<2>(500, 750), color);
-    overlay_.add_line(Vector<2>(400, 950), Vector<2>(500, 950), color);
+    overlay_.AddLine(Vector<2>(400, 550), Vector<2>(400, 950), color);
+    overlay_.AddLine(Vector<2>(400, 550), Vector<2>(500, 550), color);
+    overlay_.AddLine(Vector<2>(400, 750), Vector<2>(500, 750), color);
+    overlay_.AddLine(Vector<2>(400, 950), Vector<2>(500, 950), color);
     // E
-    overlay_.add_line(Vector<2>(550, 550), Vector<2>(550, 950), color);
-    overlay_.add_line(Vector<2>(550, 550), Vector<2>(650, 550), color);
-    overlay_.add_line(Vector<2>(550, 750), Vector<2>(650, 750), color);
-    overlay_.add_line(Vector<2>(550, 950), Vector<2>(650, 950), color);
+    overlay_.AddLine(Vector<2>(550, 550), Vector<2>(550, 950), color);
+    overlay_.AddLine(Vector<2>(550, 550), Vector<2>(650, 550), color);
+    overlay_.AddLine(Vector<2>(550, 750), Vector<2>(650, 750), color);
+    overlay_.AddLine(Vector<2>(550, 950), Vector<2>(650, 950), color);
     // D
-    overlay_.add_line(Vector<2>(700, 550), Vector<2>(700, 950), color);
-    overlay_.add_line(Vector<2>(700, 550), Vector<2>(800, 575), color);
-    overlay_.add_line(Vector<2>(800, 575), Vector<2>(800, 925), color);
-    overlay_.add_line(Vector<2>(800, 925), Vector<2>(700, 950), color);
+    overlay_.AddLine(Vector<2>(700, 550), Vector<2>(700, 950), color);
+    overlay_.AddLine(Vector<2>(700, 550), Vector<2>(800, 575), color);
+    overlay_.AddLine(Vector<2>(800, 575), Vector<2>(800, 925), color);
+    overlay_.AddLine(Vector<2>(800, 925), Vector<2>(700, 950), color);
   }
 
   void UpdateNewTime(int new_delta) {
@@ -524,9 +524,9 @@ class NetworkForwardingImageStream : public aos::events::EpollWait {
   }
 
   void DrawCross(PixelLinesOverlay &overlay, Vector<2> center, PixelRef color) {
-    overlay.add_line(Vector<2>(center.x() - 25, center.y()),
+    overlay.AddLine(Vector<2>(center.x() - 25, center.y()),
                      Vector<2>(center.x() + 25, center.y()), color);
-    overlay.add_line(Vector<2>(center.x(), center.y() - 25),
+    overlay.AddLine(Vector<2>(center.x(), center.y() - 25),
                      Vector<2>(center.x(), center.y() + 25), color);
   }
 

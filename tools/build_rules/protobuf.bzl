@@ -72,7 +72,7 @@ def proto_cc_library(name, src, deps = [], visibility = None):
     name = '%s__proto_srcs' % name,
     srcs = [src],
     deps = [('%s__proto_srcs' % o_name) for o_name in deps],
-    visibility = ['//visibility:private'],
+    visibility = visibility,
   )
   basename = src[:-len('.proto')]
   native.cc_library(

@@ -20,6 +20,9 @@ proto_cc_library(
 proto_cc_library(
   name = 'vision_config',
   src = 'vision_config.proto',
+  deps = [
+    '//aos/vision/image:camera_params',
+  ],
 )
 
 cc_binary(

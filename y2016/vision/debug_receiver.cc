@@ -12,7 +12,6 @@
 #include "aos/vision/events/socket_types.h"
 #include "aos/vision/events/tcp_client.h"
 #include "aos/vision/events/epoll_events.h"
-#include "aos/vision/debug/debug_viewer.h"
 #include "aos/vision/blob/range_image.h"
 #include "aos/vision/blob/codec.h"
 #include "aos/vision/blob/stream_view.h"
@@ -69,9 +68,9 @@ class StereoViewer {
 
  private:
   void DrawCross(PixelLinesOverlay &overlay, Vector<2> center, PixelRef color) {
-    overlay.add_line(Vector<2>(center.x() - 50, center.y()),
+    overlay.AddLine(Vector<2>(center.x() - 50, center.y()),
                      Vector<2>(center.x() + 50, center.y()), color);
-    overlay.add_line(Vector<2>(center.x(), center.y() - 50),
+    overlay.AddLine(Vector<2>(center.x(), center.y() - 50),
                      Vector<2>(center.x(), center.y() + 50), color);
   }
 

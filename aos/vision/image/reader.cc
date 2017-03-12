@@ -1,7 +1,19 @@
-#include "aos/common/time.h"
+#include "aos/vision/image/reader.h"
+
+#include <errno.h>
+#include <fcntl.h>
+#include <malloc.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "aos/common/logging/logging.h"
-#include "aos/vision/image/reader.h"
+#include "aos/common/time.h"
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
@@ -12,8 +24,21 @@ struct Reader::Buffer {
   size_t length;  // for munmap
 };
 
+aos::vision::CameraParams MakeCameraParams(int32_t width, int32_t height,
+                                           int32_t exposure, int32_t brightness,
+                                           int32_t gain, int32_t fps) {
+  aos::vision::CameraParams cam;
+  cam.set_width(width);
+  cam.set_height(height);
+  cam.set_exposure(exposure);
+  cam.set_brightness(brightness);
+  cam.set_gain(gain);
+  cam.set_fps(fps);
+  return cam;
+}
+
 Reader::Reader(const std::string &dev_name, ProcessCb process,
-               CameraParams params)
+               aos::vision::CameraParams params)
     : dev_name_(dev_name), process_(std::move(process)), params_(params) {
   struct stat st;
   if (stat(dev_name.c_str(), &st) == -1) {
@@ -67,7 +92,7 @@ void Reader::HandleFrame() {
     }
 
     if (!SetCameraControl(V4L2_CID_EXPOSURE_ABSOLUTE,
-                          "V4L2_CID_EXPOSURE_ABSOLUTE", params_.exposure)) {
+                          "V4L2_CID_EXPOSURE_ABSOLUTE", params_.exposure())) {
       LOG(FATAL, "Failed to set exposure\n");
     }
   }
@@ -200,8 +225,8 @@ void Reader::Init() {
   v4l2_format fmt;
   CLEAR(fmt);
   fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  fmt.fmt.pix.width = params_.width;
-  fmt.fmt.pix.height = params_.height;
+  fmt.fmt.pix.width = params_.width();
+  fmt.fmt.pix.height = params_.height();
   fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;
   fmt.fmt.pix.field = V4L2_FIELD_ANY;
   // fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
@@ -224,16 +249,16 @@ void Reader::Init() {
   }
 
   if (!SetCameraControl(V4L2_CID_EXPOSURE_ABSOLUTE,
-                        "V4L2_CID_EXPOSURE_ABSOLUTE", params_.exposure)) {
+                        "V4L2_CID_EXPOSURE_ABSOLUTE", params_.exposure())) {
     LOG(FATAL, "Failed to set exposure\n");
   }
 
   if (!SetCameraControl(V4L2_CID_BRIGHTNESS, "V4L2_CID_BRIGHTNESS",
-                        params_.brightness)) {
+                        params_.brightness())) {
     LOG(FATAL, "Failed to set up camera\n");
   }
 
-  if (!SetCameraControl(V4L2_CID_GAIN, "V4L2_CID_GAIN", params_.gain)) {
+  if (!SetCameraControl(V4L2_CID_GAIN, "V4L2_CID_GAIN", params_.gain())) {
     LOG(FATAL, "Failed to set up camera\n");
   }
 
@@ -243,7 +268,7 @@ void Reader::Init() {
   memset(setfps, 0, sizeof(struct v4l2_streamparm));
   setfps->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   setfps->parm.capture.timeperframe.numerator = 1;
-  setfps->parm.capture.timeperframe.denominator = params_.fps;
+  setfps->parm.capture.timeperframe.denominator = params_.fps();
   if (xioctl(fd_, VIDIOC_S_PARM, setfps) == -1) {
     PLOG(FATAL, "ioctl VIDIOC_S_PARM(%d, %p)\n", fd_, setfps);
   }

@@ -1,16 +1,5 @@
 #ifndef AOS_VISION_IMAGE_READER_H_
 #define AOS_VISION_IMAGE_READER_H_
-#include <errno.h>
-#include <fcntl.h>
-#include <malloc.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #include <inttypes.h>
 #include <functional>
@@ -18,24 +7,21 @@
 
 #include "aos/common/time.h"
 #include "aos/vision/image/V4L2.h"
+#include "aos/vision/image/camera_params.pb.h"
 #include "aos/vision/image/image_types.h"
 
 namespace camera {
 
-struct CameraParams {
-  int32_t width;
-  int32_t height;
-  int32_t exposure;
-  int32_t brightness;
-  int32_t gain;
-  int32_t fps;
-};
+aos::vision::CameraParams MakeCameraParams(int32_t width, int32_t height,
+                                           int32_t exposure, int32_t brightness,
+                                           int32_t gain, int32_t fps);
 
 class Reader {
  public:
   using ProcessCb = std::function<void(
       aos::vision::DataRef data, aos::monotonic_clock::time_point timestamp)>;
-  Reader(const std::string &dev_name, ProcessCb process, CameraParams params);
+  Reader(const std::string &dev_name, ProcessCb process,
+         aos::vision::CameraParams params);
 
   aos::vision::ImageFormat get_format();
 
@@ -74,7 +60,7 @@ class Reader {
   static const unsigned int kNumBuffers = 5;
 
   // set only at initialize
-  CameraParams params_;
+  aos::vision::CameraParams params_;
 };
 
 }  // namespace camera

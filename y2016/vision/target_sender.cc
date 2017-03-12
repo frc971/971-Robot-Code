@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -37,13 +38,15 @@ using aos::events::TXUdpSocket;
 using aos::events::DataSocket;
 using aos::vision::ImageFormat;
 
-::camera::CameraParams GetCameraParams(const Calibration &calibration) {
-  return ::camera::CameraParams{.width = calibration.camera_image_width(),
-                                .height = calibration.camera_image_height(),
-                                .exposure = calibration.camera_exposure(),
-                                .brightness = calibration.camera_brightness(),
-                                .gain = calibration.camera_gain(),
-                                .fps = calibration.camera_fps()};
+::aos::vision::CameraParams GetCameraParams(const Calibration &calibration) {
+  ::aos::vision::CameraParams params;
+  params.set_width(calibration.camera_image_width());
+  params.set_height(calibration.camera_image_height());
+  params.set_exposure(calibration.camera_exposure());
+  params.set_brightness(calibration.camera_brightness());
+  params.set_gain(calibration.camera_gain());
+  params.set_fps(calibration.camera_fps());
+  return params;
 }
 
 int64_t Nanos(aos::monotonic_clock::duration time_diff) {
@@ -62,13 +65,14 @@ inline bool FileExist(const std::string &name) {
 
 class ImageSender : public ImageStreamEvent {
  public:
-  ImageSender(int camera_index, camera::CameraParams params,
+  ImageSender(int camera_index, aos::vision::CameraParams params,
               const std::string &fname, const std::string &ipadder, int port)
       : ImageStreamEvent(fname, params),
         camera_index_(camera_index),
         udp_serv_(ipadder, 8080),
         tcp_serv_(port),
-        blob_filt_(ImageFormat(params.width, params.height), 40, 750, 250000),
+        blob_filt_(ImageFormat(params.width(), params.height()), 40, 750,
+                   250000),
         finder_(0.25, 35) {
     int index = 0;
     while (true) {
@@ -94,9 +98,8 @@ class ImageSender : public ImageStreamEvent {
     DecodeJpeg(data, &image_);
     auto fmt = image_.fmt();
 
-    RangeImage rimg = DoThreshold(image_.get(), [](PixelRef &px) {
-      return (px.g > 88);
-    });
+    RangeImage rimg =
+        DoThreshold(image_.get(), [](PixelRef &px) { return (px.g > 88); });
 
     // flip the right image as this camera is mount backward
     if (camera_index_ == 0) {
@@ -202,11 +205,11 @@ class ImageSender : public ImageStreamEvent {
  private:
 };
 
-void RunCamera(int camera_index, camera::CameraParams params,
+void RunCamera(int camera_index, aos::vision::CameraParams params,
                const std::string &device, const std::string &ip_addr,
                int port) {
-  printf("Creating camera %d (%d, %d).\n", camera_index, params.width,
-         params.height);
+  printf("Creating camera %d (%d, %d).\n", camera_index, params.width(),
+         params.height());
   ImageSender strm(camera_index, params, device, ip_addr, port);
 
   aos::events::EpollLoop loop;

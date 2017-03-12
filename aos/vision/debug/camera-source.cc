@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string>
 
+#include "aos/vision/image/camera_params.pb.h"
 #include "aos/vision/image/image_stream.h"
 
 namespace aos {
@@ -15,26 +16,20 @@ class CameraImageSource : public ImageSource {
             DebugFrameworkInterface *interface) override {
     // TODO: Get these params from a config file passed in through the
     // constructor.
-    camera::CameraParams params = {.width = 640 * 2,
-                                   .height = 480 * 2,
-                                   .exposure = 10,
-                                   .brightness = 128,
-                                   .gain = 0,
-                                   .fps = 30};
-    image_stream_.reset(new ImageStream(jpeg_list_filename, params, interface));
+    image_stream_.reset(new ImageStream(
+        jpeg_list_filename, aos::vision::CameraParams(), interface));
   }
 
   const char *GetHelpMessage() override {
     return &R"(
     format_spec is filename of the camera device.
     example: camera:/dev/video0
-    This viewer source will stream video from a usb camera of your choice.
-)"[1];
+    This viewer source will stream video from a usb camera of your choice.)"[1];
   }
 
   class ImageStream : public ImageStreamEvent {
    public:
-    ImageStream(const std::string &fname, camera::CameraParams params,
+    ImageStream(const std::string &fname, aos::vision::CameraParams params,
                 DebugFrameworkInterface *interface)
         : ImageStreamEvent(fname, params), interface_(interface) {
       interface_->Loop()->Add(this);
