@@ -174,6 +174,7 @@ queue_group SuperstructureQueue {
     TurretGoal turret;
     HoodGoal hood;
     ShooterGoal shooter;
+    bool lights_on;
   };
 
   message Status {
@@ -221,6 +222,9 @@ queue_group SuperstructureQueue {
 
     double voltage_turret;
     double voltage_hood;
+
+    // If true, the lights are on.
+    bool lights_on;
   };
 
   queue Goal goal;

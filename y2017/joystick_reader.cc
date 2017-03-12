@@ -111,6 +111,7 @@ class Reader : public ::aos::input::JoystickInput {
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
     // Default the intake to in.
     intake_goal_ = constants::Values::kIntakeRange.lower;
+    bool lights_on = false;
 
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       action_queue_.CancelAllActions();
@@ -130,6 +131,7 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.IsPressed(kVisionAlign)) {
       // Align shot using vision
       // TODO(campbell): Add vision aligning.
+      lights_on = true;
       shooter_velocity_ = 100.0;
     } else if (data.IsPressed(kCloseShot)) {
       // Close shot
@@ -176,6 +178,7 @@ class Reader : public ::aos::input::JoystickInput {
     new_superstructure_goal->hood.profile_params.max_acceleration = 25.0;
 
     new_superstructure_goal->intake.voltage_rollers = 0.0;
+    new_superstructure_goal->lights_on = lights_on;
 
     if (data.IsPressed(kHang)) {
       new_superstructure_goal->intake.voltage_rollers = -12.0;

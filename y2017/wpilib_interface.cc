@@ -461,6 +461,60 @@ class SensorReader {
   ::std::atomic<bool> run_{true};
 };
 
+class SolenoidWriter {
+ public:
+  SolenoidWriter()
+      : superstructure_(".y2017.control_loops.superstructure_queue.output") {}
+
+  ::frc971::wpilib::BufferedPcm *pcm() { return &pcm_; }
+
+  void set_lights(
+      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+    lights_ = ::std::move(s);
+  }
+
+  void operator()() {
+    ::aos::SetCurrentThreadName("Solenoids");
+    ::aos::SetCurrentThreadRealtimePriority(27);
+
+    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(20),
+                                        ::std::chrono::milliseconds(1));
+
+    while (run_) {
+      {
+        const int iterations = phased_loop.SleepUntilNext();
+        if (iterations != 1) {
+          LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
+        }
+      }
+
+      {
+        superstructure_.FetchLatest();
+        if (superstructure_.get()) {
+          LOG_STRUCT(DEBUG, "solenoids", *superstructure_);
+          lights_->Set(superstructure_->lights_on);
+        }
+      }
+
+      pcm_.Flush();
+    }
+  }
+
+  void Quit() { run_ = false; }
+
+ private:
+  ::frc971::wpilib::BufferedPcm pcm_;
+
+  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> lights_;
+
+  ::aos::Queue<
+      ::y2017::control_loops::SuperstructureQueue::Output>
+      superstructure_;
+
+  ::std::atomic<bool> run_{true};
+};
+
+
 class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
   void set_drivetrain_left_victor(::std::unique_ptr<VictorSP> t) {
@@ -630,6 +684,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         ::std::unique_ptr<VictorSP>(new VictorSP(8)));
     ::std::thread superstructure_writer_thread(
         ::std::ref(superstructure_writer));
+
+    SolenoidWriter solenoid_writer;
+    solenoid_writer.set_lights(solenoid_writer.pcm()->MakeSolenoid(0));
+
+    ::std::thread solenoid_thread(::std::ref(solenoid_writer));
 
     // Wait forever. Not much else to do...
     while (true) {

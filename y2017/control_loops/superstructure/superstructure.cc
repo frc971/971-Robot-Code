@@ -105,6 +105,9 @@ void Superstructure::RunIteration(
         ::std::max(-kMaxIndexerRollerVoltage,
                    ::std::min(unsafe_goal->indexer.voltage_rollers,
                               kMaxIndexerRollerVoltage));
+
+    // Set the lights on or off
+    output->lights_on = unsafe_goal->lights_on;
   }
 }
 

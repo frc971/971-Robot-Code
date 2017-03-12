@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include "SolenoidBase.h"
+#include "Solenoid.h"
 #undef ERROR
 
 #include "frc971/wpilib/buffered_solenoid.h"
@@ -17,10 +17,9 @@ namespace wpilib {
 // The way to use this is to call MakeSolenoid for whichever solenoid numbers
 // you want, call Set on those, and then periodically call Flush on this object
 // to write all of the buffered values out.
-class BufferedPcm : public SolenoidBase {
+class BufferedPcm : public Solenoid {
  public:
-  explicit BufferedPcm(uint8_t module = GetDefaultSolenoidModule())
-      : SolenoidBase(module) {}
+  explicit BufferedPcm() : Solenoid(0) {}
 
   // Creates a new BufferedSolenoid for a specified port number.
   ::std::unique_ptr<BufferedSolenoid> MakeSolenoid(int number);
