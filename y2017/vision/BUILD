@@ -64,6 +64,7 @@ cc_binary(
     '//aos/vision/events:udp',
     ':vision_queue',
     ':vision_result',
+    ':target_finder',
     '//aos/common:mutex',
   ],
 )

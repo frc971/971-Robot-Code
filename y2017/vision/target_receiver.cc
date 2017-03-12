@@ -5,28 +5,18 @@
 #include "aos/common/time.h"
 #include "aos/linux_code/init.h"
 #include "aos/vision/events/udp.h"
+#include "y2017/vision/target_finder.h"
 #include "y2017/vision/vision.q.h"
 #include "y2017/vision/vision_result.pb.h"
 
 using aos::monotonic_clock;
 
-namespace y2017 {
-namespace vision {
-
-void ComputeDistanceAngle(const TargetResult &target, double *distance,
-                          double *angle) {
-  // TODO: fix this.
-  *distance = target.y();
-  *angle = target.x();
-}
-
-}  // namespace vision
-}  // namespace y2017
-
 int main() {
   using namespace y2017::vision;
   ::aos::events::RXUdpSocket recv(8080);
   char raw_data[65507];
+  // TODO(parker): Have this pull in a config from somewhere.
+  TargetFinder finder;
 
   while (true) {
     // TODO(austin): Don't malloc.
@@ -52,8 +42,10 @@ int main() {
               target_time.time_since_epoch())
               .count();
 
-      ComputeDistanceAngle(target.target(), &new_vision_status->distance,
-                           &new_vision_status->angle);
+      finder.GetAngleDist(
+          aos::vision::Vector<2>(target.target().x(), target.target().y()),
+          /* TODO: Insert down estimate here in radians: */ 0.0,
+          &new_vision_status->distance, &new_vision_status->angle);
     }
 
     LOG_STRUCT(DEBUG, "vision", *new_vision_status);

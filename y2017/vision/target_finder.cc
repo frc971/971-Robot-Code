@@ -233,5 +233,49 @@ bool TargetFinder::FindTargetFromComponents(
   return true;
 }
 
+namespace {
+
+constexpr double kInchesToMeters = 0.0254;
+
+}  // namespace
+
+void RotateAngle(aos::vision::Vector<2> vec, double angle, double *rx,
+                 double *ry) {
+  double cos_ang = std::cos(angle);
+  double sin_ang = std::sin(angle);
+  *rx = vec.x() * cos_ang - vec.y() * sin_ang;
+  *ry = vec.x() * sin_ang + vec.y() * cos_ang;
+}
+
+void TargetFinder::GetAngleDist(const aos::vision::Vector<2>& target,
+                                double down_angle, double *dist,
+                                double *angle) {
+  // TODO(ben): Will put all these numbers in a config file before
+  // the first competition. I hope.
+  double focal_length = 1418.6;
+  double mounted_angle_deg = 33.5;
+  double camera_angle = mounted_angle_deg * M_PI / 180.0 - down_angle;
+  double window_height = 960.0;
+  double window_width = 1280.0;
+
+  double target_height = 78.0;
+  double camera_height = 21.5;
+  double tape_width = 2;
+  double world_height = tape_width + target_height - camera_height;
+
+  double target_to_boiler = 9.5;
+  double robot_to_camera = 9.5;
+  double added_dist = target_to_boiler + robot_to_camera;
+
+  double px = target.x() - window_width / 2.0;
+  double py = target.y() - window_height / 2.0;
+  double pz = focal_length;
+  RotateAngle(aos::vision::Vector<2>(pz, -py), camera_angle, &pz, &py);
+  double pl = std::sqrt(pz * pz + px * px);
+
+  *dist = kInchesToMeters * (world_height * pl / py - added_dist);
+  *angle = std::atan2(px, pz);
+}
+
 }  // namespace vision
 }  // namespace y2017

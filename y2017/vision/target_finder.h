@@ -70,6 +70,10 @@ class TargetFinder {
   // Get the local overlay for debug if we are doing that.
   aos::vision::PixelLinesOverlay *GetOverlay() { return &overlay_; }
 
+  // Convert target location into meters and radians.
+  void GetAngleDist(const aos::vision::Vector<2>& target, double down_angle,
+                    double *dist, double *angle);
+
  private:
   // Find a loosly connected target.
   double DetectConnectedTarget(const RangeImage &img);
