@@ -55,6 +55,7 @@ class ProfiledSubsystem {
     for (auto &estimator : estimators_) {
       estimator.Reset();
     }
+    should_reset_ = true;
   }
 
   // Returns the controller.
@@ -98,6 +99,9 @@ class ProfiledSubsystem {
     return loop_->X_hat();
   }
   double X_hat(int row, int col) const { return loop_->X_hat(row, col); }
+  double &mutable_X_hat(int row, int col) const {
+    return loop_->mutable_X_hat(row, col);
+  }
 
   // Returns the current internal estimator state for logging.
   typename ZeroingEstimator::State EstimatorState(int index) {
@@ -114,8 +118,6 @@ class ProfiledSubsystem {
  protected:
   void set_zeroed(int index, bool val) { zeroed_[index] = val; }
 
-  // TODO(austin): It's a bold assumption to assume that we will have the same
-  // number of sensors as axes.  So far, that's been fine.
   ::std::unique_ptr<::frc971::control_loops::SimpleCappedStateFeedbackLoop<
       number_of_states, number_of_inputs, number_of_outputs>>
       loop_;
@@ -124,6 +126,10 @@ class ProfiledSubsystem {
   Eigen::Matrix<double, number_of_states, 1> unprofiled_goal_;
 
   bool initialized_ = false;
+
+  // If true, the subclass should reset in Update.  It should then clear this
+  // flag.
+  bool should_reset_ = true;
 
   ::std::array<ZeroingEstimator, number_of_axes> estimators_;
 
@@ -334,6 +340,15 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::set_unprofiled_goal(
 
 template <class ZeroingEstimator>
 void SingleDOFProfiledSubsystem<ZeroingEstimator>::Update(bool disable) {
+  // TODO(austin): What do we want to do with the profile on reset?  Also, we
+  // should probably reset R, the offset, the profile, etc.
+  if (this->should_reset_) {
+    this->loop_->mutable_X_hat(0, 0) = Y_(0, 0);
+    this->loop_->mutable_X_hat(1, 0) = 0.0;
+    this->loop_->mutable_X_hat(2, 0) = 0.0;
+    this->should_reset_ = false;
+  }
+
   if (!disable) {
     ::Eigen::Matrix<double, 2, 1> goal_state = profile_.Update(
         this->unprofiled_goal_(0, 0), this->unprofiled_goal_(1, 0));

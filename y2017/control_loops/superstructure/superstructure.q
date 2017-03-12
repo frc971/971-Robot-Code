@@ -18,6 +18,9 @@ struct IntakeGoal {
 
   // Voltage to send to the rollers. Positive is sucking in.
   double voltage_rollers;
+
+  // If true, disable the intake so we can hang.
+  bool disable_intake;
 };
 
 struct IndexerGoal {
@@ -120,7 +123,7 @@ struct ColumnPosition {
 struct ColumnEstimatorState {
   bool error;
   bool zeroed;
-  .frc971.HallEffectAndPositionEstimatorState intake;
+  .frc971.HallEffectAndPositionEstimatorState indexer;
   .frc971.HallEffectAndPositionEstimatorState turret;
 };
 

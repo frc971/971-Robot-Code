@@ -6,11 +6,10 @@
 #include "aos/common/controls/control_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "y2017/control_loops/superstructure/hood/hood.h"
-#include "y2017/control_loops/superstructure/indexer/indexer.h"
 #include "y2017/control_loops/superstructure/intake/intake.h"
 #include "y2017/control_loops/superstructure/shooter/shooter.h"
 #include "y2017/control_loops/superstructure/superstructure.q.h"
-#include "y2017/control_loops/superstructure/turret/turret.h"
+#include "y2017/control_loops/superstructure/column/column.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -24,10 +23,14 @@ class Superstructure
           &control_loops::superstructure_queue);
 
   const hood::Hood &hood() const { return hood_; }
-  const turret::Turret &turret() const { return turret_; }
   const intake::Intake &intake() const { return intake_; }
   const shooter::Shooter &shooter() const { return shooter_; }
-  const indexer::Indexer &indexer() const { return indexer_; }
+  const column::Column &column() const { return column_; }
+
+  // Sets the ignore collisions bit.  This should *not* be used on the robot.
+  void set_ignore_collisions(bool ignore_collisions) {
+    ignore_collisions_ = ignore_collisions;
+  }
 
  protected:
   virtual void RunIteration(
@@ -38,10 +41,12 @@ class Superstructure
 
  private:
   hood::Hood hood_;
-  turret::Turret turret_;
   intake::Intake intake_;
   shooter::Shooter shooter_;
-  indexer::Indexer indexer_;
+  column::Column column_;
+
+  // If true, we ignore collisions.
+  bool ignore_collisions_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };

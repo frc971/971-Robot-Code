@@ -214,6 +214,11 @@ bool Arm::CheckHardLimits() {
 }
 
 void Arm::Update(bool disable) {
+  // TODO(austin): Reset the state vectors and internal state here.
+  if (should_reset_) {
+    should_reset_ = false;
+  }
+
   if (!disable) {
     // Compute next goal.
     loop_->mutable_next_R().block<2, 1>(0, 0) = shoulder_profile_.Update(

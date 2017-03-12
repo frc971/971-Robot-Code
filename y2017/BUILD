@@ -11,16 +11,15 @@ cc_library(
   ],
   deps = [
     '//aos/common/logging',
-    '//aos/common:once',
     '//aos/common/network:team_number',
     '//aos/common:mutex',
+    '//aos/common:once',
     '//frc971:constants',
     '//y2017/control_loops/drivetrain:polydrivetrain_plants',
-    '//y2017/control_loops/superstructure/shooter:shooter_plants',
-    '//y2017/control_loops/superstructure/intake:intake_plants',
-    '//y2017/control_loops/superstructure/turret:turret_plants',
-    '//y2017/control_loops/superstructure/indexer:indexer_plants',
+    '//y2017/control_loops/superstructure/column:column_plants',
     '//y2017/control_loops/superstructure/hood:hood_plants',
+    '//y2017/control_loops/superstructure/intake:intake_plants',
+    '//y2017/control_loops/superstructure/shooter:shooter_plants',
   ],
 )
 
@@ -39,6 +38,7 @@ cc_binary(
     '//aos/linux_code:init',
     '//frc971/autonomous:auto_queue',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
+    '//y2017/actors:autonomous_action_lib',
     '//y2017/control_loops/superstructure:superstructure_queue',
   ],
 )

@@ -7,11 +7,10 @@
 #include "frc971/constants.h"
 
 #include "y2017/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
-#include "y2017/control_loops/superstructure/shooter/shooter_plant.h"
-#include "y2017/control_loops/superstructure/intake/intake_plant.h"
-#include "y2017/control_loops/superstructure/turret/turret_plant.h"
-#include "y2017/control_loops/superstructure/indexer/indexer_plant.h"
+#include "y2017/control_loops/superstructure/column/column_plant.h"
 #include "y2017/control_loops/superstructure/hood/hood_plant.h"
+#include "y2017/control_loops/superstructure/intake/intake_plant.h"
+#include "y2017/control_loops/superstructure/shooter/shooter_plant.h"
 
 namespace y2017 {
 namespace constants {
@@ -40,6 +39,10 @@ struct Values {
   struct Column {
     ::frc971::constants::HallEffectZeroingConstants indexer_zeroing;
     ::frc971::constants::HallEffectZeroingConstants turret_zeroing;
+    // The max absolute value of the turret angle that we need to get to to be
+    // classified as zeroed.  Otherwise, we may be ambiguous on which wrap we
+    // are on.
+    double turret_zeroed_distance;
   };
 
   static const int kZeroingSampleSize = 200;
@@ -75,7 +78,7 @@ struct Values {
       constants::Values::kIntakeEncoderRatio *
       kIntakeEncoderCountsPerRevolution;
   static constexpr ::frc971::constants::Range kIntakeRange{-0.01, 0.240, 0.01,
-                                                           0.21};
+                                                           0.230};
 
   static constexpr double kHoodEncoderCountsPerRevolution = 2048 * 4;
   static constexpr double kHoodEncoderRatio = 20.0 / 345.0;
@@ -92,8 +95,8 @@ struct Values {
   static constexpr double kTurretEncoderCountsPerRevolution = 256 * 4;
   static constexpr double kTurretEncoderRatio = 11.0 / 94.0;
   static constexpr double kMaxTurretEncoderPulsesPerSecond =
-      control_loops::superstructure::turret::kFreeSpeed *
-      control_loops::superstructure::turret::kOutputRatio /
+      control_loops::superstructure::column::kTurretFreeSpeed *
+      control_loops::superstructure::column::kTurretOutputRatio /
       constants::Values::kTurretEncoderRatio *
       kTurretEncoderCountsPerRevolution;
 
@@ -102,10 +105,13 @@ struct Values {
   static constexpr double kIndexerEncoderIndexDifference =
       2.0 * M_PI * kIndexerEncoderRatio;
   static constexpr double kMaxIndexerEncoderPulsesPerSecond =
-      control_loops::superstructure::indexer::kFreeSpeed *
-      control_loops::superstructure::indexer::kOutputRatio /
+      control_loops::superstructure::column::kIndexerFreeSpeed *
+      control_loops::superstructure::column::kIndexerOutputRatio /
       constants::Values::kIndexerEncoderRatio *
       kIndexerEncoderCountsPerRevolution;
+  static constexpr ::frc971::constants::Range kTurretRange{
+      -460.0 / 2.0 * M_PI / 180.0, 460.0 / 2.0 * M_PI / 180.0,
+      -450.0 / 2.0 * M_PI / 180.0, 450.0 / 2.0 * M_PI / 180.0};
 
   double drivetrain_max_speed;
 

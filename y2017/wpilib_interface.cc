@@ -334,7 +334,7 @@ class SensorReader {
 
       CopyPosition(indexer_counter_, &superstructure_message->column.indexer,
                    Values::kIndexerEncoderCountsPerRevolution,
-                   Values::kIndexerEncoderRatio, true);
+                   Values::kIndexerEncoderRatio, false);
 
       superstructure_message->theta_shooter =
           encoder_translate(shooter_encoder_->GetRaw(),
@@ -347,7 +347,7 @@ class SensorReader {
 
       CopyPosition(turret_counter_, &superstructure_message->column.turret,
                    Values::kTurretEncoderCountsPerRevolution,
-                   Values::kTurretEncoderRatio, true);
+                   Values::kTurretEncoderRatio, false);
 
       superstructure_message.Send();
     }
@@ -530,9 +530,8 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
                                          -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
     intake_rollers_victor_->SetSpeed(queue->voltage_intake_rollers / 12.0);
-    indexer_victor_->SetSpeed(queue->voltage_indexer / 12.0);
-    indexer_roller_victor_->SetSpeed(queue->voltage_indexer_rollers /
-                                        12.0);
+    indexer_victor_->SetSpeed(-queue->voltage_indexer / 12.0);
+    indexer_roller_victor_->SetSpeed(queue->voltage_indexer_rollers / 12.0);
     turret_victor_->SetSpeed(::aos::Clip(-queue->voltage_turret,
                                          -kMaxBringupPower, kMaxBringupPower) /
                              12.0);

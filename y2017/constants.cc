@@ -48,6 +48,7 @@ constexpr ::frc971::constants::Range Values::kHoodRange;
 
 constexpr double Values::kTurretEncoderCountsPerRevolution,
     Values::kTurretEncoderRatio, Values::kMaxTurretEncoderPulsesPerSecond;
+constexpr ::frc971::constants::Range Values::kTurretRange;
 
 constexpr double Values::kIndexerEncoderCountsPerRevolution,
     Values::kIndexerEncoderRatio, Values::kIndexerEncoderIndexDifference,
@@ -72,8 +73,13 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   intake->zeroing.moving_buffer_size = 20;
   intake->zeroing.allowable_encoder_error = 0.3;
 
+  column->turret_zeroed_distance = M_PI / 2.0;
   column->indexer_zeroing.index_difference = 2.0 * M_PI;
+  column->indexer_zeroing.hall_trigger_zeroing_length = 2;
+  column->indexer_zeroing.zeroing_move_direction = true;
   column->turret_zeroing.index_difference = 2.0 * M_PI;
+  column->turret_zeroing.hall_trigger_zeroing_length = 2;
+  column->turret_zeroing.zeroing_move_direction = false;
 
   hood->zeroing.index_pulse_count = 2;
   hood->zeroing.index_difference = Values::kHoodEncoderIndexDifference;
@@ -85,11 +91,13 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       intake->pot_offset = 0;
       intake->zeroing.measured_absolute_position = 0;
 
-      column->indexer_zeroing.lower_hall_position = 2.0;
-      column->indexer_zeroing.upper_hall_position = 2.1;
+      // TODO(austin): Swap the turret and indexer limits and make sure the
+      // tests still pass.
+      column->indexer_zeroing.lower_hall_position = 0.1;
+      column->indexer_zeroing.upper_hall_position = 0.2;
 
-      column->turret_zeroing.lower_hall_position = 0;
-      column->turret_zeroing.upper_hall_position = 0.1;
+      column->turret_zeroing.lower_hall_position = 2;
+      column->turret_zeroing.upper_hall_position = 2.1;
 
       hood->pot_offset = 0.1;
       hood->zeroing.measured_index_position = 0.05;
@@ -115,14 +123,14 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       break;
 
     case kPracticeTeamNumber:
-      intake->pot_offset = 0.2921 + 0.00039 + 0.012236 - 0.023602;
-      intake->zeroing.measured_absolute_position = 0.031437;
+      intake->pot_offset = 0.2921 + 0.00039 + 0.012236 - 0.023602 + 0.010722;
+      intake->zeroing.measured_absolute_position = 0.045893;
 
-      column->indexer_zeroing.lower_hall_position = 2.0;
-      column->indexer_zeroing.upper_hall_position = 2.1;
+      column->indexer_zeroing.lower_hall_position = 5.014364;
+      column->indexer_zeroing.upper_hall_position = 5.292234;
 
-      column->turret_zeroing.lower_hall_position = 0;
-      column->turret_zeroing.upper_hall_position = 0.1;
+      column->turret_zeroing.lower_hall_position = -4.838110;
+      column->turret_zeroing.upper_hall_position = -4.655730;
 
       hood->zeroing.measured_index_position = 0.655432 - 0.460505;
 

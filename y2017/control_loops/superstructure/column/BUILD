@@ -9,8 +9,8 @@ genrule(
     'column_plant.cc',
     'column_integral_plant.h',
     'column_integral_plant.cc',
-    'stuck_column_integral_plant.cc',
     'stuck_column_integral_plant.h',
+    'stuck_column_integral_plant.cc',
   ],
 )
 
@@ -20,13 +20,36 @@ cc_library(
   srcs = [
     'column_plant.cc',
     'column_integral_plant.cc',
+    'stuck_column_integral_plant.cc',
   ],
   hdrs = [
     'column_plant.h',
     'column_integral_plant.h',
+    'stuck_column_integral_plant.h',
   ],
   deps = [
     '//frc971/control_loops:state_feedback_loop',
+  ],
+)
+
+cc_library(
+  name = 'column',
+  visibility = ['//visibility:public'],
+  srcs = [
+    'column.cc',
+  ],
+  hdrs = [
+    'column.h',
+  ],
+  deps = [
+    ':column_plants',
+    ':column_zeroing',
+    '//aos/common/controls:control_loop',
+    '//aos/common:math',
+    '//frc971/control_loops:profiled_subsystem',
+    '//y2017/control_loops/superstructure/intake:intake',
+    '//y2017/control_loops/superstructure:superstructure_queue',
+    '//y2017:constants',
   ],
 )
 

@@ -18,11 +18,15 @@ Intake::Intake()
               new ::frc971::control_loops::SimpleCappedStateFeedbackLoop<
                   3, 1, 1>(MakeIntegralIntakeLoop())),
           constants::GetValues().intake.zeroing,
-          constants::Values::kIntakeRange, 0.3, 5.0) {}
+          constants::Values::kIntakeRange, 0.3, 5.0) {
+  clear_min_position();
+}
 
 void Intake::Reset() {
   state_ = State::UNINITIALIZED;
+  clear_min_position();
   profiled_subsystem_.Reset();
+  disable_count_ = 0;
 }
 
 void Intake::Iterate(
@@ -82,6 +86,22 @@ void Intake::Iterate(
       if (unsafe_goal) {
         profiled_subsystem_.AdjustProfile(unsafe_goal->profile_params);
         profiled_subsystem_.set_unprofiled_goal(unsafe_goal->distance);
+        if (unsafe_goal->disable_intake) {
+          disable = true;
+          ++disable_count_;
+          if (disable_count_ > 200) {
+            state_ = State::ESTOP;
+          }
+        } else {
+          disable_count_ = 0;
+        }
+      }
+
+      // Force the intake to be at least at min_position_ out.
+      if (profiled_subsystem_.unprofiled_goal(0, 0) < min_position_) {
+        LOG(INFO, "Limiting intake to %f from %f\n", min_position_,
+            profiled_subsystem_.unprofiled_goal(0, 0));
+        profiled_subsystem_.set_unprofiled_goal(min_position_);
       }
 
       // ESTOP if we hit the hard limits.

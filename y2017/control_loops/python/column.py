@@ -20,8 +20,6 @@ except gflags.DuplicateFlagError:
   pass
 
 
-# TODO(austin): Shut down with no counts on the turret.
-
 class ColumnController(control_loop.ControlLoop):
   def __init__(self, name='Column'):
     super(ColumnController, self).__init__(name)
@@ -39,18 +37,18 @@ class ColumnController(control_loop.ControlLoop):
     self.A_continuous = numpy.matrix(numpy.zeros((3, 3)))
     self.B_continuous = numpy.matrix(numpy.zeros((3, 2)))
 
-    self.A_continuous[1 - 1, 1 - 1] = -(self.indexer.Kt / self.indexer.Kv / (self.indexer.J * self.indexer.resistance * self.indexer.G * self.indexer.G) +
+    self.A_continuous[0, 0] = -(self.indexer.Kt / self.indexer.Kv / (self.indexer.J * self.indexer.resistance * self.indexer.G * self.indexer.G) +
                                 self.turret.Kt / self.turret.Kv / (self.indexer.J * self.turret.resistance * self.turret.G * self.turret.G))
-    self.A_continuous[1 - 1, 3 - 1] = self.turret.Kt / self.turret.Kv / (self.indexer.J * self.turret.resistance * self.turret.G * self.turret.G)
-    self.B_continuous[1 - 1, 0] = self.indexer.Kt / (self.indexer.J * self.indexer.resistance * self.indexer.G)
-    self.B_continuous[1 - 1, 1] = -self.turret.Kt / (self.indexer.J * self.turret.resistance * self.turret.G)
+    self.A_continuous[0, 2] = self.turret.Kt / self.turret.Kv / (self.indexer.J * self.turret.resistance * self.turret.G * self.turret.G)
+    self.B_continuous[0, 0] = self.indexer.Kt / (self.indexer.J * self.indexer.resistance * self.indexer.G)
+    self.B_continuous[0, 1] = -self.turret.Kt / (self.indexer.J * self.turret.resistance * self.turret.G)
 
-    self.A_continuous[2 - 1, 3 - 1] = 1
+    self.A_continuous[1, 2] = 1
 
-    self.A_continuous[3 - 1, 1 - 1] = self.turret.Kt / self.turret.Kv / (self.turret.J * self.turret.resistance * self.turret.G * self.turret.G)
-    self.A_continuous[3 - 1, 3 - 1] = -self.turret.Kt / self.turret.Kv / (self.turret.J * self.turret.resistance * self.turret.G * self.turret.G)
+    self.A_continuous[2, 0] = self.turret.Kt / self.turret.Kv / (self.turret.J * self.turret.resistance * self.turret.G * self.turret.G)
+    self.A_continuous[2, 2] = -self.turret.Kt / self.turret.Kv / (self.turret.J * self.turret.resistance * self.turret.G * self.turret.G)
 
-    self.B_continuous[3 - 1, 1] = self.turret.Kt / (self.turret.J * self.turret.resistance * self.turret.G)
+    self.B_continuous[2, 1] = self.turret.Kt / (self.turret.J * self.turret.resistance * self.turret.G)
 
     self.C = numpy.matrix([[1, 0, 0], [0, 1, 0]])
     self.D = numpy.matrix([[0, 0], [0, 0]])
@@ -58,15 +56,18 @@ class ColumnController(control_loop.ControlLoop):
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    q_pos = 0.015
-    q_vel = 0.3
-    self.Q = numpy.matrix([[(1.0 / (q_vel ** 2.0)), 0.0, 0.0],
+    q_indexer_vel = 13.0
+    q_pos = 0.04
+    q_vel = 0.8
+    self.Q = numpy.matrix([[(1.0 / (q_indexer_vel ** 2.0)), 0.0, 0.0],
                            [0.0, (1.0 / (q_pos ** 2.0)), 0.0],
                            [0.0, 0.0, (1.0 / (q_vel ** 2.0))]])
 
     self.R = numpy.matrix([[(1.0 / (12.0 ** 2.0)), 0.0],
                            [0.0, (1.0 / (12.0 ** 2.0))]])
     self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
+
+    glog.debug('Controller poles are ' + repr(numpy.linalg.eig(self.A - self.B * self.K)[0]))
 
     q_vel_indexer_ff = 0.000005
     q_pos_ff = 0.0000005
@@ -84,7 +85,7 @@ class ColumnController(control_loop.ControlLoop):
 
 
 class Column(ColumnController):
-  def __init__(self, name='Column'):
+  def __init__(self, name='Column', disable_indexer=False):
     super(Column, self).__init__(name)
     A_continuous = numpy.matrix(numpy.zeros((4, 4)))
     B_continuous = numpy.matrix(numpy.zeros((4, 2)))
@@ -99,14 +100,18 @@ class Column(ColumnController):
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    glog.debug('Eig is ' + repr(numpy.linalg.eig(self.A_continuous)))
-
     self.C = numpy.matrix([[1, 0, 0, 0], [-1, 0, 1, 0]])
     self.D = numpy.matrix([[0, 0], [0, 0]])
 
     orig_K = self.K
     self.K = numpy.matrix(numpy.zeros((2, 4)))
     self.K[:, 1:] = orig_K
+
+    glog.debug('K is ' + repr(self.K))
+    # TODO(austin): Do we want to damp velocity out or not when disabled?
+    #if disable_indexer:
+    #  self.K[0, 1] = 0.0
+    #  self.K[1, 1] = 0.0
 
     orig_Kff = self.Kff
     self.Kff = numpy.matrix(numpy.zeros((2, 4)))
@@ -131,7 +136,8 @@ class Column(ColumnController):
 
 
 class IntegralColumn(Column):
-  def __init__(self, name='IntegralColumn', voltage_error_noise=None):
+  def __init__(self, name='IntegralColumn', voltage_error_noise=None,
+               disable_indexer=False):
     super(IntegralColumn, self).__init__(name)
 
     A_continuous = numpy.matrix(numpy.zeros((6, 6)))
@@ -143,25 +149,27 @@ class IntegralColumn(Column):
 
     self.A_continuous = A_continuous
     self.B_continuous = B_continuous
-    glog.debug('A_continuous: ' + repr(self.A_continuous))
-    glog.debug('B_continuous: ' + repr(self.B_continuous))
 
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    glog.debug('Eig is ' + repr(numpy.linalg.eig(self.A_continuous)))
-
     C = numpy.matrix(numpy.zeros((2, 6)))
     C[0:2, 0:4] = self.C
     self.C = C
-    glog.debug('C is ' + repr(self.C))
 
     self.D = numpy.matrix([[0, 0], [0, 0]])
 
     orig_K = self.K
     self.K = numpy.matrix(numpy.zeros((2, 6)))
     self.K[:, 0:4] = orig_K
-    self.K[0, 4] = 1
+
+    # TODO(austin): I'm not certain this is ideal.  If someone spins the bottom
+    # at a constant rate, we'll learn a voltage offset.  That should translate
+    # directly to a voltage on the turret to hold it steady.  I'm also not
+    # convinced we care that much.  If the indexer is off, it'll stop rather
+    # quickly anyways, so this is mostly a moot point.
+    if not disable_indexer:
+      self.K[0, 4] = 1
     self.K[1, 5] = 1
 
     orig_Kff = self.Kff
@@ -290,7 +298,7 @@ class ScenarioPlotter(object):
       offset = 0.0
       if i > 100:
         offset = 1.0
-      column.Update(U + numpy.matrix([[offset], [0.0]]))
+      column.Update(U + numpy.matrix([[0.0], [offset]]))
 
       observer_column.PredictObserver(U)
 
@@ -306,31 +314,31 @@ class ScenarioPlotter(object):
             numpy.matrix([[goal[2, 0]], [goal[3, 0]]]))
 
     glog.debug('Time: %f', self.t[-1])
-    glog.debug('goal_error %s', repr(end_goal - goal))
-    glog.debug('error %s', repr(observer_column.X_hat - end_goal))
+    glog.debug('goal_error %s', repr((end_goal - goal).T))
+    glog.debug('error %s', repr((observer_column.X_hat - end_goal).T))
 
   def Plot(self):
     pylab.subplot(3, 1, 1)
-    pylab.plot(self.t, self.xi, label='xi')
-    pylab.plot(self.t, self.xt, label='xt')
+    pylab.plot(self.t, self.xi, label='x_indexer')
+    pylab.plot(self.t, self.xt, label='x_turret')
     pylab.plot(self.t, self.x_hat, label='x_hat')
-    pylab.plot(self.t, self.turret_error, label='turret_error')
+    pylab.plot(self.t, self.turret_error, label='turret_error * 100')
     pylab.legend()
 
     pylab.subplot(3, 1, 2)
-    pylab.plot(self.t, self.ui, label='ui')
-    pylab.plot(self.t, self.ui_fb, label='ui_fb')
-    pylab.plot(self.t, self.ut, label='ut')
-    pylab.plot(self.t, self.ut_fb, label='ut_fb')
-    pylab.plot(self.t, self.offseti, label='voltage_offseti')
-    pylab.plot(self.t, self.offsett, label='voltage_offsett')
+    pylab.plot(self.t, self.ui, label='u_indexer')
+    pylab.plot(self.t, self.ui_fb, label='u_indexer_fb')
+    pylab.plot(self.t, self.ut, label='u_turret')
+    pylab.plot(self.t, self.ut_fb, label='u_turret_fb')
+    pylab.plot(self.t, self.offseti, label='voltage_offset_indexer')
+    pylab.plot(self.t, self.offsett, label='voltage_offset_turret')
     pylab.legend()
 
     pylab.subplot(3, 1, 3)
-    pylab.plot(self.t, self.ai, label='ai')
-    pylab.plot(self.t, self.at, label='at')
-    pylab.plot(self.t, self.vi, label='vi')
-    pylab.plot(self.t, self.vt, label='vt')
+    pylab.plot(self.t, self.ai, label='a_indexer')
+    pylab.plot(self.t, self.at, label='a_turret')
+    pylab.plot(self.t, self.vi, label='v_indexer')
+    pylab.plot(self.t, self.vt, label='v_turret')
     pylab.legend()
 
     pylab.show()
@@ -346,7 +354,7 @@ def main(argv):
   initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
   R = numpy.matrix([[0.0], [10.0], [5.0], [0.0], [0.0], [0.0]])
   scenario_plotter.run_test(column, end_goal=R, controller_column=column_controller,
-                            observer_column=observer_column, iterations=600)
+                            observer_column=observer_column, iterations=400)
 
   if FLAGS.plot:
     scenario_plotter.Plot()
@@ -358,11 +366,23 @@ def main(argv):
     column = Column('Column')
     loop_writer = control_loop.ControlLoopWriter('Column', [column],
                                                  namespaces=namespaces)
+    loop_writer.AddConstant(control_loop.Constant(
+        'kIndexerFreeSpeed', '%f', column.indexer.free_speed))
+    loop_writer.AddConstant(control_loop.Constant(
+        'kIndexerOutputRatio', '%f', column.indexer.G))
+    loop_writer.AddConstant(control_loop.Constant(
+        'kTurretFreeSpeed', '%f', column.turret.free_speed))
+    loop_writer.AddConstant(control_loop.Constant(
+        'kTurretOutputRatio', '%f', column.turret.G))
     loop_writer.Write(argv[1], argv[2])
 
+    # IntegralColumn controller 1 will disable the indexer.
     integral_column = IntegralColumn('IntegralColumn')
+    disabled_integral_column = IntegralColumn('DisabledIntegralColumn',
+                                              disable_indexer=True)
     integral_loop_writer = control_loop.ControlLoopWriter(
-        'IntegralColumn', [integral_column], namespaces=namespaces)
+        'IntegralColumn', [integral_column, disabled_integral_column],
+        namespaces=namespaces)
     integral_loop_writer.Write(argv[3], argv[4])
 
     stuck_integral_column = IntegralColumn('StuckIntegralColumn', voltage_error_noise=8.0)
