@@ -226,6 +226,8 @@ class PulseIndexZeroingEstimator : public ZeroingEstimator {
   // Returns information about our current state.
   State GetEstimatorState() const;
 
+  void TriggerError() { error_ = true; }
+
  private:
   // Returns the current real position using the relative encoder offset.
   double CalculateCurrentPosition(const IndexPosition &info);

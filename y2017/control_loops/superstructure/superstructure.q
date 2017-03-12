@@ -102,6 +102,7 @@ struct ShooterStatus {
 
   // The current velocity measured as delta x / delta t in radians/sec.
   double instantaneous_velocity;
+  double fixed_instantaneous_velocity;
 
   // The error between our measurement and expected measurement in radians.
   double position_error;
