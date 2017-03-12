@@ -25,8 +25,8 @@ double DoubleSeconds(monotonic_clock::duration duration) {
       .count();
 }
 
-const ProfileParameters kSlowDrive = {0.8, 2.5};
-const ProfileParameters kSlowTurn = {0.8, 3.0};
+const ProfileParameters kSlowDrive = {2.0, 2.0};
+const ProfileParameters kSlowTurn = {3.0, 3.0};
 
 }  // namespace
 
@@ -39,20 +39,43 @@ bool AutonomousActor::RunAction(
     const ::frc971::autonomous::AutonomousActionParams &params) {
   monotonic_clock::time_point start_time = monotonic_clock::now();
   LOG(INFO, "Starting autonomous action with mode %" PRId32 "\n", params.mode);
+  InitializeEncoders();
+  ResetDrivetrain();
 
   switch (params.mode) {
     case 0:
-      // Test case autonomous mode.
-      // Drives forward 1.0 meters and then turns 180 degrees.
-      StartDrive(1.1, 0.0, kSlowDrive, kSlowTurn);
-      if (!WaitForDriveNear(1.0, 0.0)) return true;
-      StartDrive(0.0, M_PI / 2, kSlowDrive, kSlowTurn);
-      if (!WaitForDriveDone()) return true;
+    default:
+      while (true) {
+        constexpr auto kDelayTime = chrono::milliseconds(1);
+        // Test case autonomous mode.
+        // Drives forward 1.0 meters and then turns 180 degrees.
+        StartDrive(1.0, 0.0, kSlowDrive, kSlowTurn);
+        if (!WaitForDriveDone()) return true;
+
+        this_thread::sleep_for(kDelayTime);
+        if (ShouldCancel()) return true;
+
+        StartDrive(0.0, M_PI, kSlowDrive, kSlowTurn);
+        if (!WaitForDriveDone()) return true;
+
+        this_thread::sleep_for(kDelayTime);
+        if (ShouldCancel()) return true;
+
+        StartDrive(1.0, 0.0, kSlowDrive, kSlowTurn);
+        if (!WaitForDriveDone()) return true;
+
+        this_thread::sleep_for(kDelayTime);
+        if (ShouldCancel()) return true;
+
+        StartDrive(0.0, M_PI, kSlowDrive, kSlowTurn);
+        if (!WaitForDriveDone()) return true;
+
+        this_thread::sleep_for(kDelayTime);
+        if (ShouldCancel()) return true;
+      }
+
       break;
 
-    default:
-      LOG(ERROR, "Invalid auto mode %d\n", params.mode);
-      return true;
   }
 
   LOG(INFO, "Done %f\n", DoubleSeconds(monotonic_clock::now() - start_time));
