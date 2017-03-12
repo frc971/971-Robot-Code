@@ -11,20 +11,19 @@
 #include "aos/common/time.h"
 #include "aos/common/actions/actions.h"
 
+#include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/queues/gyro.q.h"
+#include "y2016/actors/autonomous_actor.h"
+#include "y2016/actors/superstructure_actor.h"
+#include "y2016/actors/vision_align_actor.h"
+#include "y2016/constants.h"
+#include "y2016/control_loops/drivetrain/drivetrain_base.h"
 #include "y2016/control_loops/shooter/shooter.q.h"
-#include "y2016/control_loops/superstructure/superstructure.q.h"
 #include "y2016/control_loops/superstructure/superstructure.h"
+#include "y2016/control_loops/superstructure/superstructure.q.h"
 #include "y2016/queues/ball_detector.q.h"
 #include "y2016/vision/vision.q.h"
-
-#include "y2016/constants.h"
-#include "frc971/queues/gyro.q.h"
-#include "frc971/autonomous/auto.q.h"
-#include "y2016/actors/autonomous_actor.h"
-#include "y2016/actors/vision_align_actor.h"
-#include "y2016/actors/superstructure_actor.h"
-#include "y2016/control_loops/drivetrain/drivetrain_base.h"
 
 using ::frc971::control_loops::drivetrain_queue;
 using ::y2016::control_loops::shooter::shooter_queue;

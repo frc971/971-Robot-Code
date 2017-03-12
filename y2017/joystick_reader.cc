@@ -3,19 +3,18 @@
 #include <unistd.h>
 #include <math.h>
 
-#include "aos/linux_code/init.h"
-#include "aos/input/joystick_input.h"
+#include "aos/common/actions/actions.h"
 #include "aos/common/input/driver_station_data.h"
 #include "aos/common/logging/logging.h"
-#include "aos/common/util/log_interval.h"
 #include "aos/common/time.h"
-#include "aos/common/actions/actions.h"
-
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "y2017/control_loops/superstructure/superstructure.q.h"
-
-#include "y2017/constants.h"
+#include "aos/common/util/log_interval.h"
+#include "aos/input/joystick_input.h"
+#include "aos/linux_code/init.h"
 #include "frc971/autonomous/auto.q.h"
+#include "frc971/autonomous/base_autonomous_actor.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "y2017/constants.h"
+#include "y2017/control_loops/superstructure/superstructure.q.h"
 
 using ::frc971::control_loops::drivetrain_queue;
 using ::y2017::control_loops::superstructure_queue;
@@ -125,7 +124,7 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     if (data.IsPressed(kIntakeDown)) {
-      intake_goal_ = 0.23;
+      intake_goal_ = 0.223;
     }
 
     if (data.IsPressed(kVisionAlign)) {
@@ -150,19 +149,20 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     if (data.IsPressed(kExtra1)) {
-      turret_goal_ += -0.1;
+      turret_goal_ = -M_PI * 3.0 / 4.0;
     }
     if (data.IsPressed(kExtra2)) {
       turret_goal_ = 0.0;
     }
     if (data.IsPressed(kExtra3)) {
-      turret_goal_ += 0.1;
+      turret_goal_ = M_PI * 3.0 / 4.0;
     }
 
     fire_ = data.IsPressed(kFire) && shooter_velocity_ != 0.0;
 
     auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
     new_superstructure_goal->intake.distance = intake_goal_;
+    new_superstructure_goal->intake.disable_intake = false;
     new_superstructure_goal->turret.angle = turret_goal_;
     new_superstructure_goal->hood.angle = hood_goal_;
     new_superstructure_goal->shooter.angular_velocity = shooter_velocity_;
@@ -175,24 +175,27 @@ class Reader : public ::aos::input::JoystickInput {
     new_superstructure_goal->turret.profile_params.max_acceleration = 15.0;
     new_superstructure_goal->hood.profile_params.max_acceleration = 25.0;
 
+    new_superstructure_goal->intake.voltage_rollers = 0.0;
+
     if (data.IsPressed(kHang)) {
       new_superstructure_goal->intake.voltage_rollers = -12.0;
+      new_superstructure_goal->intake.disable_intake = true;
     } else if (data.IsPressed(kIntakeIn)) {
       new_superstructure_goal->intake.voltage_rollers = 12.0;
     } else if (data.IsPressed(kIntakeOut)) {
       new_superstructure_goal->intake.voltage_rollers = -8.0;
-    } else {
-      new_superstructure_goal->intake.voltage_rollers = 0.0;
+    }
+    if (intake_goal_ < 0.1) {
+      new_superstructure_goal->intake.voltage_rollers =
+          ::std::min(8.0, new_superstructure_goal->intake.voltage_rollers);
     }
 
     if (data.IsPressed(kReverseIndexer)) {
       new_superstructure_goal->indexer.voltage_rollers = -4.0;
-      new_superstructure_goal->indexer.angular_velocity = -4.0;
-      new_superstructure_goal->indexer.angular_velocity = -1.0;
-    } else if (fire_) {
-      new_superstructure_goal->indexer.voltage_rollers = 2.0;
-      new_superstructure_goal->indexer.angular_velocity = 3.0 * M_PI;
+      new_superstructure_goal->indexer.angular_velocity = 4.0;
       new_superstructure_goal->indexer.angular_velocity = 1.0;
+    } else if (fire_) {
+      new_superstructure_goal->indexer.angular_velocity = -3.0 * M_PI;
     } else {
       new_superstructure_goal->indexer.voltage_rollers = 0.0;
       new_superstructure_goal->indexer.angular_velocity = 0.0;
@@ -205,7 +208,20 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
  private:
-  void StartAuto() { LOG(INFO, "Starting auto mode\n"); }
+  void StartAuto() {
+    LOG(INFO, "Starting auto mode\n");
+
+    ::frc971::autonomous::AutonomousActionParams params;
+    ::frc971::autonomous::auto_mode.FetchLatest();
+    if (::frc971::autonomous::auto_mode.get() != nullptr) {
+      params.mode = ::frc971::autonomous::auto_mode->mode;
+    } else {
+      LOG(WARNING, "no auto mode values\n");
+      params.mode = 0;
+    }
+    action_queue_.EnqueueAction(
+        ::frc971::autonomous::MakeAutonomousAction(params));
+  }
 
   void StopAuto() {
     LOG(INFO, "Stopping auto mode\n");
@@ -219,8 +235,8 @@ class Reader : public ::aos::input::JoystickInput {
   double shooter_velocity_ = 0.0;
 
   // Goals to send to the drivetrain in closed loop mode.
-  double left_goal_;
-  double right_goal_;
+  double left_goal_ = 0.0;
+  double right_goal_ = 0.0;
 
   bool was_running_ = false;
   bool auto_running_ = false;
