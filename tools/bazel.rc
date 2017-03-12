@@ -53,3 +53,4 @@ build --show_result 5
 test --test_output=errors
 
 build --experimental_sandbox_shm
+build --experimental_multi_threaded_digest
