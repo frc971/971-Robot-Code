@@ -46,6 +46,8 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
   StateFeedbackLoop<7, 2, 3> kf_;
   PolyDrivetrain dt_openloop_;
   DrivetrainMotorsSS dt_closedloop_;
+  ::aos::monotonic_clock::time_point last_gyro_time_ =
+      ::aos::monotonic_clock::min_time;
 
   StateFeedbackLoop<2, 1, 1> down_estimator_;
   Eigen::Matrix<double, 1, 1> down_U_;

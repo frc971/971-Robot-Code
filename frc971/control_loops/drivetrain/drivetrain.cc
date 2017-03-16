@@ -21,6 +21,8 @@
 
 using frc971::sensors::gyro_reading;
 using frc971::imu_values;
+using ::aos::monotonic_clock;
+namespace chrono = ::std::chrono;
 
 namespace frc971 {
 namespace control_loops {
@@ -81,6 +83,8 @@ void DrivetrainLoop::RunIteration(
     const ::frc971::control_loops::DrivetrainQueue::Position *position,
     ::frc971::control_loops::DrivetrainQueue::Output *output,
     ::frc971::control_loops::DrivetrainQueue::Status *status) {
+  monotonic_clock::time_point monotonic_now = monotonic_clock::now();
+
   if (!has_been_enabled_ && output) {
     has_been_enabled_ = true;
     down_estimator_.mutable_X_hat(1, 0) = 0.0;
@@ -160,35 +164,44 @@ void DrivetrainLoop::RunIteration(
       if (is_latest_imu_values) {
         LOG_STRUCT(DEBUG, "using", *imu_values.get());
         last_gyro_rate_ = imu_values->gyro_x;
+        last_gyro_time_ = monotonic_now;
       }
       break;
     case GyroType::IMU_Y_GYRO:
       if (is_latest_imu_values) {
         LOG_STRUCT(DEBUG, "using", *imu_values.get());
         last_gyro_rate_ = imu_values->gyro_y;
+        last_gyro_time_ = monotonic_now;
       }
       break;
     case GyroType::IMU_Z_GYRO:
       if (is_latest_imu_values) {
         LOG_STRUCT(DEBUG, "using", *imu_values.get());
         last_gyro_rate_ = imu_values->gyro_z;
+        last_gyro_time_ = monotonic_now;
       }
       break;
     case GyroType::SPARTAN_GYRO:
       if (gyro_reading.FetchLatest()) {
         LOG_STRUCT(DEBUG, "using", *gyro_reading.get());
         last_gyro_rate_ = gyro_reading->velocity;
+        last_gyro_time_ = monotonic_now;
       }
       break;
     case GyroType::FLIPPED_SPARTAN_GYRO:
       if (gyro_reading.FetchLatest()) {
         LOG_STRUCT(DEBUG, "using", *gyro_reading.get());
         last_gyro_rate_ = -gyro_reading->velocity;
+        last_gyro_time_ = monotonic_now;
       }
       break;
     default:
       LOG(FATAL, "invalid gyro configured");
       break;
+  }
+
+  if (monotonic_now > last_gyro_time_ + chrono::milliseconds(20)) {
+    last_gyro_rate_ = 0.0;
   }
 
   {
