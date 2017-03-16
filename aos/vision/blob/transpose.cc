@@ -61,7 +61,7 @@ RangeImage Transpose(const RangeImage &img) {
       has_cur_range = true;
     };
 
-    int prev_start;
+    int prev_start = 0;
     for (const auto &pt : row_events) {
       switch (pt.second) {
         case kRangeStart:
