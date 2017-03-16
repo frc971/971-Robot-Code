@@ -87,9 +87,10 @@ aos_downloader(
     ':joystick_reader',
     ':wpilib_interface',
     '//aos:prime_start_binaries',
+    '//y2017/actors:autonomous_action',
     '//y2017/control_loops/drivetrain:drivetrain',
     '//y2017/control_loops/superstructure:superstructure',
-    '//y2017/actors:autonomous_action',
+    '//y2017/vision:target_receiver',
   ],
   srcs = [
     '//aos:prime_binaries',
@@ -102,9 +103,10 @@ aos_downloader(
     ':joystick_reader.stripped',
     ':wpilib_interface.stripped',
     '//aos:prime_start_binaries_stripped',
+    '//y2017/actors:autonomous_action.stripped',
     '//y2017/control_loops/drivetrain:drivetrain.stripped',
     '//y2017/control_loops/superstructure:superstructure.stripped',
-    '//y2017/actors:autonomous_action.stripped',
+    '//y2017/vision:target_receiver.stripped',
   ],
   srcs = [
     '//aos:prime_binaries_stripped',
