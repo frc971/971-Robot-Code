@@ -605,6 +605,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     auto imu_trigger = make_unique<DigitalInput>(3);
     ::frc971::wpilib::ADIS16448 imu(SPI::Port::kOnboardCS1, imu_trigger.get());
+    imu.SetDummySPI(SPI::Port::kOnboardCS2);
+    auto imu_reset = make_unique<DigitalOutput>(6);
+    imu.set_reset(imu_reset.get());
     ::std::thread imu_thread(::std::ref(imu));
 
     DrivetrainWriter drivetrain_writer;

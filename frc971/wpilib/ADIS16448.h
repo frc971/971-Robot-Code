@@ -8,6 +8,7 @@
 
 #include "SPI.h"
 #include "DigitalInput.h"
+#include "DigitalOutput.h"
 #undef ERROR
 
 #include "aos/common/logging/logging.h"
@@ -29,6 +30,14 @@ class ADIS16448 {
   // dio1 must be connected to DIO1 on the sensor.
   ADIS16448(SPI::Port port, DigitalInput *dio1);
 
+  // Sets the dummy SPI port to send values on to make the roboRIO deassert the
+  // chip select line. This is mainly useful when there are no other devices
+  // sharing the bus.
+  void SetDummySPI(SPI::Port port);
+
+  // Sets the reset line for the IMU to use for error recovery.
+  void set_reset(DigitalOutput *output) { reset_ = output; }
+
   // For ::std::thread to call.
   //
   // Initializes the sensor and then loops until Quit() is called taking
@@ -42,6 +51,9 @@ class ADIS16448 {
   double gyro_z_zeroed_offset() const { return gyro_z_zeroed_offset_; }
 
  private:
+  // Try to initialize repeatedly as long as we're supposed to be running.
+  void InitializeUntilSuccessful();
+
   // Converts a 16-bit value at data to a scaled output value where a value of 1
   // corresponds to lsb_per_output.
   float ConvertValue(uint8_t *data, double lsb_per_output, bool sign = true);
@@ -70,8 +82,11 @@ class ADIS16448 {
   // Returns true if it succeeds.
   bool Initialize();
 
+  // TODO(Brian): This object has no business owning these ones.
   const ::std::unique_ptr<SPI> spi_;
+  ::std::unique_ptr<SPI> dummy_spi_;
   DigitalInput *const dio1_;
+  DigitalOutput *reset_ = nullptr;
 
   ::std::atomic<bool> run_{true};
 
