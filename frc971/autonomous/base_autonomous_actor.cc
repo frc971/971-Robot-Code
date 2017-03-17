@@ -10,15 +10,13 @@
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 
-namespace frc971 {
-namespace autonomous {
-
 using ::frc971::control_loops::drivetrain_queue;
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
 namespace this_thread = ::std::this_thread;
 
-namespace {}  // namespace
+namespace frc971 {
+namespace autonomous {
 
 BaseAutonomousActor::BaseAutonomousActor(
     AutonomousActionQueueGroup *s,
@@ -109,9 +107,9 @@ bool BaseAutonomousActor::WaitForDriveDone() {
 }
 
 bool BaseAutonomousActor::IsDriveDone() {
-  constexpr double kPositionTolerance = 0.02;
-  constexpr double kVelocityTolerance = 0.10;
-  constexpr double kProfileTolerance = 0.001;
+  static constexpr double kPositionTolerance = 0.02;
+  static constexpr double kVelocityTolerance = 0.10;
+  static constexpr double kProfileTolerance = 0.001;
 
   if (drivetrain_queue.status.get()) {
     if (::std::abs(drivetrain_queue.status->profiled_left_position_goal -
