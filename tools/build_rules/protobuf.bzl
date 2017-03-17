@@ -1,14 +1,12 @@
 def _do_proto_cc_library_impl(ctx):
-  srcs = ctx.files.srcs
-  deps = []
-  deps += ctx.files.srcs
+  deps = [ctx.file.src]
 
   for dep in ctx.attr.deps:
     deps += dep.proto.deps
 
   message = 'Building %s and %s from %s' % (ctx.outputs.pb_h.short_path,
                                             ctx.outputs.pb_cc.short_path,
-                                            ctx.files.srcs[0].short_path)
+                                            ctx.file.src.short_path)
   ctx.action(
     inputs = deps + ctx.files._well_known_protos,
     executable = ctx.executable._protoc,
@@ -16,7 +14,8 @@ def _do_proto_cc_library_impl(ctx):
       '--cpp_out=%s' % ctx.configuration.genfiles_dir.path,
       '-I.',
       '-Ithird_party/protobuf/src',
-    ] + [s.path for s in srcs],
+      ctx.file.src.path,
+    ],
     mnemonic = 'ProtocCc',
     progress_message = message,
     outputs = [
@@ -27,13 +26,12 @@ def _do_proto_cc_library_impl(ctx):
 
   return struct(
     proto = struct(
-      srcs = srcs,
       deps = deps,
     )
   )
 
-def _do_proto_cc_library_outputs(srcs):
-  basename = srcs[0].name[:-len('.proto')]
+def _do_proto_cc_library_outputs(src):
+  basename = src.name[:-len('.proto')]
   return {
     'pb_h': '%s.pb.h' % basename,
     'pb_cc': '%s.pb.cc' % basename,
@@ -42,8 +40,10 @@ def _do_proto_cc_library_outputs(srcs):
 _do_proto_cc_library = rule(
   implementation = _do_proto_cc_library_impl,
   attrs = {
-    'srcs': attr.label_list(
+    'src': attr.label(
       allow_files = FileType(['.proto']),
+      mandatory = True,
+      single_file = True,
     ),
     'deps': attr.label_list(providers = ["proto"]),
     '_protoc': attr.label(
@@ -70,7 +70,7 @@ def proto_cc_library(name, src, deps = [], visibility = None):
 
   _do_proto_cc_library(
     name = '%s__proto_srcs' % name,
-    srcs = [src],
+    src = src,
     deps = [('%s__proto_srcs' % o_name) for o_name in deps],
     visibility = visibility,
   )
