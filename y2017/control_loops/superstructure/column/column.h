@@ -15,6 +15,7 @@
 #include "y2017/control_loops/superstructure/column/column_zeroing.h"
 #include "y2017/control_loops/superstructure/intake/intake.h"
 #include "y2017/control_loops/superstructure/superstructure.q.h"
+#include "y2017/control_loops/superstructure/vision_time_adjuster.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -176,7 +177,7 @@ class Column {
   static constexpr double kIntakeZeroingMinDistance = 0.08;
   static constexpr double kIntakeTolerance = 0.005;
   static constexpr double kStuckZeroingTrackingError = 0.02;
-  static constexpr double kTurretNearZero = 0.1;
+  static constexpr double kTurretNearZero = M_PI / 2.0;
 
   void Iterate(const control_loops::IndexerGoal *unsafe_indexer_goal,
                const control_loops::TurretGoal *unsafe_turret_goal,
@@ -212,6 +213,8 @@ class Column {
   IndexerState indexer_state_ = IndexerState::RUNNING;
 
   bool freeze_ = false;
+
+  VisionTimeAdjuster vision_time_adjuster_;
 
   // The last time that we transitioned from RUNNING to REVERSING or the
   // reverse.  Used to implement the timeouts.

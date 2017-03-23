@@ -39,6 +39,10 @@ struct TurretGoal {
   // These are from a top view above the robot.
   double angle;
 
+  // If true, ignore the angle and track using vision.  If we don't see
+  // anything, we'll use the turret goal above.
+  bool track;
+
   // Caps on velocity/acceleration for profiling. 0 for the default.
   .frc971.ProfileParameters profile_params;
 };
@@ -163,6 +167,10 @@ struct TurretProfiledSubsystemStatus {
 
   // State of the estimator.
   ColumnEstimatorState estimator_state;
+
+  double raw_vision_angle;
+  double vision_angle;
+  bool vision_tracking;
 };
 
 queue_group SuperstructureQueue {

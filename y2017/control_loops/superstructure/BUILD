@@ -79,6 +79,7 @@ cc_library(
     ':superstructure_queue',
     '//aos/common:ring_buffer',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
+    '//y2017/control_loops/drivetrain:polydrivetrain_plants',
     '//y2017/vision:vision_queue',
   ],
 )

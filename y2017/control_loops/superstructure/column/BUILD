@@ -49,6 +49,7 @@ cc_library(
     '//frc971/control_loops:profiled_subsystem',
     '//y2017/control_loops/superstructure/intake:intake',
     '//y2017/control_loops/superstructure:superstructure_queue',
+    '//y2017/control_loops/superstructure:vision_time_adjuster',
     '//y2017:constants',
   ],
 )

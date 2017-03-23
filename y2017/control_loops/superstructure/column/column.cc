@@ -382,6 +382,9 @@ void Column::Iterate(const control_loops::IndexerGoal *unsafe_indexer_goal,
   bool disable = turret_output == nullptr || indexer_output == nullptr;
   profiled_subsystem_.Correct(*position);
 
+  vision_time_adjuster_.Tick(::aos::monotonic_clock::now(),
+                             profiled_subsystem_.X_hat(2, 0));
+
   switch (state_) {
     case State::UNINITIALIZED:
       // Wait in the uninitialized state until the turret is initialized.
@@ -511,6 +514,14 @@ void Column::Iterate(const control_loops::IndexerGoal *unsafe_indexer_goal,
         profiled_subsystem_.set_unprofiled_goal(
             unsafe_indexer_goal->angular_velocity, unsafe_turret_goal->angle);
 
+        if (unsafe_turret_goal->track) {
+          if (vision_time_adjuster_.valid()) {
+            LOG(INFO, "Vision aligning to %f\n", vision_time_adjuster_.goal());
+            profiled_subsystem_.set_turret_unprofiled_goal(
+                vision_time_adjuster_.goal());
+          }
+        }
+
         if (freeze_) {
           profiled_subsystem_.ForceGoal(unsafe_indexer_goal->angular_velocity,
                                         starting_goal_angle);
@@ -599,6 +610,15 @@ void Column::Iterate(const control_loops::IndexerGoal *unsafe_indexer_goal,
   profiled_subsystem_.PopulateTurretStatus(turret_status);
   turret_status->estopped = (state_ == State::ESTOP);
   turret_status->state = static_cast<int32_t>(state_);
+  if (vision_time_adjuster_.valid()) {
+    turret_status->vision_angle = vision_time_adjuster_.goal();
+    turret_status->raw_vision_angle =
+        vision_time_adjuster_.most_recent_vision_reading();
+    turret_status->vision_tracking = true;
+  } else {
+    turret_status->vision_angle = ::std::numeric_limits<double>::quiet_NaN();
+    turret_status->vision_tracking = false;
+  }
 
   profiled_subsystem_.PopulateIndexerStatus(indexer_status);
   indexer_status->state = static_cast<int32_t>(indexer_state_);
