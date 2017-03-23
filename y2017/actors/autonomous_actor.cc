@@ -25,8 +25,9 @@ double DoubleSeconds(monotonic_clock::duration duration) {
       .count();
 }
 
-const ProfileParameters kSlowDrive = {2.0, 2.0};
+const ProfileParameters kSlowDrive = {3.0, 2.0};
 const ProfileParameters kSlowTurn = {3.0, 3.0};
+const ProfileParameters kSmashTurn = {3.0, 5.0};
 
 }  // namespace
 
@@ -39,43 +40,63 @@ bool AutonomousActor::RunAction(
     const ::frc971::autonomous::AutonomousActionParams &params) {
   monotonic_clock::time_point start_time = monotonic_clock::now();
   LOG(INFO, "Starting autonomous action with mode %" PRId32 "\n", params.mode);
-  InitializeEncoders();
-  ResetDrivetrain();
+  Reset();
 
   switch (params.mode) {
     case 0:
-    default:
-      while (true) {
-        constexpr auto kDelayTime = chrono::milliseconds(1);
-        // Test case autonomous mode.
-        // Drives forward 1.0 meters and then turns 180 degrees.
-        StartDrive(1.0, 0.0, kSlowDrive, kSlowTurn);
-        if (!WaitForDriveDone()) return true;
+    default: {
+      constexpr double kDriveDirection = 1.0;
+      // Test case autonomous mode.
+      // Drives forward 1.0 meters and then turns 180 degrees.
+      set_intake_goal(0.07);
+      SendSuperstructureGoal();
+      StartDrive(-3.7, 0.0, kSlowDrive, kSlowTurn);
+      if (!WaitForDriveNear(2.75, 0.0)) return true;
 
-        this_thread::sleep_for(kDelayTime);
-        if (ShouldCancel()) return true;
+      set_intake_goal(0.23);
+      SendSuperstructureGoal();
+      StartDrive(0.0, -M_PI / 4.0 * kDriveDirection, kSlowDrive, kSlowTurn);
+      if (!WaitForDriveNear(0.05, 0.0)) return true;
 
-        StartDrive(0.0, M_PI, kSlowDrive, kSlowTurn);
-        if (!WaitForDriveDone()) return true;
+      this_thread::sleep_for(chrono::milliseconds(100));
 
-        this_thread::sleep_for(kDelayTime);
-        if (ShouldCancel()) return true;
+      StartDrive(0.0, (M_PI / 4.0 + 0.20) * kDriveDirection, kSlowDrive,
+                 kSmashTurn);
+      if (!WaitForDriveNear(0.05, 0.2)) return true;
 
-        StartDrive(1.0, 0.0, kSlowDrive, kSlowTurn);
-        if (!WaitForDriveDone()) return true;
+      set_vision_track(true);
+      set_turret_goal(0.0);
+      set_hood_goal(0.63);
+      set_shooter_velocity(371.0);
+      SendSuperstructureGoal();
 
-        this_thread::sleep_for(kDelayTime);
-        if (ShouldCancel()) return true;
+      this_thread::sleep_for(chrono::milliseconds(200));
 
-        StartDrive(0.0, M_PI, kSlowDrive, kSlowTurn);
-        if (!WaitForDriveDone()) return true;
+      StartDrive(0.0, (-0.15) * kDriveDirection, kSlowDrive, kSlowTurn);
+      if (!WaitForDriveNear(0.05, 0.02)) return true;
+      set_indexer_angular_velocity(-1.8 * M_PI);
+      SendSuperstructureGoal();
+      LOG(INFO, "Started shooting at %f\n",
+          DoubleSeconds(monotonic_clock::now() - start_time));
 
-        this_thread::sleep_for(kDelayTime);
-        if (ShouldCancel()) return true;
-      }
+      this_thread::sleep_for(start_time + chrono::seconds(9) -
+                             monotonic_clock::now());
+      StartDrive(0.0, (-0.05) * kDriveDirection, kSlowDrive, kSlowTurn);
+      if (ShouldCancel()) return true;
 
-      break;
+      set_intake_max_velocity(0.05);
+      set_intake_goal(0.08);
+      SendSuperstructureGoal();
 
+      this_thread::sleep_for(start_time + chrono::seconds(15) -
+                             monotonic_clock::now());
+      if (ShouldCancel()) return true;
+
+      set_shooter_velocity(0.0);
+      set_indexer_angular_velocity(0.0);
+      SendSuperstructureGoal();
+
+    } break;
   }
 
   LOG(INFO, "Done %f\n", DoubleSeconds(monotonic_clock::now() - start_time));

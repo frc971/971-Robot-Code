@@ -25,6 +25,7 @@ cc_library(
     '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//frc971/control_loops/drivetrain:drivetrain_config',
     '//y2017/control_loops/drivetrain:drivetrain_base',
+    '//y2017/control_loops/superstructure:superstructure_queue',
   ],
 )
 
