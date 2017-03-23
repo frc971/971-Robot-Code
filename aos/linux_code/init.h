@@ -30,6 +30,9 @@ void WriteCoreDumps();
 // Sets the current thread's realtime priority.
 void SetCurrentThreadRealtimePriority(int priority);
 
+// Sets the current thread back down to non-realtime priority.
+void UnsetCurrentThreadRealtimePriority();
+
 // Pins the current thread to CPU #number.
 void PinCurrentThreadToCPU(int number);
 

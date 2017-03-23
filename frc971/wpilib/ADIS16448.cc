@@ -27,6 +27,10 @@ bool ADIS16448::DoTransaction(uint8_t to_send[size], uint8_t to_receive[size]) {
       LOG(INFO, "SPI::Transaction of %zd bytes failed\n", size);
       return false;
     case size:
+      if (dummy_spi_) {
+        uint8_t dummy_send, dummy_receive;
+        dummy_spi_->Transaction(&dummy_send, &dummy_receive, 1);
+      }
       return true;
     default:
       LOG(FATAL, "SPI::Transaction returned something weird\n");
@@ -115,8 +119,9 @@ uint16_t CalculateCrc(const uint8_t *data, size_t data_length) {
 
 ADIS16448::ADIS16448(SPI::Port port, DigitalInput *dio1)
     : spi_(new SPI(port)), dio1_(dio1) {
-  // 1MHz is the maximum supported for burst reads.
-  spi_->SetClockRate(1e6);
+  // 1MHz is the maximum supported for burst reads, but we
+  // want to go slower to hopefully make it more reliable.
+  spi_->SetClockRate(1e5);
   spi_->SetChipSelectActiveLow();
   spi_->SetClockActiveLow();
   spi_->SetSampleDataOnFalling();
@@ -124,6 +129,39 @@ ADIS16448::ADIS16448(SPI::Port port, DigitalInput *dio1)
 
   dio1_->RequestInterrupts();
   dio1_->SetUpSourceEdge(true, false);
+}
+
+void ADIS16448::SetDummySPI(SPI::Port port) {
+  dummy_spi_.reset(new SPI(port));
+  // Pick the same settings here in case the roboRIO decides to try something
+  // stupid when switching.
+  if (dummy_spi_) {
+    dummy_spi_->SetClockRate(1e5);
+    dummy_spi_->SetChipSelectActiveLow();
+    dummy_spi_->SetClockActiveLow();
+    dummy_spi_->SetSampleDataOnFalling();
+    dummy_spi_->SetMSBFirst();
+  }
+}
+
+void ADIS16448::InitializeUntilSuccessful() {
+  while (run_ && !Initialize()) {
+    if (reset_) {
+      reset_->Set(false);
+      // Datasheet says this needs to be at least 10 us long, so 10 ms is
+      // plenty.
+      ::std::this_thread::sleep_for(::std::chrono::milliseconds(10));
+      reset_->Set(true);
+      // Datasheet says this takes 90 ms typically, and we want to give it
+      // plenty of margin.
+      ::std::this_thread::sleep_for(::std::chrono::milliseconds(150));
+    } else {
+      ::std::this_thread::sleep_for(::std::chrono::milliseconds(50));
+    }
+  }
+  LOG(INFO, "IMU initialized successfully\n");
+
+  ::aos::SetCurrentThreadRealtimePriority(33);
 }
 
 void ADIS16448::operator()() {
@@ -135,13 +173,7 @@ void ADIS16448::operator()() {
 
   ::aos::SetCurrentThreadName("IMU");
 
-  // Try to initialize repeatedly as long as we're supposed to be running.
-  while (run_ && !Initialize()) {
-    ::std::this_thread::sleep_for(::std::chrono::milliseconds(50));
-  }
-  LOG(INFO, "IMU initialized successfully\n");
-
-  ::aos::SetCurrentThreadRealtimePriority(33);
+  InitializeUntilSuccessful();
 
   // Rounded to approximate the 204.8 Hz.
   constexpr size_t kImuSendRate = 205;
@@ -157,6 +189,7 @@ void ADIS16448::operator()() {
           dio1_->WaitForInterrupt(0.1, !got_an_interrupt);
       if (result == InterruptableSensorBase::kTimeout) {
         LOG(WARNING, "IMU read timed out\n");
+        InitializeUntilSuccessful();
         continue;
       }
     }
@@ -187,6 +220,7 @@ void ADIS16448::operator()() {
       if (received_crc != calculated_crc) {
         LOG(WARNING, "received CRC %" PRIx16 " but calculated %" PRIx16 "\n",
             received_crc, calculated_crc);
+        InitializeUntilSuccessful();
         continue;
       }
     }
@@ -194,7 +228,10 @@ void ADIS16448::operator()() {
     {
       uint16_t diag_stat;
       memcpy(&diag_stat, &to_receive[2], 2);
-      if (!CheckDiagStatValue(diag_stat)) continue;
+      if (!CheckDiagStatValue(diag_stat)) {
+        InitializeUntilSuccessful();
+        continue;
+      }
     }
 
     auto message = imu_values.MakeMessage();

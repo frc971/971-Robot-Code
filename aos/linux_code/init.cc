@@ -155,7 +155,15 @@ void SetCurrentThreadRealtimePriority(int priority) {
   struct sched_param param;
   param.sched_priority = priority;
   if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
-    PLOG(FATAL, "sched_setscheduler(0, SCHED_FIFO, %d) failed", priority);
+    PLOG(FATAL, "sched_setscheduler(0, SCHED_FIFO, %d) failed\n", priority);
+  }
+}
+
+void UnsetCurrentThreadRealtimePriority() {
+  struct sched_param param;
+  param.sched_priority = 0;
+  if (sched_setscheduler(0, SCHED_OTHER, &param) == -1) {
+    PLOG(FATAL, "sched_setscheduler(0, SCHED_OTHER, 0) failed\n");
   }
 }
 
