@@ -71,7 +71,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   intake->zeroing.one_revolution_distance = Values::kIntakeEncoderIndexDifference;
   intake->zeroing.zeroing_threshold = 0.0005;
   intake->zeroing.moving_buffer_size = 20;
-  intake->zeroing.allowable_encoder_error = 0.3;
+  intake->zeroing.allowable_encoder_error = 1.9;
 
   column->turret_zeroed_distance = M_PI / 2.0;
   column->indexer_zeroing.index_difference = 2.0 * M_PI;
@@ -107,16 +107,16 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       break;
 
     case kCompTeamNumber:
-      intake->pot_offset = 0.26712;
-      intake->zeroing.measured_absolute_position = 0.008913;
+      intake->pot_offset = 0.26712 + 0.0035 + 0.033 + 0.0011;
+      intake->zeroing.measured_absolute_position = 0.003892;
 
-      column->indexer_zeroing.lower_hall_position = 2.0;
-      column->indexer_zeroing.upper_hall_position = 2.1;
+      column->indexer_zeroing.lower_hall_position = 5.201948;
+      column->indexer_zeroing.upper_hall_position = 5.508744;
 
-      column->turret_zeroing.lower_hall_position = 0;
-      column->turret_zeroing.upper_hall_position = 0.1;
+      column->turret_zeroing.lower_hall_position = -4.861087;
+      column->turret_zeroing.upper_hall_position = -4.680861;
 
-      hood->zeroing.measured_index_position = 0.652898 - 0.488117;
+      hood->zeroing.measured_index_position = 0.655432 - 0.398479;
 
       r->down_error = 0;
       r->vision_name = "competition";
@@ -124,7 +124,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
     case kPracticeTeamNumber:
       intake->pot_offset = 0.2921 + 0.00039 + 0.012236 - 0.023602 + 0.010722;
-      intake->zeroing.measured_absolute_position = 0.045893;
+      intake->zeroing.measured_absolute_position = 0.044490;
 
       column->indexer_zeroing.lower_hall_position = 5.014364;
       column->indexer_zeroing.upper_hall_position = 5.292234;

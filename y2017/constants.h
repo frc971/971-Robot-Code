@@ -77,8 +77,8 @@ struct Values {
       control_loops::superstructure::intake::kOutputRatio /
       constants::Values::kIntakeEncoderRatio *
       kIntakeEncoderCountsPerRevolution;
-  static constexpr ::frc971::constants::Range kIntakeRange{-0.01, 0.240, 0.01,
-                                                           0.230};
+  static constexpr ::frc971::constants::Range kIntakeRange{-0.01, 0.250, 0.01,
+                                                           0.235};
 
   static constexpr double kHoodEncoderCountsPerRevolution = 2048 * 4;
   static constexpr double kHoodEncoderRatio = 20.0 / 345.0;
@@ -89,7 +89,7 @@ struct Values {
       control_loops::superstructure::hood::kOutputRatio /
       constants::Values::kHoodEncoderRatio * kHoodEncoderCountsPerRevolution;
   static constexpr ::frc971::constants::Range kHoodRange{
-      -0.39 * M_PI / 180.0, 37.11 * M_PI / 180.0, (-0.39 + 1.0) * M_PI / 180.0,
+      -0.39 * M_PI / 180.0 - 0.01, 37.11 * M_PI / 180.0, (-0.39 + 1.0) * M_PI / 180.0,
       (37.11 - 1.0) * M_PI / 180.0};
 
   static constexpr double kTurretEncoderCountsPerRevolution = 256 * 4;
