@@ -87,7 +87,9 @@ void Intake::Iterate(
         profiled_subsystem_.AdjustProfile(unsafe_goal->profile_params);
         profiled_subsystem_.set_unprofiled_goal(unsafe_goal->distance);
         if (unsafe_goal->disable_intake) {
-          disable = true;
+          if (disable_count_ > 100) {
+            disable = true;
+          }
           ++disable_count_;
           if (disable_count_ > 200) {
             state_ = State::ESTOP;
