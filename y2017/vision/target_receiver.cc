@@ -9,10 +9,12 @@
 #include "y2017/vision/vision.q.h"
 #include "y2017/vision/vision_result.pb.h"
 
+namespace y2017 {
+namespace vision {
+
 using aos::monotonic_clock;
 
-int main() {
-  using namespace y2017::vision;
+int Main() {
   ::aos::events::RXUdpSocket recv(8080);
   char raw_data[65507];
   // TODO(parker): Have this pull in a config from somewhere.
@@ -25,10 +27,10 @@ int main() {
     monotonic_clock::time_point now = monotonic_clock::now();
     auto target_time = now -
                        std::chrono::nanoseconds(target.send_timestamp() -
-                                                target.image_timestamp()) +
+                                                target.image_timestamp()) -
                        // It takes a bit to shoot a frame.  Push the frame
                        // further back in time.
-                       std::chrono::milliseconds(10);
+                       std::chrono::milliseconds(60);
 
     if (!target.ParseFromArray(raw_data, size)) {
       continue;
@@ -53,4 +55,12 @@ int main() {
       LOG(ERROR, "Failed to send vision information\n");
     }
   }
+}
+
+}  // namespace vision
+}  // namespace y2017
+
+int main(int /*argc*/, char ** /*argv*/) {
+  ::aos::InitNRT();
+  ::y2017::vision::Main();
 }

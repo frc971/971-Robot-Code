@@ -157,7 +157,7 @@ bool TargetFinder::FindTargetFromComponents(
   // Write down the two indicies.
   std::pair<int, int> selected;
   // We are regressing the combined estimated center,  might write that down.
-  double regressed_y_center;
+  double regressed_y_center = 0;
 
   Eigen::VectorXf b = Eigen::VectorXf::Zero(4);
   for (size_t i = 0; i < component_list.size(); i++) {
@@ -274,7 +274,7 @@ void TargetFinder::GetAngleDist(const aos::vision::Vector<2>& target,
   double pl = std::sqrt(pz * pz + px * px);
 
   *dist = kInchesToMeters * (world_height * pl / py - added_dist);
-  *angle = std::atan2(px, pz);
+  *angle = -std::atan2(px, pz);
 }
 
 }  // namespace vision
