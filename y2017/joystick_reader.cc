@@ -35,9 +35,9 @@ const ButtonLocation kTurn1(1, 7);
 const ButtonLocation kTurn2(1, 11);
 
 const ButtonLocation kIntakeDown(3, 9);
+const POVLocation kIntakeUp(3, 90);
 const ButtonLocation kIntakeIn(3, 12);
 const ButtonLocation kIntakeOut(3, 8);
-const POVLocation kHang(3, 90);
 const ButtonLocation kFire(3, 3);
 const ButtonLocation kCloseShot(3, 7);
 const ButtonLocation kMiddleShot(3, 6);
@@ -48,11 +48,15 @@ const ButtonLocation kVisionAlign(3, 5);
 const ButtonLocation kReverseIndexer(3, 4);
 const ButtonLocation kExtra1(3, 11);
 const ButtonLocation kExtra2(3, 10);
-const ButtonLocation kExtra3(3, 2);
+const ButtonLocation kHang(3, 2);
 
 class Reader : public ::aos::input::JoystickInput {
  public:
   Reader() {}
+
+  enum class ShotDistance { CLOSE_SHOT, MIDDLE_SHOT, FAR_SHOT };
+
+  ShotDistance last_shot_distance_ = ShotDistance::FAR_SHOT;
 
   void RunIteration(const ::aos::input::driver_station::Data &data) override {
     bool last_auto_running = auto_running_;
@@ -77,6 +81,7 @@ class Reader : public ::aos::input::JoystickInput {
     action_queue_.Tick();
     was_running_ = action_queue_.Running();
   }
+  int intake_accumulator_ = 0;
 
   void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
     bool is_control_loop_driving = false;
@@ -84,6 +89,9 @@ class Reader : public ::aos::input::JoystickInput {
     const double wheel = -data.GetAxis(kSteeringWheel);
     const double throttle = -data.GetAxis(kDriveThrottle);
     drivetrain_queue.status.FetchLatest();
+    if (drivetrain_queue.status.get()) {
+      robot_velocity_ = drivetrain_queue.status->robot_speed;
+    }
 
     if (data.PosEdge(kTurn1) || data.PosEdge(kTurn2)) {
       if (drivetrain_queue.status.get()) {
@@ -110,8 +118,9 @@ class Reader : public ::aos::input::JoystickInput {
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
     // Default the intake to in.
-    intake_goal_ = constants::Values::kIntakeRange.lower;
+    intake_goal_ = 0.07;
     bool lights_on = false;
+    bool vision_track = false;
 
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       action_queue_.CancelAllActions();
@@ -125,66 +134,109 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     if (data.IsPressed(kIntakeDown)) {
-      intake_goal_ = 0.223;
+      intake_goal_ = 0.235;
     }
+    if (data.IsPressed(kIntakeUp)) {
+      intake_goal_ = 0.0;
+      turret_goal_ = 0.0;
+    }
+
 
     if (data.IsPressed(kVisionAlign)) {
       // Align shot using vision
       // TODO(campbell): Add vision aligning.
       lights_on = true;
-      shooter_velocity_ = 100.0;
-    } else if (data.IsPressed(kCloseShot)) {
-      // Close shot
-      hood_goal_ = 0.5;
-      shooter_velocity_ = 350.0;
+      vision_track = true;
+    }
+    if (data.PosEdge(kMiddleShot)) {
+      turret_goal_ = -M_PI;
+    }
+    if (data.PosEdge(kFarShot)) {
+      turret_goal_ = 0.0;
+    }
+
+    if (data.IsPressed(kCloseShot)) {
+      last_shot_distance_ = ShotDistance::CLOSE_SHOT;
     } else if (data.IsPressed(kMiddleShot)) {
-      // Medium distance shot
-      hood_goal_ = 0.4;
-      shooter_velocity_ = 350.0;
+      last_shot_distance_ = ShotDistance::MIDDLE_SHOT;
     } else if (data.IsPressed(kFarShot)) {
-      // Far shot
-      hood_goal_ = 0.6;
-      shooter_velocity_ = 250.0;
+      last_shot_distance_ = ShotDistance::FAR_SHOT;
+    }
+
+    if (data.IsPressed(kVisionAlign) || data.IsPressed(kCloseShot) ||
+        data.IsPressed(kMiddleShot) || data.IsPressed(kFarShot) ||
+        data.IsPressed(kFire)) {
+      switch (last_shot_distance_) {
+        case ShotDistance::CLOSE_SHOT:
+          hood_goal_ = 0.285;
+          shooter_velocity_ = 335.0;
+          break;
+        case ShotDistance::MIDDLE_SHOT:
+          hood_goal_ = 0.63;
+          shooter_velocity_ = 384.0;
+          break;
+        case ShotDistance::FAR_SHOT:
+          hood_goal_ = 0.63;
+          shooter_velocity_ = 378.0;
+          break;
+      }
     } else {
-      hood_goal_ = 0.15;
+      //hood_goal_ = 0.15;
       shooter_velocity_ = 0.0;
     }
 
     if (data.IsPressed(kExtra1)) {
-      turret_goal_ = -M_PI * 3.0 / 4.0;
+      //turret_goal_ = -M_PI * 3.0 / 4.0;
+      turret_goal_ += 0.150;
     }
     if (data.IsPressed(kExtra2)) {
-      turret_goal_ = 0.0;
+      //turret_goal_ = M_PI * 3.0 / 4.0;
+      turret_goal_ -= 0.150;
     }
-    if (data.IsPressed(kExtra3)) {
-      turret_goal_ = M_PI * 3.0 / 4.0;
-    }
+    turret_goal_ = ::std::max(::std::min(turret_goal_, M_PI), -M_PI);
 
     fire_ = data.IsPressed(kFire) && shooter_velocity_ != 0.0;
+    if (data.IsPressed(kVisionAlign)) {
+      fire_ = fire_ && superstructure_queue.status->turret.vision_tracking;
+    }
 
     auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
+    if (data.IsPressed(kHang)) {
+      intake_goal_ = 0.23;
+    }
+
     new_superstructure_goal->intake.distance = intake_goal_;
     new_superstructure_goal->intake.disable_intake = false;
     new_superstructure_goal->turret.angle = turret_goal_;
+    new_superstructure_goal->turret.track = vision_track;
     new_superstructure_goal->hood.angle = hood_goal_;
     new_superstructure_goal->shooter.angular_velocity = shooter_velocity_;
 
     new_superstructure_goal->intake.profile_params.max_velocity = 0.50;
-    new_superstructure_goal->turret.profile_params.max_velocity = 6.0;
     new_superstructure_goal->hood.profile_params.max_velocity = 5.0;
 
     new_superstructure_goal->intake.profile_params.max_acceleration = 5.0;
-    new_superstructure_goal->turret.profile_params.max_acceleration = 15.0;
+    if (vision_track) {
+      new_superstructure_goal->turret.profile_params.max_acceleration = 35.0;
+      new_superstructure_goal->turret.profile_params.max_velocity = 10.0;
+    } else {
+      new_superstructure_goal->turret.profile_params.max_acceleration = 15.0;
+      new_superstructure_goal->turret.profile_params.max_velocity = 6.0;
+    }
     new_superstructure_goal->hood.profile_params.max_acceleration = 25.0;
 
     new_superstructure_goal->intake.voltage_rollers = 0.0;
     new_superstructure_goal->lights_on = lights_on;
 
     if (data.IsPressed(kHang)) {
-      new_superstructure_goal->intake.voltage_rollers = -12.0;
+      new_superstructure_goal->intake.voltage_rollers = -10.0;
       new_superstructure_goal->intake.disable_intake = true;
-    } else if (data.IsPressed(kIntakeIn)) {
-      new_superstructure_goal->intake.voltage_rollers = 12.0;
+    } else if (data.IsPressed(kIntakeIn) || data.IsPressed(kFire)) {
+      if (robot_velocity_ > 2.0) {
+        new_superstructure_goal->intake.voltage_rollers = 12.0;
+      } else {
+        new_superstructure_goal->intake.voltage_rollers = 10.0;
+      }
     } else if (data.IsPressed(kIntakeOut)) {
       new_superstructure_goal->intake.voltage_rollers = -8.0;
     }
@@ -193,12 +245,30 @@ class Reader : public ::aos::input::JoystickInput {
           ::std::min(8.0, new_superstructure_goal->intake.voltage_rollers);
     }
 
+    if (superstructure_queue.status->intake.position >
+        superstructure_queue.status->intake.unprofiled_goal_position + 0.01) {
+      intake_accumulator_ = 10;
+    }
+    if (intake_accumulator_ > 0) {
+      --intake_accumulator_;
+      new_superstructure_goal->intake.voltage_rollers = 10.0;
+    }
+
     if (data.IsPressed(kReverseIndexer)) {
-      new_superstructure_goal->indexer.voltage_rollers = -4.0;
+      new_superstructure_goal->indexer.voltage_rollers = -12.0;
       new_superstructure_goal->indexer.angular_velocity = 4.0;
       new_superstructure_goal->indexer.angular_velocity = 1.0;
     } else if (fire_) {
-      new_superstructure_goal->indexer.angular_velocity = -3.0 * M_PI;
+      new_superstructure_goal->indexer.voltage_rollers = 12.0;
+      switch (last_shot_distance_)  {
+        case ShotDistance::CLOSE_SHOT:
+          new_superstructure_goal->indexer.angular_velocity = -0.90 * M_PI;
+          break;
+        case ShotDistance::MIDDLE_SHOT:
+        case ShotDistance::FAR_SHOT:
+          new_superstructure_goal->indexer.angular_velocity = -2.25 * M_PI;
+          break;
+      }
     } else {
       new_superstructure_goal->indexer.voltage_rollers = 0.0;
       new_superstructure_goal->indexer.angular_velocity = 0.0;
@@ -247,6 +317,7 @@ class Reader : public ::aos::input::JoystickInput {
   bool vision_valid_ = false;
 
   bool fire_ = false;
+  double robot_velocity_ = 0.0;
 
   ::aos::common::actions::ActionQueue action_queue_;
 };
