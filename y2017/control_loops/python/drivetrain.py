@@ -44,8 +44,8 @@ class Drivetrain(control_loop.ControlLoop):
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Gear ratios
-    self.G_low = 12.0 / 54.0
-    self.G_high = 12.0 / 54.0
+    self.G_low = 11.0 / 60.0
+    self.G_high = 11.0 / 60.0
     if left_low:
       self.Gl = self.G_low
     else:
