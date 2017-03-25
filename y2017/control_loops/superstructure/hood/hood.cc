@@ -8,6 +8,8 @@ namespace control_loops {
 namespace superstructure {
 namespace hood {
 
+namespace chrono = ::std::chrono;
+
 constexpr double Hood::kZeroingVoltage;
 constexpr double Hood::kOperatingVoltage;
 // The tracking error to allow before declaring that we are stuck and reversing
@@ -53,6 +55,8 @@ Hood::Hood() {}
 void Hood::Reset() {
   state_ = State::UNINITIALIZED;
   profiled_subsystem_.Reset();
+  last_move_time_ = ::aos::monotonic_clock::min_time;
+  last_position_ = 0;
 }
 
 void Hood::Iterate(const control_loops::HoodGoal *unsafe_goal,
@@ -165,7 +169,22 @@ void Hood::Iterate(const control_loops::HoodGoal *unsafe_goal,
   const double max_voltage =
       (state_ == State::RUNNING) ? kOperatingVoltage : kZeroingVoltage;
 
-  profiled_subsystem_.set_max_voltage({{max_voltage}});
+  // If we have been in the same position for kNumberCyclesTillNotMoving, make
+  // sure that the kNotMovingVoltage is used instead of kOperatingVoltage.
+  double error_voltage = max_voltage;
+  if (::std::abs(profiled_subsystem_.position() - last_position_) >
+      kErrorOnPositionTillNotMoving) {
+    // Currently moving. Update time of last move.
+    last_move_time_ = ::aos::monotonic_clock::now();
+    // Save last position.
+    last_position_ = profiled_subsystem_.position();
+  }
+  if (::aos::monotonic_clock::now() > kTimeTillNotMoving + last_move_time_) {
+    error_voltage = kNotMovingVoltage;
+  }
+
+  profiled_subsystem_.set_max_voltage(
+      {{::std::min(max_voltage, error_voltage)}});
 
   // Calculate the loops for a cycle.
   profiled_subsystem_.Update(disable);
