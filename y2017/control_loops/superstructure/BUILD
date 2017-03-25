@@ -66,3 +66,32 @@ cc_binary(
     ':superstructure_queue',
   ],
 )
+
+cc_library(
+  name = 'vision_time_adjuster',
+  hdrs = [
+    'vision_time_adjuster.h',
+  ],
+  srcs = [
+    'vision_time_adjuster.cc',
+  ],
+  deps = [
+    ':superstructure_queue',
+    '//aos/common:ring_buffer',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
+    '//y2017/vision:vision_queue',
+  ],
+)
+
+cc_test(
+  name = 'vision_time_adjuster_test',
+  srcs = [
+    'vision_time_adjuster_test.cc',
+  ],
+  deps = [
+    ':vision_time_adjuster',
+    '//aos/common:time',
+    '//aos/testing:googletest',
+    '//aos/testing:test_shm',
+  ],
+)

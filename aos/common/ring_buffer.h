@@ -11,6 +11,8 @@ namespace aos {
 template <typename Data, size_t buffer_size>
 class RingBuffer {
  public:
+  static constexpr size_t kBufferSize = buffer_size;
+
   RingBuffer() {}
 
   // Add an item to the RingBuffer, overwriting the oldest element if necessary
