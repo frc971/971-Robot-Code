@@ -5,7 +5,7 @@
 #include "aos/common/time.h"
 #include "aos/testing/test_shm.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "y2017/control_loops/superstructure/superstructure.q.h"
+#include "y2017/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2017/vision/vision.q.h"
 
 namespace y2017 {
@@ -22,12 +22,10 @@ class VisionTimeAdjusterTest : public ::testing::Test {
         "We need a different amount of space to hold the turret data.");
     ::aos::time::EnableMockTime(current_time_);
     ::frc971::control_loops::drivetrain_queue.status.Clear();
-    superstructure_queue.status.Clear();
     vision::vision_status.Clear();
   }
 
   ~VisionTimeAdjusterTest() {
-    superstructure_queue.status.Clear();
     ::frc971::control_loops::drivetrain_queue.status.Clear();
     vision::vision_status.Clear();
     ::aos::time::DisableMockTime();
@@ -58,7 +56,7 @@ class VisionTimeAdjusterTest : public ::testing::Test {
 
   void RunIteration() {
     SendMessages();
-    adjuster_.Tick();
+    adjuster_.Tick(::aos::monotonic_clock::now(), turret_angle_);
     TickTime();
   }
 
@@ -72,7 +70,6 @@ class VisionTimeAdjusterTest : public ::testing::Test {
   void TickTime() { ::aos::time::SetMockTime(current_time_ += kTimeTick); }
 
   void SendMessages() {
-    SendTurretPosition();
     SendDrivetrainPosition();
     if (::aos::monotonic_clock::now().time_since_epoch() % kVisionTick ==
         kVisionDelay) {
@@ -80,12 +77,6 @@ class VisionTimeAdjusterTest : public ::testing::Test {
     }
     turret_history_.Push(turret_angle_);
     drivetrain_history_.Push(GetDriveTrainAngle());
-  }
-
-  void SendTurretPosition() {
-    auto message = superstructure_queue.status.MakeMessage();
-    message->turret.position = turret_angle_;
-    ASSERT_TRUE(message.Send());
   }
 
   void SendDrivetrainPosition() {
@@ -106,13 +97,13 @@ class VisionTimeAdjusterTest : public ::testing::Test {
     ASSERT_EQ(drivetrain_history_.capacity(), drivetrain_history_.size());
     message->angle =
         vision_angle_ - turret_history_[0] - drivetrain_history_[0];
+    message->image_valid = true;
     ASSERT_TRUE(message.Send());
   }
 
   double GetDriveTrainAngle() const {
-    // TODO(user): Implement this.
-    static constexpr double kDriveTrainRadius = 1.0;
-    return -(drivetrain_left_ - drivetrain_right_) / kDriveTrainRadius;
+    return -(drivetrain_left_ - drivetrain_right_) /
+           (drivetrain::kRobotRadius * 2.0);
   }
 
   ::aos::testing::TestSharedMemory my_shm_;
@@ -164,7 +155,8 @@ TEST_F(VisionTimeAdjusterTest, DrivetrainRotationOnly) {
   SetVisionAngle(0.0);
   for (size_t i = 0; i < 200; ++i) {
     double angle = static_cast<double>(i) * 0.01;
-    SetDrivetrainPosition(angle, -angle);
+    SetDrivetrainPosition(angle * drivetrain::kRobotRadius * 2.0,
+                          -angle * drivetrain::kRobotRadius * 2.0);
     ASSERT_NO_FATAL_FAILURE(RunIteration());
 
     if (i < GetVisionDelayCount()) {
@@ -184,7 +176,8 @@ TEST_F(VisionTimeAdjusterTest, DrivetrainAndTurretTogether) {
   for (size_t i = 0; i < 200; ++i) {
     double drivetrain_angle = static_cast<double>(i) * 0.01;
     double turret_angle = (100.0 - static_cast<double>(i)) * 0.005;
-    SetDrivetrainPosition(-drivetrain_angle, drivetrain_angle);
+    SetDrivetrainPosition(-drivetrain_angle * drivetrain::kRobotRadius * 2.0,
+                          drivetrain_angle * drivetrain::kRobotRadius * 2.0);
     SetTurretPosition(turret_angle);
     ASSERT_NO_FATAL_FAILURE(RunIteration());
 
