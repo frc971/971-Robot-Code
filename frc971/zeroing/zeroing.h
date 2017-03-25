@@ -276,8 +276,7 @@ class PulseIndexZeroingEstimator : public ZeroingEstimator {
   using ZeroingConstants = constants::EncoderPlusIndexZeroingConstants;
   using State = IndexEstimatorState;
 
-  PulseIndexZeroingEstimator(
-      const constants::EncoderPlusIndexZeroingConstants &constants)
+  PulseIndexZeroingEstimator(const ZeroingConstants &constants)
       : constants_(constants) {
     Reset();
   }
@@ -313,7 +312,7 @@ class PulseIndexZeroingEstimator : public ZeroingEstimator {
   int IndexPulseCount() const;
 
   // Contains the physical constants describing the system.
-  const constants::EncoderPlusIndexZeroingConstants constants_;
+  const ZeroingConstants constants_;
 
   // The smallest position of all the index pulses.
   double min_index_position_;

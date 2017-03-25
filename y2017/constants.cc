@@ -84,6 +84,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   hood->zeroing.index_pulse_count = 2;
   hood->zeroing.index_difference = Values::kHoodEncoderIndexDifference;
   hood->zeroing.known_index_pulse = 0;
+  hood->zeroing.allowable_encoder_error = 0.05;
 
   switch (team) {
     // A set of constants for tests.
