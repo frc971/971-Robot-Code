@@ -23,15 +23,16 @@ constexpr double kTolerance = 10.0;
 // TODO(austin): Pseudo current limit?
 
 ShooterController::ShooterController()
-    : loop_(new StateFeedbackLoop<3, 1, 1, StateFeedbackHybridPlant<3, 1, 1>,
-                                  HybridKalman<3, 1, 1>>(
+    : loop_(new StateFeedbackLoop<4, 1, 1, StateFeedbackHybridPlant<4, 1, 1>,
+                                  HybridKalman<4, 1, 1>>(
           superstructure::shooter::MakeIntegralShooterLoop())) {
   history_.fill(0);
   Y_.setZero();
 }
 
 void ShooterController::set_goal(double angular_velocity_goal) {
-  loop_->mutable_next_R() << 0.0, angular_velocity_goal, 0.0;
+  loop_->mutable_next_R() << 0.0, angular_velocity_goal, angular_velocity_goal,
+      0.0;
 }
 
 void ShooterController::set_position(double current_position) {
@@ -52,7 +53,7 @@ void ShooterController::Reset() { reset_ = true; }
 
 void ShooterController::Update(bool disabled, chrono::nanoseconds dt) {
   loop_->mutable_R() = loop_->next_R();
-  if (::std::abs(loop_->R(1, 0)) < 1.0) {
+  if (::std::abs(loop_->R(2, 0)) < 1.0) {
     // Kill power at low angular velocities.
     disabled = true;
   }
@@ -72,17 +73,17 @@ void ShooterController::Update(bool disabled, chrono::nanoseconds dt) {
        static_cast<double>(kHistoryLength - 1));
 
   // Ready if average angular velocity is close to the goal.
-  error_ = average_angular_velocity_ - loop_->next_R(1, 0);
+  error_ = average_angular_velocity_ - loop_->next_R(2, 0);
 
-  ready_ = std::abs(error_) < kTolerance && loop_->next_R(1, 0) > 1.0;
+  ready_ = std::abs(error_) < kTolerance && loop_->next_R(2, 0) > 1.0;
 
-  if (last_ready_ && !ready_ && loop_->next_R(1, 0) > 1.0 && error_ < 0.0) {
+  if (last_ready_ && !ready_ && loop_->next_R(2, 0) > 1.0 && error_ < 0.0) {
     needs_reset_ = true;
-    min_velocity_ = loop_->X_hat(1, 0);
+    min_velocity_ = velocity();
   }
   if (needs_reset_) {
-    min_velocity_ = ::std::min(min_velocity_, loop_->X_hat(1, 0));
-    if (loop_->X_hat(1, 0) > min_velocity_ + 5.0) {
+    min_velocity_ = ::std::min(min_velocity_, velocity());
+    if (velocity() > min_velocity_ + 5.0) {
       reset_ = true;
       needs_reset_ = false;
     }
@@ -109,10 +110,10 @@ void ShooterController::Update(bool disabled, chrono::nanoseconds dt) {
 void ShooterController::SetStatus(ShooterStatus *status) {
   status->avg_angular_velocity = average_angular_velocity_;
 
-  status->angular_velocity = X_hat_current_(1, 0);
+  status->angular_velocity = X_hat_current_(2, 0);
   status->ready = ready_;
 
-  status->voltage_error = X_hat_current_(2, 0);
+  status->voltage_error = X_hat_current_(3, 0);
   status->position_error = position_error_;
   status->instantaneous_velocity = dt_velocity_;
   status->fixed_instantaneous_velocity = fixed_dt_velocity_;
