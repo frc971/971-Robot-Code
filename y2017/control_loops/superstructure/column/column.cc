@@ -25,6 +25,7 @@ using ::frc971::zeroing::PulseIndexZeroingEstimator;
 
 namespace {
 constexpr double kTolerance = 10.0;
+constexpr double kIndexerAcceleration = 100.0;
 constexpr chrono::milliseconds kForwardTimeout{500};
 constexpr chrono::milliseconds kReverseTimeout{500};
 constexpr chrono::milliseconds kReverseMinTimeout{100};
@@ -254,8 +255,16 @@ void ColumnProfiledSubsystem::Update(bool disable) {
     ::Eigen::Matrix<double, 2, 1> goal_state =
         profile_.Update(unprofiled_goal_(2, 0), unprofiled_goal_(3, 0));
 
+    constexpr double kDt = chrono::duration_cast<chrono::duration<double>>(
+                               ::aos::controls::kLoopFrequency)
+                               .count();
+
     loop_->mutable_next_R(0, 0) = 0.0;
-    loop_->mutable_next_R(1, 0) = unprofiled_goal_(1, 0);
+    // TODO(austin): This might not handle saturation right, but I'm not sure I
+    // really care.
+    loop_->mutable_next_R(1, 0) = ::aos::Clip(
+        unprofiled_goal_(1, 0), loop_->R(1, 0) - kIndexerAcceleration * kDt,
+        loop_->R(1, 0) + kIndexerAcceleration * kDt);
     loop_->mutable_next_R(2, 0) = goal_state(0, 0);
     loop_->mutable_next_R(3, 0) = goal_state(1, 0);
     loop_->mutable_next_R(4, 0) = 0.0;
@@ -332,6 +341,10 @@ bool ColumnProfiledSubsystem::IsIndexerStuck() const {
 void ColumnProfiledSubsystem::PartialIndexerReset() {
   mutable_X_hat(4, 0) = 0.0;
   stuck_indexer_detector_->mutable_X_hat(4, 0) = 0.0;
+  // Screw it, we are stuck.  Reset the current goal to the current velocity so
+  // we start slewing faster to reverse if we have stopped.
+  loop_->mutable_R(1, 0) = X_hat(1, 0);
+  loop_->mutable_next_R(1, 0) = X_hat(1, 0);
 }
 
 void ColumnProfiledSubsystem::PartialTurretReset() {
