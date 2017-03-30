@@ -473,6 +473,11 @@ class SolenoidWriter {
     lights_ = ::std::move(s);
   }
 
+  void set_rgb_light(
+      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+    rgb_lights_ = ::std::move(s);
+  }
+
   void operator()() {
     ::aos::SetCurrentThreadName("Solenoids");
     ::aos::SetCurrentThreadRealtimePriority(27);
@@ -493,6 +498,9 @@ class SolenoidWriter {
         if (superstructure_.get()) {
           LOG_STRUCT(DEBUG, "solenoids", *superstructure_);
           lights_->Set(superstructure_->lights_on);
+          rgb_lights_->Set(superstructure_->red_light_on |
+                           superstructure_->green_light_on |
+                           superstructure_->blue_light_on);
         }
       }
 
@@ -505,7 +513,7 @@ class SolenoidWriter {
  private:
   ::frc971::wpilib::BufferedPcm pcm_;
 
-  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> lights_;
+  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> lights_, rgb_lights_;
 
   ::aos::Queue<
       ::y2017::control_loops::SuperstructureQueue::Output>
@@ -572,6 +580,16 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     hood_victor_ = ::std::move(t);
   }
 
+  void set_red_light(::std::unique_ptr<DigitalOutput> t) {
+    red_light_ = ::std::move(t);
+  }
+  void set_green_light(::std::unique_ptr<DigitalOutput> t) {
+    green_light_ = ::std::move(t);
+  }
+  void set_blue_light(::std::unique_ptr<DigitalOutput> t) {
+    blue_light_ = ::std::move(t);
+  }
+
  private:
   virtual void Read() override {
     ::y2017::control_loops::superstructure_queue.output.FetchAnother();
@@ -593,6 +611,10 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
         ::aos::Clip(queue->voltage_hood, -kMaxBringupPower, kMaxBringupPower) /
         12.0);
     shooter_victor_->SetSpeed(queue->voltage_shooter / 12.0);
+
+    red_light_->Set(queue->red_light_on);
+    green_light_->Set(queue->green_light_on);
+    blue_light_->Set(queue->blue_light_on);
   }
 
   virtual void Stop() override {
@@ -604,11 +626,17 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     turret_victor_->SetDisabled();
     hood_victor_->SetDisabled();
     shooter_victor_->SetDisabled();
+
+    red_light_->Set(true);
+    green_light_->Set(true);
+    blue_light_->Set(true);
   }
 
   ::std::unique_ptr<VictorSP> intake_victor_, intake_rollers_victor_,
       indexer_victor_, indexer_roller_victor_, shooter_victor_,
       turret_victor_, hood_victor_;
+
+  ::std::unique_ptr<DigitalOutput> red_light_, green_light_, blue_light_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -685,11 +713,20 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         ::std::unique_ptr<VictorSP>(new VictorSP(2)));
     superstructure_writer.set_shooter_victor(
         ::std::unique_ptr<VictorSP>(new VictorSP(8)));
+
+    superstructure_writer.set_red_light(
+        ::std::unique_ptr<DigitalOutput>(new DigitalOutput(5)));
+    superstructure_writer.set_green_light(
+        ::std::unique_ptr<DigitalOutput>(new DigitalOutput(24)));
+    superstructure_writer.set_blue_light(
+        ::std::unique_ptr<DigitalOutput>(new DigitalOutput(25)));
+
     ::std::thread superstructure_writer_thread(
         ::std::ref(superstructure_writer));
 
     SolenoidWriter solenoid_writer;
     solenoid_writer.set_lights(solenoid_writer.pcm()->MakeSolenoid(0));
+    solenoid_writer.set_rgb_light(solenoid_writer.pcm()->MakeSolenoid(1));
 
     ::std::thread solenoid_thread(::std::ref(solenoid_writer));
 

@@ -233,6 +233,10 @@ queue_group SuperstructureQueue {
 
     // If true, the lights are on.
     bool lights_on;
+
+    bool red_light_on;
+    bool green_light_on;
+    bool blue_light_on;
   };
 
   queue Goal goal;

@@ -96,6 +96,12 @@ void Superstructure::RunIteration(
                   output != nullptr ? &(output->voltage_turret) : nullptr,
                   &(status->indexer), &(status->turret), &intake_);
 
+  status->estopped =
+      status->intake.estopped | status->hood.estopped | status->turret.estopped;
+
+  status->zeroed =
+      status->intake.zeroed && status->hood.zeroed && status->turret.zeroed;
+
   if (output && unsafe_goal) {
     output->voltage_intake_rollers =
         ::std::max(-kMaxIntakeRollerVoltage,
@@ -108,6 +114,20 @@ void Superstructure::RunIteration(
 
     // Set the lights on or off
     output->lights_on = unsafe_goal->lights_on;
+
+    if (status->estopped) {
+      output->red_light_on = true;
+      output->green_light_on = false;
+      output->blue_light_on = false;
+    } else if (status->turret.vision_tracking) {
+      output->red_light_on = false;
+      output->green_light_on = true;
+      output->blue_light_on = false;
+    } else if (!status->zeroed) {
+      output->red_light_on = false;
+      output->green_light_on = false;
+      output->blue_light_on = true;
+    }
   }
 }
 
