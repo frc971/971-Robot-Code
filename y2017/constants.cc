@@ -107,8 +107,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       break;
 
     case kCompTeamNumber:
-      intake->pot_offset = 0.26712 + 0.0035 + 0.033 + 0.0011;
-      intake->zeroing.measured_absolute_position = 0.003892;
+      intake->pot_offset = 0.26712 + 0.0035 + 0.033 + 0.0011 -0.046872;
+      intake->zeroing.measured_absolute_position = 0.003397;
 
       column->indexer_zeroing.lower_hall_position = 5.201948;
       column->indexer_zeroing.upper_hall_position = 5.508744;
@@ -116,7 +116,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       column->turret_zeroing.lower_hall_position = -4.861087;
       column->turret_zeroing.upper_hall_position = -4.680861;
 
-      hood->zeroing.measured_index_position = 0.655432 - 0.398479;
+      hood->zeroing.measured_index_position = 0.234766;
 
       r->down_error = 0;
       r->vision_name = "competition";
