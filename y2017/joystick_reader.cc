@@ -34,6 +34,8 @@ const ButtonLocation kQuickTurn(1, 5);
 const ButtonLocation kTurn1(1, 7);
 const ButtonLocation kTurn2(1, 11);
 
+const ButtonLocation kGearSlotBack(2, 11);
+
 const ButtonLocation kIntakeDown(3, 9);
 const POVLocation kIntakeUp(3, 90);
 const ButtonLocation kIntakeIn(3, 12);
@@ -93,25 +95,37 @@ class Reader : public ::aos::input::JoystickInput {
       robot_velocity_ = drivetrain_queue.status->robot_speed;
     }
 
-    if (data.PosEdge(kTurn1) || data.PosEdge(kTurn2)) {
+    if (data.PosEdge(kTurn1) || data.PosEdge(kTurn2) ||
+        data.PosEdge(kGearSlotBack)) {
       if (drivetrain_queue.status.get()) {
         left_goal_ = drivetrain_queue.status->estimated_left_position;
         right_goal_ = drivetrain_queue.status->estimated_right_position;
       }
     }
+    double current_left_goal = left_goal_ - wheel * 0.5 + throttle * 0.3;
+    double current_right_goal = right_goal_ + wheel * 0.5 + throttle * 0.3;
     if (data.IsPressed(kTurn1) || data.IsPressed(kTurn2)) {
       is_control_loop_driving = true;
     }
-    if (!drivetrain_queue.goal.MakeWithBuilder()
-             .steering(wheel)
-             .throttle(throttle)
-             .quickturn(data.IsPressed(kQuickTurn))
-             .control_loop_driving(is_control_loop_driving)
-             .left_goal(left_goal_ - wheel * 0.5 + throttle * 0.3)
-             .right_goal(right_goal_ + wheel * 0.5 + throttle * 0.3)
-             .left_velocity_goal(0)
-             .right_velocity_goal(0)
-             .Send()) {
+    if (data.IsPressed(kGearSlotBack)) {
+      is_control_loop_driving = true;
+      current_left_goal = left_goal_ - 0.03;
+      current_right_goal = right_goal_ - 0.03;
+    }
+    auto new_drivetrain_goal = drivetrain_queue.goal.MakeMessage();
+    new_drivetrain_goal->steering = wheel;
+    new_drivetrain_goal->throttle = throttle;
+    new_drivetrain_goal->quickturn = data.IsPressed(kQuickTurn);
+    new_drivetrain_goal->control_loop_driving = is_control_loop_driving;
+    new_drivetrain_goal->left_goal = current_left_goal;
+    new_drivetrain_goal->right_goal = current_right_goal;
+    new_drivetrain_goal->left_velocity_goal = 0;
+    new_drivetrain_goal->right_velocity_goal = 0;
+
+    new_drivetrain_goal->linear.max_velocity = 3.0;
+    new_drivetrain_goal->linear.max_acceleration = 20.0;
+
+    if (!new_drivetrain_goal.Send()) {
       LOG(WARNING, "sending stick values failed\n");
     }
   }
