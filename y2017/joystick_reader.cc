@@ -242,6 +242,17 @@ class Reader : public ::aos::input::JoystickInput {
     new_superstructure_goal->intake.voltage_rollers = 0.0;
     new_superstructure_goal->lights_on = lights_on;
 
+    if (superstructure_queue.status->intake.position >
+        superstructure_queue.status->intake.unprofiled_goal_position + 0.01) {
+      intake_accumulator_ = 10;
+    }
+    if (intake_accumulator_ > 0) {
+      --intake_accumulator_;
+      if (!superstructure_queue.status->intake.estopped) {
+        new_superstructure_goal->intake.voltage_rollers = 10.0;
+      }
+    }
+
     if (data.IsPressed(kHang)) {
       new_superstructure_goal->intake.voltage_rollers = -10.0;
       new_superstructure_goal->intake.disable_intake = true;
@@ -257,15 +268,6 @@ class Reader : public ::aos::input::JoystickInput {
     if (intake_goal_ < 0.1) {
       new_superstructure_goal->intake.voltage_rollers =
           ::std::min(8.0, new_superstructure_goal->intake.voltage_rollers);
-    }
-
-    if (superstructure_queue.status->intake.position >
-        superstructure_queue.status->intake.unprofiled_goal_position + 0.01) {
-      intake_accumulator_ = 10;
-    }
-    if (intake_accumulator_ > 0) {
-      --intake_accumulator_;
-      new_superstructure_goal->intake.voltage_rollers = 10.0;
     }
 
     if (data.IsPressed(kReverseIndexer)) {
