@@ -375,7 +375,8 @@ Column::Column()
               new ::frc971::control_loops::SimpleCappedStateFeedbackLoop<
                   6, 2, 2>(MakeIntegralColumnLoop())),
           constants::GetValues().column, constants::Values::kTurretRange, 7.0,
-          50.0) {}
+          50.0),
+      vision_error_(constants::GetValues().vision_error) {}
 
 void Column::Reset() {
   state_ = State::UNINITIALIZED;
@@ -531,7 +532,7 @@ void Column::Iterate(const control_loops::IndexerGoal *unsafe_indexer_goal,
           if (vision_time_adjuster_.valid()) {
             LOG(INFO, "Vision aligning to %f\n", vision_time_adjuster_.goal());
             profiled_subsystem_.set_turret_unprofiled_goal(
-                vision_time_adjuster_.goal());
+                vision_time_adjuster_.goal() + vision_error_);
           }
         }
 

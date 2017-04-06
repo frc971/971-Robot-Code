@@ -222,6 +222,8 @@ class Column {
       ::aos::monotonic_clock::min_time;
 
   ColumnProfiledSubsystem profiled_subsystem_;
+
+  const double vision_error_;
 };
 
 }  // namespace column

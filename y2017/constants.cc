@@ -104,6 +104,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
       r->down_error = 0;
       r->vision_name = "test";
+      r->vision_error = 0.0;
       break;
 
     case kCompTeamNumber:
@@ -120,6 +121,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
       r->down_error = 0;
       r->vision_name = "competition";
+      r->vision_error = 0.015;
       break;
 
     case kPracticeTeamNumber:
@@ -136,8 +138,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
       r->down_error = 0;
       r->vision_name = "practice";
+      r->vision_error = 0.0;
       break;
-
 
     default:
       LOG(FATAL, "unknown team #%" PRIu16 "\n", team);

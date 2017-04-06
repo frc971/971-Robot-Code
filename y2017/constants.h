@@ -123,6 +123,8 @@ struct Values {
 
   double down_error;
   const char *vision_name;
+
+  double vision_error;
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and
