@@ -1,56 +1,56 @@
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <inttypes.h>
 
-#include <chrono>
-#include <thread>
-#include <mutex>
-#include <functional>
 #include <array>
+#include <chrono>
 #include <cmath>
+#include <functional>
+#include <mutex>
+#include <thread>
 
-#include "Counter.h"
-#include "Encoder.h"
-#include "VictorSP.h"
-#include "Servo.h"
-#include "Relay.h"
-#include "DriverStation.h"
 #include "AnalogInput.h"
 #include "Compressor.h"
+#include "Counter.h"
 #include "DigitalGlitchFilter.h"
+#include "DriverStation.h"
+#include "Encoder.h"
+#include "Relay.h"
+#include "Servo.h"
+#include "VictorSP.h"
 #undef ERROR
 
+#include "aos/common/commonmath.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
+#include "aos/common/messages/robot_state.q.h"
+#include "aos/common/stl_mutex.h"
 #include "aos/common/time.h"
+#include "aos/common/util/compiler_memory_barrier.h"
 #include "aos/common/util/log_interval.h"
 #include "aos/common/util/phased_loop.h"
 #include "aos/common/util/wrapping_counter.h"
-#include "aos/common/stl_mutex.h"
 #include "aos/linux_code/init.h"
-#include "aos/common/messages/robot_state.q.h"
-#include "aos/common/commonmath.h"
 
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/wpilib/ADIS16448.h"
+#include "frc971/wpilib/buffered_pcm.h"
+#include "frc971/wpilib/buffered_solenoid.h"
+#include "frc971/wpilib/dma.h"
+#include "frc971/wpilib/dma_edge_counting.h"
+#include "frc971/wpilib/encoder_and_potentiometer.h"
+#include "frc971/wpilib/interrupt_edge_counting.h"
+#include "frc971/wpilib/joystick_sender.h"
+#include "frc971/wpilib/logging.q.h"
+#include "frc971/wpilib/loop_output_handler.h"
+#include "frc971/wpilib/pdp_fetcher.h"
+#include "frc971/wpilib/wpilib_interface.h"
+#include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2017/constants.h"
 #include "y2017/control_loops/superstructure/superstructure.q.h"
-
-#include "frc971/wpilib/wpilib_robot_base.h"
-#include "frc971/wpilib/joystick_sender.h"
-#include "frc971/wpilib/loop_output_handler.h"
-#include "frc971/wpilib/buffered_solenoid.h"
-#include "frc971/wpilib/buffered_pcm.h"
-#include "frc971/wpilib/dma_edge_counting.h"
-#include "frc971/wpilib/interrupt_edge_counting.h"
-#include "frc971/wpilib/encoder_and_potentiometer.h"
-#include "frc971/wpilib/logging.q.h"
-#include "frc971/wpilib/wpilib_interface.h"
-#include "frc971/wpilib/pdp_fetcher.h"
-#include "frc971/wpilib/ADIS16448.h"
-#include "frc971/wpilib/dma.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -59,6 +59,8 @@
 using ::frc971::control_loops::drivetrain_queue;
 using ::y2017::control_loops::superstructure_queue;
 using ::y2017::constants::Values;
+using ::aos::monotonic_clock;
+namespace chrono = ::std::chrono;
 
 namespace y2017 {
 namespace wpilib {
@@ -270,7 +272,13 @@ class SensorReader {
     autonomous_modes_.at(i) = ::std::move(sensor);
   }
 
-  // All of the DMA-related set_* calls must be made before this, and it doesn't
+  void set_pwm_trigger(::std::unique_ptr<DigitalInput> pwm_trigger) {
+    medium_encoder_filter_.Add(pwm_trigger.get());
+    pwm_trigger_ = ::std::move(pwm_trigger);
+  }
+
+  // All of the DMA-related set_* calls must be made before this, and it
+  // doesn't
   // hurt to do all of them.
   void set_dma(::std::unique_ptr<DMA> dma) {
     dma_synchronizer_.reset(
@@ -280,17 +288,90 @@ class SensorReader {
     dma_synchronizer_->Add(&turret_counter_);
   }
 
+  void RunPWMDetecter() {
+    ::aos::SetCurrentThreadRealtimePriority(41);
+
+    pwm_trigger_->RequestInterrupts();
+    // Rising edge only.
+    pwm_trigger_->SetUpSourceEdge(true, false);
+
+    monotonic_clock::time_point last_posedge_monotonic =
+        monotonic_clock::min_time;
+
+    while (run_) {
+      auto ret = pwm_trigger_->WaitForInterrupt(1.0, true);
+      if (ret == InterruptableSensorBase::WaitResult::kRisingEdge) {
+        // Grab all the clocks.
+        const double pwm_fpga_time = pwm_trigger_->ReadRisingTimestamp();
+
+        aos_compiler_memory_barrier();
+        const double fpga_time_before = GetFPGATime() * 1e-6;
+        aos_compiler_memory_barrier();
+        const monotonic_clock::time_point monotonic_now =
+            monotonic_clock::now();
+        aos_compiler_memory_barrier();
+        const double fpga_time_after = GetFPGATime() * 1e-6;
+        aos_compiler_memory_barrier();
+
+        const double fpga_offset =
+            (fpga_time_after + fpga_time_before) / 2.0 - pwm_fpga_time;
+
+        // Compute when the edge was.
+        const monotonic_clock::time_point monotonic_edge =
+            monotonic_now - chrono::duration_cast<chrono::nanoseconds>(
+                                chrono::duration<double>(fpga_offset));
+
+        LOG(INFO, "Got PWM pulse %f spread, %f offset, %lld trigger\n",
+            fpga_time_after - fpga_time_before, fpga_offset,
+            monotonic_edge.time_since_epoch().count());
+
+        // Compute bounds on the timestep and sampling times.
+        const double fpga_sample_length = fpga_time_after - fpga_time_before;
+        const chrono::nanoseconds elapsed_time =
+            monotonic_edge - last_posedge_monotonic;
+
+        last_posedge_monotonic = monotonic_edge;
+
+        // Verify that the values are sane.
+        if (fpga_sample_length > 2e-5 || fpga_sample_length < 0) {
+          continue;
+        }
+        if (fpga_offset < 0 || fpga_offset > 0.00015) {
+          continue;
+        }
+        if (elapsed_time >
+                chrono::microseconds(5050) + chrono::microseconds(4) ||
+            elapsed_time <
+                chrono::microseconds(5050) - chrono::microseconds(4)) {
+          continue;
+        }
+        // Good edge!
+        {
+          ::std::unique_lock<::aos::stl_mutex> locker(tick_time_mutex_);
+          last_tick_time_monotonic_timepoint_ = last_posedge_monotonic;
+          last_period_ = elapsed_time;
+        }
+      } else {
+        LOG(INFO, "PWM triggered %d\n", ret);
+      }
+    }
+    pwm_trigger_->CancelInterrupts();
+  }
+
   void operator()() {
     ::aos::SetCurrentThreadName("SensorReader");
 
     my_pid_ = getpid();
-    ds_ =
-        &DriverStation::GetInstance();
+    ds_ = &DriverStation::GetInstance();
 
     dma_synchronizer_->Start();
 
-    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                        ::std::chrono::milliseconds(0));
+    ::aos::time::PhasedLoop phased_loop(last_period_,
+                                        ::std::chrono::milliseconds(3));
+    chrono::nanoseconds filtered_period = last_period_;
+
+    ::std::thread pwm_detecter_thread(
+        ::std::bind(&SensorReader::RunPWMDetecter, this));
 
     ::aos::SetCurrentThreadRealtimePriority(40);
     while (run_) {
@@ -301,7 +382,27 @@ class SensorReader {
         }
       }
       RunIteration();
+
+      monotonic_clock::time_point last_tick_timepoint;
+      chrono::nanoseconds period;
+      {
+        ::std::unique_lock<::aos::stl_mutex> locker(tick_time_mutex_);
+        last_tick_timepoint = last_tick_time_monotonic_timepoint_;
+        period = last_period_;
+      }
+
+      if (last_tick_timepoint == monotonic_clock::min_time) {
+        continue;
+      }
+      chrono::nanoseconds new_offset = phased_loop.OffsetFromIntervalAndTime(
+          period, last_tick_timepoint + chrono::microseconds(2050));
+
+      // TODO(austin): If this is the first edge in a while, skip to it (plus
+      // an offset). Otherwise, slowly drift time to line up.
+
+      phased_loop.set_interval_and_offset(period, new_offset);
     }
+    pwm_detecter_thread.join();
   }
 
   void RunIteration() {
@@ -357,7 +458,7 @@ class SensorReader {
       auto auto_mode_message = ::frc971::autonomous::auto_mode.MakeMessage();
       auto_mode_message->mode = 0;
       for (size_t i = 0; i < autonomous_modes_.size(); ++i) {
-        if (autonomous_modes_[i]->Get()) {
+        if (autonomous_modes_[i] && autonomous_modes_[i]->Get()) {
           auto_mode_message->mode |= 1 << i;
         }
       }
@@ -436,6 +537,12 @@ class SensorReader {
   int32_t my_pid_;
   DriverStation *ds_;
 
+  // Mutex to manage access to the period and tick time variables.
+  ::aos::stl_mutex tick_time_mutex_;
+  monotonic_clock::time_point last_tick_time_monotonic_timepoint_ =
+      monotonic_clock::min_time;
+  chrono::nanoseconds last_period_ = chrono::microseconds(5050);
+
   ::std::unique_ptr<::frc971::wpilib::DMASynchronizer> dma_synchronizer_;
 
   DigitalGlitchFilter fast_encoder_filter_, medium_encoder_filter_,
@@ -457,6 +564,8 @@ class SensorReader {
   ::frc971::wpilib::DMAEncoder hood_encoder_;
   ::std::unique_ptr<Encoder> shooter_encoder_;
 
+  ::std::unique_ptr<DigitalInput> pwm_trigger_;
+
   ::std::array<::std::unique_ptr<DigitalInput>, 4> autonomous_modes_;
 
   ::std::atomic<bool> run_{true};
@@ -469,13 +578,11 @@ class SolenoidWriter {
 
   ::frc971::wpilib::BufferedPcm *pcm() { return &pcm_; }
 
-  void set_lights(
-      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+  void set_lights(::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
     lights_ = ::std::move(s);
   }
 
-  void set_rgb_light(
-      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+  void set_rgb_light(::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
     rgb_lights_ = ::std::move(s);
   }
 
@@ -516,21 +623,19 @@ class SolenoidWriter {
 
   ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> lights_, rgb_lights_;
 
-  ::aos::Queue<
-      ::y2017::control_loops::SuperstructureQueue::Output>
+  ::aos::Queue<::y2017::control_loops::SuperstructureQueue::Output>
       superstructure_;
 
   ::std::atomic<bool> run_{true};
 };
 
-
 class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
-  void set_drivetrain_left_victor(::std::unique_ptr<VictorSP> t) {
+  void set_drivetrain_left_victor(::std::unique_ptr<::frc::VictorSP> t) {
     drivetrain_left_victor_ = ::std::move(t);
   }
 
-  void set_drivetrain_right_victor(::std::unique_ptr<VictorSP> t) {
+  void set_drivetrain_right_victor(::std::unique_ptr<::frc::VictorSP> t) {
     drivetrain_right_victor_ = ::std::move(t);
   }
 
@@ -552,35 +657,36 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
     drivetrain_right_victor_->SetDisabled();
   }
 
-  ::std::unique_ptr<VictorSP> drivetrain_left_victor_, drivetrain_right_victor_;
+  ::std::unique_ptr<::frc::VictorSP> drivetrain_left_victor_,
+      drivetrain_right_victor_;
 };
 
 class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
-  void set_intake_victor(::std::unique_ptr<VictorSP> t) {
+  void set_intake_victor(::std::unique_ptr<::frc::VictorSP> t) {
     intake_victor_ = ::std::move(t);
   }
-  void set_intake_rollers_victor(::std::unique_ptr<VictorSP> t) {
+  void set_intake_rollers_victor(::std::unique_ptr<::frc::VictorSP> t) {
     intake_rollers_victor_ = ::std::move(t);
   }
 
-  void set_indexer_victor(::std::unique_ptr<VictorSP> t) {
+  void set_indexer_victor(::std::unique_ptr<::frc::VictorSP> t) {
     indexer_victor_ = ::std::move(t);
   }
-  void set_indexer_roller_victor(::std::unique_ptr<VictorSP> t) {
+  void set_indexer_roller_victor(::std::unique_ptr<::frc::VictorSP> t) {
     indexer_roller_victor_ = ::std::move(t);
   }
 
   void set_gear_servo(::std::unique_ptr<::frc::Servo> t) {
     gear_servo_ = ::std::move(t);
   }
-  void set_shooter_victor(::std::unique_ptr<VictorSP> t) {
+  void set_shooter_victor(::std::unique_ptr<::frc::VictorSP> t) {
     shooter_victor_ = ::std::move(t);
   }
-  void set_turret_victor(::std::unique_ptr<VictorSP> t) {
+  void set_turret_victor(::std::unique_ptr<::frc::VictorSP> t) {
     turret_victor_ = ::std::move(t);
   }
-  void set_hood_victor(::std::unique_ptr<VictorSP> t) {
+  void set_hood_victor(::std::unique_ptr<::frc::VictorSP> t) {
     hood_victor_ = ::std::move(t);
   }
 
@@ -640,9 +746,9 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     blue_light_->Set(true);
   }
 
-  ::std::unique_ptr<VictorSP> intake_victor_, intake_rollers_victor_,
-      indexer_victor_, indexer_roller_victor_, shooter_victor_,
-      turret_victor_, hood_victor_;
+  ::std::unique_ptr<::frc::VictorSP> intake_victor_, intake_rollers_victor_,
+      indexer_victor_, indexer_roller_victor_, shooter_victor_, turret_victor_,
+      hood_victor_;
 
   ::std::unique_ptr<::frc::Servo> gear_servo_;
 
@@ -688,8 +794,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     reader.set_autonomous_mode(0, make_unique<DigitalInput>(9));
     reader.set_autonomous_mode(1, make_unique<DigitalInput>(8));
-    reader.set_autonomous_mode(2, make_unique<DigitalInput>(7));
-    reader.set_autonomous_mode(3, make_unique<DigitalInput>(6));
+
+    reader.set_pwm_trigger(make_unique<DigitalInput>(7));
 
     reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));
@@ -703,26 +809,26 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     DrivetrainWriter drivetrain_writer;
     drivetrain_writer.set_drivetrain_left_victor(
-        ::std::unique_ptr<VictorSP>(new VictorSP(7)));
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(7)));
     drivetrain_writer.set_drivetrain_right_victor(
-        ::std::unique_ptr<VictorSP>(new VictorSP(3)));
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(3)));
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
     SuperstructureWriter superstructure_writer;
     superstructure_writer.set_intake_victor(
-        ::std::unique_ptr<VictorSP>(new VictorSP(1)));
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)));
     superstructure_writer.set_intake_rollers_victor(
-        ::std::unique_ptr<VictorSP>(new VictorSP(4)));
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(4)));
     superstructure_writer.set_indexer_victor(
-        ::std::unique_ptr<VictorSP>(new VictorSP(6)));
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(6)));
     superstructure_writer.set_indexer_roller_victor(
-        ::std::unique_ptr<VictorSP>(new VictorSP(5)));
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(5)));
     superstructure_writer.set_turret_victor(
-        ::std::unique_ptr<VictorSP>(new VictorSP(9)));
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(9)));
     superstructure_writer.set_hood_victor(
-        ::std::unique_ptr<VictorSP>(new VictorSP(2)));
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(2)));
     superstructure_writer.set_shooter_victor(
-        ::std::unique_ptr<VictorSP>(new VictorSP(8)));
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(8)));
 
     superstructure_writer.set_gear_servo(
         ::std::unique_ptr<Servo>(new Servo(0)));
