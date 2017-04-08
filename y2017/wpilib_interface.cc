@@ -13,6 +13,7 @@
 #include "Counter.h"
 #include "Encoder.h"
 #include "VictorSP.h"
+#include "Servo.h"
 #include "Relay.h"
 #include "DriverStation.h"
 #include "AnalogInput.h"
@@ -570,6 +571,9 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     indexer_roller_victor_ = ::std::move(t);
   }
 
+  void set_gear_servo(::std::unique_ptr<::frc::Servo> t) {
+    gear_servo_ = ::std::move(t);
+  }
   void set_shooter_victor(::std::unique_ptr<VictorSP> t) {
     shooter_victor_ = ::std::move(t);
   }
@@ -615,6 +619,8 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     red_light_->Set(queue->red_light_on);
     green_light_->Set(queue->green_light_on);
     blue_light_->Set(queue->blue_light_on);
+
+    gear_servo_->Set(queue->gear_servo);
   }
 
   virtual void Stop() override {
@@ -627,6 +633,8 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     hood_victor_->SetDisabled();
     shooter_victor_->SetDisabled();
 
+    gear_servo_->SetOffline();
+
     red_light_->Set(true);
     green_light_->Set(true);
     blue_light_->Set(true);
@@ -635,6 +643,8 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
   ::std::unique_ptr<VictorSP> intake_victor_, intake_rollers_victor_,
       indexer_victor_, indexer_roller_victor_, shooter_victor_,
       turret_victor_, hood_victor_;
+
+  ::std::unique_ptr<::frc::Servo> gear_servo_;
 
   ::std::unique_ptr<DigitalOutput> red_light_, green_light_, blue_light_;
 };
@@ -713,6 +723,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         ::std::unique_ptr<VictorSP>(new VictorSP(2)));
     superstructure_writer.set_shooter_victor(
         ::std::unique_ptr<VictorSP>(new VictorSP(8)));
+
+    superstructure_writer.set_gear_servo(
+        ::std::unique_ptr<Servo>(new Servo(0)));
 
     superstructure_writer.set_red_light(
         ::std::unique_ptr<DigitalOutput>(new DigitalOutput(5)));

@@ -109,6 +109,9 @@ void Superstructure::RunIteration(
       status->intake.zeroed && status->hood.zeroed && status->turret.zeroed;
 
   if (output && unsafe_goal) {
+    output->gear_servo =
+        ::std::min(1.0, ::std::max(0.0, unsafe_goal->intake.gear_servo));
+
     output->voltage_intake_rollers =
         ::std::max(-kMaxIntakeRollerVoltage,
                    ::std::min(unsafe_goal->intake.voltage_rollers,

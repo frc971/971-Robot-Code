@@ -21,6 +21,9 @@ struct IntakeGoal {
 
   // If true, disable the intake so we can hang.
   bool disable_intake;
+
+  // The gear servo value.
+  double gear_servo;
 };
 
 struct IndexerGoal {
@@ -230,6 +233,8 @@ queue_group SuperstructureQueue {
 
     double voltage_turret;
     double voltage_hood;
+
+    double gear_servo;
 
     // If true, the lights are on.
     bool lights_on;
