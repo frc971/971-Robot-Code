@@ -27,6 +27,28 @@ class PhasedLoop {
     Reset();
   }
 
+  // Updates the offset and interval.
+  void set_interval_and_offset(const monotonic_clock::duration interval,
+                               const monotonic_clock::duration offset) {
+    interval_ = interval;
+    offset_ = offset;
+    CHECK_GE(offset_, monotonic_clock::duration(0));
+    CHECK_GT(interval_, monotonic_clock::duration(0));
+    CHECK_LT(offset_, interval_);
+  }
+
+  // Computes the offset given an interval and a time that we should trigger.
+  static monotonic_clock::duration OffsetFromIntervalAndTime(
+      const monotonic_clock::duration interval,
+      const monotonic_clock::time_point monotonic_trigger) {
+    CHECK_GT(interval, monotonic_clock::duration(0));
+    return monotonic_trigger.time_since_epoch() -
+           (monotonic_trigger.time_since_epoch() / interval) * interval +
+           ((monotonic_trigger.time_since_epoch() >= monotonic_clock::zero())
+                ? monotonic_clock::zero()
+                : interval);
+  }
+
   // Resets the count of skipped iterations.
   // Iterate(monotonic_now) will return 1 and set sleep_time() to something
   // within interval of monotonic_now.
@@ -54,7 +76,7 @@ class PhasedLoop {
   monotonic_clock::time_point sleep_time() const { return last_time_; }
 
  private:
-  const monotonic_clock::duration interval_, offset_;
+  monotonic_clock::duration interval_, offset_;
 
   // The time we most recently slept until.
   monotonic_clock::time_point last_time_ = monotonic_clock::epoch();
