@@ -31,7 +31,6 @@ _excluded_devices = [
   'CANJaguar',
   'PIDController',
   'Spark',
-  'Servo',
   'SD540',
   'RobotDrive',
   'Jaguar',
