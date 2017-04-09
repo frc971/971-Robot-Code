@@ -125,5 +125,6 @@ class FilterHarnessExample : public aos::vision::FilterHarness {
 
 int main(int argc, char **argv) {
   y2017::vision::FilterHarnessExample filter_harness;
-  aos::vision::DebugFrameworkMain(argc, argv, &filter_harness);
+  aos::vision::DebugFrameworkMain(argc, argv, &filter_harness,
+                                  aos::vision::CameraParams());
 }

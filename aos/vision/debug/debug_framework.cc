@@ -12,6 +12,27 @@
 namespace aos {
 namespace vision {
 
+// Detect screen height on smaller monitors.
+int GetScreenHeight() {
+  fprintf(stderr, "gtk version_info: %d.%d.%d\n", gtk_get_major_version(),
+          gtk_get_minor_version(), gtk_get_micro_version());
+
+  GdkScreen *screen = gdk_screen_get_default();
+  GdkRectangle dimensions;
+// Deprecated in newer versions of GTK and missing from older versions.
+#if GTK_CHECK_VERSION(3, 22, 7)
+  GdkDisplay *display = gdk_screen_get_display(screen);
+  GdkMonitor *monitor = gdk_display_get_primary_monitor(display);
+  gdk_monitor_get_geometry(monitor, &dimensions);
+#else
+  dimensions.height = gdk_screen_get_height(screen);
+  dimensions.width = gdk_screen_get_width(screen);
+#endif
+  fprintf(stdout, "Monitor dimensions: %dx%d\n", dimensions.width,
+          dimensions.height);
+  return dimensions.height;
+}
+
 bool DecodeJpeg(aos::vision::DataRef data,
                 aos::vision::BlobStreamViewer *view) {
   auto fmt = aos::vision::GetFmt(data);
@@ -24,37 +45,55 @@ bool DecodeJpeg(aos::vision::DataRef data,
 
 class DebugFramework : public DebugFrameworkInterface {
  public:
-  explicit DebugFramework(FilterHarness *filter) : filter_(filter) {
+  explicit DebugFramework(FilterHarness *filter, CameraParams camera_params)
+      : camera_params_(camera_params), filter_(filter) {
     view_.key_press_event = [this](uint32_t keyval) {
       for (const auto &event : key_press_events()) {
         event(keyval);
       }
     };
     filter->InstallViewer(&view_);
+    auto key_press = filter->RegisterKeyPress();
+    if (key_press) {
+      InstallKeyPress(key_press);
+    }
+    if (GetScreenHeight() < 1024) {
+      view_.SetScale(0.75);
+    }
   }
 
   // This the first stage in the pipeline that takes
-  void NewJpeg(DataRef data) override {
+  bool NewJpeg(DataRef data) override {
     DecodeJpeg(data, &view_);
 
     auto fmt = view_.img().fmt();
-    HandleBlobs(FindBlobs(filter_->Threshold(view_.img())), fmt);
+    return HandleBlobs(FindBlobs(filter_->Threshold(view_.img())), fmt);
   }
 
-  void NewBlobList(BlobList blob_list, ImageFormat fmt) override {
+  bool NewBlobList(BlobList blob_list, ImageFormat fmt) override {
     view_.SetFormatAndClear(fmt);
 
-    HandleBlobs(std::move(blob_list), fmt);
+    return HandleBlobs(std::move(blob_list), fmt);
   }
 
-  void HandleBlobs(BlobList blob_list, ImageFormat fmt) {
-    filter_->HandleBlobs(std::move(blob_list), fmt);
+  bool JustCheckForTarget(BlobList blob_list, ImageFormat fmt) override {
+    return filter_->JustCheckForTarget(std::move(blob_list), fmt);
+  }
+
+  bool HandleBlobs(BlobList blob_list, ImageFormat fmt) {
+    bool result = filter_->HandleBlobs(std::move(blob_list), fmt);
     view_.Redraw();
+    return result;
   }
 
   aos::events::EpollLoop *Loop() override { return &loop_; }
 
+  const CameraParams &camera_params() override { return camera_params_; }
+
+  BlobStreamViewer *viewer() override { return &view_; }
+
  private:
+  CameraParams camera_params_;
   FilterHarness *filter_;
   BlobStreamViewer view_;
 
@@ -93,7 +132,8 @@ below. The colon separates the source specifier and the source config
 parameter. A single command line argument help will print this message.
 )";
 
-void DebugFrameworkMain(int argc, char **argv, FilterHarness *filter) {
+void DebugFrameworkMain(int argc, char **argv, FilterHarness *filter,
+                        CameraParams camera_params) {
   ::aos::logging::Init();
   ::aos::logging::AddImplementation(
       new ::aos::logging::StreamLogImplementation(stdout));
@@ -116,7 +156,7 @@ void DebugFrameworkMain(int argc, char **argv, FilterHarness *filter) {
     exit(-1);
   }
 
-  DebugFramework replay(filter);
+  DebugFramework replay(filter, camera_params);
 
   std::unique_ptr<ImageSource> image_source = MakeImageSource(argv[1], &replay);
 

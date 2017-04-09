@@ -128,10 +128,10 @@ class PixelLinesOverlay : public OverlayBase {
   void DrawCross(aos::vision::Vector<2> center, int width,
                  aos::vision::PixelRef color) {
     using namespace aos::vision;
-    AddLine(Vector<2>(center.x() - width, center.y()),
-            Vector<2>(center.x() + width, center.y()), color);
-    AddLine(Vector<2>(center.x(), center.y() - width),
-            Vector<2>(center.x(), center.y() + width), color);
+    AddLine(Vector<2>(center.x() - width / 2, center.y()),
+            Vector<2>(center.x() + width / 2, center.y()), color);
+    AddLine(Vector<2>(center.x(), center.y() - width / 2),
+            Vector<2>(center.x(), center.y() + width / 2), color);
   }
 
   void DrawBBox(const ImageBBox &box, aos::vision::PixelRef color) {
@@ -144,6 +144,12 @@ class PixelLinesOverlay : public OverlayBase {
             color);
     AddLine(Vector<2>(box.minx, box.maxy), Vector<2>(box.minx, box.miny),
             color);
+  }
+
+  // Build a circle as a point and radius.
+  void DrawCircle(Vector<2> center, double radius, PixelRef newColor) {
+    circles_.emplace_back(std::pair<Vector<2>, std::pair<double, PixelRef>>(
+        center, std::pair<double, PixelRef>(radius, newColor)));
   }
 
   void StartNewProfile() { start_profile = true; }
@@ -171,14 +177,25 @@ class PixelLinesOverlay : public OverlayBase {
       render->LineTo(ln.first.B().x(), ln.first.B().y());
       render->Stroke();
     }
+    for (const auto &circle : circles_) {
+      PixelRef localColor = circle.second.second;
+      render->SetSourceRGB(localColor.r / 255.0, localColor.g / 255.0,
+                           localColor.b / 255.0);
+      render->Circle(circle.first.x(), circle.first.y(), circle.second.first);
+      render->Stroke();
+    }
   }
 
   // Empting the list will blank the whole overlay.
-  void Reset() override { lines_.clear(); }
+  void Reset() override {
+    lines_.clear();
+    circles_.clear();
+  }
 
  private:
   // Lines in this overlay.
   std::vector<std::pair<Segment<2>, PixelRef>> lines_;
+  std::vector<std::pair<Vector<2>, std::pair<double, PixelRef>>> circles_;
   bool start_profile = false;
 };
 
