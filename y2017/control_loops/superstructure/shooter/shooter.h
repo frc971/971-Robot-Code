@@ -33,7 +33,8 @@ class ShooterController {
   double voltage() const;
 
   // Returns the instantaneous velocity.
-  double velocity() const { return loop_->X_hat(1, 0); }
+  double velocity() const { return loop_->X_hat(2, 0); }
+  double voltage_error() const { return loop_->X_hat(3, 0); }
 
   double dt_velocity() const { return dt_velocity_; }
 
@@ -50,7 +51,7 @@ class ShooterController {
   Eigen::Matrix<double, 1, 1> Y_;
   // The control loop.
   ::std::unique_ptr<StateFeedbackLoop<
-      3, 1, 1, StateFeedbackHybridPlant<3, 1, 1>, HybridKalman<3, 1, 1>>>
+      4, 1, 1, StateFeedbackHybridPlant<4, 1, 1>, HybridKalman<4, 1, 1>>>
       loop_;
 
   // History array for calculating a filtered angular velocity.
@@ -67,7 +68,7 @@ class ShooterController {
   double min_velocity_ = 0.0;
   double position_error_ = 0.0;
 
-  Eigen::Matrix<double, 3, 1> X_hat_current_;
+  Eigen::Matrix<double, 4, 1> X_hat_current_;
 
   bool ready_ = false;
   bool needs_reset_ = false;

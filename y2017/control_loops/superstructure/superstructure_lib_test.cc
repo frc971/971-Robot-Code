@@ -29,10 +29,10 @@ constexpr double kNoiseScalar = 0.01;
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
 
-class ShooterPlant : public StateFeedbackPlant<2, 1, 1> {
+class ShooterPlant : public StateFeedbackPlant<3, 1, 1> {
  public:
-  explicit ShooterPlant(StateFeedbackPlant<2, 1, 1> &&other)
-      : StateFeedbackPlant<2, 1, 1>(::std::move(other)) {}
+  explicit ShooterPlant(StateFeedbackPlant<3, 1, 1> &&other)
+      : StateFeedbackPlant<3, 1, 1>(::std::move(other)) {}
 
   void CheckU(const Eigen::Matrix<double, 1, 1> &U) override {
     EXPECT_LE(U(0, 0), U_max(0, 0) + 0.00001 + voltage_offset_);
@@ -224,7 +224,7 @@ class SuperstructureSimulation {
   double intake_position() const { return intake_plant_->X(0, 0); }
   double intake_velocity() const { return intake_plant_->X(1, 0); }
 
-  double shooter_velocity() const { return shooter_plant_->X(1, 0); }
+  double shooter_velocity() const { return shooter_plant_->X(2, 0); }
 
   double indexer_velocity() const { return column_plant_->X(1, 0); }
 

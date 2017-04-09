@@ -61,12 +61,15 @@ class VelocityShooter(control_loop.HybridControlLoop):
     self.C = numpy.matrix([[1]])
     self.D = numpy.matrix([[0]])
 
+    # The states are [unfiltered_velocity]
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
     self.PlaceControllerPoles([.75])
 
     glog.debug('K %s', repr(self.K))
+    glog.debug('System poles are %s',
+               repr(numpy.linalg.eig(self.A_continuous)[0]))
     glog.debug('Poles are %s',
                repr(numpy.linalg.eig(self.A - self.B * self.K)[0]))
 
@@ -81,40 +84,85 @@ class VelocityShooter(control_loop.HybridControlLoop):
     self.Kff = controls.TwoStateFeedForwards(self.B, self.Qff)
     self.InitializeState()
 
+class SecondOrderVelocityShooter(VelocityShooter):
+  def __init__(self, name='SecondOrderVelocityShooter'):
+    super(SecondOrderVelocityShooter, self).__init__(name)
 
-class Shooter(VelocityShooter):
+    self.A_continuous_unaugmented = self.A_continuous
+    self.B_continuous_unaugmented = self.B_continuous
+
+    self.A_continuous = numpy.matrix(numpy.zeros((2, 2)))
+    self.A_continuous[0:1, 0:1] = self.A_continuous_unaugmented
+    self.A_continuous[1, 0] = 105.0
+    self.A_continuous[1, 1] = -105.0
+
+    self.B_continuous = numpy.matrix(numpy.zeros((2, 1)))
+    self.B_continuous[0:1, 0] = self.B_continuous_unaugmented
+
+    self.C = numpy.matrix([[0, 1]])
+    self.D = numpy.matrix([[0]])
+
+    self.A, self.B = self.ContinuousToDiscrete(
+        self.A_continuous, self.B_continuous, self.dt)
+
+    self.PlaceControllerPoles([.75, 0.75])
+
+    glog.debug('K %s', repr(self.K))
+    glog.debug('System poles are %s',
+               repr(numpy.linalg.eig(self.A_continuous)[0]))
+    glog.debug('Poles are %s',
+               repr(numpy.linalg.eig(self.A - self.B * self.K)[0]))
+
+    self.PlaceObserverPoles([0.3, 0.3])
+
+    self.U_max = numpy.matrix([[12.0]])
+    self.U_min = numpy.matrix([[-12.0]])
+
+    qff_vel = 8.0
+    self.Qff = numpy.matrix([[1.0 / (qff_vel ** 2.0), 0.0],
+                             [0.0, 1.0 / (qff_vel ** 2.0)]])
+
+    self.Kff = controls.TwoStateFeedForwards(self.B, self.Qff)
+    self.InitializeState()
+
+
+class Shooter(SecondOrderVelocityShooter):
   def __init__(self, name='Shooter'):
     super(Shooter, self).__init__(name)
 
     self.A_continuous_unaugmented = self.A_continuous
     self.B_continuous_unaugmented = self.B_continuous
 
-    self.A_continuous = numpy.matrix(numpy.zeros((2, 2)))
-    self.A_continuous[1:2, 1:2] = self.A_continuous_unaugmented
-    self.A_continuous[0, 1] = 1
+    self.A_continuous = numpy.matrix(numpy.zeros((3, 3)))
+    self.A_continuous[1:3, 1:3] = self.A_continuous_unaugmented
+    self.A_continuous[0, 2] = 1
 
-    self.B_continuous = numpy.matrix(numpy.zeros((2, 1)))
-    self.B_continuous[1:2, 0] = self.B_continuous_unaugmented
+    self.B_continuous = numpy.matrix(numpy.zeros((3, 1)))
+    self.B_continuous[1:3, 0] = self.B_continuous_unaugmented
 
     # State feedback matrices
-    # [position, angular velocity]
-    self.C = numpy.matrix([[1, 0]])
+    # [position, unfiltered_velocity, angular velocity]
+    self.C = numpy.matrix([[1, 0, 0]])
     self.D = numpy.matrix([[0]])
 
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
+    glog.debug(repr(self.A_continuous))
+    glog.debug(repr(self.B_continuous))
 
-    self.rpl = .45
-    self.ipl = 0.07
-    self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
-                             self.rpl - 1j * self.ipl])
+    observeability = controls.ctrb(self.A.T, self.C.T)
+    glog.debug('Rank of augmented observability matrix. %d', numpy.linalg.matrix_rank(
+            observeability))
+
+
+    self.PlaceObserverPoles([0.9, 0.8, 0.7])
 
     self.K_unaugmented = self.K
-    self.K = numpy.matrix(numpy.zeros((1, 2)))
-    self.K[0, 1:2] = self.K_unaugmented
+    self.K = numpy.matrix(numpy.zeros((1, 3)))
+    self.K[0, 1:3] = self.K_unaugmented
     self.Kff_unaugmented = self.Kff
-    self.Kff = numpy.matrix(numpy.zeros((1, 2)))
-    self.Kff[0, 1:2] = self.Kff_unaugmented
+    self.Kff = numpy.matrix(numpy.zeros((1, 3)))
+    self.Kff[0, 1:3] = self.Kff_unaugmented
 
     self.InitializeState()
 
@@ -126,17 +174,18 @@ class IntegralShooter(Shooter):
     self.A_continuous_unaugmented = self.A_continuous
     self.B_continuous_unaugmented = self.B_continuous
 
-    self.A_continuous = numpy.matrix(numpy.zeros((3, 3)))
-    self.A_continuous[0:2, 0:2] = self.A_continuous_unaugmented
-    self.A_continuous[0:2, 2] = self.B_continuous_unaugmented
+    self.A_continuous = numpy.matrix(numpy.zeros((4, 4)))
+    self.A_continuous[0:3, 0:3] = self.A_continuous_unaugmented
+    self.A_continuous[0:3, 3] = self.B_continuous_unaugmented
 
-    self.B_continuous = numpy.matrix(numpy.zeros((3, 1)))
-    self.B_continuous[0:2, 0] = self.B_continuous_unaugmented
+    self.B_continuous = numpy.matrix(numpy.zeros((4, 1)))
+    self.B_continuous[0:3, 0] = self.B_continuous_unaugmented
 
     self.C_unaugmented = self.C
-    self.C = numpy.matrix(numpy.zeros((1, 3)))
-    self.C[0:1, 0:2] = self.C_unaugmented
+    self.C = numpy.matrix(numpy.zeros((1, 4)))
+    self.C[0:1, 0:3] = self.C_unaugmented
 
+    # The states are [position, unfiltered_velocity, velocity, torque_error]
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
@@ -148,9 +197,10 @@ class IntegralShooter(Shooter):
     q_pos = 0.01
     q_vel = 2.0
     q_voltage = 0.3
-    self.Q_continuous = numpy.matrix([[(q_pos ** 2.0), 0.0, 0.0],
-                                      [0.0, (q_vel ** 2.0), 0.0],
-                                      [0.0, 0.0, (q_voltage ** 2.0)]])
+    self.Q_continuous = numpy.matrix([[(q_pos ** 2.0), 0.0, 0.0, 0.0],
+                                      [0.0, (q_vel ** 2.0), 0.0, 0.0],
+                                      [0.0, 0.0, (q_vel ** 2.0), 0.0],
+                                      [0.0, 0.0, 0.0, (q_voltage ** 2.0)]])
 
     r_pos = 0.0003
     self.R_continuous = numpy.matrix([[(r_pos ** 2.0)]])
@@ -165,12 +215,12 @@ class IntegralShooter(Shooter):
     self.L = self.A * self.KalmanGain
 
     self.K_unaugmented = self.K
-    self.K = numpy.matrix(numpy.zeros((1, 3)))
-    self.K[0, 0:2] = self.K_unaugmented
-    self.K[0, 2] = 1
+    self.K = numpy.matrix(numpy.zeros((1, 4)))
+    self.K[0, 0:3] = self.K_unaugmented
+    self.K[0, 3] = 1
     self.Kff_unaugmented = self.Kff
-    self.Kff = numpy.matrix(numpy.zeros((1, 3)))
-    self.Kff[0, 0:2] = self.Kff_unaugmented
+    self.Kff = numpy.matrix(numpy.zeros((1, 4)))
+    self.Kff[0, 0:3] = self.Kff_unaugmented
 
     self.InitializeState()
 
@@ -216,7 +266,7 @@ class ScenarioPlotter(object):
 
       if observer_shooter is not None:
         X_hat = observer_shooter.X_hat
-        self.x_hat.append(observer_shooter.X_hat[1, 0])
+        self.x_hat.append(observer_shooter.X_hat[2, 0])
 
       ff_U = controller_shooter.Kff * (goal - observer_shooter.A * goal)
 
@@ -224,21 +274,21 @@ class ScenarioPlotter(object):
       U[0, 0] = numpy.clip(U[0, 0], -vbat, vbat)
       self.x.append(shooter.X[0, 0])
 
-      self.diff.append(shooter.X[1, 0] - observer_shooter.X_hat[1, 0])
+      self.diff.append(shooter.X[2, 0] - observer_shooter.X_hat[2, 0])
 
       if self.v:
         last_v = self.v[-1]
       else:
         last_v = 0
 
-      self.v.append(shooter.X[1, 0])
+      self.v.append(shooter.X[2, 0])
       self.a.append((self.v[-1] - last_v) / shooter.dt)
 
       if observer_shooter is not None:
         if i != 0:
           observer_shooter.Y = shooter.Y
           observer_shooter.CorrectObserver(U)
-        self.offset.append(observer_shooter.X_hat[2, 0])
+        self.offset.append(observer_shooter.X_hat[3, 0])
 
       applied_U = U.copy()
       if i > 30:
@@ -283,8 +333,8 @@ def main(argv):
     observer_shooter = IntegralShooter()
     iterations = 200
 
-    initial_X = numpy.matrix([[0.0], [0.0]])
-    R = numpy.matrix([[0.0], [100.0], [0.0]])
+    initial_X = numpy.matrix([[0.0], [0.0], [0.0]])
+    R = numpy.matrix([[0.0], [100.0], [100.0], [0.0]])
     scenario_plotter.run_test(shooter, goal=R, controller_shooter=shooter_controller,
                               observer_shooter=observer_shooter, iterations=iterations)
 
