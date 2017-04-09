@@ -3,6 +3,7 @@
 
 #include "frc971/control_loops/profiled_subsystem.h"
 #include "y2017/control_loops/superstructure/superstructure.q.h"
+#include "y2017/constants.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -32,7 +33,17 @@ class Hood {
 
   // The zeroing and operating voltages.
   static constexpr double kZeroingVoltage = 2.0;
-  static constexpr double kOperatingVoltage = 4.0;
+  static constexpr double kOperatingVoltage = 12.0;
+
+  // Constants needed when determining if the hood is in danger of breaking its
+  // own gears at the normal operating voltage.
+  static constexpr double kErrorOnPositionTillNotMoving =
+      2.5 * (::y2017::constants::Values::kHoodEncoderIndexDifference /
+             ::y2017::constants::Values::kHoodEncoderCountsPerRevolution);
+
+  static constexpr ::aos::monotonic_clock::duration kTimeTillNotMoving =
+      ::std::chrono::milliseconds(15);
+  static constexpr double kNotMovingVoltage = 2.0;
 
   void Iterate(const control_loops::HoodGoal *unsafe_goal,
                const ::frc971::IndexPosition *position, double *output,
@@ -54,6 +65,9 @@ class Hood {
   State state_;
 
   IndexPulseProfiledSubsystem profiled_subsystem_;
+  double last_position_ = 0;
+  ::aos::monotonic_clock::time_point last_move_time_ =
+      ::aos::monotonic_clock::min_time;
 };
 
 }  // namespace hood
