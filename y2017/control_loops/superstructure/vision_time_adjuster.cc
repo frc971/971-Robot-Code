@@ -5,7 +5,6 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2017/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2017/control_loops/superstructure/superstructure.q.h"
-#include "y2017/vision/vision.q.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -110,7 +109,8 @@ bool ComputeAngle(const ::aos::RingBuffer<Data, buffer_size> &data,
 VisionTimeAdjuster::VisionTimeAdjuster() {}
 
 void VisionTimeAdjuster::Tick(monotonic_clock::time_point monotonic_now,
-                              double turret_position) {
+                              double turret_position,
+                              const vision::VisionStatus *vision_status) {
   // We have new column data, store it.
   column_data_.Push({.time = monotonic_now, .turret = turret_position});
 
@@ -126,10 +126,9 @@ void VisionTimeAdjuster::Tick(monotonic_clock::time_point monotonic_now,
 
   // If we have new vision data, compute the newest absolute angle at which the
   // target is.
-  if (vision::vision_status.FetchLatest() &&
-      vision::vision_status->image_valid) {
+  if (vision_status != nullptr && vision_status->image_valid) {
     monotonic_clock::time_point last_target_time(
-        monotonic_clock::duration(vision::vision_status->target_time));
+        monotonic_clock::duration(vision_status->target_time));
 
     double column_angle = 0;
     double drivetrain_angle = 0;
@@ -143,12 +142,11 @@ void VisionTimeAdjuster::Tick(monotonic_clock::time_point monotonic_now,
     if (column_angle_is_valid && drivetrain_angle_is_valid) {
       LOG(INFO, "Accepting Vision angle of %f, age %f\n",
           most_recent_vision_angle_,
-          chrono::duration_cast<chrono::duration<double>>(monotonic_now -
-                                                          last_target_time)
-              .count());
-      most_recent_vision_reading_ = vision::vision_status->angle;
+          chrono::duration_cast<chrono::duration<double>>(
+              monotonic_now - last_target_time).count());
+      most_recent_vision_reading_ = vision_status->angle;
       most_recent_vision_angle_ =
-          vision::vision_status->angle + column_angle + drivetrain_angle;
+          vision_status->angle + column_angle + drivetrain_angle;
       most_recent_vision_time_ = monotonic_now;
     }
   }

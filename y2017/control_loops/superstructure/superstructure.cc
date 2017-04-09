@@ -7,6 +7,7 @@
 #include "y2017/control_loops/superstructure/hood/hood.h"
 #include "y2017/control_loops/superstructure/intake/intake.h"
 #include "y2017/control_loops/superstructure/shooter/shooter.h"
+#include "y2017/vision/vision.q.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -34,6 +35,11 @@ void Superstructure::RunIteration(
     intake_.Reset();
     shooter_.Reset();
     column_.Reset();
+  }
+
+  const vision::VisionStatus *vision_status = nullptr;
+  if (vision::vision_status.FetchLatest()) {
+    vision_status = vision::vision_status.get();
   }
 
   hood_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->hood) : nullptr,
@@ -91,7 +97,7 @@ void Superstructure::RunIteration(
 
   column_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->indexer) : nullptr,
                   unsafe_goal != nullptr ? &(unsafe_goal->turret) : nullptr,
-                  &(position->column),
+                  &(position->column), vision_status,
                   output != nullptr ? &(output->voltage_indexer) : nullptr,
                   output != nullptr ? &(output->voltage_turret) : nullptr,
                   &(status->indexer), &(status->turret), &intake_);

@@ -12,6 +12,8 @@ namespace chrono = ::std::chrono;
 
 constexpr double Hood::kZeroingVoltage;
 constexpr double Hood::kOperatingVoltage;
+constexpr ::aos::monotonic_clock::duration Hood::kTimeTillNotMoving;
+
 // The tracking error to allow before declaring that we are stuck and reversing
 // direction while zeroing.
 constexpr double kStuckZeroingTrackingError = 0.02;

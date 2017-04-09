@@ -5,6 +5,7 @@
 
 #include "aos/common/ring_buffer.h"
 #include "aos/common/time.h"
+#include "y2017/vision/vision.q.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -17,7 +18,7 @@ class VisionTimeAdjuster {
   // This needs to be called at the same interval as the control loops so that
   // it can attempt to make accurate goal recommendations.
   void Tick(::aos::monotonic_clock::time_point monotonic_now,
-            double turret_position);
+            double turret_position, const vision::VisionStatus *vision_status);
 
   // Returns true if we have enough data to recommend a goal for the turret.
   bool valid() const { return valid_; }

@@ -56,7 +56,11 @@ class VisionTimeAdjusterTest : public ::testing::Test {
 
   void RunIteration() {
     SendMessages();
-    adjuster_.Tick(::aos::monotonic_clock::now(), turret_angle_);
+    const vision::VisionStatus *vision_status = nullptr;
+    if (vision::vision_status.FetchLatest()) {
+      vision_status = vision::vision_status.get();
+    }
+    adjuster_.Tick(::aos::monotonic_clock::now(), turret_angle_, vision_status);
     TickTime();
   }
 

@@ -389,15 +389,17 @@ void Column::Reset() {
 
 void Column::Iterate(const control_loops::IndexerGoal *unsafe_indexer_goal,
                      const control_loops::TurretGoal *unsafe_turret_goal,
-                     const ColumnPosition *position, double *indexer_output,
-                     double *turret_output, IndexerStatus *indexer_status,
+                     const ColumnPosition *position,
+                     const vision::VisionStatus *vision_status,
+                     double *indexer_output, double *turret_output,
+                     IndexerStatus *indexer_status,
                      TurretProfiledSubsystemStatus *turret_status,
                      intake::Intake *intake) {
   bool disable = turret_output == nullptr || indexer_output == nullptr;
   profiled_subsystem_.Correct(*position);
 
   vision_time_adjuster_.Tick(::aos::monotonic_clock::now(),
-                             profiled_subsystem_.X_hat(2, 0));
+                             profiled_subsystem_.X_hat(2, 0), vision_status);
 
   switch (state_) {
     case State::UNINITIALIZED:

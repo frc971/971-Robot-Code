@@ -16,6 +16,7 @@
 #include "y2017/control_loops/superstructure/intake/intake.h"
 #include "y2017/control_loops/superstructure/superstructure.q.h"
 #include "y2017/control_loops/superstructure/vision_time_adjuster.h"
+#include "y2017/vision/vision.q.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -181,8 +182,10 @@ class Column {
 
   void Iterate(const control_loops::IndexerGoal *unsafe_indexer_goal,
                const control_loops::TurretGoal *unsafe_turret_goal,
-               const ColumnPosition *position, double *indexer_output,
-               double *turret_output, IndexerStatus *indexer_status,
+               const ColumnPosition *position,
+               const vision::VisionStatus *vision_status,
+               double *indexer_output, double *turret_output,
+               IndexerStatus *indexer_status,
                TurretProfiledSubsystemStatus *turret_status,
                intake::Intake *intake);
 
