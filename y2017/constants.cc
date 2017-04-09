@@ -64,6 +64,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   Values::Intake *const intake = &r->intake;
   Values::Hood *const hood = &r->hood;
   Values::Column *const column = &r->column;
+  auto shot_interpolation_table = &r->shot_interpolation_table;
 
   r->drivetrain_max_speed = 5;
 
@@ -84,6 +85,15 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   hood->zeroing.index_pulse_count = 2;
   hood->zeroing.index_difference = Values::kHoodEncoderIndexDifference;
   hood->zeroing.known_index_pulse = 0;
+
+  // TODO(phil): Should these be different per robot?
+  *shot_interpolation_table =
+      ::frc971::shooter_interpolation::InterpolationTable(
+          {// { distance_to_target, { shot_angle, shot_power }},
+           {100.1, {20.0 * M_PI / 180.0, 335.0}},
+           {150.2, {35.0 * M_PI / 180.0, 384.0}},
+           {200.3, {40.0 * M_PI / 180.0, 417.0}},
+          });
 
   switch (team) {
     // A set of constants for tests.

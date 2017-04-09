@@ -21,9 +21,9 @@ ShotParams Blend(double coefficient, ShotParams a1, ShotParams a2) {
 }  // namespace
 
 InterpolationTable::InterpolationTable(
-    ::std::vector<::std::pair<double, ShotParams>> interpolation_table) {
-  interpolation_table_ = ::std::move(interpolation_table);
-  ::std::sort(interpolation_table_.begin(), interpolation_table_.end(),
+    const ::std::vector<::std::pair<double, ShotParams>> &table)
+    : table_(table) {
+  ::std::sort(table_.begin(), table_.end(),
               [](const ::std::pair<double, ShotParams> &a,
                  const ::std::pair<double, ShotParams> &b) {
     return a.first < b.first;
@@ -33,14 +33,13 @@ InterpolationTable::InterpolationTable(
 ShotParams InterpolationTable::GetShooterData(double distance) {
   // Points to to the smallest item such that it->first >= dist, or end() if no
   // such item exists.
-  auto it =
-      std::lower_bound(interpolation_table_.begin(), interpolation_table_.end(),
-                       distance, [](const ::std::pair<double, ShotParams> &a,
-                                    double dist) { return a.first < dist; });
-  if (it == interpolation_table_.begin()) {
+  auto it = ::std::lower_bound(table_.begin(), table_.end(), distance,
+                               [](const ::std::pair<double, ShotParams> &a,
+                                  double dist) { return a.first < dist; });
+  if (it == table_.begin()) {
     return it->second;
-  } else if (it == interpolation_table_.end()) {
-    return interpolation_table_.back().second;
+  } else if (it == table_.end()) {
+    return table_.back().second;
   } else {
     auto x_a2 = it;
     auto x_a1 = it - 1;

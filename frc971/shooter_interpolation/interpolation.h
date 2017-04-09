@@ -15,8 +15,9 @@ struct ShotParams {
 
 class InterpolationTable {
  public:
+  InterpolationTable() = default;
   InterpolationTable(
-      ::std::vector<::std::pair<double, ShotParams>> interpolation_table);
+      const ::std::vector<::std::pair<double, ShotParams>> &table);
 
   // Uses the interpolation table to calculate the optimal shooter angle and
   // power for a shot
@@ -24,7 +25,7 @@ class InterpolationTable {
 
  private:
   // Contains the list of angle entries in the interpolation table
-  ::std::vector<::std::pair<double, ShotParams>> interpolation_table_;
+  ::std::vector<::std::pair<double, ShotParams>> table_;
 };
 
 }  // namespace shooter_interpolation

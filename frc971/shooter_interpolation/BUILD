@@ -6,6 +6,7 @@ cc_library(
   srcs = [
     'interpolation.cc',
   ],
+  visibility = ['//visibility:public'],
 )
 
 cc_test(

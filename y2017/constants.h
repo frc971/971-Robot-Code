@@ -5,6 +5,7 @@
 #include <math.h>
 
 #include "frc971/constants.h"
+#include "frc971/shooter_interpolation/interpolation.h"
 
 #include "y2017/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2017/control_loops/superstructure/column/column_plant.h"
@@ -125,6 +126,8 @@ struct Values {
   const char *vision_name;
 
   double vision_error;
+
+  ::frc971::shooter_interpolation::InterpolationTable shot_interpolation_table;
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and

@@ -15,6 +15,7 @@ cc_library(
     '//aos/common:mutex',
     '//aos/common:once',
     '//frc971:constants',
+    '//frc971/shooter_interpolation:interpolation',
     '//y2017/control_loops/drivetrain:polydrivetrain_plants',
     '//y2017/control_loops/superstructure/column:column_plants',
     '//y2017/control_loops/superstructure/hood:hood_plants',
