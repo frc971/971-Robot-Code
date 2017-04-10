@@ -240,12 +240,16 @@ class Reader : public ::aos::input::JoystickInput {
       return;
     }
 
-    if (data.IsPressed(kIntakeDown)) {
-      intake_goal_ = 0.235;
-    }
     if (data.IsPressed(kIntakeUp)) {
       intake_goal_ = 0.0;
       turret_goal_ = 0.0;
+    }
+    if (data.IsPressed(kIntakeDown)) {
+      intake_goal_ = 0.235;
+      // Don't go quite so far out since we have a gear mech out now.
+      if (data.IsPressed(kIntakeUp)) {
+        intake_goal_ = 0.160;
+      }
     }
 
 
@@ -256,6 +260,9 @@ class Reader : public ::aos::input::JoystickInput {
       vision_track = true;
     }
     if (data.PosEdge(kMiddleShot)) {
+      turret_goal_ = -M_PI;
+    }
+    if (data.PosEdge(kCloseShot)) {
       turret_goal_ = -M_PI;
     }
     if (data.PosEdge(kFarShot)) {
@@ -275,16 +282,16 @@ class Reader : public ::aos::input::JoystickInput {
         data.IsPressed(kFire)) {
       switch (last_shot_distance_) {
         case ShotDistance::CLOSE_SHOT:
-          hood_goal_ = 0.285;
-          shooter_velocity_ = 335.0;
+          hood_goal_ = 0.30;
+          shooter_velocity_ = 322.0;
           break;
         case ShotDistance::MIDDLE_SHOT:
-          hood_goal_ = 0.63;
-          shooter_velocity_ = 384.0;
+          hood_goal_ = 0.43 - 0.00;
+          shooter_velocity_ = 361.0;
           break;
         case ShotDistance::FAR_SHOT:
-          hood_goal_ = 0.63;
-          shooter_velocity_ = 378.0;
+          hood_goal_ = 0.43 - 0.01;
+          shooter_velocity_ = 365.0;
           break;
       }
     } else {
