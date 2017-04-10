@@ -135,16 +135,17 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       break;
 
     case kPracticeTeamNumber:
-      intake->pot_offset = 0.2921 + 0.00039 + 0.012236 - 0.023602 + 0.010722;
-      intake->zeroing.measured_absolute_position = 0.044490;
+      intake->pot_offset = 0.2921 + 0.00039 + 0.012236 - 0.023602 + 0.010722 +
+                           0.012880 - 0.01743;
+      intake->zeroing.measured_absolute_position = 0.043179;
 
-      column->indexer_zeroing.lower_hall_position = 5.014364;
-      column->indexer_zeroing.upper_hall_position = 5.292234;
+      column->indexer_zeroing.lower_hall_position = 2.594181;
+      column->indexer_zeroing.upper_hall_position = 2.886952;
 
-      column->turret_zeroing.lower_hall_position = -4.838110;
-      column->turret_zeroing.upper_hall_position = -4.655730;
+      column->turret_zeroing.lower_hall_position = -4.918530;
+      column->turret_zeroing.upper_hall_position = -4.720353;
 
-      hood->zeroing.measured_index_position = 0.655432 - 0.460505;
+      hood->zeroing.measured_index_position = 0.124275;
 
       r->down_error = 0;
       r->vision_name = "practice";
