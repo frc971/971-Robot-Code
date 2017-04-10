@@ -28,11 +28,43 @@ namespace y2017 {
 namespace input {
 namespace joysticks {
 
+// Keep the other versions around so we can switch quickly.
+//#define STEERINGWHEEL
+#define PISTOL
+//#define XBOX
+
+#ifdef STEERINGWHEEL
 const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
 const ButtonLocation kQuickTurn(1, 5);
-
 const ButtonLocation kTurn1(1, 7);
 const ButtonLocation kTurn2(1, 11);
+
+#endif
+
+#ifdef PISTOL
+// Pistol Grip controller
+const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(1, 2);
+//const ButtonLocation kQuickTurn(1, 7);
+const ButtonLocation kQuickTurn(1, 8);
+
+// Nop
+//const ButtonLocation kTurn1(1, 8);
+const ButtonLocation kTurn2(1, 9);
+
+const ButtonLocation kTurn1(1, 7);
+#endif
+
+#ifdef XBOX
+// xbox
+const JoystickAxis kSteeringWheel(1, 5), kDriveThrottle(1, 2);
+const ButtonLocation kQuickTurn(1, 5);
+
+// Nop
+const ButtonLocation kTurn1(1, 1);
+const ButtonLocation kTurn2(1, 2);
+
+#endif
+
 
 const ButtonLocation kGearSlotBack(2, 11);
 
@@ -85,11 +117,67 @@ class Reader : public ::aos::input::JoystickInput {
   }
   int intake_accumulator_ = 0;
 
+  double Deadband(double value, const double deadband) {
+    if (::std::abs(value) < deadband) {
+      value = 0.0;
+    } else if (value > 0.0) {
+      value = (value - deadband) / (1.0 - deadband);
+    } else {
+      value = (value + deadband) / (1.0 - deadband);
+    }
+    return value;
+  }
+
   void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
     bool is_control_loop_driving = false;
 
+#ifdef STEERINGWHEEL
     const double wheel = -data.GetAxis(kSteeringWheel);
     const double throttle = -data.GetAxis(kDriveThrottle);
+#endif
+
+#ifdef XBOX
+    // xbox
+    constexpr double kWheelDeadband = 0.05;
+    constexpr double kThrottleDeadband = 0.05;
+    const double wheel =
+        Deadband(-data.GetAxis(kSteeringWheel), kWheelDeadband);
+
+    const double unmodified_throttle =
+        Deadband(-data.GetAxis(kDriveThrottle), kThrottleDeadband);
+
+    // Apply a sin function that's scaled to make it feel better.
+    constexpr double throttle_range = M_PI_2 * 0.9;
+
+    double throttle = ::std::sin(throttle_range * unmodified_throttle) /
+                      ::std::sin(throttle_range);
+    throttle =
+        ::std::sin(throttle_range * throttle) / ::std::sin(throttle_range);
+    throttle = 2.0 * unmodified_throttle - throttle;
+#endif
+
+#ifdef PISTOL
+    const double wheel = data.GetAxis(kSteeringWheel) / 0.488;
+
+    const double unscaled_throttle = -data.GetAxis(kDriveThrottle);
+    double unmodified_throttle;
+    if (unscaled_throttle < 0.0) {
+      unmodified_throttle = unscaled_throttle / 0.228;
+    } else {
+      unmodified_throttle = unscaled_throttle / 0.484;
+    }
+    unmodified_throttle = Deadband(unmodified_throttle, 0.1);
+
+    // Apply a sin function that's scaled to make it feel better.
+    constexpr double throttle_range = M_PI_2 * 0.5;
+
+    double throttle = ::std::sin(throttle_range * unmodified_throttle) /
+                      ::std::sin(throttle_range);
+    throttle =
+        ::std::sin(throttle_range * throttle) / ::std::sin(throttle_range);
+    throttle = 2.0 * unmodified_throttle - throttle;
+#endif
+
     drivetrain_queue.status.FetchLatest();
     if (drivetrain_queue.status.get()) {
       robot_velocity_ = drivetrain_queue.status->robot_speed;
@@ -102,8 +190,13 @@ class Reader : public ::aos::input::JoystickInput {
         right_goal_ = drivetrain_queue.status->estimated_right_position;
       }
     }
+#ifdef PISTOL
+    double current_left_goal = left_goal_ - wheel * 0.20 + throttle * 0.3;
+    double current_right_goal = right_goal_ + wheel * 0.20 + throttle * 0.3;
+#else
     double current_left_goal = left_goal_ - wheel * 0.5 + throttle * 0.3;
     double current_right_goal = right_goal_ + wheel * 0.5 + throttle * 0.3;
+#endif
     if (data.IsPressed(kTurn1) || data.IsPressed(kTurn2)) {
       is_control_loop_driving = true;
     }
