@@ -44,7 +44,7 @@ class Plotter(CollectingLogReader):
     # Set legend font size to small and move it to the top center.
     fontP = FontProperties()
     fontP.set_size('small')
-    pylab.legend(bbox_to_anchor=(0.5, 1.05), prop=fontP)
+    pylab.legend(bbox_to_anchor=(0.2, 1.10), prop=fontP)
 
     pylab.show()
 
