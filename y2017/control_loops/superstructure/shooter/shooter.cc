@@ -102,7 +102,7 @@ void ShooterController::Update(bool disabled, chrono::nanoseconds dt) {
   position_error_ = X_hat_current_(0, 0) - Y_(0, 0);
   dt_velocity_ = dt_position_ /
                  chrono::duration_cast<chrono::duration<double>>(dt).count();
-  fixed_dt_velocity_ = dt_position_ / 0.005;
+  fixed_dt_velocity_ = dt_position_ / 0.00505;
 
   loop_->Update(disabled, dt);
 }
