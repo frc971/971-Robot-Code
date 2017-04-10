@@ -15,7 +15,6 @@ int PhasedLoop::Iterate(const monotonic_clock::time_point now) {
 
   const monotonic_clock::duration difference = next_time - last_time_;
   const int result = difference / interval_;
-  CHECK_EQ(difference, interval_ * result);
   CHECK_EQ(
       0, (next_time - offset_).time_since_epoch().count() % interval_.count());
   CHECK_GE(next_time, now);
