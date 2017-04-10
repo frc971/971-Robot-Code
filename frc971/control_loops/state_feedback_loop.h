@@ -326,6 +326,7 @@ class StateFeedbackHybridPlant {
     Y_.setZero();
     A_.setZero();
     B_.setZero();
+    DelayedU_.setZero();
     UpdateAB(::aos::controls::kLoopFrequency);
   }
 
@@ -344,9 +345,18 @@ class StateFeedbackHybridPlant {
     // Powers outside of the range are more likely controller bugs than things
     // that the plant should deal with.
     CheckU(U);
-    X_ = Update(X(), U, dt);
-    Y_ = C() * X() + D() * U;
+    ::aos::robot_state.FetchLatest();
+
+    Eigen::Matrix<double, number_of_inputs, 1> current_U =
+        DelayedU_ * (::aos::robot_state.get()
+                         ? ::aos::robot_state->voltage_battery / 12.0
+                         : 1.0);
+    X_ = Update(X(), current_U);
+    Y_ = C() * X() + D() * current_U;
+    DelayedU_ = U;
   }
+
+  Eigen::Matrix<double, number_of_inputs, 1> DelayedU_;
 
   Eigen::Matrix<double, number_of_states, 1> Update(
       const Eigen::Matrix<double, number_of_states, 1> X,
