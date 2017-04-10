@@ -54,6 +54,13 @@ bool AutonomousActor::RunAction(
       if (!WaitForDriveNear(2.75, 0.0)) return true;
 
       set_intake_goal(0.23);
+      set_turret_goal(0.0);
+      // Values good for blue:
+      // TODO(austin): Drive these off the auto switch.
+      //set_hood_goal(0.355 + 0.01 + 0.005);
+      //set_shooter_velocity(355.0);
+      set_hood_goal(0.355 + 0.01 + 0.005 + 0.01 + 0.01);
+      set_shooter_velocity(351.0);
       SendSuperstructureGoal();
       StartDrive(0.0, -M_PI / 4.0 * kDriveDirection, kSlowDrive, kSlowTurn);
       if (!WaitForDriveNear(0.05, 0.0)) return true;
@@ -65,17 +72,15 @@ bool AutonomousActor::RunAction(
       if (!WaitForDriveNear(0.05, 0.2)) return true;
 
       set_vision_track(true);
-      set_turret_goal(0.0);
-      set_hood_goal(0.63);
-      set_shooter_velocity(371.0);
+
+      set_indexer_angular_velocity(-1.8 * M_PI);
       SendSuperstructureGoal();
 
       this_thread::sleep_for(chrono::milliseconds(200));
 
       StartDrive(0.0, (-0.15) * kDriveDirection, kSlowDrive, kSlowTurn);
       if (!WaitForDriveNear(0.05, 0.02)) return true;
-      set_indexer_angular_velocity(-1.8 * M_PI);
-      SendSuperstructureGoal();
+
       LOG(INFO, "Started shooting at %f\n",
           DoubleSeconds(monotonic_clock::now() - start_time));
 
