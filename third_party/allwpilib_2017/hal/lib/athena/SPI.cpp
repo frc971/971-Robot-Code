@@ -123,6 +123,7 @@ void HAL_InitializeSPI(int32_t port, int32_t* status) {
     case 1:
       CommonSPIPortInit(status);
       if (*status != 0) return;
+      #if 0
       // CS1, Allocate
       if ((digitalHandles[0] = HAL_InitializeDIOPort(
                HAL_GetPort(26), false, status)) == HAL_kInvalidHandle) {
@@ -130,11 +131,13 @@ void HAL_InitializeSPI(int32_t port, int32_t* status) {
         CommonSPIPortFree();
         return;
       }
+      #endif
       HAL_SetSPIHandle(1, spilib_open("/dev/spidev0.1"));
       break;
     case 2:
       CommonSPIPortInit(status);
       if (*status != 0) return;
+      #if 0
       // CS2, Allocate
       if ((digitalHandles[1] = HAL_InitializeDIOPort(
                HAL_GetPort(27), false, status)) == HAL_kInvalidHandle) {
@@ -142,6 +145,7 @@ void HAL_InitializeSPI(int32_t port, int32_t* status) {
         CommonSPIPortFree();
         return;
       }
+      #endif
       HAL_SetSPIHandle(2, spilib_open("/dev/spidev0.2"));
       break;
     case 3:
