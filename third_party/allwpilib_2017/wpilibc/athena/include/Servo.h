@@ -10,8 +10,7 @@
 #include <memory>
 #include <string>
 
-#include "SafePWM.h"
-#include "SpeedController.h"
+#include "PWM.h"
 
 namespace frc {
 
@@ -22,7 +21,7 @@ namespace frc {
  * servo provided
  * in the FIRST Kit of Parts in 2008.
  */
-class Servo : public SafePWM {
+class Servo : public PWM {
  public:
   explicit Servo(int channel);
   virtual ~Servo();
@@ -33,17 +32,6 @@ class Servo : public SafePWM {
   double GetAngle() const;
   static double GetMaxAngle() { return kMaxServoAngle; }
   static double GetMinAngle() { return kMinServoAngle; }
-
-  void ValueChanged(ITable* source, llvm::StringRef key,
-                    std::shared_ptr<nt::Value> value, bool isNew) override;
-  void UpdateTable() override;
-  void StartLiveWindowMode() override;
-  void StopLiveWindowMode() override;
-  std::string GetSmartDashboardType() const override;
-  void InitTable(std::shared_ptr<ITable> subTable) override;
-  std::shared_ptr<ITable> GetTable() const override;
-
-  std::shared_ptr<ITable> m_table;
 
  private:
   double GetServoAngleRange() const { return kMaxServoAngle - kMinServoAngle; }

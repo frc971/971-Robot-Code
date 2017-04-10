@@ -150,6 +150,29 @@ TEST_F(PhasedLoopTest, CrossingZero) {
   EXPECT_EQ(InMs(1), loop.sleep_time());
 }
 
+// Tests OffsetFromIntervalAndTime for various edge conditions.
+TEST_F(PhasedLoopTest, OffsetFromIntervalAndTimeTest) {
+  PhasedLoop loop(milliseconds(1000), milliseconds(300));
+
+  EXPECT_EQ(milliseconds(1),
+            loop.OffsetFromIntervalAndTime(milliseconds(1000), InMs(1001)));
+
+  EXPECT_EQ(milliseconds(0),
+            loop.OffsetFromIntervalAndTime(milliseconds(1000), InMs(1000)));
+
+  EXPECT_EQ(milliseconds(0),
+            loop.OffsetFromIntervalAndTime(milliseconds(1000), InMs(0)));
+
+  EXPECT_EQ(milliseconds(999),
+            loop.OffsetFromIntervalAndTime(milliseconds(1000), InMs(-1)));
+
+  EXPECT_EQ(milliseconds(7),
+            loop.OffsetFromIntervalAndTime(milliseconds(1000), InMs(19115007)));
+
+  EXPECT_EQ(milliseconds(7), loop.OffsetFromIntervalAndTime(milliseconds(1000),
+                                                            InMs(-19115993)));
+}
+
 // Tests that passing invalid values to the constructor dies correctly.
 TEST_F(PhasedLoopDeathTest, InvalidValues) {
   EXPECT_DEATH(PhasedLoop(milliseconds(1), milliseconds(2)),

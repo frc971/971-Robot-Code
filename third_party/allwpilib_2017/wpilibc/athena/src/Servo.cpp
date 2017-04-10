@@ -7,8 +7,6 @@
 
 #include "Servo.h"
 
-#include "LiveWindow/LiveWindow.h"
-
 using namespace frc;
 
 constexpr double Servo::kMaxServoAngle;
@@ -21,21 +19,15 @@ constexpr double Servo::kDefaultMinServoPWM;
  * @param channel The PWM channel to which the servo is attached. 0-9 are
  *                on-board, 10-19 are on the MXP port
  */
-Servo::Servo(int channel) : SafePWM(channel) {
+Servo::Servo(int channel) : PWM(channel) {
   // Set minimum and maximum PWM values supported by the servo
   SetBounds(kDefaultMaxServoPWM, 0.0, 0.0, 0.0, kDefaultMinServoPWM);
 
   // Assign defaults for period multiplier for the servo PWM control signal
   SetPeriodMultiplier(kPeriodMultiplier_4X);
-
-  //  std::printf("Done initializing servo %d\n", channel);
 }
 
-Servo::~Servo() {
-  if (m_table != nullptr) {
-    m_table->RemoveTableListener(this);
-  }
-}
+Servo::~Servo() {}
 
 /**
  * Set the servo position.
@@ -99,36 +91,3 @@ void Servo::SetAngle(double degrees) {
 double Servo::GetAngle() const {
   return GetPosition() * GetServoAngleRange() + kMinServoAngle;
 }
-
-void Servo::ValueChanged(ITable* source, llvm::StringRef key,
-                         std::shared_ptr<nt::Value> value, bool isNew) {
-  if (!value->IsDouble()) return;
-  Set(value->GetDouble());
-}
-
-void Servo::UpdateTable() {
-  if (m_table != nullptr) {
-    m_table->PutNumber("Value", Get());
-  }
-}
-
-void Servo::StartLiveWindowMode() {
-  if (m_table != nullptr) {
-    m_table->AddTableListener("Value", this, true);
-  }
-}
-
-void Servo::StopLiveWindowMode() {
-  if (m_table != nullptr) {
-    m_table->RemoveTableListener(this);
-  }
-}
-
-std::string Servo::GetSmartDashboardType() const { return "Servo"; }
-
-void Servo::InitTable(std::shared_ptr<ITable> subTable) {
-  m_table = subTable;
-  UpdateTable();
-}
-
-std::shared_ptr<ITable> Servo::GetTable() const { return m_table; }
