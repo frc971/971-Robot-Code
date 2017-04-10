@@ -25,10 +25,10 @@ using ::frc971::zeroing::PulseIndexZeroingEstimator;
 
 namespace {
 constexpr double kTolerance = 10.0;
-constexpr double kIndexerAcceleration = 100.0;
+constexpr double kIndexerAcceleration = 50.0;
 constexpr chrono::milliseconds kForwardTimeout{500};
-constexpr chrono::milliseconds kReverseTimeout{500};
-constexpr chrono::milliseconds kReverseMinTimeout{100};
+constexpr chrono::milliseconds kReverseTimeout{1000};
+constexpr chrono::milliseconds kReverseMinTimeout{500};
 }  // namespace
 
 constexpr double Column::kZeroingVoltage;
@@ -335,7 +335,7 @@ double ColumnProfiledSubsystem::IndexerStuckVoltage() const {
   }
 }
 bool ColumnProfiledSubsystem::IsIndexerStuck() const {
-  return IndexerStuckVoltage() > 4.0;
+  return IndexerStuckVoltage() > 6.0;
 }
 
 void ColumnProfiledSubsystem::PartialIndexerReset() {
