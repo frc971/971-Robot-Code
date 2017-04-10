@@ -114,7 +114,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
       r->down_error = 0;
       r->vision_name = "test";
-      r->vision_error = 0.0;
+      r->vision_error = -0.030;
       break;
 
     case kCompTeamNumber:

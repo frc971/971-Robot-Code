@@ -626,6 +626,7 @@ void Column::Iterate(const control_loops::IndexerGoal *unsafe_indexer_goal,
   profiled_subsystem_.PopulateTurretStatus(turret_status);
   turret_status->estopped = (state_ == State::ESTOP);
   turret_status->state = static_cast<int32_t>(state_);
+  turret_status->turret_encoder_angle = profiled_subsystem_.turret_position();
   if (vision_time_adjuster_.valid()) {
     turret_status->vision_angle = vision_time_adjuster_.goal();
     turret_status->raw_vision_angle =

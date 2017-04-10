@@ -112,6 +112,7 @@ struct ShooterStatus {
 
   // The current velocity measured as delta x / delta t in radians/sec.
   double instantaneous_velocity;
+  double filtered_velocity;
   double fixed_instantaneous_velocity;
 
   // The error between our measurement and expected measurement in radians.
@@ -174,6 +175,8 @@ struct TurretProfiledSubsystemStatus {
   double raw_vision_angle;
   double vision_angle;
   bool vision_tracking;
+
+  double turret_encoder_angle;
 };
 
 queue_group SuperstructureQueue {

@@ -20,7 +20,6 @@ def PlotDiff(list1, list2, time):
   pylab.plot(time, numpy.subtract(list1, list2), label='diff')
   pylab.legend()
 
-
 class VelocityShooter(control_loop.HybridControlLoop):
   def __init__(self, name='VelocityShooter'):
     super(VelocityShooter, self).__init__(name)
@@ -39,7 +38,7 @@ class VelocityShooter(control_loop.HybridControlLoop):
     # Moment of inertia of the shooter wheel in kg m^2
     # 1400.6 grams/cm^2
     # 1.407 *1e-4 kg m^2
-    self.J = 0.00120
+    self.J = 0.00100
     # Resistance of the motor, divided by 2 to account for the 2 motors
     self.R = 12.0 / self.stall_current
     # Motor velocity constant
@@ -93,8 +92,8 @@ class SecondOrderVelocityShooter(VelocityShooter):
 
     self.A_continuous = numpy.matrix(numpy.zeros((2, 2)))
     self.A_continuous[0:1, 0:1] = self.A_continuous_unaugmented
-    self.A_continuous[1, 0] = 105.0
-    self.A_continuous[1, 1] = -105.0
+    self.A_continuous[1, 0] = 225.0
+    self.A_continuous[1, 1] = -self.A_continuous[1, 0]
 
     self.B_continuous = numpy.matrix(numpy.zeros((2, 1)))
     self.B_continuous[0:1, 0] = self.B_continuous_unaugmented
@@ -102,10 +101,19 @@ class SecondOrderVelocityShooter(VelocityShooter):
     self.C = numpy.matrix([[0, 1]])
     self.D = numpy.matrix([[0]])
 
+    # The states are [unfiltered_velocity, velocity]
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    self.PlaceControllerPoles([.75, 0.75])
+    self.PlaceControllerPoles([.70, 0.60])
+
+    q_vel = 40.0
+    q_filteredvel = 30.0
+    self.Q = numpy.matrix([[(1.0 / (q_vel ** 2.0)), 0.0],
+                           [0.0, (1.0 / (q_filteredvel ** 2.0))]])
+
+    self.R = numpy.matrix([[(1.0 / (3.0 ** 2.0))]])
+    self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
 
     glog.debug('K %s', repr(self.K))
     glog.debug('System poles are %s',
@@ -195,11 +203,12 @@ class IntegralShooter(Shooter):
     glog.debug('A_dt(A): \n%s', repr(self.A))
 
     q_pos = 0.01
-    q_vel = 2.0
-    q_voltage = 0.3
+    q_vel = 4.0
+    q_velfilt = 1.5
+    q_voltage = 2.0
     self.Q_continuous = numpy.matrix([[(q_pos ** 2.0), 0.0, 0.0, 0.0],
                                       [0.0, (q_vel ** 2.0), 0.0, 0.0],
-                                      [0.0, 0.0, (q_vel ** 2.0), 0.0],
+                                      [0.0, 0.0, (q_velfilt ** 2.0), 0.0],
                                       [0.0, 0.0, 0.0, (q_voltage ** 2.0)]])
 
     r_pos = 0.0003
@@ -261,6 +270,7 @@ class ScenarioPlotter(object):
     else:
       initial_t = 0
 
+    last_U = numpy.matrix([[0.0]])
     for i in xrange(iterations):
       X_hat = shooter.X
 
@@ -290,16 +300,17 @@ class ScenarioPlotter(object):
           observer_shooter.CorrectObserver(U)
         self.offset.append(observer_shooter.X_hat[3, 0])
 
-      applied_U = U.copy()
-      if i > 30:
+      applied_U = last_U.copy()
+      if i > 60:
         applied_U += 2
       shooter.Update(applied_U)
 
       if observer_shooter is not None:
         if hybrid_obs:
-          observer_shooter.PredictHybridObserver(U, shooter.dt)
+          observer_shooter.PredictHybridObserver(last_U, shooter.dt)
         else:
-          observer_shooter.PredictObserver(U)
+          observer_shooter.PredictObserver(last_U)
+      last_U = U.copy()
 
 
       self.t.append(initial_t + i * shooter.dt)
@@ -328,17 +339,10 @@ def main(argv):
   scenario_plotter = ScenarioPlotter()
 
   if FLAGS.plot:
-    shooter = Shooter()
-    shooter_controller = IntegralShooter()
-    observer_shooter = IntegralShooter()
     iterations = 200
 
     initial_X = numpy.matrix([[0.0], [0.0], [0.0]])
     R = numpy.matrix([[0.0], [100.0], [100.0], [0.0]])
-    scenario_plotter.run_test(shooter, goal=R, controller_shooter=shooter_controller,
-                              observer_shooter=observer_shooter, iterations=iterations)
-
-    scenario_plotter.Plot()
 
     scenario_plotter_int = ScenarioPlotter()
 
@@ -351,8 +355,6 @@ def main(argv):
       hybrid_obs = True)
 
     scenario_plotter_int.Plot()
-    PlotDiff(scenario_plotter.x_hat, scenario_plotter_int.x_hat,
-      scenario_plotter.t)
 
     pylab.show()
 

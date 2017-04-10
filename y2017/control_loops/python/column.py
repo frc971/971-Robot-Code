@@ -57,7 +57,7 @@ class ColumnController(control_loop.ControlLoop):
         self.A_continuous, self.B_continuous, self.dt)
 
     q_indexer_vel = 13.0
-    q_pos = 0.04
+    q_pos = 0.05
     q_vel = 0.8
     self.Q = numpy.matrix([[(1.0 / (q_indexer_vel ** 2.0)), 0.0, 0.0],
                            [0.0, (1.0 / (q_pos ** 2.0)), 0.0],
@@ -176,9 +176,9 @@ class IntegralColumn(Column):
     self.Kff = numpy.matrix(numpy.zeros((2, 6)))
     self.Kff[:, 0:4] = orig_Kff
 
-    q_pos = 0.12
+    q_pos = 0.40
     q_vel = 2.00
-    q_voltage = 4.0
+    q_voltage = 8.0
     if voltage_error_noise is not None:
       q_voltage = voltage_error_noise
 

@@ -46,7 +46,7 @@ class Turret(control_loop.ControlLoop):
     # Moment of inertia, measured in CAD.
     # Extra mass to compensate for friction is added on.
     self.J = 0.06 + self.motor_inertia * ((1.0 / self.G) ** 2.0)
-    glog.info('Turret J is: %f', self.J)
+    glog.debug('Turret J is: %f', self.J)
 
     # Control loop time step
     self.dt = 0.005

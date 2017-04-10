@@ -77,6 +77,8 @@ void ShooterController::Update(bool disabled, chrono::nanoseconds dt) {
 
   ready_ = std::abs(error_) < kTolerance && loop_->next_R(2, 0) > 1.0;
 
+  // If we are no longer ready, but were, and are spinning, then we shot a ball.
+  // Reset the KF.
   if (last_ready_ && !ready_ && loop_->next_R(2, 0) > 1.0 && error_ < 0.0) {
     needs_reset_ = true;
     min_velocity_ = velocity();
@@ -89,11 +91,9 @@ void ShooterController::Update(bool disabled, chrono::nanoseconds dt) {
     }
   }
   if (reset_) {
-    loop_->mutable_X_hat(0, 0) = Y_(0, 0);
-    // TODO(austin): This should be 0 for the WPILib reset since dt_velocity_
-    // will be rubbish.
-    loop_->mutable_X_hat(1, 0) = dt_velocity_;
-    loop_->mutable_X_hat(2, 0) = 0.0;
+    // TODO(austin): I'd rather not be incrementing X_hat each time.  Sort out
+    // something better.
+    loop_->mutable_X_hat(3, 0) += 1.5;
     reset_ = false;
   }
   last_ready_ = ready_;
@@ -110,6 +110,7 @@ void ShooterController::Update(bool disabled, chrono::nanoseconds dt) {
 void ShooterController::SetStatus(ShooterStatus *status) {
   status->avg_angular_velocity = average_angular_velocity_;
 
+  status->filtered_velocity = X_hat_current_(1, 0);
   status->angular_velocity = X_hat_current_(2, 0);
   status->ready = ready_;
 
