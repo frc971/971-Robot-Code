@@ -12,7 +12,8 @@ namespace vision {
 // Implement Cairo version of RenderInterface.
 class CairoRender : public RenderInterface {
  public:
-  explicit CairoRender(cairo_t *cr) : cr_(cr) {}
+  explicit CairoRender(cairo_t *cr, double text_scale)
+      : cr_(cr), text_scale_(text_scale) {}
   virtual ~CairoRender() {}
 
   void Translate(double x, double y) override { cairo_translate(cr_, x, y); }
@@ -36,6 +37,7 @@ class CairoRender : public RenderInterface {
 
  private:
   cairo_t *cr_;
+  double text_scale_ = 1.0;
 };
 
 // Simple debug view window.
@@ -54,6 +56,13 @@ class DebugWindow {
   // Sets up the window to draw a list of overlays.
   // See overlay.h for more info.
   void SetOverlays(std::vector<OverlayBase *> *overlay);
+
+  void AddOverlay(OverlayBase *overlay);
+  void AddOverlays(const std::vector<OverlayBase *> &overlays) {
+    for (auto *overlay : overlays) {
+      AddOverlay(overlay);
+    }
+  }
 
   // Resizes the window.
   void SetScale(double scale_factor);

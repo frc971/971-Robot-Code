@@ -15,6 +15,9 @@
 namespace aos {
 namespace vision {
 
+// Reads packets in the form:
+// uint32 length
+// string text (of size length)
 class BufferedLengthDelimReader {
  public:
   union data_len {
@@ -27,33 +30,44 @@ class BufferedLengthDelimReader {
   }
   template <typename Lamb>
   void up(int fd, Lamb lam) {
-    ssize_t count;
-    if (img_read_ < 0) {
-      count = read(fd, &len_.buf[num_read_], sizeof(len_.buf) - num_read_);
-      if (count < 0) return;
-      num_read_ += count;
-      if (num_read_ < 4) return;
-      num_read_ = 0;
-      img_read_ = 0;
-      data_.clear();
-      if (len_.len > 200000) {
-        printf("bad size: %d\n", len_.len);
-        exit(-1);
+    // Drops older messages with this while loop until we've seeked to
+    // be current.
+    while (true) {
+      ssize_t count;
+      if (img_read_ < 0) {
+        count = read(fd, &len_.buf[num_read_], sizeof(len_.buf) - num_read_);
+        if (count < 0) break;
+        num_read_ += count;
+        if (num_read_ < 4) break;
+        num_read_ = 0;
+        img_read_ = 0;
+        data_.clear();
+        if (len_.len > 200000) {
+          printf("bad size: %d\n", len_.len);
+          exit(-1);
+        }
+        data_.resize(len_.len);
+      } else {
+        count = read(fd, &data_[img_read_], len_.len - img_read_);
+        if (count < 0) break;
+        img_read_ += count;
+        if (img_read_ < (int)len_.len) return;
+        std::swap(prev_data_, data_);
+        has_prev_ = true;
+        img_read_ = -1;
       }
-      data_.resize(len_.len);
-    } else {
-      count = read(fd, &data_[img_read_], len_.len - img_read_);
-      if (count < 0) return;
-      img_read_ += count;
-      if (img_read_ < (int)len_.len) return;
-      lam(DataRef{&data_[0], len_.len});
-      img_read_ = -1;
+    }
+    if (has_prev_) {
+      lam(DataRef{&prev_data_[0], len_.len});
+      has_prev_ = false;
     }
   }
 
  private:
   data_len len_;
   int num_read_;
+  bool has_prev_ = false;
+  std::vector<char> prev_data_;
   std::vector<char> data_;
   int img_read_;
 };
@@ -92,6 +106,10 @@ class TCPImageSource : public ImageSource {
         buf = ParseBlobList(&blobl, buf);
         interface_->NewBlobList(blobl, fmt);
       });
+      if (errno != EAGAIN) {
+        fprintf(stderr, "disconnected\n");
+        loop()->Delete(this);
+      }
     }
 
     BufferedLengthDelimReader read_;

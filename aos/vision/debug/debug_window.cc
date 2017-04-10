@@ -48,11 +48,17 @@ struct DebugWindow::Internals {
     if (overlays) {
       for (const auto &ov : *overlays) {
         cairo_save(cr);
-        CairoRender render(cr);
-        // move the drawing to match the window size
+        CairoRender render(cr, 1.0 / scale_factor);
         ov->Draw(&render, w, h);
         cairo_restore(cr);
       }
+    }
+
+    for (const auto &ov : overlays_internal_) {
+      cairo_save(cr);
+      CairoRender render(cr, 1.0 / scale_factor);
+      ov->Draw(&render, w, h);
+      cairo_restore(cr);
     }
 
     return FALSE;
@@ -64,6 +70,7 @@ struct DebugWindow::Internals {
   bool needs_draw = true;
   GtkWidget *window;
   std::vector<OverlayBase *> *overlays = nullptr;
+  std::vector<OverlayBase *> overlays_internal_;
   double scale_factor;
 
   // flip the image rows on drawing
@@ -75,6 +82,10 @@ struct DebugWindow::Internals {
 
 void DebugWindow::SetOverlays(std::vector<OverlayBase *> *overlays) {
   self->overlays = overlays;
+}
+
+void DebugWindow::AddOverlay(OverlayBase *overlay) {
+  self->overlays_internal_.push_back(overlay);
 }
 
 void DebugWindow::Redraw() {
@@ -158,11 +169,15 @@ DebugWindow::~DebugWindow() {}
 
 void CairoRender::Text(int x, int y, int /*text_x*/, int /*text_y*/,
                        const std::string &text) {
-  auto *pango_lay = pango_cairo_create_layout(cr_);
+  cairo_save(cr_);
   cairo_move_to(cr_, x, y);
+  cairo_scale(cr_, text_scale_, text_scale_);
+
+  auto *pango_lay = pango_cairo_create_layout(cr_);
   pango_layout_set_text(pango_lay, text.data(), text.size());
   pango_cairo_show_layout(cr_, pango_lay);
   g_object_unref(pango_lay);
+  cairo_restore(cr_);
 }
 
 }  // namespace vision

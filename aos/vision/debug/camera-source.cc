@@ -14,17 +14,17 @@ class CameraImageSource : public ImageSource {
  public:
   void Init(const std::string &jpeg_list_filename,
             DebugFrameworkInterface *interface) override {
-    // TODO: Get these params from a config file passed in through the
-    // constructor.
-    image_stream_.reset(new ImageStream(
-        jpeg_list_filename, aos::vision::CameraParams(), interface));
+    // TODO: These camera params make this ugly and less generic.
+    image_stream_.reset(new ImageStream(jpeg_list_filename,
+                                        interface->camera_params(), interface));
   }
 
   const char *GetHelpMessage() override {
     return &R"(
     format_spec is filename of the camera device.
     example: camera:/dev/video0
-    This viewer source will stream video from a usb camera of your choice.)"[1];
+    This viewer source will stream video from a usb camera of your choice.
+)"[1];
   }
 
   class ImageStream : public ImageStreamEvent {
@@ -38,9 +38,9 @@ class CameraImageSource : public ImageSource {
         // Takes a picture when you press 'a'.
         // TODO(parker): Allow setting directory.
         if (keyval == GDK_KEY_a) {
-          std::ofstream ofs(
-              std::string("/tmp/out_jpegs/test") + std::to_string(i_) + ".jpg",
-              std::ofstream::out);
+          std::ofstream ofs(std::string("/tmp/debug_viewer_jpeg_") +
+                                std::to_string(i_) + ".jpg",
+                            std::ofstream::out);
           ofs << prev_data_;
           ofs.close();
           ++i_;
