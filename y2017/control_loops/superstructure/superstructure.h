@@ -5,11 +5,12 @@
 
 #include "aos/common/controls/control_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
+#include "y2017/control_loops/superstructure/column/column.h"
 #include "y2017/control_loops/superstructure/hood/hood.h"
 #include "y2017/control_loops/superstructure/intake/intake.h"
 #include "y2017/control_loops/superstructure/shooter/shooter.h"
 #include "y2017/control_loops/superstructure/superstructure.q.h"
-#include "y2017/control_loops/superstructure/column/column.h"
+#include "y2017/control_loops/superstructure/vision_distance_average.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -47,6 +48,8 @@ class Superstructure
 
   // If true, we ignore collisions.
   bool ignore_collisions_ = false;
+
+  VisionDistanceAverage distance_average_;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };

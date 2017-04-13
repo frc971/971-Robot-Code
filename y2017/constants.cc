@@ -90,9 +90,10 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   *shot_interpolation_table =
       ::frc971::shooter_interpolation::InterpolationTable(
           {// { distance_to_target, { shot_angle, shot_power }},
-           {100.1, {20.0 * M_PI / 180.0, 335.0}},
-           {150.2, {35.0 * M_PI / 180.0, 384.0}},
-           {200.3, {40.0 * M_PI / 180.0, 417.0}},
+           {1.67, {0.31, 320.0}},
+           {1.90, {0.33, 330.0}},
+           {2.15, {0.33, 347.0}},
+           {2.45, {0.33, 361.0}},
           });
 
   switch (team) {

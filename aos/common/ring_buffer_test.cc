@@ -67,5 +67,27 @@ TEST_F(RingBufferTest, OverfillData) {
   }
 }
 
+// Tests shifting from the front of the ringbuffer.
+TEST_F(RingBufferTest, RingBufferShift) {
+  // Add numbers 0-24 to the RingBuffer
+  for (int i = 0; i < 25; ++i) {
+    buffer_.Push(i);
+  }
+
+  // It should now be full
+  ASSERT_TRUE(buffer_.full());
+
+  buffer_.Shift();
+  buffer_.Shift();
+  buffer_.Shift();
+
+  ASSERT_EQ(buffer_.size(), 7);
+
+  // The buffer should now contain the numbers 18-24
+  for (size_t i = 0; i < buffer_.size(); ++i) {
+    ASSERT_EQ(18 + i, buffer_[i]);
+  }
+}
+
 }  // namespace testing
 }  // namespace aos

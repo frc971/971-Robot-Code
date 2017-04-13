@@ -21,7 +21,7 @@ class InterpolationTable {
 
   // Uses the interpolation table to calculate the optimal shooter angle and
   // power for a shot
-  ShotParams GetShooterData(double distance);
+  ShotParams GetShooterData(double distance) const;
 
  private:
   // Contains the list of angle entries in the interpolation table

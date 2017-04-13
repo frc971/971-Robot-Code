@@ -26,8 +26,13 @@ class RingBuffer {
     }
   }
 
+  void Shift() {
+    oldest_ = (oldest_ + 1) % buffer_size;
+    --size_;
+  }
+
   // Return the value of the index requested, adjusted so that the RingBuffer
-  // contians the oldest element first and the newest last.
+  // contains the oldest element first and the newest last.
   Data &operator[](size_t index) {
     return data_[(oldest_ + index) % buffer_size];
   }

@@ -189,6 +189,7 @@ queue_group SuperstructureQueue {
     HoodGoal hood;
     ShooterGoal shooter;
     bool lights_on;
+    bool use_vision_for_shots;
   };
 
   message Status {
@@ -205,6 +206,8 @@ queue_group SuperstructureQueue {
 
     TurretProfiledSubsystemStatus turret;
     IndexerStatus indexer;
+
+    float vision_distance;
   };
 
   message Position {

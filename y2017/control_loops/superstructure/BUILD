@@ -23,6 +23,7 @@ cc_library(
     'superstructure.h',
   ],
   deps = [
+    ':vision_distance_average',
     ':superstructure_queue',
     '//aos/common/controls:control_loop',
     '//y2017/control_loops/superstructure/column',
@@ -94,5 +95,29 @@ cc_test(
     '//aos/common:time',
     '//aos/testing:googletest',
     '//aos/testing:test_shm',
+  ],
+)
+
+cc_library(
+  name = 'vision_distance_average',
+  hdrs = [
+    'vision_distance_average.h',
+  ],
+  deps = [
+    '//aos/common:time',
+    '//aos/common:ring_buffer',
+    '//y2017/vision:vision_queue',
+  ],
+)
+
+cc_test(
+  name = 'vision_distance_average_test',
+  srcs = [
+    'vision_distance_average_test.cc',
+  ],
+  deps = [
+    ':vision_distance_average',
+    '//aos/common:time',
+    '//aos/testing:googletest',
   ],
 )

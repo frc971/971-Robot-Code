@@ -30,7 +30,7 @@ InterpolationTable::InterpolationTable(
   });
 }
 
-ShotParams InterpolationTable::GetShooterData(double distance) {
+ShotParams InterpolationTable::GetShooterData(double distance) const {
   // Points to to the smallest item such that it->first >= dist, or end() if no
   // such item exists.
   auto it = ::std::lower_bound(table_.begin(), table_.end(), distance,

@@ -73,7 +73,7 @@ const POVLocation kIntakeUp(3, 90);
 const ButtonLocation kIntakeIn(3, 12);
 const ButtonLocation kIntakeOut(3, 8);
 const ButtonLocation kFire(3, 3);
-const ButtonLocation kCloseShot(3, 7);
+const ButtonLocation kVisionDistanceShot(3, 7);
 const ButtonLocation kMiddleShot(3, 6);
 const POVLocation kFarShot(3, 270);
 
@@ -88,7 +88,7 @@ class Reader : public ::aos::input::JoystickInput {
  public:
   Reader() {}
 
-  enum class ShotDistance { CLOSE_SHOT, MIDDLE_SHOT, FAR_SHOT };
+  enum class ShotDistance { VISION_SHOT, MIDDLE_SHOT, FAR_SHOT };
 
   ShotDistance last_shot_distance_ = ShotDistance::FAR_SHOT;
 
@@ -103,8 +103,6 @@ class Reader : public ::aos::input::JoystickInput {
         StopAuto();
       }
     }
-
-    vision_valid_ = false;
 
     if (!auto_running_) {
       HandleDrivetrain(data);
@@ -262,36 +260,40 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.PosEdge(kMiddleShot)) {
       turret_goal_ = -M_PI;
     }
-    if (data.PosEdge(kCloseShot)) {
-      turret_goal_ = -M_PI;
-    }
     if (data.PosEdge(kFarShot)) {
       turret_goal_ = 0.0;
     }
+    if (data.PosEdge(kVisionDistanceShot)) {
+      turret_goal_ = 0.0;
+    }
 
-    if (data.IsPressed(kCloseShot)) {
-      last_shot_distance_ = ShotDistance::CLOSE_SHOT;
+    if (data.IsPressed(kVisionDistanceShot)) {
+      last_shot_distance_ = ShotDistance::VISION_SHOT;
     } else if (data.IsPressed(kMiddleShot)) {
       last_shot_distance_ = ShotDistance::MIDDLE_SHOT;
     } else if (data.IsPressed(kFarShot)) {
       last_shot_distance_ = ShotDistance::FAR_SHOT;
     }
 
-    if (data.IsPressed(kVisionAlign) || data.IsPressed(kCloseShot) ||
+    if (data.IsPressed(kVisionAlign) ||
         data.IsPressed(kMiddleShot) || data.IsPressed(kFarShot) ||
         data.IsPressed(kFire)) {
       switch (last_shot_distance_) {
-        case ShotDistance::CLOSE_SHOT:
-          hood_goal_ = 0.30;
-          shooter_velocity_ = 322.0;
+        case ShotDistance::VISION_SHOT:
+          hood_goal_ = 0.31;
+          shooter_velocity_ = 320.0;
+          vision_distance_shot_ = true;
+          turret_goal_ = 0.0;
           break;
         case ShotDistance::MIDDLE_SHOT:
           hood_goal_ = 0.43 - 0.00;
           shooter_velocity_ = 361.0;
+          vision_distance_shot_ = false;
           break;
         case ShotDistance::FAR_SHOT:
           hood_goal_ = 0.43 - 0.01;
           shooter_velocity_ = 365.0;
+          vision_distance_shot_ = false;
           break;
       }
     } else {
@@ -349,6 +351,12 @@ class Reader : public ::aos::input::JoystickInput {
     new_superstructure_goal->intake.voltage_rollers = 0.0;
     new_superstructure_goal->lights_on = lights_on;
 
+    if (data.IsPressed(kVisionAlign) && vision_distance_shot_) {
+      new_superstructure_goal->use_vision_for_shots = true;
+    } else {
+      new_superstructure_goal->use_vision_for_shots = false;
+    }
+
     if (superstructure_queue.status->intake.position >
         superstructure_queue.status->intake.unprofiled_goal_position + 0.01) {
       intake_accumulator_ = 10;
@@ -384,8 +392,8 @@ class Reader : public ::aos::input::JoystickInput {
     } else if (fire_) {
       new_superstructure_goal->indexer.voltage_rollers = 12.0;
       switch (last_shot_distance_)  {
-        case ShotDistance::CLOSE_SHOT:
-          new_superstructure_goal->indexer.angular_velocity = -0.90 * M_PI;
+        case ShotDistance::VISION_SHOT:
+          new_superstructure_goal->indexer.angular_velocity = -2.25 * M_PI;
           break;
         case ShotDistance::MIDDLE_SHOT:
         case ShotDistance::FAR_SHOT:
@@ -437,7 +445,7 @@ class Reader : public ::aos::input::JoystickInput {
   bool was_running_ = false;
   bool auto_running_ = false;
 
-  bool vision_valid_ = false;
+  bool vision_distance_shot_ = false;
 
   bool fire_ = false;
   double robot_velocity_ = 0.0;
