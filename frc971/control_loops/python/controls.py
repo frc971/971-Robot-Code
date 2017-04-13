@@ -11,7 +11,7 @@ __author__ = 'Austin Schuh (austin.linux@gmail.com)'
 
 import numpy
 import slycot
-import scipy.signal.cont2discrete
+import scipy.linalg
 import glog
 
 class Error (Exception):
@@ -84,14 +84,30 @@ def dplace(A, B, poles, alpha=1e-6):
 
   return K
 
-
 def c2d(A, B, dt):
   """Converts from continuous time state space representation to discrete time.
-     Returns (A, B).  C and D are unchanged."""
+     Returns (A, B).  C and D are unchanged.
+     This code is copied from: scipy.signal.cont2discrete method zoh
+  """
 
-  ans_a, ans_b, _, _, _ = scipy.signal.cont2discrete(
-      (numpy.array(A), numpy.array(B), None, None), dt)
-  return numpy.matrix(ans_a), numpy.matrix(ans_b)
+  a, b = numpy.array(A), numpy.array(B)
+  # Build an exponential matrix
+  em_upper = numpy.hstack((a, b))
+
+  # Need to stack zeros under the a and b matrices
+  em_lower = numpy.hstack((numpy.zeros((b.shape[1], a.shape[0])),
+                        numpy.zeros((b.shape[1], b.shape[1]))))
+
+  em = numpy.vstack((em_upper, em_lower))
+  ms = scipy.linalg.expm(dt * em)
+
+  # Dispose of the lower rows
+  ms = ms[:a.shape[0], :]
+
+  ad = ms[:, 0:a.shape[1]]
+  bd = ms[:, a.shape[1]:]
+
+  return numpy.matrix(ad), numpy.matrix(bd)
 
 def ctrb(A, B):
   """Returns the controllability matrix.
