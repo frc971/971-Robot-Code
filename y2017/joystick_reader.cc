@@ -327,10 +327,10 @@ class Reader : public ::aos::input::JoystickInput {
     new_superstructure_goal->shooter.angular_velocity = shooter_velocity_;
 
     if (data.IsPressed(kIntakeUp)) {
-      new_superstructure_goal->intake.gear_servo = 0.37;
+      new_superstructure_goal->intake.gear_servo = 0.30;
     } else {
       // Clamp the gear
-      new_superstructure_goal->intake.gear_servo = 0.64;
+      new_superstructure_goal->intake.gear_servo = 0.66;
     }
 
     new_superstructure_goal->intake.profile_params.max_velocity = 0.50;
