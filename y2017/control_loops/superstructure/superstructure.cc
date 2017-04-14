@@ -45,20 +45,26 @@ void Superstructure::RunIteration(
   // Create a copy of the goals so that we can modify them.
   HoodGoal hood_goal;
   ShooterGoal shooter_goal;
+  IndexerGoal indexer_goal;
   if (unsafe_goal != nullptr) {
     hood_goal = unsafe_goal->hood;
     shooter_goal = unsafe_goal->shooter;
+    indexer_goal = unsafe_goal->indexer;
 
     distance_average_.Tick(::aos::monotonic_clock::now(), vision_status);
     status->vision_distance = distance_average_.Get();
     if (distance_average_.Valid()) {
       LOG(DEBUG, "VisionDistance %f\n", status->vision_distance);
       if (unsafe_goal->use_vision_for_shots) {
-        auto shot_params =
-            constants::GetValues().shot_interpolation_table.GetShooterData(
-                distance_average_.Get());
-        hood_goal.angle = shot_params.angle;
-        shooter_goal.angular_velocity = shot_params.power;
+        y2017::constants::Values::ShotParams shot_params;
+        if (constants::GetValues().shot_interpolation_table.GetInRange(
+                distance_average_.Get(), &shot_params)) {
+          hood_goal.angle = shot_params.angle;
+          shooter_goal.angular_velocity = shot_params.power;
+          if (indexer_goal.angular_velocity != 0.0) {
+            indexer_goal.angular_velocity = shot_params.indexer_velocity;
+          }
+        }
       }
     } else {
       LOG(DEBUG, "VisionNotValid %f\n", status->vision_distance);
@@ -117,7 +123,7 @@ void Superstructure::RunIteration(
                   output != nullptr ? &(output->voltage_intake) : nullptr,
                   &(status->intake));
 
-  column_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->indexer) : nullptr,
+  column_.Iterate(unsafe_goal != nullptr ? &indexer_goal : nullptr,
                   unsafe_goal != nullptr ? &(unsafe_goal->turret) : nullptr,
                   &(position->column), vision_status,
                   output != nullptr ? &(output->voltage_indexer) : nullptr,

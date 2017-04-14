@@ -351,7 +351,7 @@ class StateFeedbackHybridPlant {
         DelayedU_ * (::aos::robot_state.get()
                          ? ::aos::robot_state->voltage_battery / 12.0
                          : 1.0);
-    X_ = Update(X(), current_U);
+    X_ = Update(X(), current_U, dt);
     Y_ = C() * X() + D() * current_U;
     DelayedU_ = U;
   }

@@ -127,7 +127,15 @@ struct Values {
 
   double vision_error;
 
-  ::frc971::shooter_interpolation::InterpolationTable shot_interpolation_table;
+  struct ShotParams {
+    double angle;
+    double power;
+    double indexer_velocity;
+
+    static ShotParams BlendY(double coefficient, ShotParams a1, ShotParams a2);
+  };
+
+  ::frc971::shooter_interpolation::InterpolationTable<ShotParams> shot_interpolation_table;
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and

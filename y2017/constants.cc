@@ -88,12 +88,12 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
   // TODO(phil): Should these be different per robot?
   *shot_interpolation_table =
-      ::frc971::shooter_interpolation::InterpolationTable(
+      ::frc971::shooter_interpolation::InterpolationTable<Values::ShotParams>(
           {// { distance_to_target, { shot_angle, shot_power }},
-           {1.67, {0.31, 320.0}},
-           {1.90, {0.33, 330.0}},
-           {2.15, {0.33, 347.0}},
-           {2.45, {0.33, 361.0}},
+           {1.67, {0.31, 320.0, -2.25 * M_PI}},
+           {1.90, {0.33, 330.0, -2.25 * M_PI}},
+           {2.15, {0.33, 347.0, -2.25 * M_PI}},
+           {2.45, {0.33, 361.0, -2.25 * M_PI}},
           });
 
   switch (team) {
@@ -188,6 +188,13 @@ const Values &GetValuesForTeam(uint16_t team_number) {
 #endif
   }
   return *values[team_number];
+}
+
+Values::ShotParams Values::ShotParams::BlendY(double coefficient, Values::ShotParams a1, Values::ShotParams a2) {
+  using ::frc971::shooter_interpolation::Blend;
+  return Values::ShotParams{Blend(coefficient, a1.angle, a2.angle),
+                    Blend(coefficient, a1.power, a2.power),
+                    Blend(coefficient, a1.indexer_velocity, a2.indexer_velocity)};
 }
 
 }  // namespace constants
