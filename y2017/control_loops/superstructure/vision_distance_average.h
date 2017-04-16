@@ -36,6 +36,9 @@ class VisionDistanceAverage {
   // Valid gives a sense of how recent the data is.
   bool Valid() { return data_.size() > 4; }
 
+  // Clears all the saved samples.
+  void Reset() { data_.Reset(); }
+
  private:
   double ComputeValue() {
     double result = 0.0;

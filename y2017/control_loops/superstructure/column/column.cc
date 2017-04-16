@@ -536,6 +536,8 @@ void Column::Iterate(const control_loops::IndexerGoal *unsafe_indexer_goal,
             profiled_subsystem_.set_turret_unprofiled_goal(
                 vision_time_adjuster_.goal() + vision_error_);
           }
+        } else {
+          vision_time_adjuster_.ResetTime();
         }
 
         if (freeze_) {

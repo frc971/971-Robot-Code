@@ -52,6 +52,9 @@ class RingBuffer {
 
   bool full() const { return size_ == buffer_size; }
 
+  // Clears all the data out of the buffer.
+  void Reset() { size_ = 0; }
+
  private:
   ::std::array<Data, buffer_size> data_;
 

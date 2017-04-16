@@ -51,6 +51,10 @@ void Superstructure::RunIteration(
     shooter_goal = unsafe_goal->shooter;
     indexer_goal = unsafe_goal->indexer;
 
+    if (!unsafe_goal->use_vision_for_shots) {
+      distance_average_.Reset();
+    }
+
     distance_average_.Tick(::aos::monotonic_clock::now(), vision_status);
     status->vision_distance = distance_average_.Get();
     if (distance_average_.Valid()) {
