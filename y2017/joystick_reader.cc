@@ -87,7 +87,7 @@ class Reader : public ::aos::input::JoystickInput {
 
   enum class ShotDistance { VISION_SHOT, MIDDLE_SHOT, FAR_SHOT };
 
-  ShotDistance last_shot_distance_ = ShotDistance::FAR_SHOT;
+  ShotDistance last_shot_distance_ = ShotDistance::VISION_SHOT;
 
   void RunIteration(const ::aos::input::driver_station::Data &data) override {
     bool last_auto_running = auto_running_;
@@ -283,19 +283,19 @@ class Reader : public ::aos::input::JoystickInput {
         data.IsPressed(kFire)) {
       switch (last_shot_distance_) {
         case ShotDistance::VISION_SHOT:
-          hood_goal_ = 0.31;
-          shooter_velocity_ = 320.0;
+          hood_goal_ = 0.10;
+          shooter_velocity_ = 300.0;
+
           vision_distance_shot_ = true;
-          turret_goal_ = 0.0;
           break;
         case ShotDistance::MIDDLE_SHOT:
           hood_goal_ = 0.43 - 0.00;
-          shooter_velocity_ = 361.0;
+          shooter_velocity_ = 364.0;
           vision_distance_shot_ = false;
           break;
         case ShotDistance::FAR_SHOT:
-          hood_goal_ = 0.43 - 0.01;
-          shooter_velocity_ = 365.0;
+          hood_goal_ = 0.47;
+          shooter_velocity_ = 410.0;
           vision_distance_shot_ = false;
           break;
       }
@@ -341,7 +341,7 @@ class Reader : public ::aos::input::JoystickInput {
     new_superstructure_goal->intake.profile_params.max_velocity = 0.50;
     new_superstructure_goal->hood.profile_params.max_velocity = 5.0;
 
-    new_superstructure_goal->intake.profile_params.max_acceleration = 5.0;
+    new_superstructure_goal->intake.profile_params.max_acceleration = 3.0;
     if (vision_track) {
       new_superstructure_goal->turret.profile_params.max_acceleration = 35.0;
       new_superstructure_goal->turret.profile_params.max_velocity = 10.0;
@@ -378,7 +378,7 @@ class Reader : public ::aos::input::JoystickInput {
       if (robot_velocity_ > 2.0) {
         new_superstructure_goal->intake.voltage_rollers = 12.0;
       } else {
-        new_superstructure_goal->intake.voltage_rollers = 10.0;
+        new_superstructure_goal->intake.voltage_rollers = 11.0;
       }
     } else if (data.IsPressed(kIntakeOut)) {
       new_superstructure_goal->intake.voltage_rollers = -8.0;
@@ -396,7 +396,7 @@ class Reader : public ::aos::input::JoystickInput {
       new_superstructure_goal->indexer.voltage_rollers = 12.0;
       switch (last_shot_distance_)  {
         case ShotDistance::VISION_SHOT:
-          new_superstructure_goal->indexer.angular_velocity = -2.25 * M_PI;
+          new_superstructure_goal->indexer.angular_velocity = -1.25 * M_PI;
           break;
         case ShotDistance::MIDDLE_SHOT:
         case ShotDistance::FAR_SHOT:
