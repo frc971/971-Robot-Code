@@ -2,6 +2,7 @@
 
 #include "aos/common/controls/control_loops.q.h"
 #include "aos/common/logging/logging.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2017/constants.h"
 #include "y2017/control_loops/superstructure/column/column.h"
 #include "y2017/control_loops/superstructure/hood/hood.h"
@@ -19,10 +20,25 @@ constexpr double kMaxIntakeRollerVoltage = 12.0;
 constexpr double kMaxIndexerRollerVoltage = 12.0;
 }  // namespace
 
+typedef ::y2017::constants::Values::ShotParams ShotParams;
+using ::frc971::control_loops::drivetrain_queue;
+
 Superstructure::Superstructure(
     control_loops::SuperstructureQueue *superstructure_queue)
     : aos::controls::ControlLoop<control_loops::SuperstructureQueue>(
-          superstructure_queue) {}
+          superstructure_queue) {
+  shot_interpolation_table_ =
+      ::frc971::shooter_interpolation::InterpolationTable<ShotParams>({
+          // { distance_to_target, { shot_angle, shot_power, indexer_velocity }},
+          {1.21, {0.29, 301.0, -1.0 * M_PI}},   // table entry
+          {1.55, {0.305, 316.0, -1.1 * M_PI}},   // table entry
+          {1.82, {0.33, 325.0, -1.3 * M_PI}},   // table entry
+          {2.00, {0.34, 328.0, -1.4 * M_PI}},   // table entry
+          {2.28, {0.36, 338.0, -1.5 * M_PI}},   // table entry
+          {2.55, {0.395, 342.0, -1.8 * M_PI}},  // table entry
+          {2.81, {0.41, 351.0, -1.90 * M_PI}},  // table entry
+      });
+}
 
 void Superstructure::RunIteration(
     const control_loops::SuperstructureQueue::Goal *unsafe_goal,
@@ -46,6 +62,7 @@ void Superstructure::RunIteration(
   HoodGoal hood_goal;
   ShooterGoal shooter_goal;
   IndexerGoal indexer_goal;
+  bool in_range = true;
   if (unsafe_goal != nullptr) {
     hood_goal = unsafe_goal->hood;
     shooter_goal = unsafe_goal->shooter;
@@ -57,21 +74,43 @@ void Superstructure::RunIteration(
 
     distance_average_.Tick(::aos::monotonic_clock::now(), vision_status);
     status->vision_distance = distance_average_.Get();
-    if (distance_average_.Valid()) {
-      LOG(DEBUG, "VisionDistance %f\n", status->vision_distance);
+
+    // If we are moving too fast, disable shooting and clear the accumulator.
+    double robot_velocity = 0.0;
+    drivetrain_queue.status.FetchLatest();
+    if (drivetrain_queue.status.get()) {
+      robot_velocity = drivetrain_queue.status->robot_speed;
+    }
+
+    if (::std::abs(robot_velocity) > 0.2) {
       if (unsafe_goal->use_vision_for_shots) {
-        y2017::constants::Values::ShotParams shot_params;
-        if (constants::GetValues().shot_interpolation_table.GetInRange(
+        LOG(INFO, "Moving too fast, resetting\n");
+      }
+      distance_average_.Reset();
+    }
+    if (distance_average_.Valid()) {
+      if (unsafe_goal->use_vision_for_shots) {
+        ShotParams shot_params;
+        if (shot_interpolation_table_.GetInRange(
                 distance_average_.Get(), &shot_params)) {
           hood_goal.angle = shot_params.angle;
           shooter_goal.angular_velocity = shot_params.power;
           if (indexer_goal.angular_velocity != 0.0) {
             indexer_goal.angular_velocity = shot_params.indexer_velocity;
           }
+        } else {
+          in_range = false;
         }
       }
+      LOG(DEBUG, "VisionDistance %f, hood %f shooter %f, indexer %f * M_PI\n",
+          status->vision_distance, hood_goal.angle,
+          shooter_goal.angular_velocity, indexer_goal.angular_velocity / M_PI);
     } else {
       LOG(DEBUG, "VisionNotValid %f\n", status->vision_distance);
+      if (unsafe_goal->use_vision_for_shots) {
+        in_range = false;
+        indexer_goal.angular_velocity = 0.0;
+      }
     }
   }
 
@@ -160,14 +199,14 @@ void Superstructure::RunIteration(
       output->red_light_on = true;
       output->green_light_on = false;
       output->blue_light_on = false;
-    } else if (status->turret.vision_tracking) {
-      output->red_light_on = false;
-      output->green_light_on = true;
-      output->blue_light_on = false;
     } else if (!status->zeroed) {
       output->red_light_on = false;
       output->green_light_on = false;
       output->blue_light_on = true;
+    } else if (status->turret.vision_tracking && in_range) {
+      output->red_light_on = false;
+      output->green_light_on = true;
+      output->blue_light_on = false;
     }
   }
 }

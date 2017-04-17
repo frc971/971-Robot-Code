@@ -134,8 +134,6 @@ struct Values {
 
     static ShotParams BlendY(double coefficient, ShotParams a1, ShotParams a2);
   };
-
-  ::frc971::shooter_interpolation::InterpolationTable<ShotParams> shot_interpolation_table;
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and
