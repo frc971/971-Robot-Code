@@ -335,7 +335,7 @@ double ColumnProfiledSubsystem::IndexerStuckVoltage() const {
   }
 }
 bool ColumnProfiledSubsystem::IsIndexerStuck() const {
-  return IndexerStuckVoltage() > 6.0;
+  return IndexerStuckVoltage() > 4.0;
 }
 
 void ColumnProfiledSubsystem::PartialIndexerReset() {
