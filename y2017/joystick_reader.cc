@@ -240,7 +240,7 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.IsPressed(kIntakeUp)) {
       intake_goal_ = 0.0;
-      turret_goal_ = 0.0;
+      turret_goal_ = M_PI / 3.0;
     }
     if (data.IsPressed(kIntakeDown)) {
       intake_goal_ = 0.235;

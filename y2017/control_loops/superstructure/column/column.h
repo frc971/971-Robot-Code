@@ -178,7 +178,8 @@ class Column {
   static constexpr double kIntakeZeroingMinDistance = 0.08;
   static constexpr double kIntakeTolerance = 0.005;
   static constexpr double kStuckZeroingTrackingError = 0.02;
-  static constexpr double kTurretNearZero = M_PI / 2.0;
+  static constexpr double kTurretMin = -0.1;
+  static constexpr double kTurretMax = M_PI / 2.0 + 0.1;
 
   void Iterate(const control_loops::IndexerGoal *unsafe_indexer_goal,
                const control_loops::TurretGoal *unsafe_turret_goal,

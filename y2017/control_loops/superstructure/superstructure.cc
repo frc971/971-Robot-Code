@@ -18,6 +18,7 @@ namespace {
 // The maximum voltage the intake roller will be allowed to use.
 constexpr double kMaxIntakeRollerVoltage = 12.0;
 constexpr double kMaxIndexerRollerVoltage = 12.0;
+constexpr double kTurretTuckAngle = M_PI / 2.0;
 }  // namespace
 
 typedef ::y2017::constants::Values::ShotParams ShotParams;
@@ -130,10 +131,14 @@ void Superstructure::RunIteration(
     if (!ignore_collisions_) {
       // The turret is in a position (or wants to be in a position) where we
       // need the intake out.  Push it out.
-      if (::std::abs(unsafe_goal->turret.angle) >
-              column::Column::kTurretNearZero ||
-          ::std::abs(column_.turret_position()) >
-              column::Column::kTurretNearZero) {
+      const bool column_goal_not_safe =
+          unsafe_goal->turret.angle > column::Column::kTurretMax ||
+          unsafe_goal->turret.angle < column::Column::kTurretMin;
+      const bool column_position_not_safe =
+          column_.turret_position() > column::Column::kTurretMax ||
+          column_.turret_position() < column::Column::kTurretMin;
+
+      if (column_goal_not_safe || column_position_not_safe) {
         intake_.set_min_position(column::Column::kIntakeZeroingMinDistance);
       } else {
         intake_.clear_min_position();
@@ -141,8 +146,7 @@ void Superstructure::RunIteration(
       // The intake is in a position where it could hit.  Don't move the turret.
       if (intake_.position() < column::Column::kIntakeZeroingMinDistance -
                                    column::Column::kIntakeTolerance &&
-          ::std::abs(column_.turret_position()) >
-              column::Column::kTurretNearZero) {
+          column_position_not_safe) {
         column_.set_freeze(true);
       } else {
         column_.set_freeze(false);
