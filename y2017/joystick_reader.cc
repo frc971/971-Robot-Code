@@ -43,15 +43,12 @@ const ButtonLocation kTurn2(1, 11);
 
 #ifdef PISTOL
 // Pistol Grip controller
-const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(1, 2);
-//const ButtonLocation kQuickTurn(1, 7);
-const ButtonLocation kQuickTurn(1, 8);
+const JoystickAxis kSteeringWheel(1, 2), kDriveThrottle(1, 1);
+const ButtonLocation kQuickTurn(1, 7);
+const ButtonLocation kTurn1(1, 8);
 
 // Nop
-//const ButtonLocation kTurn1(1, 8);
 const ButtonLocation kTurn2(1, 9);
-
-const ButtonLocation kTurn1(1, 7);
 #endif
 
 #ifdef XBOX
@@ -155,14 +152,20 @@ class Reader : public ::aos::input::JoystickInput {
 #endif
 
 #ifdef PISTOL
-    const double wheel = data.GetAxis(kSteeringWheel) / 0.488;
+    const double unscaled_wheel = data.GetAxis(kSteeringWheel);
+    double wheel;
+    if (unscaled_wheel < 0.0) {
+      wheel = unscaled_wheel / 0.484375;
+    } else {
+      wheel = unscaled_wheel / 0.385827;
+    }
 
     const double unscaled_throttle = -data.GetAxis(kDriveThrottle);
     double unmodified_throttle;
     if (unscaled_throttle < 0.0) {
-      unmodified_throttle = unscaled_throttle / 0.228;
+      unmodified_throttle = unscaled_throttle / 0.086614;
     } else {
-      unmodified_throttle = unscaled_throttle / 0.484;
+      unmodified_throttle = unscaled_throttle / 0.265625;
     }
     unmodified_throttle = Deadband(unmodified_throttle, 0.1);
 
