@@ -1,2 +1,3 @@
 schematics control-main.sch
 output-name control
+use-files
