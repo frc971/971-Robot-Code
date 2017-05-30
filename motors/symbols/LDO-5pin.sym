@@ -1,0 +1,69 @@
+v 20130925 2
+T -7700 4600 8 10 0 1 0 0 1
+footprint=SOT23-5
+B 600 0 1500 1000 3 0 0 0 -1 -1 0 -1 -1 -1 -1 -1
+P 300 800 600 800 1 0 0
+{
+T 300 800 5 10 0 0 0 0 1
+pintype=pwr
+T 655 795 5 10 1 1 0 0 1
+pinlabel=VIN
+T 505 845 5 10 1 1 0 6 1
+pinnumber=1
+T 300 800 5 10 0 0 0 0 1
+pinseq=1
+}
+P 300 500 600 500 1 0 0
+{
+T 300 500 5 10 0 0 0 0 1
+pintype=pwr
+T 655 495 5 10 1 1 0 0 1
+pinlabel=VOUT
+T 505 545 5 10 1 1 0 6 1
+pinnumber=5
+T 300 500 5 10 0 0 0 0 1
+pinseq=2
+}
+P 2400 800 2100 800 1 0 0
+{
+T 2400 800 5 10 0 0 0 0 1
+pintype=in
+T 2045 795 5 10 1 1 0 6 1
+pinlabel=EN
+T 2195 845 5 10 1 1 0 0 1
+pinnumber=3
+T 2400 800 5 10 0 0 0 0 1
+pinseq=3
+}
+T 1800 1200 8 10 0 1 0 0 1
+device=LDO
+T 1800 1200 8 10 0 1 0 0 1
+description=Fixed Output LDO
+T 1700 1100 8 10 1 1 0 0 1
+refdes=U?
+T 2200 1300 8 10 0 1 0 0 1
+numslots=0
+T 800 1100 9 10 1 0 0 0 1
+LDO
+P 300 200 600 200 1 0 0
+{
+T 400 200 5 10 0 0 0 0 1
+pintype=pwr
+T 655 195 5 10 1 1 0 0 1
+pinlabel=GND
+T 505 245 5 10 1 1 0 6 1
+pinnumber=2
+T 400 200 5 10 0 0 0 0 1
+pinseq=0
+}
+P 2400 200 2100 200 1 0 0
+{
+T 2400 200 5 10 0 0 0 0 1
+pintype=io
+T 2045 195 5 10 1 1 0 6 1
+pinlabel=BYP
+T 2195 245 5 10 1 1 0 0 1
+pinnumber=4
+T 2400 200 5 10 0 0 0 0 1
+pinseq=0
+}
