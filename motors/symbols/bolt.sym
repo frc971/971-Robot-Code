@@ -1,0 +1,12 @@
+v 20130925 2
+V 600 500 500 3 0 0 0 -1 -1 0 -1 -1 -1 -1 -1
+T -300 1200 8 10 0 1 0 0 1
+device=bolt
+T 500 1300 8 10 0 1 0 0 1
+description=mounting bolt hole
+T 500 700 8 10 1 1 0 0 1
+refdes=B?
+T 1100 1400 8 10 0 1 0 0 1
+numslots=0
+T 300 1100 9 10 1 0 0 0 1
+bolt hole
