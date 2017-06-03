@@ -2860,10 +2860,12 @@ Layer(4 "bottom")
 	Line[38.6870mm 37.0431mm 37.9286mm 37.0431mm 10.00mil 20.00mil "clearline"]
 	Line[37.9286mm 37.0431mm 37.7154mm 1450.00mil 10.00mil 20.00mil "clearline"]
 	Line[37.7154mm 1450.00mil 37.7154mm 1390.00mil 10.00mil 20.00mil "clearline"]
+	Text[825.00mil 1595.00mil 1 88 "V0.0" "clearline,onsolder"]
 	Polygon("")
 	(
-		[3405.00mil 1520.00mil] [3365.00mil 1480.00mil] [3155.00mil 1480.00mil] [3055.00mil 1580.00mil] [810.00mil 1580.00mil] 
-		[810.00mil 1960.00mil] [1460.00mil 1960.00mil] [1480.00mil 1940.00mil] [3540.00mil 1940.00mil] [3540.00mil 1520.00mil] 
+		[3405.00mil 1520.00mil] [3365.00mil 1480.00mil] [3155.00mil 1480.00mil] [3055.00mil 1580.00mil] [895.00mil 1580.00mil] 
+		[895.00mil 1710.00mil] [810.00mil 1710.00mil] [810.00mil 1960.00mil] [1460.00mil 1960.00mil] [1480.00mil 1940.00mil] 
+		[3540.00mil 1940.00mil] [3540.00mil 1520.00mil] 
 	)
 	Polygon("")
 	(
@@ -2903,14 +2905,17 @@ Layer(7 "silk")
 (
 	Line[3390.00mil 1255.00mil 3410.00mil 1255.00mil 10.00mil 20.00mil "clearline"]
 	Line[3390.00mil 1185.00mil 3410.00mil 1185.00mil 10.00mil 20.00mil "clearline"]
-	Line[3390.00mil 1480.00mil 3410.00mil 1480.00mil 10.00mil 20.00mil "clearline"]
-	Line[3400.00mil 1490.00mil 3400.00mil 1470.00mil 10.00mil 20.00mil "clearline"]
 	Line[3390.00mil 960.00mil 3410.00mil 960.00mil 10.00mil 20.00mil "clearline"]
 	Line[3400.00mil 970.00mil 3400.00mil 950.00mil 10.00mil 20.00mil "clearline"]
 	Line[3255.00mil 940.00mil 3275.00mil 940.00mil 10.00mil 20.00mil "clearline"]
 	Line[3265.00mil 950.00mil 3265.00mil 930.00mil 10.00mil 20.00mil "clearline"]
+	Line[3415.00mil 1460.00mil 3435.00mil 1460.00mil 10.00mil 20.00mil "clearline"]
+	Line[3425.00mil 1470.00mil 3425.00mil 1450.00mil 10.00mil 20.00mil "clearline"]
 	Text[3330.00mil 1915.00mil 0 142 "GND" "clearline,onsolder"]
 	Text[3220.00mil 1045.00mil 0 142 "VBAT" "clearline,onsolder"]
+	Text[1710.00mil 2255.00mil 0 98 "V0.0" "clearline,onsolder"]
+	Text[840.00mil 1840.00mil 1 98 "V0.0" "clearline,onsolder"]
+	Text[845.00mil 1175.00mil 1 98 "medium salsa" "clearline,onsolder"]
 )
 Layer(8 "silk")
 (
