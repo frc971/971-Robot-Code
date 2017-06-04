@@ -9,7 +9,7 @@ Grid[500.000000 0.0000 0.0000 1]
 PolyArea[3100.006200]
 Thermal[0.500000]
 DRC[8.50mil 10.00mil 10.00mil 8.00mil 11.81mil 8.00mil]
-Flags("nameonpcb,alldirection,clearnew,snappin,locknames")
+Flags("nameonpcb,clearnew,snappin,onlynames")
 Groups("1,c:2:3:4,s:5:6")
 Styles["Signal,10.00mil,36.00mil,20.00mil,10.00mil:Power,25.00mil,60.00mil,35.00mil,10.00mil:Fat,35.00mil,70.00mil,45.00mil,10.00mil:Skinny,6.00mil,24.02mil,11.81mil,6.00mil"]
 
@@ -2603,17 +2603,17 @@ Layer(2 "signal2")
 	)
 	Polygon("")
 	(
-		[810.00mil 1570.00mil] [1510.00mil 1570.00mil] [1510.00mil 1080.00mil] [810.00mil 1080.00mil] 
+		[810.00mil 1570.00mil] [1485.00mil 1570.00mil] [1485.00mil 1080.00mil] [810.00mil 1080.00mil] 
 	)
 	Polygon("")
 	(
-		[2520.00mil 1315.00mil] [2625.00mil 1420.00mil] [2625.00mil 1570.00mil] [3025.00mil 1570.00mil] [3130.00mil 1465.00mil] 
-		[3130.00mil 1355.00mil] [3140.00mil 1345.00mil] [3140.00mil 1080.00mil] [2520.00mil 1080.00mil] 
+		[2520.00mil 1220.00mil] [2625.00mil 1325.00mil] [2625.00mil 1570.00mil] [3025.00mil 1570.00mil] [3090.00mil 1505.00mil] 
+		[3090.00mil 1080.00mil] [2520.00mil 1080.00mil] 
 	)
 	Polygon("")
 	(
-		[1715.00mil 1315.00mil] [1820.00mil 1420.00mil] [1820.00mil 1570.00mil] [2220.00mil 1570.00mil] [2325.00mil 1465.00mil] 
-		[2325.00mil 1355.00mil] [2335.00mil 1345.00mil] [2335.00mil 1080.00mil] [1715.00mil 1080.00mil] 
+		[1715.00mil 1220.00mil] [1820.00mil 1325.00mil] [1820.00mil 1570.00mil] [2290.00mil 1570.00mil] [2290.00mil 1080.00mil] 
+		[1715.00mil 1080.00mil] 
 	)
 )
 Layer(3 "signal3")
@@ -2648,7 +2648,7 @@ Layer(3 "signal3")
 	Line[3260.00mil 2175.00mil 3200.00mil 2115.00mil 10.00mil 20.00mil "clearline"]
 	Line[2900.00mil 2115.00mil 3200.00mil 2115.00mil 10.00mil 20.00mil "clearline"]
 	Line[3310.00mil 2085.00mil 3525.00mil 1870.00mil 25.00mil 20.00mil "clearline"]
-	Line[3340.00mil 1340.00mil 3340.00mil 1645.00mil 55.00mil 20.00mil "clearline"]
+	Line[3340.00mil 1340.00mil 3340.00mil 1645.00mil 55.00mil 20.00mil ""]
 	Line[3525.00mil 1870.00mil 3525.00mil 39.0561mm 25.00mil 20.00mil "clearline"]
 	Line[3525.00mil 39.0561mm 3470.00mil 37.6591mm 25.00mil 20.00mil "clearline"]
 	Polygon("")
@@ -2668,17 +2668,31 @@ Layer(3 "signal3")
 	)
 	Polygon("")
 	(
-		[1820.00mil 1570.00mil] [2345.00mil 1570.00mil] [2345.00mil 1080.00mil] [1820.00mil 1080.00mil] 
+		[1715.00mil 1220.00mil] [1820.00mil 1325.00mil] [1820.00mil 1570.00mil] [2290.00mil 1570.00mil] [2290.00mil 1080.00mil] 
+		[1715.00mil 1080.00mil] 
 	)
 	Polygon("")
 	(
-		[2520.00mil 1315.00mil] [2625.00mil 1420.00mil] [2625.00mil 1570.00mil] [3025.00mil 1570.00mil] [3140.00mil 1455.00mil] 
-		[3140.00mil 1080.00mil] [2520.00mil 1080.00mil] 
+		[2520.00mil 1220.00mil] [2625.00mil 1325.00mil] [2625.00mil 1570.00mil] [3025.00mil 1570.00mil] [3090.00mil 1505.00mil] 
+		[3090.00mil 1080.00mil] [2520.00mil 1080.00mil] 
 	)
 	Polygon("")
 	(
-		[810.00mil 1570.00mil] [1540.00mil 1570.00mil] [1540.00mil 1310.00mil] [1760.00mil 1310.00mil] [1760.00mil 1080.00mil] 
-		[810.00mil 1080.00mil] 
+		[810.00mil 1570.00mil] [1485.00mil 1570.00mil] [1485.00mil 1080.00mil] [810.00mil 1080.00mil] 
+	)
+	Polygon("clearpoly")
+	(
+		[1495.00mil 1580.00mil] [1495.00mil 1080.00mil] [1705.00mil 1080.00mil] [1705.00mil 1230.00mil] [1810.00mil 1335.00mil] 
+		[1810.00mil 1580.00mil] 
+	)
+	Polygon("clearpoly")
+	(
+		[2300.00mil 1580.00mil] [2300.00mil 1080.00mil] [2510.00mil 1080.00mil] [2510.00mil 1230.00mil] [2615.00mil 1335.00mil] 
+		[2615.00mil 1580.00mil] 
+	)
+	Polygon("clearpoly")
+	(
+		[3100.00mil 1480.00mil] [3100.00mil 1080.00mil] [3315.00mil 1080.00mil] [3315.00mil 1480.00mil] 
 	)
 )
 Layer(4 "bottom")
@@ -2889,6 +2903,10 @@ Layer(4 "bottom")
 		[1615.00mil 1170.00mil] [1750.00mil 1305.00mil] [1820.00mil 1305.00mil] [1820.00mil 1480.00mil] [1565.00mil 1480.00mil] 
 		[1565.00mil 1570.00mil] [2220.00mil 1570.00mil] [2275.00mil 1515.00mil] [2275.00mil 1365.00mil] [2290.00mil 1350.00mil] 
 		[2290.00mil 1080.00mil] [1615.00mil 1080.00mil] 
+	)
+	Polygon("")
+	(
+		[3420.00mil 1150.00mil] [3540.00mil 1150.00mil] [3540.00mil 1380.00mil] [3420.00mil 1255.00mil] 
 	)
 )
 Layer(5 "outline")
