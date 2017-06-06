@@ -2915,7 +2915,22 @@ Layer(7 "silk")
 	Text[3220.00mil 1045.00mil 0 142 "VBAT" "clearline,onsolder"]
 	Text[1040.00mil 2280.00mil 0 98 "V0.0" "clearline,onsolder"]
 	Text[840.00mil 1840.00mil 1 98 "V0.0" "clearline,onsolder"]
-	Text[845.00mil 1175.00mil 1 98 "medium salsa" "clearline,onsolder"]
+	Text[845.00mil 1190.00mil 1 98 "medium salsa" "clearline,onsolder"]
+	Text[855.00mil 1155.00mil 0 74 "60V IPT007N06" "clearline,onsolder"]
+	Text[855.00mil 1090.00mil 0 74 "80V IPT012N08" "clearline,onsolder"]
+	Text[855.00mil 1020.00mil 0 74 "100V IPT015N10" "clearline,onsolder"]
+	Polygon("clearpoly")
+	(
+		[810.00mil 1150.00mil] [840.00mil 1150.00mil] [840.00mil 1120.00mil] [810.00mil 1120.00mil] 
+	)
+	Polygon("clearpoly")
+	(
+		[810.00mil 1085.00mil] [840.00mil 1085.00mil] [840.00mil 1055.00mil] [810.00mil 1055.00mil] 
+	)
+	Polygon("clearpoly")
+	(
+		[810.00mil 1015.00mil] [840.00mil 1015.00mil] [840.00mil 985.00mil] [810.00mil 985.00mil] 
+	)
 )
 Layer(8 "silk")
 (
