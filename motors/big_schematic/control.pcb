@@ -1874,6 +1874,7 @@ Layer(1 "top")
 	Line[3080.00mil 3240.00mil 3080.00mil 3085.00mil 10.00mil 20.00mil "clearline"]
 	Line[3080.00mil 3085.00mil 3140.00mil 3025.00mil 10.00mil 20.00mil "clearline"]
 	Line[2582.00mil 3438.00mil 2582.00mil 3475.00mil 10.00mil 20.00mil "clearline"]
+	Text[3380.00mil 4171.00mil 0 98 "V0.0" "clearline"]
 	Polygon("clearpoly")
 	(
 		[810.00mil 4330.00mil] [3310.00mil 4330.00mil] [3310.00mil 3705.00mil] [810.00mil 3705.00mil] 
@@ -2411,6 +2412,8 @@ Layer(6 "silk")
 	Line[3390.00mil 3350.00mil 3390.00mil 3375.00mil 10.00mil 20.00mil "clearline"]
 	Text[3480.00mil 3180.00mil 0 98 "0" "clearline"]
 	Text[3480.00mil 3280.00mil 0 98 "1" "clearline"]
+	Text[1629.00mil 4245.00mil 0 98 "mild salsa" "clearline"]
+	Text[1989.00mil 4244.00mil 0 98 "V0.0" "clearline"]
 )
 NetList()
 (
