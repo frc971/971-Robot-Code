@@ -8,6 +8,8 @@ drivetrain.stripped status profiled_right_velocity_goal
 
 drivetrain.stripped status estimated_left_position
 drivetrain.stripped status estimated_right_position
+drivetrain.stripped status estimated_left_velocity
+drivetrain.stripped status estimated_right_velocity
 
 drivetrain.stripped goal left_goal
 drivetrain.stripped goal right_goal

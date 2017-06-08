@@ -89,5 +89,34 @@ TEST_F(RingBufferTest, RingBufferShift) {
   }
 }
 
+// Test that the buffer works after Reset.
+TEST_F(RingBufferTest, ResetWorks) {
+  // Over fill it, and then clear it out.
+  ASSERT_TRUE(buffer_.empty());
+
+  for (size_t i = 0; i < 53; ++i) {
+    buffer_.Push(i);
+  }
+  ASSERT_TRUE(buffer_.full());
+
+  buffer_.Reset();
+
+  ASSERT_TRUE(buffer_.empty());
+
+  // Now, add numbers 0-9 to the RingBuffer.
+  for (int i = 0; i < 10; ++i) {
+    buffer_.Push(i);
+  }
+
+  // It should now be full.
+  ASSERT_TRUE(buffer_.full());
+
+  // The last 10 numbers were added 0-9, so verify that is what is in the
+  // buffer.
+  for (size_t i = 0; i < buffer_.size(); ++i) {
+    ASSERT_EQ(i, buffer_[i]);
+  }
+}
+
 }  // namespace testing
 }  // namespace aos

@@ -43,6 +43,10 @@ class VisionTimeAdjuster {
     double right;
   };
 
+  void ResetTime() {
+    most_recent_vision_time_ = ::aos::monotonic_clock::min_time;
+  }
+
  private:
   // Buffer space to store the most recent drivetrain and turret messages from
   // the last second.

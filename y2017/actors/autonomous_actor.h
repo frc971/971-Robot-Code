@@ -32,6 +32,8 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     shooter_velocity_ = 0.0;
     indexer_angular_velocity_ = 0.0;
     intake_max_velocity_ = 0.5;
+    gear_servo_ = 0.66;
+    use_vision_for_shots_ = false;
     InitializeEncoders();
     ResetDrivetrain();
     SendSuperstructureGoal();
@@ -44,6 +46,8 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   double shooter_velocity_ = 0.0;
   double indexer_angular_velocity_ = 0.0;
   double intake_max_velocity_ = 0.5;
+  double gear_servo_ = 0.66;
+  bool use_vision_for_shots_ = false;
 
   void set_intake_goal(double intake_goal) { intake_goal_ = intake_goal; }
   void set_turret_goal(double turret_goal) { turret_goal_ = turret_goal; }
@@ -57,6 +61,12 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
   void set_intake_max_velocity(double intake_max_velocity) {
     intake_max_velocity_ = intake_max_velocity;
+  }
+  void set_gear_servo(double gear_servo) {
+    gear_servo_ = gear_servo;
+  }
+  void set_use_vision_for_shots(bool use_vision_for_shots) {
+    use_vision_for_shots_ = use_vision_for_shots;
   }
 
   void SendSuperstructureGoal() {
@@ -80,6 +90,8 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     new_superstructure_goal->intake.voltage_rollers = 0.0;
     new_superstructure_goal->lights_on = true;
     new_superstructure_goal->intake.disable_intake = false;
+    new_superstructure_goal->intake.gear_servo = gear_servo_;
+    new_superstructure_goal->use_vision_for_shots = use_vision_for_shots_;
 
     new_superstructure_goal->indexer.angular_velocity =
         indexer_angular_velocity_;

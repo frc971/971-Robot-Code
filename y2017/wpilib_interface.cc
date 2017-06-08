@@ -436,7 +436,7 @@ class SensorReader {
 
       CopyPosition(indexer_counter_, &superstructure_message->column.indexer,
                    Values::kIndexerEncoderCountsPerRevolution,
-                   Values::kIndexerEncoderRatio, false);
+                   Values::kIndexerEncoderRatio, true);
 
       superstructure_message->theta_shooter =
           encoder_translate(shooter_encoder_->GetRaw(),

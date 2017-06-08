@@ -93,7 +93,7 @@ void ShooterController::Update(bool disabled, chrono::nanoseconds dt) {
   if (reset_) {
     // TODO(austin): I'd rather not be incrementing X_hat each time.  Sort out
     // something better.
-    loop_->mutable_X_hat(3, 0) += 1.5;
+    loop_->mutable_X_hat(3, 0) += 1.0;
     reset_ = false;
   }
   last_ready_ = ready_;

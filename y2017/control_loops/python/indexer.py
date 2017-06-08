@@ -40,8 +40,8 @@ class VelocityIndexer(control_loop.ControlLoop):
     self.J_inner = 0.0269
     self.J_outer = 0.0952
     # Gear ratios for the inner and outer parts.
-    self.G_inner = (12.0 / 48.0) * (18.0 / 36.0) * (12.0 / 84.0)
-    self.G_outer = (12.0 / 48.0) * (18.0 / 36.0) * (24.0 / 420.0)
+    self.G_inner = (12.0 / 48.0) * (20.0 / 34.0) * (18.0 / 36.0) * (12.0 / 84.0)
+    self.G_outer = (12.0 / 48.0) * (20.0 / 34.0) * (18.0 / 36.0) * (24.0 / 420.0)
 
     # Motor inertia in kg m^2
     self.motor_inertia = 0.00001187
@@ -332,7 +332,8 @@ def main(argv):
         'IntegralIndexer', [integral_indexer], namespaces=namespaces)
     integral_loop_writer.Write(argv[3], argv[4])
 
-    stuck_integral_indexer = IntegralIndexer('StuckIntegralIndexer', voltage_error_noise=1.5)
+    stuck_integral_indexer = IntegralIndexer('StuckIntegralIndexer',
+                                             voltage_error_noise=1.5)
     stuck_integral_loop_writer = control_loop.ControlLoopWriter(
         'StuckIntegralIndexer', [stuck_integral_indexer], namespaces=namespaces)
     stuck_integral_loop_writer.Write(argv[5], argv[6])

@@ -156,8 +156,8 @@ void VisionTimeAdjuster::Tick(monotonic_clock::time_point monotonic_now,
       most_recent_drivetrain_angle_);
 
   // Now, update the vision valid flag to tell us if we have a valid vision
-  // angle within the last two seconds.
-  if (monotonic_now < most_recent_vision_time_ + chrono::seconds(2)) {
+  // angle within the last seven seconds.
+  if (monotonic_now < most_recent_vision_time_ + chrono::seconds(7)) {
     valid_ = true;
   } else {
     valid_ = false;

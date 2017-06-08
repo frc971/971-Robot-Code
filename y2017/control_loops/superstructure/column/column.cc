@@ -335,7 +335,7 @@ double ColumnProfiledSubsystem::IndexerStuckVoltage() const {
   }
 }
 bool ColumnProfiledSubsystem::IsIndexerStuck() const {
-  return IndexerStuckVoltage() > 6.0;
+  return IndexerStuckVoltage() > 4.0;
 }
 
 void ColumnProfiledSubsystem::PartialIndexerReset() {
@@ -536,6 +536,8 @@ void Column::Iterate(const control_loops::IndexerGoal *unsafe_indexer_goal,
             profiled_subsystem_.set_turret_unprofiled_goal(
                 vision_time_adjuster_.goal() + vision_error_);
           }
+        } else {
+          vision_time_adjuster_.ResetTime();
         }
 
         if (freeze_) {

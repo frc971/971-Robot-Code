@@ -46,6 +46,11 @@ class BaseAutonomousActor
 
   bool WaitForDriveProfileDone();
 
+  bool WaitForTurnProfileDone();
+
+  // Returns the distance left to go.
+  double DriveDistanceLeft();
+
   const control_loops::drivetrain::DrivetrainConfig dt_config_;
 
   // Initial drivetrain positions.

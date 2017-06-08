@@ -38,7 +38,7 @@ class VelocityShooter(control_loop.HybridControlLoop):
     # Moment of inertia of the shooter wheel in kg m^2
     # 1400.6 grams/cm^2
     # 1.407 *1e-4 kg m^2
-    self.J = 0.00100
+    self.J = 0.00120
     # Resistance of the motor, divided by 2 to account for the 2 motors
     self.R = 12.0 / self.stall_current
     # Motor velocity constant
@@ -49,7 +49,7 @@ class VelocityShooter(control_loop.HybridControlLoop):
     # Gear ratio
     self.G = 12.0 / 36.0
     # Control loop time step
-    self.dt = 0.005
+    self.dt = 0.00505
 
     # State feedback matrices
     # [angular velocity]
@@ -92,7 +92,7 @@ class SecondOrderVelocityShooter(VelocityShooter):
 
     self.A_continuous = numpy.matrix(numpy.zeros((2, 2)))
     self.A_continuous[0:1, 0:1] = self.A_continuous_unaugmented
-    self.A_continuous[1, 0] = 225.0
+    self.A_continuous[1, 0] = 175.0
     self.A_continuous[1, 1] = -self.A_continuous[1, 0]
 
     self.B_continuous = numpy.matrix(numpy.zeros((2, 1)))
@@ -203,7 +203,7 @@ class IntegralShooter(Shooter):
     glog.debug('A_dt(A): \n%s', repr(self.A))
 
     q_pos = 0.01
-    q_vel = 4.0
+    q_vel = 5.0
     q_velfilt = 1.5
     q_voltage = 2.0
     self.Q_continuous = numpy.matrix([[(q_pos ** 2.0), 0.0, 0.0, 0.0],

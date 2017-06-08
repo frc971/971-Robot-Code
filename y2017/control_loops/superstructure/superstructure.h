@@ -51,6 +51,10 @@ class Superstructure
 
   VisionDistanceAverage distance_average_;
 
+  ::frc971::shooter_interpolation::InterpolationTable<
+      ::y2017::constants::Values::ShotParams>
+      shot_interpolation_table_;
+
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 

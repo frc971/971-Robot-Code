@@ -266,6 +266,54 @@ bool BaseAutonomousActor::WaitForDriveProfileDone() {
   }
 }
 
+bool BaseAutonomousActor::WaitForTurnProfileDone() {
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
+  constexpr double kProfileTolerance = 0.001;
+
+  while (true) {
+    if (ShouldCancel()) {
+      return false;
+    }
+    phased_loop.SleepUntilNext();
+    drivetrain_queue.status.FetchLatest();
+    if (drivetrain_queue.status.get()) {
+      const double left_profile_error =
+          (initial_drivetrain_.left -
+           drivetrain_queue.status->profiled_left_position_goal);
+      const double right_profile_error =
+          (initial_drivetrain_.right -
+           drivetrain_queue.status->profiled_right_position_goal);
+
+      const double profile_angle_to_go =
+          (right_profile_error - left_profile_error) /
+          (dt_config_.robot_radius * 2.0);
+
+      if (::std::abs(profile_angle_to_go) < kProfileTolerance) {
+        LOG(INFO, "Finished turn profile\n");
+        return true;
+      }
+    }
+  }
+}
+
+double BaseAutonomousActor::DriveDistanceLeft() {
+  using ::frc971::control_loops::drivetrain_queue;
+  drivetrain_queue.status.FetchLatest();
+  if (drivetrain_queue.status.get()) {
+    const double left_error =
+        (initial_drivetrain_.left -
+         drivetrain_queue.status->estimated_left_position);
+    const double right_error =
+        (initial_drivetrain_.right -
+         drivetrain_queue.status->estimated_right_position);
+
+    return (left_error + right_error) / 2.0;
+  } else {
+    return 0;
+  }
+}
+
 ::std::unique_ptr<AutonomousAction> MakeAutonomousAction(
     const AutonomousActionParams &params) {
   return ::std::unique_ptr<AutonomousAction>(
