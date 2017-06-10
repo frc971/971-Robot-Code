@@ -1,0 +1,133 @@
+SRR1210-150M:
+  package: SRR1210
+
+PRL1632-R020-F-T1:
+  package: "0612"
+
+ADXRS453:
+  mpn: ADXRS453BRGZ
+
+22-23-2021:
+  package: 22-23-2021
+22-23-2031:
+  package: 22-23-2031
+22-23-2041:
+  package: 22-23-2041
+22-23-2051:
+  package: 22-23-2051
+22-23-2061:
+  package: 22-23-2061
+
+PPTC021LFBN-RC:
+  package: HEADER2x1
+PPTC031LFBN-RC:
+  package: HEADER3x1
+PPTC041LFBN-RC:
+  package: HEADER4x1
+
+SFH11-PBPC-D05-ST-BK:
+  package: HEADER10_2_POLAR
+SFH11-PBPC-D17-ST-BK:
+  package: HEADER34_2_POLAR
+
+# Stuff that doesn't get ordered with these scripts.
+no_order:
+  - 4-40_bolt
+  - 8_bolt
+
+not_parts:
+  - SOMETHING
+
+assembly_dnp:
+  - "PPTC021LFBN-RC"
+  - "PPTC031LFBN-RC"
+  - "PPTC041LFBN-RC"
+  - "SFH11-PBPC-D05-ST-BK"
+  - "SFH11-PBPC-D17-ST-BK"
+
+remapped_footprints:
+  SC70_6: SOT-363
+  SC70_5: SOT-353
+  TO220AB: TO-220-3
+  SOT23: SOT-23
+  SOT23_5: SOT-23-5
+  TO3P: TO-3P
+  QFN16_3: QFN-16
+  LQFP64_10: QFP-64
+  DPAK_369C: TO-252
+  SOD123: SOD-123F
+  SO16: SO-16
+  SOD882: SOD-882
+  TSSOP20: TSSOP-20
+  HTSSOP20: HTSSOP-20
+  HC49S: "HC49/US"
+  TOPMOD: TO-PMOD-7
+  SOT223: SOT-223
+  SO16W: SOIC-16
+
+digikey_numbers:
+  SOMETHING: SOMETHING-ND
+
+mouser_numbers:
+  SOMETHING: 279-SOMETHING
+
+footprint_mappings:
+  SOT-23-3: SOT-23
+  DPAK-2: TO-252
+  SC-70-6: SOT-363
+  SC-70-5: SOT-353
+  SOT-23-6: SOT6L
+  "TO-3P-3, SC-65-3": TO-3P
+  64-LQFP: QFP-64
+  "6-TSSOP, SC-88, SOT-363": SOT-363
+  "TO-236-3, SC-59, SOT-23-3": SOT-23
+  "SC-74A, SOT-753": SOT-23-5
+  "SOT-23-6 Thin, TSOT-23-6": SOT6L
+  "6-TSSOP (5 Lead), SC-88A, SOT-353": SOT-353
+  TO-236AB: SOT-23
+  "16-SOIC (0.154\", 3.90mm Width)": SO-16
+  TO-220: TO-220-3
+  "20-TSSOP (0.173\", 4.40mm Width)": TSSOP-20
+  "20-TSSOP (0.173\", 4.40mm Width) Exposed Pad": HTSSOP-20
+  "TSSOP EP": HTSSOP-20
+  "HC-49/US SM": "HC49/US"
+  "VSON-8 Clip": TRANS_NexFET_Q3
+  "8-TDFN Exposed Pad": TRANS_NexFET_Q3
+  "DO-214AC, SMA": SMA
+  "Wide 1206 (3216 Metric), 0612": "0612"
+  "TO-PMOD-7, Power Module": TO-PMOD-7
+  "TO-261-4, TO-261AA": SOT-223
+  "16-SOIC (0.295\", 7.50mm Width)": SOIC-16
+
+bom_footprints:
+  SOMETHING: "actually another thing"
+
+low_quantity_substitutes:
+  CL21A106KPFNNNG: CL21A106KPCLQNC
+  CL21A106KPFNNNS: CL21A106KPCLQNC
+
+manufacturer_names:
+  "SEI Stackpole": "Stackpole Electronics"
+  "Stackpole Electronics Inc": "Stackpole Electronics"
+  "TE Connectivity / Alcoswitch": "TE Connectivity"
+  "TE Connectivity / AMP": "TE Connectivity"
+  "Murata Electronics North America": "Murata Electronics"
+  "TDK Corporation": "TDK"
+  "Micro Commercial Co": "Micro Commercial Components (MCC)"
+  "Panasonic Electronic Components": "Panasonic"
+  "OSRAM Opto Semiconductors Inc": "OSRAM Opto Semiconductors"
+  "OSRAM Opto Semiconductors Inc.": "OSRAM Opto Semiconductors"
+  "Littelfuse Inc": Littelfuse
+  "Bourns Inc.": Bourns
+  "Vishay / Dale": "Vishay Dale"
+  "Molex Inc": Molex
+  "Molex Inc.": Molex
+  "Molex, LLC": Molex
+  "Samsung Electro-Mechanics America, Inc": "Samsung"
+  "Skyworks Solutions Inc": "Skyworks Solutions"
+  "Skyworks Solutions, Inc.": "Skyworks Solutions"
+  "CTS-Frequency Controls": "CTS Electronic Components"
+  AVX: "AVX Corporation"
+  "Analog Devices Inc": "Analog Devices"
+  "Analog Devices Inc.": "Analog Devices"
+  "ROHM Semiconductor": "Rohm Semiconductor"
