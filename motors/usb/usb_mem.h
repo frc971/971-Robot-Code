@@ -45,7 +45,7 @@ extern "C" {
 #endif
 
 usb_packet_t * usb_malloc(void);
-void usb_free(usb_packet_t *p);
+void usb_free(const usb_packet_t *p);
 
 #ifdef __cplusplus
 }

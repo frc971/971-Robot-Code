@@ -39,6 +39,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #define ENDPOINT_UNUSED			0x00
 #define ENDPOINT_TRANSIMIT_ONLY		0x15
 #define ENDPOINT_RECEIVE_ONLY		0x19
@@ -120,23 +125,31 @@ let me know?  http://forum.pjrc.com/forums/4-Suggestions-amp-Bug-Reports
   #define DEVICE_CLASS		2	// 2 = Communication Class
   #define MANUFACTURER_NAME	{'T','e','e','n','s','y','d','u','i','n','o'}
   #define MANUFACTURER_NAME_LEN	11
-  #define PRODUCT_NAME		{'U','S','B',' ','S','e','r','i','a','l'}
-  #define PRODUCT_NAME_LEN	10
+  #define PRODUCT_NAME		{'U','S','B',' ','S','e','r','i','a','l',' ','x','2'}
+  #define PRODUCT_NAME_LEN	13
   #define EP0_SIZE		64
-  #define NUM_ENDPOINTS		4
-  #define NUM_USB_BUFFERS	12
-  #define NUM_INTERFACE		2
+  #define NUM_ENDPOINTS		7
+  #define NUM_USB_BUFFERS	24
+  #define NUM_INTERFACE		4
   #define CDC_STATUS_INTERFACE	0
   #define CDC_DATA_INTERFACE	1
+  #define CDC2_STATUS_INTERFACE	2
+  #define CDC2_DATA_INTERFACE	3
   #define CDC_ACM_ENDPOINT	2
   #define CDC_RX_ENDPOINT       3
   #define CDC_TX_ENDPOINT       4
+  #define CDC2_ACM_ENDPOINT	5
+  #define CDC2_RX_ENDPOINT       6
+  #define CDC2_TX_ENDPOINT       7
   #define CDC_ACM_SIZE          16
   #define CDC_RX_SIZE           64
   #define CDC_TX_SIZE           64
   #define ENDPOINT2_CONFIG	ENDPOINT_TRANSIMIT_ONLY
   #define ENDPOINT3_CONFIG	ENDPOINT_RECEIVE_ONLY
   #define ENDPOINT4_CONFIG	ENDPOINT_TRANSIMIT_ONLY
+  #define ENDPOINT5_CONFIG	ENDPOINT_TRANSIMIT_ONLY
+  #define ENDPOINT6_CONFIG	ENDPOINT_RECEIVE_ONLY
+  #define ENDPOINT7_CONFIG	ENDPOINT_TRANSIMIT_ONLY
 
 #elif defined(USB_KEYBOARDONLY)
   #define VENDOR_ID		0x16C0
@@ -707,5 +720,11 @@ typedef struct {
 extern const usb_descriptor_list_t usb_descriptor_list[];
 #endif // NUM_ENDPOINTS
 #endif // USB_DESC_LIST_DEFINE
+
+void usb_descriptor_set_product_id(uint16_t product_id);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

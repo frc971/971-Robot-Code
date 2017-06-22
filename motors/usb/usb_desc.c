@@ -31,11 +31,11 @@
 #if F_CPU >= 20000000
 
 #define USB_DESC_LIST_DEFINE
-#include "usb_desc.h"
+#include "motors/usb/usb_desc.h"
 #ifdef NUM_ENDPOINTS
-#include "usb_names.h"
-#include "kinetis.h"
-#include "avr_functions.h"
+#include "motors/usb/usb_names.h"
+#include "motors/core/kinetis.h"
+#include "motors/core/nonstd.h"
 
 // USB Descriptors are binary data which the USB host reads to
 // automatically detect a USB device's capabilities.  The format
@@ -470,7 +470,14 @@ static uint8_t flightsim_report_desc[] = {
 #define CDC_DATA_INTERFACE_DESC_SIZE	0
 #endif
 
-#define MIDI_INTERFACE_DESC_POS		CDC_DATA_INTERFACE_DESC_POS+CDC_DATA_INTERFACE_DESC_SIZE
+#define CDC2_DATA_INTERFACE_DESC_POS	CDC_DATA_INTERFACE_DESC_POS+CDC_DATA_INTERFACE_DESC_SIZE
+#ifdef  CDC2_DATA_INTERFACE
+#define CDC2_DATA_INTERFACE_DESC_SIZE	9+5+5+4+5+7+9+7+7
+#else
+#define CDC2_DATA_INTERFACE_DESC_SIZE	0
+#endif
+
+#define MIDI_INTERFACE_DESC_POS		CDC2_DATA_INTERFACE_DESC_POS+CDC2_DATA_INTERFACE_DESC_SIZE
 #ifdef  MIDI_INTERFACE
 #define MIDI_INTERFACE_DESC_SIZE	9+7+6+6+9+9+9+5+9+5
 #else
@@ -650,6 +657,72 @@ static uint8_t config_descriptor[CONFIG_DESC_SIZE] = {
         7,                                      // bLength
         5,                                      // bDescriptorType
         CDC_TX_ENDPOINT | 0x80,                 // bEndpointAddress
+        0x02,                                   // bmAttributes (0x02=bulk)
+        CDC_TX_SIZE, 0,                         // wMaxPacketSize
+        0,                                      // bInterval
+#endif // CDC_DATA_INTERFACE
+
+#ifdef CDC2_DATA_INTERFACE
+        // interface descriptor, USB spec 9.6.5, page 267-269, Table 9-12
+        9,                                      // bLength
+        4,                                      // bDescriptorType
+        CDC2_STATUS_INTERFACE,			// bInterfaceNumber
+        0,                                      // bAlternateSetting
+        1,                                      // bNumEndpoints
+        0x02,                                   // bInterfaceClass
+        0x02,                                   // bInterfaceSubClass
+        0x01,                                   // bInterfaceProtocol
+        0,                                      // iInterface
+        // CDC Header Functional Descriptor, CDC Spec 5.2.3.1, Table 26
+        5,                                      // bFunctionLength
+        0x24,                                   // bDescriptorType
+        0x00,                                   // bDescriptorSubtype
+        0x10, 0x01,                             // bcdCDC
+        // Call Management Functional Descriptor, CDC Spec 5.2.3.2, Table 27
+        5,                                      // bFunctionLength
+        0x24,                                   // bDescriptorType
+        0x01,                                   // bDescriptorSubtype
+        0x01,                                   // bmCapabilities
+        1,                                      // bDataInterface
+        // Abstract Control Management Functional Descriptor, CDC Spec 5.2.3.3, Table 28
+        4,                                      // bFunctionLength
+        0x24,                                   // bDescriptorType
+        0x02,                                   // bDescriptorSubtype
+        0x06,                                   // bmCapabilities
+        // Union Functional Descriptor, CDC Spec 5.2.3.8, Table 33
+        5,                                      // bFunctionLength
+        0x24,                                   // bDescriptorType
+        0x06,                                   // bDescriptorSubtype
+        CDC2_STATUS_INTERFACE,                   // bMasterInterface
+        CDC2_DATA_INTERFACE,                     // bSlaveInterface0
+        // endpoint descriptor, USB spec 9.6.6, page 269-271, Table 9-13
+        7,                                      // bLength
+        5,                                      // bDescriptorType
+        CDC2_ACM_ENDPOINT | 0x80,                // bEndpointAddress
+        0x03,                                   // bmAttributes (0x03=intr)
+        CDC_ACM_SIZE, 0,                        // wMaxPacketSize
+        64,                                     // bInterval
+        // interface descriptor, USB spec 9.6.5, page 267-269, Table 9-12
+        9,                                      // bLength
+        4,                                      // bDescriptorType
+        CDC2_DATA_INTERFACE,                     // bInterfaceNumber
+        0,                                      // bAlternateSetting
+        2,                                      // bNumEndpoints
+        0x0A,                                   // bInterfaceClass
+        0x00,                                   // bInterfaceSubClass
+        0x00,                                   // bInterfaceProtocol
+        0,                                      // iInterface
+        // endpoint descriptor, USB spec 9.6.6, page 269-271, Table 9-13
+        7,                                      // bLength
+        5,                                      // bDescriptorType
+        CDC2_RX_ENDPOINT,                        // bEndpointAddress
+        0x02,                                   // bmAttributes (0x02=bulk)
+        CDC_RX_SIZE, 0,                         // wMaxPacketSize
+        0,                                      // bInterval
+        // endpoint descriptor, USB spec 9.6.6, page 269-271, Table 9-13
+        7,                                      // bLength
+        5,                                      // bDescriptorType
+        CDC2_TX_ENDPOINT | 0x80,                 // bEndpointAddress
         0x02,                                   // bmAttributes (0x02=bulk)
         CDC_TX_SIZE, 0,                         // wMaxPacketSize
         0,                                      // bInterval
@@ -1310,14 +1383,14 @@ void usb_init_serialnumber(void)
 	FTFL_FCCOB1 = 15;
 	FTFL_FSTAT = FTFL_FSTAT_CCIF;
 	while (!(FTFL_FSTAT & FTFL_FSTAT_CCIF)) ; // wait
-	num = *(uint32_t *)&FTFL_FCCOB7;
+	num = *(volatile uint32_t *)&FTFL_FCCOB7;
 #elif defined(HAS_KINETIS_FLASH_FTFE)
 	kinetis_hsrun_disable();
 	FTFL_FSTAT = FTFL_FSTAT_RDCOLERR | FTFL_FSTAT_ACCERR | FTFL_FSTAT_FPVIOL;
-	*(uint32_t *)&FTFL_FCCOB3 = 0x41070000;
+	*(volatile uint32_t *)&FTFL_FCCOB3 = 0x41070000;
 	FTFL_FSTAT = FTFL_FSTAT_CCIF;
 	while (!(FTFL_FSTAT & FTFL_FSTAT_CCIF)) ; // wait
-	num = *(uint32_t *)&FTFL_FCCOBB;
+	num = *(volatile uint32_t *)&FTFL_FCCOBB;
 	kinetis_hsrun_enable();
 #endif
 	__enable_irq();
@@ -1483,6 +1556,10 @@ const uint8_t usb_endpoint_config_table[NUM_ENDPOINTS] =
 #endif
 };
 
+void usb_descriptor_set_product_id(uint16_t product_id) {
+  device_descriptor[10] = LSB(product_id);
+  device_descriptor[11] = MSB(product_id);
+}
 
 #endif // NUM_ENDPOINTS
 #endif // F_CPU >= 20 MHz

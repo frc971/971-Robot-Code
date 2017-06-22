@@ -762,100 +762,6 @@ enum IRQ_NUMBER_t {
 #endif // end of board-specific definitions
 
 
-#if (F_CPU == 240000000)
- #define F_PLL 240000000
- #ifndef F_BUS
- #define F_BUS 60000000
- //#define F_BUS 80000000   // uncomment these to try peripheral overclocking
- //#define F_BUS 120000000  // all the usual overclocking caveats apply...
- #endif
- #define F_MEM 30000000
-#elif (F_CPU == 216000000)
- #define F_PLL 216000000
- #ifndef F_BUS
- #define F_BUS 54000000
- //#define F_BUS 72000000
- //#define F_BUS 108000000
- #endif
- #define F_MEM 27000000
-#elif (F_CPU == 192000000)
- #define F_PLL 192000000
- #ifndef F_BUS
- #define F_BUS 48000000
- //#define F_BUS 64000000
- //#define F_BUS 96000000
- #endif
- #define F_MEM 27428571
-#elif (F_CPU == 180000000)
- #define F_PLL 180000000
- #ifndef F_BUS
- #define F_BUS 60000000
- //#define F_BUS 90000000
- #endif
- #define F_MEM 25714286
-#elif (F_CPU == 168000000)
- #define F_PLL 168000000
- #define F_BUS 56000000
- #define F_MEM 28000000
-#elif (F_CPU == 144000000)
- #define F_PLL 144000000
- #ifndef F_BUS
- #define F_BUS 48000000
- //#define F_BUS 72000000
- #endif
- #define F_MEM 28800000
-#elif (F_CPU == 120000000)
- #define F_PLL 120000000
- #ifndef F_BUS
- #define F_BUS 60000000
- //#define F_BUS 120000000
- #endif
- #define F_MEM 24000000
-#elif (F_CPU == 96000000)
- #define F_PLL 96000000
- #ifndef F_BUS
- #define F_BUS 48000000
- //#define F_BUS 96000000
- #endif
- #define F_MEM 24000000
-#elif (F_CPU == 72000000)
- #define F_PLL 72000000
- #ifndef F_BUS
- #define F_BUS 36000000
- //#define F_BUS 72000000
- #endif
- #define F_MEM 24000000
-#elif (F_CPU == 48000000)
- #define F_PLL 96000000
- #if defined(KINETISK)
- #define F_BUS 48000000
- #elif defined(KINETISL)
- #define F_BUS 24000000
- #endif
- #define F_MEM 24000000
-#elif (F_CPU == 24000000)
- #define F_PLL 96000000
- #define F_BUS 24000000
- #define F_MEM 24000000
-#elif (F_CPU == 16000000)
- #define F_PLL 16000000
- #define F_BUS 16000000
- #define F_MEM 16000000
-#elif (F_CPU == 8000000)
- #define F_PLL 8000000
- #define F_BUS 8000000
- #define F_MEM 8000000
-#elif (F_CPU == 4000000)
- #define F_PLL 4000000
- #define F_BUS 4000000
- #define F_MEM 4000000
-#elif (F_CPU == 2000000)
- #define F_PLL 2000000
- #define F_BUS 2000000
- #define F_MEM 1000000
-#endif
-
-
 #ifndef NULL
 #define NULL (0)
 #endif
@@ -5650,7 +5556,7 @@ typedef struct __attribute__((packed)) {
 // Cortex-M0: 0,64,128,192
 #ifdef KINETISK
 #define NVIC_SET_PRIORITY(irqnum, priority)  (*((volatile uint8_t *)0xE000E400 + (irqnum)) = (uint8_t)(priority))
-#define NVIC_GET_PRIORITY(irqnum) (*((uint8_t *)0xE000E400 + (irqnum)))
+#define NVIC_GET_PRIORITY(irqnum) (*((volatile uint8_t *)0xE000E400 + (irqnum)))
 #else
 #define NVIC_SET_PRIORITY(irqnum, priority) (*((uint32_t *)0xE000E400 + ((irqnum) >> 2)) = (*((uint32_t *)0xE000E400 + ((irqnum) >> 2)) & (~(0xFF << (8 * ((irqnum) & 3))))) | (((priority) & 0xFF) << (8 * ((irqnum) & 3))))
 #define NVIC_GET_PRIORITY(irqnum) (*((uint32_t *)0xE000E400 + ((irqnum) >> 2)) >> (8 * ((irqnum) & 3)) & 255)
@@ -5711,7 +5617,6 @@ typedef struct __attribute__((packed)) {
 #ifdef __cplusplus
 extern "C" {
 #endif
-extern int nvic_execution_priority(void);
 
 #if defined(HAS_KINETIS_HSRUN) && F_CPU > 120000000
 extern int kinetis_hsrun_disable(void);

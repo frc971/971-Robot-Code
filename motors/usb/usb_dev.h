@@ -32,16 +32,14 @@
 #define _usb_dev_h_
 
 #define USB_DESC_LIST_DEFINE
-#include "usb_desc.h"
-
-#if F_CPU >= 20000000 && !defined(USB_DISABLED)
+#include "motors/usb/usb_desc.h"
 
 // This header is NOT meant to be included when compiling
 // user sketches in Arduino.  The low-level functions
 // provided by usb_dev.c are meant to be called only by
 // code which provides higher-level interfaces to the user.
 
-#include "usb_mem.h"
+#include "motors/usb/usb_mem.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,15 +64,6 @@ static inline uint32_t usb_rx_byte_count(uint32_t endpoint)
         if (endpoint >= NUM_ENDPOINTS) return 0;
         return usb_rx_byte_count_data[endpoint];
 }
-
-#ifdef CDC_DATA_INTERFACE
-extern uint32_t usb_cdc_line_coding[2];
-extern volatile uint32_t usb_cdc_line_rtsdtr_millis;
-extern volatile uint32_t systick_millis_count;
-extern volatile uint8_t usb_cdc_line_rtsdtr;
-extern volatile uint8_t usb_cdc_transmit_flush_timer;
-extern void usb_serial_flush_callback(void);
-#endif
 
 #ifdef SEREMU_INTERFACE
 extern volatile uint8_t usb_seremu_transmit_flush_timer;
@@ -114,24 +103,8 @@ extern int usb_audio_set_feature(void *stp, uint8_t *buf);
 extern void usb_touchscreen_update_callback(void);
 #endif
 
-
 #ifdef __cplusplus
 }
 #endif
-
-#else // F_CPU < 20000000
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void usb_init(void);
-
-#ifdef __cplusplus
-}
-#endif
-
-
-#endif // F_CPU
 
 #endif
