@@ -36,7 +36,7 @@ const ProfileParameters kFirstTurn = {1.0, 1.5};
 const ProfileParameters kFirstGearStartTurn = {2.0, 3.0};
 const ProfileParameters kFirstGearTurn = {2.0, 5.0};
 const ProfileParameters kSecondGearTurn = {3.0, 5.0};
-const ProfileParameters kSmashTurn = {3.0, 5.0};
+const ProfileParameters kSmashTurn = {1.5, 5.0};
 
 }  // namespace
 
@@ -52,7 +52,69 @@ bool AutonomousActor::RunAction(
   Reset();
 
   switch (params.mode) {
-    default: {
+    case 503: {
+      // Middle gear auto.
+      // Red is positive.
+      // Line up on boiler side edge.
+      constexpr double kDriveDirection = 1.0;
+
+      set_intake_goal(0.18);
+      set_turret_goal(0.0);
+      SendSuperstructureGoal();
+
+      set_turret_goal(-M_PI / 4.0 * kDriveDirection);
+      SendSuperstructureGoal();
+
+      // Turn towards the peg.
+      StartDrive(0.0, kDriveDirection * 0.162, kGearDrive, kSlowTurn);
+      if (!WaitForDriveNear(100.0, 0.02)) return true;
+      if (!WaitForTurnProfileDone()) return true;
+
+      // Drive, but get within 0.3 meters
+      StartDrive(1.73, 0.0, kGearFastDrive, kSlowTurn);
+      if (!WaitForDriveNear(0.3, 0.0)) return true;
+
+      // Now, add a slow, short move to actually place the gear.
+      StartDrive(0.18, 0.0, kGearPlaceDrive, kSecondGearTurn);
+      if (!WaitForDriveNear(0.07, 0.0)) return true;
+
+      set_gear_servo(0.3);
+      SendSuperstructureGoal();
+
+      // Slow down and then pause to let Chris pull the gear off.
+      this_thread::sleep_for(chrono::milliseconds(1000));
+
+      // Back up
+      StartDrive(-1.00, 0.0, kGearFastDrive, kSlowTurn);
+      if (!WaitForDriveNear(0.1, 0.1)) return true;
+
+      // Turn towards the boiler.
+      StartDrive(0.0, -kDriveDirection * M_PI / 2.0, kGearFastDrive, kSlowTurn);
+      if (!WaitForDriveNear(0.1, 0.1)) return true;
+
+      // Drive up near it.
+      StartDrive(1.8, 0.0, kGearFastDrive, kSlowTurn);
+      if (!WaitForDriveNear(0.1, 0.1)) return true;
+
+      set_hood_goal(0.37);
+      set_intake_goal(0.23);
+      set_shooter_velocity(353.0);
+      set_vision_track(true);
+      set_use_vision_for_shots(true);
+      set_indexer_angular_velocity(-1.1 * M_PI);
+      SendSuperstructureGoal();
+
+      this_thread::sleep_for(start_time + chrono::seconds(15) -
+                             monotonic_clock::now());
+      if (ShouldCancel()) return true;
+
+      set_shooter_velocity(0.0);
+      set_indexer_angular_velocity(0.0);
+      SendSuperstructureGoal();
+
+    } break;
+
+    case 500: {
       // Red is positive.
       constexpr double kDriveDirection = -1.0;
       // Side peg + hopper auto.
@@ -119,7 +181,7 @@ bool AutonomousActor::RunAction(
       LOG(INFO, "Starting drive back %f\n",
           DoubleSeconds(monotonic_clock::now() - start_time));
 
-      StartDrive(-2.69, kDriveDirection * 1.30, kSlowDrive,
+      StartDrive(-2.75, kDriveDirection * 1.24, kSlowDrive,
                  kFirstGearStartTurn);
       if (!WaitForDriveNear(2.4, 0.0)) return true;
 
@@ -128,6 +190,7 @@ bool AutonomousActor::RunAction(
 
       if (!WaitForDriveNear(0.2, 0.0)) return true;
       this_thread::sleep_for(chrono::milliseconds(200));
+      // Trip the hopper
       StartDrive(0.0, kDriveDirection * 1.10, kSlowDrive,
                  kSmashTurn);
 
@@ -164,19 +227,19 @@ bool AutonomousActor::RunAction(
 
     } break;
 
-    case 500: {
+    default: {
+      // hopper auto
       // Red is positive.
       constexpr double kDriveDirection = 1.0;
-      // Side hopper auto.
       set_intake_goal(0.07);
       SendSuperstructureGoal();
 
-      StartDrive(-3.3, kDriveDirection * M_PI / 10, kSlowDrive, kFirstTurn);
+      StartDrive(-3.42, kDriveDirection * (M_PI / 10 - 0.057) , kSlowDrive, kFirstTurn);
       if (!WaitForDriveNear(3.30, 0.0)) return true;
       LOG(INFO, "Turn ended: %f left to go\n", DriveDistanceLeft());
       // We can go to 2.50 before we hit the previous profile.
 
-      if (!WaitForDriveNear(2.42, 0.0)) return true;
+      if (!WaitForDriveNear(2.48, 0.0)) return true;
       LOG(INFO, "%f left to go\n", DriveDistanceLeft());
 
       set_intake_goal(0.23);
@@ -193,20 +256,28 @@ bool AutonomousActor::RunAction(
 
       this_thread::sleep_for(chrono::milliseconds(300));
 
+      // Turn to trigger the hopper.
       StartDrive(0.0, (M_PI / 8.0 + 0.20) * kDriveDirection, kSlowDrive,
                  kSmashTurn);
       if (!WaitForDriveNear(0.05, 0.2)) return true;
 
       set_vision_track(true);
       set_use_vision_for_shots(true);
-
-      set_indexer_angular_velocity(-2.1 * M_PI);
       SendSuperstructureGoal();
+
+      // Now that everything is tracking, wait for the hood to zero before
+      // trying to shoot.
+      WaitForHoodZeroed();
+      if (ShouldCancel()) return true;
 
       this_thread::sleep_for(chrono::milliseconds(200));
 
+      // Turn back.
       StartDrive(0.0, (-0.15) * kDriveDirection, kSlowDrive, kSlowTurn);
       if (!WaitForDriveNear(0.05, 0.02)) return true;
+
+      set_indexer_angular_velocity(-2.1 * M_PI);
+      SendSuperstructureGoal();
 
       LOG(INFO, "Started shooting at %f\n",
           DoubleSeconds(monotonic_clock::now() - start_time));
