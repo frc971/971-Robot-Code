@@ -33,6 +33,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <usb.h>
+
 void usage(const char *err)
 {
 	if(err != NULL) fprintf(stderr, "%s\n\n", err);
@@ -55,7 +57,7 @@ int teensy_open(void);
 int teensy_write(void *buf, int len, double timeout);
 void teensy_close(void);
 int hard_reboot(void);
-int soft_reboot(void);
+int soft_reboot(int);
 
 // Intel Hex File Functions
 int read_intel_hex(const char *filename);
@@ -90,8 +92,8 @@ const char *filename=NULL;
 int main(int argc, char **argv)
 {
 	unsigned char buf[2048];
-	int num, addr, r, write_size=block_size+2;
-	int first_block=1, waited=0;
+	int num, addr, r, write_size;
+	int first_block;
 
 	// parse command line arguments
 	parse_options(argc, argv);
@@ -120,84 +122,71 @@ int main(int argc, char **argv)
 	printf_verbose("Read \"%s\": %d bytes, %.1f%% usage\n",
 		filename, num, (double)num / (double)code_size * 100.0);
 
-	// open the USB device
-	while (1) {
-		if (teensy_open()) break;
-		if (hard_reboot_device) {
-			if (!hard_reboot()) die("Unable to find rebootor\n");
-			printf_verbose("Hard Reboot performed\n");
-			hard_reboot_device = 0; // only hard reboot once
-			wait_for_device_to_appear = 1;
-		}
-		if (soft_reboot_device) {
-			if (soft_reboot()) {
-				printf_verbose("Soft reboot performed\n");
-			}
-			soft_reboot_device = 0;
-			wait_for_device_to_appear = 1;
-		}
-		if (!wait_for_device_to_appear) die("Unable to open device\n");
-		if (!waited) {
-			printf_verbose("Waiting for Teensy device...\n");
-			printf_verbose(" (hint: press the reset button)\n");
-			waited = 1;
-		}
-		delay(0.25);
-	}
-	printf_verbose("Found HalfKay Bootloader\n");
+	usb_init();
+	usb_find_busses();
+	usb_find_devices();
 
-	// if we waited for the device, read the hex file again
-	// perhaps it changed while we were waiting?
-	if (waited) {
-		num = read_intel_hex(filename);
-		if (num < 0) die("error reading intel hex file \"%s\"", filename);
-		printf_verbose("Read \"%s\": %d bytes, %.1f%% usage\n",
-		 	filename, num, (double)num / (double)code_size * 100.0);
-	}
+  for (int i = 0; i <= 0xF; ++i) {
+    printf_verbose("Rebooting %x\n", i);
+    if (soft_reboot(i)) usb_find_devices();
+  }
+  int number = 0;
+  usb_find_devices();
+  while (teensy_open()) {
+    printf_verbose("Found HalfKay Bootloader\n");
 
-	// program the data
-	printf_verbose("Programming");
-	fflush(stdout);
-	for (addr = 0; addr < code_size; addr += block_size) {
-		if (!first_block && !ihex_bytes_within_range(addr, addr + block_size - 1)) {
-			// don't waste time on blocks that are unused,
-			// but always do the first one to erase the chip
-			continue;
-		}
-		if (!first_block && memory_is_blank(addr, block_size)) continue;
-		printf_verbose(".");
-		if (block_size <= 256 && code_size < 0x10000) {
-			buf[0] = addr & 255;
-			buf[1] = (addr >> 8) & 255;
-			ihex_get_data(addr, block_size, buf + 2);
-			write_size = block_size + 2;
-		} else if (block_size == 256) {
-			buf[0] = (addr >> 8) & 255;
-			buf[1] = (addr >> 16) & 255;
-			ihex_get_data(addr, block_size, buf + 2);
-			write_size = block_size + 2;
-		} else if (block_size == 512 || block_size == 1024) {
-			buf[0] = addr & 255;
-			buf[1] = (addr >> 8) & 255;
-			buf[2] = (addr >> 16) & 255;
-			memset(buf + 3, 0, 61);
-			ihex_get_data(addr, block_size, buf + 64);
-			write_size = block_size + 64;
-		} else {
-			die("Unknown code/block size\n");
-		}
-		r = teensy_write(buf, write_size, first_block ? 5.0 : 0.5);
-		if (!r) die("error writing to Teensy\n");
-		first_block = 0;
-	}
-	printf_verbose("\n");
+    ++number;
+    first_block = 1;
+    write_size = block_size + 2;
 
-	// reboot to the user's new code
-	if (reboot_after_programming) {
-		boot(buf, write_size);
-	}
-	teensy_close();
-	return 0;
+    // program the data
+    printf_verbose("Programming");
+    fflush(stdout);
+    for (addr = 0; addr < code_size; addr += block_size) {
+      if (!first_block &&
+          !ihex_bytes_within_range(addr, addr + block_size - 1)) {
+        // don't waste time on blocks that are unused,
+        // but always do the first one to erase the chip
+        continue;
+      }
+      if (!first_block && memory_is_blank(addr, block_size)) continue;
+      printf_verbose(".");
+      if (block_size <= 256 && code_size < 0x10000) {
+        buf[0] = addr & 255;
+        buf[1] = (addr >> 8) & 255;
+        ihex_get_data(addr, block_size, buf + 2);
+        write_size = block_size + 2;
+      } else if (block_size == 256) {
+        buf[0] = (addr >> 8) & 255;
+        buf[1] = (addr >> 16) & 255;
+        ihex_get_data(addr, block_size, buf + 2);
+        write_size = block_size + 2;
+      } else if (block_size == 512 || block_size == 1024) {
+        buf[0] = addr & 255;
+        buf[1] = (addr >> 8) & 255;
+        buf[2] = (addr >> 16) & 255;
+        memset(buf + 3, 0, 61);
+        ihex_get_data(addr, block_size, buf + 64);
+        write_size = block_size + 64;
+      } else {
+        die("Unknown code/block size\n");
+      }
+      r = teensy_write(buf, write_size, first_block ? 3.0 : 0.25);
+      if (!r) die("error writing to Teensy\n");
+      first_block = 0;
+    }
+    printf_verbose("\n");
+
+    // reboot to the user's new code
+    if (reboot_after_programming) {
+      boot(buf, write_size);
+    }
+    teensy_close();
+    usb_find_devices();
+  }
+
+  if (number == 0) die("found no devices to download to");
+  return 0;
 }
 
 
@@ -219,9 +208,6 @@ int main(int argc, char **argv)
 
 #if defined(USE_LIBUSB)
 
-// http://libusb.sourceforge.net/doc/index.html
-#include <usb.h>
-
 usb_dev_handle * open_usb_device(int vid, int pid)
 {
 	struct usb_bus *bus;
@@ -230,9 +216,6 @@ usb_dev_handle * open_usb_device(int vid, int pid)
 	char buf[128];
 	int r;
 
-	usb_init();
-	usb_find_busses();
-	usb_find_devices();
 	//printf_verbose("\nSearching for USB device:\n");
 	for (bus = usb_get_busses(); bus; bus = bus->next) {
 		for (dev = bus->devices; dev; dev = dev->next) {
@@ -311,28 +294,12 @@ void teensy_close(void)
 	libusb_teensy_handle = NULL;
 }
 
-int hard_reboot(void)
-{
-	usb_dev_handle *rebootor;
-	int r;
-
-	rebootor = open_usb_device(0x16C0, 0x0477);
-	if (!rebootor) return 0;
-	r = usb_control_msg(rebootor, 0x21, 9, 0x0200, 0, "reboot", 6, 100);
-	usb_release_interface(rebootor, 0);
-	usb_close(rebootor);
-	if (r < 0) return 0;
-	return 1;
-}
-
-int soft_reboot(void)
+int soft_reboot(int number)
 {
 	usb_dev_handle *serial_handle = NULL;
 
-	serial_handle = open_usb_device(0x16C0, 0x0483);
+	serial_handle = open_usb_device(0x16C0, 0x0490 | number);
 	if (!serial_handle) {
-		char *error = usb_strerror();
-		printf("Error opening USB device: %s\n", error);
 		return 0;
 	}
 
@@ -344,7 +311,7 @@ int soft_reboot(void)
 
 	if (response < 0) {
 		char *error = usb_strerror();
-		printf("Unable to soft reboot with USB error: %s\n", error);
+		printf("Unable to soft reboot number %x with USB error: %s\n", number, error);
 		return 0;
 	}
 
