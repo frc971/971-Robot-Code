@@ -32,12 +32,15 @@ Superstructure::Superstructure(
       ::frc971::shooter_interpolation::InterpolationTable<ShotParams>({
           // { distance_to_target, { shot_angle, shot_power, indexer_velocity }},
           {1.21, {0.29, 301.0, -1.0 * M_PI}},   // table entry
-          {1.55, {0.305, 316.0, -1.1 * M_PI}},   // table entry
+          {1.55, {0.305, 316.0, -1.1 * M_PI}},  // table entry
           {1.82, {0.33, 325.0, -1.3 * M_PI}},   // table entry
           {2.00, {0.34, 328.0, -1.4 * M_PI}},   // table entry
           {2.28, {0.36, 338.0, -1.5 * M_PI}},   // table entry
           {2.55, {0.395, 342.0, -1.8 * M_PI}},  // table entry
-          {2.81, {0.41, 351.0, -1.90 * M_PI}},  // table entry
+          {2.81, {0.41, 354.0, -1.90 * M_PI}},  // table entry
+          // The following entry is wrong, but will make it so we keep shooting
+          // in auto.
+          {3.20, {0.41, 354.0, -1.90 * M_PI}},  // table entry
       });
 }
 
