@@ -1359,14 +1359,14 @@ Element["" "0603" "C11" "10_nF" 3260.00mil 3590.00mil -45.00mil -75.00mil 0 77 "
 
 	)
 
-Element["" "0603" "R13" "768" 3260.00mil 3710.00mil -75.00mil 25.00mil 0 77 ""]
+Element["" "0603" "R13" "768" 3260.00mil 3710.00mil 57.00mil -21.00mil 0 77 ""]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["" "0603" "R12" "1.47_k" 3260.00mil 3650.00mil 55.00mil 5.00mil 0 77 ""]
+Element["" "0603" "R12" "1.47_k" 3260.00mil 3650.00mil 84.00mil -28.00mil 3 54 ""]
 (
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
@@ -2412,7 +2412,7 @@ Layer(6 "silk")
 	Line[3390.00mil 3350.00mil 3390.00mil 3375.00mil 10.00mil 20.00mil "clearline"]
 	Text[3480.00mil 3180.00mil 0 98 "0" "clearline"]
 	Text[3480.00mil 3280.00mil 0 98 "1" "clearline"]
-	Text[1629.00mil 4245.00mil 0 98 "mild salsa" "clearline"]
+	Text[1590.00mil 4245.00mil 0 98 "medium salsa" "clearline"]
 	Text[1989.00mil 4244.00mil 0 98 "V0.0" "clearline"]
 )
 NetList()

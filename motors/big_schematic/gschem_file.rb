@@ -1,7 +1,7 @@
 VersionRegex = /v (\d{8}) (\d+)/
 ComponentRegex = /C (\d+) (\d+) ([01]) (\d{1,3}) ([01]) (.+)/
 TextRegex = /T (\d+) (\d+) (\d+) (\d+) ([01]) ([012]) (\d{1,3}) ([0-8]) (\d+)/
-PowerRegex = /^(([0-9.]+V-plus)|(title-.)|(gnd)|(output)|(input)|(io)|-1)|(vbat)|(vhalfbat)|(generic-power).sym$/
+PowerRegex = /^(([0-9.]+V-plus)|(title-.)|(gnd)|(output)|(input)|(io)|(vcc)|-1)|(vbat)|(vhalfbat)|(generic-power).sym$/
 
 # All coordinates are in "mils".
 
