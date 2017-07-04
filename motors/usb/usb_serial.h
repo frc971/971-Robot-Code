@@ -56,7 +56,7 @@ int usb_serial_read(int port, void *buffer, uint32_t size);
 // Drops any unread input until the most recent packet sent.
 void usb_serial_flush_input(int port);
 
-// Writes data. Returns -1 if it times out or size if it succeeds.
+// Writes data. Returns -1 if it times out or 0 if it succeeds.
 //
 // NOTE: This does not send immediately. The data is buffered
 int usb_serial_write(int port, const void *buffer, uint32_t size);

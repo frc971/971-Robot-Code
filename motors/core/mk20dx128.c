@@ -31,6 +31,7 @@
 #include "motors/core/kinetis.h"
 
 #include <errno.h>
+#include <stdio.h>
 
 // Flash Security Setting. On Teensy 3.2, you can lock the MK20 chip to prevent
 // anyone from reading your code.  You CAN still reprogram your Teensy while
@@ -63,6 +64,8 @@ void ResetHandler(void);
 void __libc_init_array(void);
 
 void fault_isr(void) {
+  FTM0_C0V = FTM0_C1V = FTM0_C2V = FTM0_C3V = FTM0_C4V = FTM0_C5V = 0;
+  printf("fault_isr\n");
   while (1) {
     // keep polling some communication while in fault
     // mode, so we don't completely die.
