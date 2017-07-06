@@ -21,7 +21,7 @@ The currently supported operating system for building the code is amd64 Debian J
 
 We use [Bazel](http://bazel.io) to build the code. Bazel has [extensive](http://bazel.io/docs/build-ref.html) [docs](http://bazel.io/docs/build-encyclopedia.html) and does a nice job with fast, correct increment rebuilds.
 
-Steps to set up a computer to build the code:
+### Steps to set up a computer to build the code:
   0. Set up the required APT repositories:
      Download
 	 [frc971.list](http://robotics.mvla.net/files/frc971/packages/frc971.list)
@@ -35,7 +35,7 @@ apt-get install python libpython-dev bazel ruby clang-format-3.5 clang-3.6 gfort
   2. Allow Bazel's sandboxing to work:
      Follow the direction in `doc/frc971.conf`.
 
-Some useful Bazel commands:
+### Some useful Bazel commands:
   * Build and test everything (on the host system):
 ```console
 bazel test //... -- $(cat NO_BUILD_AMD64)
