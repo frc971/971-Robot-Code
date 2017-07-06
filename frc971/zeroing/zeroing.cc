@@ -7,7 +7,6 @@
 
 #include "frc971/zeroing/wrap.h"
 
-
 namespace frc971 {
 namespace zeroing {
 namespace {
@@ -25,7 +24,6 @@ PotAndIndexPulseZeroingEstimator::PotAndIndexPulseZeroingEstimator(
   start_pos_samples_.reserve(constants_.average_filter_size);
   Reset();
 }
-
 
 void PotAndIndexPulseZeroingEstimator::Reset() {
   samples_idx_ = 0;
@@ -307,12 +305,10 @@ void PotAndAbsEncoderZeroingEstimator::UpdateEstimate(
     buffered_samples_[buffered_samples_idx_] = info;
     auto max_value =
         ::std::max_element(buffered_samples_.begin(), buffered_samples_.end(),
-                           compare_encoder)
-            ->encoder;
+                           compare_encoder)->encoder;
     auto min_value =
         ::std::min_element(buffered_samples_.begin(), buffered_samples_.end(),
-                           compare_encoder)
-            ->encoder;
+                           compare_encoder)->encoder;
     if (::std::abs(max_value - min_value) < constants_.zeroing_threshold) {
       // Robot isn't moving, use middle sample to determine offsets.
       moving = false;
@@ -494,7 +490,11 @@ void PulseIndexZeroingEstimator::UpdateEstimate(const IndexPosition &info) {
   StoreIndexPulseMaxAndMin(info);
   const int index_pulse_count = IndexPulseCount();
   if (index_pulse_count > constants_.index_pulse_count) {
-    error_ = true;
+    if (!error_) {
+      LOG(ERROR, "Got more index pulses than expected. Got %d expected %d.\n",
+          index_pulse_count, constants_.index_pulse_count);
+      error_ = true;
+    }
   }
 
   // TODO(austin): Detect if the encoder or index pulse is unplugged.
@@ -505,6 +505,34 @@ void PulseIndexZeroingEstimator::UpdateEstimate(const IndexPosition &info) {
               constants_.known_index_pulse * constants_.index_difference -
               min_index_position_;
     zeroed_ = true;
+  } else if (zeroed_ && !error_) {
+    // Detect whether the index pulse is somewhere other than where we expect
+    // it to be. First we compute the position of the most recent index pulse.
+    double index_pulse_distance =
+        info.latched_encoder + offset_ - constants_.measured_index_position;
+    // Second we compute the position of the index pulse in terms of
+    // the index difference. I.e. if this index pulse is two pulses away from
+    // the index pulse that we know about then this number should be positive
+    // or negative two.
+    double relative_distance =
+        index_pulse_distance / constants_.index_difference;
+    // Now we compute how far away the measured index pulse is from the
+    // expected index pulse.
+    double error = relative_distance - ::std::round(relative_distance);
+    // This lets us check if the index pulse is within an acceptable error
+    // margin of where we expected it to be.
+    if (::std::abs(error) > constants_.allowable_encoder_error) {
+      LOG(ERROR,
+          "Encoder ticks out of range since last index pulse. known index "
+          "pulse: %f, expected index pulse: %f, actual index pulse: %f, "
+          "allowable error: %f\n",
+          constants_.measured_index_position,
+          round(relative_distance) * constants_.index_difference +
+              constants_.measured_index_position,
+          info.latched_encoder + offset_,
+          constants_.allowable_encoder_error * constants_.index_difference);
+      error_ = true;
+    }
   }
 
   position_ = info.encoder + offset_;

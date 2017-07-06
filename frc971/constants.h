@@ -28,7 +28,7 @@ struct PotAndIndexPulseZeroingConstants {
   double index_difference;
   // The absolute position in scaled units of one of the index pulses.
   double measured_index_position;
-  // Value between 0 and 1 which determines a fraction of the index_diff
+  // Value between 0 and .5 which determines a fraction of the index_diff
   // you want to use.
   double allowable_encoder_error;
 };
@@ -43,6 +43,10 @@ struct EncoderPlusIndexZeroingConstants {
   // The index pulse that is known, going from lowest in the range of motion to
   // highest (Starting at 0).
   int known_index_pulse;
+  // Value between 0 and 0.5 which determines a fraction of the index_diff
+  // you want to use. If an index pulse deviates by more than this amount from
+  // where we expect to see one then we flag an error.
+  double allowable_encoder_error;
 };
 
 struct PotAndAbsoluteEncoderZeroingConstants {
