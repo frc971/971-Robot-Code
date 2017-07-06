@@ -69,6 +69,22 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     use_vision_for_shots_ = use_vision_for_shots;
   }
 
+  void WaitForHoodZeroed() {
+    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                        ::std::chrono::milliseconds(5) / 2);
+    while (true) {
+      if (ShouldCancel()) return;
+
+      superstructure_queue.status.FetchLatest();
+      if (superstructure_queue.status.get()) {
+        if (superstructure_queue.status->hood.zeroed) {
+          return;
+        }
+      }
+      phased_loop.SleepUntilNext();
+    }
+  }
+
   void SendSuperstructureGoal() {
     auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
     new_superstructure_goal->intake.distance = intake_goal_;
