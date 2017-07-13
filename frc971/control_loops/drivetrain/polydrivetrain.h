@@ -66,6 +66,12 @@ class PolyDrivetrain {
 
   double goal_left_velocity_ = 0.0;
   double goal_right_velocity_ = 0.0;
+
+  // Stored from the last iteration, for logging shifting logic.
+  double left_motor_speed_ = 0.0;
+  double right_motor_speed_ = 0.0;
+  double current_left_velocity_ = 0.0;
+  double current_right_velocity_ = 0.0;
 };
 
 }  // namespace drivetrain

@@ -117,15 +117,16 @@ void DrivetrainLoop::RunIteration(
   }
 
   kf_.set_index(ControllerIndexFromGears());
-  {
-    GearLogging gear_logging;
-    gear_logging.left_state = static_cast<uint32_t>(left_gear_);
-    gear_logging.right_state = static_cast<uint32_t>(right_gear_);
-    gear_logging.left_loop_high = MaybeHigh(left_gear_);
-    gear_logging.right_loop_high = MaybeHigh(right_gear_);
-    gear_logging.controller_index = kf_.index();
-    LOG_STRUCT(DEBUG, "state", gear_logging);
+
+  // Set the gear-logging parts of the status
+  if (status) {
+    status->gear_logging.left_state = static_cast<uint32_t>(left_gear_);
+    status->gear_logging.right_state = static_cast<uint32_t>(right_gear_);
+    status->gear_logging.left_loop_high = MaybeHigh(left_gear_);
+    status->gear_logging.right_loop_high = MaybeHigh(right_gear_);
+    status->gear_logging.controller_index = kf_.index();
   }
+
   const bool is_latest_imu_values = ::frc971::imu_values.FetchLatest();
   if (is_latest_imu_values) {
     const double rate = -::frc971::imu_values->gyro_y;

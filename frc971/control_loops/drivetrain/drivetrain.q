@@ -144,6 +144,10 @@ queue_group DrivetrainQueue {
 
     // The angle of the robot relative to the ground.
     double ground_angle;
+
+    // Information about shifting logic and curent gear, for logging purposes
+    GearLogging gear_logging;
+    CIMLogging cim_logging;
   };
 
   queue Goal goal;

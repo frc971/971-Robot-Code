@@ -269,42 +269,33 @@ void PolyDrivetrain::Update() {
       loop_->mutable_X_hat() =
           loop_->plant().A() * loop_->X_hat() + loop_->plant().B() * loop_->U();
     }
+
+    // Housekeeping: set the shifting logging values to zero, because we're not shifting
+    left_motor_speed_ = 0.0;
+    right_motor_speed_ = 0.0;
+    current_left_velocity_ = 0.0;
+    current_right_velocity_ = 0.0;
   } else {
-    const double current_left_velocity =
+    current_left_velocity_ =
         (position_.left_encoder - last_position_.left_encoder) / dt_config_.dt;
-    const double current_right_velocity =
+    current_right_velocity_ =
         (position_.right_encoder - last_position_.right_encoder) /
         dt_config_.dt;
-    const double left_motor_speed =
+    left_motor_speed_ =
         MotorSpeed(dt_config_.left_drive, position_.left_shifter_position,
-                   current_left_velocity, left_gear_);
-    const double right_motor_speed =
+                   current_left_velocity_, left_gear_);
+    right_motor_speed_ =
         MotorSpeed(dt_config_.right_drive, position_.right_shifter_position,
-                   current_right_velocity, right_gear_);
+                   current_right_velocity_, right_gear_);
 
-    {
-      CIMLogging logging;
-
-      // Reset the CIM model to the current conditions to be ready for when we
-      // shift.
-      logging.left_in_gear = IsInGear(left_gear_);
-      logging.left_motor_speed = left_motor_speed;
-      logging.left_velocity = current_left_velocity;
-
-      logging.right_in_gear = IsInGear(right_gear_);
-      logging.right_motor_speed = right_motor_speed;
-      logging.right_velocity = current_right_velocity;
-
-      LOG_STRUCT(DEBUG, "currently", logging);
-    }
-    goal_left_velocity_ = current_left_velocity;
-    goal_right_velocity_ = current_right_velocity;
+    goal_left_velocity_ = current_left_velocity_;
+    goal_right_velocity_ = current_right_velocity_;
 
     // Any motor is not in gear. Speed match.
     ::Eigen::Matrix<double, 1, 1> R_left;
     ::Eigen::Matrix<double, 1, 1> R_right;
-    R_left(0, 0) = left_motor_speed;
-    R_right(0, 0) = right_motor_speed;
+    R_left(0, 0) = left_motor_speed_;
+    R_right(0, 0) = right_motor_speed_;
 
     const double wiggle =
         (static_cast<double>((counter_ % 30) / 15) - 0.5) * 8.0;
@@ -333,6 +324,14 @@ void PolyDrivetrain::PopulateStatus(
     ::frc971::control_loops::DrivetrainQueue::Status *status) {
   status->left_velocity_goal = goal_left_velocity_;
   status->right_velocity_goal = goal_right_velocity_;
+
+  status->cim_logging.left_in_gear = IsInGear(left_gear_);
+  status->cim_logging.left_motor_speed = left_motor_speed_;
+  status->cim_logging.left_velocity = current_left_velocity_;
+
+  status->cim_logging.right_in_gear = IsInGear(right_gear_);
+  status->cim_logging.right_motor_speed = right_motor_speed_;
+  status->cim_logging.right_velocity = current_right_velocity_;
 }
 
 }  // namespace drivetrain
