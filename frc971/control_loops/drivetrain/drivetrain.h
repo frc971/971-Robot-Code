@@ -5,7 +5,6 @@
 
 #include "aos/common/controls/control_loop.h"
 #include "aos/common/controls/polytope.h"
-#include "aos/common/controls/polytope.h"
 #include "aos/common/util/log_interval.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
