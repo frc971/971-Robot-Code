@@ -18,7 +18,6 @@ namespace {
 // The maximum voltage the intake roller will be allowed to use.
 constexpr double kMaxIntakeRollerVoltage = 12.0;
 constexpr double kMaxIndexerRollerVoltage = 12.0;
-constexpr double kTurretTuckAngle = M_PI / 2.0;
 }  // namespace
 
 typedef ::y2017::constants::Values::ShotParams ShotParams;
