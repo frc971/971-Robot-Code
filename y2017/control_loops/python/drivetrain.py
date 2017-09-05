@@ -220,9 +220,11 @@ def main(argv):
     simulated_right.append(drivetrain.X[2, 0])
 
   if FLAGS.plot:
-    pylab.plot(range(100), simulated_left)
-    pylab.plot(range(100), simulated_right)
-    pylab.suptitle('Acceleration Test')
+    pylab.rc('lines', linewidth=4)
+    pylab.plot(range(100), simulated_left, label='left position')
+    pylab.plot(range(100), simulated_right, 'r--', label='right position')
+    pylab.suptitle('Acceleration Test\n12 Volt Step Input')
+    pylab.legend(loc='lower right')
     pylab.show()
 
   # Simulate forwards motion.
@@ -244,10 +246,10 @@ def main(argv):
 
   if FLAGS.plot:
     pylab.plot(range(300), close_loop_left, label='left position')
-    pylab.plot(range(300), close_loop_right, label='right position')
+    pylab.plot(range(300), close_loop_right, 'm--', label='right position')
     pylab.plot(range(300), left_power, label='left power')
-    pylab.plot(range(300), right_power, label='right power')
-    pylab.suptitle('Linear Move')
+    pylab.plot(range(300), right_power, '--', label='right power')
+    pylab.suptitle('Linear Move\nLeft and Right Position going to 1')
     pylab.legend()
     pylab.show()
 
@@ -256,7 +258,7 @@ def main(argv):
   close_loop_left = []
   close_loop_right = []
   R = numpy.matrix([[-1.0], [0.0], [1.0], [0.0]])
-  for _ in xrange(100):
+  for _ in xrange(200):
     U = numpy.clip(drivetrain.K * (R - drivetrain.X_hat),
                    drivetrain.U_min, drivetrain.U_max)
     drivetrain.UpdateObserver(U)
@@ -265,9 +267,10 @@ def main(argv):
     close_loop_right.append(drivetrain.X[2, 0])
 
   if FLAGS.plot:
-    pylab.plot(range(100), close_loop_left)
-    pylab.plot(range(100), close_loop_right)
-    pylab.suptitle('Angular Move')
+    pylab.plot(range(200), close_loop_left, label='left position')
+    pylab.plot(range(200), close_loop_right, label='right position')
+    pylab.suptitle('Angular Move\nLeft position going to -1 and right position going to 1')
+    pylab.legend(loc='center right')
     pylab.show()
 
   # Try turning just one side.
@@ -275,7 +278,7 @@ def main(argv):
   close_loop_left = []
   close_loop_right = []
   R = numpy.matrix([[0.0], [0.0], [1.0], [0.0]])
-  for _ in xrange(100):
+  for _ in xrange(300):
     U = numpy.clip(drivetrain.K * (R - drivetrain.X_hat),
                    drivetrain.U_min, drivetrain.U_max)
     drivetrain.UpdateObserver(U)
@@ -284,9 +287,10 @@ def main(argv):
     close_loop_right.append(drivetrain.X[2, 0])
 
   if FLAGS.plot:
-    pylab.plot(range(100), close_loop_left)
-    pylab.plot(range(100), close_loop_right)
-    pylab.suptitle('Pivot')
+    pylab.plot(range(300), close_loop_left, label='left position')
+    pylab.plot(range(300), close_loop_right, label='right position')
+    pylab.suptitle('Pivot\nLeft position not changing and right position going to 1')
+    pylab.legend(loc='center right')
     pylab.show()
 
   # Write the generated constants out to a file.
