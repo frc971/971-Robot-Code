@@ -46,6 +46,14 @@ cat > /etc/sysctl.d/99-enable-user-namespaces.conf <<EOT
 kernel.unprivileged_userns_clone = 1
 EOT
 
+# We need to explicitly pull in the java certificates from backports. Otherwise
+# bazel won't install properly.
+cat > /etc/apt/preferences.d/java_certificates <<EOT
+Package: ca-certificates-java
+Pin: release a=jessie-backports
+Pin-Priority: 900
+EOT
+
 # Accept the LLVM GPG key so we can install their packages.
 wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | apt-key add -
 
