@@ -492,7 +492,7 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
     superstructure_.Iterate();
     superstructure_plant_.Simulate();
 
-    TickTime();
+    TickTime(::std::chrono::microseconds(5050));
   }
 
   // Runs iterations until the specified amount of simulated time has elapsed.
@@ -948,7 +948,7 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
 
   superstructure_plant_.set_hood_voltage_offset(2.0);
 
-  superstructure_plant_.set_turret_voltage_offset(-1.5);
+  superstructure_plant_.set_turret_voltage_offset(-1.0);
   superstructure_plant_.set_indexer_voltage_offset(2.0);
 
   RunForTime(chrono::seconds(1), false);
@@ -1082,12 +1082,13 @@ TEST_F(SuperstructureTest, StuckIndexerTest) {
     }
   }
 
-  // Make sure it took some time, but not too much to detect us not being stuck anymore.
+  // Make sure it took some time, but not too much to detect us not being stuck
+  // anymore.
   const auto unstuck_detection_time = monotonic_clock::now();
   EXPECT_TRUE(unstuck_detection_time - unstuck_start_time <
-              chrono::milliseconds(200));
+              chrono::milliseconds(600));
   EXPECT_TRUE(unstuck_detection_time - unstuck_start_time >
-              chrono::milliseconds(40));
+              chrono::milliseconds(100));
 
   // Verify that it actually moved.
   superstructure_queue_.position.FetchLatest();
@@ -1155,7 +1156,7 @@ TEST_F(SuperstructureTest, ReallyStuckIndexerTest) {
   // anymore.
   const auto unstuck_detection_time = monotonic_clock::now();
   EXPECT_TRUE(unstuck_detection_time - unstuck_start_time <
-              chrono::milliseconds(600));
+              chrono::milliseconds(1050));
   EXPECT_TRUE(unstuck_detection_time - unstuck_start_time >
               chrono::milliseconds(400));
   LOG(INFO, "Unstuck time is %ldms",

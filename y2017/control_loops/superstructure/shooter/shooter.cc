@@ -67,10 +67,7 @@ void ShooterController::Update(bool disabled, chrono::nanoseconds dt) {
   // Compute the distance moved over that time period.
   average_angular_velocity_ =
       (history_[oldest_history_position] - history_[history_position_]) /
-      (chrono::duration_cast<chrono::duration<double>>(
-           ::aos::controls::kLoopFrequency)
-           .count() *
-       static_cast<double>(kHistoryLength - 1));
+      (0.00505 * static_cast<double>(kHistoryLength - 1));
 
   // Ready if average angular velocity is close to the goal.
   error_ = average_angular_velocity_ - loop_->next_R(2, 0);
