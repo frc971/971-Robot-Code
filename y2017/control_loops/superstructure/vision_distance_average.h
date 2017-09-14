@@ -12,13 +12,17 @@ namespace y2017 {
 namespace control_loops {
 namespace superstructure {
 
+namespace chrono = ::std::chrono;
+
 // Averages out the distance from the vision system by a factor of 25.
 class VisionDistanceAverage {
  public:
   // Call on every tick of the control loop to update the state.
   void Tick(::aos::monotonic_clock::time_point monotonic_now,
             const vision::VisionStatus *vision_status) {
-    auto cull_time = monotonic_now - std::chrono::seconds(2);
+    constexpr chrono::seconds kCullTimeDelta = chrono::seconds(2);
+    auto cull_time = monotonic_now - kCullTimeDelta;
+    // Delete data that is older than kCullTimeDelta seconds ago.
     while (data_.size() > 0 && data_[0].time < cull_time) {
       data_.Shift();
       cached_value_ = ComputeValue();
