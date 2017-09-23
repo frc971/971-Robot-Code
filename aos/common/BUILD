@@ -1,6 +1,7 @@
 package(default_visibility = ['//visibility:public'])
 
 load('/aos/build/queues', 'queue_library')
+load("//tools:environments.bzl", "mcu_cpus")
 
 queue_library(
   name = 'test_queue',
@@ -21,6 +22,7 @@ cc_library(
   hdrs = [
     'macros.h',
   ],
+  compatible_with = mcu_cpus,
 )
 
 cc_library(

@@ -147,6 +147,8 @@ typedef struct {
 #define dma_chN_isr(n) DO_CONCATENATE(dma_ch, n, _isr)
 #define IRQ_DMA_CHn(n) DO_CONCATENATE(IRQ_DMA, _CH, n)
 
+#define USB0_ENDPTn(n) (*(volatile uint8_t *)(0x400720C0 + ((n)*4)))
+
 #ifdef __cplusplus
 }
 #endif

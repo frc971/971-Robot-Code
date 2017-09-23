@@ -242,7 +242,6 @@ toolchain {
 
   compiler_flag: "-Wall"
   compiler_flag: "-Wextra"
-  compiler_flag: "-Wswitch-enum"
   compiler_flag: "-Wpointer-arith"
   compiler_flag: "-Wstrict-aliasing"
   compiler_flag: "-Wcast-qual"
@@ -489,7 +488,6 @@ toolchain {
 
   compiler_flag: "-Wall"
   compiler_flag: "-Wextra"
-  compiler_flag: "-Wswitch-enum"
   compiler_flag: "-Wpointer-arith"
   compiler_flag: "-Wstrict-aliasing"
   compiler_flag: "-Wcast-qual"
@@ -744,7 +742,6 @@ toolchain {
 
   compiler_flag: "-Wall"
   compiler_flag: "-Wextra"
-  compiler_flag: "-Wswitch-enum"
   compiler_flag: "-Wpointer-arith"
   compiler_flag: "-Wstrict-aliasing"
   compiler_flag: "-Wcast-qual"
@@ -889,9 +886,16 @@ toolchain {
   compiler_flag: "-D__STDC_FORMAT_MACROS"
   compiler_flag: "-D__STDC_CONSTANT_MACROS"
   compiler_flag: "-D__STDC_LIMIT_MACROS"
+
+  # Some identifiers for what MCU we're using.
   compiler_flag: "-D__MK64FX512__"
   compiler_flag: "-DF_CPU=120000000"
+
   compiler_flag: "-Wl,--gc-sections"
+
+  # Newlib's stdint.h does this, but GCC's freestanding stdint.h doesn't use
+  # newlib's so we have to do it manually...
+  compiler_flag: "-D__have_long32"
 
   # Make C++ compilation deterministic. Use linkstamping instead of these
   # compiler symbols.
@@ -925,10 +929,10 @@ toolchain {
   linker_flag: "-Tmotors/core/mk64fx512.ld"
 
   compiler_flag: "-fmessage-length=80"
+  compiler_flag: "-fmax-errors=20"
 
   compiler_flag: "-Wall"
   compiler_flag: "-Wextra"
-  compiler_flag: "-Wswitch-enum"
   compiler_flag: "-Wpointer-arith"
   compiler_flag: "-Wcast-qual"
   compiler_flag: "-Wwrite-strings"
@@ -953,9 +957,15 @@ toolchain {
   # Enable debug symbols.
   compiler_flag: "-g"
 
-  # Commons symbols are weird and not what we want, so just give multiple
+  # Common symbols are weird and not what we want, so just give multiple
   # declaration errors instead.
   compiler_flag: "-fno-common"
+
+  # We're not a hosted environment (no file IO, main is called from our code,
+  # etc).
+  compiler_flag: "-ffreestanding"
+  # However, we still want to optimize things like memcpy.
+  compiler_flag: "-fbuiltin"
 
   compilation_mode_flags {
     mode: OPT
@@ -993,13 +1003,16 @@ toolchain {
       action: 'c++-header-preprocessing'
       action: 'c++-module-compile'
       flag_group {
+        iterate_over: 'quote_include_paths'
         flag: '-iquote'
         flag: '%{quote_include_paths}'
       }
       flag_group {
+        iterate_over: 'include_paths'
         flag: '-I%{include_paths}'
       }
       flag_group {
+        iterate_over: 'system_include_paths'
         flag: '-iquote'
         flag: '%{system_include_paths}'
       }

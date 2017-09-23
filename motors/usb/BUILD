@@ -1,5 +1,7 @@
+load("//tools:environments.bzl", "mcu_cpus")
+
 cc_library(
-  name = 'usb',
+  name = 'legacy',
   visibility = ['//visibility:public'],
   hdrs = [
     'usb_desc.h',
@@ -21,5 +23,42 @@ cc_library(
   deps = [
     '//motors/core',
   ],
-  restricted_to = ['//tools:cortex-m4f'],
+  restricted_to = mcu_cpus,
+)
+
+cc_library(
+  name = 'usb',
+  visibility = ['//visibility:public'],
+  hdrs = [
+    'usb.h',
+  ],
+  srcs = [
+    'usb.cc',
+  ],
+  deps = [
+    ':constants',
+    '//aos/common:macros',
+    '//motors/core',
+    '//motors:util',
+  ],
+  restricted_to = mcu_cpus,
+)
+
+cc_library(
+  name = 'constants',
+  hdrs = [
+    'constants.h',
+  ],
+  compatible_with = mcu_cpus,
+)
+
+cc_test(
+  name = 'constants_test',
+  srcs = [
+    'constants_test.cc',
+  ],
+  deps = [
+    ':constants',
+    '//aos/testing:googletest',
+  ],
 )

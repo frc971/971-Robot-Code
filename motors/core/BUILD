@@ -1,3 +1,5 @@
+load("//tools:environments.bzl", "mcu_cpus")
+
 filegroup(
   name = 'linkerscript',
   visibility = ['//tools/cpp:__pkg__'],
@@ -17,5 +19,5 @@ cc_library(
     'nonstd.c',
     'time.c',
   ],
-  restricted_to = ['//tools:cortex-m4f'],
+  restricted_to = mcu_cpus,
 )

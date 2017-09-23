@@ -1,3 +1,6 @@
+load('//motors:macros.bzl', 'hex_from_elf')
+load("//tools:environments.bzl", "mcu_cpus")
+
 cc_binary(
   name = 'medium_salsa.elf',
   srcs = [
@@ -6,29 +9,21 @@ cc_binary(
   deps = [
     ':util',
     '//motors/core',
-    '//motors/usb',
+    '//motors/usb:legacy',
   ],
-  restricted_to = ['//tools:cortex-m4f'],
+  restricted_to = mcu_cpus,
 )
 
-genrule(
+hex_from_elf(
   name = 'medium_salsa',
-  srcs = [
-    'medium_salsa.elf',
-  ],
-  outs = [
-    'medium_salsa.hex',
-  ],
-  cmd = '$(OBJCOPY) -O ihex $<  $@',
-  executable = True,
-  output_to_bindir = True,
-  restricted_to = ['//tools:cortex-m4f'],
+  restricted_to = mcu_cpus,
 )
 
 cc_library(
   name = 'util',
+  visibility = ['//visibility:public'],
   hdrs = [
     'util.h',
   ],
-  restricted_to = ['//tools:cortex-m4f'],
+  restricted_to = mcu_cpus,
 )
