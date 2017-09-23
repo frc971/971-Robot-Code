@@ -63,8 +63,7 @@ typedef struct {
 	const void * addr;
 } bdt_t;
 
-__attribute__ ((section(".usbdescriptortable"), used))
-static bdt_t table[(NUM_ENDPOINTS+1)*4];
+__attribute__((aligned(512), used)) static bdt_t table[(NUM_ENDPOINTS + 1) * 4];
 
 static usb_packet_t *rx_first[NUM_ENDPOINTS];
 static usb_packet_t *rx_last[NUM_ENDPOINTS];

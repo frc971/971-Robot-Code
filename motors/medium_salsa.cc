@@ -20,9 +20,9 @@ int _write(int file, char *ptr, int len) {
 void __stack_chk_fail(void);
 
 extern char *__brkval;
-extern unsigned long _ebss;
-extern unsigned long _sram;
-extern unsigned long _estack;
+extern uint32_t __bss_ram_start__[];
+extern uint32_t __heap_start__[];
+extern uint32_t __stack_end__[];
 
 }  // extern "C"
 
@@ -51,14 +51,14 @@ extern "C" int main(void) {
   // Give everything a chance to get going.
   delay(100);
 
-  printf("Ram start:   %p\n", &_sram);
-  printf("Heap start:  %p\n", &_ebss);
+  printf("Ram start:   %p\n", __bss_ram_start__);
+  printf("Heap start:  %p\n", __heap_start__);
   printf("Heap end:    %p\n", __brkval);
-  printf("Stack start: %p\n", &_estack);
+  printf("Stack start: %p\n", __stack_end__);
 
   GPIOC_PSOR = 1 << 5;
-
   while (true) {}
+
   return 0;
 }
 

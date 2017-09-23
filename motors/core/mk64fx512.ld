@@ -34,6 +34,7 @@ MEMORY
   RAM  (rwx) : ORIGIN = 0x1FFF0000, LENGTH = 192K
 }
 
+ENTRY(_VectorsFlash);
 
 SECTIONS
 {
@@ -64,47 +65,31 @@ SECTIONS
   } > FLASH
   _etext = .;
 
-  .usbdescriptortable (NOLOAD) : {
-    /* . = ORIGIN(RAM); */
-    _sram = .;
-    . = ALIGN(512);
-    *(.usbdescriptortable*)
-  } > RAM
-
-  .dmabuffers (NOLOAD) : {
-    . = ALIGN(4);
-    *(.dmabuffers*)
-  } > RAM
-
-  .usbbuffers (NOLOAD) : {
-    . = ALIGN(4);
-    *(.usbbuffers*)
-  } > RAM
-
-  .data : AT (_etext) {
-    . = ALIGN(4);
-    _sdata = .; 
-    *(SORT_BY_ALIGNMENT(.data*))
-    . = ALIGN(4);
-    _edata = .; 
-  } > RAM
-
-  .noinit (NOLOAD) : {
-    *(.noinit*)
-  } > RAM
-
+  /* Deliberately putting .bss before .data because we end up with some things
+   * in here that have large alignments, so this minimizes padding.
+   */
   .bss : {
     . = ALIGN(4);
-    _sbss = .;
-    __bss_start__ = .;
+    __bss_ram_start__ = .;
     *(SORT_BY_ALIGNMENT(.bss*))
     /* Stupid precompiled libc has common symbols, so stick them in. */
     */libc_nano.a:*(COMMON)
     . = ALIGN(4);
-    _ebss = .;
-    __bss_end = .;
-    __bss_end__ = .;
+    __bss_ram_end__ = .;
   } > RAM
+
+  .data : AT (_etext) {
+    . = ALIGN(4);
+    __data_ram_start__ = .;
+    *(SORT_BY_ALIGNMENT(.data*))
+    . = ALIGN(4);
+    __data_ram_end__ = .;
+  } > RAM
+
+  __data_flash_start__ = LOADADDR(.data);
+
+  . = ALIGN(8);
+  __heap_start__ = .;
 
   /* We don't want any common symbols, so just don't include them which results
    * in linker errors if any do show up somehow.
@@ -114,9 +99,5 @@ SECTIONS
     *(COMMON);
   }
 
-  _estack = ORIGIN(RAM) + LENGTH(RAM);
+  __stack_end__ = ORIGIN(RAM) + LENGTH(RAM);
 }
-
-
-
-

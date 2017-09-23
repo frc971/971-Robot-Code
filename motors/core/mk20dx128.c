@@ -50,13 +50,13 @@
 // Flash Options
 #define FOPT 0xF9
 
-extern unsigned long _stext;
-extern unsigned long _etext;
-extern unsigned long _sdata;
-extern unsigned long _edata;
-extern unsigned long _sbss;
-extern unsigned long _ebss;
-extern unsigned long _estack;
+extern uint32_t __bss_ram_start__[];
+extern uint32_t __bss_ram_end__[];
+extern uint32_t __data_ram_start__[];
+extern uint32_t __data_ram_end__[];
+extern uint32_t __data_flash_start__[];
+extern uint32_t __heap_start__[];
+extern uint32_t __stack_end__[];
 
 extern int main(void);
 void ResetHandler(void);
@@ -191,27 +191,28 @@ void porte_isr(void) __attribute__((weak, alias("unused_isr")));
 void portcd_isr(void) __attribute__((weak, alias("unused_isr")));
 void software_isr(void) __attribute__((weak, alias("unused_isr")));
 
-__attribute__((section(".dmabuffers"), used, aligned(512))) void (
+__attribute__((used, aligned(512))) void (
     *_VectorsRam[NVIC_NUM_INTERRUPTS + 16])(void);
 
 __attribute__((section(".vectors"), used)) void (
     *const _VectorsFlash[NVIC_NUM_INTERRUPTS + 16])(void) = {
-    (void (*)(void))((unsigned long)&_estack),  //  0 ARM: Initial Stack Pointer
-    ResetHandler,         //  1 ARM: Initial Program Counter
-    nmi_isr,              //  2 ARM: Non-maskable Interrupt (NMI)
-    hard_fault_isr,       //  3 ARM: Hard Fault
-    memmanage_fault_isr,  //  4 ARM: MemManage Fault
-    bus_fault_isr,        //  5 ARM: Bus Fault
-    usage_fault_isr,      //  6 ARM: Usage Fault
-    fault_isr,            //  7 --
-    fault_isr,            //  8 --
-    fault_isr,            //  9 --
-    fault_isr,            // 10 --
-    svcall_isr,           // 11 ARM: Supervisor call (SVCall)
-    debugmonitor_isr,     // 12 ARM: Debug Monitor
-    fault_isr,            // 13 --
-    pendablesrvreq_isr,   // 14 ARM: Pendable req serv(PendableSrvReq)
-    systick_isr,          // 15 ARM: System tick timer (SysTick)
+    (void (*)(void))((unsigned long)
+                     __stack_end__),  //  0 ARM: Initial Stack Pointer
+    ResetHandler,                     //  1 ARM: Initial Program Counter
+    nmi_isr,                          //  2 ARM: Non-maskable Interrupt (NMI)
+    hard_fault_isr,                   //  3 ARM: Hard Fault
+    memmanage_fault_isr,              //  4 ARM: MemManage Fault
+    bus_fault_isr,                    //  5 ARM: Bus Fault
+    usage_fault_isr,                  //  6 ARM: Usage Fault
+    fault_isr,                        //  7 --
+    fault_isr,                        //  8 --
+    fault_isr,                        //  9 --
+    fault_isr,                        // 10 --
+    svcall_isr,                       // 11 ARM: Supervisor call (SVCall)
+    debugmonitor_isr,                 // 12 ARM: Debug Monitor
+    fault_isr,                        // 13 --
+    pendablesrvreq_isr,  // 14 ARM: Pendable req serv(PendableSrvReq)
+    systick_isr,         // 15 ARM: System tick timer (SysTick)
 #if defined(__MK20DX256__)
     dma_ch0_isr,       // 16 DMA channel 0 transfer complete
     dma_ch1_isr,       // 17 DMA channel 1 transfer complete
@@ -410,8 +411,6 @@ __attribute__((optimize("-Os")))
 __attribute__((section(".startup"), optimize("-Os")))
 #endif
 void ResetHandler(void) {
-  uint32_t *src = &_etext;
-  uint32_t *dest = &_sdata;
   unsigned int i;
 
   WDOG_UNLOCK = WDOG_UNLOCK_SEQ1;
@@ -446,10 +445,19 @@ void ResetHandler(void) {
   // so we can into other sleep modes in the future at any speed
   SMC_PMPROT = SMC_PMPROT_AVLP | SMC_PMPROT_ALLS | SMC_PMPROT_AVLLS;
 
-  // TODO: do this while the PLL is waiting to lock....
-  while (dest < &_edata) *dest++ = *src++;
-  dest = &_sbss;
-  while (dest < &_ebss) *dest++ = 0;
+  {
+    uint32_t *src = __data_flash_start__;
+    uint32_t *dest = __data_ram_start__;
+    while (dest < __data_ram_end__) {
+      *dest++ = *src++;
+    }
+  }
+  {
+    uint32_t *dest = __bss_ram_start__;
+    while (dest < __bss_ram_end__) {
+      *dest++ = 0;
+    }
+  }
 
   // default all interrupts to medium priority level
   for (i = 0; i < NVIC_NUM_INTERRUPTS + 16; i++)
@@ -547,7 +555,7 @@ void ResetHandler(void) {
   }
 }
 
-char *__brkval = (char *)&_ebss;
+char *__brkval = (char *)__heap_start__;
 
 #ifndef STACK_MARGIN
 #if defined(__MKL26Z64__)
