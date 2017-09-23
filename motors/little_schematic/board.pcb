@@ -5,11 +5,11 @@ FileVersion[20091103]
 
 PCB["board" 6000.00mil 5000.00mil]
 
-Grid[1000.000000 0.0000 0.0000 1]
+Grid[1000.000000 0.0000 0.0000 0]
 PolyArea[3100.006200]
 Thermal[0.500000]
 DRC[6.00mil 10.00mil 6.00mil 8.00mil 11.81mil 8.00mil]
-Flags("showdrc,rubberband,nameonpcb,clearnew,snappin,locknames")
+Flags("showdrc,nameonpcb,clearnew,snappin,locknames")
 Groups("1,c:3:2:4,s:5:6")
 Styles["Signal,10.00mil,36.00mil,20.00mil,7.00mil:Power,25.00mil,60.00mil,35.00mil,10.00mil:Fat,50.00mil,85.00mil,50.00mil,10.00mil:Skinny,16.00mil,46.00mil,28.00mil,7.00mil"]
 
@@ -1070,7 +1070,7 @@ Via[3610.00mil 2530.00mil 46.00mil 14.00mil 0.0000 28.00mil "" ""]
 Via[3290.00mil 2910.00mil 46.00mil 14.00mil 0.0000 28.00mil "" ""]
 Via[3950.00mil 2890.00mil 46.00mil 14.00mil 0.0000 28.00mil "" "thermal(1S)"]
 Via[2770.00mil 2540.00mil 36.00mil 14.00mil 0.0000 20.00mil "" ""]
-Via[4300.00mil 2760.00mil 46.00mil 14.00mil 0.0000 28.00mil "" "thermal(1S,3S)"]
+Via[4290.00mil 2760.00mil 46.00mil 14.00mil 0.0000 28.00mil "" "thermal(1S,3S)"]
 Via[4270.00mil 2820.00mil 46.00mil 14.00mil 0.0000 28.00mil "" "thermal(1S,3S)"]
 Via[3460.00mil 2760.00mil 46.00mil 14.00mil 0.0000 28.00mil "" "thermal(1S)"]
 Via[3310.00mil 2040.00mil 36.00mil 14.00mil 0.0000 20.00mil "" ""]
@@ -1203,21 +1203,21 @@ Element["" "B03B-PASK-1" "CONN1" "unknown" 4760.00mil 3500.00mil 190.00mil 100.0
 
 	)
 
-Element["" "0603" "C11" ".15_uF" 3860.00mil 3120.00mil -101.50mil 8.50mil 0 100 ""]
+Element["" "0603" "C11" "0.15_uF" 3860.00mil 3120.00mil -101.50mil 8.50mil 0 100 ""]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["onsolder" "0603" "C10" ".15_uF" 4470.00mil 3180.00mil 28.50mil 51.50mil 0 100 "auto"]
+Element["onsolder" "0603" "C10" "0.15_uF" 4470.00mil 3180.00mil 28.50mil 51.50mil 0 100 "auto"]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "onsolder,square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "onsolder,square"]
 
 	)
 
-Element["onsolder" "0603" "C9" ".15_uF" 4890.00mil 3180.00mil 28.50mil 51.50mil 0 100 "auto"]
+Element["onsolder" "0603" "C9" "0.15_uF" 4890.00mil 3180.00mil 28.50mil 51.50mil 0 100 "auto"]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "onsolder,square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "onsolder,square"]
@@ -1334,7 +1334,7 @@ Element["" "0603" "C32" "0.15_uF" 4310.00mil 2940.00mil 58.50mil -21.50mil 0 100
 
 	)
 
-Element["" "0603" "R6" "50_k" 4180.00mil 2620.00mil 48.50mil -21.50mil 0 100 ""]
+Element["" "0603" "R6" "49.9_k" 4180.00mil 2620.00mil 48.50mil -21.50mil 0 100 ""]
 (
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
@@ -1550,7 +1550,7 @@ Element["onsolder" "0603" "C14" "0.15_uF" 4770.00mil 2360.00mil -41.50mil -18.50
 
 	)
 
-Element["" "0603" "R16" "50_k" 4930.00mil 2840.00mil -41.50mil -81.50mil 0 100 ""]
+Element["" "0603" "R16" "49.9_k" 4930.00mil 2840.00mil -41.50mil -81.50mil 0 100 ""]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
@@ -1564,14 +1564,14 @@ Element["" "0603" "C13" "1_uF" 4790.00mil 2940.00mil -131.50mil -1.50mil 0 100 "
 
 	)
 
-Element["" "0603" "C12" ".15_uF" 5160.00mil 2240.00mil 28.50mil -31.50mil 0 100 ""]
+Element["" "0603" "C12" "0.15_uF" 5160.00mil 2240.00mil 28.50mil -31.50mil 0 100 ""]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["onsolder" "0603" "C8" ".15_uF" 4660.00mil 2230.00mil 28.50mil 31.50mil 0 100 "auto"]
+Element["onsolder" "0603" "C8" "0.15_uF" 4660.00mil 2230.00mil 28.50mil 31.50mil 0 100 "auto"]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "onsolder,square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "onsolder,square"]
@@ -1616,7 +1616,7 @@ Element["" "MSSOP20_CQ-3301" "U5" "unknown" 4510.00mil 2230.00mil 10.00mil -210.
 
 	)
 
-Element["onsolder" "0603" "C7" ".15_uF" 4240.00mil 2230.00mil 28.50mil 1.50mil 0 100 "auto"]
+Element["onsolder" "0603" "C7" "0.15_uF" 4240.00mil 2230.00mil 28.50mil 1.50mil 0 100 "auto"]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "onsolder,square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "onsolder,square"]
@@ -1651,21 +1651,21 @@ Element["" "0603" "C17" "1_uF" 5160.00mil 2440.00mil 28.50mil -31.50mil 0 100 ""
 
 	)
 
-Element["onsolder" "0603" "C51" ".15_uF" 1300.00mil 2310.00mil 28.50mil 31.50mil 0 100 "auto"]
+Element["onsolder" "0603" "C51" "0.15_uF" 1300.00mil 2310.00mil 28.50mil 31.50mil 0 100 "auto"]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "onsolder,square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "onsolder,square"]
 
 	)
 
-Element["onsolder" "0603" "C50" ".15_uF" 1500.00mil 2310.00mil 28.50mil 31.50mil 0 100 "auto"]
+Element["onsolder" "0603" "C50" "0.15_uF" 1500.00mil 2310.00mil 28.50mil 31.50mil 0 100 "auto"]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "onsolder,square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "onsolder,square"]
 
 	)
 
-Element["onsolder" "0603" "C57" "0.1_uF" 2760.00mil 3440.00mil -41.50mil -18.50mil 0 100 "auto"]
+Element["onsolder" "0603" "C57" "0.15_uF" 2760.00mil 3440.00mil -41.50mil -18.50mil 0 100 "auto"]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "1" "1" "onsolder,square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "2" "2" "onsolder,square"]
@@ -2108,14 +2108,14 @@ Element["onsolder" "0603" "C107" "1_uF" 1390.00mil 2580.00mil -51.50mil -48.50mi
 
 	)
 
-Element["onsolder" "0603" "C62" ".15_uF" 2190.00mil 2200.00mil 48.50mil 31.50mil 0 100 "auto"]
+Element["onsolder" "0603" "C62" "0.15_uF" 2190.00mil 2200.00mil 48.50mil 31.50mil 0 100 "auto"]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "1" "1" "onsolder,square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "2" "2" "onsolder,square"]
 
 	)
 
-Element["onsolder" "0603" "C63" ".15_uF" 2090.00mil 2160.00mil -121.50mil -8.50mil 0 100 "auto"]
+Element["onsolder" "0603" "C63" "0.15_uF" 2090.00mil 2160.00mil -121.50mil -8.50mil 0 100 "auto"]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "onsolder,square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "onsolder,square"]
@@ -2511,6 +2511,14 @@ Element["onsolder" "0603" "C65" "3900_pF" 2800.00mil 2480.00mil -21.50mil 48.50m
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "onsolder,square"]
 
 	)
+
+Element["" "DO214AC" "D1" "unknown" 4440.00mil 2750.00mil 0.0000 0.0000 0 100 ""]
+(
+	Pad[-78.50mil 0.0000 -78.50mil 0.0000 99.00mil 20.00mil 79.00mil "2" "2" "square"]
+	Pad[78.50mil 0.0000 78.50mil 0.0000 99.00mil 20.00mil 79.00mil "1" "1" "square,edge2"]
+	ElementLine [-24.00mil 50.00mil -24.00mil -50.00mil 10.00mil]
+
+	)
 Layer(1 "top")
 (
 	Line[4780.00mil 3157.20mil 4780.00mil 79.5429mm 10.00mil 14.00mil "clearline"]
@@ -2799,6 +2807,16 @@ Layer(1 "top")
 	Line[5260.00mil 3320.00mil 5260.00mil 2770.00mil 10.00mil 14.00mil "clearline"]
 	Line[5260.00mil 2770.00mil 5230.00mil 2740.00mil 10.00mil 14.00mil "clearline"]
 	Line[5230.00mil 2740.00mil 5220.00mil 2740.00mil 10.00mil 14.00mil "clearline"]
+	Line[4490.00mil 2670.00mil 4490.00mil 2721.50mil 50.00mil 20.00mil "clearline"]
+	Line[4490.00mil 2721.50mil 114.7699mm 2750.00mil 50.00mil 20.00mil "clearline"]
+	Line[4361.50mil 2750.00mil 4351.50mil 2760.00mil 50.00mil 20.00mil "clearline"]
+	Line[4351.50mil 2760.00mil 4230.00mil 2760.00mil 50.00mil 20.00mil "clearline"]
+	Line[4270.00mil 2820.00mil 4270.00mil 2780.00mil 50.00mil 20.00mil "clearline"]
+	Line[4270.00mil 2780.00mil 4290.00mil 2760.00mil 50.00mil 20.00mil "clearline"]
+	Line[4520.00mil 2751.50mil 4548.50mil 2751.50mil 50.00mil 20.00mil "clearline"]
+	Line[4548.50mil 2751.50mil 4630.00mil 2670.00mil 50.00mil 20.00mil "clearline"]
+	Line[4490.00mil 2710.00mil 4590.00mil 2710.00mil 50.00mil 20.00mil "clearline"]
+	Line[4630.00mil 2670.00mil 4490.00mil 2670.00mil 50.00mil 20.00mil "clearline"]
 	Text[1260.00mil 3350.00mil 1 98 "20170919" "clearline"]
 	Polygon("")
 	(
@@ -4382,6 +4400,7 @@ NetList()
 		Connect("CONN10-1")
 		Connect("CONN11-1")
 		Connect("CONN12-1")
+		Connect("D1-1")
 		Connect("R7-2")
 		Connect("R9-2")
 		Connect("R17-2")
@@ -4914,6 +4933,7 @@ NetList()
 		Connect("C101-1")
 		Connect("C103-1")
 		Connect("CONN6-3")
+		Connect("D1-2")
 		Connect("R58-1")
 		Connect("U1-21")
 		Connect("U1-29")
