@@ -166,7 +166,7 @@ const ProfileParams kRaceBackupDrive = {2.0, 5.0};
       distance - theta * constants::GetValues().turn_width / 2.0;
   right_initial_position +=
       distance + theta * constants::GetValues().turn_width / 2.0;
-  return ::std::move(drivetrain_action);
+  return drivetrain_action;
 }
 
 const ProfileParams kFridgeYProfile{1.0, 4.0};

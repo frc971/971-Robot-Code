@@ -212,7 +212,7 @@ const ProfileParams kFastTurn = {3.0, 10.0};
       distance - theta * control_loops::drivetrain::kRobotRadius;
   right_initial_position +=
       distance + theta * control_loops::drivetrain::kRobotRadius;
-  return ::std::move(drivetrain_action);
+  return drivetrain_action;
 }
 
 void Shoot() {

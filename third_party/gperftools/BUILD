@@ -208,6 +208,7 @@ cc_test(
   ],
   copts = common_copts + [
     '-fno-builtin',
+    '-Wno-mismatched-new-delete',
   ],
   size = 'small',
 )

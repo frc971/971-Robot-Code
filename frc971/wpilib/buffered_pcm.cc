@@ -12,7 +12,7 @@ namespace wpilib {
       new BufferedSolenoid(number, this));
 }
 
-void BufferedPcm::Set(int number, bool value) {
+void BufferedPcm::DoSet(int number, bool value) {
   if (value) {
     values_ |= 1 << number;
   } else {

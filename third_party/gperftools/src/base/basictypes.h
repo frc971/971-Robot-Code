@@ -78,12 +78,12 @@ const uint64 kuint64max = ( (((uint64) kuint32max) << 32) | kuint32max );
 const  int8  kint8max   = (   (  int8) 0x7F);
 const  int16 kint16max  = (   ( int16) 0x7FFF);
 const  int32 kint32max  = (   ( int32) 0x7FFFFFFF);
-const  int64 kint64max =  ( ((( int64) kint32max) << 32) | kuint32max );
+const  int64 kint64max =  ( ((( uint64) kint32max) << 32) | kuint32max );
 
 const  int8  kint8min   = (   (  int8) 0x80);
 const  int16 kint16min  = (   ( int16) 0x8000);
 const  int32 kint32min  = (   ( int32) 0x80000000);
-const  int64 kint64min =  ( ((( int64) kint32min) << 32) | 0 );
+const  int64 kint64min =  ( ((( uint64) kint32min) << 32) | 0 );
 
 // Define the "portable" printf and scanf macros, if they're not
 // already there (via the inttypes.h we #included above, hopefully).

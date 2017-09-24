@@ -33,7 +33,7 @@ class BufferedPcm : public Solenoid {
   virtual void InitSolenoid() override {}
 #endif
 
-  void Set(int number, bool value);
+  void DoSet(int number, bool value);
 
   uint8_t values_ = 0;
 

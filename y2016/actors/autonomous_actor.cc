@@ -197,7 +197,7 @@ void AutonomousActor::WaitForShooterSpeed() {
 
 void AutonomousActor::AlignWithVisionGoal() {
   actors::VisionAlignActionParams params;
-  vision_action_ = ::std::move(actors::MakeVisionAlignAction(params));
+  vision_action_ = actors::MakeVisionAlignAction(params);
   vision_action_->Start();
 }
 
