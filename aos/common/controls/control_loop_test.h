@@ -25,7 +25,9 @@ class ControlLoopTest : public ::testing::Test {
   // Sends out all of the required queue messages.
   void SendMessages(bool enabled);
   // Ticks time for a single control loop cycle.
-  void TickTime() { ::aos::time::SetMockTime(current_time_ += kTimeTick); }
+  void TickTime(::std::chrono::nanoseconds dt = kTimeTick) {
+    ::aos::time::SetMockTime(current_time_ += dt);
+  }
 
   // Simulates everything that happens during 1 loop time step.
   void SimulateTimestep(bool enabled) {
