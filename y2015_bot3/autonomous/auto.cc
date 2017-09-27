@@ -91,7 +91,7 @@ void InitializeEncoders() {
       distance - theta * control_loops::drivetrain::kDrivetrainTurnWidth / 2.0;
   right_initial_position +=
       distance + theta * control_loops::drivetrain::kDrivetrainTurnWidth / 2.0;
-  return ::std::move(drivetrain_action);
+  return drivetrain_action;
 }
 void WaitUntilDoneOrCanceled(
     ::std::unique_ptr<aos::common::actions::Action> action) {
