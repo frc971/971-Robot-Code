@@ -1,4 +1,4 @@
-#include "aos/common/once.h"
+#include "aos/once.h"
 
 #include <stdlib.h>
 #include <limits.h>

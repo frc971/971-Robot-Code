@@ -182,7 +182,7 @@ cc_library(
   deps = [
     '//aos/common:die',
     '//aos/common:time',
-    '//aos/common:once',
+    '//aos:once',
     '//aos/common:queue_types',
     ':logging',
     '//aos/common:type_traits',

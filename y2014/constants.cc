@@ -11,9 +11,9 @@
 #endif
 
 #include "aos/common/logging/logging.h"
-#include "aos/common/once.h"
-#include "aos/common/network/team_number.h"
 #include "aos/common/mutex.h"
+#include "aos/common/network/team_number.h"
+#include "aos/once.h"
 
 #include "y2014/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 #include "y2014/control_loops/drivetrain/drivetrain_dog_motor_plant.h"

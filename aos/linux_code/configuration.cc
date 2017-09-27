@@ -10,7 +10,7 @@
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/unique_malloc_ptr.h"
-#include "aos/common/once.h"
+#include "aos/once.h"
 
 namespace aos {
 namespace configuration {

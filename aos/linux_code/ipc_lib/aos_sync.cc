@@ -27,9 +27,9 @@
 #include <type_traits>
 
 #include "aos/common/logging/logging.h"
-#include "aos/common/once.h"
 #include "aos/common/macros.h"
 #include "aos/common/util/compiler_memory_barrier.h"
+#include "aos/once.h"
 
 using ::aos::linux_code::ipc_lib::FutexAccessorObserver;
 

@@ -13,7 +13,7 @@ cc_library(
   ],
   deps = [
     '//aos/common/logging',
-    '//aos/common:once',
+    '//aos:once',
     '//aos/common:macros',
     '//aos/common/util:compiler_memory_barrier',
   ],

@@ -22,7 +22,7 @@ cc_library(
   deps = [
     ':googletest',
     '//aos/common/logging:implementations',
-    '//aos/common:once',
+    '//aos:once',
     '//aos/common:mutex',
   ],
   testonly = True,

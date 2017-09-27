@@ -7,11 +7,11 @@
 #include <chrono>
 
 #include "aos/common/die.h"
-#include "aos/common/once.h"
-#include "aos/common/time.h"
-#include "aos/common/queue_types.h"
 #include "aos/common/logging/printf_formats.h"
+#include "aos/common/queue_types.h"
+#include "aos/common/time.h"
 #include "aos/linux_code/ipc_lib/queue.h"
+#include "aos/once.h"
 
 namespace aos {
 namespace logging {
