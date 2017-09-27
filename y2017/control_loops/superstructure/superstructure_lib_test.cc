@@ -1159,8 +1159,9 @@ TEST_F(SuperstructureTest, ReallyStuckIndexerTest) {
               chrono::milliseconds(1050));
   EXPECT_TRUE(unstuck_detection_time - unstuck_start_time >
               chrono::milliseconds(400));
-  LOG(INFO, "Unstuck time is %ldms",
-      (unstuck_detection_time - unstuck_start_time).count() / 1000000);
+  LOG(INFO, "Unstuck time is %" PRId64 "ms",
+      static_cast<int64_t>(
+          (unstuck_detection_time - unstuck_start_time).count() / 1000000));
 
   // Now, make sure it transitions to stuck again after a delay.
   const auto restuck_start_time = monotonic_clock::now();
