@@ -30,83 +30,91 @@
 
 MEMORY
 {
-	FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 512K
-	RAM  (rwx) : ORIGIN = 0x1FFF0000, LENGTH = 192K
+  FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 512K
+  RAM  (rwx) : ORIGIN = 0x1FFF0000, LENGTH = 192K
 }
 
 
 SECTIONS
 {
-	.text : {
-		. = 0;
-		KEEP(*(.vectors))
-		*(.startup*)
-		. = 0x400;
-		KEEP(*(.flashconfig*))
-		*(.text*)
-		*(.rodata*)
-		. = ALIGN(4);
-		KEEP(*(.init))
-		. = ALIGN(4);
-		__preinit_array_start = .;
-		KEEP (*(.preinit_array))
-		__preinit_array_end = .;
-		__init_array_start = .;
-		KEEP (*(SORT(.init_array.*)))
-		KEEP (*(.init_array))
-		__init_array_end = .;
-	} > FLASH = 0xFF
+  .text : {
+    . = 0;
+    KEEP(*(.vectors))
+    *(.startup*)
+    . = 0x400;
+    KEEP(*(.flashconfig*))
+    *(SORT_BY_ALIGNMENT(.text*))
+    *(SORT_BY_ALIGNMENT(.rodata*))
+    . = ALIGN(4);
+    KEEP(*(.init))
+    . = ALIGN(4);
+    __preinit_array_start = .;
+    KEEP (*(.preinit_array))
+    __preinit_array_end = .;
+    __init_array_start = .;
+    KEEP (*(SORT(.init_array.*)))
+    KEEP (*(.init_array))
+    __init_array_end = .;
+  } > FLASH = 0xFF
 
-	.ARM.exidx : {
-		__exidx_start = .;
-		*(.ARM.exidx* .gnu.linkonce.armexidx.*)
-		__exidx_end = .;
-	} > FLASH
-	_etext = .;
+  .ARM.exidx : {
+    __exidx_start = .;
+    *(.ARM.exidx* .gnu.linkonce.armexidx.*)
+    __exidx_end = .;
+  } > FLASH
+  _etext = .;
 
-	.usbdescriptortable (NOLOAD) : {
-		/* . = ORIGIN(RAM); */
-		_sram = .;
-		. = ALIGN(512);
-		*(.usbdescriptortable*)
-	} > RAM
+  .usbdescriptortable (NOLOAD) : {
+    /* . = ORIGIN(RAM); */
+    _sram = .;
+    . = ALIGN(512);
+    *(.usbdescriptortable*)
+  } > RAM
 
-	.dmabuffers (NOLOAD) : {
-		. = ALIGN(4);
-		*(.dmabuffers*)
-	} > RAM
+  .dmabuffers (NOLOAD) : {
+    . = ALIGN(4);
+    *(.dmabuffers*)
+  } > RAM
 
-	.usbbuffers (NOLOAD) : {
-		. = ALIGN(4);
-		*(.usbbuffers*)
-	} > RAM
+  .usbbuffers (NOLOAD) : {
+    . = ALIGN(4);
+    *(.usbbuffers*)
+  } > RAM
 
-	.data : AT (_etext) {
-		. = ALIGN(4);
-		_sdata = .; 
-		*(.fastrun*)
-		*(.data*)
-		. = ALIGN(4);
-		_edata = .; 
-	} > RAM
+  .data : AT (_etext) {
+    . = ALIGN(4);
+    _sdata = .; 
+    *(SORT_BY_ALIGNMENT(.data*))
+    . = ALIGN(4);
+    _edata = .; 
+  } > RAM
 
-	.noinit (NOLOAD) : {
-		*(.noinit*)
-	} > RAM
+  .noinit (NOLOAD) : {
+    *(.noinit*)
+  } > RAM
 
-	.bss : {
-		. = ALIGN(4);
-		_sbss = .;
-		__bss_start__ = .;
-		*(.bss*)
-		*(COMMON)
-		. = ALIGN(4);
-		_ebss = .;
-		__bss_end = .;
-		__bss_end__ = .;
-	} > RAM
+  .bss : {
+    . = ALIGN(4);
+    _sbss = .;
+    __bss_start__ = .;
+    *(SORT_BY_ALIGNMENT(.bss*))
+    /* Stupid precompiled libc has common symbols, so stick them in. */
+    */libc_nano.a:*(COMMON)
+    . = ALIGN(4);
+    _ebss = .;
+    __bss_end = .;
+    __bss_end__ = .;
+  } > RAM
 
-	_estack = ORIGIN(RAM) + LENGTH(RAM);
+  /* We don't want any common symbols, so just don't include them which results
+   * in linker errors if any do show up somehow.
+   * Contrary to sanity, even with --orphan-handling=error the linker will still
+   * do normal orphan section handling with COMMON... */
+  /DISCARD/ : {
+    *(COMMON);
+  }
+
+  _estack = ORIGIN(RAM) + LENGTH(RAM);
 }
 
 

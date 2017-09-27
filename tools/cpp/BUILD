@@ -10,6 +10,7 @@ cc_library(
   deps = select({
     '//tools:has_asan': [],
     '//tools:has_tsan': [],
+    '//tools:cpu_cortex_m4f': [],
     '//conditions:default': ['//third_party/gperftools:tcmalloc'],
   }),
 )
@@ -30,6 +31,7 @@ cc_toolchain_suite(
     'k8|clang': ':cc-compiler-k8',
     'roborio|gcc': ':cc-compiler-roborio',
     'armhf-debian|clang': 'cc-compiler-armhf-debian',
+    'cortex-m4f|gcc': 'cc-compiler-cortex-m4f',
   },
 )
 
@@ -149,4 +151,18 @@ cc_toolchain(
   static_runtime_libs = [':empty'],
   strip_files = '//tools/cpp/linaro_linux_gcc:strip',
   supports_param_files = 1,
+)
+
+cc_toolchain(
+  name = 'cc-compiler-cortex-m4f',
+  all_files = ':empty',
+  compiler_files = ':empty',
+  cpu = 'cortex-m4',
+  dwp_files = ':empty',
+  dynamic_runtime_libs = [':empty'],
+  linker_files = '//motors/core:linkerscript',
+  objcopy_files = ':empty',
+  static_runtime_libs = [':empty'],
+  strip_files = ':empty',
+  supports_param_files = 0,
 )

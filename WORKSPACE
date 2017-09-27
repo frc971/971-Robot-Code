@@ -117,3 +117,9 @@ new_http_archive(
   url = 'http://frc971.org/Build-Dependencies/empty.tar.gz',
   sha256 = '71939a7d75585a57d2e99a33d39f391764d8f930f9a16acf32e00c5d3f432aa0',
 )
+
+new_local_repository(
+  name = 'libusb',
+  path = '/usr',
+  build_file = 'debian/libusb.BUILD',
+)

@@ -20,6 +20,10 @@ config_setting(
   values = {'cpu': 'roborio'},
 )
 config_setting(
+  name = 'cpu_cortex_m4f',
+  values = {'cpu': 'cortex-m4f'},
+)
+config_setting(
   name = 'cpu_armhf',
   values = {'cpu': 'armhf-debian'},
 )
