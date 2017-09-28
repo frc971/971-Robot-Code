@@ -29,14 +29,14 @@
 
 #include "third_party/libevent/event.h"
 
-#include "aos/common/logging/logging.h"
-#include "aos/common/logging/implementations.h"
-#include "aos/linux_code/init.h"
-#include "aos/common/unique_malloc_ptr.h"
-#include "aos/common/time.h"
-#include "aos/common/once.h"
 #include "aos/common/libc/aos_strsignal.h"
+#include "aos/common/logging/implementations.h"
+#include "aos/common/logging/logging.h"
+#include "aos/common/time.h"
+#include "aos/common/unique_malloc_ptr.h"
 #include "aos/common/util/run_command.h"
+#include "aos/linux_code/init.h"
+#include "aos/once.h"
 
 // This is the main piece of code that starts all of the rest of the code and
 // restarts it when the binaries are modified.

@@ -29,7 +29,7 @@ cc_library(
     'complex_thread_local.h',
   ],
   deps = [
-    '//aos/common:once',
+    '//aos:once',
     '//aos/common:die',
     '//debian:libpthread',
   ],
@@ -72,7 +72,7 @@ cc_library(
     'configuration.h',
   ],
   deps = [
-    '//aos/common:once',
+    '//aos:once',
     '//aos/common/logging',
     '//aos/common:unique_malloc_ptr',
   ],

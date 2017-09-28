@@ -13,14 +13,14 @@
 #include <functional>
 #include <atomic>
 
-#include "aos/common/logging/logging.h"
-#include "aos/common/type_traits.h"
-#include "aos/common/mutex.h"
-#include "aos/common/macros.h"
-#include "aos/common/logging/sizes.h"
-#include "aos/common/logging/interface.h"
 #include "aos/common/logging/context.h"
-#include "aos/common/once.h"
+#include "aos/common/logging/interface.h"
+#include "aos/common/logging/logging.h"
+#include "aos/common/logging/sizes.h"
+#include "aos/common/macros.h"
+#include "aos/common/mutex.h"
+#include "aos/common/type_traits.h"
+#include "aos/once.h"
 
 namespace aos {
 

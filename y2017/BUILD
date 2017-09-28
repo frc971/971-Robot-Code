@@ -13,7 +13,7 @@ cc_library(
     '//aos/common/logging',
     '//aos/common/network:team_number',
     '//aos/common:mutex',
-    '//aos/common:once',
+    '//aos:once',
     '//frc971:constants',
     '//frc971/shooter_interpolation:interpolation',
     '//y2017/control_loops/drivetrain:polydrivetrain_plants',

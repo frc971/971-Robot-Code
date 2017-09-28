@@ -200,31 +200,6 @@ cc_library(
   ],
 )
 
-cc_library(
-  name = 'once',
-  hdrs = [
-    'once.h',
-  ],
-  srcs = [
-    'once-tmpl.h',
-  ],
-  deps = [
-    ':gtest_prod',
-    ':type_traits',
-  ],
-)
-
-cc_test(
-  name = 'once_test',
-  srcs = [
-    'once_test.cc',
-  ],
-  deps = [
-    '//aos/testing:googletest',
-    ':once',
-  ],
-)
-
 cc_test(
   name = 'time_test',
   srcs = [

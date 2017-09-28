@@ -100,7 +100,7 @@ def queue_library(name, srcs, deps = [],
     srcs = [src + '.cc' for src in srcs],
     hdrs = [src + '.h' for src in srcs],
     deps = deps + [
-      '//aos/common:once',
+      '//aos:once',
       '//aos/common:queues',
       '//aos/common:queue_types',
       '//aos/common/logging:printf_formats',

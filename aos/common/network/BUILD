@@ -10,7 +10,7 @@ cc_library(
   ],
   deps = [
     '//aos/linux_code:configuration',
-    '//aos/common:once',
+    '//aos:once',
     '//aos/common/logging',
     '//aos/common/util:string_to_num',
   ],

@@ -11,7 +11,7 @@ cc_library(
   ],
   deps = [
     '//aos/common/logging',
-    '//aos/common:once',
+    '//aos:once',
     '//aos/common/network:team_number',
     '//aos/common:mutex',
     '//frc971/control_loops:state_feedback_loop',

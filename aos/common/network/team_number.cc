@@ -7,10 +7,10 @@
 
 #include <string>
 
-#include "aos/common/once.h"
-#include "aos/linux_code/configuration.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/util/string_to_num.h"
+#include "aos/linux_code/configuration.h"
+#include "aos/once.h"
 
 namespace aos {
 namespace network {

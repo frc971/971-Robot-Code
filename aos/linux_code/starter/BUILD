@@ -18,7 +18,7 @@ cc_binary(
     '//third_party/libevent',
     '//aos/common/logging',
     '//aos/common/logging:implementations',
-    '//aos/common:once',
+    '//aos:once',
     '//aos/common:time',
     '//aos/common/libc:aos_strsignal',
     '//aos/common/util:run_command',

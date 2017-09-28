@@ -1,5 +1,5 @@
-#ifndef AOS_COMMON_ONCE_H_
-#define AOS_COMMON_ONCE_H_
+#ifndef AOS_ONCE_H_
+#define AOS_ONCE_H_
 
 #include <stdint.h>
 
@@ -64,6 +64,6 @@ class Once {
 
 }  // namespace aos
 
-#include "aos/common/once-tmpl.h"
+#include "aos/once-tmpl.h"
 
-#endif  // AOS_COMMON_ONCE_H_
+#endif  // AOS_ONCE_H_

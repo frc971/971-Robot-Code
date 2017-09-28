@@ -2,8 +2,8 @@
 
 #include <pthread.h>
 
-#include "aos/common/once.h"
 #include "aos/common/die.h"
+#include "aos/once.h"
 
 #define SIMPLE_CHECK(call)              \
   do {                                  \
