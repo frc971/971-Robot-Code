@@ -208,7 +208,8 @@ cc_test(
   ],
   copts = common_copts + [
     '-fno-builtin',
-    '-Wno-mismatched-new-delete',
+    # Add this back in when we upgrade clang.
+    #'-Wno-mismatched-new-delete',
   ],
   size = 'small',
 )
