@@ -9,6 +9,7 @@ cc_binary(
   deps = [
     '//motors:util',
     '//motors/usb',
+    '//motors/usb:cdc',
     '//motors/core',
   ],
   restricted_to = mcu_cpus,

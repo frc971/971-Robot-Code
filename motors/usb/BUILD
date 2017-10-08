@@ -45,6 +45,45 @@ cc_library(
 )
 
 cc_library(
+  name = 'cdc',
+  visibility = ['//visibility:public'],
+  hdrs = [
+    'cdc.h',
+  ],
+  srcs = [
+    'cdc.cc',
+  ],
+  deps = [
+    ':usb',
+    ':queue',
+    '//motors:util',
+  ],
+  restricted_to = mcu_cpus,
+)
+
+cc_library(
+  name = 'queue',
+  hdrs = [
+    'queue.h',
+  ],
+  srcs = [
+    'queue.cc',
+  ],
+  compatible_with = mcu_cpus,
+)
+
+cc_test(
+  name = 'queue_test',
+  srcs = [
+    'queue_test.cc',
+  ],
+  deps = [
+    ':queue',
+    '//aos/testing:googletest',
+  ],
+)
+
+cc_library(
   name = 'constants',
   hdrs = [
     'constants.h',

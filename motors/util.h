@@ -150,6 +150,18 @@ typedef struct {
 #define USB0_ENDPTn(n) (*(volatile uint8_t *)(0x400720C0 + ((n)*4)))
 
 #ifdef __cplusplus
+// RAII class to disable interrupts temporarily.
+class DisableInterrupts {
+ public:
+  DisableInterrupts() { __disable_irq(); }
+  ~DisableInterrupts() { __enable_irq(); }
+
+  DisableInterrupts(const DisableInterrupts &) = delete;
+  DisableInterrupts &operator=(const DisableInterrupts &) = delete;
+};
+#endif  // __cplusplus
+
+#ifdef __cplusplus
 }
 #endif
 

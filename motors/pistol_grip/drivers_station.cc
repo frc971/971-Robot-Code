@@ -6,10 +6,94 @@
 #include "motors/core/time.h"
 #include "motors/core/kinetis.h"
 #include "motors/usb/usb.h"
+#include "motors/usb/cdc.h"
 #include "motors/util.h"
 
 namespace frc971 {
 namespace motors {
+namespace {
+
+void EchoChunks(teensy::AcmTty *tty1) {
+  while (true) {
+    char buffer[512];
+    size_t buffered = 0;
+    while (buffered < sizeof(buffer)) {
+      const size_t chunk =
+          tty1->Read(&buffer[buffered], sizeof(buffer) - buffered);
+      buffered += chunk;
+    }
+    size_t written = 0;
+    while (written < buffered) {
+      const size_t chunk = tty1->Write(&buffer[written], buffered - written);
+      written += chunk;
+    }
+
+    GPIOC_PTOR = 1 << 5;
+    for (int i = 0; i < 100000000; ++i) {
+      GPIOC_PSOR = 0;
+    }
+    GPIOC_PTOR = 1 << 5;
+  }
+}
+
+void EchoImmediately(teensy::AcmTty *tty1) {
+  while (true) {
+    if (false) {
+      // Delay for a while.
+      for (int i = 0; i < 100000000; ++i) {
+        GPIOC_PSOR = 0;
+      }
+    }
+
+    char buffer[64];
+    const size_t chunk = tty1->Read(buffer, sizeof(buffer));
+    size_t written = 0;
+    while (written < chunk) {
+      written += tty1->Write(&buffer[written], chunk - written);
+    }
+  }
+}
+
+void WriteData(teensy::AcmTty *tty1) {
+  GPIOC_PTOR = 1 << 5;
+  for (int i = 0; i < 100000000; ++i) {
+    GPIOC_PSOR = 0;
+  }
+  GPIOC_PTOR = 1 << 5;
+  for (int i = 0; i < 100000000; ++i) {
+    GPIOC_PSOR = 0;
+  }
+
+  const char data[] =
+      "Running command lineRunning command lineRunning command lineRunning "
+      "command lineRunning command lineRunning command lineRunning command "
+      "lineRunning command lineRunning command lineRunning command lineRunning "
+      "command lineRunning command lineRunning command lineRunning command "
+      "lineRunning command lineRunning command lineRunning command lineRunning "
+      "command lineRunning command lineRunning command lineRunning command "
+      "lineRunning command lineRunning command lineRunning command lineRunning "
+      "command lineRunning command lineRunning command lineRunning command "
+      "lineRunning command lineRunning command lineRunning command lineRunning "
+      "command lineRunning command lineRunning command lineRunning command "
+      "lineRunning command lineRunning command lineRunning command lineRunning "
+      "command lineRunning command lineRunning command lineRunning command "
+      "lineRunning command lineRunning command lineRunning command lineRunning "
+      "command lineRunning command lineRunning command lineRunning command "
+      "lineRunning command lineRunning command lineRunning command lineRunning "
+      "command lineRunning command lineRunning command lineRunning command "
+      "lineRunning command lineRunning command lineRunning command lineRunning "
+      "command lineRunning command lineRunning command lineRunning command "
+      "lineRunning command line\n";
+  size_t written = 0;
+  while (written < sizeof(data)) {
+    written += tty1->Write(&data[written], sizeof(data) - written);
+  }
+  GPIOC_PSOR = 1 << 5;
+  while (true) {
+  }
+}
+
+}  // namespace
 
 extern "C" {
 void *__stack_chk_guard = (void *)0x67111971;
@@ -44,10 +128,12 @@ extern "C" int main(void) {
   delay(100);
 
   teensy::UsbDevice usb_device(0, 0x16c0, 0x0490);
+  usb_device.SetManufacturer("FRC 971 Spartan Robotics");
+  usb_device.SetProduct("Pistol Grip Controller interface");
+  teensy::AcmTty tty1(&usb_device);
   usb_device.Initialize();
 
-  //GPIOC_PSOR = 1 << 5;
-  while (true) {}
+  WriteData(&tty1);
 
   return 0;
 }
