@@ -1,0 +1,3 @@
+schematics board-main.sch
+output-name board
+use-files
