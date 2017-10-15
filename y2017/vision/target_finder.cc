@@ -190,7 +190,7 @@ bool TargetFinder::FindTargetFromComponents(
       // 5-20, offset are around 10. Value selected for worst garbage can image.
       const double offsetWeight = 2.1;
       error += offsetWeight * offset;
-      if ((best_error < 0 || error < best_error) && !isnan(error)) {
+      if ((best_error < 0 || error < best_error) && !::std::isnan(error)) {
         best_error = error;
         best_offset = offset;
         best_v = error_v;
@@ -202,7 +202,7 @@ bool TargetFinder::FindTargetFromComponents(
   }
 
   // If we missed or the error is ridiculous just give up here.
-  if (best_error < 0 || best_error > 300.0 || isnan(best_error)) {
+  if (best_error < 0 || best_error > 300.0 || ::std::isnan(best_error)) {
     fprintf(stderr, "Bogus target dude (%f).\n", best_error);
     return false;
   }
