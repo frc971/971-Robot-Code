@@ -28,10 +28,10 @@ class IntakePlant : public StateFeedbackPlant<2, 1, 1> {
   explicit IntakePlant(StateFeedbackPlant<2, 1, 1> &&other)
       : StateFeedbackPlant<2, 1, 1>(::std::move(other)) {}
 
-  void CheckU() override {
-    for (int i = 0; i < kNumInputs; ++i) {
-      assert(U(i, 0) <= U_max(i, 0) + 0.00001 + voltage_offset_);
-      assert(U(i, 0) >= U_min(i, 0) - 0.00001 + voltage_offset_);
+  void CheckU(const Eigen::Matrix<double, 1, 1> &U) override {
+    if (U(0, 0) > U_max(0, 0) + 0.00001 + voltage_offset_ ||
+        U(0, 0) < U_min(0, 0) - 0.00001 + voltage_offset_) {
+      LOG(FATAL, "U out of range\n");
     }
   }
 
@@ -94,8 +94,8 @@ class IntakeSimulation {
     EXPECT_TRUE(intake_queue_.output.FetchLatest());
 
     // Feed voltages into physics simulation.
-    intake_plant_->mutable_U() << intake_queue_.output->voltage_intake +
-                                      intake_plant_->voltage_offset();
+    Eigen::Matrix<double, 1, 1> U;
+    U << intake_queue_.output->voltage_intake + intake_plant_->voltage_offset();
 
     // Verify that the correct power limits are being respected depending on
     // which mode we are in.
@@ -110,7 +110,7 @@ class IntakeSimulation {
 
     // Use the plant to generate the next physical state given the voltages to
     // the motors.
-    intake_plant_->Update();
+    intake_plant_->Update(U);
 
     const double angle_intake = intake_plant_->Y(0, 0);
 

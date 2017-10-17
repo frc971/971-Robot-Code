@@ -77,6 +77,7 @@ def fortran_library(name, srcs, deps = [], visibility = None):
       name = name + '_' + pic_o_file,
       src = src,
       visibility = ['//visibility:private'],
+      restricted_to = ['@//tools:k8'],
     )
     pic_o_files.append(pic_o_file)
 
@@ -88,4 +89,5 @@ def fortran_library(name, srcs, deps = [], visibility = None):
       '-lgfortran',
     ],
     visibility = visibility,
+    restricted_to = ['@//tools:k8'],
   )

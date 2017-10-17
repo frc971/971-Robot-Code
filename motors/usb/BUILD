@@ -21,4 +21,5 @@ cc_library(
   deps = [
     '//motors/core',
   ],
+  restricted_to = ['//tools:cortex-m4f'],
 )

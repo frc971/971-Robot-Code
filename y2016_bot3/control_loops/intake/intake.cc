@@ -170,8 +170,10 @@ void Intake::RunIteration(const control_loops::IntakeQueue::Goal *unsafe_goal,
   // Calculate the loops for a cycle.
   {
     Eigen::Matrix<double, 3, 1> error = intake_.controller().error();
-    status->intake.position_power = intake_.controller().K(0, 0) * error(0, 0);
-    status->intake.velocity_power = intake_.controller().K(0, 1) * error(1, 0);
+    status->intake.position_power =
+        intake_.controller().controller().K(0, 0) * error(0, 0);
+    status->intake.velocity_power =
+        intake_.controller().controller().K(0, 1) * error(1, 0);
   }
 
   intake_.Update(disable);

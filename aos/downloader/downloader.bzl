@@ -34,7 +34,7 @@ def _aos_downloader_impl(ctx):
       collect_data = True,
       collect_default = True,
     ),
-    files = set([ctx.outputs.executable]),
+    files = depset([ctx.outputs.executable]),
   )
 
 def _aos_downloader_dir_impl(ctx):

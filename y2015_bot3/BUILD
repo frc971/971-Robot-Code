@@ -35,6 +35,7 @@ aos_downloader(
   srcs = [
     '//aos:prime_binaries',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 cc_binary(
@@ -71,4 +72,5 @@ cc_binary(
     '//y2015_bot3/control_loops/elevator:elevator_lib',
     '//y2015_bot3/control_loops/intake:intake_lib',
   ],
+  restricted_to = ['//tools:roborio'],
 )

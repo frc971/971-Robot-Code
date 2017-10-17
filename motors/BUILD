@@ -8,6 +8,7 @@ cc_binary(
     '//motors/core',
     '//motors/usb',
   ],
+  restricted_to = ['//tools:cortex-m4f'],
 )
 
 genrule(
@@ -21,6 +22,7 @@ genrule(
   cmd = '$(OBJCOPY) -O ihex $<  $@',
   executable = True,
   output_to_bindir = True,
+  restricted_to = ['//tools:cortex-m4f'],
 )
 
 cc_library(
@@ -28,4 +30,5 @@ cc_library(
   hdrs = [
     'util.h',
   ],
+  restricted_to = ['//tools:cortex-m4f'],
 )

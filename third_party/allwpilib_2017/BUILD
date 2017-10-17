@@ -130,4 +130,5 @@ cc_library(
   defines = [
     'WPILIB2017=1',
   ],
+  restricted_to = ['//tools:roborio'],
 )

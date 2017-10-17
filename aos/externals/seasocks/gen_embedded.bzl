@@ -9,7 +9,7 @@ def _gen_embedded_impl(ctx):
   )
 
   return struct(
-    files = set([ ctx.outputs.header ]),
+    files = depset([ ctx.outputs.header ]),
   )
 
 _do_gen_embedded = rule(

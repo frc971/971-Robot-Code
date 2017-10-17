@@ -10,4 +10,5 @@ cc_binary(
   deps = [
     '@libusb//:libusb',
   ],
+  restricted_to = ['@//tools:k8'],
 )

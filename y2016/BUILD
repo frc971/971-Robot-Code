@@ -68,6 +68,7 @@ aos_downloader(
   dirs = [
     '//y2016/dashboard:www_files',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 aos_downloader(
@@ -91,6 +92,7 @@ aos_downloader(
   dirs = [
     '//y2016/dashboard:www_files',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 cc_binary(
@@ -133,4 +135,5 @@ cc_binary(
     '//y2016/control_loops/superstructure:superstructure_queue',
     '//y2016/queues:ball_detector',
   ],
+  restricted_to = ['//tools:roborio'],
 )

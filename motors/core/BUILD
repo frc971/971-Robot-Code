@@ -17,4 +17,5 @@ cc_library(
     'nonstd.c',
     'time.c',
   ],
+  restricted_to = ['//tools:cortex-m4f'],
 )

@@ -12,7 +12,8 @@ genrule(
   name = '_fortranwrapper_pyf',
   srcs = ['slycot/src/_wrapper.pyf'],
   outs = ['slycot/src/_fortranwrapper.pyf'],
-  cmd = 'cat $(SRCS) | sed \'s/_wrapper/_fortranwrapper/\' > $(OUTS)'
+  cmd = 'cat $(SRCS) | sed \'s/_wrapper/_fortranwrapper/\' > $(OUTS)',
+  restricted_to = ['@//tools:k8'],
 )
 
 # Now generate the module wrapper.
@@ -27,6 +28,7 @@ genrule(
   ],
   outs = ['_fortranwrappermodule.c'],
   cmd = '/usr/bin/python /usr/bin/f2py $(location :slycot/src/_fortranwrapper.pyf) --include-paths external/slycot_repo/slycot/src/ --coutput $(OUTS)',
+  restricted_to = ['@//tools:k8'],
 )
 
 # Build it.
@@ -48,6 +50,7 @@ cc_library(
     '-Wno-missing-field-initializers',
     '-Wno-unused-function',
   ],
+  restricted_to = ['@//tools:k8'],
 )
 
 # Now actually build the fortran files.
@@ -67,6 +70,7 @@ cc_binary(
   ],
   linkopts = ['-shared', '-lblas', '-llapack'],
   linkstatic = False,
+  restricted_to = ['@//tools:k8'],
 )
 
 # Generate the _wrapper file which loads _fortranwrapper and pretends.
@@ -75,6 +79,7 @@ genrule(
   outs = ['slycot/_wrapper.py'],
   cmd = 'echo "from external.slycot_repo._fortranwrapper import *" > $(OUTS)',
   output_to_bindir = True,
+  restricted_to = ['@//tools:k8'],
 )
 
 # Now present a python library for slycot
@@ -93,4 +98,5 @@ py_library(
     ':_fortranwrapper.so',
   ],
   visibility = ['//visibility:public'],
+  restricted_to = ['@//tools:k8'],
 )

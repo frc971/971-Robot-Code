@@ -3,4 +3,5 @@ cc_library(
   deps = ['//third_party/allwpilib_2017:wpilib'],
   visibility = ['//visibility:public'],
   linkstatic = True,
+  restricted_to = ['//tools:roborio'],
 )

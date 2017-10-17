@@ -31,6 +31,7 @@ aos_downloader(
   srcs = [
     '//aos:prime_binaries',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 cc_binary(
@@ -65,4 +66,5 @@ cc_binary(
     '//third_party:wpilib',
     '//y2012/control_loops/accessories:accessories_queue',
   ],
+  restricted_to = ['//tools:roborio'],
 )
