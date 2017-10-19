@@ -77,7 +77,8 @@ cc_library(
   ],
 )
 
-cc_binary(name = 'target_sender',
+cc_binary(
+  name = 'target_sender',
   srcs = ['target_sender.cc'],
   deps = [
     '//aos/common:time',
@@ -93,22 +94,25 @@ cc_binary(name = 'target_sender',
     ':stereo_geometry',
     ':vision_data',
     ':calibration',
-  ]
+  ],
+  restricted_to = ['//tools:k8', '//tools:armhf-debian'],
 )
 
-cc_library(name = "blob_filters",
-    srcs = ["blob_filters.cc"],
-    hdrs = ["blob_filters.h"],
-    deps = [
-      "//aos/vision/math:vector",
-      "//aos/vision/math:segment",
-      "//aos/vision/blob:range_image",
-      "//aos/vision/blob:threshold",
-      "//aos/vision/blob:find_blob",
-      "//aos/vision/blob:hierarchical_contour_merge",
-      "//aos/vision/blob:codec",
-        ],
+cc_library(
+  name = "blob_filters",
+  srcs = ["blob_filters.cc"],
+  hdrs = ["blob_filters.h"],
+  deps = [
+    "//aos/vision/math:vector",
+    "//aos/vision/math:segment",
+    "//aos/vision/blob:range_image",
+    "//aos/vision/blob:threshold",
+    "//aos/vision/blob:find_blob",
+    "//aos/vision/blob:hierarchical_contour_merge",
+    "//aos/vision/blob:codec",
+  ],
   visibility = ['//visibility:public'],
+  restricted_to = ['//tools:k8', '//tools:armhf-debian'],
 )
 
 cc_binary(

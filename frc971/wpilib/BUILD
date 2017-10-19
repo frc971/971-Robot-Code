@@ -25,6 +25,7 @@ cc_library(
     '//aos/common:mutex',
     ':dma',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 cc_library(
@@ -40,6 +41,7 @@ cc_library(
     '//aos/common/logging',
     ':dma',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 cc_library(
@@ -57,6 +59,7 @@ cc_library(
     '//aos/common:time',
     '//aos/linux_code:init',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 cc_library(
@@ -73,6 +76,7 @@ cc_library(
     '//third_party:wpilib',
     '//aos/common/logging',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 cc_library(
@@ -88,6 +92,7 @@ cc_library(
     '//aos/common/logging',
     '//aos/common:time',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 cc_library(
@@ -109,6 +114,7 @@ cc_library(
     '//aos/linux_code:init',
     '//aos/common:time',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 cc_library(
@@ -125,6 +131,7 @@ cc_library(
     '//frc971/queues:gyro',
     '//aos/common:time',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 cc_library(
@@ -159,6 +166,7 @@ cc_library(
     '//aos/common/network:team_number',
     '//aos/common/logging:queue_logging',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 cc_library(
@@ -174,6 +182,7 @@ cc_library(
     '//third_party:wpilib',
     '//aos/common/logging:queue_logging',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 queue_library(
@@ -198,6 +207,7 @@ cc_library(
     '//aos/linux_code:init',
     '//aos/common/util:phased_loop',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 cc_library(
@@ -208,6 +218,7 @@ cc_library(
   deps = [
     '//third_party:wpilib',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 queue_library(
@@ -235,6 +246,7 @@ cc_library(
     '//frc971/zeroing:averager',
     '//third_party:wpilib',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 cc_library(
@@ -248,4 +260,5 @@ cc_library(
   deps = [
     '//third_party:wpilib',
   ],
+  restricted_to = ['//tools:roborio'],
 )

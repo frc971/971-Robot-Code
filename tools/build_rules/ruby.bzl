@@ -3,7 +3,7 @@ ZIP_PATH = '/usr/bin/zip'
 ruby_file_types = FileType(['.rb'])
 
 def _collect_transitive_sources(ctx):
-  source_files = set(order='compile')
+  source_files = depset(order='postorder')
   for dep in ctx.attr.deps:
     source_files += dep.transitive_ruby_files
 
@@ -34,7 +34,7 @@ def _ruby_binary_impl(ctx):
   )
 
   return struct(
-    files = set([executable]),
+    files = depset([executable]),
     runfiles = ctx.runfiles(collect_data = True),
   )
 

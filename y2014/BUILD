@@ -58,6 +58,7 @@ aos_downloader(
   srcs = [
     '//aos:prime_binaries',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 cc_binary(
@@ -110,4 +111,5 @@ cc_binary(
     '//frc971/wpilib:pdp_fetcher',
     '//frc971/wpilib:dma',
   ],
+  restricted_to = ['//tools:roborio'],
 )

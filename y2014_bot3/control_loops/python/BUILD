@@ -9,7 +9,8 @@ py_binary(
     '//external:python-gflags',
     '//external:python-glog',
     '//frc971/control_loops/python:controls',
-  ]
+  ],
+  restricted_to = ['//tools:k8'],
 )
 
 py_binary(
@@ -23,4 +24,5 @@ py_binary(
     '//external:python-glog',
     '//frc971/control_loops/python:controls',
   ],
+  restricted_to = ['//tools:k8'],
 )

@@ -59,6 +59,6 @@ Usage
 
         git clone https://USERNAME@robotics.mvla.net/gerrit/971-Robot-Code
         cd 971-Robot-Code
-        bazel build //y2016/... -- $(cat NO_BUILD_AMD64)
+        bazel build //y2016/...
 
    where USERNAME is the same username you use to log into SVN.

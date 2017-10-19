@@ -52,7 +52,8 @@ cc_library(
     ':disjoint_set',
     ':range_image',
     '//third_party/eigen',
-  ]
+  ],
+  restricted_to = ['//tools:k8', '//tools:armhf-debian'],
 )
 
 cc_library(

@@ -30,6 +30,7 @@ aos_downloader(
   srcs = [
     '//aos:prime_binaries',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 aos_downloader(
@@ -44,6 +45,7 @@ aos_downloader(
     '//aos:prime_binaries_stripped',
   ],
   default_target = 'roboRIO-6971-frc.local',
+  restricted_to = ['//tools:roborio'],
 )
 
 cc_binary(
@@ -82,4 +84,5 @@ cc_binary(
     '//y2016_bot4/control_loops/drivetrain:polydrivetrain_plants',
     '//y2016_bot4/control_loops/drivetrain:drivetrain_base',
   ],
+  restricted_to = ['//tools:roborio'],
 )

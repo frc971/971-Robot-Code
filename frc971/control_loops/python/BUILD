@@ -16,6 +16,7 @@ py_library(
   data = [
     '//third_party/cddlib:_cddlib.so',
   ],
+  restricted_to = ['//tools:k8'],
 )
 
 py_test(
@@ -26,6 +27,7 @@ py_test(
   deps = [
     ':controls',
   ],
+  restricted_to = ['//tools:k8'],
 )
 
 py_binary(
@@ -36,4 +38,5 @@ py_binary(
   deps = [
     ':controls',
   ],
+  restricted_to = ['//tools:k8'],
 )

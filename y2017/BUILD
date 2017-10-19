@@ -1,4 +1,4 @@
-load('/aos/downloader/downloader', 'aos_downloader')
+load('//aos/downloader:downloader.bzl', 'aos_downloader')
 
 cc_library(
   name = 'constants',
@@ -80,6 +80,7 @@ cc_binary(
     '//frc971/wpilib:dma',
     '//y2017/control_loops/superstructure:superstructure_queue',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 aos_downloader(
@@ -96,6 +97,7 @@ aos_downloader(
   srcs = [
     '//aos:prime_binaries',
   ],
+  restricted_to = ['//tools:roborio'],
 )
 
 aos_downloader(
@@ -112,4 +114,5 @@ aos_downloader(
   srcs = [
     '//aos:prime_binaries_stripped',
   ],
+  restricted_to = ['//tools:roborio'],
 )

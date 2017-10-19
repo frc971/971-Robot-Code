@@ -39,3 +39,13 @@ config_setting(
   name = 'has_ubsan',
   values = {'define': 'have_ubsan=true'},
 )
+
+environment(name = "k8")
+environment(name = "armhf-debian")
+environment(name = "roborio")
+environment(name = "cortex-m4f")
+environment_group(
+    name = "cpus",
+    environments = [":k8", ":roborio", ":armhf-debian", ":cortex-m4f"],
+    defaults = [":k8", ":roborio", ":armhf-debian"],
+)
