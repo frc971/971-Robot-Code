@@ -27,7 +27,7 @@ genrule(
     'slycot/src/transform.pyf',
   ],
   outs = ['_fortranwrappermodule.c'],
-  cmd = '/usr/bin/python /usr/bin/f2py $(location :slycot/src/_fortranwrapper.pyf) --include-paths external/slycot_repo/slycot/src/ --coutput $(OUTS)',
+  cmd = '/usr/bin/python /usr/bin/f2py $(location :slycot/src/_fortranwrapper.pyf) --include-paths external/slycot_repo/slycot/src/ --coutput $(OUTS) && sed "s/Generation date.*/Generation date: redacted/" -i $(OUTS)',
   restricted_to = ['@//tools:k8'],
 )
 
