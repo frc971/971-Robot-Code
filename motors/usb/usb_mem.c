@@ -35,8 +35,9 @@
 //#include "HardwareSerial.h"
 #include "motors/usb/usb_mem.h"
 
-__attribute__ ((section(".usbbuffers"), used))
-unsigned char usb_buffer_memory[NUM_USB_BUFFERS * sizeof(usb_packet_t)];
+__attribute__((
+    aligned(128))) unsigned char usb_buffer_memory[NUM_USB_BUFFERS *
+                                                   sizeof(usb_packet_t)];
 
 static uint32_t usb_buffer_available = 0xFFFFFFFF;
 
