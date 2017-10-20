@@ -39,11 +39,11 @@ const double kPracticeDrivetrainEncoderRatio = kCompDrivetrainEncoderRatio;
 const double kPracticeLowGearRatio = kCompLowGearRatio;
 const double kPracticeHighGearRatio = kCompHighGearRatio;
 
-const ShifterHallEffect kCompLeftDriveShifter{2.61, 2.33, 4.25, 3.28, 0.2, 0.7};
-const ShifterHallEffect kCompRightDriveShifter{2.94, 4.31, 4.32, 3.25, 0.2, 0.7};
+const DualHallShifterHallEffect kCompLeftDriveShifter{{2.33, 4.25, 0.2, 0.7}, 2.61, 3.28};
+const DualHallShifterHallEffect kCompRightDriveShifter{{4.31, 4.32, 0.2, 0.7}, 2.94, 3.25};
 
-const ShifterHallEffect kPracticeLeftDriveShifter{2.80, 3.05, 4.15, 3.2, 0.2, 0.7};
-const ShifterHallEffect kPracticeRightDriveShifter{2.90, 3.75, 3.80, 2.98, 0.2, 0.7};
+const DualHallShifterHallEffect kPracticeLeftDriveShifter{{3.05, 4.15, 0.2, 0.7}, 2.80, 3.2};
+const DualHallShifterHallEffect kPracticeRightDriveShifter{{3.75, 3.80, 0.2, 0.7}, 2.90, 2.98};
 
 const double shooter_zeroing_speed = 0.05;
 const double shooter_unload_speed = 0.08;

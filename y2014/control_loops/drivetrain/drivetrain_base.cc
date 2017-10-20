@@ -30,8 +30,8 @@ const DrivetrainConfig &GetDrivetrainConfig() {
 
       constants::GetValues().high_gear_ratio,
       constants::GetValues().low_gear_ratio,
-      constants::GetValues().left_drive,
-      constants::GetValues().right_drive,
+      constants::GetValues().left_drive.shifter_hall_effect,
+      constants::GetValues().right_drive.shifter_hall_effect,
       true,
       0,
       0.25,

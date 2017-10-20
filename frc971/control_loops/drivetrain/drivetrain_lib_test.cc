@@ -31,8 +31,8 @@ using ::y2016::control_loops::drivetrain::MakeDrivetrainPlant;
 
 // TODO(Comran): Make one that doesn't depend on the actual values for a
 // specific robot.
-const constants::ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0,  0.0,
-                                                           0.0, 0.25, 0.75};
+const constants::ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0, 0.25,
+                                                           0.75};
 
 const DrivetrainConfig &GetDrivetrainConfig() {
   static DrivetrainConfig kDrivetrainConfig{

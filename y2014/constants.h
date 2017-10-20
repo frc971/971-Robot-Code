@@ -9,7 +9,7 @@
 namespace y2014 {
 namespace constants {
 
-using ::frc971::constants::ShifterHallEffect;
+using ::frc971::constants::DualHallShifterHallEffect;
 
 // Has all of the numbers that change for both robots and makes it easy to
 // retrieve the values for the current one.
@@ -35,7 +35,7 @@ struct Values {
   // gear.
   double low_gear_ratio;
   double high_gear_ratio;
-  ShifterHallEffect left_drive, right_drive;
+  DualHallShifterHallEffect left_drive, right_drive;
   bool clutch_transmission;
 
   ::std::function<StateFeedbackLoop<2, 2, 2>()> make_v_drivetrain_loop;

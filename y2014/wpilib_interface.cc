@@ -86,14 +86,16 @@ double drivetrain_velocity_translate(double in) {
          (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI) * 2.0 / 2.0;
 }
 
-float hall_translate(const constants::ShifterHallEffect &k, float in_low,
+float hall_translate(const constants::DualHallShifterHallEffect &k, float in_low,
                      float in_high) {
   const float low_ratio =
-      0.5 * (in_low - static_cast<float>(k.low_gear_low)) /
-      static_cast<float>(k.low_gear_middle - k.low_gear_low);
+      0.5 * (in_low - static_cast<float>(k.shifter_hall_effect.low_gear_low)) /
+      static_cast<float>(k.low_gear_middle - k.shifter_hall_effect.low_gear_low);
   const float high_ratio =
-      0.5 + 0.5 * (in_high - static_cast<float>(k.high_gear_middle)) /
-                static_cast<float>(k.high_gear_high - k.high_gear_middle);
+      0.5 +
+      0.5 * (in_high - static_cast<float>(k.high_gear_middle)) /
+          static_cast<float>(k.shifter_hall_effect.high_gear_high -
+                             k.high_gear_middle);
 
   // Return low when we are below 1/2, and high when we are above 1/2.
   if (low_ratio + high_ratio < 1.0) {
