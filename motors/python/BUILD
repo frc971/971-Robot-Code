@@ -3,12 +3,12 @@ py_binary(
     srcs = [
         "phase_current.py",
     ],
+    restricted_to = ["//tools:k8"],
     deps = [
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:controls",
     ],
-    restricted_to = ["//tools:k8"],
 )
 
 py_binary(
@@ -16,10 +16,10 @@ py_binary(
     srcs = [
         "haptic_phase_current.py",
     ],
+    restricted_to = ["//tools:k8"],
     deps = [
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:controls",
     ],
-    restricted_to = ["//tools:k8"],
 )

@@ -1,102 +1,102 @@
-load('//motors:macros.bzl', 'hex_from_elf')
+load("//motors:macros.bzl", "hex_from_elf")
 load("//tools:environments.bzl", "mcu_cpus")
 
 cc_binary(
-  name = 'drivers_station.elf',
-  srcs = [
-    'drivers_station.cc',
-  ],
-  deps = [
-    '//motors:util',
-    '//motors/peripheral:can',
-    '//motors/core',
-    '//motors/usb',
-    '//motors/usb:cdc',
-    '//motors/usb:hid',
-    '//motors/usb:interrupt_out',
-  ],
-  restricted_to = mcu_cpus,
+    name = "drivers_station.elf",
+    srcs = [
+        "drivers_station.cc",
+    ],
+    restricted_to = mcu_cpus,
+    deps = [
+        "//motors:util",
+        "//motors/core",
+        "//motors/peripheral:can",
+        "//motors/usb",
+        "//motors/usb:cdc",
+        "//motors/usb:hid",
+        "//motors/usb:interrupt_out",
+    ],
 )
 
 hex_from_elf(
-  name = 'drivers_station',
-  restricted_to = mcu_cpus,
+    name = "drivers_station",
+    restricted_to = mcu_cpus,
 )
 
 cc_binary(
-  name = 'controller.elf',
-  srcs = [
-    'vtable_wheel.cc',
-    'vtable_trigger.cc',
-    'controller.cc',
-  ],
-  deps = [
-    ':motor_controls',
-    '//motors:util',
-    '//motors:motor',
-    '//motors/core',
-    '//motors/peripheral:can',
-    '//motors/peripheral:adc',
-    '//motors/usb',
-    '//motors/usb:cdc',
-    '//frc971/control_loops/drivetrain:haptic_input_uc',
-  ],
-  restricted_to = mcu_cpus,
+    name = "controller.elf",
+    srcs = [
+        "controller.cc",
+        "vtable_trigger.cc",
+        "vtable_wheel.cc",
+    ],
+    restricted_to = mcu_cpus,
+    deps = [
+        ":motor_controls",
+        "//frc971/control_loops/drivetrain:haptic_input_uc",
+        "//motors:motor",
+        "//motors:util",
+        "//motors/core",
+        "//motors/peripheral:adc",
+        "//motors/peripheral:can",
+        "//motors/usb",
+        "//motors/usb:cdc",
+    ],
 )
 
 hex_from_elf(
-  name = 'controller',
-  restricted_to = mcu_cpus,
+    name = "controller",
+    restricted_to = mcu_cpus,
 )
 
 cc_binary(
-  name = 'usb_forward_linux',
-  srcs = [
-    'usb_forward.cc',
-  ],
-  deps = [
-    # Don't add anything else here. :usb_forward_windows still has to build it
-    # without any other dependencies.
-    '@libusb_1_0',
-  ],
-  restricted_to = ['//tools:k8'],
+    name = "usb_forward_linux",
+    srcs = [
+        "usb_forward.cc",
+    ],
+    restricted_to = ["//tools:k8"],
+    deps = [
+        # Don't add anything else here. :usb_forward_windows still has to build it
+        # without any other dependencies.
+        "@libusb_1_0",
+    ],
 )
 
 genrule(
-  name = 'usb_forward_windows',
-  outs = [
-    'usb_forward.exe',
-  ],
-  srcs = [
-    'usb_forward.cc',
-    '@libusb_1_0_windows//file',
-  ],
-  tools = [
-    'usb_forward_windows_build.sh',
-  ],
-  cmd = ' '.join([
-    '$(location usb_forward_windows_build.sh)',
-    '$(location usb_forward.cc)',
-    '$(location @libusb_1_0_windows//file)',
-    '$@',
-  ]),
-  output_to_bindir = True,
+    name = "usb_forward_windows",
+    srcs = [
+        "usb_forward.cc",
+        "@libusb_1_0_windows//file",
+    ],
+    outs = [
+        "usb_forward.exe",
+    ],
+    cmd = " ".join([
+        "$(location usb_forward_windows_build.sh)",
+        "$(location usb_forward.cc)",
+        "$(location @libusb_1_0_windows//file)",
+        "$@",
+    ]),
+    output_to_bindir = True,
+    tools = [
+        "usb_forward_windows_build.sh",
+    ],
 )
 
 cc_library(
-  name = 'motor_controls',
-  visibility = ['//visibility:public'],
-  hdrs = [
-    'motor_controls.h',
-  ],
-  srcs = [
-    'motor_controls.cc',
-  ],
-  deps = [
-    '//motors:math',
-    '//motors:motor',
-    '//motors/peripheral:configuration',
-    '//third_party/eigen',
-  ],
-  restricted_to = mcu_cpus,
+    name = "motor_controls",
+    srcs = [
+        "motor_controls.cc",
+    ],
+    hdrs = [
+        "motor_controls.h",
+    ],
+    restricted_to = mcu_cpus,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//motors:math",
+        "//motors:motor",
+        "//motors/peripheral:configuration",
+        "//third_party/eigen",
+    ],
 )

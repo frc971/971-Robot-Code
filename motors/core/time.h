@@ -8,6 +8,9 @@ extern "C"
 {
 #endif
 
+// Returns the current number of nanoseconds. This will wrap naturally.
+uint32_t nanos(void);
+
 // Returns the current number of microseconds. This will wrap naturally.
 uint32_t micros(void);
 
