@@ -1,0 +1,64 @@
+load('/aos/downloader/downloader', 'aos_downloader')
+
+cc_binary(
+  name = 'wpilib_interface',
+  srcs = [
+    'wpilib_interface.cc',
+  ],
+  deps = [
+    '//aos/common/controls:control_loop',
+    '//aos/common/logging',
+    '//aos/common/logging:queue_logging',
+    '//aos/common/messages:robot_state',
+    '//aos/common/util:log_interval',
+    '//aos/common/util:phased_loop',
+    '//aos/common:math',
+    '//aos/common:stl_mutex',
+    '//aos/common:time',
+    '//aos/linux_code:init',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
+    '//frc971/control_loops:queues',
+    '//frc971/wpilib:ADIS16448',
+    '//frc971/wpilib:buffered_pcm',
+    '//frc971/wpilib:dma',
+    '//frc971/wpilib:dma_edge_counting',
+    '//frc971/wpilib:encoder_and_potentiometer',
+    '//frc971/wpilib:gyro_sender',
+    '//frc971/wpilib:interrupt_edge_counting',
+    '//frc971/wpilib:joystick_sender',
+    '//frc971/wpilib:logging_queue',
+    '//frc971/wpilib:loop_output_handler',
+    '//frc971/wpilib:pdp_fetcher',
+    '//frc971/wpilib:wpilib_interface',
+    '//frc971/wpilib:wpilib_robot_base',
+    '//third_party:wpilib',
+    '//y2017_bot3/control_loops/drivetrain:polydrivetrain_plants',
+  ],
+  restricted_to = ['//tools:roborio'],
+)
+
+aos_downloader(
+  name = 'download',
+  start_srcs = [
+    '//aos:prime_start_binaries',
+    '//y2017_bot3/control_loops/drivetrain:drivetrain',
+    ':wpilib_interface',
+  ],
+  srcs = [
+    '//aos:prime_binaries',
+  ],
+  restricted_to = ['//tools:roborio'],
+)
+
+aos_downloader(
+  name = 'download_stripped',
+  start_srcs = [
+    '//aos:prime_start_binaries_stripped',
+    '//y2017_bot3/control_loops/drivetrain:drivetrain.stripped',
+    ':wpilib_interface.stripped',
+  ],
+  srcs = [
+    '//aos:prime_binaries_stripped',
+  ],
+  restricted_to = ['//tools:roborio'],
+)
