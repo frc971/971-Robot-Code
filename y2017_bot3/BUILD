@@ -33,6 +33,7 @@ cc_binary(
     '//frc971/wpilib:wpilib_robot_base',
     '//third_party:wpilib',
     '//y2017_bot3/control_loops/drivetrain:polydrivetrain_plants',
+    '//y2017_bot3/control_loops/superstructure:superstructure_queue',
   ],
   restricted_to = ['//tools:roborio'],
 )
