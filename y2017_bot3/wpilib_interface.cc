@@ -46,14 +46,16 @@
 #include "frc971/wpilib/wpilib_interface.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
 
-#include "y2017_bot3/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "y2017_bot3/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2017_bot3/control_loops/superstructure/superstructure.q.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
 using ::frc971::control_loops::drivetrain_queue;
+using ::y2017_bot3::control_loops::superstructure_queue;
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
 
@@ -102,9 +104,10 @@ double hall_translate(double in) {
 }
 
 double drivetrain_translate(int32_t in) {
-  return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/)  *
+  return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/) *
          kDrivetrainEncoderRatio *
-         control_loops::drivetrain::kWheelRadius * 2.0 * M_PI;
+         control_loops::drivetrain::kWheelRadius *
+         2.0 * M_PI;
 }
 
 double drivetrain_velocity_translate(double in) {
@@ -302,8 +305,12 @@ class SensorReader {
       drivetrain_message.Send();
     }
 
-    dma_synchronizer_->RunIteration();
+    {
+      auto superstructure_message = superstructure_queue.position.MakeMessage();
+      superstructure_message.Send();
     }
+    dma_synchronizer_->RunIteration();
+  }
 
   void Quit() { run_ = false; }
 
@@ -334,21 +341,29 @@ class SensorReader {
 
   ::std::atomic<bool> run_{true};
 
-  DigitalGlitchFilter fast_encoder_filter_, medium_encoder_filter_, hall_filter_;
+  DigitalGlitchFilter fast_encoder_filter_, medium_encoder_filter_,
+      hall_filter_;
 };
 
 class SolenoidWriter {
  public:
   SolenoidWriter(const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
       : pcm_(pcm),
-        drivetrain_(".y2017_bot3.control_loops.drivetrain_queue.output"){}
+        drivetrain_(".y2017_bot3.control_loops.drivetrain_queue.output"),
+        superstructure_(
+            ".y2017_bot3.control_loops.superstructure_queue.output") {}
+
   void set_compressor(::std::unique_ptr<Compressor> compressor) {
-     compressor_ = ::std::move(compressor);
+    compressor_ = ::std::move(compressor);
   }
 
   void set_drivetrain_shifter(
       ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
     drivetrain_shifter_ = ::std::move(s);
+  }
+
+  void set_fingers(::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+    fingers_ = ::std::move(s);
   }
 
   void operator()() {
@@ -377,10 +392,16 @@ class SolenoidWriter {
       }
 
       {
-        ::frc971::wpilib::PneumaticsToLog to_log;
-        {
-          to_log.compressor_on = compressor_->Enabled();
+        superstructure_.FetchLatest();
+        if (superstructure_.get()) {
+          LOG_STRUCT(DEBUG, "solenoids", *superstructure_);
+          fingers_->Set(superstructure_->fingers_out);
         }
+      }
+
+      {
+        ::frc971::wpilib::PneumaticsToLog to_log;
+        { to_log.compressor_on = compressor_->Enabled(); }
 
         pcm_->Flush();
         to_log.read_solenoids = pcm_->GetAll();
@@ -394,10 +415,13 @@ class SolenoidWriter {
  private:
   const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm_;
   ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> drivetrain_shifter_;
+  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> fingers_;
 
   ::std::unique_ptr<Compressor> compressor_;
 
   ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
+  ::aos::Queue<::y2017_bot3::control_loops::SuperstructureQueue::Output>
+      superstructure_;
 
   ::std::atomic<bool> run_{true};
 };
@@ -411,6 +435,7 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
   void set_drivetrain_right_victor(::std::unique_ptr<::frc::VictorSP> t) {
     drivetrain_right_victor_ = ::std::move(t);
   };
+
  private:
   virtual void Read() override {
     ::frc971::control_loops::drivetrain_queue.output.FetchAnother();
@@ -431,6 +456,37 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
 
   ::std::unique_ptr<::frc::VictorSP> drivetrain_left_victor_,
       drivetrain_right_victor_;
+};
+
+class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
+ public:
+  void set_rollers_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    rollers_victor_ = ::std::move(t);
+  }
+
+  void set_hanger_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    hanger_victor_ = ::std::move(t);
+ }
+ private:
+  virtual void Read() override {
+    ::y2017_bot3::control_loops::superstructure_queue.output.FetchAnother();
+  }
+
+  virtual void Write() override {
+    auto &queue = ::y2017_bot3::control_loops::superstructure_queue.output;
+    LOG_STRUCT(DEBUG, "will output", *queue);
+    rollers_victor_->SetSpeed(queue->voltage_rollers / 12.0);
+    hanger_victor_->SetSpeed(queue->hanger_voltage / 12.0);
+  }
+
+  virtual void Stop() override {
+    LOG(WARNING, "Superstructure output too old.\n");
+    rollers_victor_->SetDisabled();
+    hanger_victor_->SetDisabled();
+  }
+
+  ::std::unique_ptr<::frc::VictorSP> rollers_victor_;
+  ::std::unique_ptr<::frc::VictorSP> hanger_victor_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -457,7 +513,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_drivetrain_left_hall(make_unique<AnalogInput>(0));
     reader.set_drivetrain_right_hall(make_unique<AnalogInput>(1));
 
-    reader.set_pwm_trigger(make_unique<DigitalInput>(7));
+    reader.set_pwm_trigger(make_unique<DigitalInput>(0));
     reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));
 
@@ -466,15 +522,22 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     DrivetrainWriter drivetrain_writer;
     drivetrain_writer.set_drivetrain_left_victor(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(7)));
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)));
     drivetrain_writer.set_drivetrain_right_victor(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(3)));
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)));
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
+
+    SuperstructureWriter superstructure_writer;
+    superstructure_writer.set_rollers_victor(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(2)));
+    superstructure_writer.set_hanger_victor(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(3)));
 
     ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
         new ::frc971::wpilib::BufferedPcm());
     SolenoidWriter solenoid_writer(pcm);
     solenoid_writer.set_drivetrain_shifter(pcm->MakeSolenoid(0));
+    solenoid_writer.set_fingers(pcm->MakeSolenoid(2));
 
     solenoid_writer.set_compressor(make_unique<Compressor>());
 
