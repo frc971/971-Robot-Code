@@ -7,11 +7,15 @@ queue_group SuperstructureQueue {
   implements aos.control_loops.ControlLoop;
 
   message Goal {
-    // Voltage to send to the rollers. Positive is sucking in.
+    // Voltage from -12 to 12 to send to the rollers. Positive is front surface
+    // of the roller is moving down when gear is moving inwards.
     float voltage_rollers;
+    // State of finger pistons. True is out, false is in.
     bool fingers_out;
+    // Voltage from -12 to 12 sent to the hanger roller. Positive is front
+    // surface of the hanger is moving down.
     float hanger_voltage;
- };
+  };
 
   message Status {
   };
@@ -20,6 +24,7 @@ queue_group SuperstructureQueue {
   };
 
   message Output {
+    // see above
     float voltage_rollers;
     bool fingers_out;
     float hanger_voltage;
