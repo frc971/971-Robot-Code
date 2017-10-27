@@ -1,6 +1,27 @@
 load('/aos/downloader/downloader', 'aos_downloader')
 
 cc_binary(
+  name = 'joystick_reader',
+  srcs = [
+    'joystick_reader.cc',
+  ],
+  deps = [
+    '//aos/common/actions:action_lib',
+    '//aos/common/logging',
+    '//aos/common/util:log_interval',
+    '//aos/common:time',
+    '//aos/input:drivetrain_input',
+    '//aos/input:joystick_input',
+    '//aos/linux_code:init',
+    '//frc971/autonomous:auto_queue',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
+    '//frc971/autonomous:base_autonomous_actor',
+    '//y2017_bot3/control_loops/superstructure:superstructure_queue',
+    '//y2017_bot3/control_loops/superstructure:superstructure_lib',
+  ],
+)
+
+cc_binary(
   name = 'wpilib_interface',
   srcs = [
     'wpilib_interface.cc',
@@ -43,6 +64,7 @@ aos_downloader(
   start_srcs = [
     '//aos:prime_start_binaries',
     '//y2017_bot3/control_loops/drivetrain:drivetrain',
+    '//y2017_bot3/control_loops/superstructure:superstructure',
     ':wpilib_interface',
   ],
   srcs = [
@@ -56,6 +78,7 @@ aos_downloader(
   start_srcs = [
     '//aos:prime_start_binaries_stripped',
     '//y2017_bot3/control_loops/drivetrain:drivetrain.stripped',
+    '//y2017_bot3/control_loops/superstructure:superstructure.stripped',
     ':wpilib_interface.stripped',
   ],
   srcs = [

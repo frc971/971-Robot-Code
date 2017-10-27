@@ -14,7 +14,6 @@
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "y2017_bot3/actors/autonomous_actor.h"
 #include "y2017_bot3/control_loops/superstructure/superstructure.q.h"
 
 using ::frc971::control_loops::drivetrain_queue;
@@ -46,7 +45,12 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
   void RunIteration(const ::aos::input::driver_station::Data &data) override {
-    bool last_auto_running = auto_running_;
+    if (!data.GetControlBit(ControlBit::kEnabled)) {
+      action_queue_.CancelAllActions();
+      LOG(DEBUG, "Canceling\n");
+    }
+
+    const bool last_auto_running = auto_running_;
     auto_running_ = data.GetControlBit(ControlBit::kAutonomous) &&
                     data.GetControlBit(ControlBit::kEnabled);
     if (auto_running_ != last_auto_running) {
@@ -65,11 +69,6 @@ class Reader : public ::aos::input::JoystickInput {
     // Process pending actions.
     action_queue_.Tick();
     was_running_ = action_queue_.Running();
-  }
-
-  if (!data.GetControlBit(ControlBit::kEnabled)) {
-    action_queue_.CancelAllActions();
-    LOG(DEBUG, "Canceling\n");
   }
 
   void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
