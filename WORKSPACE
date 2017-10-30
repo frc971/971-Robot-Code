@@ -62,19 +62,6 @@ bind(
 )
 
 new_http_archive(
-  name = 'allwpilib_ni_libraries_repo_2016',
-  build_file = 'debian/ni-libraries-2016.BUILD',
-  sha256 = '821687afbee2d7531fb3e47d8d58ac10005695e59685be3ac3aa00b3179faf52',
-  url = 'http://frc971.org/Build-Dependencies/allwpilib_ni-libraries_20749ed.tar.gz',
-  strip_prefix = 'ni-libraries',
-)
-
-bind(
-  name = 'ni-libraries-2016',
-  actual = '@allwpilib_ni_libraries_repo_2016//:ni-libraries',
-)
-
-new_http_archive(
   name = 'allwpilib_ni_libraries_repo_2017',
   build_file = 'debian/ni-libraries-2017.BUILD',
   sha256 = '67c1ad365fb712cc0acb0bf43465b831030523dc6f88daa02626994f644d91eb',
