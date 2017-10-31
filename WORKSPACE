@@ -16,8 +16,8 @@ new_git_repository(
 new_http_archive(
   name = 'arm_frc_linux_gnueabi_repo',
   build_file = 'tools/cpp/arm-frc-linux-gnueabi/arm-frc-linux-gnueabi.BUILD',
-  sha256 = '9e2e58f0a668c22e46486a76df8b9da08f526cd8bf4e579f19b461f70a358bf8',
-  url = 'http://frc971.org/Build-Dependencies/roborio-compiler-2017.tar.xz',
+  sha256 = '875b23bec5138e09e3d21cc1ff2727ea3ecbec57509c37589514ba50f92979c7',
+  url = 'http://frc971.org/Build-Dependencies/roborio-compiler-2018.tar.xz',
 )
 
 # Recompressed version of the one downloaded from Linaro at
@@ -54,6 +54,14 @@ new_http_archive(
 bind(
   name = 'python-glog',
   actual = '@python_glog_repo//:glog',
+)
+
+new_http_archive(
+  name = 'allwpilib_ni_libraries_repo_2018',
+  build_file = 'debian/ni-libraries-2018.BUILD',
+  sha256 = '05ef6701c77b83163b443aa956d151028861cc3fa29fdf2b6b77431b4a91bfb9',
+  url = 'http://frc971.org/Build-Dependencies/allwpilib_ni-libraries_57e9fb3.tar.gz',
+  strip_prefix = 'ni-libraries',
 )
 
 new_http_archive(

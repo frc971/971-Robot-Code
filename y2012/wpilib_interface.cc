@@ -91,12 +91,6 @@ class SensorReader {
     ::aos::SetCurrentThreadName("SensorReader");
 
     my_pid_ = getpid();
-    ds_ =
-#ifdef WPILIB2015
-        DriverStation::GetInstance();
-#else
-        &DriverStation::GetInstance();
-#endif
 
     ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
                                         ::std::chrono::milliseconds(4));
@@ -114,7 +108,7 @@ class SensorReader {
   }
 
   void RunIteration() {
-    ::frc971::wpilib::SendRobotState(my_pid_, ds_);
+    ::frc971::wpilib::SendRobotState(my_pid_);
 
     {
       auto drivetrain_message = drivetrain_queue.position.MakeMessage();
@@ -137,7 +131,6 @@ class SensorReader {
 
  private:
   int32_t my_pid_;
-  DriverStation *ds_;
 
   ::std::unique_ptr<Encoder> drivetrain_left_encoder_;
   ::std::unique_ptr<Encoder> drivetrain_right_encoder_;

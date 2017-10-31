@@ -321,22 +321,22 @@ toolchain {
   compiler_flag: "--sysroot=external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi"
   compiler_flag: "-nostdinc"
   compiler_flag: "-isystem"
-  compiler_flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/4.9.3/include",
+  compiler_flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include",
   compiler_flag: "-isystem"
-  compiler_flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/4.9.3/include-fixed"
+  compiler_flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include-fixed"
   compiler_flag: "-isystem"
   compiler_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/usr/include"
 
   cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/4.9.3"
+  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0"
   cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/4.9.3/arm-frc-linux-gnueabi"
+  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0/arm-frc-linux-gnueabi"
   cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/4.9.3/backward"
+  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0/backward"
   cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/4.9.3/include"
+  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include"
   cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/4.9.3/include-fixed"
+  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include-fixed"
   cxx_flag: "-isystem"
   cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include"
   cxx_flag: "-isystem"
@@ -346,11 +346,11 @@ toolchain {
   # used by gcc. That works because bazel currently doesn't track files at
   # absolute locations and has no remote execution, yet. However, this will need
   # to be fixed, maybe with auto-detection?
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/arm-frc-linux-gnueabi/include)%/c++/4.9.3"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/arm-frc-linux-gnueabi/include)%/c++/4.9.3/arm-frc-linux-gnueabi"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/arm-frc-linux-gnueabi/include)%/c++/4.9.3/backward"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/4.9.3/include)%"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/4.9.3/include-fixed)%"
+  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/arm-frc-linux-gnueabi/include)%/c++/5.4.0"
+  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/arm-frc-linux-gnueabi/include)%/c++/5.4.0/arm-frc-linux-gnueabi"
+  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/arm-frc-linux-gnueabi/include)%/c++/5.4.0/backward"
+  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include)%"
+  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include-fixed)%"
   cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/arm-frc-linux-gnueabi/include)%"
   cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/arm-frc-linux-gnueabi/usr/include)%"
 

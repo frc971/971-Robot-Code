@@ -232,7 +232,9 @@ Java_edu_wpi_first_wpilibj_hal_InterruptJNI_readInterruptRisingTimestamp(
   INTERRUPTJNI_LOG(logDEBUG) << "Interrupt Handle = " << (HAL_InterruptHandle)interruptHandle;
 
   int32_t status = 0;
-  jdouble timeStamp = HAL_ReadInterruptRisingTimestamp((HAL_InterruptHandle)interruptHandle, &status);
+  jdouble timeStamp = static_cast<jdouble>(HAL_ReadInterruptRisingTimestamp(
+                          (HAL_InterruptHandle)interruptHandle, &status)) *
+                      1e-6;
 
   INTERRUPTJNI_LOG(logDEBUG) << "Status = " << status;
   CheckStatus(env, status);

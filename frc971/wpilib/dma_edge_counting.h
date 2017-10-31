@@ -90,12 +90,10 @@ class DMAEdgeCounter : public DMASampleHandlerInterface {
 
   // Values related to the positive edge.
   int pos_edge_count_ = 0;
-  double pos_edge_time_ = 0.0;
   int pos_last_encoder_ = 0;
 
   // Values related to the negative edge.
   int neg_edge_count_ = 0;
-  double neg_edge_time_ = 0.0;
   int neg_last_encoder_ = 0;
 
   bool polled_value_ = false;

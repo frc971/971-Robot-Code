@@ -238,7 +238,6 @@ class SensorReader {
     ::aos::SetCurrentThreadName("SensorReader");
 
     my_pid_ = getpid();
-    ds_ = &DriverStation::GetInstance();
 
     dma_synchronizer_->Start();
 
@@ -282,7 +281,7 @@ class SensorReader {
   }
 
   void RunIteration() {
-    ::frc971::wpilib::SendRobotState(my_pid_, ds_);
+    ::frc971::wpilib::SendRobotState(my_pid_);
 
     {
       auto drivetrain_message = drivetrain_queue.position.MakeMessage();
@@ -321,7 +320,6 @@ class SensorReader {
   }
 
   int32_t my_pid_;
-  DriverStation *ds_;
 
   // Mutex to manage access to the period and tick time variables.
   ::aos::stl_mutex tick_time_mutex_;

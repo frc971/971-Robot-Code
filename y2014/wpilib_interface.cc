@@ -252,12 +252,6 @@ class SensorReader {
     ::aos::SetCurrentThreadName("SensorReader");
 
     my_pid_ = getpid();
-    ds_ =
-#ifdef WPILIB2015
-        DriverStation::GetInstance();
-#else
-        &DriverStation::GetInstance();
-#endif
 
     top_reader_.Start();
     bottom_reader_.Start();
@@ -282,7 +276,7 @@ class SensorReader {
   }
 
   void RunIteration() {
-    ::frc971::wpilib::SendRobotState(my_pid_, ds_);
+    ::frc971::wpilib::SendRobotState(my_pid_);
 
     const auto &values = constants::GetValues();
 
@@ -441,7 +435,6 @@ class SensorReader {
   }
 
   int32_t my_pid_;
-  DriverStation *ds_;
 
   ::std::unique_ptr<::frc971::wpilib::DMASynchronizer> dma_synchronizer_;
 

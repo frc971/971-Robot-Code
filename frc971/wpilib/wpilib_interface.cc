@@ -3,37 +3,27 @@
 #include "aos/common/messages/robot_state.q.h"
 #include "aos/common/logging/queue_logging.h"
 
-#include "DriverStation.h"
-#include "ControllerPower.h"
-#undef ERROR
-
-#ifndef WPILIB2017
-namespace frc {
-using ::DriverStation;
-}  // namespace frc
-#endif
+#include <HAL/HAL.h>
 
 namespace frc971 {
 namespace wpilib {
 
-void SendRobotState(int32_t my_pid, frc::DriverStation *ds) {
+void SendRobotState(int32_t my_pid) {
   auto new_state = ::aos::robot_state.MakeMessage();
 
+  int32_t status = 0;
+
   new_state->reader_pid = my_pid;
-  new_state->outputs_enabled = ds->IsSysActive();
-#ifdef WPILIB2017
-  new_state->browned_out = ds->IsBrownedOut();
-#else
-  new_state->browned_out = ds->IsSysBrownedOut();
-#endif
+  new_state->outputs_enabled = HAL_GetSystemActive(&status);
+  new_state->browned_out = HAL_GetBrownedOut(&status);
 
-  new_state->is_3v3_active = ControllerPower::GetEnabled3V3();
-  new_state->is_5v_active = ControllerPower::GetEnabled5V();
-  new_state->voltage_3v3 = ControllerPower::GetVoltage3V3();
-  new_state->voltage_5v = ControllerPower::GetVoltage5V();
+  new_state->is_3v3_active = HAL_GetUserActive3V3(&status);
+  new_state->is_5v_active = HAL_GetUserActive5V(&status);
+  new_state->voltage_3v3 = HAL_GetUserVoltage3V3(&status);
+  new_state->voltage_5v = HAL_GetUserVoltage5V(&status);
 
-  new_state->voltage_roborio_in = ControllerPower::GetInputVoltage();
-  new_state->voltage_battery = ds->GetBatteryVoltage();
+  new_state->voltage_roborio_in = HAL_GetVinVoltage(&status);
+  new_state->voltage_battery = HAL_GetVinVoltage(&status);
 
   LOG_STRUCT(DEBUG, "robot_state", *new_state);
 

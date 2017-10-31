@@ -17,11 +17,9 @@ void DMAEdgeCounter::UpdateFromSample(const DMASample &sample) {
 
   if (!previous_value && ExtractValue(sample)) {
     pos_edge_count_++;
-    pos_edge_time_ = sample.GetTimestamp();
     pos_last_encoder_ = sample.GetRaw(encoder_);
   } else if (previous_value && !ExtractValue(sample)) {
     neg_edge_count_++;
-    neg_edge_time_ = sample.GetTimestamp();
     neg_last_encoder_ = sample.GetRaw(encoder_);
   }
 }

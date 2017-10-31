@@ -6,7 +6,7 @@
 #include "aos/common/logging/queue_logging.h"
 
 #include "DriverStation.h"
-#ifdef WPILIB2017
+#if defined(WPILIB2017) || defined(WPILIB2018)
 #include "HAL/HAL.h"
 #else
 #include "HAL/HAL.hpp"
@@ -31,7 +31,7 @@ void JoystickSender::operator()() {
     ds->WaitForData();
     auto new_state = ::aos::joystick_state.MakeMessage();
 
-#ifdef WPILIB2017
+#if defined(WPILIB2017) || defined(WPILIB2018)
     HAL_ControlWord control_word;
     HAL_GetControlWord(&control_word);
 #else

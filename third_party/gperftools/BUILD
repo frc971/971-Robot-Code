@@ -5,6 +5,7 @@ load('//tools/build_rules:empty_main.bzl', 'empty_main_if_asan')
 
 common_copts = [
   # Stuff from their Makefile.
+  '-Wno-cast-align',
   '-Wno-sign-compare',
   '-fno-builtin-malloc',
   '-fno-builtin-free',

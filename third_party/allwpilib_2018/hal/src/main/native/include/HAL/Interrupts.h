@@ -28,10 +28,10 @@ int64_t HAL_WaitForInterrupt(HAL_InterruptHandle interruptHandle,
 void HAL_EnableInterrupts(HAL_InterruptHandle interruptHandle, int32_t* status);
 void HAL_DisableInterrupts(HAL_InterruptHandle interruptHandle,
                            int32_t* status);
-double HAL_ReadInterruptRisingTimestamp(HAL_InterruptHandle interruptHandle,
-                                        int32_t* status);
-double HAL_ReadInterruptFallingTimestamp(HAL_InterruptHandle interruptHandle,
-                                         int32_t* status);
+uint64_t HAL_ReadInterruptRisingTimestamp(HAL_InterruptHandle interruptHandle,
+                                          int32_t *status);
+uint64_t HAL_ReadInterruptFallingTimestamp(HAL_InterruptHandle interruptHandle,
+                                           int32_t *status);
 void HAL_RequestInterrupts(HAL_InterruptHandle interruptHandle,
                            HAL_Handle digitalSourceHandle,
                            HAL_AnalogTriggerType analogTriggerType,

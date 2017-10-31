@@ -8,9 +8,7 @@
 #include "DigitalSource.h"
 #include "AnalogInput.h"
 #include "Encoder.h"
-#ifdef WPILIB2017
 #include "HAL/HAL.h"
-#endif
 
 // Interface to the roboRIO FPGA's DMA features.
 
@@ -29,10 +27,6 @@ static const int32_t kNumHeaders = 10;
 
 static constexpr ssize_t kChannelSize[20] = {2, 2, 4, 4, 2, 2, 4, 4, 3, 3,
                                              2, 1, 4, 4, 4, 4, 4, 4, 4, 4};
-
-#ifndef WPILIB2017
-#define HAL_GetErrorMessage getHALErrorMessage
-#endif
 
 enum DMAOffsetConstants {
   kEnable_AI0_Low = 0,
@@ -188,12 +182,7 @@ void DMA::SetExternalTrigger(DigitalSource *input, bool rising, bool falling) {
   new_trigger.RisingEdge = rising;
   new_trigger.ExternalClockSource_AnalogTrigger = false;
   unsigned char module = 0;
-  uint32_t channel =
-#ifdef WPILIB2017
-      input->GetChannel();
-#else
-      input->GetChannelForRouting();
-#endif
+  uint32_t channel = input->GetChannel();
   if (channel >= kNumHeaders) {
     module = 1;
     channel -= kNumHeaders;
@@ -228,6 +217,7 @@ DMA::ReadStatus DMA::Read(DMASample *sample, uint32_t timeout_ms,
   sample->dma_ = this;
   manager_->read(sample->read_buffer_, capture_size_, timeout_ms,
                  &remainingBytes, &status);
+  sample->CalculateTimestamp();
 
   // TODO(jerry): Do this only if status == 0?
   *remaining_out = remainingBytes / capture_size_;
@@ -296,7 +286,7 @@ void DMA::Start(size_t queue_depth) {
   }
 
   manager_.reset(
-      new nFPGA::tDMAManager(0, queue_depth * capture_size_, &status));
+      new nFPGA::tDMAManager(1, queue_depth * capture_size_, &status));
 
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
   if (status != 0) {
@@ -323,10 +313,23 @@ void DMA::Start(size_t queue_depth) {
 
 static_assert(::std::is_pod<DMASample>::value, "DMASample needs to be POD");
 
-ssize_t DMASample::offset(int index) const { return dma_->channel_offsets_[index]; }
+ssize_t DMASample::offset(int index) const {
+  return dma_->channel_offsets_[index];
+}
 
-uint32_t DMASample::GetTime() const {
-  return read_buffer_[dma_->capture_size_ - 1];
+void DMASample::CalculateTimestamp() {
+  uint32_t lower_sample = read_buffer_[dma_->capture_size_ - 1];
+#if WPILIB2018
+  int32_t status = 0;
+  fpga_timestamp_ = HAL_ExpandFPGATime(lower_sample, &status);
+  assert(status == 0);
+#else
+  fpga_timestamp_ = lower_sample;
+#endif
+}
+
+uint64_t DMASample::GetTime() const {
+  return fpga_timestamp_;
 }
 
 double DMASample::GetTimestamp() const {
@@ -340,12 +343,7 @@ bool DMASample::Get(DigitalSource *input) const {
         HAL_GetErrorMessage(NiFpga_Status_ResourceNotFound));
     return false;
   }
-  const uint32_t channel =
-#ifdef WPILIB2017
-      input->GetChannel();
-#else
-      input->GetChannelForRouting();
-#endif
+  const uint32_t channel = input->GetChannel();
   if (channel < kNumHeaders) {
     return (read_buffer_[offset(kEnable_DI)] >> channel) & 0x1;
   } else {

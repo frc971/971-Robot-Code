@@ -59,7 +59,7 @@ WPI_DEPRECATED("Use RobotController static class method")
 int GetFPGAVersion();
 WPI_DEPRECATED("Use RobotController static class method")
 int64_t GetFPGARevision();
-WPI_DEPRECATED("Use RobotController static class method")
+//WPI_DEPRECATED("Use RobotController static class method")
 uint64_t GetFPGATime();
 WPI_DEPRECATED("Use RobotController static class method")
 bool GetUserButton();

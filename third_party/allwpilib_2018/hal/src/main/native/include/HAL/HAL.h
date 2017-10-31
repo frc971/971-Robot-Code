@@ -68,6 +68,7 @@ HAL_PortHandle HAL_GetPort(int32_t channel);
 HAL_PortHandle HAL_GetPortWithModule(int32_t module, int32_t channel);
 
 uint64_t HAL_GetFPGATime(int32_t* status);
+uint64_t HAL_ExpandFPGATime(uint32_t unexpanded_lower, int32_t *status);
 
 HAL_Bool HAL_Initialize(int32_t timeout, int32_t mode);
 

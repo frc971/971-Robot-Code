@@ -14,6 +14,7 @@
 #include "DigitalInternal.h"
 #include "HAL/ChipObject.h"
 #include "HAL/Errors.h"
+#include "HAL/HAL.h"
 #include "HAL/cpp/make_unique.h"
 #include "HAL/handles/HandlesInternal.h"
 #include "HAL/handles/LimitedHandleResource.h"
@@ -174,9 +175,9 @@ void HAL_DisableInterrupts(HAL_InterruptHandle interruptHandle,
 /**
  * Return the timestamp for the rising interrupt that occurred most recently.
  * This is in the same time domain as GetClock().
- * @return Timestamp in seconds since boot.
+ * @return Timestamp in microseconds since boot.
  */
-double HAL_ReadInterruptRisingTimestamp(HAL_InterruptHandle interruptHandle,
+uint64_t HAL_ReadInterruptRisingTimestamp(HAL_InterruptHandle interruptHandle,
                                         int32_t* status) {
   auto anInterrupt = interruptHandles->Get(interruptHandle);
   if (anInterrupt == nullptr) {
@@ -184,7 +185,7 @@ double HAL_ReadInterruptRisingTimestamp(HAL_InterruptHandle interruptHandle,
     return 0;
   }
   uint32_t timestamp = anInterrupt->anInterrupt->readRisingTimeStamp(status);
-  return timestamp * 1e-6;
+  return HAL_ExpandFPGATime(timestamp, status);
 }
 
 /**
@@ -192,7 +193,7 @@ double HAL_ReadInterruptRisingTimestamp(HAL_InterruptHandle interruptHandle,
  * This is in the same time domain as GetClock().
  * @return Timestamp in seconds since boot.
  */
-double HAL_ReadInterruptFallingTimestamp(HAL_InterruptHandle interruptHandle,
+uint64_t HAL_ReadInterruptFallingTimestamp(HAL_InterruptHandle interruptHandle,
                                          int32_t* status) {
   auto anInterrupt = interruptHandles->Get(interruptHandle);
   if (anInterrupt == nullptr) {
@@ -200,7 +201,7 @@ double HAL_ReadInterruptFallingTimestamp(HAL_InterruptHandle interruptHandle,
     return 0;
   }
   uint32_t timestamp = anInterrupt->anInterrupt->readFallingTimeStamp(status);
-  return timestamp * 1e-6;
+  return HAL_ExpandFPGATime(timestamp, status);
 }
 
 void HAL_RequestInterrupts(HAL_InterruptHandle interruptHandle,

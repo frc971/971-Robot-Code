@@ -50,9 +50,11 @@ class InterruptableSensorBase : public SensorBase {
 
   // Return the timestamp for the rising interrupt that occurred.
   virtual double ReadRisingTimestamp();
+  virtual uint64_t ReadRisingTimestampMicroseconds();
 
   // Return the timestamp for the falling interrupt that occurred.
   virtual double ReadFallingTimestamp();
+  virtual uint64_t ReadFallingTimestampMicroseconds();
 
   virtual void SetUpSourceEdge(bool risingEdge, bool fallingEdge);
 

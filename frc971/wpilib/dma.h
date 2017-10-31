@@ -9,7 +9,7 @@
 #include <array>
 #include <memory>
 
-#ifdef WPILIB2017
+#if defined(WPILIB2017) || defined(WPILIB2018)
 #include "HAL/ChipObject.h"
 #else
 #include "ChipObject.h"
@@ -17,7 +17,7 @@
 #include "ErrorBase.h"
 
 class DMA;
-#ifdef WPILIB2017
+#if defined(WPILIB2017) || defined(WPILIB2018)
 namespace frc {
 class DigitalSource;
 class AnalogInput;
@@ -43,7 +43,7 @@ class DMASample {
   // Returns the FPGA timestamp of the sample in seconds.
   double GetTimestamp() const;
   // Returns the FPGA timestamp of the sample in microseconds.
-  uint32_t GetTime() const;
+  uint64_t GetTime() const;
 
   // All Get methods either return the requested value, or set the Error.
 
@@ -61,6 +61,8 @@ class DMASample {
  private:
   friend DMA;
 
+  void CalculateTimestamp();
+
   // Returns the offset of the sample type in the buffer, or -1 if it isn't in
   // the sample.
   ssize_t offset(int index) const;
@@ -69,6 +71,7 @@ class DMASample {
   // into WPILib.
 
   DMA *dma_;
+  uint64_t fpga_timestamp_;
   uint32_t read_buffer_[64];
 };
 

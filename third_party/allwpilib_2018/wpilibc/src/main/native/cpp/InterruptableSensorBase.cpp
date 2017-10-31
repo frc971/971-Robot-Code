@@ -152,10 +152,23 @@ void InterruptableSensorBase::DisableInterrupts() {
  * @return Timestamp in seconds since boot.
  */
 double InterruptableSensorBase::ReadRisingTimestamp() {
+  return static_cast<double>(ReadRisingTimestampMicroseconds()) * 1e-6;
+}
+
+/**
+ * Return the timestamp for the rising interrupt that occurred most recently.
+ *
+ * This is in the same time domain as GetClock().
+ * The rising-edge interrupt should be enabled with
+ * {@link #DigitalInput.SetUpSourceEdge}
+ *
+ * @return Timestamp in microseconds since boot.
+ */
+uint64_t InterruptableSensorBase::ReadRisingTimestampMicroseconds() {
   if (StatusIsFatal()) return 0.0;
   wpi_assert(m_interrupt != HAL_kInvalidHandle);
   int32_t status = 0;
-  double timestamp = HAL_ReadInterruptRisingTimestamp(m_interrupt, &status);
+  uint64_t timestamp = HAL_ReadInterruptRisingTimestamp(m_interrupt, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
   return timestamp;
 }
@@ -170,10 +183,23 @@ double InterruptableSensorBase::ReadRisingTimestamp() {
  * @return Timestamp in seconds since boot.
  */
 double InterruptableSensorBase::ReadFallingTimestamp() {
+  return static_cast<double>(ReadFallingTimestampMicroseconds()) * 1e-6;
+}
+
+/**
+ * Return the timestamp for the falling interrupt that occurred most recently.
+ *
+ * This is in the same time domain as GetClock().
+ * The falling-edge interrupt should be enabled with
+ * {@link #DigitalInput.SetUpSourceEdge}
+ *
+ * @return Timestamp in microseconds since boot.
+ */
+uint64_t InterruptableSensorBase::ReadFallingTimestampMicroseconds() {
   if (StatusIsFatal()) return 0.0;
   wpi_assert(m_interrupt != HAL_kInvalidHandle);
   int32_t status = 0;
-  double timestamp = HAL_ReadInterruptFallingTimestamp(m_interrupt, &status);
+  uint64_t timestamp = HAL_ReadInterruptFallingTimestamp(m_interrupt, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
   return timestamp;
 }
