@@ -250,6 +250,7 @@ void UsbDevice::HandleInterrupt() {
     // If we just finished processing a token.
     if (status & USB_ISTAT_TOKDNE) {
       const uint8_t stat = USB0_STAT;
+      USB0_ISTAT = USB_ISTAT_TOKDNE;
       const int endpoint = G_USB_STAT_ENDP(stat);
 
       if (endpoint == 0) {
@@ -281,8 +282,6 @@ void UsbDevice::HandleInterrupt() {
           }
         }
       }
-
-      USB0_ISTAT = USB_ISTAT_TOKDNE;
     }
 
     if (status & USB_ISTAT_USBRST) {
@@ -355,13 +354,15 @@ void UsbDevice::HandleEndpoint0Token(const uint8_t stat) {
       dma_memory_barrier();
       // Next IN and OUT packet for this endpoint (data stage/status stage)
       // should both be DATA1.
-      // TODO(Brian): Does this actually deal with received toggles correctly?
-      bdt_entry->buffer_descriptor =
-          M_USB_BD_OWN | M_USB_BD_DTS | V_USB_BD_BC(kEndpoint0MaxSize);
       MutableBdtEntryFromStat(stat ^ M_USB_STAT_ODD)->buffer_descriptor =
           M_USB_BD_OWN | M_USB_BD_DTS | V_USB_BD_BC(kEndpoint0MaxSize) |
           M_USB_BD_DATA1;
       endpoint0_tx_toggle_ = Data01::kData1;
+
+      // Give this buffer back. It should be DATA0 because it'll be the second
+      // received packet.
+      bdt_entry->buffer_descriptor =
+          M_USB_BD_OWN | M_USB_BD_DTS | V_USB_BD_BC(kEndpoint0MaxSize);
 
       // TODO(Brian): Tell the functions a new setup packet is starting.
       // CdcTty: next_endpoint0_out_ = NextEndpoint0Out::kNone;

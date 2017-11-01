@@ -1,6 +1,9 @@
 #include "motors/usb/cdc.h"
 
 #include <string.h>
+#include <stdint.h>
+
+#include "motors/core/time.h"
 
 #define CHECK(c)                             \
   do {                                       \
@@ -301,11 +304,18 @@ UsbFunction::SetupResponse AcmTty::HandleEndpoint0OutPacket(void *data,
       return SetupResponse::kIgnored;
 
     case NextEndpoint0Out::kLineCoding:
+      next_endpoint0_out_ = NextEndpoint0Out::kNone;
       if (data_length != sizeof(line_coding_)) {
         return SetupResponse::kStall;
       }
       memcpy(&line_coding_, data, data_length);
       device()->SendEmptyEndpoint0Packet();
+      // If we're supposed to reboot, then do it.
+      if (line_coding_.rate == UINT32_C(0x97101678)) {
+        // Delay for a bit so the empty IN packet gets back to the host.
+        delay(5);
+        __asm__ __volatile__("bkpt");
+      }
       return SetupResponse::kHandled;
 
     default:

@@ -21,6 +21,9 @@ static inline void dma_memory_barrier() {
 }
 
 // Aligned for faster access via memcpy etc.
+//
+// Also, the Freescale example stack forces aligned buffers to work around some
+// hardware limitations which may or may not apply to our chips.
 typedef void *DataPointer __attribute__((aligned(4)));
 
 // An entry in the Buffer Descriptor Table.

@@ -56,6 +56,7 @@ cc_library(
   deps = [
     ':usb',
     ':queue',
+    '//motors/core',
     '//motors:util',
   ],
   restricted_to = mcu_cpus,
