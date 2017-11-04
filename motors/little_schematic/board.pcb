@@ -9,7 +9,7 @@ Grid[1000.000000 0.0000 0.0000 0]
 PolyArea[3100.006200]
 Thermal[0.500000]
 DRC[6.00mil 10.00mil 6.00mil 8.00mil 11.81mil 8.00mil]
-Flags("showdrc,nameonpcb,clearnew,snappin,locknames")
+Flags("showdrc,nameonpcb,clearnew,snappin,onlynames")
 Groups("1,c:3:2:4,s:5:6")
 Styles["Signal,10.00mil,36.00mil,20.00mil,7.00mil:Power,25.00mil,60.00mil,35.00mil,10.00mil:Fat,50.00mil,85.00mil,50.00mil,10.00mil:Skinny,16.00mil,46.00mil,28.00mil,7.00mil"]
 
@@ -2322,7 +2322,7 @@ Element["" "B04B-PASK-1" "CONN6" "unknown" 2740.00mil 1900.00mil -60.00mil 100.0
 
 	)
 
-Element["" "0603" "R63" "120" 2510.00mil 2050.00mil 31.50mil 31.50mil 2 100 ""]
+Element["" "0603" "R63" "120" 2510.00mil 2050.00mil -41.50mil 18.50mil 0 100 ""]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
