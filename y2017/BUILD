@@ -36,6 +36,7 @@ cc_binary(
     '//aos/common/util:log_interval',
     '//aos/common:time',
     '//aos/input:joystick_input',
+    '//aos/input:drivetrain_input',
     '//aos/linux_code:init',
     '//frc971/autonomous:auto_queue',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
