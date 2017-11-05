@@ -102,3 +102,19 @@ cc_test(
     '//aos/testing:googletest',
   ],
 )
+
+cc_library(
+  name = 'hid',
+  visibility = ['//visibility:public'],
+  hdrs = [
+    'hid.h',
+  ],
+  srcs = [
+    'hid.cc',
+  ],
+  deps = [
+    ':usb',
+    '//motors:util',
+  ],
+  restricted_to = mcu_cpus,
+)

@@ -641,10 +641,30 @@ void UsbDevice::HandleEndpoint0SetupPacket(const SetupPacket &setup_packet) {
           break;
 
         case standard_setup_requests::kGetDescriptor:
-          if (!in || recipient != standard_setup_recipients::kDevice) {
+          if (!in) {
             break;
           }
+
           const uint8_t descriptor_type_byte = (setup_packet.value >> 8) & 0xFF;
+          if (G_DESCRIPTOR_TYPE_TYPE(descriptor_type_byte) !=
+              standard_descriptor_type_types::kStandard) {
+            for (UsbFunction *function : functions_) {
+              switch (function->HandleGetDescriptor(setup_packet)) {
+                case SetupResponse::kIgnored:
+                  continue;
+                case SetupResponse::kHandled:
+                  return;
+                case SetupResponse::kStall:
+                  break;
+              }
+              break;
+            }
+            break;
+          }
+
+          if (recipient != standard_setup_recipients::kDevice) {
+            break;
+          }
           if (descriptor_type_byte < kUsbDescriptorTypeMin ||
               descriptor_type_byte > kUsbDescriptorTypeMax) {
             break;
@@ -674,7 +694,8 @@ void UsbDevice::HandleEndpoint0SetupPacket(const SetupPacket &setup_packet) {
               return;
 
             case UsbDescriptorType::kString:
-              if (descriptor_index != 0 && setup_packet.index != english_us_code()) {
+              if (descriptor_index != 0 &&
+                  setup_packet.index != english_us_code()) {
                 break;
               }
               if (descriptor_index >= strings_.size()) {

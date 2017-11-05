@@ -2,16 +2,20 @@
 // communicates over CAN with the one in the pistol grip controller.
 
 #include <stdio.h>
+#include <atomic>
 
 #include "motors/core/time.h"
 #include "motors/core/kinetis.h"
 #include "motors/usb/usb.h"
 #include "motors/usb/cdc.h"
+#include "motors/usb/hid.h"
 #include "motors/util.h"
 
 namespace frc971 {
 namespace motors {
 namespace {
+
+::std::atomic<teensy::AcmTty *> global_stdout{nullptr};
 
 void EchoChunks(teensy::AcmTty *tty1) {
   while (true) {
@@ -93,16 +97,41 @@ void WriteData(teensy::AcmTty *tty1) {
   }
 }
 
+void MoveJoysticks(teensy::HidFunction *joysticks) {
+  static uint8_t x_axis = 0, y_axis = 97, z_axis = 5, rz_axis = 8;
+  while (true) {
+    {
+      DisableInterrupts disable_interrupts;
+      uint8_t buttons = 0;
+      if (x_axis % 8u) {
+        buttons = 2;
+      }
+      uint8_t report[10] = {x_axis,  0, y_axis, 0,       z_axis,
+                            rz_axis, 0, 0,      buttons, 0};
+      joysticks->UpdateReport(report, 10, disable_interrupts);
+    }
+    delay(1);
+    x_axis += 1;
+    y_axis += 3;
+    z_axis += 5;
+    rz_axis += 8;
+  }
+}
+
 }  // namespace
 
 extern "C" {
+
 void *__stack_chk_guard = (void *)0x67111971;
-int _write(int file, char *ptr, int len) {
-  (void)file;
-  (void)ptr;
-  (void)len;
-  return -1;
+
+int _write(int /*file*/, char *ptr, int len) {
+  teensy::AcmTty *const tty = global_stdout.load(::std::memory_order_acquire);
+  if (tty != nullptr) {
+    return tty->Write(ptr, len);
+  }
+  return 0;
 }
+
 }  // extern "C"
 
 void __stack_chk_fail(void);
@@ -127,13 +156,20 @@ extern "C" int main(void) {
 
   delay(100);
 
-  teensy::UsbDevice usb_device(0, 0x16c0, 0x0490);
+  teensy::UsbDevice usb_device(0, 0x16c0, 0x0492);
   usb_device.SetManufacturer("FRC 971 Spartan Robotics");
   usb_device.SetProduct("Pistol Grip Controller interface");
+  teensy::HidFunction joysticks(&usb_device, 10);
+  // TODO(Brian): Figure out why Windows refuses to recognize the joystick along
+  // with a TTY or two.
+#if 0
   teensy::AcmTty tty1(&usb_device);
+  teensy::AcmTty tty2(&usb_device);
+  global_stdout.store(&tty2, ::std::memory_order_release);
+#endif
   usb_device.Initialize();
 
-  WriteData(&tty1);
+  MoveJoysticks(&joysticks);
 
   return 0;
 }

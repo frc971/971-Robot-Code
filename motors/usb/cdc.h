@@ -63,9 +63,6 @@ class AcmTty final : public UsbFunction {
   // for it.
   static constexpr uint16_t kStatusMaxPacketSize = 1;
 
-  ::std::array<::std::array<char, kDataMaxPacketSize>, 2> tx_buffers_,
-      rx_buffers_;
-
   void Initialize() override;
 
   SetupResponse HandleEndpoint0SetupPacket(
@@ -98,6 +95,9 @@ class AcmTty final : public UsbFunction {
   }
 
   void EnqueueTxData(const DisableInterrupts &);
+
+  ::std::array<::std::array<char, kDataMaxPacketSize>, 2> tx_buffers_,
+      rx_buffers_;
 
   // In theory, we could sent notifications over this about things like the line
   // state, but we don't have anything to report so we pretty much just ignore
