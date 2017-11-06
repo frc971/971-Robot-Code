@@ -69,11 +69,12 @@ cc_test(
     'claw_lib_test.cc',
   ],
   deps = [
-    '//aos/testing:googletest',
-    ':claw_queue',
     ':claw_lib',
-    '//frc971/control_loops:state_feedback_loop',
+    ':claw_queue',
     '//aos/common/controls:control_loop_test',
+    '//aos/testing:googletest',
+    '//frc971/control_loops:state_feedback_loop',
+    '//frc971/control_loops:team_number_test_environment',
   ],
 )
 
