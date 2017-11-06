@@ -20,7 +20,7 @@ class TeamNumberEnvironment : public ::testing::Environment {
 
 // The static variable in a header is intentional. Kind of a hack, undefined
 // order, but that works OK here.
-static ::testing::Environment* const team_number_env =
+__attribute__((unused)) static ::testing::Environment *const team_number_env =
     ::testing::AddGlobalTestEnvironment(new TeamNumberEnvironment());
 
 }  // namespace testing
