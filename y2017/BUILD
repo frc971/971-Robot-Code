@@ -42,6 +42,7 @@ cc_binary(
     '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//y2017/actors:autonomous_action_lib',
     '//y2017/control_loops/superstructure:superstructure_queue',
+    '//y2017/control_loops/drivetrain:drivetrain_base',
   ],
 )
 

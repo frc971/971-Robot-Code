@@ -65,11 +65,10 @@ namespace {
 
 constexpr double kMaxBringupPower = 12.0;
 
-constexpr double kDrivetrainCyclesPerRevolution = 256;
+constexpr double kDrivetrainCyclesPerRevolution = 128.0;
 constexpr double kDrivetrainEncoderCountsPerRevolution =
   kDrivetrainCyclesPerRevolution * 4;
-constexpr double kDrivetrainEncoderRatio =
-  1.0 * control_loops::drivetrain::kWheelRadius;
+constexpr double kDrivetrainEncoderRatio = 1.0;
 constexpr double kMaxDrivetrainEncoderPulsesPerSecond =
   control_loops::drivetrain::kFreeSpeed *
   control_loops::drivetrain::kHighOutputRatio /
@@ -104,7 +103,7 @@ double hall_translate(double in) {
 }
 
 double drivetrain_translate(int32_t in) {
-  return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/) *
+  return -static_cast<double>(in) / (kDrivetrainCyclesPerRevolution /*cpr*/ * 4.0 /*4x*/) *
          kDrivetrainEncoderRatio *
          control_loops::drivetrain::kWheelRadius *
          2.0 * M_PI;
@@ -288,12 +287,12 @@ class SensorReader {
     {
       auto drivetrain_message = drivetrain_queue.position.MakeMessage();
       drivetrain_message->right_encoder =
-          drivetrain_translate(drivetrain_right_encoder_->GetRaw());
+          -drivetrain_translate(drivetrain_right_encoder_->GetRaw());
       drivetrain_message->right_speed =
           drivetrain_velocity_translate(drivetrain_right_encoder_->GetPeriod());
 
       drivetrain_message->left_encoder =
-          -drivetrain_translate(drivetrain_left_encoder_->GetRaw());
+          drivetrain_translate(drivetrain_left_encoder_->GetRaw());
       drivetrain_message->left_speed =
           drivetrain_velocity_translate(drivetrain_left_encoder_->GetPeriod());
 
@@ -349,7 +348,7 @@ class SolenoidWriter {
  public:
   SolenoidWriter(const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
       : pcm_(pcm),
-        drivetrain_(".y2017_bot3.control_loops.drivetrain_queue.output"),
+        drivetrain_(".frc971.control_loops.drivetrain_queue.output"),
         superstructure_(
             ".y2017_bot3.control_loops.superstructure_queue.output") {}
 
@@ -357,9 +356,14 @@ class SolenoidWriter {
     compressor_ = ::std::move(compressor);
   }
 
-  void set_drivetrain_shifter(
+  void set_left_drivetrain_shifter(
       ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
-    drivetrain_shifter_ = ::std::move(s);
+    left_drivetrain_shifter_ = ::std::move(s);
+  }
+
+  void set_right_drivetrain_shifter(
+      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+    right_drivetrain_shifter_ = ::std::move(s);
   }
 
   void set_fingers(::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
@@ -386,8 +390,8 @@ class SolenoidWriter {
         drivetrain_.FetchLatest();
         if (drivetrain_.get()) {
           LOG_STRUCT(DEBUG, "solenoids", *drivetrain_);
-          drivetrain_shifter_->Set(
-              !(drivetrain_->left_high || drivetrain_->right_high));
+          left_drivetrain_shifter_->Set(!drivetrain_->left_high);
+          right_drivetrain_shifter_->Set(!drivetrain_->right_high);
         }
       }
 
@@ -414,7 +418,10 @@ class SolenoidWriter {
 
  private:
   const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm_;
-  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> drivetrain_shifter_;
+  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid>
+      left_drivetrain_shifter_;
+  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid>
+      right_drivetrain_shifter_;
   ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> fingers_;
 
   ::std::unique_ptr<Compressor> compressor_;
@@ -428,13 +435,19 @@ class SolenoidWriter {
 
 class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
-  void set_drivetrain_left_victor(::std::unique_ptr<::frc::VictorSP> t) {
-    drivetrain_left_victor_ = ::std::move(t);
+  void set_drivetrain_left0_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    drivetrain_left0_victor_ = ::std::move(t);
+  }
+  void set_drivetrain_left1_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    drivetrain_left1_victor_ = ::std::move(t);
   }
 
-  void set_drivetrain_right_victor(::std::unique_ptr<::frc::VictorSP> t) {
-    drivetrain_right_victor_ = ::std::move(t);
-  };
+  void set_drivetrain_right0_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    drivetrain_right0_victor_ = ::std::move(t);
+  }
+  void set_drivetrain_right1_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    drivetrain_right1_victor_ = ::std::move(t);
+  }
 
  private:
   virtual void Read() override {
@@ -444,18 +457,23 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::frc971::control_loops::drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    drivetrain_left_victor_->SetSpeed(-queue->left_voltage / 12.0);
-    drivetrain_right_victor_->SetSpeed(queue->right_voltage / 12.0);
+    drivetrain_left0_victor_->SetSpeed(queue->left_voltage / 12.0);
+    drivetrain_left1_victor_->SetSpeed(queue->left_voltage / 12.0);
+    drivetrain_right0_victor_->SetSpeed(-queue->right_voltage / 12.0);
+    drivetrain_right1_victor_->SetSpeed(-queue->right_voltage / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "drivetrain output too old\n");
-    drivetrain_left_victor_->SetDisabled();
-    drivetrain_right_victor_->SetDisabled();
+    drivetrain_left0_victor_->SetDisabled();
+    drivetrain_left1_victor_->SetDisabled();
+    drivetrain_right0_victor_->SetDisabled();
+    drivetrain_right1_victor_->SetDisabled();
   }
 
-  ::std::unique_ptr<::frc::VictorSP> drivetrain_left_victor_,
-      drivetrain_right_victor_;
+  ::std::unique_ptr<::frc::VictorSP> drivetrain_left0_victor_,
+      drivetrain_left1_victor_, drivetrain_right0_victor_,
+      drivetrain_right1_victor_;
 };
 
 class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
@@ -464,9 +482,13 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     rollers_victor_ = ::std::move(t);
   }
 
-  void set_hanger_victor(::std::unique_ptr<::frc::VictorSP> t) {
-    hanger_victor_ = ::std::move(t);
- }
+  void set_hanger0_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    hanger0_victor_ = ::std::move(t);
+  }
+  void set_hanger1_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    hanger1_victor_ = ::std::move(t);
+  }
+
  private:
   virtual void Read() override {
     ::y2017_bot3::control_loops::superstructure_queue.output.FetchAnother();
@@ -476,17 +498,19 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     auto &queue = ::y2017_bot3::control_loops::superstructure_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
     rollers_victor_->SetSpeed(queue->voltage_rollers / 12.0);
-    hanger_victor_->SetSpeed(queue->hanger_voltage / 12.0);
+    hanger0_victor_->SetSpeed(queue->hanger_voltage / 12.0);
+    hanger1_victor_->SetSpeed(queue->hanger_voltage / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "Superstructure output too old.\n");
     rollers_victor_->SetDisabled();
-    hanger_victor_->SetDisabled();
+    hanger0_victor_->SetDisabled();
+    hanger1_victor_->SetDisabled();
   }
 
   ::std::unique_ptr<::frc::VictorSP> rollers_victor_;
-  ::std::unique_ptr<::frc::VictorSP> hanger_victor_;
+  ::std::unique_ptr<::frc::VictorSP> hanger0_victor_, hanger1_victor_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -507,7 +531,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
     SensorReader reader;
 
-    // TODO(sabina): Update port numbers
     reader.set_drivetrain_left_encoder(make_encoder(0));
     reader.set_drivetrain_right_encoder(make_encoder(1));
     reader.set_drivetrain_left_hall(make_unique<AnalogInput>(0));
@@ -521,22 +544,30 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread gyro_thread(::std::ref(gyro_sender));
 
     DrivetrainWriter drivetrain_writer;
-    drivetrain_writer.set_drivetrain_left_victor(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)));
-    drivetrain_writer.set_drivetrain_right_victor(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)));
+    drivetrain_writer.set_drivetrain_left0_victor(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(5)));
+    drivetrain_writer.set_drivetrain_left1_victor(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(6)));
+    drivetrain_writer.set_drivetrain_right0_victor(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(4)));
+    drivetrain_writer.set_drivetrain_right1_victor(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(3)));
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
     SuperstructureWriter superstructure_writer;
     superstructure_writer.set_rollers_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(2)));
-    superstructure_writer.set_hanger_victor(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(3)));
+    superstructure_writer.set_hanger0_victor(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)));
+    superstructure_writer.set_hanger1_victor(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)));
+    ::std::thread superstructure_writer_thread(::std::ref(superstructure_writer));
 
     ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
         new ::frc971::wpilib::BufferedPcm());
     SolenoidWriter solenoid_writer(pcm);
-    solenoid_writer.set_drivetrain_shifter(pcm->MakeSolenoid(0));
+    solenoid_writer.set_left_drivetrain_shifter(pcm->MakeSolenoid(3));
+    solenoid_writer.set_right_drivetrain_shifter(pcm->MakeSolenoid(1));
     solenoid_writer.set_fingers(pcm->MakeSolenoid(2));
 
     solenoid_writer.set_compressor(make_unique<Compressor>());

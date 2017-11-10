@@ -37,4 +37,3 @@ queue_group SuperstructureQueue {
 };
 
 queue_group SuperstructureQueue superstructure_queue;
-
