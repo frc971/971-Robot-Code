@@ -3,13 +3,14 @@
 #include <chrono>
 #include <memory>
 
-#include "gtest/gtest.h"
-#include "aos/common/network/team_number.h"
 #include "aos/common/controls/control_loop_test.h"
-#include "y2014/control_loops/shooter/shooter.q.h"
-#include "y2014/control_loops/shooter/shooter.h"
-#include "y2014/control_loops/shooter/unaugmented_shooter_motor_plant.h"
+#include "aos/common/network/team_number.h"
+#include "frc971/control_loops/team_number_test_environment.h"
+#include "gtest/gtest.h"
 #include "y2014/constants.h"
+#include "y2014/control_loops/shooter/shooter.h"
+#include "y2014/control_loops/shooter/shooter.q.h"
+#include "y2014/control_loops/shooter/unaugmented_shooter_motor_plant.h"
 
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
@@ -20,18 +21,7 @@ namespace testing {
 
 using ::y2014::control_loops::shooter::kMaxExtension;
 using ::y2014::control_loops::shooter::MakeRawShooterPlant;
-
-static const int kTestTeam = 1;
-
-class TeamNumberEnvironment : public ::testing::Environment {
- public:
-  // Override this to define how to set up the environment.
-  virtual void SetUp() { aos::network::OverrideTeamNumber(kTestTeam); }
-};
-
-::testing::Environment *const team_number_env =
-    ::testing::AddGlobalTestEnvironment(new TeamNumberEnvironment);
-
+using ::frc971::control_loops::testing::kTeamNumber;
 
 // Class which simulates the shooter and sends out queue messages containing the
 // position.
@@ -463,9 +453,8 @@ TEST_F(ShooterTest, LoadTooFar) {
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
     SimulateTimestep(true);
-    EXPECT_LT(
-        shooter_motor_plant_.GetAbsolutePosition(),
-        constants::GetValuesForTeam(kTestTeam).shooter.upper_limit);
+    EXPECT_LT(shooter_motor_plant_.GetAbsolutePosition(),
+              constants::GetValuesForTeam(kTeamNumber).shooter.upper_limit);
   }
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }
@@ -725,12 +714,12 @@ INSTANTIATE_TEST_CASE_P(
         ::testing::Bool(), ::testing::Bool(), ::testing::Bool(),
         ::testing::Values(
             0.05,
-            constants::GetValuesForTeam(kTestTeam).shooter.upper_limit - 0.05,
-            HallEffectMiddle(constants::GetValuesForTeam(kTestTeam)
+            constants::GetValuesForTeam(kTeamNumber).shooter.upper_limit - 0.05,
+            HallEffectMiddle(constants::GetValuesForTeam(kTeamNumber)
                                  .shooter.pusher_proximal),
-            HallEffectMiddle(constants::GetValuesForTeam(kTestTeam)
-                                 .shooter.pusher_distal),
-            constants::GetValuesForTeam(kTestTeam)
+            HallEffectMiddle(
+                constants::GetValuesForTeam(kTeamNumber).shooter.pusher_distal),
+            constants::GetValuesForTeam(kTeamNumber)
                     .shooter.latch_max_safe_position -
                 0.001)));
 
