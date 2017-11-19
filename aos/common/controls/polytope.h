@@ -149,10 +149,10 @@ class HPolytope : public Polytope<number_of_dimensions> {
 template <int number_of_dimensions>
 bool Polytope<number_of_dimensions>::IsInside(
     Eigen::Matrix<double, number_of_dimensions, 1> point) const {
-  auto k_ptr = k();
-  auto ev = H() * point;
+  Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, 1>> k_ptr = k();
   for (int i = 0; i < k_ptr.rows(); ++i) {
-    if (ev(i, 0) > k_ptr(i, 0)) {
+    double ev = (H().row(i) * point)(0, 0);
+    if (ev > k_ptr(i, 0)) {
       return false;
     }
   }
