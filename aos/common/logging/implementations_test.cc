@@ -211,10 +211,10 @@ TEST(LoggingPrintFormatTest, Time) {
   // Make sure rounding works correctly.
   ASSERT_EQ(18, snprintf(buffer, sizeof(buffer), AOS_TIME_FORMAT,
                          AOS_TIME_ARGS(2, 999)));
-  EXPECT_EQ("0000000002.000001s", ::std::string(buffer));
+  EXPECT_EQ("0000000002.000000s", ::std::string(buffer));
   ASSERT_EQ(18, snprintf(buffer, sizeof(buffer), AOS_TIME_FORMAT,
                          AOS_TIME_ARGS(2, 500)));
-  EXPECT_EQ("0000000002.000001s", ::std::string(buffer));
+  EXPECT_EQ("0000000002.000000s", ::std::string(buffer));
   ASSERT_EQ(18, snprintf(buffer, sizeof(buffer), AOS_TIME_FORMAT,
                          AOS_TIME_ARGS(2, 499)));
   EXPECT_EQ("0000000002.000000s", ::std::string(buffer));
@@ -223,6 +223,11 @@ TEST(LoggingPrintFormatTest, Time) {
   ASSERT_EQ(18, snprintf(buffer, sizeof(buffer), AOS_TIME_FORMAT,
                          AOS_TIME_ARGS(1, 995000000)));
   EXPECT_EQ("0000000001.995000s", ::std::string(buffer));
+
+  // This used to result in "0000000001.099500s".
+  ASSERT_EQ(18, snprintf(buffer, sizeof(buffer), AOS_TIME_FORMAT,
+                         AOS_TIME_ARGS(1, 999999999)));
+  EXPECT_EQ("0000000001.999999s", ::std::string(buffer));
 }
 
 TEST(LoggingPrintFormatTest, Base) {
