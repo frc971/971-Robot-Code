@@ -11,9 +11,7 @@
 
 #define AOS_TIME_FORMAT \
   "%010" PRId32 ".%0" STRINGIFY(AOS_TIME_NSECONDS_DIGITS) PRId32 "s"
-#define AOS_TIME_ARGS(sec, nsec)                      \
-  sec, (nsec + (AOS_TIME_NSECONDS_DENOMINATOR / 2)) / \
-      AOS_TIME_NSECONDS_DENOMINATOR
+#define AOS_TIME_ARGS(sec, nsec) sec, (nsec / AOS_TIME_NSECONDS_DENOMINATOR)
 
 #define AOS_LOGGING_BASE_FORMAT \
   "%.*s(%" PRId32 ")(%05" PRIu16 "): %-7s at " AOS_TIME_FORMAT ": "
