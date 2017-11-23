@@ -101,7 +101,7 @@ void Intake::Iterate(
 
       // Force the intake to be at least at min_position_ out.
       if (profiled_subsystem_.unprofiled_goal(0, 0) < min_position_) {
-        LOG(INFO, "Limiting intake to %f from %f\n", min_position_,
+        LOG(DEBUG, "Limiting intake to %f from %f\n", min_position_,
             profiled_subsystem_.unprofiled_goal(0, 0));
         profiled_subsystem_.set_unprofiled_goal(min_position_);
       }

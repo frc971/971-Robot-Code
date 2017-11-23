@@ -152,7 +152,7 @@ void VisionTimeAdjuster::Tick(monotonic_clock::time_point monotonic_now,
   }
 
   goal_ = most_recent_vision_angle_ - most_recent_drivetrain_angle_;
-  LOG(INFO, "Vision angle %f drivetrain %f\n", most_recent_vision_angle_,
+  LOG(DEBUG, "Vision angle %f drivetrain %f\n", most_recent_vision_angle_,
       most_recent_drivetrain_angle_);
 
   // Now, update the vision valid flag to tell us if we have a valid vision
