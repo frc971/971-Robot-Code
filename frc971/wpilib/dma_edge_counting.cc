@@ -36,7 +36,7 @@ void DMASynchronizer::CheckDMA() {
         }
 
         if (remaining == 0) {
-          if (sample_time_ < current_sample.GetTime()) {
+          if (sample_time_ < static_cast<int64_t>(current_sample.GetTime())) {
             // If the latest DMA sample happened after we started polling, then
             // just use the values from it because they're more recent.
             for (auto &c : handlers_) {

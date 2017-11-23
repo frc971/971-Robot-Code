@@ -195,7 +195,7 @@ class DMASynchronizer {
   ::std::vector<DMASampleHandlerInterface *> handlers_;
 
   // The time at which we most recently read the sensor values.
-  uint32_t sample_time_ = 0;
+  int64_t sample_time_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(DMASynchronizer);
 };
