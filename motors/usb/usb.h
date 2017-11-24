@@ -434,7 +434,7 @@ class UsbFunction {
   static constexpr uint8_t m_endpoint_address_in() { return 1 << 7; }
   static constexpr uint8_t m_endpoint_attributes_control() { return 0x00; }
   static constexpr uint8_t m_endpoint_attributes_isochronous() { return 0x01; }
-  static constexpr uint8_t m_endpoint_attributes_bulk() { return 0x03; }
+  static constexpr uint8_t m_endpoint_attributes_bulk() { return 0x02; }
   static constexpr uint8_t m_endpoint_attributes_interrupt() { return 0x03; }
 
   // Adds a new endpoint and returns its index.
