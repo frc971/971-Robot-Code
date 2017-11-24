@@ -26,6 +26,7 @@ cc_library(
     'shooter_integral_plant.h',
   ],
   deps = [
+    '//frc971/control_loops:hybrid_state_feedback_loop',
     '//frc971/control_loops:state_feedback_loop',
   ],
 )

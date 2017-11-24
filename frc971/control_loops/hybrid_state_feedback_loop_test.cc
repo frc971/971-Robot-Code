@@ -1,5 +1,6 @@
-#include "frc971/control_loops/state_feedback_loop.h"
+#include "frc971/control_loops/hybrid_state_feedback_loop.h"
 
+#include "frc971/control_loops/state_feedback_loop.h"
 #include "gtest/gtest.h"
 
 namespace frc971 {

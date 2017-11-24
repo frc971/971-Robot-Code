@@ -18,12 +18,12 @@ cc_library(
 )
 
 cc_test(
-  name = 'state_feedback_loop_test',
+  name = 'hybrid_state_feedback_loop_test',
   srcs = [
-    'state_feedback_loop_test.cc',
+    'hybrid_state_feedback_loop_test.cc',
   ],
   deps = [
-    ':state_feedback_loop',
+    ':hybrid_state_feedback_loop',
     '//aos/testing:googletest',
   ],
 )
@@ -109,6 +109,19 @@ cc_library(
     'state_feedback_loop.h',
   ],
   deps = [
+    '//aos/common/logging',
+    '//aos/common:macros',
+    '//third_party/eigen',
+  ],
+)
+
+cc_library(
+  name = 'hybrid_state_feedback_loop',
+  hdrs = [
+    'hybrid_state_feedback_loop.h',
+  ],
+  deps = [
+    ':state_feedback_loop',
     '//aos/common/controls:control_loop',
     '//aos/common/logging',
     '//aos/common:macros',

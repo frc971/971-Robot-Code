@@ -118,6 +118,10 @@ class ControlLoopWriter(object):
       fd.write('#ifndef %s\n'
                '#define %s\n\n' % (header_guard, header_guard))
       fd.write('#include \"frc971/control_loops/state_feedback_loop.h\"\n')
+      if (self._plant_type == 'StateFeedbackHybridPlant' or
+          self._observer_type == 'HybridKalman'):
+        fd.write('#include \"frc971/control_loops/hybrid_state_feedback_loop.h\"\n')
+
       fd.write('\n')
 
       fd.write(self._namespace_start)
