@@ -106,10 +106,10 @@ HybridKalman<3, 1, 1> MakeIntegralShooterObserver() {
   return HybridKalman<3, 1, 1>(&observers);
 }
 
-StateFeedbackLoop<3, 1, 1, StateFeedbackHybridPlant<3, 1, 1>,
+StateFeedbackLoop<3, 1, 1, double, StateFeedbackHybridPlant<3, 1, 1>,
                   HybridKalman<3, 1, 1>>
 MakeIntegralShooterLoop() {
-  return StateFeedbackLoop<3, 1, 1, StateFeedbackHybridPlant<3, 1, 1>,
+  return StateFeedbackLoop<3, 1, 1, double, StateFeedbackHybridPlant<3, 1, 1>,
                            HybridKalman<3, 1, 1>>(
       MakeIntegralShooterPlant(), MakeIntegralShooterController(),
       MakeIntegralShooterObserver());

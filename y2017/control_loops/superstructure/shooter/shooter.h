@@ -50,8 +50,9 @@ class ShooterController {
   // The current sensor measurement.
   Eigen::Matrix<double, 1, 1> Y_;
   // The control loop.
-  ::std::unique_ptr<StateFeedbackLoop<
-      4, 1, 1, StateFeedbackHybridPlant<4, 1, 1>, HybridKalman<4, 1, 1>>>
+  ::std::unique_ptr<
+      StateFeedbackLoop<4, 1, 1, double, StateFeedbackHybridPlant<4, 1, 1>,
+                        HybridKalman<4, 1, 1>>>
       loop_;
 
   // History array for calculating a filtered angular velocity.

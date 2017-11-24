@@ -17,7 +17,8 @@
 #include "aos/common/macros.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 
-template <int number_of_states, int number_of_inputs, int number_of_outputs>
+template <int number_of_states, int number_of_inputs, int number_of_outputs,
+          typename Scalar = double>
 struct StateFeedbackHybridPlantCoefficients final {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
@@ -32,14 +33,14 @@ struct StateFeedbackHybridPlantCoefficients final {
         U_max(other.U_max) {}
 
   StateFeedbackHybridPlantCoefficients(
-      const Eigen::Matrix<double, number_of_states, number_of_states>
+      const Eigen::Matrix<Scalar, number_of_states, number_of_states>
           &A_continuous,
-      const Eigen::Matrix<double, number_of_states, number_of_inputs>
+      const Eigen::Matrix<Scalar, number_of_states, number_of_inputs>
           &B_continuous,
-      const Eigen::Matrix<double, number_of_outputs, number_of_states> &C,
-      const Eigen::Matrix<double, number_of_outputs, number_of_inputs> &D,
-      const Eigen::Matrix<double, number_of_inputs, 1> &U_max,
-      const Eigen::Matrix<double, number_of_inputs, 1> &U_min)
+      const Eigen::Matrix<Scalar, number_of_outputs, number_of_states> &C,
+      const Eigen::Matrix<Scalar, number_of_outputs, number_of_inputs> &D,
+      const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_max,
+      const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_min)
       : A_continuous(A_continuous),
         B_continuous(B_continuous),
         C(C),
@@ -47,15 +48,16 @@ struct StateFeedbackHybridPlantCoefficients final {
         U_min(U_min),
         U_max(U_max) {}
 
-  const Eigen::Matrix<double, number_of_states, number_of_states> A_continuous;
-  const Eigen::Matrix<double, number_of_states, number_of_inputs> B_continuous;
-  const Eigen::Matrix<double, number_of_outputs, number_of_states> C;
-  const Eigen::Matrix<double, number_of_outputs, number_of_inputs> D;
-  const Eigen::Matrix<double, number_of_inputs, 1> U_min;
-  const Eigen::Matrix<double, number_of_inputs, 1> U_max;
+  const Eigen::Matrix<Scalar, number_of_states, number_of_states> A_continuous;
+  const Eigen::Matrix<Scalar, number_of_states, number_of_inputs> B_continuous;
+  const Eigen::Matrix<Scalar, number_of_outputs, number_of_states> C;
+  const Eigen::Matrix<Scalar, number_of_outputs, number_of_inputs> D;
+  const Eigen::Matrix<Scalar, number_of_inputs, 1> U_min;
+  const Eigen::Matrix<Scalar, number_of_inputs, 1> U_max;
 };
 
-template <int number_of_states, int number_of_inputs, int number_of_outputs>
+template <int number_of_states, int number_of_inputs, int number_of_outputs,
+          typename Scalar = double>
 class StateFeedbackHybridPlant {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
@@ -77,49 +79,49 @@ class StateFeedbackHybridPlant {
 
   virtual ~StateFeedbackHybridPlant() {}
 
-  const Eigen::Matrix<double, number_of_states, number_of_states> &A() const {
+  const Eigen::Matrix<Scalar, number_of_states, number_of_states> &A() const {
     return A_;
   }
-  double A(int i, int j) const { return A()(i, j); }
-  const Eigen::Matrix<double, number_of_states, number_of_inputs> &B() const {
+  Scalar A(int i, int j) const { return A()(i, j); }
+  const Eigen::Matrix<Scalar, number_of_states, number_of_inputs> &B() const {
     return B_;
   }
-  double B(int i, int j) const { return B()(i, j); }
-  const Eigen::Matrix<double, number_of_outputs, number_of_states> &C() const {
+  Scalar B(int i, int j) const { return B()(i, j); }
+  const Eigen::Matrix<Scalar, number_of_outputs, number_of_states> &C() const {
     return coefficients().C;
   }
-  double C(int i, int j) const { return C()(i, j); }
-  const Eigen::Matrix<double, number_of_outputs, number_of_inputs> &D() const {
+  Scalar C(int i, int j) const { return C()(i, j); }
+  const Eigen::Matrix<Scalar, number_of_outputs, number_of_inputs> &D() const {
     return coefficients().D;
   }
-  double D(int i, int j) const { return D()(i, j); }
-  const Eigen::Matrix<double, number_of_inputs, 1> &U_min() const {
+  Scalar D(int i, int j) const { return D()(i, j); }
+  const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_min() const {
     return coefficients().U_min;
   }
-  double U_min(int i, int j) const { return U_min()(i, j); }
-  const Eigen::Matrix<double, number_of_inputs, 1> &U_max() const {
+  Scalar U_min(int i, int j) const { return U_min()(i, j); }
+  const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_max() const {
     return coefficients().U_max;
   }
-  double U_max(int i, int j) const { return U_max()(i, j); }
+  Scalar U_max(int i, int j) const { return U_max()(i, j); }
 
-  const Eigen::Matrix<double, number_of_states, 1> &X() const { return X_; }
-  double X(int i, int j) const { return X()(i, j); }
-  const Eigen::Matrix<double, number_of_outputs, 1> &Y() const { return Y_; }
-  double Y(int i, int j) const { return Y()(i, j); }
+  const Eigen::Matrix<Scalar, number_of_states, 1> &X() const { return X_; }
+  Scalar X(int i, int j) const { return X()(i, j); }
+  const Eigen::Matrix<Scalar, number_of_outputs, 1> &Y() const { return Y_; }
+  Scalar Y(int i, int j) const { return Y()(i, j); }
 
-  Eigen::Matrix<double, number_of_states, 1> &mutable_X() { return X_; }
-  double &mutable_X(int i, int j) { return mutable_X()(i, j); }
-  Eigen::Matrix<double, number_of_outputs, 1> &mutable_Y() { return Y_; }
-  double &mutable_Y(int i, int j) { return mutable_Y()(i, j); }
+  Eigen::Matrix<Scalar, number_of_states, 1> &mutable_X() { return X_; }
+  Scalar &mutable_X(int i, int j) { return mutable_X()(i, j); }
+  Eigen::Matrix<Scalar, number_of_outputs, 1> &mutable_Y() { return Y_; }
+  Scalar &mutable_Y(int i, int j) { return mutable_Y()(i, j); }
 
   const StateFeedbackHybridPlantCoefficients<number_of_states, number_of_inputs,
-                                             number_of_outputs>
+                                             number_of_outputs, Scalar>
       &coefficients(int index) const {
     return *coefficients_[index];
   }
 
   const StateFeedbackHybridPlantCoefficients<number_of_states, number_of_inputs,
-                                             number_of_outputs>
+                                             number_of_outputs, Scalar>
       &coefficients() const {
     return *coefficients_[index_];
   }
@@ -141,36 +143,38 @@ class StateFeedbackHybridPlant {
   }
 
   // Assert that U is within the hardware range.
-  virtual void CheckU(const Eigen::Matrix<double, number_of_inputs, 1> &U) {
+  virtual void CheckU(const Eigen::Matrix<Scalar, number_of_inputs, 1> &U) {
     for (int i = 0; i < kNumInputs; ++i) {
-      if (U(i, 0) > U_max(i, 0) + 0.00001 || U(i, 0) < U_min(i, 0) - 0.00001) {
+      if (U(i, 0) > U_max(i, 0) + static_cast<Scalar>(0.00001) ||
+          U(i, 0) < U_min(i, 0) - static_cast<Scalar>(0.00001)) {
         LOG(FATAL, "U out of range\n");
       }
     }
   }
 
   // Computes the new X and Y given the control input.
-  void Update(const Eigen::Matrix<double, number_of_inputs, 1> &U,
+  void Update(const Eigen::Matrix<Scalar, number_of_inputs, 1> &U,
               ::std::chrono::nanoseconds dt) {
     // Powers outside of the range are more likely controller bugs than things
     // that the plant should deal with.
     CheckU(U);
     ::aos::robot_state.FetchLatest();
 
-    Eigen::Matrix<double, number_of_inputs, 1> current_U =
-        DelayedU_ * (::aos::robot_state.get()
-                         ? ::aos::robot_state->voltage_battery / 12.0
-                         : 1.0);
+    Eigen::Matrix<Scalar, number_of_inputs, 1> current_U =
+        DelayedU_ *
+        (::aos::robot_state.get()
+             ? ::aos::robot_state->voltage_battery / static_cast<Scalar>(12.0)
+             : static_cast<Scalar>(1.0));
     X_ = Update(X(), current_U, dt);
     Y_ = C() * X() + D() * current_U;
     DelayedU_ = U;
   }
 
-  Eigen::Matrix<double, number_of_inputs, 1> DelayedU_;
+  Eigen::Matrix<Scalar, number_of_inputs, 1> DelayedU_;
 
-  Eigen::Matrix<double, number_of_states, 1> Update(
-      const Eigen::Matrix<double, number_of_states, 1> X,
-      const Eigen::Matrix<double, number_of_inputs, 1> &U,
+  Eigen::Matrix<Scalar, number_of_states, 1> Update(
+      const Eigen::Matrix<Scalar, number_of_states, 1> X,
+      const Eigen::Matrix<Scalar, number_of_inputs, 1> &U,
       ::std::chrono::nanoseconds dt) {
     UpdateAB(dt);
     return A() * X + B() * U;
@@ -184,22 +188,22 @@ class StateFeedbackHybridPlant {
 
  private:
   void UpdateAB(::std::chrono::nanoseconds dt) {
-    Eigen::Matrix<double, number_of_states + number_of_inputs,
+    Eigen::Matrix<Scalar, number_of_states + number_of_inputs,
                   number_of_states + number_of_inputs>
         M_state_continuous;
     M_state_continuous.setZero();
     M_state_continuous.template block<number_of_states, number_of_states>(0,
                                                                           0) =
         coefficients().A_continuous *
-        ::std::chrono::duration_cast<::std::chrono::duration<double>>(dt)
+        ::std::chrono::duration_cast<::std::chrono::duration<Scalar>>(dt)
             .count();
     M_state_continuous.template block<number_of_states, number_of_inputs>(
         0, number_of_states) =
         coefficients().B_continuous *
-        ::std::chrono::duration_cast<::std::chrono::duration<double>>(dt)
+        ::std::chrono::duration_cast<::std::chrono::duration<Scalar>>(dt)
             .count();
 
-    Eigen::Matrix<double, number_of_states + number_of_inputs,
+    Eigen::Matrix<Scalar, number_of_states + number_of_inputs,
                   number_of_states + number_of_inputs>
         M_state = M_state_continuous.exp();
     A_ = M_state.template block<number_of_states, number_of_states>(0, 0);
@@ -207,11 +211,11 @@ class StateFeedbackHybridPlant {
         0, number_of_states);
   }
 
-  Eigen::Matrix<double, number_of_states, 1> X_;
-  Eigen::Matrix<double, number_of_outputs, 1> Y_;
+  Eigen::Matrix<Scalar, number_of_states, 1> X_;
+  Eigen::Matrix<Scalar, number_of_outputs, 1> Y_;
 
-  Eigen::Matrix<double, number_of_states, number_of_states> A_;
-  Eigen::Matrix<double, number_of_states, number_of_inputs> B_;
+  Eigen::Matrix<Scalar, number_of_states, number_of_states> A_;
+  Eigen::Matrix<Scalar, number_of_states, number_of_inputs> B_;
 
 
   ::std::vector<::std::unique_ptr<StateFeedbackHybridPlantCoefficients<
@@ -225,34 +229,36 @@ class StateFeedbackHybridPlant {
 
 
 // A container for all the observer coefficients.
-template <int number_of_states, int number_of_inputs, int number_of_outputs>
+template <int number_of_states, int number_of_inputs, int number_of_outputs,
+          typename Scalar = double>
 struct HybridKalmanCoefficients final {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
-  const Eigen::Matrix<double, number_of_states, number_of_states> Q_continuous;
-  const Eigen::Matrix<double, number_of_outputs, number_of_outputs> R_continuous;
-  const Eigen::Matrix<double, number_of_states, number_of_states> P_steady_state;
+  const Eigen::Matrix<Scalar, number_of_states, number_of_states> Q_continuous;
+  const Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> R_continuous;
+  const Eigen::Matrix<Scalar, number_of_states, number_of_states> P_steady_state;
 
   HybridKalmanCoefficients(
-      const Eigen::Matrix<double, number_of_states, number_of_states>
+      const Eigen::Matrix<Scalar, number_of_states, number_of_states>
           &Q_continuous,
-      const Eigen::Matrix<double, number_of_outputs, number_of_outputs>
+      const Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs>
           &R_continuous,
-      const Eigen::Matrix<double, number_of_states, number_of_states>
+      const Eigen::Matrix<Scalar, number_of_states, number_of_states>
           &P_steady_state)
       : Q_continuous(Q_continuous),
         R_continuous(R_continuous),
         P_steady_state(P_steady_state) {}
 };
 
-template <int number_of_states, int number_of_inputs, int number_of_outputs>
+template <int number_of_states, int number_of_inputs, int number_of_outputs,
+          typename Scalar = double>
 class HybridKalman {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
   explicit HybridKalman(
       ::std::vector<::std::unique_ptr<HybridKalmanCoefficients<
-          number_of_states, number_of_inputs, number_of_outputs>>> *observers)
+          number_of_states, number_of_inputs, number_of_outputs, Scalar>>> *observers)
       : coefficients_(::std::move(*observers)) {}
 
   HybridKalman(HybridKalman &&other)
@@ -261,27 +267,27 @@ class HybridKalman {
   }
 
   // Getters for Q
-  const Eigen::Matrix<double, number_of_states, number_of_states> &Q() const {
+  const Eigen::Matrix<Scalar, number_of_states, number_of_states> &Q() const {
     return Q_;
   }
-  double Q(int i, int j) const { return Q()(i, j); }
+  Scalar Q(int i, int j) const { return Q()(i, j); }
   // Getters for R
-  const Eigen::Matrix<double, number_of_outputs, number_of_outputs> &R() const {
+  const Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> &R() const {
     return R_;
   }
-  double R(int i, int j) const { return R()(i, j); }
+  Scalar R(int i, int j) const { return R()(i, j); }
 
   // Getters for P
-  const Eigen::Matrix<double, number_of_states, number_of_states> &P() const {
+  const Eigen::Matrix<Scalar, number_of_states, number_of_states> &P() const {
     return P_;
   }
-  double P(int i, int j) const { return P()(i, j); }
+  Scalar P(int i, int j) const { return P()(i, j); }
 
   // Getters for X_hat
-  const Eigen::Matrix<double, number_of_states, 1> &X_hat() const {
+  const Eigen::Matrix<Scalar, number_of_states, 1> &X_hat() const {
     return X_hat_;
   }
-  Eigen::Matrix<double, number_of_states, 1> &mutable_X_hat() { return X_hat_; }
+  Eigen::Matrix<Scalar, number_of_states, 1> &mutable_X_hat() { return X_hat_; }
 
   void Reset(StateFeedbackHybridPlant<number_of_states, number_of_inputs,
                                       number_of_outputs> *plant) {
@@ -291,8 +297,8 @@ class HybridKalman {
   }
 
   void Predict(StateFeedbackHybridPlant<number_of_states, number_of_inputs,
-                                        number_of_outputs> *plant,
-               const Eigen::Matrix<double, number_of_inputs, 1> &new_u,
+                                        number_of_outputs, Scalar> *plant,
+               const Eigen::Matrix<Scalar, number_of_inputs, 1> &new_u,
                ::std::chrono::nanoseconds dt) {
     // Trigger the predict step.  This will update A() and B() in the plant.
     mutable_X_hat() = plant->Update(X_hat(), new_u, dt);
@@ -303,14 +309,14 @@ class HybridKalman {
 
   void Correct(
       const StateFeedbackHybridPlant<number_of_states, number_of_inputs,
-                                     number_of_outputs> &plant,
-      const Eigen::Matrix<double, number_of_inputs, 1> &U,
-      const Eigen::Matrix<double, number_of_outputs, 1> &Y) {
-    Eigen::Matrix<double, number_of_outputs, 1> Y_bar =
+                                     number_of_outputs, Scalar> &plant,
+      const Eigen::Matrix<Scalar, number_of_inputs, 1> &U,
+      const Eigen::Matrix<Scalar, number_of_outputs, 1> &Y) {
+    Eigen::Matrix<Scalar, number_of_outputs, 1> Y_bar =
         Y - (plant.C() * X_hat_ + plant.D() * U);
-    Eigen::Matrix<double, number_of_outputs, number_of_outputs> S =
+    Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> S =
         plant.C() * P_ * plant.C().transpose() + R_;
-    Eigen::Matrix<double, number_of_states, number_of_outputs> KalmanGain;
+    Eigen::Matrix<Scalar, number_of_states, number_of_outputs> KalmanGain;
     KalmanGain =
         (S.transpose().ldlt().solve((P() * plant.C().transpose()).transpose()))
             .transpose();
@@ -350,16 +356,16 @@ class HybridKalman {
                                          number_of_outputs> *plant,
                 ::std::chrono::nanoseconds dt) {
     // Now, compute the discrete time Q and R coefficients.
-    Eigen::Matrix<double, number_of_states, number_of_states> Qtemp =
+    Eigen::Matrix<Scalar, number_of_states, number_of_states> Qtemp =
         (coefficients().Q_continuous +
          coefficients().Q_continuous.transpose()) /
-        2.0;
-    Eigen::Matrix<double, number_of_outputs, number_of_outputs> Rtemp =
+        static_cast<Scalar>(2.0);
+    Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> Rtemp =
         (coefficients().R_continuous +
          coefficients().R_continuous.transpose()) /
-        2.0;
+        static_cast<Scalar>(2.0);
 
-    Eigen::Matrix<double, 2 * number_of_states, 2 * number_of_states> M_gain;
+    Eigen::Matrix<Scalar, 2 * number_of_states, 2 * number_of_states> M_gain;
     M_gain.setZero();
     // Set up the matrix M = [[-A, Q], [0, A.T]]
     M_gain.template block<number_of_states, number_of_states>(0, 0) =
@@ -370,35 +376,35 @@ class HybridKalman {
         number_of_states, number_of_states) =
         plant->coefficients().A_continuous.transpose();
 
-    Eigen::Matrix<double, 2 * number_of_states, 2 *number_of_states> phi =
+    Eigen::Matrix<Scalar, 2 * number_of_states, 2 *number_of_states> phi =
         (M_gain *
-         ::std::chrono::duration_cast<::std::chrono::duration<double>>(dt)
+         ::std::chrono::duration_cast<::std::chrono::duration<Scalar>>(dt)
              .count())
             .exp();
 
     // Phi12 = phi[0:number_of_states, number_of_states:2*number_of_states]
     // Phi22 = phi[number_of_states:2*number_of_states,
     // number_of_states:2*number_of_states]
-    Eigen::Matrix<double, number_of_states, number_of_states> phi12 =
+    Eigen::Matrix<Scalar, number_of_states, number_of_states> phi12 =
         phi.block(0, number_of_states, number_of_states, number_of_states);
-    Eigen::Matrix<double, number_of_states, number_of_states> phi22 = phi.block(
+    Eigen::Matrix<Scalar, number_of_states, number_of_states> phi22 = phi.block(
         number_of_states, number_of_states, number_of_states, number_of_states);
 
     Q_ = phi22.transpose() * phi12;
-    Q_ = (Q_ + Q_.transpose()) / 2.0;
+    Q_ = (Q_ + Q_.transpose()) / static_cast<Scalar>(2.0);
     R_ = Rtemp /
-         ::std::chrono::duration_cast<::std::chrono::duration<double>>(dt)
+         ::std::chrono::duration_cast<::std::chrono::duration<Scalar>>(dt)
              .count();
   }
 
   // Internal state estimate.
-  Eigen::Matrix<double, number_of_states, 1> X_hat_;
+  Eigen::Matrix<Scalar, number_of_states, 1> X_hat_;
   // Internal covariance estimate.
-  Eigen::Matrix<double, number_of_states, number_of_states> P_;
+  Eigen::Matrix<Scalar, number_of_states, number_of_states> P_;
 
   // Discretized Q and R for the kalman filter.
-  Eigen::Matrix<double, number_of_states, number_of_states> Q_;
-  Eigen::Matrix<double, number_of_outputs, number_of_outputs> R_;
+  Eigen::Matrix<Scalar, number_of_states, number_of_states> Q_;
+  Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> R_;
 
   int index_ = 0;
   ::std::vector<::std::unique_ptr<HybridKalmanCoefficients<
