@@ -301,33 +301,24 @@ class StateFeedbackObserver {
   }
   Eigen::Matrix<double, number_of_states, 1> &mutable_X_hat() { return X_hat_; }
 
-  void Reset(
-      StateFeedbackLoop<number_of_states, number_of_inputs, number_of_outputs,
-                        StateFeedbackPlant<number_of_states, number_of_inputs,
-                                           number_of_outputs>,
-                        StateFeedbackObserver> * /*loop*/) {
+  void Reset(StateFeedbackPlant<number_of_states, number_of_inputs,
+                                number_of_outputs> * /*loop*/) {
     X_hat_.setZero();
   }
 
-  void Predict(
-      StateFeedbackLoop<number_of_states, number_of_inputs, number_of_outputs,
-                        StateFeedbackPlant<number_of_states, number_of_inputs,
-                                           number_of_outputs>,
-                        StateFeedbackObserver> *loop,
-      const Eigen::Matrix<double, number_of_inputs, 1> &new_u,
-      ::std::chrono::nanoseconds /*dt*/) {
-    mutable_X_hat() = loop->plant().Update(X_hat(), new_u);
+  void Predict(StateFeedbackPlant<number_of_states, number_of_inputs,
+                                  number_of_outputs> *plant,
+               const Eigen::Matrix<double, number_of_inputs, 1> &new_u,
+               ::std::chrono::nanoseconds /*dt*/) {
+    mutable_X_hat() = plant->Update(X_hat(), new_u);
   }
 
-  void Correct(const StateFeedbackLoop<
-                   number_of_states, number_of_inputs, number_of_outputs,
-                   StateFeedbackPlant<number_of_states, number_of_inputs,
-                                      number_of_outputs>,
-                   StateFeedbackObserver> &loop,
+  void Correct(const StateFeedbackPlant<number_of_states, number_of_inputs,
+                                        number_of_outputs> &plant,
                const Eigen::Matrix<double, number_of_inputs, 1> &U,
                const Eigen::Matrix<double, number_of_outputs, 1> &Y) {
-    mutable_X_hat() += loop.plant().A_inv() * L() *
-                       (Y - loop.plant().C() * X_hat() - loop.plant().D() * U);
+    mutable_X_hat() +=
+        plant.A_inv() * L() * (Y - plant.C() * X_hat() - plant.D() * U);
   }
 
   // Sets the current controller to be index, clamped to be within range.
@@ -458,7 +449,7 @@ class StateFeedbackLoop {
 
     plant_.Reset();
     controller_.Reset();
-    observer_.Reset(this);
+    observer_.Reset(this->mutable_plant());
   }
 
   // If U is outside the hardware range, limit it before the plant tries to use
@@ -475,7 +466,7 @@ class StateFeedbackLoop {
 
   // Corrects X_hat given the observation in Y.
   void Correct(const Eigen::Matrix<double, number_of_outputs, 1> &Y) {
-    observer_.Correct(*this, U(), Y);
+    observer_.Correct(this->plant(), U(), Y);
   }
 
   const Eigen::Matrix<double, number_of_states, 1> error() const {
@@ -522,7 +513,7 @@ class StateFeedbackLoop {
 
   void UpdateObserver(const Eigen::Matrix<double, number_of_inputs, 1> &new_u,
                       ::std::chrono::nanoseconds dt) {
-    observer_.Predict(this, new_u, dt);
+    observer_.Predict(this->mutable_plant(), new_u, dt);
   }
 
   // Sets the current controller to be index.

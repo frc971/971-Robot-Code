@@ -283,48 +283,40 @@ class HybridKalman {
   }
   Eigen::Matrix<double, number_of_states, 1> &mutable_X_hat() { return X_hat_; }
 
-  void Reset(StateFeedbackLoop<
-             number_of_states, number_of_inputs, number_of_outputs,
-             StateFeedbackHybridPlant<number_of_states, number_of_inputs,
-                                      number_of_outputs>,
-             HybridKalman> *loop) {
+  void Reset(StateFeedbackHybridPlant<number_of_states, number_of_inputs,
+                                      number_of_outputs> *plant) {
     X_hat_.setZero();
     P_ = coefficients().P_steady_state;
-    UpdateQR(loop, ::std::chrono::milliseconds(5));
+    UpdateQR(plant, ::std::chrono::milliseconds(5));
   }
 
-  void Predict(StateFeedbackLoop<
-                   number_of_states, number_of_inputs, number_of_outputs,
-                   StateFeedbackHybridPlant<number_of_states, number_of_inputs,
-                                            number_of_outputs>,
-                   HybridKalman> *loop,
+  void Predict(StateFeedbackHybridPlant<number_of_states, number_of_inputs,
+                                        number_of_outputs> *plant,
                const Eigen::Matrix<double, number_of_inputs, 1> &new_u,
                ::std::chrono::nanoseconds dt) {
     // Trigger the predict step.  This will update A() and B() in the plant.
-    mutable_X_hat() = loop->mutable_plant()->Update(X_hat(), new_u, dt);
+    mutable_X_hat() = plant->Update(X_hat(), new_u, dt);
 
-    UpdateQR(loop, dt);
-    P_ = loop->plant().A() * P_ * loop->plant().A().transpose() + Q_;
+    UpdateQR(plant, dt);
+    P_ = plant->A() * P_ * plant->A().transpose() + Q_;
   }
 
-  void Correct(const StateFeedbackLoop<
-                   number_of_states, number_of_inputs, number_of_outputs,
-                   StateFeedbackHybridPlant<number_of_states, number_of_inputs,
-                                            number_of_outputs>,
-                   HybridKalman> &loop,
-               const Eigen::Matrix<double, number_of_inputs, 1> &U,
-               const Eigen::Matrix<double, number_of_outputs, 1> &Y) {
+  void Correct(
+      const StateFeedbackHybridPlant<number_of_states, number_of_inputs,
+                                     number_of_outputs> &plant,
+      const Eigen::Matrix<double, number_of_inputs, 1> &U,
+      const Eigen::Matrix<double, number_of_outputs, 1> &Y) {
     Eigen::Matrix<double, number_of_outputs, 1> Y_bar =
-        Y - (loop.plant().C() * X_hat_ + loop.plant().D() * U);
+        Y - (plant.C() * X_hat_ + plant.D() * U);
     Eigen::Matrix<double, number_of_outputs, number_of_outputs> S =
-        loop.plant().C() * P_ * loop.plant().C().transpose() + R_;
+        plant.C() * P_ * plant.C().transpose() + R_;
     Eigen::Matrix<double, number_of_states, number_of_outputs> KalmanGain;
-    KalmanGain = (S.transpose().ldlt().solve(
-                      (P() * loop.plant().C().transpose()).transpose()))
-                     .transpose();
+    KalmanGain =
+        (S.transpose().ldlt().solve((P() * plant.C().transpose()).transpose()))
+            .transpose();
     X_hat_ = X_hat_ + KalmanGain * Y_bar;
-    P_ = (loop.plant().coefficients().A_continuous.Identity() -
-          KalmanGain * loop.plant().C()) *
+    P_ = (plant.coefficients().A_continuous.Identity() -
+          KalmanGain * plant.C()) *
          P();
   }
 
@@ -354,11 +346,8 @@ class HybridKalman {
   }
 
  private:
-  void UpdateQR(StateFeedbackLoop<
-                    number_of_states, number_of_inputs, number_of_outputs,
-                    StateFeedbackHybridPlant<number_of_states, number_of_inputs,
-                                             number_of_outputs>,
-                    HybridKalman> *loop,
+  void UpdateQR(StateFeedbackHybridPlant<number_of_states, number_of_inputs,
+                                         number_of_outputs> *plant,
                 ::std::chrono::nanoseconds dt) {
     // Now, compute the discrete time Q and R coefficients.
     Eigen::Matrix<double, number_of_states, number_of_states> Qtemp =
@@ -374,12 +363,12 @@ class HybridKalman {
     M_gain.setZero();
     // Set up the matrix M = [[-A, Q], [0, A.T]]
     M_gain.template block<number_of_states, number_of_states>(0, 0) =
-        -loop->plant().coefficients().A_continuous;
+        -plant->coefficients().A_continuous;
     M_gain.template block<number_of_states, number_of_states>(
         0, number_of_states) = Qtemp;
     M_gain.template block<number_of_states, number_of_states>(
         number_of_states, number_of_states) =
-        loop->plant().coefficients().A_continuous.transpose();
+        plant->coefficients().A_continuous.transpose();
 
     Eigen::Matrix<double, 2 * number_of_states, 2 *number_of_states> phi =
         (M_gain *
