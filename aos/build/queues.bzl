@@ -52,7 +52,7 @@ _single_queue_file = rule(
 def _q_deps_impl(ctx):
   transitive_q_files = ctx.files.srcs
   for dep in ctx.attr.deps:
-    transitive_q_files += dep.transitive_q_files
+    transitive_q_files = transitive_q_files + dep.transitive_q_files
   return struct(transitive_q_files = transitive_q_files)
 
 _q_deps = rule(

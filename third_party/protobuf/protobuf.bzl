@@ -171,7 +171,7 @@ def cc_proto_library(
   )
 
   if default_runtime and not default_runtime in cc_libs:
-    cc_libs += [default_runtime]
+    cc_libs = cc_libs + [default_runtime]
 
   native.cc_library(
       name=name,
@@ -269,8 +269,8 @@ def py_proto_library(
     outs=[internal_copied_filegroup_name]
 
   if default_runtime and not default_runtime in py_libs + deps:
-    py_libs += [default_runtime]
-  py_libs += ['@python_import_helpers//:google_protobuf_importer']
+    py_libs = py_libs + [default_runtime]
+  py_libs = py_libs + ['@python_import_helpers//:google_protobuf_importer']
 
   native.py_library(
       name=name,
