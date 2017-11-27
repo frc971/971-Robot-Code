@@ -2,6 +2,7 @@
 #define MOTORS_USB_USB_H_
 
 #include <assert.h>
+#include <string.h>
 #include <string>
 #include <vector>
 #include <memory>
@@ -76,6 +77,10 @@ enum class UsbClassDescriptorType : uint8_t {
   kString = 0x23,
   kInterface = 0x24,
   kEndpoint = 0x25,
+
+  kHidHid = 0x21,
+  kHidReport = 0x22,
+  kHidPhysical = 0x23,
 };
 
 // The names of the setup request types from the standard.
@@ -100,6 +105,16 @@ constexpr int kInterface = 1;
 constexpr int kEndpoint = 2;
 constexpr int kOther = 3;
 }  // namespace standard_setup_recipients
+
+// The HID class specification says this. Can't find any mention in the main
+// standard.
+#define G_DESCRIPTOR_TYPE_TYPE(descriptor_type) \
+  ((descriptor_type) >> 5 & UINT8_C(3))
+namespace standard_descriptor_type_types {
+constexpr int kStandard = 0;
+constexpr int kClass = 1;
+constexpr int kVendor = 2;
+}  // namespace standard_descriptor_type_types
 
 class UsbFunction;
 
@@ -183,6 +198,13 @@ class UsbDescriptorList {
       uint8_t length, UsbClassDescriptorType descriptor_type) {
     assert(data_.size() > 0);
     return CreateDescriptor(length, static_cast<uint8_t>(descriptor_type));
+  }
+
+  void AddPremadeDescriptor(const uint8_t *data, int length) {
+    const int start_index = data_.size();
+    const int end_index = start_index + length;
+    data_.resize(end_index);
+    memcpy(&data_[start_index], data, length);
   }
 
   void CheckFinished() const { assert(open_descriptors_ == 0); }
@@ -469,6 +491,9 @@ class UsbFunction {
     return device_->config_descriptor_list_.CreateDescriptor(length,
                                                              descriptor_type);
   }
+  void AddPremadeDescriptor(const uint8_t *data, int length) {
+    device_->config_descriptor_list_.AddPremadeDescriptor(data, length);
+  }
 
   UsbDevice *device() const { return device_; }
 
@@ -482,6 +507,11 @@ class UsbFunction {
 
   virtual SetupResponse HandleEndpoint0OutPacket(void * /*data*/,
                                                  int /*data_length*/) {
+    return SetupResponse::kIgnored;
+  }
+
+  virtual SetupResponse HandleGetDescriptor(
+      const UsbDevice::SetupPacket & /*setup_packet*/) {
     return SetupResponse::kIgnored;
   }
 

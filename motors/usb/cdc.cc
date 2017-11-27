@@ -167,11 +167,12 @@ void AcmTty::Initialize() {
   }
 
   {
-    const auto abstract_control_management =
-        CreateDescriptor(cdc_descriptor_subtype::abstract_control_management_length(),
-                         UsbClassDescriptorType::kInterface);
+    const auto abstract_control_management = CreateDescriptor(
+        cdc_descriptor_subtype::abstract_control_management_length(),
+        UsbClassDescriptorType::kInterface);
     abstract_control_management->AddByte(
-        cdc_descriptor_subtype::abstract_control_management());  // bDescriptorSubtype
+        cdc_descriptor_subtype::
+            abstract_control_management());  // bDescriptorSubtype
     // We support:
     //   line_coding and serial_state
     //   send_break
@@ -198,7 +199,7 @@ void AcmTty::Initialize() {
                                  m_endpoint_address_in());  // bEndpointAddress
     endpoint_descriptor->AddByte(
         m_endpoint_attributes_interrupt());                // bmAttributes
-    endpoint_descriptor->AddUint16(kStatusMaxPacketSize);  // wMaxEndpointSize
+    endpoint_descriptor->AddUint16(kStatusMaxPacketSize);  // wMaxPacketSize
     // Set it to the max because we have nothing to send, so no point using bus
     // bandwidth asking.
     endpoint_descriptor->AddByte(255);  // bInterval
@@ -225,7 +226,7 @@ void AcmTty::Initialize() {
         endpoint_descriptor_length(), UsbDescriptorType::kEndpoint);
     endpoint_descriptor->AddByte(data_rx_endpoint_);  // bEndpointAddress
     endpoint_descriptor->AddByte(m_endpoint_attributes_bulk());  // bmAttributes
-    endpoint_descriptor->AddUint16(kDataMaxPacketSize);  // wMaxEndpointSize
+    endpoint_descriptor->AddUint16(kDataMaxPacketSize);  // wMaxPacketSize
     endpoint_descriptor->AddByte(1);                     // bInterval
   }
 
@@ -235,7 +236,7 @@ void AcmTty::Initialize() {
     endpoint_descriptor->AddByte(data_tx_endpoint_ |
                                  m_endpoint_address_in());  // bEndpointAddress
     endpoint_descriptor->AddByte(m_endpoint_attributes_bulk());  // bmAttributes
-    endpoint_descriptor->AddUint16(kDataMaxPacketSize);  // wMaxEndpointSize
+    endpoint_descriptor->AddUint16(kDataMaxPacketSize);  // wMaxPacketSize
     endpoint_descriptor->AddByte(1);                     // bInterval
   }
 }
@@ -365,8 +366,8 @@ void AcmTty::HandleConfigured(int endpoint) {
     device()->ConfigureEndpointFor(status_endpoint_, false, true, true);
   } else if (endpoint == data_tx_endpoint_) {
     device()->ConfigureEndpointFor(data_tx_endpoint_, false, true, true);
-    next_tx_toggle_ = Data01::kData0;
     DisableInterrupts disable_interrupts;
+    next_tx_toggle_ = Data01::kData0;
     EnqueueTxData(disable_interrupts);
   } else if (endpoint == data_rx_endpoint_) {
     device()->ConfigureEndpointFor(data_rx_endpoint_, true, false, true);
