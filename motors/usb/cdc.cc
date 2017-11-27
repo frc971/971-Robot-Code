@@ -373,13 +373,13 @@ void AcmTty::HandleConfigured(int endpoint) {
     next_rx_toggle_ = Data01::kData0;
     device()->SetBdtEntry(
         data_rx_endpoint_, Direction::kRx, EvenOdd::kEven,
-        {M_USB_BD_OWN | M_USB_BD_DTS | V_USB_BD_BC(tx_buffers_[0].size()),
-         tx_buffers_[0].data()});
+        {M_USB_BD_OWN | M_USB_BD_DTS | V_USB_BD_BC(rx_buffers_[0].size()),
+         rx_buffers_[0].data()});
     device()->SetBdtEntry(
         data_rx_endpoint_, Direction::kRx, EvenOdd::kOdd,
-        {M_USB_BD_OWN | M_USB_BD_DTS | V_USB_BD_BC(tx_buffers_[1].size()) |
+        {M_USB_BD_OWN | M_USB_BD_DTS | V_USB_BD_BC(rx_buffers_[1].size()) |
              M_USB_BD_DATA1,
-         tx_buffers_[1].data()});
+         rx_buffers_[1].data()});
   }
 }
 
