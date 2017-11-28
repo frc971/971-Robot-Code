@@ -1,5 +1,6 @@
 # This is the footprint at
 # http://www.molex.com/pdm_docs/sd/152670201_sd.pdf.
+# Also works for 0522711479 (bottom contact version).
 Element[0x0 "" "" "" 0 0 0 0 0 100 0x0]
 (
 	Pad[-6.5mm 0.65mm -6.5mm -0.65mm 0.6mm 2000 0.75mm "1" "1" "square"]

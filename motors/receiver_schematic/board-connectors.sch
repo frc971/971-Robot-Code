@@ -178,7 +178,7 @@ device=CAPACITOR
 T 14400 52300 5 10 0 0 270 0 1
 symversion=0.1
 T 13500 52500 5 10 0 0 270 0 1
-voltage=50 V
+voltage=25 V
 T 13500 52500 5 10 0 0 270 0 1
 footprint=0603
 T 13500 52500 5 10 0 0 0 0 1
@@ -367,7 +367,7 @@ device=CAPACITOR
 T 11600 52300 5 10 0 0 270 0 1
 symversion=0.1
 T 10700 52500 5 10 0 0 270 0 1
-voltage=50 V
+voltage=25 V
 T 10700 52500 5 10 0 0 270 0 1
 footprint=0603
 T 10700 52500 5 10 0 0 0 0 1

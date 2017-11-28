@@ -1,5 +1,7 @@
 # This is the footprint at
 # http://www.infineon.com/export/sites/default/en/product/packages/_images/09018a9080080b81.gif_2110767341.gif.
+# This is technically PG-HSOF-8-1, as opposed to PG-HSOF-8-2. DigiKey calls it
+# 8-PowerSFN.
 Element["" "" "" "" 0 0 0 0 0 100 ""]
 (
 	# Big drain SMD pad.

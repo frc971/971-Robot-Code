@@ -1,0 +1,16 @@
+G04 start of page 6 for group -4063 idx -4063 *
+G04 Title: fet12connectors, componentmask *
+G04 Creator: pcb 20140316 *
+G04 CreationDate: Thu 12 Apr 2018 02:27:47 AM GMT UTC *
+G04 For: brian *
+G04 Format: Gerber/RS-274X *
+G04 PCB-Dimensions (mil): 6000.00 5000.00 *
+G04 PCB-Coordinate-Origin: lower left *
+%MOIN*%
+%FSLAX25Y25*%
+%LNTOPMASK*%
+%ADD43C,0.3750*%
+G54D43*X369500Y401500D03*
+Y192000D03*
+Y86500D03*
+M02*

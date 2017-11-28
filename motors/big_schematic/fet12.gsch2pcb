@@ -1,3 +1,3 @@
-schematics fet12-main.sch
+schematics fet12-main.sch fet12-power-12v.sch fet12-power-5v.sch
 output-name fet12
 use-files

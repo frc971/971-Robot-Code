@@ -4,16 +4,16 @@
 Element["" "" "" "" 0 0 0 0 0 100 0x0]
 (
 	# The exposed pad.
-	Pad[0.2mm 0 -0.2mm 0 2.75mm 2000 2.6mm "11" "11" "square,nopaste"]
+	Pad[0.245mm 0 -0.245mm 0 2.66mm 2000 2.6mm "11" "11" "square,nopaste"]
 	Pad[0.725mm 0.725mm 0.725mm 0.725mm 1.15mm 0 1.15mm "11" "11" "square"]
 	Pad[-0.725mm 0.725mm -0.725mm 0.725mm 1.15mm 0 1.15mm "11" "11" "square"]
 	Pad[0.725mm -0.725mm 0.725mm -0.725mm 1.15mm 0 1.15mm "11" "11" "square"]
 	Pad[-0.725mm -0.725mm -0.725mm -0.725mm 1.15mm 0 1.15mm "11" "11" "square"]
-	Pin[0 0 0.6mm 2000 100 0.3mm "11" "11" ""]
-	Pin[0.75mm 0.75mm 0.6mm 2000 100 0.3mm "11" "11" ""]
-	Pin[-0.75mm 0.75mm 0.6mm 2000 100 0.3mm "11" "11" ""]
-	Pin[0.75mm -0.75mm 0.6mm 2000 100 0.3mm "11" "11" ""]
-	Pin[-0.75mm -0.75mm 0.6mm 2000 100 0.3mm "11" "11" ""]
+	Pin[0 0 0.75mm 2000 100 0.3mm "11" "11" ""]
+	Pin[0.75mm 0.75mm 0.75mm 2000 100 0.3mm "11" "11" ""]
+	Pin[-0.75mm 0.75mm 0.75mm 2000 100 0.3mm "11" "11" ""]
+	Pin[0.75mm -0.75mm 0.75mm 2000 100 0.3mm "11" "11" ""]
+	Pin[-0.75mm -0.75mm 0.75mm 2000 100 0.3mm "11" "11" ""]
 
 	# The top row of pads.
 	Pad[-1.6mm -1.725mm -1.6mm -2.225mm 0.35mm 0.18mm 0.53mm "1" "1" ""]
@@ -31,4 +31,5 @@ Element["" "" "" "" 0 0 0 0 0 100 0x0]
 
 	ElementLine[-2.05mm -2.05mm -2.05mm 2.05mm 800]
 	ElementLine[2.05mm -2.05mm 2.05mm 2.05mm 800]
+	ElementArc[-2.05mm -1.9mm 0.2mm 0.2mm 270 180 800]
 )
