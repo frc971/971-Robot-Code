@@ -62,3 +62,4 @@ build --experimental_auto_cpu_environment_group=//tools:cpus
 startup --host_jvm_args=-Dbazel.DigestFunction=SHA1
 
 common --watchfs
+build --spawn_strategy=linux-sandbox
