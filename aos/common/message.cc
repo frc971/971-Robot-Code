@@ -1,4 +1,4 @@
-#include "aos/common/queue.h"
+#include "aos/common/message.h"
 
 #include <inttypes.h>
 #include <chrono>

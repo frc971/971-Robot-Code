@@ -144,19 +144,30 @@ cc_library(
 )
 
 cc_library(
-  name = 'queues',
+  name = 'messages',
   srcs = [
-    'queue.cc',
+    'message.cc',
   ],
+  hdrs = [
+    'message.h',
+  ],
+  deps = [
+    ':time',
+    ':macros',
+    ':byteorder',
+  ],
+)
+
+cc_library(
+  name = 'queues',
+  srcs = [],
   hdrs = [
     'queue.h',
   ],
   deps = [
     '//aos/linux_code/ipc_lib:queue',
-    ':time',
-    ':macros',
     '//aos/linux_code:queue',
-    ':byteorder',
+    ':messages',
   ],
 )
 
