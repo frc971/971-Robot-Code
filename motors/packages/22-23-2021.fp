@@ -1,0 +1,12 @@
+Element(0x00 "Molex 22-23-2021 1x2 connector" "" "22-23-2021" 360 0 3 100 0x00)
+(
+	Pin(62 147 65 40 "1" 0x101)
+	Pin(162 147 65 40 "2" 0x01)
+	ElementLine(0 0 0 290 10)
+	ElementLine(224 0 224 290 10)
+	ElementLine(224 0 0 0 10)
+	ElementLine(0 90 224 90 10)
+	ElementLine(112 290 112 90 10)
+	ElementLine(0 290 224 290 10)
+	Mark(112 147)
+)
