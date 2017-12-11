@@ -1,9 +1,9 @@
 v 20130925 2
 B 300 100 1500 7400 3 0 0 0 -1 -1 0 -1 -1 -1 -1 -1
 T 200 1600 8 10 0 1 0 0 1
-device=LM5161-Q1
+device=TEENSY3.5
 T 800 1500 8 10 0 1 0 0 1
-footprint=HTSSOP14
+footprint=teensy3.5
 T 1500 7500 8 10 1 1 0 0 1
 refdes=U?
 T 400 7500 9 10 1 0 0 0 1
