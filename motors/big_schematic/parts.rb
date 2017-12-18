@@ -11,7 +11,7 @@ require 'json'
 require 'yaml'
 require 'net/http'
 
-require './html'
+#require './html'
 
 def get_octopart_results(mpn)
   query = [{:mpn => mpn, :limit => 20}]
