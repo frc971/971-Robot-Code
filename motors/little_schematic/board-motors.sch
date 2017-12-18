@@ -490,9 +490,9 @@ tolerance=5%
 T 21700 50400 5 10 1 1 0 0 1
 refdes=R6
 T 21700 49900 5 10 1 1 0 0 1
-value=49.9 k
+value=24.9 k
 T 21500 50100 5 10 0 0 0 0 1
-pn=RC0603FR-0749K9L
+pn=RC0603FR-0724K9L
 }
 C 15600 45800 1 0 0 capacitor-1.sym
 {
@@ -1498,9 +1498,9 @@ tolerance=5%
 T 22100 72400 5 10 1 1 0 0 1
 refdes=R16
 T 22100 71900 5 10 1 1 0 0 1
-value=49.9 k
+value=24.9 k
 T 21900 72100 5 10 0 0 0 0 1
-pn=RC0603FR-0749K9L
+pn=RC0603FR-0724K9L
 }
 C 16000 67800 1 0 0 capacitor-1.sym
 {
