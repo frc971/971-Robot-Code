@@ -59,7 +59,8 @@ end
 puts ARGV
 filenames = get_schematic_filenames ARGV
 
-$parts_yaml = YAML.load_file('parts.yaml')
+#$parts_yaml = YAML.load_file('parts.yaml')
+$parts_yaml = {}
 
 module Unicode
   NBSP = "\u00A0"
@@ -735,7 +736,8 @@ $parts.each do |_, part|
   unit_price = nil
   order_quantity = nil
   if $bom_file
-    footprint = $parts_yaml['bom_footprints'][part.footprint] || part.footprint
+    #footprint = $parts_yaml['bom_footprints'][part.footprint] || part.footprint
+    footprint = part.footprint
     case options[:bom_style]
     when :myro
       line = [part.quantity,

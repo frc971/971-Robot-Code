@@ -172,7 +172,10 @@ def get_schematic_filenames files
   files.each do |file|
     if file.end_with? '.gsch2pcb'
       File.open(file, 'r') do |f|
-        r += f.readline.split(' ')[1..-1]
+        dirname = File.dirname(file) + '/'
+        r += f.readline.split(' ')[1..-1].map do |filename|
+          dirname + filename
+        end
       end
     else
       r.push file
