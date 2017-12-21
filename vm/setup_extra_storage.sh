@@ -6,8 +6,6 @@ set -u
 readonly EXTRA_USER=user
 readonly EXTRA_STORAGE=/home/"${EXTRA_USER}"
 
-apt-get install whois
-
 if ! grep -q "$EXTRA_STORAGE" /etc/passwd; then
   PASSWORD="$(echo "$EXTRA_USER" | mkpasswd -s)"
   useradd \
