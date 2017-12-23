@@ -42,7 +42,7 @@ class PotAndIndexPulseZeroingEstimator : public ZeroingEstimator {
   using ZeroingConstants = constants::PotAndIndexPulseZeroingConstants;
   using State = EstimatorState;
 
-  PotAndIndexPulseZeroingEstimator(
+  explicit PotAndIndexPulseZeroingEstimator(
       const constants::PotAndIndexPulseZeroingConstants &constants);
 
   // Update the internal logic with the next sensor values.
@@ -121,8 +121,7 @@ class PotAndIndexPulseZeroingEstimator : public ZeroingEstimator {
   double first_start_pos_;
 };
 
-// Estimates the position with an incremental encoder with an index pulse and a
-// potentiometer.
+// Estimates the position with an incremental encoder and a hall effect sensor.
 class HallEffectAndPositionZeroingEstimator : public ZeroingEstimator {
  public:
   using Position = HallEffectAndPosition;
@@ -203,7 +202,7 @@ class PotAndAbsEncoderZeroingEstimator : public ZeroingEstimator {
   using ZeroingConstants = constants::PotAndAbsoluteEncoderZeroingConstants;
   using State = AbsoluteEstimatorState;
 
-  PotAndAbsEncoderZeroingEstimator(
+  explicit PotAndAbsEncoderZeroingEstimator(
       const constants::PotAndAbsoluteEncoderZeroingConstants &constants);
 
   // Resets the internal logic so it needs to be re-zeroed.
@@ -276,7 +275,7 @@ class PulseIndexZeroingEstimator : public ZeroingEstimator {
   using ZeroingConstants = constants::EncoderPlusIndexZeroingConstants;
   using State = IndexEstimatorState;
 
-  PulseIndexZeroingEstimator(const ZeroingConstants &constants)
+  explicit PulseIndexZeroingEstimator(const ZeroingConstants &constants)
       : constants_(constants) {
     Reset();
   }

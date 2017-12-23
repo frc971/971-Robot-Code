@@ -42,8 +42,10 @@ Arm::Arm()
     : ProfiledSubsystem(
           ::std::unique_ptr<ArmControlLoop>(new ArmControlLoop(
               ::y2016::control_loops::superstructure::MakeIntegralArmLoop())),
-          {{constants::GetValues().shoulder.zeroing,
-            constants::GetValues().wrist.zeroing}}),
+          {{::frc971::zeroing::PotAndIndexPulseZeroingEstimator(
+                constants::GetValues().shoulder.zeroing),
+            ::frc971::zeroing::PotAndIndexPulseZeroingEstimator(
+                constants::GetValues().wrist.zeroing)}}),
       shoulder_profile_(::aos::controls::kLoopFrequency),
       wrist_profile_(::aos::controls::kLoopFrequency) {
   Y_.setZero();

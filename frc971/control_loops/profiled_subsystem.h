@@ -217,8 +217,8 @@ SingleDOFProfiledSubsystem<ZeroingEstimator>::SingleDOFProfiledSubsystem(
     const typename ZeroingEstimator::ZeroingConstants &zeroing_constants,
     const ::frc971::constants::Range &range, double default_velocity,
     double default_acceleration)
-    : ProfiledSubsystem<3, 1, ZeroingEstimator>(::std::move(loop),
-                                                {{zeroing_constants}}),
+    : ProfiledSubsystem<3, 1, ZeroingEstimator>(
+          ::std::move(loop), {{ZeroingEstimator(zeroing_constants)}}),
       profile_(::aos::controls::kLoopFrequency),
       range_(range),
       default_velocity_(default_velocity),
