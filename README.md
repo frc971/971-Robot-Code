@@ -30,6 +30,7 @@ We use [Bazel](http://bazel.io) to build the code. Bazel has [extensive](http://
 	 and put them in `/etc/apt/sources.list.d/`.
   1. Install the required packages:
 ```console
+apt-get install -t jessie-backports openjdk-8-jdk
 apt-get install python libpython-dev bazel ruby clang-format-3.5 clang-3.6 gfortran libblas-dev liblapack-dev python-scipy python-matplotlib
 ```
   2. Allow Bazel's sandboxing to work:
