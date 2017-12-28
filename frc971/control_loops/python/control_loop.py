@@ -475,3 +475,21 @@ class HybridControlLoop(ControlLoop):
       self.P = self.Q_steady_state
     else:
       self.P = numpy.matrix(numpy.zeros((self.A.shape[0], self.A.shape[0])))
+
+
+class CIM(object):
+  def __init__(self):
+    # Stall Torque in N m
+    self.stall_torque = 2.42
+    # Stall Current in Amps
+    self.stall_current = 133.0
+    # Free Speed in rad/s
+    self.free_speed = 5500.0 / 60.0 * 2.0 * numpy.pi
+    # Free Current in Amps
+    self.free_current = 4.7
+    # Resistance of the motor
+    self.resistance = 12.0 / self.stall_current
+    # Motor velocity constant
+    self.Kv = (self.free_speed / (12.0 - self.resistance * self.free_current))
+    # Torque constant
+    self.Kt = self.stall_torque / self.stall_current
