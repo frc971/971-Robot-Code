@@ -40,3 +40,27 @@ py_binary(
   ],
   restricted_to = ['//tools:k8'],
 )
+
+py_library(
+  name = 'drivetrain',
+  srcs = [
+    'drivetrain.py',
+  ],
+  deps = [
+    ':controls',
+  ],
+  restricted_to = ['//tools:k8'],
+)
+
+py_library(
+  name = 'polydrivetrain',
+  srcs = [
+    'polydrivetrain.py',
+  ],
+  deps = [
+    ':controls',
+    ':drivetrain',
+    '//external:python-glog',
+  ],
+  restricted_to = ['//tools:k8'],
+)
