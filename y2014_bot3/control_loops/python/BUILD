@@ -8,7 +8,7 @@ py_binary(
   deps = [
     '//external:python-gflags',
     '//external:python-glog',
-    '//frc971/control_loops/python:controls',
+    '//frc971/control_loops/python:drivetrain',
   ],
   restricted_to = ['//tools:k8'],
 )
@@ -22,7 +22,7 @@ py_binary(
   deps = [
     '//external:python-gflags',
     '//external:python-glog',
-    '//frc971/control_loops/python:controls',
+    '//frc971/control_loops/python:polydrivetrain',
   ],
   restricted_to = ['//tools:k8'],
 )
