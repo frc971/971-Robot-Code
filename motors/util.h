@@ -1,6 +1,11 @@
 #ifndef MOTORS_UTIL_H_
 #define MOTORS_UTIL_H_
 
+#include <stdint.h>
+#include <stddef.h>
+
+#include "motors/core/kinetis.h"
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -97,6 +102,7 @@ typedef struct {
 #define CAN_MB_CONTROL_IDE ((uint32_t)(1 << 21))
 #define CAN_MB_CONTROL_SRR ((uint32_t)(1 << 22))
 #define CAN_MB_CONTROL_INSERT_CODE(n) ((uint32_t)(((n) & 0xF) << 24))
+#define CAN_MB_CONTROL_EXTRACT_CODE(n) ((uint32_t)(((n) >> 24) & 0xF))
 #define CAN_MB_CONTROL_CODE_BUSY_MASK CAN_MB_CONTROL_INSERT_CODE(1)
 #define CAN_MB_PRIO_ID_PRIORITY_MASK ((uint32_t)((1 << 29) - 1))
 #define CAN_MB_CODE_RX_INACTIVE 0
@@ -160,6 +166,116 @@ class DisableInterrupts {
   DisableInterrupts &operator=(const DisableInterrupts &) = delete;
 };
 #endif  // __cplusplus
+
+typedef struct {
+	uint32_t saddr;
+	uint16_t soff;
+	uint16_t attr;
+	uint32_t nbytes_mlno;
+	uint32_t slast;
+	uint32_t daddr;
+	uint16_t doff;
+	uint16_t citer;
+	uint32_t dlastsga;
+	uint32_t _reserved;
+} DmaTcd __attribute__((aligned(0x20)));
+#ifdef __cplusplus
+static_assert(sizeof(DmaTcd) == 0x20, "DMA TCD is the wrong size");
+#endif
+
+#define ALL_FTM_REGISTERS         \
+  FOR_BOTH_FTM_REGISTER(SC)       \
+  FOR_BOTH_FTM_REGISTER(CNT)      \
+  FOR_BOTH_FTM_REGISTER(MOD)      \
+  FOR_BOTH_FTM_REGISTER(C0SC)     \
+  FOR_BOTH_FTM_REGISTER(C0V)      \
+  FOR_BOTH_FTM_REGISTER(C1SC)     \
+  FOR_BOTH_FTM_REGISTER(C1V)      \
+  FOR_BIG_FTM_REGISTER(C2SC)      \
+  FOR_BIG_FTM_REGISTER(C2V)       \
+  FOR_BIG_FTM_REGISTER(C3SC)      \
+  FOR_BIG_FTM_REGISTER(C3V)       \
+  FOR_BIG_FTM_REGISTER(C4SC)      \
+  FOR_BIG_FTM_REGISTER(C4V)       \
+  FOR_BIG_FTM_REGISTER(C5SC)      \
+  FOR_BIG_FTM_REGISTER(C5V)       \
+  FOR_BIG_FTM_REGISTER(C6SC)      \
+  FOR_BIG_FTM_REGISTER(C6V)       \
+  FOR_BIG_FTM_REGISTER(C7SC)      \
+  FOR_BIG_FTM_REGISTER(C7V)       \
+  FOR_BOTH_FTM_REGISTER(CNTIN)    \
+  FOR_BOTH_FTM_REGISTER(STATUS)   \
+  FOR_BOTH_FTM_REGISTER(MODE)     \
+  FOR_BOTH_FTM_REGISTER(SYNC)     \
+  FOR_BOTH_FTM_REGISTER(OUTINIT)  \
+  FOR_BOTH_FTM_REGISTER(OUTMASK)  \
+  FOR_BOTH_FTM_REGISTER(COMBINE)  \
+  FOR_BOTH_FTM_REGISTER(DEADTIME) \
+  FOR_BOTH_FTM_REGISTER(EXTTRIG)  \
+  FOR_BOTH_FTM_REGISTER(POL)      \
+  FOR_BOTH_FTM_REGISTER(FMS)      \
+  FOR_BOTH_FTM_REGISTER(FILTER)   \
+  FOR_BOTH_FTM_REGISTER(FLTCTRL)  \
+  FOR_LITTLE_FTM_REGISTER(QDCTRL) \
+  FOR_BOTH_FTM_REGISTER(CONF)     \
+  FOR_BOTH_FTM_REGISTER(FLTPOL)   \
+  FOR_BOTH_FTM_REGISTER(SYNCONF)  \
+  FOR_BOTH_FTM_REGISTER(INVCTRL)  \
+  FOR_BOTH_FTM_REGISTER(SWOCTRL)  \
+  FOR_BOTH_FTM_REGISTER(PWMLOAD)
+
+typedef struct {
+#define FOR_BIG_FTM_REGISTER(name) volatile uint32_t name;
+#define FOR_BOTH_FTM_REGISTER(name) volatile uint32_t name;
+#define FOR_LITTLE_FTM_REGISTER(name) const uint32_t _reserved_##name;
+  ALL_FTM_REGISTERS
+#undef FOR_BIG_FTM_REGISTER
+#undef FOR_LITTLE_FTM_REGISTER
+} BigFTM;
+
+typedef struct {
+#define FOR_BIG_FTM_REGISTER(name) const uint32_t _reserved_##name;
+#define FOR_LITTLE_FTM_REGISTER(name) volatile uint32_t name;
+        ALL_FTM_REGISTERS
+#undef FOR_BIG_FTM_REGISTER
+#undef FOR_LITTLE_FTM_REGISTER
+#undef FOR_BOTH_FTM_REGISTER
+} LittleFTM;
+
+#define FTM0 ((BigFTM *)0x40038000)
+#define FTM1 ((LittleFTM *)0x40039000)
+#define FTM2 ((LittleFTM *)0x400B8000)
+#define FTM3 ((BigFTM *)0x400B9000)
+
+#ifdef __cplusplus
+#define FOR_BIG_FTM_REGISTER(name)                                           \
+  static_assert(offsetof(BigFTM, name) ==                                    \
+                    (reinterpret_cast<const volatile char *>(&FTM0_##name) - \
+                     reinterpret_cast<volatile char *>(FTM0)),               \
+                #name " is at the wrong place");                             \
+  static_assert(offsetof(BigFTM, name) ==                                    \
+                    (reinterpret_cast<const volatile char *>(&FTM3_##name) - \
+                     reinterpret_cast<volatile char *>(FTM3)),               \
+                #name " is at the wrong place");
+#define FOR_LITTLE_FTM_REGISTER(name)                                        \
+  static_assert(offsetof(LittleFTM, name) ==                                 \
+                    (reinterpret_cast<const volatile char *>(&FTM1_##name) - \
+                     reinterpret_cast<volatile char *>(FTM1)),               \
+                #name " is at the wrong place");                             \
+  static_assert(offsetof(LittleFTM, name) ==                                 \
+                    (reinterpret_cast<const volatile char *>(&FTM2_##name) - \
+                     reinterpret_cast<volatile char *>(FTM2)),               \
+                #name " is at the wrong place");
+#define FOR_BOTH_FTM_REGISTER(name) \
+  FOR_BIG_FTM_REGISTER(name)        \
+  FOR_LITTLE_FTM_REGISTER(name)
+ALL_FTM_REGISTERS
+#undef FOR_BIG_FTM_REGISTER
+#undef FOR_LITTLE_FTM_REGISTER
+#undef FOR_BOTH_FTM_REGISTER
+#endif
+
+#undef ALL_FTM_REGISTERS
 
 #ifdef __cplusplus
 }
