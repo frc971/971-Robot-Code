@@ -164,16 +164,35 @@ bool PrintArray(char *output, size_t *output_bytes, const void *input,
 
 bool PrintMessage(char *output, size_t *output_bytes, const void *input,
                   size_t *input_bytes, const MessageType &type) {
-  *input_bytes -= type.super_size;
-  input = static_cast<const char *>(input) + type.super_size;
-
   if (*output_bytes < type.name.size() + 1) return false;
   *output_bytes -= type.name.size() + 1;
   memcpy(output, type.name.data(), type.name.size());
   output += type.name.size();
-  *(output++) = '{';
+  *output = '{';
+  ++output;
 
   bool first = true;
+  if (type.super_size == 8) {
+    size_t start_input_bytes = *input_bytes;
+
+    if (*output_bytes < 10) return false;
+    memcpy(output, "sendtime: ", 10);
+    output += 10;
+    *output_bytes -= 10;
+
+    size_t output_bytes_before = *output_bytes;
+    if (!PrintField(output, output_bytes, input, input_bytes, 0x5f372008u)) {
+      return false;
+    }
+    output += output_bytes_before - *output_bytes;
+    input = static_cast<const char *>(input) + type.super_size;
+    first = false;
+    CHECK(start_input_bytes == (*input_bytes + 8));
+  } else {
+    *input_bytes -= type.super_size;
+    input = static_cast<const char *>(input) + type.super_size;
+  }
+
   for (int i = 0; i < type.number_fields; ++i) {
     if (first) {
       first = false;

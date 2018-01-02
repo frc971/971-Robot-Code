@@ -335,7 +335,7 @@ class Target::MessageElement < Target::Node
       args.push(["AOS_TIME_ARGS(static_cast<int32_t>(",
                  "::std::chrono::duration_cast<::std::chrono::seconds>(",
                  "#{parent}#{this_name}.time_since_epoch()).count()), ",
-                 "static_cast<int32_t>(::std::chrono::duration_cast<::std::chrono::nanoseconds>(",
+                 "static_cast<uint32_t>(::std::chrono::duration_cast<::std::chrono::nanoseconds>(",
                  "#{parent}#{this_name}.time_since_epoch() - ",
                  "::std::chrono::duration_cast<::std::chrono::seconds>(",
                  "#{parent}#{this_name}.time_since_epoch())).count()))"].join(''))

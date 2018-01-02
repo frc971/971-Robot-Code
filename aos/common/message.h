@@ -28,7 +28,11 @@ class Message {
   size_t Serialize(char *buffer) const;
 
   // Populates sent_time with the current time.
-  void SetTimeToNow() { sent_time = monotonic_clock::now(); }
+  void SetTimeToNow() {
+    if (sent_time == monotonic_clock::min_time) {
+      sent_time = monotonic_clock::now();
+    }
+  }
 
   // Writes the contents of the message to the provided buffer.
   size_t Print(char *buffer, int length) const;

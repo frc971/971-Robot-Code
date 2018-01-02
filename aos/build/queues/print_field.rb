@@ -1,7 +1,8 @@
 require_relative 'load.rb'
 
 # TODO(brians): Special-case Time too and float/double if we can find a good way to do it.
-GenericTypeNames = ['float', 'double', 'char', '::aos::monotonic_clock::time_point']
+GenericTypeNames = ['float', 'double', 'char']
+TimeTypeNames = ['::aos::monotonic_clock::time_point']
 IntegerSizes = [8, 16, 32, 64]
 
 WriteIffChanged.open(ARGV[0]) do |output|
@@ -37,6 +38,32 @@ bool PrintField(char *output, size_t *output_bytes, const void *input,
         *input_bytes -= #{statement.size};
         #{name} value;
         to_host(static_cast<const char *>(input), &value);
+        int ret = snprintf(output, *output_bytes,
+                           "#{statement.toPrintFormat()}",
+                           #{print_args[0]});
+        if (ret < 0) return false;
+        if (static_cast<unsigned int>(ret) >= *output_bytes) return false;
+        *output_bytes -= ret;
+        return true;
+      }
+END2
+end.join('')}
+#{TimeTypeNames.collect do |name|
+  message_element = Target::MessageElement.new(name, 'value')
+  statement = MessageElementStmt.new(name, 'value')
+  message_element.size = statement.size
+  print_args = []
+  message_element.fetchPrintArgs(print_args)
+  next <<END2
+    case #{message_element.getTypeID()}:
+      {
+        if (*input_bytes < #{statement.size}) return false;
+        *input_bytes -= #{statement.size};
+        int32_t upper;
+        uint32_t lower;
+        to_host(static_cast<const char *>(input), &upper);
+        to_host(static_cast<const char *>(input) + 4, &lower);
+        #{name} value(::std::chrono::seconds(upper) + ::std::chrono::nanoseconds(lower));
         int ret = snprintf(output, *output_bytes,
                            "#{statement.toPrintFormat()}",
                            #{print_args[0]});
