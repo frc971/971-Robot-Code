@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "motors/util.h"
+
 namespace frc971 {
 namespace salsa {
 
@@ -12,9 +14,23 @@ struct MediumAdcReadings {
   uint16_t input_voltage;
 };
 
-void AdcInit();
+struct SmallAdcReadings {
+  uint16_t currents[3];
+};
 
-MediumAdcReadings AdcReadMedium();
+struct SmallInitReadings {
+  uint16_t motor0_abs;
+  uint16_t motor1_abs;
+  uint16_t wheel_abs;
+};
+
+void AdcInitMedium();
+void AdcInitSmall();
+
+MediumAdcReadings AdcReadMedium(const DisableInterrupts &);
+SmallAdcReadings AdcReadSmall0(const DisableInterrupts &);
+SmallAdcReadings AdcReadSmall1(const DisableInterrupts &);
+SmallInitReadings AdcReadSmallInit(const DisableInterrupts &);
 
 }  // namespace salsa
 }  // namespace frc971

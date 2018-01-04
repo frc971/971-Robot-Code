@@ -49,6 +49,8 @@ class AcmTty final : public UsbFunction {
   size_t Read(void *buffer, size_t buffer_size);
   size_t Write(const void *buffer, size_t buffer_size);
 
+  bool write_queue_empty() const { return tx_queue_.empty(); }
+
  private:
   enum class NextEndpoint0Out {
     kNone,

@@ -91,6 +91,8 @@ UsbDevice *volatile global_usb0_device = nullptr;
 
 }  // namespace
 
+constexpr int UsbDevice::kEndpoint0MaxSize;
+
 UsbDevice::UsbDevice(int index, uint16_t vendor_id, uint16_t product_id)
     : index_(index) {
   // TODO(Brian): Pass index_ into all the register access macros. Also sort out

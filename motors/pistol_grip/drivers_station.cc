@@ -132,9 +132,9 @@ int _write(int /*file*/, char *ptr, int len) {
   return 0;
 }
 
-}  // extern "C"
-
 void __stack_chk_fail(void);
+
+}  // extern "C"
 
 extern "C" int main(void) {
   // for background about this startup delay, please see these conversations
