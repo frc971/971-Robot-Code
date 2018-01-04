@@ -2,6 +2,7 @@
 #define AOS_COMMON_MUTEX_H_
 
 #include "aos/common/macros.h"
+#include "aos/common/type_traits.h"
 #include "aos/common/die.h"
 #include "aos/linux_code/ipc_lib/aos_sync.h"
 
@@ -31,12 +32,15 @@ class Mutex {
   };
 
   // Creates an unlocked mutex.
-  Mutex();
+  Mutex() : impl_() {
+    static_assert(shm_ok<Mutex>::value,
+                  "Mutex is not safe for use in shared memory.");
+  }
   // Verifies that it isn't locked.
   //
   // This is important because freeing a locked mutex means there is freed
   // memory in the middle of the robust list, which breaks things horribly.
-  ~Mutex();
+  ~Mutex() = default;
 
   // Locks the mutex. If it fails, it calls LOG(FATAL).
   // Returns true if the previous owner died instead of unlocking nicely.

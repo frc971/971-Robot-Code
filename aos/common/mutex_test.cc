@@ -100,17 +100,6 @@ TEST_F(MutexDeathTest, RepeatLock) {
       ".*multiple lock.*");
 }
 
-// Tests that destroying a locked mutex fails nicely.
-TEST_F(MutexDeathTest, DestroyLocked) {
-  EXPECT_DEATH(
-      {
-        logging::AddImplementation(new util::DeathTestLogImplementation());
-        Mutex new_mutex;
-        ASSERT_FALSE(new_mutex.Lock());
-      },
-      ".*destroying locked mutex.*");
-}
-
 // Tests that Lock behaves correctly when the previous owner exits with the lock
 // held (which is the same as dying any other way).
 TEST_F(MutexTest, OwnerDiedDeathLock) {
