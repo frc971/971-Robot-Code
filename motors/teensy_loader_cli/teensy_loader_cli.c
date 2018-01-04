@@ -303,8 +303,8 @@ int soft_reboot(int number)
 		return 0;
 	}
 
-	char reboot_command = 134;
-	int response = usb_control_msg(serial_handle, 0x21, 0x20, 0, 0, &reboot_command, 1, 10000);
+	char reboot_command[7] = {0x78, 0x16, 0x10, 0x97};
+	int response = usb_control_msg(serial_handle, 0x21, 0x20, 0, 0, reboot_command, 7, 10000);
 
 	usb_release_interface(serial_handle, 0);
 	usb_close(serial_handle);
