@@ -63,7 +63,6 @@ SECTIONS
     *(.ARM.exidx* .gnu.linkonce.armexidx.*)
     __exidx_end = .;
   } > FLASH
-  _etext = .;
 
   /* Deliberately putting .bss before .data because we end up with some things
    * in here that have large alignments, so this minimizes padding.
@@ -78,13 +77,13 @@ SECTIONS
     __bss_ram_end__ = .;
   } > RAM
 
-  .data : AT (_etext) {
+  .data : {
     . = ALIGN(4);
     __data_ram_start__ = .;
     *(SORT_BY_ALIGNMENT(.data*))
     . = ALIGN(4);
     __data_ram_end__ = .;
-  } > RAM
+  } > RAM AT>FLASH
 
   __data_flash_start__ = LOADADDR(.data);
 
