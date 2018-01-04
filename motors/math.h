@@ -23,7 +23,7 @@ inline constexpr const T &ConstexprMax(const T &a, const T &b) {
 
 namespace math_internal {
 
-constexpr uint32_t SinCosTableSize() { return 1024; }
+constexpr uint32_t SinCosTableSize() { return 4096; }
 
 constexpr float FloatMaxMagnitude() { return 1.0f; }
 
@@ -70,9 +70,10 @@ float FastTableLookupInt(uint32_t theta, const float *table) {
 }
 
 inline float FastTableLookupFloat(float theta, const float *table) {
-  const int index = (SinCosTableSize() / 2) +
-                    static_cast<int32_t>(theta * ((SinCosTableSize() / 2) /
-                                                  FloatMaxMagnitude()));
+  static constexpr float kScalar =
+      (SinCosTableSize() / 2) / FloatMaxMagnitude();
+  const int index =
+      (SinCosTableSize() / 2) + static_cast<int32_t>(theta * kScalar);
   return table[index];
 }
 
