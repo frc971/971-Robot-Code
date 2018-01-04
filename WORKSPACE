@@ -69,11 +69,6 @@ new_http_archive(
   strip_prefix = 'ni-libraries',
 )
 
-bind(
-  name = 'ni-libraries-2017',
-  actual = '@allwpilib_ni_libraries_repo_2017//:ni-libraries',
-)
-
 # Downloaded from:
 # https://pypi.python.org/packages/source/s/six/six-1.10.0.tar.gz
 new_http_archive(

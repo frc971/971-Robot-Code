@@ -17,4 +17,5 @@ cc_library(
   ],
   hdrs = glob(['include/**']),
   linkstatic = True,
+  restricted_to = ['@//tools:roborio'],
 )
