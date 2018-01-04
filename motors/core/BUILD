@@ -17,7 +17,7 @@ cc_library(
   srcs = [
     'mk20dx128.c',
     'nonstd.c',
-    'time.c',
+    'time.cc',
   ],
   restricted_to = mcu_cpus,
 )
