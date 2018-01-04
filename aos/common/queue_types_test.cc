@@ -89,7 +89,7 @@ TEST_F(QueueTypesTest, Serialization) {
 
 class PrintMessageTest : public ::testing::Test {
  public:
-  char input[128], output[256];
+  char input[512], output[512];
   size_t input_bytes, output_bytes;
 };
 
@@ -194,18 +194,18 @@ TEST_F(PrintFieldTest, OutputTooSmall) {
 
 static const OtherTestingMessage kTestMessage1(true, 8971, 3.2);
 static const ::std::string kTestMessage1String =
-    ".aos.common.testing.OtherTestingMessage{test_bool:T, test_int:8971"
+    ".aos.common.testing.OtherTestingMessage{sendtime: -633437440.3735158s, test_bool:T, test_int:8971"
     ", test_double:3.200000}";
 static const Structure kTestStructure1(false, 973, 8.56);
 static const ::std::string kTestStructure1String =
-    ".aos.common.testing.Structure{struct_bool:f, struct_int:973"
-    ", struct_float:8.560000}";
+    ".aos.common.testing.Structure{struct_bool:f, struct_int:973, "
+    "struct_float:8.560000}";
 static const ::aos::common::testing::Structure kStructureValue(true, 973, 3.14);
 static const MessageWithArrays kTestMessageWithArrays({{971, 254, 1678}},
                                                       {{kStructureValue,
                                                         kStructureValue}});
 static const ::std::string kTestMessageWithArraysString =
-    ".aos.common.testing.MessageWithArrays{test_int:[971, 254, 1678], "
+    ".aos.common.testing.MessageWithArrays{sendtime: -633437440.3735158s, test_int:[971, 254, 1678], "
     "test_struct:[.aos.common.testing.Structure{struct_bool:T, struct_int:973, "
     "struct_float:3.140000}, .aos.common.testing.Structure{struct_bool:T, "
     "struct_int:973, struct_float:3.140000}]}";

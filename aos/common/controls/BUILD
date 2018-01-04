@@ -78,12 +78,12 @@ cc_library(
     'control_loop.h',
   ],
   deps = [
-    '//aos/common/messages:robot_state',
-    '//aos/common/logging',
-    '//aos/common:time',
     ':control_loop_queues',
+    '//aos/common/logging',
     '//aos/common/logging:queue_logging',
+    '//aos/common/messages:robot_state',
     '//aos/common/util:log_interval',
     '//aos/common:queues',
+    '//aos/common:time',
   ],
 )

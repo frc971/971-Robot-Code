@@ -2,8 +2,8 @@
 #include <inttypes.h>
 
 #include "aos/common/logging/logging.h"
-#include "aos/common/messages/robot_state.q.h"
 #include "aos/common/logging/queue_logging.h"
+#include "aos/common/messages/robot_state.q.h"
 
 namespace aos {
 namespace controls {
@@ -88,6 +88,7 @@ void ControlLoop<T>::Iterate() {
         control_loop_->output.MakeMessage();
     RunIteration(goal, position, output.get(), status.get());
 
+    output->SetTimeToNow();
     LOG_STRUCT(DEBUG, "output", *output);
     output.Send();
   } else {
@@ -96,6 +97,7 @@ void ControlLoop<T>::Iterate() {
     ZeroOutputs();
   }
 
+  status->SetTimeToNow();
   LOG_STRUCT(DEBUG, "status", *status);
   status.Send();
 }
