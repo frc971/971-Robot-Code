@@ -78,6 +78,9 @@ class RawQueue {
   // For writing only.
   static constexpr Options<RawQueue>::Option kOverride{0x0010};
 
+  RawQueue(const RawQueue &) = default;
+  RawQueue &operator=(const RawQueue &) = default;
+
   // Writes a message into the queue.
   // This function takes ownership of msg.
   // NOTE: msg must point to a valid message from this queue
