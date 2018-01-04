@@ -41,12 +41,14 @@ TEST_F(SinCosIntTest, Numerator1) {
   CheckSinCos<::std::ratio<1, 8>>();
   CheckSinCos<::std::ratio<1, 128>>();
   CheckSinCos<::std::ratio<1, 1024>>();
+  CheckSinCos<::std::ratio<1, 4096>>();
 }
 
 TEST_F(SinCosIntTest, Numerator5) {
   CheckSinCos<::std::ratio<5, 8>>();
   CheckSinCos<::std::ratio<5, 128>>();
   CheckSinCos<::std::ratio<5, 1024>>();
+  CheckSinCos<::std::ratio<5, 4096>>();
 }
 
 class SinCosFloatTest : public ::testing::Test {
