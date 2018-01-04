@@ -1,3 +1,8 @@
 *.pyc
 /bazel-*
 /compile_commands.json
+
+# Hide vagrant's files that unfortunately make it into the source tree when you
+# run "vagrant up".
+/vm/.vagrant/
+/vm/workspace.vdi
