@@ -125,16 +125,27 @@ def full_sample_times(Ton, Toff, dt, n, start_time):
 
   We need the timesteps and Us to integrate.
 
+  Args:
+    Ton: On times for each phase.
+    Toff: Off times for each phase.
+    dt: The cycle time.
+    n: Number of intermediate points to include in the result.
+    start_time: Starting value for the t values in the result.
+
   Returns:
     array of [t, U matrix]
   """
 
   assert((Toff <= 1.0).all())
+  assert((Ton <= 1.0).all())
+  assert((Toff >= 0.0).all())
+  assert((Ton >= 0.0).all())
 
   if (Ton <= Toff).all():
-    # Verify that they are all ordered correctly.
     on_before_off = True
   else:
+    # Verify that they are all ordered correctly.
+    assert(not (Ton <= Toff).any())
     on_before_off = False
 
   Toff = Toff.copy() * dt
@@ -154,8 +165,10 @@ def full_sample_times(Ton, Toff, dt, n, start_time):
        numpy.reshape(numpy.asarray(Toff[numpy.logical_and(Toff < dt, Toff > 0.0)]), (-1,))
        ))
   result_times.sort()
+  assert((result_times >= 0).all())
+  assert((result_times <= dt).all())
 
-  for t in numpy.nditer(result_times):
+  for t in result_times:
     if on_before_off:
       U = numpy.matrix([[vcc], [vcc], [vcc]])
       U[t <= Ton] = 0.0
