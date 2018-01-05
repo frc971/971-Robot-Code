@@ -6,9 +6,11 @@
 
 #include "motors/core/time.h"
 #include "motors/core/kinetis.h"
+#include "motors/peripheral/can.h"
 #include "motors/usb/usb.h"
 #include "motors/usb/cdc.h"
 #include "motors/usb/hid.h"
+#include "motors/usb/interrupt_out.h"
 #include "motors/util.h"
 
 namespace frc971 {
@@ -97,10 +99,20 @@ void WriteData(teensy::AcmTty *tty1) {
   }
 }
 
-void MoveJoysticks(teensy::HidFunction *joysticks) {
+void MoveJoysticks(teensy::HidFunction *joysticks,
+                   teensy::InterruptOut *interrupt_out) {
   static uint8_t x_axis = 0, y_axis = 97, z_axis = 5, rz_axis = 8;
   while (true) {
     {
+      char buffer[64];
+      if (interrupt_out->ReceiveData(buffer) > 0) {
+        if (buffer[0]) {
+          GPIOC_PCOR = 1 << 5;
+        } else {
+          GPIOC_PSOR = 1 << 5;
+        }
+      }
+
       DisableInterrupts disable_interrupts;
       uint8_t buttons = 0;
       if (x_axis % 8u) {
@@ -115,6 +127,29 @@ void MoveJoysticks(teensy::HidFunction *joysticks) {
     y_axis += 3;
     z_axis += 5;
     rz_axis += 8;
+  }
+}
+
+void ForwardJoystickData(teensy::HidFunction *joysticks) {
+  uint32_t last_command_time = micros();
+  while (true) {
+    uint8_t data[8];
+    int length;
+    can_receive_command(data, &length);
+    if (length == 3) {
+      last_command_time = micros();
+      DisableInterrupts disable_interrupts;
+      joysticks->UpdateReport(data, 3, disable_interrupts);
+    }
+
+    static constexpr uint32_t kTimeout = 10000;
+    if (!time_after(time_add(last_command_time, kTimeout), micros())) {
+      // Avoid wrapping back into the valid range.
+      last_command_time = time_subtract(micros(), kTimeout);
+      uint8_t zeros[] = {0, 0, 0x80};
+      DisableInterrupts disable_interrupts;
+      joysticks->UpdateReport(zeros, 3, disable_interrupts);
+    }
   }
 }
 
@@ -154,22 +189,25 @@ extern "C" int main(void) {
   GPIO_BITBAND(GPIOC_PDDR, 5) = 1;
   PORTC_PCR5 = PORT_PCR_DSE | PORT_PCR_MUX(1);
 
+  // Set up the CAN pins.
+  PORTA_PCR12 = PORT_PCR_DSE | PORT_PCR_MUX(2);
+  PORTA_PCR13 = PORT_PCR_DSE | PORT_PCR_MUX(2);
+
   delay(100);
 
-  teensy::UsbDevice usb_device(0, 0x16c0, 0x0492);
+  teensy::UsbDevice usb_device(0, 0x16c0, 0x0491);
   usb_device.SetManufacturer("FRC 971 Spartan Robotics");
   usb_device.SetProduct("Pistol Grip Controller interface");
-  teensy::HidFunction joysticks(&usb_device, 10);
-  // TODO(Brian): Figure out why Windows refuses to recognize the joystick along
-  // with a TTY or two.
-#if 0
   teensy::AcmTty tty1(&usb_device);
   teensy::AcmTty tty2(&usb_device);
+  teensy::HidFunction joysticks(&usb_device, 10);
+  teensy::InterruptOut interrupt_out(&usb_device, "JoystickForce");
   global_stdout.store(&tty2, ::std::memory_order_release);
-#endif
   usb_device.Initialize();
 
-  MoveJoysticks(&joysticks);
+  can_init();
+
+  MoveJoysticks(&joysticks, &interrupt_out);
 
   return 0;
 }

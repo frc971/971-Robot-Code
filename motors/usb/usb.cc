@@ -2,6 +2,8 @@
 
 #include <string.h>
 
+#include <map>
+
 #include "motors/util.h"
 
 namespace frc971 {
@@ -67,6 +69,10 @@ constexpr uint8_t iad_device_subclass() { return 0x02; }
 // The device protocol for using IADs.
 constexpr uint8_t iad_device_protocol() { return 0x01; }
 
+// The Microsoft "vendor code" we're going to use. It's pretty arbitrary (just
+// has to not be some other request we want to use).
+constexpr uint8_t microsoft_vendor_code() { return 0x67; }
+
 // The total number of endpoints supported by this hardware.
 constexpr int number_endpoints() { return 16; }
 
@@ -122,7 +128,9 @@ UsbDevice::UsbDevice(int index, uint16_t vendor_id, uint16_t product_id)
   device_descriptor_->AddByte(kEndpoint0MaxSize);  // bMaxPacketSize0
   device_descriptor_->AddUint16(vendor_id);  // idVendor
   device_descriptor_->AddUint16(product_id);  // idProduct
-  device_descriptor_->AddUint16(0);  // bcdDevice
+  // Increment this whenever you need Windows boxes to actually pay attention to
+  // changes.
+  device_descriptor_->AddUint16(7);  // bcdDevice
   // We might overwrite these string descriptor indices later if we get strings
   // to put there.
   device_descriptor_->AddByte(0);  // iManufacturer
@@ -146,6 +154,53 @@ void UsbDevice::Initialize() {
 
   for (UsbFunction *function : functions_) {
     function->Initialize();
+  }
+
+  {
+    const uint32_t length = 16 + 24 * functions_.size();
+    microsoft_extended_id_descriptor_.resize(length);
+    int index = 0;
+
+    // dwLength
+    microsoft_extended_id_descriptor_[index++] = length & 0xFF;
+    microsoft_extended_id_descriptor_[index++] = (length >> UINT32_C(8)) & 0xFF;
+    microsoft_extended_id_descriptor_[index++] =
+        (length >> UINT32_C(16)) & 0xFF;
+    microsoft_extended_id_descriptor_[index++] =
+        (length >> UINT32_C(24)) & 0xFF;
+
+    // bcdVersion
+    microsoft_extended_id_descriptor_[index++] = 0x00;
+    microsoft_extended_id_descriptor_[index++] = 0x01;
+
+    // wIndex
+    microsoft_extended_id_descriptor_[index++] =
+        microsoft_feature_descriptors::kExtendedCompatibilityId;
+    microsoft_extended_id_descriptor_[index++] = 0;
+
+    // bCount
+    microsoft_extended_id_descriptor_[index++] = functions_.size();
+
+    // Reserved
+    index += 7;
+
+    for (UsbFunction *function : functions_) {
+      // bFirstInterfaceNumber
+      microsoft_extended_id_descriptor_[index++] = function->first_interface_;
+
+      // Reserved
+      index++;
+
+      // compatibleID and subCompatibleID
+      microsoft_extended_id_descriptor_.replace(
+          index, 16, function->MicrosoftExtendedCompatibleId());
+      index += 16;
+
+      // Reserved
+      index += 6;
+    }
+
+    assert(index == length);
   }
 
   config_descriptor_->AddUint16(
@@ -696,6 +751,29 @@ void UsbDevice::HandleEndpoint0SetupPacket(const SetupPacket &setup_packet) {
               return;
 
             case UsbDescriptorType::kString:
+              // Skip any other checks on the other fields. Who knows what
+              // Microsoft is going to set them to; not like they document it
+              // anywhere obvious...
+              if (descriptor_index == 0xEE && setup_packet.index == 0) {
+                static uint8_t
+                    kMicrosoftOsStringDescriptor
+                        [] = {
+                            0x12,  // bLength
+                            static_cast<uint8_t>(
+                                UsbDescriptorType::kString),  // bDescriptorType
+                            0x4D,
+                            0x00, 0x53, 0x00, 0x46, 0x00, 0x54, 0x00, 0x31,
+                            0x00, 0x30, 0x00, 0x30,
+                            0x00,                     // qwSignature
+                            microsoft_vendor_code(),  // bMS_VendorCode
+                            0x00                      // bPad
+                        };
+                QueueEndpoint0Data(
+                    reinterpret_cast<char *>(kMicrosoftOsStringDescriptor),
+                    ::std::min<int>(setup_packet.length,
+                                    sizeof(kMicrosoftOsStringDescriptor)));
+                return;
+              }
               if (descriptor_index != 0 &&
                   setup_packet.index != english_us_code()) {
                 break;
@@ -713,6 +791,62 @@ void UsbDevice::HandleEndpoint0SetupPacket(const SetupPacket &setup_packet) {
               // TODO(Brian): Handle other types of descriptor too.
               break;
           }
+      }
+      break;
+
+    case SetupRequestType::kVendor:
+      switch (setup_packet.request) {
+        case microsoft_vendor_code():
+          if (!in) {
+            break;
+          }
+
+          switch (recipient) {
+            case standard_setup_recipients::kDevice:
+              if (setup_packet.value != 0) {
+                // Ignoring weird things and descriptors larger than 64K for
+                // now.
+                break;
+              }
+              switch (setup_packet.index) {
+                case microsoft_feature_descriptors::kExtendedCompatibilityId:
+                  QueueEndpoint0Data(
+                      microsoft_extended_id_descriptor_.data(),
+                      ::std::min<int>(
+                          setup_packet.length,
+                          microsoft_extended_id_descriptor_.size()));
+                  return;
+              }
+              break;
+
+            case standard_setup_recipients::kInterface:
+              switch (setup_packet.index) {
+                case microsoft_feature_descriptors::kExtendedProperties:
+                  const int interface = setup_packet.value & 0xFF;
+                  const int page_number = (setup_packet.value >> 8) & 0xFF;
+
+                  if (page_number != 0) {
+                    // Ignoring weird things and descriptors larger than 64K for
+                    // now.
+                    break;
+                  }
+
+                  const UsbFunction *const function =
+                      interface_mapping_[interface];
+                  const ::std::string &descriptor =
+                      function->microsoft_extended_property_descriptor_;
+                  if (descriptor.empty() ||
+                      interface != function->first_interface_) {
+                    break;
+                  }
+                  QueueEndpoint0Data(
+                      descriptor.data(),
+                      ::std::min<int>(setup_packet.length, descriptor.size()));
+                  return;
+              }
+              break;
+          }
+          break;
       }
       break;
 
@@ -825,6 +959,100 @@ int UsbFunction::AddInterface() {
   assert(r < 255);
   device_->interface_mapping_.push_back(this);
   return r;
+}
+
+void UsbFunction::CreateIadDescriptor(int first_interface, int interface_count,
+                                      int function_class, int function_subclass,
+                                      int function_protocol,
+                                      const ::std::string &function) {
+  first_interface_ = first_interface;
+  const auto iad_descriptor = CreateDescriptor(
+      iad_descriptor_length(), UsbDescriptorType::kInterfaceAssociation);
+  iad_descriptor->AddByte(first_interface);                // bFirstInterface
+  iad_descriptor->AddByte(interface_count);                // bInterfaceCount
+  iad_descriptor->AddByte(function_class);                 // bFunctionClass
+  iad_descriptor->AddByte(function_subclass);              // bFunctionSubClass
+  iad_descriptor->AddByte(function_protocol);              // bFunctionProtocol
+  iad_descriptor->AddByte(device()->AddString(function));  // iFunction
+}
+
+void UsbFunction::SetMicrosoftDeviceInterfaceGuids(const ::std::string &guids) {
+  ::std::map<::std::string, ::std::string> properties;
+  properties["DeviceInterfaceGUIDs"] = guids + ::std::string(1, '\0');
+  ::std::string *const descriptor = &microsoft_extended_property_descriptor_;
+
+  uint32_t length = 10;
+  for (auto &pair : properties) {
+    length += 14;
+    length += (pair.first.size() + 1) * 2;
+    length += (pair.second.size() + 1) * 2;
+  }
+  descriptor->resize(length);
+  int index = 0;
+
+  // dwLength
+  (*descriptor)[index++] = length & 0xFF;
+  (*descriptor)[index++] = (length >> UINT32_C(8)) & 0xFF;
+  (*descriptor)[index++] = (length >> UINT32_C(16)) & 0xFF;
+  (*descriptor)[index++] = (length >> UINT32_C(24)) & 0xFF;
+
+  // bcdVersion
+  (*descriptor)[index++] = 0x00;
+  (*descriptor)[index++] = 0x01;
+
+  // wIndex
+  (*descriptor)[index++] = microsoft_feature_descriptors::kExtendedProperties;
+  (*descriptor)[index++] = 0;
+
+  // wCount
+  (*descriptor)[index++] = properties.size() & 0xFF;
+  (*descriptor)[index++] = (properties.size() >> 8) & 0xFF;
+
+  for (auto &pair : properties) {
+    const uint32_t size = 14 + (pair.first.size() + pair.second.size() + 2) * 2;
+    // dwSize
+    (*descriptor)[index++] = size & 0xFF;
+    (*descriptor)[index++] = (size >> UINT32_C(8)) & 0xFF;
+    (*descriptor)[index++] = (size >> UINT32_C(16)) & 0xFF;
+    (*descriptor)[index++] = (size >> UINT32_C(24)) & 0xFF;
+
+    // Need to get this from the map if we ever do others in the future.
+    const uint32_t data_type = 7;  // REG_MULTI_SZ
+    // dwPropertyDataType
+    (*descriptor)[index++] = data_type & 0xFF;
+    (*descriptor)[index++] = (data_type >> UINT32_C(8)) & 0xFF;
+    (*descriptor)[index++] = (data_type >> UINT32_C(16)) & 0xFF;
+    (*descriptor)[index++] = (data_type >> UINT32_C(24)) & 0xFF;
+
+    // wPropertyNameLength
+    (*descriptor)[index++] = ((pair.first.size() + 1) * 2) & 0xFF;
+    (*descriptor)[index++] = (((pair.first.size() + 1) * 2) >> 8) & 0xFF;
+
+    // bPropertyName
+    for (size_t i = 0; i < pair.first.size(); ++i) {
+      (*descriptor)[index] = pair.first[i];
+      index += 2;
+    }
+    index += 2;
+
+    // wPropertyDataLength
+    (*descriptor)[index++] = ((pair.second.size() + 1) * 2) & 0xFF;
+    (*descriptor)[index++] =
+        (((pair.second.size() + 1) * 2) >> UINT8_C(8)) & 0xFF;
+    (*descriptor)[index++] =
+        (((pair.second.size() + 1) * 2) >> UINT8_C(16)) & 0xFF;
+    (*descriptor)[index++] =
+        (((pair.second.size() + 1) * 2) >> UINT8_C(24)) & 0xFF;
+
+    // bPropertyData
+    for (size_t i = 0; i < pair.second.size(); ++i) {
+      (*descriptor)[index] = pair.second[i];
+      index += 2;
+    }
+    index += 2;
+  }
+
+  assert(index == length);
 }
 
 void UsbDevice::SetBdtEntry(int endpoint, Direction direction, EvenOdd odd,

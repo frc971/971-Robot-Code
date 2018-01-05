@@ -106,6 +106,11 @@ constexpr int kEndpoint = 2;
 constexpr int kOther = 3;
 }  // namespace standard_setup_recipients
 
+namespace microsoft_feature_descriptors {
+constexpr int kExtendedCompatibilityId = 4;
+constexpr int kExtendedProperties = 5;
+}  // namespace microsoft_feature_descriptors
+
 // The HID class specification says this. Can't find any mention in the main
 // standard.
 #define G_DESCRIPTOR_TYPE_TYPE(descriptor_type) \
@@ -115,6 +120,8 @@ constexpr int kStandard = 0;
 constexpr int kClass = 1;
 constexpr int kVendor = 2;
 }  // namespace standard_descriptor_type_types
+
+constexpr uint8_t vendor_specific_class() { return 0xFF; }
 
 class UsbFunction;
 
@@ -430,6 +437,9 @@ class UsbDevice final {
   // All of the functions (without duplicates).
   ::std::vector<UsbFunction *> functions_;
 
+  // Filled out during Initialize().
+  ::std::string microsoft_extended_id_descriptor_;
+
   friend void usb_isr(void);
   friend class UsbFunction;
 };
@@ -497,6 +507,23 @@ class UsbFunction {
 
   UsbDevice *device() const { return device_; }
 
+  void CreateIadDescriptor(int first_interface, int interface_count,
+                           int function_class, int function_subclass,
+                           int function_protocol,
+                           const ::std::string &function);
+
+  // Sets the interface GUIDs for this function. Each GUID (one per interface?)
+  // should be followed by a NUL.
+  //
+  // If this is never called, no GUID extended property will be reported.
+  //
+  // This is needed to pass to Windows so WinUSB will be happy. Generate them at
+  // https://www.guidgenerator.com/online-guid-generator.aspx (Uppcase, Braces,
+  // and Hyphens).
+  //
+  // May only be called during setup.
+  void SetMicrosoftDeviceInterfaceGuids(const ::std::string &guids);
+
  private:
   virtual void Initialize() = 0;
 
@@ -515,9 +542,15 @@ class UsbFunction {
     return SetupResponse::kIgnored;
   }
 
-  virtual void HandleOutFinished(int endpoint, BdtEntry *bdt_entry) = 0;
-  virtual void HandleInFinished(int endpoint, BdtEntry *bdt_entry,
-                                EvenOdd odd) = 0;
+  // Returns the concatenated compatible ID and subcompatible ID.
+  virtual ::std::string MicrosoftExtendedCompatibleId() {
+    // Default to both of them being "unused".
+    return ::std::string(16, '\0');
+  }
+
+  virtual void HandleOutFinished(int /*endpoint*/, BdtEntry * /*bdt_entry*/) {}
+  virtual void HandleInFinished(int /*endpoint*/, BdtEntry * /*bdt_entry*/,
+                                EvenOdd /*odd*/) {}
 
   // Called when a given interface is configured (aka "experiences a
   // configuration event"). This means all rx and tx buffers have been cleared
@@ -527,6 +560,11 @@ class UsbFunction {
 
   // Should reset everything to use the even buffers next.
   virtual void HandleReset() = 0;
+
+  int first_interface_ = -1;
+
+  // Filled out during Initialize().
+  ::std::string microsoft_extended_property_descriptor_;
 
   UsbDevice *const device_;
 

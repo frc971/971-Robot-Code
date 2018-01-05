@@ -51,10 +51,6 @@ class HidFunction final : public UsbFunction {
   SetupResponse HandleGetDescriptor(
       const UsbDevice::SetupPacket &setup_packet) override;
 
-  void HandleOutFinished(int /*endpoint*/, BdtEntry * /*bdt_entry*/) override {
-    // We don't support any out endpoints.
-  }
-
   void HandleInFinished(int endpoint, BdtEntry *bdt_entry,
                         EvenOdd odd) override;
 
