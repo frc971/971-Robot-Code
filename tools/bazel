@@ -50,13 +50,24 @@ if [[ ! -d "${VERSION_DIR}" ]]; then
   # destination, which is important so we can atomically move it.
   # If this move is non-atomic, then a concurrent Bazel command (like the verifier
   # uses several of) could use a half-copied Bazel installation.
+  DOWNLOAD_TEMP_DIR="$(mktemp --directory --tmpdir="${HOME}/.cache/bazel")"
   TEMP_DIR="$(mktemp --directory --tmpdir="${DOWNLOAD_DIR}")"
+  readonly DOWNLOAD_TEMP_DIR
   readonly TEMP_DIR
 
+  ( cd "${DOWNLOAD_TEMP_DIR}"
+    # Now, download into the ~/.cache folder
+    if [ ! -e "${HOME}/.cache/bazel/${INSTALLER_NAME}" ];
+    then
+      wget "${DOWNLOAD_URL}" -O "${INSTALLER_NAME}" --no-verbose --show-progress
+      mv "${INSTALLER_NAME}" "${HOME}/.cache/bazel/${INSTALLER_NAME}"
+    fi
+    rm -rf "${DOWNLOAD_TEMP_DIR}"
+  )
+
   ( cd "${TEMP_DIR}"
-    wget "${DOWNLOAD_URL}" -O "${INSTALLER_NAME}" --no-verbose --show-progress
     echo "Unpacking Bazel version ${VERSION}..." >&2
-    dpkg-deb -x "${INSTALLER_NAME}" extracted
+    dpkg-deb -x "${HOME}/.cache/bazel/${INSTALLER_NAME}" extracted
   )
 
   touch "${TEMP_DIR}/extracted/usr/bin/bazel.bazelrc"
