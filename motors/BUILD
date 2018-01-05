@@ -20,6 +20,7 @@ cc_binary(
 
 cc_library(
   name = 'motor',
+  visibility = ['//visibility:public'],
   hdrs = [
     'motor.h',
   ],
@@ -34,7 +35,7 @@ cc_library(
 
     '//motors/peripheral:adc',
     '//motors/peripheral:can',
-    '//motors/usb:legacy',
+    '//motors/usb:cdc',
   ],
   restricted_to = mcu_cpus,
 )
@@ -96,6 +97,7 @@ cc_test(
 
 cc_library(
   name = 'math',
+  visibility = ['//visibility:public'],
   hdrs = [
     'math.h',
   ],

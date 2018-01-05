@@ -8,7 +8,10 @@
 #include "motors/algorithms.h"
 #include "motors/core/kinetis.h"
 #include "motors/peripheral/adc.h"
+#include "motors/peripheral/configuration.h"
 #include "motors/util.h"
+#include "motors/usb/cdc.h"
+#include "motors/core/time.h"
 
 namespace frc971 {
 namespace salsa {
@@ -21,16 +24,14 @@ class MotorControls {
   MotorControls(const MotorControls &) = delete;
   void operator=(const MotorControls &) = delete;
 
-  static constexpr float scale_current_reading(float reading) {
-    return reading *
-           static_cast<float>(1.0 / 4096.0 /* Full-scale ADC reading */ *
-                              3.3 /* ADC reference voltage */ /
-                              (1.47 / (0.768 + 1.47)) /* 5V -> 3.3V divider */ /
-                              50.0 /* Current sense amplification */ /
-                              0.0003 /* Sense resistor */);
-  }
+  // Scales a current reading from ADC units to amps.
+  //
+  // Note that this doesn't apply any offset. The common offset will be
+  // automatically removed as part of the balancing process.
+  virtual float scale_current_reading(float reading) const = 0;
 
-  static constexpr int counts_per_revolution() { return 2048 / 2; }
+  virtual int mechanical_counts_per_revolution() const = 0;
+  virtual int electrical_counts_per_revolution() const = 0;
 
   // raw_currents are in amps for each phase.
   // theta is in electrical counts, which will be less than
@@ -45,32 +46,63 @@ class MotorControls {
 };
 
 // Controls a single motor.
-class Motor {
+class Motor final {
  public:
   // pwm_ftm is used to drive the PWM outputs.
   // encoder_ftm is used for reading the encoder.
-  Motor(BigFTM *pwm_ftm, LittleFTM *encoder_ftm, MotorControls *controls);
+  Motor(BigFTM *pwm_ftm, LittleFTM *encoder_ftm, MotorControls *controls,
+        const ::std::array<volatile uint32_t *, 3> &output_registers);
 
   Motor(const Motor &) = delete;
   void operator=(const Motor &) = delete;
+
+  void set_debug_tty(teensy::AcmTty *debug_tty) { debug_tty_ = debug_tty; }
+  void set_deadtime_compensation(int deadtime_compensation) {
+    deadtime_compensation_ = deadtime_compensation;
+  }
+  void set_switching_divisor(int switching_divisor) {
+    switching_divisor_ = switching_divisor;
+  }
+  void set_encoder_offset(int encoder_offset) {
+    encoder_offset_ = encoder_offset;
+    // Add mechanical_counts_per_revolution to the offset so that when we mod
+    // below, we are guaranteed to be > 0 regardless of the encoder multiplier.
+    // % isn't well-defined with negative numbers.
+    while (encoder_offset_ < controls_->mechanical_counts_per_revolution()) {
+      encoder_offset_ += controls_->mechanical_counts_per_revolution();
+    }
+  }
+  void set_encoder_multiplier(int encoder_multiplier) {
+    encoder_multiplier_ = encoder_multiplier;
+  }
+
+  int encoder() {
+    return encoder_multiplier_ * encoder_ftm_->CNT;
+  }
+  uint32_t wrapped_encoder() {
+    return (encoder() + encoder_offset_) %
+           controls_->mechanical_counts_per_revolution();
+  }
 
   // Sets up everything but doesn't actually start the timers.
   //
   // This assumes the global time base configuration happens outside so the
   // timers for both motors (if applicable) are synced up.
-  // TODO(Brian): "40.4.28.1 Enabling the global time base (GTB)" says something
-  // about needing to do stuff in a specific order, so this API might need
-  // revising.
   void Init();
 
-  // Zeros the encoder. This involves blocking for an arbitrary length of time
-  // with interrupts disabled.
-  void Zero();
-
   // Starts the timers.
+  //
+  // If the global time base is in use, it must be activated after this.
   void Start();
 
-  void HandleInterrupt();
+  void HandleInterrupt(const BalancedReadings &readings,
+                       uint32_t captured_wrapped_encoder);
+
+  void SetGoalCurrent(float goal_current) {
+    DisableInterrupts disable_interrupts;
+    goal_current_ = goal_current;
+    last_current_set_time_ = micros();
+  }
 
  private:
   // Represents the ADC reading which is closest to an edge.
@@ -98,11 +130,28 @@ class Motor {
     int index = 0;
   };
 
+  inline int counts_per_cycle() const {
+    return BUS_CLOCK_FREQUENCY / SWITCHING_FREQUENCY / switching_divisor_;
+  }
+
+  uint32_t CalculateOnTime(uint32_t width) const;
+  uint32_t CalculateOffTime(uint32_t width) const;
+
   bool flip_time_offset_ = false;
+  int deadtime_compensation_ = 0;
 
   BigFTM *const pwm_ftm_;
   LittleFTM *const encoder_ftm_;
   MotorControls *const controls_;
+  const ::std::array<volatile uint32_t *, 3> output_registers_;
+
+  float goal_current_ = 0;
+  uint32_t last_current_set_time_ = 0;
+  int switching_divisor_ = 1;
+  int encoder_offset_ = 0;
+  int encoder_multiplier_ = 1;
+
+  teensy::AcmTty *debug_tty_ = nullptr;
 };
 
 }  // namespace salsa

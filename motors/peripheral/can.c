@@ -33,8 +33,6 @@ static volatile uint32_t can_manual_flags = 0;
 
 void can_init(void) {
   printf("can_init\n");
-  PORTB_PCR18 = PORT_PCR_DSE | PORT_PCR_MUX(2);
-  PORTB_PCR19 = PORT_PCR_DSE | PORT_PCR_MUX(2);
 
   SIM_SCGC6 |= SIM_SCGC6_FLEXCAN0;
 
@@ -175,7 +173,7 @@ int can_send(uint32_t can_id, const unsigned char *data, unsigned int length) {
 void can_receive_command(unsigned char *data, int *length) {
   if (0) {
     static int i = 0;
-    if (i++ == 13) {
+    if (i++ == 10000) {
       printf("IFLAG1=%" PRIx32 " ESR=%" PRIx32 " ESR1=%" PRIx32 "\n",
              CAN0_IFLAG1, CAN0_ECR, CAN0_ESR1);
       i = 0;

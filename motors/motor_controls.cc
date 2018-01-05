@@ -11,7 +11,8 @@ using ComplexMatrix = MotorControlsImplementation::ComplexMatrix<kRows, kCols>;
 
 using Complex = ::std::complex<float>;
 
-constexpr int kCountsPerRevolution = MotorControls::counts_per_revolution();
+constexpr int kCountsPerRevolution =
+    MotorControlsImplementation::constant_counts_per_revolution();
 
 #if 1
 constexpr double kMaxDutyCycle = 0.98;
@@ -169,10 +170,10 @@ MotorControlsImplementation::MotorControlsImplementation()
 
   const ComplexMatrix<3, 1> E1 =
       E1Unrotated_ *
-      ImaginaryExpInt<::std::ratio<1, counts_per_revolution()>>(theta);
+      ImaginaryExpInt<::std::ratio<1, constant_counts_per_revolution()>>(theta);
   const ComplexMatrix<3, 1> E2 =
       E2Unrotated_ *
-      ImaginaryExpInt<::std::ratio<5, counts_per_revolution()>>(theta);
+      ImaginaryExpInt<::std::ratio<5, constant_counts_per_revolution()>>(theta);
 
   const float overall_measured_current =
       ((E1 + E2).real().transpose() * measured_current /
@@ -191,10 +192,12 @@ MotorControlsImplementation::MotorControlsImplementation()
   const ComplexMatrix<3, 3> H1 = Hn(omega, 1);
   const ComplexMatrix<3, 3> H2 = Hn(omega, 5);
 
-  const ComplexMatrix<3, 1> p_imaginary = H1 * E1 + H2 * E2;
+  const ComplexMatrix<3, 1> H1E1 = H1 * E1;
+  const ComplexMatrix<3, 1> H2E2 = H2 * E2;
+  const ComplexMatrix<3, 1> p_imaginary = H1E1 + H2E2;
   const ComplexMatrix<3, 1> p_next_imaginary =
-      ImaginaryExpFloat(omega / SWITCHING_FREQUENCY) * H1 * E1 +
-      ImaginaryExpFloat(omega * 5 / SWITCHING_FREQUENCY) * H2 * E2;
+      ImaginaryExpFloat(omega / SWITCHING_FREQUENCY) * H1E1 +
+      ImaginaryExpFloat(omega * 5 / SWITCHING_FREQUENCY) * H2E2;
   const ::Eigen::Matrix<float, 3, 1> p = p_imaginary.real();
   const ::Eigen::Matrix<float, 3, 1> p_next = p_next_imaginary.real();
 
