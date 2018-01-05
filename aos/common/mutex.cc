@@ -9,18 +9,6 @@
 
 namespace aos {
 
-Mutex::Mutex() : impl_() {
-  static_assert(shm_ok<Mutex>::value,
-                "Mutex is not safe for use in shared memory.");
-}
-
-Mutex::~Mutex() {
-  if (__builtin_expect(mutex_islocked(&impl_), false)) {
-    LOG(FATAL, "destroying locked mutex %p (aka %p)\n",
-        this, &impl_);
-  }
-}
-
 // Lock and Unlock use the return values of mutex_lock/mutex_unlock
 // to determine whether the lock/unlock succeeded.
 
