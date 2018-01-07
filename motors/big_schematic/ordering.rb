@@ -88,62 +88,79 @@ class Part
   end
 
   def initialize(pn, value, footprint, device, secondary_value, refdes, tolerance, pn_optional, dev_only)
-    @pn, @value, @footprint, @device = pn, value, footprint, device
-    @secondary_value, @tolerance = secondary_value, tolerance
-    @pn_optional, @dev_only = pn_optional, dev_only
+    if value == 'DNP'
+      if pn
+        puts "Error: part #{pn} for DNP from #{refdes}"
+      end
+      @value = 'DNP'
+      @pn, @footprint, @device = nil, nil, nil
+      @secondary_value, @tolerance = nil
+      @pn_optional, @dev_only = nil
+    else
+      @pn, @value, @footprint, @device = pn, value, footprint, device
+      @secondary_value, @tolerance = secondary_value, tolerance
+      @pn_optional, @dev_only = pn_optional, dev_only
 
-    puts "#{refdes} has no footprint" unless footprint
+      puts "#{refdes} has no footprint" unless footprint
+    end
 
     @refdeses = [refdes]
   end
   def found_another(pn, value, footprint, device, secondary_value, refdes, tolerance, pn_optional, dev_only)
     error = false
-    if pn != @pn
-      puts "Error: pn #@pn vs #{pn}."
-      error = true
-    end
-    if value != @value
-      puts "Error: value #@value vs #{value}."
-      error = true
-    end
-    if footprint != @footprint
-      puts "Error: footprint #@footprint vs #{footprint}."
-      error = true
-    end
-    if device != @device
-      puts "Error: device #@device vs #{device}."
-      error = true
-    end
-
-    if pn_optional != @pn_optional
-      puts "Error: pn_optional #@pn_optional vs #{pn_optional}."
-      error = true
-    end
-    if dev_only != @dev_only
-      puts "Error: dev_only #@dev_only vs #{dev_only}."
-      error = true
-    end
-
-    if tolerance && @tolerance
-      if tolerance != @tolerance
-        puts "Error: tolerance #@tolerance vs #{tolerance}."
+    if value == 'DNP'
+      if @value != 'DNP'
+        puts "Error: DNP vs not"
         error = true
       end
-    elsif tolerance
-      @tolerance = tolerance
-    end
-
-    new_secondary_match = SecondaryValueRegex.match secondary_value
-    my_secondary_match = SecondaryValueRegex.match @secondary_value
-    if new_secondary_match && my_secondary_match &&
-       new_secondary_match[2] == my_secondary_match[2]
-      new_value = new_secondary_match[1].to_f
-      my_value = my_secondary_match[1].to_f
-      @secondary_value = [new_value, my_value].max.to_s + ' ' + my_secondary_match[2]
     else
-      if secondary_value != @secondary_value
-        puts "Error: secondary_value #@secondary_value vs #{secondary_value}."
+      if pn != @pn
+        puts "Error: pn #@pn vs #{pn}."
         error = true
+      end
+      if value != @value
+        puts "Error: value #@value vs #{value}."
+        error = true
+      end
+      if footprint != @footprint
+        puts "Error: footprint #@footprint vs #{footprint}."
+        error = true
+      end
+      if device != @device
+        puts "Error: device #@device vs #{device}."
+        error = true
+      end
+
+      if pn_optional != @pn_optional
+        puts "Error: pn_optional #@pn_optional vs #{pn_optional}."
+        error = true
+      end
+      if dev_only != @dev_only
+        puts "Error: dev_only #@dev_only vs #{dev_only}."
+        error = true
+      end
+
+      if tolerance && @tolerance
+        if tolerance != @tolerance
+          puts "Error: tolerance #@tolerance vs #{tolerance}."
+          error = true
+        end
+      elsif tolerance
+        @tolerance = tolerance
+      end
+
+      new_secondary_match = SecondaryValueRegex.match secondary_value
+      my_secondary_match = SecondaryValueRegex.match @secondary_value
+      if new_secondary_match && my_secondary_match &&
+        new_secondary_match[2] == my_secondary_match[2]
+        new_value = new_secondary_match[1].to_f
+        my_value = my_secondary_match[1].to_f
+        @secondary_value = [new_value, my_value].max.to_s + ' ' + my_secondary_match[2]
+      else
+        if secondary_value != @secondary_value
+          puts "Error: secondary_value #@secondary_value vs #{secondary_value}."
+          error = true
+        end
       end
     end
 
@@ -168,10 +185,14 @@ def add_part(attrs, refdes)
   args = [attrs[:pn], attrs[:value], attrs[:footprint], attrs[:device],
           attrs[:secondary_value], refdes, attrs[:tolerance],
           attrs[:pn_optional], attrs[:dev_only]]
-  key = attrs[:pn]
-  unless key
-    key = attrs[:value] || ''
-    key += attrs[:footprint] || ''
+  if attrs[:value] == 'DNP'
+    key = 'DNP'
+  else
+    key = attrs[:pn]
+    unless key
+      key = attrs[:value] || ''
+      key += attrs[:footprint] || ''
+    end
   end
   raise "No pn or value for #{args} (#{refdes})" unless key && !key.empty?
   if $parts.include?(key)
