@@ -98,6 +98,22 @@ void OffsetToNow(monotonic_clock::time_point now) {
       chrono::duration_cast<chrono::nanoseconds>(offset).count();
 }
 
+struct timespec to_timespec(
+    const ::aos::monotonic_clock::duration duration) {
+  struct timespec time_timespec;
+  ::std::chrono::seconds sec =
+      ::std::chrono::duration_cast<::std::chrono::seconds>(duration);
+  ::std::chrono::nanoseconds nsec =
+      ::std::chrono::duration_cast<::std::chrono::nanoseconds>(duration - sec);
+  time_timespec.tv_sec = sec.count();
+  time_timespec.tv_nsec = nsec.count();
+  return time_timespec;
+}
+
+struct timespec to_timespec(
+    const ::aos::monotonic_clock::time_point time) {
+  return to_timespec(time.time_since_epoch());
+}
 }  // namespace time
 
 constexpr monotonic_clock::time_point monotonic_clock::min_time;

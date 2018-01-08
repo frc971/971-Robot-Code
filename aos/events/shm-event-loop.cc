@@ -1,6 +1,8 @@
 #include "aos/events/shm-event-loop.h"
+#include "aos/common/logging/logging.h"
 #include "aos/common/queue.h"
 
+#include <sys/timerfd.h>
 #include <atomic>
 #include <chrono>
 #include <stdexcept>
@@ -91,7 +93,7 @@ class WatcherThreadState {
       }
 
       {
-        MutexLocker locker2(&thread_state_->mutex_);
+        MutexLocker locker(&thread_state_->mutex_);
         if (!thread_state_->is_running()) break;
 
         watcher_(reinterpret_cast<const Message *>(msg));
@@ -109,6 +111,61 @@ class WatcherThreadState {
   std::shared_ptr<ShmEventLoop::ThreadState> thread_state_;
   RawQueue *queue_;
   std::function<void(const Message *message)> watcher_;
+};
+
+class TimerHandlerState : public TimerHandler {
+ public:
+  TimerHandlerState(std::shared_ptr<ShmEventLoop::ThreadState> thread_state,
+                    ::std::function<void()> fn)
+      : thread_state_(std::move(thread_state)), fn_(::std::move(fn)) {
+    fd_ = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC);
+    PCHECK(fd_ != -1);
+  }
+
+  ~TimerHandlerState() {
+    PCHECK(close(fd_) == 0);
+  }
+
+  void Setup(monotonic_clock::time_point base,
+             monotonic_clock::duration repeat_offset) override {
+    struct itimerspec new_value;
+    new_value.it_interval = ::aos::time::to_timespec(repeat_offset);
+    new_value.it_value = ::aos::time::to_timespec(base);
+    PCHECK(timerfd_settime(fd_, TFD_TIMER_ABSTIME, &new_value, nullptr) == 0);
+  }
+
+  void Disable() override {
+    // Disarm the timer by feeding zero values
+    Setup(::aos::monotonic_clock::epoch(), ::aos::monotonic_clock::zero());
+  }
+
+  void Run() {
+    thread_state_->WaitForStart();
+
+    while (true) {
+      uint64_t buf;
+      ssize_t result = read(fd_, &buf, sizeof(buf));
+      PCHECK(result != -1);
+      CHECK_EQ(result, static_cast<int>(sizeof(buf)));
+
+      {
+        MutexLocker locker(&thread_state_->mutex_);
+        if (!thread_state_->is_running()) break;
+        fn_();
+        // fn_ may have exited the event loop.
+        if (!thread_state_->is_running()) break;
+      }
+    }
+  }
+
+ private:
+  std::shared_ptr<ShmEventLoop::ThreadState> thread_state_;
+
+  // File descriptor for the timer
+  int fd_;
+
+  // Function to be run on the thread
+  ::std::function<void()> fn_;
 };
 }  // namespace internal
 
@@ -139,6 +196,19 @@ void ShmEventLoop::MakeRawWatcher(
     delete state;
   });
   thread.detach();
+}
+
+TimerHandler *ShmEventLoop::AddTimer(::std::function<void()> callback) {
+  internal::TimerHandlerState *timer =
+      new internal::TimerHandlerState(thread_state_, ::std::move(callback));
+
+  ::std::thread t([timer] {
+    timer->Run();
+    delete timer;
+  });
+  t.detach();
+
+  return timer;
 }
 
 void ShmEventLoop::OnRun(std::function<void()> on_run) {

@@ -13,6 +13,13 @@ struct TestMessage : public ::aos::Message {
   TestMessage() { Zero(); }
 };
 
+// Ends the given event loop at the given time from now.
+void EndEventLoop(EventLoop *loop, ::std::chrono::milliseconds duration) {
+  auto end_timer = loop->AddTimer([loop]() { loop->Exit(); });
+  end_timer->Setup(loop->monotonic_now() +
+                   ::std::chrono::milliseconds(duration));
+}
+
 // Tests that watcher and fetcher can fetch from a sender.
 // Also tests that OnRun() works.
 TEST_P(AbstractEventLoopTest, Basic) {
@@ -88,5 +95,68 @@ TEST_P(AbstractEventLoopTest, MultipleFetcherQuit) {
   loop->Run();
 }
 
+// Verify that timer intervals and duration function properly.
+TEST_P(AbstractEventLoopTest, TimerIntervalAndDuration) {
+  auto loop = Make();
+  ::std::vector<::aos::monotonic_clock::time_point> iteration_list;
+
+  auto test_timer = loop->AddTimer([&iteration_list, &loop]() {
+    iteration_list.push_back(loop->monotonic_now());
+  });
+
+  test_timer->Setup(loop->monotonic_now(), ::std::chrono::milliseconds(20));
+  EndEventLoop(loop.get(), ::std::chrono::milliseconds(150));
+  // Testing that the timer thread waits for the event loop to start before
+  // running
+  ::std::this_thread::sleep_for(std::chrono::milliseconds(2));
+  loop->Run();
+
+  EXPECT_EQ(iteration_list.size(), 8);
+}
+
+// Verify that we can change a timer's parameters during execution.
+TEST_P(AbstractEventLoopTest, TimerChangeParameters) {
+  auto loop = Make();
+  ::std::vector<::aos::monotonic_clock::time_point> iteration_list;
+
+  auto test_timer = loop->AddTimer([&iteration_list, &loop]() {
+    iteration_list.push_back(loop->monotonic_now());
+  });
+
+  auto modifier_timer = loop->AddTimer([&loop, &test_timer]() {
+    test_timer->Setup(loop->monotonic_now(), ::std::chrono::milliseconds(30));
+  });
+
+
+  test_timer->Setup(loop->monotonic_now(), ::std::chrono::milliseconds(20));
+  modifier_timer->Setup(loop->monotonic_now() +
+                        ::std::chrono::milliseconds(45));
+  EndEventLoop(loop.get(), ::std::chrono::milliseconds(150));
+  loop->Run();
+
+  EXPECT_EQ(iteration_list.size(), 7);
+}
+
+// Verify that we can disable a timer during execution.
+TEST_P(AbstractEventLoopTest, TimerDisable) {
+  auto loop = Make();
+  ::std::vector<::aos::monotonic_clock::time_point> iteration_list;
+
+  auto test_timer = loop->AddTimer([&iteration_list, &loop]() {
+    iteration_list.push_back(loop->monotonic_now());
+  });
+
+  auto ender_timer = loop->AddTimer([&test_timer]() {
+    test_timer->Disable();
+  });
+
+  test_timer->Setup(loop->monotonic_now(), ::std::chrono::milliseconds(20));
+  ender_timer->Setup(loop->monotonic_now() +
+                        ::std::chrono::milliseconds(45));
+  EndEventLoop(loop.get(), ::std::chrono::milliseconds(150));
+  loop->Run();
+
+  EXPECT_EQ(iteration_list.size(), 3);
+}
 }  // namespace testing
 }  // namespace aos
