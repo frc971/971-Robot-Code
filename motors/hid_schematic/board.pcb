@@ -1404,7 +1404,7 @@ Element["" "0603" "C8" ".1_uF" 3650.00mil 2830.00mil -21.50mil 28.50mil 0 77 ""]
 
 	)
 
-Element["" "0603" "C7" ".1_uF" 3490.00mil 1810.00mil -91.50mil -31.50mil 0 100 ""]
+Element["" "0603" "C7" ".1_uF" 3490.00mil 1810.00mil -31.50mil 48.50mil 0 100 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
@@ -1439,7 +1439,7 @@ Element["" "0603" "C9" ".022_uF" 1150.00mil 1810.00mil -31.50mil -58.50mil 1 100
 
 	)
 
-Element["found" "TSOT6L" "U3" "unknown" 1510.00mil 1550.00mil 0.0000 0.0000 0 100 ""]
+Element["found" "TSOT6L" "U3" "unknown" 1510.00mil 1550.00mil 80.00mil -20.00mil 0 100 ""]
 (
 	Pad[-0.9500mm -1.6000mm -0.9500mm -1.1000mm 0.6000mm 20.00mil 0.7400mm "6" "6" "square"]
 	Pad[0.0000 -1.6000mm 0.0000 -1.1000mm 0.6000mm 20.00mil 0.7400mm "5" "5" "square"]
@@ -3091,6 +3091,11 @@ Layer(5 "silk")
 	Text[3810.00mil 2550.00mil 0 403 "Rx" "clearline"]
 	Text[3530.00mil 2390.00mil 0 98 "CANL CANH" "clearline"]
 	Text[3530.00mil 2040.00mil 0 98 "CANL CANH" "clearline"]
+	Text[3360.00mil 1740.00mil 0 98 "R" "clearline"]
+	Text[3360.00mil 1810.00mil 0 98 "G" "clearline"]
+	Text[3360.00mil 1880.00mil 0 98 "Y" "clearline"]
+	Text[3310.00mil 2510.00mil 0 98 "G" "clearline"]
+	Text[3310.00mil 2580.00mil 0 98 "G" "clearline"]
 )
 NetList()
 (
