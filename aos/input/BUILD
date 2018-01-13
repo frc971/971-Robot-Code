@@ -33,5 +33,6 @@ cc_library(
     '//aos/common/network:socket',
     '//aos/common:math',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
+    '//frc971/control_loops/drivetrain:drivetrain_config',
   ],
 )

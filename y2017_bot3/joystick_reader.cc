@@ -15,6 +15,7 @@
 #include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2017_bot3/control_loops/superstructure/superstructure.q.h"
+#include "y2017_bot3/control_loops/drivetrain/drivetrain_base.h"
 
 using ::frc971::control_loops::drivetrain_queue;
 using ::y2017_bot3::control_loops::superstructure_queue;
@@ -29,19 +30,20 @@ namespace y2017_bot3 {
 namespace input {
 namespace joysticks {
 
-const ButtonLocation kHangerOn(3, 1);
-const ButtonLocation kRollersOn(3, 2);
-const ButtonLocation kGearOut(3, 3);
-
-const ButtonLocation kRollerOn(3, 4);
+const ButtonLocation kHangerOn(2, 11);
+const ButtonLocation kGearOut(2, 10);
+const ButtonLocation kRollerOn(2, 7);
+const ButtonLocation kRollerSpit(2, 6);
 
 std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
 
 class Reader : public ::aos::input::JoystickInput {
  public:
   Reader() {
+    // Setting driver station type to Steering Wheel
     drivetrain_input_reader_ = DrivetrainInputReader::Make(
-        DrivetrainInputReader::InputType::kSteeringWheel);
+        DrivetrainInputReader::InputType::kSteeringWheel,
+        ::y2017_bot3::control_loops::drivetrain::GetDrivetrainConfig());
   }
 
   void RunIteration(const ::aos::input::driver_station::Data &data) override {
@@ -69,8 +71,12 @@ class Reader : public ::aos::input::JoystickInput {
     // Process pending actions.
     action_queue_.Tick();
     was_running_ = action_queue_.Running();
-  }
 
+    if (!data.GetControlBit(ControlBit::kEnabled)) {
+      action_queue_.CancelAllActions();
+      LOG(DEBUG, "Canceling\n");
+    }
+  }
   void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
     drivetrain_input_reader_->HandleDrivetrain(data);
     robot_velocity_ = drivetrain_input_reader_->robot_velocity();
@@ -88,6 +94,10 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.IsPressed(kRollerOn)) {
       new_superstructure_goal->voltage_rollers = 12.0;
+    }
+
+    if (data.IsPressed(kRollerSpit)) {
+      new_superstructure_goal->voltage_rollers = -12.0;
     }
 
     if (data.IsPressed(kHangerOn)) {

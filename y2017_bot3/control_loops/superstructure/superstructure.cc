@@ -26,9 +26,9 @@ void Superstructure::RunIteration(
     if (unsafe_goal) {
       // Intake.
       output->voltage_rollers = unsafe_goal->voltage_rollers;
-
+      // Fire piston to release gear.
       output->fingers_out = unsafe_goal->fingers_out;
-
+      // Spin Hanger.
       output->hanger_voltage = unsafe_goal->hanger_voltage;
     }
   }

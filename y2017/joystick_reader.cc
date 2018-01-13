@@ -1,7 +1,7 @@
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <math.h>
 
 #include "aos/common/actions/actions.h"
 #include "aos/common/input/driver_station_data.h"
@@ -16,6 +16,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2017/constants.h"
 #include "y2017/control_loops/superstructure/superstructure.q.h"
+#include "y2017/control_loops/drivetrain/drivetrain_base.h"
 
 using ::frc971::control_loops::drivetrain_queue;
 using ::y2017::control_loops::superstructure_queue;
@@ -54,7 +55,8 @@ class Reader : public ::aos::input::JoystickInput {
  public:
   Reader() {
     drivetrain_input_reader_ = DrivetrainInputReader::Make(
-        DrivetrainInputReader::InputType::kSteeringWheel);
+        DrivetrainInputReader::InputType::kSteeringWheel,
+        ::y2017::control_loops::drivetrain::GetDrivetrainConfig());
   }
 
   enum class ShotDistance { VISION_SHOT, MIDDLE_SHOT, FAR_SHOT };

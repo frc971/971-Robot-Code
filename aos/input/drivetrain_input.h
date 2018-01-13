@@ -10,6 +10,7 @@
 #include "aos/common/input/driver_station_data.h"
 #include "aos/common/logging/logging.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_config.h"
 
 namespace aos {
 namespace input {
@@ -35,16 +36,16 @@ namespace input {
 class DrivetrainInputReader {
  public:
   // Inputs driver station button and joystick locations
-  DrivetrainInputReader(driver_station::JoystickAxis kSteeringWheel,
-                        driver_station::JoystickAxis kDriveThrottle,
-                        driver_station::ButtonLocation kQuickTurn,
-                        driver_station::ButtonLocation kTurn1,
-                        driver_station::ButtonLocation kTurn2)
-      : kSteeringWheel(kSteeringWheel),
-        kDriveThrottle(kDriveThrottle),
-        kQuickTurn(kQuickTurn),
-        kTurn1(kTurn1),
-        kTurn2(kTurn2) {}
+  DrivetrainInputReader(driver_station::JoystickAxis steering_wheel,
+                        driver_station::JoystickAxis drive_throttle,
+                        driver_station::ButtonLocation quick_turn,
+                        driver_station::ButtonLocation turn1,
+                        driver_station::ButtonLocation turn2)
+      : steering_wheel_(steering_wheel),
+        drive_throttle_(drive_throttle),
+        quick_turn_(quick_turn),
+        turn1_(turn1),
+        turn2_(turn2) {}
 
   virtual ~DrivetrainInputReader() = default;
 
@@ -56,7 +57,9 @@ class DrivetrainInputReader {
   };
 
   // Constructs the appropriate DrivetrainInputReader.
-  static std::unique_ptr<DrivetrainInputReader> Make(InputType type);
+  static std::unique_ptr<DrivetrainInputReader> Make(
+      InputType type,
+      const ::frc971::control_loops::drivetrain::DrivetrainConfig &dt_config);
 
   // Processes new joystick data and publishes drivetrain goal messages.
   void HandleDrivetrain(const ::aos::input::driver_station::Data &data);
@@ -71,17 +74,18 @@ class DrivetrainInputReader {
   double robot_velocity() const { return robot_velocity_; }
 
  protected:
-  const driver_station::JoystickAxis kSteeringWheel;
-  const driver_station::JoystickAxis kDriveThrottle;
-  const driver_station::ButtonLocation kQuickTurn;
-  const driver_station::ButtonLocation kTurn1;
-  const driver_station::ButtonLocation kTurn2;
+  const driver_station::JoystickAxis steering_wheel_;
+  const driver_station::JoystickAxis drive_throttle_;
+  const driver_station::ButtonLocation quick_turn_;
+  const driver_station::ButtonLocation turn1_;
+  const driver_station::ButtonLocation turn2_;
 
   // Structure containing the (potentially adjusted) steering and throttle
   // values from the joysticks.
   struct WheelAndThrottle {
     double wheel;
     double throttle;
+    bool high_gear;
   };
 
  private:
@@ -105,11 +109,20 @@ class SteeringWheelDrivetrainInputReader : public DrivetrainInputReader {
 
   // Creates a DrivetrainInputReader with the corresponding joystick ports and
   // axis for the big steering wheel and throttle stick.
-  static std::unique_ptr<SteeringWheelDrivetrainInputReader> Make();
+  static std::unique_ptr<SteeringWheelDrivetrainInputReader> Make(
+      bool default_high_gear);
+
+  // Sets the default shifter position
+  void set_default_high_gear(bool default_high_gear) {
+    high_gear_ = default_high_gear;
+    default_high_gear_ = default_high_gear;
+  }
 
  private:
   WheelAndThrottle GetWheelAndThrottle(
       const ::aos::input::driver_station::Data &data) override;
+  bool high_gear_;
+  bool default_high_gear_;
 };
 
 class PistolDrivetrainInputReader : public DrivetrainInputReader {

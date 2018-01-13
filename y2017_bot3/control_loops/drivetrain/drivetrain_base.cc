@@ -19,7 +19,7 @@ const ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0, 0.25, 0.75};
 
 const DrivetrainConfig &GetDrivetrainConfig() {
   static DrivetrainConfig kDrivetrainConfig{
-      ::frc971::control_loops::drivetrain::ShifterType::HALL_EFFECT_SHIFTER,
+      ::frc971::control_loops::drivetrain::ShifterType::SIMPLE_SHIFTER,
       ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
       ::frc971::control_loops::drivetrain::GyroType::SPARTAN_GYRO,
 
