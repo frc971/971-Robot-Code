@@ -1,5 +1,18 @@
 package(default_visibility = ['//visibility:public'])
 
+py_binary(
+  name = 'haptic_wheel',
+  srcs = [
+    'haptic_wheel.py',
+  ],
+  deps = [
+    '//external:python-gflags',
+    '//external:python-glog',
+    '//frc971/control_loops/python:controls',
+  ],
+  restricted_to = ['//tools:k8'],
+)
+
 py_library(
   name = 'controls',
   srcs = [

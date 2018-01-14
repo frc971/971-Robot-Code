@@ -12,7 +12,9 @@
 #include "Eigen/Dense"
 #include "unsupported/Eigen/MatrixFunctions"
 
+#if defined(__linux__)
 #include "aos/common/logging/logging.h"
+#endif
 #include "aos/common/macros.h"
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs,
@@ -151,7 +153,11 @@ class StateFeedbackPlant {
     for (int i = 0; i < kNumInputs; ++i) {
       if (U(i, 0) > U_max(i, 0) + static_cast<Scalar>(0.00001) ||
           U(i, 0) < U_min(i, 0) - static_cast<Scalar>(0.00001)) {
+#if defined(__linux__)
         LOG(FATAL, "U out of range\n");
+#else
+        abort();
+#endif
       }
     }
   }

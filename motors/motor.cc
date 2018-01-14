@@ -10,6 +10,7 @@
 #include "motors/peripheral/can.h"
 
 extern "C" float analog_ratio(uint16_t reading);
+extern "C" float absolute_wheel(uint16_t reading);
 
 namespace frc971 {
 namespace salsa {
@@ -194,7 +195,7 @@ void Motor::HandleInterrupt(const BalancedReadings &balanced,
   // If we fire phase 2, we should go to -2.0 * PI / 3.0 radians.
   // If we fire phase 3, we should go to 2.0 * PI / 3.0 radians.
   // These numbers were confirmed by the python motor simulation.
-  static int phase_to_fire_count = -500000;
+  static int phase_to_fire_count = -300000;
   static int phase_to_fire = 0;
   ++phase_to_fire_count;
   if (phase_to_fire_count > 200000) {
@@ -217,7 +218,8 @@ void Motor::HandleInterrupt(const BalancedReadings &balanced,
   output_registers_[2][0] = 0;
   output_registers_[2][2] = phase_to_fire == 2 ? kPhaseFireWidth : 0;
 #endif
-
+  (void)balanced;
+  (void)captured_wrapped_encoder;
 #if PRINT_READINGS
   static int i = 0;
   if (i == 1000) {
@@ -227,12 +229,19 @@ void Motor::HandleInterrupt(const BalancedReadings &balanced,
       DisableInterrupts disable_interrupts;
       readings = AdcReadSmallInit(disable_interrupts);
     }
+    //printf(
+        //"enc %" PRIu32 " %d %d\n", captured_wrapped_encoder,
+        //static_cast<int>((1.0f - analog_ratio(readings.motor1_abs)) * 7000.0f),
+        //static_cast<int>(captured_wrapped_encoder * 7.0f / 4096.0f * 1000.0f));
+    float wheel_position = absolute_wheel(analog_ratio(readings.wheel_abs));
+
     printf(
-        "enc %d %d %d\n", captured_wrapped_encoder,
-        static_cast<int>((1.0f - analog_ratio(readings.motor0_abs)) * 7000.0f),
-        static_cast<int>(captured_wrapped_encoder * 7.0f / 4096.0f * 1000.0f));
+        "ecnt %" PRIu32 " arev:%d erev:%d %d\n", captured_wrapped_encoder,
+        static_cast<int>((analog_ratio(readings.motor1_abs)) * 7000.0f),
+        static_cast<int>(captured_wrapped_encoder * 7.0f / 4096.0f * 1000.0f),
+        static_cast<int>(wheel_position * 1000.0f));
   } else if (i == 200) {
-#ifdef DO_CONTROLS
+#if DO_CONTROLS
     printf("out %" PRIu32 " %" PRIu32 " %" PRIu32 "\n", switching_points[0],
            switching_points[1], switching_points[2]);
 #else

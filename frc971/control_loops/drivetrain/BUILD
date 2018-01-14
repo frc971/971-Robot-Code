@@ -160,3 +160,62 @@ cc_test(
     '//y2016/control_loops/drivetrain:polydrivetrain_plants',
   ],
 )
+
+genrule(
+  name = 'genrule_haptic_wheel',
+  visibility = ['//visibility:private'],
+  cmd = '$(location //frc971/control_loops/python:haptic_wheel) $(OUTS)',
+  tools = [
+    '//frc971/control_loops/python:haptic_wheel',
+  ],
+  outs = [
+    'haptic_wheel.h',
+    'haptic_wheel.cc',
+    'integral_haptic_wheel.h',
+    'integral_haptic_wheel.cc',
+    'haptic_trigger.h',
+    'haptic_trigger.cc',
+    'integral_haptic_trigger.h',
+    'integral_haptic_trigger.cc',
+  ],
+  restricted_to = ["//tools:k8", "//tools:roborio", "//tools:armhf-debian", "//tools:cortex-m4f"],
+)
+
+cc_library(
+  name = 'haptic_input_uc',
+  hdrs = [
+    'haptic_wheel.h',
+    'integral_haptic_wheel.h',
+    'haptic_trigger.h',
+    'integral_haptic_trigger.h',
+  ],
+  srcs = [
+    'haptic_wheel.cc',
+    'integral_haptic_wheel.cc',
+    'haptic_trigger.cc',
+    'integral_haptic_trigger.cc',
+  ],
+  deps = [
+    '//frc971/control_loops:state_feedback_loop_uc',
+  ],
+  restricted_to = ["//tools:cortex-m4f"],
+)
+
+cc_library(
+  name = 'haptic_wheel',
+  hdrs = [
+    'haptic_wheel.h',
+    'integral_haptic_wheel.h',
+    'haptic_trigger.h',
+    'integral_haptic_trigger.h',
+  ],
+  srcs = [
+    'haptic_wheel.cc',
+    'integral_haptic_wheel.cc',
+    'haptic_trigger.cc',
+    'integral_haptic_trigger.cc',
+  ],
+  deps = [
+    '//frc971/control_loops:state_feedback_loop',
+  ],
+)
