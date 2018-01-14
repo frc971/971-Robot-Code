@@ -105,3 +105,19 @@ new_local_repository(
   path = '/usr',
   build_file = 'debian/libusb.BUILD',
 )
+
+# Created by combining libusb-1.0-0_2%3a1.0.19-1_amd64,
+# libusb-1.0-0-dev_2%3a1.0.19-1, and libudev1_215-17+deb8u7.
+new_http_archive(
+  name = 'libusb_1_0',
+  build_file = 'debian/libusb-1.0.BUILD',
+  url = 'http://frc971.org/Build-Dependencies/libusb-1.0-1.0.19.tar.xz',
+  sha256 = '12acb30faacd10e9aa7f3a5e074701e167ce9bbd45694db37d13d55de5398816',
+)
+
+# Recompressed from libusb-1.0.21.7z.
+http_file(
+  name = 'libusb_1_0_windows',
+  url = 'http://frc971.org/Build-Dependencies/libusb-1.0.21-windows.tar.xz',
+  sha256 = 'fc2ba03992f343aabbaf9eb90559c6e00cdc6a2bd914d7cebea85857d5244015',
+)

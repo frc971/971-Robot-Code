@@ -119,17 +119,12 @@ void AcmTty::Initialize() {
   data_tx_endpoint_ = AddEndpoint();
   data_rx_endpoint_ = AddEndpoint();
 
-  {
-    const auto iad_descriptor = CreateDescriptor(
-        iad_descriptor_length(), UsbDescriptorType::kInterfaceAssociation);
-    iad_descriptor->AddByte(status_interface_);       // bFirstInterface
-    iad_descriptor->AddByte(2);                       // bInterfaceCount
-    iad_descriptor->AddByte(communications_class());  // bFunctionClass
-    iad_descriptor->AddByte(communications_subclass::
-                                abstract_control_model());  // bFunctionSubClass
-    iad_descriptor->AddByte(0);                             // bFunctionProtocol
-    iad_descriptor->AddByte(device()->AddString("UsbTty"));  // iFunction
-  }
+  CreateIadDescriptor(
+      /*first_interface=*/status_interface_,
+      /*interface_count=*/2,
+      /*function_class=*/communications_class(),
+      /*function_subclass=*/communications_subclass::abstract_control_model(),
+      /*function_protocol=*/0, "UsbTty");
 
   {
     const auto interface_descriptor = CreateDescriptor(

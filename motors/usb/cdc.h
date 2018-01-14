@@ -116,7 +116,7 @@ class AcmTty final : public UsbFunction {
   EndpointBufferState tx_state_;
   Data01 next_tx_toggle_;
 
-  // These are BdtEntries which we're holding into without releasing back to the
+  // These are BdtEntries which we're holding onto without releasing back to the
   // hardware so that we won't receive any more data until we have space for it.
   // They are only manipulated with interrupts disabled.
   BdtEntry *first_rx_held_ = nullptr, *second_rx_held_ = nullptr;

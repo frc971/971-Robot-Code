@@ -61,16 +61,12 @@ void HidFunction::Initialize() {
   interface_ = AddInterface();
   in_endpoint_ = AddEndpoint();
 
-  {
-    const auto iad_descriptor = CreateDescriptor(
-        iad_descriptor_length(), UsbDescriptorType::kInterfaceAssociation);
-    iad_descriptor->AddByte(interface_);   // bFirstInterface
-    iad_descriptor->AddByte(1);            // bInterfaceCount
-    iad_descriptor->AddByte(hid_class());  // bFunctionClass
-    iad_descriptor->AddByte(0);            // bFunctionSubClass
-    iad_descriptor->AddByte(0);            // bFunctionProtocol
-    iad_descriptor->AddByte(device()->AddString("HidIad"));  // iFunction
-  }
+  CreateIadDescriptor(
+      /*first_interface=*/interface_,
+      /*interface_count=*/1,
+      /*function_class=*/hid_class(),
+      /*function_subclass=*/0,
+      /*function_protocol=*/0, "HidIad");
 
   {
     const auto interface_descriptor = CreateDescriptor(

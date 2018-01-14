@@ -63,6 +63,23 @@ cc_library(
 )
 
 cc_library(
+  name = 'interrupt_out',
+  visibility = ['//visibility:public'],
+  hdrs = [
+    'interrupt_out.h',
+  ],
+  srcs = [
+    'interrupt_out.cc',
+  ],
+  deps = [
+    ':usb',
+    '//motors/core',
+    '//motors:util',
+  ],
+  restricted_to = mcu_cpus,
+)
+
+cc_library(
   name = 'queue',
   hdrs = [
     'queue.h',
