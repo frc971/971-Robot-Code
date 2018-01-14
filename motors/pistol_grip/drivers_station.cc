@@ -99,56 +99,101 @@ void WriteData(teensy::AcmTty *tty1) {
   }
 }
 
-void MoveJoysticks(teensy::HidFunction *joysticks,
-                   teensy::InterruptOut *interrupt_out) {
-  static uint8_t x_axis = 0, y_axis = 97, z_axis = 5, rz_axis = 8;
-  while (true) {
-    {
-      char buffer[64];
-      if (interrupt_out->ReceiveData(buffer) > 0) {
-        if (buffer[0]) {
-          GPIOC_PCOR = 1 << 5;
-        } else {
-          GPIOC_PSOR = 1 << 5;
-        }
-      }
-
-      DisableInterrupts disable_interrupts;
-      uint8_t buttons = 0;
-      if (x_axis % 8u) {
-        buttons = 2;
-      }
-      uint8_t report[10] = {x_axis,  0, y_axis, 0,       z_axis,
-                            rz_axis, 0, 0,      buttons, 0};
-      joysticks->UpdateReport(report, 10, disable_interrupts);
-    }
-    delay(1);
-    x_axis += 1;
-    y_axis += 3;
-    z_axis += 5;
-    rz_axis += 8;
-  }
-}
-
-void ForwardJoystickData(teensy::HidFunction *joysticks) {
+void ForwardJoystickData(teensy::HidFunction *throttle_joystick,
+                         teensy::HidFunction *wheel_joystick,
+                         teensy::InterruptOut *interrupt_out) {
   uint32_t last_command_time = micros();
+  uint16_t trigger_position = 0x8000;
+  uint16_t wheel_position = 0x8000;
+  uint16_t trigger_velocity = 0x8000;
+  uint16_t wheel_velocity = 0x8000;
+  uint16_t trigger_torque = 0x8000;
+  uint16_t wheel_torque = 0x8000;
+  uint16_t buttons = 0x0080;
   while (true) {
-    uint8_t data[8];
+    bool update_report = false;
+
+    uint8_t can_data[8];
     int length;
-    can_receive_command(data, &length);
-    if (length == 3) {
+    can_receive_command(can_data, &length, 0);
+    if (length == 8) {
       last_command_time = micros();
-      DisableInterrupts disable_interrupts;
-      joysticks->UpdateReport(data, 3, disable_interrupts);
+      trigger_position =
+          static_cast<uint16_t>(static_cast<uint32_t>(can_data[0]) |
+                                (static_cast<uint32_t>(can_data[1]) << 8));
+      trigger_velocity =
+          static_cast<uint16_t>(static_cast<uint32_t>(can_data[2]) |
+                                (static_cast<uint32_t>(can_data[3]) << 8));
+      trigger_torque =
+          static_cast<uint16_t>(static_cast<uint32_t>(can_data[4]) |
+                                (static_cast<uint32_t>(can_data[5]) << 8));
+
+      buttons = static_cast<uint16_t>(
+          (buttons & 0xc) | (static_cast<uint32_t>(can_data[7] & 0xc0) >> 6));
+      update_report = true;
+    }
+
+    can_receive_command(can_data, &length, 1);
+    if (length == 8) {
+      last_command_time = micros();
+      wheel_position =
+          static_cast<uint16_t>(static_cast<uint32_t>(can_data[0]) |
+                                (static_cast<uint32_t>(can_data[1]) << 8));
+      wheel_velocity =
+          static_cast<uint16_t>(static_cast<uint32_t>(can_data[2]) |
+                                (static_cast<uint32_t>(can_data[3]) << 8));
+      wheel_torque =
+          static_cast<uint16_t>(static_cast<uint32_t>(can_data[4]) |
+                                (static_cast<uint32_t>(can_data[5]) << 8));
+
+      buttons = static_cast<uint16_t>(
+          (buttons & 0x3) | (static_cast<uint32_t>(can_data[7] & 0xc0) >> 4));
+      update_report = true;
     }
 
     static constexpr uint32_t kTimeout = 10000;
     if (!time_after(time_add(last_command_time, kTimeout), micros())) {
+      trigger_position = 0x8000;
+      wheel_position = 0x8000;
+      trigger_velocity = 0x8000;
+      wheel_velocity = 0x8000;
+      trigger_torque = 0x8000;
+      wheel_torque = 0x8000;
+      buttons = 0x0080;
+      update_report = true;
       // Avoid wrapping back into the valid range.
       last_command_time = time_subtract(micros(), kTimeout);
-      uint8_t zeros[] = {0, 0, 0x80};
+    }
+
+    if (update_report) {
       DisableInterrupts disable_interrupts;
-      joysticks->UpdateReport(zeros, 3, disable_interrupts);
+
+      const uint16_t trigger_packet[] = {
+          trigger_position,
+          trigger_velocity,
+          trigger_torque,
+          static_cast<uint16_t>((trigger_position & 0xff) << 8),
+          static_cast<uint16_t>((trigger_velocity & 0xff) << 8),
+          static_cast<uint16_t>((trigger_torque & 0xff) << 8),
+          buttons};
+      throttle_joystick->UpdateReport(trigger_packet, 14, disable_interrupts);
+
+      const uint16_t wheel_packet[] = {
+          wheel_position,
+          wheel_velocity,
+          wheel_torque,
+          static_cast<uint16_t>((wheel_position & 0xff) << 8),
+          static_cast<uint16_t>((wheel_velocity & 0xff) << 8),
+          static_cast<uint16_t>((wheel_torque & 0xff) << 8),
+          buttons};
+      wheel_joystick->UpdateReport(wheel_packet, 14, disable_interrupts);
+    }
+
+    char usb_out_data[teensy::InterruptOut::kSize];
+    const int usb_out_size = interrupt_out->ReceiveData(usb_out_data);
+    if (usb_out_size >= 16) {
+      can_send(0x2, reinterpret_cast<unsigned char *>(usb_out_data), 8, 2);
+      can_send(0x3, reinterpret_cast<unsigned char *>(usb_out_data) + 8, 8, 3);
     }
   }
 }
@@ -198,16 +243,17 @@ extern "C" int main(void) {
   teensy::UsbDevice usb_device(0, 0x16c0, 0x0491);
   usb_device.SetManufacturer("FRC 971 Spartan Robotics");
   usb_device.SetProduct("Pistol Grip Controller interface");
+  teensy::HidFunction throttle_joystick(&usb_device, 14);
+  teensy::HidFunction wheel_joystick(&usb_device, 14);
   teensy::AcmTty tty1(&usb_device);
   teensy::AcmTty tty2(&usb_device);
-  teensy::HidFunction joysticks(&usb_device, 10);
   teensy::InterruptOut interrupt_out(&usb_device, "JoystickForce");
   global_stdout.store(&tty2, ::std::memory_order_release);
   usb_device.Initialize();
 
-  can_init();
+  can_init(0, 1);
 
-  MoveJoysticks(&joysticks, &interrupt_out);
+  ForwardJoystickData(&throttle_joystick, &wheel_joystick, &interrupt_out);
 
   return 0;
 }

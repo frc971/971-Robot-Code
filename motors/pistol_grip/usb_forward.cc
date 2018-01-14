@@ -111,11 +111,13 @@ constexpr uint16_t port_number() { return 10971; }
 
 }  // namespace
 
-int main() {
+int main(int argc, char ** /*argv*/) {
   CHECK_LIBUSB(libusb_init(nullptr));
   libusb_set_debug(nullptr, LIBUSB_LOG_LEVEL_INFO);
 
-  libusb_set_debug(nullptr, LIBUSB_LOG_LEVEL_DEBUG);
+  if (argc > 1) {
+    libusb_set_debug(nullptr, LIBUSB_LOG_LEVEL_DEBUG);
+  }
 
 #ifdef __WINNT__
   {

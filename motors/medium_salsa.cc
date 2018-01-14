@@ -178,7 +178,7 @@ extern "C" int main(void) {
   AdcInitMedium();
   MathInit();
   delay(1000);
-  can_init();
+  can_init(0, 1);
 
   GPIOD_PCOR = 1 << 3;
   GPIO_BITBAND(GPIOD_PDDR, 3) = 1;
@@ -243,7 +243,7 @@ extern "C" int main(void) {
   while (true) {
     unsigned char command_data[8];
     int command_length;
-    can_receive_command(command_data, &command_length);
+    can_receive_command(command_data, &command_length, 0);
     if (command_length == 4) {
       uint32_t result = command_data[0] << 24 | command_data[1] << 16 |
                         command_data[2] << 8 | command_data[3];

@@ -10,14 +10,15 @@
 extern "C" {
 #endif
 
-void can_init(void);
+void can_init(uint32_t id0, uint32_t id1);
 
 // Mailbox is 2 or 3 for the two send mailboxes.
 int can_send(uint32_t can_id, const unsigned char *data, unsigned int length,
              unsigned int mailbox);
 
 // Sets *length to -1 if there isn't a new piece of data to receive.
-void can_receive_command(unsigned char *data, int *length);
+// Mailbox is 0 or 1 for the two receive mailboxes.
+void can_receive_command(unsigned char *data, int *length, int mailbox);
 
 #ifdef __cplusplus
 }

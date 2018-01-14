@@ -19,7 +19,7 @@
 // 16. Using fewer means less for the CAN module (and CPU) to go through looking
 // for actual data.
 // 0 is for sending and 1 is for receiving commands.
-#define NUMBER_MESSAGE_BUFFERS 2
+#define NUMBER_MESSAGE_BUFFERS 4
 
 #if NUMBER_MESSAGE_BUFFERS > 16
 #error Only have 16 message buffers on this part.
@@ -27,7 +27,7 @@
 
 // TODO(Brian): Do something about CAN errors and warnings (enable interrupts?).
 
-void can_init() {
+void can_init(uint32_t id0, uint32_t id1) {
   printf("can_init\n");
 
   SIM_SCGC6 |= SIM_SCGC6_FLEXCAN0;
@@ -53,17 +53,29 @@ void can_init() {
   // Initialize all the buffers and RX filters we're enabling.
 
   // Just in case this does anything...
-  CAN0_RXIMRS[0] = 0;
-  CAN0_MESSAGES[0].prio_id = 0;
+  CAN0_RXIMRS[2] = 0;
+  CAN0_MESSAGES[2].prio_id = 0;
+  CAN0_MESSAGES[2].control_timestamp =
+      CAN_MB_CONTROL_INSERT_CODE(CAN_MB_CODE_TX_INACTIVE);
+
+  CAN0_RXIMRS[3] = 0;
+  CAN0_MESSAGES[3].prio_id = 0;
+  CAN0_MESSAGES[3].control_timestamp =
+      CAN_MB_CONTROL_INSERT_CODE(CAN_MB_CODE_TX_INACTIVE);
+
+  CAN0_RXIMRS[0] = (1 << 31) /* Want to filter out RTRs. */ |
+                   (0 << 30) /* Want to only get standard frames. */ |
+                   (0x1FFC0000) /* Filter on the id. */;
+  CAN0_MESSAGES[0].prio_id = id0 << 18;
   CAN0_MESSAGES[0].control_timestamp =
-      CAN_MB_CONTROL_INSERT_CODE(CAN_MB_CODE_TX_INACTIVE) | CAN_MB_CONTROL_IDE;
+      CAN_MB_CONTROL_INSERT_CODE(CAN_MB_CODE_RX_EMPTY);
 
   CAN0_RXIMRS[1] = (1 << 31) /* Want to filter out RTRs. */ |
-                   (1 << 30) /* Want to only get extended frames. */ |
-                   0xFF /* Filter on the 1-byte VESC id. */;
-  CAN0_MESSAGES[1].prio_id = 0;
+                   (0 << 30) /* Want to only get standard frames. */ |
+                   (0x1FFC0000) /* Filter on the id. */;
+  CAN0_MESSAGES[1].prio_id = id1 << 18;
   CAN0_MESSAGES[1].control_timestamp =
-      CAN_MB_CONTROL_INSERT_CODE(CAN_MB_CODE_RX_EMPTY) | CAN_MB_CONTROL_IDE;
+      CAN_MB_CONTROL_INSERT_CODE(CAN_MB_CODE_RX_EMPTY);
 
   // Using the oscillator clock directly because it's a reasonable frequency and
   // more stable than the PLL-based peripheral clock, which matters.
@@ -165,7 +177,7 @@ int can_send(uint32_t can_id, const unsigned char *data, unsigned int length,
   return 0;
 }
 
-void can_receive_command(unsigned char *data, int *length) {
+void can_receive_command(unsigned char *data, int *length, int mailbox) {
   if (0) {
     static int i = 0;
     if (i++ == 10000) {
@@ -174,9 +186,9 @@ void can_receive_command(unsigned char *data, int *length) {
       i = 0;
     }
   }
-  if ((CAN0_IFLAG1 & (1 << 1)) == 0) {
+  if ((CAN0_IFLAG1 & (1 << mailbox)) == 0) {
     *length = -1;
     return;
   }
-  can_vesc_process_rx(&CAN0_MESSAGES[1], data, length);
+  can_vesc_process_rx(&CAN0_MESSAGES[mailbox], data, length);
 }

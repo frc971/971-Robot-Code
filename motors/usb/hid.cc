@@ -21,7 +21,7 @@ uint8_t kReportDescriptor[] = {
     0x09, 0x04,        // Usage (Joystick),
     0xA1, 0x01,        // Collection (Application),
     0x75, 0x10,        //     Report Size (16),
-    0x95, 0x04,        //     Report Count (4),
+    0x95, 0x06,        //     Report Count (6),
     0x15, 0x00,        //     Logical Minimum (0),
     0x26, 0xFF, 0xFF,  //     Logical Maximum (65535),
     0x35, 0x00,        //     Physical Minimum (0),
@@ -29,14 +29,16 @@ uint8_t kReportDescriptor[] = {
     0x09, 0x30,        //     Usage (X),
     0x09, 0x31,        //     Usage (Y),
     0x09, 0x32,        //     Usage (Z),
-    0x09, 0x35,        //     Usage (Rz),
+    0x09, 0x33,        //     Usage (Rz),
+    0x09, 0x34,        //     Usage (?),
+    0x09, 0x35,        //     Usage (?),
     0x81, 0x02,        //     Input (Variable),
     0x75, 0x01,        //     Report Size (1),
     0x95, 0x10,        //     Report Count (16),
     0x25, 0x01,        //     Logical Maximum (1),
     0x45, 0x01,        //     Physical Maximum (1),
     0x05, 0x09,        //     Usage Page (Button),
-    0x19, 0x01,        //     Usage Minimum (1),
+    0x19, 0x01,        //     Usage Minimum (01),
     0x29, 0x10,        //     Usage Maximum (16),
     0x81, 0x02,        //     Input (Variable),
     0xC0               // End Collection
@@ -90,7 +92,7 @@ void HidFunction::Initialize() {
     endpoint_descriptor->AddByte(
         m_endpoint_attributes_interrupt());                  // bmAttributes
     endpoint_descriptor->AddUint16(in_endpoint_max_size());  // wMaxPacketSize
-    endpoint_descriptor->AddByte(1);                         // bInterval
+    endpoint_descriptor->AddByte(0x8);                        // bInterval
   }
 }
 
