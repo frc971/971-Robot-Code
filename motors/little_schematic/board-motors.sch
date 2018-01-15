@@ -345,14 +345,14 @@ C 36000 37500 1 0 0 output-1.sym
 T 36100 37800 5 10 0 0 0 0 1
 device=OUTPUT
 T 36200 37700 5 10 1 1 0 0 1
-net=M0_CH2F:1
+net=M0_CH0F:1
 }
 C 36400 51400 1 0 0 output-1.sym
 {
 T 36500 51700 5 10 0 0 0 0 1
 device=OUTPUT
 T 36600 51600 5 10 1 1 0 0 1
-net=M0_CH0F:1
+net=M0_CH2F:1
 }
 C 36000 45000 1 0 0 output-1.sym
 {
@@ -892,7 +892,7 @@ C 19600 49400 1 180 0 input-1.sym
 T 19600 49100 5 10 0 0 180 0 1
 device=INPUT
 T 19100 49400 5 10 1 1 0 0 1
-net=M0_CH0:1
+net=M0_CH2:1
 }
 C 20800 49100 1 180 0 input-1.sym
 {
@@ -906,7 +906,7 @@ C 19600 48800 1 180 0 input-1.sym
 T 19600 48500 5 10 0 0 180 0 1
 device=INPUT
 T 19100 48800 5 10 1 1 0 0 1
-net=M0_CH2:1
+net=M0_CH0:1
 }
 C 20800 48500 1 180 0 input-1.sym
 {
