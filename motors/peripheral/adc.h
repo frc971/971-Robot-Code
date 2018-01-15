@@ -24,13 +24,19 @@ struct SmallInitReadings {
   uint16_t wheel_abs;
 };
 
+struct JoystickAdcReadings {
+  uint16_t analog0, analog1, analog2, analog3;
+};
+
 void AdcInitMedium();
 void AdcInitSmall();
+void AdcInitJoystick();
 
 MediumAdcReadings AdcReadMedium(const DisableInterrupts &);
 SmallAdcReadings AdcReadSmall0(const DisableInterrupts &);
 SmallAdcReadings AdcReadSmall1(const DisableInterrupts &);
 SmallInitReadings AdcReadSmallInit(const DisableInterrupts &);
+JoystickAdcReadings AdcReadJoystick(const DisableInterrupts &);
 
 }  // namespace salsa
 }  // namespace frc971

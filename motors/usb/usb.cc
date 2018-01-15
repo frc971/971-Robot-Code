@@ -130,7 +130,7 @@ UsbDevice::UsbDevice(int index, uint16_t vendor_id, uint16_t product_id)
   device_descriptor_->AddUint16(product_id);  // idProduct
   // Increment this whenever you need Windows boxes to actually pay attention to
   // changes.
-  device_descriptor_->AddUint16(15);  // bcdDevice
+  device_descriptor_->AddUint16(24);  // bcdDevice
   // We might overwrite these string descriptor indices later if we get strings
   // to put there.
   device_descriptor_->AddByte(0);  // iManufacturer

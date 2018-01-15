@@ -135,3 +135,25 @@ cc_library(
   ],
   restricted_to = mcu_cpus,
 )
+
+cc_binary(
+  name = 'button_board.elf',
+  srcs = [
+    'button_board.cc',
+  ],
+  deps = [
+    ':util',
+    '//motors/core',
+    '//motors/peripheral:can',
+    '//motors/peripheral:adc',
+    '//motors/usb',
+    '//motors/usb:cdc',
+    '//motors/usb:hid',
+  ],
+  restricted_to = mcu_cpus,
+)
+
+hex_from_elf(
+  name = 'button_board',
+  restricted_to = mcu_cpus,
+)

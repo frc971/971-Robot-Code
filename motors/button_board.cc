@@ -1,0 +1,318 @@
+// This file has the main for the Teensy on the button board.
+
+#include <stdio.h>
+#include <inttypes.h>
+#include <atomic>
+
+#include "motors/core/time.h"
+#include "motors/core/kinetis.h"
+#include "motors/peripheral/adc.h"
+#include "motors/peripheral/can.h"
+#include "motors/usb/usb.h"
+#include "motors/usb/cdc.h"
+#include "motors/usb/hid.h"
+#include "motors/util.h"
+
+namespace frc971 {
+namespace motors {
+namespace {
+
+::std::atomic<teensy::AcmTty *> global_stdout{nullptr};
+
+// The HID report descriptor we use.
+constexpr char kReportDescriptor[] = {
+    0x05, 0x01,        // Usage Page (Generic Desktop),
+    0x09, 0x04,        // Usage (Joystick),
+    0xA1, 0x01,        // Collection (Application),
+    0x75, 0x08,        //     Report Size (8),
+    0x95, 0x04,        //     Report Count (4),
+    0x15, 0x00,        //     Logical Minimum (0),
+    0x26, 0xFF, 0x00,  //     Logical Maximum (255),
+    0x35, 0x00,        //     Physical Minimum (0),
+    0x46, 0xFF, 0x00,  //     Physical Maximum (255),
+    0x09, 0x30,        //     Usage (X),
+    0x09, 0x31,        //     Usage (Y),
+    0x09, 0x32,        //     Usage (Z),
+    0x09, 0x33,        //     Usage (Rz),
+    0x81, 0x02,        //     Input (Variable),
+    0x75, 0x01,        //     Report Size (1),
+    0x95, 0x14,        //     Report Count (20),
+    0x25, 0x01,        //     Logical Maximum (1),
+    0x45, 0x01,        //     Physical Maximum (1),
+    0x05, 0x09,        //     Usage Page (Button),
+    0x19, 0x01,        //     Usage Minimum (01),
+    0x29, 0x14,        //     Usage Maximum (20),
+    0x81, 0x02,        //     Input (Variable),
+    0x95, 0x04,        //     Report Count (4),
+    0x81, 0x03,        //     Input (Constant, Variable),
+    0xC0               // End Collection
+};
+
+constexpr uint16_t report_size() { return 1 * 4 + 3; }
+
+void SendJoystickData(teensy::HidFunction *joystick) {
+  uint32_t start = micros();
+  while (true) {
+    salsa::JoystickAdcReadings adc;
+    char report[report_size()];
+    {
+      DisableInterrupts disable_interrupts;
+      adc = salsa::AdcReadJoystick(disable_interrupts);
+    }
+
+    FTM0->C1V = adc.analog0 / 4;
+    FTM0->C0V = adc.analog1 / 4;
+    FTM0->C4V = adc.analog2 / 4;
+    FTM0->C3V = adc.analog3 / 4;
+    FTM0->PWMLOAD = FTM_PWMLOAD_LDOK;
+    report[0] = adc.analog0 / 16;
+    report[1] = adc.analog1 / 16;
+    report[2] = adc.analog2 / 16;
+    report[3] = adc.analog3 / 16;
+
+    report[4] = (GPIO_BITBAND(GPIOD_PDIR, 5) << 0) |
+                (GPIO_BITBAND(GPIOD_PDIR, 6) << 1) |
+                (GPIO_BITBAND(GPIOD_PDIR, 16) << 2) |
+                (GPIO_BITBAND(GPIOB_PDIR, 1) << 3) |
+                (GPIO_BITBAND(GPIOA_PDIR, 14) << 4) |
+                (GPIO_BITBAND(GPIOE_PDIR, 26) << 5) |
+                (GPIO_BITBAND(GPIOA_PDIR, 16) << 6) |
+                (GPIO_BITBAND(GPIOA_PDIR, 15) << 7);
+
+    report[5] = (GPIO_BITBAND(GPIOE_PDIR, 25) << 0) |
+                (GPIO_BITBAND(GPIOE_PDIR, 24) << 1) |
+                (GPIO_BITBAND(GPIOC_PDIR, 3) << 2) |
+                (GPIO_BITBAND(GPIOC_PDIR, 7) << 3) |
+                (GPIO_BITBAND(GPIOD_PDIR, 3) << 4) |
+                (GPIO_BITBAND(GPIOD_PDIR, 2) << 5) |
+                (GPIO_BITBAND(GPIOD_PDIR, 7) << 6) |
+                (GPIO_BITBAND(GPIOA_PDIR, 13) << 7);
+
+    report[6] = (GPIO_BITBAND(GPIOA_PDIR, 12) << 0) |
+                (GPIO_BITBAND(GPIOD_PDIR, 0) << 1) |
+                (GPIO_BITBAND(GPIOB_PDIR, 17) << 2) |
+                (GPIO_BITBAND(GPIOB_PDIR, 16) << 3);
+
+    {
+      DisableInterrupts disable_interrupts;
+      joystick->UpdateReport(report, sizeof(report), disable_interrupts);
+    }
+
+    start = delay_from(start, 1);
+  }
+}
+
+void SetupLedFtm(BigFTM *ftm) {
+  // PWMSYNC doesn't matter because we set SYNCMODE down below.
+  ftm->MODE = FTM_MODE_WPDIS;
+  ftm->MODE = FTM_MODE_WPDIS | FTM_MODE_FTMEN;
+  ftm->SC = FTM_SC_CLKS(0) /* Disable counting for now */;
+
+  // Use center-aligned high-true for all the channels.
+  ftm->C0SC = FTM_CSC_ELSB;
+  ftm->C0V = 0;
+  ftm->C1SC = FTM_CSC_ELSB;
+  ftm->C1V = 0;
+  ftm->C2SC = FTM_CSC_ELSB;
+  ftm->C2V = 0;
+  ftm->C3SC = FTM_CSC_ELSB;
+  ftm->C3V = 0;
+  ftm->C4SC = FTM_CSC_ELSB;
+  ftm->C4V = 0;
+  ftm->C5SC = FTM_CSC_ELSB;
+  ftm->C5V = 0;
+  ftm->C6SC = FTM_CSC_ELSB;
+  ftm->C6V = 0;
+  ftm->C7SC = FTM_CSC_ELSB;
+  ftm->C7V = 0;
+
+  ftm->COMBINE = FTM_COMBINE_SYNCEN3 /* Synchronize updates usefully */ |
+                 FTM_COMBINE_SYNCEN2 /* Synchronize updates usefully */ |
+                 FTM_COMBINE_SYNCEN1 /* Synchronize updates usefully */ |
+                 FTM_COMBINE_SYNCEN0 /* Synchronize updates usefully */;
+
+  ftm->CNTIN = 0;
+  ftm->CNT = 0;
+  ftm->MOD = 1024;
+  ftm->OUTINIT = 0;
+  ftm->POL = 0;
+  ftm->SYNCONF =
+      FTM_SYNCONF_HWWRBUF /* Hardware trigger flushes switching points */ |
+      FTM_SYNCONF_SWWRBUF /* Software trigger flushes switching points */ |
+      FTM_SYNCONF_SWRSTCNT /* Software trigger resets the count */ |
+      FTM_SYNCONF_SYNCMODE /* Use the new synchronization mode */;
+  // Don't want any intermediate loading points.
+  ftm->PWMLOAD = 0;
+
+  ftm->SYNC = FTM_SYNC_SWSYNC /* Flush everything out right now */;
+  // Wait for the software synchronization to finish.
+  while (ftm->SYNC & FTM_SYNC_SWSYNC) {
+  }
+  ftm->SC = FTM_SC_CPWMS /* Center-aligned PWM */ |
+            FTM_SC_CLKS(1) /* Use the system clock */ |
+            FTM_SC_PS(60) /* Prescaler */;
+
+  ftm->MODE &= ~FTM_MODE_WPDIS;
+}
+
+}  // namespace
+
+extern "C" {
+
+void *__stack_chk_guard = (void *)0x67111971;
+
+int _write(int /*file*/, char *ptr, int len) {
+  teensy::AcmTty *const tty = global_stdout.load(::std::memory_order_acquire);
+  if (tty != nullptr) {
+    return tty->Write(ptr, len);
+  }
+  return 0;
+}
+
+void __stack_chk_fail(void);
+
+}  // extern "C"
+
+extern "C" int main(void) {
+  // for background about this startup delay, please see these conversations
+  // https://forum.pjrc.com/threads/36606-startup-time-(400ms)?p=113980&viewfull=1#post113980
+  // https://forum.pjrc.com/threads/31290-Teensey-3-2-Teensey-Loader-1-24-Issues?p=87273&viewfull=1#post87273
+  delay(400);
+
+  // Set all interrupts to the second-lowest priority to start with.
+  for (int i = 0; i < NVIC_NUM_INTERRUPTS; i++) NVIC_SET_SANE_PRIORITY(i, 0xD);
+
+  // Now set priorities for all the ones we care about. They only have meaning
+  // relative to each other, which means centralizing them here makes it a lot
+  // more manageable.
+  NVIC_SET_SANE_PRIORITY(IRQ_USBOTG, 0x7);
+
+  // Set all the LED pins to output, slew rate controlled, high drive strength.
+  // Builtin
+  GPIO_BITBAND(GPIOC_PDOR, 5) = 1;
+  PORTC_PCR5 = PORT_PCR_DSE | PORT_PCR_SRE | PORT_PCR_MUX(1);
+  GPIO_BITBAND(GPIOC_PDDR, 5) = 1;
+  // LED0 FTM0_CH1
+  GPIO_BITBAND(GPIOC_PDOR, 2) = 0;
+  PORTC_PCR2 = PORT_PCR_DSE | PORT_PCR_ODE | PORT_PCR_SRE | PORT_PCR_MUX(4);
+  GPIO_BITBAND(GPIOC_PDDR, 2) = 1;
+  // LED1 FTM0_CH0
+  GPIO_BITBAND(GPIOC_PDOR, 1) = 0;
+  PORTC_PCR1 = PORT_PCR_DSE | PORT_PCR_ODE | PORT_PCR_SRE | PORT_PCR_MUX(4);
+  GPIO_BITBAND(GPIOC_PDDR, 1) = 1;
+  // LED2 FTM0_CH4
+  GPIO_BITBAND(GPIOD_PDOR, 4) = 0;
+  PORTD_PCR4 = PORT_PCR_DSE | PORT_PCR_ODE | PORT_PCR_SRE | PORT_PCR_MUX(4);
+  GPIO_BITBAND(GPIOD_PDDR, 4) = 1;
+  // LED3 FTM0_CH3
+  GPIO_BITBAND(GPIOC_PDOR, 4) = 0;
+  PORTC_PCR4 = PORT_PCR_DSE | PORT_PCR_ODE | PORT_PCR_SRE | PORT_PCR_MUX(4);
+  GPIO_BITBAND(GPIOC_PDDR, 4) = 1;
+  // LED4 FTM3_CH4 yellow
+  GPIO_BITBAND(GPIOC_PDOR, 8) = 0;
+  PORTC_PCR8 = PORT_PCR_DSE | PORT_PCR_ODE | PORT_PCR_SRE | PORT_PCR_MUX(1);
+  GPIO_BITBAND(GPIOC_PDDR, 8) = 1;
+  // LED5 FTM3_CH5 green
+  GPIO_BITBAND(GPIOC_PDOR, 9) = 0;
+  PORTC_PCR9 = PORT_PCR_DSE | PORT_PCR_ODE | PORT_PCR_SRE | PORT_PCR_MUX(1);
+  GPIO_BITBAND(GPIOC_PDDR, 9) = 1;
+  // LED6 FTM3_CH6 red
+  GPIO_BITBAND(GPIOC_PDOR, 10) = 0;
+  PORTC_PCR10 = PORT_PCR_DSE | PORT_PCR_ODE | PORT_PCR_SRE | PORT_PCR_MUX(1);
+  GPIO_BITBAND(GPIOC_PDDR, 10) = 1;
+
+  // Set up the CAN pins.
+  PORTB_PCR18 = PORT_PCR_DSE | PORT_PCR_MUX(2);
+  PORTB_PCR19 = PORT_PCR_DSE | PORT_PCR_MUX(2);
+
+  // Set up the buttons. The LEDs pull them up to 5V, so the Teensy needs to not
+  // be set to pull up.
+  // BTN0
+  PORTD_PCR5 = PORT_PCR_MUX(1);
+  // BTN1
+  PORTD_PCR6 = PORT_PCR_MUX(1);
+  // BTN2
+  PORTD_PCR16 = PORT_PCR_MUX(1);
+  // BTN3
+  PORTB_PCR1 = PORT_PCR_MUX(1);
+  // BTN4
+  PORTA_PCR14 = PORT_PCR_MUX(1);
+  // BTN5
+  PORTE_PCR26 = PORT_PCR_MUX(1);
+  // BTN6
+  PORTA_PCR16 = PORT_PCR_MUX(1);
+  // BTN7
+  PORTA_PCR15 = PORT_PCR_MUX(1);
+  // BTN8
+  PORTE_PCR25 = PORT_PCR_MUX(1);
+  // BTN9
+  PORTE_PCR24 = PORT_PCR_MUX(1);
+  // BTN10
+  PORTC_PCR3 = PORT_PCR_MUX(1);
+  // BTN11
+  PORTC_PCR7 = PORT_PCR_MUX(1);
+  // BTN12
+  PORTD_PCR3 = PORT_PCR_MUX(1);
+  // BTN13
+  PORTD_PCR2 = PORT_PCR_MUX(1);
+  // BTN14
+  PORTD_PCR7 = PORT_PCR_MUX(1);
+  // BTN15
+  PORTA_PCR13 = PORT_PCR_MUX(1);
+  // BTN16
+  PORTA_PCR12 = PORT_PCR_MUX(1);
+  // BTN17
+  PORTD_PCR0 = PORT_PCR_MUX(1);
+  // BTN18
+  PORTB_PCR17 = PORT_PCR_MUX(1);
+  // BTN19
+  PORTB_PCR16 = PORT_PCR_MUX(1);
+
+  delay(100);
+
+  teensy::UsbDevice usb_device(0, 0x16c0, 0x0492);
+  usb_device.SetManufacturer("FRC 971 Spartan Robotics");
+  usb_device.SetProduct("Spartan Joystick Board");
+  teensy::HidFunction joystick(&usb_device, report_size());
+  joystick.set_report_descriptor(
+      ::std::string(kReportDescriptor, sizeof(kReportDescriptor)));
+  teensy::AcmTty tty1(&usb_device);
+  global_stdout.store(&tty1, ::std::memory_order_release);
+  usb_device.Initialize();
+
+  can_init(0, 1);
+  salsa::AdcInitJoystick();
+  SetupLedFtm(FTM0);
+  SetupLedFtm(FTM3);
+
+  // Leave the LEDs on for a bit longer.
+  delay(300);
+  printf("Done starting up\n");
+
+  // Done starting up, now turn all the LEDs off.
+  GPIO_BITBAND(GPIOC_PDOR, 5) = 0;
+  GPIO_BITBAND(GPIOC_PDOR, 2) = 1;
+  GPIO_BITBAND(GPIOC_PDOR, 1) = 1;
+  GPIO_BITBAND(GPIOD_PDOR, 4) = 1;
+  GPIO_BITBAND(GPIOC_PDOR, 4) = 1;
+  GPIO_BITBAND(GPIOC_PDOR, 8) = 1;
+  GPIO_BITBAND(GPIOC_PDOR, 9) = 1;
+  GPIO_BITBAND(GPIOC_PDOR, 10) = 1;
+
+  SendJoystickData(&joystick);
+
+  return 0;
+}
+
+void __stack_chk_fail(void) {
+  while (true) {
+    GPIOC_PSOR = (1 << 5);
+    printf("Stack corruption detected\n");
+    delay(1000);
+    GPIOC_PCOR = (1 << 5);
+    delay(1000);
+  }
+}
+
+}  // namespace motors
+}  // namespace frc971
