@@ -9,7 +9,7 @@ Grid[1000.000000 0.0000 0.0000 1]
 PolyArea[3100.006200]
 Thermal[0.500000]
 DRC[6.00mil 10.00mil 6.00mil 8.00mil 11.81mil 8.00mil]
-Flags("showdrc,rubberband,nameonpcb,clearnew,snappin,showmask,onlynames")
+Flags("showdrc,rubberband,nameonpcb,clearnew,snappin,onlynames")
 Groups("1,c:3:2:4,s:5:6")
 Styles["Signal,10.00mil,36.00mil,20.00mil,7.00mil:Power,25.00mil,60.00mil,35.00mil,10.00mil:Fat,50.00mil,85.00mil,50.00mil,10.00mil:Skinny,16.00mil,46.00mil,28.00mil,7.00mil"]
 
@@ -2821,7 +2821,7 @@ Layer(1 "top")
 	Line[124.5720mm 72.2480mm 4950.00mil 2890.00mil 10.00mil 14.00mil "clearline"]
 	Line[4950.00mil 2890.00mil 4960.00mil 2890.00mil 10.00mil 14.00mil "clearline"]
 	Line[4890.00mil 3260.00mil 4890.00mil 3182.80mil 10.00mil 14.00mil ""]
-	Text[1260.00mil 3350.00mil 1 98 "20170919" "clearline"]
+	Text[1260.00mil 3350.00mil 1 98 "20180114" "clearline"]
 	Polygon("")
 	(
 		[3630.00mil 2070.00mil] [3630.00mil 2350.00mil] [3030.00mil 2350.00mil] [3030.00mil 2070.00mil] 
@@ -3959,7 +3959,7 @@ Layer(4 "bottom")
 	Line[4890.00mil 81.4220mm 4890.00mil 3240.00mil 10.00mil 14.00mil "clearline"]
 	Line[4890.00mil 80.1220mm 122.7940mm 80.1220mm 16.00mil 14.00mil "clearline"]
 	Line[122.7940mm 80.1220mm 4830.00mil 3150.00mil 16.00mil 14.00mil "clearline"]
-	Text[1280.00mil 3100.00mil 1 98 "20170919" "clearline,onsolder"]
+	Text[1280.00mil 3100.00mil 1 98 "20180114" "clearline,onsolder"]
 	Polygon("")
 	(
 		[4340.00mil 3010.00mil] [4270.00mil 3010.00mil] [4270.00mil 3200.00mil] [4340.00mil 3200.00mil] [4420.00mil 3120.00mil] 
@@ -4123,9 +4123,9 @@ Layer(7 "silk")
 	Text[4650.00mil 3470.00mil 0 98 "MOTOR0" "clearline,onsolder"]
 	Text[3720.00mil 1910.00mil 0 98 "ENC1" "clearline,onsolder"]
 	Text[4790.00mil 1990.00mil 0 98 "MOTOR1" "clearline,onsolder"]
-	Text[2080.00mil 3250.00mil 0 98 "mild salsa v0.1" "clearline,onsolder"]
+	Text[2080.00mil 3250.00mil 0 98 "mild salsa v0.21" "clearline,onsolder"]
 	Text[2080.00mil 3190.00mil 0 98 "FRC 971" "clearline,onsolder"]
-	Text[2070.00mil 3130.00mil 0 98 "20170919" "clearline,onsolder"]
+	Text[2070.00mil 3130.00mil 0 98 "20180114" "clearline,onsolder"]
 )
 Layer(8 "silk")
 (
@@ -4195,9 +4195,9 @@ Layer(8 "silk")
 	Text[3850.00mil 3390.00mil 1 75 "ABS" "clearline"]
 	Text[4190.00mil 3400.00mil 1 75 "3V3" "clearline"]
 	Text[4100.00mil 3400.00mil 1 74 "GND" "clearline"]
-	Text[2090.00mil 3100.00mil 0 98 "medium salsa v0.1" "clearline"]
+	Text[2090.00mil 3100.00mil 0 98 "medium salsa v0.21" "clearline"]
 	Text[2100.00mil 3170.00mil 0 98 "FRC 971" "clearline"]
-	Text[2090.00mil 3230.00mil 0 98 "20170919" "clearline"]
+	Text[2090.00mil 3230.00mil 0 98 "20180114" "clearline"]
 )
 NetList()
 (

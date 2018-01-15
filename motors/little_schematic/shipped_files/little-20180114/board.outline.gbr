@@ -1,0 +1,17 @@
+G04 start of page 6 for group 4 idx 4 *
+G04 Title: board, outline *
+G04 Creator: pcb 20140316 *
+G04 CreationDate: Mon 15 Jan 2018 01:30:57 AM GMT UTC *
+G04 For: brian *
+G04 Format: Gerber/RS-274X *
+G04 PCB-Dimensions (mil): 6000.00 5000.00 *
+G04 PCB-Coordinate-Origin: lower left *
+%MOIN*%
+%FSLAX25Y25*%
+%LNOUTLINE*%
+%ADD105C,0.0100*%
+G54D105*X122000Y325000D02*X530000D01*
+Y135000D01*
+X122000D01*
+Y325000D01*
+M02*
