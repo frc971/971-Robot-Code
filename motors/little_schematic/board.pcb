@@ -9,7 +9,7 @@ Grid[1000.000000 0.0000 0.0000 1]
 PolyArea[3100.006200]
 Thermal[0.500000]
 DRC[6.00mil 10.00mil 6.00mil 8.00mil 11.81mil 8.00mil]
-Flags("showdrc,rubberband,nameonpcb,clearnew,snappin,locknames")
+Flags("showdrc,rubberband,nameonpcb,clearnew,snappin,showmask,onlynames")
 Groups("1,c:3:2:4,s:5:6")
 Styles["Signal,10.00mil,36.00mil,20.00mil,7.00mil:Power,25.00mil,60.00mil,35.00mil,10.00mil:Fat,50.00mil,85.00mil,50.00mil,10.00mil:Skinny,16.00mil,46.00mil,28.00mil,7.00mil"]
 
@@ -1499,7 +1499,7 @@ Element["onsolder" "1206" "C23" "10_uF" 4560.00mil 2760.00mil -51.50mil 151.50mi
 
 	)
 
-Element["" "0603" "C22" "0.15_uF" 4930.00mil 2940.00mil -41.50mil 18.50mil 0 77 ""]
+Element["" "0603" "C22" "0.15_uF" 4930.00mil 2940.00mil -41.50mil 28.50mil 0 77 ""]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
@@ -1665,7 +1665,7 @@ Element["onsolder" "0603" "C50" "0.15_uF" 1500.00mil 2310.00mil 28.50mil 31.50mi
 
 	)
 
-Element["onsolder" "0603" "C57" "0.15_uF" 2760.00mil 3440.00mil -41.50mil -18.50mil 0 100 "auto"]
+Element["onsolder" "0603" "C57" "0.15_uF" 2760.00mil 3440.00mil -41.50mil -28.50mil 0 100 "auto"]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "1" "1" "onsolder,square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "2" "2" "onsolder,square"]
@@ -2512,7 +2512,7 @@ Element["onsolder" "0603" "C65" "3900_pF" 2800.00mil 2480.00mil -21.50mil 48.50m
 
 	)
 
-Element["" "DO214AC" "D1" "unknown" 4440.00mil 2750.00mil 0.0000 0.0000 0 100 ""]
+Element["" "DO214AC" "D1" "unknown" 4440.00mil 2750.00mil -10.00mil 40.00mil 0 100 ""]
 (
 	Pad[-78.50mil 0.0000 -78.50mil 0.0000 99.00mil 20.00mil 79.00mil "2" "2" "square"]
 	Pad[78.50mil 0.0000 78.50mil 0.0000 99.00mil 20.00mil 79.00mil "1" "1" "square,edge2"]
