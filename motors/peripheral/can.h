@@ -12,7 +12,9 @@ extern "C" {
 
 void can_init(void);
 
-int can_send(uint32_t can_id, const unsigned char *data, unsigned int length);
+// Mailbox is 2 or 3 for the two send mailboxes.
+int can_send(uint32_t can_id, const unsigned char *data, unsigned int length,
+             unsigned int mailbox);
 
 // Sets *length to -1 if there isn't a new piece of data to receive.
 void can_receive_command(unsigned char *data, int *length);

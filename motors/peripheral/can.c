@@ -27,11 +27,7 @@
 
 // TODO(Brian): Do something about CAN errors and warnings (enable interrupts?).
 
-// Flags for the interrupt to process which don't actually come from the
-// hardware. Currently, only used for tx buffers.
-static volatile uint32_t can_manual_flags = 0;
-
-void can_init(void) {
+void can_init() {
   printf("can_init\n");
 
   SIM_SCGC6 |= SIM_SCGC6_FLEXCAN0;
@@ -84,13 +80,8 @@ void can_init(void) {
                /* such a fast peripheral clock, this has lots of margin. */ |
                CAN_CTRL2_EACEN /* Match on IDE and RTR. */;
 
-  // Enable interrupts for the RX mailbox.
-  CAN0_IMASK1 = 1 << 1;
-
   // Now take it out of freeze mode.
   CAN0_MCR &= ~CAN_MCR_HALT;
-
-  //NVIC_ENABLE_IRQ(IRQ_CAN_MESSAGE);
 }
 
 static void can_vesc_process_rx(volatile CanMessageBuffer *buffer,
@@ -138,18 +129,21 @@ static void can_vesc_process_rx(volatile CanMessageBuffer *buffer,
   (void)prio_id;
 }
 
-int can_send(uint32_t can_id, const unsigned char *data, unsigned int length) {
-  volatile CanMessageBuffer *const message_buffer = &CAN0_MESSAGES[0];
+int can_send(uint32_t can_id, const unsigned char *data, unsigned int length,
+             unsigned int mailbox) {
+  volatile CanMessageBuffer *const message_buffer = &CAN0_MESSAGES[mailbox];
 
-  if (CAN_MB_CONTROL_EXTRACT_CODE(message_buffer->control_timestamp) ==
-      CAN_MB_CODE_TX_DATA) {
-    return -1;
-  }
+  // Just inactivate the mailbox to start with. Checking if it's done being
+  // transmitted doesn't seem to work like the reference manual describes, so
+  // just take the brute force approach.
+  message_buffer->control_timestamp =
+      CAN_MB_CONTROL_INSERT_CODE(CAN_MB_CODE_TX_INACTIVE);
 
   // Yes, it might actually matter that we clear the interrupt flag before
   // doing stuff...
-  CAN0_IFLAG1 = 1 << (message_buffer - CAN0_MESSAGES);
-  message_buffer->prio_id = can_id;
+  CAN0_IFLAG1 = 1 << mailbox;
+
+  message_buffer->prio_id = (can_id << 18);
   // Copy only the bytes from data that we're supposed to onto the stack, and
   // then move it into the message buffer 32 bits at a time (because it might
   // get unhappy about writing individual bytes). Plus, we have to byte-swap
@@ -164,9 +158,10 @@ int can_send(uint32_t can_id, const unsigned char *data, unsigned int length) {
     message_buffer->data[0] = __builtin_bswap32(data_words[0]);
     message_buffer->data[1] = __builtin_bswap32(data_words[1]);
   }
+  // TODO(Brian): Set IDE and SRR for extended frames.
   message_buffer->control_timestamp =
-      CAN_MB_CONTROL_INSERT_DLC(length) | CAN_MB_CONTROL_SRR |
-      CAN_MB_CONTROL_IDE | CAN_MB_CONTROL_INSERT_CODE(CAN_MB_CODE_TX_DATA);
+      CAN_MB_CONTROL_INSERT_DLC(length) |
+      CAN_MB_CONTROL_INSERT_CODE(CAN_MB_CODE_TX_DATA);
   return 0;
 }
 
