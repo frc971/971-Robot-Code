@@ -198,6 +198,35 @@ void ForwardJoystickData(teensy::HidFunction *throttle_joystick,
   }
 }
 
+// The HID report descriptor we use.
+constexpr char kReportDescriptor[] = {
+    0x05, 0x01,        // Usage Page (Generic Desktop),
+    0x09, 0x04,        // Usage (Joystick),
+    0xA1, 0x01,        // Collection (Application),
+    0x75, 0x10,        //     Report Size (16),
+    0x95, 0x06,        //     Report Count (6),
+    0x15, 0x00,        //     Logical Minimum (0),
+    0x26, 0xFF, 0xFF,  //     Logical Maximum (65535),
+    0x35, 0x00,        //     Physical Minimum (0),
+    0x46, 0xFF, 0xFF,  //     Physical Maximum (65535),
+    0x09, 0x30,        //     Usage (X),
+    0x09, 0x31,        //     Usage (Y),
+    0x09, 0x32,        //     Usage (Z),
+    0x09, 0x33,        //     Usage (Rz),
+    0x09, 0x34,        //     Usage (?),
+    0x09, 0x35,        //     Usage (?),
+    0x81, 0x02,        //     Input (Variable),
+    0x75, 0x01,        //     Report Size (1),
+    0x95, 0x10,        //     Report Count (16),
+    0x25, 0x01,        //     Logical Maximum (1),
+    0x45, 0x01,        //     Physical Maximum (1),
+    0x05, 0x09,        //     Usage Page (Button),
+    0x19, 0x01,        //     Usage Minimum (01),
+    0x29, 0x10,        //     Usage Maximum (16),
+    0x81, 0x02,        //     Input (Variable),
+    0xC0               // End Collection
+};
+
 }  // namespace
 
 extern "C" {
@@ -244,7 +273,11 @@ extern "C" int main(void) {
   usb_device.SetManufacturer("FRC 971 Spartan Robotics");
   usb_device.SetProduct("Pistol Grip Controller interface");
   teensy::HidFunction throttle_joystick(&usb_device, 14);
+  throttle_joystick.set_report_descriptor(
+      ::std::string(kReportDescriptor, sizeof(kReportDescriptor)));
   teensy::HidFunction wheel_joystick(&usb_device, 14);
+  wheel_joystick.set_report_descriptor(
+      ::std::string(kReportDescriptor, sizeof(kReportDescriptor)));
   teensy::AcmTty tty1(&usb_device);
   teensy::AcmTty tty2(&usb_device);
   teensy::InterruptOut interrupt_out(&usb_device, "JoystickForce");

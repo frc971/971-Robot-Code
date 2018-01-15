@@ -15,48 +15,6 @@ constexpr uint8_t set_idle() { return 0x0a; }
 constexpr uint8_t set_protcol() { return 0x0b; }
 }  // namespace hid_class_requests
 
-// The hard-coded HID report descriptor.
-uint8_t kReportDescriptor[] = {
-    0x05, 0x01,        // Usage Page (Generic Desktop),
-    0x09, 0x04,        // Usage (Joystick),
-    0xA1, 0x01,        // Collection (Application),
-    0x75, 0x10,        //     Report Size (16),
-    0x95, 0x06,        //     Report Count (6),
-    0x15, 0x00,        //     Logical Minimum (0),
-    0x26, 0xFF, 0xFF,  //     Logical Maximum (65535),
-    0x35, 0x00,        //     Physical Minimum (0),
-    0x46, 0xFF, 0xFF,  //     Physical Maximum (65535),
-    0x09, 0x30,        //     Usage (X),
-    0x09, 0x31,        //     Usage (Y),
-    0x09, 0x32,        //     Usage (Z),
-    0x09, 0x33,        //     Usage (Rz),
-    0x09, 0x34,        //     Usage (?),
-    0x09, 0x35,        //     Usage (?),
-    0x81, 0x02,        //     Input (Variable),
-    0x75, 0x01,        //     Report Size (1),
-    0x95, 0x10,        //     Report Count (16),
-    0x25, 0x01,        //     Logical Maximum (1),
-    0x45, 0x01,        //     Physical Maximum (1),
-    0x05, 0x09,        //     Usage Page (Button),
-    0x19, 0x01,        //     Usage Minimum (01),
-    0x29, 0x10,        //     Usage Maximum (16),
-    0x81, 0x02,        //     Input (Variable),
-    0xC0               // End Collection
-};
-
-// The hard-coded HID descriptor.
-uint8_t kHidDescriptor[] = {
-    9,                                                      // bLength
-    static_cast<uint8_t>(UsbClassDescriptorType::kHidHid),  // bDescriptorType
-    0x10, 0x01,                                             // bcdHID
-    0,                                                      // bCountryCode
-    1,                                                      // bNumDescriptors
-    static_cast<uint8_t>(
-        UsbClassDescriptorType::kHidReport),  // bDescriptorType
-    sizeof(kReportDescriptor),  // wDescriptorLength
-    0,
-};
-
 }  // namespace
 
 void HidFunction::Initialize() {
@@ -82,7 +40,17 @@ void HidFunction::Initialize() {
     interface_descriptor->AddByte(device()->AddString("Hid"));  // iInterface
   }
 
-  AddPremadeDescriptor(kHidDescriptor, sizeof(kHidDescriptor));
+  {
+    const auto hid_descriptor = hid_descriptor_list_.CreateDescriptor(
+        9, UsbClassDescriptorType::kHidHid);
+    hid_descriptor->AddUint16(0x0110);  // bcdHID
+    hid_descriptor->AddByte(0);         // bCountryCode
+    hid_descriptor->AddByte(1);         // bNumDescriptors
+    hid_descriptor->AddByte(static_cast<uint8_t>(
+        UsbClassDescriptorType::kHidReport));              // bDescriptorType
+    hid_descriptor->AddUint16(report_descriptor_.size());  // wDescriptorLength
+  }
+  AddPremadeDescriptor(hid_descriptor_list_);
 
   {
     const auto endpoint_descriptor = CreateDescriptor(
@@ -169,8 +137,9 @@ UsbFunction::SetupResponse HidFunction::HandleGetDescriptor(
         return SetupResponse::kStall;
       }
       device()->QueueEndpoint0Data(
-          reinterpret_cast<const char *>(kHidDescriptor),
-          ::std::min<int>(setup_packet.length, sizeof(kHidDescriptor)));
+          hid_descriptor_list_.GetData(),
+          ::std::min<int>(setup_packet.length,
+                          hid_descriptor_list_.CurrentSize()));
       return SetupResponse::kHandled;
 
     case static_cast<uint8_t>(UsbClassDescriptorType::kHidReport):
@@ -178,8 +147,8 @@ UsbFunction::SetupResponse HidFunction::HandleGetDescriptor(
         return SetupResponse::kStall;
       }
       device()->QueueEndpoint0Data(
-          reinterpret_cast<const char *>(kReportDescriptor),
-          ::std::min<int>(setup_packet.length, sizeof(kReportDescriptor)));
+          report_descriptor_.data(),
+          ::std::min<int>(setup_packet.length, report_descriptor_.size()));
       return SetupResponse::kHandled;
 
     case static_cast<uint8_t>(UsbClassDescriptorType::kHidPhysical):

@@ -23,6 +23,13 @@ class HidFunction final : public UsbFunction {
   }
   ~HidFunction() override = default;
 
+  // Sets the report descriptor. Must be called at least once.
+  //
+  // May only be called during setup.
+  void set_report_descriptor(const ::std::string &report_descriptor) {
+    report_descriptor_ = report_descriptor;
+  }
+
   void UpdateReport(const void *data, int length,
                     const DisableInterrupts &disable_interrupts) {
     memcpy(report_tx_buffer_to_fill(disable_interrupts), data, length);
@@ -82,6 +89,9 @@ class HidFunction final : public UsbFunction {
   int in_endpoint_;
 
   const int report_max_size_;
+
+  ::std::string report_descriptor_;
+  UsbDescriptorList hid_descriptor_list_;
 };
 
 }  // namespace teensy

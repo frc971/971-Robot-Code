@@ -214,9 +214,21 @@ class UsbDescriptorList {
     memcpy(&data_[start_index], data, length);
   }
 
+  void AddPremadeDescriptor(const UsbDescriptorList &other_list) {
+    other_list.CheckFinished();
+    AddPremadeDescriptor(
+        reinterpret_cast<const uint8_t *>(other_list.data_.data()),
+        other_list.data_.size());
+  }
+
   void CheckFinished() const { assert(open_descriptors_ == 0); }
 
   int CurrentSize() const { return data_.size(); }
+
+  const char *GetData() const {
+    CheckFinished();
+    return data_.data();
+  }
 
  private:
   ::std::unique_ptr<Descriptor> CreateDescriptor(uint8_t length,
@@ -503,6 +515,9 @@ class UsbFunction {
   }
   void AddPremadeDescriptor(const uint8_t *data, int length) {
     device_->config_descriptor_list_.AddPremadeDescriptor(data, length);
+  }
+  void AddPremadeDescriptor(const UsbDescriptorList &other_list) {
+    device_->config_descriptor_list_.AddPremadeDescriptor(other_list);
   }
 
   UsbDevice *device() const { return device_; }
