@@ -8,6 +8,7 @@ namespace aos {
 namespace internal {
 
 class WatcherThreadState;
+class TimerHandlerState;
 
 }  // namespace internal
 
@@ -31,12 +32,15 @@ class ShmEventLoop : public EventLoop {
       const std::string &path, const QueueTypeInfo &type,
       std::function<void(const aos::Message *message)> watcher) override;
 
+  TimerHandler *AddTimer(::std::function<void()> callback) override;
+
   void OnRun(std::function<void()> on_run) override;
   void Run() override;
   void Exit() override;
 
  private:
   friend class internal::WatcherThreadState;
+  friend class internal::TimerHandlerState;
   // This ThreadState ensures that two watchers in the same loop cannot be
   // triggered concurrently.  Because watchers block threads indefinitely, this
   // has to be shared_ptr in case the EventLoop is destroyed before the thread
@@ -53,6 +57,7 @@ class ShmEventLoop : public EventLoop {
 
    private:
     friend class internal::WatcherThreadState;
+    friend class internal::TimerHandlerState;
     friend class ShmEventLoop;
 
     // This mutex ensures that only one watch event happens at a time.

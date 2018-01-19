@@ -78,6 +78,13 @@ class TimeFreezer {
   DISALLOW_COPY_AND_ASSIGN(TimeFreezer);
 };
 
+// Converts a monotonic_clock::duration into a timespec object.
+struct timespec to_timespec(::aos::monotonic_clock::duration duration);
+
+// Converts a monotonic_clock::time_point into a timespec object as time since
+// epoch.
+struct timespec to_timespec(::aos::monotonic_clock::time_point time);
+
 }  // namespace time
 }  // namespace aos
 

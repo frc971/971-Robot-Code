@@ -85,6 +85,21 @@ struct QueueTypeInfo {
   }
 };
 
+// Interface for timers
+class TimerHandler {
+ public:
+  virtual ~TimerHandler() {}
+
+  // Timer should sleep until base, base + offset, base + offset * 2, ...
+  // If repeat_offset isn't set, the timer only expires once.
+  virtual void Setup(monotonic_clock::time_point base,
+                     monotonic_clock::duration repeat_offset =
+                         ::aos::monotonic_clock::zero()) = 0;
+
+  // Stop future calls to callback().
+  virtual void Disable() = 0;
+};
+
 // Virtual base class for all event queue-types.
 class RawEventLoop {
  public:
@@ -98,6 +113,10 @@ class RawEventLoop {
   virtual void OnRun(std::function<void()> on_run) = 0;
 
   bool is_running() const { return is_running_.load(); }
+
+  // Creates a timer that executes callback when the timer expires
+  // Returns a TimerHandle for configuration of the timer
+  virtual TimerHandler *AddTimer(::std::function<void()> callback) = 0;
 
   // Starts receiving events.
   virtual void Run() = 0;

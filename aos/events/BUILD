@@ -24,9 +24,9 @@ cc_library(
   hdrs = ["shm-event-loop.h"],
   srcs = ["shm-event-loop.cc"],
   deps = [
-    "//aos/common:queues",
-    "//aos/vision/events:intrusive_free_list",
     ":event-loop",
+    "//aos/common:queues",
+    "//aos/common/logging:logging",
   ],
 )
 

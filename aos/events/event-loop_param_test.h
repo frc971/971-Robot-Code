@@ -1,6 +1,8 @@
 #ifndef _AOS_EVENTS_EVENT_LOOP_PARAM_TEST_H_
 #define _AOS_EVENTS_EVENT_LOOP_PARAM_TEST_H_
 
+#include <vector>
+
 #include "aos/events/event-loop.h"
 #include "gtest/gtest.h"
 
