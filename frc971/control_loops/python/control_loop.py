@@ -291,8 +291,13 @@ class ControlLoop(object):
 
   def CorrectObserver(self, U):
     """Runs the correct step of the observer update."""
-    self.X_hat += numpy.linalg.inv(self.A) * self.L * (
-        self.Y - self.C * self.X_hat - self.D * U)
+    # See if the KalmanGain exists.  That lets us avoid inverting A.
+    # Otherwise, do the inversion.
+    if hasattr(self, 'KalmanGain'):
+      KalmanGain = self.KalmanGain
+    else:
+      KalmanGain = numpy.linalg.inv(self.A) * self.L
+    self.X_hat += KalmanGain * (self.Y - self.C * self.X_hat - self.D * U)
 
   def UpdateObserver(self, U):
     """Updates the observer given the provided U."""
@@ -510,4 +515,23 @@ class MiniCIM(object):
     # Motor velocity constant
     self.Kv = (self.free_speed / (12.0 - self.resistance * self.free_current))
     # Torque constant
+    self.Kt = self.stall_torque / self.stall_current
+
+
+class BAG(object):
+  # BAG motor specs available at http://motors.vex.com/vexpro-motors/bag-motor
+  def __init__(self):
+    # Stall Torque in (N m)
+    self.stall_torque = 0.43
+    # Stall Current in (Amps)
+    self.stall_current = 53.0
+    # Free Speed in (rad/s)
+    self.free_speed = 13180.0 / 60.0 * 2.0 * numpy.pi
+    # Free Current in (Amps)
+    self.free_current = 1.8
+    # Resistance of the motor (Ohms)
+    self.resistance = 12.0 / self.stall_current
+    # Motor velocity constant (radians / (sec * volt))
+    self.Kv = (self.free_speed / (12.0 - self.resistance * self.free_current))
+    # Torque constant (N * m / A)
     self.Kt = self.stall_torque / self.stall_current
