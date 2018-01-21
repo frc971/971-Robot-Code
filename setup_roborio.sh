@@ -24,6 +24,11 @@ else
   ssh "admin@${ROBOT_HOSTNAME}" 'echo "alias l=\"ls -la\"" >> /etc/profile'
 fi
 
+# Make sure starter.sh has the correct permissions to run the robot code.
+# If missing o+rx, the robot code will not start.  No error messages on
+# some driver stations.
+ssh "admin@${ROBOT_HOSTNAME}" 'chmod go+rx robot_code/starter.sh'
+
 ssh "admin@${ROBOT_HOSTNAME}" 'PATH="${PATH}":/usr/local/natinst/bin/ /usr/local/frc/bin/frcKillRobot.sh -r -t'
 
 echo "Deploying robotCommand startup script"
