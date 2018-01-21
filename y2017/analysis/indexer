@@ -1,0 +1,7 @@
+superstructure.stripped output voltage_indexer
+
+superstructure.stripped status indexer angular_velocity
+superstructure.stripped status indexer voltage_error
+superstructure.stripped status indexer stuck_voltage
+superstructure.stripped goal indexer angular_velocity
+superstructure.stripped status indexer state

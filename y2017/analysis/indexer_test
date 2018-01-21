@@ -1,0 +1,22 @@
+superstructure_lib_test output voltage_indexer
+superstructure_lib_test output voltage_turret
+
+superstructure_lib_test status indexer angular_velocity
+#superstructure_lib_test status indexer voltage_error
+
+#superstructure_lib_test status indexer stuck_voltage_error
+superstructure_lib_test goal indexer angular_velocity
+#superstructure_lib_test position column indexer position
+#superstructure_lib_test status turret position
+
+superstructure_lib_test status indexer stuck -b 5
+superstructure_lib_test status indexer stuck_voltage
+#superstructure_lib_test status indexer voltage_error
+
+#superstructure_lib_test position column indexer posedge_count
+#superstructure_lib_test position column turret posedge_count
+#superstructure_lib_test position column indexer current -b 10
+#superstructure_lib_test position column turret current -b 10
+
+superstructure_lib_test status indexer state
+superstructure_lib_test status turret state

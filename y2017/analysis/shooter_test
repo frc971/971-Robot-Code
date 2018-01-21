@@ -1,0 +1,4 @@
+superstructure_lib_test output voltage_shooter
+
+superstructure_lib_test status shooter angular_velocity
+superstructure_lib_test goal shooter angular_velocity

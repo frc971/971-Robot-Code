@@ -1,0 +1,9 @@
+superstructure.stripped output voltage_indexer
+superstructure.stripped output voltage_turret
+
+superstructure.stripped status indexer angular_velocity
+superstructure.stripped status turret velocity
+superstructure.stripped status indexer voltage_error
+superstructure.stripped status turret voltage_error
+superstructure.stripped status turret position
+superstructure.stripped status turret turret_encoder_angle
