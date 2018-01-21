@@ -50,3 +50,25 @@ cc_library(
   ],
   testonly = True,
 )
+
+cc_test(
+  name = "simulated-event-loop_test",
+  srcs = ["simulated-event-loop_test.cc"],
+  deps = [
+    "//aos/testing:googletest",
+    ":event-loop_param_test",
+    ":simulated-event-loop",
+  ],
+  testonly = True,
+)
+
+cc_library(
+  name = "simulated-event-loop",
+  hdrs = ["simulated-event-loop.h"],
+  srcs = ["simulated-event-loop.cc"],
+  deps = [
+    ":event-loop",
+    "//aos/common:queues",
+  ],
+)
+

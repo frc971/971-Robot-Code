@@ -83,6 +83,14 @@ struct QueueTypeInfo {
     info.queue_length = T::kQueueLength;
     return info;
   }
+
+  // Necessary for the comparison of QueueTypeInfo objects in the
+  // SimulatedEventLoop.
+  bool operator<(const QueueTypeInfo &other) const {
+    if (size != other.size) return size < other.size;
+    if (hash != other.hash) return hash < other.hash;
+    return queue_length < other.queue_length;
+  }
 };
 
 // Interface for timers

@@ -12,7 +12,7 @@ class TimerHandlerState;
 
 }  // namespace internal
 
-// Specialization of EventLoop that is build from queues running out of shared
+// Specialization of EventLoop that is built from queues running out of shared
 // memory. See more details at aos/common/queue.h
 class ShmEventLoop : public EventLoop {
  public:
