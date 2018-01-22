@@ -195,3 +195,16 @@ py_library(
     visibility = ["//visibility:public"],
     deps = ["//y2018/control_loops:python_init"],
 )
+
+py_binary(
+    name = "extended_lqr",
+    srcs = [
+        "extended_lqr.py",
+    ],
+    restricted_to = ["//tools:k8"],
+    deps = [
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:controls",
+    ],
+)
