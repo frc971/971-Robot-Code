@@ -208,3 +208,17 @@ py_binary(
         "//frc971/control_loops/python:controls",
     ],
 )
+
+py_binary(
+  name = 'arm_mpc_py',
+  srcs = [
+    'arm_mpc.py',
+  ],
+  main = 'arm_mpc.py',
+  deps = [
+    '//external:python-gflags',
+    '//external:python-glog',
+    '//frc971/control_loops/python:controls',
+  ],
+  restricted_to = ['//tools:k8'],
+)
