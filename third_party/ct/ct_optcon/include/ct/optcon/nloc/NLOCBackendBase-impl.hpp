@@ -433,6 +433,7 @@ void NLOCBackendBase<STATE_DIM, CONTROL_DIM, P_DIM, V_DIM, SCALAR>::configure(co
             std::shared_ptr<HPIPMInterface<STATE_DIM, CONTROL_DIM>>(new HPIPMInterface<STATE_DIM, CONTROL_DIM>());
 #else
         throw std::runtime_error("HPIPM selected but not built.");
+        #error
 #endif
     }
     else
@@ -1169,8 +1170,9 @@ bool NLOCBackendBase<STATE_DIM, CONTROL_DIM, P_DIM, V_DIM, SCALAR>::lineSearchSi
             }
             else
             {
-#ifdef MATLAB  // in case of no debug printing but still logging, need to compute them \
-    //! compute l2 norms of state and control update
+#ifdef MATLAB
+              // in case of no debug printing but still logging, need to compute them 
+              //! compute l2 norms of state and control update
                 lu_norm_ = computeDiscreteArrayNorm<ControlVectorArray, 2>(u_ff_prev_, uff_local);
                 lx_norm_ = computeDiscreteArrayNorm<StateVectorArray, 2>(x_prev_, x_);
 #endif
@@ -1481,7 +1483,7 @@ void NLOCBackendBase<STATE_DIM, CONTROL_DIM, P_DIM, V_DIM, SCALAR>::prepareSolve
         lqocSolver_->setProblem(lqocProblem_);
 
         //iterate backward up to first stage
-        for (int i = this->lqocProblem_->getNumberOfStages() - 1; i >= startIndex; i--)
+        for (int i = this->lqocProblem_->getNumberOfStages() - 1; i >= static_cast<int>(startIndex); i--)
             lqocSolver_->solveSingleStage(i);
     }
     else

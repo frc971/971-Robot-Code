@@ -69,3 +69,16 @@ py_binary(
   ],
   restricted_to = ['//tools:k8'],
 )
+
+cc_binary(
+    name = "arm_mpc",
+    srcs = [
+        "arm_mpc.cc",
+    ],
+    deps = [
+        "//third_party/ct",
+        "//third_party/matplotlib-cpp",
+        "//third_party/gflags",
+    ],
+    restricted_to = ["//tools:k8"],
+)

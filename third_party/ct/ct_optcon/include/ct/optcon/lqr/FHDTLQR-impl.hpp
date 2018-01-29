@@ -64,7 +64,7 @@ void FHDTLQR<STATE_DIM, CONTROL_DIM, SCALAR>::linearizeModel(const state_vector_
     A.resize(N);
     B.resize(N);
 
-    for (int i = 0; i < N; i++)
+    for (size_t i = 0; i < N; i++)
     {
         A[i] = state_matrix_t::Identity() + dt * derivatives->getDerivativeState(x_trajectory[i], u_trajectory[i]);
         B[i] = dt * derivatives->getDerivativeControl(x_trajectory[i], u_trajectory[i]);

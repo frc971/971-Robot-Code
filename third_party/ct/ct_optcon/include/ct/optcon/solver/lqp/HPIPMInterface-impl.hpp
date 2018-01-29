@@ -375,7 +375,7 @@ void HPIPMInterface<STATE_DIM, CONTROL_DIM>::configureBoxConstraints(
     std::shared_ptr<LQOCProblem<STATE_DIM, CONTROL_DIM>> lqocProblem)
 {
     // stages 1 to N
-    for (size_t i = 0; i < N_ + 1; i++)
+    for (int i = 0; i < N_ + 1; i++)
     {
         nb_[i] = lqocProblem->nb_[i];
 
@@ -411,7 +411,7 @@ template <int STATE_DIM, int CONTROL_DIM>
 void HPIPMInterface<STATE_DIM, CONTROL_DIM>::configureGeneralConstraints(
     std::shared_ptr<LQOCProblem<STATE_DIM, CONTROL_DIM>> lqocProblem)
 {
-    for (size_t i = 0; i < N_ + 1; i++)
+    for (int i = 0; i < N_ + 1; i++)
     {
         // check dimensions
         assert(lqocProblem->d_lb_[i].rows() == lqocProblem->d_ub_[i].rows());

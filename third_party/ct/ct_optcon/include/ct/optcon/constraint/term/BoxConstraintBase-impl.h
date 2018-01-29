@@ -97,7 +97,7 @@ void BoxConstraintBase<DERIVED_DIM, STATE_DIM, CONTROL_DIM, SCALAR>::sanityCheck
     const VectorXs& ub) const
 {
     // assert that the size of constraint vectors is equal to the computed/given number of constraints
-    if (lb.rows() != nCon | ub.rows() != nCon)
+    if (lb.rows() != static_cast<ssize_t>(nCon) || ub.rows() != static_cast<ssize_t>(nCon))
     {
         std::cout << "no. Constraints: " << nCon << std::endl;
         std::cout << "BoxConstraintBase: lb " << lb.transpose() << std::endl;
