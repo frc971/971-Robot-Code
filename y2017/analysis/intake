@@ -1,0 +1,7 @@
+superstructure.stripped output voltage_intake
+
+superstructure.stripped status intake estimator_state position
+superstructure.stripped status intake state
+superstructure.stripped goal intake distance
+superstructure.stripped position intake pot
+superstructure.stripped position intake encoder

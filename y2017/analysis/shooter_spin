@@ -1,0 +1,5 @@
+superstructure.stripped output voltage_shooter -m 70
+superstructure.stripped status shooter angular_velocity
+superstructure.stripped status shooter instantaneous_velocity
+wpilib_interface.stripped.SensorReader robot_state voltage_battery -m 10
+wpilib_interface.stripped.OutputHandler Write raw_shooter -m 0.3

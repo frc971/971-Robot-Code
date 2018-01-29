@@ -1,0 +1,9 @@
+superstructure.stripped output voltage_shooter -m 10
+
+superstructure.stripped status shooter angular_velocity
+superstructure.stripped goal shooter angular_velocity
+superstructure.stripped status shooter instantaneous_velocity
+superstructure.stripped status shooter filtered_velocity
+#superstructure.stripped status shooter fixed_instantaneous_velocity
+superstructure.stripped status shooter voltage_error -m 10
+wpilib_interface.stripped.SensorReader robot_state voltage_battery -m 10
