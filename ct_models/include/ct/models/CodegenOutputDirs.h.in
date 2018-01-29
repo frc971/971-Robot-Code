@@ -1,0 +1,11 @@
+#pragma once
+
+namespace ct {
+namespace models {
+
+static const std::string HYA_CODEGEN_OUTPUT_DIR = "${HYA_CODEGEN_OUTPUT_DIR}";
+static const std::string HYQ_CODEGEN_OUTPUT_DIR = "${HYQ_CODEGEN_OUTPUT_DIR}";
+
+}
+}
+
