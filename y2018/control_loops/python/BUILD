@@ -95,14 +95,66 @@ py_binary(
     ],
 )
 
+cc_library(
+  name = 'dlqr',
+  hdrs = [
+    'dlqr.h',
+  ],
+    deps = [
+        '@slycot_repo//:slicot',
+  ],
+)
+
 cc_binary(
     name = "arm_mpc",
     srcs = [
         "arm_mpc.cc",
     ],
+    deps = [
+        ":arm_bounds",
+        ':dlqr',
+        "//third_party/ct",
+        "//third_party/gflags",
+        "//third_party/matplotlib-cpp",
+        "@cgal_repo//:cgal",
+    ],
+    restricted_to = ["//tools:k8"],
+)
+
+cc_binary(
+    name = "3d_plot",
+    srcs = [
+        "3d_plot.cc",
+    ],
     restricted_to = ["//tools:k8"],
     deps = [
-        "//third_party/ct",
+        ":arm_bounds",
+        "//third_party/gflags",
+        "//third_party/matplotlib-cpp",
+    ],
+)
+
+cc_library(
+    name = "arm_bounds",
+    srcs = [
+        "arm_bounds.cc",
+    ],
+    hdrs = [
+        "arm_bounds.h",
+    ],
+    deps = [
+        "//third_party/eigen",
+        "@cgal_repo//:cgal",
+    ],
+)
+
+cc_binary(
+    name = "2d_plot",
+    srcs = [
+        "2d_plot.cc",
+    ],
+    restricted_to = ["//tools:k8"],
+    deps = [
         "//third_party/gflags",
         "//third_party/matplotlib-cpp",
     ],

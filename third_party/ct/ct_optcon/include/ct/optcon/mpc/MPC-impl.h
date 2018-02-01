@@ -198,7 +198,22 @@ bool MPC<OPTCON_SOLVER>::finishIteration(const core::StateVector<STATE_DIM, Scal
 
     solver_.changeInitialState(x_start);
 
-    bool solveSuccessful = solver_.finishMPCIteration();
+    bool solveSuccessful = true;
+
+    bool foundBetter = true;
+    int numIterations = 0;
+
+    while (true) {
+      foundBetter = solver_.finishIteration();
+
+      numIterations++;
+      if (foundBetter &&
+          (numIterations < solver_.getSettings().max_iterations)) {
+        solver_.prepareMPCIteration();
+      } else {
+        break;
+      }
+    }
 
     if (solveSuccessful)
     {

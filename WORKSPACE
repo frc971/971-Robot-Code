@@ -250,3 +250,10 @@ new_http_archive(
     strip_prefix = "gcc-arm-none-eabi-7-2018-q2-update/",
     url = "http://frc971.org/Build-Dependencies/gcc-arm-none-eabi-7-2018-q2-update-linux.tar.bz2",
 )
+
+new_http_archive(
+    name = "cgal_repo",
+    sha256 = "d564dda558570344b4caa66c5bae2cdae9ef68e07829d64f5651b25f2c6a0e9e",
+    url = "http://frc971.org/Build-Dependencies/cgal-dev-4.5-2.tar.gz",
+    build_file = 'debian/cgal.BUILD',
+)
