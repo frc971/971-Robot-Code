@@ -56,3 +56,16 @@ py_test(
   ],
   restricted_to = ['//tools:k8'],
 )
+
+py_binary(
+  name = 'intake',
+  srcs = [
+    'intake.py',
+  ],
+  deps = [
+    '//external:python-gflags',
+    '//external:python-glog',
+    '//frc971/control_loops/python:controls',
+  ],
+  restricted_to = ['//tools:k8'],
+)
