@@ -343,20 +343,14 @@ def main(argv):
     scenario_plotter.Plot()
 
   # Write the generated constants out to a file.
-  if len(argv) != 5:
-    glog.fatal('Expected .h file name and .cc file name for the intake and integral intake.')
+  if len(argv) != 3:
+    glog.fatal('Expected .h file name and .cc file name for the intake.')
   else:
     namespaces = ['y2018', 'control_loops', 'superstructure']
     intake = Intake('Intake')
     loop_writer = control_loop.ControlLoopWriter(
         'Intake', [intake], namespaces=namespaces)
     loop_writer.Write(argv[1], argv[2])
-
-    integral_intake = IntegralIntake('IntegralIntake')
-    integral_loop_writer = control_loop.ControlLoopWriter(
-        'IntegralIntake', [integral_intake], namespaces=namespaces)
-    integral_loop_writer.Write(argv[3], argv[4])
-
 
 if __name__ == '__main__':
   argv = FLAGS(sys.argv)
