@@ -104,7 +104,8 @@ class Reader : public ::aos::input::JoystickInput {
 
     auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
 
-    new_superstructure_goal->intake.intake_angle = intake_goal_;
+    new_superstructure_goal->intake.left_intake_angle = intake_goal_;
+    new_superstructure_goal->intake.right_intake_angle = intake_goal_;
 
     if (data.IsPressed(kIntakeIn)) {
       // Turn on the rollers.
@@ -121,22 +122,16 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.IsPressed(kArmDown)) {
       // Put the arm down to the intake level.
-      new_superstructure_goal->arm.proximal_position =
-          1.0;  // TODO(Neil): Add real value once we have it.
-      new_superstructure_goal->arm.distal_position =
-          0.0;  // TODO(Neil): Add real value once we have it.
+      new_superstructure_goal->arm_goal_position =
+          1;  // TODO(Neil): Add real value once we have it.
     } else if (data.IsPressed(kArmSwitch)) {
       // Put the arm up to the level of the switch.
-      new_superstructure_goal->arm.proximal_position =
-          1.5;  // TODO(Neil): Add real value once we have it.
-      new_superstructure_goal->arm.distal_position =
-          0.5;  // TODO(Neil): Add real value once we have it.
+      new_superstructure_goal->arm_goal_position =
+          1;  // TODO(Neil): Add real value once we have it.
     } else if (data.IsPressed(kArmScale)) {
       // Put the arm up to the level of the switch.
-      new_superstructure_goal->arm.proximal_position =
-          1.5;  // TODO(Neil): Add real value once we have it.
-      new_superstructure_goal->arm.distal_position =
-          2.0;  // TODO(Neil): Add real value once we have it.
+      new_superstructure_goal->arm_goal_position =
+          1;  // TODO(Neil): Add real value once we have it.
     }
 
     if (data.IsPressed(kClawOpen)) {
