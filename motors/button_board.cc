@@ -72,7 +72,7 @@ void SendJoystickData(teensy::HidFunction *joystick) {
 
     report[4] = (GPIO_BITBAND(GPIOD_PDIR, 5) << 0) |
                 (GPIO_BITBAND(GPIOD_PDIR, 6) << 1) |
-                (GPIO_BITBAND(GPIOD_PDIR, 16) << 2) |
+                (GPIO_BITBAND(GPIOB_PDIR, 0) << 2) |
                 (GPIO_BITBAND(GPIOB_PDIR, 1) << 3) |
                 (GPIO_BITBAND(GPIOA_PDIR, 14) << 4) |
                 (GPIO_BITBAND(GPIOE_PDIR, 26) << 5) |
@@ -232,7 +232,7 @@ extern "C" int main(void) {
   // BTN1
   PORTD_PCR6 = PORT_PCR_MUX(1);
   // BTN2
-  PORTD_PCR16 = PORT_PCR_MUX(1);
+  PORTB_PCR0 = PORT_PCR_MUX(1);
   // BTN3
   PORTB_PCR1 = PORT_PCR_MUX(1);
   // BTN4
