@@ -1013,7 +1013,7 @@ toolchain {
       }
       flag_group {
         iterate_over: 'system_include_paths'
-        flag: '-iquote'
+        flag: '-I'
         flag: '%{system_include_paths}'
       }
     }

@@ -535,3 +535,19 @@ class BAG(object):
     self.Kv = (self.free_speed / (12.0 - self.resistance * self.free_current))
     # Torque constant (N * m / A)
     self.Kt = self.stall_torque / self.stall_current
+
+class MN3510(object):
+  def __init__(self):
+    # http://www.robotshop.com/en/t-motor-navigator-mn3510-360kv-brushless-motor.html#Specifications
+    # Free Current in Amps
+    self.free_current = 0.0
+    # Resistance of the motor
+    self.resistance = 0.188
+    # Stall Current in Amps
+    self.stall_current = 14.0 / self.resistance
+    # Motor velocity constant
+    self.Kv = 360.0 / 60.0 * (2.0 * numpy.pi)
+    # Torque constant Nm / A
+    self.Kt = 1.0 / self.Kv
+    # Stall Torque in N m
+    self.stall_torque = self.Kt * self.stall_current

@@ -24,6 +24,32 @@ hex_from_elf(
 )
 
 cc_binary(
+  name = 'controller.elf',
+  srcs = [
+    'vtable_wheel.cc',
+    'vtable_trigger.cc',
+    'controller.cc',
+  ],
+  deps = [
+    ':motor_controls',
+    '//motors:util',
+    '//motors:motor',
+    '//motors/core',
+    '//motors/peripheral:can',
+    '//motors/peripheral:adc',
+    '//motors/usb',
+    '//motors/usb:cdc',
+    '//frc971/control_loops/drivetrain:haptic_input_uc',
+  ],
+  restricted_to = mcu_cpus,
+)
+
+hex_from_elf(
+  name = 'controller',
+  restricted_to = mcu_cpus,
+)
+
+cc_binary(
   name = 'usb_forward_linux',
   srcs = [
     'usb_forward.cc',
@@ -55,4 +81,22 @@ genrule(
     '$@',
   ]),
   output_to_bindir = True,
+)
+
+cc_library(
+  name = 'motor_controls',
+  visibility = ['//visibility:public'],
+  hdrs = [
+    'motor_controls.h',
+  ],
+  srcs = [
+    'motor_controls.cc',
+  ],
+  deps = [
+    '//motors:math',
+    '//motors:motor',
+    '//motors/peripheral:configuration',
+    '//third_party/eigen',
+  ],
+  restricted_to = mcu_cpus,
 )

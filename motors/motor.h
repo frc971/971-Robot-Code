@@ -63,24 +63,50 @@ class Motor final {
   void set_switching_divisor(int switching_divisor) {
     switching_divisor_ = switching_divisor;
   }
-  void set_encoder_offset(int encoder_offset) {
+  void set_encoder_offset(int32_t encoder_offset) {
     encoder_offset_ = encoder_offset;
+    last_wrapped_encoder_reading_ = wrapped_encoder();
+  }
+  int32_t encoder_offset() const { return encoder_offset_; }
+
+  void set_encoder_calibration_offset(int encoder_offset) {
+    encoder_calibration_offset_ = encoder_offset;
     // Add mechanical_counts_per_revolution to the offset so that when we mod
     // below, we are guaranteed to be > 0 regardless of the encoder multiplier.
     // % isn't well-defined with negative numbers.
-    while (encoder_offset_ < controls_->mechanical_counts_per_revolution()) {
-      encoder_offset_ += controls_->mechanical_counts_per_revolution();
+    while (encoder_calibration_offset_ <
+           controls_->mechanical_counts_per_revolution()) {
+      encoder_calibration_offset_ +=
+          controls_->mechanical_counts_per_revolution();
     }
   }
   void set_encoder_multiplier(int encoder_multiplier) {
     encoder_multiplier_ = encoder_multiplier;
   }
 
+  int32_t absolute_encoder(uint32_t wrapped_encoder_reading) {
+    const uint32_t counts_per_revolution =
+        controls_->mechanical_counts_per_revolution();
+    const uint32_t wrap_down = counts_per_revolution / 4;
+    const uint32_t wrap_up = wrap_down * 3;
+    if (last_wrapped_encoder_reading_ > wrap_up &&
+        wrapped_encoder_reading < wrap_down) {
+      encoder_offset_ += counts_per_revolution;
+    } else if (last_wrapped_encoder_reading_ < wrap_down &&
+               wrapped_encoder_reading > wrap_up) {
+      encoder_offset_ -= counts_per_revolution;
+    }
+
+    last_wrapped_encoder_reading_ = wrapped_encoder_reading;
+
+    return static_cast<int32_t>(wrapped_encoder_reading) + encoder_offset_;
+  }
+
   int encoder() {
     return encoder_multiplier_ * encoder_ftm_->CNT;
   }
   uint32_t wrapped_encoder() {
-    return (encoder() + encoder_offset_) %
+    return (encoder() + encoder_calibration_offset_) %
            controls_->mechanical_counts_per_revolution();
   }
 
@@ -148,8 +174,10 @@ class Motor final {
   float goal_current_ = 0;
   uint32_t last_current_set_time_ = 0;
   int switching_divisor_ = 1;
-  int encoder_offset_ = 0;
+  int encoder_calibration_offset_ = 0;
+  int32_t encoder_offset_ = 0;
   int encoder_multiplier_ = 1;
+  uint32_t last_wrapped_encoder_reading_ = 0;
 
   teensy::AcmTty *debug_tty_ = nullptr;
 };

@@ -103,6 +103,19 @@ cc_library(
   ],
 )
 
+# TODO(austin): Select isn't working right.  We should be able to remove
+# logging conditionally with select and have CPU constraints work correctly.
+cc_library(
+  name = 'state_feedback_loop_uc',
+  hdrs = [
+    'state_feedback_loop.h',
+  ],
+  deps = [
+    '//aos/common:macros',
+    '//third_party/eigen',
+  ],
+  restricted_to = ['//tools:cortex-m4f'],
+)
 cc_library(
   name = 'state_feedback_loop',
   hdrs = [
