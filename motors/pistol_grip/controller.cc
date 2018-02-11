@@ -419,16 +419,16 @@ extern "C" void pit3_isr() {
                               ::std::memory_order_relaxed);
 
   uint8_t buttons = 0;
-  if (!GPIO_BITBAND(GPIOA_PDIR, 14)) {
+  if (!PERIPHERAL_BITBAND(GPIOA_PDIR, 14)) {
     buttons |= 0x1;
   }
-  if (!GPIO_BITBAND(GPIOE_PDIR, 26)) {
+  if (!PERIPHERAL_BITBAND(GPIOE_PDIR, 26)) {
     buttons |= 0x2;
   }
-  if (!GPIO_BITBAND(GPIOC_PDIR, 7)) {
+  if (!PERIPHERAL_BITBAND(GPIOC_PDIR, 7)) {
     buttons |= 0x4;
   }
-  if (!GPIO_BITBAND(GPIOD_PDIR, 0)) {
+  if (!PERIPHERAL_BITBAND(GPIOD_PDIR, 0)) {
     buttons |= 0x8;
   }
 
@@ -587,7 +587,7 @@ extern "C" int main() {
   NVIC_SET_SANE_PRIORITY(IRQ_PIT_CH3, 0x5);
 
   // Set the LED's pin to output mode.
-  GPIO_BITBAND(GPIOC_PDDR, 5) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDDR, 5) = 1;
   PORTC_PCR5 = PORT_PCR_DSE | PORT_PCR_MUX(1);
 
   // Set up the CAN pins.
@@ -634,12 +634,12 @@ extern "C" int main() {
   can_init(2, 3);
 
   GPIOD_PCOR = 1 << 3;
-  GPIO_BITBAND(GPIOD_PDDR, 3) = 1;
+  PERIPHERAL_BITBAND(GPIOD_PDDR, 3) = 1;
   PORTD_PCR3 = PORT_PCR_DSE | PORT_PCR_MUX(1);
   GPIOD_PSOR = 1 << 3;
 
   GPIOC_PCOR = 1 << 4;
-  GPIO_BITBAND(GPIOC_PDDR, 4) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDDR, 4) = 1;
   PORTC_PCR4 = PORT_PCR_DSE | PORT_PCR_MUX(1);
   GPIOC_PSOR = 1 << 4;
 
@@ -774,7 +774,7 @@ extern "C" int main() {
   }
 
   // Turn an LED on for Austin.
-  GPIO_BITBAND(GPIOC_PDDR, 6) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDDR, 6) = 1;
   GPIOC_PCOR = 1 << 6;
   PORTC_PCR6 = PORT_PCR_DSE | PORT_PCR_MUX(1);
 
@@ -839,26 +839,26 @@ extern "C" int main() {
 
   // TODO(Brian): Use SLEEPONEXIT to reduce interrupt latency?
   while (true) {
-    if (!GPIO_BITBAND(GPIOC_PDIR, 11)) {
-      if (!GPIO_BITBAND(GPIOC_PDOR, 5)) {
+    if (!PERIPHERAL_BITBAND(GPIOC_PDIR, 11)) {
+      if (!PERIPHERAL_BITBAND(GPIOC_PDOR, 5)) {
         printf("M0_THW\n");
       }
       GPIOC_PSOR = 1 << 5;
     }
-    if (!GPIO_BITBAND(GPIOD_PDIR, 6)) {
-      if (!GPIO_BITBAND(GPIOC_PDOR, 5)) {
+    if (!PERIPHERAL_BITBAND(GPIOD_PDIR, 6)) {
+      if (!PERIPHERAL_BITBAND(GPIOC_PDOR, 5)) {
         printf("M0_FAULT\n");
       }
       GPIOC_PSOR = 1 << 5;
     }
-    if (!GPIO_BITBAND(GPIOC_PDIR, 2)) {
-      if (!GPIO_BITBAND(GPIOC_PDOR, 5)) {
+    if (!PERIPHERAL_BITBAND(GPIOC_PDIR, 2)) {
+      if (!PERIPHERAL_BITBAND(GPIOC_PDOR, 5)) {
         printf("M1_THW\n");
       }
       GPIOC_PSOR = 1 << 5;
     }
-    if (!GPIO_BITBAND(GPIOD_PDIR, 5)) {
-      if (!GPIO_BITBAND(GPIOC_PDOR, 5)) {
+    if (!PERIPHERAL_BITBAND(GPIOD_PDIR, 5)) {
+      if (!PERIPHERAL_BITBAND(GPIOC_PDOR, 5)) {
         printf("M1_FAULT\n");
       }
       GPIOC_PSOR = 1 << 5;

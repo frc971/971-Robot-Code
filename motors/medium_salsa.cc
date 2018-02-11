@@ -110,7 +110,7 @@ void ConfigurePwmFtm(BigFTM *pwm_ftm) {
 void ZeroMotor() {
 #if 0
   while (true) {
-    if (GPIO_BITBAND(GPIOE_PDIR, 24)) {
+    if (PERIPHERAL_BITBAND(GPIOE_PDIR, 24)) {
       encoder_ftm_->CNT = 0;
       break;
     }
@@ -137,7 +137,7 @@ void ZeroMotor() {
       // value we store because writing anything resets it to CNTIN (ie 0).
       "str %[scratch], [%[cnt]]\n"
       : [scratch] "=&l"(scratch)
-      : [pdir_word] "l"(&GPIO_BITBAND(GPIOE_PDIR, 24)),
+      : [pdir_word] "l"(&PERIPHERAL_BITBAND(GPIOE_PDIR, 24)),
         [cnt] "l"(&FTM1->CNT));
   __enable_irq();
 #endif
@@ -161,10 +161,10 @@ extern "C" int main(void) {
   NVIC_SET_SANE_PRIORITY(IRQ_FTM0, 0x3);
 
   // Set the LED's pin to output mode.
-  GPIO_BITBAND(GPIOC_PDDR, 5) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDDR, 5) = 1;
   PORTC_PCR5 = PORT_PCR_DSE | PORT_PCR_MUX(1);
 
-  GPIO_BITBAND(GPIOA_PDDR, 15) = 1;
+  PERIPHERAL_BITBAND(GPIOA_PDDR, 15) = 1;
   PORTA_PCR15 = PORT_PCR_DSE | PORT_PCR_MUX(1);
 
   // Set up the CAN pins.
@@ -181,7 +181,7 @@ extern "C" int main(void) {
   can_init(0, 1);
 
   GPIOD_PCOR = 1 << 3;
-  GPIO_BITBAND(GPIOD_PDDR, 3) = 1;
+  PERIPHERAL_BITBAND(GPIOD_PDDR, 3) = 1;
   PORTD_PCR3 = PORT_PCR_DSE | PORT_PCR_MUX(1);
   delay(1000);
   GPIOD_PSOR = 1 << 3;

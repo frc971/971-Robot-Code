@@ -87,31 +87,31 @@ void SendJoystickData(teensy::HidFunction *joystick0,
     report0[2] = report1[2] = adc.analog2 / 16;
     report0[3] = report1[3] = adc.analog3 / 16;
 
-    report0[4] = ((GPIO_BITBAND(GPIOD_PDIR, 5) << 0) |
-                  (GPIO_BITBAND(GPIOD_PDIR, 6) << 1) |
-                  (GPIO_BITBAND(GPIOB_PDIR, 0) << 2) |
-                  (GPIO_BITBAND(GPIOB_PDIR, 1) << 3) |
-                  (GPIO_BITBAND(GPIOA_PDIR, 14) << 4) |
-                  (GPIO_BITBAND(GPIOE_PDIR, 26) << 5) |
-                  (GPIO_BITBAND(GPIOA_PDIR, 16) << 6) |
-                  (GPIO_BITBAND(GPIOA_PDIR, 15) << 7)) ^
+    report0[4] = ((PERIPHERAL_BITBAND(GPIOD_PDIR, 5) << 0) |
+                  (PERIPHERAL_BITBAND(GPIOD_PDIR, 6) << 1) |
+                  (PERIPHERAL_BITBAND(GPIOB_PDIR, 0) << 2) |
+                  (PERIPHERAL_BITBAND(GPIOB_PDIR, 1) << 3) |
+                  (PERIPHERAL_BITBAND(GPIOA_PDIR, 14) << 4) |
+                  (PERIPHERAL_BITBAND(GPIOE_PDIR, 26) << 5) |
+                  (PERIPHERAL_BITBAND(GPIOA_PDIR, 16) << 6) |
+                  (PERIPHERAL_BITBAND(GPIOA_PDIR, 15) << 7)) ^
                  0xff;
 
-    report0[5] = ((GPIO_BITBAND(GPIOE_PDIR, 25) << 0) |
-                  (GPIO_BITBAND(GPIOE_PDIR, 24) << 1) |
-                  (GPIO_BITBAND(GPIOC_PDIR, 3) << 2) |
-                  (GPIO_BITBAND(GPIOC_PDIR, 7) << 3) |
-                  (GPIO_BITBAND(GPIOD_PDIR, 3) << 4) |
-                  (GPIO_BITBAND(GPIOD_PDIR, 2) << 5) |
-                  (GPIO_BITBAND(GPIOD_PDIR, 7) << 6) |
-                  (GPIO_BITBAND(GPIOA_PDIR, 13) << 7)) ^
+    report0[5] = ((PERIPHERAL_BITBAND(GPIOE_PDIR, 25) << 0) |
+                  (PERIPHERAL_BITBAND(GPIOE_PDIR, 24) << 1) |
+                  (PERIPHERAL_BITBAND(GPIOC_PDIR, 3) << 2) |
+                  (PERIPHERAL_BITBAND(GPIOC_PDIR, 7) << 3) |
+                  (PERIPHERAL_BITBAND(GPIOD_PDIR, 3) << 4) |
+                  (PERIPHERAL_BITBAND(GPIOD_PDIR, 2) << 5) |
+                  (PERIPHERAL_BITBAND(GPIOD_PDIR, 7) << 6) |
+                  (PERIPHERAL_BITBAND(GPIOA_PDIR, 13) << 7)) ^
                  0xff;
 
     report1[4] =
-        ((GPIO_BITBAND(GPIOA_PDIR, 12) << 0) |
-         (GPIO_BITBAND(GPIOD_PDIR, 0) << 1) |
-         (GPIO_BITBAND(GPIOB_PDIR, 17) << 2) |
-         (GPIO_BITBAND(GPIOB_PDIR, 16) << 3) | (DecodeAnalog(report1[0]) << 4) |
+        ((PERIPHERAL_BITBAND(GPIOA_PDIR, 12) << 0) |
+         (PERIPHERAL_BITBAND(GPIOD_PDIR, 0) << 1) |
+         (PERIPHERAL_BITBAND(GPIOB_PDIR, 17) << 2) |
+         (PERIPHERAL_BITBAND(GPIOB_PDIR, 16) << 3) | (DecodeAnalog(report1[0]) << 4) |
          (DecodeAnalog(report1[1]) << 6)) ^
         0x0f;
     report1[5] = (DecodeAnalog(report1[2])) | (DecodeAnalog(report1[3]) << 2);
@@ -213,37 +213,37 @@ extern "C" int main(void) {
 
   // Set all the LED pins to output, slew rate controlled, high drive strength.
   // Builtin
-  GPIO_BITBAND(GPIOC_PDOR, 5) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDOR, 5) = 1;
   PORTC_PCR5 = PORT_PCR_DSE | PORT_PCR_SRE | PORT_PCR_MUX(1);
-  GPIO_BITBAND(GPIOC_PDDR, 5) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDDR, 5) = 1;
   // LED0 FTM0_CH1
-  GPIO_BITBAND(GPIOC_PDOR, 2) = 0;
+  PERIPHERAL_BITBAND(GPIOC_PDOR, 2) = 0;
   PORTC_PCR2 = PORT_PCR_DSE | PORT_PCR_ODE | PORT_PCR_SRE | PORT_PCR_MUX(4);
-  GPIO_BITBAND(GPIOC_PDDR, 2) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDDR, 2) = 1;
   // LED1 FTM0_CH0
-  GPIO_BITBAND(GPIOC_PDOR, 1) = 0;
+  PERIPHERAL_BITBAND(GPIOC_PDOR, 1) = 0;
   PORTC_PCR1 = PORT_PCR_DSE | PORT_PCR_ODE | PORT_PCR_SRE | PORT_PCR_MUX(4);
-  GPIO_BITBAND(GPIOC_PDDR, 1) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDDR, 1) = 1;
   // LED2 FTM0_CH4
-  GPIO_BITBAND(GPIOD_PDOR, 4) = 0;
+  PERIPHERAL_BITBAND(GPIOD_PDOR, 4) = 0;
   PORTD_PCR4 = PORT_PCR_DSE | PORT_PCR_ODE | PORT_PCR_SRE | PORT_PCR_MUX(4);
-  GPIO_BITBAND(GPIOD_PDDR, 4) = 1;
+  PERIPHERAL_BITBAND(GPIOD_PDDR, 4) = 1;
   // LED3 FTM0_CH3
-  GPIO_BITBAND(GPIOC_PDOR, 4) = 0;
+  PERIPHERAL_BITBAND(GPIOC_PDOR, 4) = 0;
   PORTC_PCR4 = PORT_PCR_DSE | PORT_PCR_ODE | PORT_PCR_SRE | PORT_PCR_MUX(4);
-  GPIO_BITBAND(GPIOC_PDDR, 4) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDDR, 4) = 1;
   // LED4 FTM3_CH4 yellow
-  GPIO_BITBAND(GPIOC_PDOR, 8) = 0;
+  PERIPHERAL_BITBAND(GPIOC_PDOR, 8) = 0;
   PORTC_PCR8 = PORT_PCR_DSE | PORT_PCR_ODE | PORT_PCR_SRE | PORT_PCR_MUX(1);
-  GPIO_BITBAND(GPIOC_PDDR, 8) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDDR, 8) = 1;
   // LED5 FTM3_CH5 green
-  GPIO_BITBAND(GPIOC_PDOR, 9) = 0;
+  PERIPHERAL_BITBAND(GPIOC_PDOR, 9) = 0;
   PORTC_PCR9 = PORT_PCR_DSE | PORT_PCR_ODE | PORT_PCR_SRE | PORT_PCR_MUX(1);
-  GPIO_BITBAND(GPIOC_PDDR, 9) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDDR, 9) = 1;
   // LED6 FTM3_CH6 red
-  GPIO_BITBAND(GPIOC_PDOR, 10) = 0;
+  PERIPHERAL_BITBAND(GPIOC_PDOR, 10) = 0;
   PORTC_PCR10 = PORT_PCR_DSE | PORT_PCR_ODE | PORT_PCR_SRE | PORT_PCR_MUX(1);
-  GPIO_BITBAND(GPIOC_PDDR, 10) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDDR, 10) = 1;
 
   // Set up the CAN pins.
   PORTB_PCR18 = PORT_PCR_DSE | PORT_PCR_MUX(2);
@@ -343,14 +343,14 @@ extern "C" int main(void) {
   printf("Done starting up\n");
 
   // Done starting up, now turn all the LEDs off.
-  GPIO_BITBAND(GPIOC_PDOR, 5) = 0;
-  GPIO_BITBAND(GPIOC_PDOR, 2) = 1;
-  GPIO_BITBAND(GPIOC_PDOR, 1) = 1;
-  GPIO_BITBAND(GPIOD_PDOR, 4) = 1;
-  GPIO_BITBAND(GPIOC_PDOR, 4) = 1;
-  GPIO_BITBAND(GPIOC_PDOR, 8) = 1;
-  GPIO_BITBAND(GPIOC_PDOR, 9) = 1;
-  GPIO_BITBAND(GPIOC_PDOR, 10) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDOR, 5) = 0;
+  PERIPHERAL_BITBAND(GPIOC_PDOR, 2) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDOR, 1) = 1;
+  PERIPHERAL_BITBAND(GPIOD_PDOR, 4) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDOR, 4) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDOR, 8) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDOR, 9) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDOR, 10) = 1;
 
   SendJoystickData(&joystick0, &joystick1);
 

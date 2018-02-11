@@ -260,7 +260,7 @@ extern "C" int main(void) {
   NVIC_SET_SANE_PRIORITY(IRQ_USBOTG, 0x7);
 
   // Set the LED's pin to output mode.
-  GPIO_BITBAND(GPIOC_PDDR, 5) = 1;
+  PERIPHERAL_BITBAND(GPIOC_PDDR, 5) = 1;
   PORTC_PCR5 = PORT_PCR_DSE | PORT_PCR_MUX(1);
 
   // Set up the CAN pins.

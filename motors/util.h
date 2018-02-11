@@ -11,11 +11,11 @@ extern "C"
 {
 #endif
 
-// The GPIO bitband register for a specific bit of a given GPIO register.
+// This bitband register for a specific bit of a given peripheral register.
 //
-// reg really must be one of the GPIO module's addresses
-// (0x400FF000 - 0x400FFFFF).
-#define GPIO_BITBAND(reg, bit)                                             \
+// reg must be an address in one of the peripheral modules (on AIPS0, AIPS1, or
+// GPIO) (0x40000000 - 0x400FFFFF).
+#define PERIPHERAL_BITBAND(reg, bit)                                       \
   (*(volatile uint32_t *)(((uint32_t) & (reg)-0x40000000) * 32 + (bit)*4 + \
                           0x42000000))
 
