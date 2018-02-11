@@ -34,7 +34,6 @@ struct StateFeedbackPlantCoefficients final {
 
   StateFeedbackPlantCoefficients(const StateFeedbackPlantCoefficients &other)
       : A(other.A),
-        A_inv(other.A_inv),
         B(other.B),
         C(other.C),
         D(other.D),
@@ -43,16 +42,14 @@ struct StateFeedbackPlantCoefficients final {
 
   StateFeedbackPlantCoefficients(
       const Eigen::Matrix<Scalar, number_of_states, number_of_states> &A,
-      const Eigen::Matrix<Scalar, number_of_states, number_of_states> &A_inv,
       const Eigen::Matrix<Scalar, number_of_states, number_of_inputs> &B,
       const Eigen::Matrix<Scalar, number_of_outputs, number_of_states> &C,
       const Eigen::Matrix<Scalar, number_of_outputs, number_of_inputs> &D,
       const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_max,
       const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_min)
-      : A(A), A_inv(A_inv), B(B), C(C), D(D), U_min(U_min), U_max(U_max) {}
+      : A(A), B(B), C(C), D(D), U_min(U_min), U_max(U_max) {}
 
   const Eigen::Matrix<Scalar, number_of_states, number_of_states> A;
-  const Eigen::Matrix<Scalar, number_of_states, number_of_states> A_inv;
   const Eigen::Matrix<Scalar, number_of_states, number_of_inputs> B;
   const Eigen::Matrix<Scalar, number_of_outputs, number_of_states> C;
   const Eigen::Matrix<Scalar, number_of_outputs, number_of_inputs> D;
@@ -87,10 +84,6 @@ class StateFeedbackPlant {
     return coefficients().A;
   }
   Scalar A(int i, int j) const { return A()(i, j); }
-  const Eigen::Matrix<Scalar, number_of_states, number_of_states> &A_inv() const {
-    return coefficients().A_inv;
-  }
-  Scalar A_inv(int i, int j) const { return A_inv()(i, j); }
   const Eigen::Matrix<Scalar, number_of_states, number_of_inputs> &B() const {
     return coefficients().B;
   }
@@ -276,11 +269,11 @@ template <int number_of_states, int number_of_inputs, int number_of_outputs,
 struct StateFeedbackObserverCoefficients final {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
-  const Eigen::Matrix<Scalar, number_of_states, number_of_outputs> L;
+  const Eigen::Matrix<Scalar, number_of_states, number_of_outputs> KalmanGain;
 
   StateFeedbackObserverCoefficients(
-      const Eigen::Matrix<Scalar, number_of_states, number_of_outputs> &L)
-      : L(L) {}
+      const Eigen::Matrix<Scalar, number_of_states, number_of_outputs> &KalmanGain)
+      : KalmanGain(KalmanGain) {}
 };
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs,
@@ -299,10 +292,10 @@ class StateFeedbackObserver {
     ::std::swap(coefficients_, other.coefficients_);
   }
 
-  const Eigen::Matrix<Scalar, number_of_states, number_of_outputs> &L() const {
-    return coefficients().L;
+  const Eigen::Matrix<Scalar, number_of_states, number_of_outputs> &KalmanGain() const {
+    return coefficients().KalmanGain;
   }
-  Scalar L(int i, int j) const { return L()(i, j); }
+  Scalar KalmanGain(int i, int j) const { return KalmanGain()(i, j); }
 
   const Eigen::Matrix<Scalar, number_of_states, 1> &X_hat() const {
     return X_hat_;
@@ -326,7 +319,7 @@ class StateFeedbackObserver {
                const Eigen::Matrix<Scalar, number_of_inputs, 1> &U,
                const Eigen::Matrix<Scalar, number_of_outputs, 1> &Y) {
     mutable_X_hat() +=
-        plant.A_inv() * L() * (Y - plant.C() * X_hat() - plant.D() * U);
+        KalmanGain() * (Y - plant.C() * X_hat() - plant.D() * U);
   }
 
   // Sets the current controller to be index, clamped to be within range.
