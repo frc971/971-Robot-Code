@@ -123,7 +123,6 @@ TEST(StateFeedbackLoopTest, UnequalSizes) {
   // compile or have assertion failures at runtime.
   const StateFeedbackPlantCoefficients<2, 4, 7> coefficients(
       Eigen::Matrix<double, 2, 2>::Identity(),
-      Eigen::Matrix<double, 2, 2>::Identity(),
       Eigen::Matrix<double, 2, 4>::Identity(),
       Eigen::Matrix<double, 7, 2>::Identity(),
       Eigen::Matrix<double, 7, 4>::Identity(),

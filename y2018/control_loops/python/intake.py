@@ -103,14 +103,10 @@ class Intake(control_loop.ControlLoop):
     self.KalmanGain, self.Q_steady = controls.kalman(
         A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
 
-    self.L = self.A * self.KalmanGain
-
     # The box formed by U_min and U_max must encompass all possible values,
     # or else Austin's code gets angry.
     self.U_max = numpy.matrix([[12.0]])
     self.U_min = numpy.matrix([[-12.0]])
-
-    self.Kff = controls.TwoStateFeedForwards(self.B, self.Q)
 
     self.InitializeState()
 
@@ -200,8 +196,6 @@ class DelayedIntake(Intake):
 
     self.KalmanGain, self.Q_steady = controls.kalman(
         A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
-
-    self.L = self.A * self.KalmanGain
 
     # The box formed by U_min and U_max must encompass all possible values,
     # or else Austin's code gets angry.
@@ -343,14 +337,19 @@ def main(argv):
     scenario_plotter.Plot()
 
   # Write the generated constants out to a file.
-  if len(argv) != 3:
-    glog.fatal('Expected .h file name and .cc file name for the intake.')
+  if len(argv) != 5:
+    glog.fatal('Expected .h file name and .cc file name for intake and delayed_intake.')
   else:
-    namespaces = ['y2018', 'control_loops', 'superstructure']
+    namespaces = ['y2018', 'control_loops', 'superstructure', 'intake']
     intake = Intake('Intake')
     loop_writer = control_loop.ControlLoopWriter(
         'Intake', [intake], namespaces=namespaces)
     loop_writer.Write(argv[1], argv[2])
+
+    delayed_intake = DelayedIntake('DelayedIntake')
+    loop_writer = control_loop.ControlLoopWriter(
+    'DelayedIntake', [delayed_intake], namespaces=namespaces)
+    loop_writer.Write(argv[3], argv[4])
 
 if __name__ == '__main__':
   argv = FLAGS(sys.argv)

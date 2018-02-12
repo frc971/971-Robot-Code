@@ -279,6 +279,7 @@ class ControlLoop(object):
     """
     self.L = controls.dplace(self.A.T, self.C.T, poles).T
 
+
   def Update(self, U):
     """Simulates one time step with the provided U."""
     #U = numpy.clip(U, self.U_min, self.U_max)
@@ -291,8 +292,6 @@ class ControlLoop(object):
 
   def CorrectObserver(self, U):
     """Runs the correct step of the observer update."""
-    # See if the KalmanGain exists.  That lets us avoid inverting A.
-    # Otherwise, do the inversion.
     if hasattr(self, 'KalmanGain'):
       KalmanGain = self.KalmanGain
     else:
@@ -301,8 +300,12 @@ class ControlLoop(object):
 
   def UpdateObserver(self, U):
     """Updates the observer given the provided U."""
+    if hasattr(self, 'KalmanGain'):
+      KalmanGain = self.KalmanGain
+    else:
+      KalmanGain =  numpy.linalg.inv(self.A) * self.L
     self.X_hat = (self.A * self.X_hat + self.B * U +
-                  self.L * (self.Y - self.C * self.X_hat - self.D * U))
+                  self.A * KalmanGain * (self.Y - self.C * self.X_hat - self.D * U))
 
   def _DumpMatrix(self, matrix_name, matrix, scalar_type):
     """Dumps the provided matrix into a variable called matrix_name.
@@ -352,10 +355,9 @@ class ControlLoop(object):
 
     if plant_coefficient_type.startswith('StateFeedbackPlant'):
       ans.append(self._DumpMatrix('A', self.A, scalar_type))
-      ans.append(self._DumpMatrix('A_inv', numpy.linalg.inv(self.A), scalar_type))
       ans.append(self._DumpMatrix('B', self.B, scalar_type))
       ans.append('  return %s'
-                 '(A, A_inv, B, C, D, U_max, U_min);\n' % (
+                 '(A, B, C, D, U_max, U_min);\n' % (
                      plant_coefficient_type))
     elif plant_coefficient_type.startswith('StateFeedbackHybridPlant'):
       ans.append(self._DumpMatrix('A_continuous', self.A_continuous, scalar_type))
@@ -438,8 +440,13 @@ class ControlLoop(object):
            observer_coefficient_type, self.ObserverFunction())]
 
     if observer_coefficient_type.startswith('StateFeedbackObserver'):
-      ans.append(self._DumpMatrix('L', self.L, scalar_type))
-      ans.append('  return %s(L);\n' % (observer_coefficient_type,))
+      if hasattr(self, 'KalmanGain'):
+        KalmanGain = self.KalmanGain
+      else:
+        KalmanGain =  numpy.linalg.inv(self.A) * self.L
+      ans.append(self._DumpMatrix('KalmanGain', KalmanGain, scalar_type))
+      ans.append('  return %s(KalmanGain);\n' % (observer_coefficient_type,))
+
     elif observer_coefficient_type.startswith('HybridKalman'):
       ans.append(self._DumpMatrix('Q_continuous', self.Q_continuous, scalar_type))
       ans.append(self._DumpMatrix('R_continuous', self.R_continuous, scalar_type))
