@@ -214,7 +214,7 @@ void NLOCBackendMP<STATE_DIM, CONTROL_DIM, P_DIM, V_DIM, SCALAR>::computeLQAppro
     size_t lastIndex)
 {
     // fill terminal cost
-    if (lastIndex == (this->K_ - 1))
+    if (static_cast<int>(lastIndex) == (this->K_ - 1))
         this->initializeCostToGo();
 
     /*

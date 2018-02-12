@@ -64,7 +64,7 @@ void StateFeedbackPolicyHandler<STATE_DIM, CONTROL_DIM, SCALAR>::designWarmStart
     {
         //extend at back with constant value taken from last element
         bool timeIsRelative = true;
-        for (size_t i = 0; i < Kn_new - currentSize; i++)
+        for (int i = 0; i < Kn_new - currentSize; i++)
         {
             FeedbackTraj.push_back(FeedbackTraj.back(), dt_, timeIsRelative);
             FeedForwardTraj.push_back(FeedForwardTraj.back(), dt_, timeIsRelative);
@@ -74,7 +74,7 @@ void StateFeedbackPolicyHandler<STATE_DIM, CONTROL_DIM, SCALAR>::designWarmStart
     else if (Kn_new < currentSize)
     {
         // remove elements from back
-        for (size_t i = 0; i < currentSize - Kn_new; i++)
+        for (int i = 0; i < currentSize - Kn_new; i++)
         {
             FeedbackTraj.pop_back();
             FeedForwardTraj.pop_back();

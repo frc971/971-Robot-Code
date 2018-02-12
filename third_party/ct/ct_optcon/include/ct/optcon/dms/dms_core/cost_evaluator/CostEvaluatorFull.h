@@ -6,7 +6,7 @@ Licensed under Apache2 license (see LICENSE file in main directory)
 
 #pragma once
 
-#include <omp.h>
+//#include <omp.h>
 #include <math.h>
 #include <cmath>
 #include <functional>

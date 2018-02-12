@@ -13,6 +13,9 @@ cc_library(
         "include/blasfeo_d_blas.h",
         "include/blasfeo_m_aux.h",
         "include/blasfeo_s_blas.h",
+        "include/blasfeo_v_aux_ext_dep.h",
+        "include/blasfeo_d_aux_ext_dep.h",
+        "include/blasfeo_i_aux_ext_dep.h",
     ],
     includes = [
         "include",

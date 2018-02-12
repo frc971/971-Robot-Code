@@ -18,12 +18,12 @@ MPC<OPTCON_SOLVER>::MPC(const OptConProblem_t& problem,
     :
 
       solver_(problem, solverSettings),
+      policyHandler_(new PolicyHandler<Policy_t, STATE_DIM, CONTROL_DIM, Scalar_t>()),
       mpc_settings_(mpcsettings),
+      firstRun_(true),
       dynamics_(problem.getNonlinearSystem()->clone()),
       forwardIntegrator_(dynamics_, mpcsettings.stateForwardIntegratorType_),
-      firstRun_(true),
-      runCallCounter_(0),
-      policyHandler_(new PolicyHandler<Policy_t, STATE_DIM, CONTROL_DIM, Scalar_t>())
+      runCallCounter_(0)
 {
     checkSettings(mpcsettings);
 

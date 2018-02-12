@@ -266,8 +266,8 @@ public:
         Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> sparsityMat(outputDim_, inputDim_);
 
         assert((int)(sparsityVec.size()) == outputDim_ * inputDim_);
-        for (size_t row = 0; row < outputDim_; ++row)
-            for (size_t col = 0; col < inputDim_; ++col)
+        for (int row = 0; row < outputDim_; ++row)
+            for (int col = 0; col < inputDim_; ++col)
                 sparsityMat(row, col) = sparsityVec[col + row * inputDim_];
 
         return sparsityMat;
@@ -286,8 +286,8 @@ public:
         Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> sparsityMat(inputDim_, inputDim_);
 
         assert(sparsityVec.size() == inputDim_ * inputDim_);
-        for (size_t row = 0; row < inputDim_; ++row)
-            for (size_t col = 0; col < inputDim_; ++col)
+        for (int row = 0; row < inputDim_; ++row)
+            for (int col = 0; col < inputDim_; ++col)
             {
                 // std::cout << "sparsityVec: " << sparsityRowsHessian_[col + row * this->inputDim_] << std::endl;
                 sparsityMat(row, col) = sparsityVec[col + row * inputDim_];
