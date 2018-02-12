@@ -3,39 +3,28 @@ package y2018.control_loops;
 import "aos/common/controls/control_loops.q";
 import "frc971/control_loops/control_loops.q";
 
-struct JointStatus {
+struct IntakeSideStatus {
   // Is the subsystem zeroed?
   bool zeroed;
 
-  // The state of the subsystem, if applicable.  -1 otherwise.
+  // The state of the subsystem, if applicable.
   int32_t state;
 
   // If true, we have aborted.
   bool estopped;
 
-  // Position of the joint.
+  // Estimated position of the joint.
   float position;
-  // Velocity of the joint in units/second.
+  // Estimated velocity of the joint in units/second.
   float velocity;
-  // Profiled goal position of the joint.
-  float goal_position;
-  // Profiled goal velocity of the joint in units/second.
-  float goal_velocity;
-  // Unprofiled goal position from absoulte zero of the joint.
-  float unprofiled_goal_position;
-  // Unprofiled goal velocity of the joint in units/second.
-  float unprofiled_goal_velocity;
 
-  // The estimated disturbance torque.
-  float disturbance_torque;
+  // Goal position of the joint.
+  float goal_position;
+  // Goal velocity of the joint in units/second.
+  float goal_velocity;
 
   // The calculated velocity with delta x/delta t
   float calculated_velocity;
-
-  // Components of the control loop output
-  float position_power;
-  float velocity_power;
-  float feedforwards_power;
 
   // State of the estimator.
   .frc971.AbsoluteEstimatorState estimator_state;
@@ -47,29 +36,16 @@ struct IntakeGoal {
   // Goal angle in radians of the intake.
   // Zero radians is where the intake is pointing straight out, with positive
   // radians inward towards the cube.
-  double intake_angle;
-};
-
-struct ArmGoal {
-  // Target X distance (paralell to the ground) of the arm endpoint from the
-  // base of the proximal arm (connected to the drivetrain) in meters with
-  // positive meters towards the front of the robot.
-  double proximal_position;
-
-  // Target Y distance (perpendicular to the ground) of the arm endpoint from
-  // the base of the distal arm (connected to the proximal arm) in meters with
-  // positive meters towards the front of the robot.
-  double distal_position;
+  double left_intake_angle;
+  double right_intake_angle;
 };
 
 struct IntakeElasticEncoders {
-  // Values of the encoder connected to the motor end of the series elastic in
-  // radians.
+  // Position of the motor end of the series elastic in radians.
   .frc971.IndexPosition motor_encoder;
 
-  // Values of the encoder connected to the load end of the series elastic in
-  // radians.
-  .frc971.IndexPosition spring_encoder;
+  // Displacement of the spring in radians.
+  double spring_angle;
 };
 
 struct IntakePosition {
@@ -90,20 +66,21 @@ struct IntakePosition {
   IntakeElasticEncoders right;
 };
 
+struct ArmStatus {
+  // TODO(austin): Fill in more state once we know what it is.
+  // State of the estimators.
+  .frc971.AbsoluteEstimatorState proximal_estimator_state;
+  .frc971.AbsoluteEstimatorState distal_estimator_state;
+};
+
 struct ArmPosition {
   // Values of the encoder and potentiometer at the base of the proximal
   // (connected to drivebase) arm in radians.
-  .frc971.PotAndIndexPosition proximal;
+  .frc971.PotAndAbsolutePosition proximal;
 
   // Values of the encoder and potentiometer at the base of the distal
   // (connected to proximal) arm in radians.
-  .frc971.PotAndIndexPosition distal;
-};
-
-struct ClawPosition {
-  // Value of the beam breaker sensor. This value is true if the beam is broken,
-  // false if the beam isn't broken.
-  bool beam_triggered;
+  .frc971.PotAndAbsolutePosition distal;
 };
 
 struct IntakeVoltage {
@@ -129,7 +106,9 @@ queue_group SuperstructureQueue {
 
   message Goal {
     IntakeGoal intake;
-    ArmGoal arm;
+
+    // Used to identiy a position in the planned set of positions on the arm.
+    int32_t arm_goal_position;
 
     bool open_claw;
 
@@ -143,30 +122,24 @@ queue_group SuperstructureQueue {
     // If true, any of the subsystems have aborted.
     bool estopped;
 
-    // Estimated angles and angular velocities of the superstructure subsystems.
-    JointStatus arm;
+    // Status of both intake sides.
+    IntakeSideStatus left_intake;
+    IntakeSideStatus right_intake;
 
-    JointStatus intake;
-
-    bool claw_open;
+    ArmStatus arm;
   };
 
   message Position {
     IntakePosition intake;
     ArmPosition arm;
-    ClawPosition claw;
+
+    // Value of the beam breaker sensor. This value is true if the beam is
+    // broken, false if the beam isn't broken.
+    bool claw_beambreak_triggered;
   };
 
   message Output {
     IntakeOutput intake;
-
-    // Placehodler for when we figure out how we are extending and retracting
-    // the fork tines.
-    bool tines_output;
-
-    // Placeholder for when we figure out how we are deploying and retracting
-    // the fork.
-    bool fork_output;
 
     // Voltage sent to the motors on the proximal joint of the arm.
     double voltage_proximal;
