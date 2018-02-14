@@ -66,6 +66,88 @@ class Dynamics(object):
                 (self.Kv * self.R)
             ]])
 
+        # These constants are for the Extended Kalman Filter
+        # Q is the covariance of the X values.  Use the square of the standard
+        # deviation of the error accumulated each time step.
+        self.Q_x_covariance = numpy.matrix([[0.001**2,0.0,0.0,0.0,0.0,0.0],
+                                       [0.0,0.001**2,0.0,0.0,0.0,0.0],
+                                       [0.0,0.0,0.001**2,0.0,0.0,0.0],
+                                       [0.0,0.0,0.0,0.001**2,0.0,0.0],
+                                       [0.0,0.0,0.0,0.0,10.0**2,0.0],
+                                       [0.0,0.0,0.0,0.0,0.0,10.0**2]])
+        # R is the covariance of the Z values.  Increase the responsiveness to
+        # changes by reducing coresponding term in the R matrix.
+        self.R_y_covariance = numpy.matrix([[0.01**2, 0.0],[0.0, 0.01**2]])
+        # H is the jacobian of the h(x) measurement prediction function
+        self.H_h_jacobian = numpy.matrix([[1.0,0.0,0.0,0.0,0.0,0.0],
+                                          [0.0,0.0,1.0,0.0,0.0,0.0]])
+        self.Identity_matrix = numpy.matrix(numpy.identity(6))
+
+
+    def discrete_dynamics_ekf_predict(self, X_hat, P_covariance_estimate, U,
+                                      sim_dt):
+        """Updates the Extended Kalman Filter state for one timestep.
+        The Extended Kalman Filter is used for estimating the state.
+        From https://en.wikipedia.org/wiki/Extended_Kalman_filter
+
+        The predict step is called for each time advancement in the state.
+        The update step is called when sensor data is available.  The update
+        step does not have to be called each time the predict step is called.
+
+        Args:
+          X, numpy.matrix(4, 1), The state.  [theta1, omega1, theta2, omega2]
+          X_hat, numpy.matrix(6, 1), The EKF state.  [theta1, omega1,
+            theta2, omega2, disturbance_torque1, disturbance_torque2]
+          P_covariance_estimate, numpy.matrix(6,6), Covariance Estimate
+          U, numpy.matrix(2, 1), The input.  [torque1, torque2]
+          sim_dt, The simulation time step.
+
+        Returns:
+          numpy.matrix(6, 1), The Extended Kalman Filter predicted state.
+        """
+        # Predict step
+        #   Compute the state trasition matrix using the Jacobian of state
+        #   estimate
+        F_k = numerical_jacobian_x(self.unbounded_discrete_dynamics_ekf,
+          X_hat, U)
+        #   State estimate
+        X_hat = self.unbounded_discrete_dynamics_ekf(X_hat, U, sim_dt)
+        #   Covariance estimate
+        P_covariance_estimate = F_k * P_covariance_estimate * F_k.T +\
+          self.Q_x_covariance
+        return X_hat, P_covariance_estimate
+
+    def discrete_dynamics_ekf_update(self, X_hat, P_covariance_estimate,
+                                     sim_dt, Y_reading):
+        """Updates the Extended Kalman Filter state for one timestep.
+
+        See discrete_dynamics_ekf_predict() definition for more information.
+
+        Args (in addition to those in discrete_dynamics_ekf_predict():
+          Y_reading, numpy.matrix(2, 1), Position sensor readings.
+            [encoder_angle1_sensor, encoder_angle2_sensor]
+
+        Returns:
+          numpy.matrix(6, 1), The Extended Kalman Filter updated state.
+          numpy.matrix(6, 1), The Extended Kalman Filter updated state.
+        """
+        # Update step
+        #   Measurement residual error of proximal and distal
+        #   joint angles.
+        Y_hat = Y_reading - numpy.matrix([[X_hat[0,0]],[X_hat[2,0]]])
+        #   Residual covariance
+        S = self.H_h_jacobian * P_covariance_estimate * self.H_h_jacobian.T + \
+          self.R_y_covariance
+        #   K is the Near-optimal Kalman gain
+        Kalman_gain = P_covariance_estimate * self.H_h_jacobian.T * \
+          numpy.linalg.inv(S)
+        #   Updated state estimate
+        X_hat = X_hat + Kalman_gain * Y_hat
+        #   Updated covariance estimate
+        P_covariance_estimate = (self.Identity_matrix -
+          Kalman_gain * self.H_h_jacobian) * P_covariance_estimate
+        return X_hat, P_covariance_estimate
+
     def NormilizedMatriciesForState(self, X):
         """Generate K1-4 for the arm ODE.
 
@@ -141,12 +223,44 @@ class Dynamics(object):
         return numpy.matrix([[X[1, 0]], [accel[0, 0]], [X[3, 0]],
                              [accel[1, 0]]])
 
+    def dynamics_ekf(self, X, U):
+        """Calculates the dynamics for a double jointed arm for EKF state.
+
+        The Extended Kalman Filter (EKF) has two more state variables so
+        a second version of the dynamics method is needed.
+
+        Args:
+          X, numpy.matrix(6, 1), The state.  [theta1, omega1, theta2, omega2,
+            disturbance_torque1, disturbance_torque2]
+          U, numpy.matrix(2, 1), The input.  [torque1, torque2]
+
+        Returns:
+          numpy.matrix(4, 1), The derivative of the dynamics.
+        """
+        K1, K2, K3, K4 = self.MatriciesForState(X)
+
+        velocity = numpy.matrix([[X[1, 0]], [X[3, 0]]])
+        # Include the disturbance torques for the Extended Kalman Filter
+        torque = K3 * U - K4 * velocity + numpy.matrix([[X[4, 0]], [X[5, 0]]])
+        # Uncoment the following line to add in disturbance torque and see
+        # if the Kalman Filter takes it out.
+        # torque += numpy.matrix([[-5],[-17]])
+
+        accel = numpy.linalg.inv(K1) * (torque - K2 * velocity)
+
+        return numpy.matrix([[X[1, 0]], [accel[0, 0]], [X[3, 0]],
+                             [accel[1, 0]], [0.0], [0.0]])
+
     def unbounded_discrete_dynamics(self, X, U, dt=None):
         return RungeKutta(lambda startingX: self.dynamics(startingX, U), X,
                           dt or self.dt)
 
+    def unbounded_discrete_dynamics_ekf(self, X, U, dt=None):
+        return RungeKutta(lambda startingX: self.dynamics_ekf(startingX, U), X,
+                          dt or self.dt)
+
     def discrete_dynamics(self, X, U, dt=None):
-        assert((U <= (12.0 + 1e-6)).all())
+        assert((numpy.abs(U) <= (12.0 + 1e-6)).all())
         return self.unbounded_discrete_dynamics(X, U, dt)
 
 
@@ -221,6 +335,19 @@ def K_at_state(dynamics, x, u):
 
     return controls.dlqr(final_A, final_B, Q, R)
 
+def get_encoder_values(X):
+  """Returns simulated encoder readings.
+
+  This method returns the encoder readings.  For now simply use values from X
+  with some noise added in to make the simulation more interesting.
+  """
+  introduced_random_measurement_noise = 0.005
+  introduced_random_measurement_noise = 0.05
+  theta1_measured = X[0,0] + introduced_random_measurement_noise * \
+    2.0 * ( numpy.random.random() - 0.5 )
+  theta2_measured = X[2,0] + introduced_random_measurement_noise * \
+    2.0 * ( numpy.random.random() - 0.5 )
+  return numpy.matrix([[theta1_measured ],[theta2_measured]])
 
 class Trajectory:
     """This class represents a trajectory in theta space."""
@@ -657,6 +784,12 @@ def main():
     theta1_t_array = []
     omega0_t_array = []
     omega1_t_array = []
+    theta0_hat_array = []
+    omega0_hat_array = []
+    theta1_hat_array = []
+    omega1_hat_array = []
+    torque_disturbance_0_hat_array = []
+    torque_disturbance_1_hat_array = []
     alpha0_t_array = []
     alpha1_t_array = []
     distance_t_array = []
@@ -679,6 +812,11 @@ def main():
 
     theta_t = trajectory.theta(goal_distance)
     X = numpy.matrix([[theta_t[0, 0]], [0.0], [theta_t[1, 0]], [0.0]])
+    # X_hat is for the Extended Kalman Filter state estimate
+    X_hat = numpy.matrix([[theta_t[0, 0]], [0.0], [theta_t[1, 0]],
+      [0.0], [0.0], [0.0]])
+    # P is the Covariance Estimate for the Etended Kalman Filter
+    P_covariance_estimate = dynamics.Q_x_covariance.copy()
 
     sim_dt = dt
 
@@ -726,10 +864,23 @@ def main():
         omega0_t_array.append(X[1, 0])
         theta1_t_array.append(X[2, 0])
         omega1_t_array.append(X[3, 0])
+        # Extended Kalman Filter values
+        theta0_hat_array.append(X_hat[0, 0])
+        omega0_hat_array.append(X_hat[1, 0])
+        theta1_hat_array.append(X_hat[2, 0])
+        omega1_hat_array.append(X_hat[3, 0])
+        torque_disturbance_0_hat_array.append(X_hat[4, 0])
+        torque_disturbance_1_hat_array.append(X_hat[5, 0])
 
         distance_t_array.append(goal_distance)
         velocity_t_array.append(goal_velocity)
         acceleration_t_array.append(goal_acceleration)
+
+        # Extended Kalman Filter update step - call each time sensor data is
+        # available.  For now, simulate the sensor reading by using the X
+        # position and adding some noise to it.
+        X_hat, P_covariance_estimate = dynamics.discrete_dynamics_ekf_update(
+          X_hat, P_covariance_estimate, sim_dt, get_encoder_values(X))
 
         R = trajectory.R(goal_distance, velocity=goal_velocity)
         U_ff = numpy.clip(dynamics.ff_u(R, omega_t, alpha_t), -12.0, 12.0)
@@ -804,6 +955,12 @@ def main():
         goal_distance = next_distance
         goal_velocity = next_velocity
 
+        # Push Extended Kalman filter state forwards.
+        # Predict step - call for each time step
+        X_hat, P_covariance_estimate = dynamics.discrete_dynamics_ekf_predict(
+          X_hat, P_covariance_estimate, U, sim_dt)
+
+
         if abs(goal_distance - trajectory.length()) < 1e-2:
             # If we go backwards along the path near the goal, snap us to the
             # end point or we'll never actualy finish.
@@ -816,6 +973,7 @@ def main():
     pylab.title("Trajecotry")
     pylab.plot(theta0_array, theta1_array, label="desired path")
     pylab.plot(theta0_t_array, theta1_t_array, label="actual path")
+    pylab.legend(loc='upper left')
 
     pylab.figure()
     pylab.title("Path derivitives")
@@ -830,7 +988,7 @@ def main():
     pylab.plot(integrated_distance, integrated_omega1_array, label='iomega1')
     pylab.plot(integrated_distance, integrated_theta0_array, label='itheta0')
     pylab.plot(integrated_distance, integrated_theta1_array, label='itheta1')
-    pylab.legend()
+    pylab.legend(loc='upper left')
 
     pylab.figure()
     pylab.title("Path Velocity Plan")
@@ -840,7 +998,7 @@ def main():
         distance_array, trajectory.max_dvelocity_forward_pass, label="passf")
     pylab.plot(
         distance_array, trajectory.max_dvelocity_back_pass, label="passb")
-    pylab.legend()
+    pylab.legend(loc='center')
 
     pylab.figure()
     pylab.title("Path Velocity Plan")
@@ -877,7 +1035,30 @@ def main():
     pylab.plot(t_array, theta0_t_array, label="theta0_t")
     pylab.plot(t_array, theta1_goal_t_array, label="theta1_t_goal")
     pylab.plot(t_array, theta1_t_array, label="theta1_t")
+    pylab.legend(loc='upper left')
+
+    pylab.figure()
+    pylab.title("Angles with Extended Kalman Filter State Values")
+    pylab.plot(t_array, theta0_t_array, label="theta0_t")
+    pylab.plot(t_array, theta0_hat_array, label="theta0_hat")
+    pylab.plot(t_array, theta1_t_array, label="theta1_t")
+    pylab.plot(t_array, theta1_hat_array, label="theta1_hat")
+    pylab.legend(loc='upper left')
+
+    pylab.figure()
+    pylab.title("Angular Velocities with Extended Kalman Filter State Values")
+    pylab.plot(t_array, omega0_t_array, label="omega0_t")
+    pylab.plot(t_array, omega0_hat_array, label="omega0_hat")
+    pylab.plot(t_array, omega1_t_array, label="omega1_t")
+    pylab.plot(t_array, omega1_hat_array, label="omega1_hat")
     pylab.legend()
+
+    pylab.figure()
+    pylab.title("Disturbance Force from Extended Kalman Filter State Values")
+    pylab.plot(t_array, torque_disturbance_0_hat_array, label="torque_disturbance_0_hat")
+    pylab.plot(t_array, torque_disturbance_1_hat_array, label="torque_disturbance_1_hat")
+    pylab.legend()
+
 
     pylab.show()
 
