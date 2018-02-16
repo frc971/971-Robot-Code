@@ -1,4 +1,4 @@
-load('/aos/downloader/downloader', 'aos_downloader')
+load('//aos/downloader:downloader.bzl', 'aos_downloader')
 
 cc_library(
   name = 'constants',

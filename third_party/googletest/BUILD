@@ -6,7 +6,7 @@
 # build targets here, the libraries are independent of their location in
 # a more straightforward way.
 
-load('/tools/build_rules/empty_main', 'empty_main_if_asan')
+load('//tools/build_rules:empty_main.bzl', 'empty_main_if_asan')
 
 licenses(["notice"])
 

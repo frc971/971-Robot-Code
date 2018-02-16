@@ -1,6 +1,6 @@
-load('/aos/build/queues', 'queue_library')
-load('/tools/build_rules/gtk_dependent', 'gtk_dependent_cc_binary', 'gtk_dependent_cc_library')
-load('/tools/build_rules/protobuf', 'proto_cc_library')
+load('//aos/build:queues.bzl', 'queue_library')
+load('//tools/build_rules:gtk_dependent.bzl', 'gtk_dependent_cc_binary', 'gtk_dependent_cc_library')
+load('//tools/build_rules:protobuf.bzl', 'proto_cc_library')
 
 package(default_visibility = ["//visibility:public"])
 

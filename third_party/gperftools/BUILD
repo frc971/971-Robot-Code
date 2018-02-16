@@ -1,7 +1,7 @@
 licenses(['notice'])
 
-load('/tools/build_rules/select', 'cpu_select', 'compiler_select')
-load('/tools/build_rules/empty_main', 'empty_main_if_asan')
+load('//tools/build_rules:select.bzl', 'cpu_select', 'compiler_select')
+load('//tools/build_rules:empty_main.bzl', 'empty_main_if_asan')
 
 common_copts = [
   # Stuff from their Makefile.

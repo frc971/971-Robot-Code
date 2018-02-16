@@ -1,5 +1,5 @@
 package(default_visibility = ['//visibility:public'])
-load('/tools/build_rules/protobuf', 'proto_cc_library')
+load('//tools/build_rules:protobuf.bzl', 'proto_cc_library')
 
 cc_library(
   name = 'image_types',

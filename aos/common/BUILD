@@ -1,6 +1,6 @@
 package(default_visibility = ['//visibility:public'])
 
-load('/aos/build/queues', 'queue_library')
+load('//aos/build:queues.bzl', 'queue_library')
 load("//tools:environments.bzl", "mcu_cpus")
 
 queue_library(

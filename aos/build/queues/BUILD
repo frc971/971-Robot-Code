@@ -1,4 +1,4 @@
-load('/tools/build_rules/ruby', 'ruby_library', 'ruby_binary')
+load('//tools/build_rules:ruby.bzl', 'ruby_library', 'ruby_binary')
 
 ruby_library(
   name = 'lib',

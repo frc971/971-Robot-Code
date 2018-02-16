@@ -2,7 +2,7 @@
 
 licenses(["notice"])
 
-load("/tools/build_rules/select", "compiler_select")
+load("//tools/build_rules:select.bzl", "compiler_select")
 
 ################################################################################
 # Protobuf Runtime Library
@@ -35,7 +35,7 @@ COPTS = [
 LINK_OPTS = ["-lpthread"]
 
 load(
-    "protobuf",
+    ":protobuf.bzl",
     "cc_proto_library",
     "py_proto_library",
     "internal_copied_filegroup",

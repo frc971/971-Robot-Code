@@ -58,7 +58,7 @@ build --experimental_multi_threaded_digest
 build --sandbox_fake_hostname=true
 build --sandbox_fake_username=true
 
-build --experimental_auto_cpu_environment_group=//tools:cpus
+build --auto_cpu_environment_group=//tools:cpus
 startup --host_jvm_args=-Dbazel.DigestFunction=SHA1
 
 common --watchfs

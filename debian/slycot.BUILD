@@ -1,7 +1,7 @@
 # TODO(austin): I bet this is wrong.
 licenses(['restricted'])
 
-load('/tools/build_rules/fortran', 'fortran_library')
+load('@//tools/build_rules:fortran.bzl', 'fortran_library')
 
 # We can't create _wrapper.so in the slycot folder, and can't move it.
 # The best way I found to do this is to modify _wrapper.pyf to instead generate

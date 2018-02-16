@@ -1,6 +1,6 @@
-load('/tools/build_rules/ruby', 'ruby_binary')
-load('/aos/build/queues', 'queue_library')
-load('/tools/build_rules/protobuf', 'proto_cc_library')
+load('//tools/build_rules:ruby.bzl', 'ruby_binary')
+load('//aos/build:queues.bzl', 'queue_library')
+load('//tools/build_rules:protobuf.bzl', 'proto_cc_library')
 
 cc_test(
   name = 'gflags_build_test',

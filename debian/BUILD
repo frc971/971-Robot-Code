@@ -1,6 +1,6 @@
 package(default_visibility = ['//visibility:public'])
 
-load('/tools/build_rules/select', 'cpu_select')
+load('//tools/build_rules:select.bzl', 'cpu_select')
 
 [ cc_library(
   name = libname,

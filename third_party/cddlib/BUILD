@@ -1,6 +1,6 @@
 licenses(['notice'])
 
-load('/tools/build_rules/select', 'compiler_select')
+load('//tools/build_rules:select.bzl', 'compiler_select')
 
 cc_library(
   name = 'cddlib',

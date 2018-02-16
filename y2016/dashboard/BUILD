@@ -1,5 +1,5 @@
-load('/aos/externals/seasocks/gen_embedded', 'gen_embedded')
-load('/aos/downloader/downloader', 'aos_downloader_dir')
+load('//aos/externals/seasocks:gen_embedded.bzl', 'gen_embedded')
+load('//aos/downloader:downloader.bzl', 'aos_downloader_dir')
 
 gen_embedded(
   name = 'gen_embedded',
