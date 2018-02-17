@@ -226,17 +226,17 @@ class Trajectory:
     """This class represents a trajectory in theta space."""
 
     def __init__(self, path_step_size):
-        # Points are a list of (theta0, theta1) to follow.  They are not
-        # required to be at any sort of spacing.
-        self.path_points = path_points.points
-        self.path_points = [
+        self.path_points = path_points.path_with_accelerations
+        self._thetas = [
             numpy.matrix([[numpy.pi / 2.0 - x[0]], [numpy.pi / 2.0 - x[1]]])
             for x in self.path_points
         ]
+        self._omegas = [numpy.matrix([[-x[2]], [-x[3]]]) for x in self.path_points]
+        self._alphas = [numpy.matrix([[-x[4]], [-x[5]]]) for x in self.path_points]
         self.path_step_size = path_step_size
         self.point_distances = [0.0]
-        last_point = self.path_points[0]
-        for point in self.path_points[1:]:
+        last_point = self._thetas[0]
+        for point in self._thetas[1:]:
             self.point_distances.append(
                 numpy.linalg.norm(point - last_point) +
                 self.point_distances[-1])
@@ -249,18 +249,26 @@ class Trajectory:
         Note:
           points before or after the path will get truncated to the ends of the path.
         """
+        return self._interpolate(self._thetas, distance)
+
+    def _interpolate(self, points, distance):
+        """Interpolates a set of points spaced at self.point_distances.
+
+        Returns:
+          The point linearly interpolated for the provided distance.  Points
+          before or after the path will get truncated to the ends of the path.
+        """
         if distance <= 0.0:
-            return self.path_points[0]
+            return points[0]
         elif distance >= self._length:
-            return self.path_points[-1]
+            return points[-1]
         after_index = numpy.searchsorted(
             self.point_distances, distance, side='right')
         before_index = after_index - 1
         return (distance - self.point_distances[before_index]) / (
             self.point_distances[after_index] -
-            self.point_distances[before_index]) * (
-                self.path_points[after_index] - self.path_points[before_index]
-            ) + self.path_points[before_index]
+            self.point_distances[before_index]
+        ) * (points[after_index] - points[before_index]) + points[before_index]
 
     def length(self):
         """Returns the path length in radians."""
@@ -268,21 +276,11 @@ class Trajectory:
 
     def omega(self, distance):
         """Returns d theta / dd for our path at the specified distance."""
-        after_index = numpy.searchsorted(
-            self.point_distances,
-            min(self.point_distances[-1] - 1e-6, max(0.0, distance)),
-            side='right')
-        before_index = after_index - 1
-        return (self.path_points[after_index] - self.path_points[before_index]
-                ) / (self.point_distances[after_index] -
-                     self.point_distances[before_index])
+        return self._interpolate(self._omegas, distance)
 
     def alpha(self, distance):
         """Returns d^2 theta / dd^2 for our path at the specified distance."""
-        delta = self.path_step_size
-        omega_plus = self.omega(distance + delta)
-        omega_minus = self.omega(distance - delta)
-        return (omega_plus - omega_minus) / (2.0 * delta)
+        return self._interpolate(self._alphas, distance)
 
     def curvature_trajectory_pass(self, dynamics, alpha_unitizer,
                                   distance_array, vmax):
