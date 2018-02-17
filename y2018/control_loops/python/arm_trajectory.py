@@ -8,9 +8,6 @@ from frc971.control_loops.python import controls
 
 # This code computes the optimal velocity profile for the arm to follow
 # the path while adhering to constraints.
-#
-# TODO(austin): We shouldn't need to precompute the forwards pass for
-# constraints.  That shold be done dynamically.
 
 
 def RungeKutta(f, x, dt):
@@ -377,9 +374,10 @@ class Trajectory:
                         filtered_voltage_accel_list.append(a)
 
                 int_accel_t = numpy.sqrt(
-                    max(0.0, 1.0 - (numpy.linalg.norm(alpha_unitizer * alpha) *
-                                    int_vel * int_vel)**
-                        2.0)) / numpy.linalg.norm(alpha_unitizer * omega)
+                    max(0.0, 1.0 -
+                        (numpy.linalg.norm(alpha_unitizer * alpha) * int_vel *
+                         int_vel)**2.0)) / numpy.linalg.norm(
+                             alpha_unitizer * omega)
                 if filtered_voltage_accel_list:
                     # TODO(austin): The max of the list seems right, but I'm
                     # not seeing many lists with a size > 1, so it's hard to
@@ -390,10 +388,57 @@ class Trajectory:
                 integration_step_size = self.path_step_size / float(num_steps)
                 int_d += integration_step_size
                 int_vel = numpy.sqrt(2.0 * int_accel_t * integration_step_size
-                                      + int_vel * int_vel)
+                                     + int_vel * int_vel)
             max_dvelocity_back_pass[index] = min(
                 int_vel, max_dvelocity_back_pass[index])
         return max_dvelocity_back_pass
+
+    def compute_feasable_forwards_acceleration(self, dynamics, goal_distance,
+                                               goal_velocity, vmax,
+                                               alpha_unitizer):
+        """Computes the maximum forwards feasable acceleration.
+
+        This gives us the maximum acceleration (d^2d/dt^2) for the forwards
+        pass.
+        """
+        theta = self.theta(goal_distance)
+        omega = self.omega(goal_distance)
+        alpha = self.alpha(goal_distance)
+
+        X = numpy.matrix([[theta[0, 0]], [0.0], [theta[1, 0]], [0.0]])
+        K1, K2, K3, K4 = dynamics.NormilizedMatriciesForState(X)
+        omega_square = numpy.matrix([[omega[0, 0], 0.0], [0.0, omega[1, 0]]])
+
+        k_constant = numpy.linalg.inv(K3) * (
+            (K1 * alpha + K2 * omega_square * omega
+             ) * goal_velocity * goal_velocity + K4 * omega * goal_velocity)
+        k_scalar = numpy.linalg.inv(K3) * K1 * omega
+        voltage_accel_list = []
+        for c in [-vmax, vmax]:
+            for a, b in [(k_constant[0, 0], k_scalar[0, 0]), (k_constant[1, 0],
+                                                              k_scalar[1, 0])]:
+                voltage_accel_list.append((c - a) / b)
+
+        goal_acceleration = numpy.sqrt(
+            max(0.0, 1.0 -
+                (numpy.linalg.norm(alpha_unitizer * alpha) * goal_velocity *
+                 goal_velocity)**2.0)) / numpy.linalg.norm(
+                     alpha_unitizer * omega)
+
+        filtered_voltage_accel_list = []
+        for a in voltage_accel_list:
+            U = k_constant + k_scalar * a
+            if a > 0.0 and (numpy.abs(U) <= vmax + 1e-6).all():
+                filtered_voltage_accel_list.append(a)
+
+        if filtered_voltage_accel_list:
+            # TODO(austin): The max of the list seems right, but I'm not
+            # seeing many lists with a size > 1, so it's hard to tell.
+            # Min is conservative, for sure.
+            goal_acceleration = min(
+                min(filtered_voltage_accel_list), goal_acceleration)
+
+        return goal_acceleration
 
     def forward_trajectory_pass(self, previous_pass, dynamics, alpha_unitizer,
                                 distance_array, vmax):
@@ -412,42 +457,9 @@ class Trajectory:
             int_vel = prev_velocity
             num_steps = 10
             for _ in xrange(num_steps):
-                theta = self.theta(prev_distance + int_d)
-                omega = self.omega(prev_distance + int_d)
-                alpha = self.alpha(prev_distance + int_d)
-
-                X = numpy.matrix([[theta[0, 0]], [0.0], [theta[1, 0]], [0.0]])
-                K1, K2, K3, K4 = dynamics.NormilizedMatriciesForState(X)
-                omega_square = numpy.matrix(
-                    [[omega[0, 0], 0.0], [0.0, omega[1, 0]]])
-
-                k_constant = numpy.linalg.inv(K3) * (
-                    (K1 * alpha + K2 * omega_square * omega
-                     ) * int_vel * int_vel + K4 * omega * int_vel)
-                k_scalar = numpy.linalg.inv(K3) * K1 * omega
-                voltage_accel_list = []
-                for c in [-vmax, vmax]:
-                    for a, b in [(k_constant[0, 0], k_scalar[0, 0]),
-                                 (k_constant[1, 0], k_scalar[1, 0])]:
-                        voltage_accel_list.append((c - a) / b)
-
-                int_accel_t = numpy.sqrt(
-                    max(0.0, 1.0 - (numpy.linalg.norm(alpha_unitizer * alpha) *
-                                    int_vel * int_vel)**
-                        2.0)) / numpy.linalg.norm(alpha_unitizer * omega)
-
-                filtered_voltage_accel_list = []
-                for a in voltage_accel_list:
-                    U = k_constant + k_scalar * a
-                    if a > 0.0 and (numpy.abs(U) <= vmax + 1e-6).all():
-                        filtered_voltage_accel_list.append(a)
-
-                if filtered_voltage_accel_list:
-                    # TODO(austin): The max of the list seems right, but I'm not
-                    # seeing many lists with a size > 1, so it's hard to tell.
-                    # Min is conservative, for sure.
-                    int_accel_t = min(
-                        min(filtered_voltage_accel_list), int_accel_t)
+                int_accel_t = self.compute_feasable_forwards_acceleration(
+                    dynamics, prev_distance + int_d, int_vel, vmax,
+                    alpha_unitizer)
 
                 integration_step_size = self.path_step_size / float(num_steps)
                 int_d += integration_step_size
@@ -459,11 +471,8 @@ class Trajectory:
 
         return max_dvelocity_forward_pass
 
-    def compute_trajectory(self,
-                           dynamics,
-                           alpha_unitizer,
-                           distance_array,
-                           vmax=12.0):
+    def compute_trajectory(self, dynamics, alpha_unitizer, distance_array,
+                           vmax):
         self.distance_array = copy.copy(distance_array)
         self.max_dvelocity_unfiltered = self.curvature_trajectory_pass(
             dynamics, alpha_unitizer, distance_array, vmax)
@@ -475,14 +484,21 @@ class Trajectory:
         self.max_dvelocity_back_pass = self.back_trajectory_pass(
             self.max_dvelocity_unfiltered, dynamics, alpha_unitizer,
             distance_array, vmax)
+        self.max_dvelocity = self.max_dvelocity_back_pass
         print 'Finished backwards pass'
 
         self.max_dvelocity_forward_pass = self.forward_trajectory_pass(
             self.max_dvelocity_back_pass, dynamics, alpha_unitizer,
             distance_array, vmax)
-        self.max_dvelocity = self.max_dvelocity_forward_pass
         print 'Finished forwards pass'
 
+    def interpolate_velocity(self, d, d0, d1, v0, v1):
+        if v0 + v1 > 0:
+            return numpy.sqrt(v0 * v0 +
+                              (v1 * v1 - v0 * v0) * (d - d0) / (d1 - d0))
+        else:
+            return -numpy.sqrt(v0 * v0 +
+                               (v1 * v1 - v0 * v0) * (d - d0) / (d1 - d0))
     def get_dvelocity(self, d):
         """Computes the path distance velocity of the plan as a function of the distance."""
         after_index = numpy.argmax(self.distance_array > d)
@@ -491,12 +507,10 @@ class Trajectory:
         v1 = self.max_dvelocity[after_index]
         d0 = self.distance_array[before_index]
         d1 = self.distance_array[after_index]
-        if v0 + v1 > 0:
-            return numpy.sqrt(v0 * v0 + (v1 * v1 - v0 * v0) * (d - d0) / (d1 -
-                                                                          d0))
-        else:
-            return -numpy.sqrt(v0 * v0 + (v1 * v1 - v0 * v0) * (d - d0) / (d1 -
-                                                                           d0))
+        return self.interpolate_velocity(d, d0, d1, v0, v1)
+
+    def interpolate_acceleration(self, d0, d1, v0, v1):
+        return 0.5 * (v1**2.0 - v0**2.0) / (d1 - d0)
 
     def get_dacceleration(self, d):
         """Computes the path distance acceleration of the plan as a function of the distance."""
@@ -506,7 +520,7 @@ class Trajectory:
         v1 = self.max_dvelocity[after_index]
         d0 = self.distance_array[before_index]
         d1 = self.distance_array[after_index]
-        return 0.5 * (v1**2.0 - v0**2.0) / (d1 - d0)
+        return self.interpolate_acceleration(d0, d1, v0, v1)
 
     def omega_t(self, d, velocity=None):
         """Returns d theta/dt at a specified distance."""
@@ -529,9 +543,40 @@ class Trajectory:
                              [omega_t[1, 0]]])
 
 
+def U_saturation_search(goal_distance, last_goal_distance, goal_velocity,
+                        last_goal_velocity, fraction_along_path, K, X,
+                        trajectory, dynamics, vmax):
+    saturation_goal_distance = (
+        (goal_distance - last_goal_distance) * fraction_along_path +
+        last_goal_distance)
+
+    # TODO(austin): use computed forward dynamics velocity here.
+    theta_t = trajectory.theta(saturation_goal_distance)
+    saturation_goal_velocity = trajectory.interpolate_velocity(
+        saturation_goal_distance, last_goal_distance,
+        goal_distance, last_goal_velocity, goal_velocity)
+    saturation_goal_acceleration = trajectory.interpolate_acceleration(
+        last_goal_distance, goal_distance, last_goal_velocity,
+        goal_velocity)
+    omega_t = trajectory.omega_t(
+        saturation_goal_distance,
+        velocity=saturation_goal_velocity)
+    alpha_t = trajectory.alpha_t(
+        saturation_goal_distance,
+        velocity=saturation_goal_velocity,
+        acceleration=saturation_goal_acceleration)
+    R = trajectory.R(
+        saturation_goal_distance,
+        velocity=saturation_goal_velocity)
+    U_ff = numpy.clip(dynamics.ff_u(R, omega_t, alpha_t), -12.0, 12.0)
+    return U_ff + K * (
+        R - X), saturation_goal_velocity, saturation_goal_acceleration
+
+
 def main():
     dt = 0.00505
     path_step_size = 0.01
+    vmax = 11.5
     dynamics = Dynamics(dt)
 
     trajectory = Trajectory(path_step_size)
@@ -595,7 +640,7 @@ def main():
 
     # Compute the trajectory taking into account our velocity, acceleration
     # and voltage constraints.
-    trajectory.compute_trajectory(dynamics, alpha_unitizer, distance_array)
+    trajectory.compute_trajectory(dynamics, alpha_unitizer, distance_array, vmax=vmax)
 
     print 'Computed trajectory'
 
@@ -628,6 +673,8 @@ def main():
     u1_unsaturated_array = []
 
     last_goal_distance = 0.0
+    last_goal_velocity = 0.0
+    last_goal_acceleration = 0.0
 
     goal_distance = 0.0
     goal_velocity = 0.0
@@ -637,17 +684,39 @@ def main():
 
     sim_dt = dt
 
-    vmax = 12.0
-
     print 'Starting simulation'
     # Now, we can start following the trajectory!
     for t in numpy.arange(0.0, 1.0, sim_dt):
-        dacceleration = trajectory.get_dacceleration(goal_distance)
+        if goal_distance == trajectory.length():
+            next_distance = goal_distance
+            next_velocity = 0.0
+            goal_acceleration = 0.0
+        else:
+            next_acceleration = trajectory.compute_feasable_forwards_acceleration(
+                dynamics, goal_distance, goal_velocity, vmax, alpha_unitizer)
+            next_distance = (goal_distance + goal_velocity * sim_dt +
+                             0.5 * sim_dt * sim_dt * next_acceleration)
+            next_velocity = goal_velocity + sim_dt * next_acceleration
+
+            next_trajectory_velocity = trajectory.get_dvelocity(next_distance)
+            if next_trajectory_velocity < next_velocity:
+                next_velocity = next_trajectory_velocity
+                goal_acceleration = trajectory.interpolate_acceleration(
+                    goal_distance, next_distance, goal_velocity, next_velocity)
+                next_distance = (goal_distance + goal_velocity * sim_dt +
+                                 0.5 * sim_dt * sim_dt * goal_acceleration)
+                next_velocity = trajectory.get_dvelocity(next_distance)
+
+            goal_acceleration = trajectory.interpolate_acceleration(
+                goal_distance, next_distance, goal_velocity, next_velocity)
 
         t_array.append(t)
         theta_t = trajectory.theta(goal_distance)
         omega_t = trajectory.omega_t(goal_distance, velocity=goal_velocity)
-        alpha_t = trajectory.alpha_t(goal_distance, velocity=goal_velocity)
+        alpha_t = trajectory.alpha_t(
+            goal_distance,
+            velocity=goal_velocity,
+            acceleration=goal_acceleration)
 
         theta0_goal_t_array.append(theta_t[0, 0])
         theta1_goal_t_array.append(theta_t[1, 0])
@@ -662,12 +731,15 @@ def main():
 
         distance_t_array.append(goal_distance)
         velocity_t_array.append(goal_velocity)
-        acceleration_t_array.append(dacceleration)
+        acceleration_t_array.append(goal_acceleration)
 
-        U_ff = dynamics.ff_u_distance(trajectory, goal_distance)
-        K = K_at_state(dynamics, X, U_ff)
         R = trajectory.R(goal_distance, velocity=goal_velocity)
+        U_ff = numpy.clip(dynamics.ff_u(R, omega_t, alpha_t), -12.0, 12.0)
+        K = K_at_state(dynamics, X, U_ff)
         U = U_ff + K * (R - X)
+
+        u0_unsaturated_array.append(U[0, 0])
+        u1_unsaturated_array.append(U[1, 0])
 
         # Ok, now we know if we are staturated or not.  If we are, time to
         # search between here and our previous goal either until we find a
@@ -676,32 +748,45 @@ def main():
         if (numpy.abs(U) > vmax).any():
             # Saturated.  Let's do a binary search.
             print "Saturated."
-            fraction_along_path = 0.5
-            step_size = 0.5
-            while step_size > 0.01:
-                saturation_goal_distance = (
-                    (goal_distance - last_goal_distance
-                     ) * fraction_along_path + last_goal_distance)
+            if (goal_distance - last_goal_distance) < 1e-8:
+                print "Not bothering to move"
+                # Avoid the divide by 0 when interpolating.  Just don't move
+                # since we are saturated.
+                fraction_along_path = 0.0
+                step_size = 0.0
+            else:
+                fraction_along_path = 0.5
+                step_size = 0.5
 
-                U_ff = dynamics.ff_u_distance(trajectory, saturation_goal_distance)
-                R = trajectory.R(saturation_goal_distance)
-                U = U_ff + K * (R - X)
+            # First, see if slowing down to our current velocity solves it.
+            while step_size > 0.01:
+                U, saturation_goal_velocity, saturation_goal_acceleration = U_saturation_search(
+                    goal_distance, last_goal_distance, goal_velocity,
+                    last_goal_velocity, fraction_along_path, K, X, trajectory,
+                    dynamics, 12.0)
                 step_size = step_size * 0.5
                 if (numpy.abs(U) > vmax).any():
                     fraction_along_path -= step_size
                 else:
                     fraction_along_path += step_size
-            print "Fraction", fraction_along_path
+            print "Fraction", fraction_along_path, "at", goal_distance, "rad,", t, "sec", goal_velocity
+
             goal_distance = ((goal_distance - last_goal_distance) *
                              fraction_along_path + last_goal_distance)
-            goal_velocity = trajectory.get_dvelocity(goal_distance)
-            dacceleration = trajectory.get_dacceleration(goal_distance)
+            goal_velocity = saturation_goal_velocity
+            goal_acceleration = saturation_goal_acceleration
 
-        u0_unsaturated_array.append(U[0, 0])
-        u1_unsaturated_array.append(U[1, 0])
+            next_acceleration = trajectory.compute_feasable_forwards_acceleration(
+                dynamics, goal_distance, goal_velocity, vmax, alpha_unitizer)
+            next_distance = (goal_distance + goal_velocity * sim_dt +
+                             0.5 * sim_dt * sim_dt * next_acceleration)
+            next_velocity = goal_velocity + sim_dt * next_acceleration
+
+            next_trajectory_velocity = trajectory.get_dvelocity(next_distance)
+            next_velocity = min(next_velocity, next_trajectory_velocity)
 
         # Now, artifically clip the available voltage.
-        U = numpy.clip(U, -10.0, 10.0)
+        U = numpy.clip(U, -12.0, 12.0)
 
         xdot = dynamics.dynamics(X, U)
         alpha0_t_array.append(xdot[1, 0])
@@ -715,18 +800,18 @@ def main():
         # Push our dynamics forwards.
         X = dynamics.discrete_dynamics(X, U, sim_dt)
 
+        last_goal_distance = goal_distance
+        last_goal_velocity = goal_velocity
+
+        goal_distance = next_distance
+        goal_velocity = next_velocity
+
         if abs(goal_distance - trajectory.length()) < 1e-2:
             # If we go backwards along the path near the goal, snap us to the
             # end point or we'll never actualy finish.
-            if dacceleration * sim_dt + goal_velocity < 0.0:
+            if goal_acceleration * sim_dt + goal_velocity < 0.0:
                 goal_distance = trajectory.length()
-
-        last_goal_distance = goal_distance
-        goal_distance += goal_velocity * sim_dt + 0.5 * dacceleration * sim_dt * sim_dt
-        goal_velocity = min(
-            trajectory.get_dvelocity(goal_distance),
-            goal_velocity + dacceleration * sim_dt)
-        goal_velocity = trajectory.get_dvelocity(goal_distance)
+                goal_velocity = 0.0
 
     print 'Finished simulation'
     pylab.figure()
