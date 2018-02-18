@@ -19,6 +19,19 @@ T RungeKutta(const F &fn, T X, double dt) {
   return X + dt / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4);
 }
 
+// Implements Runge Kutta integration (4th order).  fn is the function to
+// integrate.  It must take 1 argument of type T.  The integration starts at an
+// initial value X, and integrates for dt.
+template <typename F, typename T, typename Tu>
+T RungeKutta(const F &fn, T X, Tu U, double dt) {
+  const double half_dt = dt * 0.5;
+  T k1 = fn(X, U);
+  T k2 = fn(X + half_dt * k1, U);
+  T k3 = fn(X + half_dt * k2, U);
+  T k4 = fn(X + dt * k3, U);
+  return X + dt / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4);
+}
+
 }  // namespace control_loops
 }  // namespace frc971
 
