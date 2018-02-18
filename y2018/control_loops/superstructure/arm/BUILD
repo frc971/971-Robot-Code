@@ -20,3 +20,28 @@ cc_test(
         "//third_party/eigen",
     ],
 )
+
+cc_library(
+    name = "dynamics",
+    srcs = [
+        "dynamics.cc",
+    ],
+    hdrs = [
+        "dynamics.h",
+    ],
+    deps = [
+        "//frc971/control_loops:runge_kutta",
+        "//third_party/eigen",
+    ],
+)
+
+cc_test(
+    name = "dynamics_test",
+    srcs = [
+        "dynamics_test.cc",
+    ],
+    deps = [
+        ":dynamics",
+        "//aos/testing:googletest",
+    ],
+)
