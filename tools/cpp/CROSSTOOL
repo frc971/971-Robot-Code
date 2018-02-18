@@ -539,7 +539,7 @@ toolchain {
   abi_libc_version: "glibc_2.19"
   builtin_sysroot: ""
   compiler: "clang"
-  host_system_name: "roborio"
+  host_system_name: "linux"
   needsPic: true
   supports_gold_linker: false
   supports_incremental_linker: false
