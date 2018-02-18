@@ -12,6 +12,8 @@ const ::Eigen::Matrix<double, 2, 2> Dynamics::K3 =
                    Dynamics::kResistance)
         .finished();
 
+const ::Eigen::Matrix<double, 2, 2> Dynamics::K3_inverse = K3.inverse();
+
 const ::Eigen::Matrix<double, 2, 2> Dynamics::K4 =
     (::Eigen::Matrix<double, 2, 2>()
          << Dynamics::kG1 * Dynamics::kG1 * Dynamics::Kt /

@@ -453,6 +453,46 @@ class Trajectory:
 
         return max_dvelocity_unfiltered
 
+    def compute_feasable_back_acceleration(self, dynamics, distance, velocity,
+                                           vmax, alpha_unitizer):
+        theta = self.theta(distance)
+        omega = self.omega(distance)
+        alpha = self.alpha(distance)
+
+        X = numpy.matrix([[theta[0, 0]], [0.0], [theta[1, 0]], [0.0]])
+        K1, K2, K3, K4 = dynamics.NormilizedMatriciesForState(X)
+        omega_square = numpy.matrix([[omega[0, 0], 0.0], [0.0, omega[1, 0]]])
+
+        k_constant = numpy.linalg.inv(K3) * (
+            (K1 * alpha + K2 * omega_square * omega) * velocity * velocity +
+            K4 * omega * velocity)
+        k_scalar = numpy.linalg.inv(K3) * K1 * omega
+
+        voltage_accel_list = []
+        for c in [-vmax, vmax]:
+            for a, b in [(k_constant[0, 0], k_scalar[0, 0]), (k_constant[1, 0],
+                                                              k_scalar[1, 0])]:
+                # This time, we are doing the other pass.  So, find all
+                # the decelerations (and flip them) to find the prior
+                # velocity.
+                voltage_accel_list.append((c - a) / b)
+        filtered_voltage_accel_list = []
+        for a in voltage_accel_list:
+            U = k_constant + k_scalar * a
+            if a < 0.0 and (numpy.abs(U) <= vmax + 1e-6).all():
+                filtered_voltage_accel_list.append(a)
+
+        goal_acceleration = numpy.sqrt(
+            max(0.0, 1.0 -
+                (numpy.linalg.norm(alpha_unitizer * alpha) * velocity *
+                 velocity)**2.0)) / numpy.linalg.norm(alpha_unitizer * omega)
+        if filtered_voltage_accel_list:
+            # TODO(austin): The max of the list seems right, but I'm
+            # not seeing many lists with a size > 1, so it's hard to
+            # tell.  Max is conservative, for sure.
+            goal_acceleration = min(-max(filtered_voltage_accel_list), goal_acceleration)
+        return goal_acceleration
+
     def back_trajectory_pass(self, previous_pass, dynamics, alpha_unitizer,
                              distance_array, vmax):
         """Computes the backwards pass for optimizing our trajectory."""
@@ -470,45 +510,9 @@ class Trajectory:
             int_vel = prev_velocity
             num_steps = 10
             for _ in xrange(num_steps):
-                theta = self.theta(prev_distance - int_d)
-                omega = self.omega(prev_distance - int_d)
-                alpha = self.alpha(prev_distance - int_d)
-
-                X = numpy.matrix([[theta[0, 0]], [0.0], [theta[1, 0]], [0.0]])
-                K1, K2, K3, K4 = dynamics.NormilizedMatriciesForState(X)
-                omega_square = numpy.matrix(
-                    [[omega[0, 0], 0.0], [0.0, omega[1, 0]]])
-
-                k_constant = numpy.linalg.inv(K3) * (
-                    (K1 * alpha + K2 * omega_square * omega
-                     ) * int_vel * int_vel + K4 * omega * int_vel)
-                k_scalar = numpy.linalg.inv(K3) * K1 * omega
-
-                voltage_accel_list = []
-                for c in [-vmax, vmax]:
-                    for a, b in [(k_constant[0, 0], k_scalar[0, 0]),
-                                 (k_constant[1, 0], k_scalar[1, 0])]:
-                        # This time, we are doing the other pass.  So, find all
-                        # the decelerations (and flip them) to find the prior
-                        # velocity.
-                        voltage_accel_list.append((c - a) / b)
-                filtered_voltage_accel_list = []
-                for a in voltage_accel_list:
-                    U = k_constant + k_scalar * a
-                    if a < 0.0 and (numpy.abs(U) <= vmax + 1e-6).all():
-                        filtered_voltage_accel_list.append(a)
-
-                int_accel_t = numpy.sqrt(
-                    max(0.0, 1.0 -
-                        (numpy.linalg.norm(alpha_unitizer * alpha) * int_vel *
-                         int_vel)**2.0)) / numpy.linalg.norm(
-                             alpha_unitizer * omega)
-                if filtered_voltage_accel_list:
-                    # TODO(austin): The max of the list seems right, but I'm
-                    # not seeing many lists with a size > 1, so it's hard to
-                    # tell.  Max is conservative, for sure.
-                    int_accel_t = min(-max(filtered_voltage_accel_list),
-                                      int_accel_t)
+                int_accel_t = self.compute_feasable_back_acceleration(
+                    dynamics, prev_distance - int_d, int_vel, vmax,
+                    alpha_unitizer)
 
                 integration_step_size = self.path_step_size / float(num_steps)
                 int_d += integration_step_size
@@ -707,7 +711,9 @@ def main():
     trajectory = Trajectory(path_step_size)
     print 'Initialized path'
 
-    distance_array = numpy.arange(0.0, trajectory.length(), path_step_size)
+    distance_array = numpy.linspace(
+        0.0, trajectory.length(),
+        numpy.ceil(trajectory.length() / path_step_size) + 1)
     theta0_array = []
     theta1_array = []
     omega0_array = []
@@ -741,7 +747,8 @@ def main():
     # For a consistency check, integrate back up the acceleration and see how
     # close we got.
     dd = 0.005
-    for distance in numpy.arange(0.0, trajectory.length(), dd):
+    for distance in numpy.linspace(0.0, trajectory.length(),
+                                   numpy.ceil(trajectory.length() / dd) + 1):
         integrated_distance.append(distance)
         integrated_omega0_array.append(io0)
         integrated_omega1_array.append(io1)
@@ -995,10 +1002,11 @@ def main():
     pylab.plot(
         distance_array, trajectory.max_dvelocity_unfiltered, label="pass0")
     pylab.plot(
-        distance_array, trajectory.max_dvelocity_forward_pass, label="passf")
-    pylab.plot(
         distance_array, trajectory.max_dvelocity_back_pass, label="passb")
+    pylab.plot(
+        distance_array, trajectory.max_dvelocity_forward_pass, label="passf")
     pylab.legend(loc='center')
+    pylab.legend()
 
     pylab.figure()
     pylab.title("Path Velocity Plan")

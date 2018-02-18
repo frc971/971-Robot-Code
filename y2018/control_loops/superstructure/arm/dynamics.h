@@ -52,6 +52,7 @@ class Dynamics {
 
   // K3, K4 matricies described below.
   static const ::Eigen::Matrix<double, 2, 2> K3;
+  static const ::Eigen::Matrix<double, 2, 2> K3_inverse;
   static const ::Eigen::Matrix<double, 2, 2> K4;
 
   // Generates K1-2 for the arm ODE.
@@ -114,7 +115,7 @@ class Dynamics {
 
     MatriciesForState(X, &K1, &K2);
 
-    return K3.inverse() * (K1 * alpha_t + K2 * omega_t + K4 * omega_t);
+    return K3_inverse * (K1 * alpha_t + K2 * omega_t + K4 * omega_t);
   }
 
   static const ::Eigen::Matrix<double, 4, 1> UnboundedDiscreteDynamics(

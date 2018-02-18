@@ -6,7 +6,10 @@ cc_library(
     hdrs = [
         "trajectory.h",
     ],
-    deps = ["//third_party/eigen"],
+    deps = [
+        ":dynamics",
+        "//third_party/eigen",
+    ],
 )
 
 cc_test(
