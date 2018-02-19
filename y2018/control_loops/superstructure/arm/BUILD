@@ -19,10 +19,10 @@ cc_test(
     srcs = [
         "trajectory_test.cc",
     ],
-    restricted_to = ["//tools:k8"],
     deps = [
         ":demo_path",
         ":dynamics",
+        ":ekf",
         ":trajectory",
         "//aos/testing:googletest",
         "//third_party/eigen",
@@ -71,8 +71,24 @@ cc_binary(
     restricted_to = ["//tools:k8"],
     deps = [
         ":demo_path",
+        ":ekf",
         ":trajectory",
         "//third_party/eigen",
         "//third_party/matplotlib-cpp",
+    ],
+)
+
+cc_library(
+    name = "ekf",
+    srcs = [
+        "ekf.cc",
+    ],
+    hdrs = [
+        "ekf.h",
+    ],
+    deps = [
+        ":dynamics",
+        "//frc971/control_loops:jacobian",
+        "//third_party/eigen",
     ],
 )

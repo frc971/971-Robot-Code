@@ -104,6 +104,33 @@ class Dynamics {
         .finished();
   }
 
+  // Calculates the acceleration given the current augmented kalman filter state
+  // and control input.
+  static const ::Eigen::Matrix<double, 6, 1> EKFAcceleration(
+      const ::Eigen::Matrix<double, 6, 1> &X,
+      const ::Eigen::Matrix<double, 2, 1> &U) {
+    ::Eigen::Matrix<double, 2, 2> K1;
+    ::Eigen::Matrix<double, 2, 2> K2;
+
+    MatriciesForState(X.block<4, 1>(0, 0), &K1, &K2);
+
+    const ::Eigen::Matrix<double, 2, 1> velocity =
+        (::Eigen::Matrix<double, 2, 1>() << X(1, 0), X(3, 0)).finished();
+
+    const ::Eigen::Matrix<double, 2, 1> torque =
+        K3 *
+            (U +
+             (::Eigen::Matrix<double, 2, 1>() << X(4, 0), X(5, 0)).finished()) -
+        K4 * velocity;
+
+    const ::Eigen::Matrix<double, 2, 1> accel =
+        K1.inverse() * (torque - K2 * velocity);
+
+    return (::Eigen::Matrix<double, 6, 1>() << X(1, 0), accel(0, 0), X(3, 0),
+            accel(1, 0), 0.0, 0.0)
+        .finished();
+  }
+
   // Calculates the voltage required to follow the trajectory.  This requires
   // knowing the current state, desired angular velocity and acceleration.
   static const ::Eigen::Matrix<double, 2, 1> FF_U(
@@ -122,6 +149,13 @@ class Dynamics {
       const ::Eigen::Matrix<double, 4, 1> &X,
       const ::Eigen::Matrix<double, 2, 1> &U, double dt) {
     return ::frc971::control_loops::RungeKutta(Dynamics::Acceleration, X, U,
+                                               dt);
+  }
+
+  static const ::Eigen::Matrix<double, 6, 1> UnboundedEKFDiscreteDynamics(
+      const ::Eigen::Matrix<double, 6, 1> &X,
+      const ::Eigen::Matrix<double, 2, 1> &U, double dt) {
+    return ::frc971::control_loops::RungeKutta(Dynamics::EKFAcceleration, X, U,
                                                dt);
   }
 };

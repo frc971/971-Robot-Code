@@ -314,8 +314,8 @@ void TrajectoryFollower::Reset() {
   goal_acceleration_ = 0.0;
 }
 
-::Eigen::Matrix<double, 2, 4> TrajectoryFollower::K_at_state(
-    const ::Eigen::Matrix<double, 4, 1> &X,
+::Eigen::Matrix<double, 2, 6> TrajectoryFollower::K_at_state(
+    const ::Eigen::Matrix<double, 6, 1> &X,
     const ::Eigen::Matrix<double, 2, 1> &U) {
   constexpr double q_pos = 0.2;
   constexpr double q_vel = 4.0;
@@ -335,23 +335,29 @@ void TrajectoryFollower::Reset() {
           .asDiagonal();
 
   const ::Eigen::Matrix<double, 4, 4> final_A =
-      ::frc971::control_loops::NumericalJacobianX(
-          Dynamics::UnboundedDiscreteDynamics, X, U, 0.00505);
+      ::frc971::control_loops::NumericalJacobianX<4, 2>(
+          Dynamics::UnboundedDiscreteDynamics, X.block<4, 1>(0, 0), U, 0.00505);
   const ::Eigen::Matrix<double, 4, 2> final_B =
-      ::frc971::control_loops::NumericalJacobianU(
-          Dynamics::UnboundedDiscreteDynamics, X, U, 0.00505);
+      ::frc971::control_loops::NumericalJacobianU<4, 2>(
+          Dynamics::UnboundedDiscreteDynamics, X.block<4, 1>(0, 0), U, 0.00505);
 
-  ::Eigen::Matrix<double, 2, 4> K;
   ::Eigen::Matrix<double, 4, 4> S;
-  ::frc971::controls::dlqr<4, 2>(final_A, final_B, Q, R, &K, &S);
+  ::Eigen::Matrix<double, 2, 4> sub_K;
+  ::frc971::controls::dlqr<4, 2>(final_A, final_B, Q, R, &sub_K, &S);
+
+  ::Eigen::Matrix<double, 2, 6> K;
+  K.setZero();
+  K.block<2, 4>(0, 0) = sub_K;
+  K(0, 4) = 1.0;
+  K(1, 5) = 1.0;
   return K;
 }
 
 void TrajectoryFollower::USaturationSearch(
     double goal_distance, double last_goal_distance, double goal_velocity,
     double last_goal_velocity, double fraction_along_path,
-    const ::Eigen::Matrix<double, 2, 4> &K,
-    const ::Eigen::Matrix<double, 4, 1> &X, const Trajectory &trajectory,
+    const ::Eigen::Matrix<double, 2, 6> &K,
+    const ::Eigen::Matrix<double, 6, 1> &X, const Trajectory &trajectory,
     ::Eigen::Matrix<double, 2, 1> *U, double *saturation_goal_velocity,
     double *saturation_goal_acceleration) {
   double saturation_goal_distance =
@@ -370,9 +376,9 @@ void TrajectoryFollower::USaturationSearch(
   const ::Eigen::Matrix<double, 2, 1> alpha_t =
       trajectory.AlphaT(saturation_goal_distance, *saturation_goal_velocity,
                         *saturation_goal_acceleration);
-  const ::Eigen::Matrix<double, 4, 1> R = trajectory.R(theta_t, omega_t);
+  const ::Eigen::Matrix<double, 6, 1> R = trajectory.R(theta_t, omega_t);
   const ::Eigen::Matrix<double, 2, 1> U_ff =
-      Dynamics::FF_U(R, omega_t, alpha_t);
+      Dynamics::FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t);
 
   *U = U_ff + K * (R - X);
 }
@@ -405,7 +411,7 @@ void TrajectoryFollower::USaturationSearch(
   return next_goal;
 }
 
-void TrajectoryFollower::Update(const ::Eigen::Matrix<double, 4, 1> &X,
+void TrajectoryFollower::Update(const ::Eigen::Matrix<double, 6, 1> &X,
                                 double dt, double vmax) {
   // To avoid exposing the new goals before the outer code has a chance to
   // querry the internal state, move to the new goals here.
@@ -441,11 +447,11 @@ void TrajectoryFollower::Update(const ::Eigen::Matrix<double, 4, 1> &X,
   const ::Eigen::Matrix<double, 2, 1> alpha_t =
       trajectory_->AlphaT(goal_(0), goal_(1), goal_acceleration_);
 
-  const ::Eigen::Matrix<double, 4, 1> R = trajectory_->R(theta_t, omega_t);
+  const ::Eigen::Matrix<double, 6, 1> R = trajectory_->R(theta_t, omega_t);
 
-  U_ff_ = Dynamics::FF_U(R, omega_t, alpha_t);
+  U_ff_ = Dynamics::FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t);
 
-  const ::Eigen::Matrix<double, 2, 4> K = K_at_state(X, U_ff_);
+  const ::Eigen::Matrix<double, 2, 6> K = K_at_state(X, U_ff_);
   U_ = U_unsaturated_ = U_ff_ + K * (R - X);
 
   // Ok, now we know if we are staturated or not.  If we are, time to search
@@ -490,6 +496,8 @@ void TrajectoryFollower::Update(const ::Eigen::Matrix<double, 4, 1> &X,
 
     goal_acceleration_ = trajectory_->InterpolateAcceleration(
         goal_(0), next_goal_(0), goal_(1), next_goal_(1));
+
+    U_ = U_.array().max(-12.0).min(12.0);
   }
 }
 

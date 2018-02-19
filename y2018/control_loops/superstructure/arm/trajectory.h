@@ -1,6 +1,10 @@
 #ifndef Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_TRAJECTORY_H_
 #define Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_TRAJECTORY_H_
 
+#include <array>
+#include <initializer_list>
+#include <vector>
+
 #include "Eigen/Dense"
 
 namespace y2018 {
@@ -171,9 +175,10 @@ class Trajectory {
   // and that we are at point d between the two.
   static double InterpolateVelocity(double d, double d0, double d1, double v0,
                                     double v1) {
-    // We don't support negative velocities.
+    // We don't support negative velocities.  Report 0 velocity in that case.
+    // TODO(austin): Verify this doesn't show up in the real world.
     if (v0 < 0 || v1 < 0) {
-      abort();
+      return 0.0;
     }
     if (d <= d0) {
       return v0;
@@ -239,11 +244,11 @@ class Trajectory {
   }
 
   // Converts a theta and omega vector to a full state vector.
-  static ::Eigen::Matrix<double, 4, 1> R(
+  static ::Eigen::Matrix<double, 6, 1> R(
       ::Eigen::Matrix<double, 2, 1> theta_t,
       ::Eigen::Matrix<double, 2, 1> omega_t) {
-    return (::Eigen::Matrix<double, 4, 1>() << theta_t(0, 0), omega_t(0, 0),
-            theta_t(1, 0), omega_t(1, 0))
+    return (::Eigen::Matrix<double, 6, 1>() << theta_t(0, 0), omega_t(0, 0),
+            theta_t(1, 0), omega_t(1, 0), 0.0, 0.0)
         .finished();
   }
 
@@ -299,8 +304,8 @@ class TrajectoryFollower {
   void Reset();
 
   // Returns the controller gain at the provided state.
-  ::Eigen::Matrix<double, 2, 4> K_at_state(
-      const ::Eigen::Matrix<double, 4, 1> &X,
+  ::Eigen::Matrix<double, 2, 6> K_at_state(
+      const ::Eigen::Matrix<double, 6, 1> &X,
       const ::Eigen::Matrix<double, 2, 1> &U);
 
   // Returns the voltage, velocity and acceleration if we were to be partially
@@ -308,8 +313,8 @@ class TrajectoryFollower {
   void USaturationSearch(double goal_distance, double last_goal_distance,
                          double goal_velocity, double last_goal_velocity,
                          double fraction_along_path,
-                         const ::Eigen::Matrix<double, 2, 4> &K,
-                         const ::Eigen::Matrix<double, 4, 1> &X,
+                         const ::Eigen::Matrix<double, 2, 6> &K,
+                         const ::Eigen::Matrix<double, 6, 1> &X,
                          const Trajectory &trajectory,
                          ::Eigen::Matrix<double, 2, 1> *U,
                          double *saturation_goal_velocity,
@@ -321,7 +326,7 @@ class TrajectoryFollower {
       const ::Eigen::Matrix<double, 2, 1> &goal, double vmax, double dt);
 
   // Plans the next cycle and updates the internal state for consumption.
-  void Update(const ::Eigen::Matrix<double, 4, 1> &X, double dt, double vmax);
+  void Update(const ::Eigen::Matrix<double, 6, 1> &X, double dt, double vmax);
 
   // Returns the goal acceleration for this cycle.
   double goal_acceleration() const { return goal_acceleration_; }

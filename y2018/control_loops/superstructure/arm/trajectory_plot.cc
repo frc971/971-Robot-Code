@@ -3,6 +3,7 @@
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
 #include "y2018/control_loops/superstructure/arm/demo_path.h"
 #include "y2018/control_loops/superstructure/arm/dynamics.h"
+#include "y2018/control_loops/superstructure/arm/ekf.h"
 
 namespace y2018 {
 namespace control_loops {
@@ -58,8 +59,9 @@ void Main() {
     const ::Eigen::Matrix<double, 2, 1> alpha_t =
         trajectory.AlphaT(distance, goal_velocity, goal_acceleration);
 
-    const ::Eigen::Matrix<double, 4, 1> R = trajectory.R(theta_t, omega_t);
-    const ::Eigen::Matrix<double, 2, 1> U = Dynamics::FF_U(R, omega_t, alpha_t);
+    const ::Eigen::Matrix<double, 6, 1> R = trajectory.R(theta_t, omega_t);
+    const ::Eigen::Matrix<double, 2, 1> U =
+        Dynamics::FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t);
 
     Uff0_distance_array.push_back(U(0));
     Uff1_distance_array.push_back(U(1));
@@ -96,10 +98,22 @@ void Main() {
   ::std::vector<double> uff1_array;
   ::std::vector<double> u0_array;
   ::std::vector<double> u1_array;
+  ::std::vector<double> theta0_hat_t_array;
+  ::std::vector<double> omega0_hat_t_array;
+  ::std::vector<double> theta1_hat_t_array;
+  ::std::vector<double> omega1_hat_t_array;
+  ::std::vector<double> torque0_hat_t_array;
+  ::std::vector<double> torque1_hat_t_array;
 
-  while (t < 1.0) {
+  EKF arm_ekf;
+  arm_ekf.Reset(X);
+
+  while (t < 3.0) {
     t_array.push_back(t);
-    follower.Update(X, sim_dt, vmax);
+    arm_ekf.Correct((::Eigen::Matrix<double, 2, 1>() << X(0), X(2)).finished(),
+                    sim_dt);
+    // TODO(austin): Compensate for torque disturbance.
+    follower.Update(arm_ekf.X_hat(), sim_dt, vmax);
 
     const ::Eigen::Matrix<double, 2, 1> theta_t =
         trajectory.ThetaT(follower.goal()(0));
@@ -118,6 +132,12 @@ void Main() {
     omega0_t_array.push_back(X(1));
     theta1_t_array.push_back(X(2));
     omega1_t_array.push_back(X(3));
+    theta0_hat_t_array.push_back(arm_ekf.X_hat(0));
+    omega0_hat_t_array.push_back(arm_ekf.X_hat(1));
+    theta1_hat_t_array.push_back(arm_ekf.X_hat(2));
+    omega1_hat_t_array.push_back(arm_ekf.X_hat(3));
+    torque0_hat_t_array.push_back(arm_ekf.X_hat(4));
+    torque1_hat_t_array.push_back(arm_ekf.X_hat(5));
 
     distance_t_array.push_back(follower.goal()(0));
     velocity_t_array.push_back(follower.goal()(1));
@@ -126,10 +146,15 @@ void Main() {
     u0_unsaturated_array.push_back(follower.U_unsaturated()(0));
     u1_unsaturated_array.push_back(follower.U_unsaturated()(1));
 
-    const ::Eigen::Matrix<double, 4, 1> xdot =
-        Dynamics::Acceleration(X, follower.U());
+    ::Eigen::Matrix<double, 2, 1> actual_U = follower.U();
+    // Add in a disturbance force to see how well the arm learns it.
+    actual_U.array() += 1.0;
 
-    X = Dynamics::UnboundedDiscreteDynamics(X, follower.U(), sim_dt);
+    const ::Eigen::Matrix<double, 4, 1> xdot =
+        Dynamics::Acceleration(X, actual_U);
+
+    X = Dynamics::UnboundedDiscreteDynamics(X, actual_U, sim_dt);
+    arm_ekf.Predict(follower.U(), sim_dt);
 
     alpha0_t_array.push_back(xdot(1));
     alpha1_t_array.push_back(xdot(3));
@@ -185,9 +210,11 @@ void Main() {
   matplotlibcpp::plot(t_array, omega0_goal_t_array,
                       {{"label", "omega0_t_goal"}});
   matplotlibcpp::plot(t_array, omega0_t_array, {{"label", "omega0_t"}});
+  matplotlibcpp::plot(t_array, omega0_hat_t_array, {{"label", "omega0_hat_t"}});
   matplotlibcpp::plot(t_array, omega1_goal_t_array,
                       {{"label", "omega1_t_goal"}});
   matplotlibcpp::plot(t_array, omega1_t_array, {{"label", "omega1_t"}});
+  matplotlibcpp::plot(t_array, omega1_hat_t_array, {{"label", "omega1_hat_t"}});
   matplotlibcpp::legend();
 
   matplotlibcpp::figure();
@@ -198,6 +225,8 @@ void Main() {
   matplotlibcpp::plot(t_array, u1_unsaturated_array, {{"label", "u1_full"}});
   matplotlibcpp::plot(t_array, u1_array, {{"label", "u1"}});
   matplotlibcpp::plot(t_array, uff1_array, {{"label", "uff1"}});
+  matplotlibcpp::plot(t_array, torque0_hat_t_array, {{"label", "torque0_hat"}});
+  matplotlibcpp::plot(t_array, torque1_hat_t_array, {{"label", "torque1_hat"}});
   matplotlibcpp::legend();
 
   matplotlibcpp::figure();
@@ -205,9 +234,11 @@ void Main() {
   matplotlibcpp::plot(t_array, theta0_goal_t_array,
                       {{"label", "theta0_t_goal"}});
   matplotlibcpp::plot(t_array, theta0_t_array, {{"label", "theta0_t"}});
+  matplotlibcpp::plot(t_array, theta0_hat_t_array, {{"label", "theta0_hat_t"}});
   matplotlibcpp::plot(t_array, theta1_goal_t_array,
                       {{"label", "theta1_t_goal"}});
   matplotlibcpp::plot(t_array, theta1_t_array, {{"label", "theta1_t"}});
+  matplotlibcpp::plot(t_array, theta1_hat_t_array, {{"label", "theta1_hat_t"}});
   matplotlibcpp::legend();
 
 /*

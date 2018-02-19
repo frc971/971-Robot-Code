@@ -1,5 +1,8 @@
 #include "y2018/control_loops/superstructure/arm/demo_path.h"
 
+#include <array>
+#include <initializer_list>
+
 namespace y2018 {
 namespace control_loops {
 namespace superstructure {

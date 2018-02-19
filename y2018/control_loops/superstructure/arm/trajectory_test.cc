@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 #include "y2018/control_loops/superstructure/arm/demo_path.h"
 #include "y2018/control_loops/superstructure/arm/dynamics.h"
+#include "y2018/control_loops/superstructure/arm/ekf.h"
 
 namespace y2018 {
 namespace control_loops {
@@ -157,11 +158,17 @@ TEST(TrajectoryTest, RunTrajectory) {
     X << theta_t(0), 0.0, theta_t(1), 0.0;
   }
 
+  EKF arm_ekf;
+  arm_ekf.Reset(X);
+
   TrajectoryFollower follower(&path, &trajectory, alpha_unitizer);
   constexpr double sim_dt = 0.00505;
   while (t < 1.0) {
-    follower.Update(X, sim_dt, vmax);
+    arm_ekf.Correct((::Eigen::Matrix<double, 2, 1>() << X(0), X(2)).finished(),
+                    sim_dt);
+    follower.Update(arm_ekf.X_hat(), sim_dt, vmax);
     X = Dynamics::UnboundedDiscreteDynamics(X, follower.U(), sim_dt);
+    arm_ekf.Predict(follower.U(), sim_dt);
     t += sim_dt;
   }
 
