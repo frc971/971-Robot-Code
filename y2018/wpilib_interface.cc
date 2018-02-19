@@ -430,24 +430,24 @@ class SensorReader {
       CopyPosition(proximal_encoder_, &superstructure_message->arm.proximal,
                    Values::kProximalEncoderCountsPerRevolution(),
                    Values::kProximalEncoderRatio(), proximal_pot_translate,
-                   false, values.proximal.pot_offset);
+                   false, values.proximal.potentiometer_offset);
 
       CopyPosition(distal_encoder_, &superstructure_message->arm.distal,
                    Values::kDistalEncoderCountsPerRevolution(),
                    Values::kDistalEncoderRatio(), distal_pot_translate, false,
-                   values.distal.pot_offset);
+                   values.distal.potentiometer_offset);
 
       CopyPosition(left_intake_encoder_,
                    &superstructure_message->intake.left.motor_position,
                    Values::kIntakeMotorEncoderCountsPerRevolution(),
                    Values::kIntakeMotorEncoderRatio(), intake_pot_translate,
-                   false, values.intake.left_pot_offset);
+                   false, values.left_intake.potentiometer_offset);
 
       CopyPosition(right_intake_encoder_,
                    &superstructure_message->intake.right.motor_position,
                    Values::kIntakeMotorEncoderCountsPerRevolution(),
                    Values::kIntakeMotorEncoderRatio(), intake_pot_translate,
-                   false, values.intake.right_pot_offset);
+                   false, values.right_intake.potentiometer_offset);
 
       superstructure_message->intake.left.spring_angle =
           intake_spring_translate(left_intake_spring_angle_->GetVoltage());

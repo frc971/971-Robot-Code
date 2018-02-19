@@ -31,40 +31,91 @@ const uint16_t kPracticeTeamNumber = 9971;
 
 const Values *DoGetValuesForTeam(uint16_t team) {
   Values *const r = new Values();
-  Values::Intake *const intake = &r->intake;
+  Values::IntakeSide *const left_intake = &r->left_intake;
+  Values::IntakeSide *const right_intake = &r->right_intake;
   Values::Proximal *const proximal = &r->proximal;
   Values::Distal *const distal = &r->distal;
+
+  left_intake->zeroing.average_filter_size = Values::kZeroingSampleSize();
+  left_intake->zeroing.one_revolution_distance =
+      M_PI * 2.0 * constants::Values::kIntakeMotorEncoderRatio();
+  left_intake->zeroing.zeroing_threshold = 0.0005;
+  left_intake->zeroing.moving_buffer_size = 20;
+  left_intake->zeroing.allowable_encoder_error = 1.9;
+
+  *right_intake = *left_intake;
+
+  proximal->zeroing.average_filter_size = Values::kZeroingSampleSize();
+  proximal->zeroing.one_revolution_distance =
+      M_PI * 2.0 * constants::Values::kProximalEncoderRatio();
+  proximal->zeroing.zeroing_threshold = 0.0005;
+  proximal->zeroing.moving_buffer_size = 20;
+  proximal->zeroing.allowable_encoder_error = 0.9;
+
+  distal->zeroing.average_filter_size = Values::kZeroingSampleSize();
+  distal->zeroing.one_revolution_distance =
+      M_PI * 2.0 * constants::Values::kDistalEncoderRatio();
+  distal->zeroing.zeroing_threshold = 0.0005;
+  distal->zeroing.moving_buffer_size = 20;
+  distal->zeroing.allowable_encoder_error = 0.9;
 
   switch (team) {
     // A set of constants for tests.
     case 1:
-      r->down_error = 0;
       r->vision_name = "test";
       r->vision_error = -0.030;
-      intake->left_pot_offset = 0;
-      intake->right_pot_offset = 0;
-      proximal->pot_offset = 0;
-      distal->pot_offset = 0;
+
+      left_intake->zeroing.measured_absolute_position = 0.0;
+      left_intake->potentiometer_offset = 0.0;
+      left_intake->spring_offset = 0.0;
+
+      right_intake->zeroing.measured_absolute_position = 0.0;
+      right_intake->potentiometer_offset = 0.0;
+      right_intake->spring_offset = 0.0;
+
+      proximal->zeroing.measured_absolute_position = 0.0;
+      proximal->potentiometer_offset = 0.0;
+
+      distal->zeroing.measured_absolute_position = 0.0;
+      distal->potentiometer_offset = 0.0;
       break;
 
     case kCompTeamNumber:
-      r->down_error = 0;
       r->vision_name = "competition";
       r->vision_error = 0.0;
-      intake->left_pot_offset = 0;
-      intake->right_pot_offset = 0;
-      proximal->pot_offset = 0;
-      distal->pot_offset = 0;
+
+      left_intake->zeroing.measured_absolute_position = 0.0;
+      left_intake->potentiometer_offset = 0.0;
+      left_intake->spring_offset = 0.0;
+
+      right_intake->zeroing.measured_absolute_position = 0.0;
+      right_intake->potentiometer_offset = 0.0;
+      right_intake->spring_offset = 0.0;
+
+      proximal->zeroing.measured_absolute_position = 0.0;
+      proximal->potentiometer_offset = 0.0;
+
+      distal->zeroing.measured_absolute_position = 0.0;
+      distal->potentiometer_offset = 0.0;
       break;
 
     case kPracticeTeamNumber:
-      r->down_error = 0;
       r->vision_name = "practice";
       r->vision_error = 0.0;
-      intake->left_pot_offset = 0;
-      intake->right_pot_offset = 0;
-      proximal->pot_offset = 0;
-      distal->pot_offset = 0;
+
+      left_intake->zeroing.measured_absolute_position = 0.0;
+      left_intake->potentiometer_offset = 0.0;
+      left_intake->spring_offset = 0.0;
+
+      right_intake->zeroing.measured_absolute_position = 0.0;
+      right_intake->potentiometer_offset = 0.0;
+      right_intake->spring_offset = 0.0;
+
+      proximal->zeroing.measured_absolute_position = 0.0;
+      proximal->potentiometer_offset = 0.0;
+
+      distal->zeroing.measured_absolute_position = 0.0;
+      distal->potentiometer_offset = 0.0;
       break;
 
     default:

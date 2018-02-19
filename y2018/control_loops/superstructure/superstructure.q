@@ -13,10 +13,15 @@ struct IntakeSideStatus {
   // If true, we have aborted.
   bool estopped;
 
+  // Estimated position of the spring.
+  float spring_position;
+  // Estimated velocity of the spring in units/second.
+  float spring_velocity;
+
   // Estimated position of the joint.
-  float position;
+  float motor_position;
   // Estimated velocity of the joint in units/second.
-  float velocity;
+  float motor_velocity;
 
   // Goal position of the joint.
   float goal_position;
@@ -26,12 +31,15 @@ struct IntakeSideStatus {
   // The calculated velocity with delta x/delta t
   float calculated_velocity;
 
+  // The voltage given last cycle;
+  float delayed_voltage;
+
   // State of the estimator.
   .frc971.AbsoluteEstimatorState estimator_state;
 };
 
 struct IntakeGoal {
-  float roller_voltage;
+  double roller_voltage;
 
   // Goal angle in radians of the intake.
   // Zero radians is where the intake is pointing straight out, with positive

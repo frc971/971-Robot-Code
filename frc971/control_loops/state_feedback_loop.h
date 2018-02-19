@@ -105,17 +105,17 @@ class StateFeedbackPlant {
   const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_max() const {
     return coefficients().U_max;
   }
-  Scalar U_max(int i, int j) const { return U_max()(i, j); }
+  Scalar U_max(int i, int j = 0) const { return U_max()(i, j); }
 
   const Eigen::Matrix<Scalar, number_of_states, 1> &X() const { return X_; }
-  Scalar X(int i, int j) const { return X()(i, j); }
+  Scalar X(int i, int j = 0) const { return X()(i, j); }
   const Eigen::Matrix<Scalar, number_of_outputs, 1> &Y() const { return Y_; }
-  Scalar Y(int i, int j) const { return Y()(i, j); }
+  Scalar Y(int i, int j = 0) const { return Y()(i, j); }
 
   Eigen::Matrix<Scalar, number_of_states, 1> &mutable_X() { return X_; }
-  Scalar &mutable_X(int i, int j) { return mutable_X()(i, j); }
+  Scalar &mutable_X(int i, int j = 0) { return mutable_X()(i, j); }
   Eigen::Matrix<Scalar, number_of_outputs, 1> &mutable_Y() { return Y_; }
-  Scalar &mutable_Y(int i, int j) { return mutable_Y()(i, j); }
+  Scalar &mutable_Y(int i, int j = 0) { return mutable_Y()(i, j); }
 
   const StateFeedbackPlantCoefficients<number_of_states, number_of_inputs,
                                        number_of_outputs, Scalar>
@@ -400,7 +400,7 @@ class StateFeedbackLoop {
   const Eigen::Matrix<Scalar, number_of_states, 1> &X_hat() const {
     return observer().X_hat();
   }
-  Scalar X_hat(int i, int j) const { return X_hat()(i, j); }
+  Scalar X_hat(int i, int j = 0) const { return X_hat()(i, j); }
   const Eigen::Matrix<Scalar, number_of_states, 1> &R() const { return R_; }
   Scalar R(int i, int j) const { return R()(i, j); }
   const Eigen::Matrix<Scalar, number_of_states, 1> &next_R() const {
@@ -421,7 +421,7 @@ class StateFeedbackLoop {
   Eigen::Matrix<Scalar, number_of_states, 1> &mutable_X_hat() {
     return observer_.mutable_X_hat();
   }
-  Scalar &mutable_X_hat(int i, int j) { return mutable_X_hat()(i, j); }
+  Scalar &mutable_X_hat(int i, int j = 0) { return mutable_X_hat()(i, j); }
   Eigen::Matrix<Scalar, number_of_states, 1> &mutable_R() { return R_; }
   Scalar &mutable_R(int i, int j) { return mutable_R()(i, j); }
   Eigen::Matrix<Scalar, number_of_states, 1> &mutable_next_R() {

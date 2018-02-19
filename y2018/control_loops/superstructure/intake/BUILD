@@ -27,3 +27,24 @@ cc_library(
         "//frc971/control_loops:state_feedback_loop",
     ],
 )
+
+cc_library(
+    name = "intake",
+    srcs = [
+        "intake.cc",
+    ],
+    hdrs = [
+        "intake.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":intake_plants",
+        "//aos/common:math",
+        "//aos/common/controls:control_loop",
+        "//aos/common/logging:queue_logging",
+        "//frc971/control_loops:queues",
+        "//frc971/zeroing",
+        "//y2018:constants",
+        "//y2018/control_loops/superstructure:superstructure_queue",
+    ],
+)

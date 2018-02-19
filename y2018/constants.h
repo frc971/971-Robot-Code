@@ -24,7 +24,7 @@ namespace constants {
 // All ratios are from the encoder shaft to the output units.
 
 struct Values {
-  static constexpr int kZeroingSampleSize() { return 200; }
+  static constexpr size_t kZeroingSampleSize() { return 200; }
 
   static constexpr double kDrivetrainCyclesPerRevolution() { return 512.0; }
   static constexpr double kDrivetrainEncoderCountsPerRevolution() {
@@ -80,23 +80,31 @@ struct Values {
            kIntakeMotorEncoderCountsPerRevolution();
   }
 
-  struct Intake {
-    double left_pot_offset;
-    double right_pot_offset;
+  static constexpr ::frc971::constants::Range kIntakeRange() {
+    return ::frc971::constants::Range{(-0.75 * M_PI), (1.25 * M_PI),
+                                      (-2.0 / 3.0 * M_PI), M_PI};
+  }
+
+  struct IntakeSide {
+    ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants zeroing;
+    double potentiometer_offset;
+    double spring_offset;
   };
-  Intake intake;
+  IntakeSide left_intake;
+  IntakeSide right_intake;
 
   struct Proximal {
-    double pot_offset;
+    ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants zeroing;
+    double potentiometer_offset;
   };
   Proximal proximal;
 
   struct Distal {
-    double pot_offset;
+    ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants zeroing;
+    double potentiometer_offset;
   };
   Distal distal;
 
-  double down_error;
   const char *vision_name;
 
   double vision_error;
