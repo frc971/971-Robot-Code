@@ -1,5 +1,10 @@
 #include "y2018/control_loops/superstructure/arm/trajectory.h"
 
+#include "Eigen/Dense"
+#include "frc971/control_loops/jacobian.h"
+#include "y2018/control_loops/superstructure/arm/dlqr.h"
+#include "y2018/control_loops/superstructure/arm/dynamics.h"
+
 namespace y2018 {
 namespace control_loops {
 namespace superstructure {
@@ -245,7 +250,7 @@ double Trajectory::FeasableBackwardsAcceleration(
     // Subdivide the plan step size into kNumSteps steps.
     double integrated_distance = 0.0;
     double integrated_velocity = previous_velocity;
-    constexpr int kNumSteps = 10;
+    constexpr int kNumSteps = 50;
     for (int j = 0; j < kNumSteps; ++j) {
       // Compute the acceleration with respect to time.
       const double acceleration = FeasableBackwardsAcceleration(
@@ -301,6 +306,191 @@ double Trajectory::FeasableBackwardsAcceleration(
   }
 
   return max_dvelocity_forward_pass;
+}
+
+void TrajectoryFollower::Reset() {
+  next_goal_ = last_goal_ = goal_ = ::Eigen::Matrix<double, 2, 1>::Zero();
+  U_ = ::Eigen::Matrix<double, 2, 1>::Zero();
+  goal_acceleration_ = 0.0;
+}
+
+::Eigen::Matrix<double, 2, 4> TrajectoryFollower::K_at_state(
+    const ::Eigen::Matrix<double, 4, 1> &X,
+    const ::Eigen::Matrix<double, 2, 1> &U) {
+  constexpr double q_pos = 0.2;
+  constexpr double q_vel = 4.0;
+  const ::Eigen::DiagonalMatrix<double, 4> Q =
+      (::Eigen::DiagonalMatrix<double, 4>().diagonal()
+           << 1.0 / ::std::pow(q_pos, 2),
+       1.0 / ::std::pow(q_vel, 2), 1.0 / ::std::pow(q_pos, 2),
+       1.0 / ::std::pow(q_vel, 2))
+          .finished()
+          .asDiagonal();
+
+  const ::Eigen::DiagonalMatrix<double, 2> R =
+      (::Eigen::DiagonalMatrix<double, 2>().diagonal()
+           << 1.0 / ::std::pow(12.0, 2),
+       1.0 / ::std::pow(12.0, 2))
+          .finished()
+          .asDiagonal();
+
+  const ::Eigen::Matrix<double, 4, 4> final_A =
+      ::frc971::control_loops::NumericalJacobianX(
+          Dynamics::UnboundedDiscreteDynamics, X, U, 0.00505);
+  const ::Eigen::Matrix<double, 4, 2> final_B =
+      ::frc971::control_loops::NumericalJacobianU(
+          Dynamics::UnboundedDiscreteDynamics, X, U, 0.00505);
+
+  ::Eigen::Matrix<double, 2, 4> K;
+  ::Eigen::Matrix<double, 4, 4> S;
+  ::frc971::controls::dlqr<4, 2>(final_A, final_B, Q, R, &K, &S);
+  return K;
+}
+
+void TrajectoryFollower::USaturationSearch(
+    double goal_distance, double last_goal_distance, double goal_velocity,
+    double last_goal_velocity, double fraction_along_path,
+    const ::Eigen::Matrix<double, 2, 4> &K,
+    const ::Eigen::Matrix<double, 4, 1> &X, const Trajectory &trajectory,
+    ::Eigen::Matrix<double, 2, 1> *U, double *saturation_goal_velocity,
+    double *saturation_goal_acceleration) {
+  double saturation_goal_distance =
+      ((goal_distance - last_goal_distance) * fraction_along_path +
+       last_goal_distance);
+
+  const ::Eigen::Matrix<double, 2, 1> theta_t =
+      trajectory.ThetaT(saturation_goal_distance);
+  *saturation_goal_velocity = trajectory.InterpolateVelocity(
+      saturation_goal_distance, last_goal_distance, goal_distance,
+      last_goal_velocity, goal_velocity);
+  *saturation_goal_acceleration = trajectory.InterpolateAcceleration(
+      last_goal_distance, goal_distance, last_goal_velocity, goal_velocity);
+  const ::Eigen::Matrix<double, 2, 1> omega_t =
+      trajectory.OmegaT(saturation_goal_distance, *saturation_goal_velocity);
+  const ::Eigen::Matrix<double, 2, 1> alpha_t =
+      trajectory.AlphaT(saturation_goal_distance, *saturation_goal_velocity,
+                        *saturation_goal_acceleration);
+  const ::Eigen::Matrix<double, 4, 1> R = trajectory.R(theta_t, omega_t);
+  const ::Eigen::Matrix<double, 2, 1> U_ff =
+      Dynamics::FF_U(R, omega_t, alpha_t);
+
+  *U = U_ff + K * (R - X);
+}
+
+::Eigen::Matrix<double, 2, 1> TrajectoryFollower::PlanNextGoal(
+    const ::Eigen::Matrix<double, 2, 1> &goal, double vmax, double dt) {
+  // Figure out where we would be if we were to accelerate as fast as
+  // our constraints allow.
+  ::Eigen::Matrix<double, 2, 1> next_goal = ::frc971::control_loops::RungeKutta(
+      [this, &vmax](const ::Eigen::Matrix<double, 2, 1> &X) {
+        return (::Eigen::Matrix<double, 2, 1>() << X(1),
+                trajectory_->FeasableForwardsAcceleration(X(0), X(1), vmax,
+                                                          alpha_unitizer_))
+            .finished();
+      },
+      goal, dt);
+
+  // Min that with the backwards pass velocity in case the backwards pass
+  // wants us to slow down.
+  const double next_trajectory_velocity =
+      trajectory_->GetDVelocity(next_goal(0));
+  if (next_trajectory_velocity < next_goal(1)) {
+    next_goal(1) = next_trajectory_velocity;
+    // And then recompute how far to go with our new trajectory in mind.
+    double goal_acceleration = trajectory_->InterpolateAcceleration(
+        goal(0), next_goal(0), goal(1), next_goal(1));
+    next_goal(0) = (goal(0) + goal(1) * dt + 0.5 * dt * dt * goal_acceleration);
+    next_goal(1) = trajectory_->GetDVelocity(next_goal(0));
+  }
+  return next_goal;
+}
+
+void TrajectoryFollower::Update(const ::Eigen::Matrix<double, 4, 1> &X,
+                                double dt, double vmax) {
+  // To avoid exposing the new goals before the outer code has a chance to
+  // querry the internal state, move to the new goals here.
+  last_goal_ = goal_;
+  goal_ = next_goal_;
+
+  if (::std::abs(goal_(0) - path_->length()) < 1e-2) {
+    // If we go backwards along the path near the goal, snap us to the end
+    // point or we'll never actually finish.
+    if (goal_acceleration_ * dt + goal_(1) < 0.0 ||
+        goal_(0) > path_->length()) {
+      goal_(0) = path_->length();
+      goal_(1) = 0.0;
+    }
+  }
+
+  if (goal_(0) == path_->length()) {
+    next_goal_(0) = goal_(0);
+    next_goal_(1) = 0.0;
+    goal_acceleration_ = 0.0;
+  } else {
+    // Figure out where we would be if we were to accelerate as fast as
+    // our constraints allow.
+    next_goal_ = PlanNextGoal(goal_, vmax, dt);
+
+    goal_acceleration_ = trajectory_->InterpolateAcceleration(
+        goal_(0), next_goal_(0), goal_(1), next_goal_(1));
+  }
+
+  const ::Eigen::Matrix<double, 2, 1> theta_t = trajectory_->ThetaT(goal_(0));
+  const ::Eigen::Matrix<double, 2, 1> omega_t =
+      trajectory_->OmegaT(goal_(0), goal_(1));
+  const ::Eigen::Matrix<double, 2, 1> alpha_t =
+      trajectory_->AlphaT(goal_(0), goal_(1), goal_acceleration_);
+
+  const ::Eigen::Matrix<double, 4, 1> R = trajectory_->R(theta_t, omega_t);
+
+  U_ff_ = Dynamics::FF_U(R, omega_t, alpha_t);
+
+  const ::Eigen::Matrix<double, 2, 4> K = K_at_state(X, U_ff_);
+  U_ = U_unsaturated_ = U_ff_ + K * (R - X);
+
+  // Ok, now we know if we are staturated or not.  If we are, time to search
+  // between here and our previous goal either until we find a state where we
+  // aren't saturated, or we are really close to our starting point.
+  fraction_along_path_ = 1.0;
+  if ((U_.array().abs() > 12.0).any()) {
+    // Saturated.  Let's do a binary search.
+    double step_size;
+    if ((goal_(0) - last_goal_(0)) < 1e-8) {
+      // print "Not bothering to move"
+      // Avoid the divide by 0 when interpolating.  Just don't move since we
+      // are saturated.
+      fraction_along_path_ = 0.0;
+      step_size = 0.0;
+    } else {
+      fraction_along_path_ = 0.5;
+      step_size = 0.5;
+    }
+
+    // Pull us back to the previous point until we aren't saturated anymore.
+    double saturation_goal_velocity;
+    double saturation_goal_acceleration;
+    while (step_size > 0.01) {
+      USaturationSearch(goal_(0), last_goal_(0), goal_(1), last_goal_(1),
+                        fraction_along_path_, K, X, *trajectory_, &U_,
+                        &saturation_goal_velocity,
+                        &saturation_goal_acceleration);
+      step_size = step_size * 0.5;
+      if ((U_.array().abs() > 12.0).any()) {
+        fraction_along_path_ -= step_size;
+      } else {
+        fraction_along_path_ += step_size;
+      }
+    }
+
+    goal_(0) =
+        ((goal_(0) - last_goal_(0)) * fraction_along_path_ + last_goal_(0));
+    goal_(1) = saturation_goal_velocity;
+
+    next_goal_ = PlanNextGoal(goal_, vmax, dt);
+
+    goal_acceleration_ = trajectory_->InterpolateAcceleration(
+        goal_(0), next_goal_(0), goal_(1), next_goal_(1));
+  }
 }
 
 }  // namespace arm

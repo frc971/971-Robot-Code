@@ -1009,7 +1009,6 @@ def main():
     pylab.legend()
 
     pylab.figure()
-    pylab.title("Path Velocity Plan")
     pylab.plot(t_array, alpha0_goal_t_array, label="alpha0_t_goal")
     pylab.plot(t_array, alpha0_t_array, label="alpha0_t")
     pylab.plot(t_array, alpha1_goal_t_array, label="alpha1_t_goal")

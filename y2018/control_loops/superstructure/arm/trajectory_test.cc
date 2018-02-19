@@ -1,6 +1,8 @@
 #include "y2018/control_loops/superstructure/arm/trajectory.h"
 
 #include "gtest/gtest.h"
+#include "y2018/control_loops/superstructure/arm/demo_path.h"
+#include "y2018/control_loops/superstructure/arm/dynamics.h"
 
 namespace y2018 {
 namespace control_loops {
@@ -111,6 +113,69 @@ TEST(TrajectoryTest, IndicesForDistanceTest) {
   EXPECT_EQ(0.0, t.DistanceForIndex(0));
   EXPECT_EQ(0.1, t.DistanceForIndex(1));
   EXPECT_EQ(3.0, t.DistanceForIndex(30));
+}
+
+// Tests that we can correctly interpolate velocities between two points
+TEST(TrajectoryTest, InterpolateVelocity) {
+  // x = 0.5 * a * t^2
+  // v = a * t
+  // a = 2.0
+  EXPECT_EQ(0.0, Trajectory::InterpolateVelocity(0.0, 0.0, 1.0, 0.0, 2.0));
+  EXPECT_EQ(2.0, Trajectory::InterpolateVelocity(1.0, 0.0, 1.0, 0.0, 2.0));
+  EXPECT_EQ(0.0, Trajectory::InterpolateVelocity(-1.0, 0.0, 1.0, 0.0, 2.0));
+  EXPECT_EQ(2.0, Trajectory::InterpolateVelocity(20.0, 0.0, 1.0, 0.0, 2.0));
+}
+
+// Tests that we can correctly interpolate velocities between two points
+TEST(TrajectoryTest, InterpolateAcceleration) {
+  // x = 0.5 * a * t^2
+  // v = a * t
+  // a = 2.0
+  EXPECT_EQ(2.0, Trajectory::InterpolateAcceleration(0.0, 1.0, 0.0, 2.0));
+}
+
+// Tests that we can follow a path.  Look at :trajectory_plot if you want to see
+// the path.
+TEST(TrajectoryTest, RunTrajectory) {
+  Path path = MakeDemoPath();
+  Trajectory trajectory(&path, 0.001);
+
+  constexpr double kAlpha0Max = 40.0;
+  constexpr double kAlpha1Max = 60.0;
+  constexpr double vmax = 11.95;
+
+  const ::Eigen::Matrix<double, 2, 2> alpha_unitizer =
+      (::Eigen::Matrix<double, 2, 2>() << 1.0 / kAlpha0Max, 0.0, 0.0,
+       1.0 / kAlpha1Max)
+          .finished();
+  trajectory.OptimizeTrajectory(alpha_unitizer, vmax);
+
+  double t = 0;
+  ::Eigen::Matrix<double, 4, 1> X;
+  {
+    ::Eigen::Matrix<double, 2, 1> theta_t = trajectory.ThetaT(0.0);
+    X << theta_t(0), 0.0, theta_t(1), 0.0;
+  }
+
+  TrajectoryFollower follower(&path, &trajectory, alpha_unitizer);
+  constexpr double sim_dt = 0.00505;
+  while (t < 1.0) {
+    follower.Update(X, sim_dt, vmax);
+    X = Dynamics::UnboundedDiscreteDynamics(X, follower.U(), sim_dt);
+    t += sim_dt;
+  }
+
+  ::Eigen::Matrix<double, 4, 1> final_X;
+  ::Eigen::Matrix<double, 2, 1> final_theta_t =
+      trajectory.ThetaT(path.length());
+  final_X << final_theta_t(0), 0.0, final_theta_t(1), 0.0;
+
+  // Verify that we got to the end.
+  EXPECT_TRUE(X.isApprox(final_X, 0.01))
+      << ": X is " << X.transpose() << " final_X is " << final_X.transpose();
+
+  // Verify that our goal is at the end.
+  EXPECT_TRUE(final_theta_t.isApprox(path.Theta(follower.goal(0))));
 }
 
 }  // namespace testing

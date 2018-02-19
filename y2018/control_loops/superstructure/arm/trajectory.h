@@ -3,8 +3,6 @@
 
 #include "Eigen/Dense"
 
-#include "y2018/control_loops/superstructure/arm/dynamics.h"
-
 namespace y2018 {
 namespace control_loops {
 namespace superstructure {
@@ -168,6 +166,87 @@ class Trajectory {
     return max_dvelocity_forward_pass_;
   }
 
+  // Returns the interpolated velocity at the distance d along the path.  The
+  // math assumes constant acceleration from point (d0, v0), to point (d1, v1),
+  // and that we are at point d between the two.
+  static double InterpolateVelocity(double d, double d0, double d1, double v0,
+                                    double v1) {
+    // We don't support negative velocities.
+    if (v0 < 0 || v1 < 0) {
+      abort();
+    }
+    if (d <= d0) {
+      return v0;
+    }
+    if (d >= d1) {
+      return v1;
+    }
+    return ::std::sqrt(v0 * v0 + (v1 * v1 - v0 * v0) * (d - d0) / (d1 - d0));
+  }
+
+  // Computes the path distance velocity of the plan as a function of the
+  // distance.
+  double GetDVelocity(double d) {
+    ::std::pair<size_t, size_t> indices = IndicesForDistance(d);
+    const double v0 = max_dvelocity_[indices.first];
+    const double v1 = max_dvelocity_[indices.second];
+    const double d0 = DistanceForIndex(indices.first);
+    const double d1 = DistanceForIndex(indices.second);
+    return InterpolateVelocity(d, d0, d1, v0, v1);
+  }
+
+  // Computes the path distance acceleration of the plan as a function of the
+  // distance.
+  double GetDAcceleration(double distance) const {
+    ::std::pair<size_t, size_t> indices = IndicesForDistance(distance);
+    const double v0 = max_dvelocity_[indices.first];
+    const double v1 = max_dvelocity_[indices.second];
+    const double d0 = DistanceForIndex(indices.first);
+    const double d1 = DistanceForIndex(indices.second);
+    return InterpolateAcceleration(d0, d1, v0, v1);
+  }
+
+  // Returns the acceleration along the path segment assuming constant
+  // acceleration.
+  static double InterpolateAcceleration(double d0, double d1, double v0,
+                                        double v1) {
+    return 0.5 * (::std::pow(v1, 2) - ::std::pow(v0, 2)) / (d1 - d0);
+  }
+
+  ::Eigen::Matrix<double, 2, 1> ThetaT(double d) const {
+    return path_->Theta(d);
+  }
+
+  // Returns d theta/dt at a specified path distance and velocity.
+  ::Eigen::Matrix<double, 2, 1> OmegaT(double distance, double velocity) const {
+    if (distance > path_->length() || distance < 0.0) {
+      return ::Eigen::Matrix<double, 2, 1>::Zero();
+    } else {
+      return path_->Omega(distance) * velocity;
+    }
+  }
+
+  // Returns d^2 theta/dt^2 at a specified path distance, velocity and
+  // acceleration.
+  ::Eigen::Matrix<double, 2, 1> AlphaT(double distance, double velocity,
+                                       double acceleration) const {
+    if (distance > path_->length() || distance < 0.0) {
+      return ::Eigen::Matrix<double, 2, 1>::Zero();
+    } else {
+      return path_->Alpha(distance) * ::std::pow(velocity, 2) +
+             path_->Omega(distance) * acceleration;
+    }
+  }
+
+  // Converts a theta and omega vector to a full state vector.
+  static ::Eigen::Matrix<double, 4, 1> R(
+      ::Eigen::Matrix<double, 2, 1> theta_t,
+      ::Eigen::Matrix<double, 2, 1> omega_t) {
+    return (::Eigen::Matrix<double, 4, 1>() << theta_t(0, 0), omega_t(0, 0),
+            theta_t(1, 0), omega_t(1, 0))
+        .finished();
+  }
+
  private:
   friend class testing::TrajectoryTest_IndicesForDistanceTest_Test;
 
@@ -200,6 +279,82 @@ class Trajectory {
   ::std::vector<double> max_dvelocity_unfiltered_;
   ::std::vector<double> max_dvelocity_;
   ::std::vector<double> max_dvelocity_forward_pass_;
+};
+
+// This class tracks the current goal along trajectories and paths.
+class TrajectoryFollower {
+ public:
+  TrajectoryFollower(Path *const path, Trajectory *const trajectory,
+                     const ::Eigen::Matrix<double, 2, 2> alpha_unitizer)
+      : path_(path), trajectory_(trajectory), alpha_unitizer_(alpha_unitizer) {
+    Reset();
+  }
+
+  // Returns the goal distance along the path.
+  const ::Eigen::Matrix<double, 2, 1> &goal() const { return goal_; }
+  double goal(int i) const { return goal_(i); }
+
+  // Starts over at the beginning of the path.
+  // TODO(austin): Allow switching the path.
+  void Reset();
+
+  // Returns the controller gain at the provided state.
+  ::Eigen::Matrix<double, 2, 4> K_at_state(
+      const ::Eigen::Matrix<double, 4, 1> &X,
+      const ::Eigen::Matrix<double, 2, 1> &U);
+
+  // Returns the voltage, velocity and acceleration if we were to be partially
+  // along the path.
+  void USaturationSearch(double goal_distance, double last_goal_distance,
+                         double goal_velocity, double last_goal_velocity,
+                         double fraction_along_path,
+                         const ::Eigen::Matrix<double, 2, 4> &K,
+                         const ::Eigen::Matrix<double, 4, 1> &X,
+                         const Trajectory &trajectory,
+                         ::Eigen::Matrix<double, 2, 1> *U,
+                         double *saturation_goal_velocity,
+                         double *saturation_goal_acceleration);
+
+  // Returns the next goal given a planning vmax and timestep.  This ignores the
+  // backwards pass.
+  ::Eigen::Matrix<double, 2, 1> PlanNextGoal(
+      const ::Eigen::Matrix<double, 2, 1> &goal, double vmax, double dt);
+
+  // Plans the next cycle and updates the internal state for consumption.
+  void Update(const ::Eigen::Matrix<double, 4, 1> &X, double dt, double vmax);
+
+  // Returns the goal acceleration for this cycle.
+  double goal_acceleration() const { return goal_acceleration_; }
+
+  // Returns U(s) for this cycle.
+  const ::Eigen::Matrix<double, 2, 1> &U() const { return U_; }
+  const ::Eigen::Matrix<double, 2, 1> &U_unsaturated() const {
+    return U_unsaturated_;
+  }
+  const ::Eigen::Matrix<double, 2, 1> &U_ff() const { return U_ff_; }
+
+  double fraction_along_path() const { return fraction_along_path_; }
+
+ private:
+  // The path to follow.
+  Path *const path_ = nullptr;
+  // The trajectory plan.
+  Trajectory *const trajectory_ = nullptr;
+  const ::Eigen::Matrix<double, 2, 2> alpha_unitizer_;
+
+  // The current goal.
+  ::Eigen::Matrix<double, 2, 1> goal_;
+  // The previously executed goal.
+  ::Eigen::Matrix<double, 2, 1> last_goal_;
+  // The goal to use next cycle.  We always plan 1 cycle ahead.
+  ::Eigen::Matrix<double, 2, 1> next_goal_;
+
+  ::Eigen::Matrix<double, 2, 1> U_;
+  ::Eigen::Matrix<double, 2, 1> U_unsaturated_;
+  ::Eigen::Matrix<double, 2, 1> U_ff_;
+  double goal_acceleration_ = 0.0;
+
+  double fraction_along_path_ = 1.0;
 };
 
 }  // namespace arm
