@@ -95,3 +95,18 @@ cc_library(
         "//third_party/eigen",
     ],
 )
+
+cc_library(
+    name = "graph",
+    srcs = ["graph.cc"],
+    hdrs = ["graph.h"],
+)
+
+cc_test(
+    name = "graph_test",
+    srcs = ["graph_test.cc"],
+    deps = [
+        ":graph",
+        "//aos/testing:googletest",
+    ],
+)
