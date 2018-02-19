@@ -24,7 +24,7 @@ py_library(
   ],
   deps = [
     '//external:python-glog',
-    '//external:slycot',
+    '@slycot_repo//:slycot',
   ],
   data = [
     '//third_party/cddlib:_cddlib.so',
