@@ -4,11 +4,11 @@ cc_library(
         "trajectory.cc",
     ],
     hdrs = [
-        "dlqr.h",
         "trajectory.h",
     ],
     deps = [
         ":dynamics",
+        "//frc971/control_loops:dlqr",
         "//frc971/control_loops:jacobian",
         "//third_party/eigen",
     ],
@@ -19,7 +19,6 @@ cc_test(
     srcs = [
         "trajectory_test.cc",
     ],
-    linkopts = ["-lslicot"],
     restricted_to = ["//tools:k8"],
     deps = [
         ":demo_path",
@@ -69,7 +68,6 @@ cc_binary(
     srcs = [
         "trajectory_plot.cc",
     ],
-    linkopts = ["-lslicot"],
     restricted_to = ["//tools:k8"],
     deps = [
         ":demo_path",
@@ -78,4 +76,3 @@ cc_binary(
         "//third_party/matplotlib-cpp",
     ],
 )
-

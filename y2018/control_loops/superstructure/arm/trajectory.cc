@@ -1,8 +1,8 @@
 #include "y2018/control_loops/superstructure/arm/trajectory.h"
 
 #include "Eigen/Dense"
+#include "frc971/control_loops/dlqr.h"
 #include "frc971/control_loops/jacobian.h"
-#include "y2018/control_loops/superstructure/arm/dlqr.h"
 #include "y2018/control_loops/superstructure/arm/dynamics.h"
 
 namespace y2018 {

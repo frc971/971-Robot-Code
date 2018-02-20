@@ -255,7 +255,7 @@ cc_library(
     'F2CLIBS/libf2c/fmt.c',
     'F2CLIBS/libf2c/rdfmt.c',
     'F2CLIBS/libf2c/wrtfmt.c',
-    'F2CLIBS/libf2c/ctype.c',
+    #'F2CLIBS/libf2c/ctype.c',
     'F2CLIBS/libf2c/wref.c',
     'F2CLIBS/libf2c/fmtlib.c',
     'F2CLIBS/libf2c/lread.c',
@@ -269,7 +269,8 @@ cc_library(
   hdrs = glob([
     'INCLUDE/*.h',
     'F2CLIBS/libf2c/*.h',
-  ]),
+  ],
+  exclude=['F2CLIBS/libf2c/ctype.h']),
   includes = [
     'INCLUDE',
     'F2CLIBS/libf2c',

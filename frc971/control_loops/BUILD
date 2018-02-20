@@ -226,3 +226,14 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "dlqr",
+    hdrs = [
+        "dlqr.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//third_party/eigen",
+        "@slycot_repo//:slicot",
+    ],
+)
