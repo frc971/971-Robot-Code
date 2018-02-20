@@ -1,6 +1,6 @@
 #include "frc971/wpilib/ADIS16448.h"
 
-#include "InterruptableSensorBase.h"
+#include "frc971/wpilib/ahal/InterruptableSensorBase.h"
 #undef ERROR
 
 #include <inttypes.h>
@@ -118,8 +118,8 @@ uint16_t CalculateCrc(const uint8_t *data, size_t data_length) {
 
 }  // namespace
 
-ADIS16448::ADIS16448(SPI::Port port, DigitalInput *dio1)
-    : spi_(new SPI(port)), dio1_(dio1) {
+ADIS16448::ADIS16448(frc::SPI::Port port, frc::DigitalInput *dio1)
+    : spi_(new frc::SPI(port)), dio1_(dio1) {
   // 1MHz is the maximum supported for burst reads, but we
   // want to go slower to hopefully make it more reliable.
   spi_->SetClockRate(1e5);
@@ -132,8 +132,8 @@ ADIS16448::ADIS16448(SPI::Port port, DigitalInput *dio1)
   dio1_->SetUpSourceEdge(true, false);
 }
 
-void ADIS16448::SetDummySPI(SPI::Port port) {
-  dummy_spi_.reset(new SPI(port));
+void ADIS16448::SetDummySPI(frc::SPI::Port port) {
+  dummy_spi_.reset(new frc::SPI(port));
   // Pick the same settings here in case the roboRIO decides to try something
   // stupid when switching.
   if (dummy_spi_) {
@@ -168,8 +168,8 @@ void ADIS16448::InitializeUntilSuccessful() {
 void ADIS16448::operator()() {
   // NI's SPI driver defaults to SCHED_OTHER.  Find it's PID with ps, and change
   // it to a RT priority of 33.
-  PCHECK(system(
-             "ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
+  PCHECK(
+      system("ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
              "33") == 0);
 
   ::aos::SetCurrentThreadName("IMU");
@@ -186,9 +186,9 @@ void ADIS16448::operator()() {
   bool got_an_interrupt = false;
   while (run_) {
     {
-      const InterruptableSensorBase::WaitResult result =
+      const frc::InterruptableSensorBase::WaitResult result =
           dio1_->WaitForInterrupt(0.1, !got_an_interrupt);
-      if (result == InterruptableSensorBase::kTimeout) {
+      if (result == frc::InterruptableSensorBase::kTimeout) {
         LOG(WARNING, "IMU read timed out\n");
         InitializeUntilSuccessful();
         continue;
@@ -209,7 +209,7 @@ void ADIS16448::operator()() {
     // scenario.
     if (!dio1_->Get() ||
         dio1_->WaitForInterrupt(0, false) !=
-            InterruptableSensorBase::kTimeout) {
+            frc::InterruptableSensorBase::kTimeout) {
       LOG(ERROR, "IMU read took too long\n");
       continue;
     }

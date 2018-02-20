@@ -2,17 +2,19 @@
 #define FRC971_ENCODER_AND_POTENTIOMETER_H_
 
 #include <atomic>
+#include <cmath>
 #include <thread>
 
 #include "aos/macros.h"
 #include "aos/mutex/mutex.h"
 
-#include "Encoder.h"
-#include "DigitalSource.h"
-#include "AnalogInput.h"
+#include "frc971/wpilib/ahal/AnalogInput.h"
+#include "frc971/wpilib/ahal/Counter.h"
+#include "frc971/wpilib/ahal/DigitalSource.h"
+#include "frc971/wpilib/ahal/Encoder.h"
 
-#include "frc971/wpilib/dma_edge_counting.h"
 #include "frc971/wpilib/dma.h"
+#include "frc971/wpilib/dma_edge_counting.h"
 
 namespace frc971 {
 namespace wpilib {
@@ -42,20 +44,20 @@ class InterruptEncoderAndPotentiometer {
   // Holding this mutex will increase the handling latency.
   ::aos::Mutex *mutex() { return &mutex_; }
 
-  void set_encoder(::std::unique_ptr<Encoder> encoder) {
+  void set_encoder(::std::unique_ptr<frc::Encoder> encoder) {
     encoder_ = ::std::move(encoder);
   }
-  Encoder *encoder() const { return encoder_.get(); }
+  frc::Encoder *encoder() const { return encoder_.get(); }
 
-  void set_index(::std::unique_ptr<DigitalSource> index) {
+  void set_index(::std::unique_ptr<frc::DigitalSource> index) {
     index_ = ::std::move(index);
   }
-  DigitalSource *index() const { return index_.get(); }
+  frc::DigitalSource *index() const { return index_.get(); }
 
-  void set_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
+  void set_potentiometer(::std::unique_ptr<frc::AnalogInput> potentiometer) {
     potentiometer_ = ::std::move(potentiometer);
   }
-  AnalogInput *potentiometer() const { return potentiometer_.get(); }
+  frc::AnalogInput *potentiometer() const { return potentiometer_.get(); }
 
   // Returns the number of poseges that have happened on the index input.
   // mutex() must be held while calling this.
@@ -70,9 +72,9 @@ class InterruptEncoderAndPotentiometer {
   }
 
  private:
-  ::std::unique_ptr<Encoder> encoder_;
-  ::std::unique_ptr<DigitalSource> index_;
-  ::std::unique_ptr<AnalogInput> potentiometer_;
+  ::std::unique_ptr<frc::Encoder> encoder_;
+  ::std::unique_ptr<frc::DigitalSource> index_;
+  ::std::unique_ptr<frc::AnalogInput> potentiometer_;
 
   int32_t last_encoder_value_{0};
   float last_potentiometer_voltage_{0.0f};
@@ -94,15 +96,15 @@ class DMAEncoder : public DMASampleHandlerInterface {
  public:
   DMAEncoder() {}
 
-  void set_encoder(::std::unique_ptr<Encoder> encoder) {
+  void set_encoder(::std::unique_ptr<frc::Encoder> encoder) {
     encoder_ = ::std::move(encoder);
   }
-  Encoder *encoder() const { return encoder_.get(); }
+  frc::Encoder *encoder() const { return encoder_.get(); }
 
-  void set_index(::std::unique_ptr<DigitalSource> index) {
+  void set_index(::std::unique_ptr<frc::DigitalSource> index) {
     index_ = ::std::move(index);
   }
-  DigitalSource *index() const { return index_.get(); }
+  frc::DigitalSource *index() const { return index_.get(); }
 
   // Returns the most recent polled value of the encoder.
   uint32_t polled_encoder_value() const { return polled_encoder_value_; }
@@ -136,8 +138,8 @@ class DMAEncoder : public DMASampleHandlerInterface {
   bool DoUpdateFromSample(const DMASample &sample);
 
  private:
-  ::std::unique_ptr<Encoder> encoder_;
-  ::std::unique_ptr<DigitalSource> index_;
+  ::std::unique_ptr<frc::Encoder> encoder_;
+  ::std::unique_ptr<frc::DigitalSource> index_;
 
   int32_t polled_encoder_value_ = 0;
 
@@ -157,10 +159,10 @@ class DMAEncoderAndPotentiometer : public DMAEncoder {
  public:
   DMAEncoderAndPotentiometer() {}
 
-  void set_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
+  void set_potentiometer(::std::unique_ptr<frc::AnalogInput> potentiometer) {
     potentiometer_ = ::std::move(potentiometer);
   }
-  AnalogInput *potentiometer() const { return potentiometer_.get(); }
+  frc::AnalogInput *potentiometer() const { return potentiometer_.get(); }
 
   // Returns the most recent polled voltage of the potentiometer.
   float polled_potentiometer_voltage() const {
@@ -194,7 +196,7 @@ class DMAEncoderAndPotentiometer : public DMAEncoder {
   }
 
  private:
-  ::std::unique_ptr<AnalogInput> potentiometer_;
+  ::std::unique_ptr<frc::AnalogInput> potentiometer_;
 
   float polled_potentiometer_voltage_ = 0.0f;
 
@@ -245,15 +247,15 @@ class DutyCycleReader {
 // Class to hold a CTRE encoder with absolute angle pwm and potentiometer pair.
 class AbsoluteEncoderAndPotentiometer {
  public:
-  void set_absolute_pwm(::std::unique_ptr<DigitalInput> input) {
+  void set_absolute_pwm(::std::unique_ptr<frc::DigitalInput> input) {
     duty_cycle_.set_input(::std::move(input));
   }
 
-  void set_encoder(::std::unique_ptr<Encoder> encoder) {
+  void set_encoder(::std::unique_ptr<frc::Encoder> encoder) {
     encoder_ = ::std::move(encoder);
   }
 
-  void set_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
+  void set_potentiometer(::std::unique_ptr<frc::AnalogInput> potentiometer) {
     potentiometer_ = ::std::move(potentiometer);
   }
 
@@ -265,8 +267,8 @@ class AbsoluteEncoderAndPotentiometer {
 
  private:
   DutyCycleReader duty_cycle_;
-  ::std::unique_ptr<Encoder> encoder_;
-  ::std::unique_ptr<AnalogInput> potentiometer_;
+  ::std::unique_ptr<frc::Encoder> encoder_;
+  ::std::unique_ptr<frc::AnalogInput> potentiometer_;
 };
 
 }  // namespace wpilib

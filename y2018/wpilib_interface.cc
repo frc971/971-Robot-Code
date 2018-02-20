@@ -10,14 +10,14 @@
 #include <mutex>
 #include <thread>
 
-#include "AnalogInput.h"
-#include "Counter.h"
-#include "DigitalGlitchFilter.h"
-#include "DriverStation.h"
-#include "Encoder.h"
-#include "Relay.h"
-#include "Servo.h"
-#include "VictorSP.h"
+#include "frc971/wpilib/ahal/AnalogInput.h"
+#include "frc971/wpilib/ahal/Counter.h"
+#include "frc971/wpilib/ahal/DigitalGlitchFilter.h"
+#include "frc971/wpilib/ahal/DriverStation.h"
+#include "frc971/wpilib/ahal/Encoder.h"
+#include "frc971/wpilib/ahal/Relay.h"
+#include "frc971/wpilib/ahal/Servo.h"
+#include "frc971/wpilib/ahal/VictorSP.h"
 #include "ctre/phoenix/CANifier.h"
 #undef ERROR
 
@@ -169,126 +169,133 @@ class SensorReader {
   }
 
   // Left drivetrain side.
-  void set_drivetrain_left_encoder(::std::unique_ptr<Encoder> encoder) {
+  void set_drivetrain_left_encoder(::std::unique_ptr<frc::Encoder> encoder) {
     fast_encoder_filter_.Add(encoder.get());
     drivetrain_left_encoder_ = ::std::move(encoder);
   }
 
   void set_left_drivetrain_shifter_potentiometer(
-      ::std::unique_ptr<AnalogInput> potentiometer) {
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
     left_drivetrain_shifter_ = ::std::move(potentiometer);
   }
 
   // Right drivetrain side.
-  void set_drivetrain_right_encoder(::std::unique_ptr<Encoder> encoder) {
+  void set_drivetrain_right_encoder(::std::unique_ptr<frc::Encoder> encoder) {
     fast_encoder_filter_.Add(encoder.get());
     drivetrain_right_encoder_ = ::std::move(encoder);
   }
 
   void set_right_drivetrain_shifter_potentiometer(
-      ::std::unique_ptr<AnalogInput> potentiometer) {
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
     right_drivetrain_shifter_ = ::std::move(potentiometer);
   }
 
   // Proximal joint.
-  void set_proximal_encoder(::std::unique_ptr<Encoder> encoder) {
+  void set_proximal_encoder(::std::unique_ptr<frc::Encoder> encoder) {
     medium_encoder_filter_.Add(encoder.get());
     proximal_encoder_.set_encoder(::std::move(encoder));
   }
 
-  void set_proximal_absolute_pwm(::std::unique_ptr<DigitalInput> absolute_pwm) {
+  void set_proximal_absolute_pwm(
+      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
     proximal_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
   }
 
   void set_proximal_potentiometer(
-      ::std::unique_ptr<AnalogInput> potentiometer) {
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
     proximal_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
   // Distal joint.
-  void set_distal_encoder(::std::unique_ptr<Encoder> encoder) {
+  void set_distal_encoder(::std::unique_ptr<frc::Encoder> encoder) {
     medium_encoder_filter_.Add(encoder.get());
     distal_encoder_.set_encoder(::std::move(encoder));
   }
 
-  void set_distal_absolute_pwm(::std::unique_ptr<DigitalInput> absolute_pwm) {
+  void set_distal_absolute_pwm(
+      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
     fast_encoder_filter_.Add(absolute_pwm.get());
     distal_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
   }
 
-  void set_distal_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
+  void set_distal_potentiometer(
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
     distal_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
   // Left intake side.
-  void set_left_intake_encoder(::std::unique_ptr<Encoder> encoder) {
+  void set_left_intake_encoder(::std::unique_ptr<frc::Encoder> encoder) {
     fast_encoder_filter_.Add(encoder.get());
     left_intake_encoder_.set_encoder(::std::move(encoder));
   }
 
   void set_left_intake_absolute_pwm(
-      ::std::unique_ptr<DigitalInput> absolute_pwm) {
+      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
     fast_encoder_filter_.Add(absolute_pwm.get());
     left_intake_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
   }
 
   void set_left_intake_potentiometer(
-      ::std::unique_ptr<AnalogInput> potentiometer) {
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
     left_intake_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
-  void set_left_intake_spring_angle(::std::unique_ptr<AnalogInput> encoder) {
+  void set_left_intake_spring_angle(
+      ::std::unique_ptr<frc::AnalogInput> encoder) {
     left_intake_spring_angle_ = ::std::move(encoder);
   }
 
-  void set_left_intake_cube_detector(::std::unique_ptr<DigitalInput> input) {
+  void set_left_intake_cube_detector(
+      ::std::unique_ptr<frc::DigitalInput> input) {
     left_intake_cube_detector_ = ::std::move(input);
   }
 
   // Right intake side.
-  void set_right_intake_encoder(::std::unique_ptr<Encoder> encoder) {
+  void set_right_intake_encoder(::std::unique_ptr<frc::Encoder> encoder) {
     fast_encoder_filter_.Add(encoder.get());
     right_intake_encoder_.set_encoder(::std::move(encoder));
   }
 
   void set_right_intake_absolute_pwm(
-      ::std::unique_ptr<DigitalInput> absolute_pwm) {
+      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
     fast_encoder_filter_.Add(absolute_pwm.get());
     right_intake_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
   }
 
   void set_right_intake_potentiometer(
-      ::std::unique_ptr<AnalogInput> potentiometer) {
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
     right_intake_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
-  void set_right_intake_spring_angle(::std::unique_ptr<AnalogInput> encoder) {
+  void set_right_intake_spring_angle(
+      ::std::unique_ptr<frc::AnalogInput> encoder) {
     right_intake_spring_angle_ = ::std::move(encoder);
   }
 
-  void set_right_intake_cube_detector(::std::unique_ptr<DigitalInput> input) {
+  void set_right_intake_cube_detector(
+      ::std::unique_ptr<frc::DigitalInput> input) {
     right_intake_cube_detector_ = ::std::move(input);
   }
 
-  void set_claw_beambreak(::std::unique_ptr<DigitalInput> input) {
+  void set_claw_beambreak(::std::unique_ptr<frc::DigitalInput> input) {
     claw_beambreak_ = ::std::move(input);
   }
 
-  void set_box_back_beambreak(::std::unique_ptr<DigitalInput> input) {
+  void set_box_back_beambreak(::std::unique_ptr<frc::DigitalInput> input) {
     box_back_beambreak_ = ::std::move(input);
   }
 
   // Auto mode switches.
-  void set_autonomous_mode(int i, ::std::unique_ptr<DigitalInput> sensor) {
+  void set_autonomous_mode(int i, ::std::unique_ptr<frc::DigitalInput> sensor) {
     autonomous_modes_.at(i) = ::std::move(sensor);
   }
 
-  void set_pwm_trigger(::std::unique_ptr<DigitalInput> pwm_trigger) {
+  void set_pwm_trigger(::std::unique_ptr<frc::DigitalInput> pwm_trigger) {
     medium_encoder_filter_.Add(pwm_trigger.get());
     pwm_trigger_ = ::std::move(pwm_trigger);
   }
 
-  void set_lidar_lite_input(::std::unique_ptr<DigitalInput> lidar_lite_input) {
+  void set_lidar_lite_input(::std::unique_ptr<frc::DigitalInput> lidar_lite_input) {
     lidar_lite_input_ = ::std::move(lidar_lite_input);
     lidar_lite_.set_input(lidar_lite_input_.get());
   }
@@ -313,17 +320,17 @@ class SensorReader {
 
     while (run_) {
       auto ret = pwm_trigger_->WaitForInterrupt(1.0, true);
-      if (ret == InterruptableSensorBase::WaitResult::kRisingEdge) {
+      if (ret == frc::InterruptableSensorBase::WaitResult::kRisingEdge) {
         // Grab all the clocks.
         const double pwm_fpga_time = pwm_trigger_->ReadRisingTimestamp();
 
         aos_compiler_memory_barrier();
-        const double fpga_time_before = GetFPGATime() * 1e-6;
+        const double fpga_time_before = frc::GetFPGATime() * 1e-6;
         aos_compiler_memory_barrier();
         const monotonic_clock::time_point monotonic_now =
             monotonic_clock::now();
         aos_compiler_memory_barrier();
-        const double fpga_time_after = GetFPGATime() * 1e-6;
+        const double fpga_time_after = frc::GetFPGATime() * 1e-6;
         aos_compiler_memory_barrier();
 
         const double fpga_offset =
@@ -545,13 +552,13 @@ class SensorReader {
 
   ::std::unique_ptr<::frc971::wpilib::DMASynchronizer> dma_synchronizer_;
 
-  DigitalGlitchFilter fast_encoder_filter_, medium_encoder_filter_,
+  frc::DigitalGlitchFilter fast_encoder_filter_, medium_encoder_filter_,
       hall_filter_;
 
-  ::std::unique_ptr<Encoder> drivetrain_left_encoder_,
+  ::std::unique_ptr<frc::Encoder> drivetrain_left_encoder_,
       drivetrain_right_encoder_;
 
-  ::std::unique_ptr<AnalogInput> left_drivetrain_shifter_,
+  ::std::unique_ptr<frc::AnalogInput> left_drivetrain_shifter_,
       right_drivetrain_shifter_;
 
   ::frc971::wpilib::AbsoluteEncoderAndPotentiometer proximal_encoder_,
@@ -560,19 +567,19 @@ class SensorReader {
   ::frc971::wpilib::AbsoluteEncoderAndPotentiometer left_intake_encoder_,
       right_intake_encoder_;
 
-  ::std::unique_ptr<AnalogInput> left_intake_spring_angle_,
+  ::std::unique_ptr<frc::AnalogInput> left_intake_spring_angle_,
       right_intake_spring_angle_;
-  ::std::unique_ptr<DigitalInput> left_intake_cube_detector_,
+  ::std::unique_ptr<frc::DigitalInput> left_intake_cube_detector_,
       right_intake_cube_detector_;
 
-  ::std::unique_ptr<DigitalInput> claw_beambreak_;
-  ::std::unique_ptr<DigitalInput> box_back_beambreak_;
+  ::std::unique_ptr<frc::DigitalInput> claw_beambreak_;
+  ::std::unique_ptr<frc::DigitalInput> box_back_beambreak_;
 
-  ::std::unique_ptr<DigitalInput> pwm_trigger_;
+  ::std::unique_ptr<frc::DigitalInput> pwm_trigger_;
 
-  ::std::array<::std::unique_ptr<DigitalInput>, 4> autonomous_modes_;
+  ::std::array<::std::unique_ptr<frc::DigitalInput>, 4> autonomous_modes_;
 
-  ::std::unique_ptr<DigitalInput> lidar_lite_input_;
+  ::std::unique_ptr<frc::DigitalInput> lidar_lite_input_;
   ::frc971::wpilib::DMAPulseWidthReader lidar_lite_;
 
   ::std::atomic<bool> run_{true};
@@ -870,9 +877,9 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
  public:
-  ::std::unique_ptr<Encoder> make_encoder(int index) {
-    return make_unique<Encoder>(10 + index * 2, 11 + index * 2, false,
-                                Encoder::k4X);
+  ::std::unique_ptr<frc::Encoder> make_encoder(int index) {
+    return make_unique<frc::Encoder>(10 + index * 2, 11 + index * 2, false,
+                                     frc::Encoder::k4X);
   }
 
   void Run() override {
@@ -889,45 +896,46 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     // TODO(Sabina): Update port numbers(Sensors and Victors)
     reader.set_drivetrain_left_encoder(make_encoder(0));
     reader.set_left_drivetrain_shifter_potentiometer(
-        make_unique<AnalogInput>(6));
+        make_unique<frc::AnalogInput>(6));
     reader.set_drivetrain_right_encoder(make_encoder(1));
     reader.set_right_drivetrain_shifter_potentiometer(
-        make_unique<AnalogInput>(7));
+        make_unique<frc::AnalogInput>(7));
 
     reader.set_proximal_encoder(make_encoder(4));
-    reader.set_proximal_absolute_pwm(make_unique<DigitalInput>(2));
-    reader.set_proximal_potentiometer(make_unique<AnalogInput>(2));
+    reader.set_proximal_absolute_pwm(make_unique<frc::DigitalInput>(2));
+    reader.set_proximal_potentiometer(make_unique<frc::AnalogInput>(2));
 
     reader.set_distal_encoder(make_encoder(2));
-    reader.set_distal_absolute_pwm(make_unique<DigitalInput>(3));
-    reader.set_distal_potentiometer(make_unique<AnalogInput>(3));
+    reader.set_distal_absolute_pwm(make_unique<frc::DigitalInput>(3));
+    reader.set_distal_potentiometer(make_unique<frc::AnalogInput>(3));
 
     reader.set_right_intake_encoder(make_encoder(5));
-    reader.set_right_intake_absolute_pwm(make_unique<DigitalInput>(7));
-    reader.set_right_intake_potentiometer(make_unique<AnalogInput>(1));
-    reader.set_right_intake_spring_angle(make_unique<AnalogInput>(5));
-    reader.set_right_intake_cube_detector(make_unique<DigitalInput>(1));
+    reader.set_right_intake_absolute_pwm(make_unique<frc::DigitalInput>(7));
+    reader.set_right_intake_potentiometer(make_unique<frc::AnalogInput>(1));
+    reader.set_right_intake_spring_angle(make_unique<frc::AnalogInput>(5));
+    reader.set_right_intake_cube_detector(make_unique<frc::DigitalInput>(1));
 
     reader.set_left_intake_encoder(make_encoder(3));
-    reader.set_left_intake_absolute_pwm(make_unique<DigitalInput>(4));
-    reader.set_left_intake_potentiometer(make_unique<AnalogInput>(0));
-    reader.set_left_intake_spring_angle(make_unique<AnalogInput>(4));
-    reader.set_left_intake_cube_detector(make_unique<DigitalInput>(0));
+    reader.set_left_intake_absolute_pwm(make_unique<frc::DigitalInput>(4));
+    reader.set_left_intake_potentiometer(make_unique<frc::AnalogInput>(0));
+    reader.set_left_intake_spring_angle(make_unique<frc::AnalogInput>(4));
+    reader.set_left_intake_cube_detector(make_unique<frc::DigitalInput>(0));
 
-    reader.set_claw_beambreak(make_unique<DigitalInput>(8));
-    reader.set_box_back_beambreak(make_unique<DigitalInput>(9));
+    reader.set_claw_beambreak(make_unique<frc::DigitalInput>(8));
+    reader.set_box_back_beambreak(make_unique<frc::DigitalInput>(9));
 
-    reader.set_pwm_trigger(make_unique<DigitalInput>(25));
+    reader.set_pwm_trigger(make_unique<frc::DigitalInput>(25));
 
-    reader.set_lidar_lite_input(make_unique<DigitalInput>(22));
+    reader.set_lidar_lite_input(make_unique<frc::DigitalInput>(22));
 
     reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));
 
-    auto imu_trigger = make_unique<DigitalInput>(5);
-    ::frc971::wpilib::ADIS16448 imu(SPI::Port::kOnboardCS1, imu_trigger.get());
-    imu.SetDummySPI(SPI::Port::kOnboardCS2);
-    auto imu_reset = make_unique<DigitalOutput>(6);
+    auto imu_trigger = make_unique<frc::DigitalInput>(5);
+    ::frc971::wpilib::ADIS16448 imu(frc::SPI::Port::kOnboardCS1,
+                                    imu_trigger.get());
+    imu.SetDummySPI(frc::SPI::Port::kOnboardCS2);
+    auto imu_reset = make_unique<frc::DigitalOutput>(6);
     imu.set_reset(imu_reset.get());
     ::std::thread imu_thread(::std::ref(imu));
 

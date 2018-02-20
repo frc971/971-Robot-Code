@@ -1,18 +1,16 @@
 #ifndef FRC971_WPILIB_INTERRUPT_EDGE_COUNTING_H_
 #define FRC971_WPILIB_INTERRUPT_EDGE_COUNTING_H_
 
-#include <memory>
 #include <atomic>
+#include <memory>
 #include <thread>
 #include <vector>
 
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/macros.h"
 
-#include "DigitalInput.h"
-#include "Encoder.h"
-#include "AnalogInput.h"
-#include "Utility.h"
+#include "frc971/wpilib/ahal/DigitalInput.h"
+#include "frc971/wpilib/ahal/Encoder.h"
 
 namespace frc971 {
 namespace wpilib {
@@ -109,7 +107,7 @@ class InterruptHandler {
 // input.
 class EdgeCounter : public InterruptHandler {
  public:
-  EdgeCounter(Encoder *encoder, DigitalInput *input)
+  EdgeCounter(frc::Encoder *encoder, frc::DigitalInput *input)
       : encoder_(encoder), input_(input) {}
 
   // Returns the current interrupt edge counts and encoder values.
@@ -139,8 +137,8 @@ class EdgeCounter : public InterruptHandler {
   void CommitValue() override { output_ = shadow_values_; }
   void operator()() override;
 
-  Encoder *encoder_;
-  DigitalInput *input_;
+  frc::Encoder *encoder_;
+  frc::DigitalInput *input_;
 
   // The following variables represent the current "shadow" state.
   bool current_value_ = false;
@@ -156,7 +154,7 @@ class EdgeCounter : public InterruptHandler {
 // Synchronizes reading an encoder with interrupt handling.
 class InterruptSynchronizedEncoder : public InterruptHandler {
  public:
-  InterruptSynchronizedEncoder(Encoder *encoder) : encoder_(encoder) {}
+  InterruptSynchronizedEncoder(frc::Encoder *encoder) : encoder_(encoder) {}
 
   int32_t get() const { return output_; }
 
@@ -165,7 +163,7 @@ class InterruptSynchronizedEncoder : public InterruptHandler {
   void CommitValue() override { output_ = shadow_; }
   void operator()() override {}
 
-  Encoder *const encoder_;
+  frc::Encoder *const encoder_;
 
   int32_t shadow_, output_;
 };

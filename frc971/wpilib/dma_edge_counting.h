@@ -8,10 +8,10 @@
 
 #include "frc971/wpilib/dma.h"
 
-#include "DigitalInput.h"
-#include "Encoder.h"
-#include "AnalogInput.h"
-#include "Utility.h"
+#include "frc971/wpilib/ahal/AnalogInput.h"
+#include "frc971/wpilib/ahal/DigitalInput.h"
+#include "frc971/wpilib/ahal/Encoder.h"
+#include "frc971/wpilib/ahal/Utility.h"
 #undef ERROR
 
 namespace frc971 {
@@ -40,10 +40,10 @@ class DMASampleHandlerInterface {
 // TODO(brian): Timeout old data.
 class DMAPulseWidthReader : public DMASampleHandlerInterface {
  public:
-  DMAPulseWidthReader(DigitalInput *input) : input_(input) {}
+  DMAPulseWidthReader(frc::DigitalInput *input) : input_(input) {}
   DMAPulseWidthReader() = default;
 
-  void set_input(DigitalInput *input) { input_ = input; }
+  void set_input(frc::DigitalInput *input) { input_ = input; }
 
   double last_width() const { return last_width_; }
 
@@ -57,7 +57,7 @@ class DMAPulseWidthReader : public DMASampleHandlerInterface {
     dma->SetExternalTrigger(input_, true, true);
   }
 
-  DigitalInput *input_ = nullptr;
+  frc::DigitalInput *input_ = nullptr;
 
   // The last DMA reading we got.
   DMASample prev_sample_;
@@ -73,12 +73,12 @@ class DMAPulseWidthReader : public DMASampleHandlerInterface {
 // corresponding to those edges.
 class DMAEdgeCounter : public DMASampleHandlerInterface {
  public:
-  DMAEdgeCounter(Encoder *encoder, DigitalInput *input)
+  DMAEdgeCounter(frc::Encoder *encoder, frc::DigitalInput *input)
       : encoder_(encoder), input_(input) {}
   DMAEdgeCounter() = default;
 
-  void set_encoder(Encoder *encoder) { encoder_ = encoder; }
-  void set_input(DigitalInput *input) { input_ = input; }
+  void set_encoder(frc::Encoder *encoder) { encoder_ = encoder; }
+  void set_input(frc::DigitalInput *input) { input_ = input; }
 
   int positive_count() const { return pos_edge_count_; }
   int negative_count() const { return neg_edge_count_; }
@@ -112,8 +112,8 @@ class DMAEdgeCounter : public DMASampleHandlerInterface {
 
   bool ExtractValue(const DMASample &sample) const;
 
-  Encoder *encoder_ = nullptr;
-  DigitalInput *input_ = nullptr;
+  frc::Encoder *encoder_ = nullptr;
+  frc::DigitalInput *input_ = nullptr;
 
   // The last DMA reading we got.
   DMASample prev_sample_;
@@ -138,7 +138,7 @@ class DMAEdgeCounter : public DMASampleHandlerInterface {
 // Reads a hall effect in sync with DMA samples.
 class DMADigitalReader : public DMASampleHandlerInterface {
  public:
-  DMADigitalReader(DigitalInput *input) : input_(input) {}
+  DMADigitalReader(frc::DigitalInput *input) : input_(input) {}
 
   bool value() const { return value_; }
 
@@ -148,11 +148,9 @@ class DMADigitalReader : public DMASampleHandlerInterface {
   void PollFromSample(const DMASample &sample) override {
     value_ = sample.Get(input_);
   }
-  void AddToDMA(DMA *dma) override {
-    dma->Add(input_);
-  }
+  void AddToDMA(DMA *dma) override { dma->Add(input_); }
 
-  DigitalInput *const input_;
+  frc::DigitalInput *const input_;
 
   bool value_;
 
@@ -162,7 +160,7 @@ class DMADigitalReader : public DMASampleHandlerInterface {
 // Reads an analog sensor in sync with DMA samples.
 class DMAAnalogReader : public DMASampleHandlerInterface {
  public:
-  DMAAnalogReader(AnalogInput *input) : input_(input) {}
+  DMAAnalogReader(frc::AnalogInput *input) : input_(input) {}
 
   double value() const { return value_; }
 
@@ -172,11 +170,9 @@ class DMAAnalogReader : public DMASampleHandlerInterface {
   void PollFromSample(const DMASample &sample) override {
     value_ = sample.GetVoltage(input_);
   }
-  void AddToDMA(DMA *dma) override {
-    dma->Add(input_);
-  }
+  void AddToDMA(DMA *dma) override { dma->Add(input_); }
 
-  AnalogInput *const input_;
+  frc::AnalogInput *const input_;
 
   double value_;
 
@@ -200,9 +196,7 @@ class DMASynchronizer {
 
   // Actually starts watching for DMA samples.
   // Add may not be called any more after this.
-  void Start() {
-    dma_->Start(1024);
-  }
+  void Start() { dma_->Start(1024); }
 
   // Updates all sensor values.
   void RunIteration() {
@@ -214,7 +208,7 @@ class DMASynchronizer {
   // Reads the state of all the sensors and records it as the polled values of
   // all the inputs.
   void SampleSensors() {
-    sample_time_ = GetFPGATime();
+    sample_time_ = frc::GetFPGATime();
     for (auto &c : handlers_) {
       c->UpdatePolledValue();
     }

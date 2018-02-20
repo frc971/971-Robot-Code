@@ -10,15 +10,15 @@
 #include <mutex>
 #include <thread>
 
-#include "AnalogInput.h"
-#include "Compressor.h"
-#include "Counter.h"
-#include "DigitalGlitchFilter.h"
-#include "DriverStation.h"
-#include "Encoder.h"
-#include "Relay.h"
-#include "Servo.h"
-#include "VictorSP.h"
+#include "frc971/wpilib/ahal/AnalogInput.h"
+#include "frc971/wpilib/ahal/Compressor.h"
+#include "frc971/wpilib/ahal/Counter.h"
+#include "frc971/wpilib/ahal/DigitalGlitchFilter.h"
+#include "frc971/wpilib/ahal/DriverStation.h"
+#include "frc971/wpilib/ahal/Encoder.h"
+#include "frc971/wpilib/ahal/Relay.h"
+#include "frc971/wpilib/ahal/Servo.h"
+#include "frc971/wpilib/ahal/VictorSP.h"
 #undef ERROR
 
 #include "aos/commonmath.h"
@@ -61,6 +61,7 @@ using ::y2017::control_loops::superstructure_queue;
 using ::y2017::constants::Values;
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
+using namespace frc;
 
 namespace y2017 {
 namespace wpilib {
@@ -661,7 +662,7 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     green_light_->Set(queue->green_light_on);
     blue_light_->Set(queue->blue_light_on);
 
-    gear_servo_->Set(queue->gear_servo);
+    gear_servo_->SetPosition(queue->gear_servo);
   }
 
   virtual void Stop() override {
@@ -674,7 +675,7 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     hood_victor_->SetDisabled();
     shooter_victor_->SetDisabled();
 
-    gear_servo_->SetOffline();
+    gear_servo_->SetRaw(0);
 
     red_light_->Set(true);
     green_light_->Set(true);

@@ -1,12 +1,12 @@
 #ifndef FRC971_WPILIB_LPD8806_H_
 #define FRC971_WPILIB_LPD8806_H_
 
-#include <memory>
 #include <atomic>
+#include <memory>
 
 #include "aos/mutex/mutex.h"
 
-#include "SPI.h"
+#include "frc971/wpilib/ahal/SPI.h"
 #undef ERROR
 
 namespace frc971 {
@@ -59,7 +59,7 @@ class LPD8806 {
   ::std::unique_ptr<LED[]> data_;
   ::aos::Mutex data_mutex_;
 
-  ::std::unique_ptr<SPI> spi_;
+  ::std::unique_ptr<frc::SPI> spi_;
 
   ::std::atomic<bool> run_{true};
 };

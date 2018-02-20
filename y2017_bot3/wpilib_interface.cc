@@ -10,12 +10,12 @@
 #include <mutex>
 #include <thread>
 
-#include "AnalogInput.h"
-#include "DigitalGlitchFilter.h"
-#include "DriverStation.h"
-#include "Encoder.h"
-#include "Compressor.h"
-#include "VictorSP.h"
+#include "frc971/wpilib/ahal/AnalogInput.h"
+#include "frc971/wpilib/ahal/Compressor.h"
+#include "frc971/wpilib/ahal/DigitalGlitchFilter.h"
+#include "frc971/wpilib/ahal/DriverStation.h"
+#include "frc971/wpilib/ahal/Encoder.h"
+#include "frc971/wpilib/ahal/VictorSP.h"
 #undef ERROR
 
 #include "aos/commonmath.h"
@@ -57,6 +57,7 @@ using ::frc971::control_loops::drivetrain_queue;
 using ::y2017_bot3::control_loops::superstructure_queue;
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
+using namespace frc;
 
 namespace y2017_bot3 {
 namespace wpilib {

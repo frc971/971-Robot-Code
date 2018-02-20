@@ -9,30 +9,14 @@
 #include <array>
 #include <memory>
 
-#if defined(WPILIB2017) || defined(WPILIB2018)
 #include "HAL/ChipObject.h"
-#else
-#include "ChipObject.h"
-#endif
-#include "ErrorBase.h"
 
 class DMA;
-#if defined(WPILIB2017) || defined(WPILIB2018)
 namespace frc {
 class DigitalSource;
 class AnalogInput;
 class Encoder;
 }  // namespace frc
-#else
-class DigitalSource;
-class AnalogInput;
-class Encoder;
-namespace frc {
-using ::DigitalSource;
-using ::AnalogInput;
-using ::Encoder;
-}  // namespace frc
-#endif
 
 // A POD class which stores the data from a DMA sample and provides safe ways to
 // access it.
@@ -48,15 +32,15 @@ class DMASample {
   // All Get methods either return the requested value, or set the Error.
 
   // Returns the value of the digital input in the sample.
-  bool Get(DigitalSource *input) const;
+  bool Get(frc::DigitalSource *input) const;
   // Returns the raw value of the encoder in the sample.
-  int32_t GetRaw(Encoder *input) const;
+  int32_t GetRaw(frc::Encoder *input) const;
   // Returns the {1, 2, or 4} X scaled value of the encoder in the sample.
-  int32_t Get(Encoder *input) const;
+  int32_t Get(frc::Encoder *input) const;
   // Returns the raw 12-bit value from the ADC.
-  uint16_t GetValue(AnalogInput *input) const;
+  uint16_t GetValue(frc::AnalogInput *input) const;
   // Returns the scaled value of an analog input.
-  float GetVoltage(AnalogInput *input) const;
+  float GetVoltage(frc::AnalogInput *input) const;
 
  private:
   friend DMA;
@@ -75,8 +59,7 @@ class DMASample {
   uint32_t read_buffer_[64];
 };
 
-// TODO(austin): ErrorBase...
-class DMA : public ErrorBase {
+class DMA {
  public:
   DMA();
   virtual ~DMA();
@@ -93,14 +76,14 @@ class DMA : public ErrorBase {
   // It is safe to add the same input multiple times, but there is currently
   // no way to remove one once it has been added.
   // Call Add() and SetExternalTrigger() before Start().
-  void Add(Encoder *encoder);
-  void Add(DigitalSource *input);
-  void Add(AnalogInput *input);
+  void Add(frc::Encoder *encoder);
+  void Add(frc::DigitalSource *input);
+  void Add(frc::AnalogInput *input);
 
   // Configures DMA to trigger on an external trigger.  There can only be 4
   // external triggers.
   // Call Add() and SetExternalTrigger() before Start().
-  void SetExternalTrigger(DigitalSource *input, bool rising, bool falling);
+  void SetExternalTrigger(frc::DigitalSource *input, bool rising, bool falling);
 
   // Starts reading samples into the buffer.  Clears all previous samples before
   // starting.
@@ -131,8 +114,8 @@ class DMA : public ErrorBase {
   typedef nFPGA::nRoboRIO_FPGANamespace::tDMA tDMA;
   friend DMASample;
 
-  // The offsets into the sample structure for each DMA type, or -1 if it isn't
-  // in the set of values.
+// The offsets into the sample structure for each DMA type, or -1 if it isn't
+// in the set of values.
 #ifdef WPILIB2015
   ssize_t channel_offsets_[18];
 #else

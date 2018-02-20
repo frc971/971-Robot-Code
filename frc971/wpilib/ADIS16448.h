@@ -3,12 +3,12 @@
 
 #include <stdint.h>
 
-#include <memory>
 #include <atomic>
+#include <memory>
 
-#include "SPI.h"
-#include "DigitalInput.h"
-#include "DigitalOutput.h"
+#include "frc971/wpilib/ahal/DigitalInput.h"
+#include "frc971/wpilib/ahal/DigitalOutput.h"
+#include "frc971/wpilib/ahal/SPI.h"
 #undef ERROR
 
 #include "aos/logging/logging.h"
@@ -29,15 +29,15 @@ class ADIS16448 {
  public:
   // port is where to find the sensor over SPI.
   // dio1 must be connected to DIO1 on the sensor.
-  ADIS16448(SPI::Port port, DigitalInput *dio1);
+  ADIS16448(frc::SPI::Port port, frc::DigitalInput *dio1);
 
   // Sets the dummy SPI port to send values on to make the roboRIO deassert the
   // chip select line. This is mainly useful when there are no other devices
   // sharing the bus.
-  void SetDummySPI(SPI::Port port);
+  void SetDummySPI(frc::SPI::Port port);
 
   // Sets the reset line for the IMU to use for error recovery.
-  void set_reset(DigitalOutput *output) { reset_ = output; }
+  void set_reset(frc::DigitalOutput *output) { reset_ = output; }
 
   // For ::std::thread to call.
   //
@@ -84,10 +84,10 @@ class ADIS16448 {
   bool Initialize();
 
   // TODO(Brian): This object has no business owning these ones.
-  const ::std::unique_ptr<SPI> spi_;
-  ::std::unique_ptr<SPI> dummy_spi_;
-  DigitalInput *const dio1_;
-  DigitalOutput *reset_ = nullptr;
+  const ::std::unique_ptr<frc::SPI> spi_;
+  ::std::unique_ptr<frc::SPI> dummy_spi_;
+  frc::DigitalInput *const dio1_;
+  frc::DigitalOutput *reset_ = nullptr;
 
   ::std::atomic<bool> run_{true};
 

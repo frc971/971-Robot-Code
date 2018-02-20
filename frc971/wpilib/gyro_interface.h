@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include "SPI.h"
+#include "frc971/wpilib/ahal/SPI.h"
 #undef ERROR
 
 namespace frc971 {
@@ -47,7 +47,7 @@ class GyroInterface {
   uint32_t GetReading();
 
  private:
-  ::std::unique_ptr<SPI> gyro_;
+  ::std::unique_ptr<frc::SPI> gyro_;
 };
 
 }  // namespace wpilib

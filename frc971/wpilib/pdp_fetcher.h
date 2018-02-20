@@ -1,10 +1,8 @@
 #ifndef FRC971_WPILIB_PDP_FETCHER_H_
 #define FRC971_WPILIB_PDP_FETCHER_H_
 
-#include <memory>
 #include <atomic>
-
-#include "PowerDistributionPanel.h"
+#include <memory>
 
 namespace frc971 {
 namespace wpilib {

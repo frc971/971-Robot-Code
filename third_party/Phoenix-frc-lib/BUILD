@@ -1,6 +1,7 @@
 # It also restricts use to only with CTRE products and a roboRIO in FRC.
 licenses(["permissive"])
 
+# Excludes motor/sensor code because those have reliances on WPILib.
 cc_library(
     name = "phoenix",
     srcs = glob(
@@ -12,6 +13,8 @@ cc_library(
             "**/Tasking/**",
             "cpp/src/RCRadio3Ch.cpp",
             "cpp/src/CompileTest.cpp",
+            "**/MotorControl/**",
+            "**/Sensors/**",
         ],
     ) + [
         "libraries/driver/lib/libCTRE_PhoenixCCI.a",
@@ -23,6 +26,8 @@ cc_library(
         ],
         exclude = [
             "**/Tasking/**",
+            "**/MotorControl/**",
+            "**/Sensors/**",
             "cpp/include/ctre/phoenix/RCRadio3Ch.h",
         ],
     ),
