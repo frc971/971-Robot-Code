@@ -56,11 +56,11 @@ namespace control_loops {
  * remainder of the graph.
  */
 
-PositionSensorSimulator::PositionSensorSimulator(double index_difference,
+PositionSensorSimulator::PositionSensorSimulator(double distance_per_revolution,
                                                  unsigned int noise_seed)
-    : lower_index_edge_(index_difference, noise_seed),
-      upper_index_edge_(index_difference, noise_seed),
-      index_difference_(index_difference) {
+    : lower_index_edge_(distance_per_revolution, noise_seed),
+      upper_index_edge_(distance_per_revolution, noise_seed),
+      distance_per_revolution_(distance_per_revolution) {
   Initialize(0.0, 0.0);
 }
 
@@ -166,9 +166,9 @@ void PositionSensorSimulator::GetSensorValues(PotAndAbsolutePosition *values) {
   // instantaneous like the other signals. Better yet, its lag varies
   // randomly with the distribution varying depending on the reading.
   values->absolute_encoder = ::std::remainder(
-      current_position_ + known_absolute_encoder_, index_difference_);
+      current_position_ + known_absolute_encoder_, distance_per_revolution_);
   if (values->absolute_encoder < 0) {
-    values->absolute_encoder += index_difference_;
+    values->absolute_encoder += distance_per_revolution_;
   }
 }
 

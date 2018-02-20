@@ -14,16 +14,18 @@ namespace control_loops {
 
 class PositionSensorSimulator {
  public:
-  // index_diff: The interval between index pulses. This is measured in SI
-  //             units. For example, if an index pulse hits every 5cm on the
-  //             elevator, set this to 0.05.
-  //             NOTE: When retrieving the sensor values for a
-  //             PotAndAbsolutePosition message this field represents the
-  //             interval between when the absolute encoder reads 0.
-  // noise_seed: The seed to feed into the random number generator for the
-  //             potentiometer values.
+  // distance_per_revolution:
+  //     The interval between index pulses. This is measured in SI units. For
+  //     example, if an index pulse hits every 5cm on the elevator, set this to
+  //     0.05.
+  //     NOTE: When retrieving the sensor values for a PotAndAbsolutePosition
+  //     message this field represents the interval between when the absolute
+  //     encoder reads 0.
+  // noise_seed:
+  //     The seed to feed into the random number generator for the potentiometer
+  //     values.
   PositionSensorSimulator(
-      double index_difference,
+      double distance_per_revolution,
       unsigned int noise_seed = ::aos::testing::RandomSeed());
 
   // Set new parameters for the sensors. This is useful for unit tests to change
@@ -41,7 +43,7 @@ class PositionSensorSimulator {
 
   // Initializes a sensor simulation which is pretending to be a hall effect +
   // encoder setup.  This is assuming that the hall effect sensor triggers once
-  // per cycle, and a cycle is index_difference_ long;
+  // per cycle, and a cycle is distance_per_revolution_ long;
   void InitializeHallEffectAndPosition(double start_position,
                                        double known_index_lower,
                                        double known_index_upper);
@@ -69,12 +71,13 @@ class PositionSensorSimulator {
   // IndexEdge classes disagree.
   class IndexEdge {
    public:
-    explicit IndexEdge(double index_difference, unsigned int noise_seed)
-        : index_difference_(index_difference), pot_noise_(noise_seed, 0.0) {}
+    explicit IndexEdge(double distance_per_revolution, unsigned int noise_seed)
+        : distance_per_revolution_(distance_per_revolution),
+          pot_noise_(noise_seed, 0.0) {}
 
     void Initialize(double start_position, double segment_position) {
-      current_index_segment_ =
-          ::std::floor((start_position - segment_position) / index_difference_);
+      current_index_segment_ = ::std::floor(
+          (start_position - segment_position) / distance_per_revolution_);
       known_index_position_ = segment_position;
       last_index_ = 0;
       index_count_ = 0;
@@ -85,12 +88,12 @@ class PositionSensorSimulator {
     int current_index_segment() const { return current_index_segment_; }
 
     double IndexPulsePosition() const {
-      return last_index_ * index_difference_ + known_index_position_;
+      return last_index_ * distance_per_revolution_ + known_index_position_;
     }
 
     void MoveTo(double new_position) {
       const int new_index_segment = ::std::floor(
-          (new_position - known_index_position_) / index_difference_);
+          (new_position - known_index_position_) / distance_per_revolution_);
 
       if (new_index_segment < current_index_segment_) {
         // We've crossed an index pulse in the negative direction. That means
@@ -110,7 +113,7 @@ class PositionSensorSimulator {
 
       if (new_index_segment != current_index_segment_) {
         latched_pot_ = pot_noise_.AddNoiseToSample(
-            last_index_ * index_difference_ + known_index_position_);
+            last_index_ * distance_per_revolution_ + known_index_position_);
       }
 
       current_index_segment_ = new_index_segment;
@@ -134,7 +137,7 @@ class PositionSensorSimulator {
     // Absolute position of a known index pulse.
     double known_index_position_;
     // Distance between index pulses on the mechanism.
-    double index_difference_;
+    double distance_per_revolution_;
 
     // The pot position at the most recent index pulse with noise added.
     double latched_pot_;
@@ -147,7 +150,7 @@ class PositionSensorSimulator {
   IndexEdge upper_index_edge_;
 
   // Distance between index pulses on the mechanism.
-  double index_difference_;
+  double distance_per_revolution_;
 
   // The readout of the absolute encoder when the robot's mechanism is at
   // zero.
