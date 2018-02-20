@@ -11,7 +11,6 @@
 #include <thread>
 
 #include "AnalogInput.h"
-#include "Compressor.h"
 #include "Counter.h"
 #include "DigitalGlitchFilter.h"
 #include "DriverStation.h"
@@ -49,20 +48,20 @@
 #include "frc971/wpilib/pdp_fetcher.h"
 #include "frc971/wpilib/wpilib_interface.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
-#include "y2017/constants.h"
-#include "y2017/control_loops/superstructure/superstructure.q.h"
+#include "y2018/constants.h"
+#include "y2018/control_loops/superstructure/superstructure.q.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
 using ::frc971::control_loops::drivetrain_queue;
-using ::y2017::control_loops::superstructure_queue;
-using ::y2017::constants::Values;
+using ::y2018::control_loops::superstructure_queue;
+using ::y2018::constants::Values;
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
 
-namespace y2017 {
+namespace y2018 {
 namespace wpilib {
 namespace {
 
@@ -74,6 +73,7 @@ constexpr double kMaxBringupPower = 12.0;
 
 // TODO(brian): Replace this with ::std::make_unique once all our toolchains
 // have support.
+
 template <class T, class... U>
 std::unique_ptr<T> make_unique(U &&... u) {
   return std::unique_ptr<T>(new T(std::forward<U>(u)...));
@@ -81,10 +81,12 @@ std::unique_ptr<T> make_unique(U &&... u) {
 
 // TODO(brian): Use ::std::max instead once we have C++14 so that can be
 // constexpr.
+
 template <typename T>
 constexpr T max(T a, T b) {
   return (a > b) ? a : b;
 }
+
 template <typename T, typename... Rest>
 constexpr T max(T a, T b, T c, Rest... rest) {
   return max(max(a, b), c, rest...);
@@ -92,38 +94,54 @@ constexpr T max(T a, T b, T c, Rest... rest) {
 
 double drivetrain_translate(int32_t in) {
   return static_cast<double>(in) /
-         Values::kDrivetrainEncoderCountsPerRevolution *
-         Values::kDrivetrainEncoderRatio * 2.0 * M_PI;
+         Values::kDrivetrainEncoderCountsPerRevolution() *
+         Values::kDrivetrainEncoderRatio() * control_loops::drivetrain::kWheelRadius;
 }
 
 double drivetrain_velocity_translate(double in) {
-  return (1.0 / in) / Values::kDrivetrainCyclesPerRevolution *
-         Values::kDrivetrainEncoderRatio * 2.0 * M_PI;
+  return (1.0 / in) / Values::kDrivetrainCyclesPerRevolution() *
+         Values::kDrivetrainEncoderRatio() * control_loops::drivetrain::kWheelRadius;
 }
 
-// TODO(Travis): Make sure the number of turns is right.
+double proximal_pot_translate(double voltage) {
+  return voltage * Values::kProximalPotRatio() *
+         (3.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
+}
+
+double distal_pot_translate(double voltage) {
+  return voltage * Values::kDistalPotRatio() *
+         (10.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
+}
+
 double intake_pot_translate(double voltage) {
-  return voltage * Values::kIntakePotRatio * (3.0 /*turns*/ / 5.0 /*volts*/) *
-         (2 * M_PI /*radians*/);
+  return voltage * Values::kIntakeMotorPotRatio() *
+         (10.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
+}
+
+double intake_spring_translate(double voltage) {
+  return voltage * Values::kIntakeSpringRatio() * (2 * M_PI /*radians*/) /
+         (5.0 /*volts*/);
+}
+
+// TODO() figure out differnce between max and min voltages on shifter pots.
+// Returns value from 0.0 to 1.0, with 0.0 being close to low gear so it can be
+// passed drectly into the drivetrain position queue.
+double drivetrain_shifter_pot_translate(double voltage) {
+  return voltage / (Values::kDrivetrainShifterPotMaxVoltage() -
+                    Values::kDrivetrainShifterPotMinVoltage());
 }
 
 constexpr double kMaxFastEncoderPulsesPerSecond =
-    max(Values::kMaxDrivetrainEncoderPulsesPerSecond,
-        Values::kMaxShooterEncoderPulsesPerSecond);
+    max(Values::kMaxDrivetrainEncoderPulsesPerSecond(),
+        Values::kMaxIntakeMotorEncoderPulsesPerSecond());
 static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
               "fast encoders are too fast");
+
 constexpr double kMaxMediumEncoderPulsesPerSecond =
-    max(Values::kMaxIntakeEncoderPulsesPerSecond,
-        Values::kMaxTurretEncoderPulsesPerSecond,
-        Values::kMaxIndexerEncoderPulsesPerSecond);
+    max(Values::kMaxProximalEncoderPulsesPerSecond(),
+        Values::kMaxDistalEncoderPulsesPerSecond());
 static_assert(kMaxMediumEncoderPulsesPerSecond <= 400000,
               "medium encoders are too fast");
-constexpr double kMaxSlowEncoderPulsesPerSecond =
-    Values::kMaxHoodEncoderPulsesPerSecond;
-static_assert(kMaxSlowEncoderPulsesPerSecond <= 100000,
-              "slow encoders are too fast");
-static_assert(kMaxSlowEncoderPulsesPerSecond < kMaxMediumEncoderPulsesPerSecond,
-              "slow encoders are faster than medium?");
 
 // Class to send position messages with sensor readings to our loops.
 class SensorReader {
@@ -142,68 +160,109 @@ class SensorReader {
     hall_filter_.SetPeriodNanoSeconds(100000);
   }
 
+  // Left drivetrain side.
   void set_drivetrain_left_encoder(::std::unique_ptr<Encoder> encoder) {
     fast_encoder_filter_.Add(encoder.get());
     drivetrain_left_encoder_ = ::std::move(encoder);
   }
 
+  void set_left_drivetrain_shifter_potentiometer(
+      ::std::unique_ptr<AnalogInput> potentiometer) {
+    left_drivetrain_shifter_ = ::std::move(potentiometer);
+  }
+
+  // Right drivetrain side.
   void set_drivetrain_right_encoder(::std::unique_ptr<Encoder> encoder) {
     fast_encoder_filter_.Add(encoder.get());
     drivetrain_right_encoder_ = ::std::move(encoder);
   }
 
-  void set_shooter_encoder(::std::unique_ptr<Encoder> encoder) {
+  void set_right_drivetrain_shifter_potentiometer(
+      ::std::unique_ptr<AnalogInput> potentiometer) {
+    right_drivetrain_shifter_ = ::std::move(potentiometer);
+  }
+
+  // Proximal joint.
+  void set_proximal_encoder(::std::unique_ptr<Encoder> encoder) {
+    medium_encoder_filter_.Add(encoder.get());
+    proximal_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_proximal_absolute_pwm(::std::unique_ptr<DigitalInput> absolute_pwm) {
+    proximal_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
+  }
+
+  void set_proximal_potentiometer(
+      ::std::unique_ptr<AnalogInput> potentiometer) {
+    proximal_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  // Distal joint.
+  void set_distal_encoder(::std::unique_ptr<Encoder> encoder) {
+    medium_encoder_filter_.Add(encoder.get());
+    distal_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_distal_absolute_pwm(::std::unique_ptr<DigitalInput> absolute_pwm) {
+    fast_encoder_filter_.Add(absolute_pwm.get());
+    distal_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
+  }
+
+  void set_distal_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
+    distal_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  // Left intake side.
+  void set_left_intake_encoder(::std::unique_ptr<Encoder> encoder) {
     fast_encoder_filter_.Add(encoder.get());
-    shooter_encoder_ = ::std::move(encoder);
+    left_intake_encoder_.set_encoder(::std::move(encoder));
   }
 
-  void set_intake_encoder(::std::unique_ptr<Encoder> encoder) {
-    medium_encoder_filter_.Add(encoder.get());
-    intake_encoder_.set_encoder(::std::move(encoder));
+  void set_left_intake_absolute_pwm(
+      ::std::unique_ptr<DigitalInput> absolute_pwm) {
+    fast_encoder_filter_.Add(absolute_pwm.get());
+    left_intake_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
   }
 
-  void set_intake_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
-    intake_encoder_.set_potentiometer(::std::move(potentiometer));
+  void set_left_intake_potentiometer(
+      ::std::unique_ptr<AnalogInput> potentiometer) {
+    left_intake_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
-  void set_intake_absolute(::std::unique_ptr<DigitalInput> input) {
-    intake_encoder_.set_absolute_pwm(::std::move(input));
+  void set_left_intake_spring_angle(::std::unique_ptr<AnalogInput> encoder) {
+    left_intake_spring_angle_ = ::std::move(encoder);
   }
 
-  void set_indexer_encoder(::std::unique_ptr<Encoder> encoder) {
-    medium_encoder_filter_.Add(encoder.get());
-    indexer_counter_.set_encoder(encoder.get());
-    indexer_encoder_ = ::std::move(encoder);
+  void set_left_intake_cube_detector(::std::unique_ptr<DigitalInput> input) {
+    left_intake_cube_detector_ = ::std::move(input);
   }
 
-  void set_indexer_hall(::std::unique_ptr<DigitalInput> input) {
-    hall_filter_.Add(input.get());
-    indexer_counter_.set_input(input.get());
-    indexer_hall_ = ::std::move(input);
+  // Right intake side.
+  void set_right_intake_encoder(::std::unique_ptr<Encoder> encoder) {
+    fast_encoder_filter_.Add(encoder.get());
+    right_intake_encoder_.set_encoder(::std::move(encoder));
   }
 
-  void set_turret_encoder(::std::unique_ptr<Encoder> encoder) {
-    medium_encoder_filter_.Add(encoder.get());
-    turret_counter_.set_encoder(encoder.get());
-    turret_encoder_ = ::std::move(encoder);
+  void set_right_intake_absolute_pwm(
+      ::std::unique_ptr<DigitalInput> absolute_pwm) {
+    fast_encoder_filter_.Add(absolute_pwm.get());
+    right_intake_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
   }
 
-  void set_turret_hall(::std::unique_ptr<DigitalInput> input) {
-    hall_filter_.Add(input.get());
-    turret_counter_.set_input(input.get());
-    turret_hall_ = ::std::move(input);
+  void set_right_intake_potentiometer(
+      ::std::unique_ptr<AnalogInput> potentiometer) {
+    right_intake_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
-  void set_hood_encoder(::std::unique_ptr<Encoder> encoder) {
-    medium_encoder_filter_.Add(encoder.get());
-    hood_encoder_.set_encoder(::std::move(encoder));
+  void set_right_intake_spring_angle(::std::unique_ptr<AnalogInput> encoder) {
+    right_intake_spring_angle_ = ::std::move(encoder);
   }
 
-  void set_hood_index(::std::unique_ptr<DigitalInput> index) {
-    medium_encoder_filter_.Add(index.get());
-    hood_encoder_.set_index(::std::move(index));
+  void set_right_intake_cube_detector(::std::unique_ptr<DigitalInput> input) {
+    right_intake_cube_detector_ = ::std::move(input);
   }
 
+  // Auto mode switches.
   void set_autonomous_mode(int i, ::std::unique_ptr<DigitalInput> sensor) {
     autonomous_modes_.at(i) = ::std::move(sensor);
   }
@@ -214,14 +273,10 @@ class SensorReader {
   }
 
   // All of the DMA-related set_* calls must be made before this, and it
-  // doesn't
-  // hurt to do all of them.
+  // doesn't hurt to do all of them.
   void set_dma(::std::unique_ptr<DMA> dma) {
     dma_synchronizer_.reset(
         new ::frc971::wpilib::DMASynchronizer(::std::move(dma)));
-    dma_synchronizer_->Add(&indexer_counter_);
-    dma_synchronizer_->Add(&hood_encoder_);
-    dma_synchronizer_->Add(&turret_counter_);
   }
 
   void RunPWMDetecter() {
@@ -257,7 +312,7 @@ class SensorReader {
             monotonic_now - chrono::duration_cast<chrono::nanoseconds>(
                                 chrono::duration<double>(fpga_offset));
 
-        LOG(INFO, "Got PWM pulse %f spread, %f offset, %lld trigger\n",
+        LOG(DEBUG, "Got PWM pulse %f spread, %f offset, %lld trigger\n",
             fpga_time_after - fpga_time_before, fpga_offset,
             monotonic_edge.time_since_epoch().count());
 
@@ -352,11 +407,17 @@ class SensorReader {
           drivetrain_translate(drivetrain_right_encoder_->GetRaw());
       drivetrain_message->right_speed =
           drivetrain_velocity_translate(drivetrain_right_encoder_->GetPeriod());
+      drivetrain_message->left_shifter_position =
+          drivetrain_shifter_pot_translate(
+              left_drivetrain_shifter_->GetVoltage());
 
       drivetrain_message->left_encoder =
           -drivetrain_translate(drivetrain_left_encoder_->GetRaw());
       drivetrain_message->left_speed =
           drivetrain_velocity_translate(drivetrain_left_encoder_->GetPeriod());
+      drivetrain_message->right_shifter_position =
+          drivetrain_shifter_pot_translate(
+              right_drivetrain_shifter_->GetVoltage());
 
       drivetrain_message.Send();
     }
@@ -365,27 +426,38 @@ class SensorReader {
 
     {
       auto superstructure_message = superstructure_queue.position.MakeMessage();
-      CopyPosition(intake_encoder_, &superstructure_message->intake,
-                   Values::kIntakeEncoderCountsPerRevolution,
-                   Values::kIntakeEncoderRatio, intake_pot_translate, true,
-                   values.intake.pot_offset);
 
-      CopyPosition(indexer_counter_, &superstructure_message->column.indexer,
-                   Values::kIndexerEncoderCountsPerRevolution,
-                   Values::kIndexerEncoderRatio, true);
+      CopyPosition(proximal_encoder_, &superstructure_message->arm.proximal,
+                   Values::kProximalEncoderCountsPerRevolution(),
+                   Values::kProximalEncoderRatio(), proximal_pot_translate,
+                   false, values.proximal.pot_offset);
 
-      superstructure_message->theta_shooter =
-          encoder_translate(shooter_encoder_->GetRaw(),
-                            Values::kShooterEncoderCountsPerRevolution,
-                            Values::kShooterEncoderRatio);
+      CopyPosition(distal_encoder_, &superstructure_message->arm.distal,
+                   Values::kDistalEncoderCountsPerRevolution(),
+                   Values::kDistalEncoderRatio(), distal_pot_translate, false,
+                   values.distal.pot_offset);
 
-      CopyPosition(hood_encoder_, &superstructure_message->hood,
-                   Values::kHoodEncoderCountsPerRevolution,
-                   Values::kHoodEncoderRatio, true);
+      CopyPosition(left_intake_encoder_,
+                   &superstructure_message->intake.left.motor_position,
+                   Values::kIntakeMotorEncoderCountsPerRevolution(),
+                   Values::kIntakeMotorEncoderRatio(), intake_pot_translate,
+                   false, values.intake.left_pot_offset);
 
-      CopyPosition(turret_counter_, &superstructure_message->column.turret,
-                   Values::kTurretEncoderCountsPerRevolution,
-                   Values::kTurretEncoderRatio, false);
+      CopyPosition(right_intake_encoder_,
+                   &superstructure_message->intake.right.motor_position,
+                   Values::kIntakeMotorEncoderCountsPerRevolution(),
+                   Values::kIntakeMotorEncoderRatio(), intake_pot_translate,
+                   false, values.intake.right_pot_offset);
+
+      superstructure_message->intake.left.spring_angle =
+          intake_spring_translate(left_intake_spring_angle_->GetVoltage());
+      superstructure_message->intake.left.beam_break =
+          left_intake_cube_detector_->Get();
+
+      superstructure_message->intake.right.spring_angle =
+          intake_spring_translate(right_intake_spring_angle_->GetVoltage());
+      superstructure_message->intake.right.beam_break =
+          right_intake_cube_detector_->Get();
 
       superstructure_message.Send();
     }
@@ -412,22 +484,6 @@ class SensorReader {
            (2.0 * M_PI);
   }
 
-  void CopyPosition(const ::frc971::wpilib::DMAEncoder &encoder,
-                    ::frc971::IndexPosition *position,
-                    double encoder_counts_per_revolution, double encoder_ratio,
-                    bool reverse) {
-    const double multiplier = reverse ? -1.0 : 1.0;
-    position->encoder =
-        multiplier * encoder_translate(encoder.polled_encoder_value(),
-                                       encoder_counts_per_revolution,
-                                       encoder_ratio);
-    position->latched_encoder =
-        multiplier * encoder_translate(encoder.last_encoder_value(),
-                                       encoder_counts_per_revolution,
-                                       encoder_ratio);
-    position->index_pulses = encoder.index_posedge_count();
-  }
-
   void CopyPosition(
       const ::frc971::wpilib::AbsoluteEncoderAndPotentiometer &encoder,
       ::frc971::PotAndAbsolutePosition *position,
@@ -449,28 +505,6 @@ class SensorReader {
         encoder_ratio * (2.0 * M_PI);
   }
 
-  void CopyPosition(const ::frc971::wpilib::DMAEdgeCounter &counter,
-                    ::frc971::HallEffectAndPosition *position,
-                    double encoder_counts_per_revolution, double encoder_ratio,
-                    bool reverse) {
-    const double multiplier = reverse ? -1.0 : 1.0;
-    position->position =
-        multiplier * encoder_translate(counter.polled_encoder(),
-                                       encoder_counts_per_revolution,
-                                       encoder_ratio);
-    position->current = !counter.polled_value();
-    position->posedge_count = counter.negative_count();
-    position->negedge_count = counter.positive_count();
-    position->posedge_value =
-        multiplier * encoder_translate(counter.last_negative_encoder_value(),
-                                       encoder_counts_per_revolution,
-                                       encoder_ratio);
-    position->negedge_value =
-        multiplier * encoder_translate(counter.last_positive_encoder_value(),
-                                       encoder_counts_per_revolution,
-                                       encoder_ratio);
-  }
-
   int32_t my_pid_;
   DriverStation *ds_;
 
@@ -488,18 +522,19 @@ class SensorReader {
   ::std::unique_ptr<Encoder> drivetrain_left_encoder_,
       drivetrain_right_encoder_;
 
-  ::frc971::wpilib::AbsoluteEncoderAndPotentiometer intake_encoder_;
+  ::std::unique_ptr<AnalogInput> left_drivetrain_shifter_,
+      right_drivetrain_shifter_;
 
-  ::std::unique_ptr<Encoder> indexer_encoder_;
-  ::std::unique_ptr<DigitalInput> indexer_hall_;
-  ::frc971::wpilib::DMAEdgeCounter indexer_counter_;
+  ::frc971::wpilib::AbsoluteEncoderAndPotentiometer proximal_encoder_,
+      distal_encoder_;
 
-  ::std::unique_ptr<Encoder> turret_encoder_;
-  ::std::unique_ptr<DigitalInput> turret_hall_;
-  ::frc971::wpilib::DMAEdgeCounter turret_counter_;
+  ::frc971::wpilib::AbsoluteEncoderAndPotentiometer left_intake_encoder_,
+      right_intake_encoder_;
 
-  ::frc971::wpilib::DMAEncoder hood_encoder_;
-  ::std::unique_ptr<Encoder> shooter_encoder_;
+  ::std::unique_ptr<AnalogInput> left_intake_spring_angle_,
+      right_intake_spring_angle_;
+  ::std::unique_ptr<DigitalInput> left_intake_cube_detector_,
+      right_intake_cube_detector_;
 
   ::std::unique_ptr<DigitalInput> pwm_trigger_;
 
@@ -510,17 +545,41 @@ class SensorReader {
 
 class SolenoidWriter {
  public:
-  SolenoidWriter()
-      : superstructure_(".y2017.control_loops.superstructure_queue.output") {}
+  SolenoidWriter(::frc971::wpilib::BufferedPcm *pcm)
+      : pcm_(pcm),
+        drivetrain_(".frc971.control_loops.drivetrain_queue.output"),
+        superstructure_(".y2018.control_loops.superstructure_queue.output") {}
 
-  ::frc971::wpilib::BufferedPcm *pcm() { return &pcm_; }
-
-  void set_lights(::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
-    lights_ = ::std::move(s);
+  // left drive
+  // right drive
+  //
+  // claw
+  // arm brakes
+  // hook release
+  // fork release
+  void set_left_drivetrain_shifter(
+      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+    left_drivetrain_shifter_ = ::std::move(s);
+  }
+  void set_right_drivetrain_shifter(
+      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+    right_drivetrain_shifter_ = ::std::move(s);
   }
 
-  void set_rgb_light(::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
-    rgb_lights_ = ::std::move(s);
+  void set_claw(::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+    claw_ = ::std::move(s);
+  }
+
+  void set_arm_brakes(::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+    arm_brakes_ = ::std::move(s);
+  }
+
+  void set_hook(::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+    hook_ = ::std::move(s);
+  }
+
+  void set_forks(::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+    forks_ = ::std::move(s);
   }
 
   void operator()() {
@@ -539,28 +598,47 @@ class SolenoidWriter {
       }
 
       {
-        superstructure_.FetchLatest();
-        if (superstructure_.get()) {
-          LOG_STRUCT(DEBUG, "solenoids", *superstructure_);
-          lights_->Set(superstructure_->lights_on);
-          rgb_lights_->Set(superstructure_->red_light_on |
-                           superstructure_->green_light_on |
-                           superstructure_->blue_light_on);
+        drivetrain_.FetchLatest();
+        if (drivetrain_.get()) {
+          LOG_STRUCT(DEBUG, "solenoids", *drivetrain_);
+          left_drivetrain_shifter_->Set(!drivetrain_->left_high);
+          right_drivetrain_shifter_->Set(!drivetrain_->right_high);
         }
       }
 
-      pcm_.Flush();
+      {
+        superstructure_.FetchLatest();
+        if (superstructure_.get()) {
+          LOG_STRUCT(DEBUG, "solenoids", *superstructure_);
+
+          claw_->Set(superstructure_->claw_grabbed);
+          arm_brakes_->Set(superstructure_->release_arm_brake);
+          hook_->Set(superstructure_->hook_release);
+          forks_->Set(superstructure_->forks_release);
+        }
+      }
+
+      {
+        ::frc971::wpilib::PneumaticsToLog to_log;
+
+        pcm_->Flush();
+        to_log.read_solenoids = pcm_->GetAll();
+        LOG_STRUCT(DEBUG, "pneumatics info", to_log);
+      }
     }
   }
 
   void Quit() { run_ = false; }
 
  private:
-  ::frc971::wpilib::BufferedPcm pcm_;
+  ::frc971::wpilib::BufferedPcm *pcm_;
 
-  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> lights_, rgb_lights_;
+  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid>
+      left_drivetrain_shifter_, right_drivetrain_shifter_, claw_, arm_brakes_,
+      hook_, forks_;
 
-  ::aos::Queue<::y2017::control_loops::SuperstructureQueue::Output>
+  ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
+  ::aos::Queue<::y2018::control_loops::SuperstructureQueue::Output>
       superstructure_;
 
   ::std::atomic<bool> run_{true};
@@ -600,96 +678,82 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
 
 class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
-  void set_intake_victor(::std::unique_ptr<::frc::VictorSP> t) {
-    intake_victor_ = ::std::move(t);
+  void set_proximal_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    proximal_victor_ = ::std::move(t);
   }
-  void set_intake_rollers_victor(::std::unique_ptr<::frc::VictorSP> t) {
-    intake_rollers_victor_ = ::std::move(t);
-  }
-
-  void set_indexer_victor(::std::unique_ptr<::frc::VictorSP> t) {
-    indexer_victor_ = ::std::move(t);
-  }
-  void set_indexer_roller_victor(::std::unique_ptr<::frc::VictorSP> t) {
-    indexer_roller_victor_ = ::std::move(t);
+  void set_distal_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    distal_victor_ = ::std::move(t);
   }
 
-  void set_gear_servo(::std::unique_ptr<::frc::Servo> t) {
-    gear_servo_ = ::std::move(t);
+  void set_left_intake_elastic_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    left_intake_elastic_victor_ = ::std::move(t);
   }
-  void set_shooter_victor(::std::unique_ptr<::frc::VictorSP> t) {
-    shooter_victor_ = ::std::move(t);
-  }
-  void set_turret_victor(::std::unique_ptr<::frc::VictorSP> t) {
-    turret_victor_ = ::std::move(t);
-  }
-  void set_hood_victor(::std::unique_ptr<::frc::VictorSP> t) {
-    hood_victor_ = ::std::move(t);
+  void set_right_intake_elastic_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    right_intake_elastic_victor_ = ::std::move(t);
   }
 
-  void set_red_light(::std::unique_ptr<DigitalOutput> t) {
-    red_light_ = ::std::move(t);
+  void set_left_intake_rollers_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    left_intake_rollers_victor_ = ::std::move(t);
   }
-  void set_green_light(::std::unique_ptr<DigitalOutput> t) {
-    green_light_ = ::std::move(t);
-  }
-  void set_blue_light(::std::unique_ptr<DigitalOutput> t) {
-    blue_light_ = ::std::move(t);
+
+  void set_right_intake_rollers_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    right_intake_rollers_victor_ = ::std::move(t);
   }
 
  private:
   virtual void Read() override {
-    ::y2017::control_loops::superstructure_queue.output.FetchAnother();
+    ::y2018::control_loops::superstructure_queue.output.FetchAnother();
   }
 
   virtual void Write() override {
-    auto &queue = ::y2017::control_loops::superstructure_queue.output;
+    auto &queue = ::y2018::control_loops::superstructure_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    intake_victor_->SetSpeed(::aos::Clip(queue->voltage_intake,
-                                         -kMaxBringupPower, kMaxBringupPower) /
-                             12.0);
-    intake_rollers_victor_->SetSpeed(queue->voltage_intake_rollers / 12.0);
-    indexer_victor_->SetSpeed(-queue->voltage_indexer / 12.0);
-    indexer_roller_victor_->SetSpeed(queue->voltage_indexer_rollers / 12.0);
-    turret_victor_->SetSpeed(::aos::Clip(-queue->voltage_turret,
-                                         -kMaxBringupPower, kMaxBringupPower) /
-                             12.0);
-    hood_victor_->SetSpeed(
-        ::aos::Clip(queue->voltage_hood, -kMaxBringupPower, kMaxBringupPower) /
+
+    left_intake_elastic_victor_->SetSpeed(
+        ::aos::Clip(queue->intake.left.voltage_elastic, -kMaxBringupPower,
+                    kMaxBringupPower) /
         12.0);
-    shooter_victor_->SetSpeed(queue->voltage_shooter / 12.0);
 
-    red_light_->Set(queue->red_light_on);
-    green_light_->Set(queue->green_light_on);
-    blue_light_->Set(queue->blue_light_on);
+    right_intake_elastic_victor_->SetSpeed(
+        ::aos::Clip(queue->intake.right.voltage_elastic, -kMaxBringupPower,
+                    kMaxBringupPower) /
+        12.0);
 
-    gear_servo_->Set(queue->gear_servo);
+    left_intake_rollers_victor_->SetSpeed(
+        ::aos::Clip(queue->intake.right.voltage_rollers, -kMaxBringupPower,
+                    kMaxBringupPower) /
+        12.0);
+
+    right_intake_rollers_victor_->SetSpeed(
+        ::aos::Clip(queue->intake.right.voltage_rollers, -kMaxBringupPower,
+                    kMaxBringupPower) /
+        12.0);
+
+    proximal_victor_->SetSpeed(::aos::Clip(queue->voltage_proximal,
+                                           -kMaxBringupPower,
+                                           kMaxBringupPower) /
+                               12.0);
+
+    distal_victor_->SetSpeed(::aos::Clip(queue->voltage_distal,
+                                         -kMaxBringupPower, kMaxBringupPower) /
+                             12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "Superstructure output too old.\n");
-    intake_victor_->SetDisabled();
-    intake_rollers_victor_->SetDisabled();
-    indexer_victor_->SetDisabled();
-    indexer_roller_victor_->SetDisabled();
-    turret_victor_->SetDisabled();
-    hood_victor_->SetDisabled();
-    shooter_victor_->SetDisabled();
 
-    gear_servo_->SetOffline();
+    left_intake_rollers_victor_->SetDisabled();
+    right_intake_rollers_victor_->SetDisabled();
+    left_intake_elastic_victor_->SetDisabled();
+    right_intake_elastic_victor_->SetDisabled();
 
-    red_light_->Set(true);
-    green_light_->Set(true);
-    blue_light_->Set(true);
+    proximal_victor_->SetDisabled();
+    distal_victor_->SetDisabled();
   }
 
-  ::std::unique_ptr<::frc::VictorSP> intake_victor_, intake_rollers_victor_,
-      indexer_victor_, indexer_roller_victor_, shooter_victor_, turret_victor_,
-      hood_victor_;
-
-  ::std::unique_ptr<::frc::Servo> gear_servo_;
-
-  ::std::unique_ptr<DigitalOutput> red_light_, green_light_, blue_light_;
+  ::std::unique_ptr<::frc::VictorSP> left_intake_rollers_victor_,
+      right_intake_rollers_victor_, left_intake_elastic_victor_,
+      right_intake_elastic_victor_, proximal_victor_, distal_victor_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -710,29 +774,32 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
     SensorReader reader;
 
-    // TODO(campbell): Update port numbers
+    // TODO(Sabina): Update port numbers(Sensors and Victors)
     reader.set_drivetrain_left_encoder(make_encoder(0));
     reader.set_drivetrain_right_encoder(make_encoder(1));
 
-    reader.set_intake_encoder(make_encoder(3));
-    reader.set_intake_absolute(make_unique<DigitalInput>(0));
-    reader.set_intake_potentiometer(make_unique<AnalogInput>(4));
+    reader.set_proximal_encoder(make_encoder(2));
+    reader.set_proximal_absolute_pwm(make_unique<DigitalInput>(2));
+    reader.set_proximal_potentiometer(make_unique<AnalogInput>(2));
 
-    reader.set_indexer_encoder(make_encoder(5));
-    reader.set_indexer_hall(make_unique<DigitalInput>(4));
+    reader.set_distal_encoder(make_encoder(3));
+    reader.set_distal_absolute_pwm(make_unique<DigitalInput>(3));
+    reader.set_distal_potentiometer(make_unique<AnalogInput>(3));
 
-    reader.set_turret_encoder(make_encoder(6));
-    reader.set_turret_hall(make_unique<DigitalInput>(2));
+    reader.set_right_intake_encoder(make_encoder(4));
+    reader.set_right_intake_absolute_pwm(make_unique<DigitalInput>(4));
+    reader.set_right_intake_potentiometer(make_unique<AnalogInput>(4));
+    reader.set_right_intake_cube_detector(make_unique<DigitalInput>(6));
 
-    reader.set_hood_encoder(make_encoder(4));
-    reader.set_hood_index(make_unique<DigitalInput>(1));
-
-    reader.set_shooter_encoder(make_encoder(2));
+    reader.set_left_intake_encoder(make_encoder(5));
+    reader.set_left_intake_absolute_pwm(make_unique<DigitalInput>(5));
+    reader.set_left_intake_potentiometer(make_unique<AnalogInput>(5));
+    reader.set_left_intake_cube_detector(make_unique<DigitalInput>(7));
 
     reader.set_autonomous_mode(0, make_unique<DigitalInput>(9));
     reader.set_autonomous_mode(1, make_unique<DigitalInput>(8));
 
-    reader.set_pwm_trigger(make_unique<DigitalInput>(7));
+    reader.set_pwm_trigger(make_unique<DigitalInput>(0));
 
     reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));
@@ -744,6 +811,10 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     imu.set_reset(imu_reset.get());
     ::std::thread imu_thread(::std::ref(imu));
 
+// While as of 2/9/18 the drivetrain Victors are SPX, it appears as though they
+// are identical, as far as DrivetrainWriter is concerned, to the SP variety
+// so all the Victors are written as SPs.
+
     DrivetrainWriter drivetrain_writer;
     drivetrain_writer.set_drivetrain_left_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(7)));
@@ -752,37 +823,30 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
     SuperstructureWriter superstructure_writer;
-    superstructure_writer.set_intake_victor(
+    superstructure_writer.set_left_intake_elastic_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)));
-    superstructure_writer.set_intake_rollers_victor(
+    superstructure_writer.set_right_intake_elastic_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(4)));
-    superstructure_writer.set_indexer_victor(
+    superstructure_writer.set_right_intake_rollers_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(6)));
-    superstructure_writer.set_indexer_roller_victor(
+    superstructure_writer.set_left_intake_rollers_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(5)));
-    superstructure_writer.set_turret_victor(
+    superstructure_writer.set_proximal_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(9)));
-    superstructure_writer.set_hood_victor(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(2)));
-    superstructure_writer.set_shooter_victor(
+    superstructure_writer.set_distal_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(8)));
-
-    superstructure_writer.set_gear_servo(
-        ::std::unique_ptr<Servo>(new Servo(0)));
-
-    superstructure_writer.set_red_light(
-        ::std::unique_ptr<DigitalOutput>(new DigitalOutput(5)));
-    superstructure_writer.set_green_light(
-        ::std::unique_ptr<DigitalOutput>(new DigitalOutput(24)));
-    superstructure_writer.set_blue_light(
-        ::std::unique_ptr<DigitalOutput>(new DigitalOutput(25)));
 
     ::std::thread superstructure_writer_thread(
         ::std::ref(superstructure_writer));
 
-    SolenoidWriter solenoid_writer;
-    solenoid_writer.set_lights(solenoid_writer.pcm()->MakeSolenoid(0));
-    solenoid_writer.set_rgb_light(solenoid_writer.pcm()->MakeSolenoid(1));
+    ::frc971::wpilib::BufferedPcm *pcm = new ::frc971::wpilib::BufferedPcm();
+    SolenoidWriter solenoid_writer(pcm);
+    solenoid_writer.set_left_drivetrain_shifter(pcm->MakeSolenoid(0));
+    solenoid_writer.set_right_drivetrain_shifter(pcm->MakeSolenoid(1));
+    solenoid_writer.set_claw(pcm->MakeSolenoid(2));
+    solenoid_writer.set_arm_brakes(pcm->MakeSolenoid(3));
+    solenoid_writer.set_hook(pcm->MakeSolenoid(4));
+    solenoid_writer.set_forks(pcm->MakeSolenoid(5));
 
     ::std::thread solenoid_thread(::std::ref(solenoid_writer));
 
@@ -818,6 +882,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
 }  // namespace
 }  // namespace wpilib
-}  // namespace y2017
+}  // namespace y2018
 
-AOS_ROBOT_CLASS(::y2017::wpilib::WPILibRobot);
+AOS_ROBOT_CLASS(::y2018::wpilib::WPILibRobot);

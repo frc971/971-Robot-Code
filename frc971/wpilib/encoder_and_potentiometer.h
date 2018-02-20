@@ -203,6 +203,72 @@ class DMAEncoderAndPotentiometer : public DMAEncoder {
   DISALLOW_COPY_AND_ASSIGN(DMAEncoderAndPotentiometer);
 };
 
+// Class to read duty cycle of an input.  This is tuned for the CTRE encoder's
+// absolute position output.
+class DutyCycleReader {
+ public:
+  // Configure the reader to use the provided digital input.
+  void set_input(::std::unique_ptr<::frc::DigitalInput> input) {
+    high_counter_.reset(new ::frc::Counter(input.get()));
+    high_counter_->SetMaxPeriod(kMaxPeriod);
+    high_counter_->SetSemiPeriodMode(true);
+
+    period_length_counter_.reset(new ::frc::Counter(input.get()));
+    period_length_counter_->SetMaxPeriod(kMaxPeriod);
+    period_length_counter_->SetUpSourceEdge(true, false);
+
+    input_ = ::std::move(input);
+  }
+
+  // Returns the last duty cycle or nan if the signal is stale.
+  double Read() const {
+    const double high_time = high_counter_->GetPeriod();
+    const double period_length = period_length_counter_->GetPeriod();
+    if (!::std::isfinite(high_time) || !::std::isfinite(period_length)) {
+      return ::std::numeric_limits<double>::quiet_NaN();
+    }
+    return high_time / period_length;
+  }
+
+ private:
+  static constexpr ::std::chrono::nanoseconds kNominalPeriod =
+      ::std::chrono::microseconds(4096);
+  static constexpr double kMaxPeriod =
+      (::std::chrono::duration_cast<::std::chrono::duration<double>>(
+           kNominalPeriod) *
+       2).count();
+
+  ::std::unique_ptr<::frc::Counter> high_counter_, period_length_counter_;
+  ::std::unique_ptr<::frc::DigitalInput> input_;
+};
+
+// Class to hold a CTRE encoder with absolute angle pwm and potentiometer pair.
+class AbsoluteEncoderAndPotentiometer {
+ public:
+  void set_absolute_pwm(::std::unique_ptr<DigitalInput> input) {
+    duty_cycle_.set_input(::std::move(input));
+  }
+
+  void set_encoder(::std::unique_ptr<Encoder> encoder) {
+    encoder_ = ::std::move(encoder);
+  }
+
+  void set_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
+    potentiometer_ = ::std::move(potentiometer);
+  }
+
+  double ReadAbsoluteEncoder() const { return duty_cycle_.Read(); }
+  int32_t ReadRelativeEncoder() const { return encoder_->GetRaw(); }
+  double ReadPotentiometerVoltage() const {
+    return potentiometer_->GetVoltage();
+  }
+
+ private:
+  DutyCycleReader duty_cycle_;
+  ::std::unique_ptr<Encoder> encoder_;
+  ::std::unique_ptr<AnalogInput> potentiometer_;
+};
+
 }  // namespace wpilib
 }  // namespace frc971
 

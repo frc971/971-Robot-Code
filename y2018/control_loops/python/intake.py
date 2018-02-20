@@ -344,6 +344,11 @@ def main(argv):
     intake = Intake('Intake')
     loop_writer = control_loop.ControlLoopWriter(
         'Intake', [intake], namespaces=namespaces)
+    loop_writer.AddConstant(control_loop.Constant('kGearRatio', '%f', intake.G))
+    loop_writer.AddConstant(
+        control_loop.Constant('kMotorVelocityConstant', '%f', intake.Kv))
+    loop_writer.AddConstant(
+        control_loop.Constant('kFreeSpeed', '%f', intake.free_speed))
     loop_writer.Write(argv[1], argv[2])
 
     delayed_intake = DelayedIntake('DelayedIntake')

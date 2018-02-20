@@ -6,6 +6,7 @@ cc_library(
     hdrs = [
         "trajectory.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":dynamics",
         "//frc971/control_loops:dlqr",
@@ -37,6 +38,7 @@ cc_library(
     hdrs = [
         "dynamics.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops:runge_kutta",
         "//third_party/eigen",
@@ -86,6 +88,7 @@ cc_library(
     hdrs = [
         "ekf.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":dynamics",
         "//frc971/control_loops:jacobian",

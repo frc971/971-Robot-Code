@@ -40,30 +40,26 @@ struct IntakeGoal {
   double right_intake_angle;
 };
 
-struct IntakeElasticEncoders {
+struct IntakeElasticSensors {
   // Position of the motor end of the series elastic in radians.
-  .frc971.IndexPosition motor_encoder;
+  .frc971.PotAndAbsolutePosition motor_position;
 
   // Displacement of the spring in radians.
   double spring_angle;
+
+  // False if the beam break sensor isn't triggered, true if the beam breaker is
+  // triggered.
+  bool beam_break;
 };
 
 struct IntakePosition {
-  // False if the beam breaker isn't triggered, true if the beam breaker is
-  // triggered.
-  bool left_beam_breaker;
-
-  // False if the beam breaker isn't triggered, true if the beam breaker is
-  // triggered.
-  bool right_beam_breaker;
-
   // Values of the series elastic encoders on the left side of the robot from
   // the rear perspective in radians.
-  IntakeElasticEncoders left;
+  IntakeElasticSensors left;
 
   // Values of the series elastic encoders on the right side of the robot from
   // the rear perspective in radians.
-  IntakeElasticEncoders right;
+  IntakeElasticSensors right;
 };
 
 struct ArmStatus {
@@ -149,7 +145,14 @@ queue_group SuperstructureQueue {
 
     // Clamped (when true) or unclamped (when false) status sent to the
     // pneumatic claw on the arm.
-    bool claw_output;
+    bool claw_grabbed;
+
+    // If true, release the arm brakes.
+    bool release_arm_brake;
+    // If true, release the hook
+    bool hook_release;
+    // If true, release the forks
+    bool forks_release;
   };
 
   queue Goal goal;
