@@ -13,11 +13,6 @@ new_git_repository(
   commit = '5af5f283cb23cbe23c4dfea4d5e56071bdbd6e70',
 )
 
-bind(
-  name = 'slycot',
-  actual = '@slycot_repo//:slycot',
-)
-
 new_http_archive(
   name = 'arm_frc_linux_gnueabi_repo',
   build_file = 'tools/cpp/arm-frc-linux-gnueabi/arm-frc-linux-gnueabi.BUILD',
@@ -120,4 +115,21 @@ http_file(
   name = 'libusb_1_0_windows',
   url = 'http://frc971.org/Build-Dependencies/libusb-1.0.21-windows.tar.xz',
   sha256 = 'fc2ba03992f343aabbaf9eb90559c6e00cdc6a2bd914d7cebea85857d5244015',
+)
+
+# The data tarball of the same-named Debian package.
+new_http_archive(
+    name = "f2c",
+    sha256 = "2c677437f8217a2e2b23e41b33995d0571644fc1bea46de858f8913a5053e3f4",
+    url = "http://frc971.org/Build-Dependencies/f2c_20100827-1_amd64.xz.tar.xz",
+    build_file = "debian/f2c.BUILD",
+)
+
+# Downloaded from http://www.netlib.org/clapack/.
+new_http_archive(
+  name = 'clapack',
+  url = "http://frc971.org/Build-Dependencies/clapack-3.2.1.tgz",
+  build_file = 'debian/clapack.BUILD',
+  sha256 = '6dc4c382164beec8aaed8fd2acc36ad24232c406eda6db462bd4c41d5e455fac',
+  strip_prefix = 'CLAPACK-3.2.1/',
 )

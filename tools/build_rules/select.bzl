@@ -68,6 +68,6 @@ def compiler_select(values):
   if 'clang' not in values:
     fail('Need to handle clang!', 'values')
   return select({
-    '//tools:compiler_gcc': values['gcc'],
-    '//tools:compiler_clang': values['clang'],
+    '@//tools:compiler_gcc': values['gcc'],
+    '@//tools:compiler_clang': values['clang'],
   })
