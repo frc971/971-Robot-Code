@@ -1,5 +1,7 @@
 #include "y2018/control_loops/superstructure/arm/dynamics.h"
 
+DEFINE_bool(gravity, true, "If true, enable gravity.");
+
 namespace y2018 {
 namespace control_loops {
 namespace superstructure {

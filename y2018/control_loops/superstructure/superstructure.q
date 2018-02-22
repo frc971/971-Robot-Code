@@ -71,10 +71,42 @@ struct IntakePosition {
 };
 
 struct ArmStatus {
-  // TODO(austin): Fill in more state once we know what it is.
   // State of the estimators.
   .frc971.AbsoluteEstimatorState proximal_estimator_state;
   .frc971.AbsoluteEstimatorState distal_estimator_state;
+
+  // The node we are currently going to.
+  uint32_t current_node;
+  // Distance (in radians) to the end of the path.
+  float path_distance_to_go;
+  // Goal position and velocity (radians)
+  float goal_theta0;
+  float goal_theta1;
+  float goal_omega0;
+  float goal_omega1;
+
+  // Current position and velocity (radians)
+  float theta0;
+  float theta1;
+
+  float omega0;
+  float omega1;
+
+  // Estimated voltage error for the two joints.
+  float voltage_error0;
+  float voltage_error1;
+
+  // True if we are zeroed.
+  bool zeroed;
+
+  // True if the arm is zeroed.
+  bool estopped;
+
+  // The current state machine state.
+  uint32_t state;
+
+  // The number of times the LQR solver failed.
+  uint32_t failed_solutions;
 };
 
 struct ArmPosition {
@@ -112,7 +144,7 @@ queue_group SuperstructureQueue {
     IntakeGoal intake;
 
     // Used to identiy a position in the planned set of positions on the arm.
-    int32_t arm_goal_position;
+    uint32_t arm_goal_position;
 
     bool open_claw;
 

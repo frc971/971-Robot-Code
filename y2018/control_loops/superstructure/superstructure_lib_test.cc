@@ -11,6 +11,7 @@
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
 #include "y2018/constants.h"
+#include "y2018/control_loops/superstructure/arm/dynamics.h"
 #include "y2018/control_loops/superstructure/intake/intake_plant.h"
 
 using ::frc971::control_loops::PositionSensorSimulator;
@@ -109,6 +110,74 @@ class IntakeSideSimulation {
       zeroing_constants_;
 };
 
+class ArmSimulation {
+ public:
+  explicit ArmSimulation(
+      const ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants
+          &proximal_zeroing_constants,
+      const ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants
+          &distal_zeroing_constants)
+      : proximal_zeroing_constants_(proximal_zeroing_constants),
+        proximal_pot_encoder_(M_PI * 2.0 *
+                              constants::Values::kProximalEncoderRatio()),
+        distal_zeroing_constants_(distal_zeroing_constants),
+        distal_pot_encoder_(M_PI * 2.0 *
+                            constants::Values::kDistalEncoderRatio()) {
+    X_.setZero();
+  }
+
+  void InitializePosition(::Eigen::Matrix<double, 2, 1> position) {
+    X_ << position(0), 0.0, position(1), 0.0;
+
+    proximal_pot_encoder_.Initialize(
+        X_(0), kNoiseScalar, 0.0,
+        proximal_zeroing_constants_.measured_absolute_position);
+    distal_pot_encoder_.Initialize(
+        X_(2), kNoiseScalar, 0.0,
+        distal_zeroing_constants_.measured_absolute_position);
+  }
+
+  void GetSensorValues(ArmPosition *position) {
+    proximal_pot_encoder_.GetSensorValues(&position->proximal);
+    distal_pot_encoder_.GetSensorValues(&position->distal);
+  }
+
+  double proximal_position() const { return X_(0, 0); }
+  double proximal_velocity() const { return X_(1, 0); }
+  double distal_position() const { return X_(2, 0); }
+  double distal_velocity() const { return X_(3, 0); }
+
+  //void set_voltage_offset(double voltage_offset) {
+    //plant_.set_voltage_offset(voltage_offset);
+  //}
+
+  void Simulate(::Eigen::Matrix<double, 2, 1> U) {
+    constexpr double voltage_check =
+        superstructure::arm::Arm::kOperatingVoltage();
+
+    CHECK_LE(::std::abs(U(0)), voltage_check);
+    CHECK_LE(::std::abs(U(1)), voltage_check);
+
+    X_ = arm::Dynamics::UnboundedDiscreteDynamics(X_, U, 0.00505);
+
+    // TODO(austin): Estop on grose out of bounds.
+    proximal_pot_encoder_.MoveTo(X_(0));
+    distal_pot_encoder_.MoveTo(X_(2));
+  }
+
+ private:
+  ::Eigen::Matrix<double, 4, 1> X_;
+
+  const ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants
+      proximal_zeroing_constants_;
+  PositionSensorSimulator proximal_pot_encoder_;
+
+  const ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants
+      distal_zeroing_constants_;
+  PositionSensorSimulator distal_pot_encoder_;
+};
+
+
 class SuperstructureSimulation {
  public:
   SuperstructureSimulation()
@@ -118,6 +187,8 @@ class SuperstructureSimulation {
         right_intake_(::y2018::control_loops::superstructure::intake::
                           MakeDelayedIntakePlant(),
                       constants::GetValues().right_intake.zeroing),
+        arm_(constants::GetValues().arm_proximal.zeroing,
+             constants::GetValues().arm_distal.zeroing),
         superstructure_queue_(".y2018.control_loops.superstructure", 0xdeadbeef,
                               ".y2018.control_loops.superstructure.goal",
                               ".y2018.control_loops.superstructure.position",
@@ -127,11 +198,18 @@ class SuperstructureSimulation {
     InitializeIntakePosition((constants::Values::kIntakeRange().lower +
                               constants::Values::kIntakeRange().upper) /
                              2.0);
+
+    InitializeArmPosition(
+        (::Eigen::Matrix<double, 2, 1>() << 0.0, 0.0).finished());
   }
 
   void InitializeIntakePosition(double start_pos) {
     left_intake_.InitializePosition(start_pos);
     right_intake_.InitializePosition(start_pos);
+  }
+
+  void InitializeArmPosition(::Eigen::Matrix<double, 2, 1> position) {
+    arm_.InitializePosition(position);
   }
 
   void SendPositionMessage() {
@@ -140,6 +218,8 @@ class SuperstructureSimulation {
 
     left_intake_.GetSensorValues(&position->intake.left);
     right_intake_.GetSensorValues(&position->intake.right);
+    arm_.GetSensorValues(&position->arm);
+
     LOG_STRUCT(INFO, "sim position", *position);
     position.Send();
   }
@@ -156,6 +236,8 @@ class SuperstructureSimulation {
   const IntakeSideSimulation &left_intake() const { return left_intake_; }
   const IntakeSideSimulation &right_intake() const { return right_intake_; }
 
+  const ArmSimulation &arm() const { return arm_; }
+
   // Simulates the intake for a single timestep.
   void Simulate() {
     EXPECT_TRUE(superstructure_queue_.output.FetchLatest());
@@ -163,11 +245,16 @@ class SuperstructureSimulation {
 
     left_intake_.Simulate(superstructure_queue_.output->intake.left);
     right_intake_.Simulate(superstructure_queue_.output->intake.right);
+    arm_.Simulate((::Eigen::Matrix<double, 2, 1>()
+                       << superstructure_queue_.output->voltage_proximal,
+                   superstructure_queue_.output->voltage_distal)
+                      .finished());
   }
 
  private:
   IntakeSideSimulation left_intake_;
   IntakeSideSimulation right_intake_;
+  ArmSimulation arm_;
 
   SuperstructureQueue superstructure_queue_;
 };
@@ -188,7 +275,7 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
     superstructure_queue_.goal.FetchLatest();
     superstructure_queue_.status.FetchLatest();
 
-    ASSERT_TRUE(superstructure_queue_.goal.get() != nullptr);
+    ASSERT_TRUE(superstructure_queue_.goal.get() != nullptr) << ": No goal";
     ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
     // Left side test.
     EXPECT_NEAR(superstructure_queue_.goal->intake.left_intake_angle,
@@ -250,6 +337,8 @@ TEST_F(SuperstructureTest, ZeroNoGoalAndDoesNothing) {
 
 // Tests that the intake loop can reach a goal.
 TEST_F(SuperstructureTest, ReachesGoal) {
+  superstructure_plant_.InitializeArmPosition(
+      (::Eigen::Matrix<double, 2, 1>() << 0.5, M_PI).finished());
   // Set a reasonable goal.
   {
     auto goal = superstructure_queue_.goal.MakeMessage();
@@ -270,6 +359,8 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 // position.
 TEST_F(SuperstructureTest, OffsetStartReachesGoal) {
   superstructure_plant_.InitializeIntakePosition(0.5);
+  superstructure_plant_.InitializeArmPosition(
+      (::Eigen::Matrix<double, 2, 1>() << 0.5, M_PI).finished());
 
   // Set a reasonable goal.
   {
@@ -407,6 +498,51 @@ TEST_F(SuperstructureTest, ResetTest) {
 
   VerifyNearGoal();
 }
+
+// Tests that we don't freak out without a goal.
+TEST_F(SuperstructureTest, ArmNoGoalTest) {
+  RunForTime(chrono::seconds(5));
+
+  {
+    auto goal = superstructure_queue_.goal.MakeMessage();
+    goal->intake.left_intake_angle = 0.0;
+    goal->intake.right_intake_angle = 0.0;
+    goal->arm_goal_position = 0;
+    ASSERT_TRUE(goal.Send());
+  }
+
+  EXPECT_EQ(arm::Arm::State::RUNNING, superstructure_.arm().state());
+}
+
+// Tests that we can can execute a move.
+TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
+  superstructure_plant_.InitializeArmPosition(
+      (::Eigen::Matrix<double, 2, 1>() << 0.5, 0.5).finished());
+
+  auto goal = superstructure_queue_.goal.MakeMessage();
+  goal->intake.left_intake_angle = 0.0;
+  goal->intake.right_intake_angle = 0.0;
+  goal->arm_goal_position = 1;
+  ASSERT_TRUE(goal.Send());
+
+  RunForTime(chrono::seconds(10));
+
+  VerifyNearGoal();
+
+  {
+    auto goal = superstructure_queue_.goal.MakeMessage();
+    goal->intake.left_intake_angle = 0.0;
+    goal->intake.right_intake_angle = 0.0;
+    goal->arm_goal_position = 0;
+    ASSERT_TRUE(goal.Send());
+  }
+
+  RunForTime(chrono::seconds(10));
+  VerifyNearGoal();
+}
+
+// TODO(austin): Test multiple path segments.
+// TODO(austin): Disable in the middle and test recovery.
 
 }  // namespace testing
 }  // namespace superstructure

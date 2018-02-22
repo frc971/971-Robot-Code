@@ -29,10 +29,19 @@ class EKF {
   const ::Eigen::Matrix<double, 6, 1> &X_hat() const { return X_hat_; }
   double X_hat(int i) const { return X_hat_(i); }
   const ::Eigen::Matrix<double, 6, 6> &P() const { return P_; }
+  const ::Eigen::Matrix<double, 6, 6> &P_reset() const { return P_reset_; }
+  const ::Eigen::Matrix<double, 6, 6> &P_half_converged() const {
+    return P_half_converged_;
+  }
+  const ::Eigen::Matrix<double, 6, 6> &P_converged() const {
+    return P_converged_;
+  }
 
  private:
   ::Eigen::Matrix<double, 6, 1> X_hat_;
   ::Eigen::Matrix<double, 6, 6> P_;
+  ::Eigen::Matrix<double, 6, 6> P_half_converged_;
+  ::Eigen::Matrix<double, 6, 6> P_converged_;
   ::Eigen::Matrix<double, 6, 6> P_reset_;
 };
 

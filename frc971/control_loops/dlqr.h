@@ -6,6 +6,25 @@
 namespace frc971 {
 namespace controls {
 
+template <int num_states, int num_inputs>
+int Controllability(const ::Eigen::Matrix<double, num_states, num_states> &A,
+                    const ::Eigen::Matrix<double, num_states, num_inputs> &B) {
+    Eigen::Matrix<double, num_states, num_states * num_inputs> controllability;
+    controllability.block(0, 0, num_states, num_inputs) = B;
+
+    for (size_t i = 1; i < num_states; i++) {
+      controllability.block(0, i * num_inputs, num_states, num_inputs) =
+          A *
+          controllability.block(0, (i - 1) * num_inputs, num_states,
+                                num_inputs);
+    }
+
+    return Eigen::FullPivLU<
+               Eigen::Matrix<double, num_states, num_states * num_inputs>>(
+               controllability)
+        .rank();
+}
+
 extern "C" {
 // Forward declaration for slicot fortran library.
 void sb02od_(char *DICO, char *JOBB, char *FACT, char *UPLO, char *JOBL,
@@ -17,8 +36,9 @@ void sb02od_(char *DICO, char *JOBB, char *FACT, char *UPLO, char *JOBL,
              long *IWORK, double *DWORK, long *LDWORK, long *BWORK, long *INFO);
 }
 
+// Computes the optimal LQR controller K for the provided system and costs.
 template <int kN, int kM>
-void dlqr(::Eigen::Matrix<double, kN, kN> A, ::Eigen::Matrix<double, kN, kM> B,
+int dlqr(::Eigen::Matrix<double, kN, kN> A, ::Eigen::Matrix<double, kN, kM> B,
           ::Eigen::Matrix<double, kN, kN> Q, ::Eigen::Matrix<double, kM, kM> R,
           ::Eigen::Matrix<double, kM, kN> *K,
           ::Eigen::Matrix<double, kN, kN> *S) {
@@ -86,12 +106,13 @@ void dlqr(::Eigen::Matrix<double, kN, kN> A, ::Eigen::Matrix<double, kN, kM> B,
           B.data(), &N, Q.data(), &N, R.data(), &M, nullptr, &LDL, &RCOND,
           X.data(), &N, ALFAR, ALFAI, BETA, S_schur.data(), &LDS, T.data(),
           &LDT, U.data(), &LDU, &TOL, IWORK, DWORK, &LDWORK, BWORK, &INFO);
-  //::std::cout << "slycot result: " << INFO << ::std::endl;
 
   *K = (R + B.transpose() * X * B).inverse() * B.transpose() * X * A;
   if (S != nullptr) {
     *S = X;
   }
+
+  return INFO;
 }
 
 }  // namespace controls

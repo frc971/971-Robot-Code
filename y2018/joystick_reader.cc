@@ -28,14 +28,13 @@ namespace y2018 {
 namespace input {
 namespace joysticks {
 
-//TODO(Neil): Change button locations to real ones on driverstation.
 const ButtonLocation kIntakeDown(3, 9);
 const POVLocation kIntakeUp(3, 90);
 const ButtonLocation kIntakeIn(3, 12);
 const ButtonLocation kIntakeOut(3, 8);
 
-const ButtonLocation kArmDown(3, 3);
-const ButtonLocation kArmSwitch(3, 7);
+const ButtonLocation kArmDown(3, 12);
+const ButtonLocation kArmSwitch(3, 8);
 const ButtonLocation kArmScale(3, 6);
 
 const ButtonLocation kClawOpen(3, 5);
@@ -122,17 +121,16 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.IsPressed(kArmDown)) {
       // Put the arm down to the intake level.
-      new_superstructure_goal->arm_goal_position =
-          1;  // TODO(Neil): Add real value once we have it.
+      arm_goal_position_ = 0;
     } else if (data.IsPressed(kArmSwitch)) {
       // Put the arm up to the level of the switch.
-      new_superstructure_goal->arm_goal_position =
-          1;  // TODO(Neil): Add real value once we have it.
+      arm_goal_position_ = 1;
     } else if (data.IsPressed(kArmScale)) {
       // Put the arm up to the level of the switch.
-      new_superstructure_goal->arm_goal_position =
-          1;  // TODO(Neil): Add real value once we have it.
+      arm_goal_position_ = 1;
     }
+
+    new_superstructure_goal->arm_goal_position = arm_goal_position_;
 
     if (data.IsPressed(kClawOpen)) {
       new_superstructure_goal->open_claw = true;
@@ -167,6 +165,8 @@ class Reader : public ::aos::input::JoystickInput {
   bool auto_running_ = false;
 
   double robot_velocity_ = 0.0;
+
+  int arm_goal_position_ = 0;
 
   ::aos::common::actions::ActionQueue action_queue_;
 };

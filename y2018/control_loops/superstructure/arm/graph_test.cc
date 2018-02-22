@@ -14,12 +14,7 @@ class HeapTest {
 
   void SetCost(double cost) { cost_ = cost; }
 
-  bool operator<(const HeapTest &o) {
-    bool value = cost_ > o.cost_;
-    // printf("compare: %zu - %g < %zu %g -> %s\n", id_, cost_, o.id_, o.cost_,
-    // value ? "true" : "false");
-    return value;
-  }
+  bool operator<(const HeapTest &o) { return cost_ > o.cost_; }
 
  private:
   size_t id_;

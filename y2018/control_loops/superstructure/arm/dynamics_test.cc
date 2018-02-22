@@ -23,6 +23,26 @@ TEST(DynamicsTest, Acceleration) {
                       ::Eigen::Matrix<double, 4, 1>::Zero(),
                       ::Eigen::Matrix<double, 2, 1>::Zero(), 0.1)
                   .isApprox(::Eigen::Matrix<double, 4, 1>::Zero()));
+
+  const ::Eigen::Matrix<double, 4, 1> X =
+      (::Eigen::Matrix<double, 4, 1>() << M_PI / 2.0, 0.0, 0.0, 0.0).finished();
+
+  ::std::cout << dynamics.FF_U(X, ::Eigen::Matrix<double, 2, 1>::Zero(),
+                               ::Eigen::Matrix<double, 2, 1>::Zero())
+              << ::std::endl;
+
+  ::std::cout << dynamics.UnboundedDiscreteDynamics(
+                     X, dynamics.FF_U(X, ::Eigen::Matrix<double, 2, 1>::Zero(),
+                                      ::Eigen::Matrix<double, 2, 1>::Zero()),
+                     0.01)
+              << ::std::endl;
+
+  EXPECT_TRUE(dynamics
+                  .UnboundedDiscreteDynamics(
+                      X, dynamics.FF_U(X, ::Eigen::Matrix<double, 2, 1>::Zero(),
+                                       ::Eigen::Matrix<double, 2, 1>::Zero()),
+                      0.01)
+                  .isApprox(X));
 }
 
 }  // namespace testing

@@ -2,6 +2,7 @@
 
 #include <array>
 #include <initializer_list>
+#include <memory>
 
 namespace y2018 {
 namespace control_loops {
@@ -25,8 +26,8 @@ namespace arm {
 }
 
 
-Path MakeDemoPath() {
-  return Path(FlipPath(
+::std::unique_ptr<Path> MakeDemoPath() {
+  return ::std::unique_ptr<Path>(new Path(FlipPath(
       {{{1.3583511559969876, 0.99753029519739866, 0.63708920330895369,
          -0.77079007974101643, -0.21483375398380378, -0.17756921128311187}},
        {{1.4037744780290744, 0.94141413786797179, 0.62102298265172207,
@@ -204,7 +205,11 @@ Path MakeDemoPath() {
        {{1.0048838048727911, -1.4491754417344611, -0.73383972725116353,
          -0.67932264404179699, -0.18184420373071258, 0.19643734513631667}},
        {{0.97145546090878643, -1.4797428713062153, -0.74213301743428883,
-         -0.67025262732336799, -0.18446052990619061, 0.20424250843873848}}}));
+         -0.67025262732336799, -0.18446052990619061, 0.20424250843873848}}})));
+}
+
+::std::unique_ptr<Path> MakeReversedDemoPath() {
+  return ::std::unique_ptr<Path>(new Path(Path::Reversed(*MakeDemoPath())));
 }
 
 }  // namespace arm

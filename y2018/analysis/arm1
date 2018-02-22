@@ -1,0 +1,7 @@
+superstructure.stripped output voltage_distal
+superstructure.stripped status arm voltage_error1
+superstructure.stripped status arm distal_estimator_state position
+superstructure.stripped status arm goal_theta1
+superstructure.stripped status arm theta1
+superstructure.stripped status arm goal_omega1
+superstructure.stripped status arm omega1

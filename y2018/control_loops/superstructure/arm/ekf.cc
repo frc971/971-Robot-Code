@@ -6,6 +6,11 @@
 #include "frc971/control_loops/jacobian.h"
 #include "y2018/control_loops/superstructure/arm/dynamics.h"
 
+DEFINE_double(proximal_voltage_error_uncertainty, 8.0,
+              "Proximal joint voltage error uncertainty.");
+DEFINE_double(distal_voltage_error_uncertainty, 2.0,
+              "Distal joint voltage error uncertainty.");
+
 namespace y2018 {
 namespace control_loops {
 namespace superstructure {
@@ -15,17 +20,26 @@ namespace {
 // TODO(austin): When tuning this, make sure to verify that you are waiting
 // enough cycles to make sure it converges at startup. Otherwise you will have a
 // bad day.
-const ::Eigen::Matrix<double, 6, 6> Q_covariance(
+::Eigen::Matrix<double, 6, 6> Q_covariance(
     (::Eigen::DiagonalMatrix<double, 6>().diagonal() << ::std::pow(0.1, 2),
      ::std::pow(2.0, 2), ::std::pow(0.1, 2), ::std::pow(2.0, 2),
-     ::std::pow(0.80, 2), ::std::pow(0.70, 2))
+     ::std::pow(FLAGS_proximal_voltage_error_uncertainty, 2),
+     ::std::pow(FLAGS_distal_voltage_error_uncertainty, 2))
         .finished()
         .asDiagonal());
 }  // namespace
 
 EKF::EKF() {
   X_hat_.setZero();
+  Q_covariance =
+      ((::Eigen::DiagonalMatrix<double, 6>().diagonal() << ::std::pow(0.1, 2),
+        ::std::pow(2.0, 2), ::std::pow(0.1, 2), ::std::pow(2.0, 2),
+        ::std::pow(FLAGS_proximal_voltage_error_uncertainty, 2),
+        ::std::pow(FLAGS_distal_voltage_error_uncertainty, 2))
+           .finished()
+           .asDiagonal());
   P_ = Q_covariance;
+  P_reset_ = P_;
   //::std::cout << "Reset P: " << P_ << ::std::endl;
   // TODO(austin): Running the EKF 2000 cycles works, but isn't super clever.
   // We could just solve the DARE.
@@ -34,20 +48,21 @@ EKF::EKF() {
     Predict(::Eigen::Matrix<double, 2, 1>::Zero(), 0.00505);
     Correct(::Eigen::Matrix<double, 2, 1>::Zero(), 0.00505);
   }
+  P_half_converged_ = P_;
   //::std::cout << "Stabilized P: " << P_ << ::std::endl;
   for (int i = 0; i < 1000; ++i) {
     Predict(::Eigen::Matrix<double, 2, 1>::Zero(), 0.00505);
     Correct(::Eigen::Matrix<double, 2, 1>::Zero(), 0.00505);
   }
   //::std::cout << "Really stabilized P: " << P_ << ::std::endl;
-  P_reset_ = P_;
+  P_converged_ = P_;
 
   Reset(::Eigen::Matrix<double, 4, 1>::Zero());
 }
 
 void EKF::Reset(const ::Eigen::Matrix<double, 4, 1> &X) {
   X_hat_.setZero();
-  P_ = P_reset_;
+  P_ = P_converged_;
   X_hat_.block<4, 1>(0, 0) = X;
 }
 

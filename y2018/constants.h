@@ -97,13 +97,13 @@ struct Values {
     ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants zeroing;
     double potentiometer_offset;
   };
-  Proximal proximal;
+  Proximal arm_proximal;
 
   struct Distal {
     ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants zeroing;
     double potentiometer_offset;
   };
-  Distal distal;
+  Distal arm_distal;
 
   const char *vision_name;
 

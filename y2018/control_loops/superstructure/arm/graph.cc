@@ -8,11 +8,14 @@ namespace control_loops {
 namespace superstructure {
 namespace arm {
 
-SearchGraph::SearchGraph(size_t num_vertexes, const std::vector<Edge> &edges)
-    : edges_(edges) {
+SearchGraph::SearchGraph(size_t num_vertexes, std::initializer_list<Edge> edges)
+    : SearchGraph(num_vertexes, ::std::move(::std::vector<Edge>(edges))) {}
+
+SearchGraph::SearchGraph(size_t num_vertexes, std::vector<Edge> &&edges)
+    : edges_(::std::move(edges)) {
   vertexes_.resize(num_vertexes);
   size_t i = 0;
-  for (const auto &edge : edges) {
+  for (const auto &edge : edges_) {
     assert(edge.start < num_vertexes);
     assert(edge.end < num_vertexes);
     assert(edge.start != edge.end);
@@ -22,15 +25,19 @@ SearchGraph::SearchGraph(size_t num_vertexes, const std::vector<Edge> &edges)
     ++i;
   }
   for (auto &vertex : vertexes_) {
-    std::sort(vertex.forward.begin(), vertex.forward.end());
-    std::sort(vertex.reverse.begin(), vertex.reverse.end());
+    ::std::sort(vertex.forward.begin(), vertex.forward.end());
+    ::std::sort(vertex.reverse.begin(), vertex.reverse.end());
   }
   vertex_heap_.Reserve(num_vertexes);
+  SetGoal(0);
 }
 
 SearchGraph::~SearchGraph() {}
 
 void SearchGraph::SetGoal(size_t vertex) {
+  if (last_searched_vertex_ == vertex) {
+    return;
+  }
   assert(vertex < vertexes_.size());
   vertex_heap_.Clear();
 
@@ -52,6 +59,7 @@ void SearchGraph::SetGoal(size_t vertex) {
       }
     }
   }
+  last_searched_vertex_ = vertex;
 }
 
 double SearchGraph::GetCostToGoal(size_t vertex) {

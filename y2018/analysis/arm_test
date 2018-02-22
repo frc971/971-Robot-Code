@@ -1,0 +1,10 @@
+superstructure_lib_test output voltage_distal
+superstructure_lib_test output voltage_proximal
+
+superstructure_lib_test status arm path_distance_to_go
+
+superstructure_lib_test status arm goal_theta0
+superstructure_lib_test status arm theta0
+
+superstructure_lib_test status arm goal_theta1
+superstructure_lib_test status arm theta1

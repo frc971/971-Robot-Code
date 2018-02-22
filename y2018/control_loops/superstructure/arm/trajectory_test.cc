@@ -83,7 +83,7 @@ TEST(TrajectoryTest, IndicesForDistanceTest) {
           {{1.0, 0.0, 1.0, 0.0, 0.0, 0.0}},
           {{2.0, 0.0, 1.0, 0.0, 0.0, 0.0}},
           {{3.0, 0.0, 1.0, 0.0, 0.0, 0.0}}});
-  Trajectory t(&p, 0.1);
+  Trajectory t(::std::unique_ptr<Path>(new Path(p)), 0.1);
 
   // 0 - 3.0 every 0.1 should be 31 points.
   EXPECT_EQ(t.num_plan_points(), 31);
@@ -135,11 +135,27 @@ TEST(TrajectoryTest, InterpolateAcceleration) {
   EXPECT_EQ(2.0, Trajectory::InterpolateAcceleration(0.0, 1.0, 0.0, 2.0));
 }
 
+// Tests that we can correctly interpolate velocities between two points
+TEST(TrajectoryTest, ReversedPath) {
+  // Tests that a reversed path is actually reversed.
+  ::std::unique_ptr<Path> path = MakeDemoPath();
+  ::std::unique_ptr<Path> reversed_path(
+      new Path(Path::Reversed(*MakeDemoPath())));
+
+  EXPECT_NEAR(path->length(), reversed_path->length(), 1e-6);
+
+  for (double d = 0; d < path->length(); d += 0.01) {
+    EXPECT_TRUE(path->Theta(d).isApprox(reversed_path->Theta(path->length() - d)));
+    EXPECT_TRUE(path->Omega(d).isApprox(-reversed_path->Omega(path->length() - d)));
+    EXPECT_TRUE(path->Alpha(d).isApprox(reversed_path->Alpha(path->length() - d)));
+  }
+}
+
 // Tests that we can follow a path.  Look at :trajectory_plot if you want to see
 // the path.
 TEST(TrajectoryTest, RunTrajectory) {
-  Path path = MakeDemoPath();
-  Trajectory trajectory(&path, 0.001);
+  ::std::unique_ptr<Path> path = MakeDemoPath();
+  Trajectory trajectory(::std::move(path), 0.001);
 
   constexpr double kAlpha0Max = 40.0;
   constexpr double kAlpha1Max = 60.0;
@@ -161,12 +177,12 @@ TEST(TrajectoryTest, RunTrajectory) {
   EKF arm_ekf;
   arm_ekf.Reset(X);
 
-  TrajectoryFollower follower(&path, &trajectory, alpha_unitizer);
+  TrajectoryFollower follower(&trajectory);
   constexpr double sim_dt = 0.00505;
   while (t < 1.0) {
     arm_ekf.Correct((::Eigen::Matrix<double, 2, 1>() << X(0), X(2)).finished(),
                     sim_dt);
-    follower.Update(arm_ekf.X_hat(), sim_dt, vmax);
+    follower.Update(arm_ekf.X_hat(), false, sim_dt, vmax, 12.0);
     X = Dynamics::UnboundedDiscreteDynamics(X, follower.U(), sim_dt);
     arm_ekf.Predict(follower.U(), sim_dt);
     t += sim_dt;
@@ -174,7 +190,7 @@ TEST(TrajectoryTest, RunTrajectory) {
 
   ::Eigen::Matrix<double, 4, 1> final_X;
   ::Eigen::Matrix<double, 2, 1> final_theta_t =
-      trajectory.ThetaT(path.length());
+      trajectory.ThetaT(trajectory.path().length());
   final_X << final_theta_t(0), 0.0, final_theta_t(1), 0.0;
 
   // Verify that we got to the end.
@@ -182,7 +198,8 @@ TEST(TrajectoryTest, RunTrajectory) {
       << ": X is " << X.transpose() << " final_X is " << final_X.transpose();
 
   // Verify that our goal is at the end.
-  EXPECT_TRUE(final_theta_t.isApprox(path.Theta(follower.goal(0))));
+  EXPECT_TRUE(
+      final_theta_t.isApprox(trajectory.path().Theta(follower.goal(0))));
 }
 
 }  // namespace testing

@@ -31,6 +31,7 @@ void Superstructure::RunIteration(
     LOG(ERROR, "WPILib reset, restarting\n");
     intake_left_.Reset();
     intake_right_.Reset();
+    arm_.Reset();
   }
 
   intake_left_.Iterate(unsafe_goal != nullptr
@@ -47,10 +48,26 @@ void Superstructure::RunIteration(
                         output != nullptr ? &(output->intake.right) : nullptr,
                         &(status->right_intake));
 
-  status->estopped =
-      status->left_intake.estopped || status->right_intake.estopped;
+  intake_right_.Iterate(unsafe_goal != nullptr
+                            ? &(unsafe_goal->intake.right_intake_angle)
+                            : nullptr,
+                        &(position->intake.right),
+                        output != nullptr ? &(output->intake.right) : nullptr,
+                        &(status->left_intake));
 
-  status->zeroed = status->left_intake.zeroed && status->right_intake.zeroed;
+  arm_.Iterate(
+      unsafe_goal != nullptr ? &(unsafe_goal->arm_goal_position) : nullptr,
+      &(position->arm),
+      output != nullptr ? &(output->voltage_proximal) : nullptr,
+      output != nullptr ? &(output->voltage_distal) : nullptr,
+      output != nullptr ? &(output->release_arm_brake) : nullptr,
+      &(status->arm));
+
+  status->estopped = status->left_intake.estopped ||
+                     status->right_intake.estopped || status->arm.estopped;
+
+  status->zeroed = status->left_intake.zeroed && status->right_intake.zeroed &&
+                   status->arm.zeroed;
 
   if (output && unsafe_goal) {
     output->intake.left.voltage_rollers = ::std::max(

@@ -9,6 +9,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":dynamics",
+        "//aos/common/logging",
         "//frc971/control_loops:dlqr",
         "//frc971/control_loops:jacobian",
         "//third_party/eigen",
@@ -42,6 +43,7 @@ cc_library(
     deps = [
         "//frc971/control_loops:runge_kutta",
         "//third_party/eigen",
+        "//third_party/gflags",
     ],
 )
 
@@ -76,6 +78,7 @@ cc_binary(
         ":ekf",
         ":trajectory",
         "//third_party/eigen",
+        "//third_party/gflags",
         "//third_party/matplotlib-cpp",
     ],
 )
@@ -108,5 +111,26 @@ cc_test(
     deps = [
         ":graph",
         "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
+    name = "arm",
+    srcs = [
+        "arm.cc",
+    ],
+    hdrs = [
+        "arm.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":demo_path",
+        ":ekf",
+        ":graph",
+        ":trajectory",
+        "//aos/common/logging:queue_logging",
+        "//frc971/zeroing",
+        "//y2018:constants",
+        "//y2018/control_loops/superstructure:superstructure_queue",
     ],
 )

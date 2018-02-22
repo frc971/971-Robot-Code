@@ -5,6 +5,7 @@
 
 #include "aos/common/controls/control_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
+#include "y2018/control_loops/superstructure/arm/arm.h"
 #include "y2018/control_loops/superstructure/intake/intake.h"
 #include "y2018/control_loops/superstructure/superstructure.q.h"
 
@@ -21,6 +22,7 @@ class Superstructure
 
   const intake::IntakeSide &intake_left() const { return intake_left_; }
   const intake::IntakeSide &intake_right() const { return intake_right_; }
+  const arm::Arm &arm() const { return arm_; }
 
  protected:
   virtual void RunIteration(
@@ -32,6 +34,7 @@ class Superstructure
  private:
   intake::IntakeSide intake_left_;
   intake::IntakeSide intake_right_;
+  arm::Arm arm_;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };

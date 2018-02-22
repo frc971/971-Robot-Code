@@ -9,7 +9,7 @@ namespace control_loops {
 template <int num_states, int num_inputs, typename F>
 ::Eigen::Matrix<double, num_states, num_inputs> NumericalJacobian(
     const F &fn, ::Eigen::Matrix<double, num_inputs, 1> input) {
-  constexpr double kEpsilon = 1e-4;
+  constexpr double kEpsilon = 1e-5;
   ::Eigen::Matrix<double, num_states, num_inputs> result =
       ::Eigen::Matrix<double, num_states, num_inputs>::Zero();
 

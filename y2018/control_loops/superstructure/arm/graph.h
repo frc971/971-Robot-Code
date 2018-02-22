@@ -33,7 +33,7 @@ class IntrusivePriorityQueue {
    public:
     QueueEntry(T *value) : value_(value) { value_->entry_ = this; }
 
-    QueueEntry(QueueEntry &&o) : value_(o.value_) {
+    QueueEntry(QueueEntry &&o) : value_(::std::move(o.value_)) {
       if (value_) {
         value_->entry_ = this;
       }
@@ -133,7 +133,14 @@ class SearchGraph {
     bool operator<(const HalfEdge &o) const { return dest < o.dest; }
   };
 
-  SearchGraph(size_t num_vertexes, const std::vector<Edge> &edges);
+  SearchGraph(size_t num_vertexes, std::vector<Edge> &&edges);
+  SearchGraph(size_t num_vertexes, ::std::initializer_list<Edge> edges);
+  SearchGraph(SearchGraph &&o)
+      : goal_vertex_(o.goal_vertex_),
+        vertexes_(::std::move(o.vertexes_)),
+        edges_(::std::move(o.edges_)),
+        vertex_heap_(::std::move(o.vertex_heap_)) {}
+
   ~SearchGraph();
 
   // Set the goal vertex.
@@ -149,6 +156,8 @@ class SearchGraph {
   }
 
   size_t num_vertexes() const { return vertexes_.size(); }
+
+  const std::vector<Edge> &edges() const { return edges_; }
 
  private:
   size_t goal_vertex_ = std::numeric_limits<size_t>::max();
@@ -169,6 +178,8 @@ class SearchGraph {
   std::vector<Edge> edges_;
 
   IntrusivePriorityQueue<Vertex> vertex_heap_;
+
+  size_t last_searched_vertex_ = 1;
 };
 
 }  // namespace arm

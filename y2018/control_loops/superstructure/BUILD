@@ -26,6 +26,7 @@ cc_library(
         "//aos/common/controls:control_loop",
         "//frc971/control_loops:queues",
         "//y2018:constants",
+        "//y2018/control_loops/superstructure/arm",
         "//y2018/control_loops/superstructure/intake",
     ],
 )

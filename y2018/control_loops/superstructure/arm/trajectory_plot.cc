@@ -1,9 +1,14 @@
 #include "y2018/control_loops/superstructure/arm/trajectory.h"
 
+#include "third_party/gflags/include/gflags/gflags.h"
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
 #include "y2018/control_loops/superstructure/arm/demo_path.h"
 #include "y2018/control_loops/superstructure/arm/dynamics.h"
 #include "y2018/control_loops/superstructure/arm/ekf.h"
+
+DEFINE_bool(forwards, true, "If true, run the forwards simulation.");
+DEFINE_bool(plot, true, "If true, plot");
+DEFINE_bool(plot_thetas, true, "If true, plot the angles");
 
 namespace y2018 {
 namespace control_loops {
@@ -11,12 +16,12 @@ namespace superstructure {
 namespace arm {
 
 void Main() {
-  Path p = MakeDemoPath();
-  Trajectory trajectory(&p, 0.001);
+  Trajectory trajectory(
+      FLAGS_forwards ? MakeDemoPath() : MakeReversedDemoPath(), 0.001);
 
-  constexpr double kAlpha0Max = 40.0;
-  constexpr double kAlpha1Max = 60.0;
-  constexpr double vmax = 11.95;
+  constexpr double kAlpha0Max = 30.0;
+  constexpr double kAlpha1Max = 50.0;
+  constexpr double vmax = 10.5;
   constexpr double sim_dt = 0.00505;
 
   const ::Eigen::Matrix<double, 2, 2> alpha_unitizer =
@@ -35,9 +40,9 @@ void Main() {
   ::std::vector<double> alpha1_array;
 
   for (const double d : distance_array) {
-    const ::Eigen::Matrix<double, 2, 1> theta = p.Theta(d);
-    const ::Eigen::Matrix<double, 2, 1> omega = p.Omega(d);
-    const ::Eigen::Matrix<double, 2, 1> alpha = p.Alpha(d);
+    const ::Eigen::Matrix<double, 2, 1> theta = trajectory.path().Theta(d);
+    const ::Eigen::Matrix<double, 2, 1> omega = trajectory.path().Omega(d);
+    const ::Eigen::Matrix<double, 2, 1> alpha = trajectory.path().Alpha(d);
     theta0_array.push_back(theta(0, 0));
     theta1_array.push_back(theta(1, 0));
     omega0_array.push_back(omega(0, 0));
@@ -47,12 +52,18 @@ void Main() {
   }
 
   // Next step: see what U is as a function of distance.
+  ::std::vector<double> Uff0_distance_array_curvature;
+  ::std::vector<double> Uff1_distance_array_curvature;
+  ::std::vector<double> Uff0_distance_array_backwards_only;
+  ::std::vector<double> Uff1_distance_array_backwards_only;
   ::std::vector<double> Uff0_distance_array;
   ::std::vector<double> Uff1_distance_array;
 
   for (const double distance : distance_array) {
-    const double goal_velocity = trajectory.GetDVelocity(distance);
-    const double goal_acceleration = trajectory.GetDAcceleration(distance);
+    const double goal_velocity = trajectory.GetDVelocity(
+        distance, trajectory.max_dvelocity_forward_pass());
+    const double goal_acceleration = trajectory.GetDAcceleration(
+        distance, trajectory.max_dvelocity_forward_pass());
     const ::Eigen::Matrix<double, 2, 1> theta_t = trajectory.ThetaT(distance);
     const ::Eigen::Matrix<double, 2, 1> omega_t =
         trajectory.OmegaT(distance, goal_velocity);
@@ -61,10 +72,48 @@ void Main() {
 
     const ::Eigen::Matrix<double, 6, 1> R = trajectory.R(theta_t, omega_t);
     const ::Eigen::Matrix<double, 2, 1> U =
-        Dynamics::FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t);
+        Dynamics::FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t).array().max(-20).min(20);
 
     Uff0_distance_array.push_back(U(0));
     Uff1_distance_array.push_back(U(1));
+  }
+
+  for (const double distance : distance_array) {
+    const double goal_velocity = trajectory.GetDVelocity(
+        distance, trajectory.max_dvelocity_unfiltered());
+    const double goal_acceleration = trajectory.GetDAcceleration(
+        distance, trajectory.max_dvelocity_unfiltered());
+    const ::Eigen::Matrix<double, 2, 1> theta_t = trajectory.ThetaT(distance);
+    const ::Eigen::Matrix<double, 2, 1> omega_t =
+        trajectory.OmegaT(distance, goal_velocity);
+    const ::Eigen::Matrix<double, 2, 1> alpha_t =
+        trajectory.AlphaT(distance, goal_velocity, goal_acceleration);
+
+    const ::Eigen::Matrix<double, 6, 1> R = trajectory.R(theta_t, omega_t);
+    const ::Eigen::Matrix<double, 2, 1> U =
+        Dynamics::FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t).array().max(-20).min(20);
+
+    Uff0_distance_array_curvature.push_back(U(0));
+    Uff1_distance_array_curvature.push_back(U(1));
+  }
+
+  for (const double distance : distance_array) {
+    const double goal_velocity = trajectory.GetDVelocity(
+        distance, trajectory.max_dvelocity());
+    const double goal_acceleration = trajectory.GetDAcceleration(
+        distance, trajectory.max_dvelocity());
+    const ::Eigen::Matrix<double, 2, 1> theta_t = trajectory.ThetaT(distance);
+    const ::Eigen::Matrix<double, 2, 1> omega_t =
+        trajectory.OmegaT(distance, goal_velocity);
+    const ::Eigen::Matrix<double, 2, 1> alpha_t =
+        trajectory.AlphaT(distance, goal_velocity, goal_acceleration);
+
+    const ::Eigen::Matrix<double, 6, 1> R = trajectory.R(theta_t, omega_t);
+    const ::Eigen::Matrix<double, 2, 1> U =
+        Dynamics::FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t).array().max(-20).min(20);
+
+    Uff0_distance_array_backwards_only.push_back(U(0));
+    Uff1_distance_array_backwards_only.push_back(U(1));
   }
 
   double t = 0;
@@ -74,7 +123,7 @@ void Main() {
     X << theta_t(0), 0.0, theta_t(1), 0.0;
   }
 
-  TrajectoryFollower follower(&p, &trajectory, alpha_unitizer);
+  TrajectoryFollower follower(&trajectory);
 
   ::std::vector<double> t_array;
   ::std::vector<double> theta0_goal_t_array;
@@ -107,13 +156,16 @@ void Main() {
 
   EKF arm_ekf;
   arm_ekf.Reset(X);
+  ::std::cout << "Reset P: " << arm_ekf.P_reset() << ::std::endl;
+  ::std::cout << "Stabilized P: " << arm_ekf.P_half_converged() << ::std::endl;
+  ::std::cout << "Really stabilized P: " << arm_ekf.P_converged()
+              << ::std::endl;
 
-  while (t < 3.0) {
+  while (t < 1.5) {
     t_array.push_back(t);
     arm_ekf.Correct((::Eigen::Matrix<double, 2, 1>() << X(0), X(2)).finished(),
                     sim_dt);
-    // TODO(austin): Compensate for torque disturbance.
-    follower.Update(arm_ekf.X_hat(), sim_dt, vmax);
+    follower.Update(arm_ekf.X_hat(), false, sim_dt, vmax, 12.0);
 
     const ::Eigen::Matrix<double, 2, 1> theta_t =
         trajectory.ThetaT(follower.goal()(0));
@@ -148,7 +200,7 @@ void Main() {
 
     ::Eigen::Matrix<double, 2, 1> actual_U = follower.U();
     // Add in a disturbance force to see how well the arm learns it.
-    actual_U.array() += 1.0;
+    actual_U(0) += 1.0;
 
     const ::Eigen::Matrix<double, 4, 1> xdot =
         Dynamics::Acceleration(X, actual_U);
@@ -167,89 +219,108 @@ void Main() {
     t += sim_dt;
   }
 
-  matplotlibcpp::figure();
-  matplotlibcpp::title("Trajectory");
-  matplotlibcpp::plot(theta0_array, theta1_array, {{"label", "desired path"}});
-  matplotlibcpp::plot(theta0_t_array, theta1_t_array,
-                      {{"label", "actual path"}});
-  matplotlibcpp::legend();
+  if (FLAGS_plot) {
+    matplotlibcpp::figure();
+    matplotlibcpp::title("Trajectory");
+    matplotlibcpp::plot(theta0_array, theta1_array,
+                        {{"label", "desired path"}});
+    matplotlibcpp::plot(theta0_t_array, theta1_t_array,
+                        {{"label", "actual path"}});
+    matplotlibcpp::legend();
 
-  matplotlibcpp::figure();
-  matplotlibcpp::plot(distance_array, theta0_array, {{"label", "theta0"}});
-  matplotlibcpp::plot(distance_array, theta1_array, {{"label", "theta1"}});
-  matplotlibcpp::plot(distance_array, omega0_array, {{"label", "omega0"}});
-  matplotlibcpp::plot(distance_array, omega1_array, {{"label", "omega1"}});
-  matplotlibcpp::plot(distance_array, alpha0_array, {{"label", "alpha0"}});
-  matplotlibcpp::plot(distance_array, alpha1_array, {{"label", "alpha1"}});
-  matplotlibcpp::legend();
+    matplotlibcpp::figure();
+    matplotlibcpp::plot(distance_array, theta0_array, {{"label", "theta0"}});
+    matplotlibcpp::plot(distance_array, theta1_array, {{"label", "theta1"}});
+    matplotlibcpp::plot(distance_array, omega0_array, {{"label", "omega0"}});
+    matplotlibcpp::plot(distance_array, omega1_array, {{"label", "omega1"}});
+    matplotlibcpp::plot(distance_array, alpha0_array, {{"label", "alpha0"}});
+    matplotlibcpp::plot(distance_array, alpha1_array, {{"label", "alpha1"}});
+    matplotlibcpp::legend();
 
-  matplotlibcpp::figure();
-  matplotlibcpp::plot(distance_array, trajectory.max_dvelocity_unfiltered(),
-                      {{"label", "pass0"}});
-  matplotlibcpp::plot(distance_array, trajectory.max_dvelocity(),
-                      {{"label", "passb"}});
-  matplotlibcpp::plot(distance_array, trajectory.max_dvelocity_forward_pass(),
-                      {{"label", "passf"}});
-  matplotlibcpp::legend();
+    matplotlibcpp::figure();
+    matplotlibcpp::plot(distance_array, trajectory.max_dvelocity_unfiltered(),
+                        {{"label", "pass0"}});
+    matplotlibcpp::plot(distance_array, trajectory.max_dvelocity(),
+                        {{"label", "passb"}});
+    matplotlibcpp::plot(distance_array, trajectory.max_dvelocity_forward_pass(),
+                        {{"label", "passf"}});
+    matplotlibcpp::legend();
 
-  matplotlibcpp::figure();
-  matplotlibcpp::plot(t_array, alpha0_goal_t_array,
-                      {{"label", "alpha0_t_goal"}});
-  matplotlibcpp::plot(t_array, alpha0_t_array, {{"label", "alpha0_t"}});
-  matplotlibcpp::plot(t_array, alpha1_goal_t_array,
-                      {{"label", "alpha1_t_goal"}});
-  matplotlibcpp::plot(t_array, alpha1_t_array, {{"label", "alpha1_t"}});
-  matplotlibcpp::plot(t_array, distance_t_array, {{"label", "distance_t"}});
-  matplotlibcpp::plot(t_array, velocity_t_array, {{"label", "velocity_t"}});
-  matplotlibcpp::plot(t_array, acceleration_t_array,
-                      {{"label", "acceleration_t"}});
-  matplotlibcpp::legend();
+    matplotlibcpp::figure();
+    matplotlibcpp::plot(t_array, alpha0_goal_t_array,
+                        {{"label", "alpha0_t_goal"}});
+    matplotlibcpp::plot(t_array, alpha0_t_array, {{"label", "alpha0_t"}});
+    matplotlibcpp::plot(t_array, alpha1_goal_t_array,
+                        {{"label", "alpha1_t_goal"}});
+    matplotlibcpp::plot(t_array, alpha1_t_array, {{"label", "alpha1_t"}});
+    matplotlibcpp::plot(t_array, distance_t_array, {{"label", "distance_t"}});
+    matplotlibcpp::plot(t_array, velocity_t_array, {{"label", "velocity_t"}});
+    matplotlibcpp::plot(t_array, acceleration_t_array,
+                        {{"label", "acceleration_t"}});
+    matplotlibcpp::legend();
 
-  matplotlibcpp::figure();
-  matplotlibcpp::title("Angular Velocities");
-  matplotlibcpp::plot(t_array, omega0_goal_t_array,
-                      {{"label", "omega0_t_goal"}});
-  matplotlibcpp::plot(t_array, omega0_t_array, {{"label", "omega0_t"}});
-  matplotlibcpp::plot(t_array, omega0_hat_t_array, {{"label", "omega0_hat_t"}});
-  matplotlibcpp::plot(t_array, omega1_goal_t_array,
-                      {{"label", "omega1_t_goal"}});
-  matplotlibcpp::plot(t_array, omega1_t_array, {{"label", "omega1_t"}});
-  matplotlibcpp::plot(t_array, omega1_hat_t_array, {{"label", "omega1_hat_t"}});
-  matplotlibcpp::legend();
+    matplotlibcpp::figure();
+    matplotlibcpp::title("Angular Velocities");
+    matplotlibcpp::plot(t_array, omega0_goal_t_array,
+                        {{"label", "omega0_t_goal"}});
+    matplotlibcpp::plot(t_array, omega0_t_array, {{"label", "omega0_t"}});
+    matplotlibcpp::plot(t_array, omega0_hat_t_array,
+                        {{"label", "omega0_hat_t"}});
+    matplotlibcpp::plot(t_array, omega1_goal_t_array,
+                        {{"label", "omega1_t_goal"}});
+    matplotlibcpp::plot(t_array, omega1_t_array, {{"label", "omega1_t"}});
+    matplotlibcpp::plot(t_array, omega1_hat_t_array,
+                        {{"label", "omega1_hat_t"}});
+    matplotlibcpp::legend();
 
-  matplotlibcpp::figure();
-  matplotlibcpp::title("Voltages");
-  matplotlibcpp::plot(t_array, u0_unsaturated_array, {{"label", "u0_full"}});
-  matplotlibcpp::plot(t_array, u0_array, {{"label", "u0"}});
-  matplotlibcpp::plot(t_array, uff0_array, {{"label", "uff0"}});
-  matplotlibcpp::plot(t_array, u1_unsaturated_array, {{"label", "u1_full"}});
-  matplotlibcpp::plot(t_array, u1_array, {{"label", "u1"}});
-  matplotlibcpp::plot(t_array, uff1_array, {{"label", "uff1"}});
-  matplotlibcpp::plot(t_array, torque0_hat_t_array, {{"label", "torque0_hat"}});
-  matplotlibcpp::plot(t_array, torque1_hat_t_array, {{"label", "torque1_hat"}});
-  matplotlibcpp::legend();
+    matplotlibcpp::figure();
+    matplotlibcpp::title("Voltages");
+    matplotlibcpp::plot(t_array, u0_unsaturated_array, {{"label", "u0_full"}});
+    matplotlibcpp::plot(t_array, u0_array, {{"label", "u0"}});
+    matplotlibcpp::plot(t_array, uff0_array, {{"label", "uff0"}});
+    matplotlibcpp::plot(t_array, u1_unsaturated_array, {{"label", "u1_full"}});
+    matplotlibcpp::plot(t_array, u1_array, {{"label", "u1"}});
+    matplotlibcpp::plot(t_array, uff1_array, {{"label", "uff1"}});
+    matplotlibcpp::plot(t_array, torque0_hat_t_array,
+                        {{"label", "torque0_hat"}});
+    matplotlibcpp::plot(t_array, torque1_hat_t_array,
+                        {{"label", "torque1_hat"}});
+    matplotlibcpp::legend();
 
-  matplotlibcpp::figure();
-  matplotlibcpp::title("Angles");
-  matplotlibcpp::plot(t_array, theta0_goal_t_array,
-                      {{"label", "theta0_t_goal"}});
-  matplotlibcpp::plot(t_array, theta0_t_array, {{"label", "theta0_t"}});
-  matplotlibcpp::plot(t_array, theta0_hat_t_array, {{"label", "theta0_hat_t"}});
-  matplotlibcpp::plot(t_array, theta1_goal_t_array,
-                      {{"label", "theta1_t_goal"}});
-  matplotlibcpp::plot(t_array, theta1_t_array, {{"label", "theta1_t"}});
-  matplotlibcpp::plot(t_array, theta1_hat_t_array, {{"label", "theta1_hat_t"}});
-  matplotlibcpp::legend();
+    if (FLAGS_plot_thetas) {
+      matplotlibcpp::figure();
+      matplotlibcpp::title("Angles");
+      matplotlibcpp::plot(t_array, theta0_goal_t_array,
+                          {{"label", "theta0_t_goal"}});
+      matplotlibcpp::plot(t_array, theta0_t_array, {{"label", "theta0_t"}});
+      matplotlibcpp::plot(t_array, theta0_hat_t_array,
+                          {{"label", "theta0_hat_t"}});
+      matplotlibcpp::plot(t_array, theta1_goal_t_array,
+                          {{"label", "theta1_t_goal"}});
+      matplotlibcpp::plot(t_array, theta1_t_array, {{"label", "theta1_t"}});
+      matplotlibcpp::plot(t_array, theta1_hat_t_array,
+                          {{"label", "theta1_hat_t"}});
+      matplotlibcpp::legend();
+    }
 
-/*
-  matplotlibcpp::figure();
-  matplotlibcpp::title("ff for distance");
-  matplotlibcpp::plot(distance_array, Uff0_distance_array, {{"label", "ff0"}});
-  matplotlibcpp::plot(distance_array, Uff1_distance_array, {{"label", "ff1"}});
-  matplotlibcpp::legend();
-*/
+    matplotlibcpp::figure();
+    matplotlibcpp::title("ff for distance");
+    matplotlibcpp::plot(distance_array, Uff0_distance_array, {{"label",
+    "ff0"}});
+    matplotlibcpp::plot(distance_array, Uff1_distance_array, {{"label",
+    "ff1"}});
+    matplotlibcpp::plot(distance_array, Uff0_distance_array_backwards_only,
+                        {{"label", "ff0_back"}});
+    matplotlibcpp::plot(distance_array, Uff1_distance_array_backwards_only,
+                        {{"label", "ff1_back"}});
+    matplotlibcpp::plot(distance_array, Uff0_distance_array_curvature,
+                        {{"label", "ff0_curve"}});
+    matplotlibcpp::plot(distance_array, Uff1_distance_array_curvature,
+                        {{"label", "ff1_curve"}});
+    matplotlibcpp::legend();
 
-  matplotlibcpp::show();
+    matplotlibcpp::show();
+  }
 }
 
 }  // namespace arm
@@ -257,7 +328,8 @@ void Main() {
 }  // namespace control_loops
 }  // namespace y2018
 
-int main(int /*argc*/, const char * /*argv*/ []) {
+int main(int argc, char **argv) {
+  gflags::ParseCommandLineFlags(&argc, &argv, false);
   ::y2018::control_loops::superstructure::arm::Main();
   return 0;
 }

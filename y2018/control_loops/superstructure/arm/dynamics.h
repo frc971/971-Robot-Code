@@ -4,6 +4,9 @@
 #include "Eigen/Dense"
 
 #include "frc971/control_loops/runge_kutta.h"
+#include "third_party/gflags/include/gflags/gflags.h"
+
+DECLARE_bool(gravity);
 
 namespace y2018 {
 namespace control_loops {
@@ -36,7 +39,8 @@ class Dynamics {
   static constexpr double kG2 = 90.0;
 
   // MiniCIM motor constants.
-  static constexpr double kStallTorque = 1.41;
+  static constexpr double kEfficiencyTweak = 0.95;
+  static constexpr double kStallTorque = 1.41 * kEfficiencyTweak;
   static constexpr double kFreeSpeed = (5840.0 / 60.0) * 2.0 * M_PI;
   static constexpr double kStallCurrent = 89.0;
   static constexpr double kResistance = 12.0 / kStallCurrent;
@@ -95,9 +99,10 @@ class Dynamics {
         (::Eigen::Matrix<double, 2, 1>() << X(1, 0), X(3, 0)).finished();
 
     const ::Eigen::Matrix<double, 2, 1> torque = K3 * U - K4 * velocity;
+    const ::Eigen::Matrix<double, 2, 1> gravity_torque = GravityTorque(X);
 
     const ::Eigen::Matrix<double, 2, 1> accel =
-        K1.inverse() * (torque - K2 * velocity);
+        K1.inverse() * (torque + gravity_torque - K2 * velocity);
 
     return (::Eigen::Matrix<double, 4, 1>() << X(1, 0), accel(0, 0), X(3, 0),
             accel(1, 0))
@@ -122,9 +127,11 @@ class Dynamics {
             (U +
              (::Eigen::Matrix<double, 2, 1>() << X(4, 0), X(5, 0)).finished()) -
         K4 * velocity;
+    const ::Eigen::Matrix<double, 2, 1> gravity_torque =
+        GravityTorque(X.block<4, 1>(0, 0));
 
     const ::Eigen::Matrix<double, 2, 1> accel =
-        K1.inverse() * (torque - K2 * velocity);
+        K1.inverse() * (torque + gravity_torque - K2 * velocity);
 
     return (::Eigen::Matrix<double, 6, 1>() << X(1, 0), accel(0, 0), X(3, 0),
             accel(1, 0), 0.0, 0.0)
@@ -142,7 +149,21 @@ class Dynamics {
 
     MatriciesForState(X, &K1, &K2);
 
-    return K3_inverse * (K1 * alpha_t + K2 * omega_t + K4 * omega_t);
+    const ::Eigen::Matrix<double, 2, 1> gravity_torque = GravityTorque(X);
+
+    return K3_inverse *
+           (K1 * alpha_t + K2 * omega_t + K4 * omega_t - gravity_torque);
+  }
+
+  static ::Eigen::Matrix<double, 2, 1> GravityTorque(
+      const ::Eigen::Matrix<double, 4, 1> &X) {
+    constexpr double kAccelDueToGravity = 9.8 * kEfficiencyTweak;
+    return (::Eigen::Matrix<double, 2, 1>() << (r1 * kM1 + kL1 * kM2) *
+                                                   ::std::sin(X(0)) *
+                                                   kAccelDueToGravity,
+            r2 * kM2 * ::std::sin(X(2)) * kAccelDueToGravity)
+               .finished() *
+           (FLAGS_gravity ? 1.0 : 0.0);
   }
 
   static const ::Eigen::Matrix<double, 4, 1> UnboundedDiscreteDynamics(

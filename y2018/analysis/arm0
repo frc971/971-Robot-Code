@@ -1,0 +1,8 @@
+superstructure.stripped output voltage_proximal
+superstructure.stripped status arm voltage_error0
+
+superstructure.stripped status arm proximal_estimator_state position
+superstructure.stripped status arm goal_theta0
+superstructure.stripped status arm theta0
+superstructure.stripped status arm goal_omega0
+superstructure.stripped status arm omega0
