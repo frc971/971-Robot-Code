@@ -37,15 +37,15 @@ void Superstructure::RunIteration(
   intake_left_.Iterate(unsafe_goal != nullptr
                            ? &(unsafe_goal->intake.left_intake_angle)
                            : nullptr,
-                       &(position->intake.left),
-                       output != nullptr ? &(output->intake.left) : nullptr,
+                       &(position->left_intake),
+                       output != nullptr ? &(output->left_intake) : nullptr,
                        &(status->left_intake));
 
   intake_right_.Iterate(unsafe_goal != nullptr
                             ? &(unsafe_goal->intake.right_intake_angle)
                             : nullptr,
-                        &(position->intake.right),
-                        output != nullptr ? &(output->intake.right) : nullptr,
+                        &(position->right_intake),
+                        output != nullptr ? &(output->right_intake) : nullptr,
                         &(status->right_intake));
 
   arm_.Iterate(
@@ -68,18 +68,18 @@ void Superstructure::RunIteration(
                                              kMaxIntakeRollerVoltage));
     constexpr int kReverseTime = 15;
     if (unsafe_goal->intake.roller_voltage < 0.0) {
-      output->intake.left.voltage_rollers = roller_voltage;
-      output->intake.right.voltage_rollers = roller_voltage;
+      output->left_intake.voltage_rollers = roller_voltage;
+      output->right_intake.voltage_rollers = roller_voltage;
       rotation_state_ = RotationState::NOT_ROTATING;
       rotation_count_ = 0;
     } else {
       switch (rotation_state_) {
         case RotationState::NOT_ROTATING:
-          if (position->intake.left.beam_break) {
+          if (position->left_intake.beam_break) {
             rotation_state_ = RotationState::ROTATING_RIGHT;
             rotation_count_ = kReverseTime;
             break;
-          } else if (position->intake.right.beam_break) {
+          } else if (position->right_intake.beam_break) {
             rotation_state_ = RotationState::ROTATING_LEFT;
             rotation_count_ = kReverseTime;
             break;
@@ -87,7 +87,7 @@ void Superstructure::RunIteration(
             break;
           }
         case RotationState::ROTATING_LEFT:
-          if (position->intake.right.beam_break) {
+          if (position->right_intake.beam_break) {
             rotation_count_ = kReverseTime;
           } else {
             --rotation_count_;
@@ -97,7 +97,7 @@ void Superstructure::RunIteration(
           }
           break;
         case RotationState::ROTATING_RIGHT:
-          if (position->intake.left.beam_break) {
+          if (position->left_intake.beam_break) {
             rotation_count_ = kReverseTime;
           } else {
             --rotation_count_;
@@ -110,16 +110,16 @@ void Superstructure::RunIteration(
 
       switch (rotation_state_) {
         case RotationState::NOT_ROTATING:
-          output->intake.left.voltage_rollers = roller_voltage;
-          output->intake.right.voltage_rollers = roller_voltage;
+          output->left_intake.voltage_rollers = roller_voltage;
+          output->right_intake.voltage_rollers = roller_voltage;
           break;
         case RotationState::ROTATING_LEFT:
-          output->intake.left.voltage_rollers = roller_voltage;
-          output->intake.right.voltage_rollers = -roller_voltage;
+          output->left_intake.voltage_rollers = roller_voltage;
+          output->right_intake.voltage_rollers = -roller_voltage;
           break;
         case RotationState::ROTATING_RIGHT:
-          output->intake.left.voltage_rollers = -roller_voltage;
-          output->intake.right.voltage_rollers = roller_voltage;
+          output->left_intake.voltage_rollers = -roller_voltage;
+          output->right_intake.voltage_rollers = roller_voltage;
           break;
       }
     }

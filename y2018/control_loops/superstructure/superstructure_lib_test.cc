@@ -216,10 +216,9 @@ class SuperstructureSimulation {
     ::aos::ScopedMessagePtr<SuperstructureQueue::Position> position =
         superstructure_queue_.position.MakeMessage();
 
-    left_intake_.GetSensorValues(&position->intake.left);
-    right_intake_.GetSensorValues(&position->intake.right);
+    left_intake_.GetSensorValues(&position->left_intake);
+    right_intake_.GetSensorValues(&position->right_intake);
     arm_.GetSensorValues(&position->arm);
-
     LOG_STRUCT(INFO, "sim position", *position);
     position.Send();
   }
@@ -243,8 +242,8 @@ class SuperstructureSimulation {
     EXPECT_TRUE(superstructure_queue_.output.FetchLatest());
     EXPECT_TRUE(superstructure_queue_.status.FetchLatest());
 
-    left_intake_.Simulate(superstructure_queue_.output->intake.left);
-    right_intake_.Simulate(superstructure_queue_.output->intake.right);
+    left_intake_.Simulate(superstructure_queue_.output->left_intake);
+    right_intake_.Simulate(superstructure_queue_.output->right_intake);
     arm_.Simulate((::Eigen::Matrix<double, 2, 1>()
                        << superstructure_queue_.output->voltage_proximal,
                    superstructure_queue_.output->voltage_distal)
@@ -333,8 +332,8 @@ TEST_F(SuperstructureTest, ZeroNoGoalAndDoesNothing) {
             superstructure_.intake_left().state());
   EXPECT_EQ(intake::IntakeSide::State::RUNNING,
             superstructure_.intake_right().state());
-  EXPECT_EQ(superstructure_queue_.output->intake.left.voltage_elastic, 0.0);
-  EXPECT_EQ(superstructure_queue_.output->intake.right.voltage_elastic, 0.0);
+  EXPECT_EQ(superstructure_queue_.output->left_intake.voltage_elastic, 0.0);
+  EXPECT_EQ(superstructure_queue_.output->right_intake.voltage_elastic, 0.0);
 }
 
 // Tests that the intake loop can reach a goal.

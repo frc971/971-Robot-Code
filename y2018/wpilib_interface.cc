@@ -438,27 +438,27 @@ class SensorReader {
                    values.arm_distal.potentiometer_offset);
 
       CopyPosition(left_intake_encoder_,
-                   &superstructure_message->intake.left.motor_position,
+                   &superstructure_message->left_intake.motor_position,
                    Values::kIntakeMotorEncoderCountsPerRevolution(),
                    Values::kIntakeMotorEncoderRatio(), intake_pot_translate,
                    false, values.left_intake.potentiometer_offset);
 
       CopyPosition(right_intake_encoder_,
-                   &superstructure_message->intake.right.motor_position,
+                   &superstructure_message->right_intake.motor_position,
                    Values::kIntakeMotorEncoderCountsPerRevolution(),
                    Values::kIntakeMotorEncoderRatio(), intake_pot_translate,
                    true, values.right_intake.potentiometer_offset);
 
-      superstructure_message->intake.left.spring_angle =
+      superstructure_message->left_intake.spring_angle =
           intake_spring_translate(left_intake_spring_angle_->GetVoltage()) +
           values.left_intake.spring_offset;
-      superstructure_message->intake.left.beam_break =
+      superstructure_message->left_intake.beam_break =
           left_intake_cube_detector_->Get();
 
-      superstructure_message->intake.right.spring_angle =
+      superstructure_message->right_intake.spring_angle =
           -intake_spring_translate(right_intake_spring_angle_->GetVoltage()) +
           values.right_intake.spring_offset;
-      superstructure_message->intake.right.beam_break =
+      superstructure_message->right_intake.beam_break =
           right_intake_cube_detector_->Get();
 
       superstructure_message.Send();
@@ -711,22 +711,22 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     LOG_STRUCT(DEBUG, "will output", *queue);
 
     left_intake_elastic_victor_->SetSpeed(
-        ::aos::Clip(-queue->intake.left.voltage_elastic, -kMaxBringupPower,
+        ::aos::Clip(-queue->left_intake.voltage_elastic, -kMaxBringupPower,
                     kMaxBringupPower) /
         12.0);
 
     right_intake_elastic_victor_->SetSpeed(
-        ::aos::Clip(queue->intake.right.voltage_elastic, -kMaxBringupPower,
+        ::aos::Clip(queue->right_intake.voltage_elastic, -kMaxBringupPower,
                     kMaxBringupPower) /
         12.0);
 
     left_intake_rollers_victor_->SetSpeed(
-        ::aos::Clip(-queue->intake.left.voltage_rollers, -kMaxBringupPower,
+        ::aos::Clip(-queue->left_intake.voltage_rollers, -kMaxBringupPower,
                     kMaxBringupPower) /
         12.0);
 
     right_intake_rollers_victor_->SetSpeed(
-        ::aos::Clip(queue->intake.right.voltage_rollers, -kMaxBringupPower,
+        ::aos::Clip(queue->right_intake.voltage_rollers, -kMaxBringupPower,
                     kMaxBringupPower) /
         12.0);
 

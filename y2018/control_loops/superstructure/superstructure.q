@@ -60,16 +60,6 @@ struct IntakeElasticSensors {
   bool beam_break;
 };
 
-struct IntakePosition {
-  // Values of the series elastic encoders on the left side of the robot from
-  // the rear perspective in radians.
-  IntakeElasticSensors left;
-
-  // Values of the series elastic encoders on the right side of the robot from
-  // the rear perspective in radians.
-  IntakeElasticSensors right;
-};
-
 struct ArmStatus {
   // State of the estimators.
   .frc971.AbsoluteEstimatorState proximal_estimator_state;
@@ -128,15 +118,6 @@ struct IntakeVoltage {
   double voltage_rollers;
 };
 
-struct IntakeOutput {
-  // Voltage sent to the parts on the left side of the intake.
-  IntakeVoltage left;
-
-  // Voltage sent to the parts on the right side of the intake.
-  IntakeVoltage right;
-};
-
-
 queue_group SuperstructureQueue {
   implements aos.control_loops.ControlLoop;
 
@@ -166,7 +147,14 @@ queue_group SuperstructureQueue {
   };
 
   message Position {
-    IntakePosition intake;
+    // Values of the series elastic encoders on the left side of the robot from
+    // the rear perspective in radians.
+    IntakeElasticSensors left_intake;
+
+    // Values of the series elastic encoders on the right side of the robot from
+    // the rear perspective in radians.
+    IntakeElasticSensors right_intake;
+
     ArmPosition arm;
 
     // Value of the beam breaker sensor. This value is true if the beam is
@@ -175,7 +163,11 @@ queue_group SuperstructureQueue {
   };
 
   message Output {
-    IntakeOutput intake;
+    // Voltage sent to the parts on the left side of the intake.
+    IntakeVoltage left_intake;
+
+    // Voltage sent to the parts on the right side of the intake.
+    IntakeVoltage right_intake;
 
     // Voltage sent to the motors on the proximal joint of the arm.
     double voltage_proximal;
