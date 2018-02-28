@@ -51,6 +51,10 @@ class Intake(control_loop.ControlLoop):
         # Spring constant (N m / radian)
         self.Ks = 32.74
 
+        # Damper constant (N m s/ radian)
+        # 0.01 is small and 1 is big
+        self.b = 0.1
+
         # Control loop time step
         self.dt = 0.00505
 
@@ -63,10 +67,12 @@ class Intake(control_loop.ControlLoop):
 
         self.A_continuous = numpy.matrix(
             [[0.0, 1.0, 0.0, 0.0],
-             [(-self.Ks / self.Jo), 0.0, (self.Ks / self.Jo), 0.0],
+             [(-self.Ks / self.Jo), (-self.b/self.Jo),
+               (self.Ks / self.Jo), ( self.b/self.Jo)],
              [0.0, 0.0, 0.0, 1.0],
-             [(self.Ks / self.Je), 0.0, (-self.Ks / self.Je), \
-              -self.Kt / (self.Je * self.resistance * self.Kv * self.G * self.G)]])
+             [( self.Ks / self.Je),  ( self.b/self.Je),
+              (-self.Ks / self.Je),  (-self.b/self.Je)
+               -self.Kt / (self.Je * self.resistance * self.Kv * self.G * self.G)]])
 
         # Start with the unmodified input
         self.B_continuous = numpy.matrix(
@@ -263,6 +269,11 @@ class ScenarioPlotter(object):
         # Delay U by 1 cycle in our simulation to make it more realistic.
         last_U = numpy.matrix([[0.0]])
         intake.Y = intake.C * intake.X
+
+        # Start with the intake deflected by 0.2 radians
+        # intake.X[0,0] = 0.2
+        # intake.Y[0,0] = intake.X[0,0]
+        # observer_intake.X_hat[0,0] = intake.X[0,0]
 
         for i in xrange(iterations):
             X_hat = intake.X
