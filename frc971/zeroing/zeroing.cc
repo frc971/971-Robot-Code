@@ -262,7 +262,14 @@ PotAndAbsEncoderZeroingEstimator::PotAndAbsEncoderZeroingEstimator(
 }
 
 void PotAndAbsEncoderZeroingEstimator::Reset() {
+  first_offset_ = 0.0;
+  pot_relative_encoder_offset_ = 0.0;
+  offset_ = 0.0;
+  samples_idx_ = 0;
+  filtered_position_ = 0.0;
+  position_ = 0.0;
   zeroed_ = false;
+  nan_samples_ = 0;
   relative_to_absolute_offset_samples_.clear();
   offset_samples_.clear();
   buffered_samples_.clear();
@@ -291,7 +298,22 @@ void PotAndAbsEncoderZeroingEstimator::UpdateEstimate(
   // Check for Abs Encoder NaN value that would mess up the rest of the zeroing
   // code below. NaN values are given when the Absolute Encoder is disconnected.
   if (::std::isnan(info.absolute_encoder)) {
-    error_ = true;
+    if (zeroed_) {
+      LOG(ERROR, "NAN on absolute encoder\n");
+      error_ = true;
+    } else {
+      ++nan_samples_;
+      LOG(ERROR, "NAN on absolute encoder while zeroing %d\n",
+          static_cast<int>(nan_samples_));
+      if (nan_samples_ >= constants_.average_filter_size) {
+        error_ = true;
+        zeroed_ = true;
+      }
+    }
+    // Throw some dummy values in for now.
+    filtered_absolute_encoder_ = info.absolute_encoder;
+    filtered_position_ = pot_relative_encoder_offset_ + info.encoder;
+    position_ = offset_ + info.encoder;
     return;
   }
 

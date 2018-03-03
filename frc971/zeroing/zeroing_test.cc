@@ -350,6 +350,43 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithoutMovement) {
   EXPECT_DOUBLE_EQ(start_pos, estimator.offset());
 }
 
+// Makes sure that we ignore a NAN if we get it, but will correctly zero
+// afterwords.
+TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingIgnoresNAN) {
+  const double index_diff = 1.0;
+  PositionSensorSimulator sim(index_diff);
+
+  const double start_pos = 2.1;
+  double measured_absolute_position = 0.3 * index_diff;
+
+  PotAndAbsoluteEncoderZeroingConstants constants{
+      kSampleSize, index_diff,        measured_absolute_position,
+      0.1,         kMovingBufferSize, kIndexErrorFraction};
+
+  sim.Initialize(start_pos, index_diff / 3.0, 0.0,
+                 constants.measured_absolute_position);
+
+  PotAndAbsEncoderZeroingEstimator estimator(constants);
+
+  // We tolerate a couple NANs before we start.
+  PotAndAbsolutePosition sensor_values;
+  sensor_values.absolute_encoder = ::std::numeric_limits<double>::quiet_NaN();
+  sensor_values.encoder = 0.0;
+  sensor_values.pot = 0.0;
+  for (size_t i = 0; i < kSampleSize - 1; ++i) {
+    estimator.UpdateEstimate(sensor_values);
+  }
+
+  for (size_t i = 0; i < kSampleSize + kMovingBufferSize - 1; ++i) {
+    MoveTo(&sim, &estimator, start_pos);
+    ASSERT_FALSE(estimator.zeroed());
+  }
+
+  MoveTo(&sim, &estimator, start_pos);
+  ASSERT_TRUE(estimator.zeroed());
+  EXPECT_DOUBLE_EQ(start_pos, estimator.offset());
+}
+
 // Makes sure that using an absolute encoder doesn't let us zero while moving.
 TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithMovement) {
   const double index_diff = 1.0;
@@ -384,12 +421,17 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithNaN) {
 
   PotAndAbsEncoderZeroingEstimator estimator(constants);
 
-  PotAndAbsolutePosition sensor_values_;
-  sensor_values_.absolute_encoder = ::std::numeric_limits<double>::quiet_NaN();
-  sensor_values_.encoder = 0.0;
-  sensor_values_.pot = 0.0;
-  estimator.UpdateEstimate(sensor_values_);
+  PotAndAbsolutePosition sensor_values;
+  sensor_values.absolute_encoder = ::std::numeric_limits<double>::quiet_NaN();
+  sensor_values.encoder = 0.0;
+  sensor_values.pot = 0.0;
+  // We tolerate a couple NANs before we start.
+  for (size_t i = 0; i < kSampleSize - 1; ++i) {
+    estimator.UpdateEstimate(sensor_values);
+  }
+  ASSERT_FALSE(estimator.error());
 
+  estimator.UpdateEstimate(sensor_values);
   ASSERT_TRUE(estimator.error());
 }
 

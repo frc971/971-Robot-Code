@@ -258,7 +258,9 @@ class PotAndAbsEncoderZeroingEstimator : public ZeroingEstimator {
   double offset_ = 0;
   // The next position in 'relative_to_absolute_offset_samples_' and
   // 'encoder_samples_' to be used to store the next sample.
-  int samples_idx_;
+  int samples_idx_ = 0;
+
+  size_t nan_samples_ = 0;
 
   // The unzeroed filtered position.
   double filtered_position_ = 0.0;
