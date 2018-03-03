@@ -11,6 +11,7 @@ aos_downloader(
         ":wpilib_interface",
         "//aos:prime_start_binaries",
         "//y2018/control_loops/drivetrain:drivetrain",
+        "//y2018/control_loops/superstructure:superstructure.stripped",
     ],
 )
 
@@ -25,6 +26,7 @@ aos_downloader(
         ":wpilib_interface.stripped",
         "//aos:prime_start_binaries_stripped",
         "//y2018/control_loops/drivetrain:drivetrain.stripped",
+        "//y2018/control_loops/superstructure:superstructure.stripped",
     ],
 )
 

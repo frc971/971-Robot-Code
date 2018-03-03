@@ -40,8 +40,8 @@ struct Values {
            kDrivetrainEncoderCountsPerRevolution();
   }
 
-  static constexpr double kDrivetrainShifterPotMaxVoltage() { return 2.0; }
-  static constexpr double kDrivetrainShifterPotMinVoltage() { return 1.0; }
+  static constexpr double kDrivetrainShifterPotMaxVoltage() { return 1.94; }
+  static constexpr double kDrivetrainShifterPotMinVoltage() { return 3.63; }
 
   static constexpr double kProximalEncoderCountsPerRevolution() { return 4096.0; }
   static constexpr double kProximalEncoderRatio() {
@@ -68,7 +68,9 @@ struct Values {
   static constexpr double kIntakeSpringRatio() {
     return (10.0 * 0.080) / (2.0 * 1.5 * M_PI);
   }
-  static constexpr double kIntakeMotorEncoderCountsPerRevolution() { return 4096.0; }
+  static constexpr double kIntakeMotorEncoderCountsPerRevolution() {
+    return 4096.0;
+  }
   static constexpr double kIntakeMotorEncoderRatio() {
     return (18.0 / 68.0) * (18.0 / 50.0);
   }
@@ -81,6 +83,7 @@ struct Values {
   }
 
   static constexpr ::frc971::constants::Range kIntakeRange() {
+    // TODO(austin) Sort this out.
     return ::frc971::constants::Range{(-0.75 * M_PI), (1.25 * M_PI),
                                       (-2.0 / 3.0 * M_PI), M_PI};
   }

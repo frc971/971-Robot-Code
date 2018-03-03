@@ -104,7 +104,7 @@ double drivetrain_velocity_translate(double in) {
 }
 
 double proximal_pot_translate(double voltage) {
-  return voltage * Values::kProximalPotRatio() *
+  return -voltage * Values::kProximalPotRatio() *
          (3.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
 }
 
@@ -127,8 +127,9 @@ double intake_spring_translate(double voltage) {
 // Returns value from 0.0 to 1.0, with 0.0 being close to low gear so it can be
 // passed drectly into the drivetrain position queue.
 double drivetrain_shifter_pot_translate(double voltage) {
-  return voltage / (Values::kDrivetrainShifterPotMaxVoltage() -
-                    Values::kDrivetrainShifterPotMinVoltage());
+  return (voltage - Values::kDrivetrainShifterPotMinVoltage()) /
+         (Values::kDrivetrainShifterPotMaxVoltage() -
+          Values::kDrivetrainShifterPotMinVoltage());
 }
 
 constexpr double kMaxFastEncoderPulsesPerSecond =
@@ -402,18 +403,18 @@ class SensorReader {
 
     {
       auto drivetrain_message = drivetrain_queue.position.MakeMessage();
-      drivetrain_message->right_encoder =
-          drivetrain_translate(drivetrain_right_encoder_->GetRaw());
-      drivetrain_message->right_speed =
-          drivetrain_velocity_translate(drivetrain_right_encoder_->GetPeriod());
+      drivetrain_message->left_encoder =
+          drivetrain_translate(drivetrain_left_encoder_->GetRaw());
+      drivetrain_message->left_speed =
+          drivetrain_velocity_translate(drivetrain_left_encoder_->GetPeriod());
       drivetrain_message->left_shifter_position =
           drivetrain_shifter_pot_translate(
               left_drivetrain_shifter_->GetVoltage());
 
-      drivetrain_message->left_encoder =
-          -drivetrain_translate(drivetrain_left_encoder_->GetRaw());
-      drivetrain_message->left_speed =
-          drivetrain_velocity_translate(drivetrain_left_encoder_->GetPeriod());
+      drivetrain_message->right_encoder =
+          -drivetrain_translate(drivetrain_right_encoder_->GetRaw());
+      drivetrain_message->right_speed =
+          -drivetrain_velocity_translate(drivetrain_right_encoder_->GetPeriod());
       drivetrain_message->right_shifter_position =
           drivetrain_shifter_pot_translate(
               right_drivetrain_shifter_->GetVoltage());
@@ -429,12 +430,12 @@ class SensorReader {
       CopyPosition(proximal_encoder_, &superstructure_message->arm.proximal,
                    Values::kProximalEncoderCountsPerRevolution(),
                    Values::kProximalEncoderRatio(), proximal_pot_translate,
-                   false, values.proximal.potentiometer_offset);
+                   true, values.arm_proximal.potentiometer_offset);
 
       CopyPosition(distal_encoder_, &superstructure_message->arm.distal,
                    Values::kDistalEncoderCountsPerRevolution(),
-                   Values::kDistalEncoderRatio(), distal_pot_translate, false,
-                   values.distal.potentiometer_offset);
+                   Values::kDistalEncoderRatio(), distal_pot_translate, true,
+                   values.arm_distal.potentiometer_offset);
 
       CopyPosition(left_intake_encoder_,
                    &superstructure_message->intake.left.motor_position,
@@ -446,15 +447,17 @@ class SensorReader {
                    &superstructure_message->intake.right.motor_position,
                    Values::kIntakeMotorEncoderCountsPerRevolution(),
                    Values::kIntakeMotorEncoderRatio(), intake_pot_translate,
-                   false, values.right_intake.potentiometer_offset);
+                   true, values.right_intake.potentiometer_offset);
 
       superstructure_message->intake.left.spring_angle =
-          intake_spring_translate(left_intake_spring_angle_->GetVoltage());
+          intake_spring_translate(left_intake_spring_angle_->GetVoltage()) +
+          values.left_intake.spring_offset;
       superstructure_message->intake.left.beam_break =
           left_intake_cube_detector_->Get();
 
       superstructure_message->intake.right.spring_angle =
-          intake_spring_translate(right_intake_spring_angle_->GetVoltage());
+          -intake_spring_translate(right_intake_spring_angle_->GetVoltage()) +
+          values.right_intake.spring_offset;
       superstructure_message->intake.right.beam_break =
           right_intake_cube_detector_->Get();
 
@@ -660,8 +663,8 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::frc971::control_loops::drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    drivetrain_left_victor_->SetSpeed(-queue->left_voltage / 12.0);
-    drivetrain_right_victor_->SetSpeed(queue->right_voltage / 12.0);
+    drivetrain_left_victor_->SetSpeed(queue->left_voltage / 12.0);
+    drivetrain_right_victor_->SetSpeed(-queue->right_voltage / 12.0);
   }
 
   virtual void Stop() override {
@@ -708,7 +711,7 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     LOG_STRUCT(DEBUG, "will output", *queue);
 
     left_intake_elastic_victor_->SetSpeed(
-        ::aos::Clip(queue->intake.left.voltage_elastic, -kMaxBringupPower,
+        ::aos::Clip(-queue->intake.left.voltage_elastic, -kMaxBringupPower,
                     kMaxBringupPower) /
         12.0);
 
@@ -718,7 +721,7 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
         12.0);
 
     left_intake_rollers_victor_->SetSpeed(
-        ::aos::Clip(queue->intake.right.voltage_rollers, -kMaxBringupPower,
+        ::aos::Clip(-queue->intake.right.voltage_rollers, -kMaxBringupPower,
                     kMaxBringupPower) /
         12.0);
 
@@ -727,7 +730,7 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
                     kMaxBringupPower) /
         12.0);
 
-    proximal_victor_->SetSpeed(::aos::Clip(queue->voltage_proximal,
+    proximal_victor_->SetSpeed(::aos::Clip(-queue->voltage_proximal,
                                            -kMaxBringupPower,
                                            kMaxBringupPower) /
                                12.0);
@@ -774,35 +777,41 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     // TODO(Sabina): Update port numbers(Sensors and Victors)
     reader.set_drivetrain_left_encoder(make_encoder(0));
+    reader.set_left_drivetrain_shifter_potentiometer(
+        make_unique<AnalogInput>(6));
     reader.set_drivetrain_right_encoder(make_encoder(1));
+    reader.set_right_drivetrain_shifter_potentiometer(
+        make_unique<AnalogInput>(7));
 
-    reader.set_proximal_encoder(make_encoder(2));
+    reader.set_proximal_encoder(make_encoder(4));
     reader.set_proximal_absolute_pwm(make_unique<DigitalInput>(2));
     reader.set_proximal_potentiometer(make_unique<AnalogInput>(2));
 
-    reader.set_distal_encoder(make_encoder(3));
+    reader.set_distal_encoder(make_encoder(2));
     reader.set_distal_absolute_pwm(make_unique<DigitalInput>(3));
     reader.set_distal_potentiometer(make_unique<AnalogInput>(3));
 
-    reader.set_right_intake_encoder(make_encoder(4));
-    reader.set_right_intake_absolute_pwm(make_unique<DigitalInput>(4));
-    reader.set_right_intake_potentiometer(make_unique<AnalogInput>(4));
-    reader.set_right_intake_cube_detector(make_unique<DigitalInput>(6));
+    reader.set_right_intake_encoder(make_encoder(5));
+    reader.set_right_intake_absolute_pwm(make_unique<DigitalInput>(7));
+    reader.set_right_intake_potentiometer(make_unique<AnalogInput>(1));
+    reader.set_right_intake_spring_angle(make_unique<AnalogInput>(5));
+    reader.set_right_intake_cube_detector(make_unique<DigitalInput>(1));
 
-    reader.set_left_intake_encoder(make_encoder(5));
-    reader.set_left_intake_absolute_pwm(make_unique<DigitalInput>(5));
-    reader.set_left_intake_potentiometer(make_unique<AnalogInput>(5));
-    reader.set_left_intake_cube_detector(make_unique<DigitalInput>(7));
+    reader.set_left_intake_encoder(make_encoder(3));
+    reader.set_left_intake_absolute_pwm(make_unique<DigitalInput>(4));
+    reader.set_left_intake_potentiometer(make_unique<AnalogInput>(0));
+    reader.set_left_intake_spring_angle(make_unique<AnalogInput>(4));
+    reader.set_left_intake_cube_detector(make_unique<DigitalInput>(0));
 
     reader.set_autonomous_mode(0, make_unique<DigitalInput>(9));
     reader.set_autonomous_mode(1, make_unique<DigitalInput>(8));
 
-    reader.set_pwm_trigger(make_unique<DigitalInput>(0));
+    reader.set_pwm_trigger(make_unique<DigitalInput>(25));
 
     reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));
 
-    auto imu_trigger = make_unique<DigitalInput>(3);
+    auto imu_trigger = make_unique<DigitalInput>(5);
     ::frc971::wpilib::ADIS16448 imu(SPI::Port::kOnboardCS1, imu_trigger.get());
     imu.SetDummySPI(SPI::Port::kOnboardCS2);
     auto imu_reset = make_unique<DigitalOutput>(6);
@@ -815,24 +824,26 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     DrivetrainWriter drivetrain_writer;
     drivetrain_writer.set_drivetrain_left_victor(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(7)));
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(2)));
     drivetrain_writer.set_drivetrain_right_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(3)));
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
     SuperstructureWriter superstructure_writer;
     superstructure_writer.set_left_intake_elastic_victor(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)));
-    superstructure_writer.set_right_intake_elastic_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(4)));
-    superstructure_writer.set_right_intake_rollers_victor(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(6)));
     superstructure_writer.set_left_intake_rollers_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(5)));
+    superstructure_writer.set_right_intake_elastic_victor(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(7)));
+    superstructure_writer.set_right_intake_rollers_victor(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(6)));
     superstructure_writer.set_proximal_victor(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(9)));
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)));
     superstructure_writer.set_distal_victor(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(8)));
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)));
+
+    // Hanger: victor 8
 
     ::std::thread superstructure_writer_thread(
         ::std::ref(superstructure_writer));

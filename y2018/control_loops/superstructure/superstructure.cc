@@ -48,13 +48,6 @@ void Superstructure::RunIteration(
                         output != nullptr ? &(output->intake.right) : nullptr,
                         &(status->right_intake));
 
-  intake_right_.Iterate(unsafe_goal != nullptr
-                            ? &(unsafe_goal->intake.right_intake_angle)
-                            : nullptr,
-                        &(position->intake.right),
-                        output != nullptr ? &(output->intake.right) : nullptr,
-                        &(status->left_intake));
-
   arm_.Iterate(
       unsafe_goal != nullptr ? &(unsafe_goal->arm_goal_position) : nullptr,
       &(position->arm),

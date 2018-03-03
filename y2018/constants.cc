@@ -103,19 +103,19 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       r->vision_name = "practice";
       r->vision_error = 0.0;
 
-      left_intake->zeroing.measured_absolute_position = 0.0;
-      left_intake->potentiometer_offset = 0.0;
-      left_intake->spring_offset = 0.0;
+      left_intake->zeroing.measured_absolute_position = 0.3332;
+      left_intake->potentiometer_offset = -10.55;
+      left_intake->spring_offset = -0.249;
 
-      right_intake->zeroing.measured_absolute_position = 0.0;
-      right_intake->potentiometer_offset = 0.0;
-      right_intake->spring_offset = 0.0;
+      right_intake->zeroing.measured_absolute_position = 0.539284;
+      right_intake->potentiometer_offset = 9.59;
+      right_intake->spring_offset = 0.255;
 
-      arm_proximal->zeroing.measured_absolute_position = 0.0;
-      arm_proximal->potentiometer_offset = 0.0;
+      arm_proximal->zeroing.measured_absolute_position = 0.1877;
+      arm_proximal->potentiometer_offset = -1.242;
 
-      arm_distal->zeroing.measured_absolute_position = 0.0;
-      arm_distal->potentiometer_offset = 0.0;
+      arm_distal->zeroing.measured_absolute_position = 0.28366 + M_PI;
+      arm_distal->potentiometer_offset = 2.772210 + M_PI;
       break;
 
     default:
@@ -125,18 +125,15 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   return r;
 }
 
-const Values *DoGetValues() {
+const Values &DoGetValues() {
   uint16_t team = ::aos::network::GetTeamNumber();
   LOG(INFO, "creating a Constants for team %" PRIu16 "\n", team);
-  return DoGetValuesForTeam(team);
+  return GetValuesForTeam(team);
 }
 
 }  // namespace
 
-const Values &GetValues() {
-  const Values &r = *DoGetValues();
-  return r;
-}
+const Values &GetValues() { return DoGetValues(); }
 
 const Values &GetValuesForTeam(uint16_t team_number) {
   static ::aos::Mutex mutex;

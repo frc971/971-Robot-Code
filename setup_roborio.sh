@@ -14,9 +14,6 @@ readonly ROBOT_HOSTNAME="$1"
 
 bazel build -c opt @arm_frc_linux_gnueabi_repo//...
 
-echo "Copying ssh ID"
-ssh-copy-id "admin@${ROBOT_HOSTNAME}"
-
 echo "Looking to see if l is aliased right."
 if $(ssh "admin@${ROBOT_HOSTNAME}" "cat /etc/profile" | grep -Fq "alias l");
 then
