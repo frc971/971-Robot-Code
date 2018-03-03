@@ -468,7 +468,7 @@ TEST_F(DrivetrainTest, SaturatedTurnDrive) {
 TEST_F(DrivetrainTest, OpenLoopThenClosed) {
   my_drivetrain_queue_.goal.MakeWithBuilder()
       .control_loop_driving(false)
-      .steering(0.0)
+      .wheel(0.0)
       .throttle(1.0)
       .highgear(true)
       .quickturn(false)
@@ -478,7 +478,7 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
 
   my_drivetrain_queue_.goal.MakeWithBuilder()
       .control_loop_driving(false)
-      .steering(0.0)
+      .wheel(0.0)
       .throttle(-0.3)
       .highgear(true)
       .quickturn(false)
@@ -488,7 +488,7 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
 
   my_drivetrain_queue_.goal.MakeWithBuilder()
       .control_loop_driving(false)
-      .steering(0.0)
+      .wheel(0.0)
       .throttle(0.0)
       .highgear(true)
       .quickturn(false)

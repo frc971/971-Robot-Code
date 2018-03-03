@@ -108,7 +108,7 @@ Gear PolyDrivetrain::UpdateSingleGear(Gear requested_gear, Gear current_gear) {
 
 void PolyDrivetrain::SetGoal(
     const ::frc971::control_loops::DrivetrainQueue::Goal &goal) {
-  const double wheel = goal.steering;
+  const double wheel = goal.wheel;
   const double throttle = goal.throttle;
   const bool quickturn = goal.quickturn;
   const bool highgear = goal.highgear;

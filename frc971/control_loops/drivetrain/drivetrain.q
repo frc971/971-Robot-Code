@@ -40,10 +40,14 @@ queue_group DrivetrainQueue {
   message Goal {
     // Position of the steering wheel (positive = turning left when going
     // forwards).
-    double steering;
+    double wheel;
+    double wheel_velocity;
+    double wheel_torque;
 
     // Position of the throttle (positive forwards).
     double throttle;
+    double throttle_velocity;
+    double throttle_torque;
 
     // True to shift into high, false to shift into low.
     bool highgear;

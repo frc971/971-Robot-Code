@@ -159,7 +159,7 @@ class Reader : public ::aos::input::JoystickInput {
       is_control_loop_driving = true;
     }
     if (!drivetrain_queue.goal.MakeWithBuilder()
-             .steering(wheel)
+             .wheel(wheel)
              .throttle(throttle)
              .highgear(is_high_gear_)
              .quickturn(data.IsPressed(kQuickTurn))

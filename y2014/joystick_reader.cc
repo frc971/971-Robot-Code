@@ -225,7 +225,7 @@ class Reader : public ::aos::input::JoystickInput {
       LOG(DEBUG, "Left goal %f Right goal %f\n", left_goal, right_goal);
     }
     if (!drivetrain_queue.goal.MakeWithBuilder()
-             .steering(wheel)
+             .wheel(wheel)
              .throttle(throttle)
              .highgear(is_high_gear_)
              .quickturn(data.IsPressed(kQuickTurn))

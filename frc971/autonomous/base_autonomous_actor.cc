@@ -30,7 +30,7 @@ void BaseAutonomousActor::ResetDrivetrain() {
   drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(false)
       .highgear(true)
-      .steering(0.0)
+      .wheel(0.0)
       .throttle(0.0)
       .left_goal(initial_drivetrain_.left)
       .left_velocity_goal(0)
@@ -58,7 +58,7 @@ void BaseAutonomousActor::StartDrive(double distance, double angle,
   auto drivetrain_message = drivetrain_queue.goal.MakeMessage();
   drivetrain_message->control_loop_driving = true;
   drivetrain_message->highgear = true;
-  drivetrain_message->steering = 0.0;
+  drivetrain_message->wheel = 0.0;
   drivetrain_message->throttle = 0.0;
   drivetrain_message->left_goal = initial_drivetrain_.left;
   drivetrain_message->left_velocity_goal = 0;

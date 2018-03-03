@@ -60,7 +60,7 @@ bool VisionAlignActor::RunAction(
     const double right_current = vision_status.drivetrain_right_position;
 
     if (!drivetrain_queue.goal.MakeWithBuilder()
-             .steering(0.0)
+             .wheel(0.0)
              .throttle(0.0)
              .highgear(false)
              .quickturn(false)

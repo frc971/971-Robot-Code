@@ -27,7 +27,11 @@ void DrivetrainInputReader::HandleDrivetrain(
 
   const auto wheel_and_throttle = GetWheelAndThrottle(data);
   const double wheel = wheel_and_throttle.wheel;
+  const double wheel_velocity = wheel_and_throttle.wheel_velocity;
+  const double wheel_torque = wheel_and_throttle.wheel_torque;
   const double throttle = wheel_and_throttle.throttle;
+  const double throttle_velocity = wheel_and_throttle.throttle_velocity;
+  const double throttle_torque = wheel_and_throttle.throttle_torque;
   const bool high_gear = wheel_and_throttle.high_gear;
 
   drivetrain_queue.status.FetchLatest();
@@ -49,8 +53,12 @@ void DrivetrainInputReader::HandleDrivetrain(
     is_control_loop_driving = true;
   }
   auto new_drivetrain_goal = drivetrain_queue.goal.MakeMessage();
-  new_drivetrain_goal->steering = wheel;
+  new_drivetrain_goal->wheel = wheel;
+  new_drivetrain_goal->wheel_velocity = wheel_velocity;
+  new_drivetrain_goal->wheel_torque = wheel_torque;
   new_drivetrain_goal->throttle = throttle;
+  new_drivetrain_goal->throttle_velocity = throttle_velocity;
+  new_drivetrain_goal->throttle_torque = throttle_torque;
   new_drivetrain_goal->highgear = high_gear;
   new_drivetrain_goal->quickturn = data.IsPressed(quick_turn_);
   new_drivetrain_goal->control_loop_driving = is_control_loop_driving;
@@ -70,8 +78,8 @@ void DrivetrainInputReader::HandleDrivetrain(
 DrivetrainInputReader::WheelAndThrottle
 SteeringWheelDrivetrainInputReader::GetWheelAndThrottle(
     const ::aos::input::driver_station::Data &data) {
-  const double wheel = -data.GetAxis(steering_wheel_);
-  const double throttle = -data.GetAxis(drive_throttle_);
+  const double wheel = -data.GetAxis(wheel_);
+  const double throttle = -data.GetAxis(throttle_);
 
   if (!data.GetControlBit(ControlBit::kEnabled)) {
     high_gear_ = default_high_gear_;
@@ -85,37 +93,70 @@ SteeringWheelDrivetrainInputReader::GetWheelAndThrottle(
     high_gear_ = true;
   }
 
-  return DrivetrainInputReader::WheelAndThrottle{wheel, throttle, high_gear_};
+  return DrivetrainInputReader::WheelAndThrottle{
+      wheel, 0.0, 0.0, throttle, 0.0, 0.0, high_gear_};
+}
+
+double UnwrappedAxis(const ::aos::input::driver_station::Data &data,
+                     const JoystickAxis &high_bits,
+                     const JoystickAxis &low_bits) {
+  const float high_bits_data = data.GetAxis(high_bits);
+  const float low_bits_data = data.GetAxis(low_bits);
+  const int16_t high_bits_data_int =
+      (high_bits_data < 0.0f ? high_bits_data * 128.0f
+                             : high_bits_data * 127.0f);
+  const int16_t low_bits_data_int =
+      (low_bits_data < 0.0f ? low_bits_data * 128.0f : low_bits_data * 127.0f);
+
+  const uint16_t high_bits_data_uint =
+      ((static_cast<uint16_t>(high_bits_data_int) & 0xff) + 0x80) & 0xff;
+  const uint16_t low_bits_data_uint =
+      ((static_cast<uint16_t>(low_bits_data_int) & 0xff) + 0x80) & 0xff;
+
+  const uint16_t data_uint = (high_bits_data_uint << 8) | low_bits_data_uint;
+
+  const int32_t data_int = static_cast<int32_t>(data_uint) - 0x8000;
+
+  if (data_int < 0) {
+    return static_cast<double>(data_int) / static_cast<double>(0x8000);
+  } else {
+    return static_cast<double>(data_int) / static_cast<double>(0x7fff);
+  }
 }
 
 DrivetrainInputReader::WheelAndThrottle
 PistolDrivetrainInputReader::GetWheelAndThrottle(
     const ::aos::input::driver_station::Data &data) {
-  const double unscaled_wheel = data.GetAxis(steering_wheel_);
-  double wheel;
-  if (unscaled_wheel < 0.0) {
-    wheel = unscaled_wheel / 0.484375;
-  } else {
-    wheel = unscaled_wheel / 0.385827;
+  const double wheel =
+      -UnwrappedAxis(data, wheel_, wheel_low_);
+  const double wheel_velocity =
+      -UnwrappedAxis(data, wheel_velocity_high_, wheel_velocity_low_) * 50.0;
+  const double wheel_torque =
+      -UnwrappedAxis(data, wheel_torque_high_, wheel_torque_low_) / 2.0;
+
+  const double throttle =
+      UnwrappedAxis(data, throttle_, throttle_low_);
+  const double throttle_velocity =
+      UnwrappedAxis(data, throttle_velocity_high_, throttle_velocity_low_) * 50.0;
+  const double throttle_torque =
+      UnwrappedAxis(data, throttle_torque_high_, throttle_torque_low_) / 2.0;
+
+  if (!data.GetControlBit(ControlBit::kEnabled)) {
+    high_gear_ = default_high_gear_;
   }
 
-  const double unscaled_throttle = -data.GetAxis(drive_throttle_);
-  double unmodified_throttle;
-  if (unscaled_throttle < 0.0) {
-    unmodified_throttle = unscaled_throttle / 0.086614;
-  } else {
-    unmodified_throttle = unscaled_throttle / 0.265625;
+  if (data.PosEdge(shift_low_)) {
+    high_gear_ = false;
   }
-  unmodified_throttle = aos::Deadband(unmodified_throttle, 0.1, 1.0);
 
-  // Apply a sin function that's scaled to make it feel better.
-  constexpr double throttle_range = M_PI_2 * 0.5;
+  if (data.PosEdge(shift_high_)) {
+    high_gear_ = true;
+  }
 
-  double throttle = ::std::sin(throttle_range * unmodified_throttle) /
-                    ::std::sin(throttle_range);
-  throttle = ::std::sin(throttle_range * throttle) / ::std::sin(throttle_range);
-  throttle = 2.0 * unmodified_throttle - throttle;
-  return DrivetrainInputReader::WheelAndThrottle{wheel, throttle, true};
+  return DrivetrainInputReader::WheelAndThrottle{
+      wheel,    wheel_velocity,    wheel_torque,
+      throttle, throttle_velocity, throttle_torque,
+      high_gear_};
 }
 
 DrivetrainInputReader::WheelAndThrottle
@@ -125,10 +166,10 @@ XboxDrivetrainInputReader::GetWheelAndThrottle(
   constexpr double kWheelDeadband = 0.05;
   constexpr double kThrottleDeadband = 0.05;
   const double wheel =
-      aos::Deadband(-data.GetAxis(steering_wheel_), kWheelDeadband, 1.0);
+      aos::Deadband(-data.GetAxis(wheel_), kWheelDeadband, 1.0);
 
   const double unmodified_throttle =
-      aos::Deadband(-data.GetAxis(drive_throttle_), kThrottleDeadband, 1.0);
+      aos::Deadband(-data.GetAxis(throttle_), kThrottleDeadband, 1.0);
 
   // Apply a sin function that's scaled to make it feel better.
   constexpr double throttle_range = M_PI_2 * 0.9;
@@ -137,7 +178,8 @@ XboxDrivetrainInputReader::GetWheelAndThrottle(
                     ::std::sin(throttle_range);
   throttle = ::std::sin(throttle_range * throttle) / ::std::sin(throttle_range);
   throttle = 2.0 * unmodified_throttle - throttle;
-  return DrivetrainInputReader::WheelAndThrottle{wheel, throttle, true};
+  return DrivetrainInputReader::WheelAndThrottle{wheel, 0.0, 0.0, throttle,
+                                                 0.0,   0.0, true};
 }
 
 std::unique_ptr<SteeringWheelDrivetrainInputReader>
@@ -154,19 +196,32 @@ SteeringWheelDrivetrainInputReader::Make(bool default_high_gear) {
   return result;
 }
 
-std::unique_ptr<PistolDrivetrainInputReader>
-PistolDrivetrainInputReader::Make() {
+std::unique_ptr<PistolDrivetrainInputReader> PistolDrivetrainInputReader::Make(
+    bool default_high_gear) {
   // Pistol Grip controller
-  const JoystickAxis kSteeringWheel(1, 2), kDriveThrottle(1, 1);
-  const ButtonLocation kQuickTurn(1, 7);
-  const ButtonLocation kTurn1(1, 8);
+  const JoystickAxis kTriggerHigh(1, 1), kTriggerLow(1, 4),
+      kTriggerVelocityHigh(1, 2), kTriggerVelocityLow(1, 5),
+      kTriggerTorqueHigh(1, 3), kTriggerTorqueLow(1, 6);
+
+  const JoystickAxis kWheelHigh(2, 1), kWheelLow(2, 4),
+      kWheelVelocityHigh(2, 2), kWheelVelocityLow(2, 5), kWheelTorqueHigh(2, 3),
+      kWheelTorqueLow(2, 6);
+
+  const ButtonLocation kQuickTurn(1, 4);
+  const ButtonLocation kShiftHigh(1, 2);
+  const ButtonLocation kShiftLow(1, 3);
 
   // Nop
-  const ButtonLocation kTurn2(1, 9);
+  const ButtonLocation kTurn1(1, 9);
+  const ButtonLocation kTurn2(1, 10);
   std::unique_ptr<PistolDrivetrainInputReader> result(
-      new PistolDrivetrainInputReader(kSteeringWheel, kDriveThrottle,
-                                      kQuickTurn, kTurn1, kTurn2));
-  result->set_wheel_multiplier(0.2);
+      new PistolDrivetrainInputReader(
+          kWheelHigh, kWheelLow, kTriggerVelocityHigh, kTriggerVelocityLow,
+          kTriggerTorqueHigh, kTriggerTorqueLow, kTriggerHigh, kTriggerLow,
+          kWheelVelocityHigh, kWheelVelocityLow, kWheelTorqueHigh,
+          kWheelTorqueLow, kQuickTurn, kShiftHigh, kShiftLow, kTurn1, kTurn2));
+
+  result->set_default_high_gear(default_high_gear);
   return result;
 }
 
@@ -197,7 +252,8 @@ std::unique_ptr<XboxDrivetrainInputReader> XboxDrivetrainInputReader::Make() {
           SteeringWheelDrivetrainInputReader::Make(dt_config.default_high_gear);
       break;
     case InputType::kPistol:
-      drivetrain_input_reader = PistolDrivetrainInputReader::Make();
+      drivetrain_input_reader =
+          PistolDrivetrainInputReader::Make(dt_config.default_high_gear);
       break;
     case InputType::kXbox:
       drivetrain_input_reader = XboxDrivetrainInputReader::Make();

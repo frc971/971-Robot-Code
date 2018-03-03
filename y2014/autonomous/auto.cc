@@ -67,7 +67,7 @@ void ResetDrivetrain() {
   ::frc971::control_loops::drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(false)
       .highgear(true)
-      .steering(0.0)
+      .wheel(0.0)
       .throttle(0.0)
       .left_goal(left_initial_position)
       .left_velocity_goal(0)

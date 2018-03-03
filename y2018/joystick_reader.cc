@@ -50,7 +50,7 @@ class Reader : public ::aos::input::JoystickInput {
  public:
   Reader() {
     drivetrain_input_reader_ = DrivetrainInputReader::Make(
-        DrivetrainInputReader::InputType::kSteeringWheel,
+        DrivetrainInputReader::InputType::kPistol,
         ::y2018::control_loops::drivetrain::GetDrivetrainConfig());
   }
 

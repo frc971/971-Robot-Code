@@ -36,13 +36,13 @@ namespace input {
 class DrivetrainInputReader {
  public:
   // Inputs driver station button and joystick locations
-  DrivetrainInputReader(driver_station::JoystickAxis steering_wheel,
-                        driver_station::JoystickAxis drive_throttle,
+  DrivetrainInputReader(driver_station::JoystickAxis wheel,
+                        driver_station::JoystickAxis throttle,
                         driver_station::ButtonLocation quick_turn,
                         driver_station::ButtonLocation turn1,
                         driver_station::ButtonLocation turn2)
-      : steering_wheel_(steering_wheel),
-        drive_throttle_(drive_throttle),
+      : wheel_(wheel),
+        throttle_(throttle),
         quick_turn_(quick_turn),
         turn1_(turn1),
         turn2_(turn2) {}
@@ -74,8 +74,8 @@ class DrivetrainInputReader {
   double robot_velocity() const { return robot_velocity_; }
 
  protected:
-  const driver_station::JoystickAxis steering_wheel_;
-  const driver_station::JoystickAxis drive_throttle_;
+  const driver_station::JoystickAxis wheel_;
+  const driver_station::JoystickAxis throttle_;
   const driver_station::ButtonLocation quick_turn_;
   const driver_station::ButtonLocation turn1_;
   const driver_station::ButtonLocation turn2_;
@@ -84,7 +84,11 @@ class DrivetrainInputReader {
   // values from the joysticks.
   struct WheelAndThrottle {
     double wheel;
+    double wheel_velocity;
+    double wheel_torque;
     double throttle;
+    double throttle_velocity;
+    double throttle_torque;
     bool high_gear;
   };
 
@@ -131,11 +135,68 @@ class PistolDrivetrainInputReader : public DrivetrainInputReader {
 
   // Creates a DrivetrainInputReader with the corresponding joystick ports and
   // axis for the (cheap) pistol grip controller.
-  static std::unique_ptr<PistolDrivetrainInputReader> Make();
+  static std::unique_ptr<PistolDrivetrainInputReader> Make(bool default_high_gear);
 
  private:
+  PistolDrivetrainInputReader(
+      driver_station::JoystickAxis wheel_high,
+      driver_station::JoystickAxis wheel_low,
+      driver_station::JoystickAxis wheel_velocity_high,
+      driver_station::JoystickAxis wheel_velocity_low,
+      driver_station::JoystickAxis wheel_torque_high,
+      driver_station::JoystickAxis wheel_torque_low,
+      driver_station::JoystickAxis throttle_high,
+      driver_station::JoystickAxis throttle_low,
+      driver_station::JoystickAxis throttle_velocity_high,
+      driver_station::JoystickAxis throttle_velocity_low,
+      driver_station::JoystickAxis throttle_torque_high,
+      driver_station::JoystickAxis throttle_torque_low,
+      driver_station::ButtonLocation quick_turn,
+      driver_station::ButtonLocation shift_high,
+      driver_station::ButtonLocation shift_low,
+      driver_station::ButtonLocation turn1,
+      driver_station::ButtonLocation turn2)
+      : DrivetrainInputReader(wheel_high, throttle_high, quick_turn, turn1,
+                              turn2),
+        wheel_low_(wheel_low),
+        wheel_velocity_high_(wheel_velocity_high),
+        wheel_velocity_low_(wheel_velocity_low),
+        wheel_torque_high_(wheel_torque_high),
+        wheel_torque_low_(wheel_torque_low),
+        throttle_low_(throttle_low),
+        throttle_velocity_high_(throttle_velocity_high),
+        throttle_velocity_low_(throttle_velocity_low),
+        throttle_torque_high_(throttle_torque_high),
+        throttle_torque_low_(throttle_torque_low),
+        shift_high_(shift_high),
+        shift_low_(shift_low) {}
+
   WheelAndThrottle GetWheelAndThrottle(
       const ::aos::input::driver_station::Data &data) override;
+
+  // Sets the default shifter position
+  void set_default_high_gear(bool default_high_gear) {
+    high_gear_ = default_high_gear;
+    default_high_gear_ = default_high_gear;
+  }
+
+  const driver_station::JoystickAxis wheel_low_;
+  const driver_station::JoystickAxis wheel_velocity_high_;
+  const driver_station::JoystickAxis wheel_velocity_low_;
+  const driver_station::JoystickAxis wheel_torque_high_;
+  const driver_station::JoystickAxis wheel_torque_low_;
+
+  const driver_station::JoystickAxis throttle_low_;
+  const driver_station::JoystickAxis throttle_velocity_high_;
+  const driver_station::JoystickAxis throttle_velocity_low_;
+  const driver_station::JoystickAxis throttle_torque_high_;
+  const driver_station::JoystickAxis throttle_torque_low_;
+
+  const driver_station::ButtonLocation shift_high_;
+  const driver_station::ButtonLocation shift_low_;
+
+  bool high_gear_;
+  bool default_high_gear_;
 };
 
 class XboxDrivetrainInputReader : public DrivetrainInputReader {
