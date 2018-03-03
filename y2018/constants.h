@@ -40,8 +40,8 @@ struct Values {
            kDrivetrainEncoderCountsPerRevolution();
   }
 
-  static constexpr double kDrivetrainShifterPotMaxVoltage() { return 1.94; }
-  static constexpr double kDrivetrainShifterPotMinVoltage() { return 3.63; }
+  static constexpr double kDrivetrainShifterPotMaxVoltage() { return 3.63; }
+  static constexpr double kDrivetrainShifterPotMinVoltage() { return 1.94; }
 
   static constexpr double kProximalEncoderCountsPerRevolution() { return 4096.0; }
   static constexpr double kProximalEncoderRatio() {

@@ -721,7 +721,7 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
         12.0);
 
     left_intake_rollers_victor_->SetSpeed(
-        ::aos::Clip(-queue->intake.right.voltage_rollers, -kMaxBringupPower,
+        ::aos::Clip(-queue->intake.left.voltage_rollers, -kMaxBringupPower,
                     kMaxBringupPower) /
         12.0);
 

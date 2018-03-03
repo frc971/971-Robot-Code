@@ -36,6 +36,15 @@ class Superstructure
   intake::IntakeSide intake_right_;
   arm::Arm arm_;
 
+  enum class RotationState {
+    NOT_ROTATING = 0,
+    ROTATING_LEFT = 1,
+    ROTATING_RIGHT = 2
+  };
+
+  RotationState rotation_state_ = RotationState::NOT_ROTATING;
+  int rotation_count_ = 0;
+
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 

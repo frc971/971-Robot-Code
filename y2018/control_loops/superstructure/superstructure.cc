@@ -63,12 +63,66 @@ void Superstructure::RunIteration(
                    status->arm.zeroed;
 
   if (output && unsafe_goal) {
-    output->intake.left.voltage_rollers = ::std::max(
+    const double roller_voltage = ::std::max(
         -kMaxIntakeRollerVoltage, ::std::min(unsafe_goal->intake.roller_voltage,
                                              kMaxIntakeRollerVoltage));
-    output->intake.right.voltage_rollers = ::std::max(
-        -kMaxIntakeRollerVoltage, ::std::min(unsafe_goal->intake.roller_voltage,
-                                             kMaxIntakeRollerVoltage));
+    constexpr int kReverseTime = 15;
+    if (unsafe_goal->intake.roller_voltage < 0.0) {
+      output->intake.left.voltage_rollers = roller_voltage;
+      output->intake.right.voltage_rollers = roller_voltage;
+      rotation_state_ = RotationState::NOT_ROTATING;
+      rotation_count_ = 0;
+    } else {
+      switch (rotation_state_) {
+        case RotationState::NOT_ROTATING:
+          if (position->intake.left.beam_break) {
+            rotation_state_ = RotationState::ROTATING_RIGHT;
+            rotation_count_ = kReverseTime;
+            break;
+          } else if (position->intake.right.beam_break) {
+            rotation_state_ = RotationState::ROTATING_LEFT;
+            rotation_count_ = kReverseTime;
+            break;
+          } else {
+            break;
+          }
+        case RotationState::ROTATING_LEFT:
+          if (position->intake.right.beam_break) {
+            rotation_count_ = kReverseTime;
+          } else {
+            --rotation_count_;
+          }
+          if (rotation_count_ == 0) {
+            rotation_state_ = RotationState::NOT_ROTATING;
+          }
+          break;
+        case RotationState::ROTATING_RIGHT:
+          if (position->intake.left.beam_break) {
+            rotation_count_ = kReverseTime;
+          } else {
+            --rotation_count_;
+          }
+          if (rotation_count_ == 0) {
+            rotation_state_ = RotationState::NOT_ROTATING;
+          }
+          break;
+      }
+
+      switch (rotation_state_) {
+        case RotationState::NOT_ROTATING:
+          output->intake.left.voltage_rollers = roller_voltage;
+          output->intake.right.voltage_rollers = roller_voltage;
+          break;
+        case RotationState::ROTATING_LEFT:
+          output->intake.left.voltage_rollers = roller_voltage;
+          output->intake.right.voltage_rollers = -roller_voltage;
+          break;
+        case RotationState::ROTATING_RIGHT:
+          output->intake.left.voltage_rollers = -roller_voltage;
+          output->intake.right.voltage_rollers = roller_voltage;
+          break;
+      }
+    }
   }
 }
 

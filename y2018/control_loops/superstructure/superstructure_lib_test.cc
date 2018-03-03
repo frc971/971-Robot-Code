@@ -279,14 +279,16 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
     ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
     // Left side test.
     EXPECT_NEAR(superstructure_queue_.goal->intake.left_intake_angle,
-                 superstructure_queue_.status->left_intake.spring_position,
+                superstructure_queue_.status->left_intake.spring_position +
+                    superstructure_queue_.status->left_intake.motor_position,
                 0.001);
     EXPECT_NEAR(superstructure_queue_.goal->intake.left_intake_angle,
                 superstructure_plant_.left_intake().spring_position(), 0.001);
 
     // Right side test.
     EXPECT_NEAR(superstructure_queue_.goal->intake.right_intake_angle,
-                 superstructure_queue_.status->right_intake.spring_position,
+                superstructure_queue_.status->right_intake.spring_position +
+                    superstructure_queue_.status->right_intake.motor_position,
                 0.001);
     EXPECT_NEAR(superstructure_queue_.goal->intake.right_intake_angle,
                 superstructure_plant_.right_intake().spring_position(), 0.001);
@@ -395,12 +397,17 @@ TEST_F(SuperstructureTest, RespectsRange) {
   // Check that we are near our soft limit.
   superstructure_queue_.status.FetchLatest();
 
+  EXPECT_NEAR(0.0, superstructure_queue_.status->left_intake.spring_position,
+              0.001);
   EXPECT_NEAR(constants::Values::kIntakeRange().upper,
-              superstructure_queue_.status->left_intake.spring_position,
+              superstructure_queue_.status->left_intake.spring_position +
+                  superstructure_queue_.status->left_intake.motor_position,
               0.001);
 
+  EXPECT_NEAR(0.0, superstructure_queue_.status->right_intake.spring_position,
+              0.001);
   EXPECT_NEAR(constants::Values::kIntakeRange().upper,
-              superstructure_queue_.status->right_intake.spring_position,
+                  superstructure_queue_.status->right_intake.motor_position,
               0.001);
 
   // Set some ridiculous goals to test lower limits.
@@ -419,12 +426,15 @@ TEST_F(SuperstructureTest, RespectsRange) {
   superstructure_queue_.status.FetchLatest();
 
   EXPECT_NEAR(constants::Values::kIntakeRange().lower,
-              superstructure_queue_.status->left_intake.spring_position,
+              superstructure_queue_.status->left_intake.motor_position, 0.001);
+  EXPECT_NEAR(0.0, superstructure_queue_.status->left_intake.spring_position,
               0.001);
 
   EXPECT_NEAR(constants::Values::kIntakeRange().lower,
-              superstructure_queue_.status->right_intake.spring_position,
-              0.001);}
+              superstructure_queue_.status->right_intake.motor_position, 0.001);
+  EXPECT_NEAR(0.0, superstructure_queue_.status->right_intake.spring_position,
+              0.001);
+}
 
 TEST_F(SuperstructureTest, DISABLED_LowerHardstopStartup) {
   superstructure_plant_.InitializeIntakePosition(

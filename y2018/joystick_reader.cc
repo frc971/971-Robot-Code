@@ -28,10 +28,10 @@ namespace y2018 {
 namespace input {
 namespace joysticks {
 
-const ButtonLocation kIntakeDown(3, 9);
+const ButtonLocation kIntakeDown(3, 7);
 const POVLocation kIntakeUp(3, 90);
-const ButtonLocation kIntakeIn(3, 12);
-const ButtonLocation kIntakeOut(3, 8);
+const POVLocation kIntakeIn(3, 270);
+const ButtonLocation kIntakeOut(3, 6);
 
 const ButtonLocation kArmDown(3, 12);
 const ButtonLocation kArmSwitch(3, 8);
@@ -94,11 +94,11 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.IsPressed(kIntakeUp)) {
       // Bring in the intake.
-      intake_goal_ = -M_PI; //TODO(Neil): Add real value here once we have one.
+      intake_goal_ = -M_PI * 2.0 / 3.0;
     }
     if (data.IsPressed(kIntakeDown)) {
       // Deploy the intake.
-      intake_goal_ = 0; //TODO(Neil): Add real value here once we have one.
+      intake_goal_ = 0.25;
     }
 
     auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
@@ -108,12 +108,10 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.IsPressed(kIntakeIn)) {
       // Turn on the rollers.
-      new_superstructure_goal->intake.roller_voltage =
-          9.0;  //TODO(Neil): Add real value once we have one.
+      new_superstructure_goal->intake.roller_voltage = 8.0;
     } else if (data.IsPressed(kIntakeOut)) {
       // Turn off the rollers.
-      new_superstructure_goal->intake.roller_voltage =
-          -9.0;  //TODO(Neil): Add real value once we have one.
+      new_superstructure_goal->intake.roller_voltage = -12.0;
     } else {
       // We don't want the rollers on.
       new_superstructure_goal->intake.roller_voltage = 0.0;
@@ -159,7 +157,7 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
   // Current goals to send to the robot.
-  double intake_goal_ = 0.0;
+  double intake_goal_ = -M_PI * 2.0 / 3.0;
 
   bool was_running_ = false;
   bool auto_running_ = false;

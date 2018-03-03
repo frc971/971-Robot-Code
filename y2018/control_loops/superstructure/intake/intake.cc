@@ -71,7 +71,7 @@ void IntakeController::Update(bool disabled, const double *unsafe_goal) {
     goal_velocity = 0.0;
   } else {
     goal_velocity = ::aos::Clip(
-        ((goal_angle(unsafe_goal) - loop_->X_hat(0, 0)) * 6.0), -10.0, 10.0);
+        ((goal_angle(unsafe_goal) - loop_->X_hat(0, 0)) * 12.0), -16.0, 16.0);
   }
   // Computes the goal.
   loop_->mutable_R() << 0.0, goal_velocity, 0.0, goal_velocity,
@@ -84,8 +84,8 @@ void IntakeController::SetStatus(IntakeSideStatus *status,
                                  const double *unsafe_goal) {
   status->goal_position = goal_angle(unsafe_goal);
   status->goal_velocity = loop_->R(1, 0);
-  status->spring_position = loop_->X_hat(0);
-  status->spring_velocity = loop_->X_hat(1);
+  status->spring_position = loop_->X_hat(0) - loop_->X_hat(2);
+  status->spring_velocity = loop_->X_hat(1) - loop_->X_hat(3);
   status->motor_position = loop_->X_hat(2);
   status->motor_velocity = loop_->X_hat(3);
   status->delayed_voltage = loop_->X_hat(4);
@@ -102,7 +102,6 @@ void IntakeSide::Iterate(const double *unsafe_goal,
                          const control_loops::IntakeElasticSensors *position,
                          control_loops::IntakeVoltage *output,
                          control_loops::IntakeSideStatus *status) {
-  double intake_last_position_ = status->estimator_state.position;
   zeroing_estimator_.UpdateEstimate(position->motor_position);
 
   switch (state_) {
@@ -164,6 +163,7 @@ void IntakeSide::Iterate(const double *unsafe_goal,
   status->zeroed = zeroing_estimator_.zeroed();
   status->estopped = (state_ == State::ESTOP);
   status->state = static_cast<int32_t>(state_);
+  intake_last_position_ = status->estimator_state.position;
 }
 
 }  // namespace intake
