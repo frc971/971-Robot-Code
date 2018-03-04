@@ -172,6 +172,9 @@ queue_group SuperstructureQueue {
     // Value of the beam breaker sensor. This value is true if the beam is
     // broken, false if the beam isn't broken.
     bool claw_beambreak_triggered;
+    // Value of the beambreak sensor detecting when the box has hit the frame
+    // cutout.
+    bool box_back_beambreak_triggered;
   };
 
   message Output {

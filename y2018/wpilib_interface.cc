@@ -263,6 +263,14 @@ class SensorReader {
     right_intake_cube_detector_ = ::std::move(input);
   }
 
+  void set_claw_beambreak(::std::unique_ptr<DigitalInput> input) {
+    claw_beambreak_ = ::std::move(input);
+  }
+
+  void set_box_back_beambreak(::std::unique_ptr<DigitalInput> input) {
+    box_back_beambreak_ = ::std::move(input);
+  }
+
   // Auto mode switches.
   void set_autonomous_mode(int i, ::std::unique_ptr<DigitalInput> sensor) {
     autonomous_modes_.at(i) = ::std::move(sensor);
@@ -461,6 +469,10 @@ class SensorReader {
       superstructure_message->intake.right.beam_break =
           right_intake_cube_detector_->Get();
 
+      superstructure_message->claw_beambreak_triggered = claw_beambreak_->Get();
+      superstructure_message->box_back_beambreak_triggered =
+          !box_back_beambreak_->Get();
+
       superstructure_message.Send();
     }
 
@@ -536,6 +548,9 @@ class SensorReader {
       right_intake_spring_angle_;
   ::std::unique_ptr<DigitalInput> left_intake_cube_detector_,
       right_intake_cube_detector_;
+
+  ::std::unique_ptr<DigitalInput> claw_beambreak_;
+  ::std::unique_ptr<DigitalInput> box_back_beambreak_;
 
   ::std::unique_ptr<DigitalInput> pwm_trigger_;
 
@@ -803,8 +818,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_left_intake_spring_angle(make_unique<AnalogInput>(4));
     reader.set_left_intake_cube_detector(make_unique<DigitalInput>(0));
 
-    reader.set_autonomous_mode(0, make_unique<DigitalInput>(9));
-    reader.set_autonomous_mode(1, make_unique<DigitalInput>(8));
+    reader.set_claw_beambreak(make_unique<DigitalInput>(8));
+    reader.set_box_back_beambreak(make_unique<DigitalInput>(9));
 
     reader.set_pwm_trigger(make_unique<DigitalInput>(25));
 
