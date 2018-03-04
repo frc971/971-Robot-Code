@@ -96,3 +96,15 @@ cc_binary(
         "//third_party/matplotlib-cpp",
     ],
 )
+
+py_binary(
+    name = "graph_edit",
+    srcs = [
+        "basic_window.py",
+        "graph_edit.py",
+        "graph_generate.py",
+    ],
+    # Sigh, these aren't respected.
+    default_python_version = "PY3",
+    srcs_version = "PY3",
+)
