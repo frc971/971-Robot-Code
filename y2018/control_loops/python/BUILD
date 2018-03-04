@@ -108,3 +108,14 @@ py_binary(
     default_python_version = "PY3",
     srcs_version = "PY3",
 )
+
+py_binary(
+    name = "graph_codegen",
+    srcs = [
+        "graph_codegen.py",
+        "graph_generate.py",
+    ],
+    # Sigh, these aren't respected.
+    default_python_version = "PY2",
+    srcs_version = "PY2",
+)

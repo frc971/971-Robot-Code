@@ -463,9 +463,9 @@ named_segments = [
     SplineSegment(neutral, front_high_box_c1, front_high_box_c2,
                   front_high_box, "NeutralToFrontHigh"),
     SplineSegment(neutral, front_middle2_box_c1, front_middle2_box_c2,
-                  front_middle2_box, "NeutralToFronMiddle2"),
+                  front_middle2_box, "NeutralToFrontMiddle2"),
     SplineSegment(neutral, front_middle1_box_c1, front_middle1_box_c2,
-                  front_middle1_box, "NeutralToFronMiddle1"),
+                  front_middle1_box, "NeutralToFrontMiddle1"),
 ]
 
 unnamed_segments = [

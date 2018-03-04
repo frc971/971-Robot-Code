@@ -25,6 +25,7 @@ class Path {
   // doesn't want that.
   Path(::std::vector<::std::array<double, 6>> list);
 
+  static ::std::unique_ptr<Path> Reversed(::std::unique_ptr<Path> p);
   static Path Reversed(const Path &p);
 
   // Returns the length of the path in radians.
