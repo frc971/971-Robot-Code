@@ -8,3 +8,8 @@ superstructure_lib_test status arm theta0
 
 superstructure_lib_test status arm goal_theta1
 superstructure_lib_test status arm theta1
+
+superstructure_lib_test position arm proximal pot
+superstructure_lib_test position arm distal pot
+
+superstructure_lib_test status arm zeroed -b 10

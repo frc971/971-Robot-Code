@@ -59,6 +59,10 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   arm_distal->zeroing.moving_buffer_size = 20;
   arm_distal->zeroing.allowable_encoder_error = 0.9;
 
+  constexpr double kDistalZeroingPosition =
+      M_PI * 3.0 / 2.0 + (28.5 / 180.0) * M_PI;
+  // 5.209807817203074
+
   switch (team) {
     // A set of constants for tests.
     case 1:
@@ -103,19 +107,20 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       r->vision_name = "practice";
       r->vision_error = 0.0;
 
-      left_intake->zeroing.measured_absolute_position = 0.3332;
-      left_intake->potentiometer_offset = -10.55;
-      left_intake->spring_offset = -0.249;
+      left_intake->zeroing.measured_absolute_position = 0.031709;
+      left_intake->potentiometer_offset = -10.55 - 3.621232 + 4.996959;
+      left_intake->spring_offset = -0.249 - 0.002;
 
-      right_intake->zeroing.measured_absolute_position = 0.539284;
-      right_intake->potentiometer_offset = 9.59;
-      right_intake->spring_offset = 0.255;
+      right_intake->zeroing.measured_absolute_position = 0.351376;
+      right_intake->potentiometer_offset = 9.59 + 1.530320 - 3.620648;
+      right_intake->spring_offset = 0.255 + 0.008;
 
-      arm_proximal->zeroing.measured_absolute_position = 0.1877;
-      arm_proximal->potentiometer_offset = -1.242;
+      arm_proximal->zeroing.measured_absolute_position = 0.1877 + 0.02;
+      arm_proximal->potentiometer_offset = -1.242 - 0.03;
 
-      arm_distal->zeroing.measured_absolute_position = 0.28366 + M_PI;
-      arm_distal->potentiometer_offset = 2.772210 + M_PI;
+      arm_distal->zeroing.measured_absolute_position =
+          1.102987 - kDistalZeroingPosition;
+      arm_distal->potentiometer_offset = 2.772210 + M_PI + 0.434;
       break;
 
     default:

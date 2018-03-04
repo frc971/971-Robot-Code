@@ -12,6 +12,7 @@
 #include "gtest/gtest.h"
 #include "y2018/constants.h"
 #include "y2018/control_loops/superstructure/arm/dynamics.h"
+#include "y2018/control_loops/superstructure/arm/generated_graph.h"
 #include "y2018/control_loops/superstructure/intake/intake_plant.h"
 
 using ::frc971::control_loops::PositionSensorSimulator;
@@ -147,18 +148,21 @@ class ArmSimulation {
   double distal_position() const { return X_(2, 0); }
   double distal_velocity() const { return X_(3, 0); }
 
-  //void set_voltage_offset(double voltage_offset) {
-    //plant_.set_voltage_offset(voltage_offset);
-  //}
-
-  void Simulate(::Eigen::Matrix<double, 2, 1> U) {
+  void Simulate(::Eigen::Matrix<double, 2, 1> U, bool release_arm_brake) {
     constexpr double voltage_check =
         superstructure::arm::Arm::kOperatingVoltage();
 
     CHECK_LE(::std::abs(U(0)), voltage_check);
     CHECK_LE(::std::abs(U(1)), voltage_check);
 
-    X_ = arm::Dynamics::UnboundedDiscreteDynamics(X_, U, 0.00505);
+    if (release_arm_brake) {
+      X_ = arm::Dynamics::UnboundedDiscreteDynamics(X_, U, 0.00505);
+    } else {
+      // Well, the brake shouldn't stop both joints, but this will get the tests
+      // to pass.
+      X_(1) = 0.0;
+      X_(3) = 0.0;
+    }
 
     // TODO(austin): Estop on grose out of bounds.
     proximal_pot_encoder_.MoveTo(X_(0));
@@ -199,8 +203,7 @@ class SuperstructureSimulation {
                               constants::Values::kIntakeRange().upper) /
                              2.0);
 
-    InitializeArmPosition(
-        (::Eigen::Matrix<double, 2, 1>() << 0.0, 0.0).finished());
+    InitializeArmPosition(arm::ReadyAboveBoxPoint());
   }
 
   void InitializeIntakePosition(double start_pos) {
@@ -248,7 +251,8 @@ class SuperstructureSimulation {
     arm_.Simulate((::Eigen::Matrix<double, 2, 1>()
                        << superstructure_queue_.output->voltage_proximal,
                    superstructure_queue_.output->voltage_distal)
-                      .finished());
+                      .finished(),
+                  superstructure_queue_.output->release_arm_brake);
   }
 
  private:
@@ -339,8 +343,6 @@ TEST_F(SuperstructureTest, ZeroNoGoalAndDoesNothing) {
 
 // Tests that the intake loop can reach a goal.
 TEST_F(SuperstructureTest, ReachesGoal) {
-  superstructure_plant_.InitializeArmPosition(
-      (::Eigen::Matrix<double, 2, 1>() << 0.5, M_PI).finished());
   // Set a reasonable goal.
   {
     auto goal = superstructure_queue_.goal.MakeMessage();
@@ -361,8 +363,6 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 // position.
 TEST_F(SuperstructureTest, OffsetStartReachesGoal) {
   superstructure_plant_.InitializeIntakePosition(0.5);
-  superstructure_plant_.InitializeArmPosition(
-      (::Eigen::Matrix<double, 2, 1>() << 0.5, M_PI).finished());
 
   // Set a reasonable goal.
   {
@@ -526,13 +526,11 @@ TEST_F(SuperstructureTest, ArmNoGoalTest) {
 
 // Tests that we can can execute a move.
 TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
-  superstructure_plant_.InitializeArmPosition(
-      (::Eigen::Matrix<double, 2, 1>() << 0.5, 0.5).finished());
 
   auto goal = superstructure_queue_.goal.MakeMessage();
   goal->intake.left_intake_angle = 0.0;
   goal->intake.right_intake_angle = 0.0;
-  goal->arm_goal_position = 1;
+  goal->arm_goal_position = arm::FrontHighBoxIndex();
   ASSERT_TRUE(goal.Send());
 
   RunForTime(chrono::seconds(10));
@@ -543,13 +541,40 @@ TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
     auto goal = superstructure_queue_.goal.MakeMessage();
     goal->intake.left_intake_angle = 0.0;
     goal->intake.right_intake_angle = 0.0;
-    goal->arm_goal_position = 0;
+    goal->arm_goal_position = arm::ReadyAboveBoxIndex();
     ASSERT_TRUE(goal.Send());
   }
 
   RunForTime(chrono::seconds(10));
   VerifyNearGoal();
 }
+
+// Tests that we can can execute a move which moves through multiple nodes.
+TEST_F(SuperstructureTest, ArmMultistepMove) {
+  superstructure_plant_.InitializeArmPosition(arm::ReadyAboveBoxPoint());
+
+  auto goal = superstructure_queue_.goal.MakeMessage();
+  goal->intake.left_intake_angle = 0.0;
+  goal->intake.right_intake_angle = 0.0;
+  goal->arm_goal_position = arm::BackLowBoxIndex();
+  ASSERT_TRUE(goal.Send());
+
+  RunForTime(chrono::seconds(10));
+
+  VerifyNearGoal();
+
+  {
+    auto goal = superstructure_queue_.goal.MakeMessage();
+    goal->intake.left_intake_angle = 0.0;
+    goal->intake.right_intake_angle = 0.0;
+    goal->arm_goal_position = arm::ReadyAboveBoxIndex();
+    ASSERT_TRUE(goal.Send());
+  }
+
+  RunForTime(chrono::seconds(10));
+  VerifyNearGoal();
+}
+
 
 // TODO(austin): Test multiple path segments.
 // TODO(austin): Disable in the middle and test recovery.

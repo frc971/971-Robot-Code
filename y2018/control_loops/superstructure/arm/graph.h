@@ -136,10 +136,11 @@ class SearchGraph {
   SearchGraph(size_t num_vertexes, std::vector<Edge> &&edges);
   SearchGraph(size_t num_vertexes, ::std::initializer_list<Edge> edges);
   SearchGraph(SearchGraph &&o)
-      : goal_vertex_(o.goal_vertex_),
-        vertexes_(::std::move(o.vertexes_)),
+      : vertexes_(::std::move(o.vertexes_)),
         edges_(::std::move(o.edges_)),
-        vertex_heap_(::std::move(o.vertex_heap_)) {}
+        vertex_heap_(::std::move(o.vertex_heap_)) {
+    last_searched_vertex_ = std::numeric_limits<size_t>::max();
+  }
 
   ~SearchGraph();
 
@@ -160,7 +161,6 @@ class SearchGraph {
   const std::vector<Edge> &edges() const { return edges_; }
 
  private:
-  size_t goal_vertex_ = std::numeric_limits<size_t>::max();
   struct Vertex {
     std::vector<HalfEdge> forward;
     std::vector<HalfEdge> reverse;
@@ -179,7 +179,7 @@ class SearchGraph {
 
   IntrusivePriorityQueue<Vertex> vertex_heap_;
 
-  size_t last_searched_vertex_ = 1;
+  size_t last_searched_vertex_ = std::numeric_limits<size_t>::max();
 };
 
 }  // namespace arm
