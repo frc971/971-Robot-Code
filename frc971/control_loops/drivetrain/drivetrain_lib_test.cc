@@ -57,6 +57,7 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       0,
 
       0.25,
+      1.00,
       1.00};
 
   return kDrivetrainConfig;

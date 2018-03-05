@@ -121,8 +121,10 @@ void PolyDrivetrain::SetGoal(
   wheel_ = 2.0 * wheel - wheel_;
   quickturn_ = quickturn;
 
-  if (!quickturn_) {
+  if (quickturn_) {
     wheel_ *= dt_config_.quickturn_wheel_multiplier;
+  } else {
+    wheel_ *= dt_config_.wheel_multiplier;
   }
 
   static const double kThrottleDeadband = 0.05;

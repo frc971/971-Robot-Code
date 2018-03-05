@@ -27,21 +27,16 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       ::y2014_bot3::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
       ::y2014_bot3::control_loops::drivetrain::MakeKFDrivetrainLoop,
 
-      drivetrain::kDt,
-      drivetrain::kRobotRadius,
-      drivetrain::kWheelRadius,
+      drivetrain::kDt, drivetrain::kRobotRadius, drivetrain::kWheelRadius,
       drivetrain::kV,
 
-      drivetrain::kHighGearRatio,
-      drivetrain::kLowGearRatio,
+      drivetrain::kHighGearRatio, drivetrain::kLowGearRatio,
 
       // No shifter sensors, so we could put anything for the things below.
-      kThreeStateDriveShifter,
-      kThreeStateDriveShifter,
-      false,
-      0.0,
-      0.60,
-      0.60};
+      kThreeStateDriveShifter, kThreeStateDriveShifter,
+      false /* default_high_gear */, 0.0, 0.60 /* wheel_non_linearity */,
+      0.60 /* quickturn_wheel_multiplier */, 1.0 /* wheel_multiplier */,
+  };
 
   return kDrivetrainConfig;
 };

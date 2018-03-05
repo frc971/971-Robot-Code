@@ -207,9 +207,9 @@ std::unique_ptr<PistolDrivetrainInputReader> PistolDrivetrainInputReader::Make(
       kWheelVelocityHigh(2, 2), kWheelVelocityLow(2, 5), kWheelTorqueHigh(2, 3),
       kWheelTorqueLow(2, 6);
 
-  const ButtonLocation kQuickTurn(1, 4);
-  const ButtonLocation kShiftHigh(1, 2);
-  const ButtonLocation kShiftLow(1, 3);
+  const ButtonLocation kQuickTurn(1, 3);
+  const ButtonLocation kShiftHigh(1, 1);
+  const ButtonLocation kShiftLow(1, 2);
 
   // Nop
   const ButtonLocation kTurn1(1, 9);

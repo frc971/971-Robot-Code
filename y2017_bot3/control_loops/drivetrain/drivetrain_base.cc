@@ -35,7 +35,8 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       // TODO(Neil): Find out whigh position is default in pneumatics for the
       // gearing
       true /* default_high_gear */, 0 /* down_offset */,
-      0.4 /* wheel_non_linearity */, 1.0 /* quickturn_wheel_multiplier */
+      0.4 /* wheel_non_linearity */, 1.0 /* quickturn_wheel_multiplier */,
+      1.0 /* wheel_multiplier */,
   };
 
   return kDrivetrainConfig;

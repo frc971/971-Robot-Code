@@ -41,6 +41,7 @@
 #include "frc971/wpilib/dma.h"
 #include "frc971/wpilib/dma_edge_counting.h"
 #include "frc971/wpilib/encoder_and_potentiometer.h"
+#include "frc971/wpilib/gyro_sender.h"
 #include "frc971/wpilib/interrupt_edge_counting.h"
 #include "frc971/wpilib/joystick_sender.h"
 #include "frc971/wpilib/logging.q.h"
@@ -93,14 +94,18 @@ constexpr T max(T a, T b, T c, Rest... rest) {
 }
 
 double drivetrain_translate(int32_t in) {
-  return static_cast<double>(in) /
-         Values::kDrivetrainEncoderCountsPerRevolution() *
-         Values::kDrivetrainEncoderRatio() * control_loops::drivetrain::kWheelRadius;
+  return ((static_cast<double>(in) /
+           Values::kDrivetrainEncoderCountsPerRevolution()) *
+          (2.0 * M_PI)) *
+         Values::kDrivetrainEncoderRatio() *
+         control_loops::drivetrain::kWheelRadius;
 }
 
 double drivetrain_velocity_translate(double in) {
-  return (1.0 / in) / Values::kDrivetrainCyclesPerRevolution() *
-         Values::kDrivetrainEncoderRatio() * control_loops::drivetrain::kWheelRadius;
+  return (((1.0 / in) / Values::kDrivetrainCyclesPerRevolution()) *
+          (2.0 * M_PI)) *
+         Values::kDrivetrainEncoderRatio() *
+         control_loops::drivetrain::kWheelRadius;
 }
 
 double proximal_pot_translate(double voltage) {
@@ -833,9 +838,12 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     imu.set_reset(imu_reset.get());
     ::std::thread imu_thread(::std::ref(imu));
 
-// While as of 2/9/18 the drivetrain Victors are SPX, it appears as though they
-// are identical, as far as DrivetrainWriter is concerned, to the SP variety
-// so all the Victors are written as SPs.
+    ::frc971::wpilib::GyroSender gyro_sender;
+    ::std::thread gyro_thread(::std::ref(gyro_sender));
+
+    // While as of 2/9/18 the drivetrain Victors are SPX, it appears as though
+    // they are identical, as far as DrivetrainWriter is concerned, to the SP
+    // variety so all the Victors are written as SPs.
 
     DrivetrainWriter drivetrain_writer;
     drivetrain_writer.set_drivetrain_left_victor(
@@ -894,6 +902,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader_thread.join();
     imu.Quit();
     imu_thread.join();
+
+    gyro_sender.Quit();
+    gyro_thread.join();
 
     drivetrain_writer.Quit();
     drivetrain_writer_thread.join();
