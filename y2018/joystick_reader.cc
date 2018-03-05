@@ -139,6 +139,12 @@ class Reader : public ::aos::input::JoystickInput {
       new_superstructure_goal->intake.roller_voltage = 0.0;
     }
 
+    // If we are disabled, stay at the node closest to where we start.  This
+    // should remove long motions when enabled.
+    if (!data.GetControlBit(ControlBit::kEnabled)) {
+      arm_goal_position_ = superstructure_queue.status->arm.current_node;
+    }
+
     bool grab_box = false;
     if (data.IsPressed(kArmPickupBoxFromIntake)) {
       arm_goal_position_ = arm::NeutralIndex();
@@ -173,7 +179,7 @@ class Reader : public ::aos::input::JoystickInput {
 
     new_superstructure_goal->arm_goal_position = arm_goal_position_;
 
-    if (data.IsPressed(kClawOpen)) {
+    if (data.IsPressed(kClawOpen) || data.PosEdge(kArmPickupBoxFromIntake)) {
       new_superstructure_goal->open_claw = true;
     } else {
       new_superstructure_goal->open_claw = false;

@@ -94,7 +94,7 @@ class IntakeSide {
   State state() const { return state_; }
 
   bool clear_of_box() const {
-    return controller_.output_position() < -0.2;
+    return controller_.output_position() < -0.1;
   }
 
  private:

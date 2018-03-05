@@ -19,9 +19,8 @@ def add_edge(cc_file, name, segment, index, reverse):
             "  trajectories->emplace_back(Path::Reversed(%s()), 0.005);" %
             (path_function_name(str(name))))
     else:
-        cc_file.append(
-            "  trajectories->emplace_back(%s(), 0.005);" %
-            (path_function_name(str(name))))
+        cc_file.append("  trajectories->emplace_back(%s(), 0.005);" %
+                       (path_function_name(str(name))))
 
     start_index = None
     end_index = None
@@ -38,13 +37,11 @@ def add_edge(cc_file, name, segment, index, reverse):
                    (index_function_name(start_index),
                     index_function_name(end_index)))
     cc_file.append(
-        "                     trajectories->back().path().length()});"
-    )
+        "                     (trajectories->back().path().length() + 0.2)});")
 
     # TODO(austin): Allow different vmaxes for different paths.
     cc_file.append(
-        "  trajectories->back().OptimizeTrajectory(alpha_unitizer, vmax);"
-    )
+        "  trajectories->back().OptimizeTrajectory(alpha_unitizer, vmax);")
     cc_file.append("")
 
 
@@ -115,16 +112,17 @@ def main(argv):
                            (-point[3], -point[4], -point[5]))
         cc_file.append("  }));")
         cc_file.append("}")
-    
+
     # Matrix of nodes
     h_file.append("::std::vector<::Eigen::Matrix<double, 2, 1>> PointList();")
 
-    cc_file.append("::std::vector<::Eigen::Matrix<double, 2, 1>> PointList() {")
+    cc_file.append(
+        "::std::vector<::Eigen::Matrix<double, 2, 1>> PointList() {")
     cc_file.append("  ::std::vector<::Eigen::Matrix<double, 2, 1>> points;")
-    for index, point in enumerate(graph_generate.points):
+    for point in graph_generate.points:
         cc_file.append(
-            "  points.push_back((::Eigen::Matrix<double, 2, 1>() << %.12s, %.12s).finished());" % (
-                numpy.pi / 2.0 - point[0][0], numpy.pi / 2.0 - point[0][1]))
+            "  points.push_back((::Eigen::Matrix<double, 2, 1>() << %.12s, %.12s).finished());"
+            % (numpy.pi / 2.0 - point[0][0], numpy.pi / 2.0 - point[0][1]))
     cc_file.append("  return points;")
     cc_file.append("}")
 

@@ -387,7 +387,7 @@ class SplineSegment:
 
 
 tall_box_x = 0.401
-tall_box_y = 0.13
+tall_box_y = 0.14
 
 short_box_x = 0.431
 short_box_y = 0.082
@@ -459,6 +459,10 @@ named_segments = [
     XYSegment(tall_box_grab, short_box_grab, "TallToShortBox"),
     SplineSegment(neutral, ready_above_box_c1, ready_above_box_c2,
                   ready_above_box, "ReadyToNeutral"),
+    SplineSegment(neutral, ready_above_box_c1, ready_above_box_c2,
+                  tall_box_grab, "TallToNeutral"),
+    SplineSegment(neutral, ready_above_box_c1, ready_above_box_c2,
+                  short_box_grab, "ShortToNeutral"),
     SplineSegment(neutral, up_c1, up_c2, up, "NeutralToUp"),
     SplineSegment(neutral, front_high_box_c1, front_high_box_c2,
                   front_high_box, "NeutralToFrontHigh"),

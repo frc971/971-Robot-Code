@@ -19,17 +19,18 @@ class Arm {
   Arm();
 
   // If true, tune down all the constants for testing.
-  static constexpr bool kGrannyMode() { return true; }
+  static constexpr bool kGrannyMode() { return false; }
 
   // The operating voltage.
   static constexpr double kOperatingVoltage() {
     return kGrannyMode() ? 4.0 : 12.0;
   }
   static constexpr double kDt() { return 0.00505; }
-  static constexpr double kAlpha0Max() { return kGrannyMode() ? 10.0 : 25.0; }
-  static constexpr double kAlpha1Max() { return kGrannyMode() ? 10.0 : 25.0; }
-  static constexpr double kVMax() { return kGrannyMode() ? 4.0 : 11.5; }
-  static constexpr double kPathlessVMax() { return 4.0; }
+  static constexpr double kAlpha0Max() { return kGrannyMode() ? 10.0 : 15.0; }
+  static constexpr double kAlpha1Max() { return kGrannyMode() ? 10.0 : 15.0; }
+
+  static constexpr double kVMax() { return kGrannyMode() ? 5.0 : 11.5; }
+  static constexpr double kPathlessVMax() { return 5.0; }
 
   void Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
                const control_loops::ArmPosition *position,
@@ -68,7 +69,7 @@ class Arm {
 
  private:
   bool AtState(uint32_t state) const { return current_node_ == state; }
-  bool NearEnd(double threshold = 0.01) const {
+  bool NearEnd(double threshold = 0.02) const {
     return ::std::abs(arm_ekf_.X_hat(0) - follower_.theta(0)) <= threshold &&
            ::std::abs(arm_ekf_.X_hat(2) - follower_.theta(1)) <= threshold &&
            follower_.path_distance_to_go() < 1e-3;
@@ -99,6 +100,8 @@ class Arm {
 
   EKF arm_ekf_;
   TrajectoryFollower follower_;
+
+  const ::std::vector<::Eigen::Matrix<double, 2, 1>> points_;
 
   // Start at the 0th index.
   uint32_t current_node_ = 0;

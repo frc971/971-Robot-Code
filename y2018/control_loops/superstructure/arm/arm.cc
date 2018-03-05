@@ -26,7 +26,8 @@ Arm::Arm()
                           .finished()),
       search_graph_(MakeSearchGraph(&trajectories_, alpha_unitizer_, kVMax())),
       // Go to the start of the first trajectory.
-      follower_(ReadyAboveBoxPoint()) {
+      follower_(ReadyAboveBoxPoint()),
+      points_(PointList()) {
   int i = 0;
   for (const auto &trajectory : trajectories_) {
     LOG(INFO, "trajectory length for edge node %d: %f\n", i,
@@ -115,20 +116,34 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
         break;
       }
 
-    case State::DISABLED:
-      if (!outputs_disabled) {
-        follower_.SwitchTrajectory(nullptr);
-        close_enough_for_full_power_ = false;
-        // TODO(austin): Nearest point at the end of Initialize.
-        // So, get a vector of all the points, loop through them, and find the
-        // closest one.
-        follower_.set_theta(ReadyAboveBoxPoint());
-        current_node_ = ReadyAboveBoxIndex();
+    case State::DISABLED: {
+      follower_.SwitchTrajectory(nullptr);
+      close_enough_for_full_power_ = false;
 
+      const ::Eigen::Matrix<double, 2, 1> current_theta =
+          (::Eigen::Matrix<double, 2, 1>() << arm_ekf_.X_hat(0),
+           arm_ekf_.X_hat(2))
+              .finished();
+      uint32_t best_index = 0;
+      double best_distance = (points_[0] - current_theta).norm();
+      uint32_t current_index = 0;
+      for (const ::Eigen::Matrix<double, 2, 1> &point : points_) {
+        const double new_distance = (point - current_theta).norm();
+        if (new_distance < best_distance) {
+          best_distance = new_distance;
+          best_index = current_index;
+        }
+        ++current_index;
+      }
+      follower_.set_theta(points_[best_index]);
+      current_node_ = best_index;
+
+      if (!outputs_disabled) {
         state_ = State::GOTO_PATH;
       } else {
         break;
       }
+    }
 
     case State::GOTO_PATH:
       if (outputs_disabled) {
@@ -162,6 +177,7 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
     close_enough_for_full_power_ = false;
   }
 
+  // TODO(austin): Do we need to debounce box_back_beambreak_triggered ?
   if (claw_closed_) {
     if ((filtered_goal == ReadyAboveBoxIndex()) ||
         (filtered_goal == TallBoxGrabIndex()) ||
@@ -194,9 +210,6 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
     case GrabState::TALL_BOX:
       if (!grab_box) {
         grab_state_ = GrabState::NORMAL;
-      } else if (!box_back_beambreak_triggered) {
-        // Lost the box, go back to wait for it.
-        grab_state_ = GrabState::WAIT_FOR_BOX;
       } else if (AtState(TallBoxGrabIndex()) && NearEnd()) {
         // We are being asked to grab the box, and the claw is near the box.
         if (claw_beambreak_triggered) {
@@ -211,9 +224,6 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
     case GrabState::SHORT_BOX:
       if (!grab_box) {
         grab_state_ = GrabState::NORMAL;
-      } else if (!box_back_beambreak_triggered) {
-        // Lost the box, go back to wait for it.
-        grab_state_ = GrabState::WAIT_FOR_BOX;
       } else if (AtState(ShortBoxGrabIndex()) && NearEnd()) {
         // We are being asked to grab the box, and the claw is near the box.
         if (claw_beambreak_triggered) {
@@ -227,7 +237,7 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
       break;
     case GrabState::CLAW_CLOSE:
       if (::aos::monotonic_clock::now() >
-          claw_close_start_time_ + ::std::chrono::milliseconds(500)) {
+          claw_close_start_time_ + ::std::chrono::milliseconds(300)) {
         grab_state_ = GrabState::OPEN_INTAKE;
       }
       break;
