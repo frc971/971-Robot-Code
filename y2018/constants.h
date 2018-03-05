@@ -84,8 +84,8 @@ struct Values {
 
   static constexpr ::frc971::constants::Range kIntakeRange() {
     // TODO(austin) Sort this out.
-    return ::frc971::constants::Range{(-0.75 * M_PI), (1.25 * M_PI),
-                                      (-2.0 / 3.0 * M_PI), M_PI};
+    return ::frc971::constants::Range{-3.7, (1.25 * M_PI),
+                                      -3.3, M_PI};
   }
 
   struct IntakeSide {

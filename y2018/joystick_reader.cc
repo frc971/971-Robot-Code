@@ -120,7 +120,7 @@ class Reader : public ::aos::input::JoystickInput {
       }
     } else {
       // Bring in the intake.
-      intake_goal_ = -M_PI * 2.0 / 3.0;
+      intake_goal_ = -3.3;
     }
 
     auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
