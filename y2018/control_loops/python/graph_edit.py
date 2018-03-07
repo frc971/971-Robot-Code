@@ -1,5 +1,7 @@
+from __future__ import print_function
 import os
 import basic_window
+import random
 import gi
 import numpy
 gi.require_version('Gtk', '3.0')
@@ -15,83 +17,92 @@ from basic_window import OverrideMatrix, identity, quit_main_loop
 import shapely
 from shapely.geometry import Polygon
 
+
 def px(cr):
-  return OverrideMatrix(cr, identity)
+    return OverrideMatrix(cr, identity)
 
-# Draws a cross with fixed dimensions in pixel space.
+
 def draw_px_cross(cr, length_px):
-  with px(cr):
-    x,y = cr.get_current_point()
-    cr.move_to(x, y - length_px)
-    cr.line_to(x, y + length_px)
-    cr.stroke()
+    """Draws a cross with fixed dimensions in pixel space."""
+    with px(cr):
+        x, y = cr.get_current_point()
+        cr.move_to(x, y - length_px)
+        cr.line_to(x, y + length_px)
+        cr.stroke()
 
-    cr.move_to(x - length_px, y)
-    cr.line_to(x + length_px, y)
-    cr.stroke()
+        cr.move_to(x - length_px, y)
+        cr.line_to(x + length_px, y)
+        cr.stroke()
 
-# Distance between two points in angle space.
+
 def angle_dist_sqr(a1, a2):
-  return (a1[0] - a2[0]) ** 2 + (a1[1] - a2[1]) ** 2
+    """Distance between two points in angle space."""
+    return (a1[0] - a2[0])**2 + (a1[1] - a2[1])**2
+
 
 # Find the highest y position that intersects the vertical line defined by x.
 def inter_y(x):
-  return numpy.sqrt((l2 + l1) ** 2 - (x - joint_center[0]) ** 2) + joint_center[1]
+    return numpy.sqrt((l2 + l1)**2 -
+                      (x - joint_center[0])**2) + joint_center[1]
+
 
 # This is the x position where the inner (hyperextension) circle intersects the horizontal line
-derr = numpy.sqrt((l1 - l2) ** 2 - (joint_center[1] - 12.0) ** 2)
+derr = numpy.sqrt((l1 - l2)**2 - (joint_center[1] - 0.3048)**2)
+
 
 # Define min and max l1 angles based on vertical constraints.
 def get_angle(boundary):
-  h = numpy.sqrt((l1) ** 2 - (boundary - joint_center[0]) ** 2) + joint_center[1]
-  return numpy.arctan2(h, boundary - joint_center[0])
+    h = numpy.sqrt((l1)**2 - (boundary - joint_center[0])**2) + joint_center[1]
+    return numpy.arctan2(h, boundary - joint_center[0])
+
 
 # left hand side lines
 lines1 = [
-    (-32.525, inter_y(-32.525)),
-    (-32.525, 5.5),
-    (-23.025, 5.5),
-    (-23.025, 12.0),
-    (joint_center[0] - derr, 12.0),
+    (-0.826135, inter_y(-0.826135)),
+    (-0.826135, 0.1397),
+    (-23.025 * 0.0254, 0.1397),
+    (-23.025 * 0.0254, 0.3048),
+    (joint_center[0] - derr, 0.3048),
 ]
 
 # right hand side lines
-lines2 = [
-    (joint_center[0] + derr, 12.0),
-    (16.625, 12.0),
-    (16.625, 5.5),
-    (32.525, 5.5),
-    (32.525, inter_y(32.525))
-]
+lines2 = [(joint_center[0] + derr, 0.3048), (0.422275, 0.3048),
+          (0.422275, 0.1397), (0.826135, 0.1397), (0.826135,
+                                                   inter_y(0.826135))]
 
-t1_min = get_angle(32.525 - 4.0)
-t2_min = -7 / 4.0 * numpy.pi
+t1_min = get_angle((32.525 - 4.0) * 0.0254)
+t2_min = -7.0 / 4.0 * numpy.pi
 
-t1_max = get_angle(-32.525 + 4.0)
-t2_max = numpy.pi * 3 / 4.0
+t1_max = get_angle((-32.525 + 4.0) * 0.0254)
+t2_max = numpy.pi * 3.0 / 4.0
+
 
 # Draw lines to cr + stroke.
 def draw_lines(cr, lines):
-  cr.move_to(lines[0][0], lines[0][1])
-  for pt in lines[1:]:
-    cr.line_to(pt[0], pt[1])
-  with px(cr): cr.stroke()
+    cr.move_to(lines[0][0], lines[0][1])
+    for pt in lines[1:]:
+        cr.line_to(pt[0], pt[1])
+    with px(cr):
+        cr.stroke()
+
 
 # Rotate a rasterized loop such that it aligns to when the parameters loop
 def rotate_to_jump_point(points):
-  last_pt = points[0]
-  for pt_i in range(1, len(points)):
-    pt = points[pt_i]
-    delta = last_pt[1] - pt[1]
-    if abs(delta) > numpy.pi:
-      print(delta)
-      return points[pt_i:] + points[:pt_i]
-    last_pt = pt
-  return points
+    last_pt = points[0]
+    for pt_i in range(1, len(points)):
+        pt = points[pt_i]
+        delta = last_pt[1] - pt[1]
+        if abs(delta) > numpy.pi:
+            print(delta)
+            return points[pt_i:] + points[:pt_i]
+        last_pt = pt
+    return points
+
 
 # shift points vertically by dy.
 def y_shift(points, dy):
-  return [(x, y + dy) for x, y in points]
+    return [(x, y + dy) for x, y in points]
+
 
 lines1_theta_part = rotate_to_jump_point(to_theta_loop(lines1, 0))
 lines2_theta_part = rotate_to_jump_point(to_theta_loop(lines2))
@@ -106,297 +117,318 @@ lines_theta = lines1_theta + lines2_theta
 
 p1 = Polygon(lines_theta)
 
-p2 = Polygon([(t1_min, t2_min), (t1_max, t2_min),
-  (t1_max, t2_max), (t1_min, t2_max)])
+p2 = Polygon([(t1_min, t2_min), (t1_max, t2_min), (t1_max, t2_max), (t1_min,
+                                                                     t2_max)])
 
 # Fully computed theta constrints.
 lines_theta = list(p1.intersection(p2).exterior.coords)
 
-print(", ".join("{%s, %s}" % (a,b) for a, b in lines_theta))
+print("Theta constraint.")
+print(", ".join("{%s, %s}" % (a, b) for a, b in lines_theta))
 
 lines1_theta_back = back_to_xy_loop(lines1_theta)
 lines2_theta_back = back_to_xy_loop(lines2_theta)
 
 lines_theta_back = back_to_xy_loop(lines_theta)
 
+
 # Get the closest point to a line from a test pt.
 def get_closest(prev, cur, pt):
-  dx_ang = (cur[0] - prev[0])
-  dy_ang = (cur[1] - prev[1])
+    dx_ang = (cur[0] - prev[0])
+    dy_ang = (cur[1] - prev[1])
 
-  d = numpy.sqrt(dx_ang ** 2 + dy_ang ** 2)
-  if (d < 0.000001):
-    return prev, numpy.sqrt((prev[0] - pt[0]) ** 2 + (prev[1] - pt[1]) ** 2)
+    d = numpy.sqrt(dx_ang**2 + dy_ang**2)
+    if (d < 0.000001):
+        return prev, numpy.sqrt((prev[0] - pt[0])**2 + (prev[1] - pt[1])**2)
+
+    pdx = -dy_ang / d
+    pdy = dx_ang / d
+
+    dpx = pt[0] - prev[0]
+    dpy = pt[1] - prev[1]
+
+    alpha = (dx_ang * dpx + dy_ang * dpy) / d / d
+
+    if (alpha < 0):
+        return prev, numpy.sqrt((prev[0] - pt[0])**2 + (prev[1] - pt[1])**2)
+    elif (alpha > 1):
+        return cur, numpy.sqrt((cur[0] - pt[0])**2 + (cur[1] - pt[1])**2)
+    else:
+        return (alpha_blend(prev[0], cur[0], alpha), alpha_blend(prev[1], cur[1], alpha)), \
+            abs(dpx * pdx + dpy * pdy)
 
 
-  pdx = -dy_ang / d
-  pdy = dx_ang / d
-
-  dpx = pt[0] - prev[0]
-  dpy = pt[1] - prev[1]
-
-  alpha = (dx_ang * dpx + dy_ang * dpy) / d / d
-
-  if (alpha < 0):
-    return prev, numpy.sqrt((prev[0] - pt[0]) ** 2 + (prev[1] - pt[1]) ** 2)
-  elif (alpha > 1):
-    return cur, numpy.sqrt((cur[0] - pt[0]) ** 2 + (cur[1] - pt[1]) ** 2)
-  else:
-    return (alpha_blend(prev[0], cur[0], alpha), alpha_blend(prev[1], cur[1], alpha)), \
-        abs(dpx * pdx + dpy * pdy)
-
-# 
+#
 def closest_segment(lines, pt):
-  c_pt, c_pt_dist = get_closest(lines[-1], lines[0], pt)
-  for i in range(1, len(lines)):
-    prev = lines[i - 1]
-    cur = lines[i]
-    c_pt_new, c_pt_new_dist = get_closest(prev, cur, pt)
-    if c_pt_new_dist < c_pt_dist:
-      c_pt = c_pt_new
-      c_pt_dist = c_pt_new_dist
-  return c_pt, c_pt_dist
+    c_pt, c_pt_dist = get_closest(lines[-1], lines[0], pt)
+    for i in range(1, len(lines)):
+        prev = lines[i - 1]
+        cur = lines[i]
+        c_pt_new, c_pt_new_dist = get_closest(prev, cur, pt)
+        if c_pt_new_dist < c_pt_dist:
+            c_pt = c_pt_new
+            c_pt_dist = c_pt_new_dist
+    return c_pt, c_pt_dist
+
 
 # Create a GTK+ widget on which we will draw using Cairo
 class Silly(basic_window.BaseWindow):
-  def __init__(self):
-    super().__init__()
+    def __init__(self):
+        super(Silly, self).__init__()
 
-    self.theta_version = True
-    self.reinit_extents()
+        self.theta_version = True
+        self.reinit_extents()
 
-    self.last_pos = (20, 20)
-    self.c_i_select = 0
-    self.click_bool = False
+        self.last_pos = (numpy.pi / 2.0, 1.0)
+        self.circular_index_select = -1
 
+        # Extra stuff for drawing lines.
+        self.segments = []
+        self.prev_segment_pt = None
+        self.now_segment_pt = None
 
-    # Extra stuff for drawing lines.
-    self.segs = []
-    self.prev_seg_pt = None
-    self.now_seg_pt = None
-
-  def reinit_extents(self):
-    if self.theta_version:
-      self.extents_x_min = -numpy.pi * 2
-      self.extents_x_max =  numpy.pi * 2
-      self.extents_y_min = -numpy.pi * 2
-      self.extents_y_max =  numpy.pi * 2
-    else:
-      self.extents_x_min = -40.0
-      self.extents_x_max =  40.0
-      self.extents_y_min = -4.0
-      self.extents_y_max =  110.0
-
-    self.init_extents((0.5*(self.extents_x_min+self.extents_x_max), 0.5*(self.extents_y_max+self.extents_y_min)),
-                      (1.0*(self.extents_x_max-self.extents_x_min), 1.0*(self.extents_y_max-self.extents_y_min)))
-
-  # Handle the expose-event by drawing
-  def handle_draw(self, cr):
-    # use "with px(cr): blah;" to transform to pixel coordinates.
-
-    # Fill the background color of the window with grey
-    cr.set_source_rgb(0.5, 0.5, 0.5)
-    cr.paint()
-
-    # Draw a extents rectangle
-    cr.set_source_rgb(1.0, 1.0, 1.0)
-    cr.rectangle(self.extents_x_min, self.extents_y_min,
-                 (self.extents_x_max-self.extents_x_min), self.extents_y_max-self.extents_y_min)
-    cr.fill()
-
-    if not self.theta_version:
-
-      # Draw a filled white rectangle.
-      cr.set_source_rgb(1.0, 1.0, 1.0)
-      cr.rectangle(-2.0, -2.0, 4.0, 4.0)
-      cr.fill()
-
-      cr.set_source_rgb(0.0, 0.0, 1.0)
-      cr.arc(joint_center[0], joint_center[1], l2 + l1, 0, 2 * numpy.pi)
-      with px(cr): cr.stroke()
-      cr.arc(joint_center[0], joint_center[1], l1 - l2, 0, 2 * numpy.pi)
-      with px(cr): cr.stroke()
-
-    else:
-      # Draw a filled white rectangle.
-      cr.set_source_rgb(1.0, 1.0, 1.0)
-      cr.rectangle(-numpy.pi, -numpy.pi, numpy.pi * 2, numpy.pi * 2)
-      cr.fill()
-
-    if self.theta_version:
-      cr.set_source_rgb(0.0, 0.0, 1.0)
-      for i in range(-6, 6):
-        cr.move_to(-40, -40 + i * numpy.pi)
-        cr.line_to(40, 40 + i * numpy.pi)
-      with px(cr): cr.stroke()
-
-
-    if not self.theta_version:
-      cr.set_source_rgb(0.2, 1.0, 0.2)
-      draw_lines(cr, lines2)
-
-    if self.theta_version:
-      cr.set_source_rgb(0.5, 0.5, 1.0)
-      draw_lines(cr, lines_theta)
-
-    else:
-      cr.set_source_rgb(0.5, 1.0, 1.0)
-      draw_lines(cr, lines1)
-      draw_lines(cr, lines2)
-
-      def set_color(cr, c_i):
-        if c_i == -2:
-          cr.set_source_rgb(0.0, 0.25, 1.0)
-        elif c_i == -1:
-          cr.set_source_rgb(0.5, 0.0, 1.0)
-        elif c_i == 0:
-          cr.set_source_rgb(0.5, 1.0, 1.0)
-        elif c_i == 1:
-          cr.set_source_rgb(0.0, 0.5, 1.0)
-        elif c_i == 2:
-          cr.set_source_rgb(0.5, 1.0, 0.5)
+    def reinit_extents(self):
+        if self.theta_version:
+            self.extents_x_min = -numpy.pi * 2
+            self.extents_x_max = numpy.pi * 2
+            self.extents_y_min = -numpy.pi * 2
+            self.extents_y_max = numpy.pi * 2
         else:
-          cr.set_source_rgb(1.0, 0.0, 0.0)
+            self.extents_x_min = -40.0 * 0.0254
+            self.extents_x_max = 40.0 * 0.0254
+            self.extents_y_min = -4.0 * 0.0254
+            self.extents_y_max = 110.0 * 0.0254
 
-      def get_ci(pt):
-        t1, t2 = pt
-        c_i = int(numpy.floor((t2 - t1) / numpy.pi))
-        return c_i
+        self.init_extents(
+            (0.5 * (self.extents_x_min + self.extents_x_max), 0.5 *
+             (self.extents_y_max + self.extents_y_min)),
+            (1.0 * (self.extents_x_max - self.extents_x_min), 1.0 *
+             (self.extents_y_max - self.extents_y_min)))
 
-      cr.set_source_rgb(0.0, 0.0, 1.0)
-      lines = subdivide_theta(lines_theta)
-      o_c_i = c_i = get_ci(lines[0])
-      p_xy = to_xy(lines[0][0], lines[0][1])
-      if c_i == self.c_i_select: cr.move_to(p_xy[0] + c_i * 0, p_xy[1])
-      for pt in lines[1:]:
-        p_xy = to_xy(pt[0], pt[1])
-        c_i = get_ci(pt)
-        if o_c_i == self.c_i_select: cr.line_to(p_xy[0] + o_c_i * 0, p_xy[1])
-        if c_i != o_c_i:
-          o_c_i = c_i
-          with px(cr): cr.stroke()
-          if c_i == self.c_i_select: cr.move_to(p_xy[0] + c_i * 0, p_xy[1])
+    # Handle the expose-event by drawing
+    def handle_draw(self, cr):
+        # use "with px(cr): blah;" to transform to pixel coordinates.
 
-      with px(cr): cr.stroke()
+        # Fill the background color of the window with grey
+        cr.set_source_rgb(0.5, 0.5, 0.5)
+        cr.paint()
 
-    if not self.theta_version:
-      t1, t2 = to_theta(self.last_pos[0], self.last_pos[1], (self.c_i_select % 2) == 0)
-      x, y = joint_center[0], joint_center[1]
-      cr.move_to(x, y)
+        # Draw a extents rectangle
+        cr.set_source_rgb(1.0, 1.0, 1.0)
+        cr.rectangle(self.extents_x_min, self.extents_y_min,
+                     (self.extents_x_max - self.extents_x_min),
+                     self.extents_y_max - self.extents_y_min)
+        cr.fill()
 
-      x += numpy.cos(t1) * l1
-      y += numpy.sin(t1) * l1
-      cr.line_to(x, y)
-      x += numpy.cos(t2) * l2
-      y += numpy.sin(t2) * l2
-      cr.line_to(x, y)
-      with px(cr): cr.stroke()
+        if not self.theta_version:
+            # Draw a filled white rectangle.
+            cr.set_source_rgb(1.0, 1.0, 1.0)
+            cr.rectangle(-2.0, -2.0, 4.0, 4.0)
+            cr.fill()
 
-      cr.move_to(self.last_pos[0], self.last_pos[1])
-      cr.set_source_rgb(0.0, 1.0, 0.2)
-      draw_px_cross(cr, 20)
+            cr.set_source_rgb(0.0, 0.0, 1.0)
+            cr.arc(joint_center[0], joint_center[1], l2 + l1, 0,
+                   2.0 * numpy.pi)
+            with px(cr):
+                cr.stroke()
+            cr.arc(joint_center[0], joint_center[1], l1 - l2, 0,
+                   2.0 * numpy.pi)
+            with px(cr):
+                cr.stroke()
+        else:
+            # Draw a filled white rectangle.
+            cr.set_source_rgb(1.0, 1.0, 1.0)
+            cr.rectangle(-numpy.pi, -numpy.pi, numpy.pi * 2.0, numpy.pi * 2.0)
+            cr.fill()
 
-    if self.theta_version:
-      cr.set_source_rgb(0.0, 1.0, 0.2)
+        if self.theta_version:
+            cr.set_source_rgb(0.0, 0.0, 1.0)
+            for i in range(-6, 6):
+                cr.move_to(-40, -40 + i * numpy.pi)
+                cr.line_to(40, 40 + i * numpy.pi)
+            with px(cr):
+                cr.stroke()
 
-      cr.set_source_rgb(0.0, 1.0, 0.2)
-      cr.move_to(self.last_pos[0], self.last_pos[1])
-      draw_px_cross(cr, 5)
+        if self.theta_version:
+            cr.set_source_rgb(0.5, 0.5, 1.0)
+            draw_lines(cr, lines_theta)
+        else:
+            cr.set_source_rgb(0.5, 1.0, 1.0)
+            draw_lines(cr, lines1)
+            draw_lines(cr, lines2)
 
-      c_pt, dist = closest_segment(lines_theta, self.last_pos)
-      print("dist:", dist, c_pt, self.last_pos)
-      cr.set_source_rgb(0.0, 1.0, 1.0)
-      cr.move_to(c_pt[0], c_pt[1])
-      draw_px_cross(cr, 5)
+            def set_color(cr, circular_index):
+                if circular_index == -2:
+                    cr.set_source_rgb(0.0, 0.25, 1.0)
+                elif circular_index == -1:
+                    cr.set_source_rgb(0.5, 0.0, 1.0)
+                elif circular_index == 0:
+                    cr.set_source_rgb(0.5, 1.0, 1.0)
+                elif circular_index == 1:
+                    cr.set_source_rgb(0.0, 0.5, 1.0)
+                elif circular_index == 2:
+                    cr.set_source_rgb(0.5, 1.0, 0.5)
+                else:
+                    cr.set_source_rgb(1.0, 0.0, 0.0)
 
-    cr.set_source_rgb(0.0, 0.5, 1.0)
-    for seg in self.segs:
-      seg.DrawTo(cr, self.theta_version)
-      with px(cr): cr.stroke()
+            def get_circular_index(pt):
+                theta1, theta2 = pt
+                circular_index = int(numpy.floor((theta2 - theta1) / numpy.pi))
+                return circular_index
 
-    cr.set_source_rgb(0.0, 1.0, 0.5)
-    seg = self.current_seg()
-    print(seg)
-    if seg:
-      seg.DrawTo(cr, self.theta_version)
-      with px(cr): cr.stroke()
+            cr.set_source_rgb(0.0, 0.0, 1.0)
+            lines = subdivide_theta(lines_theta)
+            o_circular_index = circular_index = get_circular_index(lines[0])
+            p_xy = to_xy(lines[0][0], lines[0][1])
+            if circular_index == self.circular_index_select:
+                cr.move_to(p_xy[0] + circular_index * 0, p_xy[1])
+            for pt in lines[1:]:
+                p_xy = to_xy(pt[0], pt[1])
+                circular_index = get_circular_index(pt)
+                if o_circular_index == self.circular_index_select:
+                    cr.line_to(p_xy[0] + o_circular_index * 0, p_xy[1])
+                if circular_index != o_circular_index:
+                    o_circular_index = circular_index
+                    with px(cr):
+                        cr.stroke()
+                    if circular_index == self.circular_index_select:
+                        cr.move_to(p_xy[0] + circular_index * 0, p_xy[1])
 
-  def cur_pt_in_theta(self):
-    if self.theta_version: return self.last_pos
-    t1, t2 = to_theta(self.last_pos[0], self.last_pos[1], (self.c_i_select % 2) == 0)
-    n_ci = int(numpy.floor((t2 - t1) / numpy.pi))
-    t2 = t2 + ((self.c_i_select - n_ci)) * numpy.pi
-    return (t1, t2)
+            with px(cr):
+                cr.stroke()
 
-  # Current seg based on which mode the drawing system is in.
-  def current_seg(self):
-    if self.prev_seg_pt and self.now_seg_pt:
-      if self.theta_version:
-        return AngleSegment(self.prev_seg_pt, self.now_seg_pt)
-      else:
-        return XYSegment(self.prev_seg_pt, self.now_seg_pt)
+        if not self.theta_version:
+            theta1, theta2 = to_theta(self.last_pos, self.circular_index_select)
+            x, y = joint_center[0], joint_center[1]
+            cr.move_to(x, y)
 
-  def do_key_press(self, event):
-    print("Gdk.KEY_" + Gdk.keyval_name(event.keyval))
-    print("Gdk.KEY_" + Gdk.keyval_name(Gdk.keyval_to_lower(event.keyval)) + " is the lower case key for this button press.")
-    if ( Gdk.keyval_to_lower(event.keyval) == Gdk.KEY_q ):
-      print("Found q key and exiting.")
-      quit_main_loop()
-    elif ( Gdk.keyval_to_lower(event.keyval) == Gdk.KEY_c ):
-      self.c_i_select += 1
-    elif ( Gdk.keyval_to_lower(event.keyval) == Gdk.KEY_v ):
-      self.c_i_select -= 1
-    elif ( Gdk.keyval_to_lower(event.keyval) == Gdk.KEY_f ):
-      self.click_bool = not self.click_bool
+            x += numpy.cos(theta1) * l1
+            y += numpy.sin(theta1) * l1
+            cr.line_to(x, y)
+            x += numpy.cos(theta2) * l2
+            y += numpy.sin(theta2) * l2
+            cr.line_to(x, y)
+            with px(cr):
+                cr.stroke()
 
-    elif ( Gdk.keyval_to_lower(event.keyval) == Gdk.KEY_w ):
-      seg = self.current_seg();
-      if seg: self.segs.append(seg)
-      self.prev_seg_pt = self.now_seg_pt
+            cr.move_to(self.last_pos[0], self.last_pos[1])
+            cr.set_source_rgb(0.0, 1.0, 0.2)
+            draw_px_cross(cr, 20)
 
-    elif ( Gdk.keyval_to_lower(event.keyval) == Gdk.KEY_r ):
-      self.prev_seg_pt = self.now_seg_pt
+        if self.theta_version:
+            cr.set_source_rgb(0.0, 1.0, 0.2)
 
-    elif ( Gdk.keyval_to_lower(event.keyval) == Gdk.KEY_p ):
-      print(repr(self.segs))
-    elif ( Gdk.keyval_to_lower(event.keyval) == Gdk.KEY_g ):
-      if self.segs:
-        print(repr(self.segs[0].ToThetaPoints()))
-    elif ( Gdk.keyval_to_lower(event.keyval) == Gdk.KEY_e ):
-      best_pt = self.now_seg_pt
-      best_dist = 1e10
-      for seg in self.segs:
-        d = angle_dist_sqr(seg.st, self.now_seg_pt)
-        if (d < best_dist):
-          best_pt = seg.st
-          best_dist = d;
-        d = angle_dist_sqr(seg.ed, self.now_seg_pt)
-        if (d < best_dist):
-          best_pt = seg.ed
-          best_dist = d
-      self.now_seg_pt = best_pt
+            cr.set_source_rgb(0.0, 1.0, 0.2)
+            cr.move_to(self.last_pos[0], self.last_pos[1])
+            draw_px_cross(cr, 5)
 
-    elif ( Gdk.keyval_to_lower(event.keyval) == Gdk.KEY_t ):
-      if self.theta_version:
-        t1, t2 = self.last_pos
-        data = to_xy(t1, t2)
-        self.c_i_select = int(numpy.floor((t2 - t1) / numpy.pi))
-        self.last_pos = (data[0], data[1])
-      else:
-        self.last_pos = self.cur_pt_in_theta()
+            c_pt, dist = closest_segment(lines_theta, self.last_pos)
+            print("dist:", dist, c_pt, self.last_pos)
+            cr.set_source_rgb(0.0, 1.0, 1.0)
+            cr.move_to(c_pt[0], c_pt[1])
+            draw_px_cross(cr, 5)
 
-      self.theta_version = not self.theta_version
-      self.reinit_extents()
-    self.redraw()
+        cr.set_source_rgb(0.0, 0.5, 1.0)
+        for segment in self.segments:
+            color = [0, random.random(), 1]
+            random.shuffle(color)
+            cr.set_source_rgb(*color)
+            segment.DrawTo(cr, self.theta_version)
+            with px(cr):
+                cr.stroke()
 
-  def do_button_press(self, event):
-    print(event)
-    print(event.x, event.y, event.button)
-    self.last_pos = (event.x, event.y)
-    self.now_seg_pt = self.cur_pt_in_theta();
+        cr.set_source_rgb(0.0, 1.0, 0.5)
+        segment = self.current_seg()
+        if segment:
+            print(segment)
+            segment.DrawTo(cr, self.theta_version)
+            with px(cr):
+                cr.stroke()
 
-    self.redraw()
+    def cur_pt_in_theta(self):
+        if self.theta_version: return self.last_pos
+        return to_theta(self.last_pos, self.circular_index_select)
+
+    # Current segment based on which mode the drawing system is in.
+    def current_seg(self):
+        if self.prev_segment_pt and self.now_segment_pt:
+            if self.theta_version:
+                return AngleSegment(self.prev_segment_pt, self.now_segment_pt)
+            else:
+                return XYSegment(self.prev_segment_pt, self.now_segment_pt)
+
+    def do_key_press(self, event):
+        keyval = Gdk.keyval_to_lower(event.keyval)
+        print("Gdk.KEY_" + Gdk.keyval_name(keyval))
+        if keyval == Gdk.KEY_q:
+            print("Found q key and exiting.")
+            quit_main_loop()
+        elif keyval == Gdk.KEY_c:
+            # Increment which arm solution we render
+            self.circular_index_select += 1
+            print(self.circular_index_select)
+        elif keyval == Gdk.KEY_v:
+            # Decrement which arm solution we render
+            self.circular_index_select -= 1
+            print(self.circular_index_select)
+        elif keyval == Gdk.KEY_w:
+            # Add this segment to the segment list.
+            segment = self.current_seg()
+            if segment: self.segments.append(segment)
+            self.prev_segment_pt = self.now_segment_pt
+
+        elif keyval == Gdk.KEY_r:
+            self.prev_segment_pt = self.now_segment_pt
+
+        elif keyval == Gdk.KEY_p:
+            # Print out the segments.
+            print(repr(self.segments))
+        elif keyval == Gdk.KEY_g:
+            # Generate theta points.
+            if self.segments:
+                print(repr(self.segments[0].ToThetaPoints()))
+        elif keyval == Gdk.KEY_e:
+            best_pt = self.now_segment_pt
+            best_dist = 1e10
+            for segment in self.segments:
+                d = angle_dist_sqr(segment.start, self.now_segment_pt)
+                if (d < best_dist):
+                    best_pt = segment.start
+                    best_dist = d
+                d = angle_dist_sqr(segment.end, self.now_segment_pt)
+                if (d < best_dist):
+                    best_pt = segment.end
+                    best_dist = d
+            self.now_segment_pt = best_pt
+
+        elif keyval == Gdk.KEY_t:
+            # Toggle between theta and xy renderings
+            if self.theta_version:
+                theta1, theta2 = self.last_pos
+                data = to_xy(theta1, theta2)
+                self.circular_index_select = int(
+                    numpy.floor((theta2 - theta1) / numpy.pi))
+                self.last_pos = (data[0], data[1])
+            else:
+                self.last_pos = self.cur_pt_in_theta()
+
+            self.theta_version = not self.theta_version
+            self.reinit_extents()
+        self.redraw()
+
+    def do_button_press(self, event):
+        self.last_pos = (event.x, event.y)
+        self.now_segment_pt = self.cur_pt_in_theta()
+        print('Clicked at theta: (%f, %f)' % (self.now_segment_pt[0],
+                                              self.now_segment_pt[1]))
+        if not self.theta_version:
+            print('Clicked at xy, circular index: (%f, %f, %f)' %
+                  (self.last_pos[0], self.last_pos[1],
+                   self.circular_index_select))
+
+        self.redraw()
+
 
 silly = Silly()
-silly.segs = graph_generate.segs
+silly.segments = graph_generate.segments
 basic_window.RunApp()
