@@ -28,14 +28,16 @@ namespace y2018 {
 namespace input {
 namespace joysticks {
 
-const ButtonLocation kIntakeDown(3, 7);
-const POVLocation kIntakeUp(3, 90);
-const POVLocation kIntakeIn(3, 270);
-const ButtonLocation kIntakeOut(3, 6);
+const ButtonLocation kIntakeClosed(4, 5);
+const ButtonLocation kIntakeOpen(4, 4);
 
-const ButtonLocation kArmDown(3, 12);
-const ButtonLocation kArmSwitch(3, 8);
-const ButtonLocation kArmScale(3, 6);
+const ButtonLocation kIntakeIn(4, 3);
+const ButtonLocation kIntakeOut(4, 8);
+
+const ButtonLocation kArmDown(3, 6);
+const ButtonLocation kArmSwitch(4, 10);
+const ButtonLocation kArmScale(3, 10);
+const ButtonLocation kArmBack(4, 9);
 
 const ButtonLocation kClawOpen(3, 5);
 const ButtonLocation kClawClose(3, 4);
@@ -92,11 +94,11 @@ class Reader : public ::aos::input::JoystickInput {
       return;
     }
 
-    if (data.IsPressed(kIntakeUp)) {
+    if (data.IsPressed(kIntakeOpen)) {
       // Bring in the intake.
       intake_goal_ = -M_PI * 2.0 / 3.0;
     }
-    if (data.IsPressed(kIntakeDown)) {
+    if (data.IsPressed(kIntakeClosed)) {
       // Deploy the intake.
       intake_goal_ = 0.25;
     }
@@ -122,10 +124,13 @@ class Reader : public ::aos::input::JoystickInput {
       arm_goal_position_ = 0;
     } else if (data.IsPressed(kArmSwitch)) {
       // Put the arm up to the level of the switch.
-      arm_goal_position_ = 1;
+      arm_goal_position_ = 14;
     } else if (data.IsPressed(kArmScale)) {
       // Put the arm up to the level of the switch.
-      arm_goal_position_ = 1;
+      arm_goal_position_ = 4;
+    } else if (data.IsPressed(kArmBack)) {
+      // Put the arm up to the level of the switch.
+      arm_goal_position_ = 10;
     }
 
     new_superstructure_goal->arm_goal_position = arm_goal_position_;
