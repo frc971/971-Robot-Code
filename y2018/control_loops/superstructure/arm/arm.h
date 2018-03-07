@@ -14,16 +14,6 @@ namespace control_loops {
 namespace superstructure {
 namespace arm {
 
-struct TrajectoryPair {
-  TrajectoryPair(::std::unique_ptr<Path> forwards_path,
-                 ::std::unique_ptr<Path> backwards_path, double step_size)
-      : forwards(::std::move(forwards_path), step_size),
-        backwards(::std::move(backwards_path), step_size) {}
-
-  Trajectory forwards;
-  Trajectory backwards;
-};
-
 class Arm {
  public:
   Arm();
@@ -67,7 +57,7 @@ class Arm {
 
   const ::Eigen::Matrix<double, 2, 2> alpha_unitizer_;
 
-  ::std::vector<TrajectoryPair> trajectories_;
+  ::std::vector<Trajectory> trajectories_;
   SearchGraph search_graph_;
 
   bool close_enough_for_full_power_ = false;

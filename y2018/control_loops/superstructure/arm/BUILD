@@ -74,8 +74,8 @@ cc_binary(
     ],
     restricted_to = ["//tools:k8"],
     deps = [
-        ":demo_path",
         ":ekf",
+        ":generated_graph",
         ":trajectory",
         "//third_party/eigen",
         "//third_party/gflags",
@@ -126,11 +126,36 @@ cc_library(
     deps = [
         ":demo_path",
         ":ekf",
+        ":generated_graph",
         ":graph",
         ":trajectory",
         "//aos/common/logging:queue_logging",
         "//frc971/zeroing",
         "//y2018:constants",
         "//y2018/control_loops/superstructure:superstructure_queue",
+    ],
+)
+
+genrule(
+    name = "generated_graph_genrule",
+    outs = [
+        "generated_graph.h",
+        "generated_graph.cc",
+    ],
+    cmd = "$(location //y2018/control_loops/python:graph_codegen) $(OUTS)",
+    tools = [
+        "//y2018/control_loops/python:graph_codegen",
+    ],
+)
+
+cc_library(
+    name = "generated_graph",
+    srcs = [
+        "generated_graph.cc",
+    ],
+    hdrs = ["generated_graph.h"],
+    deps = [
+        ":graph",
+        ":trajectory",
     ],
 )

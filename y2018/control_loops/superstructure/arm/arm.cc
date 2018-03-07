@@ -8,6 +8,7 @@
 #include "y2018/constants.h"
 #include "y2018/control_loops/superstructure/arm/demo_path.h"
 #include "y2018/control_loops/superstructure/arm/dynamics.h"
+#include "y2018/control_loops/superstructure/arm/generated_graph.h"
 
 namespace y2018 {
 namespace control_loops {
@@ -17,40 +18,20 @@ namespace arm {
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
 
-SearchGraph::Edge MakeEdge(::std::vector<TrajectoryPair> *trajectories,
-                           size_t start, size_t end, ::std::unique_ptr<Path> forwards_path,
-                           ::std::unique_ptr<Path> backwards_path) {
-  trajectories->emplace_back(::std::move(forwards_path),
-                             ::std::move(backwards_path), 0.005);
-
-  return SearchGraph::Edge{start, end,
-                           trajectories->back().forwards.path().length()};
-}
-
-SearchGraph MakeSearchGraph(::std::vector<TrajectoryPair> *trajectories) {
-  ::std::vector<SearchGraph::Edge> edges;
-
-  // TODO(austin): Add more trajectories here.
-  edges.push_back(
-      MakeEdge(trajectories, 0, 1, MakeReversedDemoPath(), MakeDemoPath()));
-
-  return SearchGraph(2, ::std::move(edges));
-}
-
 Arm::Arm()
     : proximal_zeroing_estimator_(constants::GetValues().arm_proximal.zeroing),
       distal_zeroing_estimator_(constants::GetValues().arm_distal.zeroing),
       alpha_unitizer_((::Eigen::Matrix<double, 2, 2>() << 1.0 / kAlpha0Max(),
                        0.0, 0.0, 1.0 / kAlpha1Max())
                           .finished()),
-      search_graph_(MakeSearchGraph(&trajectories_)),
+      search_graph_(MakeSearchGraph(&trajectories_, alpha_unitizer_, kVMax())),
       // Go to the start of the first trajectory.
-      follower_(trajectories_[0].forwards.path().Theta(0)) {
-  // TODO(austin): Stop talking about indeces in the list and start talking
-  // about points/search for the nearest point.
-  for (TrajectoryPair &trajectory_pair : trajectories_) {
-    trajectory_pair.forwards.OptimizeTrajectory(alpha_unitizer_, kVMax());
-    trajectory_pair.backwards.OptimizeTrajectory(alpha_unitizer_, kVMax());
+      follower_(ReadyAboveBoxPoint()) {
+  int i = 0;
+  for (const auto &trajectory : trajectories_) {
+    LOG(INFO, "trajectory length for edge node %d: %f\n", i,
+        trajectory.path().length());
+    ++i;
   }
 }
 
@@ -127,6 +108,10 @@ void Arm::Iterate(const uint32_t *unsafe_goal,
         state_ = State::ESTOP;
       } else if (unsafe_goal != nullptr) {
         if (!follower_.has_path()) {
+          // TODO(austin): Nearest point at the end of Initialize.
+          // So, get a vector of all the points, loop through them, and find the
+          // closest one.
+
           // If we don't have a path and are far from the goal, don't update the
           // path.
           // TODO(austin): Once we get close to our first setpoint, crank the
@@ -165,13 +150,11 @@ void Arm::Iterate(const uint32_t *unsafe_goal,
           // Ok, now we know which edge we are on.  Figure out the path and
           // trajectory.
           const SearchGraph::Edge &next_edge = search_graph_.edges()[min_edge];
-          if (next_edge.start == current_node_) {
-            follower_.SwitchTrajectory(&trajectories_[min_edge].forwards);
-            current_node_ = next_edge.end;
-          } else {
-            follower_.SwitchTrajectory(&trajectories_[min_edge].backwards);
-            current_node_ = next_edge.start;
-          }
+          LOG(INFO, "Switching from node %d to %d along edge %d\n",
+              static_cast<int>(current_node_), static_cast<int>(next_edge.end),
+              static_cast<int>(min_edge));
+          follower_.SwitchTrajectory(&trajectories_[min_edge]);
+          current_node_ = next_edge.end;
         }
       }
       break;

@@ -32,6 +32,10 @@ Path Path::Reversed(const Path &p) {
   return Path(list);
 }
 
+::std::unique_ptr<Path> Path::Reversed(::std::unique_ptr<Path> p) {
+  return ::std::unique_ptr<Path>(new Path(Path::Reversed(*p)));
+}
+
 Path::Path(::std::vector<::std::array<double, 6>> list) {
   distances_.reserve(list.size());
   ::Eigen::Matrix<double, 2, 1> last_theta;

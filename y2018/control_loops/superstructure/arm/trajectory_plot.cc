@@ -2,9 +2,9 @@
 
 #include "third_party/gflags/include/gflags/gflags.h"
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
-#include "y2018/control_loops/superstructure/arm/demo_path.h"
 #include "y2018/control_loops/superstructure/arm/dynamics.h"
 #include "y2018/control_loops/superstructure/arm/ekf.h"
+#include "y2018/control_loops/superstructure/arm/generated_graph.h"
 
 DEFINE_bool(forwards, true, "If true, run the forwards simulation.");
 DEFINE_bool(plot, true, "If true, plot");
@@ -16,8 +16,10 @@ namespace superstructure {
 namespace arm {
 
 void Main() {
-  Trajectory trajectory(
-      FLAGS_forwards ? MakeDemoPath() : MakeReversedDemoPath(), 0.001);
+  Trajectory trajectory(FLAGS_forwards
+                            ? MakeNeutralToFrontHighPath()
+                            : Path::Reversed(MakeNeutralToFrontHighPath()),
+                        0.001);
 
   constexpr double kAlpha0Max = 30.0;
   constexpr double kAlpha1Max = 50.0;
@@ -39,6 +41,15 @@ void Main() {
   ::std::vector<double> alpha0_array;
   ::std::vector<double> alpha1_array;
 
+  ::std::vector<double> integrated_distance;
+  ::std::vector<double> integrated_theta0_array;
+  ::std::vector<double> integrated_theta1_array;
+  ::std::vector<double> integrated_omega0_array;
+  ::std::vector<double> integrated_omega1_array;
+
+  ::Eigen::Matrix<double, 2, 1> integrated_theta = trajectory.path().Theta(0);
+  ::Eigen::Matrix<double, 2, 1> integrated_omega = trajectory.path().Omega(0);
+
   for (const double d : distance_array) {
     const ::Eigen::Matrix<double, 2, 1> theta = trajectory.path().Theta(d);
     const ::Eigen::Matrix<double, 2, 1> omega = trajectory.path().Omega(d);
@@ -49,6 +60,19 @@ void Main() {
     omega1_array.push_back(omega(1, 0));
     alpha0_array.push_back(alpha(0, 0));
     alpha1_array.push_back(alpha(1, 0));
+  }
+
+  const double dd = trajectory.path().length() / 1000.0;
+  for (double d = 0; d <= trajectory.path().length(); d += dd) {
+    integrated_distance.push_back(d);
+    integrated_omega0_array.push_back(integrated_omega(0));
+    integrated_omega1_array.push_back(integrated_omega(1));
+    integrated_theta0_array.push_back(integrated_theta(0));
+    integrated_theta1_array.push_back(integrated_theta(1));
+
+    const ::Eigen::Matrix<double, 2, 1> alpha = trajectory.path().Alpha(d);
+    integrated_theta += integrated_omega * dd;
+    integrated_omega += alpha * dd;
   }
 
   // Next step: see what U is as a function of distance.
@@ -235,6 +259,15 @@ void Main() {
     matplotlibcpp::plot(distance_array, omega1_array, {{"label", "omega1"}});
     matplotlibcpp::plot(distance_array, alpha0_array, {{"label", "alpha0"}});
     matplotlibcpp::plot(distance_array, alpha1_array, {{"label", "alpha1"}});
+
+    matplotlibcpp::plot(integrated_distance, integrated_theta0_array,
+                        {{"label", "itheta0"}});
+    matplotlibcpp::plot(integrated_distance, integrated_theta1_array,
+                        {{"label", "itheta1"}});
+    matplotlibcpp::plot(integrated_distance, integrated_omega0_array,
+                        {{"label", "iomega0"}});
+    matplotlibcpp::plot(integrated_distance, integrated_omega1_array,
+                        {{"label", "iomega1"}});
     matplotlibcpp::legend();
 
     matplotlibcpp::figure();
