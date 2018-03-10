@@ -11,7 +11,8 @@ aos_downloader(
         ":wpilib_interface",
         "//aos:prime_start_binaries",
         "//y2018/control_loops/drivetrain:drivetrain",
-        "//y2018/control_loops/superstructure:superstructure.stripped",
+        "//y2018/actors:autonomous_action",
+        "//y2018/control_loops/superstructure:superstructure",
     ],
 )
 
@@ -25,6 +26,7 @@ aos_downloader(
         ":joystick_reader.stripped",
         ":wpilib_interface.stripped",
         "//aos:prime_start_binaries_stripped",
+        "//y2018/actors:autonomous_action.stripped",
         "//y2018/control_loops/drivetrain:drivetrain.stripped",
         "//y2018/control_loops/superstructure:superstructure.stripped",
     ],
@@ -44,6 +46,7 @@ cc_binary(
         "//aos/input:joystick_input",
         "//aos/linux_code:init",
         "//frc971/autonomous:auto_queue",
+        "//frc971/autonomous:base_autonomous_actor",
         "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//y2018/control_loops/drivetrain:drivetrain_base",
         "//y2018/control_loops/superstructure:superstructure_queue",

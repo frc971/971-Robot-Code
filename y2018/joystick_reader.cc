@@ -11,6 +11,8 @@
 #include "aos/input/drivetrain_input.h"
 #include "aos/input/joystick_input.h"
 #include "aos/linux_code/init.h"
+#include "frc971/autonomous/auto.q.h"
+#include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2018/control_loops/drivetrain/drivetrain_base.h"
 #include "y2018/control_loops/superstructure/arm/generated_graph.h"
@@ -199,7 +201,20 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
  private:
-  void StartAuto() { LOG(INFO, "Starting auto mode\n"); }
+  void StartAuto() {
+    LOG(INFO, "Starting auto mode\n");
+
+    ::frc971::autonomous::AutonomousActionParams params;
+    ::frc971::autonomous::auto_mode.FetchLatest();
+    if (::frc971::autonomous::auto_mode.get() != nullptr) {
+      params.mode = ::frc971::autonomous::auto_mode->mode;
+    } else {
+      LOG(WARNING, "no auto mode values\n");
+      params.mode = 0;
+    }
+    action_queue_.EnqueueAction(
+        ::frc971::autonomous::MakeAutonomousAction(params));
+  }
 
   void StopAuto() {
     LOG(INFO, "Stopping auto mode\n");
