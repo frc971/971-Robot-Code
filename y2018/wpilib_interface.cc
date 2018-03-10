@@ -469,7 +469,7 @@ class SensorReader {
       superstructure_message->right_intake.beam_break =
           right_intake_cube_detector_->Get();
 
-      superstructure_message->claw_beambreak_triggered = claw_beambreak_->Get();
+      superstructure_message->claw_beambreak_triggered = !claw_beambreak_->Get();
       superstructure_message->box_back_beambreak_triggered =
           !box_back_beambreak_->Get();
 
@@ -627,7 +627,7 @@ class SolenoidWriter {
         if (superstructure_.get()) {
           LOG_STRUCT(DEBUG, "solenoids", *superstructure_);
 
-          claw_->Set(superstructure_->claw_grabbed);
+          claw_->Set(!superstructure_->claw_grabbed);
           arm_brakes_->Set(superstructure_->release_arm_brake);
           hook_->Set(superstructure_->hook_release);
           forks_->Set(superstructure_->forks_release);

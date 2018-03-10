@@ -364,7 +364,7 @@ void TrajectoryFollower::Reset() {
   saturation_fraction_along_path_ = 0.0;
   omega_.setZero();
   if (trajectory_ != nullptr) {
-    theta_ = trajectory_->ThetaT(goal_(0));
+    set_theta(trajectory_->ThetaT(goal_(0)));
   }
 }
 

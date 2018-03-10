@@ -329,6 +329,8 @@ class TrajectoryFollower {
 
   bool has_path() const { return trajectory_ != nullptr; }
 
+  void set_theta(const ::Eigen::Matrix<double, 2, 1> &theta) { theta_ = theta; }
+
   // Returns the goal distance along the path.
   const ::Eigen::Matrix<double, 2, 1> &goal() const { return goal_; }
   double goal(int i) const { return goal_(i); }

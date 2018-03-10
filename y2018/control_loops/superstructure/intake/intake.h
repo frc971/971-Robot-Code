@@ -29,6 +29,8 @@ class IntakeController {
   // Returns the control loop calculated voltage.
   double voltage() const;
 
+  double output_position() const { return loop_->X_hat(0); }
+
   // Executes the control loop for a cycle.
   void Update(bool disabled, const double *unsafe_goal);
 
@@ -90,6 +92,10 @@ class IntakeSide {
   };
 
   State state() const { return state_; }
+
+  bool clear_of_box() const {
+    return controller_.output_position() < -0.2;
+  }
 
  private:
   IntakeController controller_;

@@ -34,27 +34,35 @@ void Superstructure::RunIteration(
     arm_.Reset();
   }
 
-  intake_left_.Iterate(unsafe_goal != nullptr
-                           ? &(unsafe_goal->intake.left_intake_angle)
-                           : nullptr,
+  const double left_intake_goal = ::std::min(
+      arm_.max_intake_override(),
+      (unsafe_goal == nullptr ? 0.0 : unsafe_goal->intake.left_intake_angle));
+  intake_left_.Iterate(unsafe_goal != nullptr ? &(left_intake_goal) : nullptr,
                        &(position->left_intake),
                        output != nullptr ? &(output->left_intake) : nullptr,
                        &(status->left_intake));
 
-  intake_right_.Iterate(unsafe_goal != nullptr
-                            ? &(unsafe_goal->intake.right_intake_angle)
-                            : nullptr,
+  const double right_intake_goal = ::std::min(
+      arm_.max_intake_override(),
+      (unsafe_goal == nullptr ? 0.0 : unsafe_goal->intake.right_intake_angle));
+
+  intake_right_.Iterate(unsafe_goal != nullptr ? &(right_intake_goal) : nullptr,
                         &(position->right_intake),
                         output != nullptr ? &(output->right_intake) : nullptr,
                         &(status->right_intake));
 
+  const bool intake_clear_of_box =
+      intake_left_.clear_of_box() && intake_right_.clear_of_box();
   arm_.Iterate(
       unsafe_goal != nullptr ? &(unsafe_goal->arm_goal_position) : nullptr,
-      &(position->arm),
+      unsafe_goal != nullptr ? unsafe_goal->grab_box : false,
+      unsafe_goal != nullptr ? unsafe_goal->open_claw : false, &(position->arm),
+      position->claw_beambreak_triggered,
+      position->box_back_beambreak_triggered, intake_clear_of_box,
       output != nullptr ? &(output->voltage_proximal) : nullptr,
       output != nullptr ? &(output->voltage_distal) : nullptr,
       output != nullptr ? &(output->release_arm_brake) : nullptr,
-      &(status->arm));
+      output != nullptr ? &(output->claw_grabbed) : nullptr, &(status->arm));
 
   status->estopped = status->left_intake.estopped ||
                      status->right_intake.estopped || status->arm.estopped;
@@ -63,7 +71,7 @@ void Superstructure::RunIteration(
                    status->arm.zeroed;
 
   if (output && unsafe_goal) {
-    const double roller_voltage = ::std::max(
+    double roller_voltage = ::std::max(
         -kMaxIntakeRollerVoltage, ::std::min(unsafe_goal->intake.roller_voltage,
                                              kMaxIntakeRollerVoltage));
     constexpr int kReverseTime = 15;
@@ -108,6 +116,9 @@ void Superstructure::RunIteration(
           break;
       }
 
+      if (position->box_back_beambreak_triggered && roller_voltage > 0.0) {
+        roller_voltage = 0;
+      }
       switch (rotation_state_) {
         case RotationState::NOT_ROTATING:
           output->left_intake.voltage_rollers = roller_voltage;

@@ -37,11 +37,29 @@ Arm::Arm()
 
 void Arm::Reset() { state_ = State::UNINITIALIZED; }
 
-void Arm::Iterate(const uint32_t *unsafe_goal,
+void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
                   const control_loops::ArmPosition *position,
-                  double *proximal_output, double *distal_output,
-                  bool *release_arm_brake, control_loops::ArmStatus *status) {
+                  const bool claw_beambreak_triggered,
+                  const bool box_back_beambreak_triggered,
+                  const bool intake_clear_of_box, double *proximal_output,
+                  double *distal_output, bool *release_arm_brake,
+                  bool *claw_closed, control_loops::ArmStatus *status) {
   ::Eigen::Matrix<double, 2, 1> Y;
+  const bool outputs_disabled =
+      ((proximal_output == nullptr) || (distal_output == nullptr) ||
+       (release_arm_brake == nullptr) || (claw_closed == nullptr));
+
+  uint32_t filtered_goal = 0;
+  if (unsafe_goal != nullptr) {
+    filtered_goal = *unsafe_goal;
+  }
+
+  if (open_claw) {
+    claw_closed_ = false;
+  }
+  if (outputs_disabled) {
+    claw_closed_ = true;
+  }
 
   Y << position->proximal.encoder + proximal_offset_,
       position->distal.encoder + distal_offset_;
@@ -74,15 +92,13 @@ void Arm::Iterate(const uint32_t *unsafe_goal,
       state_ = State::ZEROING;
       proximal_zeroing_estimator_.Reset();
       distal_zeroing_estimator_.Reset();
-      // TODO(austin): Go to the nearest node.  For now, we are always going to
-      // go to node 0.
       break;
 
     case State::ZEROING:
       // Zero by not moving.
       if (proximal_zeroing_estimator_.zeroed() &&
           distal_zeroing_estimator_.zeroed()) {
-        state_ = State::RUNNING;
+        state_ = State::DISABLED;
 
         proximal_offset_ = proximal_zeroing_estimator_.offset();
         distal_offset_ = distal_zeroing_estimator_.offset();
@@ -99,6 +115,30 @@ void Arm::Iterate(const uint32_t *unsafe_goal,
         break;
       }
 
+    case State::DISABLED:
+      if (!outputs_disabled) {
+        follower_.SwitchTrajectory(nullptr);
+        close_enough_for_full_power_ = false;
+        // TODO(austin): Nearest point at the end of Initialize.
+        // So, get a vector of all the points, loop through them, and find the
+        // closest one.
+        follower_.set_theta(ReadyAboveBoxPoint());
+        current_node_ = ReadyAboveBoxIndex();
+
+        state_ = State::GOTO_PATH;
+      } else {
+        break;
+      }
+
+    case State::GOTO_PATH:
+      if (outputs_disabled) {
+        state_ = State::DISABLED;
+      } else if (close_enough_for_full_power_) {
+        state_ = State::RUNNING;
+        grab_state_ = GrabState::NORMAL;
+      }
+      break;
+
     case State::RUNNING:
       // ESTOP if we hit the hard limits.
       // TODO(austin): Pick some sane limits.
@@ -106,56 +146,8 @@ void Arm::Iterate(const uint32_t *unsafe_goal,
           distal_zeroing_estimator_.error()) {
         LOG(ERROR, "Zeroing error ESTOP\n");
         state_ = State::ESTOP;
-      } else if (unsafe_goal != nullptr) {
-        if (!follower_.has_path()) {
-          // TODO(austin): Nearest point at the end of Initialize.
-          // So, get a vector of all the points, loop through them, and find the
-          // closest one.
-
-          // If we don't have a path and are far from the goal, don't update the
-          // path.
-          // TODO(austin): Once we get close to our first setpoint, crank the
-          // power back up. Otherwise we'll be weak at startup.
-          LOG(INFO, "No path.\n");
-          if (!close_enough_for_full_power_) {
-            break;
-          }
-        }
-        if (current_node_ != *unsafe_goal) {
-          LOG(INFO, "Goal is different\n");
-          if (*unsafe_goal >= search_graph_.num_vertexes()) {
-            LOG(ERROR, "goal out of range ESTOP\n");
-            state_ = State::ESTOP;
-            break;
-          }
-
-          if (follower_.path_distance_to_go() > 1e-3) {
-            LOG(INFO, " Distance to go %f\n", follower_.path_distance_to_go());
-            // Still on the old path segment.  Can't change yet.
-            break;
-          }
-
-          search_graph_.SetGoal(*unsafe_goal);
-
-          size_t min_edge = 0;
-          double min_cost = -1.0;
-          for (const SearchGraph::HalfEdge &edge :
-               search_graph_.Neighbors(current_node_)) {
-            const double cost = search_graph_.GetCostToGoal(edge.dest);
-            if (min_cost == -1 || cost < min_cost) {
-              min_edge = edge.edge_id;
-              min_cost = cost;
-            }
-          }
-          // Ok, now we know which edge we are on.  Figure out the path and
-          // trajectory.
-          const SearchGraph::Edge &next_edge = search_graph_.edges()[min_edge];
-          LOG(INFO, "Switching from node %d to %d along edge %d\n",
-              static_cast<int>(current_node_), static_cast<int>(next_edge.end),
-              static_cast<int>(min_edge));
-          follower_.SwitchTrajectory(&trajectories_[min_edge]);
-          current_node_ = next_edge.end;
-        }
+      } else if (outputs_disabled) {
+        state_ = State::DISABLED;
       }
       break;
 
@@ -164,12 +156,160 @@ void Arm::Iterate(const uint32_t *unsafe_goal,
       break;
   }
 
-  const bool disable =
-      ((proximal_output == nullptr) || (distal_output == nullptr) ||
-       (release_arm_brake == nullptr)) ||
-      state_ != State::RUNNING;
+  const bool disable = outputs_disabled ||
+                       (state_ != State::RUNNING && state_ != State::GOTO_PATH);
   if (disable) {
     close_enough_for_full_power_ = false;
+  }
+
+  if (claw_closed_) {
+    if ((filtered_goal == ReadyAboveBoxIndex()) ||
+        (filtered_goal == TallBoxGrabIndex()) ||
+        (filtered_goal == ShortBoxGrabIndex())) {
+      filtered_goal = NeutralIndex();
+    }
+  }
+
+  // TODO(austin): Do we need to debounce box_back_beambreak_triggered ?
+  switch (grab_state_) {
+    case GrabState::NORMAL:
+      if (grab_box && !claw_closed_) {
+        grab_state_ = GrabState::WAIT_FOR_BOX;
+      } else {
+        break;
+      }
+    case GrabState::WAIT_FOR_BOX:
+      if (!grab_box) {
+        grab_state_ = GrabState::NORMAL;
+      } else {
+        if (AtState(ReadyAboveBoxIndex()) && NearEnd()) {
+          // We are being asked to grab the box, and the claw is near the box.
+          if (box_back_beambreak_triggered) {
+            // And we now see the box!  Try for a tall box.
+            grab_state_ = GrabState::TALL_BOX;
+          }
+        }
+      }
+      break;
+    case GrabState::TALL_BOX:
+      if (!grab_box) {
+        grab_state_ = GrabState::NORMAL;
+      } else if (!box_back_beambreak_triggered) {
+        // Lost the box, go back to wait for it.
+        grab_state_ = GrabState::WAIT_FOR_BOX;
+      } else if (AtState(TallBoxGrabIndex()) && NearEnd()) {
+        // We are being asked to grab the box, and the claw is near the box.
+        if (claw_beambreak_triggered) {
+          grab_state_ = GrabState::CLAW_CLOSE;
+          // Snap time for the delay here.
+          claw_close_start_time_ = ::aos::monotonic_clock::now();
+        } else {
+          grab_state_ = GrabState::SHORT_BOX;
+        }
+      }
+      break;
+    case GrabState::SHORT_BOX:
+      if (!grab_box) {
+        grab_state_ = GrabState::NORMAL;
+      } else if (!box_back_beambreak_triggered) {
+        // Lost the box, go back to wait for it.
+        grab_state_ = GrabState::WAIT_FOR_BOX;
+      } else if (AtState(ShortBoxGrabIndex()) && NearEnd()) {
+        // We are being asked to grab the box, and the claw is near the box.
+        if (claw_beambreak_triggered) {
+          grab_state_ = GrabState::CLAW_CLOSE;
+          // Snap time for the delay here.
+          claw_close_start_time_ = ::aos::monotonic_clock::now();
+        } else {
+          grab_state_ = GrabState::WAIT_FOR_BOX;
+        }
+      }
+      break;
+    case GrabState::CLAW_CLOSE:
+      if (::aos::monotonic_clock::now() >
+          claw_close_start_time_ + ::std::chrono::milliseconds(500)) {
+        grab_state_ = GrabState::OPEN_INTAKE;
+      }
+      break;
+    case GrabState::OPEN_INTAKE:
+      if (intake_clear_of_box) {
+        grab_state_ = GrabState::NORMAL;
+      }
+      break;
+  }
+
+  // Now, based out our current state, go to the right state.
+  switch (grab_state_) {
+    case GrabState::NORMAL:
+      // Don't let the intake close fully with the claw closed.
+      // TODO(austin): If we want to transfer the box from the claw to the
+      // intake, we'll need to change this.
+      if (claw_closed_) {
+        max_intake_override_ = -0.5;
+      } else {
+        max_intake_override_ = 1000.0;
+      }
+      break;
+    case GrabState::WAIT_FOR_BOX:
+      filtered_goal = ReadyAboveBoxIndex();
+      claw_closed_ = false;
+      max_intake_override_ = 1000.0;
+      break;
+    case GrabState::TALL_BOX:
+      filtered_goal = TallBoxGrabIndex();
+      claw_closed_ = false;
+      max_intake_override_ = 1000.0;
+      break;
+    case GrabState::SHORT_BOX:
+      filtered_goal = ShortBoxGrabIndex();
+      claw_closed_ = false;
+      max_intake_override_ = 1000.0;
+      break;
+    case GrabState::CLAW_CLOSE:
+      // Don't move.
+      filtered_goal = current_node_;
+      claw_closed_ = true;
+      max_intake_override_ = 1000.0;
+      break;
+    case GrabState::OPEN_INTAKE:
+      // Don't move.
+      filtered_goal = current_node_;
+      claw_closed_ = true;
+      max_intake_override_ = -0.5;
+      break;
+  }
+
+  if (state_ == State::RUNNING && unsafe_goal != nullptr) {
+    if (current_node_ != filtered_goal) {
+      LOG(INFO, "Goal is different\n");
+      if (filtered_goal >= search_graph_.num_vertexes()) {
+        LOG(ERROR, "goal node out of range ESTOP\n");
+        state_ = State::ESTOP;
+      } else if (follower_.path_distance_to_go() > 1e-3) {
+        // Still on the old path segment.  Can't change yet.
+      } else {
+        search_graph_.SetGoal(filtered_goal);
+
+        size_t min_edge = 0;
+        double min_cost = ::std::numeric_limits<double>::infinity();
+        for (const SearchGraph::HalfEdge &edge :
+             search_graph_.Neighbors(current_node_)) {
+          const double cost = search_graph_.GetCostToGoal(edge.dest);
+          if (cost < min_cost) {
+            min_edge = edge.edge_id;
+            min_cost = cost;
+          }
+        }
+        // Ok, now we know which edge we are on.  Figure out the path and
+        // trajectory.
+        const SearchGraph::Edge &next_edge = search_graph_.edges()[min_edge];
+        LOG(INFO, "Switching from node %d to %d along edge %d\n",
+            static_cast<int>(current_node_), static_cast<int>(next_edge.end),
+            static_cast<int>(min_edge));
+        follower_.SwitchTrajectory(&trajectories_[min_edge]);
+        current_node_ = next_edge.end;
+      }
+    }
   }
 
   follower_.Update(
@@ -195,6 +335,7 @@ void Arm::Iterate(const uint32_t *unsafe_goal,
     *distal_output = ::std::max(
         -kOperatingVoltage(), ::std::min(kOperatingVoltage(), follower_.U(1)));
     *release_arm_brake = true;
+    *claw_closed = claw_closed_;
   }
 
   status->proximal_estimator_state =
@@ -209,6 +350,7 @@ void Arm::Iterate(const uint32_t *unsafe_goal,
                     distal_zeroing_estimator_.zeroed());
   status->estopped = (state_ == State::ESTOP);
   status->state = static_cast<int32_t>(state_);
+  status->grab_state = static_cast<int32_t>(grab_state_);
   status->failed_solutions = follower_.failed_solutions();
 
   arm_ekf_.Predict(follower_.U(), kDt());
