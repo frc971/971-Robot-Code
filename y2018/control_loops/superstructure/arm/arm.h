@@ -18,19 +18,23 @@ class Arm {
  public:
   Arm();
 
+  // If true, tune down all the constants for testing.
+  static constexpr bool kGrannyMode() { return true; }
+
   // The operating voltage.
-  static constexpr double kOperatingVoltage() { return 12.0; }
+  static constexpr double kOperatingVoltage() {
+    return kGrannyMode() ? 6.0 : 12.0;
+  }
   static constexpr double kDt() { return 0.00505; }
-  static constexpr double kAlpha0Max() { return 25.0; }
-  static constexpr double kAlpha1Max() { return 25.0; }
-  static constexpr double kVMax() { return 11.0; }
+  static constexpr double kAlpha0Max() { return kGrannyMode() ? 10.0 : 25.0; }
+  static constexpr double kAlpha1Max() { return kGrannyMode() ? 10.0 : 25.0; }
+  static constexpr double kVMax() { return kGrannyMode() ? 4.0 : 11.5; }
   static constexpr double kPathlessVMax() { return 4.0; }
 
   void Iterate(const uint32_t *unsafe_goal,
                const control_loops::ArmPosition *position,
                double *proximal_output, double *distal_output,
-               bool *release_arm_brake,
-               control_loops::ArmStatus *status);
+               bool *release_arm_brake, control_loops::ArmStatus *status);
 
   void Reset();
 
