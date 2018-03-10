@@ -328,6 +328,8 @@ extern "C" void pit3_isr() {
     wheel_haptic_current = 0.0f;
     wheel_centering = true;
     wheel_centering_scalar = 0.25f;
+    // Avoid wrapping back into the valid range.
+    last_command_time = time_subtract(micros(), kTimeout);
   }
 
   StateFeedbackPlant<3, 1, 1, float> *const trigger_plant =
