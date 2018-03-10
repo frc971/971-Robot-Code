@@ -115,6 +115,18 @@ def main(argv):
                            (-point[3], -point[4], -point[5]))
         cc_file.append("  }));")
         cc_file.append("}")
+    
+    # Matrix of nodes
+    h_file.append("::std::vector<::Eigen::Matrix<double, 2, 1>> PointList();")
+
+    cc_file.append("::std::vector<::Eigen::Matrix<double, 2, 1>> PointList() {")
+    cc_file.append("  ::std::vector<::Eigen::Matrix<double, 2, 1>> points;")
+    for index, point in enumerate(graph_generate.points):
+        cc_file.append(
+            "  points.push_back((::Eigen::Matrix<double, 2, 1>() << %.12s, %.12s).finished());" % (
+                numpy.pi / 2.0 - point[0][0], numpy.pi / 2.0 - point[0][1]))
+    cc_file.append("  return points;")
+    cc_file.append("}")
 
     # Now create the MakeSearchGraph function.
     h_file.append("")
