@@ -13,6 +13,7 @@
 #include "aos/linux_code/init.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2018/control_loops/drivetrain/drivetrain_base.h"
+#include "y2018/control_loops/superstructure/arm/generated_graph.h"
 #include "y2018/control_loops/superstructure/superstructure.q.h"
 
 using ::frc971::control_loops::drivetrain_queue;
@@ -28,19 +29,33 @@ namespace y2018 {
 namespace input {
 namespace joysticks {
 
-const ButtonLocation kIntakeClosed(4, 5);
-const ButtonLocation kIntakeOpen(4, 4);
+namespace arm = ::y2018::control_loops::superstructure::arm;
 
-const ButtonLocation kIntakeIn(4, 3);
-const ButtonLocation kIntakeOut(4, 8);
+const ButtonLocation kIntakeClosed(4, 1);
 
-const ButtonLocation kArmDown(3, 6);
-const ButtonLocation kArmSwitch(4, 10);
-const ButtonLocation kArmScale(3, 10);
-const ButtonLocation kArmBack(4, 9);
+const ButtonLocation kIntakeIn(3, 16);
+const ButtonLocation kIntakeOut(4, 3);
 
-const ButtonLocation kClawOpen(3, 5);
-const ButtonLocation kClawClose(3, 4);
+const ButtonLocation kArmFrontHighBox(4, 5);
+const ButtonLocation kArmFrontExtraHighBox(3, 8);
+const ButtonLocation kArmFrontMiddle2Box(4, 7);
+const ButtonLocation kArmFrontMiddle1Box(4, 9);
+const ButtonLocation kArmFrontLowBox(4, 11);
+const ButtonLocation kArmFrontSwitch(3, 14);
+
+const ButtonLocation kArmBackHighBox(4, 6);
+const ButtonLocation kArmBackExtraHighBox(3, 10);
+const ButtonLocation kArmBackMiddle2Box(4, 8);
+const ButtonLocation kArmBackMiddle1Box(4, 10);
+const ButtonLocation kArmBackLowBox(4, 12);
+const ButtonLocation kArmBackSwitch(3, 12);
+
+const ButtonLocation kArmNeutral(3, 13);
+const ButtonLocation kArmUp(3, 9);
+
+const ButtonLocation kArmPickupBoxFromIntake(3, 6);
+
+const ButtonLocation kClawOpen(3, 1);
 
 const ButtonLocation kForkDeploy(3, 11);
 const ButtonLocation kForkStow(3, 10);
@@ -88,19 +103,24 @@ class Reader : public ::aos::input::JoystickInput {
       LOG(DEBUG, "Canceling\n");
     }
 
+    superstructure_queue.position.FetchLatest();
     superstructure_queue.status.FetchLatest();
-    if (!superstructure_queue.status.get()) {
+    if (!superstructure_queue.status.get() ||
+        !superstructure_queue.position.get()) {
       LOG(ERROR, "Got no superstructure status packet.\n");
       return;
     }
 
-    if (data.IsPressed(kIntakeOpen)) {
-      // Bring in the intake.
-      intake_goal_ = -M_PI * 2.0 / 3.0;
-    }
     if (data.IsPressed(kIntakeClosed)) {
       // Deploy the intake.
-      intake_goal_ = 0.25;
+      if (superstructure_queue.position->box_back_beambreak_triggered) {
+        intake_goal_ = 0.30;
+      } else {
+        intake_goal_ = 0.07;
+      }
+    } else {
+      // Bring in the intake.
+      intake_goal_ = -M_PI * 2.0 / 3.0;
     }
 
     auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
@@ -108,7 +128,7 @@ class Reader : public ::aos::input::JoystickInput {
     new_superstructure_goal->intake.left_intake_angle = intake_goal_;
     new_superstructure_goal->intake.right_intake_angle = intake_goal_;
 
-    if (data.IsPressed(kIntakeIn)) {
+    if (data.IsPressed(kIntakeIn) || data.IsPressed(kArmPickupBoxFromIntake)) {
       // Turn on the rollers.
       new_superstructure_goal->intake.roller_voltage = 8.0;
     } else if (data.IsPressed(kIntakeOut)) {
@@ -119,25 +139,43 @@ class Reader : public ::aos::input::JoystickInput {
       new_superstructure_goal->intake.roller_voltage = 0.0;
     }
 
-    if (data.IsPressed(kArmDown)) {
-      // Put the arm down to the intake level.
-      arm_goal_position_ = 0;
-    } else if (data.IsPressed(kArmSwitch)) {
-      // Put the arm up to the level of the switch.
-      arm_goal_position_ = 14;
-    } else if (data.IsPressed(kArmScale)) {
-      // Put the arm up to the level of the switch.
-      arm_goal_position_ = 4;
-    } else if (data.IsPressed(kArmBack)) {
-      // Put the arm up to the level of the switch.
-      arm_goal_position_ = 10;
+    bool grab_box = false;
+    if (data.IsPressed(kArmPickupBoxFromIntake)) {
+      arm_goal_position_ = arm::NeutralIndex();
+      grab_box = true;
+    } else if (data.IsPressed(kArmNeutral)) {
+      arm_goal_position_ = arm::NeutralIndex();
+    } else if (data.IsPressed(kArmUp)) {
+      arm_goal_position_ = arm::UpIndex();
+    } else if (data.IsPressed(kArmFrontSwitch)) {
+      arm_goal_position_ = arm::FrontSwitchIndex();
+    } else if (data.IsPressed(kArmFrontHighBox) ||
+               data.IsPressed(kArmFrontExtraHighBox)) {
+      arm_goal_position_ = arm::FrontHighBoxIndex();
+    } else if (data.IsPressed(kArmFrontMiddle2Box)) {
+      arm_goal_position_ = arm::FrontMiddle2BoxIndex();
+    } else if (data.IsPressed(kArmFrontMiddle1Box)) {
+      arm_goal_position_ = arm::FrontMiddle1BoxIndex();
+    } else if (data.IsPressed(kArmFrontLowBox)) {
+      arm_goal_position_ = arm::FrontLowBoxIndex();
+    } else if (data.IsPressed(kArmBackHighBox) ||
+               data.IsPressed(kArmBackExtraHighBox)) {
+      arm_goal_position_ = arm::BackHighBoxIndex();
+    } else if (data.IsPressed(kArmBackMiddle2Box)) {
+      arm_goal_position_ = arm::BackMiddle2BoxIndex();
+    } else if (data.IsPressed(kArmBackMiddle1Box)) {
+      arm_goal_position_ = arm::BackMiddle1BoxIndex();
+    } else if (data.IsPressed(kArmBackLowBox)) {
+      arm_goal_position_ = arm::BackLowBoxIndex();
+    }  else if (data.IsPressed(kArmBackSwitch)) {
+      arm_goal_position_ = arm::BackSwitchIndex();
     }
 
     new_superstructure_goal->arm_goal_position = arm_goal_position_;
 
     if (data.IsPressed(kClawOpen)) {
       new_superstructure_goal->open_claw = true;
-    } else if (data.IsPressed(kClawClose)) {
+    } else {
       new_superstructure_goal->open_claw = false;
     }
 
@@ -146,6 +184,7 @@ class Reader : public ::aos::input::JoystickInput {
     } else if (data.IsPressed(kForkStow)) {
       new_superstructure_goal->deploy_fork = false;
     }
+    new_superstructure_goal->grab_box = grab_box;
 
     LOG_STRUCT(DEBUG, "sending goal", *new_superstructure_goal);
     if (!new_superstructure_goal.Send()) {

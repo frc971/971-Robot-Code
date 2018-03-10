@@ -471,6 +471,7 @@ named_segments = [
 unnamed_segments = [
     AngleSegment(neutral, back_switch),
     XYSegment(neutral, front_switch),
+    XYSegment(neutral, front_low_box),
 
     XYSegment(up, front_high_box),
     XYSegment(up, front_middle2_box),

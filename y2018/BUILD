@@ -47,6 +47,7 @@ cc_binary(
         "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//y2018/control_loops/drivetrain:drivetrain_base",
         "//y2018/control_loops/superstructure:superstructure_queue",
+        "//y2018/control_loops/superstructure/arm:generated_graph",
     ],
 )
 
