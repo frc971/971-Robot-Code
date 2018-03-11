@@ -55,11 +55,13 @@ cc_library(
     '//aos/common/logging:queue_logging',
     '//aos/common/logging:matrix_logging',
     '//aos/common:math',
-    '//debian:libm',
     '//frc971/control_loops:state_feedback_loop',
     '//frc971/control_loops:coerce_goal',
     '//frc971/control_loops:hall_effect_tracker',
     '//y2014:constants',
+  ],
+  linkopts = [
+    '-lm',
   ],
 )
 

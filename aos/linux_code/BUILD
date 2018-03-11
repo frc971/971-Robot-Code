@@ -31,7 +31,9 @@ cc_library(
   deps = [
     '//aos:once',
     '//aos/common:die',
-    '//debian:libpthread',
+  ],
+  linkopts = [
+    "-pthread",
   ],
 )
 

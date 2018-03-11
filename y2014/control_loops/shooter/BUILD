@@ -58,7 +58,9 @@ cc_library(
     '//y2014:constants',
     '//frc971/control_loops:state_feedback_loop',
     '//aos/common/logging:queue_logging',
-    '//debian:libm',
+  ],
+  linkopts = [
+    '-lm',
   ],
 )
 

@@ -72,7 +72,9 @@ cc_library(
         ":gaussian_noise",
         ":queues",
         "//aos/testing:random_seed",
-        "//debian:libm",
+    ],
+    linkopts = [
+        "-lm",
     ],
 )
 
@@ -84,8 +86,8 @@ cc_library(
     hdrs = [
         "gaussian_noise.h",
     ],
-    deps = [
-        "//debian:libm",
+    linkopts = [
+        "-lm",
     ],
 )
 
@@ -114,8 +116,10 @@ cc_library(
     ],
     deps = [
         "//aos/common/controls:polytope",
-        "//debian:libm",
         "//third_party/eigen",
+    ],
+    linkopts = [
+        "-lm",
     ],
 )
 

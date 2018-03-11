@@ -134,11 +134,11 @@ cc_library(
     'src/debugallocation.cc',
   ]),
   deps = [
-    '//debian:librt',
     '//third_party/empty_config_h',
   ],
   copts = common_copts,
   linkopts = [
+    '-lrt',
     '-pthread',
   ],
   alwayslink = True,

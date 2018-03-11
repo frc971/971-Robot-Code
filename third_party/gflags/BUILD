@@ -42,8 +42,10 @@ cc_library(
     'include/gflags/gflags_completions.h',
   ],
   deps = [
-    '//debian:libpthread',
     '//third_party/empty_config_h',
+  ],
+  linkopts = [
+    '-pthread',
   ],
   copts = common_copts,
   includes = [ 'include' ],

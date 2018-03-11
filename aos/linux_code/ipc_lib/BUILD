@@ -46,7 +46,9 @@ cc_library(
     ':core_lib',
     ':shared_mem_types',
     '//aos/common/logging',
-    '//debian:librt',
+  ],
+  linkopts = [
+    '-lrt',
   ],
 )
 
@@ -76,8 +78,10 @@ cc_library(
     ':core_lib',
     ':shared_mem',
     '//aos/common/logging',
-    '//debian:librt',
     '//aos/common/util:options',
+  ],
+  linkopts = [
+    '-lrt',
   ],
 )
 
