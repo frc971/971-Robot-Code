@@ -1,11 +1,13 @@
 #include "motors/core/kinetis.h"
 
-#include <stdio.h>
 #include <inttypes.h>
+#include <stdio.h>
 
 #include <atomic>
 #include <cmath>
 
+#include "frc971/control_loops/drivetrain/integral_haptic_trigger.h"
+#include "frc971/control_loops/drivetrain/integral_haptic_wheel.h"
 #include "motors/core/time.h"
 #include "motors/motor.h"
 #include "motors/peripheral/adc.h"
@@ -14,8 +16,6 @@
 #include "motors/usb/cdc.h"
 #include "motors/usb/usb.h"
 #include "motors/util.h"
-#include "frc971/control_loops/drivetrain/integral_haptic_wheel.h"
-#include "frc971/control_loops/drivetrain/integral_haptic_trigger.h"
 
 #define MOTOR0_PWM_FTM FTM3
 #define MOTOR0_ENCODER_FTM FTM2
@@ -195,10 +195,8 @@ extern "C" void ftm3_isr() {
   global_motor0.load(::std::memory_order_relaxed)
       ->HandleInterrupt(BalanceSimpleReadings(readings.currents), encoder);
 
-
   global_trigger_angle.store(trigger_angle);
 }
-
 
 int ConvertFloat16(float val) {
   int result = static_cast<int>(val * 32768.0f) + 32768;
@@ -330,6 +328,8 @@ extern "C" void pit3_isr() {
     wheel_haptic_current = 0.0f;
     wheel_centering = true;
     wheel_centering_scalar = 0.25f;
+    // Avoid wrapping back into the valid range.
+    last_command_time = time_subtract(micros(), kTimeout);
   }
 
   StateFeedbackPlant<3, 1, 1, float> *const trigger_plant =

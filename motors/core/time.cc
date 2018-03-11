@@ -5,7 +5,10 @@
 // The systick interrupt increments this every 1ms.
 volatile uint32_t systick_millis_count = 0;
 
-uint32_t micros(void) {
+namespace {
+
+template<int kMultiplier>
+uint32_t do_time(void) {
   __disable_irq();
   uint32_t current = SYST_CVR;
   uint32_t count = systick_millis_count;
@@ -15,8 +18,15 @@ uint32_t micros(void) {
   // up to its max, then add another ms.
   if ((istatus & SCB_ICSR_PENDSTSET) && current > 50) count++;
   current = ((F_CPU / 1000) - 1) - current;
-  return count * 1000 + current / (F_CPU / 1000000);
+  return count * (1000 * kMultiplier) +
+         current * kMultiplier / (F_CPU / 1000000);
 }
+
+}  // namespace
+
+uint32_t nanos(void) { return do_time<1000>(); }
+
+uint32_t micros(void) { return do_time<1>(); }
 
 void delay(uint32_t ms) { delay_from(micros(), ms); }
 
