@@ -15,14 +15,16 @@ def get_deps(package):
 
 def get_all_deps(packages):
   deps = set()
-  for package in packages:
+  for package in packages or ():
     deps.update(get_deps(package))
   return deps
 
-def download_deps(packages, excludes):
+def download_deps(packages, excludes, force_includes):
   deps = get_all_deps(packages)
   exclude_deps = get_all_deps(excludes)
   deps -= exclude_deps
+  force_include_deps = get_all_deps(force_includes)
+  deps |= force_include_deps
   subprocess.check_call([b"apt-get", b"download"] + list(deps))
 
 def fixup_files():
@@ -50,9 +52,20 @@ def print_file_list():
     print('  "%s": "%s",' % (deb, sha256_checksum(deb)))
   print("}")
 
+_ALWAYS_EXCLUDE = [
+    "debconf",
+    "debconf-2.0",
+    "dpkg",
+    "install-info",
+    "libc-dev",
+    "libc6",
+    "libc6-dev",
+]
+
 def main(argv):
   parser = argparse.ArgumentParser()
   parser.add_argument("--exclude", "-e", type=str, action="append", help="A package to exclude from the list")
+  parser.add_argument("--force-include", type=str, action="append", help="Force include this and its dependencies. Even if listed in excludes.")
   parser.add_argument("package", nargs="+", help="The packages to download.")
   args = parser.parse_args(argv[1:])
   folder = tempfile.mkdtemp()
@@ -60,8 +73,8 @@ def main(argv):
   excludes = args.exclude or []
   # Exclude common packages that don't make sense to include in everything all
   # the time.
-  excludes += ["libc-dev", "debconf", "install-info", "debconf-2.0", "libc6", "libc6-dev", "dpkg"]
-  download_deps(args.package, excludes)
+  excludes += _ALWAYS_EXCLUDE
+  download_deps(args.package, excludes, args.force_include)
   fixup_files()
   print_file_list()
   print("Your packages are all in %s" % folder)

@@ -4,6 +4,10 @@ load(
     "//debian:python.bzl",
     python_debs = "files",
 )
+load(
+    "//debian:clang.bzl",
+    clang_debs = "files",
+)
 load("//debian:packages.bzl", "download_packages", "generate_deb_tarball")
 
 py_binary(
@@ -30,7 +34,29 @@ download_packages(
     ],
 )
 
+download_packages(
+    name = "download_clang_deps",
+    excludes = [
+        "libblas.so.3",
+    ],
+    force_includes = [
+        "libc6",
+        "libc6-dev",
+    ],
+    packages = [
+        "clang-3.6",
+        "clang-format-3.6",
+        "gcc",
+        "gfortran",
+    ],
+)
+
 generate_deb_tarball(
     name = "python",
     files = python_debs,
+)
+
+generate_deb_tarball(
+    name = "clang_3p6",
+    files = clang_debs,
 )

@@ -23,7 +23,7 @@ load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 # TODO(phil): Deal with armhf packages. Right now only works for amd64.
 
-def download_packages(name, packages, excludes=[]):
+def download_packages(name, packages, excludes=[], force_includes=[]):
   """Downloads a set of packages as well as their dependencies.
 
   You can also specify excludes in case some of the dependencies are meta
@@ -36,6 +36,7 @@ def download_packages(name, packages, excludes=[]):
   """
   package_list = " ".join(packages)
   excludes_list = " ".join(["--exclude=%s" % e for e in excludes])
+  force_includes = " ".join(["--force-include=%s" % i for i in force_includes])
   native.genrule(
     name = name,
     outs = ["%s_output.txt" % name],
@@ -48,7 +49,8 @@ def download_packages(name, packages, excludes=[]):
     ],
     # TODO(phil): Deal with stderr a bit better. It spews more stuff out than I
     # would like it to.
-    cmd = "$(location //debian:download_packages) %s %s | tee $@ >&2" % (excludes_list, package_list),
+    cmd = "$(location //debian:download_packages) %s %s %s | tee $@ >&2" \
+        % (force_includes, excludes_list, package_list),
   )
 
 def _convert_deb_to_target(deb):
