@@ -27,7 +27,8 @@ class DrivetrainParams(object):
                  num_motors=2,
                  dt=0.00505,
                  controller_poles=[0.90, 0.90],
-                 observer_poles=[0.02, 0.02]):
+                 observer_poles=[0.02, 0.02],
+                 robot_cg_offset=0.0):
         """Defines all constants of a drivetrain.
 
         Args:
@@ -51,11 +52,13 @@ class DrivetrainParams(object):
           num_motors: int, number of motors on one side of drivetrain.
           controller_poles: array, An array of poles. (See control_loop.py)
           observer_poles: array, An array of poles. (See control_loop.py)
+          robot_cg_offset: offset in meters of CG from robot center to left side
         """
 
         self.J = J
         self.mass = mass
         self.robot_radius = robot_radius
+        self.robot_cg_offset = robot_cg_offset
         self.wheel_radius = wheel_radius
         self.G_high = G_high
         self.G_low = G_low
@@ -99,6 +102,14 @@ class Drivetrain(control_loop.ControlLoop):
         # Radius of the wheels, in meters.
         self.r = drivetrain_params.wheel_radius
         self.has_imu = drivetrain_params.has_imu
+        # Offset in meters of the CG from the center of the robot to the left side
+        # of the robot.  Since the arm is on the right side, the offset will
+        # likely be a negative number.
+        self.robot_cg_offset = drivetrain_params.robot_cg_offset
+        # Distance from the left side of the robot to the Center of Gravity
+        self.robot_radius_l = drivetrain_params.robot_radius - self.robot_cg_offset
+        # Distance from the right side of the robot to the Center of Gravity
+        self.robot_radius_r = drivetrain_params.robot_radius + self.robot_cg_offset
 
         # Gear ratios
         self.G_low = drivetrain_params.G_low
@@ -157,8 +168,12 @@ class Drivetrain(control_loop.ControlLoop):
 
         # These describe the way that a given side of a robot will be influenced
         # by the other side. Units of 1 / kg.
-        self.msp = 1.0 / self.mass + self.robot_radius * self.robot_radius / self.J
-        self.msn = 1.0 / self.mass - self.robot_radius * self.robot_radius / self.J
+        self.mspl = 1.0 / self.mass + self.robot_radius_l * self.robot_radius_l / self.J
+        self.mspr = 1.0 / self.mass + self.robot_radius_r * self.robot_radius_r / self.J
+        self.msnl = self.robot_radius_r / ( self.robot_radius_l * self.mass ) - \
+            self.robot_radius_l * self.robot_radius_r / self.J
+        self.msnr = self.robot_radius_l / ( self.robot_radius_r * self.mass ) - \
+            self.robot_radius_l * self.robot_radius_r / self.J
         # The calculations which we will need for A and B.
         self.tcl = self.Kt / self.Kv / (
             self.Gl * self.Gl * self.resistance * self.r * self.r)
@@ -171,11 +186,15 @@ class Drivetrain(control_loop.ControlLoop):
         # X will be of the format
         # [[positionl], [velocityl], [positionr], velocityr]]
         self.A_continuous = numpy.matrix(
-            [[0, 1, 0, 0], [0, -self.msp * self.tcl, 0, -self.msn * self.tcr],
-             [0, 0, 0, 1], [0, -self.msn * self.tcl, 0, -self.msp * self.tcr]])
+            [[0, 1, 0, 0],
+             [0, -self.mspl * self.tcl, 0, -self.msnr * self.tcr],
+             [0, 0, 0, 1],
+             [0, -self.msnl * self.tcl, 0, -self.mspr * self.tcr]])
         self.B_continuous = numpy.matrix(
-            [[0, 0], [self.msp * self.mpl, self.msn * self.mpr], [0, 0],
-             [self.msn * self.mpl, self.msp * self.mpr]])
+            [[0, 0],
+             [self.mspl * self.mpl, self.msnr * self.mpr],
+             [0, 0],
+             [self.msnl * self.mpl, self.mspr * self.mpr]])
         self.C = numpy.matrix([[1, 0, 0, 0], [0, 0, 1, 0]])
         self.D = numpy.matrix([[0, 0], [0, 0]])
 
@@ -244,8 +263,8 @@ class KFDrivetrain(Drivetrain):
 
         if self.force:
             self.A_continuous[0:4, 4:6] = numpy.matrix(
-                [[0.0, 0.0], [self.msp, self.msn], [0.0, 0.0],
-                 [self.msn, self.msp]])
+                [[0.0, 0.0], [self.mspl, self.msnl], [0.0, 0.0],
+                 [self.msnr, self.mspr]])
             q_voltage = drivetrain_params.kf_q_voltage * self.mpl
         else:
             self.A_continuous[0:4, 4:6] = self.unaugmented_B_continuous

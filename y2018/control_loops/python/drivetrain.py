@@ -30,6 +30,7 @@ kDrivetrain = drivetrain.DrivetrainParams(
     force=True,
     kf_q_voltage=13.0,
     controller_poles=[0.82, 0.82],
+    robot_cg_offset=0.0,
 )
 
 
