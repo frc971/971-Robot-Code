@@ -138,7 +138,10 @@ const Values &DoGetValues() {
 
 }  // namespace
 
-const Values &GetValues() { return DoGetValues(); }
+const Values &GetValues() {
+  static const Values r = DoGetValues();
+  return r;
+}
 
 const Values &GetValuesForTeam(uint16_t team_number) {
   static ::aos::Mutex mutex;
