@@ -724,6 +724,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));
 
+    // TODO(Brian): This interacts poorly with the SpiRxClearer in ADIS16448.
     ::frc971::wpilib::GyroSender gyro_sender;
     ::std::thread gyro_thread(::std::ref(gyro_sender));
 

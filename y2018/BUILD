@@ -102,7 +102,6 @@ cc_binary(
         "//frc971/wpilib:dma",
         "//frc971/wpilib:dma_edge_counting",
         "//frc971/wpilib:encoder_and_potentiometer",
-        "//frc971/wpilib:gyro_sender",
         "//frc971/wpilib:interrupt_edge_counting",
         "//frc971/wpilib:joystick_sender",
         "//frc971/wpilib:logging_queue",

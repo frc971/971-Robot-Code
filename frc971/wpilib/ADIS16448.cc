@@ -22,6 +22,7 @@ namespace chrono = ::std::chrono;
 
 template <uint8_t size>
 bool ADIS16448::DoTransaction(uint8_t to_send[size], uint8_t to_receive[size]) {
+  rx_clearer_.ClearRxFifo();
   switch (spi_->Transaction(to_send, to_receive, size)) {
     case -1:
       LOG(INFO, "SPI::Transaction of %zd bytes failed\n", size);
