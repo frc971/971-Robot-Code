@@ -1,0 +1,24 @@
+// Name of the library used for changing zip outputs and jar name
+// Note will not change native library names
+ext.libraryName = "CTRE_Phoenix"
+
+// Set to true to embed included java libraries in the output jar
+ext.embedJavaLibraries = false
+
+// Set to true to combine the driver and cpp static libraries for wpilibc use
+ext.combineStaticLibs = false
+
+// Set to true to include the java sources in the user zip
+ext.includeJavaSources = true
+
+// Set to true to include the java javadocs in the user zip
+ext.includeJavaJavadoc = true
+
+// Set to true to include the cpp sources in the user zip (does not include the driver sources)
+ext.includeCppSources = false
+
+// Set to true to include the driver sources in the user zip
+ext.includeDriverSources = false
+
+// Set to true to automatically copy to eclipse on build
+ext.setCopyToEclipse = true

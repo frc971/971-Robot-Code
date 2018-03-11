@@ -1,0 +1,53 @@
+//input parameters
+def beta = project.hasProperty('beta') ? project.beta : false
+
+//defaults
+ext.wpiDepYear = 2018
+ext.wpiDeps = "wpi-dependencies-2018.gradle"
+ext.FRCToolChainYear = 2018
+ext.wpilibjDep = 'edu.wpi.first.wpilibj:wpilibj-java:+'
+ext.javaNetTablesDep = 'edu.wpi.first.ntcore:ntcore-java:+'
+
+if(beta)
+{
+
+}
+
+
+
+//Choose which dependencies gradle to use
+if(wpiDepYear == 2017)
+{
+	wpiDeps = "wpi-dependencies-2017.gradle"
+	wpilibjDep = 'edu.wpi.first.wpilibj:athena:+'
+	javaNetTablesDep = 'edu.wpi.first.wpilib.networktables.java:NetworkTables:+:arm'
+	println "[INFO] Using 2017 WPI dependencies"
+}
+else if (wpiDepYear == 2018)
+{
+	wpiDeps = "wpi-dependencies-2018.gradle"
+	wpilibjDep = 'edu.wpi.first.wpilibj:wpilibj-java:+'
+	javaNetTablesDep = 'edu.wpi.first.ntcore:ntcore-java:+'
+	println "[INFO] Using 2018 WPI dependencies"
+}
+
+ext.toolChainVers = null
+ext.instToolChain = null
+
+toolChainVers = new File('C:/frc/version.txt')
+if(toolChainVers.exists()){instToolChain = toolChainVers.text}
+else {println "[INFO] Toolchain version not found"}
+
+
+//Choose the path for your FRC Toolchain
+if(FRCToolChainYear == 2018)
+{
+	if(instToolChain != null && instToolChain != '2018'){throw new GradleException('2018 FRC Toolchain Not Installed')}
+	println "[INFO] Using 2018 FRC Toolchain"
+}
+else if(FRCToolChainYear == 2017)
+{
+	if(instToolChain != null && instToolChain != '2017'){throw new GradleException('2017 FRC Toolchain Not Installed')}
+	println "[INFO] Using 2017 FRC Toolchain"
+}
+//default to PATH otherwise
