@@ -225,48 +225,71 @@ extern "C" int main(void) {
   PORTB_PCR18 = PORT_PCR_DSE | PORT_PCR_MUX(2);
   PORTB_PCR19 = PORT_PCR_DSE | PORT_PCR_MUX(2);
 
+  // .1ms filter time.
+  PORTA_DFWR = PORTB_DFWR = PORTC_DFWR = PORTD_DFWR = PORTE_DFWR = 6000;
+
   // Set up the buttons. The LEDs pull them up to 5V, so the Teensy needs to not
   // be set to pull up.
   // BTN0
   PORTD_PCR5 = PORT_PCR_MUX(1);
+  PORTD_DFER |= 1 << 5;
   // BTN1
   PORTD_PCR6 = PORT_PCR_MUX(1);
+  PORTD_DFER |= 1 << 6;
   // BTN2
   PORTB_PCR0 = PORT_PCR_MUX(1);
+  PORTB_DFER |= 1 << 0;
   // BTN3
   PORTB_PCR1 = PORT_PCR_MUX(1);
+  PORTB_DFER |= 1 << 1;
   // BTN4
   PORTA_PCR14 = PORT_PCR_MUX(1);
+  PORTA_DFER |= 1 << 14;
   // BTN5
   PORTE_PCR26 = PORT_PCR_MUX(1);
+  PORTE_DFER |= 1 << 26;
   // BTN6
   PORTA_PCR16 = PORT_PCR_MUX(1);
+  PORTA_DFER |= 1 << 16;
   // BTN7
   PORTA_PCR15 = PORT_PCR_MUX(1);
+  PORTA_DFER |= 1 << 15;
   // BTN8
   PORTE_PCR25 = PORT_PCR_MUX(1);
+  PORTE_DFER |= 1 << 25;
   // BTN9
   PORTE_PCR24 = PORT_PCR_MUX(1);
+  PORTE_DFER |= 1 << 24;
   // BTN10
   PORTC_PCR3 = PORT_PCR_MUX(1);
+  PORTC_DFER |= 1 << 3;
   // BTN11
   PORTC_PCR7 = PORT_PCR_MUX(1);
+  PORTC_DFER |= 1 << 7;
   // BTN12
   PORTD_PCR3 = PORT_PCR_MUX(1);
+  PORTD_DFER |= 1 << 3;
   // BTN13
   PORTD_PCR2 = PORT_PCR_MUX(1);
+  PORTD_DFER |= 1 << 2;
   // BTN14
   PORTD_PCR7 = PORT_PCR_MUX(1);
+  PORTD_DFER |= 1 << 7;
   // BTN15
   PORTA_PCR13 = PORT_PCR_MUX(1);
+  PORTA_DFER |= 1 << 13;
   // BTN16
   PORTA_PCR12 = PORT_PCR_MUX(1);
+  PORTA_DFER |= 1 << 12;
   // BTN17
   PORTD_PCR0 = PORT_PCR_MUX(1);
+  PORTD_DFER |= 1 << 0;
   // BTN18
   PORTB_PCR17 = PORT_PCR_MUX(1);
+  PORTB_DFER |= 1 << 17;
   // BTN19
   PORTB_PCR16 = PORT_PCR_MUX(1);
+  PORTB_DFER |= 1 << 16;
 
   delay(100);
 
