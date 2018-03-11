@@ -12,6 +12,7 @@
 #undef ERROR
 
 #include "aos/common/logging/logging.h"
+#include "frc971/wpilib/spi_rx_clearer.h"
 
 namespace frc971 {
 namespace wpilib {
@@ -95,6 +96,8 @@ class ADIS16448 {
   double gyro_x_zeroed_offset_ = 0.0;
   double gyro_y_zeroed_offset_ = 0.0;
   double gyro_z_zeroed_offset_ = 0.0;
+
+  SpiRxClearer rx_clearer_;
 };
 
 }  // namespace wpilib
