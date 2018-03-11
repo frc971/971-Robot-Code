@@ -1,0 +1,101 @@
+import org.gradle.internal.os.OperatingSystem
+
+plugins {
+    id 'net.ltgt.errorprone' version '0.0.8'
+    id 'edu.wpi.first.wpilib.versioning.WPILibVersioningPlugin' version '2.0'
+}
+
+allprojects {
+    repositories {
+        mavenCentral()
+    }
+}
+
+if (!hasProperty('releaseType')) {
+    WPILibVersion {
+        releaseType = 'dev'
+    }
+}
+
+ext.compilerPrefixToUse = project.hasProperty('compilerPrefix') ? project.compilerPrefix : 'arm-frc-linux-gnueabi-'
+
+ext.setupDefines = { project, binaries ->
+    binaries.all {
+        if (project.hasProperty('debug')) {
+            project.setupDebugDefines(cppCompiler, linker)
+        } else {
+            project.setupReleaseDefines(cppCompiler, linker)
+        }
+    }
+}
+
+apply from: "locations.gradle"
+
+ext.addUserLinks = { linker, targetPlatform, implLib ->
+    def libPattern = /.*((\\/|\\).*)+lib(?<libName>.+).(.+)$/
+    def libraryArgs = []
+    def libraryPath = file(driverLibraryLib).path
+
+    // adds all libraries found in the driver folder
+    def libraryTree = fileTree(libraryPath)
+    libraryTree.include '*.so'
+    libraryTree.include '*.a'
+
+    libraryTree.each { lib ->
+        def nameMatcher = (lib.path =~ libPattern)
+        if (nameMatcher[0].size() > 1) {
+            def name = nameMatcher.group('libName')
+            libraryArgs << '-l' + name
+        }
+    }
+    
+    if (implLib) {
+        // adds all libraries found in the impl folder
+        def implLibraryPath = file(cppLibraryLib).path
+        def implLibraryTree = fileTree(implLibraryPath)
+        implLibraryTree.include '*.so'
+        implLibraryTree.include '*.a'
+
+        implLibraryTree.each { lib ->
+            def nameMatcher = (lib.path =~ libPattern)
+            if (nameMatcher[0].size() > 1) {
+                def name = nameMatcher.group('libName')
+                libraryArgs << '-l' + name
+            }
+        }
+    }
+     
+    // Add all arguments
+    String architecture = targetPlatform.architecture
+    if (architecture.contains('arm')){
+        linker.args << '-L' + libraryPath
+        linker.args.addAll(libraryArgs)
+    }
+}
+
+apply from: "properties.gradle"
+apply from: "options.gradle"
+
+apply from: wpiDeps
+
+apply from: "cpp.gradle"
+
+// Empty task for build so that zips will be
+// built when running ./gradlew build
+task build
+
+apply from: "releases.gradle"
+
+task clean(type: Delete) {
+    description = "Deletes the build directory"
+    group = "Build"
+    delete buildDir
+}
+
+clean {
+    delete releaseDir
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.3'
+}
