@@ -62,7 +62,20 @@ void Superstructure::RunIteration(
       output != nullptr ? &(output->voltage_proximal) : nullptr,
       output != nullptr ? &(output->voltage_distal) : nullptr,
       output != nullptr ? &(output->release_arm_brake) : nullptr,
-      output != nullptr ? &(output->claw_grabbed) : nullptr, &(status->arm));
+      output != nullptr ? &(output->claw_grabbed) : nullptr, &(status->arm),
+      unsafe_goal != nullptr ? unsafe_goal->voltage_winch > 1.0 : false);
+
+  if (output) {
+    if (unsafe_goal) {
+      output->hook_release = unsafe_goal->hook_release;
+      output->voltage_winch = unsafe_goal->voltage_winch;
+      output->forks_release = unsafe_goal->deploy_fork;
+    } else {
+      output->voltage_winch = 0.0;
+      output->hook_release = false;
+      output->forks_release = false;
+    }
+  }
 
   status->estopped = status->left_intake.estopped ||
                      status->right_intake.estopped || status->arm.estopped;

@@ -134,6 +134,10 @@ queue_group SuperstructureQueue {
     bool open_claw;
 
     bool deploy_fork;
+
+    bool hook_release;
+
+    double voltage_winch;
   };
 
   message Status {
@@ -181,6 +185,9 @@ queue_group SuperstructureQueue {
 
     // Voltage sent to the motors on the distal joint of the arm.
     double voltage_distal;
+
+    // Voltage sent to the hanger.  Positive pulls the robot up.
+    double voltage_winch;
 
     // Clamped (when true) or unclamped (when false) status sent to the
     // pneumatic claw on the arm.

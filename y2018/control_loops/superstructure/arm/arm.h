@@ -38,7 +38,8 @@ class Arm {
                const bool box_back_beambreak_triggered,
                const bool intake_clear_of_box, double *proximal_output,
                double *distal_output, bool *release_arm_brake,
-               bool *claw_closed, control_loops::ArmStatus *status);
+               bool *claw_closed, control_loops::ArmStatus *status,
+               bool suicide);
 
   void Reset();
 
@@ -48,6 +49,7 @@ class Arm {
     DISABLED,
     GOTO_PATH,
     RUNNING,
+    PREP_CLIMB,
     ESTOP,
   };
 
@@ -97,6 +99,8 @@ class Arm {
   SearchGraph search_graph_;
 
   bool close_enough_for_full_power_ = false;
+
+  int32_t climb_count_ = 0;
 
   EKF arm_ekf_;
   TrajectoryFollower follower_;

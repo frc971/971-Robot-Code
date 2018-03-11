@@ -722,6 +722,10 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     distal_victor_ = ::std::move(t);
   }
 
+  void set_hanger_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    hanger_victor_ = ::std::move(t);
+  }
+
   void set_left_intake_elastic_victor(::std::unique_ptr<::frc::VictorSP> t) {
     left_intake_elastic_victor_ = ::std::move(t);
   }
@@ -774,6 +778,9 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     distal_victor_->SetSpeed(::aos::Clip(queue->voltage_distal,
                                          -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
+    hanger_victor_->SetSpeed(
+        ::aos::Clip(-queue->voltage_winch, -kMaxBringupPower, kMaxBringupPower) /
+        12.0);
   }
 
   virtual void Stop() override {
@@ -786,11 +793,13 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
 
     proximal_victor_->SetDisabled();
     distal_victor_->SetDisabled();
+    hanger_victor_->SetDisabled();
   }
 
   ::std::unique_ptr<::frc::VictorSP> left_intake_rollers_victor_,
       right_intake_rollers_victor_, left_intake_elastic_victor_,
-      right_intake_elastic_victor_, proximal_victor_, distal_victor_;
+      right_intake_elastic_victor_, proximal_victor_, distal_victor_,
+      hanger_victor_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -879,7 +888,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_distal_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)));
 
-    // Hanger: victor 8
+    superstructure_writer.set_hanger_victor(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(8)));
 
     ::std::thread superstructure_writer_thread(
         ::std::ref(superstructure_writer));

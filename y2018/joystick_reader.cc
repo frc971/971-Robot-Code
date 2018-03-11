@@ -52,6 +52,11 @@ const ButtonLocation kArmBackMiddle1Box(4, 10);
 const ButtonLocation kArmBackLowBox(4, 12);
 const ButtonLocation kArmBackSwitch(3, 12);
 
+const ButtonLocation kArmAboveHang(3, 7);
+const ButtonLocation kArmBelowHang(3, 2);
+
+const ButtonLocation kWinch(3, 5);
+
 const ButtonLocation kArmNeutral(3, 13);
 const ButtonLocation kArmUp(3, 9);
 
@@ -96,7 +101,6 @@ class Reader : public ::aos::input::JoystickInput {
 
   void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
     drivetrain_input_reader_->HandleDrivetrain(data);
-    robot_velocity_ = drivetrain_input_reader_->robot_velocity();
   }
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
@@ -177,7 +181,32 @@ class Reader : public ::aos::input::JoystickInput {
       arm_goal_position_ = arm::BackLowBoxIndex();
     }  else if (data.IsPressed(kArmBackSwitch)) {
       arm_goal_position_ = arm::BackSwitchIndex();
+    } else if (data.IsPressed(kArmAboveHang)) {
+      if (data.IsPressed(kIntakeIn)) {
+        arm_goal_position_ = arm::SelfHangIndex();
+      } else if (data.IsPressed(kIntakeOut)) {
+        arm_goal_position_ = arm::PartnerHangIndex();
+      } else {
+        arm_goal_position_ = arm::AboveHangIndex();
+      }
+    } else if (data.IsPressed(kArmBelowHang)) {
+      arm_goal_position_ = arm::BelowHangIndex();
     }
+
+    new_superstructure_goal->deploy_fork =
+        data.IsPressed(kArmAboveHang) && data.IsPressed(kClawOpen);
+
+    if (new_superstructure_goal->deploy_fork) {
+      intake_goal_ = -2.0;
+    }
+
+    if (data.IsPressed(kWinch)) {
+      new_superstructure_goal->voltage_winch = 12.0;
+    } else {
+      new_superstructure_goal->voltage_winch = 0.0;
+    }
+
+    new_superstructure_goal->hook_release = data.IsPressed(kArmBelowHang);
 
     new_superstructure_goal->arm_goal_position = arm_goal_position_;
 
@@ -222,12 +251,10 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
   // Current goals to send to the robot.
-  double intake_goal_ = -M_PI * 2.0 / 3.0;
+  double intake_goal_ = 0.0;
 
   bool was_running_ = false;
   bool auto_running_ = false;
-
-  double robot_velocity_ = 0.0;
 
   int arm_goal_position_ = 0;
 

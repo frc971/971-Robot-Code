@@ -44,7 +44,8 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
                   const bool box_back_beambreak_triggered,
                   const bool intake_clear_of_box, double *proximal_output,
                   double *distal_output, bool *release_arm_brake,
-                  bool *claw_closed, control_loops::ArmStatus *status) {
+                  bool *claw_closed, control_loops::ArmStatus *status,
+                  bool suicide) {
   ::Eigen::Matrix<double, 2, 1> Y;
   const bool outputs_disabled =
       ((proximal_output == nullptr) || (distal_output == nullptr) ||
@@ -163,6 +164,18 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
         state_ = State::ESTOP;
       } else if (outputs_disabled) {
         state_ = State::DISABLED;
+      } else if (suicide) {
+        state_ = State::PREP_CLIMB;
+        climb_count_ = 50;
+      }
+      break;
+
+    case State::PREP_CLIMB:
+      --climb_count_;
+      if (climb_count_ <= 0) {
+        state_ = State::ESTOP;
+      } else if (!suicide) {
+        state_ = State::RUNNING;
       }
       break;
 
@@ -171,8 +184,9 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
       break;
   }
 
-  const bool disable = outputs_disabled ||
-                       (state_ != State::RUNNING && state_ != State::GOTO_PATH);
+  const bool disable = outputs_disabled || (state_ != State::RUNNING &&
+                                            state_ != State::GOTO_PATH &&
+                                            state_ != State::PREP_CLIMB);
   if (disable) {
     close_enough_for_full_power_ = false;
   }
@@ -344,7 +358,11 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
         -kOperatingVoltage(), ::std::min(kOperatingVoltage(), follower_.U(0)));
     *distal_output = ::std::max(
         -kOperatingVoltage(), ::std::min(kOperatingVoltage(), follower_.U(1)));
-    *release_arm_brake = true;
+    if (state_ != State::PREP_CLIMB) {
+      *release_arm_brake = true;
+    } else {
+      *release_arm_brake = false;
+    }
     *claw_closed = claw_closed_;
   }
 

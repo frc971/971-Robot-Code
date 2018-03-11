@@ -420,6 +420,16 @@ neutral = to_theta_with_circular_index(0.0, 0.33, circular_index=-1)
 
 up = to_theta_with_circular_index(0.0, 2.547, circular_index=-1)
 
+self_hang = numpy.array(
+    [numpy.pi / 2.0 - 0.191611, numpy.pi / 2.0])
+partner_hang = numpy.array(
+    [numpy.pi / 2.0 - (-0.25), numpy.pi / 2.0])
+
+above_hang = numpy.array(
+    [numpy.pi / 2.0 - 0.008739, numpy.pi / 2.0 - (-0.101927)])
+below_hang = numpy.array(
+    [numpy.pi / 2.0 - 0.329954, numpy.pi / 2.0 - (-0.534816)])
+
 up_c1 = to_theta((0.63, 1.17), circular_index=-1)
 up_c2 = to_theta((0.65, 1.62), circular_index=-1)
 
@@ -452,7 +462,12 @@ points = [(ready_above_box, "ReadyAboveBox"),
           (front_switch, "FrontSwitch"),
           (back_switch, "BackSwitch"),
           (neutral, "Neutral"),
-          (up, "Up")]  # yapf: disable
+          (up, "Up"),
+          (above_hang, "AboveHang"),
+          (below_hang, "BelowHang"),
+          (self_hang, "SelfHang"),
+          (partner_hang, "PartnerHang"),
+]  # yapf: disable
 
 # We need to define critical points so we can create paths connecting them.
 # TODO(austin): Attach velocities to the slow ones.
@@ -477,7 +492,6 @@ named_segments = [
 
 unnamed_segments = [
     AngleSegment(neutral, back_switch),
-    #XYSegment(neutral, front_switch),
     SplineSegment(neutral, front_switch_c1, front_switch_c2, front_switch),
 
     XYSegment(neutral, front_low_box),
@@ -503,6 +517,12 @@ unnamed_segments = [
     XYSegment(back_middle2_box, back_middle1_box),
     XYSegment(back_middle2_box, back_low_box),
     XYSegment(back_middle1_box, back_low_box),
+
+    AngleSegment(up, above_hang),
+    AngleSegment(above_hang, below_hang),
+    AngleSegment(up, below_hang),
+    AngleSegment(up, self_hang),
+    AngleSegment(up, partner_hang),
 ]
 
 segments = named_segments + unnamed_segments

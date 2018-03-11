@@ -93,7 +93,6 @@ def rotate_to_jump_point(points):
         pt = points[pt_i]
         delta = last_pt[1] - pt[1]
         if abs(delta) > numpy.pi:
-            print(delta)
             return points[pt_i:] + points[:pt_i]
         last_pt = pt
     return points
@@ -122,9 +121,6 @@ p2 = Polygon([(t1_min, t2_min), (t1_max, t2_min), (t1_max, t2_max), (t1_min,
 
 # Fully computed theta constrints.
 lines_theta = list(p1.intersection(p2).exterior.coords)
-
-print("Theta constraint.")
-print(", ".join("{%s, %s}" % (a, b) for a, b in lines_theta))
 
 lines1_theta_back = back_to_xy_loop(lines1_theta)
 lines2_theta_back = back_to_xy_loop(lines2_theta)
@@ -419,8 +415,7 @@ class Silly(basic_window.BaseWindow):
     def do_button_press(self, event):
         self.last_pos = (event.x, event.y)
         self.now_segment_pt = self.cur_pt_in_theta()
-        print('Clicked at theta: (%f, %f)' % (self.now_segment_pt[0],
-                                              self.now_segment_pt[1]))
+        print('Clicked at theta: %s' % (repr(self.now_segment_pt,)))
         if not self.theta_version:
             print('Clicked at xy, circular index: (%f, %f, %f)' %
                   (self.last_pos[0], self.last_pos[1],
