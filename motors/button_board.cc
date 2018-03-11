@@ -1,8 +1,9 @@
 // This file has the main for the Teensy on the button board.
 
-#include <stdio.h>
 #include <inttypes.h>
+#include <stdio.h>
 #include <atomic>
+#include <cmath>
 
 #include "motors/core/time.h"
 #include "motors/core/kinetis.h"
@@ -20,7 +21,7 @@ namespace {
 ::std::atomic<teensy::AcmTty *> global_stdout{nullptr};
 
 // The HID report descriptor we use.
-constexpr char kReportDescriptor[] = {
+constexpr char kReportDescriptor1[] = {
     0x05, 0x01,        // Usage Page (Generic Desktop),
     0x09, 0x04,        // Usage (Joystick),
     0xA1, 0x01,        // Collection (Application),
@@ -36,25 +37,41 @@ constexpr char kReportDescriptor[] = {
     0x09, 0x33,        //     Usage (Rz),
     0x81, 0x02,        //     Input (Variable),
     0x75, 0x01,        //     Report Size (1),
-    0x95, 0x14,        //     Report Count (20),
+    0x95, 0x10,        //     Report Count (16),
     0x25, 0x01,        //     Logical Maximum (1),
     0x45, 0x01,        //     Physical Maximum (1),
     0x05, 0x09,        //     Usage Page (Button),
     0x19, 0x01,        //     Usage Minimum (01),
-    0x29, 0x14,        //     Usage Maximum (20),
+    0x29, 0x10,        //     Usage Maximum (16),
     0x81, 0x02,        //     Input (Variable),
-    0x95, 0x04,        //     Report Count (4),
-    0x81, 0x03,        //     Input (Constant, Variable),
     0xC0               // End Collection
 };
 
-constexpr uint16_t report_size() { return 1 * 4 + 3; }
+constexpr uint16_t report_size() { return 1 * 4 + 2; }
 
-void SendJoystickData(teensy::HidFunction *joystick) {
+char DecodeAnalog(int analog) {
+  // None: 132
+  // Far: 71
+  // Near: 103
+  // Both: 0
+  if (analog < 30) {
+    return 0x3;
+  } else if (::std::abs(analog - 71) < 10) {
+    return 0x2;
+  } else if (::std::abs(analog - 103) < 10) {
+    return 0x1;
+  } else {
+    return 0x0;
+  }
+}
+
+void SendJoystickData(teensy::HidFunction *joystick0,
+                      teensy::HidFunction *joystick1) {
   uint32_t start = micros();
   while (true) {
     salsa::JoystickAdcReadings adc;
-    char report[report_size()];
+    char report0[report_size()];
+    char report1[report_size()];
     {
       DisableInterrupts disable_interrupts;
       adc = salsa::AdcReadJoystick(disable_interrupts);
@@ -65,37 +82,44 @@ void SendJoystickData(teensy::HidFunction *joystick) {
     FTM0->C4V = adc.analog2 / 4;
     FTM0->C3V = adc.analog3 / 4;
     FTM0->PWMLOAD = FTM_PWMLOAD_LDOK;
-    report[0] = adc.analog0 / 16;
-    report[1] = adc.analog1 / 16;
-    report[2] = adc.analog2 / 16;
-    report[3] = adc.analog3 / 16;
+    report0[0] = report1[0] = adc.analog0 / 16;
+    report0[1] = report1[1] = adc.analog1 / 16;
+    report0[2] = report1[2] = adc.analog2 / 16;
+    report0[3] = report1[3] = adc.analog3 / 16;
 
-    report[4] = (GPIO_BITBAND(GPIOD_PDIR, 5) << 0) |
-                (GPIO_BITBAND(GPIOD_PDIR, 6) << 1) |
-                (GPIO_BITBAND(GPIOB_PDIR, 0) << 2) |
-                (GPIO_BITBAND(GPIOB_PDIR, 1) << 3) |
-                (GPIO_BITBAND(GPIOA_PDIR, 14) << 4) |
-                (GPIO_BITBAND(GPIOE_PDIR, 26) << 5) |
-                (GPIO_BITBAND(GPIOA_PDIR, 16) << 6) |
-                (GPIO_BITBAND(GPIOA_PDIR, 15) << 7);
+    report0[4] = ((GPIO_BITBAND(GPIOD_PDIR, 5) << 0) |
+                  (GPIO_BITBAND(GPIOD_PDIR, 6) << 1) |
+                  (GPIO_BITBAND(GPIOB_PDIR, 0) << 2) |
+                  (GPIO_BITBAND(GPIOB_PDIR, 1) << 3) |
+                  (GPIO_BITBAND(GPIOA_PDIR, 14) << 4) |
+                  (GPIO_BITBAND(GPIOE_PDIR, 26) << 5) |
+                  (GPIO_BITBAND(GPIOA_PDIR, 16) << 6) |
+                  (GPIO_BITBAND(GPIOA_PDIR, 15) << 7)) ^
+                 0xff;
 
-    report[5] = (GPIO_BITBAND(GPIOE_PDIR, 25) << 0) |
-                (GPIO_BITBAND(GPIOE_PDIR, 24) << 1) |
-                (GPIO_BITBAND(GPIOC_PDIR, 3) << 2) |
-                (GPIO_BITBAND(GPIOC_PDIR, 7) << 3) |
-                (GPIO_BITBAND(GPIOD_PDIR, 3) << 4) |
-                (GPIO_BITBAND(GPIOD_PDIR, 2) << 5) |
-                (GPIO_BITBAND(GPIOD_PDIR, 7) << 6) |
-                (GPIO_BITBAND(GPIOA_PDIR, 13) << 7);
+    report0[5] = ((GPIO_BITBAND(GPIOE_PDIR, 25) << 0) |
+                  (GPIO_BITBAND(GPIOE_PDIR, 24) << 1) |
+                  (GPIO_BITBAND(GPIOC_PDIR, 3) << 2) |
+                  (GPIO_BITBAND(GPIOC_PDIR, 7) << 3) |
+                  (GPIO_BITBAND(GPIOD_PDIR, 3) << 4) |
+                  (GPIO_BITBAND(GPIOD_PDIR, 2) << 5) |
+                  (GPIO_BITBAND(GPIOD_PDIR, 7) << 6) |
+                  (GPIO_BITBAND(GPIOA_PDIR, 13) << 7)) ^
+                 0xff;
 
-    report[6] = (GPIO_BITBAND(GPIOA_PDIR, 12) << 0) |
-                (GPIO_BITBAND(GPIOD_PDIR, 0) << 1) |
-                (GPIO_BITBAND(GPIOB_PDIR, 17) << 2) |
-                (GPIO_BITBAND(GPIOB_PDIR, 16) << 3);
+    report1[4] =
+        ((GPIO_BITBAND(GPIOA_PDIR, 12) << 0) |
+         (GPIO_BITBAND(GPIOD_PDIR, 0) << 1) |
+         (GPIO_BITBAND(GPIOB_PDIR, 17) << 2) |
+         (GPIO_BITBAND(GPIOB_PDIR, 16) << 3) | (DecodeAnalog(report1[0]) << 4) |
+         (DecodeAnalog(report1[1]) << 6)) ^
+        0x0f;
+    report1[5] = (DecodeAnalog(report1[2])) | (DecodeAnalog(report1[3]) << 2);
 
     {
       DisableInterrupts disable_interrupts;
-      joystick->UpdateReport(report, sizeof(report), disable_interrupts);
+      joystick0->UpdateReport(report0, sizeof(report0), disable_interrupts);
+      joystick1->UpdateReport(report1, sizeof(report1), disable_interrupts);
     }
 
     start = delay_from(start, 1);
@@ -273,9 +297,15 @@ extern "C" int main(void) {
   teensy::UsbDevice usb_device(0, 0x16c0, 0x0492);
   usb_device.SetManufacturer("FRC 971 Spartan Robotics");
   usb_device.SetProduct("Spartan Joystick Board");
-  teensy::HidFunction joystick(&usb_device, report_size());
-  joystick.set_report_descriptor(
-      ::std::string(kReportDescriptor, sizeof(kReportDescriptor)));
+
+  teensy::HidFunction joystick0(&usb_device, report_size());
+  joystick0.set_report_descriptor(
+      ::std::string(kReportDescriptor1, sizeof(kReportDescriptor1)));
+
+  teensy::HidFunction joystick1(&usb_device, report_size());
+  joystick1.set_report_descriptor(
+      ::std::string(kReportDescriptor1, sizeof(kReportDescriptor1)));
+
   teensy::AcmTty tty1(&usb_device);
   global_stdout.store(&tty1, ::std::memory_order_release);
   usb_device.Initialize();
@@ -299,7 +329,7 @@ extern "C" int main(void) {
   GPIO_BITBAND(GPIOC_PDOR, 9) = 1;
   GPIO_BITBAND(GPIOC_PDOR, 10) = 1;
 
-  SendJoystickData(&joystick);
+  SendJoystickData(&joystick0, &joystick1);
 
   return 0;
 }

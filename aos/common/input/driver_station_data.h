@@ -41,7 +41,7 @@ class ButtonLocation : public JoystickFeature {
       : JoystickFeature(joystick, number) {}
 
   // How many buttons there are available on each joystick.
-  static const int kButtons = 12;
+  static const int kButtons = 16;
 };
 
 // Represents the direction of a POV on a joystick.
