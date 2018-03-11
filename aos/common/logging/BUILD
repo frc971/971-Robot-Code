@@ -1,194 +1,194 @@
 # The primary client logging interface.
 cc_library(
-  name = 'logging',
-  visibility = ['//visibility:public'],
-  hdrs = [
-    'logging.h',
-    'interface.h',
-    'context.h',
-  ],
-  srcs = [
-    'interface.cc',
-    'context.cc',
-  ],
-  deps = [
-    '//aos/common:die',
-    '//aos/common/libc:aos_strerror',
-    '//aos/common:macros',
-    '//aos/linux_code:complex_thread_local',
-    ':sizes',
-  ],
+    name = "logging",
+    srcs = [
+        "context.cc",
+        "interface.cc",
+    ],
+    hdrs = [
+        "context.h",
+        "interface.h",
+        "logging.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":sizes",
+        "//aos/common:die",
+        "//aos/common:macros",
+        "//aos/common/libc:aos_strerror",
+        "//aos/linux_code:complex_thread_local",
+    ],
 )
 
 cc_library(
-  name = 'replay',
-  visibility = ['//visibility:public'],
-  srcs = [
-    'replay.cc',
-  ],
-  hdrs = [
-    'replay.h',
-  ],
-  deps = [
-    ':binary_log_file',
-    '//aos/common:queues',
-    ':logging',
-    '//aos/linux_code/ipc_lib:queue',
-  ],
+    name = "replay",
+    srcs = [
+        "replay.cc",
+    ],
+    hdrs = [
+        "replay.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":binary_log_file",
+        ":logging",
+        "//aos/common:queues",
+        "//aos/linux_code/ipc_lib:queue",
+    ],
 )
 
 cc_binary(
-  name = 'binary_log_writer',
-  visibility = ['//visibility:public'],
-  srcs = [
-    'binary_log_writer.cc',
-  ],
-  deps = [
-    ':logging',
-    ':implementations',
-    '//aos/linux_code:init',
-    '//aos/linux_code:configuration',
-    '//aos/linux_code/ipc_lib:queue',
-    '//aos/common:die',
-    ':binary_log_file',
-    '//aos/common:queue_types',
-    '//aos/common:time',
-  ],
+    name = "binary_log_writer",
+    srcs = [
+        "binary_log_writer.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":binary_log_file",
+        ":implementations",
+        ":logging",
+        "//aos/common:die",
+        "//aos/common:queue_types",
+        "//aos/common:time",
+        "//aos/linux_code:configuration",
+        "//aos/linux_code:init",
+        "//aos/linux_code/ipc_lib:queue",
+    ],
 )
 
 cc_binary(
-  name = 'log_streamer',
-  visibility = ['//visibility:public'],
-  srcs = [
-    'log_streamer.cc',
-  ],
-  deps = [
-    ':logging',
-    ':implementations',
-    '//aos/linux_code:init',
-    '//aos/common:time',
-    '//aos/linux_code/ipc_lib:queue',
-  ],
+    name = "log_streamer",
+    srcs = [
+        "log_streamer.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":implementations",
+        ":logging",
+        "//aos/common:time",
+        "//aos/linux_code:init",
+        "//aos/linux_code/ipc_lib:queue",
+    ],
 )
 
 cc_binary(
-  name = 'log_displayer',
-  visibility = ['//visibility:public'],
-  srcs = [
-    'log_displayer.cc',
-  ],
-  deps = [
-    ':logging',
-    ':implementations',
-    '//aos/linux_code:init',
-    ':binary_log_file',
-    '//aos/common:queue_types',
-    '//aos/linux_code:configuration',
-    '//aos/common/util:string_to_num',
-  ],
+    name = "log_displayer",
+    srcs = [
+        "log_displayer.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":binary_log_file",
+        ":implementations",
+        ":logging",
+        "//aos/common:queue_types",
+        "//aos/common/util:string_to_num",
+        "//aos/linux_code:configuration",
+        "//aos/linux_code:init",
+    ],
 )
 
 cc_library(
-  name = 'binary_log_file',
-  srcs = [
-    'binary_log_file.cc',
-  ],
-  hdrs = [
-    'binary_log_file.h',
-  ],
-  deps = [
-    ':implementations',
-  ],
+    name = "binary_log_file",
+    srcs = [
+        "binary_log_file.cc",
+    ],
+    hdrs = [
+        "binary_log_file.h",
+    ],
+    deps = [
+        ":implementations",
+    ],
 )
 
 cc_library(
-  name = 'sizes',
-  hdrs = [
-    'sizes.h',
-  ],
+    name = "sizes",
+    hdrs = [
+        "sizes.h",
+    ],
 )
 
 cc_test(
-  name = 'implementations_test',
-  srcs = [
-    'implementations_test.cc',
-  ],
-  deps = [
-    '//aos/testing:googletest',
-    ':logging',
-    ':implementations',
-  ],
+    name = "implementations_test",
+    srcs = [
+        "implementations_test.cc",
+    ],
+    deps = [
+        ":implementations",
+        ":logging",
+        "//aos/testing:googletest",
+    ],
 )
 
 cc_library(
-  name = 'queue_logging',
-  visibility = ['//visibility:public'],
-  srcs = [
-    'queue_logging.cc',
-  ],
-  hdrs = [
-    'queue_logging.h',
-  ],
-  deps = [
-    ':logging',
-    ':sizes',
-    '//aos/common:die',
-    '//aos/common:queue_types',
-  ],
+    name = "queue_logging",
+    srcs = [
+        "queue_logging.cc",
+    ],
+    hdrs = [
+        "queue_logging.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":logging",
+        ":sizes",
+        "//aos/common:die",
+        "//aos/common:queue_types",
+    ],
 )
 
 cc_library(
-  name = 'matrix_logging',
-  visibility = ['//visibility:public'],
-  srcs = [
-    'matrix_logging.cc',
-  ],
-  hdrs = [
-    'matrix_logging.h',
-  ],
-  deps = [
-    '//aos/common:generated_queue_headers',
-    ':logging',
-    ':sizes',
-    '//aos/common:die',
-    '//aos/common:queue_types',
-    '//third_party/eigen',
-  ],
+    name = "matrix_logging",
+    srcs = [
+        "matrix_logging.cc",
+    ],
+    hdrs = [
+        "matrix_logging.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":logging",
+        ":sizes",
+        "//aos/common:die",
+        "//aos/common:generated_queue_headers",
+        "//aos/common:queue_types",
+        "//third_party/eigen",
+    ],
 )
 
 cc_library(
-  name = 'printf_formats',
-  visibility = ['//visibility:public'],
-  hdrs = [
-    'printf_formats.h',
-  ],
-  deps = [
-    '//aos/common:macros',
-  ],
+    name = "printf_formats",
+    hdrs = [
+        "printf_formats.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos/common:macros",
+    ],
 )
 
 cc_library(
-  name = 'implementations',
-  visibility = ['//visibility:public'],
-  srcs = [
-    'implementations.cc',
-  ],
-  hdrs = [
-    'implementations.h',
-  ],
-  linkopts = [
-    '-pthread',
-  ],
-  deps = [
-    '//aos/common:die',
-    '//aos/common:time',
-    '//aos:once',
-    '//aos/common:queue_types',
-    ':logging',
-    '//aos/common:type_traits',
-    '//aos/common:mutex',
-    '//aos/common:macros',
-    ':sizes',
-    '//aos/linux_code/ipc_lib:queue',
-  ],
+    name = "implementations",
+    srcs = [
+        "implementations.cc",
+    ],
+    hdrs = [
+        "implementations.h",
+    ],
+    linkopts = [
+        "-lpthread",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":logging",
+        ":sizes",
+        "//aos:once",
+        "//aos/common:die",
+        "//aos/common:macros",
+        "//aos/common:mutex",
+        "//aos/common:queue_types",
+        "//aos/common:time",
+        "//aos/common:type_traits",
+        "//aos/linux_code/ipc_lib:queue",
+    ],
 )

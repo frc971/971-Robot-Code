@@ -6,32 +6,27 @@
 # build targets here, the libraries are independent of their location in
 # a more straightforward way.
 
-load('//tools/build_rules:empty_main.bzl', 'empty_main_if_asan')
+load("//tools/build_rules:empty_main.bzl", "empty_main_if_asan")
 
 licenses(["notice"])
 
 cc_library(
     name = "googletest",
-    visibility = ["//visibility:public"],
     srcs = glob([
-    	"googletest/src/gtest.cc",
-    	"googletest/src/gtest-death-test.cc",
-    	"googletest/src/gtest-filepath.cc",
-    	"googletest/src/gtest-internal-inl.h",
-    	"googletest/src/gtest-port.cc",
-    	"googletest/src/gtest-printers.cc",
-    	"googletest/src/gtest-test-part.cc",
-    	"googletest/src/gtest-typed-test.cc",
-    	"googletest/include/gtest/internal/*.h",
-    	"googletest/include/gtest/internal/custom/*.h",
+        "googletest/src/gtest.cc",
+        "googletest/src/gtest-death-test.cc",
+        "googletest/src/gtest-filepath.cc",
+        "googletest/src/gtest-internal-inl.h",
+        "googletest/src/gtest-port.cc",
+        "googletest/src/gtest-printers.cc",
+        "googletest/src/gtest-test-part.cc",
+        "googletest/src/gtest-typed-test.cc",
+        "googletest/include/gtest/internal/*.h",
+        "googletest/include/gtest/internal/custom/*.h",
     ]),
     hdrs = glob([
-    	"googletest/include/gtest/*.h"
+        "googletest/include/gtest/*.h",
     ]),
-    includes = [
-        "googletest",
-        "googletest/include",
-    ],
     copts = [
         "-g",
         "-Wall",
@@ -40,25 +35,29 @@ cc_library(
         "-Wno-switch-enum",
         "-Wno-missing-field-initializers",
     ],
+    includes = [
+        "googletest",
+        "googletest/include",
+    ],
     linkopts = [
-        "-pthread",
+        "-lpthread",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "googletest_main",
+    srcs = [
+        "googletest/src/gtest_main.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":googletest",
     ],
 )
 
 cc_library(
-  name = "googletest_main",
-  visibility = ["//visibility:public"],
-  srcs = [
-    "googletest/src/gtest_main.cc",
-  ],
-  deps = [
-    ":googletest",
-  ],
-)
-
-cc_library(
-	name = "googlemock",
-    visibility = ["//visibility:public"],
+    name = "googlemock",
     srcs = glob([
         "googlemock/src/gmock-cardinalities.cc",
         "googlemock/src/gmock.cc",
@@ -70,13 +69,8 @@ cc_library(
         "googlemock/include/gmock/internal/custom/*.h",
     ]),
     hdrs = glob([
-        "googlemock/include/gmock/*.h"
+        "googlemock/include/gmock/*.h",
     ]),
-    includes = [
-        "googletest/include",
-        "googlemock",
-        "googlemock/include",
-    ],
     copts = [
         "-std=c++11",
         "-g",
@@ -86,9 +80,15 @@ cc_library(
         "-Wno-missing-field-initializers",
         "-Wno-unused-parameter",
     ],
-    linkopts = [
-        "-pthread",
+    includes = [
+        "googlemock",
+        "googlemock/include",
+        "googletest/include",
     ],
+    linkopts = [
+        "-lpthread",
+    ],
+    visibility = ["//visibility:public"],
     deps = [
         ":googletest",
     ],
@@ -104,35 +104,35 @@ cc_library(
 )
 
 cc_library(
-	name = "googletest_sample_libs",
-	hdrs = [
-	    "googletest/samples/prime_tables.h",
-	    "googletest/samples/sample1.h",
-	    "googletest/samples/sample2.h",
-	    "googletest/samples/sample3-inl.h",
-	    "googletest/samples/sample4.h",
-	],
-	srcs = [
-	    "googletest/samples/sample1.cc",
-	    "googletest/samples/sample2.cc",
-	    "googletest/samples/sample4.cc",
-	],
+    name = "googletest_sample_libs",
+    srcs = [
+        "googletest/samples/sample1.cc",
+        "googletest/samples/sample2.cc",
+        "googletest/samples/sample4.cc",
+    ],
+    hdrs = [
+        "googletest/samples/prime_tables.h",
+        "googletest/samples/sample1.h",
+        "googletest/samples/sample2.h",
+        "googletest/samples/sample3-inl.h",
+        "googletest/samples/sample4.h",
+    ],
 )
 
 test_suite(
-	name = "googletest_example_tests",
-	tests = [
-	    ":googletest_sample1_test",
-	    ":googletest_sample2_test",
-	    ":googletest_sample3_test",
-	    ":googletest_sample4_test",
-	    ":googletest_sample5_test",
-	    ":googletest_sample6_test",
-  	    ":googletest_sample7_test",
-	    ":googletest_sample8_test",
-	    ":googletest_sample9_test",
-	    ":googletest_sample10_test",
-	],
+    name = "googletest_example_tests",
+    tests = [
+        ":googletest_sample10_test",
+        ":googletest_sample1_test",
+        ":googletest_sample2_test",
+        ":googletest_sample3_test",
+        ":googletest_sample4_test",
+        ":googletest_sample5_test",
+        ":googletest_sample6_test",
+        ":googletest_sample7_test",
+        ":googletest_sample8_test",
+        ":googletest_sample9_test",
+    ],
 )
 
 test_suite(
@@ -181,103 +181,104 @@ test_suite(
 )
 
 cc_test(
-	name = "googletest_sample1_test",
-	srcs = ["googletest/samples/sample1_unittest.cc"],
-	deps = [
-	    ":googletest_main",
-	    ":googletest_sample_libs",
-	],
+    name = "googletest_sample1_test",
+    srcs = ["googletest/samples/sample1_unittest.cc"],
+    deps = [
+        ":googletest_main",
+        ":googletest_sample_libs",
+    ],
 )
 
 cc_test(
-	name = "googletest_sample2_test",
-	srcs = ["googletest/samples/sample2_unittest.cc"],
-	deps = [
-	    ":googletest_main",
-	    ":googletest_sample_libs",
-	],
+    name = "googletest_sample2_test",
+    srcs = ["googletest/samples/sample2_unittest.cc"],
+    deps = [
+        ":googletest_main",
+        ":googletest_sample_libs",
+    ],
 )
 
 cc_test(
-	name = "googletest_sample3_test",
-	srcs = ["googletest/samples/sample3_unittest.cc"],
-	deps = [
-	    ":googletest_main",
-	    ":googletest_sample_libs",
-	],
+    name = "googletest_sample3_test",
+    srcs = ["googletest/samples/sample3_unittest.cc"],
+    deps = [
+        ":googletest_main",
+        ":googletest_sample_libs",
+    ],
 )
 
 cc_test(
-	name = "googletest_sample4_test",
-	srcs = ["googletest/samples/sample4_unittest.cc"],
-	deps = [
-	    ":googletest_main",
-	    ":googletest_sample_libs",
-	],
+    name = "googletest_sample4_test",
+    srcs = ["googletest/samples/sample4_unittest.cc"],
+    deps = [
+        ":googletest_main",
+        ":googletest_sample_libs",
+    ],
 )
 
 cc_test(
-	name = "googletest_sample5_test",
-	srcs = ["googletest/samples/sample5_unittest.cc"],
-	deps = [
-	    ":googletest_main",
-	    ":googletest_sample_libs",
-	],
+    name = "googletest_sample5_test",
+    srcs = ["googletest/samples/sample5_unittest.cc"],
+    deps = [
+        ":googletest_main",
+        ":googletest_sample_libs",
+    ],
 )
 
 cc_test(
-	name = "googletest_sample6_test",
-	srcs = ["googletest/samples/sample6_unittest.cc"],
-	deps = [
-	    ":googletest_main",
-	    ":googletest_sample_libs",
-	],
+    name = "googletest_sample6_test",
+    srcs = ["googletest/samples/sample6_unittest.cc"],
+    deps = [
+        ":googletest_main",
+        ":googletest_sample_libs",
+    ],
 )
 
 cc_test(
-	name = "googletest_sample7_test",
-	srcs = ["googletest/samples/sample7_unittest.cc"],
-	deps = [
-	    ":googletest_main",
-	    ":googletest_sample_libs",
-	],
+    name = "googletest_sample7_test",
+    srcs = ["googletest/samples/sample7_unittest.cc"],
+    deps = [
+        ":googletest_main",
+        ":googletest_sample_libs",
+    ],
 )
 
 cc_test(
-	name = "googletest_sample8_test",
-	srcs = ["googletest/samples/sample8_unittest.cc"],
-	deps = [
-	    ":googletest_main",
-	    ":googletest_sample_libs",
-	],
+    name = "googletest_sample8_test",
+    srcs = ["googletest/samples/sample8_unittest.cc"],
+    deps = [
+        ":googletest_main",
+        ":googletest_sample_libs",
+    ],
 )
 
 cc_test(
-	name = "googletest_sample9_test",
-	srcs = ["googletest/samples/sample9_unittest.cc"],
-	deps = [
-	    ":googletest_main",
-	    ":googletest_sample_libs",
-	],
+    name = "googletest_sample9_test",
+    srcs = ["googletest/samples/sample9_unittest.cc"],
+    deps = [
+        ":googletest_main",
+        ":googletest_sample_libs",
+    ],
 )
 
 cc_test(
-	name = "googletest_sample10_test",
-	srcs = empty_main_if_asan(["googletest/samples/sample10_unittest.cc"]),
-	deps = [
-	    ":googletest_main",
-	    ":googletest_sample_libs",
-	],
+    name = "googletest_sample10_test",
+    srcs = empty_main_if_asan(["googletest/samples/sample10_unittest.cc"]),
+    deps = [
+        ":googletest_main",
+        ":googletest_sample_libs",
+    ],
 )
 
 """ Tests on the googletest library itself."""
+
 cc_library(
     name = "gtest_production",
-    hdrs = [
-        "googletest/test/production.h",
-    ],
     srcs = [
         "googletest/test/production.cc",
+    ],
+    hdrs = [
+        "googletest/test/production.h",
     ],
     deps = [
         ":googletest_main",
@@ -333,12 +334,12 @@ cc_test(
     srcs = [
         "googletest/test/gtest-port_test.cc",
     ],
+    copts = [
+        "-Wno-empty-body",
+    ],
     deps = [
         ":googletest_main",
     ],
-    copts = [
-        "-Wno-empty-body",
-    ]
 )
 
 cc_test(
@@ -379,8 +380,8 @@ cc_test(
 cc_test(
     name = "googletest_gtest_typed_test_test",
     srcs = [
-        "googletest/test/gtest-typed-test_test.h",
         "googletest/test/gtest-typed-test_test.cc",
+        "googletest/test/gtest-typed-test_test.h",
     ],
     deps = [
         ":googletest_main",
@@ -390,8 +391,8 @@ cc_test(
 cc_test(
     name = "googletest_gtest_typed_test2_test",
     srcs = [
-        "googletest/test/gtest-typed-test_test.h",
         "googletest/test/gtest-typed-test2_test.cc",
+        "googletest/test/gtest-typed-test_test.h",
     ],
     deps = [
         ":googletest_main",
@@ -403,20 +404,20 @@ cc_test(
     srcs = [
         "googletest/test/gtest_unittest.cc",
     ],
-    deps = [
-        ":googletest_main",
-    ],
     copts = [
         "-Wno-empty-body",
         "-Wno-missing-field-initializers",
-    ]
+    ],
+    deps = [
+        ":googletest_main",
+    ],
 )
 
 cc_test(
     name = "googletest_gtest_production_test",
     srcs = [
-        "googletest/test/production.h",
         "googletest/test/production.cc",
+        "googletest/test/production.h",
     ],
     deps = [
         ":googletest_main",
@@ -424,6 +425,7 @@ cc_test(
 )
 
 """ Tests on the googlemock library itself."""
+
 cc_test(
     name = "googlemock_gmock_actions_test",
     srcs = [
@@ -449,7 +451,7 @@ cc_test(
     ],
 )
 
-'''
+"""
 cc_test(
     name = "googlemock_gmock_ex_test",
     srcs = [
@@ -460,7 +462,7 @@ cc_test(
         ":googletest_main",
     ],
 )
-'''
+"""
 
 cc_test(
     name = "googlemock_gmock_generated_actions_test",
@@ -500,12 +502,12 @@ cc_test(
     srcs = [
         "googlemock/test/gmock-generated-matchers_test.cc",
     ],
+    copts = [
+        "-Wno-unused-parameter",
+    ],
     deps = [
         ":googlemock",
         ":googletest_main",
-    ],
-    copts = [
-        "-Wno-unused-parameter",
     ],
 )
 
@@ -536,8 +538,8 @@ cc_test(
 cc_test(
     name = "googlemock_gmock_link_test",
     srcs = [
-        "googlemock/test/gmock_link_test.h",
         "googlemock/test/gmock_link_test.cc",
+        "googlemock/test/gmock_link_test.h",
     ],
     deps = [
         ":googlemock",
@@ -548,8 +550,8 @@ cc_test(
 cc_test(
     name = "googlemock_gmock_link2_test",
     srcs = [
-        "googlemock/test/gmock_link_test.h",
         "googlemock/test/gmock_link2_test.cc",
+        "googlemock/test/gmock_link_test.h",
     ],
     deps = [
         ":googlemock",
@@ -562,12 +564,12 @@ cc_test(
     srcs = [
         "googlemock/test/gmock-matchers_test.cc",
     ],
+    copts = [
+        "-Wno-unused-parameter",
+    ],
     deps = [
         ":googlemock",
         ":googletest_main",
-    ],
-    copts = [
-        "-Wno-unused-parameter",
     ],
 )
 

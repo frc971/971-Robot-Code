@@ -15,14 +15,14 @@ cc_library(
         "gmock-1.7.0/gtest/include",
         "gmock-1.7.0/include",
     ],
-    linkopts = ["-pthread"],
+    linkopts = ["-lpthread"],
     visibility = ["//visibility:public"],
 )
 
 cc_library(
     name = "gtest_main",
     srcs = ["gmock-1.7.0/src/gmock_main.cc"],
-    linkopts = ["-pthread"],
+    linkopts = ["-lpthread"],
     visibility = ["//visibility:public"],
     deps = [":gtest"],
 )

@@ -1,0 +1,5 @@
+#!/bin/bash --norc
+
+exec -a strip \
+  ${BAZEL_OUTPUT_ROOT}external/clang_3p6_repo/usr/bin/strip \
+  "$@"
