@@ -134,12 +134,17 @@ PistolDrivetrainInputReader::GetWheelAndThrottle(
   const double wheel_torque =
       -UnwrappedAxis(data, wheel_torque_high_, wheel_torque_low_) / 2.0;
 
-  const double throttle =
+  double throttle =
       UnwrappedAxis(data, throttle_, throttle_low_);
   const double throttle_velocity =
       UnwrappedAxis(data, throttle_velocity_high_, throttle_velocity_low_) * 50.0;
   const double throttle_torque =
       UnwrappedAxis(data, throttle_torque_high_, throttle_torque_low_) / 2.0;
+
+  // TODO(austin): Deal with haptics here.
+  if (throttle < 0) {
+    throttle = ::std::max(-1.0, throttle / 0.7);
+  }
 
   if (!data.GetControlBit(ControlBit::kEnabled)) {
     high_gear_ = default_high_gear_;

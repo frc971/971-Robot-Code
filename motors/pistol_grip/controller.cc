@@ -156,18 +156,28 @@ extern "C" void ftm0_isr() {
       ->HandleInterrupt(BalanceSimpleReadings(readings.currents), encoder);
 }
 
-constexpr float kTriggerMaxExtension = -1.00f;
+constexpr float kTriggerMaxExtension = -0.70f;
 constexpr float kTriggerCenter = 0.0f;
+constexpr float kCenteringStiffness = 0.15f;
 float TriggerCenteringCurrent(float trigger_angle) {
   float goal_current = (kTriggerCenter - trigger_angle) * 3.0f;
+  float knotch_goal_current = (kTriggerCenter - trigger_angle) * 8.0f;
+  if (knotch_goal_current < -kCenteringStiffness) {
+    knotch_goal_current = -kCenteringStiffness;
+  } else if (knotch_goal_current > kCenteringStiffness) {
+    knotch_goal_current = kCenteringStiffness;
+  }
+
+  goal_current += knotch_goal_current;
+
   if (goal_current < -1.0f) {
     goal_current = -1.0f;
   } else if (goal_current > 1.0f) {
     goal_current = 1.0f;
     if (trigger_angle < kTriggerMaxExtension) {
       goal_current -= (30.0f * (trigger_angle - kTriggerMaxExtension));
-      if (goal_current > 2.0f) {
-        goal_current = 2.0f;
+      if (goal_current > 4.0f) {
+        goal_current = 4.0f;
       }
     }
   }
