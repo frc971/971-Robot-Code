@@ -20,7 +20,7 @@ const ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0, 0.25, 0.75};
 const DrivetrainConfig &GetDrivetrainConfig() {
   static DrivetrainConfig kDrivetrainConfig{
       ::frc971::control_loops::drivetrain::ShifterType::HALL_EFFECT_SHIFTER,
-      ::frc971::control_loops::drivetrain::LoopType::OPEN_LOOP,
+      ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
       ::frc971::control_loops::drivetrain::GyroType::SPARTAN_GYRO,
 
       ::y2018::control_loops::drivetrain::MakeDrivetrainLoop,
@@ -34,7 +34,8 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       kThreeStateDriveShifter, kThreeStateDriveShifter,
       true /* default_high_gear */, 0 /* down_offset if using constants use
                                    constants::GetValues().down_error */,
-      0.4 /* wheel_non_linearity */, 1.0 /* quickturn_wheel_multiplier */,
+      0.8 /* wheel_non_linearity */, 1.2 /* quickturn_wheel_multiplier */,
+      1.1 /* wheel_multiplier */,
   };
 
   return kDrivetrainConfig;

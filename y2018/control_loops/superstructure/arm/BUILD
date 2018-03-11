@@ -154,6 +154,7 @@ cc_library(
         "generated_graph.cc",
     ],
     hdrs = ["generated_graph.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":graph",
         ":trajectory",

@@ -364,7 +364,7 @@ void TrajectoryFollower::Reset() {
   saturation_fraction_along_path_ = 0.0;
   omega_.setZero();
   if (trajectory_ != nullptr) {
-    theta_ = trajectory_->ThetaT(goal_(0));
+    set_theta(trajectory_->ThetaT(goal_(0)));
   }
 }
 
@@ -477,6 +477,7 @@ void TrajectoryFollower::USaturationSearch(
 void TrajectoryFollower::Update(const ::Eigen::Matrix<double, 6, 1> &X,
                                 bool disabled, double dt, double plan_vmax,
                                 double voltage_limit) {
+  // TODO(austin): Separate voltage limit for shoulder for no path.
   last_goal_ = goal_;
 
   if (!has_path()) {

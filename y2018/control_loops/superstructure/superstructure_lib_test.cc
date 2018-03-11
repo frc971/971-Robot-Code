@@ -203,7 +203,7 @@ class SuperstructureSimulation {
                               constants::Values::kIntakeRange().upper) /
                              2.0);
 
-    InitializeArmPosition(arm::ReadyAboveBoxPoint());
+    InitializeArmPosition(arm::UpPoint());
   }
 
   void InitializeIntakePosition(double start_pos) {
@@ -348,6 +348,8 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 
     goal->intake.left_intake_angle = 0.1;
     goal->intake.right_intake_angle = 0.2;
+    goal->arm_goal_position = arm::UpIndex();
+    goal->open_claw = true;
 
     ASSERT_TRUE(goal.Send());
   }
@@ -369,6 +371,8 @@ TEST_F(SuperstructureTest, OffsetStartReachesGoal) {
 
     goal->intake.left_intake_angle = 0.1;
     goal->intake.right_intake_angle = 0.2;
+    goal->arm_goal_position = arm::UpIndex();
+    goal->open_claw = true;
 
     ASSERT_TRUE(goal.Send());
   }
@@ -388,6 +392,8 @@ TEST_F(SuperstructureTest, RespectsRange) {
 
     goal->intake.left_intake_angle = 5.0 * M_PI;
     goal->intake.right_intake_angle = 5.0 * M_PI;
+    goal->arm_goal_position = arm::UpIndex();
+    goal->open_claw = true;
 
     ASSERT_TRUE(goal.Send());
   }
@@ -415,6 +421,8 @@ TEST_F(SuperstructureTest, RespectsRange) {
 
     goal->intake.left_intake_angle = -5.0 * M_PI;
     goal->intake.right_intake_angle = -5.0 * M_PI;
+    goal->arm_goal_position = arm::UpIndex();
+    goal->open_claw = true;
 
     ASSERT_TRUE(goal.Send());
   }
@@ -442,6 +450,8 @@ TEST_F(SuperstructureTest, DISABLED_LowerHardstopStartup) {
     auto goal = superstructure_queue_.goal.MakeMessage();
     goal->intake.left_intake_angle = constants::Values::kIntakeRange().lower;
     goal->intake.right_intake_angle = constants::Values::kIntakeRange().lower;
+    goal->arm_goal_position = arm::UpIndex();
+    goal->open_claw = true;
     ASSERT_TRUE(goal.Send());
   }
   RunForTime(chrono::seconds(10));
@@ -463,6 +473,8 @@ TEST_F(SuperstructureTest, DISABLED_UpperHardstopStartup) {
     auto goal = superstructure_queue_.goal.MakeMessage();
     goal->intake.left_intake_angle = constants::Values::kIntakeRange().upper;
     goal->intake.right_intake_angle = constants::Values::kIntakeRange().upper;
+    goal->arm_goal_position = arm::UpIndex();
+    goal->open_claw = true;
     ASSERT_TRUE(goal.Send());
   }
   RunForTime(chrono::seconds(10));
@@ -480,6 +492,8 @@ TEST_F(SuperstructureTest, ResetTest) {
         constants::Values::kIntakeRange().upper - 0.1;
     goal->intake.right_intake_angle =
         constants::Values::kIntakeRange().upper - 0.1;
+    goal->arm_goal_position = arm::UpIndex();
+    goal->open_claw = true;
     ASSERT_TRUE(goal.Send());
   }
   RunForTime(chrono::seconds(10));
@@ -509,14 +523,15 @@ TEST_F(SuperstructureTest, ResetTest) {
 }
 
 // Tests that we don't freak out without a goal.
-TEST_F(SuperstructureTest, ArmNoGoalTest) {
+TEST_F(SuperstructureTest, ArmSimpleGoal) {
   RunForTime(chrono::seconds(5));
 
   {
     auto goal = superstructure_queue_.goal.MakeMessage();
-    goal->intake.left_intake_angle = 0.0;
-    goal->intake.right_intake_angle = 0.0;
-    goal->arm_goal_position = 0;
+    goal->intake.left_intake_angle = -0.8;
+    goal->intake.right_intake_angle = -0.8;
+    goal->arm_goal_position = arm::FrontHighBoxIndex();
+    goal->open_claw = true;
     ASSERT_TRUE(goal.Send());
   }
 
@@ -530,6 +545,7 @@ TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
   goal->intake.left_intake_angle = 0.0;
   goal->intake.right_intake_angle = 0.0;
   goal->arm_goal_position = arm::FrontHighBoxIndex();
+  goal->open_claw = true;
   ASSERT_TRUE(goal.Send());
 
   RunForTime(chrono::seconds(10));
@@ -541,6 +557,7 @@ TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
     goal->intake.left_intake_angle = 0.0;
     goal->intake.right_intake_angle = 0.0;
     goal->arm_goal_position = arm::ReadyAboveBoxIndex();
+    goal->open_claw = true;
     ASSERT_TRUE(goal.Send());
   }
 
@@ -556,6 +573,7 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
   goal->intake.left_intake_angle = 0.0;
   goal->intake.right_intake_angle = 0.0;
   goal->arm_goal_position = arm::BackLowBoxIndex();
+  goal->open_claw = true;
   ASSERT_TRUE(goal.Send());
 
   RunForTime(chrono::seconds(10));
@@ -567,6 +585,7 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
     goal->intake.left_intake_angle = 0.0;
     goal->intake.right_intake_angle = 0.0;
     goal->arm_goal_position = arm::ReadyAboveBoxIndex();
+    goal->open_claw = true;
     ASSERT_TRUE(goal.Send());
   }
 

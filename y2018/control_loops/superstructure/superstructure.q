@@ -95,6 +95,8 @@ struct ArmStatus {
   // The current state machine state.
   uint32_t state;
 
+  uint32_t grab_state;
+
   // The number of times the LQR solver failed.
   uint32_t failed_solutions;
 };
@@ -126,6 +128,8 @@ queue_group SuperstructureQueue {
 
     // Used to identiy a position in the planned set of positions on the arm.
     uint32_t arm_goal_position;
+    // If true, start the grab box sequence.
+    bool grab_box;
 
     bool open_claw;
 

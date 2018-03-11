@@ -37,10 +37,12 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       drivetrain::kLowGearRatio,
       kThreeStateDriveShifter,
       kThreeStateDriveShifter,
-      true,
+      true /* default_high_gear */,
       constants::GetValues().down_error,
-      0.25,
-      1.0};
+      0.25 /* wheel_non_linearity */,
+      1.0 /* quickturn_wheel_multiplier */,
+      1.0 /* wheel_multiplier */,
+  };
 
   return kDrivetrainConfig;
 };

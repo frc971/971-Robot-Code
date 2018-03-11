@@ -272,12 +272,15 @@ extern "C" int main(void) {
   teensy::UsbDevice usb_device(0, 0x16c0, 0x0491);
   usb_device.SetManufacturer("FRC 971 Spartan Robotics");
   usb_device.SetProduct("Pistol Grip Controller interface");
+
   teensy::HidFunction throttle_joystick(&usb_device, 14);
   throttle_joystick.set_report_descriptor(
       ::std::string(kReportDescriptor, sizeof(kReportDescriptor)));
+
   teensy::HidFunction wheel_joystick(&usb_device, 14);
   wheel_joystick.set_report_descriptor(
       ::std::string(kReportDescriptor, sizeof(kReportDescriptor)));
+
   teensy::AcmTty tty1(&usb_device);
   teensy::AcmTty tty2(&usb_device);
   teensy::InterruptOut interrupt_out(&usb_device, "JoystickForce");

@@ -19,38 +19,67 @@ class Arm {
   Arm();
 
   // If true, tune down all the constants for testing.
-  static constexpr bool kGrannyMode() { return true; }
+  static constexpr bool kGrannyMode() { return false; }
 
   // The operating voltage.
   static constexpr double kOperatingVoltage() {
-    return kGrannyMode() ? 6.0 : 12.0;
+    return kGrannyMode() ? 4.0 : 12.0;
   }
   static constexpr double kDt() { return 0.00505; }
-  static constexpr double kAlpha0Max() { return kGrannyMode() ? 10.0 : 25.0; }
-  static constexpr double kAlpha1Max() { return kGrannyMode() ? 10.0 : 25.0; }
-  static constexpr double kVMax() { return kGrannyMode() ? 4.0 : 11.5; }
-  static constexpr double kPathlessVMax() { return 4.0; }
+  static constexpr double kAlpha0Max() { return kGrannyMode() ? 10.0 : 15.0; }
+  static constexpr double kAlpha1Max() { return kGrannyMode() ? 10.0 : 15.0; }
 
-  void Iterate(const uint32_t *unsafe_goal,
+  static constexpr double kVMax() { return kGrannyMode() ? 5.0 : 11.5; }
+  static constexpr double kPathlessVMax() { return 5.0; }
+
+  void Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
                const control_loops::ArmPosition *position,
-               double *proximal_output, double *distal_output,
-               bool *release_arm_brake, control_loops::ArmStatus *status);
+               const bool claw_beambreak_triggered,
+               const bool box_back_beambreak_triggered,
+               const bool intake_clear_of_box, double *proximal_output,
+               double *distal_output, bool *release_arm_brake,
+               bool *claw_closed, control_loops::ArmStatus *status);
 
   void Reset();
 
   enum class State : int32_t {
     UNINITIALIZED,
     ZEROING,
+    DISABLED,
+    GOTO_PATH,
     RUNNING,
     ESTOP,
   };
 
+  enum class GrabState : int32_t {
+    NORMAL,
+    WAIT_FOR_BOX,
+    TALL_BOX,
+    SHORT_BOX,
+    CLAW_CLOSE,
+    OPEN_INTAKE,
+  };
+
   State state() const { return state_; }
+  GrabState grab_state() const { return grab_state_; }
+
+  // Returns the maximum position for the intake.  This is used to override the
+  // intake position to release the box when the state machine is lifting.
+  double max_intake_override() const { return max_intake_override_; }
 
  private:
+  bool AtState(uint32_t state) const { return current_node_ == state; }
+  bool NearEnd(double threshold = 0.02) const {
+    return ::std::abs(arm_ekf_.X_hat(0) - follower_.theta(0)) <= threshold &&
+           ::std::abs(arm_ekf_.X_hat(2) - follower_.theta(1)) <= threshold &&
+           follower_.path_distance_to_go() < 1e-3;
+  }
+
   State state_ = State::UNINITIALIZED;
 
-  ::aos::monotonic_clock::time_point last_time_ =
+  GrabState grab_state_ = GrabState::NORMAL;
+
+  ::aos::monotonic_clock::time_point claw_close_start_time_ =
       ::aos::monotonic_clock::min_time;
 
   ::frc971::zeroing::PotAndAbsEncoderZeroingEstimator proximal_zeroing_estimator_;
@@ -58,6 +87,9 @@ class Arm {
 
   double proximal_offset_ = 0.0;
   double distal_offset_ = 0.0;
+
+  bool claw_closed_ = true;
+  double max_intake_override_ = 1000.0;
 
   const ::Eigen::Matrix<double, 2, 2> alpha_unitizer_;
 
@@ -68,6 +100,8 @@ class Arm {
 
   EKF arm_ekf_;
   TrajectoryFollower follower_;
+
+  const ::std::vector<::Eigen::Matrix<double, 2, 1>> points_;
 
   // Start at the 0th index.
   uint32_t current_node_ = 0;
