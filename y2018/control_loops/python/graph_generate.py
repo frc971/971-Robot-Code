@@ -405,13 +405,13 @@ front_middle2_box = to_theta_with_circular_index(
     0.732, 2.268, circular_index=-1)
 front_middle1_box = to_theta_with_circular_index(
     0.878, 1.885, circular_index=-1)
-front_low_box = to_theta_with_circular_index(0.926, 1.522, circular_index=-1)
+front_low_box = to_theta_with_circular_index(0.926, 1.542, circular_index=-1)
 back_high_box = to_theta_with_circular_index(-0.75, 2.48, circular_index=0)
 back_middle2_box = to_theta_with_circular_index(
     -0.732, 2.268, circular_index=0)
 back_middle1_box = to_theta_with_circular_index(
     -0.878, 1.885, circular_index=0)
-back_low_box = to_theta_with_circular_index(-0.926, 1.522, circular_index=0)
+back_low_box = to_theta_with_circular_index(-0.926, 1.542, circular_index=0)
 
 front_switch = to_theta_with_circular_index(0.88, 0.967, circular_index=-1)
 back_switch = to_theta_with_circular_index(-0.88, 0.967, circular_index=-2)
@@ -434,6 +434,9 @@ front_middle1_box_c2 = to_theta((0.48, 1.15), circular_index=-1)
 
 ready_above_box_c1 = to_theta((0.38, 0.33), circular_index=-1)
 ready_above_box_c2 = to_theta((0.42, 0.51), circular_index=-1)
+
+front_switch_c1 = numpy.array([1.903841, -0.622351])
+front_switch_c2 = numpy.array([1.903841, -0.622351])
 
 points = [(ready_above_box, "ReadyAboveBox"),
           (tall_box_grab, "TallBoxGrab"),
@@ -474,9 +477,10 @@ named_segments = [
 
 unnamed_segments = [
     AngleSegment(neutral, back_switch),
-    XYSegment(neutral, front_switch),
-    XYSegment(neutral, front_low_box),
+    #XYSegment(neutral, front_switch),
+    SplineSegment(neutral, front_switch_c1, front_switch_c2, front_switch),
 
+    XYSegment(neutral, front_low_box),
     XYSegment(up, front_high_box),
     XYSegment(up, front_middle2_box),
     XYSegment(up, front_middle1_box),
