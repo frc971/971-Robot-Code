@@ -62,6 +62,10 @@ void InitStart() {
 
 const char *const kNoRealtimeEnvironmentVariable = "AOS_NO_REALTIME";
 
+bool ShouldBeRealtime() {
+  return getenv(kNoRealtimeEnvironmentVariable) == nullptr;
+}
+
 }  // namespace
 
 void LockAllMemory() {
@@ -95,9 +99,9 @@ void LockAllMemory() {
   free(heap_data);
 }
 
-void InitNRT() {
+void InitNRT(bool for_realtime) {
   InitStart();
-  aos_core_create_shared_mem(false, false);
+  aos_core_create_shared_mem(false, for_realtime && ShouldBeRealtime());
   logging::RegisterQueueImplementation();
   LOG(INFO, "%s initialized non-realtime\n", program_invocation_short_name);
 }
@@ -110,8 +114,14 @@ void InitCreate() {
 }
 
 void Init(int relative_priority) {
-  bool realtime = getenv(kNoRealtimeEnvironmentVariable) == nullptr;
-  if (realtime) {
+  InitStart();
+  aos_core_create_shared_mem(false, ShouldBeRealtime());
+  logging::RegisterQueueImplementation();
+  GoRT(relative_priority);
+}
+
+void GoRT(int relative_priority) {
+  if (ShouldBeRealtime()) {
     LockAllMemory();
 
     // Only let rt processes run for 3 seconds straight.
@@ -133,9 +143,6 @@ void Init(int relative_priority) {
     printf("no realtime for %s. see stderr\n", program_invocation_short_name);
   }
 
-  InitStart();
-  aos_core_create_shared_mem(false, realtime);
-  logging::RegisterQueueImplementation();
   LOG(INFO, "%s initialized realtime\n", program_invocation_short_name);
 }
 

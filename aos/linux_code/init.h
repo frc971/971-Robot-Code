@@ -10,7 +10,8 @@ namespace aos {
 // them again after fork(2)ing.
 
 // Does the non-realtime parts of the initialization process.
-void InitNRT();
+// If for_realtime is true, this sets up to call GoRT later.
+void InitNRT(bool for_realtime = false);
 // Initializes everything, including the realtime stuff.
 // relative_priority adjusts the priority of this process relative to all of the
 // other ones (positive for higher priority).
@@ -21,6 +22,9 @@ void InitCreate();
 // Cleans up (probably not going to get called very often because few things can
 // exit gracefully).
 void Cleanup();
+
+// Performs the realtime parts of initialization after InitNRT(true) has been called.
+void GoRT(int relative_priority = 0);
 
 // Sets up this process to write core dump files.
 // This is called by Init*, but it's here for other files that want this
