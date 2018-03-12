@@ -18,6 +18,7 @@
 #include "Relay.h"
 #include "Servo.h"
 #include "VictorSP.h"
+#include "ctre/phoenix/CANifier.h"
 #undef ERROR
 
 #include "aos/common/commonmath.h"
@@ -50,6 +51,7 @@
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2018/constants.h"
 #include "y2018/control_loops/superstructure/superstructure.q.h"
+#include "y2018/status_light.q.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -645,6 +647,19 @@ class SolenoidWriter {
         to_log.read_solenoids = pcm_->GetAll();
         LOG_STRUCT(DEBUG, "pneumatics info", to_log);
       }
+
+      status_light.FetchLatest();
+      if (status_light.get()) {
+        LOG_STRUCT(DEBUG, "writing", *status_light);
+        // Not sure which of these is red vs green. We're not ready to use
+        // either,
+        // so just turn them off.
+        canifier_.SetLEDOutput(1.0, ::ctre::phoenix::CANifier::LEDChannelA);
+        canifier_.SetLEDOutput(1.0, ::ctre::phoenix::CANifier::LEDChannelB);
+        // Red
+        canifier_.SetLEDOutput(1 - status_light->red,
+                               ::ctre::phoenix::CANifier::LEDChannelC);
+      }
     }
   }
 
@@ -660,6 +675,8 @@ class SolenoidWriter {
   ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
   ::aos::Queue<::y2018::control_loops::SuperstructureQueue::Output>
       superstructure_;
+
+  ::ctre::phoenix::CANifier canifier_{0};
 
   ::std::atomic<bool> run_{true};
 };
