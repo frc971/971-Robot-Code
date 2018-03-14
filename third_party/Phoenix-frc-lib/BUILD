@@ -1,0 +1,35 @@
+# It also restricts use to only with CTRE products and a roboRIO in FRC.
+licenses(["permissive"])
+
+cc_library(
+    name = "phoenix",
+    srcs = glob(
+        include = [
+            "cpp/src/**/*.cpp",
+            "libraries/driver/include/src/**/*.cpp",
+        ],
+        exclude = [
+            "**/Tasking/**",
+            "cpp/src/RCRadio3Ch.cpp",
+            "cpp/src/CompileTest.cpp",
+        ],
+    ),
+    hdrs = glob(
+        include = [
+            "cpp/include/**/*.h",
+            "libraries/driver/include/**/*.h",
+        ],
+        exclude = [
+            "**/Tasking/**",
+            "cpp/include/ctre/phoenix/RCRadio3Ch.h",
+        ],
+    ),
+    includes = [
+        "cpp/include",
+        "libraries/driver/include",
+    ],
+    restricted_to = ["//tools:roborio"],
+    deps = [
+        "//third_party:wpilib",
+    ],
+)
