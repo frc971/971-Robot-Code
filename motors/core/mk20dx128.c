@@ -65,14 +65,12 @@ void __libc_init_array(void);
 
 void fault_isr(void) {
   FTM0_C0V = FTM0_C1V = FTM0_C2V = FTM0_C3V = FTM0_C4V = FTM0_C5V = 0;
+  FTM3_C0V = FTM3_C1V = FTM3_C2V = FTM3_C3V = FTM3_C4V = FTM3_C5V = 0;
   printf("fault_isr\n");
   while (1) {
     // keep polling some communication while in fault
     // mode, so we don't completely die.
     if (SIM_SCGC4 & SIM_SCGC4_USBOTG) usb_isr();
-    if (SIM_SCGC4 & SIM_SCGC4_UART0) uart0_status_isr();
-    if (SIM_SCGC4 & SIM_SCGC4_UART1) uart1_status_isr();
-    if (SIM_SCGC4 & SIM_SCGC4_UART2) uart2_status_isr();
   }
 }
 
