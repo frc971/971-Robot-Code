@@ -13,7 +13,9 @@ cc_library(
             "cpp/src/RCRadio3Ch.cpp",
             "cpp/src/CompileTest.cpp",
         ],
-    ),
+    ) + [
+        "libraries/driver/lib/libCTRE_PhoenixCCI.a",
+    ],
     hdrs = glob(
         include = [
             "cpp/include/**/*.h",
@@ -29,6 +31,7 @@ cc_library(
         "libraries/driver/include",
     ],
     restricted_to = ["//tools:roborio"],
+    visibility = ["//visibility:public"],
     deps = [
         "//third_party:wpilib",
     ],

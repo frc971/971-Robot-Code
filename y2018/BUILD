@@ -1,4 +1,5 @@
 load("//aos/downloader:downloader.bzl", "aos_downloader")
+load("//aos/build:queues.bzl", "queue_library")
 
 aos_downloader(
     name = "download",
@@ -83,6 +84,7 @@ cc_binary(
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
+        ":status_light",
         "//aos/common:math",
         "//aos/common:stl_mutex",
         "//aos/common:time",
@@ -110,7 +112,15 @@ cc_binary(
         "//frc971/wpilib:wpilib_interface",
         "//frc971/wpilib:wpilib_robot_base",
         "//third_party:wpilib",
+        "//third_party/Phoenix-frc-lib:phoenix",
         "//y2018:constants",
         "//y2018/control_loops/superstructure:superstructure_queue",
+    ],
+)
+
+queue_library(
+    name = "status_light",
+    srcs = [
+        "status_light.q",
     ],
 )
