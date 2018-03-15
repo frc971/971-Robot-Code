@@ -27,6 +27,7 @@ BaseAutonomousActor::BaseAutonomousActor(
 
 void BaseAutonomousActor::ResetDrivetrain() {
   LOG(INFO, "resetting the drivetrain\n");
+  max_drivetrain_voltage_ = 12.0;
   drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(false)
       .highgear(true)
@@ -36,6 +37,7 @@ void BaseAutonomousActor::ResetDrivetrain() {
       .left_velocity_goal(0)
       .right_goal(initial_drivetrain_.right)
       .right_velocity_goal(0)
+      .max_ss_voltage(max_drivetrain_voltage_)
       .Send();
 }
 
@@ -64,6 +66,7 @@ void BaseAutonomousActor::StartDrive(double distance, double angle,
   drivetrain_message->left_velocity_goal = 0;
   drivetrain_message->right_goal = initial_drivetrain_.right;
   drivetrain_message->right_velocity_goal = 0;
+  drivetrain_message->max_ss_voltage = max_drivetrain_voltage_;
   drivetrain_message->linear = linear;
   drivetrain_message->angular = angular;
 
@@ -243,22 +246,29 @@ bool BaseAutonomousActor::WaitForDriveNear(double distance, double angle) {
   }
 }
 
-bool BaseAutonomousActor::WaitForDriveProfileDone() {
+bool BaseAutonomousActor::WaitForDriveProfileNear(double tolerance) {
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
                                       ::std::chrono::milliseconds(5) / 2);
-  constexpr double kProfileTolerance = 0.001;
-
   while (true) {
     if (ShouldCancel()) {
       return false;
     }
     phased_loop.SleepUntilNext();
     drivetrain_queue.status.FetchLatest();
+
+    const Eigen::Matrix<double, 7, 1> current_error =
+        (Eigen::Matrix<double, 7, 1>()
+             << initial_drivetrain_.left -
+                    drivetrain_queue.status->profiled_left_position_goal,
+         0.0, initial_drivetrain_.right -
+                  drivetrain_queue.status->profiled_right_position_goal,
+         0.0, 0.0, 0.0, 0.0)
+            .finished();
+    const Eigen::Matrix<double, 2, 1> linear_error =
+        dt_config_.LeftRightToLinear(current_error);
+
     if (drivetrain_queue.status.get()) {
-      if (::std::abs(drivetrain_queue.status->profiled_left_position_goal -
-                     initial_drivetrain_.left) < kProfileTolerance &&
-          ::std::abs(drivetrain_queue.status->profiled_right_position_goal -
-                     initial_drivetrain_.right) < kProfileTolerance) {
+      if (::std::abs(linear_error(0)) < tolerance) {
         LOG(INFO, "Finished drive\n");
         return true;
       }
@@ -266,35 +276,44 @@ bool BaseAutonomousActor::WaitForDriveProfileDone() {
   }
 }
 
-bool BaseAutonomousActor::WaitForTurnProfileDone() {
+bool BaseAutonomousActor::WaitForDriveProfileDone() {
+  constexpr double kProfileTolerance = 0.001;
+  return WaitForDriveProfileNear(kProfileTolerance);
+}
+
+bool BaseAutonomousActor::WaitForTurnProfileNear(double tolerance) {
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
                                       ::std::chrono::milliseconds(5) / 2);
-  constexpr double kProfileTolerance = 0.001;
-
   while (true) {
     if (ShouldCancel()) {
       return false;
     }
     phased_loop.SleepUntilNext();
     drivetrain_queue.status.FetchLatest();
+
+    const Eigen::Matrix<double, 7, 1> current_error =
+        (Eigen::Matrix<double, 7, 1>()
+             << initial_drivetrain_.left -
+                    drivetrain_queue.status->profiled_left_position_goal,
+         0.0, initial_drivetrain_.right -
+                  drivetrain_queue.status->profiled_right_position_goal,
+         0.0, 0.0, 0.0, 0.0)
+            .finished();
+    const Eigen::Matrix<double, 2, 1> angular_error =
+        dt_config_.LeftRightToAngular(current_error);
+
     if (drivetrain_queue.status.get()) {
-      const double left_profile_error =
-          (initial_drivetrain_.left -
-           drivetrain_queue.status->profiled_left_position_goal);
-      const double right_profile_error =
-          (initial_drivetrain_.right -
-           drivetrain_queue.status->profiled_right_position_goal);
-
-      const double profile_angle_to_go =
-          (right_profile_error - left_profile_error) /
-          (dt_config_.robot_radius * 2.0);
-
-      if (::std::abs(profile_angle_to_go) < kProfileTolerance) {
-        LOG(INFO, "Finished turn profile\n");
+      if (::std::abs(angular_error(0)) < tolerance) {
+        LOG(INFO, "Finished turn\n");
         return true;
       }
     }
   }
+}
+
+bool BaseAutonomousActor::WaitForTurnProfileDone() {
+  constexpr double kProfileTolerance = 0.001;
+  return WaitForTurnProfileNear(kProfileTolerance);
 }
 
 double BaseAutonomousActor::DriveDistanceLeft() {

@@ -48,6 +48,9 @@ class DrivetrainMotorsSS {
 
   double last_gyro_to_wheel_offset_ = 0;
 
+  constexpr static double kMaxVoltage = 12.0;
+  double max_voltage_ = kMaxVoltage;
+
   // Reprsents +/- full power on each motor in U-space, aka the square from
   // (-12, -12) to (12, 12).
   const ::aos::controls::HVPolytope<2, 4, 4> U_poly_;

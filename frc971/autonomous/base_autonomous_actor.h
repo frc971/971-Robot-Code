@@ -44,8 +44,10 @@ class BaseAutonomousActor
   // goal.  Returns true on success, and false when canceled.
   bool WaitForDriveNear(double distance, double angle);
 
+  bool WaitForDriveProfileNear(double tolerance);
   bool WaitForDriveProfileDone();
 
+  bool WaitForTurnProfileNear(double tolerance);
   bool WaitForTurnProfileDone();
 
   // Returns the distance left to go.
@@ -59,6 +61,13 @@ class BaseAutonomousActor
     double right;
   };
   InitialDrivetrain initial_drivetrain_;
+
+  void set_max_drivetrain_voltage(double max_drivetrain_voltage) {
+    max_drivetrain_voltage_ = max_drivetrain_voltage;
+  }
+
+ private:
+  double max_drivetrain_voltage_ = 12.0;
 };
 
 using AutonomousAction =

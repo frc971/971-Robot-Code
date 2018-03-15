@@ -68,6 +68,8 @@ queue_group DrivetrainQueue {
     double left_velocity_goal;
     double right_velocity_goal;
 
+    double max_ss_voltage;
+
     // Motion profile parameters.
     // The control loop will profile if these are all non-zero.
     .frc971.ProfileParameters linear;

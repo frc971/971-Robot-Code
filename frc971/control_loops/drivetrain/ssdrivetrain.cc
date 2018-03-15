@@ -1,24 +1,24 @@
 #include "frc971/control_loops/drivetrain/ssdrivetrain.h"
 
-#include "aos/common/controls/polytope.h"
 #include "aos/common/commonmath.h"
+#include "aos/common/controls/polytope.h"
 #include "aos/common/logging/matrix_logging.h"
 
-#include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/state_feedback_loop.h"
 
 namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
 void DrivetrainMotorsSS::ScaleCapU(Eigen::Matrix<double, 2, 1> *U) {
-  output_was_capped_ =
-      ::std::abs((*U)(0, 0)) > 12.0 || ::std::abs((*U)(1, 0)) > 12.0;
+  output_was_capped_ = ::std::abs((*U)(0, 0)) > max_voltage_ ||
+                       ::std::abs((*U)(1, 0)) > max_voltage_;
 
   if (output_was_capped_) {
-    *U *= 12.0 / kf_->U_uncapped().lpNorm<Eigen::Infinity>();
+    *U *= max_voltage_ / kf_->U_uncapped().lpNorm<Eigen::Infinity>();
   }
 }
 
@@ -27,8 +27,8 @@ void DrivetrainMotorsSS::ScaleCapU(Eigen::Matrix<double, 2, 1> *U) {
 // out-of-range voltages could lead to things like running out of CPU under
 // certain situations, which would be bad.
 void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
-  output_was_capped_ =
-      ::std::abs((*U)(0, 0)) > 12.0 || ::std::abs((*U)(1, 0)) > 12.0;
+  output_was_capped_ = ::std::abs((*U)(0, 0)) > max_voltage_ ||
+                       ::std::abs((*U)(1, 0)) > max_voltage_;
 
   const Eigen::Matrix<double, 7, 1> error = kf_->R() - kf_->X_hat();
 
@@ -57,10 +57,10 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
       U_poly_.static_H() * position_K * T_,
       U_poly_.static_H() *
               (-velocity_K * velocity_error + U_integral - kf_->ff_U()) +
-          U_poly_.static_k(),
+          (U_poly_.static_k() * max_voltage_),
       (position_K * T_).inverse() *
           ::aos::controls::ShiftPoints<2, 4>(
-              U_poly_.StaticVertices(),
+              (U_poly_.StaticVertices() * max_voltage_),
               -velocity_K * velocity_error + U_integral - kf_->ff_U()));
 
   Eigen::Matrix<double, 2, 1> adjusted_pos_error;
@@ -125,12 +125,12 @@ DrivetrainMotorsSS::DrivetrainMotorsSS(const DrivetrainConfig &dt_config,
                /*[*/ -1, 0 /*]*/,
                /*[*/ 0, 1 /*]*/,
                /*[*/ 0, -1 /*]]*/).finished(),
-              (Eigen::Matrix<double, 4, 1>() << /*[[*/ 12 /*]*/,
-               /*[*/ 12 /*]*/,
-               /*[*/ 12 /*]*/,
-               /*[*/ 12 /*]]*/).finished(),
-              (Eigen::Matrix<double, 2, 4>() << /*[[*/ 12, 12, -12, -12 /*]*/,
-               /*[*/ -12, 12, 12, -12 /*]*/).finished()),
+              (Eigen::Matrix<double, 4, 1>() << /*[[*/ 1.0 /*]*/,
+               /*[*/ 1.0 /*]*/,
+               /*[*/ 1.0 /*]*/,
+               /*[*/ 1.0 /*]]*/).finished(),
+              (Eigen::Matrix<double, 2, 4>() << /*[[*/ 1.0, 1.0, -1.0, -1.0 /*]*/,
+               /*[*/ -1.0, 1.0, 1.0, -1.0 /*]*/).finished()),
       linear_profile_(::aos::controls::kLoopFrequency),
       angular_profile_(::aos::controls::kLoopFrequency),
       integrated_kf_heading_(integrated_kf_heading) {
@@ -144,6 +144,11 @@ void DrivetrainMotorsSS::SetGoal(
     const ::frc971::control_loops::DrivetrainQueue::Goal &goal) {
   unprofiled_goal_ << goal.left_goal, goal.left_velocity_goal, goal.right_goal,
       goal.right_velocity_goal, 0.0, 0.0, 0.0;
+  if (::std::abs(goal.max_ss_voltage) < 0.01) {
+    max_voltage_ = kMaxVoltage;
+  } else {
+    max_voltage_ = goal.max_ss_voltage;
+  }
 
   use_profile_ =
       !kf_->controller().Kff().isZero(0) &&
