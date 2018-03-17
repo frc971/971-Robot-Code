@@ -27,9 +27,15 @@
 
 // TODO(Brian): Do something about CAN errors and warnings (enable interrupts?).
 
-void can_init(uint32_t id0, uint32_t id1) {
-  printf("can_init\n");
+static uint32_t prio_id_for_id(uint32_t can_id) {
+  if (can_id & CAN_EFF_FLAG) {
+    return can_id & ~CAN_EFF_FLAG;
+  } else {
+    return can_id << 18;
+  }
+}
 
+void can_init(uint32_t id0, uint32_t id1) {
   SIM_SCGC6 |= SIM_SCGC6_FLEXCAN0;
 
   // Put it into freeze mode and wait for it to actually do that.
@@ -66,14 +72,14 @@ void can_init(uint32_t id0, uint32_t id1) {
   CAN0_RXIMRS[0] = (1 << 31) /* Want to filter out RTRs. */ |
                    (0 << 30) /* Want to only get standard frames. */ |
                    (0x1FFC0000) /* Filter on the id. */;
-  CAN0_MESSAGES[0].prio_id = id0 << 18;
+  CAN0_MESSAGES[0].prio_id = prio_id_for_id(id0);
   CAN0_MESSAGES[0].control_timestamp =
       CAN_MB_CONTROL_INSERT_CODE(CAN_MB_CODE_RX_EMPTY);
 
   CAN0_RXIMRS[1] = (1 << 31) /* Want to filter out RTRs. */ |
                    (0 << 30) /* Want to only get standard frames. */ |
                    (0x1FFC0000) /* Filter on the id. */;
-  CAN0_MESSAGES[1].prio_id = id1 << 18;
+  CAN0_MESSAGES[1].prio_id = prio_id_for_id(id1);
   CAN0_MESSAGES[1].control_timestamp =
       CAN_MB_CONTROL_INSERT_CODE(CAN_MB_CODE_RX_EMPTY);
 
@@ -111,8 +117,8 @@ void can_init(uint32_t id0, uint32_t id1) {
   CAN0_MCR &= ~CAN_MCR_HALT;
 }
 
-static void can_vesc_process_rx(volatile CanMessageBuffer *buffer,
-                                unsigned char *data_out, int *length_out) {
+static void can_process_rx(volatile CanMessageBuffer *buffer,
+                           unsigned char *data_out, int *length_out) {
   // Wait until the buffer is marked as not being busy. The reference manual
   // says to do this, although it's unclear how we could get an interrupt
   // asserted while it's still busy. Maybe if the interrupt was slow and now
@@ -170,7 +176,7 @@ int can_send(uint32_t can_id, const unsigned char *data, unsigned int length,
   // doing stuff...
   CAN0_IFLAG1 = 1 << mailbox;
 
-  message_buffer->prio_id = (can_id << 18);
+  message_buffer->prio_id = prio_id_for_id(can_id);
   // Copy only the bytes from data that we're supposed to onto the stack, and
   // then move it into the message buffer 32 bits at a time (because it might
   // get unhappy about writing individual bytes). Plus, we have to byte-swap
@@ -185,14 +191,16 @@ int can_send(uint32_t can_id, const unsigned char *data, unsigned int length,
     message_buffer->data[0] = __builtin_bswap32(data_words[0]);
     message_buffer->data[1] = __builtin_bswap32(data_words[1]);
   }
-  // TODO(Brian): Set IDE and SRR for extended frames.
-  message_buffer->control_timestamp =
-      CAN_MB_CONTROL_INSERT_DLC(length) |
-      CAN_MB_CONTROL_INSERT_CODE(CAN_MB_CODE_TX_DATA);
+  uint32_t control_timestamp = CAN_MB_CONTROL_INSERT_DLC(length) |
+                               CAN_MB_CONTROL_INSERT_CODE(CAN_MB_CODE_TX_DATA);
+  if (can_id & CAN_EFF_FLAG) {
+    control_timestamp |= CAN_MB_CONTROL_IDE | CAN_MB_CONTROL_SRR;
+  }
+  message_buffer->control_timestamp = control_timestamp;
   return 0;
 }
 
-void can_receive_command(unsigned char *data, int *length, int mailbox) {
+void can_receive(unsigned char *data, int *length, int mailbox) {
   if (0) {
     static int i = 0;
     if (i++ == 10000) {
@@ -205,5 +213,5 @@ void can_receive_command(unsigned char *data, int *length, int mailbox) {
     *length = -1;
     return;
   }
-  can_vesc_process_rx(&CAN0_MESSAGES[mailbox], data, length);
+  can_process_rx(&CAN0_MESSAGES[mailbox], data, length);
 }
