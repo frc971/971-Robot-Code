@@ -386,8 +386,8 @@ class SplineSegment:
         ]
 
 
-tall_box_x = 0.401
-tall_box_y = 0.14
+tall_box_x = 0.411
+tall_box_y = 0.125
 
 short_box_x = 0.431
 short_box_y = 0.082
@@ -401,17 +401,19 @@ short_box_grab = to_theta_with_circular_index(
 
 # TODO(austin): Drive the front/back off the same numbers a bit better.
 front_high_box = to_theta_with_circular_index(0.378, 2.46, circular_index=-1)
+front_middle3_box = to_theta_with_circular_index(
+    0.700, 2.125, circular_index=-1.000000)
 front_middle2_box = to_theta_with_circular_index(
-    0.732, 2.268, circular_index=-1)
+    0.700, 2.268, circular_index=-1)
 front_middle1_box = to_theta_with_circular_index(
-    0.878, 1.885, circular_index=-1)
-front_low_box = to_theta_with_circular_index(0.926, 1.542, circular_index=-1)
+    0.800, 1.915, circular_index=-1)
+front_low_box = to_theta_with_circular_index(0.87, 1.572, circular_index=-1)
 back_high_box = to_theta_with_circular_index(-0.75, 2.48, circular_index=0)
 back_middle2_box = to_theta_with_circular_index(
-    -0.732, 2.268, circular_index=0)
+    -0.700, 2.268, circular_index=0)
 back_middle1_box = to_theta_with_circular_index(
-    -0.878, 1.885, circular_index=0)
-back_low_box = to_theta_with_circular_index(-0.926, 1.542, circular_index=0)
+    -0.800, 1.915, circular_index=0)
+back_low_box = to_theta_with_circular_index(-0.87, 1.572, circular_index=0)
 
 front_switch = to_theta_with_circular_index(0.88, 0.967, circular_index=-1)
 back_switch = to_theta_with_circular_index(-0.88, 0.967, circular_index=-2)
@@ -420,15 +422,23 @@ neutral = to_theta_with_circular_index(0.0, 0.33, circular_index=-1)
 
 up = to_theta_with_circular_index(0.0, 2.547, circular_index=-1)
 
+front_switch_auto = to_theta_with_circular_index(
+    0.750, 2.20, circular_index=-1.000000)
+
+starting = numpy.array(
+    [numpy.pi / 2.0 - 0.593329, numpy.pi / 2.0 - 3.749631])
+vertical_starting = numpy.array(
+    [numpy.pi / 2.0, -numpy.pi / 2.0])
+
 self_hang = numpy.array(
     [numpy.pi / 2.0 - 0.191611, numpy.pi / 2.0])
 partner_hang = numpy.array(
     [numpy.pi / 2.0 - (-0.25), numpy.pi / 2.0])
 
 above_hang = numpy.array(
-    [numpy.pi / 2.0 - 0.008739, numpy.pi / 2.0 - (-0.101927)])
+    [numpy.pi / 2.0 - 0.14, numpy.pi / 2.0 - (-0.165)])
 below_hang = numpy.array(
-    [numpy.pi / 2.0 - 0.329954, numpy.pi / 2.0 - (-0.534816)])
+    [numpy.pi / 2.0 - 0.39, numpy.pi / 2.0 - (-0.517)])
 
 up_c1 = to_theta((0.63, 1.17), circular_index=-1)
 up_c2 = to_theta((0.65, 1.62), circular_index=-1)
@@ -452,6 +462,7 @@ points = [(ready_above_box, "ReadyAboveBox"),
           (tall_box_grab, "TallBoxGrab"),
           (short_box_grab, "ShortBoxGrab"),
           (front_high_box, "FrontHighBox"),
+          (front_middle3_box, "FrontMiddle3Box"),
           (front_middle2_box, "FrontMiddle2Box"),
           (front_middle1_box, "FrontMiddle1Box"),
           (front_low_box, "FrontLowBox"),
@@ -467,6 +478,9 @@ points = [(ready_above_box, "ReadyAboveBox"),
           (below_hang, "BelowHang"),
           (self_hang, "SelfHang"),
           (partner_hang, "PartnerHang"),
+          (front_switch_auto, "FrontSwitchAuto"),
+          (starting, "Starting"),
+          (vertical_starting, "VerticalStarting"),
 ]  # yapf: disable
 
 # We need to define critical points so we can create paths connecting them.
@@ -494,9 +508,20 @@ unnamed_segments = [
     AngleSegment(neutral, back_switch),
     SplineSegment(neutral, front_switch_c1, front_switch_c2, front_switch),
 
+    AngleSegment(starting, vertical_starting),
+    AngleSegment(vertical_starting, neutral),
+
     XYSegment(neutral, front_low_box),
     XYSegment(up, front_high_box),
     XYSegment(up, front_middle2_box),
+
+    XYSegment(front_middle3_box, up),
+    XYSegment(front_middle3_box, front_high_box),
+    XYSegment(front_middle3_box, front_middle2_box),
+    XYSegment(front_middle3_box, front_middle1_box),
+
+    XYSegment(neutral, front_switch_auto),
+
     XYSegment(up, front_middle1_box),
     XYSegment(up, front_low_box),
     XYSegment(front_high_box, front_middle2_box),

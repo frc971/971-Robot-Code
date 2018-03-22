@@ -37,14 +37,14 @@ void Superstructure::RunIteration(
   const double left_intake_goal = ::std::min(
       arm_.max_intake_override(),
       (unsafe_goal == nullptr ? 0.0 : unsafe_goal->intake.left_intake_angle));
+  const double right_intake_goal = ::std::min(
+      arm_.max_intake_override(),
+      (unsafe_goal == nullptr ? 0.0 : unsafe_goal->intake.right_intake_angle));
+
   intake_left_.Iterate(unsafe_goal != nullptr ? &(left_intake_goal) : nullptr,
                        &(position->left_intake),
                        output != nullptr ? &(output->left_intake) : nullptr,
                        &(status->left_intake));
-
-  const double right_intake_goal = ::std::min(
-      arm_.max_intake_override(),
-      (unsafe_goal == nullptr ? 0.0 : unsafe_goal->intake.right_intake_angle));
 
   intake_right_.Iterate(unsafe_goal != nullptr ? &(right_intake_goal) : nullptr,
                         &(position->right_intake),

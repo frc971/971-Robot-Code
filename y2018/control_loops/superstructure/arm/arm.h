@@ -71,7 +71,7 @@ class Arm {
 
  private:
   bool AtState(uint32_t state) const { return current_node_ == state; }
-  bool NearEnd(double threshold = 0.02) const {
+  bool NearEnd(double threshold = 0.03) const {
     return ::std::abs(arm_ekf_.X_hat(0) - follower_.theta(0)) <= threshold &&
            ::std::abs(arm_ekf_.X_hat(2) - follower_.theta(1)) <= threshold &&
            follower_.path_distance_to_go() < 1e-3;
