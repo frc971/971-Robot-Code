@@ -287,11 +287,17 @@ class SensorReader {
     pwm_trigger_ = ::std::move(pwm_trigger);
   }
 
+  void set_lidar_lite_input(::std::unique_ptr<DigitalInput> lidar_lite_input) {
+    lidar_lite_input_ = ::std::move(lidar_lite_input);
+    lidar_lite_.set_input(lidar_lite_input_.get());
+  }
+
   // All of the DMA-related set_* calls must be made before this, and it
   // doesn't hurt to do all of them.
   void set_dma(::std::unique_ptr<DMA> dma) {
     dma_synchronizer_.reset(
         new ::frc971::wpilib::DMASynchronizer(::std::move(dma)));
+    dma_synchronizer_->Add(&lidar_lite_);
   }
 
   void RunPWMDetecter() {
@@ -479,6 +485,9 @@ class SensorReader {
       superstructure_message->box_back_beambreak_triggered =
           !box_back_beambreak_->Get();
 
+      superstructure_message->box_distance =
+          lidar_lite_.last_width() / 0.00001 / 100.0 / 2;
+
       superstructure_message.Send();
     }
 
@@ -561,6 +570,9 @@ class SensorReader {
   ::std::unique_ptr<DigitalInput> pwm_trigger_;
 
   ::std::array<::std::unique_ptr<DigitalInput>, 4> autonomous_modes_;
+
+  ::std::unique_ptr<DigitalInput> lidar_lite_input_;
+  ::frc971::wpilib::DMAPulseWidthReader lidar_lite_;
 
   ::std::atomic<bool> run_{true};
 };
@@ -852,6 +864,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_box_back_beambreak(make_unique<DigitalInput>(9));
 
     reader.set_pwm_trigger(make_unique<DigitalInput>(25));
+
+    reader.set_lidar_lite_input(make_unique<DigitalInput>(22));
 
     reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));

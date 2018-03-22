@@ -24,6 +24,14 @@ void DMAEdgeCounter::UpdateFromSample(const DMASample &sample) {
   }
 }
 
+void DMAPulseWidthReader::UpdateFromSample(const DMASample &sample) {
+  if (have_prev_sample_ && prev_sample_.Get(input_) && !sample.Get(input_)) {
+    last_width_ = sample.GetTimestamp() - prev_sample_.GetTimestamp();
+  }
+  have_prev_sample_ = true;
+  prev_sample_ = sample;
+}
+
 void DMASynchronizer::CheckDMA() {
   DMASample current_sample;
 
@@ -45,6 +53,7 @@ void DMASynchronizer::CheckDMA() {
           }
           return;
         }
+        break;
       case DMA::STATUS_TIMEOUT:
         return;
       case DMA::STATUS_ERROR:

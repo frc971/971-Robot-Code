@@ -37,6 +37,38 @@ class DMASampleHandlerInterface {
   virtual void AddToDMA(DMA *dma) = 0;
 };
 
+// TODO(brian): Timeout old data.
+class DMAPulseWidthReader : public DMASampleHandlerInterface {
+ public:
+  DMAPulseWidthReader(DigitalInput *input) : input_(input) {}
+  DMAPulseWidthReader() = default;
+
+  void set_input(DigitalInput *input) { input_ = input; }
+
+  double last_width() const { return last_width_; }
+
+ private:
+  void UpdateFromSample(const DMASample & /*sample*/) override;
+  void UpdatePolledValue() override {}
+
+  void PollFromSample(const DMASample & /*sample*/) override {}
+  void AddToDMA(DMA *dma) override {
+    dma->Add(input_);
+    dma->SetExternalTrigger(input_, true, true);
+  }
+
+  DigitalInput *input_ = nullptr;
+
+  // The last DMA reading we got.
+  DMASample prev_sample_;
+  // Whether or not we actually have anything in prev_sample_.
+  bool have_prev_sample_ = false;
+
+  double last_width_ = ::std::numeric_limits<double>::quiet_NaN();
+
+  DISALLOW_COPY_AND_ASSIGN(DMAPulseWidthReader);
+};
+
 // Counts edges on a sensor using DMA data and latches encoder values
 // corresponding to those edges.
 class DMAEdgeCounter : public DMASampleHandlerInterface {

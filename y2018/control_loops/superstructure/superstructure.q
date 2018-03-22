@@ -171,6 +171,9 @@ queue_group SuperstructureQueue {
     // Value of the beambreak sensor detecting when the box has hit the frame
     // cutout.
     bool box_back_beambreak_triggered;
+
+    // Distance to the box in meters.
+    double box_distance;
   };
 
   message Output {
