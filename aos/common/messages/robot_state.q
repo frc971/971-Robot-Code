@@ -20,6 +20,11 @@ message JoystickState {
   bool autonomous;
   uint16_t team_id;
 
+  // 2018 scale and switch positions.
+  // TODO(austin): Push these out to a new message?
+  bool switch_left;
+  bool scale_left;
+
   // If this is true, then this message isn't actually from the control
   // system and so should not be trusted as evidence that the button inputs
   // etc are actually real and should be acted on.

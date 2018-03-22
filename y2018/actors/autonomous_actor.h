@@ -77,6 +77,25 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
       LOG(ERROR, "Sending superstructure goal failed.\n");
     }
   }
+
+  bool WaitForArmTrajectoryClose(double threshold) {
+    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                        ::std::chrono::milliseconds(5) / 2);
+    while (true) {
+      if (ShouldCancel()) {
+        return false;
+      }
+
+      superstructure_queue.status.FetchLatest();
+      if (superstructure_queue.status.get()) {
+        if (superstructure_queue.status->arm.current_node == arm_goal_position_ &&
+            superstructure_queue.status->arm.path_distance_to_go < threshold) {
+          return true;
+        }
+      }
+      phased_loop.SleepUntilNext();
+    }
+  }
 };
 
 }  // namespace actors

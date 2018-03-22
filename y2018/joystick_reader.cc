@@ -248,11 +248,14 @@ class Reader : public ::aos::input::JoystickInput {
     ::frc971::autonomous::AutonomousActionParams params;
     ::frc971::autonomous::auto_mode.FetchLatest();
     if (::frc971::autonomous::auto_mode.get() != nullptr) {
-      params.mode = ::frc971::autonomous::auto_mode->mode;
+      params.mode = ::frc971::autonomous::auto_mode->mode << 2;
     } else {
       LOG(WARNING, "no auto mode values\n");
       params.mode = 0;
     }
+    // TODO(austin): use the mode later if we care.  We don't care right now.
+    params.mode = static_cast<int>(::aos::joystick_state->switch_left) |
+                  (static_cast<int>(::aos::joystick_state->scale_left) << 1);
     action_queue_.EnqueueAction(
         ::frc971::autonomous::MakeAutonomousAction(params));
   }

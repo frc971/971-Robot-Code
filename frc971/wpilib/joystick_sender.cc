@@ -31,13 +31,18 @@ void JoystickSender::operator()() {
     ds->WaitForData();
     auto new_state = ::aos::joystick_state.MakeMessage();
 
-#if defined(WPILIB2017) || defined(WPILIB2018)
     HAL_ControlWord control_word;
     HAL_GetControlWord(&control_word);
-#else
-    HALControlWord control_word;
-    HALGetControlWord(&control_word);
-#endif
+    HAL_MatchInfo match_info;
+    auto status = HAL_GetMatchInfo(&match_info);
+    if (status == 0) {
+      new_state->switch_left = match_info.gameSpecificMessage[0] == 'L' ||
+                               match_info.gameSpecificMessage[0] == 'l';
+      new_state->scale_left = match_info.gameSpecificMessage[1] == 'L' ||
+                              match_info.gameSpecificMessage[1] == 'l';
+    }
+    HAL_FreeMatchInfo(&match_info);
+
     new_state->test_mode = control_word.test;
     new_state->fms_attached = control_word.fmsAttached;
     new_state->enabled = control_word.enabled;
