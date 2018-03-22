@@ -26,8 +26,8 @@ class Arm {
     return kGrannyMode() ? 4.0 : 12.0;
   }
   static constexpr double kDt() { return 0.00505; }
-  static constexpr double kAlpha0Max() { return kGrannyMode() ? 10.0 : 15.0; }
-  static constexpr double kAlpha1Max() { return kGrannyMode() ? 10.0 : 15.0; }
+  static constexpr double kAlpha0Max() { return kGrannyMode() ? 10.0 : 10.0; }
+  static constexpr double kAlpha1Max() { return kGrannyMode() ? 10.0 : 10.0; }
 
   static constexpr double kVMax() { return kGrannyMode() ? 5.0 : 11.5; }
   static constexpr double kPathlessVMax() { return 5.0; }

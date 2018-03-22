@@ -473,13 +473,13 @@ class SensorReader {
           intake_spring_translate(left_intake_spring_angle_->GetVoltage()) +
           values.left_intake.spring_offset;
       superstructure_message->left_intake.beam_break =
-          left_intake_cube_detector_->Get();
+          !left_intake_cube_detector_->Get();
 
       superstructure_message->right_intake.spring_angle =
           -intake_spring_translate(right_intake_spring_angle_->GetVoltage()) +
           values.right_intake.spring_offset;
       superstructure_message->right_intake.beam_break =
-          right_intake_cube_detector_->Get();
+          !right_intake_cube_detector_->Get();
 
       superstructure_message->claw_beambreak_triggered = !claw_beambreak_->Get();
       superstructure_message->box_back_beambreak_triggered =

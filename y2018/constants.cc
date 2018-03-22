@@ -88,19 +88,21 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       r->vision_name = "competition";
       r->vision_error = 0.0;
 
-      left_intake->zeroing.measured_absolute_position = 0.0;
-      left_intake->potentiometer_offset = 0.0;
-      left_intake->spring_offset = 0.0;
+      left_intake->zeroing.measured_absolute_position = 0.213653;
+      left_intake->potentiometer_offset = -5.45258;
+      left_intake->spring_offset = -0.25;
 
-      right_intake->zeroing.measured_absolute_position = 0.0;
-      right_intake->potentiometer_offset = 0.0;
-      right_intake->spring_offset = 0.0;
+      right_intake->zeroing.measured_absolute_position = 0.056773;
+      right_intake->potentiometer_offset = 3.739919;
+      right_intake->spring_offset = 0.25 - 0.014;
 
-      arm_proximal->zeroing.measured_absolute_position = 0.0;
-      arm_proximal->potentiometer_offset = 0.0;
+      arm_proximal->zeroing.measured_absolute_position =
+          0.067941 + 1.047 - 0.116 + 0.06 - 0.004;
+      arm_proximal->potentiometer_offset = 1.047 - 3.653298 + -0.078 + 0.9455;
 
-      arm_distal->zeroing.measured_absolute_position = 0.0;
-      arm_distal->potentiometer_offset = 0.0;
+      arm_distal->zeroing.measured_absolute_position =
+          -0.870445 + 5.209807817203074 + 0.118 - 0.004;
+      arm_distal->potentiometer_offset = 5.209807817203074 + 1.250476;
       break;
 
     case kPracticeTeamNumber:
@@ -115,12 +117,13 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       right_intake->potentiometer_offset = 9.59 + 1.530320 - 3.620648;
       right_intake->spring_offset = 0.255 + 0.008;
 
-      arm_proximal->zeroing.measured_absolute_position = 0.1877 + 0.02;
-      arm_proximal->potentiometer_offset = -1.242 - 0.03;
+      arm_proximal->zeroing.measured_absolute_position = 0.1877 + 0.02 + 0.1;
+      arm_proximal->potentiometer_offset = -1.242 - 0.03 - 0.1;
 
       arm_distal->zeroing.measured_absolute_position =
-          1.102987 - kDistalZeroingPosition;
-      arm_distal->potentiometer_offset = 2.772210 + M_PI + 0.434;
+          1.102987 - kDistalZeroingPosition + 0.12;
+      arm_distal->potentiometer_offset =
+          2.772210 + M_PI + 0.434 - 0.12 + 1.25 - 0.226;
       break;
 
     default:
