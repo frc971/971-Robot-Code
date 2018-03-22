@@ -139,6 +139,16 @@ void DrivetrainLoop::RunIteration(
     const double angle = ::std::atan2(::frc971::imu_values->accelerometer_x,
                                       ::frc971::imu_values->accelerometer_z) +
                          0.008;
+
+    switch (dt_config_.imu_type) {
+      case IMUType::IMU_X:
+        last_accel_ = -::frc971::imu_values->accelerometer_x;
+        break;
+      case IMUType::IMU_Y:
+        last_accel_ = -::frc971::imu_values->accelerometer_y;
+        break;
+    }
+
     if (accel_squared > 1.03 || accel_squared < 0.97) {
       LOG(DEBUG, "New IMU value, rejecting reading\n");
     } else {
@@ -206,8 +216,9 @@ void DrivetrainLoop::RunIteration(
   }
 
   {
-    Eigen::Matrix<double, 3, 1> Y;
-    Y << position->left_encoder, position->right_encoder, last_gyro_rate_;
+    Eigen::Matrix<double, 4, 1> Y;
+    Y << position->left_encoder, position->right_encoder, last_gyro_rate_,
+        last_accel_;
     kf_.Correct(Y);
     integrated_kf_heading_ += dt_config_.dt *
                               (kf_.X_hat(3, 0) - kf_.X_hat(1, 0)) /

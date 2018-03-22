@@ -23,6 +23,7 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       ::frc971::control_loops::drivetrain::ShifterType::HALL_EFFECT_SHIFTER,
       ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
       ::frc971::control_loops::drivetrain::GyroType::SPARTAN_GYRO,
+      ::frc971::control_loops::drivetrain::IMUType::IMU_X,
 
       ::y2016::control_loops::drivetrain::MakeDrivetrainLoop,
       ::y2016::control_loops::drivetrain::MakeVelocityDrivetrainLoop,

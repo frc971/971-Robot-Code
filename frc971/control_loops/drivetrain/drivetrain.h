@@ -42,7 +42,7 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
 
   const DrivetrainConfig dt_config_;
 
-  StateFeedbackLoop<7, 2, 3> kf_;
+  StateFeedbackLoop<7, 2, 4> kf_;
   PolyDrivetrain dt_openloop_;
   DrivetrainMotorsSS dt_closedloop_;
   ::aos::monotonic_clock::time_point last_gyro_time_ =
@@ -64,6 +64,8 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
   bool right_high_requested_;
 
   bool has_been_enabled_ = false;
+
+  double last_accel_ = 0.0;
 };
 
 }  // namespace drivetrain

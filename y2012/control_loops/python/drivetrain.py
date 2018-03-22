@@ -20,6 +20,7 @@ kDrivetrain = drivetrain.DrivetrainParams(J = 1.5,
                                           q_pos_high = 0.14,
                                           q_vel_low = 1.0,
                                           q_vel_high = 0.95,
+                                          has_imu = False,
                                           dt = 0.005,
                                           controller_poles = [0.8, 0.8])
 

@@ -15,16 +15,20 @@ gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 #J needs updating
 
 kDrivetrain = drivetrain.DrivetrainParams(
-    J=2.5,
+    J=6.0,
     mass=68.0,
     robot_radius=0.616 / 2.0,
-    wheel_radius=0.127 / 2.0,
+    wheel_radius=0.127 / 2.0 * 120.0 / 118.0,
     G_low=46.0 / 60.0 * 20.0 / 48.0 * 14.0 / 62.0,
     G_high=62.0 / 44.0 * 20.0 / 48.0 * 14.0 / 62.0,
     q_pos_low=0.12,
     q_pos_high=0.14,
     q_vel_low=1.0,
     q_vel_high=0.95,
+    efficiency=0.70,
+    has_imu=True,
+    force=True,
+    kf_q_voltage=13.0,
     controller_poles=[0.82, 0.82],
 )
 

@@ -13,3 +13,8 @@ drivetrain.stripped status estimated_right_velocity
 
 drivetrain.stripped goal left_goal
 drivetrain.stripped goal right_goal
+
+drivetrain.stripped status left_voltage_error -m 0.1
+drivetrain.stripped status right_voltage_error -m 0.1
+
+drivetrain.stripped using accelerometer_y -m -10

@@ -17,7 +17,7 @@ namespace control_loops {
 namespace drivetrain {
 
 PolyDrivetrain::PolyDrivetrain(const DrivetrainConfig &dt_config,
-                               StateFeedbackLoop<7, 2, 3> *kf)
+                               StateFeedbackLoop<7, 2, 4> *kf)
     : kf_(kf),
       U_Poly_((Eigen::Matrix<double, 4, 2>() << /*[[*/ 1, 0 /*]*/,
                /*[*/ -1, 0 /*]*/,

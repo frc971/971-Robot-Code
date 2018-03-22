@@ -21,7 +21,8 @@ const DrivetrainConfig &GetDrivetrainConfig() {
   static DrivetrainConfig kDrivetrainConfig{
       ::frc971::control_loops::drivetrain::ShifterType::HALL_EFFECT_SHIFTER,
       ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
-      ::frc971::control_loops::drivetrain::GyroType::SPARTAN_GYRO,
+      ::frc971::control_loops::drivetrain::GyroType::IMU_Z_GYRO,
+      ::frc971::control_loops::drivetrain::IMUType::IMU_Y,
 
       ::y2018::control_loops::drivetrain::MakeDrivetrainLoop,
       ::y2018::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
@@ -35,7 +36,7 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       true /* default_high_gear */, 0 /* down_offset if using constants use
                                    constants::GetValues().down_error */,
       0.8 /* wheel_non_linearity */, 1.2 /* quickturn_wheel_multiplier */,
-      1.1 /* wheel_multiplier */,
+      1.5 /* wheel_multiplier */,
   };
 
   return kDrivetrainConfig;

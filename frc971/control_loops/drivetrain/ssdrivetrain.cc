@@ -117,7 +117,7 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
 }
 
 DrivetrainMotorsSS::DrivetrainMotorsSS(const DrivetrainConfig &dt_config,
-                                       StateFeedbackLoop<7, 2, 3> *kf,
+                                       StateFeedbackLoop<7, 2, 4> *kf,
                                        double *integrated_kf_heading)
     : dt_config_(dt_config),
       kf_(kf),

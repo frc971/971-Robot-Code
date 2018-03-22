@@ -19,7 +19,7 @@ namespace drivetrain {
 class DrivetrainMotorsSS {
  public:
   DrivetrainMotorsSS(const DrivetrainConfig &dt_config,
-                     StateFeedbackLoop<7, 2, 3> *kf,
+                     StateFeedbackLoop<7, 2, 4> *kf,
                      double *integrated_kf_heading);
 
   void SetGoal(const ::frc971::control_loops::DrivetrainQueue::Goal &goal);
@@ -43,7 +43,7 @@ class DrivetrainMotorsSS {
   void ScaleCapU(Eigen::Matrix<double, 2, 1> *U);
 
   const DrivetrainConfig dt_config_;
-  StateFeedbackLoop<7, 2, 3> *kf_;
+  StateFeedbackLoop<7, 2, 4> *kf_;
   Eigen::Matrix<double, 7, 1> unprofiled_goal_;
 
   double last_gyro_to_wheel_offset_ = 0;

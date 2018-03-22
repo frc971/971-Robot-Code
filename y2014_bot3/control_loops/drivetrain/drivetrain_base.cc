@@ -22,6 +22,7 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       ::frc971::control_loops::drivetrain::ShifterType::SIMPLE_SHIFTER,
       ::frc971::control_loops::drivetrain::LoopType::OPEN_LOOP,
       ::frc971::control_loops::drivetrain::GyroType::SPARTAN_GYRO,
+      ::frc971::control_loops::drivetrain::IMUType::IMU_X,
 
       ::y2014_bot3::control_loops::drivetrain::MakeDrivetrainLoop,
       ::y2014_bot3::control_loops::drivetrain::MakeVelocityDrivetrainLoop,

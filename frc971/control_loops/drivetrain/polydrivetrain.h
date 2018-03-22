@@ -15,7 +15,7 @@ namespace drivetrain {
 class PolyDrivetrain {
  public:
   PolyDrivetrain(const DrivetrainConfig &dt_config,
-                 StateFeedbackLoop<7, 2, 3> *kf);
+                 StateFeedbackLoop<7, 2, 4> *kf);
 
   int controller_index() const { return loop_->index(); }
 
@@ -45,7 +45,7 @@ class PolyDrivetrain {
   Gear UpdateSingleGear(Gear requested_gear, Gear current_gear);
 
  private:
-  StateFeedbackLoop<7, 2, 3> *kf_;
+  StateFeedbackLoop<7, 2, 4> *kf_;
 
   const ::aos::controls::HVPolytope<2, 4, 4> U_Poly_;
 

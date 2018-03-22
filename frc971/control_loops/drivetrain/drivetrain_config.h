@@ -29,6 +29,11 @@ enum class GyroType : int32_t {
   FLIPPED_SPARTAN_GYRO = 4, // Use the gyro on the spartan board.
 };
 
+enum class IMUType : int32_t {
+  IMU_X = 0, // Use the x-axis of the IMU.
+  IMU_Y = 1, // Use the y-axis of the IMU.
+};
+
 struct DrivetrainConfig {
   // Shifting method we are using.
   ShifterType shifter_type;
@@ -39,10 +44,13 @@ struct DrivetrainConfig {
   // Type of gyro to use.
   GyroType gyro_type;
 
+  // Type of IMU to use.
+  IMUType imu_type;
+
   // Polydrivetrain functions returning various controller loops with plants.
   ::std::function<StateFeedbackLoop<4, 2, 2>()> make_drivetrain_loop;
   ::std::function<StateFeedbackLoop<2, 2, 2>()> make_v_drivetrain_loop;
-  ::std::function<StateFeedbackLoop<7, 2, 3>()> make_kf_drivetrain_loop;
+  ::std::function<StateFeedbackLoop<7, 2, 4>()> make_kf_drivetrain_loop;
 
   double dt;            // Control loop time step.
   double robot_radius;  // Robot radius, in meters.
