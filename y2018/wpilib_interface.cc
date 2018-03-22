@@ -933,6 +933,18 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     ::std::thread solenoid_thread(::std::ref(solenoid_writer));
 
+    int32_t status = 0;
+    HAL_CompressorHandle compressor = HAL_InitializeCompressor(0, &status);
+    if (status != 0) {
+      LOG(ERROR, "Compressor status is nonzero, %d\n",
+          static_cast<int>(status));
+    }
+    HAL_SetCompressorClosedLoopControl(compressor, true, &status);
+    if (status != 0) {
+      LOG(ERROR, "Compressor status is nonzero, %d\n",
+          static_cast<int>(status));
+    }
+
     // Wait forever. Not much else to do...
     while (true) {
       const int r = select(0, nullptr, nullptr, nullptr, nullptr);
