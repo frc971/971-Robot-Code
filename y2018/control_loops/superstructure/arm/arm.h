@@ -31,6 +31,7 @@ class Arm {
 
   static constexpr double kVMax() { return kGrannyMode() ? 5.0 : 11.5; }
   static constexpr double kPathlessVMax() { return 5.0; }
+  static constexpr double kGotoPathVMax() { return 12.0; }
 
   void Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
                const control_loops::ArmPosition *position,

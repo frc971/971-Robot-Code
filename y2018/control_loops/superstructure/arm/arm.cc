@@ -336,11 +336,13 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
     }
   }
 
-  follower_.Update(
-      arm_ekf_.X_hat(), disable, kDt(), kVMax(),
-      close_enough_for_full_power_ ? kOperatingVoltage() : kPathlessVMax());
-  LOG(INFO, "Max voltage: %f\n",
-      close_enough_for_full_power_ ? kOperatingVoltage() : kPathlessVMax());
+  const double max_operating_voltage =
+      close_enough_for_full_power_
+          ? kOperatingVoltage()
+          : (state_ == State::GOTO_PATH ? kGotoPathVMax() : kPathlessVMax());
+  follower_.Update(arm_ekf_.X_hat(), disable, kDt(), kVMax(),
+                   max_operating_voltage);
+  LOG(INFO, "Max voltage: %f\n", max_operating_voltage);
   status->goal_theta0 = follower_.theta(0);
   status->goal_theta1 = follower_.theta(1);
   status->goal_omega0 = follower_.omega(0);
