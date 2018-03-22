@@ -660,17 +660,31 @@ class SolenoidWriter {
         LOG_STRUCT(DEBUG, "pneumatics info", to_log);
       }
 
+      static double last_red = -1.0;
+      static double last_green = -1.0;
+      static double last_blue = -1.0;
       status_light.FetchLatest();
       if (status_light.get()) {
         LOG_STRUCT(DEBUG, "writing", *status_light);
         // Not sure which of these is red vs green. We're not ready to use
-        // either,
-        // so just turn them off.
-        canifier_.SetLEDOutput(1.0, ::ctre::phoenix::CANifier::LEDChannelA);
-        canifier_.SetLEDOutput(1.0, ::ctre::phoenix::CANifier::LEDChannelB);
-        // Red
-        canifier_.SetLEDOutput(1 - status_light->red,
-                               ::ctre::phoenix::CANifier::LEDChannelC);
+        // either, so just turn them off.
+        if (status_light->green != last_green) {
+          canifier_.SetLEDOutput(1.0 - status_light->green,
+                                 ::ctre::phoenix::CANifier::LEDChannelA);
+          last_green = status_light->green;
+        }
+
+        if (status_light->blue != last_blue) {
+          canifier_.SetLEDOutput(1.0 - status_light->blue,
+                                 ::ctre::phoenix::CANifier::LEDChannelB);
+          last_blue = status_light->blue;
+        }
+
+        if (status_light->red != last_red) {
+          canifier_.SetLEDOutput(1.0 - status_light->red,
+                                 ::ctre::phoenix::CANifier::LEDChannelC);
+          last_red = status_light->red;
+        }
       }
     }
   }

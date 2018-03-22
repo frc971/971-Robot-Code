@@ -39,6 +39,7 @@ cc_binary(
         "joystick_reader.cc",
     ],
     deps = [
+        ":status_light",
         "//aos/common:time",
         "//aos/common/actions:action_lib",
         "//aos/common/logging",

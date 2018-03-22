@@ -17,6 +17,7 @@
 #include "y2018/control_loops/drivetrain/drivetrain_base.h"
 #include "y2018/control_loops/superstructure/arm/generated_graph.h"
 #include "y2018/control_loops/superstructure/superstructure.q.h"
+#include "y2018/status_light.q.h"
 
 using ::frc971::control_loops::drivetrain_queue;
 using ::y2018::control_loops::superstructure_queue;
@@ -101,6 +102,17 @@ class Reader : public ::aos::input::JoystickInput {
 
   void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
     drivetrain_input_reader_->HandleDrivetrain(data);
+  }
+
+  void SendColors(float red, float green, float blue) {
+    auto new_status_light = status_light.MakeMessage();
+    new_status_light->red = red;
+    new_status_light->green = green;
+    new_status_light->blue = blue;
+
+    if (!new_status_light.Send()) {
+      LOG(ERROR, "Failed to send lights.\n");
+    }
   }
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
