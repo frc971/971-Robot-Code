@@ -174,7 +174,7 @@ void SetupLedFtm(BigFTM *ftm) {
   }
   ftm->SC = FTM_SC_CPWMS /* Center-aligned PWM */ |
             FTM_SC_CLKS(1) /* Use the system clock */ |
-            FTM_SC_PS(60) /* Prescaler */;
+            FTM_SC_PS(6) /* Prescaler=64 */;
 
   ftm->MODE &= ~FTM_MODE_WPDIS;
 }
