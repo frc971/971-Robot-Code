@@ -689,8 +689,10 @@ extern "C" int main() {
   global_motor1.store(&motor1, ::std::memory_order_relaxed);
 
   SIM_SCGC6 |= SIM_SCGC6_PIT;
+  // Workaround for errata e7914.
+  (void)PIT_MCR;
   PIT_MCR = 0;
-  PIT_LDVAL3 = BUS_CLOCK_FREQUENCY / 1000;
+  PIT_LDVAL3 = (BUS_CLOCK_FREQUENCY / 1000) - 1;
   PIT_TCTRL3 = PIT_TCTRL_TIE | PIT_TCTRL_TEN;
 
   // Have them both wait for the GTB signal.
