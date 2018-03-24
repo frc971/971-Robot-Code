@@ -28,6 +28,8 @@ uint32_t nanos(void) { return do_time<1000>(); }
 
 uint32_t micros(void) { return do_time<1>(); }
 
+uint32_t millis(void) { return systick_millis_count; }
+
 void delay(uint32_t ms) { delay_from(micros(), ms); }
 
 uint32_t delay_from(uint32_t start, uint32_t ms) {

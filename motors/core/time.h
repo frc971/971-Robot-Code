@@ -14,6 +14,9 @@ uint32_t nanos(void);
 // Returns the current number of microseconds. This will wrap naturally.
 uint32_t micros(void);
 
+// Returns the current number of milliseconds. This will wrap naturally.
+uint32_t millis(void);
+
 // Delays for the specified number of milliseconds.
 void delay(uint32_t ms);
 

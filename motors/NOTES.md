@@ -4,6 +4,8 @@
     * 192 kB SRAM (64 kB SRAM\_L, 128 kB SRAM\_U)
     * Up to 120 MHz
 * [datasheet](http://cache.freescale.com/files/microcontrollers/doc/data_sheet/K64P144M120SF5.pdf)
+* [errata](https://www.nxp.com/docs/en/errata/Kinetis_K_1N83J.pdf)
+    * TODO(Brian): Are all of our parts this revision?
 * [reference manual](http://cache.nxp.com/assets/documents/data/en/reference-manuals/K64P144M120SF5RM.pdf)
 * [schematic](https://www.pjrc.com/teensy/schematic.html).
 * [actual docs on the bit banding](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0439b/Behcjiic.html)

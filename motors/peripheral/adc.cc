@@ -129,6 +129,13 @@ void AdcInitJoystick() {
   PORTB_PCR2 = PORT_PCR_MUX(0);
 }
 
+void AdcInitSimple() {
+  AdcInitCommon();
+
+  // ENC_SIN ADC0_SE23
+  // ENC_COS ADC1_SE23
+}
+
 MediumAdcReadings AdcReadMedium(const DisableInterrupts &) {
   MediumAdcReadings r;
 
@@ -244,6 +251,21 @@ JoystickAdcReadings AdcReadJoystick(const DisableInterrupts &) {
   while (!(ADC0_SC1A & ADC_SC1_COCO)) {
   }
   r.analog3 = ADC0_RA;
+
+  return r;
+}
+
+SimpleAdcReadings AdcReadSimple(const DisableInterrupts &) {
+  SimpleAdcReadings r;
+
+  ADC0_SC1A = 23;
+  ADC1_SC1A = 23;
+  while (!(ADC0_SC1A & ADC_SC1_COCO)) {
+  }
+  while (!(ADC1_SC1A & ADC_SC1_COCO)) {
+  }
+  r.sin = ADC0_RA;
+  r.cos = ADC1_RA;
 
   return r;
 }
