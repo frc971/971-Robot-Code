@@ -88,9 +88,24 @@ void can_init(uint32_t id0, uint32_t id1) {
                CAN_CTRL1_PSEG2(1) /* 2 time quanta after sampling. */ |
                CAN_CTRL1_SMP /* Use triple sampling. */ |
                CAN_CTRL1_PROPSEG(4) /* 5 time quanta before sampling. */;
-  CAN0_CTRL2 = CAN_CTRL2_TASD(25) /* We have so few mailboxes and */
-               /* such a fast peripheral clock, this has lots of margin. */ |
-               CAN_CTRL2_EACEN /* Match on IDE and RTR. */;
+  // TASD calculation:
+  // 25 - (fcanclk * (maxmb + 3 - (rfen * 8) - (rfen * rffn * 2)) * 2) /
+  //    (fsys * (1 + (pseg1 + 1) + (pseg2 + 1) + (propseg + 1)) * (presdiv + 1))
+  // fcanclk = 8000000
+  // maxmb = NUMBER_MESSAGE_BUFFERS-1 = 3
+  //   Answer is still 25 with maxmb = 15.
+  // rfen = 0
+  // rffn = whatever
+  // fsys = 60000000
+  // pseg1 = 7
+  // pseg2 = 1
+  // propseg = 4
+  // presdiv = 1
+  // answer = 25
+  // The TRM off-handedly mentions 24. In practice, using 25 results in weird
+  // and broken behavior, so just use 24. Linux looks like it just leaves this
+  // at 0.
+  CAN0_CTRL2 = CAN_CTRL2_TASD(24) | CAN_CTRL2_EACEN /* Match on IDE and RTR. */;
 
   // Now take it out of freeze mode.
   CAN0_MCR &= ~CAN_MCR_HALT;
