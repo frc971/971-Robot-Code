@@ -73,7 +73,7 @@ void vesc_set_rpm(int vesc_id, float rpm) {
 // Note that sending 6 VESC commands every 1ms doesn't quite fit in the CAN
 // bandwidth.
 void vesc_set_current(int vesc_id, float current) {
-  const int32_t current_int = current * 1000;
+  const int32_t current_int = current * 1000.0f;
   uint32_t id = CAN_EFF_FLAG;
   id |= vesc_id;
   id |= (0x01 /* SET_CURRENT */) << 8;
@@ -82,6 +82,24 @@ void vesc_set_current(int vesc_id, float current) {
       static_cast<uint8_t>((current_int >> 16) & 0xFF),
       static_cast<uint8_t>((current_int >> 8) & 0xFF),
       static_cast<uint8_t>((current_int >> 0) & 0xFF),
+  };
+  can_send(id, data, sizeof(data), 2 + vesc_id);
+}
+
+// Sends a SET_DUTY command to the specified VESC.
+// duty is from -1 to 1.
+// Note that sending 6 VESC commands every 1ms doesn't quite fit in the CAN
+// bandwidth.
+void vesc_set_duty(int vesc_id, float duty) {
+  const int32_t duty_int = duty * 100000.0f;
+  uint32_t id = CAN_EFF_FLAG;
+  id |= vesc_id;
+  id |= (0x00 /* SET_DUTY */) << 8;
+  uint8_t data[4] = {
+      static_cast<uint8_t>((duty_int >> 24) & 0xFF),
+      static_cast<uint8_t>((duty_int >> 16) & 0xFF),
+      static_cast<uint8_t>((duty_int >> 8) & 0xFF),
+      static_cast<uint8_t>((duty_int >> 0) & 0xFF),
   };
   can_send(id, data, sizeof(data), 2 + vesc_id);
 }
