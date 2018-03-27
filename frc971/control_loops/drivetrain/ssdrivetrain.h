@@ -18,7 +18,7 @@ namespace drivetrain {
 
 class DrivetrainMotorsSS {
  public:
-  DrivetrainMotorsSS(const DrivetrainConfig &dt_config,
+  DrivetrainMotorsSS(const DrivetrainConfig<double> &dt_config,
                      StateFeedbackLoop<7, 2, 4> *kf,
                      double *integrated_kf_heading);
 
@@ -42,7 +42,7 @@ class DrivetrainMotorsSS {
   void PolyCapU(Eigen::Matrix<double, 2, 1> *U);
   void ScaleCapU(Eigen::Matrix<double, 2, 1> *U);
 
-  const DrivetrainConfig dt_config_;
+  const DrivetrainConfig<double> dt_config_;
   StateFeedbackLoop<7, 2, 4> *kf_;
   Eigen::Matrix<double, 7, 1> unprofiled_goal_;
 

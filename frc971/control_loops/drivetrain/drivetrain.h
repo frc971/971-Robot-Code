@@ -22,7 +22,7 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
   // Constructs a control loop which can take a Drivetrain or defaults to the
   // drivetrain at frc971::control_loops::drivetrain
   explicit DrivetrainLoop(
-      const DrivetrainConfig &dt_config,
+      const DrivetrainConfig<double> &dt_config,
       ::frc971::control_loops::DrivetrainQueue *my_drivetrain =
           &::frc971::control_loops::drivetrain_queue);
 
@@ -40,10 +40,10 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
 
   double last_gyro_rate_ = 0.0;
 
-  const DrivetrainConfig dt_config_;
+  const DrivetrainConfig<double> dt_config_;
 
   StateFeedbackLoop<7, 2, 4> kf_;
-  PolyDrivetrain dt_openloop_;
+  PolyDrivetrain<double> dt_openloop_;
   DrivetrainMotorsSS dt_closedloop_;
   ::aos::monotonic_clock::time_point last_gyro_time_ =
       ::aos::monotonic_clock::min_time;

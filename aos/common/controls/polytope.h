@@ -2,11 +2,14 @@
 #define AOS_COMMON_CONTROLS_POLYTOPE_H_
 
 #include "Eigen/Dense"
+
+#ifdef __linux__
 #include "third_party/cddlib/lib-src/setoper.h"
 #include "third_party/cddlib/lib-src/cdd.h"
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/matrix_logging.h"
+#endif  // __linux__
 
 namespace aos {
 namespace controls {
@@ -18,18 +21,18 @@ namespace controls {
 // random-seeming polytopes it refuses to calculate the vertices completely. To
 // avoid issues with that, using the "shifting" constructor is recommended
 // whenever possible.
-template <int number_of_dimensions>
+template <int number_of_dimensions, typename Scalar = double>
 class Polytope {
  public:
   virtual ~Polytope() {}
 
   // Returns a reference to H.
   virtual Eigen::Ref<
-      const Eigen::Matrix<double, Eigen::Dynamic, number_of_dimensions>>
+      const Eigen::Matrix<Scalar, Eigen::Dynamic, number_of_dimensions>>
   H() const = 0;
 
   // Returns a reference to k.
-  virtual Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, 1>> k()
+  virtual Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> k()
       const = 0;
 
   // Returns the number of dimensions in the polytope.
@@ -39,72 +42,74 @@ class Polytope {
   int num_constraints() const { return k().rows(); }
 
   // Returns true if the point is inside the polytope.
-  bool IsInside(Eigen::Matrix<double, number_of_dimensions, 1> point) const;
+  bool IsInside(Eigen::Matrix<Scalar, number_of_dimensions, 1> point) const;
 
   // Returns the list of vertices inside the polytope.
-  virtual Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic> Vertices()
+  virtual Eigen::Matrix<Scalar, number_of_dimensions, Eigen::Dynamic> Vertices()
       const = 0;
 };
 
-template <int number_of_dimensions, int num_vertices>
-Eigen::Matrix<double, number_of_dimensions, num_vertices> ShiftPoints(
-    const Eigen::Matrix<double, number_of_dimensions, num_vertices> &vertices,
-    const Eigen::Matrix<double, number_of_dimensions, 1> &offset) {
-  Eigen::Matrix<double, number_of_dimensions, num_vertices> ans = vertices;
+template <int number_of_dimensions, int num_vertices, typename Scalar = double>
+Eigen::Matrix<Scalar, number_of_dimensions, num_vertices> ShiftPoints(
+    const Eigen::Matrix<Scalar, number_of_dimensions, num_vertices> &vertices,
+    const Eigen::Matrix<Scalar, number_of_dimensions, 1> &offset) {
+  Eigen::Matrix<Scalar, number_of_dimensions, num_vertices> ans = vertices;
   for (int i = 0; i < num_vertices; ++i) {
     ans.col(i) += offset;
   }
   return ans;
 }
 
-template <int number_of_dimensions, int num_constraints, int num_vertices>
-class HVPolytope : public Polytope<number_of_dimensions> {
+template <int number_of_dimensions, int num_constraints, int num_vertices,
+          typename Scalar = double>
+class HVPolytope : public Polytope<number_of_dimensions, Scalar> {
  public:
   // Constructs a polytope given the H and k matrices.
-  HVPolytope(Eigen::Ref<const Eigen::Matrix<double, num_constraints,
+  HVPolytope(Eigen::Ref<const Eigen::Matrix<Scalar, num_constraints,
                                             number_of_dimensions>> H,
-             Eigen::Ref<const Eigen::Matrix<double, num_constraints, 1>> k,
-             Eigen::Ref<const Eigen::Matrix<double, number_of_dimensions,
+             Eigen::Ref<const Eigen::Matrix<Scalar, num_constraints, 1>> k,
+             Eigen::Ref<const Eigen::Matrix<Scalar, number_of_dimensions,
                                             num_vertices>> vertices)
       : H_(H), k_(k), vertices_(vertices) {}
 
-  Eigen::Ref<const Eigen::Matrix<double, num_constraints, number_of_dimensions>>
+  Eigen::Ref<const Eigen::Matrix<Scalar, num_constraints, number_of_dimensions>>
   static_H() const {
     return H_;
   }
 
-  Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, number_of_dimensions>>
+  Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, number_of_dimensions>>
   H() const override {
     return H_;
   }
 
-  Eigen::Ref<const Eigen::Matrix<double, num_constraints, 1>> static_k()
+  Eigen::Ref<const Eigen::Matrix<Scalar, num_constraints, 1>> static_k()
       const {
     return k_;
   }
-  Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, 1>> k()
+  Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> k()
       const override {
     return k_;
   }
 
-  Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic> Vertices()
+  Eigen::Matrix<Scalar, number_of_dimensions, Eigen::Dynamic> Vertices()
       const override {
     return vertices_;
   }
 
-  Eigen::Matrix<double, number_of_dimensions, num_vertices>
+  Eigen::Matrix<Scalar, number_of_dimensions, num_vertices>
   StaticVertices() const {
     return vertices_;
   }
 
  private:
-  const Eigen::Matrix<double, num_constraints, number_of_dimensions> H_;
-  const Eigen::Matrix<double, num_constraints, 1> k_;
-  const Eigen::Matrix<double, number_of_dimensions, num_vertices> vertices_;
+  const Eigen::Matrix<Scalar, num_constraints, number_of_dimensions> H_;
+  const Eigen::Matrix<Scalar, num_constraints, 1> k_;
+  const Eigen::Matrix<Scalar, number_of_dimensions, num_vertices> vertices_;
 };
 
 
 
+#ifdef __linux__
 template <int number_of_dimensions>
 class HPolytope : public Polytope<number_of_dimensions> {
  public:
@@ -146,12 +151,14 @@ class HPolytope : public Polytope<number_of_dimensions> {
       Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, 1>> &k);
 };
 
-template <int number_of_dimensions>
-bool Polytope<number_of_dimensions>::IsInside(
-    Eigen::Matrix<double, number_of_dimensions, 1> point) const {
-  Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, 1>> k_ptr = k();
+#endif  // __linux__
+
+template <int number_of_dimensions, typename Scalar>
+bool Polytope<number_of_dimensions, Scalar>::IsInside(
+    Eigen::Matrix<Scalar, number_of_dimensions, 1> point) const {
+  Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> k_ptr = k();
   for (int i = 0; i < k_ptr.rows(); ++i) {
-    double ev = (H().row(i) * point)(0, 0);
+    Scalar ev = (H().row(i) * point)(0, 0);
     if (ev > k_ptr(i, 0)) {
       return false;
     }
@@ -159,6 +166,7 @@ bool Polytope<number_of_dimensions>::IsInside(
   return true;
 }
 
+#ifdef __linux__
 template <int number_of_dimensions>
 Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic>
 HPolytope<number_of_dimensions>::CalculateVertices(
@@ -221,6 +229,7 @@ HPolytope<number_of_dimensions>::CalculateVertices(
 
   return vertices;
 }
+#endif  // __linux__
 
 }  // namespace controls
 }  // namespace aos

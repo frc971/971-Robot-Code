@@ -407,19 +407,23 @@ class VelocityDrivetrain(object):
                self.right_gear, self.right_shifter_position)
 
 def WritePolyDrivetrain(drivetrain_files, motor_files, year_namespace,
-                        drivetrain_params):
+                        drivetrain_params, scalar_type='double'):
   vdrivetrain = VelocityDrivetrain(drivetrain_params)
-  namespaces = [year_namespace, 'control_loops', 'drivetrain']
+  if isinstance(year_namespace, list):
+    namespaces = year_namespace
+  else:
+    namespaces = [year_namespace, 'control_loops', 'drivetrain']
   dog_loop_writer = control_loop.ControlLoopWriter(
       "VelocityDrivetrain", [vdrivetrain.drivetrain_low_low,
                      vdrivetrain.drivetrain_low_high,
                      vdrivetrain.drivetrain_high_low,
                      vdrivetrain.drivetrain_high_high],
-                     namespaces=namespaces)
+                     namespaces=namespaces,
+                     scalar_type=scalar_type)
 
   dog_loop_writer.Write(drivetrain_files[0], drivetrain_files[1])
 
-  cim_writer = control_loop.ControlLoopWriter("CIM", [CIM()])
+  cim_writer = control_loop.ControlLoopWriter("CIM", [CIM()], scalar_type=scalar_type)
 
   cim_writer.Write(motor_files[0], motor_files[1])
 

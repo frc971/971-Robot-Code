@@ -34,8 +34,8 @@ using ::y2016::control_loops::drivetrain::MakeDrivetrainPlant;
 const constants::ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0, 0.25,
                                                            0.75};
 
-const DrivetrainConfig &GetDrivetrainConfig() {
-  static DrivetrainConfig kDrivetrainConfig{
+const DrivetrainConfig<double> &GetDrivetrainConfig() {
+  static DrivetrainConfig<double> kDrivetrainConfig{
       ::frc971::control_loops::drivetrain::ShifterType::HALL_EFFECT_SHIFTER,
       ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
       ::frc971::control_loops::drivetrain::GyroType::SPARTAN_GYRO,
@@ -354,7 +354,7 @@ TEST_F(DrivetrainTest, DriveAlmostStraightForward) {
 // Tests that converting from a left, right position to a distance, angle
 // coordinate system and back returns the same answer.
 TEST_F(DrivetrainTest, LinearToAngularAndBack) {
-  const DrivetrainConfig dt_config = GetDrivetrainConfig();
+  const DrivetrainConfig<double> &dt_config = GetDrivetrainConfig();
   const double width = dt_config.robot_radius * 2.0;
 
   Eigen::Matrix<double, 7, 1> state;
@@ -560,7 +560,7 @@ TEST_F(CoerceGoalTest, Inside) {
   R << /*[[*/ 1.5, 1.5 /*]]*/;
 
   Eigen::Matrix<double, 2, 1> output =
-      ::frc971::control_loops::CoerceGoal(box, K, 0, R);
+      ::frc971::control_loops::CoerceGoal<double>(box, K, 0, R);
 
   EXPECT_EQ(R(0, 0), output(0, 0));
   EXPECT_EQ(R(1, 0), output(1, 0));
@@ -576,7 +576,7 @@ TEST_F(CoerceGoalTest, Outside_Inside_Intersect) {
   R << 5, 5;
 
   Eigen::Matrix<double, 2, 1> output =
-      ::frc971::control_loops::CoerceGoal(box, K, 0, R);
+      ::frc971::control_loops::CoerceGoal<double>(box, K, 0, R);
 
   EXPECT_EQ(2.0, output(0, 0));
   EXPECT_EQ(2.0, output(1, 0));
@@ -592,7 +592,7 @@ TEST_F(CoerceGoalTest, Outside_Inside_no_Intersect) {
   R << 5, 5;
 
   Eigen::Matrix<double, 2, 1> output =
-      ::frc971::control_loops::CoerceGoal(box, K, 0, R);
+      ::frc971::control_loops::CoerceGoal<double>(box, K, 0, R);
 
   EXPECT_EQ(3.0, output(0, 0));
   EXPECT_EQ(2.0, output(1, 0));
@@ -608,7 +608,7 @@ TEST_F(CoerceGoalTest, Middle_Of_Edge) {
   R << 5, 5;
 
   Eigen::Matrix<double, 2, 1> output =
-      ::frc971::control_loops::CoerceGoal(box, K, 0, R);
+      ::frc971::control_loops::CoerceGoal<double>(box, K, 0, R);
 
   EXPECT_EQ(2.0, output(0, 0));
   EXPECT_EQ(2.0, output(1, 0));
@@ -624,7 +624,7 @@ TEST_F(CoerceGoalTest, PerpendicularLine) {
   R << 5, 5;
 
   Eigen::Matrix<double, 2, 1> output =
-      ::frc971::control_loops::CoerceGoal(box, K, 0, R);
+      ::frc971::control_loops::CoerceGoal<double>(box, K, 0, R);
 
   EXPECT_EQ(1.0, output(0, 0));
   EXPECT_EQ(1.0, output(1, 0));

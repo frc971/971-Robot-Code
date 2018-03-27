@@ -10,9 +10,13 @@ class Constant(object):
     self.formatToType = {}
     self.formatToType['%f'] = "double"
     self.formatToType['%d'] = "int"
-  def __str__ (self):
+
+  def Render(self, loop_type):
+    typestring = self.formatToType[self.formatt]
+    if loop_type == 'float' and typestring == 'double':
+      typestring = loop_type
     return str("\nstatic constexpr %s %s = "+ self.formatt +";\n") % \
-        (self.formatToType[self.formatt], self.name, self.value)
+        (typestring, self.name, self.value)
 
 
 class ControlLoopWriter(object):
@@ -138,7 +142,7 @@ class ControlLoopWriter(object):
       fd.write(self._namespace_start)
 
       for const in self._constant_list:
-          fd.write(str(const))
+          fd.write(const.Render(self._scalar_type))
 
       fd.write('\n\n')
       for loop in self._loops:
@@ -325,6 +329,8 @@ class ControlLoop(object):
       for y in xrange(matrix.shape[1]):
         write_type =  repr(matrix[x, y])
         if scalar_type == 'float':
+          if '.' not in write_type:
+            write_type += '.0'
           write_type += 'f'
         ans.append('  %s(%d, %d) = %s;\n' % (matrix_name, x, y, write_type))
 

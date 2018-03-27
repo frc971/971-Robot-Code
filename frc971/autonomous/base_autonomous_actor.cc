@@ -20,7 +20,7 @@ namespace autonomous {
 
 BaseAutonomousActor::BaseAutonomousActor(
     AutonomousActionQueueGroup *s,
-    const control_loops::drivetrain::DrivetrainConfig dt_config)
+    const control_loops::drivetrain::DrivetrainConfig<double> &dt_config)
     : aos::common::actions::ActorBase<AutonomousActionQueueGroup>(s),
       dt_config_(dt_config),
       initial_drivetrain_({0.0, 0.0}) {}

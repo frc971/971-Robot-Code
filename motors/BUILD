@@ -174,6 +174,7 @@ cc_binary(
         "//motors/peripheral:can",
         "//motors/usb",
         "//motors/usb:cdc",
+        "//motors/seems_reasonable:drivetrain_lib",
     ],
 )
 

@@ -29,7 +29,7 @@ namespace control_loops {
 namespace drivetrain {
 
 DrivetrainLoop::DrivetrainLoop(
-    const DrivetrainConfig &dt_config,
+    const DrivetrainConfig<double> &dt_config,
     ::frc971::control_loops::DrivetrainQueue *my_drivetrain)
     : aos::controls::ControlLoop<::frc971::control_loops::DrivetrainQueue>(
           my_drivetrain),

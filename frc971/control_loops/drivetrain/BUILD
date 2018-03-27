@@ -1,221 +1,256 @@
-package(default_visibility = ['//visibility:public'])
+package(default_visibility = ["//visibility:public"])
 
-load('//aos/build:queues.bzl', 'queue_library')
+load("//aos/build:queues.bzl", "queue_library")
+load("//tools:environments.bzl", "mcu_cpus")
 
 cc_binary(
-  name = 'replay_drivetrain',
-  srcs = [
-    'replay_drivetrain.cc',
-  ],
-  deps = [
-    ':drivetrain_queue',
-    '//aos/common/controls:replay_control_loop',
-    '//aos/linux_code:init',
-    '//frc971/queues:gyro',
-  ],
+    name = "replay_drivetrain",
+    srcs = [
+        "replay_drivetrain.cc",
+    ],
+    deps = [
+        ":drivetrain_queue",
+        "//aos/common/controls:replay_control_loop",
+        "//aos/linux_code:init",
+        "//frc971/queues:gyro",
+    ],
 )
 
 queue_library(
-  name = 'drivetrain_queue',
-  srcs = [
-    'drivetrain.q',
-  ],
-  deps = [
-    '//aos/common/controls:control_loop_queues',
-    '//frc971/control_loops:queues',
-  ],
+    name = "drivetrain_queue",
+    srcs = [
+        "drivetrain.q",
+    ],
+    deps = [
+        "//aos/common/controls:control_loop_queues",
+        "//frc971/control_loops:queues",
+    ],
 )
 
 cc_library(
-  name = 'drivetrain_config',
-  hdrs = [
-    'drivetrain_config.h',
-  ],
-  deps = [
-    '//frc971/control_loops:state_feedback_loop',
-    '//frc971:shifter_hall_effect',
-  ],
+    name = "drivetrain_config",
+    hdrs = [
+        "drivetrain_config.h",
+    ],
+    deps = [
+        "//frc971:shifter_hall_effect",
+        "//frc971/control_loops:state_feedback_loop",
+    ],
 )
 
 cc_library(
-  name = 'gear',
-  hdrs = [
-    'gear.h',
-  ],
+    name = "gear",
+    hdrs = [
+        "gear.h",
+    ],
+    compatible_with = mcu_cpus,
 )
 
 cc_library(
-  name = 'ssdrivetrain',
-  srcs = [
-    'ssdrivetrain.cc',
-  ],
-  hdrs = [
-    'ssdrivetrain.h',
-  ],
-  deps = [
-    ':drivetrain_queue',
-    ':drivetrain_config',
-    ':gear',
-    '//aos/common/controls:control_loop',
-    '//aos/common/controls:polytope',
-    '//aos/common/logging:matrix_logging',
-    '//aos/common/logging:queue_logging',
-    '//aos/common/messages:robot_state',
-    '//aos/common/util:log_interval',
-    '//aos/common/util:trapezoid_profile',
-    '//aos/common:math',
-    '//frc971/control_loops:coerce_goal',
-    '//frc971/control_loops:state_feedback_loop',
-    '//frc971:shifter_hall_effect',
-  ],
+    name = "ssdrivetrain",
+    srcs = [
+        "ssdrivetrain.cc",
+    ],
+    hdrs = [
+        "ssdrivetrain.h",
+    ],
+    deps = [
+        ":drivetrain_config",
+        ":drivetrain_queue",
+        ":gear",
+        "//aos/common:math",
+        "//aos/common/controls:control_loop",
+        "//aos/common/controls:polytope",
+        "//aos/common/logging:matrix_logging",
+        "//aos/common/logging:queue_logging",
+        "//aos/common/messages:robot_state",
+        "//aos/common/util:log_interval",
+        "//aos/common/util:trapezoid_profile",
+        "//frc971:shifter_hall_effect",
+        "//frc971/control_loops:coerce_goal",
+        "//frc971/control_loops:state_feedback_loop",
+    ],
 )
 
 cc_library(
-  name = 'polydrivetrain',
-  srcs = [
-    'polydrivetrain.cc',
-  ],
-  hdrs = [
-    'polydrivetrain.h',
-  ],
-  deps = [
-    ':drivetrain_queue',
-    ':drivetrain_config',
-    ':gear',
-    '//aos/common/controls:polytope',
-    '//aos/common:math',
-    '//aos/common/messages:robot_state',
-    '//frc971/control_loops:state_feedback_loop',
-    '//frc971/control_loops:coerce_goal',
-    '//aos/common/util:log_interval',
-    '//aos/common/logging:queue_logging',
-    '//aos/common/logging:matrix_logging',
-  ],
+    name = "polydrivetrain",
+    srcs = [
+        "polydrivetrain.cc",
+    ],
+    hdrs = [
+        "polydrivetrain.h",
+    ],
+    deps = [
+        ":drivetrain_config",
+        ":drivetrain_queue",
+        ":gear",
+        "//aos/common:math",
+        "//aos/common/controls:polytope",
+        "//aos/common/logging:matrix_logging",
+        "//aos/common/logging:queue_logging",
+        "//aos/common/messages:robot_state",
+        "//aos/common/util:log_interval",
+        "//frc971/control_loops:coerce_goal",
+        "//frc971/control_loops:state_feedback_loop",
+    ],
+)
+
+cc_library(
+    name = "drivetrain_config_uc",
+    hdrs = [
+        "drivetrain_config.h",
+    ],
+    restricted_to = mcu_cpus,
+    deps = [
+        "//frc971:shifter_hall_effect",
+        "//frc971/control_loops:state_feedback_loop_uc",
+    ],
+)
+
+cc_library(
+    name = "polydrivetrain_uc",
+    srcs = [
+        "drivetrain_uc.q.cc",
+        "polydrivetrain.cc",
+    ],
+    hdrs = [
+        "drivetrain_uc.q.h",
+        "polydrivetrain.h",
+    ],
+    restricted_to = mcu_cpus,
+    deps = [
+        ":drivetrain_config_uc",
+        ":gear",
+        "//aos/common:math",
+        "//aos/common/controls:polytope_uc",
+        "//frc971/control_loops:coerce_goal_uc",
+        "//frc971/control_loops:state_feedback_loop_uc",
+    ],
 )
 
 genrule(
-  name = 'genrule_down_estimator',
-  visibility = ['//visibility:private'],
-  cmd = '$(location //frc971/control_loops/python:down_estimator) $(OUTS)',
-  tools = [
-    '//frc971/control_loops/python:down_estimator',
-  ],
-  outs = [
-    'down_estimator.h',
-    'down_estimator.cc',
-  ],
+    name = "genrule_down_estimator",
+    outs = [
+        "down_estimator.h",
+        "down_estimator.cc",
+    ],
+    cmd = "$(location //frc971/control_loops/python:down_estimator) $(OUTS)",
+    tools = [
+        "//frc971/control_loops/python:down_estimator",
+    ],
+    visibility = ["//visibility:private"],
 )
 
 cc_library(
-  name = 'down_estimator',
-  hdrs = [
-    'down_estimator.h',
-  ],
-  srcs = [
-    'down_estimator.cc',
-  ],
-  deps = [
-    '//frc971/control_loops:state_feedback_loop',
-  ],
+    name = "down_estimator",
+    srcs = [
+        "down_estimator.cc",
+    ],
+    hdrs = [
+        "down_estimator.h",
+    ],
+    deps = [
+        "//frc971/control_loops:state_feedback_loop",
+    ],
 )
 
 cc_library(
-  name = 'drivetrain_lib',
-  srcs = [
-    'drivetrain.cc',
-  ],
-  hdrs = [
-    'drivetrain.h',
-  ],
-  deps = [
-    ':down_estimator',
-    ':drivetrain_queue',
-    ':gear',
-    ':polydrivetrain',
-    ':ssdrivetrain',
-    '//aos/common/controls:control_loop',
-    '//frc971/queues:gyro',
-    '//frc971/wpilib:imu_queue',
-    '//aos/common/util:log_interval',
-    '//aos/common/logging:queue_logging',
-    '//aos/common/logging:matrix_logging',
-  ],
+    name = "drivetrain_lib",
+    srcs = [
+        "drivetrain.cc",
+    ],
+    hdrs = [
+        "drivetrain.h",
+    ],
+    deps = [
+        ":down_estimator",
+        ":drivetrain_queue",
+        ":gear",
+        ":polydrivetrain",
+        ":ssdrivetrain",
+        "//aos/common/controls:control_loop",
+        "//aos/common/logging:matrix_logging",
+        "//aos/common/logging:queue_logging",
+        "//aos/common/util:log_interval",
+        "//frc971/queues:gyro",
+        "//frc971/wpilib:imu_queue",
+    ],
 )
 
 cc_test(
-  name = 'drivetrain_lib_test',
-  srcs = [
-    'drivetrain_lib_test.cc',
-  ],
-  deps = [
-    '//aos/testing:googletest',
-    ':drivetrain_queue',
-    ':drivetrain_lib',
-    ':drivetrain_config',
-    '//aos/common/controls:control_loop_test',
-    '//frc971/control_loops:state_feedback_loop',
-    '//frc971/queues:gyro',
-    '//aos/common:queues',
-    '//y2016:constants',
-    '//y2016/control_loops/drivetrain:polydrivetrain_plants',
-  ],
+    name = "drivetrain_lib_test",
+    srcs = [
+        "drivetrain_lib_test.cc",
+    ],
+    deps = [
+        ":drivetrain_config",
+        ":drivetrain_lib",
+        ":drivetrain_queue",
+        "//aos/common:queues",
+        "//aos/common/controls:control_loop_test",
+        "//aos/testing:googletest",
+        "//frc971/control_loops:state_feedback_loop",
+        "//frc971/queues:gyro",
+        "//y2016:constants",
+        "//y2016/control_loops/drivetrain:polydrivetrain_plants",
+    ],
 )
 
 genrule(
-  name = 'genrule_haptic_wheel',
-  visibility = ['//visibility:private'],
-  cmd = '$(location //frc971/control_loops/python:haptic_wheel) $(OUTS)',
-  tools = [
-    '//frc971/control_loops/python:haptic_wheel',
-  ],
-  outs = [
-    'haptic_wheel.h',
-    'haptic_wheel.cc',
-    'integral_haptic_wheel.h',
-    'integral_haptic_wheel.cc',
-    'haptic_trigger.h',
-    'haptic_trigger.cc',
-    'integral_haptic_trigger.h',
-    'integral_haptic_trigger.cc',
-  ],
-  restricted_to = ["//tools:k8", "//tools:roborio", "//tools:armhf-debian", "//tools:cortex-m4f"],
+    name = "genrule_haptic_wheel",
+    outs = [
+        "haptic_wheel.h",
+        "haptic_wheel.cc",
+        "integral_haptic_wheel.h",
+        "integral_haptic_wheel.cc",
+        "haptic_trigger.h",
+        "haptic_trigger.cc",
+        "integral_haptic_trigger.h",
+        "integral_haptic_trigger.cc",
+    ],
+    cmd = "$(location //frc971/control_loops/python:haptic_wheel) $(OUTS)",
+    compatible_with = mcu_cpus,
+    tools = [
+        "//frc971/control_loops/python:haptic_wheel",
+    ],
+    visibility = ["//visibility:private"],
 )
 
 cc_library(
-  name = 'haptic_input_uc',
-  hdrs = [
-    'haptic_wheel.h',
-    'integral_haptic_wheel.h',
-    'haptic_trigger.h',
-    'integral_haptic_trigger.h',
-  ],
-  srcs = [
-    'haptic_wheel.cc',
-    'integral_haptic_wheel.cc',
-    'haptic_trigger.cc',
-    'integral_haptic_trigger.cc',
-  ],
-  deps = [
-    '//frc971/control_loops:state_feedback_loop_uc',
-  ],
-  restricted_to = ["//tools:cortex-m4f"],
+    name = "haptic_input_uc",
+    srcs = [
+        "haptic_trigger.cc",
+        "haptic_wheel.cc",
+        "integral_haptic_trigger.cc",
+        "integral_haptic_wheel.cc",
+    ],
+    hdrs = [
+        "haptic_trigger.h",
+        "haptic_wheel.h",
+        "integral_haptic_trigger.h",
+        "integral_haptic_wheel.h",
+    ],
+    restricted_to = mcu_cpus,
+    deps = [
+        "//frc971/control_loops:state_feedback_loop_uc",
+    ],
 )
 
 cc_library(
-  name = 'haptic_wheel',
-  hdrs = [
-    'haptic_wheel.h',
-    'integral_haptic_wheel.h',
-    'haptic_trigger.h',
-    'integral_haptic_trigger.h',
-  ],
-  srcs = [
-    'haptic_wheel.cc',
-    'integral_haptic_wheel.cc',
-    'haptic_trigger.cc',
-    'integral_haptic_trigger.cc',
-  ],
-  deps = [
-    '//frc971/control_loops:state_feedback_loop',
-  ],
+    name = "haptic_wheel",
+    srcs = [
+        "haptic_trigger.cc",
+        "haptic_wheel.cc",
+        "integral_haptic_trigger.cc",
+        "integral_haptic_wheel.cc",
+    ],
+    hdrs = [
+        "haptic_trigger.h",
+        "haptic_wheel.h",
+        "integral_haptic_trigger.h",
+        "integral_haptic_wheel.h",
+    ],
+    deps = [
+        "//frc971/control_loops:state_feedback_loop",
+    ],
 )

@@ -12,9 +12,9 @@ using ::frc971::control_loops::drivetrain::DrivetrainConfig;
 namespace y2014 {
 namespace control_loops {
 
-const DrivetrainConfig &GetDrivetrainConfig() {
+const DrivetrainConfig<double> &GetDrivetrainConfig() {
   // TODO(austin): Switch over to using the profile.
-  static DrivetrainConfig kDrivetrainConfig{
+  static DrivetrainConfig<double> kDrivetrainConfig{
       ::frc971::control_loops::drivetrain::ShifterType::HALL_EFFECT_SHIFTER,
       ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
       ::frc971::control_loops::drivetrain::GyroType::SPARTAN_GYRO,

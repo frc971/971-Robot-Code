@@ -13,17 +13,67 @@
 #include "motors/usb/cdc.h"
 #include "motors/usb/usb.h"
 #include "motors/util.h"
+#include "frc971/control_loops/drivetrain/polydrivetrain.h"
+#include "motors/seems_reasonable/drivetrain_dog_motor_plant.h"
+#include "motors/seems_reasonable/polydrivetrain_dog_motor_plant.h"
 
 namespace frc971 {
 namespace motors {
 namespace {
 
+using ::frc971::control_loops::drivetrain::DrivetrainConfig;
+using ::frc971::control_loops::drivetrain::PolyDrivetrain;
+using ::frc971::constants::ShifterHallEffect;
+using ::frc971::control_loops::DrivetrainQueue_Goal;
+using ::frc971::control_loops::DrivetrainQueue_Output;
+
+const ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0, 0.25, 0.75};
+
+const DrivetrainConfig<float> &GetDrivetrainConfig() {
+  static DrivetrainConfig<float> kDrivetrainConfig{
+      ::frc971::control_loops::drivetrain::ShifterType::NO_SHIFTER,
+      ::frc971::control_loops::drivetrain::LoopType::OPEN_LOOP,
+      ::frc971::control_loops::drivetrain::GyroType::SPARTAN_GYRO,
+      ::frc971::control_loops::drivetrain::IMUType::IMU_X,
+
+      ::motors::seems_reasonable::MakeDrivetrainLoop,
+      ::motors::seems_reasonable::MakeVelocityDrivetrainLoop,
+      ::std::function<StateFeedbackLoop<7, 2, 4, float>()>(),
+
+      ::motors::seems_reasonable::kDt, ::motors::seems_reasonable::kRobotRadius,
+      ::motors::seems_reasonable::kWheelRadius, ::motors::seems_reasonable::kV,
+
+      ::motors::seems_reasonable::kHighGearRatio,
+      ::motors::seems_reasonable::kLowGearRatio, kThreeStateDriveShifter,
+      kThreeStateDriveShifter, true /* default_high_gear */,
+      0 /* down_offset if using constants use
+                                   constants::GetValues().down_error */, 0.8 /* wheel_non_linearity */,
+      1.2 /* quickturn_wheel_multiplier */, 1.5 /* wheel_multiplier */,
+  };
+
+  return kDrivetrainConfig;
+};
+
+
 ::std::atomic<teensy::AcmTty *> global_stdout{nullptr};
+
+::std::atomic<PolyDrivetrain<float> *> global_polydrivetrain{nullptr};
 
 // Last width we received on each channel.
 uint16_t pwm_input_widths[5];
 // When we received a pulse on each channel in milliseconds.
 uint32_t pwm_input_times[5];
+
+constexpr int kChannelTimeout = 100;
+
+bool lost_channel(int channel) {
+  DisableInterrupts disable_interrupts;
+  if (time_after(millis(),
+                 time_add(pwm_input_times[channel], kChannelTimeout))) {
+    return true;
+  }
+  return false;
+}
 
 // Returns the most recently captured value for the specified input channel
 // scaled from -1 to 1, or 0 if it was captured over 100ms ago.
@@ -31,7 +81,8 @@ float convert_input_width(int channel) {
   uint16_t width;
   {
     DisableInterrupts disable_interrupts;
-    if (time_after(millis(), time_add(pwm_input_times[channel], 100))) {
+    if (time_after(millis(),
+                   time_add(pwm_input_times[channel], kChannelTimeout))) {
       return 0;
     }
 
@@ -73,7 +124,9 @@ void vesc_set_rpm(int vesc_id, float rpm) {
 // Note that sending 6 VESC commands every 1ms doesn't quite fit in the CAN
 // bandwidth.
 void vesc_set_current(int vesc_id, float current) {
-  const int32_t current_int = current * 1000.0f;
+  constexpr float kMaxCurrent = 80.0f;
+  const int32_t current_int =
+      ::std::max(-kMaxCurrent, ::std::min(kMaxCurrent, current)) * 1000.0f;
   uint32_t id = CAN_EFF_FLAG;
   id |= vesc_id;
   id |= (0x01 /* SET_CURRENT */) << 8;
@@ -91,7 +144,9 @@ void vesc_set_current(int vesc_id, float current) {
 // Note that sending 6 VESC commands every 1ms doesn't quite fit in the CAN
 // bandwidth.
 void vesc_set_duty(int vesc_id, float duty) {
-  const int32_t duty_int = duty * 100000.0f;
+  constexpr int32_t kMaxDuty = 99999;
+  const int32_t duty_int = ::std::max(
+      -kMaxDuty, ::std::min(kMaxDuty, static_cast<int32_t>(duty * 100000.0f)));
   uint32_t id = CAN_EFF_FLAG;
   id |= vesc_id;
   id |= (0x00 /* SET_DUTY */) << 8;
@@ -316,7 +371,7 @@ struct EncoderReading {
     const float sin = ConvertEncoderChannel(adc_readings.sin);
     const float cos = ConvertEncoderChannel(adc_readings.cos);
 
-    const float magnitude = ::std::sqrt(sin * sin + cos * cos);
+    const float magnitude = hypot(sin, cos);
     const float magnitude_error = ::std::abs(magnitude - 1.0f);
     valid = magnitude_error < 0.15f;
 
@@ -331,6 +386,8 @@ struct EncoderReading {
 
 extern "C" void pit3_isr() {
   PIT_TFLG3 = 1;
+  PolyDrivetrain<float> *polydrivetrain =
+      global_polydrivetrain.load(::std::memory_order_acquire);
 
   salsa::SimpleAdcReadings adc_readings;
   {
@@ -340,20 +397,69 @@ extern "C" void pit3_isr() {
 
   EncoderReading encoder(adc_readings);
 
-  printf("TODO(Austin): 1kHz loop %d %d %d %d %d ADC %" PRIu16 " %" PRIu16
-         " enc %d/1000 %s from %d\n",
-         (int)(convert_input_width(0) * 1000),
-         (int)(convert_input_width(1) * 1000),
-         (int)(convert_input_width(2) * 1000),
-         (int)(convert_input_width(3) * 1000),
-         (int)(convert_input_width(4) * 1000), adc_readings.sin,
-         adc_readings.cos, (int)(encoder.angle * 1000),
-         encoder.valid ? "T" : "f",
-         (int)(::std::sqrt(ConvertEncoderChannel(adc_readings.sin) *
-                               ConvertEncoderChannel(adc_readings.sin) +
-                           ConvertEncoderChannel(adc_readings.cos) *
-                               ConvertEncoderChannel(adc_readings.cos)) *
-               1000));
+  const bool lost_any_channel = lost_channel(0) || lost_channel(1) ||
+                                lost_channel(2) || lost_channel(3) ||
+                                lost_channel(4) ||
+                                (::std::abs(convert_input_width(4)) < 0.05f);
+
+  if (polydrivetrain != nullptr) {
+    DrivetrainQueue_Goal goal;
+    goal.control_loop_driving = false;
+    if (lost_any_channel) {
+      goal.throttle = 0.0f;
+      goal.wheel = 0.0f;
+    } else {
+      goal.throttle = convert_input_width(1);
+      goal.wheel = convert_input_width(0);
+    }
+    goal.throttle = convert_input_width(1);
+    goal.quickturn = ::std::abs(polydrivetrain->velocity()) < 0.25f;
+
+    DrivetrainQueue_Output output;
+
+    polydrivetrain->SetGoal(goal);
+    polydrivetrain->Update();
+    polydrivetrain->SetOutput(&output);
+
+    vesc_set_duty(0, -output.left_voltage / 12.0f);
+    vesc_set_duty(1, -output.left_voltage / 12.0f);
+
+    vesc_set_duty(2, output.right_voltage / 12.0f);
+    vesc_set_duty(3, output.right_voltage / 12.0f);
+
+    static int i = 0;
+    ++i;
+    if (i > 20) {
+      i = 0;
+      if (lost_any_channel) {
+        printf("200Hz loop, disabled %d %d %d %d %d\n",
+               (int)(convert_input_width(0) * 1000),
+               (int)(convert_input_width(1) * 1000),
+               (int)(convert_input_width(2) * 1000),
+               (int)(convert_input_width(3) * 1000),
+               (int)(convert_input_width(4) * 1000));
+      } else {
+        printf(
+            "TODO(Austin): 200Hz loop %d %d %d %d %d, lr, %d, %d velocity %d "
+            "ADC %" PRIu16 " %" PRIu16 " enc %d/1000 %s from %d\n",
+            (int)(convert_input_width(0) * 1000),
+            (int)(convert_input_width(1) * 1000),
+            (int)(convert_input_width(2) * 1000),
+            (int)(convert_input_width(3) * 1000),
+            (int)(convert_input_width(4) * 1000),
+            static_cast<int>(output.left_voltage * 100),
+            static_cast<int>(output.right_voltage * 100),
+            static_cast<int>(polydrivetrain->velocity() * 100),
+            adc_readings.sin, adc_readings.cos, (int)(encoder.angle * 1000),
+            encoder.valid ? "T" : "f",
+            (int)(::std::sqrt(ConvertEncoderChannel(adc_readings.sin) *
+                                  ConvertEncoderChannel(adc_readings.sin) +
+                              ConvertEncoderChannel(adc_readings.cos) *
+                                  ConvertEncoderChannel(adc_readings.cos)) *
+                  1000));
+      }
+    }
+  }
 }
 
 }  // namespace
@@ -434,13 +540,16 @@ extern "C" int main(void) {
   // Workaround for errata e7914.
   (void)PIT_MCR;
   PIT_MCR = 0;
-  PIT_LDVAL3 = (BUS_CLOCK_FREQUENCY / 1000) - 1;
+  PIT_LDVAL3 = (BUS_CLOCK_FREQUENCY / 200) - 1;
   PIT_TCTRL3 = PIT_TCTRL_TIE | PIT_TCTRL_TEN;
 
   can_init(0, 1);
   salsa::AdcInitSimple();
   SetupPwmFtm(FTM0);
   SetupPwmFtm(FTM3);
+
+  PolyDrivetrain<float> polydrivetrain(GetDrivetrainConfig(), nullptr);
+  global_polydrivetrain.store(&polydrivetrain, ::std::memory_order_release);
 
   // Leave the LEDs on for a bit longer.
   delay(300);
@@ -453,7 +562,8 @@ extern "C" int main(void) {
   NVIC_ENABLE_IRQ(IRQ_FTM3);
   NVIC_ENABLE_IRQ(IRQ_PIT_CH3);
 
-  DoReceiverTest2();
+  while (true) {
+  }
 
   return 0;
 }

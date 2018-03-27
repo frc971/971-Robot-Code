@@ -17,7 +17,7 @@ class BaseAutonomousActor
  public:
   explicit BaseAutonomousActor(
       AutonomousActionQueueGroup *s,
-      const control_loops::drivetrain::DrivetrainConfig dt_config);
+      const control_loops::drivetrain::DrivetrainConfig<double> &dt_config);
 
  protected:
   void ResetDrivetrain();
@@ -53,7 +53,7 @@ class BaseAutonomousActor
   // Returns the distance left to go.
   double DriveDistanceLeft();
 
-  const control_loops::drivetrain::DrivetrainConfig dt_config_;
+  const control_loops::drivetrain::DrivetrainConfig<double> dt_config_;
 
   // Initial drivetrain positions.
   struct InitialDrivetrain {

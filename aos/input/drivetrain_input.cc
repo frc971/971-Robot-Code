@@ -246,7 +246,8 @@ std::unique_ptr<XboxDrivetrainInputReader> XboxDrivetrainInputReader::Make() {
 }
 ::std::unique_ptr<DrivetrainInputReader> DrivetrainInputReader::Make(
     InputType type,
-    const ::frc971::control_loops::drivetrain::DrivetrainConfig &dt_config) {
+    const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>
+        &dt_config) {
   std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader;
 
   using InputType = DrivetrainInputReader::InputType;

@@ -59,7 +59,8 @@ class DrivetrainInputReader {
   // Constructs the appropriate DrivetrainInputReader.
   static std::unique_ptr<DrivetrainInputReader> Make(
       InputType type,
-      const ::frc971::control_loops::drivetrain::DrivetrainConfig &dt_config);
+      const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>
+          &dt_config);
 
   // Processes new joystick data and publishes drivetrain goal messages.
   void HandleDrivetrain(const ::aos::input::driver_station::Data &data);

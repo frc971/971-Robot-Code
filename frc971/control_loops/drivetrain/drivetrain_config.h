@@ -34,6 +34,7 @@ enum class IMUType : int32_t {
   IMU_Y = 1, // Use the y-axis of the IMU.
 };
 
+template <typename Scalar = double>
 struct DrivetrainConfig {
   // Shifting method we are using.
   ShifterType shifter_type;
@@ -48,18 +49,18 @@ struct DrivetrainConfig {
   IMUType imu_type;
 
   // Polydrivetrain functions returning various controller loops with plants.
-  ::std::function<StateFeedbackLoop<4, 2, 2>()> make_drivetrain_loop;
-  ::std::function<StateFeedbackLoop<2, 2, 2>()> make_v_drivetrain_loop;
-  ::std::function<StateFeedbackLoop<7, 2, 4>()> make_kf_drivetrain_loop;
+  ::std::function<StateFeedbackLoop<4, 2, 2, Scalar>()> make_drivetrain_loop;
+  ::std::function<StateFeedbackLoop<2, 2, 2, Scalar>()> make_v_drivetrain_loop;
+  ::std::function<StateFeedbackLoop<7, 2, 4, Scalar>()> make_kf_drivetrain_loop;
 
-  double dt;            // Control loop time step.
-  double robot_radius;  // Robot radius, in meters.
-  double wheel_radius;  // Wheel radius, in meters.
-  double v;             // Motor velocity constant.
+  Scalar dt;            // Control loop time step.
+  Scalar robot_radius;  // Robot radius, in meters.
+  Scalar wheel_radius;  // Wheel radius, in meters.
+  Scalar v;             // Motor velocity constant.
 
   // Gear ratios, from wheel to motor shaft.
-  double high_gear_ratio;
-  double low_gear_ratio;
+  Scalar high_gear_ratio;
+  Scalar low_gear_ratio;
 
   // Hall effect constants. Unused if not applicable to shifter type.
   constants::ShifterHallEffect left_drive;
@@ -69,26 +70,26 @@ struct DrivetrainConfig {
   // (ie. true means high gear is default).
   bool default_high_gear;
 
-  double down_offset;
+  Scalar down_offset;
 
-  double wheel_non_linearity;
+  Scalar wheel_non_linearity;
 
-  double quickturn_wheel_multiplier;
+  Scalar quickturn_wheel_multiplier;
 
-  double wheel_multiplier;
+  Scalar wheel_multiplier;
 
   // Converts the robot state to a linear distance position, velocity.
-  static Eigen::Matrix<double, 2, 1> LeftRightToLinear(
-      const Eigen::Matrix<double, 7, 1> &left_right) {
-    Eigen::Matrix<double, 2, 1> linear;
+  static Eigen::Matrix<Scalar, 2, 1> LeftRightToLinear(
+      const Eigen::Matrix<Scalar, 7, 1> &left_right) {
+    Eigen::Matrix<Scalar, 2, 1> linear;
     linear(0, 0) = (left_right(0, 0) + left_right(2, 0)) / 2.0;
     linear(1, 0) = (left_right(1, 0) + left_right(3, 0)) / 2.0;
     return linear;
   }
   // Converts the robot state to an anglular distance, velocity.
-  Eigen::Matrix<double, 2, 1> LeftRightToAngular(
-      const Eigen::Matrix<double, 7, 1> &left_right) const {
-    Eigen::Matrix<double, 2, 1> angular;
+  Eigen::Matrix<Scalar, 2, 1> LeftRightToAngular(
+      const Eigen::Matrix<Scalar, 7, 1> &left_right) const {
+    Eigen::Matrix<Scalar, 2, 1> angular;
     angular(0, 0) =
         (left_right(2, 0) - left_right(0, 0)) / (this->robot_radius * 2.0);
     angular(1, 0) =
@@ -98,12 +99,12 @@ struct DrivetrainConfig {
 
   // Converts the linear and angular position, velocity to the top 4 states of
   // the robot state.
-  Eigen::Matrix<double, 4, 1> AngularLinearToLeftRight(
-      const Eigen::Matrix<double, 2, 1> &linear,
-      const Eigen::Matrix<double, 2, 1> &angular) const {
-    Eigen::Matrix<double, 2, 1> scaled_angle =
+  Eigen::Matrix<Scalar, 4, 1> AngularLinearToLeftRight(
+      const Eigen::Matrix<Scalar, 2, 1> &linear,
+      const Eigen::Matrix<Scalar, 2, 1> &angular) const {
+    Eigen::Matrix<Scalar, 2, 1> scaled_angle =
         angular * this->robot_radius;
-    Eigen::Matrix<double, 4, 1> state;
+    Eigen::Matrix<Scalar, 4, 1> state;
     state(0, 0) = linear(0, 0) - scaled_angle(0, 0);
     state(1, 0) = linear(1, 0) - scaled_angle(1, 0);
     state(2, 0) = linear(0, 0) + scaled_angle(0, 0);
@@ -111,7 +112,6 @@ struct DrivetrainConfig {
     return state;
   }
 };
-
 }  // namespace drivetrain
 }  // namespace control_loops
 }  // namespace frc971

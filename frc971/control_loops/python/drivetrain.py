@@ -15,10 +15,10 @@ class DrivetrainParams(object):
                  wheel_radius,
                  G_high,
                  G_low,
-                 q_pos_low,
-                 q_pos_high,
-                 q_vel_low,
-                 q_vel_high,
+                 q_pos_low=0.12,
+                 q_pos_high=0.14,
+                 q_vel_low=1.0,
+                 q_vel_high=0.95,
                  efficiency=0.60,
                  has_imu=False,
                  force=False,
@@ -349,7 +349,7 @@ class KFDrivetrain(Drivetrain):
 
 
 def WriteDrivetrain(drivetrain_files, kf_drivetrain_files, year_namespace,
-                    drivetrain_params):
+                    drivetrain_params, scalar_type='double'):
 
     # Write the generated constants out to a file.
     drivetrain_low_low = Drivetrain(
@@ -394,13 +394,17 @@ def WriteDrivetrain(drivetrain_files, kf_drivetrain_files, year_namespace,
         right_low=False,
         drivetrain_params=drivetrain_params)
 
-    namespaces = [year_namespace, 'control_loops', 'drivetrain']
+    if isinstance(year_namespace, list):
+      namespaces = year_namespace
+    else:
+      namespaces = [year_namespace, 'control_loops', 'drivetrain']
     dog_loop_writer = control_loop.ControlLoopWriter(
         "Drivetrain", [
             drivetrain_low_low, drivetrain_low_high, drivetrain_high_low,
             drivetrain_high_high
         ],
-        namespaces=namespaces)
+        namespaces=namespaces,
+        scalar_type=scalar_type)
     dog_loop_writer.AddConstant(
         control_loop.Constant("kDt", "%f", drivetrain_low_low.dt))
     dog_loop_writer.AddConstant(
@@ -447,7 +451,8 @@ def WriteDrivetrain(drivetrain_files, kf_drivetrain_files, year_namespace,
             kf_drivetrain_low_low, kf_drivetrain_low_high,
             kf_drivetrain_high_low, kf_drivetrain_high_high
         ],
-        namespaces=namespaces)
+        namespaces=namespaces,
+        scalar_type=scalar_type)
     kf_loop_writer.Write(kf_drivetrain_files[0], kf_drivetrain_files[1])
 
 

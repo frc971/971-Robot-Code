@@ -18,8 +18,8 @@ using ::frc971::constants::ShifterHallEffect;
 
 const ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0, 0.25, 0.75};
 
-const DrivetrainConfig &GetDrivetrainConfig() {
-  static DrivetrainConfig kDrivetrainConfig{
+const DrivetrainConfig<double> &GetDrivetrainConfig() {
+  static DrivetrainConfig<double> kDrivetrainConfig{
       ::frc971::control_loops::drivetrain::ShifterType::NO_SHIFTER,
       ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
       ::frc971::control_loops::drivetrain::GyroType::IMU_Z_GYRO,

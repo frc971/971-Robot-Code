@@ -483,7 +483,7 @@ class Reader : public ::aos::input::JoystickInput {
 
   ::aos::common::actions::ActionQueue action_queue_;
 
-  const ::frc971::control_loops::drivetrain::DrivetrainConfig dt_config_;
+  const ::frc971::control_loops::drivetrain::DrivetrainConfig<double> dt_config_;
 
   bool is_expanding_ = false;
 

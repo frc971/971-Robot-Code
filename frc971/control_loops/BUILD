@@ -1,6 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//aos/build:queues.bzl", "queue_library")
+load("//tools:environments.bzl", "mcu_cpus")
 
 cc_library(
     name = "team_number_test_environment",
@@ -85,6 +86,21 @@ cc_library(
     ],
     deps = [
         "//debian:libm",
+    ],
+)
+
+cc_library(
+    name = "coerce_goal_uc",
+    srcs = [
+        "coerce_goal.cc",
+    ],
+    hdrs = [
+        "coerce_goal.h",
+    ],
+    restricted_to = mcu_cpus,
+    deps = [
+        "//aos/common/controls:polytope_uc",
+        "//third_party/eigen",
     ],
 )
 

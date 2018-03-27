@@ -164,10 +164,10 @@ void ClawLimitedLoop::CapU() {
       const Eigen::Matrix<double, 2, 1> intersection = standard.inverse() * W;
 
       bool is_inside_h;
-      const auto adjusted_pos_error_h =
-          DoCoerceGoal(hv_pos_poly, LH, wh, position_error, &is_inside_h);
+      const auto adjusted_pos_error_h = DoCoerceGoal<double>(
+          hv_pos_poly, LH, wh, position_error, &is_inside_h);
       const auto adjusted_pos_error_45 =
-          DoCoerceGoal(hv_pos_poly, L45, w45, intersection, nullptr);
+          DoCoerceGoal<double>(hv_pos_poly, L45, w45, intersection, nullptr);
       if (pos_poly.IsInside(intersection)) {
         adjusted_pos_error = adjusted_pos_error_h;
       } else {
