@@ -128,9 +128,13 @@ int main(int argc, char **argv)
 
   for (int i = 0; i <= 0xF; ++i) {
     printf_verbose("Rebooting %x\n", i);
-    if (soft_reboot(i)) usb_find_devices();
+    if (soft_reboot(i)) {
+      usleep(10000);
+      usb_find_devices();
+    }
   }
   int number = 0;
+  usleep(10000);
   usb_find_devices();
   while (teensy_open()) {
     printf_verbose("Found HalfKay Bootloader\n");
@@ -179,6 +183,7 @@ int main(int argc, char **argv)
 
     // reboot to the user's new code
     if (reboot_after_programming) {
+      usleep(10000);
       boot(buf, write_size);
     }
     teensy_close();
@@ -315,6 +320,7 @@ int soft_reboot(int number)
 		return 0;
 	}
 
+	printf_verbose("Rebooted %x\n", number);
 	return 1;
 }
 

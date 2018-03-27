@@ -5,12 +5,13 @@
 #include <atomic>
 #include <cmath>
 
-#include "motors/core/time.h"
 #include "motors/core/kinetis.h"
+#include "motors/core/time.h"
 #include "motors/peripheral/adc.h"
 #include "motors/peripheral/can.h"
-#include "motors/usb/usb.h"
+#include "motors/peripheral/configuration.h"
 #include "motors/usb/cdc.h"
+#include "motors/usb/usb.h"
 #include "motors/util.h"
 
 namespace frc971 {
@@ -18,6 +19,72 @@ namespace motors {
 namespace {
 
 ::std::atomic<teensy::AcmTty *> global_stdout{nullptr};
+
+// Last width we received on each channel.
+uint16_t pwm_input_widths[5];
+// When we received a pulse on each channel in milliseconds.
+uint32_t pwm_input_times[5];
+
+// Returns the most recently captured value for the specified input channel
+// scaled from -1 to 1, or 0 if it was captured over 100ms ago.
+float convert_input_width(int channel) {
+  uint16_t width;
+  {
+    DisableInterrupts disable_interrupts;
+    if (time_after(millis(), time_add(pwm_input_times[channel], 100))) {
+      return 0;
+    }
+
+    width = pwm_input_widths[channel];
+  }
+
+  // Values measured with a channel mapped to a button.
+  static constexpr uint16_t kMinWidth = 4133;
+  static constexpr uint16_t kMaxWidth = 7177;
+  if (width < kMinWidth) {
+    width = kMinWidth;
+  } else if (width > kMaxWidth) {
+    width = kMaxWidth;
+  }
+  return (static_cast<float>(2 * (width - kMinWidth)) /
+          static_cast<float>(kMaxWidth - kMinWidth)) -
+         1.0f;
+}
+
+// Sends a SET_RPM command to the specified VESC.
+// Note that sending 6 VESC commands every 1ms doesn't quite fit in the CAN
+// bandwidth.
+void vesc_set_rpm(int vesc_id, float rpm) {
+  const int32_t rpm_int = rpm;
+  uint32_t id = CAN_EFF_FLAG;
+  id |= vesc_id;
+  id |= (0x03 /* SET_RPM */) << 8;
+  uint8_t data[4] = {
+      static_cast<uint8_t>((rpm_int >> 24) & 0xFF),
+      static_cast<uint8_t>((rpm_int >> 16) & 0xFF),
+      static_cast<uint8_t>((rpm_int >> 8) & 0xFF),
+      static_cast<uint8_t>((rpm_int >> 0) & 0xFF),
+  };
+  can_send(id, data, sizeof(data), 2 + vesc_id);
+}
+
+// Sends a SET_CURRENT command to the specified VESC.
+// current is in amps.
+// Note that sending 6 VESC commands every 1ms doesn't quite fit in the CAN
+// bandwidth.
+void vesc_set_current(int vesc_id, float current) {
+  const int32_t current_int = current * 1000;
+  uint32_t id = CAN_EFF_FLAG;
+  id |= vesc_id;
+  id |= (0x01 /* SET_CURRENT */) << 8;
+  uint8_t data[4] = {
+      static_cast<uint8_t>((current_int >> 24) & 0xFF),
+      static_cast<uint8_t>((current_int >> 16) & 0xFF),
+      static_cast<uint8_t>((current_int >> 8) & 0xFF),
+      static_cast<uint8_t>((current_int >> 0) & 0xFF),
+  };
+  can_send(id, data, sizeof(data), 2 + vesc_id);
+}
 
 void DoVescTest() {
   uint32_t time = micros();
@@ -32,17 +99,7 @@ void DoVescTest() {
         } else {
           current = 6;
         }
-        const int32_t current_int = current * 1000;
-        uint32_t id = CAN_EFF_FLAG;
-        id |= i;
-        id |= (0x01 /* SET_CURRENT */) << 8;
-        uint8_t data[4] = {
-            static_cast<uint8_t>((current_int >> 24) & 0xFF),
-            static_cast<uint8_t>((current_int >> 16) & 0xFF),
-            static_cast<uint8_t>((current_int >> 8) & 0xFF),
-            static_cast<uint8_t>((current_int >> 0) & 0xFF),
-        };
-        can_send(id, data, sizeof(data), 2);
+        vesc_set_current(i, current);
         if (done) {
           break;
         }
@@ -53,211 +110,72 @@ void DoVescTest() {
   }
 }
 
-void DoReceiverTest() {
-  while (true) {
-    FTM0->STATUS = 0x00;
-    while (!(FTM0->STATUS & (1 << 1))) {}
-    const uint32_t start = FTM0->C0V;
-    const uint32_t end = FTM0->C1V;
-    const uint32_t now = micros();
-    const uint32_t width = (end - start) & 0xFFFF;
-    printf("got pulse %" PRIu32 "-%" PRIu32 "=%" PRIu32 " at %" PRIu32 "\n",
-           start, end, width, now);
-
-    for (int i = 0; i < 6; ++i) {
-      // 4290 - 6966
-      // 4133 - 7117
-#if 0
-      float current =
-          static_cast<float>(static_cast<int>(width) - 5625) / 1338.0f * 4.0f;
-      const int32_t current_int = current * 1000;
-      uint32_t id = CAN_EFF_FLAG;
-      id |= i;
-      id |= (0x01 /* SET_CURRENT */) << 8;
-      uint8_t data[4] = {
-          static_cast<uint8_t>((current_int >> 24) & 0xFF),
-          static_cast<uint8_t>((current_int >> 16) & 0xFF),
-          static_cast<uint8_t>((current_int >> 8) & 0xFF),
-          static_cast<uint8_t>((current_int >> 0) & 0xFF),
-      };
-#else
-      float rpm = static_cast<float>(static_cast<int>(width) - 5625) / 1338.0f *
-                  10000.0f;
-      const int32_t rpm_int = rpm;
-      uint32_t id = CAN_EFF_FLAG;
-      id |= i;
-      id |= (0x03 /* SET_RPM */) << 8;
-      uint8_t data[4] = {
-          static_cast<uint8_t>((rpm_int >> 24) & 0xFF),
-          static_cast<uint8_t>((rpm_int >> 16) & 0xFF),
-          static_cast<uint8_t>((rpm_int >> 8) & 0xFF),
-          static_cast<uint8_t>((rpm_int >> 0) & 0xFF),
-      };
-#endif
-      can_send(id, data, sizeof(data), 2);
-      delay(1);
-    }
-  }
-}
-
-// 4290 - 6966
-// 4133 - 7117
 void DoReceiverTest2() {
-  static constexpr int kMin = 4133, kMax = 7177;
-  static constexpr int kMid = (kMin + kMax) / 2, kRange = kMax - kMin;
   static constexpr float kMaxRpm = 10000.0f;
   while (true) {
-    FTM0->STATUS = 0x00;
+    const bool flip = convert_input_width(2) > 0;
 
-    while (!(FTM0->STATUS & (1 << 5))) {
-    }
-    const uint32_t flip_start = FTM0->C4V;
-    const uint32_t flip_end = FTM0->C5V;
-    const bool flip = ((flip_end - flip_start) & 0xFFFF) > kMid;
-
-    while (!(FTM0->STATUS & (1 << 1))) {
-    }
     {
-      const uint32_t start = FTM0->C0V;
-      const uint32_t end = FTM0->C1V;
-      const int width = (end - start) & 0xFFFF;
+      const float value = convert_input_width(0);
 
       {
-        float rpm = static_cast<float>(::std::min(0, width - kMid)) /
-                    static_cast<float>(kRange) * kMaxRpm;
+        float rpm = ::std::min(0.0f, value) * kMaxRpm;
         if (flip) {
           rpm *= -1.0f;
         }
-        const int32_t rpm_int = rpm;
-        uint32_t id = CAN_EFF_FLAG;
-        id |= 0;
-        id |= (0x03 /* SET_RPM */) << 8;
-        uint8_t data[4] = {
-            static_cast<uint8_t>((rpm_int >> 24) & 0xFF),
-            static_cast<uint8_t>((rpm_int >> 16) & 0xFF),
-            static_cast<uint8_t>((rpm_int >> 8) & 0xFF),
-            static_cast<uint8_t>((rpm_int >> 0) & 0xFF),
-        };
-        can_send(id, data, sizeof(data), 2);
-        delay(1);
+        vesc_set_rpm(0, rpm);
       }
 
       {
-        float rpm = static_cast<float>(::std::max(0, width - kMid)) /
-                    static_cast<float>(kRange) * kMaxRpm;
+        float rpm = ::std::max(0.0f, value) * kMaxRpm;
         if (flip) {
           rpm *= -1.0f;
         }
-        const int32_t rpm_int = rpm;
-        uint32_t id = CAN_EFF_FLAG;
-        id |= 1;
-        id |= (0x03 /* SET_RPM */) << 8;
-        uint8_t data[4] = {
-            static_cast<uint8_t>((rpm_int >> 24) & 0xFF),
-            static_cast<uint8_t>((rpm_int >> 16) & 0xFF),
-            static_cast<uint8_t>((rpm_int >> 8) & 0xFF),
-            static_cast<uint8_t>((rpm_int >> 0) & 0xFF),
-        };
-        can_send(id, data, sizeof(data), 2);
-        delay(1);
+        vesc_set_rpm(1, rpm);
       }
     }
 
-    while (!(FTM0->STATUS & (1 << 7))) {
-    }
     {
-      const uint32_t start = FTM0->C6V;
-      const uint32_t end = FTM0->C7V;
-      const int width = (end - start) & 0xFFFF;
+      const float value = convert_input_width(1);
 
       {
-        float rpm = static_cast<float>(::std::min(0, width - kMid)) /
-                    static_cast<float>(kRange) * kMaxRpm;
+        float rpm = ::std::min(0.0f, value) * kMaxRpm;
         if (flip) {
           rpm *= -1.0f;
         }
-        const int32_t rpm_int = rpm;
-        uint32_t id = CAN_EFF_FLAG;
-        id |= 2;
-        id |= (0x03 /* SET_RPM */) << 8;
-        uint8_t data[4] = {
-            static_cast<uint8_t>((rpm_int >> 24) & 0xFF),
-            static_cast<uint8_t>((rpm_int >> 16) & 0xFF),
-            static_cast<uint8_t>((rpm_int >> 8) & 0xFF),
-            static_cast<uint8_t>((rpm_int >> 0) & 0xFF),
-        };
-        can_send(id, data, sizeof(data), 2);
-        delay(1);
+        vesc_set_rpm(2, rpm);
       }
 
       {
-        float rpm = static_cast<float>(::std::max(0, width - kMid)) /
-                    static_cast<float>(kRange) * kMaxRpm;
+        float rpm = ::std::max(0.0f, value) * kMaxRpm;
         if (flip) {
           rpm *= -1.0f;
         }
-        const int32_t rpm_int = rpm;
-        uint32_t id = CAN_EFF_FLAG;
-        id |= 3;
-        id |= (0x03 /* SET_RPM */) << 8;
-        uint8_t data[4] = {
-            static_cast<uint8_t>((rpm_int >> 24) & 0xFF),
-            static_cast<uint8_t>((rpm_int >> 16) & 0xFF),
-            static_cast<uint8_t>((rpm_int >> 8) & 0xFF),
-            static_cast<uint8_t>((rpm_int >> 0) & 0xFF),
-        };
-        can_send(id, data, sizeof(data), 2);
-        delay(1);
+        vesc_set_rpm(3, rpm);
       }
     }
 
-    while (!(FTM0->STATUS & (1 << 3))) {
-    }
     {
-      const uint32_t start = FTM0->C2V;
-      const uint32_t end = FTM0->C3V;
-      const int width = (end - start) & 0xFFFF;
+      const float value = convert_input_width(4);
 
       {
-        float rpm = static_cast<float>(::std::min(0, width - kMid)) /
-                    static_cast<float>(kRange) * kMaxRpm;
+        float rpm = ::std::min(0.0f, value) * kMaxRpm;
         if (flip) {
           rpm *= -1.0f;
         }
-        const int32_t rpm_int = rpm;
-        uint32_t id = CAN_EFF_FLAG;
-        id |= 4;
-        id |= (0x03 /* SET_RPM */) << 8;
-        uint8_t data[4] = {
-            static_cast<uint8_t>((rpm_int >> 24) & 0xFF),
-            static_cast<uint8_t>((rpm_int >> 16) & 0xFF),
-            static_cast<uint8_t>((rpm_int >> 8) & 0xFF),
-            static_cast<uint8_t>((rpm_int >> 0) & 0xFF),
-        };
-        can_send(id, data, sizeof(data), 2);
-        delay(1);
+        vesc_set_rpm(4, rpm);
       }
 
       {
-        float rpm = static_cast<float>(::std::max(0, width - kMid)) /
-                    static_cast<float>(kRange) * kMaxRpm;
+        float rpm = ::std::max(0.0f, value) * kMaxRpm;
         if (flip) {
           rpm *= -1.0f;
         }
-        const int32_t rpm_int = rpm;
-        uint32_t id = CAN_EFF_FLAG;
-        id |= 5;
-        id |= (0x03 /* SET_RPM */) << 8;
-        uint8_t data[4] = {
-            static_cast<uint8_t>((rpm_int >> 24) & 0xFF),
-            static_cast<uint8_t>((rpm_int >> 16) & 0xFF),
-            static_cast<uint8_t>((rpm_int >> 8) & 0xFF),
-            static_cast<uint8_t>((rpm_int >> 0) & 0xFF),
-        };
-        can_send(id, data, sizeof(data), 2);
-        delay(1);
+        vesc_set_rpm(5, rpm);
       }
     }
+    // Give the CAN frames a chance to go out.
+    delay(5);
   }
 }
 
@@ -273,23 +191,24 @@ void SetupPwmFtm(BigFTM *ftm) {
   // Capturing rising edge.
   ftm->C0SC = FTM_CSC_MSA | FTM_CSC_ELSA;
   // Capturing falling edge.
-  ftm->C1SC = FTM_CSC_MSA | FTM_CSC_ELSB;
+  ftm->C1SC = FTM_CSC_CHIE | FTM_CSC_MSA | FTM_CSC_ELSB;
 
   // Capturing rising edge.
   ftm->C2SC = FTM_CSC_MSA | FTM_CSC_ELSA;
   // Capturing falling edge.
-  ftm->C3SC = FTM_CSC_MSA | FTM_CSC_ELSB;
+  ftm->C3SC = FTM_CSC_CHIE | FTM_CSC_MSA | FTM_CSC_ELSB;
 
   // Capturing rising edge.
   ftm->C4SC = FTM_CSC_MSA | FTM_CSC_ELSA;
   // Capturing falling edge.
-  ftm->C5SC = FTM_CSC_MSA | FTM_CSC_ELSB;
+  ftm->C5SC = FTM_CSC_CHIE | FTM_CSC_MSA | FTM_CSC_ELSB;
 
   // Capturing rising edge.
   ftm->C6SC = FTM_CSC_MSA | FTM_CSC_ELSA;
   // Capturing falling edge.
-  ftm->C7SC = FTM_CSC_MSA | FTM_CSC_ELSB;
+  ftm->C7SC = FTM_CSC_CHIE | FTM_CSC_MSA | FTM_CSC_ELSB;
 
+  (void)ftm->STATUS;
   ftm->STATUS = 0x00;
 
   ftm->COMBINE = FTM_COMBINE_DECAP3 | FTM_COMBINE_DECAPEN3 |
@@ -302,6 +221,121 @@ void SetupPwmFtm(BigFTM *ftm) {
             FTM_SC_PS(4) /* Prescaler=32 */;
 
   ftm->MODE &= ~FTM_MODE_WPDIS;
+}
+
+extern "C" void ftm0_isr() {
+  while (true) {
+    const uint32_t status = FTM0->STATUS;
+    if (status == 0) {
+      return;
+    }
+
+    if (status & (1 << 1)) {
+      const uint32_t start = FTM0->C0V;
+      const uint32_t end = FTM0->C1V;
+      pwm_input_widths[0] = (end - start) & 0xFFFF;
+      pwm_input_times[0] = millis();
+    }
+    if (status & (1 << 7)) {
+      const uint32_t start = FTM0->C6V;
+      const uint32_t end = FTM0->C7V;
+      pwm_input_widths[1] = (end - start) & 0xFFFF;
+      pwm_input_times[1] = millis();
+    }
+    if (status & (1 << 5)) {
+      const uint32_t start = FTM0->C4V;
+      const uint32_t end = FTM0->C5V;
+      pwm_input_widths[2] = (end - start) & 0xFFFF;
+      pwm_input_times[2] = millis();
+    }
+    if (status & (1 << 3)) {
+      const uint32_t start = FTM0->C2V;
+      const uint32_t end = FTM0->C3V;
+      pwm_input_widths[4] = (end - start) & 0xFFFF;
+      pwm_input_times[4] = millis();
+    }
+
+    FTM0->STATUS = 0;
+  }
+}
+
+extern "C" void ftm3_isr() {
+  while (true) {
+    const uint32_t status = FTM3->STATUS;
+    if (status == 0) {
+      return;
+    }
+
+    if (status & (1 << 3)) {
+      const uint32_t start = FTM3->C2V;
+      const uint32_t end = FTM3->C3V;
+      pwm_input_widths[3] = (end - start) & 0xFFFF;
+      pwm_input_times[3] = millis();
+    }
+
+    FTM3->STATUS = 0;
+  }
+}
+
+float ConvertEncoderChannel(uint16_t reading) {
+  // Theoretical values based on the datasheet are 931 and 2917.
+  // With these values, the magnitude ranges from 0.99-1.03, which works fine
+  // (the encoder's output appears to get less accurate in one quadrant for some
+  // reason, hence the variation).
+  static constexpr uint16_t kMin = 802, kMax = 3088;
+  if (reading < kMin) {
+    reading = kMin;
+  } else if (reading > kMax) {
+    reading = kMax;
+  }
+  return (static_cast<float>(2 * (reading - kMin)) /
+          static_cast<float>(kMax - kMin)) -
+         1.0f;
+}
+
+struct EncoderReading {
+  EncoderReading(const salsa::SimpleAdcReadings &adc_readings) {
+    const float sin = ConvertEncoderChannel(adc_readings.sin);
+    const float cos = ConvertEncoderChannel(adc_readings.cos);
+
+    const float magnitude = ::std::sqrt(sin * sin + cos * cos);
+    const float magnitude_error = ::std::abs(magnitude - 1.0f);
+    valid = magnitude_error < 0.15f;
+
+    angle = ::std::atan2(sin, cos);
+  }
+
+  // Angle in radians, in [-pi, pi].
+  float angle;
+
+  bool valid;
+};
+
+extern "C" void pit3_isr() {
+  PIT_TFLG3 = 1;
+
+  salsa::SimpleAdcReadings adc_readings;
+  {
+    DisableInterrupts disable_interrupts;
+    adc_readings = salsa::AdcReadSimple(disable_interrupts);
+  }
+
+  EncoderReading encoder(adc_readings);
+
+  printf("TODO(Austin): 1kHz loop %d %d %d %d %d ADC %" PRIu16 " %" PRIu16
+         " enc %d/1000 %s from %d\n",
+         (int)(convert_input_width(0) * 1000),
+         (int)(convert_input_width(1) * 1000),
+         (int)(convert_input_width(2) * 1000),
+         (int)(convert_input_width(3) * 1000),
+         (int)(convert_input_width(4) * 1000), adc_readings.sin,
+         adc_readings.cos, (int)(encoder.angle * 1000),
+         encoder.valid ? "T" : "f",
+         (int)(::std::sqrt(ConvertEncoderChannel(adc_readings.sin) *
+                               ConvertEncoderChannel(adc_readings.sin) +
+                           ConvertEncoderChannel(adc_readings.cos) *
+                               ConvertEncoderChannel(adc_readings.cos)) *
+               1000));
 }
 
 }  // namespace
@@ -335,6 +369,9 @@ extern "C" int main(void) {
   // relative to each other, which means centralizing them here makes it a lot
   // more manageable.
   NVIC_SET_SANE_PRIORITY(IRQ_USBOTG, 0x7);
+  NVIC_SET_SANE_PRIORITY(IRQ_FTM0, 0xa);
+  NVIC_SET_SANE_PRIORITY(IRQ_FTM3, 0xa);
+  NVIC_SET_SANE_PRIORITY(IRQ_PIT_CH3, 0x5);
 
   // Builtin LED.
   PERIPHERAL_BITBAND(GPIOC_PDOR, 5) = 1;
@@ -375,8 +412,15 @@ extern "C" int main(void) {
   global_stdout.store(&tty0, ::std::memory_order_release);
   usb_device.Initialize();
 
+  SIM_SCGC6 |= SIM_SCGC6_PIT;
+  // Workaround for errata e7914.
+  (void)PIT_MCR;
+  PIT_MCR = 0;
+  PIT_LDVAL3 = (BUS_CLOCK_FREQUENCY / 1000) - 1;
+  PIT_TCTRL3 = PIT_TCTRL_TIE | PIT_TCTRL_TEN;
+
   can_init(0, 1);
-  salsa::AdcInitJoystick();
+  salsa::AdcInitSimple();
   SetupPwmFtm(FTM0);
   SetupPwmFtm(FTM3);
 
@@ -386,6 +430,10 @@ extern "C" int main(void) {
 
   // Done starting up, now turn the LED off.
   PERIPHERAL_BITBAND(GPIOC_PDOR, 5) = 0;
+
+  NVIC_ENABLE_IRQ(IRQ_FTM0);
+  NVIC_ENABLE_IRQ(IRQ_FTM3);
+  NVIC_ENABLE_IRQ(IRQ_PIT_CH3);
 
   DoReceiverTest2();
 

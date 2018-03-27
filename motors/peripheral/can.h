@@ -14,7 +14,7 @@ extern "C" {
 
 void can_init(uint32_t id0, uint32_t id1);
 
-// Mailbox is 2 or 3 for the two send mailboxes.
+// Mailbox is 2-7 (inclusive) for the send mailboxes.
 int can_send(uint32_t can_id, const unsigned char *data, unsigned int length,
              unsigned int mailbox);
 

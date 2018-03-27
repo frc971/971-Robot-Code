@@ -18,8 +18,9 @@
 // The number of message buffers we're actually going to use. The chip only has
 // 16. Using fewer means less for the CAN module (and CPU) to go through looking
 // for actual data.
-// 0 is for sending and 1 is for receiving commands.
-#define NUMBER_MESSAGE_BUFFERS 4
+// 0 and 1 are for receiving.
+// 2-7 are for sending.
+#define NUMBER_MESSAGE_BUFFERS 8
 
 #if NUMBER_MESSAGE_BUFFERS > 16
 #error Only have 16 message buffers on this part.
@@ -53,21 +54,19 @@ void can_init(uint32_t id0, uint32_t id1) {
       CAN_MCR_SRXDIS /* Don't want to see our own frames at all. */ |
       CAN_MCR_IRMQ /* Use individual masks for each filter. */ |
       CAN_MCR_LPRIOEN /* Let us prioritize TX mailboxes. */ |
+      (0 << 12) /* !AEN to avoid complicated abort semantics. */ |
       (0 << 8) /* No need to pack IDs tightly, so it's easier not to. */ |
       (NUMBER_MESSAGE_BUFFERS - 1);
 
   // Initialize all the buffers and RX filters we're enabling.
 
-  // Just in case this does anything...
-  CAN0_RXIMRS[2] = 0;
-  CAN0_MESSAGES[2].prio_id = 0;
-  CAN0_MESSAGES[2].control_timestamp =
-      CAN_MB_CONTROL_INSERT_CODE(CAN_MB_CODE_TX_INACTIVE);
-
-  CAN0_RXIMRS[3] = 0;
-  CAN0_MESSAGES[3].prio_id = 0;
-  CAN0_MESSAGES[3].control_timestamp =
-      CAN_MB_CONTROL_INSERT_CODE(CAN_MB_CODE_TX_INACTIVE);
+  for (int i = 2; i < 8; ++i) {
+    // Just in case this does anything...
+    CAN0_RXIMRS[i] = 0;
+    CAN0_MESSAGES[i].prio_id = 0;
+    CAN0_MESSAGES[i].control_timestamp =
+        CAN_MB_CONTROL_INSERT_CODE(CAN_MB_CODE_TX_INACTIVE);
+  }
 
   CAN0_RXIMRS[0] = (1 << 31) /* Want to filter out RTRs. */ |
                    (0 << 30) /* Want to only get standard frames. */ |
@@ -169,6 +168,8 @@ int can_send(uint32_t can_id, const unsigned char *data, unsigned int length,
   // Just inactivate the mailbox to start with. Checking if it's done being
   // transmitted doesn't seem to work like the reference manual describes, so
   // just take the brute force approach.
+  // The reference manual says this will either transmit the frame or not, but
+  // there's no way to tell which happened, which is fine for what we're doing.
   message_buffer->control_timestamp =
       CAN_MB_CONTROL_INSERT_CODE(CAN_MB_CODE_TX_INACTIVE);
 
