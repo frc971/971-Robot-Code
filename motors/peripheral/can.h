@@ -10,6 +10,8 @@
 extern "C" {
 #endif
 
+#define CAN_EFF_FLAG UINT32_C(0x80000000) /* EFF/SFF is set in the MSB */
+
 void can_init(uint32_t id0, uint32_t id1);
 
 // Mailbox is 2 or 3 for the two send mailboxes.
@@ -18,7 +20,7 @@ int can_send(uint32_t can_id, const unsigned char *data, unsigned int length,
 
 // Sets *length to -1 if there isn't a new piece of data to receive.
 // Mailbox is 0 or 1 for the two receive mailboxes.
-void can_receive_command(unsigned char *data, int *length, int mailbox);
+void can_receive(unsigned char *data, int *length, int mailbox);
 
 #ifdef __cplusplus
 }

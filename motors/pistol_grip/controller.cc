@@ -250,7 +250,7 @@ extern "C" void pit3_isr() {
   {
     uint8_t data[8];
     int length;
-    can_receive_command(data, &length, 0);
+    can_receive(data, &length, 0);
     if (length > 0) {
       last_command_time = micros();
       trigger_goal_position =
@@ -291,7 +291,7 @@ extern "C" void pit3_isr() {
   {
     uint8_t data[8];
     int length;
-    can_receive_command(data, &length, 1);
+    can_receive(data, &length, 1);
     if (length == 8) {
       last_command_time = micros();
       wheel_goal_position =

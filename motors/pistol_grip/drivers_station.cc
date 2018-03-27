@@ -115,7 +115,7 @@ void ForwardJoystickData(teensy::HidFunction *throttle_joystick,
 
     uint8_t can_data[8];
     int length;
-    can_receive_command(can_data, &length, 0);
+    can_receive(can_data, &length, 0);
     if (length == 8) {
       last_command_time = micros();
       trigger_position =
@@ -133,7 +133,7 @@ void ForwardJoystickData(teensy::HidFunction *throttle_joystick,
       update_report = true;
     }
 
-    can_receive_command(can_data, &length, 1);
+    can_receive(can_data, &length, 1);
     if (length == 8) {
       last_command_time = micros();
       wheel_position =
