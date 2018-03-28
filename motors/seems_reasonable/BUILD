@@ -74,3 +74,23 @@ cc_library(
         "//frc971/control_loops/drivetrain:polydrivetrain_uc",
     ],
 )
+
+cc_library(
+    name = "spring",
+    srcs = ["spring.cc"],
+    hdrs = ["spring.h"],
+    compatible_with = mcu_cpus,
+    visibility = ["//visibility:public"],
+    deps = ["//frc971/zeroing:wrap"],
+)
+
+cc_test(
+    name = "spring_test",
+    srcs = [
+        "spring_test.cc",
+    ],
+    deps = [
+        ":spring",
+        "//aos/testing:googletest",
+    ],
+)

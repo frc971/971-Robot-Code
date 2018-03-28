@@ -5,17 +5,18 @@
 #include <atomic>
 #include <cmath>
 
+#include "frc971/control_loops/drivetrain/polydrivetrain.h"
 #include "motors/core/kinetis.h"
 #include "motors/core/time.h"
 #include "motors/peripheral/adc.h"
 #include "motors/peripheral/can.h"
 #include "motors/peripheral/configuration.h"
+#include "motors/seems_reasonable/drivetrain_dog_motor_plant.h"
+#include "motors/seems_reasonable/polydrivetrain_dog_motor_plant.h"
+#include "motors/seems_reasonable/spring.h"
 #include "motors/usb/cdc.h"
 #include "motors/usb/usb.h"
 #include "motors/util.h"
-#include "frc971/control_loops/drivetrain/polydrivetrain.h"
-#include "motors/seems_reasonable/drivetrain_dog_motor_plant.h"
-#include "motors/seems_reasonable/polydrivetrain_dog_motor_plant.h"
 
 namespace frc971 {
 namespace motors {
@@ -26,6 +27,7 @@ using ::frc971::control_loops::drivetrain::PolyDrivetrain;
 using ::frc971::constants::ShifterHallEffect;
 using ::frc971::control_loops::DrivetrainQueue_Goal;
 using ::frc971::control_loops::DrivetrainQueue_Output;
+using ::motors::seems_reasonable::Spring;
 
 const ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0, 0.25, 0.75};
 
@@ -58,6 +60,7 @@ const DrivetrainConfig<float> &GetDrivetrainConfig() {
 ::std::atomic<teensy::AcmTty *> global_stdout{nullptr};
 
 ::std::atomic<PolyDrivetrain<float> *> global_polydrivetrain{nullptr};
+::std::atomic<Spring *> global_spring{nullptr};
 
 // Last width we received on each channel.
 uint16_t pwm_input_widths[5];
@@ -373,7 +376,7 @@ struct EncoderReading {
 
     const float magnitude = hypot(sin, cos);
     const float magnitude_error = ::std::abs(magnitude - 1.0f);
-    valid = magnitude_error < 0.15f;
+    valid = magnitude_error < 0.30f;
 
     angle = ::std::atan2(sin, cos);
   }
@@ -388,6 +391,7 @@ extern "C" void pit3_isr() {
   PIT_TFLG3 = 1;
   PolyDrivetrain<float> *polydrivetrain =
       global_polydrivetrain.load(::std::memory_order_acquire);
+  Spring *spring = global_spring.load(::std::memory_order_acquire);
 
   salsa::SimpleAdcReadings adc_readings;
   {
@@ -396,13 +400,21 @@ extern "C" void pit3_isr() {
   }
 
   EncoderReading encoder(adc_readings);
+  static float last_good_encoder = 0.0f;
+  static int invalid_encoder_count = 0;
+  if (encoder.valid) {
+    last_good_encoder = encoder.angle;
+    invalid_encoder_count = 0;
+  } else {
+    ++invalid_encoder_count;
+  }
 
   const bool lost_any_channel = lost_channel(0) || lost_channel(1) ||
                                 lost_channel(2) || lost_channel(3) ||
                                 lost_channel(4) ||
-                                (::std::abs(convert_input_width(4)) < 0.05f);
+                                (::std::abs(convert_input_width(4)) < 0.5f);
 
-  if (polydrivetrain != nullptr) {
+  if (polydrivetrain != nullptr && spring != nullptr) {
     DrivetrainQueue_Goal goal;
     goal.control_loop_driving = false;
     if (lost_any_channel) {
@@ -410,9 +422,8 @@ extern "C" void pit3_isr() {
       goal.wheel = 0.0f;
     } else {
       goal.throttle = convert_input_width(1);
-      goal.wheel = convert_input_width(0);
+      goal.wheel = -convert_input_width(0);
     }
-    goal.throttle = convert_input_width(1);
     goal.quickturn = ::std::abs(polydrivetrain->velocity()) < 0.25f;
 
     DrivetrainQueue_Output output;
@@ -427,6 +438,33 @@ extern "C" void pit3_isr() {
     vesc_set_duty(2, output.right_voltage / 12.0f);
     vesc_set_duty(3, output.right_voltage / 12.0f);
 
+    bool prime = convert_input_width(2) > 0.1f;
+    bool fire = convert_input_width(3) > 0.1f;
+
+    bool unload = lost_any_channel;
+    static bool was_lost = true;
+    bool force_reset = !lost_any_channel && was_lost;
+    was_lost = lost_any_channel;
+
+    spring->Iterate(unload, prime, fire, force_reset, invalid_encoder_count <= 2,
+                    last_good_encoder);
+
+    float spring_output = spring->output();
+
+    vesc_set_duty(4, -spring_output);
+    vesc_set_duty(5, spring_output);
+
+    /*
+     // Massive debug.  Turn on for useful bits.
+    if (!encoder.valid) {
+      printf("Stuck encoder: ADC %" PRIu16 " %" PRIu16
+             " enc %d/1000 %s mag %d\n",
+             adc_readings.sin, adc_readings.cos, (int)(encoder.angle * 1000),
+             encoder.valid ? "T" : "f",
+             (int)(hypot(ConvertEncoderChannel(adc_readings.sin),
+                         ConvertEncoderChannel(adc_readings.cos)) *
+                   1000));
+    }
     static int i = 0;
     ++i;
     if (i > 20) {
@@ -441,7 +479,8 @@ extern "C" void pit3_isr() {
       } else {
         printf(
             "TODO(Austin): 200Hz loop %d %d %d %d %d, lr, %d, %d velocity %d "
-            "ADC %" PRIu16 " %" PRIu16 " enc %d/1000 %s from %d\n",
+            " state: %d, near %d angle %d goal %d to: %d ADC %" PRIu16
+            " %" PRIu16 " enc %d/1000 %s from %d\n",
             (int)(convert_input_width(0) * 1000),
             (int)(convert_input_width(1) * 1000),
             (int)(convert_input_width(2) * 1000),
@@ -450,7 +489,11 @@ extern "C" void pit3_isr() {
             static_cast<int>(output.left_voltage * 100),
             static_cast<int>(output.right_voltage * 100),
             static_cast<int>(polydrivetrain->velocity() * 100),
-            adc_readings.sin, adc_readings.cos, (int)(encoder.angle * 1000),
+            static_cast<int>(spring->state()), static_cast<int>(spring->Near()),
+            static_cast<int>(spring->angle() * 1000),
+            static_cast<int>(spring->goal() * 1000),
+            static_cast<int>(spring->timeout()), adc_readings.sin,
+            adc_readings.cos, (int)(encoder.angle * 1000),
             encoder.valid ? "T" : "f",
             (int)(::std::sqrt(ConvertEncoderChannel(adc_readings.sin) *
                                   ConvertEncoderChannel(adc_readings.sin) +
@@ -459,6 +502,7 @@ extern "C" void pit3_isr() {
                   1000));
       }
     }
+    */
   }
 }
 
@@ -550,6 +594,8 @@ extern "C" int main(void) {
 
   PolyDrivetrain<float> polydrivetrain(GetDrivetrainConfig(), nullptr);
   global_polydrivetrain.store(&polydrivetrain, ::std::memory_order_release);
+  Spring spring;
+  global_spring.store(&spring, ::std::memory_order_release);
 
   // Leave the LEDs on for a bit longer.
   delay(300);
