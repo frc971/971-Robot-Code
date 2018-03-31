@@ -82,9 +82,9 @@ class Spring {
   State state_ = State::UNINITIALIZED;
 
   // Note, these need to be (-M_PI, M_PI]
-  constexpr static float kLoadGoal = -0.18f;
-  constexpr static float kPrimeGoal = -0.10f;
-  constexpr static float kFireGoal = -0.0f;
+  constexpr static float kLoadGoal = -0.345f;
+  constexpr static float kPrimeGoal = -0.269f;
+  constexpr static float kFireGoal = -0.163f;
   constexpr static float kUnloadGoal = kFireGoal;
 
   float angle_ = 0.0f;
