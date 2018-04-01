@@ -114,10 +114,32 @@ void Spring::Iterate(bool unload, bool prime, bool fire, bool force_reset,
         // TODO(austin): Maybe have a different timeout for success.
         if (timeout_ > 0) {
           timeout_--;
-        } else {
-          Load();
-          goal_ = NextGoal(kLoadGoal);
+        } else if (!prime) {
+          state_ = State::WAIT_FOR_LOAD;
         }
+      }
+      break;
+    case State::WAIT_FOR_LOAD:
+      if (!encoder_valid) {
+        StuckUnload();
+      } else if (unload) {
+        // Goal is as good as it is going to get since unload is the fire
+        // position.
+        Unload();
+      } else if (prime) {
+        state_ = State::WAIT_FOR_LOAD_RELEASE;
+      }
+      break;
+    case State::WAIT_FOR_LOAD_RELEASE:
+      if (!encoder_valid) {
+        StuckUnload();
+      } else if (unload) {
+        // Goal is as good as it is going to get since unload is the fire
+        // position.
+        Unload();
+      } else if (!prime) {
+        Load();
+        goal_ = NextGoal(kLoadGoal);
       }
       break;
   }
@@ -139,7 +161,9 @@ void Spring::Iterate(bool unload, bool prime, bool fire, bool force_reset,
 
     case State::LOAD:
     case State::PRIME:
-    case State::FIRE: {
+    case State::FIRE:
+    case State::WAIT_FOR_LOAD:
+    case State::WAIT_FOR_LOAD_RELEASE: {
       constexpr float kP = 3.00f;
       constexpr float kD = 0.00f;
       output_ = kP * error + kD * derror;

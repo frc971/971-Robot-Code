@@ -30,6 +30,8 @@ class Spring {
     LOAD = 3,
     PRIME = 4,
     FIRE = 5,
+    WAIT_FOR_LOAD = 6,
+    WAIT_FOR_LOAD_RELEASE = 7,
   };
 
   // Returns the current to output to the spring motors.
