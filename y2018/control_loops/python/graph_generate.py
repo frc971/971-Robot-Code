@@ -518,6 +518,9 @@ up = to_theta_with_circular_index(0.0, 2.547, circular_index=-1)
 front_switch_auto = to_theta_with_circular_index(
     0.750, 2.20, circular_index=-1.000000)
 
+duck = numpy.array(
+    [numpy.pi / 2.0 - 0.92, numpy.pi / 2.0 - 4.26])
+
 starting = numpy.array(
     [numpy.pi / 2.0 - 0.593329, numpy.pi / 2.0 - 3.749631])
 vertical_starting = numpy.array(
@@ -545,8 +548,10 @@ front_middle2_box_c2 = to_theta((0.52, 1.30), circular_index=-1)
 front_middle1_box_c1 = to_theta((0.34, 0.82), circular_index=-1)
 front_middle1_box_c2 = to_theta((0.48, 1.15), circular_index=-1)
 
-ready_above_box_c1 = to_theta((0.38, 0.33), circular_index=-1)
-ready_above_box_c2 = to_theta((0.42, 0.51), circular_index=-1)
+#c1: (1.421433, -1.070254)
+#c2: (1.434384, -1.057803
+ready_above_box_c1 = numpy.array([1.480802, -1.081218])
+ready_above_box_c2 = numpy.array([1.391449, -1.060331])
 
 front_switch_c1 = numpy.array([1.903841, -0.622351])
 front_switch_c2 = numpy.array([1.903841, -0.622351])
@@ -573,8 +578,16 @@ points = [(ready_above_box, "ReadyAboveBox"),
           (partner_hang, "PartnerHang"),
           (front_switch_auto, "FrontSwitchAuto"),
           (starting, "Starting"),
+          (duck, "Duck"),
           (vertical_starting, "VerticalStarting"),
 ]  # yapf: disable
+
+duck_c1 = numpy.array([1.337111, -1.721008])
+duck_c2 = numpy.array([1.283701, -1.795519])
+
+ready_to_up_c1 = numpy.array([1.792962, 0.198329])
+ready_to_up_c2 = numpy.array([1.792962, 0.198329])
+
 
 # We need to define critical points so we can create paths connecting them.
 # TODO(austin): Attach velocities to the slow ones.
@@ -598,11 +611,26 @@ named_segments = [
 ]
 
 unnamed_segments = [
-    AngleSegment(neutral, back_switch),
+    SplineSegment(tall_box_grab, ready_to_up_c1, ready_to_up_c2, up),
+    SplineSegment(short_box_grab, ready_to_up_c1, ready_to_up_c2, up),
+    SplineSegment(ready_above_box, ready_to_up_c1, ready_to_up_c2, up),
+    ThetaSplineSegment(duck, duck_c1, duck_c2, neutral),
     SplineSegment(neutral, front_switch_c1, front_switch_c2, front_switch),
+    AngleSegment(neutral, back_switch),
+
+    XYSegment(ready_above_box, front_low_box),
+    XYSegment(ready_above_box, front_switch),
+    XYSegment(ready_above_box, front_middle1_box),
+    XYSegment(ready_above_box, front_middle2_box),
+    XYSegment(ready_above_box, front_middle3_box),
+    XYSegment(ready_above_box, front_high_box),
+    #XYSegment(ready_above_box, up),
 
     AngleSegment(starting, vertical_starting),
     AngleSegment(vertical_starting, neutral),
+
+    # TODO(austin): Duck -> neutral with a theta spline.
+    #AngleSegment(duck, vertical_starting),
 
     XYSegment(neutral, front_low_box),
     XYSegment(up, front_high_box),
