@@ -195,7 +195,7 @@ def back_to_xy_loop(lines):
 
 # Segment in angle space.
 class AngleSegment:
-    def __init__(self, start, end, name=None):
+    def __init__(self, start, end, name=None, alpha_unitizer=None, vmax=None):
         """Creates an angle segment.
 
         Args:
@@ -207,6 +207,8 @@ class AngleSegment:
         self.start = start
         self.end = end
         self.name = name
+        self.alpha_unitizer = alpha_unitizer
+        self.vmax = vmax
 
     def __repr__(self):
         return "AngleSegment(%s, %s)" % (repr(self.start), repr(self.end))
@@ -245,7 +247,7 @@ class AngleSegment:
 class XYSegment:
     """Straight line in XY space."""
 
-    def __init__(self, start, end, name=None):
+    def __init__(self, start, end, name=None, alpha_unitizer=None, vmax=None):
         """Creates an XY segment.
 
         Args:
@@ -257,6 +259,8 @@ class XYSegment:
         self.start = start
         self.end = end
         self.name = name
+        self.alpha_unitizer = alpha_unitizer
+        self.vmax = vmax
 
     def __repr__(self):
         return "XYSegment(%s, %s)" % (repr(self.start), repr(self.end))
@@ -329,21 +333,30 @@ def subdivide_spline(start, control1, control2, end):
 
 
 class SplineSegment:
-    def __init__(self, start, control1, control2, end, name=None):
+    def __init__(self,
+                 start,
+                 control1,
+                 control2,
+                 end,
+                 name=None,
+                 alpha_unitizer=None,
+                 vmax=None):
         self.start = start
         self.control1 = control1
         self.control2 = control2
         self.end = end
         self.name = name
+        self.alpha_unitizer = alpha_unitizer
+        self.vmax = vmax
 
     def __repr__(self):
-        return "XYSegment(%s, %s, &s, %s)" % (repr(self.start),
-                                              repr(self.control1),
-                                              repr(self.control2),
-                                              repr(self.end))
+        return "SplineSegment(%s, %s, %s, %s)" % (repr(self.start),
+                                                  repr(self.control1),
+                                                  repr(self.control2),
+                                                  repr(self.end))
 
     def DrawTo(self, cr, theta_version):
-        if (theta_version):
+        if theta_version:
             c_i_select = get_circular_index(self.start)
             start = get_xy(self.start)
             control1 = get_xy(self.control1)
@@ -356,17 +369,27 @@ class SplineSegment:
                     c_i_select)
                 for alpha in subdivide_spline(start, control1, control2, end)
             ])
+            cr.move_to(self.start[0] + theta_end_circle_size, self.start[1])
+            cr.arc(self.start[0], self.start[1], theta_end_circle_size, 0,
+                   2.0 * numpy.pi)
+            cr.move_to(self.end[0] + theta_end_circle_size, self.end[1])
+            cr.arc(self.end[0], self.end[1], theta_end_circle_size, 0,
+                   2.0 * numpy.pi)
         else:
             start = get_xy(self.start)
             control1 = get_xy(self.control1)
             control2 = get_xy(self.control2)
             end = get_xy(self.end)
-            #cr.move_to(start[0], start[1])
+
             draw_lines(cr, [
                 spline_eval(start, control1, control2, end, alpha)
                 for alpha in subdivide_spline(start, control1, control2, end)
             ])
-            # cr.spline_to(control1[0], control1[1], control2[0], control2[1], end[0], end[1])
+
+            cr.move_to(self.start[0] + xy_end_circle_size, start[1])
+            cr.arc(start[0], start[1], xy_end_circle_size, 0, 2.0 * numpy.pi)
+            cr.move_to(end[0] + xy_end_circle_size, end[1])
+            cr.arc(end[0], end[1], xy_end_circle_size, 0, 2.0 * numpy.pi)
 
     def ToThetaPoints(self):
         t1, t2 = self.start
@@ -383,6 +406,76 @@ class SplineSegment:
                 spline_eval(start, control1, control2, end, alpha + 0.00001),
                 c_i_select)
             for alpha in subdivide_spline(start, control1, control2, end)
+        ]
+
+
+def get_derivs(t_prev, t, t_next):
+    c, a, b = t_prev, t, t_next
+    d1 = normalize(b - a)
+    d2 = normalize(c - a)
+    accel = (d1 + d2) / numpy.linalg.norm(a - b)
+    return (a[0], a[1], d1[0], d1[1], accel[0], accel[1])
+
+
+class ThetaSplineSegment:
+    def __init__(self,
+                 start,
+                 control1,
+                 control2,
+                 end,
+                 name=None,
+                 alpha_unitizer=None,
+                 vmax=None):
+        self.start = start
+        self.control1 = control1
+        self.control2 = control2
+        self.end = end
+        self.name = name
+        self.alpha_unitizer = alpha_unitizer
+        self.vmax = vmax
+
+    def __repr__(self):
+        return "ThetaSplineSegment(%s, %s, &s, %s)" % (repr(self.start),
+                                                       repr(self.control1),
+                                                       repr(self.control2),
+                                                       repr(self.end))
+
+    def DrawTo(self, cr, theta_version):
+        if (theta_version):
+            draw_lines(cr, [
+                spline_eval(self.start, self.control1, self.control2, self.end,
+                            alpha)
+                for alpha in subdivide_spline(self.start, self.control1,
+                                              self.control2, self.end)
+            ])
+        else:
+            start = get_xy(self.start)
+            end = get_xy(self.end)
+
+            draw_lines(cr, [
+                get_xy(
+                    spline_eval(self.start, self.control1, self.control2,
+                                self.end, alpha))
+                for alpha in subdivide_spline(self.start, self.control1,
+                                              self.control2, self.end)
+            ])
+
+            cr.move_to(start[0] + xy_end_circle_size, start[1])
+            cr.arc(start[0], start[1], xy_end_circle_size, 0, 2.0 * numpy.pi)
+            cr.move_to(end[0] + xy_end_circle_size, end[1])
+            cr.arc(end[0], end[1], xy_end_circle_size, 0, 2.0 * numpy.pi)
+
+    def ToThetaPoints(self):
+        return [
+            get_derivs(
+                spline_eval(self.start, self.control1, self.control2, self.end,
+                            alpha - 0.00001),
+                spline_eval(self.start, self.control1, self.control2, self.end,
+                            alpha),
+                spline_eval(self.start, self.control1, self.control2, self.end,
+                            alpha + 0.00001))
+            for alpha in subdivide_spline(self.start, self.control1,
+                                          self.control2, self.end)
         ]
 
 
@@ -486,11 +579,11 @@ points = [(ready_above_box, "ReadyAboveBox"),
 # We need to define critical points so we can create paths connecting them.
 # TODO(austin): Attach velocities to the slow ones.
 named_segments = [
-    XYSegment(ready_above_box, tall_box_grab, "ReadyToTallBox"),
-    XYSegment(ready_above_box, short_box_grab, "ReadyToShortBox"),
-    XYSegment(tall_box_grab, short_box_grab, "TallToShortBox"),
     SplineSegment(neutral, ready_above_box_c1, ready_above_box_c2,
                   ready_above_box, "ReadyToNeutral"),
+    XYSegment(ready_above_box, tall_box_grab, "ReadyToTallBox", vmax=6.0),
+    XYSegment(ready_above_box, short_box_grab, "ReadyToShortBox", vmax=6.0),
+    XYSegment(tall_box_grab, short_box_grab, "TallToShortBox", vmax=6.0),
     SplineSegment(neutral, ready_above_box_c1, ready_above_box_c2,
                   tall_box_grab, "TallToNeutral"),
     SplineSegment(neutral, ready_above_box_c1, ready_above_box_c2,
