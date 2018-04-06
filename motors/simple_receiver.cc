@@ -63,9 +63,9 @@ const DrivetrainConfig<float> &GetDrivetrainConfig() {
 ::std::atomic<Spring *> global_spring{nullptr};
 
 // Last width we received on each channel.
-uint16_t pwm_input_widths[5];
+uint16_t pwm_input_widths[6];
 // When we received a pulse on each channel in milliseconds.
-uint32_t pwm_input_times[5];
+uint32_t pwm_input_times[6];
 
 constexpr int kChannelTimeout = 100;
 
@@ -440,6 +440,12 @@ extern "C" void ftm3_isr() {
       pwm_input_widths[3] = (end - start) & 0xFFFF;
       pwm_input_times[3] = millis();
     }
+    if (status & (1 << 7)) {
+      const uint32_t start = FTM3->C6V;
+      const uint32_t end = FTM3->C7V;
+      pwm_input_widths[5] = (end - start) & 0xFFFF;
+      pwm_input_times[5] = millis();
+    }
 
     FTM3->STATUS = 0;
   }
@@ -665,6 +671,10 @@ extern "C" int main(void) {
   // PWM_IN4
   // FTM0_CH2
   PORTC_PCR3 = PORT_PCR_MUX(4);
+
+  // PWM_IN5
+  // FTM3_CH6
+  PORTC_PCR10 = PORT_PCR_MUX(3);
 
   // SPI0
   // ACC_CS PCS0
