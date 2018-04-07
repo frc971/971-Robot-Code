@@ -218,32 +218,23 @@ class Reader : public ::aos::input::JoystickInput {
     const bool near_goal =
         superstructure_queue.status->arm.current_node == arm_goal_position_ &&
         superstructure_queue.status->arm.path_distance_to_go < 1e-3;
-    if (data.PosEdge(kArmStepDown) && near_goal) {
+    if (data.IsPressed(kArmStepDown) && near_goal) {
       uint32_t *front_point = ::std::find(
           front_points_.begin(), front_points_.end(), arm_goal_position_);
       uint32_t *back_point = ::std::find(
           back_points_.begin(), back_points_.end(), arm_goal_position_);
-      LOG(INFO, "Step up\n");
       if (front_point != front_points_.end()) {
-        LOG(INFO, "In the front list, %d\n",
-            static_cast<int>(
-                ::std::distance(front_points_.begin(), front_point)));
         ++front_point;
         if (front_point != front_points_.end()) {
-          LOG(INFO, "Incrementing front\n");
           arm_goal_position_ = *front_point;
         }
       } else if (back_point != back_points_.end()) {
-        LOG(INFO, "In the back list, %d\n",
-            static_cast<int>(
-                ::std::distance(back_points_.begin(), back_point)));
         ++back_point;
         if (back_point != back_points_.end()) {
-          LOG(INFO, "Incrementing back\n");
           arm_goal_position_ = *back_point;
         }
       }
-    } else if (data.PosEdge(kArmStepUp) && near_goal) {
+    } else if (data.IsPressed(kArmStepUp) && near_goal) {
       const uint32_t *front_point = ::std::find(
           front_points_.begin(), front_points_.end(), arm_goal_position_);
       const uint32_t *back_point = ::std::find(

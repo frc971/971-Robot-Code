@@ -386,7 +386,7 @@ class SplineSegment:
                 for alpha in subdivide_spline(start, control1, control2, end)
             ])
 
-            cr.move_to(self.start[0] + xy_end_circle_size, start[1])
+            cr.move_to(start[0] + xy_end_circle_size, start[1])
             cr.arc(start[0], start[1], xy_end_circle_size, 0, 2.0 * numpy.pi)
             cr.move_to(end[0] + xy_end_circle_size, end[1])
             cr.arc(end[0], end[1], xy_end_circle_size, 0, 2.0 * numpy.pi)
@@ -557,7 +557,7 @@ front_switch_c1 = numpy.array([1.903841, -0.622351])
 front_switch_c2 = numpy.array([1.903841, -0.622351])
 
 
-front_points = [
+sparse_front_points = [
     (front_high_box, "FrontHighBox"),
     (front_middle2_box, "FrontMiddle2Box"),
     (front_middle3_box, "FrontMiddle3Box"),
@@ -566,12 +566,57 @@ front_points = [
     (front_switch, "FrontSwitch"),
 ]  # yapf: disable
 
-back_points = [
+sparse_back_points = [
     (back_high_box, "BackHighBox"),
     (back_middle2_box, "BackMiddle2Box"),
     (back_middle1_box, "BackMiddle1Box"),
     (back_low_box, "BackLowBox"),
 ]  # yapf: disable
+
+def expand_points(points, max_distance):
+    """Expands a list of points to be at most max_distance apart
+
+    Generates the paths to connect the new points to the closest input points,
+    and the paths connecting the points.
+
+    Args:
+      points, list of tuple of point, name, The points to start with and fill
+          in.
+      max_distance, float, The max distance between two points when expanding
+          the graph.
+
+    Return:
+      points, edges
+    """
+    result_points = [points[0]]
+    result_paths = []
+    for point, name in points[1:]:
+        previous_point = result_points[-1][0]
+        previous_point_xy = get_xy(previous_point)
+        circular_index = get_circular_index(previous_point)
+
+        point_xy = get_xy(point)
+        norm = numpy.linalg.norm(point_xy - previous_point_xy)
+        num_points = int(numpy.ceil(norm / max_distance))
+        last_iteration_point = previous_point
+        for subindex in range(1, num_points):
+            subpoint = to_theta(
+                alpha_blend(previous_point_xy, point_xy,
+                            float(subindex) / num_points),
+                circular_index=circular_index)
+            result_points.append((subpoint, '%s%dof%d' % (name, subindex,
+                                                          num_points)))
+            result_paths.append(XYSegment(previous_point, subpoint))
+            if (last_iteration_point != previous_point).any():
+                result_paths.append(XYSegment(last_iteration_point, subpoint))
+            result_paths.append(XYSegment(subpoint, point))
+            last_iteration_point = subpoint
+        result_points.append((point, name))
+
+    return result_points, result_paths
+
+front_points, front_paths = expand_points(sparse_front_points, 0.05)
+back_points, back_paths = expand_points(sparse_back_points, 0.05)
 
 points = [(ready_above_box, "ReadyAboveBox"),
           (tall_box_grab, "TallBoxGrab"),
@@ -674,6 +719,6 @@ unnamed_segments = [
     AngleSegment(up, below_hang),
     AngleSegment(up, self_hang),
     AngleSegment(up, partner_hang),
-]
+] + front_paths + back_paths
 
 segments = named_segments + unnamed_segments
