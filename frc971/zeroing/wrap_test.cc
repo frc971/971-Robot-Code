@@ -1,6 +1,7 @@
-#include <random>
-
 #include "frc971/zeroing/wrap.h"
+
+#include <cmath>
+
 #include "gtest/gtest.h"
 
 namespace frc971 {
@@ -37,6 +38,18 @@ TEST(WrapTest, ExhaustiveWrap) {
                                   << ") = " << wrapped_val;
     }
   }
+}
+
+// Tests some various positive and negative values for wrap (with floats).
+TEST(WrapTest, TestFloatWrap) {
+  EXPECT_NEAR(1.0f, Wrap(0.0f, 1.0f, 10.0f), 1e-6f);
+  EXPECT_NEAR(-1.0f, Wrap(0.0f, -1.0f, 10.0f), 1e-6f);
+
+  EXPECT_NEAR(1.0f, Wrap(5.0f, 1.0f, 10.0f), 1e-6f);
+  EXPECT_NEAR(9.0f, Wrap(5.0f, -1.0f, 10.0f), 1e-6f);
+
+  EXPECT_NEAR(10.0f, Wrap(5.0f, 10.0f, 10.0f), 1e-6f);
+  EXPECT_NEAR(1.0f, Wrap(5.0f, -9.0f, 10.0f), 1e-6f);
 }
 
 }  // namespace testing

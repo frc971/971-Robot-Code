@@ -172,9 +172,10 @@ cc_binary(
         "//motors/core",
         "//motors/peripheral:adc",
         "//motors/peripheral:can",
+        "//motors/seems_reasonable:drivetrain_lib",
+        "//motors/seems_reasonable:spring",
         "//motors/usb",
         "//motors/usb:cdc",
-        "//motors/seems_reasonable:drivetrain_lib",
     ],
 )
 

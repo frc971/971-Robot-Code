@@ -7,6 +7,7 @@ namespace zeroing {
 // Returns a modified value which has been wrapped such that it is +- period/2
 // away from nearest.
 double Wrap(double nearest, double value, double period);
+float Wrap(float nearest, float value, float period);
 
 }  // namespace zeroing
 }  // namespace frc971
