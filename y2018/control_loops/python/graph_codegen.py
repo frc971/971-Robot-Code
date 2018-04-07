@@ -17,8 +17,14 @@ def add_edge(cc_file, name, segment, index, reverse):
     vmax = "vmax"
     if segment.vmax:
         vmax = "::std::min(vmax, %f)" % segment.vmax
+
+    alpha_unitizer = "alpha_unitizer"
+    if segment.alpha_unitizer is not None:
+        alpha_unitizer = "(::Eigen::Matrix<double, 2, 2>() << %f, %f, %f, %f).finished()" % (
+            segment.alpha_unitizer[0, 0], segment.alpha_unitizer[0, 1],
+            segment.alpha_unitizer[1, 0], segment.alpha_unitizer[1, 1])
     cc_file.append( "  trajectories->emplace_back(%s," % (vmax))
-    cc_file.append( "                             alpha_unitizer,")
+    cc_file.append( "                             %s," % (alpha_unitizer))
     if reverse:
         cc_file.append(
             "                             Trajectory(Path::Reversed(%s()), 0.005));"
@@ -43,7 +49,7 @@ def add_edge(cc_file, name, segment, index, reverse):
                    (index_function_name(start_index),
                     index_function_name(end_index)))
     cc_file.append(
-        "                     (trajectories->back().trajectory.path().length() + 1.0)});")
+        "                     (trajectories->back().trajectory.path().length() + 0.2)});")
 
     # TODO(austin): Allow different vmaxes for different paths.
     cc_file.append(

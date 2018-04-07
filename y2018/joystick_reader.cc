@@ -187,13 +187,17 @@ class Reader : public ::aos::input::JoystickInput {
           } else {
             intake_goal_ = -0.10;
           }
+          if (drivetrain_input_reader_->robot_velocity() < -0.1 &&
+              superstructure_queue.position->box_distance > 0.15) {
+            intake_goal_ += 0.10;
+          }
         } else {
           intake_goal_ = -0.60;
         }
       }
     } else {
       // Bring in the intake.
-      intake_goal_ = -3.3;
+      intake_goal_ = -3.20;
     }
 
     if (new_superstructure_goal->intake.roller_voltage > 0.1 &&

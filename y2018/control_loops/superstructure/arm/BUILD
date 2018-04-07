@@ -154,6 +154,9 @@ cc_library(
         "generated_graph.cc",
     ],
     hdrs = ["generated_graph.h"],
+    copts = [
+        "-O1",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":graph",
