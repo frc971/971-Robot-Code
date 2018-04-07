@@ -39,7 +39,7 @@ Arm::Arm()
 void Arm::Reset() { state_ = State::UNINITIALIZED; }
 
 void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
-                  const control_loops::ArmPosition *position,
+                  bool close_claw, const control_loops::ArmPosition *position,
                   const bool claw_beambreak_triggered,
                   const bool box_back_beambreak_triggered,
                   const bool intake_clear_of_box, double *proximal_output,
@@ -59,8 +59,19 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
   if (open_claw) {
     claw_closed_ = false;
   }
-  if (outputs_disabled) {
+  if (close_claw) {
     claw_closed_ = true;
+  }
+  if (outputs_disabled) {
+    if (claw_closed_count_ == 0) {
+      claw_closed_ = true;
+    } else {
+      --claw_closed_count_;
+    }
+  } else {
+    // Wait this many iterations before closing the claw.  That prevents
+    // brownouts from closing the claw.
+    claw_closed_count_ = 50;
   }
 
   Y << position->proximal.encoder + proximal_offset_,

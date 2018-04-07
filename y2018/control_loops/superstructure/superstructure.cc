@@ -1,5 +1,7 @@
 #include "y2018/control_loops/superstructure/superstructure.h"
 
+#include <chrono>
+
 #include "aos/common/controls/control_loops.q.h"
 #include "aos/common/logging/logging.h"
 #include "frc971/control_loops/control_loops.q.h"
@@ -9,6 +11,10 @@
 namespace y2018 {
 namespace control_loops {
 namespace superstructure {
+
+using ::aos::monotonic_clock;
+
+namespace chrono = ::std::chrono;
 
 namespace {
 // The maximum voltage the intake roller will be allowed to use.
@@ -34,12 +40,31 @@ void Superstructure::RunIteration(
     arm_.Reset();
   }
 
-  const double left_intake_goal = ::std::min(
-      arm_.max_intake_override(),
-      (unsafe_goal == nullptr ? 0.0 : unsafe_goal->intake.left_intake_angle));
-  const double right_intake_goal = ::std::min(
-      arm_.max_intake_override(),
-      (unsafe_goal == nullptr ? 0.0 : unsafe_goal->intake.right_intake_angle));
+  const double clipped_box_distance =
+      ::std::min(1.0, ::std::max(0.0, position->box_distance));
+
+  const double box_velocity =
+      (clipped_box_distance - last_box_distance_) / 0.005;
+
+  constexpr double kFilteredBoxVelocityAlpha = 0.02;
+  filtered_box_velocity_ =
+      box_velocity * kFilteredBoxVelocityAlpha +
+      (1.0 - kFilteredBoxVelocityAlpha) * filtered_box_velocity_;
+  status->filtered_box_velocity = filtered_box_velocity_;
+
+  constexpr double kCenteringAngleGain = 0.0;
+  const double left_intake_goal =
+      ::std::min(
+          arm_.max_intake_override(),
+          (unsafe_goal == nullptr ? 0.0
+                                  : unsafe_goal->intake.left_intake_angle)) +
+      last_intake_center_error_ * kCenteringAngleGain;
+  const double right_intake_goal =
+      ::std::min(
+          arm_.max_intake_override(),
+          (unsafe_goal == nullptr ? 0.0
+                                  : unsafe_goal->intake.right_intake_angle)) -
+      last_intake_center_error_ * kCenteringAngleGain;
 
   intake_left_.Iterate(unsafe_goal != nullptr ? &(left_intake_goal) : nullptr,
                        &(position->left_intake),
@@ -51,13 +76,18 @@ void Superstructure::RunIteration(
                         output != nullptr ? &(output->right_intake) : nullptr,
                         &(status->right_intake));
 
+  const double intake_center_error =
+      intake_right_.output_position() - intake_left_.output_position();
+  last_intake_center_error_ = intake_center_error;
+
   const bool intake_clear_of_box =
       intake_left_.clear_of_box() && intake_right_.clear_of_box();
   arm_.Iterate(
       unsafe_goal != nullptr ? &(unsafe_goal->arm_goal_position) : nullptr,
       unsafe_goal != nullptr ? unsafe_goal->grab_box : false,
-      unsafe_goal != nullptr ? unsafe_goal->open_claw : false, &(position->arm),
-      position->claw_beambreak_triggered,
+      unsafe_goal != nullptr ? unsafe_goal->open_claw : false,
+      unsafe_goal != nullptr ? unsafe_goal->close_claw : false,
+      &(position->arm), position->claw_beambreak_triggered,
       position->box_back_beambreak_triggered, intake_clear_of_box,
       output != nullptr ? &(output->voltage_proximal) : nullptr,
       output != nullptr ? &(output->voltage_distal) : nullptr,
@@ -87,16 +117,37 @@ void Superstructure::RunIteration(
     double roller_voltage = ::std::max(
         -kMaxIntakeRollerVoltage, ::std::min(unsafe_goal->intake.roller_voltage,
                                              kMaxIntakeRollerVoltage));
-    constexpr int kReverseTime = 15;
-    if (unsafe_goal->intake.roller_voltage < 0.0) {
+    constexpr int kReverseTime = 14;
+    if (unsafe_goal->intake.roller_voltage < 0.0 ||
+        unsafe_goal->disable_box_correct) {
       output->left_intake.voltage_rollers = roller_voltage;
       output->right_intake.voltage_rollers = roller_voltage;
       rotation_state_ = RotationState::NOT_ROTATING;
       rotation_count_ = 0;
+      stuck_count_ = 0;
     } else {
+      monotonic_clock::time_point monotonic_now = monotonic_clock::now();
+      const bool stuck = position->box_distance < 0.20 &&
+                   filtered_box_velocity_ > -0.05 &&
+                   !position->box_back_beambreak_triggered;
+      // Make sure we don't declare ourselves re-stuck too quickly.  We want to
+      // wait 400 ms before triggering the stuck condition again.
+      if (!stuck) {
+        last_unstuck_time_ = monotonic_now;
+      }
+      if (monotonic_now < last_stuck_time_ + chrono::milliseconds(400)) {
+        last_unstuck_time_ = monotonic_now;
+      }
+
       switch (rotation_state_) {
         case RotationState::NOT_ROTATING:
-          if (position->left_intake.beam_break) {
+          if (stuck &&
+              monotonic_now > last_stuck_time_ + chrono::milliseconds(400) &&
+              monotonic_now > last_unstuck_time_ + chrono::milliseconds(100)) {
+            rotation_state_ = RotationState::STUCK;
+            ++stuck_count_;
+            last_stuck_time_ = monotonic_now;
+          } else if (position->left_intake.beam_break) {
             rotation_state_ = RotationState::ROTATING_RIGHT;
             rotation_count_ = kReverseTime;
             break;
@@ -107,6 +158,13 @@ void Superstructure::RunIteration(
           } else {
             break;
           }
+        case RotationState::STUCK: {
+          // Latch being stuck for 80 ms so we kick the box out far enough.
+          if (last_stuck_time_ + chrono::milliseconds(80) < monotonic_now) {
+            rotation_state_ = RotationState::NOT_ROTATING;
+            last_unstuck_time_ = monotonic_now;
+          }
+        } break;
         case RotationState::ROTATING_LEFT:
           if (position->right_intake.beam_break) {
             rotation_count_ = kReverseTime;
@@ -129,25 +187,57 @@ void Superstructure::RunIteration(
           break;
       }
 
-      if (position->box_back_beambreak_triggered && roller_voltage > 0.0) {
-        roller_voltage = 0;
+      constexpr double kHoldVoltage = 1.0;
+      constexpr double kStuckVoltage = 10.0;
+
+      if (position->box_back_beambreak_triggered &&
+          roller_voltage > kHoldVoltage) {
+        roller_voltage = kHoldVoltage;
       }
       switch (rotation_state_) {
-        case RotationState::NOT_ROTATING:
-          output->left_intake.voltage_rollers = roller_voltage;
-          output->right_intake.voltage_rollers = roller_voltage;
-          break;
+        case RotationState::NOT_ROTATING: {
+          double centering_gain = 13.0;
+          if (stuck_count_ > 1) {
+            if ((stuck_count_ - 1) % 2 == 0) {
+              centering_gain = 0.0;
+            }
+          }
+          output->left_intake.voltage_rollers =
+              roller_voltage - intake_center_error * centering_gain;
+          output->right_intake.voltage_rollers =
+              roller_voltage + intake_center_error * centering_gain;
+        } break;
+        case RotationState::STUCK: {
+          if (roller_voltage > kHoldVoltage) {
+            output->left_intake.voltage_rollers = -kStuckVoltage;
+            output->right_intake.voltage_rollers = -kStuckVoltage;
+          }
+        } break;
         case RotationState::ROTATING_LEFT:
-          output->left_intake.voltage_rollers = roller_voltage;
-          output->right_intake.voltage_rollers = -roller_voltage;
+          if (position->left_intake.beam_break) {
+            output->left_intake.voltage_rollers = -roller_voltage * 0.9;
+          } else {
+            output->left_intake.voltage_rollers = -roller_voltage * 0.6;
+          }
+          output->right_intake.voltage_rollers = roller_voltage;
           break;
         case RotationState::ROTATING_RIGHT:
-          output->left_intake.voltage_rollers = -roller_voltage;
-          output->right_intake.voltage_rollers = roller_voltage;
+          output->left_intake.voltage_rollers = roller_voltage;
+          if (position->right_intake.beam_break) {
+            output->right_intake.voltage_rollers = -roller_voltage * 0.9;
+          } else {
+            output->right_intake.voltage_rollers = -roller_voltage * 0.6;
+          }
           break;
       }
     }
+  } else {
+    rotation_state_ = RotationState::NOT_ROTATING;
+    rotation_count_ = 0;
+    stuck_count_ = 0;
   }
+  status->rotation_state = static_cast<uint32_t>(rotation_state_);
+  last_box_distance_ = clipped_box_distance;
 }
 
 }  // namespace superstructure

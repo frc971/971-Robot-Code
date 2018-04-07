@@ -35,6 +35,7 @@ namespace joysticks {
 namespace arm = ::y2018::control_loops::superstructure::arm;
 
 const ButtonLocation kIntakeClosed(4, 1);
+const ButtonLocation kDuck(3, 11);
 const ButtonLocation kSmallBox(4, 4);
 
 const ButtonLocation kIntakeIn(3, 16);
@@ -65,6 +66,7 @@ const ButtonLocation kArmUp(3, 9);
 const ButtonLocation kArmPickupBoxFromIntake(3, 6);
 
 const ButtonLocation kClawOpen(3, 1);
+const ButtonLocation kDriverClawOpen(2, 4);
 
 std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
 
@@ -134,7 +136,7 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.IsPressed(kIntakeIn)) {
       // Turn on the rollers.
-      new_superstructure_goal->intake.roller_voltage = 7.5;
+      new_superstructure_goal->intake.roller_voltage = 8.0;
     } else if (data.IsPressed(kIntakeOut)) {
       // Turn off the rollers.
       new_superstructure_goal->intake.roller_voltage = -12.0;
@@ -169,16 +171,15 @@ class Reader : public ::aos::input::JoystickInput {
         intake_goal_ = 0.30;
       } else {
         if (new_superstructure_goal->intake.roller_voltage > 0.1) {
-          if (superstructure_queue.position->box_distance < 0.15) {
-            intake_goal_ = 0.23;
-          } else if (superstructure_queue.position->box_distance < 0.20) {
+          if (superstructure_queue.position->box_distance < 0.10) {
+            new_superstructure_goal->intake.roller_voltage -= 3.0;
+            intake_goal_ = 0.22;
+          } else if (superstructure_queue.position->box_distance < 0.17) {
             intake_goal_ = 0.13;
           } else if (superstructure_queue.position->box_distance < 0.25) {
-            intake_goal_ = -0.05;
-          } else if (superstructure_queue.position->box_distance < 0.28) {
-            intake_goal_ = -0.20;
+            intake_goal_ = 0.05;
           } else {
-            intake_goal_ = -0.40;
+            intake_goal_ = -0.10;
           }
         } else {
           intake_goal_ = -0.60;
@@ -189,16 +190,29 @@ class Reader : public ::aos::input::JoystickInput {
       intake_goal_ = -3.3;
     }
 
+    if (new_superstructure_goal->intake.roller_voltage > 0.1 &&
+        intake_goal_ > 0.0) {
+      if (superstructure_queue.position->box_distance < 0.10) {
+        new_superstructure_goal->intake.roller_voltage -= 3.0;
+      }
+      new_superstructure_goal->intake.roller_voltage += 3.0;
+    }
+
     // If we are disabled, stay at the node closest to where we start.  This
     // should remove long motions when enabled.
-    if (!data.GetControlBit(ControlBit::kEnabled)) {
+    if (!data.GetControlBit(ControlBit::kEnabled) || never_disabled_) {
       arm_goal_position_ = superstructure_queue.status->arm.current_node;
+      never_disabled_ = false;
     }
 
     bool grab_box = false;
     if (data.IsPressed(kArmPickupBoxFromIntake)) {
-      arm_goal_position_ = arm::NeutralIndex();
       grab_box = true;
+    }
+    if (data.PosEdge(kArmPickupBoxFromIntake)) {
+      arm_goal_position_ = arm::NeutralIndex();
+    } else if (data.IsPressed(kDuck)) {
+      arm_goal_position_ = arm::DuckIndex();
     } else if (data.IsPressed(kArmNeutral)) {
       arm_goal_position_ = arm::NeutralIndex();
     } else if (data.IsPressed(kArmUp)) {
@@ -246,6 +260,7 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     if (data.IsPressed(kWinch)) {
+      LOG(INFO, "Winching\n");
       new_superstructure_goal->voltage_winch = 12.0;
     } else {
       new_superstructure_goal->voltage_winch = 0.0;
@@ -255,7 +270,8 @@ class Reader : public ::aos::input::JoystickInput {
 
     new_superstructure_goal->arm_goal_position = arm_goal_position_;
 
-    if (data.IsPressed(kClawOpen) || data.PosEdge(kArmPickupBoxFromIntake)) {
+    if ((data.IsPressed(kClawOpen) && data.IsPressed(kDriverClawOpen)) ||
+        data.PosEdge(kArmPickupBoxFromIntake)) {
       new_superstructure_goal->open_claw = true;
     } else {
       new_superstructure_goal->open_claw = false;
@@ -298,6 +314,7 @@ class Reader : public ::aos::input::JoystickInput {
 
   bool was_running_ = false;
   bool auto_running_ = false;
+  bool never_disabled_ = true;
 
   int arm_goal_position_ = 0;
 
