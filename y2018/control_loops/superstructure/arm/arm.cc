@@ -31,7 +31,7 @@ Arm::Arm()
   int i = 0;
   for (const auto &trajectory : trajectories_) {
     LOG(INFO, "trajectory length for edge node %d: %f\n", i,
-        trajectory.path().length());
+        trajectory.trajectory.path().length());
     ++i;
   }
 }
@@ -330,7 +330,8 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
         LOG(INFO, "Switching from node %d to %d along edge %d\n",
             static_cast<int>(current_node_), static_cast<int>(next_edge.end),
             static_cast<int>(min_edge));
-        follower_.SwitchTrajectory(&trajectories_[min_edge]);
+        vmax_ = trajectories_[min_edge].vmax;
+        follower_.SwitchTrajectory(&trajectories_[min_edge].trajectory);
         current_node_ = next_edge.end;
       }
     }
@@ -340,7 +341,7 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
       close_enough_for_full_power_
           ? kOperatingVoltage()
           : (state_ == State::GOTO_PATH ? kGotoPathVMax() : kPathlessVMax());
-  follower_.Update(arm_ekf_.X_hat(), disable, kDt(), kVMax(),
+  follower_.Update(arm_ekf_.X_hat(), disable, kDt(), vmax_,
                    max_operating_voltage);
   LOG(INFO, "Max voltage: %f\n", max_operating_voltage);
   status->goal_theta0 = follower_.theta(0);

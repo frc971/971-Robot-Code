@@ -5,6 +5,7 @@
 #include "y2018/constants.h"
 #include "y2018/control_loops/superstructure/arm/dynamics.h"
 #include "y2018/control_loops/superstructure/arm/ekf.h"
+#include "y2018/control_loops/superstructure/arm/generated_graph.h"
 #include "y2018/control_loops/superstructure/arm/graph.h"
 #include "y2018/control_loops/superstructure/arm/trajectory.h"
 #include "y2018/control_loops/superstructure/superstructure.q.h"
@@ -23,15 +24,15 @@ class Arm {
 
   // The operating voltage.
   static constexpr double kOperatingVoltage() {
-    return kGrannyMode() ? 4.0 : 12.0;
+    return kGrannyMode() ? 5.0 : 12.0;
   }
   static constexpr double kDt() { return 0.00505; }
-  static constexpr double kAlpha0Max() { return kGrannyMode() ? 10.0 : 10.0; }
-  static constexpr double kAlpha1Max() { return kGrannyMode() ? 10.0 : 10.0; }
+  static constexpr double kAlpha0Max() { return kGrannyMode() ? 5.0 : 15.0; }
+  static constexpr double kAlpha1Max() { return kGrannyMode() ? 5.0 : 15.0; }
 
   static constexpr double kVMax() { return kGrannyMode() ? 5.0 : 11.5; }
   static constexpr double kPathlessVMax() { return 5.0; }
-  static constexpr double kGotoPathVMax() { return 12.0; }
+  static constexpr double kGotoPathVMax() { return 6.0; }
 
   void Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
                const control_loops::ArmPosition *position,
@@ -96,7 +97,9 @@ class Arm {
 
   const ::Eigen::Matrix<double, 2, 2> alpha_unitizer_;
 
-  ::std::vector<Trajectory> trajectories_;
+  double vmax_ = kVMax();
+
+  ::std::vector<TrajectoryAndParams> trajectories_;
   SearchGraph search_graph_;
 
   bool close_enough_for_full_power_ = false;

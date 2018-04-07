@@ -14,13 +14,19 @@ def path_function_name(name):
 
 def add_edge(cc_file, name, segment, index, reverse):
     cc_file.append("  // Adding edge %d" % index)
+    vmax = "vmax"
+    if segment.vmax:
+        vmax = "::std::min(vmax, %f)" % segment.vmax
+    cc_file.append( "  trajectories->emplace_back(%s," % (vmax))
+    cc_file.append( "                             alpha_unitizer,")
     if reverse:
         cc_file.append(
-            "  trajectories->emplace_back(Path::Reversed(%s()), 0.005);" %
-            (path_function_name(str(name))))
+            "                             Trajectory(Path::Reversed(%s()), 0.005));"
+            % (path_function_name(str(name))))
     else:
-        cc_file.append("  trajectories->emplace_back(%s(), 0.005);" %
-                       (path_function_name(str(name))))
+        cc_file.append(
+            "                             Trajectory(%s(), 0.005));"
+            % (path_function_name(str(name))))
 
     start_index = None
     end_index = None
@@ -37,11 +43,13 @@ def add_edge(cc_file, name, segment, index, reverse):
                    (index_function_name(start_index),
                     index_function_name(end_index)))
     cc_file.append(
-        "                     (trajectories->back().path().length() + 0.2)});")
+        "                     (trajectories->back().trajectory.path().length() + 1.0)});")
 
     # TODO(austin): Allow different vmaxes for different paths.
     cc_file.append(
-        "  trajectories->back().OptimizeTrajectory(alpha_unitizer, vmax);")
+        "  trajectories->back().trajectory.OptimizeTrajectory(")
+    cc_file.append("      trajectories->back().alpha_unitizer,")
+    cc_file.append("      trajectories->back().vmax);")
     cc_file.append("")
 
 
@@ -80,6 +88,22 @@ def main(argv):
     h_file.append("namespace control_loops {")
     h_file.append("namespace superstructure {")
     h_file.append("namespace arm {")
+
+    h_file.append("")
+    h_file.append("struct TrajectoryAndParams {")
+    h_file.append("  TrajectoryAndParams(double new_vmax,")
+    h_file.append(
+        "                      const ::Eigen::Matrix<double, 2, 2> &new_alpha_unitizer,"
+    )
+    h_file.append("                      Trajectory &&new_trajectory)")
+    h_file.append("      : vmax(new_vmax),")
+    h_file.append("        alpha_unitizer(new_alpha_unitizer),")
+    h_file.append("        trajectory(::std::move(new_trajectory)) {}")
+    h_file.append("  double vmax;")
+    h_file.append("  ::Eigen::Matrix<double, 2, 2> alpha_unitizer;")
+    h_file.append("  Trajectory trajectory;")
+    h_file.append("};")
+    h_file.append("")
 
     # Now dump out the vertices and associated constexpr vertex name functions.
     for index, point in enumerate(graph_generate.points):
@@ -130,12 +154,12 @@ def main(argv):
     h_file.append("")
     h_file.append("// Builds a search graph.")
     h_file.append("SearchGraph MakeSearchGraph("
-                  "::std::vector<Trajectory> *trajectories,")
+                  "::std::vector<TrajectoryAndParams> *trajectories,")
     h_file.append("                            "
                   "const ::Eigen::Matrix<double, 2, 2> &alpha_unitizer,")
     h_file.append("                            double vmax);")
     cc_file.append("SearchGraph MakeSearchGraph("
-                   "::std::vector<Trajectory> *trajectories,")
+                   "::std::vector<TrajectoryAndParams> *trajectories,")
     cc_file.append("                            "
                    "const ::Eigen::Matrix<double, 2, 2> &alpha_unitizer,")
     cc_file.append("                            " "double vmax) {")
