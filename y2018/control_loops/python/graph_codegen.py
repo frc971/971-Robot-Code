@@ -117,6 +117,26 @@ def main(argv):
             % (numpy.pi / 2.0 - point[0][0], numpy.pi / 2.0 - point[0][1]))
         h_file.append("}")
 
+    front_points = [
+        index_function_name(point[1]) + "()" for point in graph_generate.front_points
+    ]
+    h_file.append("")
+    h_file.append("constexpr ::std::array<uint32_t, %d> FrontPoints() {" %
+                  len(front_points))
+    h_file.append("  return ::std::array<uint32_t, %d>{{%s}};" %
+                  (len(front_points), ", ".join(front_points)))
+    h_file.append("}")
+
+    back_points = [
+        index_function_name(point[1]) + "()" for point in graph_generate.back_points
+    ]
+    h_file.append("")
+    h_file.append("constexpr ::std::array<uint32_t, %d> BackPoints() {" %
+                  len(back_points))
+    h_file.append("  return ::std::array<uint32_t, %d>{{%s}};" %
+                  (len(back_points), ", ".join(back_points)))
+    h_file.append("}")
+
     # Add the Make*Path functions.
     h_file.append("")
     cc_file.append("")

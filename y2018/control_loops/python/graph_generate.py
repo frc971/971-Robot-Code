@@ -556,19 +556,26 @@ ready_above_box_c2 = numpy.array([1.391449, -1.060331])
 front_switch_c1 = numpy.array([1.903841, -0.622351])
 front_switch_c2 = numpy.array([1.903841, -0.622351])
 
+
+front_points = [
+    (front_high_box, "FrontHighBox"),
+    (front_middle2_box, "FrontMiddle2Box"),
+    (front_middle3_box, "FrontMiddle3Box"),
+    (front_middle1_box, "FrontMiddle1Box"),
+    (front_low_box, "FrontLowBox"),
+    (front_switch, "FrontSwitch"),
+]  # yapf: disable
+
+back_points = [
+    (back_high_box, "BackHighBox"),
+    (back_middle2_box, "BackMiddle2Box"),
+    (back_middle1_box, "BackMiddle1Box"),
+    (back_low_box, "BackLowBox"),
+]  # yapf: disable
+
 points = [(ready_above_box, "ReadyAboveBox"),
           (tall_box_grab, "TallBoxGrab"),
           (short_box_grab, "ShortBoxGrab"),
-          (front_high_box, "FrontHighBox"),
-          (front_middle3_box, "FrontMiddle3Box"),
-          (front_middle2_box, "FrontMiddle2Box"),
-          (front_middle1_box, "FrontMiddle1Box"),
-          (front_low_box, "FrontLowBox"),
-          (back_high_box, "BackHighBox"),
-          (back_middle2_box, "BackMiddle2Box"),
-          (back_middle1_box, "BackMiddle1Box"),
-          (back_low_box, "BackLowBox"),
-          (front_switch, "FrontSwitch"),
           (back_switch, "BackSwitch"),
           (neutral, "Neutral"),
           (up, "Up"),
@@ -580,13 +587,16 @@ points = [(ready_above_box, "ReadyAboveBox"),
           (starting, "Starting"),
           (duck, "Duck"),
           (vertical_starting, "VerticalStarting"),
-]  # yapf: disable
+] + front_points + back_points  # yapf: disable
 
 duck_c1 = numpy.array([1.337111, -1.721008])
 duck_c2 = numpy.array([1.283701, -1.795519])
 
 ready_to_up_c1 = numpy.array([1.792962, 0.198329])
 ready_to_up_c2 = numpy.array([1.792962, 0.198329])
+
+front_switch_auto_c1 = numpy.array([1.792857, -0.372768])
+front_switch_auto_c2 = numpy.array([1.861885, -0.273664])
 
 
 # We need to define critical points so we can create paths connecting them.
@@ -611,6 +621,7 @@ named_segments = [
 ]
 
 unnamed_segments = [
+    SplineSegment(neutral, front_switch_auto_c1, front_switch_auto_c2, front_switch_auto),
     SplineSegment(tall_box_grab, ready_to_up_c1, ready_to_up_c2, up),
     SplineSegment(short_box_grab, ready_to_up_c1, ready_to_up_c2, up),
     SplineSegment(ready_above_box, ready_to_up_c1, ready_to_up_c2, up),
@@ -623,14 +634,10 @@ unnamed_segments = [
     XYSegment(ready_above_box, front_middle1_box),
     XYSegment(ready_above_box, front_middle2_box),
     XYSegment(ready_above_box, front_middle3_box),
-    XYSegment(ready_above_box, front_high_box),
-    #XYSegment(ready_above_box, up),
+    SplineSegment(ready_above_box, ready_to_up_c1, ready_to_up_c2, front_high_box),
 
     AngleSegment(starting, vertical_starting),
     AngleSegment(vertical_starting, neutral),
-
-    # TODO(austin): Duck -> neutral with a theta spline.
-    #AngleSegment(duck, vertical_starting),
 
     XYSegment(neutral, front_low_box),
     XYSegment(up, front_high_box),
@@ -640,8 +647,6 @@ unnamed_segments = [
     XYSegment(front_middle3_box, front_high_box),
     XYSegment(front_middle3_box, front_middle2_box),
     XYSegment(front_middle3_box, front_middle1_box),
-
-    XYSegment(neutral, front_switch_auto),
 
     XYSegment(up, front_middle1_box),
     XYSegment(up, front_low_box),

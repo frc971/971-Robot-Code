@@ -28,6 +28,9 @@ using ::aos::input::driver_station::JoystickAxis;
 using ::aos::input::driver_station::POVLocation;
 using ::aos::input::DrivetrainInputReader;
 
+using ::y2018::control_loops::superstructure::arm::FrontPoints;
+using ::y2018::control_loops::superstructure::arm::BackPoints;
+
 namespace y2018 {
 namespace input {
 namespace joysticks {
@@ -212,7 +215,51 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.IsPressed(kArmPickupBoxFromIntake)) {
       grab_box = true;
     }
-    if (data.PosEdge(kArmPickupBoxFromIntake)) {
+    const bool near_goal =
+        superstructure_queue.status->arm.current_node == arm_goal_position_ &&
+        superstructure_queue.status->arm.path_distance_to_go < 1e-3;
+    if (data.PosEdge(kArmStepDown) && near_goal) {
+      uint32_t *front_point = ::std::find(
+          front_points_.begin(), front_points_.end(), arm_goal_position_);
+      uint32_t *back_point = ::std::find(
+          back_points_.begin(), back_points_.end(), arm_goal_position_);
+      LOG(INFO, "Step up\n");
+      if (front_point != front_points_.end()) {
+        LOG(INFO, "In the front list, %d\n",
+            static_cast<int>(
+                ::std::distance(front_points_.begin(), front_point)));
+        ++front_point;
+        if (front_point != front_points_.end()) {
+          LOG(INFO, "Incrementing front\n");
+          arm_goal_position_ = *front_point;
+        }
+      } else if (back_point != back_points_.end()) {
+        LOG(INFO, "In the back list, %d\n",
+            static_cast<int>(
+                ::std::distance(back_points_.begin(), back_point)));
+        ++back_point;
+        if (back_point != back_points_.end()) {
+          LOG(INFO, "Incrementing back\n");
+          arm_goal_position_ = *back_point;
+        }
+      }
+    } else if (data.PosEdge(kArmStepUp) && near_goal) {
+      const uint32_t *front_point = ::std::find(
+          front_points_.begin(), front_points_.end(), arm_goal_position_);
+      const uint32_t *back_point = ::std::find(
+          back_points_.begin(), back_points_.end(), arm_goal_position_);
+      if (front_point != front_points_.end()) {
+        if (front_point != front_points_.begin()) {
+          --front_point;
+          arm_goal_position_ = *front_point;
+        }
+      } else if (back_point != back_points_.end()) {
+        if (back_point != back_points_.begin()) {
+          --back_point;
+          arm_goal_position_ = *back_point;
+        }
+      }
+    } else if (data.PosEdge(kArmPickupBoxFromIntake)) {
       arm_goal_position_ = arm::NeutralIndex();
     } else if (data.IsPressed(kDuck)) {
       arm_goal_position_ = arm::DuckIndex();
@@ -319,7 +366,10 @@ class Reader : public ::aos::input::JoystickInput {
   bool auto_running_ = false;
   bool never_disabled_ = true;
 
-  int arm_goal_position_ = 0;
+  uint32_t arm_goal_position_ = 0;
+
+  decltype(FrontPoints()) front_points_ = FrontPoints();
+  decltype(BackPoints()) back_points_ = BackPoints();
 
   ::aos::common::actions::ActionQueue action_queue_;
 };
