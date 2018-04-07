@@ -299,6 +299,98 @@ void SetupPwmFtm(BigFTM *ftm) {
   ftm->MODE &= ~FTM_MODE_WPDIS;
 }
 
+struct AccelerometerResult {
+  uint16_t result;
+  bool success;
+};
+
+// Does a transfer on the accelerometer. Returns the resulting frame, or a
+// failure if it takes until after end_micros.
+AccelerometerResult AccelerometerTransfer(uint16_t data, uint32_t end_micros) {
+  SPI0_SR = SPI_SR_RFDF;
+  SPI0_PUSHR = SPI_PUSHR_PCS(1) | data;
+
+  while (!(SPI0_SR & SPI_SR_RFDF)) {
+    if (time_after(micros(), end_micros)) {
+      return {0, false};
+    }
+  }
+  const uint32_t popr = SPI0_POPR;
+  SPI0_SR = SPI_SR_RFDF;
+  return {static_cast<uint16_t>(popr & 0xFFFF), true};
+}
+
+constexpr uint32_t kAccelerometerTimeout = 500;
+
+bool AccelerometerWrite(uint8_t address, uint8_t data, uint32_t end_micros) {
+  const AccelerometerResult r = AccelerometerTransfer(
+      (static_cast<uint16_t>(address) << 8) | static_cast<uint16_t>(data),
+      end_micros);
+  return r.success;
+}
+
+AccelerometerResult AccelerometerRead(uint8_t address, uint32_t end_micros) {
+  AccelerometerResult r = AccelerometerTransfer(
+      (static_cast<uint16_t>(address) << 8) | UINT16_C(0x8000), end_micros);
+  r.result = r.result & UINT16_C(0xFF);
+  return r;
+}
+
+bool accelerometer_inited = false;
+
+void AccelerometerInit() {
+  accelerometer_inited = false;
+  const uint32_t end_micros = time_add(micros(), kAccelerometerTimeout);
+  {
+    const auto who_am_i = AccelerometerRead(0xF, end_micros);
+    if (!who_am_i.success) {
+      return;
+    }
+    if (who_am_i.result != 0x32) {
+      return;
+    }
+  }
+  if (!AccelerometerWrite(
+          0x20, (1 << 5) /* Normal mode */ | (1 << 3) /* 100 Hz */ |
+                    (1 << 2) /* Z enabled */ | (1 << 1) /* Y enabled */ |
+                    (1 << 0) /* X enabled */,
+          end_micros)) {
+  }
+  // If want to read LSB, need to enable BDU to avoid splitting reads.
+  if (!AccelerometerWrite(0x23, (0 << 6) /* Data LSB at lower address */ |
+                                    (3 << 4) /* 400g full scale */ |
+                                    (0 << 0) /* 4-wire interface */,
+                          end_micros)) {
+  }
+  accelerometer_inited = true;
+}
+
+float AccelerometerConvert(uint16_t value) {
+  return static_cast<float>(400.0 / 65536.0) * static_cast<float>(value);
+}
+
+// Returns the total acceleration (in any direction) or 0 if there's an error.
+float ReadAccelerometer() {
+  if (!accelerometer_inited) {
+    AccelerometerInit();
+    return 0;
+  }
+
+  const uint32_t end_micros = time_add(micros(), kAccelerometerTimeout);
+  const auto x = AccelerometerRead(0x29, end_micros);
+  const auto y = AccelerometerRead(0x2B, end_micros);
+  const auto z = AccelerometerRead(0x2D, end_micros);
+  if (!x.success || !y.success || !z.success) {
+    accelerometer_inited = false;
+    return 0;
+  }
+
+  const float x_g = AccelerometerConvert(x.result);
+  const float y_g = AccelerometerConvert(y.result);
+  const float z_g = AccelerometerConvert(z.result);
+  return ::std::sqrt(x_g * x_g + y_g * y_g + z_g * z_g);
+}
+
 extern "C" void ftm0_isr() {
   while (true) {
     const uint32_t status = FTM0->STATUS;
@@ -454,8 +546,12 @@ extern "C" void pit3_isr() {
     vesc_set_duty(4, -spring_output);
     vesc_set_duty(5, spring_output);
 
+    const float accelerometer = ReadAccelerometer();
+    (void)accelerometer;
+
     /*
      // Massive debug.  Turn on for useful bits.
+    printf("acc %d/1000\n", (int)(accelerometer / 1000));
     if (!encoder.valid) {
       printf("Stuck encoder: ADC %" PRIu16 " %" PRIu16
              " enc %d/1000 %s mag %d\n",
@@ -570,6 +666,36 @@ extern "C" int main(void) {
   // FTM0_CH2
   PORTC_PCR3 = PORT_PCR_MUX(4);
 
+  // SPI0
+  // ACC_CS PCS0
+  PORTA_PCR14 = PORT_PCR_DSE | PORT_PCR_MUX(2);
+  // SCK
+  PORTA_PCR15 = PORT_PCR_DSE | PORT_PCR_MUX(2);
+  // MOSI
+  PORTA_PCR16 = PORT_PCR_DSE | PORT_PCR_MUX(2);
+  // MISO
+  PORTA_PCR17 = PORT_PCR_DSE | PORT_PCR_MUX(2);
+
+  SIM_SCGC6 |= SIM_SCGC6_SPI0;
+  SPI0_MCR = SPI_MCR_MSTR | SPI_MCR_PCSIS(1) | SPI_MCR_CLR_TXF |
+             SPI_MCR_CLR_RXF | SPI_MCR_HALT;
+  // 60 MHz "protocol clock"
+  // 6ns CS setup
+  // 8ns CS hold
+  SPI0_CTAR0 = SPI_CTAR_FMSZ(15) | SPI_CTAR_CPOL /* Clock idles high */ |
+               SPI_CTAR_CPHA /* Data captured on trailing edge */ |
+               0 /* !LSBFE MSB first */ |
+               SPI_CTAR_PCSSCK(0) /* PCS->SCK prescaler = 1 */ |
+               SPI_CTAR_PASC(0) /* SCK->PCS prescaler = 1 */ |
+               SPI_CTAR_PDT(0) /* PCS->PCS prescaler = 1 */ |
+               SPI_CTAR_PBR(0) /* baud prescaler = 1 */ |
+               SPI_CTAR_CSSCK(0) /* PCS->SCK 2/60MHz = 33.33ns */ |
+               SPI_CTAR_ASC(0) /* SCK->PCS 2/60MHz = 33.33ns */ |
+               SPI_CTAR_DT(2) /* PCS->PSC 8/60MHz = 133.33ns */ |
+               SPI_CTAR_BR(2) /* BR 60MHz/6 = 10MHz */;
+
+  SPI0_MCR &= ~SPI_MCR_HALT;
+
   delay(100);
 
   teensy::UsbDevice usb_device(0, 0x16c0, 0x0492);
@@ -600,6 +726,9 @@ extern "C" int main(void) {
   // Leave the LEDs on for a bit longer.
   delay(300);
   printf("Done starting up\n");
+
+  AccelerometerInit();
+  printf("Accelerometer init %s\n", accelerometer_inited ? "success" : "fail");
 
   // Done starting up, now turn the LED off.
   PERIPHERAL_BITBAND(GPIOC_PDOR, 5) = 0;
