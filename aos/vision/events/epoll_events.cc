@@ -18,11 +18,12 @@ void EpollLoop::Add(EpollEvent *event) {
   event->loop_ = this;
   struct epoll_event temp_event;
   temp_event.data.ptr = static_cast<void *>(event);
-  temp_event.events = EPOLLIN;
+  temp_event.events = event->events();
   PCHECK(epoll_ctl(epoll_fd(), EPOLL_CTL_ADD, event->fd(), &temp_event));
 }
 
 void EpollLoop::Delete(EpollEvent *event) {
+  event->loop_ = nullptr;
   PCHECK(epoll_ctl(epoll_fd(), EPOLL_CTL_DEL, event->fd(), NULL));
 }
 
@@ -35,12 +36,7 @@ void EpollLoop::Run() {
         PCHECK(epoll_wait(epoll_fd(), events, kNumberOfEvents, timeout));
 
     for (int i = 0; i < number_events; i++) {
-      EpollEvent *event = static_cast<EpollEvent *>(events[i].data.ptr);
-      if ((events[i].events & ~(EPOLLIN | EPOLLPRI | EPOLLERR)) != 0) {
-        LOG(FATAL, "unexpected epoll events set in %x on %d\n",
-            events[i].events, event->fd());
-      }
-      event->ReadEvent();
+      static_cast<EpollEvent *>(events[i].data.ptr)->DirectEvent(events[i].events);
     }
   }
 }

@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <memory>
 #include <vector>
+#include <sys/epoll.h>
 
 #include "aos/common/scoped_fd.h"
 #include "aos/common/time.h"
@@ -73,10 +74,27 @@ class EpollEvent {
   // loop degrades into a busy loop.
   virtual void ReadEvent() = 0;
 
+  // Handle Events directly from epoll.
+  virtual void DirectEvent(uint32_t events) {
+    if ((events & ~(EPOLLIN | EPOLLPRI | EPOLLERR)) != 0) {
+      LOG(FATAL, "unexpected epoll events set in %x on %d\n",
+          events, fd());
+    }
+    ReadEvent();
+  }
+
   EpollLoop *loop() { return loop_; }
+
+  void SetEvents(uint32_t events) {
+    events_ |= events;
+    CHECK(!loop_);
+  }
+
+  uint32_t events() const { return events_; }
 
  private:
   const int fd_;
+  uint32_t events_ = EPOLLIN;
   friend class EpollLoop;
   EpollLoop *loop_ = nullptr;
 };
@@ -113,6 +131,7 @@ class EpollLoop {
   int epoll_fd() { return epoll_fd_.get(); }
 
   int CalculateTimeout();
+  friend class EpollEvent;
 
   ::aos::ScopedFD epoll_fd_;
   ::std::vector<EpollWait *> waits_;
