@@ -34,38 +34,41 @@ namespace joysticks {
 
 namespace arm = ::y2018::control_loops::superstructure::arm;
 
-const ButtonLocation kIntakeClosed(4, 1);
-const ButtonLocation kDuck(3, 11);
-const ButtonLocation kSmallBox(4, 4);
+const ButtonLocation kIntakeClosed(3, 2);
+const ButtonLocation kDuck(3, 9);
+const ButtonLocation kSmallBox(3, 1);
 
-const ButtonLocation kIntakeIn(3, 16);
-const ButtonLocation kIntakeOut(4, 3);
+const ButtonLocation kIntakeIn(3, 4);
+const ButtonLocation kIntakeOut(3, 3);
 
-const ButtonLocation kArmFrontHighBox(4, 5);
-const ButtonLocation kArmFrontExtraHighBox(3, 8);
-const ButtonLocation kArmFrontMiddle2Box(4, 7);
-const ButtonLocation kArmFrontMiddle1Box(4, 9);
-const ButtonLocation kArmFrontLowBox(4, 11);
-const ButtonLocation kArmFrontSwitch(3, 14);
+const ButtonLocation kArmFrontHighBox(4, 11);
+const ButtonLocation kArmFrontExtraHighBox(4, 1);
+const ButtonLocation kArmFrontMiddle2Box(4, 9);
+const ButtonLocation kArmFrontMiddle1Box(4, 7);
+const ButtonLocation kArmFrontLowBox(4, 5);
+const ButtonLocation kArmFrontSwitch(3, 7);
 
-const ButtonLocation kArmBackHighBox(4, 6);
-const ButtonLocation kArmBackExtraHighBox(3, 10);
-const ButtonLocation kArmBackMiddle2Box(4, 8);
-const ButtonLocation kArmBackMiddle1Box(4, 10);
-const ButtonLocation kArmBackLowBox(4, 12);
-const ButtonLocation kArmBackSwitch(3, 12);
+const ButtonLocation kArmBackHighBox(4, 12);
+const ButtonLocation kArmBackExtraHighBox(3, 14);
+const ButtonLocation kArmBackMiddle2Box(4, 10);
+const ButtonLocation kArmBackMiddle1Box(4, 8);
+const ButtonLocation kArmBackLowBox(4, 6);
+const ButtonLocation kArmBackSwitch(3, 10);
 
-const ButtonLocation kArmAboveHang(3, 7);
-const ButtonLocation kArmBelowHang(3, 2);
+const ButtonLocation kArmAboveHang(3, 15);
+const ButtonLocation kArmBelowHang(3, 16);
 
-const ButtonLocation kWinch(3, 4);
+const ButtonLocation kWinch(4, 2);
 
-const ButtonLocation kArmNeutral(3, 13);
-const ButtonLocation kArmUp(3, 9);
+const ButtonLocation kArmNeutral(3, 8);
+const ButtonLocation kArmUp(3, 11);
 
-const ButtonLocation kArmPickupBoxFromIntake(3, 6);
+const ButtonLocation kArmStepUp(3, 13);
+const ButtonLocation kArmStepDown(3, 12);
 
-const ButtonLocation kClawOpen(3, 1);
+const ButtonLocation kArmPickupBoxFromIntake(4, 3);
+
+const ButtonLocation kClawOpen(4, 4);
 const ButtonLocation kDriverClawOpen(2, 4);
 
 std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
