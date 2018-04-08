@@ -3,7 +3,7 @@
 set -e
 
 A=`ls /dev/video*`
-EXPOSURE='2000'
+EXPOSURE='100'
 
 echo $SHELL
 

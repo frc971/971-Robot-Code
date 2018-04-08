@@ -221,7 +221,7 @@ int main() {
 
   TCPServer<MjpegDataSocket> tcp_serv_(80);
   aos::vision::CameraParams params;
-  params.set_exposure(300);
+  params.set_exposure(100);
   params.set_width(320);
   params.set_height(240);
   CameraStream camera(params, "/dev/video0", &tcp_serv_);

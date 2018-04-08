@@ -38,7 +38,7 @@ echo $A
 
 v4l2-ctl --set-ctrl="exposure_auto=1" -d $A
 sleep 0.5
-v4l2-ctl --set-ctrl="exposure_absolute=2000" -d $A
+v4l2-ctl --set-ctrl="exposure_absolute=100" -d $A
 sleep 0.5
 
 PATH="./;$PATH"
