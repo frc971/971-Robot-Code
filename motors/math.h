@@ -10,7 +10,7 @@
 // controls in a minimal number of cycles.
 
 namespace frc971 {
-namespace salsa {
+namespace motors {
 
 inline constexpr unsigned int Log2RoundUp(unsigned int x) {
   return (x < 2) ? x : (1 + Log2RoundUp(x / 2));
@@ -126,7 +126,7 @@ template<class Rotation>
 
 void MathInit();
 
-}  // namespace salsa
+}  // namespace motors
 }  // namespace frc971
 
 #endif  // MOTORS_MATH_H_

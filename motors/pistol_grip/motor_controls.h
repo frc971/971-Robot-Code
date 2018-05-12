@@ -10,7 +10,7 @@
 #include "Eigen/Dense"
 
 namespace frc971 {
-namespace salsa {
+namespace motors {
 
 class LittleMotorControlsImplementation : public MotorControls {
  public:
@@ -57,7 +57,7 @@ class LittleMotorControlsImplementation : public MotorControls {
   int16_t debug_[9];
 };
 
-}  // namespace salsa
+}  // namespace motors
 }  // namespace frc971
 
 #endif  // MOTORS_PISTOL_GRIP_MOTOR_CONTROLS_H_

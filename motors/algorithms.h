@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 namespace frc971 {
-namespace salsa {
+namespace motors {
 
 struct ReadingsToBalance {
   // Adds a single reading at index.
@@ -39,7 +39,7 @@ inline BalancedReadings BalanceSimpleReadings(const uint16_t readings[3]) {
   return r;
 }
 
-}  // namespace salsa
+}  // namespace motors
 }  // namespace frc971
 
 #endif  // MOTORS_ALGORITHMS_H_

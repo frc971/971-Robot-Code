@@ -4,17 +4,90 @@
 
 #include <atomic>
 
+#include "motors/big/motor_controls.h"
 #include "motors/core/time.h"
 #include "motors/motor.h"
-#include "motors/motor_controls.h"
 #include "motors/peripheral/adc.h"
 #include "motors/peripheral/can.h"
 #include "motors/usb/usb_serial.h"
 #include "motors/util.h"
 
 namespace frc971 {
-namespace salsa {
+namespace motors {
 namespace {
+
+struct MediumAdcReadings {
+  uint16_t motor_currents[3][2];
+  uint16_t motor_current_ref;
+  uint16_t input_voltage;
+};
+
+void AdcInitMedium() {
+  AdcInitCommon();
+
+  // M_CH2V ADC0_SE14
+  PORTC_PCR0 = PORT_PCR_MUX(0);
+
+  // M_CH0V ADC0_SE13
+  PORTB_PCR3 = PORT_PCR_MUX(0);
+
+  // M_CH1V ADC0_SE12
+  PORTB_PCR2 = PORT_PCR_MUX(0);
+
+  // M_CH0F ADC1_SE14
+  PORTB_PCR10 = PORT_PCR_MUX(0);
+
+  // M_CH1F ADC1_SE15
+  PORTB_PCR11 = PORT_PCR_MUX(0);
+
+  // M_VREF ADC0_SE18
+  PORTE_PCR25 = PORT_PCR_MUX(0);
+
+  // VIN ADC1_SE5B
+  PORTC_PCR9 = PORT_PCR_MUX(0);
+
+  // M_CH2F ADC1_SE17
+  PORTA_PCR17 = PORT_PCR_MUX(0);
+}
+
+MediumAdcReadings AdcReadMedium(const DisableInterrupts &) {
+  MediumAdcReadings r;
+
+  ADC1_SC1A = 14;
+  while (!(ADC1_SC1A & ADC_SC1_COCO)) {
+  }
+  ADC1_SC1A = 15;
+  r.motor_currents[0][0] = ADC1_RA;
+  while (!(ADC1_SC1A & ADC_SC1_COCO)) {
+  }
+  ADC1_SC1A = 17;
+  ADC0_SC1A = 18;
+  r.motor_currents[1][0] = ADC1_RA;
+  while (!(ADC1_SC1A & ADC_SC1_COCO)) {
+  }
+  ADC1_SC1A = 5;
+  r.motor_currents[2][0] = ADC1_RA;
+  while (!(ADC0_SC1A & ADC_SC1_COCO)) {
+  }
+  r.motor_current_ref = ADC0_RA;
+  while (!(ADC1_SC1A & ADC_SC1_COCO)) {
+  }
+  ADC1_SC1A = 14;
+  r.input_voltage = ADC1_RA;
+  while (!(ADC1_SC1A & ADC_SC1_COCO)) {
+  }
+  ADC1_SC1A = 15;
+  r.motor_currents[0][1] = ADC1_RA;
+  while (!(ADC1_SC1A & ADC_SC1_COCO)) {
+  }
+  ADC1_SC1A = 17;
+  r.motor_currents[1][1] = ADC1_RA;
+  while (!(ADC1_SC1A & ADC_SC1_COCO)) {
+  }
+  r.motor_currents[2][1] = ADC1_RA;
+
+  return r;
+}
 
 ::std::atomic<Motor *> global_motor{nullptr};
 
@@ -269,5 +342,5 @@ extern "C" int main(void) {
   return 0;
 }
 
-}  // namespace salsa
+}  // namespace motors
 }  // namespace frc971

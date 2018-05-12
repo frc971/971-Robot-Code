@@ -1,7 +1,7 @@
 py_binary(
-    name = "phase_current",
+    name = "big_phase_current",
     srcs = [
-        "phase_current.py",
+        "big_phase_current.py",
     ],
     restricted_to = ["//tools:k8"],
     deps = [

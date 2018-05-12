@@ -3,7 +3,7 @@
 #include <math.h>
 
 namespace frc971 {
-namespace salsa {
+namespace motors {
 namespace math_internal {
 
 float sin_int_table[SinCosTableSize()];
@@ -33,5 +33,5 @@ __attribute__((cold)) void MathInit() {
   }
 }
 
-}  // namespace salsa
+}  // namespace motors
 }  // namespace frc971

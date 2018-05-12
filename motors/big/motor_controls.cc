@@ -1,9 +1,9 @@
-#include "motors/motor_controls.h"
+#include "motors/big/motor_controls.h"
 
 #include "motors/peripheral/configuration.h"
 
 namespace frc971 {
-namespace salsa {
+namespace motors {
 namespace {
 
 template <int kRows, int kCols>
@@ -239,5 +239,5 @@ int16_t MotorControlsImplementation::Debug(uint32_t theta) {
   return debug_[theta];
 }
 
-}  // namespace salsa
+}  // namespace motors
 }  // namespace frc971

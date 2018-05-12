@@ -4,7 +4,7 @@
 #include "gmock/gmock.h"
 
 namespace frc971 {
-namespace salsa {
+namespace motors {
 namespace testing {
 
 class SinCosIntTest : public ::testing::Test {
@@ -76,5 +76,5 @@ TEST_F(SinCosFloatTest, Endpoints) {
 }
 
 }  // namespace testing
-}  // namespace salsa
+}  // namespace motors
 }  // namespace frc971
