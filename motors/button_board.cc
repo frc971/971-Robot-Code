@@ -18,6 +18,46 @@ namespace frc971 {
 namespace motors {
 namespace {
 
+struct JoystickAdcReadings {
+  uint16_t analog0, analog1, analog2, analog3;
+};
+
+void AdcInitJoystick() {
+  AdcInitCommon();
+
+  // ANALOG0 ADC0_SE5b
+  PORTD_PCR1 = PORT_PCR_MUX(0);
+  // ANALOG1 ADC0_SE14
+  PORTC_PCR0 = PORT_PCR_MUX(0);
+  // ANALOG2 ADC0_SE13
+  PORTB_PCR3 = PORT_PCR_MUX(0);
+  // ANALOG3 ADC0_SE12
+  PORTB_PCR2 = PORT_PCR_MUX(0);
+}
+
+JoystickAdcReadings AdcReadJoystick(const DisableInterrupts &) {
+  JoystickAdcReadings r;
+
+  ADC0_SC1A = 5;
+  while (!(ADC0_SC1A & ADC_SC1_COCO)) {
+  }
+  ADC0_SC1A = 14;
+  r.analog0 = ADC0_RA;
+  while (!(ADC0_SC1A & ADC_SC1_COCO)) {
+  }
+  ADC0_SC1A = 13;
+  r.analog1 = ADC0_RA;
+  while (!(ADC0_SC1A & ADC_SC1_COCO)) {
+  }
+  ADC0_SC1A = 12;
+  r.analog2 = ADC0_RA;
+  while (!(ADC0_SC1A & ADC_SC1_COCO)) {
+  }
+  r.analog3 = ADC0_RA;
+
+  return r;
+}
+
 ::std::atomic<teensy::AcmTty *> global_stdout{nullptr};
 
 // The HID report descriptor we use.

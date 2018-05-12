@@ -29,6 +29,32 @@ using ::frc971::control_loops::DrivetrainQueue_Goal;
 using ::frc971::control_loops::DrivetrainQueue_Output;
 using ::motors::seems_reasonable::Spring;
 
+struct SimpleAdcReadings {
+  uint16_t sin, cos;
+};
+
+void AdcInitSimple() {
+  AdcInitCommon();
+
+  // ENC_SIN ADC0_SE23
+  // ENC_COS ADC1_SE23
+}
+
+SimpleAdcReadings AdcReadSimple(const DisableInterrupts &) {
+  SimpleAdcReadings r;
+
+  ADC0_SC1A = 23;
+  ADC1_SC1A = 23;
+  while (!(ADC0_SC1A & ADC_SC1_COCO)) {
+  }
+  while (!(ADC1_SC1A & ADC_SC1_COCO)) {
+  }
+  r.sin = ADC0_RA;
+  r.cos = ADC1_RA;
+
+  return r;
+}
+
 const ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0, 0.25, 0.75};
 
 const DrivetrainConfig<float> &GetDrivetrainConfig() {

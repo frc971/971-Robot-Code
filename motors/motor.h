@@ -131,31 +131,6 @@ class Motor final {
   }
 
  private:
-  // Represents the ADC reading which is closest to an edge.
-  struct CloseAdcReading {
-    // Adds a new reading to the readings to balance or pushes the previous
-    // closest one there and saves off this one.
-    //
-    // Returns true if it saves off the new reading.
-    bool MaybeUse(int new_distance, const MediumAdcReadings &adc_readings,
-                  int phase, int sample, ReadingsToBalance *to_balance) {
-      if (new_distance < distance) {
-        if (distance != INT_MAX) {
-          to_balance->Add(index, value);
-        }
-        distance = new_distance;
-        value = adc_readings.motor_currents[phase][sample];
-        index = phase;
-        return true;
-      }
-      return false;
-    }
-
-    int distance = INT_MAX;
-    int32_t value = 0;
-    int index = 0;
-  };
-
   inline int counts_per_cycle() const {
     return BUS_CLOCK_FREQUENCY / SWITCHING_FREQUENCY / switching_divisor_;
   }
