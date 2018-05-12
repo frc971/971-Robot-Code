@@ -9,7 +9,7 @@ Grid[500.000000 0.0000 0.0000 1]
 PolyArea[3100.006200]
 Thermal[0.500000]
 DRC[6.00mil 10.00mil 6.00mil 8.00mil 11.81mil 6.00mil]
-Flags("showdrc,rubberband,nameonpcb,clearnew,snappin")
+Flags("showdrc,nameonpcb,clearnew,snappin")
 Groups("1,c:2:3:4,s:5")
 Styles["Signal,10.00mil,36.00mil,20.00mil,7.00mil:Power,25.00mil,60.00mil,35.00mil,10.00mil:Fat,15.00mil,45.00mil,25.00mil,10.00mil:Skinny,6.00mil,24.02mil,11.81mil,6.00mil"]
 
@@ -982,14 +982,14 @@ Element["" "0603" "C309" "2.2_uF" 3490.00mil 2390.00mil 73.50mil 41.50mil 1 77 "
 
 	)
 
-Element["hidename" "0603" "C308" "0.15_uF" 3495.00mil 2190.00mil -31.50mil 33.50mil 0 77 ""]
+Element["hidename" "0603" "C308" "0.15_uF" 3495.00mil 2190.00mil -51.50mil -21.50mil 0 77 ""]
 (
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "C307" "0.15_uF" 3115.00mil 2650.00mil 31.50mil -31.50mil 3 77 ""]
+Element["hidename" "0603" "C307" "0.15_uF" 3115.00mil 2650.00mil -31.50mil 41.50mil 1 77 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
@@ -1010,7 +1010,7 @@ Element["hidename" "8_bolt_insulated" "CONN300" "unknown" 3695.00mil 3080.00mil 
 
 	)
 
-Element["hidename" "SOT-416" "U303" "unknown" 3650.00mil 2085.00mil -35.00mil -50.00mil 1 77 ""]
+Element["" "SOT-416" "U303" "unknown" 3650.00mil 2085.00mil -20.00mil 145.00mil 1 77 ""]
 (
 	Pad[22.50mil -0.5000mm 0.7235mm -0.5000mm 0.3560mm 20.00mil 0.5600mm "2" "2" "square,edge2"]
 	Pad[22.50mil 0.5000mm 0.7235mm 0.5000mm 0.3560mm 20.00mil 0.5600mm "1" "1" "square,edge2"]
@@ -1042,14 +1042,14 @@ Element["hidename" "10118194" "CONN301" "unknown" 3900.00mil 2070.00mil 0.0000 0
 
 	)
 
-Element["hidename" "0603" "R303" "33" 3540.00mil 2075.00mil -6.50mil -28.50mil 1 77 ""]
+Element["hidename" "0603" "R303" "33" 3540.00mil 2075.00mil -41.50mil -26.50mil 0 77 ""]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "R302" "33" 3540.00mil 2135.00mil 53.50mil 101.50mil 1 77 ""]
+Element["hidename" "0603" "R302" "33" 3540.00mil 2135.00mil -41.50mil -21.50mil 0 77 ""]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
@@ -1111,7 +1111,7 @@ Element["" "0603" "C504" "100_nF" 3840.00mil 1345.00mil -56.50mil -121.50mil 0 7
 
 	)
 
-Element["hidename" "0603" "C503" "47_nF" 3740.00mil 1755.00mil 63.50mil 26.50mil 1 77 ""]
+Element["hidename" "0603" "C503" "47_nF" 3740.00mil 1755.00mil -41.50mil -21.50mil 0 77 ""]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
@@ -1260,7 +1260,7 @@ Element["" "TSOT6L" "U263" "unknown" 3420.00mil 2615.00mil -160.00mil -20.00mil 
 
 	)
 
-Element["hidename" "0603" "C313" ".015_uF" 2710.00mil 2630.00mil 31.50mil -31.50mil 3 77 ""]
+Element["hidename" "0603" "C313" ".015_uF" 2710.00mil 2630.00mil -26.50mil 46.50mil 1 77 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
@@ -1274,84 +1274,84 @@ Element["hidename" "0603" "C303" "0.15_uF" 3455.00mil 2000.00mil -31.50mil 31.50
 
 	)
 
-Element["hidename" "0603" "C302" "2.2_uF" 3510.00mil 2000.00mil -31.50mil 31.50mil 1 77 ""]
+Element["hidename" "0603" "C302" "2.2_uF" 3510.00mil 2000.00mil -21.50mil 31.50mil 1 77 ""]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "C304" "2.2_uF" 3445.00mil 1845.00mil -6.50mil -91.50mil 0 77 ""]
+Element["hidename" "0603" "C304" "2.2_uF" 3445.00mil 1845.00mil -26.50mil 36.50mil 1 77 ""]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "L302" "unknown" 3520.00mil 1810.00mil 31.50mil 31.50mil 2 77 ""]
+Element["hidename" "0603" "L302" "unknown" 3520.00mil 1810.00mil -46.50mil -26.50mil 0 77 ""]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "L301" "unknown" 3520.00mil 1865.00mil 31.50mil 31.50mil 2 77 ""]
+Element["hidename" "0603" "L301" "unknown" 3520.00mil 1865.00mil -41.50mil -21.50mil 0 77 ""]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "R504" "5.1_k" 3680.00mil 1955.00mil 31.50mil -31.50mil 3 77 ""]
+Element["hidename" "0603" "R504" "5.1_k" 3680.00mil 1955.00mil -21.50mil 46.50mil 1 77 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "R505" "9.76_k" 3625.00mil 1955.00mil -31.50mil 31.50mil 1 77 ""]
+Element["hidename" "0603" "R505" "9.76_k" 3625.00mil 1955.00mil -16.50mil 56.50mil 1 77 ""]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "C508" "1500_pF" 3570.00mil 1955.00mil -31.50mil 31.50mil 1 77 ""]
+Element["hidename" "0603" "C508" "1500_pF" 3570.00mil 1955.00mil -31.50mil 41.50mil 1 77 ""]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "C501" "1500_pF" 3610.00mil 1860.00mil -16.50mil -36.50mil 0 76 ""]
+Element["hidename" "0603" "C501" "1500_pF" 3610.00mil 1860.00mil -15.91mil 40.91mil 1 76 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "C500" "1500_pF" 3395.00mil 1720.00mil 31.50mil -31.50mil 3 77 ""]
+Element["hidename" "0603" "C500" "1500_pF" 3395.00mil 1720.00mil -16.50mil 45.32mil 1 77 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "R500" "5.1_k" 3505.00mil 1720.00mil -31.50mil 31.50mil 1 77 ""]
+Element["hidename" "0603" "R500" "5.1_k" 3505.00mil 1720.00mil -31.50mil 41.50mil 1 77 ""]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "R503" "9.76_k" 3450.00mil 1720.00mil 31.50mil -31.50mil 3 77 ""]
+Element["hidename" "0603" "R503" "9.76_k" 3450.00mil 1720.00mil -21.50mil 41.50mil 1 77 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "R295" "100" 2800.00mil 1620.00mil 33.50mil 51.50mil 1 77 ""]
+Element["hidename" "0603" "R295" "100" 2800.00mil 1620.00mil -21.50mil 51.50mil 1 77 ""]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
@@ -1365,84 +1365,84 @@ Element["hidename" "0603" "C274" "DNP" 2910.00mil 1620.00mil -26.50mil 56.50mil 
 
 	)
 
-Element["hidename" "0603" "R296" "DNP" 2855.00mil 1620.00mil -76.50mil 51.50mil 1 77 ""]
+Element["hidename" "0603" "R296" "DNP" 2855.00mil 1620.00mil -26.50mil 51.50mil 1 77 ""]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "C311" ".015_uF" 2460.00mil 2095.00mil 31.50mil 31.50mil 2 77 ""]
+Element["hidename" "0603" "C311" ".015_uF" 2460.00mil 2095.00mil -41.50mil -21.50mil 0 77 ""]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "C314" ".015_uF" 2460.00mil 2205.00mil 31.50mil 31.50mil 2 77 ""]
+Element["hidename" "0603" "C314" ".015_uF" 2460.00mil 2205.00mil -51.50mil -26.50mil 0 77 ""]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "C312" ".015_uF" 2445.00mil 2150.00mil 31.50mil 31.50mil 2 77 ""]
+Element["hidename" "0603" "C312" ".015_uF" 2445.00mil 2150.00mil -41.50mil -21.50mil 0 77 ""]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "C257" "DNP" 2480.00mil 2020.00mil -31.50mil 31.50mil 1 77 ""]
+Element["hidename" "0603" "C257" "DNP" 2480.00mil 2020.00mil -21.50mil 51.50mil 1 77 ""]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "R258" "100" 2370.00mil 2020.00mil -31.50mil 31.50mil 1 77 ""]
+Element["hidename" "0603" "R258" "100" 2370.00mil 2020.00mil -26.50mil 46.50mil 1 77 ""]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "R259" "DNP" 2425.00mil 2020.00mil -31.50mil 31.50mil 1 77 ""]
+Element["hidename" "0603" "R259" "DNP" 2425.00mil 2020.00mil -21.50mil 51.50mil 1 77 ""]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "R267" "100" 2370.00mil 1875.00mil -31.50mil 31.50mil 1 77 ""]
+Element["hidename" "0603" "R267" "100" 2370.00mil 1875.00mil -21.50mil 41.50mil 1 77 ""]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "C261" "DNP" 2480.00mil 1925.00mil 31.50mil -31.50mil 3 77 ""]
+Element["hidename" "0603" "C261" "DNP" 2480.00mil 1925.00mil -26.50mil 36.50mil 1 77 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "R266" "DNP" 2425.00mil 1925.00mil 31.50mil -31.50mil 3 77 ""]
+Element["hidename" "0603" "R266" "DNP" 2425.00mil 1925.00mil -21.50mil 41.50mil 1 77 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "R502" "5.1_k" 3735.00mil 1860.00mil 53.50mil -46.50mil 0 77 ""]
+Element["hidename" "0603" "R502" "5.1_k" 3735.00mil 1860.00mil -26.50mil 61.50mil 1 77 ""]
 (
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "R501" "9.76_k" 3680.00mil 1860.00mil 53.50mil -86.50mil 0 76 ""]
+Element["hidename" "0603" "R501" "9.76_k" 3680.00mil 1860.00mil -21.50mil 41.50mil 1 76 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
@@ -1623,21 +1623,21 @@ Element["" "LQFP144_20" "U301" "unknown" 2965.00mil 2125.00mil 460.00mil 160.00m
 
 	)
 
-Element["hidename" "0603" "C310" "2.2_uF" 2875.00mil 2650.00mil 31.50mil -31.50mil 3 76 ""]
+Element["hidename" "0603" "C310" "2.2_uF" 2875.00mil 2650.00mil -21.50mil 36.50mil 1 76 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "R300" "2.2_k" 2765.00mil 2650.00mil 31.50mil -31.50mil 3 77 ""]
+Element["hidename" "0603" "R300" "2.2_k" 2765.00mil 2650.00mil -31.50mil 41.50mil 1 77 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "R301" "2.2_k" 2820.00mil 2650.00mil 31.50mil -31.50mil 3 77 ""]
+Element["hidename" "0603" "R301" "2.2_k" 2820.00mil 2650.00mil -26.50mil 41.50mil 1 77 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "1" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "2" "2" "square"]
@@ -1787,49 +1787,49 @@ Element["" "0603" "C509" "DNP" 3765.00mil 4515.00mil -101.50mil 6.50mil 1 100 ""
 
 	)
 
-Element["hidename" "0603" "D404" "unknown" 1865.00mil 2785.00mil -36.50mil 36.50mil 1 77 ""]
+Element["hidename" "0603" "D404" "unknown" 1865.00mil 2785.00mil -51.50mil -21.50mil 0 77 ""]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "CATHODE" "1" "square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "ANODE" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "D403" "unknown" 1865.00mil 2730.00mil -71.50mil 71.50mil 1 77 ""]
+Element["hidename" "0603" "D403" "unknown" 1865.00mil 2730.00mil -47.09mil -25.91mil 0 77 ""]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "CATHODE" "1" "square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "ANODE" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "D402" "unknown" 1865.00mil 2675.00mil -41.50mil 51.50mil 1 77 ""]
+Element["hidename" "0603" "D402" "unknown" 1865.00mil 2675.00mil -52.09mil -20.91mil 0 77 ""]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "CATHODE" "1" "square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "ANODE" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "D401" "unknown" 1865.00mil 2620.00mil -41.50mil 31.50mil 1 77 ""]
+Element["hidename" "0603" "D401" "unknown" 1865.00mil 2620.00mil -47.09mil -20.91mil 0 77 ""]
 (
 	Pad[25.59mil -4.92mil 25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "CATHODE" "1" "square"]
 	Pad[-25.59mil -4.92mil -25.59mil 4.92mil 29.52mil 20.00mil 35.52mil "ANODE" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "D407" "unknown" 2630.00mil 2795.00mil -21.50mil 8.50mil 0 77 ""]
+Element["hidename" "0603" "D407" "unknown" 2630.00mil 2795.00mil -21.50mil 46.50mil 1 77 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "CATHODE" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "ANODE" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "D405" "unknown" 2520.00mil 2795.00mil -31.50mil -11.50mil 0 77 ""]
+Element["hidename" "0603" "D405" "unknown" 2520.00mil 2795.00mil -21.50mil 56.50mil 1 77 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "CATHODE" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "ANODE" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "D406" "unknown" 2575.00mil 2795.00mil 28.50mil -51.50mil 0 77 ""]
+Element["hidename" "0603" "D406" "unknown" 2575.00mil 2795.00mil -16.50mil 51.50mil 1 77 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "CATHODE" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "ANODE" "2" "square"]
@@ -1849,21 +1849,21 @@ Element["" "0603_4" "R401" "2.2_k" 2585.00mil 2685.00mil -45.00mil -105.00mil 0 
 
 	)
 
-Element["hidename" "0603" "D408" "unknown" 2250.00mil 2795.00mil -26.50mil -16.50mil 0 77 ""]
+Element["hidename" "0603" "D408" "unknown" 2250.00mil 2795.00mil -26.50mil 56.50mil 1 77 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "CATHODE" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "ANODE" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "D409" "unknown" 2305.00mil 2795.00mil -66.50mil 13.50mil 0 77 ""]
+Element["hidename" "0603" "D409" "unknown" 2305.00mil 2795.00mil -26.50mil 61.50mil 1 77 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "CATHODE" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "ANODE" "2" "square"]
 
 	)
 
-Element["hidename" "0603" "D410" "unknown" 2360.00mil 2795.00mil -71.50mil 8.50mil 0 77 ""]
+Element["hidename" "0603" "D410" "unknown" 2360.00mil 2795.00mil -16.50mil 51.50mil 1 77 ""]
 (
 	Pad[-4.92mil -25.59mil 4.92mil -25.59mil 29.52mil 20.00mil 35.52mil "CATHODE" "1" "square"]
 	Pad[-4.92mil 25.59mil 4.92mil 25.59mil 29.52mil 20.00mil 35.52mil "ANODE" "2" "square"]
