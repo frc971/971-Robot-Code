@@ -15,6 +15,7 @@
 namespace y2018 {
 namespace actors {
 using ::y2018::control_loops::superstructure_queue;
+using ::frc971::control_loops::drivetrain_queue;
 
 namespace arm = ::y2018::control_loops::superstructure::arm;
 
@@ -32,7 +33,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     arm_goal_position_ = arm::NeutralIndex();
     grab_box_ = false;
     open_claw_ = false;
+    close_claw_ = false;
     deploy_fork_ = false;
+    disable_box_correct_ = false;
     InitializeEncoders();
     ResetDrivetrain();
     SendSuperstructureGoal();
@@ -44,10 +47,16 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   uint32_t arm_goal_position_ = arm::NeutralIndex();
   bool grab_box_ = false;
   bool open_claw_ = false;
+  bool close_claw_ = false;
   bool deploy_fork_ = false;
+  bool disable_box_correct_ = false;
 
   void set_roller_voltage(double roller_voltage) {
     roller_voltage_ = roller_voltage;
+  }
+  void set_intake_angle(double intake_angle) {
+    set_left_intake_angle(intake_angle);
+    set_right_intake_angle(intake_angle);
   }
   void set_left_intake_angle(double left_intake_angle) {
     left_intake_angle_ = left_intake_angle;
@@ -60,7 +69,12 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
   void set_grab_box(bool grab_box) { grab_box_ = grab_box; }
   void set_open_claw(bool open_claw) { open_claw_ = open_claw; }
+  void set_close_claw(bool close_claw) { close_claw_ = close_claw; }
   void set_deploy_fork(bool deploy_fork) { deploy_fork_ = deploy_fork; }
+
+  void set_disable_box_correct(bool disable_box_correct) {
+    disable_box_correct_ = disable_box_correct;
+  }
 
   void SendSuperstructureGoal() {
     auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
@@ -71,10 +85,72 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     new_superstructure_goal->arm_goal_position = arm_goal_position_;
     new_superstructure_goal->grab_box = grab_box_;
     new_superstructure_goal->open_claw = open_claw_;
+    new_superstructure_goal->close_claw = close_claw_;
     new_superstructure_goal->deploy_fork = deploy_fork_;
 
     if (!new_superstructure_goal.Send()) {
       LOG(ERROR, "Sending superstructure goal failed.\n");
+    }
+  }
+
+  bool WaitForArmTrajectoryOrDriveClose(double drive_threshold,
+                                        double arm_threshold) {
+    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                        ::std::chrono::milliseconds(5) / 2);
+
+    constexpr double kPositionTolerance = 0.02;
+    constexpr double kProfileTolerance = 0.001;
+
+    while (true) {
+      if (ShouldCancel()) {
+        return false;
+      }
+
+      superstructure_queue.status.FetchLatest();
+      drivetrain_queue.status.FetchLatest();
+      if (drivetrain_queue.status.get() && superstructure_queue.status.get()) {
+        const double left_profile_error =
+            (initial_drivetrain_.left -
+             drivetrain_queue.status->profiled_left_position_goal);
+        const double right_profile_error =
+            (initial_drivetrain_.right -
+             drivetrain_queue.status->profiled_right_position_goal);
+
+        const double left_error =
+            (initial_drivetrain_.left -
+             drivetrain_queue.status->estimated_left_position);
+        const double right_error =
+            (initial_drivetrain_.right -
+             drivetrain_queue.status->estimated_right_position);
+
+        const double profile_distance_to_go =
+            (left_profile_error + right_profile_error) / 2.0;
+
+        const double distance_to_go = (left_error + right_error) / 2.0;
+
+        // Check superstructure first.
+        if (superstructure_queue.status->arm.current_node ==
+                arm_goal_position_ &&
+            superstructure_queue.status->arm.path_distance_to_go <
+                arm_threshold) {
+          LOG(INFO, "Arm finished first: %f, drivetrain %f distance\n",
+              superstructure_queue.status->arm.path_distance_to_go,
+              ::std::abs(distance_to_go));
+          return true;
+        }
+
+        // Now check drivetrain.
+        if (::std::abs(profile_distance_to_go) <
+                drive_threshold + kProfileTolerance &&
+            ::std::abs(distance_to_go) < drive_threshold + kPositionTolerance) {
+          LOG(INFO,
+              "Drivetrain finished first: arm %f, drivetrain %f distance\n",
+              superstructure_queue.status->arm.path_distance_to_go,
+              ::std::abs(distance_to_go));
+          return true;
+        }
+      }
+      phased_loop.SleepUntilNext();
     }
   }
 
@@ -88,8 +164,27 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
       superstructure_queue.status.FetchLatest();
       if (superstructure_queue.status.get()) {
-        if (superstructure_queue.status->arm.current_node == arm_goal_position_ &&
+        if (superstructure_queue.status->arm.current_node ==
+                arm_goal_position_ &&
             superstructure_queue.status->arm.path_distance_to_go < threshold) {
+          return true;
+        }
+      }
+      phased_loop.SleepUntilNext();
+    }
+  }
+
+  bool WaitForBoxGrabed() {
+    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                        ::std::chrono::milliseconds(5) / 2);
+    while (true) {
+      if (ShouldCancel()) {
+        return false;
+      }
+
+      superstructure_queue.status.FetchLatest();
+      if (superstructure_queue.status.get()) {
+        if (superstructure_queue.status->arm.grab_state == 4) {
           return true;
         }
       }

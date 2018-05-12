@@ -97,6 +97,8 @@ class IntakeSide {
     return controller_.output_position() < -0.1;
   }
 
+  double output_position() const { return controller_.output_position(); }
+
  private:
   IntakeController controller_;
 

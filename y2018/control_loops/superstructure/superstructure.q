@@ -132,12 +132,15 @@ queue_group SuperstructureQueue {
     bool grab_box;
 
     bool open_claw;
+    bool close_claw;
 
     bool deploy_fork;
 
     bool hook_release;
 
     double voltage_winch;
+
+    bool disable_box_correct;
   };
 
   message Status {
@@ -152,6 +155,9 @@ queue_group SuperstructureQueue {
     IntakeSideStatus right_intake;
 
     ArmStatus arm;
+
+    double filtered_box_velocity;
+    uint32_t rotation_state;
   };
 
   message Position {

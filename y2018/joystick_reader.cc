@@ -28,43 +28,51 @@ using ::aos::input::driver_station::JoystickAxis;
 using ::aos::input::driver_station::POVLocation;
 using ::aos::input::DrivetrainInputReader;
 
+using ::y2018::control_loops::superstructure::arm::FrontPoints;
+using ::y2018::control_loops::superstructure::arm::BackPoints;
+
 namespace y2018 {
 namespace input {
 namespace joysticks {
 
 namespace arm = ::y2018::control_loops::superstructure::arm;
 
-const ButtonLocation kIntakeClosed(4, 1);
-const ButtonLocation kSmallBox(4, 4);
+const ButtonLocation kIntakeClosed(3, 2);
+const ButtonLocation kDuck(3, 9);
+const ButtonLocation kSmallBox(3, 1);
 
-const ButtonLocation kIntakeIn(3, 16);
-const ButtonLocation kIntakeOut(4, 3);
+const ButtonLocation kIntakeIn(3, 4);
+const ButtonLocation kIntakeOut(3, 3);
 
-const ButtonLocation kArmFrontHighBox(4, 5);
-const ButtonLocation kArmFrontExtraHighBox(3, 8);
-const ButtonLocation kArmFrontMiddle2Box(4, 7);
-const ButtonLocation kArmFrontMiddle1Box(4, 9);
-const ButtonLocation kArmFrontLowBox(4, 11);
-const ButtonLocation kArmFrontSwitch(3, 14);
+const ButtonLocation kArmFrontHighBox(4, 11);
+const ButtonLocation kArmFrontExtraHighBox(4, 1);
+const ButtonLocation kArmFrontMiddle2Box(4, 9);
+const ButtonLocation kArmFrontMiddle1Box(4, 7);
+const ButtonLocation kArmFrontLowBox(4, 5);
+const ButtonLocation kArmFrontSwitch(3, 7);
 
-const ButtonLocation kArmBackHighBox(4, 6);
-const ButtonLocation kArmBackExtraHighBox(3, 10);
-const ButtonLocation kArmBackMiddle2Box(4, 8);
-const ButtonLocation kArmBackMiddle1Box(4, 10);
-const ButtonLocation kArmBackLowBox(4, 12);
-const ButtonLocation kArmBackSwitch(3, 12);
+const ButtonLocation kArmBackHighBox(4, 12);
+const ButtonLocation kArmBackExtraHighBox(3, 14);
+const ButtonLocation kArmBackMiddle2Box(4, 10);
+const ButtonLocation kArmBackMiddle1Box(4, 8);
+const ButtonLocation kArmBackLowBox(4, 6);
+const ButtonLocation kArmBackSwitch(3, 10);
 
-const ButtonLocation kArmAboveHang(3, 7);
-const ButtonLocation kArmBelowHang(3, 2);
+const ButtonLocation kArmAboveHang(3, 15);
+const ButtonLocation kArmBelowHang(3, 16);
 
-const ButtonLocation kWinch(3, 4);
+const ButtonLocation kWinch(4, 2);
 
-const ButtonLocation kArmNeutral(3, 13);
-const ButtonLocation kArmUp(3, 9);
+const ButtonLocation kArmNeutral(3, 8);
+const ButtonLocation kArmUp(3, 11);
 
-const ButtonLocation kArmPickupBoxFromIntake(3, 6);
+const ButtonLocation kArmStepUp(3, 13);
+const ButtonLocation kArmStepDown(3, 12);
 
-const ButtonLocation kClawOpen(3, 1);
+const ButtonLocation kArmPickupBoxFromIntake(4, 3);
+
+const ButtonLocation kClawOpen(4, 4);
+const ButtonLocation kDriverClawOpen(2, 4);
 
 std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
 
@@ -134,7 +142,7 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.IsPressed(kIntakeIn)) {
       // Turn on the rollers.
-      new_superstructure_goal->intake.roller_voltage = 7.5;
+      new_superstructure_goal->intake.roller_voltage = 8.0;
     } else if (data.IsPressed(kIntakeOut)) {
       // Turn off the rollers.
       new_superstructure_goal->intake.roller_voltage = -12.0;
@@ -169,16 +177,15 @@ class Reader : public ::aos::input::JoystickInput {
         intake_goal_ = 0.30;
       } else {
         if (new_superstructure_goal->intake.roller_voltage > 0.1) {
-          if (superstructure_queue.position->box_distance < 0.15) {
-            intake_goal_ = 0.23;
-          } else if (superstructure_queue.position->box_distance < 0.20) {
+          if (superstructure_queue.position->box_distance < 0.10) {
+            new_superstructure_goal->intake.roller_voltage -= 3.0;
+            intake_goal_ = 0.22;
+          } else if (superstructure_queue.position->box_distance < 0.17) {
             intake_goal_ = 0.13;
           } else if (superstructure_queue.position->box_distance < 0.25) {
-            intake_goal_ = -0.05;
-          } else if (superstructure_queue.position->box_distance < 0.28) {
-            intake_goal_ = -0.20;
+            intake_goal_ = 0.05;
           } else {
-            intake_goal_ = -0.40;
+            intake_goal_ = -0.10;
           }
         } else {
           intake_goal_ = -0.60;
@@ -189,16 +196,64 @@ class Reader : public ::aos::input::JoystickInput {
       intake_goal_ = -3.3;
     }
 
+    if (new_superstructure_goal->intake.roller_voltage > 0.1 &&
+        intake_goal_ > 0.0) {
+      if (superstructure_queue.position->box_distance < 0.10) {
+        new_superstructure_goal->intake.roller_voltage -= 3.0;
+      }
+      new_superstructure_goal->intake.roller_voltage += 3.0;
+    }
+
     // If we are disabled, stay at the node closest to where we start.  This
     // should remove long motions when enabled.
-    if (!data.GetControlBit(ControlBit::kEnabled)) {
+    if (!data.GetControlBit(ControlBit::kEnabled) || never_disabled_) {
       arm_goal_position_ = superstructure_queue.status->arm.current_node;
+      never_disabled_ = false;
     }
 
     bool grab_box = false;
     if (data.IsPressed(kArmPickupBoxFromIntake)) {
-      arm_goal_position_ = arm::NeutralIndex();
       grab_box = true;
+    }
+    const bool near_goal =
+        superstructure_queue.status->arm.current_node == arm_goal_position_ &&
+        superstructure_queue.status->arm.path_distance_to_go < 1e-3;
+    if (data.IsPressed(kArmStepDown) && near_goal) {
+      uint32_t *front_point = ::std::find(
+          front_points_.begin(), front_points_.end(), arm_goal_position_);
+      uint32_t *back_point = ::std::find(
+          back_points_.begin(), back_points_.end(), arm_goal_position_);
+      if (front_point != front_points_.end()) {
+        ++front_point;
+        if (front_point != front_points_.end()) {
+          arm_goal_position_ = *front_point;
+        }
+      } else if (back_point != back_points_.end()) {
+        ++back_point;
+        if (back_point != back_points_.end()) {
+          arm_goal_position_ = *back_point;
+        }
+      }
+    } else if (data.IsPressed(kArmStepUp) && near_goal) {
+      const uint32_t *front_point = ::std::find(
+          front_points_.begin(), front_points_.end(), arm_goal_position_);
+      const uint32_t *back_point = ::std::find(
+          back_points_.begin(), back_points_.end(), arm_goal_position_);
+      if (front_point != front_points_.end()) {
+        if (front_point != front_points_.begin()) {
+          --front_point;
+          arm_goal_position_ = *front_point;
+        }
+      } else if (back_point != back_points_.end()) {
+        if (back_point != back_points_.begin()) {
+          --back_point;
+          arm_goal_position_ = *back_point;
+        }
+      }
+    } else if (data.PosEdge(kArmPickupBoxFromIntake)) {
+      arm_goal_position_ = arm::NeutralIndex();
+    } else if (data.IsPressed(kDuck)) {
+      arm_goal_position_ = arm::DuckIndex();
     } else if (data.IsPressed(kArmNeutral)) {
       arm_goal_position_ = arm::NeutralIndex();
     } else if (data.IsPressed(kArmUp)) {
@@ -246,6 +301,7 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     if (data.IsPressed(kWinch)) {
+      LOG(INFO, "Winching\n");
       new_superstructure_goal->voltage_winch = 12.0;
     } else {
       new_superstructure_goal->voltage_winch = 0.0;
@@ -255,7 +311,8 @@ class Reader : public ::aos::input::JoystickInput {
 
     new_superstructure_goal->arm_goal_position = arm_goal_position_;
 
-    if (data.IsPressed(kClawOpen) || data.PosEdge(kArmPickupBoxFromIntake)) {
+    if ((data.IsPressed(kClawOpen) && data.IsPressed(kDriverClawOpen)) ||
+        data.PosEdge(kArmPickupBoxFromIntake)) {
       new_superstructure_goal->open_claw = true;
     } else {
       new_superstructure_goal->open_claw = false;
@@ -298,8 +355,12 @@ class Reader : public ::aos::input::JoystickInput {
 
   bool was_running_ = false;
   bool auto_running_ = false;
+  bool never_disabled_ = true;
 
-  int arm_goal_position_ = 0;
+  uint32_t arm_goal_position_ = 0;
+
+  decltype(FrontPoints()) front_points_ = FrontPoints();
+  decltype(BackPoints()) back_points_ = BackPoints();
 
   ::aos::common::actions::ActionQueue action_queue_;
 };

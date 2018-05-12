@@ -35,7 +35,7 @@ class Arm {
   static constexpr double kGotoPathVMax() { return 6.0; }
 
   void Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
-               const control_loops::ArmPosition *position,
+               bool close_claw, const control_loops::ArmPosition *position,
                const bool claw_beambreak_triggered,
                const bool box_back_beambreak_triggered,
                const bool intake_clear_of_box, double *proximal_output,
@@ -113,6 +113,8 @@ class Arm {
 
   // Start at the 0th index.
   uint32_t current_node_ = 0;
+
+  uint32_t claw_closed_count_ = 0;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };

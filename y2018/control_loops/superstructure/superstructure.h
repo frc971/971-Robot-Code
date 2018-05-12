@@ -36,14 +36,28 @@ class Superstructure
   intake::IntakeSide intake_right_;
   arm::Arm arm_;
 
+  // The last centering error. This is the distance that the center of the two
+  // intakes is away from 0.
+  double last_intake_center_error_ = 0.0;
+  // The last distance that the box distance lidar measured.
+  double last_box_distance_ = 0.0;
+  // State variable for the box velocity low pass filter.
+  double filtered_box_velocity_ = 0.0;
+
   enum class RotationState {
     NOT_ROTATING = 0,
     ROTATING_LEFT = 1,
-    ROTATING_RIGHT = 2
+    ROTATING_RIGHT = 2,
+    STUCK = 3
   };
 
   RotationState rotation_state_ = RotationState::NOT_ROTATING;
   int rotation_count_ = 0;
+  int stuck_count_ = 0;
+  ::aos::monotonic_clock::time_point last_stuck_time_ =
+      ::aos::monotonic_clock::min_time;
+  ::aos::monotonic_clock::time_point last_unstuck_time_ =
+      ::aos::monotonic_clock::min_time;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
