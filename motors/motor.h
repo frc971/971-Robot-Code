@@ -14,7 +14,7 @@
 #include "motors/core/time.h"
 
 namespace frc971 {
-namespace salsa {
+namespace motors {
 
 class MotorControls {
  public:
@@ -182,7 +182,7 @@ class Motor final {
   teensy::AcmTty *debug_tty_ = nullptr;
 };
 
-}  // namespace salsa
+}  // namespace motors
 }  // namespace frc971
 
 #endif  // MOTORS_MOTOR_H_

@@ -6,7 +6,7 @@
 #include "gtest/gtest.h"
 
 namespace frc971 {
-namespace salsa {
+namespace motors {
 namespace testing {
 
 class BalanceReadingsTest : public ::testing::Test {
@@ -97,5 +97,5 @@ TEST_F(BalanceReadingsTest, Basic) {
 }
 
 }  // namespace testing
-}  // namespace salsa
+}  // namespace motors
 }  // namespace frc971

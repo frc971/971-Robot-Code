@@ -69,12 +69,12 @@ void SendJoystickData(teensy::HidFunction *joystick0,
                       teensy::HidFunction *joystick1) {
   uint32_t start = micros();
   while (true) {
-    salsa::JoystickAdcReadings adc;
+    JoystickAdcReadings adc;
     char report0[report_size()];
     char report1[report_size()];
     {
       DisableInterrupts disable_interrupts;
-      adc = salsa::AdcReadJoystick(disable_interrupts);
+      adc = AdcReadJoystick(disable_interrupts);
     }
 
     FTM0->C1V = adc.analog0 / 4;
@@ -334,7 +334,7 @@ extern "C" int main(void) {
   usb_device.Initialize();
 
   can_init(0, 1);
-  salsa::AdcInitJoystick();
+  AdcInitJoystick();
   SetupLedFtm(FTM0);
   SetupLedFtm(FTM3);
 

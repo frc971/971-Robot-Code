@@ -13,7 +13,7 @@
 #include "motors/util.h"
 
 namespace frc971 {
-namespace salsa {
+namespace motors {
 namespace {
 
 ::std::atomic<Motor *> global_motor{nullptr};
@@ -269,5 +269,5 @@ extern "C" int main(void) {
   return 0;
 }
 
-}  // namespace salsa
+}  // namespace motors
 }  // namespace frc971

@@ -9,7 +9,7 @@
 // single file like this.
 
 namespace frc971 {
-namespace salsa {
+namespace motors {
 
 struct MediumAdcReadings {
   uint16_t motor_currents[3][2];
@@ -47,7 +47,7 @@ SmallInitReadings AdcReadSmallInit(const DisableInterrupts &);
 JoystickAdcReadings AdcReadJoystick(const DisableInterrupts &);
 SimpleAdcReadings AdcReadSimple(const DisableInterrupts &);
 
-}  // namespace salsa
+}  // namespace motors
 }  // namespace frc971
 
 #endif  // MOTORS_PERIPHERAL_ADC_H_

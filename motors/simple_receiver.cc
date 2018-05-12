@@ -468,7 +468,7 @@ float ConvertEncoderChannel(uint16_t reading) {
 }
 
 struct EncoderReading {
-  EncoderReading(const salsa::SimpleAdcReadings &adc_readings) {
+  EncoderReading(const SimpleAdcReadings &adc_readings) {
     const float sin = ConvertEncoderChannel(adc_readings.sin);
     const float cos = ConvertEncoderChannel(adc_readings.cos);
 
@@ -491,10 +491,10 @@ extern "C" void pit3_isr() {
       global_polydrivetrain.load(::std::memory_order_acquire);
   Spring *spring = global_spring.load(::std::memory_order_acquire);
 
-  salsa::SimpleAdcReadings adc_readings;
+  SimpleAdcReadings adc_readings;
   {
     DisableInterrupts disable_interrupts;
-    adc_readings = salsa::AdcReadSimple(disable_interrupts);
+    adc_readings = AdcReadSimple(disable_interrupts);
   }
 
   EncoderReading encoder(adc_readings);
@@ -724,7 +724,7 @@ extern "C" int main(void) {
   PIT_TCTRL3 = PIT_TCTRL_TIE | PIT_TCTRL_TEN;
 
   can_init(0, 1);
-  salsa::AdcInitSimple();
+  AdcInitSimple();
   SetupPwmFtm(FTM0);
   SetupPwmFtm(FTM3);
 

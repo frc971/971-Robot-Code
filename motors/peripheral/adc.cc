@@ -3,7 +3,7 @@
 #include "motors/core/kinetis.h"
 
 namespace frc971 {
-namespace salsa {
+namespace motors {
 namespace {
 
 #define ADC_SC2_BASE (ADC_SC2_REFSEL(0) /* Use the external reference pins. */)
@@ -270,5 +270,5 @@ SimpleAdcReadings AdcReadSimple(const DisableInterrupts &) {
   return r;
 }
 
-}  // namespace salsa
+}  // namespace motors
 }  // namespace frc971

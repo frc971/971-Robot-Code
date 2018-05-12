@@ -26,7 +26,7 @@ extern const float kWheelCoggingTorque[4096];
 extern const float kTriggerCoggingTorque[4096];
 
 namespace frc971 {
-namespace salsa {
+namespace motors {
 namespace {
 
 using ::frc971::control_loops::drivetrain::MakeIntegralHapticTriggerPlant;
@@ -870,5 +870,5 @@ extern "C" int main() {
   return 0;
 }
 
-}  // namespace salsa
+}  // namespace motors
 }  // namespace frc971
