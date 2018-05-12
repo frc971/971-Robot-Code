@@ -4,9 +4,9 @@
 
 #include <atomic>
 
+#include "motors/big/motor_controls.h"
 #include "motors/core/time.h"
 #include "motors/motor.h"
-#include "motors/motor_controls.h"
 #include "motors/peripheral/adc.h"
 #include "motors/peripheral/can.h"
 #include "motors/usb/usb_serial.h"
