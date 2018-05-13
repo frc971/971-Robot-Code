@@ -22,8 +22,8 @@ Element["" "" "" "" 0 0 0 0 0 100 ""]
 	Pad[3.425mm -2.275mm 2.375mm -2.275mm 0.45mm 2000 0.55mm "16" "16" "square"]
 
 	# The big power pad in the middle, and the vias in it.
-	Pad[0 0.44mm 0 -0.44mm 1000 0 2.41mm "17" "17" "square"]
-	Pad[0 0.8mm 0 -0.8mm 3.4mm 2000 1000 "17" "17" "square"]
+	Pad[0 0.44mm 0 -0.44mm 2.41mm 0 2.41mm "17" "17" "square"]
+	Pad[0 0.8mm 0 -0.8mm 3.4mm 2000 1000 "17" "17" "square,nopaste"]
 	Pin[-1.425mm 1.9mm 31.81mil 20mil 0 11.81mil "17" "17" ""]
 	Pin[-0.475mm 1.9mm 31.81mil 20mil 0 11.81mil "17" "17" ""]
 	Pin[0.475mm 1.9mm 31.81mil 20mil 0 11.81mil "17" "17" ""]

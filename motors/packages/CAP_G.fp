@@ -1,16 +1,18 @@
 # This is the footprint at
-# http://www.nichicon.co.jp/english/products/pdfs/e-ch_ref.pdf
+# https://web.archive.org/web/20131102032848/http://industrial.panasonic.com/www-data/pdf/ABA0000/ABA0000PE251.pdf
 # for a 10mm diameter capacitor (size G).
 Element[0x0 "" "" "" 0 0 0 0 0 100 0x0]
 (
-	Pad[0 5.25mm 0 6.75mm 2.5mm 2000 10743 "1" "1" "square"]
-	Pad[0 -5.25mm 0 -6.75mm 2.5mm 2000 10743 "2" "2" "square"]
+	Pad[0 3.3mm 0 5.4mm 2.0mm 2000 2.3mm "1" "1" "square"]
+	Pad[0 -3.3mm 0 -5.4mm 2.0mm 2000 2.3mm "2" "2" "square"]
 
-    ElementLine[-5mm -7.5mm -2mm -7.5mm 2000]
-    ElementLine[5mm -7.5mm 2mm -7.5mm 2000]
+	ElementLine[-5mm -5.85mm -2mm -5.85mm 0.5mm]
+	ElementLine[5mm -5.85mm 2mm -5.85mm 0.5mm]
 
-	ElementLine[-5.25mm 5.25mm -5.25mm -5.25mm 800]
-	ElementLine[5.25mm 5.25mm 5.25mm -5.25mm 800]
-	ElementLine[5.25mm 5.25mm 2.75mm 7.75mm 800]
-	ElementLine[-5.25mm 5.25mm -2.75mm 7.75mm 800]
+	ElementLine[-5.75mm 4.275mm -5.75mm -5mm 0.25mm]
+	ElementLine[5.75mm 4.275mm 5.75mm -5mm 0.25mm]
+	ElementLine[5.75mm 4.275mm 4.05mm 5.975mm 0.25mm]
+	ElementLine[-5.75mm 4.275mm -4.05mm 5.975mm 0.25mm]
+	ElementLine[4.05mm 5.975mm 2mm 5.975mm 0.25mm]
+	ElementLine[-4.05mm 5.975mm -2mm 5.975mm 0.25mm]
 )
