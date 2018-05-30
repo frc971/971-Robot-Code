@@ -9,7 +9,7 @@ namespace superstructure {
 namespace arm {
 
 SearchGraph::SearchGraph(size_t num_vertexes, std::initializer_list<Edge> edges)
-    : SearchGraph(num_vertexes, ::std::move(::std::vector<Edge>(edges))) {}
+    : SearchGraph(num_vertexes, ::std::vector<Edge>(edges)) {}
 
 SearchGraph::SearchGraph(size_t num_vertexes, std::vector<Edge> &&edges)
     : edges_(::std::move(edges)) {
