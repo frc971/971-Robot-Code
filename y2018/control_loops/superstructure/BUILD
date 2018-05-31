@@ -61,3 +61,24 @@ cc_binary(
         "//aos/linux_code:init",
     ],
 )
+
+cc_library(
+    name = "debouncer",
+    hdrs = [
+        "debouncer.h",
+    ],
+    srcs = [
+        "debouncer.cc",
+    ],
+)
+
+cc_test(
+    name = "debouncer_test",
+    srcs = [
+        "debouncer_test.cc",
+    ],
+    deps = [
+        ":debouncer",
+        "//aos/testing:googletest",
+    ],
+)
