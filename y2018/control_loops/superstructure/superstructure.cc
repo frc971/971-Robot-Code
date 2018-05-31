@@ -5,8 +5,11 @@
 #include "aos/common/controls/control_loops.q.h"
 #include "aos/common/logging/logging.h"
 #include "frc971/control_loops/control_loops.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2018/constants.h"
 #include "y2018/control_loops/superstructure/intake/intake.h"
+#include "y2018/status_light.q.h"
+#include "y2018/vision/vision.q.h"
 
 namespace y2018 {
 namespace control_loops {
@@ -20,6 +23,17 @@ namespace {
 // The maximum voltage the intake roller will be allowed to use.
 constexpr double kMaxIntakeRollerVoltage = 12.0;
 }  // namespace
+
+void SendColors(float red, float green, float blue) {
+  auto new_status_light = status_light.MakeMessage();
+  new_status_light->red = red;
+  new_status_light->green = green;
+  new_status_light->blue = blue;
+
+  if (!new_status_light.Send()) {
+    LOG(ERROR, "Failed to send lights.\n");
+  }
+}
 
 Superstructure::Superstructure(
     control_loops::SuperstructureQueue *superstructure_queue)
@@ -237,6 +251,34 @@ void Superstructure::RunIteration(
     stuck_count_ = 0;
   }
   status->rotation_state = static_cast<uint32_t>(rotation_state_);
+
+  ::frc971::control_loops::drivetrain_queue.output.FetchLatest();
+
+  ::y2018::vision::vision_status.FetchLatest();
+  if (status->estopped) {
+    SendColors(0.5, 0.0, 0.0);
+  } else if (!y2018::vision::vision_status.get() ||
+             y2018::vision::vision_status.Age() > chrono::seconds(1)) {
+    SendColors(0.5, 0.5, 0.0);
+  } else if (rotation_state_ == RotationState::ROTATING_LEFT ||
+             rotation_state_ == RotationState::ROTATING_RIGHT) {
+    SendColors(0.5, 0.20, 0.0);
+  } else if (rotation_state_ == RotationState::STUCK) {
+    SendColors(0.5, 0.0, 0.5);
+  } else if (position->box_back_beambreak_triggered) {
+    SendColors(0.0, 0.0, 0.5);
+  } else if (position->box_distance < 0.2) {
+    SendColors(0.0, 0.5, 0.0);
+  } else if (::frc971::control_loops::drivetrain_queue.output.get() &&
+             ::std::max(::std::abs(::frc971::control_loops::drivetrain_queue
+                                       .output->left_voltage),
+                        ::std::abs(::frc971::control_loops::drivetrain_queue
+                                       .output->right_voltage)) > 11.5) {
+    SendColors(0.5, 0.0, 0.5);
+  } else {
+    SendColors(0.0, 0.0, 0.0);
+  }
+
   last_box_distance_ = clipped_box_distance;
 }
 

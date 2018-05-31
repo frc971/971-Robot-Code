@@ -30,6 +30,24 @@ class TXUdpSocket {
   DISALLOW_COPY_AND_ASSIGN(TXUdpSocket);
 };
 
+// Send a protobuf.  Not RT (mallocs on send).
+template <typename PB>
+class ProtoTXUdpSocket {
+ public:
+  ProtoTXUdpSocket(const std::string &ip_addr, int port)
+      : socket_(ip_addr, port) {}
+
+  void Send(const PB &pb) {
+    ::std::string serialized_data;
+    pb.SerializeToString(&serialized_data);
+    socket_.Send(serialized_data.data(), serialized_data.size());
+  }
+
+ private:
+  TXUdpSocket socket_;
+  DISALLOW_COPY_AND_ASSIGN(ProtoTXUdpSocket);
+};
+
 // Simple wrapper around a receiving UDP socket.
 //
 // LOG(FATAL)s for all errors, including from Recv.
@@ -39,6 +57,8 @@ class RXUdpSocket {
 
   // Returns the number of bytes received.
   int Recv(void *data, int size);
+
+  static int SocketBindListenOnPort(int port);
 
  private:
   ScopedFD fd_;

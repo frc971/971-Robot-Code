@@ -25,9 +25,12 @@ cc_library(
         ":superstructure_queue",
         "//aos/common/controls:control_loop",
         "//frc971/control_loops:queues",
+        "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//y2018:constants",
+        "//y2018:status_light",
         "//y2018/control_loops/superstructure/arm",
         "//y2018/control_loops/superstructure/intake",
+        "//y2018/vision:vision_queue",
     ],
 )
 

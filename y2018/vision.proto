@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package y2018;
+
+message VisionControl {
+  optional bool high_video = 1;
+}
+
+message VisionStatus {
+  optional uint32 high_frame_count = 1;
+  optional uint32 low_frame_count = 2;
+}

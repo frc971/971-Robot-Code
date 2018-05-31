@@ -2,26 +2,31 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <mutex>
 
 #include "aos/common/actions/actions.h"
 #include "aos/common/input/driver_station_data.h"
 #include "aos/common/logging/logging.h"
+#include "aos/common/stl_mutex.h"
 #include "aos/common/time.h"
 #include "aos/common/util/log_interval.h"
 #include "aos/input/drivetrain_input.h"
 #include "aos/input/joystick_input.h"
 #include "aos/linux_code/init.h"
+#include "aos/vision/events/udp.h"
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2018/control_loops/drivetrain/drivetrain_base.h"
 #include "y2018/control_loops/superstructure/arm/generated_graph.h"
 #include "y2018/control_loops/superstructure/superstructure.q.h"
-#include "y2018/status_light.q.h"
+#include "y2018/vision.pb.h"
 
+using ::aos::monotonic_clock;
 using ::frc971::control_loops::drivetrain_queue;
 using ::y2018::control_loops::superstructure_queue;
-
+using ::aos::events::ProtoTXUdpSocket;
+using ::aos::events::RXUdpSocket;
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::ControlBit;
 using ::aos::input::driver_station::JoystickAxis;
@@ -78,7 +83,7 @@ std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
 
 class Reader : public ::aos::input::JoystickInput {
  public:
-  Reader() {
+  Reader() : video_tx_("10.9.71.179", 5000) {
     drivetrain_input_reader_ = DrivetrainInputReader::Make(
         DrivetrainInputReader::InputType::kPistol,
         ::y2018::control_loops::drivetrain::GetDrivetrainConfig());
@@ -110,17 +115,6 @@ class Reader : public ::aos::input::JoystickInput {
     drivetrain_input_reader_->HandleDrivetrain(data);
   }
 
-  void SendColors(float red, float green, float blue) {
-    auto new_status_light = status_light.MakeMessage();
-    new_status_light->red = red;
-    new_status_light->green = green;
-    new_status_light->blue = blue;
-
-    if (!new_status_light.Send()) {
-      LOG(ERROR, "Failed to send lights.\n");
-    }
-  }
-
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       action_queue_.CancelAllActions();
@@ -140,6 +134,11 @@ class Reader : public ::aos::input::JoystickInput {
     new_superstructure_goal->intake.left_intake_angle = intake_goal_;
     new_superstructure_goal->intake.right_intake_angle = intake_goal_;
 
+    if (data.PosEdge(kIntakeIn) || data.PosEdge(kSmallBox) ||
+        data.PosEdge(kIntakeClosed)) {
+      vision_control_.set_high_video(false);
+    }
+
     if (data.IsPressed(kIntakeIn)) {
       // Turn on the rollers.
       new_superstructure_goal->intake.roller_voltage = 8.0;
@@ -149,14 +148,6 @@ class Reader : public ::aos::input::JoystickInput {
     } else {
       // We don't want the rollers on.
       new_superstructure_goal->intake.roller_voltage = 0.0;
-    }
-
-    if (superstructure_queue.position->box_back_beambreak_triggered) {
-      SendColors(0.0, 0.5, 0.0);
-    } else if (superstructure_queue.position->box_distance < 0.2) {
-      SendColors(0.0, 0.0, 0.5);
-    } else {
-      SendColors(0.0, 0.0, 0.0);
     }
 
     if (data.IsPressed(kSmallBox)) {
@@ -251,24 +242,33 @@ class Reader : public ::aos::input::JoystickInput {
         }
       }
     } else if (data.PosEdge(kArmPickupBoxFromIntake)) {
+      vision_control_.set_high_video(false);
       arm_goal_position_ = arm::NeutralIndex();
     } else if (data.IsPressed(kDuck)) {
+      vision_control_.set_high_video(false);
       arm_goal_position_ = arm::DuckIndex();
     } else if (data.IsPressed(kArmNeutral)) {
+      vision_control_.set_high_video(false);
       arm_goal_position_ = arm::NeutralIndex();
     } else if (data.IsPressed(kArmUp)) {
+      vision_control_.set_high_video(true);
       arm_goal_position_ = arm::UpIndex();
     } else if (data.IsPressed(kArmFrontSwitch)) {
       arm_goal_position_ = arm::FrontSwitchIndex();
     } else if (data.IsPressed(kArmFrontExtraHighBox)) {
+      vision_control_.set_high_video(true);
       arm_goal_position_ = arm::FrontHighBoxIndex();
     } else if (data.IsPressed(kArmFrontHighBox)) {
+      vision_control_.set_high_video(true);
       arm_goal_position_ = arm::FrontMiddle2BoxIndex();
     } else if (data.IsPressed(kArmFrontMiddle2Box)) {
+      vision_control_.set_high_video(true);
       arm_goal_position_ = arm::FrontMiddle3BoxIndex();
     } else if (data.IsPressed(kArmFrontMiddle1Box)) {
+      vision_control_.set_high_video(true);
       arm_goal_position_ = arm::FrontMiddle1BoxIndex();
     } else if (data.IsPressed(kArmFrontLowBox)) {
+      vision_control_.set_high_video(true);
       arm_goal_position_ = arm::FrontLowBoxIndex();
     } else if (data.IsPressed(kArmBackExtraHighBox)) {
       arm_goal_position_ = arm::BackHighBoxIndex();
@@ -324,6 +324,8 @@ class Reader : public ::aos::input::JoystickInput {
     if (!new_superstructure_goal.Send()) {
       LOG(ERROR, "Sending superstructure goal failed.\n");
     }
+
+    video_tx_.Send(vision_control_);
   }
 
  private:
@@ -358,11 +360,14 @@ class Reader : public ::aos::input::JoystickInput {
   bool never_disabled_ = true;
 
   uint32_t arm_goal_position_ = 0;
+  VisionControl vision_control_;
 
   decltype(FrontPoints()) front_points_ = FrontPoints();
   decltype(BackPoints()) back_points_ = BackPoints();
 
   ::aos::common::actions::ActionQueue action_queue_;
+
+  ProtoTXUdpSocket<VisionControl> video_tx_;
 };
 
 }  // namespace joysticks
