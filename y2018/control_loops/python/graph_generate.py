@@ -503,10 +503,12 @@ front_middle1_box = to_theta_with_circular_index(
 front_low_box = to_theta_with_circular_index(0.87, 1.572, circular_index=-1)
 back_high_box = to_theta_with_circular_index(-0.75, 2.48, circular_index=0)
 back_middle2_box = to_theta_with_circular_index(
-    -0.700, 2.268, circular_index=0)
+    -0.700, 2.27, circular_index=0)
 back_middle1_box = to_theta_with_circular_index(
-    -0.800, 1.915, circular_index=0)
-back_low_box = to_theta_with_circular_index(-0.87, 1.572, circular_index=0)
+    -0.800, 1.93, circular_index=0)
+back_low_box = to_theta_with_circular_index(-0.87, 1.64, circular_index=0)
+
+back_extra_low_box = to_theta_with_circular_index(-0.87, 1.52, circular_index=0)
 
 front_switch = to_theta_with_circular_index(0.88, 0.967, circular_index=-1)
 back_switch = to_theta_with_circular_index(-0.88, 0.967, circular_index=-2)
@@ -571,6 +573,7 @@ sparse_back_points = [
     (back_middle2_box, "BackMiddle2Box"),
     (back_middle1_box, "BackMiddle1Box"),
     (back_low_box, "BackLowBox"),
+    (back_extra_low_box, "BackExtraLowBox"),
 ]  # yapf: disable
 
 def expand_points(points, max_distance):
@@ -606,17 +609,21 @@ def expand_points(points, max_distance):
                 circular_index=circular_index)
             result_points.append((subpoint, '%s%dof%d' % (name, subindex,
                                                           num_points)))
-            result_paths.append(XYSegment(previous_point, subpoint))
+            result_paths.append(
+                XYSegment(last_iteration_point, subpoint, vmax=6.0))
             if (last_iteration_point != previous_point).any():
-                result_paths.append(XYSegment(last_iteration_point, subpoint))
-            result_paths.append(XYSegment(subpoint, point))
+                result_paths.append(XYSegment(previous_point, subpoint))
+            if subindex == num_points - 1:
+              result_paths.append(XYSegment(subpoint, point, vmax=6.0))
+            else:
+              result_paths.append(XYSegment(subpoint, point))
             last_iteration_point = subpoint
         result_points.append((point, name))
 
     return result_points, result_paths
 
-front_points, front_paths = expand_points(sparse_front_points, 0.05)
-back_points, back_paths = expand_points(sparse_back_points, 0.05)
+front_points, front_paths = expand_points(sparse_front_points, 0.06)
+back_points, back_paths = expand_points(sparse_back_points, 0.06)
 
 points = [(ready_above_box, "ReadyAboveBox"),
           (tall_box_grab, "TallBoxGrab"),
@@ -646,7 +653,41 @@ front_switch_auto_c2 = numpy.array([1.861885, -0.273664])
 
 # We need to define critical points so we can create paths connecting them.
 # TODO(austin): Attach velocities to the slow ones.
+ready_to_back_low_c1 = numpy.array([2.524325, 0.046417])
+
+neutral_to_back_low_c1 = numpy.array([2.381942, -0.070220])
+
+tall_to_back_low_c1 = numpy.array([2.603918, 0.088298])
+tall_to_back_low_c2 = numpy.array([1.605624, 1.003434])
+
+tall_to_back_high_c2 = numpy.array([1.508610, 0.946147])
+
+# If true, only plot the first named segment
+isolate = 0
+
+long_alpha_unitizer = numpy.matrix([[1.0 / 17.0, 0.0], [0.0, 1.0 / 17.0]])
+
 named_segments = [
+    ThetaSplineSegment(neutral, neutral_to_back_low_c1, tall_to_back_high_c2, back_high_box, "NeutralBoxToHigh", alpha_unitizer=long_alpha_unitizer),
+    ThetaSplineSegment(neutral, neutral_to_back_low_c1, tall_to_back_high_c2, back_middle2_box, "NeutralBoxToMiddle2", long_alpha_unitizer),
+    ThetaSplineSegment(neutral, neutral_to_back_low_c1, tall_to_back_low_c2, back_middle1_box, "NeutralBoxToMiddle1", long_alpha_unitizer),
+    ThetaSplineSegment(neutral, neutral_to_back_low_c1, tall_to_back_low_c2, back_low_box, "NeutralBoxToLow", long_alpha_unitizer),
+
+    ThetaSplineSegment(ready_above_box, ready_to_back_low_c1, tall_to_back_high_c2, back_high_box, "ReadyBoxToHigh", long_alpha_unitizer),
+    ThetaSplineSegment(ready_above_box, ready_to_back_low_c1, tall_to_back_high_c2, back_middle2_box, "ReadyBoxToMiddle2", long_alpha_unitizer),
+    ThetaSplineSegment(ready_above_box, ready_to_back_low_c1, tall_to_back_low_c2, back_middle1_box, "ReadyBoxToMiddle1", long_alpha_unitizer),
+    ThetaSplineSegment(ready_above_box, ready_to_back_low_c1, tall_to_back_low_c2, back_low_box, "ReadyBoxToLow", long_alpha_unitizer),
+
+    ThetaSplineSegment(short_box_grab, tall_to_back_low_c1, tall_to_back_high_c2, back_high_box, "ShortBoxToHigh", long_alpha_unitizer),
+    ThetaSplineSegment(short_box_grab, tall_to_back_low_c1, tall_to_back_high_c2, back_middle2_box, "ShortBoxToMiddle2", long_alpha_unitizer),
+    ThetaSplineSegment(short_box_grab, tall_to_back_low_c1, tall_to_back_low_c2, back_middle1_box, "ShortBoxToMiddle1", long_alpha_unitizer),
+    ThetaSplineSegment(short_box_grab, tall_to_back_low_c1, tall_to_back_low_c2, back_low_box, "ShortBoxToLow", long_alpha_unitizer),
+
+    ThetaSplineSegment(tall_box_grab, tall_to_back_low_c1, tall_to_back_high_c2, back_high_box, "TallBoxToHigh", long_alpha_unitizer),
+    ThetaSplineSegment(tall_box_grab, tall_to_back_low_c1, tall_to_back_high_c2, back_middle2_box, "TallBoxToMiddle2", long_alpha_unitizer),
+    ThetaSplineSegment(tall_box_grab, tall_to_back_low_c1, tall_to_back_low_c2, back_middle1_box, "TallBoxToMiddle1", long_alpha_unitizer),
+    ThetaSplineSegment(tall_box_grab, tall_to_back_low_c1, tall_to_back_low_c2, back_low_box, "TallBoxToLow", long_alpha_unitizer),
+
     SplineSegment(neutral, ready_above_box_c1, ready_above_box_c2,
                   ready_above_box, "ReadyToNeutral"),
     XYSegment(ready_above_box, tall_box_grab, "ReadyToTallBox", vmax=6.0),
@@ -707,6 +748,7 @@ unnamed_segments = [
     AngleSegment(up, back_high_box),
     AngleSegment(up, back_middle2_box),
     AngleSegment(up, back_middle1_box),
+    AngleSegment(up, back_low_box),
     XYSegment(back_high_box, back_middle2_box),
     XYSegment(back_high_box, back_middle1_box),
     XYSegment(back_high_box, back_low_box),
@@ -721,4 +763,8 @@ unnamed_segments = [
     AngleSegment(up, partner_hang),
 ] + front_paths + back_paths
 
-segments = named_segments + unnamed_segments
+segments = []
+if isolate:
+    segments += named_segments[:isolate]
+else:
+    segments += named_segments + unnamed_segments

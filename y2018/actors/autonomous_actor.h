@@ -28,8 +28,8 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  private:
   void Reset() {
     roller_voltage_ = 0.0;
-    left_intake_angle_ = -3.3;
-    right_intake_angle_ = -3.3;
+    left_intake_angle_ = -3.2;
+    right_intake_angle_ = -3.2;
     arm_goal_position_ = arm::NeutralIndex();
     grab_box_ = false;
     open_claw_ = false;
@@ -42,8 +42,8 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 
   double roller_voltage_ = 0.0;
-  double left_intake_angle_ = -3.3;
-  double right_intake_angle_ = -3.3;
+  double left_intake_angle_ = -3.2;
+  double right_intake_angle_ = -3.2;
   uint32_t arm_goal_position_ = arm::NeutralIndex();
   bool grab_box_ = false;
   bool open_claw_ = false;
