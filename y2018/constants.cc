@@ -90,20 +90,20 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
       left_intake->zeroing.measured_absolute_position = 0.213653;
       left_intake->potentiometer_offset = -5.45258 + 1.299206;
-      left_intake->spring_offset = -0.25 - 0.009 + 0.029;
+      left_intake->spring_offset = -0.25 - 0.009 + 0.029 - 0.025;
 
       right_intake->zeroing.measured_absolute_position = 0.37022 - 0.04;
       right_intake->potentiometer_offset = 3.739919 + 1.087098 + 0.825;
-      right_intake->spring_offset = 0.25 + 0.015;
+      right_intake->spring_offset = 0.25 + 0.015 - 0.025;
 
       arm_proximal->zeroing.measured_absolute_position =
-          0.067941 + 1.047 - 0.116 + 0.06 - 0.004 + 0.009;
+          0.067941 + 1.047 - 0.116 + 0.06 - 0.004 + 0.009 + 0.0938;
       arm_proximal->potentiometer_offset =
-          1.047 - 3.653298 + -0.078 + 0.9455 + 0.265;
+          1.047 - 3.653298 + -0.078 + 0.9455 + 0.265 - 0.36;
 
       arm_distal->zeroing.measured_absolute_position =
-          -0.870445 + 5.209807817203074 + 0.118 - 0.004 + 0.407;
-      arm_distal->potentiometer_offset = 5.209807817203074 + 1.250476 + 0.110;
+          -0.870445 + 5.209807817203074 + 0.118 - 0.004 + 0.407 - 0.53;
+      arm_distal->potentiometer_offset = 5.209807817203074 + 1.250476 + 0.110 + 0.52;
       break;
 
     case kPracticeTeamNumber:
