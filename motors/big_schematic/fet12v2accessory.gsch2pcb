@@ -1,0 +1,3 @@
+schematics fet12v2accessory-main.sch fet12v2accessory-current-sense.sch fet12v2accessory-connectors.sch fet12v2accessory-leds.sch fet12v2accessory-thermocouples.sch fet12v2accessory-xbee.sch
+output-name fet12v2accessory
+use-files

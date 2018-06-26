@@ -1,0 +1,3 @@
+schematics fet12v2logic-main.sch fet12v2logic-connectors.sch fet12v2logic-leds.sch fet12v2logic-halls.sch fet12v2logic-gate-drives.sch fet12v2logic-5v.sch fet12v2logic-12v.sch fet12v2logic-temp-sensors.sch
+output-name fet12v2logic
+use-files
