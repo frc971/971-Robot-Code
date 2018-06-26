@@ -1,13 +1,43 @@
+load("//aos/build:queues.bzl", "queue_library")
+
 cc_binary(
-  name = "image_streamer",
-  srcs = ["image_streamer.cc"],
-  deps = [
-    "//aos/vision/events:socket_types",
-    '//aos/vision/events:epoll_events',
-    '//aos/vision/image:reader',
-    '//aos/vision/image:image_stream',
-    '//aos/vision/blob:codec',
-    '//aos/common/logging:logging',
-    '//aos/common/logging:implementations',
-  ],
+    name = "image_streamer",
+    srcs = ["image_streamer.cc"],
+    deps = [
+        "//aos/common/logging",
+        "//aos/common/logging:implementations",
+        "//aos/vision/blob:codec",
+        "//aos/vision/events:epoll_events",
+        "//aos/vision/events:socket_types",
+        "//aos/vision/events:udp",
+        "//aos/vision/image:image_stream",
+        "//aos/vision/image:reader",
+        "//third_party/gflags",
+        "//y2018:vision_proto",
+    ],
+)
+
+queue_library(
+    name = "vision_queue",
+    srcs = [
+        "vision.q",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "vision_status",
+    srcs = [
+        "vision_status.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":vision_queue",
+        "//aos/common:time",
+        "//aos/common/logging",
+        "//aos/common/logging:queue_logging",
+        "//aos/linux_code:init",
+        "//aos/vision/events:udp",
+        "//y2018:vision_proto",
+    ],
 )

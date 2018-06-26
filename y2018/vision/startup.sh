@@ -30,25 +30,25 @@ sleep 1
 # echo All done setting exposure
 
 # echo "Starting target sender now."
-A=`ls /dev/video*`
 
-echo $SHELL
+for CAMERA in /dev/video0 /dev/video1
+do
+  echo $CAMERA
 
-echo $A
+  v4l2-ctl --set-ctrl="exposure_auto=1" -d $CAMERA
+  sleep 0.5
+  v4l2-ctl --set-ctrl="exposure_absolute=100" -d $CAMERA
+  sleep 0.5
 
-v4l2-ctl --set-ctrl="exposure_auto=1" -d $A
-sleep 0.5
-v4l2-ctl --set-ctrl="exposure_absolute=100" -d $A
-sleep 0.5
+  PATH="./;$PATH"
 
-PATH="./;$PATH"
-
-/root/camera_primer $A
+  /root/camera_primer $CAMERA
+done
 
 # Run a script to reset the exposure a few times and exit.
 /root/exposure_2018.sh &
 
-/root/image_streamer
+exec /root/image_streamer --single_camera=false
 #exec ./target_sender Practice
 #exec ./target_sender Comp
 #exec ./target_sender Spare

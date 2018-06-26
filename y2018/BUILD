@@ -1,5 +1,6 @@
 load("//aos/downloader:downloader.bzl", "aos_downloader")
 load("//aos/build:queues.bzl", "queue_library")
+load("//tools/build_rules:protobuf.bzl", "proto_cc_library")
 
 aos_downloader(
     name = "download",
@@ -10,6 +11,7 @@ aos_downloader(
     start_srcs = [
         ":joystick_reader",
         ":wpilib_interface",
+        "//y2018/vision:vision_status",
         "//aos:prime_start_binaries",
         "//y2018/control_loops/drivetrain:drivetrain",
         "//y2018/actors:autonomous_action",
@@ -26,6 +28,7 @@ aos_downloader(
     start_srcs = [
         ":joystick_reader.stripped",
         ":wpilib_interface.stripped",
+        "//y2018/vision:vision_status.stripped",
         "//aos:prime_start_binaries_stripped",
         "//y2018/actors:autonomous_action.stripped",
         "//y2018/control_loops/drivetrain:drivetrain.stripped",
@@ -39,7 +42,8 @@ cc_binary(
         "joystick_reader.cc",
     ],
     deps = [
-        ":status_light",
+        ":vision_proto",
+        "//aos/common:stl_mutex",
         "//aos/common:time",
         "//aos/common/actions:action_lib",
         "//aos/common/logging",
@@ -47,6 +51,7 @@ cc_binary(
         "//aos/input:drivetrain_input",
         "//aos/input:joystick_input",
         "//aos/linux_code:init",
+        "//aos/vision/events:udp",
         "//frc971/autonomous:auto_queue",
         "//frc971/autonomous:base_autonomous_actor",
         "//frc971/control_loops/drivetrain:drivetrain_queue",
@@ -116,6 +121,7 @@ cc_binary(
         "//third_party/Phoenix-frc-lib:phoenix",
         "//y2018:constants",
         "//y2018/control_loops/superstructure:superstructure_queue",
+        "//y2018/vision:vision_queue",
     ],
 )
 
@@ -124,4 +130,11 @@ queue_library(
     srcs = [
         "status_light.q",
     ],
+    visibility = ["//visibility:public"],
+)
+
+proto_cc_library(
+    name = "vision_proto",
+    src = "vision.proto",
+    visibility = ["//visibility:public"],
 )

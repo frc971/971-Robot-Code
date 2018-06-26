@@ -7,6 +7,7 @@
 
 #include "aos/common/controls/control_loop_test.h"
 #include "aos/common/queue.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
@@ -14,6 +15,8 @@
 #include "y2018/control_loops/superstructure/arm/dynamics.h"
 #include "y2018/control_loops/superstructure/arm/generated_graph.h"
 #include "y2018/control_loops/superstructure/intake/intake_plant.h"
+#include "y2018/status_light.q.h"
+#include "y2018/vision/vision.q.h"
 
 using ::frc971::control_loops::PositionSensorSimulator;
 
@@ -271,6 +274,9 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
                               ".y2018.control_loops.superstructure.output",
                               ".y2018.control_loops.superstructure.status"),
         superstructure_(&superstructure_queue_) {
+    status_light.Clear();
+    ::y2018::vision::vision_status.Clear();
+    ::frc971::control_loops::drivetrain_queue.output.Clear();
     set_team_id(::frc971::control_loops::testing::kTeamNumber);
   }
 

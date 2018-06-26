@@ -26,8 +26,8 @@ int TXUdpSocket::Send(const char *data, int size) {
   return send(fd_.get(), data, size, 0);
 }
 
-RXUdpSocket::RXUdpSocket(int port)
-    : fd_(PCHECK(socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))) {
+int RXUdpSocket::SocketBindListenOnPort(int port) {
+  int fd = PCHECK(socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP));
   sockaddr_in bind_address;
   memset(&bind_address, 0, sizeof(bind_address));
 
@@ -35,9 +35,12 @@ RXUdpSocket::RXUdpSocket(int port)
   bind_address.sin_port = htons(port);
   bind_address.sin_addr.s_addr = htonl(INADDR_ANY);
 
-  PCHECK(bind(fd_.get(), reinterpret_cast<sockaddr *>(&bind_address),
+  PCHECK(bind(fd, reinterpret_cast<sockaddr *>(&bind_address),
               sizeof(bind_address)));
+  return fd;
 }
+
+RXUdpSocket::RXUdpSocket(int port) : fd_(SocketBindListenOnPort(port)) {}
 
 int RXUdpSocket::Recv(void *data, int size) {
   return PCHECK(recv(fd_.get(), static_cast<char *>(data), size, 0));
