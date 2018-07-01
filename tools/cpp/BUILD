@@ -81,6 +81,7 @@ filegroup(
 filegroup(
     name = "clang_3p6_compiler_files",
     srcs = [
+        "flags_compiler_inputs",
         "//tools/cpp/clang_3p6:clang",
         "//tools/cpp/clang_3p6:ld",
         "@clang_3p6_repo//:compiler_components",
@@ -197,7 +198,7 @@ cc_toolchain(
     name = "cc-compiler-cortex-m4f",
     all_files = ":empty",
     compiler_files = ":empty",
-    cpu = "cortex-m4",
+    cpu = "cortex-m4f",
     dwp_files = ":empty",
     dynamic_runtime_libs = [":empty"],
     linker_files = "//motors/core:linkerscript",
@@ -205,4 +206,13 @@ cc_toolchain(
     static_runtime_libs = [":empty"],
     strip_files = ":empty",
     supports_param_files = 0,
+)
+
+py_binary(
+    name = "gen_crosstool",
+    srcs = ["gen_crosstool.py"],
+    main = "gen_crosstool.py",
+    deps = [
+        "//third_party/bazel:crosstool_config_proto_py",
+    ],
 )

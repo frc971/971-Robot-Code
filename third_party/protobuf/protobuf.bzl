@@ -90,7 +90,7 @@ _proto_gen = rule(
         "deps": attr.label_list(providers = ["proto"]),
         "includes": attr.string_list(),
         "protoc": attr.label(
-            cfg = 'host',
+            cfg = "host",
             executable = True,
             single_file = True,
             mandatory = True,
@@ -180,7 +180,6 @@ def cc_proto_library(
       includes=includes,
       **kargs)
 
-
 def internal_copied_filegroup(
         name,
         srcs,
@@ -210,13 +209,13 @@ def internal_copied_filegroup(
       srcs=outs,
       **kargs)
 
-
 def py_proto_library(
         name,
         srcs=[],
         deps=[],
         py_libs=[],
         py_extra_srcs=[],
+        py_imports=[],
         include=None,
         default_runtime="//google/protobuf:protobuf_python",
         protoc="//google/protobuf:protoc",
@@ -270,12 +269,13 @@ def py_proto_library(
 
   if default_runtime and not default_runtime in py_libs + deps:
     py_libs = py_libs + [default_runtime]
-  py_libs = py_libs + ['@python_import_helpers//:google_protobuf_importer']
+  py_libs = py_libs
 
   native.py_library(
       name=name,
       srcs=outs+py_extra_srcs,
       deps=py_libs+deps,
+      imports=py_imports,
       **kargs)
 
 def internal_protobuf_py_tests(
