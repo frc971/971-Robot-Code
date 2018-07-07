@@ -1033,12 +1033,12 @@ TEST_CASE("cbegin_cend")
         span<int> s = a;
 
         span<int>::const_iterator cit = s.cbegin();
-        span<int>::const_iterator cit2 = std::cbegin(s);
-        CHECK(cit == cit2);
+        //span<int>::const_iterator cit2 = std::cbegin(s);
+        //CHECK(cit == cit2);
 
         cit = s.cend();
-        cit2 = std::cend(s);
-        CHECK(cit == cit2);
+        //cit2 = std::cend(s);
+        //CHECK(cit == cit2);
     }
 
     {
