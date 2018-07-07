@@ -10,13 +10,14 @@ set -u
 BAZEL_SOURCE="$1"
 
 VERSION="$(date +%Y%m%d%H%M)+$(GIT_DIR="${BAZEL_SOURCE}/.git" git rev-parse --short HEAD)"
-DEB="bazel_${VERSION}_amd64.deb"
+OUTPUT="bazel_${VERSION}"
 
 (
 cd "${BAZEL_SOURCE}"
-bazel build -c opt //scripts/packages/debian:bazel-debian --embed_label="${VERSION}" --stamp=yes --experimental_sandbox_base=/dev/shm
+bazel build -c opt //scripts/packages:with-jdk/bazel-real --embed_label="${VERSION}" --stamp=yes --experimental_sandbox_base=/dev/shm
 )
 
-cp "${BAZEL_SOURCE}/bazel-bin/scripts/packages/debian/bazel-debian.deb" "${DEB}"
+cp "${BAZEL_SOURCE}/bazel-genfiles/scripts/packages/with-jdk/bazel-real" "${OUTPUT}"
+xz "${OUTPUT}"
 
-echo "Output is at ${DEB}"
+echo "Output is at ${OUTPUT}.xz"
