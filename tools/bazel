@@ -24,7 +24,8 @@ if [[ -n "${BAZEL_OVERRIDE+x}" ]]; then
   exec "${BAZEL_OVERRIDE}" "$@"
 fi
 
-readonly VERSION="201802152317+9b1b63c"
+readonly VERSION="201807071512+aa7e972"
+#bazel_201807071512+aa7e972.xz
 
 readonly DOWNLOAD_DIR="$(dirname "${BASH_SOURCE[0]}")/../bazel-downloads"
 # Directory to unpack bazel into.  This must change whenever bazel changes.
@@ -40,7 +41,7 @@ if [[ ! -d "${DOWNLOAD_DIR}" ]]; then
   exit 1
 fi
 
-readonly INSTALLER_NAME="bazel_${VERSION}-linux-x86_64.deb"
+readonly INSTALLER_NAME="bazel_${VERSION}.xz"
 readonly DOWNLOAD_URL="http://frc971.org/Build-Dependencies/${INSTALLER_NAME}"
 
 if [[ ! -d "${VERSION_DIR}" ]]; then
@@ -60,7 +61,11 @@ if [[ ! -d "${VERSION_DIR}" ]]; then
     # Now, download into the ~/.cache folder
     if [ ! -e "${HOME}/.cache/bazel/${INSTALLER_NAME}" ];
     then
-      wget "${DOWNLOAD_URL}" -O "${INSTALLER_NAME}" --no-verbose --show-progress
+      if [ -t 0 ] ; then
+        wget "${DOWNLOAD_URL}" -O "${INSTALLER_NAME}" --no-verbose --show-progress
+      else
+        wget "${DOWNLOAD_URL}" -O "${INSTALLER_NAME}" --no-verbose --quiet
+      fi
       mv "${INSTALLER_NAME}" "${HOME}/.cache/bazel/${INSTALLER_NAME}"
     fi
     rm -rf "${DOWNLOAD_TEMP_DIR}"
@@ -68,7 +73,9 @@ if [[ ! -d "${VERSION_DIR}" ]]; then
 
   ( cd "${TEMP_DIR}"
     echo "Unpacking Bazel version ${VERSION}..." >&2
-    dpkg-deb -x "${HOME}/.cache/bazel/${INSTALLER_NAME}" extracted
+    mkdir -p extracted/usr/bin
+    xz -d ${HOME}/.cache/bazel/${INSTALLER_NAME} -c > extracted/usr/bin/bazel-real
+    chmod a+x extracted/usr/bin/bazel-real
   )
 
   touch "${TEMP_DIR}/extracted/usr/bin/bazel.bazelrc"

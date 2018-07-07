@@ -228,7 +228,6 @@ toolchain {
   compiler_flag: "-D_FORTIFY_SOURCE=1"
   compiler_flag: "-fstack-protector"
   compiler_flag: "-fPIE"
-  linker_flag: "-pie"
   linker_flag: "-Wl,-z,relro,-z,now"
 
   # Pretty much everything needs this, including parts of the glibc STL...
@@ -279,6 +278,16 @@ toolchain {
     compiler_flag: "-ffunction-sections"
     compiler_flag: "-fdata-sections"
     linker_flag: "-Wl,--gc-sections"
+  }
+  feature {
+    name: "pie_for_linking"
+    enabled: true
+    flag_set {
+      action: "c++-link-executable"
+      flag_group {
+        flag: "-pie"
+      }
+    }
   }
 }
 
@@ -476,7 +485,6 @@ toolchain {
   compiler_flag: "-U_FORTIFY_SOURCE"
   compiler_flag: "-fstack-protector"
   compiler_flag: "-fPIE"
-  linker_flag: "-pie"
   linker_flag: "-Wl,-z,relro,-z,now"
 
   # Pretty much everything needs this, including parts of the glibc STL...
@@ -531,6 +539,16 @@ toolchain {
     compiler_flag: "-ffunction-sections"
     compiler_flag: "-fdata-sections"
     linker_flag: "-Wl,--gc-sections"
+  }
+  feature {
+    name: "pie_for_linking"
+    enabled: true
+    flag_set {
+      action: "c++-link-executable"
+      flag_group {
+        flag: "-pie"
+      }
+    }
   }
 }
 
@@ -730,7 +748,6 @@ toolchain {
   compiler_flag: "-U_FORTIFY_SOURCE"
   compiler_flag: "-fstack-protector"
   compiler_flag: "-fPIE"
-  linker_flag: "-pie"
   linker_flag: "-Wl,-z,relro,-z,now"
 
   # Pretty much everything needs this, including parts of the glibc STL...
@@ -781,6 +798,16 @@ toolchain {
     compiler_flag: "-ffunction-sections"
     compiler_flag: "-fdata-sections"
     linker_flag: "-Wl,--gc-sections"
+  }
+  feature {
+    name: "pie_for_linking"
+    enabled: true
+    flag_set {
+      action: "c++-link-executable"
+      flag_group {
+        flag: "-pie"
+      }
+    }
   }
 }
 
