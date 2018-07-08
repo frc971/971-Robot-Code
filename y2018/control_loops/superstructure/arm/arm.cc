@@ -42,10 +42,10 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
                   bool close_claw, const control_loops::ArmPosition *position,
                   const bool claw_beambreak_triggered,
                   const bool box_back_beambreak_triggered,
-                  const bool intake_clear_of_box, double *proximal_output,
+                  const bool intake_clear_of_box, bool suicide,
+                  bool trajectory_override, double *proximal_output,
                   double *distal_output, bool *release_arm_brake,
-                  bool *claw_closed, control_loops::ArmStatus *status,
-                  bool suicide) {
+                  bool *claw_closed, control_loops::ArmStatus *status) {
   ::Eigen::Matrix<double, 2, 1> Y;
   const bool outputs_disabled =
       ((proximal_output == nullptr) || (distal_output == nullptr) ||
@@ -160,6 +160,11 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
     case State::GOTO_PATH:
       if (outputs_disabled) {
         state_ = State::DISABLED;
+      } else if (trajectory_override) {
+        follower_.SwitchTrajectory(nullptr);
+        current_node_ = filtered_goal;
+        follower_.set_theta(points_[current_node_]);
+        state_ = State::GOTO_PATH;
       } else if (close_enough_for_full_power_) {
         state_ = State::RUNNING;
         grab_state_ = GrabState::NORMAL;
@@ -175,6 +180,11 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
         state_ = State::ESTOP;
       } else if (outputs_disabled) {
         state_ = State::DISABLED;
+      } else if (trajectory_override) {
+        follower_.SwitchTrajectory(nullptr);
+        current_node_ = filtered_goal;
+        follower_.set_theta(points_[current_node_]);
+        state_ = State::GOTO_PATH;
       } else if (suicide) {
         state_ = State::PREP_CLIMB;
         climb_count_ = 50;

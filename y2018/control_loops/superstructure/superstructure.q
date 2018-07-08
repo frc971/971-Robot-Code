@@ -140,7 +140,11 @@ queue_group SuperstructureQueue {
 
     double voltage_winch;
 
+    double open_threshold;
+
     bool disable_box_correct;
+
+    bool trajectory_override;
   };
 
   message Status {
