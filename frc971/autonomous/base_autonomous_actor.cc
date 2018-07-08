@@ -204,6 +204,10 @@ bool BaseAutonomousActor::WaitForDriveNear(double distance, double angle) {
   constexpr double kPositionTolerance = 0.02;
   constexpr double kProfileTolerance = 0.001;
 
+  bool drive_has_been_close = false;
+  bool turn_has_been_close = false;
+  bool printed_first = false;
+
   while (true) {
     if (ShouldCancel()) {
       return false;
@@ -235,11 +239,27 @@ bool BaseAutonomousActor::WaitForDriveNear(double distance, double angle) {
       const double angle_to_go =
           (right_error - left_error) / (dt_config_.robot_radius * 2.0);
 
-      if (::std::abs(profile_distance_to_go) < distance + kProfileTolerance &&
+      const bool drive_close =
+          ::std::abs(profile_distance_to_go) < distance + kProfileTolerance &&
+          ::std::abs(distance_to_go) < distance + kPositionTolerance;
+      const bool turn_close =
           ::std::abs(profile_angle_to_go) < angle + kProfileTolerance &&
-          ::std::abs(distance_to_go) < distance + kPositionTolerance &&
-          ::std::abs(angle_to_go) < angle + kPositionTolerance) {
-        LOG(INFO, "Closer than %f distance, %f angle\n", distance, angle);
+          ::std::abs(angle_to_go) < angle + kPositionTolerance;
+
+      drive_has_been_close |= drive_close;
+      turn_has_been_close |= turn_close;
+      if (drive_has_been_close && !turn_has_been_close && !printed_first) {
+        LOG(INFO, "Drive finished first\n");
+        printed_first = true;
+      } else if (!drive_has_been_close && turn_has_been_close &&
+                 !printed_first) {
+        LOG(INFO, "Turn finished first\n");
+        printed_first = true;
+      }
+
+      if (drive_close && turn_close) {
+        LOG(INFO, "Closer than %f < %f distance, %f < %f angle\n",
+            distance_to_go, distance, angle_to_go, angle);
         return true;
       }
     }
