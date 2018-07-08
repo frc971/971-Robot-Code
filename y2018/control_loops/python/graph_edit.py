@@ -172,7 +172,7 @@ class Silly(basic_window.BaseWindow):
     def __init__(self):
         super(Silly, self).__init__()
 
-        self.theta_version = True
+        self.theta_version = False
         self.reinit_extents()
 
         self.last_pos = (numpy.pi / 2.0, 1.0)
@@ -420,6 +420,11 @@ class Silly(basic_window.BaseWindow):
             print('Clicked at xy, circular index: (%f, %f, %f)' %
                   (self.last_pos[0], self.last_pos[1],
                    self.circular_index_select))
+
+        print('c1: numpy.array([%f, %f])' % (self.segments[0].control1[0],
+                                             self.segments[0].control1[1]))
+        print('c2: numpy.array([%f, %f])' % (self.segments[0].control2[0],
+                                             self.segments[0].control2[1]))
 
         self.redraw()
 
