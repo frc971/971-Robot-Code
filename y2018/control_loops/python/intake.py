@@ -165,7 +165,7 @@ class DelayedIntake(Intake):
         # space.
 
         q_output_vel = 1.0
-        q_spring_pos = 0.5
+        q_spring_pos = 0.10
         q_spring_vel = 2.0
         q_voltage = 1000000000000.0
         self.Q_lqr = numpy.matrix(

@@ -56,12 +56,12 @@ class Arm {
   };
 
   enum class GrabState : int32_t {
-    NORMAL,
-    WAIT_FOR_BOX,
-    TALL_BOX,
-    SHORT_BOX,
-    CLAW_CLOSE,
-    OPEN_INTAKE,
+    NORMAL = 0,
+    WAIT_FOR_BOX = 1,
+    TALL_BOX = 2,
+    SHORT_BOX = 3,
+    CLAW_CLOSE = 4,
+    OPEN_INTAKE = 5,
   };
 
   State state() const { return state_; }
