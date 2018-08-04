@@ -124,10 +124,6 @@ setup_roborio.sh roboRIO-971-frc.local
 # Install apt-file so that packages can be searched
    apt-get install apt-file
    apt-file update
-# Look for the package that contains the ptree.hpp file.  This is needed to
-#   compile the 2018 code.
-   apt-file search 'boost/property_tree/ptree.hpp'
-   apt-get install libboost1.62-dev
 # Install sysstat so that you can tell how many resources are being used during
 #   the compile.
    apt-get install sysstat

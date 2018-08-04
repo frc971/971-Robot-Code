@@ -2,11 +2,6 @@ licenses(["notice"])  # lgpl
 
 cc_library(
     name = "ct",
-    includes = [
-        "ct_optcon/include",
-        "ct_core/include",
-        "ct_core/include/external",
-    ],
     hdrs = [
         "ct_optcon/include/ct/optcon/optcon.h",
         "ct_core/include/ct/core/core.h",
@@ -260,10 +255,6 @@ cc_library(
         "ct_optcon/include/ct/optcon/mpc/policyhandler/PolicyHandler-impl.h",
         "ct_optcon/include/ct/optcon/mpc/policyhandler/default/StateFeedbackPolicyHandler-impl.h",
     ] + glob(["ct_core/include/external/cppad/**/*.hpp"]),
-    deps = [
-        "//third_party/hpipm",
-        "//third_party/eigen",
-    ],
     copts = [
         "-Wno-pointer-arith",
         "-Wno-unused-variable",
@@ -272,6 +263,19 @@ cc_library(
     defines = [
         "HPIPM=1",
     ],
-    visibility = ["//visibility:public"],
+    includes = [
+        "ct_core/include",
+        "ct_core/include/external",
+        "ct_optcon/include",
+    ],
     restricted_to = ["//tools:k8"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//third_party/boostorg/algorithm",
+        "//third_party/boostorg/config",
+        "//third_party/boostorg/odeint",
+        "//third_party/boostorg/property_tree",
+        "//third_party/eigen",
+        "//third_party/hpipm",
+    ],
 )
