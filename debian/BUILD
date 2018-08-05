@@ -16,6 +16,10 @@ load(
     ":pandoc.bzl",
     pandoc_debs = "files",
 )
+load(
+    ":libusb.bzl",
+    libusb_debs = "files",
+)
 load("//debian:packages.bzl", "download_packages", "generate_deb_tarball")
 
 py_binary(
@@ -73,6 +77,16 @@ download_packages(
     ],
 )
 
+download_packages(
+    name = "download_libusb_deps",
+    packages = [
+        "libusb-0.1-4",
+        "libusb-1.0-0",
+        "libusb-1.0-0-dev",
+        "libusb-dev",
+    ],
+)
+
 generate_deb_tarball(
     name = "python",
     files = python_debs,
@@ -91,4 +105,9 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "pandoc",
     files = pandoc_debs,
+)
+
+generate_deb_tarball(
+    name = "libusb",
+    files = libusb_debs,
 )

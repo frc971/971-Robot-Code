@@ -16,6 +16,10 @@ load(
     "//debian:pandoc.bzl",
     pandoc_debs = "files",
 )
+load(
+    "//debian:libusb.bzl",
+    libusb_debs = "files",
+)
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
 generate_repositories_for_debs(python_debs)
@@ -25,6 +29,8 @@ generate_repositories_for_debs(clang_debs)
 generate_repositories_for_debs(patch_debs)
 
 generate_repositories_for_debs(pandoc_debs)
+
+generate_repositories_for_debs(libusb_debs)
 
 new_http_archive(
     name = "python_repo",
@@ -145,21 +151,6 @@ new_http_archive(
     url = "http://frc971.org/Build-Dependencies/empty.tar.gz",
 )
 
-new_local_repository(
-    name = "libusb",
-    build_file = "debian/libusb.BUILD",
-    path = "/usr",
-)
-
-# Created by combining libusb-1.0-0_2%3a1.0.19-1_amd64,
-# libusb-1.0-0-dev_2%3a1.0.19-1, and libudev1_215-17+deb8u7.
-new_http_archive(
-    name = "libusb_1_0",
-    build_file = "debian/libusb-1.0.BUILD",
-    sha256 = "12acb30faacd10e9aa7f3a5e074701e167ce9bbd45694db37d13d55de5398816",
-    url = "http://frc971.org/Build-Dependencies/libusb-1.0-1.0.19.tar.xz",
-)
-
 # Recompressed from libusb-1.0.21.7z.
 http_file(
     name = "libusb_1_0_windows",
@@ -196,4 +187,11 @@ new_http_archive(
     build_file = "debian/pandoc.BUILD",
     sha256 = "9f7a7adb3974a1f14715054c349ff3edc2909e920dbe3438fca437a83845f3c4",
     url = "http://frc971.org/Build-Dependencies/pandoc.tar.gz",
+)
+
+new_http_archive(
+    name = "libusb",
+    build_file = "debian/libusb.BUILD",
+    sha256 = "3ca5cc2d317226f6646866ff9e8c443db3b0f6c82f828e800240982727531590",
+    url = "http://frc971.org/Build-Dependencies/libusb.tar.gz",
 )

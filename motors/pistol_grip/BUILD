@@ -58,7 +58,7 @@ cc_binary(
     deps = [
         # Don't add anything else here. :usb_forward_windows still has to build it
         # without any other dependencies.
-        "@libusb_1_0",
+        "@libusb//:libusb_1_0",
     ],
 )
 
