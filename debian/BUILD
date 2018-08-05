@@ -8,6 +8,10 @@ load(
     "//debian:clang.bzl",
     clang_debs = "files",
 )
+load(
+    ":patch.bzl",
+    patch_debs = "files",
+)
 load("//debian:packages.bzl", "download_packages", "generate_deb_tarball")
 
 py_binary(
@@ -51,6 +55,13 @@ download_packages(
     ],
 )
 
+download_packages(
+    name = "download_patch_deps",
+    packages = [
+        "patch",
+    ],
+)
+
 generate_deb_tarball(
     name = "python",
     files = python_debs,
@@ -59,4 +70,9 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "clang_3p6",
     files = clang_debs,
+)
+
+generate_deb_tarball(
+    name = "patch",
+    files = patch_debs,
 )
