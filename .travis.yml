@@ -1,0 +1,164 @@
+# Copyright 2016 Peter Dimov
+# Copyright 2017, 2018 James E. King III
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE_1_0.txt or copy at http://boost.org/LICENSE_1_0.txt)
+
+#
+# Generic Travis CI build script for boostorg repositories
+#
+# Instructions for customizing this script for your library:
+# 
+# 1. Customize the compilers and language levels you want.
+# 2. If you have move than include/, src/, test/, example/, examples/,
+#    benchmark/ or tools/ directories, set the environment variable DEPINST.
+#    For example if your build uses code in "bench/" and "fog/" directories:
+#        - DEPINST="--include bench --include fog"
+# 3. If you want to enable Coverity Scan, you need to provide the environment
+#    variables COVERITY_SCAN_TOKEN and COVERITY_SCAN_NOTIFICATION_EMAIL in
+#    your github settings.
+# 4. Enable pull request builds in your boostorg/<library> account.
+# 5. The default language level is C++03, you can change CXXSTD to modify it.
+#
+# That's it - the scripts will do everything else for you.
+#
+
+sudo: false
+dist: trusty
+language: cpp
+
+env:
+  global:
+  # see: http://www.boost.org/build/doc/html/bbv2/overview/invocation.html#bbv2.overview.invocation.properties
+  # to use the default for a given environment, comment it out; recommend you build debug and release however..
+  # - B2_ADDRESS_MODEL=address-model=64,32
+  # - B2_LINK=link=shared,static
+  # - B2_THREADING=threading=multi,single
+    - B2_VARIANT=variant=release,debug
+  # - CXXSTD=03
+  # - DEPINST="--include other"
+
+install:
+  - git clone https://github.com/jeking3/boost-ci.git boost-ci
+  - cp -pr boost-ci/ci boost-ci/.codecov.yml .
+  - source ci/travis/install.sh
+
+addons:
+  apt:
+    packages:
+      - binutils-gold
+      - gdb
+      - libc6-dbg
+        
+branches:
+  only:
+    - develop
+    - master
+    
+script:
+  - cd $BOOST_ROOT/libs/$SELF
+  - ci/travis/build.sh
+
+jobs:
+  include:
+    #################### Jobs to run on every pull request ####################
+    - os: linux
+      env: 
+        - COMMENT="C++03"
+        - TOOLSET=gcc,gcc-7,clang
+      addons:
+        apt:
+          packages:
+            - g++-7
+          sources:
+            - ubuntu-toolchain-r-test
+    - os: linux
+      env: 
+        - COMMENT="C++11"
+        - TOOLSET=gcc,gcc-7,clang
+        - CXXSTD=11
+      addons:
+        apt:
+          packages:
+            - g++-7
+          sources:
+            - ubuntu-toolchain-r-test
+    - os: linux
+      env: 
+        - COMMENT=valgrind
+        - TOOLSET=clang 
+        - B2_VARIANT=variant=debug
+        - TESTFLAGS=testing.launcher=valgrind
+        - VALGRIND_OPTS=--error-exitcode=1
+      addons:
+        apt:
+          packages:
+            - clang-5.0
+            - libstdc++-7-dev
+            - valgrind
+          sources:
+            - llvm-toolchain-trusty-5.0
+            - ubuntu-toolchain-r-test
+
+    - os: linux
+      env:
+        - COMMENT=cppcheck
+      script:
+        - cd $BOOST_ROOT/libs/$SELF
+        - ci/travis/cppcheck.sh
+
+    - os: linux
+      env:
+        - COMMENT=UBSAN
+        - B2_VARIANT=variant=debug
+        - TOOLSET=gcc-7
+        - CXXFLAGS="cxxflags=-fno-omit-frame-pointer cxxflags=-fsanitize=undefined cxxflags=-fno-sanitize-recover=undefined"
+        - LINKFLAGS="linkflags=-fsanitize=undefined linkflags=-fno-sanitize-recover=undefined linkflags=-fuse-ld=gold"
+        - UBSAN_OPTIONS=print_stacktrace=1
+      addons:
+        apt:
+          packages:
+            - g++-7
+          sources:
+            - ubuntu-toolchain-r-test
+
+    - os: linux
+      env: 
+        - COMMENT=CodeCov
+        - TOOLSET=gcc-7
+      addons:
+        apt:
+          packages:
+            - gcc-7
+            - g++-7
+          sources:
+            - ubuntu-toolchain-r-test
+      script:
+        - pushd /tmp && git clone https://github.com/linux-test-project/lcov.git && export PATH=/tmp/lcov/bin:$PATH && which lcov && lcov --version && popd
+        - cd $BOOST_ROOT/libs/$SELF
+        - ci/travis/codecov.sh
+
+  # does not work with sourced install shell yet: see 
+  # https://travis-ci.org/jeking3/tokenizer/jobs/384903189
+  # for a typical failure
+  # - os: osx
+  #   osx_image: xcode9
+  #   env:
+  #     - TOOLSET=clang
+  #     - CXXSTD=03,11
+
+    #################### Jobs to run on pushes to master, develop ###################
+
+    # Coverity Scan
+    - os: linux
+      if: (env(COVERITY_SCAN_NOTIFICATION_EMAIL) IS present) AND (branch IN (develop, master)) AND (type IN (cron, push))
+      env:
+        - COMMENT="Coverity Scan"
+        - TOOLSET=gcc
+      script:
+        - cd $BOOST_ROOT/libs/$SELF
+        - ci/travis/coverity.sh
+
+notifications:
+  email:
+    false
+
