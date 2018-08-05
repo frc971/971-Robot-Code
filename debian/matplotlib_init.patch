@@ -1,0 +1,32 @@
+--- a/__init__.py	2018-07-11 15:57:58.086509489 -0700
++++ b/__init__.py	2018-07-11 16:04:15.004795500 -0700
+@@ -102,6 +102,7 @@
+ from __future__ import (absolute_import, division, print_function,
+                         unicode_literals)
+ 
++import os
+ import six
+ import sys
+ import distutils.version
+@@ -110,6 +111,21 @@
+ __version__ = str('1.4.2')
+ __version__numpy__ = str('1.6')  # minimum required numpy version
+ 
++matplotlib_base = os.path.dirname(os.path.dirname(__file__))
++
++# Hack to point matplotlib at its data.
++os.environ['MATPLOTLIBDATA'] = \
++        os.path.join( \
++            matplotlib_base,
++            "usr", "share", "matplotlib", "mpl-data")
++# Avoid reading /etc/matplotlib in all cases. Matplotlib is pretty happy to
++# escape the sandbox by using absolute paths.
++os.environ['MATPLOTLIBRC'] = os.environ['MATPLOTLIBDATA']
++# There's a bug where the temp directory gets set if MATPLOTLIBRC isn't set.
++# That causes the directory to not be created in time. We set the variable
++# manually here to work around the bug.
++os.environ['MPLCONFIGDIR'] = '/tmp/matplotlib-nobody'
++
+ try:
+     import dateutil
+ except ImportError:

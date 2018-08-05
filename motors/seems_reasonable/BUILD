@@ -5,8 +5,10 @@ py_binary(
     srcs = [
         "drivetrain.py",
     ],
+    legacy_create_init = False,
     restricted_to = ["//tools:k8"],
     deps = [
+        ":python_init",
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:drivetrain",
@@ -19,8 +21,10 @@ py_binary(
         "drivetrain.py",
         "polydrivetrain.py",
     ],
+    legacy_create_init = False,
     restricted_to = ["//tools:k8"],
     deps = [
+        ":python_init",
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:polydrivetrain",
@@ -93,4 +97,11 @@ cc_test(
         ":spring",
         "//aos/testing:googletest",
     ],
+)
+
+py_library(
+    name = "python_init",
+    srcs = ["__init__.py"],
+    visibility = ["//visibility:public"],
+    deps = ["//motors:python_init"],
 )

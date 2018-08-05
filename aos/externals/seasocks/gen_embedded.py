@@ -39,7 +39,7 @@ std::unordered_map<std::string, EmbeddedContent> embedded = {
     with open(f, 'rb') as file:
       bytes = file.read()
     o.write('{"/%s", {' % os.path.basename(f))
-    o.write('"' + "".join(['\\x%02x' % ord(x) for x in bytes]) + '"')
+    o.write('"' + "".join(['\\x%02x' % x for x in bytes]) + '"')
     o.write(',%d }},' % len(bytes))
 
   o.write("""

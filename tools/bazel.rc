@@ -9,6 +9,9 @@ build --strip=never
 # Use the malloc we want.
 build --custom_malloc=//tools/cpp:malloc
 
+# Use our hermetic Python runtime.
+build --python_top=//tools/python:runtime
+
 build:asan --copt -fsanitize=address
 build:asan --linkopt -fsanitize=address --linkopt -ldl
 build:asan --platform_suffix=-asan

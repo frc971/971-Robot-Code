@@ -7,7 +7,6 @@ from y2017.control_loops.python import turret
 from y2017.control_loops.python import indexer
 import numpy
 import sys
-import matplotlib
 from matplotlib import pylab
 import gflags
 import glog
