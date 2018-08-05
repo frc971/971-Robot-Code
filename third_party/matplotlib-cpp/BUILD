@@ -6,7 +6,7 @@ cc_library(
         "matplotlibcpp.h"
     ],
     deps = [
-        "@usr_repo//:python2.7_lib",
+        "@python_repo//:python2.7_lib",
     ],
     visibility = ["//visibility:public"],
     restricted_to = ["//tools:k8"],

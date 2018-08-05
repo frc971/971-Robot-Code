@@ -71,8 +71,8 @@ cc_library(
   ],
   deps = [
     ':slicot',
-    '@usr_repo//:python2.7_lib',
-    '@usr_repo//:python2.7_f2py',
+    '@python_repo//:python2.7_lib',
+    '@python_repo//:python2.7_f2py',
   ],
   copts = [
     '-Wno-error',

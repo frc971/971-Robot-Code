@@ -1,5 +1,19 @@
 workspace(name = 'org_frc971')
 
+load("//debian:python.bzl", python_debs="files")
+load("//debian:clang.bzl", clang_debs="files")
+load("//debian:packages.bzl", "generate_repositories_for_debs")
+
+generate_repositories_for_debs(python_debs)
+generate_repositories_for_debs(clang_debs)
+
+new_http_archive(
+  name = 'python_repo',
+  build_file = 'debian/python.BUILD',
+  sha256 = '21214b6386273698b6aa1b64bccf1bc8c5ef4ef44563871bac5cd85383575af5',
+  url = 'http://frc971.org/Build-Dependencies/python.tar.gz',
+)
+
 new_local_repository(
   name = 'usr_repo',
   path = '/usr',
