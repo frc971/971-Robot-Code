@@ -43,7 +43,7 @@ genrule(
         "NOTES.html",
     ],
     cmd = " ".join([
-        "pandoc",
+        "$(location @pandoc)",
         "-f",
         "markdown_github-hard_line_breaks",
         "-t",
@@ -52,6 +52,10 @@ genrule(
         "$@",
         "$<",
     ]),
+    tools = [
+        "@pandoc",
+        "@pandoc//:all_files",
+    ],
 )
 
 cc_library(

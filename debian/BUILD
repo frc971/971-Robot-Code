@@ -12,6 +12,10 @@ load(
     ":patch.bzl",
     patch_debs = "files",
 )
+load(
+    ":pandoc.bzl",
+    pandoc_debs = "files",
+)
 load("//debian:packages.bzl", "download_packages", "generate_deb_tarball")
 
 py_binary(
@@ -62,6 +66,13 @@ download_packages(
     ],
 )
 
+download_packages(
+    name = "download_pandoc_deps",
+    packages = [
+        "pandoc",
+    ],
+)
+
 generate_deb_tarball(
     name = "python",
     files = python_debs,
@@ -75,4 +86,9 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "patch",
     files = patch_debs,
+)
+
+generate_deb_tarball(
+    name = "pandoc",
+    files = pandoc_debs,
 )

@@ -12,6 +12,10 @@ load(
     "//debian:patch.bzl",
     patch_debs = "files",
 )
+load(
+    "//debian:pandoc.bzl",
+    pandoc_debs = "files",
+)
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
 generate_repositories_for_debs(python_debs)
@@ -19,6 +23,8 @@ generate_repositories_for_debs(python_debs)
 generate_repositories_for_debs(clang_debs)
 
 generate_repositories_for_debs(patch_debs)
+
+generate_repositories_for_debs(pandoc_debs)
 
 new_http_archive(
     name = "python_repo",
@@ -183,4 +189,11 @@ new_http_archive(
     build_file = "debian/patch.BUILD",
     sha256 = "b5ce139648a2e04f5585948ddad2fdae24dd4ee7976ac5a22d6ae7bd5674631e",
     url = "http://frc971.org/Build-Dependencies/patch.tar.gz",
+)
+
+new_http_archive(
+    name = "pandoc",
+    build_file = "debian/pandoc.BUILD",
+    sha256 = "9f7a7adb3974a1f14715054c349ff3edc2909e920dbe3438fca437a83845f3c4",
+    url = "http://frc971.org/Build-Dependencies/pandoc.tar.gz",
 )
