@@ -14,6 +14,13 @@ new_http_archive(
   url = 'http://frc971.org/Build-Dependencies/python.tar.gz',
 )
 
+new_http_archive(
+  name = 'clang_3p6_repo',
+  build_file = 'tools/cpp/clang_3p6/clang_3p6.BUILD',
+  sha256 = '5ee9e04c55c2c99d0c0f83722102a49e98f485fc274f73111b33a7ac4e34e03e',
+  url = 'http://frc971.org/Build-Dependencies/clang_3p6.tar.gz',
+)
+
 new_local_repository(
   name = 'usr_repo',
   path = '/usr',

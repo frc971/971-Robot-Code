@@ -17,6 +17,9 @@ ruby_binary(
   deps = [
     ':lib',
   ],
+  data = [
+    '@clang_3p6_repo//:clang-format',
+  ],
 )
 
 ruby_binary(

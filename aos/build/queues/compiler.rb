@@ -77,7 +77,9 @@ def parse_args(globals,args)
 end
 def format_pipeline(output)
   read_in, write_in = IO.pipe()
-  child = Process.spawn('/usr/bin/clang-format-3.5 --style=google',
+  # TODO(phil): Is there a better way to use the sandboxed clang-format here?
+  child = Process.spawn({'LD_LIBRARY_PATH' => './bazel-out/host/bin/aos/build/queues/compiler.runfiles/org_frc971/external/clang_3p6_repo/usr/lib/x86_64-linux-gnu'},
+                        './bazel-out/host/bin/aos/build/queues/compiler.runfiles/org_frc971/external/clang_3p6_repo/usr/bin/clang-format-3.6 --style=google',
                         {:in=>read_in, write_in=>:close,
                          :out=>output.fileno})
   read_in.close
