@@ -2,6 +2,8 @@ superstructure.stripped output voltage_distal
 superstructure.stripped output voltage_proximal
 
 superstructure.stripped status arm path_distance_to_go
+superstructure.stripped goal arm_goal_position
+superstructure.stripped status arm current_node
 
 superstructure.stripped status arm proximal_estimator_state position
 superstructure.stripped status arm goal_theta0

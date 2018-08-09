@@ -531,7 +531,7 @@ vertical_starting = numpy.array(
 self_hang = numpy.array(
     [numpy.pi / 2.0 - 0.191611, numpy.pi / 2.0])
 partner_hang = numpy.array(
-    [numpy.pi / 2.0 - (-0.25), numpy.pi / 2.0])
+    [numpy.pi / 2.0 - (-0.30), numpy.pi / 2.0])
 
 above_hang = numpy.array(
     [numpy.pi / 2.0 - 0.14, numpy.pi / 2.0 - (-0.165)])
@@ -663,11 +663,17 @@ tall_to_back_low_c2 = numpy.array([1.605624, 1.003434])
 tall_to_back_high_c2 = numpy.array([1.508610, 0.946147])
 
 # If true, only plot the first named segment
-isolate = 0
+isolate = False
 
 long_alpha_unitizer = numpy.matrix([[1.0 / 17.0, 0.0], [0.0, 1.0 / 17.0]])
 
+neutral_to_back_c1 = numpy.array([0.702527, -2.618276])
+neutral_to_back_c2 = numpy.array([0.526914, -3.109691])
+
+
 named_segments = [
+    ThetaSplineSegment(neutral, neutral_to_back_c1, neutral_to_back_c2, back_switch, "BackSwitch"),
+
     ThetaSplineSegment(neutral, neutral_to_back_low_c1, tall_to_back_high_c2, back_high_box, "NeutralBoxToHigh", alpha_unitizer=long_alpha_unitizer),
     ThetaSplineSegment(neutral, neutral_to_back_low_c1, tall_to_back_high_c2, back_middle2_box, "NeutralBoxToMiddle2", long_alpha_unitizer),
     ThetaSplineSegment(neutral, neutral_to_back_low_c1, tall_to_back_low_c2, back_middle1_box, "NeutralBoxToMiddle1", long_alpha_unitizer),
@@ -713,7 +719,6 @@ unnamed_segments = [
     SplineSegment(ready_above_box, ready_to_up_c1, ready_to_up_c2, up),
     ThetaSplineSegment(duck, duck_c1, duck_c2, neutral),
     SplineSegment(neutral, front_switch_c1, front_switch_c2, front_switch),
-    AngleSegment(neutral, back_switch),
 
     XYSegment(ready_above_box, front_low_box),
     XYSegment(ready_above_box, front_switch),
