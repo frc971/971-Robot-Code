@@ -134,7 +134,11 @@ const bool kPrintOperations = false;
 // actually make the syscall.
 
 // The actual macro that we key off of to use the inline versions or not.
-#define ARM_EABI_INLINE_SYSCALL defined(__ARM_EABI__)
+#if defined(__ARM_EABI__)
+#define ARM_EABI_INLINE_SYSCALL 1
+#else
+#define ARM_EABI_INLINE_SYSCALL 0
+#endif
 
 // Used for FUTEX_WAIT, FUTEX_LOCK_PI, and FUTEX_TRYLOCK_PI.
 inline int sys_futex_wait(int op, aos_futex *addr1, int val1,
