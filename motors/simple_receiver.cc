@@ -533,15 +533,17 @@ extern "C" void pit3_isr() {
     ++invalid_encoder_count;
   }
 
-  const bool lost_any_channel = lost_channel(0) || lost_channel(1) ||
-                                lost_channel(2) || lost_channel(3) ||
-                                lost_channel(4) ||
-                                (::std::abs(convert_input_width(4)) < 0.5f);
+  const bool lost_spring_channel = lost_channel(2) || lost_channel(3) ||
+                                   lost_channel(4) || lost_channel(5) ||
+                                   (convert_input_width(4) < 0.5f);
+
+  const bool lost_drive_channel = lost_channel(0) || lost_channel(1) ||
+                                  (::std::abs(convert_input_width(4)) < 0.5f);
 
   if (polydrivetrain != nullptr && spring != nullptr) {
     DrivetrainQueue_Goal goal;
     goal.control_loop_driving = false;
-    if (lost_any_channel) {
+    if (lost_drive_channel) {
       goal.throttle = 0.0f;
       goal.wheel = 0.0f;
     } else {
@@ -562,16 +564,18 @@ extern "C" void pit3_isr() {
     vesc_set_duty(2, output.right_voltage / 12.0f);
     vesc_set_duty(3, output.right_voltage / 12.0f);
 
-    bool prime = convert_input_width(2) > 0.1f;
-    bool fire = convert_input_width(3) > 0.1f;
+    const bool prime = convert_input_width(2) > 0.1f;
+    const bool fire = convert_input_width(3) > 0.1f;
+    const bool force_move =
+        (convert_input_width(5) > 0.1f) && !lost_spring_channel;
 
-    bool unload = lost_any_channel;
+    bool unload = lost_spring_channel;
     static bool was_lost = true;
-    bool force_reset = !lost_any_channel && was_lost;
-    was_lost = lost_any_channel;
+    bool force_reset = !lost_spring_channel && was_lost;
+    was_lost = lost_spring_channel;
 
-    spring->Iterate(unload, prime, fire, force_reset, invalid_encoder_count <= 2,
-                    last_good_encoder);
+    spring->Iterate(unload, prime, fire, force_reset, force_move,
+                    invalid_encoder_count <= 2, last_good_encoder);
 
     float spring_output = spring->output();
 
@@ -597,16 +601,18 @@ extern "C" void pit3_isr() {
     ++i;
     if (i > 20) {
       i = 0;
-      if (lost_any_channel) {
-        printf("200Hz loop, disabled %d %d %d %d %d\n",
+      if (lost_spring_channel || lost_drive_channel) {
+        printf("200Hz loop, disabled %d %d %d %d %d %d\n",
                (int)(convert_input_width(0) * 1000),
                (int)(convert_input_width(1) * 1000),
                (int)(convert_input_width(2) * 1000),
                (int)(convert_input_width(3) * 1000),
-               (int)(convert_input_width(4) * 1000));
+               (int)(convert_input_width(4) * 1000),
+               (int)(convert_input_width(5) * 1000));
       } else {
         printf(
-            "TODO(Austin): 200Hz loop %d %d %d %d %d, lr, %d, %d velocity %d "
+            "TODO(Austin): 200Hz loop %d %d %d %d %d %d, lr, %d, %d velocity %d
+    "
             " state: %d, near %d angle %d goal %d to: %d ADC %" PRIu16
             " %" PRIu16 " enc %d/1000 %s from %d\n",
             (int)(convert_input_width(0) * 1000),
@@ -614,6 +620,7 @@ extern "C" void pit3_isr() {
             (int)(convert_input_width(2) * 1000),
             (int)(convert_input_width(3) * 1000),
             (int)(convert_input_width(4) * 1000),
+            (int)(convert_input_width(5) * 1000),
             static_cast<int>(output.left_voltage * 100),
             static_cast<int>(output.right_voltage * 100),
             static_cast<int>(polydrivetrain->velocity() * 100),
@@ -772,7 +779,9 @@ extern "C" int main(void) {
   NVIC_ENABLE_IRQ(IRQ_FTM0);
   NVIC_ENABLE_IRQ(IRQ_FTM3);
   NVIC_ENABLE_IRQ(IRQ_PIT_CH3);
+  printf("Done starting up2\n");
 
+  //DoReceiverTest2();
   while (true) {
   }
 

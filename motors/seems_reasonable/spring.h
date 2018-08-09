@@ -21,7 +21,7 @@ class Spring {
   // If prime is true, go to primed state.
   // If prime and fire are true, fire.
   void Iterate(bool unload, bool prime, bool fire, bool force_reset,
-               bool encoder_valid, float angle);
+               bool force_move, bool encoder_valid, float angle);
 
   enum class State {
     UNINITIALIZED = 0,
@@ -32,6 +32,7 @@ class Spring {
     FIRE = 5,
     WAIT_FOR_LOAD = 6,
     WAIT_FOR_LOAD_RELEASE = 7,
+    FORCE_MOVE = 8,
   };
 
   // Returns the current to output to the spring motors.
@@ -58,13 +59,18 @@ class Spring {
     state_ = State::PRIME;
   }
 
+  void ForceMove() {
+    timeout_ = 0;
+    state_ = State::FORCE_MOVE;
+  }
+
   void Unload() {
-    timeout_ = 10 * 200;
+    timeout_ = 14 * 200;
     state_ = State::UNLOAD;
   }
 
   void StuckUnload() {
-    timeout_ = 10 * 200;
+    timeout_ = 14 * 200;
     state_ = State::STUCK_UNLOAD;
   }
 
@@ -86,7 +92,7 @@ class Spring {
   // Note, these need to be (-M_PI, M_PI]
   constexpr static float kLoadGoal = -0.345f;
   constexpr static float kPrimeGoal = -0.269f;
-  constexpr static float kFireGoal = -0.163f;
+  constexpr static float kFireGoal = -0.063f;
   constexpr static float kUnloadGoal = kFireGoal;
 
   float angle_ = 0.0f;
