@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 JETSON="root@$1"
 
 # To build for the Jetson, use

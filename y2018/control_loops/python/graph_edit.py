@@ -182,6 +182,8 @@ class Silly(basic_window.BaseWindow):
         self.segments = []
         self.prev_segment_pt = None
         self.now_segment_pt = None
+        self.spline_edit = 0
+        self.edit_control1 = True
 
     def reinit_extents(self):
         if self.theta_version:
@@ -410,11 +412,33 @@ class Silly(basic_window.BaseWindow):
 
             self.theta_version = not self.theta_version
             self.reinit_extents()
+
+        elif keyval == Gdk.KEY_z:
+            self.edit_control1 = not self.edit_control1
+            if self.edit_control1:
+                self.now_segment_pt = self.segments[0].control1
+            else:
+                self.now_segment_pt = self.segments[0].control2
+            if not self.theta_version:
+                data = to_xy(self.now_segment_pt[0], self.now_segment_pt[1])
+                self.last_pos = (data[0], data[1])
+            else:
+                self.last_pos = self.now_segment_pt
+
+            print("self.last_pos: ", self.last_pos, " ci: ",
+                  self.circular_index_select)
+
         self.redraw()
 
     def do_button_press(self, event):
         self.last_pos = (event.x, event.y)
         self.now_segment_pt = self.cur_pt_in_theta()
+
+        if self.edit_control1:
+            self.segments[0].control1 = self.now_segment_pt
+        else:
+            self.segments[0].control2 = self.now_segment_pt
+
         print('Clicked at theta: %s' % (repr(self.now_segment_pt,)))
         if not self.theta_version:
             print('Clicked at xy, circular index: (%f, %f, %f)' %

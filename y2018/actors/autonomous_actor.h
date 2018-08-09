@@ -87,11 +87,22 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     new_superstructure_goal->open_claw = open_claw_;
     new_superstructure_goal->close_claw = close_claw_;
     new_superstructure_goal->deploy_fork = deploy_fork_;
+    new_superstructure_goal->trajectory_override = false;
 
     if (!new_superstructure_goal.Send()) {
       LOG(ERROR, "Sending superstructure goal failed.\n");
     }
   }
+
+  bool ThreeCubeAuto(::aos::monotonic_clock::time_point start_time);
+  bool CloseSwitch(::aos::monotonic_clock::time_point start_time,
+                   bool left = true);
+  bool FarSwitch(::aos::monotonic_clock::time_point start_time,
+                 bool drive_behind = true, bool left = true);
+  bool FarReadyScale(::aos::monotonic_clock::time_point start_time);
+  bool DriveStraight();
+
+  bool FarScale(::aos::monotonic_clock::time_point start_time);
 
   bool WaitForArmTrajectoryOrDriveClose(double drive_threshold,
                                         double arm_threshold) {
