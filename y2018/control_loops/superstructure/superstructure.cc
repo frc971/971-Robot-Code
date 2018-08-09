@@ -96,18 +96,28 @@ void Superstructure::RunIteration(
 
   const bool intake_clear_of_box =
       intake_left_.clear_of_box() && intake_right_.clear_of_box();
+
+  bool open_claw = unsafe_goal != nullptr ? unsafe_goal->open_claw : false;
+  if (unsafe_goal) {
+    if (unsafe_goal->open_threshold != 0.0) {
+      if (arm_.current_node() != unsafe_goal->arm_goal_position ||
+          arm_.path_distance_to_go() > unsafe_goal->open_threshold) {
+        open_claw = false;
+      }
+    }
+  }
   arm_.Iterate(
       unsafe_goal != nullptr ? &(unsafe_goal->arm_goal_position) : nullptr,
-      unsafe_goal != nullptr ? unsafe_goal->grab_box : false,
-      unsafe_goal != nullptr ? unsafe_goal->open_claw : false,
+      unsafe_goal != nullptr ? unsafe_goal->grab_box : false, open_claw,
       unsafe_goal != nullptr ? unsafe_goal->close_claw : false,
       &(position->arm), position->claw_beambreak_triggered,
       position->box_back_beambreak_triggered, intake_clear_of_box,
+      unsafe_goal != nullptr ? unsafe_goal->voltage_winch > 1.0 : false,
+      unsafe_goal != nullptr ? unsafe_goal->trajectory_override : false,
       output != nullptr ? &(output->voltage_proximal) : nullptr,
       output != nullptr ? &(output->voltage_distal) : nullptr,
       output != nullptr ? &(output->release_arm_brake) : nullptr,
-      output != nullptr ? &(output->claw_grabbed) : nullptr, &(status->arm),
-      unsafe_goal != nullptr ? unsafe_goal->voltage_winch > 1.0 : false);
+      output != nullptr ? &(output->claw_grabbed) : nullptr, &(status->arm));
 
   if (output) {
     if (unsafe_goal) {

@@ -66,6 +66,9 @@ const ButtonLocation kArmBackSwitch(3, 10);
 const ButtonLocation kArmAboveHang(3, 15);
 const ButtonLocation kArmBelowHang(3, 16);
 
+const ButtonLocation kEmergencyUp(3, 5);
+const ButtonLocation kEmergencyDown(3, 6);
+
 const ButtonLocation kWinch(4, 2);
 
 const ButtonLocation kArmNeutral(3, 8);
@@ -297,6 +300,16 @@ class Reader : public ::aos::input::JoystickInput {
       arm_goal_position_ = arm::BelowHangIndex();
     }
 
+    if (data.IsPressed(kEmergencyDown)) {
+      arm_goal_position_ = arm::NeutralIndex();
+      new_superstructure_goal->trajectory_override = true;
+    } else if (data.IsPressed(kEmergencyUp)) {
+      arm_goal_position_ = arm::UpIndex();
+      new_superstructure_goal->trajectory_override = true;
+    } else {
+      new_superstructure_goal->trajectory_override = false;
+    }
+
     new_superstructure_goal->deploy_fork =
         data.IsPressed(kArmAboveHang) && data.IsPressed(kClawOpen);
 
@@ -314,9 +327,16 @@ class Reader : public ::aos::input::JoystickInput {
     new_superstructure_goal->hook_release = data.IsPressed(kArmBelowHang);
 
     new_superstructure_goal->arm_goal_position = arm_goal_position_;
+    if (data.IsPressed(kArmFrontSwitch) || data.IsPressed(kArmBackSwitch)) {
+      new_superstructure_goal->open_threshold = 0.35;
+    } else {
+      new_superstructure_goal->open_threshold = 0.0;
+    }
 
     if ((data.IsPressed(kClawOpen) && data.IsPressed(kDriverClawOpen)) ||
-        data.PosEdge(kArmPickupBoxFromIntake)) {
+        data.PosEdge(kArmPickupBoxFromIntake) ||
+        (data.IsPressed(kClawOpen) &&
+         (data.IsPressed(kArmFrontSwitch) || data.IsPressed(kArmBackSwitch)))) {
       new_superstructure_goal->open_claw = true;
     } else {
       new_superstructure_goal->open_claw = false;

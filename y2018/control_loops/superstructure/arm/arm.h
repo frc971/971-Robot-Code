@@ -38,10 +38,11 @@ class Arm {
                bool close_claw, const control_loops::ArmPosition *position,
                const bool claw_beambreak_triggered,
                const bool box_back_beambreak_triggered,
-               const bool intake_clear_of_box, double *proximal_output,
+               const bool intake_clear_of_box,
+               bool suicide, bool trajectory_override,
+               double *proximal_output,
                double *distal_output, bool *release_arm_brake,
-               bool *claw_closed, control_loops::ArmStatus *status,
-               bool suicide);
+               bool *claw_closed, control_loops::ArmStatus *status);
 
   void Reset();
 
@@ -56,12 +57,12 @@ class Arm {
   };
 
   enum class GrabState : int32_t {
-    NORMAL,
-    WAIT_FOR_BOX,
-    TALL_BOX,
-    SHORT_BOX,
-    CLAW_CLOSE,
-    OPEN_INTAKE,
+    NORMAL = 0,
+    WAIT_FOR_BOX = 1,
+    TALL_BOX = 2,
+    SHORT_BOX = 3,
+    CLAW_CLOSE = 4,
+    OPEN_INTAKE = 5,
   };
 
   State state() const { return state_; }
@@ -70,6 +71,10 @@ class Arm {
   // Returns the maximum position for the intake.  This is used to override the
   // intake position to release the box when the state machine is lifting.
   double max_intake_override() const { return max_intake_override_; }
+
+  uint32_t current_node() const { return current_node_; }
+
+  double path_distance_to_go() { return follower_.path_distance_to_go(); }
 
  private:
   bool AtState(uint32_t state) const { return current_node_ == state; }
