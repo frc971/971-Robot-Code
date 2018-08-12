@@ -101,14 +101,12 @@ ping 10.9.71.2
 setup_roborio.sh roboRIO-971-frc.local
 ```
 
-# ============================ Notes for running under Stretch ===================
-#
-# Parker and Austin helped me compile the code under the Stretch version of Debian.
-# Below are my notes on what was done differently.  I started with a cleanly
-# installed Debian Stretch OS.  Michael Schuh, May 13, 2018.
-#
+### Some other useful packages
+These aren't strictly necessary to build the code, but Michael found the
+additional tools provided by these packages useful to install when working with
+the code on May 13, 2018.
 
-# Install different packages than those listed above:
+```console
 # Get some useful packages including git and subversion.
    apt-get update
    apt-get install git subversion ruby python vim-gtk3 subversion-tools
@@ -132,124 +130,4 @@ setup_roborio.sh roboRIO-971-frc.local
 # understanding the revision history of the repository and viewing
 # log messages and changes.
    apt-get install gitg
-
-# Make the following changes to the configuration files.
-# The one change to the graph.cc file is to update it to work with current
-# complilers.  The other changes are required to work with a newer version
-# of clang.
-#
-# The sed commands can be run by copying and pasting them to the command line.
-# The sed commands will change the file contents and replace the file with the
-# updated changes.
-
-#
-# aos/build/queues/compiler.rb
-#
-sed -i -e 's/clang-format-3.5/clang-format-3.8/' aos/build/queues/compiler.rb
-
-diff --git a/aos/build/queues/compiler.rb b/aos/build/queues/compiler.rb
-index 51646702..6a273ae9 100644
---- a/aos/build/queues/compiler.rb
-+++ b/aos/build/queues/compiler.rb
-@@ -77,7 +77,7 @@ def parse_args(globals,args)
- end
- def format_pipeline(output)
-   read_in, write_in = IO.pipe()
--  child = Process.spawn('/usr/bin/clang-format-3.5 --style=google',
-+  child = Process.spawn('/usr/bin/clang-format-3.8 --style=google',
-                         {:in=>read_in, write_in=>:close,
-                          :out=>output.fileno})
-   read_in.close
-
-#
-# tools/cpp/CROSSTOOL
-#
-sed -e 's?clang/3.6.2?clang/3.8.1?' \
-    -e 's/clang-3.6/clang-3.8/' \
-    -e 's/clang_3.6/clang_3.8/' \
-    -e 's/llvm-3.6/llvm-3.8/' \
-    -e 's?clang/3.6?clang/3.8?' \
-    -i tools/cpp/CROSSTOOL
-
-diff --git a/tools/cpp/CROSSTOOL b/tools/cpp/CROSSTOOL
-index d4e7fbb1..caa2f633 100644
---- a/tools/cpp/CROSSTOOL
-+++ b/tools/cpp/CROSSTOOL
-@@ -83,7 +83,7 @@ toolchain {
-   tool_path { name: "compat-ld" path: "/usr/bin/ld" }
-   tool_path { name: "cpp" path: "/usr/bin/cpp" }
-   tool_path { name: "dwp" path: "/usr/bin/dwp" }
--  tool_path { name: "gcc" path: "/usr/bin/clang-3.6" }
-+  tool_path { name: "gcc" path: "/usr/bin/clang-3.8" }
-   tool_path { name: "gcov" path: "/usr/bin/gcov" }
-   # C(++) compiles invoke the compiler (as that is the one knowing where
-   # to find libraries), but we provide LD so other rules can invoke the linker.
-@@ -104,10 +104,10 @@ toolchain {
-   cxx_builtin_include_directory: '/usr/include/x86_64-linux-gnu/c++/4.9'
-   cxx_builtin_include_directory: '/usr/include/c++/4.9/backward'
-   cxx_builtin_include_directory: '/usr/local/include'
--  cxx_builtin_include_directory: '/usr/lib/llvm-3.6/lib/clang/3.6.2/include'
-+  cxx_builtin_include_directory: '/usr/lib/llvm-3.8/lib/clang/3.8.1/include'
-   cxx_builtin_include_directory: '/usr/include/x86_64-linux-gnu'
-   cxx_builtin_include_directory: '/usr/include'
--  cxx_builtin_include_directory: '/usr/lib/clang/3.6.2/include'
-+  cxx_builtin_include_directory: '/usr/lib/clang/3.8.1/include'
-
-   linker_flag: "-lstdc++"
-   linker_flag: "-B/usr/bin/"
-@@ -535,7 +535,7 @@ toolchain {
- }
-
- toolchain {
--  abi_version: "clang_3.6"
-+  abi_version: "clang_3.8"
-   abi_libc_version: "glibc_2.19"
-   builtin_sysroot: ""
-   compiler: "clang"
-@@ -578,7 +578,7 @@ toolchain {
-
-   compiler_flag: "-nostdinc"
-   compiler_flag: "-isystem"
--  compiler_flag: "/usr/lib/clang/3.6/include"
-+  compiler_flag: "/usr/lib/clang/3.8/include"
-   compiler_flag: "-isystem"
-   compiler_flag: "external/linaro_linux_gcc_4_9_repo/lib/gcc/arm-linux-gnueabihf/4.9.3/include"
-   compiler_flag: "-isystem"
-@@ -604,7 +604,7 @@ toolchain {
-   cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4_9_repo//lib/gcc/arm-linux-gnueabihf/4.9.3/include)%"
-   cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4_9_repo//lib/gcc/arm-linux-gnueabihf/4.9.3/include-fixed)%"
-   cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4_9_repo//arm-linux-gnueabihf/include)%/c++/4.9.3"
--  cxx_builtin_include_directory: '/usr/lib/clang/3.6/include'
-+  cxx_builtin_include_directory: '/usr/lib/clang/3.8/include'
-
-   linker_flag: "-target"
-   linker_flag: "armv7a-arm-linux-gnueabif"
-
-#
-# To compile the code for the robot, libisl.so.10 is needed.  It is not
-# available on stretch package servers so download the amd64 jessie package
-# from https://packages.debian.org/jessie/libisl10
-# and install it with dpkg.
-# This installs
-#   /usr/lib/x86_64-linux-gnu/libisl.so.10
-#   /usr/lib/x86_64-linux-gnu/libisl.so.10.2.2
-#   /usr/share/doc/libisl10/changelog.Debian.gz
-#   /usr/share/doc/libisl10/changelog.gz
-#   /usr/share/doc/libisl10/copyright
-#
-wget http://ftp.us.debian.org/debian/pool/main/i/isl/libisl10_0.12.2-2_amd64.deb
-dpkg -i libisl10_0.12.2-2_amd64.deb
-
-# After doing this, this compile command should work.
-time bazel build --cpu=roborio --compilation_mode=opt //y2018:download
-# On Michael's Lenovo ThinkPad X270 with an
-#    Intel(R) Core(TM) i7-6500U CPU @ 2.50GHz
-# compiling the 2018 robot code takes
-#   INFO: Elapsed time: 499.177s, Critical Path: 63.33s
-#   INFO: Build completed successfully, 4901 total actions
-#
-#   real	8m19.234s
-#   user	0m0.277s
-#   sys	0m0.518s
-
-
+```

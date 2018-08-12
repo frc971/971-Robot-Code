@@ -32,6 +32,10 @@ load(
     "//debian:matplotlib.bzl",
     matplotlib_debs = "files",
 )
+load(
+    "//debian:arm_frc_gnueabi_deps.bzl",
+    arm_frc_gnueabi_deps_debs = "files",
+)
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
 generate_repositories_for_debs(python_debs)
@@ -49,6 +53,8 @@ generate_repositories_for_debs(mingw_compiler_debs)
 generate_repositories_for_debs(patchelf_debs)
 
 generate_repositories_for_debs(matplotlib_debs)
+
+generate_repositories_for_debs(arm_frc_gnueabi_deps_debs)
 
 new_http_archive(
     name = "python_repo",
@@ -233,4 +239,11 @@ new_http_archive(
     build_file = "debian/patchelf.BUILD",
     sha256 = "bf8b709909d7d9e30815dd228eeded7dc282e3ce3919d0589ccbb56ac8632abc",
     url = "http://frc971.org/Build-Dependencies/patchelf.tar.gz",
+)
+
+new_http_archive(
+    name = "arm_frc_gnueabi_deps",
+    build_file = "debian/arm_frc_gnueabi_deps.BUILD",
+    sha256 = "4b26fe45010817dc136488ee1604ade21bd7c264c29f17d864fc6eba9d7442c4",
+    url = "http://frc971.org/Build-Dependencies/arm_frc_gnueabi_deps.tar.gz",
 )

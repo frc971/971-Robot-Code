@@ -32,6 +32,10 @@ load(
     ":matplotlib.bzl",
     matplotlib_debs = "files",
 )
+load(
+    ":arm_frc_gnueabi_deps.bzl",
+    arm_frc_gnueabi_deps_debs = "files",
+)
 load("//debian:packages.bzl", "download_packages", "generate_deb_tarball")
 
 filegroup(
@@ -143,6 +147,23 @@ download_packages(
     ],
 )
 
+# This list was obtained by manually looking at the output from:
+# find bazel-out/../../../external/arm_frc_linux_gnueabi_repo/ -executable -type f -exec ldd {} + | sed 's/=>.*//g' | sort -u
+download_packages(
+    name = "download_arm_frc_gnueabi_deps",
+    packages = [
+        "libexpat1",
+        "libgmp10",
+        "libisl10",
+        "liblzma5",
+        "libmpc3",
+        "libmpfr4",
+        "libncurses5",
+        "libtinfo5",
+        "zlib1g",
+    ],
+)
+
 generate_deb_tarball(
     name = "python",
     files = python_debs,
@@ -181,4 +202,9 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "matplotlib",
     files = matplotlib_debs,
+)
+
+generate_deb_tarball(
+    name = "arm_frc_gnueabi_deps",
+    files = arm_frc_gnueabi_deps_debs,
 )

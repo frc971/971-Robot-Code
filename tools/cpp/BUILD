@@ -133,6 +133,14 @@ filegroup(
     ],
 )
 
+filegroup(
+    name = "roborio_strip_files",
+    srcs = [
+        "//tools/cpp/arm-frc-linux-gnueabi:strip",
+        "@arm_frc_linux_gnueabi_repo//:compiler_pieces",
+    ],
+)
+
 cc_toolchain(
     name = "cc-compiler-roborio",
     all_files = ":roborio-compiler-files",
@@ -143,7 +151,7 @@ cc_toolchain(
     linker_files = ":roborio_linker_files",
     objcopy_files = "//tools/cpp/arm-frc-linux-gnueabi:objcopy",
     static_runtime_libs = [":empty"],
-    strip_files = "//tools/cpp/arm-frc-linux-gnueabi:strip",
+    strip_files = ":roborio_strip_files",
     supports_param_files = 1,
 )
 
