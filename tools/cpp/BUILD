@@ -71,6 +71,14 @@ filegroup(
 )
 
 filegroup(
+    name = "clang_3p6_strip_files",
+    srcs = [
+        "//tools/cpp/clang_3p6:strip",
+        "@clang_3p6_repo//:compiler_pieces",
+    ],
+)
+
+filegroup(
     name = "clang_3p6_compiler_files",
     srcs = [
         "//tools/cpp/clang_3p6:clang",
@@ -90,7 +98,7 @@ cc_toolchain(
     linker_files = ":clang_3p6_linker_files",
     objcopy_files = "//tools/cpp/clang_3p6:objcopy",
     static_runtime_libs = [":empty"],
-    strip_files = "//tools/cpp/clang_3p6:strip",
+    strip_files = ":clang_3p6_strip_files",
     supports_param_files = 1,
 )
 
