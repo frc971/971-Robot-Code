@@ -29,7 +29,7 @@ float PreviousGoal(float current_goal, float goal) {
 }
 
 void Spring::Iterate(bool unload, bool prime, bool fire, bool force_reset,
-                     bool encoder_valid, float angle) {
+                     bool force_move, bool encoder_valid, float angle) {
   // Angle is +- M_PI.  So, we need to find the nearest angle to the previous
   // one, and that's our new angle.
   angle_ = ::frc971::zeroing::Wrap(angle_, angle, kTwoPi);
@@ -39,12 +39,21 @@ void Spring::Iterate(bool unload, bool prime, bool fire, bool force_reset,
       // Go to the previous unload from where we are.
       goal_ = angle_;
       goal_ = PreviousGoal(kUnloadGoal);
-      if (prime && fire) {
+      if (force_move) {
+        ForceMove();
+      } else if (prime && fire) {
         Unload();
       }
       break;
+    case State::FORCE_MOVE:
+      if (!force_move) {
+        state_ = State::UNINITIALIZED;
+      }
+      break;
     case State::UNLOAD:
-      if (!encoder_valid) {
+      if (force_move) {
+        ForceMove();
+      } else if (!encoder_valid) {
         state_ = State::STUCK_UNLOAD;
       } else if (!unload && prime && fire) {
         // Go to the next goal from the current location.  This handles if we
@@ -54,14 +63,19 @@ void Spring::Iterate(bool unload, bool prime, bool fire, bool force_reset,
         Load();
       }
     case State::STUCK_UNLOAD:
-      if (force_reset && encoder_valid && state_ == State::STUCK_UNLOAD) {
+      if (force_move) {
+        ForceMove();
+      } else if (force_reset && encoder_valid &&
+                 state_ == State::STUCK_UNLOAD) {
         state_ = State::UNINITIALIZED;
       } else if (timeout_ > 0) {
         --timeout_;
       }
       break;
     case State::LOAD:
-      if (!encoder_valid) {
+      if (force_move) {
+        ForceMove();
+      } else if (!encoder_valid) {
         goal_ = PreviousGoal(kUnloadGoal);
         StuckUnload();
       } else if (unload) {
@@ -79,7 +93,9 @@ void Spring::Iterate(bool unload, bool prime, bool fire, bool force_reset,
       }
       break;
     case State::PRIME:
-      if (!encoder_valid) {
+      if (force_move) {
+        ForceMove();
+      } else if (!encoder_valid) {
         goal_ = PreviousGoal(kUnloadGoal);
         StuckUnload();
       } else if (unload) {
@@ -101,7 +117,9 @@ void Spring::Iterate(bool unload, bool prime, bool fire, bool force_reset,
       break;
 
     case State::FIRE:
-      if (!encoder_valid) {
+      if (force_move) {
+        ForceMove();
+      } else if (!encoder_valid) {
         goal_ = PreviousGoal(kUnloadGoal);
         StuckUnload();
       } else if (!Near()) {
@@ -120,7 +138,9 @@ void Spring::Iterate(bool unload, bool prime, bool fire, bool force_reset,
       }
       break;
     case State::WAIT_FOR_LOAD:
-      if (!encoder_valid) {
+      if (force_move) {
+        ForceMove();
+      } else if (!encoder_valid) {
         StuckUnload();
       } else if (unload) {
         // Goal is as good as it is going to get since unload is the fire
@@ -131,7 +151,9 @@ void Spring::Iterate(bool unload, bool prime, bool fire, bool force_reset,
       }
       break;
     case State::WAIT_FOR_LOAD_RELEASE:
-      if (!encoder_valid) {
+      if (force_move) {
+        ForceMove();
+      } else if (!encoder_valid) {
         StuckUnload();
       } else if (unload) {
         // Goal is as good as it is going to get since unload is the fire
@@ -157,6 +179,10 @@ void Spring::Iterate(bool unload, bool prime, bool fire, bool force_reset,
       } else {
         output_ = 0.0f;
       }
+      break;
+
+    case State::FORCE_MOVE:
+      output_ = 1.0f;
       break;
 
     case State::LOAD:
