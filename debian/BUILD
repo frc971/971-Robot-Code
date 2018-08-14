@@ -20,6 +20,10 @@ load(
     ":libusb.bzl",
     libusb_debs = "files",
 )
+load(
+    ":mingw_compiler.bzl",
+    mingw_compiler_debs = "files",
+)
 load("//debian:packages.bzl", "download_packages", "generate_deb_tarball")
 
 py_binary(
@@ -87,6 +91,13 @@ download_packages(
     ],
 )
 
+download_packages(
+    name = "download_mingw_compiler_deps",
+    packages = [
+        "g++-mingw-w64-x86-64",
+    ],
+)
+
 generate_deb_tarball(
     name = "python",
     files = python_debs,
@@ -110,4 +121,9 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "libusb",
     files = libusb_debs,
+)
+
+generate_deb_tarball(
+    name = "mingw_compiler",
+    files = mingw_compiler_debs,
 )

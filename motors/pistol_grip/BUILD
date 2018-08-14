@@ -80,6 +80,7 @@ genrule(
     output_to_bindir = True,
     tools = [
         "usb_forward_windows_build.sh",
+        "@mingw_compiler//:all_files",
     ],
 )
 

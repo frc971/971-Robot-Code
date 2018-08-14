@@ -20,6 +20,10 @@ load(
     "//debian:libusb.bzl",
     libusb_debs = "files",
 )
+load(
+    "//debian:mingw_compiler.bzl",
+    mingw_compiler_debs = "files",
+)
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
 generate_repositories_for_debs(python_debs)
@@ -31,6 +35,8 @@ generate_repositories_for_debs(patch_debs)
 generate_repositories_for_debs(pandoc_debs)
 
 generate_repositories_for_debs(libusb_debs)
+
+generate_repositories_for_debs(mingw_compiler_debs)
 
 new_http_archive(
     name = "python_repo",
@@ -194,4 +200,11 @@ new_http_archive(
     build_file = "debian/libusb.BUILD",
     sha256 = "3ca5cc2d317226f6646866ff9e8c443db3b0f6c82f828e800240982727531590",
     url = "http://frc971.org/Build-Dependencies/libusb.tar.gz",
+)
+
+new_http_archive(
+    name = "mingw_compiler",
+    build_file = "debian/mingw_compiler.BUILD",
+    sha256 = "45e86a8460f2151a4f0306e7ae7b06761029d2412ee16f63d1e8d2d29354e378",
+    url = "http://frc971.org/Build-Dependencies/mingw_compiler.tar.gz",
 )
