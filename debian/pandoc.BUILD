@@ -1,6 +1,6 @@
 genrule(
     name = "gen_wrapper",
-    outs = ["pandoc_wrapper"],
+    outs = ["pandoc_wrapper.sh"],
     cmd = "\n".join([
         "cat > $@ <<END",
         "#!/bin/bash",
@@ -11,10 +11,16 @@ genrule(
     executable = True,
 )
 
+sh_binary(
+    name = "pandoc_wrapper",
+    srcs = [":pandoc_wrapper.sh"],
+    data = glob(["**"]),
+    visibility = ["//visibility:public"],
+)
+
 filegroup(
     name = "pandoc",
-    srcs = ["pandoc_wrapper"],
-    data = glob(["**"]),
+    srcs = ["pandoc_wrapper.sh"],
     visibility = ["//visibility:public"],
 )
 
