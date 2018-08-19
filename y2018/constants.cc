@@ -118,13 +118,13 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       right_intake->potentiometer_offset = 9.59 + 1.530320 - 3.620648;
       right_intake->spring_offset = 0.255 + 0.008 - 0.09;
 
-      arm_proximal->zeroing.measured_absolute_position = 0.1877 + 0.02 + 0.1;
-      arm_proximal->potentiometer_offset = -1.242 - 0.03 - 0.1;
+      arm_proximal->zeroing.measured_absolute_position = -0.253183 + 1.0652774488034022 + 0.009566448803402405;
+      arm_proximal->potentiometer_offset = -1.242 - 0.03 - 0.1 - 1.0652;
 
       arm_distal->zeroing.measured_absolute_position =
-          1.102987 - kDistalZeroingPosition + 0.12 + 0.0095;
+          1.102987 - kDistalZeroingPosition + 0.12 + 0.0095 + 0.22300918279692628;
       arm_distal->potentiometer_offset =
-          2.772210 + M_PI + 0.434 - 0.12 + 1.25 - 0.226 + 0.862067;
+          2.772210 + M_PI + 0.434 - 0.12 + 1.25 - 0.226 + 0.862067 - 0.121925182796926;
       break;
 
     default:
