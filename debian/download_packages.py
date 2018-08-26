@@ -19,13 +19,25 @@ def get_all_deps(packages):
     deps.update(get_deps(package))
   return deps
 
+def map_virtual_packages(packages):
+  '''Maps known virtual packages to the preferred concrete packages which
+  provide them.'''
+  for package in packages:
+    if package == b'python-numpy-abi9':
+      yield b'python-numpy'
+      continue
+    if package == b'python3-numpy-abi9':
+      yield b'python3-numpy'
+      continue
+    yield package
+
 def download_deps(packages, excludes, force_includes):
   deps = get_all_deps(packages)
   exclude_deps = get_all_deps(excludes)
   deps -= exclude_deps
   force_include_deps = get_all_deps(force_includes)
   deps |= force_include_deps
-  subprocess.check_call([b"apt-get", b"download"] + list(deps))
+  subprocess.check_call([b"apt-get", b"download"] + list(map_virtual_packages(deps)))
 
 def fixup_files():
   # Gotta remove those pesky epoch numbers in the file names. Bazel doesn't

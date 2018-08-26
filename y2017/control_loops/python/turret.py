@@ -5,7 +5,6 @@ from frc971.control_loops.python import control_loop
 from frc971.control_loops.python import controls
 import numpy
 import sys
-import matplotlib
 from matplotlib import pylab
 import gflags
 import glog

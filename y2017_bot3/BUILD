@@ -88,3 +88,9 @@ aos_downloader(
         "//y2017_bot3/control_loops/superstructure:superstructure.stripped",
     ],
 )
+
+py_library(
+    name = "python_init",
+    srcs = ["__init__.py"],
+    visibility = ["//visibility:public"],
+)

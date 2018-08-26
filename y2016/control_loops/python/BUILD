@@ -1,156 +1,184 @@
-package(default_visibility = ['//y2016:__subpackages__'])
+package(default_visibility = ["//y2016:__subpackages__"])
 
 py_binary(
-  name = 'drivetrain',
-  srcs = [
-    'drivetrain.py',
-  ],
-  deps = [
-    '//external:python-gflags',
-    '//external:python-glog',
-    '//frc971/control_loops/python:drivetrain',
-  ],
-  restricted_to = ['//tools:k8'],
+    name = "drivetrain",
+    srcs = [
+        "drivetrain.py",
+    ],
+    legacy_create_init = False,
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":python_init",
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:drivetrain",
+    ],
 )
 
 py_binary(
-  name = 'polydrivetrain',
-  srcs = [
-    'polydrivetrain.py',
-    'drivetrain.py',
-  ],
-  deps = [
-    '//external:python-gflags',
-    '//external:python-glog',
-    '//frc971/control_loops/python:polydrivetrain',
-  ],
-  restricted_to = ['//tools:k8'],
+    name = "polydrivetrain",
+    srcs = [
+        "drivetrain.py",
+        "polydrivetrain.py",
+    ],
+    legacy_create_init = False,
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":python_init",
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:polydrivetrain",
+    ],
 )
 
 py_library(
-  name = 'polydrivetrain_lib',
-  srcs = [
-    'polydrivetrain.py',
-    'drivetrain.py',
-  ],
-  deps = [
-    '//external:python-gflags',
-    '//external:python-glog',
-    '//frc971/control_loops/python:controls',
-  ],
-  restricted_to = ['//tools:k8'],
+    name = "polydrivetrain_lib",
+    srcs = [
+        "drivetrain.py",
+        "polydrivetrain.py",
+    ],
+    restricted_to = ["//tools:k8"],
+    deps = [
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:controls",
+    ],
 )
 
 py_binary(
-  name = 'shooter',
-  srcs = [
-    'shooter.py',
-  ],
-  deps = [
-    '//external:python-gflags',
-    '//external:python-glog',
-    '//frc971/control_loops/python:controls',
-  ],
-  restricted_to = ['//tools:k8'],
+    name = "shooter",
+    srcs = [
+        "shooter.py",
+    ],
+    legacy_create_init = False,
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":python_init",
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:controls",
+        "@matplotlib",
+    ],
 )
 
 py_binary(
-  name = 'intake',
-  srcs = [
-    'intake.py',
-  ],
-  deps = [
-    '//aos/common/util:py_trapezoid_profile',
-    '//external:python-gflags',
-    '//external:python-glog',
-    '//frc971/control_loops/python:controls',
-  ],
-  restricted_to = ['//tools:k8'],
+    name = "intake",
+    srcs = [
+        "intake.py",
+    ],
+    legacy_create_init = False,
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":python_init",
+        "//aos/common/util:py_trapezoid_profile",
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:controls",
+        "@matplotlib",
+    ],
 )
 
 py_binary(
-  name = 'shoulder',
-  srcs = [
-    'shoulder.py',
-  ],
-  deps = [
-    '//aos/common/util:py_trapezoid_profile',
-    '//external:python-gflags',
-    '//external:python-glog',
-    '//frc971/control_loops/python:controls',
-  ],
-  restricted_to = ['//tools:k8'],
+    name = "shoulder",
+    srcs = [
+        "shoulder.py",
+    ],
+    legacy_create_init = False,
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":python_init",
+        "//aos/common/util:py_trapezoid_profile",
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:controls",
+        "@matplotlib",
+    ],
 )
 
 py_binary(
-  name = 'wrist',
-  srcs = [
-    'wrist.py',
-  ],
-  deps = [
-    '//aos/common/util:py_trapezoid_profile',
-    '//external:python-gflags',
-    '//external:python-glog',
-    '//frc971/control_loops/python:controls',
-  ],
-  restricted_to = ['//tools:k8'],
+    name = "wrist",
+    srcs = [
+        "wrist.py",
+    ],
+    legacy_create_init = False,
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":python_init",
+        "//aos/common/util:py_trapezoid_profile",
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:controls",
+        "@matplotlib",
+    ],
 )
 
 py_library(
-  name = 'wrist_lib',
-  srcs = [
-    'wrist.py',
-  ],
-  deps = [
-    '//aos/common/util:py_trapezoid_profile',
-    '//external:python-gflags',
-    '//external:python-glog',
-    '//frc971/control_loops/python:controls',
-  ],
-  restricted_to = ['//tools:k8'],
+    name = "wrist_lib",
+    srcs = [
+        "wrist.py",
+    ],
+    restricted_to = ["//tools:k8"],
+    deps = [
+        "//aos/common/util:py_trapezoid_profile",
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:controls",
+    ],
 )
 
 py_library(
-  name = 'shoulder_lib',
-  srcs = [
-    'shoulder.py',
-  ],
-  deps = [
-    '//aos/common/util:py_trapezoid_profile',
-    '//external:python-gflags',
-    '//external:python-glog',
-    '//frc971/control_loops/python:controls',
-  ],
-  restricted_to = ['//tools:k8'],
+    name = "shoulder_lib",
+    srcs = [
+        "shoulder.py",
+    ],
+    restricted_to = ["//tools:k8"],
+    deps = [
+        "//aos/common/util:py_trapezoid_profile",
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:controls",
+        "@matplotlib",
+    ],
 )
 
 py_library(
-  name = 'arm_lib',
-  srcs = [
-    'arm.py',
-  ],
-  deps = [
-    ':wrist_lib',
-    ':shoulder_lib',
-    '//external:python-gflags',
-    '//external:python-glog',
-    '//frc971/control_loops/python:controls',
-    '//aos/common/util:py_trapezoid_profile',
-  ],
-  restricted_to = ['//tools:k8'],
+    name = "arm_lib",
+    srcs = [
+        "arm.py",
+    ],
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":shoulder_lib",
+        ":wrist_lib",
+        "//aos/common/util:py_trapezoid_profile",
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:controls",
+        "@matplotlib",
+    ],
 )
+
 py_binary(
-  name = 'arm',
-  srcs = [
-    'arm.py',
-  ],
-  deps = [
-    ':wrist_lib',
-    ':shoulder_lib',
-    '//external:python-gflags',
-    '//external:python-glog',
-    '//frc971/control_loops/python:controls',
-    '//aos/common/util:py_trapezoid_profile',
-  ],
-  restricted_to = ['//tools:k8'],
+    name = "arm",
+    srcs = [
+        "arm.py",
+    ],
+    legacy_create_init = False,
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":python_init",
+        ":shoulder_lib",
+        ":wrist_lib",
+        "//aos/common/util:py_trapezoid_profile",
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:controls",
+    ],
+)
+
+py_library(
+    name = "python_init",
+    srcs = ["__init__.py"],
+    visibility = ["//visibility:public"],
+    deps = ["//y2016/control_loops:python_init"],
 )

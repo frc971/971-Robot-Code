@@ -24,7 +24,23 @@ load(
     ":mingw_compiler.bzl",
     mingw_compiler_debs = "files",
 )
+load(
+    ":patchelf.bzl",
+    patchelf_debs = "files",
+)
+load(
+    ":matplotlib.bzl",
+    matplotlib_debs = "files",
+)
 load("//debian:packages.bzl", "download_packages", "generate_deb_tarball")
+
+filegroup(
+    name = "matplotlib_patches",
+    srcs = [
+        "matplotlib_init.patch",
+    ],
+    visibility = ["@matplotlib//:__pkg__"],
+)
 
 py_binary(
     name = "download_packages",
@@ -45,8 +61,10 @@ download_packages(
     packages = [
         "python-dev",
         "python-numpy",
+        "python-scipy",
         "python3-dev",
         "python3-numpy",
+        "python3-scipy",
     ],
 )
 
@@ -98,6 +116,33 @@ download_packages(
     ],
 )
 
+download_packages(
+    name = "download_patchelf_deps",
+    packages = [
+        "patchelf",
+    ],
+)
+
+download_packages(
+    name = "download_matplotlib_deps",
+    excludes = [
+        "python-dev",
+        "python-numpy",
+        "python-scipy",
+        "python3-dev",
+        "python3-numpy",
+        "python3-scipy",
+        "x11-common",
+        "fonts-freefont",
+        "python",
+        "libcups2",
+    ],
+    packages = [
+        "python-matplotlib",
+        "python3-matplotlib",
+    ],
+)
+
 generate_deb_tarball(
     name = "python",
     files = python_debs,
@@ -126,4 +171,14 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "mingw_compiler",
     files = mingw_compiler_debs,
+)
+
+generate_deb_tarball(
+    name = "patchelf",
+    files = patchelf_debs,
+)
+
+generate_deb_tarball(
+    name = "matplotlib",
+    files = matplotlib_debs,
 )

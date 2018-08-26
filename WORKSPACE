@@ -24,6 +24,14 @@ load(
     "//debian:mingw_compiler.bzl",
     mingw_compiler_debs = "files",
 )
+load(
+    "//debian:patchelf.bzl",
+    patchelf_debs = "files",
+)
+load(
+    "//debian:matplotlib.bzl",
+    matplotlib_debs = "files",
+)
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
 generate_repositories_for_debs(python_debs)
@@ -38,11 +46,15 @@ generate_repositories_for_debs(libusb_debs)
 
 generate_repositories_for_debs(mingw_compiler_debs)
 
+generate_repositories_for_debs(patchelf_debs)
+
+generate_repositories_for_debs(matplotlib_debs)
+
 new_http_archive(
     name = "python_repo",
     build_file = "debian/python.BUILD",
-    sha256 = "21214b6386273698b6aa1b64bccf1bc8c5ef4ef44563871bac5cd85383575af5",
-    url = "http://frc971.org/Build-Dependencies/python.tar.gz",
+    sha256 = "4ff939f90cffd8c72f9992d7420481e361b6016b0ce5c6fa701be0691d4e20fa",
+    url = "http://frc971.org/Build-Dependencies/python-2.tar.gz",
 )
 
 new_http_archive(
@@ -207,4 +219,18 @@ new_http_archive(
     build_file = "debian/mingw_compiler.BUILD",
     sha256 = "45e86a8460f2151a4f0306e7ae7b06761029d2412ee16f63d1e8d2d29354e378",
     url = "http://frc971.org/Build-Dependencies/mingw_compiler.tar.gz",
+)
+
+new_http_archive(
+    name = "matplotlib",
+    build_file = "debian/matplotlib.BUILD",
+    sha256 = "4aa1efb22f74859ab5c478ff743f2fd34291fc30635f4b7cf2d67550ed226117",
+    url = "http://frc971.org/Build-Dependencies/matplotlib.tar.gz",
+)
+
+new_http_archive(
+    name = "patchelf",
+    build_file = "debian/patchelf.BUILD",
+    sha256 = "bf8b709909d7d9e30815dd228eeded7dc282e3ce3919d0589ccbb56ac8632abc",
+    url = "http://frc971.org/Build-Dependencies/patchelf.tar.gz",
 )

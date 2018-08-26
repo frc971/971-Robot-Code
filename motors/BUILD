@@ -148,3 +148,9 @@ hex_from_elf(
     name = "simple_receiver",
     restricted_to = mcu_cpus,
 )
+
+py_library(
+    name = "python_init",
+    srcs = ["__init__.py"],
+    visibility = ["//visibility:public"],
+)

@@ -68,13 +68,13 @@ cc_library(
     hdrs = [
         "position_sensor_sim.h",
     ],
+    linkopts = [
+        "-lm",
+    ],
     deps = [
         ":gaussian_noise",
         ":queues",
         "//aos/testing:random_seed",
-    ],
-    linkopts = [
-        "-lm",
     ],
 )
 
@@ -114,12 +114,12 @@ cc_library(
     hdrs = [
         "coerce_goal.h",
     ],
+    linkopts = [
+        "-lm",
+    ],
     deps = [
         "//aos/common/controls:polytope",
         "//third_party/eigen",
-    ],
-    linkopts = [
-        "-lm",
     ],
 )
 
@@ -256,4 +256,11 @@ cc_library(
         "//third_party/eigen",
         "@slycot_repo//:slicot",
     ],
+)
+
+py_library(
+    name = "python_init",
+    srcs = ["__init__.py"],
+    visibility = ["//visibility:public"],
+    deps = ["//frc971:python_init"],
 )

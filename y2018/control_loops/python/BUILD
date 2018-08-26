@@ -5,8 +5,10 @@ py_binary(
     srcs = [
         "drivetrain.py",
     ],
+    legacy_create_init = False,
     restricted_to = ["//tools:k8"],
     deps = [
+        ":python_init",
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:drivetrain",
@@ -19,8 +21,10 @@ py_binary(
         "drivetrain.py",
         "polydrivetrain.py",
     ],
+    legacy_create_init = False,
     restricted_to = ["//tools:k8"],
     deps = [
+        ":python_init",
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:polydrivetrain",
@@ -47,9 +51,11 @@ py_test(
     srcs = [
         "polydrivetrain_test.py",
     ],
+    legacy_create_init = False,
     restricted_to = ["//tools:k8"],
     deps = [
         ":polydrivetrain_lib",
+        ":python_init",
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:controls",
@@ -63,8 +69,10 @@ py_binary(
         "arm_trajectory.py",
         "path_points.py",
     ],
+    legacy_create_init = False,
     restricted_to = ["//tools:k8"],
     deps = [
+        ":python_init",
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:controls",
@@ -76,11 +84,14 @@ py_binary(
     srcs = [
         "intake.py",
     ],
+    legacy_create_init = False,
     restricted_to = ["//tools:k8"],
     deps = [
+        ":python_init",
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:controls",
+        "@matplotlib",
     ],
 )
 
@@ -104,9 +115,12 @@ py_binary(
         "graph_edit.py",
         "graph_generate.py",
     ],
-    # Sigh, these aren't respected.
     default_python_version = "PY3",
+    legacy_create_init = False,
     srcs_version = "PY3",
+    deps = [
+        ":python_init",
+    ],
 )
 
 py_binary(
@@ -115,7 +129,17 @@ py_binary(
         "graph_codegen.py",
         "graph_generate.py",
     ],
-    # Sigh, these aren't respected.
     default_python_version = "PY2",
+    legacy_create_init = False,
     srcs_version = "PY2",
+    deps = [
+        ":python_init",
+    ],
+)
+
+py_library(
+    name = "python_init",
+    srcs = ["__init__.py"],
+    visibility = ["//visibility:public"],
+    deps = ["//y2018/control_loops:python_init"],
 )
