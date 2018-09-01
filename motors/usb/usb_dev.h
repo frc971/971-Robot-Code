@@ -46,7 +46,6 @@ extern "C" {
 #endif
 
 void usb_init(void);
-void usb_init_serialnumber(void);
 void usb_isr(void);
 usb_packet_t *usb_rx(uint32_t endpoint);
 uint32_t usb_tx_byte_count(uint32_t endpoint);

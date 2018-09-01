@@ -5618,14 +5618,6 @@ typedef struct __attribute__((packed)) {
 extern "C" {
 #endif
 
-#if defined(HAS_KINETIS_HSRUN) && F_CPU > 120000000
-extern int kinetis_hsrun_disable(void);
-extern int kinetis_hsrun_enable(void);
-#else
-__attribute__((always_inline)) static inline int kinetis_hsrun_disable(void) { return 0; }
-__attribute__((always_inline)) static inline int kinetis_hsrun_enable(void)  { return 0; }
-#endif
-
 extern void nmi_isr(void);
 extern void hard_fault_isr(void);
 extern void memmanage_fault_isr(void);

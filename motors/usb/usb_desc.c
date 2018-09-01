@@ -1371,41 +1371,6 @@ struct usb_string_descriptor_struct usb_string_mtp = {
 };
 #endif
 
-void usb_init_serialnumber(void)
-{
-	char buf[11];
-	uint32_t i, num;
-
-	__disable_irq();
-#if defined(HAS_KINETIS_FLASH_FTFA) || defined(HAS_KINETIS_FLASH_FTFL)
-	FTFL_FSTAT = FTFL_FSTAT_RDCOLERR | FTFL_FSTAT_ACCERR | FTFL_FSTAT_FPVIOL;
-	FTFL_FCCOB0 = 0x41;
-	FTFL_FCCOB1 = 15;
-	FTFL_FSTAT = FTFL_FSTAT_CCIF;
-	while (!(FTFL_FSTAT & FTFL_FSTAT_CCIF)) ; // wait
-	num = *(volatile uint32_t *)&FTFL_FCCOB7;
-#elif defined(HAS_KINETIS_FLASH_FTFE)
-	kinetis_hsrun_disable();
-	FTFL_FSTAT = FTFL_FSTAT_RDCOLERR | FTFL_FSTAT_ACCERR | FTFL_FSTAT_FPVIOL;
-	*(volatile uint32_t *)&FTFL_FCCOB3 = 0x41070000;
-	FTFL_FSTAT = FTFL_FSTAT_CCIF;
-	while (!(FTFL_FSTAT & FTFL_FSTAT_CCIF)) ; // wait
-	num = *(volatile uint32_t *)&FTFL_FCCOBB;
-	kinetis_hsrun_enable();
-#endif
-	__enable_irq();
-	// add extra zero to work around OS-X CDC-ACM driver bug
-	if (num < 10000000) num = num * 10;
-	ultoa(num, buf, 10);
-	for (i=0; i<10; i++) {
-		char c = buf[i];
-		if (!c) break;
-		usb_string_serial_number_default.wString[i] = c;
-	}
-	usb_string_serial_number_default.bLength = i * 2 + 2;
-}
-
-
 // **************************************************************
 //   Descriptors List
 // **************************************************************
