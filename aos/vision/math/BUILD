@@ -1,29 +1,38 @@
-package(default_visibility = ['//visibility:public'])
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
-  name = 'segment',
-  hdrs = ['segment.h'],
-  deps = [':vector'],
+    name = "segment",
+    hdrs = ["segment.h"],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    deps = [":vector"],
 )
 
 cc_library(
-  name = 'vector',
-  hdrs = [
-    'vector.h',
-  ],
-  deps = [
-    '//third_party/eigen',
-  ],
+    name = "vector",
+    hdrs = [
+        "vector.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    deps = [
+        "//third_party/eigen",
+    ],
 )
 
 cc_test(
-  name = 'vector_test',
-  srcs = [
-    'vector_test.cc',
-  ],
-  deps = [
-    ':vector',
-    '//aos/testing:googletest',
-  ],
-  size = 'small',
+    name = "vector_test",
+    size = "small",
+    srcs = [
+        "vector_test.cc",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    deps = [
+        ":vector",
+        "//aos/testing:googletest",
+    ],
 )

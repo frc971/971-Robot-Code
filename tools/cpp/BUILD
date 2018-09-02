@@ -158,6 +158,7 @@ cc_toolchain(
 filegroup(
     name = "linaro-gcc-files",
     srcs = [
+        ":clang_3p6_all_files",
         "//tools/cpp/linaro_linux_gcc:clang-symlinks",
         "//tools/cpp/linaro_linux_gcc:tool-wrappers",
         "@linaro_linux_gcc_4_9_repo//:compiler_pieces",
@@ -167,6 +168,7 @@ filegroup(
 filegroup(
     name = "linaro_linux_linker_files",
     srcs = [
+        ":clang_3p6_linker_files",
         "//tools/cpp/linaro_linux_gcc:ar",
         "//tools/cpp/linaro_linux_gcc:clang",
         "//tools/cpp/linaro_linux_gcc:clang-ld",
@@ -180,10 +182,20 @@ filegroup(
 filegroup(
     name = "linaro_linux_compiler_files",
     srcs = [
+        ":clang_3p6_compiler_files",
         "//tools/cpp/linaro_linux_gcc:as",
         "//tools/cpp/linaro_linux_gcc:clang",
         "//tools/cpp/linaro_linux_gcc:gcc",
         "//tools/cpp/linaro_linux_gcc:ld",
+        "@linaro_linux_gcc_4_9_repo//:compiler_pieces",
+    ],
+)
+
+filegroup(
+    name = "linaro_linux_strip_files",
+    srcs = [
+        "//tools/cpp/linaro_linux_gcc:strip",
+        "@linaro_linux_gcc_4_9_repo//:compiler_pieces",
     ],
 )
 
@@ -197,7 +209,7 @@ cc_toolchain(
     linker_files = ":linaro_linux_linker_files",
     objcopy_files = "//tools/cpp/linaro_linux_gcc:objcopy",
     static_runtime_libs = [":empty"],
-    strip_files = "//tools/cpp/linaro_linux_gcc:strip",
+    strip_files = ":linaro_linux_strip_files",
     supports_param_files = 1,
 )
 

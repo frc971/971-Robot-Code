@@ -1,4 +1,4 @@
 #!/bin/bash --norc
 
 exec -a "$0" \
-  "/usr/bin/clang-3.6" "$@"
+  "tools/cpp/clang_3p6/x86_64-linux-gnu-clang-3.6" "$@"

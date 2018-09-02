@@ -8,6 +8,9 @@ cc_library(
     hdrs = [
         "aos_sync.h",
     ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
     linkopts = [
         "-lpthread",
     ],
@@ -27,6 +30,9 @@ cc_library(
     hdrs = [
         "core_lib.h",
     ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
     deps = [
         ":aos_sync",
         ":shared_mem_types",
@@ -40,6 +46,9 @@ cc_library(
     ],
     hdrs = [
         "shared_mem.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
     ],
     linkopts = [
         "-lrt",
@@ -59,6 +68,9 @@ cc_library(
     hdrs = [
         "shared_mem_types.h",
     ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
     deps = [
         ":aos_sync",
     ],
@@ -71,6 +83,9 @@ cc_library(
     ],
     hdrs = [
         "queue.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
     ],
     linkopts = [
         "-lrt",
@@ -108,6 +123,9 @@ cc_test(
     name = "ipc_stress_test",
     srcs = [
         "ipc_stress_test.cc",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
     ],
     tags = [
         "manual",

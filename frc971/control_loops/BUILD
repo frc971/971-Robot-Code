@@ -44,6 +44,9 @@ queue_library(
     srcs = [
         "control_loops.q",
     ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
 )
 
 cc_test(
@@ -141,6 +144,9 @@ cc_library(
     name = "state_feedback_loop",
     hdrs = [
         "state_feedback_loop.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
     ],
     deps = [
         "//aos/common:macros",

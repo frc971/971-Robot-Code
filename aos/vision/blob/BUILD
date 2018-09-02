@@ -1,144 +1,187 @@
-load('//tools/build_rules:gtk_dependent.bzl', 'gtk_dependent_cc_binary', 'gtk_dependent_cc_library')
-package(default_visibility = ['//visibility:public'])
+load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary", "gtk_dependent_cc_library")
+
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
-  name = 'range_image',
-  hdrs = ['range_image.h'],
-  srcs = ['range_image.cc'],
-  deps = [
-    '//aos/vision/math:vector',
-    '//aos/vision/debug:overlay',
-    '//aos/vision/math:segment',
-    '//aos/vision/image:image_types',
-    '//third_party/eigen',
-  ],
+    name = "range_image",
+    srcs = ["range_image.cc"],
+    hdrs = ["range_image.h"],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    deps = [
+        "//aos/vision/debug:overlay",
+        "//aos/vision/image:image_types",
+        "//aos/vision/math:segment",
+        "//aos/vision/math:vector",
+        "//third_party/eigen",
+    ],
 )
 
 cc_library(
-  name = 'region_alloc',
-  hdrs = ['region_alloc.h'],
-  deps = [
-    '//aos/common/logging',
-  ],
+    name = "region_alloc",
+    hdrs = ["region_alloc.h"],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    deps = [
+        "//aos/common/logging",
+    ],
 )
 
 cc_library(
-  name = 'contour',
-  hdrs = ['contour.h'],
-  srcs = ['contour.cc'],
-  deps = [
-    '//aos/vision/debug:overlay',
-    '//aos/vision/math:segment',
-    ':range_image',
-    ':region_alloc',
-  ],
+    name = "contour",
+    srcs = ["contour.cc"],
+    hdrs = ["contour.h"],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    deps = [
+        ":range_image",
+        ":region_alloc",
+        "//aos/vision/debug:overlay",
+        "//aos/vision/math:segment",
+    ],
 )
 
 cc_library(
-  name = 'threshold',
-  hdrs = ['threshold.h'],
-  deps = [
-    ':range_image',
-    '//aos/vision/image:image_types',
-  ]
+    name = "threshold",
+    hdrs = ["threshold.h"],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    deps = [
+        ":range_image",
+        "//aos/vision/image:image_types",
+    ],
 )
 
 cc_library(
-  name = 'hierarchical_contour_merge',
-  hdrs = ['hierarchical_contour_merge.h'],
-  srcs = ['hierarchical_contour_merge.cc'],
-  deps = [
-    ':contour',
-    ':disjoint_set',
-    ':range_image',
-    '//third_party/eigen',
-  ],
-  restricted_to = ['//tools:k8', '//tools:armhf-debian'],
+    name = "hierarchical_contour_merge",
+    srcs = ["hierarchical_contour_merge.cc"],
+    hdrs = ["hierarchical_contour_merge.h"],
+    restricted_to = [
+        "//tools:k8",
+        "//tools:armhf-debian",
+    ],
+    deps = [
+        ":contour",
+        ":disjoint_set",
+        ":range_image",
+        "//third_party/eigen",
+    ],
 )
 
 cc_library(
-  name = 'disjoint_set',
-  hdrs = ['disjoint_set.h'],
+    name = "disjoint_set",
+    hdrs = ["disjoint_set.h"],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
 )
 
 cc_library(
-  name = 'find_blob',
-  hdrs = ['find_blob.h'],
-  srcs = ['find_blob.cc'],
-  deps = [
-    '//aos/vision/debug:overlay',
-    '//aos/vision/math:segment',
-    ':disjoint_set',
-    ':range_image',
-    '//third_party/eigen',
-  ]
+    name = "find_blob",
+    srcs = ["find_blob.cc"],
+    hdrs = ["find_blob.h"],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    deps = [
+        ":disjoint_set",
+        ":range_image",
+        "//aos/vision/debug:overlay",
+        "//aos/vision/math:segment",
+        "//third_party/eigen",
+    ],
 )
 
 cc_library(
-  name = 'codec',
-  hdrs = ['codec.h'],
-  srcs = ['codec.cc'],
-  deps = [
-    '//aos/vision/debug:overlay',
-    '//aos/vision/math:segment',
-    ':range_image',
-    '//third_party/eigen',
-  ],
+    name = "codec",
+    srcs = ["codec.cc"],
+    hdrs = ["codec.h"],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    deps = [
+        ":range_image",
+        "//aos/vision/debug:overlay",
+        "//aos/vision/math:segment",
+        "//third_party/eigen",
+    ],
 )
 
 cc_test(
-  name = 'codec_test',
-  srcs = ['codec_test.cc'],
-  deps = [
-    ':codec',
-    '//aos/testing:googletest',
-  ],
+    name = "codec_test",
+    srcs = ["codec_test.cc"],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    deps = [
+        ":codec",
+        "//aos/testing:googletest",
+    ],
 )
 
 cc_library(
-  name = 'move_scale',
-  hdrs = ['move_scale.h'],
-  srcs = ['move_scale.cc'],
-  deps = [
-    ':range_image',
-    '//aos/vision/image:image_types',
-  ],
+    name = "move_scale",
+    srcs = ["move_scale.cc"],
+    hdrs = ["move_scale.h"],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    deps = [
+        ":range_image",
+        "//aos/vision/image:image_types",
+    ],
 )
 
 cc_library(
-  name = 'test_utils',
-  hdrs = ['test_utils.h'],
-  srcs = ['test_utils.cc'],
-  deps = [
-    ':range_image',
-  ],
+    name = "test_utils",
+    srcs = ["test_utils.cc"],
+    hdrs = ["test_utils.h"],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    deps = [
+        ":range_image",
+    ],
 )
 
 cc_library(
-  name = 'transpose',
-  hdrs = ['transpose.h'],
-  srcs = ['transpose.cc'],
-  deps = [
-    ':range_image',
-  ],
+    name = "transpose",
+    srcs = ["transpose.cc"],
+    hdrs = ["transpose.h"],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    deps = [
+        ":range_image",
+    ],
 )
 
 cc_test(
-  name = 'transpose_test',
-  srcs = ['transpose_test.cc'],
-  deps = [
-    ':transpose',
-    ':test_utils',
-    '//aos/testing:googletest',
-  ],
+    name = "transpose_test",
+    srcs = ["transpose_test.cc"],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    deps = [
+        ":test_utils",
+        ":transpose",
+        "//aos/testing:googletest",
+    ],
 )
 
 gtk_dependent_cc_library(
-  name = 'stream_view',
-  hdrs = ['stream_view.h'],
-  deps = [
-    ':range_image',
-    '//aos/vision/debug:debug_window',
-    '//aos/vision/image:image_types',
-  ],
+    name = "stream_view",
+    hdrs = ["stream_view.h"],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    deps = [
+        ":range_image",
+        "//aos/vision/debug:debug_window",
+        "//aos/vision/image:image_types",
+    ],
 )

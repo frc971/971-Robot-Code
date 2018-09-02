@@ -27,6 +27,9 @@ cc_library(
     hdrs = glob([
         "googletest/include/gtest/*.h",
     ]),
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
     copts = [
         "-g",
         "-Wall",
@@ -71,6 +74,9 @@ cc_library(
     hdrs = glob([
         "googlemock/include/gmock/*.h",
     ]),
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
     copts = [
         "-std=c++11",
         "-g",

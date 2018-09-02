@@ -23,13 +23,18 @@ cc_library(
     hdrs = [
         "macros.h",
     ],
-    compatible_with = mcu_cpus,
+    compatible_with = mcu_cpus + [
+        "//tools:armhf-debian",
+    ],
 )
 
 cc_library(
     name = "type_traits",
     hdrs = [
         "type_traits.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
     ],
 )
 
@@ -40,6 +45,9 @@ cc_library(
     ],
     hdrs = [
         "time.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
     ],
     deps = [
         ":macros",
@@ -53,6 +61,9 @@ genrule(
     name = "gen_queue_primitives",
     outs = ["queue_primitives.h"],
     cmd = "$(location //aos/build/queues:queue_primitives) $@",
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
     tools = ["//aos/build/queues:queue_primitives"],
     visibility = ["//visibility:private"],
 )
@@ -61,6 +72,9 @@ genrule(
     name = "gen_print_field",
     outs = ["print_field.cc"],
     cmd = "$(location //aos/build/queues:print_field) $@",
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
     tools = ["//aos/build/queues:print_field"],
     visibility = ["//visibility:private"],
 )
@@ -69,6 +83,9 @@ cc_library(
     name = "generated_queue_headers",
     hdrs = [
         ":gen_queue_primitives",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
     ],
     visibility = ["//aos/common/logging:__pkg__"],
 )
@@ -93,6 +110,9 @@ cc_library(
     hdrs = [
         "unique_malloc_ptr.h",
     ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
 )
 
 cc_library(
@@ -104,6 +124,9 @@ cc_library(
     ],
     hdrs = [
         "queue_types.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
     ],
     deps = [
         ":byteorder",
@@ -142,6 +165,9 @@ cc_library(
     hdrs = [
         "byteorder.h",
     ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
 )
 
 cc_library(
@@ -152,6 +178,9 @@ cc_library(
     hdrs = [
         "message.h",
     ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
     deps = [
         ":byteorder",
         ":macros",
@@ -161,9 +190,11 @@ cc_library(
 
 cc_library(
     name = "queues",
-    srcs = [],
     hdrs = [
         "queue.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
     ],
     deps = [
         ":messages",
@@ -176,6 +207,9 @@ cc_library(
     name = "scoped_fd",
     hdrs = [
         "scoped_fd.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
     ],
     deps = [
         "//aos/common/logging",
@@ -212,6 +246,9 @@ cc_library(
     hdrs = [
         "gtest_prod.h",
     ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
 )
 
 cc_test(
@@ -234,6 +271,9 @@ cc_library(
     ],
     hdrs = [
         "die.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
     ],
     deps = [
         ":macros",
@@ -279,6 +319,9 @@ cc_library(
     ],
     hdrs = [
         "condition.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
     ],
     deps = [
         ":mutex",
@@ -336,6 +379,9 @@ cc_library(
     ],
     hdrs = [
         "mutex.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
     ],
     deps = [
         ":die",

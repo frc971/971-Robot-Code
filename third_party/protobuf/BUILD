@@ -71,6 +71,9 @@ cc_library(
         "src/google/protobuf/wire_format_lite.cc",
     ],
     hdrs = glob(["src/google/protobuf/**/*.h"]),
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
     copts = COPTS,
     includes = ["src/"],
     linkopts = LINK_OPTS,
@@ -136,6 +139,9 @@ cc_library(
         "src/google/protobuf/wrappers.pb.cc",
     ],
     hdrs = glob(["src/**/*.h"]),
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
     copts = COPTS,
     includes = ["src/"],
     linkopts = LINK_OPTS,
@@ -143,7 +149,7 @@ cc_library(
     deps = [":protobuf_lite"],
 )
 
-'''
+"""
 objc_library(
     name = "protobuf_objc",
     hdrs = ["objectivec/GPBProtocolBuffers.h"],
@@ -151,7 +157,7 @@ objc_library(
     non_arc_srcs = ["objectivec/GPBProtocolBuffers.m"],
     visibility = ["//visibility:public"],
 )
-'''
+"""
 
 RELATIVE_WELL_KNOWN_PROTOS = [
     # AUTOGEN(well_known_protos)
@@ -363,10 +369,10 @@ cc_proto_library(
     name = "cc_test_protos",
     srcs = LITE_TEST_PROTOS + TEST_PROTOS,
     include = "src",
+    copts = COPTS,
     default_runtime = ":protobuf",
     protoc = ":protoc",
     deps = [":cc_wkt_protos"],
-    copts = COPTS,
 )
 
 COMMON_TEST_SRCS = [
@@ -386,12 +392,12 @@ cc_binary(
         "src/google/protobuf/compiler/test_plugin.cc",
         "src/google/protobuf/testing/file.cc",
     ],
+    copts = COPTS,
     deps = [
         ":protobuf",
         ":protoc_lib",
         "//external:gtest",
     ],
-    copts = COPTS,
 )
 
 cc_test(
@@ -488,11 +494,11 @@ genrule(
     name = "gen_well_known_protos_java",
     srcs = WELL_KNOWN_PROTOS,
     outs = [
-        "wellknown.srcjar"
+        "wellknown.srcjar",
     ],
     cmd = "$(location :protoc) --java_out=$(@D)/wellknown.jar" +
-        " -Ithird_party/protobuf/src $(SRCS) " +
-        " && mv $(@D)/wellknown.jar $(@D)/wellknown.srcjar",
+          " -Ithird_party/protobuf/src $(SRCS) " +
+          " && mv $(@D)/wellknown.jar $(@D)/wellknown.srcjar",
     tools = [":protoc"],
 )
 
@@ -543,7 +549,7 @@ internal_copied_filegroup(
     include = "python",
 )
 
-'''
+"""
 cc_binary(
     name = "internal/_api_implementation.so",
     srcs = ["python/google/protobuf/internal/api_implementation.cc"],
@@ -580,7 +586,7 @@ cc_binary(
         ":use_fast_cpp_protos": ["//third_party/protobuf/util/python:python_headers"],
     }),
 )
-'''
+"""
 
 config_setting(
     name = "use_fast_cpp_protos",

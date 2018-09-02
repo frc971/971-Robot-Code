@@ -45,6 +45,9 @@ cc_library(
     hdrs = [
         "once.h",
     ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "//aos/common:gtest_prod",

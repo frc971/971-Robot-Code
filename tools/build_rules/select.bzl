@@ -3,10 +3,15 @@
 # quickly find issues where something new isn't handled.
 # It will also make adding ORs when it makes sense easy to do nicely.
 
-all_cpus = ['amd64', 'roborio', 'armhf']
-'''All of the CPUs we know about.'''
+all_cpus = [
+    "amd64",
+    "roborio",
+    "armhf",
+]
 
-'''A select wrapper for CPU architectures.
+"""All of the CPUs we know about."""
+
+"""A select wrapper for CPU architectures.
 
 Args:
   values: A mapping from architecture names (as strings) to other things.
@@ -14,7 +19,8 @@ Args:
           'else' is also allowed as a default.
           'arm' is allowed instead of roborio and armhf.
 Returns a select which evaluates to the correct element of values.
-'''
+"""
+
 def cpu_select(values):
   if 'arm' in values:
     new_values = {}
@@ -39,12 +45,13 @@ def cpu_select(values):
     '//tools:cpu_armhf': values['armhf'],
   })
 
-'''A select wrapper for address space sizes.
+"""A select wrapper for address space sizes.
 
 Args:
   values: A mapping from address space sizes (as strings) to other things.
 Returns a select which evaluates to the correct element of values.
-'''
+"""
+
 def address_size_select(values):
   if '32' not in values:
     fail('Need to handle 32 bit addresses!', 'values')
@@ -53,15 +60,17 @@ def address_size_select(values):
   return select({
     '//tools:cpu_k8': values['64'],
     '//tools:cpu_roborio': values['32'],
+    '//tools:cpu_armhf': values['32'],
   })
 
-'''A select wrapper for compilers.
+"""A select wrapper for compilers.
 
 Args:
   values: A mapping from compiler names (as strings) to other things.
           Currently 'gcc' and 'clang' are recognized.
 Returns a select which evaluates to the correct element of values.
-'''
+"""
+
 def compiler_select(values):
   if 'gcc' not in values:
     fail('Need to handle gcc!', 'values')

@@ -1,113 +1,113 @@
-package(default_visibility = ['//tools/cpp:__pkg__'])
+package(default_visibility = ["//tools/cpp:__pkg__"])
 
 cc_library(
-  name = 'libpthread',
-  visibility = ['//visibility:public'],
-  srcs = [
-    'clang_more_libs/libpthread.so',
-  ],
+    name = "libpthread",
+    srcs = [
+        "clang_more_libs/libpthread.so",
+    ],
+    visibility = ["//visibility:public"],
 )
 
 filegroup(
-  name = 'gcc',
-  srcs = [
-    '@linaro_linux_gcc_4_9_repo//:gcc',
-    'arm-linux-gnueabihf-gcc',
-  ],
+    name = "gcc",
+    srcs = [
+        "arm-linux-gnueabihf-gcc",
+        "@linaro_linux_gcc_4_9_repo//:gcc",
+    ],
 )
 
 filegroup(
-  name = 'ar',
-  srcs = [
-    '@linaro_linux_gcc_4_9_repo//:ar',
-    'arm-linux-gnueabihf-ar',
-  ],
+    name = "ar",
+    srcs = [
+        "arm-linux-gnueabihf-ar",
+        "@linaro_linux_gcc_4_9_repo//:ar",
+    ],
 )
 
 filegroup(
-  name = 'ld',
-  srcs = [
-    '@linaro_linux_gcc_4_9_repo//:ld',
-    'arm-linux-gnueabihf-ld',
-  ],
+    name = "ld",
+    srcs = [
+        "arm-linux-gnueabihf-ld",
+        "@linaro_linux_gcc_4_9_repo//:ld",
+    ],
 )
 
 filegroup(
-  name = 'nm',
-  srcs = [
-    '@linaro_linux_gcc_4_9_repo//:nm',
-    'arm-linux-gnueabihf-nm',
-  ],
+    name = "nm",
+    srcs = [
+        "arm-linux-gnueabihf-nm",
+        "@linaro_linux_gcc_4_9_repo//:nm",
+    ],
 )
 
 filegroup(
-  name = 'objcopy',
-  srcs = [
-    '@linaro_linux_gcc_4_9_repo//:objcopy',
-    'arm-linux-gnueabihf-objcopy',
-  ],
+    name = "objcopy",
+    srcs = [
+        "arm-linux-gnueabihf-objcopy",
+        "@linaro_linux_gcc_4_9_repo//:objcopy",
+    ],
 )
 
 filegroup(
-  name = 'objdump',
-  srcs = [
-    '@linaro_linux_gcc_4_9_repo//:objdump',
-    'arm-linux-gnueabihf-objdump',
-  ],
+    name = "objdump",
+    srcs = [
+        "arm-linux-gnueabihf-objdump",
+        "@linaro_linux_gcc_4_9_repo//:objdump",
+    ],
 )
 
 filegroup(
-  name = 'strip',
-  srcs = [
-    '@linaro_linux_gcc_4_9_repo//:strip',
-    'arm-linux-gnueabihf-strip',
-  ],
+    name = "strip",
+    srcs = [
+        "arm-linux-gnueabihf-strip",
+        "@linaro_linux_gcc_4_9_repo//:strip",
+    ],
 )
 
 filegroup(
-  name = 'as',
-  srcs = [
-    '@linaro_linux_gcc_4_9_repo//:as',
-    'arm-linux-gnueabihf-as',
-  ],
+    name = "as",
+    srcs = [
+        "arm-linux-gnueabihf-as",
+        "@linaro_linux_gcc_4_9_repo//:as",
+    ],
 )
 
 filegroup(
-  name = 'clang',
-  srcs = [
-    'clang_bin/clang',
-  ],
+    name = "clang",
+    srcs = [
+        "clang_bin/clang",
+    ],
 )
 
 filegroup(
-  name = 'clang-ld',
-  srcs = [
-    'clang_bin/ld',
-    ':ld',
-  ],
+    name = "clang-ld",
+    srcs = [
+        "clang_bin/ld",
+        ":ld",
+    ],
 )
 
 filegroup(
-  name = 'tool-wrappers',
-  srcs = [
-    ':gcc',
-    ':ar',
-    ':ld',
-    ':nm',
-    ':objcopy',
-    ':objdump',
-    ':strip',
-    ':as',
-    'clang_bin/as',
-    ':clang',
-    ':clang-ld',
-  ],
+    name = "tool-wrappers",
+    srcs = [
+        "clang_bin/as",
+        ":ar",
+        ":as",
+        ":clang",
+        ":clang-ld",
+        ":gcc",
+        ":ld",
+        ":nm",
+        ":objcopy",
+        ":objdump",
+        ":strip",
+    ],
 )
 
 filegroup(
-  name = 'clang-symlinks',
-  srcs = glob([
-    'clang_more_libs/**',
-    'clang_syroot/**',
-  ]),
+    name = "clang-symlinks",
+    srcs = glob([
+        "clang_more_libs/**",
+        "clang_syroot/**",
+    ]),
 )
