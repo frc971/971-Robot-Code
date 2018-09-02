@@ -33,23 +33,14 @@
 #include <errno.h>
 #include <stdio.h>
 
-// Flash Security Setting. On Teensy 3.2, you can lock the MK20 chip to prevent
-// anyone from reading your code.  You CAN still reprogram your Teensy while
-// security is set, but the bootloader will be unable to respond to auto-reboot
-// requests from Arduino. Pressing the program button will cause a full chip
-// erase to gain access, because the bootloader chip is locked out.  Normally,
-// erase occurs when uploading begins, so if you press the Program button
-// accidentally, simply power cycling will run your program again.  When
-// security is locked, any Program button press causes immediate full erase.
-// Special care must be used with the Program button, because it must be made
-// accessible to initiate reprogramming, but it must not be accidentally
-// pressed when Teensy Loader is not being used to reprogram.  To set lock the
-// security change this to 0xDC.  Teensy 3.0 and 3.1 do not support security
-// lock.
-#define FSEC 0xDE
+#define FSEC                                   \
+  ((2 << 6) /* Enable backdoor key access */ | \
+   (1 << 4) /* Enable mass erase */ |          \
+   (3 << 2) /* Freescale access granted */ | (2 << 0) /* Not secured */)
 
-// Flash Options
-#define FOPT 0xF9
+#define FOPT                                                            \
+  ((0 << 2) /* NMI always blocked */ | (0 << 1) /* EzPort disabled */ | \
+   (1 << 0) /* Normal (not low-power) boot */)
 
 extern uint32_t __bss_ram_start__[];
 extern uint32_t __bss_ram_end__[];
@@ -397,13 +388,111 @@ __attribute__((section(".vectors"), used)) void (
     enet_tx_isr,       // 99 Ethernet Transmit
     enet_rx_isr,       // 100 Ethernet Receive
     enet_error_isr,    // 101 Ethernet Error
+#elif defined(__MK22FX512__)
+    dma_ch0_isr,       // 16 DMA channel 0 transfer complete
+    dma_ch1_isr,       // 17 DMA channel 1 transfer complete
+    dma_ch2_isr,       // 18 DMA channel 2 transfer complete
+    dma_ch3_isr,       // 19 DMA channel 3 transfer complete
+    dma_ch4_isr,       // 20 DMA channel 4 transfer complete
+    dma_ch5_isr,       // 21 DMA channel 5 transfer complete
+    dma_ch6_isr,       // 22 DMA channel 6 transfer complete
+    dma_ch7_isr,       // 23 DMA channel 7 transfer complete
+    dma_ch8_isr,       // 24 DMA channel 8 transfer complete
+    dma_ch9_isr,       // 25 DMA channel 9 transfer complete
+    dma_ch10_isr,      // 26 DMA channel 10 transfer complete
+    dma_ch11_isr,      // 27 DMA channel 11 transfer complete
+    dma_ch12_isr,      // 28 DMA channel 12 transfer complete
+    dma_ch13_isr,      // 29 DMA channel 13 transfer complete
+    dma_ch14_isr,      // 30 DMA channel 14 transfer complete
+    dma_ch15_isr,      // 31 DMA channel 15 transfer complete
+    dma_error_isr,     // 32 DMA error interrupt channel
+    mcm_isr,           // 33 MCM
+    flash_cmd_isr,     // 34 Flash Memory Command complete
+    flash_error_isr,   // 35 Flash Read collision
+    low_voltage_isr,   // 36 Low-voltage detect/warning
+    wakeup_isr,        // 37 Low Leakage Wakeup
+    watchdog_isr,      // 38 Both EWM and WDOG interrupt
+    unused_isr,        // 39 --
+    i2c0_isr,          // 40 I2C0
+    i2c1_isr,          // 41 I2C1
+    spi0_isr,          // 42 SPI0
+    spi1_isr,          // 43 SPI1
+    i2s0_tx_isr,       // 44 I2S0 Transmit
+    i2s0_rx_isr,       // 45 I2S0 Receive
+    unused_isr,        // 46 --
+    uart0_status_isr,  // 47 UART0 status
+    uart0_error_isr,   // 48 UART0 error
+    uart1_status_isr,  // 49 UART1 status
+    uart1_error_isr,   // 50 UART1 error
+    uart2_status_isr,  // 51 UART2 status
+    uart2_error_isr,   // 52 UART2 error
+    uart3_status_isr,  // 53 UART3 status
+    uart3_error_isr,   // 54 UART3 error
+    adc0_isr,          // 55 ADC0
+    cmp0_isr,          // 56 CMP0
+    cmp1_isr,          // 57 CMP1
+    ftm0_isr,          // 58 FTM0
+    ftm1_isr,          // 59 FTM1
+    ftm2_isr,          // 60 FTM2
+    cmt_isr,           // 61 CMT
+    rtc_alarm_isr,     // 62 RTC Alarm interrupt
+    rtc_seconds_isr,   // 63 RTC Seconds interrupt
+    pit0_isr,          // 64 PIT Channel 0
+    pit1_isr,          // 65 PIT Channel 1
+    pit2_isr,          // 66 PIT Channel 2
+    pit3_isr,          // 67 PIT Channel 3
+    pdb_isr,           // 68 PDB Programmable Delay Block
+    usb_isr,           // 69 USB OTG
+    usb_charge_isr,    // 70 USB Charger Detect
+    unused_isr,        // 71 --
+    dac0_isr,          // 72 DAC0
+    mcg_isr,           // 73 MCG
+    lptmr_isr,         // 74 Low Power Timer
+    porta_isr,         // 75 Pin detect (Port A)
+    portb_isr,         // 76 Pin detect (Port B)
+    portc_isr,         // 77 Pin detect (Port C)
+    portd_isr,         // 78 Pin detect (Port D)
+    porte_isr,         // 79 Pin detect (Port E)
+    software_isr,      // 80 Software interrupt
+    unused_isr,        // 81 --
+    unused_isr,        // 82 --
+    unused_isr,        // 83 --
+    unused_isr,        // 84 --
+    unused_isr,        // 85 --
+    cmp2_isr,          // 86 CMP2
+    ftm3_isr,          // 87 FTM3
+    unused_isr,        // 88 --
+    adc1_isr,          // 89 ADC1
+    i2c2_isr,          // 90 I2C2
+    can0_message_isr,  // 91 CAN OR'ed Message buffer (0-15)
+    can0_bus_off_isr,  // 92 CAN Bus Off
+    can0_error_isr,    // 93 CAN Error
+    can0_tx_warn_isr,  // 94 CAN Transmit Warning
+    can0_rx_warn_isr,  // 95 CAN Receive Warning
+    can0_wakeup_isr,   // 96 CAN Wake Up
+    sdhc_isr,          // 97 SDHC
+#else
+#error
 #endif
 };
 
-__attribute__((section(".flashconfig"),
-               used)) const uint8_t flashconfigbytes[16] = {
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-    0xFF, 0xFF, 0xFF, 0xFF, FSEC, FOPT, 0xFF, 0xFF};
+__attribute__((section(".flashconfig"), used))
+const uint8_t flashconfigbytes[16] = {0xFF,
+                                      0xFF,
+                                      0xFF,
+                                      0xFF,
+                                      0xFF,
+                                      0xFF,
+                                      0xFF,
+                                      0xFF, /* Backdoor access key */
+                                      0xFF,
+                                      0xFF,
+                                      0xFF,
+                                      0xFF /* Program flash protection */,
+                                      FSEC,
+                                      FOPT,
+                                      0xFF /* FEPROT */,
+                                      0xFF /* PDPROT */};
 
 #ifdef __clang__
 // Clang seems to generate slightly larger code with Os than gcc
@@ -412,12 +501,10 @@ __attribute__((optimize("-Os")))
 __attribute__((section(".startup"), optimize("-Os")))
 #endif
 void ResetHandler(void) {
-  unsigned int i;
-
   WDOG_UNLOCK = WDOG_UNLOCK_SEQ1;
   WDOG_UNLOCK = WDOG_UNLOCK_SEQ2;
-  __asm__ volatile("nop");
-  __asm__ volatile("nop");
+  __asm__ __volatile__("nop" ::: "memory");
+  __asm__ __volatile__("nop" ::: "memory");
 
   WDOG_STCTRLH = WDOG_STCTRLH_ALLOWUPDATE;
 
@@ -426,13 +513,15 @@ void ResetHandler(void) {
   SIM_SCGC3 = SIM_SCGC3_ADC1 | SIM_SCGC3_FTM2;
   SIM_SCGC5 = 0x00043F82;  // clocks active to all GPIO
   SIM_SCGC6 = SIM_SCGC6_RTC | SIM_SCGC6_FTM0 | SIM_SCGC6_FTM1 | SIM_SCGC6_ADC0 |
-              SIM_SCGC6_FTFL;
-#elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
+              SIM_SCGC6_FTF;
+#elif defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__MK22FX512__)
   SIM_SCGC3 = SIM_SCGC3_ADC1 | SIM_SCGC3_FTM2 | SIM_SCGC3_FTM3;
   SIM_SCGC5 = 0x00043F82;  // clocks active to all GPIO
   SIM_SCGC6 = SIM_SCGC6_RTC | SIM_SCGC6_FTM0 | SIM_SCGC6_FTM1 | SIM_SCGC6_ADC0 |
-              SIM_SCGC6_FTFL;
+              SIM_SCGC6_FTF;
   SCB_CPACR = 0x00F00000;
+#else
+#error
 #endif
   // if the RTC oscillator isn't enabled, get it started early
   if (!(RTC_CR & RTC_CR_OSCE)) {
@@ -440,7 +529,9 @@ void ResetHandler(void) {
     RTC_CR = RTC_CR_SC16P | RTC_CR_SC4P | RTC_CR_OSCE;
   }
   // release I/O pins hold, if we woke up from VLLS mode
-  if (PMC_REGSC & PMC_REGSC_ACKISO) PMC_REGSC |= PMC_REGSC_ACKISO;
+  if (PMC_REGSC & PMC_REGSC_ACKISO) {
+    PMC_REGSC |= PMC_REGSC_ACKISO;
+  }
 
   // since this is a write once register, make it visible to all F_CPU's
   // so we can into other sleep modes in the future at any speed
@@ -461,9 +552,12 @@ void ResetHandler(void) {
   }
 
   // default all interrupts to medium priority level
-  for (i = 0; i < NVIC_NUM_INTERRUPTS + 16; i++)
+  for (int i = 0; i < NVIC_NUM_INTERRUPTS + 16; i++) {
     _VectorsRam[i] = _VectorsFlash[i];
-  for (i = 0; i < NVIC_NUM_INTERRUPTS; i++) NVIC_SET_PRIORITY(i, 128);
+  }
+  for (int i = 0; i < NVIC_NUM_INTERRUPTS; i++) {
+    NVIC_SET_PRIORITY(i, 128);
+  }
   SCB_VTOR = (uint32_t)_VectorsRam;  // use vector table in RAM
 
   // hardware always starts in FEI mode
@@ -518,14 +612,16 @@ void ResetHandler(void) {
   // now we're in PBE mode
   // now program the clock dividers
 #if F_CPU == 120000000
-  // config divisors: 120 MHz core, 60 MHz bus, 24 MHz flash, USB = 128 * 2 / 5
-  SIM_CLKDIV1 =
-      SIM_CLKDIV1_OUTDIV1(0) | SIM_CLKDIV1_OUTDIV2(1) | SIM_CLKDIV1_OUTDIV4(4);
+  // config divisors: 120 MHz core, 60 MHz bus, 40 MHz FlexBus, 24 MHz flash,
+  // USB = 120 * 2 / 5 = 48 MHz
+  SIM_CLKDIV1 = SIM_CLKDIV1_OUTDIV1(0) | SIM_CLKDIV1_OUTDIV2(1) |
+                SIM_CLKDIV1_OUTDIV3(2) | SIM_CLKDIV1_OUTDIV4(4);
   SIM_CLKDIV2 = SIM_CLKDIV2_USBDIV(4) | SIM_CLKDIV2_USBFRAC;
 #elif F_CPU == 72000000
-  // config divisors: 72 MHz core, 36 MHz bus, 24 MHz flash, USB = 72 * 2 / 3
-  SIM_CLKDIV1 =
-      SIM_CLKDIV1_OUTDIV1(0) | SIM_CLKDIV1_OUTDIV2(1) | SIM_CLKDIV1_OUTDIV4(2);
+  // config divisors: 72 MHz core, 36 MHz bus, 36 MHz FlexBus, 24 MHz flash,
+  // USB = 72 * 2 / 3 = 48 MHz
+  SIM_CLKDIV1 = SIM_CLKDIV1_OUTDIV1(0) | SIM_CLKDIV1_OUTDIV2(1) |
+                SIM_CLKDIV1_OUTDIV3(1) | SIM_CLKDIV1_OUTDIV4(2);
   SIM_CLKDIV2 = SIM_CLKDIV2_USBDIV(2) | SIM_CLKDIV2_USBFRAC;
 #else
 #error "Unsupported F_CPU"
@@ -565,8 +661,10 @@ char *__brkval = (char *)__heap_start__;
 #define STACK_MARGIN 1024
 #elif defined(__MK20DX256__)
 #define STACK_MARGIN 4096
-#elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
+#elif defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__MK22FX512__)
 #define STACK_MARGIN 8192
+#else
+#error
 #endif
 #endif
 

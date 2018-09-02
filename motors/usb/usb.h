@@ -10,6 +10,7 @@
 #include "aos/common/macros.h"
 #include "motors/core/kinetis.h"
 #include "motors/usb/constants.h"
+#include "motors/util.h"
 
 namespace frc971 {
 namespace teensy {
@@ -17,9 +18,7 @@ namespace teensy {
 // A sufficient memory barrier between writing some data and telling the USB
 // hardware to read it or having the USB hardware say some data is readable and
 // actually reading it.
-static inline void dma_memory_barrier() {
-  __asm__ __volatile__("" :: : "memory");
-}
+static inline void dma_memory_barrier() { DmaMemoryBarrier(); }
 
 // Aligned for faster access via memcpy etc.
 //
