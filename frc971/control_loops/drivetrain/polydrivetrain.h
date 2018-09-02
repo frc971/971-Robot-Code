@@ -57,10 +57,16 @@ class PolyDrivetrain {
 
   // Returns the current estimated velocity in m/s.
   Scalar velocity() const {
-    return (loop_->mutable_X_hat()(0) + loop_->mutable_X_hat()(1)) / 2.0;
+    return (loop_->mutable_X_hat()(0) + loop_->mutable_X_hat()(1)) * kHalf;
   }
 
  private:
+  static constexpr Scalar kZero = static_cast<Scalar>(0.0);
+  static constexpr Scalar kHalf = static_cast<Scalar>(0.5);
+  static constexpr Scalar kOne = static_cast<Scalar>(1.0);
+  static constexpr Scalar kTwo = static_cast<Scalar>(2.0);
+  static constexpr Scalar kTwelve = static_cast<Scalar>(12.0);
+
   StateFeedbackLoop<7, 2, 4, Scalar> *kf_;
 
   const ::aos::controls::HVPolytope<2, 4, 4, Scalar> U_Poly_;
@@ -127,14 +133,16 @@ Scalar PolyDrivetrain<Scalar>::MotorSpeed(
     const constants::ShifterHallEffect &hall_effect, Scalar shifter_position,
     Scalar velocity, Gear gear) {
   const Scalar high_gear_speed =
-      velocity / dt_config_.high_gear_ratio / dt_config_.wheel_radius;
+      velocity /
+      static_cast<Scalar>(dt_config_.high_gear_ratio / dt_config_.wheel_radius);
   const Scalar low_gear_speed =
-      velocity / dt_config_.low_gear_ratio / dt_config_.wheel_radius;
+      velocity /
+      static_cast<Scalar>(dt_config_.low_gear_ratio / dt_config_.wheel_radius);
 
-  if (shifter_position < hall_effect.clear_low) {
+  if (shifter_position < static_cast<Scalar>(hall_effect.clear_low)) {
     // We're in low gear, so return speed for that gear.
     return low_gear_speed;
-  } else if (shifter_position > hall_effect.clear_high) {
+  } else if (shifter_position > static_cast<Scalar>(hall_effect.clear_high)) {
     // We're in high gear, so return speed for that gear.
     return high_gear_speed;
   }
@@ -195,11 +203,12 @@ void PolyDrivetrain<Scalar>::SetGoal(
   const bool highgear = goal.highgear;
 
   // Apply a sin function that's scaled to make it feel better.
-  const Scalar angular_range = M_PI_2 * dt_config_.wheel_non_linearity;
+  const Scalar angular_range =
+      static_cast<Scalar>(M_PI_2) * dt_config_.wheel_non_linearity;
 
   wheel_ = sin(angular_range * wheel) / sin(angular_range);
   wheel_ = sin(angular_range * wheel_) / sin(angular_range);
-  wheel_ = 2.0 * wheel - wheel_;
+  wheel_ = kTwo * wheel - wheel_;
   quickturn_ = quickturn;
 
   if (quickturn_) {
@@ -208,12 +217,12 @@ void PolyDrivetrain<Scalar>::SetGoal(
     wheel_ *= dt_config_.wheel_multiplier;
   }
 
-  static const Scalar kThrottleDeadband = 0.05;
+  static constexpr Scalar kThrottleDeadband = static_cast<Scalar>(0.05);
   if (::std::abs(throttle) < kThrottleDeadband) {
     throttle_ = 0;
   } else {
     throttle_ = copysign(
-        (::std::abs(throttle) - kThrottleDeadband) / (1.0 - kThrottleDeadband),
+        (::std::abs(throttle) - kThrottleDeadband) / (kOne - kThrottleDeadband),
         throttle);
   }
 
@@ -252,10 +261,10 @@ Scalar PolyDrivetrain<Scalar>::FilterVelocity(Scalar throttle) const {
   const Scalar high_min_FF_sum = FF_high.col(0).sum();
 
   const Scalar adjusted_ff_voltage =
-      ::aos::Clip(throttle * 12.0 * min_FF_sum / high_min_FF_sum, -12.0, 12.0);
+      ::aos::Clip(throttle * kTwelve * min_FF_sum / high_min_FF_sum, -kTwelve, kTwelve);
   return (adjusted_ff_voltage +
-          ttrust_ * min_K_sum * (loop_->X_hat(0, 0) + loop_->X_hat(1, 0)) /
-              2.0) /
+          ttrust_ * min_K_sum * (loop_->X_hat(0, 0) + loop_->X_hat(1, 0)) *
+              kHalf) /
          (ttrust_ * min_K_sum + min_FF_sum);
 }
 
@@ -278,7 +287,7 @@ Scalar PolyDrivetrain<Scalar>::MaxVelocity() {
   const Scalar high_min_FF_sum = FF_high.col(0).sum();
 
   const Scalar adjusted_ff_voltage =
-      ::aos::Clip(12.0 * min_FF_sum / high_min_FF_sum, -12.0, 12.0);
+      ::aos::Clip(kTwelve * min_FF_sum / high_min_FF_sum, -kTwelve, kTwelve);
   return adjusted_ff_voltage / min_FF_sum;
 }
 
@@ -307,7 +316,7 @@ void PolyDrivetrain<Scalar>::Update() {
     // and that the plant is the same on the left and right.
     const Scalar fvel = FilterVelocity(throttle_);
 
-    const Scalar sign_svel = wheel_ * ((fvel > 0.0) ? 1.0 : -1.0);
+    const Scalar sign_svel = wheel_ * ((fvel > kZero) ? kOne : -kOne);
     Scalar steering_velocity;
     if (quickturn_) {
       steering_velocity = wheel_ * MaxVelocity();
@@ -327,7 +336,7 @@ void PolyDrivetrain<Scalar>::Update() {
       // K * R = w
       Eigen::Matrix<Scalar, 1, 2> equality_k;
       equality_k << 1 + sign_svel, -(1 - sign_svel);
-      const Scalar equality_w = 0.0;
+      const Scalar equality_w = kZero;
 
       // Construct a constraint on R by manipulating the constraint on U
       ::aos::controls::HVPolytope<2, 4, 4, Scalar> R_poly_hv(
@@ -358,10 +367,10 @@ void PolyDrivetrain<Scalar>::Update() {
     }
 
     // Housekeeping: set the shifting logging values to zero, because we're not shifting
-    left_motor_speed_ = 0.0;
-    right_motor_speed_ = 0.0;
-    current_left_velocity_ = 0.0;
-    current_right_velocity_ = 0.0;
+    left_motor_speed_ = kZero;
+    right_motor_speed_ = kZero;
+    current_left_velocity_ = kZero;
+    current_right_velocity_ = kZero;
   } else {
     current_left_velocity_ =
         (position_.left_encoder - last_position_.left_encoder) / dt_config_.dt;
@@ -384,17 +393,17 @@ void PolyDrivetrain<Scalar>::Update() {
     R_left(0, 0) = left_motor_speed_;
     R_right(0, 0) = right_motor_speed_;
 
-    const Scalar wiggle =
-        (static_cast<Scalar>((counter_ % 30) / 15) - 0.5) * 8.0;
+    const Scalar wiggle = (static_cast<Scalar>((counter_ % 30) / 15) - kHalf) *
+                          static_cast<Scalar>(8.0);
 
     loop_->mutable_U(0, 0) = ::aos::Clip(
         (R_left / dt_config_.v)(0, 0) + (IsInGear(left_gear_) ? 0 : wiggle),
-        -12.0, 12.0);
+        -kTwelve, kTwelve);
     loop_->mutable_U(1, 0) = ::aos::Clip(
         (R_right / dt_config_.v)(0, 0) + (IsInGear(right_gear_) ? 0 : wiggle),
-        -12.0, 12.0);
+        -kTwelve, kTwelve);
 #ifdef __linux__
-    loop_->mutable_U() *= 12.0 / ::aos::robot_state->voltage_battery;
+    loop_->mutable_U() *= kTwelve / ::aos::robot_state->voltage_battery;
 #endif  // __linux__
   }
 }
