@@ -162,13 +162,6 @@ bind(
     actual = "//third_party/googletest:googlemock_main",
 )
 
-new_http_archive(
-    name = "python_import_helpers",
-    build_file = "third_party/python_import_helpers.BUILD",
-    sha256 = "71939a7d75585a57d2e99a33d39f391764d8f930f9a16acf32e00c5d3f432aa0",
-    url = "http://frc971.org/Build-Dependencies/empty.tar.gz",
-)
-
 # Recompressed from libusb-1.0.21.7z.
 http_file(
     name = "libusb_1_0_windows",
