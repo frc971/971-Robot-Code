@@ -1,4 +1,4 @@
-load('@//tools/build_rules:select.bzl', 'compiler_select')
+load("@//tools/build_rules:select.bzl", "compiler_select")
 
 def _single_fortran_object_impl(ctx):
   toolchain_cflags = (ctx.fragments.cpp.compiler_options([]) +
@@ -47,22 +47,24 @@ def _define_fortran_output(src):
     'pic_o': fortran_file_base + '.pic.o',
   }
 
-
 _single_fortran_object = rule(
-  implementation = _single_fortran_object_impl,
-  attrs = {
-    'src': attr.label(single_file=True, allow_files=FileType(['.f'])),
-    'cc_libs': attr.label_list(providers=['cc']),
-    # TODO(Brian): Replace this with something more fine-grained from the
-    # configuration fragment or something.
-    '_cc_toolchain': attr.label(
-      default = Label('@//tools/cpp:toolchain'),
-    ),
-  },
-  outputs = _define_fortran_output,
-  fragments = [
-    'cpp',
-  ],
+    attrs = {
+        "src": attr.label(
+            single_file = True,
+            allow_files = FileType([".f"]),
+        ),
+        "cc_libs": attr.label_list(providers = ["cc"]),
+        # TODO(Brian): Replace this with something more fine-grained from the
+        # configuration fragment or something.
+        "_cc_toolchain": attr.label(
+            default = Label("@//tools/cpp:toolchain"),
+        ),
+    },
+    fragments = [
+        "cpp",
+    ],
+    outputs = _define_fortran_output,
+    implementation = _single_fortran_object_impl,
 )
 
 def fortran_library(name, srcs, deps = [], visibility = None):
@@ -95,28 +97,28 @@ def fortran_library(name, srcs, deps = [], visibility = None):
   )
 
 f2c_copts = compiler_select({
-  'clang': [
-    '-Wno-incompatible-pointer-types-discards-qualifiers',
-    # Clang appears to be a bit over-eager about this and the comma operator.
-    '-Wno-sometimes-uninitialized',
-  ],
-  'gcc': [
-    # TODO(Brian): Remove this once we can actually disable all the warnings.
-    # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=43245 isn't fixed in our
-    # roborio toolchain yet, so we can't for now.
-    '-Wno-error',
-  ],
+    "clang": [
+        "-Wno-incompatible-pointer-types-discards-qualifiers",
+        # Clang appears to be a bit over-eager about this and the comma operator.
+        "-Wno-sometimes-uninitialized",
+    ],
+    "gcc": [
+        # TODO(Brian): Remove this once we can actually disable all the warnings.
+        # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=43245 isn't fixed in our
+        # roborio toolchain yet, so we can't for now.
+        "-Wno-error",
+    ],
 }) + [
-  # f2c appears to know what it's doing without adding extra ().
-  '-Wno-parentheses',
-
-  '-Wno-unused-parameter',
-  '-Wno-missing-field-initializers',
-  '-Wno-unused-variable',
+    # f2c appears to know what it's doing without adding extra ().
+    "-Wno-parentheses",
+    "-Wno-unused-parameter",
+    "-Wno-missing-field-initializers",
+    "-Wno-unused-variable",
 ]
-'''Copts to use when compiling f2c-generated files.
 
-This is useful when building externally-f2ced files.'''
+"""Copts to use when compiling f2c-generated files.
+
+This is useful when building externally-f2ced files."""
 
 def f2c_library(name, srcs, copts = [], **kwargs):
   '''Converts Fortran code to C and then compiles it.
@@ -141,8 +143,14 @@ def f2c_library(name, srcs, copts = [], **kwargs):
     outs = c_srcs,
     tools = [
       '@f2c',
+      '@//tools/build_rules:quiet_success',
     ],
-    cmd = '$(location @f2c) -d$(@D)/%s $(SRCS)' % ('/'.join(out_dir),),
+    cmd = ' '.join([
+      '$(location @//tools/build_rules:quiet_success)',
+      '$(location @f2c)',
+      '-d$(@D)/%s' % ('/'.join(out_dir),),
+      '$(SRCS)',
+    ]),
   )
   native.cc_library(
     name = name,
