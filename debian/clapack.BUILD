@@ -1,6 +1,7 @@
 licenses(["notice"])
 
 load("@//tools/build_rules:fortran.bzl", "f2c_copts")
+load("@//tools/build_rules:select.bzl", "compiler_select")
 
 genrule(
     name = "create_sysdep1",
@@ -280,7 +281,6 @@ cc_library(
         "-Wno-sign-compare",
         "-Wno-cast-qual",
         "-Wno-cast-align",
-        "-Wno-self-assign",
 
         # Some files don't #include system headers when they should. sysdep1.h
         # messes with feature test macros, so it always has to come first.
@@ -292,7 +292,14 @@ cc_library(
         # Don't mangle the names of all the BLAS symbols, because slicot needs to
         # call them directly.
         "-DNO_BLAS_WRAP",
-    ],
+    ] + compiler_select({
+        "clang": [
+            "-Wno-self-assign",
+        ],
+        "gcc": [
+            "-Wno-discarded-qualifiers",
+        ],
+    }),
     includes = [
         "F2CLIBS/libf2c",
         "INCLUDE",

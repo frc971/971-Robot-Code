@@ -2,6 +2,7 @@
 licenses(["restricted"])
 
 load("@//tools/build_rules:fortran.bzl", "f2c_library")
+load("@//tools/build_rules:select.bzl", "compiler_select")
 
 # We can't create _wrapper.so in the slycot folder, and can't move it.
 # The best way I found to do this is to modify _wrapper.pyf to instead generate
@@ -135,7 +136,13 @@ f2c_library(
         # This gets triggered because it doesn't realize xerbla doesn't return.
         # TODO(Brian): Try and get __attribute__((noreturn)) on xerbla somehow.
         "-Wno-uninitialized",
-    ],
+    ] + compiler_select({
+        "clang": [
+        ],
+        "gcc": [
+            "-Wno-discarded-qualifiers",
+        ],
+    }),
     visibility = ["//visibility:public"],
     deps = [
         "@clapack",
