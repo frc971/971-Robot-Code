@@ -17,21 +17,21 @@ toolchain {
   target_system_name: "%NAME%"
   toolchain_identifier: "%NAME%"
 
-  tool_path { name: "ar" path: "/usr/bin/arm-none-eabi-ar" }
-  tool_path { name: "compat-ld" path: "/usr/bin/arm-none-eabi-ld" }
-  tool_path { name: "cpp" path: "/usr/bin/arm-none-eabi-cpp" }
-  tool_path { name: "dwp" path: "/usr/bin/arm-none-eabi-dwp" }
-  tool_path { name: "gcc" path: "/usr/bin/arm-none-eabi-gcc" }
-  tool_path { name: "gcov" path: "/usr/bin/arm-none-eabi-gcov" }
+  tool_path { name: "ar" path: "gcc_arm_none_eabi/arm-none-eabi-ar" }
+  tool_path { name: "compat-ld" path: "gcc_arm_none_eabi/arm-none-eabi-ld" }
+  tool_path { name: "cpp" path: "gcc_arm_none_eabi/arm-none-eabi-cpp" }
+  tool_path { name: "dwp" path: "gcc_arm_none_eabi/arm-none-eabi-dwp" }
+  tool_path { name: "gcc" path: "gcc_arm_none_eabi/arm-none-eabi-gcc" }
+  tool_path { name: "gcov" path: "gcc_arm_none_eabi/arm-none-eabi-gcov" }
   # C(++) compiles invoke the compiler (as that is the one knowing where
   # to find libraries), but we provide LD so other rules can invoke the linker.
-  tool_path { name: "ld" path: "/usr/bin/arm-none-eabi-ld" }
-  tool_path { name: "nm" path: "/usr/bin/arm-none-eabi-nm" }
-  tool_path { name: "objcopy" path: "/usr/bin/arm-none-eabi-objcopy" }
+  tool_path { name: "ld" path: "gcc_arm_none_eabi/arm-none-eabi-ld" }
+  tool_path { name: "nm" path: "gcc_arm_none_eabi/arm-none-eabi-nm" }
+  tool_path { name: "objcopy" path: "gcc_arm_none_eabi/arm-none-eabi-objcopy" }
   objcopy_embed_flag: "-I"
   objcopy_embed_flag: "binary"
-  tool_path { name: "objdump" path: "/usr/bin/arm-none-eabi-objdump" }
-  tool_path { name: "strip" path: "/usr/bin/arm-none-eabi-strip" }
+  tool_path { name: "objdump" path: "gcc_arm_none_eabi/arm-none-eabi-objdump" }
+  tool_path { name: "strip" path: "gcc_arm_none_eabi/arm-none-eabi-strip" }
   linking_mode_flags { mode: FULLY_STATIC }
 
   # TODO(bazel-team): In theory, the path here ought to exactly match the path
@@ -84,7 +84,7 @@ toolchain {
       action: "c++-header-preprocessing"
       action: "c++-module-compile"
       flag_group {
-        flag: "--std=gnu++11"
+        flag: "--std=gnu++1y"
         flag: "-fno-exceptions"
         flag: "-fno-rtti"
       }
@@ -137,10 +137,10 @@ toolchain {
 
   # Pretty much everything needs this, including parts of the glibc STL...
   linker_flag: "-lgcc"
-  linker_flag: "-lstdc++"
+  linker_flag: "-lstdc++_nano"
   linker_flag: "-lm"
-  linker_flag: "-lc"
-  linker_flag: "-Tmotors/core/mk64fx512.ld"
+  linker_flag: "-lc_nano"
+  linker_flag: "-T%LINKER_SCRIPT%"
 
   compiler_flag: "-fmessage-length=80"
   compiler_flag: "-fmax-errors=20"
@@ -155,6 +155,10 @@ toolchain {
   compiler_flag: "-Wformat=2"
   compiler_flag: "-Werror"
   compiler_flag: "-Wstrict-aliasing=2"
+
+  # TODO(Brian): Drop these once we upgrade Eigen.
+  compiler_flag: "-Wno-misleading-indentation"
+  compiler_flag: "-Wno-int-in-bool-context"
 
   # Be annoying about using doubles places we probably didn't mean to, because
   # the FPU only does single-precision.

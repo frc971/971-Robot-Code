@@ -188,7 +188,8 @@ void vesc_set_duty(int vesc_id, float duty) {
   can_send(id, data, sizeof(data), 2 + vesc_id);
 }
 
-void DoVescTest() {
+// TODO(Brian): Move these two test functions somewhere else.
+__attribute__((unused)) void DoVescTest() {
   uint32_t time = micros();
   while (true) {
     for (int i = 0; i < 6; ++i) {
@@ -212,7 +213,7 @@ void DoVescTest() {
   }
 }
 
-void DoReceiverTest2() {
+__attribute__((unused)) void DoReceiverTest2() {
   static constexpr float kMaxRpm = 10000.0f;
   while (true) {
     const bool flip = convert_input_width(2) > 0;

@@ -23,6 +23,10 @@ default_toolchain {
   cpu: "cortex-m4f"
   toolchain_identifier: "cortex-m4f"
 }
+default_toolchain {
+  cpu: "cortex-m4f-k22"
+  toolchain_identifier: "cortex-m4f-k22"
+}
 toolchain {
   toolchain_identifier: "stub_armeabi-v7a"
   host_system_name: "armeabi-v7a"
@@ -817,47 +821,47 @@ toolchain {
   abi_libc_version: "cortex-m4f"
   tool_path {
     name: "ar"
-    path: "/usr/bin/arm-none-eabi-ar"
+    path: "gcc_arm_none_eabi/arm-none-eabi-ar"
   }
   tool_path {
     name: "compat-ld"
-    path: "/usr/bin/arm-none-eabi-ld"
+    path: "gcc_arm_none_eabi/arm-none-eabi-ld"
   }
   tool_path {
     name: "cpp"
-    path: "/usr/bin/arm-none-eabi-cpp"
+    path: "gcc_arm_none_eabi/arm-none-eabi-cpp"
   }
   tool_path {
     name: "dwp"
-    path: "/usr/bin/arm-none-eabi-dwp"
+    path: "gcc_arm_none_eabi/arm-none-eabi-dwp"
   }
   tool_path {
     name: "gcc"
-    path: "/usr/bin/arm-none-eabi-gcc"
+    path: "gcc_arm_none_eabi/arm-none-eabi-gcc"
   }
   tool_path {
     name: "gcov"
-    path: "/usr/bin/arm-none-eabi-gcov"
+    path: "gcc_arm_none_eabi/arm-none-eabi-gcov"
   }
   tool_path {
     name: "ld"
-    path: "/usr/bin/arm-none-eabi-ld"
+    path: "gcc_arm_none_eabi/arm-none-eabi-ld"
   }
   tool_path {
     name: "nm"
-    path: "/usr/bin/arm-none-eabi-nm"
+    path: "gcc_arm_none_eabi/arm-none-eabi-nm"
   }
   tool_path {
     name: "objcopy"
-    path: "/usr/bin/arm-none-eabi-objcopy"
+    path: "gcc_arm_none_eabi/arm-none-eabi-objcopy"
   }
   tool_path {
     name: "objdump"
-    path: "/usr/bin/arm-none-eabi-objdump"
+    path: "gcc_arm_none_eabi/arm-none-eabi-objdump"
   }
   tool_path {
     name: "strip"
-    path: "/usr/bin/arm-none-eabi-strip"
+    path: "gcc_arm_none_eabi/arm-none-eabi-strip"
   }
   supports_gold_linker: false
   supports_thin_archives: false
@@ -887,6 +891,8 @@ toolchain {
   compiler_flag: "-Wformat=2"
   compiler_flag: "-Werror"
   compiler_flag: "-Wstrict-aliasing=2"
+  compiler_flag: "-Wno-misleading-indentation"
+  compiler_flag: "-Wno-int-in-bool-context"
   compiler_flag: "-Wdouble-promotion"
   compiler_flag: "-pipe"
   compiler_flag: "-g"
@@ -901,10 +907,10 @@ toolchain {
   linker_flag: "-fno-strict-aliasing"
   linker_flag: "--specs=nano.specs"
   linker_flag: "-lgcc"
-  linker_flag: "-lstdc++"
+  linker_flag: "-lstdc++_nano"
   linker_flag: "-lm"
-  linker_flag: "-lc"
-  linker_flag: "-Tmotors/core/mk64fx512.ld"
+  linker_flag: "-lc_nano"
+  linker_flag: "-Tmotors/core/kinetis_192k.ld"
   objcopy_embed_flag: "-I"
   objcopy_embed_flag: "binary"
   compilation_mode_flags {
@@ -974,7 +980,209 @@ toolchain {
       action: "c++-header-preprocessing"
       action: "c++-module-compile"
       flag_group {
-        flag: "--std=gnu++11"
+        flag: "--std=gnu++1y"
+        flag: "-fno-exceptions"
+        flag: "-fno-rtti"
+      }
+    }
+  }
+  feature {
+    name: "include_paths"
+    flag_set {
+      action: "preprocess-assemble"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-header-preprocessing"
+      action: "c++-module-compile"
+      flag_group {
+        flag: "-iquote"
+        flag: "%{quote_include_paths}"
+        iterate_over: "quote_include_paths"
+      }
+      flag_group {
+        flag: "-I%{include_paths}"
+        iterate_over: "include_paths"
+      }
+      flag_group {
+        flag: "-I"
+        flag: "%{system_include_paths}"
+        iterate_over: "system_include_paths"
+      }
+    }
+  }
+}
+toolchain {
+  toolchain_identifier: "cortex-m4f-k22"
+  host_system_name: "local"
+  target_system_name: "cortex-m4f-k22"
+  target_cpu: "cortex-m4f-k22"
+  target_libc: "cortex-m4f-k22"
+  compiler: "gcc"
+  abi_version: "cortex-m4f-k22"
+  abi_libc_version: "cortex-m4f-k22"
+  tool_path {
+    name: "ar"
+    path: "gcc_arm_none_eabi/arm-none-eabi-ar"
+  }
+  tool_path {
+    name: "compat-ld"
+    path: "gcc_arm_none_eabi/arm-none-eabi-ld"
+  }
+  tool_path {
+    name: "cpp"
+    path: "gcc_arm_none_eabi/arm-none-eabi-cpp"
+  }
+  tool_path {
+    name: "dwp"
+    path: "gcc_arm_none_eabi/arm-none-eabi-dwp"
+  }
+  tool_path {
+    name: "gcc"
+    path: "gcc_arm_none_eabi/arm-none-eabi-gcc"
+  }
+  tool_path {
+    name: "gcov"
+    path: "gcc_arm_none_eabi/arm-none-eabi-gcov"
+  }
+  tool_path {
+    name: "ld"
+    path: "gcc_arm_none_eabi/arm-none-eabi-ld"
+  }
+  tool_path {
+    name: "nm"
+    path: "gcc_arm_none_eabi/arm-none-eabi-nm"
+  }
+  tool_path {
+    name: "objcopy"
+    path: "gcc_arm_none_eabi/arm-none-eabi-objcopy"
+  }
+  tool_path {
+    name: "objdump"
+    path: "gcc_arm_none_eabi/arm-none-eabi-objdump"
+  }
+  tool_path {
+    name: "strip"
+    path: "gcc_arm_none_eabi/arm-none-eabi-strip"
+  }
+  supports_gold_linker: false
+  supports_thin_archives: false
+  needsPic: false
+  compiler_flag: "-D__STDC_FORMAT_MACROS"
+  compiler_flag: "-D__STDC_CONSTANT_MACROS"
+  compiler_flag: "-D__STDC_LIMIT_MACROS"
+  compiler_flag: "-D__MK22FX512__"
+  compiler_flag: "-DF_CPU=120000000"
+  compiler_flag: "-Wl,--gc-sections"
+  compiler_flag: "-D__have_long32"
+  compiler_flag: "-fstack-protector"
+  compiler_flag: "-mcpu=cortex-m4"
+  compiler_flag: "-mfpu=fpv4-sp-d16"
+  compiler_flag: "-mthumb"
+  compiler_flag: "-mfloat-abi=hard"
+  compiler_flag: "-fno-strict-aliasing"
+  compiler_flag: "-fmessage-length=80"
+  compiler_flag: "-fmax-errors=20"
+  compiler_flag: "-Wall"
+  compiler_flag: "-Wextra"
+  compiler_flag: "-Wpointer-arith"
+  compiler_flag: "-Wcast-qual"
+  compiler_flag: "-Wwrite-strings"
+  compiler_flag: "-Wtype-limits"
+  compiler_flag: "-Wsign-compare"
+  compiler_flag: "-Wformat=2"
+  compiler_flag: "-Werror"
+  compiler_flag: "-Wstrict-aliasing=2"
+  compiler_flag: "-Wno-misleading-indentation"
+  compiler_flag: "-Wno-int-in-bool-context"
+  compiler_flag: "-Wdouble-promotion"
+  compiler_flag: "-pipe"
+  compiler_flag: "-g"
+  compiler_flag: "-fno-common"
+  compiler_flag: "-ffreestanding"
+  compiler_flag: "-fbuiltin"
+  linker_flag: "-no-canonical-prefixes"
+  linker_flag: "-mcpu=cortex-m4"
+  linker_flag: "-mfpu=fpv4-sp-d16"
+  linker_flag: "-mthumb"
+  linker_flag: "-mfloat-abi=hard"
+  linker_flag: "-fno-strict-aliasing"
+  linker_flag: "--specs=nano.specs"
+  linker_flag: "-lgcc"
+  linker_flag: "-lstdc++_nano"
+  linker_flag: "-lm"
+  linker_flag: "-lc_nano"
+  linker_flag: "-Tmotors/core/kinetis_128k.ld"
+  objcopy_embed_flag: "-I"
+  objcopy_embed_flag: "binary"
+  compilation_mode_flags {
+    mode: OPT
+    compiler_flag: "-O2"
+    compiler_flag: "-finline-functions"
+    compiler_flag: "-ffast-math"
+    compiler_flag: "-funroll-loops"
+    compiler_flag: "-DNDEBUG"
+    compiler_flag: "-ffunction-sections"
+    linker_flag: "-Wl,--gc-sections"
+  }
+  linking_mode_flags {
+    mode: FULLY_STATIC
+  }
+  cxx_builtin_include_directory: "/usr/lib/gcc/arm-none-eabi/4.8/include"
+  cxx_builtin_include_directory: "/usr/lib/gcc/arm-none-eabi/4.8/include-fixed"
+  cxx_builtin_include_directory: "/usr/lib/arm-none-eabi/include"
+  cxx_builtin_include_directory: "/usr/include/newlib"
+  builtin_sysroot: ""
+  unfiltered_cxx_flag: "-no-canonical-prefixes"
+  unfiltered_cxx_flag: "-Wno-builtin-macro-redefined"
+  unfiltered_cxx_flag: "-D__DATE__=\"redacted\""
+  unfiltered_cxx_flag: "-D__TIMESTAMP__=\"redacted\""
+  unfiltered_cxx_flag: "-D__TIME__=\"redacted\""
+  supports_normalizing_ar: false
+  supports_start_end_lib: false
+  supports_interface_shared_objects: false
+  supports_incremental_linker: false
+  supports_fission: false
+  feature {
+    name: "dbg"
+    flag_set {
+      action: "preprocess-assemble"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-header-preprocessing"
+      action: "c++-module-compile"
+      flag_group {
+        flag: "-fno-omit-frame-pointer"
+      }
+    }
+    implies: "all_modes"
+  }
+  feature {
+    name: "opt"
+    implies: "all_modes"
+  }
+  feature {
+    name: "fastbuild"
+    implies: "all_modes"
+  }
+  feature {
+    name: "all_modes"
+    flag_set {
+      action: "preprocess-assemble"
+      action: "assemble"
+      action: "c-compile"
+      flag_group {
+        flag: "--std=gnu99"
+      }
+    }
+    flag_set {
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-header-preprocessing"
+      action: "c++-module-compile"
+      flag_group {
+        flag: "--std=gnu++1y"
         flag: "-fno-exceptions"
         flag: "-fno-rtti"
       }

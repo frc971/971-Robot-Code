@@ -19,7 +19,8 @@ namespace {
 
 ::std::atomic<teensy::AcmTty *> global_stdout{nullptr};
 
-void EchoChunks(teensy::AcmTty *tty1) {
+// TODO(Brian): Move this and the other two test functions somewhere else.
+__attribute__((unused)) void EchoChunks(teensy::AcmTty *tty1) {
   while (true) {
     char buffer[512];
     size_t buffered = 0;
@@ -42,7 +43,7 @@ void EchoChunks(teensy::AcmTty *tty1) {
   }
 }
 
-void EchoImmediately(teensy::AcmTty *tty1) {
+__attribute__((unused)) void EchoImmediately(teensy::AcmTty *tty1) {
   while (true) {
     if (false) {
       // Delay for a while.
@@ -60,7 +61,7 @@ void EchoImmediately(teensy::AcmTty *tty1) {
   }
 }
 
-void WriteData(teensy::AcmTty *tty1) {
+__attribute__((unused)) void WriteData(teensy::AcmTty *tty1) {
   GPIOC_PTOR = 1 << 5;
   for (int i = 0; i < 100000000; ++i) {
     GPIOC_PSOR = 0;

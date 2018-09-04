@@ -27,6 +27,11 @@ default_toolchain {
   toolchain_identifier: "cortex-m4f"
 }
 
+default_toolchain {
+  cpu: "cortex-m4f-k22"
+  toolchain_identifier: "cortex-m4f-k22"
+}
+
 toolchain {
   abi_version: "armeabi-v7a"
   abi_libc_version: "armeabi-v7a"

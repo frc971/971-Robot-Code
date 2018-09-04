@@ -359,20 +359,20 @@ extern "C" void pit3_isr() {
               static_cast<int32_t>(static_cast<uint32_t>(data[0]) |
                                    (static_cast<uint32_t>(data[1]) << 8)) -
               32768) /
-          32768.0f * M_PI / 8.0;
+          static_cast<float>(32768.0 * M_PI / 8.0);
       trigger_goal_velocity =
           static_cast<float>(
               static_cast<int32_t>(static_cast<uint32_t>(data[2]) |
                                    (static_cast<uint32_t>(data[3]) << 8)) -
               32768) /
-          32768.0f * 4.0f;
+          static_cast<float>(32768.0 * 4.0);
 
       trigger_haptic_current =
           static_cast<float>(
               static_cast<int32_t>(static_cast<uint32_t>(data[4]) |
                                    (static_cast<uint32_t>(data[5]) << 8)) -
               32768) /
-          32768.0f * 2.0f;
+          static_cast<float>(32768.0 * 2.0);
       if (trigger_haptic_current > kHapticTriggerCurrentLimit) {
         trigger_haptic_current = kHapticTriggerCurrentLimit;
       } else if (trigger_haptic_current < -kHapticTriggerCurrentLimit) {
@@ -400,20 +400,20 @@ extern "C" void pit3_isr() {
               static_cast<int32_t>(static_cast<uint32_t>(data[0]) |
                                    (static_cast<uint32_t>(data[1]) << 8)) -
               32768) /
-          32768.0f * M_PI;
+          static_cast<float>(32768.0 * M_PI);
       wheel_goal_velocity =
           static_cast<float>(
               static_cast<int32_t>(static_cast<uint32_t>(data[2]) |
                                    (static_cast<uint32_t>(data[3]) << 8)) -
               32768) /
-          32768.0f * 10.0f;
+          static_cast<float>(32768.0 * 10.0);
 
       wheel_haptic_current =
           static_cast<float>(
               static_cast<int32_t>(static_cast<uint32_t>(data[4]) |
                                    (static_cast<uint32_t>(data[5]) << 8)) -
               32768) /
-          32768.0f * 2.0f;
+          static_cast<float>(32768.0 * 2.0);
       if (wheel_haptic_current > kHapticWheelCurrentLimit) {
         wheel_haptic_current = kHapticWheelCurrentLimit;
       } else if (wheel_haptic_current < -kHapticWheelCurrentLimit) {

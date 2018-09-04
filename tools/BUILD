@@ -29,6 +29,11 @@ config_setting(
 )
 
 config_setting(
+    name = "cpu_cortex_m4f_k22",
+    values = {"cpu": "cortex-m4f-k22"},
+)
+
+config_setting(
     name = "cpu_armhf",
     values = {"cpu": "armhf-debian"},
 )
@@ -56,6 +61,8 @@ environment(name = "roborio")
 
 environment(name = "cortex-m4f")
 
+environment(name = "cortex-m4f-k22")
+
 environment_group(
     name = "cpus",
     defaults = [
@@ -67,5 +74,6 @@ environment_group(
         ":roborio",
         ":armhf-debian",
         ":cortex-m4f",
+        ":cortex-m4f-k22",
     ],
 )

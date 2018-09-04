@@ -1,0 +1,6 @@
+#!/bin/bash --norc
+
+PATH="${BAZEL_OUTPUT_ROOT}external/gcc_arm_none_eabi/lib/gcc/arm-none-eabi/7.3.1:$PATH" \
+	exec \
+	${BAZEL_OUTPUT_ROOT}external/gcc_arm_none_eabi/bin/arm-none-eabi-gcc \
+	"$@"

@@ -11,6 +11,7 @@ cc_library(
         "//tools:has_asan": [],
         "//tools:has_tsan": [],
         "//tools:cpu_cortex_m4f": [],
+        "//tools:cpu_cortex_m4f_k22": [],
         "//conditions:default": ["//third_party/gperftools:tcmalloc"],
     }),
 )
@@ -32,6 +33,7 @@ cc_toolchain_suite(
         "roborio|gcc": ":cc-compiler-roborio",
         "armhf-debian|clang": "cc-compiler-armhf-debian",
         "cortex-m4f|gcc": "cc-compiler-cortex-m4f",
+        "cortex-m4f-k22|gcc": "cc-compiler-cortex-m4f-k22",
     },
 )
 
@@ -214,18 +216,60 @@ cc_toolchain(
     supports_param_files = 1,
 )
 
+filegroup(
+    name = "gcc_arm_none_eabi_none_files",
+    srcs = [
+        "//tools/cpp/gcc_arm_none_eabi:tool-wrappers",
+        "@gcc_arm_none_eabi//:compiler_pieces",
+    ],
+)
+
+filegroup(
+    name = "gcc_arm_none_eabi_compiler_files",
+    srcs = [
+        "//tools/cpp/gcc_arm_none_eabi:as",
+        "//tools/cpp/gcc_arm_none_eabi:gcc",
+        "//tools/cpp/gcc_arm_none_eabi:ld",
+    ],
+)
+
+filegroup(
+    name = "gcc_arm_none_eabi_linker_files",
+    srcs = [
+        "//motors/core:linkerscripts",
+        "//tools/cpp/gcc_arm_none_eabi:ar",
+        "//tools/cpp/gcc_arm_none_eabi:gcc",
+        "//tools/cpp/gcc_arm_none_eabi:ld",
+        "@gcc_arm_none_eabi//:compiler_pieces",
+    ],
+)
+
 cc_toolchain(
     name = "cc-compiler-cortex-m4f",
-    all_files = ":empty",
-    compiler_files = ":empty",
+    all_files = ":gcc_arm_none_eabi_none_files",
+    compiler_files = ":gcc_arm_none_eabi_compiler_files",
     cpu = "cortex-m4f",
     dwp_files = ":empty",
     dynamic_runtime_libs = [":empty"],
-    linker_files = "//motors/core:linkerscript",
+    linker_files = ":gcc_arm_none_eabi_linker_files",
+    objcopy_files = "//tools/cpp/gcc_arm_none_eabi:objcopy",
+    static_runtime_libs = [":empty"],
+    strip_files = "//tools/cpp/gcc_arm_none_eabi:strip",
+    supports_param_files = 1,
+)
+
+cc_toolchain(
+    name = "cc-compiler-cortex-m4f-k22",
+    all_files = ":gcc_arm_none_eabi_none_files",
+    compiler_files = ":gcc_arm_none_eabi_compiler_files",
+    cpu = "cortex-m4f-k22",
+    dwp_files = ":empty",
+    dynamic_runtime_libs = [":empty"],
+    linker_files = ":gcc_arm_none_eabi_linker_files",
     objcopy_files = ":empty",
     static_runtime_libs = [":empty"],
     strip_files = ":empty",
-    supports_param_files = 0,
+    supports_param_files = 1,
 )
 
 py_binary(

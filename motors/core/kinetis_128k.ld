@@ -28,10 +28,12 @@
  * SOFTWARE.
  */
 
+/* TODO(Brian): De-duplicate with the version for 192K SRAM. */
+/* TODO(Brian): Split out SRAM_L and SRAM_U intelligently. */
 MEMORY
 {
   FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 512K
-  RAM  (rwx) : ORIGIN = 0x1FFF0000, LENGTH = 192K
+  RAM  (rwx) : ORIGIN = 0x1FFF0000, LENGTH = 128K
 }
 
 ENTRY(_VectorsFlash);

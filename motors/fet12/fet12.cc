@@ -306,6 +306,8 @@ extern "C" int main(void) {
   delay(1000);
 #if 0
   ZeroMotor();
+#else
+  (void)ZeroMotor;
 #endif
 
   printf("Zeroed motor!\n");

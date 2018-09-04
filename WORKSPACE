@@ -240,3 +240,13 @@ new_http_archive(
     sha256 = "4b26fe45010817dc136488ee1604ade21bd7c264c29f17d864fc6eba9d7442c4",
     url = "http://frc971.org/Build-Dependencies/arm_frc_gnueabi_deps.tar.gz",
 )
+
+# Downloaded from
+# https://developer.arm.com/-/media/Files/downloads/gnu-rm/7-2018q2/gcc-arm-none-eabi-7-2018-q2-update-linux.tar.bz2?revision=bc2c96c0-14b5-4bb4-9f18-bceb4050fee7?product=GNU%20Arm%20Embedded%20Toolchain,64-bit,,Linux,7-2018-q2-update
+new_http_archive(
+    name = "gcc_arm_none_eabi",
+    build_file = "compilers/gcc_arm_none_eabi.BUILD",
+    sha256 = "bb17109f0ee697254a5d4ae6e5e01440e3ea8f0277f2e8169bf95d07c7d5fe69",
+    strip_prefix = "gcc-arm-none-eabi-7-2018-q2-update/",
+    url = "http://frc971.org/Build-Dependencies/gcc-arm-none-eabi-7-2018-q2-update-linux.tar.bz2",
+)
