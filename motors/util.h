@@ -23,6 +23,26 @@ extern "C"
   NVIC_SET_PRIORITY(irqnum, ((priority)&0xF) << 4)
 #define NVIC_GET_SANE_PRIORITY(irqnum) (NVIC_GET_PRIORITY(irqnum) >> 4)
 
+// A sufficient memory barrier between writing some data and telling the
+// hardware to read it or having the hardware say some data has been written and
+// actually reading it.
+static inline void DmaMemoryBarrier() {
+  // Cortex-M3 and Cortex-M4 don't reorder loads or stores, so no DMB is
+  // necessary here.
+  __asm__ __volatile__("" ::: "memory");
+}
+
+static inline void InterruptMemoryBarrier() {
+  // Cortex-M3 and Cortex-M4 don't reorder loads or stores, and evaluate
+  // interrupts between every instruction, so no DSB or ISB is necessary here.
+  // Note: up to two instructions may be executed after enabling/disabling an
+  // interrupt in the NVIC before taking the new value into account, so that
+  // would still require a DSB+ISB if we cared.
+  // Note: enabling interrupts might not recognize interrupts immediately
+  // without an ISB.
+  __asm__ __volatile__("" ::: "memory", "cc");
+}
+
 // Definitions for the bits in some registers that are missing.
 #define CAN_MCR_MDIS ((uint32_t)(1 << 31))
 #define CAN_MCR_FRZ ((uint32_t)(1 << 30))
@@ -125,21 +145,6 @@ typedef struct {
 // Index-parameterized access to various registers from various peripherals.
 // This only includes ones somebody thought might be useful; add more if you
 // want them.
-#define DMA_TCDn_SADDR(n) DO_CONCATENATE(DMA_TCD, n, _SADDR)
-#define DMA_TCDn_SOFF(n) DO_CONCATENATE(DMA_TCD, n, _SOFF)
-#define DMA_TCDn_ATTR(n) DO_CONCATENATE(DMA_TCD, n, _ATTR)
-#define DMA_TCDn_NBYTES_MLNO(n) DO_CONCATENATE(DMA_TCD, n, _NBYTES_MLNO)
-#define DMA_TCDn_NBYTES_MLOFFNO(n) DO_CONCATENATE(DMA_TCD, n, _NBYTES_MLOFFNO)
-#define DMA_TCDn_NBYTES_MLOFFYES(n) DO_CONCATENATE(DMA_TCD, n, _NBYTES_MLOFFYES)
-#define DMA_TCDn_SLAST(n) DO_CONCATENATE(DMA_TCD, n, _SLAST)
-#define DMA_TCDn_DADDR(n) DO_CONCATENATE(DMA_TCD, n, _DADDR)
-#define DMA_TCDn_DOFF(n) DO_CONCATENATE(DMA_TCD, n, _DOFF)
-#define DMA_TCDn_CITER_ELINKYES(n) DO_CONCATENATE(DMA_TCD, n, _CITER_ELINKYES)
-#define DMA_TCDn_CITER_ELINKNO(n) DO_CONCATENATE(DMA_TCD, n, _CITER_ELINKNO)
-#define DMA_TCDn_DLASTSGA(n) DO_CONCATENATE(DMA_TCD, n, _DLASTSGA)
-#define DMA_TCDn_CSR(n) DO_CONCATENATE(DMA_TCD, n, _CSR)
-#define DMA_TCDn_BITER_ELINKYES(n) DO_CONCATENATE(DMA_TCD, n, _BITER_ELINKYES)
-#define DMA_TCDn_BITER_ELINKNO(n) DO_CONCATENATE(DMA_TCD, n, _BITER_ELINKNO)
 #define SPIn_MCR(n) DO_CONCATENATE(SPI, n, _MCR)
 #define SPIn_TCR(n) DO_CONCATENATE(SPI, n, _TCR)
 #define SPIn_CTAR0(n) DO_CONCATENATE(SPI, n, _CTAR0)
@@ -147,42 +152,12 @@ typedef struct {
 #define SPIn_RSER(n) DO_CONCATENATE(SPI, n, _RSER)
 #define SPIn_PUSHR(n) DO_CONCATENATE(SPI, n, _PUSHR)
 #define SPIn_POPR(n) DO_CONCATENATE(SPI, n, _POPR)
-#define DMAMUX0_CHCFGn(n) DO_CONCATENATE(DMAMUX0, _CHCFG, n)
-#define DMAMUX_SOURCE_SPIn_RX(n) DO_CONCATENATE(DMAMUX_SOURCE_SPI, n, _RX)
-#define DMAMUX_SOURCE_SPIn_TX(n) DO_CONCATENATE(DMAMUX_SOURCE_SPI, n, _TX)
 #define dma_chN_isr(n) DO_CONCATENATE(dma_ch, n, _isr)
 #define IRQ_DMA_CHn(n) DO_CONCATENATE(IRQ_DMA, _CH, n)
 
 #define USB0_ENDPTn(n) (*(volatile uint8_t *)(0x400720C0 + ((n)*4)))
 
-#ifdef __cplusplus
-// RAII class to disable interrupts temporarily.
-class DisableInterrupts {
- public:
-  DisableInterrupts() { __disable_irq(); }
-  ~DisableInterrupts() { __enable_irq(); }
-
-  DisableInterrupts(const DisableInterrupts &) = delete;
-  DisableInterrupts &operator=(const DisableInterrupts &) = delete;
-};
-#endif  // __cplusplus
-
-typedef struct {
-	uint32_t saddr;
-	uint16_t soff;
-	uint16_t attr;
-	uint32_t nbytes_mlno;
-	uint32_t slast;
-	uint32_t daddr;
-	uint16_t doff;
-	uint16_t citer;
-	uint32_t dlastsga;
-	uint32_t _reserved;
-} DmaTcd __attribute__((aligned(0x20)));
-#ifdef __cplusplus
-static_assert(sizeof(DmaTcd) == 0x20, "DMA TCD is the wrong size");
-#endif
-
+// TODO(Brian): Just write the structs out, and do all this in kinetis.h.
 #define ALL_FTM_REGISTERS         \
   FOR_BOTH_FTM_REGISTER(SC)       \
   FOR_BOTH_FTM_REGISTER(CNT)      \
@@ -247,38 +222,40 @@ typedef struct {
 #define FTM2 ((LittleFTM *)0x400B8000)
 #define FTM3 ((BigFTM *)0x400B9000)
 
-#ifdef __cplusplus
-#define FOR_BIG_FTM_REGISTER(name)                                           \
-  static_assert(offsetof(BigFTM, name) ==                                    \
-                    (reinterpret_cast<const volatile char *>(&FTM0_##name) - \
-                     reinterpret_cast<volatile char *>(FTM0)),               \
-                #name " is at the wrong place");                             \
-  static_assert(offsetof(BigFTM, name) ==                                    \
-                    (reinterpret_cast<const volatile char *>(&FTM3_##name) - \
-                     reinterpret_cast<volatile char *>(FTM3)),               \
-                #name " is at the wrong place");
-#define FOR_LITTLE_FTM_REGISTER(name)                                        \
-  static_assert(offsetof(LittleFTM, name) ==                                 \
-                    (reinterpret_cast<const volatile char *>(&FTM1_##name) - \
-                     reinterpret_cast<volatile char *>(FTM1)),               \
-                #name " is at the wrong place");                             \
-  static_assert(offsetof(LittleFTM, name) ==                                 \
-                    (reinterpret_cast<const volatile char *>(&FTM2_##name) - \
-                     reinterpret_cast<volatile char *>(FTM2)),               \
-                #name " is at the wrong place");
-#define FOR_BOTH_FTM_REGISTER(name) \
-  FOR_BIG_FTM_REGISTER(name)        \
-  FOR_LITTLE_FTM_REGISTER(name)
-ALL_FTM_REGISTERS
-#undef FOR_BIG_FTM_REGISTER
-#undef FOR_LITTLE_FTM_REGISTER
-#undef FOR_BOTH_FTM_REGISTER
-#endif
-
 #undef ALL_FTM_REGISTERS
 
 #ifdef __cplusplus
 }
 #endif
+
+#ifdef __cplusplus
+
+// RAII class to disable interrupts temporarily.
+class DisableInterrupts {
+ public:
+  DisableInterrupts() { __disable_irq(); }
+  ~DisableInterrupts() { __enable_irq(); }
+
+  DisableInterrupts(const DisableInterrupts &) = delete;
+  DisableInterrupts &operator=(const DisableInterrupts &) = delete;
+};
+
+// constexpr log base 2, which fails to compile for non-power-of-2 inputs.
+// This is a silly implementation to use at runtime.
+template<typename T>
+constexpr T ConstexprLog2(T i) {
+  if (i == 0) {
+    __builtin_abort();
+  }
+  if (i == 1) {
+    return 0;
+  }
+  if (i / 2 * 2 == i) {
+    return 1 + ConstexprLog2(i / 2);
+  }
+  __builtin_abort();
+}
+
+#endif  // __cplusplus
 
 #endif  // MOTORS_UTIL_H_

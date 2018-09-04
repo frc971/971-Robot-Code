@@ -8,7 +8,12 @@
 namespace frc971 {
 namespace motors {
 
-void AdcInitCommon();
+enum class AdcChannels {
+  kA,
+  kB,
+};
+void AdcInitCommon(AdcChannels adc0_channels = AdcChannels::kB,
+                   AdcChannels adc1_channels = AdcChannels::kB);
 
 }  // namespace motors
 }  // namespace frc971

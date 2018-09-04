@@ -719,7 +719,7 @@ extern "C" int main() {
 
   PORTA_PCR5 = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1);
 
-  DMA_CR = DMA_CR_EMLM;
+  DMA.CR = M_DMA_EMLM;
 
   teensy::UsbDevice usb_device(0, 0x16c0, 0x0490);
   usb_device.SetManufacturer("FRC 971 Spartan Robotics");

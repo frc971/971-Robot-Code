@@ -244,7 +244,7 @@ extern "C" int main(void) {
   PORTB_PCR18 = PORT_PCR_DSE | PORT_PCR_MUX(2);
   PORTB_PCR19 = PORT_PCR_DSE | PORT_PCR_MUX(2);
 
-  DMA_CR = DMA_CR_EMLM;
+  DMA.CR = M_DMA_EMLM;
   usb_serial_init();
   usb_descriptor_set_product_id(0x0490);
   usb_init();
