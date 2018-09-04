@@ -38,28 +38,30 @@ def _do_proto_cc_library_outputs(src):
   }
 
 _do_proto_cc_library = rule(
-  implementation = _do_proto_cc_library_impl,
-  attrs = {
-    'src': attr.label(
-      allow_files = FileType(['.proto']),
-      mandatory = True,
-      single_file = True,
-    ),
-    'deps': attr.label_list(providers = ["proto"]),
-    '_protoc': attr.label(
-      default = Label('//third_party/protobuf:protoc'),
-      executable = True,
-      cfg = 'host',
-    ),
-    '_well_known_protos': attr.label(
-      default = Label('//third_party/protobuf:well_known_protos'),
-    ),
-  },
-  outputs = _do_proto_cc_library_outputs,
-  output_to_genfiles = True,
+    attrs = {
+        "src": attr.label(
+            allow_files = FileType([".proto"]),
+            mandatory = True,
+            single_file = True,
+        ),
+        "deps": attr.label_list(providers = ["proto"]),
+        "_protoc": attr.label(
+            default = Label("//third_party/protobuf:protoc"),
+            executable = True,
+            cfg = "host",
+        ),
+        "_well_known_protos": attr.label(
+            default = Label("//third_party/protobuf:well_known_protos"),
+        ),
+    },
+    output_to_genfiles = True,
+    outputs = _do_proto_cc_library_outputs,
+    implementation = _do_proto_cc_library_impl,
 )
 
-def proto_cc_library(name, src, deps = [], visibility = None):
+def proto_cc_library(name, src, deps = [],
+                     compatible_with = None, restricted_to = None,
+                     visibility = None):
   '''Generates a cc_library from a single .proto file. Does not support
   dependencies on any .proto files except the well-known ones protobuf comes
   with (which are unconditionally depended on).
@@ -73,6 +75,8 @@ def proto_cc_library(name, src, deps = [], visibility = None):
     src = src,
     deps = [('%s__proto_srcs' % o_name) for o_name in deps],
     visibility = visibility,
+    compatible_with = compatible_with,
+    restricted_to = restricted_to,
   )
   basename = src[:-len('.proto')]
   native.cc_library(
@@ -81,4 +85,6 @@ def proto_cc_library(name, src, deps = [], visibility = None):
     hdrs = [ '%s.pb.h' % basename ],
     deps = [ '//third_party/protobuf' ] + deps,
     visibility = visibility,
+    compatible_with = compatible_with,
+    restricted_to = restricted_to,
   )

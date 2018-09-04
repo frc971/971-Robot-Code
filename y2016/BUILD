@@ -8,6 +8,9 @@ cc_library(
     hdrs = [
         "constants.h",
     ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "//aos:once",

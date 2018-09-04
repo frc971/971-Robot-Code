@@ -7,13 +7,18 @@ cc_library(
     hdrs = [
         "shifter_hall_effect.h",
     ],
-    compatible_with = mcu_cpus,
+    compatible_with = mcu_cpus + [
+        "//tools:armhf-debian",
+    ],
 )
 
 cc_library(
     name = "constants",
     hdrs = [
         "constants.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
     ],
 )
 

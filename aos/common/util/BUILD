@@ -90,6 +90,9 @@ cc_library(
     hdrs = [
         "string_to_num.h",
     ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
 )
 
 cc_test(
@@ -172,6 +175,9 @@ cc_library(
     hdrs = [
         "options.h",
     ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
 )
 
 cc_test(
@@ -189,6 +195,9 @@ cc_library(
     name = "compiler_memory_barrier",
     hdrs = [
         "compiler_memory_barrier.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
     ],
 )
 

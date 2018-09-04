@@ -71,6 +71,9 @@ cc_library(
         "src/google/protobuf/wire_format_lite.cc",
     ],
     hdrs = glob(["src/google/protobuf/**/*.h"]),
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
     copts = COPTS,
     includes = ["src/"],
     linkopts = LINK_OPTS,
@@ -136,6 +139,9 @@ cc_library(
         "src/google/protobuf/wrappers.pb.cc",
     ],
     hdrs = glob(["src/**/*.h"]),
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
     copts = COPTS,
     includes = ["src/"],
     linkopts = LINK_OPTS,

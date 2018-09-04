@@ -17,6 +17,9 @@ cc_library(
     hdrs = [
         "queue-tmpl.h",
     ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
     visibility = ["//aos/common:__pkg__"],
 )
 
@@ -27,6 +30,9 @@ cc_library(
     ],
     hdrs = [
         "complex_thread_local.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
     ],
     linkopts = [
         "-lpthread",
@@ -58,6 +64,9 @@ cc_library(
     hdrs = [
         "init.h",
     ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
     deps = [
         "//aos/common:die",
         "//aos/common/logging:implementations",
@@ -72,6 +81,9 @@ cc_library(
     ],
     hdrs = [
         "configuration.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
     ],
     deps = [
         "//aos:once",

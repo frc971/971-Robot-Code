@@ -25,28 +25,28 @@ def _single_queue_file_outputs(src):
   }
 
 _single_queue_file = rule(
-  implementation = _single_queue_file_impl,
-  attrs = {
-    'src': attr.label(
-      mandatory = True,
-      single_file = True,
-      allow_files = ['.q'],
-    ),
-    'q_deps': attr.label(
-      providers = ['transitive_q_files'],
-      mandatory = True,
-    ),
-    'package_name': attr.string(
-      mandatory = True,
-    ),
-    '_queue_compiler': attr.label(
-      executable = True,
-      default = Label('//aos/build/queues:compiler'),
-      cfg = 'host',
-    ),
-  },
-  outputs = _single_queue_file_outputs,
-  output_to_genfiles = True,
+    attrs = {
+        "src": attr.label(
+            mandatory = True,
+            single_file = True,
+            allow_files = [".q"],
+        ),
+        "q_deps": attr.label(
+            providers = ["transitive_q_files"],
+            mandatory = True,
+        ),
+        "package_name": attr.string(
+            mandatory = True,
+        ),
+        "_queue_compiler": attr.label(
+            executable = True,
+            default = Label("//aos/build/queues:compiler"),
+            cfg = "host",
+        ),
+    },
+    output_to_genfiles = True,
+    outputs = _single_queue_file_outputs,
+    implementation = _single_queue_file_impl,
 )
 
 def _q_deps_impl(ctx):
@@ -56,34 +56,38 @@ def _q_deps_impl(ctx):
   return struct(transitive_q_files = transitive_q_files)
 
 _q_deps = rule(
-  implementation = _q_deps_impl,
-  attrs = {
-    'srcs': attr.label_list(
-      mandatory = True,
-      non_empty = True,
-      allow_files = ['.q'],
-    ),
-    'deps': attr.label_list(
-      mandatory = True,
-      non_empty = False,
-      providers = ['transitive_q_files'],
-    ),
-  },
+    attrs = {
+        "srcs": attr.label_list(
+            mandatory = True,
+            non_empty = True,
+            allow_files = [".q"],
+        ),
+        "deps": attr.label_list(
+            mandatory = True,
+            non_empty = False,
+            providers = ["transitive_q_files"],
+        ),
+    },
+    implementation = _q_deps_impl,
 )
 
-'''Creates a C++ library from a set of .q files.
+"""Creates a C++ library from a set of .q files.
 
 Attrs:
   srcs: A list of .q files.
   deps: Other queue_library rules this one depends on.
-'''
+"""
+
 def queue_library(name, srcs, deps = [],
+                  compatible_with = None, restricted_to = None,
                   visibility = None):
   q_deps = _q_deps(
     name = name + '__q_deps',
     srcs = srcs,
     deps = [dep + '__q_deps' for dep in deps],
     visibility = visibility,
+    compatible_with = compatible_with,
+    restricted_to = restricted_to,
   )
 
   for src in srcs:
@@ -93,6 +97,8 @@ def queue_library(name, srcs, deps = [],
       q_deps = ':%s__q_deps' % name,
       package_name = PACKAGE_NAME,
       visibility = ['//visibility:private'],
+      compatible_with = compatible_with,
+      restricted_to = restricted_to,
     )
 
   native.cc_library(
@@ -106,4 +112,6 @@ def queue_library(name, srcs, deps = [],
       '//aos/common/logging:printf_formats',
     ],
     visibility = visibility,
+    compatible_with = compatible_with,
+    restricted_to = restricted_to,
   )
