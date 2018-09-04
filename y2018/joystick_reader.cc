@@ -3,10 +3,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <mutex>
+#include <google/protobuf/stubs/stringprintf.h>
 
 #include "aos/common/actions/actions.h"
 #include "aos/common/input/driver_station_data.h"
 #include "aos/common/logging/logging.h"
+#include "aos/common/network/team_number.h"
 #include "aos/common/stl_mutex.h"
 #include "aos/common/time.h"
 #include "aos/common/util/log_interval.h"
@@ -41,6 +43,7 @@ namespace input {
 namespace joysticks {
 
 namespace arm = ::y2018::control_loops::superstructure::arm;
+using google::protobuf::StringPrintf;
 
 const ButtonLocation kIntakeClosed(3, 2);
 const ButtonLocation kDuck(3, 9);
@@ -49,19 +52,19 @@ const ButtonLocation kSmallBox(3, 1);
 const ButtonLocation kIntakeIn(3, 4);
 const ButtonLocation kIntakeOut(3, 3);
 
-const ButtonLocation kArmFrontHighBox(4, 11);
-const ButtonLocation kArmFrontExtraHighBox(4, 1);
-const ButtonLocation kArmFrontMiddle2Box(4, 9);
-const ButtonLocation kArmFrontMiddle1Box(4, 7);
-const ButtonLocation kArmFrontLowBox(4, 5);
-const ButtonLocation kArmFrontSwitch(3, 7);
+const ButtonLocation kArmBackHighBox(4, 11);
+const ButtonLocation kArmBackExtraHighBox(4, 1);
+const ButtonLocation kArmBackMiddle2Box(4, 9);
+const ButtonLocation kArmBackMiddle1Box(4, 7);
+const ButtonLocation kArmBackLowBox(4, 5);
+const ButtonLocation kArmBackSwitch(3, 7);
 
-const ButtonLocation kArmBackHighBox(4, 12);
-const ButtonLocation kArmBackExtraHighBox(3, 14);
-const ButtonLocation kArmBackMiddle2Box(4, 10);
-const ButtonLocation kArmBackMiddle1Box(4, 8);
-const ButtonLocation kArmBackLowBox(4, 6);
-const ButtonLocation kArmBackSwitch(3, 10);
+const ButtonLocation kArmFrontHighBox(4, 12);
+const ButtonLocation kArmFrontExtraHighBox(3, 14);
+const ButtonLocation kArmFrontMiddle2Box(4, 10);
+const ButtonLocation kArmFrontMiddle1Box(4, 8);
+const ButtonLocation kArmFrontLowBox(4, 6);
+const ButtonLocation kArmFrontSwitch(3, 10);
 
 const ButtonLocation kArmAboveHang(3, 15);
 const ButtonLocation kArmBelowHang(3, 16);
@@ -86,10 +89,15 @@ std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
 
 class Reader : public ::aos::input::JoystickInput {
  public:
-  Reader() : video_tx_("10.9.71.179", 5000) {
+  Reader() {
+    const uint16_t team = ::aos::network::GetTeamNumber();
+
     drivetrain_input_reader_ = DrivetrainInputReader::Make(
-        DrivetrainInputReader::InputType::kPistol,
+        team == 971 ? DrivetrainInputReader::InputType::kPistol
+                    : DrivetrainInputReader::InputType::kSteeringWheel,
         ::y2018::control_loops::drivetrain::GetDrivetrainConfig());
+    video_tx_.reset(new ProtoTXUdpSocket<VisionControl>(
+        StringPrintf("10.%d.%d.179", team / 100, team % 100), 5000));
   }
 
   void RunIteration(const ::aos::input::driver_station::Data &data) override {
@@ -349,7 +357,7 @@ class Reader : public ::aos::input::JoystickInput {
       LOG(ERROR, "Sending superstructure goal failed.\n");
     }
 
-    video_tx_.Send(vision_control_);
+    video_tx_->Send(vision_control_);
   }
 
  private:
@@ -391,7 +399,7 @@ class Reader : public ::aos::input::JoystickInput {
 
   ::aos::common::actions::ActionQueue action_queue_;
 
-  ProtoTXUdpSocket<VisionControl> video_tx_;
+  ::std::unique_ptr<ProtoTXUdpSocket<VisionControl>> video_tx_;
 };
 
 }  // namespace joysticks

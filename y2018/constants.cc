@@ -135,7 +135,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 }
 
 const Values &DoGetValues() {
-  uint16_t team = ::aos::network::GetTeamNumber();
+  const uint16_t team = ::aos::network::GetTeamNumber();
   LOG(INFO, "creating a Constants for team %" PRIu16 "\n", team);
   return GetValuesForTeam(team);
 }
