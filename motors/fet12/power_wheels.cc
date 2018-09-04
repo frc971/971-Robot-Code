@@ -117,7 +117,7 @@ extern "C" int main(void) {
 
   teensy::UsbDevice usb_device(0, 0x16c0, 0x0490);
   usb_device.SetManufacturer("FRC 971 Spartan Robotics");
-  usb_device.SetProduct("Pistol Grip Controller debug");
+  usb_device.SetProduct("FET12 power wheels mode");
   teensy::AcmTty tty1(&usb_device);
   teensy::AcmTty tty2(&usb_device);
   global_stdout.store(&tty1, ::std::memory_order_release);

@@ -133,7 +133,7 @@ cc_library(
     hdrs = [
         "state_feedback_loop.h",
     ],
-    restricted_to = ["//tools:cortex-m4f"],
+    restricted_to = mcu_cpus,
     deps = [
         "//aos/common:macros",
         "//third_party/eigen",
