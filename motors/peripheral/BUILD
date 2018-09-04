@@ -76,3 +76,16 @@ cc_library(
         "//third_party/GSL",
     ],
 )
+
+cc_library(
+    name = "adc_dma",
+    srcs = ["adc_dma.cc"],
+    hdrs = ["adc_dma.h"],
+    restricted_to = mcu_cpus,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":configuration",
+        "//motors:util",
+        "//motors/core",
+    ],
+)

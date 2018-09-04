@@ -12,13 +12,13 @@
 // The frequency we switch the motor FETs at in hz.
 #define SWITCHING_FREQUENCY 20000
 
-#if 0
-// Which PDB the ADC triggering uses.
-#define ADC_TRIGGER_PDB 0
-// The DMA channel which copies ADC results.
-#define ADC_RESULT_DMA_CHANNEL 7
-// The DMA channel which reconfigures the ADCs to take the next samples.
-#define ADC_RECONFIGURE_DMA_CHANNEL 8
-#endif
+// The DMA channels which copy ADC results.
+#define ADC_RESULT_DMA_CHANNEL0 7
+#define ADC_RESULT_DMA_CHANNEL1 8
+// The DMA channels which reconfigure the ADCs to take the next samples.
+#define ADC_RECONFIGURE_DMA_CHANNEL0 9
+#define ADC_RECONFIGURE_DMA_CHANNEL1 10
+// The DMA channel which reads encoder values.
+#define ENCODER_VALUE_DMA_CHANNEL 11
 
 #endif  // MOTORS_PERIPHERAL_CONFIGURATION_H_
