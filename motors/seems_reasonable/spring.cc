@@ -62,6 +62,8 @@ void Spring::Iterate(bool unload, bool prime, bool fire, bool force_reset,
         goal_ = NextGoal(kLoadGoal);
         Load();
       }
+      // TODO(Austin): This should be a break, right?
+      // fallthrough
     case State::STUCK_UNLOAD:
       if (force_move) {
         ForceMove();
