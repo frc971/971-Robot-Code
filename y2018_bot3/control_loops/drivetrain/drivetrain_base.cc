@@ -1,0 +1,47 @@
+#include "y2018_bot3/control_loops/drivetrain/drivetrain_base.h"
+
+#include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/state_feedback_loop.h"
+#include "y2018_bot3/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2018_bot3/control_loops/drivetrain/kalman_drivetrain_motor_plant.h"
+#include "y2018_bot3/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
+
+using ::frc971::control_loops::drivetrain::DrivetrainConfig;
+
+namespace y2018_bot3 {
+namespace control_loops {
+namespace drivetrain {
+
+namespace {
+const ::frc971::constants::ShifterHallEffect kThreeStateDriveShifter{
+    0.0, 0.0, 0.25, 0.75};
+}  // namespace
+
+const DrivetrainConfig<double> &GetDrivetrainConfig() {
+  static DrivetrainConfig<double> kDrivetrainConfig{
+      ::frc971::control_loops::drivetrain::ShifterType::SIMPLE_SHIFTER,
+      ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
+      ::frc971::control_loops::drivetrain::GyroType::SPARTAN_GYRO,
+      ::frc971::control_loops::drivetrain::IMUType::IMU_X,
+
+      ::y2018_bot3::control_loops::drivetrain::MakeDrivetrainLoop,
+      ::y2018_bot3::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
+      ::y2018_bot3::control_loops::drivetrain::MakeKFDrivetrainLoop,
+
+      drivetrain::kDt, drivetrain::kRobotRadius, drivetrain::kWheelRadius,
+      drivetrain::kV,
+
+      drivetrain::kHighGearRatio, drivetrain::kHighGearRatio,
+      kThreeStateDriveShifter, kThreeStateDriveShifter,
+      // TODO(sabina): confirm once robot is built
+      true /* default_high_gear */, 0 /* down_offset */,
+      0.4 /* wheel_non_linearity */, 1.0 /* quickturn_wheel_multiplier */,
+      1.0 /* wheel_multiplier */,
+  };
+
+  return kDrivetrainConfig;
+};
+
+}  // namespace drivetrain
+}  // namespace control_loops
+}  // namespace y2018_bot3
