@@ -5,7 +5,7 @@
 namespace frc971 {
 namespace teensy {
 
-// Currently hard-coded for 8-bit + odd parity + start bit + stop bit.
+// Currently hard-coded for 8-bit + no parity + start bit + stop bit.
 void Uart::Initialize(int baud_rate) {
   {
     // UART baud rate = UART module clock / (16 * (SBR[12:0] + BRFD))
@@ -21,9 +21,8 @@ void Uart::Initialize(int baud_rate) {
 
     module_->BDH = (sbr >> 8) & 0x1F;
     module_->BDL = sbr & 0xFF;
-    module_->C1 = M_UART_M /* 9 data bits */ |
-                  M_UART_ILT /* only detect idle after stop bit */ |
-                  M_UART_PE /* enable parity */ | M_UART_PT /* odd parity */;
+    module_->C1 = M_UART_ILT /* only detect idle after stop bit */ |
+                  M_UART_PT /* odd parity */;
     module_->C4 = V_UART_BRFA(brfa);
   }
   {
