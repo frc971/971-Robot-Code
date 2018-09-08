@@ -125,7 +125,7 @@ MotorControlsImplementation::MotorControlsImplementation()
   MakeFluxLinkageTable();
 }
 
-::std::array<uint32_t, 3> MotorControlsImplementation::DoIteration(
+::std::array<float, 3> MotorControlsImplementation::DoIteration(
     const float raw_currents[3], const uint32_t theta_in,
     const float command_current) {
   static constexpr float kCurrentSlewRate = 0.05f;
@@ -230,9 +230,8 @@ MotorControlsImplementation::MotorControlsImplementation()
   I_last_ = I_next;
 
   // TODO(Austin): Figure out why we need the min here.
-  return {static_cast<uint32_t>(::std::max(0.0f, times(0)) * 3000.0f),
-          static_cast<uint32_t>(::std::max(0.0f, times(1)) * 3000.0f),
-          static_cast<uint32_t>(::std::max(0.0f, times(2)) * 3000.0f)};
+  return {::std::max(0.0f, times(0)), ::std::max(0.0f, times(1)),
+          ::std::max(0.0f, times(2))};
 }
 
 int16_t MotorControlsImplementation::Debug(uint32_t theta) {

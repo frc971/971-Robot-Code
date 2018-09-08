@@ -20,6 +20,8 @@ class LittleMotorControlsImplementation : public MotorControls {
   LittleMotorControlsImplementation();
   ~LittleMotorControlsImplementation() override = default;
 
+  void Reset() override {}
+
   static constexpr int constant_counts_per_revolution() { return 4096; }
   static constexpr int poles_per_revolution() { return 7; }
 
@@ -38,13 +40,17 @@ class LittleMotorControlsImplementation : public MotorControls {
                               0.195 /* V/A */);
   }
 
-  ::std::array<uint32_t, 3> DoIteration(const float raw_currents[3],
+  ::std::array<float, 3> DoIteration(const float raw_currents[3],
                                         uint32_t theta,
                                         const float command_current) override;
 
   int16_t Debug(uint32_t theta) override;
 
   float estimated_velocity() const override { return estimated_velocity_; }
+
+  int16_t i_goal(size_t ii) const override {
+    return static_cast<int16_t>(I_last_[ii] * 10.0f);
+  }
 
  private:
   const ComplexMatrix<3, 1> E1Unrotated_;

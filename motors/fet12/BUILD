@@ -4,6 +4,7 @@ load("//tools:environments.bzl", "mcu_cpus")
 cc_binary(
     name = "fet12.elf",
     srcs = [
+        "current_equalization.h",
         "fet12.cc",
     ],
     restricted_to = mcu_cpus,
@@ -16,6 +17,24 @@ cc_binary(
         "//motors/peripheral:can",
         "//motors/usb",
         "//motors/usb:cdc",
+    ],
+)
+
+cc_binary(
+    name = "fet12v2.elf",
+    srcs = [
+        "current_equalization.h",
+        "fet12v2.cc",
+    ],
+    restricted_to = mcu_cpus,
+    deps = [
+        ":motor_controls",
+        "//motors:motor",
+        "//motors:util",
+        "//motors/core",
+        "//motors/peripheral:adc",
+        "//motors/peripheral:can",
+        "//motors/peripheral:uart",
     ],
 )
 
@@ -59,4 +78,12 @@ cc_library(
         "//motors/peripheral:configuration",
         "//third_party/eigen",
     ],
+)
+
+genrule(
+    name = "gen_current_equalization",
+    outs = ["current_equalization.h"],
+    cmd = "./$(location current_equalize.py) > \"$@\"",
+    restricted_to = mcu_cpus,
+    tools = ["current_equalize.py"],
 )

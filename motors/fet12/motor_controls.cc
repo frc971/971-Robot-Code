@@ -25,44 +25,44 @@ constexpr double kMaxDutyCycle = 0.2;
 constexpr int kPhaseBOffset = kCountsPerRevolution / 3;
 constexpr int kPhaseCOffset = 2 * kCountsPerRevolution / 3;
 
-constexpr double K1_unscaled = 1.81e04;
-constexpr double K2_unscaled = -2.65e03;
+constexpr double K1_unscaled = 1.0;
+constexpr double K2_unscaled = 1.0 / -6.4786;
 
 // Make the amplitude of the fundamental 1 for ease of math.
 constexpr double K2 = K2_unscaled / K1_unscaled;
-constexpr double K1 = 1;
+constexpr double K1 = 1.0;
 
 // volts
-constexpr double vcc = 30.0;
+constexpr double kVcc = 31.5;
 
-constexpr double Kv = 22000.0 * 2.0 * M_PI / 60.0 / 30.0 * 2.0;
+constexpr double Kv = 22000.0 * 2.0 * M_PI / 60.0 / 30.0 * 3.6;
 
-// Henries
-constexpr double L = 1e-05;
+constexpr double kL = 6e-06;
+constexpr double kM = 0;
+constexpr double kR = 0.0084;
+constexpr float kAdiscrete_diagonal = 0.932394f;
+constexpr float kAdiscrete_offdiagonal = 0.0f;
+constexpr float kBdiscrete_inv_diagonal = 0.124249f;
+constexpr float kBdiscrete_inv_offdiagonal = 0.0f;
 
-constexpr double M = 1e-06;
+// The number to divide the product of the unit BEMF and the per phase current
+// by to get motor current.
+constexpr double kOneAmpScalar = 1.46426;
+constexpr double kMaxOneAmpDrivingVoltage = 0.024884;
 
-// ohms for system
-constexpr double R = 0.008;
 
 ::Eigen::Matrix<float, 3, 3> A_discrete() {
   ::Eigen::Matrix<float, 3, 3> r;
-  static constexpr float kDiagonal = 0.960091f;
-  static constexpr float kOffDiagonal = 0.00356245f;
-  r << kDiagonal, kOffDiagonal, kOffDiagonal, kOffDiagonal, kDiagonal,
-      kOffDiagonal, kOffDiagonal, kOffDiagonal, kDiagonal;
+  r << kAdiscrete_diagonal, kAdiscrete_offdiagonal, kAdiscrete_offdiagonal,
+      kAdiscrete_offdiagonal, kAdiscrete_diagonal, kAdiscrete_offdiagonal,
+      kAdiscrete_offdiagonal, kAdiscrete_offdiagonal, kAdiscrete_diagonal;
   return r;
 }
 
 ::Eigen::Matrix<float, 3, 3> B_discrete_inverse() {
-  return ::Eigen::Matrix<float, 1, 3>::Constant(0.18403f).asDiagonal();
+  return ::Eigen::Matrix<float, 1, 3>::Constant(kBdiscrete_inv_diagonal)
+      .asDiagonal();
 }
-
-// The number to divide the product of the unit BEMF and the per phase current
-// by to get motor current.
-constexpr double kOneAmpScalar = 1.46785;
-
-constexpr double kMaxOneAmpDrivingVoltage = 0.0361525;
 
 // Use FluxLinkageTable() to access this with a const so you don't accidentally
 // modify it.
@@ -88,7 +88,7 @@ void MakeFluxLinkageTable() {
 ::Eigen::Matrix<float, 3, 3> MakeK() {
   ::Eigen::Matrix<float, 3, 3> Vconv;
   Vconv << 2.0f, -1.0f, -1.0f, -1.0f, 2.0f, -1.0f, -1.0f, -1.0f, 2.0f;
-  static constexpr float kControllerGain = 0.07f;
+  static constexpr float kControllerGain = 0.05f;
   return kControllerGain * (Vconv / 3.0f);
 }
 
@@ -107,9 +107,9 @@ ComplexMatrix<3, 1> MakeE2Unrotated() {
 }
 
 ComplexMatrix<3, 3> Hn(float omega, int scalar) {
-  const Complex a(static_cast<float>(R),
-                  omega * static_cast<float>(scalar * L));
-  const Complex b(0, omega * static_cast<float>(scalar * M));
+  const Complex a(static_cast<float>(kR),
+                  omega * static_cast<float>(scalar * kL));
+  const Complex b(0, omega * static_cast<float>(scalar * kM));
   const Complex temp1 = a + b;
   const Complex temp2 = -b;
   ComplexMatrix<3, 3> matrix;
@@ -125,10 +125,10 @@ MotorControlsImplementation::MotorControlsImplementation()
   MakeFluxLinkageTable();
 }
 
-::std::array<uint32_t, 3> MotorControlsImplementation::DoIteration(
+::std::array<float, 3> MotorControlsImplementation::DoIteration(
     const float raw_currents[3], const uint32_t theta_in,
     const float command_current) {
-  static constexpr float kCurrentSlewRate = 0.05f;
+  static constexpr float kCurrentSlewRate = 0.10f;
   if (command_current > filtered_current_ + kCurrentSlewRate) {
     filtered_current_ += kCurrentSlewRate;
   } else if (command_current < filtered_current_ - kCurrentSlewRate) {
@@ -138,11 +138,11 @@ MotorControlsImplementation::MotorControlsImplementation()
   }
   const float goal_current_in = filtered_current_;
   const float max_current =
-      (static_cast<float>(vcc * kMaxDutyCycle) -
+      (static_cast<float>(kVcc * kMaxDutyCycle) -
        estimated_velocity_ / static_cast<float>(Kv / 2.0)) /
       static_cast<float>(kMaxOneAmpDrivingVoltage);
   const float min_current =
-      (-static_cast<float>(vcc * kMaxDutyCycle) -
+      (-static_cast<float>(kVcc * kMaxDutyCycle) -
        estimated_velocity_ / static_cast<float>(Kv / 2.0)) /
       static_cast<float>(kMaxOneAmpDrivingVoltage);
   const float goal_current =
@@ -154,12 +154,12 @@ MotorControlsImplementation::MotorControlsImplementation()
 #elif 0
   const uint32_t theta =
       (theta_in + kCountsPerRevolution - 160u) % kCountsPerRevolution;
-#elif 1
+#elif 0
   const uint32_t theta =
       (theta_in + kCountsPerRevolution +
        ((estimated_velocity_ > 0) ? (kCountsPerRevolution - 10u) : 60u)) %
       kCountsPerRevolution;
-#elif 0
+#elif 1
   const uint32_t theta = theta_in;
 #endif
 
@@ -187,17 +187,24 @@ MotorControlsImplementation::MotorControlsImplementation()
 
   const ::Eigen::Matrix<float, 3, 1> I_now = I_last_;
   const ::Eigen::Matrix<float, 3, 1> I_next =
-      FluxLinkageAt(theta) * goal_current;
+      FluxLinkageAt(theta +
+                    static_cast<int32_t>(
+                        2.0f * omega * kCountsPerRevolution /
+                        static_cast<float>(2.0 * M_PI * SWITCHING_FREQUENCY))) *
+      goal_current;
 
   const ComplexMatrix<3, 3> H1 = Hn(omega, 1);
   const ComplexMatrix<3, 3> H2 = Hn(omega, 5);
 
-  const ComplexMatrix<3, 1> H1E1 = H1 * E1;
-  const ComplexMatrix<3, 1> H2E2 = H2 * E2;
+  const ::std::complex<float> first_speed_delay =
+      ImaginaryExpFloat(omega / SWITCHING_FREQUENCY);
+  const ::std::complex<float> fifth_speed_delay =
+      ImaginaryExpFloat(omega * 5.0f / SWITCHING_FREQUENCY);
+  const ComplexMatrix<3, 1> H1E1 = first_speed_delay * H1 * E1;
+  const ComplexMatrix<3, 1> H2E2 = fifth_speed_delay * H2 * E2;
   const ComplexMatrix<3, 1> p_imaginary = H1E1 + H2E2;
   const ComplexMatrix<3, 1> p_next_imaginary =
-      ImaginaryExpFloat(omega / SWITCHING_FREQUENCY) * H1E1 +
-      ImaginaryExpFloat(omega * 5 / SWITCHING_FREQUENCY) * H2E2;
+      first_speed_delay * H1E1 + fifth_speed_delay * H2E2;
   const ::Eigen::Matrix<float, 3, 1> p = p_imaginary.real();
   const ::Eigen::Matrix<float, 3, 1> p_next = p_next_imaginary.real();
 
@@ -214,7 +221,7 @@ MotorControlsImplementation::MotorControlsImplementation()
   debug_[6] = Vn(1) * 100;
   debug_[7] = Vn(2) * 100;
 
-  ::Eigen::Matrix<float, 3, 1> times = Vn / vcc;
+  ::Eigen::Matrix<float, 3, 1> times = Vn / kVcc;
   {
     const float min_time = times.minCoeff();
     times -= ::Eigen::Matrix<float, 3, 1>::Constant(min_time);
@@ -230,9 +237,8 @@ MotorControlsImplementation::MotorControlsImplementation()
   I_last_ = I_next;
 
   // TODO(Austin): Figure out why we need the min here.
-  return {static_cast<uint32_t>(::std::max(0.0f, times(0)) * 3000.0f),
-          static_cast<uint32_t>(::std::max(0.0f, times(1)) * 3000.0f),
-          static_cast<uint32_t>(::std::max(0.0f, times(2)) * 3000.0f)};
+  return {::std::max(0.0f, times(0)), ::std::max(0.0f, times(1)),
+          ::std::max(0.0f, times(2))};
 }
 
 int16_t MotorControlsImplementation::Debug(uint32_t theta) {
