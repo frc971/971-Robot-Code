@@ -1,43 +1,91 @@
 load("//tools:environments.bzl", "mcu_cpus")
 
 cc_library(
-  name = 'adc',
-  visibility = ['//visibility:public'],
-  hdrs = [
-    'adc.h',
-  ],
-  srcs = [
-    'adc.cc',
-  ],
-  deps = [
-    ':configuration',
-    '//motors:util',
-    '//motors/core',
-  ],
-  restricted_to = mcu_cpus,
+    name = "adc",
+    srcs = [
+        "adc.cc",
+    ],
+    hdrs = [
+        "adc.h",
+    ],
+    restricted_to = mcu_cpus,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":configuration",
+        "//motors:util",
+        "//motors/core",
+    ],
 )
 
 cc_library(
-  name = 'configuration',
-  visibility = ['//visibility:public'],
-  hdrs = [
-    'configuration.h',
-  ],
-  restricted_to = mcu_cpus,
+    name = "configuration",
+    hdrs = [
+        "configuration.h",
+    ],
+    restricted_to = mcu_cpus,
+    visibility = ["//visibility:public"],
 )
 
 cc_library(
-  name = 'can',
-  visibility = ['//visibility:public'],
-  hdrs = [
-    'can.h',
-  ],
-  srcs = [
-    'can.c',
-  ],
-  deps = [
-    '//motors/core',
-    '//motors:util',
-  ],
-  restricted_to = mcu_cpus,
+    name = "can",
+    srcs = [
+        "can.c",
+    ],
+    hdrs = [
+        "can.h",
+    ],
+    restricted_to = mcu_cpus,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//motors:util",
+        "//motors/core",
+    ],
+)
+
+cc_library(
+    name = "uart_buffer",
+    hdrs = ["uart_buffer.h"],
+    compatible_with = mcu_cpus,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//third_party/GSL",
+    ],
+)
+
+cc_test(
+    name = "uart_buffer_test",
+    srcs = [
+        "uart_buffer_test.cc",
+    ],
+    deps = [
+        ":uart_buffer",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
+    name = "uart",
+    srcs = ["uart.cc"],
+    hdrs = ["uart.h"],
+    restricted_to = mcu_cpus,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":uart_buffer",
+        "//motors:util",
+        "//motors/core",
+        "//third_party/GSL",
+    ],
+)
+
+cc_library(
+    name = "adc_dma",
+    srcs = ["adc_dma.cc"],
+    hdrs = ["adc_dma.h"],
+    restricted_to = mcu_cpus,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":configuration",
+        "//motors:util",
+        "//motors/core",
+    ],
 )
