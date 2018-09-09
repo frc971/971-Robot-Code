@@ -80,10 +80,20 @@ cc_library(
     ],
 )
 
+py_binary(
+    name = "current_equalize",
+    srcs = [
+        "current_equalize.py",
+    ],
+    data = [
+        "@python_repo//:scipy",
+    ],
+)
+
 genrule(
     name = "gen_current_equalization",
     outs = ["current_equalization.h"],
-    cmd = "./$(location current_equalize.py) > \"$@\"",
+    cmd = "./$(location current_equalize) > \"$@\"",
     restricted_to = mcu_cpus,
-    tools = ["current_equalize.py"],
+    tools = ["current_equalize"],
 )
