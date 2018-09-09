@@ -24,6 +24,8 @@ class MotorControls {
   MotorControls(const MotorControls &) = delete;
   void operator=(const MotorControls &) = delete;
 
+  virtual void Reset() = 0;
+
   // Scales a current reading from ADC units to amps.
   //
   // Note that this doesn't apply any offset. The common offset will be
@@ -36,13 +38,14 @@ class MotorControls {
   // raw_currents are in amps for each phase.
   // theta is in electrical counts, which will be less than
   // counts_per_revolution().
-  virtual ::std::array<uint32_t, 3> DoIteration(
-      const float raw_currents[3], uint32_t theta,
-      const float command_current) = 0;
+  virtual ::std::array<float, 3> DoIteration(const float raw_currents[3],
+                                             uint32_t theta,
+                                             const float command_current) = 0;
 
   virtual int16_t Debug(uint32_t theta) = 0;
 
   virtual float estimated_velocity() const = 0;
+  virtual int16_t i_goal(size_t ii) const = 0;
 };
 
 // Controls a single motor.
@@ -55,6 +58,8 @@ class Motor final {
 
   Motor(const Motor &) = delete;
   void operator=(const Motor &) = delete;
+
+  void Reset() { controls_->Reset(); }
 
   void set_debug_tty(teensy::AcmTty *debug_tty) { debug_tty_ = debug_tty; }
   void set_deadtime_compensation(int deadtime_compensation) {
@@ -130,11 +135,28 @@ class Motor final {
     last_current_set_time_ = micros();
   }
 
- private:
   inline int counts_per_cycle() const {
     return BUS_CLOCK_FREQUENCY / SWITCHING_FREQUENCY / switching_divisor_;
   }
 
+  inline uint16_t get_switching_points_cycles(size_t ii) const {
+    return static_cast<uint16_t>(switching_points_ratio_[ii] *
+                                 counts_per_cycle());
+  }
+
+  inline float estimated_velocity() const {
+    return controls_->estimated_velocity();
+  }
+
+  inline int16_t i_goal(size_t ii) const {
+    return controls_->i_goal(ii);
+  }
+
+  inline int16_t goal_current() const {
+    return goal_current_;
+  }
+
+ private:
   uint32_t CalculateOnTime(uint32_t width) const;
   uint32_t CalculateOffTime(uint32_t width) const;
 
@@ -145,6 +167,7 @@ class Motor final {
   LittleFTM *const encoder_ftm_;
   MotorControls *const controls_;
   const ::std::array<volatile uint32_t *, 3> output_registers_;
+  ::std::array<float, 3> switching_points_ratio_;
 
   float goal_current_ = 0;
   uint32_t last_current_set_time_ = 0;

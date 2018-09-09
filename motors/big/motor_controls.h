@@ -20,6 +20,8 @@ class MotorControlsImplementation : public MotorControls {
   MotorControlsImplementation();
   ~MotorControlsImplementation() override = default;
 
+  void Reset() override {}
+
   static constexpr int constant_counts_per_revolution() { return 1024; }
 
   int mechanical_counts_per_revolution() const override {
@@ -37,13 +39,17 @@ class MotorControlsImplementation : public MotorControls {
                               0.0003 /* Sense resistor */);
   }
 
-  ::std::array<uint32_t, 3> DoIteration(const float raw_currents[3],
+  ::std::array<float, 3> DoIteration(const float raw_currents[3],
                                         uint32_t theta,
                                         const float command_current) override;
 
   int16_t Debug(uint32_t theta) override;
 
   float estimated_velocity() const override { return estimated_velocity_; }
+
+  int16_t i_goal(size_t ii) const override {
+    return static_cast<int16_t>(I_last_[ii] * 10.0f);
+  }
 
  private:
   const ComplexMatrix<3, 1> E1Unrotated_, E2Unrotated_;

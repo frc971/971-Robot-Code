@@ -2,6 +2,7 @@
 #define MOTORS_ALGORITHMS_H_
 
 #include <stdint.h>
+#include <array>
 
 namespace frc971 {
 namespace motors {
@@ -25,6 +26,22 @@ struct BalancedReadings {
 // the input ones (by weight). The distances between the averages of the inputs
 // and the corresponding outputs will be inversely proportional to the weights.
 BalancedReadings BalanceReadings(ReadingsToBalance to_balance);
+
+inline BalancedReadings BalanceSimpleReadings(
+    const ::std::array<float, 3> readings) {
+  float offset = 0;
+  for (int i = 0; i < 3; ++i) {
+    offset += readings[i];
+  }
+
+  offset = offset / 3.0f;
+
+  BalancedReadings r;
+  for (int i = 0; i < 3; ++i) {
+    r.readings[i] = static_cast<float>(readings[i]) - offset;
+  }
+  return r;
+}
 
 inline BalancedReadings BalanceSimpleReadings(const uint16_t readings[3]) {
   float offset = 0;

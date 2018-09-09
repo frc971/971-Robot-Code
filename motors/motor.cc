@@ -120,18 +120,23 @@ void Motor::HandleInterrupt(const BalancedReadings &balanced,
 
 #if PRINT_TIMING
   const uint32_t start_nanos = nanos();
-#endif
+#endif  // PRINT_TIMING
 
   if (!time_after(time_add(last_current_set_time_, 100000), micros())) {
     goal_current_ = 0;
   }
 
 #if DO_CONTROLS
-  const ::std::array<uint32_t, 3> switching_points =
-      controls_->DoIteration(balanced.readings, captured_wrapped_encoder, goal_current_);
+  switching_points_ratio_ = controls_->DoIteration(
+      balanced.readings, captured_wrapped_encoder, goal_current_);
+  const float switching_points_max = static_cast<float>(counts_per_cycle());
+  const ::std::array<uint32_t, 3> switching_points = {
+      static_cast<uint32_t>(switching_points_ratio_[0] * switching_points_max),
+      static_cast<uint32_t>(switching_points_ratio_[1] * switching_points_max),
+      static_cast<uint32_t>(switching_points_ratio_[2] * switching_points_max)};
 #if USE_CUTOFF
-  //constexpr uint32_t kMax = 2945;
-  constexpr uint32_t kMax = 1445;
+  constexpr uint32_t kMax = 2995;
+  //constexpr uint32_t kMax = 1445;
   static bool done = false;
   bool done_now = false;
   if (switching_points[0] > kMax || switching_points[1] > kMax ||
@@ -144,7 +149,7 @@ void Motor::HandleInterrupt(const BalancedReadings &balanced,
   for (int phase = 0; phase < 3; ++phase) {
     const float scaled_reading =
         controls_->scale_current_reading(balanced.readings[phase]);
-    static constexpr float kMaxBalancedCurrent = 190.0f;
+    static constexpr float kMaxBalancedCurrent = 50.0f;
     if (scaled_reading > kMaxBalancedCurrent ||
         scaled_reading < -kMaxBalancedCurrent) {
       current_done = true;
@@ -158,7 +163,7 @@ void Motor::HandleInterrupt(const BalancedReadings &balanced,
   } else {
     current_done_count = 0;
   }
-#endif
+#endif  // USE_ABSOLUTE_CUTOFF
   if (done_now && !done) {
     printf("done now\n");
     printf("switching_points %" PRIu32 " %" PRIu32 " %" PRIu32 "\n",
@@ -170,9 +175,9 @@ void Motor::HandleInterrupt(const BalancedReadings &balanced,
     done = true;
   }
   if (!done) {
-#else
+#else  // USE_CUTOFF
   if (true) {
-#endif
+#endif  // USE_CUTOFF
     output_registers_[0][0] = CalculateOnTime(switching_points[0]);
     output_registers_[0][2] = CalculateOffTime(switching_points[0]);
     output_registers_[1][0] = CalculateOnTime(switching_points[1]);
@@ -188,7 +193,7 @@ void Motor::HandleInterrupt(const BalancedReadings &balanced,
     output_registers_[2][0] = 0;
     output_registers_[2][2] = 0;
   }
-#elif DO_FIXED_PULSE
+#elif DO_FIXED_PULSE  // DO_CONTROLS
   // Step through all the phases one by one in a loop.  This should slowly move
   // the trigger.
   // If we fire phase 1, we should go to 0 radians.
@@ -210,61 +215,68 @@ void Motor::HandleInterrupt(const BalancedReadings &balanced,
   // 30W total power dumped by the motor for the big one.
   // For the small one, an on-width of 120/3000 with 14V in means about 2A
   // through the motor.
-  constexpr int kPhaseFireWidth = 60;
+  constexpr int kPhaseFireWidth = 90;
   output_registers_[0][0] = 0;
-  output_registers_[0][2] = phase_to_fire == 0 ? kPhaseFireWidth : 0;
+  output_registers_[0][2] =
+      phase_to_fire == 0 ? kPhaseFireWidth : 0;
+
+  const float switching_points_max = static_cast<float>(counts_per_cycle());
+  switching_points_ratio_[0] =
+      static_cast<float>(output_registers_[0][2]) / switching_points_max;
   output_registers_[1][0] = 0;
   output_registers_[1][2] = phase_to_fire == 1 ? kPhaseFireWidth : 0;
+  switching_points_ratio_[1] =
+      static_cast<float>(output_registers_[1][2]) / switching_points_max;
   output_registers_[2][0] = 0;
   output_registers_[2][2] = phase_to_fire == 2 ? kPhaseFireWidth : 0;
-#endif
+  switching_points_ratio_[2] =
+      static_cast<float>(output_registers_[2][2]) / switching_points_max;
+#endif  // DO_CONTROLS/DO_FIXED_PULSE
   (void)balanced;
   (void)captured_wrapped_encoder;
 #if PRINT_READINGS
   static int i = 0;
   if (i == 1000) {
     i = 0;
-    SmallInitReadings readings;
-    {
-      DisableInterrupts disable_interrupts;
-      readings = AdcReadSmallInit(disable_interrupts);
-    }
+    //SmallInitReadings readings;
+    //{
+      //DisableInterrupts disable_interrupts;
+      //readings = AdcReadSmallInit(disable_interrupts);
+    //}
     //printf(
         //"enc %" PRIu32 " %d %d\n", captured_wrapped_encoder,
         //static_cast<int>((1.0f - analog_ratio(readings.motor1_abs)) * 7000.0f),
         //static_cast<int>(captured_wrapped_encoder * 7.0f / 4096.0f * 1000.0f));
-    float wheel_position = absolute_wheel(analog_ratio(readings.wheel_abs));
+    //float wheel_position = absolute_wheel(analog_ratio(readings.wheel_abs));
 
     printf(
-        "ecnt %" PRIu32 " arev:%d erev:%d %d\n", captured_wrapped_encoder,
-        static_cast<int>((analog_ratio(readings.motor1_abs)) * 7000.0f),
-        static_cast<int>(captured_wrapped_encoder * 7.0f / 4096.0f * 1000.0f),
-        static_cast<int>(wheel_position * 1000.0f));
+        "ecnt %" PRIu32
+        //" arev:%d"
+        " erev:%d"
+        //" %d"
+        "\n", captured_wrapped_encoder,
+        //static_cast<int>((analog_ratio(readings.motor1_abs)) * 7000.0f),
+        static_cast<int>(captured_wrapped_encoder / 4096.0f * 1000.0f)
+        //static_cast<int>(wheel_position * 1000.0f)
+        );
   } else if (i == 200) {
 #if DO_CONTROLS
     printf("out %" PRIu32 " %" PRIu32 " %" PRIu32 "\n", switching_points[0],
            switching_points[1], switching_points[2]);
-#else
+#else  // DO_CONTROLS
     printf("out %" PRIu32 " %" PRIu32 " %" PRIu32 "\n", output_registers_[0][2],
            output_registers_[1][2], output_registers_[2][2]);
-#endif
-    //printf("0=%f\n", (double)balanced.readings[0]);
-  } else if (i == 400) {
-    //printf("1=%f\n", (double)balanced.readings[1]);
-  } else if (i == 600) {
-    //printf("2=%f\n", (double)balanced.readings[2]);
-  } else {
-    //printf("%" PRIu32 " to %" PRIu32 "\n", start_count, end_count);
+#endif  // DO_CONTROLS
   }
   ++i;
-#elif PRINT_ALL_READINGS
+#elif PRINT_ALL_READINGS  // PRINT_READINGS
   printf("ref=%" PRIu16 " 0.0=%" PRIu16 " 1.0=%" PRIu16 " 2.0=%" PRIu16
          " in=%" PRIu16 " 0.1=%" PRIu16 " 1.1=%" PRIu16 " 2.1=%" PRIu16 "\n",
          adc_readings.motor_current_ref, adc_readings.motor_currents[0][0],
          adc_readings.motor_currents[1][0], adc_readings.motor_currents[2][0],
          adc_readings.input_voltage, adc_readings.motor_currents[0][1],
          adc_readings.motor_currents[1][1], adc_readings.motor_currents[2][1]);
-#elif TAKE_SAMPLE
+#elif TAKE_SAMPLE  // PRINT_READINGS/PRINT_ALL_READINGS
 #if 0
   constexpr int kStartupWait = 50000;
 #elif 0
@@ -290,12 +302,13 @@ void Motor::HandleInterrupt(const BalancedReadings &balanced,
     ++j;
 #if SAMPLE_UNTIL_DONE
   } else if (!done) {
-#else
+#else  // SAMPLE_UNTIL_DONE
   } else if (j < kSamplingEnd && (j % kSubsampling) == 0) {
-#endif
+#endif  // SAMPLE_UNTIL_DONE
     {
       const int index = ((j - kStartupWait) / kSubsampling) % kPoints;
       auto &point = data[index];
+// Start obnoxious #if 0/#if 1
 #if 0
       point[0] = adc_readings.motor_currents[0][0];
       point[1] = adc_readings.motor_currents[1][0];
@@ -341,13 +354,14 @@ void Motor::HandleInterrupt(const BalancedReadings &balanced,
       point[5] = pwm_ftm_->C5V - pwm_ftm_->C4V;
 #endif
 #endif
+// End obnoxious #if 0/#if 1
       point[9] = captured_wrapped_encoder;
-      SmallInitReadings readings;
-      {
-        DisableInterrupts disable_interrupts;
-        readings = AdcReadSmallInit(disable_interrupts);
-      }
-      point[10] = readings.motor0_abs;
+      //SmallInitReadings readings;
+      //{
+        //DisableInterrupts disable_interrupts;
+        //readings = AdcReadSmallInit(disable_interrupts);
+      //}
+      //point[10] = readings.motor0_abs;
     }
 
 #if DO_STEP_RESPONSE
@@ -355,7 +369,7 @@ void Motor::HandleInterrupt(const BalancedReadings &balanced,
     if (j > kStartupWait + 200 / kSubsampling) {
       pwm_ftm_->C3V = 240;
     }
-#elif DO_PULSE_SWEEP
+#elif DO_PULSE_SWEEP  // DO_STEP_RESPONSE
     // Sweep the pulse through the ADC sampling points.
     static constexpr int kMax = 2500;
     static constexpr int kExtraWait = 1500;
@@ -370,23 +384,23 @@ void Motor::HandleInterrupt(const BalancedReadings &balanced,
       pwm_ftm_->C2V = 0;
       pwm_ftm_->C3V = 0;
     }
-#endif
+#endif  // DO_STEP_RESPONSE/DO_PULSE_SWEEP
 
     ++j;
 #if SAMPLE_UNTIL_DONE
   } else if (false) {
-#else
+#else  // SAMPLE_UNTIL_DONE
   } else if (j < kSamplingEnd) {
     ++j;
   } else if (j == kSamplingEnd) {
-#endif
+#endif  // SAMPLE_UNTIL_DONE
     printf("finished\n");
     ++j;
 #if SAMPLE_UNTIL_DONE
   } else if (done) {
-#else
+#else  // SAMPLE_UNTIL_DONE
   } else {
-#endif
+#endif  // SAMPLE_UNTIL_DONE
     // Time to write the data out.
     if (written < (int)sizeof(data) && debug_tty_ != nullptr) {
       int to_write = sizeof(data) - written;
@@ -406,7 +420,7 @@ void Motor::HandleInterrupt(const BalancedReadings &balanced,
       done_writing = true;
     }
   }
-#endif
+#endif  // PRINT_READINGS/PRINT_ALL_READINGS/TAKE_SAMPLE
   (void)balanced;
 
   // Tell the hardware to use the new switching points.
@@ -423,7 +437,7 @@ void Motor::HandleInterrupt(const BalancedReadings &balanced,
     print_timing_count = 0;
     print_timing_total = 0;
   }
-#endif
+#endif  // PRINT_TIMING
 
   // If another cycle has already started, turn the light on right now.
   if (pwm_ftm_->SC & FTM_SC_TOF) {
