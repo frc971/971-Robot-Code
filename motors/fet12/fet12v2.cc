@@ -111,8 +111,7 @@ int _write(int /*file*/, char *ptr, int len) {
   teensy::InterruptBufferedUart *const tty =
       global_stdout.load(::std::memory_order_acquire);
   if (tty != nullptr) {
-    DisableInterrupts disable_interrupts;
-    tty->Write(gsl::make_span(ptr, len), disable_interrupts);
+    tty->Write(gsl::make_span(ptr, len));
     return len;
   }
   return 0;

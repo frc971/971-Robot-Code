@@ -240,6 +240,19 @@ class DisableInterrupts {
   DisableInterrupts &operator=(const DisableInterrupts &) = delete;
 };
 
+class ReenableInterrupts {
+ public:
+  ReenableInterrupts(DisableInterrupts *) {
+    __enable_irq();
+    // Because we're on a Cortex-M4, we don't need an ISB here to ensure
+    // interrupts are processed.
+  }
+  ~ReenableInterrupts() { __disable_irq(); }
+
+  ReenableInterrupts(const ReenableInterrupts &) = delete;
+  ReenableInterrupts &operator=(const ReenableInterrupts &) = delete;
+};
+
 // constexpr log base 2, which fails to compile for non-power-of-2 inputs.
 // This is a silly implementation to use at runtime.
 template<typename T>

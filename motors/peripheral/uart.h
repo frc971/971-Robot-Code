@@ -56,7 +56,7 @@ class InterruptBufferedUart {
 
   void Initialize(int baud_rate);
 
-  void Write(gsl::span<char> data, const DisableInterrupts &disable_interrupts);
+  void Write(gsl::span<char> data);
 
   // Should be called as the body of the interrupt handler.
   void HandleInterrupt(const DisableInterrupts &disable_interrupts) {
