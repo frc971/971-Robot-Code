@@ -64,8 +64,8 @@ void InterruptBufferedUart::Initialize(int baud_rate) {
   uart_.Initialize(baud_rate);
 }
 
-void InterruptBufferedUart::Write(gsl::span<char> data,
-                                  const DisableInterrupts &disable_interrupts) {
+void InterruptBufferedUart::Write(gsl::span<char> data) {
+  DisableInterrupts disable_interrupts;
   uart_.EnableTransmitInterrupt();
   static_assert(buffer_.size() >= 8,
                 "Need enough space to not turn the interrupt off each time");
@@ -73,6 +73,7 @@ void InterruptBufferedUart::Write(gsl::span<char> data,
     const int bytes_written = buffer_.PushSpan(data);
     data = data.subspan(bytes_written);
     WriteCharacters(data.empty(), disable_interrupts);
+    ReenableInterrupts{&disable_interrupts};
   }
 }
 
