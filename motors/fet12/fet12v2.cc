@@ -10,6 +10,7 @@
 #include "motors/fet12/motor_controls.h"
 #include "motors/motor.h"
 #include "motors/peripheral/adc.h"
+#include "motors/peripheral/adc_dma.h"
 #include "motors/peripheral/can.h"
 #include "motors/peripheral/uart.h"
 #include "motors/util.h"
@@ -25,6 +26,10 @@ constexpr double kIcc = 125.0;
 constexpr double kR = 0.0084;
 
 struct Fet12AdcReadings {
+  // Averages of the pairs of ADC DMA channels corresponding with each channel
+  // pair. Individual values in motor_currents correspond to current sensor
+  // values, rather than the actual currents themselves (and so they still need
+  // to be decoupled).
   int16_t motor_currents[3];
   int16_t throttle, fuse_voltage;
 };
@@ -57,34 +62,9 @@ void AdcInitFet12() {
   PORTB_PCR3 = PORT_PCR_MUX(0);
 }
 
-Fet12AdcReadings AdcReadFet12(const DisableInterrupts &) {
-  Fet12AdcReadings r;
-
-  ADC1_SC1A = 5;
-  ADC0_SC1A = 23;
-  while (!(ADC1_SC1A & ADC_SC1_COCO)) {
-  }
-  ADC1_SC1A = 6;
-  r.motor_currents[0] = static_cast<int16_t>(ADC1_RA) - 2032;
-  while (!(ADC0_SC1A & ADC_SC1_COCO)) {
-  }
-  ADC0_SC1A = 13;
-  r.throttle = static_cast<int16_t>(ADC0_RA);
-  while (!(ADC1_SC1A & ADC_SC1_COCO)) {
-  }
-  ADC1_SC1A = 7;
-  r.motor_currents[1] = static_cast<int16_t>(ADC1_RA) - 2032;
-  while (!(ADC0_SC1A & ADC_SC1_COCO)) {
-  }
-  r.fuse_voltage = static_cast<int16_t>(ADC0_RA);
-  while (!(ADC1_SC1A & ADC_SC1_COCO)) {
-  }
-  r.motor_currents[2] = static_cast<int16_t>(ADC1_RA) - 2032;
-
-  return r;
-}
-
 ::std::atomic<Motor *> global_motor{nullptr};
+::std::atomic<teensy::AdcDmaSampler *> global_adc_dma{nullptr};
+
 ::std::atomic<teensy::InterruptBufferedUart *> global_stdout{nullptr};
 
 extern "C" {
@@ -154,20 +134,31 @@ struct DebugBuffer {
 DebugBuffer global_debug_buffer;
 
 void ftm0_isr(void) {
-  const auto wrapped_encoder =
-      global_motor.load(::std::memory_order_relaxed)->wrapped_encoder();
+  static uint32_t i = 0;
+  teensy::AdcDmaSampler *const adc_dma =
+      global_adc_dma.load(::std::memory_order_relaxed);
+
   Fet12AdcReadings adc_readings;
-  {
-    DisableInterrupts disable_interrupts;
-    adc_readings = AdcReadFet12(disable_interrupts);
+  // TODO(Brian): Switch to the DMA interrupt instead of spinning.
+  while (!adc_dma->CheckDone()) {
   }
+
+  adc_readings.motor_currents[0] =
+      (adc_dma->adc_result(0, 0) + adc_dma->adc_result(0, 1)) / 2;
+  adc_readings.motor_currents[1] =
+      (adc_dma->adc_result(0, 2) + adc_dma->adc_result(1, 1)) / 2;
+  adc_readings.motor_currents[2] =
+      (adc_dma->adc_result(1, 0) + adc_dma->adc_result(1, 2)) / 2;
+  adc_readings.throttle = adc_dma->adc_result(0, 3);
   const ::std::array<float, 3> decoupled =
       DecoupleCurrents(adc_readings.motor_currents);
-
+  adc_dma->Reset();
+  const uint32_t wrapped_encoder =
+      global_motor.load(::std::memory_order_relaxed)->wrapped_encoder();
+#if 1
   const BalancedReadings balanced =
       BalanceSimpleReadings(decoupled);
 
-  static int i = 0;
   static float fuse_badness = 0;
 
   static uint32_t cycles_since_start = 0u;
@@ -265,17 +256,6 @@ void ftm0_isr(void) {
       ->SetGoalCurrent(goal_current);
   global_motor.load(::std::memory_order_relaxed)
       ->HandleInterrupt(balanced, wrapped_encoder);
-#else
-  (void)balanced;
-  FTM0->SC &= ~FTM_SC_TOF;
-  FTM0->C0V = 0;
-  FTM0->C1V = 0;
-  FTM0->C2V = 0;
-  FTM0->C3V = 0;
-  FTM0->C4V = 0;
-  FTM0->C5V = 60;
-  FTM0->PWMLOAD = FTM_PWMLOAD_LDOK;
-#endif
 
   global_debug_buffer.count.fetch_add(1);
 
@@ -322,7 +302,9 @@ void ftm0_isr(void) {
     global_debug_buffer.size.fetch_add(1);
   }
 
+  ++i;
   if (buffer_size == global_debug_buffer.samples.size()) {
+    i = 0;
     GPIOC_PCOR = (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4);
     GPIOD_PCOR = (1 << 4) | (1 << 5);
 
@@ -340,11 +322,19 @@ void ftm0_isr(void) {
     PORTD_PCR4 = PORT_PCR_DSE | PORT_PCR_MUX(1);
     PORTD_PCR5 = PORT_PCR_DSE | PORT_PCR_MUX(1);
   }
+#else
+#endif
+#else
+  FTM0->SC &= ~FTM_SC_TOF;
+  FTM0->C0V = 0;
+  FTM0->C1V = 0;
+  FTM0->C2V = 0;
+  FTM0->C3V = 0;
+  FTM0->C4V = 0;
+  FTM0->C5V = 0;
+  FTM0->PWMLOAD = FTM_PWMLOAD_LDOK;
+#endif
 
-  ++i;
-  if (i > 1000) {
-    i = 0;
-  }
 }
 
 }  // extern "C"
@@ -501,8 +491,69 @@ extern "C" int main(void) {
   motor.set_encoder_offset(810);
   motor.set_deadtime_compensation(9);
   ConfigurePwmFtm(FTM0);
+
+  FTM2->CONF = FTM_CONF_GTBEEN;
+  FTM2->MODE = FTM_MODE_WPDIS;
+  FTM2->MODE = FTM_MODE_WPDIS | FTM_MODE_FTMEN;
+  FTM2->SC = FTM_SC_CLKS(0) /* Disable counting for now */;
+  FTM2->CNTIN = 0;
+  FTM2->CNT = 0;
+  // TODO(Brian): Don't duplicate this.
+  FTM2->MOD = BUS_CLOCK_FREQUENCY / SWITCHING_FREQUENCY;
+  FTM2->OUTINIT = 0;
+  // All of the channels are active high.
+  FTM2->POL = 0;
+  FTM2->SYNCONF = FTM_SYNCONF_HWWRBUF | FTM_SYNCONF_SWWRBUF |
+                  FTM_SYNCONF_SWRSTCNT | FTM_SYNCONF_SYNCMODE;
+  // Don't want any intermediate loading points.
+  FTM2->PWMLOAD = 0;
+
+  // Need to set them to some kind of output mode so we can actually change
+  // them.
+  FTM2->C0SC = FTM_CSC_MSA;
+  FTM2->C1SC = FTM_CSC_MSA;
+
+  // This has to happen after messing with SYNCONF, and should happen after
+  // messing with various other things so the values can get flushed out of the
+  // buffers.
+  FTM2->SYNC =
+      FTM_SYNC_SWSYNC /* Flush everything out right now */ |
+      FTM_SYNC_CNTMAX /* Load new values at the end of the cycle */;
+  // Wait for the software synchronization to finish.
+  while (FTM2->SYNC & FTM_SYNC_SWSYNC) {
+  }
+  FTM2->SC = FTM_SC_CLKS(1) /* Use the system clock */ |
+      FTM_SC_PS(0) /* Don't prescale the clock */;
+  // TODO:
+  //FTM2->MODE &= ~FTM_MODE_WPDIS;
+
+  FTM2->EXTTRIG = FTM_EXTTRIG_CH0TRIG | FTM_EXTTRIG_CH1TRIG;
+
+  teensy::AdcDmaSampler adc_dma;
+  // ADC0_Dx0 is 1-0
+  // ADC0_Dx2 is 1-2
+  // ADC0_Dx3 is 2-0
+  // ADC1_Dx0 is 2-0
+  // ADC1_Dx3 is 1-0
+  // Sample 0: 1-2,2-0
+  // Sample 1: 1-2,1-0
+  // Sample 2: 1-0,2-0
+  // Sample 3: 23(SENSE0),18(VIN)
+  adc_dma.set_adc0_samples({V_ADC_ADCH(2) | M_ADC_DIFF,
+                            V_ADC_ADCH(2) | M_ADC_DIFF,
+                            V_ADC_ADCH(0) | M_ADC_DIFF, V_ADC_ADCH(23)});
+  adc_dma.set_adc1_samples({V_ADC_ADCH(0) | M_ADC_DIFF,
+                            V_ADC_ADCH(3) | M_ADC_DIFF,
+                            V_ADC_ADCH(0) | M_ADC_DIFF, V_ADC_ADCH(18)});
+  adc_dma.set_ftm_delays({&FTM2->C0V, &FTM2->C1V});
+  adc_dma.set_pdb_input(PDB_IN_FTM2);
+
+  adc_dma.Initialize();
+  FTM0->CONF = FTM_CONF_GTBEEN;
   motor.Init();
   global_motor.store(&motor, ::std::memory_order_relaxed);
+  global_adc_dma.store(&adc_dma, ::std::memory_order_relaxed);
+
   // Output triggers to things like the PDBs on initialization.
   FTM0_EXTTRIG = FTM_EXTTRIG_INITTRIGEN;
   // Don't let any memory accesses sneak past here, because we actually
@@ -529,7 +580,11 @@ extern "C" int main(void) {
   printf("Zeroed motor!\n");
   // Give stuff a chance to recover from interrupts-disabled.
   delay(100);
+  adc_dma.Reset();
   motor.Start();
+  // Now poke the GTB to actually start both timers.
+  FTM0->CONF = FTM_CONF_GTBEEN | FTM_CONF_GTBEOUT;
+
   NVIC_ENABLE_IRQ(IRQ_FTM0);
   GPIOC_PSOR = 1 << 5;
 
