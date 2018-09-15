@@ -502,6 +502,7 @@ genrule(
     tools = [":protoc"],
 )
 
+"""
 java_library(
     name = "protobuf_java",
     srcs = glob([
@@ -511,6 +512,7 @@ java_library(
     ],
     visibility = ["//visibility:public"],
 )
+"""
 
 ################################################################################
 # Python support
