@@ -5,7 +5,7 @@ genrule(
         "cat > $@ <<END",
         "#!/bin/bash",
         "export LD_LIBRARY_PATH=external/pandoc/usr/lib/x86_64-linux-gnu:external/pandoc/lib/x86_64-linux-gnu",
-        "exec external/pandoc/usr/bin/pandoc \"\\$$@\"",
+        "exec external/pandoc/usr/bin/pandoc --data-dir=external/pandoc/usr/share/pandoc/data \"\\$$@\"",
         "END",
     ]),
     executable = True,
