@@ -2,8 +2,9 @@
 
 import numpy
 import sys
+import calib_sensors
 
-def main():
+def manual_calibrate():
     #  38  27 -84
     #  36 -64  39
     # -74  21  35
@@ -17,6 +18,13 @@ def main():
                       [-current / 2.0, current, -current / 2.0],
                       [-current / 2.0, -current / 2.0, current]])
     transform = I * numpy.linalg.inv(Is)
+    return transform
+
+def main():
+    transform = manual_calibrate()
+
+    if len(sys.argv) > 1:
+      transform = calib_sensors.calibrate(sys.argv[1:])
 
     print("#ifndef MOTORS_FET12_CURRENT_MATRIX_")
     print("#define MOTORS_FET12_CURRENT_MATRIX_")

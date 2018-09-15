@@ -33,6 +33,7 @@ cc_binary(
         "//motors:util",
         "//motors/core",
         "//motors/peripheral:adc",
+        "//motors/peripheral:adc_dma",
         "//motors/peripheral:can",
         "//motors/peripheral:uart",
     ],
@@ -80,20 +81,37 @@ cc_library(
     ],
 )
 
-py_binary(
-    name = "current_equalize",
+py_library(
+    name = "calib_sensors",
     srcs = [
-        "current_equalize.py",
+        "calib_sensors.py",
     ],
     data = [
         "@python_repo//:scipy",
     ],
 )
 
+py_binary(
+    name = "current_equalize",
+    srcs = [
+        "current_equalize.py",
+    ],
+    data = [
+        ":calib_sensors",
+        "@python_repo//:scipy",
+    ],
+)
+
 genrule(
     name = "gen_current_equalization",
+    srcs = [
+        "calib_data_6030.csv",
+        "calib_data_60a.csv",
+        "calib_data_60b.csv",
+        "calib_data_60c.csv",
+    ],
     outs = ["current_equalization.h"],
-    cmd = "./$(location current_equalize) > \"$@\"",
+    cmd = "./$(location current_equalize) $(location calib_data_60a.csv) $(location calib_data_60b.csv) $(location calib_data_60c.csv) $(location calib_data_6030.csv) > \"$@\"",
     restricted_to = mcu_cpus,
     tools = ["current_equalize"],
 )
