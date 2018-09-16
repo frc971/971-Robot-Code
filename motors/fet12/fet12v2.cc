@@ -511,6 +511,8 @@ extern "C" int main(void) {
   motor.set_deadtime_compensation(9);
   ConfigurePwmFtm(FTM0);
 
+  // TODO(Brian): Figure out how to avoid duplicating this code to slave one FTM
+  // to another.
   FTM2->CONF = FTM_CONF_GTBEEN;
   FTM2->MODE = FTM_MODE_WPDIS;
   FTM2->MODE = FTM_MODE_WPDIS | FTM_MODE_FTMEN;
@@ -548,7 +550,8 @@ extern "C" int main(void) {
 
   FTM2->EXTTRIG = FTM_EXTTRIG_CH0TRIG | FTM_EXTTRIG_CH1TRIG;
 
-  teensy::AdcDmaSampler adc_dma;
+  // TODO(Brian): Don't duplicate the timer's MOD value.
+  teensy::AdcDmaSampler adc_dma{BUS_CLOCK_FREQUENCY / SWITCHING_FREQUENCY};
   // ADC0_Dx0 is 1-0
   // ADC0_Dx2 is 1-2
   // ADC0_Dx3 is 2-0
