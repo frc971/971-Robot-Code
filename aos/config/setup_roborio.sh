@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# Note: this should be run from within bazel
+
 set -Eeuo pipefail
 
 if [ $# != 1 ];
@@ -17,12 +20,10 @@ readonly ROBOT_HOSTNAME="$1"
 
 echo "Looking to see if l is aliased right."
 
-readonly HAS_ALIAS=$(ssh "admin@${ROBOT_HOSTNAME}" "cat /etc/profile" | grep -Fq "alias l")
-
-if [[ $? -ne 0 ]]; then
+if ! HAS_ALIAS=$(ssh "admin@${ROBOT_HOSTNAME}" "cat /etc/profile"); then
   echo "ssh command failed remotely"
   exit 1
-elif $HAS_ALIAS
+elif echo "${HAS_ALIAS}" | grep -Fq "alias l"; then
   echo "Already has l alias"
 else
   echo "Adding l alias"
@@ -30,11 +31,6 @@ else
   echo "Adding symbolic link to loging directory"
   ssh "admin@${ROBOT_HOSTNAME}" ln -s /media/sda1 logs
 fi
-
-# Make sure starter.sh has the correct permissions to run the robot code.
-# If missing o+rx, the robot code will not start.  No error messages on
-# some driver stations.
-ssh "admin@${ROBOT_HOSTNAME}" 'chmod go+rx robot_code/starter.sh'
 
 ssh "admin@${ROBOT_HOSTNAME}" 'PATH="${PATH}":/usr/local/natinst/bin/ /usr/local/frc/bin/frcKillRobot.sh -r -t'
 
