@@ -110,6 +110,7 @@ class Arm {
   bool close_enough_for_full_power_ = false;
 
   int32_t climb_count_ = 0;
+  int32_t brownout_count_ = 0;
 
   EKF arm_ekf_;
   TrajectoryFollower follower_;
