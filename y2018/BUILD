@@ -47,6 +47,7 @@ cc_binary(
         "//aos/common:time",
         "//aos/common/actions:action_lib",
         "//aos/common/logging",
+        "//aos/common/network:team_number",
         "//aos/common/util:log_interval",
         "//aos/input:drivetrain_input",
         "//aos/input:joystick_input",

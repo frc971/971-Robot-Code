@@ -15,8 +15,14 @@ namespace control_loops {
 namespace superstructure {
 namespace arm {
 
+namespace {
+
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
+
+constexpr int kMaxBrownoutCount = 4;
+
+}  // namespace
 
 Arm::Arm()
     : proximal_zeroing_estimator_(constants::GetValues().arm_proximal.zeroing),
@@ -50,6 +56,11 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
   const bool outputs_disabled =
       ((proximal_output == nullptr) || (distal_output == nullptr) ||
        (release_arm_brake == nullptr) || (claw_closed == nullptr));
+  if (outputs_disabled) {
+    ++brownout_count_;
+  } else {
+    brownout_count_ = 0;
+  }
 
   uint32_t filtered_goal = 0;
   if (unsafe_goal != nullptr) {
@@ -178,7 +189,7 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
           distal_zeroing_estimator_.error()) {
         LOG(ERROR, "Zeroing error ESTOP\n");
         state_ = State::ESTOP;
-      } else if (outputs_disabled) {
+      } else if (outputs_disabled && brownout_count_ > kMaxBrownoutCount) {
         state_ = State::DISABLED;
       } else if (trajectory_override) {
         follower_.SwitchTrajectory(nullptr);

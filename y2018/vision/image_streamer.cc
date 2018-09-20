@@ -334,13 +334,16 @@ int main(int argc, char ** argv) {
 
   ProtoUdpClient<VisionControl> udp_client(
       5000, [&camera0, &camera1](const VisionControl &vision_control) {
-        LOG(INFO, "Got control packet\n");
+        bool cam0_active = false;
         if (camera1) {
+          cam0_active = !vision_control.high_video();
           camera0->set_active(!vision_control.high_video());
           camera1->set_active(vision_control.high_video());
         } else {
+          cam0_active = true;
           camera0->set_active(true);
         }
+        LOG(INFO, "Got control packet, cam%d active\n", cam0_active ? 0 : 1);
       });
 
   // Default to camera0
