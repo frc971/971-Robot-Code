@@ -123,7 +123,7 @@ def ctrb(A, B):
 
   return output
 
-def dlqr(A, B, Q, R):
+def dlqr(A, B, Q, R, optimal_cost_function=False):
   """Solves for the optimal lqr controller.
 
     x(n+1) = A * x(n) + B * u(n)
@@ -131,12 +131,16 @@ def dlqr(A, B, Q, R):
   """
 
   # P = (A.T * P * A) - (A.T * P * B * numpy.linalg.inv(R + B.T * P *B) * (A.T * P.T * B).T + Q
+  # 0.5 * X.T * P * X -> optimal cost to infinity
 
   P, rcond, w, S, T = slycot.sb02od(
       n=A.shape[0], m=B.shape[1], A=A, B=B, Q=Q, R=R, dico='D')
 
-  F = numpy.linalg.inv(R + B.T * P *B) * B.T * P * A
-  return F
+  F = numpy.linalg.inv(R + B.T * P * B) * B.T * P * A
+  if optimal_cost_function:
+    return F, P
+  else:
+    return F
 
 def kalman(A, B, C, Q, R):
   """Solves for the steady state kalman gain and covariance matricies.
