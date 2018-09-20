@@ -11,7 +11,6 @@ cc_library(
   deps = [
     '//aos/common/input:driver_station_data',
     '//aos/common/messages:robot_state',
-    '//aos/common/network:socket',
     '//aos/common/logging',
     '//aos/common/logging:queue_logging',
   ],
@@ -30,7 +29,6 @@ cc_library(
     '//aos/common/logging',
     '//aos/common/logging:queue_logging',
     '//aos/common/messages:robot_state',
-    '//aos/common/network:socket',
     '//aos/common:math',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//frc971/control_loops/drivetrain:drivetrain_config',

@@ -19,26 +19,6 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "socket",
-    srcs = [
-        "receive_socket.cc",
-        "send_socket.cc",
-        "socket.cc",
-    ],
-    hdrs = [
-        "receive_socket.h",
-        "send_socket.h",
-        "socket.h",
-    ],
-    deps = [
-        "//aos/common:time",
-        "//aos/common/logging",
-        "//aos/common/util:inet_addr",
-        "//aos/linux_code:configuration",
-    ],
-)
-
 cc_test(
     name = "team_number_test",
     srcs = [
