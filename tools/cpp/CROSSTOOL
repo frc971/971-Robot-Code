@@ -910,7 +910,8 @@ toolchain {
   linker_flag: "-lstdc++_nano"
   linker_flag: "-lm"
   linker_flag: "-lc_nano"
-  linker_flag: "-Tmotors/core/kinetis_192k.ld"
+  linker_flag: "-Tmotors/core/kinetis_512_256.ld"
+  linker_flag: "-Tmotors/core/kinetis_sections.ld"
   objcopy_embed_flag: "-I"
   objcopy_embed_flag: "binary"
   compilation_mode_flags {
@@ -1112,7 +1113,8 @@ toolchain {
   linker_flag: "-lstdc++_nano"
   linker_flag: "-lm"
   linker_flag: "-lc_nano"
-  linker_flag: "-Tmotors/core/kinetis_128k.ld"
+  linker_flag: "-Tmotors/core/kinetis_512_128.ld"
+  linker_flag: "-Tmotors/core/kinetis_sections.ld"
   objcopy_embed_flag: "-I"
   objcopy_embed_flag: "binary"
   compilation_mode_flags {

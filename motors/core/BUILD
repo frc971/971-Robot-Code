@@ -3,8 +3,9 @@ load("//tools:environments.bzl", "mcu_cpus")
 filegroup(
     name = "linkerscripts",
     srcs = [
-        "kinetis_128k.ld",
-        "kinetis_192k.ld",
+        "kinetis_512_128.ld",
+        "kinetis_512_256.ld",
+        "kinetis_sections.ld",
     ],
     visibility = ["//tools/cpp:__pkg__"],
 )

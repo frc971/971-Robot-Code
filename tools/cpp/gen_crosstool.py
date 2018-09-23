@@ -47,13 +47,16 @@ def main(args):
       '%NAME%': 'cortex-m4f',
       '%CPU%': '__MK64FX512__',
       '%F_CPU%': '120000000',
-      '%LINKER_SCRIPT%': 'motors/core/kinetis_192k.ld',
+      '%LINKER_SCRIPT%': 'motors/core/kinetis_512_256.ld',
       })
+  # TODO(Brian): The parts we actually use have 1M of FLASH. Do we want to take
+  # advantage, or maintain compatibility with alternative parts that use some
+  # of it for EEPROM/FlexMem/etc?
   add_m4f_toolchain(crosstool_proto.toolchain.add(), m4f_proto, {
       '%NAME%': 'cortex-m4f-k22',
       '%CPU%': '__MK22FX512__',
       '%F_CPU%': '120000000',
-      '%LINKER_SCRIPT%': 'motors/core/kinetis_128k.ld',
+      '%LINKER_SCRIPT%': 'motors/core/kinetis_512_128.ld',
       })
 
   with open(args[2], 'w') as f:

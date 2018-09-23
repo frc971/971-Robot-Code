@@ -42,12 +42,8 @@
   ((0 << 2) /* NMI always blocked */ | (0 << 1) /* EzPort disabled */ | \
    (1 << 0) /* Normal (not low-power) boot */)
 
-extern uint32_t __bss_ram_start__[];
-extern uint32_t __bss_ram_end__[];
-extern uint32_t __data_ram_start__[];
-extern uint32_t __data_ram_end__[];
-extern uint32_t __data_flash_start__[];
 extern uint32_t __heap_start__[];
+extern uint32_t __heap_end__[];
 extern uint32_t __stack_end__[];
 
 extern int main(void);
@@ -538,15 +534,28 @@ void ResetHandler(void) {
   SMC_PMPROT = SMC_PMPROT_AVLP | SMC_PMPROT_ALLS | SMC_PMPROT_AVLLS;
 
   {
-    uint32_t *src = __data_flash_start__;
-    uint32_t *dest = __data_ram_start__;
-    while (dest < __data_ram_end__) {
+    uint32_t *src, *dest, *end;
+    __asm__("ldr %0, =__data_flash_start__" :"=r"(src));
+    __asm__("ldr %0, =__data_ram_start__" :"=r"(dest));
+    __asm__("ldr %0, =__data_ram_end__" :"=r"(end));
+    while (dest < end) {
       *dest++ = *src++;
     }
   }
   {
-    uint32_t *dest = __bss_ram_start__;
-    while (dest < __bss_ram_end__) {
+    uint32_t *src, *dest, *end;
+    __asm__("ldr %0, =__sram_l_flash_start__" :"=r"(src));
+    __asm__("ldr %0, =__data_sram_l_start__" :"=r"(dest));
+    __asm__("ldr %0, =__data_sram_l_end__" :"=r"(end));
+    while (dest < end) {
+      *dest++ = *src++;
+    }
+  }
+  {
+    uint32_t *dest, *end;
+    __asm__("ldr %0, =__bss_ram_start__" :"=r"(dest));
+    __asm__("ldr %0, =__bss_ram_end__" :"=r"(end));
+    while (dest < end) {
       *dest++ = 0;
     }
   }
@@ -654,27 +663,12 @@ void ResetHandler(void) {
 
 char *__brkval = (char *)__heap_start__;
 
-#ifndef STACK_MARGIN
-#if defined(__MKL26Z64__)
-#define STACK_MARGIN 512
-#elif defined(__MK20DX128__)
-#define STACK_MARGIN 1024
-#elif defined(__MK20DX256__)
-#define STACK_MARGIN 4096
-#elif defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__MK22FX512__)
-#define STACK_MARGIN 8192
-#else
-#error
-#endif
-#endif
-
 void *_sbrk(int incr) {
-  char *prev, *stack;
+  char *prev;
 
   prev = __brkval;
   if (incr != 0) {
-    __asm__ volatile("mov %0, sp" : "=r"(stack)::);
-    if (prev + incr >= stack - STACK_MARGIN) {
+    if (prev + incr >= (char *)__heap_end__) {
       errno = ENOMEM;
       return (void *)-1;
     }
@@ -682,8 +676,6 @@ void *_sbrk(int incr) {
   }
   return prev;
 }
-
-#undef STACK_MARGIN
 
 __attribute__((weak)) int _read(int file, char *ptr, int len) {
   (void)file;
