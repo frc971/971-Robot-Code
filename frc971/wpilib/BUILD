@@ -21,8 +21,8 @@ cc_library(
     deps = [
         ":dma",
         ":dma_edge_counting",
-        "//aos/common:mutex",
-        "//aos/common/logging",
+        "//aos/mutex:mutex",
+        "//aos/logging",
         "//aos/linux_code:init",
         "//third_party:wpilib",
     ],
@@ -39,7 +39,7 @@ cc_library(
     restricted_to = ["//tools:roborio"],
     deps = [
         ":dma",
-        "//aos/common/logging",
+        "//aos/logging",
         "//third_party:wpilib",
     ],
 )
@@ -54,9 +54,9 @@ cc_library(
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
-        "//aos/common:stl_mutex",
-        "//aos/common:time",
-        "//aos/common/logging",
+        "//aos/stl_mutex:stl_mutex",
+        "//aos/time:time",
+        "//aos/logging",
         "//aos/linux_code:init",
         "//third_party:wpilib",
     ],
@@ -74,7 +74,7 @@ cc_library(
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
-        "//aos/common/logging",
+        "//aos/logging",
         "//third_party:wpilib",
     ],
 )
@@ -89,8 +89,8 @@ cc_library(
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
-        "//aos/common:time",
-        "//aos/common/logging",
+        "//aos/time:time",
+        "//aos/logging",
         "//third_party:wpilib",
     ],
 )
@@ -106,11 +106,11 @@ cc_library(
     restricted_to = ["//tools:roborio"],
     deps = [
         ":gyro_interface",
-        "//aos/common:time",
-        "//aos/common/logging",
-        "//aos/common/logging:queue_logging",
-        "//aos/common/messages:robot_state",
-        "//aos/common/util:phased_loop",
+        "//aos/time:time",
+        "//aos/logging",
+        "//aos/logging:queue_logging",
+        "//aos/robot_state:robot_state",
+        "//aos/util:phased_loop",
         "//aos/linux_code:init",
         "//frc971/queues:gyro",
         "//frc971/zeroing:averager",
@@ -127,8 +127,8 @@ cc_library(
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
-        "//aos/common:mutex",
-        "//aos/common:time",
+        "//aos/mutex:mutex",
+        "//aos/time:time",
         "//frc971/queues:gyro",
         "//third_party:wpilib",
     ],
@@ -143,10 +143,10 @@ cc_library(
         "loop_output_handler.h",
     ],
     deps = [
-        "//aos/common:scoped_fd",
-        "//aos/common:time",
-        "//aos/common/messages:robot_state",
-        "//aos/common/util:log_interval",
+        "//aos/scoped:scoped_fd",
+        "//aos/time:time",
+        "//aos/robot_state:robot_state",
+        "//aos/util:log_interval",
         "//aos/linux_code:init",
     ],
 )
@@ -161,9 +161,9 @@ cc_library(
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
-        "//aos/common/logging:queue_logging",
-        "//aos/common/messages:robot_state",
-        "//aos/common/network:team_number",
+        "//aos/logging:queue_logging",
+        "//aos/robot_state:robot_state",
+        "//aos/network:team_number",
         "//aos/linux_code:init",
         "//third_party:wpilib",
     ],
@@ -179,8 +179,8 @@ cc_library(
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
-        "//aos/common/logging:queue_logging",
-        "//aos/common/messages:robot_state",
+        "//aos/logging:queue_logging",
+        "//aos/robot_state:robot_state",
         "//third_party:wpilib",
     ],
 )
@@ -203,8 +203,8 @@ cc_library(
     restricted_to = ["//tools:roborio"],
     deps = [
         ":pdp_values",
-        "//aos/common/logging:queue_logging",
-        "//aos/common/util:phased_loop",
+        "//aos/logging:queue_logging",
+        "//aos/util:phased_loop",
         "//aos/linux_code:init",
         "//third_party:wpilib",
     ],
@@ -240,10 +240,10 @@ cc_library(
     deps = [
         ":imu_queue",
         ":spi_rx_clearer",
-        "//aos/common:time",
-        "//aos/common/logging",
-        "//aos/common/logging:queue_logging",
-        "//aos/common/messages:robot_state",
+        "//aos/time:time",
+        "//aos/logging",
+        "//aos/logging:queue_logging",
+        "//aos/robot_state:robot_state",
         "//aos/linux_code:init",
         "//frc971/zeroing:averager",
         "//third_party:wpilib",
@@ -273,6 +273,6 @@ cc_library(
         "spi_rx_clearer.h",
     ],
     deps = [
-        "//aos/common/logging",
+        "//aos/logging",
     ],
 )

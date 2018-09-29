@@ -8,7 +8,7 @@ queue_library(
     'auto.q',
   ],
   deps = [
-    '//aos/common/actions:action_queue',
+    '//aos/actions:action_queue',
   ],
 )
 
@@ -22,9 +22,9 @@ cc_library(
   ],
   deps = [
     ':auto_queue',
-    '//aos/common/actions:action_lib',
-    '//aos/common/util:phased_loop',
-    '//aos/common/logging',
+    '//aos/actions:action_lib',
+    '//aos/util:phased_loop',
+    '//aos/logging',
     '//frc971/control_loops/drivetrain:drivetrain_config',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
   ],

@@ -3,8 +3,8 @@ cc_library(
   name = "raw-event-loop",
   hdrs = ["raw-event-loop.h"],
   deps = [
-    "//aos/common:time",
-    "//aos/common:queues",
+    "//aos/time:time",
+    "//aos:queues",
   ],
 )
 
@@ -14,8 +14,8 @@ cc_library(
   srcs = ["event-loop-tmpl.h"],
   deps = [
     ":raw-event-loop",
-    "//aos/common:time",
-    "//aos/common:queues",
+    "//aos/time:time",
+    "//aos:queues",
   ],
 )
 
@@ -25,8 +25,8 @@ cc_library(
   srcs = ["shm-event-loop.cc"],
   deps = [
     ":event-loop",
-    "//aos/common:queues",
-    "//aos/common/logging:logging",
+    "//aos:queues",
+    "//aos/logging:logging",
   ],
 )
 
@@ -68,7 +68,7 @@ cc_library(
   srcs = ["simulated-event-loop.cc"],
   deps = [
     ":event-loop",
-    "//aos/common:queues",
+    "//aos:queues",
   ],
 )
 

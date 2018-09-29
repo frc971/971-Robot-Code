@@ -1,6 +1,6 @@
 #include "aos/events/shm-event-loop.h"
-#include "aos/common/logging/logging.h"
-#include "aos/common/queue.h"
+#include "aos/logging/logging.h"
+#include "aos/queue.h"
 
 #include <sys/timerfd.h>
 #include <atomic>

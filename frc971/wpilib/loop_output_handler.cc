@@ -7,7 +7,7 @@
 #include <thread>
 
 #include "aos/linux_code/init.h"
-#include "aos/common/messages/robot_state.q.h"
+#include "aos/robot_state/robot_state.q.h"
 
 namespace frc971 {
 namespace wpilib {

@@ -9,7 +9,7 @@ cc_binary(
   ],
   deps = [
     ':claw_queue',
-    '//aos/common/controls:replay_control_loop',
+    '//aos/controls:replay_control_loop',
     '//aos/linux_code:init',
   ],
 )
@@ -20,7 +20,7 @@ queue_library(
     'claw.q',
   ],
   deps = [
-    '//aos/common/controls:control_loop_queues',
+    '//aos/controls:control_loop_queues',
     '//frc971/control_loops:queues',
   ],
 )
@@ -50,11 +50,11 @@ cc_library(
   ],
   deps = [
     ':claw_queue',
-    '//aos/common/controls:control_loop',
-    '//aos/common/controls:polytope',
-    '//aos/common/logging:queue_logging',
-    '//aos/common/logging:matrix_logging',
-    '//aos/common:math',
+    '//aos/controls:control_loop',
+    '//aos/controls:polytope',
+    '//aos/logging:queue_logging',
+    '//aos/logging:matrix_logging',
+    '//aos:math',
     '//frc971/control_loops:state_feedback_loop',
     '//frc971/control_loops:coerce_goal',
     '//frc971/control_loops:hall_effect_tracker',
@@ -73,7 +73,7 @@ cc_test(
   deps = [
     ':claw_lib',
     ':claw_queue',
-    '//aos/common/controls:control_loop_test',
+    '//aos/controls:control_loop_test',
     '//aos/testing:googletest',
     '//frc971/control_loops:state_feedback_loop',
     '//frc971/control_loops:team_number_test_environment',
@@ -88,7 +88,7 @@ cc_binary(
   deps = [
     '//aos/linux_code:init',
     ':claw_queue',
-    '//aos/common/controls:control_loop',
+    '//aos/controls:control_loop',
     '//y2014:constants',
   ],
 )

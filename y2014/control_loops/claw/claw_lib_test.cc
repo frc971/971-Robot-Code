@@ -3,7 +3,7 @@
 #include <chrono>
 #include <memory>
 
-#include "aos/common/controls/control_loop_test.h"
+#include "aos/controls/control_loop_test.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
 #include "y2014/constants.h"

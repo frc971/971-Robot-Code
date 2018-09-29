@@ -5,11 +5,11 @@
 
 #include <Eigen/Dense>
 
-#include "aos/common/util/phased_loop.h"
-#include "aos/common/logging/logging.h"
-#include "aos/common/util/trapezoid_profile.h"
-#include "aos/common/commonmath.h"
-#include "aos/common/time.h"
+#include "aos/util/phased_loop.h"
+#include "aos/logging/logging.h"
+#include "aos/util/trapezoid_profile.h"
+#include "aos/commonmath.h"
+#include "aos/time/time.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2014/actors/drivetrain_actor.h"

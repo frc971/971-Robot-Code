@@ -4,8 +4,8 @@ cc_binary(
     name = "image_streamer",
     srcs = ["image_streamer.cc"],
     deps = [
-        "//aos/common/logging",
-        "//aos/common/logging:implementations",
+        "//aos/logging",
+        "//aos/logging:implementations",
         "//aos/vision/blob:codec",
         "//aos/vision/events:epoll_events",
         "//aos/vision/events:socket_types",
@@ -33,9 +33,9 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":vision_queue",
-        "//aos/common:time",
-        "//aos/common/logging",
-        "//aos/common/logging:queue_logging",
+        "//aos/time:time",
+        "//aos/logging",
+        "//aos/logging:queue_logging",
         "//aos/linux_code:init",
         "//aos/vision/events:udp",
         "//y2018:vision_proto",

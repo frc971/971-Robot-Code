@@ -1,4 +1,4 @@
-#include "aos/common/controls/replay_control_loop.h"
+#include "aos/controls/replay_control_loop.h"
 #include "aos/linux_code/init.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"

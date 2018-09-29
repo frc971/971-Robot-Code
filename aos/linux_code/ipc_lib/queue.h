@@ -2,10 +2,10 @@
 #define AOS_LINUX_CODE_IPC_LIB_QUEUE_H_
 
 #include "aos/linux_code/ipc_lib/shared_mem.h"
-#include "aos/common/mutex.h"
-#include "aos/common/condition.h"
-#include "aos/common/util/options.h"
-#include "aos/common/logging/logging.h"
+#include "aos/mutex/mutex.h"
+#include "aos/condition.h"
+#include "aos/util/options.h"
+#include "aos/logging/logging.h"
 
 // TODO(brians) add valgrind client requests to the queue and shared_mem_malloc
 // code to make checking for leaks work better

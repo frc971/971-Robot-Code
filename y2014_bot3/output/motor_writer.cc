@@ -3,12 +3,12 @@
 #include <unistd.h>
 
 #include "aos/output/motor_output.h"
-#include "aos/common/logging/logging.h"
+#include "aos/logging/logging.h"
 #include "aos/linux_code/init.h"
-#include "aos/common/util/log_interval.h"
-#include "aos/common/time.h"
-#include "aos/common/logging/queue_logging.h"
-#include "aos/common/controls/output_check.q.h"
+#include "aos/util/log_interval.h"
+#include "aos/time/time.h"
+#include "aos/logging/queue_logging.h"
+#include "aos/controls/output_check.q.h"
 
 #include "bot3/control_loops/drivetrain/drivetrain.q.h"
 #include "bot3/control_loops/rollers/rollers.q.h"

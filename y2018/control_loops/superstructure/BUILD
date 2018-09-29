@@ -8,7 +8,7 @@ queue_library(
         "superstructure.q",
     ],
     deps = [
-        "//aos/common/controls:control_loop_queues",
+        "//aos/controls:control_loop_queues",
         "//frc971/control_loops:queues",
     ],
 )
@@ -23,7 +23,7 @@ cc_library(
     ],
     deps = [
         ":superstructure_queue",
-        "//aos/common/controls:control_loop",
+        "//aos/controls:control_loop",
         "//frc971/control_loops:queues",
         "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//y2018:constants",
@@ -42,10 +42,10 @@ cc_test(
     deps = [
         ":superstructure_lib",
         ":superstructure_queue",
-        "//aos/common:math",
-        "//aos/common:queues",
-        "//aos/common:time",
-        "//aos/common/controls:control_loop_test",
+        "//aos:math",
+        "//aos:queues",
+        "//aos/time:time",
+        "//aos/controls:control_loop_test",
         "//aos/testing:googletest",
         "//frc971/control_loops:position_sensor_sim",
         "//frc971/control_loops:team_number_test_environment",

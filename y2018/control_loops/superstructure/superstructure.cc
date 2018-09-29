@@ -2,8 +2,8 @@
 
 #include <chrono>
 
-#include "aos/common/controls/control_loops.q.h"
-#include "aos/common/logging/logging.h"
+#include "aos/controls/control_loops.q.h"
+#include "aos/logging/logging.h"
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2018/constants.h"

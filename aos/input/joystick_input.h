@@ -3,7 +3,7 @@
 
 #include <atomic>
 
-#include "aos/common/input/driver_station_data.h"
+#include "aos/input/driver_station_data.h"
 
 namespace aos {
 namespace input {

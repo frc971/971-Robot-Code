@@ -1,7 +1,7 @@
 #include "y2018/control_loops/superstructure/arm/trajectory.h"
 
 #include "Eigen/Dense"
-#include "aos/common/logging/logging.h"
+#include "aos/logging/logging.h"
 #include "frc971/control_loops/dlqr.h"
 #include "frc971/control_loops/jacobian.h"
 #include "third_party/gflags/include/gflags/gflags.h"

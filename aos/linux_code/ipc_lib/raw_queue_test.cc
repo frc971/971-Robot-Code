@@ -12,14 +12,14 @@
 #include "gtest/gtest.h"
 
 #include "aos/linux_code/ipc_lib/core_lib.h"
-#include "aos/common/type_traits.h"
+#include "aos/type_traits/type_traits.h"
 #include "aos/testing/test_shm.h"
-#include "aos/common/time.h"
-#include "aos/common/logging/logging.h"
-#include "aos/common/die.h"
-#include "aos/common/util/thread.h"
-#include "aos/common/util/options.h"
-#include "aos/common/util/death_test_log_implementation.h"
+#include "aos/time/time.h"
+#include "aos/logging/logging.h"
+#include "aos/die.h"
+#include "aos/util/thread.h"
+#include "aos/util/options.h"
+#include "aos/util/death_test_log_implementation.h"
 #include "aos/testing/prevent_exit.h"
 
 using ::testing::AssertionResult;

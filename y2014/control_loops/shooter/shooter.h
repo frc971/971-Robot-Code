@@ -3,9 +3,9 @@
 
 #include <memory>
 
-#include "aos/common/controls/control_loop.h"
+#include "aos/controls/control_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-#include "aos/common/time.h"
+#include "aos/time/time.h"
 
 #include "y2014/constants.h"
 #include "y2014/control_loops/shooter/shooter_motor_plant.h"

@@ -1,7 +1,7 @@
 #include "frc971/control_loops/drivetrain/polydrivetrain.h"
 
-#include "aos/common/commonmath.h"
-#include "aos/common/controls/polytope.h"
+#include "aos/commonmath.h"
+#include "aos/controls/polytope.h"
 #include "frc971/control_loops/coerce_goal.h"
 #ifdef __linux__
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"

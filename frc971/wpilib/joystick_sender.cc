@@ -1,9 +1,9 @@
 #include "frc971/wpilib/joystick_sender.h"
 
-#include "aos/common/messages/robot_state.q.h"
+#include "aos/robot_state/robot_state.q.h"
 #include "aos/linux_code/init.h"
-#include "aos/common/network/team_number.h"
-#include "aos/common/logging/queue_logging.h"
+#include "aos/network/team_number.h"
+#include "aos/logging/queue_logging.h"
 
 #include "DriverStation.h"
 #if defined(WPILIB2017) || defined(WPILIB2018)

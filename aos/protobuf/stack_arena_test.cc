@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 
-#include "aos/common/logging/logging.h"
+#include "aos/logging/logging.h"
 #include "aos/protobuf/stack_arena.h"
 #include "aos/testing/test_logging.h"
 

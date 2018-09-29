@@ -3,9 +3,9 @@
 #include <string.h>
 #include <atomic>
 
-#include "aos/common/messages/robot_state.q.h"
-#include "aos/common/logging/logging.h"
-#include "aos/common/logging/queue_logging.h"
+#include "aos/robot_state/robot_state.q.h"
+#include "aos/logging/logging.h"
+#include "aos/logging/queue_logging.h"
 
 namespace aos {
 namespace input {

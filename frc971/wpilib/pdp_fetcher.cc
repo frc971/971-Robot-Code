@@ -2,9 +2,9 @@
 
 #include <chrono>
 
-#include "aos/common/logging/queue_logging.h"
+#include "aos/logging/queue_logging.h"
 #include "aos/linux_code/init.h"
-#include "aos/common/util/phased_loop.h"
+#include "aos/util/phased_loop.h"
 #include "frc971/wpilib/pdp_values.q.h"
 
 namespace frc971 {

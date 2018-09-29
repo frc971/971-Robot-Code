@@ -2,7 +2,7 @@
 
 #include <chrono>
 
-#include "aos/common/time.h"
+#include "aos/time/time.h"
 #include "aos/linux_code/init.h"
 
 namespace frc971 {

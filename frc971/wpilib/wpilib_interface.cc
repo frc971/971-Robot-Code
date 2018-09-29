@@ -1,7 +1,7 @@
 #include "frc971/wpilib/wpilib_interface.h"
 
-#include "aos/common/messages/robot_state.q.h"
-#include "aos/common/logging/queue_logging.h"
+#include "aos/robot_state/robot_state.q.h"
+#include "aos/logging/queue_logging.h"
 
 #include <HAL/HAL.h>
 

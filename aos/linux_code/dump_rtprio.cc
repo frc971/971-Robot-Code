@@ -16,9 +16,9 @@
 
 #include <string>
 
-#include "aos/common/logging/logging.h"
-#include "aos/common/logging/implementations.h"
-#include "aos/common/time.h"
+#include "aos/logging/logging.h"
+#include "aos/logging/implementations.h"
+#include "aos/time/time.h"
 
 namespace {
 

@@ -9,9 +9,9 @@
 #include <thread>
 #include <vector>
 
-#include "aos/common/logging/implementations.h"
-#include "aos/common/logging/logging.h"
-#include "aos/common/time.h"
+#include "aos/logging/implementations.h"
+#include "aos/logging/logging.h"
+#include "aos/time/time.h"
 #include "aos/vision/blob/codec.h"
 #include "aos/vision/blob/find_blob.h"
 #include "aos/vision/blob/range_image.h"

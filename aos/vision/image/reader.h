@@ -5,7 +5,7 @@
 #include <functional>
 #include <string>
 
-#include "aos/common/time.h"
+#include "aos/time/time.h"
 #include "aos/vision/image/V4L2.h"
 #include "aos/vision/image/camera_params.pb.h"
 #include "aos/vision/image/image_types.h"

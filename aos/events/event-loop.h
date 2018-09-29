@@ -2,8 +2,8 @@
 #define _AOS_EVENTS_EVENT_LOOP_H_
 
 #include <string>
-#include "aos/common/queue.h"
-#include "aos/common/time.h"
+#include "aos/queue.h"
+#include "aos/time/time.h"
 #include "aos/events/raw-event-loop.h"
 
 namespace aos {

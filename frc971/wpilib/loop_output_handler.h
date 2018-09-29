@@ -4,9 +4,9 @@
 #include <atomic>
 #include <chrono>
 
-#include "aos/common/scoped_fd.h"
-#include "aos/common/time.h"
-#include "aos/common/util/log_interval.h"
+#include "aos/scoped/scoped_fd.h"
+#include "aos/time/time.h"
+#include "aos/util/log_interval.h"
 
 namespace frc971 {
 namespace wpilib {

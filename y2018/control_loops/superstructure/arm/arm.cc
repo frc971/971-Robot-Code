@@ -3,8 +3,8 @@
 #include <chrono>
 #include <iostream>
 
-#include "aos/common/logging/logging.h"
-#include "aos/common/logging/queue_logging.h"
+#include "aos/logging/logging.h"
+#include "aos/logging/queue_logging.h"
 #include "y2018/constants.h"
 #include "y2018/control_loops/superstructure/arm/demo_path.h"
 #include "y2018/control_loops/superstructure/arm/dynamics.h"

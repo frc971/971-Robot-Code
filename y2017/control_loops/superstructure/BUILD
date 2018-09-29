@@ -8,7 +8,7 @@ queue_library(
     'superstructure.q',
   ],
   deps = [
-    '//aos/common/controls:control_loop_queues',
+    '//aos/controls:control_loop_queues',
     '//frc971/control_loops:profiled_subsystem_queue',
     '//frc971/control_loops:queues',
   ],
@@ -25,7 +25,7 @@ cc_library(
   deps = [
     ':vision_distance_average',
     ':superstructure_queue',
-    '//aos/common/controls:control_loop',
+    '//aos/controls:control_loop',
     '//y2017/control_loops/superstructure/column',
     '//y2017/control_loops/superstructure/hood',
     '//y2017/control_loops/superstructure/intake',
@@ -42,10 +42,10 @@ cc_test(
   deps = [
     ':superstructure_queue',
     ':superstructure_lib',
-    '//aos/common/controls:control_loop_test',
-    '//aos/common:math',
-    '//aos/common:queues',
-    '//aos/common:time',
+    '//aos/controls:control_loop_test',
+    '//aos:math',
+    '//aos:queues',
+    '//aos/time:time',
     '//aos/testing:googletest',
     '//frc971/control_loops:position_sensor_sim',
     '//frc971/control_loops:team_number_test_environment',
@@ -78,7 +78,7 @@ cc_library(
   ],
   deps = [
     ':superstructure_queue',
-    '//aos/common:ring_buffer',
+    '//aos/ring_buffer:ring_buffer',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//y2017/control_loops/drivetrain:polydrivetrain_plants',
     '//y2017/vision:vision_queue',
@@ -92,7 +92,7 @@ cc_test(
   ],
   deps = [
     ':vision_time_adjuster',
-    '//aos/common:time',
+    '//aos/time:time',
     '//aos/testing:googletest',
     '//aos/testing:test_shm',
   ],
@@ -104,8 +104,8 @@ cc_library(
     'vision_distance_average.h',
   ],
   deps = [
-    '//aos/common:time',
-    '//aos/common:ring_buffer',
+    '//aos/time:time',
+    '//aos/ring_buffer:ring_buffer',
     '//y2017/vision:vision_queue',
   ],
 )
@@ -117,7 +117,7 @@ cc_test(
   ],
   deps = [
     ':vision_distance_average',
-    '//aos/common:time',
+    '//aos/time:time',
     '//aos/testing:googletest',
   ],
 )

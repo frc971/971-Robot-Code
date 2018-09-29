@@ -1,6 +1,6 @@
 package y2012.control_loops;
 
-import "aos/common/controls/control_loops.q";
+import "aos/controls/control_loops.q";
 
 queue_group AccessoriesQueue {
   implements aos.control_loops.ControlLoop;

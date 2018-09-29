@@ -5,8 +5,8 @@
 #include <fstream>
 #include <string>
 
-#include "aos/common/logging/implementations.h"
-#include "aos/common/logging/logging.h"
+#include "aos/logging/implementations.h"
+#include "aos/logging/logging.h"
 #include "aos/vision/blob/codec.h"
 #include "aos/vision/events/socket_types.h"
 #include "aos/vision/events/udp.h"

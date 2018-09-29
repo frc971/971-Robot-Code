@@ -25,7 +25,7 @@ cc_library(
         "//tools:armhf-debian",
     ],
     deps = [
-        "//aos/common/logging",
+        "//aos/logging",
     ],
 )
 

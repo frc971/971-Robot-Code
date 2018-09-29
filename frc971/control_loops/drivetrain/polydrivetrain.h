@@ -1,17 +1,17 @@
 #ifndef FRC971_CONTROL_LOOPS_DRIVETRAIN_POLYDRIVETRAIN_H_
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_POLYDRIVETRAIN_H_
 
-#include "aos/common/controls/polytope.h"
+#include "aos/controls/polytope.h"
 
-#include "aos/common/commonmath.h"
+#include "aos/commonmath.h"
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/drivetrain/gear.h"
 #ifdef __linux__
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "aos/common/logging/logging.h"
-#include "aos/common/logging/matrix_logging.h"
-#include "aos/common/logging/queue_logging.h"
-#include "aos/common/messages/robot_state.q.h"
+#include "aos/logging/logging.h"
+#include "aos/logging/matrix_logging.h"
+#include "aos/logging/queue_logging.h"
+#include "aos/robot_state/robot_state.q.h"
 #else
 #include "frc971/control_loops/drivetrain/drivetrain_uc.q.h"
 #endif  // __linux__

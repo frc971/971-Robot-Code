@@ -12,8 +12,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "aos/common/logging/logging.h"
-#include "aos/common/time.h"
+#include "aos/logging/logging.h"
+#include "aos/time/time.h"
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 

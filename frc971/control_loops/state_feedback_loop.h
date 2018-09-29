@@ -13,9 +13,9 @@
 #include "unsupported/Eigen/MatrixFunctions"
 
 #if defined(__linux__)
-#include "aos/common/logging/logging.h"
+#include "aos/logging/logging.h"
 #endif
-#include "aos/common/macros.h"
+#include "aos/macros.h"
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs,
           typename PlantType, typename ObserverType, typename Scalar>

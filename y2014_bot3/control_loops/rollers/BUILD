@@ -8,7 +8,7 @@ queue_library(
     'rollers.q',
   ],
   deps = [
-    '//aos/common/controls:control_loop_queues',
+    '//aos/controls:control_loop_queues',
     '//frc971/control_loops:queues',
   ],
 )
@@ -23,8 +23,8 @@ cc_library(
   ],
   deps = [
     ':rollers_queue',
-    '//aos/common/logging',
-    '//aos/common/controls:control_loop',
+    '//aos/logging',
+    '//aos/controls:control_loop',
   ],
 )
 

@@ -4,7 +4,7 @@
 #include <sched.h>
 #endif
 
-#include "aos/common/type_traits.h"
+#include "aos/type_traits/type_traits.h"
 
 // It doesn't use pthread_once, because Brian looked at the pthreads
 // implementation for vxworks and noticed that it is completely and entirely

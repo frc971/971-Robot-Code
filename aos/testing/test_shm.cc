@@ -2,8 +2,8 @@
 
 #include <sys/mman.h>
 
-#include "aos/common/queue.h"
-#include "aos/common/logging/logging.h"
+#include "aos/queue.h"
+#include "aos/logging/logging.h"
 #include "aos/testing/test_logging.h"
 
 namespace aos {

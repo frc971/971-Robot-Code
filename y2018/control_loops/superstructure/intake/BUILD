@@ -39,9 +39,9 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":intake_plants",
-        "//aos/common:math",
-        "//aos/common/controls:control_loop",
-        "//aos/common/logging:queue_logging",
+        "//aos:math",
+        "//aos/controls:control_loop",
+        "//aos/logging:queue_logging",
         "//frc971/control_loops:queues",
         "//frc971/zeroing",
         "//y2018:constants",

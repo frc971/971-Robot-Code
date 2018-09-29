@@ -7,8 +7,8 @@
 #include <vector>
 #include <sys/epoll.h>
 
-#include "aos/common/scoped_fd.h"
-#include "aos/common/time.h"
+#include "aos/scoped/scoped_fd.h"
+#include "aos/time/time.h"
 
 namespace aos {
 namespace events {

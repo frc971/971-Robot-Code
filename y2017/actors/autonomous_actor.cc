@@ -5,8 +5,8 @@
 #include <chrono>
 #include <cmath>
 
-#include "aos/common/util/phased_loop.h"
-#include "aos/common/logging/logging.h"
+#include "aos/util/phased_loop.h"
+#include "aos/logging/logging.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2017/control_loops/drivetrain/drivetrain_base.h"

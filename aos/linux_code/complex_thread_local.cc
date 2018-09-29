@@ -2,7 +2,7 @@
 
 #include <pthread.h>
 
-#include "aos/common/die.h"
+#include "aos/die.h"
 #include "aos/once.h"
 
 #define SIMPLE_CHECK(call)              \

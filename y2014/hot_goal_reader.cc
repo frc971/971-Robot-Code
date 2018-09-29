@@ -6,11 +6,11 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "aos/common/time.h"
-#include "aos/common/logging/queue_logging.h"
-#include "aos/common/logging/logging.h"
+#include "aos/time/time.h"
+#include "aos/logging/queue_logging.h"
+#include "aos/logging/logging.h"
 #include "aos/linux_code/init.h"
-#include "aos/common/byteorder.h"
+#include "aos/byteorder.h"
 
 #include "y2014/queues/hot_goal.q.h"
 

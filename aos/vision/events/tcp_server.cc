@@ -13,7 +13,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "aos/common/logging/logging.h"
+#include "aos/logging/logging.h"
 
 namespace aos {
 namespace events {

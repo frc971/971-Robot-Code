@@ -3,8 +3,8 @@
 
 #include <memory>
 
-#include "aos/common/controls/control_loop.h"
-#include "aos/common/controls/polytope.h"
+#include "aos/controls/control_loop.h"
+#include "aos/controls/polytope.h"
 #include "y2014/constants.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/coerce_goal.h"

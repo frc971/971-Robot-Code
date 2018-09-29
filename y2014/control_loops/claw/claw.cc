@@ -2,11 +2,11 @@
 
 #include <algorithm>
 
-#include "aos/common/controls/control_loops.q.h"
-#include "aos/common/logging/logging.h"
-#include "aos/common/logging/queue_logging.h"
-#include "aos/common/logging/matrix_logging.h"
-#include "aos/common/commonmath.h"
+#include "aos/controls/control_loops.q.h"
+#include "aos/logging/logging.h"
+#include "aos/logging/queue_logging.h"
+#include "aos/logging/matrix_logging.h"
+#include "aos/commonmath.h"
 
 #include "y2014/constants.h"
 #include "y2014/control_loops/claw/claw_motor_plant.h"

@@ -8,8 +8,8 @@
 #include <ifaddrs.h>
 #include <unistd.h>
 
-#include "aos/common/logging/logging.h"
-#include "aos/common/unique_malloc_ptr.h"
+#include "aos/logging/logging.h"
+#include "aos/unique_malloc_ptr.h"
 #include "aos/once.h"
 
 namespace aos {

@@ -43,8 +43,8 @@ cc_test(
     ],
     deps = [
         ":zeroing",
-        "//aos/common:die",
-        "//aos/common/util:thread",
+        "//aos:die",
+        "//aos/util:thread",
         "//aos/testing:googletest",
         "//aos/testing:test_shm",
         "//frc971/control_loops:position_sensor_sim",

@@ -2,10 +2,10 @@
 
 #include <chrono>
 
-#include "aos/common/commonmath.h"
-#include "aos/common/controls/control_loops.q.h"
-#include "aos/common/logging/logging.h"
-#include "aos/common/logging/queue_logging.h"
+#include "aos/commonmath.h"
+#include "aos/controls/control_loops.q.h"
+#include "aos/logging/logging.h"
+#include "aos/logging/queue_logging.h"
 
 #include "y2018/constants.h"
 #include "y2018/control_loops/superstructure/intake/intake_delayed_plant.h"

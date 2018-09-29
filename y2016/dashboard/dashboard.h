@@ -12,9 +12,9 @@
 #include "seasocks/WebSocket.h"
 
 #include "aos/linux_code/init.h"
-#include "aos/common/time.h"
-#include "aos/common/util/phased_loop.h"
-#include "aos/common/mutex.h"
+#include "aos/time/time.h"
+#include "aos/util/phased_loop.h"
+#include "aos/mutex/mutex.h"
 
 namespace y2016 {
 namespace dashboard {

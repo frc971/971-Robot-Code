@@ -9,9 +9,9 @@ cc_library(
         "autonomous_actor.h",
     ],
     deps = [
-        "//aos/common/actions:action_lib",
-        "//aos/common/logging",
-        "//aos/common/util:phased_loop",
+        "//aos/actions:action_lib",
+        "//aos/logging",
+        "//aos/util:phased_loop",
         "//frc971/autonomous:base_autonomous_actor",
         "//frc971/control_loops/drivetrain:drivetrain_config",
         "//frc971/control_loops/drivetrain:drivetrain_queue",

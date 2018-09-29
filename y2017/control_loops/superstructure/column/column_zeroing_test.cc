@@ -2,7 +2,7 @@
 #include <memory>
 #include <random>
 
-#include "aos/common/die.h"
+#include "aos/die.h"
 #include "aos/testing/test_shm.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"

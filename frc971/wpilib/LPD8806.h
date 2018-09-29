@@ -4,7 +4,7 @@
 #include <memory>
 #include <atomic>
 
-#include "aos/common/mutex.h"
+#include "aos/mutex/mutex.h"
 
 #include "SPI.h"
 #undef ERROR

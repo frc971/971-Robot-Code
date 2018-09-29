@@ -13,7 +13,7 @@ cc_library(
         "team_number_test_environment.h",
     ],
     deps = [
-        "//aos/common/network:team_number",
+        "//aos/network:team_number",
         "//aos/testing:googletest",
     ],
 )
@@ -57,7 +57,7 @@ cc_test(
     deps = [
         ":position_sensor_sim",
         ":queues",
-        "//aos/common/logging",
+        "//aos/logging",
         "//aos/testing:googletest",
     ],
 )
@@ -104,7 +104,7 @@ cc_library(
     ],
     restricted_to = mcu_cpus,
     deps = [
-        "//aos/common/controls:polytope_uc",
+        "//aos/controls:polytope_uc",
         "//third_party/eigen",
     ],
 )
@@ -121,7 +121,7 @@ cc_library(
         "-lm",
     ],
     deps = [
-        "//aos/common/controls:polytope",
+        "//aos/controls:polytope",
         "//third_party/eigen",
     ],
 )
@@ -135,7 +135,7 @@ cc_library(
     ],
     restricted_to = mcu_cpus,
     deps = [
-        "//aos/common:macros",
+        "//aos:macros",
         "//third_party/eigen",
     ],
 )
@@ -149,8 +149,8 @@ cc_library(
         "//tools:armhf-debian",
     ],
     deps = [
-        "//aos/common:macros",
-        "//aos/common/logging",
+        "//aos:macros",
+        "//aos/logging",
         "//third_party/eigen",
     ],
 )
@@ -162,9 +162,9 @@ cc_library(
     ],
     deps = [
         ":state_feedback_loop",
-        "//aos/common:macros",
-        "//aos/common/controls:control_loop",
-        "//aos/common/logging",
+        "//aos:macros",
+        "//aos/controls:control_loop",
+        "//aos/logging",
         "//third_party/eigen",
     ],
 )
@@ -224,8 +224,8 @@ cc_library(
         ":profiled_subsystem_queue",
         ":simple_capped_state_feedback_loop",
         ":state_feedback_loop",
-        "//aos/common/controls:control_loop",
-        "//aos/common/util:trapezoid_profile",
+        "//aos/controls:control_loop",
+        "//aos/util:trapezoid_profile",
         "//frc971/zeroing",
     ],
 )

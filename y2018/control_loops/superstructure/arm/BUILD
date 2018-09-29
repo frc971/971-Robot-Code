@@ -9,7 +9,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":dynamics",
-        "//aos/common/logging",
+        "//aos/logging",
         "//frc971/control_loops:dlqr",
         "//frc971/control_loops:jacobian",
         "//third_party/eigen",
@@ -129,7 +129,7 @@ cc_library(
         ":generated_graph",
         ":graph",
         ":trajectory",
-        "//aos/common/logging:queue_logging",
+        "//aos/logging:queue_logging",
         "//frc971/zeroing",
         "//y2018:constants",
         "//y2018/control_loops/superstructure:superstructure_queue",

@@ -6,8 +6,8 @@
 #include <thread>
 #include <vector>
 
-#include "aos/common/stl_mutex.h"
-#include "aos/common/macros.h"
+#include "aos/stl_mutex/stl_mutex.h"
+#include "aos/macros.h"
 
 #include "DigitalInput.h"
 #include "Encoder.h"

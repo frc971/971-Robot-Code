@@ -16,12 +16,12 @@ cc_binary(
   deps = [
     '//aos/linux_code:init',
     '//third_party/libevent',
-    '//aos/common/logging',
-    '//aos/common/logging:implementations',
+    '//aos/logging',
+    '//aos/logging:implementations',
     '//aos:once',
-    '//aos/common:time',
-    '//aos/common/libc:aos_strsignal',
-    '//aos/common/util:run_command',
-    '//aos/common:unique_malloc_ptr',
+    '//aos/time:time',
+    '//aos/libc:aos_strsignal',
+    '//aos/util:run_command',
+    '//aos:unique_malloc_ptr',
   ],
 )

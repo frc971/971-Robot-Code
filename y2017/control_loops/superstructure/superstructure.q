@@ -1,6 +1,6 @@
 package y2017.control_loops;
 
-import "aos/common/controls/control_loops.q";
+import "aos/controls/control_loops.q";
 import "frc971/control_loops/profiled_subsystem.q";
 // TODO(austin): Add this back in when the queue compiler supports diamond
 // inheritance.

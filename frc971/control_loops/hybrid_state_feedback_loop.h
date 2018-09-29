@@ -12,9 +12,9 @@
 #include "Eigen/Dense"
 #include "unsupported/Eigen/MatrixFunctions"
 
-#include "aos/common/controls/control_loop.h"
-#include "aos/common/logging/logging.h"
-#include "aos/common/macros.h"
+#include "aos/controls/control_loop.h"
+#include "aos/logging/logging.h"
+#include "aos/macros.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs,

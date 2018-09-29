@@ -8,7 +8,7 @@ queue_library(
     'shooter.q',
   ],
   deps = [
-    '//aos/common/controls:control_loop_queues',
+    '//aos/controls:control_loop_queues',
     '//frc971/control_loops:queues',
   ],
 )
@@ -54,7 +54,7 @@ cc_library(
   deps = [
     ':shooter_queue',
     ':shooter_plants',
-    '//aos/common/controls:control_loop',
+    '//aos/controls:control_loop',
   ],
 )
 
@@ -67,8 +67,8 @@ cc_test(
     ':shooter_queue',
     ':shooter_lib',
     '//aos/testing:googletest',
-    '//aos/common:queues',
-    '//aos/common/controls:control_loop_test',
+    '//aos:queues',
+    '//aos/controls:control_loop_test',
     '//frc971/control_loops:state_feedback_loop',
     '//frc971/control_loops:team_number_test_environment',
   ],

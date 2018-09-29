@@ -14,7 +14,7 @@ WriteIffChanged.open(ARGV[0]) do |output|
 
 #include <stdint.h>
 
-#include "aos/common/time.h"
+#include "aos/time/time.h"
 
 namespace aos {
 namespace queue_primitive_types {

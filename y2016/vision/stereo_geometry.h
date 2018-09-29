@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "aos/common/logging/logging.h"
+#include "aos/logging/logging.h"
 #include "aos/vision/math/vector.h"
 
 #include "y2016/vision/calibration.pb.h"

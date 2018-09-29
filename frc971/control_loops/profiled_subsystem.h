@@ -8,8 +8,8 @@
 
 #include "Eigen/Dense"
 
-#include "aos/common/controls/control_loop.h"
-#include "aos/common/util/trapezoid_profile.h"
+#include "aos/controls/control_loop.h"
+#include "aos/util/trapezoid_profile.h"
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/profiled_subsystem.q.h"
 #include "frc971/control_loops/simple_capped_state_feedback_loop.h"

@@ -7,7 +7,7 @@
 #include <vector>
 #include <memory>
 
-#include "aos/common/macros.h"
+#include "aos/macros.h"
 #include "motors/core/kinetis.h"
 #include "motors/usb/constants.h"
 #include "motors/util.h"

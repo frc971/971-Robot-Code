@@ -3,8 +3,8 @@
 
 #include <memory>
 
-#include "aos/common/controls/control_loop.h"
-#include "aos/common/time.h"
+#include "aos/controls/control_loop.h"
+#include "aos/time/time.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 
 #include "y2016/control_loops/shooter/shooter_integral_plant.h"

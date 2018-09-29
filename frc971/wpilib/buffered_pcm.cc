@@ -5,7 +5,7 @@
 #include <HAL/HAL.h>
 #include <HAL/Ports.h>
 #include <HAL/Solenoid.h>
-#include "aos/common/logging/logging.h"
+#include "aos/logging/logging.h"
 
 namespace frc971 {
 namespace wpilib {

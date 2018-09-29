@@ -6,9 +6,9 @@
 #include <memory>
 #include "Eigen/Dense"
 
-#include "aos/common/logging/logging.h"
-#include "aos/common/logging/queue_logging.h"
-#include "aos/common/logging/matrix_logging.h"
+#include "aos/logging/logging.h"
+#include "aos/logging/queue_logging.h"
+#include "aos/logging/matrix_logging.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/polydrivetrain.h"

@@ -8,8 +8,8 @@
 #include <string>
 #include <vector>
 
-#include "aos/common/macros.h"
-#include "aos/common/scoped_fd.h"
+#include "aos/macros.h"
+#include "aos/scoped/scoped_fd.h"
 
 namespace aos {
 namespace events {

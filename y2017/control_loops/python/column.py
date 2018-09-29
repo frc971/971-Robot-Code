@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from aos.common.util.trapezoid_profile import TrapezoidProfile
+from aos.util.trapezoid_profile import TrapezoidProfile
 from frc971.control_loops.python import control_loop
 from frc971.control_loops.python import controls
 from y2017.control_loops.python import turret

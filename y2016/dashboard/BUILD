@@ -25,9 +25,9 @@ cc_binary(
   deps = [
     ':gen_embedded',
     '//aos/linux_code:init',
-    '//aos/common/logging',
-    '//aos/common/util:phased_loop',
-    '//aos/common:time',
+    '//aos/logging',
+    '//aos/util:phased_loop',
+    '//aos/time:time',
     '//frc971/autonomous:auto_queue',
     '//third_party/seasocks',
     '//y2016/vision:vision_queue',

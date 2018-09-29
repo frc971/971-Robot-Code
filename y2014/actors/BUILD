@@ -16,7 +16,7 @@ queue_library(
     'shoot_action.q',
   ],
   deps = [
-    '//aos/common/actions:action_queue',
+    '//aos/actions:action_queue',
   ],
 )
 
@@ -30,9 +30,9 @@ cc_library(
   ],
   deps = [
     ':shoot_action_queue',
-    '//aos/common/actions:action_lib',
+    '//aos/actions:action_lib',
     '//y2014/queues:profile_params',
-    '//aos/common/logging',
+    '//aos/logging',
     '//y2014/control_loops/shooter:shooter_queue',
     '//y2014/control_loops/claw:claw_queue',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
@@ -58,7 +58,7 @@ queue_library(
     'drivetrain_action.q',
   ],
   deps = [
-    '//aos/common/actions:action_queue',
+    '//aos/actions:action_queue',
   ],
 )
 
@@ -73,14 +73,14 @@ cc_library(
   deps = [
     ':drivetrain_action_queue',
     '//y2014:constants',
-    '//aos/common:time',
-    '//aos/common:math',
-    '//aos/common/util:phased_loop',
-    '//aos/common/logging',
-    '//aos/common/actions:action_lib',
-    '//aos/common/logging:queue_logging',
+    '//aos/time:time',
+    '//aos:math',
+    '//aos/util:phased_loop',
+    '//aos/logging',
+    '//aos/actions:action_lib',
+    '//aos/logging:queue_logging',
     '//third_party/eigen',
-    '//aos/common/util:trapezoid_profile',
+    '//aos/util:trapezoid_profile',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//frc971/control_loops:state_feedback_loop',
   ],

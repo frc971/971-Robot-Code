@@ -18,15 +18,15 @@
 #include "DigitalInput.h"
 #undef ERROR
 
-#include "aos/common/logging/logging.h"
-#include "aos/common/logging/queue_logging.h"
-#include "aos/common/time.h"
-#include "aos/common/util/log_interval.h"
-#include "aos/common/util/phased_loop.h"
-#include "aos/common/util/wrapping_counter.h"
-#include "aos/common/stl_mutex.h"
+#include "aos/logging/logging.h"
+#include "aos/logging/queue_logging.h"
+#include "aos/time/time.h"
+#include "aos/util/log_interval.h"
+#include "aos/util/phased_loop.h"
+#include "aos/util/wrapping_counter.h"
+#include "aos/stl_mutex/stl_mutex.h"
 #include "aos/linux_code/init.h"
-#include "aos/common/messages/robot_state.q.h"
+#include "aos/robot_state/robot_state.q.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2014_bot3/control_loops/drivetrain/drivetrain_base.h"

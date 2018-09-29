@@ -3,10 +3,10 @@
 #include <chrono>
 #include <memory>
 
-#include "aos/common/controls/control_loop_test.h"
-#include "aos/common/controls/polytope.h"
-#include "aos/common/network/team_number.h"
-#include "aos/common/time.h"
+#include "aos/controls/control_loop_test.h"
+#include "aos/controls/polytope.h"
+#include "aos/network/team_number.h"
+#include "aos/time/time.h"
 #include "gtest/gtest.h"
 
 #include "frc971/control_loops/coerce_goal.h"

@@ -44,8 +44,8 @@ cc_library(
   deps = [
     ':column_plants',
     ':column_zeroing',
-    '//aos/common/controls:control_loop',
-    '//aos/common:math',
+    '//aos/controls:control_loop',
+    '//aos:math',
     '//frc971/control_loops:profiled_subsystem',
     '//y2017/control_loops/superstructure/intake:intake',
     '//y2017/control_loops/superstructure:superstructure_queue',
