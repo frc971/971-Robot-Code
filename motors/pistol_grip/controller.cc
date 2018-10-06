@@ -13,8 +13,7 @@
 #include "motors/peripheral/adc.h"
 #include "motors/peripheral/can.h"
 #include "motors/pistol_grip/motor_controls.h"
-#include "motors/usb/cdc.h"
-#include "motors/usb/usb.h"
+#include "motors/print/print.h"
 #include "motors/util.h"
 
 #define MOTOR0_PWM_FTM FTM3
@@ -141,7 +140,6 @@ constexpr float kHapticTriggerCurrentLimit = static_cast<float>(
     ::frc971::control_loops::drivetrain::kHapticTriggerCurrentLimit);
 
 ::std::atomic<Motor *> global_motor0{nullptr}, global_motor1{nullptr};
-::std::atomic<teensy::AcmTty *> global_stdout{nullptr};
 
 // Angle last time the current loop ran.
 ::std::atomic<float> global_wheel_angle{0.0f};
@@ -193,14 +191,6 @@ void __stack_chk_fail() {
     GPIOC_PCOR = (1 << 5);
     delay(1000);
   }
-}
-
-int _write(int /*file*/, char *ptr, int len) {
-  teensy::AcmTty *const tty = global_stdout.load(::std::memory_order_acquire);
-  if (tty != nullptr) {
-    return tty->Write(ptr, len);
-  }
-  return 0;
 }
 
 extern uint32_t __bss_ram_start__[], __bss_ram_end__[];
@@ -736,13 +726,11 @@ extern "C" int main() {
 
   DMA.CR = M_DMA_EMLM;
 
-  teensy::UsbDevice usb_device(0, 0x16c0, 0x0490);
-  usb_device.SetManufacturer("FRC 971 Spartan Robotics");
-  usb_device.SetProduct("Pistol Grip Controller debug");
-  teensy::AcmTty tty1(&usb_device);
-  teensy::AcmTty tty2(&usb_device);
-  global_stdout.store(&tty1, ::std::memory_order_release);
-  usb_device.Initialize();
+  PrintingParameters printing_parameters;
+  printing_parameters.dedicated_usb = true;
+  const ::std::unique_ptr<PrintingImplementation> printing =
+      CreatePrinting(printing_parameters);
+  printing->Initialize();
 
   AdcInitSmall();
   MathInit();
@@ -790,12 +778,12 @@ extern "C" int main() {
   Motor motor0(
       MOTOR0_PWM_FTM, MOTOR0_ENCODER_FTM, &controls0,
       {&MOTOR0_PWM_FTM->C4V, &MOTOR0_PWM_FTM->C2V, &MOTOR0_PWM_FTM->C6V});
-  motor0.set_debug_tty(&tty2);
+  motor0.set_printing_implementation(printing.get());
   motor0.set_switching_divisor(kSwitchingDivisor);
   Motor motor1(
       MOTOR1_PWM_FTM, MOTOR1_ENCODER_FTM, &controls1,
       {&MOTOR1_PWM_FTM->C0V, &MOTOR1_PWM_FTM->C2V, &MOTOR1_PWM_FTM->C4V});
-  motor1.set_debug_tty(&tty2);
+  motor1.set_printing_implementation(printing.get());
   motor1.set_switching_divisor(kSwitchingDivisor);
   ConfigurePwmFtm(MOTOR0_PWM_FTM);
   ConfigurePwmFtm(MOTOR1_PWM_FTM);

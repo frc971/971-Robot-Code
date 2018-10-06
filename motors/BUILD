@@ -18,7 +18,7 @@ cc_library(
         "//motors/peripheral:adc",
         "//motors/peripheral:can",
         "//motors/peripheral:configuration",
-        "//motors/usb:cdc",
+        "//motors/print",
     ],
 )
 
@@ -115,6 +115,7 @@ cc_binary(
         "//motors/core",
         "//motors/peripheral:adc",
         "//motors/peripheral:can",
+        "//motors/print:usb",
         "//motors/usb",
         "//motors/usb:cdc",
         "//motors/usb:hid",
@@ -137,10 +138,9 @@ cc_binary(
         "//motors/core",
         "//motors/peripheral:adc",
         "//motors/peripheral:can",
+        "//motors/print:usb",
         "//motors/seems_reasonable:drivetrain_lib",
         "//motors/seems_reasonable:spring",
-        "//motors/usb",
-        "//motors/usb:cdc",
     ],
 )
 

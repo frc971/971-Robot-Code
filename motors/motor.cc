@@ -402,23 +402,25 @@ void Motor::HandleInterrupt(const BalancedReadings &balanced,
   } else {
 #endif  // SAMPLE_UNTIL_DONE
     // Time to write the data out.
-    if (written < (int)sizeof(data) && debug_tty_ != nullptr) {
+    if (written < (int)sizeof(data) && printing_implementation_ != nullptr) {
       int to_write = sizeof(data) - written;
       if (to_write > 64) {
         to_write = 64;
       }
-      int result = debug_tty_->Write(((const char *)data) + written, to_write);
+      int result = printing_implementation_->Write(((const char *)data) + written, to_write);
       if (result >= 0) {
         written += result;
       } else {
         printf("error\n");
       }
     }
+#if 0
     if (!done_writing && written >= (int)sizeof(data) &&
-        debug_tty_->write_queue_empty()) {
+        printing_implementation_->write_queue_empty()) {
       printf("done writing %d\n", written);
       done_writing = true;
     }
+#endif
   }
 #endif  // PRINT_READINGS/PRINT_ALL_READINGS/TAKE_SAMPLE
   (void)balanced;

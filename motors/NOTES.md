@@ -29,6 +29,7 @@
     * Alternative part is MK22FX512AVLH12 with 512 KB of flash
     * [datasheet](https://www.nxp.com/docs/en/data-sheet/K22P64M120SF5V2.pdf)
     * [reference manual](https://www.nxp.com/docs/en/reference-manual/K22P64M120SF5V2RM.pdf)
+* [ARMv7-M Architecture Reference Manual](https://static.docs.arm.com/ddi0403/eb/DDI0403E_B_armv7m_arm.pdf)
 
 ### Clocking
 * Running the core clock at its maximum of 120 MHz

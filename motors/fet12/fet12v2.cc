@@ -12,9 +12,8 @@
 #include "motors/peripheral/adc.h"
 #include "motors/peripheral/adc_dma.h"
 #include "motors/peripheral/can.h"
-#include "motors/peripheral/uart.h"
+#include "motors/print/print.h"
 #include "motors/util.h"
-#include "third_party/GSL/include/gsl/gsl"
 
 namespace frc971 {
 namespace motors {
@@ -65,16 +64,7 @@ void AdcInitFet12() {
 ::std::atomic<Motor *> global_motor{nullptr};
 ::std::atomic<teensy::AdcDmaSampler *> global_adc_dma{nullptr};
 
-::std::atomic<teensy::InterruptBufferedUart *> global_stdout{nullptr};
-
 extern "C" {
-
-void uart0_status_isr(void) {
-  teensy::InterruptBufferedUart *const tty =
-      global_stdout.load(::std::memory_order_relaxed);
-  DisableInterrupts disable_interrupts;
-  tty->HandleInterrupt(disable_interrupts);
-}
 
 void *__stack_chk_guard = (void *)0x67111971;
 void __stack_chk_fail(void) {
@@ -86,18 +76,6 @@ void __stack_chk_fail(void) {
     delay(1000);
   }
 }
-
-int _write(int /*file*/, char *ptr, int len) {
-  teensy::InterruptBufferedUart *const tty =
-      global_stdout.load(::std::memory_order_acquire);
-  if (tty != nullptr) {
-    tty->Write(gsl::make_span(ptr, len));
-    return len;
-  }
-  return 0;
-}
-
-void __stack_chk_fail(void);
 
 extern char *__brkval;
 extern uint32_t __bss_ram_start__[];
@@ -478,10 +456,15 @@ extern "C" int main(void) {
   PORTB_PCR16 = PORT_PCR_DSE | PORT_PCR_MUX(3);
   PORTB_PCR17 = PORT_PCR_DSE | PORT_PCR_MUX(3);
   SIM_SCGC4 |= SIM_SCGC4_UART0;
-  teensy::InterruptBufferedUart debug_uart(&UART0, F_CPU);
-  debug_uart.Initialize(115200);
-  global_stdout.store(&debug_uart, ::std::memory_order_release);
-  NVIC_ENABLE_IRQ(IRQ_UART0_STATUS);
+
+  PrintingParameters printing_parameters;
+  printing_parameters.stdout_uart_module = &UART0;
+  printing_parameters.stdout_uart_module_clock_frequency = F_CPU;
+  printing_parameters.stdout_uart_status_interrupt = IRQ_UART0_STATUS;
+  printing_parameters.dedicated_usb = true;
+  const ::std::unique_ptr<PrintingImplementation> printing =
+      CreatePrinting(printing_parameters);
+  printing->Initialize();
 
   AdcInitFet12();
   MathInit();

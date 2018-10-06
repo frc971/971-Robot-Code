@@ -11,6 +11,7 @@ cc_binary(
         "//motors:util",
         "//motors/core",
         "//motors/peripheral:can",
+        "//motors/print:usb",
         "//motors/usb",
         "//motors/usb:cdc",
         "//motors/usb:hid",
@@ -39,8 +40,7 @@ cc_binary(
         "//motors/core",
         "//motors/peripheral:adc",
         "//motors/peripheral:can",
-        "//motors/usb",
-        "//motors/usb:cdc",
+        "//motors/print:usb",
     ],
 )
 

@@ -50,7 +50,7 @@ void Uart::Initialize(int baud_rate) {
   module_->RWFIFO = rx_fifo_size_ - 1;
 }
 
-void Uart::DoWrite(gsl::span<char> data) {
+void Uart::DoWrite(gsl::span<const char> data) {
   for (int i = 0; i < data.size(); ++i) {
     while (!SpaceAvailable()) {
     }
@@ -64,7 +64,7 @@ void InterruptBufferedUart::Initialize(int baud_rate) {
   uart_.Initialize(baud_rate);
 }
 
-void InterruptBufferedUart::Write(gsl::span<char> data) {
+void InterruptBufferedUart::Write(gsl::span<const char> data) {
   DisableInterrupts disable_interrupts;
   uart_.EnableTransmitInterrupt();
   static_assert(buffer_.size() >= 8,
