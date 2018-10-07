@@ -196,7 +196,11 @@ void ftm0_isr(void) {
   constexpr float kFuseAlpha = 0.95f;
 
   // 3400 - 760
-  static float filtered_throttle = 0.0f;
+  // Start the throttle filter at 1.0f--once it converges to near zero, we set
+  // throttle_zeroed to true and only then do we start listening to throttle
+  // commands.
+  static float filtered_throttle = 1.0f;
+  static bool throttle_zeroed = false;
   constexpr int kMaxThrottle = 3400;
   constexpr int kMinThrottle = 760;
   const float throttle = ::std::max(
@@ -208,6 +212,11 @@ void ftm0_isr(void) {
 
   // y(n) = x(n) + a * (y(n-1) - x(n))
   filtered_throttle = throttle + kAlpha * (filtered_throttle - throttle);
+  if (::std::abs(filtered_throttle) < 1e-2f) {
+    // Once the filter gets near zero once, we start paying attention to it;
+    // once it gets near zero once, never ignore it again.
+    throttle_zeroed = true;
+  }
 
   const float fuse_voltage = static_cast<float>(adc_readings.fuse_voltage);
   static float filtered_fuse_voltage = 0.0f;
@@ -237,6 +246,10 @@ void ftm0_isr(void) {
   float goal_current = -::std::min(
       filtered_throttle * (kPeakCurrent + kNegativeCurrent) - kNegativeCurrent,
       throttle_limit);
+
+  if (!throttle_zeroed) {
+    goal_current = 0.0f;
+  }
 
   if (velocity > -500) {
     if (goal_current > 0.0f) {
