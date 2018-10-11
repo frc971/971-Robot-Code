@@ -243,14 +243,20 @@ void ftm0_isr(void) {
           (2.0f * 1.5f * static_cast<float>(kR)));
 
   constexpr float kNegativeCurrent = 80.0f;
-  float goal_current = -::std::min(
-      filtered_throttle * (kPeakCurrent + kNegativeCurrent) - kNegativeCurrent,
-      throttle_limit);
+  float goal_current =
+      -::std::min(
+          ::std::max(filtered_throttle * (kPeakCurrent + kNegativeCurrent) -
+                         kNegativeCurrent,
+                     -throttle_limit),
+          throttle_limit);
 
   if (!throttle_zeroed) {
     goal_current = 0.0f;
   }
 
+  // Note: current reduction is 12/70 belt, 15 / 54 on chain, and 10 inch
+  // diameter wheels, so cutoff of 500 electrical rad/sec * 1 mechanical rad / 2
+  // erad * 12 / 70 * 15 / 54 * 0.127 m = 1.5m/s = 3.4 mph
   if (velocity > -500) {
     if (goal_current > 0.0f) {
       goal_current = 0.0f;
