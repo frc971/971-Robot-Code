@@ -1,7 +1,7 @@
 #include <unordered_set>
 #include <vector>
-#include "aos/common/condition.h"
-#include "aos/common/mutex.h"
+#include "aos/condition.h"
+#include "aos/mutex/mutex.h"
 #include "aos/events/event-loop.h"
 
 namespace aos {
@@ -13,7 +13,7 @@ class TimerHandlerState;
 }  // namespace internal
 
 // Specialization of EventLoop that is built from queues running out of shared
-// memory. See more details at aos/common/queue.h
+// memory. See more details at aos/queue.h
 class ShmEventLoop : public EventLoop {
  public:
   ShmEventLoop();

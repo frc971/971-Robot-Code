@@ -7,7 +7,7 @@
 
 #include "Eigen/Dense"
 
-#include "aos/common/commonmath.h"
+#include "aos/commonmath.h"
 #include "frc971/constants.h"
 #include "frc971/control_loops/profiled_subsystem.h"
 #include "frc971/control_loops/state_feedback_loop.h"

@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <cstring>
 
-#include "aos/common/logging/logging.h"
+#include "aos/logging/logging.h"
 #include "third_party/libjpeg/jpeglib.h"
 
 namespace aos {

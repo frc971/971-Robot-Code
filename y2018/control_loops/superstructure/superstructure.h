@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include "aos/common/controls/control_loop.h"
+#include "aos/controls/control_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "y2018/control_loops/superstructure/arm/arm.h"
 #include "y2018/control_loops/superstructure/intake/intake.h"

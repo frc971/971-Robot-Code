@@ -1,8 +1,8 @@
 #ifndef FRC971_CODELAB_BASIC_H_
 #define FRC971_CODELAB_BASIC_H_
 
-#include "aos/common/controls/control_loop.h"
-#include "aos/common/time.h"
+#include "aos/controls/control_loop.h"
+#include "aos/time/time.h"
 
 #include "frc971/codelab/basic.q.h"
 

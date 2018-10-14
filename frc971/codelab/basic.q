@@ -1,6 +1,6 @@
 package frc971.codelab;
 
-import "aos/common/controls/control_loops.q";
+import "aos/controls/control_loops.q";
 import "frc971/control_loops/control_loops.q";
 
 // The theme of this basic test is a simple intake system.

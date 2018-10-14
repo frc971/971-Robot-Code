@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <chrono>
 
-#include "aos/common/ring_buffer.h"
-#include "aos/common/time.h"
+#include "aos/ring_buffer/ring_buffer.h"
+#include "aos/time/time.h"
 #include "y2017/vision/vision.q.h"
 
 namespace y2017 {

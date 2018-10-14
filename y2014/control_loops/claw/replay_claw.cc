@@ -1,4 +1,4 @@
-#include "aos/common/controls/replay_control_loop.h"
+#include "aos/controls/replay_control_loop.h"
 #include "aos/linux_code/init.h"
 
 #include "y2014/control_loops/claw/claw.q.h"

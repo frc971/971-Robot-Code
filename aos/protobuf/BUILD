@@ -5,7 +5,7 @@ cc_library(
   srcs = ["stack_arena.cc"],
   hdrs = ["stack_arena.h"],
   deps = [
-    "//aos/common/logging:logging",
+    "//aos/logging:logging",
     "//third_party/protobuf",
   ],
 )
@@ -16,7 +16,7 @@ cc_test(
   deps = [
     ":stack_arena",
     "//aos/testing:test_logging",
-    "//aos/common/logging:logging",
+    "//aos/logging:logging",
     "//aos/testing:googletest",
   ],
 )

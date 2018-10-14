@@ -5,8 +5,8 @@
 #include <chrono>
 #include <memory>
 
-#include "aos/common/controls/control_loop_test.h"
-#include "aos/common/queue.h"
+#include "aos/controls/control_loop_test.h"
+#include "aos/queue.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"

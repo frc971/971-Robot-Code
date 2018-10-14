@@ -4,8 +4,8 @@
 #include <atomic>
 #include <thread>
 
-#include "aos/common/macros.h"
-#include "aos/common/mutex.h"
+#include "aos/macros.h"
+#include "aos/mutex/mutex.h"
 
 #include "Encoder.h"
 #include "DigitalSource.h"

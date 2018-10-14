@@ -1,6 +1,6 @@
 package frc971.autonomous;
 
-import "aos/common/actions/actions.q";
+import "aos/actions/actions.q";
 
 message AutoControl {
   // True if auto mode should be running, false otherwise.

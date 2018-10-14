@@ -29,12 +29,12 @@
 
 #include "third_party/libevent/event.h"
 
-#include "aos/common/libc/aos_strsignal.h"
-#include "aos/common/logging/implementations.h"
-#include "aos/common/logging/logging.h"
-#include "aos/common/time.h"
-#include "aos/common/unique_malloc_ptr.h"
-#include "aos/common/util/run_command.h"
+#include "aos/libc/aos_strsignal.h"
+#include "aos/logging/implementations.h"
+#include "aos/logging/logging.h"
+#include "aos/time/time.h"
+#include "aos/unique_malloc_ptr.h"
+#include "aos/util/run_command.h"
 #include "aos/linux_code/init.h"
 #include "aos/once.h"
 

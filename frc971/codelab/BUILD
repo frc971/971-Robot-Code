@@ -9,8 +9,8 @@ cc_binary(
     ':basic_queue',
     ':basic',
     '//aos/testing:googletest',
-    '//aos/common:queues',
-    '//aos/common/controls:control_loop_test',
+    '//aos:queues',
+    '//aos/controls:control_loop_test',
     '//frc971/control_loops:state_feedback_loop',
     '//frc971/control_loops:team_number_test_environment',
   ],
@@ -23,7 +23,7 @@ cc_library(
   hdrs = ['basic.h'],
   deps = [
     ':basic_queue',
-    '//aos/common/controls:control_loop',
+    '//aos/controls:control_loop',
   ],
 )
 
@@ -33,7 +33,7 @@ queue_library(
     'basic.q',
   ],
   deps = [
-    '//aos/common/controls:control_loop_queues',
+    '//aos/controls:control_loop_queues',
     '//frc971/control_loops:queues',
   ],
 )

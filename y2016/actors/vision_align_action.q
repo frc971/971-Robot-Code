@@ -1,6 +1,6 @@
 package y2016.actors;
 
-import "aos/common/actions/actions.q";
+import "aos/actions/actions.q";
 
 // Parameters to send with start.
 struct VisionAlignActionParams {

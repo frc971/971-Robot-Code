@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/common/time.h"
+#include "aos/time/time.h"
 #include "aos/testing/test_shm.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2017/control_loops/drivetrain/drivetrain_dog_motor_plant.h"

@@ -2,7 +2,7 @@
 
 #include <functional>
 
-#include "aos/common/logging/logging.h"
+#include "aos/logging/logging.h"
 
 #include "y2014/control_loops/shooter/shooter.q.h"
 #include "y2014/control_loops/claw/claw.q.h"

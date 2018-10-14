@@ -9,7 +9,7 @@ cc_binary(
   ],
   deps = [
     ':shooter_queue',
-    '//aos/common/controls:replay_control_loop',
+    '//aos/controls:replay_control_loop',
     '//aos/linux_code:init',
   ],
 )
@@ -20,7 +20,7 @@ queue_library(
     'shooter.q',
   ],
   deps = [
-    '//aos/common/controls:control_loop_queues',
+    '//aos/controls:control_loop_queues',
     '//frc971/control_loops:queues',
   ],
 )
@@ -54,10 +54,10 @@ cc_library(
   ],
   deps = [
     ':shooter_queue',
-    '//aos/common/controls:control_loop',
+    '//aos/controls:control_loop',
     '//y2014:constants',
     '//frc971/control_loops:state_feedback_loop',
-    '//aos/common/logging:queue_logging',
+    '//aos/logging:queue_logging',
   ],
   linkopts = [
     '-lm',
@@ -72,7 +72,7 @@ cc_test(
   deps = [
     ':shooter_lib',
     ':shooter_queue',
-    '//aos/common/controls:control_loop_test',
+    '//aos/controls:control_loop_test',
     '//aos/testing:googletest',
     '//frc971/control_loops:state_feedback_loop',
     '//frc971/control_loops:team_number_test_environment',

@@ -10,9 +10,9 @@
 #include "sanitizer/lsan_interface.h"
 #endif
 
-#include "aos/common/logging/logging.h"
-#include "aos/common/mutex.h"
-#include "aos/common/network/team_number.h"
+#include "aos/logging/logging.h"
+#include "aos/mutex/mutex.h"
+#include "aos/network/team_number.h"
 #include "aos/once.h"
 
 #include "y2014/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"

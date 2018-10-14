@@ -1,6 +1,6 @@
 #include "y2014_bot3/control_loops/rollers/rollers.h"
 
-#include "aos/common/logging/logging.h"
+#include "aos/logging/logging.h"
 
 namespace y2014_bot3 {
 namespace control_loops {

@@ -1,4 +1,4 @@
-#include "aos/common/logging/logging.h"
+#include "aos/logging/logging.h"
 
 namespace aos {
 namespace protobuf {

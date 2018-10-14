@@ -6,8 +6,8 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/common/logging/implementations.h"
-#include "aos/common/mutex.h"
+#include "aos/logging/implementations.h"
+#include "aos/mutex/mutex.h"
 #include "aos/once.h"
 
 using ::aos::logging::LogMessage;

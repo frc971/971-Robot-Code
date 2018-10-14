@@ -1,6 +1,6 @@
 #include "frc971/control_loops/team_number_test_environment.h"
 
-#include "aos/common/network/team_number.h"
+#include "aos/network/team_number.h"
 
 namespace frc971 {
 namespace control_loops {

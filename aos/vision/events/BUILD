@@ -10,9 +10,9 @@ cc_library(
         "//tools:armhf-debian",
     ],
     deps = [
-        "//aos/common:scoped_fd",
-        "//aos/common:time",
-        "//aos/common/logging",
+        "//aos/scoped:scoped_fd",
+        "//aos/time:time",
+        "//aos/logging",
     ],
 )
 
@@ -68,8 +68,8 @@ cc_library(
         "//tools:armhf-debian",
     ],
     deps = [
-        "//aos/common:macros",
-        "//aos/common:scoped_fd",
+        "//aos:macros",
+        "//aos/scoped:scoped_fd",
     ],
 )
 

@@ -15,10 +15,10 @@ WriteIffChanged.open(ARGV[0]) do |output|
 #include <inttypes.h>
 #include <stdio.h>
 
-#include "aos/common/byteorder.h"
-#include "aos/common/time.h"
-#include "aos/common/print_field_helpers.h"
-#include "aos/common/logging/printf_formats.h"
+#include "aos/byteorder.h"
+#include "aos/time/time.h"
+#include "aos/print_field_helpers.h"
+#include "aos/logging/printf_formats.h"
 
 namespace aos {
 

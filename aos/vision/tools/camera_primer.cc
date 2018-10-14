@@ -1,5 +1,5 @@
-#include "aos/common/logging/implementations.h"
-#include "aos/common/logging/logging.h"
+#include "aos/logging/implementations.h"
+#include "aos/logging/logging.h"
 #include "aos/vision/events/epoll_events.h"
 #include "aos/vision/image/image_stream.h"
 

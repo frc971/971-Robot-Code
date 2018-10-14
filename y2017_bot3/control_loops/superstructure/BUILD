@@ -8,7 +8,7 @@ queue_library(
     'superstructure.q',
   ],
   deps = [
-    '//aos/common/controls:control_loop_queues',
+    '//aos/controls:control_loop_queues',
     '//frc971/control_loops:profiled_subsystem_queue',
     '//frc971/control_loops:queues',
   ],
@@ -24,9 +24,9 @@ cc_library(
   ],
   deps = [
     ':superstructure_queue',
-    '//aos/common/controls:control_loop',
-    '//aos/common/util:trapezoid_profile',
-    '//aos/common:math',
+    '//aos/controls:control_loop',
+    '//aos/util:trapezoid_profile',
+    '//aos:math',
     '//frc971/control_loops:profiled_subsystem',
     '//frc971/control_loops:simple_capped_state_feedback_loop',
     '//frc971/control_loops:state_feedback_loop',

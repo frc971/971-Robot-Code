@@ -6,9 +6,9 @@ cc_binary(
         "dump_rtprio.cc",
     ],
     deps = [
-        "//aos/common:time",
-        "//aos/common/logging",
-        "//aos/common/logging:implementations",
+        "//aos/time:time",
+        "//aos/logging",
+        "//aos/logging:implementations",
     ],
 )
 
@@ -20,7 +20,7 @@ cc_library(
     compatible_with = [
         "//tools:armhf-debian",
     ],
-    visibility = ["//aos/common:__pkg__"],
+    visibility = ["//aos:__pkg__"],
 )
 
 cc_library(
@@ -39,7 +39,7 @@ cc_library(
     ],
     deps = [
         "//aos:once",
-        "//aos/common:die",
+        "//aos:die",
     ],
 )
 
@@ -50,8 +50,8 @@ cc_test(
     ],
     deps = [
         ":complex_thread_local",
-        "//aos/common/logging",
-        "//aos/common/util:thread",
+        "//aos/logging",
+        "//aos/util:thread",
         "//aos/testing:googletest",
     ],
 )
@@ -68,8 +68,8 @@ cc_library(
         "//tools:armhf-debian",
     ],
     deps = [
-        "//aos/common:die",
-        "//aos/common/logging:implementations",
+        "//aos:die",
+        "//aos/logging:implementations",
         "//aos/linux_code/ipc_lib:shared_mem",
     ],
 )
@@ -87,8 +87,8 @@ cc_library(
     ],
     deps = [
         "//aos:once",
-        "//aos/common:unique_malloc_ptr",
-        "//aos/common/logging",
+        "//aos:unique_malloc_ptr",
+        "//aos/logging",
     ],
 )
 
@@ -99,6 +99,6 @@ cc_binary(
     ],
     deps = [
         ":init",
-        "//aos/common/util:run_command",
+        "//aos/util:run_command",
     ],
 )

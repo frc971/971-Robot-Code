@@ -86,7 +86,7 @@ py_binary(
     restricted_to = ["//tools:k8"],
     deps = [
         ":python_init",
-        "//aos/common/util:py_trapezoid_profile",
+        "//aos/util:py_trapezoid_profile",
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:controls",
@@ -103,7 +103,7 @@ py_binary(
     restricted_to = ["//tools:k8"],
     deps = [
         ":python_init",
-        "//aos/common/util:py_trapezoid_profile",
+        "//aos/util:py_trapezoid_profile",
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:controls",
@@ -120,7 +120,7 @@ py_binary(
     restricted_to = ["//tools:k8"],
     deps = [
         ":python_init",
-        "//aos/common/util:py_trapezoid_profile",
+        "//aos/util:py_trapezoid_profile",
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:controls",
@@ -135,7 +135,7 @@ py_library(
     ],
     restricted_to = ["//tools:k8"],
     deps = [
-        "//aos/common/util:py_trapezoid_profile",
+        "//aos/util:py_trapezoid_profile",
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:controls",

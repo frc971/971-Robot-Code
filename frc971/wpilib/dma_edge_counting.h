@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-#include "aos/common/macros.h"
+#include "aos/macros.h"
 
 #include "frc971/wpilib/dma.h"
 

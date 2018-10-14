@@ -2,8 +2,8 @@
 
 #include <gtk/gtk.h>
 
-#include "aos/common/logging/implementations.h"
-#include "aos/common/logging/logging.h"
+#include "aos/logging/implementations.h"
+#include "aos/logging/logging.h"
 #include "aos/vision/blob/find_blob.h"
 #include "aos/vision/blob/stream_view.h"
 #include "aos/vision/events/epoll_events.h"

@@ -9,7 +9,7 @@ cc_library(
         "//tools:armhf-debian",
     ],
     deps = [
-        "//aos/common/logging",
+        "//aos/logging",
     ],
 )
 
@@ -34,8 +34,8 @@ cc_library(
     deps = [
         ":camera_params",
         ":image_types",
-        "//aos/common:time",
-        "//aos/common/logging",
+        "//aos/time:time",
+        "//aos/logging",
     ],
 )
 
@@ -48,7 +48,7 @@ cc_library(
     ],
     deps = [
         ":image_types",
-        "//aos/common/logging",
+        "//aos/logging",
         "//third_party/libjpeg",
     ],
 )

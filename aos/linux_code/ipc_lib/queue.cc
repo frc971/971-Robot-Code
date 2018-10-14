@@ -13,7 +13,7 @@
 #include <memory>
 #include <algorithm>
 
-#include "aos/common/type_traits.h"
+#include "aos/type_traits/type_traits.h"
 #include "aos/linux_code/ipc_lib/core_lib.h"
 
 namespace aos {

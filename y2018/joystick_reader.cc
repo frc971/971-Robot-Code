@@ -5,13 +5,13 @@
 #include <mutex>
 #include <google/protobuf/stubs/stringprintf.h>
 
-#include "aos/common/actions/actions.h"
-#include "aos/common/input/driver_station_data.h"
-#include "aos/common/logging/logging.h"
-#include "aos/common/network/team_number.h"
-#include "aos/common/stl_mutex.h"
-#include "aos/common/time.h"
-#include "aos/common/util/log_interval.h"
+#include "aos/actions/actions.h"
+#include "aos/input/driver_station_data.h"
+#include "aos/logging/logging.h"
+#include "aos/network/team_number.h"
+#include "aos/stl_mutex/stl_mutex.h"
+#include "aos/time/time.h"
+#include "aos/util/log_interval.h"
 #include "aos/input/drivetrain_input.h"
 #include "aos/input/joystick_input.h"
 #include "aos/linux_code/init.h"

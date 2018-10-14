@@ -11,7 +11,7 @@
 #include "DigitalOutput.h"
 #undef ERROR
 
-#include "aos/common/logging/logging.h"
+#include "aos/logging/logging.h"
 #include "frc971/wpilib/spi_rx_clearer.h"
 
 namespace frc971 {

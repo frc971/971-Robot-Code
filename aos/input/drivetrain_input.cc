@@ -5,9 +5,9 @@
 #include <string.h>
 #include <cmath>
 
-#include "aos/common/commonmath.h"
-#include "aos/common/input/driver_station_data.h"
-#include "aos/common/logging/logging.h"
+#include "aos/commonmath.h"
+#include "aos/input/driver_station_data.h"
+#include "aos/logging/logging.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 
 using ::frc971::control_loops::drivetrain_queue;

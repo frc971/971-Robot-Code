@@ -16,7 +16,7 @@ queue_library(
     'superstructure_action.q',
   ],
   deps = [
-    '//aos/common/actions:action_queue',
+    '//aos/actions:action_queue',
   ],
 )
 
@@ -30,9 +30,9 @@ cc_library(
   ],
   deps = [
     ':superstructure_action_queue',
-    '//aos/common/util:phased_loop',
-    '//aos/common/logging',
-    '//aos/common/actions:action_lib',
+    '//aos/util:phased_loop',
+    '//aos/logging',
+    '//aos/actions:action_lib',
     '//y2016/control_loops/superstructure:superstructure_queue',
   ],
 )
@@ -59,9 +59,9 @@ cc_library(
   ],
   deps = [
     ':vision_align_action_lib',
-    '//aos/common/util:phased_loop',
-    '//aos/common/logging',
-    '//aos/common/actions:action_lib',
+    '//aos/util:phased_loop',
+    '//aos/logging',
+    '//aos/actions:action_lib',
     '//frc971/autonomous:base_autonomous_actor',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//y2016/queues:ball_detector',
@@ -90,7 +90,7 @@ queue_library(
     'vision_align_action.q',
   ],
   deps = [
-    '//aos/common/actions:action_queue',
+    '//aos/actions:action_queue',
   ],
 )
 
@@ -104,13 +104,13 @@ cc_library(
   ],
   deps = [
     ':vision_align_action_queue',
-    '//aos/common:time',
-    '//aos/common:math',
-    '//aos/common/util:phased_loop',
-    '//aos/common/logging',
-    '//aos/common/actions:action_lib',
-    '//aos/common/logging:queue_logging',
-    '//aos/common/util:trapezoid_profile',
+    '//aos/time:time',
+    '//aos:math',
+    '//aos/util:phased_loop',
+    '//aos/logging',
+    '//aos/actions:action_lib',
+    '//aos/logging:queue_logging',
+    '//aos/util:trapezoid_profile',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//third_party/eigen',
     '//y2016:constants',

@@ -21,12 +21,12 @@
 #include <string>
 #include <thread>
 
-#include "aos/common/condition.h"
-#include "aos/common/event.h"
-#include "aos/common/logging/implementations.h"
-#include "aos/common/logging/logging.h"
-#include "aos/common/mutex.h"
-#include "aos/common/time.h"
+#include "aos/condition.h"
+#include "aos/event.h"
+#include "aos/logging/implementations.h"
+#include "aos/logging/logging.h"
+#include "aos/mutex/mutex.h"
+#include "aos/time/time.h"
 #include "aos/linux_code/init.h"
 #include "aos/linux_code/ipc_lib/queue.h"
 

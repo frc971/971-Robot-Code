@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "aos/common/gtest_prod.h"
+#include "aos/gtest_prod.h"
 
 namespace aos {
 namespace testing {

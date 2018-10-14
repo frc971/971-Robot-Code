@@ -37,7 +37,7 @@ cc_library(
   ],
   deps = [
     ':constants',
-    '//aos/common:macros',
+    '//aos:macros',
     '//motors/core',
     '//motors:util',
   ],

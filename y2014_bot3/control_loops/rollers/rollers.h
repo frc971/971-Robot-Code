@@ -1,7 +1,7 @@
 #ifndef Y2014_BOT3_CONTROL_LOOPS_ROLLERS_H_
 #define Y2014_BOT3_CONTROL_LOOPS_ROLLERS_H_
 
-#include "aos/common/controls/control_loop.h"
+#include "aos/controls/control_loop.h"
 
 #include "y2014_bot3/control_loops/rollers/rollers.q.h"
 

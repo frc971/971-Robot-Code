@@ -37,8 +37,8 @@ class Target::QFile < Target::Node
 	def make_cpp_tree(rel_path)
 		cpp_tree = DepFilePair.new(rel_path)
 		cpp_tree.add_header_include("<array>")
-		cpp_tree.add_header_include("\"aos/common/macros.h\"")
-		cpp_tree.add_header_include("\"aos/common/queue.h\"")
+		cpp_tree.add_header_include("\"aos/macros.h\"")
+		cpp_tree.add_header_include("\"aos/queue.h\"")
 		@class_types.each do |type|
 			cpp_tree.get(type)
 		end

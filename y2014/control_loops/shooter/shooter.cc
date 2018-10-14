@@ -6,9 +6,9 @@
 #include <limits>
 #include <chrono>
 
-#include "aos/common/controls/control_loops.q.h"
-#include "aos/common/logging/logging.h"
-#include "aos/common/logging/queue_logging.h"
+#include "aos/controls/control_loops.q.h"
+#include "aos/logging/logging.h"
+#include "aos/logging/queue_logging.h"
 
 #include "y2014/constants.h"
 #include "y2014/control_loops/shooter/shooter_motor_plant.h"

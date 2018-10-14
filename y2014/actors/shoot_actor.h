@@ -3,8 +3,8 @@
 
 #include <memory>
 
-#include "aos/common/actions/actor.h"
-#include "aos/common/actions/actions.h"
+#include "aos/actions/actor.h"
+#include "aos/actions/actions.h"
 
 #include "y2014/actors/shoot_action.q.h"
 

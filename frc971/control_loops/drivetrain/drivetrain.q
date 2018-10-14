@@ -1,6 +1,6 @@
 package frc971.control_loops;
 
-import "aos/common/controls/control_loops.q";
+import "aos/controls/control_loops.q";
 import "frc971/control_loops/control_loops.q";
 
 // For logging information about what the code is doing with the shifters.

@@ -1,8 +1,8 @@
 #ifndef Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_INTAKE_INTAKE_H_
 #define Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_INTAKE_INTAKE_H_
 
-#include "aos/common/commonmath.h"
-#include "aos/common/controls/control_loop.h"
+#include "aos/commonmath.h"
+#include "aos/controls/control_loop.h"
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/zeroing/zeroing.h"
 #include "y2018/constants.h"

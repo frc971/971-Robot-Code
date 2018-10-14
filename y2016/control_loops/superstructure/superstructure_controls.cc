@@ -1,7 +1,7 @@
 #include "y2016/control_loops/superstructure/superstructure_controls.h"
 
-#include "aos/common/controls/control_loops.q.h"
-#include "aos/common/logging/logging.h"
+#include "aos/controls/control_loops.q.h"
+#include "aos/logging/logging.h"
 
 #include "y2016/control_loops/superstructure/integral_intake_plant.h"
 #include "y2016/control_loops/superstructure/integral_arm_plant.h"

@@ -1,8 +1,8 @@
 #include "y2017_bot3/control_loops/superstructure/superstructure.h"
 
-#include "aos/common/commonmath.h"
-#include "aos/common/controls/control_loops.q.h"
-#include "aos/common/logging/logging.h"
+#include "aos/commonmath.h"
+#include "aos/controls/control_loops.q.h"
+#include "aos/logging/logging.h"
 
 namespace y2017_bot3 {
 namespace control_loops {

@@ -2,8 +2,8 @@
 
 #include <cmath>
 
-#include "aos/common/util/phased_loop.h"
-#include "aos/common/logging/logging.h"
+#include "aos/util/phased_loop.h"
+#include "aos/logging/logging.h"
 #include "y2016/actors/superstructure_actor.h"
 #include "y2016/control_loops/superstructure/superstructure.q.h"
 

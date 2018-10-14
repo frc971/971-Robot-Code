@@ -13,8 +13,8 @@
 #include <sys/prctl.h>
 #include <malloc.h>
 
-#include "aos/common/die.h"
-#include "aos/common/logging/implementations.h"
+#include "aos/die.h"
+#include "aos/logging/implementations.h"
 #include "aos/linux_code/ipc_lib/shared_mem.h"
 
 namespace FLAG__namespace_do_not_use_directly_use_DECLARE_double_instead {
@@ -27,7 +27,7 @@ namespace aos {
 namespace logging {
 namespace internal {
 
-// Implemented in aos/common/logging/context.cc.
+// Implemented in aos/logging/context.cc.
 void ReloadThreadName();
 
 }  // namespace internal

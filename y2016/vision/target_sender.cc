@@ -7,9 +7,9 @@
 #include <thread>
 #include <vector>
 
-#include "aos/common/logging/implementations.h"
-#include "aos/common/logging/logging.h"
-#include "aos/common/time.h"
+#include "aos/logging/implementations.h"
+#include "aos/logging/logging.h"
+#include "aos/time/time.h"
 #include "aos/vision/events/socket_types.h"
 #include "aos/vision/events/udp.h"
 #include "aos/vision/image/image_stream.h"

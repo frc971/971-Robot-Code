@@ -19,14 +19,14 @@ cc_library(
   ],
   deps = [
     ':auto_queue',
-    '//aos/common/controls:control_loop',
+    '//aos/controls:control_loop',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//y2014_bot3/control_loops/rollers:rollers_queue',
-    '//aos/common:time',
-    '//aos/common/util:phased_loop',
-    '//aos/common/util:trapezoid_profile',
-    '//aos/common/logging',
-    '//aos/common/logging:queue_logging',
+    '//aos/time:time',
+    '//aos/util:phased_loop',
+    '//aos/util:trapezoid_profile',
+    '//aos/logging',
+    '//aos/logging:queue_logging',
   ],
 )
 

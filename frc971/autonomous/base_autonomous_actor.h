@@ -3,8 +3,8 @@
 
 #include <memory>
 
-#include "aos/common/actions/actions.h"
-#include "aos/common/actions/actor.h"
+#include "aos/actions/actions.h"
+#include "aos/actions/actor.h"
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"

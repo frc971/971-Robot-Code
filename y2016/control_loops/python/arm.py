@@ -9,7 +9,7 @@ from frc971.control_loops.python import controls
 
 from y2016.control_loops.python.shoulder import Shoulder, IntegralShoulder
 from y2016.control_loops.python.wrist import Wrist, IntegralWrist
-from aos.common.util.trapezoid_profile import TrapezoidProfile
+from aos.util.trapezoid_profile import TrapezoidProfile
 
 from matplotlib import pylab
 import gflags

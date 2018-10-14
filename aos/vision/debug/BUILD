@@ -43,9 +43,9 @@ gtk_dependent_cc_library(
         "//tools:armhf-debian",
     ],
     deps = [
-        "//aos/common/logging",
-        "//aos/common/logging:implementations",
-        "//aos/common/util:global_factory",
+        "//aos/logging",
+        "//aos/logging:implementations",
+        "//aos/util:global_factory",
         "//aos/vision/blob:codec",
         "//aos/vision/blob:find_blob",
         "//aos/vision/blob:range_image",

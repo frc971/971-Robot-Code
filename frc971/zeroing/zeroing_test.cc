@@ -8,8 +8,8 @@
 #include "frc971/zeroing/zeroing.h"
 #include "frc971/control_loops/control_loops.q.h"
 #include "aos/testing/test_shm.h"
-#include "aos/common/util/thread.h"
-#include "aos/common/die.h"
+#include "aos/util/thread.h"
+#include "aos/die.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 
 namespace frc971 {

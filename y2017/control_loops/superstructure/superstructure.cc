@@ -1,7 +1,7 @@
 #include "y2017/control_loops/superstructure/superstructure.h"
 
-#include "aos/common/controls/control_loops.q.h"
-#include "aos/common/logging/logging.h"
+#include "aos/controls/control_loops.q.h"
+#include "aos/logging/logging.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2017/constants.h"
 #include "y2017/control_loops/superstructure/column/column.h"

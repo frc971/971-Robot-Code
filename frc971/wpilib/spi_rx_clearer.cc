@@ -5,7 +5,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "aos/common/logging/logging.h"
+#include "aos/logging/logging.h"
 
 namespace frc971 {
 namespace wpilib {

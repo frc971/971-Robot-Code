@@ -4,8 +4,8 @@
 #include <atomic>
 #include <memory>
 #include <string>
-#include "aos/common/queue.h"
-#include "aos/common/time.h"
+#include "aos/queue.h"
+#include "aos/time/time.h"
 
 // This file contains raw versions of the classes in event-loop.h.
 //

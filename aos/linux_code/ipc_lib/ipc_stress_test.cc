@@ -9,13 +9,13 @@
 #include <chrono>
 #include <string>
 
-#include "aos/common/die.h"
-#include "aos/common/libc/aos_strsignal.h"
-#include "aos/common/libc/dirname.h"
-#include "aos/common/logging/logging.h"
-#include "aos/common/mutex.h"
-#include "aos/common/time.h"
-#include "aos/common/type_traits.h"
+#include "aos/die.h"
+#include "aos/libc/aos_strsignal.h"
+#include "aos/libc/dirname.h"
+#include "aos/logging/logging.h"
+#include "aos/mutex/mutex.h"
+#include "aos/time/time.h"
+#include "aos/type_traits/type_traits.h"
 #include "aos/linux_code/ipc_lib/core_lib.h"
 #include "aos/testing/test_shm.h"
 

@@ -26,8 +26,8 @@ cc_library(
     deps = [
         ":googletest",
         "//aos:once",
-        "//aos/common:mutex",
-        "//aos/common/logging:implementations",
+        "//aos/mutex:mutex",
+        "//aos/logging:implementations",
     ],
 )
 
@@ -39,7 +39,7 @@ cc_test(
     deps = [
         ":googletest",
         ":test_logging",
-        "//aos/common/logging",
+        "//aos/logging",
     ],
 )
 
@@ -54,7 +54,7 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//aos/common/logging",
+        "//aos/logging",
     ],
 )
 
@@ -70,8 +70,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":test_logging",
-        "//aos/common:queues",
-        "//aos/common/logging",
+        "//aos:queues",
+        "//aos/logging",
         "//aos/linux_code/ipc_lib:shared_mem",
     ],
 )

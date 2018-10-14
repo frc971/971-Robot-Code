@@ -1,7 +1,7 @@
 #ifndef _AOS_VISION_DEBUG_DEBUG_FRAMEWORK_H_
 #define _AOS_VISION_DEBUG_DEBUG_FRAMEWORK_H_
 
-#include "aos/common/util/global_factory.h"
+#include "aos/util/global_factory.h"
 #include "aos/vision/blob/range_image.h"
 #include "aos/vision/events/epoll_events.h"
 #include "aos/vision/image/camera_params.pb.h"

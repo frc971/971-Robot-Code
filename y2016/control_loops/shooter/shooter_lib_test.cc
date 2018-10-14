@@ -6,8 +6,8 @@
 #include <memory>
 
 #include "gtest/gtest.h"
-#include "aos/common/queue.h"
-#include "aos/common/controls/control_loop_test.h"
+#include "aos/queue.h"
+#include "aos/controls/control_loop_test.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "y2016/control_loops/shooter/shooter.q.h"
 #include "y2016/control_loops/shooter/shooter.h"

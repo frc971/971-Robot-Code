@@ -1,6 +1,6 @@
 package y2017_bot3.control_loops;
 
-import "aos/common/controls/control_loops.q";
+import "aos/controls/control_loops.q";
 import "frc971/control_loops/control_loops.q";
 
 queue_group SuperstructureQueue {

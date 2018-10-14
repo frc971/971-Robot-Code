@@ -1,5 +1,5 @@
 #include "aos/events/simulated-event-loop.h"
-#include "aos/common/queue.h"
+#include "aos/queue.h"
 
 namespace aos {
 namespace {

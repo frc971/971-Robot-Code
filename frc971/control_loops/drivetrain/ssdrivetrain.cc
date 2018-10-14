@@ -1,8 +1,8 @@
 #include "frc971/control_loops/drivetrain/ssdrivetrain.h"
 
-#include "aos/common/commonmath.h"
-#include "aos/common/controls/polytope.h"
-#include "aos/common/logging/matrix_logging.h"
+#include "aos/commonmath.h"
+#include "aos/controls/polytope.h"
+#include "aos/logging/matrix_logging.h"
 
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"

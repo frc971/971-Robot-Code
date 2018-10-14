@@ -117,7 +117,7 @@ cc_library(
   deps = [
     '//third_party/ntcore_2017:ntcore',
     '@allwpilib_ni_libraries_repo_2017//:ni-libraries',
-    '//aos/common/logging',
+    '//aos/logging',
   ],
   hdrs = _h_hdrs + _hpp_hdrs + [
     'wpilibc/shared/include/CircularBuffer.inc',

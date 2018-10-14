@@ -3,8 +3,8 @@
 #include <inttypes.h>
 #include <chrono>
 
-#include "aos/common/logging/logging.h"
-#include "aos/common/time.h"
+#include "aos/logging/logging.h"
+#include "aos/time/time.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846

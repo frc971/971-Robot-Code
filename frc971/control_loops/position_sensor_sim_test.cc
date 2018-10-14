@@ -7,7 +7,7 @@
 #include "gtest/gtest.h"
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/position_sensor_sim.h"
-#include "aos/common/die.h"
+#include "aos/die.h"
 
 namespace frc971 {
 namespace control_loops {

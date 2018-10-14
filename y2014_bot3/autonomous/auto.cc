@@ -3,11 +3,11 @@
 #include <chrono>
 #include <memory>
 
-#include "aos/common/logging/logging.h"
-#include "aos/common/logging/queue_logging.h"
-#include "aos/common/time.h"
-#include "aos/common/util/phased_loop.h"
-#include "aos/common/util/trapezoid_profile.h"
+#include "aos/logging/logging.h"
+#include "aos/logging/queue_logging.h"
+#include "aos/time/time.h"
+#include "aos/util/phased_loop.h"
+#include "aos/util/trapezoid_profile.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2014_bot3/autonomous/auto.q.h"
 #include "y2014_bot3/control_loops/rollers/rollers.q.h"

@@ -10,7 +10,7 @@ cc_binary(
   deps = [
     ':accessories_queue',
     '//aos/linux_code:init',
-    '//aos/common/controls:control_loop',
+    '//aos/controls:control_loop',
   ],
 )
 
@@ -20,6 +20,6 @@ queue_library(
     'accessories.q',
   ],
   deps = [
-    '//aos/common/controls:control_loop_queues',
+    '//aos/controls:control_loop_queues',
   ],
 )

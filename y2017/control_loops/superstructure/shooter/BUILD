@@ -42,7 +42,7 @@ cc_library(
   ],
   deps = [
     ':shooter_plants',
-    '//aos/common/controls:control_loop',
+    '//aos/controls:control_loop',
     '//third_party/eigen',
     '//y2017/control_loops/superstructure:superstructure_queue',
   ],

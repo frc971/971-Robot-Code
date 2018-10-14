@@ -5,10 +5,10 @@
 
 #include "aos/linux_code/init.h"
 #include "aos/input/joystick_input.h"
-#include "aos/common/input/driver_station_data.h"
-#include "aos/common/logging/logging.h"
-#include "aos/common/time.h"
-#include "aos/common/actions/actions.h"
+#include "aos/input/driver_station_data.h"
+#include "aos/logging/logging.h"
+#include "aos/time/time.h"
+#include "aos/actions/actions.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2012/control_loops/accessories/accessories.q.h"

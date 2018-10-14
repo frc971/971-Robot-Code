@@ -4,7 +4,7 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/common/util/thread.h"
+#include "aos/util/thread.h"
 
 namespace aos {
 namespace testing {
