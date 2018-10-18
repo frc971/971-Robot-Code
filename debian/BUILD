@@ -36,6 +36,10 @@ load(
     ":arm_frc_gnueabi_deps.bzl",
     arm_frc_gnueabi_deps_debs = "files",
 )
+load(
+    ":python_gtk.bzl",
+    python_gtk_debs = "files",
+)
 load("//debian:packages.bzl", "download_packages", "generate_deb_tarball")
 
 filegroup(
@@ -44,6 +48,30 @@ filegroup(
         "matplotlib_init.patch",
     ],
     visibility = ["@matplotlib//:__pkg__"],
+)
+
+filegroup(
+    name = "python_shapely_patches",
+    srcs = [
+        "python_shapely_init.patch",
+    ],
+    visibility = ["@python_gtk//:__pkg__"],
+)
+
+filegroup(
+    name = "python_gi_patches",
+    srcs = [
+        "python_gi_init.patch",
+    ],
+    visibility = ["@python_gtk//:__pkg__"],
+)
+
+filegroup(
+    name = "python_geos_patches",
+    srcs = [
+        "python_geos.patch",
+    ],
+    visibility = ["@python_gtk//:__pkg__"],
 )
 
 py_binary(
@@ -143,6 +171,7 @@ download_packages(
     ],
     packages = [
         "python-matplotlib",
+        "python-tk",
         "python3-matplotlib",
     ],
 )
@@ -161,6 +190,25 @@ download_packages(
         "libncurses5",
         "libtinfo5",
         "zlib1g",
+    ],
+)
+
+download_packages(
+    name = "download_python_gtk_deps",
+    excludes = [
+        "fonts-freefont",
+        "gsettings-backend",
+        "libpng-dev",
+        "libz-dev",
+        "python3-dev",
+        "python3",
+    ],
+    packages = [
+        "libgtk-3-dev",
+        "python3-cairo",
+        "python3-gi",
+        "python3-gi-cairo",
+        "python3-shapely",
     ],
 )
 
@@ -207,4 +255,9 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "arm_frc_gnueabi_deps",
     files = arm_frc_gnueabi_deps_debs,
+)
+
+generate_deb_tarball(
+    name = "python_gtk",
+    files = python_gtk_debs,
 )

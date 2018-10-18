@@ -1,14 +1,50 @@
 genrule(
-    name = "patch_init",
+    name = "patch_gi_init",
     srcs = [
-        "usr/lib/python2.7/dist-packages/matplotlib/__init__.py",
-        "@//debian:matplotlib_patches",
+        "usr/lib/python3/dist-packages/gi/__init__.py",
+        "@//debian:python_gi_patches",
     ],
-    outs = ["matplotlib/__init__.py"],
+    outs = ["gi/__init__.py"],
     cmd = " && ".join([
-        "cp $(location usr/lib/python2.7/dist-packages/matplotlib/__init__.py) $@",
+        "cp $(location usr/lib/python3/dist-packages/gi/__init__.py) $@",
         "readonly PATCH=\"$$(readlink -f $(location @patch))\"",
-        "readonly FILE=\"$$(readlink -f $(location @//debian:matplotlib_patches))\"",
+        "readonly FILE=\"$$(readlink -f $(location @//debian:python_gi_patches))\"",
+        "(cd $(@D) && \"$${PATCH}\" -p1 < \"$${FILE}\") > /dev/null",
+    ]),
+    tools = [
+        "@patch",
+    ],
+)
+
+genrule(
+    name = "patch_shapely_init",
+    srcs = [
+        "usr/lib/python3/dist-packages/shapely/__init__.py",
+        "@//debian:python_shapely_patches",
+    ],
+    outs = ["shapely/__init__.py"],
+    cmd = " && ".join([
+        "cp $(location usr/lib/python3/dist-packages/shapely/__init__.py) $@",
+        "readonly PATCH=\"$$(readlink -f $(location @patch))\"",
+        "readonly FILE=\"$$(readlink -f $(location @//debian:python_shapely_patches))\"",
+        "(cd $(@D) && \"$${PATCH}\" -p1 < \"$${FILE}\") > /dev/null",
+    ]),
+    tools = [
+        "@patch",
+    ],
+)
+
+genrule(
+    name = "patch_geos",
+    srcs = [
+        "usr/lib/python3/dist-packages/shapely/geos.py",
+        "@//debian:python_geos_patches",
+    ],
+    outs = ["shapely/geos.py"],
+    cmd = " && ".join([
+        "cp $(location usr/lib/python3/dist-packages/shapely/geos.py) $@",
+        "readonly PATCH=\"$$(readlink -f $(location @patch))\"",
+        "readonly FILE=\"$$(readlink -f $(location @//debian:python_geos_patches))\"",
         "(cd $(@D) && \"$${PATCH}\" -p1 < \"$${FILE}\") > /dev/null",
     ]),
     tools = [
@@ -17,28 +53,33 @@ genrule(
 )
 
 _src_files = glob(
-    include = ["usr/lib/python2.7/dist-packages/**/*.py"],
+    include = ["usr/lib/python3/dist-packages/**/*.py"],
     exclude = [
-        "usr/lib/python2.7/dist-packages/matplotlib/__init__.py",
+        "usr/lib/python3/dist-packages/gi/__init__.py",
+        "usr/lib/python3/dist-packages/shapely/__init__.py",
+        "usr/lib/python3/dist-packages/shapely/geos.py",
     ],
 )
 
 _data_files = glob([
-    "usr/share/matplotlib/mpl-data/**",
-    "usr/share/tcltk/**",
+    "usr/lib/x86_64-linux-gnu/girepository-1.0/**/*",
 ])
 
 _src_copied = ["/".join(f.split("/")[4:]) for f in _src_files]
 
 _builtin_so_files = glob([
-    "usr/lib/python2.7/dist-packages/**/*.x86_64-linux-gnu.so",
-    "usr/lib/python2.7/lib-dynload/*.so",
+    "usr/lib/python3/dist-packages/**/*.cpython-34m-x86_64-linux-gnu.so",
 ])
 
-_system_so_files = glob([
-    "usr/lib/**/*.so*",
-    "lib/x86_64-linux-gnu/**/*.so*",
-])
+_system_so_files = glob(
+    include = [
+        "lib/x86_64-linux-gnu/**/*.so*",
+        "usr/lib/**/*.so*",
+    ],
+    exclude = [
+        "usr/lib/**/*.cpython-34m-x86_64-linux-gnu.so",
+    ],
+)
 
 _builtin_so_copied = ["/".join(f.split("/")[4:]) for f in _builtin_so_files]
 
@@ -53,6 +94,7 @@ _builtin_rpaths = [":".join([
 
 _system_rpaths = [":".join([
     "\\$$ORIGIN/%s/rpathed/usr/lib/x86_64-linux-gnu" % rel,
+    "\\$$ORIGIN/%s/rpathed/usr/lib" % rel,
     "\\$$ORIGIN/%s/rpathed/lib/x86_64-linux-gnu" % rel,
 ]) for rel in ["/".join([".." for _ in so.split("/")[1:]]) for so in _system_so_copied]]
 
@@ -89,6 +131,13 @@ genrule(
 )
 
 genrule(
+    name = "copy_libgeos_c",
+    srcs = ["rpathed/usr/lib/libgeos_c.so.1"],
+    outs = ["rpathed/usr/lib/libgeos_c.so"],
+    cmd = "cp $< $@",
+)
+
+genrule(
     name = "copy_files",
     srcs = _src_files,
     outs = _src_copied,
@@ -98,27 +147,17 @@ genrule(
     )]),
 )
 
-genrule(
-    name = "create_rc",
-    outs = ["usr/share/matplotlib/mpl-data/matplotlibrc"],
-    cmd = "\n".join([
-        "cat > $@ << END",
-        # This is necessary to make matplotlib actually plot things to the
-        # screen by default.
-        "backend      : TkAgg",
-        "END",
-    ]),
-)
-
 py_library(
-    name = "matplotlib",
+    name = "python_gtk",
     srcs = _src_copied + [
-        "matplotlib/__init__.py",
+        "gi/__init__.py",
+        "shapely/__init__.py",
+        "shapely/geos.py",
     ],
     data = _data_files + _builtin_so_copied + _system_so_copied + [
-        ":usr/share/matplotlib/mpl-data/matplotlibrc",
+        "rpathed/usr/lib/libgeos_c.so",
     ],
-    imports = ["usr/lib/python2.7/dist-packages"],
+    imports = ["usr/lib/python3/dist-packages"],
     restricted_to = ["@//tools:k8"],
     visibility = ["//visibility:public"],
 )

@@ -1,0 +1,8 @@
+--- a/__init__.py	2018-10-17 21:55:40.000000000 -0700
++++ b/__init__.py	2018-10-17 22:54:48.798723540 -0700
+@@ -1 +1,5 @@
+ __version__ = "1.4.3"
++
++import os
++_base = os.path.dirname(os.path.dirname(__file__))
++os.environ['LIBRARY_PATH'] = os.path.join(_base, 'rpathed', 'usr', 'lib')

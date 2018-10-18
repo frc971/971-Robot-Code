@@ -8,16 +8,16 @@
  import six
  import sys
  import distutils.version
-@@ -110,6 +111,21 @@
+@@ -110,6 +111,26 @@
  __version__ = str('1.4.2')
  __version__numpy__ = str('1.6')  # minimum required numpy version
  
-+matplotlib_base = os.path.dirname(os.path.dirname(__file__))
++_matplotlib_base = os.path.dirname(os.path.dirname(__file__))
 +
 +# Hack to point matplotlib at its data.
 +os.environ['MATPLOTLIBDATA'] = \
 +        os.path.join( \
-+            matplotlib_base,
++            _matplotlib_base,
 +            "usr", "share", "matplotlib", "mpl-data")
 +# Avoid reading /etc/matplotlib in all cases. Matplotlib is pretty happy to
 +# escape the sandbox by using absolute paths.
@@ -26,6 +26,11 @@
 +# That causes the directory to not be created in time. We set the variable
 +# manually here to work around the bug.
 +os.environ['MPLCONFIGDIR'] = '/tmp/matplotlib-nobody'
++
++# Tell Tcl where to find the sandboxed version. Otherwise, it will try using
++# one from the host system, even if that's an incompatible version.
++os.environ['TCL_LIBRARY'] = os.path.join(_matplotlib_base, 'usr', 'share',
++                                         'tcltk', 'tcl8.6')
 +
  try:
      import dateutil

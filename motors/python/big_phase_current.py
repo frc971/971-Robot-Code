@@ -1,4 +1,6 @@
-#!/usr/bin/python3
+#!/usr/bin/python
+
+from __future__ import print_function
 
 import numpy
 from matplotlib import pylab
@@ -106,10 +108,10 @@ max_one_amp_driving_voltage = max(one_amp_driving_voltage)
 # by to get motor current.
 one_amp_scalar = (phases(f_single, 0.0).T * phases(g_single, 0.0))[0, 0]
 
-print 'Max BEMF', max(f(theta_range))
-print 'Max current', max(g(theta_range))
-print 'Max drive voltage (one_amp_driving_voltage)', max(one_amp_driving_voltage)
-print 'one_amp_scalar', one_amp_scalar
+print('Max BEMF', max(f(theta_range)))
+print('Max current', max(g(theta_range)))
+print('Max drive voltage (one_amp_driving_voltage)', max(one_amp_driving_voltage))
+print('one_amp_scalar', one_amp_scalar)
 
 pylab.figure()
 pylab.subplot(1, 1, 1)
@@ -420,15 +422,15 @@ class Simulation(object):
         controls.c2d(-self.A_model, self.B_model, 1.0 / hz)
     self.B_discrete_inverse_model = numpy.matrix(numpy.eye(3)) / (self.B_discrete_model[0, 0] - self.B_discrete_model[1, 0])
 
-    print 'constexpr double kL = %g;' % self.L_model
-    print 'constexpr double kM = %g;' % self.M_model
-    print 'constexpr double kR = %g;' % self.R_model
-    print 'constexpr float kAdiscrete_diagonal = %gf;' % self.A_discrete_model[0, 0]
-    print 'constexpr float kAdiscrete_offdiagonal = %gf;' % self.A_discrete_model[1, 0]
-    print 'constexpr float kBdiscrete_inv_diagonal = %gf;' % self.B_discrete_inverse_model[0, 0]
-    print 'constexpr float kBdiscrete_inv_offdiagonal = %gf;' % self.B_discrete_inverse_model[1, 0]
-    print 'constexpr double kOneAmpScalar = %g;' % one_amp_scalar
-    print 'constexpr double kMaxOneAmpDrivingVoltage = %g;' % max_one_amp_driving_voltage
+    print('constexpr double kL = %g;' % self.L_model)
+    print('constexpr double kM = %g;' % self.M_model)
+    print('constexpr double kR = %g;' % self.R_model)
+    print('constexpr float kAdiscrete_diagonal = %gf;' % self.A_discrete_model[0, 0])
+    print('constexpr float kAdiscrete_offdiagonal = %gf;' % self.A_discrete_model[1, 0])
+    print('constexpr float kBdiscrete_inv_diagonal = %gf;' % self.B_discrete_inverse_model[0, 0])
+    print('constexpr float kBdiscrete_inv_offdiagonal = %gf;' % self.B_discrete_inverse_model[1, 0])
+    print('constexpr double kOneAmpScalar = %g;' % one_amp_scalar)
+    print('constexpr double kMaxOneAmpDrivingVoltage = %g;' % max_one_amp_driving_voltage)
     print('A_discrete', self.A_discrete)
     print('B_discrete', self.B_discrete)
     print('B_discrete_sub', numpy.linalg.inv(self.B_discrete[0:2, 0:2]))
@@ -520,8 +522,8 @@ class Simulation(object):
     # So, we now know how much the change in current is due to changes in BEMF.
     # Subtract that, and then run the stock statespace equation.
     Vn_ff = self.B_discrete_inverse * (Inext - self.A_discrete * (Icurrent - p) - p_next_imag.real)
-    print 'Vn_ff', Vn_ff
-    print 'Inext', Inext
+    print('Vn_ff', Vn_ff)
+    print('Inext', Inext)
     Vn = Vn_ff + self.K * (Icurrent - measured_current)
 
     E = phases(f_single, self.X[3, 0]) / Kv * self.X[4, 0]
@@ -568,7 +570,7 @@ class Simulation(object):
 
         self.current_time = t
 
-    print 'Took %f to simulate' % (time.time() - start_wall_time)
+    print('Took %f to simulate' % (time.time() - start_wall_time))
 
     self.data_logger.plot()
 

@@ -1,0 +1,14 @@
+--- a/geos.py	2018-10-17 23:02:05.000000000 -0700
++++ b/geos.py	2018-10-17 23:16:33.017257372 -0700
+@@ -40,6 +40,11 @@ def load_dll(libname, fallbacks=None):
+             return CDLL(lib)
+         except OSError:
+             pass
++        base = os.path.dirname(os.path.dirname(__file__))
++        try:
++            return CDLL(os.path.join(base, 'rpathed', 'usr', 'lib', lib))
++        except OSError:
++            pass
+     if fallbacks is not None:
+         for name in fallbacks:
+             try:

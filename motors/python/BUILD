@@ -3,6 +3,9 @@ py_binary(
     srcs = [
         "big_phase_current.py",
     ],
+    data = [
+        "@python_repo//:scipy",
+    ],
     legacy_create_init = False,
     restricted_to = ["//tools:k8"],
     deps = [
@@ -10,6 +13,7 @@ py_binary(
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:controls",
+        "@matplotlib",
     ],
 )
 

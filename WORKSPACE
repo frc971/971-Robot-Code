@@ -36,6 +36,10 @@ load(
     "//debian:arm_frc_gnueabi_deps.bzl",
     arm_frc_gnueabi_deps_debs = "files",
 )
+load(
+    "//debian:python_gtk.bzl",
+    python_gtk_debs = "files",
+)
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
 generate_repositories_for_debs(python_debs)
@@ -55,6 +59,8 @@ generate_repositories_for_debs(patchelf_debs)
 generate_repositories_for_debs(matplotlib_debs)
 
 generate_repositories_for_debs(arm_frc_gnueabi_deps_debs)
+
+generate_repositories_for_debs(python_gtk_debs)
 
 new_http_archive(
     name = "python_repo",
@@ -223,8 +229,8 @@ new_http_archive(
 new_http_archive(
     name = "matplotlib",
     build_file = "debian/matplotlib.BUILD",
-    sha256 = "4aa1efb22f74859ab5c478ff743f2fd34291fc30635f4b7cf2d67550ed226117",
-    url = "http://frc971.org/Build-Dependencies/matplotlib.tar.gz",
+    sha256 = "dc8e04123a93180bf89727bf6b5a5a0f6d210b6c1c5eaec148f7f8183abbce24",
+    url = "http://frc971.org/Build-Dependencies/matplotlib-2.tar.gz",
 )
 
 new_http_archive(
@@ -241,6 +247,13 @@ new_http_archive(
     url = "http://frc971.org/Build-Dependencies/arm_frc_gnueabi_deps.tar.gz",
 )
 
+new_http_archive(
+    name = "python_gtk",
+    build_file = "debian/python_gtk.BUILD",
+    sha256 = "850f5c1521b94c5c049c44d9107cd8ae9110696fbf054d2cb48bae9620fd4d23",
+    url = "http://frc971.org/Build-Dependencies/python_gtk.tar.gz",
+)
+
 # Downloaded from
 # https://developer.arm.com/-/media/Files/downloads/gnu-rm/7-2018q2/gcc-arm-none-eabi-7-2018-q2-update-linux.tar.bz2?revision=bc2c96c0-14b5-4bb4-9f18-bceb4050fee7?product=GNU%20Arm%20Embedded%20Toolchain,64-bit,,Linux,7-2018-q2-update
 new_http_archive(
@@ -253,7 +266,7 @@ new_http_archive(
 
 new_http_archive(
     name = "cgal_repo",
+    build_file = "debian/cgal.BUILD",
     sha256 = "d564dda558570344b4caa66c5bae2cdae9ef68e07829d64f5651b25f2c6a0e9e",
     url = "http://frc971.org/Build-Dependencies/cgal-dev-4.5-2.tar.gz",
-    build_file = 'debian/cgal.BUILD',
 )
