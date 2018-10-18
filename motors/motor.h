@@ -46,6 +46,7 @@ class MotorControls {
 
   virtual float estimated_velocity() const = 0;
   virtual int16_t i_goal(size_t ii) const = 0;
+  virtual float overall_measured_current() const = 0;
 };
 
 // Controls a single motor.
@@ -157,6 +158,10 @@ class Motor final {
 
   inline int16_t goal_current() const {
     return goal_current_;
+  }
+
+  inline float overall_measured_current() const {
+    return controls_->overall_measured_current();
   }
 
  private:

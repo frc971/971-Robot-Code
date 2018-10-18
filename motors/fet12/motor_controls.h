@@ -47,13 +47,18 @@ class MotorControlsImplementation : public MotorControls {
     return static_cast<int16_t>(I_last_[ii] * 10.0f);
   }
 
+  float overall_measured_current() const { return overall_measured_current_; }
+
  private:
   const ComplexMatrix<3, 1> E1Unrotated_, E2Unrotated_;
 
   float estimated_velocity_ = 0;
   float filtered_current_ = 0;
+  float overall_measured_current_ = 0;
 
   ::Eigen::Matrix<float, 3, 1> I_last_ = ::Eigen::Matrix<float, 3, 1>::Zero();
+  ::Eigen::Matrix<float, 3, 1> I_prev_ =
+      ::Eigen::Matrix<float, 3, 1>::Zero();
 
   int16_t debug_[9];
 };

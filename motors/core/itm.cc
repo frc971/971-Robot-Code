@@ -7,7 +7,7 @@ namespace motors {
 namespace itm {
 namespace {
 
-constexpr int kDesiredTraceFrequency = 64000;
+constexpr int kDesiredTraceFrequency = 128000;
 // TODO(Brian): Is this actually the frequency our parts use?
 constexpr int kTpiuAsynchronousClockFrequency = F_CPU;
 

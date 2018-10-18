@@ -178,6 +178,7 @@ MotorControlsImplementation::MotorControlsImplementation()
   const float overall_measured_current =
       ((E1 + E2).real().transpose() * measured_current /
        static_cast<float>(kOneAmpScalar))(0);
+  overall_measured_current_ = overall_measured_current;
   const float current_error = goal_current - overall_measured_current;
   estimated_velocity_ += current_error * 0.1f;
   debug_[3] = theta;
