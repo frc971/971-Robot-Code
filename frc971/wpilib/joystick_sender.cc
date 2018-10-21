@@ -1,7 +1,7 @@
 #include "frc971/wpilib/joystick_sender.h"
 
 #include "aos/robot_state/robot_state.q.h"
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 #include "aos/network/team_number.h"
 #include "aos/logging/queue_logging.h"
 

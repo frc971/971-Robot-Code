@@ -10,7 +10,7 @@
 #include "aos/logging/queue_logging.h"
 #include "aos/robot_state/robot_state.q.h"
 #include "aos/time/time.h"
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 #include "frc971/wpilib/imu.q.h"
 #include "frc971/zeroing/averager.h"
 

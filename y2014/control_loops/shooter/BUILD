@@ -10,7 +10,7 @@ cc_binary(
   deps = [
     ':shooter_queue',
     '//aos/controls:replay_control_loop',
-    '//aos/linux_code:init',
+    '//aos:init',
   ],
 )
 
@@ -85,7 +85,7 @@ cc_binary(
     'shooter_main.cc',
   ],
   deps = [
-    '//aos/linux_code:init',
+    '//aos:init',
     ':shooter_lib',
   ],
 )

@@ -15,7 +15,7 @@ cc_library(
         "//aos:die",
         "//aos/type_traits:type_traits",
         "//aos/logging",
-        "//aos/linux_code/ipc_lib:aos_sync",
+        "//aos/ipc_lib:aos_sync",
     ],
 )
 

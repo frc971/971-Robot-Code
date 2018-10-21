@@ -1,7 +1,7 @@
 #ifndef AOS_TESTING_TEST_SHM_H_
 #define AOS_TESTING_TEST_SHM_H_
 
-#include "aos/linux_code/ipc_lib/shared_mem.h"
+#include "aos/ipc_lib/shared_mem.h"
 
 namespace aos {
 namespace testing {

@@ -1,4 +1,4 @@
-#include "aos/linux_code/configuration.h"
+#include "aos/configuration.h"
 
 #include <string.h>
 #include <stdlib.h>

@@ -11,7 +11,7 @@
 #include <memory>
 #include <string>
 
-#include "aos/linux_code/configuration.h"
+#include "aos/configuration.h"
 #include "aos/logging/binary_log_file.h"
 #include "aos/queue_types.h"
 #include "aos/logging/logging.h"

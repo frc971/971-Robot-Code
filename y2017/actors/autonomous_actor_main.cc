@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 #include "frc971/autonomous/auto.q.h"
 #include "y2017/actors/autonomous_actor.h"
 

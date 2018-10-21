@@ -40,7 +40,7 @@ cc_binary(
     'superstructure_main.cc',
   ],
   deps = [
-    '//aos/linux_code:init',
+    '//aos:init',
     ':superstructure_lib',
     ':superstructure_queue',
   ],

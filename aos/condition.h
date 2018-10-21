@@ -1,7 +1,7 @@
 #ifndef AOS_CONDITION_H_
 #define AOS_CONDITION_H_
 
-#include "aos/linux_code/ipc_lib/aos_sync.h"
+#include "aos/ipc_lib/aos_sync.h"
 
 namespace aos {
 

@@ -1,10 +1,10 @@
-#include "aos/linux_code/ipc_lib/core_lib.h"
+#include "aos/ipc_lib/core_lib.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 
-#include "aos/linux_code/ipc_lib/shared_mem_types.h"
+#include "aos/ipc_lib/shared_mem_types.h"
 
 static uint8_t aos_8max(uint8_t l, uint8_t r) {
   return (l > r) ? l : r;

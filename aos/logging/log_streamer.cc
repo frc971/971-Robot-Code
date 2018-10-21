@@ -14,8 +14,8 @@
 #include "aos/logging/implementations.h"
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"
-#include "aos/linux_code/init.h"
-#include "aos/linux_code/ipc_lib/queue.h"
+#include "aos/init.h"
+#include "aos/ipc_lib/queue.h"
 
 namespace aos {
 namespace logging {

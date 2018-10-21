@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 #include "y2016/actors/autonomous_actor.h"
 
 int main(int /*argc*/, char * /*argv*/ []) {

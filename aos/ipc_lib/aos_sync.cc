@@ -3,7 +3,7 @@
 #define NDEBUG
 #endif
 
-#include "aos/linux_code/ipc_lib/aos_sync.h"
+#include "aos/ipc_lib/aos_sync.h"
 
 #include <linux/futex.h>
 #include <unistd.h>

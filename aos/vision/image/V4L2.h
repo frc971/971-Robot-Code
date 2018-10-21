@@ -1,5 +1,5 @@
-#ifndef AOS_LINUX_CODE_CAMREA_V4L2_H_
-#define AOS_LINUX_CODE_CAMREA_V4L2_H_
+#ifndef AOS_CAMREA_V4L2_H_
+#define AOS_CAMREA_V4L2_H_
 
 // This file handles including everything needed to use V4L2 and has some
 // utility functions.

@@ -14,7 +14,7 @@
 #include "aos/util/log_interval.h"
 #include "aos/input/drivetrain_input.h"
 #include "aos/input/joystick_input.h"
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 #include "aos/vision/events/udp.h"
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/autonomous/base_autonomous_actor.h"

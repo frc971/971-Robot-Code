@@ -162,7 +162,7 @@ cc_binary(
         "//aos/mutex:mutex",
         "//aos/logging",
         "//aos/logging:implementations",
-        "//aos/linux_code:init",
+        "//aos:init",
         "//third_party/gflags",
     ],
 )

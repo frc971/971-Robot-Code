@@ -3,7 +3,7 @@
 #include <chrono>
 
 #include "aos/logging/queue_logging.h"
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 #include "aos/util/phased_loop.h"
 #include "frc971/wpilib/pdp_values.q.h"
 

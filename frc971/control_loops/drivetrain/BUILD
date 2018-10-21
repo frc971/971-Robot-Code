@@ -11,7 +11,7 @@ cc_binary(
     deps = [
         ":drivetrain_queue",
         "//aos/controls:replay_control_loop",
-        "//aos/linux_code:init",
+        "//aos:init",
         "//frc971/queues:gyro",
     ],
 )

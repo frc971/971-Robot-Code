@@ -1,6 +1,6 @@
 #include "y2016/control_loops/superstructure/superstructure.h"
 
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 
 int main() {
   ::aos::Init();

@@ -29,7 +29,7 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":autonomous_action_lib",
-        "//aos/linux_code:init",
+        "//aos:init",
         "//frc971/autonomous:auto_queue",
     ],
 )

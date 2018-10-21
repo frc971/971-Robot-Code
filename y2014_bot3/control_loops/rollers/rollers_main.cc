@@ -1,6 +1,6 @@
 #include "y2014_bot3/control_loops/rollers/rollers.h"
 
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 
 int main() {
   ::aos::Init();

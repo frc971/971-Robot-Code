@@ -72,7 +72,7 @@ cc_library(
         ":test_logging",
         "//aos:queues",
         "//aos/logging",
-        "//aos/linux_code/ipc_lib:shared_mem",
+        "//aos/ipc_lib:shared_mem",
     ],
 )
 

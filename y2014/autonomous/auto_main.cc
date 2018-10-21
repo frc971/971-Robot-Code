@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #include "aos/time/time.h"
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "frc971/autonomous/auto.q.h"
 #include "y2014/autonomous/auto.h"

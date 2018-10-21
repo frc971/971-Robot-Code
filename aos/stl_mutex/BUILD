@@ -7,7 +7,7 @@ cc_library(
     ],
     deps = [
         "//aos/logging",
-        "//aos/linux_code/ipc_lib:aos_sync",
+        "//aos/ipc_lib:aos_sync",
     ],
 )
 

@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 #include "y2014/actors/shoot_action.q.h"
 #include "y2014/actors/shoot_actor.h"
 

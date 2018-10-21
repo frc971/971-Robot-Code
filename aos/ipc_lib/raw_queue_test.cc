@@ -1,4 +1,4 @@
-#include "aos/linux_code/ipc_lib/queue.h"
+#include "aos/ipc_lib/queue.h"
 
 #include <unistd.h>
 #include <sys/mman.h>
@@ -11,7 +11,7 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/linux_code/ipc_lib/core_lib.h"
+#include "aos/ipc_lib/core_lib.h"
 #include "aos/type_traits/type_traits.h"
 #include "aos/testing/test_shm.h"
 #include "aos/time/time.h"

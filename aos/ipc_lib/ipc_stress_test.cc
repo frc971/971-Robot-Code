@@ -16,7 +16,7 @@
 #include "aos/mutex/mutex.h"
 #include "aos/time/time.h"
 #include "aos/type_traits/type_traits.h"
-#include "aos/linux_code/ipc_lib/core_lib.h"
+#include "aos/ipc_lib/core_lib.h"
 #include "aos/testing/test_shm.h"
 
 // This runs all of the IPC-related tests in a bunch of parallel processes for a

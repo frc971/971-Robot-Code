@@ -13,8 +13,8 @@
 #include "aos/time/time.h"
 #include "aos/util/death_test_log_implementation.h"
 #include "aos/util/thread.h"
-#include "aos/linux_code/ipc_lib/aos_sync.h"
-#include "aos/linux_code/ipc_lib/core_lib.h"
+#include "aos/ipc_lib/aos_sync.h"
+#include "aos/ipc_lib/core_lib.h"
 #include "aos/testing/test_logging.h"
 #include "aos/testing/test_shm.h"
 

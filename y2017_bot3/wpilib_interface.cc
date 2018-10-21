@@ -27,7 +27,7 @@
 #include "aos/util/compiler_memory_barrier.h"
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"

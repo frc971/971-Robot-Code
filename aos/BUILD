@@ -5,8 +5,8 @@ filegroup(
     srcs = [
         "//aos/logging:log_displayer",
         "//aos/logging:log_streamer",
-        "//aos/linux_code:core",
-        "//aos/linux_code/starter",
+        "//aos:core",
+        "//aos/starter",
     ],
     visibility = ["//visibility:public"],
 )
@@ -23,10 +23,10 @@ filegroup(
     name = "prime_binaries_stripped",
     srcs = [
         # starter is hard coded to look for a non-stripped core...
-        "//aos/linux_code:core",
+        "//aos:core",
         "//aos/logging:log_streamer.stripped",
         "//aos/logging:log_displayer.stripped",
-        "//aos/linux_code/starter",
+        "//aos/starter",
     ],
     visibility = ["//visibility:public"],
 )
@@ -155,8 +155,8 @@ cc_library(
         "//aos/mutex:mutex",
         "//aos/time:time",
         "//aos/logging:printf_formats",
-        "//aos/linux_code/ipc_lib:core_lib",
-        "//aos/linux_code/ipc_lib:shared_mem",
+        "//aos/ipc_lib:core_lib",
+        "//aos/ipc_lib:shared_mem",
     ],
     visibility = ["//visibility:public"],
 )
@@ -185,8 +185,8 @@ cc_library(
     ],
     deps = [
         "//aos/messages:messages",
-        "//aos/linux_code:queue",
-        "//aos/linux_code/ipc_lib:queue",
+        "//aos:queue",
+        "//aos/ipc_lib:queue",
     ],
     visibility = ["//visibility:public"],
 )
@@ -259,7 +259,7 @@ cc_library(
     deps = [
         "//aos/mutex:mutex",
         "//aos/logging",
-        "//aos/linux_code/ipc_lib:aos_sync",
+        "//aos/ipc_lib:aos_sync",
     ],
     visibility = ["//visibility:public"],
 )
@@ -276,8 +276,8 @@ cc_test(
         "//aos/time:time",
         "//aos/logging",
         "//aos/util:thread",
-        "//aos/linux_code/ipc_lib:aos_sync",
-        "//aos/linux_code/ipc_lib:core_lib",
+        "//aos/ipc_lib:aos_sync",
+        "//aos/ipc_lib:core_lib",
         "//aos/testing:googletest",
         "//aos/testing:prevent_exit",
         "//aos/testing:test_shm",
@@ -325,7 +325,7 @@ cc_library(
     deps = [
         "//aos/time:time",
         "//aos/logging",
-        "//aos/linux_code/ipc_lib:aos_sync",
+        "//aos/ipc_lib:aos_sync",
     ],
     visibility = ["//visibility:public"],
 )
@@ -340,5 +340,111 @@ cc_test(
         "//aos/time:time",
         "//aos/testing:googletest",
         "//aos/testing:test_logging",
+    ],
+)
+
+cc_binary(
+    name = "dump_rtprio",
+    srcs = [
+        "dump_rtprio.cc",
+    ],
+    deps = [
+        "//aos/time:time",
+        "//aos/logging",
+        "//aos/logging:implementations",
+    ],
+)
+
+cc_library(
+    name = "queue",
+    hdrs = [
+        "queue-tmpl.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    visibility = ["//aos:__pkg__"],
+)
+
+cc_library(
+    name = "complex_thread_local",
+    srcs = [
+        "complex_thread_local.cc",
+    ],
+    hdrs = [
+        "complex_thread_local.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    linkopts = [
+        "-lpthread",
+    ],
+    deps = [
+        "//aos:once",
+        "//aos:die",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_test(
+    name = "complex_thread_local_test",
+    srcs = [
+        "complex_thread_local_test.cc",
+    ],
+    deps = [
+        ":complex_thread_local",
+        "//aos/logging",
+        "//aos/util:thread",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
+    name = "init",
+    srcs = [
+        "init.cc",
+    ],
+    hdrs = [
+        "init.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    deps = [
+        "//aos:die",
+        "//aos/logging:implementations",
+        "//aos/ipc_lib:shared_mem",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "configuration",
+    srcs = [
+        "configuration.cc",
+    ],
+    hdrs = [
+        "configuration.h",
+    ],
+    compatible_with = [
+        "//tools:armhf-debian",
+    ],
+    deps = [
+        "//aos:once",
+        "//aos:unique_malloc_ptr",
+        "//aos/logging",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "core",
+    srcs = [
+        "core.cc",
+    ],
+    deps = [
+        ":init",
+        "//aos/util:run_command",
     ],
 )

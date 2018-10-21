@@ -6,7 +6,7 @@
 #include <functional>
 #include <thread>
 
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 #include "aos/robot_state/robot_state.q.h"
 
 namespace frc971 {

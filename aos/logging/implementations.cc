@@ -10,7 +10,7 @@
 #include "aos/logging/printf_formats.h"
 #include "aos/queue_types.h"
 #include "aos/time/time.h"
-#include "aos/linux_code/ipc_lib/queue.h"
+#include "aos/ipc_lib/queue.h"
 #include "aos/once.h"
 
 namespace aos {

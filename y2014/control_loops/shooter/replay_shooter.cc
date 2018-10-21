@@ -1,5 +1,5 @@
 #include "aos/controls/replay_control_loop.h"
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 
 #include "y2014/control_loops/shooter/shooter.q.h"
 

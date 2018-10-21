@@ -1,9 +1,9 @@
-#ifndef AOS_LINUX_CODE_IPC_LIB_SHARED_MEM_TYPES_H_
-#define AOS_LINUX_CODE_IPC_LIB_SHARED_MEM_TYPES_H_
+#ifndef AOS_IPC_LIB_SHARED_MEM_TYPES_H_
+#define AOS_IPC_LIB_SHARED_MEM_TYPES_H_
 
 #include <stddef.h>
 
-#include "aos/linux_code/ipc_lib/aos_sync.h"
+#include "aos/ipc_lib/aos_sync.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,4 +61,4 @@ struct aos_core {
 }
 #endif
 
-#endif  // AOS_LINUX_CODE_IPC_LIB_SHARED_MEM_TYPES_H_
+#endif  // AOS_IPC_LIB_SHARED_MEM_TYPES_H_

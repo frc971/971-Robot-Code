@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #include "aos/logging/logging.h"
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 #include "bot3/actions/drivetrain_action.h"
 #include "frc971/actions/drivetrain_action.q.h"
 
