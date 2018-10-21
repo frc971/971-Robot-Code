@@ -9,7 +9,7 @@ set -u
 
 BAZEL_SOURCE="$1"
 
-VERSION="$(date +%Y%m%d%H%M)+$(GIT_DIR="${BAZEL_SOURCE}/.git" git rev-parse --short HEAD)"
+VERSION="0.19.0rc4-$(date +%Y%m%d%H%M)+$(GIT_DIR="${BAZEL_SOURCE}/.git" git rev-parse --short HEAD)"
 OUTPUT="bazel_${VERSION}"
 
 (

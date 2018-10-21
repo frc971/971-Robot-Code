@@ -103,6 +103,7 @@ cc_toolchain(
     static_runtime_libs = [":empty"],
     strip_files = ":clang_3p6_strip_files",
     supports_param_files = 1,
+    toolchain_identifier = "k8_linux",
 )
 
 filegroup(
@@ -156,6 +157,7 @@ cc_toolchain(
     static_runtime_libs = [":empty"],
     strip_files = ":roborio_strip_files",
     supports_param_files = 1,
+    toolchain_identifier = "roborio_linux",
 )
 
 filegroup(
@@ -214,6 +216,7 @@ cc_toolchain(
     static_runtime_libs = [":empty"],
     strip_files = ":linaro_linux_strip_files",
     supports_param_files = 1,
+    toolchain_identifier = "clang_linux_armhf",
 )
 
 filegroup(
@@ -256,6 +259,7 @@ cc_toolchain(
     static_runtime_libs = [":empty"],
     strip_files = "//tools/cpp/gcc_arm_none_eabi:strip",
     supports_param_files = 1,
+    toolchain_identifier = "cortex-m4f",
 )
 
 cc_toolchain(
@@ -270,6 +274,7 @@ cc_toolchain(
     static_runtime_libs = [":empty"],
     strip_files = ":empty",
     supports_param_files = 1,
+    toolchain_identifier = "cortex-m4f-k22",
 )
 
 py_binary(

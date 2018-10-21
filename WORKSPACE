@@ -270,3 +270,21 @@ new_http_archive(
     sha256 = "d564dda558570344b4caa66c5bae2cdae9ef68e07829d64f5651b25f2c6a0e9e",
     url = "http://frc971.org/Build-Dependencies/cgal-dev-4.5-2.tar.gz",
 )
+
+# Java9 JDK.
+new_http_archive(
+    name = "openjdk_linux_archive",
+    build_file_content = """
+java_runtime(
+    name = 'jdk',
+    srcs = glob(['**']),
+    visibility = ['//visibility:public']
+)
+""",
+    sha256 = "f27cb933de4f9e7fe9a703486cf44c84bc8e9f138be0c270c9e5716a32367e87",
+    strip_prefix = "zulu9.0.7.1-jdk9.0.7-linux_x64-allmodules",
+    urls = [
+        "http://frc971.org/Build-Dependencies/zulu9.0.7.1-jdk9.0.7-linux_x64-allmodules.tar.gz",
+    ],
+)
+
