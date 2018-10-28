@@ -32,7 +32,8 @@ else
   ssh "admin@${ROBOT_HOSTNAME}" ln -s /media/sda1 logs
 fi
 
-ssh "admin@${ROBOT_HOSTNAME}" 'PATH="${PATH}":/usr/local/natinst/bin/ /usr/local/frc/bin/frcKillRobot.sh -r -t'
+# This fails if the code isn't running.
+ssh "admin@${ROBOT_HOSTNAME}" 'PATH="${PATH}":/usr/local/natinst/bin/ /usr/local/frc/bin/frcKillRobot.sh -r -t' || true
 
 echo "Deploying robotCommand startup script"
 scp aos/config/robotCommand "admin@${ROBOT_HOSTNAME}:/home/lvuser/"
