@@ -1,6 +1,6 @@
 #include "y2014/control_loops/claw/claw.h"
 
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 
 int main() {
   ::aos::Init();

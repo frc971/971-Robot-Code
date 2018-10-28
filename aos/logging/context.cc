@@ -8,7 +8,7 @@
 #include <string>
 
 #include "aos/die.h"
-#include "aos/linux_code/complex_thread_local.h"
+#include "aos/complex_thread_local.h"
 
 namespace aos {
 namespace logging {

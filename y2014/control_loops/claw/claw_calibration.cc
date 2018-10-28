@@ -1,7 +1,7 @@
 #include "y2014/control_loops/claw/claw.q.h"
 #include "frc971/control_loops/control_loops.q.h"
 
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 #include "y2014/constants.h"
 
 namespace y2014 {

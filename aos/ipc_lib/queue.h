@@ -1,7 +1,7 @@
-#ifndef AOS_LINUX_CODE_IPC_LIB_QUEUE_H_
-#define AOS_LINUX_CODE_IPC_LIB_QUEUE_H_
+#ifndef AOS_IPC_LIB_QUEUE_H_
+#define AOS_IPC_LIB_QUEUE_H_
 
-#include "aos/linux_code/ipc_lib/shared_mem.h"
+#include "aos/ipc_lib/shared_mem.h"
 #include "aos/mutex/mutex.h"
 #include "aos/condition.h"
 #include "aos/util/options.h"
@@ -228,4 +228,4 @@ class RawQueue {
 
 }  // namespace aos
 
-#endif  // AOS_LINUX_CODE_IPC_LIB_QUEUE_H_
+#endif  // AOS_IPC_LIB_QUEUE_H_

@@ -15,7 +15,7 @@ cc_library(
         "//aos:once",
         "//aos/logging",
         "//aos/util:string_to_num",
-        "//aos/linux_code:configuration",
+        "//aos:configuration",
     ],
 )
 

@@ -3,7 +3,7 @@
 #include <chrono>
 
 #include "aos/time/time.h"
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 
 namespace frc971 {
 namespace wpilib {

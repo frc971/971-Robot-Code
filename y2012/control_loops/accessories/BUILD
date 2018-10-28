@@ -9,7 +9,7 @@ cc_binary(
   ],
   deps = [
     ':accessories_queue',
-    '//aos/linux_code:init',
+    '//aos:init',
     '//aos/controls:control_loop',
   ],
 )

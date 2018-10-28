@@ -14,7 +14,7 @@
 #include "aos/logging/queue_logging.h"
 #include "aos/mutex/mutex.h"
 #include "aos/time/time.h"
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 #include "aos/vision/events/udp.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"

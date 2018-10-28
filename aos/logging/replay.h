@@ -10,7 +10,7 @@
 #include "aos/queue.h"
 #include "aos/logging/logging.h"
 #include "aos/macros.h"
-#include "aos/linux_code/ipc_lib/queue.h"
+#include "aos/ipc_lib/queue.h"
 #include "aos/queue_types.h"
 
 namespace aos {

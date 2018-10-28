@@ -35,7 +35,7 @@
 #include "aos/time/time.h"
 #include "aos/unique_malloc_ptr.h"
 #include "aos/util/run_command.h"
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 #include "aos/once.h"
 
 // This is the main piece of code that starts all of the rest of the code and

@@ -46,7 +46,7 @@ cc_binary(
     'shoot_actor_main.cc',
   ],
   deps = [
-    '//aos/linux_code:init',
+    '//aos:init',
     ':shoot_action_lib',
     ':shoot_action_queue',
   ],
@@ -92,7 +92,7 @@ cc_binary(
     'drivetrain_actor_main.cc',
   ],
   deps = [
-    '//aos/linux_code:init',
+    '//aos:init',
     ':drivetrain_action_lib',
     ':drivetrain_action_queue',
   ],

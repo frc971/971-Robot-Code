@@ -31,7 +31,7 @@
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/control_loops.q.h"

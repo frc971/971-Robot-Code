@@ -81,7 +81,7 @@ cc_binary(
     ],
     deps = [
         ":drivetrain_base",
-        "//aos/linux_code:init",
+        "//aos:init",
         "//frc971/control_loops/drivetrain:drivetrain_lib",
     ],
 )

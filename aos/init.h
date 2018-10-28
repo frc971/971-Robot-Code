@@ -1,5 +1,5 @@
-#ifndef AOS_LINUX_CODE_INIT_H_
-#define AOS_LINUX_CODE_INIT_H_
+#ifndef AOS_INIT_H_
+#define AOS_INIT_H_
 
 #include <string>
 
@@ -49,4 +49,4 @@ void LockAllMemory();
 
 }  // namespace aos
 
-#endif  // AOS_LINUX_CODE_INIT_H_
+#endif  // AOS_INIT_H_

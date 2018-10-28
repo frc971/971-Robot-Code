@@ -14,7 +14,7 @@ cc_binary(
     'starter.cc',
   ],
   deps = [
-    '//aos/linux_code:init',
+    '//aos:init',
     '//third_party/libevent',
     '//aos/logging',
     '//aos/logging:implementations',

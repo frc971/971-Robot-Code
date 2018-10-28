@@ -80,7 +80,7 @@ cc_binary(
     'shooter_main.cc',
   ],
   deps = [
-    '//aos/linux_code:init',
+    '//aos:init',
     ':shooter_lib',
     ':shooter_queue',
   ],

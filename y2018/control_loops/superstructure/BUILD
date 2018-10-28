@@ -61,7 +61,7 @@ cc_binary(
     deps = [
         ":superstructure_lib",
         ":superstructure_queue",
-        "//aos/linux_code:init",
+        "//aos:init",
     ],
 )
 

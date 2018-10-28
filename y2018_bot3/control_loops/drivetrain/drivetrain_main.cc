@@ -1,4 +1,4 @@
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "y2018_bot3/control_loops/drivetrain/drivetrain_base.h"

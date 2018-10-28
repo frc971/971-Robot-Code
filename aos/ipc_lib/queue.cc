@@ -3,7 +3,7 @@
 #define NDEBUG
 #endif
 
-#include "aos/linux_code/ipc_lib/queue.h"
+#include "aos/ipc_lib/queue.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -14,7 +14,7 @@
 #include <algorithm>
 
 #include "aos/type_traits/type_traits.h"
-#include "aos/linux_code/ipc_lib/core_lib.h"
+#include "aos/ipc_lib/core_lib.h"
 
 namespace aos {
 namespace {

@@ -1,6 +1,6 @@
 #include "y2012/control_loops/accessories/accessories.q.h"
 
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 #include "aos/controls/control_loop.h"
 
 namespace y2012 {

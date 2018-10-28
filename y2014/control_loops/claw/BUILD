@@ -10,7 +10,7 @@ cc_binary(
   deps = [
     ':claw_queue',
     '//aos/controls:replay_control_loop',
-    '//aos/linux_code:init',
+    '//aos:init',
   ],
 )
 
@@ -86,7 +86,7 @@ cc_binary(
     'claw_calibration.cc',
   ],
   deps = [
-    '//aos/linux_code:init',
+    '//aos:init',
     ':claw_queue',
     '//aos/controls:control_loop',
     '//y2014:constants',
@@ -99,7 +99,7 @@ cc_binary(
     'claw_main.cc',
   ],
   deps = [
-    '//aos/linux_code:init',
+    '//aos:init',
     ':claw_lib',
   ],
 )

@@ -153,7 +153,7 @@ cc_binary(
         "//aos/time:time",
         "//aos/logging",
         "//aos/logging:queue_logging",
-        "//aos/linux_code:init",
+        "//aos:init",
         "//aos/vision/events:udp",
         "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//y2016:constants",

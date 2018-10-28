@@ -36,7 +36,7 @@ cc_binary(
         "//aos/time:time",
         "//aos/logging",
         "//aos/logging:queue_logging",
-        "//aos/linux_code:init",
+        "//aos:init",
         "//aos/vision/events:udp",
         "//y2018:vision_proto",
     ],

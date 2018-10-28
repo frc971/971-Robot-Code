@@ -19,7 +19,7 @@ cc_library(
         "//aos:die",
         "//aos:macros",
         "//aos/libc:aos_strerror",
-        "//aos/linux_code:complex_thread_local",
+        "//aos:complex_thread_local",
     ],
 )
 
@@ -36,7 +36,7 @@ cc_library(
         ":binary_log_file",
         ":logging",
         "//aos:queues",
-        "//aos/linux_code/ipc_lib:queue",
+        "//aos/ipc_lib:queue",
     ],
 )
 
@@ -53,9 +53,9 @@ cc_binary(
         "//aos:die",
         "//aos:queue_types",
         "//aos/time:time",
-        "//aos/linux_code:configuration",
-        "//aos/linux_code:init",
-        "//aos/linux_code/ipc_lib:queue",
+        "//aos:configuration",
+        "//aos:init",
+        "//aos/ipc_lib:queue",
     ],
 )
 
@@ -69,8 +69,8 @@ cc_binary(
         ":implementations",
         ":logging",
         "//aos/time:time",
-        "//aos/linux_code:init",
-        "//aos/linux_code/ipc_lib:queue",
+        "//aos:init",
+        "//aos/ipc_lib:queue",
     ],
 )
 
@@ -86,8 +86,8 @@ cc_binary(
         ":logging",
         "//aos:queue_types",
         "//aos/util:string_to_num",
-        "//aos/linux_code:configuration",
-        "//aos/linux_code:init",
+        "//aos:configuration",
+        "//aos:init",
     ],
 )
 
@@ -204,6 +204,6 @@ cc_library(
         "//aos:queue_types",
         "//aos/time:time",
         "//aos/type_traits:type_traits",
-        "//aos/linux_code/ipc_lib:queue",
+        "//aos/ipc_lib:queue",
     ],
 )

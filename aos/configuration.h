@@ -1,5 +1,5 @@
-#ifndef AOS_LINUX_CODE_CONFIGURATION_H_
-#define AOS_LINUX_CODE_CONFIGURATION_H_
+#ifndef AOS_CONFIGURATION_H_
+#define AOS_CONFIGURATION_H_
 
 #include <stdint.h>
 #include <sys/socket.h>
@@ -28,4 +28,4 @@ const char *GetLoggingDirectory();
 }  // namespace configuration
 }  // namespace aos
 
-#endif  // AOS_LINUX_CODE_CONFIGURATION_H_
+#endif  // AOS_CONFIGURATION_H_

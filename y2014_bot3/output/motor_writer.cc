@@ -4,7 +4,7 @@
 
 #include "aos/output/motor_output.h"
 #include "aos/logging/logging.h"
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 #include "aos/util/log_interval.h"
 #include "aos/time/time.h"
 #include "aos/logging/queue_logging.h"

@@ -23,7 +23,7 @@ cc_library(
         ":dma_edge_counting",
         "//aos/mutex:mutex",
         "//aos/logging",
-        "//aos/linux_code:init",
+        "//aos:init",
         "//third_party:wpilib",
     ],
 )
@@ -57,7 +57,7 @@ cc_library(
         "//aos/stl_mutex:stl_mutex",
         "//aos/time:time",
         "//aos/logging",
-        "//aos/linux_code:init",
+        "//aos:init",
         "//third_party:wpilib",
     ],
 )
@@ -111,7 +111,7 @@ cc_library(
         "//aos/logging:queue_logging",
         "//aos/robot_state:robot_state",
         "//aos/util:phased_loop",
-        "//aos/linux_code:init",
+        "//aos:init",
         "//frc971/queues:gyro",
         "//frc971/zeroing:averager",
     ],
@@ -147,7 +147,7 @@ cc_library(
         "//aos/time:time",
         "//aos/robot_state:robot_state",
         "//aos/util:log_interval",
-        "//aos/linux_code:init",
+        "//aos:init",
     ],
 )
 
@@ -164,7 +164,7 @@ cc_library(
         "//aos/logging:queue_logging",
         "//aos/robot_state:robot_state",
         "//aos/network:team_number",
-        "//aos/linux_code:init",
+        "//aos:init",
         "//third_party:wpilib",
     ],
 )
@@ -205,7 +205,7 @@ cc_library(
         ":pdp_values",
         "//aos/logging:queue_logging",
         "//aos/util:phased_loop",
-        "//aos/linux_code:init",
+        "//aos:init",
         "//third_party:wpilib",
     ],
 )
@@ -244,7 +244,7 @@ cc_library(
         "//aos/logging",
         "//aos/logging:queue_logging",
         "//aos/robot_state:robot_state",
-        "//aos/linux_code:init",
+        "//aos:init",
         "//frc971/zeroing:averager",
         "//third_party:wpilib",
     ],

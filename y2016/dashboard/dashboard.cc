@@ -10,7 +10,7 @@
 
 #include "seasocks/Server.h"
 
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"

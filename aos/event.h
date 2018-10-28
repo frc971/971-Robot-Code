@@ -3,7 +3,7 @@
 
 #include "aos/time/time.h"
 
-#include "aos/linux_code/ipc_lib/aos_sync.h"
+#include "aos/ipc_lib/aos_sync.h"
 
 namespace aos {
 

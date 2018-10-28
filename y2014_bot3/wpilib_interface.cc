@@ -25,7 +25,7 @@
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
 #include "aos/stl_mutex/stl_mutex.h"
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 #include "aos/robot_state/robot_state.q.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"

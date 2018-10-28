@@ -35,6 +35,6 @@ cc_binary(
   ],
   deps = [
     ':rollers_lib',
-    '//aos/linux_code:init',
+    '//aos:init',
   ],
 )

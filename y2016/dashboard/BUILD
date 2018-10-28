@@ -1,4 +1,4 @@
-load('//aos/externals/seasocks:gen_embedded.bzl', 'gen_embedded')
+load('//aos/seasocks:gen_embedded.bzl', 'gen_embedded')
 load('//aos/downloader:downloader.bzl', 'aos_downloader_dir')
 
 gen_embedded(
@@ -24,7 +24,7 @@ cc_binary(
   ],
   deps = [
     ':gen_embedded',
-    '//aos/linux_code:init',
+    '//aos:init',
     '//aos/logging',
     '//aos/util:phased_loop',
     '//aos/time:time',

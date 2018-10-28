@@ -3,7 +3,7 @@
 
 #include <mutex>
 
-#include "aos/linux_code/ipc_lib/aos_sync.h"
+#include "aos/ipc_lib/aos_sync.h"
 #include "aos/logging/logging.h"
 #include "aos/type_traits/type_traits.h"
 #include "aos/macros.h"

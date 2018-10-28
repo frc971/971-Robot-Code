@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <time.h>
 
-#include "aos/linux_code/ipc_lib/shared_mem_types.h"
+#include "aos/ipc_lib/shared_mem_types.h"
 
 #ifdef __cplusplus
 extern "C" {

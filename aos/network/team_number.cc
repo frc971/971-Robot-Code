@@ -9,7 +9,7 @@
 
 #include "aos/logging/logging.h"
 #include "aos/util/string_to_num.h"
-#include "aos/linux_code/configuration.h"
+#include "aos/configuration.h"
 #include "aos/once.h"
 
 namespace aos {

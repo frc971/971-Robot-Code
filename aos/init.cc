@@ -1,4 +1,4 @@
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -15,7 +15,7 @@
 
 #include "aos/die.h"
 #include "aos/logging/implementations.h"
-#include "aos/linux_code/ipc_lib/shared_mem.h"
+#include "aos/ipc_lib/shared_mem.h"
 
 namespace FLAG__namespace_do_not_use_directly_use_DECLARE_double_instead {
 extern double FLAGS_tcmalloc_release_rate __attribute__((weak));

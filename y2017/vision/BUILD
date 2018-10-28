@@ -59,7 +59,7 @@ cc_binary(
   deps = [
     '//aos/logging',
     '//aos/logging:queue_logging',
-    '//aos/linux_code:init',
+    '//aos:init',
     '//aos/time:time',
     '//aos/vision/events:udp',
     ':vision_queue',

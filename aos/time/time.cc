@@ -8,7 +8,7 @@
 
 // We only use global_core from here, which is weak, so we don't really have a
 // dependency on it.
-#include "aos/linux_code/ipc_lib/shared_mem.h"
+#include "aos/ipc_lib/shared_mem.h"
 
 #include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"

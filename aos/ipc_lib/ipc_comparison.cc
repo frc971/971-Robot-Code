@@ -27,8 +27,8 @@
 #include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"
 #include "aos/time/time.h"
-#include "aos/linux_code/init.h"
-#include "aos/linux_code/ipc_lib/queue.h"
+#include "aos/init.h"
+#include "aos/ipc_lib/queue.h"
 
 DEFINE_string(method, "", "Which IPC method to use");
 DEFINE_int32(messages, 1000000, "How many messages to send back and forth");

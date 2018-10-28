@@ -36,7 +36,7 @@ cc_binary(
     'auto_main.cc',
   ],
   deps = [
-    '//aos/linux_code:init',
+    '//aos:init',
     ':auto_queue',
     ':auto_lib',
   ],

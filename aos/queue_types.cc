@@ -6,9 +6,9 @@
 #include <unordered_map>
 
 #include "aos/byteorder.h"
-#include "aos/linux_code/ipc_lib/shared_mem.h"
+#include "aos/ipc_lib/shared_mem.h"
 #include "aos/logging/logging.h"
-#include "aos/linux_code/ipc_lib/core_lib.h"
+#include "aos/ipc_lib/core_lib.h"
 #include "aos/mutex/mutex.h"
 
 namespace aos {

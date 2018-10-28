@@ -12,7 +12,7 @@
 #include "aos/util/phased_loop.h"
 #include "aos/robot_state/robot_state.q.h"
 #include "aos/time/time.h"
-#include "aos/linux_code/init.h"
+#include "aos/init.h"
 
 #include "frc971/queues/gyro.q.h"
 #include "frc971/zeroing/averager.h"

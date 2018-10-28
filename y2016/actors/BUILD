@@ -45,7 +45,7 @@ cc_binary(
   deps = [
     ':superstructure_action_lib',
     ':superstructure_action_queue',
-    '//aos/linux_code:init',
+    '//aos:init',
   ],
 )
 
@@ -80,7 +80,7 @@ cc_binary(
   ],
   deps = [
     ':autonomous_action_lib',
-    '//aos/linux_code:init',
+    '//aos:init',
   ],
 )
 
@@ -127,6 +127,6 @@ cc_binary(
   deps = [
     ':vision_align_action_lib',
     ':vision_align_action_queue',
-    '//aos/linux_code:init',
+    '//aos:init',
   ],
 )

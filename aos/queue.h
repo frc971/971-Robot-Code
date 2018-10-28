@@ -4,7 +4,7 @@
 #include <assert.h>
 
 #include "aos/macros.h"
-#include "aos/linux_code/ipc_lib/queue.h"
+#include "aos/ipc_lib/queue.h"
 #include "aos/messages/message.h"
 
 namespace aos {
@@ -223,6 +223,6 @@ class QueueGroup {
 
 }  // namespace aos
 
-#include "aos/linux_code/queue-tmpl.h"
+#include "aos/queue-tmpl.h"
 
 #endif  // AOS_QUEUE_H_
