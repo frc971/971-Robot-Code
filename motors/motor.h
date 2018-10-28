@@ -7,11 +7,11 @@
 
 #include "motors/algorithms.h"
 #include "motors/core/kinetis.h"
+#include "motors/core/time.h"
 #include "motors/peripheral/adc.h"
 #include "motors/peripheral/configuration.h"
+#include "motors/print/print.h"
 #include "motors/util.h"
-#include "motors/usb/cdc.h"
-#include "motors/core/time.h"
 
 namespace frc971 {
 namespace motors {
@@ -46,6 +46,7 @@ class MotorControls {
 
   virtual float estimated_velocity() const = 0;
   virtual int16_t i_goal(size_t ii) const = 0;
+  virtual float overall_measured_current() const = 0;
 };
 
 // Controls a single motor.
@@ -61,7 +62,10 @@ class Motor final {
 
   void Reset() { controls_->Reset(); }
 
-  void set_debug_tty(teensy::AcmTty *debug_tty) { debug_tty_ = debug_tty; }
+  void set_printing_implementation(
+      PrintingImplementation *printing_implementation) {
+    printing_implementation_ = printing_implementation;
+  }
   void set_deadtime_compensation(int deadtime_compensation) {
     deadtime_compensation_ = deadtime_compensation;
   }
@@ -156,6 +160,10 @@ class Motor final {
     return goal_current_;
   }
 
+  inline float overall_measured_current() const {
+    return controls_->overall_measured_current();
+  }
+
  private:
   uint32_t CalculateOnTime(uint32_t width) const;
   uint32_t CalculateOffTime(uint32_t width) const;
@@ -177,7 +185,7 @@ class Motor final {
   int encoder_multiplier_ = 1;
   uint32_t last_wrapped_encoder_reading_ = 0;
 
-  teensy::AcmTty *debug_tty_ = nullptr;
+  PrintingImplementation *printing_implementation_ = nullptr;
 };
 
 }  // namespace motors

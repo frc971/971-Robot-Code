@@ -6,8 +6,10 @@ namespace frc971 {
 namespace motors {
 namespace math_internal {
 
-float sin_float_table[SinCosFloatTableSize() + 1];
-float cos_float_table[SinCosFloatTableSize() + 1];
+float sin_float_table[SinCosFloatTableSize() + 1]
+    __attribute__((section(".sram_l")));
+float cos_float_table[SinCosFloatTableSize() + 1]
+    __attribute__((section(".sram_l")));
 
 ::std::array<GenericInitializer *, 10> global_initializers{};
 

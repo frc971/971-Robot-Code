@@ -16,14 +16,15 @@ K2 = -2.65e03
 K2 /= K1
 K1 = 1
 
-vcc = 30.0  # volts
-R_motor = 0.0055  # ohms for the motor
-R = 0.008  # ohms for system
+vcc = 31.5  # volts
+R = 0.01008  # ohms for system
 
-L = 10.0 * 1e-6  # Henries
-M = L / 10.0
+L = 3.0 * 1e-6  # Henries
+M = 0.0
 
-Kv = 22000.0 * 2.0 * numpy.pi / 60.0 / vcc * 2.0
+Kv_vcc = 30.0
+Kv = 22000.0 * 2.0 * numpy.pi / 60.0 / Kv_vcc * 2.0
+Kv = 1.0 / 0.00315
 J = 0.0000007
 
 R_shunt = 0.0003

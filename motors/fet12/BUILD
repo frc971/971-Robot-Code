@@ -15,8 +15,7 @@ cc_binary(
         "//motors/core",
         "//motors/peripheral:adc",
         "//motors/peripheral:can",
-        "//motors/usb",
-        "//motors/usb:cdc",
+        "//motors/print:usb",
     ],
 )
 
@@ -35,7 +34,7 @@ cc_binary(
         "//motors/peripheral:adc",
         "//motors/peripheral:adc_dma",
         "//motors/peripheral:can",
-        "//motors/peripheral:uart",
+        "//motors/print:uart",
     ],
 )
 

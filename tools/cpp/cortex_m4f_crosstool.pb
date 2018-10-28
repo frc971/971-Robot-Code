@@ -141,6 +141,7 @@ toolchain {
   linker_flag: "-lm"
   linker_flag: "-lc_nano"
   linker_flag: "-T%LINKER_SCRIPT%"
+  linker_flag: "-Tmotors/core/kinetis_sections.ld"
 
   compiler_flag: "-fmessage-length=80"
   compiler_flag: "-fmax-errors=20"

@@ -65,7 +65,7 @@ constexpr uint32_t pdb_sc(int pdb_input) {
 
 }  // namespace
 
-AdcDmaSampler::AdcDmaSampler() {
+AdcDmaSampler::AdcDmaSampler(int counts_per_cycle) : counts_per_cycle_(counts_per_cycle) {
   for (int adc = 0; adc < 2; ++adc) {
     for (int i = 0; i < 2; ++i) {
       adc_sc1s_[adc][kNumberAdcSamples + i] = ADC_SC1_ADCH(0x1f);
@@ -117,17 +117,24 @@ void AdcDmaSampler::Initialize() {
 
     static constexpr int kHscAdder = 2 * kAdcClockDivider;
 
+
     static constexpr int kConversionTime =
         kSfcAdder + 1 /* AverageNum */ * (kBct + kLstAdder + kHscAdder);
 
+    // Sampling takes 8 ADCK cycles according to
+    // "33.4.4.5 Sample time and total conversion time". This means we want 0
+    // (the start of the cycle) to be 4 ADCK cycles into the second of our four
+    // samples.
+    const int delay_before_cycle =
+        (kConversionTime -
+         4 /* Clocks before middle of sample */ * kAdcClockDivider +
+         ftm_clock_divider - 1) /
+        ftm_clock_divider;
     const int ftm_delay =
         (kConversionTime * 2 /* 2 ADC samples */ + ftm_clock_divider - 1) /
         ftm_clock_divider;
-    // TODO(Brian): Center on the start of the cycle instead. Need to think
-    // through how to get it started synced correctly though. Specifically,
-    // the second of the four samples should happen on the cycle boundary.
-    *ftm_delays_[0] = 0;
-    *ftm_delays_[1] = ftm_delay;
+    *ftm_delays_[0] = counts_per_cycle_ - delay_before_cycle;
+    *ftm_delays_[1] = ftm_delay - delay_before_cycle;
   }
 
   InitializePdbChannel(&PDB0.CH[0]);

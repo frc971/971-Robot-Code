@@ -28,7 +28,7 @@ class AdcDmaSampler {
   // Corresponding samples in adc0_samples and adc1_samples happen
   // simultaneously. Second sample happens at the cycle boundary. Elements
   // should include the appropriate ADCH and DIFF values.
-  AdcDmaSampler();
+  AdcDmaSampler(int counts_per_cycle);
 
   // Must be called before Initialize().
   void set_adc0_samples(
@@ -96,6 +96,8 @@ class AdcDmaSampler {
   static constexpr int encoder_value_dma_channel() {
     return ENCODER_VALUE_DMA_CHANNEL;
   }
+
+  const int counts_per_cycle_;
 
   ::std::array<::std::array<volatile uint32_t, kNumberAdcSamples + 2>, 2>
       adc_sc1s_{};

@@ -12,9 +12,8 @@
 #include "motors/peripheral/adc.h"
 #include "motors/peripheral/adc_dma.h"
 #include "motors/peripheral/can.h"
-#include "motors/peripheral/uart.h"
+#include "motors/print/print.h"
 #include "motors/util.h"
-#include "third_party/GSL/include/gsl/gsl"
 
 namespace frc971 {
 namespace motors {
@@ -65,16 +64,7 @@ void AdcInitFet12() {
 ::std::atomic<Motor *> global_motor{nullptr};
 ::std::atomic<teensy::AdcDmaSampler *> global_adc_dma{nullptr};
 
-::std::atomic<teensy::InterruptBufferedUart *> global_stdout{nullptr};
-
 extern "C" {
-
-void uart0_status_isr(void) {
-  teensy::InterruptBufferedUart *const tty =
-      global_stdout.load(::std::memory_order_relaxed);
-  DisableInterrupts disable_interrupts;
-  tty->HandleInterrupt(disable_interrupts);
-}
 
 void *__stack_chk_guard = (void *)0x67111971;
 void __stack_chk_fail(void) {
@@ -86,18 +76,6 @@ void __stack_chk_fail(void) {
     delay(1000);
   }
 }
-
-int _write(int /*file*/, char *ptr, int len) {
-  teensy::InterruptBufferedUart *const tty =
-      global_stdout.load(::std::memory_order_acquire);
-  if (tty != nullptr) {
-    tty->Write(gsl::make_span(ptr, len));
-    return len;
-  }
-  return 0;
-}
-
-void __stack_chk_fail(void);
 
 extern char *__brkval;
 extern uint32_t __bss_ram_start__[];
@@ -155,9 +133,10 @@ void ftm0_isr(void) {
   adc_dma->Reset();
   const uint32_t wrapped_encoder =
       global_motor.load(::std::memory_order_relaxed)->wrapped_encoder();
-#if 1
   const BalancedReadings balanced =
       BalanceSimpleReadings(decoupled);
+
+#if 1
 
   static float fuse_badness = 0;
 
@@ -242,7 +221,7 @@ void ftm0_isr(void) {
                            static_cast<float>(kVcc) * max_bat_cur))) /
           (2.0f * 1.5f * static_cast<float>(kR)));
 
-  constexpr float kNegativeCurrent = 80.0f;
+  constexpr float kNegativeCurrent = 100.0f;
   float goal_current =
       -::std::min(
           ::std::max(filtered_throttle * (kPeakCurrent + kNegativeCurrent) -
@@ -253,7 +232,6 @@ void ftm0_isr(void) {
   if (!throttle_zeroed) {
     goal_current = 0.0f;
   }
-
   // Note: current reduction is 12/70 belt, 15 / 54 on chain, and 10 inch
   // diameter wheels, so cutoff of 500 electrical rad/sec * 1 mechanical rad / 2
   // erad * 12 / 70 * 15 / 54 * 0.127 m = 1.5m/s = 3.4 mph
@@ -262,11 +240,15 @@ void ftm0_isr(void) {
       goal_current = 0.0f;
     }
   }
+
   //float goal_current =
       //-::std::min(filtered_throttle * kPeakCurrent, throttle_limit);
+  const float overall_measured_current =
+      global_motor.load(::std::memory_order_relaxed)
+          ->overall_measured_current();
   const float fuse_current =
-      goal_current *
-      (bemf + goal_current * static_cast<float>(kR) * 1.5f) /
+      overall_measured_current *
+      (bemf + overall_measured_current * static_cast<float>(kR) * 1.5f) /
       static_cast<float>(kVcc);
   const int16_t fuse_current_10 = static_cast<int16_t>(10.0f * fuse_current);
   fuse_badness += 0.00002f * (fuse_current * fuse_current - fuse_badness);
@@ -278,7 +260,7 @@ void ftm0_isr(void) {
 
   global_debug_buffer.count.fetch_add(1);
 
-  const bool trigger = false;
+  const bool trigger = false && i > 10000;
   // global_debug_buffer.count.load(::std::memory_order_relaxed) >= 0;
   size_t buffer_size =
       global_debug_buffer.size.load(::std::memory_order_relaxed);
@@ -344,14 +326,55 @@ void ftm0_isr(void) {
 #else
 #endif
 #else
+  // Useful code when calculating resistance/inductance of motor
   FTM0->SC &= ~FTM_SC_TOF;
   FTM0->C0V = 0;
   FTM0->C1V = 0;
   FTM0->C2V = 0;
   FTM0->C3V = 0;
   FTM0->C4V = 0;
-  FTM0->C5V = 0;
+  FTM0->C5V = 10;
   FTM0->PWMLOAD = FTM_PWMLOAD_LDOK;
+  (void)wrapped_encoder;
+  (void)real_throttle;
+  size_t buffer_size =
+      global_debug_buffer.size.load(::std::memory_order_relaxed);
+  bool trigger = true || i > 20000;
+  if ((trigger || buffer_size > 0) &&
+      buffer_size != global_debug_buffer.samples.size()) {
+    global_debug_buffer.samples[buffer_size].currents[0] =
+        static_cast<int16_t>(balanced.readings[0] * 10.0f);
+    global_debug_buffer.samples[buffer_size].currents[1] =
+        static_cast<int16_t>(balanced.readings[1] * 10.0f);
+    global_debug_buffer.samples[buffer_size].currents[2] =
+        static_cast<int16_t>(balanced.readings[2] * 10.0f);
+    global_debug_buffer.samples[buffer_size].commands[0] = FTM0->C1V;
+    global_debug_buffer.samples[buffer_size].commands[1] = FTM0->C3V;
+    global_debug_buffer.samples[buffer_size].commands[2] = FTM0->C5V;
+    global_debug_buffer.samples[buffer_size].position =
+        global_motor.load(::std::memory_order_relaxed)->wrapped_encoder();
+    global_debug_buffer.size.fetch_add(1);
+  }
+  if (buffer_size == global_debug_buffer.samples.size()) {
+    GPIOC_PCOR = (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4);
+    GPIOD_PCOR = (1 << 4) | (1 << 5);
+
+    PERIPHERAL_BITBAND(GPIOC_PDDR, 1) = 1;
+    PERIPHERAL_BITBAND(GPIOC_PDDR, 2) = 1;
+    PERIPHERAL_BITBAND(GPIOC_PDDR, 3) = 1;
+    PERIPHERAL_BITBAND(GPIOC_PDDR, 4) = 1;
+    PERIPHERAL_BITBAND(GPIOD_PDDR, 4) = 1;
+    PERIPHERAL_BITBAND(GPIOD_PDDR, 5) = 1;
+
+    PORTC_PCR1 = PORT_PCR_DSE | PORT_PCR_MUX(1);
+    PORTC_PCR2 = PORT_PCR_DSE | PORT_PCR_MUX(1);
+    PORTC_PCR3 = PORT_PCR_DSE | PORT_PCR_MUX(1);
+    PORTC_PCR4 = PORT_PCR_DSE | PORT_PCR_MUX(1);
+    PORTD_PCR4 = PORT_PCR_DSE | PORT_PCR_MUX(1);
+    PORTD_PCR5 = PORT_PCR_DSE | PORT_PCR_MUX(1);
+    i = 0;
+  }
+  ++i;
 #endif
 
 }
@@ -478,10 +501,15 @@ extern "C" int main(void) {
   PORTB_PCR16 = PORT_PCR_DSE | PORT_PCR_MUX(3);
   PORTB_PCR17 = PORT_PCR_DSE | PORT_PCR_MUX(3);
   SIM_SCGC4 |= SIM_SCGC4_UART0;
-  teensy::InterruptBufferedUart debug_uart(&UART0, F_CPU);
-  debug_uart.Initialize(115200);
-  global_stdout.store(&debug_uart, ::std::memory_order_release);
-  NVIC_ENABLE_IRQ(IRQ_UART0_STATUS);
+
+  PrintingParameters printing_parameters;
+  printing_parameters.stdout_uart_module = &UART0;
+  printing_parameters.stdout_uart_module_clock_frequency = F_CPU;
+  printing_parameters.stdout_uart_status_interrupt = IRQ_UART0_STATUS;
+  printing_parameters.dedicated_usb = true;
+  const ::std::unique_ptr<PrintingImplementation> printing =
+      CreatePrinting(printing_parameters);
+  printing->Initialize();
 
   AdcInitFet12();
   MathInit();
@@ -511,6 +539,8 @@ extern "C" int main(void) {
   motor.set_deadtime_compensation(9);
   ConfigurePwmFtm(FTM0);
 
+  // TODO(Brian): Figure out how to avoid duplicating this code to slave one FTM
+  // to another.
   FTM2->CONF = FTM_CONF_GTBEEN;
   FTM2->MODE = FTM_MODE_WPDIS;
   FTM2->MODE = FTM_MODE_WPDIS | FTM_MODE_FTMEN;
@@ -548,7 +578,8 @@ extern "C" int main(void) {
 
   FTM2->EXTTRIG = FTM_EXTTRIG_CH0TRIG | FTM_EXTTRIG_CH1TRIG;
 
-  teensy::AdcDmaSampler adc_dma;
+  // TODO(Brian): Don't duplicate the timer's MOD value.
+  teensy::AdcDmaSampler adc_dma{BUS_CLOCK_FREQUENCY / SWITCHING_FREQUENCY};
   // ADC0_Dx0 is 1-0
   // ADC0_Dx2 is 1-2
   // ADC0_Dx3 is 2-0
@@ -594,7 +625,8 @@ extern "C" int main(void) {
 
   motor.set_encoder_multiplier(-1);
   motor.set_encoder_calibration_offset(
-      558 + 1034 + 39 /*big data bemf comp*/ - 14 /*just backwardsbackwards comp*/);
+      364 /*from running constant phases*/ - 26 /*average offset from lstsq*/ -
+      14 /* compensation for going backwards */);
 
   printf("Zeroed motor!\n");
   // Give stuff a chance to recover from interrupts-disabled.
@@ -607,9 +639,10 @@ extern "C" int main(void) {
   NVIC_ENABLE_IRQ(IRQ_FTM0);
   GPIOC_PSOR = 1 << 5;
 
-  constexpr bool dump_full_sample = false;
+  constexpr bool dump_full_sample = true;
+  constexpr bool dump_resist_calib = false;
   while (true) {
-    if (dump_full_sample) {
+    if (dump_resist_calib || dump_full_sample) {
       PORTC_PCR1 = PORT_PCR_DSE | PORT_PCR_MUX(4);
       PORTC_PCR2 = PORT_PCR_DSE | PORT_PCR_MUX(4);
       PORTC_PCR3 = PORT_PCR_DSE | PORT_PCR_MUX(4);
@@ -623,7 +656,16 @@ extern "C" int main(void) {
     while (global_debug_buffer.size.load(::std::memory_order_relaxed) <
            global_debug_buffer.samples.size()) {
     }
-    if (dump_full_sample) {
+    if (dump_resist_calib) {
+      // Useful prints for when calibrating resistance/inductance of motor
+      for (size_t i = 0; i < global_debug_buffer.samples.size(); ++i) {
+        const auto &sample = global_debug_buffer.samples[i];
+        printf("%u, %d, %d, %d, %u, %u, %u, %u\n", i,
+               sample.currents[0], sample.currents[1], sample.currents[2],
+               sample.commands[0], sample.commands[1], sample.commands[2],
+               sample.position);
+      }
+    } else if (dump_full_sample) {
       printf("Dumping data\n");
       for (size_t i = 0; i < global_debug_buffer.samples.size(); ++i) {
         const auto &sample = global_debug_buffer.samples[i];

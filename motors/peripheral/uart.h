@@ -21,7 +21,9 @@ class Uart {
   void Initialize(int baud_rate);
 
   // Blocks until all of the data is at least queued.
-  void Write(gsl::span<char> data, const DisableInterrupts &) { DoWrite(data); }
+  void Write(gsl::span<const char> data, const DisableInterrupts &) {
+    DoWrite(data);
+  }
 
   bool SpaceAvailable() const { return module_->S1 & M_UART_TDRE; }
   // Only call this if SpaceAvailable() has just returned true.
@@ -38,7 +40,7 @@ class Uart {
   }
 
  private:
-  void DoWrite(gsl::span<char> data);
+  void DoWrite(gsl::span<const char> data);
 
   KINETISK_UART_t *const module_;
   const int module_clock_frequency_;
@@ -56,7 +58,7 @@ class InterruptBufferedUart {
 
   void Initialize(int baud_rate);
 
-  void Write(gsl::span<char> data);
+  void Write(gsl::span<const char> data);
 
   // Should be called as the body of the interrupt handler.
   void HandleInterrupt(const DisableInterrupts &disable_interrupts) {

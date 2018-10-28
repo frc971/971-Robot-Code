@@ -35,20 +35,18 @@ constexpr double K1 = 1.0;
 // volts
 constexpr double kVcc = 31.5;
 
-constexpr double Kv = 22000.0 * 2.0 * M_PI / 60.0 / 30.0 * 3.6;
+// 3.6 and 1.15 are adjustments from calibrations.
+constexpr double Kv = 22000.0 * 2.0 * M_PI / 60.0 / 30.0 * 3.6 * 1.15;
 
-constexpr double kL = 6e-06;
+constexpr double kL = 3e-06;
 constexpr double kM = 0;
-constexpr double kR = 0.0084;
-constexpr float kAdiscrete_diagonal = 0.932394f;
+constexpr double kR = 0.01008;
+constexpr float kAdiscrete_diagonal = 0.845354f;
 constexpr float kAdiscrete_offdiagonal = 0.0f;
-constexpr float kBdiscrete_inv_diagonal = 0.124249f;
+constexpr float kBdiscrete_inv_diagonal = 0.0651811f;
 constexpr float kBdiscrete_inv_offdiagonal = 0.0f;
-
-// The number to divide the product of the unit BEMF and the per phase current
-// by to get motor current.
-constexpr double kOneAmpScalar = 1.46426;
-constexpr double kMaxOneAmpDrivingVoltage = 0.024884;
+constexpr double kOneAmpScalar = 1.46785;
+constexpr double kMaxOneAmpDrivingVoltage = 0.0265038;
 
 
 ::Eigen::Matrix<float, 3, 3> A_discrete() {
@@ -178,6 +176,7 @@ MotorControlsImplementation::MotorControlsImplementation()
   const float overall_measured_current =
       ((E1 + E2).real().transpose() * measured_current /
        static_cast<float>(kOneAmpScalar))(0);
+  overall_measured_current_ = overall_measured_current;
   const float current_error = goal_current - overall_measured_current;
   estimated_velocity_ += current_error * 0.1f;
   debug_[3] = theta;
@@ -211,7 +210,7 @@ MotorControlsImplementation::MotorControlsImplementation()
   const ::Eigen::Matrix<float, 3, 1> Vn_ff =
       B_discrete_inverse() * (I_next - A_discrete() * (I_now - p) - p_next);
   const ::Eigen::Matrix<float, 3, 1> Vn =
-      Vn_ff + MakeK() * (I_now - measured_current);
+      Vn_ff + MakeK() * (I_prev_ - measured_current);
 
   debug_[0] = (I_next)(0) * 100;
   debug_[1] = (I_next)(1) * 100;
@@ -234,6 +233,7 @@ MotorControlsImplementation::MotorControlsImplementation()
     times *= scalar;
   }
 
+  I_prev_ = I_now;
   I_last_ = I_next;
 
   // TODO(Austin): Figure out why we need the min here.

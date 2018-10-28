@@ -13,7 +13,7 @@ template<int kSize>
 class UartBuffer {
  public:
   // Returns the number of characters added.
-  __attribute__((warn_unused_result)) int PushSpan(gsl::span<char> data);
+  __attribute__((warn_unused_result)) int PushSpan(gsl::span<const char> data);
 
   bool empty() const { return size_ == 0; }
 
@@ -32,7 +32,7 @@ class UartBuffer {
 };
 
 template<int kSize>
-int UartBuffer<kSize>::PushSpan(gsl::span<char> data) {
+int UartBuffer<kSize>::PushSpan(gsl::span<const char> data) {
   const int end_location = (start_ + size_) % kSize;
   const int remaining_end = ::std::min(kSize - size_, kSize - end_location);
   const int on_end = ::std::min<int>(data.size(), remaining_end);
