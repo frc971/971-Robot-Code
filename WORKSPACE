@@ -1,5 +1,7 @@
 workspace(name = "org_frc971")
 
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
+
 load(
     "//debian:python.bzl",
     python_debs = "files",
@@ -84,7 +86,7 @@ new_local_repository(
 
 new_git_repository(
     name = "slycot_repo",
-    build_file = "debian/slycot.BUILD",
+    build_file = "@//debian:slycot.BUILD",
     commit = "5af5f283cb23cbe23c4dfea4d5e56071bdbd6e70",
     remote = "https://github.com/avventi/Slycot.git",
 )
@@ -109,7 +111,7 @@ new_http_archive(
 
 new_git_repository(
     name = "python_gflags_repo",
-    build_file = "debian/gflags.BUILD",
+    build_file = "@//debian:gflags.BUILD",
     commit = "41c4571864f0db5823e07715317e7388e94faabc",
     remote = "https://github.com/gflags/python-gflags.git",
 )
