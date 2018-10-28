@@ -7,8 +7,9 @@ namespace motors {
 namespace itm {
 namespace {
 
-constexpr int kDesiredTraceFrequency = 128000;
-// TODO(Brian): Is this actually the frequency our parts use?
+// 480000 works for a bit but eventually errors out with an stlink-v2 and
+// FRDM-K64F dev board. 200000 works for longer, but still fails eventually.
+constexpr int kDesiredTraceFrequency = 192000;
 constexpr int kTpiuAsynchronousClockFrequency = F_CPU;
 
 }  // namespace
