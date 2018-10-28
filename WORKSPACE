@@ -40,6 +40,11 @@ load(
     "//debian:python_gtk.bzl",
     python_gtk_debs = "files",
 )
+
+load(
+    "//debian:ruby.bzl",
+    ruby_debs = "files",
+)
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
 generate_repositories_for_debs(python_debs)
@@ -61,6 +66,8 @@ generate_repositories_for_debs(matplotlib_debs)
 generate_repositories_for_debs(arm_frc_gnueabi_deps_debs)
 
 generate_repositories_for_debs(python_gtk_debs)
+
+generate_repositories_for_debs(ruby_debs)
 
 new_http_archive(
     name = "python_repo",
@@ -87,6 +94,13 @@ new_git_repository(
     build_file = "debian/slycot.BUILD",
     commit = "5af5f283cb23cbe23c4dfea4d5e56071bdbd6e70",
     remote = "https://github.com/avventi/Slycot.git",
+)
+
+new_http_archive(
+    name = "ruby_repo",
+    build_file = "debian/ruby.BUILD",
+    sha256 = "d3e21cca0abcad933de0d4095da35344a60475d1f5828ee99283ed4250ee1320",
+    url = "http://frc971.org/Build-Dependencies/ruby.tar.gz",
 )
 
 new_http_archive(

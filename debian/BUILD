@@ -40,6 +40,10 @@ load(
     ":python_gtk.bzl",
     python_gtk_debs = "files",
 )
+load(
+    ":ruby.bzl",
+    ruby_debs = "files",
+)
 load("//debian:packages.bzl", "download_packages", "generate_deb_tarball")
 
 filegroup(
@@ -114,6 +118,16 @@ download_packages(
         "clang-format-3.6",
         "gcc",
         "gfortran",
+    ],
+)
+
+download_packages(
+    name = "download_ruby_deps",
+    excludes = [
+        "ca-certificates",
+    ],
+    packages = [
+        "ruby",
     ],
 )
 
@@ -260,4 +274,9 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "python_gtk",
     files = python_gtk_debs,
+)
+
+generate_deb_tarball(
+    name = "ruby",
+    files = ruby_debs,
 )
