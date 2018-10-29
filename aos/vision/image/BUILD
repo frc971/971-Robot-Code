@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//tools/build_rules:protobuf.bzl", "proto_cc_library")
+load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 
 cc_library(
     name = "image_types",
@@ -13,9 +13,9 @@ cc_library(
     ],
 )
 
-proto_cc_library(
+cc_proto_library(
     name = "camera_params",
-    src = "camera_params.proto",
+    srcs = ["camera_params.proto"],
     compatible_with = [
         "//tools:armhf-debian",
     ],
@@ -34,8 +34,8 @@ cc_library(
     deps = [
         ":camera_params",
         ":image_types",
-        "//aos/time:time",
         "//aos/logging",
+        "//aos/time",
     ],
 )
 

@@ -18,5 +18,5 @@ py_library(
         "protos/crosstool_config_pb2.py",
     ],
     visibility = ["//visibility:public"],
-    deps = ["//third_party/protobuf:protobuf_python"],
+    deps = ["@com_google_protobuf//:protobuf_python"],
 )

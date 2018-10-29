@@ -34,7 +34,6 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
-
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
@@ -56,14 +55,7 @@ import java.util.regex.Pattern;
 public final class TextFormat {
   private TextFormat() {}
 
-  private static final Logger logger =
-      Logger.getLogger(TextFormat.class.getName());
-
-  private static final Printer DEFAULT_PRINTER = new Printer();
-  private static final Printer SINGLE_LINE_PRINTER =
-      (new Printer()).setSingleLineMode(true);
-  private static final Printer UNICODE_PRINTER =
-      (new Printer()).setEscapeNonAscii(false);
+  private static final Logger logger = Logger.getLogger(TextFormat.class.getName());
 
   /**
    * Outputs a textual representation of the Protocol Message supplied into
@@ -73,14 +65,14 @@ public final class TextFormat {
   public static void print(
       final MessageOrBuilder message, final Appendable output)
       throws IOException {
-    DEFAULT_PRINTER.print(message, new TextGenerator(output));
+    Printer.DEFAULT.print(message, multiLineOutput(output));
   }
 
   /** Outputs a textual representation of {@code fields} to {@code output}. */
   public static void print(final UnknownFieldSet fields,
                            final Appendable output)
                            throws IOException {
-    DEFAULT_PRINTER.printUnknownFields(fields, new TextGenerator(output));
+    Printer.DEFAULT.printUnknownFields(fields, multiLineOutput(output));
   }
 
   /**
@@ -90,7 +82,7 @@ public final class TextFormat {
   public static void printUnicode(
       final MessageOrBuilder message, final Appendable output)
       throws IOException {
-    UNICODE_PRINTER.print(message, new TextGenerator(output));
+    Printer.UNICODE.print(message, multiLineOutput(output));
   }
 
   /**
@@ -100,7 +92,7 @@ public final class TextFormat {
   public static void printUnicode(final UnknownFieldSet fields,
                                   final Appendable output)
                                   throws IOException {
-    UNICODE_PRINTER.printUnknownFields(fields, new TextGenerator(output));
+    Printer.UNICODE.printUnknownFields(fields, multiLineOutput(output));
   }
 
   /**
@@ -109,10 +101,9 @@ public final class TextFormat {
    */
   public static String shortDebugString(final MessageOrBuilder message) {
     try {
-      final StringBuilder sb = new StringBuilder();
-      SINGLE_LINE_PRINTER.print(message, new TextGenerator(sb));
-      // Single line mode currently might have an extra space at the end.
-      return sb.toString().trim();
+      final StringBuilder text = new StringBuilder();
+      Printer.DEFAULT.print(message, singleLineOutput(text));
+      return text.toString();
     } catch (IOException e) {
       throw new IllegalStateException(e);
     }
@@ -125,11 +116,11 @@ public final class TextFormat {
   public static String shortDebugString(final FieldDescriptor field,
                                         final Object value) {
     try {
-      final StringBuilder sb = new StringBuilder();
-      SINGLE_LINE_PRINTER.printField(field, value, new TextGenerator(sb));
-      return sb.toString().trim();
+      final StringBuilder text = new StringBuilder();
+      Printer.DEFAULT.printField(field, value, singleLineOutput(text));
+      return text.toString();
     } catch (IOException e) {
-        throw new IllegalStateException(e);
+      throw new IllegalStateException(e);
     }
   }
 
@@ -139,10 +130,9 @@ public final class TextFormat {
    */
   public static String shortDebugString(final UnknownFieldSet fields) {
     try {
-      final StringBuilder sb = new StringBuilder();
-      SINGLE_LINE_PRINTER.printUnknownFields(fields, new TextGenerator(sb));
-      // Single line mode currently might have an extra space at the end.
-      return sb.toString().trim();
+      final StringBuilder text = new StringBuilder();
+      Printer.DEFAULT.printUnknownFields(fields, singleLineOutput(text));
+      return text.toString();
     } catch (IOException e) {
       throw new IllegalStateException(e);
     }
@@ -183,7 +173,7 @@ public final class TextFormat {
   public static String printToUnicodeString(final MessageOrBuilder message) {
     try {
       final StringBuilder text = new StringBuilder();
-      UNICODE_PRINTER.print(message, new TextGenerator(text));
+      Printer.UNICODE.print(message, multiLineOutput(text));
       return text.toString();
     } catch (IOException e) {
       throw new IllegalStateException(e);
@@ -197,7 +187,7 @@ public final class TextFormat {
   public static String printToUnicodeString(final UnknownFieldSet fields) {
     try {
       final StringBuilder text = new StringBuilder();
-      UNICODE_PRINTER.printUnknownFields(fields, new TextGenerator(text));
+      Printer.UNICODE.printUnknownFields(fields, multiLineOutput(text));
       return text.toString();
     } catch (IOException e) {
       throw new IllegalStateException(e);
@@ -208,7 +198,7 @@ public final class TextFormat {
                                 final Object value,
                                 final Appendable output)
                                 throws IOException {
-    DEFAULT_PRINTER.printField(field, value, new TextGenerator(output));
+    Printer.DEFAULT.printField(field, value, multiLineOutput(output));
   }
 
   public static String printFieldToString(final FieldDescriptor field,
@@ -220,6 +210,23 @@ public final class TextFormat {
     } catch (IOException e) {
       throw new IllegalStateException(e);
     }
+  }
+
+  /**
+   * Outputs a unicode textual representation of the value of given field value.
+   *
+   * <p>Same as {@code printFieldValue()}, except that non-ASCII characters in string type fields
+   * are not escaped in backslash+octals.
+   *
+   * @param field the descriptor of the field
+   * @param value the value of the field
+   * @param output the output to which to append the formatted value
+   * @throws ClassCastException if the value is not appropriate for the given field descriptor
+   * @throws IOException if there is an exception writing to the output
+   */
+  public static void printUnicodeFieldValue(
+      final FieldDescriptor field, final Object value, final Appendable output) throws IOException {
+    Printer.UNICODE.printFieldValue(field, value, multiLineOutput(output));
   }
 
   /**
@@ -236,7 +243,7 @@ public final class TextFormat {
                                      final Object value,
                                      final Appendable output)
                                      throws IOException {
-    DEFAULT_PRINTER.printFieldValue(field, value, new TextGenerator(output));
+    Printer.DEFAULT.printFieldValue(field, value, multiLineOutput(output));
   }
 
   /**
@@ -253,7 +260,7 @@ public final class TextFormat {
                                             final Object value,
                                             final Appendable output)
                                             throws IOException {
-    printUnknownFieldValue(tag, value, new TextGenerator(output));
+    printUnknownFieldValue(tag, value, multiLineOutput(output));
   }
 
   private static void printUnknownFieldValue(final int tag,
@@ -272,12 +279,24 @@ public final class TextFormat {
         generator.print(String.format((Locale) null, "0x%016x", (Long) value));
         break;
       case WireFormat.WIRETYPE_LENGTH_DELIMITED:
-        generator.print("\"");
-        generator.print(escapeBytes((ByteString) value));
-        generator.print("\"");
+        try {
+          // Try to parse and print the field as an embedded message
+          UnknownFieldSet message = UnknownFieldSet.parseFrom((ByteString) value);
+          generator.print("{");
+          generator.eol();
+          generator.indent();
+          Printer.DEFAULT.printUnknownFields(message, generator);
+          generator.outdent();
+          generator.print("}");
+        } catch (InvalidProtocolBufferException e) {
+          // If not parseable as a message, print as a String
+          generator.print("\"");
+          generator.print(escapeBytes((ByteString) value));
+          generator.print("\"");
+        }
         break;
       case WireFormat.WIRETYPE_START_GROUP:
-        DEFAULT_PRINTER.printUnknownFields((UnknownFieldSet) value, generator);
+        Printer.DEFAULT.printUnknownFields((UnknownFieldSet) value, generator);
         break;
       default:
         throw new IllegalArgumentException("Bad tag: " + tag);
@@ -286,24 +305,16 @@ public final class TextFormat {
 
   /** Helper class for converting protobufs to text. */
   private static final class Printer {
-    /** Whether to omit newlines from the output. */
-    boolean singleLineMode = false;
+    // Printer instance which escapes non-ASCII characters.
+    static final Printer DEFAULT = new Printer(true);
+    // Printer instance which emits Unicode (it still escapes newlines and quotes in strings).
+    static final Printer UNICODE = new Printer(false);
 
     /** Whether to escape non ASCII characters with backslash and octal. */
-    boolean escapeNonAscii = true;
+    private final boolean escapeNonAscii;
 
-    private Printer() {}
-
-    /** Setter of singleLineMode */
-    private Printer setSingleLineMode(boolean singleLineMode) {
-      this.singleLineMode = singleLineMode;
-      return this;
-    }
-
-    /** Setter of escapeNonAscii */
-    private Printer setEscapeNonAscii(boolean escapeNonAscii) {
+    private Printer(boolean escapeNonAscii) {
       this.escapeNonAscii = escapeNonAscii;
-      return this;
     }
 
     private void print(
@@ -355,12 +366,9 @@ public final class TextFormat {
       }
 
       if (field.getJavaType() == FieldDescriptor.JavaType.MESSAGE) {
-        if (singleLineMode) {
-          generator.print(" { ");
-        } else {
-          generator.print(" {\n");
-          generator.indent();
-        }
+        generator.print(" {");
+        generator.eol();
+        generator.indent();
       } else {
         generator.print(": ");
       }
@@ -368,19 +376,10 @@ public final class TextFormat {
       printFieldValue(field, value, generator);
 
       if (field.getJavaType() == FieldDescriptor.JavaType.MESSAGE) {
-        if (singleLineMode) {
-          generator.print("} ");
-        } else {
-          generator.outdent();
-          generator.print("}\n");
-        }
-      } else {
-        if (singleLineMode) {
-          generator.print(" ");
-        } else {
-          generator.print("\n");
-        }
+        generator.outdent();
+        generator.print("}");
       }
+      generator.eol();
     }
 
     private void printFieldValue(final FieldDescriptor field,
@@ -425,7 +424,7 @@ public final class TextFormat {
         case STRING:
           generator.print("\"");
           generator.print(escapeNonAscii
-              ? escapeText((String) value)
+              ? TextFormatEscaper.escapeText((String) value)
               : escapeDoubleQuotesAndBackslashes((String) value)
                   .replace("\n", "\\n"));
           generator.print("\"");
@@ -469,19 +468,13 @@ public final class TextFormat {
             field.getLengthDelimitedList(), generator);
         for (final UnknownFieldSet value : field.getGroupList()) {
           generator.print(entry.getKey().toString());
-          if (singleLineMode) {
-            generator.print(" { ");
-          } else {
-            generator.print(" {\n");
-            generator.indent();
-          }
+          generator.print(" {");
+          generator.eol();
+          generator.indent();
           printUnknownFields(value, generator);
-          if (singleLineMode) {
-            generator.print("} ");
-          } else {
-            generator.outdent();
-            generator.print("}\n");
-          }
+          generator.outdent();
+          generator.print("}");
+          generator.eol();
         }
       }
     }
@@ -495,7 +488,7 @@ public final class TextFormat {
         generator.print(String.valueOf(number));
         generator.print(": ");
         printUnknownFieldValue(wireType, value, generator);
-        generator.print(singleLineMode ? " " : "\n");
+        generator.eol();
       }
     }
   }
@@ -521,16 +514,29 @@ public final class TextFormat {
     }
   }
 
-  /**
+  private static TextGenerator multiLineOutput(Appendable output) {
+    return new TextGenerator(output, false);
+  }
+
+  private static TextGenerator singleLineOutput(Appendable output) {
+    return new TextGenerator(output, true);
+  }
+
+ /**
    * An inner class for writing text to the output stream.
    */
   private static final class TextGenerator {
     private final Appendable output;
     private final StringBuilder indent = new StringBuilder();
-    private boolean atStartOfLine = true;
+    private final boolean singleLineMode;
+    // While technically we are "at the start of a line" at the very beginning of the output, all
+    // we would do in response to this is emit the (zero length) indentation, so it has no effect.
+    // Setting it false here does however suppress an unwanted leading space in single-line mode.
+    private boolean atStartOfLine = false;
 
-    private TextGenerator(final Appendable output) {
+    private TextGenerator(final Appendable output, boolean singleLineMode) {
       this.output = output;
+      this.singleLineMode = singleLineMode;
     }
 
     /**
@@ -552,35 +558,31 @@ public final class TextFormat {
         throw new IllegalArgumentException(
             " Outdent() without matching Indent().");
       }
-      indent.delete(length - 2, length);
+      indent.setLength(length - 2);
     }
 
     /**
-     * Print text to the output stream.
+     * Print text to the output stream. Bare newlines are never expected to be passed to this
+     * method; to indicate the end of a line, call "eol()".
      */
     public void print(final CharSequence text) throws IOException {
-      final int size = text.length();
-      int pos = 0;
-
-      for (int i = 0; i < size; i++) {
-        if (text.charAt(i) == '\n') {
-          write(text.subSequence(pos, i + 1));
-          pos = i + 1;
-          atStartOfLine = true;
-        }
-      }
-      write(text.subSequence(pos, size));
-    }
-
-    private void write(final CharSequence data) throws IOException {
-      if (data.length() == 0) {
-        return;
-      }
       if (atStartOfLine) {
         atStartOfLine = false;
-        output.append(indent);
+        output.append(singleLineMode ? " " : indent);
       }
-      output.append(data);
+      output.append(text);
+    }
+
+    /**
+     * Signifies reaching the "end of the current line" in the output. In single-line mode, this
+     * does not result in a newline being emitted, but ensures that a separating space is written
+     * before the next output.
+     */
+    public void eol() throws IOException {
+      if (!singleLineMode) {
+        output.append("\n");
+      }
+      atStartOfLine = true;
     }
   }
 
@@ -659,6 +661,22 @@ public final class TextFormat {
       this.matcher = WHITESPACE.matcher(text);
       skipWhitespace();
       nextToken();
+    }
+
+    int getPreviousLine() {
+      return previousLine;
+    }
+
+    int getPreviousColumn() {
+      return previousColumn;
+    }
+
+    int getLine() {
+      return line;
+    }
+
+    int getColumn() {
+      return column;
     }
 
     /** Are we at the end of the input? */
@@ -957,17 +975,19 @@ public final class TextFormat {
      */
     public boolean consumeBoolean() throws ParseException {
       if (currentToken.equals("true")
+          || currentToken.equals("True")
           || currentToken.equals("t")
           || currentToken.equals("1")) {
         nextToken();
         return true;
       } else if (currentToken.equals("false")
+          || currentToken.equals("False")
           || currentToken.equals("f")
           || currentToken.equals("0")) {
         nextToken();
         return false;
       } else {
-        throw parseException("Expected \"true\" or \"false\".");
+        throw parseException("Expected \"true\" or \"false\". Found \"" + currentToken + "\".");
       }
     }
 
@@ -1074,7 +1094,7 @@ public final class TextFormat {
     private ParseException floatParseException(final NumberFormatException e) {
       return parseException("Couldn't parse number: " + e.getMessage());
     }
-    
+
     /**
      * Returns a {@link UnknownFieldParseException} with the line and column
      * numbers of the previous token in the description, and the unknown field
@@ -1133,7 +1153,7 @@ public final class TextFormat {
       return column;
     }
   }
-  
+
   /**
    * Thrown when encountering an unknown field while parsing
    * a text format message.
@@ -1204,6 +1224,22 @@ public final class TextFormat {
   }
 
   /**
+   * Parse a text-format message from {@code input}.
+   *
+   * @return the parsed message, guaranteed initialized
+   */
+  public static <T extends Message> T parse(final CharSequence input,
+                                            final Class<T> protoClass)
+                                            throws ParseException {
+    Message.Builder builder =
+        Internal.getDefaultInstance(protoClass).newBuilderForType();
+    merge(input, builder);
+    @SuppressWarnings("unchecked")
+    T output = (T) builder.build();
+    return output;
+  }
+
+  /**
    * Parse a text-format message from {@code input} and merge the contents
    * into {@code builder}.  Extensions will be recognized if they are
    * registered in {@code extensionRegistry}.
@@ -1226,6 +1262,25 @@ public final class TextFormat {
                            final Message.Builder builder)
                            throws ParseException {
     PARSER.merge(input, extensionRegistry, builder);
+  }
+
+  /**
+   * Parse a text-format message from {@code input}.  Extensions will be
+   * recognized if they are registered in {@code extensionRegistry}.
+   *
+   * @return the parsed message, guaranteed initialized
+   */
+  public static <T extends Message> T parse(
+      final CharSequence input,
+      final ExtensionRegistry extensionRegistry,
+      final Class<T> protoClass)
+      throws ParseException {
+    Message.Builder builder =
+        Internal.getDefaultInstance(protoClass).newBuilderForType();
+    merge(input, extensionRegistry, builder);
+    @SuppressWarnings("unchecked")
+    T output = (T) builder.build();
+    return output;
   }
 
 
@@ -1256,12 +1311,19 @@ public final class TextFormat {
     }
 
     private final boolean allowUnknownFields;
+    private final boolean allowUnknownEnumValues;
     private final SingularOverwritePolicy singularOverwritePolicy;
+    private TextFormatParseInfoTree.Builder parseInfoTreeBuilder;
 
-    private Parser(boolean allowUnknownFields,
-        SingularOverwritePolicy singularOverwritePolicy) {
+    private Parser(
+        boolean allowUnknownFields,
+        boolean allowUnknownEnumValues,
+        SingularOverwritePolicy singularOverwritePolicy,
+        TextFormatParseInfoTree.Builder parseInfoTreeBuilder) {
       this.allowUnknownFields = allowUnknownFields;
+      this.allowUnknownEnumValues = allowUnknownEnumValues;
       this.singularOverwritePolicy = singularOverwritePolicy;
+      this.parseInfoTreeBuilder = parseInfoTreeBuilder;
     }
 
     /**
@@ -1276,8 +1338,10 @@ public final class TextFormat {
      */
     public static class Builder {
       private boolean allowUnknownFields = false;
+      private boolean allowUnknownEnumValues = false;
       private SingularOverwritePolicy singularOverwritePolicy =
           SingularOverwritePolicy.ALLOW_SINGULAR_OVERWRITES;
+      private TextFormatParseInfoTree.Builder parseInfoTreeBuilder = null;
 
 
       /**
@@ -1288,8 +1352,18 @@ public final class TextFormat {
         return this;
       }
 
+      public Builder setParseInfoTreeBuilder(
+          TextFormatParseInfoTree.Builder parseInfoTreeBuilder) {
+        this.parseInfoTreeBuilder = parseInfoTreeBuilder;
+        return this;
+      }
+
       public Parser build() {
-        return new Parser(allowUnknownFields, singularOverwritePolicy);
+        return new Parser(
+            allowUnknownFields,
+            allowUnknownEnumValues,
+            singularOverwritePolicy,
+            parseInfoTreeBuilder);
       }
     }
 
@@ -1353,6 +1427,28 @@ public final class TextFormat {
       return text;
     }
 
+    // Check both unknown fields and unknown extensions and log warning messages
+    // or throw exceptions according to the flag.
+    private void checkUnknownFields(final List<String> unknownFields)
+        throws ParseException {
+      if (unknownFields.isEmpty()) {
+        return;
+      }
+
+      StringBuilder msg = new StringBuilder("Input contains unknown fields and/or extensions:");
+      for (String field : unknownFields) {
+        msg.append('\n').append(field);
+      }
+
+      if (allowUnknownFields) {
+          logger.warning(msg.toString());
+      } else {
+        String[] lineColumn = unknownFields.get(0).split(":");
+        throw new ParseException(Integer.valueOf(lineColumn[0]),
+            Integer.valueOf(lineColumn[1]), msg.toString());
+      }
+    }
+
     /**
      * Parse a text-format message from {@code input} and merge the contents
      * into {@code builder}.  Extensions will be recognized if they are
@@ -1366,9 +1462,13 @@ public final class TextFormat {
       MessageReflection.BuilderAdapter target =
           new MessageReflection.BuilderAdapter(builder);
 
+      List<String> unknownFields = new ArrayList<String>();
+
       while (!tokenizer.atEnd()) {
-        mergeField(tokenizer, extensionRegistry, target);
+        mergeField(tokenizer, extensionRegistry, target, unknownFields);
       }
+
+      checkUnknownFields(unknownFields);
     }
 
 
@@ -1378,9 +1478,26 @@ public final class TextFormat {
      */
     private void mergeField(final Tokenizer tokenizer,
                             final ExtensionRegistry extensionRegistry,
-                            final MessageReflection.MergeTarget target)
+                            final MessageReflection.MergeTarget target,
+                            List<String> unknownFields)
+                            throws ParseException {
+      mergeField(tokenizer, extensionRegistry, target, parseInfoTreeBuilder,
+                 unknownFields);
+    }
+
+    /**
+     * Parse a single field from {@code tokenizer} and merge it into
+     * {@code target}.
+     */
+    private void mergeField(final Tokenizer tokenizer,
+                            final ExtensionRegistry extensionRegistry,
+                            final MessageReflection.MergeTarget target,
+                            TextFormatParseInfoTree.Builder parseTreeBuilder,
+                            List<String> unknownFields)
                             throws ParseException {
       FieldDescriptor field = null;
+      int startLine = tokenizer.getLine();
+      int startColumn = tokenizer.getColumn();
       final Descriptor type = target.getDescriptorForType();
       ExtensionRegistry.ExtensionInfo extension = null;
 
@@ -1397,13 +1514,15 @@ public final class TextFormat {
             extensionRegistry, name.toString());
 
         if (extension == null) {
-          if (!allowUnknownFields) {
-            throw tokenizer.parseExceptionPreviousToken(
-              "Extension \"" + name + "\" not found in the ExtensionRegistry.");
-          } else {
-            logger.warning(
-              "Extension \"" + name + "\" not found in the ExtensionRegistry.");
-          }
+          unknownFields.add(
+              (tokenizer.getPreviousLine() + 1)
+                  + ":"
+                  + (tokenizer.getPreviousColumn() + 1)
+                  + ":\t"
+                  + type.getFullName()
+                  + ".["
+                  + name
+                  + "]");
         } else {
           if (extension.descriptor.getContainingType() != type) {
             throw tokenizer.parseExceptionPreviousToken(
@@ -1438,16 +1557,14 @@ public final class TextFormat {
         }
 
         if (field == null) {
-          if (!allowUnknownFields) {
-            throw tokenizer.unknownFieldParseExceptionPreviousToken(
-              name,
-              "Message type \"" + type.getFullName()
-              + "\" has no field named \"" + name + "\".");
-          } else {
-            logger.warning(
-              "Message type \"" + type.getFullName()
-              + "\" has no field named \"" + name + "\".");
-          }
+          unknownFields.add(
+              (tokenizer.getPreviousLine() + 1)
+                  + ":"
+                  + (tokenizer.getPreviousColumn() + 1)
+                  + ":\t"
+                  + type.getFullName()
+                  + "."
+                  + name);
         }
       }
 
@@ -1472,28 +1589,69 @@ public final class TextFormat {
       // Handle potential ':'.
       if (field.getJavaType() == FieldDescriptor.JavaType.MESSAGE) {
         tokenizer.tryConsume(":");  // optional
-      } else {
-        tokenizer.consume(":");  // required
-      }
-      // Support specifying repeated field values as a comma-separated list.
-      // Ex."foo: [1, 2, 3]"
-      if (field.isRepeated() && tokenizer.tryConsume("[")) {
-        while (true) {
-          consumeFieldValue(tokenizer, extensionRegistry, target, field, extension);
-          if (tokenizer.tryConsume("]")) {
-            // End of list.
-            break;
-          }
-          tokenizer.consume(",");
+        if (parseTreeBuilder != null) {
+          TextFormatParseInfoTree.Builder childParseTreeBuilder =
+              parseTreeBuilder.getBuilderForSubMessageField(field);
+          consumeFieldValues(tokenizer, extensionRegistry, target, field, extension,
+              childParseTreeBuilder, unknownFields);
+        } else {
+          consumeFieldValues(tokenizer, extensionRegistry, target, field, extension,
+              parseTreeBuilder, unknownFields);
         }
       } else {
-        consumeFieldValue(tokenizer, extensionRegistry, target, field, extension);
+        tokenizer.consume(":");  // required
+        consumeFieldValues(tokenizer, extensionRegistry, target, field,
+            extension, parseTreeBuilder, unknownFields);
+      }
+
+      if (parseTreeBuilder != null) {
+        parseTreeBuilder.setLocation(
+            field, TextFormatParseLocation.create(startLine, startColumn));
       }
 
       // For historical reasons, fields may optionally be separated by commas or
       // semicolons.
       if (!tokenizer.tryConsume(";")) {
         tokenizer.tryConsume(",");
+      }
+    }
+
+    /**
+     * Parse a one or more field values from {@code tokenizer} and merge it into
+     * {@code builder}.
+     */
+    private void consumeFieldValues(
+        final Tokenizer tokenizer,
+        final ExtensionRegistry extensionRegistry,
+        final MessageReflection.MergeTarget target,
+        final FieldDescriptor field,
+        final ExtensionRegistry.ExtensionInfo extension,
+        final TextFormatParseInfoTree.Builder parseTreeBuilder,
+        List<String> unknownFields)
+        throws ParseException {
+      // Support specifying repeated field values as a comma-separated list.
+      // Ex."foo: [1, 2, 3]"
+      if (field.isRepeated() && tokenizer.tryConsume("[")) {
+        if (!tokenizer.tryConsume("]")) {  // Allow "foo: []" to be treated as empty.
+          while (true) {
+            consumeFieldValue(
+                tokenizer,
+                extensionRegistry,
+                target,
+                field,
+                extension,
+                parseTreeBuilder,
+                unknownFields);
+            if (tokenizer.tryConsume("]")) {
+              // End of list.
+              break;
+            }
+            tokenizer.consume(",");
+          }
+        }
+      } else {
+        consumeFieldValue(tokenizer, extensionRegistry, target, field,
+            extension, parseTreeBuilder, unknownFields);
       }
     }
 
@@ -1506,7 +1664,9 @@ public final class TextFormat {
         final ExtensionRegistry extensionRegistry,
         final MessageReflection.MergeTarget target,
         final FieldDescriptor field,
-        final ExtensionRegistry.ExtensionInfo extension)
+        final ExtensionRegistry.ExtensionInfo extension,
+        final TextFormatParseInfoTree.Builder parseTreeBuilder,
+        List<String> unknownFields)
         throws ParseException {
       Object value = null;
 
@@ -1528,7 +1688,8 @@ public final class TextFormat {
             throw tokenizer.parseException(
               "Expected \"" + endToken + "\".");
           }
-          mergeField(tokenizer, extensionRegistry, subField);
+          mergeField(tokenizer, extensionRegistry, subField, parseTreeBuilder,
+              unknownFields);
         }
 
         value = subField.finish();
@@ -1584,17 +1745,40 @@ public final class TextFormat {
               final int number = tokenizer.consumeInt32();
               value = enumType.findValueByNumber(number);
               if (value == null) {
-                throw tokenizer.parseExceptionPreviousToken(
-                  "Enum type \"" + enumType.getFullName()
-                  + "\" has no value with number " + number + '.');
+                String unknownValueMsg =
+                    "Enum type \""
+                        + enumType.getFullName()
+                        + "\" has no value with number "
+                        + number
+                        + '.';
+                if (allowUnknownEnumValues) {
+                  logger.warning(unknownValueMsg);
+                  return;
+                } else {
+                  throw tokenizer.parseExceptionPreviousToken(
+                      "Enum type \""
+                          + enumType.getFullName()
+                          + "\" has no value with number "
+                          + number
+                          + '.');
+                }
               }
             } else {
               final String id = tokenizer.consumeIdentifier();
               value = enumType.findValueByName(id);
               if (value == null) {
-                throw tokenizer.parseExceptionPreviousToken(
-                  "Enum type \"" + enumType.getFullName()
-                  + "\" has no value named \"" + id + "\".");
+                String unknownValueMsg =
+                    "Enum type \""
+                        + enumType.getFullName()
+                        + "\" has no value named \""
+                        + id
+                        + "\".";
+                if (allowUnknownEnumValues) {
+                  logger.warning(unknownValueMsg);
+                  return;
+                } else {
+                  throw tokenizer.parseExceptionPreviousToken(unknownValueMsg);
+                }
               }
             }
 
@@ -1607,6 +1791,8 @@ public final class TextFormat {
       }
 
       if (field.isRepeated()) {
+        // TODO(b/29122459): If field.isMapField() and FORBID_SINGULAR_OVERWRITES mode,
+        //     check for duplicate map keys here.
         target.addRepeatedField(field, value);
       } else if ((singularOverwritePolicy
               == SingularOverwritePolicy.FORBID_SINGULAR_OVERWRITES)
@@ -1704,11 +1890,6 @@ public final class TextFormat {
   // Some of these methods are package-private because Descriptors.java uses
   // them.
 
-  private interface ByteSequence {
-    int size();
-    byte byteAt(int offset);
-  }
-
   /**
    * Escapes bytes in the format used in protocol buffer text format, which
    * is the same as the format used for C string literals.  All bytes
@@ -1717,74 +1898,15 @@ public final class TextFormat {
    * which no defined short-hand escape sequence is defined will be escaped
    * using 3-digit octal sequences.
    */
-  public static String escapeBytes(final ByteSequence input) {
-    final StringBuilder builder = new StringBuilder(input.size());
-    for (int i = 0; i < input.size(); i++) {
-      final byte b = input.byteAt(i);
-      switch (b) {
-        // Java does not recognize \a or \v, apparently.
-        case 0x07: builder.append("\\a"); break;
-        case '\b': builder.append("\\b"); break;
-        case '\f': builder.append("\\f"); break;
-        case '\n': builder.append("\\n"); break;
-        case '\r': builder.append("\\r"); break;
-        case '\t': builder.append("\\t"); break;
-        case 0x0b: builder.append("\\v"); break;
-        case '\\': builder.append("\\\\"); break;
-        case '\'': builder.append("\\\'"); break;
-        case '"' : builder.append("\\\""); break;
-        default:
-          // Only ASCII characters between 0x20 (space) and 0x7e (tilde) are
-          // printable.  Other byte values must be escaped.
-          if (b >= 0x20 && b <= 0x7e) {
-            builder.append((char) b);
-          } else {
-            builder.append('\\');
-            builder.append((char) ('0' + ((b >>> 6) & 3)));
-            builder.append((char) ('0' + ((b >>> 3) & 7)));
-            builder.append((char) ('0' + (b & 7)));
-          }
-          break;
-      }
-    }
-    return builder.toString();
-  }
-
-  /**
-   * Escapes bytes in the format used in protocol buffer text format, which
-   * is the same as the format used for C string literals.  All bytes
-   * that are not printable 7-bit ASCII characters are escaped, as well as
-   * backslash, single-quote, and double-quote characters.  Characters for
-   * which no defined short-hand escape sequence is defined will be escaped
-   * using 3-digit octal sequences.
-   */
-  public static String escapeBytes(final ByteString input) {
-    return escapeBytes(new ByteSequence() {
-      @Override
-      public int size() {
-        return input.size();
-      }
-      @Override
-      public byte byteAt(int offset) {
-        return input.byteAt(offset);
-      }
-    });
+  public static String escapeBytes(ByteString input) {
+    return TextFormatEscaper.escapeBytes(input);
   }
 
   /**
    * Like {@link #escapeBytes(ByteString)}, but used for byte array.
    */
-  public static String escapeBytes(final byte[] input) {
-    return escapeBytes(new ByteSequence() {
-      @Override
-      public int size() {
-        return input.length;
-      }
-      @Override
-      public byte byteAt(int offset) {
-        return input[offset];
-      }
-    });
+  public static String escapeBytes(byte[] input) {
+    return TextFormatEscaper.escapeBytes(input);
   }
 
   /**
@@ -1868,7 +1990,9 @@ public final class TextFormat {
       }
     }
 
-    return ByteString.copyFrom(result, 0, pos);
+    return result.length == pos
+        ? ByteString.wrap(result)  // This reference has not been out of our control.
+        : ByteString.copyFrom(result, 0, pos);
   }
 
   /**
@@ -1896,7 +2020,7 @@ public final class TextFormat {
    * Escape double quotes and backslashes in a String for unicode output of a message.
    */
   public static String escapeDoubleQuotesAndBackslashes(final String input) {
-    return input.replace("\\", "\\\\").replace("\"", "\\\"");
+    return TextFormatEscaper.escapeDoubleQuotesAndBackslashes(input);
   }
 
   /**

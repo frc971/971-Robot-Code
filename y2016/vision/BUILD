@@ -1,4 +1,4 @@
-load("//tools/build_rules:protobuf.bzl", "proto_cc_library")
+load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 load("//aos/build:queues.bzl", "queue_library")
 load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary", "gtk_dependent_cc_library")
 
@@ -13,17 +13,17 @@ queue_library(
     visibility = ["//visibility:public"],
 )
 
-proto_cc_library(
+cc_proto_library(
     name = "vision_data",
-    src = "vision_data.proto",
+    srcs = ["vision_data.proto"],
     compatible_with = [
         "//tools:armhf-debian",
     ],
 )
 
-proto_cc_library(
+cc_proto_library(
     name = "calibration",
-    src = "calibration.proto",
+    srcs = ["calibration.proto"],
     compatible_with = [
         "//tools:armhf-debian",
     ],
@@ -34,7 +34,7 @@ _calibration_values_embedded_before = """
 
 #include <string>
 
-#include "third_party/protobuf/src/google/protobuf/text_format.h"
+#include "external/com_google_protobuf/src/google/protobuf/text_format.h"
 
 namespace y2016 {
 namespace vision {
@@ -103,9 +103,9 @@ cc_binary(
         ":calibration",
         ":stereo_geometry",
         ":vision_data",
-        "//aos/time:time",
         "//aos/logging",
         "//aos/logging:implementations",
+        "//aos/time",
         "//aos/vision/events:epoll_events",
         "//aos/vision/events:socket_types",
         "//aos/vision/events:udp",
@@ -149,11 +149,11 @@ cc_binary(
         ":stereo_geometry",
         ":vision_data",
         ":vision_queue",
-        "//aos/mutex:mutex",
-        "//aos/time:time",
+        "//aos:init",
         "//aos/logging",
         "//aos/logging:queue_logging",
-        "//aos:init",
+        "//aos/mutex",
+        "//aos/time",
         "//aos/vision/events:udp",
         "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//y2016:constants",

@@ -29,27 +29,131 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <memory>
-#ifndef _SHARED_PTR_H
-#include <google/protobuf/stubs/shared_ptr.h>
-#endif
 
 #include <google/protobuf/compiler/cpp/cpp_helpers.h>
 #include <google/protobuf/compiler/cpp/cpp_generator.h>
+#include <google/protobuf/compiler/annotation_test_util.h>
 #include <google/protobuf/compiler/command_line_interface.h>
-#include <google/protobuf/io/zero_copy_stream.h>
-#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
-#include <google/protobuf/io/printer.h>
 #include <google/protobuf/descriptor.pb.h>
 
+#include <google/protobuf/testing/file.h>
+#include <google/protobuf/testing/file.h>
 #include <google/protobuf/testing/googletest.h>
 #include <gtest/gtest.h>
-#include <google/protobuf/testing/file.h>
 
 namespace google {
+namespace atu = ::google::protobuf::compiler::annotation_test_util;
+
 namespace protobuf {
 namespace compiler {
 namespace cpp {
 namespace {
+
+class CppMetadataTest : public ::testing::Test {
+ public:
+  // Tries to capture a FileDescriptorProto, GeneratedCodeInfo, and output
+  // code from the previously added file with name `filename`. Returns true on
+  // success. If pb_h is non-null, expects a .pb.h and a .pb.h.meta (copied to
+  // pb_h and pb_h_info respecfively); similarly for proto_h and proto_h_info.
+  bool CaptureMetadata(const string& filename, FileDescriptorProto* file,
+                       string* pb_h, GeneratedCodeInfo* pb_h_info,
+                       string* proto_h, GeneratedCodeInfo* proto_h_info,
+                       string* pb_cc) {
+    google::protobuf::compiler::CommandLineInterface cli;
+    CppGenerator cpp_generator;
+    cli.RegisterGenerator("--cpp_out", &cpp_generator, "");
+    string cpp_out =
+        "--cpp_out=annotate_headers=true,"
+        "annotation_pragma_name=pragma_name,"
+        "annotation_guard_name=guard_name:" +
+        TestTempDir();
+
+    const bool result =
+        atu::RunProtoCompiler(filename, cpp_out, &cli, file);
+
+    if (!result) {
+      return result;
+    }
+
+    string output_base = TestTempDir() + "/" + StripProto(filename);
+
+    if (pb_cc != NULL) {
+      GOOGLE_CHECK_OK(
+          File::GetContents(output_base + ".pb.cc", pb_cc, true));
+    }
+
+    if (pb_h != NULL && pb_h_info != NULL) {
+      GOOGLE_CHECK_OK(
+          File::GetContents(output_base + ".pb.h", pb_h, true));
+      if (!atu::DecodeMetadata(output_base + ".pb.h.meta", pb_h_info)) {
+        return false;
+      }
+    }
+
+    if (proto_h != NULL && proto_h_info != NULL) {
+      GOOGLE_CHECK_OK(File::GetContents(output_base + ".proto.h", proto_h,
+                                 true));
+      if (!atu::DecodeMetadata(output_base + ".proto.h.meta", proto_h_info)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+};
+
+const char kSmallTestFile[] =
+    "syntax = \"proto2\";\n"
+    "package foo;\n"
+    "enum Enum { VALUE = 0; }\n"
+    "message Message { }\n";
+
+TEST_F(CppMetadataTest, CapturesEnumNames) {
+  FileDescriptorProto file;
+  GeneratedCodeInfo info;
+  string pb_h;
+  atu::AddFile("test.proto", kSmallTestFile);
+  EXPECT_TRUE(
+      CaptureMetadata("test.proto", &file, &pb_h, &info, NULL, NULL, NULL));
+  EXPECT_EQ("Enum", file.enum_type(0).name());
+  std::vector<int> enum_path;
+  enum_path.push_back(FileDescriptorProto::kEnumTypeFieldNumber);
+  enum_path.push_back(0);
+  const GeneratedCodeInfo::Annotation* enum_annotation =
+      atu::FindAnnotationOnPath(info, "test.proto", enum_path);
+  EXPECT_TRUE(NULL != enum_annotation);
+  EXPECT_TRUE(atu::AnnotationMatchesSubstring(pb_h, enum_annotation, "Enum"));
+}
+
+TEST_F(CppMetadataTest, AddsPragma) {
+  FileDescriptorProto file;
+  GeneratedCodeInfo info;
+  string pb_h;
+  atu::AddFile("test.proto", kSmallTestFile);
+  EXPECT_TRUE(
+      CaptureMetadata("test.proto", &file, &pb_h, &info, NULL, NULL, NULL));
+  EXPECT_TRUE(pb_h.find("#ifdef guard_name") != string::npos);
+  EXPECT_TRUE(pb_h.find("#pragma pragma_name \"test.pb.h.meta\"") !=
+              string::npos);
+}
+
+TEST_F(CppMetadataTest, CapturesMessageNames) {
+  FileDescriptorProto file;
+  GeneratedCodeInfo info;
+  string pb_h;
+  atu::AddFile("test.proto", kSmallTestFile);
+  EXPECT_TRUE(
+      CaptureMetadata("test.proto", &file, &pb_h, &info, NULL, NULL, NULL));
+  EXPECT_EQ("Message", file.message_type(0).name());
+  std::vector<int> message_path;
+  message_path.push_back(FileDescriptorProto::kMessageTypeFieldNumber);
+  message_path.push_back(0);
+  const GeneratedCodeInfo::Annotation* message_annotation =
+      atu::FindAnnotationOnPath(info, "test.proto", message_path);
+  EXPECT_TRUE(NULL != message_annotation);
+  EXPECT_TRUE(
+      atu::AnnotationMatchesSubstring(pb_h, message_annotation, "Message"));
+}
 
 }  // namespace
 }  // namespace cpp

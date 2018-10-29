@@ -1,6 +1,6 @@
 load("//aos/downloader:downloader.bzl", "aos_downloader")
 load("//aos/build:queues.bzl", "queue_library")
-load("//tools/build_rules:protobuf.bzl", "proto_cc_library")
+load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 
 aos_downloader(
     name = "download",
@@ -43,15 +43,15 @@ cc_binary(
     ],
     deps = [
         ":vision_proto",
-        "//aos/stl_mutex:stl_mutex",
-        "//aos/time:time",
+        "//aos:init",
         "//aos/actions:action_lib",
-        "//aos/logging",
-        "//aos/network:team_number",
-        "//aos/util:log_interval",
         "//aos/input:drivetrain_input",
         "//aos/input:joystick_input",
-        "//aos:init",
+        "//aos/logging",
+        "//aos/network:team_number",
+        "//aos/stl_mutex",
+        "//aos/time",
+        "//aos/util:log_interval",
         "//aos/vision/events:udp",
         "//frc971/autonomous:auto_queue",
         "//frc971/autonomous:base_autonomous_actor",
@@ -73,8 +73,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos:once",
-        "//aos/mutex:mutex",
         "//aos/logging",
+        "//aos/mutex",
         "//aos/network:team_number",
         "//frc971:constants",
         "//frc971/shooter_interpolation:interpolation",
@@ -92,17 +92,17 @@ cc_binary(
     restricted_to = ["//tools:roborio"],
     deps = [
         ":status_light",
+        "//aos:init",
         "//aos:math",
-        "//aos/stl_mutex:stl_mutex",
-        "//aos/time:time",
         "//aos/controls:control_loop",
         "//aos/logging",
         "//aos/logging:queue_logging",
-        "//aos/robot_state:robot_state",
+        "//aos/robot_state",
+        "//aos/stl_mutex",
+        "//aos/time",
         "//aos/util:log_interval",
         "//aos/util:phased_loop",
         "//aos/util:wrapping_counter",
-        "//aos:init",
         "//frc971/autonomous:auto_queue",
         "//frc971/control_loops:queues",
         "//frc971/control_loops/drivetrain:drivetrain_queue",
@@ -134,9 +134,9 @@ queue_library(
     visibility = ["//visibility:public"],
 )
 
-proto_cc_library(
+cc_proto_library(
     name = "vision_proto",
-    src = "vision.proto",
+    srcs = ["vision.proto"],
     visibility = ["//visibility:public"],
 )
 

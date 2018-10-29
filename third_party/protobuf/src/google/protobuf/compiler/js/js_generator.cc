@@ -35,9 +35,6 @@
 #include <limits>
 #include <map>
 #include <memory>
-#ifndef _SHARED_PTR_H
-#include <google/protobuf/stubs/shared_ptr.h>
-#endif
 #include <string>
 #include <utility>
 #include <vector>
@@ -45,11 +42,13 @@
 #include <google/protobuf/stubs/logging.h>
 #include <google/protobuf/stubs/common.h>
 #include <google/protobuf/stubs/stringprintf.h>
+#include <google/protobuf/compiler/js/well_known_types_embed.h>
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream.h>
 #include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/stubs/strutil.h>
+
 
 namespace google {
 namespace protobuf {
@@ -123,6 +122,16 @@ static const int kNumKeyword = sizeof(kKeyword) / sizeof(char*);
 
 namespace {
 
+// The mode of operation for bytes fields. Historically JSPB always carried
+// bytes as JS {string}, containing base64 content by convention. With binary
+// and proto3 serialization the new convention is to represent it as binary
+// data in Uint8Array. See b/26173701 for background on the migration.
+enum BytesMode {
+  BYTES_DEFAULT,  // Default type for getBytesField to return.
+  BYTES_B64,      // Explicitly coerce to base64 string where needed.
+  BYTES_U8,       // Explicitly coerce to Uint8Array where needed.
+};
+
 bool IsReserved(const string& ident) {
   for (int i = 0; i < kNumKeyword; i++) {
     if (ident == kKeyword[i]) {
@@ -132,18 +141,68 @@ bool IsReserved(const string& ident) {
   return false;
 }
 
+bool StrEndsWith(StringPiece sp, StringPiece x) {
+  return sp.size() >= x.size() && sp.substr(sp.size() - x.size()) == x;
+}
+
 // Returns a copy of |filename| with any trailing ".protodevel" or ".proto
 // suffix stripped.
+// TODO(haberman): Unify with copy in compiler/cpp/internal/helpers.cc.
 string StripProto(const string& filename) {
-  const char* suffix = HasSuffixString(filename, ".protodevel")
-      ? ".protodevel" : ".proto";
+  const char* suffix =
+      StrEndsWith(filename, ".protodevel") ? ".protodevel" : ".proto";
   return StripSuffixString(filename, suffix);
+}
+
+// Given a filename like foo/bar/baz.proto, returns the corresponding JavaScript
+// file foo/bar/baz.js.
+string GetJSFilename(const GeneratorOptions& options, const string& filename) {
+  return StripProto(filename) + options.GetFileNameExtension();
+}
+
+// Given a filename like foo/bar/baz.proto, returns the root directory
+// path ../../
+string GetRootPath(const string& from_filename, const string& to_filename) {
+  if (to_filename.find("google/protobuf") == 0) {
+    // Well-known types (.proto files in the google/protobuf directory) are
+    // assumed to come from the 'google-protobuf' npm package.  We may want to
+    // generalize this exception later by letting others put generated code in
+    // their own npm packages.
+    return "google-protobuf/";
+  }
+
+  size_t slashes = std::count(from_filename.begin(), from_filename.end(), '/');
+  if (slashes == 0) {
+    return "./";
+  }
+  string result = "";
+  for (size_t i = 0; i < slashes; i++) {
+    result += "../";
+  }
+  return result;
+}
+
+// Returns the alias we assign to the module of the given .proto filename
+// when importing.
+string ModuleAlias(const string& filename) {
+  // This scheme could technically cause problems if a file includes any 2 of:
+  //   foo/bar_baz.proto
+  //   foo_bar_baz.proto
+  //   foo_bar/baz.proto
+  //
+  // We'll worry about this problem if/when we actually see it.  This name isn't
+  // exposed to users so we can change it later if we need to.
+  string basename = StripProto(filename);
+  ReplaceCharacters(&basename, "-", '$');
+  ReplaceCharacters(&basename, "/", '_');
+  ReplaceCharacters(&basename, ".", '_');
+  return basename + "_pb";
 }
 
 // Returns the fully normalized JavaScript path for the given
 // file descriptor's package.
-string GetPath(const GeneratorOptions& options,
-               const FileDescriptor* file) {
+string GetFilePath(const GeneratorOptions& options,
+                   const FileDescriptor* file) {
   if (!options.namespace_prefix.empty()) {
     return options.namespace_prefix;
   } else if (!file->package().empty()) {
@@ -153,66 +212,87 @@ string GetPath(const GeneratorOptions& options,
   }
 }
 
-// Forward declare, so that GetPrefix can call this method,
-// which in turn, calls GetPrefix.
-string GetPath(const GeneratorOptions& options,
-               const Descriptor* descriptor);
+// Returns the name of the message with a leading dot and taking into account
+// nesting, for example ".OuterMessage.InnerMessage", or returns empty if
+// descriptor is null. This function does not handle namespacing, only message
+// nesting.
+string GetNestedMessageName(const Descriptor* descriptor) {
+  if (descriptor == NULL) {
+    return "";
+  }
+  string result =
+      StripPrefixString(descriptor->full_name(), descriptor->file()->package());
+  // Add a leading dot if one is not already present.
+  if (!result.empty() && result[0] != '.') {
+    result = "." + result;
+  }
+  return result;
+}
 
 // Returns the path prefix for a message or enumeration that
 // lives under the given file and containing type.
 string GetPrefix(const GeneratorOptions& options,
                  const FileDescriptor* file_descriptor,
                  const Descriptor* containing_type) {
-  string prefix = "";
-
-  if (containing_type == NULL) {
-    prefix = GetPath(options, file_descriptor);
-  } else {
-    prefix = GetPath(options, containing_type);
-  }
-
+  string prefix = GetFilePath(options, file_descriptor) +
+                  GetNestedMessageName(containing_type);
   if (!prefix.empty()) {
     prefix += ".";
   }
-
   return prefix;
 }
 
+// Returns the fully normalized JavaScript path prefix for the given
+// message descriptor.
+string GetMessagePathPrefix(const GeneratorOptions& options,
+                            const Descriptor* descriptor) {
+  return GetPrefix(
+      options, descriptor->file(),
+      descriptor->containing_type());
+}
 
 // Returns the fully normalized JavaScript path for the given
 // message descriptor.
-string GetPath(const GeneratorOptions& options,
-               const Descriptor* descriptor) {
-  return GetPrefix(
-      options, descriptor->file(),
-      descriptor->containing_type()) + descriptor->name();
+string GetMessagePath(const GeneratorOptions& options,
+                      const Descriptor* descriptor) {
+  return GetMessagePathPrefix(options, descriptor) + descriptor->name();
 }
 
-
-// Returns the fully normalized JavaScript path for the given
-// field's containing message descriptor.
-string GetPath(const GeneratorOptions& options,
-               const FieldDescriptor* descriptor) {
-  return GetPath(options, descriptor->containing_type());
+// Returns the fully normalized JavaScript path prefix for the given
+// enumeration descriptor.
+string GetEnumPathPrefix(const GeneratorOptions& options,
+                   const EnumDescriptor* enum_descriptor) {
+  return GetPrefix(options, enum_descriptor->file(),
+      enum_descriptor->containing_type());
 }
 
 // Returns the fully normalized JavaScript path for the given
 // enumeration descriptor.
-string GetPath(const GeneratorOptions& options,
-               const EnumDescriptor* enum_descriptor) {
-  return GetPrefix(
-      options, enum_descriptor->file(),
-      enum_descriptor->containing_type()) + enum_descriptor->name();
+string GetEnumPath(const GeneratorOptions& options,
+                   const EnumDescriptor* enum_descriptor) {
+  return GetEnumPathPrefix(options, enum_descriptor) + enum_descriptor->name();
 }
 
+string MaybeCrossFileRef(const GeneratorOptions& options,
+                         const FileDescriptor* from_file,
+                         const Descriptor* to_message) {
+  if (options.import_style == GeneratorOptions::kImportCommonJs &&
+      from_file != to_message->file()) {
+    // Cross-file ref in CommonJS needs to use the module alias instead of
+    // the global name.
+    return ModuleAlias(to_message->file()->name()) +
+           GetNestedMessageName(to_message->containing_type()) + "." +
+           to_message->name();
+  } else {
+    // Within a single file we use a full name.
+    return GetMessagePath(options, to_message);
+  }
+}
 
-// Returns the fully normalized JavaScript path for the given
-// enumeration value descriptor.
-string GetPath(const GeneratorOptions& options,
-               const EnumValueDescriptor* value_descriptor) {
-  return GetPath(
-      options,
-      value_descriptor->type()) + "." + value_descriptor->name();
+string SubmessageTypeRef(const GeneratorOptions& options,
+                         const FieldDescriptor* field) {
+  GOOGLE_CHECK(field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE);
+  return MaybeCrossFileRef(options, field->file(), field->message_type());
 }
 
 // - Object field name: LOWER_UNDERSCORE -> LOWER_CAMEL, except for group fields
@@ -232,8 +312,8 @@ char ToLowerASCII(char c) {
   }
 }
 
-vector<string> ParseLowerUnderscore(const string& input) {
-  vector<string> words;
+std::vector<string> ParseLowerUnderscore(const string& input) {
+  std::vector<string> words;
   string running = "";
   for (int i = 0; i < input.size(); i++) {
     if (input[i] == '_') {
@@ -251,8 +331,8 @@ vector<string> ParseLowerUnderscore(const string& input) {
   return words;
 }
 
-vector<string> ParseUpperCamel(const string& input) {
-  vector<string> words;
+std::vector<string> ParseUpperCamel(const string& input) {
+  std::vector<string> words;
   string running = "";
   for (int i = 0; i < input.size(); i++) {
     if (input[i] >= 'A' && input[i] <= 'Z' && !running.empty()) {
@@ -267,7 +347,7 @@ vector<string> ParseUpperCamel(const string& input) {
   return words;
 }
 
-string ToLowerCamel(const vector<string>& words) {
+string ToLowerCamel(const std::vector<string>& words) {
   string result;
   for (int i = 0; i < words.size(); i++) {
     string word = words[i];
@@ -281,7 +361,7 @@ string ToLowerCamel(const vector<string>& words) {
   return result;
 }
 
-string ToUpperCamel(const vector<string>& words) {
+string ToUpperCamel(const std::vector<string>& words) {
   string result;
   for (int i = 0; i < words.size(); i++) {
     string word = words[i];
@@ -326,16 +406,66 @@ string ToFileName(const string& input) {
   return result;
 }
 
+// When we're generating one output file per type name, this is the filename
+// that top-level extensions should go in.
+string GetExtensionFileName(const GeneratorOptions& options,
+                            const FileDescriptor* file) {
+  return options.output_dir + "/" + ToFileName(GetFilePath(options, file)) +
+         options.GetFileNameExtension();
+}
+
+// When we're generating one output file per type name, this is the filename
+// that a top-level message should go in.
+string GetMessageFileName(const GeneratorOptions& options,
+                          const Descriptor* desc) {
+  return options.output_dir + "/" + ToFileName(desc->name()) +
+         options.GetFileNameExtension();
+}
+
+// When we're generating one output file per type name, this is the filename
+// that a top-level message should go in.
+string GetEnumFileName(const GeneratorOptions& options,
+                       const EnumDescriptor* desc) {
+  return options.output_dir + "/" + ToFileName(desc->name()) +
+         options.GetFileNameExtension();
+}
+
 // Returns the message/response ID, if set.
 string GetMessageId(const Descriptor* desc) {
   return string();
 }
 
+bool IgnoreExtensionField(const FieldDescriptor* field) {
+  // Exclude descriptor extensions from output "to avoid clutter" (from original
+  // codegen).
+  return field->is_extension() &&
+         field->containing_type()->file()->name() ==
+             "google/protobuf/descriptor.proto";
+}
+
 
 // Used inside Google only -- do not remove.
 bool IsResponse(const Descriptor* desc) { return false; }
-bool IgnoreField(const FieldDescriptor* field) { return false; }
 
+bool IgnoreField(const FieldDescriptor* field) {
+  return IgnoreExtensionField(field);
+}
+
+
+// Used inside Google only -- do not remove.
+bool ShouldTreatMapsAsRepeatedFields(const FileDescriptor& descriptor) {
+  return false;
+}
+
+// Do we ignore this message type?
+bool IgnoreMessage(const GeneratorOptions& options, const Descriptor* d) {
+  return d->options().map_entry() &&
+         !ShouldTreatMapsAsRepeatedFields(*d->file());
+}
+
+bool IsMap(const GeneratorOptions& options, const FieldDescriptor* field) {
+  return field->is_map() && !ShouldTreatMapsAsRepeatedFields(*field->file());
+}
 
 // Does JSPB ignore this entire oneof? True only if all fields are ignored.
 bool IgnoreOneof(const OneofDescriptor* oneof) {
@@ -347,9 +477,8 @@ bool IgnoreOneof(const OneofDescriptor* oneof) {
   return true;
 }
 
-string JSIdent(const FieldDescriptor* field,
-               bool is_upper_camel,
-               bool is_map) {
+string JSIdent(const GeneratorOptions& options, const FieldDescriptor* field,
+               bool is_upper_camel, bool is_map, bool drop_list) {
   string result;
   if (field->type() == FieldDescriptor::TYPE_GROUP) {
     result = is_upper_camel ?
@@ -360,42 +489,62 @@ string JSIdent(const FieldDescriptor* field,
         ToUpperCamel(ParseLowerUnderscore(field->name())) :
         ToLowerCamel(ParseLowerUnderscore(field->name()));
   }
-  if (is_map) {
+  if (is_map || IsMap(options, field)) {
+    // JSPB-style or proto3-style map.
     result += "Map";
-  } else if (field->is_repeated()) {
+  } else if (!drop_list && field->is_repeated()) {
+    // Repeated field.
     result += "List";
   }
   return result;
 }
 
-string JSObjectFieldName(const FieldDescriptor* field) {
-  string name = JSIdent(
-      field,
-      /* is_upper_camel = */ false,
-      /* is_map = */ false);
+string JSObjectFieldName(const GeneratorOptions& options,
+                         const FieldDescriptor* field) {
+  string name = JSIdent(options, field,
+                        /* is_upper_camel = */ false,
+                        /* is_map = */ false,
+                        /* drop_list = */ false);
   if (IsReserved(name)) {
     name = "pb_" + name;
   }
   return name;
 }
 
+string JSByteGetterSuffix(BytesMode bytes_mode) {
+  switch (bytes_mode) {
+    case BYTES_DEFAULT:
+      return "";
+    case BYTES_B64:
+      return "B64";
+    case BYTES_U8:
+      return "U8";
+    default:
+      assert(false);
+  }
+  return "";
+}
+
 // Returns the field name as a capitalized portion of a getter/setter method
 // name, e.g. MyField for .getMyField().
-string JSGetterName(const FieldDescriptor* field) {
-  string name = JSIdent(field,
+string JSGetterName(const GeneratorOptions& options,
+                    const FieldDescriptor* field,
+                    BytesMode bytes_mode = BYTES_DEFAULT,
+                    bool drop_list = false) {
+  string name = JSIdent(options, field,
                         /* is_upper_camel = */ true,
-                        /* is_map = */ false);
+                        /* is_map = */ false, drop_list);
+  if (field->type() == FieldDescriptor::TYPE_BYTES) {
+    string suffix = JSByteGetterSuffix(bytes_mode);
+    if (!suffix.empty()) {
+      name += "_as" + suffix;
+    }
+  }
   if (name == "Extension" || name == "JsPbMessageId") {
     // Avoid conflicts with base-class names.
     name += "$";
   }
   return name;
-}
-
-string JSMapGetterName(const FieldDescriptor* field) {
-  return JSIdent(field,
-                 /* is_upper_camel = */ true,
-                 /* is_map = */ true);
 }
 
 
@@ -445,8 +594,7 @@ string JSOneofIndex(const OneofDescriptor* oneof) {
   return SimpleItoa(index);
 }
 
-// Decodes a codepoint in \x0000 -- \xFFFF. Since JS strings are UTF-16, we only
-// need to handle the BMP (16-bit range) here.
+// Decodes a codepoint in \x0000 -- \xFFFF.
 uint16 DecodeUTF8Codepoint(uint8* bytes, size_t* length) {
   if (*length == 0) {
     return 0;
@@ -483,80 +631,56 @@ uint16 DecodeUTF8Codepoint(uint8* bytes, size_t* length) {
 }
 
 // Escapes the contents of a string to be included within double-quotes ("") in
-// JavaScript. |is_utf8| determines whether the input data (in a C++ string of
-// chars) is UTF-8 encoded (in which case codepoints become JavaScript string
-// characters, escaped with 16-bit hex escapes where necessary) or raw binary
-// (in which case bytes become JavaScript string characters 0 -- 255).
-string EscapeJSString(const string& in, bool is_utf8) {
-  string result;
+// JavaScript. The input data should be a UTF-8 encoded C++ string of chars.
+// Returns false if |out| was truncated because |in| contained invalid UTF-8 or
+// codepoints outside the BMP.
+// TODO(lukestebbing): Support codepoints outside the BMP.
+bool EscapeJSString(const string& in, string* out) {
   size_t decoded = 0;
   for (size_t i = 0; i < in.size(); i += decoded) {
     uint16 codepoint = 0;
-    if (is_utf8) {
-      // Decode the next UTF-8 codepoint.
-      size_t have_bytes = in.size() - i;
-      uint8 bytes[3] = {
+    // Decode the next UTF-8 codepoint.
+    size_t have_bytes = in.size() - i;
+    uint8 bytes[3] = {
         static_cast<uint8>(in[i]),
         static_cast<uint8>(((i + 1) < in.size()) ? in[i + 1] : 0),
         static_cast<uint8>(((i + 2) < in.size()) ? in[i + 2] : 0),
-      };
-      codepoint = DecodeUTF8Codepoint(bytes, &have_bytes);
-      if (have_bytes == 0) {
-        break;
-      }
-      decoded = have_bytes;
-    } else {
-      codepoint = static_cast<uint16>(static_cast<uint8>(in[i]));
-      decoded = 1;
+    };
+    codepoint = DecodeUTF8Codepoint(bytes, &have_bytes);
+    if (have_bytes == 0) {
+      return false;
     }
-
-    // Next byte -- used for minimal octal escapes below.
-    char next_byte = (i + decoded) < in.size() ?
-        in[i + decoded] : 0;
-    bool pad_octal = (next_byte >= '0' && next_byte <= '7');
+    decoded = have_bytes;
 
     switch (codepoint) {
-      case '\0': result += pad_octal ? "\\000" : "\\0";   break;
-      case '\b': result += "\\\b";  break;
-      case '\t': result += "\\\t";  break;
-      case '\n': result += "\\\n";  break;
-      case '\r': result += "\\\r";  break;
-      case '\f': result += "\\\f";  break;
-      case '\\': result += "\\\\";  break;
-      case '"':  result += pad_octal ? "\\042" : "\\42"; break;
-      case '&':  result += pad_octal ? "\\046" : "\\46"; break;
-      case '\'': result += pad_octal ? "\\047" : "\\47"; break;
-      case '<':  result += pad_octal ? "\\074" : "\\74"; break;
-      case '=':  result += pad_octal ? "\\075" : "\\75"; break;
-      case '>':  result += pad_octal ? "\\076" : "\\76"; break;
+      case '\'': *out += "\\x27"; break;
+      case '"': *out += "\\x22"; break;
+      case '<': *out += "\\x3c"; break;
+      case '=': *out += "\\x3d"; break;
+      case '>': *out += "\\x3e"; break;
+      case '&': *out += "\\x26"; break;
+      case '\b': *out += "\\b"; break;
+      case '\t': *out += "\\t"; break;
+      case '\n': *out += "\\n"; break;
+      case '\f': *out += "\\f"; break;
+      case '\r': *out += "\\r"; break;
+      case '\\': *out += "\\\\"; break;
       default:
-        // All other non-ASCII codepoints are escaped.
-        // Original codegen uses hex for >= 0x100 and octal for others.
+        // TODO(lukestebbing): Once we're supporting codepoints outside the BMP,
+        // use a single Unicode codepoint escape if the output language is
+        // ECMAScript 2015 or above. Otherwise, use a surrogate pair.
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#String_literals
         if (codepoint >= 0x20 && codepoint <= 0x7e) {
-          result += static_cast<char>(codepoint);
+          *out += static_cast<char>(codepoint);
+        } else if (codepoint >= 0x100) {
+          *out += StringPrintf("\\u%04x", codepoint);
         } else {
-          if (codepoint >= 0x100) {
-            result += StringPrintf("\\u%04x", codepoint);
-          } else {
-            if (pad_octal || codepoint >= 0100) {
-              result += "\\";
-              result += ('0' + ((codepoint >> 6) & 07));
-              result += ('0' + ((codepoint >> 3) & 07));
-              result += ('0' + ((codepoint >> 0) & 07));
-            } else if (codepoint >= 010) {
-              result += "\\";
-              result += ('0' + ((codepoint >> 3) & 07));
-              result += ('0' + ((codepoint >> 0) & 07));
-            } else {
-              result += "\\";
-              result += ('0' + ((codepoint >> 0) & 07));
-            }
-          }
+          *out += StringPrintf("\\x%02x", codepoint);
         }
         break;
     }
   }
-  return result;
+  return true;
 }
 
 string EscapeBase64(const string& in) {
@@ -648,12 +772,29 @@ string DoubleToString(double value) {
   return PostProcessFloat(result);
 }
 
+// Return true if this is an integral field that should be represented as string
+// in JS.
+bool IsIntegralFieldWithStringJSType(const FieldDescriptor* field) {
+  switch (field->cpp_type()) {
+    case FieldDescriptor::CPPTYPE_INT64:
+    case FieldDescriptor::CPPTYPE_UINT64:
+      // The default value of JSType is JS_NORMAL, which behaves the same as
+      // JS_NUMBER.
+      return field->options().jstype() == google::protobuf::FieldOptions::JS_STRING;
+    default:
+      return false;
+  }
+}
+
 string MaybeNumberString(const FieldDescriptor* field, const string& orig) {
-  return orig;
+  return IsIntegralFieldWithStringJSType(field) ? ("\"" + orig + "\"") : orig;
 }
 
 string JSFieldDefault(const FieldDescriptor* field) {
-  assert(field->has_default_value());
+  if (field->is_repeated()) {
+    return "[]";
+  }
+
   switch (field->cpp_type()) {
     case FieldDescriptor::CPPTYPE_INT32:
       return MaybeNumberString(
@@ -681,11 +822,17 @@ string JSFieldDefault(const FieldDescriptor* field) {
       return DoubleToString(field->default_value_double());
     case FieldDescriptor::CPPTYPE_STRING:
       if (field->type() == FieldDescriptor::TYPE_STRING) {
-        return "\"" + EscapeJSString(field->default_value_string(), true) +
-               "\"";
-      } else {
-        return "\"" + EscapeBase64(field->default_value_string()) +
-               "\"";
+        string out;
+        bool is_valid = EscapeJSString(field->default_value_string(), &out);
+        if (!is_valid) {
+          // TODO(lukestebbing): Decide whether this should be a hard error.
+          GOOGLE_LOG(WARNING) << "The default value for field " << field->full_name()
+                       << " was truncated since it contained invalid UTF-8 or"
+                          " codepoints outside the basic multilingual plane.";
+        }
+        return "\"" + out + "\"";
+      } else {  // Bytes
+        return "\"" + EscapeBase64(field->default_value_string()) + "\"";
       }
     case FieldDescriptor::CPPTYPE_MESSAGE:
       return "null";
@@ -728,22 +875,41 @@ string ProtoTypeName(const GeneratorOptions& options,
     case FieldDescriptor::TYPE_BYTES:
       return "bytes";
     case FieldDescriptor::TYPE_GROUP:
-      return GetPath(options, field->message_type());
+      return GetMessagePath(options, field->message_type());
     case FieldDescriptor::TYPE_ENUM:
-      return GetPath(options, field->enum_type());
+      return GetEnumPath(options, field->enum_type());
     case FieldDescriptor::TYPE_MESSAGE:
-      return GetPath(options, field->message_type());
+      return GetMessagePath(options, field->message_type());
     default:
       return "";
   }
 }
 
 string JSIntegerTypeName(const FieldDescriptor* field) {
-  return "number";
+  return IsIntegralFieldWithStringJSType(field) ? "string" : "number";
+}
+
+string JSStringTypeName(const GeneratorOptions& options,
+                        const FieldDescriptor* field,
+                        BytesMode bytes_mode) {
+  if (field->type() == FieldDescriptor::TYPE_BYTES) {
+    switch (bytes_mode) {
+      case BYTES_DEFAULT:
+        return "(string|Uint8Array)";
+      case BYTES_B64:
+        return "string";
+      case BYTES_U8:
+        return "Uint8Array";
+      default:
+        assert(false);
+    }
+  }
+  return "string";
 }
 
 string JSTypeName(const GeneratorOptions& options,
-                  const FieldDescriptor* field) {
+                  const FieldDescriptor* field,
+                  BytesMode bytes_mode) {
   switch (field->cpp_type()) {
     case FieldDescriptor::CPPTYPE_BOOL:
       return "boolean";
@@ -760,53 +926,132 @@ string JSTypeName(const GeneratorOptions& options,
     case FieldDescriptor::CPPTYPE_DOUBLE:
       return "number";
     case FieldDescriptor::CPPTYPE_STRING:
-      return "string";
+      return JSStringTypeName(options, field, bytes_mode);
     case FieldDescriptor::CPPTYPE_ENUM:
-      return GetPath(options, field->enum_type());
+      return GetEnumPath(options, field->enum_type());
     case FieldDescriptor::CPPTYPE_MESSAGE:
-      return GetPath(options, field->message_type());
+      return GetMessagePath(options, field->message_type());
     default:
       return "";
   }
 }
 
-bool HasFieldPresence(const FieldDescriptor* field);
+// Used inside Google only -- do not remove.
+bool UseBrokenPresenceSemantics(const GeneratorOptions& options,
+                                const FieldDescriptor* field) {
+  return false;
+}
+
+// Returns true for fields that return "null" from accessors when they are
+// unset.  This should normally only be true for non-repeated submessages, but
+// we have legacy users who relied on old behavior where accessors behaved this
+// way.
+bool ReturnsNullWhenUnset(const GeneratorOptions& options,
+                          const FieldDescriptor* field) {
+  if (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE &&
+      field->is_optional()) {
+    return true;
+  }
+
+  // TODO(haberman): remove this case and unconditionally return false.
+  return UseBrokenPresenceSemantics(options, field) && !field->is_repeated() &&
+         !field->has_default_value();
+}
+
+// In a sane world, this would be the same as ReturnsNullWhenUnset().  But in
+// the status quo, some fields declare that they never return null/undefined
+// even though they actually do:
+//   * required fields
+//   * optional enum fields
+//   * proto3 primitive fields.
+bool DeclaredReturnTypeIsNullable(const GeneratorOptions& options,
+                                  const FieldDescriptor* field) {
+  if (field->is_required() || field->type() == FieldDescriptor::TYPE_ENUM) {
+    return false;
+  }
+
+  if (field->file()->syntax() == FileDescriptor::SYNTAX_PROTO3 &&
+      field->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE) {
+    return false;
+  }
+
+  return ReturnsNullWhenUnset(options, field);
+}
+
+bool SetterAcceptsUndefined(const GeneratorOptions& options,
+                            const FieldDescriptor* field) {
+  if (ReturnsNullWhenUnset(options, field)) {
+    return true;
+  }
+
+  // Broken presence semantics always accepts undefined for setters.
+  return UseBrokenPresenceSemantics(options, field);
+}
+
+bool SetterAcceptsNull(const GeneratorOptions& options,
+                       const FieldDescriptor* field) {
+  if (ReturnsNullWhenUnset(options, field)) {
+    return true;
+  }
+
+  // With broken presence semantics, fields with defaults accept "null" for
+  // setters, but other fields do not.  This is a strange quirk of the old
+  // codegen.
+  return UseBrokenPresenceSemantics(options, field) &&
+         field->has_default_value();
+}
+
+// Returns types which are known to by non-nullable by default.
+// The style guide requires that we omit "!" in this case.
+bool IsPrimitive(const string& type) {
+  return type == "undefined" || type == "string" || type == "number" ||
+         type == "boolean";
+}
 
 string JSFieldTypeAnnotation(const GeneratorOptions& options,
                              const FieldDescriptor* field,
-                             bool force_optional,
+                             bool is_setter_argument,
                              bool force_present,
                              bool singular_if_not_packed,
-                             bool always_singular) {
-  bool is_primitive =
-      (field->cpp_type() != FieldDescriptor::CPPTYPE_ENUM &&
-       field->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE);
-
-  string jstype = JSTypeName(options, field);
+                             BytesMode bytes_mode = BYTES_DEFAULT) {
+  GOOGLE_CHECK(!(is_setter_argument && force_present));
+  string jstype = JSTypeName(options, field, bytes_mode);
 
   if (field->is_repeated() &&
-      !always_singular &&
       (field->is_packed() || !singular_if_not_packed)) {
-    if (!is_primitive) {
-      jstype = "!" + jstype;
-    }
-    jstype = "Array.<" + jstype + ">";
-    if (!force_optional) {
-      jstype = "!" + jstype;
+    if (field->type() == FieldDescriptor::TYPE_BYTES &&
+        bytes_mode == BYTES_DEFAULT) {
+      jstype = "(Array<!Uint8Array>|Array<string>)";
+    } else {
+      if (!IsPrimitive(jstype)) {
+        jstype = "!" + jstype;
+      }
+      jstype = "Array<" + jstype + ">";
     }
   }
 
-  if (field->is_optional() && is_primitive &&
-      (!field->has_default_value() || force_optional) && !force_present) {
-    jstype += "?";
-  } else if (field->is_required() && !is_primitive && !force_optional) {
-    jstype = "!" + jstype;
+  bool is_null_or_undefined = false;
+
+  if (is_setter_argument) {
+    if (SetterAcceptsNull(options, field)) {
+      jstype = "?" + jstype;
+      is_null_or_undefined = true;
+    }
+
+    if (SetterAcceptsUndefined(options, field)) {
+      jstype += "|undefined";
+      is_null_or_undefined = true;
+    }
+  } else if (force_present) {
+    // Don't add null or undefined.
+  } else {
+    if (DeclaredReturnTypeIsNullable(options, field)) {
+      jstype = "?" + jstype;
+      is_null_or_undefined = true;
+    }
   }
 
-  if (force_optional && HasFieldPresence(field)) {
-    jstype += "|undefined";
-  }
-  if (force_present && jstype[0] != '!' && !is_primitive) {
+  if (!is_null_or_undefined && !IsPrimitive(jstype)) {
     jstype = "!" + jstype;
   }
 
@@ -818,17 +1063,12 @@ string JSBinaryReaderMethodType(const FieldDescriptor* field) {
   if (name[0] >= 'a' && name[0] <= 'z') {
     name[0] = (name[0] - 'a') + 'A';
   }
-
-  return name;
+  return IsIntegralFieldWithStringJSType(field) ? (name + "String") : name;
 }
 
 string JSBinaryReadWriteMethodName(const FieldDescriptor* field,
                                    bool is_writer) {
   string name = JSBinaryReaderMethodType(field);
-  if (is_writer && field->type() == FieldDescriptor::TYPE_BYTES) {
-    // Override for `bytes` fields: treat string as raw bytes, not base64.
-    name = "BytesRawString";
-  }
   if (field->is_packed()) {
     name = "Packed" + name;
   } else if (is_writer && field->is_repeated()) {
@@ -837,15 +1077,53 @@ string JSBinaryReadWriteMethodName(const FieldDescriptor* field,
   return name;
 }
 
-string JSBinaryReaderMethodName(const FieldDescriptor* field) {
-  return "read" + JSBinaryReadWriteMethodName(field, /* is_writer = */ false);
+string JSBinaryReaderMethodName(const GeneratorOptions& options,
+                                const FieldDescriptor* field) {
+  return "jspb.BinaryReader.prototype.read" +
+         JSBinaryReadWriteMethodName(field, /* is_writer = */ false);
 }
 
-string JSBinaryWriterMethodName(const FieldDescriptor* field) {
-  return "write" + JSBinaryReadWriteMethodName(field, /* is_writer = */ true);
+string JSBinaryWriterMethodName(const GeneratorOptions& options,
+                                const FieldDescriptor* field) {
+  return "jspb.BinaryWriter.prototype.write" +
+         JSBinaryReadWriteMethodName(field, /* is_writer = */ true);
 }
 
 string JSReturnClause(const FieldDescriptor* desc) {
+  return "";
+}
+
+string JSTypeTag(const FieldDescriptor* desc) {
+  switch (desc->type()) {
+    case FieldDescriptor::TYPE_DOUBLE:
+    case FieldDescriptor::TYPE_FLOAT:
+      return "Float";
+    case FieldDescriptor::TYPE_INT32:
+    case FieldDescriptor::TYPE_UINT32:
+    case FieldDescriptor::TYPE_INT64:
+    case FieldDescriptor::TYPE_UINT64:
+    case FieldDescriptor::TYPE_FIXED32:
+    case FieldDescriptor::TYPE_FIXED64:
+    case FieldDescriptor::TYPE_SINT32:
+    case FieldDescriptor::TYPE_SINT64:
+    case FieldDescriptor::TYPE_SFIXED32:
+    case FieldDescriptor::TYPE_SFIXED64:
+      if (IsIntegralFieldWithStringJSType(desc)) {
+        return "StringInt";
+      } else {
+        return "Int";
+      }
+    case FieldDescriptor::TYPE_BOOL:
+      return "Boolean";
+    case FieldDescriptor::TYPE_STRING:
+      return "String";
+    case FieldDescriptor::TYPE_BYTES:
+      return "Bytes";
+    case FieldDescriptor::TYPE_ENUM:
+      return "Enum";
+    default:
+      assert(false);
+  }
   return "";
 }
 
@@ -854,9 +1132,10 @@ string JSReturnDoc(const GeneratorOptions& options,
   return "";
 }
 
-bool HasRepeatedFields(const Descriptor* desc) {
+bool HasRepeatedFields(const GeneratorOptions& options,
+                       const Descriptor* desc) {
   for (int i = 0; i < desc->field_count(); i++) {
-    if (desc->field(i)->is_repeated()) {
+    if (desc->field(i)->is_repeated() && !IsMap(options, desc->field(i))) {
       return true;
     }
   }
@@ -867,8 +1146,9 @@ static const char* kRepeatedFieldArrayName = ".repeatedFields_";
 
 string RepeatedFieldsArrayName(const GeneratorOptions& options,
                                const Descriptor* desc) {
-  return HasRepeatedFields(desc) ?
-      (GetPath(options, desc) + kRepeatedFieldArrayName) : "null";
+  return HasRepeatedFields(options, desc)
+             ? (GetMessagePath(options, desc) + kRepeatedFieldArrayName)
+             : "null";
 }
 
 bool HasOneofFields(const Descriptor* desc) {
@@ -884,14 +1164,16 @@ static const char* kOneofGroupArrayName = ".oneofGroups_";
 
 string OneofFieldsArrayName(const GeneratorOptions& options,
                             const Descriptor* desc) {
-  return HasOneofFields(desc) ?
-      (GetPath(options, desc) + kOneofGroupArrayName) : "null";
+  return HasOneofFields(desc)
+             ? (GetMessagePath(options, desc) + kOneofGroupArrayName)
+             : "null";
 }
 
-string RepeatedFieldNumberList(const Descriptor* desc) {
+string RepeatedFieldNumberList(const GeneratorOptions& options,
+                               const Descriptor* desc) {
   std::vector<string> numbers;
   for (int i = 0; i < desc->field_count(); i++) {
-    if (desc->field(i)->is_repeated()) {
+    if (desc->field(i)->is_repeated() && !IsMap(options, desc->field(i))) {
       numbers.push_back(JSFieldIndex(desc->field(i)));
     }
   }
@@ -952,38 +1234,71 @@ string RelativeTypeName(const FieldDescriptor* field) {
 }
 
 string JSExtensionsObjectName(const GeneratorOptions& options,
+                              const FileDescriptor* from_file,
                               const Descriptor* desc) {
   if (desc->full_name() == "google.protobuf.bridge.MessageSet") {
+    // TODO(haberman): fix this for the kImportCommonJs case.
     return "jspb.Message.messageSetExtensions";
   } else {
-    return GetPath(options, desc) + ".extensions";
+    return MaybeCrossFileRef(options, from_file, desc) + ".extensions";
   }
+}
+
+static const int kMapKeyField = 1;
+static const int kMapValueField = 2;
+
+const FieldDescriptor* MapFieldKey(const FieldDescriptor* field) {
+  assert(field->is_map());
+  return field->message_type()->FindFieldByNumber(kMapKeyField);
+}
+
+const FieldDescriptor* MapFieldValue(const FieldDescriptor* field) {
+  assert(field->is_map());
+  return field->message_type()->FindFieldByNumber(kMapValueField);
 }
 
 string FieldDefinition(const GeneratorOptions& options,
                        const FieldDescriptor* field) {
-  string qualifier = field->is_repeated() ? "repeated" :
-      (field->is_optional() ? "optional" : "required");
-  string type, name;
-  if (field->type() == FieldDescriptor::TYPE_ENUM ||
-      field->type() == FieldDescriptor::TYPE_MESSAGE) {
-    type = RelativeTypeName(field);
-    name = field->name();
-  } else if (field->type() == FieldDescriptor::TYPE_GROUP) {
-    type = "group";
-    name = field->message_type()->name();
+  if (IsMap(options, field)) {
+    const FieldDescriptor* key_field = MapFieldKey(field);
+    const FieldDescriptor* value_field = MapFieldValue(field);
+    string key_type = ProtoTypeName(options, key_field);
+    string value_type;
+    if (value_field->type() == FieldDescriptor::TYPE_ENUM ||
+        value_field->type() == FieldDescriptor::TYPE_MESSAGE) {
+      value_type = RelativeTypeName(value_field);
+    } else {
+      value_type = ProtoTypeName(options, value_field);
+    }
+    return StringPrintf("map<%s, %s> %s = %d;",
+                        key_type.c_str(),
+                        value_type.c_str(),
+                        field->name().c_str(),
+                        field->number());
   } else {
-    type = ProtoTypeName(options, field);
-    name = field->name();
+    string qualifier = field->is_repeated() ? "repeated" :
+        (field->is_optional() ? "optional" : "required");
+    string type, name;
+    if (field->type() == FieldDescriptor::TYPE_ENUM ||
+        field->type() == FieldDescriptor::TYPE_MESSAGE) {
+      type = RelativeTypeName(field);
+      name = field->name();
+    } else if (field->type() == FieldDescriptor::TYPE_GROUP) {
+      type = "group";
+      name = field->message_type()->name();
+    } else {
+      type = ProtoTypeName(options, field);
+      name = field->name();
+    }
+    return StringPrintf("%s %s %s = %d;",
+                        qualifier.c_str(),
+                        type.c_str(),
+                        name.c_str(),
+                        field->number());
   }
-  return StringPrintf("%s %s %s = %d;",
-                      qualifier.c_str(),
-                      type.c_str(),
-                      name.c_str(),
-                      field->number());
 }
 
-string FieldComments(const FieldDescriptor* field) {
+string FieldComments(const FieldDescriptor* field, BytesMode bytes_mode) {
   string comments;
   if (field->cpp_type() == FieldDescriptor::CPPTYPE_BOOL) {
     comments +=
@@ -992,12 +1307,10 @@ string FieldComments(const FieldDescriptor* field) {
         " * You should avoid comparisons like {@code val === true/false} in "
         "those cases.\n";
   }
-  if (field->is_repeated()) {
+  if (field->type() == FieldDescriptor::TYPE_BYTES && bytes_mode == BYTES_U8) {
     comments +=
-        " * If you change this array by adding, removing or replacing "
-        "elements, or if you\n"
-        " * replace the array itself, then you must call the setter to "
-        "update it.\n";
+        " * Note that Uint8Array is not supported on all browsers.\n"
+        " * @see http://caniuse.com/Uint8Array\n";
   }
   return comments;
 }
@@ -1009,8 +1322,10 @@ bool ShouldGenerateExtension(const FieldDescriptor* field) {
 }
 
 bool HasExtensions(const Descriptor* desc) {
-  if (desc->extension_count() > 0) {
-    return true;
+  for (int i = 0; i < desc->extension_count(); i++) {
+    if (ShouldGenerateExtension(desc->extension(i))) {
+      return true;
+    }
   }
   for (int i = 0; i < desc->nested_type_count(); i++) {
     if (HasExtensions(desc->nested_type(i))) {
@@ -1034,6 +1349,29 @@ bool HasExtensions(const FileDescriptor* file) {
   return false;
 }
 
+bool HasMap(const GeneratorOptions& options, const Descriptor* desc) {
+  for (int i = 0; i < desc->field_count(); i++) {
+    if (IsMap(options, desc->field(i))) {
+      return true;
+    }
+  }
+  for (int i = 0; i < desc->nested_type_count(); i++) {
+    if (HasMap(options, desc->nested_type(i))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool FileHasMap(const GeneratorOptions& options, const FileDescriptor* desc) {
+  for (int i = 0; i < desc->message_type_count(); i++) {
+    if (HasMap(options, desc->message_type(i))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool IsExtendable(const Descriptor* desc) {
   return desc->extension_range_count() > 0;
 }
@@ -1041,7 +1379,7 @@ bool IsExtendable(const Descriptor* desc) {
 // Returns the max index in the underlying data storage array beyond which the
 // extension object is used.
 string GetPivot(const Descriptor* desc) {
-  static const int kDefaultPivot = (1 << 29);  // max field number (29 bits)
+  static const int kDefaultPivot = 500;
 
   // Find the max field number
   int max_field_number = 0;
@@ -1053,7 +1391,7 @@ string GetPivot(const Descriptor* desc) {
   }
 
   int pivot = -1;
-  if (IsExtendable(desc)) {
+  if (IsExtendable(desc) || (max_field_number >= kDefaultPivot)) {
     pivot = ((max_field_number + 1) < kDefaultPivot) ?
         (max_field_number + 1) : kDefaultPivot;
   }
@@ -1061,43 +1399,177 @@ string GetPivot(const Descriptor* desc) {
   return SimpleItoa(pivot);
 }
 
-// Returns true for fields that represent "null" as distinct from the default
-// value. See https://go/proto3#heading=h.kozewqqcqhuz for more information.
-bool HasFieldPresence(const FieldDescriptor* field) {
-  return
-      (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) ||
-      (field->containing_oneof() != NULL) ||
-      (field->file()->syntax() != FileDescriptor::SYNTAX_PROTO3);
+// Whether this field represents presence.  For fields with presence, we
+// generate extra methods (clearFoo() and hasFoo()) for this field.
+bool HasFieldPresence(const GeneratorOptions& options,
+                      const FieldDescriptor* field) {
+  if (field->is_repeated() || field->is_map()) {
+    // We say repeated fields and maps don't have presence, but we still do
+    // generate clearFoo() methods for them through a special case elsewhere.
+    return false;
+  }
+
+  if (UseBrokenPresenceSemantics(options, field)) {
+    // Proto3 files with broken presence semantics have field presence.
+    return true;
+  }
+
+  return field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE ||
+         field->containing_oneof() != NULL ||
+         field->file()->syntax() == FileDescriptor::SYNTAX_PROTO2;
 }
 
-// For proto3 fields without presence, returns a string representing the default
-// value in JavaScript. See https://go/proto3#heading=h.kozewqqcqhuz for more
-// information.
-string Proto3PrimitiveFieldDefault(const FieldDescriptor* field) {
-  switch (field->cpp_type()) {
-    case FieldDescriptor::CPPTYPE_INT32:
-    case FieldDescriptor::CPPTYPE_INT64:
-    case FieldDescriptor::CPPTYPE_UINT32:
-    case FieldDescriptor::CPPTYPE_UINT64: {
-      return "0";
+// We use this to implement the semantics that same file can be generated
+// multiple times, but the last one wins.  We never actually write the files,
+// but we keep a set of which descriptors were the final one for a given
+// filename.
+class FileDeduplicator {
+ public:
+  explicit FileDeduplicator(const GeneratorOptions& options)
+      : error_on_conflict_(options.error_on_name_conflict) {}
+
+  bool AddFile(const string& filename, const void* desc, string* error) {
+    if (descs_by_filename_.find(filename) != descs_by_filename_.end()) {
+      if (error_on_conflict_) {
+        *error = "Name conflict: file name " + filename +
+                 " would be generated by two descriptors";
+        return false;
+      }
+      allowed_descs_.erase(descs_by_filename_[filename]);
     }
 
-    case FieldDescriptor::CPPTYPE_ENUM:
-    case FieldDescriptor::CPPTYPE_FLOAT:
-    case FieldDescriptor::CPPTYPE_DOUBLE:
-      return "0";
-
-    case FieldDescriptor::CPPTYPE_BOOL:
-      return "false";
-
-    case FieldDescriptor::CPPTYPE_STRING:
-      return "\"\"";
-
-    default:
-      // BYTES and MESSAGE are handled separately.
-      assert(false);
-      return "";
+    descs_by_filename_[filename] = desc;
+    allowed_descs_.insert(desc);
+    return true;
   }
+
+  void GetAllowedSet(std::set<const void*>* allowed_set) {
+    *allowed_set = allowed_descs_;
+  }
+
+ private:
+  bool error_on_conflict_;
+  std::map<string, const void*> descs_by_filename_;
+  std::set<const void*> allowed_descs_;
+};
+
+void DepthFirstSearch(const FileDescriptor* file,
+                      std::vector<const FileDescriptor*>* list,
+                      std::set<const FileDescriptor*>* seen) {
+  if (!seen->insert(file).second) {
+    return;
+  }
+
+  // Add all dependencies.
+  for (int i = 0; i < file->dependency_count(); i++) {
+    DepthFirstSearch(file->dependency(i), list, seen);
+  }
+
+  // Add this file.
+  list->push_back(file);
+}
+
+// A functor for the predicate to remove_if() below.  Returns true if a given
+// FileDescriptor is not in the given set.
+class NotInSet {
+ public:
+  explicit NotInSet(const std::set<const FileDescriptor*>& file_set)
+      : file_set_(file_set) {}
+
+  bool operator()(const FileDescriptor* file) {
+    return file_set_.count(file) == 0;
+  }
+
+ private:
+  const std::set<const FileDescriptor*>& file_set_;
+};
+
+// This function generates an ordering of the input FileDescriptors that matches
+// the logic of the old code generator.  The order is significant because two
+// different input files can generate the same output file, and the last one
+// needs to win.
+void GenerateJspbFileOrder(const std::vector<const FileDescriptor*>& input,
+                           std::vector<const FileDescriptor*>* ordered) {
+  // First generate an ordering of all reachable files (including dependencies)
+  // with depth-first search.  This mimics the behavior of --include_imports,
+  // which is what the old codegen used.
+  ordered->clear();
+  std::set<const FileDescriptor*> seen;
+  std::set<const FileDescriptor*> input_set;
+  for (int i = 0; i < input.size(); i++) {
+    DepthFirstSearch(input[i], ordered, &seen);
+    input_set.insert(input[i]);
+  }
+
+  // Now remove the entries that are not actually in our input list.
+  ordered->erase(
+      std::remove_if(ordered->begin(), ordered->end(), NotInSet(input_set)),
+      ordered->end());
+}
+
+// If we're generating code in file-per-type mode, avoid overwriting files
+// by choosing the last descriptor that writes each filename and permitting
+// only those to generate code.
+
+bool GenerateJspbAllowedSet(const GeneratorOptions& options,
+                            const std::vector<const FileDescriptor*>& files,
+                            std::set<const void*>* allowed_set,
+                            string* error) {
+  std::vector<const FileDescriptor*> files_ordered;
+  GenerateJspbFileOrder(files, &files_ordered);
+
+  // Choose the last descriptor for each filename.
+  FileDeduplicator dedup(options);
+  for (int i = 0; i < files_ordered.size(); i++) {
+    for (int j = 0; j < files_ordered[i]->message_type_count(); j++) {
+      const Descriptor* desc = files_ordered[i]->message_type(j);
+      if (!dedup.AddFile(GetMessageFileName(options, desc), desc, error)) {
+        return false;
+      }
+    }
+    for (int j = 0; j < files_ordered[i]->enum_type_count(); j++) {
+      const EnumDescriptor* desc = files_ordered[i]->enum_type(j);
+      if (!dedup.AddFile(GetEnumFileName(options, desc), desc, error)) {
+        return false;
+      }
+    }
+
+    // Pull out all free-floating extensions and generate files for those too.
+    bool has_extension = false;
+
+    for (int j = 0; j < files_ordered[i]->extension_count(); j++) {
+      if (ShouldGenerateExtension(files_ordered[i]->extension(j))) {
+        has_extension = true;
+      }
+    }
+
+    if (has_extension) {
+      if (!dedup.AddFile(GetExtensionFileName(options, files_ordered[i]),
+                         files_ordered[i], error)) {
+        return false;
+      }
+    }
+  }
+
+  dedup.GetAllowedSet(allowed_set);
+
+  return true;
+}
+
+// Embeds base64 encoded GeneratedCodeInfo proto in a comment at the end of
+// file.
+void EmbedCodeAnnotations(const GeneratedCodeInfo& annotations,
+                          io::Printer* printer) {
+  // Serialize annotations proto into base64 string.
+  string meta_content;
+  annotations.SerializeToString(&meta_content);
+  string meta_64;
+  Base64Escape(meta_content, &meta_64);
+
+  // Print base64 encoded annotations at the end of output file in
+  // a comment.
+  printer->Print("\n// Below is base64 encoded GeneratedCodeInfo proto");
+  printer->Print("\n// $encoded_proto$\n", "encoded_proto", meta_64);
 }
 
 }  // anonymous namespace
@@ -1107,25 +1579,34 @@ void Generator::GenerateHeader(const GeneratorOptions& options,
   printer->Print("/**\n"
                  " * @fileoverview\n"
                  " * @enhanceable\n"
+                 " * @suppress {messageConventions} JS Compiler reports an "
+                 "error if a variable or\n"
+                 " *     field starts with 'MSG_' and isn't a translatable "
+                 "message.\n"
                  " * @public\n"
                  " */\n"
                  "// GENERATED CODE -- DO NOT EDIT!\n"
                  "\n");
 }
 
+void Generator::FindProvidesForFile(const GeneratorOptions& options,
+                                    io::Printer* printer,
+                                    const FileDescriptor* file,
+                                    std::set<string>* provided) const {
+  for (int i = 0; i < file->message_type_count(); i++) {
+    FindProvidesForMessage(options, printer, file->message_type(i), provided);
+  }
+  for (int i = 0; i < file->enum_type_count(); i++) {
+    FindProvidesForEnum(options, printer, file->enum_type(i), provided);
+  }
+}
+
 void Generator::FindProvides(const GeneratorOptions& options,
                              io::Printer* printer,
-                             const vector<const FileDescriptor*>& files,
+                             const std::vector<const FileDescriptor*>& files,
                              std::set<string>* provided) const {
   for (int i = 0; i < files.size(); i++) {
-    for (int j = 0; j < files[i]->message_type_count(); j++) {
-      FindProvidesForMessage(options, printer, files[i]->message_type(j),
-                                 provided);
-    }
-    for (int j = 0; j < files[i]->enum_type_count(); j++) {
-      FindProvidesForEnum(options, printer, files[i]->enum_type(j),
-                              provided);
-    }
+    FindProvidesForFile(options, printer, files[i], provided);
   }
 
   printer->Print("\n");
@@ -1136,7 +1617,11 @@ void Generator::FindProvidesForMessage(
     io::Printer* printer,
     const Descriptor* desc,
     std::set<string>* provided) const {
-  string name = GetPath(options, desc);
+  if (IgnoreMessage(options, desc)) {
+    return;
+  }
+
+  string name = GetMessagePath(options, desc);
   provided->insert(name);
 
   for (int i = 0; i < desc->enum_type_count(); i++) {
@@ -1153,14 +1638,14 @@ void Generator::FindProvidesForEnum(const GeneratorOptions& options,
                                     io::Printer* printer,
                                     const EnumDescriptor* enumdesc,
                                     std::set<string>* provided) const {
-  string name = GetPath(options, enumdesc);
+  string name = GetEnumPath(options, enumdesc);
   provided->insert(name);
 }
 
 void Generator::FindProvidesForFields(
     const GeneratorOptions& options,
     io::Printer* printer,
-    const vector<const FieldDescriptor*>& fields,
+    const std::vector<const FieldDescriptor*>& fields,
     std::set<string>* provided) const {
   for (int i = 0; i < fields.size(); i++) {
     const FieldDescriptor* field = fields[i];
@@ -1169,8 +1654,8 @@ void Generator::FindProvidesForFields(
       continue;
     }
 
-    string name =
-        GetPath(options, field->file()) + "." + JSObjectFieldName(field);
+    string name = GetFilePath(options, field->file()) + "." +
+                  JSObjectFieldName(options, field);
     provided->insert(name);
   }
 }
@@ -1180,15 +1665,26 @@ void Generator::GenerateProvides(const GeneratorOptions& options,
                                  std::set<string>* provided) const {
   for (std::set<string>::iterator it = provided->begin();
        it != provided->end(); ++it) {
-    printer->Print("goog.provide('$name$');\n",
-                   "name", *it);
+    if (options.import_style == GeneratorOptions::kImportClosure) {
+      printer->Print("goog.provide('$name$');\n", "name", *it);
+    } else {
+      // We aren't using Closure's import system, but we use goog.exportSymbol()
+      // to construct the expected tree of objects, eg.
+      //
+      //   goog.exportSymbol('foo.bar.Baz', null, this);
+      //
+      //   // Later generated code expects foo.bar = {} to exist:
+      //   foo.bar.Baz = function() { /* ... */ }
+      printer->Print("goog.exportSymbol('$name$', null, global);\n", "name",
+                     *it);
+    }
   }
 }
 
-void Generator::GenerateRequires(const GeneratorOptions& options,
-                                 io::Printer* printer,
-                                 const Descriptor* desc,
-                                 std::set<string>* provided) const {
+void Generator::GenerateRequiresForMessage(const GeneratorOptions& options,
+                                           io::Printer* printer,
+                                           const Descriptor* desc,
+                                           std::set<string>* provided) const {
   std::set<string> required;
   std::set<string> forwards;
   bool have_message = false;
@@ -1197,26 +1693,37 @@ void Generator::GenerateRequires(const GeneratorOptions& options,
 
   GenerateRequiresImpl(options, printer, &required, &forwards, provided,
                        /* require_jspb = */ have_message,
-                       /* require_extension = */ HasExtensions(desc));
+                       /* require_extension = */ HasExtensions(desc),
+                       /* require_map = */ HasMap(options, desc));
 }
 
-void Generator::GenerateRequires(const GeneratorOptions& options,
-                                 io::Printer* printer,
-                                 const vector<const FileDescriptor*>& files,
-                                 std::set<string>* provided) const {
+void Generator::GenerateRequiresForLibrary(
+    const GeneratorOptions& options, io::Printer* printer,
+    const std::vector<const FileDescriptor*>& files,
+    std::set<string>* provided) const {
+  GOOGLE_CHECK_EQ(options.import_style, GeneratorOptions::kImportClosure);
+  // For Closure imports we need to import every message type individually.
   std::set<string> required;
   std::set<string> forwards;
   bool have_extensions = false;
+  bool have_map = false;
   bool have_message = false;
 
   for (int i = 0; i < files.size(); i++) {
     for (int j = 0; j < files[i]->message_type_count(); j++) {
-      FindRequiresForMessage(options,
-                             files[i]->message_type(j),
-                             &required, &forwards, &have_message);
+      const Descriptor* desc = files[i]->message_type(j);
+      if (!IgnoreMessage(options, desc)) {
+        FindRequiresForMessage(options, desc, &required, &forwards,
+                               &have_message);
+      }
     }
+
     if (!have_extensions && HasExtensions(files[i])) {
       have_extensions = true;
+    }
+
+    if (!have_map && FileHasMap(options, files[i])) {
+      have_map = true;
     }
 
     for (int j = 0; j < files[i]->extension_count(); j++) {
@@ -1225,8 +1732,8 @@ void Generator::GenerateRequires(const GeneratorOptions& options,
         continue;
       }
       if (extension->containing_type()->full_name() !=
-          "google.protobuf.bridge.MessageSet") {
-        required.insert(GetPath(options, extension->containing_type()));
+        "google.protobuf.bridge.MessageSet") {
+        required.insert(GetMessagePath(options, extension->containing_type()));
       }
       FindRequiresForField(options, extension, &required, &forwards);
       have_extensions = true;
@@ -1235,13 +1742,14 @@ void Generator::GenerateRequires(const GeneratorOptions& options,
 
   GenerateRequiresImpl(options, printer, &required, &forwards, provided,
                        /* require_jspb = */ have_message,
-                       /* require_extension = */ have_extensions);
+                       /* require_extension = */ have_extensions,
+                       /* require_map = */ have_map);
 }
 
-void Generator::GenerateRequires(const GeneratorOptions& options,
-                                 io::Printer* printer,
-                                 const vector<const FieldDescriptor*>& fields,
-                                 std::set<string>* provided) const {
+void Generator::GenerateRequiresForExtensions(
+    const GeneratorOptions& options, io::Printer* printer,
+    const std::vector<const FieldDescriptor*>& fields,
+    std::set<string>* provided) const {
   std::set<string> required;
   std::set<string> forwards;
   for (int i = 0; i < fields.size(); i++) {
@@ -1254,7 +1762,8 @@ void Generator::GenerateRequires(const GeneratorOptions& options,
 
   GenerateRequiresImpl(options, printer, &required, &forwards, provided,
                        /* require_jspb = */ false,
-                       /* require_extension = */ fields.size() > 0);
+                       /* require_extension = */ fields.size() > 0,
+                       /* require_map = */ false);
 }
 
 void Generator::GenerateRequiresImpl(const GeneratorOptions& options,
@@ -1262,20 +1771,19 @@ void Generator::GenerateRequiresImpl(const GeneratorOptions& options,
                                      std::set<string>* required,
                                      std::set<string>* forwards,
                                      std::set<string>* provided,
-                                     bool require_jspb,
-                                     bool require_extension) const {
+                                     bool require_jspb, bool require_extension,
+                                     bool require_map) const {
   if (require_jspb) {
-    printer->Print(
-        "goog.require('jspb.Message');\n");
-    if (options.binary) {
-      printer->Print(
-          "goog.require('jspb.BinaryReader');\n"
-          "goog.require('jspb.BinaryWriter');\n");
-    }
+    required->insert("jspb.Message");
+    required->insert("jspb.BinaryReader");
+    required->insert("jspb.BinaryWriter");
   }
   if (require_extension) {
-    printer->Print(
-        "goog.require('jspb.ExtensionFieldInfo');\n");
+    required->insert("jspb.ExtensionFieldBinaryInfo");
+    required->insert("jspb.ExtensionFieldInfo");
+  }
+  if (require_map) {
+    required->insert("jspb.Map");
   }
 
   std::set<string>::iterator it;
@@ -1344,12 +1852,14 @@ void Generator::FindRequiresForField(const GeneratorOptions& options,
         // dependencies, as per original codegen.
         !(field->is_extension() && field->extension_scope() == NULL)) {
       if (options.add_require_for_enums) {
-        required->insert(GetPath(options, field->enum_type()));
+        required->insert(GetEnumPath(options, field->enum_type()));
       } else {
-        forwards->insert(GetPath(options, field->enum_type()));
+        forwards->insert(GetEnumPath(options, field->enum_type()));
       }
     } else if (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) {
-      required->insert(GetPath(options, field->message_type()));
+      if (!IgnoreMessage(options, field->message_type())) {
+        required->insert(GetMessagePath(options, field->message_type()));
+      }
     }
 }
 
@@ -1358,7 +1868,7 @@ void Generator::FindRequiresForExtension(const GeneratorOptions& options,
                                          std::set<string>* required,
                                          std::set<string>* forwards) const {
     if (field->containing_type()->full_name() != "google.protobuf.bridge.MessageSet") {
-      required->insert(GetPath(options, field->containing_type()));
+      required->insert(GetMessagePath(options, field->containing_type()));
     }
     FindRequiresForField(options, field, required, forwards);
 }
@@ -1385,6 +1895,10 @@ void Generator::GenerateClassesAndEnums(const GeneratorOptions& options,
 void Generator::GenerateClass(const GeneratorOptions& options,
                               io::Printer* printer,
                               const Descriptor* desc) const {
+  if (IgnoreMessage(options, desc)) {
+    return;
+  }
+
   if (!NamespaceOnly(desc)) {
     printer->Print("\n");
     GenerateClassConstructor(options, printer, desc);
@@ -1392,28 +1906,36 @@ void Generator::GenerateClass(const GeneratorOptions& options,
 
 
     GenerateClassToObject(options, printer, desc);
-    if (options.binary) {
-      // These must come *before* the extension-field info generation in
-      // GenerateClassRegistration so that references to the binary
-      // serialization/deserialization functions may be placed in the extension
-      // objects.
-      GenerateClassDeserializeBinary(options, printer, desc);
-      GenerateClassSerializeBinary(options, printer, desc);
-    }
-    GenerateClassClone(options, printer, desc);
-    GenerateClassRegistration(options, printer, desc);
-    GenerateClassFields(options, printer, desc);
-    if (IsExtendable(desc) && desc->full_name() != "google.protobuf.bridge.MessageSet") {
-      GenerateClassExtensionFieldInfo(options, printer, desc);
-    }
+    // These must come *before* the extension-field info generation in
+    // GenerateClassRegistration so that references to the binary
+    // serialization/deserialization functions may be placed in the extension
+    // objects.
+    GenerateClassDeserializeBinary(options, printer, desc);
+    GenerateClassSerializeBinary(options, printer, desc);
   }
 
-  // Recurse on nested types.
+  // Recurse on nested types. These must come *before* the extension-field
+  // info generation in GenerateClassRegistration so that extensions that
+  // reference nested types proceed the definitions of the nested types.
   for (int i = 0; i < desc->enum_type_count(); i++) {
     GenerateEnum(options, printer, desc->enum_type(i));
   }
   for (int i = 0; i < desc->nested_type_count(); i++) {
     GenerateClass(options, printer, desc->nested_type(i));
+  }
+
+  if (!NamespaceOnly(desc)) {
+    GenerateClassRegistration(options, printer, desc);
+    GenerateClassFields(options, printer, desc);
+    if (IsExtendable(desc) && desc->full_name() != "google.protobuf.bridge.MessageSet") {
+      GenerateClassExtensionFieldInfo(options, printer, desc);
+    }
+
+    if (options.import_style != GeneratorOptions::kImportClosure) {
+      for (int i = 0; i < desc->extension_count(); i++) {
+        GenerateExtension(options, printer, desc->extension(i));
+      }
+    }
   }
 }
 
@@ -1435,8 +1957,10 @@ void Generator::GenerateClassConstructor(const GeneratorOptions& options,
       " * @extends {jspb.Message}\n"
       " * @constructor\n"
       " */\n"
-      "$classname$ = function(opt_data) {\n",
-      "classname", GetPath(options, desc));
+      "$classprefix$$classname$ = function(opt_data) {\n",
+      "classprefix", GetMessagePathPrefix(options, desc),
+      "classname", desc->name());
+  printer->Annotate("classname", desc);
   string message_id = GetMessageId(desc);
   printer->Print(
       "  jspb.Message.initialize(this, opt_data, $messageId$, $pivot$, "
@@ -1453,13 +1977,13 @@ void Generator::GenerateClassConstructor(const GeneratorOptions& options,
       "if (goog.DEBUG && !COMPILED) {\n"
       "  $classname$.displayName = '$classname$';\n"
       "}\n",
-      "classname", GetPath(options, desc));
+      "classname", GetMessagePath(options, desc));
 }
 
 void Generator::GenerateClassFieldInfo(const GeneratorOptions& options,
                                        io::Printer* printer,
                                        const Descriptor* desc) const {
-  if (HasRepeatedFields(desc)) {
+  if (HasRepeatedFields(options, desc)) {
     printer->Print(
         "/**\n"
         " * List of repeated fields within this message type.\n"
@@ -1468,9 +1992,9 @@ void Generator::GenerateClassFieldInfo(const GeneratorOptions& options,
         " */\n"
         "$classname$$rptfieldarray$ = $rptfields$;\n"
         "\n",
-        "classname", GetPath(options, desc),
+        "classname", GetMessagePath(options, desc),
         "rptfieldarray", kRepeatedFieldArrayName,
-        "rptfields", RepeatedFieldNumberList(desc));
+        "rptfields", RepeatedFieldNumberList(options, desc));
   }
 
   if (HasOneofFields(desc)) {
@@ -1489,7 +2013,7 @@ void Generator::GenerateClassFieldInfo(const GeneratorOptions& options,
         " */\n"
         "$classname$$oneofgrouparray$ = $oneofgroups$;\n"
         "\n",
-        "classname", GetPath(options, desc),
+        "classname", GetMessagePath(options, desc),
         "oneofgrouparray", kOneofGroupArrayName,
         "oneofgroups", OneofGroupList(desc));
 
@@ -1509,7 +2033,7 @@ void Generator::GenerateClassXid(const GeneratorOptions& options,
       "\n"
       "\n"
       "$class$.prototype.messageXid = xid('$class$');\n",
-      "class", GetPath(options, desc));
+      "class", GetMessagePath(options, desc));
 }
 
 void Generator::GenerateOneofCaseDefinition(
@@ -1522,7 +2046,7 @@ void Generator::GenerateOneofCaseDefinition(
       " */\n"
       "$classname$.$oneof$Case = {\n"
       "  $upcase$_NOT_SET: 0",
-      "classname", GetPath(options, oneof->containing_type()),
+      "classname", GetMessagePath(options, oneof->containing_type()),
       "oneof", JSOneofName(oneof),
       "upcase", ToEnumCase(oneof->name()));
 
@@ -1536,6 +2060,7 @@ void Generator::GenerateOneofCaseDefinition(
         "  $upcase$: $number$",
         "upcase", ToEnumCase(oneof->field(i)->name()),
         "number", JSFieldIndex(oneof->field(i)));
+    printer->Annotate("upcase", oneof->field(i));
   }
 
   printer->Print(
@@ -1550,7 +2075,7 @@ void Generator::GenerateOneofCaseDefinition(
       "computeOneofCase(this, $class$.oneofGroups_[$oneofindex$]));\n"
       "};\n"
       "\n",
-      "class", GetPath(options, oneof->containing_type()),
+      "class", GetMessagePath(options, oneof->containing_type()),
       "oneof", JSOneofName(oneof),
       "oneofindex", JSOneofIndex(oneof));
 }
@@ -1589,10 +2114,11 @@ void Generator::GenerateClassToObject(const GeneratorOptions& options,
       " *     http://goto/soy-param-migration\n"
       " * @param {!$classname$} msg The msg instance to transform.\n"
       " * @return {!Object}\n"
+      " * @suppress {unusedLocalVariables} f is only used for nested messages\n"
       " */\n"
       "$classname$.toObject = function(includeInstance, msg) {\n"
       "  var f, obj = {",
-      "classname", GetPath(options, desc));
+      "classname", GetMessagePath(options, desc));
 
   bool first = true;
   for (int i = 0; i < desc->field_count(); i++) {
@@ -1623,61 +2149,127 @@ void Generator::GenerateClassToObject(const GeneratorOptions& options,
         "obj,\n"
         "      $extObject$, $class$.prototype.getExtension,\n"
         "      includeInstance);\n",
-        "extObject", JSExtensionsObjectName(options, desc),
-        "class", GetPath(options, desc));
+        "extObject", JSExtensionsObjectName(options, desc->file(), desc),
+        "class", GetMessagePath(options, desc));
   }
 
   printer->Print(
       "  if (includeInstance) {\n"
-      "    obj.$$jspbMessageInstance = msg\n"
+      "    obj.$$jspbMessageInstance = msg;\n"
       "  }\n"
       "  return obj;\n"
       "};\n"
       "}\n"
       "\n"
       "\n",
-      "classname", GetPath(options, desc));
+      "classname", GetMessagePath(options, desc));
+}
+
+void Generator::GenerateFieldValueExpression(io::Printer* printer,
+                                             const char *obj_reference,
+                                             const FieldDescriptor* field,
+                                             bool use_default) const {
+  bool is_float_or_double =
+      field->cpp_type() == FieldDescriptor::CPPTYPE_FLOAT ||
+      field->cpp_type() == FieldDescriptor::CPPTYPE_DOUBLE;
+  if (use_default) {
+    if (is_float_or_double) {
+      // Coerce "Nan" and "Infinity" to actual float values.
+      //
+      // This will change null to 0, but that doesn't matter since we're getting
+      // with a default.
+      printer->Print("+");
+    }
+
+    printer->Print(
+        "jspb.Message.getFieldWithDefault($obj$, $index$, $default$)",
+        "obj", obj_reference,
+        "index", JSFieldIndex(field),
+        "default", JSFieldDefault(field));
+  } else {
+    if (is_float_or_double) {
+      if (field->is_required()) {
+        // Use "+" to convert all fields to numeric (including null).
+        printer->Print(
+            "+jspb.Message.getField($obj$, $index$)",
+            "index", JSFieldIndex(field),
+            "obj", obj_reference);
+      } else {
+        // Converts "NaN" and "Infinity" while preserving null.
+        printer->Print(
+            "jspb.Message.get$cardinality$FloatingPointField($obj$, $index$)",
+            "cardinality", field->is_repeated() ? "Repeated" : "Optional",
+            "index", JSFieldIndex(field),
+            "obj", obj_reference);
+      }
+    } else {
+      printer->Print("jspb.Message.get$cardinality$Field($obj$, $index$)",
+                     "cardinality", field->is_repeated() ? "Repeated" : "",
+                     "index", JSFieldIndex(field),
+                     "obj", obj_reference);
+    }
+  }
 }
 
 void Generator::GenerateClassFieldToObject(const GeneratorOptions& options,
                                            io::Printer* printer,
                                            const FieldDescriptor* field) const {
   printer->Print("$fieldname$: ",
-                 "fieldname", JSObjectFieldName(field));
+                 "fieldname", JSObjectFieldName(options, field));
 
-  if (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) {
+  if (IsMap(options, field)) {
+    const FieldDescriptor* value_field = MapFieldValue(field);
+    // If the map values are of a message type, we must provide their static
+    // toObject() method; otherwise we pass undefined for that argument.
+    string value_to_object;
+    if (value_field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) {
+      value_to_object =
+          GetMessagePath(options, value_field->message_type()) + ".toObject";
+    } else {
+      value_to_object = "undefined";
+    }
+    printer->Print(
+        "(f = msg.get$name$()) ? f.toObject(includeInstance, $valuetoobject$) "
+        ": []",
+        "name", JSGetterName(options, field), "valuetoobject", value_to_object);
+  } else if (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) {
     // Message field.
     if (field->is_repeated()) {
       {
         printer->Print("jspb.Message.toObjectList(msg.get$getter$(),\n"
                        "    $type$.toObject, includeInstance)",
-                       "getter", JSGetterName(field),
-                       "type", GetPath(options, field->message_type()));
+                       "getter", JSGetterName(options, field),
+                       "type", SubmessageTypeRef(options, field));
       }
     } else {
       printer->Print("(f = msg.get$getter$()) && "
                      "$type$.toObject(includeInstance, f)",
-                     "getter", JSGetterName(field),
-                     "type", GetPath(options, field->message_type()));
+                     "getter", JSGetterName(options, field),
+                     "type", SubmessageTypeRef(options, field));
     }
+  } else if (field->type() == FieldDescriptor::TYPE_BYTES) {
+    // For bytes fields we want to always return the B64 data.
+    printer->Print("msg.get$getter$()",
+                   "getter", JSGetterName(options, field, BYTES_B64));
   } else {
-    // Simple field (singular or repeated).
-    if (!HasFieldPresence(field) && !field->is_repeated()) {
-      // Delegate to the generated get<field>() method in order not to duplicate
-      // the proto3-field-default-value logic here.
-      printer->Print("msg.get$getter$()",
-                     "getter", JSGetterName(field));
-    } else {
-      if (field->has_default_value()) {
-        printer->Print("jspb.Message.getField(msg, $index$) != null ? "
-                       "jspb.Message.getField(msg, $index$) : $defaultValue$",
-                       "index", JSFieldIndex(field),
-                       "defaultValue", JSFieldDefault(field));
-      } else {
-        printer->Print("jspb.Message.getField(msg, $index$)",
-                       "index", JSFieldIndex(field));
-      }
+    bool use_default = field->has_default_value();
+
+    if (field->file()->syntax() == FileDescriptor::SYNTAX_PROTO3 &&
+        // Repeated fields get initialized to their default in the constructor
+        // (why?), so we emit a plain getField() call for them.
+        !field->is_repeated() && !UseBrokenPresenceSemantics(options, field)) {
+      // Proto3 puts all defaults (including implicit defaults) in toObject().
+      // But for proto2 we leave the existing semantics unchanged: unset fields
+      // without default are unset.
+      use_default = true;
     }
+
+    // We don't implement this by calling the accessors, because the semantics
+    // of the accessors are changing independently of the toObject() semantics.
+    // We are migrating the accessors to return defaults instead of null, but
+    // it may take longer to migrate toObject (or we might not want to do it at
+    // all).  So we want to generate independent code.
+    GenerateFieldValueExpression(printer, "msg", field, use_default);
   }
 }
 
@@ -1694,7 +2286,7 @@ void Generator::GenerateClassFromObject(const GeneratorOptions& options,
       " */\n"
       "$classname$.fromObject = function(obj) {\n"
       "  var f, msg = new $classname$();\n",
-      "classname", GetPath(options, desc));
+      "classname", GetMessagePath(options, desc));
 
   for (int i = 0; i < desc->field_count(); i++) {
     const FieldDescriptor* field = desc->field(i);
@@ -1711,7 +2303,29 @@ void Generator::GenerateClassFieldFromObject(
     const GeneratorOptions& options,
     io::Printer* printer,
     const FieldDescriptor* field) const {
-  if (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) {
+  if (IsMap(options, field)) {
+    const FieldDescriptor* value_field = MapFieldValue(field);
+    if (value_field->type() == FieldDescriptor::TYPE_MESSAGE) {
+      // Since the map values are of message type, we have to do some extra work
+      // to recursively call fromObject() on them before setting the map field.
+      printer->Print(
+          "  goog.isDef(obj.$name$) && jspb.Message.setWrapperField(\n"
+          "      msg, $index$, jspb.Map.fromObject(obj.$name$, $fieldclass$, "
+          "$fieldclass$.fromObject));\n",
+          "name", JSObjectFieldName(options, field),
+          "index", JSFieldIndex(field),
+          "fieldclass", GetMessagePath(options, value_field->message_type()));
+    } else {
+      // `msg` is a newly-constructed message object that has not yet built any
+      // map containers wrapping underlying arrays, so we can simply directly
+      // set the array here without fear of a stale wrapper.
+      printer->Print(
+          "  goog.isDef(obj.$name$) && "
+          "jspb.Message.setField(msg, $index$, obj.$name$);\n",
+          "name", JSObjectFieldName(options, field),
+          "index", JSFieldIndex(field));
+    }
+  } else if (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) {
     // Message field (singular or repeated)
     if (field->is_repeated()) {
       {
@@ -1721,41 +2335,26 @@ void Generator::GenerateClassFieldFromObject(
             "      msg, $index$, goog.array.map(obj.$name$, function(i) {\n"
             "        return $fieldclass$.fromObject(i);\n"
             "      }));\n",
-            "name", JSObjectFieldName(field),
+            "name", JSObjectFieldName(options, field),
             "index", JSFieldIndex(field),
-            "fieldclass", GetPath(options, field->message_type()));
+            "fieldclass", SubmessageTypeRef(options, field));
       }
     } else {
       printer->Print(
           "  goog.isDef(obj.$name$) && jspb.Message.setWrapperField(\n"
           "      msg, $index$, $fieldclass$.fromObject(obj.$name$));\n",
-          "name", JSObjectFieldName(field),
+          "name", JSObjectFieldName(options, field),
           "index", JSFieldIndex(field),
-          "fieldclass", GetPath(options, field->message_type()));
+          "fieldclass", SubmessageTypeRef(options, field));
     }
   } else {
     // Simple (primitive) field.
     printer->Print(
         "  goog.isDef(obj.$name$) && jspb.Message.setField(msg, $index$, "
         "obj.$name$);\n",
-        "name", JSObjectFieldName(field),
+        "name", JSObjectFieldName(options, field),
         "index", JSFieldIndex(field));
   }
-}
-
-void Generator::GenerateClassClone(const GeneratorOptions& options,
-                                   io::Printer* printer,
-                                   const Descriptor* desc) const {
-  printer->Print(
-      "/**\n"
-      " * Creates a deep clone of this proto. No data is shared with the "
-      "original.\n"
-      " * @return {!$name$} The clone.\n"
-      " */\n"
-      "$name$.prototype.cloneMessage = function() {\n"
-      "  return /** @type {!$name$} */ (jspb.Message.cloneMessage(this));\n"
-      "};\n\n\n",
-      "name", GetPath(options, desc));
 }
 
 void Generator::GenerateClassRegistration(const GeneratorOptions& options,
@@ -1781,10 +2380,101 @@ void Generator::GenerateClassFields(const GeneratorOptions& options,
   }
 }
 
+void GenerateBytesWrapper(const GeneratorOptions& options,
+                          io::Printer* printer,
+                          const FieldDescriptor* field,
+                          BytesMode bytes_mode) {
+  string type = JSFieldTypeAnnotation(
+      options, field,
+      /* is_setter_argument = */ false,
+      /* force_present = */ false,
+      /* singular_if_not_packed = */ false, bytes_mode);
+  printer->Print(
+      "/**\n"
+      " * $fielddef$\n"
+      "$comment$"
+      " * This is a type-conversion wrapper around `get$defname$()`\n"
+      " * @return {$type$}\n"
+      " */\n"
+      "$class$.prototype.get$name$ = function() {\n"
+      "  return /** @type {$type$} */ (jspb.Message.bytes$list$As$suffix$(\n"
+      "      this.get$defname$()));\n"
+      "};\n"
+      "\n"
+      "\n",
+      "fielddef", FieldDefinition(options, field),
+      "comment", FieldComments(field, bytes_mode),
+      "type", type,
+      "class", GetMessagePath(options, field->containing_type()),
+      "name", JSGetterName(options, field, bytes_mode),
+      "list", field->is_repeated() ? "List" : "",
+      "suffix", JSByteGetterSuffix(bytes_mode),
+      "defname", JSGetterName(options, field, BYTES_DEFAULT));
+}
+
 void Generator::GenerateClassField(const GeneratorOptions& options,
                                    io::Printer* printer,
                                    const FieldDescriptor* field) const {
-  if (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) {
+  if (IsMap(options, field)) {
+    const FieldDescriptor* key_field = MapFieldKey(field);
+    const FieldDescriptor* value_field = MapFieldValue(field);
+    // Map field: special handling to instantiate the map object on demand.
+    string key_type =
+        JSFieldTypeAnnotation(
+            options, key_field,
+            /* is_setter_argument = */ false,
+            /* force_present = */ true,
+            /* singular_if_not_packed = */ false);
+    string value_type =
+        JSFieldTypeAnnotation(
+            options, value_field,
+            /* is_setter_argument = */ false,
+            /* force_present = */ true,
+            /* singular_if_not_packed = */ false);
+
+    printer->Print(
+        "/**\n"
+        " * $fielddef$\n"
+        " * @param {boolean=} opt_noLazyCreate Do not create the map if\n"
+        " * empty, instead returning `undefined`\n"
+        " * @return {!jspb.Map<$keytype$,$valuetype$>}\n"
+        " */\n",
+        "fielddef", FieldDefinition(options, field),
+        "keytype", key_type,
+        "valuetype", value_type);
+    printer->Print(
+        "$class$.prototype.$gettername$ = function(opt_noLazyCreate) {\n"
+        "  return /** @type {!jspb.Map<$keytype$,$valuetype$>} */ (\n",
+        "class", GetMessagePath(options, field->containing_type()),
+        "gettername", "get" + JSGetterName(options, field),
+        "keytype", key_type,
+        "valuetype", value_type);
+    printer->Annotate("gettername", field);
+    printer->Print(
+        "      jspb.Message.getMapField(this, $index$, opt_noLazyCreate",
+        "index", JSFieldIndex(field));
+
+    if (value_field->type() == FieldDescriptor::TYPE_MESSAGE) {
+      printer->Print(
+          ",\n"
+          "      $messageType$",
+          "messageType", GetMessagePath(options, value_field->message_type()));
+    } else {
+      printer->Print(",\n"
+          "      null");
+    }
+
+    printer->Print(
+        "));\n");
+
+    printer->Print(
+        "};\n"
+        "\n"
+        "\n");
+  } else if (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) {
+    // Message field: special handling in order to wrap the underlying data
+    // array with a message object.
+
     printer->Print(
         "/**\n"
         " * $fielddef$\n"
@@ -1792,47 +2482,46 @@ void Generator::GenerateClassField(const GeneratorOptions& options,
         " * @return {$type$}\n"
         " */\n",
         "fielddef", FieldDefinition(options, field),
-        "comment", FieldComments(field),
+        "comment", FieldComments(field, BYTES_DEFAULT),
         "type", JSFieldTypeAnnotation(options, field,
-                                      /* force_optional = */ false,
+                                      /* is_setter_argument = */ false,
                                       /* force_present = */ false,
-                                      /* singular_if_not_packed = */ false,
-                                      /* always_singular = */ false));
+                                      /* singular_if_not_packed = */ false));
     printer->Print(
-        "$class$.prototype.get$name$ = function() {\n"
+        "$class$.prototype.$gettername$ = function() {\n"
         "  return /** @type{$type$} */ (\n"
         "    jspb.Message.get$rpt$WrapperField(this, $wrapperclass$, "
         "$index$$required$));\n"
         "};\n"
         "\n"
         "\n",
-        "class", GetPath(options, field->containing_type()),
-        "name", JSGetterName(field),
+        "class", GetMessagePath(options, field->containing_type()),
+        "gettername", "get" + JSGetterName(options, field),
         "type", JSFieldTypeAnnotation(options, field,
-                                      /* force_optional = */ false,
+                                      /* is_setter_argument = */ false,
                                       /* force_present = */ false,
-                                      /* singular_if_not_packed = */ false,
-                                      /* always_singular = */ false),
+                                      /* singular_if_not_packed = */ false),
         "rpt", (field->is_repeated() ? "Repeated" : ""),
         "index", JSFieldIndex(field),
-        "wrapperclass", GetPath(options, field->message_type()),
+        "wrapperclass", SubmessageTypeRef(options, field),
         "required", (field->label() == FieldDescriptor::LABEL_REQUIRED ?
                      ", 1" : ""));
+    printer->Annotate("gettername", field);
     printer->Print(
-        "/** @param {$optionaltype$} value $returndoc$ */\n"
-        "$class$.prototype.set$name$ = function(value) {\n"
+        "/** @param {$optionaltype$} value$returndoc$ */\n"
+        "$class$.prototype.$settername$ = function(value) {\n"
         "  jspb.Message.set$oneoftag$$repeatedtag$WrapperField(",
         "optionaltype",
         JSFieldTypeAnnotation(options, field,
-                              /* force_optional = */ true,
+                              /* is_setter_argument = */ true,
                               /* force_present = */ false,
-                              /* singular_if_not_packed = */ false,
-                              /* always_singular = */ false),
+                              /* singular_if_not_packed = */ false),
         "returndoc", JSReturnDoc(options, field),
-        "class", GetPath(options, field->containing_type()),
-        "name", JSGetterName(field),
+        "class", GetMessagePath(options, field->containing_type()),
+        "settername", "set" + JSGetterName(options, field),
         "oneoftag", (field->containing_oneof() ? "Oneof" : ""),
         "repeatedtag", (field->is_repeated() ? "Repeated" : ""));
+    printer->Annotate("settername", field);
 
     printer->Print(
         "this, $index$$oneofgroup$, value);$returnvalue$\n"
@@ -1844,27 +2533,34 @@ void Generator::GenerateClassField(const GeneratorOptions& options,
                        (", " + JSOneofArray(options, field)) : ""),
         "returnvalue", JSReturnClause(field));
 
-    printer->Print(
-        "$class$.prototype.clear$name$ = function() {\n"
-        "  this.set$name$($clearedvalue$);$returnvalue$\n"
-        "};\n"
-        "\n"
-        "\n",
-        "class", GetPath(options, field->containing_type()),
-        "name", JSGetterName(field),
-        "clearedvalue", (field->is_repeated() ? "[]" : "undefined"),
-        "returnvalue", JSReturnClause(field));
+    if (field->is_repeated()) {
+      GenerateRepeatedMessageHelperMethods(options, printer, field);
+    }
 
   } else {
-    string typed_annotation;
+    bool untyped =
+        false;
 
     // Simple (primitive) field, either singular or repeated.
-    {
-      typed_annotation = JSFieldTypeAnnotation(options, field,
-                              /* force_optional = */ false,
-                              /* force_present = */ !HasFieldPresence(field),
-                              /* singular_if_not_packed = */ false,
-                              /* always_singular = */ false),
+
+    // TODO(b/26173701): Always use BYTES_DEFAULT for the getter return type;
+    // at this point we "lie" to non-binary users and tell the return
+    // type is always base64 string, pending a LSC to migrate to typed getters.
+    BytesMode bytes_mode =
+        field->type() == FieldDescriptor::TYPE_BYTES && !options.binary ?
+            BYTES_B64 : BYTES_DEFAULT;
+    string typed_annotation = JSFieldTypeAnnotation(
+        options, field,
+        /* is_setter_argument = */ false,
+        /* force_present = */ false,
+        /* singular_if_not_packed = */ false,
+        /* bytes_mode = */ bytes_mode);
+    if (untyped) {
+      printer->Print(
+          "/**\n"
+          " * @return {?} Raw field, untyped.\n"
+          " */\n");
+    } else {
       printer->Print(
           "/**\n"
           " * $fielddef$\n"
@@ -1872,41 +2568,47 @@ void Generator::GenerateClassField(const GeneratorOptions& options,
           " * @return {$type$}\n"
           " */\n",
           "fielddef", FieldDefinition(options, field),
-          "comment", FieldComments(field),
+          "comment", FieldComments(field, bytes_mode),
           "type", typed_annotation);
     }
 
     printer->Print(
-        "$class$.prototype.get$name$ = function() {\n",
-        "class", GetPath(options, field->containing_type()),
-        "name", JSGetterName(field));
+        "$class$.prototype.$gettername$ = function() {\n",
+        "class", GetMessagePath(options, field->containing_type()),
+        "gettername", "get" + JSGetterName(options, field));
+    printer->Annotate("gettername", field);
 
-    {
+    if (untyped) {
+      printer->Print(
+          "  return ");
+    } else {
       printer->Print(
           "  return /** @type {$type$} */ (",
           "type", typed_annotation);
     }
 
-    // For proto3 fields without presence, use special getters that will return
-    // defaults when the field is unset, possibly constructing a value if
-    // required.
-    if (!HasFieldPresence(field) && !field->is_repeated()) {
-      printer->Print("jspb.Message.getFieldProto3(this, $index$, $default$)",
-                     "index", JSFieldIndex(field),
-                     "default", Proto3PrimitiveFieldDefault(field));
-    } else {
-      if (field->has_default_value()) {
-        printer->Print("jspb.Message.getField(this, $index$) != null ? "
-                       "jspb.Message.getField(this, $index$) : $defaultValue$",
-                       "index", JSFieldIndex(field),
-                       "defaultValue", JSFieldDefault(field));
-      } else {
-        printer->Print("jspb.Message.getField(this, $index$)",
-                       "index", JSFieldIndex(field));
-      }
+    bool use_default = !ReturnsNullWhenUnset(options, field);
+
+    // Raw fields with no default set should just return undefined.
+    if (untyped && !field->has_default_value()) {
+      use_default = false;
     }
 
-    {
+    // Repeated fields get initialized to their default in the constructor
+    // (why?), so we emit a plain getField() call for them.
+    if (field->is_repeated()) {
+      use_default = false;
+    }
+
+    GenerateFieldValueExpression(printer, "this", field, use_default);
+
+    if (untyped) {
+      printer->Print(
+          ";\n"
+          "};\n"
+          "\n"
+          "\n");
+    } else {
       printer->Print(
           ");\n"
           "};\n"
@@ -1914,58 +2616,211 @@ void Generator::GenerateClassField(const GeneratorOptions& options,
           "\n");
     }
 
-    {
+    if (field->type() == FieldDescriptor::TYPE_BYTES && !untyped) {
+      GenerateBytesWrapper(options, printer, field, BYTES_B64);
+      GenerateBytesWrapper(options, printer, field, BYTES_U8);
+    }
+
+    if (untyped) {
       printer->Print(
-          "/** @param {$optionaltype$} value $returndoc$ */\n",
-          "optionaltype",
-          JSFieldTypeAnnotation(options, field,
-                                /* force_optional = */ true,
-                                /* force_present = */ !HasFieldPresence(field),
-                                /* singular_if_not_packed = */ false,
-                                /* always_singular = */ false),
+          "/**\n"
+          " * @param {*} value$returndoc$\n"
+          " */\n",
+          "returndoc", JSReturnDoc(options, field));
+    } else {
+      printer->Print(
+          "/** @param {$optionaltype$} value$returndoc$ */\n", "optionaltype",
+          JSFieldTypeAnnotation(
+              options, field,
+              /* is_setter_argument = */ true,
+              /* force_present = */ false,
+              /* singular_if_not_packed = */ false),
           "returndoc", JSReturnDoc(options, field));
     }
 
-    printer->Print(
-        "$class$.prototype.set$name$ = function(value) {\n"
-        "  jspb.Message.set$oneoftag$Field(this, $index$",
-        "class", GetPath(options, field->containing_type()),
-        "name", JSGetterName(field),
-        "oneoftag", (field->containing_oneof() ? "Oneof" : ""),
-        "index", JSFieldIndex(field));
-    printer->Print(
-        "$oneofgroup$, $type$value$rptvalueinit$$typeclose$);$returnvalue$\n"
-        "};\n"
-        "\n"
-        "\n",
-        "type", "",
-        "typeclose", "",
-        "oneofgroup",
-        (field->containing_oneof() ? (", " + JSOneofArray(options, field))
-                                   : ""),
-        "returnvalue", JSReturnClause(field), "rptvalueinit",
-        (field->is_repeated() ? " || []" : ""));
-
-
-    if (HasFieldPresence(field)) {
+    if (field->file()->syntax() == FileDescriptor::SYNTAX_PROTO3 &&
+        !field->is_repeated() && !field->is_map() &&
+        !HasFieldPresence(options, field)) {
+      // Proto3 non-repeated and non-map fields without presence use the
+      // setProto3*Field function.
       printer->Print(
-          "$class$.prototype.clear$name$ = function() {\n"
-          "  jspb.Message.set$oneoftag$Field(this, $index$$oneofgroup$, ",
-          "class", GetPath(options, field->containing_type()),
-          "name", JSGetterName(field),
-          "oneoftag", (field->containing_oneof() ? "Oneof" : ""),
-          "oneofgroup", (field->containing_oneof() ?
-                         (", " + JSOneofArray(options, field)) : ""),
-          "index", JSFieldIndex(field));
-      printer->Print(
-          "$clearedvalue$);$returnvalue$\n"
+          "$class$.prototype.$settername$ = function(value) {\n"
+          "  jspb.Message.setProto3$typetag$Field(this, $index$, "
+          "value);$returnvalue$\n"
           "};\n"
           "\n"
           "\n",
-          "clearedvalue", (field->is_repeated() ? "[]" : "undefined"),
-          "returnvalue", JSReturnClause(field));
+          "class", GetMessagePath(options, field->containing_type()),
+          "settername", "set" + JSGetterName(options, field), "typetag",
+          JSTypeTag(field), "index", JSFieldIndex(field), "returnvalue",
+          JSReturnClause(field));
+      printer->Annotate("settername", field);
+    } else {
+      // Otherwise, use the regular setField function.
+      printer->Print(
+          "$class$.prototype.$settername$ = function(value) {\n"
+          "  jspb.Message.set$oneoftag$Field(this, $index$",
+          "class", GetMessagePath(options, field->containing_type()),
+          "settername", "set" + JSGetterName(options, field), "oneoftag",
+          (field->containing_oneof() ? "Oneof" : ""), "index",
+          JSFieldIndex(field));
+      printer->Annotate("settername", field);
+      printer->Print(
+          "$oneofgroup$, $type$value$rptvalueinit$$typeclose$);$returnvalue$\n"
+          "};\n"
+          "\n"
+          "\n",
+          "type",
+          untyped ? "/** @type{string|number|boolean|Array|undefined} */(" : "",
+          "typeclose", untyped ? ")" : "", "oneofgroup",
+          (field->containing_oneof() ? (", " + JSOneofArray(options, field))
+                                     : ""),
+          "returnvalue", JSReturnClause(field), "rptvalueinit",
+          (field->is_repeated() ? " || []" : ""));
+    }
+
+    if (untyped) {
+      printer->Print(
+          "/**\n"
+          " * Clears the value.$returndoc$\n"
+          " */\n",
+          "returndoc", JSReturnDoc(options, field));
+    }
+
+
+    if (field->is_repeated()) {
+      GenerateRepeatedPrimitiveHelperMethods(options, printer, field, untyped);
     }
   }
+
+  // Generate clearFoo() method for map fields, repeated fields, and other
+  // fields with presence.
+  if (IsMap(options, field)) {
+    printer->Print(
+        "$class$.prototype.$clearername$ = function() {\n"
+        "  this.$gettername$().clear();$returnvalue$\n"
+        "};\n"
+        "\n"
+        "\n",
+        "class", GetMessagePath(options, field->containing_type()),
+        "clearername", "clear" + JSGetterName(options, field),
+        "gettername", "get" + JSGetterName(options, field),
+        "returnvalue", JSReturnClause(field));
+    printer->Annotate("clearername", field);
+  } else if (field->is_repeated() ||
+             (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE &&
+              !field->is_required())) {
+    // Fields where we can delegate to the regular setter.
+    printer->Print(
+        "$class$.prototype.$clearername$ = function() {\n"
+        "  this.$settername$($clearedvalue$);$returnvalue$\n"
+        "};\n"
+        "\n"
+        "\n",
+        "class", GetMessagePath(options, field->containing_type()),
+        "clearername", "clear" + JSGetterName(options, field),
+        "settername", "set" + JSGetterName(options, field),
+        "clearedvalue", (field->is_repeated() ? "[]" : "undefined"),
+        "returnvalue", JSReturnClause(field));
+    printer->Annotate("clearername", field);
+  } else if (HasFieldPresence(options, field)) {
+    // Fields where we can't delegate to the regular setter because it doesn't
+    // accept "undefined" as an argument.
+    printer->Print(
+        "$class$.prototype.$clearername$ = function() {\n"
+        "  jspb.Message.set$maybeoneof$Field(this, "
+        "$index$$maybeoneofgroup$, ",
+        "class", GetMessagePath(options, field->containing_type()),
+        "clearername", "clear" + JSGetterName(options, field),
+        "maybeoneof", (field->containing_oneof() ? "Oneof" : ""),
+        "maybeoneofgroup", (field->containing_oneof() ?
+                           (", " + JSOneofArray(options, field)) : ""),
+        "index", JSFieldIndex(field));
+    printer->Annotate("clearername", field);
+    printer->Print(
+        "$clearedvalue$);$returnvalue$\n"
+        "};\n"
+        "\n"
+        "\n",
+        "clearedvalue", (field->is_repeated() ? "[]" : "undefined"),
+        "returnvalue", JSReturnClause(field));
+  }
+
+  if (HasFieldPresence(options, field)) {
+    printer->Print(
+        "/**\n"
+        " * Returns whether this field is set.\n"
+        " * @return {!boolean}\n"
+        " */\n"
+        "$class$.prototype.$hasername$ = function() {\n"
+        "  return jspb.Message.getField(this, $index$) != null;\n"
+        "};\n"
+        "\n"
+        "\n",
+        "class", GetMessagePath(options, field->containing_type()),
+        "hasername", "has" + JSGetterName(options, field),
+        "index", JSFieldIndex(field));
+    printer->Annotate("hasername", field);
+  }
+}
+
+void Generator::GenerateRepeatedPrimitiveHelperMethods(
+    const GeneratorOptions& options, io::Printer* printer,
+    const FieldDescriptor* field, bool untyped) const {
+  // clang-format off
+  printer->Print(
+      "/**\n"
+      " * @param {!$optionaltype$} value\n"
+      " * @param {number=} opt_index$returndoc$\n"
+      " */\n"
+      "$class$.prototype.$addername$ = function(value, opt_index) {\n"
+      "  jspb.Message.addToRepeatedField(this, $index$",
+      "class", GetMessagePath(options, field->containing_type()), "addername",
+      "add" + JSGetterName(options, field, BYTES_DEFAULT,
+                           /* drop_list = */ true),
+      "optionaltype", JSTypeName(options, field, BYTES_DEFAULT),
+      "index", JSFieldIndex(field),
+      "returndoc", JSReturnDoc(options, field));
+  printer->Annotate("addername", field);
+  printer->Print(
+      "$oneofgroup$, $type$value$rptvalueinit$$typeclose$, "
+      "opt_index);$returnvalue$\n"
+      "};\n"
+      "\n"
+      "\n",
+      "type", untyped ? "/** @type{string|number|boolean|!Uint8Array} */(" : "",
+      "typeclose", untyped ? ")" : "", "oneofgroup",
+      (field->containing_oneof() ? (", " + JSOneofArray(options, field)) : ""),
+      "rptvalueinit", "",
+      "returnvalue", JSReturnClause(field));
+  // clang-format on
+}
+
+void Generator::GenerateRepeatedMessageHelperMethods(
+    const GeneratorOptions& options, io::Printer* printer,
+    const FieldDescriptor* field) const {
+  printer->Print(
+      "/**\n"
+      " * @param {!$optionaltype$=} opt_value\n"
+      " * @param {number=} opt_index\n"
+      " * @return {!$optionaltype$}\n"
+      " */\n"
+      "$class$.prototype.add$name$ = function(opt_value, opt_index) {\n"
+      "  return jspb.Message.addTo$repeatedtag$WrapperField(",
+      "optionaltype", JSTypeName(options, field, BYTES_DEFAULT),
+      "class", GetMessagePath(options, field->containing_type()),
+      "name", JSGetterName(options, field, BYTES_DEFAULT,
+                   /* drop_list = */ true),
+      "repeatedtag", (field->is_repeated() ? "Repeated" : ""));
+
+  printer->Print(
+      "this, $index$$oneofgroup$, opt_value, $ctor$, opt_index);\n"
+      "};\n"
+      "\n"
+      "\n",
+      "index", JSFieldIndex(field), "oneofgroup",
+      (field->containing_oneof() ? (", " + JSOneofArray(options, field)) : ""),
+      "ctor", GetMessagePath(options, field->message_type()));
 }
 
 void Generator::GenerateClassExtensionFieldInfo(const GeneratorOptions& options,
@@ -1987,11 +2842,32 @@ void Generator::GenerateClassExtensionFieldInfo(const GeneratorOptions& options,
         "so that it\n"
         " * works in OPTIMIZED mode.\n"
         " *\n"
-        " * @type {!Object.<number, jspb.ExtensionFieldInfo>}\n"
+        " * @type {!Object<number, jspb.ExtensionFieldInfo>}\n"
         " */\n"
         "$class$.extensions = {};\n"
         "\n",
-        "class", GetPath(options, desc));
+        "class", GetMessagePath(options, desc));
+
+    printer->Print(
+        "\n"
+        "/**\n"
+        " * The extensions registered with this message class. This is a "
+        "map of\n"
+        " * extension field number to fieldInfo object.\n"
+        " *\n"
+        " * For example:\n"
+        " *     { 123: {fieldIndex: 123, fieldName: {my_field_name: 0}, "
+        "ctor: proto.example.MyMessage} }\n"
+        " *\n"
+        " * fieldName contains the JsCompiler renamed field name property "
+        "so that it\n"
+        " * works in OPTIMIZED mode.\n"
+        " *\n"
+        " * @type {!Object<number, jspb.ExtensionFieldBinaryInfo>}\n"
+        " */\n"
+        "$class$.extensionsBinary = {};\n"
+        "\n",
+        "class", GetMessagePath(options, desc));
   }
 }
 
@@ -2029,22 +2905,24 @@ void Generator::GenerateClassDeserializeBinary(const GeneratorOptions& options,
       "    }\n"
       "    var field = reader.getFieldNumber();\n"
       "    switch (field) {\n",
-      "class", GetPath(options, desc));
+      "class", GetMessagePath(options, desc));
 
   for (int i = 0; i < desc->field_count(); i++) {
-    GenerateClassDeserializeBinaryField(options, printer, desc->field(i));
+    if (!IgnoreField(desc->field(i))) {
+      GenerateClassDeserializeBinaryField(options, printer, desc->field(i));
+    }
   }
 
   printer->Print(
       "    default:\n");
   if (IsExtendable(desc)) {
     printer->Print(
-        "      jspb.Message.readBinaryExtension(msg, reader, $extobj$,\n"
+        "      jspb.Message.readBinaryExtension(msg, reader, $extobj$Binary,\n"
         "        $class$.prototype.getExtension,\n"
         "        $class$.prototype.setExtension);\n"
         "      break;\n",
-        "extobj", JSExtensionsObjectName(options, desc),
-        "class", GetPath(options, desc));
+        "extobj", JSExtensionsObjectName(options, desc->file(), desc),
+        "class", GetMessagePath(options, desc));
   } else {
     printer->Print(
         "      reader.skipField();\n"
@@ -2068,38 +2946,64 @@ void Generator::GenerateClassDeserializeBinaryField(
   printer->Print("    case $num$:\n",
                  "num", SimpleItoa(field->number()));
 
-  if (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) {
+  if (IsMap(options, field)) {
+    const FieldDescriptor* key_field = MapFieldKey(field);
+    const FieldDescriptor* value_field = MapFieldValue(field);
     printer->Print(
-        "      var value = new $fieldclass$;\n"
-        "      reader.read$msgOrGroup$($grpfield$value,"
-        "$fieldclass$.deserializeBinaryFromReader);\n",
-        "fieldclass", GetPath(options, field->message_type()),
-        "msgOrGroup", (field->type() == FieldDescriptor::TYPE_GROUP) ?
-                      "Group" : "Message",
-        "grpfield", (field->type() == FieldDescriptor::TYPE_GROUP) ?
-                    (SimpleItoa(field->number()) + ", ") : "");
-  } else {
-    printer->Print(
-        "      var value = /** @type {$fieldtype$} */ (reader.$reader$());\n",
-        "fieldtype", JSFieldTypeAnnotation(options, field, false, true,
-                                           /* singular_if_not_packed = */ true,
-                                           /* always_singular = */ false),
-        "reader", JSBinaryReaderMethodName(field));
-  }
+        "      var value = msg.get$name$();\n"
+        "      reader.readMessage(value, function(message, reader) {\n",
+        "name", JSGetterName(options, field));
 
-  if (field->is_repeated() && !field->is_packed()) {
-    // Repeated fields receive a |value| one at at a time; append to array
-    // returned by get$name$().
-    printer->Print(
-        "      msg.get$name$().push(value);\n",
-        "name", JSGetterName(field));
+    printer->Print("        jspb.Map.deserializeBinary(message, reader, "
+                   "$keyReaderFn$, $valueReaderFn$",
+          "keyReaderFn", JSBinaryReaderMethodName(options, key_field),
+          "valueReaderFn", JSBinaryReaderMethodName(options, value_field));
+
+    if (value_field->type() == FieldDescriptor::TYPE_MESSAGE) {
+      printer->Print(", $messageType$.deserializeBinaryFromReader",
+          "messageType", GetMessagePath(options, value_field->message_type()));
+    } else {
+      printer->Print(", null");
+    }
+    printer->Print(", $defaultKey$",
+          "defaultKey", JSFieldDefault(key_field)
+    );
+    printer->Print(");\n");
+    printer->Print("         });\n");
   } else {
-    // Singular fields, and packed repeated fields, receive a |value| either as
-    // the field's value or as the array of all the field's values; set this as
-    // the field's value directly.
-    printer->Print(
-        "      msg.set$name$(value);\n",
-        "name", JSGetterName(field));
+    if (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) {
+      printer->Print(
+          "      var value = new $fieldclass$;\n"
+          "      reader.read$msgOrGroup$($grpfield$value,"
+          "$fieldclass$.deserializeBinaryFromReader);\n",
+        "fieldclass", SubmessageTypeRef(options, field),
+          "msgOrGroup", (field->type() == FieldDescriptor::TYPE_GROUP) ?
+                        "Group" : "Message",
+          "grpfield", (field->type() == FieldDescriptor::TYPE_GROUP) ?
+                      (SimpleItoa(field->number()) + ", ") : "");
+    } else {
+      printer->Print(
+          "      var value = /** @type {$fieldtype$} */ "
+          "(reader.read$reader$());\n",
+          "fieldtype", JSFieldTypeAnnotation(options, field, false, true,
+                                             /* singular_if_not_packed */ true,
+                                             BYTES_U8),
+          "reader",
+          JSBinaryReadWriteMethodName(field, /* is_writer = */ false));
+    }
+
+    if (field->is_repeated() && !field->is_packed()) {
+      printer->Print(
+          "      msg.add$name$(value);\n", "name",
+          JSGetterName(options, field, BYTES_DEFAULT, /* drop_list = */ true));
+    } else {
+      // Singular fields, and packed repeated fields, receive a |value| either
+      // as the field's value or as the array of all the field's values; set
+      // this as the field's value directly.
+      printer->Print(
+          "      msg.set$name$(value);\n",
+          "name", JSGetterName(options, field));
+    }
   }
 
   printer->Print("      break;\n");
@@ -2110,47 +3014,40 @@ void Generator::GenerateClassSerializeBinary(const GeneratorOptions& options,
                                              const Descriptor* desc) const {
   printer->Print(
       "/**\n"
-      " * Class method variant: serializes the given message to binary data\n"
-      " * (in protobuf wire format), writing to the given BinaryWriter.\n"
-      " * @param {!$class$} message\n"
-      " * @param {!jspb.BinaryWriter} writer\n"
-      " */\n"
-      "$class$.serializeBinaryToWriter = function(message, "
-      "writer) {\n"
-      "  message.serializeBinaryToWriter(writer);\n"
-      "};\n"
-      "\n"
-      "\n"
-      "/**\n"
       " * Serializes the message to binary data (in protobuf wire format).\n"
       " * @return {!Uint8Array}\n"
       " */\n"
       "$class$.prototype.serializeBinary = function() {\n"
       "  var writer = new jspb.BinaryWriter();\n"
-      "  this.serializeBinaryToWriter(writer);\n"
+      "  $class$.serializeBinaryToWriter(this, writer);\n"
       "  return writer.getResultBuffer();\n"
       "};\n"
       "\n"
       "\n"
       "/**\n"
-      " * Serializes the message to binary data (in protobuf wire format),\n"
-      " * writing to the given BinaryWriter.\n"
+      " * Serializes the given message to binary data (in protobuf wire\n"
+      " * format), writing to the given BinaryWriter.\n"
+      " * @param {!$class$} message\n"
       " * @param {!jspb.BinaryWriter} writer\n"
+      " * @suppress {unusedLocalVariables} f is only used for nested messages\n"
       " */\n"
-      "$class$.prototype.serializeBinaryToWriter = function (writer) {\n"
+      "$class$.serializeBinaryToWriter = function(message, "
+      "writer) {\n"
       "  var f = undefined;\n",
-      "class", GetPath(options, desc));
+      "class", GetMessagePath(options, desc));
 
   for (int i = 0; i < desc->field_count(); i++) {
-    GenerateClassSerializeBinaryField(options, printer, desc->field(i));
+    if (!IgnoreField(desc->field(i))) {
+      GenerateClassSerializeBinaryField(options, printer, desc->field(i));
+    }
   }
 
   if (IsExtendable(desc)) {
     printer->Print(
-        "  jspb.Message.serializeBinaryExtensions(this, writer, $extobj$,\n"
-        "    $class$.prototype.getExtension);\n",
-        "extobj", JSExtensionsObjectName(options, desc),
-        "class", GetPath(options, desc));
+        "  jspb.Message.serializeBinaryExtensions(message, writer,\n"
+        "    $extobj$Binary, $class$.prototype.getExtension);\n",
+        "extobj", JSExtensionsObjectName(options, desc->file(), desc),
+        "class", GetMessagePath(options, desc));
   }
 
   printer->Print(
@@ -2163,15 +3060,37 @@ void Generator::GenerateClassSerializeBinaryField(
     const GeneratorOptions& options,
     io::Printer* printer,
     const FieldDescriptor* field) const {
-  printer->Print(
-      "  f = this.get$name$();\n",
-      "name", JSGetterName(field));
+  if (HasFieldPresence(options, field) &&
+      field->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE) {
+    string typed_annotation = JSFieldTypeAnnotation(
+        options, field,
+        /* is_setter_argument = */ false,
+        /* force_present = */ false,
+        /* singular_if_not_packed = */ false,
+        /* bytes_mode = */ BYTES_DEFAULT);
+    printer->Print(
+        "  f = /** @type {$type$} */ "
+        "(jspb.Message.getField(message, $index$));\n",
+        "index", JSFieldIndex(field),
+        "type", typed_annotation);
+  } else {
+    printer->Print(
+        "  f = message.get$name$($nolazy$);\n",
+        "name", JSGetterName(options, field, BYTES_U8),
+        // No lazy creation for maps containers -- fastpath the empty case.
+        "nolazy", IsMap(options, field) ? "true" : "");
+  }
 
-  if (field->is_repeated()) {
+  // Print an `if (condition)` statement that evaluates to true if the field
+  // goes on the wire.
+  if (IsMap(options, field)) {
+    printer->Print(
+        "  if (f && f.getLength() > 0) {\n");
+  } else if (field->is_repeated()) {
     printer->Print(
         "  if (f.length > 0) {\n");
   } else {
-    if (HasFieldPresence(field)) {
+    if (HasFieldPresence(options, field)) {
       printer->Print(
           "  if (f != null) {\n");
     } else {
@@ -2183,7 +3102,13 @@ void Generator::GenerateClassSerializeBinaryField(
         case FieldDescriptor::CPPTYPE_INT64:
         case FieldDescriptor::CPPTYPE_UINT32:
         case FieldDescriptor::CPPTYPE_UINT64: {
-          {
+          if (IsIntegralFieldWithStringJSType(field)) {
+            // We can use `parseInt` here even though it will not be precise for
+            // 64-bit quantities because we are only testing for zero/nonzero,
+            // and JS numbers (64-bit floating point values, i.e., doubles) are
+            // integer-precise in the range that includes zero.
+            printer->Print("  if (parseInt(f, 10) !== 0) {\n");
+          } else {
             printer->Print("  if (f !== 0) {\n");
           }
           break;
@@ -2210,24 +3135,47 @@ void Generator::GenerateClassSerializeBinaryField(
     }
   }
 
-  printer->Print(
-      "    writer.$writer$(\n"
-      "      $index$,\n"
-      "      f",
-      "writer", JSBinaryWriterMethodName(field),
-      "name", JSGetterName(field),
-      "index", SimpleItoa(field->number()));
-
-  if (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) {
+  // Write the field on the wire.
+  if (IsMap(options, field)) {
+    const FieldDescriptor* key_field = MapFieldKey(field);
+    const FieldDescriptor* value_field = MapFieldValue(field);
     printer->Print(
-        ",\n"
-        "      $submsg$.serializeBinaryToWriter\n",
-        "submsg", GetPath(options, field->message_type()));
+        "    f.serializeBinary($index$, writer, "
+                              "$keyWriterFn$, $valueWriterFn$",
+        "index", SimpleItoa(field->number()),
+        "keyWriterFn", JSBinaryWriterMethodName(options, key_field),
+        "valueWriterFn", JSBinaryWriterMethodName(options, value_field));
+
+    if (value_field->type() == FieldDescriptor::TYPE_MESSAGE) {
+      printer->Print(", $messageType$.serializeBinaryToWriter",
+          "messageType", GetMessagePath(options, value_field->message_type()));
+    }
+
+    printer->Print(");\n");
   } else {
-    printer->Print("\n");
+    printer->Print(
+        "    writer.write$method$(\n"
+        "      $index$,\n"
+        "      f",
+        "method", JSBinaryReadWriteMethodName(field, /* is_writer = */ true),
+        "index", SimpleItoa(field->number()));
+
+    if (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE &&
+        !IsMap(options, field)) {
+      printer->Print(
+          ",\n"
+          "      $submsg$.serializeBinaryToWriter\n",
+        "submsg", SubmessageTypeRef(options, field));
+    } else {
+      printer->Print("\n");
+    }
+
+    printer->Print(
+        "    );\n");
   }
+
+  // Close the `if`.
   printer->Print(
-      "    );\n"
       "  }\n");
 }
 
@@ -2238,8 +3186,10 @@ void Generator::GenerateEnum(const GeneratorOptions& options,
       "/**\n"
       " * @enum {number}\n"
       " */\n"
-      "$name$ = {\n",
-      "name", GetPath(options, enumdesc));
+      "$enumprefix$$name$ = {\n",
+      "enumprefix", GetEnumPathPrefix(options, enumdesc),
+      "name", enumdesc->name());
+  printer->Annotate("name", enumdesc);
 
   for (int i = 0; i < enumdesc->value_count(); i++) {
     const EnumValueDescriptor* value = enumdesc->value(i);
@@ -2248,6 +3198,7 @@ void Generator::GenerateEnum(const GeneratorOptions& options,
         "name", ToEnumCase(value->name()),
         "value", SimpleItoa(value->number()),
         "comma", (i == enumdesc->value_count() - 1) ? "" : ",");
+    printer->Annotate("name", value);
   }
 
   printer->Print(
@@ -2259,26 +3210,28 @@ void Generator::GenerateExtension(const GeneratorOptions& options,
                                   io::Printer* printer,
                                   const FieldDescriptor* field) const {
   string extension_scope =
-      (field->extension_scope() ?
-       GetPath(options, field->extension_scope()) :
-       GetPath(options, field->file()));
+      (field->extension_scope()
+           ? GetMessagePath(options, field->extension_scope())
+           : GetFilePath(options, field->file()));
 
+  const string extension_object_name = JSObjectFieldName(options, field);
   printer->Print(
       "\n"
       "/**\n"
       " * A tuple of {field number, class constructor} for the extension\n"
-      " * field named `$name$`.\n"
-      " * @type {!jspb.ExtensionFieldInfo.<$extensionType$>}\n"
+      " * field named `$nameInComment$`.\n"
+      " * @type {!jspb.ExtensionFieldInfo<$extensionType$>}\n"
       " */\n"
       "$class$.$name$ = new jspb.ExtensionFieldInfo(\n",
-      "name", JSObjectFieldName(field),
+      "nameInComment", extension_object_name,
+      "name", extension_object_name,
       "class", extension_scope,
       "extensionType", JSFieldTypeAnnotation(
           options, field,
-          /* force_optional = */ false,
+          /* is_setter_argument = */ false,
           /* force_present = */ true,
-          /* singular_if_not_packed = */ false,
-          /* always_singular = */ false));
+          /* singular_if_not_packed = */ false));
+  printer->Annotate("name", field);
   printer->Print(
       "    $index$,\n"
       "    {$name$: 0},\n"
@@ -2286,52 +3239,55 @@ void Generator::GenerateExtension(const GeneratorOptions& options,
       "     /** @type {?function((boolean|undefined),!jspb.Message=): "
       "!Object} */ (\n"
       "         $toObject$),\n"
-      "    $repeated$",
+      "    $repeated$);\n",
       "index", SimpleItoa(field->number()),
-      "name", JSObjectFieldName(field),
+      "name", extension_object_name,
       "ctor", (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE ?
-               GetPath(options, field->message_type()) : string("null")),
+               SubmessageTypeRef(options, field) : string("null")),
       "toObject", (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE ?
-                   (GetPath(options, field->message_type()) + ".toObject") :
+                   (SubmessageTypeRef(options, field) + ".toObject") :
                    string("null")),
       "repeated", (field->is_repeated() ? "1" : "0"));
 
-  if (options.binary) {
-    printer->Print(
-        ",\n"
-        "    jspb.BinaryReader.prototype.$binaryReaderFn$,\n"
-        "    jspb.BinaryWriter.prototype.$binaryWriterFn$,\n"
-        "    $binaryMessageSerializeFn$,\n"
-        "    $binaryMessageDeserializeFn$,\n"
-        "    $isPacked$);\n",
-        "binaryReaderFn", JSBinaryReaderMethodName(field),
-        "binaryWriterFn", JSBinaryWriterMethodName(field),
-        "binaryMessageSerializeFn",
-        (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) ?
-        (GetPath(options, field->message_type()) +
-         ".serializeBinaryToWriter") : "null",
-        "binaryMessageDeserializeFn",
-        (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) ?
-        (GetPath(options, field->message_type()) +
-         ".deserializeBinaryFromReader") : "null",
-        "isPacked", (field->is_packed() ? "true" : "false"));
-  } else {
-    printer->Print(");\n");
-  }
+  printer->Print(
+      "\n"
+      "$extendName$Binary[$index$] = new jspb.ExtensionFieldBinaryInfo(\n"
+      "    $class$.$name$,\n"
+      "    $binaryReaderFn$,\n"
+      "    $binaryWriterFn$,\n"
+      "    $binaryMessageSerializeFn$,\n"
+      "    $binaryMessageDeserializeFn$,\n",
+      "extendName",
+      JSExtensionsObjectName(options, field->file(), field->containing_type()),
+      "index", SimpleItoa(field->number()), "class", extension_scope, "name",
+      extension_object_name, "binaryReaderFn",
+      JSBinaryReaderMethodName(options, field), "binaryWriterFn",
+      JSBinaryWriterMethodName(options, field), "binaryMessageSerializeFn",
+      (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE)
+          ? (SubmessageTypeRef(options, field) + ".serializeBinaryToWriter")
+          : "undefined",
+      "binaryMessageDeserializeFn",
+      (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE)
+          ? (SubmessageTypeRef(options, field) + ".deserializeBinaryFromReader")
+          : "undefined");
+
+  printer->Print("    $isPacked$);\n", "isPacked",
+                 (field->is_packed() ? "true" : "false"));
 
   printer->Print(
       "// This registers the extension field with the extended class, so that\n"
       "// toObject() will function correctly.\n"
       "$extendName$[$index$] = $class$.$name$;\n"
       "\n",
-      "extendName", JSExtensionsObjectName(options, field->containing_type()),
+      "extendName", JSExtensionsObjectName(options, field->file(),
+                                           field->containing_type()),
       "index", SimpleItoa(field->number()),
       "class", extension_scope,
-      "name", JSObjectFieldName(field));
+      "name", extension_object_name);
 }
 
 bool GeneratorOptions::ParseFromOptions(
-    const vector< pair< string, string > >& options,
+    const std::vector< std::pair< string, string > >& options,
     string* error) {
   for (int i = 0; i < options.size(); i++) {
     if (options[i].first == "add_require_for_enums") {
@@ -2364,6 +3320,33 @@ bool GeneratorOptions::ParseFromOptions(
       namespace_prefix = options[i].second;
     } else if (options[i].first == "library") {
       library = options[i].second;
+    } else if (options[i].first == "import_style") {
+      if (options[i].second == "closure") {
+        import_style = kImportClosure;
+      } else if (options[i].second == "commonjs") {
+        import_style = kImportCommonJs;
+      } else if (options[i].second == "browser") {
+        import_style = kImportBrowser;
+      } else if (options[i].second == "es6") {
+        import_style = kImportEs6;
+      } else {
+        *error = "Unknown import style " + options[i].second + ", expected " +
+                 "one of: closure, commonjs, browser, es6.";
+      }
+    } else if (options[i].first == "extension") {
+      extension = options[i].second;
+    } else if (options[i].first == "one_output_file_per_input_file") {
+      if (!options[i].second.empty()) {
+        *error = "Unexpected option value for one_output_file_per_input_file";
+        return false;
+      }
+      one_output_file_per_input_file = true;
+    } else if (options[i].first == "annotate_code") {
+      if (!options[i].second.empty()) {
+        *error = "Unexpected option value for annotate_code";
+        return false;
+      }
+      annotate_code = true;
     } else {
       // Assume any other option is an output directory, as long as it is a bare
       // `key` rather than a `key=value` option.
@@ -2375,13 +3358,40 @@ bool GeneratorOptions::ParseFromOptions(
     }
   }
 
+  if (import_style != kImportClosure &&
+      (add_require_for_enums || testonly || !library.empty() ||
+       error_on_name_conflict || extension != ".js" ||
+       one_output_file_per_input_file)) {
+    *error =
+        "The add_require_for_enums, testonly, library, error_on_name_conflict, "
+        "extension, and one_output_file_per_input_file options should only be "
+        "used for import_style=closure";
+    return false;
+  }
+
   return true;
+}
+
+GeneratorOptions::OutputMode GeneratorOptions::output_mode() const {
+  // We use one output file per input file if we are not using Closure or if
+  // this is explicitly requested.
+  if (import_style != kImportClosure || one_output_file_per_input_file) {
+    return kOneOutputFilePerInputFile;
+  }
+
+  // If a library name is provided, we put everything in that one file.
+  if (!library.empty()) {
+    return kEverythingInOneFile;
+  }
+
+  // Otherwise, we create one output file per type.
+  return kOneOutputFilePerType;
 }
 
 void Generator::GenerateFilesInDepOrder(
     const GeneratorOptions& options,
     io::Printer* printer,
-    const vector<const FileDescriptor*>& files) const {
+    const std::vector<const FileDescriptor*>& files) const {
   // Build a std::set over all files so that the DFS can detect when it recurses
   // into a dep not specified in the user's command line.
   std::set<const FileDescriptor*> all_files(files.begin(), files.end());
@@ -2418,11 +3428,78 @@ void Generator::GenerateFileAndDeps(
   }
 }
 
-bool Generator::GenerateAll(const vector<const FileDescriptor*>& files,
+void Generator::GenerateFile(const GeneratorOptions& options,
+                             io::Printer* printer,
+                             const FileDescriptor* file) const {
+  GenerateHeader(options, printer);
+
+  // Generate "require" statements.
+  if (options.import_style == GeneratorOptions::kImportCommonJs) {
+    printer->Print("var jspb = require('google-protobuf');\n");
+    printer->Print("var goog = jspb;\n");
+    printer->Print("var global = Function('return this')();\n\n");
+
+    for (int i = 0; i < file->dependency_count(); i++) {
+      const string& name = file->dependency(i)->name();
+      printer->Print(
+          "var $alias$ = require('$file$');\n",
+          "alias", ModuleAlias(name),
+          "file",
+          GetRootPath(file->name(), name) + GetJSFilename(options, name));
+    }
+  }
+
+  std::set<string> provided;
+  std::set<const FieldDescriptor*> extensions;
+  for (int i = 0; i < file->extension_count(); i++) {
+    // We honor the jspb::ignore option here only when working with
+    // Closure-style imports. Use of this option is discouraged and so we want
+    // to avoid adding new support for it.
+    if (options.import_style == GeneratorOptions::kImportClosure &&
+        IgnoreField(file->extension(i))) {
+      continue;
+    }
+    provided.insert(GetFilePath(options, file) + "." +
+                    JSObjectFieldName(options, file->extension(i)));
+    extensions.insert(file->extension(i));
+  }
+
+  FindProvidesForFile(options, printer, file, &provided);
+  GenerateProvides(options, printer, &provided);
+  std::vector<const FileDescriptor*> files;
+  files.push_back(file);
+  if (options.import_style == GeneratorOptions::kImportClosure) {
+    GenerateRequiresForLibrary(options, printer, files, &provided);
+  }
+
+  GenerateClassesAndEnums(options, printer, file);
+
+  // Generate code for top-level extensions. Extensions nested inside messages
+  // are emitted inside GenerateClassesAndEnums().
+  for (std::set<const FieldDescriptor*>::const_iterator it = extensions.begin();
+       it != extensions.end(); ++it) {
+    GenerateExtension(options, printer, *it);
+  }
+
+  if (options.import_style == GeneratorOptions::kImportCommonJs) {
+    printer->Print("goog.object.extend(exports, $package$);\n",
+                   "package", GetFilePath(options, file));
+  }
+
+  // Emit well-known type methods.
+  for (FileToc* toc = well_known_types_js; toc->name != NULL; toc++) {
+    string name = string("google/protobuf/") + toc->name;
+    if (name == StripProto(file->name()) + ".js") {
+      printer->Print(toc->data);
+    }
+  }
+}
+
+bool Generator::GenerateAll(const std::vector<const FileDescriptor*>& files,
                             const string& parameter,
                             GeneratorContext* context,
                             string* error) const {
-  vector< pair< string, string > > option_pairs;
+  std::vector< std::pair< string, string > > option_pairs;
   ParseGeneratorParameter(parameter, &option_pairs);
   GeneratorOptions options;
   if (!options.ParseFromOptions(option_pairs, error)) {
@@ -2430,18 +3507,17 @@ bool Generator::GenerateAll(const vector<const FileDescriptor*>& files,
   }
 
 
-  // We're either generating a single library file with definitions for message
-  // and enum types in *all* FileDescriptor inputs, or we're generating a single
-  // file for each type.
-  if (options.library != "") {
-    string filename = options.output_dir + "/" + options.library + ".js";
-    google::protobuf::scoped_ptr<io::ZeroCopyOutputStream> output(context->Open(filename));
+  if (options.output_mode() == GeneratorOptions::kEverythingInOneFile) {
+    // All output should go in a single file.
+    string filename = options.output_dir + "/" + options.library +
+                      options.GetFileNameExtension();
+    std::unique_ptr<io::ZeroCopyOutputStream> output(context->Open(filename));
     GOOGLE_CHECK(output.get());
     io::Printer printer(output.get(), '$');
 
     // Pull out all extensions -- we need these to generate all
     // provides/requires.
-    vector<const FieldDescriptor*> extensions;
+    std::vector<const FieldDescriptor*> extensions;
     for (int i = 0; i < files.size(); i++) {
       for (int j = 0; j < files[i]->extension_count(); j++) {
         const FieldDescriptor* extension = files[i]->extension(j);
@@ -2456,7 +3532,7 @@ bool Generator::GenerateAll(const vector<const FileDescriptor*>& files,
     FindProvidesForFields(options, &printer, extensions, &provided);
     GenerateProvides(options, &printer, &provided);
     GenerateTestOnly(options, &printer);
-    GenerateRequires(options, &printer, files, &provided);
+    GenerateRequiresForLibrary(options, &printer, files, &provided);
 
     GenerateFilesInDepOrder(options, &printer, files);
 
@@ -2469,68 +3545,22 @@ bool Generator::GenerateAll(const vector<const FileDescriptor*>& files,
     if (printer.failed()) {
       return false;
     }
-  } else {
-    // Collect all types, and print each type to a separate file. Pull out
-    // free-floating extensions while we make this pass.
-    map< string, vector<const FieldDescriptor*> > extensions_by_namespace;
-
-    // If we're generating code in file-per-type mode, avoid overwriting files
-    // by choosing the last descriptor that writes each filename and permitting
-    // only those to generate code.
-
-    // Current descriptor that will generate each filename, indexed by filename.
-    map<string, const void*> desc_by_filename;
-    // Set of descriptors allowed to generate files.
-    set<const void*> allowed_descs;
-
-    for (int i = 0; i < files.size(); i++) {
-      // Collect all (descriptor, filename) pairs.
-      map<const void*, string> descs_in_file;
-      for (int j = 0; j < files[i]->message_type_count(); j++) {
-        const Descriptor* desc = files[i]->message_type(j);
-        string filename =
-            options.output_dir + "/" + ToFileName(desc->name()) + ".js";
-        descs_in_file[desc] = filename;
-      }
-      for (int j = 0; j < files[i]->enum_type_count(); j++) {
-        const EnumDescriptor* desc = files[i]->enum_type(j);
-        string filename =
-            options.output_dir + "/" + ToFileName(desc->name()) + ".js";
-        descs_in_file[desc] = filename;
-      }
-
-      // For each (descriptor, filename) pair, update the
-      // descriptors-by-filename map, and if a previous descriptor was already
-      // writing the filename, remove it from the allowed-descriptors set.
-      map<const void*, string>::iterator it;
-      for (it = descs_in_file.begin(); it != descs_in_file.end(); ++it) {
-        const void* desc = it->first;
-        const string& filename = it->second;
-        if (desc_by_filename.find(filename) != desc_by_filename.end()) {
-          if (options.error_on_name_conflict) {
-            *error = "Name conflict: file name " + filename +
-                     " would be generated by two descriptors";
-            return false;
-          }
-          allowed_descs.erase(desc_by_filename[filename]);
-        }
-        desc_by_filename[filename] = desc;
-        allowed_descs.insert(desc);
-      }
+  } else if (options.output_mode() == GeneratorOptions::kOneOutputFilePerType) {
+    std::set<const void*> allowed_set;
+    if (!GenerateJspbAllowedSet(options, files, &allowed_set, error)) {
+      return false;
     }
 
-    // Generate code.
     for (int i = 0; i < files.size(); i++) {
       const FileDescriptor* file = files[i];
       for (int j = 0; j < file->message_type_count(); j++) {
         const Descriptor* desc = file->message_type(j);
-        if (allowed_descs.find(desc) == allowed_descs.end()) {
+        if (allowed_set.count(desc) == 0) {
           continue;
         }
 
-        string filename = options.output_dir + "/" +
-            ToFileName(desc->name()) + ".js";
-        google::protobuf::scoped_ptr<io::ZeroCopyOutputStream> output(
+        string filename = GetMessageFileName(options, desc);
+        std::unique_ptr<io::ZeroCopyOutputStream> output(
             context->Open(filename));
         GOOGLE_CHECK(output.get());
         io::Printer printer(output.get(), '$');
@@ -2541,7 +3571,7 @@ bool Generator::GenerateAll(const vector<const FileDescriptor*>& files,
         FindProvidesForMessage(options, &printer, desc, &provided);
         GenerateProvides(options, &printer, &provided);
         GenerateTestOnly(options, &printer);
-        GenerateRequires(options, &printer, desc, &provided);
+        GenerateRequiresForMessage(options, &printer, desc, &provided);
 
         GenerateClass(options, &printer, desc);
 
@@ -2551,14 +3581,12 @@ bool Generator::GenerateAll(const vector<const FileDescriptor*>& files,
       }
       for (int j = 0; j < file->enum_type_count(); j++) {
         const EnumDescriptor* enumdesc = file->enum_type(j);
-        if (allowed_descs.find(enumdesc) == allowed_descs.end()) {
+        if (allowed_set.count(enumdesc) == 0) {
           continue;
         }
 
-        string filename = options.output_dir + "/" +
-            ToFileName(enumdesc->name()) + ".js";
-
-        google::protobuf::scoped_ptr<io::ZeroCopyOutputStream> output(
+        string filename = GetEnumFileName(options, enumdesc);
+        std::unique_ptr<io::ZeroCopyOutputStream> output(
             context->Open(filename));
         GOOGLE_CHECK(output.get());
         io::Printer printer(output.get(), '$');
@@ -2576,43 +3604,67 @@ bool Generator::GenerateAll(const vector<const FileDescriptor*>& files,
           return false;
         }
       }
-      // Pull out all free-floating extensions and generate files for those too.
-      for (int j = 0; j < file->extension_count(); j++) {
-        const FieldDescriptor* extension = file->extension(j);
-        extensions_by_namespace[GetPath(options, files[i])]
-            .push_back(extension);
-      }
-    }
+      // File-level extensions (message-level extensions are generated under
+      // the enclosing message).
+      if (allowed_set.count(file) == 1) {
+        string filename = GetExtensionFileName(options, file);
 
-    // Generate extensions in separate files.
-    map< string, vector<const FieldDescriptor*> >::iterator it;
-    for (it = extensions_by_namespace.begin();
-         it != extensions_by_namespace.end();
-         ++it) {
-      string filename = options.output_dir + "/" +
-          ToFileName(it->first) + ".js";
+        std::unique_ptr<io::ZeroCopyOutputStream> output(
+            context->Open(filename));
+        GOOGLE_CHECK(output.get());
+        io::Printer printer(output.get(), '$');
 
-      google::protobuf::scoped_ptr<io::ZeroCopyOutputStream> output(
-          context->Open(filename));
-      GOOGLE_CHECK(output.get());
-      io::Printer printer(output.get(), '$');
+        GenerateHeader(options, &printer);
 
-      GenerateHeader(options, &printer);
+        std::set<string> provided;
+        std::vector<const FieldDescriptor*> fields;
 
-      std::set<string> provided;
-      FindProvidesForFields(options, &printer, it->second, &provided);
-      GenerateProvides(options, &printer, &provided);
-      GenerateTestOnly(options, &printer);
-      GenerateRequires(options, &printer, it->second, &provided);
+        for (int j = 0; j < files[i]->extension_count(); j++) {
+          if (ShouldGenerateExtension(files[i]->extension(j))) {
+            fields.push_back(files[i]->extension(j));
+          }
+        }
 
-      for (int j = 0; j < it->second.size(); j++) {
-        if (ShouldGenerateExtension(it->second[j])) {
-          GenerateExtension(options, &printer, it->second[j]);
+        FindProvidesForFields(options, &printer, fields, &provided);
+        GenerateProvides(options, &printer, &provided);
+        GenerateTestOnly(options, &printer);
+        GenerateRequiresForExtensions(options, &printer, fields, &provided);
+
+        for (int j = 0; j < files[i]->extension_count(); j++) {
+          if (ShouldGenerateExtension(files[i]->extension(j))) {
+            GenerateExtension(options, &printer, files[i]->extension(j));
+          }
         }
       }
     }
-  }
+  } else /* options.output_mode() == kOneOutputFilePerInputFile */ {
+    // Generate one output file per input (.proto) file.
 
+    for (int i = 0; i < files.size(); i++) {
+      const google::protobuf::FileDescriptor* file = files[i];
+
+      string filename =
+          options.output_dir + "/" + GetJSFilename(options, file->name());
+      std::unique_ptr<io::ZeroCopyOutputStream> output(context->Open(filename));
+      GOOGLE_CHECK(output.get());
+      GeneratedCodeInfo annotations;
+      io::AnnotationProtoCollector<GeneratedCodeInfo> annotation_collector(
+          &annotations);
+      io::Printer printer(output.get(), '$',
+                          options.annotate_code ? &annotation_collector : NULL);
+
+
+      GenerateFile(options, &printer, file);
+
+      if (printer.failed()) {
+        return false;
+      }
+
+      if (options.annotate_code) {
+        EmbedCodeAnnotations(annotations, &printer);
+      }
+    }
+  }
   return true;
 }
 

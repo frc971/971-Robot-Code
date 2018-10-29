@@ -38,6 +38,7 @@
 goog.provide('jspb.utils');
 
 goog.require('goog.asserts');
+goog.require('goog.crypt');
 goog.require('goog.crypt.base64');
 goog.require('goog.string');
 goog.require('jspb.BinaryConstants');
@@ -430,7 +431,7 @@ jspb.utils.joinHash64 = function(bitsLow, bitsHigh) {
 
 /**
  * Individual digits for number->string conversion.
- * @const {!Array.<number>}
+ * @const {!Array<string>}
  */
 jspb.utils.DIGITS = [
   '0', '1', '2', '3', '4', '5', '6', '7',
@@ -553,10 +554,10 @@ jspb.utils.hash64ToDecimalString = function(hash, signed) {
 /**
  * Converts an array of 8-character hash strings into their decimal
  * representations.
- * @param {!Array.<string>} hashes The array of hash strings to convert.
+ * @param {!Array<string>} hashes The array of hash strings to convert.
  * @param {boolean} signed True if we should treat the hash string as encoding
  *     a signed integer.
- * @return {!Array.<string>}
+ * @return {!Array<string>}
  */
 jspb.utils.hash64ArrayToDecimalStrings = function(hashes, signed) {
   var result = new Array(hashes.length);
@@ -564,6 +565,66 @@ jspb.utils.hash64ArrayToDecimalStrings = function(hashes, signed) {
     result[i] = jspb.utils.hash64ToDecimalString(hashes[i], signed);
   }
   return result;
+};
+
+
+/**
+ * Converts a signed or unsigned decimal string into its hash string
+ * representation.
+ * @param {string} dec
+ * @return {string}
+ */
+jspb.utils.decimalStringToHash64 = function(dec) {
+  goog.asserts.assert(dec.length > 0);
+
+  // Check for minus sign.
+  var minus = false;
+  if (dec[0] === '-') {
+    minus = true;
+    dec = dec.slice(1);
+  }
+
+  // Store result as a byte array.
+  var resultBytes = [0, 0, 0, 0, 0, 0, 0, 0];
+
+  // Set result to m*result + c.
+  function muladd(m, c) {
+    for (var i = 0; i < 8 && (m !== 1 || c > 0); i++) {
+      var r = m * resultBytes[i] + c;
+      resultBytes[i] = r & 0xFF;
+      c = r >>> 8;
+    }
+  }
+
+  // Negate the result bits.
+  function neg() {
+    for (var i = 0; i < 8; i++) {
+      resultBytes[i] = (~resultBytes[i]) & 0xFF;
+    }
+  }
+
+  // For each decimal digit, set result to 10*result + digit.
+  for (var i = 0; i < dec.length; i++) {
+    muladd(10, jspb.utils.DIGITS.indexOf(dec[i]));
+  }
+
+  // If there's a minus sign, convert into two's complement.
+  if (minus) {
+    neg();
+    muladd(1, 1);
+  }
+
+  return goog.crypt.byteArrayToString(resultBytes);
+};
+
+
+/**
+ * Converts a signed or unsigned decimal string into two 32-bit halves, and
+ * stores them in the temp variables listed above.
+ * @param {string} value The decimal string to convert.
+ */
+jspb.utils.splitDecimalString = function(value) {
+  jspb.utils.splitHash64(jspb.utils.decimalStringToHash64(value));
 };
 
 
@@ -839,62 +900,16 @@ jspb.utils.countDelimitedFields = function(buffer, start, end, field) {
 
 
 /**
- * Clones a scalar field. Pulling this out to a helper method saves us a few
- * bytes of generated code.
- * @param {Array} array
- * @return {Array}
- */
-jspb.utils.cloneRepeatedScalarField = function(array) {
-  return array ? array.slice() : null;
-};
-
-
-/**
- * Clones an array of messages using the provided cloner function.
- * @param {Array.<jspb.BinaryMessage>} messages
- * @param {jspb.ClonerFunction} cloner
- * @return {Array.<jspb.BinaryMessage>}
- */
-jspb.utils.cloneRepeatedMessageField = function(messages, cloner) {
-  if (messages === null) return null;
-  var result = [];
-  for (var i = 0; i < messages.length; i++) {
-    result.push(cloner(messages[i]));
-  }
-  return result;
-};
-
-
-/**
- * Clones an array of byte blobs.
- * @param {Array.<Uint8Array>} blobs
- * @return {Array.<Uint8Array>}
- */
-jspb.utils.cloneRepeatedBlobField = function(blobs) {
-  if (blobs === null) return null;
-  var result = [];
-  for (var i = 0; i < blobs.length; i++) {
-    result.push(new Uint8Array(blobs[i]));
-  }
-  return result;
-};
-
-
-/**
  * String-ify bytes for text format. Should be optimized away in non-debug.
  * The returned string uses \xXX escapes for all values and is itself quoted.
  * [1, 31] serializes to '"\x01\x1f"'.
  * @param {jspb.ByteSource} byteSource The bytes to serialize.
- * @param {boolean=} opt_stringIsRawBytes The string is interpreted as a series
- * of raw bytes rather than base64 data.
  * @return {string} Stringified bytes for text format.
  */
-jspb.utils.debugBytesToTextFormat = function(byteSource,
-                                                opt_stringIsRawBytes) {
+jspb.utils.debugBytesToTextFormat = function(byteSource) {
   var s = '"';
   if (byteSource) {
-    var bytes =
-        jspb.utils.byteSourceToUint8Array(byteSource, opt_stringIsRawBytes);
+    var bytes = jspb.utils.byteSourceToUint8Array(byteSource);
     for (var i = 0; i < bytes.length; i++) {
       s += '\\x';
       if (bytes[i] < 16) s += '0';
@@ -925,9 +940,8 @@ jspb.utils.debugScalarToTextFormat = function(scalar) {
  * exception.
  * @param {string} str
  * @return {!Uint8Array}
- * @private
  */
-jspb.utils.stringToByteArray_ = function(str) {
+jspb.utils.stringToByteArray = function(str) {
   var arr = new Uint8Array(str.length);
   for (var i = 0; i < str.length; i++) {
     var codepoint = str.charCodeAt(i);
@@ -944,13 +958,10 @@ jspb.utils.stringToByteArray_ = function(str) {
 /**
  * Converts any type defined in jspb.ByteSource into a Uint8Array.
  * @param {!jspb.ByteSource} data
- * @param {boolean=} opt_stringIsRawBytes Interpret a string as a series of raw
- * bytes (encoded as codepoints 0--255 inclusive) rather than base64 data
- * (default behavior).
  * @return {!Uint8Array}
  * @suppress {invalidCasts}
  */
-jspb.utils.byteSourceToUint8Array = function(data, opt_stringIsRawBytes) {
+jspb.utils.byteSourceToUint8Array = function(data) {
   if (data.constructor === Uint8Array) {
     return /** @type {!Uint8Array} */(data);
   }
@@ -960,18 +971,18 @@ jspb.utils.byteSourceToUint8Array = function(data, opt_stringIsRawBytes) {
     return /** @type {!Uint8Array} */(new Uint8Array(data));
   }
 
+  if (data.constructor === Buffer) {
+    return /** @type {!Uint8Array} */(new Uint8Array(data));
+  }
+
   if (data.constructor === Array) {
-    data = /** @type {!Array.<number>} */(data);
+    data = /** @type {!Array<number>} */(data);
     return /** @type {!Uint8Array} */(new Uint8Array(data));
   }
 
   if (data.constructor === String) {
     data = /** @type {string} */(data);
-    if (opt_stringIsRawBytes) {
-      return jspb.utils.stringToByteArray_(data);
-    } else {
-      return goog.crypt.base64.decodeStringToUint8Array(data);
-    }
+    return goog.crypt.base64.decodeStringToUint8Array(data);
   }
 
   goog.asserts.fail('Type not convertible to Uint8Array.');

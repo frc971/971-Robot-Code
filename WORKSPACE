@@ -302,3 +302,7 @@ java_runtime(
     ],
 )
 
+local_repository(
+    name = "com_google_protobuf",
+    path = "third_party/protobuf",
+)

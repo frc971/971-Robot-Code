@@ -10,9 +10,9 @@ cc_library(
         "//tools:armhf-debian",
     ],
     deps = [
-        "//aos/scoped:scoped_fd",
-        "//aos/time:time",
         "//aos/logging",
+        "//aos/scoped:scoped_fd",
+        "//aos/time",
     ],
 )
 
@@ -25,7 +25,7 @@ cc_library(
     deps = [
         "//aos/vision/events:tcp_server",
         "//aos/vision/image:image_types",
-        "//third_party/protobuf",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 

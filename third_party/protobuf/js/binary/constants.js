@@ -41,25 +41,44 @@ goog.provide('jspb.BinaryMessage');
 goog.provide('jspb.BuilderFunction');
 goog.provide('jspb.ByteSource');
 goog.provide('jspb.ClonerFunction');
+goog.provide('jspb.ComparerFunction');
 goog.provide('jspb.ConstBinaryMessage');
+goog.provide('jspb.PrunerFunction');
 goog.provide('jspb.ReaderFunction');
 goog.provide('jspb.RecyclerFunction');
+goog.provide('jspb.RepeatedFieldType');
+goog.provide('jspb.ScalarFieldType');
 goog.provide('jspb.WriterFunction');
 
+
+goog.forwardDeclare('jspb.BinaryMessage');
+goog.forwardDeclare('jspb.BinaryReader');
+goog.forwardDeclare('jspb.BinaryWriter');
 goog.forwardDeclare('jspb.Message');
 goog.forwardDeclare('jsproto.BinaryExtension');
 
 
 
 /**
- * Base interface class for all const messages. Does __not__ define any
- * methods, as doing so on a widely-used interface defeats dead-code
- * elimination.
+ * Base interface class for all const messages.
  * @interface
  */
 jspb.ConstBinaryMessage = function() {};
 
+/**
+ * Generate a debug string for this proto that is in proto2 text format.
+ * @return {string} The debug string.
+ */
+jspb.ConstBinaryMessage.prototype.toDebugString;
 
+/**
+ * Helper to generate a debug string for this proto at some indent level. The
+ * first line is not indented.
+ * @param {number} indentLevel The number of spaces by which to indent lines.
+ * @return {string} The debug string.
+ * @protected
+ */
+jspb.ConstBinaryMessage.prototype.toDebugStringInternal;
 
 /**
  * Base interface class for all messages. Does __not__ define any methods, as
@@ -79,11 +98,31 @@ jspb.ByteSource;
 
 
 /**
+ * A scalar field in jspb can be a boolean, number, or string.
+ * @typedef {boolean|number|string}
+ */
+jspb.ScalarFieldType;
+
+
+/**
+ * A repeated field in jspb is an array of scalars, blobs, or messages.
+ * @typedef {!Array<jspb.ScalarFieldType>|
+             !Array<!Uint8Array>|
+             !Array<!jspb.ConstBinaryMessage>|
+             !Array<!jspb.BinaryMessage>}
+ */
+jspb.RepeatedFieldType;
+
+
+/**
  * A field in jspb can be a scalar, a block of bytes, another proto, or an
  * array of any of the above.
- * @typedef {boolean|number|string|Uint8Array|
-             jspb.BinaryMessage|jsproto.BinaryExtension|
-             Array<jspb.AnyFieldType>}
+ * @typedef {jspb.ScalarFieldType|
+             jspb.RepeatedFieldType|
+             !Uint8Array|
+             !jspb.ConstBinaryMessage|
+             !jspb.BinaryMessage|
+             !jsproto.BinaryExtension}
  */
 jspb.AnyFieldType;
 
@@ -118,10 +157,27 @@ jspb.ReaderFunction;
 
 /**
  * A writer function serializes a message to a BinaryWriter.
- * @typedef {!function(!jspb.Message, !jspb.BinaryWriter):void |
- *           !function(!jspb.ConstBinaryMessage, !jspb.BinaryWriter):void}
+ * @typedef {function((!jspb.Message|!jspb.ConstBinaryMessage),
+ *                    !jspb.BinaryWriter):void}
  */
 jspb.WriterFunction;
+
+
+/**
+ * A pruner function removes default-valued fields and empty submessages from a
+ * message and returns either the pruned message or null if the entire message
+ * was pruned away.
+ * @typedef {function(?jspb.BinaryMessage):?jspb.BinaryMessage}
+ */
+jspb.PrunerFunction;
+
+
+/**
+ * A comparer function returns true if two protos are equal.
+ * @typedef {!function(?jspb.ConstBinaryMessage,
+ *                     ?jspb.ConstBinaryMessage):boolean}
+ */
+jspb.ComparerFunction;
 
 
 /**
