@@ -133,17 +133,20 @@ namespace Google.Protobuf
         }
 
         [Test]
+        [TestCase(typeof(BoolValue), "true", true)]
         [TestCase(typeof(Int32Value), "32", 32)]
         [TestCase(typeof(Int64Value), "32", 32L)]
+        [TestCase(typeof(Int64Value), "\"32\"", 32L)]
         [TestCase(typeof(UInt32Value), "32", 32U)]
+        [TestCase(typeof(UInt64Value), "\"32\"", 32UL)]
         [TestCase(typeof(UInt64Value), "32", 32UL)]
         [TestCase(typeof(StringValue), "\"foo\"", "foo")]
         [TestCase(typeof(FloatValue), "1.5", 1.5f)]
         [TestCase(typeof(DoubleValue), "1.5", 1.5d)]
         public void Wrappers_Standalone(System.Type wrapperType, string json, object expectedValue)
         {
-            IMessage parsed = (IMessage) Activator.CreateInstance(wrapperType);
-            IMessage expected = (IMessage) Activator.CreateInstance(wrapperType);
+            IMessage parsed = (IMessage)Activator.CreateInstance(wrapperType);
+            IMessage expected = (IMessage)Activator.CreateInstance(wrapperType);
             JsonParser.Default.Merge(parsed, "null");
             Assert.AreEqual(expected, parsed);
 
@@ -640,7 +643,7 @@ namespace Google.Protobuf
             var parsed = Timestamp.Parser.ParseJson(json);
             Assert.AreEqual(WrapInQuotes(expectedFormatted), parsed.ToString());
         }
-        
+
         [Test]
         [TestCase("2015-10-09 14:46:23.123456789Z", Description = "No T between date and time")]
         [TestCase("2015/10/09T14:46:23.123456789Z", Description = "Wrong date separators")]
@@ -690,6 +693,22 @@ namespace Google.Protobuf
         public void StructValue_List()
         {
             Assert.AreEqual(Value.ForList(Value.ForNumber(1), Value.ForString("x")), Value.Parser.ParseJson("[1, \"x\"]"));
+        }
+
+        [Test]
+        public void Value_List_WithNullElement()
+        {
+            var expected = Value.ForList(Value.ForString("x"), Value.ForNull(), Value.ForString("y"));
+            var actual = Value.Parser.ParseJson("[\"x\", null, \"y\"]");
+            Assert.AreEqual(expected, actual);
+        }
+
+        [Test]
+        public void StructValue_NullElement()
+        {
+            var expected = Value.ForStruct(new Struct { Fields = { { "x", Value.ForNull() } } });
+            var actual = Value.Parser.ParseJson("{ \"x\": null }");
+            Assert.AreEqual(expected, actual);
         }
 
         [Test]
@@ -806,8 +825,19 @@ namespace Google.Protobuf
             var json = formatter.Format(original); // This is tested in JsonFormatterTest
             var parser = new JsonParser(new JsonParser.Settings(10, registry));
             Assert.AreEqual(original, parser.Parse<Any>(json));
-            string valueFirstJson = "{ \"singleInt32\": 10, \"singleNestedMessage\": { \"bb\": 20 }, \"@type\": \"type.googleapis.com/protobuf_unittest.TestAllTypes\" }";
+            string valueFirstJson = "{ \"singleInt32\": 10, \"singleNestedMessage\": { \"bb\": 20 }, \"@type\": \"type.googleapis.com/protobuf_unittest3.TestAllTypes\" }";
             Assert.AreEqual(original, parser.Parse<Any>(valueFirstJson));
+        }
+
+        [Test]
+        public void Any_CustomPrefix()
+        {
+            var registry = TypeRegistry.FromMessages(TestAllTypes.Descriptor);
+            var message = new TestAllTypes { SingleInt32 = 10 };
+            var original = Any.Pack(message, "custom.prefix/middle-part");
+            var parser = new JsonParser(new JsonParser.Settings(10, registry));
+            string json = "{ \"@type\": \"custom.prefix/middle-part/protobuf_unittest3.TestAllTypes\", \"singleInt32\": 10 }";
+            Assert.AreEqual(original, parser.Parse<Any>(json));
         }
 
         [Test]
@@ -886,9 +916,9 @@ namespace Google.Protobuf
         }
 
         [Test]
-        [TestCase("\"FOREIGN_BAR\"", ForeignEnum.FOREIGN_BAR)]
-        [TestCase("5", ForeignEnum.FOREIGN_BAR)]
-        [TestCase("100", (ForeignEnum) 100)]
+        [TestCase("\"FOREIGN_BAR\"", ForeignEnum.ForeignBar)]
+        [TestCase("5", ForeignEnum.ForeignBar)]
+        [TestCase("100", (ForeignEnum)100)]
         public void EnumValid(string value, ForeignEnum expectedValue)
         {
             string json = "{ \"singleForeignEnum\": " + value + " }";
@@ -910,6 +940,27 @@ namespace Google.Protobuf
         {
             string json = "{ \"oneofString\": \"x\", \"oneofUint32\": 10 }";
             Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseJson(json));
+        }
+
+        [Test]
+        public void UnknownField_NotIgnored()
+        {
+            string json = "{ \"unknownField\": 10, \"singleString\": \"x\" }";
+            Assert.Throws<InvalidProtocolBufferException>(() => TestAllTypes.Parser.ParseJson(json));
+        }
+
+        [Test]
+        [TestCase("5")]
+        [TestCase("\"text\"")]
+        [TestCase("[0, 1, 2]")]
+        [TestCase("{ \"a\": { \"b\": 10 } }")]
+        public void UnknownField_Ignored(string value)
+        {
+            var parser = new JsonParser(JsonParser.Settings.Default.WithIgnoreUnknownFields(true));
+            string json = "{ \"unknownField\": " + value + ", \"singleString\": \"x\" }";
+            var actual = parser.Parse<TestAllTypes>(json);
+            var expected = new TestAllTypes { SingleString = "x" };
+            Assert.AreEqual(expected, actual);
         }
 
         /// <summary>

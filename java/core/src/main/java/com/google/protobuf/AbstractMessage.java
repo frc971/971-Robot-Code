@@ -32,9 +32,9 @@ package com.google.protobuf;
 
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.protobuf.Internal.EnumLite;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -50,17 +50,51 @@ import java.util.Map;
  *
  * @author kenton@google.com Kenton Varda
  */
-public abstract class AbstractMessage extends AbstractMessageLite
-                                      implements Message {
+public abstract class AbstractMessage
+    // TODO(dweis): Update GeneratedMessage to parameterize with MessageType and BuilderType.
+    extends AbstractMessageLite
+    implements Message {
+
+  @Override
   public boolean isInitialized() {
     return MessageReflection.isInitialized(this);
   }
 
+  /**
+   * Interface for the parent of a Builder that allows the builder to
+   * communicate invalidations back to the parent for use when using nested
+   * builders.
+   */
+  protected interface BuilderParent {
 
+    /**
+     * A builder becomes dirty whenever a field is modified -- including fields
+     * in nested builders -- and becomes clean when build() is called.  Thus,
+     * when a builder becomes dirty, all its parents become dirty as well, and
+     * when it becomes clean, all its children become clean.  The dirtiness
+     * state is used to invalidate certain cached values.
+     * <br>
+     * To this end, a builder calls markDirty() on its parent whenever it
+     * transitions from clean to dirty.  The parent must propagate this call to
+     * its own parent, unless it was already dirty, in which case the
+     * grandparent must necessarily already be dirty as well.  The parent can
+     * only transition back to "clean" after calling build() on all children.
+     */
+    void markDirty();
+  }
+
+  /** Create a nested builder. */
+  protected Message.Builder newBuilderForType(BuilderParent parent) {
+    throw new UnsupportedOperationException("Nested builder is not supported for this type.");
+  }
+
+
+  @Override
   public List<String> findInitializationErrors() {
     return MessageReflection.findMissingFields(this);
   }
 
+  @Override
   public String getInitializationErrorString() {
     return MessageReflection.delimitWithCommas(findInitializationErrors());
   }
@@ -83,12 +117,24 @@ public abstract class AbstractMessage extends AbstractMessageLite
     return TextFormat.printToString(this);
   }
 
+  @Override
   public void writeTo(final CodedOutputStream output) throws IOException {
     MessageReflection.writeMessageTo(this, getAllFields(), output, false);
   }
 
   protected int memoizedSize = -1;
 
+  @Override
+  int getMemoizedSerializedSize() {
+    return memoizedSize;
+  }
+
+  @Override
+  void setMemoizedSerializedSize(int size) {
+    memoizedSize = size;
+  }
+
+  @Override
   public int getSerializedSize() {
     int size = memoizedSize;
     if (size != -1) {
@@ -127,7 +173,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
     }
     return hash;
   }
-  
+
   private static ByteString toByteString(Object value) {
     if (value instanceof byte[]) {
       return ByteString.copyFrom((byte[]) value);
@@ -135,7 +181,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
       return (ByteString) value;
     }
   }
- 
+
   /**
    * Compares two bytes fields. The parameters must be either a byte array or a
    * ByteString object. They can be of different type though.
@@ -146,7 +192,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
     }
     return toByteString(a).equals(toByteString(b));
   }
-  
+
   /**
    * Converts a list of MapEntry messages into a Map used for equals() and
    * hashCode().
@@ -177,7 +223,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
     }
     return result;
   }
-  
+
   /**
    * Compares two map fields. The parameters must be a list of MapEntry
    * messages.
@@ -188,13 +234,13 @@ public abstract class AbstractMessage extends AbstractMessageLite
     Map mb = convertMapEntryListToMap((List) b);
     return MapFieldLite.equals(ma, mb);
   }
-  
+
   /**
    * Compares two set of fields.
    * This method is used to implement {@link AbstractMessage#equals(Object)}
    * and {@link AbstractMutableMessage#equals(Object)}. It takes special care
    * of bytes fields because immutable messages and mutable messages use
-   * different Java type to reprensent a bytes field and this method should be
+   * different Java type to represent a bytes field and this method should be
    * able to compare immutable messages, mutable messages and also an immutable
    * message to a mutable message.
    */
@@ -240,7 +286,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
     }
     return true;
   }
-  
+
   /**
    * Calculates the hash code of a map field. {@code value} must be a list of
    * MapEntry messages.
@@ -288,12 +334,16 @@ public abstract class AbstractMessage extends AbstractMessageLite
    * other methods.
    */
   @SuppressWarnings("unchecked")
-  public static abstract class Builder<BuilderType extends Builder>
-      extends AbstractMessageLite.Builder<BuilderType>
+  public static abstract class Builder<BuilderType extends Builder<BuilderType>>
+      extends AbstractMessageLite.Builder
       implements Message.Builder {
     // The compiler produces an error if this is not declared explicitly.
+    // Method isn't abstract to bypass Java 1.6 compiler issue:
+    //     http://bugs.java.com/view_bug.do?bug_id=6908259
     @Override
-    public abstract BuilderType clone();
+    public BuilderType clone() {
+      throw new UnsupportedOperationException("clone() should be implemented in subclasses.");
+    }
 
     /** TODO(jieluo): Clear it when all subclasses have implemented this method. */
     @Override
@@ -314,6 +364,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
       throw new UnsupportedOperationException("clearOneof() is not implemented.");
     }
 
+    @Override
     public BuilderType clear() {
       for (final Map.Entry<FieldDescriptor, Object> entry :
            getAllFields().entrySet()) {
@@ -322,15 +373,27 @@ public abstract class AbstractMessage extends AbstractMessageLite
       return (BuilderType) this;
     }
 
+    @Override
     public List<String> findInitializationErrors() {
       return MessageReflection.findMissingFields(this);
     }
 
+    @Override
     public String getInitializationErrorString() {
       return MessageReflection.delimitWithCommas(findInitializationErrors());
     }
 
+    @Override
+    protected BuilderType internalMergeFrom(AbstractMessageLite other) {
+      return mergeFrom((Message) other);
+    }
+
+    @Override
     public BuilderType mergeFrom(final Message other) {
+      return mergeFrom(other, other.getAllFields());
+    }
+    
+    BuilderType mergeFrom(final Message other, Map<FieldDescriptor, Object> allFields) {
       if (other.getDescriptorForType() != getDescriptorForType()) {
         throw new IllegalArgumentException(
           "mergeFrom(Message) can only merge messages of the same type.");
@@ -345,8 +408,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
       // TODO(kenton):  Provide a function somewhere called makeDeepCopy()
       //   which allows people to make secure deep copies of messages.
 
-      for (final Map.Entry<FieldDescriptor, Object> entry :
-           other.getAllFields().entrySet()) {
+      for (final Map.Entry<FieldDescriptor, Object> entry : allFields.entrySet()) {
         final FieldDescriptor field = entry.getKey();
         if (field.isRepeated()) {
           for (final Object element : (List)entry.getValue()) {
@@ -384,8 +446,12 @@ public abstract class AbstractMessage extends AbstractMessageLite
         final CodedInputStream input,
         final ExtensionRegistryLite extensionRegistry)
         throws IOException {
+      boolean discardUnknown =
+          getDescriptorForType().getFile().getSyntax() == Syntax.PROTO3
+              ? input.shouldDiscardUnknownFieldsProto3()
+              : input.shouldDiscardUnknownFields();
       final UnknownFieldSet.Builder unknownFields =
-        UnknownFieldSet.newBuilder(getUnknownFields());
+          discardUnknown ? null : UnknownFieldSet.newBuilder(getUnknownFields());
       while (true) {
         final int tag = input.readTag();
         if (tag == 0) {
@@ -403,10 +469,13 @@ public abstract class AbstractMessage extends AbstractMessageLite
           break;
         }
       }
-      setUnknownFields(unknownFields.build());
+      if (unknownFields != null) {
+        setUnknownFields(unknownFields.build());
+      }
       return (BuilderType) this;
     }
 
+    @Override
     public BuilderType mergeUnknownFields(final UnknownFieldSet unknownFields) {
       setUnknownFields(
         UnknownFieldSet.newBuilder(getUnknownFields())
@@ -415,17 +484,19 @@ public abstract class AbstractMessage extends AbstractMessageLite
       return (BuilderType) this;
     }
 
+    @Override
     public Message.Builder getFieldBuilder(final FieldDescriptor field) {
       throw new UnsupportedOperationException(
           "getFieldBuilder() called on an unsupported message type.");
     }
 
-    public Message.Builder getRepeatedFieldBuilder(final FieldDescriptor field,
-        int index) {
+    @Override
+    public Message.Builder getRepeatedFieldBuilder(final FieldDescriptor field, int index) {
       throw new UnsupportedOperationException(
           "getRepeatedFieldBuilder() called on an unsupported message type.");
     }
 
+    @Override
     public String toString() {
       return TextFormat.printToString(this);
     }
@@ -438,6 +509,31 @@ public abstract class AbstractMessage extends AbstractMessageLite
         newUninitializedMessageException(Message message) {
       return new UninitializedMessageException(
           MessageReflection.findMissingFields(message));
+    }
+
+    /**
+     * Used to support nested builders and called to mark this builder as clean.
+     * Clean builders will propagate the {@link BuilderParent#markDirty()} event
+     * to their parent builders, while dirty builders will not, as their parents
+     * should be dirty already.
+     *
+     * NOTE: Implementations that don't support nested builders don't need to
+     * override this method.
+     */
+    void markClean() {
+      throw new IllegalStateException("Should be overridden by subclasses.");
+    }
+
+    /**
+     * Used to support nested builders and called when this nested builder is
+     * no longer used by its parent builder and should release the reference
+     * to its parent builder.
+     *
+     * NOTE: Implementations that don't support nested builders don't need to
+     * override this method.
+     */
+    void dispose() {
+      throw new IllegalStateException("Should be overridden by subclasses.");
     }
 
     // ===============================================================
@@ -462,7 +558,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
     @Override
     public BuilderType mergeFrom(final ByteString data)
         throws InvalidProtocolBufferException {
-      return super.mergeFrom(data);
+      return (BuilderType) super.mergeFrom(data);
     }
 
     @Override
@@ -470,20 +566,20 @@ public abstract class AbstractMessage extends AbstractMessageLite
         final ByteString data,
         final ExtensionRegistryLite extensionRegistry)
         throws InvalidProtocolBufferException {
-      return super.mergeFrom(data, extensionRegistry);
+      return (BuilderType) super.mergeFrom(data, extensionRegistry);
     }
 
     @Override
     public BuilderType mergeFrom(final byte[] data)
         throws InvalidProtocolBufferException {
-      return super.mergeFrom(data);
+      return (BuilderType) super.mergeFrom(data);
     }
 
     @Override
     public BuilderType mergeFrom(
         final byte[] data, final int off, final int len)
         throws InvalidProtocolBufferException {
-      return super.mergeFrom(data, off, len);
+      return (BuilderType) super.mergeFrom(data, off, len);
     }
 
     @Override
@@ -491,7 +587,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
         final byte[] data,
         final ExtensionRegistryLite extensionRegistry)
         throws InvalidProtocolBufferException {
-      return super.mergeFrom(data, extensionRegistry);
+      return (BuilderType) super.mergeFrom(data, extensionRegistry);
     }
 
     @Override
@@ -499,13 +595,13 @@ public abstract class AbstractMessage extends AbstractMessageLite
         final byte[] data, final int off, final int len,
         final ExtensionRegistryLite extensionRegistry)
         throws InvalidProtocolBufferException {
-      return super.mergeFrom(data, off, len, extensionRegistry);
+      return (BuilderType) super.mergeFrom(data, off, len, extensionRegistry);
     }
 
     @Override
     public BuilderType mergeFrom(final InputStream input)
         throws IOException {
-      return super.mergeFrom(input);
+      return (BuilderType) super.mergeFrom(input);
     }
 
     @Override
@@ -513,7 +609,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
         final InputStream input,
         final ExtensionRegistryLite extensionRegistry)
         throws IOException {
-      return super.mergeFrom(input, extensionRegistry);
+      return (BuilderType) super.mergeFrom(input, extensionRegistry);
     }
 
     @Override
@@ -529,5 +625,45 @@ public abstract class AbstractMessage extends AbstractMessageLite
         throws IOException {
       return super.mergeDelimitedFrom(input, extensionRegistry);
     }
+  }
+
+  /**
+   * @deprecated from v3.0.0-beta-3+, for compatibility with v2.5.0 and v2.6.1
+   * generated code.
+   */
+  @Deprecated
+  protected static int hashLong(long n) {
+    return (int) (n ^ (n >>> 32));
+  }
+  //
+  /**
+   * @deprecated from v3.0.0-beta-3+, for compatibility with v2.5.0 and v2.6.1
+   * generated code.
+   */
+  @Deprecated
+  protected static int hashBoolean(boolean b) {
+    return b ? 1231 : 1237;
+  }
+  //
+  /**
+   * @deprecated from v3.0.0-beta-3+, for compatibility with v2.5.0 and v2.6.1
+   * generated code.
+   */
+  @Deprecated
+  protected static int hashEnum(EnumLite e) {
+    return e.getNumber();
+  }
+  //
+  /**
+   * @deprecated from v3.0.0-beta-3+, for compatibility with v2.5.0 and v2.6.1
+   * generated code.
+   */
+  @Deprecated
+  protected static int hashEnumList(List<? extends EnumLite> list) {
+    int hash = 1;
+    for (EnumLite e : list) {
+      hash = 31 * hash + hashEnum(e);
+    }
+    return hash;
   }
 }

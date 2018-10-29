@@ -30,11 +30,12 @@
 
 package com.google.protobuf;
 
+import static com.google.protobuf.Internal.checkNotNull;
+
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.OneofDescriptor;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
@@ -156,18 +157,22 @@ public final class DynamicMessage extends AbstractMessage {
   // -----------------------------------------------------------------
   // Implementation of Message interface.
 
+  @Override
   public Descriptor getDescriptorForType() {
     return type;
   }
 
+  @Override
   public DynamicMessage getDefaultInstanceForType() {
     return getDefaultInstance(type);
   }
 
+  @Override
   public Map<FieldDescriptor, Object> getAllFields() {
     return fields.getAllFields();
   }
 
+  @Override
   public boolean hasOneof(OneofDescriptor oneof) {
     verifyOneofContainingType(oneof);
     FieldDescriptor field = oneofCases[oneof.getIndex()];
@@ -177,16 +182,19 @@ public final class DynamicMessage extends AbstractMessage {
     return true;
   }
 
+  @Override
   public FieldDescriptor getOneofFieldDescriptor(OneofDescriptor oneof) {
     verifyOneofContainingType(oneof);
     return oneofCases[oneof.getIndex()];
   }
 
+  @Override
   public boolean hasField(FieldDescriptor field) {
     verifyContainingType(field);
     return fields.hasField(field);
   }
 
+  @Override
   public Object getField(FieldDescriptor field) {
     verifyContainingType(field);
     Object result = fields.getField(field);
@@ -202,16 +210,19 @@ public final class DynamicMessage extends AbstractMessage {
     return result;
   }
 
+  @Override
   public int getRepeatedFieldCount(FieldDescriptor field) {
     verifyContainingType(field);
     return fields.getRepeatedFieldCount(field);
   }
 
+  @Override
   public Object getRepeatedField(FieldDescriptor field, int index) {
     verifyContainingType(field);
     return fields.getRepeatedField(field, index);
   }
 
+  @Override
   public UnknownFieldSet getUnknownFields() {
     return unknownFields;
   }
@@ -264,19 +275,22 @@ public final class DynamicMessage extends AbstractMessage {
     return size;
   }
 
+  @Override
   public Builder newBuilderForType() {
     return new Builder(type);
   }
 
+  @Override
   public Builder toBuilder() {
     return newBuilderForType().mergeFrom(this);
   }
 
+  @Override
   public Parser<DynamicMessage> getParserForType() {
     return new AbstractParser<DynamicMessage>() {
+      @Override
       public DynamicMessage parsePartialFrom(
-          CodedInputStream input,
-          ExtensionRegistryLite extensionRegistry)
+          CodedInputStream input, ExtensionRegistryLite extensionRegistry)
           throws InvalidProtocolBufferException {
         Builder builder = newBuilder(type);
         try {
@@ -284,7 +298,7 @@ public final class DynamicMessage extends AbstractMessage {
         } catch (InvalidProtocolBufferException e) {
           throw e.setUnfinishedMessage(builder.buildPartial());
         } catch (IOException e) {
-          throw new InvalidProtocolBufferException(e.getMessage())
+          throw new InvalidProtocolBufferException(e)
               .setUnfinishedMessage(builder.buildPartial());
         }
         return builder.buildPartial();
@@ -325,6 +339,20 @@ public final class DynamicMessage extends AbstractMessage {
       this.fields = FieldSet.newFieldSet();
       this.unknownFields = UnknownFieldSet.getDefaultInstance();
       this.oneofCases = new FieldDescriptor[type.toProto().getOneofDeclCount()];
+      // A MapEntry has all of its fields present at all times.
+      if (type.getOptions().getMapEntry()) {
+        populateMapEntry();
+      }
+    }
+
+    private void populateMapEntry() {
+      for (FieldDescriptor field : type.getFields()) {
+        if (field.getJavaType() == FieldDescriptor.JavaType.MESSAGE) {
+          fields.setField(field, getDefaultInstance(field.getMessageType()));
+        } else {
+          fields.setField(field, field.getDefaultValue());
+        }
+      }
     }
 
     // ---------------------------------------------------------------
@@ -336,6 +364,10 @@ public final class DynamicMessage extends AbstractMessage {
         fields = FieldSet.newFieldSet();
       } else {
         fields.clear();
+      }
+      // A MapEntry has all of its fields present at all times.
+      if (type.getOptions().getMapEntry()) {
+        populateMapEntry();
       }
       unknownFields = UnknownFieldSet.getDefaultInstance();
       return this;
@@ -370,6 +402,7 @@ public final class DynamicMessage extends AbstractMessage {
       }
     }
 
+    @Override
     public DynamicMessage build() {
       if (!isInitialized()) {
         throw newUninitializedMessageException(
@@ -394,6 +427,7 @@ public final class DynamicMessage extends AbstractMessage {
       return buildPartial();
     }
 
+    @Override
     public DynamicMessage buildPartial() {
       fields.makeImmutable();
       DynamicMessage result =
@@ -411,22 +445,27 @@ public final class DynamicMessage extends AbstractMessage {
       return result;
     }
 
+    @Override
     public boolean isInitialized() {
       return DynamicMessage.isInitialized(type, fields);
     }
 
+    @Override
     public Descriptor getDescriptorForType() {
       return type;
     }
 
+    @Override
     public DynamicMessage getDefaultInstanceForType() {
       return getDefaultInstance(type);
     }
 
+    @Override
     public Map<FieldDescriptor, Object> getAllFields() {
       return fields.getAllFields();
     }
 
+    @Override
     public Builder newBuilderForField(FieldDescriptor field) {
       verifyContainingType(field);
 
@@ -438,6 +477,7 @@ public final class DynamicMessage extends AbstractMessage {
       return new Builder(field.getMessageType());
     }
 
+    @Override
     public boolean hasOneof(OneofDescriptor oneof) {
       verifyOneofContainingType(oneof);
       FieldDescriptor field = oneofCases[oneof.getIndex()];
@@ -447,11 +487,13 @@ public final class DynamicMessage extends AbstractMessage {
       return true;
     }
 
+    @Override
     public FieldDescriptor getOneofFieldDescriptor(OneofDescriptor oneof) {
       verifyOneofContainingType(oneof);
       return oneofCases[oneof.getIndex()];
     }
 
+    @Override
     public Builder clearOneof(OneofDescriptor oneof) {
       verifyOneofContainingType(oneof);
       FieldDescriptor field = oneofCases[oneof.getIndex()];
@@ -461,11 +503,13 @@ public final class DynamicMessage extends AbstractMessage {
       return this;
     }
 
+    @Override
     public boolean hasField(FieldDescriptor field) {
       verifyContainingType(field);
       return fields.hasField(field);
     }
 
+    @Override
     public Object getField(FieldDescriptor field) {
       verifyContainingType(field);
       Object result = fields.getField(field);
@@ -481,6 +525,7 @@ public final class DynamicMessage extends AbstractMessage {
       return result;
     }
 
+    @Override
     public Builder setField(FieldDescriptor field, Object value) {
       verifyContainingType(field);
       ensureIsMutable();
@@ -500,11 +545,20 @@ public final class DynamicMessage extends AbstractMessage {
           fields.clearField(oldField);
         }
         oneofCases[index] = field;
+      } else if (field.getFile().getSyntax() == Descriptors.FileDescriptor.Syntax.PROTO3) {
+        if (!field.isRepeated()
+            && field.getJavaType() != FieldDescriptor.JavaType.MESSAGE
+            && value.equals(field.getDefaultValue())) {
+          // In proto3, setting a field to its default value is equivalent to clearing the field.
+          fields.clearField(field);
+          return this;
+        }
       }
       fields.setField(field, value);
       return this;
     }
 
+    @Override
     public Builder clearField(FieldDescriptor field) {
       verifyContainingType(field);
       ensureIsMutable();
@@ -519,24 +573,27 @@ public final class DynamicMessage extends AbstractMessage {
       return this;
     }
 
+    @Override
     public int getRepeatedFieldCount(FieldDescriptor field) {
       verifyContainingType(field);
       return fields.getRepeatedFieldCount(field);
     }
 
+    @Override
     public Object getRepeatedField(FieldDescriptor field, int index) {
       verifyContainingType(field);
       return fields.getRepeatedField(field, index);
     }
 
-    public Builder setRepeatedField(FieldDescriptor field,
-                                    int index, Object value) {
+    @Override
+    public Builder setRepeatedField(FieldDescriptor field, int index, Object value) {
       verifyContainingType(field);
       ensureIsMutable();
       fields.setRepeatedField(field, index, value);
       return this;
     }
 
+    @Override
     public Builder addRepeatedField(FieldDescriptor field, Object value) {
       verifyContainingType(field);
       ensureIsMutable();
@@ -544,14 +601,15 @@ public final class DynamicMessage extends AbstractMessage {
       return this;
     }
 
+    @Override
     public UnknownFieldSet getUnknownFields() {
       return unknownFields;
     }
 
+    @Override
     public Builder setUnknownFields(UnknownFieldSet unknownFields) {
-      if (getDescriptorForType().getFile().getSyntax()
-          == Descriptors.FileDescriptor.Syntax.PROTO3) {
-        // Proto3 discards unknown fields.
+      if (getDescriptorForType().getFile().getSyntax() == Descriptors.FileDescriptor.Syntax.PROTO3
+          && CodedInputStream.getProto3DiscardUnknownFieldsDefault()) {
         return this;
       }
       this.unknownFields = unknownFields;
@@ -560,9 +618,8 @@ public final class DynamicMessage extends AbstractMessage {
 
     @Override
     public Builder mergeUnknownFields(UnknownFieldSet unknownFields) {
-      if (getDescriptorForType().getFile().getSyntax()
-          == Descriptors.FileDescriptor.Syntax.PROTO3) {
-        // Proto3 discards unknown fields.
+      if (getDescriptorForType().getFile().getSyntax() == Descriptors.FileDescriptor.Syntax.PROTO3
+          && CodedInputStream.getProto3DiscardUnknownFieldsDefault()) {
         return this;
       }
       this.unknownFields =
@@ -591,9 +648,7 @@ public final class DynamicMessage extends AbstractMessage {
     /** Verifies that the value is EnumValueDescriptor and matches Enum Type. */
     private void ensureSingularEnumValueDescriptor(
         FieldDescriptor field, Object value) {
-      if (value == null) {
-        throw new NullPointerException();
-      }
+      checkNotNull(value);
       if (!(value instanceof EnumValueDescriptor)) {
         throw new IllegalArgumentException(
           "DynamicMessage should use EnumValueDescriptor to set Enum Value.");

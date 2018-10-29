@@ -61,15 +61,6 @@ public final class UnknownFieldSetLite {
   public static UnknownFieldSetLite getDefaultInstance() {
     return DEFAULT_INSTANCE;
   }
-
-  /**
-   * Returns an empty {@code UnknownFieldSetLite.Builder}.
-   *
-   * <p>For use by generated code only.
-   */
-  public static Builder newBuilder() {
-    return new Builder();
-  }
   
   /**
    * Returns a new mutable instance.
@@ -90,7 +81,7 @@ public final class UnknownFieldSetLite {
     System.arraycopy(second.objects, 0, objects, first.count, second.count);
     return new UnknownFieldSetLite(count, tags, objects, true /* isMutable */);
   }
-  
+
   /**
    * The number of elements in the set.
    */
@@ -185,6 +176,42 @@ public final class UnknownFieldSetLite {
   }
 
   /**
+   * Serializes the set and writes it to {@code output} using {@code MessageSet} wire format.
+   *
+   * <p>For use by generated code only.
+   */
+  public void writeAsMessageSetTo(CodedOutputStream output) throws IOException {
+    for (int i = 0; i < count; i++) {
+      int fieldNumber = WireFormat.getTagFieldNumber(tags[i]);
+      output.writeRawMessageSetExtension(fieldNumber, (ByteString) objects[i]);
+    }
+  }
+
+
+  /**
+   * Get the number of bytes required to encode this field, including field number, using {@code
+   * MessageSet} wire format.
+   */
+  public int getSerializedSizeAsMessageSet() {
+    int size = memoizedSerializedSize;
+    if (size != -1) {
+      return size;
+    }
+    
+    size = 0;
+    for (int i = 0; i < count; i++) {
+      int tag = tags[i];
+      int fieldNumber = WireFormat.getTagFieldNumber(tag);
+      size += CodedOutputStream.computeRawMessageSetExtensionSize(
+          fieldNumber, (ByteString) objects[i]);
+    }
+    
+    memoizedSerializedSize = size;
+    
+    return size;
+  }
+
+  /**
    * Get the number of bytes required to encode this set.
    *
    * <p>For use by generated code only.
@@ -225,6 +252,24 @@ public final class UnknownFieldSetLite {
     
     return size;
   }
+  
+  private static boolean equals(int[] tags1, int[] tags2, int count) {
+    for (int i = 0; i < count; ++i) {
+      if (tags1[i] != tags2[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private static boolean equals(Object[] objects1, Object[] objects2, int count) {
+    for (int i = 0; i < count; ++i) {
+      if (!objects1[i].equals(objects2[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   @Override
   public boolean equals(Object obj) {
@@ -242,27 +287,59 @@ public final class UnknownFieldSetLite {
     
     UnknownFieldSetLite other = (UnknownFieldSetLite) obj;    
     if (count != other.count
-        // TODO(dweis): Only have to compare up to count but at worst 2x worse than we need to do.
-        || !Arrays.equals(tags, other.tags)
-        || !Arrays.deepEquals(objects, other.objects)) {
+        || !equals(tags, other.tags, count)
+        || !equals(objects, other.objects, count)) {
       return false;
     }
 
     return true;
   }
 
-  @Override
-  public int hashCode() {
+  private static int hashCode(int[] tags, int count) {
     int hashCode = 17;
-    
-    hashCode = 31 * hashCode + count;
-    hashCode = 31 * hashCode + Arrays.hashCode(tags);
-    hashCode = 31 * hashCode + Arrays.deepHashCode(objects);
-    
+    for (int i = 0; i < count; ++i) {
+      hashCode = 31 * hashCode + tags[i];
+    }
     return hashCode;
   }
 
-  private void storeField(int tag, Object value) {
+  private static int hashCode(Object[] objects, int count) {
+    int hashCode = 17;
+    for (int i = 0; i < count; ++i) {
+      hashCode = 31 * hashCode + objects[i].hashCode();
+    }
+    return hashCode;
+  }
+
+  @Override
+  public int hashCode() {
+    int hashCode = 17;
+
+    hashCode = 31 * hashCode + count;
+    hashCode = 31 * hashCode + hashCode(tags, count);
+    hashCode = 31 * hashCode + hashCode(objects, count);
+
+    return hashCode;
+  }
+
+  /**
+   * Prints a String representation of the unknown field set.
+   *
+   * <p>For use by generated code only.
+   *
+   * @param buffer the buffer to write to
+   * @param indent the number of spaces the fields should be indented by
+   */
+  final void printWithIndent(StringBuilder buffer, int indent) {
+    for (int i = 0; i < count; i++) {
+      int fieldNumber = WireFormat.getTagFieldNumber(tags[i]);
+      MessageLiteToString.printField(buffer, indent, String.valueOf(fieldNumber), objects[i]);
+    }
+  }
+
+  // Package private for unsafe experimental runtime.
+  void storeField(int tag, Object value) {
+    checkMutable();
     ensureCapacity();
     
     tags[count] = tag;
@@ -368,91 +445,5 @@ public final class UnknownFieldSetLite {
       }
     }
     return this;
-  }
-  
-  /**
-   * Builder for {@link UnknownFieldSetLite}s.
-   *
-   * <p>Use {@link UnknownFieldSet#newBuilder()} to construct a {@code Builder}.
-   *
-   * <p>For use by generated code only.
-   */
-  // TODO(dweis): Update the mutable API to no longer need this builder and delete.
-  public static final class Builder {
-
-    private UnknownFieldSetLite set;
-    
-    private Builder() {
-      this.set = null;
-    }
-
-    /**
-     * Ensures internal state is initialized for use.
-     */
-    private void ensureNotBuilt() {
-      if (set == null) {
-        set = new UnknownFieldSetLite();
-      }
-      
-      set.checkMutable();
-    }
-    
-    /**
-     * Parse a single field from {@code input} and merge it into this set.
-     *
-     * <p>For use by generated code only.
-     *
-     * @param tag The field's tag number, which was already parsed.
-     * @return {@code false} if the tag is an end group tag.
-     */
-    boolean mergeFieldFrom(final int tag, final CodedInputStream input) throws IOException {
-      ensureNotBuilt();
-      return set.mergeFieldFrom(tag, input);
-    }
-
-    /**
-     * Convenience method for merging a new field containing a single varint
-     * value. This is used in particular when an unknown enum value is
-     * encountered.
-     *
-     * <p>For use by generated code only.
-     */
-    Builder mergeVarintField(int fieldNumber, int value) {
-      ensureNotBuilt();
-      set.mergeVarintField(fieldNumber, value);
-      return this;
-    }
-    
-    /**
-     * Convenience method for merging a length-delimited field.
-     *
-     * <p>For use by generated code only.
-     */
-    public Builder mergeLengthDelimitedField(final int fieldNumber, final ByteString value) {
-      ensureNotBuilt();  
-      set.mergeLengthDelimitedField(fieldNumber, value);
-      return this;
-    }
-    
-    /**
-     * Build the {@link UnknownFieldSetLite} and return it.
-     *
-     * <p>Once {@code build()} has been called, the {@code Builder} will no
-     * longer be usable.  Calling any method after {@code build()} will result
-     * in undefined behavior and can cause an
-     * {@code UnsupportedOperationException} to be thrown.
-     *
-     * <p>For use by generated code only.
-     */
-    public UnknownFieldSetLite build() {
-      if (set == null) {
-        return DEFAULT_INSTANCE;
-      }
-      
-      set.checkMutable();
-      set.makeImmutable();
-
-      return set;
-    }
   }
 }

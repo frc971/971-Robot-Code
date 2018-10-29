@@ -31,12 +31,18 @@
 goog.setTestOnly();
 
 goog.require('goog.testing.asserts');
+
+// CommonJS-LoadFromFile: google-protobuf
 goog.require('jspb.debug');
+
+// CommonJS-LoadFromFile: test_pb
 goog.require('proto.jspb.test.HasExtensions');
 goog.require('proto.jspb.test.IsExtension');
 goog.require('proto.jspb.test.Simple1');
 
 
+// CommonJS-LoadFromFile: testbinary_pb
+goog.require('proto.jspb.test.TestAllTypes');
 
 describe('debugTest', function() {
   it('testSimple1', function() {
@@ -61,7 +67,7 @@ describe('debugTest', function() {
       'aBoolean': true
     }, jspb.debug.dump(message));
 
-    message.setAString(undefined);
+    message.clearAString();
 
     assertObjectEquals({
       $name: 'proto.jspb.test.Simple1',
@@ -70,6 +76,15 @@ describe('debugTest', function() {
     }, jspb.debug.dump(message));
   });
 
+  it('testBytes', function() {
+    if (COMPILED || typeof Uint8Array == 'undefined') {
+      return;
+    }
+    var message = new proto.jspb.test.TestAllTypes();
+    var bytes = new Uint8Array(4);
+    message.setOptionalBytes(bytes);
+    assertEquals(jspb.debug.dump(message)['optionalBytes'], bytes);
+  });
 
   it('testExtensions', function() {
     if (COMPILED) {
