@@ -56,8 +56,8 @@
 #include <vector>
 
 #include "config.h"
-#include "gflags.h"
-#include "gflags_completions.h"
+#include "gflags/gflags.h"
+#include "gflags/gflags_completions.h"
 #include "util.h"
 
 
@@ -126,7 +126,8 @@ string DescribeOneFlag(const CommandLineFlagInfo& flag) {
   string final_string = "";
   int chars_in_line = 0;  // how many chars in current line so far?
   while (1) {
-    assert(chars_left == strlen(c_string));  // Unless there's a \0 in there?
+    assert(static_cast<size_t>(chars_left)
+            == strlen(c_string));  // Unless there's a \0 in there?
     const char* newline = strchr(c_string, '\n');
     if (newline == NULL && chars_in_line+chars_left < kLineLength) {
       // The whole remainder of the string fits on this line
@@ -295,10 +296,10 @@ static void ShowUsageWithFlagsMatching(const char *argv0,
   }
 }
 
-void ShowUsageWithFlagsRestrict(const char *argv0, const char *restrict) {
+void ShowUsageWithFlagsRestrict(const char *argv0, const char *restrict_) {
   vector<string> substrings;
-  if (restrict != NULL && *restrict != '\0') {
-    substrings.push_back(restrict);
+  if (restrict_ != NULL && *restrict_ != '\0') {
+    substrings.push_back(restrict_);
   }
   ShowUsageWithFlagsMatching(argv0, substrings);
 }
@@ -388,8 +389,8 @@ void HandleCommandLineHelpFlags() {
     gflags_exitfunc(1);
 
   } else if (!FLAGS_helpon.empty()) {
-    string restrict = PATH_SEPARATOR + FLAGS_helpon + ".";
-    ShowUsageWithFlagsRestrict(progname, restrict.c_str());
+    string restrict_ = PATH_SEPARATOR + FLAGS_helpon + ".";
+    ShowUsageWithFlagsRestrict(progname, restrict_.c_str());
     gflags_exitfunc(1);
 
   } else if (!FLAGS_helpmatch.empty()) {

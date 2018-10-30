@@ -18,13 +18,16 @@ include_directories ("${gflags_BINARY_DIR}/include/gflags")
 
 if (BUILD_SHARED_LIBS)
   set (type shared)
+  if (GFLAGS_IS_A_DLL)
+    add_definitions(-DGFLAGS_IS_A_DLL)
+  endif ()
 else ()
   set (type static)
 endif ()
 if (BUILD_gflags_LIB)
-  link_libraries (gflags-${type})
+  link_libraries (gflags_${type})
 else ()
-  link_libraries (gflags_nothreads-${type})
+  link_libraries (gflags_nothreads_${type})
 endif ()
 
 # ----------------------------------------------------------------------------
@@ -37,6 +40,7 @@ add_test (
   NAME strip_flags_binary
   COMMAND "${CMAKE_COMMAND}" "-DBINARY=$<TARGET_FILE:gflags_strip_flags_test>"
           -P "${CMAKE_CURRENT_SOURCE_DIR}/gflags_strip_flags_test.cmake"
+  CONFIGURATIONS Release MinSizeRel
 )
 
 # ----------------------------------------------------------------------------

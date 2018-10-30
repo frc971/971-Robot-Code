@@ -4,7 +4,7 @@
 #include "aos/logging/logging.h"
 #include "frc971/control_loops/dlqr.h"
 #include "frc971/control_loops/jacobian.h"
-#include "third_party/gflags/include/gflags/gflags.h"
+#include "gflags/gflags.h"
 #include "y2018/control_loops/superstructure/arm/dynamics.h"
 
 DEFINE_double(lqr_proximal_pos, 0.15, "Position LQR gain");

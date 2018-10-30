@@ -1,4 +1,4 @@
-#include "third_party/gflags/include/gflags/gflags.h"
+#include "gflags/gflags.h"
 
 DEFINE_int32(test_flag, 0, "Test command-line flag");
 

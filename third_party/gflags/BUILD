@@ -1,53 +1,18 @@
+# Bazel (http://bazel.io/) BUILD file for gflags.
+#
+# See INSTALL.md for instructions for adding gflags to a Bazel workspace.
+
 licenses(["notice"])
 
-common_copts = [
-    "-Ithird_party/gflags/include/gflags",
-    "-Ithird_party/empty_config_h",
-    "-DHAVE_STDINT_H=",
-    "-DHAVE_SYS_TYPES_H=",
-    "-DHAVE_INTTYPES_H=",
-    "-DHAVE_SYS_STAT_H=",
-    "-DHAVE_UNISTD_H=",
-    "-DHAVE_FNMATCH_H=",
-    "-DHAVE_STRTOLL=",
-    "-DHAVE_PTHREAD=",
-    "-DHAVE_RWLOCK=",
-    "-D__STDC_FORMAT_MACROS=1",
-    "-DPATH_SEPARATOR=\"'/'\"",
-    "-DGFLAGS_IS_A_DLL=0",
-    "-DGFLAGS_DLL_DECL=",
-    "-DGFLAGS_DLL_DEFINE_FLAG=",
-    "-Wno-format-nonliteral",
-    "-Wno-unused-local-typedefs",
-    "-Wno-sign-compare",
-    "-Wno-missing-field-initializers",
-]
+exports_files(["src/gflags_completions.sh", "COPYING.txt"])
 
-cc_library(
-    name = "gflags",
-    srcs = glob(
-        [
-            "src/*.cc",
-            "src/*.h",
-        ],
-        exclude = [
-            "src/windows_*",
-        ],
-    ) + [
-        "include/gflags/gflags_declare.h",
-        "include/gflags/gflags_gflags.h",
-    ],
-    hdrs = [
-        "include/gflags/gflags.h",
-        "include/gflags/gflags_completions.h",
-    ],
-    copts = common_copts,
-    includes = ["include"],
-    linkopts = [
-        "-lpthread",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//third_party/empty_config_h",
-    ],
+config_setting(
+    name = "x64_windows",
+    values = {"cpu": "x64_windows"},
 )
+
+load(":bazel/gflags.bzl", "gflags_sources", "gflags_library")
+
+(hdrs, srcs) = gflags_sources(namespace=["gflags", "google"])
+gflags_library(hdrs=hdrs, srcs=srcs, threads=0)
+gflags_library(hdrs=hdrs, srcs=srcs, threads=1)

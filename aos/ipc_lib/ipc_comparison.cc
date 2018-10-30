@@ -1,4 +1,4 @@
-#include "third_party/gflags/include/gflags/gflags.h"
+#include "gflags/gflags.h"
 
 #include <fcntl.h>
 #include <mqueue.h>

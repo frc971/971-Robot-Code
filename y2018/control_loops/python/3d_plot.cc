@@ -2,7 +2,7 @@
 #include <cmath>
 #include <thread>
 
-#include "third_party/gflags/include/gflags/gflags.h"
+#include "gflags/gflags.h"
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
 #include "y2018/control_loops/python/arm_bounds.h"
 

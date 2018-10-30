@@ -11,7 +11,7 @@
 #include "aos/vision/events/socket_types.h"
 #include "aos/vision/events/udp.h"
 #include "aos/vision/image/reader.h"
-#include "third_party/gflags/include/gflags/gflags.h"
+#include "gflags/gflags.h"
 #include "y2018/vision.pb.h"
 
 using ::aos::events::DataSocket;

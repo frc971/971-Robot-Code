@@ -4,7 +4,7 @@
 #include "Eigen/Dense"
 
 #include "frc971/control_loops/runge_kutta.h"
-#include "third_party/gflags/include/gflags/gflags.h"
+#include "gflags/gflags.h"
 
 DECLARE_bool(gravity);
 
