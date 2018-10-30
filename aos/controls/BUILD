@@ -11,9 +11,9 @@ cc_library(
     deps = [
         ":control_loop",
         "//aos:queues",
-        "//aos/time:time",
         "//aos/logging:queue_logging",
         "//aos/logging:replay",
+        "//aos/time",
     ],
 )
 
@@ -27,11 +27,11 @@ cc_library(
         "control_loop_test.h",
     ],
     deps = [
-        "//aos/time:time",
         "//aos/logging:queue_logging",
-        "//aos/robot_state:robot_state",
+        "//aos/robot_state",
         "//aos/testing:googletest",
         "//aos/testing:test_shm",
+        "//aos/time",
     ],
 )
 
@@ -69,7 +69,6 @@ cc_test(
         "//aos/testing:googletest",
         "//aos/testing:test_logging",
         "//third_party/eigen",
-        "//third_party/googletest:googlemock",
     ],
 )
 
@@ -95,10 +94,10 @@ cc_library(
     deps = [
         ":control_loop_queues",
         "//aos:queues",
-        "//aos/time:time",
         "//aos/logging",
         "//aos/logging:queue_logging",
-        "//aos/robot_state:robot_state",
+        "//aos/robot_state",
+        "//aos/time",
         "//aos/util:log_interval",
     ],
 )

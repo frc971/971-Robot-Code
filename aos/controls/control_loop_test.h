@@ -1,8 +1,12 @@
 #ifndef AOS_CONTROLS_CONTROL_LOOP_TEST_H_
 #define AOS_CONTROLS_CONTROL_LOOP_TEST_H_
 
+#include <chrono>
+
 #include "gtest/gtest.h"
 
+#include "aos/logging/queue_logging.h"
+#include "aos/robot_state/robot_state.q.h"
 #include "aos/testing/test_shm.h"
 #include "aos/time/time.h"
 
@@ -14,16 +18,62 @@ namespace testing {
 // This includes sending the queue messages and Clear()ing the queues when
 // appropriate.
 // It also includes dealing with ::aos::time.
-class ControlLoopTest : public ::testing::Test {
+template <typename TestBaseClass>
+class ControlLoopTestTemplated : public TestBaseClass {
  public:
-  ControlLoopTest();
-  virtual ~ControlLoopTest();
+  ControlLoopTestTemplated() {
+    ::aos::joystick_state.Clear();
+    ::aos::robot_state.Clear();
+
+    ::aos::time::EnableMockTime(current_time_);
+
+    SendMessages(false);
+  }
+  virtual ~ControlLoopTestTemplated() {
+    ::aos::joystick_state.Clear();
+    ::aos::robot_state.Clear();
+
+    ::aos::time::DisableMockTime();
+  }
 
   void set_team_id(uint16_t team_id) { team_id_ = team_id; }
   uint16_t team_id() const { return team_id_; }
 
   // Sends out all of the required queue messages.
-  void SendMessages(bool enabled);
+  void SendMessages(bool enabled) {
+    if (current_time_ >= kDSPacketTime + last_ds_time_ ||
+        last_enabled_ != enabled) {
+      last_ds_time_ = current_time_;
+      auto new_state = ::aos::joystick_state.MakeMessage();
+      new_state->fake = true;
+
+      new_state->enabled = enabled;
+      new_state->autonomous = false;
+      new_state->team_id = team_id_;
+
+      new_state.Send();
+      last_enabled_ = enabled;
+    }
+
+    {
+      auto new_state = ::aos::robot_state.MakeMessage();
+
+      new_state->reader_pid = reader_pid_;
+      new_state->outputs_enabled = enabled;
+      new_state->browned_out = false;
+
+      new_state->is_3v3_active = true;
+      new_state->is_5v_active = true;
+      new_state->voltage_3v3 = 3.3;
+      new_state->voltage_5v = 5.0;
+
+      new_state->voltage_roborio_in = battery_voltage_;
+      new_state->voltage_battery = battery_voltage_;
+
+      LOG_STRUCT(INFO, "robot_state", *new_state);
+      new_state.Send();
+    }
+  }
   // Ticks time for a single control loop cycle.
   void TickTime(::std::chrono::nanoseconds dt = kTimeTick) {
     ::aos::time::SetMockTime(current_time_ += dt);
@@ -63,6 +113,14 @@ class ControlLoopTest : public ::testing::Test {
 
   bool last_enabled_ = false;
 };
+
+typedef ControlLoopTestTemplated<::testing::Test> ControlLoopTest;
+
+template <typename TestBaseClass>
+constexpr ::std::chrono::milliseconds ControlLoopTestTemplated<TestBaseClass>::kTimeTick;
+
+template <typename TestBaseClass>
+constexpr ::std::chrono::milliseconds ControlLoopTestTemplated<TestBaseClass>::kDSPacketTime;
 
 }  // namespace testing
 }  // namespace aos

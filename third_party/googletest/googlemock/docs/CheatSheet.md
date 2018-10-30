@@ -65,7 +65,7 @@ can specify it by appending `_WITH_CALLTYPE` to any of the macros
 described in the previous two sections and supplying the calling
 convention as the first argument to the macro. For example,
 ```
-  MOCK_METHOD_1_WITH_CALLTYPE(STDMETHODCALLTYPE, Foo, bool(int n));
+  MOCK_METHOD1_WITH_CALLTYPE(STDMETHODCALLTYPE, Foo, bool(int n));
   MOCK_CONST_METHOD2_WITH_CALLTYPE(STDMETHODCALLTYPE, Bar, int(double x, double y));
 ```
 where `STDMETHODCALLTYPE` is defined by `<objbase.h>` on Windows.
@@ -77,7 +77,7 @@ The typical flow is:
   1. Create the mock objects.
   1. Optionally, set the default actions of the mock objects.
   1. Set your expectations on the mock objects (How will they be called? What wil they do?).
-  1. Exercise code that uses the mock objects; if necessary, check the result using [Google Test](http://code.google.com/p/googletest/) assertions.
+  1. Exercise code that uses the mock objects; if necessary, check the result using [Google Test](../../googletest/) assertions.
   1. When a mock objects is destructed, Google Mock automatically verifies that all expectations on it have been satisfied.
 
 Here is an example:
@@ -178,6 +178,8 @@ divided into several categories:
 |`Ne(value)`           |`argument != value`|
 |`IsNull()`            |`argument` is a `NULL` pointer (raw or smart).|
 |`NotNull()`           |`argument` is a non-null pointer (raw or smart).|
+|`VariantWith<T>(m)`   |`argument` is `variant<>` that holds the alternative of
+type T with a value matching `m`.|
 |`Ref(variable)`       |`argument` is a reference to `variable`.|
 |`TypedEq<type>(value)`|`argument` has type `type` and is equal to `value`. You may need to use this instead of `Eq(value)` when the mock function is overloaded.|
 
@@ -197,7 +199,7 @@ matcher will be changed.
 |`NanSensitiveFloatEq(a_float)`|`argument` is a `float` value approximately equal to `a_float`, treating two NaNs as equal.    |
 
 The above matchers use ULP-based comparison (the same as used in
-[Google Test](http://code.google.com/p/googletest/)). They
+[Google Test](../../googletest/)). They
 automatically pick a reasonable error bound based on the absolute
 value of the expected value.  `DoubleEq()` and `FloatEq()` conform to
 the IEEE standard, which requires comparing two NaNs for equality to
@@ -227,7 +229,7 @@ The `argument` can be either a C string or a C++ string object:
 
 `ContainsRegex()` and `MatchesRegex()` use the regular expression
 syntax defined
-[here](http://code.google.com/p/googletest/wiki/AdvancedGuide#Regular_Expression_Syntax).
+[here](../../googletest/docs/advanced.md#regular-expression-syntax).
 `StrCaseEq()`, `StrCaseNe()`, `StrEq()`, and `StrNe()` work for wide
 strings as well.
 
@@ -249,7 +251,7 @@ match them more flexibly, or get more informative messages, you can use:
 | `SizeIs(m)`              | `argument` is a container whose size matches `m`. E.g. `SizeIs(2)` or `SizeIs(Lt(2))`.                                           |
 | `UnorderedElementsAre(e0, e1, ..., en)` | `argument` has `n + 1` elements, and under some permutation each element matches an `ei` (for a different `i`), which can be a value or a matcher. 0 to 10 arguments are allowed. |
 | `UnorderedElementsAreArray({ e0, e1, ..., en })`, `UnorderedElementsAreArray(array)`, or `UnorderedElementsAreArray(array, count)` | The same as `UnorderedElementsAre()` except that the expected element values/matchers come from an initializer list, STL-style container, or C-style array. |
-| `WhenSorted(m)`          | When `argument` is sorted using the `<` operator, it matches container matcher `m`. E.g. `WhenSorted(UnorderedElementsAre(1, 2, 3))` verifies that `argument` contains elements `1`, `2`, and `3`, ignoring order. |
+| `WhenSorted(m)`          | When `argument` is sorted using the `<` operator, it matches container matcher `m`. E.g. `WhenSorted(ElementsAre(1, 2, 3))` verifies that `argument` contains elements `1`, `2`, and `3`, ignoring order. |
 | `WhenSortedBy(comparator, m)` | The same as `WhenSorted(m)`, except that the given comparator instead of `<` is used to sort `argument`. E.g. `WhenSortedBy(std::greater<int>(), ElementsAre(3, 2, 1))`. |
 
 Notes:
@@ -322,7 +324,7 @@ You can make a matcher from one or more other matchers:
 
 |`MatcherCast<T>(m)`|casts matcher `m` to type `Matcher<T>`.|
 |:------------------|:--------------------------------------|
-|`SafeMatcherCast<T>(m)`| [safely casts](http://code.google.com/p/googlemock/wiki/CookBook#Casting_Matchers) matcher `m` to type `Matcher<T>`. |
+|`SafeMatcherCast<T>(m)`| [safely casts](CookBook.md#casting-matchers) matcher `m` to type `Matcher<T>`. |
 |`Truly(predicate)` |`predicate(argument)` returns something considered by C++ to be true, where `predicate` is a function or functor.|
 
 ## Matchers as Predicates ##
@@ -347,7 +349,7 @@ You can make a matcher from one or more other matchers:
 
 ## Matchers as Test Assertions ##
 
-|`ASSERT_THAT(expression, m)`|Generates a [fatal failure](http://code.google.com/p/googletest/wiki/Primer#Assertions) if the value of `expression` doesn't match matcher `m`.|
+|`ASSERT_THAT(expression, m)`|Generates a [fatal failure](../../googletest/docs/primer.md#assertions) if the value of `expression` doesn't match matcher `m`.|
 |:---------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------|
 |`EXPECT_THAT(expression, m)`|Generates a non-fatal failure if the value of `expression` doesn't match matcher `m`.                                                          |
 
@@ -553,7 +555,7 @@ class MockFunction<R(A1, ..., An)> {
   MOCK_METHODn(Call, R(A1, ..., An));
 };
 ```
-See this [recipe](http://code.google.com/p/googlemock/wiki/CookBook#Using_Check_Points) for one application of it.
+See this [recipe](CookBook.md#using-check-points) for one application of it.
 
 # Flags #
 

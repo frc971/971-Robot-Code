@@ -1,7 +1,7 @@
-m4_include(gtest/m4/acx_pthread.m4)
+m4_include(../googletest/m4/acx_pthread.m4)
 
 AC_INIT([Google C++ Mocking Framework],
-        [1.7.0],
+        [1.8.0],
         [googlemock@googlegroups.com],
         [gmock])
 
@@ -101,7 +101,7 @@ AC_ARG_VAR([GTEST_VERSION],
            [The version of Google Test available.])
 HAVE_BUILT_GTEST="no"
 
-GTEST_MIN_VERSION="1.7.0"
+GTEST_MIN_VERSION="1.8.0"
 
 AS_IF([test "x${enable_external_gtest}" = "xyes"],
       [# Begin filling in variables as we are able.
@@ -129,14 +129,14 @@ AS_IF([test "x${HAVE_BUILT_GTEST}" = "xyes"],
       GTEST_LDFLAGS=`${GTEST_CONFIG} --ldflags`
       GTEST_LIBS=`${GTEST_CONFIG} --libs`
       GTEST_VERSION=`${GTEST_CONFIG} --version`],
-      [AC_CONFIG_SUBDIRS([gtest])
-      # GTEST_CONFIG needs to be executable both in a Makefile environmont and
+      [
+      # GTEST_CONFIG needs to be executable both in a Makefile environment and
       # in a shell script environment, so resolve an absolute path for it here.
-      GTEST_CONFIG="`pwd -P`/gtest/scripts/gtest-config"
-      GTEST_CPPFLAGS='-I$(top_srcdir)/gtest/include'
+      GTEST_CONFIG="`pwd -P`/../googletest/scripts/gtest-config"
+      GTEST_CPPFLAGS='-I$(top_srcdir)/../googletest/include'
       GTEST_CXXFLAGS='-g'
       GTEST_LDFLAGS=''
-      GTEST_LIBS='$(top_builddir)/gtest/lib/libgtest.la'
+      GTEST_LIBS='$(top_builddir)/../googletest/lib/libgtest.la'
       GTEST_VERSION="${GTEST_MIN_VERSION}"])
 
 # TODO(chandlerc@google.com) Check the types, structures, and other compiler

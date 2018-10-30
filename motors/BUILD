@@ -100,7 +100,6 @@ cc_test(
     deps = [
         ":math",
         "//aos/testing:googletest",
-        "//third_party/googletest:googlemock",
     ],
 )
 

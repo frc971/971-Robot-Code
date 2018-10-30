@@ -9,7 +9,7 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//third_party/googletest",
+        "//third_party/googletest:gtest",
     ],
 )
 

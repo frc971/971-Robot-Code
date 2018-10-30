@@ -281,8 +281,9 @@ class ShooterSimulation {
   double last_plant_position_;
 };
 
-class ShooterTest : public ::aos::testing::ControlLoopTest {
-
+template <typename TestType>
+class ShooterTestTemplated
+    : public ::aos::testing::ControlLoopTestTemplated<TestType> {
  protected:
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory that
@@ -297,7 +298,7 @@ class ShooterTest : public ::aos::testing::ControlLoopTest {
     shooter_motor_plant_.Reinitialize(position);
   }
 
-  ShooterTest()
+  ShooterTestTemplated()
       : shooter_queue_(
             ".y2014.control_loops.shooter_queue", 0xcbf22ba9,
             ".y2014.control_loops.shooter_queue.goal",
@@ -315,6 +316,8 @@ class ShooterTest : public ::aos::testing::ControlLoopTest {
     EXPECT_NEAR(shooter_queue_.goal->shot_power, pos, 1e-4);
   }
 };
+
+typedef ShooterTestTemplated<::testing::Test> ShooterTest;
 
 TEST_F(ShooterTest, PowerConversion) {
   const constants::Values &values = constants::GetValues();
@@ -677,15 +680,15 @@ TEST_F(ShooterTest, StartsOnProximal) {
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }
 
-class ShooterZeroingTest : public ShooterTest,
-                    public ::testing::WithParamInterface<
-                        ::std::tr1::tuple<bool, bool, bool, double>> {};
+class ShooterZeroingTest
+    : public ShooterTestTemplated<
+          ::testing::TestWithParam<::std::tuple<bool, bool, bool, double>>> {};
 
 TEST_P(ShooterZeroingTest, AllDisparateStartingZero) {
-  bool latch = ::std::tr1::get<0>(GetParam());
-  bool brake = ::std::tr1::get<1>(GetParam());
-  bool plunger_back = ::std::tr1::get<2>(GetParam());
-  double start_pos = ::std::tr1::get<3>(GetParam());
+  bool latch = ::std::get<0>(GetParam());
+  bool brake = ::std::get<1>(GetParam());
+  bool plunger_back = ::std::get<2>(GetParam());
+  double start_pos = ::std::get<3>(GetParam());
   // flag to initialize test
 	//printf("@@@@ l= %d b= %d p= %d s= %.3f\n",
 	//		latch, brake, plunger_back, start_pos);
@@ -709,7 +712,7 @@ TEST_P(ShooterZeroingTest, AllDisparateStartingZero) {
 }
 
 INSTANTIATE_TEST_CASE_P(
-    ShooterZeroingTest, ShooterZeroingTest,
+    ShooterZeroingTestParameters, ShooterZeroingTest,
     ::testing::Combine(
         ::testing::Bool(), ::testing::Bool(), ::testing::Bool(),
         ::testing::Values(
