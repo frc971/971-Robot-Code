@@ -385,54 +385,6 @@ toolchain {
   supports_gold_linker: false
   supports_thin_archives: false
   needsPic: true
-  compiler_flag: "--sysroot=external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi"
-  compiler_flag: "-nostdinc"
-  compiler_flag: "-isystem"
-  compiler_flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include"
-  compiler_flag: "-isystem"
-  compiler_flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include-fixed"
-  compiler_flag: "-isystem"
-  compiler_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/usr/include"
-  compiler_flag: "-mfpu=neon"
-  compiler_flag: "-D__STDC_FORMAT_MACROS"
-  compiler_flag: "-D__STDC_CONSTANT_MACROS"
-  compiler_flag: "-D__STDC_LIMIT_MACROS"
-  compiler_flag: "-D_FILE_OFFSET_BITS=64"
-  compiler_flag: "-DAOS_ARCHITECTURE_arm_frc"
-  compiler_flag: "-U_FORTIFY_SOURCE"
-  compiler_flag: "-fstack-protector"
-  compiler_flag: "-fPIE"
-  compiler_flag: "-fdiagnostics-color=always"
-  compiler_flag: "-Wall"
-  compiler_flag: "-Wextra"
-  compiler_flag: "-Wpointer-arith"
-  compiler_flag: "-Wstrict-aliasing"
-  compiler_flag: "-Wcast-qual"
-  compiler_flag: "-Wcast-align"
-  compiler_flag: "-Wwrite-strings"
-  compiler_flag: "-Wtype-limits"
-  compiler_flag: "-Wsign-compare"
-  compiler_flag: "-Wformat=2"
-  compiler_flag: "-Werror"
-  compiler_flag: "-Wunused-local-typedefs"
-  compiler_flag: "-fno-omit-frame-pointer"
-  compiler_flag: "-D__has_feature(x)=0"
-  compiler_flag: "-pipe"
-  compiler_flag: "-ggdb3"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0/arm-frc-linux-gnueabi"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0/backward"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include-fixed"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/usr/include"
   linker_flag: "-lstdc++"
   linker_flag: "-Ltools/cpp/arm-frc-linux-gnueabi/libs"
   linker_flag: "-no-canonical-prefixes"
@@ -443,15 +395,6 @@ toolchain {
   linker_flag: "-Wl,--hash-style=gnu"
   objcopy_embed_flag: "-I"
   objcopy_embed_flag: "binary"
-  compilation_mode_flags {
-    mode: OPT
-    compiler_flag: "-O2"
-    compiler_flag: "-DNDEBUG"
-    compiler_flag: "-D_FORTIFY_SOURCE=1"
-    compiler_flag: "-ffunction-sections"
-    compiler_flag: "-fdata-sections"
-    linker_flag: "-Wl,--gc-sections"
-  }
   linking_mode_flags {
     mode: DYNAMIC
   }
@@ -474,7 +417,205 @@ toolchain {
   supports_incremental_linker: false
   supports_fission: false
   feature {
+    name: "compile_flags1"
+    flag_set {
+      action: "assemble"
+      action: "preprocess-assemble"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-module-compile"
+      action: "c++-module-codegen"
+      action: "lto-backend"
+      action: "clif-match"
+      flag_group {
+        flag: "--sysroot=external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi"
+        flag: "-nostdinc"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include-fixed"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/usr/include"
+        flag: "-mfpu=neon"
+        flag: "-D__STDC_FORMAT_MACROS"
+        flag: "-D__STDC_CONSTANT_MACROS"
+        flag: "-D__STDC_LIMIT_MACROS"
+        flag: "-D_FILE_OFFSET_BITS=64"
+        flag: "-DAOS_ARCHITECTURE_arm_frc"
+        flag: "-U_FORTIFY_SOURCE"
+        flag: "-fstack-protector"
+        flag: "-fPIE"
+        flag: "-fdiagnostics-color=always"
+        flag: "-Wall"
+        flag: "-Wextra"
+        flag: "-Wpointer-arith"
+        flag: "-Wstrict-aliasing"
+        flag: "-Wcast-qual"
+        flag: "-Wcast-align"
+        flag: "-Wwrite-strings"
+        flag: "-Wtype-limits"
+        flag: "-Wsign-compare"
+        flag: "-Wformat=2"
+        flag: "-Werror"
+        flag: "-Wunused-local-typedefs"
+        flag: "-fno-omit-frame-pointer"
+        flag: "-D__has_feature(x)=0"
+        flag: "-pipe"
+        flag: "-ggdb3"
+      }
+    }
+    enabled: true
+  }
+  feature {
     name: "opt"
+    flag_set {
+      action: "assemble"
+      action: "preprocess-assemble"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-module-compile"
+      action: "objc-compile"
+      action: "objc++-compile"
+      action: "c++-header-parsing"
+      action: "linkstamp-compile"
+      flag_group {
+        flag: "-O2"
+        flag: "-DNDEBUG"
+        flag: "-D_FORTIFY_SOURCE=1"
+        flag: "-ffunction-sections"
+        flag: "-fdata-sections"
+      }
+    }
+    flag_set {
+      action: "c++-link-executable"
+      action: "c++-link-nodeps-dynamic-library"
+      action: "c++-link-dynamic-library"
+      flag_group {
+        flag: "-Wl,--gc-sections"
+      }
+    }
+    implies: "opt_post"
+  }
+  feature {
+    name: "compile_flags2"
+    flag_set {
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-module-compile"
+      action: "c++-module-codegen"
+      action: "lto-backend"
+      action: "clif-match"
+      flag_group {
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0/arm-frc-linux-gnueabi"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0/backward"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include-fixed"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/usr/include"
+      }
+    }
+    enabled: true
+  }
+  feature {
+    name: "dependency_file"
+    flag_set {
+      action: "assemble"
+      action: "preprocess-assemble"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-module-compile"
+      action: "objc-compile"
+      action: "objc++-compile"
+      action: "c++-header-parsing"
+      action: "clif-match"
+      flag_group {
+        flag: "-MD"
+        flag: "-MF"
+        flag: "%{dependency_file}"
+      }
+      expand_if_all_available: "dependency_file"
+    }
+  }
+  feature {
+    name: "random_seed"
+    flag_set {
+      action: "c++-compile"
+      action: "c++-module-codegen"
+      action: "c++-module-compile"
+      flag_group {
+        flag: "-frandom-seed=%{output_file}"
+        expand_if_all_available: "output_file"
+      }
+    }
+  }
+  feature {
+    name: "pic"
+    flag_set {
+      action: "assemble"
+      action: "preprocess-assemble"
+      action: "linkstamp-compile"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-module-codegen"
+      action: "c++-module-compile"
+      flag_group {
+        flag: "-fPIC"
+      }
+      expand_if_all_available: "pic"
+    }
+  }
+  feature {
+    name: "preprocessor_defines"
+    flag_set {
+      action: "preprocess-assemble"
+      action: "linkstamp-compile"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-module-compile"
+      action: "clif-match"
+      flag_group {
+        flag: "-D%{preprocessor_defines}"
+        iterate_over: "preprocessor_defines"
+      }
+    }
+  }
+  feature {
+    name: "include_paths"
+    flag_set {
+      action: "preprocess-assemble"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-header-preprocessing"
+      action: "c++-module-compile"
+      flag_group {
+        flag: "-iquote"
+        flag: "%{quote_include_paths}"
+        iterate_over: "quote_include_paths"
+      }
+      flag_group {
+        flag: "-I%{include_paths}"
+        iterate_over: "include_paths"
+      }
+      flag_group {
+        flag: "-isystem"
+        flag: "%{system_include_paths}"
+        iterate_over: "system_include_paths"
+      }
+    }
+  }
+  feature {
+    name: "opt_post"
     flag_set {
       action: "preprocess-assemble"
       action: "c-compile"
@@ -486,7 +627,6 @@ toolchain {
         flag: "-DAOS_DEBUG=0"
       }
     }
-    implies: "all_modes"
   }
   feature {
     name: "dbg"
@@ -504,7 +644,6 @@ toolchain {
         flag: "-fno-omit-frame-pointer"
       }
     }
-    implies: "all_modes"
   }
   feature {
     name: "fastbuild"
@@ -519,7 +658,6 @@ toolchain {
         flag: "-DAOS_DEBUG=0"
       }
     }
-    implies: "all_modes"
   }
   feature {
     name: "all_modes"
@@ -553,6 +691,7 @@ toolchain {
         flag: "-pthread"
       }
     }
+    enabled: true
   }
   feature {
     name: "pie_for_linking"

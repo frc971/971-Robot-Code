@@ -323,11 +323,16 @@ toolchain {
 }
 
 toolchain {
+  toolchain_identifier: "roborio_linux"
+  host_system_name: "roborio"
+  target_system_name: "roborio"
+  target_cpu: "roborio"
+  target_libc: "roborio"
+  compiler: "gcc"
   abi_version: "roborio"
   abi_libc_version: "roborio"
+
   builtin_sysroot: ""
-  compiler: "gcc"
-  host_system_name: "roborio"
   needsPic: true
   supports_gold_linker: false
   supports_incremental_linker: false
@@ -336,10 +341,6 @@ toolchain {
   supports_normalizing_ar: false
   supports_start_end_lib: false
   supports_thin_archives: false
-  target_libc: "roborio"
-  target_cpu: "roborio"
-  target_system_name: "roborio"
-  toolchain_identifier: "roborio_linux"
 
   tool_path { name: "ar" path: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-ar" }
   tool_path { name: "compat-ld" path: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-ld" }
@@ -358,29 +359,137 @@ toolchain {
   tool_path { name: "strip" path: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-strip" }
   linking_mode_flags { mode: DYNAMIC }
 
-  compiler_flag: "--sysroot=external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi"
-  compiler_flag: "-nostdinc"
-  compiler_flag: "-isystem"
-  compiler_flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include",
-  compiler_flag: "-isystem"
-  compiler_flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include-fixed"
-  compiler_flag: "-isystem"
-  compiler_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/usr/include"
+  feature {
+    name: "compile_flags1"
+    enabled: true
+    flag_set {
+      action: "assemble"
+      action: "preprocess-assemble"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-module-compile"
+      action: "c++-module-codegen"
+      action: "lto-backend"
+      action: "clif-match"
+      flag_group {
+        flag: "--sysroot=external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi"
+        flag: "-nostdinc"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include-fixed"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/usr/include"
+        flag: "-mfpu=neon"
 
-  cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0/arm-frc-linux-gnueabi"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0/backward"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include-fixed"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/usr/include"
+        # Things that the code wants defined.
+        flag: "-D__STDC_FORMAT_MACROS"
+        flag: "-D__STDC_CONSTANT_MACROS"
+        flag: "-D__STDC_LIMIT_MACROS"
+        flag: "-D_FILE_OFFSET_BITS=64"
+
+        # TODO(Brian): Rename this or something.
+        flag: "-DAOS_ARCHITECTURE_arm_frc"
+
+        # Security hardening on by default.
+        # Conservative choice; -D_FORTIFY_SOURCE=2 may be unsafe in some cases.
+        # We need to undef it before redefining it as some distributions now have
+        # it enabled by default.
+        flag: "-U_FORTIFY_SOURCE"
+        flag: "-fstack-protector"
+        flag: "-fPIE"
+
+        # Enable coloring even if there's no attached terminal. Bazel removes the
+        # escape sequences if --nocolor is specified.
+        flag: "-fdiagnostics-color=always"
+
+        flag: "-Wall"
+        flag: "-Wextra"
+        flag: "-Wpointer-arith"
+        flag: "-Wstrict-aliasing"
+        flag: "-Wcast-qual"
+        flag: "-Wcast-align"
+        flag: "-Wwrite-strings"
+        flag: "-Wtype-limits"
+        flag: "-Wsign-compare"
+        flag: "-Wformat=2"
+        flag: "-Werror"
+        flag: "-Wunused-local-typedefs"
+
+        # Keep stack frames for debugging, even in opt mode.
+        flag: "-fno-omit-frame-pointer"
+
+        flag: "-D__has_feature(x)=0"
+
+        # Don't use temp files while compiling.
+        flag: "-pipe"
+
+        # Enable debug symbols.
+        flag: "-ggdb3"
+      }
+    }
+  }
+
+  feature {
+    name: "opt"
+    implies: "opt_post"
+    flag_set {
+      action: "assemble"
+      action: "preprocess-assemble"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-module-compile"
+      action: "objc-compile"
+      action: "objc++-compile"
+      action: "c++-header-parsing"
+      action: "linkstamp-compile"
+      flag_group {
+        flag: "-O2"
+        flag: "-DNDEBUG"
+        flag: "-D_FORTIFY_SOURCE=1"
+        flag: "-ffunction-sections"
+        flag: "-fdata-sections"
+      }
+    }
+    flag_set {
+      action: "c++-link-executable"
+      action: "c++-link-nodeps-dynamic-library"
+      action: "c++-link-dynamic-library"
+      flag_group {
+        flag: "-Wl,--gc-sections"
+      }
+    }
+  }
+
+  feature {
+    name: "compile_flags2"
+    enabled: true
+    flag_set {
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-module-compile"
+      action: "c++-module-codegen"
+      action: "lto-backend"
+      action: "clif-match"
+      flag_group {
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0/arm-frc-linux-gnueabi"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0/backward"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include-fixed"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/usr/include"
+      }
+    }
+  }
 
   # TODO(bazel-team): In theory, the path here ought to exactly match the path
   # used by gcc. That works because bazel currently doesn't track files at
@@ -398,8 +507,105 @@ toolchain {
   linker_flag: "-Ltools/cpp/arm-frc-linux-gnueabi/libs"
 
   feature {
-    name: "opt"
-    implies: "all_modes"
+    name: "dependency_file"
+    flag_set {
+      action: "assemble"
+      action: "preprocess-assemble"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-module-compile"
+      action: "objc-compile"
+      action: "objc++-compile"
+      action: "c++-header-parsing"
+      action: "clif-match"
+      expand_if_all_available: "dependency_file"
+      flag_group {
+        flag: "-MD"
+        flag: "-MF"
+        flag: "%{dependency_file}"
+      }
+    }
+  }
+
+  feature {
+    name: "random_seed"
+    flag_set {
+      # TODO(austin): Should these also have -frandom-seed set?  Upstream
+      # doesn't.
+      # action: "linkstamp-compile"
+      # action: "c-compile"
+      action: "c++-compile"
+      action: "c++-module-codegen"
+      action: "c++-module-compile"
+      flag_group {
+        expand_if_all_available: "output_file"
+        flag: "-frandom-seed=%{output_file}"
+      }
+    }
+  }
+
+  feature {
+    name: "pic"
+    flag_set {
+      action: "assemble"
+      action: "preprocess-assemble"
+      action: "linkstamp-compile"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-module-codegen"
+      action: "c++-module-compile"
+      expand_if_all_available: "pic"
+      flag_group {
+        flag: "-fPIC"
+      }
+    }
+  }
+
+  feature {
+    name: "preprocessor_defines"
+    flag_set {
+      action: "preprocess-assemble"
+      action: "linkstamp-compile"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-module-compile"
+      action: "clif-match"
+      flag_group {
+        iterate_over: "preprocessor_defines"
+        flag: "-D%{preprocessor_defines}"
+      }
+    }
+  }
+
+  feature {
+    name: "include_paths"
+    flag_set {
+      action: "preprocess-assemble"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-header-preprocessing"
+      action: "c++-module-compile"
+      flag_group {
+        flag: "-iquote"
+        flag: "%{quote_include_paths}"
+        iterate_over: "quote_include_paths"
+      }
+      flag_group {
+        flag: "-I%{include_paths}"
+        iterate_over: "include_paths"
+      }
+      flag_group {
+        flag: "-isystem"
+        flag: "%{system_include_paths}"
+        iterate_over: "system_include_paths"
+      }
+    }
+  }
+
+  feature {
+    name: "opt_post"
     flag_set {
       action: "preprocess-assemble"
       action: "c-compile"
@@ -415,7 +621,6 @@ toolchain {
 
   feature {
     name: "dbg"
-    implies: "all_modes"
     flag_set {
       action: "preprocess-assemble"
       action: "c-compile"
@@ -434,7 +639,6 @@ toolchain {
 
   feature {
     name: "fastbuild"
-    implies: "all_modes"
     flag_set {
       action: "preprocess-assemble"
       action: "c-compile"
@@ -450,6 +654,7 @@ toolchain {
 
   feature {
     name: "all_modes"
+    enabled: true
     flag_set {
       action: "preprocess-assemble"
       action: "assemble"
@@ -483,24 +688,10 @@ toolchain {
     }
   }
 
-  compiler_flag: "-mfpu=neon"
-  # TODO(brians): See if it will run with this enabled.
-  #compiler_flag: "-mhwdiv=arm,thumb"
-
   # Anticipated future default.
   # This makes GCC and Clang do what we want when called through symlinks.
   unfiltered_cxx_flag: "-no-canonical-prefixes"
   linker_flag: "-no-canonical-prefixes"
-
-  # Things that the code wants defined.
-  compiler_flag: "-D__STDC_FORMAT_MACROS"
-  compiler_flag: "-D__STDC_CONSTANT_MACROS"
-  compiler_flag: "-D__STDC_LIMIT_MACROS"
-  compiler_flag: "-D_FILE_OFFSET_BITS=64"
-  # TODO(Brian): Rename this or something.
-  compiler_flag: "-DAOS_ARCHITECTURE_arm_frc"
-
-  #linker_flag: "-fuse-ld=gold"
 
   # Make C++ compilation deterministic. Use linkstamping instead of these
   # compiler symbols.
@@ -509,41 +700,10 @@ toolchain {
   unfiltered_cxx_flag: "-D__TIMESTAMP__=\"redacted\""
   unfiltered_cxx_flag: "-D__TIME__=\"redacted\""
 
-  # Security hardening on by default.
-  # Conservative choice; -D_FORTIFY_SOURCE=2 may be unsafe in some cases.
-  # We need to undef it before redefining it as some distributions now have
-  # it enabled by default.
-  compiler_flag: "-U_FORTIFY_SOURCE"
-  compiler_flag: "-fstack-protector"
-  compiler_flag: "-fPIE"
   linker_flag: "-Wl,-z,relro,-z,now"
 
   # Pretty much everything needs this, including parts of the glibc STL...
   linker_flag: "-lm"
-
-  # Enable coloring even if there's no attached terminal. Bazel removes the
-  # escape sequences if --nocolor is specified.
-  compiler_flag: "-fdiagnostics-color=always"
-
-  compiler_flag: "-Wall"
-  compiler_flag: "-Wextra"
-  compiler_flag: "-Wpointer-arith"
-  compiler_flag: "-Wstrict-aliasing"
-  compiler_flag: "-Wcast-qual"
-  compiler_flag: "-Wcast-align"
-  compiler_flag: "-Wwrite-strings"
-  compiler_flag: "-Wtype-limits"
-  compiler_flag: "-Wsign-compare"
-  compiler_flag: "-Wformat=2"
-  compiler_flag: "-Werror"
-  compiler_flag: "-Wunused-local-typedefs"
-
-  # Keep stack frames for debugging, even in opt mode.
-  compiler_flag: "-fno-omit-frame-pointer"
-  compiler_flag: "-D__has_feature(x)=0"
-
-  # Don't use temp files while compiling.
-  compiler_flag: "-pipe"
 
   # Have GCC return the exit code from ld.
   linker_flag: "-pass-exit-codes"
@@ -554,23 +714,6 @@ toolchain {
   #linker_flag: "-Wl,--warn-execstack"
   #linker_flag: "-Wl,--detect-odr-violations"
 
-  # Enable debug symbols.
-  compiler_flag: "-ggdb3"
-
-  compilation_mode_flags {
-    mode: OPT
-
-    compiler_flag: "-O2"
-
-    # Disable assertions
-    compiler_flag: "-DNDEBUG"
-    compiler_flag: "-D_FORTIFY_SOURCE=1"
-
-    # Removal of unused code and data at link time (can this increase binary size in some cases?).
-    compiler_flag: "-ffunction-sections"
-    compiler_flag: "-fdata-sections"
-    linker_flag: "-Wl,--gc-sections"
-  }
   feature {
     name: "pie_for_linking"
     enabled: true
