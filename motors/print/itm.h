@@ -12,7 +12,7 @@ namespace motors {
 //
 // To decode the output from this, use motors/print/itm_read.py.
 // To configure openocd to feed data to that:
-//   tpiu config internal /tmp/itm.fifo uart off 120000000 64000
+//   tpiu config internal /tmp/itm.fifo uart off 120000000 192000
 class ItmPrinting final : public PrintingImplementation {
  public:
   ItmPrinting();
