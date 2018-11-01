@@ -61,7 +61,7 @@ _excluded_devices = [
   #'SafePWM',
   #'SerialHelper',
   #'SerialPort',
-  'Spark',
+  #'Spark',
   #'SpeedController',
   'TalonSRX',
   'Ultrasonic',
