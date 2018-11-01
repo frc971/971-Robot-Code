@@ -12,8 +12,8 @@ cc_binary(
         "//aos/vision/events:udp",
         "//aos/vision/image:image_stream",
         "//aos/vision/image:reader",
-        "//third_party/gflags",
         "//y2018:vision_proto",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -33,10 +33,10 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":vision_queue",
-        "//aos/time:time",
+        "//aos:init",
         "//aos/logging",
         "//aos/logging:queue_logging",
-        "//aos:init",
+        "//aos/time",
         "//aos/vision/events:udp",
         "//y2018:vision_proto",
     ],

@@ -43,7 +43,7 @@ cc_library(
     deps = [
         "//frc971/control_loops:runge_kutta",
         "//third_party/eigen",
-        "//third_party/gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -78,8 +78,8 @@ cc_binary(
         ":generated_graph",
         ":trajectory",
         "//third_party/eigen",
-        "//third_party/gflags",
         "//third_party/matplotlib-cpp",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 

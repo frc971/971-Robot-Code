@@ -96,13 +96,13 @@ py_binary(
 )
 
 cc_library(
-  name = 'dlqr',
-  hdrs = [
-    'dlqr.h',
-  ],
+    name = "dlqr",
+    hdrs = [
+        "dlqr.h",
+    ],
     deps = [
-        '@slycot_repo//:slicot',
-  ],
+        "@slycot_repo//:slicot",
+    ],
 )
 
 cc_binary(
@@ -110,15 +110,15 @@ cc_binary(
     srcs = [
         "arm_mpc.cc",
     ],
+    restricted_to = ["//tools:k8"],
     deps = [
         ":arm_bounds",
-        ':dlqr',
+        ":dlqr",
         "//third_party/ct",
-        "//third_party/gflags",
         "//third_party/matplotlib-cpp",
         "@cgal_repo//:cgal",
+        "@com_github_gflags_gflags//:gflags",
     ],
-    restricted_to = ["//tools:k8"],
 )
 
 cc_binary(
@@ -129,8 +129,8 @@ cc_binary(
     restricted_to = ["//tools:k8"],
     deps = [
         ":arm_bounds",
-        "//third_party/gflags",
         "//third_party/matplotlib-cpp",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -155,8 +155,8 @@ cc_binary(
     ],
     restricted_to = ["//tools:k8"],
     deps = [
-        "//third_party/gflags",
         "//third_party/matplotlib-cpp",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -210,15 +210,15 @@ py_binary(
 )
 
 py_binary(
-  name = 'arm_mpc_py',
-  srcs = [
-    'arm_mpc.py',
-  ],
-  main = 'arm_mpc.py',
-  deps = [
-    '//external:python-gflags',
-    '//external:python-glog',
-    '//frc971/control_loops/python:controls',
-  ],
-  restricted_to = ['//tools:k8'],
+    name = "arm_mpc_py",
+    srcs = [
+        "arm_mpc.py",
+    ],
+    main = "arm_mpc.py",
+    restricted_to = ["//tools:k8"],
+    deps = [
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:controls",
+    ],
 )

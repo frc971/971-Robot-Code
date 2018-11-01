@@ -15,8 +15,8 @@ cc_library(
         "-lpthread",
     ],
     deps = [
-        "//aos:once",
         "//aos:macros",
+        "//aos:once",
         "//aos/logging",
         "//aos/util:compiler_memory_barrier",
     ],
@@ -94,8 +94,8 @@ cc_library(
         ":core_lib",
         ":shared_mem",
         "//aos:condition",
-        "//aos/mutex:mutex",
         "//aos/logging",
+        "//aos/mutex",
         "//aos/util:options",
     ],
 )
@@ -109,13 +109,13 @@ cc_test(
         ":core_lib",
         ":queue",
         "//aos:die",
-        "//aos/time:time",
         "//aos/logging",
-        "//aos/util:death_test_log_implementation",
-        "//aos/util:thread",
         "//aos/testing:googletest",
         "//aos/testing:prevent_exit",
         "//aos/testing:test_shm",
+        "//aos/time",
+        "//aos/util:death_test_log_implementation",
+        "//aos/util:thread",
     ],
 )
 
@@ -133,13 +133,13 @@ cc_test(
     deps = [
         ":core_lib",
         "//aos:die",
-        "//aos/mutex:mutex",
-        "//aos/time:time",
         "//aos/libc:aos_strsignal",
         "//aos/libc:dirname",
         "//aos/logging",
+        "//aos/mutex",
         "//aos/testing:googletest",
         "//aos/testing:test_shm",
+        "//aos/time",
     ],
 )
 
@@ -159,10 +159,10 @@ cc_binary(
         ":queue",
         "//aos:condition",
         "//aos:event",
-        "//aos/mutex:mutex",
+        "//aos:init",
         "//aos/logging",
         "//aos/logging:implementations",
-        "//aos:init",
-        "//third_party/gflags",
+        "//aos/mutex",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
