@@ -1,4 +1,4 @@
-load("//aos/downloader:downloader.bzl", "aos_downloader")
+load('//frc971:downloader.bzl', 'robot_downloader')
 
 cc_library(
     name = "constants",
@@ -50,52 +50,22 @@ cc_binary(
     ],
 )
 
-aos_downloader(
-    name = "download",
-    srcs = [
-        "//aos:prime_binaries",
-    ],
-    dirs = [
-        "//y2016/dashboard:www_files",
-    ],
-    restricted_to = ["//tools:roborio"],
-    start_srcs = [
-        ":joystick_reader",
-        ":wpilib_interface",
-        "//aos:prime_start_binaries",
-        "//y2016/control_loops/drivetrain:drivetrain",
-        "//y2016/control_loops/superstructure:superstructure",
-        "//y2016/control_loops/shooter:shooter",
-        "//y2016/dashboard:dashboard",
-        "//y2016/actors:autonomous_action",
-        "//y2016/actors:superstructure_action",
-        "//y2016/actors:vision_align_action",
-        "//y2016/vision:target_receiver",
-    ],
-)
-
-aos_downloader(
-    name = "download_stripped",
-    srcs = [
-        "//aos:prime_binaries_stripped",
-    ],
-    dirs = [
-        "//y2016/dashboard:www_files",
-    ],
-    restricted_to = ["//tools:roborio"],
-    start_srcs = [
-        ":joystick_reader.stripped",
-        ":wpilib_interface.stripped",
-        "//aos:prime_start_binaries_stripped",
-        "//y2016/control_loops/drivetrain:drivetrain.stripped",
-        "//y2016/control_loops/superstructure:superstructure.stripped",
-        "//y2016/control_loops/shooter:shooter.stripped",
-        "//y2016/dashboard:dashboard.stripped",
-        "//y2016/actors:autonomous_action.stripped",
-        "//y2016/actors:superstructure_action.stripped",
-        "//y2016/actors:vision_align_action.stripped",
-        "//y2016/vision:target_receiver.stripped",
-    ],
+robot_downloader(
+  start_binaries = [
+    ':joystick_reader',
+    ':wpilib_interface',
+    '//y2016/control_loops/drivetrain:drivetrain',
+    '//y2016/control_loops/superstructure:superstructure',
+    '//y2016/control_loops/shooter:shooter',
+    '//y2016/dashboard:dashboard',
+    '//y2016/actors:autonomous_action',
+    '//y2016/actors:superstructure_action',
+    '//y2016/actors:vision_align_action',
+    '//y2016/vision:target_receiver',
+  ],
+  dirs = [
+    '//y2016/dashboard:www_files',
+  ],
 )
 
 cc_binary(

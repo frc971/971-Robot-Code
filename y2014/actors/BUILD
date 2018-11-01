@@ -10,6 +10,14 @@ filegroup(
   ],
 )
 
+filegroup(
+  name = 'binaries.stripped',
+  srcs = [
+    ':drivetrain_action.stripped',
+    ':shoot_action.stripped',
+  ],
+)
+
 queue_library(
   name = 'shoot_action_queue',
   srcs = [

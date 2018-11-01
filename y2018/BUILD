@@ -1,38 +1,15 @@
-load("//aos/downloader:downloader.bzl", "aos_downloader")
+load("//frc971:downloader.bzl", "robot_downloader")
 load("//aos/build:queues.bzl", "queue_library")
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 
-aos_downloader(
-    name = "download",
-    srcs = [
-        "//aos:prime_binaries",
-    ],
-    restricted_to = ["//tools:roborio"],
-    start_srcs = [
+robot_downloader(
+    start_binaries = [
         ":joystick_reader",
         ":wpilib_interface",
         "//y2018/vision:vision_status",
-        "//aos:prime_start_binaries",
-        "//y2018/control_loops/drivetrain:drivetrain",
         "//y2018/actors:autonomous_action",
+        "//y2018/control_loops/drivetrain:drivetrain",
         "//y2018/control_loops/superstructure:superstructure",
-    ],
-)
-
-aos_downloader(
-    name = "download_stripped",
-    srcs = [
-        "//aos:prime_binaries_stripped",
-    ],
-    restricted_to = ["//tools:roborio"],
-    start_srcs = [
-        ":joystick_reader.stripped",
-        ":wpilib_interface.stripped",
-        "//y2018/vision:vision_status.stripped",
-        "//aos:prime_start_binaries_stripped",
-        "//y2018/actors:autonomous_action.stripped",
-        "//y2018/control_loops/drivetrain:drivetrain.stripped",
-        "//y2018/control_loops/superstructure:superstructure.stripped",
     ],
 )
 

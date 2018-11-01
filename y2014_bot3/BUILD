@@ -1,4 +1,4 @@
-load("//aos/downloader:downloader.bzl", "aos_downloader")
+load("//frc971:downloader.bzl", "robot_downloader")
 
 cc_binary(
     name = "joystick_reader",
@@ -19,19 +19,13 @@ cc_binary(
     ],
 )
 
-aos_downloader(
-    name = "download_stripped",
-    srcs = [
-        "//aos:prime_binaries_stripped",
-    ],
-    restricted_to = ["//tools:roborio"],
-    start_srcs = [
-        ":joystick_reader.stripped",
-        ":wpilib_interface.stripped",
-        "//aos:prime_start_binaries_stripped",
-        "//y2014_bot3/autonomous:auto.stripped",
-        "//y2014_bot3/control_loops/drivetrain:drivetrain.stripped",
-        "//y2014_bot3/control_loops/rollers:rollers.stripped",
+robot_downloader(
+    start_binaries = [
+        ":joystick_reader",
+        ":wpilib_interface",
+        "//y2014_bot3/autonomous:auto",
+        "//y2014_bot3/control_loops/drivetrain:drivetrain",
+        "//y2014_bot3/control_loops/rollers:rollers",
     ],
 )
 
