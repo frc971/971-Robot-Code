@@ -1,7 +1,6 @@
 workspace(name = "org_frc971")
 
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
-
 load(
     "//debian:python.bzl",
     python_debs = "files",
@@ -42,7 +41,6 @@ load(
     "//debian:python_gtk.bzl",
     python_gtk_debs = "files",
 )
-
 load(
     "//debian:ruby.bzl",
     ruby_debs = "files",
@@ -133,6 +131,11 @@ new_git_repository(
 bind(
     name = "python-gflags",
     actual = "@python_gflags_repo//:gflags",
+)
+
+local_repository(
+    name = "com_github_gflags_gflags",
+    path = "third_party/gflags",
 )
 
 new_http_archive(

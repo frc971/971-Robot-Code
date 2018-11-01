@@ -9,7 +9,7 @@ cc_test(
         "gflags.cc",
     ],
     deps = [
-        "//third_party/gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
