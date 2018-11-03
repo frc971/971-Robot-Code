@@ -159,14 +159,6 @@ new_http_archive(
     url = "http://frc971.org/Build-Dependencies/allwpilib_ni-libraries_57e9fb3.tar.gz",
 )
 
-new_http_archive(
-    name = "allwpilib_ni_libraries_repo_2017",
-    build_file = "debian/ni-libraries-2017.BUILD",
-    sha256 = "67c1ad365fb712cc0acb0bf43465b831030523dc6f88daa02626994f644d91eb",
-    strip_prefix = "ni-libraries",
-    url = "http://frc971.org/Build-Dependencies/allwpilib_ni-libraries_e375b4a.tar.gz",
-)
-
 # Downloaded from:
 # https://pypi.python.org/packages/source/s/six/six-1.10.0.tar.gz
 new_http_archive(
