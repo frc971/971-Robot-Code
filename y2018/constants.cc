@@ -88,8 +88,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       r->vision_name = "competition";
       r->vision_error = 0.0;
 
-      left_intake->zeroing.measured_absolute_position = 0.213653;
-      left_intake->potentiometer_offset = -5.45258 + 1.299206;
+      left_intake->zeroing.measured_absolute_position = 0.219024;
+      left_intake->potentiometer_offset = -5.45258 + 1.299206 - 0.525603;
       left_intake->spring_offset = -0.25 - 0.009 + 0.029 - 0.025;
 
       right_intake->zeroing.measured_absolute_position = 0.37022 - 0.04;
