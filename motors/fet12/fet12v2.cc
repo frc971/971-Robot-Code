@@ -87,6 +87,7 @@ struct DebugBuffer {
     ::std::array<int16_t, 3> currents;
     ::std::array<int16_t, 3> commanded_currents;
     ::std::array<uint16_t, 3> commands;
+    ::std::array<int16_t, 3> readings;
     uint16_t position;
     // Driver requested current.
     float driver_request;
@@ -208,7 +209,7 @@ void ftm0_isr(void) {
   const float bemf = velocity / (static_cast<float>(Kv) / 1.5f);
   const float abs_bemf = ::std::abs(bemf);
   constexpr float kPeakCurrent = 300.0f;
-  constexpr float kLimitedCurrent = 75.0f;
+  constexpr float kLimitedCurrent = 70.0f;
   const float max_bat_cur =
       fuse_badness > (kLimitedCurrent * kLimitedCurrent * 0.95f)
           ? kLimitedCurrent
@@ -323,7 +324,6 @@ void ftm0_isr(void) {
     PORTD_PCR4 = PORT_PCR_DSE | PORT_PCR_MUX(1);
     PORTD_PCR5 = PORT_PCR_DSE | PORT_PCR_MUX(1);
   }
-#else
 #endif
 #else
   // Useful code when calculating resistance/inductance of motor
@@ -331,15 +331,17 @@ void ftm0_isr(void) {
   FTM0->C0V = 0;
   FTM0->C1V = 0;
   FTM0->C2V = 0;
-  FTM0->C3V = 0;
+  FTM0->C3V = 20;
   FTM0->C4V = 0;
-  FTM0->C5V = 10;
+  FTM0->C5V = 0;
   FTM0->PWMLOAD = FTM_PWMLOAD_LDOK;
   (void)wrapped_encoder;
-  (void)real_throttle;
   size_t buffer_size =
       global_debug_buffer.size.load(::std::memory_order_relaxed);
-  bool trigger = true || i > 20000;
+  // Setting this to true is helpful for calibrating inductance, and false is
+  // good for calibrating resistance.
+  constexpr bool start_immediately = true;
+  bool trigger = start_immediately || i > 20000;
   if ((trigger || buffer_size > 0) &&
       buffer_size != global_debug_buffer.samples.size()) {
     global_debug_buffer.samples[buffer_size].currents[0] =
@@ -351,6 +353,12 @@ void ftm0_isr(void) {
     global_debug_buffer.samples[buffer_size].commands[0] = FTM0->C1V;
     global_debug_buffer.samples[buffer_size].commands[1] = FTM0->C3V;
     global_debug_buffer.samples[buffer_size].commands[2] = FTM0->C5V;
+    global_debug_buffer.samples[buffer_size].readings[0] =
+        adc_readings.motor_currents[0];
+    global_debug_buffer.samples[buffer_size].readings[1] =
+        adc_readings.motor_currents[1];
+    global_debug_buffer.samples[buffer_size].readings[2] =
+        adc_readings.motor_currents[2];
     global_debug_buffer.samples[buffer_size].position =
         global_motor.load(::std::memory_order_relaxed)->wrapped_encoder();
     global_debug_buffer.size.fetch_add(1);
@@ -639,8 +647,9 @@ extern "C" int main(void) {
   NVIC_ENABLE_IRQ(IRQ_FTM0);
   GPIOC_PSOR = 1 << 5;
 
-  constexpr bool dump_full_sample = true;
+  constexpr bool dump_full_sample = false;
   constexpr bool dump_resist_calib = false;
+  constexpr bool repeat_calib = true;
   while (true) {
     if (dump_resist_calib || dump_full_sample) {
       PORTC_PCR1 = PORT_PCR_DSE | PORT_PCR_MUX(4);
@@ -660,10 +669,17 @@ extern "C" int main(void) {
       // Useful prints for when calibrating resistance/inductance of motor
       for (size_t i = 0; i < global_debug_buffer.samples.size(); ++i) {
         const auto &sample = global_debug_buffer.samples[i];
+#if 1
         printf("%u, %d, %d, %d, %u, %u, %u, %u\n", i,
                sample.currents[0], sample.currents[1], sample.currents[2],
                sample.commands[0], sample.commands[1], sample.commands[2],
                sample.position);
+#else
+        printf("%" PRIu16 ",%" PRIu16 ",%" PRIu16 ",%" PRId16 ",%" PRId16
+               ",%" PRId16 "\n",
+               sample.commands[0], sample.commands[1], sample.commands[2],
+               sample.readings[0], sample.readings[1], sample.readings[2]);
+#endif
       }
     } else if (dump_full_sample) {
       printf("Dumping data\n");
@@ -695,6 +711,10 @@ extern "C" int main(void) {
       printf("%d, %d\n", static_cast<int>(sample.fuse_voltage),
              sample.fuse_current);
 #endif
+    }
+    if (!repeat_calib) {
+      while (true) {
+      }
     }
   }
 

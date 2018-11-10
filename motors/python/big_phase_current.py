@@ -17,9 +17,9 @@ K2 /= K1
 K1 = 1
 
 vcc = 31.5  # volts
-R = 0.01008  # ohms for system
+R = 0.0079  # ohms for system
 
-L = 3.0 * 1e-6  # Henries
+L = 5.0 * 1e-6  # Henries
 M = 0.0
 
 Kv_vcc = 30.0
