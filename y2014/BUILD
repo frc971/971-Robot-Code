@@ -1,4 +1,4 @@
-load("//aos/downloader:downloader.bzl", "aos_downloader")
+load("//frc971:downloader.bzl", "robot_downloader")
 
 cc_library(
     name = "constants",
@@ -42,13 +42,8 @@ cc_binary(
     ],
 )
 
-aos_downloader(
-    name = "download",
-    srcs = [
-        "//aos:prime_binaries",
-    ],
-    restricted_to = ["//tools:roborio"],
-    start_srcs = [
+robot_downloader(
+    start_binaries = [
         ":hot_goal_reader",
         ":joystick_reader",
         ":wpilib_interface",
@@ -57,7 +52,6 @@ aos_downloader(
         "//y2014/control_loops/shooter:shooter",
         "//y2014/autonomous:auto",
         "//y2014/actors:binaries",
-        "//aos:prime_start_binaries",
     ],
 )
 

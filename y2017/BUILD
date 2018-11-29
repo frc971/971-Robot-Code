@@ -1,4 +1,4 @@
-load("//aos/downloader:downloader.bzl", "aos_downloader")
+load('//frc971:downloader.bzl', 'robot_downloader')
 
 cc_library(
     name = "constants",
@@ -85,38 +85,14 @@ cc_binary(
     ],
 )
 
-aos_downloader(
-    name = "download",
-    srcs = [
-        "//aos:prime_binaries",
-    ],
-    restricted_to = ["//tools:roborio"],
-    start_srcs = [
-        ":joystick_reader",
-        ":wpilib_interface",
-        "//aos:prime_start_binaries",
-        "//y2017/actors:autonomous_action",
-        "//y2017/control_loops/drivetrain:drivetrain",
-        "//y2017/control_loops/superstructure:superstructure",
-        "//y2017/vision:target_receiver",
-    ],
-)
-
-aos_downloader(
-    name = "download_stripped",
-    srcs = [
-        "//aos:prime_binaries_stripped",
-    ],
-    restricted_to = ["//tools:roborio"],
-    start_srcs = [
-        ":joystick_reader.stripped",
-        ":wpilib_interface.stripped",
-        "//aos:prime_start_binaries_stripped",
-        "//y2017/actors:autonomous_action.stripped",
-        "//y2017/control_loops/drivetrain:drivetrain.stripped",
-        "//y2017/control_loops/superstructure:superstructure.stripped",
-        "//y2017/vision:target_receiver.stripped",
-    ],
+robot_downloader(
+  start_binaries = [
+    ':joystick_reader',
+    ':wpilib_interface',
+    '//y2017/control_loops/drivetrain:drivetrain',
+    '//y2017/control_loops/superstructure:superstructure',
+    '//y2017/actors:autonomous_action',
+  ],
 )
 
 py_library(
