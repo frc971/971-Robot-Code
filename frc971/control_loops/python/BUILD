@@ -96,3 +96,18 @@ py_library(
     visibility = ["//visibility:public"],
     deps = ["//frc971/control_loops:python_init"],
 )
+
+py_binary(
+    name = "spline",
+    srcs = [
+        "spline.py",
+    ],
+    legacy_create_init = False,
+    restricted_to = ["//tools:k8"],
+    deps = [
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:controls",
+        "@matplotlib",
+    ],
+)
