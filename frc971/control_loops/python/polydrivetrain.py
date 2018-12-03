@@ -132,6 +132,12 @@ class VelocityDrivetrainModel(control_loop.ControlLoop):
     self.U_max = self._drivetrain.U_max
     self.U_min = self._drivetrain.U_min
 
+  @property
+  def robot_radius_l(self):
+    return self._drivetrain.robot_radius_l
+  @property
+  def robot_radius_r(self):
+    return self._drivetrain.robot_radius_r
 
 class VelocityDrivetrain(object):
   HIGH = 'high'

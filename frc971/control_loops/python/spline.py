@@ -10,6 +10,9 @@ import scipy
 import scipy.integrate
 import sys
 
+from frc971.control_loops.python import polydrivetrain
+import y2018.control_loops.python.drivetrain
+
 """This file is my playground for implementing spline following.
 
 All splines here are cubic bezier splines.  See
@@ -512,6 +515,71 @@ def main(argv):
 
     # TODO(austin): Start creating a velocity plan now that we have all the
     # derivitives of our spline.
+
+    velocity_drivetrain = polydrivetrain.VelocityDrivetrainModel(
+        y2018.control_loops.python.drivetrain.kDrivetrain)
+
+    vmax = numpy.inf
+    vmax = 10.0
+    lateral_accel_plan = numpy.array(numpy.zeros((distance_count, )))
+    lateral_accel_plan.fill(vmax)
+    curvature_plan = lateral_accel_plan.copy()
+
+    longitudal_accel = 15.0
+    lateral_accel = 20.0
+
+    for i, distance in enumerate(distances):
+        lateral_accel_plan[i] = min(
+            lateral_accel_plan[i],
+            numpy.sqrt(lateral_accel / numpy.linalg.norm(path.ddxy(distance))))
+
+        # We've now got the equation: K1 (dx/dt)^2 = A * K2 * dx/dt + B * U
+        # We need to find the feasible
+        current_ddtheta = path.ddtheta(distance)[0]
+        current_dtheta = path.dtheta(distance)[0]
+        K1 = numpy.matrix(
+            [[-velocity_drivetrain.robot_radius_l * current_ddtheta],
+             [velocity_drivetrain.robot_radius_r * current_ddtheta]])
+        K2 = numpy.matrix(
+            [[1.0 - velocity_drivetrain.robot_radius_l * current_dtheta],
+             [1.0 + velocity_drivetrain.robot_radius_r * current_dtheta]])
+        A = velocity_drivetrain.A_continuous
+        B = velocity_drivetrain.B_continuous
+
+        # Now, rephrase it as K5 a + K3 v^2 + K4 v = U
+        # Now, rephrase it as K5 a + K3 v^2 + K4 v = U
+        K3 = numpy.linalg.inv(B) * K1
+        K5 = numpy.linalg.inv(B) * K2
+        K4 = -K5
+
+        x = []
+        for a, b in [(K3[0, 0], K4[0, 0]), (K3[1, 0], K4[1, 0])]:
+            for c in [12.0, -12.0]:
+                middle = b * b - 4.0 * a * c
+                if middle >= 0.0:
+                    x.append((-b + numpy.sqrt(middle)) / (2.0 * a))
+                    x.append((-b - numpy.sqrt(middle)) / (2.0 * a))
+
+        maxx = 0.0
+        for newx in x:
+            if newx < 0.0:
+                continue
+            U = (K3 * newx * newx + K4 * newx).T
+            # TODO(austin): We know that one of these *will* be +-12.0.  Only
+            # check the other one.
+            if not (numpy.abs(U) > 12.0 + 1e-6).any():
+                maxx = max(newx, maxx)
+
+        if maxx == 0.0:
+            print('Could not solve')
+        curvature_plan[i] = min(lateral_accel_plan[i], maxx)
+
+    pylab.figure()
+    pylab.plot(distances, lateral_accel_plan, label='accel pass')
+    pylab.plot(distances, curvature_plan, label='voltage limit pass')
+    pylab.xlabel("distance along spline (m)")
+    pylab.ylabel("velocity (m/s)")
+    pylab.legend()
 
     pylab.show()
 
