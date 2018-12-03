@@ -22,7 +22,7 @@ kDrivetrain = drivetrain.DrivetrainParams(J = 1.8,
                                           q_vel_high = 0.95,
                                           has_imu = False,
                                           dt = 0.005,
-                                          controller_poles = [0.67, 0.67])
+                                          controller_poles = [0.83, 0.83])
 
 def main(argv):
   argv = FLAGS(argv)

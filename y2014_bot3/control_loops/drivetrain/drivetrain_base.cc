@@ -20,7 +20,7 @@ const ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0, 0.25, 0.75};
 const DrivetrainConfig<double> &GetDrivetrainConfig() {
   static DrivetrainConfig<double> kDrivetrainConfig{
       ::frc971::control_loops::drivetrain::ShifterType::SIMPLE_SHIFTER,
-      ::frc971::control_loops::drivetrain::LoopType::OPEN_LOOP,
+      ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
       ::frc971::control_loops::drivetrain::GyroType::SPARTAN_GYRO,
       ::frc971::control_loops::drivetrain::IMUType::IMU_X,
 
@@ -36,7 +36,7 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
       // No shifter sensors, so we could put anything for the things below.
       kThreeStateDriveShifter, kThreeStateDriveShifter,
       false /* default_high_gear */, 0.0, 0.60 /* wheel_non_linearity */,
-      0.60 /* quickturn_wheel_multiplier */, 1.0 /* wheel_multiplier */,
+      0.60 /* quickturn_wheel_multiplier */, 0.7 /* wheel_multiplier */,
   };
 
   return kDrivetrainConfig;
