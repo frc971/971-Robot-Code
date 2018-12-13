@@ -3,6 +3,7 @@
 from __future__ import print_function
 import os
 import basic_window
+from color import Color, palette
 import random
 import gi
 import numpy as np
@@ -14,7 +15,7 @@ import cairo
 import enum
 import csv # For writing to csv files
 
-from basic_window import OverrideMatrix, identity, quit_main_loop
+from basic_window import OverrideMatrix, identity, quit_main_loop, set_color
 
 LENGTH_OF_FIELD = 323.65
 PIXELS_ON_SCREEN = 300
@@ -28,9 +29,9 @@ def inToPx(i):
 def px(cr):
     return OverrideMatrix(cr, identity)
 
-def draw_px_cross(cr, x, y, length_px, r, g, b):
+def draw_px_cross(cr, x, y, length_px, color=palette["RED"]):
     """Draws a cross with fixed dimensions in pixel space."""
-    cr.set_source_rgb(r, g, b)
+    set_color(cr, color)
     cr.move_to(x, y - length_px)
     cr.line_to(x, y + length_px)
     cr.stroke()
@@ -38,11 +39,12 @@ def draw_px_cross(cr, x, y, length_px, r, g, b):
     cr.move_to(x - length_px, y)
     cr.line_to(x + length_px, y)
     cr.stroke()
+    set_color(cr, palette["LIGHT_GREY"])
 
-def draw_px_x(cr, x, y, length_px1, r, g, b):
+def draw_px_x(cr, x, y, length_px1, color=palette["BLACK"]):
     """Draws a x with fixed dimensions in pixel space."""
     length_px = length_px1 / np.sqrt(2)
-    cr.set_source_rgb(r, g, b)
+    set_color(cr, color)
     cr.move_to(x - length_px, y - length_px)
     cr.line_to(x + length_px, y + length_px)
     cr.stroke()
@@ -50,10 +52,11 @@ def draw_px_x(cr, x, y, length_px1, r, g, b):
     cr.move_to(x - length_px, y + length_px)
     cr.line_to(x + length_px, y - length_px)
     cr.stroke()
+    set_color(cr, palette["LIGHT_GREY"])
 
 def draw_points(cr, p, size):
     for i in range(0, len(p)):
-        draw_px_cross(cr, p[i][0], p[i][1], size, 0, np.sqrt(0.2 * i), 0)
+        draw_px_cross(cr, p[i][0], p[i][1], size, Color(0, np.sqrt(0.2 * i), 0))
 
 class Mode(enum.Enum):
     kViewing = 0
@@ -127,11 +130,11 @@ class GTK_Widget(basic_window.BaseWindow):
 
         # begin drawing
         # Fill the background color of the window with grey
-        cr.set_source_rgb(0.5, 0.5, 0.5)
+        set_color(cr, palette["GREY"])
         cr.paint()
 
         # Draw a extents rectangle
-        cr.set_source_rgb(1.0, 1.0, 1.0)
+        set_color(cr, palette["WHITE"])
         cr.rectangle(self.extents_x_min, self.extents_y_min,
                      (self.extents_x_max - self.extents_x_min),
                      self.extents_y_max - self.extents_y_min)
@@ -142,36 +145,33 @@ class GTK_Widget(basic_window.BaseWindow):
         cr.show_text('Press "e" to export')
         cr.show_text('Press "i" to import')
 
-        cr.set_source_rgb(0.3,0.3,0.3)
+        set_color(cr, Color(0.3, 0.3, 0.3))
         cr.rectangle(-150,-150,300,300)
         cr.fill()
-        cr.set_source_rgb(0, 0, 0)
+        set_color(cr, palette["BLACK"])
         cr.rectangle(-150,-150,300,300)
         cr.set_line_join(cairo.LINE_JOIN_ROUND)
         cr.stroke()
-        cr.set_source_rgb(0, 0, 0)
         cr.rectangle(inToPx(140-161.825),inToPx(76.575),inToPx(56),inToPx(-153.15))
         cr.set_line_join(cairo.LINE_JOIN_ROUND)
         cr.stroke()
-
         cr.rectangle(inToPx(161.825-24),inToPx(90),inToPx(24),inToPx(-180))
         cr.set_line_join(cairo.LINE_JOIN_ROUND)
         cr.stroke()
 
-        cr.set_source_rgb(0.2, 0.2, 0.2)
+        set_color(cr, Color(0.2, 0.2, 0.2))
         cr.rectangle(inToPx(140-161.825),inToPx(76.575),inToPx(56),inToPx(-153.15))
         cr.fill()
-
         cr.rectangle(inToPx(161.825-24),inToPx(90),inToPx(24),inToPx(-180))
         cr.fill()
 
         # update all the things
 
         if self.mode == Mode.kViewing:
-            cr.set_source_rgb(0, 0, 0)
+            set_color(cr, palette["BLACK"])
             cr.move_to(-300, 170)
             cr.show_text("VIEWING")
-            cr.set_source_rgb(0.5, 0.5, 0.5)
+            set_color(cr, palette["GREY"])
             # its gonna check for points_added from button_press_action
             # The behavior of the click is such that it runs twice
             # This is consistant with graph_edit.py which someone smart wrote
@@ -184,16 +184,15 @@ class GTK_Widget(basic_window.BaseWindow):
                     print(str(item))
                 for i, point in enumerate(self.selected_points):
                     print("I: " + str(i))
-                    draw_px_x(cr, point[0], point[1], 10, 0,
-                                0, 0)
+                    draw_px_x(cr, point[0], point[1], 10)
                     cr.move_to(point[0], point[1]-15)
                     display_text(cr, str(i), 0.5, 0.5, 2, 2)
 
         if self.mode == Mode.kPlacing:
-            cr.set_source_rgb(0, 0, 0)
+            set_color(cr, palette["BLACK"])
             cr.move_to(-300, 170)
             display_text(cr, "ADD", 1, 1, 1, 1)
-            cr.set_source_rgb(0.5, 0.5, 0.5)
+            set_color(cr, palette["GREY"])
             # its gonna check for points_added from button_press_action
             # The behavior of the click is such that it runs twice
             # This is consistant with graph_edit.py which someone smart wrote
@@ -206,18 +205,17 @@ class GTK_Widget(basic_window.BaseWindow):
                     print(str(item))
                 for i, point in enumerate(self.selected_points):
                     print("I: " + str(i))
-                    draw_px_x(cr, point[0], point[1], 10, 0,
-                                0, 0)
+                    draw_px_x(cr, point[0], point[1], 10)
                     cr.move_to(point[0], point[1]-15)
                     display_text(cr, str(i), 0.5, 0.5, 2, 2)
                     if(i==3):
                         self.mode = Mode.kEditing
 
         elif self.mode == Mode.kEditing:
-            cr.set_source_rgb(0, 0, 0)
+            set_color(cr, palette["BLACK"])
             cr.move_to(-300, 170)
             display_text(cr, "EDITING", 1, 1, 1, 1)
-            cr.set_source_rgb(0.5, 0.5, 0.5)
+            set_color(cr, palette["GREY"])
             if len(self.selected_points) > 0:
                 print("SELECTED_POINTS: " + str(len(self.selected_points)))
                 print("ITEMS:")
@@ -225,16 +223,15 @@ class GTK_Widget(basic_window.BaseWindow):
                     print(str(item))
                 for i, point in enumerate(self.selected_points):
                     print("I: " + str(i))
-                    draw_px_x(cr, point[0], point[1], 10, 0,
-                                0, 0)
+                    draw_px_x(cr, point[0], point[1], 10)
                     cr.move_to(point[0], point[1]-15)
                     display_text(cr, str(i), 0.5, 0.5, 2, 2)
 
         elif self.mode == Mode.kExporting:
-            cr.set_source_rgb(0, 0, 0)
+            set_color(cr, palette["BLACK"])
             cr.move_to(-300, 170)
             display_text(cr, "VIEWING", 1, 1, 1, 1)
-            cr.set_source_rgb(0.5, 0.5, 0.5)
+            set_color(cr, palette["GREY"])
             #its gonna check for points_added from button_press_action
 
             # The behavior of the click is such that it runs twice
@@ -248,15 +245,14 @@ class GTK_Widget(basic_window.BaseWindow):
                     print(str(item))
                 for i, point in enumerate(self.selected_points):
                     print("I: " + str(i))
-                    draw_px_x(cr, point[0], point[1], 10, 0,
-                                0, 0)
+                    draw_px_x(cr, point[0], point[1], 10)
                     cr.move_to(point[0], point[1]-15)
                     display_text(cr, str(i), 0.5, 0.5, 2, 2)
         elif self.mode == Mode.kImporting:
-            cr.set_source_rgb(0, 0, 0)
+            set_color(cr, palette["BLACK"])
             cr.move_to(-300, 170)
             display_text(cr, "VIEWING", 1, 1, 1, 1)
-            cr.set_source_rgb(0.5, 0.5, 0.5)
+            set_color(cr, palette["GREY"])
             # its gonna check for points_added from button_press_action
 
             # The behavior of the click is such that it runs twice
@@ -270,14 +266,14 @@ class GTK_Widget(basic_window.BaseWindow):
                     print(str(item))
                 for i, point in enumerate(self.selected_points):
                     print("I: " + str(i))
-                    draw_px_x(cr, point[0], point[1], 10, 0,
-                                0, 0)
+                    draw_px_x(cr, point[0], point[1], 10)
                     cr.move_to(point[0], point[1]-15)
                     display_text(cr, str(i), 0.5, 0.5, 2, 2)
 
+
         cr.paint_with_alpha(.65)
 
-        draw_px_cross(cr, self.x, self.y, 10, 1, 0, 0)
+        draw_px_cross(cr, self.x, self.y, 10)
 
     def do_key_press(self, event):
         keyval = Gdk.keyval_to_lower(event.keyval)

@@ -3,6 +3,7 @@
 from __future__ import print_function
 import os
 import basic_window
+from color import Color, palette
 import random
 import gi
 import numpy
@@ -14,7 +15,7 @@ from graph_generate import XYSegment, AngleSegment, to_theta, to_xy, alpha_blend
 from graph_generate import back_to_xy_loop, subdivide_theta, to_theta_loop
 from graph_generate import l1, l2, joint_center
 
-from basic_window import OverrideMatrix, identity, quit_main_loop
+from basic_window import OverrideMatrix, identity, quit_main_loop, set_color
 
 import shapely
 from shapely.geometry import Polygon
@@ -210,11 +211,11 @@ class Silly(basic_window.BaseWindow):
         # use "with px(cr): blah;" to transform to pixel coordinates.
 
         # Fill the background color of the window with grey
-        cr.set_source_rgb(0.5, 0.5, 0.5)
+        set_color(cr, palette["GREY"])
         cr.paint()
 
         # Draw a extents rectangle
-        cr.set_source_rgb(1.0, 1.0, 1.0)
+        set_color(cr, palette["WHITE"])
         cr.rectangle(self.extents_x_min, self.extents_y_min,
                      (self.extents_x_max - self.extents_x_min),
                      self.extents_y_max - self.extents_y_min)
@@ -222,11 +223,11 @@ class Silly(basic_window.BaseWindow):
 
         if not self.theta_version:
             # Draw a filled white rectangle.
-            cr.set_source_rgb(1.0, 1.0, 1.0)
+            set_color(cr, palette["WHITE"])
             cr.rectangle(-2.0, -2.0, 4.0, 4.0)
             cr.fill()
 
-            cr.set_source_rgb(0.0, 0.0, 1.0)
+            set_color(cr, palette["BLUE"])
             cr.arc(joint_center[0], joint_center[1], l2 + l1, 0,
                    2.0 * numpy.pi)
             with px(cr):
@@ -237,12 +238,12 @@ class Silly(basic_window.BaseWindow):
                 cr.stroke()
         else:
             # Draw a filled white rectangle.
-            cr.set_source_rgb(1.0, 1.0, 1.0)
+            set_color(cr, palette["WHITE"])
             cr.rectangle(-numpy.pi, -numpy.pi, numpy.pi * 2.0, numpy.pi * 2.0)
             cr.fill()
 
         if self.theta_version:
-            cr.set_source_rgb(0.0, 0.0, 1.0)
+            set_color(cr, palette["BLUE"])
             for i in range(-6, 6):
                 cr.move_to(-40, -40 + i * numpy.pi)
                 cr.line_to(40, 40 + i * numpy.pi)
@@ -250,33 +251,19 @@ class Silly(basic_window.BaseWindow):
                 cr.stroke()
 
         if self.theta_version:
-            cr.set_source_rgb(0.5, 0.5, 1.0)
+            set_color(cr, Color(0.5, 0.5, 1.0))
             draw_lines(cr, lines_theta)
         else:
-            cr.set_source_rgb(0.5, 1.0, 1.0)
+            set_color(cr, Color(0.5, 1.0, 1.0))
             draw_lines(cr, lines1)
             draw_lines(cr, lines2)
-
-            def set_color(cr, circular_index):
-                if circular_index == -2:
-                    cr.set_source_rgb(0.0, 0.25, 1.0)
-                elif circular_index == -1:
-                    cr.set_source_rgb(0.5, 0.0, 1.0)
-                elif circular_index == 0:
-                    cr.set_source_rgb(0.5, 1.0, 1.0)
-                elif circular_index == 1:
-                    cr.set_source_rgb(0.0, 0.5, 1.0)
-                elif circular_index == 2:
-                    cr.set_source_rgb(0.5, 1.0, 0.5)
-                else:
-                    cr.set_source_rgb(1.0, 0.0, 0.0)
 
             def get_circular_index(pt):
                 theta1, theta2 = pt
                 circular_index = int(numpy.floor((theta2 - theta1) / numpy.pi))
                 return circular_index
 
-            cr.set_source_rgb(0.0, 0.0, 1.0)
+            set_color(cr, palette["BLUE"])
             lines = subdivide_theta(lines_theta)
             o_circular_index = circular_index = get_circular_index(lines[0])
             p_xy = to_xy(lines[0][0], lines[0][1])
@@ -312,32 +299,30 @@ class Silly(basic_window.BaseWindow):
                 cr.stroke()
 
             cr.move_to(self.last_pos[0], self.last_pos[1])
-            cr.set_source_rgb(0.0, 1.0, 0.2)
+            set_color(cr, Color(0.0, 1.0, 0.2))
             draw_px_cross(cr, 20)
 
         if self.theta_version:
-            cr.set_source_rgb(0.0, 1.0, 0.2)
-
-            cr.set_source_rgb(0.0, 1.0, 0.2)
+            set_color(cr, Color(0.0, 1.0, 0.2))
             cr.move_to(self.last_pos[0], self.last_pos[1])
             draw_px_cross(cr, 5)
 
             c_pt, dist = closest_segment(lines_theta, self.last_pos)
             print("dist:", dist, c_pt, self.last_pos)
-            cr.set_source_rgb(0.0, 1.0, 1.0)
+            set_color(cr, palette["CYAN"])
             cr.move_to(c_pt[0], c_pt[1])
             draw_px_cross(cr, 5)
 
-        cr.set_source_rgb(0.0, 0.5, 1.0)
+        set_color(cr, Color(0.0, 0.5, 1.0))
         for segment in self.segments:
             color = [0, random.random(), 1]
             random.shuffle(color)
-            cr.set_source_rgb(*color)
+            set_color(cr, Color(color[0], color[1], color[2]))
             segment.DrawTo(cr, self.theta_version)
             with px(cr):
                 cr.stroke()
 
-        cr.set_source_rgb(0.0, 1.0, 0.5)
+        set_color(cr, Color(0.0, 1.0, 0.5))
         segment = self.current_seg()
         if segment:
             print(segment)

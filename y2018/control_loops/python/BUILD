@@ -167,6 +167,7 @@ py_library(
     name = "basic_window",
     srcs = [
         "basic_window.py",
+        "color.py",
     ],
     restricted_to = ["//tools:k8"],
     deps = [
