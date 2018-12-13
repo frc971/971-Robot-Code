@@ -160,18 +160,32 @@ cc_binary(
     ],
 )
 
+py_library(
+    name = "basic_window",
+    srcs = [
+        "basic_window.py",
+    ],
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":python_init",
+        "@python_gtk",
+    ],
+)
+
 py_binary(
     name = "graph_edit",
     srcs = [
-        "basic_window.py",
         "graph_edit.py",
         "graph_generate.py",
     ],
     default_python_version = "PY3",
     legacy_create_init = False,
     srcs_version = "PY3",
+    restricted_to = ["//tools:k8"],
     deps = [
+        ":basic_window",
         ":python_init",
+        "@python_gtk",
     ],
 )
 
@@ -186,6 +200,22 @@ py_binary(
     srcs_version = "PY2",
     deps = [
         ":python_init",
+    ],
+)
+
+py_binary(
+    name = "path_edit",
+    srcs = [
+        "path_edit.py",
+    ],
+    default_python_version = "PY3",
+    legacy_create_init = False,
+    srcs_version = "PY3",
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":basic_window",
+        ":python_init",
+        "@python_gtk",
     ],
 )
 
