@@ -169,9 +169,11 @@ py_binary(
     ],
     default_python_version = "PY3",
     legacy_create_init = False,
+    restricted_to = ["//tools:k8"],
     srcs_version = "PY3",
     deps = [
         ":python_init",
+        "@python_gtk",
     ],
 )
 
