@@ -108,7 +108,7 @@ py_binary(
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:controls",
-        "//y2018/control_loops/python:polydrivetrain_lib",
+        "//y2016/control_loops/python:polydrivetrain_lib",
         "@matplotlib",
     ],
 )
