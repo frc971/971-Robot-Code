@@ -202,6 +202,24 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "fixed_quadrature",
+    hdrs = [
+        "fixed_quadrature.h",
+    ],
+)
+
+cc_test(
+    name = "fixed_quadrature_test",
+    srcs = [
+        "fixed_quadrature_test.cc",
+    ],
+    deps = [
+        ":fixed_quadrature",
+        "//aos/testing:googletest",
+    ],
+)
+
 queue_library(
     name = "profiled_subsystem_queue",
     srcs = [
