@@ -10,8 +10,8 @@ cc_binary(
     ],
     deps = [
         ":drivetrain_queue",
-        "//aos/controls:replay_control_loop",
         "//aos:init",
+        "//aos/controls:replay_control_loop",
         "//frc971/queues:gyro",
     ],
 )
@@ -66,7 +66,7 @@ cc_library(
         "//aos/controls:polytope",
         "//aos/logging:matrix_logging",
         "//aos/logging:queue_logging",
-        "//aos/robot_state:robot_state",
+        "//aos/robot_state",
         "//aos/util:log_interval",
         "//aos/util:trapezoid_profile",
         "//frc971:shifter_hall_effect",
@@ -91,7 +91,7 @@ cc_library(
         "//aos/controls:polytope",
         "//aos/logging:matrix_logging",
         "//aos/logging:queue_logging",
-        "//aos/robot_state:robot_state",
+        "//aos/robot_state",
         "//aos/util:log_interval",
         "//frc971/control_loops:coerce_goal",
         "//frc971/control_loops:state_feedback_loop",
@@ -255,5 +255,28 @@ cc_library(
     ],
     deps = [
         "//frc971/control_loops:state_feedback_loop",
+    ],
+)
+
+cc_library(
+    name = "spline",
+    srcs = ["spline.cc"],
+    hdrs = ["spline.h"],
+    deps = [
+        "//third_party/eigen",
+    ],
+)
+
+cc_test(
+    name = "spline_test",
+    srcs = [
+        "spline_test.cc",
+    ],
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":spline",
+        "//aos/testing:googletest",
+        "//third_party/matplotlib-cpp",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
