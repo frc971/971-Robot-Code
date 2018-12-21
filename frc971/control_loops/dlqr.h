@@ -57,8 +57,8 @@ int dlqr(::Eigen::Matrix<double, kN, kN> A, ::Eigen::Matrix<double, kN, kM> B,
   // Stable eigenvalues first in the sort order
   char SORT = 'S';
 
-  long N = 4;
-  long M = 2;
+  long N = kN;
+  long M = kM;
   // Not needed since FACT = N
   long P = 0;
 
