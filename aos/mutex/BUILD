@@ -8,9 +8,6 @@ cc_library(
     hdrs = [
         "mutex.h",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     deps = [
         "//aos:die",
         "//aos/type_traits:type_traits",

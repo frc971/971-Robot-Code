@@ -73,7 +73,6 @@ cc_library(
         "googletest/include/gtest/*.h",
         "googlemock/include/gmock/*.h",
     ]),
-    compatible_with = ["//tools:armhf-debian"],
     copts = select(
         {
             ":windows": [],

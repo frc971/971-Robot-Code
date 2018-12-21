@@ -21,9 +21,6 @@ queue_library(
     srcs = [
         "drivetrain.q",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     deps = [
         "//aos/controls:control_loop_queues",
         "//frc971/control_loops:queues",

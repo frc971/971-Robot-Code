@@ -6,9 +6,6 @@ cc_library(
     name = "range_image",
     srcs = ["range_image.cc"],
     hdrs = ["range_image.h"],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     deps = [
         "//aos/vision/debug:overlay",
         "//aos/vision/image:image_types",
@@ -21,9 +18,6 @@ cc_library(
 cc_library(
     name = "region_alloc",
     hdrs = ["region_alloc.h"],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     deps = [
         "//aos/logging",
     ],
@@ -33,9 +27,6 @@ cc_library(
     name = "contour",
     srcs = ["contour.cc"],
     hdrs = ["contour.h"],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     deps = [
         ":range_image",
         ":region_alloc",
@@ -47,9 +38,6 @@ cc_library(
 cc_library(
     name = "threshold",
     hdrs = ["threshold.h"],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     deps = [
         ":range_image",
         "//aos/vision/image:image_types",
@@ -75,18 +63,12 @@ cc_library(
 cc_library(
     name = "disjoint_set",
     hdrs = ["disjoint_set.h"],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
 )
 
 cc_library(
     name = "find_blob",
     srcs = ["find_blob.cc"],
     hdrs = ["find_blob.h"],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     deps = [
         ":disjoint_set",
         ":range_image",
@@ -100,9 +82,6 @@ cc_library(
     name = "codec",
     srcs = ["codec.cc"],
     hdrs = ["codec.h"],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     deps = [
         ":range_image",
         "//aos/vision/debug:overlay",
@@ -114,9 +93,6 @@ cc_library(
 cc_test(
     name = "codec_test",
     srcs = ["codec_test.cc"],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     deps = [
         ":codec",
         "//aos/testing:googletest",
@@ -127,9 +103,6 @@ cc_library(
     name = "move_scale",
     srcs = ["move_scale.cc"],
     hdrs = ["move_scale.h"],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     deps = [
         ":range_image",
         "//aos/vision/image:image_types",
@@ -140,9 +113,6 @@ cc_library(
     name = "test_utils",
     srcs = ["test_utils.cc"],
     hdrs = ["test_utils.h"],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     deps = [
         ":range_image",
     ],
@@ -152,9 +122,6 @@ cc_library(
     name = "transpose",
     srcs = ["transpose.cc"],
     hdrs = ["transpose.h"],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     deps = [
         ":range_image",
     ],
@@ -163,9 +130,6 @@ cc_library(
 cc_test(
     name = "transpose_test",
     srcs = ["transpose_test.cc"],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     deps = [
         ":test_utils",
         ":transpose",
@@ -176,9 +140,6 @@ cc_test(
 gtk_dependent_cc_library(
     name = "stream_view",
     hdrs = ["stream_view.h"],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     deps = [
         ":range_image",
         "//aos/vision/debug:debug_window",

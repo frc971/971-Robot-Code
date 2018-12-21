@@ -8,9 +8,6 @@ cc_library(
     hdrs = [
         "message.h",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     deps = [
         "//aos:byteorder",
         "//aos:macros",

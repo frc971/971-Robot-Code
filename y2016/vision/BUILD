@@ -7,26 +7,17 @@ queue_library(
     srcs = [
         "vision.q",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "vision_data",
     srcs = ["vision_data.proto"],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
 )
 
 cc_proto_library(
     name = "calibration",
     srcs = ["calibration.proto"],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
 )
 
 _calibration_values_embedded_before = """
@@ -68,9 +59,6 @@ genrule(
         "cat $(location :calibration.pb) | sed 's/\"/\\\\\"/g ; s/^/\"/g ; s/$$/\\\\n\"/g' >> $@",
         "echo '%s' >> $@" % _calibration_values_embedded_after,
     ]),
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
 )
 
 cc_library(
@@ -81,9 +69,6 @@ cc_library(
     ],
     hdrs = [
         "stereo_geometry.h",
-    ],
-    compatible_with = [
-        "//tools:armhf-debian",
     ],
     deps = [
         ":calibration",
@@ -141,9 +126,6 @@ cc_binary(
     srcs = [
         "target_receiver.cc",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     visibility = ["//visibility:public"],
     deps = [
         ":stereo_geometry",
@@ -163,9 +145,6 @@ cc_binary(
 gtk_dependent_cc_binary(
     name = "debug_receiver",
     srcs = ["debug_receiver.cc"],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     visibility = ["//visibility:public"],
     deps = [
         ":blob_filters",

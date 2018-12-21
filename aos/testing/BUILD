@@ -4,9 +4,6 @@ cc_library(
     srcs = [
         "gtest_main.cc",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     visibility = ["//visibility:public"],
     deps = [
         "//third_party/googletest:gtest",
