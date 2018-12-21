@@ -59,9 +59,6 @@ cc_library(
             "jmemmac.h",
         ],
     ),
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     copts = [
         "-Wno-cast-align",
         "-Wno-cast-qual",

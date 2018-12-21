@@ -5,9 +5,6 @@ cc_library(
     hdrs = [
         "type_traits.h",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
 )
 
 cc_test(

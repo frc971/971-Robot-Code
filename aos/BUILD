@@ -1,11 +1,12 @@
 load("//tools:environments.bzl", "mcu_cpus")
 load("//aos/build:queues.bzl", "queue_library")
+
 filegroup(
     name = "prime_binaries",
     srcs = [
+        "//aos:core",
         "//aos/logging:log_displayer",
         "//aos/logging:log_streamer",
-        "//aos:core",
         "//aos/starter",
     ],
     visibility = ["//visibility:public"],
@@ -56,13 +57,10 @@ cc_library(
     hdrs = [
         "once.h",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     visibility = ["//visibility:public"],
     deps = [
         "//aos:gtest_prod",
-        "//aos/type_traits:type_traits",
+        "//aos/type_traits",
     ],
 )
 
@@ -70,9 +68,6 @@ cc_library(
     name = "byteorder",
     hdrs = [
         "byteorder.h",
-    ],
-    compatible_with = [
-        "//tools:armhf-debian",
     ],
     visibility = ["//visibility:public"],
 )
@@ -96,13 +91,11 @@ py_library(
 )
 
 cc_library(
-    name="macros",
-    hdrs=(
+    name = "macros",
+    hdrs = [
         "macros.h",
-    ),
-    compatible_with =  mcu_cpus + [
-        "//tools:armhf-debian",
     ],
+    compatible_with = mcu_cpus,
     visibility = ["//visibility:public"],
 )
 
@@ -110,9 +103,6 @@ cc_library(
     name = "gtest_prod",
     hdrs = [
         "gtest_prod.h",
-    ],
-    compatible_with = [
-        "//tools:armhf-debian",
     ],
     visibility = ["//visibility:public"],
 )
@@ -129,9 +119,6 @@ genrule(
     name = "gen_print_field",
     outs = ["print_field.cc"],
     cmd = "$(location //aos/build/queues:print_field) $@",
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     tools = ["//aos/build/queues:print_field"],
     visibility = ["//visibility:private"],
 )
@@ -146,19 +133,16 @@ cc_library(
     hdrs = [
         "queue_types.h",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
+    visibility = ["//visibility:public"],
     deps = [
-        "//aos:byteorder",
         ":generated_queue_headers",
-        "//aos/mutex:mutex",
-        "//aos/time:time",
-        "//aos/logging:printf_formats",
+        "//aos:byteorder",
         "//aos/ipc_lib:core_lib",
         "//aos/ipc_lib:shared_mem",
+        "//aos/logging:printf_formats",
+        "//aos/mutex",
+        "//aos/time",
     ],
-    visibility = ["//visibility:public"],
 )
 
 cc_test(
@@ -180,15 +164,12 @@ cc_library(
     hdrs = [
         "queue.h",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
+    visibility = ["//visibility:public"],
     deps = [
-        "//aos/messages:messages",
         "//aos:queue",
         "//aos/ipc_lib:queue",
+        "//aos/messages",
     ],
-    visibility = ["//visibility:public"],
 )
 
 queue_library(
@@ -202,9 +183,6 @@ genrule(
     name = "gen_queue_primitives",
     outs = ["queue_primitives.h"],
     cmd = "$(location //aos/build/queues:queue_primitives) $@",
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     tools = ["//aos/build/queues:queue_primitives"],
     visibility = ["//visibility:private"],
 )
@@ -213,9 +191,6 @@ cc_library(
     name = "generated_queue_headers",
     hdrs = [
         ":gen_queue_primitives",
-    ],
-    compatible_with = [
-        "//tools:armhf-debian",
     ],
     visibility = ["//aos/logging:__pkg__"],
 )
@@ -226,11 +201,11 @@ cc_test(
         "queue_test.cc",
     ],
     deps = [
-        "//aos:die",
         ":test_queue",
-        "//aos/util:thread",
+        "//aos:die",
         "//aos/testing:googletest",
         "//aos/testing:test_shm",
+        "//aos/util:thread",
     ],
 )
 
@@ -238,9 +213,6 @@ cc_library(
     name = "unique_malloc_ptr",
     hdrs = [
         "unique_malloc_ptr.h",
-    ],
-    compatible_with = [
-        "//tools:armhf-debian",
     ],
     visibility = ["//visibility:public"],
 )
@@ -253,15 +225,12 @@ cc_library(
     hdrs = [
         "condition.h",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
-    deps = [
-        "//aos/mutex:mutex",
-        "//aos/logging",
-        "//aos/ipc_lib:aos_sync",
-    ],
     visibility = ["//visibility:public"],
+    deps = [
+        "//aos/ipc_lib:aos_sync",
+        "//aos/logging",
+        "//aos/mutex",
+    ],
 )
 
 cc_test(
@@ -272,15 +241,15 @@ cc_test(
     deps = [
         ":condition",
         "//aos:die",
-        "//aos/mutex:mutex",
-        "//aos/time:time",
-        "//aos/logging",
-        "//aos/util:thread",
         "//aos/ipc_lib:aos_sync",
         "//aos/ipc_lib:core_lib",
+        "//aos/logging",
+        "//aos/mutex",
         "//aos/testing:googletest",
         "//aos/testing:prevent_exit",
         "//aos/testing:test_shm",
+        "//aos/time",
+        "//aos/util:thread",
     ],
 )
 
@@ -292,16 +261,12 @@ cc_library(
     hdrs = [
         "die.h",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
+    visibility = ["//visibility:public"],
     deps = [
         "//aos:macros",
         "//aos/libc:aos_strerror",
     ],
-    visibility = ["//visibility:public"],
 )
-
 
 cc_test(
     name = "die_test",
@@ -322,24 +287,24 @@ cc_library(
     hdrs = [
         "event.h",
     ],
-    deps = [
-        "//aos/time:time",
-        "//aos/logging",
-        "//aos/ipc_lib:aos_sync",
-    ],
     visibility = ["//visibility:public"],
+    deps = [
+        "//aos/ipc_lib:aos_sync",
+        "//aos/logging",
+        "//aos/time",
+    ],
 )
 
 cc_test(
     name = "event_test",
     srcs = [
         "event_test.cc",
-        ],
+    ],
     deps = [
         ":event",
-        "//aos/time:time",
         "//aos/testing:googletest",
         "//aos/testing:test_logging",
+        "//aos/time",
     ],
 )
 
@@ -349,9 +314,9 @@ cc_binary(
         "dump_rtprio.cc",
     ],
     deps = [
-        "//aos/time:time",
         "//aos/logging",
         "//aos/logging:implementations",
+        "//aos/time",
     ],
 )
 
@@ -359,9 +324,6 @@ cc_library(
     name = "queue",
     hdrs = [
         "queue-tmpl.h",
-    ],
-    compatible_with = [
-        "//tools:armhf-debian",
     ],
     visibility = ["//aos:__pkg__"],
 )
@@ -374,17 +336,14 @@ cc_library(
     hdrs = [
         "complex_thread_local.h",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     linkopts = [
         "-lpthread",
     ],
-    deps = [
-        "//aos:once",
-        "//aos:die",
-    ],
     visibility = ["//visibility:public"],
+    deps = [
+        "//aos:die",
+        "//aos:once",
+    ],
 )
 
 cc_test(
@@ -395,8 +354,8 @@ cc_test(
     deps = [
         ":complex_thread_local",
         "//aos/logging",
-        "//aos/util:thread",
         "//aos/testing:googletest",
+        "//aos/util:thread",
     ],
 )
 
@@ -408,15 +367,12 @@ cc_library(
     hdrs = [
         "init.h",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
+    visibility = ["//visibility:public"],
     deps = [
         "//aos:die",
-        "//aos/logging:implementations",
         "//aos/ipc_lib:shared_mem",
+        "//aos/logging:implementations",
     ],
-    visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -427,15 +383,12 @@ cc_library(
     hdrs = [
         "configuration.h",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
+    visibility = ["//visibility:public"],
     deps = [
         "//aos:once",
         "//aos:unique_malloc_ptr",
         "//aos/logging",
     ],
-    visibility = ["//visibility:public"],
 )
 
 cc_binary(

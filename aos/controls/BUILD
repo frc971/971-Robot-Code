@@ -77,9 +77,6 @@ queue_library(
     srcs = [
         "control_loops.q",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
 )
 
 cc_library(

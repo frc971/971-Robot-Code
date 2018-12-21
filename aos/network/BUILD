@@ -8,9 +8,6 @@ cc_library(
     hdrs = [
         "team_number.h",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     deps = [
         "//aos:once",
         "//aos/logging",

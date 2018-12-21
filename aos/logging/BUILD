@@ -10,9 +10,6 @@ cc_library(
         "interface.h",
         "logging.h",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     visibility = ["//visibility:public"],
     deps = [
         ":sizes",
@@ -109,9 +106,6 @@ cc_library(
     hdrs = [
         "sizes.h",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
 )
 
 cc_test(
@@ -133,9 +127,6 @@ cc_library(
     ],
     hdrs = [
         "queue_logging.h",
-    ],
-    compatible_with = [
-        "//tools:armhf-debian",
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -170,9 +161,6 @@ cc_library(
     hdrs = [
         "printf_formats.h",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     visibility = ["//visibility:public"],
     deps = [
         "//aos:macros",
@@ -186,9 +174,6 @@ cc_library(
     ],
     hdrs = [
         "implementations.h",
-    ],
-    compatible_with = [
-        "//tools:armhf-debian",
     ],
     linkopts = [
         "-lpthread",

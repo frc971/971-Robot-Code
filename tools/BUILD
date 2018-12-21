@@ -68,6 +68,7 @@ environment_group(
     defaults = [
         ":k8",
         ":roborio",
+        ":armhf-debian",
     ],
     environments = [
         ":k8",

@@ -11,9 +11,6 @@ genrule(
         "kalman_drivetrain_motor_plant.cc",
     ],
     cmd = "$(location //y2016/control_loops/python:drivetrain) $(OUTS)",
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     tools = [
         "//y2016/control_loops/python:drivetrain",
     ],
@@ -29,9 +26,6 @@ genrule(
         "polydrivetrain_cim_plant.cc",
     ],
     cmd = "$(location //y2016/control_loops/python:polydrivetrain) $(OUTS)",
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     tools = [
         "//y2016/control_loops/python:polydrivetrain",
     ],
@@ -49,9 +43,6 @@ cc_library(
         "drivetrain_dog_motor_plant.h",
         "kalman_drivetrain_motor_plant.h",
         "polydrivetrain_dog_motor_plant.h",
-    ],
-    compatible_with = [
-        "//tools:armhf-debian",
     ],
     deps = [
         "//frc971/control_loops:state_feedback_loop",

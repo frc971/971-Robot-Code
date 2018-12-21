@@ -5,9 +5,6 @@ cc_library(
     hdrs = [
         "scoped_fd.h",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
     deps = [
         "//aos/logging",
     ],

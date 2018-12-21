@@ -54,9 +54,6 @@ cc_library(
     hdrs = [
         "aos_strerror.h",
     ],
-    compatible_with = [
-        "//tools:armhf-debian",
-    ],
 )
 
 cc_test(
