@@ -182,7 +182,6 @@ py_binary(
     legacy_create_init = False,
     restricted_to = ["//tools:k8"],
     srcs_version = "PY3",
-    restricted_to = ["//tools:k8"],
     deps = [
         ":basic_window",
         ":python_init",
@@ -211,8 +210,8 @@ py_binary(
     ],
     default_python_version = "PY3",
     legacy_create_init = False,
-    srcs_version = "PY3",
     restricted_to = ["//tools:k8"],
+    srcs_version = "PY3",
     deps = [
         ":basic_window",
         ":python_init",
