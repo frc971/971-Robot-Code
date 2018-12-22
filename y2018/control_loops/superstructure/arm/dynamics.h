@@ -169,15 +169,15 @@ class Dynamics {
   static const ::Eigen::Matrix<double, 4, 1> UnboundedDiscreteDynamics(
       const ::Eigen::Matrix<double, 4, 1> &X,
       const ::Eigen::Matrix<double, 2, 1> &U, double dt) {
-    return ::frc971::control_loops::RungeKutta(Dynamics::Acceleration, X, U,
-                                               dt);
+    return ::frc971::control_loops::RungeKuttaU(Dynamics::Acceleration, X, U,
+                                                dt);
   }
 
   static const ::Eigen::Matrix<double, 6, 1> UnboundedEKFDiscreteDynamics(
       const ::Eigen::Matrix<double, 6, 1> &X,
       const ::Eigen::Matrix<double, 2, 1> &U, double dt) {
-    return ::frc971::control_loops::RungeKutta(Dynamics::EKFAcceleration, X, U,
-                                               dt);
+    return ::frc971::control_loops::RungeKuttaU(Dynamics::EKFAcceleration, X, U,
+                                                dt);
   }
 };
 
