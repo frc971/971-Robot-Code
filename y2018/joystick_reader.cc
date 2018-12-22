@@ -85,8 +85,6 @@ const ButtonLocation kArmPickupBoxFromIntake(4, 3);
 const ButtonLocation kClawOpen(4, 4);
 const ButtonLocation kDriverClawOpen(2, 4);
 
-std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
-
 class Reader : public ::aos::input::JoystickInput {
  public:
   Reader() {
@@ -400,6 +398,8 @@ class Reader : public ::aos::input::JoystickInput {
   ::aos::common::actions::ActionQueue action_queue_;
 
   ::std::unique_ptr<ProtoTXUdpSocket<VisionControl>> video_tx_;
+
+  ::std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
 };
 
 }  // namespace joysticks
