@@ -23,7 +23,7 @@ T RungeKutta(const F &fn, T X, double dt) {
 // integrate.  It must take 1 argument of type T.  The integration starts at an
 // initial value X, and integrates for dt.
 template <typename F, typename T, typename Tu>
-T RungeKutta(const F &fn, T X, Tu U, double dt) {
+T RungeKuttaU(const F &fn, T X, Tu U, double dt) {
   const double half_dt = dt * 0.5;
   T k1 = fn(X, U);
   T k2 = fn(X + half_dt * k1, U);

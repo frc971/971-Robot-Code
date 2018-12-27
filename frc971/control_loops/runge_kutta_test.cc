@@ -26,7 +26,7 @@ TEST(RungeKuttaTest, ExponentialWithU) {
   ::Eigen::Matrix<double, 1, 1> y0;
   y0(0, 0) = 0.0;
 
-  ::Eigen::Matrix<double, 1, 1> y1 = RungeKutta(
+  ::Eigen::Matrix<double, 1, 1> y1 = RungeKuttaU(
       [](::Eigen::Matrix<double, 1, 1> x, ::Eigen::Matrix<double, 1, 1> u) {
         ::Eigen::Matrix<double, 1, 1> y;
         y(0, 0) = ::std::exp(u(0, 0) * x(0, 0));
