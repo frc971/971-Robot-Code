@@ -13,6 +13,34 @@ namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
+DrivetrainMotorsSS::DrivetrainMotorsSS(
+    const DrivetrainConfig<double> &dt_config, StateFeedbackLoop<7, 2, 4> *kf,
+    double *integrated_kf_heading)
+    : dt_config_(dt_config),
+      kf_(kf),
+      U_poly_(
+          (Eigen::Matrix<double, 4, 2>() << /*[[*/ 1, 0 /*]*/,
+           /*[*/ -1, 0 /*]*/,
+           /*[*/ 0, 1 /*]*/,
+           /*[*/ 0, -1 /*]]*/)
+              .finished(),
+          (Eigen::Matrix<double, 4, 1>() << /*[[*/ 1.0 /*]*/,
+           /*[*/ 1.0 /*]*/,
+           /*[*/ 1.0 /*]*/,
+           /*[*/ 1.0 /*]]*/)
+              .finished(),
+          (Eigen::Matrix<double, 2, 4>() << /*[[*/ 1.0, 1.0, -1.0, -1.0 /*]*/,
+           /*[*/ -1.0, 1.0, 1.0, -1.0 /*]*/)
+              .finished()),
+      linear_profile_(::aos::controls::kLoopFrequency),
+      angular_profile_(::aos::controls::kLoopFrequency),
+      integrated_kf_heading_(integrated_kf_heading) {
+  ::aos::controls::HPolytope<0>::Init();
+  T_ << 1, 1, 1, -1;
+  T_inverse_ = T_.inverse();
+  unprofiled_goal_.setZero();
+}
+
 void DrivetrainMotorsSS::ScaleCapU(Eigen::Matrix<double, 2, 1> *U) {
   output_was_capped_ = ::std::abs((*U)(0, 0)) > max_voltage_ ||
                        ::std::abs((*U)(1, 0)) > max_voltage_;
@@ -114,34 +142,6 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
       LOG(FATAL, "U unnecessarily capped\n");
     }
   }
-}
-
-DrivetrainMotorsSS::DrivetrainMotorsSS(
-    const DrivetrainConfig<double> &dt_config, StateFeedbackLoop<7, 2, 4> *kf,
-    double *integrated_kf_heading)
-    : dt_config_(dt_config),
-      kf_(kf),
-      U_poly_(
-          (Eigen::Matrix<double, 4, 2>() << /*[[*/ 1, 0 /*]*/,
-           /*[*/ -1, 0 /*]*/,
-           /*[*/ 0, 1 /*]*/,
-           /*[*/ 0, -1 /*]]*/)
-              .finished(),
-          (Eigen::Matrix<double, 4, 1>() << /*[[*/ 1.0 /*]*/,
-           /*[*/ 1.0 /*]*/,
-           /*[*/ 1.0 /*]*/,
-           /*[*/ 1.0 /*]]*/)
-              .finished(),
-          (Eigen::Matrix<double, 2, 4>() << /*[[*/ 1.0, 1.0, -1.0, -1.0 /*]*/,
-           /*[*/ -1.0, 1.0, 1.0, -1.0 /*]*/)
-              .finished()),
-      linear_profile_(::aos::controls::kLoopFrequency),
-      angular_profile_(::aos::controls::kLoopFrequency),
-      integrated_kf_heading_(integrated_kf_heading) {
-  ::aos::controls::HPolytope<0>::Init();
-  T_ << 1, 1, 1, -1;
-  T_inverse_ = T_.inverse();
-  unprofiled_goal_.setZero();
 }
 
 void DrivetrainMotorsSS::SetGoal(
