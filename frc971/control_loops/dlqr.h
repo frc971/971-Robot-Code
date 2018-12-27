@@ -9,20 +9,19 @@ namespace controls {
 template <int num_states, int num_inputs>
 int Controllability(const ::Eigen::Matrix<double, num_states, num_states> &A,
                     const ::Eigen::Matrix<double, num_states, num_inputs> &B) {
-    Eigen::Matrix<double, num_states, num_states * num_inputs> controllability;
-    controllability.block(0, 0, num_states, num_inputs) = B;
+  Eigen::Matrix<double, num_states, num_states * num_inputs> controllability;
+  controllability.block(0, 0, num_states, num_inputs) = B;
 
-    for (size_t i = 1; i < num_states; i++) {
-      controllability.block(0, i * num_inputs, num_states, num_inputs) =
-          A *
-          controllability.block(0, (i - 1) * num_inputs, num_states,
-                                num_inputs);
-    }
+  for (size_t i = 1; i < num_states; i++) {
+    controllability.block(0, i * num_inputs, num_states, num_inputs) =
+        A *
+        controllability.block(0, (i - 1) * num_inputs, num_states, num_inputs);
+  }
 
-    return Eigen::FullPivLU<
-               Eigen::Matrix<double, num_states, num_states * num_inputs>>(
-               controllability)
-        .rank();
+  return Eigen::FullPivLU<
+             Eigen::Matrix<double, num_states, num_states * num_inputs>>(
+             controllability)
+      .rank();
 }
 
 extern "C" {
