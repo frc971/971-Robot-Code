@@ -53,6 +53,8 @@ genrule(
         "polydrivetrain_dog_motor_plant.cc",
         "polydrivetrain_cim_plant.h",
         "polydrivetrain_cim_plant.cc",
+        "hybrid_velocity_drivetrain.h",
+        "hybrid_velocity_drivetrain.cc",
     ],
     cmd = "$(location :polydrivetrain) $(OUTS)",
     restricted_to = mcu_cpus,
@@ -66,6 +68,7 @@ cc_library(
     srcs = [
         "drivetrain_dog_motor_plant.cc",
         "polydrivetrain_dog_motor_plant.cc",
+        # Note: skip the hybrid filter since we don't need it down here.
     ],
     hdrs = [
         "drivetrain_dog_motor_plant.h",

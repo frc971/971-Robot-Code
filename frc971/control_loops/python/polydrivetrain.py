@@ -120,7 +120,19 @@ class VelocityDrivetrainModel(control_loop.ControlLoop):
     self.FF = self.B.I * (numpy.eye(2) - self.A)
 
     self.PlaceControllerPoles(drivetrain_params.controller_poles)
+    # Build a kalman filter for the velocity.  We don't care what the gains
+    # are, but the hybrid kalman filter that we want to write to disk to get
+    # access to A_continuous and B_continuous needs this for completeness.
+    self.Q_continuous = numpy.matrix([[(0.5 ** 2.0), 0.0], [0.0, (0.5 ** 2.0)]])
+    self.R_continuous = numpy.matrix([[(0.1 ** 2.0), 0.0], [0.0, (0.1 ** 2.0)]])
     self.PlaceObserverPoles(drivetrain_params.observer_poles)
+    _, _, self.Q, self.R = controls.kalmd(
+        A_continuous=self.A_continuous, B_continuous=self.B_continuous,
+        Q_continuous=self.Q_continuous, R_continuous=self.R_continuous,
+        dt=self.dt)
+
+    self.KalmanGain, self.P_steady_state = controls.kalman(
+        A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
 
     self.G_high = self._drivetrain.G_high
     self.G_low = self._drivetrain.G_low
@@ -145,18 +157,18 @@ class VelocityDrivetrain(object):
   SHIFTING_UP = 'up'
   SHIFTING_DOWN = 'down'
 
-  def __init__(self, drivetrain_params):
+  def __init__(self, drivetrain_params, name='VelocityDrivetrain'):
     self.drivetrain_low_low = VelocityDrivetrainModel(
-        left_low=True, right_low=True, name='VelocityDrivetrainLowLow',
+        left_low=True, right_low=True, name=name + 'LowLow',
         drivetrain_params=drivetrain_params)
     self.drivetrain_low_high = VelocityDrivetrainModel(
-        left_low=True, right_low=False, name='VelocityDrivetrainLowHigh',
+        left_low=True, right_low=False, name=name + 'LowHigh',
         drivetrain_params=drivetrain_params)
     self.drivetrain_high_low = VelocityDrivetrainModel(
-        left_low=False, right_low=True, name = 'VelocityDrivetrainHighLow',
+        left_low=False, right_low=True, name = name + 'HighLow',
         drivetrain_params=drivetrain_params)
     self.drivetrain_high_high = VelocityDrivetrainModel(
-        left_low=False, right_low=False, name = 'VelocityDrivetrainHighHigh',
+        left_low=False, right_low=False, name = name + 'HighHigh',
         drivetrain_params=drivetrain_params)
 
     # X is [lvel, rvel]
@@ -412,9 +424,12 @@ class VelocityDrivetrain(object):
                self.left_gear, self.left_shifter_position,
                self.right_gear, self.right_shifter_position)
 
-def WritePolyDrivetrain(drivetrain_files, motor_files, year_namespace,
-                        drivetrain_params, scalar_type='double'):
+def WritePolyDrivetrain(drivetrain_files, motor_files, hybrid_files,
+                        year_namespace, drivetrain_params,
+                        scalar_type='double'):
   vdrivetrain = VelocityDrivetrain(drivetrain_params)
+  hybrid_vdrivetrain = VelocityDrivetrain(drivetrain_params,
+                                          name="HybridVelocityDrivetrain")
   if isinstance(year_namespace, list):
     namespaces = year_namespace
   else:
@@ -428,6 +443,18 @@ def WritePolyDrivetrain(drivetrain_files, motor_files, year_namespace,
                      scalar_type=scalar_type)
 
   dog_loop_writer.Write(drivetrain_files[0], drivetrain_files[1])
+
+  hybrid_loop_writer = control_loop.ControlLoopWriter(
+      "HybridVelocityDrivetrain", [hybrid_vdrivetrain.drivetrain_low_low,
+                     hybrid_vdrivetrain.drivetrain_low_high,
+                     hybrid_vdrivetrain.drivetrain_high_low,
+                     hybrid_vdrivetrain.drivetrain_high_high],
+                     namespaces=namespaces,
+                     scalar_type=scalar_type,
+                     plant_type='StateFeedbackHybridPlant',
+                     observer_type='HybridKalman')
+
+  hybrid_loop_writer.Write(hybrid_files[0], hybrid_files[1])
 
   cim_writer = control_loop.ControlLoopWriter("CIM", [CIM()], scalar_type=scalar_type)
 

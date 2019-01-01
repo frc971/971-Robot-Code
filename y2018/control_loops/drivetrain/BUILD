@@ -21,6 +21,8 @@ genrule(
         "polydrivetrain_dog_motor_plant.cc",
         "polydrivetrain_cim_plant.h",
         "polydrivetrain_cim_plant.cc",
+        "hybrid_velocity_drivetrain.h",
+        "hybrid_velocity_drivetrain.cc",
     ],
     cmd = "$(location //y2018/control_loops/python:polydrivetrain) $(OUTS)",
     tools = [
@@ -32,16 +34,19 @@ cc_library(
     name = "polydrivetrain_plants",
     srcs = [
         "drivetrain_dog_motor_plant.cc",
+        "hybrid_velocity_drivetrain.cc",
         "kalman_drivetrain_motor_plant.cc",
         "polydrivetrain_dog_motor_plant.cc",
     ],
     hdrs = [
         "drivetrain_dog_motor_plant.h",
+        "hybrid_velocity_drivetrain.h",
         "kalman_drivetrain_motor_plant.h",
         "polydrivetrain_dog_motor_plant.h",
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "//frc971/control_loops:hybrid_state_feedback_loop",
         "//frc971/control_loops:state_feedback_loop",
     ],
 )

@@ -19,10 +19,10 @@ except gflags.DuplicateFlagError:
 def main(argv):
   if FLAGS.plot:
     polydrivetrain.PlotPolyDrivetrainMotions(drivetrain.kDrivetrain)
-  elif len(argv) != 5:
+  elif len(argv) != 7:
     glog.fatal('Expected .h file name and .cc file name')
   else:
-    polydrivetrain.WritePolyDrivetrain(argv[1:3], argv[3:5], 'y2017',
+    polydrivetrain.WritePolyDrivetrain(argv[1:3], argv[3:5], argv[5:7], 'y2017',
                                        drivetrain.kDrivetrain)
 
 if __name__ == '__main__':
