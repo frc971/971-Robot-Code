@@ -277,3 +277,28 @@ cc_test(
         "@com_github_gflags_gflags//:gflags",
     ],
 )
+
+cc_library(
+    name = "distance_spline",
+    srcs = ["distance_spline.cc"],
+    hdrs = ["distance_spline.h"],
+    deps = [
+        ":spline",
+        "//frc971/control_loops:fixed_quadrature",
+        "//third_party/eigen",
+    ],
+)
+
+cc_test(
+    name = "distance_spline_test",
+    srcs = [
+        "distance_spline_test.cc",
+    ],
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":distance_spline",
+        "//aos/testing:googletest",
+        "//third_party/matplotlib-cpp",
+        "@com_github_gflags_gflags//:gflags",
+    ],
+)
