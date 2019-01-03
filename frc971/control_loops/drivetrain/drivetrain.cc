@@ -192,6 +192,13 @@ void DrivetrainLoop::RunIteration(
         last_gyro_time_ = monotonic_now;
       }
       break;
+    case GyroType::FLIPPED_IMU_Z_GYRO:
+      if (is_latest_imu_values) {
+        LOG_STRUCT(DEBUG, "using", *imu_values.get());
+        last_gyro_rate_ = -imu_values->gyro_z;
+        last_gyro_time_ = monotonic_now;
+      }
+      break;
     case GyroType::SPARTAN_GYRO:
       if (gyro_reading.FetchLatest()) {
         LOG_STRUCT(DEBUG, "using", *gyro_reading.get());
