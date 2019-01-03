@@ -15,6 +15,7 @@
 #include "aos/controls/control_loop.h"
 #include "aos/logging/logging.h"
 #include "aos/macros.h"
+#include "frc971/control_loops/c2d.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs,
@@ -188,27 +189,8 @@ class StateFeedbackHybridPlant {
 
  private:
   void UpdateAB(::std::chrono::nanoseconds dt) {
-    Eigen::Matrix<Scalar, number_of_states + number_of_inputs,
-                  number_of_states + number_of_inputs>
-        M_state_continuous;
-    M_state_continuous.setZero();
-    M_state_continuous.template block<number_of_states, number_of_states>(0,
-                                                                          0) =
-        coefficients().A_continuous *
-        ::std::chrono::duration_cast<::std::chrono::duration<Scalar>>(dt)
-            .count();
-    M_state_continuous.template block<number_of_states, number_of_inputs>(
-        0, number_of_states) =
-        coefficients().B_continuous *
-        ::std::chrono::duration_cast<::std::chrono::duration<Scalar>>(dt)
-            .count();
-
-    Eigen::Matrix<Scalar, number_of_states + number_of_inputs,
-                  number_of_states + number_of_inputs>
-        M_state = M_state_continuous.exp();
-    A_ = M_state.template block<number_of_states, number_of_states>(0, 0);
-    B_ = M_state.template block<number_of_states, number_of_inputs>(
-        0, number_of_states);
+    ::frc971::controls::C2D(coefficients().A_continuous,
+                            coefficients().B_continuous, dt, &A_, &B_);
   }
 
   Eigen::Matrix<Scalar, number_of_states, 1> X_;
