@@ -44,7 +44,8 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
       ::y2016::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
       ::y2016::control_loops::drivetrain::MakeKFDrivetrainLoop,
 
-      ::y2016::control_loops::drivetrain::kDt,
+      chrono::duration_cast<chrono::nanoseconds>(
+          chrono::duration<double>(::y2016::control_loops::drivetrain::kDt)),
       ::y2016::control_loops::drivetrain::kRobotRadius,
       ::y2016::control_loops::drivetrain::kWheelRadius,
       ::y2016::control_loops::drivetrain::kV,

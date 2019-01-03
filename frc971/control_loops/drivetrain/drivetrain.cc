@@ -227,9 +227,9 @@ void DrivetrainLoop::RunIteration(
     Y << position->left_encoder, position->right_encoder, last_gyro_rate_,
         last_accel_;
     kf_.Correct(Y);
-    integrated_kf_heading_ += dt_config_.dt *
-                              (kf_.X_hat(3, 0) - kf_.X_hat(1, 0)) /
-                              (dt_config_.robot_radius * 2.0);
+    integrated_kf_heading_ +=
+        chrono::duration_cast<chrono::duration<double>>(dt_config_.dt).count() *
+        (kf_.X_hat(3, 0) - kf_.X_hat(1, 0)) / (dt_config_.robot_radius * 2.0);
 
     // gyro_heading = (real_right - real_left) / width
     // wheel_heading = (wheel_right - wheel_left) / width

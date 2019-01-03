@@ -54,10 +54,10 @@ struct DrivetrainConfig {
   ::std::function<StateFeedbackLoop<2, 2, 2, Scalar>()> make_v_drivetrain_loop;
   ::std::function<StateFeedbackLoop<7, 2, 4, Scalar>()> make_kf_drivetrain_loop;
 
-  Scalar dt;            // Control loop time step.
-  Scalar robot_radius;  // Robot radius, in meters.
-  Scalar wheel_radius;  // Wheel radius, in meters.
-  Scalar v;             // Motor velocity constant.
+  ::std::chrono::nanoseconds dt;  // Control loop time step.
+  Scalar robot_radius;            // Robot radius, in meters.
+  Scalar wheel_radius;            // Wheel radius, in meters.
+  Scalar v;                       // Motor velocity constant.
 
   // Gear ratios, from wheel to motor shaft.
   Scalar high_gear_ratio;

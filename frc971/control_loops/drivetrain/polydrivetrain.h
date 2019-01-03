@@ -372,11 +372,14 @@ void PolyDrivetrain<Scalar>::Update() {
     current_left_velocity_ = kZero;
     current_right_velocity_ = kZero;
   } else {
+    const Scalar dt =
+        ::std::chrono::duration_cast<::std::chrono::duration<Scalar>>(
+            dt_config_.dt)
+            .count();
     current_left_velocity_ =
-        (position_.left_encoder - last_position_.left_encoder) / dt_config_.dt;
+        (position_.left_encoder - last_position_.left_encoder) / dt;
     current_right_velocity_ =
-        (position_.right_encoder - last_position_.right_encoder) /
-        dt_config_.dt;
+        (position_.right_encoder - last_position_.right_encoder) / dt;
     left_motor_speed_ =
         MotorSpeed(dt_config_.left_drive, position_.left_shifter_position,
                    current_left_velocity_, left_gear_);

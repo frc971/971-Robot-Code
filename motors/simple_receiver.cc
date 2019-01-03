@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <atomic>
+#include <chrono>
 #include <cmath>
 
 #include "frc971/control_loops/drivetrain/polydrivetrain.h"
@@ -27,6 +28,8 @@ using ::frc971::constants::ShifterHallEffect;
 using ::frc971::control_loops::DrivetrainQueue_Goal;
 using ::frc971::control_loops::DrivetrainQueue_Output;
 using ::motors::seems_reasonable::Spring;
+
+namespace chrono = ::std::chrono;
 
 struct SimpleAdcReadings {
   uint16_t sin, cos;
@@ -67,7 +70,9 @@ const DrivetrainConfig<float> &GetDrivetrainConfig() {
       ::motors::seems_reasonable::MakeVelocityDrivetrainLoop,
       ::std::function<StateFeedbackLoop<7, 2, 4, float>()>(),
 
-      ::motors::seems_reasonable::kDt, ::motors::seems_reasonable::kRobotRadius,
+      chrono::duration_cast<chrono::nanoseconds>(
+          chrono::duration<float>(::motors::seems_reasonable::kDt)),
+      ::motors::seems_reasonable::kRobotRadius,
       ::motors::seems_reasonable::kWheelRadius, ::motors::seems_reasonable::kV,
 
       ::motors::seems_reasonable::kHighGearRatio,

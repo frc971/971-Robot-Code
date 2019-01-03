@@ -1,14 +1,17 @@
 #include "y2016/control_loops/drivetrain/drivetrain_base.h"
 
-#include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include <chrono>
 
+#include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-#include "y2016/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
-#include "y2016/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
-#include "y2016/control_loops/drivetrain/kalman_drivetrain_motor_plant.h"
 #include "y2016/constants.h"
+#include "y2016/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2016/control_loops/drivetrain/kalman_drivetrain_motor_plant.h"
+#include "y2016/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 
 using ::frc971::control_loops::drivetrain::DrivetrainConfig;
+
+namespace chrono = ::std::chrono;
 
 namespace y2016 {
 namespace control_loops {
@@ -29,7 +32,8 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
       ::y2016::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
       ::y2016::control_loops::drivetrain::MakeKFDrivetrainLoop,
 
-      drivetrain::kDt,
+      chrono::duration_cast<chrono::nanoseconds>(
+          chrono::duration<double>(drivetrain::kDt)),
       drivetrain::kRobotRadius,
       drivetrain::kWheelRadius,
       drivetrain::kV,
