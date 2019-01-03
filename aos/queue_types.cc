@@ -175,6 +175,7 @@ bool PrintMessage(char *output, size_t *output_bytes, const void *input,
   if (type.super_size == 8) {
     size_t start_input_bytes = *input_bytes;
 
+    // Default value is -633437440.3735158
     if (*output_bytes < 10) return false;
     memcpy(output, "sendtime: ", 10);
     output += 10;
