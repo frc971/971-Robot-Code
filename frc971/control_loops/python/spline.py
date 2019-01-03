@@ -491,11 +491,8 @@ class Trajectory(object):
         accelerations = [(12.0 - C[0, 0]) / K5[0, 0], (12.0 - C[1, 0]) /
                          K5[1, 0], (-12.0 - C[0, 0]) / K5[0, 0],
                          (-12.0 - C[1, 0]) / K5[1, 0]]
-        maxa = 0.0
+        maxa = -float('inf')
         for a in accelerations:
-            if a < 0.0:
-                continue
-
             U = K5 * a + K3 * v * v + K4 * v
             if not (numpy.abs(U) > 12.0 + 1e-6).any():
                 maxa = max(maxa, a)
@@ -537,11 +534,8 @@ class Trajectory(object):
         accelerations = [(12.0 - C[0, 0]) / K5[0, 0], (12.0 - C[1, 0]) /
                          K5[1, 0], (-12.0 - C[0, 0]) / K5[0, 0],
                          (-12.0 - C[1, 0]) / K5[1, 0]]
-        mina = 0.0
+        mina = float('inf')
         for a in accelerations:
-            if a > 0.0:
-                continue
-
             U = K5 * a + K3 * v * v + K4 * v
             if not (numpy.abs(U) > 12.0 + 1e-6).any():
                 mina = min(mina, a)
