@@ -17,6 +17,7 @@
 #include "frc971/queues/gyro.q.h"
 #include "y2016/constants.h"
 #include "y2016/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2016/control_loops/drivetrain/hybrid_velocity_drivetrain.h"
 #include "y2016/control_loops/drivetrain/kalman_drivetrain_motor_plant.h"
 #include "y2016/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 
@@ -43,6 +44,7 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
       ::y2016::control_loops::drivetrain::MakeDrivetrainLoop,
       ::y2016::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
       ::y2016::control_loops::drivetrain::MakeKFDrivetrainLoop,
+      ::y2016::control_loops::drivetrain::MakeHybridVelocityDrivetrainLoop,
 
       chrono::duration_cast<chrono::nanoseconds>(
           chrono::duration<double>(::y2016::control_loops::drivetrain::kDt)),

@@ -34,6 +34,7 @@ cc_library(
     ],
     deps = [
         "//frc971:shifter_hall_effect",
+        "//frc971/control_loops:hybrid_state_feedback_loop",
         "//frc971/control_loops:state_feedback_loop",
     ],
 )

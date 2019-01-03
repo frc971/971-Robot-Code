@@ -5,6 +5,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "y2014/constants.h"
 #include "y2014/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2014/control_loops/drivetrain/hybrid_velocity_drivetrain.h"
 #include "y2014/control_loops/drivetrain/kalman_drivetrain_motor_plant.h"
 #include "y2014/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 
@@ -23,9 +24,10 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
       ::frc971::control_loops::drivetrain::GyroType::SPARTAN_GYRO,
       ::frc971::control_loops::drivetrain::IMUType::IMU_X,
 
-      ::y2014::control_loops::drivetrain::MakeDrivetrainLoop,
-      ::y2014::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
-      ::y2014::control_loops::drivetrain::MakeKFDrivetrainLoop,
+      drivetrain::MakeDrivetrainLoop,
+      drivetrain::MakeVelocityDrivetrainLoop,
+      drivetrain::MakeKFDrivetrainLoop,
+      drivetrain::MakeHybridVelocityDrivetrainLoop,
 
       chrono::duration_cast<chrono::nanoseconds>(
           chrono::duration<double>(drivetrain::kDt)),

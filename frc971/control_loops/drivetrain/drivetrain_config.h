@@ -3,8 +3,11 @@
 
 #include <functional>
 
-#include "frc971/shifter_hall_effect.h"
+#if defined(__linux__)
+#include "frc971/control_loops/hybrid_state_feedback_loop.h"
+#endif
 #include "frc971/control_loops/state_feedback_loop.h"
+#include "frc971/shifter_hall_effect.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -53,6 +56,12 @@ struct DrivetrainConfig {
   ::std::function<StateFeedbackLoop<4, 2, 2, Scalar>()> make_drivetrain_loop;
   ::std::function<StateFeedbackLoop<2, 2, 2, Scalar>()> make_v_drivetrain_loop;
   ::std::function<StateFeedbackLoop<7, 2, 4, Scalar>()> make_kf_drivetrain_loop;
+#if defined(__linux__)
+  ::std::function<
+      StateFeedbackLoop<2, 2, 2, Scalar, StateFeedbackHybridPlant<2, 2, 2>,
+                        HybridKalman<2, 2, 2>>()>
+      make_hybrid_drivetrain_velocity_loop;
+#endif
 
   ::std::chrono::nanoseconds dt;  // Control loop time step.
   Scalar robot_radius;            // Robot radius, in meters.
