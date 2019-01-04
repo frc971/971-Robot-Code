@@ -27,6 +27,7 @@ enum class GyroType : int32_t {
   IMU_Y_GYRO = 2,   // Use the y-axis of the gyro on the IMU.
   IMU_Z_GYRO = 3,   // Use the z-axis of the gyro on the IMU.
   FLIPPED_SPARTAN_GYRO = 4, // Use the gyro on the spartan board.
+  FLIPPED_IMU_Z_GYRO = 5,   // Use the flipped z-axis of the gyro on the IMU.
 };
 
 enum class IMUType : int32_t {

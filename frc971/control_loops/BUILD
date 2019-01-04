@@ -155,6 +155,7 @@ cc_library(
         "hybrid_state_feedback_loop.h",
     ],
     deps = [
+        ":c2d",
         ":state_feedback_loop",
         "//aos:macros",
         "//aos/controls:control_loop",
@@ -260,6 +261,17 @@ cc_test(
     deps = [
         ":jacobian",
         "//aos/testing:googletest",
+        "//third_party/eigen",
+    ],
+)
+
+cc_library(
+    name = "c2d",
+    hdrs = [
+        "c2d.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
         "//third_party/eigen",
     ],
 )
