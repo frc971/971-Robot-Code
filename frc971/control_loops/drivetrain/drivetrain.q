@@ -145,8 +145,11 @@ queue_group DrivetrainQueue {
     double estimated_angular_velocity_error;
     // The KF estimated heading.
     double estimated_heading;
-    // The KF wheel estimated heading.
-    //double estimated_wheel_heading;
+
+    // xytheta of the robot.
+    double x;
+    double y;
+    double theta;
 
     // True if the output voltage was capped last cycle.
     bool output_was_capped;

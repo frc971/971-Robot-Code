@@ -173,6 +173,7 @@ cc_library(
         "//aos/logging:matrix_logging",
         "//aos/logging:queue_logging",
         "//aos/util:log_interval",
+        "//frc971/control_loops:runge_kutta",
         "//frc971/queues:gyro",
         "//frc971/wpilib:imu_queue",
     ],
