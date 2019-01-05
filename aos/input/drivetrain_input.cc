@@ -61,7 +61,7 @@ void DrivetrainInputReader::HandleDrivetrain(
   new_drivetrain_goal->throttle_torque = throttle_torque;
   new_drivetrain_goal->highgear = high_gear;
   new_drivetrain_goal->quickturn = data.IsPressed(quick_turn_);
-  new_drivetrain_goal->control_loop_driving = is_control_loop_driving;
+  new_drivetrain_goal->controller_type = is_control_loop_driving ? 1 : 0;
   new_drivetrain_goal->left_goal = current_left_goal;
   new_drivetrain_goal->right_goal = current_right_goal;
   new_drivetrain_goal->left_velocity_goal = 0;

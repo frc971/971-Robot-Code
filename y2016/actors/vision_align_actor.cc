@@ -64,7 +64,7 @@ bool VisionAlignActor::RunAction(
              .throttle(0.0)
              .highgear(false)
              .quickturn(false)
-             .control_loop_driving(true)
+             .controller_type(1)
              .left_goal(left_current + side_distance_change)
              .right_goal(right_current - side_distance_change)
              .left_velocity_goal(0)

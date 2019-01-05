@@ -29,7 +29,7 @@ void BaseAutonomousActor::ResetDrivetrain() {
   LOG(INFO, "resetting the drivetrain\n");
   max_drivetrain_voltage_ = 12.0;
   drivetrain_queue.goal.MakeWithBuilder()
-      .control_loop_driving(false)
+      .controller_type(0)
       .highgear(true)
       .wheel(0.0)
       .throttle(0.0)
@@ -58,7 +58,7 @@ void BaseAutonomousActor::StartDrive(double distance, double angle,
   }
 
   auto drivetrain_message = drivetrain_queue.goal.MakeMessage();
-  drivetrain_message->control_loop_driving = true;
+  drivetrain_message->controller_type = 1;
   drivetrain_message->highgear = true;
   drivetrain_message->wheel = 0.0;
   drivetrain_message->throttle = 0.0;

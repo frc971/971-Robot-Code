@@ -52,7 +52,7 @@ bool ShouldExitAuto() {
 void StopDrivetrain() {
   LOG(INFO, "Stopping the drivetrain\n");
   frc971::control_loops::drivetrain_queue.goal.MakeWithBuilder()
-      .control_loop_driving(true)
+      .controller_type(1)
       .highgear(true)
       .left_goal(left_initial_position)
       .left_velocity_goal(0)
@@ -65,7 +65,7 @@ void StopDrivetrain() {
 void ResetDrivetrain() {
   LOG(INFO, "resetting the drivetrain\n");
   ::frc971::control_loops::drivetrain_queue.goal.MakeWithBuilder()
-      .control_loop_driving(false)
+      .controller_type(0)
       .highgear(true)
       .wheel(0.0)
       .throttle(0.0)
@@ -99,7 +99,7 @@ void StepDrive(double distance, double theta) {
   double right_goal = (right_initial_position + distance +
                        theta * control_loops::drivetrain::kRobotRadius);
   ::frc971::control_loops::drivetrain_queue.goal.MakeWithBuilder()
-      .control_loop_driving(true)
+      .controller_type(1)
       .highgear(true)
       .left_goal(left_goal)
       .right_goal(right_goal)

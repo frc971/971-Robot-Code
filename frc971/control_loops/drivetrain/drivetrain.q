@@ -55,8 +55,11 @@ queue_group DrivetrainQueue {
     // True to activate quickturn.
     bool quickturn;
 
-    // True to have the closed-loop controller take over.
-    bool control_loop_driving;
+    // Type of controller in charge of the drivetrain.
+    //  0: polydrive
+    //  1: motion profiled position drive (statespace)
+    //  2: spline follower.
+    uint8_t controller_type;
 
     // Position goals for each drivetrain side (in meters) when the
     // closed-loop controller is active.

@@ -125,7 +125,7 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
         left_goal_state(0, 0) + params.left_initial_position,
         right_goal_state(0, 0) + params.right_initial_position);
     ::frc971::control_loops::drivetrain_queue.goal.MakeWithBuilder()
-        .control_loop_driving(true)
+        .controller_type(1)
         .highgear(true)
         .left_goal(left_goal_state(0, 0) + params.left_initial_position)
         .right_goal(right_goal_state(0, 0) + params.right_initial_position)

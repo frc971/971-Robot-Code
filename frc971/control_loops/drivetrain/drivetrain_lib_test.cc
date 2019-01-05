@@ -261,7 +261,7 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
 // Tests that the drivetrain converges on a goal.
 TEST_F(DrivetrainTest, ConvergesCorrectly) {
   my_drivetrain_queue_.goal.MakeWithBuilder()
-      .control_loop_driving(true)
+      .controller_type(1)
       .left_goal(-1.0)
       .right_goal(1.0)
       .Send();
@@ -273,7 +273,7 @@ TEST_F(DrivetrainTest, ConvergesCorrectly) {
 // voltage offset/disturbance.
 TEST_F(DrivetrainTest, ConvergesWithVoltageError) {
   my_drivetrain_queue_.goal.MakeWithBuilder()
-      .control_loop_driving(true)
+      .controller_type(1)
       .left_goal(-1.0)
       .right_goal(1.0)
       .Send();
@@ -286,7 +286,7 @@ TEST_F(DrivetrainTest, ConvergesWithVoltageError) {
 // Tests that it survives disabling.
 TEST_F(DrivetrainTest, SurvivesDisabling) {
   my_drivetrain_queue_.goal.MakeWithBuilder()
-      .control_loop_driving(true)
+      .controller_type(1)
       .left_goal(-1.0)
       .right_goal(1.0)
       .Send();
@@ -322,7 +322,7 @@ TEST_F(DrivetrainTest, NoGoalWithRobotState) {
 // This used to not work due to a U-capping bug.
 TEST_F(DrivetrainTest, DriveStraightForward) {
   my_drivetrain_queue_.goal.MakeWithBuilder()
-      .control_loop_driving(true)
+      .controller_type(1)
       .left_goal(4.0)
       .right_goal(4.0)
       .Send();
@@ -341,7 +341,7 @@ TEST_F(DrivetrainTest, DriveStraightForward) {
 // This used to fail in simulation due to libcdd issues with U-capping.
 TEST_F(DrivetrainTest, DriveAlmostStraightForward) {
   my_drivetrain_queue_.goal.MakeWithBuilder()
-      .control_loop_driving(true)
+      .controller_type(1)
       .left_goal(4.0)
       .right_goal(3.9)
       .Send();
@@ -385,7 +385,7 @@ TEST_F(DrivetrainTest, ProfileStraightForward) {
   {
     ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
         goal = my_drivetrain_queue_.goal.MakeMessage();
-    goal->control_loop_driving = true;
+    goal->controller_type = 1;
     goal->left_goal = 4.0;
     goal->right_goal = 4.0;
     goal->left_velocity_goal = 0.0;
@@ -416,7 +416,7 @@ TEST_F(DrivetrainTest, ProfileTurn) {
   {
     ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
         goal = my_drivetrain_queue_.goal.MakeMessage();
-    goal->control_loop_driving = true;
+    goal->controller_type = 1;
     goal->left_goal = -1.0;
     goal->right_goal = 1.0;
     goal->left_velocity_goal = 0.0;
@@ -447,7 +447,7 @@ TEST_F(DrivetrainTest, SaturatedTurnDrive) {
   {
     ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
         goal = my_drivetrain_queue_.goal.MakeMessage();
-    goal->control_loop_driving = true;
+    goal->controller_type = 1;
     goal->left_goal = 5.0;
     goal->right_goal = 4.0;
     goal->left_velocity_goal = 0.0;
@@ -471,7 +471,7 @@ TEST_F(DrivetrainTest, SaturatedTurnDrive) {
 // drive profiles nicely.
 TEST_F(DrivetrainTest, OpenLoopThenClosed) {
   my_drivetrain_queue_.goal.MakeWithBuilder()
-      .control_loop_driving(false)
+      .controller_type(0)
       .wheel(0.0)
       .throttle(1.0)
       .highgear(true)
@@ -481,7 +481,7 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
   RunForTime(chrono::seconds(1));
 
   my_drivetrain_queue_.goal.MakeWithBuilder()
-      .control_loop_driving(false)
+      .controller_type(0)
       .wheel(0.0)
       .throttle(-0.3)
       .highgear(true)
@@ -491,7 +491,7 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
   RunForTime(chrono::seconds(1));
 
   my_drivetrain_queue_.goal.MakeWithBuilder()
-      .control_loop_driving(false)
+      .controller_type(0)
       .wheel(0.0)
       .throttle(0.0)
       .highgear(true)
@@ -503,7 +503,7 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
   {
     ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
         goal = my_drivetrain_queue_.goal.MakeMessage();
-    goal->control_loop_driving = true;
+    goal->controller_type = 1;
     goal->left_goal = 5.0;
     goal->right_goal = 4.0;
     goal->left_velocity_goal = 0.0;

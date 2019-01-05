@@ -242,9 +242,9 @@ void DrivetrainLoop::RunIteration(
 
   dt_openloop_.SetPosition(position, left_gear_, right_gear_);
 
-  bool control_loop_driving = false;
+  int controller_type = 0;
   if (goal) {
-    control_loop_driving = goal->control_loop_driving;
+    controller_type = goal->controller_type;
 
     dt_closedloop_.SetGoal(*goal);
     dt_openloop_.SetGoal(*goal);
@@ -252,13 +252,15 @@ void DrivetrainLoop::RunIteration(
 
   dt_openloop_.Update();
 
-  if (control_loop_driving) {
-    dt_closedloop_.Update(output != NULL);
-    dt_closedloop_.SetOutput(output);
-  } else {
-    dt_openloop_.SetOutput(output);
-    // TODO(austin): Set profile to current spot.
-    dt_closedloop_.Update(false);
+  dt_closedloop_.Update(output != NULL && controller_type == 1);
+
+  switch (controller_type) {
+    case 0:
+      dt_openloop_.SetOutput(output);
+      break;
+    case 1:
+      dt_closedloop_.SetOutput(output);
+      break;
   }
 
   // The output should now contain the shift request.
