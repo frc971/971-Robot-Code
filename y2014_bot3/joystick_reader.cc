@@ -10,9 +10,12 @@
 #include "aos/util/log_interval.h"
 #include "aos/time/time.h"
 
-#include "frc971/queues/gyro.q.h"
+#include "aos/input/drivetrain_input.h"
+#include "frc971/autonomous/auto.q.h"
+#include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "y2014_bot3/autonomous/auto.q.h"
+#include "frc971/queues/gyro.q.h"
+#include "y2014_bot3/control_loops/drivetrain/drivetrain_base.h"
 #include "y2014_bot3/control_loops/rollers/rollers.q.h"
 
 using ::frc971::control_loops::drivetrain_queue;
@@ -23,6 +26,7 @@ using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::POVLocation;
 using ::aos::input::driver_station::JoystickAxis;
 using ::aos::input::driver_station::ControlBit;
+using ::aos::input::DrivetrainInputReader;
 
 namespace y2014_bot3 {
 namespace input {
@@ -44,7 +48,11 @@ const ButtonLocation kHumanPlayer(4, 11);
 
 class Reader : public ::aos::input::JoystickInput {
  public:
-  Reader() : is_high_gear_(false) {}
+  Reader() {
+    drivetrain_input_reader_ = DrivetrainInputReader::Make(
+        DrivetrainInputReader::InputType::kSteeringWheel,
+        ::y2014_bot3::control_loops::drivetrain::GetDrivetrainConfig());
+  }
 
   virtual void RunIteration(const ::aos::input::driver_station::Data &data) {
     bool last_auto_running = auto_running_;
@@ -62,48 +70,20 @@ class Reader : public ::aos::input::JoystickInput {
       HandleDrivetrain(data);
       HandleTeleop(data);
     }
+
+    action_queue_.Tick();
   }
 
   void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
-    bool is_control_loop_driving = false;
-    const double wheel = -data.GetAxis(kSteeringWheel);
-    const double throttle = -data.GetAxis(kDriveThrottle);
-
-    if (data.PosEdge(kTurn1) || data.PosEdge(kTurn2)) {
-      drivetrain_queue.status.FetchLatest();
-      if (drivetrain_queue.status.get()) {
-        left_goal_ = drivetrain_queue.status->estimated_left_position;
-        right_goal_ = drivetrain_queue.status->estimated_right_position;
-      }
-    }
-    if (data.IsPressed(kTurn1) || data.IsPressed(kTurn2)) {
-      is_control_loop_driving = true;
-    }
-
-    if (!drivetrain_queue.goal.MakeWithBuilder()
-             .wheel(wheel)
-             .throttle(throttle)
-             .highgear(is_high_gear_)
-             .quickturn(data.IsPressed(kQuickTurn))
-             .control_loop_driving(is_control_loop_driving)
-             .left_goal(left_goal_ - wheel * 0.5 + throttle * 0.3)
-             .right_goal(right_goal_ + wheel * 0.5 + throttle * 0.3)
-             .left_velocity_goal(0)
-             .right_velocity_goal(0)
-             .Send()) {
-      LOG(WARNING, "sending stick values failed\n");
-    }
-
-    if (data.PosEdge(kShiftLow)) {
-      is_high_gear_ = false;
-    }
-
-    if (data.PosEdge(kShiftHigh) || data.PosEdge(kShiftHigh2)) {
-      is_high_gear_ = true;
-    }
+    drivetrain_input_reader_->HandleDrivetrain(data);
   }
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
+    if (!data.GetControlBit(ControlBit::kEnabled)) {
+      action_queue_.CancelAllActions();
+      LOG(DEBUG, "Canceling\n");
+    }
+
     // Rollers.
     auto rollers_goal = control_loops::rollers_queue.goal.MakeMessage();
     rollers_goal->Zero();
@@ -126,24 +106,26 @@ class Reader : public ::aos::input::JoystickInput {
  private:
   void StartAuto() {
     LOG(INFO, "Starting auto mode.\n");
-    ::y2014_bot3::autonomous::autonomous.MakeWithBuilder().run_auto(true).Send();
+    ::frc971::autonomous::AutonomousActionParams params;
+    params.mode = 0;
+    action_queue_.EnqueueAction(
+        ::frc971::autonomous::MakeAutonomousAction(params));
   }
 
   void StopAuto() {
     LOG(INFO, "Stopping auto mode\n");
-    ::y2014_bot3::autonomous::autonomous.MakeWithBuilder().run_auto(false).Send();
+    action_queue_.CancelAllActions();
   }
 
   bool auto_running_ = false;
 
-  bool is_high_gear_;
-  // Turning goals.
-  double left_goal_;
-  double right_goal_;
-
   ::aos::util::SimpleLogInterval no_drivetrain_status_ =
       ::aos::util::SimpleLogInterval(::std::chrono::milliseconds(200), WARNING,
                                      "no drivetrain status");
+
+  ::aos::common::actions::ActionQueue action_queue_;
+
+  ::std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
 };
 
 }  // namespace joysticks

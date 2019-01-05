@@ -31,7 +31,6 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2014_bot3/control_loops/drivetrain/drivetrain_base.h"
 #include "y2014_bot3/control_loops/rollers/rollers.q.h"
-#include "y2014_bot3/autonomous/auto.q.h"
 #include "y2014_bot3/control_loops/rollers/rollers.h"
 
 #include "frc971/wpilib/joystick_sender.h"
