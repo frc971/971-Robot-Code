@@ -1,5 +1,3 @@
-load("//aos/build:queues.bzl", "queue_library")
-
 cc_library(
     name = "autonomous_action_lib",
     srcs = [
