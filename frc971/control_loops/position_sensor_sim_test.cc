@@ -315,7 +315,7 @@ TEST_F(PositionSensorSimTest, HallEffectAndPosition) {
   sim.MoveTo(0.25);
   sim.GetSensorValues(&position);
   EXPECT_TRUE(position.current);
-  EXPECT_DOUBLE_EQ(0.50, position.position);
+  EXPECT_DOUBLE_EQ(0.50, position.encoder);
   EXPECT_EQ(1, position.posedge_count);
   EXPECT_EQ(0.25, position.posedge_value);
   EXPECT_EQ(0, position.negedge_count);
@@ -325,7 +325,7 @@ TEST_F(PositionSensorSimTest, HallEffectAndPosition) {
   sim.MoveTo(0.75);
   sim.GetSensorValues(&position);
   EXPECT_FALSE(position.current);
-  EXPECT_DOUBLE_EQ(1.0, position.position);
+  EXPECT_DOUBLE_EQ(1.0, position.encoder);
   EXPECT_EQ(1, position.posedge_count);
   EXPECT_DOUBLE_EQ(0.25, position.posedge_value);
   EXPECT_EQ(1, position.negedge_count);
@@ -335,7 +335,7 @@ TEST_F(PositionSensorSimTest, HallEffectAndPosition) {
   sim.MoveTo(1.75);
   sim.GetSensorValues(&position);
   EXPECT_FALSE(position.current);
-  EXPECT_DOUBLE_EQ(2.0, position.position);
+  EXPECT_DOUBLE_EQ(2.0, position.encoder);
   EXPECT_EQ(2, position.posedge_count);
   EXPECT_DOUBLE_EQ(1.25, position.posedge_value);
   EXPECT_EQ(2, position.negedge_count);
@@ -345,7 +345,7 @@ TEST_F(PositionSensorSimTest, HallEffectAndPosition) {
   sim.MoveTo(0.75);
   sim.GetSensorValues(&position);
   EXPECT_FALSE(position.current);
-  EXPECT_DOUBLE_EQ(1.0, position.position);
+  EXPECT_DOUBLE_EQ(1.0, position.encoder);
   EXPECT_EQ(3, position.posedge_count);
   EXPECT_DOUBLE_EQ(1.75, position.posedge_value);
   EXPECT_EQ(3, position.negedge_count);
@@ -355,7 +355,7 @@ TEST_F(PositionSensorSimTest, HallEffectAndPosition) {
   sim.MoveTo(0.25);
   sim.GetSensorValues(&position);
   EXPECT_TRUE(position.current);
-  EXPECT_DOUBLE_EQ(0.5, position.position);
+  EXPECT_DOUBLE_EQ(0.5, position.encoder);
   EXPECT_EQ(4, position.posedge_count);
   EXPECT_DOUBLE_EQ(0.75, position.posedge_value);
   EXPECT_EQ(3, position.negedge_count);
@@ -365,7 +365,7 @@ TEST_F(PositionSensorSimTest, HallEffectAndPosition) {
   sim.MoveTo(-0.25);
   sim.GetSensorValues(&position);
   EXPECT_FALSE(position.current);
-  EXPECT_DOUBLE_EQ(0.0, position.position);
+  EXPECT_DOUBLE_EQ(0.0, position.encoder);
   EXPECT_EQ(4, position.posedge_count);
   EXPECT_DOUBLE_EQ(0.75, position.posedge_value);
   EXPECT_EQ(4, position.negedge_count);
@@ -376,7 +376,7 @@ TEST_F(PositionSensorSimTest, HallEffectAndPosition) {
     sim.MoveTo(-0.25 - i * 1.0e-6);
     sim.GetSensorValues(&position);
     EXPECT_FALSE(position.current);
-    EXPECT_NEAR(-i * 1.0e-6, position.position, 1e-8);
+    EXPECT_NEAR(-i * 1.0e-6, position.encoder, 1e-8);
     EXPECT_EQ(4, position.posedge_count);
     EXPECT_DOUBLE_EQ(0.75, position.posedge_value);
     EXPECT_EQ(4, position.negedge_count);

@@ -175,7 +175,7 @@ void PositionSensorSimulator::GetSensorValues(PotAndAbsolutePosition *values) {
 void PositionSensorSimulator::GetSensorValues(HallEffectAndPosition *values) {
   values->current = lower_index_edge_.current_index_segment() !=
                     upper_index_edge_.current_index_segment();
-  values->position = current_position_ - start_position_;
+  values->encoder = current_position_ - start_position_;
 
   values->posedge_count = posedge_count_;
   values->negedge_count = negedge_count_;
