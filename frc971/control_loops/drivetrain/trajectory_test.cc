@@ -78,7 +78,10 @@ struct SplineTestParams {
   double longitudal_acceleration;
   double velocity_limit;
   double voltage_limit;
+  ::std::function<void(Trajectory *)> trajectory_modification_fn;
 };
+
+void NullTrajectoryModificationFunction(Trajectory *) {}
 
 class ParameterizedSplineTest
     : public ::testing::TestWithParam<SplineTestParams> {
@@ -105,6 +108,8 @@ class ParameterizedSplineTest
     trajectory_->set_longitudal_acceleration(GetParam().longitudal_acceleration);
     trajectory_->set_voltage_limit(GetParam().voltage_limit);
 
+    GetParam().trajectory_modification_fn(trajectory_.get());
+
     initial_plan_ = trajectory_->plan();
     trajectory_->LateralAccelPass();
     curvature_plan_ = trajectory_->plan();
@@ -117,6 +122,8 @@ class ParameterizedSplineTest
   }
 
   void TearDown() {
+    printf("  Spline takes %f seconds to follow\n",
+           length_plan_xva_.size() * ::y2016::control_loops::drivetrain::kDt);
 #if defined(SUPPORT_PLOT)
     if (FLAGS_plot) {
       ::std::vector<double> distances = trajectory_->Distances();
@@ -128,7 +135,20 @@ class ParameterizedSplineTest
         length_plan_a_.push_back(length_plan_xva_[i](2));
       }
 
+      ::std::vector<double> plan_segment_center_distance;
+      ::std::vector<double> plan_type;
+      for (Trajectory::SegmentType segment_type :
+           trajectory_->plan_segment_type()) {
+        plan_type.push_back(static_cast<int>(segment_type));
+      }
+      for (size_t i = 0; i < distances.size() - 1; ++i) {
+        plan_segment_center_distance.push_back(
+            (distances[i] + distances[i + 1]) / 2.0);
+      }
+
       matplotlibcpp::figure();
+      matplotlibcpp::plot(plan_segment_center_distance, plan_type,
+                          {{"label", "plan_type"}});
       matplotlibcpp::plot(distances, backward_plan_, {{"label", "backward"}});
       matplotlibcpp::plot(distances, forward_plan_, {{"label", "forward"}});
       matplotlibcpp::plot(distances, curvature_plan_, {{"label", "lateral"}});
@@ -248,6 +268,14 @@ SplineTestParams MakeSplineTestParams(struct SplineTestParams params) {
   return params;
 }
 
+void LimitMiddleOfPathTrajectoryModificationFunction(Trajectory *trajectory) {
+  trajectory->LimitVelocity(1.0, 2.0, 0.5);
+}
+
+void ShortLimitMiddleOfPathTrajectoryModificationFunction(Trajectory *trajectory) {
+  trajectory->LimitVelocity(1.5, 1.5, 0.5);
+}
+
 INSTANTIATE_TEST_CASE_P(
     SplineTest, ParameterizedSplineTest,
     ::testing::Values(
@@ -257,28 +285,48 @@ INSTANTIATE_TEST_CASE_P(
                                   .finished(),
                               2.0 /*lateral acceleration*/,
                               1.0 /*longitudinal acceleration*/,
-                              10.0 /* velocity limit */, 12.0 /* volts */}),
+                              10.0 /* velocity limit */, 12.0 /* volts */,
+                              NullTrajectoryModificationFunction}),
         // Be velocity limited.
         MakeSplineTestParams({(::Eigen::Matrix<double, 2, 4>() << 0.0, 6.0,
                                -1.0, 5.0, 0.0, 0.0, 1.0, 1.0)
                                   .finished(),
                               2.0 /*lateral acceleration*/,
                               1.0 /*longitudinal acceleration*/,
-                              0.5 /* velocity limit */, 12.0 /* volts */}),
+                              0.5 /* velocity limit */, 12.0 /* volts */,
+                              NullTrajectoryModificationFunction}),
         // Hit the voltage limit.
         MakeSplineTestParams({(::Eigen::Matrix<double, 2, 4>() << 0.0, 6.0,
                                -1.0, 5.0, 0.0, 0.0, 1.0, 1.0)
                                   .finished(),
                               2.0 /*lateral acceleration*/,
                               3.0 /*longitudinal acceleration*/,
-                              10.0 /* velocity limit */, 5.0 /* volts */}),
-        // Hit the curvature limit
+                              10.0 /* velocity limit */, 5.0 /* volts */,
+                              NullTrajectoryModificationFunction}),
+        // Hit the curvature limit.
         MakeSplineTestParams({(::Eigen::Matrix<double, 2, 4>() << 0.0, 1.2,
                                -0.2, 1.0, 0.0, 0.0, 1.0, 1.0)
                                   .finished(),
                               1.0 /*lateral acceleration*/,
                               3.0 /*longitudinal acceleration*/,
-                              10.0 /* velocity limit */, 12.0 /* volts */})));
+                              10.0 /* velocity limit */, 12.0 /* volts */,
+                              NullTrajectoryModificationFunction}),
+        // Add an artifical velocity limit in the middle.
+        MakeSplineTestParams({(::Eigen::Matrix<double, 2, 4>() << 0.0, 6.0,
+                               -1.0, 5.0, 0.0, 0.0, 1.0, 1.0)
+                                  .finished(),
+                              2.0 /*lateral acceleration*/,
+                              3.0 /*longitudinal acceleration*/,
+                              10.0 /* velocity limit */, 12.0 /* volts */,
+                              LimitMiddleOfPathTrajectoryModificationFunction}),
+        // Add a really short artifical velocity limit in the middle.
+        MakeSplineTestParams({(::Eigen::Matrix<double, 2, 4>() << 0.0, 6.0,
+                               -1.0, 5.0, 0.0, 0.0, 1.0, 1.0)
+                                  .finished(),
+                              2.0 /*lateral acceleration*/,
+                              3.0 /*longitudinal acceleration*/,
+                              10.0 /* velocity limit */, 12.0 /* volts */,
+                              ShortLimitMiddleOfPathTrajectoryModificationFunction})));
 
 // TODO(austin): Handle saturation.  254 does this by just not going that
 // fast...  We want to maybe replan when we get behind, or something.  Maybe

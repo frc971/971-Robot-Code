@@ -61,6 +61,10 @@ class Trajectory {
     return ::std::sqrt(lateral_acceleration_ / spline_->DDXY(distance).norm());
   }
 
+  // Limits the velocity in the specified segment to the max velocity.
+  void LimitVelocity(double starting_distance, double ending_distance,
+                     double max_velocity);
+
   // Runs the lateral acceleration (curvature) pass on the plan.
   void LateralAccelPass();
 

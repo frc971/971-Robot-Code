@@ -391,6 +391,36 @@ const ::Eigen::Matrix<double, 5, 1> Trajectory::GoalState(double distance,
   return result;
 }
 
+void Trajectory::LimitVelocity(double starting_distance, double ending_distance,
+                               const double max_velocity) {
+  const double segment_length = ending_distance - starting_distance;
+
+  const double min_length = length() / static_cast<double>(plan_.size() - 1);
+  if (starting_distance > ending_distance) {
+    LOG(FATAL, "End before start: %f > %f\n", starting_distance,
+        ending_distance);
+  }
+  starting_distance = ::std::min(length(), ::std::max(0.0, starting_distance));
+  ending_distance = ::std::min(length(), ::std::max(0.0, ending_distance));
+  if (segment_length < min_length) {
+    const size_t plan_index = static_cast<size_t>(
+        ::std::round((starting_distance + ending_distance) / 2.0 / min_length));
+    if (max_velocity < plan_[plan_index]) {
+      plan_[plan_index] = max_velocity;
+    }
+  } else {
+    for (size_t i = DistanceToSegment(starting_distance) + 1;
+         i < DistanceToSegment(ending_distance) + 1; ++i) {
+      if (max_velocity < plan_[i]) {
+        plan_[i] = max_velocity;
+        if (i < DistanceToSegment(ending_distance)) {
+          plan_segment_type_[i] = SegmentType::VELOCITY_LIMITED;
+        }
+      }
+    }
+  }
+}
+
 }  // namespace drivetrain
 }  // namespace control_loops
 }  // namespace frc971
