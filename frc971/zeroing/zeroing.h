@@ -19,8 +19,12 @@
 namespace frc971 {
 namespace zeroing {
 
+template <typename TPosition, typename TZeroingConstants, typename TState>
 class ZeroingEstimator {
  public:
+  using Position = TPosition;
+  using ZeroingConstants = TZeroingConstants;
+  using State = TState;
   virtual ~ZeroingEstimator(){}
 
   // Returns true if the logic considers the corresponding mechanism to be
@@ -32,28 +36,42 @@ class ZeroingEstimator {
 
   // Returns true if there has been an error.
   virtual bool error() const = 0;
+
+  // Returns true if an offset is ready.
+  virtual bool offset_ready() const = 0;
+
+  // Triggers an internal error. This is used for testing the error
+  // logic.
+  virtual void TriggerError() = 0;
+
+  // Resets the estimator, clearing error and zeroing states.
+  virtual void Reset() = 0;
+
+  // Updates the internal logic with new sensor values
+  virtual void UpdateEstimate(const Position &) = 0;
+
+  // Returns the state of the estimator
+  virtual State GetEstimatorState() const = 0;
 };
 
 // Estimates the position with an incremental encoder with an index pulse and a
 // potentiometer.
-class PotAndIndexPulseZeroingEstimator : public ZeroingEstimator {
+class PotAndIndexPulseZeroingEstimator : public ZeroingEstimator<PotAndIndexPosition,
+    constants::PotAndIndexPulseZeroingConstants,
+    EstimatorState> {
  public:
-  using Position = PotAndIndexPosition;
-  using ZeroingConstants = constants::PotAndIndexPulseZeroingConstants;
-  using State = EstimatorState;
-
   explicit PotAndIndexPulseZeroingEstimator(
       const constants::PotAndIndexPulseZeroingConstants &constants);
 
   // Update the internal logic with the next sensor values.
-  void UpdateEstimate(const PotAndIndexPosition &info);
+  void UpdateEstimate(const PotAndIndexPosition &info) override;
 
   // Reset the internal logic so it needs to be re-zeroed.
-  void Reset();
+  void Reset() override;
 
   // Manually trigger an internal error. This is used for testing the error
   // logic.
-  void TriggerError();
+  void TriggerError() override;
 
   bool error() const override { return error_; }
 
@@ -73,12 +91,12 @@ class PotAndIndexPulseZeroingEstimator : public ZeroingEstimator {
   }
 
   // Returns true if the sample buffer is full.
-  bool offset_ready() const {
+  bool offset_ready() const override {
     return start_pos_samples_.size() == constants_.average_filter_size;
   }
 
   // Returns information about our current state.
-  State GetEstimatorState() const;
+  State GetEstimatorState() const override;
 
  private:
   // This function calculates the start position given the internal state and
@@ -122,23 +140,22 @@ class PotAndIndexPulseZeroingEstimator : public ZeroingEstimator {
 };
 
 // Estimates the position with an incremental encoder and a hall effect sensor.
-class HallEffectAndPositionZeroingEstimator : public ZeroingEstimator {
+class HallEffectAndPositionZeroingEstimator
+    : public ZeroingEstimator<HallEffectAndPosition,
+    constants::HallEffectZeroingConstants,
+    HallEffectAndPositionEstimatorState> {
  public:
-  using Position = HallEffectAndPosition;
-  using ZeroingConstants = constants::HallEffectZeroingConstants;
-  using State = HallEffectAndPositionEstimatorState;
-
   explicit HallEffectAndPositionZeroingEstimator(const ZeroingConstants &constants);
 
   // Update the internal logic with the next sensor values.
-  void UpdateEstimate(const Position &info);
+  void UpdateEstimate(const Position &info) override;
 
   // Reset the internal logic so it needs to be re-zeroed.
-  void Reset();
+  void Reset() override;
 
   // Manually trigger an internal error. This is used for testing the error
   // logic.
-  void TriggerError();
+  void TriggerError() override;
 
   bool error() const override { return error_; }
 
@@ -146,8 +163,10 @@ class HallEffectAndPositionZeroingEstimator : public ZeroingEstimator {
 
   double offset() const override { return offset_; }
 
+  bool offset_ready() const override { return zeroed_; }
+
   // Returns information about our current state.
-  State GetEstimatorState() const;
+  State GetEstimatorState() const override;
 
  private:
   // Sets the minimum and maximum posedge position values.
@@ -196,20 +215,21 @@ class HallEffectAndPositionZeroingEstimator : public ZeroingEstimator {
 
 // Estimates the position with an absolute encoder which also reports
 // incremental counts, and a potentiometer.
-class PotAndAbsEncoderZeroingEstimator : public ZeroingEstimator {
+class PotAndAbsEncoderZeroingEstimator
+    : public ZeroingEstimator<PotAndAbsolutePosition,
+    constants::PotAndAbsoluteEncoderZeroingConstants,
+    AbsoluteEstimatorState> {
  public:
-  using Position = PotAndAbsolutePosition;
-  using ZeroingConstants = constants::PotAndAbsoluteEncoderZeroingConstants;
-  using State = AbsoluteEstimatorState;
-
   explicit PotAndAbsEncoderZeroingEstimator(
       const constants::PotAndAbsoluteEncoderZeroingConstants &constants);
 
   // Resets the internal logic so it needs to be re-zeroed.
-  void Reset();
+  void Reset() override;
 
   // Updates the sensor values for the zeroing logic.
-  void UpdateEstimate(const PotAndAbsolutePosition &info);
+  void UpdateEstimate(const PotAndAbsolutePosition &info) override;
+
+  void TriggerError() override { error_ = true; }
 
   bool zeroed() const override { return zeroed_; }
 
@@ -218,14 +238,14 @@ class PotAndAbsEncoderZeroingEstimator : public ZeroingEstimator {
   bool error() const override { return error_; }
 
   // Returns true if the sample buffer is full.
-  bool offset_ready() const {
+  bool offset_ready() const override {
     return relative_to_absolute_offset_samples_.size() ==
                constants_.average_filter_size &&
            offset_samples_.size() == constants_.average_filter_size;
   }
 
   // Returns information about our current state.
-  State GetEstimatorState() const;
+  State GetEstimatorState() const override;
 
  private:
   // The zeroing constants used to describe the configuration of the system.
@@ -268,39 +288,36 @@ class PotAndAbsEncoderZeroingEstimator : public ZeroingEstimator {
   double position_ = 0.0;
 };
 
-
 // Zeros by seeing all the index pulses in the range of motion of the mechanism
 // and using that to figure out which index pulse is which.
-class PulseIndexZeroingEstimator : public ZeroingEstimator {
+class PulseIndexZeroingEstimator : public ZeroingEstimator<IndexPosition,
+    constants::EncoderPlusIndexZeroingConstants,
+    IndexEstimatorState> {
  public:
-  using Position = IndexPosition;
-  using ZeroingConstants = constants::EncoderPlusIndexZeroingConstants;
-  using State = IndexEstimatorState;
-
   explicit PulseIndexZeroingEstimator(const ZeroingConstants &constants)
       : constants_(constants) {
     Reset();
   }
 
   // Resets the internal logic so it needs to be re-zeroed.
-  void Reset();
+  void Reset() override;
 
   bool zeroed() const override { return zeroed_; }
 
   // It's as ready as it'll ever be...
-  bool offset_ready() const { return true; }
+  bool offset_ready() const override { return true; }
 
   double offset() const override { return offset_; }
 
   bool error() const override { return error_; }
 
   // Updates the internal logic with the next sensor values.
-  void UpdateEstimate(const IndexPosition &info);
+  void UpdateEstimate(const IndexPosition &info) override;
 
   // Returns information about our current state.
-  State GetEstimatorState() const;
+  State GetEstimatorState() const override;
 
-  void TriggerError() { error_ = true; }
+  void TriggerError() override { error_ = true; }
 
  private:
   // Returns the current real position using the relative encoder offset.
