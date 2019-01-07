@@ -150,9 +150,26 @@ class Trajectory {
   ::std::vector<::Eigen::Matrix<double, 3, 1>> PlanXVA(
       ::std::chrono::nanoseconds dt);
 
+  enum SegmentType : uint8_t {
+    VELOCITY_LIMITED,
+    CURVATURE_LIMITED,
+    ACCELERATION_LIMITED,
+    DECELERATION_LIMITED
+  };
+
+  const ::std::vector<SegmentType> &plan_segment_type() const {
+    return plan_segment_type_;
+  }
+
  private:
   // Computes alpha for a distance.
-  double DistanceToAlpha(double distance) const;
+  size_t DistanceToSegment(double distance) const {
+    return ::std::max(
+        static_cast<size_t>(0),
+        ::std::min(plan_segment_type_.size() - 1,
+                   static_cast<size_t>(::std::floor(distance / length() *
+                                                    (plan_.size() - 1)))));
+  }
 
   // Returns K1 and K2.
   // K2 * d^x/dt^2 + K1 (dx/dt)^2 = A * K2 * dx/dt + B * U
@@ -211,6 +228,7 @@ class Trajectory {
   const ::Eigen::Matrix<double, 2, 2> Tla_to_lr_;
   // Velocities in the plan (distance for each index is defined by distance())
   ::std::vector<double> plan_;
+  ::std::vector<SegmentType> plan_segment_type_;
   // Plan voltage limit.
   double voltage_limit_ = 12.0;
 };

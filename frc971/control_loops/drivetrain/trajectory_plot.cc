@@ -83,6 +83,17 @@ void Main() {
   trajectory.BackwardPass();
 
   ::aos::monotonic_clock::time_point end_time = ::aos::monotonic_clock::now();
+
+  ::std::vector<double> plan_segment_center_distance;
+  ::std::vector<double> plan_type;
+  for (Trajectory::SegmentType segment_type : trajectory.plan_segment_type()) {
+    plan_type.push_back(static_cast<int>(segment_type));
+  }
+  for (size_t i = 0; i < distances.size() - 1; ++i) {
+    plan_segment_center_distance.push_back((distances[i] + distances[i + 1]) /
+                                           2.0);
+  }
+
   ::std::vector<double> backward_plan = trajectory.plan();
 
   LOG(INFO, "Took %fms to plan\n",
@@ -195,6 +206,8 @@ void Main() {
 
   if (FLAGS_plot) {
     matplotlibcpp::figure();
+    matplotlibcpp::plot(plan_segment_center_distance, plan_type,
+                        {{"label", "plan_type"}});
     matplotlibcpp::plot(distances, backward_plan, {{"label", "backward"}});
     matplotlibcpp::plot(distances, forward_plan, {{"label", "forward"}});
     matplotlibcpp::plot(distances, curvature_plan, {{"label", "lateral"}});

@@ -167,8 +167,6 @@ TEST_F(SplineTest, FBSpline) {
             1.1e-2);
 }
 
-// TODO(austin): Try a velocity limited plan at some point.
-//
 // TODO(austin): Handle saturation.  254 does this by just not going that
 // fast...  We want to maybe replan when we get behind, or something.  Maybe
 // stop moving the setpoint like our 2018 arm?
