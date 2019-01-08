@@ -1,7 +1,13 @@
 #include <iostream>
 #include <getopt.h>
 
+#include "gflags/gflags.h"
 #include "gtest/gtest.h"
+
+DEFINE_bool(print_logs, false,
+            "Print the log messages as they are being generated.");
+DEFINE_string(log_file, "",
+              "Print all log messages to FILE instead of standard output.");
 
 namespace aos {
 namespace testing {
@@ -14,54 +20,21 @@ void ForcePrintLogsDuringTests() __attribute__((weak));
 }  // namespace aos
 
 GTEST_API_ int main(int argc, char **argv) {
-  static const struct option long_options[] = {
-      {"help", no_argument, 0, 'h'},
-      {"print-logs", no_argument, 0, 'p'},
-      {"log-file", required_argument, 0, 'o'},
-      {0, 0, 0, 0},
-  };
+  ::testing::InitGoogleTest(&argc, argv);
+  ::gflags::ParseCommandLineFlags(&argc, &argv, false);
 
-  testing::InitGoogleTest(&argc, argv);
-
-  // The gtest library modifies argc and argv to remove all of its own command
-  // line switches etc. So after calling InitGoogleTest() we can parse our own
-  // command line options.
-  while (true) {
-    int c = getopt_long(argc, argv, "pho:", long_options, nullptr);
-
-    if (c == -1) {
-      break;
+  if (FLAGS_print_logs) {
+    if (::aos::testing::ForcePrintLogsDuringTests) {
+      ::aos::testing::ForcePrintLogsDuringTests();
     }
+  }
 
-    switch (c) {
-      case 'h':
-        printf(
-            "\nFRC971 options:\n"
-            "  -p, --print-logs\n"
-            "      Print the log messages as they are being generated.\n"
-            "  -o, --log-file=FILE\n"
-            "      Print all log messages to FILE instead of standard output.\n"
-	    "      This implies -p.\n"
-            );
-        break;
-
-      case 'p':
-        if (::aos::testing::ForcePrintLogsDuringTests) {
-          ::aos::testing::ForcePrintLogsDuringTests();
-        }
-        break;
-
-      case 'o':
-        if (::aos::testing::ForcePrintLogsDuringTests) {
-          ::aos::testing::ForcePrintLogsDuringTests();
-        }
-        if (::aos::testing::SetLogFileName) {
-          ::aos::testing::SetLogFileName(optarg);
-        }
-        break;
-
-      case '?':
-        abort();
+  if (!FLAGS_log_file.empty()) {
+    if (::aos::testing::ForcePrintLogsDuringTests) {
+      ::aos::testing::ForcePrintLogsDuringTests();
+    }
+    if (::aos::testing::SetLogFileName) {
+      ::aos::testing::SetLogFileName(FLAGS_log_file.c_str());
     }
   }
 
