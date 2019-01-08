@@ -70,16 +70,26 @@ double Trajectory::ForwardAcceleration(const double x, const double v) {
 
   // Then, assume an acceleration oval and stay inside it.
   const double lateral_acceleration = v * v * spline_->DDXY(x).norm();
+  const double ellipse_down_shift = longitudal_acceleration_ * 1.0;
+  const double ellipse_width_stretch = ::std::sqrt(
+      1.0 / (1.0 - ::std::pow(ellipse_down_shift / (longitudal_acceleration_ +
+                                                    ellipse_down_shift),
+                              2.0)));
   const double squared =
-      1.0 - ::std::pow(lateral_acceleration / lateral_acceleration_, 2.0);
+      1.0 - ::std::pow(lateral_acceleration / lateral_acceleration_ /
+                           ellipse_width_stretch,
+                       2.0);
   // If we would end up with an imaginary number, cap us at 0 acceleration.
   // TODO(austin): Investigate when this happens, why, and fix it.
   if (squared < 0.0) {
-    LOG(ERROR, "Imaginary %f, d %f\n", squared, x);
+    LOG(ERROR, "Imaginary %f, maxa: %f, fa(%f, %f) -> 0.0\n", squared, maxa, x,
+        v);
     return 0.0;
   }
   const double longitudal_acceleration =
-      ::std::sqrt(squared) * longitudal_acceleration_;
+      ::std::sqrt(::std::abs(squared)) *
+          (longitudal_acceleration_ + ellipse_down_shift) -
+      ellipse_down_shift;
   return ::std::min(longitudal_acceleration, maxa);
 }
 
@@ -119,16 +129,26 @@ double Trajectory::BackwardAcceleration(double x, double v) {
 
   // Then, assume an acceleration oval and stay inside it.
   const double lateral_acceleration = v * v * spline_->DDXY(x).norm();
+  const double ellipse_down_shift = longitudal_acceleration_ * 1.0;
+  const double ellipse_width_stretch = ::std::sqrt(
+      1.0 / (1.0 - ::std::pow(ellipse_down_shift / (longitudal_acceleration_ +
+                                                    ellipse_down_shift),
+                              2.0)));
   const double squared =
-      1.0 - ::std::pow(lateral_acceleration / lateral_acceleration_, 2.0);
+      1.0 - ::std::pow(lateral_acceleration / lateral_acceleration_ /
+                           ellipse_width_stretch,
+                       2.0);
   // If we would end up with an imaginary number, cap us at 0 acceleration.
   // TODO(austin): Investigate when this happens, why, and fix it.
   if (squared < 0.0) {
-    LOG(ERROR, "Imaginary %f, d %f\n", squared, x);
+    LOG(ERROR, "Imaginary %f, mina: %f, fa(%f, %f) -> 0.0\n", squared, mina, x,
+        v);
     return 0.0;
   }
   const double longitudal_acceleration =
-      -::std::sqrt(squared) * longitudal_acceleration_;
+      -::std::sqrt(::std::abs(squared)) *
+          (longitudal_acceleration_ + ellipse_down_shift) +
+      ellipse_down_shift;
   return ::std::max(longitudal_acceleration, mina);
 }
 
