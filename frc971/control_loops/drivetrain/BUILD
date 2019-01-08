@@ -2,6 +2,7 @@ package(default_visibility = ["//visibility:public"])
 
 load("//aos/build:queues.bzl", "queue_library")
 load("//tools:environments.bzl", "mcu_cpus")
+load("//tools/build_rules:select.bzl", "cpu_select", "compiler_select")
 
 cc_binary(
     name = "replay_drivetrain",
@@ -346,11 +347,24 @@ cc_test(
     srcs = [
         "trajectory_test.cc",
     ],
+    defines =
+        cpu_select({
+            "amd64": [
+                "SUPPORT_PLOT=1",
+            ],
+            "arm": [],
+        }),
+    linkstatic = True,
     deps = [
         ":trajectory",
         "//aos/testing:googletest",
         "//aos/testing:test_shm",
         "//y2016:constants",
         "//y2016/control_loops/drivetrain:polydrivetrain_plants",
-    ],
+    ] + cpu_select({
+        "amd64": [
+            "//third_party/matplotlib-cpp",
+        ],
+        "arm": [],
+    }),
 )

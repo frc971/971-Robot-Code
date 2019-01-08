@@ -41,8 +41,8 @@ double IntegrateAccelForDistance(const F &fn, double v, double x, double dx) {
 class Trajectory {
  public:
   Trajectory(const DistanceSpline *spline,
-             const DrivetrainConfig<double> &config,
-             double vmax = 10.0, int num_distance = 500);
+             const DrivetrainConfig<double> &config, double vmax = 10.0,
+             int num_distance = 0);
   // Sets the plan longitudal acceleration limit
   void set_longitudal_acceleration(double longitudal_acceleration) {
     longitudal_acceleration_ = longitudal_acceleration;
@@ -60,6 +60,10 @@ class Trajectory {
   double LateralVelocityCurvature(double distance) const {
     return ::std::sqrt(lateral_acceleration_ / spline_->DDXY(distance).norm());
   }
+
+  // Limits the velocity in the specified segment to the max velocity.
+  void LimitVelocity(double starting_distance, double ending_distance,
+                     double max_velocity);
 
   // Runs the lateral acceleration (curvature) pass on the plan.
   void LateralAccelPass();
@@ -150,9 +154,26 @@ class Trajectory {
   ::std::vector<::Eigen::Matrix<double, 3, 1>> PlanXVA(
       ::std::chrono::nanoseconds dt);
 
+  enum SegmentType : uint8_t {
+    VELOCITY_LIMITED,
+    CURVATURE_LIMITED,
+    ACCELERATION_LIMITED,
+    DECELERATION_LIMITED
+  };
+
+  const ::std::vector<SegmentType> &plan_segment_type() const {
+    return plan_segment_type_;
+  }
+
  private:
   // Computes alpha for a distance.
-  double DistanceToAlpha(double distance) const;
+  size_t DistanceToSegment(double distance) const {
+    return ::std::max(
+        static_cast<size_t>(0),
+        ::std::min(plan_segment_type_.size() - 1,
+                   static_cast<size_t>(::std::floor(distance / length() *
+                                                    (plan_.size() - 1)))));
+  }
 
   // Returns K1 and K2.
   // K2 * d^x/dt^2 + K1 (dx/dt)^2 = A * K2 * dx/dt + B * U
@@ -211,6 +232,7 @@ class Trajectory {
   const ::Eigen::Matrix<double, 2, 2> Tla_to_lr_;
   // Velocities in the plan (distance for each index is defined by distance())
   ::std::vector<double> plan_;
+  ::std::vector<SegmentType> plan_segment_type_;
   // Plan voltage limit.
   double voltage_limit_ = 12.0;
 };

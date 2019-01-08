@@ -7,6 +7,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//third_party/googletest:gtest",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -23,8 +24,8 @@ cc_library(
     deps = [
         ":googletest",
         "//aos:once",
-        "//aos/mutex:mutex",
         "//aos/logging:implementations",
+        "//aos/mutex",
     ],
 )
 
@@ -68,8 +69,8 @@ cc_library(
     deps = [
         ":test_logging",
         "//aos:queues",
-        "//aos/logging",
         "//aos/ipc_lib:shared_mem",
+        "//aos/logging",
     ],
 )
 

@@ -36,7 +36,11 @@ Trajectory::Trajectory(const DistanceSpline *spline,
                   1.0 / (robot_radius_l_ + robot_radius_r_))
                      .finished()),
       Tla_to_lr_(Tlr_to_la_.inverse()),
-      plan_(num_distance, vmax) {}
+      plan_(num_distance == 0
+                ? ::std::max(100, static_cast<int>(spline_->length() / 0.0025))
+                : num_distance,
+            vmax),
+      plan_segment_type_(plan_.size() - 1, SegmentType::VELOCITY_LIMITED) {}
 
 void Trajectory::LateralAccelPass() {
   for (size_t i = 0; i < plan_.size(); ++i) {
@@ -70,16 +74,26 @@ double Trajectory::ForwardAcceleration(const double x, const double v) {
 
   // Then, assume an acceleration oval and stay inside it.
   const double lateral_acceleration = v * v * spline_->DDXY(x).norm();
+  const double ellipse_down_shift = longitudal_acceleration_ * 1.0;
+  const double ellipse_width_stretch = ::std::sqrt(
+      1.0 / (1.0 - ::std::pow(ellipse_down_shift / (longitudal_acceleration_ +
+                                                    ellipse_down_shift),
+                              2.0)));
   const double squared =
-      1.0 - ::std::pow(lateral_acceleration / lateral_acceleration_, 2.0);
+      1.0 - ::std::pow(lateral_acceleration / lateral_acceleration_ /
+                           ellipse_width_stretch,
+                       2.0);
   // If we would end up with an imaginary number, cap us at 0 acceleration.
   // TODO(austin): Investigate when this happens, why, and fix it.
   if (squared < 0.0) {
-    LOG(ERROR, "Imaginary %f, d %f\n", squared, x);
+    LOG(ERROR, "Imaginary %f, maxa: %f, fa(%f, %f) -> 0.0\n", squared, maxa, x,
+        v);
     return 0.0;
   }
   const double longitudal_acceleration =
-      ::std::sqrt(squared) * longitudal_acceleration_;
+      ::std::sqrt(::std::abs(squared)) *
+          (longitudal_acceleration_ + ellipse_down_shift) -
+      ellipse_down_shift;
   return ::std::min(longitudal_acceleration, maxa);
 }
 
@@ -90,11 +104,14 @@ void Trajectory::ForwardPass() {
     const double distance = Distance(i);
 
     // Integrate our acceleration forward one step.
-    plan_[i + 1] = ::std::min(
-        plan_[i + 1],
-        IntegrateAccelForDistance(
-            [this](double x, double v) { return ForwardAcceleration(x, v); },
-            plan_[i], distance, delta_distance));
+    const double new_plan_velocity = IntegrateAccelForDistance(
+        [this](double x, double v) { return ForwardAcceleration(x, v); },
+        plan_[i], distance, delta_distance);
+
+    if (new_plan_velocity < plan_[i + 1]) {
+      plan_[i + 1] = new_plan_velocity;
+      plan_segment_type_[i] = SegmentType::ACCELERATION_LIMITED;
+    }
   }
 }
 
@@ -119,16 +136,26 @@ double Trajectory::BackwardAcceleration(double x, double v) {
 
   // Then, assume an acceleration oval and stay inside it.
   const double lateral_acceleration = v * v * spline_->DDXY(x).norm();
+  const double ellipse_down_shift = longitudal_acceleration_ * 1.0;
+  const double ellipse_width_stretch = ::std::sqrt(
+      1.0 / (1.0 - ::std::pow(ellipse_down_shift / (longitudal_acceleration_ +
+                                                    ellipse_down_shift),
+                              2.0)));
   const double squared =
-      1.0 - ::std::pow(lateral_acceleration / lateral_acceleration_, 2.0);
+      1.0 - ::std::pow(lateral_acceleration / lateral_acceleration_ /
+                           ellipse_width_stretch,
+                       2.0);
   // If we would end up with an imaginary number, cap us at 0 acceleration.
   // TODO(austin): Investigate when this happens, why, and fix it.
   if (squared < 0.0) {
-    LOG(ERROR, "Imaginary %f, d %f\n", squared, x);
+    LOG(ERROR, "Imaginary %f, mina: %f, fa(%f, %f) -> 0.0\n", squared, mina, x,
+        v);
     return 0.0;
   }
   const double longitudal_acceleration =
-      -::std::sqrt(squared) * longitudal_acceleration_;
+      -::std::sqrt(::std::abs(squared)) *
+          (longitudal_acceleration_ + ellipse_down_shift) +
+      ellipse_down_shift;
   return ::std::max(longitudal_acceleration, mina);
 }
 
@@ -139,69 +166,70 @@ void Trajectory::BackwardPass() {
     const double distance = Distance(i);
 
     // Integrate our deceleration back one step.
-    plan_[i - 1] = ::std::min(
-        plan_[i - 1],
-        IntegrateAccelForDistance(
-            [this](double x, double v) { return BackwardAcceleration(x, v); },
-            plan_[i], distance, delta_distance));
+    const double new_plan_velocity = IntegrateAccelForDistance(
+        [this](double x, double v) { return BackwardAcceleration(x, v); },
+        plan_[i], distance, delta_distance);
+
+    if (new_plan_velocity < plan_[i - 1]) {
+      plan_[i - 1] = new_plan_velocity;
+      plan_segment_type_[i - 1] = SegmentType::DECELERATION_LIMITED;
+    }
   }
 }
 
 ::Eigen::Matrix<double, 3, 1> Trajectory::FFAcceleration(double distance) {
-  size_t before_index;
-  size_t after_index;
-  if (distance < Distance(1)) {
-    // Within the first step.
-    after_index = 1;
+  if (distance < 0.0) {
     // Make sure we don't end up off the beginning of the curve.
-    if (distance < 0.0) {
-      distance = 0.0;
-    }
-  } else if (distance > Distance(plan_.size() - 2)) {
-    // Within the last step.
-    after_index = plan_.size() - 1;
+    distance = 0.0;
+  } else if (distance > length()) {
     // Make sure we don't end up off the end of the curve.
-    if (distance > length()) {
-      distance = length();
-    }
-  } else {
-    // Otherwise do the calculation normally.
-    after_index = static_cast<size_t>(
-        ::std::ceil(distance / length() * (plan_.size() - 1)));
+    distance = length();
   }
-  before_index = after_index - 1;
+  const size_t before_index = DistanceToSegment(distance);
+  const size_t after_index = before_index + 1;
+
   const double before_distance = Distance(before_index);
   const double after_distance = Distance(after_index);
-
-  // Now, compute the velocity that we could have if we accelerated from the
-  // previous step and decelerated from the next step.  The min will tell us
-  // which is in effect.
-  const double velocity_forwards = IntegrateAccelForDistance(
-      [this](double x, double v) { return ForwardAcceleration(x, v); },
-      plan_[before_index], before_distance, distance - before_distance);
-  const double velocity_backward = IntegrateAccelForDistance(
-      [this](double x, double v) { return BackwardAcceleration(x, v); },
-      plan_[after_index], after_distance, distance - after_distance);
 
   // And then also make sure we aren't curvature limited.
   const double vcurvature = LateralVelocityCurvature(distance);
 
   double acceleration;
   double velocity;
-  if (vcurvature < velocity_forwards && vcurvature < velocity_backward) {
-    // If we are curvature limited, we can't accelerate.
+  switch (plan_segment_type_[DistanceToSegment(distance)]) {
+    case SegmentType::VELOCITY_LIMITED:
+      acceleration = 0.0;
+      velocity = (plan_[before_index] + plan_[after_index]) / 2.0;
+      // TODO(austin): Accelerate or decelerate until we hit the limit in the
+      // time slice.  Otherwise our acceleration will be lying for this slice.
+      // Do note, we've got small slices so the effect will be small.
+      break;
+    case SegmentType::CURVATURE_LIMITED:
+      velocity = vcurvature;
+      acceleration = 0.0;
+      break;
+    case SegmentType::ACCELERATION_LIMITED:
+      velocity = IntegrateAccelForDistance(
+          [this](double x, double v) { return ForwardAcceleration(x, v); },
+          plan_[before_index], before_distance, distance - before_distance);
+      acceleration = ForwardAcceleration(distance, velocity);
+      break;
+    case SegmentType::DECELERATION_LIMITED:
+      velocity = IntegrateAccelForDistance(
+          [this](double x, double v) { return BackwardAcceleration(x, v); },
+          plan_[after_index], after_distance, distance - after_distance);
+      acceleration = BackwardAcceleration(distance, velocity);
+      break;
+    default:
+      LOG(FATAL, "Unknown segment type %d\n",
+          static_cast<int>(plan_segment_type_[DistanceToSegment(distance)]));
+      break;
+  }
+
+  if (vcurvature < velocity) {
     velocity = vcurvature;
     acceleration = 0.0;
-  } else if (velocity_forwards < velocity_backward) {
-    // Otherwise, pick the acceleration and velocity from the forward pass if it
-    // was the predominate factor in this step.
-    velocity = velocity_forwards;
-    acceleration = ForwardAcceleration(distance, velocity);
-  } else {
-    // Otherwise, pick the acceleration and velocity from the backward pass if
-    // it was the predominate factor in this step.
-    velocity = velocity_backward;
-    acceleration = BackwardAcceleration(distance, velocity);
+    LOG(ERROR, "Curvature won\n");
   }
   return (::Eigen::Matrix<double, 3, 1>() << distance, velocity, acceleration)
       .finished();
@@ -211,21 +239,11 @@ void Trajectory::BackwardPass() {
   const Eigen::Matrix<double, 3, 1> xva = FFAcceleration(distance);
   const double velocity = xva(1);
   const double acceleration = xva(2);
-  const double current_ddtheta = spline_->DDTheta(distance);
-  const double current_dtheta = spline_->DTheta(distance);
-  // We've now got the equation:
-  //     K2 * d^x/dt^2 + K1 (dx/dt)^2 = A * K2 * dx/dt + B * U
-  const ::Eigen::Matrix<double, 2, 1> my_K2 = K2(current_dtheta);
 
-  const ::Eigen::Matrix<double, 2, 2> B_inverse =
-      velocity_drivetrain_->plant().coefficients().B_continuous.inverse();
-
-  // Now, rephrase it as K5 a + K3 v^2 + K4 v = U
-  const ::Eigen::Matrix<double, 2, 1> K5 = B_inverse * my_K2;
-  const ::Eigen::Matrix<double, 2, 1> K3 = B_inverse * K1(current_ddtheta);
-  const ::Eigen::Matrix<double, 2, 1> K4 =
-      -B_inverse * velocity_drivetrain_->plant().coefficients().A_continuous *
-      my_K2;
+  ::Eigen::Matrix<double, 2, 1> K3;
+  ::Eigen::Matrix<double, 2, 1> K4;
+  ::Eigen::Matrix<double, 2, 1> K5;
+  K345(distance, &K3, &K4, &K5);
 
   return K5 * acceleration + K3 * velocity * velocity + K4 * velocity;
 }
@@ -371,6 +389,36 @@ const ::Eigen::Matrix<double, 5, 1> Trajectory::GoalState(double distance,
     state(1) = result.back()(1);
   }
   return result;
+}
+
+void Trajectory::LimitVelocity(double starting_distance, double ending_distance,
+                               const double max_velocity) {
+  const double segment_length = ending_distance - starting_distance;
+
+  const double min_length = length() / static_cast<double>(plan_.size() - 1);
+  if (starting_distance > ending_distance) {
+    LOG(FATAL, "End before start: %f > %f\n", starting_distance,
+        ending_distance);
+  }
+  starting_distance = ::std::min(length(), ::std::max(0.0, starting_distance));
+  ending_distance = ::std::min(length(), ::std::max(0.0, ending_distance));
+  if (segment_length < min_length) {
+    const size_t plan_index = static_cast<size_t>(
+        ::std::round((starting_distance + ending_distance) / 2.0 / min_length));
+    if (max_velocity < plan_[plan_index]) {
+      plan_[plan_index] = max_velocity;
+    }
+  } else {
+    for (size_t i = DistanceToSegment(starting_distance) + 1;
+         i < DistanceToSegment(ending_distance) + 1; ++i) {
+      if (max_velocity < plan_[i]) {
+        plan_[i] = max_velocity;
+        if (i < DistanceToSegment(ending_distance)) {
+          plan_segment_type_[i] = SegmentType::VELOCITY_LIMITED;
+        }
+      }
+    }
+  }
 }
 
 }  // namespace drivetrain
