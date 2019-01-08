@@ -38,6 +38,12 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
 
   void Zero(::frc971::control_loops::DrivetrainQueue::Output *output) override;
 
+  // Computes the xy state change given the change in the lr state.
+  ::Eigen::Matrix<double, 3, 1> PredictState(
+      const ::Eigen::Matrix<double, 3, 1> &xytheta_state,
+      const ::Eigen::Matrix<double, 7, 1> &state,
+      const ::Eigen::Matrix<double, 7, 1> &previous_state) const;
+
   double last_gyro_rate_ = 0.0;
 
   const DrivetrainConfig<double> dt_config_;
@@ -66,6 +72,16 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
   bool has_been_enabled_ = false;
 
   double last_accel_ = 0.0;
+
+  // Current xytheta state of the robot.  This is essentially the kalman filter
+  // integrated up in a direction.
+  // [x, y, theta, vl, vr, left_error, right_error]
+  ::Eigen::Matrix<double, 7, 1> xytheta_state_ =
+      ::Eigen::Matrix<double, 7, 1>::Zero();
+
+  // Last kalman filter state.
+  ::Eigen::Matrix<double, 7, 1> last_state_ =
+      ::Eigen::Matrix<double, 7, 1>::Zero();
 };
 
 }  // namespace drivetrain

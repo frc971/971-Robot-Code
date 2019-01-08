@@ -43,6 +43,10 @@ class DistanceSpline {
     return spline_.DTheta(alpha) / spline_.DPoint(alpha).norm();
   }
 
+  double DThetaDt(double distance, double velocity) const {
+    return DTheta(distance) * velocity;
+  }
+
   // Returns the angular acceleration as a function of distance.
   double DDTheta(double distance) const;
 

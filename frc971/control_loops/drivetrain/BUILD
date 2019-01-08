@@ -173,6 +173,7 @@ cc_library(
         "//aos/logging:matrix_logging",
         "//aos/logging:queue_logging",
         "//aos/util:log_interval",
+        "//frc971/control_loops:runge_kutta",
         "//frc971/queues:gyro",
         "//frc971/wpilib:imu_queue",
     ],
@@ -301,5 +302,55 @@ cc_test(
         "//aos/testing:googletest",
         "//third_party/matplotlib-cpp",
         "@com_github_gflags_gflags//:gflags",
+    ],
+)
+
+cc_library(
+    name = "trajectory",
+    srcs = ["trajectory.cc"],
+    hdrs = ["trajectory.h"],
+    deps = [
+        ":distance_spline",
+        ":drivetrain_config",
+        "//aos/logging:matrix_logging",
+        "//frc971/control_loops:c2d",
+        "//frc971/control_loops:dlqr",
+        "//frc971/control_loops:hybrid_state_feedback_loop",
+        "//frc971/control_loops:runge_kutta",
+        "//frc971/control_loops:state_feedback_loop",
+        "//third_party/eigen",
+    ],
+)
+
+cc_binary(
+    name = "trajectory_plot",
+    srcs = [
+        "trajectory_plot.cc",
+    ],
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":distance_spline",
+        ":trajectory",
+        "//aos/logging:implementations",
+        "//aos/logging:matrix_logging",
+        "//aos/network:team_number",
+        "//third_party/eigen",
+        "//third_party/matplotlib-cpp",
+        "//y2016/control_loops/drivetrain:drivetrain_base",
+        "@com_github_gflags_gflags//:gflags",
+    ],
+)
+
+cc_test(
+    name = "trajectory_test",
+    srcs = [
+        "trajectory_test.cc",
+    ],
+    deps = [
+        ":trajectory",
+        "//aos/testing:googletest",
+        "//aos/testing:test_shm",
+        "//y2016:constants",
+        "//y2016/control_loops/drivetrain:polydrivetrain_plants",
     ],
 )
