@@ -41,8 +41,8 @@ double IntegrateAccelForDistance(const F &fn, double v, double x, double dx) {
 class Trajectory {
  public:
   Trajectory(const DistanceSpline *spline,
-             const DrivetrainConfig<double> &config,
-             double vmax = 10.0, int num_distance = 500);
+             const DrivetrainConfig<double> &config, double vmax = 10.0,
+             int num_distance = 0);
   // Sets the plan longitudal acceleration limit
   void set_longitudal_acceleration(double longitudal_acceleration) {
     longitudal_acceleration_ = longitudal_acceleration;

@@ -241,7 +241,7 @@ TEST_P(ParameterizedSplineTest, FBSpline) {
   }
 
   EXPECT_LT((state - trajectory_->GoalState(trajectory_->length(), 0.0)).norm(),
-            1.1e-2);
+            1.2e-2);
 }
 
 SplineTestParams MakeSplineTestParams(struct SplineTestParams params) {
