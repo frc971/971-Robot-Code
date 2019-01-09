@@ -4,7 +4,6 @@
 
 #include "aos/commonmath.h"
 #include "aos/logging/logging.h"
-
 #include "y2018/constants.h"
 #include "y2018/control_loops/superstructure/intake/intake_delayed_plant.h"
 #include "y2018/control_loops/superstructure/intake/intake_plant.h"
@@ -91,8 +90,9 @@ void IntakeController::SetStatus(IntakeSideStatus::Builder *status,
 
 IntakeSide::IntakeSide(
     const ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants
-        &zeroing_constants)
-    : zeroing_estimator_(zeroing_constants) {}
+        &zeroing_constants,
+    const double spring_offset)
+    : zeroing_estimator_(zeroing_constants), spring_offset_(spring_offset) {}
 
 void IntakeSide::Reset() { state_ = State::UNINITIALIZED; }
 
@@ -109,6 +109,7 @@ flatbuffers::Offset<superstructure::IntakeSideStatus> IntakeSide::Iterate(
       AOS_LOG(DEBUG, "Uninitialized, waiting for intake\n");
       zeroing_estimator_.Reset();
       controller_.Reset();
+      spring_unwrap_.Reset();
       state_ = State::ZEROING;
       break;
 
@@ -131,8 +132,10 @@ flatbuffers::Offset<superstructure::IntakeSideStatus> IntakeSide::Iterate(
         state_ = State::UNINITIALIZED;
       }
       // ESTOP if we hit the hard limits.
-      if ((controller_.motor_position()) > controller_.intake_range().upper_hard ||
-          (controller_.motor_position()) < controller_.intake_range().lower_hard) {
+      if ((controller_.motor_position()) >
+              controller_.intake_range().upper_hard ||
+          (controller_.motor_position()) <
+              controller_.intake_range().lower_hard) {
         AOS_LOG(ERROR, "Hit hard limits\n");
         state_ = State::ESTOP;
       }
@@ -144,7 +147,7 @@ flatbuffers::Offset<superstructure::IntakeSideStatus> IntakeSide::Iterate(
   }
 
   const bool disable = (output == nullptr) || state_ != State::RUNNING;
-  controller_.set_position(position->spring_angle(),
+  controller_.set_position(spring_unwrap_.Unwrap(position->spring_angle()),
                            position->motor_position()->encoder());
 
   controller_.Update(disable, unsafe_goal);
@@ -159,6 +162,8 @@ flatbuffers::Offset<superstructure::IntakeSideStatus> IntakeSide::Iterate(
   superstructure::IntakeSideStatus::Builder status_builder(*fbb);
   // Save debug/internal state.
   status_builder.add_estimator_state(estimator_state);
+  // Save the spring wrapped status.
+  status_builder.add_spring_wrapped(spring_unwrap_.sensor_wrapped());
 
   controller_.SetStatus(&status_builder, unsafe_goal);
   status_builder.add_calculated_velocity(
@@ -167,7 +172,7 @@ flatbuffers::Offset<superstructure::IntakeSideStatus> IntakeSide::Iterate(
       controller_.kDt);
   status_builder.add_zeroed(zeroing_estimator_.zeroed());
   status_builder.add_estopped(estopped());
-  status_builder.add_state ( static_cast<int32_t>(state_));
+  status_builder.add_state(static_cast<int32_t>(state_));
   intake_last_position_ =
       zeroing_estimator_.offset() + position->motor_position()->encoder();
 

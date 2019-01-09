@@ -1,12 +1,15 @@
 #ifndef Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_INTAKE_INTAKE_H_
 #define Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_INTAKE_INTAKE_H_
 
+#include <math.h>
+
 #include "aos/commonmath.h"
 #include "aos/controls/control_loop.h"
 #include "frc971/zeroing/zeroing.h"
 #include "y2018/constants.h"
 #include "y2018/control_loops/superstructure/intake/intake_delayed_plant.h"
 #include "y2018/control_loops/superstructure/intake/intake_plant.h"
+#include "y2018/control_loops/superstructure/intake/sensor_unwrap.h"
 #include "y2018/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2018/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2018/control_loops/superstructure/superstructure_status_generated.h"
@@ -76,7 +79,8 @@ class IntakeController {
 class IntakeSide {
  public:
   IntakeSide(const ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants
-                 &zeroing_constants);
+                 &zeroing_constants,
+             const double spring_offset);
 
   // The operating voltage.
   static constexpr double kOperatingVoltage() { return 12.0; }
@@ -99,6 +103,7 @@ class IntakeSide {
   State state() const { return state_; }
 
   bool estopped() const { return state_ == State::ESTOP; }
+
   bool zeroed() const { return zeroing_estimator_.zeroed(); }
 
   bool clear_of_box() const { return controller_.output_position() < -0.1; }
@@ -108,9 +113,17 @@ class IntakeSide {
  private:
   IntakeController controller_;
 
-  State state_ = State::UNINITIALIZED;
-
   ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator zeroing_estimator_;
+
+  const double spring_offset_;
+
+  double spring_range() const {
+    return ::y2018::constants::Values::kIntakeSpringRatio() * (2 * M_PI);
+  }
+
+  UnwrapSensor spring_unwrap_{spring_offset_, spring_range()};
+
+  State state_ = State::UNINITIALIZED;
 
   double intake_last_position_ = 0.0;
 };

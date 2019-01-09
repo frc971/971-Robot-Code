@@ -16,6 +16,8 @@ table IntakeSideStatus {
   spring_position:float;
   // Estimated velocity of the spring in units/second.
   spring_velocity:float;
+  // Reported wrapping of the spring
+  spring_wrapped:int;
 
   // Estimated position of the joint.
   motor_position:float;

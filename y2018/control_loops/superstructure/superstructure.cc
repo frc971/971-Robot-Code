@@ -35,8 +35,10 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       drivetrain_output_fetcher_(
           event_loop->MakeFetcher<::frc971::control_loops::drivetrain::Output>(
               "/drivetrain")),
-      intake_left_(constants::GetValues().left_intake.zeroing),
-      intake_right_(constants::GetValues().right_intake.zeroing) {}
+      intake_left_(constants::GetValues().left_intake.zeroing,
+                   constants::GetValues().left_intake.spring_offset),
+      intake_right_(constants::GetValues().right_intake.zeroing,
+                    constants::GetValues().right_intake.spring_offset) {}
 
 void Superstructure::RunIteration(const Goal *unsafe_goal,
                                   const Position *position,
