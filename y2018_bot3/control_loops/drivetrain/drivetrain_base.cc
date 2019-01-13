@@ -39,6 +39,8 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
       drivetrain::kRobotRadius, drivetrain::kWheelRadius, drivetrain::kV,
 
       drivetrain::kHighGearRatio, drivetrain::kHighGearRatio,
+      drivetrain::kJ,
+      drivetrain::kMass,
       kThreeStateDriveShifter, kThreeStateDriveShifter,
       // TODO(sabina): confirm once robot is built
       true /* default_high_gear */, 0 /* down_offset */,

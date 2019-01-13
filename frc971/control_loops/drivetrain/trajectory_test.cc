@@ -60,6 +60,8 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
 
       ::y2016::control_loops::drivetrain::kHighGearRatio,
       ::y2016::control_loops::drivetrain::kLowGearRatio,
+      ::y2016::control_loops::drivetrain::kJ,
+      ::y2016::control_loops::drivetrain::kMass,
       kThreeStateDriveShifter,
       kThreeStateDriveShifter,
       false,

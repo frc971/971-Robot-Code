@@ -37,7 +37,8 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
           chrono::duration<double>(drivetrain::kDt)),
       drivetrain::kRobotRadius, drivetrain::kWheelRadius, drivetrain::kV,
 
-      drivetrain::kHighGearRatio, drivetrain::kLowGearRatio,
+      drivetrain::kHighGearRatio, drivetrain::kLowGearRatio, drivetrain::kJ,
+      drivetrain::kMass,
 
       // No shifter sensors, so we could put anything for the things below.
       kThreeStateDriveShifter, kThreeStateDriveShifter,

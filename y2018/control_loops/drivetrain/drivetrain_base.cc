@@ -38,6 +38,8 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
       drivetrain::kRobotRadius, drivetrain::kWheelRadius, drivetrain::kV,
 
       drivetrain::kHighGearRatio, drivetrain::kLowGearRatio,
+      drivetrain::kJ,
+      drivetrain::kMass,
       kThreeStateDriveShifter, kThreeStateDriveShifter,
       true /* default_high_gear */, 0 /* down_offset if using constants use
                                    constants::GetValues().down_error */,

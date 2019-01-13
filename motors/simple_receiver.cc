@@ -76,7 +76,10 @@ const DrivetrainConfig<float> &GetDrivetrainConfig() {
       ::motors::seems_reasonable::kWheelRadius, ::motors::seems_reasonable::kV,
 
       ::motors::seems_reasonable::kHighGearRatio,
-      ::motors::seems_reasonable::kLowGearRatio, kThreeStateDriveShifter,
+      ::motors::seems_reasonable::kLowGearRatio,
+      ::motors::seems_reasonable::kJ,
+      ::motors::seems_reasonable::kMass,
+      kThreeStateDriveShifter,
       kThreeStateDriveShifter, true /* default_high_gear */,
       0 /* down_offset if using constants use
                                    constants::GetValues().down_error */, 0.8 /* wheel_non_linearity */,
