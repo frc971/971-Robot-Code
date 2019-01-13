@@ -72,6 +72,10 @@ struct DrivetrainConfig {
   Scalar high_gear_ratio;
   Scalar low_gear_ratio;
 
+  // Moment of inertia and mass.
+  Scalar J;
+  Scalar mass;
+
   // Hall effect constants. Unused if not applicable to shifter type.
   constants::ShifterHallEffect left_drive;
   constants::ShifterHallEffect right_drive;

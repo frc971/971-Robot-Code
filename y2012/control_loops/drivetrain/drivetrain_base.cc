@@ -41,6 +41,8 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
 
       drivetrain::kHighGearRatio,
       drivetrain::kLowGearRatio,
+      drivetrain::kJ,
+      drivetrain::kMass,
       kThreeStateDriveShifter,
       kThreeStateDriveShifter,
       true /* default_high_gear */,

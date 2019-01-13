@@ -38,6 +38,8 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
       drivetrain::kRobotRadius, drivetrain::kWheelRadius, drivetrain::kV,
 
       drivetrain::kHighGearRatio, drivetrain::kHighGearRatio,
+      drivetrain::kJ,
+      drivetrain::kMass,
       kThreeStateDriveShifter, kThreeStateDriveShifter,
       // TODO(Neil): Find out whigh position is default in pneumatics for the
       // gearing
