@@ -4,6 +4,7 @@ from gi.repository import Gtk
 from gi.repository import GLib
 from gi.repository import Gdk
 from gi.repository import GdkX11
+from color import Color, palette
 import cairo
 
 identity = cairo.Matrix()
@@ -25,6 +26,11 @@ class OverrideMatrix(object):
 
 mainloop = GLib.MainLoop()
 
+def set_color(cr, color):
+    if color.a == 1.0:
+        cr.set_source_rgb(color.r, color.g, color.b)
+    else:
+        cr.set_source_rgba(color.r, color.g, color.b, color.a)
 
 def quit_main_loop(*args):
     mainloop.quit()
