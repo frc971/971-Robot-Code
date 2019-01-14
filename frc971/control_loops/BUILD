@@ -294,3 +294,19 @@ py_library(
     visibility = ["//visibility:public"],
     deps = ["//frc971:python_init"],
 )
+
+cc_library(
+    name = "binomial",
+    hdrs = ["binomial.h"],
+)
+
+cc_test(
+    name = "binomial_test",
+    srcs = [
+        "binomial_test.cc",
+    ],
+    deps = [
+        ":binomial",
+        "//aos/testing:googletest",
+    ],
+)
