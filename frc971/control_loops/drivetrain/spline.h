@@ -150,6 +150,10 @@ class NSpline {
            1.0 / magdxy2 * (dx * dddy - dy * dddx);
   }
 
+  const ::Eigen::Matrix<double, 2, N> &control_points() const {
+    return control_points_;
+  }
+
  private:
   const ::Eigen::Matrix<double, 2, N> control_points_;
 
@@ -162,6 +166,10 @@ class NSpline {
 };
 
 typedef NSpline<4> Spline;
+
+// Converts a 4 control point spline into
+::Eigen::Matrix<double, 2, 6> Spline4To6(
+    const ::Eigen::Matrix<double, 2, 4> &control_points);
 
 }  // namespace drivetrain
 }  // namespace control_loops
