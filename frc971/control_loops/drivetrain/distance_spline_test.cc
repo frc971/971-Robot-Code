@@ -4,7 +4,9 @@
 
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"
+#if defined(SUPPORT_PLOT)
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
+#endif
 
 DEFINE_bool(plot, false, "If true, plot");
 
@@ -72,6 +74,7 @@ TEST_F(DistanceSplineTest, XYIntegral) {
     dpoint += distance_spline_.DDXY(distance) * ddistance;
   }
 
+#if defined(SUPPORT_PLOT)
   // Conditionally plot the functions and their integrals to aid debugging.
   if (FLAGS_plot) {
     matplotlibcpp::figure();
@@ -85,8 +88,13 @@ TEST_F(DistanceSplineTest, XYIntegral) {
     matplotlibcpp::plot(distances_plot, idy_plot, {{"label", "idy"}});
     matplotlibcpp::legend();
 
+    matplotlibcpp::figure();
+    matplotlibcpp::plot(x_plot, y_plot, {{"label", "spline"}});
+    matplotlibcpp::legend();
+
     matplotlibcpp::show();
   }
+#endif
 }
 
 // Tests that the derivitives of xy integrate back up to the position.
@@ -126,6 +134,7 @@ TEST_F(DistanceSplineTest, ThetaIntegral) {
     dtheta += distance_spline_.DDTheta(distance) * ddistance;
   }
 
+#if defined(SUPPORT_PLOT)
   // Conditionally plot the functions and their integrals to aid debugging.
   if (FLAGS_plot) {
     matplotlibcpp::figure();
@@ -137,6 +146,7 @@ TEST_F(DistanceSplineTest, ThetaIntegral) {
 
     matplotlibcpp::show();
   }
+#endif
 }
 
 }  // namespace testing

@@ -298,13 +298,24 @@ cc_test(
     srcs = [
         "distance_spline_test.cc",
     ],
-    restricted_to = ["//tools:k8"],
+    defines =
+        cpu_select({
+            "amd64": [
+                "SUPPORT_PLOT=1",
+            ],
+            "arm": [],
+        }),
+    linkstatic = True,
     deps = [
         ":distance_spline",
         "//aos/testing:googletest",
-        "//third_party/matplotlib-cpp",
         "@com_github_gflags_gflags//:gflags",
-    ],
+    ] + cpu_select({
+        "amd64": [
+            "//third_party/matplotlib-cpp",
+        ],
+        "arm": [],
+    }),
 )
 
 cc_library(
