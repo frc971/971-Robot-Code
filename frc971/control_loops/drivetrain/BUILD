@@ -263,6 +263,7 @@ cc_library(
     srcs = ["spline.cc"],
     hdrs = ["spline.h"],
     deps = [
+        "//frc971/control_loops:binomial",
         "//third_party/eigen",
     ],
 )
