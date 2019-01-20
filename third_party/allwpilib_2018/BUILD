@@ -56,7 +56,10 @@ cc_library(
     includes = _hal_header_dirs,
     linkopts = ["-lpthread"],
     restricted_to = ["//tools:roborio"],
-    visibility = ["//third_party:__pkg__"],
+    visibility = [
+        "//third_party:__pkg__",
+        "//third_party/Phoenix-frc-lib:__pkg__",
+    ],
     deps = [
         "//aos/logging",
         "//third_party/wpiutil_2018:wpiutil",

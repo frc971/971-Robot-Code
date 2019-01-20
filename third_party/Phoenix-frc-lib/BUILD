@@ -38,6 +38,6 @@ cc_library(
     restricted_to = ["//tools:roborio"],
     visibility = ["//visibility:public"],
     deps = [
-        "//third_party:wpilib",
+        "//third_party/allwpilib_2018:hal",
     ],
 )
