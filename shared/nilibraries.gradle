@@ -1,0 +1,37 @@
+def netCommLibConfigs = [:];
+def chipObjectConfigs = [:];
+
+project.chipObjectComponents.each { String s->
+  chipObjectConfigs[s] = ['linux:athena']
+}
+
+project.netCommComponents.each { String s->
+  netCommLibConfigs[s] = ['linux:athena']
+}
+
+def niLibrariesVersion = '2019.12.1'
+
+model {
+  dependencyConfigs {
+    chipobject(DependencyConfig) {
+      groupId = 'edu.wpi.first.ni-libraries'
+      artifactId = 'chipobject'
+      headerClassifier = 'headers'
+      ext = 'zip'
+      version = niLibrariesVersion
+      sharedConfigs = chipObjectConfigs
+      staticConfigs = [:]
+      compileOnlyShared = true
+    }
+    netcomm(DependencyConfig) {
+      groupId = 'edu.wpi.first.ni-libraries'
+      artifactId = 'netcomm'
+      headerClassifier = 'headers'
+      ext = 'zip'
+      version = niLibrariesVersion
+      sharedConfigs = netCommLibConfigs
+      staticConfigs = [:]
+      compileOnlyShared = true
+    }
+  }
+}

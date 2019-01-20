@@ -1,0 +1,48 @@
+apply plugin: 'java'
+apply plugin: 'pmd'
+
+ext {
+    useJava = true
+    useCpp = false
+    skipDev = true
+}
+
+apply from: "${rootDir}/shared/opencv.gradle"
+
+
+
+dependencies {
+    compile project(':wpilibj')
+
+    compile project(':hal')
+    compile project(':wpiutil')
+    compile project(':ntcore')
+    compile project(':cscore')
+    compile project(':cameraserver')
+}
+
+pmd {
+    consoleOutput = true
+    reportsDir = file("$project.buildDir/reports/pmd")
+    ruleSetFiles = files(new File(rootDir, "styleguide/pmd-ruleset.xml"))
+    ruleSets = []
+}
+
+gradle.projectsEvaluated {
+    tasks.withType(JavaCompile) {
+        options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+    }
+}
+
+apply from: 'publish.gradle'
+
+ext {
+    templateDirectory = new File("$projectDir/src/main/java/edu/wpi/first/wpilibj/templates/")
+    templateFile = new File("$projectDir/src/main/java/edu/wpi/first/wpilibj/templates/templates.json")
+    exampleDirectory = new File("$projectDir/src/main/java/edu/wpi/first/wpilibj/examples/")
+    exampleFile = new File("$projectDir/src/main/java/edu/wpi/first/wpilibj/examples/examples.json")
+    commandDirectory = new File("$projectDir/src/main/java/edu/wpi/first/wpilibj/commands/")
+    commandFile = new File("$projectDir/src/main/java/edu/wpi/first/wpilibj/commands/commands.json")
+}
+
+apply from: "${rootDir}/shared/examplecheck.gradle"
