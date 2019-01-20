@@ -5,6 +5,7 @@
 #include "aos/logging/queue_logging.h"
 #include "aos/init.h"
 #include "aos/util/phased_loop.h"
+#include "frc971/wpilib/ahal/PowerDistributionPanel.h"
 #include "frc971/wpilib/pdp_values.q.h"
 
 namespace frc971 {
@@ -12,7 +13,8 @@ namespace wpilib {
 
 void PDPFetcher::operator()() {
   ::aos::SetCurrentThreadName("PDPFetcher");
-  ::std::unique_ptr<PowerDistributionPanel> pdp(new PowerDistributionPanel());
+  ::std::unique_ptr<frc::PowerDistributionPanel> pdp(
+      new frc::PowerDistributionPanel());
 
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(20),
                                       ::std::chrono::milliseconds(4));

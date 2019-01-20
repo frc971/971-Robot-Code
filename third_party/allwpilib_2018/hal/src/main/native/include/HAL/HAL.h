@@ -13,7 +13,6 @@
 
 #include "HAL/Accelerometer.h"
 #include "HAL/AnalogAccumulator.h"
-#include "HAL/AnalogGyro.h"
 #include "HAL/AnalogInput.h"
 #include "HAL/AnalogOutput.h"
 #include "HAL/AnalogTrigger.h"
@@ -33,7 +32,6 @@
 #include "HAL/Power.h"
 #include "HAL/Relay.h"
 #include "HAL/SPI.h"
-#include "HAL/SerialPort.h"
 #include "HAL/Solenoid.h"
 
 #endif  // HAL_USE_LABVIEW

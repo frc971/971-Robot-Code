@@ -32,11 +32,12 @@ void EdgeCounter::operator()() {
   }
 
   ::aos::SetCurrentThreadRealtimePriority(priority());
-  InterruptableSensorBase::WaitResult result = InterruptableSensorBase::kBoth;
+  frc::InterruptableSensorBase::WaitResult result =
+      frc::InterruptableSensorBase::kBoth;
   while (should_run()) {
     result = input_->WaitForInterrupt(
-        0.1, result != InterruptableSensorBase::kTimeout);
-    if (result == InterruptableSensorBase::kTimeout) {
+        0.1, result != frc::InterruptableSensorBase::kTimeout);
+    if (result == frc::InterruptableSensorBase::kTimeout) {
       continue;
     }
     interrupt_received();

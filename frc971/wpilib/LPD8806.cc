@@ -2,7 +2,7 @@
 
 #include "frc971/queues/gyro.q.h"
 
-#include "SPI.h"
+#include "frc971/wpilib/ahal/SPI.h"
 #undef ERROR
 
 namespace frc971 {
@@ -11,7 +11,7 @@ namespace wpilib {
 LPD8806::LPD8806(int chips)
     : chips_(chips),
       data_(new LED[chips * 2]),
-      spi_(new SPI(SPI::kOnboardCS1)) {
+      spi_(new frc::SPI(frc::SPI::kOnboardCS1)) {
   memset(data_.get(), 0, sizeof(LED[chips_ * 2]));
 
   // 2 MHz is the maximum frequency the datasheet recommends.

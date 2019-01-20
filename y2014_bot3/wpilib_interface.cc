@@ -8,14 +8,14 @@
 #include <mutex>
 #include <functional>
 
-#include "Encoder.h"
-#include "Talon.h"
-#include "DriverStation.h"
-#include "AnalogInput.h"
-#include "Compressor.h"
-#include "Relay.h"
+#include "frc971/wpilib/ahal/AnalogInput.h"
+#include "frc971/wpilib/ahal/Compressor.h"
+#include "frc971/wpilib/ahal/DigitalInput.h"
+#include "frc971/wpilib/ahal/DriverStation.h"
+#include "frc971/wpilib/ahal/Encoder.h"
+#include "frc971/wpilib/ahal/Relay.h"
+#include "frc971/wpilib/ahal/Talon.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
-#include "DigitalInput.h"
 #undef ERROR
 
 #include "aos/logging/logging.h"
@@ -55,6 +55,7 @@ using ::frc971::wpilib::BufferedSolenoid;
 using ::frc971::wpilib::LoopOutputHandler;
 using ::frc971::wpilib::JoystickSender;
 using ::frc971::wpilib::GyroSender;
+using namespace frc;
 
 namespace frc971 {
 namespace wpilib {

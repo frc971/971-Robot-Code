@@ -5,21 +5,21 @@
 #include <algorithm>
 #include <type_traits>
 
-#include "DigitalSource.h"
-#include "AnalogInput.h"
-#include "Encoder.h"
 #include "HAL/HAL.h"
+#include "frc971/wpilib/ahal/AnalogInput.h"
+#include "frc971/wpilib/ahal/DigitalSource.h"
+#include "frc971/wpilib/ahal/Encoder.h"
 
 // Interface to the roboRIO FPGA's DMA features.
 
 // Like tEncoder::tOutput with the bitfields reversed.
 typedef union {
   struct {
-    unsigned Direction: 1;
-    signed Value: 31;
+    unsigned Direction : 1;
+    signed Value : 31;
   };
   struct {
-    unsigned value: 32;
+    unsigned value : 32;
   };
 } t1Output;
 
@@ -85,12 +85,12 @@ void DMA::SetRate(uint32_t cycles) {
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
 }
 
-void DMA::Add(Encoder *encoder) {
+void DMA::Add(frc::Encoder *encoder) {
   tRioStatusCode status = 0;
 
   if (manager_) {
     wpi_setErrorWithContext(NiFpga_Status_InvalidParameter,
-        "DMA::Add() only works before DMA::Start()");
+                            "DMA::Add() only works before DMA::Start()");
     return;
   }
   const int index = encoder->GetFPGAIndex();
@@ -111,12 +111,12 @@ void DMA::Add(Encoder *encoder) {
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
 }
 
-void DMA::Add(DigitalSource * /*input*/) {
+void DMA::Add(frc::DigitalSource * /*input*/) {
   tRioStatusCode status = 0;
 
   if (manager_) {
     wpi_setErrorWithContext(NiFpga_Status_InvalidParameter,
-        "DMA::Add() only works before DMA::Start()");
+                            "DMA::Add() only works before DMA::Start()");
     return;
   }
 
@@ -124,12 +124,12 @@ void DMA::Add(DigitalSource * /*input*/) {
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
 }
 
-void DMA::Add(AnalogInput *input) {
+void DMA::Add(frc::AnalogInput *input) {
   tRioStatusCode status = 0;
 
   if (manager_) {
     wpi_setErrorWithContext(NiFpga_Status_InvalidParameter,
-        "DMA::Add() only works before DMA::Start()");
+                            "DMA::Add() only works before DMA::Start()");
     return;
   }
 
@@ -141,11 +141,13 @@ void DMA::Add(AnalogInput *input) {
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
 }
 
-void DMA::SetExternalTrigger(DigitalSource *input, bool rising, bool falling) {
+void DMA::SetExternalTrigger(frc::DigitalSource *input, bool rising,
+                             bool falling) {
   tRioStatusCode status = 0;
 
   if (manager_) {
-    wpi_setErrorWithContext(NiFpga_Status_InvalidParameter,
+    wpi_setErrorWithContext(
+        NiFpga_Status_InvalidParameter,
         "DMA::SetExternalTrigger() only works before DMA::Start()");
     return;
   }
@@ -193,7 +195,7 @@ void DMA::SetExternalTrigger(DigitalSource *input, bool rising, bool falling) {
   new_trigger.ExternalClockSource_Module = module;
   new_trigger.ExternalClockSource_Channel = channel;
 
-// Configures the trigger to be external, not off the FPGA clock.
+  // Configures the trigger to be external, not off the FPGA clock.
   tdma_config_->writeExternalTriggers(channel_index / 4, channel_index % 4,
                                       new_trigger, &status);
   if (status != 0) {
@@ -210,7 +212,7 @@ DMA::ReadStatus DMA::Read(DMASample *sample, uint32_t timeout_ms,
 
   if (!manager_.get()) {
     wpi_setErrorWithContext(NiFpga_Status_InvalidParameter,
-        "DMA::Read() only works after DMA::Start()");
+                            "DMA::Read() only works after DMA::Start()");
     return STATUS_ERROR;
   }
 
@@ -236,10 +238,14 @@ DMA::ReadStatus DMA::Read(DMASample *sample, uint32_t timeout_ms,
 
 const char *DMA::NameOfReadStatus(ReadStatus s) {
   switch (s) {
-    case STATUS_OK:      return "OK";
-    case STATUS_TIMEOUT: return "TIMEOUT";
-    case STATUS_ERROR:   return "ERROR";
-    default:             return "(bad ReadStatus code)";
+    case STATUS_OK:
+      return "OK";
+    case STATUS_TIMEOUT:
+      return "TIMEOUT";
+    case STATUS_ERROR:
+      return "ERROR";
+    default:
+      return "(bad ReadStatus code)";
   }
 }
 
@@ -308,7 +314,6 @@ void DMA::Start(size_t queue_depth) {
   if (status != 0) {
     return;
   }
-
 }
 
 static_assert(::std::is_pod<DMASample>::value, "DMASample needs to be POD");
@@ -336,7 +341,7 @@ double DMASample::GetTimestamp() const {
   return static_cast<double>(GetTime()) * 0.000001;
 }
 
-bool DMASample::Get(DigitalSource *input) const {
+bool DMASample::Get(frc::DigitalSource *input) const {
   if (offset(kEnable_DI) == -1) {
     wpi_setStaticErrorWithContext(
         dma_, NiFpga_Status_ResourceNotFound,
@@ -351,7 +356,7 @@ bool DMASample::Get(DigitalSource *input) const {
   }
 }
 
-int32_t DMASample::GetRaw(Encoder *input) const {
+int32_t DMASample::GetRaw(frc::Encoder *input) const {
   int index = input->GetFPGAIndex();
   uint32_t dmaWord = 0;
   if (index < 4) {
@@ -391,13 +396,13 @@ int32_t DMASample::GetRaw(Encoder *input) const {
   return result;
 }
 
-int32_t DMASample::Get(Encoder *input) const {
+int32_t DMASample::Get(frc::Encoder *input) const {
   int32_t raw = GetRaw(input);
 
   return raw / input->GetEncodingScale();
 }
 
-uint16_t DMASample::GetValue(AnalogInput *input) const {
+uint16_t DMASample::GetValue(frc::AnalogInput *input) const {
   uint32_t channel = input->GetChannel();
   uint32_t dmaWord;
   if (channel < 4) {
@@ -430,7 +435,7 @@ uint16_t DMASample::GetValue(AnalogInput *input) const {
   return static_cast<int16_t>(dmaWord);
 }
 
-float DMASample::GetVoltage(AnalogInput *input) const {
+float DMASample::GetVoltage(frc::AnalogInput *input) const {
   uint16_t value = GetValue(input);
   if (value == 0xffff) return 0.0;
   uint32_t lsb_weight = input->GetLSBWeight();

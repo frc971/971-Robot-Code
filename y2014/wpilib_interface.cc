@@ -8,16 +8,14 @@
 #include <mutex>
 #include <functional>
 
-#include "Encoder.h"
-#include "Talon.h"
-#include "DriverStation.h"
-#include "AnalogInput.h"
-#include "Compressor.h"
-#include "Relay.h"
+#include "frc971/wpilib/ahal/AnalogInput.h"
+#include "frc971/wpilib/ahal/Compressor.h"
+#include "frc971/wpilib/ahal/DigitalGlitchFilter.h"
+#include "frc971/wpilib/ahal/DriverStation.h"
+#include "frc971/wpilib/ahal/Encoder.h"
+#include "frc971/wpilib/ahal/Relay.h"
+#include "frc971/wpilib/ahal/Talon.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
-#ifndef WPILIB2015
-#include "DigitalGlitchFilter.h"
-#endif
 #undef ERROR
 
 #include "aos/logging/logging.h"
@@ -58,6 +56,7 @@
 using ::frc971::control_loops::drivetrain_queue;
 using ::y2014::control_loops::claw_queue;
 using ::y2014::control_loops::shooter_queue;
+using namespace frc;
 
 namespace y2014 {
 namespace wpilib {

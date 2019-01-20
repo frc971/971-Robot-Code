@@ -13,7 +13,7 @@
 namespace frc971 {
 namespace wpilib {
 
-GyroInterface::GyroInterface() : gyro_(new SPI(SPI::kOnboardCS0)) {
+GyroInterface::GyroInterface() : gyro_(new frc::SPI(frc::SPI::kOnboardCS0)) {
   // The gyro goes up to 8.08MHz.
   // The myRIO goes up to 4MHz, so the roboRIO probably does too.
   gyro_->SetClockRate(4e6);
