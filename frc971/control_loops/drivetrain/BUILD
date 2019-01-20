@@ -288,6 +288,7 @@ cc_library(
     hdrs = ["distance_spline.h"],
     deps = [
         ":spline",
+        "//aos/logging",
         "//frc971/control_loops:fixed_quadrature",
         "//third_party/eigen",
     ],
@@ -309,6 +310,7 @@ cc_test(
     deps = [
         ":distance_spline",
         "//aos/testing:googletest",
+        "//aos/testing:test_shm",
         "@com_github_gflags_gflags//:gflags",
     ] + cpu_select({
         "amd64": [

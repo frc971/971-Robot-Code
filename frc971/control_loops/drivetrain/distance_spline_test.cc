@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "aos/testing/test_shm.h"
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"
 #if defined(SUPPORT_PLOT)
@@ -21,6 +22,7 @@ class ParameterizedDistanceSplineTest
  protected:
   ParameterizedDistanceSplineTest()
       : distance_spline_(::std::vector<Spline>(GetParam())) {}
+  ::aos::testing::TestSharedMemory shm_;
   DistanceSpline distance_spline_;
 };
 

@@ -11,9 +11,6 @@ namespace drivetrain {
 
 // Class to hold a spline as a function of alpha.  Alpha can only range between
 // 0.0 and 1.0.
-// TODO(austin): Need to be able to represent splines which have more than 2
-// control points at some point.  Or splines chained together.  This is close
-// enough for now.
 template <int N>
 class NSpline {
  public:
