@@ -1,0 +1,3 @@
+schematics uart-main.sch uart-5v.sch uart-spi.sch uart-outputs.sch uart-beacon.sch
+output-name uart
+use-files
