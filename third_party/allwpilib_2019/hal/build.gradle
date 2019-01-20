@@ -1,0 +1,203 @@
+def javaResourceFile = file("$buildDir/generated/java/edu/wpi/first/hal/FRCNetComm.java")
+def cppResourceFile = file("$buildDir/generated/headers/hal/FRCUsageReporting.h")
+
+def generateUsageReporting = tasks.register('generateUsageReporting') {
+    def javaBase = file('src/generate/FRCNetComm.java.in')
+    def cppBase = file('src/generate/FRCUsageReporting.h.in')
+
+    def instances = file('src/generate/Instances.txt')
+    def resourceType = file('src/generate/ResourceType.txt')
+
+    inputs.file(javaBase)
+    inputs.file(cppBase)
+    inputs.file(instances)
+    inputs.file(resourceType)
+
+    outputs.file(javaResourceFile)
+    outputs.file(cppResourceFile)
+
+    doLast {
+        def instanceTextJava = instances as String[]
+        def instanceTextCpp = instances as String[]
+        def resourceTextJava = resourceType as String[]
+        def resourceTextCpp = resourceType as String[]
+
+        instanceTextJava = instanceTextJava.collect {
+            "    public static final int ${it};"
+        }.join('\n')
+
+        instanceTextCpp = instanceTextCpp.collect {
+            "    ${it},"
+        }.join('\n')
+
+        resourceTextJava = resourceTextJava.collect {
+            "    public static final int ${it};"
+        }.join('\n')
+
+        resourceTextCpp = resourceTextCpp.collect {
+            "    ${it},"
+        }.join('\n')
+
+        javaResourceFile.text = javaBase.text.replace('${usage_reporting_types}', resourceTextJava).replace('${usage_reporting_instances}', instanceTextJava)
+        cppResourceFile.text = cppBase.text.replace('${usage_reporting_types_cpp}', resourceTextCpp).replace('${usage_reporting_instances_cpp}', instanceTextCpp)
+    }
+}
+
+ext {
+    addHalDependency = { binary, shared->
+        binary.tasks.withType(AbstractNativeSourceCompileTask) {
+            it.dependsOn generateUsageReporting
+        }
+        binary.lib project: ':hal', library: 'hal', linkage: shared
+    }
+
+    addHalJniDependency = { binary->
+        binary.tasks.withType(AbstractNativeSourceCompileTask) {
+            it.dependsOn generateUsageReporting
+        }
+        binary.lib project: ':hal', library: 'halJNIShared', linkage: 'shared'
+    }
+
+    nativeName = 'hal'
+    setBaseName = 'wpiHal'
+    devMain = 'DevMain'
+    niLibraries = true
+    generatedHeaders = "$buildDir/generated/headers"
+    jniSplitSetup = {
+        it.tasks.withType(AbstractNativeSourceCompileTask) {
+            it.dependsOn generateUsageReporting
+        }
+        if (it.targetPlatform.architecture.name == 'athena') {
+            it.sources {
+                athenaJniCpp(CppSourceSet) {
+                    source {
+                        srcDirs = ["${rootDir}/shared/singlelib", "$buildDir/generated/cpp"]
+                        include '**/*.cpp'
+                    }
+                    exportedHeaders {
+                        srcDir 'src/main/native/include'
+                        srcDir generatedHeaders
+                    }
+                }
+            }
+        } else {
+            it.sources {
+                simJniCpp(CppSourceSet) {
+                    source {
+                        srcDirs 'src/main/native/sim'
+                        include '**/jni/*.cpp'
+                    }
+                    exportedHeaders {
+                        srcDir 'src/main/native/include'
+                        srcDir generatedHeaders
+                    }
+                }
+            }
+        }
+    }
+    splitSetup = {
+        it.tasks.withType(AbstractNativeSourceCompileTask) {
+            it.dependsOn generateUsageReporting
+        }
+        if (it.targetPlatform.architecture.name == 'athena') {
+            it.sources {
+                athenaCpp(CppSourceSet) {
+                    source {
+                        srcDirs = ['src/main/native/athena']
+                        include '**/*.cpp'
+                        exclude '**/jni/*.cpp'
+                    }
+                    exportedHeaders {
+                        srcDir 'src/main/native/include'
+                        srcDir generatedHeaders
+                    }
+                }
+            }
+        } else {
+            it.sources {
+                simCpp(CppSourceSet) {
+                    source {
+                        srcDirs 'src/main/native/sim'
+                        include '**/*.cpp'
+                        exclude '**/jni/*.cpp'
+                    }
+                    exportedHeaders {
+                        srcDir 'src/main/native/include'
+                        srcDir generatedHeaders
+                    }
+                }
+            }
+        }
+    }
+}
+
+apply from: "${rootDir}/shared/jni/setupBuild.gradle"
+apply from: 'simjni.gradle'
+
+sourceSets.main.java.srcDir "${buildDir}/generated/java/"
+
+compileJava {
+    dependsOn generateUsageReporting
+}
+
+cppSourcesZip {
+    from('src/main/native/athena') {
+        into '/athena'
+    }
+
+    from('src/main/native/sim') {
+        into '/sim'
+    }
+
+    from("$buildDir/generated/cpp") {
+        into '/athena/jni'
+    }
+
+    dependsOn generateAthenaSimFiles
+}
+
+cppHeadersZip {
+    dependsOn generateUsageReporting
+    from(generatedHeaders) {
+        into '/'
+    }
+}
+
+model {
+    // Exports config is a utility to enable exporting all symbols in a C++ library on windows to a DLL.
+    // This removes the need for DllExport on a library. However, the gradle C++ builder has a bug
+    // where some extra symbols are added that cannot be resolved at link time. This configuration
+    // lets you specify specific symbols to exlude from exporting.
+    exportsConfigs {
+        hal(ExportsConfig) {
+            x86ExcludeSymbols = ['_CT??_R0?AV_System_error', '_CT??_R0?AVexception', '_CT??_R0?AVfailure',
+                                 '_CT??_R0?AVbad_cast',
+                                 '_CT??_R0?AVruntime_error', '_CT??_R0?AVsystem_error', '_CTA5?AVfailure',
+                                 '_TI5?AVfailure']
+            x64ExcludeSymbols = ['_CT??_R0?AV_System_error', '_CT??_R0?AVexception', '_CT??_R0?AVfailure',
+                                 '_CT??_R0?AVbad_cast',
+                                 '_CT??_R0?AVruntime_error', '_CT??_R0?AVsystem_error', '_CTA5?AVfailure',
+                                 '_TI5?AVfailure']
+        }
+        halJNI(ExportsConfig) {
+            x86SymbolFilter = { symbols ->
+                def retList = []
+                symbols.each { symbol ->
+                    if (symbol.startsWith('HAL_') || symbol.startsWith('HALSIM_')) {
+                        retList << symbol
+                    }
+                }
+                return retList
+            }
+            x64SymbolFilter = { symbols ->
+                def retList = []
+                symbols.each { symbol ->
+                    if (symbol.startsWith('HAL_') || symbol.startsWith('HALSIM_')) {
+                        retList << symbol
+                    }
+                }
+                return retList
+            }
+        }
+    }
+}
