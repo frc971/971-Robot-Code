@@ -16,17 +16,16 @@ namespace drivetrain {
 namespace testing {
 
 // Test fixture with a spline from 0, 0 to 1, 1
-class DistanceSplineTest : public ::testing::Test {
+class ParameterizedDistanceSplineTest
+    : public ::testing::TestWithParam<::std::vector<Spline>> {
  protected:
-  DistanceSplineTest()
-      : distance_spline_(Spline((::Eigen::Matrix<double, 2, 4>() << 0.0, 0.5,
-                                 0.5, 1.0, 0.0, 0.0, 1.0, 1.0)
-                                    .finished())) {}
+  ParameterizedDistanceSplineTest()
+      : distance_spline_(::std::vector<Spline>(GetParam())) {}
   DistanceSpline distance_spline_;
 };
 
 // Tests that the derivitives of xy integrate back up to the position.
-TEST_F(DistanceSplineTest, XYIntegral) {
+TEST_P(ParameterizedDistanceSplineTest, XYIntegral) {
   ::std::vector<double> distances_plot;
   ::std::vector<double> x_plot;
   ::std::vector<double> y_plot;
@@ -98,7 +97,7 @@ TEST_F(DistanceSplineTest, XYIntegral) {
 }
 
 // Tests that the derivitives of xy integrate back up to the position.
-TEST_F(DistanceSplineTest, ThetaIntegral) {
+TEST_P(ParameterizedDistanceSplineTest, ThetaIntegral) {
   ::std::vector<double> distances_plot;
   ::std::vector<double> theta_plot;
   ::std::vector<double> itheta_plot;
@@ -148,6 +147,21 @@ TEST_F(DistanceSplineTest, ThetaIntegral) {
   }
 #endif
 }
+
+INSTANTIATE_TEST_CASE_P(
+    DistanceSplineTest, ParameterizedDistanceSplineTest,
+    ::testing::Values(
+        ::std::vector<Spline>(
+            {Spline(Spline4To6((::Eigen::Matrix<double, 2, 4>() << 0.0, 0.5,
+                                0.5, 1.0, 0.0, 0.0, 1.0, 1.0)
+                                   .finished()))}),
+        ::std::vector<Spline>(
+            {Spline(Spline4To6((::Eigen::Matrix<double, 2, 4>() << 0.0, 0.5,
+                                0.5, 1.0, 0.0, 0.0, 1.0, 1.0)
+                                   .finished())),
+             Spline(Spline4To6((::Eigen::Matrix<double, 2, 4>() << 1.0, 1.5,
+                                1.5, 2.0, 1.0, 1.0, 0.0, 0.0)
+                                   .finished()))})));
 
 }  // namespace testing
 }  // namespace drivetrain

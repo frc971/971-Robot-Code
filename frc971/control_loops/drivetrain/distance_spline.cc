@@ -6,27 +6,44 @@ namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
-DistanceSpline::DistanceSpline(const Spline &spline, int num_alpha)
-    : spline_(spline) {
-  distances_.push_back(0.0);
-  const double dalpha = 1.0 / static_cast<double>(num_alpha - 1);
+::std::vector<double> DistanceSpline::BuildDistances(size_t num_alpha) {
+  num_alpha = num_alpha == 0 ? 100 * splines_.size() : num_alpha;
+  ::std::vector<double> distances;
+  distances.push_back(0.0);
 
+  const double dalpha =
+      static_cast<double>(splines_.size()) / static_cast<double>(num_alpha - 1);
   double last_alpha = 0.0;
-  for (int i = 1; i < num_alpha; ++i) {
+  for (size_t i = 1; i < num_alpha; ++i) {
     const double alpha = dalpha * i;
-    distances_.push_back(
-        distances_.back() +
-        GaussianQuadrature5(
-            [this](double alpha) { return this->spline_.DPoint(alpha).norm(); },
-            last_alpha, alpha));
+    distances.push_back(distances.back() +
+                        GaussianQuadrature5(
+                            [this](double alpha) {
+                              const size_t spline_index = ::std::min(
+                                  static_cast<size_t>(::std::floor(alpha)),
+                                  splines_.size() - 1);
+                              return this->splines_[spline_index]
+                                  .DPoint(alpha - spline_index)
+                                  .norm();
+                            },
+                            last_alpha, alpha));
     last_alpha = alpha;
   }
+  return distances;
 }
 
+DistanceSpline::DistanceSpline(::std::vector<Spline> &&splines, int num_alpha)
+    : splines_(::std::move(splines)), distances_(BuildDistances(num_alpha)) {}
+
+DistanceSpline::DistanceSpline(const Spline &spline, int num_alpha)
+    : splines_({spline}), distances_(BuildDistances(num_alpha)) {}
+
 ::Eigen::Matrix<double, 2, 1> DistanceSpline::DDXY(double distance) const {
-  const double alpha = DistanceToAlpha(distance);
-  const ::Eigen::Matrix<double, 2, 1> dspline_point = spline_.DPoint(alpha);
-  const ::Eigen::Matrix<double, 2, 1> ddspline_point = spline_.DDPoint(alpha);
+  const AlphaAndIndex a = DistanceToAlpha(distance);
+  const ::Eigen::Matrix<double, 2, 1> dspline_point =
+      splines_[a.index].DPoint(a.alpha);
+  const ::Eigen::Matrix<double, 2, 1> ddspline_point =
+      splines_[a.index].DDPoint(a.alpha);
 
   const double squared_norm = dspline_point.squaredNorm();
 
@@ -37,14 +54,16 @@ DistanceSpline::DistanceSpline(const Spline &spline, int num_alpha)
 }
 
 double DistanceSpline::DDTheta(double distance) const {
-  const double alpha = DistanceToAlpha(distance);
+  const AlphaAndIndex a = DistanceToAlpha(distance);
 
   // TODO(austin): We are re-computing DPoint here even worse
-  const ::Eigen::Matrix<double, 2, 1> dspline_point = spline_.DPoint(alpha);
-  const ::Eigen::Matrix<double, 2, 1> ddspline_point = spline_.DDPoint(alpha);
+  const ::Eigen::Matrix<double, 2, 1> dspline_point =
+      splines_[a.index].DPoint(a.alpha);
+  const ::Eigen::Matrix<double, 2, 1> ddspline_point =
+      splines_[a.index].DDPoint(a.alpha);
 
-  const double dtheta = spline_.DTheta(alpha);
-  const double ddtheta = spline_.DDTheta(alpha);
+  const double dtheta = splines_[a.index].DTheta(a.alpha);
+  const double ddtheta = splines_[a.index].DDTheta(a.alpha);
 
   const double squared_norm = dspline_point.squaredNorm();
 
@@ -54,12 +73,13 @@ double DistanceSpline::DDTheta(double distance) const {
              ::std::pow(squared_norm, 2);
 }
 
-double DistanceSpline::DistanceToAlpha(double distance) const {
+DistanceSpline::AlphaAndIndex DistanceSpline::DistanceToAlpha(
+    double distance) const {
   if (distance <= 0.0) {
-    return 0.0;
+    return {0, 0.0};
   }
   if (distance >= length()) {
-    return 1.0;
+    return {splines_.size() - 1, 1.0};
   }
 
   // Find the distance right below our number using a binary search.
@@ -68,11 +88,15 @@ double DistanceSpline::DistanceToAlpha(double distance) const {
       ::std::lower_bound(distances_.begin(), distances_.end(), distance));
   size_t before = after - 1;
   const double distance_step_size =
-      (1.0 / static_cast<double>(distances_.size() - 1));
+      (splines_.size() / static_cast<double>(distances_.size() - 1));
 
-  return (distance - distances_[before]) /
-             (distances_[after] - distances_[before]) * distance_step_size +
-         static_cast<double>(before) * distance_step_size;
+  const double alpha = (distance - distances_[before]) /
+                           (distances_[after] - distances_[before]) *
+                           distance_step_size +
+                       static_cast<double>(before) * distance_step_size;
+  const size_t index = static_cast<size_t>(::std::floor(alpha));
+
+  return {index, alpha - index};
 }
 
 }  // namespace drivetrain

@@ -49,10 +49,10 @@ namespace control_loops {
 namespace drivetrain {
 
 void Main() {
-  DistanceSpline distance_spline(
-      Spline((::Eigen::Matrix<double, 2, 4>() << 0.0, 1.2 * FLAGS_forward,
-              -0.2 * FLAGS_forward, FLAGS_forward, 0.0, 0.0, 1.0, 1.0)
-                 .finished()));
+  DistanceSpline distance_spline(Spline(
+      Spline4To6((::Eigen::Matrix<double, 2, 4>() << 0.0, 1.2 * FLAGS_forward,
+                  -0.2 * FLAGS_forward, FLAGS_forward, 0.0, 0.0, 1.0, 1.0)
+                     .finished())));
   Trajectory trajectory(
       &distance_spline,
       ::y2016::control_loops::drivetrain::GetDrivetrainConfig());
