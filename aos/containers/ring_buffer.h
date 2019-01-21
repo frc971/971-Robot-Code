@@ -13,7 +13,7 @@ class RingBuffer {
  public:
   static constexpr size_t kBufferSize = buffer_size;
 
-  RingBuffer() {}
+  constexpr RingBuffer() {}
 
   // Add an item to the RingBuffer, overwriting the oldest element if necessary
   void Push(const Data &data) {

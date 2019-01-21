@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <chrono>
 
-#include "aos/ring_buffer/ring_buffer.h"
+#include "aos/containers/ring_buffer.h"
 #include "aos/time/time.h"
 #include "y2017/vision/vision.q.h"
 
