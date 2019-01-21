@@ -13,12 +13,15 @@ class DrivetrainParams(object):
                  mass,
                  robot_radius,
                  wheel_radius,
-                 G_high,
-                 G_low,
-                 q_pos_low=0.12,
-                 q_pos_high=0.14,
-                 q_vel_low=1.0,
-                 q_vel_high=0.95,
+                 G=None,
+                 G_high=None,
+                 G_low=None,
+                 q_pos=None,
+                 q_pos_low=None,
+                 q_pos_high=None,
+                 q_vel=None,
+                 q_vel_low=None,
+                 q_vel_high=None,
                  efficiency=0.60,
                  has_imu=False,
                  force=False,
@@ -37,11 +40,14 @@ class DrivetrainParams(object):
           robot_radius: float, Radius of the robot, in meters (requires tuning by
             hand).
           wheel_radius: float, Radius of the wheels, in meters.
+          G: float, Gear ratio for a single speed.
           G_high: float, Gear ratio for high gear.
           G_low: float, Gear ratio for low gear.
           dt: float, Control loop time step.
+          q_pos: float, q position for a single speed.
           q_pos_low: float, q position low gear.
           q_pos_high: float, q position high gear.
+          q_vel: float, q velocity for a single speed
           q_vel_low: float, q velocity low gear.
           q_vel_high: float, q velocity high gear.
           efficiency: float, gear box effiency.
@@ -54,6 +60,29 @@ class DrivetrainParams(object):
           observer_poles: array, An array of poles. (See control_loop.py)
           robot_cg_offset: offset in meters of CG from robot center to left side
         """
+        if G is not None:
+            assert (G_high is None)
+            assert (G_low is None)
+            G_high = G
+            G_low = G
+        assert (G_high is not None)
+        assert (G_low is not None)
+
+        if q_pos is not None:
+            assert (q_pos_low is None)
+            assert (q_pos_high is None)
+            q_pos_low = q_pos
+            q_pos_high = q_pos
+        assert (q_pos_low is not None)
+        assert (q_pos_high is not None)
+
+        if q_vel is not None:
+            assert (q_vel_low is None)
+            assert (q_vel_high is None)
+            q_vel_low = q_vel
+            q_vel_high = q_vel
+        assert (q_vel_low is not None)
+        assert (q_vel_high is not None)
 
         self.J = J
         self.mass = mass
@@ -334,9 +363,9 @@ class KFDrivetrain(Drivetrain):
             A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
 
         if not self.has_imu:
-          self.KalmanGain = numpy.hstack((self.KalmanGain, numpy.matrix(numpy.zeros((7, 1)))))
-          self.C = numpy.vstack((self.C, numpy.matrix(numpy.zeros((1, 7)))))
-          self.D = numpy.vstack((self.D, numpy.matrix(numpy.zeros((1, 2)))))
+            self.KalmanGain = numpy.hstack((self.KalmanGain, numpy.matrix(numpy.zeros((7, 1)))))
+            self.C = numpy.vstack((self.C, numpy.matrix(numpy.zeros((1, 7)))))
+            self.D = numpy.vstack((self.D, numpy.matrix(numpy.zeros((1, 2)))))
 
         self.L = self.A * self.KalmanGain
 
@@ -414,9 +443,9 @@ def WriteDrivetrain(drivetrain_files, kf_drivetrain_files, year_namespace,
         drivetrain_params=drivetrain_params)
 
     if isinstance(year_namespace, list):
-      namespaces = year_namespace
+        namespaces = year_namespace
     else:
-      namespaces = [year_namespace, 'control_loops', 'drivetrain']
+        namespaces = [year_namespace, 'control_loops', 'drivetrain']
     dog_loop_writer = control_loop.ControlLoopWriter(
         "Drivetrain", [
             drivetrain_low_low, drivetrain_low_high, drivetrain_high_low,
