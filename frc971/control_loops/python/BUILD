@@ -112,3 +112,16 @@ py_binary(
         "@matplotlib",
     ],
 )
+
+py_library(
+    name = "linear_system",
+    srcs = ["linear_system.py"],
+    restricted_to = ["//tools:k8"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":controls",
+        "//aos/util:py_trapezoid_profile",
+        "//frc971/control_loops:python_init",
+        "@matplotlib",
+    ],
+)

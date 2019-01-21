@@ -246,6 +246,11 @@ class ControlLoop(object):
     """
     self._name = name
 
+  @property
+  def name(self):
+    """Returns the name"""
+    return self._name
+
   def ContinuousToDiscrete(self, A_continuous, B_continuous, dt):
     """Calculates the discrete time values for A and B.
 
@@ -529,6 +534,40 @@ class MiniCIM(object):
     self.Kv = (self.free_speed / (12.0 - self.resistance * self.free_current))
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
+
+
+class NMotor(object):
+    def __init__(self, motor, n):
+        """Gangs together n motors."""
+        self.motor = motor
+        self.stall_torque = motor.stall_torque * n
+        self.stall_current = motor.stall_current * n
+        self.free_speed = motor.free_speed
+
+        self.free_current = motor.free_current * n
+        self.resistance = motor.resistance / n
+        self.Kv = motor.Kv
+        self.Kt = motor.Kt
+
+
+class Vex775Pro(object):
+    def __init__(self):
+        # Stall Torque in N m
+        self.stall_torque = 0.71
+        # Stall Current in Amps
+        self.stall_current = 134.0
+        # Free Speed in rad/s
+        self.free_speed = 18730.0 / 60.0 * 2.0 * numpy.pi
+        # Free Current in Amps
+        self.free_current = 0.7
+        # Resistance of the motor
+        self.resistance = 12.0 / self.stall_current
+        # Motor velocity constant
+        self.Kv = (self.free_speed / (12.0 - self.resistance * self.free_current))
+        # Torque constant
+        self.Kt = self.stall_torque / self.stall_current
+        # Motor inertia in kg m^2
+        self.motor_inertia = 0.00001187
 
 
 class BAG(object):
