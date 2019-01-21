@@ -145,3 +145,16 @@ py_library(
         "@matplotlib",
     ],
 )
+
+py_library(
+    name = "angular_system",
+    srcs = ["angular_system.py"],
+    restricted_to = ["//tools:k8"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":controls",
+        "//aos/util:py_trapezoid_profile",
+        "//frc971/control_loops:python_init",
+        "@matplotlib",
+    ],
+)

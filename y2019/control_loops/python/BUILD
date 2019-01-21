@@ -67,6 +67,7 @@ py_binary(
         ":python_init",
         "//external:python-gflags",
         "//external:python-glog",
+        "//frc971/control_loops/python:controls",
         "//frc971/control_loops/python:linear_system",
     ],
 )

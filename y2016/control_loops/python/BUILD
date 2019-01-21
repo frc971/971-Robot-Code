@@ -70,11 +70,10 @@ py_binary(
     restricted_to = ["//tools:k8"],
     deps = [
         ":python_init",
-        "//aos/util:py_trapezoid_profile",
         "//external:python-gflags",
         "//external:python-glog",
+        "//frc971/control_loops/python:angular_system",
         "//frc971/control_loops/python:controls",
-        "@matplotlib",
     ],
 )
 
