@@ -77,6 +77,16 @@ py_library(
 )
 
 py_library(
+    name = "libspline",
+    srcs = [
+        "libspline.py",
+    ],
+    data = [
+        "//frc971/control_loops/drivetrain:spline.so"
+    ],
+)
+
+py_library(
     name = "polydrivetrain",
     srcs = [
         "polydrivetrain.py",

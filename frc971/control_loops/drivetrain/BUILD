@@ -294,6 +294,16 @@ cc_library(
     ],
 )
 
+cc_binary(
+    name = "spline.so",
+    srcs = ["libspline.cc"],
+    deps = [
+        ":spline",
+        "//third_party/eigen",
+    ],
+    linkshared=1,
+)
+
 cc_test(
     name = "distance_spline_test",
     srcs = [
