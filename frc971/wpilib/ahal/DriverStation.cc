@@ -12,6 +12,7 @@
 #include "FRC_NetworkCommunication/FRCComm.h"
 #include "HAL/HAL.h"
 #include "HAL/Power.h"
+#include "aos/make_unique.h"
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Utility.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"

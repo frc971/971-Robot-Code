@@ -1,4 +1,4 @@
-load('//frc971:downloader.bzl', 'robot_downloader')
+load("//frc971:downloader.bzl", "robot_downloader")
 
 cc_library(
     name = "constants",
@@ -11,8 +11,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos:once",
-        "//aos/mutex:mutex",
         "//aos/logging",
+        "//aos/mutex",
         "//aos/network:team_number",
         "//frc971:constants",
         "//frc971/shooter_interpolation:interpolation",
@@ -31,13 +31,13 @@ cc_binary(
     ],
     deps = [
         ":constants",
-        "//aos/time:time",
+        "//aos:init",
         "//aos/actions:action_lib",
-        "//aos/logging",
-        "//aos/util:log_interval",
         "//aos/input:drivetrain_input",
         "//aos/input:joystick_input",
-        "//aos:init",
+        "//aos/logging",
+        "//aos/time",
+        "//aos/util:log_interval",
         "//frc971/autonomous:auto_queue",
         "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//y2017/actors:autonomous_action_lib",
@@ -54,17 +54,18 @@ cc_binary(
     restricted_to = ["//tools:roborio"],
     deps = [
         ":constants",
+        "//aos:init",
+        "//aos:make_unique",
         "//aos:math",
-        "//aos/stl_mutex:stl_mutex",
-        "//aos/time:time",
         "//aos/controls:control_loop",
         "//aos/logging",
         "//aos/logging:queue_logging",
-        "//aos/robot_state:robot_state",
+        "//aos/robot_state",
+        "//aos/stl_mutex",
+        "//aos/time",
         "//aos/util:log_interval",
         "//aos/util:phased_loop",
         "//aos/util:wrapping_counter",
-        "//aos:init",
         "//frc971/autonomous:auto_queue",
         "//frc971/control_loops:queues",
         "//frc971/control_loops/drivetrain:drivetrain_queue",
@@ -86,13 +87,13 @@ cc_binary(
 )
 
 robot_downloader(
-  start_binaries = [
-    ':joystick_reader',
-    ':wpilib_interface',
-    '//y2017/control_loops/drivetrain:drivetrain',
-    '//y2017/control_loops/superstructure:superstructure',
-    '//y2017/actors:autonomous_action',
-  ],
+    start_binaries = [
+        ":joystick_reader",
+        ":wpilib_interface",
+        "//y2017/control_loops/drivetrain:drivetrain",
+        "//y2017/control_loops/superstructure:superstructure",
+        "//y2017/actors:autonomous_action",
+    ],
 )
 
 py_library(

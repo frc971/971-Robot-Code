@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include "HAL/cpp/make_unique.h"
-
 namespace frc {
 
 // A struct to use as a deleter when a std::shared_ptr must wrap a raw pointer

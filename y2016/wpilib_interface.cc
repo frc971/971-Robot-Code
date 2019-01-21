@@ -19,16 +19,17 @@
 #include "frc971/wpilib/wpilib_robot_base.h"
 #undef ERROR
 
+#include "aos/commonmath.h"
+#include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/logging/queue_logging.h"
+#include "aos/make_unique.h"
+#include "aos/robot_state/robot_state.q.h"
+#include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
-#include "aos/stl_mutex/stl_mutex.h"
-#include "aos/init.h"
-#include "aos/robot_state/robot_state.q.h"
-#include "aos/commonmath.h"
 
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/control_loops.q.h"
@@ -62,6 +63,7 @@ using ::frc971::control_loops::drivetrain_queue;
 using ::y2016::control_loops::shooter::shooter_queue;
 using ::y2016::control_loops::superstructure_queue;
 using namespace frc;
+using aos::make_unique;
 
 namespace y2016 {
 namespace wpilib {
@@ -72,13 +74,6 @@ constexpr double kMaxBringupPower = 12.0;
 // TODO(Brian): Fix the interpretation of the result of GetRaw here and in the
 // DMA stuff and then removing the * 2.0 in *_translate.
 // The low bit is direction.
-
-// TODO(brian): Replace this with ::std::make_unique once all our toolchains
-// have support.
-template <class T, class... U>
-std::unique_ptr<T> make_unique(U &&... u) {
-  return std::unique_ptr<T>(new T(std::forward<U>(u)...));
-}
 
 // Translates for the sensor values to convert raw index pulses into something
 // with proper units.

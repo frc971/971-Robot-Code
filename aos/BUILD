@@ -401,3 +401,11 @@ cc_binary(
         "//aos/util:run_command",
     ],
 )
+
+cc_library(
+    name = "make_unique",
+    hdrs = [
+        "make_unique.h",
+    ],
+    visibility = ["//visibility:public"],
+)
