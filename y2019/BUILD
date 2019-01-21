@@ -55,6 +55,30 @@ cc_binary(
         "//third_party/Phoenix-frc-lib:phoenix",
     ],
 )
+cc_library(
+    name = "joystick_reader",
+    srcs = [
+        ":joystick_reader.cc",
+    ],
+    deps = [
+        "//aos:init",
+        "//aos/actions:action_lib",
+        "//aos/input:drivetrain_input",
+        "//aos/input:joystick_input",
+        "//aos/input:action_joystick_input",
+        "//aos/logging",
+        "//aos/network:team_number",
+        "//aos/stl_mutex",
+        "//aos/time",
+        "//aos/util:log_interval",
+        "//aos/vision/events:udp",
+        "//frc971/autonomous:auto_queue",
+        "//frc971/autonomous:base_autonomous_actor",
+        "//frc971/control_loops/drivetrain:drivetrain_queue",
+        "//y2019/control_loops/drivetrain:drivetrain_base",
+        "//y2019/control_loops/superstructure:superstructure_queue",
+    ],
+)
 
 py_library(
     name = "python_init",
