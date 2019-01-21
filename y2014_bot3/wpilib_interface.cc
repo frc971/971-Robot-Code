@@ -18,15 +18,16 @@
 #include "frc971/wpilib/wpilib_robot_base.h"
 #undef ERROR
 
+#include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/logging/queue_logging.h"
+#include "aos/make_unique.h"
+#include "aos/robot_state/robot_state.q.h"
+#include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
-#include "aos/stl_mutex/stl_mutex.h"
-#include "aos/init.h"
-#include "aos/robot_state/robot_state.q.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2014_bot3/control_loops/drivetrain/drivetrain_base.h"
@@ -56,6 +57,7 @@ using ::frc971::wpilib::LoopOutputHandler;
 using ::frc971::wpilib::JoystickSender;
 using ::frc971::wpilib::GyroSender;
 using namespace frc;
+using aos::make_unique;
 
 namespace frc971 {
 namespace wpilib {
@@ -328,13 +330,6 @@ class RollersWriter : public LoopOutputHandler {
       rollers_back_left_intake_talon_, rollers_front_right_intake_talon_,
       rollers_back_right_intake_talon_, rollers_low_goal_talon_;
 };
-
-// TODO(brian): Replace this with ::std::make_unique once all our toolchains
-// have support.
-template <class T, class... U>
-std::unique_ptr<T> make_unique(U &&... u) {
-  return std::unique_ptr<T>(new T(std::forward<U>(u)...));
-}
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
  public:

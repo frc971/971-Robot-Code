@@ -18,6 +18,7 @@ cc_library(
     restricted_to = ["//tools:roborio"],
     visibility = ["//third_party:__pkg__"],
     deps = [
+        "//aos:make_unique",
         "//aos/logging",
         "//third_party:wpilib_hal",
     ],

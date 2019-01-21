@@ -19,15 +19,16 @@
 #undef ERROR
 
 #include "aos/commonmath.h"
+#include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/logging/queue_logging.h"
+#include "aos/make_unique.h"
 #include "aos/robot_state/robot_state.q.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "aos/util/compiler_memory_barrier.h"
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
-#include "aos/init.h"
 
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
@@ -58,6 +59,7 @@ using ::y2017_bot3::control_loops::superstructure_queue;
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
 using namespace frc;
+using aos::make_unique;
 
 namespace y2017_bot3 {
 namespace wpilib {
@@ -78,13 +80,6 @@ constexpr double kMaxDrivetrainEncoderPulsesPerSecond =
 // TODO(Brian): Fix the interpretation of the result of GetRaw here and in the
 // DMA stuff and then removing the * 2.0 in *_translate.
 // The low bit is direction.
-
-// TODO(brian): Replace this with ::std::make_unique once all our toolchains
-// have support.
-template <class T, class... U>
-std::unique_ptr<T> make_unique(U &&... u) {
-  return std::unique_ptr<T>(new T(std::forward<U>(u)...));
-}
 
 // TODO(brian): Use ::std::max instead once we have C++14 so that can be
 // constexpr.

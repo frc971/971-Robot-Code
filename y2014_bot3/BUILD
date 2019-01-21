@@ -40,6 +40,7 @@ cc_binary(
     restricted_to = ["//tools:roborio"],
     deps = [
         "//aos:init",
+        "//aos:make_unique",
         "//aos/controls:control_loop",
         "//aos/logging",
         "//aos/logging:queue_logging",

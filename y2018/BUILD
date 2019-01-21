@@ -70,6 +70,7 @@ cc_binary(
     deps = [
         ":status_light",
         "//aos:init",
+        "//aos:make_unique",
         "//aos:math",
         "//aos/controls:control_loop",
         "//aos/logging",
