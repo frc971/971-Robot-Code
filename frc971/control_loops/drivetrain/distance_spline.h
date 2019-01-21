@@ -16,16 +16,19 @@ class DistanceSpline {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  DistanceSpline(const Spline &spline, int num_alpha = 100);
+  DistanceSpline(const Spline &spline, int num_alpha = 0);
+  DistanceSpline(::std::vector<Spline> &&splines, int num_alpha = 0);
 
   // Returns a point on the spline as a function of distance.
   ::Eigen::Matrix<double, 2, 1> XY(double distance) const {
-    return spline_.Point(DistanceToAlpha(distance));
+    const AlphaAndIndex a = DistanceToAlpha(distance);
+    return splines_[a.index].Point(a.alpha);
   }
 
   // Returns the velocity as a function of distance.
   ::Eigen::Matrix<double, 2, 1> DXY(double distance) const {
-    return spline_.DPoint(DistanceToAlpha(distance)).normalized();
+    const AlphaAndIndex a = DistanceToAlpha(distance);
+    return splines_[a.index].DPoint(a.alpha).normalized();
   }
 
   // Returns the acceleration as a function of distance.
@@ -33,14 +36,16 @@ class DistanceSpline {
 
   // Returns the heading as a function of distance.
   double Theta(double distance) const {
-    return spline_.Theta(DistanceToAlpha(distance));
+    const AlphaAndIndex a = DistanceToAlpha(distance);
+    return splines_[a.index].Theta(a.alpha);
   }
 
   // Returns the angular velocity as a function of distance.
   double DTheta(double distance) const {
     // TODO(austin): We are re-computing DPoint here!
-    const double alpha = DistanceToAlpha(distance);
-    return spline_.DTheta(alpha) / spline_.DPoint(alpha).norm();
+    const AlphaAndIndex a = DistanceToAlpha(distance);
+    const Spline &spline = splines_[a.index];
+    return spline.DTheta(a.alpha) / spline.DPoint(a.alpha).norm();
   }
 
   double DThetaDt(double distance, double velocity) const {
@@ -54,13 +59,20 @@ class DistanceSpline {
   double length() const { return distances_.back(); }
 
  private:
+  struct AlphaAndIndex {
+    size_t index;
+    double alpha;
+  };
+
   // Computes alpha for a distance
-  double DistanceToAlpha(double distance) const;
+  AlphaAndIndex DistanceToAlpha(double distance) const;
+
+  ::std::vector<double> BuildDistances(size_t num_alpha);
 
   // The spline we are converting to a distance.
-  const Spline spline_;
+  const ::std::vector<Spline> splines_;
   // An interpolation table of distances evenly distributed in alpha.
-  ::std::vector<double> distances_;
+  const ::std::vector<double> distances_;
 };
 
 }  // namespace drivetrain

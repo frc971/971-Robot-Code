@@ -11,9 +11,6 @@ namespace drivetrain {
 
 // Class to hold a spline as a function of alpha.  Alpha can only range between
 // 0.0 and 1.0.
-// TODO(austin): Need to be able to represent splines which have more than 2
-// control points at some point.  Or splines chained together.  This is close
-// enough for now.
 template <int N>
 class NSpline {
  public:
@@ -165,11 +162,22 @@ class NSpline {
   const ::Eigen::Matrix<double, 2, N - 3> dddspline_polynomial_;
 };
 
-typedef NSpline<4> Spline;
+typedef NSpline<6> Spline;
 
 // Converts a 4 control point spline into
 ::Eigen::Matrix<double, 2, 6> Spline4To6(
     const ::Eigen::Matrix<double, 2, 4> &control_points);
+
+template <int N>
+::Eigen::Matrix<double, 2, N> TranslateSpline(
+    const ::Eigen::Matrix<double, 2, N> &control_points,
+    const ::Eigen::Matrix<double, 2, 1> translation) {
+  ::Eigen::Matrix<double, 2, N> ans = control_points;
+  for (size_t i = 0; i < N; ++i) {
+    ans.template block<2, 1>(0, i) += translation;
+  }
+  return ans;
+}
 
 }  // namespace drivetrain
 }  // namespace control_loops

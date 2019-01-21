@@ -101,7 +101,7 @@ class ParameterizedSplineTest
 
   void SetUp() {
     distance_spline_ = ::std::unique_ptr<DistanceSpline>(
-        new DistanceSpline(Spline(GetParam().control_points)));
+        new DistanceSpline(Spline(Spline4To6(GetParam().control_points))));
     trajectory_ = ::std::unique_ptr<Trajectory>(
         new Trajectory(distance_spline_.get(), GetDrivetrainConfig(),
                        GetParam().velocity_limit));
