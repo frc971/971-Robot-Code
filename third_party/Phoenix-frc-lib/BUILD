@@ -1,6 +1,14 @@
 # It also restricts use to only with CTRE products and a roboRIO in FRC.
 licenses(["permissive"])
 
+cc_library(
+    name = "libs",
+    srcs = [
+        "libraries/driver/lib/libCTRE_PhoenixCCI.a",
+    ],
+    restricted_to = ["//tools:roborio"],
+)
+
 # Excludes motor/sensor code because those have reliances on WPILib.
 cc_library(
     name = "phoenix",
@@ -16,9 +24,7 @@ cc_library(
             "**/MotorControl/**",
             "**/Sensors/**",
         ],
-    ) + [
-        "libraries/driver/lib/libCTRE_PhoenixCCI.a",
-    ],
+    ),
     hdrs = glob(
         include = [
             "cpp/include/**/*.h",
@@ -38,6 +44,7 @@ cc_library(
     restricted_to = ["//tools:roborio"],
     visibility = ["//visibility:public"],
     deps = [
+        ":libs",
         "//third_party/allwpilib_2018:hal",
     ],
 )
