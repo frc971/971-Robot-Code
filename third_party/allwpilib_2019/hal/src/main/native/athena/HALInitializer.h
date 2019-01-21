@@ -20,7 +20,6 @@ static inline void CheckInit() {
 
 extern void InitializeAccelerometer();
 extern void InitializeAnalogAccumulator();
-extern void InitializeAnalogGyro();
 extern void InitializeAnalogInput();
 extern void InitializeAnalogInternal();
 extern void InitializeAnalogOutput();
@@ -45,7 +44,6 @@ extern void InitializePorts();
 extern void InitializePower();
 extern void InitializePWM();
 extern void InitializeRelay();
-extern void InitializeSerialPort();
 extern void InitializeSolenoid();
 extern void InitializeSPI();
 extern void InitializeThreads();

@@ -30,7 +30,6 @@
 #include "hal/Errors.h"
 #include "hal/Notifier.h"
 #include "hal/handles/HandlesInternal.h"
-#include "visa/visa.h"
 
 using namespace hal;
 
@@ -44,7 +43,6 @@ namespace init {
 void InitializeHAL() {
   InitializeAccelerometer();
   InitializeAnalogAccumulator();
-  InitializeAnalogGyro();
   InitializeAnalogInput();
   InitializeAnalogInternal();
   InitializeAnalogOutput();
@@ -68,7 +66,6 @@ void InitializeHAL() {
   InitializePower();
   InitializePWM();
   InitializeRelay();
-  InitializeSerialPort();
   InitializeSolenoid();
   InitializeSPI();
   InitializeThreads();
@@ -169,30 +166,6 @@ const char* HAL_GetErrorMessage(int32_t code) {
       return ERR_CANSessionMux_NotAllowed_MESSAGE;
     case HAL_ERR_CANSessionMux_NotInitialized:
       return ERR_CANSessionMux_NotInitialized_MESSAGE;
-    case VI_ERROR_SYSTEM_ERROR:
-      return VI_ERROR_SYSTEM_ERROR_MESSAGE;
-    case VI_ERROR_INV_OBJECT:
-      return VI_ERROR_INV_OBJECT_MESSAGE;
-    case VI_ERROR_RSRC_LOCKED:
-      return VI_ERROR_RSRC_LOCKED_MESSAGE;
-    case VI_ERROR_RSRC_NFOUND:
-      return VI_ERROR_RSRC_NFOUND_MESSAGE;
-    case VI_ERROR_INV_RSRC_NAME:
-      return VI_ERROR_INV_RSRC_NAME_MESSAGE;
-    case VI_ERROR_QUEUE_OVERFLOW:
-      return VI_ERROR_QUEUE_OVERFLOW_MESSAGE;
-    case VI_ERROR_IO:
-      return VI_ERROR_IO_MESSAGE;
-    case VI_ERROR_ASRL_PARITY:
-      return VI_ERROR_ASRL_PARITY_MESSAGE;
-    case VI_ERROR_ASRL_FRAMING:
-      return VI_ERROR_ASRL_FRAMING_MESSAGE;
-    case VI_ERROR_ASRL_OVERRUN:
-      return VI_ERROR_ASRL_OVERRUN_MESSAGE;
-    case VI_ERROR_RSRC_BUSY:
-      return VI_ERROR_RSRC_BUSY_MESSAGE;
-    case VI_ERROR_INV_PARAMETER:
-      return VI_ERROR_INV_PARAMETER_MESSAGE;
     case HAL_PWM_SCALE_ERROR:
       return HAL_PWM_SCALE_ERROR_MESSAGE;
     case HAL_SERIAL_PORT_NOT_FOUND:

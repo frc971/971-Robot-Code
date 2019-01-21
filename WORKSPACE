@@ -159,6 +159,16 @@ new_http_archive(
     url = "http://www.frc971.org/Build-Dependencies/allwpilib_ni-libraries_57e9fb3.tar.gz",
 )
 
+# Generated with:
+# git fetch https://github.com/wpilibsuite/ni-libraries master
+# git archive --output=allwpilib_ni-libraries_4785480.tar.gz --format=tar.gz 4785480
+new_http_archive(
+    name = "allwpilib_ni_libraries_2019",
+    build_file = "debian/ni-libraries-2019.BUILD",
+    sha256 = "2cdcde3391f36877b7533e15d0f36baf696b27c1107b77192a8200e26f13278c",
+    url = "http://www.frc971.org/Build-Dependencies/allwpilib_ni-libraries_4785480.tar.gz",
+)
+
 # Downloaded from:
 # https://pypi.python.org/packages/source/s/six/six-1.10.0.tar.gz
 new_http_archive(
