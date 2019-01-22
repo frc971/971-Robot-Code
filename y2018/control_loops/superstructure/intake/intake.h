@@ -104,7 +104,7 @@ class IntakeSide {
 
   State state_ = State::UNINITIALIZED;
 
-  ::frc971::zeroing::PotAndAbsEncoderZeroingEstimator zeroing_estimator_;
+  ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator zeroing_estimator_;
 
   double intake_last_position_ = 0.0;
 };

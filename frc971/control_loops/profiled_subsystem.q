@@ -113,7 +113,7 @@ struct AbsoluteProfiledJointStatus {
   float feedforwards_power;
 
   // State of the estimator.
-  .frc971.AbsoluteEstimatorState estimator_state;
+  .frc971.PotAndAbsoluteEncoderEstimatorState estimator_state;
 };
 
 struct IndexProfiledJointStatus {

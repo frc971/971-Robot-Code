@@ -65,7 +65,7 @@ struct EstimatorState {
 };
 
 // The internal state of a zeroing estimator.
-struct AbsoluteEstimatorState {
+struct PotAndAbsoluteEncoderEstimatorState {
   // If true, there has been a fatal error for the estimator.
   bool error;
   // If the joint has seen an index pulse and is zeroed.

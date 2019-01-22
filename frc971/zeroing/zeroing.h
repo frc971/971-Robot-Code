@@ -215,12 +215,12 @@ class HallEffectAndPositionZeroingEstimator
 
 // Estimates the position with an absolute encoder which also reports
 // incremental counts, and a potentiometer.
-class PotAndAbsEncoderZeroingEstimator
+class PotAndAbsoluteEncoderZeroingEstimator
     : public ZeroingEstimator<PotAndAbsolutePosition,
-    constants::PotAndAbsoluteEncoderZeroingConstants,
-    AbsoluteEstimatorState> {
+                              constants::PotAndAbsoluteEncoderZeroingConstants,
+                              PotAndAbsoluteEncoderEstimatorState> {
  public:
-  explicit PotAndAbsEncoderZeroingEstimator(
+  explicit PotAndAbsoluteEncoderZeroingEstimator(
       const constants::PotAndAbsoluteEncoderZeroingConstants &constants);
 
   // Resets the internal logic so it needs to be re-zeroed.

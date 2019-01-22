@@ -253,7 +253,7 @@ HallEffectAndPositionZeroingEstimator::GetEstimatorState() const {
   return r;
 }
 
-PotAndAbsEncoderZeroingEstimator::PotAndAbsEncoderZeroingEstimator(
+PotAndAbsoluteEncoderZeroingEstimator::PotAndAbsoluteEncoderZeroingEstimator(
     const constants::PotAndAbsoluteEncoderZeroingConstants &constants)
     : constants_(constants) {
   relative_to_absolute_offset_samples_.reserve(constants_.average_filter_size);
@@ -261,7 +261,7 @@ PotAndAbsEncoderZeroingEstimator::PotAndAbsEncoderZeroingEstimator(
   Reset();
 }
 
-void PotAndAbsEncoderZeroingEstimator::Reset() {
+void PotAndAbsoluteEncoderZeroingEstimator::Reset() {
   first_offset_ = 0.0;
   pot_relative_encoder_offset_ = 0.0;
   offset_ = 0.0;
@@ -293,7 +293,7 @@ void PotAndAbsEncoderZeroingEstimator::Reset() {
 // of samples and check that the buffered samples are not different than the
 // zeroing threshold. At any point that the samples differ too much, do not
 // update estimates based on those samples.
-void PotAndAbsEncoderZeroingEstimator::UpdateEstimate(
+void PotAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
     const PotAndAbsolutePosition &info) {
   // Check for Abs Encoder NaN value that would mess up the rest of the zeroing
   // code below. NaN values are given when the Absolute Encoder is disconnected.
@@ -460,8 +460,8 @@ void PotAndAbsEncoderZeroingEstimator::UpdateEstimate(
   position_ = offset_ + info.encoder;
 }
 
-PotAndAbsEncoderZeroingEstimator::State
-PotAndAbsEncoderZeroingEstimator::GetEstimatorState() const {
+PotAndAbsoluteEncoderZeroingEstimator::State
+PotAndAbsoluteEncoderZeroingEstimator::GetEstimatorState() const {
   State r;
   r.error = error_;
   r.zeroed = zeroed_;

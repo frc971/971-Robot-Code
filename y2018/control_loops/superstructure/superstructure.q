@@ -35,7 +35,7 @@ struct IntakeSideStatus {
   float delayed_voltage;
 
   // State of the estimator.
-  .frc971.AbsoluteEstimatorState estimator_state;
+  .frc971.PotAndAbsoluteEncoderEstimatorState estimator_state;
 };
 
 struct IntakeGoal {
@@ -62,8 +62,8 @@ struct IntakeElasticSensors {
 
 struct ArmStatus {
   // State of the estimators.
-  .frc971.AbsoluteEstimatorState proximal_estimator_state;
-  .frc971.AbsoluteEstimatorState distal_estimator_state;
+  .frc971.PotAndAbsoluteEncoderEstimatorState proximal_estimator_state;
+  .frc971.PotAndAbsoluteEncoderEstimatorState distal_estimator_state;
 
   // The node we are currently going to.
   uint32_t current_node;

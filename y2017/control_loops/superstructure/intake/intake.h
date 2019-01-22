@@ -56,7 +56,8 @@ class Intake {
   int disable_count_ = 0;
 
   ::frc971::control_loops::SingleDOFProfiledSubsystem<
-      ::frc971::zeroing::PotAndAbsEncoderZeroingEstimator> profiled_subsystem_;
+      ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>
+      profiled_subsystem_;
 };
 
 }  // namespace intake

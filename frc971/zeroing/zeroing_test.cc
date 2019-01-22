@@ -39,7 +39,7 @@ class ZeroingTest : public ::testing::Test {
   }
 
   void MoveTo(PositionSensorSimulator *simulator,
-              PotAndAbsEncoderZeroingEstimator *estimator,
+              PotAndAbsoluteEncoderZeroingEstimator *estimator,
               double new_position) {
     PotAndAbsolutePosition sensor_values_;
     simulator->MoveTo(new_position);
@@ -338,7 +338,7 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithoutMovement) {
   sim.Initialize(start_pos, index_diff / 3.0, 0.0,
                  constants.measured_absolute_position);
 
-  PotAndAbsEncoderZeroingEstimator estimator(constants);
+  PotAndAbsoluteEncoderZeroingEstimator estimator(constants);
 
   for (size_t i = 0; i < kSampleSize + kMovingBufferSize - 1; ++i) {
     MoveTo(&sim, &estimator, start_pos);
@@ -366,7 +366,7 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingIgnoresNAN) {
   sim.Initialize(start_pos, index_diff / 3.0, 0.0,
                  constants.measured_absolute_position);
 
-  PotAndAbsEncoderZeroingEstimator estimator(constants);
+  PotAndAbsoluteEncoderZeroingEstimator estimator(constants);
 
   // We tolerate a couple NANs before we start.
   PotAndAbsolutePosition sensor_values;
@@ -402,7 +402,7 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithMovement) {
   sim.Initialize(start_pos, index_diff / 3.0, 0.0,
                  constants.measured_absolute_position);
 
-  PotAndAbsEncoderZeroingEstimator estimator(constants);
+  PotAndAbsoluteEncoderZeroingEstimator estimator(constants);
 
   for (size_t i = 0; i < kSampleSize + kMovingBufferSize - 1; ++i) {
     MoveTo(&sim, &estimator, start_pos + i * index_diff);
@@ -419,7 +419,7 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithNaN) {
   PotAndAbsoluteEncoderZeroingConstants constants{
       kSampleSize, 1, 0.3, 0.1, kMovingBufferSize, kIndexErrorFraction};
 
-  PotAndAbsEncoderZeroingEstimator estimator(constants);
+  PotAndAbsoluteEncoderZeroingEstimator estimator(constants);
 
   PotAndAbsolutePosition sensor_values;
   sensor_values.absolute_encoder = ::std::numeric_limits<double>::quiet_NaN();

@@ -91,8 +91,10 @@ class Arm {
   ::aos::monotonic_clock::time_point claw_close_start_time_ =
       ::aos::monotonic_clock::min_time;
 
-  ::frc971::zeroing::PotAndAbsEncoderZeroingEstimator proximal_zeroing_estimator_;
-  ::frc971::zeroing::PotAndAbsEncoderZeroingEstimator distal_zeroing_estimator_;
+  ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator
+      proximal_zeroing_estimator_;
+  ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator
+      distal_zeroing_estimator_;
 
   double proximal_offset_ = 0.0;
   double distal_offset_ = 0.0;
