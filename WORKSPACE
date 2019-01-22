@@ -318,3 +318,9 @@ local_repository(
     name = "com_github_google_glog",
     path = "third_party/google-glog",
 )
+
+# External dependency: Google Benchmark; has no Bazel build.
+local_repository(
+    name = "com_github_google_benchmark",
+    path = "third_party/google-benchmark",
+)
