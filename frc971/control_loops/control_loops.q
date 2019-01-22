@@ -132,7 +132,7 @@ struct HallEffectAndPosition {
   // The current hall effect state.
   bool current;
   // The current encoder position.
-  double position;
+  double encoder;
   // The number of positive and negative edges we've seen on the hall effect
   // sensor.
   int32_t posedge_count;

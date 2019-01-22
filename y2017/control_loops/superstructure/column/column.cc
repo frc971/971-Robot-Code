@@ -118,19 +118,19 @@ void ColumnProfiledSubsystem::Correct(const ColumnPosition &new_position) {
   }
 
   turret_last_position_ = turret_position();
-  Y_ << new_position.indexer.position, new_position.turret.position;
+  Y_ << new_position.indexer.encoder, new_position.turret.encoder;
   Y_ += offset_;
   loop_->Correct(Y_);
 
-  indexer_history_[indexer_history_position_] = new_position.indexer.position;
+  indexer_history_[indexer_history_position_] = new_position.indexer.encoder;
   indexer_history_position_ = (indexer_history_position_ + 1) % kHistoryLength;
 
   indexer_dt_velocity_ =
-      (new_position.indexer.position - indexer_last_position_) /
+      (new_position.indexer.encoder - indexer_last_position_) /
       chrono::duration_cast<chrono::duration<double>>(
           ::aos::controls::kLoopFrequency)
           .count();
-  indexer_last_position_ = new_position.indexer.position;
+  indexer_last_position_ = new_position.indexer.encoder;
 
   stuck_indexer_detector_->Correct(Y_);
 

@@ -173,10 +173,10 @@ void HallEffectAndPositionZeroingEstimator::StoreEncoderMaxAndMin(
   // If we have a new posedge.
   if (!info.current) {
     if (last_hall_) {
-      min_low_position_ = max_low_position_ = info.position;
+      min_low_position_ = max_low_position_ = info.encoder;
     } else {
-      min_low_position_ = ::std::min(min_low_position_, info.position);
-      max_low_position_ = ::std::max(max_low_position_, info.position);
+      min_low_position_ = ::std::min(min_low_position_, info.encoder);
+      max_low_position_ = ::std::max(max_low_position_, info.encoder);
     }
   }
   last_hall_ = info.current;
@@ -207,9 +207,9 @@ void HallEffectAndPositionZeroingEstimator::UpdateEstimate(
 
   bool moving_backward = false;
   if (constants_.zeroing_move_direction) {
-    moving_backward = info.position > min_low_position_;
+    moving_backward = info.encoder > min_low_position_;
   } else {
-    moving_backward = info.position < max_low_position_;
+    moving_backward = info.encoder < max_low_position_;
   }
 
   // If there are no posedges to use or we don't have enough samples yet to
@@ -239,7 +239,7 @@ void HallEffectAndPositionZeroingEstimator::UpdateEstimate(
     zeroed_ = true;
   }
 
-  position_ = info.position - offset_;
+  position_ = info.encoder - offset_;
 }
 
 HallEffectAndPositionZeroingEstimator::State

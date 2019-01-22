@@ -1066,7 +1066,7 @@ TEST_F(SuperstructureTest, StuckIndexerTest) {
   superstructure_queue_.position.FetchLatest();
   ASSERT_TRUE(superstructure_queue_.position.get() != nullptr);
   const double indexer_position =
-      superstructure_queue_.position->column.indexer.position;
+      superstructure_queue_.position->column.indexer.encoder;
 
   // Now, unstick it.
   superstructure_plant_.set_freeze_indexer(false);
@@ -1094,7 +1094,7 @@ TEST_F(SuperstructureTest, StuckIndexerTest) {
   superstructure_queue_.position.FetchLatest();
   ASSERT_TRUE(superstructure_queue_.position.get() != nullptr);
   const double unstuck_indexer_position =
-      superstructure_queue_.position->column.indexer.position;
+      superstructure_queue_.position->column.indexer.encoder;
   EXPECT_LT(unstuck_indexer_position, indexer_position - 0.1);
 
   // Now, verify that everything works as expected.

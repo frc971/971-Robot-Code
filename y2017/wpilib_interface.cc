@@ -449,7 +449,7 @@ class SensorReader {
                     double encoder_counts_per_revolution, double encoder_ratio,
                     bool reverse) {
     const double multiplier = reverse ? -1.0 : 1.0;
-    position->position =
+    position->encoder =
         multiplier * encoder_translate(counter.polled_encoder(),
                                        encoder_counts_per_revolution,
                                        encoder_ratio);

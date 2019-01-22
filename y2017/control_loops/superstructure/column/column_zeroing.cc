@@ -38,8 +38,8 @@ void ColumnZeroingEstimator::UpdateEstimate(const ColumnPosition &position) {
     indexer_offset_ = indexer_.offset();
 
     // Compute the current turret position.
-    const double current_turret = indexer_offset_ + position.indexer.position +
-                                  turret_.offset() + position.turret.position;
+    const double current_turret = indexer_offset_ + position.indexer.encoder +
+                                  turret_.offset() + position.turret.encoder;
 
     // Now, we can compute the turret position which is closest to 0 radians
     // (within +- M_PI).
@@ -47,14 +47,14 @@ void ColumnZeroingEstimator::UpdateEstimate(const ColumnPosition &position) {
         ::frc971::zeroing::Wrap(0.0, current_turret, M_PI * 2.0);
 
     // Now, compute the actual turret offset.
-    turret_offset_ = adjusted_turret - position.turret.position -
-                     (indexer_offset_ + position.indexer.position);
+    turret_offset_ = adjusted_turret - position.turret.encoder -
+                     (indexer_offset_ + position.indexer.encoder);
     offset_ready_ = true;
 
     // If we are close enough to 0, we are zeroed.  Otherwise, we don't know
     // which revolution we are on and need more info.  We will always report the
     // turret position as within +- M_PI from 0 with the provided offset.
-    if (::std::abs(position.indexer.position + position.turret.position +
+    if (::std::abs(position.indexer.encoder + position.turret.encoder +
                    indexer_offset_ + turret_offset_) <
         turret_zeroed_distance_) {
       zeroed_ = true;
