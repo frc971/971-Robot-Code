@@ -587,6 +587,8 @@ class BAG(object):
     self.Kv = (self.free_speed / (12.0 - self.resistance * self.free_current))
     # Torque constant (N * m / A)
     self.Kt = self.stall_torque / self.stall_current
+    # Motor inertia in kg m^2
+    self.motor_inertia = 0.000006
 
 class MN3510(object):
   def __init__(self):
