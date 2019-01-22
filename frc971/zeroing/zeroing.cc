@@ -258,6 +258,7 @@ PotAndAbsoluteEncoderZeroingEstimator::PotAndAbsoluteEncoderZeroingEstimator(
     : constants_(constants) {
   relative_to_absolute_offset_samples_.reserve(constants_.average_filter_size);
   offset_samples_.reserve(constants_.average_filter_size);
+  buffered_samples_.reserve(constants_.moving_buffer_size);
   Reset();
 }
 
@@ -344,6 +345,7 @@ void PotAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
     const int middle_index =
         (buffered_samples_idx_ + (constants_.moving_buffer_size - 1) / 2) %
         constants_.moving_buffer_size;
+    const PotAndAbsolutePosition &sample = buffered_samples_[middle_index];
 
     // Compute the sum of all the offset samples.
     double relative_to_absolute_offset_sum = 0.0;
@@ -361,30 +363,26 @@ void PotAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
                   relative_to_absolute_offset_samples_.size();
 
     const double adjusted_incremental_encoder =
-        buffered_samples_[middle_index].encoder +
-        average_relative_to_absolute_offset;
+        sample.encoder + average_relative_to_absolute_offset;
 
     // Now, compute the nearest absolute encoder value to the offset relative
     // encoder position.
     const double adjusted_absolute_encoder =
         Wrap(adjusted_incremental_encoder,
-             buffered_samples_[middle_index].absolute_encoder -
-                 constants_.measured_absolute_position,
+             sample.absolute_encoder - constants_.measured_absolute_position,
              constants_.one_revolution_distance);
 
     // Reverse the math on the previous line to compute the absolute encoder.
     // Do this by taking the adjusted encoder, and then subtracting off the
     // second argument above, and the value that was added by Wrap.
     filtered_absolute_encoder_ =
-        ((buffered_samples_[middle_index].encoder +
-          average_relative_to_absolute_offset) -
+        ((sample.encoder + average_relative_to_absolute_offset) -
          (-constants_.measured_absolute_position +
           (adjusted_absolute_encoder -
-           (buffered_samples_[middle_index].absolute_encoder -
-            constants_.measured_absolute_position))));
+           (sample.absolute_encoder - constants_.measured_absolute_position))));
 
     const double relative_to_absolute_offset =
-        adjusted_absolute_encoder - buffered_samples_[middle_index].encoder;
+        adjusted_absolute_encoder - sample.encoder;
 
     // Add the sample and update the average with the new reading.
     const size_t relative_to_absolute_offset_samples_size =
@@ -412,11 +410,9 @@ void PotAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
 
     // Now compute the offset between the pot and relative encoder.
     if (offset_samples_.size() < constants_.average_filter_size) {
-      offset_samples_.push_back(buffered_samples_[middle_index].pot -
-                                buffered_samples_[middle_index].encoder);
+      offset_samples_.push_back(sample.pot - sample.encoder);
     } else {
-      offset_samples_[samples_idx_] = buffered_samples_[middle_index].pot -
-                                      buffered_samples_[middle_index].encoder;
+      offset_samples_[samples_idx_] = sample.pot - sample.encoder;
     }
 
     // Drop the oldest sample when we run this function the next time around.
@@ -429,12 +425,10 @@ void PotAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
     pot_relative_encoder_offset_ =
         pot_relative_encoder_offset_sum / offset_samples_.size();
 
-    offset_ = Wrap(buffered_samples_[middle_index].encoder +
-                       pot_relative_encoder_offset_,
-                   average_relative_to_absolute_offset +
-                       buffered_samples_[middle_index].encoder,
+    offset_ = Wrap(sample.encoder + pot_relative_encoder_offset_,
+                   average_relative_to_absolute_offset + sample.encoder,
                    constants_.one_revolution_distance) -
-              buffered_samples_[middle_index].encoder;
+              sample.encoder;
     if (offset_ready()) {
       if (!zeroed_) {
         first_offset_ = offset_;
