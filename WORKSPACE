@@ -313,3 +313,8 @@ local_repository(
     name = "com_google_protobuf",
     path = "third_party/protobuf",
 )
+
+local_repository(
+    name = "com_github_google_glog",
+    path = "third_party/google-glog",
+)

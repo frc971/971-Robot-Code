@@ -2,7 +2,9 @@
 set -e
 set -x
 
-bazel test -c opt --curses=no --color=no //...
-bazel build -c opt --curses=no --color=no //... --cpu=roborio
+TARGETS='//... @com_github_google_glog//...'
+
+bazel test -c opt --curses=no --color=no ${TARGETS}
+bazel build -c opt --curses=no --color=no ${TARGETS} --cpu=roborio
+bazel build --curses=no --color=no ${TARGETS} --cpu=armhf-debian
 bazel build -c opt --curses=no --color=no //motors/... --cpu=cortex-m4f
-bazel build --curses=no --color=no //... --cpu=armhf-debian
