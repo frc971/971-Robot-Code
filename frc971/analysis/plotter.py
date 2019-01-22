@@ -35,7 +35,7 @@ class Plotter(CollectingLogReader):
 
       # Create a legend label using the binary name (optional), the structure
       # name and the data search path.
-      label = key[1] + '.' + '.'.join(key[2])
+      label = key[1] + '.' + '.'.join(str(x) for x in key[2])
       if not no_binary_in_legend:
         label = key[0] + ' ' + label
 
