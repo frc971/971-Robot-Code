@@ -18,6 +18,10 @@ cc_library(
         exclude = ["src/benchmark_main.cc"],
     ),
     hdrs = ["include/benchmark/benchmark.h"],
+    copts = [
+        "-Wno-format-nonliteral",
+        "-Wno-deprecated-declarations",
+    ],
     linkopts = select({
         ":windows": ["-DEFAULTLIB:shlwapi.lib"],
         "//conditions:default": ["-pthread"],

@@ -324,3 +324,8 @@ local_repository(
     name = "com_github_google_benchmark",
     path = "third_party/google-benchmark",
 )
+
+local_repository(
+    name = "com_google_ceres_solver",
+    path = "third_party/ceres",
+)
