@@ -103,3 +103,19 @@ py_binary(
         "//frc971/control_loops/python:controls",
     ],
 )
+
+py_binary(
+    name = "lift",
+    srcs = [
+        "lift.py",
+    ],
+    legacy_create_init = False,
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":python_init",
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:linear_system",
+        "//frc971/control_loops/python:controls",
+    ],
+)
