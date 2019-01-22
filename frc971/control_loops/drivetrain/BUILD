@@ -268,6 +268,17 @@ cc_library(
     ],
 )
 
+cc_binary(
+    name = "spline.so",
+    srcs = ["libspline.cc"],
+    deps = [
+        ":distance_spline",
+        ":spline",
+        "//third_party/eigen",
+    ],
+    linkshared=True,
+)
+
 cc_test(
     name = "spline_test",
     srcs = [
@@ -292,16 +303,6 @@ cc_library(
         "//frc971/control_loops:fixed_quadrature",
         "//third_party/eigen",
     ],
-)
-
-cc_binary(
-    name = "spline.so",
-    srcs = ["libspline.cc"],
-    deps = [
-        ":spline",
-        "//third_party/eigen",
-    ],
-    linkshared=1,
 )
 
 cc_test(
