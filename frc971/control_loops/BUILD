@@ -265,6 +265,19 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "c2d_test",
+    srcs = [
+        "c2d_test.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":c2d",
+        ":runge_kutta",
+        "//aos/testing:googletest",
+    ],
+)
+
 cc_library(
     name = "c2d",
     hdrs = [

@@ -336,43 +336,15 @@ class HybridKalman {
   void UpdateQR(StateFeedbackHybridPlant<number_of_states, number_of_inputs,
                                          number_of_outputs> *plant,
                 ::std::chrono::nanoseconds dt) {
-    // Now, compute the discrete time Q and R coefficients.
-    Eigen::Matrix<Scalar, number_of_states, number_of_states> Qtemp =
-        (coefficients().Q_continuous +
-         coefficients().Q_continuous.transpose()) /
-        static_cast<Scalar>(2.0);
+    ::frc971::controls::DiscretizeQ(coefficients().Q_continuous,
+                                    plant->coefficients().A_continuous, dt,
+                                    &Q_);
+
     Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> Rtemp =
         (coefficients().R_continuous +
          coefficients().R_continuous.transpose()) /
         static_cast<Scalar>(2.0);
 
-    Eigen::Matrix<Scalar, 2 * number_of_states, 2 * number_of_states> M_gain;
-    M_gain.setZero();
-    // Set up the matrix M = [[-A, Q], [0, A.T]]
-    M_gain.template block<number_of_states, number_of_states>(0, 0) =
-        -plant->coefficients().A_continuous;
-    M_gain.template block<number_of_states, number_of_states>(
-        0, number_of_states) = Qtemp;
-    M_gain.template block<number_of_states, number_of_states>(
-        number_of_states, number_of_states) =
-        plant->coefficients().A_continuous.transpose();
-
-    Eigen::Matrix<Scalar, 2 * number_of_states, 2 *number_of_states> phi =
-        (M_gain *
-         ::std::chrono::duration_cast<::std::chrono::duration<Scalar>>(dt)
-             .count())
-            .exp();
-
-    // Phi12 = phi[0:number_of_states, number_of_states:2*number_of_states]
-    // Phi22 = phi[number_of_states:2*number_of_states,
-    // number_of_states:2*number_of_states]
-    Eigen::Matrix<Scalar, number_of_states, number_of_states> phi12 =
-        phi.block(0, number_of_states, number_of_states, number_of_states);
-    Eigen::Matrix<Scalar, number_of_states, number_of_states> phi22 = phi.block(
-        number_of_states, number_of_states, number_of_states, number_of_states);
-
-    Q_ = phi22.transpose() * phi12;
-    Q_ = (Q_ + Q_.transpose()) / static_cast<Scalar>(2.0);
     R_ = Rtemp /
          ::std::chrono::duration_cast<::std::chrono::duration<Scalar>>(dt)
              .count();
