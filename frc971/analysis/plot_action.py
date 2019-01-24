@@ -1,8 +1,8 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 
 import sys
 import numpy
-from plotter import Plotter
+from frc971.analysis.plotter import Plotter
 import argparse
 
 def ReadPlotDefinitions(filename):

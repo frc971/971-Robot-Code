@@ -1,6 +1,6 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 
-from logreader import CollectingLogReader
+from frc971.analysis.logreader import CollectingLogReader
 import matplotlib
 from matplotlib import pylab
 from matplotlib.font_manager import FontProperties
