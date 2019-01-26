@@ -12,7 +12,7 @@ for path in os.environ.get('PYTHONPATH').split(':'):
     try:
         libSpline = ct.cdll.LoadLibrary(
             os.path.join(path, 'frc971/control_loops/drivetrain/spline.so'))
-    except OSError, e:
+    except (OSError):
         pass
 
 # Define required output types.

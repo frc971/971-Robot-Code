@@ -167,6 +167,8 @@ py_binary(
     name = "path_edit",
     srcs = [
         "path_edit.py",
+        "basic_window.py",
+        "color.py",
     ],
     visibility = ["//visibility:public"],
     restricted_to = ["//tools:k8"],
@@ -174,7 +176,6 @@ py_binary(
         ":python_init",
         ":libspline",
         "@python_gtk",
-        ":basic_window",
     ],
 )
 
@@ -182,11 +183,24 @@ py_library(
     name = "basic_window",
     srcs = [
         "basic_window.py",
-        "color.py",
+        "color.py"
     ],
+    visibility = ["//visibility:public"],
     restricted_to = ["//tools:k8"],
     deps = [
         ":python_init",
         "@python_gtk",
+    ],
+)
+
+py_library(
+    name = "color",
+    srcs = [
+        "color.py",
+    ],
+    visibility = ["//visibility:public"],
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":python_init",
     ],
 )

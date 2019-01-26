@@ -2,20 +2,20 @@
 
 from __future__ import print_function
 import os
-import basic_window
-from color import Color, palette
+from frc971.control_loops.python import basic_window
+from frc971.control_loops.python.color import Color, palette
 import random
 import gi
 import numpy
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gdk
+from gi.repository import Gdk, Gtk
 import cairo
 import graph_generate
 from graph_generate import XYSegment, AngleSegment, to_theta, to_xy, alpha_blend
 from graph_generate import back_to_xy_loop, subdivide_theta, to_theta_loop
 from graph_generate import l1, l2, joint_center
 
-from basic_window import OverrideMatrix, identity, quit_main_loop, set_color
+from frc971.control_loops.python.basic_window import OverrideMatrix, identity, quit_main_loop, set_color
 
 import shapely
 from shapely.geometry import Polygon
@@ -157,7 +157,7 @@ def get_closest(prev, cur, pt):
             abs(dpx * pdx + dpy * pdy)
 
 
-#
+
 def closest_segment(lines, pt):
     c_pt, c_pt_dist = get_closest(lines[-1], lines[0], pt)
     for i in range(1, len(lines)):
@@ -175,6 +175,21 @@ class Silly(basic_window.BaseWindow):
     def __init__(self):
         super(Silly, self).__init__()
 
+        self.window = Gtk.Window()
+        self.window.set_title("DrawingArea")
+
+        self.window.set_events(Gdk.EventMask.BUTTON_PRESS_MASK
+                               | Gdk.EventMask.BUTTON_RELEASE_MASK
+                               | Gdk.EventMask.POINTER_MOTION_MASK
+                               | Gdk.EventMask.SCROLL_MASK
+                               | Gdk.EventMask.KEY_PRESS_MASK)
+        self.method_connect("key-press-event", self.do_key_press)
+        self.method_connect("button-press-event",
+                            self._do_button_press_internal)
+        self.method_connect("configure-event", self._do_configure)
+        self.window.add(self)
+        self.window.show_all()
+
         self.theta_version = False
         self.reinit_extents()
 
@@ -187,6 +202,38 @@ class Silly(basic_window.BaseWindow):
         self.now_segment_pt = None
         self.spline_edit = 0
         self.edit_control1 = True
+
+    def do_key_press(self, event):
+        pass
+
+    def _do_button_press_internal(self, event):
+        o_x = event.x
+        o_y = event.y
+        x = event.x - self.window_shape[0] / 2
+        y = self.window_shape[1] / 2 - event.y
+        scale = self.get_current_scale()
+        event.x = x / scale + self.center[0]
+        event.y = y / scale + self.center[1]
+        self.do_button_press(event)
+        event.x = o_x
+        event.y = o_y
+
+    def do_button_press(self, event):
+        pass
+
+    def _do_configure(self, event):
+        self.window_shape = (event.width, event.height)
+
+    def redraw(self):
+        if not self.needs_redraw:
+            self.needs_redraw = True
+            self.window.queue_draw()
+
+    def method_connect(self, event, cb):
+        def handler(obj, *args):
+            cb(*args)
+
+        self.window.connect(event, handler)
 
     def reinit_extents(self):
         if self.theta_version:
