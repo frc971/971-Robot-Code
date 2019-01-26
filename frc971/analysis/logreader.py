@@ -1,7 +1,7 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 
 import collections
-from logentry import LogEntry
+from frc971.analysis.logentry import LogEntry
 
 class Dataset(object):
   def __init__(self):
