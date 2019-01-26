@@ -24,10 +24,18 @@ libSpline.DistanceSplineDTheta.restype = ct.c_double
 libSpline.DistanceSplineDThetaDt.restype = ct.c_double
 libSpline.DistanceSplineDDTheta.restype = ct.c_double
 libSpline.DistanceSplineLength.restype = ct.c_double
+libSpline.TrajectoryLength.restype = ct.c_double
+libSpline.TrajectoryDistance.resType = ct.c_double
 
+# Required for trajectory
+libSpline.SetUpLogging()
 
 class Spline:
-    """A wrapper around spline.h/cc through libspline.cc."""
+    """
+    A wrapper around spline.h/cc through libspline.cc.
+    The functions return values parameterized by alpha, a number that varies
+    between 0 and 1 along the length of the spline.
+    """
 
     def __init__(self, points):
         assert points.shape == (2, 6)
@@ -83,18 +91,22 @@ class Spline:
     def ControlPoints(self):
         return self.__points
 
-    def Spline(self):
+    def GetSplinePtr(self):
         return self.__spline
 
 
 class DistanceSpline:
-    """A wrapper around distance_spline.h/cc through libdistancespline.cc."""
+    """
+    A wrapper around distance_spline.h/cc through libspline.cc.
+    The functions return values parameterized by the distance along the spline,
+    starting at 0 and and ending at the value returned by Length().
+    """
 
     def __init__(self, splines):
         self.__spline = None
         spline_ptrs = []
         for spline in splines:
-            spline_ptrs.append(spline.Spline())
+            spline_ptrs.append(spline.GetSplinePtr())
         spline_ptrs = np.array(spline_ptrs)
 
         spline_array = np.ctypeslib.as_ctypes(spline_ptrs)
@@ -141,3 +153,89 @@ class DistanceSpline:
 
     def Length(self):
         return libSpline.DistanceSplineLength(self.__spline)
+
+    def GetSplinePtr(self):
+        return self.__spline
+
+
+class Trajectory:
+    """A wrapper around trajectory.h/cc through libspline.cc."""
+
+    def __init__(self, distance_spline, vmax=10, num_distance=0):
+        self.__trajectory = libSpline.NewTrajectory(
+            distance_spline.GetSplinePtr(), ct.c_double(vmax), num_distance)
+
+    def __del__(self):
+        libSpline.deleteTrajectory(self.__trajectory)
+
+    def SetLongitudalAcceleration(self, accel):
+        libSpline.TrajectorySetLongitualAcceleration(self.__trajectory,
+                                                     ct.c_double(accel))
+
+    def SetLateralAcceleration(self, accel):
+        libSpline.TrajectorySetLateralAcceleration(self.__trajectory,
+                                                   ct.c_double(accel))
+
+    def SetVoltageLimit(self, limit):
+        libSpline.TrajectorySetVoltageLimit(self.__trajectory,
+                                            ct.c_double(limit))
+
+    def LimitVelocity(self, start_distance, end_distance, max_vel):
+        libSpline.TrajectoryLimitVelocity(self.__trajectory,
+                                          ct.c_double(start_distance),
+                                          ct.c_double(end_distance),
+                                          ct.c_double(max_vel))
+
+    def Plan(self):
+        """
+        Call this to compute the plan, if any of the limits change, a new plan
+        must be generated.
+        """
+        libSpline.TrajectoryPlan(self.__trajectory)
+
+    def Length(self):
+        return libSpline.TrajectoryLength(self.__trajectory)
+
+    def Distance(self, index):
+        return libSpline.TrajectoryDistance(self.__trajectory, index)
+
+    def Distances(self):
+        """
+        Returns an array of distances used to compute the plan. The linear
+        distance between each distance is equal.
+        """
+        path_length = libSpline.TrajectoryGetPathLength(self.__trajectory)
+        distances = numpy.zeros(path_length)
+        libSpline.TrajectoryDistances(self.__trajectory,
+                                      np.ctypeslib.as_ctypes(distances))
+        return distances
+
+    def GetPlan(self):
+        """
+        Returns the plan as an array of velocities matched to each distance
+        from Distances.
+        """
+        path_length = libSpline.TrajectoryGetPathLength(self.__trajectory)
+        velocities = numpy.zeros(path_length)
+        libSpline.TrajectoryGetPlan(self.__trajectory,
+                                    np.ctypeslib.as_ctypes(velocities))
+        return velocities
+
+    def GetPlanXVA(self, dt):
+        """
+        dt is in seconds
+        Returns the position, velocity, and acceleration as a function of time.
+        This is returned as a 3xN numpy array where N is proportional to how
+        long it takes to run the path.
+        This is slow so don't call more than once with the same data.
+        """
+        XVAPtr = libSpline.TrajectoryGetPlanXVAPtr(self.__trajectory, int(dt*1e9))
+        XVALength = libSpline.TrajectoryGetVectorLength(XVAPtr)
+        X = np.zeros(XVALength)
+        V = np.zeros(XVALength)
+        A = np.zeros(XVALength)
+        libSpline.TrajectoryGetPlanXVA(XVAPtr, np.ctypeslib.as_ctypes(X),
+                                       np.ctypeslib.as_ctypes(V),
+                                       np.ctypeslib.as_ctypes(A))
+        libSpline.TrajectoryDeleteVector(XVAPtr)
+        return np.vstack([X, V, A])

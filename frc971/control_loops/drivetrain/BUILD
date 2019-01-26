@@ -274,7 +274,11 @@ cc_binary(
     deps = [
         ":distance_spline",
         ":spline",
+        ":trajectory",
+        "//aos/logging:implementations",
+        "//aos/network:team_number",
         "//third_party/eigen",
+        "//y2019/control_loops/drivetrain:drivetrain_base",
     ],
     linkshared=True,
 )
