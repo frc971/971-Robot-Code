@@ -10,14 +10,6 @@
 
 namespace frc971 {
 namespace zeroing {
-namespace {
-
-bool compare_encoder(const PotAndAbsolutePosition &left,
-                     const PotAndAbsolutePosition &right) {
-  return left.encoder < right.encoder;
-}
-
-}  // namespace
 
 PotAndIndexPulseZeroingEstimator::PotAndIndexPulseZeroingEstimator(
     const constants::PotAndIndexPulseZeroingConstants &constants)
@@ -327,12 +319,15 @@ void PotAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
   } else {
     // Have enough samples to start determining if the robot is moving or not.
     buffered_samples_[buffered_samples_idx_] = info;
-    auto max_value =
-        ::std::max_element(buffered_samples_.begin(), buffered_samples_.end(),
-                           compare_encoder)->encoder;
-    auto min_value =
-        ::std::min_element(buffered_samples_.begin(), buffered_samples_.end(),
-                           compare_encoder)->encoder;
+    const auto minmax_value = ::std::minmax_element(
+        buffered_samples_.begin(), buffered_samples_.end(),
+        [](const PotAndAbsolutePosition &left,
+           const PotAndAbsolutePosition &right) {
+          return left.encoder < right.encoder;
+        });
+    const double min_value = minmax_value.first->encoder;
+    const double max_value = minmax_value.second->encoder;
+
     if (::std::abs(max_value - min_value) < constants_.zeroing_threshold) {
       // Robot isn't moving, use middle sample to determine offsets.
       moving = false;
