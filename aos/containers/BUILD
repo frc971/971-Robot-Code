@@ -17,3 +17,21 @@ cc_test(
         "//aos/testing:googletest",
     ],
 )
+
+cc_library(
+    name = "priority_queue",
+    hdrs = [
+        "priority_queue.h",
+    ],
+)
+
+cc_test(
+    name = "priority_queue_test",
+    srcs = [
+        "priority_queue_test.cc",
+    ],
+    deps = [
+        ":priority_queue",
+        "//aos/testing:googletest",
+    ],
+)

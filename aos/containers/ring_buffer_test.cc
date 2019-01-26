@@ -1,4 +1,4 @@
-#include "aos/ring_buffer/ring_buffer.h"
+#include "aos/containers/ring_buffer.h"
 
 #include "gtest/gtest.h"
 
