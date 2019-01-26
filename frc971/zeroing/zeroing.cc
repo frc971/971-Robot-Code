@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <numeric>
 #include <vector>
 
 #include "frc971/zeroing/wrap.h"
@@ -347,19 +348,14 @@ void PotAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
         constants_.moving_buffer_size;
     const PotAndAbsolutePosition &sample = buffered_samples_[middle_index];
 
-    // Compute the sum of all the offset samples.
-    double relative_to_absolute_offset_sum = 0.0;
-    for (size_t i = 0; i < relative_to_absolute_offset_samples_.size(); ++i) {
-      relative_to_absolute_offset_sum +=
-          relative_to_absolute_offset_samples_[i];
-    }
-
     // Compute the average offset between the absolute encoder and relative
     // encoder.  If we have 0 samples, assume it is 0.
     double average_relative_to_absolute_offset =
         relative_to_absolute_offset_samples_.size() == 0
             ? 0.0
-            : relative_to_absolute_offset_sum /
+            : ::std::accumulate(relative_to_absolute_offset_samples_.begin(),
+                                relative_to_absolute_offset_samples_.end(),
+                                0.0) /
                   relative_to_absolute_offset_samples_.size();
 
     const double adjusted_incremental_encoder =
@@ -418,12 +414,9 @@ void PotAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
     // Drop the oldest sample when we run this function the next time around.
     samples_idx_ = (samples_idx_ + 1) % constants_.average_filter_size;
 
-    double pot_relative_encoder_offset_sum = 0.0;
-    for (size_t i = 0; i < offset_samples_.size(); ++i) {
-      pot_relative_encoder_offset_sum += offset_samples_[i];
-    }
     pot_relative_encoder_offset_ =
-        pot_relative_encoder_offset_sum / offset_samples_.size();
+        ::std::accumulate(offset_samples_.begin(), offset_samples_.end(), 0.0) /
+        offset_samples_.size();
 
     offset_ = Wrap(sample.encoder + pot_relative_encoder_offset_,
                    average_relative_to_absolute_offset + sample.encoder,
