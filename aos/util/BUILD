@@ -37,6 +37,23 @@ cc_test(
 )
 
 cc_library(
+    name = "math",
+    hdrs = ["math.h"],
+    deps = [
+        "//third_party/eigen",
+    ],
+)
+
+cc_test(
+    name = "math_test",
+    srcs = ["math_test.cc"],
+    deps = [
+        ":math",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
     name = "death_test_log_implementation",
     hdrs = [
         "death_test_log_implementation.h",
@@ -69,8 +86,8 @@ cc_library(
         "phased_loop.h",
     ],
     deps = [
-        "//aos/time:time",
         "//aos/logging",
+        "//aos/time",
     ],
 )
 
@@ -80,8 +97,8 @@ cc_library(
         "log_interval.h",
     ],
     deps = [
-        "//aos/time:time",
         "//aos/logging",
+        "//aos/time",
     ],
 )
 
@@ -129,8 +146,8 @@ cc_library(
         "-lm",
     ],
     deps = [
-        "//aos/time:time",
         "//aos/logging",
+        "//aos/time",
         "//third_party/eigen",
     ],
 )
@@ -216,7 +233,7 @@ cc_library(
         "linked_list.h",
     ],
     deps = [
-        "//aos/transaction:transaction",
+        "//aos/transaction",
     ],
 )
 
