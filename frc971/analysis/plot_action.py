@@ -50,6 +50,14 @@ def ReadPlotDefinitions(filename):
 
   return defs
 
+
+def maybeint(x):
+  try:
+    return int(x)
+  except ValueError:
+    return x
+
+
 def main():
   # Parse all command line arguments.
   arg_parser = argparse.ArgumentParser(description='Log Plotter')
@@ -68,7 +76,8 @@ def main():
   if args.plot_defs:
     defs = ReadPlotDefinitions(args.plot_defs)
     for definition in defs:
-      p.Add(definition[0], definition[1], *definition[2:])
+      mapped_definitions = map(maybeint, definition[2:])
+      p.Add(definition[0], definition[1], *mapped_definitions)
 
   # Otherwise use a pre-defined set of data to plot.
   else:
