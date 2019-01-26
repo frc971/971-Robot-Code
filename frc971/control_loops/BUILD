@@ -30,6 +30,24 @@ cc_test(
 )
 
 cc_library(
+    name = "pose",
+    hdrs = ["pose.h"],
+    deps = [
+        "//aos/util:math",
+        "//third_party/eigen",
+    ],
+)
+
+cc_test(
+    name = "pose_test",
+    srcs = ["pose_test.cc"],
+    deps = [
+        ":pose",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
     name = "hall_effect_tracker",
     hdrs = [
         "hall_effect_tracker.h",
