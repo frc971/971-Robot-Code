@@ -8,13 +8,12 @@ from matplotlib import pylab
 import glog
 
 
-class LinearSystemParams(object):
+class AngularSystemParams(object):
     def __init__(self,
                  name,
                  motor,
                  G,
-                 radius,
-                 mass,
+                 J,
                  q_pos,
                  q_vel,
                  kalman_q_pos,
@@ -25,8 +24,7 @@ class LinearSystemParams(object):
         self.name = name
         self.motor = motor
         self.G = G
-        self.radius = radius
-        self.mass = mass
+        self.J = J
         self.q_pos = q_pos
         self.q_vel = q_vel
         self.kalman_q_pos = kalman_q_pos
@@ -36,31 +34,27 @@ class LinearSystemParams(object):
         self.dt = dt
 
 
-class LinearSystem(control_loop.ControlLoop):
-    def __init__(self, params, name='LinearSystem'):
-        super(LinearSystem, self).__init__(name)
+class AngularSystem(control_loop.ControlLoop):
+    def __init__(self, params, name="AngularSystem"):
+        super(AngularSystem, self).__init__(name)
         self.params = params
 
         self.motor = params.motor
 
         # Gear ratio
         self.G = params.G
-        self.radius = params.radius
 
-        # Mass in kg
-        self.mass = params.mass + self.motor.motor_inertia / (
-            (self.G * self.radius)**2.0)
+        # Moment of inertia in kg m^2
+        self.J = params.J + self.motor.motor_inertia / (self.G ** 2.0)
 
         # Control loop time step
         self.dt = params.dt
 
         # State is [position, velocity]
         # Input is [Voltage]
-        C1 = self.motor.Kt / (self.G * self.G * self.radius * self.radius *
-                              self.motor.resistance * self.mass *
-                              self.motor.Kv)
-        C2 = self.motor.Kt / (self.G * self.radius * self.motor.resistance *
-                              self.mass)
+        C1 = self.motor.Kt / (self.G * self.G * self.motor.resistance *
+                              self.J * self.motor.Kv)
+        C2 = self.motor.Kt / (self.G * self.J * self.motor.resistance)
 
         self.A_continuous = numpy.matrix([[0, 1], [0, -C1]])
 
@@ -78,10 +72,10 @@ class LinearSystem(control_loop.ControlLoop):
         controllability = controls.ctrb(self.A, self.B)
         glog.debug('Controllability of %d',
                    numpy.linalg.matrix_rank(controllability))
-        glog.debug('Mass: %f', self.mass)
-        glog.debug('Stall force: %f', self.motor.stall_torque / self.G / self.radius)
-        glog.debug('Stall acceleration: %f', self.motor.stall_torque / self.G /
-                   self.radius / self.mass)
+        glog.debug('J: %f', self.J)
+        glog.debug('Stall torque: %f', self.motor.stall_torque / self.G)
+        glog.debug('Stall acceleration: %f',
+                   self.motor.stall_torque / self.G / self.J)
 
         glog.debug('Free speed is %f',
                    -self.B_continuous[1, 0] / self.A_continuous[1, 1] * 12.0)
@@ -121,9 +115,9 @@ class LinearSystem(control_loop.ControlLoop):
         self.InitializeState()
 
 
-class IntegralLinearSystem(LinearSystem):
-    def __init__(self, params, name='IntegralLinearSystem'):
-        super(IntegralLinearSystem, self).__init__(params, name=name)
+class IntegralAngularSystem(AngularSystem):
+    def __init__(self, params, name="IntegralAngularSystem"):
+        super(IntegralAngularSystem, self).__init__(params, name=name)
 
         self.A_continuous_unaugmented = self.A_continuous
         self.B_continuous_unaugmented = self.B_continuous
@@ -170,21 +164,19 @@ def RunTest(plant,
             duration=1.0,
             use_profile=True,
             kick_time=0.5,
-            kick_magnitude=0.0,
-            max_velocity=0.3):
+            kick_magnitude=0.0):
     """Runs the plant with an initial condition and goal.
 
     Args:
       plant: plant object to use.
       end_goal: end_goal state.
-      controller: LinearSystem object to get K from, or None if we should
+      controller: AngularSystem object to get K from, or None if we should
           use plant.
-      observer: LinearSystem object to use for the observer, or None if we
+      observer: AngularSystem object to use for the observer, or None if we
           should use the actual state.
       duration: float, time in seconds to run the simulation for.
       kick_time: float, time in seconds to kick the robot.
       kick_magnitude: float, disturbance in volts to apply.
-      max_velocity: float, the max speed in m/s to profile.
     """
     t_plot = []
     x_plot = []
@@ -205,8 +197,8 @@ def RunTest(plant,
         (plant.X, numpy.matrix(numpy.zeros((1, 1)))), axis=0)
 
     profile = TrapezoidProfile(plant.dt)
-    profile.set_maximum_acceleration(10.0)
-    profile.set_maximum_velocity(max_velocity)
+    profile.set_maximum_acceleration(70.0)
+    profile.set_maximum_velocity(10.0)
     profile.SetGoal(goal[0, 0])
 
     U_last = numpy.matrix(numpy.zeros((1, 1)))
@@ -291,9 +283,9 @@ def PlotStep(params, R):
 
     Args:
       R: numpy.matrix(2, 1), the goal"""
-    plant = LinearSystem(params, params.name)
-    controller = IntegralLinearSystem(params, params.name)
-    observer = IntegralLinearSystem(params, params.name)
+    plant = AngularSystem(params, params.name)
+    controller = IntegralAngularSystem(params, params.name)
+    observer = IntegralAngularSystem(params, params.name)
 
     # Test moving the system.
     initial_X = numpy.matrix([[0.0], [0.0]])
@@ -315,9 +307,9 @@ def PlotKick(params, R):
 
     Args:
       R: numpy.matrix(2, 1), the goal"""
-    plant = LinearSystem(params, params.name)
-    controller = IntegralLinearSystem(params, params.name)
-    observer = IntegralLinearSystem(params, params.name)
+    plant = AngularSystem(params, params.name)
+    controller = IntegralAngularSystem(params, params.name)
+    observer = IntegralAngularSystem(params, params.name)
 
     # Test moving the system.
     initial_X = numpy.matrix([[0.0], [0.0]])
@@ -334,16 +326,15 @@ def PlotKick(params, R):
         kick_magnitude=2.0)
 
 
-def PlotMotion(params, R, max_velocity=0.3):
+def PlotMotion(params, R):
     """Plots a trapezoidal motion.
 
     Args:
       R: numpy.matrix(2, 1), the goal,
-      max_velocity: float, The max velocity of the profile.
     """
-    plant = LinearSystem(params, params.name)
-    controller = IntegralLinearSystem(params, params.name)
-    observer = IntegralLinearSystem(params, params.name)
+    plant = AngularSystem(params, params.name)
+    controller = IntegralAngularSystem(params, params.name)
+    observer = IntegralAngularSystem(params, params.name)
 
     # Test moving the system.
     initial_X = numpy.matrix([[0.0], [0.0]])
@@ -355,35 +346,28 @@ def PlotMotion(params, R, max_velocity=0.3):
         controller=controller,
         observer=observer,
         duration=2.0,
-        use_profile=True,
-        max_velocity=max_velocity)
+        use_profile=True)
 
 
-def WriteLinearSystem(params, plant_files, controller_files, year_namespaces):
-    """Writes out the constants for a linear system to a file.
+def WriteAngularSystem(params, plant_files, controller_files, year_namespaces):
+    """Writes out the constants for a angular system to a file.
 
     Args:
-      params: LinearSystemParams, the parameters defining the system.
+      params: AngularSystemParams, the parameters defining the system.
       plant_files: list of strings, the cc and h files for the plant.
       controller_files: list of strings, the cc and h files for the integral
         controller.
       year_namespaces: list of strings, the namespace list to use.
     """
     # Write the generated constants out to a file.
-    linear_system = LinearSystem(params, params.name)
+    angular_system = AngularSystem(params, params.name)
     loop_writer = control_loop.ControlLoopWriter(
-        linear_system.name, [linear_system], namespaces=year_namespaces)
-    loop_writer.AddConstant(
-        control_loop.Constant('kFreeSpeed', '%f', linear_system.motor.
-                              free_speed / (2.0 * numpy.pi)))
-    loop_writer.AddConstant(
-        control_loop.Constant('kOutputRatio', '%f', linear_system.G *
-                              linear_system.radius))
+        angular_system.name, [angular_system], namespaces=year_namespaces)
     loop_writer.Write(plant_files[0], plant_files[1])
 
-    integral_linear_system = IntegralLinearSystem(params,
-                                                  'Integral' + params.name)
+    integral_angular_system = IntegralAngularSystem(params,
+                                                    'Integral' + params.name)
     integral_loop_writer = control_loop.ControlLoopWriter(
-        integral_linear_system.name, [integral_linear_system],
+        integral_angular_system.name, [integral_angular_system],
         namespaces=year_namespaces)
     integral_loop_writer.Write(controller_files[0], controller_files[1])

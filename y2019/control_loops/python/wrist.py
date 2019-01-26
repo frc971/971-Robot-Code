@@ -17,12 +17,12 @@ try:
 except gflags.DuplicateFlagError:
     pass
 
-kIntake = angular_system.AngularSystemParams(
-    name='Intake',
-    motor=control_loop.Vex775Pro(),
-    # (1 / 35.0) * (20.0 / 40.0) -> 16 tooth sprocket on #25 chain
-    G=(12.0 / 56.0) * (14.0 / 54.0) * (18.0 / 64.0) * (16.0 / 48.0),
-    J=0.34 - 0.03757568,
+kWrist = angular_system.AngularSystemParams(
+    name='Wrist',
+    motor=control_loop.BAG(),
+    G=(6.0 / 60.0) * (20.0 / 100.0) * (24.0 / 84.0),
+    # TODO(austin): Pull moments of inertia from CAD when it's done.
+    J=0.34,
     q_pos=0.20,
     q_vel=5.0,
     kalman_q_pos=0.12,
@@ -34,16 +34,17 @@ kIntake = angular_system.AngularSystemParams(
 def main(argv):
     if FLAGS.plot:
         R = numpy.matrix([[numpy.pi / 2.0], [0.0]])
-        angular_system.PlotMotion(kIntake, R)
+        angular_system.PlotMotion(kWrist, R)
+        angular_system.PlotKick(kWrist, R)
 
     # Write the generated constants out to a file.
     if len(argv) != 5:
         glog.fatal(
-            'Expected .h file name and .cc file name for the intake and integral intake.'
+            'Expected .h file name and .cc file name for the wrist and integral wrist.'
         )
     else:
-        namespaces = ['y2016', 'control_loops', 'superstructure']
-        angular_system.WriteAngularSystem(kIntake, argv[1:3], argv[3:5],
+        namespaces = ['y2019', 'control_loops', 'superstructure', 'wrist']
+        angular_system.WriteAngularSystem(kWrist, argv[1:3], argv[3:5],
                                           namespaces)
 
 

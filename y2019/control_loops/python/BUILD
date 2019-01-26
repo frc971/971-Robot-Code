@@ -67,6 +67,23 @@ py_binary(
         ":python_init",
         "//external:python-gflags",
         "//external:python-glog",
+        "//frc971/control_loops/python:controls",
         "//frc971/control_loops/python:linear_system",
+    ],
+)
+
+py_binary(
+    name = "wrist",
+    srcs = [
+        "wrist.py",
+    ],
+    legacy_create_init = False,
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":python_init",
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:angular_system",
+        "//frc971/control_loops/python:controls",
     ],
 )
