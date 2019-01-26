@@ -53,5 +53,5 @@ py_library(
     name = "python_init",
     srcs = ["__init__.py"],
     visibility = ["//visibility:public"],
-    deps = ["//y2018/control_loops:python_init"],
+    deps = ["//y2019/control_loops:python_init"],
 )

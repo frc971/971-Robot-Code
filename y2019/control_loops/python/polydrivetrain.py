@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import sys
-from y2018.control_loops.python import drivetrain
+from y2019.control_loops.python import drivetrain
 from frc971.control_loops.python import polydrivetrain
 
 import gflags
@@ -22,7 +22,7 @@ def main(argv):
   elif len(argv) != 7:
     glog.fatal('Expected .h file name and .cc file name')
   else:
-    polydrivetrain.WritePolyDrivetrain(argv[1:3], argv[3:5], argv[5:7], 'y2018',
+    polydrivetrain.WritePolyDrivetrain(argv[1:3], argv[3:5], argv[5:7], 'y2019',
                                        drivetrain.kDrivetrain)
 
 if __name__ == '__main__':
