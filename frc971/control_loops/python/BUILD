@@ -84,6 +84,9 @@ py_library(
     data = [
         "//frc971/control_loops/drivetrain:spline.so",
     ],
+    deps = [
+        ":python_init",
+    ],
 )
 
 py_test(
@@ -93,6 +96,7 @@ py_test(
     ],
     deps = [
         ":libspline",
+        ":python_init",
     ]
 )
 
