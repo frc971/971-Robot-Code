@@ -149,6 +149,12 @@ extern "C" {
 
   void TrajectoryPlan(Trajectory *t) { t->Plan(); }
 
+  void TrajectoryVoltage(Trajectory *t, double distance, double* res) {
+    double *val = t->FFVoltage(distance).data();
+    res[0] = val[0];
+    res[1] = val[1];
+  }
+
   double TrajectoryLength(Trajectory *t) { return t->length(); }
 
   int TrajectoryGetPathLength(Trajectory *t) { return t->plan().size(); }

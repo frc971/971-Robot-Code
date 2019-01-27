@@ -193,6 +193,16 @@ class Trajectory:
         """
         libSpline.TrajectoryPlan(self.__trajectory)
 
+    def Voltage(self, distance):
+        """
+        Returns a pair of voltages for a given distance.
+        Order is left-right.
+        """
+        result = np.zeros(2)
+        libSpline.TrajectoryVoltage(self.__trajectory, ct.c_double(distance),
+                                    np.ctypeslib.as_ctypes(result))
+        return result
+
     def Length(self):
         return libSpline.TrajectoryLength(self.__trajectory)
 
