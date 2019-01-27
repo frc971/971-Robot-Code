@@ -699,12 +699,10 @@ void ShooterMotor::RunIteration(
   status->shots = shot_count_;
 }
 
-void ShooterMotor::ZeroOutputs() {
-  queue_group()->output.MakeWithBuilder()
-      .voltage(0)
-      .latch_piston(latch_piston_)
-      .brake_piston(brake_piston_)
-      .Send();
+void ShooterMotor::Zero(::y2014::control_loops::ShooterQueue::Output *output) {
+  output->voltage = 0.0;
+  output->latch_piston = latch_piston_;
+  output->brake_piston = brake_piston_;
 }
 
 }  // namespace control_loops
