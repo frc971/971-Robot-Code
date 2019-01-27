@@ -16,9 +16,10 @@ namespace frc971 {
 namespace zeroing {
 
 using control_loops::PositionSensorSimulator;
-using constants::PotAndIndexPulseZeroingConstants;
-using constants::PotAndAbsoluteEncoderZeroingConstants;
+using constants::AbsoluteEncoderZeroingConstants;
 using constants::EncoderPlusIndexZeroingConstants;
+using constants::PotAndAbsoluteEncoderZeroingConstants;
+using constants::PotAndIndexPulseZeroingConstants;
 
 static const size_t kSampleSize = 30;
 static const double kAcceptableUnzeroedError = 0.2;
@@ -36,6 +37,15 @@ class ZeroingTest : public ::testing::Test {
     simulator->MoveTo(new_position);
     simulator->GetSensorValues(&sensor_values);
     estimator->UpdateEstimate(sensor_values);
+  }
+
+  void MoveTo(PositionSensorSimulator *simulator,
+              AbsoluteEncoderZeroingEstimator *estimator,
+              double new_position) {
+    AbsolutePosition sensor_values_;
+    simulator->MoveTo(new_position);
+    simulator->GetSensorValues(&sensor_values_);
+    estimator->UpdateEstimate(sensor_values_);
   }
 
   void MoveTo(PositionSensorSimulator *simulator,
@@ -324,7 +334,7 @@ TEST_F(ZeroingTest, TestIndexOffsetError) {
 }
 
 // Makes sure that using an absolute encoder lets us zero without moving.
-TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithoutMovement) {
+TEST_F(ZeroingTest, TestPotAndAbsoluteEncoderZeroingWithoutMovement) {
   const double index_diff = 1.0;
   PositionSensorSimulator sim(index_diff);
 
@@ -351,8 +361,8 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithoutMovement) {
 }
 
 // Makes sure that we ignore a NAN if we get it, but will correctly zero
-// afterwords.
-TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingIgnoresNAN) {
+// afterwards.
+TEST_F(ZeroingTest, TestPotAndAbsoluteEncoderZeroingIgnoresNAN) {
   const double index_diff = 1.0;
   PositionSensorSimulator sim(index_diff);
 
@@ -388,7 +398,7 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingIgnoresNAN) {
 }
 
 // Makes sure that using an absolute encoder doesn't let us zero while moving.
-TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithMovement) {
+TEST_F(ZeroingTest, TestPotAndAbsoluteEncoderZeroingWithMovement) {
   const double index_diff = 1.0;
   PositionSensorSimulator sim(index_diff);
 
@@ -415,7 +425,7 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithMovement) {
 }
 
 // Makes sure we detect an error if the ZeroingEstimator gets sent a NaN.
-TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithNaN) {
+TEST_F(ZeroingTest, TestPotAndAbsoluteEncoderZeroingWithNaN) {
   PotAndAbsoluteEncoderZeroingConstants constants{
       kSampleSize, 1, 0.3, 0.1, kMovingBufferSize, kIndexErrorFraction};
 
@@ -654,6 +664,122 @@ TEST_F(HallEffectAndPositionZeroingEstimatorTest, TestStartingOnNoZero) {
   EXPECT_FALSE(estimator.zeroed());
   MoveTo(&sim_, &estimator, 0.0);
   EXPECT_FALSE(estimator.zeroed());
+}
+
+// Makes sure that using an absolute encoder lets us zero without moving.
+TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithoutMovement) {
+  const double index_diff = 1.0;
+  PositionSensorSimulator sim(index_diff);
+
+  const double kMiddlePosition = 2.5;
+  const double start_pos = 2.1;
+  double measured_absolute_position = 0.3 * index_diff;
+
+  AbsoluteEncoderZeroingConstants constants{
+      kSampleSize,        index_diff, measured_absolute_position,
+      kMiddlePosition,    0.1,        kMovingBufferSize,
+      kIndexErrorFraction};
+
+  sim.Initialize(start_pos, index_diff / 3.0, 0.0,
+                 constants.measured_absolute_position);
+
+  AbsoluteEncoderZeroingEstimator estimator(constants);
+
+  for (size_t i = 0; i < kSampleSize + kMovingBufferSize - 1; ++i) {
+    MoveTo(&sim, &estimator, start_pos);
+    ASSERT_FALSE(estimator.zeroed());
+  }
+
+  MoveTo(&sim, &estimator, start_pos);
+  ASSERT_TRUE(estimator.zeroed());
+  EXPECT_DOUBLE_EQ(start_pos, estimator.offset());
+}
+
+// Makes sure that we ignore a NAN if we get it, but will correctly zero
+// afterwards.
+TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingIgnoresNAN) {
+  const double index_diff = 1.0;
+  PositionSensorSimulator sim(index_diff);
+
+  const double start_pos = 2.1;
+  double measured_absolute_position = 0.3 * index_diff;
+  const double kMiddlePosition = 2.5;
+
+  AbsoluteEncoderZeroingConstants constants{
+      kSampleSize,        index_diff, measured_absolute_position,
+      kMiddlePosition,    0.1,        kMovingBufferSize,
+      kIndexErrorFraction};
+
+  sim.Initialize(start_pos, index_diff / 3.0, 0.0,
+                 constants.measured_absolute_position);
+
+  AbsoluteEncoderZeroingEstimator estimator(constants);
+
+  // We tolerate a couple NANs before we start.
+  AbsolutePosition sensor_values;
+  sensor_values.absolute_encoder = ::std::numeric_limits<double>::quiet_NaN();
+  sensor_values.encoder = 0.0;
+  for (size_t i = 0; i < kSampleSize - 1; ++i) {
+    estimator.UpdateEstimate(sensor_values);
+  }
+
+  for (size_t i = 0; i < kSampleSize + kMovingBufferSize - 1; ++i) {
+    MoveTo(&sim, &estimator, start_pos);
+    ASSERT_FALSE(estimator.zeroed());
+  }
+
+  MoveTo(&sim, &estimator, start_pos);
+  ASSERT_TRUE(estimator.zeroed());
+  EXPECT_DOUBLE_EQ(start_pos, estimator.offset());
+}
+
+// Makes sure that using an absolute encoder doesn't let us zero while moving.
+TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithMovement) {
+  const double index_diff = 1.0;
+  PositionSensorSimulator sim(index_diff);
+
+  const double start_pos = 10 * index_diff;
+  double measured_absolute_position = 0.3 * index_diff;
+  const double kMiddlePosition = 2.5;
+
+  AbsoluteEncoderZeroingConstants constants{
+      kSampleSize,        index_diff, measured_absolute_position,
+      kMiddlePosition,    0.1,        kMovingBufferSize,
+      kIndexErrorFraction};
+
+  sim.Initialize(start_pos, index_diff / 3.0, 0.0,
+                 constants.measured_absolute_position);
+
+  AbsoluteEncoderZeroingEstimator estimator(constants);
+
+  for (size_t i = 0; i < kSampleSize + kMovingBufferSize - 1; ++i) {
+    MoveTo(&sim, &estimator, start_pos + i * index_diff);
+    ASSERT_FALSE(estimator.zeroed());
+  }
+  MoveTo(&sim, &estimator, start_pos + 10 * index_diff);
+
+  MoveTo(&sim, &estimator, start_pos);
+  ASSERT_FALSE(estimator.zeroed());
+}
+
+// Makes sure we detect an error if the ZeroingEstimator gets sent a NaN.
+TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithNaN) {
+  AbsoluteEncoderZeroingConstants constants{
+      kSampleSize, 1, 0.3, 1.0, 0.1, kMovingBufferSize, kIndexErrorFraction};
+
+  AbsoluteEncoderZeroingEstimator estimator(constants);
+
+  AbsolutePosition sensor_values;
+  sensor_values.absolute_encoder = ::std::numeric_limits<double>::quiet_NaN();
+  sensor_values.encoder = 0.0;
+  // We tolerate a couple NANs before we start.
+  for (size_t i = 0; i < kSampleSize - 1; ++i) {
+    estimator.UpdateEstimate(sensor_values);
+  }
+  ASSERT_FALSE(estimator.error());
+
+  estimator.UpdateEstimate(sensor_values);
+  ASSERT_TRUE(estimator.error());
 }
 
 }  // namespace zeroing

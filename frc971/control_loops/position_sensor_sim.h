@@ -60,6 +60,7 @@ class PositionSensorSimulator {
   //         can be given in radians, meters, etc.
   void GetSensorValues(IndexPosition *values);
   void GetSensorValues(PotAndIndexPosition *values);
+  void GetSensorValues(AbsolutePosition *values);
   void GetSensorValues(PotAndAbsolutePosition *values);
   void GetSensorValues(HallEffectAndPosition *values);
 

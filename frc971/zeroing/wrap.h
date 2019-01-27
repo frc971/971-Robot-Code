@@ -9,6 +9,13 @@ namespace zeroing {
 double Wrap(double nearest, double value, double period);
 float Wrap(float nearest, float value, float period);
 
+inline double UnWrap(double nearest, double value, double period) {
+  return Wrap(nearest, value, period);
+}
+inline float UnWrap(float nearest, float value, float period) {
+  return Wrap(nearest, value, period);
+}
+
 }  // namespace zeroing
 }  // namespace frc971
 
