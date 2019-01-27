@@ -236,6 +236,8 @@ class GTK_Widget(basic_window.BaseWindow):
         # Fill the background color of the window with grey
         set_color(cr, palette["GREY"])
         cr.paint()
+        #Scale the field to fit within drawing area
+        cr.scale(0.5,0.5)
 
         # Draw a extents rectangle
         set_color(cr, palette["WHITE"])
@@ -537,8 +539,9 @@ class GTK_Widget(basic_window.BaseWindow):
 
     def do_button_press(self, event):
         print("button press activated")
-        self.x = event.x
-        self.y = event.y
+        #Be consistent with the scaling in the drawing_area
+        self.x = event.x * 2
+        self.y = event.y * 2
         self.button_press_action()
 
 
