@@ -118,8 +118,7 @@ class Target::QueueGroupDec < Target::Node
 		type_class.add_member(:public,member_func)
 		#cpp_tree.cc_file.add_funct(member_func)
 		member_func.args << "const char *name";
-		member_func.args << "uint32_t hash";
-		member_func.add_cons("::aos::QueueGroup","name", "hash")
+		member_func.add_cons("::aos::QueueGroup","name")
 		@queues.each do |queue|
 			member_func.args << "const char *#{queue.name}_name";
 			member_func.add_cons(queue.name,"#{queue.name}_name")
@@ -169,7 +168,6 @@ COMMENT_END
 		cons_call = CPP::FuncCall.new("new #{type_name}")
 		cons_call.args.push(@loc.queue_name(@name).inspect)
 
-		cons_call.args.push(@type.hash_with_name(@loc.queue_name(@name).inspect))
 		@type.queues.collect do |queue|
 			cons_call.args.push(@loc.queue_name(@name + "." + queue.name).inspect)
 		end

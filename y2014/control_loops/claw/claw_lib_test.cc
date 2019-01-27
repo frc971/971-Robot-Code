@@ -37,7 +37,7 @@ class ClawMotorSimulation {
   ClawMotorSimulation(double initial_top_position,
                       double initial_bottom_position)
       : claw_plant_(new StateFeedbackPlant<4, 2, 2>(MakeClawPlant())),
-        claw_queue(".y2014.control_loops.claw_queue", 0x9f1a99dd,
+        claw_queue(".y2014.control_loops.claw_queue",
                    ".y2014.control_loops.claw_queue.goal",
                    ".y2014.control_loops.claw_queue.position",
                    ".y2014.control_loops.claw_queue.output",
@@ -254,7 +254,7 @@ class ClawTest : public ::aos::testing::ControlLoopTest {
   double min_separation_;
 
   ClawTest()
-      : claw_queue(".y2014.control_loops.claw_queue", 0x9f1a99dd,
+      : claw_queue(".y2014.control_loops.claw_queue",
                    ".y2014.control_loops.claw_queue.goal",
                    ".y2014.control_loops.claw_queue.position",
                    ".y2014.control_loops.claw_queue.output",

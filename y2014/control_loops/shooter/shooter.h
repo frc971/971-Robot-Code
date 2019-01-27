@@ -41,7 +41,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
 
   const static int kZeroingMaxVoltage = 5;
 
-  virtual void CapU();
+  void CapU() override;
 
   // Returns the accumulated voltage.
   double voltage() const { return voltage_; }
@@ -158,15 +158,15 @@ class ShooterMotor
   State state() { return state_; }
 
  protected:
-  virtual void RunIteration(
+  void RunIteration(
       const ::y2014::control_loops::ShooterQueue::Goal *goal,
       const ::y2014::control_loops::ShooterQueue::Position *position,
       ::y2014::control_loops::ShooterQueue::Output *output,
-      ::y2014::control_loops::ShooterQueue::Status *status);
+      ::y2014::control_loops::ShooterQueue::Status *status) override;
 
  private:
   // We have to override this to keep the pistons in the correct positions.
-  virtual void ZeroOutputs();
+  void Zero(::y2014::control_loops::ShooterQueue::Output *output) override;
 
   // Friend the test classes for acces to the internal state.
   friend class testing::ShooterTest_UnloadWindupPositive_Test;

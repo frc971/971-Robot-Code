@@ -22,21 +22,6 @@ class Runnable {
   virtual void Iterate() = 0;
 };
 
-class SerializableControlLoop : public Runnable {
- public:
-  // Returns the size of all the data to be sent when serialized.
-  virtual size_t SeralizedSize() = 0;
-  // Serialize the current data.
-  virtual void Serialize(char *buffer) const = 0;
-  // Serialize zeroed data in case the data is out of date.
-  virtual void SerializeZeroMessage(char *buffer) const = 0;
-  // Deserialize data into the control loop.
-  virtual void Deserialize(const char *buffer) = 0;
-  // Unique identifier for the control loop.
-  // Most likely the hash of the queue group.
-  virtual uint32_t UniqueID() = 0;
-};
-
 // Control loops run this often, "starting" at time 0.
 constexpr ::std::chrono::nanoseconds kLoopFrequency =
     ::std::chrono::milliseconds(5);
@@ -47,7 +32,7 @@ constexpr ::std::chrono::nanoseconds kLoopFrequency =
 // It will then call the RunIteration method every cycle that it has enough
 // valid data for the control loop to run.
 template <class T>
-class ControlLoop : public SerializableControlLoop {
+class ControlLoop : public Runnable {
  public:
   // Create some convenient typedefs to reference the Goal, Position, Status,
   // and Output structures.
@@ -78,14 +63,13 @@ class ControlLoop : public SerializableControlLoop {
   }
 
   // Constructs and sends a message on the output queue which sets everything to
-  // a safe state (generally motors off). For some subclasses, this will be a
-  // bit different (ie pistons).
-  // The implementation here creates a new Output message, calls Zero() on it,
-  // and then sends it.
-  virtual void ZeroOutputs();
+  // a safe state.  Default is to set everything to zero.  Override Zero below
+  // to change that behavior.
+  void ZeroOutputs();
 
   // Sets the output to zero.
-  // Over-ride if a value of zero is not "off" for this subsystem.
+  // Override this if a value of zero (or false) is not "off" for this
+  // subsystem.
   virtual void Zero(OutputType *output) { output->Zero(); }
 
   // Runs the loop forever.
@@ -93,29 +77,6 @@ class ControlLoop : public SerializableControlLoop {
 
   // Runs one cycle of the loop.
   void Iterate() override;
-
-  // Returns the name of the queue group.
-  const char *name() { return control_loop_->name(); }
-
-  // Methods to serialize all the data that should be sent over the network.
-  size_t SeralizedSize() override { return control_loop_->goal->Size(); }
-  void Serialize(char *buffer) const override {
-    control_loop_->goal->Serialize(buffer);
-  }
-  void SerializeZeroMessage(char *buffer) const override {
-    GoalType zero_goal;
-    zero_goal.Zero();
-    zero_goal.Serialize(buffer);
-  }
-
-  void Deserialize(const char *buffer) override {
-    ScopedMessagePtr<GoalType> new_msg = control_loop_->goal.MakeMessage();
-    new_msg->Deserialize(buffer);
-    new_msg.Send();
-  }
-
-  uint32_t UniqueID() override { return control_loop_->hash(); }
-
 
  protected:
   static void Quit(int /*signum*/) {
@@ -135,9 +96,6 @@ class ControlLoop : public SerializableControlLoop {
                             const PositionType *position,
                             OutputType *output,
                             StatusType *status) = 0;
-
-  T *queue_group() { return control_loop_; }
-  const T *queue_group() const { return control_loop_; }
 
  private:
   static constexpr ::std::chrono::milliseconds kStaleLogInterval =

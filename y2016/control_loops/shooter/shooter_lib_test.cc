@@ -53,7 +53,7 @@ class ShooterSimulation {
             ::y2016::control_loops::shooter::MakeShooterPlant())),
         shooter_plant_right_(new ShooterPlant(
             ::y2016::control_loops::shooter::MakeShooterPlant())),
-        shooter_queue_(".y2016.control_loops.shooter", 0x78d8e372,
+        shooter_queue_(".y2016.control_loops.shooter",
                        ".y2016.control_loops.shooter.goal",
                        ".y2016.control_loops.shooter.position",
                        ".y2016.control_loops.shooter.output",
@@ -101,7 +101,7 @@ class ShooterSimulation {
 class ShooterTest : public ::aos::testing::ControlLoopTest {
  protected:
   ShooterTest()
-      : shooter_queue_(".y2016.control_loops.shooter", 0x78d8e372,
+      : shooter_queue_(".y2016.control_loops.shooter",
                        ".y2016.control_loops.shooter.goal",
                        ".y2016.control_loops.shooter.position",
                        ".y2016.control_loops.shooter.output",

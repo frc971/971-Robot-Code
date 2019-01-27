@@ -20,7 +20,7 @@ namespace testing {
 class BasicSimulation {
  public:
   BasicSimulation()
-      : basic_queue_(".frc971.codelab.basic_queue", 0x78d8e372,
+      : basic_queue_(".frc971.codelab.basic_queue",
                      ".frc971.codelab.basic_queue.goal",
                      ".frc971.codelab.basic_queue.position",
                      ".frc971.codelab.basic_queue.output",
@@ -60,7 +60,7 @@ class BasicSimulation {
 class BasicControlLoopTest : public ::aos::testing::ControlLoopTest {
  public:
   BasicControlLoopTest()
-      : basic_queue_(".frc971.codelab.basic_queue", 0x78d8e372,
+      : basic_queue_(".frc971.codelab.basic_queue",
                      ".frc971.codelab.basic_queue.goal",
                      ".frc971.codelab.basic_queue.position",
                      ".frc971.codelab.basic_queue.output",

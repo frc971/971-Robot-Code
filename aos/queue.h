@@ -209,16 +209,13 @@ class QueueGroup {
  public:
   // Constructs a queue group given its name and a unique hash of the name and
   // type.
-  QueueGroup(const char *name, uint32_t hash) : name_(name), hash_(hash) {}
+  QueueGroup(const char *name) : name_(name) {}
 
   // Returns the name of the queue group.
   const char *name() const { return name_.c_str(); }
-  // Returns a unique hash representing this instance of the queue group.
-  uint32_t hash() const { return hash_; }
 
  private:
   std::string name_;
-  uint32_t hash_;
 };
 
 }  // namespace aos

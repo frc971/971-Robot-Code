@@ -103,7 +103,7 @@ class DrivetrainSimulation {
   // TODO(aschuh) Do we want to test the clutch one too?
   DrivetrainSimulation()
       : drivetrain_plant_(new DrivetrainPlant(MakeDrivetrainPlant())),
-        my_drivetrain_queue_(".frc971.control_loops.drivetrain", 0x8a8dde77,
+        my_drivetrain_queue_(".frc971.control_loops.drivetrain",
                              ".frc971.control_loops.drivetrain.goal",
                              ".frc971.control_loops.drivetrain.position",
                              ".frc971.control_loops.drivetrain.output",
@@ -223,7 +223,7 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
   DrivetrainSimulation drivetrain_motor_plant_;
 
   DrivetrainTest()
-      : my_drivetrain_queue_(".frc971.control_loops.drivetrain", 0x8a8dde77,
+      : my_drivetrain_queue_(".frc971.control_loops.drivetrain",
                              ".frc971.control_loops.drivetrain.goal",
                              ".frc971.control_loops.drivetrain.position",
                              ".frc971.control_loops.drivetrain.output",

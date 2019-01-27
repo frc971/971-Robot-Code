@@ -35,12 +35,11 @@ class ShooterSimulation {
         plunger_latched_(false),
         brake_piston_state_(true),
         brake_delay_count_(0),
-        shooter_queue_(
-            ".y2014.control_loops.shooter_queue", 0xcbf22ba9,
-            ".y2014.control_loops.shooter_queue.goal",
-            ".y2014.control_loops.shooter_queue.position",
-            ".y2014.control_loops.shooter_queue.output",
-            ".y2014.control_loops.shooter_queue.status") {
+        shooter_queue_(".y2014.control_loops.shooter_queue",
+                       ".y2014.control_loops.shooter_queue.goal",
+                       ".y2014.control_loops.shooter_queue.position",
+                       ".y2014.control_loops.shooter_queue.output",
+                       ".y2014.control_loops.shooter_queue.status") {
     Reinitialize(initial_position);
   }
 
@@ -299,15 +298,13 @@ class ShooterTestTemplated
   }
 
   ShooterTestTemplated()
-      : shooter_queue_(
-            ".y2014.control_loops.shooter_queue", 0xcbf22ba9,
-            ".y2014.control_loops.shooter_queue.goal",
-            ".y2014.control_loops.shooter_queue.position",
-            ".y2014.control_loops.shooter_queue.output",
-            ".y2014.control_loops.shooter_queue.status"),
+      : shooter_queue_(".y2014.control_loops.shooter_queue",
+                       ".y2014.control_loops.shooter_queue.goal",
+                       ".y2014.control_loops.shooter_queue.position",
+                       ".y2014.control_loops.shooter_queue.output",
+                       ".y2014.control_loops.shooter_queue.status"),
         shooter_motor_(&shooter_queue_),
-        shooter_motor_plant_(0.2) {
-  }
+        shooter_motor_plant_(0.2) {}
 
   void VerifyNearGoal() {
     shooter_queue_.goal.FetchLatest();

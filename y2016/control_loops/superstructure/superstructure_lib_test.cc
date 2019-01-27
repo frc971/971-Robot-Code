@@ -88,7 +88,7 @@ class SuperstructureSimulation {
         pot_encoder_shoulder_(
             constants::Values::kShoulderEncoderIndexDifference),
         pot_encoder_wrist_(constants::Values::kWristEncoderIndexDifference),
-        superstructure_queue_(".y2016.control_loops.superstructure", 0x0,
+        superstructure_queue_(".y2016.control_loops.superstructure",
                               ".y2016.control_loops.superstructure.goal",
                               ".y2016.control_loops.superstructure.status",
                               ".y2016.control_loops.superstructure.output",
@@ -246,7 +246,7 @@ class SuperstructureSimulation {
 class SuperstructureTest : public ::aos::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
-      : superstructure_queue_(".y2016.control_loops.superstructure", 0x0,
+      : superstructure_queue_(".y2016.control_loops.superstructure",
                               ".y2016.control_loops.superstructure.goal",
                               ".y2016.control_loops.superstructure.status",
                               ".y2016.control_loops.superstructure.output",

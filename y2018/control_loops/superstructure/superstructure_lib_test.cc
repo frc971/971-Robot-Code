@@ -196,7 +196,7 @@ class SuperstructureSimulation {
                       constants::GetValues().right_intake.zeroing),
         arm_(constants::GetValues().arm_proximal.zeroing,
              constants::GetValues().arm_distal.zeroing),
-        superstructure_queue_(".y2018.control_loops.superstructure", 0xdeadbeef,
+        superstructure_queue_(".y2018.control_loops.superstructure",
                               ".y2018.control_loops.superstructure.goal",
                               ".y2018.control_loops.superstructure.position",
                               ".y2018.control_loops.superstructure.output",
@@ -268,7 +268,7 @@ class SuperstructureSimulation {
 class SuperstructureTest : public ::aos::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
-      : superstructure_queue_(".y2018.control_loops.superstructure", 0xdeadbeef,
+      : superstructure_queue_(".y2018.control_loops.superstructure",
                               ".y2018.control_loops.superstructure.goal",
                               ".y2018.control_loops.superstructure.position",
                               ".y2018.control_loops.superstructure.output",
