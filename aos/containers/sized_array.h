@@ -30,6 +30,8 @@ class SizedArray {
   using const_reverse_iterator = typename array::const_reverse_iterator;
 
   constexpr SizedArray() = default;
+  SizedArray(const SizedArray &) = default;
+  SizedArray(SizedArray &&) = default;
   SizedArray &operator=(const SizedArray &) = default;
   SizedArray &operator=(SizedArray &&) = default;
 
