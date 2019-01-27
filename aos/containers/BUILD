@@ -35,3 +35,21 @@ cc_test(
         "//aos/testing:googletest",
     ],
 )
+
+cc_library(
+    name = "sized_array",
+    hdrs = [
+        "sized_array.h",
+    ],
+)
+
+cc_test(
+    name = "sized_array_test",
+    srcs = [
+        "sized_array_test.cc",
+    ],
+    deps = [
+        ":sized_array",
+        "//aos/testing:googletest",
+    ],
+)
