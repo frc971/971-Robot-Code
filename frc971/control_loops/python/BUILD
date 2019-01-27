@@ -158,3 +158,31 @@ py_library(
         "@matplotlib",
     ],
 )
+
+py_binary(
+    name = "path_edit",
+    srcs = [
+        "path_edit.py",
+    ],
+    visibility = ["//visibility:public"],
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":python_init",
+        ":libspline",
+        "@python_gtk",
+        ":basic_window",
+    ],
+)
+
+py_library(
+    name = "basic_window",
+    srcs = [
+        "basic_window.py",
+        "color.py",
+    ],
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":python_init",
+        "@python_gtk",
+    ],
+)
