@@ -171,7 +171,8 @@ def RunTest(plant,
             use_profile=True,
             kick_time=0.5,
             kick_magnitude=0.0,
-            max_velocity=0.3):
+            max_velocity=0.3,
+            max_acceleration=10.0):
     """Runs the plant with an initial condition and goal.
 
     Args:
@@ -185,6 +186,7 @@ def RunTest(plant,
       kick_time: float, time in seconds to kick the robot.
       kick_magnitude: float, disturbance in volts to apply.
       max_velocity: float, the max speed in m/s to profile.
+      max_acceleration: float, the max acceleration in m/s/s to profile.
     """
     t_plot = []
     x_plot = []
@@ -205,7 +207,7 @@ def RunTest(plant,
         (plant.X, numpy.matrix(numpy.zeros((1, 1)))), axis=0)
 
     profile = TrapezoidProfile(plant.dt)
-    profile.set_maximum_acceleration(10.0)
+    profile.set_maximum_acceleration(max_acceleration)
     profile.set_maximum_velocity(max_velocity)
     profile.SetGoal(goal[0, 0])
 
@@ -334,12 +336,13 @@ def PlotKick(params, R):
         kick_magnitude=2.0)
 
 
-def PlotMotion(params, R, max_velocity=0.3):
+def PlotMotion(params, R, max_velocity=0.3, max_acceleration=10.0):
     """Plots a trapezoidal motion.
 
     Args:
       R: numpy.matrix(2, 1), the goal,
       max_velocity: float, The max velocity of the profile.
+      max_acceleration: float, The max acceleration of the profile.
     """
     plant = LinearSystem(params, params.name)
     controller = IntegralLinearSystem(params, params.name)
@@ -356,7 +359,8 @@ def PlotMotion(params, R, max_velocity=0.3):
         observer=observer,
         duration=2.0,
         use_profile=True,
-        max_velocity=max_velocity)
+        max_velocity=max_velocity,
+        max_acceleration=max_acceleration)
 
 
 def WriteLinearSystem(params, plant_files, controller_files, year_namespaces):
