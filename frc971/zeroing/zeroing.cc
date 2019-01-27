@@ -248,10 +248,9 @@ HallEffectAndPositionZeroingEstimator::GetEstimatorState() const {
 
 PotAndAbsoluteEncoderZeroingEstimator::PotAndAbsoluteEncoderZeroingEstimator(
     const constants::PotAndAbsoluteEncoderZeroingConstants &constants)
-    : constants_(constants) {
+    : constants_(constants), move_detector_(constants_.moving_buffer_size) {
   relative_to_absolute_offset_samples_.reserve(constants_.average_filter_size);
   offset_samples_.reserve(constants_.average_filter_size);
-  buffered_samples_.reserve(constants_.moving_buffer_size);
   Reset();
 }
 
@@ -266,7 +265,7 @@ void PotAndAbsoluteEncoderZeroingEstimator::Reset() {
   nan_samples_ = 0;
   relative_to_absolute_offset_samples_.clear();
   offset_samples_.clear();
-  buffered_samples_.clear();
+  move_detector_.Reset();
   error_ = false;
 }
 
@@ -311,37 +310,11 @@ void PotAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
     return;
   }
 
-  bool moving = true;
-  if (buffered_samples_.size() < constants_.moving_buffer_size) {
-    // Not enough samples to start determining if the robot is moving or not,
-    // don't use the samples yet.
-    buffered_samples_.push_back(info);
-  } else {
-    // Have enough samples to start determining if the robot is moving or not.
-    buffered_samples_[buffered_samples_idx_] = info;
-    const auto minmax_value = ::std::minmax_element(
-        buffered_samples_.begin(), buffered_samples_.end(),
-        [](const PotAndAbsolutePosition &left,
-           const PotAndAbsolutePosition &right) {
-          return left.encoder < right.encoder;
-        });
-    const double min_value = minmax_value.first->encoder;
-    const double max_value = minmax_value.second->encoder;
-
-    if (::std::abs(max_value - min_value) < constants_.zeroing_threshold) {
-      // Robot isn't moving, use middle sample to determine offsets.
-      moving = false;
-    }
-  }
-  buffered_samples_idx_ =
-      (buffered_samples_idx_ + 1) % constants_.moving_buffer_size;
+  const bool moving = move_detector_.Update(info, constants_.moving_buffer_size,
+                                            constants_.zeroing_threshold);
 
   if (!moving) {
-    // The robot is not moving, use the middle sample to determine offsets.
-    const int middle_index =
-        (buffered_samples_idx_ + (constants_.moving_buffer_size - 1) / 2) %
-        constants_.moving_buffer_size;
-    const PotAndAbsolutePosition &sample = buffered_samples_[middle_index];
+    const PotAndAbsolutePosition &sample = move_detector_.GetSample();
 
     // Compute the average offset between the absolute encoder and relative
     // encoder.  If we have 0 samples, assume it is 0.
