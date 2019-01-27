@@ -1,0 +1,103 @@
+#ifndef Y2019_JEVOIS_STRUCTURES_H_
+#define Y2019_JEVOIS_STRUCTURES_H_
+
+#include <stdint.h>
+
+#include <array>
+#include <bitset>
+#include <chrono>
+
+#include "Eigen/Dense"
+
+#include "aos/containers/sized_array.h"
+
+namespace frc971 {
+namespace jevois {
+
+// The overall flow to get data to the roboRIO consists of:
+//  1.  Camera captures a frame and grabs an absolute timestamp.
+//  2.  Camera processes the frame.
+//  3.  Camera grabs another absolute timestamp and subtracts to get a
+//      camera_duration.
+//  4.  Camera sends the frame via UART to the Teensy.
+//  5.  Teensy grabs an absolute timestamp for the first character received.
+//  6.  Teensy buffers at most one frame from each camera.
+//  7.  roboRIO toggles the CS line.
+//  8.  Teensy grabs an absolute timestamp for CS being asserted.
+//  9.  Teensy pulls together up to three frames and adds the time each one
+//      spent in its queue to the timestamps, and queues them in its SPI
+//      peripheral. This all happens before the roboRIO has enough time to start
+//      actually moving data.
+//  10. roboRIO transfers the frames, and sends back light/status commands.
+
+using camera_duration = std::chrono::duration<uint8_t, std::milli>;
+
+// This file declares the shared datastructures for the JeVois-based image
+// system.
+//
+// Note that floating-point numbers are represented with floats. This is because
+// a float has more bits than we need for anything, and the Teensy can't handle
+// doubles very quickly. It would probably be quick enough, but it's easier to
+// just use floats and not worry about it.
+
+struct Target {
+  // Distance to the target in meters. Specifically, the distance from the
+  // center of the camera's image plane to the center of the target.
+  float distance;
+
+  // Height of the target in meters. Specifically, the distance from the floor
+  // to the center of the target.
+  float height;
+
+  // Heading of the center of the target in radians. Zero is straight out
+  // perpendicular to the camera's image plane. Images to the left (looking at a
+  // camera image) are at a positive angle.
+  float heading;
+
+  // The angle between the target and the camera's image plane. This is
+  // projected so both are assumed to be perpendicular to the floor. Parallel
+  // targets have a skew of zero. Targets rotated such that their left edge
+  // (looking at a camera image) is closer are at a positive angle.
+  float skew;
+};
+
+// The information extracted from a single camera frame.
+//
+// This is all the information sent from each camera to the Teensy.
+struct Frame {
+  // The top most interesting targets found in this frame.
+  aos::SizedArray<Target, 3> targets;
+
+  // How long ago from the current time this frame was captured.
+  camera_duration age;
+};
+
+// This is all the information sent from the Teensy to each camera.
+struct CameraCalibration {
+  // The calibration matrix. This defines where the camera is pointing.
+  //
+  // TODO(Parker): What are the details on how this is defined.
+  Eigen::Matrix<float, 3, 4> calibration;
+};
+
+// This is all the information the Teensy sends to the RoboRIO.
+struct TeensyToRoborio {
+  // The newest frames received from up to three cameras. These will be the
+  // three earliest-received of all buffered frames.
+  aos::SizedArray<Frame, 3> frames;
+};
+
+// This is all the information the RoboRIO sends to the Teensy.
+struct RoborioToTeensy {
+  // Brightnesses for each of the beacon light channels. 0 is off, 255 is fully
+  // on.
+  std::array<uint8_t, 3> beacon_brightness;
+
+  // Whether the light ring for each camera should be on.
+  std::bitset<5> light_rings;
+};
+
+}  // namespace jevois
+}  // namespace frc971
+
+#endif  // Y2019_JEVOIS_STRUCTURES_H_
