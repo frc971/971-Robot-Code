@@ -153,3 +153,8 @@ struct IndexProfiledJointStatus {
   // State of the estimator.
   .frc971.IndexEstimatorState estimator_state;
 };
+
+struct StaticZeroingSingleDOFProfiledSubsystemGoal {
+  double unsafe_goal;
+  .frc971.ProfileParameters profile_params;
+};

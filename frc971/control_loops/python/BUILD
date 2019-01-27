@@ -97,7 +97,7 @@ py_test(
     deps = [
         ":libspline",
         ":python_init",
-    ]
+    ],
 )
 
 py_library(
@@ -166,15 +166,15 @@ py_library(
 py_binary(
     name = "path_edit",
     srcs = [
-        "path_edit.py",
         "basic_window.py",
         "color.py",
+        "path_edit.py",
     ],
-    visibility = ["//visibility:public"],
     restricted_to = ["//tools:k8"],
+    visibility = ["//visibility:public"],
     deps = [
-        ":python_init",
         ":libspline",
+        ":python_init",
         "@python_gtk",
     ],
 )
@@ -183,10 +183,10 @@ py_library(
     name = "basic_window",
     srcs = [
         "basic_window.py",
-        "color.py"
+        "color.py",
     ],
-    visibility = ["//visibility:public"],
     restricted_to = ["//tools:k8"],
+    visibility = ["//visibility:public"],
     deps = [
         ":python_init",
         "@python_gtk",
@@ -198,9 +198,25 @@ py_library(
     srcs = [
         "color.py",
     ],
-    visibility = ["//visibility:public"],
     restricted_to = ["//tools:k8"],
+    visibility = ["//visibility:public"],
     deps = [
         ":python_init",
+    ],
+)
+
+py_binary(
+    name = "static_zeroing_single_dof_profiled_subsystem_test",
+    srcs = [
+        "static_zeroing_single_dof_profiled_subsystem_test.py",
+    ],
+    legacy_create_init = False,
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":controls",
+        ":linear_system",
+        ":python_init",
+        "//external:python-gflags",
+        "//external:python-glog",
     ],
 )
