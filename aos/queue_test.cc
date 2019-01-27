@@ -213,7 +213,6 @@ class GroupTest : public ::testing::Test {
  protected:
   GroupTest()
       : my_test_queuegroup(".aos.common.testing.test_queuegroup",
-                           0x20561114,
                            ".aos.common.testing.test_queuegroup.first",
                            ".aos.common.testing.test_queuegroup.second") {}
 
@@ -225,16 +224,6 @@ class GroupTest : public ::testing::Test {
  private:
   ::aos::testing::TestSharedMemory my_shm_;
 };
-
-// Tests that the hash gets preserved.
-TEST_F(GroupTest, Hash) {
-  EXPECT_EQ(static_cast<uint32_t>(0x20561114), my_test_queuegroup.hash());
-}
-
-// Tests that the hash works.
-TEST_F(GroupTest, RealHash) {
-  EXPECT_EQ(static_cast<uint32_t>(0x93596b2f), test_queuegroup.hash());
-}
 
 // Tests that name works.
 TEST_F(GroupTest, Name) {

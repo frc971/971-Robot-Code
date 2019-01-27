@@ -134,7 +134,7 @@ class SuperstructureSimulation {
         column_plant_(new ColumnPlant(
             ::y2017::control_loops::superstructure::column::MakeColumnPlant())),
 
-        superstructure_queue_(".y2017.control_loops.superstructure", 0xdeadbeef,
+        superstructure_queue_(".y2017.control_loops.superstructure",
                               ".y2017.control_loops.superstructure.goal",
                               ".y2017.control_loops.superstructure.position",
                               ".y2017.control_loops.superstructure.output",
@@ -432,7 +432,7 @@ class SuperstructureSimulation {
 class SuperstructureTest : public ::aos::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
-      : superstructure_queue_(".y2017.control_loops.superstructure", 0xdeadbeef,
+      : superstructure_queue_(".y2017.control_loops.superstructure",
                               ".y2017.control_loops.superstructure.goal",
                               ".y2017.control_loops.superstructure.position",
                               ".y2017.control_loops.superstructure.output",
