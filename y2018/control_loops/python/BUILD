@@ -163,18 +163,6 @@ cc_binary(
     ],
 )
 
-py_library(
-    name = "basic_window",
-    srcs = [
-        "basic_window.py",
-        "color.py",
-    ],
-    restricted_to = ["//tools:k8"],
-    deps = [
-        ":python_init",
-        "@python_gtk",
-    ],
-)
 
 py_binary(
     name = "graph_edit",
@@ -187,7 +175,7 @@ py_binary(
     restricted_to = ["//tools:k8"],
     srcs_version = "PY3",
     deps = [
-        ":basic_window",
+        "//frc971/control_loops/python:basic_window",
         ":python_init",
         "@python_gtk",
     ],
@@ -204,22 +192,6 @@ py_binary(
     srcs_version = "PY2",
     deps = [
         ":python_init",
-    ],
-)
-
-py_binary(
-    name = "path_edit",
-    srcs = [
-        "path_edit.py",
-    ],
-    default_python_version = "PY3",
-    legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
-    srcs_version = "PY3",
-    deps = [
-        ":basic_window",
-        ":python_init",
-        "@python_gtk",
     ],
 )
 
