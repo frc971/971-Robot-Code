@@ -52,10 +52,8 @@ class ControlLoop : public Runnable {
     decltype(*(static_cast<T *>(NULL)->output.MakeMessage().get()))>::type
       OutputType;
 
-  ControlLoop(T *control_loop)
-      : shm_event_loop_(new ::aos::ShmEventLoop()),
-        event_loop_(shm_event_loop_.get()),
-        name_(control_loop->name()) {
+  ControlLoop(EventLoop *event_loop, const ::std::string &name)
+      : event_loop_(event_loop), name_(name) {
     output_sender_ = event_loop_->MakeSender<OutputType>(name_ + ".output");
     status_sender_ = event_loop_->MakeSender<StatusType>(name_ + ".status");
     goal_fetcher_ = event_loop_->MakeFetcher<GoalType>(name_ + ".goal");
@@ -69,17 +67,6 @@ class ControlLoop : public Runnable {
   bool has_joystick_state() const { return joystick_state_fetcher_.get(); }
   const ::aos::JoystickState &joystick_state() const {
     return *joystick_state_fetcher_;
-  }
-
-  ControlLoop(EventLoop *event_loop, const ::std::string &name)
-      : event_loop_(event_loop), name_(name) {
-    output_sender_ = event_loop_->MakeSender<OutputType>(name_ + ".output");
-    status_sender_ = event_loop_->MakeSender<StatusType>(name_ + ".status");
-    goal_fetcher_ = event_loop_->MakeFetcher<GoalType>(name_ + ".goal");
-    robot_state_fetcher_ =
-        event_loop_->MakeFetcher<::aos::RobotState>(".aos.robot_state");
-    joystick_state_fetcher_ =
-        event_loop_->MakeFetcher<::aos::JoystickState>(".aos.joystick_state");
   }
 
   // Returns true if all the counters etc in the sensor data have been reset.
