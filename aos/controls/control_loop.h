@@ -71,6 +71,17 @@ class ControlLoop : public Runnable {
     return *joystick_state_fetcher_;
   }
 
+  ControlLoop(EventLoop *event_loop, const ::std::string &name)
+      : event_loop_(event_loop), name_(name) {
+    output_sender_ = event_loop_->MakeSender<OutputType>(name_ + ".output");
+    status_sender_ = event_loop_->MakeSender<StatusType>(name_ + ".status");
+    goal_fetcher_ = event_loop_->MakeFetcher<GoalType>(name_ + ".goal");
+    robot_state_fetcher_ =
+        event_loop_->MakeFetcher<::aos::RobotState>(".aos.robot_state");
+    joystick_state_fetcher_ =
+        event_loop_->MakeFetcher<::aos::JoystickState>(".aos.joystick_state");
+  }
+
   // Returns true if all the counters etc in the sensor data have been reset.
   // This will return true only a single time per reset.
   bool WasReset() {
@@ -93,9 +104,12 @@ class ControlLoop : public Runnable {
   virtual void Zero(OutputType *output) { output->Zero(); }
 
   // Runs the loop forever.
+  // TODO(austin): This should move to the event loop once it gets hoisted out.
   void Run() override;
 
   // Runs one cycle of the loop.
+  // TODO(austin): This should go away when all the tests use event loops
+  // directly.
   void Iterate() override;
 
  protected:
