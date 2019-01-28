@@ -1,0 +1,162 @@
+#include "y2019/control_loops/superstructure/collision_avoidance.h"
+
+#include <cmath>
+#include "y2019/control_loops/superstructure/superstructure.q.h"
+
+namespace y2019 {
+namespace control_loops {
+namespace superstructure {
+
+constexpr double CollisionAvoidance::kElevatorClearHeight;
+constexpr double CollisionAvoidance::kElevatorClearWristDownHeight;
+constexpr double CollisionAvoidance::kElevatorClearIntakeHeight;
+constexpr double CollisionAvoidance::kWristMaxAngle;
+constexpr double CollisionAvoidance::kWristMinAngle;
+constexpr double CollisionAvoidance::kIntakeOutAngle;
+constexpr double CollisionAvoidance::kIntakeInAngle;
+constexpr double CollisionAvoidance::kWristElevatorCollisionMinAngle;
+constexpr double CollisionAvoidance::kWristElevatorCollisionMaxAngle;
+constexpr double CollisionAvoidance::kEps;
+constexpr double CollisionAvoidance::kEpsIntake;
+constexpr double CollisionAvoidance::kEpsWrist;
+
+CollisionAvoidance::CollisionAvoidance() {
+  clear_min_wrist_goal();
+  clear_max_wrist_goal();
+  clear_min_elevator_goal();
+  clear_min_intake_goal();
+  clear_max_intake_goal();
+}
+
+bool CollisionAvoidance::IsCollided(const SuperstructureQueue::Status *status) {
+  const double wrist_position = status->wrist.position;
+  const double elevator_position = status->elevator.position;
+  const double intake_position = status->intake.position;
+
+  // Elevator is down, so the wrist can't be close to vertical.
+  if (elevator_position < kElevatorClearHeight) {
+    if (wrist_position < kWristElevatorCollisionMaxAngle &&
+        wrist_position > kWristElevatorCollisionMinAngle) {
+      return true;
+    }
+  }
+
+  // Elevator is down so wrist can't go below horizontal in either direction.
+  if (elevator_position < kElevatorClearWristDownHeight) {
+    if (wrist_position > kWristMaxAngle) {
+      return true;
+    }
+    if (wrist_position < kWristMinAngle) {
+      return true;
+    }
+  }
+
+  // Elevator is down so the intake has to be at either extreme.
+  if (elevator_position < kElevatorClearIntakeHeight) {
+    if (intake_position < kIntakeOutAngle && intake_position > kIntakeInAngle) {
+      return true;
+    }
+  }
+
+  // Nothing is hitting, we must be good.
+  return false;
+}
+
+void CollisionAvoidance::UpdateGoal(
+    const SuperstructureQueue::Status *status,
+    const SuperstructureQueue::Goal *unsafe_goal) {
+  const double wrist_position = status->wrist.position;
+  const double elevator_position = status->elevator.position;
+  const double intake_position = status->intake.position;
+
+  // Start with our constraints being wide open.
+  clear_max_wrist_goal();
+  clear_min_wrist_goal();
+  clear_max_intake_goal();
+  clear_min_intake_goal();
+
+  // If the elevator is low enough, we also can't transition the wrist.
+  if (elevator_position < kElevatorClearHeight) {
+    // Figure out which side the wrist is on and stay there.
+    if (wrist_position < 0.0) {
+      update_max_wrist_goal(kWristElevatorCollisionMinAngle - kEpsWrist);
+    } else {
+      update_min_wrist_goal(kWristElevatorCollisionMaxAngle + kEpsWrist);
+    }
+  }
+
+  // If the elevator is too low, the wrist needs to be above the clearance
+  // angles to avoid crashing the frame.
+  if (elevator_position < kElevatorClearWristDownHeight) {
+    update_min_wrist_goal(kWristMinAngle + kEpsWrist);
+    update_max_wrist_goal(kWristMaxAngle - kEpsWrist);
+  }
+
+  constexpr double kIntakeMiddleAngle =
+      (kIntakeOutAngle + kIntakeInAngle) / 2.0;
+
+  // If the elevator is too low, the intake can't transition from in to out or
+  // back.
+  if (elevator_position < kElevatorClearIntakeHeight) {
+    // Figure out if the intake is in our out and keep it there.
+    if (intake_position < kIntakeMiddleAngle) {
+      update_max_intake_goal(kIntakeInAngle - kEpsIntake);
+    } else {
+      update_min_intake_goal(kIntakeOutAngle + kEpsIntake);
+    }
+  }
+
+  // Start with an unconstrained elevator.
+  clear_min_elevator_goal();
+
+  // If the intake is within the collision range, don't let the elevator down.
+  if (intake_position > kIntakeInAngle && intake_position < kIntakeOutAngle) {
+    update_min_elevator_goal(kElevatorClearIntakeHeight + kEps);
+  }
+
+  // If the wrist is within the elevator collision range, don't let the elevator
+  // go down.
+  if (wrist_position > kWristElevatorCollisionMinAngle &&
+      wrist_position < kWristElevatorCollisionMaxAngle) {
+    update_min_elevator_goal(kElevatorClearHeight + kEps);
+  }
+
+  // If the wrist is far enough down that we are going to hit the frame, don't
+  // let the elevator go too far down.
+  if (wrist_position > kWristMaxAngle || wrist_position < kWristMinAngle) {
+    update_min_elevator_goal(kElevatorClearWristDownHeight + kEps);
+  }
+
+  if (unsafe_goal) {
+    const double wrist_goal = unsafe_goal->wrist.angle;
+    const double intake_goal = unsafe_goal->intake.joint_angle;
+
+    // Compute if we need to move the intake.
+    const bool intake_needs_to_move = (intake_position < kIntakeMiddleAngle) ^
+                                      (intake_goal < kIntakeMiddleAngle);
+
+    // Compute if we need to move the wrist across 0.
+    const bool wrist_needs_to_move =
+        (wrist_position < 0.0) ^ (wrist_goal < 0.0);
+
+    // If we need to move the intake, we've got to shove the elevator up.  The
+    // intake is already constrained so it can't hit anything until it's clear.
+    if (intake_needs_to_move && wrist_position > 0) {
+      update_min_elevator_goal(kElevatorClearIntakeHeight + kEps);
+    }
+    // If we need to move the wrist, we've got to shove the elevator up too. The
+    // wrist is already constrained so it can't hit anything until it's clear.
+    // If both the intake and wrist need to move, figure out which one will
+    // require the higher motion and move that.
+    if (wrist_needs_to_move) {
+      update_min_elevator_goal(kElevatorClearHeight + kEps);
+    }
+
+    // TODO(austin): We won't shove the elevator up if the wrist is asked to go
+    // down below horizontal.  I think that's fine.
+  }
+}
+
+}  // namespace superstructure
+}  // namespace control_loops
+}  // namespace y2019
