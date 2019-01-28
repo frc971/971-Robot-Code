@@ -249,8 +249,7 @@ void ShooterMotor::RunIteration(
   // Don't even let the control loops run.
   bool shooter_loop_disable = false;
 
-  const bool disabled =
-      !::aos::joystick_state.get() || !::aos::joystick_state->enabled;
+  const bool disabled = !has_joystick_state() || !joystick_state().enabled;
 
   // If true, move the goal if we saturate.
   bool cap_goal = false;
@@ -549,7 +548,7 @@ void ShooterMotor::RunIteration(
                        shooter_.absolute_position()) > 0.0005 &&
             cycles_not_moved_ > 6) ||
            monotonic_clock::now() > shot_end_time_) &&
-          ::aos::robot_state->voltage_battery > 10.5) {
+          robot_state().voltage_battery > 10.5) {
         state_ = STATE_REQUEST_LOAD;
         ++shot_count_;
       }

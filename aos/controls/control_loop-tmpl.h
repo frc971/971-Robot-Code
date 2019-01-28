@@ -3,7 +3,6 @@
 
 #include "aos/logging/logging.h"
 #include "aos/logging/queue_logging.h"
-#include "aos/robot_state/robot_state.q.h"
 
 namespace aos {
 namespace controls {
@@ -25,8 +24,16 @@ void ControlLoop<T>::ZeroOutputs() {
 
 template <class T>
 void ControlLoop<T>::Iterate() {
-  control_loop_->position.FetchAnother();
-  IteratePosition(*control_loop_->position.get());
+  if (!has_iterate_fetcher_) {
+    iterate_position_fetcher_ =
+        event_loop_->MakeFetcher<PositionType>(name_ + ".position");
+    has_iterate_fetcher_ = true;
+  }
+  const bool did_fetch = iterate_position_fetcher_.Fetch();
+  if (!did_fetch) {
+    LOG(FATAL, "Failed to fetch from position queue\n");
+  }
+  IteratePosition(*iterate_position_fetcher_);
 }
 
 template <class T>
@@ -52,35 +59,35 @@ void ControlLoop<T>::IteratePosition(const PositionType &position) {
     LOG_INTERVAL(no_goal_);
   }
 
-  const bool new_robot_state = ::aos::robot_state.FetchLatest();
-  if (!::aos::robot_state.get()) {
+  const bool new_robot_state = robot_state_fetcher_.Fetch();
+  if (!robot_state_fetcher_.get()) {
     LOG_INTERVAL(no_sensor_state_);
     return;
   }
-  if (sensor_reader_pid_ != ::aos::robot_state->reader_pid) {
+  if (sensor_reader_pid_ != robot_state_fetcher_->reader_pid) {
     LOG(INFO, "new sensor reader PID %" PRId32 ", old was %" PRId32 "\n",
-        ::aos::robot_state->reader_pid, sensor_reader_pid_);
+        robot_state_fetcher_->reader_pid, sensor_reader_pid_);
     reset_ = true;
-    sensor_reader_pid_ = ::aos::robot_state->reader_pid;
+    sensor_reader_pid_ = robot_state_fetcher_->reader_pid;
   }
 
-  bool outputs_enabled = ::aos::robot_state->outputs_enabled;
+  bool outputs_enabled = robot_state_fetcher_->outputs_enabled;
 
   // Check to see if we got a driver station packet recently.
   if (new_robot_state) {
-    if (::aos::robot_state->outputs_enabled) {
+    if (robot_state_fetcher_->outputs_enabled) {
       // If the driver's station reports being disabled, we're probably not
       // actually going to send motor values regardless of what the FPGA
       // reports.
-      last_pwm_sent_ = ::aos::robot_state->sent_time;
+      last_pwm_sent_ = robot_state_fetcher_->sent_time;
     }
   }
 
   const ::aos::monotonic_clock::time_point now = ::aos::monotonic_clock::now();
   const bool motors_off = now >= kPwmDisableTime + last_pwm_sent_;
-  ::aos::joystick_state.FetchLatest();
+  joystick_state_fetcher_.Fetch();
   if (motors_off) {
-    if (::aos::joystick_state.get() && ::aos::joystick_state->enabled) {
+    if (joystick_state_fetcher_.get() && joystick_state_fetcher_->enabled) {
       LOG_INTERVAL(motors_off_log_);
     }
     outputs_enabled = false;
@@ -122,7 +129,7 @@ void ControlLoop<T>::Run() {
   PCHECK(sigaction(SIGQUIT, &action, nullptr));
   PCHECK(sigaction(SIGINT, &action, nullptr));
 
-  event_loop_->MakeWatcher(::std::string(control_loop_->name()) + ".position",
+  event_loop_->MakeWatcher(name_ + ".position",
                            [this](const PositionType &position) {
                              this->IteratePosition(position);
                            });

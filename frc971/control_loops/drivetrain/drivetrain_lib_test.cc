@@ -164,6 +164,7 @@ class DrivetrainSimulation {
     last_U_ << my_drivetrain_queue_.output->left_voltage,
         my_drivetrain_queue_.output->right_voltage;
     {
+      ::aos::robot_state.FetchLatest();
       const double scalar = ::aos::robot_state->voltage_battery / 12.0;
       last_U_ *= scalar;
     }

@@ -90,7 +90,7 @@ class SuperstructureSimulation {
         pot_encoder_wrist_(constants::Values::kWristEncoderIndexDifference),
         superstructure_queue_(".y2016.control_loops.superstructure",
                               ".y2016.control_loops.superstructure.goal",
-                              ".y2016.control_loops.superstructure.status",
+                              ".y2016.control_loops.superstructure.position",
                               ".y2016.control_loops.superstructure.output",
                               ".y2016.control_loops.superstructure.status") {
     InitializeIntakePosition(0.0);
@@ -248,7 +248,7 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
   SuperstructureTest()
       : superstructure_queue_(".y2016.control_loops.superstructure",
                               ".y2016.control_loops.superstructure.goal",
-                              ".y2016.control_loops.superstructure.status",
+                              ".y2016.control_loops.superstructure.position",
                               ".y2016.control_loops.superstructure.output",
                               ".y2016.control_loops.superstructure.status"),
         superstructure_(&superstructure_queue_),

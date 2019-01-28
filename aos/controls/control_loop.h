@@ -7,6 +7,7 @@
 #include "aos/events/event-loop.h"
 #include "aos/events/shm-event-loop.h"
 #include "aos/queue.h"
+#include "aos/robot_state/robot_state.q.h"
 #include "aos/time/time.h"
 #include "aos/type_traits/type_traits.h"
 #include "aos/util/log_interval.h"
@@ -52,13 +53,22 @@ class ControlLoop : public Runnable {
       OutputType;
 
   ControlLoop(T *control_loop)
-      : event_loop_(new ::aos::ShmEventLoop()), control_loop_(control_loop) {
-    output_sender_ = event_loop_->MakeSender<OutputType>(
-        ::std::string(control_loop_->name()) + ".output");
-    status_sender_ = event_loop_->MakeSender<StatusType>(
-        ::std::string(control_loop_->name()) + ".status");
-    goal_fetcher_ = event_loop_->MakeFetcher<GoalType>(
-        ::std::string(control_loop_->name()) + ".goal");
+      : shm_event_loop_(new ::aos::ShmEventLoop()),
+        event_loop_(shm_event_loop_.get()),
+        name_(control_loop->name()) {
+    output_sender_ = event_loop_->MakeSender<OutputType>(name_ + ".output");
+    status_sender_ = event_loop_->MakeSender<StatusType>(name_ + ".status");
+    goal_fetcher_ = event_loop_->MakeFetcher<GoalType>(name_ + ".goal");
+    robot_state_fetcher_ =
+        event_loop_->MakeFetcher<::aos::RobotState>(".aos.robot_state");
+    joystick_state_fetcher_ =
+        event_loop_->MakeFetcher<::aos::JoystickState>(".aos.joystick_state");
+  }
+
+  const ::aos::RobotState &robot_state() const { return *robot_state_fetcher_; }
+  bool has_joystick_state() const { return joystick_state_fetcher_.get(); }
+  const ::aos::JoystickState &joystick_state() const {
+    return *joystick_state_fetcher_;
   }
 
   // Returns true if all the counters etc in the sensor data have been reset.
@@ -120,12 +130,20 @@ class ControlLoop : public Runnable {
       ::std::chrono::milliseconds(100);
 
   // Pointer to the queue group
-  ::std::unique_ptr<EventLoop> event_loop_;
-  T *control_loop_;
+  ::std::unique_ptr<ShmEventLoop> shm_event_loop_;
+  EventLoop *event_loop_;
+  ::std::string name_;
 
   ::aos::Sender<OutputType> output_sender_;
   ::aos::Sender<StatusType> status_sender_;
   ::aos::Fetcher<GoalType> goal_fetcher_;
+  ::aos::Fetcher<::aos::RobotState> robot_state_fetcher_;
+  ::aos::Fetcher<::aos::JoystickState> joystick_state_fetcher_;
+
+  // Fetcher only to be used for the Iterate method.  If Iterate is called, Run
+  // can't be called.
+  bool has_iterate_fetcher_ = false;
+  ::aos::Fetcher<PositionType> iterate_position_fetcher_;
 
   bool reset_ = false;
   int32_t sensor_reader_pid_ = 0;
