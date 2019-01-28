@@ -79,3 +79,21 @@ cc_binary(
         "//frc971/control_loops/drivetrain:drivetrain_lib",
     ],
 )
+
+cc_library(
+    name = "camera",
+    srcs = ["camera.h"],
+    deps = [
+        "//aos/containers:sized_array",
+        "//frc971/control_loops:pose",
+    ],
+)
+
+cc_test(
+    name = "camera_test",
+    srcs = ["camera_test.cc"],
+    deps = [
+        ":camera",
+        "//aos/testing:googletest",
+    ],
+)
