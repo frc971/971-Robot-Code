@@ -3,8 +3,8 @@
 namespace frc971 {
 namespace codelab {
 
-Basic::Basic(BasicQueue *my_basic_queue)
-    : aos::controls::ControlLoop<BasicQueue>(my_basic_queue) {}
+Basic::Basic(::aos::EventLoop *event_loop, const ::std::string &name)
+    : aos::controls::ControlLoop<BasicQueue>(event_loop, name) {}
 
 void Basic::RunIteration(const BasicQueue::Goal *goal,
                          const BasicQueue::Position *position,

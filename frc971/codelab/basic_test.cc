@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "aos/controls/control_loop_test.h"
+#include "aos/events/shm-event-loop.h"
 #include "aos/queue.h"
 #include "frc971/codelab/basic.q.h"
 #include "frc971/control_loops/team_number_test_environment.h"
@@ -65,7 +66,7 @@ class BasicControlLoopTest : public ::aos::testing::ControlLoopTest {
                      ".frc971.codelab.basic_queue.position",
                      ".frc971.codelab.basic_queue.output",
                      ".frc971.codelab.basic_queue.status"),
-        basic_loop_(&basic_queue_) {
+        basic_loop_(&event_loop_, ".frc971.codelab.basic_queue") {
     set_team_id(control_loops::testing::kTeamNumber);
   }
 
@@ -81,6 +82,7 @@ class BasicControlLoopTest : public ::aos::testing::ControlLoopTest {
   }
 
   BasicQueue basic_queue_;
+  ::aos::ShmEventLoop event_loop_;
   Basic basic_loop_;
   BasicSimulation basic_simulation_;
 };

@@ -29,11 +29,11 @@ namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
-DrivetrainLoop::DrivetrainLoop(
-    const DrivetrainConfig<double> &dt_config,
-    ::frc971::control_loops::DrivetrainQueue *my_drivetrain)
+DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
+                               ::aos::EventLoop *event_loop,
+                               const ::std::string &name)
     : aos::controls::ControlLoop<::frc971::control_loops::DrivetrainQueue>(
-          my_drivetrain),
+          event_loop, name),
       dt_config_(dt_config),
       kf_(dt_config_.make_kf_drivetrain_loop()),
       dt_openloop_(dt_config_, &kf_),

@@ -53,11 +53,11 @@ class ShooterSimulation {
             ::y2016::control_loops::shooter::MakeShooterPlant())),
         shooter_plant_right_(new ShooterPlant(
             ::y2016::control_loops::shooter::MakeShooterPlant())),
-        shooter_queue_(".y2016.control_loops.shooter",
-                       ".y2016.control_loops.shooter.goal",
-                       ".y2016.control_loops.shooter.position",
-                       ".y2016.control_loops.shooter.output",
-                       ".y2016.control_loops.shooter.status") {}
+        shooter_queue_(".y2016.control_loops.shooter.shooter_queue",
+                       ".y2016.control_loops.shooter.shooter_queue.goal",
+                       ".y2016.control_loops.shooter.shooter_queue.position",
+                       ".y2016.control_loops.shooter.shooter_queue.output",
+                       ".y2016.control_loops.shooter.shooter_queue.status") {}
 
   // Sends a queue message with the position of the shooter.
   void SendPositionMessage() {
@@ -101,12 +101,12 @@ class ShooterSimulation {
 class ShooterTest : public ::aos::testing::ControlLoopTest {
  protected:
   ShooterTest()
-      : shooter_queue_(".y2016.control_loops.shooter",
-                       ".y2016.control_loops.shooter.goal",
-                       ".y2016.control_loops.shooter.position",
-                       ".y2016.control_loops.shooter.output",
-                       ".y2016.control_loops.shooter.status"),
-        shooter_(&shooter_queue_),
+      : shooter_queue_(".y2016.control_loops.shooter.shooter_queue",
+                       ".y2016.control_loops.shooter.shooter_queue.goal",
+                       ".y2016.control_loops.shooter.shooter_queue.position",
+                       ".y2016.control_loops.shooter.shooter_queue.output",
+                       ".y2016.control_loops.shooter.shooter_queue.status"),
+        shooter_(&event_loop_),
         shooter_plant_() {
     set_team_id(kTeamNumber);
   }
@@ -153,6 +153,7 @@ class ShooterTest : public ::aos::testing::ControlLoopTest {
   // is no longer valid.
   ShooterQueue shooter_queue_;
 
+  ::aos::ShmEventLoop event_loop_;
   // Create a control loop and simulation.
   Shooter shooter_;
   ShooterSimulation shooter_plant_;

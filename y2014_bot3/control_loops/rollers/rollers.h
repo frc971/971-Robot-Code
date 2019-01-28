@@ -12,8 +12,9 @@ class Rollers : public aos::controls::ControlLoop<control_loops::RollersQueue> {
  public:
   // Constructs a control loops which can take a rollers or defaults to the
   // rollers at ::2014_bot3::control_loops::rollers.
-  explicit Rollers(control_loops::RollersQueue *rollers_queue =
-                       &control_loops::rollers_queue);
+  explicit Rollers(
+      ::aos::EventLoop *event_loop,
+      const ::std::string &name = ".y2014_bot3.control_loops.rollers_queue");
 
  protected:
   // Executes one cycle of the control loop.

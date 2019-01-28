@@ -289,6 +289,7 @@ class ShooterTestTemplated
   // is no longer valid.
   ::y2014::control_loops::ShooterQueue shooter_queue_;
 
+  ::aos::ShmEventLoop event_loop_;
   // Create a loop and simulation plant.
   ShooterMotor shooter_motor_;
   ShooterSimulation shooter_motor_plant_;
@@ -303,7 +304,7 @@ class ShooterTestTemplated
                        ".y2014.control_loops.shooter_queue.position",
                        ".y2014.control_loops.shooter_queue.output",
                        ".y2014.control_loops.shooter_queue.status"),
-        shooter_motor_(&shooter_queue_),
+        shooter_motor_(&event_loop_),
         shooter_motor_plant_(0.2) {}
 
   void VerifyNearGoal() {

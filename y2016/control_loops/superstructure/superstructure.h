@@ -107,8 +107,8 @@ class Superstructure
     : public ::aos::controls::ControlLoop<control_loops::SuperstructureQueue> {
  public:
   explicit Superstructure(
-      control_loops::SuperstructureQueue *my_superstructure =
-          &control_loops::superstructure_queue);
+      ::aos::EventLoop *event_loop,
+      const ::std::string &name = ".y2016.control_loops.superstructure_queue");
 
   static constexpr double kZeroingVoltage = 6.0;
   static constexpr double kShooterHangingVoltage = 6.0;

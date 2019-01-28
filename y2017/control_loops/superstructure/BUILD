@@ -65,6 +65,7 @@ cc_binary(
         ":superstructure_lib",
         ":superstructure_queue",
         "//aos:init",
+        "//aos/events:shm-event-loop",
     ],
 )
 

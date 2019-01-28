@@ -20,8 +20,8 @@ class Superstructure
     : public ::aos::controls::ControlLoop<control_loops::SuperstructureQueue> {
  public:
   explicit Superstructure(
-      control_loops::SuperstructureQueue *my_superstructure =
-          &control_loops::superstructure_queue);
+      ::aos::EventLoop *event_loop,
+      const ::std::string &name = ".y2017.control_loops.superstructure_queue");
 
   const hood::Hood &hood() const { return hood_; }
   const intake::Intake &intake() const { return intake_; }

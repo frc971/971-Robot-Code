@@ -116,9 +116,10 @@ void ZeroedStateFeedbackLoop::SetCalibration(double encoder_val,
                  previous_offset, offset_));
 }
 
-ShooterMotor::ShooterMotor(::y2014::control_loops::ShooterQueue *my_shooter)
+ShooterMotor::ShooterMotor(::aos::EventLoop *event_loop,
+                           const ::std::string &name)
     : aos::controls::ControlLoop<::y2014::control_loops::ShooterQueue>(
-          my_shooter),
+          event_loop, name),
       shooter_(MakeShooterLoop()),
       state_(STATE_INITIALIZE),
       cycles_not_moved_(0),

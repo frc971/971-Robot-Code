@@ -43,7 +43,8 @@ namespace codelab {
 // - Read basic.q, and familiarize yourself on the inputs and types involved.
 class Basic : public ::aos::controls::ControlLoop<BasicQueue> {
  public:
-  explicit Basic(BasicQueue *my_basic_queue = &basic_queue);
+  explicit Basic(::aos::EventLoop *event_loop,
+                 const ::std::string &name = ".frc971.codelab.basic_queue");
 
  protected:
   void RunIteration(const BasicQueue::Goal *goal,

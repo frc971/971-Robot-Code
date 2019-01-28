@@ -103,11 +103,11 @@ class DrivetrainSimulation {
   // TODO(aschuh) Do we want to test the clutch one too?
   DrivetrainSimulation()
       : drivetrain_plant_(new DrivetrainPlant(MakeDrivetrainPlant())),
-        my_drivetrain_queue_(".frc971.control_loops.drivetrain",
-                             ".frc971.control_loops.drivetrain.goal",
-                             ".frc971.control_loops.drivetrain.position",
-                             ".frc971.control_loops.drivetrain.output",
-                             ".frc971.control_loops.drivetrain.status"),
+        my_drivetrain_queue_(".frc971.control_loops.drivetrain_queue",
+                             ".frc971.control_loops.drivetrain_queue.goal",
+                             ".frc971.control_loops.drivetrain_queue.position",
+                             ".frc971.control_loops.drivetrain_queue.output",
+                             ".frc971.control_loops.drivetrain_queue.status"),
         gyro_reading_(::frc971::sensors::gyro_reading.name()) {
     Reinitialize();
     last_U_.setZero();
@@ -219,17 +219,18 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
   // is no longer valid.
   ::frc971::control_loops::DrivetrainQueue my_drivetrain_queue_;
 
+  ::aos::ShmEventLoop event_loop_;
   // Create a loop and simulation plant.
   DrivetrainLoop drivetrain_motor_;
   DrivetrainSimulation drivetrain_motor_plant_;
 
   DrivetrainTest()
-      : my_drivetrain_queue_(".frc971.control_loops.drivetrain",
-                             ".frc971.control_loops.drivetrain.goal",
-                             ".frc971.control_loops.drivetrain.position",
-                             ".frc971.control_loops.drivetrain.output",
-                             ".frc971.control_loops.drivetrain.status"),
-        drivetrain_motor_(GetDrivetrainConfig(), &my_drivetrain_queue_),
+      : my_drivetrain_queue_(".frc971.control_loops.drivetrain_queue",
+                             ".frc971.control_loops.drivetrain_queue.goal",
+                             ".frc971.control_loops.drivetrain_queue.position",
+                             ".frc971.control_loops.drivetrain_queue.output",
+                             ".frc971.control_loops.drivetrain_queue.status"),
+        drivetrain_motor_(GetDrivetrainConfig(), &event_loop_),
         drivetrain_motor_plant_() {
     ::frc971::sensors::gyro_reading.Clear();
     set_battery_voltage(12.0);

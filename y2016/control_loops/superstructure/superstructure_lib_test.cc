@@ -88,11 +88,11 @@ class SuperstructureSimulation {
         pot_encoder_shoulder_(
             constants::Values::kShoulderEncoderIndexDifference),
         pot_encoder_wrist_(constants::Values::kWristEncoderIndexDifference),
-        superstructure_queue_(".y2016.control_loops.superstructure",
-                              ".y2016.control_loops.superstructure.goal",
-                              ".y2016.control_loops.superstructure.position",
-                              ".y2016.control_loops.superstructure.output",
-                              ".y2016.control_loops.superstructure.status") {
+        superstructure_queue_(".y2016.control_loops.superstructure_queue",
+                              ".y2016.control_loops.superstructure_queue.goal",
+                              ".y2016.control_loops.superstructure_queue.position",
+                              ".y2016.control_loops.superstructure_queue.output",
+                              ".y2016.control_loops.superstructure_queue.status") {
     InitializeIntakePosition(0.0);
     InitializeShoulderPosition(0.0);
     InitializeRelativeWristPosition(0.0);
@@ -246,12 +246,12 @@ class SuperstructureSimulation {
 class SuperstructureTest : public ::aos::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
-      : superstructure_queue_(".y2016.control_loops.superstructure",
-                              ".y2016.control_loops.superstructure.goal",
-                              ".y2016.control_loops.superstructure.position",
-                              ".y2016.control_loops.superstructure.output",
-                              ".y2016.control_loops.superstructure.status"),
-        superstructure_(&superstructure_queue_),
+      : superstructure_queue_(".y2016.control_loops.superstructure_queue",
+                              ".y2016.control_loops.superstructure_queue.goal",
+                              ".y2016.control_loops.superstructure_queue.position",
+                              ".y2016.control_loops.superstructure_queue.output",
+                              ".y2016.control_loops.superstructure_queue.status"),
+        superstructure_(&event_loop_),
         superstructure_plant_() {}
 
   void VerifyNearGoal() {
@@ -375,6 +375,7 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
   // shared memory that is no longer valid.
   SuperstructureQueue superstructure_queue_;
 
+  ::aos::ShmEventLoop event_loop_;
   // Create a control loop and simulation.
   Superstructure superstructure_;
   SuperstructureSimulation superstructure_plant_;

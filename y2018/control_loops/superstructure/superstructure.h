@@ -17,8 +17,8 @@ class Superstructure
     : public ::aos::controls::ControlLoop<control_loops::SuperstructureQueue> {
  public:
   explicit Superstructure(
-      control_loops::SuperstructureQueue *my_superstructure =
-          &control_loops::superstructure_queue);
+      ::aos::EventLoop *event_loop,
+      const ::std::string &name = ".y2018.control_loops.superstructure_queue");
 
   const intake::IntakeSide &intake_left() const { return intake_left_; }
   const intake::IntakeSide &intake_right() const { return intake_right_; }

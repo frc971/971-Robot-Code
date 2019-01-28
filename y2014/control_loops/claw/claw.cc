@@ -373,8 +373,9 @@ bool BottomZeroedStateFeedbackLoop::SetCalibrationOnEdge(
   return false;
 }
 
-ClawMotor::ClawMotor(::y2014::control_loops::ClawQueue *my_claw)
-    : aos::controls::ControlLoop<::y2014::control_loops::ClawQueue>(my_claw),
+ClawMotor::ClawMotor(::aos::EventLoop *event_loop, const ::std::string &name)
+    : aos::controls::ControlLoop<::y2014::control_loops::ClawQueue>(event_loop,
+                                                                    name),
       has_top_claw_goal_(false),
       top_claw_goal_(0.0),
       top_claw_(this),

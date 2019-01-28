@@ -245,6 +245,7 @@ class ClawTest : public ::aos::testing::ControlLoopTest {
   // is no longer valid.
   ::y2014::control_loops::ClawQueue claw_queue;
 
+  ::aos::ShmEventLoop event_loop_;
   // Create a loop and simulation plant.
   ClawMotor claw_motor_;
   ClawMotorSimulation claw_motor_plant_;
@@ -259,7 +260,7 @@ class ClawTest : public ::aos::testing::ControlLoopTest {
                    ".y2014.control_loops.claw_queue.position",
                    ".y2014.control_loops.claw_queue.output",
                    ".y2014.control_loops.claw_queue.status"),
-        claw_motor_(&claw_queue),
+        claw_motor_(&event_loop_),
         claw_motor_plant_(0.4, 0.2),
         min_separation_(constants::GetValues().claw.claw_min_separation) {}
 
