@@ -91,6 +91,8 @@ cc_library(
     deps = [
         ":control_loop_queues",
         "//aos:queues",
+        "//aos/events:event-loop",
+        "//aos/events:shm-event-loop",
         "//aos/logging",
         "//aos/logging:queue_logging",
         "//aos/robot_state",

@@ -17,26 +17,35 @@ constexpr ::std::chrono::milliseconds ControlLoop<T>::kPwmDisableTime;
 
 template <class T>
 void ControlLoop<T>::ZeroOutputs() {
-  aos::ScopedMessagePtr<OutputType> output =
-      control_loop_->output.MakeMessage();
+  typename ::aos::Sender<OutputType>::Message output =
+      output_sender_.MakeMessage();
   Zero(output.get());
   output.Send();
 }
 
 template <class T>
 void ControlLoop<T>::Iterate() {
+  control_loop_->position.FetchAnother();
+  IteratePosition(*control_loop_->position.get());
+}
+
+template <class T>
+void ControlLoop<T>::IteratePosition(const PositionType &position) {
+  // Since Exit() isn't async safe, we want to call Exit from the periodic
+  // handler.
+  if (!run_) {
+    event_loop_->Exit();
+  }
   no_goal_.Print();
   no_sensor_state_.Print();
   motors_off_log_.Print();
 
-  control_loop_->position.FetchAnother();
-  const PositionType *const position = control_loop_->position.get();
-  LOG_STRUCT(DEBUG, "position", *position);
+  LOG_STRUCT(DEBUG, "position", position);
 
   // Fetch the latest control loop goal. If there is no new
   // goal, we will just reuse the old one.
-  control_loop_->goal.FetchLatest();
-  const GoalType *goal = control_loop_->goal.get();
+  goal_fetcher_.Fetch();
+  const GoalType *goal = goal_fetcher_.get();
   if (goal) {
     LOG_STRUCT(DEBUG, "goal", *goal);
   } else {
@@ -77,23 +86,23 @@ void ControlLoop<T>::Iterate() {
     outputs_enabled = false;
   }
 
-  aos::ScopedMessagePtr<StatusType> status =
-      control_loop_->status.MakeMessage();
+  typename ::aos::Sender<StatusType>::Message status =
+      status_sender_.MakeMessage();
   if (status.get() == nullptr) {
     return;
   }
 
   if (outputs_enabled) {
-    aos::ScopedMessagePtr<OutputType> output =
-        control_loop_->output.MakeMessage();
-    RunIteration(goal, position, output.get(), status.get());
+    typename ::aos::Sender<OutputType>::Message output =
+        output_sender_.MakeMessage();
+    RunIteration(goal, &position, output.get(), status.get());
 
     output->SetTimeToNow();
     LOG_STRUCT(DEBUG, "output", *output);
     output.Send();
   } else {
     // The outputs are disabled, so pass nullptr in for the output.
-    RunIteration(goal, position, nullptr, status.get());
+    RunIteration(goal, &position, nullptr, status.get());
     ZeroOutputs();
   }
 
@@ -113,9 +122,12 @@ void ControlLoop<T>::Run() {
   PCHECK(sigaction(SIGQUIT, &action, nullptr));
   PCHECK(sigaction(SIGINT, &action, nullptr));
 
-  while (run_) {
-    Iterate();
-  }
+  event_loop_->MakeWatcher(::std::string(control_loop_->name()) + ".position",
+                           [this](const PositionType &position) {
+                             this->IteratePosition(position);
+                           });
+
+  event_loop_->Run();
   LOG(INFO, "Shutting down\n");
 }
 

@@ -107,6 +107,7 @@ class EventLoop : public RawEventLoop {
   //
   // This will watch messages sent to path.
   // Note that T needs to match both send and recv side.
+  // TODO(parker): Need to support ::std::bind.  For now, use lambdas.
   template <typename Watch>
   void MakeWatcher(const std::string &path, Watch &&w);
 

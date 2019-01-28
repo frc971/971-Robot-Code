@@ -4,6 +4,8 @@
 #include <string.h>
 #include <atomic>
 
+#include "aos/events/event-loop.h"
+#include "aos/events/shm-event-loop.h"
 #include "aos/queue.h"
 #include "aos/time/time.h"
 #include "aos/type_traits/type_traits.h"
@@ -49,7 +51,15 @@ class ControlLoop : public Runnable {
     decltype(*(static_cast<T *>(NULL)->output.MakeMessage().get()))>::type
       OutputType;
 
-  ControlLoop(T *control_loop) : control_loop_(control_loop) {}
+  ControlLoop(T *control_loop)
+      : event_loop_(new ::aos::ShmEventLoop()), control_loop_(control_loop) {
+    output_sender_ = event_loop_->MakeSender<OutputType>(
+        ::std::string(control_loop_->name()) + ".output");
+    status_sender_ = event_loop_->MakeSender<StatusType>(
+        ::std::string(control_loop_->name()) + ".status");
+    goal_fetcher_ = event_loop_->MakeFetcher<GoalType>(
+        ::std::string(control_loop_->name()) + ".goal");
+  }
 
   // Returns true if all the counters etc in the sensor data have been reset.
   // This will return true only a single time per reset.
@@ -79,6 +89,8 @@ class ControlLoop : public Runnable {
   void Iterate() override;
 
  protected:
+  void IteratePosition(const PositionType &position);
+
   static void Quit(int /*signum*/) {
     run_ = false;
   }
@@ -108,7 +120,12 @@ class ControlLoop : public Runnable {
       ::std::chrono::milliseconds(100);
 
   // Pointer to the queue group
+  ::std::unique_ptr<EventLoop> event_loop_;
   T *control_loop_;
+
+  ::aos::Sender<OutputType> output_sender_;
+  ::aos::Sender<StatusType> status_sender_;
+  ::aos::Fetcher<GoalType> goal_fetcher_;
 
   bool reset_ = false;
   int32_t sensor_reader_pid_ = 0;

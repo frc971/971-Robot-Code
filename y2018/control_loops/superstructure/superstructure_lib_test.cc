@@ -198,9 +198,9 @@ class SuperstructureSimulation {
              constants::GetValues().arm_distal.zeroing),
         superstructure_queue_(".y2018.control_loops.superstructure",
                               ".y2018.control_loops.superstructure.goal",
-                              ".y2018.control_loops.superstructure.position",
                               ".y2018.control_loops.superstructure.output",
-                              ".y2018.control_loops.superstructure.status") {
+                              ".y2018.control_loops.superstructure.status",
+                              ".y2018.control_loops.superstructure.position") {
     // Start the intake out in the middle by default.
     InitializeIntakePosition((constants::Values::kIntakeRange().lower +
                               constants::Values::kIntakeRange().upper) /
@@ -245,8 +245,8 @@ class SuperstructureSimulation {
 
   // Simulates the intake for a single timestep.
   void Simulate() {
-    EXPECT_TRUE(superstructure_queue_.output.FetchLatest());
-    EXPECT_TRUE(superstructure_queue_.status.FetchLatest());
+    ASSERT_TRUE(superstructure_queue_.output.FetchLatest());
+    ASSERT_TRUE(superstructure_queue_.status.FetchLatest());
 
     left_intake_.Simulate(superstructure_queue_.output->left_intake);
     right_intake_.Simulate(superstructure_queue_.output->right_intake);
@@ -270,9 +270,9 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
   SuperstructureTest()
       : superstructure_queue_(".y2018.control_loops.superstructure",
                               ".y2018.control_loops.superstructure.goal",
-                              ".y2018.control_loops.superstructure.position",
                               ".y2018.control_loops.superstructure.output",
-                              ".y2018.control_loops.superstructure.status"),
+                              ".y2018.control_loops.superstructure.status",
+                              ".y2018.control_loops.superstructure.position"),
         superstructure_(&superstructure_queue_) {
     status_light.Clear();
     ::y2018::vision::vision_status.Clear();

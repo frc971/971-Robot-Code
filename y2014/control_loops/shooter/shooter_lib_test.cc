@@ -359,6 +359,7 @@ TEST_F(ShooterTest, GoesToValue) {
   }
   // EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
   double pos = shooter_motor_plant_.GetAbsolutePosition();
+  EXPECT_TRUE(shooter_queue_.goal.FetchLatest());
   EXPECT_NEAR(
       shooter_motor_.PowerToPosition(shooter_queue_.goal->shot_power),
       pos, 0.05);
@@ -400,6 +401,7 @@ TEST_F(ShooterTest, Fire) {
   }
 
   double pos = shooter_motor_plant_.GetAbsolutePosition();
+  EXPECT_TRUE(shooter_queue_.goal.FetchLatest());
   EXPECT_NEAR(
       shooter_motor_.PowerToPosition(shooter_queue_.goal->shot_power),
       pos, 0.05);
@@ -438,7 +440,9 @@ TEST_F(ShooterTest, FireLong) {
   }
 
   double pos = shooter_motor_plant_.GetAbsolutePosition();
-  EXPECT_NEAR(shooter_motor_.PowerToPosition(shooter_queue_.goal->shot_power), pos, 0.05);
+  EXPECT_TRUE(shooter_queue_.goal.FetchLatest());
+  EXPECT_NEAR(shooter_motor_.PowerToPosition(shooter_queue_.goal->shot_power),
+              pos, 0.05);
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   EXPECT_TRUE(hit_fire);
 }
@@ -472,8 +476,8 @@ TEST_F(ShooterTest, MoveGoal) {
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   shooter_queue_.goal.MakeWithBuilder().shot_power(14.0).Send();
 
-  while (::aos::monotonic_clock::now() <
-         ::aos::monotonic_clock::time_point(chrono::seconds(1))) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::seconds(2))) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
@@ -481,6 +485,7 @@ TEST_F(ShooterTest, MoveGoal) {
   }
 
   double pos = shooter_motor_plant_.GetAbsolutePosition();
+  EXPECT_TRUE(shooter_queue_.goal.FetchLatest());
   EXPECT_NEAR(
       shooter_motor_.PowerToPosition(shooter_queue_.goal->shot_power),
       pos, 0.05);
@@ -650,6 +655,7 @@ TEST_F(ShooterTest, StartsOnDistal) {
   }
   // EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
   double pos = shooter_motor_plant_.GetAbsolutePosition();
+  EXPECT_TRUE(shooter_queue_.goal.FetchLatest());
   EXPECT_NEAR(
       shooter_motor_.PowerToPosition(shooter_queue_.goal->shot_power),
       pos, 0.05);
@@ -671,6 +677,7 @@ TEST_F(ShooterTest, StartsOnProximal) {
   }
   // EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
   double pos = shooter_motor_plant_.GetAbsolutePosition();
+  EXPECT_TRUE(shooter_queue_.goal.FetchLatest());
   EXPECT_NEAR(
       shooter_motor_.PowerToPosition(shooter_queue_.goal->shot_power),
       pos, 0.05);
@@ -702,6 +709,7 @@ TEST_P(ShooterZeroingTest, AllDisparateStartingZero) {
   }
   // EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
   double pos = shooter_motor_plant_.GetAbsolutePosition();
+  EXPECT_TRUE(shooter_queue_.goal.FetchLatest());
   EXPECT_NEAR(
       shooter_motor_.PowerToPosition(shooter_queue_.goal->shot_power),
       pos, 0.05);

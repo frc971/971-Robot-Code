@@ -218,6 +218,8 @@ void ShmEventLoop::OnRun(std::function<void()> on_run) {
 void ShmEventLoop::Run() {
   set_is_running(true);
   for (const auto &run : on_run_) run();
+  // TODO(austin): epoll event loop in main thread (if needed), and async safe
+  // quit handler.
   thread_state_->Run();
 }
 
