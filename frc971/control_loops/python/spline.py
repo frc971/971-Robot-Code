@@ -8,11 +8,13 @@ import glog
 import numpy
 import scipy
 import scipy.integrate
+import scipy.optimize
 import sys
 
 from frc971.control_loops.python import polydrivetrain
 from frc971.control_loops.python import drivetrain
-import y2018.control_loops.python.drivetrain
+from frc971.control_loops.python import controls
+import y2016.control_loops.python.drivetrain
 
 """This file is my playground for implementing spline following.
 
@@ -236,7 +238,7 @@ class Path(object):
         # table to get an alpha -> distance calculation.  Gaussian Quadrature
         # is quite accurate, so we can get away with fewer points here than we
         # might think.
-        for alpha in numpy.linspace(0.0, 1.0, num_alpha)[:-1]:
+        for alpha in numpy.linspace(0.0, 1.0, num_alpha)[1:]:
             self._point_distances.append(
                 scipy.integrate.fixed_quad(spline_velocity, alpha, alpha + 1.0
                                            / (num_alpha - 1.0))[0] +
@@ -325,6 +327,10 @@ class Path(object):
 
         return dtheta_points / numpy.linalg.norm(dspline_points, axis=0)
 
+    def dtheta_dt(self, distance, velocity, dspline_points=None, ddspline_points=None):
+        """Returns the angular velocity as a function of time."""
+        return self.dtheta(distance, dspline_points, ddspline_points) * velocity
+
     def ddtheta(self,
                 distance,
                 dspline_points=None,
@@ -394,11 +400,13 @@ def integrate_accel_for_distance(f, v, x, dx):
             return 0.0
         return (f(t, y) - a0) / y
 
-    return (RungeKutta(integrablef, v, x, dx) - v) + numpy.sqrt(2.0 * a0 * dx + v * v)
+    return (RungeKutta(integrablef, v, x, dx) - v
+            ) + numpy.sqrt(2.0 * a0 * dx + v * v)
 
 
 class Trajectory(object):
-    def __init__(self, path, drivetrain, longitudal_accel, lateral_accel, distance_count):
+    def __init__(self, path, drivetrain, longitudal_accel, lateral_accel,
+                 distance_count):
         self._path = path
         self._drivetrain = drivetrain
         self.distances = numpy.linspace(0.0,
@@ -440,42 +448,6 @@ class Trajectory(object):
         K4 = -self._B_inverse * self._drivetrain.A_continuous * K2
         K5 = self._B_inverse * K2
         return K3, K4, K5
-
-    def curvature_voltage_pass(self, plan):
-        plan = plan.copy()
-        for i, distance in enumerate(self.distances):
-            current_ddtheta = self._path.ddtheta(distance)[0]
-            current_dtheta = self._path.dtheta(distance)[0]
-            # We've now got the equation:
-            #     K2 * d^2x/dt^2 + K1 (dx/dt)^2 = A * K2 * dx/dt + B * U
-            # Now, rephrase it as K3 v^2 + K4 v = U
-            K3, K4, K5 = self.compute_K345(current_dtheta, current_ddtheta)
-            # But, we are going to assume that d^2x/dt^2 = 0
-
-            x = []
-            for a, b in [(K3[0, 0], K4[0, 0]), (K3[1, 0], K4[1, 0])]:
-                for c in [12.0, -12.0]:
-                    middle = b * b - 4.0 * a * c
-                    if middle >= 0.0:
-                        x.append((-b + numpy.sqrt(middle)) / (2.0 * a))
-                        x.append((-b - numpy.sqrt(middle)) / (2.0 * a))
-
-            maxx = 0.0
-            for newx in x:
-                if newx < 0.0:
-                    continue
-                U = (K3 * newx * newx + K4 * newx).T
-                # TODO(austin): We know that one of these *will* be +-12.0.  Only
-                # check the other one.
-                if not (numpy.abs(U) > 12.0 + 1e-6).any():
-                    maxx = max(newx, maxx)
-
-            if maxx == 0.0:
-                print('Could not solve')
-                return None
-            plan[i] = min(plan[i], maxx)
-            pass
-        return plan
 
     def forward_acceleration(self, x, v):
         current_ddtheta = self._path.ddtheta(x)[0]
@@ -562,7 +534,7 @@ class Trajectory(object):
         return plan
 
     # TODO(austin): The plan should probably not be passed in...
-    def ff_voltage(self, plan, distance):
+    def ff_accel(self, plan, distance):
         if distance < self.distances[1]:
             after_index = 1
             before_index = after_index - 1
@@ -598,7 +570,10 @@ class Trajectory(object):
         else:
             velocity = vbackward
             accel = self.backward_acceleration(distance, velocity)
+        return (distance, velocity, accel)
 
+    def ff_voltage(self, plan, distance):
+        _, velocity, accel = self.ff_accel(plan, distance)
         current_ddtheta = self._path.ddtheta(distance)[0]
         current_dtheta = self._path.dtheta(distance)[0]
         # TODO(austin): Factor these out.
@@ -609,6 +584,20 @@ class Trajectory(object):
 
         U = K5 * accel + K3 * velocity * velocity + K4 * velocity
         return U
+
+    def goal_state(self, distance, velocity):
+        width = (
+            self._drivetrain.robot_radius_l + self._drivetrain.robot_radius_r)
+        goal = numpy.matrix(numpy.zeros((5, 1)))
+
+        goal[0:2, :] = self._path.xy(distance)
+        goal[2, :] = self._path.theta(distance)
+
+        Ter = numpy.linalg.inv(numpy.matrix([[0.5, 0.5], [-1.0 / width, 1.0 / width]]))
+        goal[3:5, :] = Ter * numpy.matrix(
+            [[velocity], [self._path.dtheta_dt(distance, velocity)]])
+        return goal
+
 
 def main(argv):
     # Build up the control point matrix
@@ -784,9 +773,9 @@ def main(argv):
     # derivitives of our spline.
 
     velocity_drivetrain = polydrivetrain.VelocityDrivetrainModel(
-        y2018.control_loops.python.drivetrain.kDrivetrain)
+        y2016.control_loops.python.drivetrain.kDrivetrain)
     position_drivetrain = drivetrain.Drivetrain(
-        y2018.control_loops.python.drivetrain.kDrivetrain)
+        y2016.control_loops.python.drivetrain.kDrivetrain)
 
     longitudal_accel = 3.0
     lateral_accel = 2.0
@@ -825,47 +814,132 @@ def main(argv):
     pylab.ylabel("velocity (m/s)")
     pylab.legend()
 
-    voltages = numpy.matrix(numpy.zeros((2, len(distances))))
-    for i in range(len(distances)):
-        voltages[:, i] = trajectory.ff_voltage(backward_accel_plan,
-                                               distances[i])
-
-    # Now, let's integrate up the feed forwards voltage to see where we end up.
-    spline_state = numpy.matrix(numpy.zeros((4, 1)))
-    # x, y, theta, vl, vr
-    state = numpy.matrix(numpy.zeros((5, 1)))
     dt = 0.005
-    num_timesteps = 400
-    spline_states = numpy.matrix(numpy.zeros((4, num_timesteps)))
-    states = numpy.matrix(numpy.zeros((5, num_timesteps)))
-    Us = numpy.matrix(numpy.zeros((2, num_timesteps)))
-    t = numpy.array(range(num_timesteps)) * dt
-    for i in range(num_timesteps):
-        spline_distance = 0.5 * (spline_state[0, 0] + spline_state[2, 0])
-        spline_velocity = 0.5 * (spline_state[1, 0] + spline_state[3, 0])
-        def distance_spline_diffeq(t, x):
-            spline_distance = 0.5 * (x[0, 0] + x[2, 0])
-            spline_velocity = 0.5 * (x[1, 0] + x[3, 0])
-            U = trajectory.ff_voltage(
-                backward_accel_plan,
-                spline_distance)
-            dXdt = (position_drivetrain.A_continuous * x +
-                      position_drivetrain.B_continuous * U)
-            return dXdt
-        spline_state = RungeKutta(distance_spline_diffeq, spline_state, i * dt, dt)
+    # Now, let's integrate up the path centric coordinates to get a distance,
+    # velocity, and acceleration as a function of time to follow the path.
 
-        def spline_diffeq(t, x):
-            spline_distance = 0.5 * (spline_state[0, 0] + spline_state[2, 0])
-            spline_velocity = 0.5 * (spline_state[1, 0] + spline_state[3, 0])
-            velocity = x[3:, :]
+    length_plan_t = [0.0]
+    length_plan_x = [numpy.matrix(numpy.zeros((2, 1)))]
+    length_plan_v = [0.0]
+    length_plan_a = [trajectory.ff_accel(backward_accel_plan, 0.0)[2]]
+    t = 0.0
+    spline_state = length_plan_x[-1][0:2, :]
+
+    while spline_state[0, 0] < path.length():
+        t += dt
+        def along_spline_diffeq(t, x):
+            _, v, a = trajectory.ff_accel(backward_accel_plan, x[0, 0])
+            return numpy.matrix([[x[1, 0]], [a]])
+
+        spline_state = RungeKutta(along_spline_diffeq,
+                                  spline_state.copy(), t, dt)
+
+        d, v, a = trajectory.ff_accel(backward_accel_plan, length_plan_x[-1][0, 0])
+
+        length_plan_v.append(v)
+        length_plan_a.append(a)
+        length_plan_t.append(t)
+        length_plan_x.append(spline_state.copy())
+        spline_state[1, 0] = v
+
+    xva_plan = numpy.matrix(numpy.zeros((3, len(length_plan_t))))
+    u_plan = numpy.matrix(numpy.zeros((2, len(length_plan_t))))
+    state_plan = numpy.matrix(numpy.zeros((5, len(length_plan_t))))
+
+    state = numpy.matrix(numpy.zeros((5, 1)))
+    state[3, 0] = 0.1
+    state[4, 0] = 0.1
+    states = numpy.matrix(numpy.zeros((5, len(length_plan_t))))
+    full_us = numpy.matrix(numpy.zeros((2, len(length_plan_t))))
+    x_es = []
+    y_es = []
+    theta_es = []
+    vel_es = []
+    omega_es = []
+    omega_rs = []
+    omega_cs = []
+
+    width = (velocity_drivetrain.robot_radius_l +
+             velocity_drivetrain.robot_radius_r)
+    Ter = numpy.matrix([[0.5, 0.5], [-1.0 / width, 1.0 / width]])
+
+    for i in xrange(len(length_plan_t)):
+        xva_plan[0, i] = length_plan_x[i][0, 0]
+        xva_plan[1, i] = length_plan_v[i]
+        xva_plan[2, i] = length_plan_a[i]
+
+        xy_r = path.xy(xva_plan[0, i])
+        x_r = xy_r[0, 0]
+        y_r = xy_r[1, 0]
+        theta_r = path.theta(xva_plan[0, i])[0]
+        vel_omega_r = numpy.matrix(
+            [[xva_plan[1, i]],
+             [path.dtheta_dt(xva_plan[0, i], xva_plan[1, i])[0]]])
+        vel_lr = numpy.linalg.inv(Ter) * vel_omega_r
+
+        state_plan[:, i] = numpy.matrix(
+            [[x_r], [y_r], [theta_r], [vel_lr[0, 0]], [vel_lr[1, 0]]])
+        u_plan[:, i] = trajectory.ff_voltage(backward_accel_plan, xva_plan[0, i])
+
+    Q = numpy.matrix(
+        numpy.diag([
+            1.0 / (0.05**2), 1.0 / (0.05**2), 1.0 / (0.2**2), 1.0 / (0.5**2),
+            1.0 / (0.5**2)
+        ]))
+    R = numpy.matrix(numpy.diag([1.0 / (12.0**2), 1.0 / (12.0**2)]))
+    kMinVelocity = 0.1
+
+    for i in xrange(len(length_plan_t)):
+        states[:, i] = state
+
+        theta = state[2, 0]
+        sintheta = numpy.sin(theta)
+        costheta = numpy.cos(theta)
+        linear_velocity = (state[3, 0] + state[4, 0]) / 2.0
+        if abs(linear_velocity) < kMinVelocity / 100.0:
+            linear_velocity = 0.1
+        elif abs(linear_velocity) > kMinVelocity:
+            pass
+        elif linear_velocity > 0:
+            linear_velocity = kMinVelocity
+        elif linear_velocity < 0:
+            linear_velocity = -kMinVelocity
+
+        width = (velocity_drivetrain.robot_radius_l +
+                velocity_drivetrain.robot_radius_r)
+        A_linearized_continuous = numpy.matrix([[
+            0.0, 0.0, -sintheta * linear_velocity, 0.5 * costheta, 0.5 *
+            costheta
+        ], [
+            0.0, 0.0, costheta * linear_velocity, 0.5 * sintheta, 0.5 *
+            sintheta
+        ], [0.0, 0.0, 0.0, -1.0 / width, 1.0 / width],
+                                                [0.0, 0.0, 0.0, 0.0, 0.0],
+                                                [0.0, 0.0, 0.0, 0.0, 0.0]])
+        A_linearized_continuous[3:5, 3:5] = velocity_drivetrain.A_continuous
+        B_linearized_continuous = numpy.matrix(numpy.zeros((5, 2)))
+        B_linearized_continuous[3:5, :] = velocity_drivetrain.B_continuous
+
+        A, B = controls.c2d(A_linearized_continuous, B_linearized_continuous,
+                            dt)
+
+        if i >= 0:
+            K = controls.dlqr(A, B, Q, R)
+            print("K", K)
+            print("eig", numpy.linalg.eig(A - B * K)[0])
+        goal_state = trajectory.goal_state(xva_plan[0, i], xva_plan[1, i])
+        state_error = goal_state - state
+
+        U = (trajectory.ff_voltage(backward_accel_plan, xva_plan[0, i]) + K *
+             (state_error))
+
+        def spline_diffeq(U, t, x):
+            velocity = x[3:5, :]
             theta = x[2, 0]
             linear_velocity = (velocity[0, 0] + velocity[1, 0]) / 2.0
             angular_velocity = (velocity[1, 0] - velocity[0, 0]) / (
                 velocity_drivetrain.robot_radius_l +
                 velocity_drivetrain.robot_radius_r)
-            U = trajectory.ff_voltage(
-                backward_accel_plan,
-                spline_distance + numpy.linalg.norm(x[0:2, 0] - state[0:2, 0]))
             accel = (velocity_drivetrain.A_continuous * velocity +
                      velocity_drivetrain.B_continuous * U)
             return numpy.matrix(
@@ -873,45 +947,32 @@ def main(argv):
                  [numpy.sin(theta) * linear_velocity], [angular_velocity],
                  [accel[0, 0]], [accel[1, 0]]])
 
-        U = trajectory.ff_voltage(backward_accel_plan, spline_distance)
-        state = RungeKutta(spline_diffeq, state, i * dt, dt)
-        spline_states[:, i] = spline_state
-        states[:, i] = state
-        Us[:, i] = U
+        full_us[:, i] = U
 
-    spline_distances = numpy.array(
-        (numpy.array(spline_states)[0, :] + numpy.array(spline_states)[2, :]) /
-        2.0)
+        state = RungeKutta(lambda t, x: spline_diffeq(U, t, x),
+                                state, i * dt, dt)
+
     pylab.figure()
-    pylab.plot(distances, numpy.array(voltages)[0, :], label='vl')
-    pylab.plot(distances, numpy.array(voltages)[1, :], label='vr')
+    pylab.plot(length_plan_t, numpy.array(xva_plan)[0, :], label='x')
+    pylab.plot(length_plan_t, [x[1, 0] for x in length_plan_x], label='v')
+    pylab.plot(length_plan_t, numpy.array(xva_plan)[1, :], label='planv')
+    pylab.plot(length_plan_t, numpy.array(xva_plan)[2, :], label='a')
+
+    pylab.plot(length_plan_t, numpy.array(full_us)[0, :], label='vl')
+    pylab.plot(length_plan_t, numpy.array(full_us)[1, :], label='vr')
     pylab.legend()
 
     pylab.figure()
+    pylab.plot(
+        numpy.array(states)[0, :],
+        numpy.array(states)[1, :],
+        label='robot')
     pylab.plot(
         numpy.array(spline_points)[0, :],
         numpy.array(spline_points)[1, :],
         label='spline')
-    pylab.plot(
-        numpy.array(states)[0, :], numpy.array(states)[1, :], label="robot")
     pylab.legend()
 
-    pylab.figure()
-    pylab.plot(
-        spline_distances, (numpy.array(states)[0, :] - numpy.array(
-            path.xy(spline_distances))[0, :]) * 100.0,
-        label='robotx_error * 100')
-    pylab.plot(
-        spline_distances, (numpy.array(states)[1, :] - numpy.array(
-            path.xy(spline_distances))[1, :]) * 100.0,
-        label='roboty_error * 100')
-    pylab.plot(
-        spline_distances, (numpy.array(states)[2, :] - numpy.array(
-            path.theta(spline_distances))) * 100.0,
-        label='robottheta_error * 100')
-    pylab.plot(distances, numpy.array(voltages)[0, :], label='voltsl')
-    pylab.plot(distances, numpy.array(voltages)[1, :], label='voltsr')
-    pylab.legend()
 
     def a(_, x):
         return 2.0

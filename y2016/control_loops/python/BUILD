@@ -38,10 +38,14 @@ py_library(
         "polydrivetrain.py",
     ],
     restricted_to = ["//tools:k8"],
+    visibility = ["//visibility:public"],
     deps = [
+        ":python_init",
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:controls",
+        "//frc971/control_loops/python:drivetrain",
+        "//frc971/control_loops/python:polydrivetrain",
     ],
 )
 
