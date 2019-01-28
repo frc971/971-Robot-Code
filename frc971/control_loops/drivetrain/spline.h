@@ -16,30 +16,41 @@ class NSpline {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  // Computes the matrix to multiply by [1, a, a^2, ...] to evaluate the spline.
-  template <int D>
-  static ::Eigen::Matrix<double, 2, N - D> SplinePolynomial(
-      const ::Eigen::Matrix<double, 2, N> &control_points) {
-    ::Eigen::Matrix<double, 2, N> polynomial =
-        ::Eigen::Matrix<double, 2, N>::Zero();
-    // Compute this in pieces.  Start by the coefficients of each control point.
+  // Computes the characteristic matrix of a given spline order. This is an
+  // upper triangular matrix rather than lower because our splines are
+  // represented as rows rather than columns.
+  // Each row represents the impact of each point with increasing powers of
+  // alpha. Row i, column j contains the effect point i has with the j'th power
+  // of alpha.
+  static ::Eigen::Matrix<double, N, N> SplineMatrix() {
+    ::Eigen::Matrix<double, N, N> matrix =
+        ::Eigen::Matrix<double, N, N>::Zero();
+
     for (int i = 0; i < N; ++i) {
       // Binomial(N - 1, i) * (1 - t) ^ (N - i - 1) * (t ^ i) * P[i]
       const double binomial = Binomial(N - 1, i);
       const int one_minus_t_power = N - i - 1;
-      // Then iterate over the powers of t and add the pieces to the polynomial
-      // matrix.
+
+      // Then iterate over the powers of t and add the pieces to the matrix.
       for (int j = i; j < N; ++j) {
-        // j is the power of t we are placing in the polynomial matrix.
+        // j is the power of t we are placing in the matrix.
         // k is the power of t in the (1 - t) expression that we need to
         // evaluate.
         const int k = j - i;
         const double tscalar =
             binomial * Binomial(one_minus_t_power, k) * ::std::pow(-1.0, k);
-        polynomial.template block<2, 1>(0, j) +=
-            control_points.template block<2, 1>(0, i) * tscalar;
+        matrix(i, j) = tscalar;
       }
     }
+    return matrix;
+  }
+
+  // Computes the matrix to multiply by [1, a, a^2, ...] to evaluate the spline.
+  template <int D>
+  static ::Eigen::Matrix<double, 2, N - D> SplinePolynomial(
+      const ::Eigen::Matrix<double, 2, N> &control_points) {
+    // We use rows for the spline, so the multiplication looks "backwards"
+    ::Eigen::Matrix<double, 2, N> polynomial = control_points * SplineMatrix();
 
     // Now, compute the derivative requested.
     for (int i = D; i < N; ++i) {
