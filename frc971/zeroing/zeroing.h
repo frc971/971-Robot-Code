@@ -1,6 +1,8 @@
 #ifndef FRC971_ZEROING_ZEROING_H_
 #define FRC971_ZEROING_ZEROING_H_
 
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <vector>
 
@@ -213,6 +215,71 @@ class HallEffectAndPositionZeroingEstimator
   double first_start_pos_;
 };
 
+// Class to encapsulate the logic to decide when we are moving and which samples
+// are safe to use.
+template <typename Position>
+class MoveDetector {
+ public:
+  MoveDetector(size_t filter_size) {
+    buffered_samples_.reserve(filter_size);
+    Reset();
+  }
+
+  // Clears all the state.
+  void Reset() {
+    buffered_samples_.clear();
+    buffered_samples_idx_ = 0;
+  }
+
+  // Updates the detector with a new sample.  Returns true if we are moving.
+  // buffer_size is the number of samples in the moving buffer, and
+  // zeroing_threshold is the max amount we can move within the period specified
+  // by buffer_size.
+  bool Update(const Position &position, size_t buffer_size,
+              double zeroing_threshold) {
+    bool moving = true;
+    if (buffered_samples_.size() < buffer_size) {
+      // Not enough samples to start determining if the robot is moving or not,
+      // don't use the samples yet.
+      buffered_samples_.push_back(position);
+    } else {
+      // Have enough samples to start determining if the robot is moving or not.
+      buffered_samples_[buffered_samples_idx_] = position;
+      const auto minmax_value = ::std::minmax_element(
+          buffered_samples_.begin(), buffered_samples_.end(),
+          [](const Position &left, const Position &right) {
+            return left.encoder < right.encoder;
+          });
+      const double min_value = minmax_value.first->encoder;
+      const double max_value = minmax_value.second->encoder;
+
+      if (::std::abs(max_value - min_value) < zeroing_threshold) {
+        // Robot isn't moving, use middle sample to determine offsets.
+        moving = false;
+      }
+    }
+    buffered_samples_idx_ = (buffered_samples_idx_ + 1) % buffer_size;
+    return moving;
+  }
+
+  // Returns a safe sample if we aren't moving as reported by Update.
+  const Position &GetSample() const {
+    // The robot is not moving, use the middle sample to determine offsets.
+    // The middle sample makes it so that we don't use the samples from the
+    // beginning or end of periods when the robot is moving.
+    const int middle_index =
+        (buffered_samples_idx_ + (buffered_samples_.size() / 2)) %
+        buffered_samples_.size();
+    return buffered_samples_[middle_index];
+  }
+
+ private:
+  // The last buffer_size samples.
+  ::std::vector<Position> buffered_samples_;
+  // The index to place the next sample in.
+  size_t buffered_samples_idx_;
+};
+
 // Estimates the position with an absolute encoder which also reports
 // incremental counts, and a potentiometer.
 class PotAndAbsoluteEncoderZeroingEstimator
@@ -267,11 +334,9 @@ class PotAndAbsoluteEncoderZeroingEstimator
   ::std::vector<double> relative_to_absolute_offset_samples_;
   // Offset between the Pot and Relative encoder position.
   ::std::vector<double> offset_samples_;
-  // Last moving_buffer_size position samples to be used to determine if the
-  // robot is moving.
-  ::std::vector<PotAndAbsolutePosition> buffered_samples_;
-  // Pointer to front of the buffered samples.
-  int buffered_samples_idx_ = 0;
+
+  MoveDetector<PotAndAbsolutePosition> move_detector_;
+
   // Estimated offset between the pot and relative encoder.
   double pot_relative_encoder_offset_ = 0;
   // Estimated start position of the mechanism
