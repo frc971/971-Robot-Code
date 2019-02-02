@@ -253,7 +253,7 @@ module Types
 			if(@parent)
 				state.print(" : #{@parent} {\n")
 			else
-				state.pp(" {\n")
+				state.print(" {\n")
 			end
 			state.indent += 2
 		end
