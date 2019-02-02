@@ -21,9 +21,9 @@ cc_library(
     deps = [
         ":dma",
         ":dma_edge_counting",
-        "//aos/mutex:mutex",
-        "//aos/logging",
         "//aos:init",
+        "//aos/logging",
+        "//aos/mutex",
         "//third_party:wpilib",
     ],
 )
@@ -54,10 +54,10 @@ cc_library(
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
-        "//aos/stl_mutex:stl_mutex",
-        "//aos/time:time",
-        "//aos/logging",
         "//aos:init",
+        "//aos/logging",
+        "//aos/stl_mutex",
+        "//aos/time",
         "//third_party:wpilib",
     ],
 )
@@ -89,8 +89,8 @@ cc_library(
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
-        "//aos/time:time",
         "//aos/logging",
+        "//aos/time",
         "//third_party:wpilib",
     ],
 )
@@ -106,12 +106,12 @@ cc_library(
     restricted_to = ["//tools:roborio"],
     deps = [
         ":gyro_interface",
-        "//aos/time:time",
+        "//aos:init",
         "//aos/logging",
         "//aos/logging:queue_logging",
-        "//aos/robot_state:robot_state",
+        "//aos/robot_state",
+        "//aos/time",
         "//aos/util:phased_loop",
-        "//aos:init",
         "//frc971/queues:gyro",
         "//frc971/zeroing:averager",
     ],
@@ -127,8 +127,8 @@ cc_library(
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
-        "//aos/mutex:mutex",
-        "//aos/time:time",
+        "//aos/mutex",
+        "//aos/time",
         "//frc971/queues:gyro",
         "//third_party:wpilib",
     ],
@@ -143,11 +143,11 @@ cc_library(
         "loop_output_handler.h",
     ],
     deps = [
-        "//aos/scoped:scoped_fd",
-        "//aos/time:time",
-        "//aos/robot_state:robot_state",
-        "//aos/util:log_interval",
         "//aos:init",
+        "//aos/robot_state",
+        "//aos/scoped:scoped_fd",
+        "//aos/time",
+        "//aos/util:log_interval",
     ],
 )
 
@@ -161,10 +161,10 @@ cc_library(
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
-        "//aos/logging:queue_logging",
-        "//aos/robot_state:robot_state",
-        "//aos/network:team_number",
         "//aos:init",
+        "//aos/logging:queue_logging",
+        "//aos/network:team_number",
+        "//aos/robot_state",
         "//third_party:wpilib",
     ],
 )
@@ -180,7 +180,7 @@ cc_library(
     restricted_to = ["//tools:roborio"],
     deps = [
         "//aos/logging:queue_logging",
-        "//aos/robot_state:robot_state",
+        "//aos/robot_state",
         "//third_party:wpilib",
     ],
 )
@@ -203,9 +203,9 @@ cc_library(
     restricted_to = ["//tools:roborio"],
     deps = [
         ":pdp_values",
+        "//aos:init",
         "//aos/logging:queue_logging",
         "//aos/util:phased_loop",
-        "//aos:init",
         "//third_party:wpilib",
     ],
 )
@@ -240,11 +240,11 @@ cc_library(
     deps = [
         ":imu_queue",
         ":spi_rx_clearer",
-        "//aos/time:time",
+        "//aos:init",
         "//aos/logging",
         "//aos/logging:queue_logging",
-        "//aos/robot_state:robot_state",
-        "//aos:init",
+        "//aos/robot_state",
+        "//aos/time",
         "//frc971/zeroing:averager",
         "//third_party:wpilib",
     ],
@@ -283,16 +283,17 @@ cc_library(
         "sensor_reader.cc",
     ],
     hdrs = [
-        "sensor_reader.h"
+        "sensor_reader.h",
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
-        "//aos/stl_mutex",
-        "//aos/time:time",
-        "//aos/util:phased_loop",
-        "//aos:init",
-        "//third_party:wpilib",
         ":dma",
         ":dma_edge_counting",
+        ":wpilib_interface",
+        "//aos:init",
+        "//aos/stl_mutex",
+        "//aos/time",
+        "//aos/util:phased_loop",
+        "//third_party:wpilib",
     ],
 )

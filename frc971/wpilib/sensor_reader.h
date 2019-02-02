@@ -21,6 +21,10 @@ class SensorReader {
  public:
   SensorReader();
 
+  // Updates the fast and medium encoder filter frequencies.
+  void UpdateFastEncoderFilterHz(int hz);
+  void UpdateMediumEncoderFilterHz(int hz);
+
   // Sets the left drivetrain encoder.
   void set_drivetrain_left_encoder(::std::unique_ptr<frc::Encoder> encoder);
 
@@ -41,29 +45,27 @@ class SensorReader {
   void operator()();
 
  protected:
+  frc::DigitalGlitchFilter fast_encoder_filter_, medium_encoder_filter_;
+
+  ::std::unique_ptr<frc::Encoder> drivetrain_left_encoder_,
+      drivetrain_right_encoder_;
+
+ private:
   // Uses the pwm trigger to find the pwm cycle width and offset for that
   // iteration.
   void RunPWMDetecter();
 
-  int32_t my_pid_;
-
   ::std::unique_ptr<frc::DigitalInput> pwm_trigger_;
-
-  frc::DigitalGlitchFilter fast_encoder_filter_, medium_encoder_filter_,
-      hall_filter_;
 
   // Mutex to manage access to the period and tick time variables.
   ::aos::stl_mutex tick_time_mutex_;
   monotonic_clock::time_point last_tick_time_monotonic_timepoint_ =
       monotonic_clock::min_time;
-  chrono::nanoseconds last_period_ = chrono::microseconds(5050);
+  chrono::nanoseconds last_period_;
 
   ::std::unique_ptr<::frc971::wpilib::DMASynchronizer> dma_synchronizer_;
 
   ::std::atomic<bool> run_{true};
-
-  ::std::unique_ptr<frc::Encoder> drivetrain_left_encoder_,
-      drivetrain_right_encoder_;
 };
 
 }  // namespace wpilib

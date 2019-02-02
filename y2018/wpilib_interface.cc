@@ -380,7 +380,6 @@ class SensorReader {
 
     ::aos::time::PhasedLoop phased_loop(last_period_,
                                         ::std::chrono::milliseconds(3));
-    chrono::nanoseconds filtered_period = last_period_;
 
     ::std::thread pwm_detecter_thread(
         ::std::bind(&SensorReader::RunPWMDetecter, this));

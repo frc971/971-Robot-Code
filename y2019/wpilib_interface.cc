@@ -38,7 +38,6 @@
 #include "frc971/wpilib/loop_output_handler.h"
 #include "frc971/wpilib/pdp_fetcher.h"
 #include "frc971/wpilib/sensor_reader.h"
-#include "frc971/wpilib/wpilib_interface.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2019/constants.h"
 
@@ -107,20 +106,11 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   SensorReader() {
     // Set to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
-    fast_encoder_filter_.SetPeriodNanoSeconds(
-        static_cast<int>(1 / 4.0 /* built-in tolerance */ /
-                             kMaxFastEncoderPulsesPerSecond * 1e9 +
-                         0.5));
-    medium_encoder_filter_.SetPeriodNanoSeconds(
-        static_cast<int>(1 / 4.0 /* built-in tolerance */ /
-                             kMaxMediumEncoderPulsesPerSecond * 1e9 +
-                         0.5));
-    hall_filter_.SetPeriodNanoSeconds(100000);
+    UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
+    UpdateMediumEncoderFilterHz(kMaxMediumEncoderPulsesPerSecond);
   }
 
   void RunIteration() override {
-    ::frc971::wpilib::SendRobotState(my_pid_);
-
     {
       auto drivetrain_message = drivetrain_queue.position.MakeMessage();
       drivetrain_message->left_encoder =
@@ -135,8 +125,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       drivetrain_message.Send();
     }
-
-    dma_synchronizer_->RunIteration();
   }
 };
 

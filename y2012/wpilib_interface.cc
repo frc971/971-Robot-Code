@@ -29,7 +29,6 @@
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
-
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/wpilib/buffered_pcm.h"
 #include "frc971/wpilib/buffered_solenoid.h"
@@ -41,7 +40,7 @@
 #include "frc971/wpilib/joystick_sender.h"
 #include "frc971/wpilib/logging.q.h"
 #include "frc971/wpilib/loop_output_handler.h"
-#include "frc971/wpilib/wpilib_interface.h"
+#include "frc971/wpilib/sensor_reader.h"
 #include "y2012/control_loops/accessories/accessories.q.h"
 
 #ifndef M_PI
@@ -69,43 +68,11 @@ double drivetrain_velocity_translate(double in) {
          (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI) * 2.0 / 2.0;
 }
 
-class SensorReader {
+class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
   SensorReader() {}
 
-  void set_drivetrain_left_encoder(::std::unique_ptr<Encoder> encoder) {
-    drivetrain_left_encoder_ = ::std::move(encoder);
-    drivetrain_left_encoder_->SetMaxPeriod(0.005);
-  }
-
-  void set_drivetrain_right_encoder(::std::unique_ptr<Encoder> encoder) {
-    drivetrain_right_encoder_ = ::std::move(encoder);
-    drivetrain_right_encoder_->SetMaxPeriod(0.005);
-  }
-
-  void operator()() {
-    ::aos::SetCurrentThreadName("SensorReader");
-
-    my_pid_ = getpid();
-
-    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                        ::std::chrono::milliseconds(4));
-
-    ::aos::SetCurrentThreadRealtimePriority(40);
-    while (run_) {
-      {
-        const int iterations = phased_loop.SleepUntilNext();
-        if (iterations != 1) {
-          LOG(WARNING, "SensorReader skipped %d iterations\n", iterations - 1);
-        }
-      }
-      RunIteration();
-    }
-  }
-
   void RunIteration() {
-    ::frc971::wpilib::SendRobotState(my_pid_);
-
     {
       auto drivetrain_message = drivetrain_queue.position.MakeMessage();
       drivetrain_message->right_encoder =
@@ -122,15 +89,6 @@ class SensorReader {
 
     accessories_queue.position.MakeMessage().Send();
   }
-
-  void Quit() { run_ = false; }
-
- private:
-  int32_t my_pid_;
-
-  ::std::unique_ptr<Encoder> drivetrain_left_encoder_;
-  ::std::unique_ptr<Encoder> drivetrain_right_encoder_;
-  ::std::atomic<bool> run_{true};
 };
 
 class SolenoidWriter {
@@ -301,6 +259,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread joystick_thread(::std::ref(joystick_sender));
 
     SensorReader reader;
+    reader.set_dma(make_unique<DMA>());
 
     reader.set_drivetrain_left_encoder(make_encoder(0));
     reader.set_drivetrain_right_encoder(make_encoder(1));
