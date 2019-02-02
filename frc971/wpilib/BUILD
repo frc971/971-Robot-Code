@@ -289,6 +289,7 @@ cc_library(
     deps = [
         "//aos/stl_mutex",
         "//aos/time:time",
+        "//aos/util:phased_loop",
         "//aos:init",
         "//third_party:wpilib",
         ":dma",
