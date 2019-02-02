@@ -276,3 +276,20 @@ cc_library(
         "//aos/logging",
     ],
 )
+
+cc_library(
+    name = "sensor_reader",
+    srcs = [
+        "sensor_reader.cc",
+    ],
+    hdrs = [
+        "sensor_reader.h"
+    ],
+    restricted_to = ["//tools:roborio"],
+    deps = [
+        "//aos:init",
+        "//aos/time:time",
+        "//aos/stl_mutex",
+        "//third_party:wpilib",
+    ],
+)

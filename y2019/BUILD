@@ -46,6 +46,7 @@ cc_binary(
         "//frc971/wpilib:logging_queue",
         "//frc971/wpilib:loop_output_handler",
         "//frc971/wpilib:pdp_fetcher",
+        "//frc971/wpilib:sensor_reader",
         "//frc971/wpilib:wpilib_interface",
         "//frc971/wpilib:wpilib_robot_base",
         "//third_party:wpilib",
