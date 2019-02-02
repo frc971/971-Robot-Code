@@ -305,7 +305,9 @@ module CPP
 			@indent += 2
 		end
 		def pp(ast)
-			return ast.pp(self) if(ast.respond_to?(:pp))
+			return ast.pp(self) if(ast.respond_to?(:pp) &&
+			                       ast.class != String &&
+			                       ast.class != Integer)
 			self.print(ast)
 		end
 		def print(chars)
