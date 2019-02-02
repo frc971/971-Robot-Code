@@ -10,6 +10,11 @@ namespace wpilib {
 
 SensorReader::SensorReader() {}
 
+void SensorReader::set_dma(::std::unique_ptr<DMA> dma) {
+  dma_synchronizer_.reset(
+      new ::frc971::wpilib::DMASynchronizer(::std::move(dma)));
+}
+
 void SensorReader::set_pwm_trigger(
     ::std::unique_ptr<frc::DigitalInput> pwm_trigger) {
   medium_encoder_filter_.Add(pwm_trigger.get());

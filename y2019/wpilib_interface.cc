@@ -32,7 +32,6 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/wpilib/ADIS16448.h"
 #include "frc971/wpilib/dma.h"
-#include "frc971/wpilib/dma_edge_counting.h"
 #include "frc971/wpilib/encoder_and_potentiometer.h"
 #include "frc971/wpilib/joystick_sender.h"
 #include "frc971/wpilib/logging.q.h"
@@ -129,13 +128,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     drivetrain_right_encoder_ = ::std::move(encoder);
   }
 
-  // All of the DMA-related set_* calls must be made before this, and it
-  // doesn't hurt to do all of them.
-  void set_dma(::std::unique_ptr<DMA> dma) {
-    dma_synchronizer_.reset(
-        new ::frc971::wpilib::DMASynchronizer(::std::move(dma)));
-  }
-
   void operator()() {
     ::aos::SetCurrentThreadName("SensorReader");
 
@@ -213,8 +205,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
   int32_t my_pid_;
-
-  ::std::unique_ptr<::frc971::wpilib::DMASynchronizer> dma_synchronizer_;
 
   ::std::unique_ptr<frc::Encoder> drivetrain_left_encoder_,
       drivetrain_right_encoder_;

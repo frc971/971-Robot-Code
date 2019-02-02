@@ -287,9 +287,11 @@ cc_library(
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
-        "//aos:init",
-        "//aos/time:time",
         "//aos/stl_mutex",
+        "//aos/time:time",
+        "//aos:init",
         "//third_party:wpilib",
+        ":dma",
+        ":dma_edge_counting",
     ],
 )
