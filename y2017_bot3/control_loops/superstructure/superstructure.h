@@ -16,9 +16,9 @@ namespace superstructure {
 class Superstructure
     : public ::aos::controls::ControlLoop<control_loops::SuperstructureQueue> {
  public:
-  explicit Superstructure(
-      control_loops::SuperstructureQueue *my_superstructure =
-          &control_loops::superstructure_queue);
+  explicit Superstructure(::aos::EventLoop *event_loop,
+                          const ::std::string &name =
+                              ".y2017_bot3.control_loops.superstructure_queue");
 
   static constexpr double kOperatingVoltage = 12.0;
 

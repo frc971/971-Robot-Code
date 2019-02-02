@@ -129,8 +129,9 @@ static constexpr ::std::chrono::nanoseconds kPrepareFireEndTime =
 class ShooterMotor
     : public aos::controls::ControlLoop<::y2014::control_loops::ShooterQueue> {
  public:
-  explicit ShooterMotor(::y2014::control_loops::ShooterQueue *my_shooter =
-                            &::y2014::control_loops::shooter_queue);
+  explicit ShooterMotor(
+      ::aos::EventLoop *event_loop,
+      const ::std::string &name = ".y2014.control_loops.shooter_queue");
 
   // True if the goal was moved to avoid goal windup.
   bool capped_goal() const { return shooter_.capped_goal(); }

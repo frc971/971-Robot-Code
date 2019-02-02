@@ -72,8 +72,8 @@ void ShooterSide::SetStatus(ShooterSideStatus *status) {
                    loop_->next_R(1, 0) > 1.0);
 }
 
-Shooter::Shooter(ShooterQueue *my_shooter)
-    : aos::controls::ControlLoop<ShooterQueue>(my_shooter),
+Shooter::Shooter(::aos::EventLoop *event_loop, const ::std::string &name)
+    : aos::controls::ControlLoop<ShooterQueue>(event_loop, name),
       shots_(0),
       last_pre_shot_timeout_(::aos::monotonic_clock::min_time) {}
 

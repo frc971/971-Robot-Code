@@ -45,7 +45,7 @@ class PolyDrivetrain {
 
   Scalar MaxVelocity();
 
-  void Update();
+  void Update(Scalar voltage_battery);
 
   void SetOutput(::frc971::control_loops::DrivetrainQueue::Output *output);
 
@@ -292,7 +292,7 @@ Scalar PolyDrivetrain<Scalar>::MaxVelocity() {
 }
 
 template <typename Scalar>
-void PolyDrivetrain<Scalar>::Update() {
+void PolyDrivetrain<Scalar>::Update(Scalar voltage_battery) {
   if (dt_config_.loop_type == LoopType::CLOSED_LOOP) {
     loop_->mutable_X_hat()(0, 0) = kf_->X_hat()(1, 0);
     loop_->mutable_X_hat()(1, 0) = kf_->X_hat()(3, 0);
@@ -406,7 +406,9 @@ void PolyDrivetrain<Scalar>::Update() {
         (R_right / dt_config_.v)(0, 0) + (IsInGear(right_gear_) ? 0 : wiggle),
         -kTwelve, kTwelve);
 #ifdef __linux__
-    loop_->mutable_U() *= kTwelve / ::aos::robot_state->voltage_battery;
+    loop_->mutable_U() *= kTwelve / voltage_battery;
+#else
+    (void)voltage_battery;
 #endif  // __linux__
   }
 }

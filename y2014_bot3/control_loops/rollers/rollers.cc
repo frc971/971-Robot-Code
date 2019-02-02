@@ -5,8 +5,9 @@
 namespace y2014_bot3 {
 namespace control_loops {
 
-Rollers::Rollers(control_loops::RollersQueue *rollers)
-    : aos::controls::ControlLoop<control_loops::RollersQueue>(rollers) {}
+Rollers::Rollers(::aos::EventLoop *event_loop, const ::std::string &name)
+    : aos::controls::ControlLoop<control_loops::RollersQueue>(event_loop,
+                                                              name) {}
 
 void Rollers::RunIteration(
     const control_loops::RollersQueue::Goal *goal,

@@ -8,10 +8,10 @@ namespace y2017_bot3 {
 namespace control_loops {
 namespace superstructure {
 
-Superstructure::Superstructure(
-    control_loops::SuperstructureQueue *superstructure_queue)
-    : aos::controls::ControlLoop<control_loops::SuperstructureQueue>(
-          superstructure_queue) {}
+Superstructure::Superstructure(::aos::EventLoop *event_loop,
+                               const ::std::string &name)
+    : aos::controls::ControlLoop<control_loops::SuperstructureQueue>(event_loop,
+                                                                     name) {}
 
 void Superstructure::RunIteration(
     const control_loops::SuperstructureQueue::Goal *unsafe_goal,

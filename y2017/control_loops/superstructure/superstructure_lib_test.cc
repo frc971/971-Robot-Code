@@ -134,11 +134,12 @@ class SuperstructureSimulation {
         column_plant_(new ColumnPlant(
             ::y2017::control_loops::superstructure::column::MakeColumnPlant())),
 
-        superstructure_queue_(".y2017.control_loops.superstructure",
-                              ".y2017.control_loops.superstructure.goal",
-                              ".y2017.control_loops.superstructure.position",
-                              ".y2017.control_loops.superstructure.output",
-                              ".y2017.control_loops.superstructure.status") {
+        superstructure_queue_(
+            ".y2017.control_loops.superstructure_queue",
+            ".y2017.control_loops.superstructure_queue.goal",
+            ".y2017.control_loops.superstructure_queue.position",
+            ".y2017.control_loops.superstructure_queue.output",
+            ".y2017.control_loops.superstructure_queue.status") {
     // Start the hood out in the middle by default.
     InitializeHoodPosition((constants::Values::kHoodRange.lower +
                             constants::Values::kHoodRange.upper) /
@@ -432,12 +433,13 @@ class SuperstructureSimulation {
 class SuperstructureTest : public ::aos::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
-      : superstructure_queue_(".y2017.control_loops.superstructure",
-                              ".y2017.control_loops.superstructure.goal",
-                              ".y2017.control_loops.superstructure.position",
-                              ".y2017.control_loops.superstructure.output",
-                              ".y2017.control_loops.superstructure.status"),
-        superstructure_(&superstructure_queue_) {
+      : superstructure_queue_(
+            ".y2017.control_loops.superstructure_queue",
+            ".y2017.control_loops.superstructure_queue.goal",
+            ".y2017.control_loops.superstructure_queue.position",
+            ".y2017.control_loops.superstructure_queue.output",
+            ".y2017.control_loops.superstructure_queue.status"),
+        superstructure_(&event_loop_) {
     set_team_id(::frc971::control_loops::testing::kTeamNumber);
   }
 
@@ -562,6 +564,7 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
   // that is no longer valid.
   SuperstructureQueue superstructure_queue_;
 
+  ::aos::ShmEventLoop event_loop_;
   // Create a control loop and simulation.
   Superstructure superstructure_;
   SuperstructureSimulation superstructure_plant_;

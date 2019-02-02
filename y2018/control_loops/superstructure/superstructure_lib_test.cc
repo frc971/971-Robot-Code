@@ -273,7 +273,7 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
                               ".y2018.control_loops.superstructure.output",
                               ".y2018.control_loops.superstructure.status",
                               ".y2018.control_loops.superstructure.position"),
-        superstructure_(&superstructure_queue_) {
+        superstructure_(&event_loop_, ".y2018.control_loops.superstructure") {
     status_light.Clear();
     ::y2018::vision::vision_status.Clear();
     ::frc971::control_loops::drivetrain_queue.output.Clear();
@@ -323,6 +323,7 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
     }
   }
 
+  ::aos::ShmEventLoop event_loop_;
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory
   // that is no longer valid.

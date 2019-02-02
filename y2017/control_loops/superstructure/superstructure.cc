@@ -23,10 +23,10 @@ constexpr double kMaxIndexerRollerVoltage = 12.0;
 typedef ::y2017::constants::Values::ShotParams ShotParams;
 using ::frc971::control_loops::drivetrain_queue;
 
-Superstructure::Superstructure(
-    control_loops::SuperstructureQueue *superstructure_queue)
-    : aos::controls::ControlLoop<control_loops::SuperstructureQueue>(
-          superstructure_queue) {
+Superstructure::Superstructure(::aos::EventLoop *event_loop,
+                               const ::std::string &name)
+    : aos::controls::ControlLoop<control_loops::SuperstructureQueue>(event_loop,
+                                                                     name) {
   shot_interpolation_table_ =
       ::frc971::shooter_interpolation::InterpolationTable<ShotParams>({
           // { distance_to_target, { shot_angle, shot_power, indexer_velocity }},

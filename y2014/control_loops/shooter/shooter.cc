@@ -116,9 +116,10 @@ void ZeroedStateFeedbackLoop::SetCalibration(double encoder_val,
                  previous_offset, offset_));
 }
 
-ShooterMotor::ShooterMotor(::y2014::control_loops::ShooterQueue *my_shooter)
+ShooterMotor::ShooterMotor(::aos::EventLoop *event_loop,
+                           const ::std::string &name)
     : aos::controls::ControlLoop<::y2014::control_loops::ShooterQueue>(
-          my_shooter),
+          event_loop, name),
       shooter_(MakeShooterLoop()),
       state_(STATE_INITIALIZE),
       cycles_not_moved_(0),
@@ -249,8 +250,7 @@ void ShooterMotor::RunIteration(
   // Don't even let the control loops run.
   bool shooter_loop_disable = false;
 
-  const bool disabled =
-      !::aos::joystick_state.get() || !::aos::joystick_state->enabled;
+  const bool disabled = !has_joystick_state() || !joystick_state().enabled;
 
   // If true, move the goal if we saturate.
   bool cap_goal = false;
@@ -549,7 +549,7 @@ void ShooterMotor::RunIteration(
                        shooter_.absolute_position()) > 0.0005 &&
             cycles_not_moved_ > 6) ||
            monotonic_clock::now() > shot_end_time_) &&
-          ::aos::robot_state->voltage_battery > 10.5) {
+          robot_state().voltage_battery > 10.5) {
         state_ = STATE_REQUEST_LOAD;
         ++shot_count_;
       }

@@ -373,8 +373,9 @@ bool BottomZeroedStateFeedbackLoop::SetCalibrationOnEdge(
   return false;
 }
 
-ClawMotor::ClawMotor(::y2014::control_loops::ClawQueue *my_claw)
-    : aos::controls::ControlLoop<::y2014::control_loops::ClawQueue>(my_claw),
+ClawMotor::ClawMotor(::aos::EventLoop *event_loop, const ::std::string &name)
+    : aos::controls::ControlLoop<::y2014::control_loops::ClawQueue>(event_loop,
+                                                                    name),
       has_top_claw_goal_(false),
       top_claw_goal_(0.0),
       top_claw_(this),
@@ -604,9 +605,7 @@ bool ClawMotor::is_ready() const {
   return (
       (top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED &&
        bottom_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED) ||
-      (((::aos::joystick_state.get() == NULL)
-            ? true
-            : ::aos::joystick_state->autonomous) &&
+      ((has_joystick_state() ? joystick_state().autonomous : true) &&
        ((top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
          top_claw_.zeroing_state() ==
              ZeroedStateFeedbackLoop::DISABLED_CALIBRATION) &&
@@ -674,12 +673,12 @@ void ClawMotor::RunIteration(
   }
 
   bool autonomous, enabled;
-  if (::aos::joystick_state.get() == nullptr) {
+  if (has_joystick_state()) {
+    autonomous = joystick_state().autonomous;
+    enabled = joystick_state().enabled;
+  } else {
     autonomous = true;
     enabled = false;
-  } else {
-    autonomous = ::aos::joystick_state->autonomous;
-    enabled = ::aos::joystick_state->enabled;
   }
 
   double bottom_claw_velocity_ = 0.0;

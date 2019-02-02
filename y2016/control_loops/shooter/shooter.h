@@ -4,11 +4,11 @@
 #include <memory>
 
 #include "aos/controls/control_loop.h"
+#include "aos/events/event-loop.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-
-#include "y2016/control_loops/shooter/shooter_integral_plant.h"
 #include "y2016/control_loops/shooter/shooter.q.h"
+#include "y2016/control_loops/shooter/shooter_integral_plant.h"
 
 namespace y2016 {
 namespace control_loops {
@@ -56,7 +56,8 @@ class ShooterSide {
 class Shooter : public ::aos::controls::ControlLoop<ShooterQueue> {
  public:
   explicit Shooter(
-      ShooterQueue *shooter_queue = &control_loops::shooter::shooter_queue);
+      ::aos::EventLoop *event_loop,
+      const ::std::string &name = ".y2016.control_loops.shooter.shooter_queue");
 
   enum class ShooterLatchState {
     // Any shoot commands will be passed through without modification.

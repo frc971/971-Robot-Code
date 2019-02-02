@@ -15,7 +15,7 @@ queue_library(
 )
 
 cc_library(
-    name = 'superstructure_lib',
+    name = "superstructure_lib",
     srcs = [
         "superstructure.cc",
     ],
@@ -25,7 +25,7 @@ cc_library(
     deps = [
         ":superstructure_queue",
         "//aos/controls:control_loop",
-    ]
+    ],
 )
 
 cc_binary(
@@ -36,5 +36,6 @@ cc_binary(
     deps = [
         ":superstructure_lib",
         "//aos:init",
-    ]
+        "//aos/events:shm-event-loop",
+    ],
 )

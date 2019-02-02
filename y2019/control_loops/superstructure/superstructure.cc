@@ -7,10 +7,9 @@ namespace y2019 {
 namespace control_loops {
 namespace superstructure {
 
-Superstructure::Superstructure(
-    SuperstructureQueue *superstructure_queue)
-    : aos::controls::ControlLoop<SuperstructureQueue>(
-          superstructure_queue) {}
+Superstructure::Superstructure(::aos::EventLoop *event_loop,
+                               const ::std::string &name)
+    : aos::controls::ControlLoop<SuperstructureQueue>(event_loop, name) {}
 
 void Superstructure::RunIteration(
     const SuperstructureQueue::Goal *unsafe_goal,

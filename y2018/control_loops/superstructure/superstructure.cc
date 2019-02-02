@@ -35,10 +35,10 @@ void SendColors(float red, float green, float blue) {
   }
 }
 
-Superstructure::Superstructure(
-    control_loops::SuperstructureQueue *superstructure_queue)
-    : aos::controls::ControlLoop<control_loops::SuperstructureQueue>(
-          superstructure_queue),
+Superstructure::Superstructure(::aos::EventLoop *event_loop,
+                               const ::std::string &name)
+    : aos::controls::ControlLoop<control_loops::SuperstructureQueue>(event_loop,
+                                                                     name),
       intake_left_(constants::GetValues().left_intake.zeroing),
       intake_right_(constants::GetValues().right_intake.zeroing) {}
 

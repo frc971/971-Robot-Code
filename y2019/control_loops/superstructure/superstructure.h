@@ -12,8 +12,9 @@ class Superstructure
     : public ::aos::controls::ControlLoop<SuperstructureQueue> {
  public:
   explicit Superstructure(
-      SuperstructureQueue *my_superstructure =
-          &superstructure_queue);
+      ::aos::EventLoop *event_loop,
+      const ::std::string &name =
+          ".y2019.control_loops.superstructure.superstructure_queue");
 
  protected:
   virtual void RunIteration(

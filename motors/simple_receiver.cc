@@ -561,7 +561,7 @@ extern "C" void pit3_isr() {
     DrivetrainQueue_Output output;
 
     polydrivetrain->SetGoal(goal);
-    polydrivetrain->Update();
+    polydrivetrain->Update(12.0f);
     polydrivetrain->SetOutput(&output);
 
     vesc_set_duty(0, -output.left_voltage / 12.0f);

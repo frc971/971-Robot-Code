@@ -1,3 +1,6 @@
+#ifndef AOS_EVENTS_SHM_EVENT_LOOP_H_
+#define AOS_EVENTS_SHM_EVENT_LOOP_H_
+
 #include <unordered_set>
 #include <vector>
 #include "aos/condition.h"
@@ -79,3 +82,5 @@ class ShmEventLoop : public EventLoop {
 };
 
 }  // namespace aos
+
+#endif  // AOS_EVENTS_SHM_EVENT_LOOP_H_

@@ -11,10 +11,10 @@ class AccessoriesLoop : public ::aos::controls::ControlLoop<
                             ::y2012::control_loops::AccessoriesQueue> {
  public:
   explicit AccessoriesLoop(
-      ::y2012::control_loops::AccessoriesQueue *my_accessories =
-          &::y2012::control_loops::accessories_queue)
+      ::aos::EventLoop *event_loop,
+      const ::std::string &name = ".y2012.control_loops.accessories_queue")
       : ::aos::controls::ControlLoop<::y2012::control_loops::AccessoriesQueue>(
-            my_accessories) {}
+            event_loop, name) {}
 
   void RunIteration(
       const ::y2012::control_loops::AccessoriesQueue::Message *goal,
@@ -33,7 +33,8 @@ class AccessoriesLoop : public ::aos::controls::ControlLoop<
 
 int main() {
   ::aos::Init();
-  ::y2012::control_loops::accessories::AccessoriesLoop accessories;
+  ::aos::ShmEventLoop event_loop;
+  ::y2012::control_loops::accessories::AccessoriesLoop accessories(&event_loop);
   accessories.Run();
   ::aos::Cleanup();
 }

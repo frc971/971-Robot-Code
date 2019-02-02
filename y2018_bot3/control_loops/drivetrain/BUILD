@@ -74,6 +74,7 @@ cc_binary(
     deps = [
         ":drivetrain_base",
         "//aos:init",
+        "//aos/events:shm-event-loop",
         "//frc971/control_loops/drivetrain:drivetrain_lib",
     ],
 )

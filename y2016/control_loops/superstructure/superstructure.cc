@@ -225,10 +225,10 @@ constexpr double CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference;
 constexpr double CollisionAvoidance::kMaxWristAngleForSafeArmStowing;
 constexpr double CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing;
 
-Superstructure::Superstructure(
-    control_loops::SuperstructureQueue *superstructure_queue)
-    : aos::controls::ControlLoop<control_loops::SuperstructureQueue>(
-          superstructure_queue),
+Superstructure::Superstructure(::aos::EventLoop *event_loop,
+                               const ::std::string &name)
+    : aos::controls::ControlLoop<control_loops::SuperstructureQueue>(event_loop,
+                                                                     name),
       collision_avoidance_(&intake_, &arm_) {}
 
 bool Superstructure::IsArmNear(double shoulder_tolerance,

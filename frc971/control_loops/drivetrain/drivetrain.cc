@@ -29,11 +29,11 @@ namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
-DrivetrainLoop::DrivetrainLoop(
-    const DrivetrainConfig<double> &dt_config,
-    ::frc971::control_loops::DrivetrainQueue *my_drivetrain)
+DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
+                               ::aos::EventLoop *event_loop,
+                               const ::std::string &name)
     : aos::controls::ControlLoop<::frc971::control_loops::DrivetrainQueue>(
-          my_drivetrain),
+          event_loop, name),
       dt_config_(dt_config),
       kf_(dt_config_.make_kf_drivetrain_loop()),
       dt_openloop_(dt_config_, &kf_),
@@ -331,7 +331,7 @@ void DrivetrainLoop::RunIteration(
     dt_openloop_.SetGoal(*goal);
   }
 
-  dt_openloop_.Update();
+  dt_openloop_.Update(robot_state().voltage_battery);
 
   dt_closedloop_.Update(output != NULL && controller_type == 1);
 
@@ -393,7 +393,7 @@ void DrivetrainLoop::RunIteration(
     right_high_requested_ = output->right_high;
   }
 
-  const double scalar = ::aos::robot_state->voltage_battery / 12.0;
+  const double scalar = robot_state().voltage_battery / 12.0;
 
   left_voltage *= scalar;
   right_voltage *= scalar;

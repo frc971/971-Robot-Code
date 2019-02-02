@@ -185,8 +185,9 @@ class BottomZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
 class ClawMotor
     : public aos::controls::ControlLoop<::y2014::control_loops::ClawQueue> {
  public:
-  explicit ClawMotor(::y2014::control_loops::ClawQueue *my_claw =
-                         &::y2014::control_loops::claw_queue);
+  explicit ClawMotor(
+      ::aos::EventLoop *event_loop,
+      const ::std::string &name = ".y2014.control_loops.claw_queue");
 
   // True if the state machine is ready.
   bool capped_goal() const { return capped_goal_; }

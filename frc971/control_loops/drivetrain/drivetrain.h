@@ -22,9 +22,8 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
   // Constructs a control loop which can take a Drivetrain or defaults to the
   // drivetrain at frc971::control_loops::drivetrain
   explicit DrivetrainLoop(
-      const DrivetrainConfig<double> &dt_config,
-      ::frc971::control_loops::DrivetrainQueue *my_drivetrain =
-          &::frc971::control_loops::drivetrain_queue);
+      const DrivetrainConfig<double> &dt_config, ::aos::EventLoop *event_loop,
+      const ::std::string &name = ".frc971.control_loops.drivetrain_queue");
 
   int ControllerIndexFromGears();
 
