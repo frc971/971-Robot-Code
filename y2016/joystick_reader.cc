@@ -71,8 +71,9 @@ const ButtonLocation kWinch(3, 5);
 
 class Reader : public ::aos::input::JoystickInput {
  public:
-  Reader()
-      : is_high_gear_(true),
+  Reader(::aos::EventLoop *event_loop)
+      : ::aos::input::JoystickInput(event_loop),
+        is_high_gear_(true),
         intake_goal_(0.0),
         shoulder_goal_(M_PI / 2.0),
         wrist_goal_(0.0),
@@ -498,7 +499,8 @@ class Reader : public ::aos::input::JoystickInput {
 
 int main() {
   ::aos::Init(-1);
-  ::y2016::input::joysticks::Reader reader;
+  ::aos::ShmEventLoop event_loop;
+  ::y2016::input::joysticks::Reader reader(&event_loop);
   reader.Run();
   ::aos::Cleanup();
 }

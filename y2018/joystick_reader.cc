@@ -87,7 +87,8 @@ const ButtonLocation kDriverClawOpen(2, 4);
 
 class Reader : public ::aos::input::JoystickInput {
  public:
-  Reader() {
+  Reader(::aos::EventLoop *event_loop)
+      : ::aos::input::JoystickInput(event_loop) {
     const uint16_t team = ::aos::network::GetTeamNumber();
 
     drivetrain_input_reader_ = DrivetrainInputReader::Make(
@@ -370,9 +371,8 @@ class Reader : public ::aos::input::JoystickInput {
       LOG(WARNING, "no auto mode values\n");
       params.mode = 0;
     }
-    // TODO(austin): use the mode later if we care.  We don't care right now.
-    params.mode = static_cast<int>(::aos::joystick_state->switch_left) |
-                  (static_cast<int>(::aos::joystick_state->scale_left) << 1);
+    // Low bit is switch, high bit is scale.  1 means left, 0 means right.
+    params.mode = mode();
     action_queue_.EnqueueAction(
         ::frc971::autonomous::MakeAutonomousAction(params));
   }
@@ -408,7 +408,8 @@ class Reader : public ::aos::input::JoystickInput {
 
 int main() {
   ::aos::Init(-1);
-  ::y2018::input::joysticks::Reader reader;
+  ::aos::ShmEventLoop event_loop;
+  ::y2018::input::joysticks::Reader reader(&event_loop);
   reader.Run();
   ::aos::Cleanup();
 }
