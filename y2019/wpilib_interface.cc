@@ -183,7 +183,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     dma_synchronizer_->RunIteration();
   }
 
-  void Quit() { run_ = false; }
 
  private:
   int32_t my_pid_;

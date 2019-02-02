@@ -33,6 +33,9 @@ class SensorReader {
   // Sets the pwm trigger.
   void set_pwm_trigger(::std::unique_ptr<frc::DigitalInput> pwm_trigger);
 
+  // Stops the pwm trigger on the next iteration.
+  void Quit() { run_ = false; }
+
  protected:
   // Uses the pwm trigger to find the pwm cycle width and offset for that
   // iteration.
