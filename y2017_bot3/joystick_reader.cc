@@ -39,7 +39,8 @@ std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
 
 class Reader : public ::aos::input::JoystickInput {
  public:
-  Reader() {
+  Reader(::aos::EventLoop *event_loop)
+      : ::aos::input::JoystickInput(event_loop) {
     // Setting driver station type to Steering Wheel
     drivetrain_input_reader_ = DrivetrainInputReader::Make(
         DrivetrainInputReader::InputType::kSteeringWheel,
@@ -149,7 +150,8 @@ class Reader : public ::aos::input::JoystickInput {
 
 int main() {
   ::aos::Init(-1);
-  ::y2017_bot3::input::joysticks::Reader reader;
+  ::aos::ShmEventLoop event_loop;
+  ::y2017_bot3::input::joysticks::Reader reader(&event_loop);
   reader.Run();
   ::aos::Cleanup();
 }

@@ -53,7 +53,8 @@ std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
 
 class Reader : public ::aos::input::JoystickInput {
  public:
-  Reader() {
+  Reader(::aos::EventLoop *event_loop)
+      : ::aos::input::JoystickInput(event_loop) {
     drivetrain_input_reader_ = DrivetrainInputReader::Make(
         DrivetrainInputReader::InputType::kSteeringWheel,
         ::y2017::control_loops::drivetrain::GetDrivetrainConfig());
@@ -324,7 +325,8 @@ class Reader : public ::aos::input::JoystickInput {
 
 int main() {
   ::aos::Init(-1);
-  ::y2017::input::joysticks::Reader reader;
+  ::aos::ShmEventLoop event_loop;
+  ::y2017::input::joysticks::Reader reader(&event_loop);
   reader.Run();
   ::aos::Cleanup();
 }

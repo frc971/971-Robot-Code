@@ -3,12 +3,13 @@
 #include <unistd.h>
 #include <math.h>
 
+#include "aos/actions/actions.h"
+#include "aos/events/shm-event-loop.h"
 #include "aos/init.h"
-#include "aos/input/joystick_input.h"
 #include "aos/input/driver_station_data.h"
+#include "aos/input/joystick_input.h"
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"
-#include "aos/actions/actions.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2012/control_loops/accessories/accessories.q.h"
@@ -80,8 +81,8 @@ const JoystickAxis kAdjustClawSeparation(3, 1);
 
 class Reader : public ::aos::input::JoystickInput {
  public:
-  Reader()
-      : is_high_gear_(false) {}
+  Reader(::aos::EventLoop *event_loop)
+      : ::aos::input::JoystickInput(event_loop), is_high_gear_(false) {}
 
   void RunIteration(const ::aos::input::driver_station::Data &data) override {
     if (!data.GetControlBit(ControlBit::kAutonomous)) {
@@ -144,7 +145,8 @@ class Reader : public ::aos::input::JoystickInput {
 
 int main() {
   ::aos::Init(-1);
-  ::y2012::input::joysticks::Reader reader;
+  ::aos::ShmEventLoop event_loop;
+  ::y2012::input::joysticks::Reader reader(&event_loop);
   reader.Run();
   ::aos::Cleanup();
 }

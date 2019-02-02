@@ -155,8 +155,9 @@ const ClawGoal kFlipped254PassGoal = {1.96, kGrabSeparation};
 
 class Reader : public ::aos::input::JoystickInput {
  public:
-  Reader()
-      : is_high_gear_(false),
+  Reader(::aos::EventLoop *event_loop)
+      : ::aos::input::JoystickInput(event_loop),
+        is_high_gear_(false),
         shot_power_(80.0),
         goal_angle_(0.0),
         separation_angle_(kGrabSeparation),
@@ -523,7 +524,8 @@ class Reader : public ::aos::input::JoystickInput {
 
 int main() {
   ::aos::Init(-1);
-  ::y2014::input::joysticks::Reader reader;
+  ::aos::ShmEventLoop event_loop;
+  ::y2014::input::joysticks::Reader reader(&event_loop);
   reader.Run();
   ::aos::Cleanup();
 }
