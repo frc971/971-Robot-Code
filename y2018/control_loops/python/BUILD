@@ -176,6 +176,7 @@ py_binary(
     srcs_version = "PY3",
     deps = [
         "//frc971/control_loops/python:basic_window",
+        "//frc971/control_loops/python:color",
         ":python_init",
         "@python_gtk",
     ],
