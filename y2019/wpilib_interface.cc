@@ -40,12 +40,14 @@
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/wpilib_interface.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
+#include "y2019/constants.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
 using ::frc971::control_loops::drivetrain_queue;
+using ::y2019::constants::Values;
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
 using aos::make_unique;
@@ -73,18 +75,18 @@ constexpr T max(T a, T b, T c, Rest... rest) {
 }
 
 double drivetrain_translate(int32_t in) {
-  return ((static_cast<double>(in)
-           /* / Values::kDrivetrainEncoderCountsPerRevolution()) *
+  return ((static_cast<double>(in) /
+           Values::kDrivetrainEncoderCountsPerRevolution()) *
           (2.0 * M_PI)) *
          Values::kDrivetrainEncoderRatio() *
-         control_loops::drivetrain::kWheelRadius*/));
+         control_loops::drivetrain::kWheelRadius;
 }
 
 double drivetrain_velocity_translate(double in) {
-  return (((1.0 / in) /* / Values::kDrivetrainCyclesPerRevolution()) *
+  return (((1.0 / in) / Values::kDrivetrainCyclesPerRevolution()) *
           (2.0 * M_PI)) *
          Values::kDrivetrainEncoderRatio() *
-         control_loops::drivetrain::kWheelRadius*/));
+         control_loops::drivetrain::kWheelRadius;
 }
 
 constexpr double kMaxFastEncoderPulsesPerSecond =

@@ -5,6 +5,7 @@
 #include <math.h>
 
 #include "frc971/constants.h"
+#include "y2019/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 
 namespace y2019 {
 namespace constants {
@@ -21,6 +22,20 @@ namespace constants {
 
 struct Values {
   static const int kZeroingSampleSize = 200;
+
+  static constexpr double kDrivetrainCyclesPerRevolution() { return 512.0; }
+  static constexpr double kDrivetrainEncoderCountsPerRevolution() {
+    return kDrivetrainCyclesPerRevolution() * 4;
+  }
+  static constexpr double kDrivetrainEncoderRatio() {
+    return (52.0 / 24.0);
+  }
+  static constexpr double kMaxDrivetrainEncoderPulsesPerSecond() {
+    return control_loops::drivetrain::kFreeSpeed / (2.0 * M_PI) *
+           control_loops::drivetrain::kHighOutputRatio /
+           constants::Values::kDrivetrainEncoderRatio() *
+           kDrivetrainEncoderCountsPerRevolution();
+  }
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and

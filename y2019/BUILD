@@ -13,6 +13,7 @@ cc_library(
         "//aos/mutex",
         "//aos/network:team_number",
         "//frc971:constants",
+        "//y2019/control_loops/drivetrain:polydrivetrain_plants",
     ],
 )
 
@@ -23,6 +24,7 @@ cc_binary(
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
+        ":constants",
         "//aos:init",
         "//aos:make_unique",
         "//aos:math",
