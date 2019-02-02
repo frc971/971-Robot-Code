@@ -1,7 +1,11 @@
 #include "frc971/wpilib/sensor_reader.h"
 
+#include <inttypes.h>
+#include <unistd.h>
+
 #include "aos/init.h"
 #include "aos/util/compiler_memory_barrier.h"
+#include "aos/util/phased_loop.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"
 #include "frc971/wpilib/ahal/Utility.h"
 
@@ -100,6 +104,52 @@ void SensorReader::RunPWMDetecter() {
     }
   }
   pwm_trigger_->CancelInterrupts();
+}
+
+void SensorReader::operator()() {
+  ::aos::SetCurrentThreadName("SensorReader");
+
+  my_pid_ = getpid();
+
+  dma_synchronizer_->Start();
+
+  ::aos::time::PhasedLoop phased_loop(last_period_,
+                                      ::std::chrono::milliseconds(3));
+  chrono::nanoseconds filtered_period = last_period_;
+
+  ::std::thread pwm_detecter_thread(
+      ::std::bind(&SensorReader::RunPWMDetecter, this));
+
+  ::aos::SetCurrentThreadRealtimePriority(40);
+  while (run_) {
+    {
+      const int iterations = phased_loop.SleepUntilNext();
+      if (iterations != 1) {
+        LOG(WARNING, "SensorReader skipped %d iterations\n", iterations - 1);
+      }
+    }
+    RunIteration();
+
+    monotonic_clock::time_point last_tick_timepoint;
+    chrono::nanoseconds period;
+    {
+      ::std::unique_lock<::aos::stl_mutex> locker(tick_time_mutex_);
+      last_tick_timepoint = last_tick_time_monotonic_timepoint_;
+      period = last_period_;
+    }
+
+    if (last_tick_timepoint == monotonic_clock::min_time) {
+      continue;
+    }
+    chrono::nanoseconds new_offset = phased_loop.OffsetFromIntervalAndTime(
+        period, last_tick_timepoint + chrono::microseconds(2050));
+
+    // TODO(austin): If this is the first edge in a while, skip to it (plus
+    // an offset). Otherwise, slowly drift time to line up.
+
+    phased_loop.set_interval_and_offset(period, new_offset);
+  }
+  pwm_detecter_thread.join();
 }
 
 }  // namespace wpilib

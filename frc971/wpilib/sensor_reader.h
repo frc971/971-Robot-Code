@@ -36,10 +36,16 @@ class SensorReader {
   // Stops the pwm trigger on the next iteration.
   void Quit() { run_ = false; }
 
+  virtual void RunIteration() = 0;
+
+  void operator()();
+
  protected:
   // Uses the pwm trigger to find the pwm cycle width and offset for that
   // iteration.
   void RunPWMDetecter();
+
+  int32_t my_pid_;
 
   ::std::unique_ptr<frc::DigitalInput> pwm_trigger_;
 
