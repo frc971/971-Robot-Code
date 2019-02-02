@@ -302,8 +302,52 @@ class GTK_Widget(basic_window.BaseWindow):
 
         cr.stroke()
 
+    def draw_rockets(self, cr):
+        # BASE Constants
+        X_BASE = -450+mToPx(2.41568)
+        Y_BASE  = -150+mToPx(4.129151)
+
+        # Top Rocket
+
+        # Leftmost Line
+        cr.move_to(X_BASE + mToPx(2.89973), Y_BASE + mToPx(3.86305))
+        cr.line_to(X_BASE + mToPx(3.15642), Y_BASE + mToPx(3.39548))
+
+        # Top Line
+        cr.move_to(X_BASE + mToPx(3.15642), Y_BASE + mToPx(3.39548))
+        cr.line_to(X_BASE + mToPx(3.63473), Y_BASE + mToPx(3.39238))
+
+        #Rightmost Line
+        cr.move_to(X_BASE + mToPx(3.63473), Y_BASE + mToPx(3.39238))
+        cr.line_to(X_BASE + mToPx(3.89984), Y_BASE + mToPx(3.86305))
+
+        #Back Line
+        cr.move_to(X_BASE + mToPx(2.89973), Y_BASE + mToPx(3.86305))
+        cr.line_to(X_BASE + mToPx(3.89984), Y_BASE + mToPx(3.86305))
+
+        # Bottom Rocket
+
+        # Leftmost Line
+        cr.move_to(X_BASE + mToPx(2.89973), Y_BASE - mToPx(3.86305))
+        cr.line_to(X_BASE + mToPx(3.15642), Y_BASE - mToPx(3.39548))
+
+        # Top Line
+        cr.move_to(X_BASE + mToPx(3.15642), Y_BASE - mToPx(3.39548))
+        cr.line_to(X_BASE + mToPx(3.63473), Y_BASE - mToPx(3.39238))
+
+        #Rightmost Line
+        cr.move_to(X_BASE + mToPx(3.63473), Y_BASE - mToPx(3.39238))
+        cr.line_to(X_BASE + mToPx(3.89984), Y_BASE - mToPx(3.86305))
+
+        #Back Line
+        cr.move_to(X_BASE + mToPx(2.89973), Y_BASE - mToPx(3.86305))
+        cr.line_to(X_BASE + mToPx(3.89984), Y_BASE - mToPx(3.86305))
+
+        cr.stroke()
+
     def draw_field_elements(self, cr):
         self.draw_HAB(cr)
+        self.draw_rockets(cr)
 
     def handle_draw(self, cr):
         # print(self.new_point)
