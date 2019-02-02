@@ -10,6 +10,20 @@ namespace wpilib {
 
 SensorReader::SensorReader() {}
 
+void SensorReader::set_drivetrain_left_encoder(
+    ::std::unique_ptr<frc::Encoder> encoder) {
+  fast_encoder_filter_.Add(encoder.get());
+  drivetrain_left_encoder_ = ::std::move(encoder);
+}
+
+void SensorReader::set_drivetrain_right_encoder(
+    ::std::unique_ptr<frc::Encoder> encoder) {
+  fast_encoder_filter_.Add(encoder.get());
+  drivetrain_right_encoder_ = ::std::move(encoder);
+}
+
+// All of the DMA-related set_* calls must be made before this, and it
+// doesn't hurt to do all of them.
 void SensorReader::set_dma(::std::unique_ptr<DMA> dma) {
   dma_synchronizer_.reset(
       new ::frc971::wpilib::DMASynchronizer(::std::move(dma)));

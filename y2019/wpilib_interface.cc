@@ -116,18 +116,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     hall_filter_.SetPeriodNanoSeconds(100000);
   }
 
-  // Left drivetrain side.
-  void set_drivetrain_left_encoder(::std::unique_ptr<frc::Encoder> encoder) {
-    fast_encoder_filter_.Add(encoder.get());
-    drivetrain_left_encoder_ = ::std::move(encoder);
-  }
-
-  // Right drivetrain side.
-  void set_drivetrain_right_encoder(::std::unique_ptr<frc::Encoder> encoder) {
-    fast_encoder_filter_.Add(encoder.get());
-    drivetrain_right_encoder_ = ::std::move(encoder);
-  }
-
   void operator()() {
     ::aos::SetCurrentThreadName("SensorReader");
 
@@ -198,12 +186,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   void Quit() { run_ = false; }
 
  private:
-  double encoder_translate(int32_t value, double counts_per_revolution,
-                           double ratio) {
-    return static_cast<double>(value) / counts_per_revolution * ratio *
-           (2.0 * M_PI);
-  }
-
   int32_t my_pid_;
 
   ::std::unique_ptr<frc::Encoder> drivetrain_left_encoder_,

@@ -21,13 +21,21 @@ class SensorReader {
  public:
   SensorReader();
 
-  // All of the DMA-related set_* calls must be made before this, and it
-  // doesn't hurt to do all of them.
+  // Sets the left drivetrain encoder.
+  void set_drivetrain_left_encoder(::std::unique_ptr<frc::Encoder> encoder);
+
+  // Sets the right drivetrain encoder.
+  void set_drivetrain_right_encoder(::std::unique_ptr<frc::Encoder> encoder);
+
+  // Sets the dma.
   void set_dma(::std::unique_ptr<DMA> dma);
 
+  // Sets the pwm trigger.
   void set_pwm_trigger(::std::unique_ptr<frc::DigitalInput> pwm_trigger);
 
  protected:
+  // Uses the pwm trigger to find the pwm cycle width and offset for that
+  // iteration.
   void RunPWMDetecter();
 
   ::std::unique_ptr<frc::DigitalInput> pwm_trigger_;
@@ -44,6 +52,9 @@ class SensorReader {
   ::std::unique_ptr<::frc971::wpilib::DMASynchronizer> dma_synchronizer_;
 
   ::std::atomic<bool> run_{true};
+
+  ::std::unique_ptr<frc::Encoder> drivetrain_left_encoder_,
+      drivetrain_right_encoder_;
 };
 
 }  // namespace wpilib
