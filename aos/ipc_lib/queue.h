@@ -144,6 +144,9 @@ class RawQueue {
   // only 1 task is using this object (ie in tests).
   int FreeMessages() const;
 
+  // Returns the name of the queue.
+  const char *name() const { return name_; }
+
  private:
   struct MessageHeader;
 

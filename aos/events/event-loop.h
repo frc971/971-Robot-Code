@@ -73,6 +73,9 @@ class Sender {
   // Constructs an above message.
   Message MakeMessage();
 
+  // Returns the name of the underlying queue.
+  const char *name() const { return sender_->name(); }
+
  private:
   friend class EventLoop;
   Sender(std::unique_ptr<RawSender> sender) : sender_(std::move(sender)) {}

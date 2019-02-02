@@ -105,8 +105,9 @@ class EventScheduler {
 
 class SimulatedQueue {
  public:
-  explicit SimulatedQueue(const QueueTypeInfo &type, EventScheduler *scheduler)
-      : type_(type), scheduler_(scheduler){};
+  explicit SimulatedQueue(const QueueTypeInfo &type, const ::std::string &name,
+                          EventScheduler *scheduler)
+      : type_(type), name_(name), scheduler_(scheduler){};
 
   std::unique_ptr<RawSender> MakeRawSender();
 
@@ -129,9 +130,12 @@ class SimulatedQueue {
 
   size_t size() { return type_.size; }
 
+  const char *name() const { return name_.c_str(); }
+
  private:
   int64_t index_ = -1;
   QueueTypeInfo type_;
+  const ::std::string name_;
   ::std::vector<std::function<void(const aos::Message *message)>> watchers_;
   RefCountedBuffer latest_message_;
   EventScheduler *scheduler_;

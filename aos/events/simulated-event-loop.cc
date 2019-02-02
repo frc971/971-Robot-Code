@@ -43,6 +43,8 @@ class SimulatedSender : public RawSender {
     return true;  // Maybe false instead? :)
   }
 
+  const char *name() const override { return queue_->name(); }
+
  private:
   SimulatedQueue *queue_;
 };
@@ -93,8 +95,10 @@ SimulatedQueue *SimulatedEventLoop::GetSimulatedQueue(
     const ::std::pair<::std::string, QueueTypeInfo> &type) {
   auto it = queues_->find(type);
   if (it == queues_->end()) {
-    it = queues_->emplace(type, SimulatedQueue(type.second, scheduler_))
-             .first;
+    it =
+        queues_
+            ->emplace(type, SimulatedQueue(type.second, type.first, scheduler_))
+            .first;
   }
   return &it->second;
 }

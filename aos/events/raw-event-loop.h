@@ -60,6 +60,8 @@ class RawSender {
     Free(reinterpret_cast<SendContext *>(t));
   }
 
+  virtual const char *name() const = 0;
+
  protected:
   RawSender(const RawSender &) = delete;
   RawSender &operator=(const RawSender &) = delete;

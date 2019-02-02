@@ -60,6 +60,8 @@ class ShmSender : public RawSender {
     return queue_->WriteMessage(msg, RawQueue::kOverride);
   }
 
+  const char *name() const override { return queue_->name(); }
+
  private:
   RawQueue *queue_;
 };
