@@ -345,9 +345,20 @@ class GTK_Widget(basic_window.BaseWindow):
 
         cr.stroke()
 
+    def draw_cargo_ship(self, cr):
+        # BASE Constants
+        X_BASE = -450+mToPx(2.41568)
+        Y_BASE  = -150+mToPx(4.129151)
+
+        cr.rectangle(X_BASE + mToPx(3.15912), Y_BASE - mToPx(0.72326),
+                mToPx(2.43205), mToPx(1.41605))
+
+        cr.stroke()
+
     def draw_field_elements(self, cr):
         self.draw_HAB(cr)
         self.draw_rockets(cr)
+        self.draw_cargo_ship(cr)
 
     def handle_draw(self, cr):
         # print(self.new_point)
