@@ -51,6 +51,16 @@ struct PotAndAbsolutePosition {
   double pot;
 };
 
+// Represents all of the data for an absolute and relative encoder pair.
+// The units on all of the positions are the same.
+// The relative encoder values are relative to where the encoder was at some
+// arbitrary point in time.
+struct AbsolutePosition {
+  // Current position read from each encoder.
+  double encoder;
+  double absolute_encoder;
+};
+
 // The internal state of a zeroing estimator.
 struct EstimatorState {
   // If true, there has been a fatal error for the estimator.
@@ -75,6 +85,20 @@ struct PotAndAbsoluteEncoderEstimatorState {
 
   // The estimated position not using the index pulse.
   double pot_position;
+
+  // The estimated absolute position of the encoder.  This is filtered, so it
+  // can be easily used when zeroing.
+  double absolute_position;
+};
+
+// The internal state of a zeroing estimator.
+struct AbsoluteEncoderEstimatorState {
+  // If true, there has been a fatal error for the estimator.
+  bool error;
+  // If the joint has seen an index pulse and is zeroed.
+  bool zeroed;
+  // The estimated position of the joint.
+  double position;
 
   // The estimated absolute position of the encoder.  This is filtered, so it
   // can be easily used when zeroing.

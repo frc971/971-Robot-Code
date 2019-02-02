@@ -172,6 +172,18 @@ void PositionSensorSimulator::GetSensorValues(PotAndAbsolutePosition *values) {
   }
 }
 
+void PositionSensorSimulator::GetSensorValues(AbsolutePosition *values) {
+  values->encoder = current_position_ - start_position_;
+  // TODO(phil): Create some lag here since this is a PWM signal it won't be
+  // instantaneous like the other signals. Better yet, its lag varies
+  // randomly with the distribution varying depending on the reading.
+  values->absolute_encoder = ::std::remainder(
+      current_position_ + known_absolute_encoder_, distance_per_revolution_);
+  if (values->absolute_encoder < 0) {
+    values->absolute_encoder += distance_per_revolution_;
+  }
+}
+
 void PositionSensorSimulator::GetSensorValues(HallEffectAndPosition *values) {
   values->current = lower_index_edge_.current_index_segment() !=
                     upper_index_edge_.current_index_segment();
