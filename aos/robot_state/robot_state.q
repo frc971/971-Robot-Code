@@ -11,6 +11,8 @@ struct Joystick {
   int32_t pov;
 };
 
+// This message is checked by all control loops to make sure that the
+// joystick code hasn't died.  It is published on ".aos.joystick_state"
 message JoystickState {
   Joystick[6] joysticks;
 
@@ -34,10 +36,10 @@ message JoystickState {
   bool fake;
 };
 
-// This queue is checked by all control loops to make sure that the
-// joystick code hasn't died.
-queue JoystickState joystick_state;
-
+// This message is sent out on this queue when sensors are read. It contains
+// global robot state and information about whether the process reading sensors
+// has been restarted, along with all counters etc it keeps track of.  It is
+// published on ".aos.robot_state"
 message RobotState {
   // The PID of the process reading sensors.
   // This is here so control loops can tell when it changes.
@@ -66,7 +68,3 @@ message RobotState {
   double voltage_battery;
 };
 
-// Messages are sent out on this queue along with reading sensors. It contains
-// global robot state and information about whether the process reading sensors
-// has been restarted, along with all counters etc it keeps track of.
-queue RobotState robot_state;

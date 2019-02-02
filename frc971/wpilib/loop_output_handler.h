@@ -4,6 +4,8 @@
 #include <atomic>
 #include <chrono>
 
+#include "aos/events/event-loop.h"
+#include "aos/robot_state/robot_state.q.h"
 #include "aos/scoped/scoped_fd.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
@@ -22,6 +24,7 @@ namespace wpilib {
 class LoopOutputHandler {
  public:
   LoopOutputHandler(
+      ::aos::EventLoop *event_loop,
       ::std::chrono::nanoseconds timeout = ::std::chrono::milliseconds(100));
 
   void Quit() { run_ = false; }
@@ -42,6 +45,9 @@ class LoopOutputHandler {
   // This will be called exactly once if Read() blocks for too long and once
   // after Quit is called.
   virtual void Stop() = 0;
+
+  // Returns a pointer to the event loop.
+  ::aos::EventLoop *event_loop() { return event_loop_; }
 
  private:
   // The thread that actually contains a timerfd to implement timeouts. The
@@ -72,6 +78,8 @@ class LoopOutputHandler {
     ::std::atomic<bool> run_{true};
   };
 
+  ::aos::EventLoop *event_loop_;
+  ::aos::Fetcher<::aos::JoystickState> joystick_state_fetcher_;
   Watchdog watchdog_;
 
   ::std::atomic<bool> run_{true};

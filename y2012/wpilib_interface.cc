@@ -19,6 +19,7 @@
 #include "frc971/wpilib/wpilib_robot_base.h"
 #undef ERROR
 
+#include "aos/events/shm-event-loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/logging/queue_logging.h"
@@ -36,7 +37,6 @@
 #include "frc971/wpilib/dma_edge_counting.h"
 #include "frc971/wpilib/drivetrain_writer.h"
 #include "frc971/wpilib/encoder_and_potentiometer.h"
-#include "frc971/wpilib/gyro_sender.h"
 #include "frc971/wpilib/interrupt_edge_counting.h"
 #include "frc971/wpilib/joystick_sender.h"
 #include "frc971/wpilib/logging.q.h"
@@ -71,7 +71,8 @@ double drivetrain_velocity_translate(double in) {
 
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
-  SensorReader() {}
+  SensorReader(::aos::EventLoop *event_loop)
+      : ::frc971::wpilib::SensorReader(event_loop) {}
 
   void RunIteration() {
     {
@@ -184,6 +185,9 @@ class SolenoidWriter {
 
 class AccessoriesWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
+  AccessoriesWriter(::aos::EventLoop *event_loop)
+      : ::frc971::wpilib::LoopOutputHandler(event_loop) {}
+
   void set_talon1(::std::unique_ptr<Talon> t) {
     talon1_ = ::std::move(t);
   }
@@ -224,24 +228,26 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::aos::InitNRT();
     ::aos::SetCurrentThreadName("StartCompetition");
 
-    ::frc971::wpilib::JoystickSender joystick_sender;
+    ::aos::ShmEventLoop event_loop;
+
+    ::frc971::wpilib::JoystickSender joystick_sender(&event_loop);
     ::std::thread joystick_thread(::std::ref(joystick_sender));
 
-    SensorReader reader;
+    SensorReader reader(&event_loop);
 
     reader.set_drivetrain_left_encoder(make_encoder(0));
     reader.set_drivetrain_right_encoder(make_encoder(1));
 
     ::std::thread reader_thread(::std::ref(reader));
 
-    ::frc971::wpilib::DrivetrainWriter drivetrain_writer;
+    ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&event_loop);
     drivetrain_writer.set_left_controller0(
         ::std::unique_ptr<Talon>(new Talon(3)), true);
     drivetrain_writer.set_right_controller0(
         ::std::unique_ptr<Talon>(new Talon(4)), false);
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
-    ::y2012::wpilib::AccessoriesWriter accessories_writer;
+    ::y2012::wpilib::AccessoriesWriter accessories_writer(&event_loop);
     accessories_writer.set_talon1(::std::unique_ptr<Talon>(new Talon(5)));
     accessories_writer.set_talon2(::std::unique_ptr<Talon>(new Talon(6)));
     ::std::thread accessories_writer_thread(::std::ref(accessories_writer));

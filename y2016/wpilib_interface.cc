@@ -20,6 +20,7 @@
 #undef ERROR
 
 #include "aos/commonmath.h"
+#include "aos/events/shm-event-loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/logging/queue_logging.h"
@@ -151,7 +152,8 @@ constexpr double kMaxSuperstructureEncoderPulsesPerSecond =
 // Class to send position messages with sensor readings to our loops.
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
-  SensorReader() {
+  SensorReader(::aos::EventLoop *event_loop)
+      : ::frc971::wpilib::SensorReader(event_loop) {
     // Set it to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxDrivetrainShooterEncoderPulsesPerSecond);
@@ -465,6 +467,9 @@ class SolenoidWriter {
 
 class ShooterWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
+  ShooterWriter(::aos::EventLoop *event_loop)
+      : ::frc971::wpilib::LoopOutputHandler(event_loop) {}
+
   void set_shooter_left_talon(::std::unique_ptr<Talon> t) {
     shooter_left_talon_ = ::std::move(t);
   }
@@ -497,6 +502,9 @@ class ShooterWriter : public ::frc971::wpilib::LoopOutputHandler {
 
 class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
+  SuperstructureWriter(::aos::EventLoop *event_loop)
+      : ::frc971::wpilib::LoopOutputHandler(event_loop) {}
+
   void set_intake_talon(::std::unique_ptr<Talon> t) {
     intake_talon_ = ::std::move(t);
   }
@@ -565,12 +573,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::aos::InitNRT();
     ::aos::SetCurrentThreadName("StartCompetition");
 
-    ::frc971::wpilib::JoystickSender joystick_sender;
+    ::aos::ShmEventLoop event_loop;
+
+    ::frc971::wpilib::JoystickSender joystick_sender(&event_loop);
     ::std::thread joystick_thread(::std::ref(joystick_sender));
 
     ::frc971::wpilib::PDPFetcher pdp_fetcher;
     ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
-    SensorReader reader;
+    SensorReader reader(&event_loop);
 
     reader.set_drivetrain_left_encoder(make_encoder(5));
     reader.set_drivetrain_right_encoder(make_encoder(6));
@@ -602,28 +612,29 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread reader_thread(::std::ref(reader));
 
     // TODO(Brian): This interacts poorly with the SpiRxClearer in ADIS16448.
-    ::frc971::wpilib::GyroSender gyro_sender;
+    ::frc971::wpilib::GyroSender gyro_sender(&event_loop);
     ::std::thread gyro_thread(::std::ref(gyro_sender));
 
     auto imu_trigger = make_unique<DigitalInput>(3);
-    ::frc971::wpilib::ADIS16448 imu(SPI::Port::kMXP, imu_trigger.get());
+    ::frc971::wpilib::ADIS16448 imu(&event_loop, SPI::Port::kMXP,
+                                    imu_trigger.get());
     ::std::thread imu_thread(::std::ref(imu));
 
-    ::frc971::wpilib::DrivetrainWriter drivetrain_writer;
+    ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&event_loop);
     drivetrain_writer.set_left_controller0(
         ::std::unique_ptr<Talon>(new Talon(5)), false);
     drivetrain_writer.set_right_controller0(
         ::std::unique_ptr<Talon>(new Talon(4)), true);
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
-    ShooterWriter shooter_writer;
+    ShooterWriter shooter_writer(&event_loop);
     shooter_writer.set_shooter_left_talon(
         ::std::unique_ptr<Talon>(new Talon(9)));
     shooter_writer.set_shooter_right_talon(
         ::std::unique_ptr<Talon>(new Talon(8)));
     ::std::thread shooter_writer_thread(::std::ref(shooter_writer));
 
-    SuperstructureWriter superstructure_writer;
+    SuperstructureWriter superstructure_writer(&event_loop);
     superstructure_writer.set_intake_talon(
         ::std::unique_ptr<Talon>(new Talon(3)));
     superstructure_writer.set_shoulder_talon(

@@ -13,10 +13,10 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":sizes",
+        "//aos:complex_thread_local",
         "//aos:die",
         "//aos:macros",
         "//aos/libc:aos_strerror",
-        "//aos:complex_thread_local",
     ],
 )
 
@@ -33,6 +33,7 @@ cc_library(
         ":binary_log_file",
         ":logging",
         "//aos:queues",
+        "//aos/events:event-loop",
         "//aos/ipc_lib:queue",
     ],
 )
@@ -47,12 +48,12 @@ cc_binary(
         ":binary_log_file",
         ":implementations",
         ":logging",
-        "//aos:die",
-        "//aos:queue_types",
-        "//aos/time:time",
         "//aos:configuration",
+        "//aos:die",
         "//aos:init",
+        "//aos:queue_types",
         "//aos/ipc_lib:queue",
+        "//aos/time",
     ],
 )
 
@@ -65,9 +66,9 @@ cc_binary(
     deps = [
         ":implementations",
         ":logging",
-        "//aos/time:time",
         "//aos:init",
         "//aos/ipc_lib:queue",
+        "//aos/time",
     ],
 )
 
@@ -81,10 +82,10 @@ cc_binary(
         ":binary_log_file",
         ":implementations",
         ":logging",
-        "//aos:queue_types",
-        "//aos/util:string_to_num",
         "//aos:configuration",
         "//aos:init",
+        "//aos:queue_types",
+        "//aos/util:string_to_num",
     ],
 )
 
@@ -182,13 +183,13 @@ cc_library(
     deps = [
         ":logging",
         ":sizes",
-        "//aos:once",
         "//aos:die",
         "//aos:macros",
-        "//aos/mutex:mutex",
+        "//aos:once",
         "//aos:queue_types",
-        "//aos/time:time",
-        "//aos/type_traits:type_traits",
         "//aos/ipc_lib:queue",
+        "//aos/mutex",
+        "//aos/time",
+        "//aos/type_traits",
     ],
 )

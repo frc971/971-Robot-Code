@@ -22,7 +22,7 @@ void JoystickSender::operator()() {
   // variable / mutex needs to get exposed all the way out or something).
   while (run_) {
     ds->RunIteration([&]() {
-      auto new_state = ::aos::joystick_state.MakeMessage();
+      auto new_state = joystick_state_sender_.MakeMessage();
 
       HAL_MatchInfo match_info;
       auto status = HAL_GetMatchInfo(&match_info);

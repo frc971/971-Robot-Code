@@ -51,7 +51,7 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
         camera_queue_(::y2019::control_loops::drivetrain::camera_frames.name()),
         localizer_(dt_config_, &event_loop_),
         drivetrain_motor_(dt_config_, &event_loop_, &localizer_),
-        drivetrain_motor_plant_(dt_config_),
+        drivetrain_motor_plant_(&simulation_event_loop_, dt_config_),
         cameras_(MakeCameras(&robot_pose_)),
         last_frame_(monotonic_clock::now()) {
     set_team_id(::frc971::control_loops::testing::kTeamNumber);
@@ -177,6 +177,7 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
   ::frc971::control_loops::DrivetrainQueue my_drivetrain_queue_;
   ::aos::Queue<CameraFrame> camera_queue_;
   ::aos::ShmEventLoop event_loop_;
+  ::aos::ShmEventLoop simulation_event_loop_;
 
   EventLoopLocalizer localizer_;
   DrivetrainLoop drivetrain_motor_;

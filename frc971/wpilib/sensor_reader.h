@@ -4,6 +4,8 @@
 #include <atomic>
 #include <chrono>
 
+#include "aos/events/event-loop.h"
+#include "aos/robot_state/robot_state.q.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/control_loops.q.h"
@@ -22,7 +24,7 @@ namespace wpilib {
 
 class SensorReader {
  public:
-  SensorReader();
+  SensorReader(::aos::EventLoop *event_loop);
   virtual ~SensorReader() {}
 
   // Updates the fast and medium encoder filter frequencies.
@@ -170,6 +172,9 @@ class SensorReader {
     return static_cast<double>(value) / counts_per_revolution * ratio *
            (2.0 * M_PI);
   }
+
+  ::aos::EventLoop *event_loop_;
+  ::aos::Sender<::aos::RobotState> robot_state_sender_;
 
   frc::DigitalGlitchFilter fast_encoder_filter_, medium_encoder_filter_;
 

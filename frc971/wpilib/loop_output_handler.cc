@@ -6,6 +6,7 @@
 #include <functional>
 #include <thread>
 
+#include "aos/events/event-loop.h"
 #include "aos/init.h"
 #include "aos/robot_state/robot_state.q.h"
 
@@ -14,8 +15,12 @@ namespace wpilib {
 
 namespace chrono = ::std::chrono;
 
-LoopOutputHandler::LoopOutputHandler(::std::chrono::nanoseconds timeout)
-    : watchdog_(this, timeout) {}
+LoopOutputHandler::LoopOutputHandler(::aos::EventLoop *event_loop,
+                                     ::std::chrono::nanoseconds timeout)
+    : event_loop_(event_loop),
+      joystick_state_fetcher_(event_loop_->MakeFetcher<::aos::JoystickState>(
+          ".aos.joystick_state")),
+      watchdog_(this, timeout) {}
 
 void LoopOutputHandler::operator()() {
   ::std::thread watchdog_thread(::std::ref(watchdog_));
@@ -26,12 +31,12 @@ void LoopOutputHandler::operator()() {
     no_joystick_state_.Print();
     fake_joystick_state_.Print();
     Read();
-    ::aos::joystick_state.FetchLatest();
-    if (!::aos::joystick_state.get()) {
+    joystick_state_fetcher_.Fetch();
+    if (!joystick_state_fetcher_.get()) {
       LOG_INTERVAL(no_joystick_state_);
       continue;
     }
-    if (::aos::joystick_state->fake) {
+    if (joystick_state_fetcher_->fake) {
       LOG_INTERVAL(fake_joystick_state_);
       continue;
     }

@@ -107,6 +107,7 @@ cc_library(
     deps = [
         ":gyro_interface",
         "//aos:init",
+        "//aos/events:event-loop",
         "//aos/logging",
         "//aos/logging:queue_logging",
         "//aos/robot_state",
@@ -144,6 +145,7 @@ cc_library(
     ],
     deps = [
         "//aos:init",
+        "//aos/events:event-loop",
         "//aos/robot_state",
         "//aos/scoped:scoped_fd",
         "//aos/time",
@@ -162,6 +164,7 @@ cc_library(
     restricted_to = ["//tools:roborio"],
     deps = [
         "//aos:init",
+        "//aos/events:shm-event-loop",
         "//aos/logging:queue_logging",
         "//aos/network:team_number",
         "//aos/robot_state",
@@ -241,6 +244,7 @@ cc_library(
         ":imu_queue",
         ":spi_rx_clearer",
         "//aos:init",
+        "//aos/events:event-loop",
         "//aos/logging",
         "//aos/logging:queue_logging",
         "//aos/robot_state",
@@ -292,6 +296,7 @@ cc_library(
         ":encoder_and_potentiometer",
         ":wpilib_interface",
         "//aos:init",
+        "//aos/events:event-loop",
         "//aos/stl_mutex",
         "//aos/time",
         "//aos/util:phased_loop",

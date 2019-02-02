@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include "aos/init.h"
+#include "aos/logging/queue_logging.h"
 #include "aos/util/compiler_memory_barrier.h"
 #include "aos/util/phased_loop.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"
@@ -15,7 +16,10 @@
 namespace frc971 {
 namespace wpilib {
 
-SensorReader::SensorReader() {
+SensorReader::SensorReader(::aos::EventLoop *event_loop)
+    : event_loop_(event_loop),
+      robot_state_sender_(
+          event_loop_->MakeSender<::aos::RobotState>(".aos.robot_state")) {
   // Set some defaults.  We don't tend to exceed these, so old robots should
   // just work with them.
   UpdateFastEncoderFilterHz(500000);
@@ -110,7 +114,12 @@ void SensorReader::operator()() {
     }
     const monotonic_clock::time_point monotonic_now = monotonic_clock::now();
 
-    ::frc971::wpilib::SendRobotState(my_pid);
+    {
+      auto new_state = robot_state_sender_.MakeMessage();
+      ::frc971::wpilib::PopulateRobotState(new_state.get(), my_pid);
+      LOG_STRUCT(DEBUG, "robot_state", *new_state);
+      new_state.Send();
+    }
     RunIteration();
     if (dma_synchronizer_) {
       dma_synchronizer_->RunIteration();

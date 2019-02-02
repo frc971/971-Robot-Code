@@ -11,16 +11,6 @@ bool ScopedMessagePtr<T>::Send() {
 }
 
 template <class T>
-bool ScopedMessagePtr<T>::SendBlocking() {
-  assert(msg_ != NULL);
-  msg_->SetTimeToNow();
-  assert(queue_ != NULL);
-  bool return_value = queue_->WriteMessage(msg_, RawQueue::kBlock);
-  msg_ = NULL;
-  return return_value;
-}
-
-template <class T>
 void ScopedMessagePtr<T>::reset(T *msg) {
   if (queue_ != NULL && msg_ != NULL) {
     queue_->FreeMessage(msg_);

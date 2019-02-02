@@ -14,7 +14,6 @@ cc_binary(
         "//aos/util:log_interval",
         "//frc971/autonomous:auto_queue",
         "//frc971/control_loops/drivetrain:drivetrain_queue",
-        "//frc971/queues:gyro",
         "//y2012/control_loops/accessories:accessories_queue",
     ],
 )
@@ -38,6 +37,7 @@ cc_binary(
         "//aos:init",
         "//aos:make_unique",
         "//aos/controls:control_loop",
+        "//aos/events:shm-event-loop",
         "//aos/logging",
         "//aos/logging:queue_logging",
         "//aos/robot_state",
@@ -53,7 +53,6 @@ cc_binary(
         "//frc971/wpilib:dma_edge_counting",
         "//frc971/wpilib:drivetrain_writer",
         "//frc971/wpilib:encoder_and_potentiometer",
-        "//frc971/wpilib:gyro_sender",
         "//frc971/wpilib:interrupt_edge_counting",
         "//frc971/wpilib:joystick_sender",
         "//frc971/wpilib:logging_queue",

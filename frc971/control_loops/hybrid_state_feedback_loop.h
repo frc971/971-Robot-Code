@@ -154,17 +154,14 @@ class StateFeedbackHybridPlant {
 
   // Computes the new X and Y given the control input.
   void Update(const Eigen::Matrix<Scalar, number_of_inputs, 1> &U,
-              ::std::chrono::nanoseconds dt) {
+              ::std::chrono::nanoseconds dt, Scalar voltage_battery) {
     // Powers outside of the range are more likely controller bugs than things
     // that the plant should deal with.
     CheckU(U);
-    ::aos::robot_state.FetchLatest();
 
     Eigen::Matrix<Scalar, number_of_inputs, 1> current_U =
-        DelayedU_ *
-        (::aos::robot_state.get()
-             ? ::aos::robot_state->voltage_battery / static_cast<Scalar>(12.0)
-             : static_cast<Scalar>(1.0));
+        DelayedU_ * voltage_battery / static_cast<Scalar>(12.0);
+
     X_ = Update(X(), current_U, dt);
     Y_ = C() * X() + D() * current_U;
     DelayedU_ = U;
@@ -176,6 +173,9 @@ class StateFeedbackHybridPlant {
       const Eigen::Matrix<Scalar, number_of_states, 1> X,
       const Eigen::Matrix<Scalar, number_of_inputs, 1> &U,
       ::std::chrono::nanoseconds dt) {
+    // TODO(austin): Hmmm, looks like we aren't compensating for battery voltage
+    // or the unit delay...  Might want to do that if we care about performance
+    // again.
     UpdateAB(dt);
     return A() * X + B() * U;
   }

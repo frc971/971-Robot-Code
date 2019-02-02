@@ -5,6 +5,7 @@
 
 #include "gtest/gtest.h"
 
+#include "aos/events/shm-event-loop.h"
 #include "aos/logging/queue_logging.h"
 #include "aos/robot_state/robot_state.q.h"
 #include "aos/testing/test_shm.h"
@@ -22,17 +23,16 @@ template <typename TestBaseClass>
 class ControlLoopTestTemplated : public TestBaseClass {
  public:
   ControlLoopTestTemplated() {
-    ::aos::joystick_state.Clear();
-    ::aos::robot_state.Clear();
+    robot_state_sender_ =
+        test_event_loop_.MakeSender<::aos::RobotState>(".aos.robot_state");
+    joystick_state_sender_ =
+        test_event_loop_.MakeSender<::aos::JoystickState>(".aos.joystick_state");
 
     ::aos::time::EnableMockTime(current_time_);
 
     SendMessages(false);
   }
   virtual ~ControlLoopTestTemplated() {
-    ::aos::joystick_state.Clear();
-    ::aos::robot_state.Clear();
-
     ::aos::time::DisableMockTime();
   }
 
@@ -44,7 +44,7 @@ class ControlLoopTestTemplated : public TestBaseClass {
     if (current_time_ >= kDSPacketTime + last_ds_time_ ||
         last_enabled_ != enabled) {
       last_ds_time_ = current_time_;
-      auto new_state = ::aos::joystick_state.MakeMessage();
+      auto new_state = joystick_state_sender_.MakeMessage();
       new_state->fake = true;
 
       new_state->enabled = enabled;
@@ -56,7 +56,7 @@ class ControlLoopTestTemplated : public TestBaseClass {
     }
 
     {
-      auto new_state = ::aos::robot_state.MakeMessage();
+      auto new_state = robot_state_sender_.MakeMessage();
 
       new_state->reader_pid = reader_pid_;
       new_state->outputs_enabled = enabled;
@@ -113,6 +113,11 @@ class ControlLoopTestTemplated : public TestBaseClass {
   ::aos::testing::TestSharedMemory my_shm_;
 
   bool last_enabled_ = false;
+
+  ::aos::ShmEventLoop test_event_loop_;
+
+  ::aos::Sender<::aos::RobotState> robot_state_sender_;
+  ::aos::Sender<::aos::JoystickState> joystick_state_sender_;
 };
 
 typedef ControlLoopTestTemplated<::testing::Test> ControlLoopTest;

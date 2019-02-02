@@ -11,6 +11,9 @@ namespace wpilib {
 
 class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
+  DrivetrainWriter(::aos::EventLoop *event_loop)
+      : ::frc971::wpilib::LoopOutputHandler(event_loop) {}
+
   void set_left_controller0(::std::unique_ptr<::frc::PWM> t, bool reversed) {
     left_controller0_ = ::std::move(t);
     reversed_left0_ = reversed;

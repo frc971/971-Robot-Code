@@ -171,7 +171,10 @@ class IntakeSystemTest : public ::aos::testing::ControlLoopTest {
   using ProfiledJointStatus = typename SZSDPS::ProfiledJointStatus;
 
   IntakeSystemTest()
-      : subsystem_(TestIntakeSystemValues<
+      : robot_state_fetcher_(
+            simulation_event_loop_.MakeFetcher<::aos::RobotState>(
+                ".aos.robot_state")),
+        subsystem_(TestIntakeSystemValues<
                    typename SZSDPS::ZeroingEstimator>::make_params()),
         subsystem_plant_() {}
 
@@ -190,14 +193,14 @@ class IntakeSystemTest : public ::aos::testing::ControlLoopTest {
 
     // Checks if the robot was reset and resets the subsystem.
     // Required since there is no ControlLoop to reset it (ie. a superstructure)
-    ::aos::robot_state.FetchLatest();
-    if (::aos::robot_state.get() &&
-        sensor_reader_pid_ != ::aos::robot_state->reader_pid) {
-      LOG(ERROR, "WPILib reset, restarting\n");
-      subsystem_.Reset();
+    robot_state_fetcher_.Fetch();
+    if (robot_state_fetcher_.get()) {
+      if (sensor_reader_pid_ != robot_state_fetcher_->reader_pid) {
+        LOG(ERROR, "WPILib reset, restarting\n");
+        subsystem_.Reset();
+      }
+      sensor_reader_pid_ = robot_state_fetcher_->reader_pid;
     }
-
-    sensor_reader_pid_ = ::aos::robot_state->reader_pid;
     subsystem_goal_.unsafe_goal = subsystem_data_.goal.unsafe_goal;
     subsystem_goal_.profile_params = subsystem_data_.goal.profile_params;
 
@@ -244,6 +247,8 @@ class IntakeSystemTest : public ::aos::testing::ControlLoopTest {
   // that it points to.  Otherwise, we will have a pointer to shared memory
   // that is no longer valid.
   // TestIntakeSystemData subsystem_data_;
+  ::aos::ShmEventLoop simulation_event_loop_;
+  ::aos::Fetcher<::aos::RobotState> robot_state_fetcher_;
 
   // Create a control loop and simulation.
   SZSDPS subsystem_;

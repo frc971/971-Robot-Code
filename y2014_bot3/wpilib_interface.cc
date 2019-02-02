@@ -18,6 +18,7 @@
 #include "frc971/wpilib/wpilib_robot_base.h"
 #undef ERROR
 
+#include "aos/events/shm-event-loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/logging/queue_logging.h"
@@ -76,6 +77,9 @@ double drivetrain_velocity_translate(double in) {
 // Reads in our inputs. (sensors, voltages, etc.)
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
+  SensorReader(::aos::EventLoop *event_loop)
+      : ::frc971::wpilib::SensorReader(event_loop) {}
+
   void RunIteration() {
     // Drivetrain
     {
@@ -168,7 +172,6 @@ class SolenoidWriter {
       }
 
       // Compressor
-      ::aos::joystick_state.FetchLatest();
       {
         ::frc971::wpilib::PneumaticsToLog to_log;
         {
@@ -209,6 +212,9 @@ class SolenoidWriter {
 // Writes out rollers voltages.
 class RollersWriter : public LoopOutputHandler {
  public:
+  RollersWriter(::aos::EventLoop *event_loop)
+      : ::frc971::wpilib::LoopOutputHandler(event_loop) {}
+
   void set_rollers_front_intake_talon(::std::unique_ptr<Talon> t_left,
                                       ::std::unique_ptr<Talon> t_right) {
     rollers_front_left_intake_talon_ = ::std::move(t_left);
@@ -268,7 +274,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::aos::InitNRT();
     ::aos::SetCurrentThreadName("StartCompetition");
 
-    JoystickSender joystick_sender;
+    ::aos::ShmEventLoop event_loop;
+
+    JoystickSender joystick_sender(&event_loop);
     ::std::thread joystick_thread(::std::ref(joystick_sender));
 
     ::frc971::wpilib::PDPFetcher pdp_fetcher;
@@ -278,23 +286,23 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     // the robot before turning on.
 
     // Sensors
-    SensorReader reader;
+    SensorReader reader(&event_loop);
     reader.set_drivetrain_left_encoder(make_encoder(4));
     reader.set_drivetrain_right_encoder(make_encoder(5));
 
     ::std::thread reader_thread(::std::ref(reader));
-    GyroSender gyro_sender;
+    GyroSender gyro_sender(&event_loop);
     ::std::thread gyro_thread(::std::ref(gyro_sender));
 
     // Outputs
-    ::frc971::wpilib::DrivetrainWriter drivetrain_writer;
+    ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&event_loop);
     drivetrain_writer.set_left_controller0(
         ::std::unique_ptr<Talon>(new Talon(5)), true);
     drivetrain_writer.set_right_controller0(
         ::std::unique_ptr<Talon>(new Talon(2)), false);
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
-    RollersWriter rollers_writer;
+    RollersWriter rollers_writer(&event_loop);
     rollers_writer.set_rollers_front_intake_talon(
         ::std::unique_ptr<Talon>(new Talon(3)),
         ::std::unique_ptr<Talon>(new Talon(7)));

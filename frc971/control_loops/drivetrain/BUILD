@@ -294,6 +294,7 @@ cc_library(
         ":drivetrain_config",
         ":drivetrain_queue",
         ":trajectory",
+        "//aos/events:event-loop",
         "//aos/testing:googletest",
         "//frc971/control_loops:state_feedback_loop",
         "//frc971/queues:gyro",

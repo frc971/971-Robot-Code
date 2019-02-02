@@ -11,7 +11,9 @@
 #include "frc971/wpilib/ahal/SPI.h"
 #undef ERROR
 
+#include "aos/events/event-loop.h"
 #include "aos/logging/logging.h"
+#include "aos/robot_state/robot_state.q.h"
 #include "frc971/wpilib/spi_rx_clearer.h"
 
 namespace frc971 {
@@ -29,7 +31,8 @@ class ADIS16448 {
  public:
   // port is where to find the sensor over SPI.
   // dio1 must be connected to DIO1 on the sensor.
-  ADIS16448(frc::SPI::Port port, frc::DigitalInput *dio1);
+  ADIS16448(::aos::EventLoop *event_loop, frc::SPI::Port port,
+            frc::DigitalInput *dio1);
 
   // Sets the dummy SPI port to send values on to make the roboRIO deassert the
   // chip select line. This is mainly useful when there are no other devices
@@ -88,6 +91,9 @@ class ADIS16448 {
   // Starts everything up and runs a self test.
   // Returns true if it succeeds.
   bool Initialize();
+
+  ::aos::EventLoop *event_loop_;
+  ::aos::Fetcher<::aos::JoystickState> joystick_state_fetcher_;
 
   // TODO(Brian): This object has no business owning these ones.
   const ::std::unique_ptr<frc::SPI> spi_;

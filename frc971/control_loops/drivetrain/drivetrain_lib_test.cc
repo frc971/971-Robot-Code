@@ -5,6 +5,8 @@
 
 #include "aos/controls/control_loop_test.h"
 #include "aos/controls/polytope.h"
+#include "aos/events/event-loop.h"
+#include "aos/events/shm-event-loop.h"
 #include "aos/time/time.h"
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"
@@ -42,6 +44,7 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
   DeadReckonEkf localizer_;
   // Create a loop and simulation plant.
   DrivetrainLoop drivetrain_motor_;
+  ::aos::ShmEventLoop simulation_event_loop_;
   DrivetrainSimulation drivetrain_motor_plant_;
 
   DrivetrainTest()
@@ -53,7 +56,7 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
         dt_config_(GetTestDrivetrainConfig()),
         localizer_(dt_config_),
         drivetrain_motor_(dt_config_, &event_loop_, &localizer_),
-        drivetrain_motor_plant_(dt_config_) {
+        drivetrain_motor_plant_(&simulation_event_loop_, dt_config_) {
     ::frc971::sensors::gyro_reading.Clear();
     set_battery_voltage(12.0);
   }

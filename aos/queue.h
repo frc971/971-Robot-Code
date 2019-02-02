@@ -58,12 +58,6 @@ class ScopedMessagePtr {
   // The message will be freed.
   bool Send();
 
-  // Sends the message and removes our reference to it.
-  // If the queue is full, block until it is no longer full.
-  // Returns true on success, and false otherwise.
-  // The message will be freed.
-  bool SendBlocking();
-
   // Frees the contained message.
   ~ScopedMessagePtr() {
     reset();

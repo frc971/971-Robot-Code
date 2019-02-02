@@ -18,6 +18,7 @@
 #include "frc971/wpilib/wpilib_robot_base.h"
 #undef ERROR
 
+#include "aos/events/shm-event-loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/logging/queue_logging.h"
@@ -117,7 +118,8 @@ static const double kMaximumEncoderPulsesPerSecond =
 
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
-  SensorReader() {
+  SensorReader(::aos::EventLoop *event_loop)
+      : ::frc971::wpilib::SensorReader(event_loop) {
     // Set it to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateMediumEncoderFilterHz(kMaximumEncoderPulsesPerSecond);
@@ -516,6 +518,9 @@ class SolenoidWriter {
 
 class ShooterWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
+  ShooterWriter(::aos::EventLoop *event_loop)
+      : ::frc971::wpilib::LoopOutputHandler(event_loop) {}
+
   void set_shooter_talon(::std::unique_ptr<Talon> t) {
     shooter_talon_ = ::std::move(t);
   }
@@ -541,6 +546,9 @@ class ShooterWriter : public ::frc971::wpilib::LoopOutputHandler {
 
 class ClawWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
+  ClawWriter(::aos::EventLoop *event_loop)
+      : ::frc971::wpilib::LoopOutputHandler(event_loop) {}
+
   void set_top_claw_talon(::std::unique_ptr<Talon> t) {
     top_claw_talon_ = ::std::move(t);
   }
@@ -610,12 +618,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::aos::InitNRT();
     ::aos::SetCurrentThreadName("StartCompetition");
 
-    ::frc971::wpilib::JoystickSender joystick_sender;
+    ::aos::ShmEventLoop event_loop;
+
+    ::frc971::wpilib::JoystickSender joystick_sender(&event_loop);
     ::std::thread joystick_thread(::std::ref(joystick_sender));
 
     ::frc971::wpilib::PDPFetcher pdp_fetcher;
     ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
-    SensorReader reader;
+    SensorReader reader(&event_loop);
 
     // Create this first to make sure it ends up in one of the lower-numbered
     // FPGA slots so we can use it with DMA.
@@ -648,17 +658,17 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     ::std::thread reader_thread(::std::ref(reader));
 
-    ::frc971::wpilib::GyroSender gyro_sender;
+    ::frc971::wpilib::GyroSender gyro_sender(&event_loop);
     ::std::thread gyro_thread(::std::ref(gyro_sender));
 
-    ::frc971::wpilib::DrivetrainWriter drivetrain_writer;
+    ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&event_loop);
     drivetrain_writer.set_left_controller0(
         ::std::unique_ptr<Talon>(new Talon(5)), true);
     drivetrain_writer.set_right_controller0(
         ::std::unique_ptr<Talon>(new Talon(2)), false);
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
-    ::y2014::wpilib::ClawWriter claw_writer;
+    ::y2014::wpilib::ClawWriter claw_writer(&event_loop);
     claw_writer.set_top_claw_talon(::std::unique_ptr<Talon>(new Talon(1)));
     claw_writer.set_bottom_claw_talon(::std::unique_ptr<Talon>(new Talon(0)));
     claw_writer.set_left_tusk_talon(::std::unique_ptr<Talon>(new Talon(4)));
@@ -667,7 +677,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     claw_writer.set_intake2_talon(::std::unique_ptr<Talon>(new Talon(8)));
     ::std::thread claw_writer_thread(::std::ref(claw_writer));
 
-    ::y2014::wpilib::ShooterWriter shooter_writer;
+    ::y2014::wpilib::ShooterWriter shooter_writer(&event_loop);
     shooter_writer.set_shooter_talon(::std::unique_ptr<Talon>(new Talon(6)));
     ::std::thread shooter_writer_thread(::std::ref(shooter_writer));
 

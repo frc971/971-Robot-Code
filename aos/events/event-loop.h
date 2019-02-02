@@ -34,6 +34,8 @@ class Fetcher {
 template <typename T>
 class Sender {
  public:
+  typedef T Type;
+
   Sender() {}
 
   // Represents a single message about to be sent to the queue.

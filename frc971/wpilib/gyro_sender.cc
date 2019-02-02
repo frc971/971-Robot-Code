@@ -7,12 +7,13 @@
 
 #include <chrono>
 
+#include "aos/events/event-loop.h"
+#include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/logging/queue_logging.h"
-#include "aos/util/phased_loop.h"
 #include "aos/robot_state/robot_state.q.h"
 #include "aos/time/time.h"
-#include "aos/init.h"
+#include "aos/util/phased_loop.h"
 
 #include "frc971/queues/gyro.q.h"
 #include "frc971/zeroing/averager.h"
@@ -23,9 +24,12 @@ namespace wpilib {
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
 
-GyroSender::GyroSender() {
-  PCHECK(system(
-             "ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
+GyroSender::GyroSender(::aos::EventLoop *event_loop)
+    : event_loop_(event_loop),
+      joystick_state_fetcher_(event_loop_->MakeFetcher<::aos::JoystickState>(
+          ".aos.joystick_state")) {
+  PCHECK(
+      system("ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
              "33") == 0);
 }
 
@@ -135,8 +139,8 @@ void GyroSender::operator()() {
       }
       zeroing_data.AddData(new_angle);
 
-      ::aos::joystick_state.FetchLatest();
-      if (::aos::joystick_state.get() && ::aos::joystick_state->enabled &&
+      joystick_state_fetcher_.Fetch();
+      if (joystick_state_fetcher_.get() && joystick_state_fetcher_->enabled &&
           zeroing_data.full()) {
         zero_offset = -zeroing_data.GetAverage();
         LOG(INFO, "total zero offset %f\n", zero_offset);

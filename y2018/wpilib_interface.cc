@@ -21,6 +21,7 @@
 #undef ERROR
 
 #include "aos/commonmath.h"
+#include "aos/events/shm-event-loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/logging/queue_logging.h"
@@ -144,7 +145,8 @@ static_assert(kMaxMediumEncoderPulsesPerSecond <= 400000,
 // Class to send position messages with sensor readings to our loops.
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
-  SensorReader() {
+  SensorReader(::aos::EventLoop *event_loop)
+      : ::frc971::wpilib::SensorReader(event_loop) {
     // Set to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
@@ -547,6 +549,9 @@ class SolenoidWriter {
 
 class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
+  SuperstructureWriter(::aos::EventLoop *event_loop)
+      : ::frc971::wpilib::LoopOutputHandler(event_loop) {}
+
   void set_proximal_victor(::std::unique_ptr<::frc::VictorSP> t) {
     proximal_victor_ = ::std::move(t);
   }
@@ -645,12 +650,15 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::aos::InitNRT();
     ::aos::SetCurrentThreadName("StartCompetition");
 
-    ::frc971::wpilib::JoystickSender joystick_sender;
+    ::aos::ShmEventLoop event_loop;
+
+    ::frc971::wpilib::JoystickSender joystick_sender(&event_loop);
     ::std::thread joystick_thread(::std::ref(joystick_sender));
 
     ::frc971::wpilib::PDPFetcher pdp_fetcher;
     ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
-    SensorReader reader;
+
+    SensorReader reader(&event_loop);
 
     // TODO(Sabina): Update port numbers(Sensors and Victors)
     reader.set_drivetrain_left_encoder(make_encoder(0));
@@ -690,7 +698,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread reader_thread(::std::ref(reader));
 
     auto imu_trigger = make_unique<frc::DigitalInput>(5);
-    ::frc971::wpilib::ADIS16448 imu(frc::SPI::Port::kOnboardCS1,
+    ::frc971::wpilib::ADIS16448 imu(&event_loop, frc::SPI::Port::kOnboardCS1,
                                     imu_trigger.get());
     imu.SetDummySPI(frc::SPI::Port::kOnboardCS2);
     auto imu_reset = make_unique<frc::DigitalOutput>(6);
@@ -701,14 +709,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     // they are identical, as far as DrivetrainWriter is concerned, to the SP
     // variety so all the Victors are written as SPs.
 
-    ::frc971::wpilib::DrivetrainWriter drivetrain_writer;
+    ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&event_loop);
     drivetrain_writer.set_left_controller0(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(2)), false);
     drivetrain_writer.set_right_controller0(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(3)), true);
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
-    SuperstructureWriter superstructure_writer;
+    SuperstructureWriter superstructure_writer(&event_loop);
     superstructure_writer.set_left_intake_elastic_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(4)));
     superstructure_writer.set_left_intake_rollers_victor(

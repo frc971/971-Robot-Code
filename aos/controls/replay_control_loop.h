@@ -33,10 +33,10 @@ class ControlLoopReplayer {
     loop_group_->status.FetchLatest();
     loop_group_->output.FetchLatest();
 
-    replayer_.AddDirectQueueSender("wpilib_interface.DSReader",
-                                   "joystick_state", ::aos::joystick_state);
-    replayer_.AddDirectQueueSender("wpilib_interface.SensorReader",
-                                   "robot_state", ::aos::robot_state);
+    AddDirectQueueSender<::aos::JoystickState>(
+        "wpilib_interface.DSReader", "joystick_state", ".aos.joystick_state");
+    AddDirectQueueSender<::aos::RobotState>("wpilib_interface.SensorReader",
+                                            "robot_state", ".aos.robot_state");
 
     replayer_.AddHandler(
         process_name, "position",
@@ -49,14 +49,15 @@ class ControlLoopReplayer {
         ::std::function<void(const StatusType &)>(::std::ref(status_)));
     // The timing of goal messages doesn't matter, and we don't need to look
     // back at them after running the loop.
-    replayer_.AddDirectQueueSender(process_name, "goal", loop_group_->goal);
+    AddDirectQueueSender<GoalType>(
+        process_name, "goal", ::std::string(loop_group_->name()) + ".goal");
   }
 
   template <class QT>
   void AddDirectQueueSender(const ::std::string &process_name,
                             const ::std::string &log_message,
-                            const ::aos::Queue<QT> &queue) {
-    replayer_.AddDirectQueueSender<QT>(process_name, log_message, queue);
+                            const ::std::string &name) {
+    replayer_.AddDirectQueueSender<QT>(process_name, log_message, name);
   }
 
   // Replays messages from a file.
@@ -92,6 +93,8 @@ class ControlLoopReplayer {
   // Runs through the file currently loaded in replayer_.
   // Returns after going through the entire file.
   void DoProcessFile();
+
+  ::aos::ShmEventLoop event_loop_;
 
   T *const loop_group_;
 

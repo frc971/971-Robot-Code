@@ -118,8 +118,13 @@ uint16_t CalculateCrc(const uint8_t *data, size_t data_length) {
 
 }  // namespace
 
-ADIS16448::ADIS16448(frc::SPI::Port port, frc::DigitalInput *dio1)
-    : spi_(new frc::SPI(port)), dio1_(dio1) {
+ADIS16448::ADIS16448(::aos::EventLoop *event_loop, frc::SPI::Port port,
+                     frc::DigitalInput *dio1)
+    : event_loop_(event_loop),
+      joystick_state_fetcher_(event_loop_->MakeFetcher<::aos::JoystickState>(
+          ".aos.joystick_state")),
+      spi_(new frc::SPI(port)),
+      dio1_(dio1) {
   // 1MHz is the maximum supported for burst reads, but we
   // want to go slower to hopefully make it more reliable.
   // Note that the roboRIO's minimum supported clock rate appears to be
@@ -262,8 +267,8 @@ void ADIS16448::operator()() {
 
       if (average_gyro_x.full() && average_gyro_y.full() &&
           average_gyro_z.full()) {
-        ::aos::joystick_state.FetchLatest();
-        if (::aos::joystick_state.get() && ::aos::joystick_state->enabled) {
+        joystick_state_fetcher_.Fetch();
+        if (joystick_state_fetcher_.get() && joystick_state_fetcher_->enabled) {
           gyro_x_zeroed_offset_ = -average_gyro_x.GetAverage();
           gyro_y_zeroed_offset_ = -average_gyro_y.GetAverage();
           gyro_z_zeroed_offset_ = -average_gyro_z.GetAverage();

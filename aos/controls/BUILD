@@ -27,6 +27,7 @@ cc_library(
         "control_loop_test.h",
     ],
     deps = [
+        "//aos/events:shm-event-loop",
         "//aos/logging:queue_logging",
         "//aos/robot_state",
         "//aos/testing:googletest",

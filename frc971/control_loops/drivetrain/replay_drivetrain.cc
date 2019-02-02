@@ -20,8 +20,8 @@ int main(int argc, char **argv) {
         ::frc971::control_loops::DrivetrainQueue>
         replayer(&::frc971::control_loops::drivetrain_queue, "drivetrain");
 
-    replayer.AddDirectQueueSender("wpilib_interface.Gyro", "sending",
-                                  ::frc971::sensors::gyro_reading);
+    replayer.AddDirectQueueSender<::frc971::sensors::GyroReading>(
+        "wpilib_interface.Gyro", "sending", ".frc971.sensors.gyro_reading");
     for (int i = 1; i < argc; ++i) {
       replayer.ProcessFile(argv[i]);
     }

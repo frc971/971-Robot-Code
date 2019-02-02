@@ -6,11 +6,12 @@
 #include <functional>
 #include <memory>
 
+#include "aos/events/event-loop.h"
+#include "aos/ipc_lib/queue.h"
 #include "aos/logging/binary_log_file.h"
-#include "aos/queue.h"
 #include "aos/logging/logging.h"
 #include "aos/macros.h"
-#include "aos/ipc_lib/queue.h"
+#include "aos/queue.h"
 #include "aos/queue_types.h"
 
 namespace aos {
@@ -68,10 +69,10 @@ class LogReplayer {
   template <class T>
   void AddDirectQueueSender(const ::std::string &process_name,
                             const ::std::string &log_message,
-                            const ::aos::Queue<T> &queue) {
+                            const ::std::string &name) {
     AddHandler(process_name, log_message,
                ::std::function<void(const T &)>(
-                   QueueDumpStructHandler<T>(queue.name())));
+                   QueueDumpStructHandler<T>(name.c_str())));
   }
 
  private:

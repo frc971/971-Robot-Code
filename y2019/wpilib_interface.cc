@@ -20,6 +20,7 @@
 #undef ERROR
 
 #include "aos/commonmath.h"
+#include "aos/events/shm-event-loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/logging/queue_logging.h"
@@ -128,7 +129,8 @@ static_assert(kMaxMediumEncoderPulsesPerSecond <= 400000,
 // Class to send position messages with sensor readings to our loops.
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
-  SensorReader() {
+  SensorReader(::aos::EventLoop *event_loop)
+      : ::frc971::wpilib::SensorReader(event_loop) {
     // Set to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
@@ -429,6 +431,11 @@ class CameraReader {
 
 class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
+  SuperstructureWriter(::aos::EventLoop *event_loop)
+      : ::frc971::wpilib::LoopOutputHandler(event_loop),
+        robot_state_fetcher_(
+            event_loop->MakeFetcher<::aos::RobotState>(".aos.robot_state")) {}
+
   void set_elevator_victor(::std::unique_ptr<::frc::VictorSP> t) {
     elevator_victor_ = ::std::move(t);
   }
@@ -476,9 +483,10 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
                                          -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
 
-    ::aos::robot_state.FetchLatest();
-    const double battery_voltage =
-        ::aos::robot_state.get() ? ::aos::robot_state->voltage_battery : 12.0;
+    robot_state_fetcher_.Fetch();
+    const double battery_voltage = robot_state_fetcher_.get()
+                                       ? robot_state_fetcher_->voltage_battery
+                                       : 12.0;
 
     // Throw a fast low pass filter on the battery voltage so we don't respond
     // too fast to noise.
@@ -498,6 +506,8 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     stilts_victor_->SetDisabled();
     suction_victor_->SetDisabled();
   }
+
+  ::aos::Fetcher<::aos::RobotState> robot_state_fetcher_;
 
   ::std::unique_ptr<::frc::VictorSP> elevator_victor_, intake_victor_,
       wrist_victor_, stilts_victor_, suction_victor_;
@@ -661,12 +671,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::aos::InitNRT();
     ::aos::SetCurrentThreadName("StartCompetition");
 
-    ::frc971::wpilib::JoystickSender joystick_sender;
+    ::aos::ShmEventLoop event_loop;
+
+    ::frc971::wpilib::JoystickSender joystick_sender(&event_loop);
     ::std::thread joystick_thread(::std::ref(joystick_sender));
 
     ::frc971::wpilib::PDPFetcher pdp_fetcher;
     ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
-    SensorReader reader;
+    SensorReader reader(&event_loop);
 
     reader.set_drivetrain_left_encoder(make_encoder(0));
     reader.set_drivetrain_right_encoder(make_encoder(1));
@@ -706,7 +718,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     camera_reader.set_activate_passthrough(make_unique<frc::DigitalInput>(25));
 
     auto imu_trigger = make_unique<frc::DigitalInput>(0);
-    ::frc971::wpilib::ADIS16448 imu(frc::SPI::Port::kOnboardCS1,
+    ::frc971::wpilib::ADIS16448 imu(&event_loop, frc::SPI::Port::kOnboardCS1,
                                     imu_trigger.get());
     imu.set_spi_idle_callback(
         [&camera_reader]() { camera_reader.DoSpiTransaction(); });
@@ -718,14 +730,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     // they are identical, as far as DrivetrainWriter is concerned, to the SP
     // variety so all the Victors are written as SPs.
 
-    ::frc971::wpilib::DrivetrainWriter drivetrain_writer;
+    ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&event_loop);
     drivetrain_writer.set_left_controller0(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)), true);
     drivetrain_writer.set_right_controller0(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)), false);
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
-    SuperstructureWriter superstructure_writer;
+    SuperstructureWriter superstructure_writer(&event_loop);
     superstructure_writer.set_elevator_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(4)));
     // TODO(austin): Do the vacuum

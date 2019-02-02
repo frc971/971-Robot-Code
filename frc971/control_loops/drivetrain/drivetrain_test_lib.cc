@@ -82,8 +82,11 @@ void DrivetrainPlant::CheckU(const Eigen::Matrix<double, 2, 1> &U) {
 }
 
 DrivetrainSimulation::DrivetrainSimulation(
-    const DrivetrainConfig<double> &dt_config)
-    : dt_config_(dt_config),
+    ::aos::EventLoop *event_loop, const DrivetrainConfig<double> &dt_config)
+    : event_loop_(event_loop),
+      robot_state_fetcher_(
+          event_loop_->MakeFetcher<::aos::RobotState>(".aos.robot_state")),
+      dt_config_(dt_config),
       drivetrain_plant_(MakePlantFromConfig(dt_config_)),
       my_drivetrain_queue_(".frc971.control_loops.drivetrain_queue",
                            ".frc971.control_loops.drivetrain_queue.goal",
@@ -148,8 +151,10 @@ void DrivetrainSimulation::Simulate() {
   last_U_ << my_drivetrain_queue_.output->left_voltage,
       my_drivetrain_queue_.output->right_voltage;
   {
-    ::aos::robot_state.FetchLatest();
-    const double scalar = ::aos::robot_state->voltage_battery / 12.0;
+    robot_state_fetcher_.Fetch();
+    const double scalar = robot_state_fetcher_.get()
+                              ? robot_state_fetcher_->voltage_battery / 12.0
+                              : 1.0;
     last_U_ *= scalar;
   }
   left_gear_high_ = my_drivetrain_queue_.output->left_high;

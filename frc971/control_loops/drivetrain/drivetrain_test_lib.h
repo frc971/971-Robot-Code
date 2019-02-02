@@ -1,6 +1,7 @@
 #ifndef FRC971_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_TEST_LIB_H_
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_TEST_LIB_H_
 
+#include "aos/events/event-loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/state_feedback_loop.h"
@@ -41,7 +42,8 @@ class DrivetrainSimulation {
  public:
   // Constructs a motor simulation.
   // TODO(aschuh) Do we want to test the clutch one too?
-  DrivetrainSimulation(const DrivetrainConfig<double> &dt_config);
+  DrivetrainSimulation(::aos::EventLoop *event_loop,
+                       const DrivetrainConfig<double> &dt_config);
 
   // Resets the plant.
   void Reinitialize();
@@ -72,6 +74,9 @@ class DrivetrainSimulation {
   }
 
  private:
+  ::aos::EventLoop *event_loop_;
+  ::aos::Fetcher<::aos::RobotState> robot_state_fetcher_;
+
   DrivetrainConfig<double> dt_config_;
 
   DrivetrainPlant drivetrain_plant_;
