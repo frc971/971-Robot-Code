@@ -41,6 +41,25 @@ using camera_duration = std::chrono::duration<uint8_t, std::milli>;
 // just use floats and not worry about it.
 
 struct Target {
+  bool operator==(const Target &other) const {
+    if (other.distance != distance) {
+      return false;
+    }
+    if (other.height != height) {
+      return false;
+    }
+    if (other.heading != heading) {
+      return false;
+    }
+    if (other.skew != skew) {
+      return false;
+    }
+    return true;
+  }
+  bool operator!=(const Target &other) const {
+    return !(*this == other);
+  }
+
   // Distance to the target in meters. Specifically, the distance from the
   // center of the camera's image plane to the center of the target.
   float distance;
@@ -65,6 +84,19 @@ struct Target {
 //
 // This is all the information sent from each camera to the Teensy.
 struct Frame {
+  bool operator==(const Frame &other) const {
+    if (other.targets != targets) {
+      return false;
+    }
+    if (other.age != age) {
+      return false;
+    }
+    return true;
+  }
+  bool operator!=(const Frame &other) const {
+    return !(*this == other);
+  }
+
   // The top most interesting targets found in this frame.
   aos::SizedArray<Target, 3> targets;
 
@@ -74,14 +106,34 @@ struct Frame {
 
 // This is all the information sent from the Teensy to each camera.
 struct CameraCalibration {
+  bool operator==(const CameraCalibration &other) const {
+    if (other.calibration != calibration) {
+      return false;
+    }
+    return true;
+  }
+  bool operator!=(const CameraCalibration &other) const {
+    return !(*this == other);
+  }
+
   // The calibration matrix. This defines where the camera is pointing.
   //
-  // TODO(Parker): What are the details on how this is defined.
+  // TODO(Parker): What are the details on how this is defined?
   Eigen::Matrix<float, 3, 4> calibration;
 };
 
 // This is all the information the Teensy sends to the RoboRIO.
 struct TeensyToRoborio {
+  bool operator==(const TeensyToRoborio &other) const {
+    if (other.frames != frames) {
+      return false;
+    }
+    return true;
+  }
+  bool operator!=(const TeensyToRoborio &other) const {
+    return !(*this == other);
+  }
+
   // The newest frames received from up to three cameras. These will be the
   // three earliest-received of all buffered frames.
   aos::SizedArray<Frame, 3> frames;
@@ -89,6 +141,19 @@ struct TeensyToRoborio {
 
 // This is all the information the RoboRIO sends to the Teensy.
 struct RoborioToTeensy {
+  bool operator==(const RoborioToTeensy &other) const {
+    if (other.beacon_brightness != beacon_brightness) {
+      return false;
+    }
+    if (other.light_rings != light_rings) {
+      return false;
+    }
+    return true;
+  }
+  bool operator!=(const RoborioToTeensy &other) const {
+    return !(*this == other);
+  }
+
   // Brightnesses for each of the beacon light channels. 0 is off, 255 is fully
   // on.
   std::array<uint8_t, 3> beacon_brightness;

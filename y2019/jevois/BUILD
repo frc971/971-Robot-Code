@@ -1,3 +1,57 @@
+spi_crc_args = [
+    "$(location //third_party/pycrc:pycrc_main)",
+    "--width=16",
+    # This is the recommendation from
+    # http://users.ece.cmu.edu/~koopman/roses/dsn04/koopman04_crc_poly_embedded.pdf
+    # for messages of 242 - 2048 bits, which covers what we want.
+    # That's an analysis from an exhaustive search of all polynomials for
+    # various CRCs to find the best ones. This is 0xBAAD, converted from the
+    # weird format used there to the standard one used by pycrc.
+    "--poly=0x755b",
+    "--reflect-in=False",
+    "--xor-in=0xffff",
+    "--reflect-out=False",
+    "--xor-out=0xffff",
+    "--std=C99",
+    "--algorithm=table-driven",
+    "--symbol-prefix=jevois_spi_crc_",
+    "--crc-type=uint16_t",
+]
+
+genrule(
+    name = "gen_spi_crc",
+    outs = [
+        "spi_crc.h",
+        "spi_crc.c",
+    ],
+    cmd = " && ".join([
+        " ".join(spi_crc_args + [
+            "--generate=h",
+            "--output=$(location spi_crc.h)",
+        ]),
+        " ".join(spi_crc_args + [
+            "--generate=c",
+            "--output=$(location spi_crc.c)",
+        ]),
+    ]),
+    tools = [
+        "//third_party/pycrc:pycrc_main",
+    ],
+)
+
+cc_library(
+    name = "spi_crc",
+    srcs = [
+        "spi_crc.c",
+    ],
+    hdrs = [
+        "spi_crc.h",
+    ],
+    deps = [
+        "//third_party/GSL",
+    ],
+)
+
 cc_library(
     name = "structures",
     hdrs = [
@@ -7,5 +61,33 @@ cc_library(
     deps = [
         "//aos/containers:sized_array",
         "//third_party/eigen",
+    ],
+)
+
+cc_library(
+    name = "spi",
+    srcs = [
+        "spi.cc",
+    ],
+    hdrs = [
+        "spi.h",
+    ],
+    deps = [
+        ":spi_crc",
+        ":structures",
+        "//aos/util:bitpacking",
+        "//third_party/GSL",
+        "//third_party/optional",
+    ],
+)
+
+cc_test(
+    name = "spi_test",
+    srcs = [
+        "spi_test.cc",
+    ],
+    deps = [
+        ":spi",
+        "//aos/testing:googletest",
     ],
 )

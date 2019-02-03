@@ -35,6 +35,21 @@ class SizedArray {
   SizedArray &operator=(const SizedArray &) = default;
   SizedArray &operator=(SizedArray &&) = default;
 
+  bool operator==(const SizedArray &other) const {
+    if (other.size() != size()) {
+      return false;
+    }
+    for (size_t i = 0; i < size(); ++i) {
+      if (other[i] != (*this)[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+  bool operator!=(const SizedArray &other) const {
+    return !(*this == other);
+  }
+
   reference at(size_t i) {
     check_index(i);
     return array_.at(i);
