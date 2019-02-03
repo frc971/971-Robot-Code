@@ -28,27 +28,24 @@
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
-
-#include "frc971/shifter_hall_effect.h"
-
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/shifter_hall_effect.h"
+#include "frc971/wpilib/buffered_pcm.h"
+#include "frc971/wpilib/buffered_solenoid.h"
+#include "frc971/wpilib/dma.h"
+#include "frc971/wpilib/dma_edge_counting.h"
+#include "frc971/wpilib/encoder_and_potentiometer.h"
+#include "frc971/wpilib/gyro_sender.h"
+#include "frc971/wpilib/interrupt_edge_counting.h"
+#include "frc971/wpilib/joystick_sender.h"
+#include "frc971/wpilib/logging.q.h"
+#include "frc971/wpilib/loop_output_handler.h"
+#include "frc971/wpilib/pdp_fetcher.h"
+#include "frc971/wpilib/sensor_reader.h"
+#include "y2014/constants.h"
 #include "y2014/control_loops/claw/claw.q.h"
 #include "y2014/control_loops/shooter/shooter.q.h"
-#include "y2014/constants.h"
 #include "y2014/queues/auto_mode.q.h"
-
-#include "frc971/wpilib/joystick_sender.h"
-#include "frc971/wpilib/loop_output_handler.h"
-#include "frc971/wpilib/buffered_solenoid.h"
-#include "frc971/wpilib/buffered_pcm.h"
-#include "frc971/wpilib/gyro_sender.h"
-#include "frc971/wpilib/dma_edge_counting.h"
-#include "frc971/wpilib/interrupt_edge_counting.h"
-#include "frc971/wpilib/encoder_and_potentiometer.h"
-#include "frc971/wpilib/logging.q.h"
-#include "frc971/wpilib/wpilib_interface.h"
-#include "frc971/wpilib/pdp_fetcher.h"
-#include "frc971/wpilib/dma.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -113,32 +110,26 @@ double shooter_translate(int32_t in) {
 
 static const double kMaximumEncoderPulsesPerSecond =
     5600.0 /* free speed RPM */ * 14.0 / 48.0 /* bottom gear reduction */ *
-    18.0 / 32.0 /* big belt reduction */ *
-    18.0 / 66.0 /* top gear reduction */ * 48.0 / 18.0 /* encoder gears */ /
-    60.0 /* seconds / minute */ * 256.0 /* CPR */;
+    18.0 / 32.0 /* big belt reduction */ * 18.0 /
+    66.0 /* top gear reduction */ * 48.0 / 18.0 /* encoder gears */ /
+    60.0 /* seconds / minute */ * 256.0 /* CPR */ * 4.0 /* edges / pulse */;
 
-class SensorReader {
+class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
   SensorReader() {
     // Set it to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
-    encoder_filter_.SetPeriodNanoSeconds(
-        static_cast<int>(1 / 4.0 / kMaximumEncoderPulsesPerSecond * 1e9 + 0.5));
+    UpdateMediumEncoderFilterHz(kMaximumEncoderPulsesPerSecond);
     hall_filter_.SetPeriodNanoSeconds(100000);
+  }
+
+  ~SensorReader() override {
+    top_reader_.Quit();
+    bottom_reader_.Quit();
   }
 
   void set_auto_selector_analog(::std::unique_ptr<AnalogInput> analog) {
     auto_selector_analog_ = ::std::move(analog);
-  }
-
-  void set_drivetrain_left_encoder(::std::unique_ptr<Encoder> encoder) {
-    drivetrain_left_encoder_ = ::std::move(encoder);
-    drivetrain_left_encoder_->SetMaxPeriod(0.005);
-  }
-
-  void set_drivetrain_right_encoder(::std::unique_ptr<Encoder> encoder) {
-    drivetrain_right_encoder_ = ::std::move(encoder);
-    drivetrain_right_encoder_->SetMaxPeriod(0.005);
   }
 
   void set_high_left_drive_hall(::std::unique_ptr<AnalogInput> analog) {
@@ -158,7 +149,7 @@ class SensorReader {
   }
 
   void set_top_claw_encoder(::std::unique_ptr<Encoder> encoder) {
-    encoder_filter_.Add(encoder.get());
+    medium_encoder_filter_.Add(encoder.get());
     top_reader_.set_encoder(::std::move(encoder));
   }
 
@@ -178,7 +169,7 @@ class SensorReader {
   }
 
   void set_bottom_claw_encoder(::std::unique_ptr<Encoder> encoder) {
-    encoder_filter_.Add(encoder.get());
+    medium_encoder_filter_.Add(encoder.get());
     bottom_reader_.set_encoder(::std::move(encoder));
   }
 
@@ -198,7 +189,7 @@ class SensorReader {
   }
 
   void set_shooter_encoder(::std::unique_ptr<Encoder> encoder) {
-    encoder_filter_.Add(encoder.get());
+    medium_encoder_filter_.Add(encoder.get());
     shooter_encoder_ = ::std::move(encoder);
   }
 
@@ -226,52 +217,22 @@ class SensorReader {
         make_unique<::frc971::wpilib::DMADigitalReader>(shooter_latch_.get());
   }
 
-  // All of the DMA-related set_* calls must be made before this, and it doesn't
-  // hurt to do all of them.
-  void set_dma(::std::unique_ptr<DMA> dma) {
+  void Start() override {
     shooter_proximal_counter_ = make_unique<::frc971::wpilib::DMAEdgeCounter>(
         shooter_encoder_.get(), shooter_proximal_.get());
     shooter_distal_counter_ = make_unique<::frc971::wpilib::DMAEdgeCounter>(
         shooter_encoder_.get(), shooter_distal_.get());
 
-    dma_synchronizer_.reset(
-        new ::frc971::wpilib::DMASynchronizer(::std::move(dma)));
-    dma_synchronizer_->Add(shooter_proximal_counter_.get());
-    dma_synchronizer_->Add(shooter_distal_counter_.get());
-    dma_synchronizer_->Add(shooter_plunger_reader_.get());
-    dma_synchronizer_->Add(shooter_latch_reader_.get());
-  }
-
-  void operator()() {
-    ::aos::SetCurrentThreadName("SensorReader");
-
-    my_pid_ = getpid();
+    AddToDMA(shooter_proximal_counter_.get());
+    AddToDMA(shooter_distal_counter_.get());
+    AddToDMA(shooter_plunger_reader_.get());
+    AddToDMA(shooter_latch_reader_.get());
 
     top_reader_.Start();
     bottom_reader_.Start();
-    dma_synchronizer_->Start();
-
-    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                        ::std::chrono::milliseconds(4));
-
-    ::aos::SetCurrentThreadRealtimePriority(40);
-    while (run_) {
-      {
-        const int iterations = phased_loop.SleepUntilNext();
-        if (iterations != 1) {
-          LOG(WARNING, "SensorReader skipped %d iterations\n", iterations - 1);
-        }
-      }
-      RunIteration();
-    }
-
-    top_reader_.Quit();
-    bottom_reader_.Quit();
   }
 
   void RunIteration() {
-    ::frc971::wpilib::SendRobotState(my_pid_);
-
     const auto &values = constants::GetValues();
 
     {
@@ -304,9 +265,9 @@ class SensorReader {
     ::y2014::sensors::auto_mode.MakeWithBuilder()
         .voltage(auto_selector_analog_->GetVoltage())
         .Send();
+  }
 
-    dma_synchronizer_->RunIteration();
-
+  void RunDmaIteration() {
     {
       auto shooter_message = shooter_queue.position.MakeMessage();
       shooter_message->position = shooter_translate(shooter_encoder_->GetRaw());
@@ -328,8 +289,6 @@ class SensorReader {
       claw_message.Send();
     }
   }
-
-  void Quit() { run_ = false; }
 
  private:
   class HalfClawReader {
@@ -428,14 +387,8 @@ class SensorReader {
         shooter_translate(counter->last_negative_encoder_value());
   }
 
-  int32_t my_pid_;
-
-  ::std::unique_ptr<::frc971::wpilib::DMASynchronizer> dma_synchronizer_;
-
   ::std::unique_ptr<AnalogInput> auto_selector_analog_;
 
-  ::std::unique_ptr<Encoder> drivetrain_left_encoder_;
-  ::std::unique_ptr<Encoder> drivetrain_right_encoder_;
   ::std::unique_ptr<AnalogInput> low_left_drive_hall_;
   ::std::unique_ptr<AnalogInput> high_left_drive_hall_;
   ::std::unique_ptr<AnalogInput> low_right_drive_hall_;
@@ -451,8 +404,7 @@ class SensorReader {
   ::std::unique_ptr<::frc971::wpilib::DMADigitalReader> shooter_plunger_reader_,
       shooter_latch_reader_;
 
-  ::std::atomic<bool> run_{true};
-  DigitalGlitchFilter encoder_filter_, hall_filter_;
+  DigitalGlitchFilter hall_filter_;
 };
 
 class SolenoidWriter {

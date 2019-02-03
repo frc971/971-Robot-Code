@@ -53,7 +53,7 @@ void SensorReader::set_dma(::std::unique_ptr<DMA> dma) {
 
 void SensorReader::set_pwm_trigger(
     ::std::unique_ptr<frc::DigitalInput> pwm_trigger) {
-  medium_encoder_filter_.Add(pwm_trigger.get());
+  fast_encoder_filter_.Add(pwm_trigger.get());
   pwm_trigger_ = ::std::move(pwm_trigger);
 }
 
@@ -129,7 +129,9 @@ void SensorReader::operator()() {
 
   int32_t my_pid = getpid();
 
+  Start();
   dma_synchronizer_->Start();
+
   if (pwm_trigger_) {
     last_period_ = chrono::microseconds(5050);
     LOG(INFO, "Using PWM trigger and a 5.05 ms period\n");
@@ -159,6 +161,7 @@ void SensorReader::operator()() {
     ::frc971::wpilib::SendRobotState(my_pid);
     RunIteration();
     dma_synchronizer_->RunIteration();
+    RunDmaIteration();
 
     if (pwm_trigger_) {
       monotonic_clock::time_point last_tick_timepoint;
@@ -181,6 +184,7 @@ void SensorReader::operator()() {
       phased_loop.set_interval_and_offset(period, new_offset);
     }
   }
+
   if (pwm_trigger_) {
     pwm_detecter_thread.join();
   }

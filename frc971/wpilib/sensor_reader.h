@@ -20,6 +20,7 @@ namespace wpilib {
 class SensorReader {
  public:
   SensorReader();
+  virtual ~SensorReader() {}
 
   // Updates the fast and medium encoder filter frequencies.
   void UpdateFastEncoderFilterHz(int hz);
@@ -34,6 +35,10 @@ class SensorReader {
   // Sets the dma.
   void set_dma(::std::unique_ptr<DMA> dma);
 
+  void AddToDMA(DMASampleHandlerInterface *handler) {
+    dma_synchronizer_->Add(handler);
+  }
+
   // Sets the pwm trigger.
   void set_pwm_trigger(::std::unique_ptr<frc::DigitalInput> pwm_trigger);
 
@@ -41,6 +46,7 @@ class SensorReader {
   void Quit() { run_ = false; }
 
   virtual void RunIteration() = 0;
+  virtual void RunDmaIteration() {}
 
   void operator()();
 
@@ -51,6 +57,9 @@ class SensorReader {
       drivetrain_right_encoder_;
 
  private:
+  // Gets called right before the DMA synchronizer is up and running.
+  virtual void Start() {}
+
   // Uses the pwm trigger to find the pwm cycle width and offset for that
   // iteration.
   void RunPWMDetecter();
