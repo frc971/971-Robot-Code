@@ -28,8 +28,9 @@
 #define TL_OPTIONAL_MSVC2015
 #endif
 
+// TODO(Brian): We use libstdc++ with clang too. Sort this out nicely.
 #if (defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ <= 9 &&              \
-     !defined(__clang__))
+    !(defined(__clang__) && defined(_LIBCPP_VERSION)))
 #define TL_OPTIONAL_GCC49
 #endif
 
@@ -43,8 +44,7 @@
 #define TL_OPTIONAL_GCC55
 #endif
 
-#if (defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ <= 9 &&              \
-     !defined(__clang__))
+#ifdef TL_OPTIONAL_GCC49
 // GCC < 5 doesn't support overloading on const&& for member functions
 #define TL_OPTIONAL_NO_CONSTRR
 
@@ -89,7 +89,8 @@ namespace tl {
 #endif
 
 #if __cplusplus > 201103L
-#define TL_OPTIONAL_CXX14
+// TODO(Brian): Re-enable this once we have full C++14 support.
+//#define TL_OPTIONAL_CXX14
 #endif
 
 // constexpr implies const in C++11, not C++14
