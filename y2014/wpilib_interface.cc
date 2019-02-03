@@ -34,6 +34,7 @@
 #include "frc971/wpilib/buffered_solenoid.h"
 #include "frc971/wpilib/dma.h"
 #include "frc971/wpilib/dma_edge_counting.h"
+#include "frc971/wpilib/drivetrain_writer.h"
 #include "frc971/wpilib/encoder_and_potentiometer.h"
 #include "frc971/wpilib/gyro_sender.h"
 #include "frc971/wpilib/interrupt_edge_counting.h"
@@ -513,38 +514,6 @@ class SolenoidWriter {
   ::std::atomic<bool> run_{true};
 };
 
-class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
- public:
-  void set_left_drivetrain_talon(::std::unique_ptr<Talon> t) {
-    left_drivetrain_talon_ = ::std::move(t);
-  }
-
-  void set_right_drivetrain_talon(::std::unique_ptr<Talon> t) {
-    right_drivetrain_talon_ = ::std::move(t);
-  }
-
- private:
-  virtual void Read() override {
-    ::frc971::control_loops::drivetrain_queue.output.FetchAnother();
-  }
-
-  virtual void Write() override {
-    auto &queue = ::frc971::control_loops::drivetrain_queue.output;
-    LOG_STRUCT(DEBUG, "will output", *queue);
-    left_drivetrain_talon_->SetSpeed(-queue->left_voltage / 12.0);
-    right_drivetrain_talon_->SetSpeed(queue->right_voltage / 12.0);
-  }
-
-  virtual void Stop() override {
-    LOG(WARNING, "drivetrain output too old\n");
-    left_drivetrain_talon_->SetDisabled();
-    right_drivetrain_talon_->SetDisabled();
-  }
-
-  ::std::unique_ptr<Talon> left_drivetrain_talon_;
-  ::std::unique_ptr<Talon> right_drivetrain_talon_;
-};
-
 class ShooterWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
   void set_shooter_talon(::std::unique_ptr<Talon> t) {
@@ -683,11 +652,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::frc971::wpilib::GyroSender gyro_sender;
     ::std::thread gyro_thread(::std::ref(gyro_sender));
 
-    DrivetrainWriter drivetrain_writer;
-    drivetrain_writer.set_left_drivetrain_talon(
-        ::std::unique_ptr<Talon>(new Talon(5)));
-    drivetrain_writer.set_right_drivetrain_talon(
-        ::std::unique_ptr<Talon>(new Talon(2)));
+    ::frc971::wpilib::DrivetrainWriter drivetrain_writer;
+    drivetrain_writer.set_left_controller0(
+        ::std::unique_ptr<Talon>(new Talon(5)), true);
+    drivetrain_writer.set_right_controller0(
+        ::std::unique_ptr<Talon>(new Talon(2)), false);
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
     ::y2014::wpilib::ClawWriter claw_writer;
