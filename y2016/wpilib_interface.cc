@@ -38,6 +38,7 @@
 #include "frc971/wpilib/buffered_solenoid.h"
 #include "frc971/wpilib/dma.h"
 #include "frc971/wpilib/dma_edge_counting.h"
+#include "frc971/wpilib/drivetrain_writer.h"
 #include "frc971/wpilib/encoder_and_potentiometer.h"
 #include "frc971/wpilib/gyro_sender.h"
 #include "frc971/wpilib/interrupt_edge_counting.h"
@@ -492,37 +493,6 @@ class SolenoidWriter {
   ::std::atomic<bool> run_{true};
 };
 
-class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
- public:
-  void set_drivetrain_left_talon(::std::unique_ptr<Talon> t) {
-    drivetrain_left_talon_ = ::std::move(t);
-  }
-
-  void set_drivetrain_right_talon(::std::unique_ptr<Talon> t) {
-    drivetrain_right_talon_ = ::std::move(t);
-  }
-
- private:
-  virtual void Read() override {
-    ::frc971::control_loops::drivetrain_queue.output.FetchAnother();
-  }
-
-  virtual void Write() override {
-    auto &queue = ::frc971::control_loops::drivetrain_queue.output;
-    LOG_STRUCT(DEBUG, "will output", *queue);
-    drivetrain_left_talon_->SetSpeed(queue->left_voltage / 12.0);
-    drivetrain_right_talon_->SetSpeed(-queue->right_voltage / 12.0);
-  }
-
-  virtual void Stop() override {
-    LOG(WARNING, "drivetrain output too old\n");
-    drivetrain_left_talon_->SetDisabled();
-    drivetrain_right_talon_->SetDisabled();
-  }
-
-  ::std::unique_ptr<Talon> drivetrain_left_talon_, drivetrain_right_talon_;
-};
-
 class ShooterWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
   void set_shooter_left_talon(::std::unique_ptr<Talon> t) {
@@ -670,11 +640,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::frc971::wpilib::ADIS16448 imu(SPI::Port::kMXP, imu_trigger.get());
     ::std::thread imu_thread(::std::ref(imu));
 
-    DrivetrainWriter drivetrain_writer;
-    drivetrain_writer.set_drivetrain_left_talon(
-        ::std::unique_ptr<Talon>(new Talon(5)));
-    drivetrain_writer.set_drivetrain_right_talon(
-        ::std::unique_ptr<Talon>(new Talon(4)));
+    ::frc971::wpilib::DrivetrainWriter drivetrain_writer;
+    drivetrain_writer.set_left_controller0(
+        ::std::unique_ptr<Talon>(new Talon(5)), false);
+    drivetrain_writer.set_right_controller0(
+        ::std::unique_ptr<Talon>(new Talon(4)), true);
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
     ShooterWriter shooter_writer;
