@@ -59,7 +59,7 @@ refdes=U201
 T 66100 54500 5 10 0 1 0 0 1
 footprint=SO16W
 T 64400 51500 5 10 0 0 0 0 1
-pn=SI8641BA-B-IUR
+pn=SI8641BB-B-ISR
 }
 C 64200 53200 1 90 0 generic-power.sym
 {
