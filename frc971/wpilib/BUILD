@@ -289,11 +289,13 @@ cc_library(
     deps = [
         ":dma",
         ":dma_edge_counting",
+        ":encoder_and_potentiometer",
         ":wpilib_interface",
         "//aos:init",
         "//aos/stl_mutex",
         "//aos/time",
         "//aos/util:phased_loop",
+        "//frc971/control_loops:queues",
         "//third_party:wpilib",
     ],
 )

@@ -6,10 +6,12 @@
 
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
+#include "frc971/control_loops/control_loops.q.h"
 #include "frc971/wpilib/ahal/DigitalGlitchFilter.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"
 #include "frc971/wpilib/dma.h"
 #include "frc971/wpilib/dma_edge_counting.h"
+#include "frc971/wpilib/encoder_and_potentiometer.h"
 
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
@@ -51,6 +53,77 @@ class SensorReader {
   void operator()();
 
  protected:
+  // Copies a DMAEncoder to a IndexPosition with the correct unit and direction
+  // changes.
+  void CopyPosition(const ::frc971::wpilib::DMAEncoder &encoder,
+                    ::frc971::IndexPosition *position,
+                    double encoder_counts_per_revolution, double encoder_ratio,
+                    bool reverse) {
+    const double multiplier = reverse ? -1.0 : 1.0;
+    position->encoder =
+        multiplier * encoder_translate(encoder.polled_encoder_value(),
+                                       encoder_counts_per_revolution,
+                                       encoder_ratio);
+    position->latched_encoder =
+        multiplier * encoder_translate(encoder.last_encoder_value(),
+                                       encoder_counts_per_revolution,
+                                       encoder_ratio);
+    position->index_pulses = encoder.index_posedge_count();
+  }
+
+  // Copies a AbsoluteEncoderAndPotentiometer to a PotAndAbsolutePosition with
+  // the correct unit and direction changes.
+  void CopyPosition(
+      const ::frc971::wpilib::AbsoluteEncoderAndPotentiometer &encoder,
+      ::frc971::PotAndAbsolutePosition *position,
+      double encoder_counts_per_revolution, double encoder_ratio,
+      ::std::function<double(double)> potentiometer_translate, bool reverse,
+      double pot_offset) {
+    const double multiplier = reverse ? -1.0 : 1.0;
+    position->pot = multiplier * potentiometer_translate(
+                                     encoder.ReadPotentiometerVoltage()) +
+                    pot_offset;
+    position->encoder =
+        multiplier * encoder_translate(encoder.ReadRelativeEncoder(),
+                                       encoder_counts_per_revolution,
+                                       encoder_ratio);
+
+    position->absolute_encoder =
+        (reverse ? (1.0 - encoder.ReadAbsoluteEncoder())
+                 : encoder.ReadAbsoluteEncoder()) *
+        encoder_ratio * (2.0 * M_PI);
+  }
+
+  // Copies a DMAEdgeCounter to a HallEffectAndPosition with the correct unit
+  // and direction changes.
+  void CopyPosition(const ::frc971::wpilib::DMAEdgeCounter &counter,
+                    ::frc971::HallEffectAndPosition *position,
+                    double encoder_counts_per_revolution, double encoder_ratio,
+                    bool reverse) {
+    const double multiplier = reverse ? -1.0 : 1.0;
+    position->encoder =
+        multiplier * encoder_translate(counter.polled_encoder(),
+                                       encoder_counts_per_revolution,
+                                       encoder_ratio);
+    position->current = !counter.polled_value();
+    position->posedge_count = counter.negative_count();
+    position->negedge_count = counter.positive_count();
+    position->posedge_value =
+        multiplier * encoder_translate(counter.last_negative_encoder_value(),
+                                       encoder_counts_per_revolution,
+                                       encoder_ratio);
+    position->negedge_value =
+        multiplier * encoder_translate(counter.last_positive_encoder_value(),
+                                       encoder_counts_per_revolution,
+                                       encoder_ratio);
+  }
+
+  double encoder_translate(int32_t value, double counts_per_revolution,
+                           double ratio) {
+    return static_cast<double>(value) / counts_per_revolution * ratio *
+           (2.0 * M_PI);
+  }
+
   frc::DigitalGlitchFilter fast_encoder_filter_, medium_encoder_filter_;
 
   ::std::unique_ptr<frc::Encoder> drivetrain_left_encoder_,

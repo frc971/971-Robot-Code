@@ -30,30 +30,28 @@
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
-
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "y2016/control_loops/shooter/shooter.q.h"
+#include "frc971/wpilib/ADIS16448.h"
+#include "frc971/wpilib/buffered_pcm.h"
+#include "frc971/wpilib/buffered_solenoid.h"
+#include "frc971/wpilib/dma.h"
+#include "frc971/wpilib/dma_edge_counting.h"
+#include "frc971/wpilib/encoder_and_potentiometer.h"
+#include "frc971/wpilib/gyro_sender.h"
+#include "frc971/wpilib/interrupt_edge_counting.h"
+#include "frc971/wpilib/joystick_sender.h"
+#include "frc971/wpilib/logging.q.h"
+#include "frc971/wpilib/loop_output_handler.h"
+#include "frc971/wpilib/pdp_fetcher.h"
+#include "frc971/wpilib/sensor_reader.h"
 #include "y2016/constants.h"
 #include "y2016/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2016/control_loops/shooter/shooter.q.h"
+#include "y2016/control_loops/shooter/shooter.q.h"
 #include "y2016/control_loops/superstructure/superstructure.q.h"
 #include "y2016/queues/ball_detector.q.h"
-
-#include "frc971/wpilib/joystick_sender.h"
-#include "frc971/wpilib/loop_output_handler.h"
-#include "frc971/wpilib/buffered_solenoid.h"
-#include "frc971/wpilib/buffered_pcm.h"
-#include "frc971/wpilib/gyro_sender.h"
-#include "frc971/wpilib/dma_edge_counting.h"
-#include "frc971/wpilib/interrupt_edge_counting.h"
-#include "frc971/wpilib/encoder_and_potentiometer.h"
-#include "frc971/wpilib/logging.q.h"
-#include "frc971/wpilib/wpilib_interface.h"
-#include "frc971/wpilib/pdp_fetcher.h"
-#include "frc971/wpilib/ADIS16448.h"
-#include "frc971/wpilib/dma.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -150,31 +148,14 @@ constexpr double kMaxSuperstructureEncoderPulsesPerSecond =
     512.0 /* CPR */ * 4 /* index pulse every quarter cycle */;
 
 // Class to send position messages with sensor readings to our loops.
-class SensorReader {
+class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
   SensorReader() {
     // Set it to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
-    drivetrain_shooter_encoder_filter_.SetPeriodNanoSeconds(
-        static_cast<int>(1 / 4.0 /* built-in tolerance */ /
-                             kMaxDrivetrainShooterEncoderPulsesPerSecond * 1e9 +
-                         0.5));
-    superstructure_encoder_filter_.SetPeriodNanoSeconds(
-        static_cast<int>(1 / 4.0 /* built-in tolerance */ /
-                             kMaxSuperstructureEncoderPulsesPerSecond * 1e9 +
-                         0.5));
+    UpdateFastEncoderFilterHz(kMaxDrivetrainShooterEncoderPulsesPerSecond);
+    UpdateMediumEncoderFilterHz(kMaxSuperstructureEncoderPulsesPerSecond);
     hall_filter_.SetPeriodNanoSeconds(100000);
-  }
-
-  // Drivetrain setters.
-  void set_drivetrain_left_encoder(::std::unique_ptr<Encoder> encoder) {
-    drivetrain_shooter_encoder_filter_.Add(encoder.get());
-    drivetrain_left_encoder_ = ::std::move(encoder);
-  }
-
-  void set_drivetrain_right_encoder(::std::unique_ptr<Encoder> encoder) {
-    drivetrain_shooter_encoder_filter_.Add(encoder.get());
-    drivetrain_right_encoder_ = ::std::move(encoder);
   }
 
   void set_drivetrain_left_hall(::std::unique_ptr<AnalogInput> analog) {
@@ -187,18 +168,18 @@ class SensorReader {
 
   // Shooter setters.
   void set_shooter_left_encoder(::std::unique_ptr<Encoder> encoder) {
-    drivetrain_shooter_encoder_filter_.Add(encoder.get());
+    fast_encoder_filter_.Add(encoder.get());
     shooter_left_encoder_ = ::std::move(encoder);
   }
 
   void set_shooter_right_encoder(::std::unique_ptr<Encoder> encoder) {
-    drivetrain_shooter_encoder_filter_.Add(encoder.get());
+    fast_encoder_filter_.Add(encoder.get());
     shooter_right_encoder_ = ::std::move(encoder);
   }
 
   // Intake setters.
   void set_intake_encoder(::std::unique_ptr<Encoder> encoder) {
-    superstructure_encoder_filter_.Add(encoder.get());
+    medium_encoder_filter_.Add(encoder.get());
     intake_encoder_.set_encoder(::std::move(encoder));
   }
 
@@ -207,13 +188,13 @@ class SensorReader {
   }
 
   void set_intake_index(::std::unique_ptr<DigitalInput> index) {
-    superstructure_encoder_filter_.Add(index.get());
+    medium_encoder_filter_.Add(index.get());
     intake_encoder_.set_index(::std::move(index));
   }
 
   // Shoulder setters.
   void set_shoulder_encoder(::std::unique_ptr<Encoder> encoder) {
-    superstructure_encoder_filter_.Add(encoder.get());
+    medium_encoder_filter_.Add(encoder.get());
     shoulder_encoder_.set_encoder(::std::move(encoder));
   }
 
@@ -223,13 +204,13 @@ class SensorReader {
   }
 
   void set_shoulder_index(::std::unique_ptr<DigitalInput> index) {
-    superstructure_encoder_filter_.Add(index.get());
+    medium_encoder_filter_.Add(index.get());
     shoulder_encoder_.set_index(::std::move(index));
   }
 
   // Wrist setters.
   void set_wrist_encoder(::std::unique_ptr<Encoder> encoder) {
-    superstructure_encoder_filter_.Add(encoder.get());
+    medium_encoder_filter_.Add(encoder.get());
     wrist_encoder_.set_encoder(::std::move(encoder));
   }
 
@@ -238,7 +219,7 @@ class SensorReader {
   }
 
   void set_wrist_index(::std::unique_ptr<DigitalInput> index) {
-    superstructure_encoder_filter_.Add(index.get());
+    medium_encoder_filter_.Add(index.get());
     wrist_encoder_.set_index(::std::move(index));
   }
 
@@ -256,41 +237,13 @@ class SensorReader {
   // All of the DMA-related set_* calls must be made before this, and it doesn't
   // hurt to do all of them.
 
-  void set_dma(::std::unique_ptr<DMA> dma) {
-    dma_synchronizer_.reset(
-        new ::frc971::wpilib::DMASynchronizer(::std::move(dma)));
-    dma_synchronizer_->Add(&intake_encoder_);
-    dma_synchronizer_->Add(&shoulder_encoder_);
-    dma_synchronizer_->Add(&wrist_encoder_);
-  }
-
-  void operator()() {
-    ::aos::SetCurrentThreadName("SensorReader");
-
-    my_pid_ = getpid();
-
-    dma_synchronizer_->Start();
-
-    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                        ::std::chrono::milliseconds(4));
-
-    ::aos::SetCurrentThreadRealtimePriority(40);
-    while (run_) {
-      {
-        const int iterations = phased_loop.SleepUntilNext();
-        if (iterations != 1) {
-          LOG(WARNING, "SensorReader skipped %d iterations\n", iterations - 1);
-        }
-      }
-      RunIteration();
-    }
+  void Start() {
+    AddToDMA(&intake_encoder_);
+    AddToDMA(&shoulder_encoder_);
+    AddToDMA(&wrist_encoder_);
   }
 
   void RunIteration() {
-    ::frc971::wpilib::SendRobotState(my_pid_);
-
-    const auto &values = constants::GetValues();
-
     {
       auto drivetrain_message = drivetrain_queue.position.MakeMessage();
       drivetrain_message->right_encoder =
@@ -309,9 +262,10 @@ class SensorReader {
 
       drivetrain_message.Send();
     }
+  }
 
-    dma_synchronizer_->RunIteration();
-
+  void RunDmaIteration() {
+    const auto &values = constants::GetValues();
     {
       auto shooter_message = shooter_queue.position.MakeMessage();
       shooter_message->theta_left =
@@ -358,8 +312,6 @@ class SensorReader {
     }
   }
 
-  void Quit() { run_ = false; }
-
  private:
   void CopyPotAndIndexPosition(
       const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
@@ -382,12 +334,6 @@ class SensorReader {
     position->index_pulses = encoder.index_posedge_count();
   }
 
-  int32_t my_pid_;
-
-  ::std::unique_ptr<::frc971::wpilib::DMASynchronizer> dma_synchronizer_;
-
-  ::std::unique_ptr<Encoder> drivetrain_left_encoder_,
-      drivetrain_right_encoder_;
   ::std::unique_ptr<AnalogInput> drivetrain_left_hall_, drivetrain_right_hall_;
 
   ::std::unique_ptr<Encoder> shooter_left_encoder_, shooter_right_encoder_;
@@ -397,9 +343,7 @@ class SensorReader {
 
   ::std::array<::std::unique_ptr<DigitalInput>, 4> autonomous_modes_;
 
-  ::std::atomic<bool> run_{true};
-  DigitalGlitchFilter drivetrain_shooter_encoder_filter_, hall_filter_,
-      superstructure_encoder_filter_;
+  DigitalGlitchFilter hall_filter_;
 };
 
 class SolenoidWriter {
