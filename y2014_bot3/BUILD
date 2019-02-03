@@ -54,6 +54,7 @@ cc_binary(
         "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//frc971/wpilib:buffered_pcm",
         "//frc971/wpilib:dma",
+        "//frc971/wpilib:drivetrain_writer",
         "//frc971/wpilib:gyro_sender",
         "//frc971/wpilib:joystick_sender",
         "//frc971/wpilib:logging_queue",
