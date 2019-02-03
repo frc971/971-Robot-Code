@@ -299,3 +299,22 @@ cc_library(
         "//third_party:wpilib",
     ],
 )
+
+cc_library(
+    name = "drivetrain_writer",
+    srcs = [
+        "drivetrain_writer.cc",
+    ],
+    hdrs = [
+        "drivetrain_writer.h",
+    ],
+    restricted_to = ["//tools:roborio"],
+    deps = [
+        ":loop_output_handler",
+        "//aos:math",
+        "//aos/logging",
+        "//aos/logging:queue_logging",
+        "//frc971/control_loops/drivetrain:drivetrain_queue",
+        "//third_party:wpilib",
+    ],
+)

@@ -41,7 +41,7 @@ cc_binary(
         "//frc971/control_loops:queues",
         "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//frc971/wpilib:ADIS16448",
-        "//frc971/wpilib:buffered_pcm",
+        "//frc971/wpilib:drivetrain_writer",
         "//frc971/wpilib:encoder_and_potentiometer",
         "//frc971/wpilib:interrupt_edge_counting",
         "//frc971/wpilib:joystick_sender",
