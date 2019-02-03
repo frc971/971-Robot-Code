@@ -39,6 +39,9 @@ class DigitalGlitchFilter {
   void SetPeriodCycles(int fpga_cycles);
   void SetPeriodNanoSeconds(uint64_t nanoseconds);
 
+  // Sets the filter period such that it will work well for an input at a maxmium frequency of hz.
+  void SetPeriodHz(int hz);
+
   int GetPeriodCycles();
   uint64_t GetPeriodNanoSeconds();
 

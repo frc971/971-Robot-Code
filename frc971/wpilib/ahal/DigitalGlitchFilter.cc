@@ -167,6 +167,11 @@ void DigitalGlitchFilter::SetPeriodNanoSeconds(uint64_t nanoseconds) {
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
 }
 
+void DigitalGlitchFilter::SetPeriodHz(int hz) {
+  SetPeriodNanoSeconds(static_cast<int>(
+      1 / 4.0 /* built-in tolerance */ / static_cast<double>(hz) * 1e9 + 0.5));
+}
+
 /**
  * Gets the number of cycles that the input must not change state for.
  *
