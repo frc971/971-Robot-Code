@@ -1,11 +1,13 @@
 #include "aos/events/shm-event-loop.h"
-#include "aos/logging/logging.h"
-#include "aos/queue.h"
 
 #include <sys/timerfd.h>
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <stdexcept>
+
+#include "aos/logging/logging.h"
+#include "aos/queue.h"
 
 namespace aos {
 
@@ -173,13 +175,13 @@ class TimerHandlerState : public TimerHandler {
 
 std::unique_ptr<RawFetcher> ShmEventLoop::MakeRawFetcher(
     const std::string &path, const QueueTypeInfo &type) {
-  Take(path);
   return std::unique_ptr<RawFetcher>(new ShmFetcher(
       RawQueue::Fetch(path.c_str(), type.size, type.hash, type.queue_length)));
 }
 
 std::unique_ptr<RawSender> ShmEventLoop::MakeRawSender(
     const std::string &path, const QueueTypeInfo &type) {
+  Take(path);
   return std::unique_ptr<RawSender>(new ShmSender(
       RawQueue::Fetch(path.c_str(), type.size, type.hash, type.queue_length)));
 }
@@ -269,8 +271,12 @@ void ShmEventLoop::Take(const std::string &path) {
   if (is_running()) {
     ::aos::Die("Cannot add new objects while running.\n");
   }
-  if (!taken_.emplace(path).second) {
-    ::aos::Die("%s already has a listener / watcher.", path.c_str());
+
+  const auto prior = ::std::find(taken_.begin(), taken_.end(), path);
+  if (prior != taken_.end()) {
+    ::aos::Die("%s is already being used.", path.c_str());
+  } else {
+    taken_.emplace_back(path);
   }
 }
 

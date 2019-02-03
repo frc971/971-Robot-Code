@@ -59,11 +59,13 @@ class Sender {
     const T &operator*() const { return *get(); }
     const T *operator->() const { return get(); }
 
-    // Sends the message to the queue. Should only be called once.
-    void Send() {
+    // Sends the message to the queue. Should only be called once.  Returns true
+    // if the message was successfully sent, and false otherwise.
+    bool Send() {
       RawSender *sender = &msg_.get_deleter();
       msg_->SetTimeToNow();
-      sender->Send(reinterpret_cast<RawSender::SendContext *>(msg_.release()));
+      return sender->Send(
+          reinterpret_cast<RawSender::SendContext *>(msg_.release()));
     }
 
    private:
@@ -90,6 +92,10 @@ class EventLoop : public RawEventLoop {
 
   // Current time.
   virtual monotonic_clock::time_point monotonic_now() = 0;
+
+  // Note, it is supported to create:
+  //   multiple fetchers, and (one sender or one watcher) per <path, type>
+  //   tuple.
 
   // Makes a class that will always fetch the most recent value
   // sent to path.

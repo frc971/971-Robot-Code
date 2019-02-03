@@ -212,8 +212,7 @@ class SimulatedEventLoop : public EventLoop {
       std::function<void(const aos::Message *message)> watcher) override;
 
   TimerHandler *AddTimer(::std::function<void()> callback) override {
-    timers_.emplace_back(
-        new SimulatedTimerHandler(scheduler_, callback));
+    timers_.emplace_back(new SimulatedTimerHandler(scheduler_, callback));
     return timers_.back().get();
   }
 
@@ -232,19 +231,20 @@ class SimulatedEventLoop : public EventLoop {
   SimulatedQueue *GetSimulatedQueue(
       const ::std::pair<::std::string, QueueTypeInfo> &);
 
-  void Take(const std::string &path);
+  void Take(const ::std::string &path);
 
  private:
   EventScheduler *scheduler_;
-  std::map<::std::pair<::std::string, QueueTypeInfo>, SimulatedQueue> *queues_;
-  std::unordered_set<std::string> taken_;
-  std::vector<std::unique_ptr<TimerHandler>> timers_;
+  ::std::map<::std::pair<::std::string, QueueTypeInfo>, SimulatedQueue>
+      *queues_;
+  ::std::vector<std::string> taken_;
+  ::std::vector<std::unique_ptr<TimerHandler>> timers_;
 };
 
 class SimulatedEventLoopFactory {
  public:
-  std::unique_ptr<EventLoop> CreateEventLoop() {
-    return std::unique_ptr<EventLoop>(
+  ::std::unique_ptr<EventLoop> CreateEventLoop() {
+    return ::std::unique_ptr<EventLoop>(
         new SimulatedEventLoop(&scheduler_, &queues_));
   }
 

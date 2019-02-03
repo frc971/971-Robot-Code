@@ -55,44 +55,54 @@ TEST_P(AbstractEventLoopTest, Basic) {
   EXPECT_TRUE(happened);
 }
 
-// Verify that making a fetcher and handler for "/test" dies.
-TEST_P(AbstractEventLoopTest, FetcherAndHandler) {
+// Verify that making a fetcher and watcher for "/test" succeeds.
+TEST_P(AbstractEventLoopTest, FetcherAndWatcher) {
   auto loop = Make();
   auto fetcher = loop->MakeFetcher<TestMessage>("/test");
-  EXPECT_DEATH(loop->MakeWatcher("/test", [&](const TestMessage &) {}), "/test");
+  loop->MakeWatcher("/test", [&](const TestMessage &) {});
 }
 
-// Verify that making 2 fetchers for "/test" fails.
+// Verify that making 2 fetchers for "/test" succeeds.
 TEST_P(AbstractEventLoopTest, TwoFetcher) {
   auto loop = Make();
   auto fetcher = loop->MakeFetcher<TestMessage>("/test");
-  EXPECT_DEATH(loop->MakeFetcher<TestMessage>("/test"), "/test");
+  auto fetcher2 = loop->MakeFetcher<TestMessage>("/test");
 }
 
-// Verify that registering a handler twice for "/test" fails.
-TEST_P(AbstractEventLoopTest, TwoHandler) {
+// Verify that registering a watcher twice for "/test" fails.
+TEST_P(AbstractEventLoopTest, TwoWatcher) {
   auto loop = Make();
   loop->MakeWatcher("/test", [&](const TestMessage &) {});
-  EXPECT_DEATH(loop->MakeWatcher("/test", [&](const TestMessage &) {}), "/test");
+  EXPECT_DEATH(loop->MakeWatcher("/test", [&](const TestMessage &) {}),
+               "/test");
+}
+
+// Verify that registering a watcher and a sender for "/test" fails.
+TEST_P(AbstractEventLoopTest, WatcherAndSender) {
+  auto loop = Make();
+  auto sender = loop->MakeSender<TestMessage>("/test");
+  EXPECT_DEATH(loop->MakeWatcher("/test", [&](const TestMessage &) {}),
+               "/test");
 }
 
 // Verify that Quit() works when there are multiple watchers.
-TEST_P(AbstractEventLoopTest, MultipleFetcherQuit) {
-  auto loop = Make();
+TEST_P(AbstractEventLoopTest, MultipleWatcherQuit) {
+  auto loop1 = Make();
+  auto loop2 = Make();
 
-  auto sender = loop->MakeSender<TestMessage>("/test2");
+  auto sender = loop1->MakeSender<TestMessage>("/test2");
   {
     auto msg = sender.MakeMessage();
     msg->msg_value = 200;
     msg.Send();
   }
 
-  loop->MakeWatcher("/test1", [&](const TestMessage &) {});
-  loop->MakeWatcher("/test2", [&](const TestMessage &message) {
+  loop2->MakeWatcher("/test1", [&](const TestMessage &) {});
+  loop2->MakeWatcher("/test2", [&](const TestMessage &message) {
     EXPECT_EQ(message.msg_value, 200);
-    loop->Exit();
+    loop2->Exit();
   });
-  loop->Run();
+  loop2->Run();
 }
 
 // Verify that timer intervals and duration function properly.

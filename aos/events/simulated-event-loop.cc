@@ -1,4 +1,7 @@
 #include "aos/events/simulated-event-loop.h"
+
+#include <algorithm>
+
 #include "aos/queue.h"
 
 namespace aos {
@@ -80,13 +83,13 @@ void SimulatedEventLoop::MakeRawWatcher(
 
 std::unique_ptr<RawSender> SimulatedEventLoop::MakeRawSender(
     const std::string &path, const QueueTypeInfo &type) {
+  Take(path);
   ::std::pair<::std::string, QueueTypeInfo> key(path, type);
   return GetSimulatedQueue(key)->MakeRawSender();
 }
 
 std::unique_ptr<RawFetcher> SimulatedEventLoop::MakeRawFetcher(
     const std::string &path, const QueueTypeInfo &type) {
-  Take(path);
   ::std::pair<::std::string, QueueTypeInfo> key(path, type);
   return GetSimulatedQueue(key)->MakeRawFetcher();
 }
@@ -116,12 +119,15 @@ std::unique_ptr<RawFetcher> SimulatedQueue::MakeRawFetcher() {
   return std::unique_ptr<RawFetcher>(new SimulatedFetcher(this));
 }
 
-void SimulatedEventLoop::Take(const std::string &path) {
+void SimulatedEventLoop::Take(const ::std::string &path) {
   if (is_running()) {
     ::aos::Die("Cannot add new objects while running.\n");
   }
-  if (!taken_.emplace(path).second) {
-    ::aos::Die("%s already has a listener / watcher.", path.c_str());
+  const auto prior = ::std::find(taken_.begin(), taken_.end(), path);
+  if (prior != taken_.end()) {
+    ::aos::Die("%s is already being used.", path.c_str());
+  } else {
+    taken_.emplace_back(path);
   }
 }
 }  // namespace aos
