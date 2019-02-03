@@ -107,7 +107,6 @@ class ParameterizedSplineTest
                        GetParam().velocity_limit));
     trajectory_->set_lateral_acceleration(GetParam().lateral_acceleration);
     trajectory_->set_longitudal_acceleration(GetParam().longitudal_acceleration);
-    trajectory_->set_longitudal_acceleration(GetParam().longitudal_acceleration);
     trajectory_->set_voltage_limit(GetParam().voltage_limit);
 
     GetParam().trajectory_modification_fn(trajectory_.get());
