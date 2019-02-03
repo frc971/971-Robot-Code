@@ -41,6 +41,7 @@
 #include "frc971/wpilib/buffered_solenoid.h"
 #include "frc971/wpilib/dma.h"
 #include "frc971/wpilib/dma_edge_counting.h"
+#include "frc971/wpilib/drivetrain_writer.h"
 #include "frc971/wpilib/encoder_and_potentiometer.h"
 #include "frc971/wpilib/interrupt_edge_counting.h"
 #include "frc971/wpilib/joystick_sender.h"
@@ -330,38 +331,6 @@ class SolenoidWriter {
   ::std::atomic<bool> run_{true};
 };
 
-class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
- public:
-  void set_drivetrain_left_victor(::std::unique_ptr<::frc::VictorSP> t) {
-    drivetrain_left_victor_ = ::std::move(t);
-  }
-
-  void set_drivetrain_right_victor(::std::unique_ptr<::frc::VictorSP> t) {
-    drivetrain_right_victor_ = ::std::move(t);
-  }
-
- private:
-  virtual void Read() override {
-    ::frc971::control_loops::drivetrain_queue.output.FetchAnother();
-  }
-
-  virtual void Write() override {
-    auto &queue = ::frc971::control_loops::drivetrain_queue.output;
-    LOG_STRUCT(DEBUG, "will output", *queue);
-    drivetrain_left_victor_->SetSpeed(-queue->left_voltage / 12.0);
-    drivetrain_right_victor_->SetSpeed(queue->right_voltage / 12.0);
-  }
-
-  virtual void Stop() override {
-    LOG(WARNING, "drivetrain output too old\n");
-    drivetrain_left_victor_->SetDisabled();
-    drivetrain_right_victor_->SetDisabled();
-  }
-
-  ::std::unique_ptr<::frc::VictorSP> drivetrain_left_victor_,
-      drivetrain_right_victor_;
-};
-
 class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
   void set_intake_victor(::std::unique_ptr<::frc::VictorSP> t) {
@@ -508,11 +477,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     imu.set_reset(imu_reset.get());
     ::std::thread imu_thread(::std::ref(imu));
 
-    DrivetrainWriter drivetrain_writer;
-    drivetrain_writer.set_drivetrain_left_victor(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(7)));
-    drivetrain_writer.set_drivetrain_right_victor(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(3)));
+    ::frc971::wpilib::DrivetrainWriter drivetrain_writer;
+    drivetrain_writer.set_left_controller0(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(7)), true);
+    drivetrain_writer.set_right_controller0(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(3)), false);
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
     SuperstructureWriter superstructure_writer;
