@@ -167,8 +167,6 @@ class Reader : public ::aos::input::JoystickInput {
              .controller_type(is_control_loop_driving ? 1 : 0)
              .left_goal(left_goal_ - wheel * 0.5 + throttle * 0.3)
              .right_goal(right_goal_ + wheel * 0.5 + throttle * 0.3)
-             .left_velocity_goal(0)
-             .right_velocity_goal(0)
              .Send()) {
       LOG(WARNING, "sending stick values failed\n");
     }

@@ -146,8 +146,7 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
 
 void DrivetrainMotorsSS::SetGoal(
     const ::frc971::control_loops::DrivetrainQueue::Goal &goal) {
-  unprofiled_goal_ << goal.left_goal, goal.left_velocity_goal, goal.right_goal,
-      goal.right_velocity_goal, 0.0, 0.0, 0.0;
+  unprofiled_goal_ << goal.left_goal, 0.0, goal.right_goal, 0.0, 0.0, 0.0, 0.0;
   if (::std::abs(goal.max_ss_voltage) < 0.01) {
     max_voltage_ = kMaxVoltage;
   } else {

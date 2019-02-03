@@ -392,8 +392,6 @@ TEST_F(DrivetrainTest, ProfileStraightForward) {
     goal->controller_type = 1;
     goal->left_goal = 4.0;
     goal->right_goal = 4.0;
-    goal->left_velocity_goal = 0.0;
-    goal->right_velocity_goal = 0.0;
     goal->linear.max_velocity = 1.0;
     goal->linear.max_acceleration = 3.0;
     goal->angular.max_velocity = 1.0;
@@ -423,8 +421,6 @@ TEST_F(DrivetrainTest, ProfileTurn) {
     goal->controller_type = 1;
     goal->left_goal = -1.0;
     goal->right_goal = 1.0;
-    goal->left_velocity_goal = 0.0;
-    goal->right_velocity_goal = 0.0;
     goal->linear.max_velocity = 1.0;
     goal->linear.max_acceleration = 3.0;
     goal->angular.max_velocity = 1.0;
@@ -454,8 +450,6 @@ TEST_F(DrivetrainTest, SaturatedTurnDrive) {
     goal->controller_type = 1;
     goal->left_goal = 5.0;
     goal->right_goal = 4.0;
-    goal->left_velocity_goal = 0.0;
-    goal->right_velocity_goal = 0.0;
     goal->linear.max_velocity = 6.0;
     goal->linear.max_acceleration = 4.0;
     goal->angular.max_velocity = 2.0;
@@ -510,8 +504,6 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
     goal->controller_type = 1;
     goal->left_goal = 5.0;
     goal->right_goal = 4.0;
-    goal->left_velocity_goal = 0.0;
-    goal->right_velocity_goal = 0.0;
     goal->linear.max_velocity = 1.0;
     goal->linear.max_acceleration = 2.0;
     goal->angular.max_velocity = 1.0;

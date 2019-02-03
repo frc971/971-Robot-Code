@@ -67,8 +67,6 @@ bool VisionAlignActor::RunAction(
              .controller_type(1)
              .left_goal(left_current + side_distance_change)
              .right_goal(right_current - side_distance_change)
-             .left_velocity_goal(0)
-             .right_velocity_goal(0)
              .Send()) {
       LOG(WARNING, "sending drivetrain goal failed\n");
     }

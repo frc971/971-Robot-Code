@@ -34,9 +34,7 @@ void BaseAutonomousActor::ResetDrivetrain() {
       .wheel(0.0)
       .throttle(0.0)
       .left_goal(initial_drivetrain_.left)
-      .left_velocity_goal(0)
       .right_goal(initial_drivetrain_.right)
-      .right_velocity_goal(0)
       .max_ss_voltage(max_drivetrain_voltage_)
       .Send();
 }
@@ -63,9 +61,7 @@ void BaseAutonomousActor::StartDrive(double distance, double angle,
   drivetrain_message->wheel = 0.0;
   drivetrain_message->throttle = 0.0;
   drivetrain_message->left_goal = initial_drivetrain_.left;
-  drivetrain_message->left_velocity_goal = 0;
   drivetrain_message->right_goal = initial_drivetrain_.right;
-  drivetrain_message->right_velocity_goal = 0;
   drivetrain_message->max_ss_voltage = max_drivetrain_voltage_;
   drivetrain_message->linear = linear;
   drivetrain_message->angular = angular;

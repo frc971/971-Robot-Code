@@ -105,8 +105,6 @@ class Reader : public ::aos::input::JoystickInput {
              .throttle(throttle)
              .highgear(is_high_gear_)
              .quickturn(data.IsPressed(kQuickTurn))
-             .left_velocity_goal(0)
-             .right_velocity_goal(0)
              .Send()) {
       LOG(WARNING, "sending stick values failed\n");
     }
