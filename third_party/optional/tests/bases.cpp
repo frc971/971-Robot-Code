@@ -2,8 +2,7 @@
 #include "optional.hpp"
 
 // Old versions of GCC don't have the correct trait names. Could fix them up if needs be.
-#if (defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ <= 9 &&              \
-     !defined(__clang__))
+#ifdef TL_OPTIONAL_GCC49
 // nothing for now
 #else
 TEST_CASE("Triviality", "[bases.triviality]") {
