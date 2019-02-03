@@ -1,12 +1,12 @@
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <inttypes.h>
 
 #include <chrono>
-#include <thread>
-#include <mutex>
 #include <functional>
+#include <mutex>
+#include <thread>
 
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Compressor.h"
@@ -28,21 +28,19 @@
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
-
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "y2014_bot3/control_loops/drivetrain/drivetrain_base.h"
-#include "y2014_bot3/control_loops/rollers/rollers.q.h"
-#include "y2014_bot3/control_loops/rollers/rollers.h"
-
-#include "frc971/wpilib/joystick_sender.h"
-#include "frc971/wpilib/loop_output_handler.h"
-#include "frc971/wpilib/buffered_solenoid.h"
 #include "frc971/wpilib/buffered_pcm.h"
-#include "frc971/wpilib/gyro_sender.h"
-#include "frc971/wpilib/logging.q.h"
-#include "frc971/wpilib/wpilib_interface.h"
-#include "frc971/wpilib/pdp_fetcher.h"
+#include "frc971/wpilib/buffered_solenoid.h"
 #include "frc971/wpilib/dma.h"
+#include "frc971/wpilib/gyro_sender.h"
+#include "frc971/wpilib/joystick_sender.h"
+#include "frc971/wpilib/logging.q.h"
+#include "frc971/wpilib/loop_output_handler.h"
+#include "frc971/wpilib/pdp_fetcher.h"
+#include "frc971/wpilib/sensor_reader.h"
+#include "y2014_bot3/control_loops/drivetrain/drivetrain_base.h"
+#include "y2014_bot3/control_loops/rollers/rollers.h"
+#include "y2014_bot3/control_loops/rollers/rollers.q.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -59,7 +57,7 @@ using ::frc971::wpilib::GyroSender;
 using namespace frc;
 using aos::make_unique;
 
-namespace frc971 {
+namespace y2014_bot3 {
 namespace wpilib {
 
 double drivetrain_translate(int32_t in) {
@@ -75,43 +73,9 @@ double drivetrain_velocity_translate(double in) {
 }
 
 // Reads in our inputs. (sensors, voltages, etc.)
-class SensorReader {
+class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
-  SensorReader() {}
-
-  void set_drivetrain_left_encoder(::std::unique_ptr<Encoder> encoder) {
-    drivetrain_left_encoder_ = ::std::move(encoder);
-    drivetrain_left_encoder_->SetMaxPeriod(0.005);
-  }
-
-  void set_drivetrain_right_encoder(::std::unique_ptr<Encoder> encoder) {
-    drivetrain_right_encoder_ = ::std::move(encoder);
-    drivetrain_right_encoder_->SetMaxPeriod(0.005);
-  }
-
-  void operator()() {
-    ::aos::SetCurrentThreadName("SensorReader");
-
-    my_pid_ = getpid();
-
-    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                        ::std::chrono::milliseconds(4));
-
-    ::aos::SetCurrentThreadRealtimePriority(40);
-    while (run_) {
-      {
-        const int iterations = phased_loop.SleepUntilNext();
-        if (iterations != 1) {
-          LOG(WARNING, "SensorReader skipped %d iterations\n", iterations - 1);
-        }
-      }
-      RunIteration();
-    }
-  }
-
   void RunIteration() {
-    ::frc971::wpilib::SendRobotState(my_pid_);
-
     // Drivetrain
     {
       auto drivetrain_message = drivetrain_queue.position.MakeMessage();
@@ -133,16 +97,6 @@ class SensorReader {
       rollers_message.Send();
     }
   }
-
-  void Quit() { run_ = false; }
-
- private:
-  int32_t my_pid_;
-
-  ::std::unique_ptr<Encoder> drivetrain_left_encoder_;
-  ::std::unique_ptr<Encoder> drivetrain_right_encoder_;
-
-  ::std::atomic<bool> run_{true};
 };
 
 // Writes out our pneumatic outputs.
@@ -245,8 +199,7 @@ class SolenoidWriter {
   ::std::unique_ptr<DigitalInput> pressure_switch_;
   ::std::unique_ptr<Relay> compressor_relay_;
 
-  ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output>
-      drivetrain_;
+  ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
   ::aos::Queue<::y2014_bot3::control_loops::RollersQueue::Output> rollers_;
 
   ::std::atomic<bool> run_{true};
@@ -288,12 +241,14 @@ class DrivetrainWriter : public LoopOutputHandler {
 // Writes out rollers voltages.
 class RollersWriter : public LoopOutputHandler {
  public:
-  void set_rollers_front_intake_talon(::std::unique_ptr<Talon> t_left, ::std::unique_ptr<Talon> t_right) {
+  void set_rollers_front_intake_talon(::std::unique_ptr<Talon> t_left,
+                                      ::std::unique_ptr<Talon> t_right) {
     rollers_front_left_intake_talon_ = ::std::move(t_left);
     rollers_front_right_intake_talon_ = ::std::move(t_right);
   }
 
-  void set_rollers_back_intake_talon(::std::unique_ptr<Talon> t_left, ::std::unique_ptr<Talon> t_right) {
+  void set_rollers_back_intake_talon(::std::unique_ptr<Talon> t_left,
+                                     ::std::unique_ptr<Talon> t_right) {
     rollers_back_left_intake_talon_ = ::std::move(t_left);
     rollers_back_right_intake_talon_ = ::std::move(t_right);
   }
@@ -310,10 +265,14 @@ class RollersWriter : public LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::y2014_bot3::control_loops::rollers_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    rollers_front_left_intake_talon_->SetSpeed(queue->front_intake_voltage / 12.0);
-    rollers_front_right_intake_talon_->SetSpeed(-(queue->front_intake_voltage / 12.0));
-    rollers_back_left_intake_talon_->SetSpeed(queue->back_intake_voltage / 12.0);
-    rollers_back_right_intake_talon_->SetSpeed(-(queue->back_intake_voltage / 12.0));
+    rollers_front_left_intake_talon_->SetSpeed(queue->front_intake_voltage /
+                                               12.0);
+    rollers_front_right_intake_talon_->SetSpeed(
+        -(queue->front_intake_voltage / 12.0));
+    rollers_back_left_intake_talon_->SetSpeed(queue->back_intake_voltage /
+                                              12.0);
+    rollers_back_right_intake_talon_->SetSpeed(
+        -(queue->back_intake_voltage / 12.0));
     rollers_low_goal_talon_->SetSpeed(queue->low_goal_voltage / 12.0);
   }
 
@@ -347,7 +306,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::frc971::wpilib::PDPFetcher pdp_fetcher;
     ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
 
-    //TODO(comran): IO ports are placeholders at the moment, so match them to
+    // TODO(comran): IO ports are placeholders at the moment, so match them to
     // the robot before turning on.
 
     // Sensors
@@ -369,9 +328,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     RollersWriter rollers_writer;
     rollers_writer.set_rollers_front_intake_talon(
-        ::std::unique_ptr<Talon>(new Talon(3)), ::std::unique_ptr<Talon>(new Talon(7)));
+        ::std::unique_ptr<Talon>(new Talon(3)),
+        ::std::unique_ptr<Talon>(new Talon(7)));
     rollers_writer.set_rollers_back_intake_talon(
-        ::std::unique_ptr<Talon>(new Talon(1)), ::std::unique_ptr<Talon>(new Talon(6)));
+        ::std::unique_ptr<Talon>(new Talon(1)),
+        ::std::unique_ptr<Talon>(new Talon(6)));
 
     rollers_writer.set_rollers_low_goal_talon(
         ::std::unique_ptr<Talon>(new Talon(4)));
@@ -425,6 +386,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 };
 
 }  // namespace wpilib
-}  // namespace frc971
+}  // namespace y2014_bot3
 
-AOS_ROBOT_CLASS(::frc971::wpilib::WPILibRobot);
+AOS_ROBOT_CLASS(::y2014_bot3::wpilib::WPILibRobot);
