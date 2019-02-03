@@ -98,6 +98,11 @@ class Trajectory {
   // Returns the feed forwards voltage for an explicit distance.
   ::Eigen::Matrix<double, 2, 1> FFVoltage(double distance);
 
+  // Returns whether a state represents a state at the end of the spline.
+  bool is_at_end(::Eigen::Matrix<double, 2, 1> state) const {
+    return state(0) > length() - 1e-4;
+  }
+
   // Returns the length of the path in meters.
   double length() const { return spline_->length(); }
 
@@ -151,6 +156,10 @@ class Trajectory {
       const ::Eigen::DiagonalMatrix<double, 5> &Q,
       const ::Eigen::DiagonalMatrix<double, 2> &R) const;
 
+  // Return the next position, velocity, acceleration based on the current
+  // state. Updates the passed in state for the next iteration.
+  ::Eigen::Matrix<double, 3, 1> GetNextXVA(
+      ::std::chrono::nanoseconds dt, ::Eigen::Matrix<double, 2, 1> *state);
   ::std::vector<::Eigen::Matrix<double, 3, 1>> PlanXVA(
       ::std::chrono::nanoseconds dt);
 

@@ -265,6 +265,15 @@ TEST_P(ParameterizedSplineTest, FBSpline) {
             1.2e-2);
 }
 
+// Tests that Iteratively computing the XVA plan is the same as precomputing it.
+TEST_P(ParameterizedSplineTest, IterativeXVA) {
+  ::Eigen::Matrix<double, 2, 1> state = ::Eigen::Matrix<double, 2, 1>::Zero();
+  for (size_t i = 1; i < length_plan_xva_.size(); ++i) {
+    ::Eigen::Matrix<double, 3, 1> xva = trajectory_->GetNextXVA(kDt, &state);
+    EXPECT_LT((length_plan_xva_[i] - xva).norm(), 1e-2);
+  }
+}
+
 SplineTestParams MakeSplineTestParams(struct SplineTestParams params) {
   return params;
 }

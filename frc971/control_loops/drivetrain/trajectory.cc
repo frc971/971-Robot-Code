@@ -362,31 +362,32 @@ const ::Eigen::Matrix<double, 5, 1> Trajectory::GoalState(double distance,
   return result;
 }
 
-::std::vector<::Eigen::Matrix<double, 3, 1>> Trajectory::PlanXVA(
-    ::std::chrono::nanoseconds dt) {
+::Eigen::Matrix<double, 3, 1> Trajectory::GetNextXVA(
+    ::std::chrono::nanoseconds dt, ::Eigen::Matrix<double, 2, 1> *state) {
   double dt_float =
       ::std::chrono::duration_cast<::std::chrono::duration<double>>(dt).count();
-  double t = 0.0;
-  ::Eigen::Matrix<double, 2, 1> state = ::Eigen::Matrix<double, 2, 1>::Zero();
 
+  // TODO(austin): This feels like something that should be pulled out into
+  // a library for re-use.
+  *state = RungeKutta([this](const ::Eigen::Matrix<double, 2, 1> x) {
+    ::Eigen::Matrix<double, 3, 1> xva = FFAcceleration(x(0));
+    return (::Eigen::Matrix<double, 2, 1>() << x(1), xva(2)).finished();
+  }, *state, dt_float);
+
+  ::Eigen::Matrix<double, 3, 1> result = FFAcceleration((*state)(0));
+  (*state)(1) = result(1);
+  return result;
+}
+
+::std::vector<::Eigen::Matrix<double, 3, 1>> Trajectory::PlanXVA(
+    ::std::chrono::nanoseconds dt) {
+  ::Eigen::Matrix<double, 2, 1> state = ::Eigen::Matrix<double, 2, 1>::Zero();
   ::std::vector<::Eigen::Matrix<double, 3, 1>> result;
   result.emplace_back(FFAcceleration(0));
   result.back()(1) = 0.0;
 
-  while (state(0) < length() - 1e-4) {
-    t += dt_float;
-
-    // TODO(austin): This feels like something that should be pulled out into
-    // a library for re-use.
-    state = RungeKutta(
-        [this](const ::Eigen::Matrix<double, 2, 1> x) {
-          ::Eigen::Matrix<double, 3, 1> xva = FFAcceleration(x(0));
-          return (::Eigen::Matrix<double, 2, 1>() << x(1), xva(2)).finished();
-        },
-        state, dt_float);
-
-    result.emplace_back(FFAcceleration(state(0)));
-    state(1) = result.back()(1);
+  while (!is_at_end(state)) {
+    result.emplace_back(GetNextXVA(dt, &state));
   }
   return result;
 }
