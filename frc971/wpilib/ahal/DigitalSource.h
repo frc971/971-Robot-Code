@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "HAL/Types.h"
+#include "hal/Types.h"
 #include "frc971/wpilib/ahal/InterruptableSensorBase.h"
 
 namespace frc {

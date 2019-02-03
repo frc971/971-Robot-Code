@@ -9,7 +9,7 @@
 #include <array>
 #include <memory>
 
-#include "HAL/ChipObject.h"
+#include "hal/ChipObject.h"
 
 class DMA;
 namespace frc {

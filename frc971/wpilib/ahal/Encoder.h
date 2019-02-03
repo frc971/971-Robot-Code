@@ -10,7 +10,7 @@
 #include <memory>
 #include <string>
 
-#include "HAL/Encoder.h"
+#include "hal/Encoder.h"
 
 namespace frc {
 

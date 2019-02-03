@@ -10,7 +10,7 @@
 #include <array>
 
 #include "frc971/wpilib/ahal/DigitalSource.h"
-// #include "HAL/cpp/priority_mutex.h"
+// #include "hal/cpp/priority_mutex.h"
 
 namespace frc {
 

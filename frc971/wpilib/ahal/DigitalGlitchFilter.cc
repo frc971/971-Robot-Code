@@ -10,9 +10,9 @@
 #include <algorithm>
 #include <array>
 
-#include "HAL/Constants.h"
-#include "HAL/DIO.h"
-#include "HAL/HAL.h"
+#include "hal/Constants.h"
+#include "hal/DIO.h"
+#include "hal/HAL.h"
 #include "frc971/wpilib/ahal/Counter.h"
 #include "frc971/wpilib/ahal/Encoder.h"
 #include "frc971/wpilib/ahal/Utility.h"
@@ -31,7 +31,7 @@ DigitalGlitchFilter::DigitalGlitchFilter() {
   m_channelIndex = std::distance(m_filterAllocated.begin(), index);
   *index = true;
 
-  HAL_Report(HALUsageReporting::kResourceType_DigitalFilter, m_channelIndex);
+  HAL_Report(HALUsageReporting::kResourceType_DigitalGlitchFilter, m_channelIndex);
 }
 
 DigitalGlitchFilter::~DigitalGlitchFilter() {

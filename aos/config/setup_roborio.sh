@@ -37,6 +37,3 @@ ssh "admin@${ROBOT_HOSTNAME}" 'PATH="${PATH}":/usr/local/natinst/bin/ /usr/local
 
 echo "Deploying robotCommand startup script"
 scp aos/config/robotCommand "admin@${ROBOT_HOSTNAME}:/home/lvuser/"
-
-echo "Copying libstdc++.so.6.0.21 library to /usr/lib"
-scp external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/lib/libstdc++.so.6.0.21 "admin@${ROBOT_HOSTNAME}:/usr/lib/"

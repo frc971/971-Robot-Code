@@ -10,8 +10,8 @@
 #include <memory>
 #include <string>
 
-#include "HAL/Counter.h"
-#include "HAL/Types.h"
+#include "hal/Counter.h"
+#include "hal/Types.h"
 #include "frc971/wpilib/ahal/AnalogTrigger.h"
 #include "frc971/wpilib/ahal/CounterBase.h"
 #include "frc971/wpilib/ahal/SensorBase.h"

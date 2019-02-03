@@ -3,7 +3,7 @@
 #include "aos/robot_state/robot_state.q.h"
 #include "aos/logging/queue_logging.h"
 
-#include <HAL/HAL.h>
+#include "hal/HAL.h"
 
 namespace frc971 {
 namespace wpilib {

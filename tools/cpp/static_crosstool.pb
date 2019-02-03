@@ -343,6 +343,7 @@ toolchain {
   supports_thin_archives: false
 
   tool_path { name: "ar" path: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-ar" }
+  tool_path { name: "as" path: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-as" }
   tool_path { name: "compat-ld" path: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-ld" }
   tool_path { name: "cpp" path: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-cpp" }
   tool_path { name: "dwp" path: "/bin/false" }
@@ -373,14 +374,44 @@ toolchain {
       action: "lto-backend"
       action: "clif-match"
       flag_group {
-        flag: "--sysroot=external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi"
+        flag: "--sysroot=external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi"
         flag: "-nostdinc"
         flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include"
+        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi/usr/lib/gcc/arm-frc2019-linux-gnueabi/6.3.0/include"
         flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include-fixed"
+        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi/usr/lib/gcc/arm-frc2019-linux-gnueabi/6.3.0/include-fixed"
+      }
+    }
+
+    flag_set {
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-module-compile"
+      action: "c++-module-codegen"
+      flag_group {
         flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/usr/include"
+        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi/usr/include/c++/6.3.0"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi/usr/include/c++/6.3.0/arm-frc2019-linux-gnueabi"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi/usr/include/c++/6.3.0/backward"
+      }
+    }
+
+    flag_set {
+      action: "assemble"
+      action: "preprocess-assemble"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-module-compile"
+      action: "c++-module-codegen"
+      action: "lto-backend"
+      action: "clif-match"
+      flag_group {
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi/usr/include"
+
         flag: "-mfpu=neon"
 
         # Things that the code wants defined.
@@ -462,46 +493,15 @@ toolchain {
     }
   }
 
-  feature {
-    name: "compile_flags2"
-    enabled: true
-    flag_set {
-      action: "c++-compile"
-      action: "c++-header-parsing"
-      action: "c++-module-compile"
-      action: "c++-module-codegen"
-      action: "lto-backend"
-      action: "clif-match"
-      flag_group {
-        flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0"
-        flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0/arm-frc-linux-gnueabi"
-        flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0/backward"
-        flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include"
-        flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include-fixed"
-        flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include"
-        flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/usr/include"
-      }
-    }
-  }
-
   # TODO(bazel-team): In theory, the path here ought to exactly match the path
   # used by gcc. That works because bazel currently doesn't track files at
   # absolute locations and has no remote execution, yet. However, this will need
   # to be fixed, maybe with auto-detection?
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/arm-frc-linux-gnueabi/include)%/c++/5.4.0"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/arm-frc-linux-gnueabi/include)%/c++/5.4.0/arm-frc-linux-gnueabi"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/arm-frc-linux-gnueabi/include)%/c++/5.4.0/backward"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include)%"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include-fixed)%"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/arm-frc-linux-gnueabi/include)%"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/arm-frc-linux-gnueabi/usr/include)%"
+
+  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//arm-frc2019-linux-gnueabi/usr/lib/gcc/arm-frc2019-linux-gnueabi/6.3.0/include)%"
+  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//arm-frc2019-linux-gnueabi/usr/lib/gcc/arm-frc2019-linux-gnueabi/6.3.0/include-fixed)%"
+  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//arm-frc2019-linux-gnueabi/usr/include/c++/6.3.0/arm-frc2019-linux-gnueabi)%"
+  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//arm-frc2019-linux-gnueabi/usr/include/c++/6.3.0/backward)%"
 
   linker_flag: "-lstdc++"
   linker_flag: "-Ltools/cpp/arm-frc-linux-gnueabi/libs"
@@ -670,6 +670,7 @@ toolchain {
       action: "c++-module-compile"
       flag_group {
         flag: "-std=gnu++1y"
+        flag: "-fno-sized-deallocation"
       }
     }
     flag_set {

@@ -32,6 +32,7 @@
 # not support parameterization around threading choice or sparse backends.
 
 load("//:bazel/ceres.bzl", "ceres_library")
+load("@//tools/build_rules:select.bzl", "cpu_select")
 
 ceres_library(
     name = "ceres",
@@ -170,7 +171,10 @@ TEST_COPTS = [
     "-Wno-format-nonliteral",
     "-Wno-missing-braces",
     "-Wno-missing-field-initializers",
-]
+] + cpu_select({
+    "roborio": ["-Wno-nonnull-compare"],
+    "else": [],
+})
 
 TEST_DEPS = [
     "//:ceres",

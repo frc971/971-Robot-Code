@@ -298,6 +298,8 @@ cc_library(
         ],
         "gcc": [
             "-Wno-discarded-qualifiers",
+            "-Wno-maybe-uninitialized",
+            "-Wno-unused-but-set-variable",
         ],
     }),
     includes = [

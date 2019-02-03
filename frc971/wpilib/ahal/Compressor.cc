@@ -6,11 +6,11 @@
 /*----------------------------------------------------------------------------*/
 
 #include "frc971/wpilib/ahal/Compressor.h"
-#include "HAL/Compressor.h"
+#include "hal/Compressor.h"
 
-#include "HAL/HAL.h"
-#include "HAL/Ports.h"
-#include "HAL/Solenoid.h"
+#include "hal/HAL.h"
+#include "hal/Ports.h"
+#include "hal/Solenoid.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"
 
 using namespace frc;

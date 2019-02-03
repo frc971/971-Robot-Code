@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "HAL/AnalogTrigger.h"
+#include "hal/AnalogTrigger.h"
 #include "frc971/wpilib/ahal/DigitalSource.h"
 
 namespace frc {

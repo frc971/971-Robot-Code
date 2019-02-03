@@ -5,13 +5,13 @@
 /* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
-#include "HAL/Relay.h"
+#include "hal/Relay.h"
 #include "frc971/wpilib/ahal/Relay.h"
 
 #include <sstream>
 
-#include "HAL/HAL.h"
-#include "HAL/Ports.h"
+#include "hal/HAL.h"
+#include "hal/Ports.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"
 
 using namespace frc;

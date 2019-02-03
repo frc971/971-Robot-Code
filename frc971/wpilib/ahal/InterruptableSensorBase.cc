@@ -7,47 +7,50 @@
 
 #include "frc971/wpilib/ahal/InterruptableSensorBase.h"
 
-#include "HAL/HAL.h"
+#include "hal/HAL.h"
 #include "frc971/wpilib/ahal/Utility.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"
 
 using namespace frc;
 
-InterruptableSensorBase::InterruptableSensorBase() {}
+namespace {
 
-/**
- * Request one of the 8 interrupts asynchronously on this digital input.
- *
- * Request interrupts in asynchronous mode where the user's interrupt handler
- * will be called when the interrupt fires. Users that want control over the
- * thread priority should use the synchronous method with their own spawned
- * thread. The default is interrupt on rising edges only.
- */
-void InterruptableSensorBase::RequestInterrupts(
-    HAL_InterruptHandlerFunction handler, void *param) {
-  if (StatusIsFatal()) return;
+// Converts a freestanding lower half to a 64 bit FPGA timestamp
+//
+// Note: This is making the assumption that the timestamp being converted is
+// always in the past.  If you call this with a future timestamp, it probably
+// will make it in the past.  If you wait over 70 minutes between capturing the
+// bottom 32 bits of the timestamp and expanding it, you will be off by
+// multiples of 1<<32 microseconds.
+//
+// @return The current time in microseconds according to the FPGA (since FPGA
+// reset) as a 64 bit number.
+uint64_t HAL_ExpandFPGATime(uint32_t unexpanded_lower, int32_t* status) {
+  // Capture the current FPGA time.  This will give us the upper half of the
+  // clock.
+  uint64_t fpga_time = HAL_GetFPGATime(status);
+  if (*status != 0) return 0;
 
-  wpi_assert(m_interrupt == HAL_kInvalidHandle);
-  AllocateInterrupts(false);
-  if (StatusIsFatal()) return;  // if allocate failed, out of interrupts
+  // Now, we need to detect the case where the lower bits rolled over after we
+  // sampled.  In that case, the upper bits will be 1 bigger than they should
+  // be.
 
-  int32_t status = 0;
-  HAL_RequestInterrupts(
-      m_interrupt, GetPortHandleForRouting(),
-      static_cast<HAL_AnalogTriggerType>(GetAnalogTriggerTypeForRouting()),
-      &status);
-  SetUpSourceEdge(true, false);
-  HAL_AttachInterruptHandler(m_interrupt, handler, param, &status);
-  wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+  // Break it into lower and upper portions.
+  uint32_t lower = fpga_time & ((uint64_t)0xffffffff);
+  uint64_t upper = (fpga_time >> 32) & 0xffffffff;
+
+  // The time was sampled *before* the current time, so roll it back.
+  if (lower < unexpanded_lower) {
+    --upper;
+  }
+
+  return (upper << 32) + static_cast<uint64_t>(unexpanded_lower);
 }
 
-/**
- * Request one of the 8 interrupts synchronously on this digital input.
- *
- * Request interrupts in synchronous mode where the user program will have to
- * explicitly wait for the interrupt to occur using WaitForInterrupt.
- * The default is interrupt on rising edges only.
- */
+}  // namespace
+
+InterruptableSensorBase::InterruptableSensorBase() {}
+
 void InterruptableSensorBase::RequestInterrupts() {
   if (StatusIsFatal()) return;
 
@@ -72,11 +75,6 @@ void InterruptableSensorBase::AllocateInterrupts(bool watcher) {
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
 }
 
-/**
- * Cancel interrupts on this device.
- *
- * This deallocates all the chipobject structures and disables any interrupts.
- */
 void InterruptableSensorBase::CancelInterrupts() {
   if (StatusIsFatal()) return;
   wpi_assert(m_interrupt != HAL_kInvalidHandle);
@@ -86,18 +84,6 @@ void InterruptableSensorBase::CancelInterrupts() {
   m_interrupt = HAL_kInvalidHandle;
 }
 
-/**
- * In synchronous mode, wait for the defined interrupt to occur.
- *
- * You should <b>NOT</b> attempt to read the sensor from another thread while
- * waiting for an interrupt. This is not threadsafe, and can cause memory
- * corruption
- *
- * @param timeout        Timeout in seconds
- * @param ignorePrevious If true, ignore interrupts that happened before
- *                       WaitForInterrupt was called.
- * @return What interrupts fired
- */
 InterruptableSensorBase::WaitResult InterruptableSensorBase::WaitForInterrupt(
     double timeout, bool ignorePrevious) {
   if (StatusIsFatal()) return InterruptableSensorBase::kTimeout;
@@ -117,13 +103,6 @@ InterruptableSensorBase::WaitResult InterruptableSensorBase::WaitForInterrupt(
   return static_cast<WaitResult>(falling | rising);
 }
 
-/**
- * Enable interrupts to occur on this input.
- *
- * Interrupts are disabled when the RequestInterrupt call is made. This gives
- * time to do the setup of the other options before starting to field
- * interrupts.
- */
 void InterruptableSensorBase::EnableInterrupts() {
   if (StatusIsFatal()) return;
   wpi_assert(m_interrupt != HAL_kInvalidHandle);
@@ -132,59 +111,26 @@ void InterruptableSensorBase::EnableInterrupts() {
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
 }
 
-/**
- * Disable Interrupts without without deallocating structures.
- */
-void InterruptableSensorBase::DisableInterrupts() {
-  if (StatusIsFatal()) return;
+hal::fpga_clock::time_point InterruptableSensorBase::ReadRisingTimestamp() {
+  if (StatusIsFatal()) return hal::fpga_clock::min_time;
   wpi_assert(m_interrupt != HAL_kInvalidHandle);
   int32_t status = 0;
-  HAL_DisableInterrupts(m_interrupt, &status);
+  uint64_t timestamp = HAL_ReadInterruptRisingTimestamp(m_interrupt, &status);
+  timestamp = HAL_ExpandFPGATime(timestamp, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+  return hal::fpga_clock::time_point(hal::fpga_clock::duration(timestamp));
 }
 
-/**
- * Return the timestamp for the rising interrupt that occurred most recently.
- *
- * This is in the same time domain as GetClock().
- * The rising-edge interrupt should be enabled with
- * {@link #DigitalInput.SetUpSourceEdge}
- *
- * @return Timestamp in seconds since boot.
- */
-double InterruptableSensorBase::ReadRisingTimestamp() {
-  if (StatusIsFatal()) return 0.0;
+hal::fpga_clock::time_point InterruptableSensorBase::ReadFallingTimestamp() {
+  if (StatusIsFatal()) return hal::fpga_clock::min_time;
   wpi_assert(m_interrupt != HAL_kInvalidHandle);
   int32_t status = 0;
-  double timestamp = HAL_ReadInterruptRisingTimestamp(m_interrupt, &status);
+  uint64_t timestamp = HAL_ReadInterruptFallingTimestamp(m_interrupt, &status);
+  timestamp = HAL_ExpandFPGATime(timestamp, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
-  return timestamp;
+  return hal::fpga_clock::time_point(hal::fpga_clock::duration(timestamp));
 }
 
-/**
- * Return the timestamp for the falling interrupt that occurred most recently.
- *
- * This is in the same time domain as GetClock().
- * The falling-edge interrupt should be enabled with
- * {@link #DigitalInput.SetUpSourceEdge}
- *
- * @return Timestamp in seconds since boot.
-*/
-double InterruptableSensorBase::ReadFallingTimestamp() {
-  if (StatusIsFatal()) return 0.0;
-  wpi_assert(m_interrupt != HAL_kInvalidHandle);
-  int32_t status = 0;
-  double timestamp = HAL_ReadInterruptFallingTimestamp(m_interrupt, &status);
-  wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
-  return timestamp;
-}
-
-/**
- * Set which edge to trigger interrupts on
- *
- * @param risingEdge  true to interrupt on rising edge
- * @param fallingEdge true to interrupt on falling edge
- */
 void InterruptableSensorBase::SetUpSourceEdge(bool risingEdge,
                                               bool fallingEdge) {
   if (StatusIsFatal()) return;

@@ -9,8 +9,8 @@
 
 #include <stdint.h>
 
-#include "HAL/HAL.h"
-#include "HAL/Power.h"
+#include "hal/HAL.h"
+#include "hal/Power.h"
 #include "frc971/wpilib/ahal/ErrorBase.h"
 
 using namespace frc;

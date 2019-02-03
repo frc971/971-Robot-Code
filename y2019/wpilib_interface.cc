@@ -42,7 +42,7 @@
 #include "frc971/wpilib/pdp_fetcher.h"
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
-#include "third_party/Phoenix-frc-lib/cpp/include/ctre/phoenix/MotorControl/CAN/TalonSRX.h"
+#include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
 #include "y2019/constants.h"
 #include "y2019/control_loops/superstructure/superstructure.q.h"
 

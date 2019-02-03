@@ -7,7 +7,7 @@
 
 #include "frc971/wpilib/ahal/AnalogTriggerOutput.h"
 
-#include <HAL/HAL.h>
+#include <hal/HAL.h>
 
 #include "frc971/wpilib/ahal/AnalogTrigger.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"

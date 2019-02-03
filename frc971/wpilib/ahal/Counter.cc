@@ -7,7 +7,7 @@
 
 #include "frc971/wpilib/ahal/Counter.h"
 
-#include "HAL/HAL.h"
+#include "hal/HAL.h"
 #include "frc971/wpilib/ahal/AnalogTrigger.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"

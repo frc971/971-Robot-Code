@@ -5,13 +5,13 @@
 /* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
-#include "HAL/SPI.h"
+#include "hal/SPI.h"
 #include "frc971/wpilib/ahal/SPI.h"
 
 #include <cstring>
 
-#include "HAL/HAL.h"
-#include "llvm/SmallVector.h"
+#include "hal/HAL.h"
+#include "wpi/SmallVector.h"
 
 using namespace frc;
 
@@ -87,7 +87,7 @@ int SPI::Write(uint8_t *data, int size) {
 int SPI::Read(bool initiate, uint8_t *dataReceived, int size) {
   int retVal = 0;
   if (initiate) {
-    llvm::SmallVector<uint8_t, 32> dataToSend;
+    wpi::SmallVector<uint8_t, 32> dataToSend;
     dataToSend.resize(size);
     retVal = HAL_TransactionSPI(m_port, dataToSend.data(), dataReceived, size);
   } else {

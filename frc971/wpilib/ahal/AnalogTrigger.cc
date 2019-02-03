@@ -9,7 +9,7 @@
 
 #include <memory>
 
-#include <HAL/HAL.h>
+#include <hal/HAL.h>
 
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"
