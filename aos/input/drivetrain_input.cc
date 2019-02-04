@@ -64,8 +64,6 @@ void DrivetrainInputReader::HandleDrivetrain(
   new_drivetrain_goal->controller_type = is_control_loop_driving ? 1 : 0;
   new_drivetrain_goal->left_goal = current_left_goal;
   new_drivetrain_goal->right_goal = current_right_goal;
-  new_drivetrain_goal->left_velocity_goal = 0;
-  new_drivetrain_goal->right_velocity_goal = 0;
 
   new_drivetrain_goal->linear.max_velocity = 3.0;
   new_drivetrain_goal->linear.max_acceleration = 20.0;

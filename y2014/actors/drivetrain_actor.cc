@@ -129,8 +129,6 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
         .highgear(true)
         .left_goal(left_goal_state(0, 0) + params.left_initial_position)
         .right_goal(right_goal_state(0, 0) + params.right_initial_position)
-        .left_velocity_goal(left_goal_state(1, 0))
-        .right_velocity_goal(right_goal_state(1, 0))
         .Send();
   }
   if (ShouldCancel()) return true;

@@ -37,8 +37,6 @@ void DrivetrainQueue_Goal::Zero() {
   control_loop_driving = false;
   left_goal = 0.0f;
   right_goal = 0.0f;
-  left_velocity_goal = 0.0f;
-  right_velocity_goal = 0.0f;
   max_ss_voltage = 0.0f;
   //linear.max_velocity = 0.0f;
   //linear.max_acceleration = 0.0f;
@@ -80,8 +78,6 @@ void DrivetrainQueue_Status::Zero() {
   estimated_right_velocity = 0.0f;
   uncapped_left_voltage = 0.0f;
   uncapped_right_voltage = 0.0f;
-  left_velocity_goal = 0.0f;
-  right_velocity_goal = 0.0f;
   left_voltage_error = 0.0f;
   right_voltage_error = 0.0f;
   profiled_left_position_goal = 0.0f;

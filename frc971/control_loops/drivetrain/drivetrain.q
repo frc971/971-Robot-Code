@@ -40,14 +40,14 @@ queue_group DrivetrainQueue {
   message Goal {
     // Position of the steering wheel (positive = turning left when going
     // forwards).
-    double wheel;
-    double wheel_velocity;
-    double wheel_torque;
+    float wheel;
+    float wheel_velocity;
+    float wheel_torque;
 
     // Position of the throttle (positive forwards).
-    double throttle;
-    double throttle_velocity;
-    double throttle_torque;
+    float throttle;
+    float throttle_velocity;
+    float throttle_torque;
 
     // True to shift into high, false to shift into low.
     bool highgear;
@@ -66,12 +66,7 @@ queue_group DrivetrainQueue {
     double left_goal;
     double right_goal;
 
-    // Velocity goal for each drivetrain side (in m/s) when the closed-loop
-    // controller is active.
-    double left_velocity_goal;
-    double right_velocity_goal;
-
-    double max_ss_voltage;
+    float max_ss_voltage;
 
     // Motion profile parameters.
     // The control loop will profile if these are all non-zero.
@@ -126,10 +121,6 @@ queue_group DrivetrainQueue {
     // The voltage we wanted to send to each drivetrain side last cycle.
     double uncapped_left_voltage;
     double uncapped_right_voltage;
-
-    // The goal velocities for the polydrive controller.
-    double left_velocity_goal;
-    double right_velocity_goal;
 
     // The voltage error for the left and right sides.
     double left_voltage_error;

@@ -44,8 +44,6 @@ struct DrivetrainQueue_Goal {
   bool control_loop_driving;
   float left_goal;
   float right_goal;
-  float left_velocity_goal;
-  float right_velocity_goal;
   float max_ss_voltage;
 };
 
@@ -86,8 +84,6 @@ struct DrivetrainQueue_Status {
   float estimated_right_velocity;
   float uncapped_left_voltage;
   float uncapped_right_voltage;
-  float left_velocity_goal;
-  float right_velocity_goal;
   float left_voltage_error;
   float right_voltage_error;
   float profiled_left_position_goal;

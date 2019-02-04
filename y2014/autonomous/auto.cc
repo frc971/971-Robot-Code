@@ -55,9 +55,7 @@ void StopDrivetrain() {
       .controller_type(1)
       .highgear(true)
       .left_goal(left_initial_position)
-      .left_velocity_goal(0)
       .right_goal(right_initial_position)
-      .right_velocity_goal(0)
       .quickturn(false)
       .Send();
 }
@@ -70,9 +68,7 @@ void ResetDrivetrain() {
       .wheel(0.0)
       .throttle(0.0)
       .left_goal(left_initial_position)
-      .left_velocity_goal(0)
       .right_goal(right_initial_position)
-      .right_velocity_goal(0)
       .Send();
 }
 
@@ -103,8 +99,6 @@ void StepDrive(double distance, double theta) {
       .highgear(true)
       .left_goal(left_goal)
       .right_goal(right_goal)
-      .left_velocity_goal(0.0)
-      .right_velocity_goal(0.0)
       .Send();
   left_initial_position = left_goal;
   right_initial_position = right_goal;

@@ -427,8 +427,6 @@ void PolyDrivetrain<Scalar>::SetOutput(
 template <typename Scalar>
 void PolyDrivetrain<Scalar>::PopulateStatus(
     ::frc971::control_loops::DrivetrainQueue::Status *status) {
-  status->left_velocity_goal = goal_left_velocity_;
-  status->right_velocity_goal = goal_right_velocity_;
 
   status->cim_logging.left_in_gear = IsInGear(left_gear_);
   status->cim_logging.left_motor_speed = left_motor_speed_;
