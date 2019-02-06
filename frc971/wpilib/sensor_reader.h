@@ -141,6 +141,27 @@ class SensorReader {
         encoder_ratio * (2.0 * M_PI);
   }
 
+  void CopyPosition(
+      const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
+      ::frc971::PotAndIndexPosition *position,
+      ::std::function<double(int32_t)> encoder_translate,
+      ::std::function<double(double)> potentiometer_translate, bool reverse,
+      double pot_offset) {
+    const double multiplier = reverse ? -1.0 : 1.0;
+    position->encoder =
+        multiplier * encoder_translate(encoder.polled_encoder_value());
+    position->pot = multiplier * potentiometer_translate(
+                                     encoder.polled_potentiometer_voltage()) +
+                    pot_offset;
+    position->latched_encoder =
+        multiplier * encoder_translate(encoder.last_encoder_value());
+    position->latched_pot =
+        multiplier *
+            potentiometer_translate(encoder.last_potentiometer_voltage()) +
+        pot_offset;
+    position->index_pulses = encoder.index_posedge_count();
+  }
+
   double encoder_translate(int32_t value, double counts_per_revolution,
                            double ratio) {
     return static_cast<double>(value) / counts_per_revolution * ratio *

@@ -1,13 +1,13 @@
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <inttypes.h>
 
-#include <chrono>
-#include <thread>
-#include <mutex>
-#include <functional>
 #include <array>
+#include <chrono>
+#include <functional>
+#include <mutex>
+#include <thread>
 
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Compressor.h"
@@ -234,7 +234,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     autonomous_modes_.at(i) = ::std::move(sensor);
   }
 
-
   // All of the DMA-related set_* calls must be made before this, and it doesn't
   // hurt to do all of them.
 
@@ -278,16 +277,15 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
     {
       auto superstructure_message = superstructure_queue.position.MakeMessage();
-      CopyPotAndIndexPosition(intake_encoder_, &superstructure_message->intake,
-                              intake_translate, intake_pot_translate, false,
-                              values.intake.pot_offset);
-      CopyPotAndIndexPosition(shoulder_encoder_,
-                              &superstructure_message->shoulder,
-                              shoulder_translate, shoulder_pot_translate, false,
-                              values.shoulder.pot_offset);
-      CopyPotAndIndexPosition(wrist_encoder_, &superstructure_message->wrist,
-                              wrist_translate, wrist_pot_translate, true,
-                              values.wrist.pot_offset);
+      CopyPosition(intake_encoder_, &superstructure_message->intake,
+                   intake_translate, intake_pot_translate, false,
+                   values.intake.pot_offset);
+      CopyPosition(shoulder_encoder_, &superstructure_message->shoulder,
+                   shoulder_translate, shoulder_pot_translate, false,
+                   values.shoulder.pot_offset);
+      CopyPosition(wrist_encoder_, &superstructure_message->wrist,
+                   wrist_translate, wrist_pot_translate, true,
+                   values.wrist.pot_offset);
 
       superstructure_message.Send();
     }
@@ -314,27 +312,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
  private:
-  void CopyPotAndIndexPosition(
-      const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
-      ::frc971::PotAndIndexPosition *position,
-      ::std::function<double(int32_t)> encoder_translate,
-      ::std::function<double(double)> potentiometer_translate, bool reverse,
-      double pot_offset) {
-    const double multiplier = reverse ? -1.0 : 1.0;
-    position->encoder =
-        multiplier * encoder_translate(encoder.polled_encoder_value());
-    position->pot = multiplier * potentiometer_translate(
-                                     encoder.polled_potentiometer_voltage()) +
-                    pot_offset;
-    position->latched_encoder =
-        multiplier * encoder_translate(encoder.last_encoder_value());
-    position->latched_pot =
-        multiplier *
-            potentiometer_translate(encoder.last_potentiometer_voltage()) +
-        pot_offset;
-    position->index_pulses = encoder.index_posedge_count();
-  }
-
   ::std::unique_ptr<AnalogInput> drivetrain_left_hall_, drivetrain_right_hall_;
 
   ::std::unique_ptr<Encoder> shooter_left_encoder_, shooter_right_encoder_;
@@ -353,9 +330,7 @@ class SolenoidWriter {
       : pcm_(pcm),
         drivetrain_(".frc971.control_loops.drivetrain_queue.output"),
         shooter_(".y2016.control_loops.shooter.shooter_queue.output"),
-        superstructure_(
-            ".y2016.control_loops.superstructure_queue.output") {
-  }
+        superstructure_(".y2016.control_loops.superstructure_queue.output") {}
 
   void set_compressor(::std::unique_ptr<Compressor> compressor) {
     compressor_ = ::std::move(compressor);
@@ -371,8 +346,7 @@ class SolenoidWriter {
     climber_trigger_ = ::std::move(s);
   }
 
-  void set_traverse(
-      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+  void set_traverse(::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
     traverse_ = ::std::move(s);
   }
 
@@ -391,8 +365,7 @@ class SolenoidWriter {
     shooter_pusher_ = ::std::move(s);
   }
 
-  void set_lights(
-      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+  void set_lights(::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
     lights_ = ::std::move(s);
   }
 
@@ -462,9 +435,7 @@ class SolenoidWriter {
 
       {
         ::frc971::wpilib::PneumaticsToLog to_log;
-        {
-          to_log.compressor_on = compressor_->Enabled();
-        }
+        { to_log.compressor_on = compressor_->Enabled(); }
 
         pcm_->Flush();
         to_log.read_solenoids = pcm_->GetAll();
@@ -486,8 +457,7 @@ class SolenoidWriter {
 
   ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
   ::aos::Queue<::y2016::control_loops::shooter::ShooterQueue::Output> shooter_;
-  ::aos::Queue<
-      ::y2016::control_loops::SuperstructureQueue::Output>
+  ::aos::Queue<::y2016::control_loops::SuperstructureQueue::Output>
       superstructure_;
 
   ::std::atomic<bool> run_{true};
