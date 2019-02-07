@@ -42,15 +42,6 @@ void SensorReader::set_drivetrain_right_encoder(
   drivetrain_right_encoder_->SetMaxPeriod(0.005);
 }
 
-// All of the DMA-related set_* calls must be made before this, and it
-// doesn't hurt to do all of them.
-// TODO(austin): Does anyone actually do anything other than set this?  Or can
-// we just take care of that automatically?
-void SensorReader::set_dma(::std::unique_ptr<DMA> dma) {
-  dma_synchronizer_.reset(
-      new ::frc971::wpilib::DMASynchronizer(::std::move(dma)));
-}
-
 void SensorReader::set_pwm_trigger(
     ::std::unique_ptr<frc::DigitalInput> pwm_trigger) {
   fast_encoder_filter_.Add(pwm_trigger.get());
@@ -130,7 +121,9 @@ void SensorReader::operator()() {
   int32_t my_pid = getpid();
 
   Start();
-  dma_synchronizer_->Start();
+  if (dma_synchronizer_) {
+    dma_synchronizer_->Start();
+  }
 
   if (pwm_trigger_) {
     last_period_ = chrono::microseconds(5050);
@@ -160,8 +153,10 @@ void SensorReader::operator()() {
 
     ::frc971::wpilib::SendRobotState(my_pid);
     RunIteration();
-    dma_synchronizer_->RunIteration();
-    RunDmaIteration();
+    if (dma_synchronizer_) {
+      dma_synchronizer_->RunIteration();
+      RunDmaIteration();
+    }
 
     if (pwm_trigger_) {
       monotonic_clock::time_point last_tick_timepoint;

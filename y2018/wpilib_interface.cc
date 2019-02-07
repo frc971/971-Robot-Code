@@ -687,7 +687,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     reader.set_lidar_lite_input(make_unique<frc::DigitalInput>(22));
 
-    reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));
 
     auto imu_trigger = make_unique<frc::DigitalInput>(5);

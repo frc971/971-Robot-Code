@@ -228,7 +228,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread joystick_thread(::std::ref(joystick_sender));
 
     SensorReader reader;
-    reader.set_dma(make_unique<DMA>());
 
     reader.set_drivetrain_left_encoder(make_encoder(0));
     reader.set_drivetrain_right_encoder(make_encoder(1));
