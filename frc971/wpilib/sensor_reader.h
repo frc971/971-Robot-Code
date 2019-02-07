@@ -118,6 +118,25 @@ class SensorReader {
                                        encoder_ratio);
   }
 
+  // Copies a Absolute Encoder with the correct unit
+  // and direction changes.
+  void CopyPosition(
+      const ::frc971::wpilib::AbsoluteEncoder &encoder,
+      ::frc971::AbsolutePosition *position,
+      double encoder_counts_per_revolution, double encoder_ratio,
+      bool reverse) {
+    const double multiplier = reverse ? -1.0 : 1.0;
+    position->encoder =
+        multiplier * encoder_translate(encoder.ReadRelativeEncoder(),
+                                       encoder_counts_per_revolution,
+                                       encoder_ratio);
+
+    position->absolute_encoder =
+        (reverse ? (1.0 - encoder.ReadAbsoluteEncoder())
+                 : encoder.ReadAbsoluteEncoder()) *
+        encoder_ratio * (2.0 * M_PI);
+  }
+
   double encoder_translate(int32_t value, double counts_per_revolution,
                            double ratio) {
     return static_cast<double>(value) / counts_per_revolution * ratio *

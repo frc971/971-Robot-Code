@@ -271,6 +271,24 @@ class AbsoluteEncoderAndPotentiometer {
   ::std::unique_ptr<frc::AnalogInput> potentiometer_;
 };
 
+class AbsoluteEncoder {
+ public:
+  void set_absolute_pwm(::std::unique_ptr<frc::DigitalInput> input) {
+    duty_cycle_.set_input(::std::move(input));
+  }
+
+  void set_encoder(::std::unique_ptr<frc::Encoder> encoder) {
+    encoder_ = ::std::move(encoder);
+  }
+
+  double ReadAbsoluteEncoder() const { return duty_cycle_.Read(); }
+  int32_t ReadRelativeEncoder() const { return encoder_->GetRaw(); }
+
+ private:
+  DutyCycleReader duty_cycle_;
+  ::std::unique_ptr<frc::Encoder> encoder_;
+};
+
 }  // namespace wpilib
 }  // namespace frc971
 
