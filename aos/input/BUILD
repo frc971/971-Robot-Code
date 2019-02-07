@@ -48,3 +48,18 @@ cc_library(
         "//aos/robot_state",
     ],
 )
+
+cc_library(
+    name = "action_joystick_input",
+    srcs = ["action_joystick_input.cc"],
+    hdrs = ["action_joystick_input.h"],
+    deps = [
+        "//aos:init",
+        "//aos/actions:action_lib",
+        "//aos/input:drivetrain_input",
+        "//aos/input:joystick_input",
+        "//aos/logging",
+        "//frc971/autonomous:auto_queue",
+        "//frc971/autonomous:base_autonomous_actor",
+    ],
+)

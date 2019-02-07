@@ -98,7 +98,7 @@ ping 10.9.71.2
 ```console
 # Freshly imaged roboRIOs need to be configured to run the 971 code
 # at startup.  This is done by using the setup_roborio.sh script.
-setup_roborio.sh roboRIO-971-frc.local
+bazel run -c opt //aos/config:setup_roborio -- roboRIO-XXX-frc.local
 ```
 
 ### Some other useful packages
