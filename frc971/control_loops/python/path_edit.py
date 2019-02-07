@@ -144,7 +144,6 @@ class GTK_Widget(basic_window.BaseWindow):
 
         self.selected_points = []
         self.splines = []
-        self.spline = []
         self.reinit_extents()
 
         self.inStart = None
@@ -204,8 +203,6 @@ class GTK_Widget(basic_window.BaseWindow):
             self.startSet = True
         else:
             self.inEnd = [self.index_of_edit, self.findDistance()]
-            self.spline[self.spline_edit].addConstraint(
-                self.inStart, self.inEnd, self.inConstraint, self.inValue)
             self.startSet = False
             self.mode = Mode.kEditing
             self.spline_edit = -1
@@ -237,7 +234,7 @@ class GTK_Widget(basic_window.BaseWindow):
         set_color(cr, palette["GREY"])
         cr.paint()
         #Scale the field to fit within drawing area
-        cr.scale(0.5,0.5)
+        cr.scale(0.5, 0.5)
 
         # Draw a extents rectangle
         set_color(cr, palette["WHITE"])
@@ -277,14 +274,6 @@ class GTK_Widget(basic_window.BaseWindow):
         cr.fill()
 
         y = 0
-        for x, i in enumerate(self.spline):
-            for j in i.constraints:
-                cr.move_to(-650, -y * 10 + 320)
-                set_color(cr, palette["BLACK"])
-                display_text(
-                    cr, str("Spline " + str(x) + ":   " + str(j.toString())),
-                    0.5, 0.5, 2, 2)
-                y += 1
 
         # update all the things
 
@@ -489,9 +478,6 @@ class GTK_Widget(basic_window.BaseWindow):
                     self.splines[spline_edit][1] = f * 2 + e * -1
                     self.splines[spline_edit][2] = d + f * 4 + e * -4
 
-                    self.spline[spline_edit].point = self.splines[spline_edit]
-                    self.spline[spline_edit].math()
-
                 if not self.spline_edit == 0:
                     spline_edit = self.spline_edit - 1
                     a = self.splines[self.spline_edit][0]
@@ -501,11 +487,6 @@ class GTK_Widget(basic_window.BaseWindow):
                     self.splines[spline_edit][4] = a * 2 + b * -1
                     self.splines[spline_edit][3] = c + a * 4 + b * -4
 
-                    self.spline[spline_edit].point = self.splines[spline_edit]
-                    self.spline[spline_edit].math()
-
-                self.spline[self.spline_edit].edit(self.index_of_edit,
-                                                   [self.x, self.y])
                 self.index_of_edit = -1
                 self.spline_edit = -1
             else:
