@@ -371,6 +371,10 @@ def WriteAngularSystem(params, plant_files, controller_files, year_namespaces):
     angular_system = AngularSystem(params, params.name)
     loop_writer = control_loop.ControlLoopWriter(
         angular_system.name, [angular_system], namespaces=year_namespaces)
+    loop_writer.AddConstant(
+        control_loop.Constant('kOutputRatio', '%f', angular_system.G))
+    loop_writer.AddConstant(
+        control_loop.Constant('kFreeSpeed', '%f', angular_system.motor.free_speed))
     loop_writer.Write(plant_files[0], plant_files[1])
 
     integral_angular_system = IntegralAngularSystem(params,
