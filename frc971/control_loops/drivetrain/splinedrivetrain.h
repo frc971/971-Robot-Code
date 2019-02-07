@@ -1,6 +1,8 @@
 #ifndef FRC971_CONTROL_LOOPS_DRIVETRAIN_SPLINEDRIVETRAIN_H_
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_SPLINEDRIVETRAIN_H_
 
+#include "Eigen/Dense"
+
 #include "frc971/control_loops/drivetrain/distance_spline.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
@@ -17,6 +19,8 @@ class SplineDrivetrain {
 
   void SetGoal(const ::frc971::control_loops::DrivetrainQueue::Goal &goal);
 
+  void Update(bool enabled);
+
   void SetOutput(
       ::frc971::control_loops::DrivetrainQueue::Output *output);
   // TODO(alex): What status do we need?
@@ -29,8 +33,8 @@ class SplineDrivetrain {
   uint32_t current_spline_idx_;  // Current excecuting spline.
   ::std::unique_ptr<DistanceSpline> distance_spline_;
   ::std::unique_ptr<Trajectory> current_trajectory_;
-  ::std::vector<::Eigen::Matrix<double, 3, 1>> current_xva_plan_;
-  size_t current_xva_idx_;
+  ::Eigen::Matrix<double, 3, 1> current_xva_, next_xva_;
+  ::Eigen::Matrix<double, 2, 1> current_state_;
 };
 
 }  // namespace drivetrain
