@@ -207,7 +207,7 @@ void DrivetrainLoop::RunIteration(
     }
 
     LOG(DEBUG,
-        "New IMU value from ADIS16448, rate is %f, angle %f, fused %f, bias "
+        "New IMU value, rate is %f, angle %f, fused %f, bias "
         "%f\n",
         rate, angle, down_estimator_.X_hat(0), down_estimator_.X_hat(1));
     down_U_(0, 0) = rate;
