@@ -467,7 +467,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     reader.set_pwm_trigger(make_unique<DigitalInput>(7));
 
-    reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));
 
     auto imu_trigger = make_unique<DigitalInput>(3);

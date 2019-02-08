@@ -629,7 +629,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_autonomous_mode(2, make_unique<DigitalInput>(7));
     reader.set_autonomous_mode(3, make_unique<DigitalInput>(6));
 
-    reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));
 
     // TODO(Brian): This interacts poorly with the SpiRxClearer in ADIS16448.

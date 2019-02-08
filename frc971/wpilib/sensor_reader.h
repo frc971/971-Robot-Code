@@ -34,10 +34,12 @@ class SensorReader {
   // Sets the right drivetrain encoder.
   void set_drivetrain_right_encoder(::std::unique_ptr<frc::Encoder> encoder);
 
-  // Sets the dma.
-  void set_dma(::std::unique_ptr<DMA> dma);
-
+  // Adds a sensor to DMA.
   void AddToDMA(DMASampleHandlerInterface *handler) {
+    if (!dma_synchronizer_) {
+      dma_synchronizer_.reset(
+          new ::frc971::wpilib::DMASynchronizer(std::make_unique<DMA>()));
+    }
     dma_synchronizer_->Add(handler);
   }
 
@@ -48,6 +50,8 @@ class SensorReader {
   void Quit() { run_ = false; }
 
   virtual void RunIteration() = 0;
+  // Runs the DMA iteration after the synchronizer.  This only gets run if a
+  // sensor has been added to DMA.
   virtual void RunDmaIteration() {}
 
   void operator()();

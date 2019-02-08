@@ -646,7 +646,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_shooter_plunger(make_unique<DigitalInput>(8));  // S3
     reader.set_shooter_latch(make_unique<DigitalInput>(9));  // S4
 
-    reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));
 
     ::frc971::wpilib::GyroSender gyro_sender;
