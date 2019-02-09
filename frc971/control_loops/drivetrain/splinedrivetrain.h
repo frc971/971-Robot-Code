@@ -19,7 +19,7 @@ class SplineDrivetrain {
 
   void SetGoal(const ::frc971::control_loops::DrivetrainQueue::Goal &goal);
 
-  void Update(bool enabled);
+  void Update(bool enabled, const ::Eigen::Matrix<double, 5, 1> &state);
 
   void SetOutput(
       ::frc971::control_loops::DrivetrainQueue::Output *output);
@@ -27,6 +27,8 @@ class SplineDrivetrain {
   void PopulateStatus(
       ::frc971::control_loops::DrivetrainQueue::Status *status) const;
  private:
+  void ScaleCapU(Eigen::Matrix<double, 2, 1> *U);
+
   const DrivetrainConfig<double> dt_config_;
 
   uint32_t current_spline_handle_; // Current spline told to excecute.
@@ -35,6 +37,25 @@ class SplineDrivetrain {
   ::std::unique_ptr<Trajectory> current_trajectory_;
   ::Eigen::Matrix<double, 3, 1> current_xva_, next_xva_;
   ::Eigen::Matrix<double, 2, 1> current_state_;
+  ::Eigen::Matrix<double, 2, 1> next_U_;
+  ::Eigen::Matrix<double, 2, 1> uncapped_U_;
+
+  bool enable_;
+
+  // TODO(alex): pull this out of dt_config.
+  const ::Eigen::DiagonalMatrix<double, 5> Q =
+      (::Eigen::DiagonalMatrix<double, 5>().diagonal()
+           << 1.0 / ::std::pow(0.05, 2),
+       1.0 / ::std::pow(0.05, 2), 1.0 / ::std::pow(0.2, 2),
+       1.0 / ::std::pow(0.5, 2), 1.0 / ::std::pow(0.5, 2))
+          .finished()
+          .asDiagonal();
+  const ::Eigen::DiagonalMatrix<double, 2> R =
+      (::Eigen::DiagonalMatrix<double, 2>().diagonal()
+           << 1.0 / ::std::pow(12.0, 2),
+       1.0 / ::std::pow(12.0, 2))
+          .finished()
+          .asDiagonal();
 };
 
 }  // namespace drivetrain
