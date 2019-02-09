@@ -23,6 +23,8 @@ TEST(PoseTest, BasicPoseTest) {
 
   EXPECT_EQ(1.0, pose.abs_pos().x());
   EXPECT_EQ(1.0, pose.abs_pos().y());
+  EXPECT_EQ(1.0, pose.abs_xy().x());
+  EXPECT_EQ(1.0, pose.abs_xy().y());
   EXPECT_EQ(0.5, pose.abs_pos().z());
 
   EXPECT_EQ(0.5, pose.rel_theta());
@@ -32,6 +34,11 @@ TEST(PoseTest, BasicPoseTest) {
   EXPECT_EQ(3.14, pose.rel_theta());
   pose.mutable_pos()->x() = 9.71;
   EXPECT_EQ(9.71, pose.rel_pos().x());
+
+  EXPECT_EQ(nullptr, pose.base());
+  Pose new_base;
+  pose.set_base(&new_base);
+  EXPECT_EQ(&new_base, pose.base());
 }
 
 // Check that Poses behave as expected when constructed relative to another
@@ -74,6 +81,22 @@ TEST(PoseTest, BaseTest) {
   EXPECT_NEAR(rel1.abs_pos().y(), abs.rel_pos().y(), kEps);
   EXPECT_NEAR(rel1.abs_pos().z(), abs.rel_pos().z(), kEps);
   EXPECT_NEAR(rel1.abs_theta(), abs.rel_theta(), kEps);
+}
+
+// Tests that basic accessors for LineSegment behave as expected.
+TEST(LineSegmentTest, BasicAccessorTest) {
+  LineSegment l;
+  EXPECT_EQ(0.0, l.pose1().rel_theta());
+  l.mutable_pose1()->set_theta(1.234);
+  EXPECT_EQ(1.234, l.pose1().rel_theta());
+  EXPECT_EQ(0.0, l.pose2().rel_theta());
+  l.mutable_pose2()->set_theta(5.678);
+  EXPECT_EQ(5.678, l.pose2().rel_theta());
+
+  const ::std::vector<Pose> plot_pts = l.PlotPoints();
+  ASSERT_EQ(2u, plot_pts.size());
+  EXPECT_EQ(l.pose1().rel_theta(), plot_pts[0].rel_theta());
+  EXPECT_EQ(l.pose2().rel_theta(), plot_pts[1].rel_theta());
 }
 
 // Tests that basic checks for intersection function as expected.
