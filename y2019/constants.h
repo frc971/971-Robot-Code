@@ -1,6 +1,7 @@
 #ifndef Y2019_CONSTANTS_H_
 #define Y2019_CONSTANTS_H_
 
+#include <array>
 #include <math.h>
 #include <stdint.h>
 
@@ -11,6 +12,8 @@
 #include "y2019/control_loops/superstructure/intake/intake_plant.h"
 #include "y2019/control_loops/superstructure/stilts/stilts_plant.h"
 #include "y2019/control_loops/superstructure/wrist/wrist_plant.h"
+#include "y2019/control_loops/drivetrain/camera.h"
+#include "frc971/control_loops/pose.h"
 
 namespace y2019 {
 namespace constants {
@@ -24,6 +27,33 @@ namespace constants {
 // (encoder counts, voltage, etc) to scaled units (radians, meters, etc).
 //
 // All ratios are from the encoder shaft to the output units.
+
+
+class Field {
+ public:
+  typedef ::frc971::control_loops::TypedPose<double> Pose;
+  typedef ::y2019::control_loops::TypedTarget<double> Target;
+  typedef ::frc971::control_loops::TypedLineSegment<double> Obstacle;
+
+  static constexpr size_t kNumTargets = 32;
+  static constexpr size_t kNumObstacles = 10;
+
+  Field();
+
+  ::std::array<Target, kNumTargets> targets() const { return targets_; }
+  ::std::array<Obstacle, kNumObstacles> obstacles() const { return obstacles_; }
+
+ private:
+  // All target locations are defined as being at the center of the target,
+  // except for the height, for which we use the top of the target.
+  ::std::array<Target, kNumTargets> targets_;
+  // Obstacle locations are approximate, as we are just trying to roughly
+  // approximate what will block our view when on the field.
+  // If anything, we should err on the side of making obstacles too small so
+  // that if there is any error in our position, we don't assume that it must
+  // be hidden behind a target when it really is not.
+  ::std::array<Obstacle, kNumObstacles> obstacles_;
+};
 
 struct Values {
   static const int kZeroingSampleSize = 200;
