@@ -1,8 +1,8 @@
 #ifndef Y2019_CONSTANTS_H_
 #define Y2019_CONSTANTS_H_
 
-#include <stdint.h>
 #include <math.h>
+#include <stdint.h>
 
 #include "frc971/constants.h"
 #include "y2019/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
@@ -28,7 +28,7 @@ struct Values {
     return kDrivetrainCyclesPerRevolution() * 4;
   }
   static constexpr double kDrivetrainEncoderRatio() {
-    return (52.0 / 24.0);
+    return (24.0 / 52.0);
   }
   static constexpr double kMaxDrivetrainEncoderPulsesPerSecond() {
     return control_loops::drivetrain::kFreeSpeed / (2.0 * M_PI) *

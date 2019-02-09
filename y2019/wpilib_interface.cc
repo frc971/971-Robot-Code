@@ -169,9 +169,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     ::frc971::wpilib::DrivetrainWriter drivetrain_writer;
     drivetrain_writer.set_left_controller0(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(2)), false);
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)), true);
     drivetrain_writer.set_right_controller0(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(3)), false);
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)), false);
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
     // Wait forever. Not much else to do...
