@@ -1,3 +1,13 @@
+load("//frc971:downloader.bzl", "robot_downloader")
+
+robot_downloader(
+    start_binaries = [
+        ":joystick_reader",
+        ":wpilib_interface",
+        "//y2019/control_loops/drivetrain:drivetrain",
+    ],
+)
+
 cc_library(
     name = "constants",
     srcs = [
@@ -55,7 +65,8 @@ cc_binary(
         "//third_party/Phoenix-frc-lib:phoenix",
     ],
 )
-cc_library(
+
+cc_binary(
     name = "joystick_reader",
     srcs = [
         ":joystick_reader.cc",
@@ -63,9 +74,9 @@ cc_library(
     deps = [
         "//aos:init",
         "//aos/actions:action_lib",
+        "//aos/input:action_joystick_input",
         "//aos/input:drivetrain_input",
         "//aos/input:joystick_input",
-        "//aos/input:action_joystick_input",
         "//aos/logging",
         "//aos/network:team_number",
         "//aos/stl_mutex",
