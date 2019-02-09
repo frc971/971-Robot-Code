@@ -1,0 +1,110 @@
+#include "y2019/jevois/spi.h"
+
+#include <stdint.h>
+
+#include "gtest/gtest.h"
+
+namespace frc971 {
+namespace jevois {
+namespace testing {
+
+// Tests packing and then unpacking an empty message.
+TEST(SpiToRoborioPackTest, Empty) {
+  TeensyToRoborio input_message;
+  const SpiTransfer transfer = SpiPackToRoborio(input_message);
+  const auto output_message = SpiUnpackToRoborio(transfer);
+  ASSERT_TRUE(output_message);
+  EXPECT_EQ(input_message, output_message.value());
+}
+
+// Tests that unpacking after the message has been modified results in a
+// checksum failure.
+TEST(SpiToRoborioPackTest, CorruptChecksum) {
+  TeensyToRoborio input_message;
+  {
+    SpiTransfer transfer = SpiPackToRoborio(input_message);
+    transfer[0]++;
+    ASSERT_FALSE(SpiUnpackToRoborio(transfer));
+  }
+  {
+    SpiTransfer transfer = SpiPackToRoborio(input_message);
+    transfer[0] ^= 0xFF;
+    ASSERT_FALSE(SpiUnpackToRoborio(transfer));
+  }
+  {
+    SpiTransfer transfer = SpiPackToRoborio(input_message);
+    transfer[transfer.size() - 1]++;
+    ASSERT_FALSE(SpiUnpackToRoborio(transfer));
+  }
+  input_message.frames.push_back({});
+  {
+    SpiTransfer transfer = SpiPackToRoborio(input_message);
+    transfer[0]++;
+    ASSERT_FALSE(SpiUnpackToRoborio(transfer));
+  }
+  {
+    SpiTransfer transfer = SpiPackToRoborio(input_message);
+    transfer[3]++;
+    ASSERT_FALSE(SpiUnpackToRoborio(transfer));
+  }
+  input_message.frames.back().targets.push_back({});
+  {
+    SpiTransfer transfer = SpiPackToRoborio(input_message);
+    transfer[3]++;
+    ASSERT_FALSE(SpiUnpackToRoborio(transfer));
+  }
+}
+
+// Tests packing and then unpacking a full message.
+TEST(SpiToRoborioPackTest, Full) {
+  TeensyToRoborio input_message;
+  input_message.frames.push_back({});
+  input_message.frames.back().age = camera_duration(9);
+  input_message.frames.push_back({});
+  input_message.frames.back().age = camera_duration(7);
+  input_message.frames.push_back({});
+  input_message.frames.back().age = camera_duration(1);
+
+  const SpiTransfer transfer = SpiPackToRoborio(input_message);
+  const auto output_message = SpiUnpackToRoborio(transfer);
+  ASSERT_TRUE(output_message);
+  EXPECT_EQ(input_message, output_message.value());
+}
+
+// Tests that packing and unpacking a target results in values close to before.
+TEST(SpiToRoborioPackTest, Target) {
+  TeensyToRoborio input_message;
+  input_message.frames.push_back({});
+  input_message.frames.back().targets.push_back({});
+  input_message.frames.back().targets.back().distance = 9;
+  input_message.frames.back().targets.back().height = 1;
+  input_message.frames.back().targets.back().heading = 0.5;
+  input_message.frames.back().targets.back().skew = -0.5;
+  input_message.frames.push_back({});
+  input_message.frames.back().targets.push_back({});
+  input_message.frames.back().targets.push_back({});
+  input_message.frames.push_back({});
+  input_message.frames.back().targets.push_back({});
+  input_message.frames.back().targets.push_back({});
+  input_message.frames.back().targets.push_back({});
+
+  const SpiTransfer transfer = SpiPackToRoborio(input_message);
+  const auto output_message = SpiUnpackToRoborio(transfer);
+  ASSERT_TRUE(output_message);
+  ASSERT_EQ(3u, output_message->frames.size());
+  ASSERT_EQ(1u, output_message->frames[0].targets.size());
+  ASSERT_EQ(2u, output_message->frames[1].targets.size());
+  ASSERT_EQ(3u, output_message->frames[2].targets.size());
+  EXPECT_NEAR(input_message.frames.back().targets.back().distance,
+              output_message->frames.back().targets.back().distance, 0.1);
+  EXPECT_NEAR(input_message.frames.back().targets.back().height,
+              output_message->frames.back().targets.back().height, 0.1);
+  EXPECT_NEAR(input_message.frames.back().targets.back().heading,
+              output_message->frames.back().targets.back().heading, 0.1);
+  EXPECT_NEAR(input_message.frames.back().targets.back().skew,
+              output_message->frames.back().targets.back().skew, 0.1);
+}
+
+}  // namespace testing
+}  // namespace jevois
+}  // namespace frc971

@@ -1,5 +1,27 @@
 package(default_visibility = ["//visibility:public"])
 
+cc_library(
+    name = "bitpacking",
+    hdrs = [
+        "bitpacking.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//third_party/GSL",
+    ],
+)
+
+cc_test(
+    name = "bitpacking_test",
+    srcs = [
+        "bitpacking_test.cc",
+    ],
+    deps = [
+        ":bitpacking",
+        "//aos/testing:googletest",
+    ],
+)
+
 py_library(
     name = "py_trapezoid_profile",
     srcs = [
