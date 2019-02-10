@@ -14,12 +14,15 @@ try:
 except gflags.DuplicateFlagError:
     pass
 
+first_stage_mass = 0.7957
+carriage_mass = 2.754
+
 kElevator = linear_system.LinearSystemParams(
     name='Elevator',
     motor=control_loop.Vex775Pro(),
     G=(8.0 / 82.0),
     radius=2.25 * 0.0254 / 2.0,
-    mass=4.0,
+    mass=first_stage_mass + carriage_mass,
     q_pos=0.070,
     q_vel=1.2,
     kalman_q_pos=0.12,

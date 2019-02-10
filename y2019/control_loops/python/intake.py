@@ -21,8 +21,15 @@ kIntake = angular_system.AngularSystemParams(
     name='Intake',
     motor=control_loop.BAG(),
     G=(1.0 / 7.0) * (1.0 / 4.0) * (1.0 / 4.0)* (18.0 / 38.0),
-    # TODO(austin): Pull moments of inertia from CAD when it's done.
-    J=0.8,
+    # Suneel: Sampled moment of inertia at 6 different positions
+    # J = the average of the six.
+    # 1. 0.686
+    # 2. 0.637
+    # 3. 0.514
+    # 4. 0.332
+    # 5. 0.183
+    # 6. 0.149
+    J=0.3,
     q_pos=0.20,
     q_vel=5.0,
     kalman_q_pos=0.12,

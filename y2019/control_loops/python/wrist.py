@@ -17,12 +17,18 @@ try:
 except gflags.DuplicateFlagError:
     pass
 
+# Wrist alone
+#  0.1348
+# Wrist with ball
+#  0.3007
+# Wrist with hatch
+#  0.446
+
 kWrist = angular_system.AngularSystemParams(
     name='Wrist',
     motor=control_loop.BAG(),
     G=(6.0 / 60.0) * (20.0 / 100.0) * (24.0 / 84.0),
-    # TODO(austin): Pull moments of inertia from CAD when it's done.
-    J=0.34,
+    J=0.27,
     q_pos=0.20,
     q_vel=5.0,
     kalman_q_pos=0.12,

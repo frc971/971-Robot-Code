@@ -21,7 +21,7 @@ kStilts = linear_system.LinearSystemParams(
     # 5mm pitch, 18 tooth
     radius=0.005 * 18.0 / (2.0 * numpy.pi),
     # Or, 2.34 lb * 2 (2.1 kg) when lifting back up
-    mass=40.0,
+    mass=1.175 * 2,  # 1 stilt foot = 1.175 kg
     q_pos=0.070,
     q_vel=1.2,
     kalman_q_pos=0.12,
