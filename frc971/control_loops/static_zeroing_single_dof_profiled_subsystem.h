@@ -22,10 +22,10 @@ struct StaticZeroingSingleDOFProfiledSubsystemParams {
   ::frc971::ProfileParameters default_profile_params;
 
   // Maximum range of the subsystem in meters
-  const ::frc971::constants::Range range;
+  ::frc971::constants::Range range;
 
   // Zeroing constants for PotAndABsoluteEncoder estimator
-  const typename ZeroingEstimator::ZeroingConstants zeroing_constants;
+  typename ZeroingEstimator::ZeroingConstants zeroing_constants;
 
   // Function that makes the integral loop for the subsystem
   ::std::function<StateFeedbackLoop<3, 1, 1>()> make_integral_loop;
@@ -33,12 +33,15 @@ struct StaticZeroingSingleDOFProfiledSubsystemParams {
 
 // Class for controlling and motion profiling a single degree of freedom
 // subsystem with a zeroing strategy of not moving.
-template <typename ZeroingEstimator>
+template <typename TZeroingEstimator, typename TProfiledJointStatus>
 class StaticZeroingSingleDOFProfiledSubsystem {
  public:
   StaticZeroingSingleDOFProfiledSubsystem(
-      const StaticZeroingSingleDOFProfiledSubsystemParams<ZeroingEstimator>
+      const StaticZeroingSingleDOFProfiledSubsystemParams<TZeroingEstimator>
           &params);
+
+  using ZeroingEstimator = TZeroingEstimator;
+  using ProfiledJointStatus = TProfiledJointStatus;
 
   // Returns the filtered goal of the profiled subsystem (R)
   double goal(int row) const { return profiled_subsystem_.goal(row, 0); }
@@ -64,9 +67,7 @@ class StaticZeroingSingleDOFProfiledSubsystem {
 
   void Iterate(const StaticZeroingSingleDOFProfiledSubsystemGoal *goal,
                const typename ZeroingEstimator::Position *position,
-               double *output,
-               ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus
-                   *status);
+               double *output, ProfiledJointStatus *status);
 
   // Resets the profiled subsystem and returns to uninitialized
   void Reset();
@@ -91,8 +92,8 @@ class StaticZeroingSingleDOFProfiledSubsystem {
       profiled_subsystem_;
 };
 
-template <typename ZeroingEstimator>
-StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator>::
+template <typename ZeroingEstimator, typename ProfiledJointStatus>
+StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus>::
     StaticZeroingSingleDOFProfiledSubsystem(
         const StaticZeroingSingleDOFProfiledSubsystemParams<ZeroingEstimator>
             &params)
@@ -101,26 +102,26 @@ StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator>::
           ::std::unique_ptr<
               ::frc971::control_loops::SimpleCappedStateFeedbackLoop<3, 1, 1>>(
               new ::frc971::control_loops::SimpleCappedStateFeedbackLoop<
-                  3, 1, 1>(params.make_integral_loop())),
+                  3, 1, 1>(params_.make_integral_loop())),
           params.zeroing_constants, params.range,
           params.default_profile_params.max_velocity,
           params.default_profile_params.max_acceleration) {
   Reset();
 };
 
-template <typename ZeroingEstimator>
-void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator>::Reset() {
+template <typename ZeroingEstimator, typename ProfiledJointStatus>
+void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus>::Reset() {
   state_ = State::UNINITIALIZED;
   clear_min_position();
   clear_max_position();
   profiled_subsystem_.Reset();
 }
 
-template <typename ZeroingEstimator>
-void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator>::Iterate(
+template <typename ZeroingEstimator, typename ProfiledJointStatus>
+void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus>::Iterate(
     const StaticZeroingSingleDOFProfiledSubsystemGoal *goal,
     const typename ZeroingEstimator::Position *position, double *output,
-    ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus *status) {
+    ProfiledJointStatus *status) {
   bool disabled = output == nullptr;
   profiled_subsystem_.Correct(*position);
 
