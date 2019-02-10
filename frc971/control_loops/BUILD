@@ -341,3 +341,75 @@ cc_test(
         "//aos/testing:googletest",
     ],
 )
+
+cc_library(
+    name = "capped_test_plant",
+    testonly = True,
+    srcs = [
+        "capped_test_plant.cc",
+    ],
+    hdrs = [
+        "capped_test_plant.h",
+    ],
+    deps = [
+        ":state_feedback_loop",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
+    name = "static_zeroing_single_dof_profiled_subsystem",
+    srcs = [
+        "static_zeroing_single_dof_profiled_subsystem.cc",
+    ],
+    hdrs = [
+        "static_zeroing_single_dof_profiled_subsystem.h",
+    ],
+    deps = [
+        "//frc971/control_loops:profiled_subsystem",
+    ],
+)
+
+genrule(
+    name = "genrule_static_zeroing_single_dof_profiled_subsystem_test",
+    outs = [
+        "static_zeroing_single_dof_profiled_subsystem_test_plant.h",
+        "static_zeroing_single_dof_profiled_subsystem_test_plant.cc",
+        "static_zeroing_single_dof_profiled_subsystem_test_integral_plant.h",
+        "static_zeroing_single_dof_profiled_subsystem_test_integral_plant.cc",
+    ],
+    cmd = "$(location //frc971/control_loops/python:static_zeroing_single_dof_profiled_subsystem_test) $(OUTS)",
+    tools = [
+        "//frc971/control_loops/python:static_zeroing_single_dof_profiled_subsystem_test",
+    ],
+)
+
+cc_library(
+    name = "static_zeroing_single_dof_profiled_subsystem_test_plants",
+    srcs = [
+        "static_zeroing_single_dof_profiled_subsystem_test_integral_plant.cc",
+        "static_zeroing_single_dof_profiled_subsystem_test_plant.cc",
+    ],
+    hdrs = [
+        "static_zeroing_single_dof_profiled_subsystem_test_integral_plant.h",
+        "static_zeroing_single_dof_profiled_subsystem_test_plant.h",
+    ],
+    deps = [
+        ":state_feedback_loop",
+    ],
+)
+
+cc_test(
+    name = "static_zeroing_single_dof_profiled_subsystem_test",
+    srcs = [
+        "static_zeroing_single_dof_profiled_subsystem_test.cc",
+    ],
+    deps = [
+        ":capped_test_plant",
+        ":position_sensor_sim",
+        ":static_zeroing_single_dof_profiled_subsystem",
+        ":static_zeroing_single_dof_profiled_subsystem_test_plants",
+        "//aos/controls:control_loop_test",
+        "//aos/testing:googletest",
+    ],
+)
