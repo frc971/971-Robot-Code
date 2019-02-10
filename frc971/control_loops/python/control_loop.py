@@ -453,10 +453,17 @@ class ControlLoop(object):
     if observer_coefficient_type.startswith('StateFeedbackObserver'):
       if hasattr(self, 'KalmanGain'):
         KalmanGain = self.KalmanGain
+        Q = self.Q
+        R = self.R
       else:
         KalmanGain =  numpy.linalg.inv(self.A) * self.L
+        Q = numpy.zeros(self.A.shape)
+        R = numpy.zeros((self.C.shape[0], self.C.shape[0]))
       ans.append(self._DumpMatrix('KalmanGain', KalmanGain, scalar_type))
-      ans.append('  return %s(KalmanGain);\n' % (observer_coefficient_type,))
+      ans.append(self._DumpMatrix('Q', Q, scalar_type))
+      ans.append(self._DumpMatrix('R', R, scalar_type))
+      ans.append('  return %s(KalmanGain, Q, R);\n'
+          % (observer_coefficient_type,))
 
     elif observer_coefficient_type.startswith('HybridKalman'):
       ans.append(self._DumpMatrix('Q_continuous', self.Q_continuous, scalar_type))

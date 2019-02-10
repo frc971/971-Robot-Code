@@ -362,10 +362,15 @@ class KFDrivetrain(Drivetrain):
         self.KalmanGain, self.Q_steady = controls.kalman(
             A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
 
+        # If we don't have an IMU, pad various matrices with zeros so that
+        # we can still have 4 measurement outputs.
         if not self.has_imu:
             self.KalmanGain = numpy.hstack((self.KalmanGain, numpy.matrix(numpy.zeros((7, 1)))))
             self.C = numpy.vstack((self.C, numpy.matrix(numpy.zeros((1, 7)))))
             self.D = numpy.vstack((self.D, numpy.matrix(numpy.zeros((1, 2)))))
+            Rtmp = numpy.zeros((4, 4))
+            Rtmp[0:3, 0:3] = self.R
+            self.R = Rtmp
 
         self.L = self.A * self.KalmanGain
 

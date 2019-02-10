@@ -150,7 +150,9 @@ TEST(StateFeedbackLoopTest, UnequalSizes) {
   ::std::vector<::std::unique_ptr<StateFeedbackObserverCoefficients<2, 4, 7>>>
       v_observer;
   v_observer.emplace_back(new StateFeedbackObserverCoefficients<2, 4, 7>(
-      Eigen::Matrix<double, 2, 7>::Identity()));
+      Eigen::Matrix<double, 2, 7>::Identity(),
+      Eigen::Matrix<double, 2, 2>::Identity(),
+      Eigen::Matrix<double, 7, 7>::Identity()));
   StateFeedbackObserver<2, 4, 7> observer(&v_observer);
 
   StateFeedbackLoop<2, 4, 7> test_loop(

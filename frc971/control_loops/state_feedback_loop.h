@@ -275,10 +275,15 @@ struct StateFeedbackObserverCoefficients final {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
   const Eigen::Matrix<Scalar, number_of_states, number_of_outputs> KalmanGain;
+  const Eigen::Matrix<Scalar, number_of_states, number_of_states> Q;
+  const Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> R;
 
   StateFeedbackObserverCoefficients(
-      const Eigen::Matrix<Scalar, number_of_states, number_of_outputs> &KalmanGain)
-      : KalmanGain(KalmanGain) {}
+      const Eigen::Matrix<Scalar, number_of_states, number_of_outputs> &
+          KalmanGain,
+      const Eigen::Matrix<Scalar, number_of_states, number_of_states> &Q,
+      const Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> &R)
+      : KalmanGain(KalmanGain), Q(Q), R(R) {}
 };
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs,
