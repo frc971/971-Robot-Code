@@ -8,6 +8,18 @@ namespace y2019 {
 namespace control_loops {
 namespace superstructure {
 
+void suction_cups(
+    const SuperstructureQueue::Goal *unsafe_goal,
+    SuperstructureQueue::Output *output) {
+  const double on_voltage = 12.0;
+
+  if(unsafe_goal && output) {
+    if(unsafe_goal->suction.top || unsafe_goal->suction.bottom) {
+      output->pump_voltage = on_voltage;
+    }
+  }
+}
+
 Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
     : aos::controls::ControlLoop<SuperstructureQueue>(event_loop, name),
