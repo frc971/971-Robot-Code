@@ -150,6 +150,16 @@ class ParameterizedLocalizerTest
     ::std::copy(GetParam().control_pts_y.begin(),
                 GetParam().control_pts_y.end(), goal.spline.spline_y.begin());
     spline_drivetrain_.SetGoal(goal);
+
+    // Let the spline drivetrain compute the spline.
+     ::frc971::control_loops::DrivetrainQueue::Status status;
+    do {
+      ::std::this_thread::sleep_for(::std::chrono::milliseconds(5));
+      spline_drivetrain_.PopulateStatus(&status);
+    } while (status.trajectory_logging.planning_state !=
+             (int8_t)::frc971::control_loops::drivetrain::SplineDrivetrain::
+                 PlanState::kPlannedTrajectory);
+    spline_drivetrain_.SetGoal(goal);
   }
 
   void TearDown() {
