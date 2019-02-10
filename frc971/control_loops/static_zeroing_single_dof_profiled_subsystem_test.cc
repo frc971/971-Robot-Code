@@ -35,7 +35,9 @@ struct TestIntakeSystemValues {
   static constexpr ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants
       kZeroing{kZeroingSampleSize, kEncoderIndexDifference, 0, 0.0005, 20, 1.9};
 
-  static const StaticZeroingSingleDOFProfiledSubsystemParams kParams;
+  static const StaticZeroingSingleDOFProfiledSubsystemParams<
+      zeroing::PotAndAbsoluteEncoderZeroingEstimator>
+      kParams;
 };
 
 constexpr ::frc971::constants::Range TestIntakeSystemValues::kRange;
@@ -46,7 +48,8 @@ const ::frc971::ProfileParameters TestIntakeSystemValues::kDefaultParams{0.3,
 const ::frc971::ProfileParameters TestIntakeSystemValues::kZeroingParams{0.1,
                                                                          1.0};
 
-const StaticZeroingSingleDOFProfiledSubsystemParams
+const StaticZeroingSingleDOFProfiledSubsystemParams<
+    zeroing::PotAndAbsoluteEncoderZeroingEstimator>
     TestIntakeSystemValues::kParams(
         {.zeroing_voltage = TestIntakeSystemValues::kZeroingVoltage,
          .operating_voltage = TestIntakeSystemValues::kOperatingVoltage,
@@ -107,8 +110,10 @@ class TestIntakeSystemSimulation {
   // Simulates the subsystem for a single timestep.
   void Simulate(const double output_voltage, const int32_t state) {
     const double voltage_check_subsystem =
-        (static_cast<StaticZeroingSingleDOFProfiledSubsystem::State>(state) ==
-         StaticZeroingSingleDOFProfiledSubsystem::State::RUNNING)
+        (static_cast<StaticZeroingSingleDOFProfiledSubsystem<
+             zeroing::PotAndAbsoluteEncoderZeroingEstimator>::State>(state) ==
+         StaticZeroingSingleDOFProfiledSubsystem<
+             zeroing::PotAndAbsoluteEncoderZeroingEstimator>::State::RUNNING)
             ? TestIntakeSystemValues::kOperatingVoltage
             : TestIntakeSystemValues::kZeroingVoltage;
 
@@ -207,7 +212,9 @@ class IntakeSystemTest : public ::aos::testing::ControlLoopTest {
   // TestIntakeSystemData subsystem_data_;
 
   // Create a control loop and simulation.
-  StaticZeroingSingleDOFProfiledSubsystem subsystem_;
+  StaticZeroingSingleDOFProfiledSubsystem<
+      zeroing::PotAndAbsoluteEncoderZeroingEstimator>
+      subsystem_;
   TestIntakeSystemSimulation subsystem_plant_;
 
   StaticZeroingSingleDOFProfiledSubsystemGoal subsystem_goal_;
@@ -330,7 +337,8 @@ TEST_F(IntakeSystemTest, ZeroTest) {
 TEST_F(IntakeSystemTest, ZeroNoGoal) {
   RunForTime(chrono::seconds(5));
 
-  EXPECT_EQ(StaticZeroingSingleDOFProfiledSubsystem::State::RUNNING,
+  EXPECT_EQ(StaticZeroingSingleDOFProfiledSubsystem<
+                zeroing::PotAndAbsoluteEncoderZeroingEstimator>::State::RUNNING,
             subsystem_.state());
 }
 
@@ -363,19 +371,23 @@ TEST_F(IntakeSystemTest, ResetTest) {
   }
   RunForTime(chrono::seconds(10));
 
-  EXPECT_EQ(StaticZeroingSingleDOFProfiledSubsystem::State::RUNNING,
+  EXPECT_EQ(StaticZeroingSingleDOFProfiledSubsystem<
+                zeroing::PotAndAbsoluteEncoderZeroingEstimator>::State::RUNNING,
             subsystem_.state());
 
   VerifyNearGoal();
   SimulateSensorReset();
   RunForTime(chrono::milliseconds(100));
 
-  EXPECT_EQ(StaticZeroingSingleDOFProfiledSubsystem::State::UNINITIALIZED,
-            subsystem_.state());
+  EXPECT_EQ(
+      StaticZeroingSingleDOFProfiledSubsystem<
+          zeroing::PotAndAbsoluteEncoderZeroingEstimator>::State::UNINITIALIZED,
+      subsystem_.state());
 
   RunForTime(chrono::seconds(10));
 
-  EXPECT_EQ(StaticZeroingSingleDOFProfiledSubsystem::State::RUNNING,
+  EXPECT_EQ(StaticZeroingSingleDOFProfiledSubsystem<
+                zeroing::PotAndAbsoluteEncoderZeroingEstimator>::State::RUNNING,
             subsystem_.state());
   VerifyNearGoal();
 }
@@ -402,7 +414,8 @@ TEST_F(IntakeSystemTest, DisabledZeroTest) {
 
   // Run disabled for 2 seconds
   RunForTime(chrono::seconds(2), false);
-  EXPECT_EQ(StaticZeroingSingleDOFProfiledSubsystem::State::RUNNING,
+  EXPECT_EQ(StaticZeroingSingleDOFProfiledSubsystem<
+                zeroing::PotAndAbsoluteEncoderZeroingEstimator>::State::RUNNING,
             subsystem_.state());
 
   RunForTime(chrono::seconds(4), true);
