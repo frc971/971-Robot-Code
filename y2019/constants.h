@@ -59,6 +59,15 @@ struct Values {
     return (1.0) * control_loops::superstructure::elevator::kRadius;
   }
 
+  static constexpr ::frc971::constants::Range kElevatorRange() {
+    return ::frc971::constants::Range{
+        0.0,    // Bottom Hard
+        1.44,   // Top Hard
+        0.025,  // Bottom Soft
+        1.415   // Top Soft
+    };
+  }
+
   // Intake
   static constexpr double kIntakeEncoderCountsPerRevolution() { return 4096.0; }
 
@@ -69,6 +78,15 @@ struct Values {
            control_loops::superstructure::intake::kOutputRatio /
            kIntakeEncoderRatio() / (2.0 * M_PI) *
            kIntakeEncoderCountsPerRevolution();
+  }
+
+  static constexpr ::frc971::constants::Range kIntakeRange() {
+    return ::frc971::constants::Range{
+        -1.15,  // Back Hard
+        1.36,   // Front Hard
+        -1.14,  // Back Soft
+        1.22    // Front Soft
+    };
   }
 
   // Wrist
@@ -86,6 +104,15 @@ struct Values {
   }
 
   static constexpr double kWristPotRatio() { return (24.0) / (84.0); }
+
+  static constexpr ::frc971::constants::Range kWristRange() {
+    return ::frc971::constants::Range{
+        -3.14,  // Back Hard
+        2.58,   // Front Hard
+        -2.97,  // Back Soft
+        2.41    // Front Soft
+    };
+  }
 
   // Stilts
   static constexpr double kStiltsEncoderCountsPerRevolution() { return 4096.0; }
@@ -105,6 +132,15 @@ struct Values {
   static constexpr double kStiltsPotRatio() {
     return (1.0 /* Gear ratio */) *
            control_loops::superstructure::stilts::kRadius;
+  }
+
+  static constexpr ::frc971::constants::Range kStiltsRange() {
+    return ::frc971::constants::Range{
+        -0.026,  // Top Hard
+        0.693,   // Bottom Hard
+        -0.02,   // Top Soft
+        0.673    // Bottom Soft
+    };
   }
 
   struct PotAndAbsConstants {
