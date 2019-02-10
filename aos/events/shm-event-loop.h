@@ -17,6 +17,10 @@ class TimerHandlerState;
 
 // Specialization of EventLoop that is built from queues running out of shared
 // memory. See more details at aos/queue.h
+//
+// This object must be interacted with from one thread, but the Senders and
+// Fetchers may be used from multiple threads afterwords (as long as their
+// destructors are called back in one thread again)
 class ShmEventLoop : public EventLoop {
  public:
   ShmEventLoop();
@@ -73,12 +77,13 @@ class ShmEventLoop : public EventLoop {
   };
 
   // Exclude multiple of the same type for path.
-  void Take(const std::string &path);
 
   std::vector<std::function<void()>> on_run_;
   std::shared_ptr<ThreadState> thread_state_;
 
-  std::unordered_set<std::string> taken_;
+  void Take(const std::string &path);
+
+  std::vector<::std::string> taken_;
 };
 
 }  // namespace aos
