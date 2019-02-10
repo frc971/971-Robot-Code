@@ -39,3 +39,31 @@ cc_binary(
         "//aos/events:shm-event-loop",
     ],
 )
+
+cc_library(
+    name = "collision_avoidance",
+    srcs = [
+        "collision_avoidance.cc",
+    ],
+    hdrs = [
+        "collision_avoidance.h",
+    ],
+    deps = [
+        ":superstructure_queue",
+        "//aos/controls:control_loop_queues",
+        "//frc971:constants",
+    ],
+)
+
+cc_test(
+    name = "collision_avoidance_tests",
+    srcs = [
+        "collision_avoidance_tests.cc",
+    ],
+    deps = [
+        ":collision_avoidance",
+        ":superstructure_queue",
+        "//aos:math",
+        "//aos/testing:googletest",
+    ],
+)
