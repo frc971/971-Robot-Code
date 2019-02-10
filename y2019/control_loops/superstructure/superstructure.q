@@ -67,10 +67,10 @@ queue_group SuperstructureQueue {
     bool has_piece;
 
     // Status of each subsystem.
-    .frc971.control_loops.AbsoluteProfiledJointStatus elevator;
-    .frc971.control_loops.AbsoluteProfiledJointStatus wrist;
-    .frc971.control_loops.AbsoluteProfiledJointStatus intake;
-    .frc971.control_loops.AbsoluteProfiledJointStatus stilts;
+    .frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus elevator;
+    .frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus wrist;
+    .frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus intake;
+    .frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus stilts;
   };
 
   message Position {

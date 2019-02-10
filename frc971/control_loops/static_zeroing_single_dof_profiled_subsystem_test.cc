@@ -62,7 +62,7 @@ const StaticZeroingSingleDOFProfiledSubsystemParams<
 struct TestIntakeSystemData {
   ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal goal;
 
-  ::frc971::control_loops::AbsoluteProfiledJointStatus status;
+  ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus status;
 
   ::frc971::PotAndAbsolutePosition position;
 

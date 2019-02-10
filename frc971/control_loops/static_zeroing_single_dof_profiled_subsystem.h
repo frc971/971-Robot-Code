@@ -65,7 +65,8 @@ class StaticZeroingSingleDOFProfiledSubsystem {
   void Iterate(const StaticZeroingSingleDOFProfiledSubsystemGoal *goal,
                const typename ZeroingEstimator::Position *position,
                double *output,
-               ::frc971::control_loops::AbsoluteProfiledJointStatus *status);
+               ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus
+                   *status);
 
   // Resets the profiled subsystem and returns to uninitialized
   void Reset();
@@ -119,7 +120,7 @@ template <typename ZeroingEstimator>
 void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator>::Iterate(
     const StaticZeroingSingleDOFProfiledSubsystemGoal *goal,
     const typename ZeroingEstimator::Position *position, double *output,
-    ::frc971::control_loops::AbsoluteProfiledJointStatus *status) {
+    ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus *status) {
   bool disabled = output == nullptr;
   profiled_subsystem_.Correct(*position);
 

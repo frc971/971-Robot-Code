@@ -32,7 +32,7 @@ void Intake::Reset() {
 void Intake::Iterate(
     const control_loops::IntakeGoal *unsafe_goal,
     const ::frc971::PotAndAbsolutePosition *position, double *output,
-    ::frc971::control_loops::AbsoluteProfiledJointStatus *status) {
+    ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus *status) {
   bool disable = output == nullptr;
   profiled_subsystem_.Correct(*position);
 

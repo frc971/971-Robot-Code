@@ -78,7 +78,7 @@ struct HallProfiledJointStatus {
   .frc971.HallEffectAndPositionEstimatorState estimator_state;
 };
 
-struct AbsoluteProfiledJointStatus {
+struct PotAndAbsoluteEncoderProfiledJointStatus {
   // Is the subsystem zeroed?
   bool zeroed;
 

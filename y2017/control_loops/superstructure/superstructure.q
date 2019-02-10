@@ -200,7 +200,7 @@ queue_group SuperstructureQueue {
     bool estopped;
 
     // Each subsystems status.
-    .frc971.control_loops.AbsoluteProfiledJointStatus intake;
+    .frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus intake;
     .frc971.control_loops.IndexProfiledJointStatus hood;
     ShooterStatus shooter;
 

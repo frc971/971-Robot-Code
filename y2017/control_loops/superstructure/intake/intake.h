@@ -34,7 +34,8 @@ class Intake {
 
   void Iterate(const control_loops::IntakeGoal *unsafe_goal,
                const ::frc971::PotAndAbsolutePosition *position, double *output,
-               ::frc971::control_loops::AbsoluteProfiledJointStatus *status);
+               ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus
+                   *status);
 
   void Reset();
 
