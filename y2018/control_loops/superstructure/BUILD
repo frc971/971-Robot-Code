@@ -36,6 +36,7 @@ cc_library(
 
 cc_test(
     name = "superstructure_lib_test",
+    timeout = "long",
     srcs = [
         "superstructure_lib_test.cc",
     ],
@@ -44,9 +45,9 @@ cc_test(
         ":superstructure_queue",
         "//aos:math",
         "//aos:queues",
-        "//aos/time:time",
         "//aos/controls:control_loop_test",
         "//aos/testing:googletest",
+        "//aos/time",
         "//frc971/control_loops:position_sensor_sim",
         "//frc971/control_loops:team_number_test_environment",
         "//y2018/control_loops/superstructure/intake:intake_plants",
@@ -67,11 +68,11 @@ cc_binary(
 
 cc_library(
     name = "debouncer",
-    hdrs = [
-        "debouncer.h",
-    ],
     srcs = [
         "debouncer.cc",
+    ],
+    hdrs = [
+        "debouncer.h",
     ],
 )
 
