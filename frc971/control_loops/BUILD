@@ -359,9 +359,6 @@ cc_library(
 
 cc_library(
     name = "static_zeroing_single_dof_profiled_subsystem",
-    srcs = [
-        "static_zeroing_single_dof_profiled_subsystem.cc",
-    ],
     hdrs = [
         "static_zeroing_single_dof_profiled_subsystem.h",
     ],
