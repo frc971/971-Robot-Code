@@ -41,12 +41,14 @@
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2019/constants.h"
+#include "y2019/control_loops/superstructure/superstructure.q.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
 using ::frc971::control_loops::drivetrain_queue;
+using ::y2019::control_loops::superstructure::superstructure_queue;
 using ::y2019::constants::Values;
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
@@ -89,15 +91,30 @@ double drivetrain_velocity_translate(double in) {
          control_loops::drivetrain::kWheelRadius;
 }
 
+double elevator_pot_translate(double voltage) {
+  return voltage * Values::kElevatorPotRatio() *
+         (3.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
+}
+
+double wrist_pot_translate(double voltage) {
+  return voltage * Values::kWristPotRatio() * (10.0 /*turns*/ / 5.0 /*volts*/) *
+         (2 * M_PI /*radians*/);
+}
+
+double stilts_pot_translate(double voltage) {
+  return voltage * Values::kStiltsPotRatio() *
+         (10.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
+}
+
 constexpr double kMaxFastEncoderPulsesPerSecond =
-    max(/*Values::kMaxDrivetrainEncoderPulsesPerSecond(),
-        Values::kMaxIntakeMotorEncoderPulsesPerSecond()*/ 1.0, 1.0);
+    max(Values::kMaxDrivetrainEncoderPulsesPerSecond(),
+        Values::kMaxIntakeEncoderPulsesPerSecond());
 static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
               "fast encoders are too fast");
 
 constexpr double kMaxMediumEncoderPulsesPerSecond =
-    max(/*Values::kMaxProximalEncoderPulsesPerSecond(),
-        Values::kMaxDistalEncoderPulsesPerSecond()*/ 1.0, 1.0);
+    max(Values::kMaxElevatorEncoderPulsesPerSecond(),
+        Values::kMaxWristEncoderPulsesPerSecond());
 static_assert(kMaxMediumEncoderPulsesPerSecond <= 400000,
               "medium encoders are too fast");
 
@@ -109,6 +126,69 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
     UpdateMediumEncoderFilterHz(kMaxMediumEncoderPulsesPerSecond);
+  }
+
+  // Elevator
+
+  void set_elevator_encoder(::std::unique_ptr<frc::Encoder> encoder) {
+    medium_encoder_filter_.Add(encoder.get());
+    elevator_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_elevator_absolute_pwm(
+      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    elevator_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
+  }
+
+  void set_elevator_potentiometer(
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    elevator_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  // Intake
+
+  void set_intake_encoder(::std::unique_ptr<frc::Encoder> encoder) {
+    medium_encoder_filter_.Add(encoder.get());
+    intake_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_intake_absolute_pwm(
+      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    intake_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
+  }
+
+  // Wrist
+
+  void set_wrist_encoder(::std::unique_ptr<frc::Encoder> encoder) {
+    medium_encoder_filter_.Add(encoder.get());
+    wrist_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_wrist_absolute_pwm(
+      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    wrist_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
+  }
+
+  void set_wrist_potentiometer(
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    wrist_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  // Stilts
+
+  void set_stilts_encoder(::std::unique_ptr<frc::Encoder> encoder) {
+    medium_encoder_filter_.Add(encoder.get());
+    stilts_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_stilts_absolute_pwm(
+      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    stilts_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
+  }
+
+  void set_stilts_potentiometer(
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    stilts_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
   void RunIteration() override {
@@ -127,6 +207,113 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       drivetrain_message.Send();
     }
   }
+
+  void RunDmaIteration() {
+    const auto values = constants::GetValues();
+
+    {
+      auto superstructure_message = superstructure_queue.position.MakeMessage();
+
+      // Elevator
+      CopyPosition(elevator_encoder_, &superstructure_message->elevator,
+                   Values::kElevatorEncoderCountsPerRevolution(),
+                   Values::kElevatorEncoderRatio(), elevator_pot_translate,
+                   false, values.elevator.potentiometer_offset);
+      // Intake
+      CopyPosition(intake_encoder_, &superstructure_message->intake_joint,
+                   Values::kIntakeEncoderCountsPerRevolution(),
+                   Values::kIntakeEncoderRatio(), false);
+
+      // Wrist
+      CopyPosition(wrist_encoder_, &superstructure_message->wrist,
+                   Values::kWristEncoderCountsPerRevolution(),
+                   Values::kWristEncoderRatio(), wrist_pot_translate, false,
+                   values.wrist.potentiometer_offset);
+
+      // Stilts
+      CopyPosition(stilts_encoder_, &superstructure_message->stilts,
+                   Values::kStiltsEncoderCountsPerRevolution(),
+                   Values::kStiltsEncoderRatio(), stilts_pot_translate, false,
+                   values.stilts.potentiometer_offset);
+
+      superstructure_message.Send();
+    }
+  }
+
+ private:
+  ::frc971::wpilib::AbsoluteEncoderAndPotentiometer elevator_encoder_,
+      wrist_encoder_, stilts_encoder_;
+
+  ::frc971::wpilib::AbsoluteEncoder intake_encoder_;
+  // TODO(sabina): Add wrist and elevator hall effects.
+};
+
+class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
+ public:
+  void set_elevator_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    elevator_victor_ = ::std::move(t);
+  }
+
+  void set_intake_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    intake_victor_ = ::std::move(t);
+  }
+  void set_intake_rollers_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    intake_rollers_victor_ = ::std::move(t);
+  }
+
+  void set_wrist_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    wrist_victor_ = ::std::move(t);
+  }
+
+  void set_stilts_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    stilts_victor_ = ::std::move(t);
+  }
+
+ private:
+  virtual void Read() override {
+    ::y2019::control_loops::superstructure::superstructure_queue.output
+        .FetchAnother();
+  }
+
+  virtual void Write() override {
+    auto &queue =
+        ::y2019::control_loops::superstructure::superstructure_queue.output;
+    LOG_STRUCT(DEBUG, "will output", *queue);
+    elevator_victor_->SetSpeed(::aos::Clip(-queue->elevator_voltage,
+                                           -kMaxBringupPower,
+                                           kMaxBringupPower) /
+                               12.0);
+
+    intake_victor_->SetSpeed(::aos::Clip(-queue->intake_joint_voltage,
+                                         -kMaxBringupPower, kMaxBringupPower) /
+                             12.0);
+
+    intake_rollers_victor_->SetSpeed(::aos::Clip(-queue->intake_roller_voltage,
+                                                 -kMaxBringupPower,
+                                                 kMaxBringupPower) /
+                                     12.0);
+
+    wrist_victor_->SetSpeed(::aos::Clip(-queue->wrist_voltage,
+                                        -kMaxBringupPower, kMaxBringupPower) /
+                            12.0);
+
+    stilts_victor_->SetSpeed(::aos::Clip(-queue->stilts_voltage,
+                                         -kMaxBringupPower, kMaxBringupPower) /
+                             12.0);
+  }
+
+  virtual void Stop() override {
+    LOG(WARNING, "Superstructure output too old.\n");
+
+    elevator_victor_->SetDisabled();
+    intake_victor_->SetDisabled();
+    intake_rollers_victor_->SetDisabled();
+    wrist_victor_->SetDisabled();
+    stilts_victor_->SetDisabled();
+  }
+
+  ::std::unique_ptr<::frc::VictorSP> elevator_victor_, intake_victor_,
+      intake_rollers_victor_, wrist_victor_, stilts_victor_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -151,6 +338,21 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_drivetrain_left_encoder(make_encoder(0));
     reader.set_drivetrain_right_encoder(make_encoder(1));
 
+    reader.set_elevator_encoder(make_encoder(2));
+    reader.set_elevator_absolute_pwm(make_unique<frc::DigitalInput>(0));
+    reader.set_elevator_potentiometer(make_unique<frc::AnalogInput>(0));
+
+    reader.set_wrist_encoder(make_encoder(3));
+    reader.set_wrist_absolute_pwm(make_unique<frc::DigitalInput>(1));
+    reader.set_wrist_potentiometer(make_unique<frc::AnalogInput>(2));
+
+    reader.set_intake_encoder(make_encoder(4));
+    reader.set_intake_absolute_pwm(make_unique<frc::DigitalInput>(3));
+
+    reader.set_stilts_encoder(make_encoder(5));
+    reader.set_stilts_absolute_pwm(make_unique<frc::DigitalInput>(2));
+    reader.set_stilts_potentiometer(make_unique<frc::AnalogInput>(3));
+
     reader.set_pwm_trigger(make_unique<frc::DigitalInput>(25));
 
     ::std::thread reader_thread(::std::ref(reader));
@@ -173,6 +375,21 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     drivetrain_writer.set_right_controller0(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)), false);
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
+
+    SuperstructureWriter superstructure_writer;
+    superstructure_writer.set_elevator_victor(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(2)));
+    superstructure_writer.set_intake_rollers_victor(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(3)));
+    superstructure_writer.set_intake_victor(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(4)));
+    superstructure_writer.set_wrist_victor(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(5)));
+    superstructure_writer.set_stilts_victor(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(6)));
+
+    ::std::thread superstructure_writer_thread(
+        ::std::ref(superstructure_writer));
 
     // Wait forever. Not much else to do...
     while (true) {
@@ -197,6 +414,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     drivetrain_writer.Quit();
     drivetrain_writer_thread.join();
+    superstructure_writer.Quit();
+    superstructure_writer_thread.join();
 
     ::aos::Cleanup();
   }

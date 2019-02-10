@@ -379,10 +379,12 @@ def WriteLinearSystem(params, plant_files, controller_files, year_namespaces):
         linear_system.name, [linear_system], namespaces=year_namespaces)
     loop_writer.AddConstant(
         control_loop.Constant('kFreeSpeed', '%f', linear_system.motor.
-                              free_speed / (2.0 * numpy.pi)))
+                              free_speed))
     loop_writer.AddConstant(
         control_loop.Constant('kOutputRatio', '%f', linear_system.G *
                               linear_system.radius))
+    loop_writer.AddConstant(
+        control_loop.Constant('kRadius', '%f', linear_system.radius))
     loop_writer.Write(plant_files[0], plant_files[1])
 
     integral_linear_system = IntegralLinearSystem(params,

@@ -86,7 +86,7 @@ queue_group SuperstructureQueue {
     .frc971.PotAndAbsolutePosition wrist;
 
     // Position of the intake. 0 when rollers are retracted, positive extended.
-    .frc971.PotAndAbsolutePosition intake_joint;
+    .frc971.AbsolutePosition intake_joint;
 
     // Position of the stilts, 0 when retracted (defualt), positive lifts robot.
     .frc971.PotAndAbsolutePosition stilts;

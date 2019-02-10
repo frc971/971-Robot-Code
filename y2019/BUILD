@@ -24,6 +24,10 @@ cc_library(
         "//aos/network:team_number",
         "//frc971:constants",
         "//y2019/control_loops/drivetrain:polydrivetrain_plants",
+        "//y2019/control_loops/superstructure/elevator:elevator_plants",
+        "//y2019/control_loops/superstructure/intake:intake_plants",
+        "//y2019/control_loops/superstructure/stilts:stilts_plants",
+        "//y2019/control_loops/superstructure/wrist:wrist_plants",
     ],
 )
 
@@ -63,6 +67,7 @@ cc_binary(
         "//frc971/wpilib:wpilib_robot_base",
         "//third_party:wpilib",
         "//third_party/Phoenix-frc-lib:phoenix",
+        "//y2019/control_loops/superstructure:superstructure_queue",
     ],
 )
 

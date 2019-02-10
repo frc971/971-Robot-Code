@@ -20,7 +20,7 @@ except gflags.DuplicateFlagError:
 kIntake = angular_system.AngularSystemParams(
     name='Intake',
     motor=control_loop.BAG(),
-    G=(1.0 / 9.0) * (1.0 / 9.0) * (16.0 / 38.0),
+    G=(1.0 / 7.0) * (1.0 / 4.0) * (1.0 / 4.0)* (18.0 / 38.0),
     # TODO(austin): Pull moments of inertia from CAD when it's done.
     J=0.8,
     q_pos=0.20,
