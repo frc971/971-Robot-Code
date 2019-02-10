@@ -88,15 +88,14 @@ void SplineDrivetrain::Update(bool enable,
   enable_ = enable;
   if (enable && current_trajectory_) {
     ::Eigen::Matrix<double, 2, 1> U_ff = ::Eigen::Matrix<double, 2, 1>::Zero();
-    if (!current_trajectory_->is_at_end(current_state_)) {
+    if (!IsAtEnd()) {
       // TODO(alex): It takes about a cycle for the outputs to propagate to the
       // motors. Consider delaying the output by a cycle.
       U_ff = current_trajectory_->FFVoltage(current_xva_(0));
     }
     ::Eigen::Matrix<double, 2, 5> K =
         current_trajectory_->KForState(state, dt_config_.dt, Q, R);
-    ::Eigen::Matrix<double, 5, 1> goal_state =
-        current_trajectory_->GoalState(current_xva_(0), current_xva_(1));
+    ::Eigen::Matrix<double, 5, 1> goal_state = CurrentGoalState();
     ::Eigen::Matrix<double, 5, 1> state_error = goal_state - state;
     ::Eigen::Matrix<double, 2, 1> U_fb = K * state_error;
     next_U_ = U_ff + U_fb;
@@ -116,7 +115,7 @@ void SplineDrivetrain::SetOutput(
     return;
   }
   if (current_spline_handle_ == current_spline_idx_) {
-    if (!current_trajectory_->is_at_end(current_state_)) {
+    if (!IsAtEnd()) {
       output->left_voltage = next_U_(0);
       output->right_voltage = next_U_(1);
       current_xva_ = next_xva_;

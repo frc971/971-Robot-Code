@@ -28,7 +28,8 @@ class HybridEkfTest : public ::testing::Test {
         velocity_plant_coefs_(dt_config_.make_hybrid_drivetrain_velocity_loop()
                                   .plant()
                                   .coefficients()) {
-    ekf_.ResetInitialState(t0_, HybridEkf<>::State::Zero());
+    ekf_.ResetInitialState(t0_, State::Zero(),
+                           HybridEkf<>::StateSquare::Identity());
   }
 
  protected:
@@ -107,25 +108,26 @@ TEST_F(HybridEkfTest, CheckDynamics) {
               {5.0, 6.0});
 }
 
-// Tests that if we provide a bunch of observations of the angular position
+// Tests that if we provide a bunch of observations of the position
 // with zero change in time, the state should approach the estimation.
 TEST_F(HybridEkfTest, ZeroTimeCorrect) {
-  HybridEkf<>::Output Z(1, 0, 0);
+  HybridEkf<>::Output Z(0.5, 0.5, 1);
   Eigen::Matrix<double, 3, 10> H;
-  H.setZero();
-  H(0, 2) = 1;
+  H.setIdentity();
   auto h = [H](const State &X, const Input &) { return H * X; };
   auto dhdx = [H](const State &) { return H; };
   Eigen::Matrix<double, 3, 3> R;
-  R.setZero();
-  R.diagonal() << 0.01, 0.01, 0.01;
+  R.setIdentity();
+  R *= 1e-3;
   Input U(0, 0);
   EXPECT_EQ(0.0, ekf_.X_hat(StateIdx::kTheta));
   const double starting_p_norm = ekf_.P().norm();
   for (int ii = 0; ii < 100; ++ii) {
     ekf_.Correct(Z, &U, {}, h, dhdx, R, t0_);
   }
-  EXPECT_NEAR(Z(0, 0), ekf_.X_hat(StateIdx::kTheta), 1e-3);
+  EXPECT_NEAR(Z(0, 0), ekf_.X_hat(StateIdx::kX), 1e-3);
+  EXPECT_NEAR(Z(1, 0), ekf_.X_hat(StateIdx::kY), 1e-3);
+  EXPECT_NEAR(Z(2, 0), ekf_.X_hat(StateIdx::kTheta), 1e-3);
   const double ending_p_norm = ekf_.P().norm();
   // Due to corrections, noise should've decreased.
   EXPECT_LT(ending_p_norm, starting_p_norm * 0.95);

@@ -1,4 +1,5 @@
 load("//aos/build:queues.bzl", "queue_library")
+load("//tools/build_rules:select.bzl", "cpu_select", "compiler_select")
 
 genrule(
     name = "genrule_drivetrain",
@@ -98,4 +99,43 @@ cc_test(
         ":camera",
         "//aos/testing:googletest",
     ],
+)
+
+cc_library(
+    name = "localizer",
+    hdrs = ["localizer.h"],
+    deps = [
+        ":camera",
+        "//frc971/control_loops:pose",
+        "//frc971/control_loops/drivetrain:hybrid_ekf",
+    ],
+)
+
+cc_test(
+    name = "localizer_test",
+    srcs = ["localizer_test.cc"],
+    defines =
+        cpu_select({
+            "amd64": [
+                "SUPPORT_PLOT=1",
+            ],
+            "arm": [],
+        }),
+    linkstatic = True,
+    deps = [
+        ":localizer",
+        ":drivetrain_base",
+        "//aos/testing:googletest",
+        "//aos/testing:random_seed",
+        "//aos/testing:test_shm",
+        "//frc971/control_loops/drivetrain:trajectory",
+        "//y2019:constants",
+        "//frc971/control_loops/drivetrain:splinedrivetrain",
+        "@com_github_gflags_gflags//:gflags",
+    ] + cpu_select({
+        "amd64": [
+            "//third_party/matplotlib-cpp",
+        ],
+        "arm": [],
+    }),
 )

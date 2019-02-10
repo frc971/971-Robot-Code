@@ -9,6 +9,14 @@
 #include "Eigen/Dense"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 
+namespace y2019 {
+namespace control_loops {
+namespace testing {
+class ParameterizedLocalizerTest;
+}  // namespace testing
+}  // namespace control_loops
+}  // namespace y2019
+
 namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
@@ -95,9 +103,10 @@ class HybridEkf {
   // TODO(james): We may want to actually re-initialize and reset things on
   // the field. Create some sort of Reset() function.
   void ResetInitialState(::aos::monotonic_clock::time_point t,
-                       const State &state) {
+                         const State &state, const StateSquare &P) {
     observations_.clear();
     X_hat_ = state;
+    P_ = P;
     observations_.PushFromBottom(
         {t,
          t,
@@ -299,6 +308,7 @@ class HybridEkf {
       observations_;
 
   friend class testing::HybridEkfTest;
+  friend class ::y2019::control_loops::testing::ParameterizedLocalizerTest;
 };  // class HybridEkf
 
 template <typename Scalar>
@@ -419,8 +429,9 @@ void HybridEkf<Scalar>::InitializeMatrices() {
 
   Q_continuous_.setZero();
   // TODO(james): Improve estimates of process noise--e.g., X/Y noise can
-  // probably be reduced because we rarely randomly jump in space, but maybe
-  // wheel speed noise should increase due to likelihood of slippage.
+  // probably be reduced when we are stopped because you rarely jump randomly.
+  // Or maybe it's more appropriate to scale wheelspeed noise with wheelspeed,
+  // since the wheels aren't likely to slip much stopped.
   Q_continuous_(kX, kX) = 0.005;
   Q_continuous_(kY, kY) = 0.005;
   Q_continuous_(kTheta, kTheta) = 0.001;
@@ -428,7 +439,7 @@ void HybridEkf<Scalar>::InitializeMatrices() {
       dt_config_.make_kf_drivetrain_loop().observer().coefficients().Q;
 
   P_.setZero();
-  P_.diagonal() << 1, 1, 1, 0.5, 0.1, 0.5, 0.1, 1, 1, 1;
+  P_.diagonal() << 0.1, 0.1, 0.01, 0.02, 0.01, 0.02, 0.01, 1, 1, 0.03;
 
   H_encoders_and_gyro_.setZero();
   // Encoders are stored directly in the state matrix, so are a minor
