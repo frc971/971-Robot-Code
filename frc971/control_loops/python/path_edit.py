@@ -17,16 +17,16 @@ import csv  # For writing to csv files
 
 from basic_window import OverrideMatrix, identity, quit_main_loop, set_color
 
-LENGTH_OF_FIELD = 323.65
+WIDTH_OF_FIELD_IN_METERS = 8.258302
 PIXELS_ON_SCREEN = 300
 
 
-def pxToIn(p):
-    return p * LENGTH_OF_FIELD / PIXELS_ON_SCREEN
+def pxToM(p):
+    return p * WIDTH_OF_FIELD_IN_METERS / PIXELS_ON_SCREEN
 
 
-def inToPx(i):
-    return (i * PIXELS_ON_SCREEN / LENGTH_OF_FIELD)
+def mToPx(i):
+    return (i * PIXELS_ON_SCREEN / WIDTH_OF_FIELD_IN_METERS)
 
 
 def px(cr):
@@ -155,7 +155,7 @@ class GTK_Widget(basic_window.BaseWindow):
     #John also wrote this
     def add_point(self, x, y):
         if (len(self.selected_points) < 6):
-            self.selected_points.append([x, y])
+            self.selected_points.append([pxToM(x), pxToM(y)])
             if (len(self.selected_points) == 6):
                 self.mode = Mode.kEditing
                 self.splines.append(np.array(self.selected_points))
@@ -188,9 +188,10 @@ class GTK_Widget(basic_window.BaseWindow):
         cur_p = [self.x, self.y]
 
         for index_splines, points in enumerate(self.spline):
-            for index_points, i in enumerate(points.curve):
+            for index_points, point in enumerate(points.curve):
                 # pythagorean
-                distance = np.sqrt((cur_p[0] - i[0])**2 + (cur_p[1] - i[1])**2)
+                distance = np.sqrt((cur_p[0] - mToPx(point[0]))**2 +
+                                   (cur_p[1] - mToPx(point[1])**2))
                 if distance < nearest:
                     nearest = distance
                     print("DISTANCE: ", distance, " | INDEX: ", index_points)
@@ -222,7 +223,7 @@ class GTK_Widget(basic_window.BaseWindow):
             if index > 0 and index <= self.index_of_edit:
                 distance += np.sqrt((points[index - 1][0] - point[0])**2 +
                                     (points[index - 1][1] - point[1])**2)
-        return pxToIn(distance)
+        return distance
 
     # Handle the expose-event by updating the Window and drawing
     def handle_draw(self, cr):
@@ -255,23 +256,6 @@ class GTK_Widget(basic_window.BaseWindow):
         cr.rectangle(-450, -150, 300, 300)
         cr.set_line_join(cairo.LINE_JOIN_ROUND)
         cr.stroke()
-        cr.rectangle((inToPx(140 - 161.825) - 300), inToPx(76.575), inToPx(56),
-                     inToPx(-153.15))
-        cr.set_line_join(cairo.LINE_JOIN_ROUND)
-        cr.stroke()
-        cr.rectangle((inToPx(161.825 - 24) - 300), inToPx(90), inToPx(24),
-                     inToPx(-180))
-        cr.set_line_join(cairo.LINE_JOIN_ROUND)
-        cr.stroke()
-
-        set_color(cr, Color(0.2, 0.2, 0.2))
-        cr.rectangle(
-            inToPx(140 - 161.825) - 300, inToPx(76.575), inToPx(56),
-            inToPx(-153.15))
-        cr.fill()
-        cr.rectangle(
-            inToPx(161.825 - 24) - 300, inToPx(90), inToPx(24), inToPx(-180))
-        cr.fill()
 
         y = 0
 
@@ -307,8 +291,8 @@ class GTK_Widget(basic_window.BaseWindow):
                     print(str(item))
                 for i, point in enumerate(self.selected_points):
                     print("I: " + str(i))
-                    draw_px_x(cr, point[0], point[1], 10)
-                    cr.move_to(point[0], point[1] - 15)
+                    draw_px_x(cr, mToPx(point[0]), mToPx(point[1]), 10)
+                    cr.move_to(mToPx(point[0]), mToPx(point[1]) - 15)
                     display_text(cr, str(i), 0.5, 0.5, 2, 2)
 
         elif self.mode == Mode.kEditing:
@@ -316,17 +300,14 @@ class GTK_Widget(basic_window.BaseWindow):
             cr.move_to(-300, 170)
             display_text(cr, "EDITING", 1, 1, 1, 1)
             if len(self.splines) > 0:
-                # print("Splines: " + str(len(self.splines)))
-                # print("ITEMS:")
                 holder_spline = []
                 for i, points in enumerate(self.splines):
                     array = np.zeros(shape=(6, 2), dtype=float)
                     for j, point in enumerate(points):
-                        array[j, 0] = point[0]
-                        array[j, 1] = point[1]
+                        array[j, 0] = mToPx(point[0])
+                        array[j, 1] = mToPx(point[1])
                     spline = Spline(np.ascontiguousarray(np.transpose(array)))
                     for k in np.linspace(0.01, 1, 100):
-
                         cr.move_to(
                             spline.Point(k - 0.01)[0],
                             spline.Point(k - 0.01)[1])
@@ -336,7 +317,6 @@ class GTK_Widget(basic_window.BaseWindow):
                             spline.Point(k - 0.01)[0],
                             spline.Point(k - 0.01)[1]
                         ]
-
                         holder_spline.append(holding)
                 self.curves.append(holder_spline)
 
@@ -346,13 +326,13 @@ class GTK_Widget(basic_window.BaseWindow):
                     for i, point in enumerate(points):
                         # print("I: " + str(i))
                         if spline == self.spline_edit and i == self.index_of_edit:
-                            draw_px_x(cr, point[0], point[1], 15,
+                            draw_px_x(cr, mToPx(point[0]), mToPx(point[1]), 15,
                                       self.colors[spline])
                         elif (spline == 0 and not i == 5) or (not i == 0
                                                               and not i == 5):
-                            draw_px_x(cr, point[0], point[1], 10,
+                            draw_px_x(cr, mToPx(point[0]), mToPx(point[1]), 10,
                                       self.colors[spline])
-                        cr.move_to(point[0], point[1] - 15)
+                        cr.move_to(mToPx(point[0]), mToPx(point[1]) - 15)
                         display_text(cr, str(i), 0.5, 0.5, 2, 2)
 
         elif self.mode == Mode.kExporting:
@@ -466,7 +446,7 @@ class GTK_Widget(basic_window.BaseWindow):
             if self.index_of_edit > -1 and self.held_x != self.x:
                 print("INDEX OF EDIT: " + str(self.index_of_edit))
                 self.splines[self.spline_edit][self.index_of_edit] = [
-                    self.x, self.y
+                    pxToM(self.x), pxToM(self.y)
                 ]
 
                 if not self.spline_edit == len(self.splines) - 1:
@@ -494,11 +474,11 @@ class GTK_Widget(basic_window.BaseWindow):
                 # Get clicked point
                 # Find nearest
                 # Move nearest to clicked
-                cur_p = [self.x, self.y]
+                cur_p = [pxToM(self.x), pxToM(self.y)]
                 print("CUR_P: " + str(self.x) + " " + str(self.y))
                 # Get the distance between each for x and y
                 # Save the index of the point closest
-                nearest = 50
+                nearest = 1  # Max distance away a the selected point can be in meters
                 index_of_closest = 0
                 for index_splines, points in enumerate(self.splines):
                     for index_points, val in enumerate(points):
@@ -520,7 +500,7 @@ class GTK_Widget(basic_window.BaseWindow):
 
     def do_button_press(self, event):
         print("button press activated")
-        #Be consistent with the scaling in the drawing_area
+        # Be consistent with the scaling in the drawing_area
         self.x = event.x * 2
         self.y = event.y * 2
         self.button_press_action()
