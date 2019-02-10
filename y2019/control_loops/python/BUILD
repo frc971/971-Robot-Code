@@ -105,9 +105,9 @@ py_binary(
 )
 
 py_binary(
-    name = "lift",
+    name = "stilts",
     srcs = [
-        "lift.py",
+        "stilts.py",
     ],
     legacy_create_init = False,
     restricted_to = ["//tools:k8"],
