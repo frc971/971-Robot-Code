@@ -78,8 +78,17 @@ class PriorityQueue {
   bool empty() const { return size_ == 0; }
   bool full() const { return size_ == buffer_size; }
 
+  // Removes all the elements from the queue:
+  void clear() {
+    size_ = 0;
+    bottom_ = buffer_size;
+    top_ = buffer_size;
+  }
+
   Data &top() { return list_[top_].data; }
+  const Data &top() const { return list_[top_].data; }
   Data &get(size_t idx) { return list_[idx].data; }
+  const Data &get(size_t idx) const { return list_[idx].data; }
   iterator begin() { return iterator(this, bottom_); }
   iterator end() { return iterator(this, buffer_size); }
 
