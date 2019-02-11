@@ -81,6 +81,21 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "uart",
+    srcs = [
+        "uart.cc",
+    ],
+    hdrs = [
+        "uart.h",
+    ],
+    deps = [
+        ":structures",
+        "//aos/containers:sized_array",
+        "//third_party/optional",
+    ],
+)
+
 cc_test(
     name = "spi_test",
     srcs = [
