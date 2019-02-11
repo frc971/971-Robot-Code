@@ -91,3 +91,27 @@ cc_test(
         "//aos/testing:googletest",
     ],
 )
+
+cc_library(
+    name = "cobs",
+    hdrs = [
+        "cobs.h",
+    ],
+    deps = [
+        "//aos/logging",
+        "//third_party/GSL",
+    ],
+)
+
+cc_test(
+    name = "cobs_test",
+    srcs = [
+        "cobs_test.cc",
+    ],
+    deps = [
+        ":cobs",
+        "//aos/testing:googletest",
+        "//aos/testing:test_logging",
+        "//third_party/GSL",
+    ],
+)
