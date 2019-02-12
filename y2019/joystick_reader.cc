@@ -108,27 +108,27 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     // TODO(sabina): get accurate angle.
     if (data.IsPressed(kIntakeExtend)) {
-      new_superstructure_goal->intake.joint_angle = 0.5;
+      new_superstructure_goal->intake.unsafe_goal = 0.5;
     } else {
-      new_superstructure_goal->intake.joint_angle = 0.0;
+      new_superstructure_goal->intake.unsafe_goal = 0.0;
     }
 
     if (data.IsPressed(kIntake)) {
       new_superstructure_goal->suction.bottom = true;
       if (superstructure_queue.status->has_piece == false) {
-        new_superstructure_goal->intake.roller_voltage = 12.0;
+        new_superstructure_goal->roller_voltage = 12.0;
       } else {
-        new_superstructure_goal->intake.roller_voltage = 0.0;
+        new_superstructure_goal->roller_voltage = 0.0;
       }
     } else if (data.IsPressed(kSpit)) {
       new_superstructure_goal->suction.bottom = false;
       if (superstructure_queue.status->has_piece == false) {
-        new_superstructure_goal->intake.roller_voltage = 12.0;
+        new_superstructure_goal->roller_voltage = 12.0;
       } else {
-        new_superstructure_goal->intake.roller_voltage = 0.0;
+        new_superstructure_goal->roller_voltage = 0.0;
       }
     } else {
-      new_superstructure_goal->intake.roller_voltage = 0.0;
+      new_superstructure_goal->roller_voltage = 0.0;
     }
 
     // TODO(sabina): decide if we should really have disk suction as its own
@@ -147,9 +147,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     // TODO(sabina): max height please?
     if (data.IsPressed(kDeployStilt)) {
-      new_superstructure_goal->stilts.height = 0;
+      new_superstructure_goal->stilts.unsafe_goal= 0;
     } else if (data.IsPressed(kRetractStilt)) {
-      new_superstructure_goal->stilts.height = 0;
+      new_superstructure_goal->stilts.unsafe_goal = 0;
     } else {
     }
 
@@ -157,8 +157,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
       wrist_angle_ = -wrist_angle_;
     }
 
-    new_superstructure_goal->elevator.height = elevator_height_;
-    new_superstructure_goal->wrist.angle = wrist_angle_;
+    new_superstructure_goal->elevator.unsafe_goal = elevator_height_;
+    new_superstructure_goal->wrist.unsafe_goal = wrist_angle_;
 
     LOG_STRUCT(DEBUG, "sending goal", *new_superstructure_goal);
     if (!new_superstructure_goal.Send()) {

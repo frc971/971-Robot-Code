@@ -128,8 +128,8 @@ void CollisionAvoidance::UpdateGoal(
   }
 
   if (unsafe_goal) {
-    const double wrist_goal = unsafe_goal->wrist.angle;
-    const double intake_goal = unsafe_goal->intake.joint_angle;
+    const double wrist_goal = unsafe_goal->wrist.unsafe_goal;
+    const double intake_goal = unsafe_goal->intake.unsafe_goal;
 
     // Compute if we need to move the intake.
     const bool intake_needs_to_move = (intake_position < kIntakeMiddleAngle) ^

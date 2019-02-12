@@ -23,11 +23,12 @@ cc_library(
         "//aos/mutex",
         "//aos/network:team_number",
         "//frc971:constants",
+        "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
         "//y2019/control_loops/drivetrain:polydrivetrain_plants",
         "//y2019/control_loops/superstructure/elevator:elevator_plants",
+        "//y2019/control_loops/superstructure/wrist:wrist_plants",
         "//y2019/control_loops/superstructure/intake:intake_plants",
         "//y2019/control_loops/superstructure/stilts:stilts_plants",
-        "//y2019/control_loops/superstructure/wrist:wrist_plants",
     ],
 )
 

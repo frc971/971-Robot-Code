@@ -5,9 +5,10 @@
 #include <stdint.h>
 
 #include "frc971/constants.h"
+#include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 #include "y2019/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
-#include "y2019/control_loops/superstructure/intake/intake_plant.h"
 #include "y2019/control_loops/superstructure/elevator/elevator_plant.h"
+#include "y2019/control_loops/superstructure/intake/intake_plant.h"
 #include "y2019/control_loops/superstructure/stilts/stilts_plant.h"
 #include "y2019/control_loops/superstructure/wrist/wrist_plant.h"
 
@@ -27,6 +28,7 @@ namespace constants {
 struct Values {
   static const int kZeroingSampleSize = 200;
 
+  // Drivetrain Constants
   static constexpr double kDrivetrainCyclesPerRevolution() { return 512.0; }
   static constexpr double kDrivetrainEncoderCountsPerRevolution() {
     return kDrivetrainCyclesPerRevolution() * 4;
@@ -117,6 +119,7 @@ struct Values {
   // Stilts
   static constexpr double kStiltsEncoderCountsPerRevolution() { return 4096.0; }
 
+  // Stilts Constants
   static constexpr double kStiltsEncoderRatio() {
     return (1.0 /* Gear ratio */) *
            control_loops::superstructure::stilts::kRadius;
@@ -144,17 +147,19 @@ struct Values {
   }
 
   struct PotAndAbsConstants {
-    ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants zeroing;
+    ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+        ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>
+        subsystem_params;
     double potentiometer_offset;
   };
+
   PotAndAbsConstants elevator;
   PotAndAbsConstants wrist;
-  PotAndAbsConstants stilts;
+  ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+      ::frc971::zeroing::AbsoluteEncoderZeroingEstimator>
+      intake;
 
-  struct Intake {
-    ::frc971::constants::AbsoluteEncoderZeroingConstants zeroing;
-  };
-  Intake intake;
+  PotAndAbsConstants stilts;
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and

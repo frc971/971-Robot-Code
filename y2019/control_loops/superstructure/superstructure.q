@@ -3,25 +3,6 @@ package y2019.control_loops.superstructure;
 import "aos/controls/control_loops.q";
 import "frc971/control_loops/profiled_subsystem.q";
 
-struct ElevatorGoal {
-  // Meters, 0 = lowest position - mechanical hard stop,
-  // positive = upward
-  double height;
-
-  .frc971.ProfileParameters profile_params;
-};
-
-struct IntakeGoal {
-  // Positive is rollers intaking inward.
-  double roller_voltage;
-
-  // 0 = linkage on the sprocket is pointing straight up,
-  // positive = forward
-  double joint_angle;
-
-  .frc971.ProfileParameters profile_params;
-};
-
 struct SuctionGoal {
   // True = open solenoid (apply suction)
   // Top/bottom are when wrist is forward
@@ -29,31 +10,29 @@ struct SuctionGoal {
   bool bottom;
 };
 
-struct StiltsGoal {
-  // Distance stilts extended out of the bottom of the robot. Positive = down.
-  // 0 is the height such that the bottom of the stilts is tangent to the bottom
-  // of the middle wheels.
-  double height;
-
-  .frc971.ProfileParameters profile_params;
-};
-
-struct WristGoal {
-  // 0 = Straight up parallel to elevator
-  // Positive rotates toward intake from 0
-  double angle;
-  .frc971.ProfileParameters profile_params;
-};
-
 queue_group SuperstructureQueue {
   implements aos.control_loops.ControlLoop;
 
   message Goal {
-    ElevatorGoal elevator;
-    IntakeGoal intake;
+    // Meters, 0 = lowest position - mechanical hard stop,
+    // positive = upward
+    .frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal elevator;
+    // 0 = linkage on the sprocket is pointing straight up,
+    // positive = forward
+    .frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal intake;
+    // 0 = Straight up parallel to elevator
+    // Positive rotates toward intake from 0
+    .frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal wrist;
+
+    // Distance stilts extended out of the bottom of the robot. Positive = down.
+    // 0 is the height such that the bottom of the stilts is tangent to the bottom
+    // of the middle wheels.
+    .frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal stilts;
+
+    // Positive is rollers intaking inward.
+    double roller_voltage;
+
     SuctionGoal suction;
-    StiltsGoal stilts;
-    WristGoal wrist;
   };
 
   message Status {
@@ -69,7 +48,7 @@ queue_group SuperstructureQueue {
     // Status of each subsystem.
     .frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus elevator;
     .frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus wrist;
-    .frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus intake;
+    .frc971.control_loops.AbsoluteEncoderProfiledJointStatus intake;
     .frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus stilts;
   };
 
@@ -106,7 +85,8 @@ queue_group SuperstructureQueue {
     // Voltage sent to rollers on intake. Positive rolls inward.
     double intake_roller_voltage;
 
-    // Voltage sent to motors to move stilts height. Positive moves robot upward.
+    // Voltage sent to motors to move stilts height. Positive moves robot
+    // upward.
     double stilts_voltage;
 
     // True opens solenoid (applies suction)

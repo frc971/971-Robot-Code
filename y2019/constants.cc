@@ -12,13 +12,15 @@
 #include "aos/mutex/mutex.h"
 #include "aos/network/team_number.h"
 #include "aos/once.h"
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
+#include "y2019/control_loops/superstructure/elevator/integral_elevator_plant.h"
+#include "y2019/control_loops/superstructure/intake/integral_intake_plant.h"
+#include "y2019/control_loops/superstructure/stilts/integral_stilts_plant.h"
+#include "y2019/control_loops/superstructure/wrist/integral_wrist_plant.h"
 
 namespace y2019 {
 namespace constants {
+
+using ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator;
 
 const int Values::kZeroingSampleSize;
 
@@ -31,94 +33,140 @@ const uint16_t kCodingRobotTeamNumber = 7971;
 const Values *DoGetValuesForTeam(uint16_t team) {
   Values *const r = new Values();
   Values::PotAndAbsConstants *const elevator = &r->elevator;
-  Values::Intake *const intake = &r->intake;
+  ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+      ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>
+      *const elevator_params = &(elevator->subsystem_params);
   Values::PotAndAbsConstants *const stilts = &r->stilts;
+  ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+      ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>
+      *const stilts_params = &(stilts->subsystem_params);
   Values::PotAndAbsConstants *const wrist = &r->wrist;
+  ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+      ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>
+      *const wrist_params = &(wrist->subsystem_params);
+  ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+      ::frc971::zeroing::AbsoluteEncoderZeroingEstimator> *const intake =
+      &r->intake;
 
-  elevator->zeroing.average_filter_size = Values::kZeroingSampleSize;
-  elevator->zeroing.one_revolution_distance =
+  // Elevator constants.
+  elevator_params->zeroing_voltage = 4.0;
+  elevator_params->operating_voltage = 12.0;
+  elevator_params->zeroing_profile_params = {0.1, 1.0};
+  elevator_params->default_profile_params = {4.0, 3.0};
+  elevator_params->range = Values::kElevatorRange();
+  elevator_params->make_integral_loop =
+      &control_loops::superstructure::elevator::MakeIntegralElevatorLoop;
+  elevator_params->zeroing_constants.average_filter_size =
+      Values::kZeroingSampleSize;
+  elevator_params->zeroing_constants.one_revolution_distance =
       M_PI * 2.0 * constants::Values::kElevatorEncoderRatio();
-  elevator->zeroing.zeroing_threshold = 0.0005;
-  elevator->zeroing.moving_buffer_size = 20;
-  elevator->zeroing.allowable_encoder_error = 0.9;
+  elevator_params->zeroing_constants.zeroing_threshold = 0.005;
+  elevator_params->zeroing_constants.moving_buffer_size = 20;
+  elevator_params->zeroing_constants.allowable_encoder_error = 0.9;
 
-  intake->zeroing.average_filter_size = Values::kZeroingSampleSize;
-  intake->zeroing.one_revolution_distance =
-      M_PI * 2.0 * constants::Values::kIntakeEncoderRatio();
-  intake->zeroing.zeroing_threshold = 0.0005;
-  intake->zeroing.moving_buffer_size = 20;
-  intake->zeroing.allowable_encoder_error = 0.9;
-
-  stilts->zeroing.average_filter_size = Values::kZeroingSampleSize;
-  stilts->zeroing.one_revolution_distance =
-      M_PI * 2.0 * constants::Values::kStiltsEncoderRatio();
-  stilts->zeroing.zeroing_threshold = 0.0005;
-  stilts->zeroing.moving_buffer_size = 20;
-  stilts->zeroing.allowable_encoder_error = 0.9;
-
-  wrist->zeroing.average_filter_size = Values::kZeroingSampleSize;
-  wrist->zeroing.one_revolution_distance =
+  // Wrist constants.
+  wrist_params->zeroing_voltage = 4.0;
+  wrist_params->operating_voltage = 12.0;
+  wrist_params->zeroing_profile_params = {0.5, 2.0};
+  wrist_params->default_profile_params = {6.0, 5.0};
+  wrist_params->range = Values::kWristRange();
+  wrist_params->make_integral_loop =
+      &control_loops::superstructure::wrist::MakeIntegralWristLoop;
+  wrist_params->zeroing_constants.average_filter_size =
+      Values::kZeroingSampleSize;
+  wrist_params->zeroing_constants.one_revolution_distance =
       M_PI * 2.0 * constants::Values::kWristEncoderRatio();
-  wrist->zeroing.zeroing_threshold = 0.0005;
-  wrist->zeroing.moving_buffer_size = 20;
-  wrist->zeroing.allowable_encoder_error = 0.9;
+  wrist_params->zeroing_constants.zeroing_threshold = 0.0005;
+  wrist_params->zeroing_constants.moving_buffer_size = 20;
+  wrist_params->zeroing_constants.allowable_encoder_error = 0.9;
+
+  // Intake constants.
+  intake->zeroing_voltage = 4.0;
+  intake->operating_voltage = 12.0;
+  intake->zeroing_profile_params = {0.5, 3.0};
+  intake->default_profile_params = {6.0, 5.0};
+  intake->range = Values::kIntakeRange();
+  intake->make_integral_loop =
+      control_loops::superstructure::intake::MakeIntegralIntakeLoop;
+  intake->zeroing_constants.average_filter_size = Values::kZeroingSampleSize;
+  intake->zeroing_constants.one_revolution_distance =
+      M_PI * 2.0 * constants::Values::kIntakeEncoderRatio();
+  intake->zeroing_constants.zeroing_threshold = 0.0005;
+  intake->zeroing_constants.moving_buffer_size = 20;
+  intake->zeroing_constants.allowable_encoder_error = 0.9;
+
+  // Stilts constants.
+  stilts_params->zeroing_voltage = 4.0;
+  stilts_params->operating_voltage = 12.0;
+  stilts_params->zeroing_profile_params = {0.1, 3.0};
+  stilts_params->default_profile_params = {2.0, 4.0};
+  stilts_params->range = Values::kStiltsRange();
+  stilts_params->make_integral_loop =
+      &control_loops::superstructure::stilts::MakeIntegralStiltsLoop;
+  stilts_params->zeroing_constants.average_filter_size =
+      Values::kZeroingSampleSize;
+  stilts_params->zeroing_constants.one_revolution_distance =
+      M_PI * 2.0 * constants::Values::kStiltsEncoderRatio();
+  stilts_params->zeroing_constants.zeroing_threshold = 0.0005;
+  stilts_params->zeroing_constants.moving_buffer_size = 20;
+  stilts_params->zeroing_constants.allowable_encoder_error = 0.9;
 
   switch (team) {
     // A set of constants for tests.
     case 1:
-      elevator->zeroing.measured_absolute_position = 0.0;
+      elevator_params->zeroing_constants.measured_absolute_position = 0.0;
       elevator->potentiometer_offset = 0.0;
 
-      intake->zeroing.measured_absolute_position = 0.0;
-      intake->zeroing.middle_position = 0.0;
+      intake->zeroing_constants.measured_absolute_position = 0.0;
+      intake->zeroing_constants.middle_position = 0.0;
 
-      stilts->zeroing.measured_absolute_position = 0.0;
-      stilts->potentiometer_offset = 0.0;
-
-      wrist->zeroing.measured_absolute_position = 0.0;
+      wrist_params->zeroing_constants.measured_absolute_position = 0.0;
       wrist->potentiometer_offset = 0.0;
+
+      stilts_params->zeroing_constants.measured_absolute_position = 0.0;
+      stilts->potentiometer_offset = 0.0;
       break;
 
     case kCompTeamNumber:
-      elevator->zeroing.measured_absolute_position = 0.0;
+      elevator_params->zeroing_constants.measured_absolute_position = 0.0;
       elevator->potentiometer_offset = 0.0;
 
-      intake->zeroing.measured_absolute_position = 0.0;
-      intake->zeroing.middle_position = 0.0;
+      intake->zeroing_constants.measured_absolute_position = 0.0;
+      intake->zeroing_constants.middle_position = 0.0;
 
-      stilts->zeroing.measured_absolute_position = 0.0;
-      stilts->potentiometer_offset = 0.0;
-
-      wrist->zeroing.measured_absolute_position = 0.0;
+      wrist_params->zeroing_constants.measured_absolute_position = 0.0;
       wrist->potentiometer_offset = 0.0;
+
+      stilts_params->zeroing_constants.measured_absolute_position = 0.0;
+      stilts->potentiometer_offset = 0.0;
       break;
 
     case kPracticeTeamNumber:
-      elevator->zeroing.measured_absolute_position = 0.0;
+      elevator_params->zeroing_constants.measured_absolute_position = 0.0;
       elevator->potentiometer_offset = 0.0;
 
-      intake->zeroing.measured_absolute_position = 0.0;
-      intake->zeroing.middle_position = 0.0;
+      intake->zeroing_constants.measured_absolute_position = 0.0;
+      intake->zeroing_constants.middle_position = 0.0;
 
-      stilts->zeroing.measured_absolute_position = 0.0;
-      stilts->potentiometer_offset = 0.0;
-
-      wrist->zeroing.measured_absolute_position = 0.0;
+      wrist_params->zeroing_constants.measured_absolute_position = 0.0;
       wrist->potentiometer_offset = 0.0;
+
+      stilts_params->zeroing_constants.measured_absolute_position = 0.0;
+      stilts->potentiometer_offset = 0.0;
       break;
 
     case kCodingRobotTeamNumber:
-      elevator->zeroing.measured_absolute_position = 0.0;
+      elevator_params->zeroing_constants.measured_absolute_position = 0.0;
       elevator->potentiometer_offset = 0.0;
 
-      intake->zeroing.measured_absolute_position = 0.0;
-      intake->zeroing.middle_position = 0.0;
+      intake->zeroing_constants.measured_absolute_position = 0.0;
+      intake->zeroing_constants.middle_position = 0.0;
 
-      stilts->zeroing.measured_absolute_position = 0.0;
-      stilts->potentiometer_offset = 0.0;
-
-      wrist->zeroing.measured_absolute_position = 0.0;
+      wrist_params->zeroing_constants.measured_absolute_position = 0.0;
       wrist->potentiometer_offset = 0.0;
+
+      stilts_params->zeroing_constants.measured_absolute_position = 0.0;
+      stilts->potentiometer_offset = 0.0;
       break;
 
     default:

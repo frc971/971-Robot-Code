@@ -23,8 +23,30 @@ cc_library(
         "superstructure.h",
     ],
     deps = [
+        ":collision_avoidance",
         ":superstructure_queue",
         "//aos/controls:control_loop",
+        "//y2019:constants",
+    ],
+)
+
+cc_test(
+    name = "superstructure_lib_test",
+    srcs = [
+        "superstructure_lib_test.cc",
+    ],
+    deps = [
+        ":superstructure_lib",
+        ":superstructure_queue",
+        "//aos:math",
+        "//aos:queues",
+        "//aos/controls:control_loop_test",
+        "//aos/testing:googletest",
+        "//aos/time",
+        "//frc971/control_loops:capped_test_plant",
+        "//frc971/control_loops:position_sensor_sim",
+        "//frc971/control_loops:team_number_test_environment",
+        "//y2019/control_loops/superstructure/intake:intake_plants",
     ],
 )
 

@@ -111,10 +111,10 @@ constexpr double kMaxFastEncoderPulsesPerSecond =
         Values::kMaxIntakeEncoderPulsesPerSecond());
 static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
               "fast encoders are too fast");
-
 constexpr double kMaxMediumEncoderPulsesPerSecond =
     max(Values::kMaxElevatorEncoderPulsesPerSecond(),
         Values::kMaxWristEncoderPulsesPerSecond());
+
 static_assert(kMaxMediumEncoderPulsesPerSecond <= 400000,
               "medium encoders are too fast");
 
