@@ -288,12 +288,15 @@ def RunTest(plant,
     pylab.show()
 
 
-def PlotStep(params, R):
+def PlotStep(params, R, plant_params=None):
     """Plots a step move to the goal.
 
     Args:
+      params: LinearSystemParams for the controller and observer
+      plant_params: LinearSystemParams for the plant.  Defaults to params if
+        plant_params is None.
       R: numpy.matrix(2, 1), the goal"""
-    plant = LinearSystem(params, params.name)
+    plant = LinearSystem(plant_params or params, params.name)
     controller = IntegralLinearSystem(params, params.name)
     observer = IntegralLinearSystem(params, params.name)
 
@@ -312,12 +315,15 @@ def PlotStep(params, R):
         kick_magnitude=0.0)
 
 
-def PlotKick(params, R):
+def PlotKick(params, R, plant_params=None):
     """Plots a step motion with a kick at 1.0 seconds.
 
     Args:
+      params: LinearSystemParams for the controller and observer
+      plant_params: LinearSystemParams for the plant.  Defaults to params if
+        plant_params is None.
       R: numpy.matrix(2, 1), the goal"""
-    plant = LinearSystem(params, params.name)
+    plant = LinearSystem(plant_params or params, params.name)
     controller = IntegralLinearSystem(params, params.name)
     observer = IntegralLinearSystem(params, params.name)
 
@@ -336,15 +342,22 @@ def PlotKick(params, R):
         kick_magnitude=2.0)
 
 
-def PlotMotion(params, R, max_velocity=0.3, max_acceleration=10.0):
+def PlotMotion(params,
+               R,
+               max_velocity=0.3,
+               max_acceleration=10.0,
+               plant_params=None):
     """Plots a trapezoidal motion.
 
     Args:
+      params: LinearSystemParams for the controller and observer
+      plant_params: LinearSystemParams for the plant.  Defaults to params if
+        plant_params is None.
       R: numpy.matrix(2, 1), the goal,
       max_velocity: float, The max velocity of the profile.
       max_acceleration: float, The max acceleration of the profile.
     """
-    plant = LinearSystem(params, params.name)
+    plant = LinearSystem(plant_params or params, params.name)
     controller = IntegralLinearSystem(params, params.name)
     observer = IntegralLinearSystem(params, params.name)
 

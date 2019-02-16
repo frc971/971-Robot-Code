@@ -282,12 +282,15 @@ def RunTest(plant,
     pylab.show()
 
 
-def PlotStep(params, R):
+def PlotStep(params, R, plant_params=None):
     """Plots a step move to the goal.
 
     Args:
+      params: AngularSystemParams for the controller and observer
+      plant_params: AngularSystemParams for the plant.  Defaults to params if
+        plant_params is None.
       R: numpy.matrix(2, 1), the goal"""
-    plant = AngularSystem(params, params.name)
+    plant = AngularSystem(plant_params or params, params.name)
     controller = IntegralAngularSystem(params, params.name)
     observer = IntegralAngularSystem(params, params.name)
 
@@ -306,12 +309,15 @@ def PlotStep(params, R):
         kick_magnitude=0.0)
 
 
-def PlotKick(params, R):
+def PlotKick(params, R, plant_params=None):
     """Plots a step motion with a kick at 1.0 seconds.
 
     Args:
+      params: AngularSystemParams for the controller and observer
+      plant_params: AngularSystemParams for the plant.  Defaults to params if
+        plant_params is None.
       R: numpy.matrix(2, 1), the goal"""
-    plant = AngularSystem(params, params.name)
+    plant = AngularSystem(plant_params or params, params.name)
     controller = IntegralAngularSystem(params, params.name)
     observer = IntegralAngularSystem(params, params.name)
 
@@ -330,15 +336,22 @@ def PlotKick(params, R):
         kick_magnitude=2.0)
 
 
-def PlotMotion(params, R, max_velocity=10.0, max_acceleration=70.0):
+def PlotMotion(params,
+               R,
+               max_velocity=10.0,
+               max_acceleration=70.0,
+               plant_params=None):
     """Plots a trapezoidal motion.
 
     Args:
+      params: AngularSystemParams for the controller and observer
+      plant_params: AngularSystemParams for the plant.  Defaults to params if
+        plant_params is None.
       R: numpy.matrix(2, 1), the goal,
       max_velocity: float, The max velocity of the profile.
       max_acceleration: float, The max acceleration of the profile.
     """
-    plant = AngularSystem(params, params.name)
+    plant = AngularSystem(plant_params or params, params.name)
     controller = IntegralAngularSystem(params, params.name)
     observer = IntegralAngularSystem(params, params.name)
 
