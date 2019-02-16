@@ -49,10 +49,10 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       &r->intake;
 
   // Elevator constants.
-  elevator_params->zeroing_voltage = 4.0;
+  elevator_params->zeroing_voltage = 3.0;
   elevator_params->operating_voltage = 12.0;
   elevator_params->zeroing_profile_params = {0.1, 1.0};
-  elevator_params->default_profile_params = {4.0, 3.0};
+  elevator_params->default_profile_params = {4.0, 16.0};
   elevator_params->range = Values::kElevatorRange();
   elevator_params->make_integral_loop =
       &control_loops::superstructure::elevator::MakeIntegralElevatorLoop;
@@ -68,7 +68,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   wrist_params->zeroing_voltage = 4.0;
   wrist_params->operating_voltage = 12.0;
   wrist_params->zeroing_profile_params = {0.5, 2.0};
-  wrist_params->default_profile_params = {6.0, 5.0};
+  wrist_params->default_profile_params = {10.0, 40.0};
   wrist_params->range = Values::kWristRange();
   wrist_params->make_integral_loop =
       &control_loops::superstructure::wrist::MakeIntegralWristLoop;
@@ -81,10 +81,10 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   wrist_params->zeroing_constants.allowable_encoder_error = 0.9;
 
   // Intake constants.
-  intake->zeroing_voltage = 4.0;
+  intake->zeroing_voltage = 3.0;
   intake->operating_voltage = 12.0;
   intake->zeroing_profile_params = {0.5, 3.0};
-  intake->default_profile_params = {6.0, 5.0};
+  intake->default_profile_params = {6.0, 30.0};
   intake->range = Values::kIntakeRange();
   intake->make_integral_loop =
       control_loops::superstructure::intake::MakeIntegralIntakeLoop;
@@ -96,10 +96,10 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   intake->zeroing_constants.allowable_encoder_error = 0.9;
 
   // Stilts constants.
-  stilts_params->zeroing_voltage = 4.0;
+  stilts_params->zeroing_voltage = 3.0;
   stilts_params->operating_voltage = 12.0;
-  stilts_params->zeroing_profile_params = {0.1, 3.0};
-  stilts_params->default_profile_params = {2.0, 4.0};
+  stilts_params->zeroing_profile_params = {0.1, 0.5};
+  stilts_params->default_profile_params = {0.5, 0.5};
   stilts_params->range = Values::kStiltsRange();
   stilts_params->make_integral_loop =
       &control_loops::superstructure::stilts::MakeIntegralStiltsLoop;
