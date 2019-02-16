@@ -206,9 +206,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       drivetrain_message.Send();
     }
-  }
-
-  void RunDmaIteration() {
     const auto values = constants::GetValues();
 
     {
@@ -257,9 +254,6 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
   void set_intake_victor(::std::unique_ptr<::frc::VictorSP> t) {
     intake_victor_ = ::std::move(t);
   }
-  void set_intake_rollers_victor(::std::unique_ptr<::frc::VictorSP> t) {
-    intake_rollers_victor_ = ::std::move(t);
-  }
 
   void set_wrist_victor(::std::unique_ptr<::frc::VictorSP> t) {
     wrist_victor_ = ::std::move(t);
@@ -279,25 +273,20 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     auto &queue =
         ::y2019::control_loops::superstructure::superstructure_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    elevator_victor_->SetSpeed(::aos::Clip(-queue->elevator_voltage,
+    elevator_victor_->SetSpeed(::aos::Clip(queue->elevator_voltage,
                                            -kMaxBringupPower,
                                            kMaxBringupPower) /
                                12.0);
 
-    intake_victor_->SetSpeed(::aos::Clip(-queue->intake_joint_voltage,
+    intake_victor_->SetSpeed(::aos::Clip(queue->intake_joint_voltage,
                                          -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
-
-    intake_rollers_victor_->SetSpeed(::aos::Clip(-queue->intake_roller_voltage,
-                                                 -kMaxBringupPower,
-                                                 kMaxBringupPower) /
-                                     12.0);
 
     wrist_victor_->SetSpeed(::aos::Clip(-queue->wrist_voltage,
                                         -kMaxBringupPower, kMaxBringupPower) /
                             12.0);
 
-    stilts_victor_->SetSpeed(::aos::Clip(-queue->stilts_voltage,
+    stilts_victor_->SetSpeed(::aos::Clip(queue->stilts_voltage,
                                          -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
   }
@@ -307,13 +296,12 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
 
     elevator_victor_->SetDisabled();
     intake_victor_->SetDisabled();
-    intake_rollers_victor_->SetDisabled();
     wrist_victor_->SetDisabled();
     stilts_victor_->SetDisabled();
   }
 
   ::std::unique_ptr<::frc::VictorSP> elevator_victor_, intake_victor_,
-      intake_rollers_victor_, wrist_victor_, stilts_victor_;
+      wrist_victor_, stilts_victor_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -334,34 +322,33 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
     SensorReader reader;
 
-    // TODO(Sabina): Update port numbers(Sensors and Victors)
     reader.set_drivetrain_left_encoder(make_encoder(0));
     reader.set_drivetrain_right_encoder(make_encoder(1));
 
-    reader.set_elevator_encoder(make_encoder(2));
-    reader.set_elevator_absolute_pwm(make_unique<frc::DigitalInput>(0));
-    reader.set_elevator_potentiometer(make_unique<frc::AnalogInput>(0));
+    reader.set_elevator_encoder(make_encoder(4));
+    reader.set_elevator_absolute_pwm(make_unique<frc::DigitalInput>(4));
+    reader.set_elevator_potentiometer(make_unique<frc::AnalogInput>(4));
 
-    reader.set_wrist_encoder(make_encoder(3));
-    reader.set_wrist_absolute_pwm(make_unique<frc::DigitalInput>(1));
-    reader.set_wrist_potentiometer(make_unique<frc::AnalogInput>(2));
+    reader.set_wrist_encoder(make_encoder(5));
+    reader.set_wrist_absolute_pwm(make_unique<frc::DigitalInput>(5));
+    reader.set_wrist_potentiometer(make_unique<frc::AnalogInput>(5));
 
-    reader.set_intake_encoder(make_encoder(4));
-    reader.set_intake_absolute_pwm(make_unique<frc::DigitalInput>(3));
+    reader.set_intake_encoder(make_encoder(2));
+    reader.set_intake_absolute_pwm(make_unique<frc::DigitalInput>(2));
 
-    reader.set_stilts_encoder(make_encoder(5));
-    reader.set_stilts_absolute_pwm(make_unique<frc::DigitalInput>(2));
+    reader.set_stilts_encoder(make_encoder(3));
+    reader.set_stilts_absolute_pwm(make_unique<frc::DigitalInput>(3));
     reader.set_stilts_potentiometer(make_unique<frc::AnalogInput>(3));
 
     reader.set_pwm_trigger(make_unique<frc::DigitalInput>(25));
 
     ::std::thread reader_thread(::std::ref(reader));
 
-    auto imu_trigger = make_unique<frc::DigitalInput>(5);
+    auto imu_trigger = make_unique<frc::DigitalInput>(0);
     ::frc971::wpilib::ADIS16448 imu(frc::SPI::Port::kOnboardCS1,
                                     imu_trigger.get());
     imu.SetDummySPI(frc::SPI::Port::kOnboardCS2);
-    auto imu_reset = make_unique<frc::DigitalOutput>(6);
+    auto imu_reset = make_unique<frc::DigitalOutput>(1);
     imu.set_reset(imu_reset.get());
     ::std::thread imu_thread(::std::ref(imu));
 
@@ -378,15 +365,16 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     SuperstructureWriter superstructure_writer;
     superstructure_writer.set_elevator_victor(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(2)));
-    superstructure_writer.set_intake_rollers_victor(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(3)));
-    superstructure_writer.set_intake_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(4)));
+    // TODO(austin): Do the vacuum
+    //superstructure_writer.set_vacuum(
+        //::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(6)));
+    superstructure_writer.set_intake_victor(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(2)));
     superstructure_writer.set_wrist_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(5)));
     superstructure_writer.set_stilts_victor(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(6)));
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(3)));
 
     ::std::thread superstructure_writer_thread(
         ::std::ref(superstructure_writer));
