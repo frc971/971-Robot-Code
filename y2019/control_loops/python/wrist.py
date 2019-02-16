@@ -4,6 +4,7 @@ from aos.util.trapezoid_profile import TrapezoidProfile
 from frc971.control_loops.python import control_loop
 from frc971.control_loops.python import angular_system
 from frc971.control_loops.python import controls
+import copy
 import numpy
 import sys
 from matplotlib import pylab
@@ -36,12 +37,15 @@ kWrist = angular_system.AngularSystemParams(
     kalman_q_voltage=4.0,
     kalman_r_position=0.05)
 
+kWristModel = copy.copy(kWrist)
+kWristModel.J = 0.1348
+
 
 def main(argv):
     if FLAGS.plot:
         R = numpy.matrix([[numpy.pi / 2.0], [0.0]])
-        angular_system.PlotMotion(kWrist, R)
-        angular_system.PlotKick(kWrist, R)
+        angular_system.PlotKick(kWrist, R, plant_params=kWristModel)
+        angular_system.PlotMotion(kWrist, R, plant_params=kWristModel)
 
     # Write the generated constants out to a file.
     if len(argv) != 5:

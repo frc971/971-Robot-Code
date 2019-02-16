@@ -41,8 +41,8 @@ kIntake = angular_system.AngularSystemParams(
 def main(argv):
     if FLAGS.plot:
         R = numpy.matrix([[numpy.pi / 2.0], [0.0]])
-        angular_system.PlotMotion(kIntake, R)
         angular_system.PlotKick(kIntake, R)
+        angular_system.PlotMotion(kIntake, R)
 
     # Write the generated constants out to a file.
     if len(argv) != 5:
