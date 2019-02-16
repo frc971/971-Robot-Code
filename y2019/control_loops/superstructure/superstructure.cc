@@ -38,11 +38,10 @@ void Superstructure::RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
                  output != nullptr ? &(output->wrist_voltage) : nullptr,
                  &(status->wrist));
 
-  intake_.Iterate(
-      unsafe_goal != nullptr ? &(unsafe_goal->intake) : nullptr,
-      &(position->intake_joint),
-      output != nullptr ? &(output->intake_joint_voltage) : nullptr,
-      &(status->intake));
+  intake_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->intake) : nullptr,
+                  &(position->intake_joint),
+                  output != nullptr ? &(output->intake_joint_voltage) : nullptr,
+                  &(status->intake));
 
   stilts_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->stilts) : nullptr,
                   &(position->stilts),
@@ -54,6 +53,16 @@ void Superstructure::RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
 
   status->estopped = status->elevator.estopped || status->wrist.estopped ||
                      status->intake.estopped || status->stilts.estopped;
+
+  if (output) {
+    if (status->intake.position > kMinIntakeAngleForRollers) {
+      output->intake_roller_voltage =
+          (unsafe_goal != nullptr) ? unsafe_goal->roller_voltage : 0.0;
+
+    } else {
+      output->intake_roller_voltage = 0.0;
+    }
+  }
 
   // TODO(theo) move these up when Iterate() is split
   // update the goals

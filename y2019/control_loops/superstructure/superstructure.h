@@ -28,18 +28,10 @@ class Superstructure
           ::frc971::zeroing::AbsoluteEncoderZeroingEstimator,
           ::frc971::control_loops::AbsoluteEncoderProfiledJointStatus>;
 
-  const PotAndAbsoluteEncoderSubsystem &elevator() const {
-    return elevator_;
-  }
-  const PotAndAbsoluteEncoderSubsystem &wrist() const {
-    return wrist_;
-  }
-  const AbsoluteEncoderSubsystem &intake() const {
-    return intake_;
-  }
-  const PotAndAbsoluteEncoderSubsystem &stilts() const {
-    return stilts_;
-  }
+  const PotAndAbsoluteEncoderSubsystem &elevator() const { return elevator_; }
+  const PotAndAbsoluteEncoderSubsystem &wrist() const { return wrist_; }
+  const AbsoluteEncoderSubsystem &intake() const { return intake_; }
+  const PotAndAbsoluteEncoderSubsystem &stilts() const { return stilts_; }
 
  protected:
   virtual void RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
@@ -54,6 +46,8 @@ class Superstructure
   PotAndAbsoluteEncoderSubsystem stilts_;
 
   CollisionAvoidance collision_avoidance_;
+
+  static constexpr double kMinIntakeAngleForRollers = -0.7;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
