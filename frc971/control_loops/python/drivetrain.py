@@ -7,7 +7,9 @@ import sys
 from matplotlib import pylab
 import glog
 
+
 class DrivetrainParams(object):
+
     def __init__(self,
                  J,
                  mass,
@@ -107,6 +109,7 @@ class DrivetrainParams(object):
 
 
 class Drivetrain(control_loop.ControlLoop):
+
     def __init__(self,
                  drivetrain_params,
                  name="Drivetrain",
@@ -190,8 +193,8 @@ class Drivetrain(control_loop.ControlLoop):
 
         # Resistance of the motor, divided by the number of motors.
         # Motor velocity constant
-        self.Kv = (self.free_speed /
-                   (12.0 - self.resistance * self.free_current))
+        self.Kv = (
+            self.free_speed / (12.0 - self.resistance * self.free_current))
         # Torque constant
         self.Kt = self.stall_torque / self.stall_current
 
@@ -215,14 +218,11 @@ class Drivetrain(control_loop.ControlLoop):
         # X will be of the format
         # [[positionl], [velocityl], [positionr], velocityr]]
         self.A_continuous = numpy.matrix(
-            [[0, 1, 0, 0],
-             [0, -self.mspl * self.tcl, 0, -self.msnr * self.tcr],
-             [0, 0, 0, 1],
-             [0, -self.msnl * self.tcl, 0, -self.mspr * self.tcr]])
+            [[0, 1, 0, 0], [0, -self.mspl * self.tcl, 0, -self.msnr * self.tcr],
+             [0, 0, 0, 1], [0, -self.msnl * self.tcl, 0,
+                            -self.mspr * self.tcr]])
         self.B_continuous = numpy.matrix(
-            [[0, 0],
-             [self.mspl * self.mpl, self.msnr * self.mpr],
-             [0, 0],
+            [[0, 0], [self.mspl * self.mpl, self.msnr * self.mpr], [0, 0],
              [self.msnl * self.mpl, self.mspr * self.mpr]])
         self.C = numpy.matrix([[1, 0, 0, 0], [0, 0, 1, 0]])
         self.D = numpy.matrix([[0, 0], [0, 0]])
@@ -232,10 +232,10 @@ class Drivetrain(control_loop.ControlLoop):
 
     def BuildDrivetrainController(self, q_pos, q_vel):
         # Tune the LQR controller
-        self.Q = numpy.matrix([[(1.0 / (q_pos**2.0)), 0.0, 0.0,
-                                0.0], [0.0, (1.0 / (q_vel**2.0)), 0.0, 0.0],
-                               [0.0, 0.0, (1.0 / (q_pos**2.0)),
-                                0.0], [0.0, 0.0, 0.0, (1.0 / (q_vel**2.0))]])
+        self.Q = numpy.matrix([[(1.0 / (q_pos**2.0)), 0.0, 0.0, 0.0],
+                               [0.0, (1.0 / (q_vel**2.0)), 0.0, 0.0],
+                               [0.0, 0.0, (1.0 / (q_pos**2.0)), 0.0],
+                               [0.0, 0.0, 0.0, (1.0 / (q_vel**2.0))]])
 
         self.R = numpy.matrix([[(1.0 / (12.0**2.0)), 0.0],
                                [0.0, (1.0 / (12.0**2.0))]])
@@ -254,6 +254,7 @@ class Drivetrain(control_loop.ControlLoop):
 
 
 class KFDrivetrain(Drivetrain):
+
     def __init__(self,
                  drivetrain_params,
                  name="KFDrivetrain",
@@ -291,9 +292,10 @@ class KFDrivetrain(Drivetrain):
         self.A_continuous[0:4, 0:4] = self.unaugmented_A_continuous
 
         if self.force:
-            self.A_continuous[0:4, 4:6] = numpy.matrix(
-                [[0.0, 0.0], [self.mspl, self.msnl], [0.0, 0.0],
-                 [self.msnr, self.mspr]])
+            self.A_continuous[0:4, 4:6] = numpy.matrix([[0.0, 0.0],
+                                                        [self.mspl, self.msnl],
+                                                        [0.0, 0.0],
+                                                        [self.msnr, self.mspr]])
             q_voltage = drivetrain_params.kf_q_voltage * self.mpl
         else:
             self.A_continuous[0:4, 4:6] = self.unaugmented_B_continuous
@@ -307,28 +309,31 @@ class KFDrivetrain(Drivetrain):
                                                    self.B_continuous, self.dt)
 
         if self.has_imu:
-            self.C = numpy.matrix(
-                [[1, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0], [
-                    0, -0.5 / drivetrain_params.robot_radius, 0,
-                    0.5 / drivetrain_params.robot_radius, 0, 0, 0
-                ], [0, 0, 0, 0, 0, 0, 0]])
+            self.C = numpy.matrix([[1, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0],
+                                   [
+                                       0, -0.5 / drivetrain_params.robot_radius,
+                                       0, 0.5 / drivetrain_params.robot_radius,
+                                       0, 0, 0
+                                   ], [0, 0, 0, 0, 0, 0, 0]])
             gravity = 9.8
             self.C[3, 0:6] = 0.5 * (
-                self.A_continuous[1, 0:6] + self.A_continuous[3, 0:6]
-            ) / gravity
+                self.A_continuous[1, 0:6] + self.A_continuous[3, 0:6]) / gravity
 
-            self.D = numpy.matrix([[0, 0], [0, 0], [0, 0], [
-                0.5 *
-                (self.B_continuous[1, 0] + self.B_continuous[3, 0]) / gravity,
-                0.5 *
-                (self.B_continuous[1, 1] + self.B_continuous[3, 1]) / gravity
-            ]])
+            self.D = numpy.matrix(
+                [[0, 0], [0, 0], [0, 0],
+                 [
+                     0.5 * (self.B_continuous[1, 0] + self.B_continuous[3, 0]) /
+                     gravity,
+                     0.5 * (self.B_continuous[1, 1] + self.B_continuous[3, 1]) /
+                     gravity
+                 ]])
         else:
-            self.C = numpy.matrix(
-                [[1, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0], [
-                    0, -0.5 / drivetrain_params.robot_radius, 0,
-                    0.5 / drivetrain_params.robot_radius, 0, 0, 0
-                ]])
+            self.C = numpy.matrix([[1, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0],
+                                   [
+                                       0, -0.5 / drivetrain_params.robot_radius,
+                                       0, 0.5 / drivetrain_params.robot_radius,
+                                       0, 0, 0
+                                   ]])
 
             self.D = numpy.matrix([[0, 0], [0, 0], [0, 0]])
 
@@ -337,12 +342,12 @@ class KFDrivetrain(Drivetrain):
         q_encoder_uncertainty = 2.00
 
         self.Q = numpy.matrix(
-            [[(q_pos**2.0), 0.0, 0.0, 0.0, 0.0, 0.0,
-              0.0], [0.0, (q_vel**2.0), 0.0, 0.0, 0.0, 0.0,
-                     0.0], [0.0, 0.0, (q_pos**2.0), 0.0, 0.0, 0.0,
-                            0.0], [0.0, 0.0, 0.0, (q_vel**2.0), 0.0, 0.0, 0.0],
-             [0.0, 0.0, 0.0, 0.0, (q_voltage**2.0), 0.0,
-              0.0], [0.0, 0.0, 0.0, 0.0, 0.0, (q_voltage**2.0), 0.0],
+            [[(q_pos**2.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+             [0.0, (q_vel**2.0), 0.0, 0.0, 0.0, 0.0, 0.0],
+             [0.0, 0.0, (q_pos**2.0), 0.0, 0.0, 0.0, 0.0],
+             [0.0, 0.0, 0.0, (q_vel**2.0), 0.0, 0.0, 0.0],
+             [0.0, 0.0, 0.0, 0.0, (q_voltage**2.0), 0.0, 0.0],
+             [0.0, 0.0, 0.0, 0.0, 0.0, (q_voltage**2.0), 0.0],
              [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, (q_encoder_uncertainty**2.0)]])
 
         r_pos = 0.0001
@@ -365,7 +370,8 @@ class KFDrivetrain(Drivetrain):
         # If we don't have an IMU, pad various matrices with zeros so that
         # we can still have 4 measurement outputs.
         if not self.has_imu:
-            self.KalmanGain = numpy.hstack((self.KalmanGain, numpy.matrix(numpy.zeros((7, 1)))))
+            self.KalmanGain = numpy.hstack((self.KalmanGain,
+                                            numpy.matrix(numpy.zeros((7, 1)))))
             self.C = numpy.vstack((self.C, numpy.matrix(numpy.zeros((1, 7)))))
             self.D = numpy.vstack((self.D, numpy.matrix(numpy.zeros((1, 2)))))
             Rtmp = numpy.zeros((4, 4))
@@ -401,8 +407,11 @@ class KFDrivetrain(Drivetrain):
         self.InitializeState()
 
 
-def WriteDrivetrain(drivetrain_files, kf_drivetrain_files, year_namespace,
-                    drivetrain_params, scalar_type='double'):
+def WriteDrivetrain(drivetrain_files,
+                    kf_drivetrain_files,
+                    year_namespace,
+                    drivetrain_params,
+                    scalar_type='double'):
 
     # Write the generated constants out to a file.
     drivetrain_low_low = Drivetrain(
@@ -569,8 +578,7 @@ def PlotDrivetrainMotions(drivetrain_params):
     pylab.plot(range(200), close_loop_left, label='left position')
     pylab.plot(range(200), close_loop_right, label='right position')
     pylab.suptitle(
-        'Angular Move\nLeft position going to -1 and right position going to 1'
-    )
+        'Angular Move\nLeft position going to -1 and right position going to 1')
     pylab.legend(loc='center right')
     pylab.show()
 

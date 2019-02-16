@@ -3,10 +3,10 @@
 
 #include <assert.h>
 
+#include <chrono>
 #include <memory>
 #include <utility>
 #include <vector>
-#include <chrono>
 
 #include "Eigen/Dense"
 #include "unsupported/Eigen/MatrixFunctions"
@@ -72,8 +72,7 @@ class StateFeedbackPlant {
     Reset();
   }
 
-  StateFeedbackPlant(StateFeedbackPlant &&other)
-      : index_(other.index_) {
+  StateFeedbackPlant(StateFeedbackPlant &&other) : index_(other.index_) {
     ::std::swap(coefficients_, other.coefficients_);
     X_.swap(other.X_);
     Y_.swap(other.Y_);
@@ -279,8 +278,8 @@ struct StateFeedbackObserverCoefficients final {
   const Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> R;
 
   StateFeedbackObserverCoefficients(
-      const Eigen::Matrix<Scalar, number_of_states, number_of_outputs> &
-          KalmanGain,
+      const Eigen::Matrix<Scalar, number_of_states, number_of_outputs>
+          &KalmanGain,
       const Eigen::Matrix<Scalar, number_of_states, number_of_states> &Q,
       const Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> &R)
       : KalmanGain(KalmanGain), Q(Q), R(R) {}
@@ -294,7 +293,8 @@ class StateFeedbackObserver {
 
   explicit StateFeedbackObserver(
       ::std::vector<::std::unique_ptr<StateFeedbackObserverCoefficients<
-          number_of_states, number_of_inputs, number_of_outputs, Scalar>>> *observers)
+          number_of_states, number_of_inputs, number_of_outputs, Scalar>>>
+          *observers)
       : coefficients_(::std::move(*observers)) {}
 
   StateFeedbackObserver(StateFeedbackObserver &&other)
@@ -302,7 +302,8 @@ class StateFeedbackObserver {
     ::std::swap(coefficients_, other.coefficients_);
   }
 
-  const Eigen::Matrix<Scalar, number_of_states, number_of_outputs> &KalmanGain() const {
+  const Eigen::Matrix<Scalar, number_of_states, number_of_outputs> &KalmanGain()
+      const {
     return coefficients().KalmanGain;
   }
   Scalar KalmanGain(int i, int j) const { return KalmanGain()(i, j); }
@@ -328,8 +329,7 @@ class StateFeedbackObserver {
                                         number_of_outputs, Scalar> &plant,
                const Eigen::Matrix<Scalar, number_of_inputs, 1> &U,
                const Eigen::Matrix<Scalar, number_of_outputs, 1> &Y) {
-    mutable_X_hat() +=
-        KalmanGain() * (Y - plant.C() * X_hat() - plant.D() * U);
+    mutable_X_hat() += KalmanGain() * (Y - plant.C() * X_hat() - plant.D() * U);
   }
 
   // Sets the current controller to be index, clamped to be within range.

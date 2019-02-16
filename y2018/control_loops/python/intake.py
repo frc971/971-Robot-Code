@@ -17,6 +17,7 @@ except gflags.DuplicateFlagError:
 
 
 class Intake(control_loop.ControlLoop):
+
     def __init__(self, name="Intake"):
         super(Intake, self).__init__(name)
         self.motor = control_loop.BAG()
@@ -67,12 +68,11 @@ class Intake(control_loop.ControlLoop):
 
         self.A_continuous = numpy.matrix(
             [[0.0, 1.0, 0.0, 0.0],
-             [(-self.Ks / self.Jo), (-self.b/self.Jo),
-               (self.Ks / self.Jo), ( self.b/self.Jo)],
-             [0.0, 0.0, 0.0, 1.0],
-             [( self.Ks / self.Je),  ( self.b/self.Je),
-              (-self.Ks / self.Je),  (-self.b/self.Je)
-               -self.Kt / (self.Je * self.resistance * self.Kv * self.G * self.G)]])
+             [(-self.Ks / self.Jo), (-self.b / self.Jo), (self.Ks / self.Jo),
+              (self.b / self.Jo)], [0.0, 0.0, 0.0, 1.0],
+             [(self.Ks / self.Je), (self.b / self.Je), (-self.Ks / self.Je),
+              (-self.b / self.Je) - self.Kt /
+              (self.Je * self.resistance * self.Kv * self.G * self.G)]])
 
         # Start with the unmodified input
         self.B_continuous = numpy.matrix(
@@ -99,8 +99,8 @@ class Intake(control_loop.ControlLoop):
         q_pos = 0.05
         q_vel = 2.65
         self.Q = numpy.matrix(
-            numpy.diag([(q_pos**2.0), (q_vel**2.0), (q_pos**2.0), (q_vel
-                                                                   **2.0)]))
+            numpy.diag([(q_pos**2.0), (q_vel**2.0), (q_pos**2.0),
+                        (q_vel**2.0)]))
 
         r_nm = 0.025
         self.R = numpy.matrix(numpy.diag([(r_nm**2.0), (r_nm**2.0)]))
@@ -117,6 +117,7 @@ class Intake(control_loop.ControlLoop):
 
 
 class DelayedIntake(Intake):
+
     def __init__(self, name="DelayedIntake"):
         super(DelayedIntake, self).__init__(name=name)
 
@@ -137,12 +138,11 @@ class DelayedIntake(Intake):
 
         # Coordinate transform fom absolute angles to relative angles.
         # [output_position, output_velocity, spring_angle, spring_velocity, voltage]
-        abs_to_rel = numpy.matrix(
-            [[1.0, 0.0, 0.0, 0.0, 0.0],
-             [0.0, 1.0, 0.0, 0.0, 0.0],
-             [1.0, 0.0, -1.0, 0.0, 0.0],
-             [0.0, 1.0, 0.0, -1.0, 0.0],
-             [0.0, 0.0, 0.0, 0.0, 1.0]])
+        abs_to_rel = numpy.matrix([[1.0, 0.0, 0.0, 0.0, 0.0],
+                                   [0.0, 1.0, 0.0, 0.0, 0.0],
+                                   [1.0, 0.0, -1.0, 0.0, 0.0],
+                                   [0.0, 1.0, 0.0, -1.0, 0.0],
+                                   [0.0, 0.0, 0.0, 0.0, 1.0]])
         # and back again.
         rel_to_abs = numpy.matrix(numpy.linalg.inv(abs_to_rel))
 
@@ -185,14 +185,14 @@ class DelayedIntake(Intake):
             self.A_transformed, self.B_transformed, self.Q_lqr, self.R)
 
         # Write the controller back out in the absolute coordinate system.
-        self.K = numpy.hstack((numpy.matrix([[0.0]]),
-                               self.K_transformed)) * abs_to_rel
+        self.K = numpy.hstack(
+            (numpy.matrix([[0.0]]), self.K_transformed)) * abs_to_rel
 
         controllability = controls.ctrb(self.A_transformed, self.B_transformed)
         glog.debug('ctrb: ' + repr(numpy.linalg.matrix_rank(controllability)))
 
-        w, v = numpy.linalg.eig(
-            self.A_transformed - self.B_transformed * self.K_transformed)
+        w, v = numpy.linalg.eig(self.A_transformed -
+                                self.B_transformed * self.K_transformed)
         glog.debug('Poles are %s, for %s', repr(w), self._name)
 
         for i in range(len(w)):
@@ -222,6 +222,7 @@ class DelayedIntake(Intake):
 
 
 class ScenarioPlotter(object):
+
     def __init__(self):
         # Various lists for graphing things.
         self.t = []
@@ -295,7 +296,7 @@ class ScenarioPlotter(object):
                               [goal_velocity / (intake.G * intake.Kv)]])
             U = controller_intake.K * (R - X_hat) + R[4, 0]
 
-            U[0, 0] = numpy.clip(U[0, 0], -vbat, vbat) # * 0.0
+            U[0, 0] = numpy.clip(U[0, 0], -vbat, vbat)  # * 0.0
 
             self.x_output.append(intake.X[0, 0])
             self.x_motor.append(intake.X[2, 0])
