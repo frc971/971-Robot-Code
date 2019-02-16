@@ -63,10 +63,10 @@ struct Values {
 
   static constexpr ::frc971::constants::Range kElevatorRange() {
     return ::frc971::constants::Range{
-        0.0,    // Bottom Hard
-        1.44,   // Top Hard
-        0.025,  // Bottom Soft
-        1.415   // Top Soft
+        -0.01,  // Bottom Hard
+        1.62,   // Top Hard
+        0.01,   // Bottom Soft
+        1.59    // Top Soft
     };
   }
 
@@ -84,10 +84,10 @@ struct Values {
 
   static constexpr ::frc971::constants::Range kIntakeRange() {
     return ::frc971::constants::Range{
-        -1.15,  // Back Hard
-        1.36,   // Front Hard
-        -1.14,  // Back Soft
-        1.22    // Front Soft
+        -1.30,  // Back Hard
+        1.35,   // Front Hard
+        -1.25,  // Back Soft
+        1.30    // Front Soft
     };
   }
 
@@ -110,7 +110,7 @@ struct Values {
   static constexpr ::frc971::constants::Range kWristRange() {
     return ::frc971::constants::Range{
         -3.14,  // Back Hard
-        2.58,   // Front Hard
+        3.14,   // Front Hard
         -2.97,  // Back Soft
         2.41    // Front Soft
     };
@@ -139,10 +139,10 @@ struct Values {
 
   static constexpr ::frc971::constants::Range kStiltsRange() {
     return ::frc971::constants::Range{
-        -0.026,  // Top Hard
-        0.693,   // Bottom Hard
-        -0.02,   // Top Soft
-        0.673    // Bottom Soft
+        -0.01,  // Top Hard
+        0.72,   // Bottom Hard
+        0.00,   // Top Soft
+        0.71    // Bottom Soft
     };
   }
 

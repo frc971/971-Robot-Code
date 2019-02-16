@@ -53,10 +53,10 @@ class CollisionAvoidance {
   // TODO(sabina): set all the numbers to correctly match the robot.
 
   // Height above which we can move the wrist freely.
-  static constexpr double kElevatorClearHeight = 0.5;
+  static constexpr double kElevatorClearHeight = 0.35;
 
   // Height above which we can move the wrist down.
-  static constexpr double kElevatorClearWristDownHeight = 0.3;
+  static constexpr double kElevatorClearWristDownHeight = 0.25;
   // Height the carriage needs to be above to move the intake.
   static constexpr double kElevatorClearIntakeHeight = 0.4;
 
@@ -65,8 +65,8 @@ class CollisionAvoidance {
   static constexpr double kWristMinAngle = -M_PI / 2.0;
 
   // Angles outside of which the intake is fully clear of the wrist.
-  static constexpr double kIntakeOutAngle = M_PI / 6.0;
-  static constexpr double kIntakeInAngle = -M_PI / 3.0;
+  static constexpr double kIntakeOutAngle = 0.3;
+  static constexpr double kIntakeInAngle = -1.1;
 
   // Angles within which we will crash the wrist into the elevator if the
   // elevator is below kElevatorClearHeight.

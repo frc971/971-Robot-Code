@@ -93,11 +93,11 @@ double drivetrain_velocity_translate(double in) {
 
 double elevator_pot_translate(double voltage) {
   return voltage * Values::kElevatorPotRatio() *
-         (3.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
+         (10.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
 }
 
 double wrist_pot_translate(double voltage) {
-  return voltage * Values::kWristPotRatio() * (10.0 /*turns*/ / 5.0 /*volts*/) *
+  return voltage * Values::kWristPotRatio() * (5.0 /*turns*/ / 5.0 /*volts*/) *
          (2 * M_PI /*radians*/);
 }
 
