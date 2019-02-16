@@ -1,3 +1,5 @@
+package(default_visibility = ["//visibility:public"])
+
 spi_crc_args = [
     "$(location //third_party/pycrc:pycrc_main)",
     "--width=16",
@@ -113,5 +115,14 @@ cc_test(
         "//aos/testing:googletest",
         "//aos/testing:test_logging",
         "//third_party/GSL",
+    ],
+)
+
+cc_library(
+    name = "serial",
+    hdrs = ["serial.h"],
+    srcs = ["serial.cc"],
+    deps = [
+        "//aos/logging:logging",
     ],
 )
