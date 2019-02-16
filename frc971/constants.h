@@ -96,6 +96,8 @@ struct Range {
   double upper_hard;
   double lower;
   double upper;
+
+  double middle() const { return (lower_hard + upper_hard) / 2.0; }
 };
 
 }  // namespace constants
