@@ -13,7 +13,7 @@
 #include "ctre/phoenix/Motion/TrajectoryPoint.h"
 #include "ctre/phoenix/Motion/MotionProfileStatus.h"
 /* WPILIB */
-#include "SpeedController.h"
+//#include "SpeedController.h"
 
 /* forward proto's */
 namespace ctre {

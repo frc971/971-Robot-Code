@@ -17,7 +17,7 @@
 #include "ctre/phoenix/ErrorCode.h"
 #include "IFollower.h"
 /* WPILIB */
-#include "SpeedController.h"
+//#include "SpeedController.h"
 
 namespace ctre {
 namespace phoenix {

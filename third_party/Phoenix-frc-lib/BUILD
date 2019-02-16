@@ -21,7 +21,8 @@ cc_library(
             "**/Tasking/**",
             "cpp/src/RCRadio3Ch.cpp",
             "cpp/src/CompileTest.cpp",
-            "**/MotorControl/**",
+            "cpp/src/MotorControl/CAN/WPI_TalonSRX.cpp",
+            "cpp/src/MotorControl/CAN/WPI_VictorSPX.cpp",
             "**/Sensors/**",
         ],
     ),
@@ -32,7 +33,6 @@ cc_library(
         ],
         exclude = [
             "**/Tasking/**",
-            "**/MotorControl/**",
             "**/Sensors/**",
             "cpp/include/ctre/phoenix/RCRadio3Ch.h",
         ],
