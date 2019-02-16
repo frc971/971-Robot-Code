@@ -30,8 +30,15 @@ namespace input {
 namespace joysticks {
 
 // TODO(sabina): update button locations when the board is done
-const ButtonLocation kElevatorUp(0, 0);
+const ButtonLocation kElevatorUp(4, 4);
+const ButtonLocation kIntakeOut(3, 3);
 const ButtonLocation kElevatorDown(0, 0);
+const ButtonLocation kElevator1(4, 1);
+const ButtonLocation kElevator2(4, 11);
+const ButtonLocation kElevator3(4, 9);
+const ButtonLocation kElevator4(4, 7);
+const ButtonLocation kElevator5(4, 5);
+
 const ButtonLocation kDiskLoad(0, 0);
 const ButtonLocation kDiskRocketMiddle(0, 0);
 const ButtonLocation kDiskRocketTop(0, 0);
@@ -47,9 +54,11 @@ const ButtonLocation kSpit(0, 0);
 const ButtonLocation kCargoSuction(0, 0);
 const ButtonLocation kDiskSuction(0, 0);
 const ButtonLocation kSuctionOut(0, 0);
-const ButtonLocation kDeployStilt(0, 0);
+const ButtonLocation kDeployStilt(3, 8);
 const ButtonLocation kRetractStilt(0, 0);
 const ButtonLocation kBackwards(0, 0);
+
+const ButtonLocation kWristDown(3, 1);
 
 class Reader : public ::aos::input::ActionJoystickInput {
  public:
@@ -69,6 +78,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
 
+    /*
     if (data.IsPressed(kElevatorUp)) {
       elevator_height_ += 0.1;
     } else if (data.IsPressed(kElevatorDown)) {
@@ -105,7 +115,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
       wrist_angle_ = 0.0;
     } else {
     }
+    */
 
+    /*
     // TODO(sabina): get accurate angle.
     if (data.IsPressed(kIntakeExtend)) {
       new_superstructure_goal->intake.unsafe_goal = 0.5;
@@ -130,6 +142,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     } else {
       new_superstructure_goal->roller_voltage = 0.0;
     }
+    */
 
     // TODO(sabina): decide if we should really have disk suction as its own
     // button
@@ -142,19 +155,39 @@ class Reader : public ::aos::input::ActionJoystickInput {
     } else if (data.IsPressed(kSuctionOut)) {
       new_superstructure_goal->suction.top = true;
       new_superstructure_goal->suction.bottom = true;
-    } else {
     }
 
     // TODO(sabina): max height please?
     if (data.IsPressed(kDeployStilt)) {
-      new_superstructure_goal->stilts.unsafe_goal= 0;
-    } else if (data.IsPressed(kRetractStilt)) {
-      new_superstructure_goal->stilts.unsafe_goal = 0;
+      new_superstructure_goal->stilts.unsafe_goal = 0.3;
     } else {
+      new_superstructure_goal->stilts.unsafe_goal = 0.01;
     }
 
-    if (data.IsPressed(kBackwards)) {
-      wrist_angle_ = -wrist_angle_;
+    if (data.IsPressed(kIntakeOut)) {
+      new_superstructure_goal->intake.unsafe_goal = 0.8;
+      new_superstructure_goal->roller_voltage = 5.0;
+    } else {
+      new_superstructure_goal->intake.unsafe_goal = -1.2;
+      new_superstructure_goal->roller_voltage = 0.0;
+    }
+
+    if (data.IsPressed(kElevator1)) {
+      elevator_height_ = 1.5;
+    } else if (data.IsPressed(kElevator2)) {
+      elevator_height_ = 1.2;
+    } else if (data.IsPressed(kElevator3)) {
+      elevator_height_ = 0.8;
+    } else if (data.IsPressed(kElevator4)) {
+      elevator_height_ = 0.3;
+    } else if (data.IsPressed(kElevator5)) {
+      elevator_height_ = 0.01;
+    }
+
+    if (data.IsPressed(kWristDown)) {
+      wrist_angle_ = -M_PI / 3.0;
+    } else {
+      wrist_angle_ = M_PI / 3.0;
     }
 
     new_superstructure_goal->elevator.unsafe_goal = elevator_height_;
