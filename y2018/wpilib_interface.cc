@@ -728,14 +728,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread superstructure_writer_thread(
         ::std::ref(superstructure_writer));
 
-    ::frc971::wpilib::BufferedPcm *pcm = new ::frc971::wpilib::BufferedPcm();
-    SolenoidWriter solenoid_writer(pcm);
-    solenoid_writer.set_left_drivetrain_shifter(pcm->MakeSolenoid(0));
-    solenoid_writer.set_right_drivetrain_shifter(pcm->MakeSolenoid(1));
-    solenoid_writer.set_claw(pcm->MakeSolenoid(2));
-    solenoid_writer.set_arm_brakes(pcm->MakeSolenoid(3));
-    solenoid_writer.set_hook(pcm->MakeSolenoid(4));
-    solenoid_writer.set_forks(pcm->MakeSolenoid(5));
+    ::frc971::wpilib::BufferedPcm pcm;
+    SolenoidWriter solenoid_writer(&pcm);
+    solenoid_writer.set_left_drivetrain_shifter(pcm.MakeSolenoid(0));
+    solenoid_writer.set_right_drivetrain_shifter(pcm.MakeSolenoid(1));
+    solenoid_writer.set_claw(pcm.MakeSolenoid(2));
+    solenoid_writer.set_arm_brakes(pcm.MakeSolenoid(3));
+    solenoid_writer.set_hook(pcm.MakeSolenoid(4));
+    solenoid_writer.set_forks(pcm.MakeSolenoid(5));
 
     ::std::thread solenoid_thread(::std::ref(solenoid_writer));
 
