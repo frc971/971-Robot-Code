@@ -27,9 +27,9 @@ cc_library(
         "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
         "//y2019/control_loops/drivetrain:polydrivetrain_plants",
         "//y2019/control_loops/superstructure/elevator:elevator_plants",
-        "//y2019/control_loops/superstructure/wrist:wrist_plants",
         "//y2019/control_loops/superstructure/intake:intake_plants",
         "//y2019/control_loops/superstructure/stilts:stilts_plants",
+        "//y2019/control_loops/superstructure/wrist:wrist_plants",
     ],
 )
 
@@ -57,6 +57,7 @@ cc_binary(
         "//frc971/control_loops:queues",
         "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//frc971/wpilib:ADIS16448",
+        "//frc971/wpilib:buffered_pcm",
         "//frc971/wpilib:drivetrain_writer",
         "//frc971/wpilib:encoder_and_potentiometer",
         "//frc971/wpilib:interrupt_edge_counting",

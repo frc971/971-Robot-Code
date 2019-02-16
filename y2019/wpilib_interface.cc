@@ -31,6 +31,8 @@
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/wpilib/ADIS16448.h"
+#include "frc971/wpilib/buffered_pcm.h"
+#include "frc971/wpilib/buffered_solenoid.h"
 #include "frc971/wpilib/dma.h"
 #include "frc971/wpilib/drivetrain_writer.h"
 #include "frc971/wpilib/encoder_and_potentiometer.h"
@@ -40,6 +42,7 @@
 #include "frc971/wpilib/pdp_fetcher.h"
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
+#include "third_party/Phoenix-frc-lib/cpp/include/ctre/phoenix/MotorControl/CAN/TalonSRX.h"
 #include "y2019/constants.h"
 #include "y2019/control_loops/superstructure/superstructure.q.h"
 
@@ -304,6 +307,86 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
       wrist_victor_, stilts_victor_;
 };
 
+class SolenoidWriter {
+ public:
+  SolenoidWriter()
+      : superstructure_(
+            ".y2019.control_loops.superstructure.superstructure_queue.output") {
+  }
+
+  void set_big_suction_cup(int index) {
+    big_suction_cup_ = pcm_.MakeSolenoid(index);
+  }
+  void set_small_suction_cup(int index) {
+    small_suction_cup_ = pcm_.MakeSolenoid(index);
+  }
+
+  void set_intake_roller_talon(
+      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonSRX> t) {
+    intake_rollers_talon_ = ::std::move(t);
+    intake_rollers_talon_->ConfigContinuousCurrentLimit(40.0, 0);
+    intake_rollers_talon_->EnableCurrentLimit(true);
+  }
+
+  void operator()() {
+    ::aos::SetCurrentThreadName("Solenoids");
+    ::aos::SetCurrentThreadRealtimePriority(27);
+
+    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(20),
+                                        ::std::chrono::milliseconds(1));
+
+    while (run_) {
+      {
+        const int iterations = phased_loop.SleepUntilNext();
+        if (iterations != 1) {
+          LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
+        }
+      }
+
+      {
+        superstructure_.FetchLatest();
+        if (superstructure_.get()) {
+          LOG_STRUCT(DEBUG, "solenoids", *superstructure_);
+
+          big_suction_cup_->Set(!superstructure_->intake_suction_top);
+          small_suction_cup_->Set(!superstructure_->intake_suction_bottom);
+
+          intake_rollers_talon_->Set(
+              ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
+              ::aos::Clip(superstructure_->intake_roller_voltage,
+                          -kMaxBringupPower, kMaxBringupPower) /
+                  12.0);
+        }
+      }
+
+      {
+        ::frc971::wpilib::PneumaticsToLog to_log;
+
+        pcm_.Flush();
+        to_log.read_solenoids = pcm_.GetAll();
+        LOG_STRUCT(DEBUG, "pneumatics info", to_log);
+      }
+    }
+  }
+
+  void Quit() { run_ = false; }
+
+ private:
+  ::frc971::wpilib::BufferedPcm pcm_;
+
+  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> big_suction_cup_,
+      small_suction_cup_;
+
+  ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonSRX>
+      intake_rollers_talon_;
+
+  ::aos::Queue<
+      ::y2019::control_loops::superstructure::SuperstructureQueue::Output>
+      superstructure_;
+
+  ::std::atomic<bool> run_{true};
+};
+
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
  public:
   ::std::unique_ptr<frc::Encoder> make_encoder(int index) {
@@ -379,6 +462,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread superstructure_writer_thread(
         ::std::ref(superstructure_writer));
 
+    SolenoidWriter solenoid_writer;
+    solenoid_writer.set_intake_roller_talon(
+        make_unique<::ctre::phoenix::motorcontrol::can::TalonSRX>(10));
+    solenoid_writer.set_big_suction_cup(0);
+    solenoid_writer.set_small_suction_cup(1);
+
+    ::std::thread solenoid_writer_thread(::std::ref(solenoid_writer));
+
     // Wait forever. Not much else to do...
     while (true) {
       const int r = select(0, nullptr, nullptr, nullptr, nullptr);
@@ -391,6 +482,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     LOG(ERROR, "Exiting WPILibRobot\n");
 
+    solenoid_writer.Quit();
+    solenoid_writer_thread.join();
     joystick_sender.Quit();
     joystick_thread.join();
     pdp_fetcher.Quit();
