@@ -5,6 +5,7 @@ robot_downloader(
         ":joystick_reader",
         ":wpilib_interface",
         "//y2019/control_loops/drivetrain:drivetrain",
+        "//y2019/control_loops/superstructure:superstructure",
     ],
 )
 
