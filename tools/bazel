@@ -26,7 +26,7 @@ fi
 
 readonly VERSION="0.19.0rc4-201810201638+ac88041"
 
-readonly DOWNLOAD_DIR="$(dirname "${BASH_SOURCE[0]}")/../bazel-downloads"
+readonly DOWNLOAD_DIR="${HOME}/.cache/bazel"
 # Directory to unpack bazel into.  This must change whenever bazel changes.
 readonly VERSION_DIR="${DOWNLOAD_DIR}/${VERSION}-v1"
 readonly VERSION_BAZEL="${VERSION_DIR}/usr/bin/bazel"
