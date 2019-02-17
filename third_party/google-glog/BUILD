@@ -1,5 +1,5 @@
-licenses(['notice'])
+licenses(["notice"])
 
-load(':bazel/glog.bzl', 'glog_library')
+load(":bazel/glog.bzl", "glog_library")
 
 glog_library()
