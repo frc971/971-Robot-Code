@@ -96,6 +96,7 @@ class ValueArray2d {
   }
 
   const ImageFormat &fmt() const { return fmt_; }
+  const ImageType *data() const { return data_.get(); }
   ImageType *data() { return data_.get(); }
 
  private:

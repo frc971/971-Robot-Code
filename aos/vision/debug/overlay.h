@@ -121,8 +121,12 @@ class PixelLinesOverlay : public OverlayBase {
 
   // build a segment for this line
   void AddLine(Vector<2> st, Vector<2> ed, PixelRef newColor) {
-    lines_.emplace_back(
-        std::pair<Segment<2>, PixelRef>(Segment<2>(st, ed), newColor));
+    AddLine(Segment<2>(st, ed), newColor);
+  }
+
+  // draw a segment.
+  void AddLine(Segment<2> seg, PixelRef newColor) {
+    lines_.emplace_back(std::pair<Segment<2>, PixelRef>(seg, newColor));
   }
 
   void DrawCross(aos::vision::Vector<2> center, int width,

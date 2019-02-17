@@ -44,7 +44,7 @@ class Segment {
   }
 
   // Intersect two lines in a plane.
-  Vector<2> Intersect(const Segment<2> &other) {
+  Vector<2> Intersect(const Segment<2> &other) const {
     static_assert(Size == 2, "Only works for size == 2");
     double x1 = A_.x();
     double y1 = A_.y();

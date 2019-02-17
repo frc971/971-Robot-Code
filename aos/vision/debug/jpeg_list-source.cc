@@ -65,16 +65,22 @@ class JpegListImageSource : public ImageSource {
           if (jpeg_filename[i] == '#') return;
           if (jpeg_filename[i] != ' ') break;
         }
+        bool is_jpeg = true;
+        size_t l = jpeg_filename.size();
+        if (l > 4 && jpeg_filename[l - 1] == 'v') {
+          is_jpeg = false;
+        }
         if (jpeg_filename[0] == '/') {
-          images_.emplace_back(GetFileContents(jpeg_filename));
+          images_.emplace_back(Frame{is_jpeg, GetFileContents(jpeg_filename)});
         } else {
-          images_.emplace_back(GetFileContents(basename + jpeg_filename));
+          images_.emplace_back(
+              Frame{is_jpeg, GetFileContents(basename + jpeg_filename)});
         }
       }();
     }
     fprintf(stderr, "loaded %lu items\n", images_.size());
     if (!images_.empty()) {
-      interface_->NewJpeg(images_[idx_]);
+      SetCurrentFrame();
       interface_->InstallKeyPress([this](uint32_t keyval) {
         if (keyval == GDK_KEY_Left && idx_ > 0) {
           --idx_;
@@ -83,8 +89,27 @@ class JpegListImageSource : public ImageSource {
         } else {
           return;
         }
-        interface_->NewJpeg(images_[idx_]);
+        SetCurrentFrame();
       });
+    }
+  }
+
+  void SetCurrentFrame() {
+    const auto &frame = images_[idx_];
+    if (frame.is_jpeg) {
+      interface_->NewJpeg(frame.data);
+    } else {
+      const auto &data = frame.data;
+      interface_->NewImage({640, 480},
+                           [&](ImagePtr img_data) {
+                             for (int y = 0; y < 480; ++y) {
+                               for (int x = 0; x < 640; ++x) {
+                                 uint8_t v = data[y * 640 * 2 + x * 2 + 0];
+                                 img_data.get_px(x, y) = PixelRef{v, v, v};
+                               }
+                             }
+                             return false;
+                           });
     }
   }
 
@@ -98,7 +123,11 @@ class JpegListImageSource : public ImageSource {
 
  private:
   DebugFrameworkInterface *interface_ = nullptr;
-  std::vector<std::string> images_;
+  struct Frame {
+    bool is_jpeg = true;
+    std::string data;
+  };
+  std::vector<Frame> images_;
   size_t idx_ = 0;
 };
 
