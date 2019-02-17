@@ -24,7 +24,32 @@ class monotonic_clock {
   typedef ::std::chrono::time_point<monotonic_clock> time_point;
 
   static monotonic_clock::time_point now() noexcept;
-  static constexpr bool is_steady = true;
+  // This clock is still subject to rate adjustments based on adjtime, so it is
+  // not steady.
+  static constexpr bool is_steady = false;
+
+  // Returns the epoch (0).
+  static constexpr monotonic_clock::time_point epoch() {
+    return time_point(zero());
+  }
+
+  static constexpr monotonic_clock::duration zero() { return duration(0); }
+
+  static constexpr time_point min_time{
+      time_point(duration(::std::numeric_limits<duration::rep>::min()))};
+};
+
+class realtime_clock {
+ public:
+  typedef ::std::chrono::nanoseconds::rep rep;
+  typedef ::std::chrono::nanoseconds::period period;
+  typedef ::std::chrono::nanoseconds duration;
+  typedef ::std::chrono::time_point<monotonic_clock> time_point;
+
+#ifdef __linux__
+  static monotonic_clock::time_point now() noexcept;
+#endif  // __linux__
+  static constexpr bool is_steady = false;
 
   // Returns the epoch (0).
   static constexpr monotonic_clock::time_point epoch() {

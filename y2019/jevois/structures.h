@@ -10,6 +10,7 @@
 #include "Eigen/Dense"
 
 #include "aos/containers/sized_array.h"
+#include "aos/time/time.h"
 
 namespace frc971 {
 namespace jevois {
@@ -106,6 +107,15 @@ struct Frame {
 
 // This is all the information sent from the Teensy to each camera.
 struct CameraCalibration {
+  enum class CameraCommand {
+    // Stay in normal mode.
+    kNormal,
+    // Go to camera passthrough mode.
+    kCameraPassthrough,
+    // Go to being a useful USB device.
+    kUsb,
+  };
+
   bool operator==(const CameraCalibration &other) const {
     if (other.calibration != calibration) {
       return false;
@@ -120,6 +130,17 @@ struct CameraCalibration {
   //
   // TODO(Parker): What are the details on how this is defined?
   Eigen::Matrix<float, 3, 4> calibration;
+
+  // A local timestamp from the Teensy. This starts at 0 when the Teensy is
+  // powered on.
+  aos::monotonic_clock::time_point teensy_now;
+
+  // A realtime timestamp from the roboRIO. This will be min_time if the roboRIO
+  // has never sent anything.
+  aos::realtime_clock::time_point realtime_now;
+
+  // What mode the camera should transition into.
+  CameraCommand camera_command;
 };
 
 // This is all the information the Teensy sends to the RoboRIO.
@@ -160,6 +181,9 @@ struct RoborioToTeensy {
 
   // Whether the light ring for each camera should be on.
   std::bitset<5> light_rings;
+
+  // The current time.
+  aos::realtime_clock::time_point realtime_now;
 };
 
 }  // namespace jevois

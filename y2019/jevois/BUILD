@@ -63,6 +63,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos/containers:sized_array",
+        "//aos/time",
         "//third_party/eigen",
     ],
 )

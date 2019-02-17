@@ -185,5 +185,17 @@ monotonic_clock::time_point monotonic_clock::now() noexcept {
 #endif  // __linux__
 }
 
+#ifdef __linux__
+realtime_clock::time_point realtime_clock::now() noexcept {
+  struct timespec current_time;
+  if (clock_gettime(CLOCK_REALTIME, &current_time) != 0) {
+    PLOG(FATAL, "clock_gettime(%jd, %p) failed",
+         static_cast<uintmax_t>(CLOCK_REALTIME), &current_time);
+  }
+
+  return time_point(::std::chrono::seconds(current_time.tv_sec) +
+                    ::std::chrono::nanoseconds(current_time.tv_nsec));
+}
+#endif  // __linux__
 
 }  // namespace aos
