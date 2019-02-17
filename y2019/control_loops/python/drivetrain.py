@@ -18,10 +18,10 @@ gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 # Encoder is on a 24 tooth gear attached to the output gear.
 
 kDrivetrain = drivetrain.DrivetrainParams(
-    J=4.0,
-    mass=40.0,
+    J=1.5,
+    mass=38.5,
     # TODO(austin): Measure.
-    robot_radius=0.616 / 2.0,
+    robot_radius=0.45 / 2.0,
     wheel_radius=4.0 * 0.0254 / 2.0,
     G=9.0 / 52.0,
     q_pos=0.14,

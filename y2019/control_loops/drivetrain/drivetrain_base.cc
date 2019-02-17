@@ -24,12 +24,11 @@ const ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0, 0.25, 0.75};
 const DrivetrainConfig<double> &GetDrivetrainConfig() {
   static DrivetrainConfig<double> kDrivetrainConfig{
       ::frc971::control_loops::drivetrain::ShifterType::SIMPLE_SHIFTER,
-      ::frc971::control_loops::drivetrain::LoopType::OPEN_LOOP,
+      ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
       ::frc971::control_loops::drivetrain::GyroType::IMU_Z_GYRO,
       ::frc971::control_loops::drivetrain::IMUType::IMU_X,
 
-      drivetrain::MakeDrivetrainLoop,
-      drivetrain::MakeVelocityDrivetrainLoop,
+      drivetrain::MakeDrivetrainLoop, drivetrain::MakeVelocityDrivetrainLoop,
       drivetrain::MakeKFDrivetrainLoop,
       drivetrain::MakeHybridVelocityDrivetrainLoop,
 
@@ -37,10 +36,8 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
           chrono::duration<double>(drivetrain::kDt)),
       drivetrain::kRobotRadius, drivetrain::kWheelRadius, drivetrain::kV,
 
-      drivetrain::kHighGearRatio, drivetrain::kLowGearRatio,
-      drivetrain::kJ,
-      drivetrain::kMass,
-      kThreeStateDriveShifter, kThreeStateDriveShifter,
+      drivetrain::kHighGearRatio, drivetrain::kLowGearRatio, drivetrain::kJ,
+      drivetrain::kMass, kThreeStateDriveShifter, kThreeStateDriveShifter,
       true /* default_high_gear */, 0 /* down_offset if using constants use
                                    constants::GetValues().down_error */,
       0.8 /* wheel_non_linearity */, 1.2 /* quickturn_wheel_multiplier */,
