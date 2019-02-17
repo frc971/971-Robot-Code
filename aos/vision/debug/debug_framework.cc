@@ -58,7 +58,7 @@ class DebugFramework : public DebugFrameworkInterface {
       InstallKeyPress(key_press);
     }
     if (GetScreenHeight() < 1024) {
-      view_.SetScale(0.75);
+      view_.SetScale(1.0);
     }
   }
 
@@ -67,6 +67,17 @@ class DebugFramework : public DebugFrameworkInterface {
     DecodeJpeg(data, &view_);
 
     auto fmt = view_.img().fmt();
+    return HandleBlobs(FindBlobs(filter_->Threshold(view_.img())), fmt);
+  }
+
+  bool NewImage(ImageFormat fmt,
+                const std::function<bool(ImagePtr data)> &process) override {
+    auto value = view_.img();
+    if (!value.fmt().Equals(fmt)) {
+      view_.SetFormatAndClear(fmt);
+    }
+    process(view_.img());
+
     return HandleBlobs(FindBlobs(filter_->Threshold(view_.img())), fmt);
   }
 

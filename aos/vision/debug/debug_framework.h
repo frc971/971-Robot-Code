@@ -55,6 +55,9 @@ class DebugFrameworkInterface {
   // if the frame is "interesting" ie has a target.
   virtual bool NewJpeg(DataRef data) = 0;
 
+  virtual bool NewImage(ImageFormat fmt,
+                        const std::function<bool(ImagePtr data)> &process) = 0;
+
   virtual bool NewBlobList(BlobList blob_list, ImageFormat fmt) = 0;
 
   virtual bool JustCheckForTarget(BlobList imgs, ImageFormat fmt) = 0;

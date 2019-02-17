@@ -186,6 +186,11 @@ class Vector {
     return tmp.MagSqr();
   }
 
+  // Returns the distance between this and other.
+  double DistanceTo(const Vector<size> &other) const {
+    return std::sqrt(SquaredDistanceTo(other));
+  }
+
  private:
   // The actual data.
   ::Eigen::Matrix<double, 1, size> data_;
@@ -195,6 +200,17 @@ class Vector {
 inline double PointsCrossProduct(const Vector<2> &a, const Vector<2> &b) {
   return a.x() * b.y() - a.y() * b.x();
 }
+
+// Rotates along the z, y, and then x axis (all radians).
+inline Vector<3> Rotate(double rx, double ry, double rz, const Vector<3> vec) {
+  ::Eigen::AngleAxis<double> ax(rx, ::Eigen::Vector3d(1.0, 0.0, 0.0));
+  ::Eigen::AngleAxis<double> ay(ry, ::Eigen::Vector3d(0.0, 1.0, 0.0));
+  ::Eigen::AngleAxis<double> az(rz, ::Eigen::Vector3d(0.0, 0.0, 1.0));
+  Vector<3> result;
+  result.SetData(ax * ay * az * vec.GetData());
+  return result;
+}
+
 // scalar multiply
 template <int Size>
 inline Vector<Size> operator*(const double &lhs, Vector<Size> &rhs) {
