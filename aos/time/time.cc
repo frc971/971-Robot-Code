@@ -6,6 +6,8 @@
 #include <atomic>
 #include <chrono>
 
+#ifdef __linux__
+
 // We only use global_core from here, which is weak, so we don't really have a
 // dependency on it.
 #include "aos/ipc_lib/shared_mem.h"
@@ -13,7 +15,18 @@
 #include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"
 
+#else  // __linux__
+
+#include "motors/core/kinetis.h"
+
+// The systick interrupt increments this every 1ms.
+extern "C" volatile uint32_t systick_millis_count;
+
+#endif  // __linux__
+
 namespace chrono = ::std::chrono;
+
+#ifdef __linux__
 
 namespace std {
 namespace this_thread {
@@ -42,9 +55,12 @@ void sleep_until(const ::aos::monotonic_clock::time_point &end_time) {
 }  // namespace this_thread
 }  // namespace std
 
+#endif  // __linux__
 
 namespace aos {
 namespace time {
+
+#ifdef __linux__
 
 // State required to enable and use mock time.
 namespace {
@@ -98,6 +114,8 @@ void OffsetToNow(monotonic_clock::time_point now) {
       chrono::duration_cast<chrono::nanoseconds>(offset).count();
 }
 
+#endif  // __linux__
+
 struct timespec to_timespec(
     const ::aos::monotonic_clock::duration duration) {
   struct timespec time_timespec;
@@ -119,11 +137,11 @@ struct timespec to_timespec(
 constexpr monotonic_clock::time_point monotonic_clock::min_time;
 
 monotonic_clock::time_point monotonic_clock::now() noexcept {
-  {
-    if (time::mock_time_enabled.load(::std::memory_order_relaxed)) {
-      MutexLocker time_mutex_locker(&time::time_mutex);
-      return time::current_mock_time;
-    }
+#ifdef __linux__
+
+  if (time::mock_time_enabled.load(::std::memory_order_relaxed)) {
+    MutexLocker time_mutex_locker(&time::time_mutex);
+    return time::current_mock_time;
   }
 
   struct timespec current_time;
@@ -139,7 +157,45 @@ monotonic_clock::time_point monotonic_clock::now() noexcept {
 
   return time_point(::std::chrono::seconds(current_time.tv_sec) +
                     ::std::chrono::nanoseconds(current_time.tv_nsec)) + offset;
+
+#else  // __linux__
+
+  __disable_irq();
+  const uint32_t current_counter = SYST_CVR;
+  uint32_t ms_count = systick_millis_count;
+  const uint32_t istatus = SCB_ICSR;
+  __enable_irq();
+  // If the interrupt is pending and the timer has already wrapped from 0 back
+  // up to its max, then add another ms.
+  if ((istatus & SCB_ICSR_PENDSTSET) && current_counter > 50) {
+    ++ms_count;
+  }
+
+  // It counts down, but everything we care about counts up.
+  const uint32_t counter_up = ((F_CPU / 1000) - 1) - current_counter;
+
+  // "3.2.1.2 System Tick Timer" in the TRM says "The System Tick Timer's clock
+  // source is always the core clock, FCLK".
+  using systick_duration =
+      std::chrono::duration<uint32_t, std::ratio<1, F_CPU>>;
+
+  return time_point(aos::time::round<std::chrono::nanoseconds>(
+      std::chrono::milliseconds(ms_count) + systick_duration(counter_up)));
+
+#endif  // __linux__
 }
 
+#ifdef __linux__
+realtime_clock::time_point realtime_clock::now() noexcept {
+  struct timespec current_time;
+  if (clock_gettime(CLOCK_REALTIME, &current_time) != 0) {
+    PLOG(FATAL, "clock_gettime(%jd, %p) failed",
+         static_cast<uintmax_t>(CLOCK_REALTIME), &current_time);
+  }
+
+  return time_point(::std::chrono::seconds(current_time.tv_sec) +
+                    ::std::chrono::nanoseconds(current_time.tv_nsec));
+}
+#endif  // __linux__
 
 }  // namespace aos

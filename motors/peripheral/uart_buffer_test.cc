@@ -181,6 +181,106 @@ TEST(UartBufferTest, PushSpanOverflowSingle) {
   ASSERT_TRUE(buffer.empty());
 }
 
+// Tests that using PopSpan with single characters works correctly.
+TEST(UartBufferTest, PopSpanSingle) {
+  UartBuffer<3> buffer;
+  ASSERT_FALSE(buffer.full());
+  buffer.PushSingle(1);
+  ASSERT_FALSE(buffer.full());
+  buffer.PushSingle(2);
+  ASSERT_FALSE(buffer.full());
+
+  {
+    const auto result = buffer.PopSpan(1);
+    ASSERT_EQ(1u, result.size());
+    EXPECT_EQ(1u, result[0]);
+  }
+
+  ASSERT_FALSE(buffer.full());
+  buffer.PushSingle(3);
+  ASSERT_FALSE(buffer.full());
+  buffer.PushSingle(4);
+  ASSERT_TRUE(buffer.full());
+
+  {
+    const auto result = buffer.PopSpan(1);
+    ASSERT_EQ(1u, result.size());
+    EXPECT_EQ(2u, result[0]);
+  }
+
+  {
+    const auto result = buffer.PopSpan(1);
+    ASSERT_EQ(1u, result.size());
+    EXPECT_EQ(3u, result[0]);
+  }
+
+  {
+    const auto result = buffer.PopSpan(1);
+    ASSERT_EQ(1u, result.size());
+    EXPECT_EQ(4u, result[0]);
+  }
+}
+
+// Tests that using PopSpan with multiple characters works correctly.
+TEST(UartBufferTest, PopSpanMultiple) {
+  UartBuffer<1024> buffer;
+  for (int i = 0; i < 10; ++i) {
+    buffer.PushSingle(i);
+  }
+  ASSERT_TRUE(buffer.PopSpan(0).empty());
+  {
+    const auto result = buffer.PopSpan(5);
+    ASSERT_EQ(5u, result.size());
+    for (int i = 0; i < 5; ++i) {
+    EXPECT_EQ(static_cast<char>(i), result[i]);
+    }
+  }
+  {
+    const auto result = buffer.PopSpan(10);
+    ASSERT_EQ(5u, result.size());
+    for (int i = 0; i < 5; ++i) {
+    EXPECT_EQ(static_cast<char>(i + 5), result[i]);
+    }
+  }
+  ASSERT_TRUE(buffer.PopSpan(5).empty());
+  ASSERT_TRUE(buffer.PopSpan(3000).empty());
+  ASSERT_TRUE(buffer.PopSpan(0).empty());
+}
+
+// Tests that using PopSpan with multiple characters works correctly when
+// wrapping.
+TEST(UartBufferTest, PopSpanWrapMultiple) {
+  UartBuffer<10> buffer;
+  for (int i = 0; i < 10; ++i) {
+    buffer.PushSingle(i);
+  }
+  ASSERT_TRUE(buffer.PopSpan(0).empty());
+  {
+    const auto result = buffer.PopSpan(5);
+    ASSERT_EQ(5u, result.size());
+    for (int i = 0; i < 5; ++i) {
+    EXPECT_EQ(static_cast<char>(i), result[i]);
+    }
+  }
+  for (int i = 0; i < 5; ++i) {
+    buffer.PushSingle(20 + i);
+  }
+  {
+    const auto result = buffer.PopSpan(10);
+    ASSERT_EQ(5u, result.size());
+    for (int i = 0; i < 5; ++i) {
+    EXPECT_EQ(static_cast<char>(i + 5), result[i]);
+    }
+  }
+  {
+    const auto result = buffer.PopSpan(10);
+    ASSERT_EQ(5u, result.size());
+    for (int i = 0; i < 5; ++i) {
+    EXPECT_EQ(static_cast<char>(i + 20), result[i]);
+    }
+  }
+}
+
 }  // namespace testing
 }  // namespace teensy
 }  // namespace frc971

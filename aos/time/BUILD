@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+load("//tools:environments.bzl", "mcu_cpus")
 
 cc_library(
     name = "time",
@@ -8,11 +8,31 @@ cc_library(
     hdrs = [
         "time.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//aos:macros",
-        "//aos/mutex:mutex",
-        "//aos/logging",
         "//aos/ipc_lib:shared_mem",
+        "//aos/logging",
+        "//aos/mutex",
+        "//aos/type_traits",
+    ],
+)
+
+# TODO(Brian): Remove this hack once bazel chases deps through selects correctly.
+cc_library(
+    name = "time_mcu",
+    srcs = [
+        "time.cc",
+    ],
+    hdrs = [
+        "time.h",
+    ],
+    restricted_to = mcu_cpus,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:macros",
+        "//aos/type_traits",
+        "//motors/core",
     ],
 )
 
@@ -24,7 +44,7 @@ cc_test(
     deps = [
         ":time",
         "//aos/logging",
-        "//aos/util:death_test_log_implementation",
         "//aos/testing:googletest",
+        "//aos/util:death_test_log_implementation",
     ],
 )

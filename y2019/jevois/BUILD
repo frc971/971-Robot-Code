@@ -1,4 +1,5 @@
-package(default_visibility = ["//visibility:public"])
+load("//tools:environments.bzl", "mcu_cpus")
+load("//motors:macros.bzl", "hex_from_elf")
 
 spi_crc_args = [
     "$(location //third_party/pycrc:pycrc_main)",
@@ -62,6 +63,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos/containers:sized_array",
+        "//aos/time",
         "//third_party/eigen",
     ],
 )
@@ -135,9 +137,30 @@ cc_test(
 
 cc_library(
     name = "serial",
-    hdrs = ["serial.h"],
     srcs = ["serial.cc"],
+    hdrs = ["serial.h"],
     deps = [
-        "//aos/logging:logging",
+        "//aos/logging",
     ],
+)
+
+cc_binary(
+    name = "teensy.elf",
+    srcs = [
+        "teensy.cc",
+    ],
+    restricted_to = ["//tools:cortex-m4f"],
+    deps = [
+        "//aos/time:time_mcu",
+        "//motors:util",
+        "//motors/core",
+        "//motors/peripheral:configuration",
+        "//motors/peripheral:uart",
+        "//motors/print:usb",
+    ],
+)
+
+hex_from_elf(
+    name = "teensy",
+    restricted_to = ["//tools:cortex-m4f"],
 )

@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+// This whole file is deprecated. Use //aos/time instead.
+
 #ifdef __cplusplus
 extern "C"
 {
