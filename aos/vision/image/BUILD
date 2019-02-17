@@ -42,6 +42,15 @@ cc_library(
 )
 
 cc_library(
+    name = "image_dataset",
+    srcs = ["image_dataset.cc"],
+    hdrs = ["image_dataset.h"],
+    deps = [
+        ":image_types",
+    ],
+)
+
+cc_library(
     name = "image_stream",
     hdrs = ["image_stream.h"],
     deps = [
