@@ -8,16 +8,33 @@ namespace y2019 {
 namespace control_loops {
 namespace superstructure {
 
-void suction_cups(
-    const SuperstructureQueue::Goal *unsafe_goal,
-    SuperstructureQueue::Output *output) {
-  const double on_voltage = 12.0;
+void Superstructure::HandleSuction(const SuctionGoal *unsafe_goal,
+                                   float suction_pressure,
+                                   SuperstructureQueue::Output *output,
+                                   bool *has_piece) {
+  constexpr double kPumpVoltage = 12.0;
+  constexpr double kPumpHasPieceVoltage = 8.0;
 
-  if(unsafe_goal && output) {
-    if(unsafe_goal->suction.top || unsafe_goal->suction.bottom) {
-      output->pump_voltage = on_voltage;
+  // TODO(austin): Low pass filter on pressure.
+  *has_piece = suction_pressure < 0.70;
+
+  if (unsafe_goal && output) {
+    const bool evacuate = unsafe_goal->top || unsafe_goal->bottom;
+    if (evacuate) {
+      vacuum_count_ = 200;
     }
+    // TODO(austin): High speed pump a bit longer after we detect we have the
+    // game piece.
+    // Once the vacuum evacuates, the pump speeds up because there is no
+    // resistance.  So, we want to turn it down to save the pump from
+    // overheating.
+    output->pump_voltage =
+        (vacuum_count_ > 0) ? (*has_piece ? kPumpHasPieceVoltage : kPumpVoltage)
+                            : 0.0;
+    output->intake_suction_top = unsafe_goal->top;
+    output->intake_suction_bottom = unsafe_goal->bottom;
   }
+  vacuum_count_ = ::std::max(0, vacuum_count_ - 1);
 }
 
 Superstructure::Superstructure(::aos::EventLoop *event_loop,
@@ -59,6 +76,9 @@ void Superstructure::RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
                   &(position->stilts),
                   output != nullptr ? &(output->stilts_voltage) : nullptr,
                   &(status->stilts));
+
+  HandleSuction(unsafe_goal != nullptr ? &(unsafe_goal->suction) : nullptr,
+                position->suction_pressure, output, &(status->has_piece));
 
   status->zeroed = status->elevator.zeroed && status->wrist.zeroed &&
                    status->intake.zeroed && status->stilts.zeroed;
