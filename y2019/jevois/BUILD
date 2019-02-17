@@ -1,7 +1,7 @@
 load("//tools:environments.bzl", "mcu_cpus")
 load("//motors:macros.bzl", "hex_from_elf")
 
-spi_crc_args = [
+jevois_crc_args = [
     "$(location //third_party/pycrc:pycrc_main)",
     "--width=16",
     # This is the recommendation from
@@ -17,24 +17,24 @@ spi_crc_args = [
     "--xor-out=0xffff",
     "--std=C99",
     "--algorithm=table-driven",
-    "--symbol-prefix=jevois_spi_crc_",
+    "--symbol-prefix=jevois_crc_",
     "--crc-type=uint16_t",
 ]
 
 genrule(
-    name = "gen_spi_crc",
+    name = "gen_jevois_crc",
     outs = [
-        "spi_crc.h",
-        "spi_crc.c",
+        "jevois_crc.h",
+        "jevois_crc.c",
     ],
     cmd = " && ".join([
-        " ".join(spi_crc_args + [
+        " ".join(jevois_crc_args + [
             "--generate=h",
-            "--output=$(location spi_crc.h)",
+            "--output=$(location jevois_crc.h)",
         ]),
-        " ".join(spi_crc_args + [
+        " ".join(jevois_crc_args + [
             "--generate=c",
-            "--output=$(location spi_crc.c)",
+            "--output=$(location jevois_crc.c)",
         ]),
     ]),
     tools = [
@@ -43,12 +43,12 @@ genrule(
 )
 
 cc_library(
-    name = "spi_crc",
+    name = "jevois_crc",
     srcs = [
-        "spi_crc.c",
+        "jevois_crc.c",
     ],
     hdrs = [
-        "spi_crc.h",
+        "jevois_crc.h",
     ],
     deps = [
         "//third_party/GSL",
@@ -77,7 +77,7 @@ cc_library(
         "spi.h",
     ],
     deps = [
-        ":spi_crc",
+        ":jevois_crc",
         ":structures",
         "//aos/util:bitpacking",
         "//third_party/GSL",
