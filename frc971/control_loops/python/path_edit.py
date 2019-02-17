@@ -26,9 +26,8 @@ def pxToM(p):
     return p * WIDTH_OF_FIELD_IN_METERS / PIXELS_ON_SCREEN
 
 
-def mToPx(i):
-    return (i * PIXELS_ON_SCREEN / WIDTH_OF_FIELD_IN_METERS)
-
+def mToPx(m):
+    return (m*PIXELS_ON_SCREEN/WIDTH_OF_FIELD_IN_METERS)
 
 def px(cr):
     return OverrideMatrix(cr, identity)
@@ -229,7 +228,138 @@ class GTK_Widget(basic_window.BaseWindow):
                                     (points[index - 1][1] - point[1])**2)
         return distance
 
-    # Handle the expose-event by updating the Window and drawing
+    def draw_HAB(self, cr):
+        print("WENT IN")
+        # BASE Constants
+        X_BASE = -450+mToPx(2.41568)
+        Y_BASE  = -150+mToPx(4.129151)
+
+        BACKWALL_X = -450
+
+        # HAB Levels 2 and 3 called in variables backhab
+
+        WIDTH_BACKHAB = mToPx(1.2192)
+
+        Y_TOP_BACKHAB_BOX = Y_BASE + mToPx(0.6096)
+        BACKHAB_LV2_LENGTH = mToPx(1.016)
+
+        BACKHAB_LV3_LENGTH = mToPx(1.2192)
+        Y_LV3_BOX = Y_TOP_BACKHAB_BOX - BACKHAB_LV3_LENGTH
+
+        Y_BOTTOM_BACKHAB_BOX = Y_LV3_BOX -BACKHAB_LV2_LENGTH
+
+        # HAB LEVEL 1
+        X_LV1_BOX = BACKWALL_X + WIDTH_BACKHAB
+
+        WIDTH_LV1_BOX = mToPx(0.90805)
+        LENGTH_LV1_BOX = mToPx(1.6256)
+
+        Y_BOTTOM_LV1_BOX = Y_BASE - LENGTH_LV1_BOX
+
+        # Ramp off Level 1
+        X_RAMP = X_LV1_BOX
+
+        Y_TOP_RAMP = Y_BASE + LENGTH_LV1_BOX
+        WIDTH_TOP_RAMP = mToPx(1.20015)
+        LENGTH_TOP_RAMP = Y_BASE + mToPx(0.28306)
+
+        X_MIDDLE_RAMP = X_RAMP + WIDTH_LV1_BOX
+        Y_MIDDLE_RAMP = Y_BOTTOM_LV1_BOX
+        LENGTH_MIDDLE_RAMP = 2*LENGTH_LV1_BOX
+        WIDTH_MIDDLE_RAMP = WIDTH_TOP_RAMP - WIDTH_LV1_BOX
+
+        Y_BOTTOM_RAMP = Y_BASE - LENGTH_LV1_BOX - LENGTH_TOP_RAMP
+
+        # Side Bars to Hold in balls
+        X_BARS = BACKWALL_X
+        WIDTH_BARS = WIDTH_BACKHAB
+        LENGTH_BARS = mToPx(0.574675)
+
+        Y_TOP_BAR = Y_TOP_BACKHAB_BOX + BACKHAB_LV2_LENGTH
+
+        Y_BOTTOM_BAR = Y_BOTTOM_BACKHAB_BOX - LENGTH_BARS
+
+        set_color(cr, palette["BLACK"])
+        cr.rectangle(BACKWALL_X, Y_TOP_BACKHAB_BOX, WIDTH_BACKHAB,
+                BACKHAB_LV2_LENGTH)
+        cr.rectangle(BACKWALL_X, Y_LV3_BOX, WIDTH_BACKHAB,
+                BACKHAB_LV3_LENGTH)
+        cr.rectangle(BACKWALL_X, Y_BOTTOM_BACKHAB_BOX, WIDTH_BACKHAB,
+                BACKHAB_LV2_LENGTH)
+        cr.rectangle(X_LV1_BOX, Y_BASE, WIDTH_LV1_BOX, LENGTH_LV1_BOX)
+        cr.rectangle(X_LV1_BOX, Y_BOTTOM_LV1_BOX, WIDTH_LV1_BOX,
+                LENGTH_LV1_BOX)
+        cr.rectangle(X_RAMP, Y_TOP_RAMP, WIDTH_TOP_RAMP, LENGTH_TOP_RAMP)
+        cr.rectangle(X_MIDDLE_RAMP, Y_MIDDLE_RAMP, WIDTH_MIDDLE_RAMP,
+                LENGTH_MIDDLE_RAMP)
+        cr.rectangle(X_RAMP, Y_BOTTOM_RAMP, WIDTH_TOP_RAMP, LENGTH_TOP_RAMP)
+        cr.rectangle(X_BARS, Y_TOP_BAR, WIDTH_BARS, LENGTH_BARS)
+        cr.rectangle(X_BARS, Y_BOTTOM_BAR, WIDTH_BARS, LENGTH_BARS)
+        cr.stroke()
+        #draw_px_x(cr, BACKWALL_X, 0, 10) # Midline Point
+        #draw_px_x(cr, X_BASE, Y_BASE, 10) # Bases
+        cr.set_line_join(cairo.LINE_JOIN_ROUND)
+
+        cr.stroke()
+
+    def draw_rockets(self, cr):
+        # BASE Constants
+        X_BASE = -450+mToPx(2.41568)
+        Y_BASE  = -150+mToPx(4.129151)
+
+        # Top Rocket
+
+        # Leftmost Line
+        cr.move_to(X_BASE + mToPx(2.89973), Y_BASE + mToPx(3.86305))
+        cr.line_to(X_BASE + mToPx(3.15642), Y_BASE + mToPx(3.39548))
+
+        # Top Line
+        cr.move_to(X_BASE + mToPx(3.15642), Y_BASE + mToPx(3.39548))
+        cr.line_to(X_BASE + mToPx(3.63473), Y_BASE + mToPx(3.39238))
+
+        #Rightmost Line
+        cr.move_to(X_BASE + mToPx(3.63473), Y_BASE + mToPx(3.39238))
+        cr.line_to(X_BASE + mToPx(3.89984), Y_BASE + mToPx(3.86305))
+
+        #Back Line
+        cr.move_to(X_BASE + mToPx(2.89973), Y_BASE + mToPx(3.86305))
+        cr.line_to(X_BASE + mToPx(3.89984), Y_BASE + mToPx(3.86305))
+
+        # Bottom Rocket
+
+        # Leftmost Line
+        cr.move_to(X_BASE + mToPx(2.89973), Y_BASE - mToPx(3.86305))
+        cr.line_to(X_BASE + mToPx(3.15642), Y_BASE - mToPx(3.39548))
+
+        # Top Line
+        cr.move_to(X_BASE + mToPx(3.15642), Y_BASE - mToPx(3.39548))
+        cr.line_to(X_BASE + mToPx(3.63473), Y_BASE - mToPx(3.39238))
+
+        #Rightmost Line
+        cr.move_to(X_BASE + mToPx(3.63473), Y_BASE - mToPx(3.39238))
+        cr.line_to(X_BASE + mToPx(3.89984), Y_BASE - mToPx(3.86305))
+
+        #Back Line
+        cr.move_to(X_BASE + mToPx(2.89973), Y_BASE - mToPx(3.86305))
+        cr.line_to(X_BASE + mToPx(3.89984), Y_BASE - mToPx(3.86305))
+
+        cr.stroke()
+
+    def draw_cargo_ship(self, cr):
+        # BASE Constants
+        X_BASE = -450+mToPx(2.41568)
+        Y_BASE  = -150+mToPx(4.129151)
+
+        cr.rectangle(X_BASE + mToPx(3.15912), Y_BASE - mToPx(0.72326),
+                mToPx(2.43205), mToPx(1.41605))
+
+        cr.stroke()
+
+    def draw_field_elements(self, cr):
+        self.draw_HAB(cr)
+        self.draw_rockets(cr)
+        self.draw_cargo_ship(cr)
+
     def handle_draw(self, cr):
         # print(self.new_point)
         # print("SELF.POINT_SELECTED: " + str(self.point_selected))
@@ -248,7 +378,7 @@ class GTK_Widget(basic_window.BaseWindow):
                      self.extents_y_max - self.extents_y_min)
         cr.fill()
 
-        #Drawing the switch and scale in the field
+        #Drawing the field
         cr.move_to(0, 50)
         cr.show_text('Press "e" to export')
         cr.show_text('Press "i" to import')
@@ -260,6 +390,8 @@ class GTK_Widget(basic_window.BaseWindow):
         cr.rectangle(-450, -150, 300, 300)
         cr.set_line_join(cairo.LINE_JOIN_ROUND)
         cr.stroke()
+
+        self.draw_field_elements(cr)
 
         y = 0
 
