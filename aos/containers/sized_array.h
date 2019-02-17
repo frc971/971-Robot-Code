@@ -109,6 +109,12 @@ class SizedArray {
     --size_;
   }
 
+  // These allow access to the underlying storage. The data here may be outside
+  // the current logical extents of the container.
+  const array &backing_array() const { return array_; }
+  array *mutable_backing_array() { return &array_; }
+  void set_size(size_t size) { size_ = size; }
+
  private:
   void check_index(size_t i) const {
     if (i >= size_) {

@@ -1,7 +1,6 @@
 #include "y2019/jevois/spi.h"
 
-#include <assert.h>
-
+#include "aos/logging/logging.h"
 #include "aos/util/bitpacking.h"
 #include "third_party/GSL/include/gsl/gsl"
 #include "y2019/jevois/jevois_crc.h"
@@ -175,11 +174,11 @@ SpiTransfer SpiPackToRoborio(const TeensyToRoborio &message) {
     crc = jevois_crc_update(crc, transfer.data(),
                             transfer.size() - remaining_space.size());
     crc = jevois_crc_finalize(crc);
-    assert(static_cast<size_t>(remaining_space.size()) >= sizeof(crc));
+    CHECK_GE(static_cast<size_t>(remaining_space.size()), sizeof(crc));
     memcpy(&remaining_space[0], &crc, sizeof(crc));
     remaining_space = remaining_space.subspan(sizeof(crc));
   }
-  assert(remaining_space.empty());
+  CHECK(remaining_space.empty());
   return transfer;
 }
 
@@ -222,14 +221,14 @@ tl::optional<TeensyToRoborio> SpiUnpackToRoborio(const SpiTransfer &transfer) {
                           transfer.size() - remaining_input.size());
     calculated_crc = jevois_crc_finalize(calculated_crc);
     uint16_t received_crc;
-    assert(static_cast<size_t>(remaining_input.size()) >= sizeof(received_crc));
+    CHECK_GE(static_cast<size_t>(remaining_input.size()), sizeof(received_crc));
     memcpy(&received_crc, &remaining_input[0], sizeof(received_crc));
     remaining_input = remaining_input.subspan(sizeof(received_crc));
+    CHECK(remaining_input.empty());
     if (calculated_crc != received_crc) {
       return tl::nullopt;
     }
   }
-  assert(remaining_input.empty());
   return message;
 }
 
