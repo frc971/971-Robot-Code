@@ -50,8 +50,6 @@ class CollisionAvoidance {
     min_elevator_goal_ = ::std::max(min_elevator_goal, min_elevator_goal_);
   }
 
-  // TODO(sabina): set all the numbers to correctly match the robot.
-
   // Height above which we can move the wrist freely.
   static constexpr double kElevatorClearHeight = 0.35;
 
@@ -61,8 +59,8 @@ class CollisionAvoidance {
   static constexpr double kElevatorClearIntakeHeight = 0.4;
 
   // Angle constraints for the wrist when below kElevatorClearDownHeight
-  static constexpr double kWristMaxAngle = M_PI / 2.0;
-  static constexpr double kWristMinAngle = -M_PI / 2.0;
+  static constexpr double kWristMaxAngle = M_PI / 2.0 + 0.05;
+  static constexpr double kWristMinAngle = -M_PI / 2.0 - 0.05;
 
   // Angles outside of which the intake is fully clear of the wrist.
   static constexpr double kIntakeOutAngle = 0.3;

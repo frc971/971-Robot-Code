@@ -52,7 +52,8 @@ bool CollisionAvoidance::IsCollided(const SuperstructureQueue::Status *status) {
   }
 
   // Elevator is down so the intake has to be at either extreme.
-  if (elevator_position < kElevatorClearIntakeHeight) {
+  if (elevator_position < kElevatorClearIntakeHeight &&
+      wrist_position > kWristMaxAngle) {
     if (intake_position < kIntakeOutAngle && intake_position > kIntakeInAngle) {
       return true;
     }
@@ -78,7 +79,9 @@ void CollisionAvoidance::UpdateGoal(
   // If the elevator is low enough, we also can't transition the wrist.
   if (elevator_position < kElevatorClearHeight) {
     // Figure out which side the wrist is on and stay there.
-    if (wrist_position < 0.0) {
+    if (wrist_position < (2.0 * kWristElevatorCollisionMinAngle +
+                          kWristElevatorCollisionMaxAngle) /
+                             3.0) {
       update_max_wrist_goal(kWristElevatorCollisionMinAngle - kEpsWrist);
     } else {
       update_min_wrist_goal(kWristElevatorCollisionMaxAngle + kEpsWrist);
@@ -97,7 +100,8 @@ void CollisionAvoidance::UpdateGoal(
 
   // If the elevator is too low, the intake can't transition from in to out or
   // back.
-  if (elevator_position < kElevatorClearIntakeHeight) {
+  if (elevator_position < kElevatorClearIntakeHeight &&
+      wrist_position > kWristElevatorCollisionMaxAngle) {
     // Figure out if the intake is in our out and keep it there.
     if (intake_position < kIntakeMiddleAngle) {
       update_max_intake_goal(kIntakeInAngle - kEpsIntake);
@@ -110,8 +114,16 @@ void CollisionAvoidance::UpdateGoal(
   clear_min_elevator_goal();
 
   // If the intake is within the collision range, don't let the elevator down.
-  if (intake_position > kIntakeInAngle && intake_position < kIntakeOutAngle) {
+  if (intake_position > kIntakeInAngle && intake_position < kIntakeOutAngle &&
+      wrist_position > kWristElevatorCollisionMaxAngle) {
     update_min_elevator_goal(kElevatorClearIntakeHeight + kEps);
+  }
+
+  // If the intake is in the collision range and the elevator is down, don't let
+  // the wrist go far down.
+  if (intake_position > kIntakeInAngle && intake_position < kIntakeOutAngle &&
+      elevator_position < kElevatorClearIntakeHeight) {
+    update_max_wrist_goal(kWristMaxAngle - kEpsWrist);
   }
 
   // If the wrist is within the elevator collision range, don't let the elevator
@@ -141,7 +153,8 @@ void CollisionAvoidance::UpdateGoal(
 
     // If we need to move the intake, we've got to shove the elevator up.  The
     // intake is already constrained so it can't hit anything until it's clear.
-    if (intake_needs_to_move && wrist_position > 0) {
+    if (intake_needs_to_move &&
+        wrist_position > kWristElevatorCollisionMaxAngle) {
       update_min_elevator_goal(kElevatorClearIntakeHeight + kEps);
     }
     // If we need to move the wrist, we've got to shove the elevator up too. The
