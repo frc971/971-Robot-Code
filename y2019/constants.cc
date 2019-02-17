@@ -99,7 +99,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   stilts_params->zeroing_voltage = 3.0;
   stilts_params->operating_voltage = 12.0;
   stilts_params->zeroing_profile_params = {0.1, 0.5};
-  stilts_params->default_profile_params = {0.5, 0.5};
+  stilts_params->default_profile_params = {0.1, 0.5};
   stilts_params->range = Values::kStiltsRange();
   stilts_params->make_integral_loop =
       &control_loops::superstructure::stilts::MakeIntegralStiltsLoop;
