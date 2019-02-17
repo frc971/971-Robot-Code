@@ -337,6 +337,8 @@ void DrivetrainLoop::RunIteration(
 
   dt_closedloop_.Update(output != NULL && controller_type == 1);
 
+  dt_spline_.Update(output != NULL && controller_type == 2);
+
   switch (controller_type) {
     case 0:
       dt_openloop_.SetOutput(output);

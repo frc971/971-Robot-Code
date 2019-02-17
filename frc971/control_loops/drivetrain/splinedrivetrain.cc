@@ -63,7 +63,15 @@ void SplineDrivetrain::SetGoal(
     }
 
     current_trajectory_->Plan();
-    current_xva_plan_ = current_trajectory_->PlanXVA(dt_config_.dt);
+    current_xva_ = current_trajectory_->FFAcceleration(0);
+    current_xva_(1) = 0.0;
+  }
+}
+
+void SplineDrivetrain::Update(bool enable) {
+  if (enable && current_trajectory_ &&
+      !current_trajectory_->is_at_end(current_state_)) {
+    next_xva_ = current_trajectory_->GetNextXVA(dt_config_.dt, &current_state_);
   }
 }
 
@@ -73,14 +81,17 @@ void SplineDrivetrain::SetOutput(
   if (!output) {
     return;
   }
+  if (!current_trajectory_) {
+    return;
+  }
   if (current_spline_handle_ == current_spline_idx_) {
-    if (current_xva_idx_ < current_xva_plan_.size()) {
-      double current_distance = current_xva_plan_[current_xva_idx_](0);
+    if (!current_trajectory_->is_at_end(current_state_)) {
+      double current_distance = current_xva_(0);
       ::Eigen::Matrix<double, 2, 1> FFVoltage =
           current_trajectory_->FFVoltage(current_distance);
       output->left_voltage = FFVoltage(0);
       output->right_voltage = FFVoltage(1);
-      ++current_xva_idx_;
+      current_xva_ = next_xva_;
     }
   }
 }
