@@ -67,10 +67,8 @@ void Superstructure::RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
                      status->intake.estopped || status->stilts.estopped;
 
   if (output) {
-    if (status->intake.position > kMinIntakeAngleForRollers) {
-      output->intake_roller_voltage =
-          (unsafe_goal != nullptr) ? unsafe_goal->roller_voltage : 0.0;
-
+    if (unsafe_goal && status->intake.position > kMinIntakeAngleForRollers) {
+      output->intake_roller_voltage = unsafe_goal->roller_voltage;
     } else {
       output->intake_roller_voltage = 0.0;
     }
