@@ -139,6 +139,7 @@ cc_library(
     name = "serial",
     srcs = ["serial.cc"],
     hdrs = ["serial.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//aos/logging",
     ],
