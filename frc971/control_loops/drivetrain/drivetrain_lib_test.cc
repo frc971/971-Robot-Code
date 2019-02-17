@@ -6,7 +6,11 @@
 #include "aos/controls/control_loop_test.h"
 #include "aos/controls/polytope.h"
 #include "aos/time/time.h"
+#include "gflags/gflags.h"
 #include "gtest/gtest.h"
+#if defined(SUPPORT_PLOT)
+#include "third_party/matplotlib-cpp/matplotlibcpp.h"
+#endif
 
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
@@ -14,6 +18,8 @@
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "frc971/queues/gyro.q.h"
+
+DEFINE_bool(plot, false, "If true, plot");
 
 namespace frc971 {
 namespace control_loops {
@@ -56,6 +62,17 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
     drivetrain_motor_.Iterate();
     drivetrain_motor_plant_.Simulate();
     SimulateTimestep(true, dt_config_.dt);
+    if (FLAGS_plot) {
+      my_drivetrain_queue_.status.FetchLatest();
+
+      ::Eigen::Matrix<double, 2, 1> actual_position =
+          drivetrain_motor_plant_.GetPosition();
+      actual_x_.push_back(actual_position(0));
+      actual_y_.push_back(actual_position(1));
+
+      trajectory_x_.push_back(my_drivetrain_queue_.status->trajectory_logging.x);
+      trajectory_y_.push_back(my_drivetrain_queue_.status->trajectory_logging.y);
+    }
   }
 
   void RunForTime(monotonic_clock::duration run_for) {
@@ -63,6 +80,20 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
     while (monotonic_clock::now() < end_time) {
       RunIteration();
     }
+  }
+
+  void TearDown() {
+#if defined(SUPPORT_PLOT)
+    if (FLAGS_plot) {
+      std::cout << "plotting.\n";
+      matplotlibcpp::figure();
+      matplotlibcpp::plot(actual_x_, actual_y_, {{"label", "actual position"}});
+      matplotlibcpp::plot(trajectory_x_, trajectory_y_,
+                          {{"label", "trajectory position"}});
+      matplotlibcpp::legend();
+      matplotlibcpp::show();
+    }
+#endif
   }
 
   void VerifyNearGoal() {
@@ -101,6 +132,13 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
   }
 
   virtual ~DrivetrainTest() { ::frc971::sensors::gyro_reading.Clear(); }
+
+ private:
+  ::std::vector<double> actual_x_;
+  ::std::vector<double> actual_y_;
+  ::std::vector<double> trajectory_x_;
+  ::std::vector<double> trajectory_y_;
+
 };
 
 // Tests that the drivetrain converges on a goal.

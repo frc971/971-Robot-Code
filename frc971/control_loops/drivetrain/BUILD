@@ -256,6 +256,14 @@ cc_test(
     srcs = [
         "drivetrain_lib_test.cc",
     ],
+    defines =
+        cpu_select({
+            "amd64": [
+                "SUPPORT_PLOT=1",
+            ],
+            "arm": [],
+        }),
+    linkstatic = True,
     deps = [
         ":drivetrain_config",
         ":drivetrain_lib",
@@ -265,7 +273,12 @@ cc_test(
         "//aos/controls:control_loop_test",
         "//aos/testing:googletest",
         "//frc971/queues:gyro",
-    ],
+    ] + cpu_select({
+        "amd64": [
+            "//third_party/matplotlib-cpp",
+        ],
+        "arm": [],
+    }),
 )
 
 genrule(
