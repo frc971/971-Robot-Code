@@ -52,9 +52,33 @@ TEST_F(PriorityQueueTest, PriorityInsertion) {
   ASSERT_EQ(4u, queue_.size());
   ASSERT_FALSE(queue_.full());
   ::std::vector<int> reverse_expected{20, 15, 11};
-  EXPECT_EQ(20, queue_.top());
+  EXPECT_EQ(10, *queue_.begin());
   for (; it != queue_.end(); ++it) {
     EXPECT_EQ(reverse_expected.back(), *it);
+    reverse_expected.pop_back();
+  }
+  ASSERT_TRUE(reverse_expected.empty());
+}
+
+// Tests that the clear() method works properly.
+TEST_F(PriorityQueueTest, ClearQueue) {
+  queue_.PushFromBottom(10);
+  queue_.PushFromBottom(20);
+  queue_.PushFromBottom(15);
+  queue_.PushFromBottom(11);
+  ASSERT_EQ(4u, queue_.size());
+  ASSERT_FALSE(queue_.full());
+  queue_.clear();
+  ASSERT_TRUE(queue_.empty());
+  ASSERT_EQ(0u, queue_.size());
+
+  queue_.PushFromBottom(1);
+  queue_.PushFromBottom(3);
+  queue_.PushFromBottom(2);
+  ASSERT_EQ(3u, queue_.size());
+  ::std::vector<int> reverse_expected{3, 2, 1};
+  for (const int val : queue_) {
+    EXPECT_EQ(reverse_expected.back(), val);
     reverse_expected.pop_back();
   }
   ASSERT_TRUE(reverse_expected.empty());
