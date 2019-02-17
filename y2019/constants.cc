@@ -145,7 +145,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       elevator_params->zeroing_constants.measured_absolute_position = 0.049419;
       elevator->potentiometer_offset = -0.022320;
 
-      intake->zeroing_constants.measured_absolute_position = 2.303729;
+      intake->zeroing_constants.measured_absolute_position = 1.756847;
       intake->zeroing_constants.middle_position =
           Values::kIntakeRange().middle();
 
