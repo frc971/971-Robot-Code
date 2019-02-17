@@ -4,7 +4,7 @@
 
 #include "aos/util/bitpacking.h"
 #include "third_party/GSL/include/gsl/gsl"
-#include "y2019/jevois/spi_crc.h"
+#include "y2019/jevois/jevois_crc.h"
 
 // SPI transfer format (6x 8 bit frames):
 // 1. 1-byte brightness for each beacon channel.
@@ -171,10 +171,10 @@ SpiTransfer SpiPackToRoborio(const TeensyToRoborio &message) {
     remaining_space = remaining_space.subspan(1);
   }
   {
-    uint16_t crc = jevois_spi_crc_init();
-    crc = jevois_spi_crc_update(crc, transfer.data(),
-                                transfer.size() - remaining_space.size());
-    crc = jevois_spi_crc_finalize(crc);
+    uint16_t crc = jevois_crc_init();
+    crc = jevois_crc_update(crc, transfer.data(),
+                            transfer.size() - remaining_space.size());
+    crc = jevois_crc_finalize(crc);
     assert(static_cast<size_t>(remaining_space.size()) >= sizeof(crc));
     memcpy(&remaining_space[0], &crc, sizeof(crc));
     remaining_space = remaining_space.subspan(sizeof(crc));
@@ -216,11 +216,11 @@ tl::optional<TeensyToRoborio> SpiUnpackToRoborio(const SpiTransfer &transfer) {
     remaining_input = remaining_input.subspan(1);
   }
   {
-    uint16_t calculated_crc = jevois_spi_crc_init();
+    uint16_t calculated_crc = jevois_crc_init();
     calculated_crc =
-        jevois_spi_crc_update(calculated_crc, transfer.data(),
-                              transfer.size() - remaining_input.size());
-    calculated_crc = jevois_spi_crc_finalize(calculated_crc);
+        jevois_crc_update(calculated_crc, transfer.data(),
+                          transfer.size() - remaining_input.size());
+    calculated_crc = jevois_crc_finalize(calculated_crc);
     uint16_t received_crc;
     assert(static_cast<size_t>(remaining_input.size()) >= sizeof(received_crc));
     memcpy(&received_crc, &remaining_input[0], sizeof(received_crc));
