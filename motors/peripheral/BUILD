@@ -71,6 +71,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":uart_buffer",
+        "//aos/containers:sized_array",
         "//motors:util",
         "//motors/core",
         "//third_party/GSL",

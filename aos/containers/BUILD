@@ -1,5 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
+load("//tools:environments.bzl", "mcu_cpus")
+
 cc_library(
     name = "ring_buffer",
     hdrs = [
@@ -41,6 +43,7 @@ cc_library(
     hdrs = [
         "sized_array.h",
     ],
+    compatible_with = mcu_cpus,
 )
 
 cc_test(
