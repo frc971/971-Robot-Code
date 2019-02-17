@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from __future__ import print_function
 import os
+import sys
 import copy
 import basic_window
 from color import Color, palette
@@ -13,7 +14,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gdk, Gtk, GLib
 import cairo
 import enum
-import csv  # For writing to csv files
+import json # For writing to json files
 
 from basic_window import OverrideMatrix, identity, quit_main_loop, set_color
 
@@ -124,6 +125,9 @@ class GTK_Widget(basic_window.BaseWindow):
         self.x = 0
         self.y = 0
 
+        module_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        self.path_to_export = os.path.join(module_path,
+            'points_for_pathedit.json')
         # update list of control points
         self.point_selected = False
         # self.adding_spline = False
@@ -335,40 +339,6 @@ class GTK_Widget(basic_window.BaseWindow):
                         cr.move_to(mToPx(point[0]), mToPx(point[1]) - 15)
                         display_text(cr, str(i), 0.5, 0.5, 2, 2)
 
-        elif self.mode == Mode.kExporting:
-            set_color(cr, palette["BLACK"])
-            cr.move_to(-300, 170)
-            display_text(cr, "VIEWING", 1, 1, 1, 1)
-            set_color(cr, palette["GREY"])
-
-            if len(self.selected_points) > 0:
-                print("SELECTED_POINTS: " + str(len(self.selected_points)))
-                print("ITEMS:")
-                # for item in self.selected_points:
-                #     print(str(item))
-                for i, point in enumerate(self.selected_points):
-                    # print("I: " + str(i))
-                    draw_px_x(cr, point[0], point[1], 10)
-                    cr.move_to(point[0], point[1] - 15)
-                    display_text(cr, str(i), 0.5, 0.5, 2, 2)
-
-        elif self.mode == Mode.kImporting:
-            set_color(cr, palette["BLACK"])
-            cr.move_to(-300, 170)
-            display_text(cr, "VIEWING", 1, 1, 1, 1)
-            set_color(cr, palette["GREY"])
-
-            if len(self.selected_points) > 0:
-                print("SELECTED_POINTS: " + str(len(self.selected_points)))
-                print("ITEMS:")
-                for item in self.selected_points:
-                    print(str(item))
-                for i, point in enumerate(self.selected_points):
-                    print("I: " + str(i))
-                    draw_px_x(cr, point[0], point[1], 10)
-                    cr.move_to(point[0], point[1] - 15)
-                    display_text(cr, str(i), 0.5, 0.5, 2, 2)
-
         elif self.mode == Mode.kConstraint:
             print("Drawn")
             set_color(cr, palette["BLACK"])
@@ -397,26 +367,22 @@ class GTK_Widget(basic_window.BaseWindow):
             print("Found q key and exiting.")
             quit_main_loop()
         if keyval == Gdk.KEY_e:
-            self.mode = Mode.kExporting
-            # Will export to csv file
-            with open('points_for_pathedit.csv', mode='w') as points_file:
-                writer = csv.writer(
-                    points_file,
-                    delimiter=',',
-                    quotechar='"',
-                    quoting=csv.QUOTE_MINIMAL)
-                for item in self.selected_points:
-                    writer.writerow([str(item[0]), str(item[1])])
-                    print("Wrote: " + str(item[0]) + " " + str(item[1]))
+            # Will export to json file
+            self.mode = Mode.kEditing
+            print(str(sys.argv))
+            print('out to: ', self.path_to_export)
+            exportList = [l.tolist() for l in self.splines]
+            with open(self.path_to_export, mode='w') as points_file:
+                json.dump(exportList, points_file)
+                print("Wrote: " + str(self.splines))
         if keyval == Gdk.KEY_i:
-            self.mode = Mode.kImporting
-            # import from csv file
+            # import from json file
+            self.mode = Mode.kEditing
             self.selected_points = []
-            with open('points_for_pathedit.csv') as points_file:
-                reader = csv.reader(points_file, delimiter=',')
-                for row in reader:
-                    self.add_point(float(row[0]), float(row[1]))
-                    print("Added: " + row[0] + " " + row[1])
+            self.splines = []
+            with open(self.path_to_export) as points_file:
+                self.splines = json.load(points_file)
+                print("Added: " + str(self.splines))
         if keyval == Gdk.KEY_p:
             self.mode = Mode.kPlacing
             # F0 = A1
