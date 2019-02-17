@@ -38,6 +38,7 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
       kf_(dt_config_.make_kf_drivetrain_loop()),
       dt_openloop_(dt_config_, &kf_),
       dt_closedloop_(dt_config_, &kf_, &integrated_kf_heading_),
+      dt_spline_(dt_config_),
       down_estimator_(MakeDownEstimatorLoop()),
       left_gear_(dt_config_.default_high_gear ? Gear::HIGH : Gear::LOW),
       right_gear_(dt_config_.default_high_gear ? Gear::HIGH : Gear::LOW),
@@ -329,6 +330,7 @@ void DrivetrainLoop::RunIteration(
 
     dt_closedloop_.SetGoal(*goal);
     dt_openloop_.SetGoal(*goal);
+    dt_spline_.SetGoal(*goal);
   }
 
   dt_openloop_.Update(robot_state().voltage_battery);
@@ -341,6 +343,9 @@ void DrivetrainLoop::RunIteration(
       break;
     case 1:
       dt_closedloop_.SetOutput(output);
+      break;
+    case 2:
+      dt_spline_.SetOutput(output);
       break;
   }
 

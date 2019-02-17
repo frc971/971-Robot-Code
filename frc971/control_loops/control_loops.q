@@ -188,3 +188,33 @@ struct ProfileParameters {
   // Maximum acceleration for the profile.
   float max_acceleration;
 };
+
+// Definition of a constraint on a trajectory
+struct Constraint {
+  // Type of constraint
+  //  0: Null constraint. Ignore and all following
+  //  1: longitual acceleration
+  //  2: lateral acceleration
+  //  3: voltage
+  //  4: velocity
+  uint8_t constraint_type;
+  float value;
+  // start and end distance are only checked for velocity limits.
+  float start_distance;
+  float end_distance;
+};
+
+// Parameters for computing a trajectory using a chain of splines and
+// constraints.
+struct MultiSpline {
+  // index of the spline. Zero indicates the spline should not be computed.
+  uint32_t spline_idx;
+  // Number of splines. The spline point arrays will be expected to have
+  // 6 + 5 * (n - 1) points in them. The endpoints are shared between
+  // neighboring splines.
+  uint8_t spline_count;
+  float[36] spline_x;
+  float[36] spline_y;
+
+  Constraint[6] constraints;
+};

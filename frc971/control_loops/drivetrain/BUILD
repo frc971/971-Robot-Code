@@ -49,6 +49,23 @@ cc_library(
 )
 
 cc_library(
+    name = "splinedrivetrain",
+    srcs = [
+        "splinedrivetrain.cc",
+    ],
+    hdrs = [
+        "splinedrivetrain.h",
+    ],
+    deps = [
+        ":drivetrain_config",
+        ":drivetrain_queue",
+        ":spline",
+        ":distance_spline",
+        ":trajectory",
+    ]
+)
+
+cc_library(
     name = "ssdrivetrain",
     srcs = [
         "ssdrivetrain.cc",
@@ -170,6 +187,7 @@ cc_library(
         ":gear",
         ":polydrivetrain",
         ":ssdrivetrain",
+        ":splinedrivetrain",
         "//aos/controls:control_loop",
         "//aos/logging:matrix_logging",
         "//aos/logging:queue_logging",

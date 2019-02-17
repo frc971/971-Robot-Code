@@ -11,6 +11,7 @@
 #include "frc971/control_loops/drivetrain/gear.h"
 #include "frc971/control_loops/drivetrain/polydrivetrain.h"
 #include "frc971/control_loops/drivetrain/ssdrivetrain.h"
+#include "frc971/control_loops/drivetrain/splinedrivetrain.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -50,6 +51,7 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
   StateFeedbackLoop<7, 2, 4> kf_;
   PolyDrivetrain<double> dt_openloop_;
   DrivetrainMotorsSS dt_closedloop_;
+  SplineDrivetrain dt_spline_;
   ::aos::monotonic_clock::time_point last_gyro_time_ =
       ::aos::monotonic_clock::min_time;
 

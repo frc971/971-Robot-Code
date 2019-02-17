@@ -72,6 +72,14 @@ queue_group DrivetrainQueue {
     // The control loop will profile if these are all non-zero.
     .frc971.ProfileParameters linear;
     .frc971.ProfileParameters angular;
+
+    // Parameters for a spline to follow. This just contains info on a spline to
+    // compute. Each time this is sent, spline drivetrain will compute a new
+    // spline.
+    .frc971.MultiSpline spline;
+
+    // Which spline to follow.
+    uint32_t spline_handle;
   };
 
   message Position {
