@@ -1,8 +1,6 @@
 #ifndef AOS_TYPE_TRAITS_
 #define AOS_TYPE_TRAITS_
 
-#include <features.h>
-
 #include <type_traits>
 
 namespace aos {
