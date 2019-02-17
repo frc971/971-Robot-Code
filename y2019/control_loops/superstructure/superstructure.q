@@ -53,9 +53,9 @@ queue_group SuperstructureQueue {
   };
 
   message Position {
-    // Input from pressure sensor in psi
-    // 0 = current atmospheric pressure, negative = suction.
-    double suction_pressure;
+    // Input from pressure sensor in bar
+    // 1 = 1 atm, 0 = full vacuum
+    float suction_pressure;
 
     // Position of the elevator, 0 at lowest position, positive when up.
     .frc971.PotAndAbsolutePosition elevator;
