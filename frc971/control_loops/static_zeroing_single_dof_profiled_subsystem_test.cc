@@ -53,13 +53,7 @@ const zeroing::PotAndAbsoluteEncoderZeroingEstimator::ZeroingConstants
 template <>
 const zeroing::AbsoluteEncoderZeroingEstimator::ZeroingConstants
     TestIntakeSystemValues<zeroing::AbsoluteEncoderZeroingEstimator>::kZeroing{
-        kZeroingSampleSize,
-        kEncoderIndexDifference,
-        0.0,
-        0.2,
-        0.0005,
-        20,
-        1.9};
+        kZeroingSampleSize, kEncoderIndexDifference, 0.0, 0.2, 0.0005, 20, 1.9};
 
 template <typename ZeroingEstimator>
 const StaticZeroingSingleDOFProfiledSubsystemParams<ZeroingEstimator>
@@ -94,8 +88,7 @@ class TestIntakeSystemSimulation {
   TestIntakeSystemSimulation()
       : subsystem_plant_(new CappedTestPlant(
             ::frc971::control_loops::MakeTestIntakeSystemPlant())),
-        subsystem_sensor_sim_(
-            kEncoderIndexDifference) {
+        subsystem_sensor_sim_(kEncoderIndexDifference) {
     // Start the subsystem out in the middle by default.
     InitializeSubsystemPosition((kRange.lower + kRange.upper) / 2.0);
   }

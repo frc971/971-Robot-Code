@@ -110,7 +110,8 @@ StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus>::
 };
 
 template <typename ZeroingEstimator, typename ProfiledJointStatus>
-void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus>::Reset() {
+void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator,
+                                             ProfiledJointStatus>::Reset() {
   state_ = State::UNINITIALIZED;
   clear_min_position();
   clear_max_position();
@@ -118,10 +119,11 @@ void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStat
 }
 
 template <typename ZeroingEstimator, typename ProfiledJointStatus>
-void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus>::Iterate(
-    const StaticZeroingSingleDOFProfiledSubsystemGoal *goal,
-    const typename ZeroingEstimator::Position *position, double *output,
-    ProfiledJointStatus *status) {
+void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator,
+                                             ProfiledJointStatus>::
+    Iterate(const StaticZeroingSingleDOFProfiledSubsystemGoal *goal,
+            const typename ZeroingEstimator::Position *position, double *output,
+            ProfiledJointStatus *status) {
   bool disabled = output == nullptr;
   profiled_subsystem_.Correct(*position);
 

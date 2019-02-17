@@ -9,6 +9,7 @@ import glog
 
 
 class LinearSystemParams(object):
+
     def __init__(self,
                  name,
                  motor,
@@ -37,6 +38,7 @@ class LinearSystemParams(object):
 
 
 class LinearSystem(control_loop.ControlLoop):
+
     def __init__(self, params, name='LinearSystem'):
         super(LinearSystem, self).__init__(name)
         self.params = params
@@ -57,10 +59,9 @@ class LinearSystem(control_loop.ControlLoop):
         # State is [position, velocity]
         # Input is [Voltage]
         C1 = self.motor.Kt / (self.G * self.G * self.radius * self.radius *
-                              self.motor.resistance * self.mass *
-                              self.motor.Kv)
-        C2 = self.motor.Kt / (self.G * self.radius * self.motor.resistance *
-                              self.mass)
+                              self.motor.resistance * self.mass * self.motor.Kv)
+        C2 = self.motor.Kt / (
+            self.G * self.radius * self.motor.resistance * self.mass)
 
         self.A_continuous = numpy.matrix([[0, 1], [0, -C1]])
 
@@ -79,9 +80,10 @@ class LinearSystem(control_loop.ControlLoop):
         glog.debug('Controllability of %d',
                    numpy.linalg.matrix_rank(controllability))
         glog.debug('Mass: %f', self.mass)
-        glog.debug('Stall force: %f', self.motor.stall_torque / self.G / self.radius)
-        glog.debug('Stall acceleration: %f', self.motor.stall_torque / self.G /
-                   self.radius / self.mass)
+        glog.debug('Stall force: %f',
+                   self.motor.stall_torque / self.G / self.radius)
+        glog.debug('Stall acceleration: %f',
+                   self.motor.stall_torque / self.G / self.radius / self.mass)
 
         glog.debug('Free speed is %f',
                    -self.B_continuous[1, 0] / self.A_continuous[1, 1] * 12.0)
@@ -122,6 +124,7 @@ class LinearSystem(control_loop.ControlLoop):
 
 
 class IntegralLinearSystem(LinearSystem):
+
     def __init__(self, params, name='IntegralLinearSystem'):
         super(IntegralLinearSystem, self).__init__(params, name=name)
 
@@ -142,10 +145,9 @@ class IntegralLinearSystem(LinearSystem):
         self.A, self.B = self.ContinuousToDiscrete(self.A_continuous,
                                                    self.B_continuous, self.dt)
 
-        self.Q = numpy.matrix(
-            [[(self.params.kalman_q_pos**2.0), 0.0, 0.0],
-             [0.0, (self.params.kalman_q_vel**2.0), 0.0],
-             [0.0, 0.0, (self.params.kalman_q_voltage**2.0)]])
+        self.Q = numpy.matrix([[(self.params.kalman_q_pos**2.0), 0.0, 0.0],
+                               [0.0, (self.params.kalman_q_vel**2.0), 0.0],
+                               [0.0, 0.0, (self.params.kalman_q_voltage**2.0)]])
 
         self.R = numpy.matrix([[(self.params.kalman_r_position**2.0)]])
 
@@ -203,8 +205,8 @@ def RunTest(plant,
 
     vbat = 12.0
 
-    goal = numpy.concatenate(
-        (plant.X, numpy.matrix(numpy.zeros((1, 1)))), axis=0)
+    goal = numpy.concatenate((plant.X, numpy.matrix(numpy.zeros((1, 1)))),
+                             axis=0)
 
     profile = TrapezoidProfile(plant.dt)
     profile.set_maximum_acceleration(max_acceleration)
@@ -263,8 +265,7 @@ def RunTest(plant,
         goal = controller.A * goal + controller.B * ff_U
 
         if U[0, 0] != U_uncapped[0, 0]:
-            profile.MoveCurrentState(
-                numpy.matrix([[goal[0, 0]], [goal[1, 0]]]))
+            profile.MoveCurrentState(numpy.matrix([[goal[0, 0]], [goal[1, 0]]]))
 
     glog.debug('Time: %f', t_plot[-1])
     glog.debug('goal_error %s', repr(end_goal - goal))
@@ -391,11 +392,11 @@ def WriteLinearSystem(params, plant_files, controller_files, year_namespaces):
     loop_writer = control_loop.ControlLoopWriter(
         linear_system.name, [linear_system], namespaces=year_namespaces)
     loop_writer.AddConstant(
-        control_loop.Constant('kFreeSpeed', '%f', linear_system.motor.
-                              free_speed))
+        control_loop.Constant('kFreeSpeed', '%f',
+                              linear_system.motor.free_speed))
     loop_writer.AddConstant(
-        control_loop.Constant('kOutputRatio', '%f', linear_system.G *
-                              linear_system.radius))
+        control_loop.Constant('kOutputRatio', '%f',
+                              linear_system.G * linear_system.radius))
     loop_writer.AddConstant(
         control_loop.Constant('kRadius', '%f', linear_system.radius))
     loop_writer.Write(plant_files[0], plant_files[1])

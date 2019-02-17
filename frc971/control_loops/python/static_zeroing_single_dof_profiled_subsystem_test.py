@@ -39,11 +39,9 @@ def main(argv):
 
     # Write the generated constants out to a file.
     if len(argv) != 5:
-        glog.fatal(
-            'Expected .h file name and .cc file name for the \
+        glog.fatal('Expected .h file name and .cc file name for the \
             static_zeroing_single_dof_profiled_subsystem_test and integral \
-            static_zeroing_single_dof_profiled_subsystem_test.'
-        )
+            static_zeroing_single_dof_profiled_subsystem_test.')
     else:
         namespaces = ['frc971', 'control_loops']
         linear_system.WriteLinearSystem(kIntake, argv[1:3], argv[3:5],
