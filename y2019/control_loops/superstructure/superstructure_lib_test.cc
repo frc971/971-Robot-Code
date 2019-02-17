@@ -342,9 +342,9 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
         CheckCollisions();
       }
 
-      const double loop_time = chrono::duration_cast<chrono::duration<double>>(
-                                   monotonic_clock::now() - loop_start_time)
-                                   .count();
+      const double loop_time =
+          chrono::duration_cast<chrono::duration<double>>(
+              monotonic_clock::now() - loop_start_time).count();
 
       const double elevator_acceleration =
           (superstructure_plant_.elevator_velocity() -
@@ -655,6 +655,52 @@ TEST_F(SuperstructureTest, CollisionTest) {
   RunForTime(chrono::seconds(20), true, true);
 
   VerifyNearGoal();
+}
+
+// Tests that the rollers spin when allowed
+TEST_F(SuperstructureTest, IntakeRollerTest) {
+  WaitUntilZeroed();
+
+  // Get the elevator and wrist out of the way and set the Intake to where
+  // we should be able to spin and verify that they do
+  {
+    auto goal = superstructure_queue_.goal.MakeMessage();
+    goal->elevator.unsafe_goal = constants::Values::kElevatorRange().upper;
+    goal->wrist.unsafe_goal = 0.0;
+    goal->intake.unsafe_goal = constants::Values::kIntakeRange().upper;
+    goal->roller_voltage = 6.0;
+
+    ASSERT_TRUE(goal.Send());
+  }
+
+  RunForTime(chrono::seconds(5), true, true);
+  superstructure_queue_.goal.FetchLatest();
+  superstructure_queue_.output.FetchLatest();
+  EXPECT_EQ(superstructure_queue_.output->intake_roller_voltage,
+            superstructure_queue_.goal->roller_voltage);
+  VerifyNearGoal();
+
+  // Move the intake where we oughtn't to spin the rollers and verify they don't
+  {
+    auto goal = superstructure_queue_.goal.MakeMessage();
+    goal->elevator.unsafe_goal = constants::Values::kElevatorRange().upper;
+    goal->wrist.unsafe_goal = 0.0;
+    goal->intake.unsafe_goal = constants::Values::kIntakeRange().lower;
+    goal->roller_voltage = 6.0;
+
+    ASSERT_TRUE(goal.Send());
+  }
+
+  RunForTime(chrono::seconds(5), true, true);
+  superstructure_queue_.goal.FetchLatest();
+  superstructure_queue_.output.FetchLatest();
+  EXPECT_EQ(superstructure_queue_.output->intake_roller_voltage, 0.0);
+  VerifyNearGoal();
+}
+
+// Tests that running disabled, ya know, works
+TEST_F(SuperstructureTest, DiasableTest) {
+  RunForTime(chrono::seconds(2), false, false);
 }
 
 }  // namespace testing
