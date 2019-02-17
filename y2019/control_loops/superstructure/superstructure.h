@@ -40,12 +40,16 @@ class Superstructure
                             SuperstructureQueue::Status *status) override;
 
  private:
+  void HandleSuction(const SuctionGoal *unsafe_goal, float suction_pressure,
+                     SuperstructureQueue::Output *output, bool *has_piece);
+
   PotAndAbsoluteEncoderSubsystem elevator_;
   PotAndAbsoluteEncoderSubsystem wrist_;
   AbsoluteEncoderSubsystem intake_;
   PotAndAbsoluteEncoderSubsystem stilts_;
 
   CollisionAvoidance collision_avoidance_;
+  int vacuum_count_ = 0;
 
   static constexpr double kMinIntakeAngleForRollers = -0.7;
 
