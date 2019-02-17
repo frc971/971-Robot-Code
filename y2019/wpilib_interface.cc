@@ -194,6 +194,11 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     stilts_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
+  // Vacuum pressure sensor
+  void set_vacuum_sensor(int port) {
+    vacuum_sensor_ = make_unique<frc::AnalogInput>(port);
+  }
+
   void RunIteration() override {
     {
       auto drivetrain_message = drivetrain_queue.position.MakeMessage();
@@ -236,6 +241,13 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                    Values::kStiltsEncoderRatio(), stilts_pot_translate, false,
                    values.stilts.potentiometer_offset);
 
+      // Suction
+      constexpr float kMinVoltage = 0.5;
+      constexpr float kMaxVoltage = 2.1;
+      superstructure_message->suction_pressure =
+          (vacuum_sensor_->GetVoltage() - kMinVoltage) /
+          (kMaxVoltage - kMinVoltage);
+
       superstructure_message.Send();
     }
   }
@@ -243,6 +255,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
  private:
   ::frc971::wpilib::AbsoluteEncoderAndPotentiometer elevator_encoder_,
       wrist_encoder_, stilts_encoder_;
+
+  ::std::unique_ptr<frc::AnalogInput> vacuum_sensor_;
 
   ::frc971::wpilib::AbsoluteEncoder intake_encoder_;
   // TODO(sabina): Add wrist and elevator hall effects.
@@ -252,6 +266,10 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
   void set_elevator_victor(::std::unique_ptr<::frc::VictorSP> t) {
     elevator_victor_ = ::std::move(t);
+  }
+
+  void set_suction_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    suction_victor_ = ::std::move(t);
   }
 
   void set_intake_victor(::std::unique_ptr<::frc::VictorSP> t) {
@@ -267,12 +285,12 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
   }
 
  private:
-  virtual void Read() override {
+  void Read() override {
     ::y2019::control_loops::superstructure::superstructure_queue.output
         .FetchAnother();
   }
 
-  virtual void Write() override {
+  void Write() override {
     auto &queue =
         ::y2019::control_loops::superstructure::superstructure_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
@@ -292,19 +310,24 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     stilts_victor_->SetSpeed(::aos::Clip(queue->stilts_voltage,
                                          -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
+
+    suction_victor_->SetSpeed(
+        ::aos::Clip(queue->pump_voltage, -kMaxBringupPower, kMaxBringupPower) /
+        12.0);
   }
 
-  virtual void Stop() override {
+  void Stop() override {
     LOG(WARNING, "Superstructure output too old.\n");
 
     elevator_victor_->SetDisabled();
     intake_victor_->SetDisabled();
     wrist_victor_->SetDisabled();
     stilts_victor_->SetDisabled();
+    suction_victor_->SetDisabled();
   }
 
   ::std::unique_ptr<::frc::VictorSP> elevator_victor_, intake_victor_,
-      wrist_victor_, stilts_victor_;
+      wrist_victor_, stilts_victor_, suction_victor_;
 };
 
 class SolenoidWriter {
@@ -314,11 +337,13 @@ class SolenoidWriter {
             ".y2019.control_loops.superstructure.superstructure_queue.output") {
   }
 
-  void set_big_suction_cup(int index) {
-    big_suction_cup_ = pcm_.MakeSolenoid(index);
+  void set_big_suction_cup(int index0, int index1) {
+    big_suction_cup0_ = pcm_.MakeSolenoid(index0);
+    big_suction_cup1_ = pcm_.MakeSolenoid(index1);
   }
-  void set_small_suction_cup(int index) {
-    small_suction_cup_ = pcm_.MakeSolenoid(index);
+  void set_small_suction_cup(int index0, int index1) {
+    small_suction_cup0_ = pcm_.MakeSolenoid(index0);
+    small_suction_cup1_ = pcm_.MakeSolenoid(index1);
   }
 
   void set_intake_roller_talon(
@@ -348,8 +373,10 @@ class SolenoidWriter {
         if (superstructure_.get()) {
           LOG_STRUCT(DEBUG, "solenoids", *superstructure_);
 
-          big_suction_cup_->Set(!superstructure_->intake_suction_top);
-          small_suction_cup_->Set(!superstructure_->intake_suction_bottom);
+          big_suction_cup0_->Set(!superstructure_->intake_suction_top);
+          big_suction_cup1_->Set(!superstructure_->intake_suction_top);
+          small_suction_cup0_->Set(!superstructure_->intake_suction_bottom);
+          small_suction_cup1_->Set(!superstructure_->intake_suction_bottom);
 
           intake_rollers_talon_->Set(
               ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
@@ -374,8 +401,8 @@ class SolenoidWriter {
  private:
   ::frc971::wpilib::BufferedPcm pcm_;
 
-  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> big_suction_cup_,
-      small_suction_cup_;
+  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> big_suction_cup0_,
+      big_suction_cup1_, small_suction_cup0_, small_suction_cup1_;
 
   ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonSRX>
       intake_rollers_talon_;
@@ -424,6 +451,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_stilts_potentiometer(make_unique<frc::AnalogInput>(3));
 
     reader.set_pwm_trigger(make_unique<frc::DigitalInput>(25));
+    reader.set_vacuum_sensor(7);
 
     ::std::thread reader_thread(::std::ref(reader));
 
@@ -450,8 +478,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_elevator_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(4)));
     // TODO(austin): Do the vacuum
-    //superstructure_writer.set_vacuum(
-        //::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(6)));
+    superstructure_writer.set_suction_victor(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(6)));
     superstructure_writer.set_intake_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(2)));
     superstructure_writer.set_wrist_victor(
@@ -465,8 +493,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     SolenoidWriter solenoid_writer;
     solenoid_writer.set_intake_roller_talon(
         make_unique<::ctre::phoenix::motorcontrol::can::TalonSRX>(10));
-    solenoid_writer.set_big_suction_cup(0);
-    solenoid_writer.set_small_suction_cup(1);
+    solenoid_writer.set_big_suction_cup(0, 1);
+    solenoid_writer.set_small_suction_cup(2, 3);
 
     ::std::thread solenoid_writer_thread(::std::ref(solenoid_writer));
 
