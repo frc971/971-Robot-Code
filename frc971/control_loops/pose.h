@@ -1,6 +1,8 @@
 #ifndef FRC971_CONTROL_LOOPS_POSE_H_
 #define FRC971_CONTROL_LOOPS_POSE_H_
 
+#include <vector>
+
 #include "Eigen/Dense"
 #include "aos/util/math.h"
 
@@ -39,6 +41,9 @@ class TypedPose {
   // The type that contains the translational (x, y, z) component of the Pose.
   typedef Eigen::Matrix<Scalar, 3, 1> Pos;
 
+  // Provide a default constructor that crease a pose at the origin.
+  TypedPose() : TypedPose({0.0, 0.0, 0.0}, 0.0) {}
+
   // Construct a Pose in the absolute frame with a particular position and yaw.
   TypedPose(const Pos &abs_pos, Scalar theta) : pos_(abs_pos), theta_(theta) {}
   // Construct a Pose relative to another Pose (base).
@@ -69,9 +74,12 @@ class TypedPose {
   // Provide access to the position and yaw relative to the base Pose.
   Pos rel_pos() const { return pos_; }
   Scalar rel_theta() const { return theta_; }
+  const TypedPose<Scalar> *base() const { return base_; }
 
   Pos *mutable_pos() { return &pos_; }
   void set_theta(Scalar theta) { theta_ = theta; }
+  // Swap out the base Pose, keeping the current relative position/angle.
+  void set_base(const TypedPose<Scalar> *new_base) { base_ = new_base; }
 
   // For 2-D calculation, provide the heading, which is distinct from the
   // yaw/theta value. heading is the heading relative to the base Pose if you
@@ -137,6 +145,7 @@ TypedPose<Scalar> TypedPose<Scalar>::Rebase(
 template <typename Scalar = double>
 class TypedLineSegment {
  public:
+  TypedLineSegment() {}
   TypedLineSegment(const TypedPose<Scalar> &pose1,
                    const TypedPose<Scalar> &pose2)
       : pose1_(pose1), pose2_(pose2) {}
@@ -162,9 +171,18 @@ class TypedLineSegment {
            (::aos::math::PointsAreCCW<Scalar>(p1, p2, q1) !=
             ::aos::math::PointsAreCCW<Scalar>(p1, p2, q2));
   }
+
+  TypedPose<Scalar> pose1() const { return pose1_; }
+  TypedPose<Scalar> pose2() const { return pose2_; }
+  TypedPose<Scalar> *mutable_pose1() { return &pose1_; }
+  TypedPose<Scalar> *mutable_pose2() { return &pose2_; }
+
+  ::std::vector<TypedPose<Scalar>> PlotPoints() const {
+    return {pose1_, pose2_};
+  }
  private:
-  const TypedPose<Scalar> pose1_;
-  const TypedPose<Scalar> pose2_;
+  TypedPose<Scalar> pose1_;
+  TypedPose<Scalar> pose2_;
 };  // class TypedLineSegment
 
 typedef TypedLineSegment<double> LineSegment;

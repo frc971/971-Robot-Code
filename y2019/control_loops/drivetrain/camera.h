@@ -35,6 +35,7 @@ class TypedTarget {
  public:
   typedef ::frc971::control_loops::TypedPose<Scalar> Pose;
   TypedTarget(const Pose &pose) : pose_(pose) {}
+  TypedTarget() {}
   Pose pose() const { return pose_; }
 
   bool occluded() const { return occluded_; }
@@ -117,6 +118,8 @@ class TypedCamera {
 
     // The target that this view corresponds to.
     const TypedTarget<Scalar> *target;
+    // The Pose the camera was at when viewing the target:
+    Pose camera_pose;
   };
 
   // Important parameters for dealing with camera noise calculations.
@@ -172,11 +175,12 @@ class TypedCamera {
   // separately for simulation.
   ::aos::SizedArray<TargetView, num_targets> target_views() const {
     ::aos::SizedArray<TargetView, num_targets> views;
+    Pose camera_abs_pose = pose_.Rebase(nullptr);
     // Because there are num_targets in targets_ and because AddTargetIfVisible
     // adds at most 1 view to views, we should never exceed the size of
     // SizedArray.
     for (const auto &target : targets_) {
-      AddTargetIfVisible(target, &views);
+      AddTargetIfVisible(target, camera_abs_pose, &views);
     }
     return views;
   }
@@ -189,12 +193,12 @@ class TypedCamera {
   ::std::vector<::std::vector<Pose>> PlotPoints() const {
     ::std::vector<::std::vector<Pose>> list_of_lists;
     for (const auto &view : target_views()) {
-      list_of_lists.push_back({pose_, view.target.pose()});
+      list_of_lists.push_back({pose_, view.target->pose()});
     }
     return list_of_lists;
   }
 
-  const Pose pose() const { return pose_; }
+  const Pose &pose() const { return pose_; }
   Scalar fov() const { return fov_; }
 
  private:
@@ -202,11 +206,12 @@ class TypedCamera {
   // If the specified target is visible from the current camera Pose, adds it to
   // the views array.
   void AddTargetIfVisible(
-      const TypedTarget<Scalar> &target,
+      const TypedTarget<Scalar> &target, const Pose &camera_abs_pose,
       ::aos::SizedArray<TargetView, num_targets> *views) const;
 
   // The Pose of this camera.
   const Pose pose_;
+
   // Field of view of the camera, in radians.
   const Scalar fov_;
 
@@ -215,6 +220,8 @@ class TypedCamera {
   const NoiseParameters noise_parameters_;
 
   // A list of all the targets on the field.
+  // TODO(james): Is it worth creating some sort of cache for the targets and
+  // obstacles? e.g., passing around pointer to the targets/obstacles.
   const ::std::array<TypedTarget<Scalar>, num_targets> targets_;
   // Known obstacles on the field which can interfere with our view of the
   // targets. An "obstacle" is a line segment which we cannot see through, as
@@ -225,7 +232,7 @@ class TypedCamera {
 
 template <int num_targets, int num_obstacles, typename Scalar>
 void TypedCamera<num_targets, num_obstacles, Scalar>::AddTargetIfVisible(
-    const TypedTarget<Scalar> &target,
+    const TypedTarget<Scalar> &target, const Pose &camera_abs_pose,
     ::aos::SizedArray<TargetView, num_targets> *views) const {
   if (target.occluded()) {
     return;
@@ -233,8 +240,6 @@ void TypedCamera<num_targets, num_obstacles, Scalar>::AddTargetIfVisible(
 
   // Precompute the current absolute pose of the camera, because we will reuse
   // it a bunch.
-  const Pose camera_abs_pose = pose_.Rebase(nullptr);
-
   const Pose relative_pose = target.pose().Rebase(&camera_abs_pose);
   const Scalar heading = relative_pose.heading();
   const Scalar distance = relative_pose.xy_norm();
@@ -280,6 +285,7 @@ void TypedCamera<num_targets, num_obstacles, Scalar>::AddTargetIfVisible(
   view.noise = {noise_parameters_.heading_noise, distance_noise, height_noise,
                 skew_noise};
   view.target = &target;
+  view.camera_pose = camera_abs_pose;
   views->push_back(view);
 }
 

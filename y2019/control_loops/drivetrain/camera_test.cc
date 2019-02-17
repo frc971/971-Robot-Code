@@ -93,6 +93,14 @@ TEST_F(CameraTest, BasicCameraTest) {
   EXPECT_GT(views[0].noise.distance, 0.0);
   EXPECT_GT(views[0].noise.skew, 0.0);
   EXPECT_GT(views[0].noise.height, 0.0);
+
+  // Check that the PlotPoints for debugging are as expected (should be a single
+  // line from the camera to the one visible target).
+  const auto plot_pts = camera_.PlotPoints();
+  ASSERT_EQ(1u, plot_pts.size());
+  ASSERT_EQ(2u, plot_pts[0].size());
+  EXPECT_EQ(camera_.pose().abs_pos(), plot_pts[0][0].abs_pos());
+  EXPECT_EQ(views[0].target->pose().abs_pos(), plot_pts[0][1].abs_pos());
 }
 
 // Check that occluding the middle target makes it invisible.
