@@ -96,6 +96,7 @@ cc_library(
         ":drivetrain_queue",
         ":spline",
         ":trajectory",
+        "//aos:init",
     ],
 )
 

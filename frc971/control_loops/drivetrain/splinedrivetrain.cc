@@ -2,6 +2,7 @@
 
 #include "Eigen/Dense"
 
+#include "aos/init.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 
@@ -23,8 +24,9 @@ void SplineDrivetrain::ScaleCapU(Eigen::Matrix<double, 2, 1> *U) {
   }
 }
 
-// TODO(alex): work on setting priority.
 void SplineDrivetrain::ComputeTrajectory() {
+  ::aos::SetCurrentThreadRealtimePriority(1);
+
   ::aos::MutexLocker locker(&mutex_);
   while (run_) {
     while (goal_.spline.spline_idx == future_spline_idx_) {
