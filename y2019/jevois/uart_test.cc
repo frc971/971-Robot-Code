@@ -12,10 +12,41 @@ namespace testing {
 TEST(UartToTeensyTest, Basic) {
   Frame input_message;
   for (int i = 0; i < 3; ++i) {
-    input_message.targets[i].distance = i * 7 + 1;
-    input_message.targets[i].height = i * 7 + 2;
-    input_message.targets[i].heading = i * 7 + 3;
-    input_message.targets[i].skew = i * 7 + 5;
+    input_message.targets.push_back({});
+    Target *const target = &input_message.targets.back();
+    target->distance = i * 7 + 1;
+    target->height = i * 7 + 2;
+    target->heading = i * 7 + 3;
+    target->skew = i * 7 + 5;
+  }
+  input_message.age = camera_duration(123);
+  const UartToTeensyBuffer buffer = UartPackToTeensy(input_message);
+  const auto output_message = UartUnpackToTeensy(buffer);
+  ASSERT_TRUE(output_message);
+  EXPECT_EQ(input_message, output_message.value());
+}
+
+// Tests packing and then unpacking a message with arbitrary values and no
+// frames.
+TEST(UartToTeensyTest, NoFrames) {
+  Frame input_message;
+  input_message.age = camera_duration(123);
+  const UartToTeensyBuffer buffer = UartPackToTeensy(input_message);
+  const auto output_message = UartUnpackToTeensy(buffer);
+  ASSERT_TRUE(output_message);
+  EXPECT_EQ(input_message, output_message.value());
+}
+
+// Tests packing and then unpacking a message with just one frame.
+TEST(UartToTeensyTest, OneFrame) {
+  Frame input_message;
+  {
+    input_message.targets.push_back({});
+    Target *const target = &input_message.targets.back();
+    target->distance = 1;
+    target->height = 2;
+    target->heading = 3;
+    target->skew = 5;
   }
   input_message.age = camera_duration(123);
   const UartToTeensyBuffer buffer = UartPackToTeensy(input_message);

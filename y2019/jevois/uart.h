@@ -13,7 +13,8 @@ namespace frc971 {
 namespace jevois {
 
 constexpr size_t uart_to_teensy_size() {
-  return 3 /* targets */ * (sizeof(float) * 4 /* fields */) + 1 /* age */ +
+  return 1 /* number of targets */ +
+         3 /* targets */ * (sizeof(float) * 4 /* fields */) + 1 /* age */ +
          2 /* CRC-16 */;
 }
 using UartToTeensyBuffer =

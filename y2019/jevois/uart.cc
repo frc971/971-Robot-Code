@@ -13,15 +13,23 @@ namespace jevois {
 UartToTeensyBuffer UartPackToTeensy(const Frame &message) {
   std::array<char, uart_to_teensy_size()> buffer;
   gsl::span<char> remaining_space = buffer;
-  for (int i = 0; i < 3; ++i) {
-    memcpy(remaining_space.data(), &message.targets[i].distance, sizeof(float));
-    remaining_space = remaining_space.subspan(sizeof(float));
-    memcpy(remaining_space.data(), &message.targets[i].height, sizeof(float));
-    remaining_space = remaining_space.subspan(sizeof(float));
-    memcpy(remaining_space.data(), &message.targets[i].heading, sizeof(float));
-    remaining_space = remaining_space.subspan(sizeof(float));
-    memcpy(remaining_space.data(), &message.targets[i].skew, sizeof(float));
-    remaining_space = remaining_space.subspan(sizeof(float));
+  remaining_space[0] = message.targets.size();
+  remaining_space = remaining_space.subspan(1);
+  for (size_t i = 0; i < 3; ++i) {
+    if (i < message.targets.size()) {
+      memcpy(remaining_space.data(), &message.targets[i].distance,
+             sizeof(float));
+      remaining_space = remaining_space.subspan(sizeof(float));
+      memcpy(remaining_space.data(), &message.targets[i].height, sizeof(float));
+      remaining_space = remaining_space.subspan(sizeof(float));
+      memcpy(remaining_space.data(), &message.targets[i].heading,
+             sizeof(float));
+      remaining_space = remaining_space.subspan(sizeof(float));
+      memcpy(remaining_space.data(), &message.targets[i].skew, sizeof(float));
+      remaining_space = remaining_space.subspan(sizeof(float));
+    } else {
+      remaining_space = remaining_space.subspan(sizeof(float) * 4);
+    }
   }
   remaining_space[0] = message.age.count();
   remaining_space = remaining_space.subspan(1);
@@ -53,15 +61,23 @@ tl::optional<Frame> UartUnpackToTeensy(
 
   Frame message;
   gsl::span<const char> remaining_input = buffer;
+  const int number_targets = remaining_input[0];
+  remaining_input = remaining_input.subspan(1);
   for (int i = 0; i < 3; ++i) {
-    memcpy(&message.targets[i].distance, remaining_input.data(), sizeof(float));
-    remaining_input = remaining_input.subspan(sizeof(float));
-    memcpy(&message.targets[i].height, remaining_input.data(), sizeof(float));
-    remaining_input = remaining_input.subspan(sizeof(float));
-    memcpy(&message.targets[i].heading, remaining_input.data(), sizeof(float));
-    remaining_input = remaining_input.subspan(sizeof(float));
-    memcpy(&message.targets[i].skew, remaining_input.data(), sizeof(float));
-    remaining_input = remaining_input.subspan(sizeof(float));
+    if (i < number_targets) {
+      message.targets.push_back({});
+      Target *const target = &message.targets.back();
+      memcpy(&target->distance, remaining_input.data(), sizeof(float));
+      remaining_input = remaining_input.subspan(sizeof(float));
+      memcpy(&target->height, remaining_input.data(), sizeof(float));
+      remaining_input = remaining_input.subspan(sizeof(float));
+      memcpy(&target->heading, remaining_input.data(), sizeof(float));
+      remaining_input = remaining_input.subspan(sizeof(float));
+      memcpy(&target->skew, remaining_input.data(), sizeof(float));
+      remaining_input = remaining_input.subspan(sizeof(float));
+    } else {
+      remaining_input = remaining_input.subspan(sizeof(float) * 4);
+    }
   }
   message.age = camera_duration(remaining_input[0]);
   remaining_input = remaining_input.subspan(1);
