@@ -126,5 +126,167 @@ TEST_F(CobsTest, AroundOneChunk) {
   EncodeAndDecode<253>(data_span.subspan(0, 253));
 }
 
+// Tests parsing a few packets, one byte at a time.
+TEST(CobsPacketizerTest, BasicSingleByte) {
+  CobsPacketizer<5> packetizer;
+
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 1>{{1}});
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 1>{{2}});
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 1>{{3}});
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 1>{{0}});
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  EXPECT_EQ(gsl::span<const char>(std::array<char, 3>{{1, 2, 3}}),
+            packetizer.received_packet());
+  packetizer.clear_received_packet();
+  ASSERT_TRUE(packetizer.received_packet().empty());
+
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 1>{{5}});
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 1>{{0}});
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  EXPECT_EQ(gsl::span<const char>(std::array<char, 1>{{5}}),
+            packetizer.received_packet());
+
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 1>{{9}});
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  EXPECT_EQ(gsl::span<const char>(std::array<char, 1>{{5}}),
+            packetizer.received_packet());
+  packetizer.ParseData(std::array<char, 1>{{7}});
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  EXPECT_EQ(gsl::span<const char>(std::array<char, 1>{{5}}),
+            packetizer.received_packet());
+  packetizer.ParseData(std::array<char, 1>{{0}});
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  EXPECT_EQ(gsl::span<const char>(std::array<char, 2>{{9, 7}}),
+            packetizer.received_packet());
+}
+
+// Tests parsing a few packets, one span per packet.
+TEST(CobsPacketizerTest, BasicSinglePacket) {
+  CobsPacketizer<5> packetizer;
+
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 3>{{1, 2, 3}});
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 1>{{0}});
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  EXPECT_EQ(gsl::span<const char>(std::array<char, 3>{{1, 2, 3}}),
+            packetizer.received_packet());
+  packetizer.clear_received_packet();
+  ASSERT_TRUE(packetizer.received_packet().empty());
+
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 1>{{5}});
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 1>{{0}});
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  EXPECT_EQ(gsl::span<const char>(std::array<char, 1>{{5}}),
+            packetizer.received_packet());
+
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 2>{{9, 7}});
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  EXPECT_EQ(gsl::span<const char>(std::array<char, 1>{{5}}),
+            packetizer.received_packet());
+  packetizer.ParseData(std::array<char, 1>{{0}});
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  EXPECT_EQ(gsl::span<const char>(std::array<char, 2>{{9, 7}}),
+            packetizer.received_packet());
+}
+
+// Tests parsing a few packets, one span per packet including its terminator.
+TEST(CobsPacketizerTest, BasicSinglePacketWithTerminator) {
+  CobsPacketizer<5> packetizer;
+
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 4>{{1, 2, 3, 0}});
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  EXPECT_EQ(gsl::span<const char>(std::array<char, 3>{{1, 2, 3}}),
+            packetizer.received_packet());
+  packetizer.clear_received_packet();
+  ASSERT_TRUE(packetizer.received_packet().empty());
+
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 2>{{5, 0}});
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  EXPECT_EQ(gsl::span<const char>(std::array<char, 1>{{5}}),
+            packetizer.received_packet());
+
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 3>{{9, 7, 0}});
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  EXPECT_EQ(gsl::span<const char>(std::array<char, 2>{{9, 7}}),
+            packetizer.received_packet());
+}
+
+// Tests parsing a packet in the same span as the previous terminator.
+TEST(CobsPacketizerTest, OverlappingEnd) {
+  CobsPacketizer<5> packetizer;
+
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 3>{{1, 2, 3}});
+  ASSERT_TRUE(packetizer.received_packet().empty());
+
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 2>{{0, 5}});
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  EXPECT_EQ(gsl::span<const char>(std::array<char, 3>{{1, 2, 3}}),
+            packetizer.received_packet());
+  packetizer.clear_received_packet();
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 1>{{0}});
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  EXPECT_EQ(gsl::span<const char>(std::array<char, 1>{{5}}),
+            packetizer.received_packet());
+}
+
+// Tests parsing a packet in the same span as the previous terminator, including
+// its terminator (so we skip the first packet).
+TEST(CobsPacketizerTest, OverlappingTwoEnds) {
+  CobsPacketizer<5> packetizer;
+
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 3>{{1, 2, 3}});
+  ASSERT_TRUE(packetizer.received_packet().empty());
+
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 3>{{0, 5, 0}});
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  // We skip the {{1, 2, 3}} packet (arbitrarily; either that packet or this one
+  // has to be skipped).
+  EXPECT_EQ(gsl::span<const char>(std::array<char, 1>{{5}}),
+            packetizer.received_packet());
+}
+
+// Tests parsing a packet in the same span as the previous terminator, including
+// its terminator (so we skip the first packet), and then starting another new
+// packet.
+TEST(CobsPacketizerTest, OverlappingTwoEndsAndPartial) {
+  CobsPacketizer<5> packetizer;
+
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 3>{{1, 2, 3}});
+  ASSERT_TRUE(packetizer.received_packet().empty());
+
+  ASSERT_TRUE(packetizer.received_packet().empty());
+  packetizer.ParseData(std::array<char, 4>{{0, 5, 0, 8}});
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  // We skip the {{5}} packet (arbitrarily; either that packet or this one has
+  // to be skipped).
+  EXPECT_EQ(gsl::span<const char>(std::array<char, 3>{{1, 2, 3}}),
+            packetizer.received_packet());
+
+  packetizer.ParseData(std::array<char, 1>{{0}});
+  ASSERT_FALSE(packetizer.received_packet().empty());
+  EXPECT_EQ(gsl::span<const char>(std::array<char, 1>{{8}}),
+            packetizer.received_packet());
+}
+
 }  // namespace jevois
 }  // namespace frc971
