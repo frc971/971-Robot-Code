@@ -10,6 +10,8 @@
 #include "aos/vision/image/reader.h"
 
 #include "y2019/jevois/serial.h"
+#include "y2019/jevois/structures.h"
+#include "y2019/jevois/uart.h"
 #include "y2019/vision/target_finder.h"
 
 using ::aos::events::DataSocket;
@@ -74,8 +76,8 @@ int main(int argc, char **argv) {
       new ::aos::logging::StreamLogImplementation(stderr));
 
   int itsDev = open_terminos("/dev/ttyS0");
-  dup2(itsDev, 1);
-  dup2(itsDev, 2);
+  //dup2(itsDev, 1);
+  //dup2(itsDev, 2);
 
   TargetFinder finder_;
 
@@ -121,6 +123,18 @@ int main(int argc, char **argv) {
     }
 
     results = finder_.FilterResults(results);
+
+    // If we succeed in writing our delimiter, then write out the rest of the
+    // frame. If not, no point in continuing.
+    if (write(itsDev, "\0", 1) == 1) {
+      frc971::jevois::Frame frame{};
+      // TODO(Parker): Fill out frame appropriately.
+      const auto serialized_frame = frc971::jevois::UartPackToTeensy(frame);
+      // We don't really care if this succeeds or not. If it fails for some
+      // reason, we'll just try again with the next frame, and the other end
+      // will find the new packet just fine.
+      (void)write(itsDev, serialized_frame.data(), serialized_frame.size());
+    }
   };
 
   aos::events::EpollLoop loop;
