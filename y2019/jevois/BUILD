@@ -76,6 +76,7 @@ cc_library(
     hdrs = [
         "spi.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":jevois_crc",
         ":structures",
@@ -94,6 +95,7 @@ cc_library(
     hdrs = [
         "uart.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":cobs",
         ":jevois_crc",
