@@ -33,7 +33,7 @@ readonly VERSION_BAZEL="${VERSION_DIR}/usr/bin/bazel"
 
 # Creating might fail if another invocation is racing us.
 if [[ ! -d "${DOWNLOAD_DIR}" ]]; then
-  mkdir "${DOWNLOAD_DIR}" || true
+  mkdir -p "${DOWNLOAD_DIR}" || true
 fi
 if [[ ! -d "${DOWNLOAD_DIR}" ]]; then
   echo "Failed to create ${DOWNLOAD_DIR}" >&2
