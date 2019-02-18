@@ -66,6 +66,15 @@ cc_test(
 )
 
 cc_library(
+    name = "localizer",
+    hdrs = ["localizer.h"],
+    deps = [
+        ":drivetrain_config",
+        ":hybrid_ekf",
+    ],
+)
+
+cc_library(
     name = "gear",
     hdrs = [
         "gear.h",
@@ -102,6 +111,7 @@ cc_library(
         ":drivetrain_config",
         ":drivetrain_queue",
         ":gear",
+        ":localizer",
         "//aos:math",
         "//aos/controls:control_loop",
         "//aos/controls:polytope",
@@ -210,6 +220,7 @@ cc_library(
         ":down_estimator",
         ":drivetrain_queue",
         ":gear",
+        ":localizer",
         ":polydrivetrain",
         ":splinedrivetrain",
         ":ssdrivetrain",

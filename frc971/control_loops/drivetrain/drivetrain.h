@@ -9,6 +9,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/gear.h"
+#include "frc971/control_loops/drivetrain/localizer.h"
 #include "frc971/control_loops/drivetrain/polydrivetrain.h"
 #include "frc971/control_loops/drivetrain/ssdrivetrain.h"
 #include "frc971/control_loops/drivetrain/splinedrivetrain.h"
@@ -24,6 +25,7 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
   // drivetrain at frc971::control_loops::drivetrain
   explicit DrivetrainLoop(
       const DrivetrainConfig<double> &dt_config, ::aos::EventLoop *event_loop,
+      LocalizerInterface *localizer,
       const ::std::string &name = ".frc971.control_loops.drivetrain_queue");
 
   int ControllerIndexFromGears();
@@ -38,15 +40,11 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
 
   void Zero(::frc971::control_loops::DrivetrainQueue::Output *output) override;
 
-  // Computes the xy state change given the change in the lr state.
-  ::Eigen::Matrix<double, 3, 1> PredictState(
-      const ::Eigen::Matrix<double, 3, 1> &xytheta_state,
-      const ::Eigen::Matrix<double, 7, 1> &state,
-      const ::Eigen::Matrix<double, 7, 1> &previous_state) const;
-
   double last_gyro_rate_ = 0.0;
 
   const DrivetrainConfig<double> dt_config_;
+
+  LocalizerInterface *localizer_;
 
   StateFeedbackLoop<7, 2, 4> kf_;
   PolyDrivetrain<double> dt_openloop_;
@@ -65,20 +63,12 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
   double last_left_voltage_ = 0;
   double last_right_voltage_ = 0;
 
-  double integrated_kf_heading_ = 0;
-
   bool left_high_requested_;
   bool right_high_requested_;
 
   bool has_been_enabled_ = false;
 
   double last_accel_ = 0.0;
-
-  // Current xytheta state of the robot.  This is essentially the kalman filter
-  // integrated up in a direction.
-  // [x, y, theta, vl, vr, left_error, right_error]
-  ::Eigen::Matrix<double, 7, 1> xytheta_state_ =
-      ::Eigen::Matrix<double, 7, 1>::Zero();
 
   // Last kalman filter state.
   ::Eigen::Matrix<double, 7, 1> last_state_ =
