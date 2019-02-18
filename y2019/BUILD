@@ -76,6 +76,30 @@ cc_binary(
     ],
 )
 
+cc_library(
+    name = "joystick_angle",
+    srcs = [
+        "joystick_angle.cc",
+    ],
+    hdrs = [
+        "joystick_angle.h",
+    ],
+    deps = [
+        "//aos/input:drivetrain_input",
+    ],
+)
+
+cc_test(
+    name = "joystick_angle_test",
+    srcs = [
+        "joystick_angle_test.cc",
+    ],
+    deps = [
+        ":joystick_angle",
+        "//aos/testing:googletest",
+    ],
+)
+
 cc_binary(
     name = "joystick_reader",
     srcs = [
