@@ -25,8 +25,8 @@ queue_group SuperstructureQueue {
     .frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal wrist;
 
     // Distance stilts extended out of the bottom of the robot. Positive = down.
-    // 0 is the height such that the bottom of the stilts is tangent to the bottom
-    // of the middle wheels.
+    // 0 is the height such that the bottom of the stilts is tangent to the
+    // bottom of the middle wheels.
     .frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal stilts;
 
     // Positive is rollers intaking inward.

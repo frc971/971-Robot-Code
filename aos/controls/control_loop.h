@@ -39,18 +39,15 @@ class ControlLoop : public Runnable {
  public:
   // Create some convenient typedefs to reference the Goal, Position, Status,
   // and Output structures.
-  typedef typename std::remove_reference<
-      decltype(*(static_cast<T *>(NULL)->goal.MakeMessage().get()))>::type
-        GoalType;
+  typedef typename std::remove_reference<decltype(
+      *(static_cast<T *>(NULL)->goal.MakeMessage().get()))>::type GoalType;
   typedef typename std::remove_reference<
       decltype(*(static_cast<T *>(NULL)->position.MakeMessage().get()))>::type
-        PositionType;
-  typedef typename std::remove_reference<
-    decltype(*(static_cast<T *>(NULL)->status.MakeMessage().get()))>::type
-      StatusType;
-  typedef typename std::remove_reference<
-    decltype(*(static_cast<T *>(NULL)->output.MakeMessage().get()))>::type
-      OutputType;
+      PositionType;
+  typedef typename std::remove_reference<decltype(
+      *(static_cast<T *>(NULL)->status.MakeMessage().get()))>::type StatusType;
+  typedef typename std::remove_reference<decltype(
+      *(static_cast<T *>(NULL)->output.MakeMessage().get()))>::type OutputType;
 
   ControlLoop(EventLoop *event_loop, const ::std::string &name)
       : event_loop_(event_loop), name_(name) {
@@ -102,9 +99,9 @@ class ControlLoop : public Runnable {
  protected:
   void IteratePosition(const PositionType &position);
 
-  static void Quit(int /*signum*/) {
-    run_ = false;
-  }
+  EventLoop *event_loop() { return event_loop_; }
+
+  static void Quit(int /*signum*/) { run_ = false; }
 
   // Runs an iteration of the control loop.
   // goal is the last goal that was sent.  It might be any number of cycles old
@@ -115,10 +112,8 @@ class ControlLoop : public Runnable {
   // output is going to be ignored and set to 0.
   // status is the status of the control loop.
   // Both output and status should be filled in by the implementation.
-  virtual void RunIteration(const GoalType *goal,
-                            const PositionType *position,
-                            OutputType *output,
-                            StatusType *status) = 0;
+  virtual void RunIteration(const GoalType *goal, const PositionType *position,
+                            OutputType *output, StatusType *status) = 0;
 
  private:
   static constexpr ::std::chrono::milliseconds kStaleLogInterval =
