@@ -115,6 +115,8 @@ class StateFeedbackPlant {
   Eigen::Matrix<Scalar, number_of_outputs, 1> &mutable_Y() { return Y_; }
   Scalar &mutable_Y(int i, int j = 0) { return mutable_Y()(i, j); }
 
+  size_t coefficients_size() const { return coefficients_.size(); }
+
   const StateFeedbackPlantCoefficients<number_of_states, number_of_inputs,
                                        number_of_outputs, Scalar>
       &coefficients(int index) const {

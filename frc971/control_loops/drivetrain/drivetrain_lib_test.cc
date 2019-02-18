@@ -5,7 +5,6 @@
 
 #include "aos/controls/control_loop_test.h"
 #include "aos/controls/polytope.h"
-#include "aos/network/team_number.h"
 #include "aos/time/time.h"
 #include "gtest/gtest.h"
 
@@ -13,14 +12,8 @@
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
-#include "frc971/control_loops/drivetrain/trajectory.h"
-#include "frc971/control_loops/state_feedback_loop.h"
+#include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "frc971/queues/gyro.q.h"
-#include "y2016/constants.h"
-#include "y2016/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
-#include "y2016/control_loops/drivetrain/hybrid_velocity_drivetrain.h"
-#include "y2016/control_loops/drivetrain/kalman_drivetrain_motor_plant.h"
-#include "y2016/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -29,215 +22,6 @@ namespace testing {
 
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
-using ::y2016::control_loops::drivetrain::MakeDrivetrainPlant;
-
-// TODO(Comran): Make one that doesn't depend on the actual values for a
-// specific robot.
-const constants::ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0, 0.25,
-                                                           0.75};
-
-const DrivetrainConfig<double> &GetDrivetrainConfig() {
-  static DrivetrainConfig<double> kDrivetrainConfig{
-      ::frc971::control_loops::drivetrain::ShifterType::HALL_EFFECT_SHIFTER,
-      ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
-      ::frc971::control_loops::drivetrain::GyroType::SPARTAN_GYRO,
-      IMUType::IMU_X,
-      ::y2016::control_loops::drivetrain::MakeDrivetrainLoop,
-      ::y2016::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
-      ::y2016::control_loops::drivetrain::MakeKFDrivetrainLoop,
-      ::y2016::control_loops::drivetrain::MakeHybridVelocityDrivetrainLoop,
-
-      chrono::duration_cast<chrono::nanoseconds>(
-          chrono::duration<double>(::y2016::control_loops::drivetrain::kDt)),
-      ::y2016::control_loops::drivetrain::kRobotRadius,
-      ::y2016::control_loops::drivetrain::kWheelRadius,
-      ::y2016::control_loops::drivetrain::kV,
-
-      ::y2016::control_loops::drivetrain::kHighGearRatio,
-      ::y2016::control_loops::drivetrain::kLowGearRatio,
-      ::y2016::control_loops::drivetrain::kJ,
-      ::y2016::control_loops::drivetrain::kMass,
-      kThreeStateDriveShifter,
-      kThreeStateDriveShifter,
-      false,
-      0,
-
-      0.25,
-      1.00,
-      1.00};
-
-  return kDrivetrainConfig;
-};
-
-class DrivetrainPlant : public StateFeedbackPlant<4, 2, 2> {
- public:
-  explicit DrivetrainPlant(StateFeedbackPlant<4, 2, 2> &&other)
-      : StateFeedbackPlant<4, 2, 2>(::std::move(other)) {}
-
-  void CheckU(const Eigen::Matrix<double, 2, 1> &U) override {
-    EXPECT_LE(U(0, 0), U_max(0, 0) + 0.00001 + left_voltage_offset_);
-    EXPECT_GE(U(0, 0), U_min(0, 0) - 0.00001 + left_voltage_offset_);
-    EXPECT_LE(U(1, 0), U_max(1, 0) + 0.00001 + right_voltage_offset_);
-    EXPECT_GE(U(1, 0), U_min(1, 0) - 0.00001 + right_voltage_offset_);
-  }
-
-  double left_voltage_offset() const { return left_voltage_offset_; }
-  void set_left_voltage_offset(double left_voltage_offset) {
-    left_voltage_offset_ = left_voltage_offset;
-  }
-
-  double right_voltage_offset() const { return right_voltage_offset_; }
-  void set_right_voltage_offset(double right_voltage_offset) {
-    right_voltage_offset_ = right_voltage_offset;
-  }
-
- private:
-  double left_voltage_offset_ = 0.0;
-  double right_voltage_offset_ = 0.0;
-};
-
-// Class which simulates the drivetrain and sends out queue messages containing
-// the position.
-class DrivetrainSimulation {
- public:
-  // Constructs a motor simulation.
-  // TODO(aschuh) Do we want to test the clutch one too?
-  DrivetrainSimulation()
-      : drivetrain_plant_(new DrivetrainPlant(MakeDrivetrainPlant())),
-        my_drivetrain_queue_(".frc971.control_loops.drivetrain_queue",
-                             ".frc971.control_loops.drivetrain_queue.goal",
-                             ".frc971.control_loops.drivetrain_queue.position",
-                             ".frc971.control_loops.drivetrain_queue.output",
-                             ".frc971.control_loops.drivetrain_queue.status"),
-        gyro_reading_(::frc971::sensors::gyro_reading.name()),
-        velocity_drivetrain_(::std::unique_ptr<StateFeedbackLoop<
-            2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
-            HybridKalman<2, 2, 2>>>(
-            new StateFeedbackLoop<2, 2, 2, double,
-                                  StateFeedbackHybridPlant<2, 2, 2>,
-                                  HybridKalman<2, 2, 2>>(
-                GetDrivetrainConfig()
-                    .make_hybrid_drivetrain_velocity_loop()))) {
-    Reinitialize();
-    last_U_.setZero();
-  }
-
-  // Resets the plant.
-  void Reinitialize() {
-    drivetrain_plant_->mutable_X(0, 0) = 0.0;
-    drivetrain_plant_->mutable_X(1, 0) = 0.0;
-    drivetrain_plant_->mutable_Y() =
-        drivetrain_plant_->C() * drivetrain_plant_->X();
-    last_left_position_ = drivetrain_plant_->Y(0, 0);
-    last_right_position_ = drivetrain_plant_->Y(1, 0);
-  }
-
-  // Returns the position of the drivetrain.
-  double GetLeftPosition() const { return drivetrain_plant_->Y(0, 0); }
-  double GetRightPosition() const { return drivetrain_plant_->Y(1, 0); }
-
-  // Sends out the position queue messages.
-  void SendPositionMessage() {
-    const double left_encoder = GetLeftPosition();
-    const double right_encoder = GetRightPosition();
-
-    {
-      ::aos::ScopedMessagePtr<
-          ::frc971::control_loops::DrivetrainQueue::Position> position =
-          my_drivetrain_queue_.position.MakeMessage();
-      position->left_encoder = left_encoder;
-      position->right_encoder = right_encoder;
-      position->left_shifter_position = left_gear_high_ ? 1.0 : 0.0;
-      position->right_shifter_position = right_gear_high_ ? 1.0 : 0.0;
-      position.Send();
-    }
-
-    {
-      ::aos::ScopedMessagePtr<::frc971::sensors::GyroReading> gyro =
-          gyro_reading_.MakeMessage();
-      gyro->angle = (right_encoder - left_encoder) /
-                    (::y2016::control_loops::drivetrain::kRobotRadius * 2.0);
-      gyro->velocity =
-          (drivetrain_plant_->X(3, 0) - drivetrain_plant_->X(1, 0)) /
-          (::y2016::control_loops::drivetrain::kRobotRadius * 2.0);
-      gyro.Send();
-    }
-  }
-
-  // Simulates the drivetrain moving for one timestep.
-  void Simulate() {
-    last_left_position_ = drivetrain_plant_->Y(0, 0);
-    last_right_position_ = drivetrain_plant_->Y(1, 0);
-    EXPECT_TRUE(my_drivetrain_queue_.output.FetchLatest());
-    ::Eigen::Matrix<double, 2, 1> U = last_U_;
-    last_U_ << my_drivetrain_queue_.output->left_voltage,
-        my_drivetrain_queue_.output->right_voltage;
-    {
-      ::aos::robot_state.FetchLatest();
-      const double scalar = ::aos::robot_state->voltage_battery / 12.0;
-      last_U_ *= scalar;
-    }
-    left_gear_high_ = my_drivetrain_queue_.output->left_high;
-    right_gear_high_ = my_drivetrain_queue_.output->right_high;
-
-    if (left_gear_high_) {
-      if (right_gear_high_) {
-        drivetrain_plant_->set_index(3);
-      } else {
-        drivetrain_plant_->set_index(2);
-      }
-    } else {
-      if (right_gear_high_) {
-        drivetrain_plant_->set_index(1);
-      } else {
-        drivetrain_plant_->set_index(0);
-      }
-    }
-
-    U(0, 0) += drivetrain_plant_->left_voltage_offset();
-    U(1, 0) += drivetrain_plant_->right_voltage_offset();
-    drivetrain_plant_->Update(U);
-    double dt_float =
-        ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-            GetDrivetrainConfig().dt).count();
-    state = RungeKuttaU(
-        [this](const ::Eigen::Matrix<double, 5, 1> &X,
-               const ::Eigen::Matrix<double, 2, 1> &U) {
-          return ContinuousDynamics(velocity_drivetrain_->plant(),
-                                    GetDrivetrainConfig().Tlr_to_la(), X, U);
-        },
-        state, U, dt_float);
-  }
-
-  void set_left_voltage_offset(double left_voltage_offset) {
-    drivetrain_plant_->set_left_voltage_offset(left_voltage_offset);
-  }
-  void set_right_voltage_offset(double right_voltage_offset) {
-    drivetrain_plant_->set_right_voltage_offset(right_voltage_offset);
-  }
-
-  ::std::unique_ptr<DrivetrainPlant> drivetrain_plant_;
-
-  ::Eigen::Matrix<double, 2, 1> GetPosition() const {
-    return state.block<2,1>(0,0);
-  }
-
- private:
-  ::frc971::control_loops::DrivetrainQueue my_drivetrain_queue_;
-  ::aos::Queue<::frc971::sensors::GyroReading> gyro_reading_;
-
-  ::Eigen::Matrix<double, 5, 1> state = ::Eigen::Matrix<double, 5, 1>::Zero();
-  ::std::unique_ptr<
-      StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
-                        HybridKalman<2, 2, 2>>> velocity_drivetrain_;
-  double last_left_position_;
-  double last_right_position_;
-
-  Eigen::Matrix<double, 2, 1> last_U_;
-
-  bool left_gear_high_ = false;
-  bool right_gear_high_ = false;
-};
 
 class DrivetrainTest : public ::aos::testing::ControlLoopTest {
  protected:
@@ -247,6 +31,7 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
   ::frc971::control_loops::DrivetrainQueue my_drivetrain_queue_;
 
   ::aos::ShmEventLoop event_loop_;
+  const DrivetrainConfig<double> dt_config_;
   // Create a loop and simulation plant.
   DrivetrainLoop drivetrain_motor_;
   DrivetrainSimulation drivetrain_motor_plant_;
@@ -257,8 +42,9 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
                              ".frc971.control_loops.drivetrain_queue.position",
                              ".frc971.control_loops.drivetrain_queue.output",
                              ".frc971.control_loops.drivetrain_queue.status"),
-        drivetrain_motor_(GetDrivetrainConfig(), &event_loop_),
-        drivetrain_motor_plant_() {
+        dt_config_(GetTestDrivetrainConfig()),
+        drivetrain_motor_(dt_config_, &event_loop_),
+        drivetrain_motor_plant_(dt_config_) {
     ::frc971::sensors::gyro_reading.Clear();
     set_battery_voltage(12.0);
   }
@@ -267,7 +53,7 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
     drivetrain_motor_plant_.SendPositionMessage();
     drivetrain_motor_.Iterate();
     drivetrain_motor_plant_.Simulate();
-    SimulateTimestep(true);
+    SimulateTimestep(true, dt_config_.dt);
   }
 
   void RunForTime(monotonic_clock::duration run_for) {
@@ -332,9 +118,9 @@ TEST_F(DrivetrainTest, SurvivesDisabling) {
     drivetrain_motor_.Iterate();
     drivetrain_motor_plant_.Simulate();
     if (i > 20 && i < 200) {
-      SimulateTimestep(false);
+      SimulateTimestep(false, dt_config_.dt);
     } else {
-      SimulateTimestep(true);
+      SimulateTimestep(true, dt_config_.dt);
     }
   }
   VerifyNearGoal();
@@ -394,23 +180,22 @@ TEST_F(DrivetrainTest, DriveAlmostStraightForward) {
 // Tests that converting from a left, right position to a distance, angle
 // coordinate system and back returns the same answer.
 TEST_F(DrivetrainTest, LinearToAngularAndBack) {
-  const DrivetrainConfig<double> &dt_config = GetDrivetrainConfig();
-  const double width = dt_config.robot_radius * 2.0;
+  const double width = dt_config_.robot_radius * 2.0;
 
   Eigen::Matrix<double, 7, 1> state;
   state << 2, 3, 4, 5, 0, 0, 0;
-  Eigen::Matrix<double, 2, 1> linear = dt_config.LeftRightToLinear(state);
+  Eigen::Matrix<double, 2, 1> linear = dt_config_.LeftRightToLinear(state);
 
   EXPECT_NEAR(3.0, linear(0, 0), 1e-6);
   EXPECT_NEAR(4.0, linear(1, 0), 1e-6);
 
-  Eigen::Matrix<double, 2, 1> angular = dt_config.LeftRightToAngular(state);
+  Eigen::Matrix<double, 2, 1> angular = dt_config_.LeftRightToAngular(state);
 
   EXPECT_NEAR(2.0 / width, angular(0, 0), 1e-6);
   EXPECT_NEAR(2.0 / width, angular(1, 0), 1e-6);
 
   Eigen::Matrix<double, 4, 1> back_state =
-      dt_config.AngularLinearToLeftRight(linear, angular);
+      dt_config_.AngularLinearToLeftRight(linear, angular);
 
   for (int i = 0; i < 4; ++i) {
     EXPECT_NEAR(state(i, 0), back_state(i, 0), 1e-8);
@@ -549,7 +334,7 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
     drivetrain_motor_plant_.SendPositionMessage();
     drivetrain_motor_.Iterate();
     drivetrain_motor_plant_.Simulate();
-    SimulateTimestep(true);
+    SimulateTimestep(true, dt_config_.dt);
     ASSERT_TRUE(my_drivetrain_queue_.output.FetchLatest());
     EXPECT_GT(my_drivetrain_queue_.output->left_voltage, -6);
     EXPECT_GT(my_drivetrain_queue_.output->right_voltage, -6);

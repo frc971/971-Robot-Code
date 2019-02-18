@@ -198,6 +198,23 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "drivetrain_test_lib",
+    testonly = True,
+    srcs = ["drivetrain_test_lib.cc"],
+    hdrs = ["drivetrain_test_lib.h"],
+    deps = [
+        ":drivetrain_config",
+        ":drivetrain_queue",
+        ":trajectory",
+        "//aos/testing:googletest",
+        "//frc971/control_loops:state_feedback_loop",
+        "//frc971/queues:gyro",
+        "//y2016:constants",
+        "//y2016/control_loops/drivetrain:polydrivetrain_plants",
+    ],
+)
+
 cc_test(
     name = "drivetrain_lib_test",
     srcs = [
@@ -207,13 +224,11 @@ cc_test(
         ":drivetrain_config",
         ":drivetrain_lib",
         ":drivetrain_queue",
+        ":drivetrain_test_lib",
         "//aos:queues",
         "//aos/controls:control_loop_test",
         "//aos/testing:googletest",
-        "//frc971/control_loops:state_feedback_loop",
         "//frc971/queues:gyro",
-        "//y2016:constants",
-        "//y2016/control_loops/drivetrain:polydrivetrain_plants",
     ],
 )
 

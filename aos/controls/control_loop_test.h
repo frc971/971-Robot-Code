@@ -80,9 +80,10 @@ class ControlLoopTestTemplated : public TestBaseClass {
   }
 
   // Simulates everything that happens during 1 loop time step.
-  void SimulateTimestep(bool enabled) {
+  void SimulateTimestep(bool enabled,
+                        ::std::chrono::nanoseconds dt = kTimeTick) {
     SendMessages(enabled);
-    TickTime();
+    TickTime(dt);
   }
 
   // Simulate a reset of the process reading sensors, which tells loops that all
