@@ -79,6 +79,7 @@ cc_library(
     deps = [
         ":jevois_crc",
         ":structures",
+        "//aos/logging",
         "//aos/util:bitpacking",
         "//third_party/GSL",
         "//third_party/optional",
@@ -94,9 +95,25 @@ cc_library(
         "uart.h",
     ],
     deps = [
+        ":cobs",
+        ":jevois_crc",
         ":structures",
         "//aos/containers:sized_array",
+        "//aos/logging",
+        "//aos/util:bitpacking",
+        "//third_party/GSL",
         "//third_party/optional",
+    ],
+)
+
+cc_test(
+    name = "uart_test",
+    srcs = [
+        "uart_test.cc",
+    ],
+    deps = [
+        ":uart",
+        "//aos/testing:googletest",
     ],
 )
 

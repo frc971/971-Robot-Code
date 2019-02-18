@@ -107,7 +107,7 @@ struct Frame {
 
 // This is all the information sent from the Teensy to each camera.
 struct CameraCalibration {
-  enum class CameraCommand {
+  enum class CameraCommand : char {
     // Stay in normal mode.
     kNormal,
     // Go to camera passthrough mode.
@@ -118,6 +118,15 @@ struct CameraCalibration {
 
   bool operator==(const CameraCalibration &other) const {
     if (other.calibration != calibration) {
+      return false;
+    }
+    if (other.teensy_now != teensy_now) {
+      return false;
+    }
+    if (other.realtime_now != realtime_now) {
+      return false;
+    }
+    if (other.camera_command != camera_command) {
       return false;
     }
     return true;
