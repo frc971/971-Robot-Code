@@ -260,24 +260,25 @@ TEST_F(CollisionAvoidanceTests, UnreasonableWristGoal) {
   // changes the goals to be in the position where the angle is low front and
   // the elevator is all the way at the bottom with the intake attempting to be
   // out.
-  unsafe_goal.wrist.unsafe_goal = avoidance.kWristMinAngle;
+  unsafe_goal.wrist.unsafe_goal =
+      avoidance.kWristMaxAngle - avoidance.kEpsWrist;
   unsafe_goal.elevator.unsafe_goal = 0.0;
   unsafe_goal.intake.unsafe_goal =
       (avoidance.kIntakeOutAngle + avoidance.kIntakeInAngle) / 2.0;
 
   // sets the status position messgaes to be have the elevator at the half way
   // with the intake in and the wrist middle front
-  status.wrist.position = avoidance.kWristMaxAngle - avoidance.kEpsWrist;
+  status.wrist.position = avoidance.kWristMinAngle + avoidance.kEpsWrist;
   status.elevator.position = 0.45;
   status.intake.position =
       (avoidance.kIntakeOutAngle + avoidance.kIntakeInAngle) / 2.0;
 
   Iterate();
 
-  ASSERT_NEAR(unsafe_goal.wrist.unsafe_goal, status.wrist.position, 0.001);
-  ASSERT_NEAR((avoidance.kElevatorClearIntakeHeight + avoidance.kEps),
+  EXPECT_NEAR(unsafe_goal.wrist.unsafe_goal, status.wrist.position, 0.001);
+  EXPECT_NEAR((avoidance.kElevatorClearIntakeHeight + avoidance.kEps),
               status.elevator.position, 0.001);
-  ASSERT_NEAR(unsafe_goal.intake.unsafe_goal, status.intake.position, 0.001);
+  EXPECT_NEAR(unsafe_goal.intake.unsafe_goal, status.intake.position, 0.001);
 }
 
 // Fix Collision Wrist in Elevator
@@ -304,13 +305,13 @@ TEST_F(CollisionAvoidanceTests, FixElevatorCollision) {
 // Fix Collision Wrist in Intake
 TEST_F(CollisionAvoidanceTests, FixWristCollision) {
   // changes the goals
-  unsafe_goal.wrist.unsafe_goal = avoidance.kWristMinAngle + avoidance.kEpsWrist;
+  unsafe_goal.wrist.unsafe_goal = avoidance.kWristMaxAngle - avoidance.kEpsWrist;
   unsafe_goal.elevator.unsafe_goal = 0.0;
   unsafe_goal.intake.unsafe_goal =
       (avoidance.kIntakeOutAngle + avoidance.kIntakeInAngle) / 2.0;
 
   // sets the status position messgaes
-  status.wrist.position = avoidance.kWristMinAngle + avoidance.kEpsWrist;
+  status.wrist.position = avoidance.kWristMaxAngle - avoidance.kEpsWrist;
   status.elevator.position = 0.0;
   status.intake.position =
       (avoidance.kIntakeOutAngle + avoidance.kIntakeInAngle) / 2.0;
