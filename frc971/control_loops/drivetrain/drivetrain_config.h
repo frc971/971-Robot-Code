@@ -111,6 +111,15 @@ struct DrivetrainConfig {
     return angular;
   }
 
+  Eigen::Matrix<Scalar, 2, 2> Tlr_to_la() const {
+    return (::Eigen::Matrix<Scalar, 2, 2>() << 0.5, 0.5,
+            -1.0 / (2 * robot_radius), 1.0 / (2 * robot_radius)).finished();
+  }
+
+  Eigen::Matrix<Scalar, 2, 2> Tla_to_lr() const {
+    return Tlr_to_la().inverse();
+  }
+
   // Converts the linear and angular position, velocity to the top 4 states of
   // the robot state.
   Eigen::Matrix<Scalar, 4, 1> AngularLinearToLeftRight(

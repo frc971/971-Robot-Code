@@ -337,7 +337,8 @@ void DrivetrainLoop::RunIteration(
 
   dt_closedloop_.Update(output != NULL && controller_type == 1);
 
-  dt_spline_.Update(output != NULL && controller_type == 2);
+  dt_spline_.Update(output != NULL && controller_type == 2,
+                    xytheta_state_.block<5, 1>(0, 0));
 
   switch (controller_type) {
     case 0:
@@ -389,6 +390,7 @@ void DrivetrainLoop::RunIteration(
 
     dt_openloop_.PopulateStatus(status);
     dt_closedloop_.PopulateStatus(status);
+    dt_spline_.PopulateStatus(status);
   }
 
   double left_voltage = 0.0;
