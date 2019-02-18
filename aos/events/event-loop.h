@@ -13,6 +13,8 @@ template <typename T>
 class Fetcher {
  public:
   Fetcher() {}
+  // Fetches the next message. Returns whether it fetched a new message.
+  bool FetchNext() { return fetcher_->FetchNext(); }
   // Fetches the most recent message. Returns whether it fetched a new message.
   bool Fetch() { return fetcher_->Fetch(); }
 

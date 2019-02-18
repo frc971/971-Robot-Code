@@ -73,5 +73,6 @@ cc_library(
     deps = [
         ":event-loop",
         "//aos:queues",
+        "//aos/logging",
     ],
 )

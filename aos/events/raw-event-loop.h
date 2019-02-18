@@ -23,6 +23,10 @@ class RawFetcher {
   RawFetcher() {}
   virtual ~RawFetcher() {}
 
+  // Non-blocking fetch of the next message in the queue. Returns true if there
+  // was a new message and we got it.
+  virtual bool FetchNext() = 0;
+  // Non-blocking fetch of the latest message:
   virtual bool Fetch() = 0;
 
   const FetchValue *most_recent() { return most_recent_; }

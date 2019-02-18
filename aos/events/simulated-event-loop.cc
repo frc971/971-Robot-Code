@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "aos/logging/logging.h"
 #include "aos/queue.h"
 
 namespace aos {
@@ -10,6 +11,11 @@ class SimulatedFetcher : public RawFetcher {
  public:
   explicit SimulatedFetcher(SimulatedQueue *queue) : queue_(queue) {}
   ~SimulatedFetcher() {}
+
+  bool FetchNext() override {
+    LOG(FATAL, "Simulated event loops do not support FetchNext.");
+    return false;
+  }
 
   bool Fetch() override {
     if (index_ == queue_->index()) return false;

@@ -23,7 +23,19 @@ class ShmFetcher : public RawFetcher {
     }
   }
 
-  bool Fetch() {
+  bool FetchNext() override {
+    const FetchValue *msg = static_cast<const FetchValue *>(
+        queue_->ReadMessageIndex(RawQueue::kNonBlock, &index_));
+    // Only update the internal pointer if we got a new message.
+    if (msg != NULL) {
+      queue_->FreeMessage(msg_);
+      msg_ = msg;
+      set_most_recent(msg_);
+    }
+    return msg != NULL;
+  }
+
+  bool Fetch() override {
     static constexpr Options<RawQueue> kOptions =
         RawQueue::kFromEnd | RawQueue::kNonBlock;
     const FetchValue *msg = static_cast<const FetchValue *>(
