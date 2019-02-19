@@ -24,6 +24,7 @@ cc_library(
     ],
     deps = [
         ":collision_avoidance",
+        ":vacuum",
         ":superstructure_queue",
         "//aos/controls:control_loop",
         "//y2019:constants",
@@ -74,6 +75,20 @@ cc_library(
         ":superstructure_queue",
         "//aos/controls:control_loop_queues",
         "//frc971:constants",
+    ],
+)
+
+cc_library(
+    name = "vacuum",
+    srcs = [
+        "vacuum.cc",
+    ],
+    hdrs = [
+        "vacuum.h",
+    ],
+    deps = [
+        ":superstructure_queue",
+        "//aos/controls:control_loop"
     ],
 )
 

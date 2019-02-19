@@ -6,6 +6,7 @@
 #include "y2019/constants.h"
 #include "y2019/control_loops/superstructure/collision_avoidance.h"
 #include "y2019/control_loops/superstructure/superstructure.q.h"
+#include "y2019/control_loops/superstructure/vacuum.h"
 
 namespace y2019 {
 namespace control_loops {
@@ -32,6 +33,7 @@ class Superstructure
   const PotAndAbsoluteEncoderSubsystem &wrist() const { return wrist_; }
   const AbsoluteEncoderSubsystem &intake() const { return intake_; }
   const PotAndAbsoluteEncoderSubsystem &stilts() const { return stilts_; }
+  const Vacuum &vacuum() const { return vacuum_; }
 
  protected:
   virtual void RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
@@ -40,16 +42,13 @@ class Superstructure
                             SuperstructureQueue::Status *status) override;
 
  private:
-  void HandleSuction(const SuctionGoal *unsafe_goal, float suction_pressure,
-                     SuperstructureQueue::Output *output, bool *has_piece);
-
   PotAndAbsoluteEncoderSubsystem elevator_;
   PotAndAbsoluteEncoderSubsystem wrist_;
   AbsoluteEncoderSubsystem intake_;
   PotAndAbsoluteEncoderSubsystem stilts_;
+  Vacuum vacuum_;
 
   CollisionAvoidance collision_avoidance_;
-  int vacuum_count_ = 0;
 
   static constexpr double kMinIntakeAngleForRollers = -0.7;
 

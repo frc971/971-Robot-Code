@@ -128,6 +128,8 @@ class SuperstructureSimulation {
     wrist_pot_encoder_.GetSensorValues(&position->wrist);
     intake_pot_encoder_.GetSensorValues(&position->intake_joint);
     stilts_pot_encoder_.GetSensorValues(&position->stilts);
+    position->suction_pressure = simulated_pressure_;
+
     position.Send();
   }
 
@@ -160,6 +162,10 @@ class SuperstructureSimulation {
 
   void set_stilts_voltage_offset(double voltage_offset) {
     stilts_plant_->set_voltage_offset(voltage_offset);
+  }
+
+  void set_simulated_pressure(double pressure) {
+    simulated_pressure_ = pressure;
   }
 
   // Simulates the superstructure for a single timestep.
@@ -266,6 +272,8 @@ class SuperstructureSimulation {
   ::std::unique_ptr<CappedTestPlant> stilts_plant_;
   PositionSensorSimulator stilts_pot_encoder_;
 
+  double simulated_pressure_ = 1.0;
+
   SuperstructureQueue superstructure_queue_;
 };
 
@@ -305,7 +313,7 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
     superstructure_.Iterate();
     superstructure_plant_.Simulate();
 
-    TickTime(::std::chrono::microseconds(5050));
+    TickTime(chrono::microseconds(5050));
   }
 
   void CheckCollisions() {
@@ -696,6 +704,98 @@ TEST_F(SuperstructureTest, IntakeRollerTest) {
   superstructure_queue_.output.FetchLatest();
   EXPECT_EQ(superstructure_queue_.output->intake_roller_voltage, 0.0);
   VerifyNearGoal();
+}
+
+// Tests the Vacuum detects a gamepiece
+TEST_F(SuperstructureTest, VacuumDetectsPiece) {
+  WaitUntilZeroed();
+  // Turn on suction
+  {
+    auto goal = superstructure_queue_.goal.MakeMessage();
+    goal->suction.top = true;
+    goal->suction.bottom = true;
+
+    ASSERT_TRUE(goal.Send());
+  }
+
+  RunForTime(
+      Vacuum::kTimeAtHigherVoltage - chrono::milliseconds(10),
+      true, false);
+
+  // Verify that at 0 pressure after short time voltage is still 12
+  superstructure_plant_.set_simulated_pressure(0.0);
+  RunForTime(chrono::seconds(2));
+  superstructure_queue_.status.FetchLatest();
+  EXPECT_TRUE(superstructure_queue_.status->has_piece);
+}
+
+// Tests the Vacuum backs off after acquiring a gamepiece
+TEST_F(SuperstructureTest, VacuumBacksOff) {
+  WaitUntilZeroed();
+  // Turn on suction
+  {
+    auto goal = superstructure_queue_.goal.MakeMessage();
+    goal->suction.top = true;
+    goal->suction.bottom = true;
+
+    ASSERT_TRUE(goal.Send());
+  }
+
+  // Verify that at 0 pressure after short time voltage is still high
+  superstructure_plant_.set_simulated_pressure(0.0);
+  RunForTime(
+      Vacuum::kTimeAtHigherVoltage - chrono::milliseconds(10),
+      true, false);
+  superstructure_queue_.output.FetchLatest();
+  EXPECT_EQ(superstructure_queue_.output->pump_voltage, Vacuum::kPumpVoltage);
+
+  // Verify that after waiting with a piece the pump voltage goes to the
+  // has piece voltage
+  RunForTime(chrono::seconds(2), true, false);
+  superstructure_queue_.output.FetchLatest();
+  EXPECT_EQ(superstructure_queue_.output->pump_voltage,
+            Vacuum::kPumpHasPieceVoltage);
+}
+
+// Tests the Vacuum stays on for a bit after getting a no suck goal
+TEST_F(SuperstructureTest, VacuumStaysOn) {
+  WaitUntilZeroed();
+  // Turn on suction
+  {
+    auto goal = superstructure_queue_.goal.MakeMessage();
+    goal->suction.top = true;
+    goal->suction.bottom = true;
+
+    ASSERT_TRUE(goal.Send());
+  }
+
+  // Get a Gamepiece
+  superstructure_plant_.set_simulated_pressure(0.0);
+  RunForTime(chrono::seconds(2));
+  superstructure_queue_.status.FetchLatest();
+  EXPECT_TRUE(superstructure_queue_.status->has_piece);
+
+  // Turn off suction
+  {
+    auto goal = superstructure_queue_.goal.MakeMessage();
+    goal->suction.top = false;
+    goal->suction.bottom = false;
+    ASSERT_TRUE(goal.Send());
+  }
+
+  superstructure_plant_.set_simulated_pressure(1.0);
+  // Run for a short while and make sure we still ask for non-zero volts
+  RunForTime(Vacuum::kTimeToKeepPumpRunning -
+                 chrono::milliseconds(10),
+             true, false);
+  superstructure_queue_.output.FetchLatest();
+  EXPECT_GE(superstructure_queue_.output->pump_voltage,
+            Vacuum::kPumpHasPieceVoltage);
+
+  // Wait and make sure the vacuum actually turns off
+  RunForTime(chrono::seconds(2));
+  superstructure_queue_.output.FetchLatest();
+  EXPECT_EQ(superstructure_queue_.output->pump_voltage, 0.0);
 }
 
 // Tests that running disabled, ya know, works
