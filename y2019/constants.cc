@@ -104,6 +104,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   intake->zeroing_constants.zeroing_threshold = 0.0005;
   intake->zeroing_constants.moving_buffer_size = 20;
   intake->zeroing_constants.allowable_encoder_error = 0.9;
+  intake->zeroing_constants.middle_position = Values::kIntakeRange().middle();
 
   // Stilts constants.
   stilts_params->zeroing_voltage = 3.0;
@@ -128,7 +129,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       elevator->potentiometer_offset = 0.0;
 
       intake->zeroing_constants.measured_absolute_position = 0.0;
-      intake->zeroing_constants.middle_position = 0.0;
 
       wrist_params->zeroing_constants.measured_absolute_position = 0.0;
       wrist->potentiometer_offset = 0.0;
@@ -138,29 +138,23 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       break;
 
     case kCompTeamNumber:
-      elevator_params->zeroing_constants.measured_absolute_position = 0.0;
-      elevator->potentiometer_offset = 0.0;
+      elevator_params->zeroing_constants.measured_absolute_position = 0.019470;
+      elevator->potentiometer_offset = -0.075017;
 
-      intake->zeroing_constants.measured_absolute_position = 0.0;
-      intake->zeroing_constants.middle_position = 0.0;
+      intake->zeroing_constants.measured_absolute_position = 1.860016;
 
-      wrist_params->zeroing_constants.measured_absolute_position = 0.0;
-      wrist->potentiometer_offset = 0.0;
+      wrist_params->zeroing_constants.measured_absolute_position = 0.163840;
+      wrist->potentiometer_offset = -4.257454;
 
-      stilts_params->zeroing_constants.measured_absolute_position = 0.0;
-      stilts->potentiometer_offset = 0.0;
+      stilts_params->zeroing_constants.measured_absolute_position = 0.030049;
+      stilts->potentiometer_offset = -0.015760 + 0.011604;
       break;
 
     case kPracticeTeamNumber:
-      elevator_params->zeroing_constants.measured_absolute_position = 0.172663;
-      elevator->potentiometer_offset = -0.022320 + 0.020567;
+      elevator_params->zeroing_constants.measured_absolute_position = 0.160767;
+      elevator->potentiometer_offset = -0.022320 + 0.020567 - 0.022355;
 
       intake->zeroing_constants.measured_absolute_position = 1.756847;
-      intake->zeroing_constants.middle_position =
-          Values::kIntakeRange().middle();
-
-      stilts_params->zeroing_constants.measured_absolute_position = 0.0;
-      stilts->potentiometer_offset = 0.0;
 
       wrist_params->zeroing_constants.measured_absolute_position = 0.357394;
       wrist->potentiometer_offset = -1.479097 - 2.740303;
@@ -174,7 +168,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       elevator->potentiometer_offset = 0.0;
 
       intake->zeroing_constants.measured_absolute_position = 0.0;
-      intake->zeroing_constants.middle_position = 0.0;
 
       wrist_params->zeroing_constants.measured_absolute_position = 0.0;
       wrist->potentiometer_offset = 0.0;
