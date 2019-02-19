@@ -17,18 +17,18 @@ class Vacuum {
 
 
   // Voltage to the vaccum pump when we are attempting to acquire a piece
-  static constexpr double kPumpVoltage = 12.0;
+  static constexpr double kPumpVoltage = 8.0;
 
   // Voltage to the vaccum pump when we have a piece
-  static constexpr double kPumpHasPieceVoltage = 8.0;
+  static constexpr double kPumpHasPieceVoltage = 2.0;
 
   // Time to continue at the higher pump voltage after getting a gamepiece
   static constexpr aos::monotonic_clock::duration kTimeAtHigherVoltage =
-      std::chrono::milliseconds(200);
+      std::chrono::milliseconds(100);
 
   // Time to continue the pump after getting a no suck goal
   static constexpr aos::monotonic_clock::duration kTimeToKeepPumpRunning =
-      std::chrono::milliseconds(1000);
+      std::chrono::milliseconds(750);
 
  private:
   bool had_piece_ = false;
