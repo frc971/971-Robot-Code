@@ -32,6 +32,7 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
 
   ::aos::ShmEventLoop event_loop_;
   const DrivetrainConfig<double> dt_config_;
+  DeadReckonEkf localizer_;
   // Create a loop and simulation plant.
   DrivetrainLoop drivetrain_motor_;
   DrivetrainSimulation drivetrain_motor_plant_;
@@ -43,7 +44,8 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
                              ".frc971.control_loops.drivetrain_queue.output",
                              ".frc971.control_loops.drivetrain_queue.status"),
         dt_config_(GetTestDrivetrainConfig()),
-        drivetrain_motor_(dt_config_, &event_loop_),
+        localizer_(dt_config_),
+        drivetrain_motor_(dt_config_, &event_loop_, &localizer_),
         drivetrain_motor_plant_(dt_config_) {
     ::frc971::sensors::gyro_reading.Clear();
     set_battery_voltage(12.0);

@@ -26,6 +26,16 @@ class SplineDrivetrain {
   // TODO(alex): What status do we need?
   void PopulateStatus(
       ::frc971::control_loops::DrivetrainQueue::Status *status) const;
+
+  // Accessor for the current goal state, pretty much only present for debugging
+  // purposes.
+  Eigen::Matrix<double, 5, 1> CurrentGoalState() const {
+    return current_trajectory_->GoalState(current_xva_(0), current_xva_(1));
+  }
+
+  bool IsAtEnd() const {
+    return current_trajectory_->is_at_end(current_state_);
+  }
  private:
   void ScaleCapU(Eigen::Matrix<double, 2, 1> *U);
 

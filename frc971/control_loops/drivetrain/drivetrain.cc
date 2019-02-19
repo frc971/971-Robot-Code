@@ -31,13 +31,15 @@ namespace drivetrain {
 
 DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
                                ::aos::EventLoop *event_loop,
+                               LocalizerInterface *localizer,
                                const ::std::string &name)
     : aos::controls::ControlLoop<::frc971::control_loops::DrivetrainQueue>(
           event_loop, name),
       dt_config_(dt_config),
+      localizer_(localizer),
       kf_(dt_config_.make_kf_drivetrain_loop()),
       dt_openloop_(dt_config_, &kf_),
-      dt_closedloop_(dt_config_, &kf_, &integrated_kf_heading_),
+      dt_closedloop_(dt_config_, &kf_, localizer_),
       dt_spline_(dt_config_),
       down_estimator_(MakeDownEstimatorLoop()),
       left_gear_(dt_config_.default_high_gear ? Gear::HIGH : Gear::LOW),
@@ -78,51 +80,6 @@ Gear ComputeGear(double shifter_position,
       return Gear::SHIFTING_DOWN;
     }
   }
-}
-
-::Eigen::Matrix<double, 3, 1> DrivetrainLoop::PredictState(
-    const ::Eigen::Matrix<double, 3, 1> &xytheta_state,
-    const ::Eigen::Matrix<double, 7, 1> &state,
-    const ::Eigen::Matrix<double, 7, 1> &previous_state) const {
-  const double dt =
-      ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-          dt_config_.dt)
-          .count();
-
-  const double distance_traveled =
-      (state(0) + state(2)) / 2.0 -
-      (previous_state(0) + previous_state(2)) / 2.0;
-
-  const double omega0 =
-      (previous_state(3) - previous_state(1)) / (dt_config_.robot_radius * 2.0);
-  const double omega1 = (state(3) - state(1)) / (dt_config_.robot_radius * 2.0);
-  const double alpha = (omega1 - omega0) / dt;
-
-  const double velocity_start = (previous_state(3) + previous_state(1)) / 2.0;
-  const double velocity_end = (state(3) + state(1)) / 2.0;
-
-  const double acceleration = (velocity_end - velocity_start) / dt;
-  const double velocity_offset =
-      distance_traveled / dt - 0.5 * acceleration * dt - velocity_start;
-  const double velocity0 = velocity_start + velocity_offset;
-
-  // TODO(austin): Substep 10x here.  This is super important! ?
-  return RungeKutta(
-      [&dt, &velocity0, &acceleration, &omega0, &alpha](
-          double t, const ::Eigen::Matrix<double, 3, 1> &X) {
-        const double velocity1 = velocity0 + acceleration * t;
-        const double omega1 = omega0 + alpha * t;
-        const double theta = X(2);
-
-        return (::Eigen::Matrix<double, 3, 1>()
-                    << ::std::cos(theta) * velocity1,
-                ::std::sin(theta) * velocity1, omega1)
-            .finished();
-      },
-      xytheta_state, 0.0,
-      ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-          dt_config_.dt)
-          .count());
 }
 
 void DrivetrainLoop::RunIteration(
@@ -274,52 +231,9 @@ void DrivetrainLoop::RunIteration(
     Y << position->left_encoder, position->right_encoder, last_gyro_rate_,
         last_accel_;
     kf_.Correct(Y);
-
-    // We are going to choose to integrate velocity to get position by assuming
-    // that velocity is a linear function of time.  For drivetrains with large
-    // amounts of mass, we won't get large changes in acceleration over a 5 ms
-    // timestep.  Do note, the only place that this matters is when we are
-    // talking about the curvature errors introduced by integration.  The
-    // velocities are scaled such that the distance traveled is correct.
-    //
-    // We want to do this after the kalman filter runs so we take into account
-    // the encoder and gyro corrections.
-    //
-    // Start by computing the beginning and ending linear and angular
-    // velocities.
-    // To handle 0 velocity well, compute the offset required to be added to
-    // both velocities to make the robot travel the correct distance.
-
-    xytheta_state_.block<3, 1>(0, 0) = PredictState(
-        xytheta_state_.block<3, 1>(0, 0), kf_.X_hat(), last_state_);
-
-    // Use trapezoidal integration for the gyro heading since it's more
-    // accurate.
-    const double average_angular_velocity =
-        ((kf_.X_hat(3) - kf_.X_hat(1)) + (last_state_(3) - last_state_(1))) /
-        2.0 / (dt_config_.robot_radius * 2.0);
-
-    integrated_kf_heading_ +=
-        ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-            dt_config_.dt)
-            .count() *
-        average_angular_velocity;
-
-    // Copy over the gyro heading.
-    xytheta_state_(2) = integrated_kf_heading_;
-    // Copy over the velocities heading.
-    xytheta_state_(3) = kf_.X_hat(1);
-    xytheta_state_(4) = kf_.X_hat(3);
-    // Copy over the voltage errors.
-    xytheta_state_.block<2, 1>(5, 0) = kf_.X_hat().block<2, 1>(4, 0);
-
-    // gyro_heading = (real_right - real_left) / width
-    // wheel_heading = (wheel_right - wheel_left) / width
-    // gyro_heading + offset = wheel_heading
-    // gyro_goal + offset = wheel_goal
-    // offset = wheel_heading - gyro_heading
-
-    // gyro_goal + wheel_heading - gyro_heading = wheel_goal
+    localizer_->Update({last_left_voltage_, last_right_voltage_}, monotonic_now,
+                       position->left_encoder, position->right_encoder,
+                       last_gyro_rate_, last_accel_);
   }
 
   dt_openloop_.SetPosition(position, left_gear_, right_gear_);
@@ -338,7 +252,10 @@ void DrivetrainLoop::RunIteration(
   dt_closedloop_.Update(output != NULL && controller_type == 1);
 
   dt_spline_.Update(output != NULL && controller_type == 2,
-                    xytheta_state_.block<5, 1>(0, 0));
+                    (Eigen::Matrix<double, 5, 1>() << localizer_->x(),
+                     localizer_->y(), localizer_->theta(),
+                     localizer_->left_velocity(), localizer_->right_velocity())
+                        .finished());
 
   switch (controller_type) {
     case 0:
@@ -363,7 +280,7 @@ void DrivetrainLoop::RunIteration(
     Eigen::Matrix<double, 2, 1> angular =
         dt_config_.LeftRightToAngular(kf_.X_hat());
 
-    angular(0, 0) = integrated_kf_heading_;
+    angular(0, 0) = localizer_->theta();
 
     Eigen::Matrix<double, 4, 1> gyro_left_right =
         dt_config_.AngularLinearToLeftRight(linear, angular);
@@ -380,11 +297,11 @@ void DrivetrainLoop::RunIteration(
     status->left_voltage_error = kf_.X_hat(4);
     status->right_voltage_error = kf_.X_hat(5);
     status->estimated_angular_velocity_error = kf_.X_hat(6);
-    status->estimated_heading = integrated_kf_heading_;
+    status->estimated_heading = localizer_->theta();
 
-    status->x = xytheta_state_(0);
-    status->y = xytheta_state_(1);
-    status->theta = xytheta_state_(2);
+    status->x = localizer_->x();
+    status->y = localizer_->y();
+    status->theta = localizer_->theta();
 
     status->ground_angle = down_estimator_.X_hat(0) + dt_config_.down_offset;
 

@@ -9,8 +9,11 @@ using ::frc971::control_loops::drivetrain::DrivetrainLoop;
 int main() {
   ::aos::Init();
   ::aos::ShmEventLoop event_loop;
+  ::frc971::control_loops::drivetrain::DeadReckonEkf localizer(
+      ::y2018::control_loops::drivetrain::GetDrivetrainConfig());
   DrivetrainLoop drivetrain(
-      ::y2018::control_loops::drivetrain::GetDrivetrainConfig(), &event_loop);
+      ::y2018::control_loops::drivetrain::GetDrivetrainConfig(), &event_loop,
+      &localizer);
   drivetrain.Run();
   ::aos::Cleanup();
   return 0;

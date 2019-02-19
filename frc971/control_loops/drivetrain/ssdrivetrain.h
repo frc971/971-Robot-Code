@@ -11,6 +11,7 @@
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/drivetrain/localizer.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -20,7 +21,7 @@ class DrivetrainMotorsSS {
  public:
   DrivetrainMotorsSS(const DrivetrainConfig<double> &dt_config,
                      StateFeedbackLoop<7, 2, 4> *kf,
-                     double *integrated_kf_heading);
+                     LocalizerInterface *localizer);
 
   void SetGoal(const ::frc971::control_loops::DrivetrainQueue::Goal &goal);
 
@@ -65,7 +66,7 @@ class DrivetrainMotorsSS {
 
   bool use_profile_ = false;
 
-  double *integrated_kf_heading_;
+  LocalizerInterface *localizer_;
 };
 
 }  // namespace drivetrain

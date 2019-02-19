@@ -193,7 +193,7 @@ class TypedCamera {
   ::std::vector<::std::vector<Pose>> PlotPoints() const {
     ::std::vector<::std::vector<Pose>> list_of_lists;
     for (const auto &view : target_views()) {
-      list_of_lists.push_back({pose_, view.target->pose()});
+      list_of_lists.push_back({pose_, view.target->pose().Rebase(&pose_)});
     }
     return list_of_lists;
   }
@@ -254,9 +254,9 @@ void TypedCamera<num_targets, num_obstacles, Scalar>::AddTargetIfVisible(
   // This number is unitless and if greater than 1, implies that the target is
   // visible to the camera and if less than 1 implies it is too small to be
   // registered on the camera.
-  const Scalar apparent_width =
-      ::std::max(0.0, ::std::cos(skew) *
-                          noise_parameters_.max_viewable_distance / distance);
+  const Scalar apparent_width = ::std::max<Scalar>(
+      0.0,
+      ::std::cos(skew) * noise_parameters_.max_viewable_distance / distance);
 
   if (apparent_width < 1.0) {
     return;

@@ -15,7 +15,7 @@ namespace drivetrain {
 
 DrivetrainMotorsSS::DrivetrainMotorsSS(
     const DrivetrainConfig<double> &dt_config, StateFeedbackLoop<7, 2, 4> *kf,
-    double *integrated_kf_heading)
+    LocalizerInterface *localizer)
     : dt_config_(dt_config),
       kf_(kf),
       U_poly_(
@@ -34,7 +34,7 @@ DrivetrainMotorsSS::DrivetrainMotorsSS(
               .finished()),
       linear_profile_(::aos::controls::kLoopFrequency),
       angular_profile_(::aos::controls::kLoopFrequency),
-      integrated_kf_heading_(integrated_kf_heading) {
+      localizer_(localizer) {
   ::aos::controls::HPolytope<0>::Init();
   T_ << 1, 1, 1, -1;
   T_inverse_ = T_.inverse();
@@ -168,8 +168,7 @@ void DrivetrainMotorsSS::Update(bool enable_control_loop) {
   Eigen::Matrix<double, 2, 1> wheel_heading =
       dt_config_.LeftRightToAngular(kf_->X_hat());
 
-  const double gyro_to_wheel_offset =
-      wheel_heading(0, 0) - *integrated_kf_heading_;
+  const double gyro_to_wheel_offset = wheel_heading(0, 0) - localizer_->theta();
 
   if (enable_control_loop) {
     // Update profiles.
@@ -240,7 +239,7 @@ void DrivetrainMotorsSS::Update(bool enable_control_loop) {
     Eigen::Matrix<double, 2, 1> wheel_linear =
         dt_config_.LeftRightToLinear(kf_->X_hat());
     Eigen::Matrix<double, 2, 1> next_angular = wheel_heading;
-    next_angular(0, 0) = *integrated_kf_heading_;
+    next_angular(0, 0) = localizer_->theta();
 
     unprofiled_goal_.block<4, 1>(0, 0) =
         dt_config_.AngularLinearToLeftRight(wheel_linear, next_angular);

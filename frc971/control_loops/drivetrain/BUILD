@@ -41,6 +41,40 @@ cc_library(
 )
 
 cc_library(
+    name = "hybrid_ekf",
+    hdrs = ["hybrid_ekf.h"],
+    deps = [
+        ":drivetrain_config",
+        "//aos/containers:priority_queue",
+        "//frc971/control_loops:c2d",
+        "//frc971/control_loops:runge_kutta",
+        "//third_party/eigen",
+    ],
+)
+
+cc_test(
+    name = "hybrid_ekf_test",
+    srcs = ["hybrid_ekf_test.cc"],
+    deps = [
+        ":drivetrain_test_lib",
+        ":hybrid_ekf",
+        ":trajectory",
+        "//aos/testing:googletest",
+        "//aos/testing:random_seed",
+        "//aos/testing:test_shm",
+    ],
+)
+
+cc_library(
+    name = "localizer",
+    hdrs = ["localizer.h"],
+    deps = [
+        ":drivetrain_config",
+        ":hybrid_ekf",
+    ],
+)
+
+cc_library(
     name = "gear",
     hdrs = [
         "gear.h",
@@ -57,12 +91,12 @@ cc_library(
         "splinedrivetrain.h",
     ],
     deps = [
+        ":distance_spline",
         ":drivetrain_config",
         ":drivetrain_queue",
         ":spline",
-        ":distance_spline",
         ":trajectory",
-    ]
+    ],
 )
 
 cc_library(
@@ -77,6 +111,7 @@ cc_library(
         ":drivetrain_config",
         ":drivetrain_queue",
         ":gear",
+        ":localizer",
         "//aos:math",
         "//aos/controls:control_loop",
         "//aos/controls:polytope",
@@ -185,9 +220,10 @@ cc_library(
         ":down_estimator",
         ":drivetrain_queue",
         ":gear",
+        ":localizer",
         ":polydrivetrain",
-        ":ssdrivetrain",
         ":splinedrivetrain",
+        ":ssdrivetrain",
         "//aos/controls:control_loop",
         "//aos/logging:matrix_logging",
         "//aos/logging:queue_logging",
@@ -304,6 +340,7 @@ cc_library(
 cc_binary(
     name = "spline.so",
     srcs = ["libspline.cc"],
+    linkshared = True,
     deps = [
         ":distance_spline",
         ":spline",
@@ -313,7 +350,6 @@ cc_binary(
         "//third_party/eigen",
         "//y2019/control_loops/drivetrain:drivetrain_base",
     ],
-    linkshared=True,
 )
 
 cc_test(
