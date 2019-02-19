@@ -86,6 +86,7 @@ cc_library(
     ],
     deps = [
         "//aos/input:drivetrain_input",
+        "//frc971/zeroing:wrap",
     ],
 )
 

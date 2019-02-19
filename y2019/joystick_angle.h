@@ -9,12 +9,7 @@ using ::aos::input::driver_station::Data;
 namespace y2019 {
 namespace input {
 namespace joysticks {
-namespace {
-constexpr double kJoystickLeft = -0.5;
-constexpr double kJoystickRight = 0.5;
-constexpr double kJoystickUp = 0.5;
-constexpr double kJoystickDown = -0.5;
-}
+bool AngleCloseTo(double angle, double near, double range);
 
 enum class JoystickAngle {
   kDefault,
