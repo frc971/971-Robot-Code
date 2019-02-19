@@ -76,9 +76,17 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":drivetrain_base",
+        ":event_loop_localizer",
         "//aos:init",
         "//aos/events:shm-event-loop",
         "//frc971/control_loops/drivetrain:drivetrain_lib",
+    ],
+)
+
+queue_library(
+    name = "camera_queue",
+    srcs = [
+        "camera.q",
     ],
 )
 
@@ -111,6 +119,18 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "event_loop_localizer",
+    srcs = ["event_loop_localizer.cc"],
+    hdrs = ["event_loop_localizer.h"],
+    deps = [
+        ":camera_queue",
+        ":localizer",
+        "//frc971/control_loops/drivetrain:localizer",
+        "//y2019:constants",
+    ],
+)
+
 cc_test(
     name = "localizer_test",
     srcs = ["localizer_test.cc"],
@@ -138,4 +158,20 @@ cc_test(
         ],
         "arm": [],
     }),
+)
+
+cc_test(
+    name = "localized_drivetrain_test",
+    srcs = ["localized_drivetrain_test.cc"],
+    deps = [
+        ":camera_queue",
+        ":drivetrain_base",
+        ":event_loop_localizer",
+        ":localizer",
+        "//aos/controls:control_loop_test",
+        "//aos/network:team_number",
+        "//frc971/control_loops:team_number_test_environment",
+        "//frc971/control_loops/drivetrain:drivetrain_lib",
+        "//frc971/control_loops/drivetrain:drivetrain_test_lib",
+    ],
 )

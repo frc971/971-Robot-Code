@@ -23,6 +23,7 @@ namespace constants {
 using ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator;
 
 const int Values::kZeroingSampleSize;
+constexpr size_t Values::kNumCameras;
 
 namespace {
 
@@ -122,6 +123,12 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   stilts_params->zeroing_constants.moving_buffer_size = 20;
   stilts_params->zeroing_constants.allowable_encoder_error = 0.9;
 
+  r->camera_noise_parameters = {.max_viewable_distance = 10.0,
+                                .heading_noise = 0.02,
+                                .nominal_distance_noise = 0.06,
+                                .nominal_skew_noise = 0.1,
+                                .nominal_height_noise = 0.01};
+
   switch (team) {
     // A set of constants for tests.
     case 1:
@@ -135,6 +142,17 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
       stilts_params->zeroing_constants.measured_absolute_position = 0.0;
       stilts->potentiometer_offset = 0.0;
+
+      // Deliberately make FOV a bit large so that we are overly conservative in
+      // our EKF.
+      for (auto &camera : r->cameras) {
+        camera.fov = M_PI_2 * 1.1;
+      }
+      r->cameras[0].pose.set_theta(M_PI);
+      r->cameras[1].pose.set_theta(0.26);
+      r->cameras[2].pose.set_theta(-0.26);
+      r->cameras[3].pose.set_theta(M_PI_2);
+      r->cameras[4].pose.set_theta(-M_PI_2);
       break;
 
     case kCompTeamNumber:

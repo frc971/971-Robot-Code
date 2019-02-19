@@ -190,6 +190,21 @@ struct Values {
       intake;
 
   PotAndAbsConstants stilts;
+
+  struct CameraCalibration {
+    // constants matrix to send to camera for calibration.
+    Eigen::Matrix<float, 3, 4> for_camera;
+    // Pose of the camera relative to the robot.
+    ::frc971::control_loops::TypedPose<double> pose;
+    // Field of view, in radians. This is total horizontal FOV, from left
+    // edge to right edge of the camera image.
+    double fov;
+  };
+
+  static constexpr size_t kNumCameras = 5;
+  ::std::array<CameraCalibration, kNumCameras> cameras;
+  control_loops::TypedCamera<Field::kNumTargets, Field::kNumObstacles,
+                             double>::NoiseParameters camera_noise_parameters;
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and

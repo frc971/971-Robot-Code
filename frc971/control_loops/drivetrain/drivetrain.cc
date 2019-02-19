@@ -231,6 +231,8 @@ void DrivetrainLoop::RunIteration(
     Y << position->left_encoder, position->right_encoder, last_gyro_rate_,
         last_accel_;
     kf_.Correct(Y);
+    // TODO(james): Account for delayed_U as appropriate (should be
+    // last_last_*_voltage).
     localizer_->Update({last_left_voltage_, last_right_voltage_}, monotonic_now,
                        position->left_encoder, position->right_encoder,
                        last_gyro_rate_, last_accel_);
