@@ -23,11 +23,11 @@
 #include "aos/logging/logging.h"
 #include "aos/logging/queue_logging.h"
 #include "aos/make_unique.h"
+#include "aos/robot_state/robot_state.q.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
-
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/wpilib/ADIS16448.h"
@@ -311,9 +311,17 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
                                          -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
 
-    suction_victor_->SetSpeed(
-        ::aos::Clip(queue->pump_voltage, -kMaxBringupPower, kMaxBringupPower) /
-        12.0);
+    ::aos::robot_state.FetchLatest();
+    const double battery_voltage =
+        ::aos::robot_state.get() ? ::aos::robot_state->voltage_battery : 12.0;
+
+    // Throw a fast low pass filter on the battery voltage so we don't respond
+    // too fast to noise.
+    filtered_battery_voltage_ =
+        0.5 * filtered_battery_voltage_ + 0.5 * battery_voltage;
+
+    suction_victor_->SetSpeed(::aos::Clip(
+        queue->pump_voltage / filtered_battery_voltage_, -1.0, 1.0));
   }
 
   void Stop() override {
@@ -328,6 +336,8 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
 
   ::std::unique_ptr<::frc::VictorSP> elevator_victor_, intake_victor_,
       wrist_victor_, stilts_victor_, suction_victor_;
+
+  double filtered_battery_voltage_ = 12.0;
 };
 
 class SolenoidWriter {
