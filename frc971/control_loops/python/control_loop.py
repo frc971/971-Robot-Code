@@ -598,6 +598,7 @@ class NMotor(object):
         self.resistance = motor.resistance / n
         self.Kv = motor.Kv
         self.Kt = motor.Kt
+        self.motor_inertia = motor.motor_inertia * n
 
 
 class Vex775Pro(object):
