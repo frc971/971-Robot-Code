@@ -628,10 +628,12 @@ cc_test(
     linkstatic = True,
     deps = [
         ":trajectory",
+        ":drivetrain_test_lib",
         "//aos/testing:googletest",
         "//aos/testing:test_shm",
         "//y2016:constants",
         "//y2016/control_loops/drivetrain:polydrivetrain_plants",
+        "//y2019/control_loops/drivetrain:drivetrain_base",
     ] + cpu_select({
         "amd64": [
             "//third_party/matplotlib-cpp",

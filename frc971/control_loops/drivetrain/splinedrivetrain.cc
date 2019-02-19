@@ -73,7 +73,7 @@ void SplineDrivetrain::ComputeTrajectory() {
         case frc971::ConstraintType_CONSTRAINT_TYPE_UNDEFINED:
           break;
         case frc971::ConstraintType_LONGITUDINAL_ACCELERATION:
-          future_trajectory_->set_longitudal_acceleration(constraint.value);
+          future_trajectory_->set_longitudinal_acceleration(constraint.value);
           break;
         case frc971::ConstraintType_LATERAL_ACCELERATION:
           future_trajectory_->set_lateral_acceleration(constraint.value);

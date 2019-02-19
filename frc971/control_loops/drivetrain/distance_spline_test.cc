@@ -73,6 +73,8 @@ TEST_P(ParameterizedDistanceSplineTest, XYIntegral) {
 
     point += dpoint * ddistance;
     dpoint += distance_spline_.DDXY(distance) * ddistance;
+    EXPECT_FLOAT_EQ(distance_spline_.DDXY(distance).norm(),
+                    ::std::abs(distance_spline_.DTheta(distance)));
   }
 
 #if defined(SUPPORT_PLOT)

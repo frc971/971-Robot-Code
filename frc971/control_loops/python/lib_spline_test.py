@@ -32,7 +32,7 @@ class TestTrajectory(unittest.TestCase):
         trajectory = Trajectory(dSpline)
         trajectory.Plan()
         plan = trajectory.GetPlanXVA(5.05*1e-3)
-        assert(plan.shape == (3, 611))
+        self.assertEqual(plan.shape, (3, 617))
 
     def testLimits(self):
         """ A plan with a lower limit should take longer. """
@@ -44,7 +44,7 @@ class TestTrajectory(unittest.TestCase):
         trajectory.LimitVelocity(0, trajectory.Length(), 3)
         trajectory.Plan()
         plan = trajectory.GetPlanXVA(5.05*1e-3)
-        self.assertEqual(plan.shape, (3, 644))
+        self.assertEqual(plan.shape, (3, 650))
 
 
 if __name__ == '__main__':

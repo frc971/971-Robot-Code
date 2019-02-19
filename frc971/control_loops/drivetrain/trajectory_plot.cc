@@ -57,7 +57,7 @@ void Main() {
       &distance_spline,
       ::y2019::control_loops::drivetrain::GetDrivetrainConfig());
   trajectory.set_lateral_acceleration(2.0);
-  trajectory.set_longitudal_acceleration(1.0);
+  trajectory.set_longitudinal_acceleration(1.0);
 
   // Grab the spline.
   ::std::vector<double> distances = trajectory.Distances();
@@ -76,6 +76,8 @@ void Main() {
   // Compute the velocity plan.
   ::aos::monotonic_clock::time_point start_time = ::aos::monotonic_clock::now();
   ::std::vector<double> initial_plan = trajectory.plan();
+  trajectory.VoltageFeasibilityPass(Trajectory::VoltageLimit::kConservative);
+  ::std::vector<double> voltage_plan = trajectory.plan();
   trajectory.LateralAccelPass();
   ::std::vector<double> curvature_plan = trajectory.plan();
   trajectory.ForwardPass();
