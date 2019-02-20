@@ -20,7 +20,7 @@ class Vacuum {
   static constexpr double kPumpVoltage = 8.0;
 
   // Voltage to the vaccum pump when we have a piece
-  static constexpr double kPumpHasPieceVoltage = 2.0;
+  static constexpr double kPumpHasPieceVoltage = 2.25;
 
   // Time to continue at the higher pump voltage after getting a gamepiece
   static constexpr aos::monotonic_clock::duration kTimeAtHigherVoltage =
