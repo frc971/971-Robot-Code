@@ -45,7 +45,7 @@ const ButtonLocation kElevatorBack4(4, 8);
 const ButtonLocation kElevatorBack5(4, 6);
 
 const ButtonLocation kElevatorIntaking(3, 4);
-const ButtonLocation kElevatorIntakingUp(3, 6);
+const ButtonLocation kElevatorOuttake(3, 6);
 const ButtonLocation kRelease(4, 4);
 
 const ButtonLocation kSuctionBall(3, 13);
@@ -243,14 +243,18 @@ class Reader : public ::aos::input::ActionJoystickInput {
       wrist_angle_ = 0.0;
       elevator_height_ = 0.36;
     }
-    //if (data.IsPressed(kElevatorIntaking)) {
-    //}
+
+    if (data.IsPressed(kElevatorOuttake) ||
+        (data.IsPressed(kIntakeOut) &&
+         !superstructure_queue.status->has_piece)) {
+      new_superstructure_goal->intake.unsafe_goal = 0.959327;
+    }
+
     if (data.IsPressed(kIntakeOut) && !superstructure_queue.status->has_piece) {
       elevator_height_ = 0.29;
       wrist_angle_ = 2.14;
-      new_superstructure_goal->intake.unsafe_goal = 0.52;
       if (data.IsPressed(kElevatorIntaking)) {
-        new_superstructure_goal->roller_voltage = 6.0;
+        new_superstructure_goal->roller_voltage = 9.0;
       } else {
         new_superstructure_goal->roller_voltage = 0.0;
       }
@@ -260,9 +264,29 @@ class Reader : public ::aos::input::ActionJoystickInput {
       new_superstructure_goal->roller_voltage = 0.0;
     }
 
-    if (data.IsPressed(kElevatorIntakingUp)) {
-      elevator_height_ = 0.29 + 0.3;
-      wrist_angle_ = 2.14;
+    if (data.IsPressed(kElevatorOuttake)) {
+      new_superstructure_goal->roller_voltage = -6.0;
+    }
+
+    if (data.IsPressed(kElevatorBack1)) {
+      wrist_angle_ = -2.451824;
+      elevator_height_ = 0.430478;
+      //new_superstructure_goal->wrist.profile_params.max_velocity = 2.0;
+      //new_superstructure_goal->wrist.profile_params.max_acceleration = 20.0;
+    }
+    if (data.IsPressed(kElevatorBack2)) {
+      wrist_angle_ = -2.400;
+      elevator_height_ = 0.364108;
+      new_superstructure_goal->elevator.profile_params.max_velocity = 2.0;
+      new_superstructure_goal->elevator.profile_params.max_acceleration = 5.0;
+      new_superstructure_goal->wrist.profile_params.max_velocity = 0.35;
+      new_superstructure_goal->wrist.profile_params.max_acceleration = 10.0;
+    }
+    if (data.IsPressed(kElevatorBack3)) {
+      wrist_angle_ = -2.211173;
+      elevator_height_ = 0.25;
+      new_superstructure_goal->wrist.profile_params.max_velocity = 2.0;
+      new_superstructure_goal->wrist.profile_params.max_acceleration = 10.0;
     }
 
 

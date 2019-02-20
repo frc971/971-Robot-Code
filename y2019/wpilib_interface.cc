@@ -359,7 +359,7 @@ class SolenoidWriter {
   void set_intake_roller_talon(
       ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonSRX> t) {
     intake_rollers_talon_ = ::std::move(t);
-    intake_rollers_talon_->ConfigContinuousCurrentLimit(20.0, 0);
+    intake_rollers_talon_->ConfigContinuousCurrentLimit(10.0, 0);
     intake_rollers_talon_->EnableCurrentLimit(true);
   }
 
