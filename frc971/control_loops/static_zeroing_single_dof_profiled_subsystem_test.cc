@@ -498,11 +498,22 @@ TYPED_TEST_P(IntakeSystemTest, NullGoalTest) {
   this->VerifyNearGoal();
 }
 
+// Tests that the subsystem estops when a zeroing error occurs
+TYPED_TEST_P(IntakeSystemTest, ZeroingErrorTest) {
+  this->RunForTime(chrono::seconds(2), true);
+
+  EXPECT_EQ(this->subsystem_.state(), TestFixture::SZSDPS::State::RUNNING);
+  this->subsystem_.TriggerEstimatorError();
+  this->RunIteration(true, false);
+  EXPECT_EQ(this->subsystem_.state(), TestFixture::SZSDPS::State::ESTOP);
+}
+
 REGISTER_TYPED_TEST_CASE_P(IntakeSystemTest, DoesNothing, ReachesGoal,
                            SaturationTest, RespectsRange, ZeroTest, ZeroNoGoal,
                            LowerHardstopStartup, UpperHardstopStartup,
                            ResetTest, DisabledGoalTest, DisabledZeroTest,
-                           MinPositionTest, MaxPositionTest, NullGoalTest);
+                           MinPositionTest, MaxPositionTest, NullGoalTest,
+                           ZeroingErrorTest);
 INSTANTIATE_TYPED_TEST_CASE_P(My, IntakeSystemTest, TestTypes);
 
 }  // namespace control_loops
