@@ -72,6 +72,8 @@ class StaticZeroingSingleDOFProfiledSubsystem {
   // Resets the profiled subsystem and returns to uninitialized
   void Reset();
 
+  void TriggerEstimatorError() { profiled_subsystem_.TriggerEstimatorError(); }
+
   enum class State : int32_t {
     UNINITIALIZED,
     DISABLED_INITIALIZED,
@@ -126,6 +128,10 @@ void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator,
             ProfiledJointStatus *status) {
   bool disabled = output == nullptr;
   profiled_subsystem_.Correct(*position);
+
+  if (profiled_subsystem_.error()) {
+    state_ = State::ESTOP;
+  }
 
   switch (state_) {
     case State::UNINITIALIZED:
