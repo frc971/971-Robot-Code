@@ -93,7 +93,7 @@ struct Values {
 
   static constexpr ::frc971::constants::Range kElevatorRange() {
     return ::frc971::constants::Range{
-        -0.01,  // Bottom Hard
+        -0.02,  // Bottom Hard
         1.62,   // Top Hard
         0.01,   // Bottom Soft
         1.59    // Top Soft
