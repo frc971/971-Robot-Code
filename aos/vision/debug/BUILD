@@ -27,6 +27,7 @@ gtk_dependent_cc_library(
     name = "debug_framework",
     srcs = [
         "blob_log-source.cc",
+        "aveugle-source.cc",
         "camera-source.cc",
         "debug_framework.cc",
         "jpeg_list-source.cc",
@@ -45,6 +46,7 @@ gtk_dependent_cc_library(
         "//aos/vision/events:gtk_event",
         "//aos/vision/events:tcp_client",
         "//aos/vision/image:image_stream",
+        "//aos/vision/image:image_dataset",
         "//aos/vision/image:image_types",
         "//aos/vision/image:jpeg_routines",
         "@usr_repo//:gtk+-3.0",
