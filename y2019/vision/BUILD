@@ -69,6 +69,18 @@ cc_binary(
     ],
 )
 
+cc_binary(
+    name = "debug_serial",
+    srcs = ["debug_serial.cc"],
+    deps = [
+        "//y2019/jevois:serial",
+        "//y2019/jevois:structures",
+        "//y2019/jevois:uart",
+         "//aos/logging",
+         "//aos/logging:implementations",
+    ],
+)
+
 """
 cc_binary(
     name = "calibration",
