@@ -20,16 +20,17 @@ void Vacuum::Iterate(const SuctionGoal *unsafe_goal, float suction_pressure,
   filtered_pressure_ = kSuctionAlpha * suction_pressure +
                        (1 - kSuctionAlpha) * filtered_pressure_;
 
-  *has_piece = filtered_pressure_ < kVacuumThreshold;
+  const bool new_has_piece = filtered_pressure_ < kVacuumThreshold;
 
-  if (*has_piece && !had_piece_) {
+  if (new_has_piece && !had_piece_) {
     time_at_last_acquisition_ = monotonic_now;
   }
+  *has_piece =
+      monotonic_now > time_at_last_acquisition_ + kTimeAtHigherVoltage &&
+      new_has_piece;
 
   // if we've had the piece for enought time, go to lower pump_voltage
-  low_pump_voltage =
-      *has_piece &&
-      monotonic_now > time_at_last_acquisition_ + kTimeAtHigherVoltage;
+  low_pump_voltage = *has_piece;
   no_goal_for_a_bit =
       monotonic_now > time_at_last_evacuate_goal_ + kTimeToKeepPumpRunning;
 
@@ -49,7 +50,7 @@ void Vacuum::Iterate(const SuctionGoal *unsafe_goal, float suction_pressure,
     output->intake_suction_top = unsafe_goal->top;
     output->intake_suction_bottom = unsafe_goal->bottom;
   }
-  had_piece_ = *has_piece;
+  had_piece_ = new_has_piece;
 }
 
 }  // namespace superstructure
