@@ -383,10 +383,10 @@ class SolenoidWriter {
         if (superstructure_.get()) {
           LOG_STRUCT(DEBUG, "solenoids", *superstructure_);
 
-          big_suction_cup0_->Set(!superstructure_->intake_suction_top);
-          big_suction_cup1_->Set(!superstructure_->intake_suction_top);
-          small_suction_cup0_->Set(!superstructure_->intake_suction_bottom);
-          small_suction_cup1_->Set(!superstructure_->intake_suction_bottom);
+          big_suction_cup0_->Set(superstructure_->intake_suction_top);
+          big_suction_cup1_->Set(superstructure_->intake_suction_top);
+          small_suction_cup0_->Set(superstructure_->intake_suction_bottom);
+          small_suction_cup1_->Set(superstructure_->intake_suction_bottom);
 
           intake_rollers_talon_->Set(
               ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
