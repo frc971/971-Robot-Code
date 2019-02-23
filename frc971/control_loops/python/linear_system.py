@@ -22,7 +22,7 @@ class LinearSystemParams(object):
                  kalman_q_vel,
                  kalman_q_voltage,
                  kalman_r_position,
-                 dt=0.005):
+                 dt=0.00505):
         self.name = name
         self.motor = motor
         self.G = G

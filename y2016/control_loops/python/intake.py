@@ -25,6 +25,7 @@ kIntake = angular_system.AngularSystemParams(
     J=0.34 - 0.03757568,
     q_pos=0.20,
     q_vel=5.0,
+    dt=0.005,
     kalman_q_pos=0.12,
     kalman_q_vel=2.0,
     kalman_q_voltage=4.0,
