@@ -51,7 +51,7 @@ UartToTeensyBuffer UartPackToTeensy(const Frame &message) {
 }
 
 tl::optional<Frame> UartUnpackToTeensy(
-    const UartToTeensyBuffer &encoded_buffer) {
+    gsl::span<const char> encoded_buffer) {
   std::array<char, uart_to_teensy_size()> buffer;
   if (static_cast<size_t>(
           CobsDecode<uart_to_teensy_size()>(encoded_buffer, &buffer).size()) !=
@@ -138,7 +138,7 @@ UartToCameraBuffer UartPackToCamera(const CameraCalibration &message) {
 }
 
 tl::optional<CameraCalibration> UartUnpackToCamera(
-    const UartToCameraBuffer &encoded_buffer) {
+    gsl::span<const char> encoded_buffer) {
   std::array<char, uart_to_camera_size()> buffer;
   if (static_cast<size_t>(
           CobsDecode<uart_to_camera_size()>(encoded_buffer, &buffer).size()) !=
