@@ -29,11 +29,11 @@ using UartToCameraBuffer =
     aos::SizedArray<char, CobsMaxEncodedSize(uart_to_camera_size())>;
 
 UartToTeensyBuffer UartPackToTeensy(const Frame &message);
-tl::optional<Frame> UartUnpackToTeensy(const UartToTeensyBuffer &buffer);
+tl::optional<Frame> UartUnpackToTeensy(gsl::span<const char> buffer);
 
 UartToCameraBuffer UartPackToCamera(const CameraCalibration &message);
 tl::optional<CameraCalibration> UartUnpackToCamera(
-    const UartToCameraBuffer &buffer);
+    gsl::span<const char> buffer);
 
 }  // namespace jevois
 }  // namespace frc971
