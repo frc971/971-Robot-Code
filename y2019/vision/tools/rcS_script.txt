@@ -1,0 +1,6 @@
+#!/bin/sh
+hostname jevois
+MODULES_DIR=/lib/modules/3.4.39
+
+if [ ! -f /boot/login ]; then /jevois/austin_cam.sh
+else while true; do /sbin/getty -L ttyS0 115200 vt100; done; fi

@@ -1,0 +1,5 @@
+This file is a list of unpolished notes.
+
+To convert a jevois that has been flashed over to be a passthrough:
+
+mkdir -p JEVOIS/modules/JeVois/; cp JEVOIS1/modules/JeVois/PassThrough/ JEVOIS/modules/JeVois/ -r; mkdir -p JEVOIS/lib/JeVois/; cp JEVOIS1/lib/JeVois/libjevoisbase.so JEVOIS/lib/JeVois/; mkdir -p JEVOIS/deploy; chmod 777 JEVOIS/deploy; cp /backups/no_backup/971-code-lab/971-Robot-Code/y2019/vision/tools/launch.sh JEVOIS/deploy/
