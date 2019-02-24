@@ -135,7 +135,9 @@ struct timespec to_timespec(
 }  // namespace time
 
 constexpr monotonic_clock::time_point monotonic_clock::min_time;
+constexpr monotonic_clock::time_point monotonic_clock::max_time;
 constexpr realtime_clock::time_point realtime_clock::min_time;
+constexpr realtime_clock::time_point realtime_clock::max_time;
 
 monotonic_clock::time_point monotonic_clock::now() noexcept {
 #ifdef __linux__

@@ -37,6 +37,8 @@ class monotonic_clock {
 
   static constexpr time_point min_time{
       time_point(duration(::std::numeric_limits<duration::rep>::min()))};
+  static constexpr time_point max_time{
+      time_point(duration(::std::numeric_limits<duration::rep>::max()))};
 };
 
 class realtime_clock {
@@ -60,6 +62,8 @@ class realtime_clock {
 
   static constexpr time_point min_time{
       time_point(duration(::std::numeric_limits<duration::rep>::min()))};
+  static constexpr time_point max_time{
+      time_point(duration(::std::numeric_limits<duration::rep>::max()))};
 };
 
 namespace time {
