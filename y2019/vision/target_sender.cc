@@ -381,6 +381,11 @@ int main(int argc, char **argv) {
               frc971::jevois::UartUnpackToCamera(packet);
           if (calibration_question) {
             const auto &calibration = *calibration_question;
+            IntrinsicParams *intrinsics = finder_.mutable_intrinsics();
+            intrinsics->mount_angle = calibration.calibration(0, 0);
+            intrinsics->focal_length = calibration.calibration(0, 1);
+            intrinsics->barrel_mount = calibration.calibration(0, 2);
+
             switch (calibration.camera_command) {
               case CameraCalibration::CameraCommand::kNormal:
                 break;

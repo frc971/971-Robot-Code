@@ -57,6 +57,7 @@ class TargetFinder {
   const Target &GetTemplateTarget() { return target_template_; }
 
   const IntrinsicParams &intrinsics() const { return intrinsics_; }
+  IntrinsicParams *mutable_intrinsics() { return &intrinsics_; }
 
  private:
   // Find a loosly connected target.

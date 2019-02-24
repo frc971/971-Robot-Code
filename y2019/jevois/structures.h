@@ -139,6 +139,9 @@ struct CameraCalibration {
   // The calibration matrix. This defines where the camera is pointing.
   //
   // TODO(Parker): What are the details on how this is defined?
+  // [0][0]: mount_angle
+  // [0][1]: focal_length
+  // [0][2]: barrel_mount
   Eigen::Matrix<float, 3, 4> calibration;
 
   // A local timestamp from the Teensy. This starts at 0 when the Teensy is
