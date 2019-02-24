@@ -60,11 +60,11 @@ cc_binary(
         "//aos/vision/events:epoll_events",
         "//aos/vision/events:socket_types",
         "//aos/vision/events:udp",
-        "//aos/vision/image:image_stream",
-        "//aos/vision/image:reader",
         "//y2019/jevois:serial",
         "//y2019/jevois:structures",
         "//y2019/jevois:uart",
+        "//y2019/jevois/camera:reader",
+        "//y2019/jevois/camera:image_stream",
         "@com_google_ceres_solver//:ceres",
     ],
 )
