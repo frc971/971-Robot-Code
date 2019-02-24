@@ -350,9 +350,9 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
         CheckCollisions();
       }
 
-      const double loop_time =
-          chrono::duration_cast<chrono::duration<double>>(
-              monotonic_clock::now() - loop_start_time).count();
+      const double loop_time = chrono::duration_cast<chrono::duration<double>>(
+                                   monotonic_clock::now() - loop_start_time)
+                                   .count();
 
       const double elevator_acceleration =
           (superstructure_plant_.elevator_velocity() -
@@ -718,9 +718,8 @@ TEST_F(SuperstructureTest, VacuumDetectsPiece) {
     ASSERT_TRUE(goal.Send());
   }
 
-  RunForTime(
-      Vacuum::kTimeAtHigherVoltage - chrono::milliseconds(10),
-      true, false);
+  RunForTime(Vacuum::kTimeAtHigherVoltage - chrono::milliseconds(10), true,
+             false);
 
   // Verify that at 0 pressure after short time voltage is still 12
   superstructure_plant_.set_simulated_pressure(0.0);
@@ -743,9 +742,8 @@ TEST_F(SuperstructureTest, VacuumBacksOff) {
 
   // Verify that at 0 pressure after short time voltage is still high
   superstructure_plant_.set_simulated_pressure(0.0);
-  RunForTime(
-      Vacuum::kTimeAtHigherVoltage - chrono::milliseconds(10),
-      true, false);
+  RunForTime(Vacuum::kTimeAtHigherVoltage - chrono::milliseconds(10), true,
+             false);
   superstructure_queue_.output.FetchLatest();
   EXPECT_EQ(superstructure_queue_.output->pump_voltage, Vacuum::kPumpVoltage);
 
@@ -757,8 +755,8 @@ TEST_F(SuperstructureTest, VacuumBacksOff) {
             Vacuum::kPumpHasPieceVoltage);
 }
 
-// Tests the Vacuum stays on for a bit after getting a no suck goal
-TEST_F(SuperstructureTest, VacuumStaysOn) {
+// Tests the Vacuum stops immediately after getting a no suck goal
+TEST_F(SuperstructureTest, VacuumStopsQuickly) {
   WaitUntilZeroed();
   // Turn on suction
   {
@@ -784,16 +782,8 @@ TEST_F(SuperstructureTest, VacuumStaysOn) {
   }
 
   superstructure_plant_.set_simulated_pressure(1.0);
-  // Run for a short while and make sure we still ask for non-zero volts
-  RunForTime(Vacuum::kTimeToKeepPumpRunning -
-                 chrono::milliseconds(10),
-             true, false);
-  superstructure_queue_.output.FetchLatest();
-  EXPECT_GE(superstructure_queue_.output->pump_voltage,
-            Vacuum::kPumpHasPieceVoltage);
-
-  // Wait and make sure the vacuum actually turns off
-  RunForTime(chrono::seconds(2));
+  // Run for a short while and check that voltage dropped to 0
+  RunForTime(chrono::milliseconds(10), true, false);
   superstructure_queue_.output.FetchLatest();
   EXPECT_EQ(superstructure_queue_.output->pump_voltage, 0.0);
 }

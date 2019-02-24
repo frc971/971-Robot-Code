@@ -7,14 +7,13 @@ namespace superstructure {
 constexpr double Vacuum::kPumpVoltage;
 constexpr double Vacuum::kPumpHasPieceVoltage;
 constexpr aos::monotonic_clock::duration Vacuum::kTimeAtHigherVoltage;
-constexpr aos::monotonic_clock::duration Vacuum::kTimeToKeepPumpRunning;
+constexpr aos::monotonic_clock::duration Vacuum::kReleaseTime;
 
 void Vacuum::Iterate(const SuctionGoal *unsafe_goal, float suction_pressure,
                      SuperstructureQueue::Output *output, bool *has_piece,
                      aos::EventLoop *event_loop) {
   auto monotonic_now = event_loop->monotonic_now();
   bool low_pump_voltage = false;
-  bool no_goal_for_a_bit = false;
 
   // implement a simple low-pass filter on the pressure
   filtered_pressure_ = kSuctionAlpha * suction_pressure +
@@ -29,26 +28,31 @@ void Vacuum::Iterate(const SuctionGoal *unsafe_goal, float suction_pressure,
       monotonic_now > time_at_last_acquisition_ + kTimeAtHigherVoltage &&
       new_has_piece;
 
-  // if we've had the piece for enought time, go to lower pump_voltage
+  // If we've had the piece for enough time, go to lower pump_voltage
   low_pump_voltage = *has_piece;
-  no_goal_for_a_bit =
-      monotonic_now > time_at_last_evacuate_goal_ + kTimeToKeepPumpRunning;
 
   if (unsafe_goal && output) {
-    const bool evacuate = unsafe_goal->top || unsafe_goal->bottom;
-    if (evacuate) {
-      time_at_last_evacuate_goal_ = monotonic_now;
+    const bool release = !unsafe_goal->top && !unsafe_goal->bottom;
+
+    if (release) {
+      last_release_time_ = monotonic_now;
     }
 
     // Once the vacuum evacuates, the pump speeds up because there is no
     // resistance.  So, we want to turn it down to save the pump from
     // overheating.
     output->pump_voltage =
-        (no_goal_for_a_bit) ? 0 : (low_pump_voltage ? kPumpHasPieceVoltage
-                                                    : kPumpVoltage);
+        release ? 0 : (low_pump_voltage ? kPumpHasPieceVoltage : kPumpVoltage);
 
     output->intake_suction_top = unsafe_goal->top;
     output->intake_suction_bottom = unsafe_goal->bottom;
+
+    // If we intend to release, or recently released, set has_piece to false so
+    // that we give the part of the vacuum circuit with the pressure sensor time
+    // to equilibrate with the rest of the suction cup.
+    if (release || monotonic_now < last_release_time_ + kReleaseTime) {
+      *has_piece = false;
+    }
   }
   had_piece_ = new_has_piece;
 }
