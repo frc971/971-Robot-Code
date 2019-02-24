@@ -1,10 +1,13 @@
 package(default_visibility = ["//visibility:public"])
 
+load("//tools:environments.bzl", "mcu_cpus")
+
 cc_library(
     name = "bitpacking",
     hdrs = [
         "bitpacking.h",
     ],
+    compatible_with = mcu_cpus,
     visibility = ["//visibility:public"],
     deps = [
         "//third_party/GSL",

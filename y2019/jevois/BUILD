@@ -37,6 +37,7 @@ genrule(
             "--output=$(location jevois_crc.c)",
         ]),
     ]),
+    compatible_with = mcu_cpus,
     tools = [
         "//third_party/pycrc:pycrc_main",
     ],
@@ -50,6 +51,7 @@ cc_library(
     hdrs = [
         "jevois_crc.h",
     ],
+    compatible_with = mcu_cpus,
     deps = [
         "//third_party/GSL",
     ],
@@ -64,6 +66,19 @@ cc_library(
     deps = [
         "//aos/containers:sized_array",
         "//aos/time",
+        "//third_party/eigen",
+    ],
+)
+
+cc_library(
+    name = "structures_mcu",
+    hdrs = [
+        "structures.h",
+    ],
+    restricted_to = mcu_cpus,
+    deps = [
+        "//aos/containers:sized_array",
+        "//aos/time:time_mcu",
         "//third_party/eigen",
     ],
 )
@@ -88,6 +103,24 @@ cc_library(
 )
 
 cc_library(
+    name = "spi_mcu",
+    srcs = [
+        "spi.cc",
+    ],
+    hdrs = [
+        "spi.h",
+    ],
+    restricted_to = mcu_cpus,
+    deps = [
+        ":jevois_crc",
+        ":structures_mcu",
+        "//aos/util:bitpacking",
+        "//third_party/GSL",
+        "//third_party/optional",
+    ],
+)
+
+cc_library(
     name = "uart",
     srcs = [
         "uart.cc",
@@ -102,6 +135,26 @@ cc_library(
         ":structures",
         "//aos/containers:sized_array",
         "//aos/logging",
+        "//aos/util:bitpacking",
+        "//third_party/GSL",
+        "//third_party/optional",
+    ],
+)
+
+cc_library(
+    name = "uart_mcu",
+    srcs = [
+        "uart.cc",
+    ],
+    hdrs = [
+        "uart.h",
+    ],
+    restricted_to = mcu_cpus,
+    deps = [
+        ":cobs_mcu",
+        ":jevois_crc",
+        ":structures_mcu",
+        "//aos/containers:sized_array",
         "//aos/util:bitpacking",
         "//third_party/GSL",
         "//third_party/optional",
@@ -137,6 +190,17 @@ cc_library(
     ],
     deps = [
         "//aos/logging",
+        "//third_party/GSL",
+    ],
+)
+
+cc_library(
+    name = "cobs_mcu",
+    hdrs = [
+        "cobs.h",
+    ],
+    restricted_to = mcu_cpus,
+    deps = [
         "//third_party/GSL",
     ],
 )

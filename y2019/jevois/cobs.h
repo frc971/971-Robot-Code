@@ -6,8 +6,13 @@
 #include <algorithm>
 #include <array>
 
-#include "aos/logging/logging.h"
 #include "third_party/GSL/include/gsl/gsl"
+#ifdef __linux__
+#include "aos/logging/logging.h"
+#else
+#define CHECK(...)
+#define CHECK_LE(...)
+#endif
 
 // This file contains code for encoding and decoding Consistent Overhead Byte
 // Stuffing data. <http://www.stuartcheshire.org/papers/cobsforton.pdf> has
