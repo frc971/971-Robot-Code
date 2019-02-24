@@ -15,7 +15,7 @@ class UartBuffer {
   // Returns the number of characters added.
   __attribute__((warn_unused_result)) int PushSpan(gsl::span<const char> data);
 
-  // max is the maximum size the returned spans should be.
+  // max is the maximum size the returned span should be.
   // The data in the result is only valid until another method is called.
   // Note that this may not return all available data when doing so would
   // require wrapping around, but it will always return a non-empty span if any
@@ -24,6 +24,8 @@ class UartBuffer {
 
   bool empty() const { return size_ == 0; }
   bool full() const { return size_ == kSize; }
+
+  void clear() { size_ = 0; }
 
   // This may only be called when !empty().
   char PopSingle();

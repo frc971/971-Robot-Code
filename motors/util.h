@@ -145,13 +145,6 @@ typedef struct {
 // Index-parameterized access to various registers from various peripherals.
 // This only includes ones somebody thought might be useful; add more if you
 // want them.
-#define SPIn_MCR(n) DO_CONCATENATE(SPI, n, _MCR)
-#define SPIn_TCR(n) DO_CONCATENATE(SPI, n, _TCR)
-#define SPIn_CTAR0(n) DO_CONCATENATE(SPI, n, _CTAR0)
-#define SPIn_SR(n) DO_CONCATENATE(SPI, n, _SR)
-#define SPIn_RSER(n) DO_CONCATENATE(SPI, n, _RSER)
-#define SPIn_PUSHR(n) DO_CONCATENATE(SPI, n, _PUSHR)
-#define SPIn_POPR(n) DO_CONCATENATE(SPI, n, _POPR)
 #define dma_chN_isr(n) DO_CONCATENATE(dma_ch, n, _isr)
 #define IRQ_DMA_CHn(n) DO_CONCATENATE(IRQ_DMA, _CH, n)
 
