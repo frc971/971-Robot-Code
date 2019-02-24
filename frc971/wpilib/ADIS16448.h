@@ -45,6 +45,10 @@ class ADIS16448 {
   // readings.
   void operator()();
 
+  void set_spi_idle_callback(std::function<void()> spi_idle_callback) {
+    spi_idle_callback_ = std::move(spi_idle_callback);
+  }
+
   void Quit() { run_ = false; }
 
   double gyro_x_zeroed_offset() const { return gyro_x_zeroed_offset_; }
@@ -89,6 +93,7 @@ class ADIS16448 {
   frc::DigitalInput *const dio1_;
   frc::DigitalOutput *reset_ = nullptr;
 
+  std::function<void()> spi_idle_callback_ = []() {};
   ::std::atomic<bool> run_{true};
 
   // The averaged values of the gyro over 6 seconds after power up.

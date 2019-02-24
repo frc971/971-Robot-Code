@@ -122,6 +122,8 @@ ADIS16448::ADIS16448(frc::SPI::Port port, frc::DigitalInput *dio1)
     : spi_(new frc::SPI(port)), dio1_(dio1) {
   // 1MHz is the maximum supported for burst reads, but we
   // want to go slower to hopefully make it more reliable.
+  // Note that the roboRIO's minimum supported clock rate appears to be
+  // 0.781MHz, so that's what this actually does.
   spi_->SetClockRate(1e5);
   spi_->SetChipSelectActiveLow();
   spi_->SetClockActiveLow();
@@ -298,6 +300,8 @@ void ADIS16448::operator()() {
     if (!message.Send()) {
       LOG(WARNING, "sending queue message failed\n");
     }
+
+    spi_idle_callback_();
   }
 }
 
