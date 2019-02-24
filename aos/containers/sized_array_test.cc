@@ -135,5 +135,24 @@ TEST(SizedArrayTest, Iterators) {
   }
 }
 
+// Tests various ways of filling up and emptying.
+TEST(SizedArrayTest, FillEmpty) {
+  SizedArray<int, 2> a;
+  EXPECT_TRUE(a.empty());
+  EXPECT_FALSE(a.full());
+  a.push_back(9);
+  EXPECT_FALSE(a.empty());
+  EXPECT_FALSE(a.full());
+  a.push_back(7);
+  EXPECT_FALSE(a.empty());
+  EXPECT_TRUE(a.full());
+
+  a.clear();
+  EXPECT_TRUE(a.empty());
+  EXPECT_FALSE(a.full());
+  a.push_back(1);
+  EXPECT_EQ(1, a.back());
+}
+
 }  // namespace testing
 }  // namespace aos

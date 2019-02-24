@@ -109,6 +109,8 @@ class SizedArray {
     --size_;
   }
 
+  void clear() { size_ = 0; }
+
   // These allow access to the underlying storage. The data here may be outside
   // the current logical extents of the container.
   const array &backing_array() const { return array_; }
