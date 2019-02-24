@@ -22,8 +22,11 @@ Test List:
     QuarterCounterClockwiseRotationFromBottomFrontIntakeMoving
 */
 
-class CollisionAvoidanceTests : public ::testing::Test {
+class CollisionAvoidanceTests : public ::testing::Test,
+                                public ::testing::WithParamInterface<bool> {
  public:
+  CollisionAvoidanceTests() { status.has_piece = GetParam(); }
+
   void Iterate() {
     SuperstructureQueue::Goal safe_goal;
     bool was_collided = avoidance.IsCollided(&status);
@@ -40,8 +43,8 @@ class CollisionAvoidanceTests : public ::testing::Test {
           ::aos::Clip(unsafe_goal.wrist.unsafe_goal, avoidance.min_wrist_goal(),
                       avoidance.max_wrist_goal());
 
-      safe_goal.elevator.unsafe_goal = ::std::max(unsafe_goal.elevator.unsafe_goal,
-                                             avoidance.min_elevator_goal());
+      safe_goal.elevator.unsafe_goal = ::std::max(
+          unsafe_goal.elevator.unsafe_goal, avoidance.min_elevator_goal());
 
       safe_goal.intake.unsafe_goal =
           ::aos::Clip(unsafe_goal.intake.unsafe_goal,
@@ -79,7 +82,8 @@ class CollisionAvoidanceTests : public ::testing::Test {
   void CheckGoals() {
     // check to see if we reached the goals
     ASSERT_NEAR(unsafe_goal.wrist.unsafe_goal, status.wrist.position, 0.001);
-    ASSERT_NEAR(unsafe_goal.elevator.unsafe_goal, status.elevator.position, 0.001);
+    ASSERT_NEAR(unsafe_goal.elevator.unsafe_goal, status.elevator.position,
+                0.001);
     ASSERT_NEAR(unsafe_goal.intake.unsafe_goal, status.intake.position, 0.001);
   }
 
@@ -97,11 +101,12 @@ class CollisionAvoidanceTests : public ::testing::Test {
   static constexpr double kIterationMove = 0.001;
 };
 // It is trying to rotate from far back to front low.
-TEST_F(CollisionAvoidanceTests, FullClockwiseRotationFromBottomBackIntakeIn) {
+TEST_P(CollisionAvoidanceTests, FullClockwiseRotationFromBottomBackIntakeIn) {
   // changes the goals to be in the position where the angle is low front and
   // the elevator is all the way at the bottom with the intake attempting to be
   // in.
-  unsafe_goal.wrist.unsafe_goal = avoidance.kWristMaxAngle - avoidance.kEpsWrist;
+  unsafe_goal.wrist.unsafe_goal =
+      avoidance.kWristMaxAngle - avoidance.kEpsWrist;
   unsafe_goal.elevator.unsafe_goal = 0.0;
   unsafe_goal.intake.unsafe_goal =
       avoidance.kIntakeInAngle - avoidance.kEpsIntake;
@@ -118,12 +123,13 @@ TEST_F(CollisionAvoidanceTests, FullClockwiseRotationFromBottomBackIntakeIn) {
 }
 
 // It is trying to rotate from the front middle to front bottom.
-TEST_F(CollisionAvoidanceTests,
+TEST_P(CollisionAvoidanceTests,
        QuarterClockwiseRotationFromMiddleFrontIntakeOut) {
   // changes the goals to be in the position where the angle is low front and
   // the elevator is all the way at the bottom with the intake attempting to be
   // out.
-  unsafe_goal.wrist.unsafe_goal = avoidance.kWristMaxAngle - avoidance.kEpsWrist;
+  unsafe_goal.wrist.unsafe_goal =
+      avoidance.kWristMaxAngle - avoidance.kEpsWrist;
   unsafe_goal.elevator.unsafe_goal = 0.0;
   unsafe_goal.intake.unsafe_goal =
       avoidance.kIntakeOutAngle + avoidance.kEpsIntake;
@@ -140,7 +146,7 @@ TEST_F(CollisionAvoidanceTests,
   CheckGoals();
 }
 // It is trying to rotate from the front middle to front bottom.
-TEST_F(CollisionAvoidanceTests,
+TEST_P(CollisionAvoidanceTests,
        QuarterClockwiseRotationFromMiddleFrontIntakeMiddle) {
   // changes the goals to be in the position where the angle is low front and
   // the elevator is all the way at the bottom with the intake attempting to be
@@ -152,7 +158,8 @@ TEST_F(CollisionAvoidanceTests,
 
   // sets the status position messgaes to be have the elevator at the half way
   // with the intake in and the wrist middle front
-  unsafe_goal.wrist.unsafe_goal = avoidance.kWristMaxAngle - avoidance.kEpsWrist;
+  unsafe_goal.wrist.unsafe_goal =
+      avoidance.kWristMaxAngle - avoidance.kEpsWrist;
   unsafe_goal.elevator.unsafe_goal = 0.0;
   unsafe_goal.intake.unsafe_goal =
       avoidance.kIntakeOutAngle + avoidance.kEpsIntake;
@@ -163,7 +170,7 @@ TEST_F(CollisionAvoidanceTests,
 }
 
 // It is trying to rotate from front low to far back.
-TEST_F(CollisionAvoidanceTests,
+TEST_P(CollisionAvoidanceTests,
        FullCounterClockwiseRotationFromBottomBackIntakeIn) {
   // sets the status position messgaes to be have the elevator at the bottom
   // with the intake in and the wrist low back
@@ -174,7 +181,8 @@ TEST_F(CollisionAvoidanceTests,
   // changes the goals to be in the position where the angle is low front and
   // the elevator is all the way at the bottom with the intake attempting to be
   // in.
-  unsafe_goal.wrist.unsafe_goal = avoidance.kWristMinAngle + avoidance.kEpsWrist;
+  unsafe_goal.wrist.unsafe_goal =
+      avoidance.kWristMinAngle + avoidance.kEpsWrist;
   unsafe_goal.elevator.unsafe_goal = 0.0;
   unsafe_goal.intake.unsafe_goal =
       avoidance.kIntakeInAngle - avoidance.kEpsIntake;
@@ -185,7 +193,7 @@ TEST_F(CollisionAvoidanceTests,
 }
 
 // It is trying to rotate from the front bottom to front middle.
-TEST_F(CollisionAvoidanceTests,
+TEST_P(CollisionAvoidanceTests,
        QuarterCounterClockwiseRotationFromMiddleFrontIntakeOut) {
   // changes the goals to be in the position where the angle is low front and
   // the elevator is all the way at the bottom with the intake attempting to be
@@ -208,7 +216,7 @@ TEST_F(CollisionAvoidanceTests,
 }
 
 // It is trying to rotate from the front bottom to front middle.
-TEST_F(CollisionAvoidanceTests,
+TEST_P(CollisionAvoidanceTests,
        QuarterCounterClockwiseRotationFromBottomFrontIntakeMiddle) {
   // changes the goals to be in the position where the angle is low front and
   // the elevator is all the way at the bottom with the intake attempting to be
@@ -232,7 +240,7 @@ TEST_F(CollisionAvoidanceTests,
 }
 
 // Unreasonable Elevator Goal
-TEST_F(CollisionAvoidanceTests, UnreasonableElevatorGoal) {
+TEST_P(CollisionAvoidanceTests, UnreasonableElevatorGoal) {
   // changes the goals to be in the position where the angle is low front and
   // the elevator is all the way at the bottom with the intake attempting to be
   // out.
@@ -256,7 +264,7 @@ TEST_F(CollisionAvoidanceTests, UnreasonableElevatorGoal) {
 }
 
 // Unreasonable Wrist Goal
-TEST_F(CollisionAvoidanceTests, UnreasonableWristGoal) {
+TEST_P(CollisionAvoidanceTests, UnreasonableWristGoal) {
   // changes the goals to be in the position where the angle is low front and
   // the elevator is all the way at the bottom with the intake attempting to be
   // out.
@@ -282,7 +290,7 @@ TEST_F(CollisionAvoidanceTests, UnreasonableWristGoal) {
 }
 
 // Fix Collision Wrist in Elevator
-TEST_F(CollisionAvoidanceTests, FixElevatorCollision) {
+TEST_P(CollisionAvoidanceTests, FixElevatorCollision) {
   // changes the goals
   unsafe_goal.wrist.unsafe_goal = 3.14;
   unsafe_goal.elevator.unsafe_goal = 0.0;
@@ -303,9 +311,10 @@ TEST_F(CollisionAvoidanceTests, FixElevatorCollision) {
 }
 
 // Fix Collision Wrist in Intake
-TEST_F(CollisionAvoidanceTests, FixWristCollision) {
+TEST_P(CollisionAvoidanceTests, FixWristCollision) {
   // changes the goals
-  unsafe_goal.wrist.unsafe_goal = avoidance.kWristMaxAngle - avoidance.kEpsWrist;
+  unsafe_goal.wrist.unsafe_goal =
+      avoidance.kWristMaxAngle - avoidance.kEpsWrist;
   unsafe_goal.elevator.unsafe_goal = 0.0;
   unsafe_goal.intake.unsafe_goal =
       (avoidance.kIntakeOutAngle + avoidance.kIntakeInAngle) / 2.0;
@@ -324,7 +333,7 @@ TEST_F(CollisionAvoidanceTests, FixWristCollision) {
   ASSERT_NEAR(unsafe_goal.intake.unsafe_goal, status.intake.position, 0.001);
 }
 // Fix Collision Wrist Above Elevator
-TEST_F(CollisionAvoidanceTests, FixWristElevatorCollision) {
+TEST_P(CollisionAvoidanceTests, FixWristElevatorCollision) {
   // changes the goals
   unsafe_goal.wrist.unsafe_goal = 0.0;
   unsafe_goal.elevator.unsafe_goal = 0.0;
@@ -343,6 +352,10 @@ TEST_F(CollisionAvoidanceTests, FixWristElevatorCollision) {
               status.elevator.position, 0.001);
   ASSERT_NEAR(unsafe_goal.intake.unsafe_goal, status.intake.position, 0.001);
 }
+
+INSTANTIATE_TEST_CASE_P(CollisionAvoidancePieceTest, CollisionAvoidanceTests,
+                        ::testing::Bool());
+
 }  // namespace testing
 }  // namespace superstructure
 }  // namespace control_loops
