@@ -58,6 +58,7 @@ Vector<2> Project(Vector<2> pt, const IntrinsicParams &intrinsics,
   double r1 = extrinsics.r1;
   double r2 = extrinsics.r2;
   double rup = intrinsics.mount_angle;
+  double rbarrel = intrinsics.barrel_mount;
   double fl = intrinsics.focal_length;
 
   ::Eigen::Matrix<double, 1, 3> pts{pt.x(), pt.y() + y, 0.0};
@@ -92,6 +93,11 @@ Vector<2> Project(Vector<2> pt, const IntrinsicParams &intrinsics,
            c).finished() *
           pts.transpose();
   }
+
+  // TODO: Maybe barrel should be extrinsics to allow rocking?
+  // Also, in this case, barrel should go above the rotation above?
+  pts = ::Eigen::AngleAxis<double>(rbarrel, ::Eigen::Vector3d(0.0, 0.0, 1.0)) *
+        pts.transpose();
 
   // TODO: Final image projection.
   ::Eigen::Matrix<double, 1, 3> res = pts;

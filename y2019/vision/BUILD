@@ -81,10 +81,9 @@ cc_binary(
     ],
 )
 
-"""
 cc_binary(
-    name = "calibration",
-    srcs = ["calibration.cc"],
+    name = "global_calibration",
+    srcs = ["global_calibration.cc"],
     deps = [
          ":target_finder",
          "//aos/logging",
@@ -95,9 +94,9 @@ cc_binary(
          "//aos/vision/events:socket_types",
          "//aos/vision/events:udp",
          "//aos/vision/image:image_stream",
+         "//aos/vision/image:image_dataset",
          "//aos/vision/image:reader",
          "@com_google_ceres_solver//:ceres",
     ],
     restricted_to = VISION_TARGETS,
 )
-"""

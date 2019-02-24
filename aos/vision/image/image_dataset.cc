@@ -45,6 +45,15 @@ std::vector<std::string> Split(DataRef inp, char delim) {
 }
 }  // namespace
 
+DatasetFrame LoadFile(const std::string &jpeg_filename) {
+  bool is_jpeg = true;
+  size_t l = jpeg_filename.size();
+  if (l > 4 && jpeg_filename[l - 1] == 'v') {
+    is_jpeg = false;
+  }
+  return DatasetFrame{is_jpeg, GetFileContents(jpeg_filename)};
+}
+
 std::vector<DatasetFrame> LoadDataset(const std::string &jpeg_list_filename) {
   std::vector<DatasetFrame> images;
   auto contents = GetFileContents(jpeg_list_filename);
@@ -62,17 +71,10 @@ std::vector<DatasetFrame> LoadDataset(const std::string &jpeg_list_filename) {
         if (jpeg_filename[i] == '#') return;
         if (jpeg_filename[i] != ' ') break;
       }
-      bool is_jpeg = true;
-      size_t l = jpeg_filename.size();
-      if (l > 4 && jpeg_filename[l - 1] == 'v') {
-        is_jpeg = false;
-      }
       if (jpeg_filename[0] == '/') {
-        images.emplace_back(
-            DatasetFrame{is_jpeg, GetFileContents(jpeg_filename)});
+        images.emplace_back(LoadFile(jpeg_filename));
       } else {
-        images.emplace_back(
-            DatasetFrame{is_jpeg, GetFileContents(basename + jpeg_filename)});
+        images.emplace_back(LoadFile(basename + jpeg_filename));
       }
     }();
   }

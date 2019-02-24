@@ -15,6 +15,8 @@ struct DatasetFrame {
 
 std::vector<DatasetFrame> LoadDataset(const std::string &jpeg_list_filename);
 
+DatasetFrame LoadFile(const std::string &jpeg_filename);
+
 }  // namespace vision
 }  // namespace aos
 
