@@ -12,7 +12,7 @@ struct Joystick {
 };
 
 message JoystickState {
-  Joystick[4] joysticks;
+  Joystick[6] joysticks;
 
   bool test_mode;
   bool fms_attached;

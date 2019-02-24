@@ -1,9 +1,9 @@
 #include "frc971/wpilib/joystick_sender.h"
 
-#include "aos/robot_state/robot_state.q.h"
 #include "aos/init.h"
-#include "aos/network/team_number.h"
 #include "aos/logging/queue_logging.h"
+#include "aos/network/team_number.h"
+#include "aos/robot_state/robot_state.q.h"
 
 #include "HAL/HAL.h"
 #include "frc971/wpilib/ahal/DriverStation.h"
@@ -41,13 +41,16 @@ void JoystickSender::operator()() {
       new_state->team_id = team_id;
       new_state->fake = false;
 
-      for (int i = 0; i < 4; ++i) {
+      for (uint8_t i = 0;
+           i < sizeof(new_state->joysticks) / sizeof(::aos::Joystick); ++i) {
         new_state->joysticks[i].buttons = ds->GetStickButtons(i);
         for (int j = 0; j < 6; ++j) {
           new_state->joysticks[i].axis[j] = ds->GetStickAxis(i, j);
         }
+        if (ds->GetStickPOVCount(i) > 0) {
+          new_state->joysticks[i].pov = ds->GetStickPOV(i, 0);
+        }
         LOG_STRUCT(DEBUG, "joystick_state", *new_state);
-
       }
       if (!new_state.Send()) {
         LOG(WARNING, "sending joystick_state failed\n");
