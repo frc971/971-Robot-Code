@@ -2,10 +2,15 @@
 
 #include <array>
 
-#include "aos/logging/logging.h"
 #include "aos/util/bitpacking.h"
 #include "third_party/GSL/include/gsl/gsl"
 #include "y2019/jevois/jevois_crc.h"
+#ifdef __linux__
+#include "aos/logging/logging.h"
+#else
+#define CHECK(...)
+#define CHECK_GE(...)
+#endif
 
 namespace frc971 {
 namespace jevois {
@@ -50,8 +55,7 @@ UartToTeensyBuffer UartPackToTeensy(const Frame &message) {
   return result;
 }
 
-tl::optional<Frame> UartUnpackToTeensy(
-    gsl::span<const char> encoded_buffer) {
+tl::optional<Frame> UartUnpackToTeensy(gsl::span<const char> encoded_buffer) {
   std::array<char, uart_to_teensy_size()> buffer;
   if (static_cast<size_t>(
           CobsDecode<uart_to_teensy_size()>(encoded_buffer, &buffer).size()) !=

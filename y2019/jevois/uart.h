@@ -2,6 +2,7 @@
 #define Y2019_JEVOIS_UART_H_
 
 #include "aos/containers/sized_array.h"
+#include "third_party/GSL/include/gsl/gsl"
 #include "third_party/optional/tl/optional.hpp"
 #include "y2019/jevois/cobs.h"
 #include "y2019/jevois/structures.h"
