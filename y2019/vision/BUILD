@@ -10,6 +10,12 @@ VISION_TARGETS = [
 ]
 
 cc_library(
+    name = "constants",
+    hdrs = ["constants.h"],
+    srcs = ["constants.cc"],
+)
+
+cc_library(
     name = "target_finder",
     srcs = [
         "target_finder.cc",
@@ -21,6 +27,7 @@ cc_library(
     ],
     restricted_to = VISION_TARGETS,
     deps = [
+        ":constants",
         "//aos/vision/blob:contour",
         "//aos/vision/blob:hierarchical_contour_merge",
         "//aos/vision/blob:region_alloc",
