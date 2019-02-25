@@ -45,6 +45,7 @@
 #include "third_party/Phoenix-frc-lib/cpp/include/ctre/phoenix/MotorControl/CAN/TalonSRX.h"
 #include "y2019/constants.h"
 #include "y2019/control_loops/superstructure/superstructure.q.h"
+#include "y2019/jevois/spi.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -262,6 +263,89 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   // TODO(sabina): Add wrist and elevator hall effects.
 };
 
+class CameraReader {
+ public:
+  CameraReader() = default;
+  CameraReader(const CameraReader &) = delete;
+  CameraReader &operator=(const CameraReader &) = delete;
+
+  void set_spi(frc::SPI *spi) {
+    spi_ = spi;
+    spi_->SetClockRate(1e6);
+    spi_->SetChipSelectActiveHigh();
+    spi_->SetClockActiveLow();
+    spi_->SetSampleDataOnFalling();
+    // It ignores you if you try changing this...
+    spi_->SetMSBFirst();
+  }
+
+  void DoSpiTransaction() {
+    using namespace frc971::jevois;
+    RoborioToTeensy to_teensy{};
+    to_teensy.realtime_now = aos::realtime_clock::now();
+
+    std::array<char, spi_transfer_size() + 1> to_send{};
+    {
+      const auto to_send_data =
+          gsl::make_span(to_send).last<spi_transfer_size()>();
+      const auto encoded = SpiPackToTeensy(to_teensy);
+      std::copy(encoded.begin(), encoded.end(), to_send_data.begin());
+    }
+    rx_clearer_.ClearRxFifo();
+    // First, send recieve a dummy byte because the Teensy can't control what it
+    // sends for the first byte.
+    std::array<char, spi_transfer_size() + 1> to_receive;
+    DoTransaction(to_send, to_receive);
+    const auto unpacked = SpiUnpackToRoborio(
+        gsl::make_span(to_receive).last(spi_transfer_size()));
+    if (!unpacked) {
+      LOG(INFO, "Decoding SPI data failed\n");
+      return;
+    }
+
+    // TODO(Brian): Do something useful with the targets.
+
+    if (dummy_spi_) {
+      uint8_t dummy_send, dummy_receive;
+      dummy_spi_->Transaction(&dummy_send, &dummy_receive, 1);
+    }
+  }
+
+  void DoTransaction(gsl::span<char> to_send, gsl::span<char> to_receive) {
+    CHECK_EQ(to_send.size(), to_receive.size());
+    const auto result = spi_->Transaction(
+        reinterpret_cast<uint8_t *>(to_send.data()),
+        reinterpret_cast<uint8_t *>(to_receive.data()), to_send.size());
+    if (result == to_send.size()) {
+      return;
+    }
+    if (result == -1) {
+      LOG(INFO, "SPI::Transaction of %zd bytes failed\n", to_send.size());
+      return;
+    }
+    LOG(FATAL, "SPI::Transaction returned something weird\n");
+  }
+
+  void SetDummySPI(frc::SPI::Port port) {
+    dummy_spi_.reset(new frc::SPI(port));
+    // Pick the same settings here in case the roboRIO decides to try something
+    // stupid when switching.
+    if (dummy_spi_) {
+      dummy_spi_->SetClockRate(1e5);
+      dummy_spi_->SetChipSelectActiveLow();
+      dummy_spi_->SetClockActiveLow();
+      dummy_spi_->SetSampleDataOnFalling();
+      dummy_spi_->SetMSBFirst();
+    }
+  }
+
+ private:
+  frc::SPI *spi_ = nullptr;
+  ::std::unique_ptr<frc::SPI> dummy_spi_;
+
+  frc971::wpilib::SpiRxClearer rx_clearer_;
+};
+
 class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
   void set_elevator_victor(::std::unique_ptr<::frc::VictorSP> t) {
@@ -465,10 +549,16 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     ::std::thread reader_thread(::std::ref(reader));
 
+    CameraReader camera_reader;
+    frc::SPI camera_spi(frc::SPI::Port::kOnboardCS3);
+    camera_reader.set_spi(&camera_spi);
+    camera_reader.SetDummySPI(frc::SPI::Port::kOnboardCS2);
+
     auto imu_trigger = make_unique<frc::DigitalInput>(0);
     ::frc971::wpilib::ADIS16448 imu(frc::SPI::Port::kOnboardCS1,
                                     imu_trigger.get());
-    imu.SetDummySPI(frc::SPI::Port::kOnboardCS2);
+    imu.set_spi_idle_callback(
+        [&camera_reader]() { camera_reader.DoSpiTransaction(); });
     auto imu_reset = make_unique<frc::DigitalOutput>(1);
     imu.set_reset(imu_reset.get());
     ::std::thread imu_thread(::std::ref(imu));
