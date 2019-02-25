@@ -3,29 +3,52 @@
 namespace y2019 {
 namespace vision {
 
-constexpr double kInchesToMeters = 0.0254;
+static constexpr double kInchesToMeters = 0.0254;
 
 CameraCalibration camera_4 = {
     {
-        3.50309 / 180.0 * M_PI, 593.557, -0.0487739 / 180.0 * M_PI,
+        3.73623 / 180.0 * M_PI, 588.1, 0.269291 / 180.0 * M_PI,
     },
     {
-        {{5.56082 / kInchesToMeters, 4.70235 / kInchesToMeters,
-          33.4998 / kInchesToMeters}},
-        22.2155 * M_PI / 180.0,
+        {{6.02674 * kInchesToMeters, 4.57805 * kInchesToMeters,
+          33.3849 * kInchesToMeters}},
+        22.4535 / 180.0 * M_PI,
     },
     {
         4,
-        {{12.5 / kInchesToMeters, 12.0 / kInchesToMeters}},
-        {{kInchesToMeters, 0.0}},
-        26.0,
+        {{12.5 * kInchesToMeters, 12 * kInchesToMeters}},
+        {{1 * kInchesToMeters, 0.0}},
+        26,
         "cam4_0/debug_viewer_jpeg_",
+        52,
+    }};
+
+CameraCalibration camera_5 = {
+    {
+        1.00774 / 180.0 * M_PI, 658.554, 2.43864 / 180.0 * M_PI,
+    },
+    {
+        {{5.51248 * kInchesToMeters, 2.04087 * kInchesToMeters,
+          33.2555 * kInchesToMeters}},
+        -13.1396 / 180.0 * M_PI,
+    },
+    {
+        5,
+        {{12.5 * kInchesToMeters, 0.5 * kInchesToMeters}},
+        {{1 * kInchesToMeters, 0.0}},
+        26,
+        "cam5_0/debug_viewer_jpeg_",
+        59,
     }};
 
 const CameraCalibration *GetCamera(int camera_id) {
   switch (camera_id) {
-  case 4: return &camera_4;
-  default: return nullptr;
+    case 4:
+      return &camera_4;
+    case 5:
+      return &camera_5;
+    default:
+      return nullptr;
   }
 }
 

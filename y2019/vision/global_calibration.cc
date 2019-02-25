@@ -42,17 +42,34 @@ T *MakeFunctor(T &&t) {
   return new T(std::move(t));
 }
 
-std::array<double, 3> GetError(const double *const extrinsics,
+std::array<double, 3> GetError(const DatasetInfo &info,
+                               const double *const extrinsics,
                                const double *const geometry, int i) {
-  auto ex = ExtrinsicParams::get(extrinsics);
+  auto extrinsic_params = ExtrinsicParams::get(extrinsics);
+  auto geo = CameraGeometry::get(geometry);
 
-  double s = sin(geometry[2] + ex.r2);
-  double c = cos(geometry[2] + ex.r2);
+  const double s = sin(geo.heading + extrinsic_params.r2);
+  const double c = cos(geo.heading + extrinsic_params.r2);
 
-  // TODO: Generalize this from being just for a single calibration.
-  double dx = 12.5 + 26.0 + i - (geometry[0] + c * ex.z) / kInchesToMeters;
-  double dy = 12.0 - (geometry[1] + s * ex.z) / kInchesToMeters;
-  double dz = 28.5 - (geometry[3] + ex.y) / kInchesToMeters;
+  // Take the tape measure starting point (this will be at the perimeter of the
+  // robot), add the offset to the first sample, and then add the per sample
+  // offset.
+  const double dx =
+      (info.to_tape_measure_start[0] +
+       (info.beginning_tape_measure_reading + i) *
+           info.tape_measure_direction[0]) /
+          kInchesToMeters -
+      (geo.location[0] + c * extrinsic_params.z) / kInchesToMeters;
+  const double dy =
+      (info.to_tape_measure_start[1] +
+       (info.beginning_tape_measure_reading + i) *
+           info.tape_measure_direction[1]) /
+          kInchesToMeters -
+      (geo.location[1] + s * extrinsic_params.z) / kInchesToMeters;
+
+  constexpr double kCalibrationTargetHeight = 28.5;
+  const double dz = kCalibrationTargetHeight -
+                    (geo.location[2] + extrinsic_params.y) / kInchesToMeters;
   return {{dx, dy, dz}};
 }
 
@@ -61,6 +78,19 @@ void main(int argc, char **argv) {
   (void)argv;
   using namespace y2019::vision;
   // gflags::ParseCommandLineFlags(&argc, &argv, false);
+
+  int camera_id = 5;
+  const char *base_directory = "/home/parker/data/frc/2019_calibration/";
+
+  DatasetInfo info = {
+      camera_id,
+      {{12.5 * kInchesToMeters, 0.5 * kInchesToMeters}},
+      {{kInchesToMeters, 0.0}},
+      26,
+      "cam5_0/debug_viewer_jpeg_",
+      59,
+  };
+
   ::aos::logging::Init();
   ::aos::logging::AddImplementation(
       new ::aos::logging::StreamLogImplementation(stderr));
@@ -77,9 +107,8 @@ void main(int argc, char **argv) {
   double intrinsics[IntrinsicParams::kNumParams];
   IntrinsicParams().set(&intrinsics[0]);
 
-  // To know the meaning, see the printout below...
-  constexpr size_t GeometrykNumParams = 4;
-  double geometry[GeometrykNumParams] = {0, 0, 0, 0};
+  double geometry[CameraGeometry::kNumParams];
+  CameraGeometry().set(&geometry[0]);
 
   Solver::Options options;
   options.minimizer_progress_to_stdout = false;
@@ -91,11 +120,10 @@ void main(int argc, char **argv) {
   std::cout << "fl = " << intrinsics_.focal_length << ";\n";
   std::cout << "error = " << summary.final_cost << ";\n";
 
-  int nimgs = 56;
-  for (int i = 0; i < nimgs; ++i) {
-    auto frame = aos::vision::LoadFile(
-        "/home/parker/data/frc/2019_calibration/cam4_0/debug_viewer_jpeg_" +
-        std::to_string(i) + ".yuyv");
+  for (int i = 0; i < info.num_images; ++i) {
+    auto frame = aos::vision::LoadFile(std::string(base_directory) +
+                                       info.filename_prefix +
+                                       std::to_string(i) + ".yuyv");
 
     aos::vision::ImageFormat fmt{640, 480};
     aos::vision::BlobList imgs = aos::vision::FindBlobs(
@@ -138,8 +166,8 @@ void main(int argc, char **argv) {
                                     const double *const extrinsics,
                                     double *residual) {
           auto in = IntrinsicParams::get(intrinsics);
-          auto ex = ExtrinsicParams::get(extrinsics);
-          auto pt = targ - Project(temp, in, ex);
+          auto extrinsic_params = ExtrinsicParams::get(extrinsics);
+          auto pt = targ - Project(temp, in, extrinsic_params);
           residual[0] = pt.x();
           residual[1] = pt.y();
           return true;
@@ -152,9 +180,9 @@ void main(int argc, char **argv) {
             NULL, &intrinsics[0], extrinsics);
       }
 
-      auto ftor = [i](const double *const extrinsics,
-                      const double *const geometry, double *residual) {
-        auto err = GetError(extrinsics, geometry, i);
+      auto ftor = [&info, i](const double *const extrinsics,
+                             const double *const geometry, double *residual) {
+        auto err = GetError(info, extrinsics, geometry, i);
         residual[0] = 32.0 * err[0];
         residual[1] = 32.0 * err[1];
         residual[2] = 32.0 * err[2];
@@ -164,7 +192,7 @@ void main(int argc, char **argv) {
       problem.AddResidualBlock(
           new NumericDiffCostFunction<decltype(ftor), CENTRAL, 3,
                                       ExtrinsicParams::kNumParams,
-                                      GeometrykNumParams>(
+                                      CameraGeometry::kNumParams>(
               new decltype(ftor)(std::move(ftor))),
           NULL, extrinsics, &geometry[0]);
     }
@@ -177,14 +205,18 @@ void main(int argc, char **argv) {
   {
     std::cout << summary.BriefReport() << "\n";
     auto intrinsics_ = IntrinsicParams::get(&intrinsics[0]);
+    auto geometry_ = CameraGeometry::get(&geometry[0]);
     std::cout << "rup = " << intrinsics_.mount_angle * 180 / M_PI << ";\n";
     std::cout << "fl = " << intrinsics_.focal_length << ";\n";
     std::cout << "error = " << summary.final_cost << ";\n";
 
-    std::cout << "camera_height = " << geometry[3] / kInchesToMeters << "\n";
-    std::cout << "camera_angle = " << geometry[2] * 180 / M_PI << "\n";
-    std::cout << "camera_x = " << geometry[0] / kInchesToMeters << "\n";
-    std::cout << "camera_y = " << geometry[1] / kInchesToMeters << "\n";
+    std::cout << "camera_angle = " << geometry_.heading * 180 / M_PI << "\n";
+    std::cout << "camera_x = " << geometry_.location[0] / kInchesToMeters
+              << "\n";
+    std::cout << "camera_y = " << geometry_.location[1] / kInchesToMeters
+              << "\n";
+    std::cout << "camera_z = " << geometry_.location[2] / kInchesToMeters
+              << "\n";
     std::cout << "camera_barrel = " << intrinsics_.barrel_mount * 180.0 / M_PI
               << "\n";
 
@@ -194,7 +226,7 @@ void main(int argc, char **argv) {
 
       auto extn = ExtrinsicParams::get(data);
 
-      auto err = GetError(data, &geometry[0], i);
+      auto err = GetError(info, data, &geometry[0], i);
 
       std::cout << i << ", ";
       std::cout << extn.z / kInchesToMeters << ", ";
@@ -208,6 +240,12 @@ void main(int argc, char **argv) {
       std::cout << err[2] << "\n";
     }
   }
+
+  CameraCalibration results;
+  results.dataset = info;
+  results.intrinsics = IntrinsicParams::get(&intrinsics[0]);
+  results.geometry = CameraGeometry::get(&geometry[0]);
+  DumpCameraConstants(camera_id, results);
 }
 
 }  // namespace y2019
