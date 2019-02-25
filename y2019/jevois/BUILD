@@ -235,12 +235,17 @@ cc_binary(
     ],
     restricted_to = ["//tools:cortex-m4f"],
     deps = [
+        ":cobs_mcu",
+        ":spi_mcu",
+        ":uart_mcu",
         "//aos/time:time_mcu",
         "//motors:util",
         "//motors/core",
         "//motors/peripheral:configuration",
+        "//motors/peripheral:spi",
         "//motors/peripheral:uart",
         "//motors/print:usb",
+        "//third_party/GSL",
     ],
 )
 
