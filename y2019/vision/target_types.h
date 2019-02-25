@@ -3,6 +3,7 @@
 
 #include "aos/vision/math/segment.h"
 #include "aos/vision/math/vector.h"
+#include "y2019/vision/constants.h"
 
 namespace y2019 {
 namespace vision {
@@ -40,28 +41,6 @@ struct Target {
   static Target MakeTemplate();
   // Get the points in some order (will match against the template).
   std::array<aos::vision::Vector<2>, 8> toPointList() const;
-};
-
-struct IntrinsicParams {
-  static constexpr size_t kNumParams = 3;
-
-  double mount_angle = 0.819433 / 180.0 * M_PI;  // 9.32615 / 180.0 * M_PI;
-  double focal_length = 666.763;                 // 734.328;
-  // This is a final rotation where the camera isn't straight.
-  double barrel_mount = 2.72086 / 180.0 * M_PI;
-
-  void set(double *data) {
-    data[0] = mount_angle;
-    data[1] = focal_length;
-    data[2] = barrel_mount;
-  }
-  static IntrinsicParams get(const double *data) {
-    IntrinsicParams out;
-    out.mount_angle = data[0];
-    out.focal_length = data[1];
-    out.barrel_mount = data[2];
-    return out;
-  }
 };
 
 struct ExtrinsicParams {
