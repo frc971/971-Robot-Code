@@ -7,8 +7,10 @@
 #include "aos/util/compiler_memory_barrier.h"
 #include "aos/util/phased_loop.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"
+#include "frc971/wpilib/ahal/DriverStation.h"
 #include "frc971/wpilib/ahal/Utility.h"
 #include "frc971/wpilib/wpilib_interface.h"
+#include "hal/PWM.h"
 
 namespace frc971 {
 namespace wpilib {
@@ -18,6 +20,7 @@ SensorReader::SensorReader() {
   // just work with them.
   UpdateFastEncoderFilterHz(500000);
   UpdateMediumEncoderFilterHz(100000);
+  ds_ = &::frc::DriverStation::GetInstance();
 }
 
 void SensorReader::UpdateFastEncoderFilterHz(int hz) {
@@ -42,77 +45,37 @@ void SensorReader::set_drivetrain_right_encoder(
   drivetrain_right_encoder_->SetMaxPeriod(0.005);
 }
 
-void SensorReader::set_pwm_trigger(
-    ::std::unique_ptr<frc::DigitalInput> pwm_trigger) {
-  fast_encoder_filter_.Add(pwm_trigger.get());
-  pwm_trigger_ = ::std::move(pwm_trigger);
-}
+monotonic_clock::time_point SensorReader::GetPWMStartTime() {
+  int32_t status = 0;
+  const hal::fpga_clock::time_point new_fpga_time = hal::fpga_clock::time_point(
+      hal::fpga_clock::duration(HAL_GetPWMCycleStartTime(&status)));
 
-void SensorReader::RunPWMDetecter() {
-  ::aos::SetCurrentThreadRealtimePriority(41);
+  aos_compiler_memory_barrier();
+  const hal::fpga_clock::time_point fpga_time_before = hal::fpga_clock::now();
+  aos_compiler_memory_barrier();
+  const monotonic_clock::time_point monotonic_now = monotonic_clock::now();
+  aos_compiler_memory_barrier();
+  const hal::fpga_clock::time_point fpga_time_after = hal::fpga_clock::now();
+  aos_compiler_memory_barrier();
 
-  pwm_trigger_->RequestInterrupts();
-  // Rising edge only.
-  pwm_trigger_->SetUpSourceEdge(true, false);
+  const chrono::nanoseconds fpga_sample_length =
+      fpga_time_after - fpga_time_before;
+  const chrono::nanoseconds fpga_offset =
+      hal::fpga_clock::time_point((fpga_time_after.time_since_epoch() +
+                                   fpga_time_before.time_since_epoch()) /
+                                  2) -
+      new_fpga_time;
 
-  monotonic_clock::time_point last_posedge_monotonic =
-      monotonic_clock::min_time;
-
-  while (run_) {
-    auto ret = pwm_trigger_->WaitForInterrupt(1.0, true);
-    if (ret == frc::InterruptableSensorBase::WaitResult::kRisingEdge) {
-      // Grab all the clocks.
-      const double pwm_fpga_time = pwm_trigger_->ReadRisingTimestamp();
-
-      aos_compiler_memory_barrier();
-      const double fpga_time_before = frc::GetFPGATime() * 1e-6;
-      aos_compiler_memory_barrier();
-      const monotonic_clock::time_point monotonic_now = monotonic_clock::now();
-      aos_compiler_memory_barrier();
-      const double fpga_time_after = frc::GetFPGATime() * 1e-6;
-      aos_compiler_memory_barrier();
-
-      const double fpga_offset =
-          (fpga_time_after + fpga_time_before) / 2.0 - pwm_fpga_time;
-
-      // Compute when the edge was.
-      const monotonic_clock::time_point monotonic_edge =
-          monotonic_now - chrono::duration_cast<chrono::nanoseconds>(
-                              chrono::duration<double>(fpga_offset));
-
-      LOG(DEBUG, "Got PWM pulse %f spread, %f offset, %lld trigger\n",
-          fpga_time_after - fpga_time_before, fpga_offset,
-          monotonic_edge.time_since_epoch().count());
-
-      // Compute bounds on the timestep and sampling times.
-      const double fpga_sample_length = fpga_time_after - fpga_time_before;
-      const chrono::nanoseconds elapsed_time =
-          monotonic_edge - last_posedge_monotonic;
-
-      last_posedge_monotonic = monotonic_edge;
-
-      // Verify that the values are sane.
-      if (fpga_sample_length > 2e-5 || fpga_sample_length < 0) {
-        continue;
-      }
-      if (fpga_offset < 0 || fpga_offset > 0.00015) {
-        continue;
-      }
-      if (elapsed_time > chrono::microseconds(5050) + chrono::microseconds(4) ||
-          elapsed_time < chrono::microseconds(5050) - chrono::microseconds(4)) {
-        continue;
-      }
-      // Good edge!
-      {
-        ::std::unique_lock<::aos::stl_mutex> locker(tick_time_mutex_);
-        last_tick_time_monotonic_timepoint_ = last_posedge_monotonic;
-        last_period_ = elapsed_time;
-      }
-    } else {
-      LOG(INFO, "PWM triggered %d\n", ret);
-    }
+  // Make sure that there wasn't a context switch while we were sampling the
+  // clocks.  If there was, we are better off rejecting the sample than using
+  // it.
+  if (ds_->IsSysActive() && fpga_sample_length <= chrono::microseconds(20) &&
+      fpga_sample_length >= chrono::microseconds(0)) {
+    // Compute when the edge was.
+    return monotonic_now - fpga_offset;
+  } else {
+    return monotonic_clock::min_time;
   }
-  pwm_trigger_->CancelInterrupts();
 }
 
 void SensorReader::operator()() {
@@ -125,24 +88,19 @@ void SensorReader::operator()() {
     dma_synchronizer_->Start();
   }
 
+  const chrono::microseconds period =
+      pwm_trigger_ ? chrono::microseconds(5050) : chrono::microseconds(5000);
   if (pwm_trigger_) {
-    last_period_ = chrono::microseconds(5050);
     LOG(INFO, "Using PWM trigger and a 5.05 ms period\n");
   } else {
     LOG(INFO, "Defaulting to open loop pwm synchronization\n");
-    last_period_ = chrono::microseconds(5000);
   }
   ::aos::time::PhasedLoop phased_loop(
-      last_period_,
+      period,
       pwm_trigger_ ? ::std::chrono::milliseconds(3) : chrono::milliseconds(4));
 
-  ::std::thread pwm_detecter_thread;
-  if (pwm_trigger_) {
-    pwm_detecter_thread =
-        ::std::thread(::std::bind(&SensorReader::RunPWMDetecter, this));
-  }
-
   ::aos::SetCurrentThreadRealtimePriority(40);
+  monotonic_clock::time_point last_monotonic_now = monotonic_clock::now();
   while (run_) {
     {
       const int iterations = phased_loop.SleepUntilNext();
@@ -150,6 +108,7 @@ void SensorReader::operator()() {
         LOG(WARNING, "SensorReader skipped %d iterations\n", iterations - 1);
       }
     }
+    const monotonic_clock::time_point monotonic_now = monotonic_clock::now();
 
     ::frc971::wpilib::SendRobotState(my_pid);
     RunIteration();
@@ -159,29 +118,32 @@ void SensorReader::operator()() {
     }
 
     if (pwm_trigger_) {
-      monotonic_clock::time_point last_tick_timepoint;
-      chrono::nanoseconds period;
-      {
-        ::std::unique_lock<::aos::stl_mutex> locker(tick_time_mutex_);
-        last_tick_timepoint = last_tick_time_monotonic_timepoint_;
-        period = last_period_;
-      }
+      LOG(DEBUG, "PWM wakeup delta: %lld\n",
+          (monotonic_now - last_monotonic_now).count());
+      last_monotonic_now = monotonic_now;
 
+      monotonic_clock::time_point last_tick_timepoint = GetPWMStartTime();
       if (last_tick_timepoint == monotonic_clock::min_time) {
         continue;
       }
-      chrono::nanoseconds new_offset = phased_loop.OffsetFromIntervalAndTime(
-          period, last_tick_timepoint + chrono::microseconds(2050));
 
-      // TODO(austin): If this is the first edge in a while, skip to it (plus
-      // an offset). Otherwise, slowly drift time to line up.
+      last_tick_timepoint +=
+          (monotonic_now - last_tick_timepoint) / period * period;
+      // If it's over 1/2 of a period back in time, that's wrong.  Move it
+      // forwards to now.
+      if (last_tick_timepoint - monotonic_now < -period / 2) {
+        last_tick_timepoint += period;
+      }
+
+      // We should be sampling our sensors to kick off the control cycle 50 uS
+      // after the falling edge.  This gives us a little bit of buffer for
+      // errors in waking up.  The PWM cycle starts at the falling edge of the
+      // PWM pulse.
+      chrono::nanoseconds new_offset = phased_loop.OffsetFromIntervalAndTime(
+          period, last_tick_timepoint + chrono::microseconds(50));
 
       phased_loop.set_interval_and_offset(period, new_offset);
     }
-  }
-
-  if (pwm_trigger_) {
-    pwm_detecter_thread.join();
   }
 }
 

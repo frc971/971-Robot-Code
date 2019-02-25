@@ -683,7 +683,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_claw_beambreak(make_unique<frc::DigitalInput>(8));
     reader.set_box_back_beambreak(make_unique<frc::DigitalInput>(9));
 
-    reader.set_pwm_trigger(make_unique<frc::DigitalInput>(25));
+    reader.set_pwm_trigger(true);
 
     reader.set_lidar_lite_input(make_unique<frc::DigitalInput>(22));
 

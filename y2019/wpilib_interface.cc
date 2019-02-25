@@ -460,7 +460,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_stilts_absolute_pwm(make_unique<frc::DigitalInput>(3));
     reader.set_stilts_potentiometer(make_unique<frc::AnalogInput>(3));
 
-    reader.set_pwm_trigger(make_unique<frc::DigitalInput>(25));
+    reader.set_pwm_trigger(true);
     reader.set_vacuum_sensor(7);
 
     ::std::thread reader_thread(::std::ref(reader));
