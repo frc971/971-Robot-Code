@@ -105,6 +105,15 @@ TEST(SpiToRoborioPackTest, Target) {
               output_message->frames.back().targets.back().skew, 0.1);
 }
 
+// Tests packing and then unpacking an empty message.
+TEST(SpiToTeensyPackTest, Empty) {
+  RoborioToTeensy input_message;
+  const SpiTransfer transfer = SpiPackToTeensy(input_message);
+  const auto output_message = SpiUnpackToTeensy(transfer);
+  ASSERT_TRUE(output_message);
+  EXPECT_EQ(input_message, output_message.value());
+}
+
 }  // namespace testing
 }  // namespace jevois
 }  // namespace frc971

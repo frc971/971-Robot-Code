@@ -1,7 +1,6 @@
 #include "y2019/jevois/spi.h"
 
 #include "aos/util/bitpacking.h"
-#include "third_party/GSL/include/gsl/gsl"
 #include "y2019/jevois/jevois_crc.h"
 #ifdef __linux__
 #include "aos/logging/logging.h"
@@ -187,7 +186,8 @@ SpiTransfer SpiPackToRoborio(const TeensyToRoborio &message) {
   return transfer;
 }
 
-tl::optional<TeensyToRoborio> SpiUnpackToRoborio(const SpiTransfer &transfer) {
+tl::optional<TeensyToRoborio> SpiUnpackToRoborio(
+    gsl::span<const char, spi_transfer_size()> transfer) {
   TeensyToRoborio message;
   gsl::span<const char> remaining_input = transfer;
   for (int frame = 0; frame < 3; ++frame) {
@@ -230,6 +230,67 @@ tl::optional<TeensyToRoborio> SpiUnpackToRoborio(const SpiTransfer &transfer) {
     memcpy(&received_crc, &remaining_input[0], sizeof(received_crc));
     remaining_input = remaining_input.subspan(sizeof(received_crc));
     CHECK(remaining_input.empty());
+    if (calculated_crc != received_crc) {
+      return tl::nullopt;
+    }
+  }
+  return message;
+}
+
+SpiTransfer SpiPackToTeensy(const RoborioToTeensy &message) {
+  SpiTransfer transfer;
+  gsl::span<char> remaining_space = transfer;
+  for (size_t i = 0; i < message.beacon_brightness.size(); ++i) {
+    remaining_space[0] = message.beacon_brightness[i];
+    remaining_space = remaining_space.subspan(1);
+  }
+  remaining_space[0] = message.light_rings.to_ulong() & 0xFF;
+  remaining_space = remaining_space.subspan(1);
+  {
+    const int64_t realtime_now =
+        message.realtime_now.time_since_epoch().count();
+    memcpy(remaining_space.data(), &realtime_now, sizeof(realtime_now));
+    remaining_space = remaining_space.subspan(sizeof(realtime_now));
+  }
+  {
+    uint16_t crc = jevois_crc_init();
+    crc = jevois_crc_update(crc, transfer.data(),
+                            transfer.size() - remaining_space.size());
+    crc = jevois_crc_finalize(crc);
+    CHECK_GE(static_cast<size_t>(remaining_space.size()), sizeof(crc));
+    memcpy(&remaining_space[0], &crc, sizeof(crc));
+    remaining_space = remaining_space.subspan(sizeof(crc));
+  }
+  return transfer;
+}
+
+tl::optional<RoborioToTeensy> SpiUnpackToTeensy(
+    gsl::span<const char, spi_transfer_size()> transfer) {
+  RoborioToTeensy message;
+  gsl::span<const char> remaining_input = transfer;
+  for (size_t i = 0; i < message.beacon_brightness.size(); ++i) {
+    message.beacon_brightness[i] = remaining_input[0];
+    remaining_input = remaining_input.subspan(1);
+  }
+  message.light_rings = remaining_input[0];
+  remaining_input = remaining_input.subspan(1);
+  {
+    int64_t realtime_now;
+    memcpy(&realtime_now, remaining_input.data(), sizeof(realtime_now));
+    message.realtime_now = aos::realtime_clock::time_point(
+        aos::realtime_clock::duration(realtime_now));
+    remaining_input = remaining_input.subspan(sizeof(realtime_now));
+  }
+  {
+    uint16_t calculated_crc = jevois_crc_init();
+    calculated_crc =
+        jevois_crc_update(calculated_crc, transfer.data(),
+                          transfer.size() - remaining_input.size());
+    calculated_crc = jevois_crc_finalize(calculated_crc);
+    uint16_t received_crc;
+    CHECK_GE(static_cast<size_t>(remaining_input.size()), sizeof(received_crc));
+    memcpy(&received_crc, &remaining_input[0], sizeof(received_crc));
+    remaining_input = remaining_input.subspan(sizeof(received_crc));
     if (calculated_crc != received_crc) {
       return tl::nullopt;
     }
