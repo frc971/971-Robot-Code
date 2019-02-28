@@ -41,6 +41,7 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
       dt_openloop_(dt_config_, &kf_),
       dt_closedloop_(dt_config_, &kf_, localizer_),
       dt_spline_(dt_config_),
+      dt_line_follow_(dt_config_),
       down_estimator_(MakeDownEstimatorLoop()),
       left_gear_(dt_config_.default_high_gear ? Gear::HIGH : Gear::LOW),
       right_gear_(dt_config_.default_high_gear ? Gear::HIGH : Gear::LOW),
@@ -247,17 +248,26 @@ void DrivetrainLoop::RunIteration(
     dt_closedloop_.SetGoal(*goal);
     dt_openloop_.SetGoal(*goal);
     dt_spline_.SetGoal(*goal);
+    // TODO(james): Use a goal other than zero (which is what Pose default
+    // constructs to). Need to query the EKF in some way to determine what the
+    // logical target is.
+    const LineFollowDrivetrain::Pose goal_pose;
+    dt_line_follow_.SetGoal(*goal, goal_pose);
   }
 
   dt_openloop_.Update(robot_state().voltage_battery);
 
   dt_closedloop_.Update(output != NULL && controller_type == 1);
 
-  dt_spline_.Update(output != NULL && controller_type == 2,
-                    (Eigen::Matrix<double, 5, 1>() << localizer_->x(),
-                     localizer_->y(), localizer_->theta(),
-                     localizer_->left_velocity(), localizer_->right_velocity())
-                        .finished());
+  const Eigen::Matrix<double, 5, 1> trajectory_state =
+      (Eigen::Matrix<double, 5, 1>() << localizer_->x(), localizer_->y(),
+       localizer_->theta(), localizer_->left_velocity(),
+       localizer_->right_velocity())
+          .finished();
+
+  dt_spline_.Update(output != NULL && controller_type == 2, trajectory_state);
+
+  dt_line_follow_.Update(trajectory_state);
 
   switch (controller_type) {
     case 0:
@@ -268,6 +278,9 @@ void DrivetrainLoop::RunIteration(
       break;
     case 2:
       dt_spline_.SetOutput(output);
+      break;
+    case 3:
+      dt_line_follow_.SetOutput(output);
       break;
   }
 
@@ -310,6 +323,7 @@ void DrivetrainLoop::RunIteration(
     dt_openloop_.PopulateStatus(status);
     dt_closedloop_.PopulateStatus(status);
     dt_spline_.PopulateStatus(status);
+    dt_line_follow_.PopulateStatus(status);
   }
 
   double left_voltage = 0.0;

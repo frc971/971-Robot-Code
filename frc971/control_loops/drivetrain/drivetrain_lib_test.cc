@@ -719,6 +719,21 @@ TEST_F(DrivetrainTest, OnlyPlanSpline) {
   VerifyNearSplineGoal();
 }
 
+// The LineFollowDrivetrain logic is tested in line_follow_drivetrain_test. This
+// tests that the integration with drivetrain_lib worked properly.
+TEST_F(DrivetrainTest, BasicLineFollow) {
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> goal =
+      my_drivetrain_queue_.goal.MakeMessage();
+  goal->controller_type = 3;
+  goal->throttle = 0.5;
+  goal.Send();
+
+  RunForTime(chrono::seconds(5));
+  // Should be on the x-axis, with y = 0 and x having increased:
+  EXPECT_LT(0.5, drivetrain_motor_plant_.GetPosition().x());
+  EXPECT_NEAR(0.0, drivetrain_motor_plant_.GetPosition().y(), 1e-4);
+}
+
 ::aos::controls::HVPolytope<2, 4, 4> MakeBox(double x1_min, double x1_max,
                                              double x2_min, double x2_max) {
   Eigen::Matrix<double, 4, 2> box_H;

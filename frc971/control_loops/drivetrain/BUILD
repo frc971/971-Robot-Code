@@ -101,6 +101,43 @@ cc_library(
 )
 
 cc_library(
+    name = "line_follow_drivetrain",
+    srcs = [
+        "line_follow_drivetrain.cc",
+    ],
+    hdrs = [
+        "line_follow_drivetrain.h",
+    ],
+    deps = [
+        ":drivetrain_config",
+        ":drivetrain_queue",
+        "//aos:math",
+        "//aos/util:math",
+        "//frc971/control_loops:c2d",
+        "//frc971/control_loops:dlqr",
+        "//frc971/control_loops:pose",
+        "//third_party/eigen",
+    ],
+)
+
+cc_test(
+    name = "line_follow_drivetrain_test",
+    srcs = ["line_follow_drivetrain_test.cc"],
+    linkstatic = True,
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":drivetrain_config",
+        ":drivetrain_test_lib",
+        ":line_follow_drivetrain",
+        ":trajectory",
+        "//aos/testing:googletest",
+        "//aos/testing:test_shm",
+        "//third_party/matplotlib-cpp",
+        "@com_github_gflags_gflags//:gflags",
+    ],
+)
+
+cc_library(
     name = "ssdrivetrain",
     srcs = [
         "ssdrivetrain.cc",
@@ -221,6 +258,7 @@ cc_library(
         ":down_estimator",
         ":drivetrain_queue",
         ":gear",
+        ":line_follow_drivetrain",
         ":localizer",
         ":polydrivetrain",
         ":splinedrivetrain",
