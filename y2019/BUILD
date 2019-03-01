@@ -1,5 +1,6 @@
 load("//frc971:downloader.bzl", "robot_downloader")
 load("//aos/build:queues.bzl", "queue_library")
+load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 
 robot_downloader(
     start_binaries = [
@@ -137,6 +138,12 @@ queue_library(
     srcs = [
         "status_light.q",
     ],
+    visibility = ["//visibility:public"],
+)
+
+cc_proto_library(
+    name = "vision_proto",
+    srcs = ["vision.proto"],
     visibility = ["//visibility:public"],
 )
 
