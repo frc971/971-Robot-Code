@@ -89,12 +89,15 @@ void AB(const DrivetrainConfig<double> &dt_config,
 // When we create A/B, we do recompute A/B, but we don't really care about
 // optimizing it since it is only happening at initialization time...
 LineFollowDrivetrain::LineFollowDrivetrain(
-    const DrivetrainConfig<double> &dt_config)
+    const DrivetrainConfig<double> &dt_config,
+    TargetSelectorInterface *target_selector)
     : dt_config_(dt_config),
       A_d_(ADiscrete(dt_config_)),
       B_d_(BDiscrete(dt_config_)),
       K_(CalcK(A_d_, B_d_, Q_, R_)),
-      Kff_(CalcKff(B_d_)) {}
+      Kff_(CalcKff(B_d_)),
+      target_selector_(target_selector),
+      U_(0, 0) {}
 
 double LineFollowDrivetrain::GoalTheta(
     const ::Eigen::Matrix<double, 5, 1> &state) const {
@@ -154,25 +157,48 @@ double LineFollowDrivetrain::GoalThetaDot(
 }
 
 void LineFollowDrivetrain::SetGoal(
-    const ::frc971::control_loops::DrivetrainQueue::Goal &goal,
-    const Pose &goal_pose) {
+    const ::frc971::control_loops::DrivetrainQueue::Goal &goal) {
   // TODO(james): More properly calculate goal velocity from throttle.
   goal_velocity_ = goal.throttle;
-  target_pose_ = goal_pose;
+  // Freeze the target once the driver presses the button; if we haven't yet
+  // confirmed a target when the driver presses the button, we will not do
+  // anything and report not ready until we have a target.
+  freeze_target_ = goal.controller_type == 3;
 }
 
-void LineFollowDrivetrain::SetOutput(
+bool LineFollowDrivetrain::SetOutput(
     ::frc971::control_loops::DrivetrainQueue::Output *output) {
   // TODO(james): Account for voltage error terms, and/or provide driver with
   // ability to influence steering.
-  if (output != nullptr) {
+  if (output != nullptr && have_target_) {
     output->left_voltage = U_(0, 0);
     output->right_voltage = U_(1, 0);
   }
+  return have_target_;
 }
 
 void LineFollowDrivetrain::Update(
     const ::Eigen::Matrix<double, 5, 1> &abs_state) {
+  // Because we assume the target selector may have some internal state (e.g.,
+  // not confirming a target until some time as passed), we should call
+  // UpdateSelection every time.
+  bool new_target = target_selector_->UpdateSelection(abs_state);
+  if (freeze_target_) {
+    // When freezing the target, only make changes if we didn't have a good
+    // target before.
+    if (!have_target_ && new_target) {
+      have_target_ = true;
+      target_pose_ = target_selector_->TargetPose();
+    }
+  } else {
+    // If the target selector has lost its target, we *do* want to set
+    // have_target_ to false, so long as we aren't trying to freeze the target.
+    have_target_ = new_target;
+    if (have_target_) {
+      target_pose_ = target_selector_->TargetPose();
+    }
+  }
+
   // Get the robot pose in the target coordinate frame.
   const Pose relative_robot_pose = Pose({abs_state.x(), abs_state.y(), 0.0},
                                         abs_state(2, 0)).Rebase(&target_pose_);

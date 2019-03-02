@@ -26,20 +26,21 @@ class LineFollowDrivetrainTest : public ::testing::Test {
 
   LineFollowDrivetrainTest()
       : config_(GetTestDrivetrainConfig()),
-        drivetrain_(config_),
-        velocity_drivetrain_(::std::unique_ptr<StateFeedbackLoop<
-            2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
-            HybridKalman<2, 2, 2>>>(
-            new StateFeedbackLoop<2, 2, 2, double,
-                                  StateFeedbackHybridPlant<2, 2, 2>,
-                                  HybridKalman<2, 2, 2>>(
-                config_.make_hybrid_drivetrain_velocity_loop()))),
+        drivetrain_(config_, &target_selector_),
+        velocity_drivetrain_(
+            ::std::unique_ptr<StateFeedbackLoop<
+                2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
+                HybridKalman<2, 2, 2>>>(
+                new StateFeedbackLoop<2, 2, 2, double,
+                                      StateFeedbackHybridPlant<2, 2, 2>,
+                                      HybridKalman<2, 2, 2>>(
+                    config_.make_hybrid_drivetrain_velocity_loop()))),
         Tlr_to_la_(config_.Tlr_to_la()),
         Tla_to_lr_(config_.Tla_to_lr()) {}
 
-  void set_goal_pose(const Pose &pose) {
-    goal_pose_ = pose;
-  }
+  void set_goal_pose(const Pose &pose) { target_selector_.set_pose(pose); }
+
+  Pose goal_pose() const { return target_selector_.TargetPose(); }
 
   void RunForTime(chrono::nanoseconds t) {
     const int niter = t / config_.dt;
@@ -51,11 +52,17 @@ class LineFollowDrivetrainTest : public ::testing::Test {
   void Iterate() {
     ::frc971::control_loops::DrivetrainQueue::Goal goal;
     goal.throttle = driver_model_(state_);
-    drivetrain_.SetGoal(goal, goal_pose_);
+    goal.controller_type = freeze_target_ ? 3 : 0;
+    drivetrain_.SetGoal(goal);
     drivetrain_.Update(state_);
 
     ::frc971::control_loops::DrivetrainQueue::Output output;
-    drivetrain_.SetOutput(&output);
+    EXPECT_EQ(expect_output_, drivetrain_.SetOutput(&output));
+    if (!expect_output_) {
+      EXPECT_EQ(0.0, output.left_voltage);
+      EXPECT_EQ(0.0, output.right_voltage);
+    }
+
 
     EXPECT_LE(::std::abs(output.left_voltage), 12.0 + 1e-6);
     EXPECT_LE(::std::abs(output.right_voltage), 12.0 + 1e-6);
@@ -83,12 +90,12 @@ class LineFollowDrivetrainTest : public ::testing::Test {
   // Check that left/right velocities are near zero and the absolute position is
   // near that of the goal Pose.
   void VerifyNearGoal() const {
-    EXPECT_NEAR(goal_pose_.abs_pos().x(), state_(0, 0), 1e-3);
-    EXPECT_NEAR(goal_pose_.abs_pos().y(), state_(1, 0), 1e-3);
+    EXPECT_NEAR(goal_pose().abs_pos().x(), state_(0, 0), 1e-3);
+    EXPECT_NEAR(goal_pose().abs_pos().y(), state_(1, 0), 1e-3);
     // state should be at 0 or PI (we should've come in striaght on or straight
     // backwards).
     const double angle_err =
-        ::aos::math::DiffAngle(goal_pose_.abs_theta(), state_(2, 0));
+        ::aos::math::DiffAngle(goal_pose().abs_theta(), state_(2, 0));
     const double angle_pi_err = ::aos::math::DiffAngle(angle_err, M_PI);
     EXPECT_LT(::std::min(::std::abs(angle_err), ::std::abs(angle_pi_err)),
               1e-3);
@@ -132,11 +139,12 @@ class LineFollowDrivetrainTest : public ::testing::Test {
       matplotlibcpp::plot(time_, simulation_ur_, {{"label", "ur"}});
       matplotlibcpp::legend();
 
-      Pose base_pose(&goal_pose_, {-1.0, 0.0, 0.0}, 0.0);
+      TypedPose<double> target = goal_pose();
+      Pose base_pose(&target, {-1.0, 0.0, 0.0}, 0.0);
       ::std::vector<double> line_x(
-          {base_pose.abs_pos().x(), goal_pose_.abs_pos().x()});
+          {base_pose.abs_pos().x(), target.abs_pos().x()});
       ::std::vector<double> line_y(
-          {base_pose.abs_pos().y(), goal_pose_.abs_pos().y()});
+          {base_pose.abs_pos().y(), target.abs_pos().y()});
       matplotlibcpp::figure();
       matplotlibcpp::plot(line_x, line_y, {{"label", "line"}, {"marker", "o"}});
       matplotlibcpp::plot(simulation_x_, simulation_y_,
@@ -157,7 +165,11 @@ class LineFollowDrivetrainTest : public ::testing::Test {
       };
 
   // Current state; [x, y, theta, left_velocity, right_velocity]
-  ::Eigen::Matrix<double, 5, 1> state_;
+  ::Eigen::Matrix<double, 5, 1> state_ = ::Eigen::Matrix<double, 5, 1>::Zero();
+  TrivialTargetSelector target_selector_;
+
+  bool freeze_target_ = false;
+  bool expect_output_ = true;
 
  private:
   const DrivetrainConfig<double> config_;
@@ -173,9 +185,6 @@ class LineFollowDrivetrainTest : public ::testing::Test {
   const ::Eigen::Matrix<double, 2, 2> Tlr_to_la_;
   // Transformation matrix from linear, angular to left, right
   const ::Eigen::Matrix<double, 2, 2> Tla_to_lr_;
-
-  // Current goal pose we are trying to drive to.
-  Pose goal_pose_;
 
   aos::monotonic_clock::time_point t_;
 
@@ -214,6 +223,66 @@ TEST_F(LineFollowDrivetrainTest, RunOffEnd) {
   EXPECT_NEAR(0.0, state_(2, 0), 1e-4);
   EXPECT_NEAR(1.0, state_(3, 0), 1e-4);
   EXPECT_NEAR(1.0, state_(4, 0), 1e-4);
+}
+
+// Tests that the outputs are not set when there is no valid target.
+TEST_F(LineFollowDrivetrainTest, DoesntHaveTarget) {
+  state_.setZero();
+  target_selector_.set_has_target(false);
+  expect_output_ = false;
+  // There are checks in Iterate for the logic surrounding SetOutput().
+  RunForTime(::std::chrono::seconds(5));
+  // The robot should not have gone anywhere.
+  EXPECT_NEAR(0.0, state_.squaredNorm(), 1e-25);
+}
+
+// Tests that, when we set the controller type to be line following, the target
+// selection freezes.
+TEST_F(LineFollowDrivetrainTest, FreezeOnControllerType) {
+  state_.setZero();
+  set_goal_pose({{0.0, 0.0, 0.0}, 0.0});
+  // Do one iteration to get the target into the drivetrain:
+  Iterate();
+
+  freeze_target_ = true;
+
+  // Set a goal pose that we should not go to.
+  set_goal_pose({{1.0, 1.0, 0.0}, M_PI_2});
+
+  RunForTime(::std::chrono::seconds(5));
+  EXPECT_NEAR(0.0, state_.squaredNorm(), 1e-25);
+}
+
+// Tests that when we freeze the controller without having acquired a target, we
+// don't do anything until a target arrives.
+TEST_F(LineFollowDrivetrainTest, FreezeWithoutAcquiringTarget) {
+  freeze_target_ = true;
+  target_selector_.set_has_target(false);
+  expect_output_ = false;
+  state_.setZero();
+
+  RunForTime(::std::chrono::seconds(5));
+
+  // Nothing should've happened
+  EXPECT_NEAR(0.0, state_.squaredNorm(), 1e-25);
+
+  // Now, provide a target:
+  target_selector_.set_has_target(true);
+  set_goal_pose({{1.0, 1.0, 0.0}, M_PI_2});
+  driver_model_ = [this](const ::Eigen::Matrix<double, 5, 1> &state) {
+    return (state.topRows<2>() - goal_pose().abs_pos().topRows<2>()).norm();
+  };
+  expect_output_ = true;
+
+  Iterate();
+
+  // And remove the target, to ensure that we keep going if we do loose the
+  // target:
+  target_selector_.set_has_target(false);
+
+  RunForTime(::std::chrono::seconds(15));
+
+  VerifyNearGoal();
 }
 
 class LineFollowDrivetrainTargetParamTest

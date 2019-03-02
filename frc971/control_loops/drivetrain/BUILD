@@ -71,6 +71,7 @@ cc_library(
     deps = [
         ":drivetrain_config",
         ":hybrid_ekf",
+        "//frc971/control_loops:pose",
     ],
 )
 
@@ -111,6 +112,7 @@ cc_library(
     deps = [
         ":drivetrain_config",
         ":drivetrain_queue",
+        ":localizer",
         "//aos:math",
         "//aos/util:math",
         "//frc971/control_loops:c2d",

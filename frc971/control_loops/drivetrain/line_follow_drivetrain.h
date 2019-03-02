@@ -5,6 +5,7 @@
 #include "frc971/control_loops/pose.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/drivetrain/localizer.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -24,17 +25,21 @@ class LineFollowDrivetrain {
  public:
   typedef TypedPose<double> Pose;
 
-  LineFollowDrivetrain(const DrivetrainConfig<double> &dt_config);
+  LineFollowDrivetrain(
+      const DrivetrainConfig<double> &dt_config,
+      TargetSelectorInterface *target_selector);
   // Sets the current goal; the drivetrain queue contains throttle_velocity
   // which is used to command overall robot velocity. The goal_pose is a Pose
   // representing where we are tring to go. This would typically be the Pose of
   // a Target; the positive X-axis in the Pose's frame represents the direction
   // we want to go (we approach the pose from the left-half plane).
-  void SetGoal(const ::frc971::control_loops::DrivetrainQueue::Goal &goal,
-               const Pose &goal_pose);
+  void SetGoal(const ::frc971::control_loops::DrivetrainQueue::Goal &goal);
   // State: [x, y, theta, left_vel, right_vel]
   void Update(const ::Eigen::Matrix<double, 5, 1> &state);
-  void SetOutput(
+  // Returns whether we set the output. If false, that implies that we do not
+  // yet have a target to track into and so some other drivetrain should take
+  // over.
+  bool SetOutput(
       ::frc971::control_loops::DrivetrainQueue::Output *output);
   // TODO(james): Populate.
   void PopulateStatus(
@@ -77,6 +82,9 @@ class LineFollowDrivetrain {
   const ::Eigen::Matrix<double, 2, 3> K_;
   const ::Eigen::Matrix<double, 2, 3> Kff_;
 
+  TargetSelectorInterface *target_selector_;
+  bool freeze_target_ = false;
+  bool have_target_ = false;
   Pose target_pose_;
   double goal_velocity_ = 0.0;
 

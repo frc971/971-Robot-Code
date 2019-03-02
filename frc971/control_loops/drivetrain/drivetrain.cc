@@ -41,7 +41,7 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
       dt_openloop_(dt_config_, &kf_),
       dt_closedloop_(dt_config_, &kf_, localizer_),
       dt_spline_(dt_config_),
-      dt_line_follow_(dt_config_),
+      dt_line_follow_(dt_config_, localizer->target_selector()),
       down_estimator_(MakeDownEstimatorLoop()),
       left_gear_(dt_config_.default_high_gear ? Gear::HIGH : Gear::LOW),
       right_gear_(dt_config_.default_high_gear ? Gear::HIGH : Gear::LOW),
@@ -248,11 +248,7 @@ void DrivetrainLoop::RunIteration(
     dt_closedloop_.SetGoal(*goal);
     dt_openloop_.SetGoal(*goal);
     dt_spline_.SetGoal(*goal);
-    // TODO(james): Use a goal other than zero (which is what Pose default
-    // constructs to). Need to query the EKF in some way to determine what the
-    // logical target is.
-    const LineFollowDrivetrain::Pose goal_pose;
-    dt_line_follow_.SetGoal(*goal, goal_pose);
+    dt_line_follow_.SetGoal(*goal);
   }
 
   dt_openloop_.Update(robot_state().voltage_battery);
@@ -280,7 +276,11 @@ void DrivetrainLoop::RunIteration(
       dt_spline_.SetOutput(output);
       break;
     case 3:
-      dt_line_follow_.SetOutput(output);
+      if (!dt_line_follow_.SetOutput(output)) {
+        // If the line follow drivetrain was unable to execute (generally due to
+        // not having a target), execute the regular teleop drivetrain.
+        dt_openloop_.SetOutput(output);
+      }
       break;
   }
 
