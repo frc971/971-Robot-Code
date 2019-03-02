@@ -152,14 +152,6 @@ bind(
     actual = "@python_glog_repo//:glog",
 )
 
-new_http_archive(
-    name = "allwpilib_ni_libraries_repo_2018",
-    build_file = "debian/ni-libraries-2018.BUILD",
-    sha256 = "05ef6701c77b83163b443aa956d151028861cc3fa29fdf2b6b77431b4a91bfb9",
-    strip_prefix = "ni-libraries",
-    url = "http://www.frc971.org/Build-Dependencies/allwpilib_ni-libraries_57e9fb3.tar.gz",
-)
-
 # Generated with:
 # git fetch https://github.com/wpilibsuite/ni-libraries master
 # git archive --output=allwpilib_ni-libraries_4785480.tar.gz --format=tar.gz 4785480
