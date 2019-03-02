@@ -16,6 +16,8 @@ constexpr double CollisionAvoidance::kIntakeOutAngle;
 constexpr double CollisionAvoidance::kIntakeInAngle;
 constexpr double CollisionAvoidance::kWristElevatorCollisionMinAngle;
 constexpr double CollisionAvoidance::kWristElevatorCollisionMaxAngle;
+constexpr double
+    CollisionAvoidance::kWristElevatorCollisionMaxAngleWithoutObject;
 constexpr double CollisionAvoidance::kEps;
 constexpr double CollisionAvoidance::kEpsIntake;
 constexpr double CollisionAvoidance::kEpsWrist;
@@ -32,10 +34,15 @@ bool CollisionAvoidance::IsCollided(const SuperstructureQueue::Status *status) {
   const double wrist_position = status->wrist.position;
   const double elevator_position = status->elevator.position;
   const double intake_position = status->intake.position;
+  const bool has_piece = status->has_piece;
+
+  const double wrist_elevator_collision_max_angle =
+      has_piece ? kWristElevatorCollisionMaxAngle
+                : kWristElevatorCollisionMaxAngleWithoutObject;
 
   // Elevator is down, so the wrist can't be close to vertical.
   if (elevator_position < kElevatorClearHeight) {
-    if (wrist_position < kWristElevatorCollisionMaxAngle &&
+    if (wrist_position < wrist_elevator_collision_max_angle &&
         wrist_position > kWristElevatorCollisionMinAngle) {
       return true;
     }
@@ -69,12 +76,17 @@ void CollisionAvoidance::UpdateGoal(
   const double wrist_position = status->wrist.position;
   const double elevator_position = status->elevator.position;
   const double intake_position = status->intake.position;
+  const bool has_piece = status->has_piece;
 
   // Start with our constraints being wide open.
   clear_max_wrist_goal();
   clear_min_wrist_goal();
   clear_max_intake_goal();
   clear_min_intake_goal();
+
+  const double wrist_elevator_collision_max_angle =
+      has_piece ? kWristElevatorCollisionMaxAngle
+                : kWristElevatorCollisionMaxAngleWithoutObject;
 
   // If the elevator is low enough, we also can't transition the wrist.
   if (elevator_position < kElevatorClearHeight) {
@@ -84,7 +96,7 @@ void CollisionAvoidance::UpdateGoal(
                              3.0) {
       update_max_wrist_goal(kWristElevatorCollisionMinAngle - kEpsWrist);
     } else {
-      update_min_wrist_goal(kWristElevatorCollisionMaxAngle + kEpsWrist);
+      update_min_wrist_goal(wrist_elevator_collision_max_angle + kEpsWrist);
     }
   }
 
@@ -101,7 +113,7 @@ void CollisionAvoidance::UpdateGoal(
   // If the elevator is too low, the intake can't transition from in to out or
   // back.
   if (elevator_position < kElevatorClearIntakeHeight &&
-      wrist_position > kWristElevatorCollisionMaxAngle) {
+      wrist_position > wrist_elevator_collision_max_angle) {
     // Figure out if the intake is in our out and keep it there.
     if (intake_position < kIntakeMiddleAngle) {
       update_max_intake_goal(kIntakeInAngle - kEpsIntake);
@@ -115,7 +127,7 @@ void CollisionAvoidance::UpdateGoal(
 
   // If the intake is within the collision range, don't let the elevator down.
   if (intake_position > kIntakeInAngle && intake_position < kIntakeOutAngle &&
-      wrist_position > kWristElevatorCollisionMaxAngle) {
+      wrist_position > wrist_elevator_collision_max_angle) {
     update_min_elevator_goal(kElevatorClearIntakeHeight + kEps);
   }
 
@@ -129,7 +141,7 @@ void CollisionAvoidance::UpdateGoal(
   // If the wrist is within the elevator collision range, don't let the elevator
   // go down.
   if (wrist_position > kWristElevatorCollisionMinAngle &&
-      wrist_position < kWristElevatorCollisionMaxAngle) {
+      wrist_position < wrist_elevator_collision_max_angle) {
     update_min_elevator_goal(kElevatorClearHeight + kEps);
   }
 
@@ -154,7 +166,7 @@ void CollisionAvoidance::UpdateGoal(
     // If we need to move the intake, we've got to shove the elevator up.  The
     // intake is already constrained so it can't hit anything until it's clear.
     if (intake_needs_to_move &&
-        wrist_position > kWristElevatorCollisionMaxAngle) {
+        wrist_position > wrist_elevator_collision_max_angle) {
       update_min_elevator_goal(kElevatorClearIntakeHeight + kEps);
     }
     // If we need to move the wrist, we've got to shove the elevator up too. The
