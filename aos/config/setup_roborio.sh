@@ -30,6 +30,8 @@ else
   ssh "admin@${ROBOT_HOSTNAME}" 'echo "alias l=\"ls -la\"" >> /etc/profile'
   echo "Adding symbolic link to loging directory"
   ssh "admin@${ROBOT_HOSTNAME}" ln -s /media/sda1 logs
+  ssh "admin@${ROBOT_HOSTNAME}" mkdir robot_code
+  ssh "admin@${ROBOT_HOSTNAME}" ln -s /media/sda1/aos_log-current robot_code/aos_log-current
 fi
 
 # This fails if the code isn't running.
