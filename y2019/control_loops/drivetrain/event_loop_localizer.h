@@ -3,8 +3,9 @@
 
 #include "frc971/control_loops/drivetrain/localizer.h"
 #include "y2019/constants.h"
-#include "y2019/control_loops/drivetrain/localizer.h"
 #include "y2019/control_loops/drivetrain/camera.q.h"
+#include "y2019/control_loops/drivetrain/localizer.h"
+#include "y2019/control_loops/drivetrain/target_selector.h"
 
 namespace y2019 {
 namespace control_loops {
@@ -61,8 +62,7 @@ class EventLoopLocalizer
     return localizer_.X_hat(StateIdx::kRightVoltageError);
   }
 
-  ::frc971::control_loops::drivetrain::TrivialTargetSelector *target_selector()
-      override {
+  TargetSelector *target_selector() override {
     return &target_selector_;
   }
 
@@ -79,7 +79,7 @@ class EventLoopLocalizer
   Pose robot_pose_;
   const ::std::array<Camera, constants::Values::kNumCameras> cameras_;
   Localizer localizer_;
-  ::frc971::control_loops::drivetrain::TrivialTargetSelector target_selector_;
+  TargetSelector target_selector_;
 };
 
 // Constructs the cameras based on the constants in the //y2019/constants.*

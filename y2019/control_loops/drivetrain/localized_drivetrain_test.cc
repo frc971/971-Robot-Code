@@ -275,6 +275,32 @@ TEST_F(LocalizedDrivetrainTest, CameraUpdate) {
   VerifyEstimatorAccurate(1e-5);
 }
 
+namespace {
+EventLoopLocalizer::Pose HPSlotLeft() { return constants::Field().targets()[7].pose(); }
+}  // namespace
+
+// Tests that using the line following drivetrain and just driving straight
+// forward from roughly the right spot gets us to the HP slot.
+TEST_F(LocalizedDrivetrainTest, LineFollowToHPSlot) {
+  set_enable_cameras(false);
+  SetStartingPosition({4, 3, M_PI});
+  my_drivetrain_queue_.goal.MakeWithBuilder()
+      .controller_type(3)
+      .throttle(0.5)
+      .Send();
+  RunForTime(chrono::seconds(10));
+
+  VerifyEstimatorAccurate(1e-10);
+  // Due to the fact that we aren't modulating the throttle, we don't try to hit
+  // the target exactly. Instead, just run slightly past the target:
+  EXPECT_LT(::std::abs(::aos::math::DiffAngle(
+                M_PI, drivetrain_motor_plant_.state()(2, 0))),
+            1e-5);
+  EXPECT_GT(HPSlotLeft().abs_pos().x(), drivetrain_motor_plant_.state().x());
+  EXPECT_NEAR(HPSlotLeft().abs_pos().y(),
+              drivetrain_motor_plant_.state().y(), 1e-4);
+}
+
 }  // namespace testing
 }  // namespace drivetrain
 }  // namespace control_loops
