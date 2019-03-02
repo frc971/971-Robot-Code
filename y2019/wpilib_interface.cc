@@ -279,11 +279,26 @@ class CameraReader {
     spi_->SetMSBFirst();
   }
 
+  void set_activate_usb(std::unique_ptr<frc::DigitalInput> activate_usb) {
+    activate_usb_ = std::move(activate_usb);
+  }
+
+  void set_activate_passthrough(
+      std::unique_ptr<frc::DigitalInput> activate_passthrough) {
+    activate_passthrough_ = std::move(activate_passthrough);
+  }
+
   void DoSpiTransaction() {
     using namespace frc971::jevois;
     RoborioToTeensy to_teensy{};
     to_teensy.realtime_now = aos::realtime_clock::now();
-    to_teensy.camera_command = CameraCommand::kNormal;
+    if (activate_usb_ && !activate_usb_->Get()) {
+      to_teensy.camera_command = CameraCommand::kUsb;
+    } else if (activate_passthrough_ && !activate_passthrough_->Get()) {
+      to_teensy.camera_command = CameraCommand::kCameraPassthrough;
+    } else {
+      to_teensy.camera_command = CameraCommand::kNormal;
+    }
 
     std::array<char, spi_transfer_size() + 1> to_send{};
     {
@@ -343,6 +358,9 @@ class CameraReader {
  private:
   frc::SPI *spi_ = nullptr;
   ::std::unique_ptr<frc::SPI> dummy_spi_;
+
+  std::unique_ptr<frc::DigitalInput> activate_usb_;
+  std::unique_ptr<frc::DigitalInput> activate_passthrough_;
 
   frc971::wpilib::SpiRxClearer rx_clearer_;
 };
@@ -554,6 +572,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     frc::SPI camera_spi(frc::SPI::Port::kOnboardCS3);
     camera_reader.set_spi(&camera_spi);
     camera_reader.SetDummySPI(frc::SPI::Port::kOnboardCS2);
+    // Austin says 8, 9, 24, and 25 are good options to choose from for these.
+    camera_reader.set_activate_usb(make_unique<frc::DigitalInput>(24));
+    camera_reader.set_activate_passthrough(make_unique<frc::DigitalInput>(25));
 
     auto imu_trigger = make_unique<frc::DigitalInput>(0);
     ::frc971::wpilib::ADIS16448 imu(frc::SPI::Port::kOnboardCS1,
