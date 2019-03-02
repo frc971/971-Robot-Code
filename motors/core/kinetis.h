@@ -89,7 +89,6 @@
 // TODO(Brian): Use structs to access all the peripherals, and arrays for things
 // like DMA.
 // TODO(Brian): Name bitfield insert/extract macros consistently.
-// TODO(Brian): Use UINT32_C throughout.
 // TODO(Brian): Document all the things that are available at different
 // addresses on the other AIPS-lite bridge too.
 
@@ -1767,19 +1766,19 @@ typedef struct {
 
 // Direct Memory Access Controller (eDMA)
 
-#define M_DMA_CX UINT32_C(1 << 17)   // Cancel Transfer
-#define M_DMA_ECX UINT32_C(1 << 16)  // Error Cancel Transfer
+#define M_DMA_CX (uint32_t)(1 << 17)   // Cancel Transfer
+#define M_DMA_ECX (uint32_t)(1 << 16)  // Error Cancel Transfer
 #if DMA_NUM_CHANNELS >= 32
-#define M_DMA_GRP1PRI UINT32_C(0x400)
-#define M_DMA_GRP0PRI UINT32_C(0x100)
-#define M_DMA_ERGA UINT32_C(0x08)  // Enable Round Robin Group Arbitration
+#define M_DMA_GRP1PRI (uint32_t)(0x400)
+#define M_DMA_GRP0PRI (uint32_t)(0x100)
+#define M_DMA_ERGA (uint32_t)(0x08)  // Enable Round Robin Group Arbitration
 #endif
-#define M_DMA_EMLM UINT32_C(0x80)  // Enable Minor Loop Mapping
-#define M_DMA_CLM UINT32_C(0x40)   // Continuous Link Mode
-#define M_DMA_HALT UINT32_C(0x20)  // Halt DMA Operations
-#define M_DMA_HOE UINT32_C(0x10)   // Halt On Error
-#define M_DMA_ERCA UINT32_C(0x04)  // Enable Round Robin Channel Arbitration
-#define M_DMA_EDBG UINT32_C(0x02)  // Enable Debug
+#define M_DMA_EMLM (uint32_t)(0x80)  // Enable Minor Loop Mapping
+#define M_DMA_CLM (uint32_t)(0x40)   // Continuous Link Mode
+#define M_DMA_HALT (uint32_t)(0x20)  // Halt DMA Operations
+#define M_DMA_HOE (uint32_t)(0x10)   // Halt On Error
+#define M_DMA_ERCA (uint32_t)(0x04)  // Enable Round Robin Channel Arbitration
+#define M_DMA_EDBG (uint32_t)(0x02)  // Enable Debug
 #define V_DMA_CHPRI(n) \
   ((((uint8_t)(n)) & 15) << 0)     // Channel Arbitration Priority
 #define M_DMA_DPA UINT8_C(1 << 6)  // Disable PreEmpt Ability
@@ -1827,8 +1826,8 @@ typedef struct {
 #define M_TCD_ELINK \
   ((uint16_t)1 << 15)  // Enable channel linking on minor-loop complete
 #define V_TCD_LINKCH(n) ((((uint16_t)(n)) & 0xF) << 9)
-#define M_TCD_SMLOE (UINT32_C(1) << 31)  // Source Minor Loop Offset Enable
-#define M_TCD_DMLOE (UINT32_C(1) << 30)  // Destination Minor Loop Offset Enable
+#define M_TCD_SMLOE ((uint32_t)(1) << 31)  // Source Minor Loop Offset Enable
+#define M_TCD_DMLOE ((uint32_t)(1) << 30)  // Destination Minor Loop Offset Enable
 #define V_TCD_MLOFF(n) ((((uint32_t)(n)) & 0xFFFFF) << 10)  // Minor loop offset
 
 typedef struct {
@@ -2406,21 +2405,21 @@ static inline KINETIS_ADC_t *ADC(int i) { return (i == 0) ? &ADC0 : &ADC1; }
 // Programmable Delay Block (PDB)
 
 #define V_PDB_LDMOD(n) ((uint32_t)(((n)&3) << 18))  // Load Mode Select
-#define M_PDB_PDBEIE UINT32_C(0x00020000)  // Sequence Error Interrupt Enable
-#define M_PDB_SWTRIG UINT32_C(0x00010000)  // Software Trigger
-#define M_PDB_DMAEN UINT32_C(0x00008000)   // DMA Enable
+#define M_PDB_PDBEIE (uint32_t)(0x00020000)  // Sequence Error Interrupt Enable
+#define M_PDB_SWTRIG (uint32_t)(0x00010000)  // Software Trigger
+#define M_PDB_DMAEN (uint32_t)(0x00008000)   // DMA Enable
 #define V_PDB_PRESCALER(n) \
   ((uint32_t)(((n)&7) << 12))  // Prescaler Divider Select
 #define V_PDB_TRGSEL(n) \
   ((uint32_t)(((n)&15) << 8))                     // Trigger Input Source Select
-#define M_PDB_PDBEN UINT32_C(0x00000080)          // PDB Enable
-#define M_PDB_PDBIF UINT32_C(0x00000040)          // PDB Interrupt Flag
-#define M_PDB_PDBIE UINT32_C(0x00000020)          // PDB Interrupt Enable.
+#define M_PDB_PDBEN (uint32_t)(0x00000080)          // PDB Enable
+#define M_PDB_PDBIF (uint32_t)(0x00000040)          // PDB Interrupt Flag
+#define M_PDB_PDBIE (uint32_t)(0x00000020)          // PDB Interrupt Enable.
 #define V_PDB_MULT(n) ((uint32_t)(((n)&3) << 2))  // Multiplication Factor
-#define M_PDB_CONT UINT32_C(0x00000002)           // Continuous Mode Enable
-#define M_PDB_LDOK UINT32_C(0x00000001)           // Load OK
-#define M_PDB_EXT UINT32_C(0x02)  // External Trigger Input Enable
-#define M_PDB_TOE UINT32_C(0x01)  // Interval Trigger Enable
+#define M_PDB_CONT (uint32_t)(0x00000002)           // Continuous Mode Enable
+#define M_PDB_LDOK (uint32_t)(0x00000001)           // Load OK
+#define M_PDB_EXT (uint32_t)(0x02)  // External Trigger Input Enable
+#define M_PDB_TOE (uint32_t)(0x01)  // Interval Trigger Enable
 #define V_PDB_BB(n) ((uint32_t)(((n) & 0xFF) << 16))
 #define V_PDB_TOS(n) ((uint32_t)(((n) & 0xFF) << 8))
 #define V_PDB_EN(n) ((uint32_t)(((n) & 0xFF) << 0))
@@ -3678,18 +3677,71 @@ typedef struct {
 #define SPI_PUSHR_CTCNT			((uint32_t)0x04000000)		//
 #define SPI_PUSHR_PCS(n)		(((n) & 31) << 16)		//
 
+#define M_SPI_MSTR (uint32_t)(1 << 31)
+#define M_SPI_CONT_SCKE (uint32_t)(1 << 30)
+#define V_SPI_DCONF(n) ((uint32_t)(((uint32_t)(n) & 3) << 28))
+#define M_SPI_FRZ (uint32_t)(1 << 27)
+#define M_SPI_MTFE (uint32_t)(1 << 26)
+#define M_SPI_PCSSE (uint32_t)(1 << 25)
+#define M_SPI_ROOE (uint32_t)(1 << 24)
+#define V_SPI_PCSIS(n) ((uint32_t)(((uint32_t)(n) & 0x3F) << 16))
+#define M_SPI_DOZE (uint32_t)(1 << 15)
+#define M_SPI_MDIS (uint32_t)(1 << 14)
+#define M_SPI_DIS_TXF (uint32_t)(1 << 13)
+#define M_SPI_DIS_RXF (uint32_t)(1 << 12)
+#define M_SPI_CLR_TXF (uint32_t)(1 << 11)
+#define M_SPI_CLR_RXF (uint32_t)(1 << 10)
+#define V_SPI_SMPL_PT(n) ((uint32_t)(((uint32_t)(n) & 3) << 8))
+#define M_SPI_HALT (uint32_t)(1 << 0)
+
+#define G_SPI_SPI_TCNT(n) ((uint16_t)(((uint32_t)(n) >> 16) & UINT16_C(0xFFFF)))
+
+#define M_SPI_DBR (uint32_t)(1 << 31)
+#define V_SPI_FMSZ(n) ((uint32_t)(((uint32_t)(n) & 0xF) << 27))
+#define M_SPI_CPOL (uint32_t)(1 << 26)
+#define M_SPI_CPHA (uint32_t)(1 << 25)
+#define M_SPI_LSBFE (uint32_t)(1 << 24)
+#define V_SPI_PCSSCK(n) ((uint32_t)(((uint32_t)(n) & 3) << 22))
+#define V_SPI_PASC(n) ((uint32_t)(((uint32_t)(n) & 3) << 20))
+#define V_SPI_PDT(n) ((uint32_t)(((uint32_t)(n) & 3) << 18))
+#define V_SPI_PBR(n) ((uint32_t)(((uint32_t)(n) & 3) << 16))
+#define V_SPI_CSSCK(n) ((uint32_t)(((uint32_t)(n) & 0xF) << 12))
+#define V_SPI_ASC(n) ((uint32_t)(((uint32_t)(n) & 0xF) << 8))
+#define V_SPI_DT(n) ((uint32_t)(((uint32_t)(n) & 0xF) << 4))
+#define V_SPI_BR(n) ((uint32_t)(((uint32_t)(n) & 0xF) << 0))
+
+#define M_SPI_TCF (uint32_t)(1 << 31)
+#define M_SPI_TXRXS (uint32_t)(1 << 30)
+#define M_SPI_EOQF (uint32_t)(1 << 28)
+#define M_SPI_TFUF (uint32_t)(1 << 27)
+#define M_SPI_TFFF (uint32_t)(1 << 25)
+#define M_SPI_RFOF (uint32_t)(1 << 19)
+#define M_SPI_RFDF (uint32_t)(1 << 17)
+#define G_SPI_TXCTR(n) ((uint8_t)(((uint32_t)(n) >> 12) & UINT8_C(0xF)))
+#define G_SPI_TXNXTPTR(n) ((uint8_t)(((uint32_t)(n) >> 8) & UINT8_C(0xF)))
+#define G_SPI_RXCTR(n) ((uint8_t)(((uint32_t)(n) >> 4) & UINT8_C(0xF)))
+#define G_SPI_POPNXTPTR(n) ((uint8_t)(((uint32_t)(n) >> 0) & UINT8_C(0xF)))
+
+#define M_SPI_TCF_RE (uint32_t)(1 << 31)
+#define M_SPI_EOQF_RE (uint32_t)(1 << 28)
+#define M_SPI_TFUF_RE (uint32_t)(1 << 27)
+#define M_SPI_TFFF_RE (uint32_t)(1 << 25)
+#define M_SPI_TFFF_DIRS (uint32_t)(1 << 24)
+#define M_SPI_RFOF_RE (uint32_t)(1 << 19)
+#define M_SPI_RFDF_RE (uint32_t)(1 << 17)
+#define M_SPI_RFDF_DIRS (uint32_t)(1 << 16)
+
+#define M_SPI_CONT (uint32_t)(1 << 31)
+#define V_SPI_CTAS(n) ((uint32_t)(((uint32_t)(n) & 7) << 28))
+#define M_SPI_EOQ (uint32_t)(1 << 27)
+#define M_SPI_CTCNT (uint32_t)(1 << 26)
+#define V_SPI_PCS(n) ((uint32_t)(((uint32_t)(n) & 0x3F) << 16))
+
 typedef struct {
 	volatile uint32_t	MCR;	// 0
 	volatile uint32_t	unused1;// 4
 	volatile uint32_t	TCR;	// 8
-	volatile uint32_t	CTAR0;	// c
-	volatile uint32_t	CTAR1;	// 10
-	volatile uint32_t	CTAR2;	// 14
-	volatile uint32_t	CTAR3;	// 18
-	volatile uint32_t	CTAR4;	// 1c
-	volatile uint32_t	CTAR5;	// 20
-	volatile uint32_t	CTAR6;	// 24
-	volatile uint32_t	CTAR7;	// 28
+	volatile uint32_t	CTAR[8];	// c
 	volatile uint32_t	SR;	// 2c
 	volatile uint32_t	RSER;	// 30
 	volatile uint32_t	PUSHR;	// 34
@@ -3697,68 +3749,68 @@ typedef struct {
 	volatile uint32_t	TXFR[16]; // 3c
 	volatile uint32_t	RXFR[16]; // 7c
 } KINETISK_SPI_t;
-#define KINETISK_SPI0		(*(KINETISK_SPI_t *)0x4002C000)
-#define SPI0_MCR		(KINETISK_SPI0.MCR)	// DSPI Module Configuration Register
-#define SPI0_TCR		(KINETISK_SPI0.TCR)	// DSPI Transfer Count Register
-#define SPI0_CTAR0		(KINETISK_SPI0.CTAR0)	// DSPI Clock and Transfer Attributes Register, In Master Mode
-#define SPI0_CTAR0_SLAVE	(KINETISK_SPI0.CTAR0)	// DSPI Clock and Transfer Attributes Register, In Slave Mode
-#define SPI0_CTAR1		(KINETISK_SPI0.CTAR1)	// DSPI Clock and Transfer Attributes Register, In Master Mode
-#define SPI0_SR			(KINETISK_SPI0.SR)	// DSPI Status Register
-#define SPI0_RSER		(KINETISK_SPI0.RSER)	// DSPI DMA/Interrupt Request Select and Enable Register
-#define SPI0_PUSHR		(KINETISK_SPI0.PUSHR)	// DSPI PUSH TX FIFO Register In Master Mode
-#define SPI0_PUSHR_SLAVE	(KINETISK_SPI0.PUSHR)	// DSPI PUSH TX FIFO Register In Slave Mode
-#define SPI0_POPR		(KINETISK_SPI0.POPR)	// DSPI POP RX FIFO Register
-#define SPI0_TXFR0		(KINETISK_SPI0.TXFR[0])	// DSPI Transmit FIFO Registers
-#define SPI0_TXFR1		(KINETISK_SPI0.TXFR[1])	// DSPI Transmit FIFO Registers
-#define SPI0_TXFR2		(KINETISK_SPI0.TXFR[2])	// DSPI Transmit FIFO Registers
-#define SPI0_TXFR3		(KINETISK_SPI0.TXFR[3])	// DSPI Transmit FIFO Registers
-#define SPI0_RXFR0		(KINETISK_SPI0.RXFR[0])	// DSPI Receive FIFO Registers
-#define SPI0_RXFR1		(KINETISK_SPI0.RXFR[1])	// DSPI Receive FIFO Registers
-#define SPI0_RXFR2		(KINETISK_SPI0.RXFR[2])	// DSPI Receive FIFO Registers
-#define SPI0_RXFR3		(KINETISK_SPI0.RXFR[3])	// DSPI Receive FIFO Registers
+#define SPI0		(*(KINETISK_SPI_t *)0x4002C000)
+#define SPI0_MCR		(SPI0.MCR)	// DSPI Module Configuration Register
+#define SPI0_TCR		(SPI0.TCR)	// DSPI Transfer Count Register
+#define SPI0_CTAR0		(SPI0.CTAR[0])	// DSPI Clock and Transfer Attributes Register, In Master Mode
+#define SPI0_CTAR0_SLAVE	(SPI0.CTAR[0])	// DSPI Clock and Transfer Attributes Register, In Slave Mode
+#define SPI0_CTAR1		(SPI0.CTAR[1])	// DSPI Clock and Transfer Attributes Register, In Master Mode
+#define SPI0_SR			(SPI0.SR)	// DSPI Status Register
+#define SPI0_RSER		(SPI0.RSER)	// DSPI DMA/Interrupt Request Select and Enable Register
+#define SPI0_PUSHR		(SPI0.PUSHR)	// DSPI PUSH TX FIFO Register In Master Mode
+#define SPI0_PUSHR_SLAVE	(SPI0.PUSHR)	// DSPI PUSH TX FIFO Register In Slave Mode
+#define SPI0_POPR		(SPI0.POPR)	// DSPI POP RX FIFO Register
+#define SPI0_TXFR0		(SPI0.TXFR[0])	// DSPI Transmit FIFO Registers
+#define SPI0_TXFR1		(SPI0.TXFR[1])	// DSPI Transmit FIFO Registers
+#define SPI0_TXFR2		(SPI0.TXFR[2])	// DSPI Transmit FIFO Registers
+#define SPI0_TXFR3		(SPI0.TXFR[3])	// DSPI Transmit FIFO Registers
+#define SPI0_RXFR0		(SPI0.RXFR[0])	// DSPI Receive FIFO Registers
+#define SPI0_RXFR1		(SPI0.RXFR[1])	// DSPI Receive FIFO Registers
+#define SPI0_RXFR2		(SPI0.RXFR[2])	// DSPI Receive FIFO Registers
+#define SPI0_RXFR3		(SPI0.RXFR[3])	// DSPI Receive FIFO Registers
 
 #if defined(HAS_KINETIS_SPI1)
-#define KINETISK_SPI1		(*(KINETISK_SPI_t *)0x4002D000)
-#define SPI1_MCR		(KINETISK_SPI1.MCR)	// DSPI Module Configuration Register
-#define SPI1_TCR		(KINETISK_SPI1.TCR)	// DSPI Transfer Count Register
-#define SPI1_CTAR0		(KINETISK_SPI1.CTAR0)	// DSPI Clock and Transfer Attributes Register, In Master Mode
-#define SPI1_CTAR0_SLAVE	(KINETISK_SPI1.CTAR0)	// DSPI Clock and Transfer Attributes Register, In Slave Mode
-#define SPI1_CTAR1		(KINETISK_SPI1.CTAR1)	// DSPI Clock and Transfer Attributes Register, In Master Mode
-#define SPI1_SR			(KINETISK_SPI1.SR)	// DSPI Status Register
-#define SPI1_RSER		(KINETISK_SPI1.RSER)	// DSPI DMA/Interrupt Request Select and Enable Register
-#define SPI1_PUSHR		(KINETISK_SPI1.PUSHR)	// DSPI PUSH TX FIFO Register In Master Mode
-#define SPI1_PUSHR_SLAVE	(KINETISK_SPI1.PUSHR)	// DSPI PUSH TX FIFO Register In Slave Mode
-#define SPI1_POPR		(KINETISK_SPI1.POPR)	// DSPI POP RX FIFO Register
-#define SPI1_TXFR0		(KINETISK_SPI1.TXFR[0])	// DSPI Transmit FIFO Registers
-#define SPI1_TXFR1		(KINETISK_SPI1.TXFR[1])	// DSPI Transmit FIFO Registers
-#define SPI1_TXFR2		(KINETISK_SPI1.TXFR[2])	// DSPI Transmit FIFO Registers
-#define SPI1_TXFR3		(KINETISK_SPI1.TXFR[3])	// DSPI Transmit FIFO Registers
-#define SPI1_RXFR0		(KINETISK_SPI1.RXFR[0])	// DSPI Receive FIFO Registers
-#define SPI1_RXFR1		(KINETISK_SPI1.RXFR[1])	// DSPI Receive FIFO Registers
-#define SPI1_RXFR2		(KINETISK_SPI1.RXFR[2])	// DSPI Receive FIFO Registers
-#define SPI1_RXFR3		(KINETISK_SPI1.RXFR[3])	// DSPI Receive FIFO Registers
+#define SPI1		(*(KINETISK_SPI_t *)0x4002D000)
+#define SPI1_MCR		(SPI1.MCR)	// DSPI Module Configuration Register
+#define SPI1_TCR		(SPI1.TCR)	// DSPI Transfer Count Register
+#define SPI1_CTAR0		(SPI1.CTAR[0])	// DSPI Clock and Transfer Attributes Register, In Master Mode
+#define SPI1_CTAR0_SLAVE	(SPI1.CTAR[0])	// DSPI Clock and Transfer Attributes Register, In Slave Mode
+#define SPI1_CTAR1		(SPI1.CTAR[1])	// DSPI Clock and Transfer Attributes Register, In Master Mode
+#define SPI1_SR			(SPI1.SR)	// DSPI Status Register
+#define SPI1_RSER		(SPI1.RSER)	// DSPI DMA/Interrupt Request Select and Enable Register
+#define SPI1_PUSHR		(SPI1.PUSHR)	// DSPI PUSH TX FIFO Register In Master Mode
+#define SPI1_PUSHR_SLAVE	(SPI1.PUSHR)	// DSPI PUSH TX FIFO Register In Slave Mode
+#define SPI1_POPR		(SPI1.POPR)	// DSPI POP RX FIFO Register
+#define SPI1_TXFR0		(SPI1.TXFR[0])	// DSPI Transmit FIFO Registers
+#define SPI1_TXFR1		(SPI1.TXFR[1])	// DSPI Transmit FIFO Registers
+#define SPI1_TXFR2		(SPI1.TXFR[2])	// DSPI Transmit FIFO Registers
+#define SPI1_TXFR3		(SPI1.TXFR[3])	// DSPI Transmit FIFO Registers
+#define SPI1_RXFR0		(SPI1.RXFR[0])	// DSPI Receive FIFO Registers
+#define SPI1_RXFR1		(SPI1.RXFR[1])	// DSPI Receive FIFO Registers
+#define SPI1_RXFR2		(SPI1.RXFR[2])	// DSPI Receive FIFO Registers
+#define SPI1_RXFR3		(SPI1.RXFR[3])	// DSPI Receive FIFO Registers
 #endif
 
 #if defined(HAS_KINETIS_SPI2)
-#define KINETISK_SPI2		(*(KINETISK_SPI_t *)0x400AC000)
-#define SPI2_MCR		(KINETISK_SPI2.MCR)	// DSPI Module Configuration Register
-#define SPI2_TCR		(KINETISK_SPI2.TCR)	// DSPI Transfer Count Register
-#define SPI2_CTAR0		(KINETISK_SPI2.CTAR0)	// DSPI Clock and Transfer Attributes Register, In Master Mode
-#define SPI2_CTAR0_SLAVE	(KINETISK_SPI2.CTAR0)	// DSPI Clock and Transfer Attributes Register, In Slave Mode
-#define SPI2_CTAR1		(KINETISK_SPI2.CTAR1)	// DSPI Clock and Transfer Attributes Register, In Master Mode
-#define SPI2_SR			(KINETISK_SPI2.SR)	// DSPI Status Register
-#define SPI2_RSER		(KINETISK_SPI2.RSER)	// DSPI DMA/Interrupt Request Select and Enable Register
-#define SPI2_PUSHR		(KINETISK_SPI2.PUSHR)	// DSPI PUSH TX FIFO Register In Master Mode
-#define SPI2_PUSHR_SLAVE	(KINETISK_SPI2.PUSHR)	// DSPI PUSH TX FIFO Register In Slave Mode
-#define SPI2_POPR		(KINETISK_SPI2.POPR)	// DSPI POP RX FIFO Register
-#define SPI2_TXFR0		(KINETISK_SPI2.TXFR[0])	// DSPI Transmit FIFO Registers
-#define SPI2_TXFR1		(KINETISK_SPI2.TXFR[1])	// DSPI Transmit FIFO Registers
-#define SPI2_TXFR2		(KINETISK_SPI2.TXFR[2])	// DSPI Transmit FIFO Registers
-#define SPI2_TXFR3		(KINETISK_SPI2.TXFR[3])	// DSPI Transmit FIFO Registers
-#define SPI2_RXFR0		(KINETISK_SPI2.RXFR[0])	// DSPI Receive FIFO Registers
-#define SPI2_RXFR1		(KINETISK_SPI2.RXFR[1])	// DSPI Receive FIFO Registers
-#define SPI2_RXFR2		(KINETISK_SPI2.RXFR[2])	// DSPI Receive FIFO Registers
-#define SPI2_RXFR3		(KINETISK_SPI2.RXFR[3])	// DSPI Receive FIFO Registers
+#define SPI2		(*(KINETISK_SPI_t *)0x400AC000)
+#define SPI2_MCR		(SPI2.MCR)	// DSPI Module Configuration Register
+#define SPI2_TCR		(SPI2.TCR)	// DSPI Transfer Count Register
+#define SPI2_CTAR0		(SPI2.CTAR[0])	// DSPI Clock and Transfer Attributes Register, In Master Mode
+#define SPI2_CTAR0_SLAVE	(SPI2.CTAR[0])	// DSPI Clock and Transfer Attributes Register, In Slave Mode
+#define SPI2_CTAR1		(SPI2.CTAR[1])	// DSPI Clock and Transfer Attributes Register, In Master Mode
+#define SPI2_SR			(SPI2.SR)	// DSPI Status Register
+#define SPI2_RSER		(SPI2.RSER)	// DSPI DMA/Interrupt Request Select and Enable Register
+#define SPI2_PUSHR		(SPI2.PUSHR)	// DSPI PUSH TX FIFO Register In Master Mode
+#define SPI2_PUSHR_SLAVE	(SPI2.PUSHR)	// DSPI PUSH TX FIFO Register In Slave Mode
+#define SPI2_POPR		(SPI2.POPR)	// DSPI POP RX FIFO Register
+#define SPI2_TXFR0		(SPI2.TXFR[0])	// DSPI Transmit FIFO Registers
+#define SPI2_TXFR1		(SPI2.TXFR[1])	// DSPI Transmit FIFO Registers
+#define SPI2_TXFR2		(SPI2.TXFR[2])	// DSPI Transmit FIFO Registers
+#define SPI2_TXFR3		(SPI2.TXFR[3])	// DSPI Transmit FIFO Registers
+#define SPI2_RXFR0		(SPI2.RXFR[0])	// DSPI Receive FIFO Registers
+#define SPI2_RXFR1		(SPI2.RXFR[1])	// DSPI Receive FIFO Registers
+#define SPI2_RXFR2		(SPI2.RXFR[2])	// DSPI Receive FIFO Registers
+#define SPI2_RXFR3		(SPI2.RXFR[3])	// DSPI Receive FIFO Registers
 #endif
 
 

@@ -90,3 +90,17 @@ cc_library(
         "//motors/core",
     ],
 )
+
+cc_library(
+    name = "spi",
+    srcs = ["spi.cc"],
+    hdrs = ["spi.h"],
+    restricted_to = mcu_cpus,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":uart_buffer",
+        "//motors:util",
+        "//motors/core",
+        "//third_party/GSL",
+    ],
+)

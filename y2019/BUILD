@@ -73,6 +73,7 @@ cc_binary(
         "//third_party:phoenix",
         "//third_party:wpilib",
         "//y2019/control_loops/superstructure:superstructure_queue",
+        "//y2019/jevois:spi",
     ],
 )
 
