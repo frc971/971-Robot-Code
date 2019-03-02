@@ -577,7 +577,8 @@ __attribute__((unused)) void TestIo() {
 // claiming that it's impossible to queue up the first byte for the slave end of
 // an SPI connection properly. Instead, we just accept there will be a garbage
 // byte and the other end ignores it.
-__attribute__((unused)) void TransferData() {
+__attribute__((unused)) void TransferData(
+    frc971::motors::PrintingImplementation *printing) {
   Uarts *const uarts = Uarts::global_instance;
   std::array<CobsPacketizer<uart_to_teensy_size()>, 5> packetizers;
   std::array<TransmitBuffer, 5> transmit_buffers{
@@ -585,13 +586,18 @@ __attribute__((unused)) void TransferData() {
   FrameQueue frame_queue;
   aos::monotonic_clock::time_point last_camera_send =
       aos::monotonic_clock::min_time;
+  CameraCommand stdin_camera_command = CameraCommand::kNormal;
+  CameraCommand last_roborio_camera_command = CameraCommand::kNormal;
+
   bool first = true;
   while (true) {
     {
       const auto received_transfer = SpiQueue::global_instance->Tick();
       if (received_transfer) {
         const auto unpacked = SpiUnpackToTeensy(*received_transfer);
-        if (!unpacked) {
+        if (unpacked) {
+          last_roborio_camera_command = unpacked->camera_command;
+        } else {
           printf("UART decode error\n");
         }
       }
@@ -639,7 +645,11 @@ __attribute__((unused)) void TransferData() {
         CameraCalibration calibration{};
         calibration.teensy_now = aos::monotonic_clock::now();
         calibration.realtime_now = aos::realtime_clock::min_time;
-        calibration.camera_command = CameraCommand::kNormal;
+        if (last_roborio_camera_command != CameraCommand::kNormal) {
+          calibration.camera_command = last_roborio_camera_command;
+        } else {
+          calibration.camera_command = stdin_camera_command;
+        }
         // TODO(Brian): Actually fill out the calibration field.
         transmit_buffers[0].MaybeWritePacket(calibration);
         transmit_buffers[1].MaybeWritePacket(calibration);
@@ -649,6 +659,29 @@ __attribute__((unused)) void TransferData() {
       }
       for (TransmitBuffer &transmit_buffer : transmit_buffers) {
         transmit_buffer.Tick(now);
+      }
+    }
+
+    {
+      const auto stdin_data = printing->ReadStdin();
+      if (!stdin_data.empty()) {
+        switch (stdin_data.back()) {
+          case 'p':
+            printf("Entering passthrough mode\n");
+            stdin_camera_command = CameraCommand::kCameraPassthrough;
+            break;
+          case 'u':
+            printf("Entering USB mode\n");
+            stdin_camera_command = CameraCommand::kUsb;
+            break;
+          case 'n':
+            printf("Entering normal mode\n");
+            stdin_camera_command = CameraCommand::kNormal;
+            break;
+          default:
+            printf("Unrecognized character\n");
+            break;
+        }
       }
     }
 
@@ -817,7 +850,7 @@ int Main() {
   NVIC_ENABLE_IRQ(IRQ_SPI0);
   NVIC_ENABLE_IRQ(IRQ_PORTA);
 
-  TransferData();
+  TransferData(printing.get());
 
   while (true) {
   }
