@@ -159,8 +159,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       wrist_params->zeroing_constants.measured_absolute_position = 0.357394;
       wrist->potentiometer_offset = -1.479097 - 2.740303;
 
-      stilts_params->zeroing_constants.measured_absolute_position = 0.036469;
-      stilts->potentiometer_offset = -0.093820 + 0.0124;
+      stilts_params->zeroing_constants.measured_absolute_position = 0.048258;
+      stilts->potentiometer_offset = -0.093820 + 0.0124 - 0.008334;
       break;
 
     case kCodingRobotTeamNumber:
