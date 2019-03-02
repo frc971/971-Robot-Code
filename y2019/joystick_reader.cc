@@ -18,6 +18,7 @@
 
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
 #include "y2019/control_loops/superstructure/superstructure.q.h"
+#include "y2019/status_light.q.h"
 
 using ::y2019::control_loops::superstructure::superstructure_queue;
 using ::aos::input::driver_station::ButtonLocation;
@@ -102,8 +103,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
             ::y2019::control_loops::drivetrain::GetDrivetrainConfig()) {
     superstructure_queue.goal.FetchLatest();
     if (superstructure_queue.goal.get()) {
-      top_ = superstructure_queue.goal->suction.top;
-      bottom_ = superstructure_queue.goal->suction.bottom;
+      grab_piece_ = superstructure_queue.goal->suction.grab_piece;
     }
   }
 
@@ -119,13 +119,12 @@ class Reader : public ::aos::input::ActionJoystickInput {
     auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
 
     if (data.IsPressed(kSuctionBall)) {
-      Ball();
+      grab_piece_ = true;
     } else if (data.IsPressed(kSuctionHatch)) {
-      Disc();
+      grab_piece_ = true;
     } else if (data.IsPressed(kRelease) ||
                !superstructure_queue.status->has_piece) {
-      top_ = false;
-      bottom_ = false;
+      grab_piece_ = false;
     }
 
     if (data.IsPressed(kRocketBackwardUnpressed)) {
@@ -175,10 +174,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
       // Go to intake position and apply vacuum
       if (data.IsPressed(kBallHPIntakeForward)) {
-        Ball();
+        grab_piece_ = true;
         elevator_wrist_pos_ = kBallHPIntakeForwardPos;
       } else if (data.IsPressed(kBallHPIntakeBackward)) {
-        Ball();
+        grab_piece_ = true;
         elevator_wrist_pos_ = kBallHPIntakeBackwardPos;
       }
 
@@ -203,10 +202,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
       }
     } else {
       if (data.IsPressed(kPanelHPIntakeForward)) {
-        Disc();
+        grab_piece_ = true;
         elevator_wrist_pos_ = kPanelHPIntakeForwrdPos;
       } else if (data.IsPressed(kPanelHPIntakeBackward)) {
-        Disc();
+        grab_piece_ = true;
         elevator_wrist_pos_ = kPanelHPIntakeBackwardPos;
       }
 
@@ -236,7 +235,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       if (kDoBallIntake && !superstructure_queue.status->has_piece) {
         elevator_wrist_pos_ = kBallIntakePos;
         new_superstructure_goal->roller_voltage = 9.0;
-        Ball();
+        grab_piece_ = true;
       } else {
         if (kDoBallOutake) {
           new_superstructure_goal->roller_voltage = -6.0;
@@ -248,12 +247,16 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     if (data.IsPressed(kRelease)) {
-      top_ = false;
-      bottom_ = false;
+      grab_piece_ = false;
     }
 
-    new_superstructure_goal->suction.top = top_;
-    new_superstructure_goal->suction.bottom = bottom_;
+    if (switch_ball_) {
+      new_superstructure_goal->suction.gamepiece_mode = 0;
+    } else {
+      new_superstructure_goal->suction.gamepiece_mode = 1;
+    }
+
+    new_superstructure_goal->suction.grab_piece = grab_piece_;
 
     new_superstructure_goal->elevator.unsafe_goal =
         elevator_wrist_pos_.elevator;
@@ -265,20 +268,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
   }
 
-  void Disc() {
-    top_ = true;
-    bottom_ = true;
-  }
-  void Ball() {
-    top_ = false;
-    bottom_ = true;
-  }
-
  private:
   // Current goals here.
   ElevatorWristPosition elevator_wrist_pos_ = kStowPos;
-  bool top_ = false;
-  bool bottom_ = false;
+  bool grab_piece_ = false;
 
   bool switch_ball_ = false;
   bool stilts_was_above_ = false;

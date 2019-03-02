@@ -1,4 +1,5 @@
 load("//frc971:downloader.bzl", "robot_downloader")
+load("//aos/build:queues.bzl", "queue_library")
 
 robot_downloader(
     start_binaries = [
@@ -43,6 +44,7 @@ cc_binary(
     restricted_to = ["//tools:roborio"],
     deps = [
         ":constants",
+        ":status_light",
         "//aos:init",
         "//aos:make_unique",
         "//aos:math",
@@ -109,6 +111,7 @@ cc_binary(
         ":joystick_reader.cc",
     ],
     deps = [
+        ":status_light",
         "//aos:init",
         "//aos/actions:action_lib",
         "//aos/input:action_joystick_input",
@@ -126,6 +129,14 @@ cc_binary(
         "//y2019/control_loops/drivetrain:drivetrain_base",
         "//y2019/control_loops/superstructure:superstructure_queue",
     ],
+)
+
+queue_library(
+    name = "status_light",
+    srcs = [
+        "status_light.q",
+    ],
+    visibility = ["//visibility:public"],
 )
 
 py_library(

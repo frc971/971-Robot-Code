@@ -16,6 +16,7 @@
 #include "frc971/wpilib/ahal/DriverStation.h"
 #include "frc971/wpilib/ahal/Encoder.h"
 #include "frc971/wpilib/ahal/VictorSP.h"
+#include "ctre/phoenix/CANifier.h"
 #undef ERROR
 
 #include "aos/commonmath.h"
@@ -47,6 +48,7 @@
 #include "y2019/control_loops/drivetrain/camera.q.h"
 #include "y2019/control_loops/superstructure/superstructure.q.h"
 #include "y2019/jevois/spi.h"
+#include "y2019/status_light.q.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -522,6 +524,59 @@ class SolenoidWriter {
         to_log.read_solenoids = pcm_.GetAll();
         LOG_STRUCT(DEBUG, "pneumatics info", to_log);
       }
+
+      status_light.FetchLatest();
+      // If we don't have a light request (or it's an old one), we are borked.
+      // Flash the red light slowly.
+      if (!status_light.get() ||
+          status_light.Age() > chrono::milliseconds(100)) {
+        StatusLight color;
+        color.red = 0.0;
+        color.green = 0.0;
+        color.blue = 0.0;
+
+        ++light_flash_;
+        if (light_flash_ > 10) {
+          color.red = 0.5;
+        }
+
+        if (light_flash_ > 20) {
+          light_flash_ = 0;
+        }
+
+        LOG_STRUCT(DEBUG, "color", color);
+        SetColor(color);
+      } else {
+        LOG_STRUCT(DEBUG, "color", *status_light);
+        SetColor(*status_light);
+      }
+    }
+  }
+
+  void SetColor(const StatusLight &status_light) {
+    // Save CAN bandwidth and CPU at the cost of RT.  Only change the light when
+    // it actually changes.  This is pretty low priority anyways.
+    static int time_since_last_send = 0;
+    ++time_since_last_send;
+    if (time_since_last_send > 10) {
+      time_since_last_send = 0;
+    }
+    if (status_light.green != last_green_ || time_since_last_send == 0) {
+      canifier_.SetLEDOutput(1.0 - status_light.green,
+                             ::ctre::phoenix::CANifier::LEDChannelB);
+      last_green_ = status_light.green;
+    }
+
+    if (status_light.blue != last_blue_ || time_since_last_send == 0) {
+      canifier_.SetLEDOutput(1.0 - status_light.blue,
+                             ::ctre::phoenix::CANifier::LEDChannelA);
+      last_blue_ = status_light.blue;
+    }
+
+    if (status_light.red != last_red_ || time_since_last_send == 0) {
+      canifier_.SetLEDOutput(1.0 - status_light.red,
+                             ::ctre::phoenix::CANifier::LEDChannelC);
+      last_red_ = status_light.red;
     }
   }
 
@@ -540,7 +595,15 @@ class SolenoidWriter {
       ::y2019::control_loops::superstructure::SuperstructureQueue::Output>
       superstructure_;
 
+  ::ctre::phoenix::CANifier canifier_{0};
+
   ::std::atomic<bool> run_{true};
+
+  double last_red_ = -1.0;
+  double last_green_ = -1.0;
+  double last_blue_ = -1.0;
+
+  int light_flash_ = 0;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
