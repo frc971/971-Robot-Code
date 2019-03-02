@@ -208,7 +208,7 @@ struct Constraint {
 // constraints.
 struct MultiSpline {
   // index of the spline. Zero indicates the spline should not be computed.
-  uint32_t spline_idx;
+  int32_t spline_idx;
   // Number of splines. The spline point arrays will be expected to have
   // 6 + 5 * (n - 1) points in them. The endpoints are shared between
   // neighboring splines.

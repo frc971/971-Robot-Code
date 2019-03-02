@@ -6,7 +6,11 @@
 #include "aos/controls/control_loop_test.h"
 #include "aos/controls/polytope.h"
 #include "aos/time/time.h"
+#include "gflags/gflags.h"
 #include "gtest/gtest.h"
+#if defined(SUPPORT_PLOT)
+#include "third_party/matplotlib-cpp/matplotlibcpp.h"
+#endif
 
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
@@ -14,6 +18,8 @@
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "frc971/queues/gyro.q.h"
+
+DEFINE_bool(plot, false, "If true, plot");
 
 namespace frc971 {
 namespace control_loops {
@@ -56,6 +62,17 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
     drivetrain_motor_.Iterate();
     drivetrain_motor_plant_.Simulate();
     SimulateTimestep(true, dt_config_.dt);
+    if (FLAGS_plot) {
+      my_drivetrain_queue_.status.FetchLatest();
+
+      ::Eigen::Matrix<double, 2, 1> actual_position =
+          drivetrain_motor_plant_.GetPosition();
+      actual_x_.push_back(actual_position(0));
+      actual_y_.push_back(actual_position(1));
+
+      trajectory_x_.push_back(my_drivetrain_queue_.status->trajectory_logging.x);
+      trajectory_y_.push_back(my_drivetrain_queue_.status->trajectory_logging.y);
+    }
   }
 
   void RunForTime(monotonic_clock::duration run_for) {
@@ -63,6 +80,20 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
     while (monotonic_clock::now() < end_time) {
       RunIteration();
     }
+  }
+
+  void TearDown() {
+#if defined(SUPPORT_PLOT)
+    if (FLAGS_plot) {
+      std::cout << "plotting.\n";
+      matplotlibcpp::figure();
+      matplotlibcpp::plot(actual_x_, actual_y_, {{"label", "actual position"}});
+      matplotlibcpp::plot(trajectory_x_, trajectory_y_,
+                          {{"label", "trajectory position"}});
+      matplotlibcpp::legend();
+      matplotlibcpp::show();
+    }
+#endif
   }
 
   void VerifyNearGoal() {
@@ -74,13 +105,40 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
                 drivetrain_motor_plant_.GetRightPosition(), 1e-3);
   }
 
-  void VerifyNearPosition(::Eigen::Matrix<double, 2, 1> expected) {
+  void VerifyNearSplineGoal() {
+    my_drivetrain_queue_.status.FetchLatest();
+    double expected_x = my_drivetrain_queue_.status->trajectory_logging.x;
+    double expected_y = my_drivetrain_queue_.status->trajectory_logging.y;
     auto actual = drivetrain_motor_plant_.GetPosition();
-    EXPECT_NEAR(actual(0), expected(0), 1e-2);
-    EXPECT_NEAR(actual(1), expected(1), 1e-2);
+    EXPECT_NEAR(actual(0), expected_x, 3e-3);
+    EXPECT_NEAR(actual(1), expected_y, 3e-3);
+  }
+
+  void WaitForTrajectoryPlan() {
+    do {
+      // Run for fewer iterations while the worker thread computes.
+      ::std::this_thread::sleep_for(::std::chrono::milliseconds(5));
+      RunIteration();
+      my_drivetrain_queue_.status.FetchLatest();
+    } while (my_drivetrain_queue_.status->trajectory_logging.planning_state !=
+        (int8_t)SplineDrivetrain::PlanState::kPlannedTrajectory);
+  }
+
+  void WaitForTrajectoryExecution() {
+    do {
+      RunIteration();
+      my_drivetrain_queue_.status.FetchLatest();
+    } while (my_drivetrain_queue_.status->trajectory_logging.is_executing);
   }
 
   virtual ~DrivetrainTest() { ::frc971::sensors::gyro_reading.Clear(); }
+
+ private:
+  ::std::vector<double> actual_x_;
+  ::std::vector<double> actual_y_;
+  ::std::vector<double> trajectory_x_;
+  ::std::vector<double> trajectory_y_;
+
 };
 
 // Tests that the drivetrain converges on a goal.
@@ -358,14 +416,101 @@ TEST_F(DrivetrainTest, SplineSimple) {
   goal.Send();
   RunIteration();
 
-  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> start_goal =
-      my_drivetrain_queue_.goal.MakeMessage();
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
+      start_goal = my_drivetrain_queue_.goal.MakeMessage();
   start_goal->controller_type = 2;
   start_goal->spline_handle = 1;
   start_goal.Send();
+  WaitForTrajectoryPlan();
 
   RunForTime(chrono::milliseconds(2000));
-  VerifyNearPosition((::Eigen::Matrix<double, 2, 1>() << 1.0, 1.0).finished());
+  VerifyNearSplineGoal();
+}
+
+// Tests that simple spline with a single goal message.
+TEST_F(DrivetrainTest, SplineSingleGoal) {
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> goal =
+      my_drivetrain_queue_.goal.MakeMessage();
+  goal->controller_type = 2;
+  goal->spline.spline_idx = 1;
+  goal->spline.spline_count = 1;
+  goal->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
+  goal->spline.spline_y = {{0.0, 0.0, 0.25 ,0.75, 1.0, 1.0}};
+  goal->spline_handle = 1;
+  goal.Send();
+  WaitForTrajectoryPlan();
+
+  RunForTime(chrono::milliseconds(2000));
+  VerifyNearSplineGoal();
+}
+
+// Tests that a trajectory can be stopped in the middle.
+TEST_F(DrivetrainTest, SplineStop) {
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> goal =
+      my_drivetrain_queue_.goal.MakeMessage();
+  goal->controller_type = 2;
+  goal->spline.spline_idx = 1;
+  goal->spline.spline_count = 1;
+  goal->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
+  goal->spline.spline_y = {{0.0, 0.0, 0.25 ,0.75, 1.0, 1.0}};
+  goal->spline_handle = 1;
+  goal.Send();
+  WaitForTrajectoryPlan();
+
+  RunForTime(chrono::milliseconds(500));
+  my_drivetrain_queue_.status.FetchLatest();
+  const double goal_x = my_drivetrain_queue_.status->trajectory_logging.x;
+  const double goal_y = my_drivetrain_queue_.status->trajectory_logging.y;
+
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> stop_goal =
+      my_drivetrain_queue_.goal.MakeMessage();
+  stop_goal->controller_type = 2;
+  stop_goal->spline_handle = 0;
+  stop_goal.Send();
+  RunForTime(chrono::milliseconds(2000));
+
+  // The goal shouldn't change after being stopped.
+  my_drivetrain_queue_.status.FetchLatest();
+  EXPECT_NEAR(my_drivetrain_queue_.status->trajectory_logging.x, goal_x, 1e-9);
+  EXPECT_NEAR(my_drivetrain_queue_.status->trajectory_logging.y, goal_y, 1e-9);
+}
+
+// Tests that a spline can't be restarted.
+TEST_F(DrivetrainTest, SplineRestart) {
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> goal =
+      my_drivetrain_queue_.goal.MakeMessage();
+  goal->controller_type = 2;
+  goal->spline.spline_idx = 1;
+  goal->spline.spline_count = 1;
+  goal->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
+  goal->spline.spline_y = {{0.0, 0.0, 0.25 ,0.75, 1.0, 1.0}};
+  goal->spline_handle = 1;
+  goal.Send();
+  WaitForTrajectoryPlan();
+
+  RunForTime(chrono::milliseconds(500));
+  my_drivetrain_queue_.status.FetchLatest();
+  const double goal_x = my_drivetrain_queue_.status->trajectory_logging.x;
+  const double goal_y = my_drivetrain_queue_.status->trajectory_logging.y;
+
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> stop_goal =
+      my_drivetrain_queue_.goal.MakeMessage();
+  stop_goal->controller_type = 2;
+  stop_goal->spline_handle = 0;
+  stop_goal.Send();
+  RunForTime(chrono::milliseconds(500));
+
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> restart_goal =
+      my_drivetrain_queue_.goal.MakeMessage();
+  restart_goal->controller_type = 2;
+  restart_goal->spline_handle = 1;
+  restart_goal.Send();
+  RunForTime(chrono::milliseconds(2000));
+
+  // The goal shouldn't change after being stopped and restarted.
+  my_drivetrain_queue_.status.FetchLatest();
+  EXPECT_NEAR(my_drivetrain_queue_.status->trajectory_logging.x, goal_x, 1e-9);
+  EXPECT_NEAR(my_drivetrain_queue_.status->trajectory_logging.y, goal_y, 1e-9);
 }
 
 // Tests that simple spline converges when it doesn't start where it thinks.
@@ -380,14 +525,15 @@ TEST_F(DrivetrainTest, SplineOffset) {
   goal.Send();
   RunIteration();
 
-  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> start_goal =
-      my_drivetrain_queue_.goal.MakeMessage();
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
+      start_goal = my_drivetrain_queue_.goal.MakeMessage();
   start_goal->controller_type = 2;
   start_goal->spline_handle = 1;
   start_goal.Send();
+  WaitForTrajectoryPlan();
 
   RunForTime(chrono::milliseconds(2000));
-  VerifyNearPosition((::Eigen::Matrix<double, 2, 1>() << 1.0, 1.0).finished());
+  VerifyNearSplineGoal();
 }
 
 // Tests that simple spline converges when it starts to the side of where it
@@ -403,14 +549,15 @@ TEST_F(DrivetrainTest, SplineSideOffset) {
   goal.Send();
   RunIteration();
 
-  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> start_goal =
-      my_drivetrain_queue_.goal.MakeMessage();
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
+      start_goal = my_drivetrain_queue_.goal.MakeMessage();
   start_goal->controller_type = 2;
   start_goal->spline_handle = 1;
   start_goal.Send();
+  WaitForTrajectoryPlan();
 
   RunForTime(chrono::milliseconds(2000));
-  VerifyNearPosition((::Eigen::Matrix<double, 2, 1>() << 1.0, 1.0).finished());
+  VerifyNearSplineGoal();
 }
 
 // Tests that a multispline converges on a goal.
@@ -420,19 +567,22 @@ TEST_F(DrivetrainTest, MultiSpline) {
   goal->controller_type = 2;
   goal->spline.spline_idx = 1;
   goal->spline.spline_count = 2;
-  goal->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0, 1.25, 1.5, 1.5, 1.25, 1.0}};
-  goal->spline.spline_y = {{0.0, 0.0, 0.25 ,0.75, 1.0, 1.0, 1.0, 1.25, 1.5, 1.75, 2.0}};
+  goal->spline.spline_x = {
+      {0.0, 0.25, 0.5, 0.5, 0.75, 1.0, 1.25, 1.5, 1.5, 1.25, 1.0}};
+  goal->spline.spline_y = {
+      {0.0, 0.0, 0.25, 0.75, 1.0, 1.0, 1.0, 1.25, 1.5, 1.75, 2.0}};
   goal.Send();
   RunIteration();
 
-  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> start_goal =
-      my_drivetrain_queue_.goal.MakeMessage();
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
+      start_goal = my_drivetrain_queue_.goal.MakeMessage();
   start_goal->controller_type = 2;
   start_goal->spline_handle = 1;
   start_goal.Send();
+  WaitForTrajectoryPlan();
 
   RunForTime(chrono::milliseconds(4000));
-  VerifyNearPosition((::Eigen::Matrix<double, 2, 1>() << 1.0, 2.0).finished());
+  VerifyNearSplineGoal();
 }
 
 // Tests that several splines converges on a goal.
@@ -443,20 +593,23 @@ TEST_F(DrivetrainTest, SequentialSplines) {
   goal->spline.spline_idx = 1;
   goal->spline.spline_count = 1;
   goal->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
-  goal->spline.spline_y = {{0.0, 0.0, 0.25 ,0.75, 1.0, 1.0}};
+  goal->spline.spline_y = {{0.0, 0.0, 0.25, 0.75, 1.0, 1.0}};
   goal.Send();
   RunIteration();
 
-  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> start_goal =
-      my_drivetrain_queue_.goal.MakeMessage();
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
+      start_goal = my_drivetrain_queue_.goal.MakeMessage();
   start_goal->controller_type = 2;
   start_goal->spline_handle = 1;
   start_goal.Send();
-  RunForTime(chrono::milliseconds(2000));
-  VerifyNearPosition((::Eigen::Matrix<double, 2, 1>() << 1.0, 1.0).finished());
+  WaitForTrajectoryPlan();
 
-  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> second_spline_goal =
-      my_drivetrain_queue_.goal.MakeMessage();
+  WaitForTrajectoryExecution();
+
+  VerifyNearSplineGoal();
+
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
+      second_spline_goal = my_drivetrain_queue_.goal.MakeMessage();
   second_spline_goal->controller_type = 2;
   second_spline_goal->spline.spline_idx = 2;
   second_spline_goal->spline.spline_count = 1;
@@ -465,14 +618,105 @@ TEST_F(DrivetrainTest, SequentialSplines) {
   second_spline_goal.Send();
   RunIteration();
 
-  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> second_start_goal =
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
+      second_start_goal = my_drivetrain_queue_.goal.MakeMessage();
+  second_start_goal->controller_type = 2;
+  second_start_goal->spline_handle = 2;
+  second_start_goal.Send();
+  WaitForTrajectoryPlan();
+
+  RunForTime(chrono::milliseconds(2000));
+  VerifyNearSplineGoal();
+}
+// Tests that a second spline will run if the first is stopped.
+TEST_F(DrivetrainTest, SplineStopFirst) {
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> goal =
       my_drivetrain_queue_.goal.MakeMessage();
+  goal->controller_type = 2;
+  goal->spline.spline_idx = 1;
+  goal->spline.spline_count = 1;
+  goal->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
+  goal->spline.spline_y = {{0.0, 0.0, 0.25 ,0.75, 1.0, 1.0}};
+  goal->spline_handle = 1;
+  goal.Send();
+  WaitForTrajectoryPlan();
+
+  RunForTime(chrono::milliseconds(1000));
+
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> stop_goal =
+      my_drivetrain_queue_.goal.MakeMessage();
+  stop_goal->controller_type = 2;
+  stop_goal->spline_handle = 0;
+  stop_goal.Send();
+  RunForTime(chrono::milliseconds(500));
+
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
+      second_spline_goal = my_drivetrain_queue_.goal.MakeMessage();
+  second_spline_goal->controller_type = 2;
+  second_spline_goal->spline.spline_idx = 2;
+  second_spline_goal->spline.spline_count = 1;
+  second_spline_goal->spline.spline_x = {{1.0, 1.25, 1.5, 1.5, 1.25, 1.0}};
+  second_spline_goal->spline.spline_y = {{1.0, 1.0, 1.25, 1.5, 1.75, 2.0}};
+  second_spline_goal->spline_handle = 2;
+  second_spline_goal.Send();
+  WaitForTrajectoryPlan();
+
+  WaitForTrajectoryExecution();
+  VerifyNearSplineGoal();
+}
+
+// Tests that splines can excecute and plan at the same time.
+TEST_F(DrivetrainTest, ParallelSplines) {
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> goal =
+      my_drivetrain_queue_.goal.MakeMessage();
+  goal->controller_type = 2;
+  goal->spline.spline_idx = 1;
+  goal->spline.spline_count = 1;
+  goal->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
+  goal->spline.spline_y = {{0.0, 0.0, 0.25, 0.75, 1.0, 1.0}};
+  goal.Send();
+  WaitForTrajectoryPlan();
+
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
+      second_spline_goal = my_drivetrain_queue_.goal.MakeMessage();
+  second_spline_goal->spline_handle = 1;
+  second_spline_goal->controller_type = 2;
+  second_spline_goal->spline.spline_idx = 2;
+  second_spline_goal->spline.spline_count = 1;
+  second_spline_goal->spline.spline_x = {{1.0, 1.25, 1.5, 1.5, 1.25, 1.0}};
+  second_spline_goal->spline.spline_y = {{1.0, 1.0, 1.25, 1.5, 1.75, 2.0}};
+  second_spline_goal.Send();
+  WaitForTrajectoryExecution();
+
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
+      second_start_goal = my_drivetrain_queue_.goal.MakeMessage();
   second_start_goal->controller_type = 2;
   second_start_goal->spline_handle = 2;
   second_start_goal.Send();
 
-  RunForTime(chrono::milliseconds(2000));
-  VerifyNearPosition((::Eigen::Matrix<double, 2, 1>() << 1.0, 2.0).finished());
+  RunForTime(chrono::milliseconds(4000));
+  VerifyNearSplineGoal();
+}
+
+//Tests that a trajectory never told to execute will not replan.
+TEST_F(DrivetrainTest, OnlyPlanSpline) {
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> goal =
+      my_drivetrain_queue_.goal.MakeMessage();
+  goal->controller_type = 2;
+  goal->spline.spline_idx = 1;
+  goal->spline.spline_count = 1;
+  goal->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
+  goal->spline.spline_y = {{0.0, 0.0, 0.25, 0.75, 1.0, 1.0}};
+  goal.Send();
+  WaitForTrajectoryPlan();
+
+  for (int i = 0; i < 100; ++i) {
+    RunIteration();
+    my_drivetrain_queue_.status.FetchLatest();
+    EXPECT_EQ(my_drivetrain_queue_.status->trajectory_logging.planning_state, 3);
+    ::std::this_thread::sleep_for(::std::chrono::milliseconds(2));
+  }
+  VerifyNearSplineGoal();
 }
 
 ::aos::controls::HVPolytope<2, 4, 4> MakeBox(double x1_min, double x1_max,

@@ -34,6 +34,29 @@ struct CIMLogging {
   double right_velocity;
 };
 
+// For logging information about the state of the trajectory planning.
+struct TrajectoryLogging {
+  // state of planning the trajectory.
+  //  0: not currently planning
+  //  1: received a multispline to plan
+  //  2: Built the spline and planning.
+  //  3: Finished the plan and ready to excecute.
+  int8_t planning_state;
+
+  // State of the spline execution.
+  bool is_executing;
+
+  int32_t current_spline_handle;
+  int32_t current_spline_idx;
+
+  // Expected position and velocity on the spline
+  float x;
+  float y;
+  float theta;
+  float left_velocity;
+  float right_velocity;
+};
+
 queue_group DrivetrainQueue {
   implements aos.control_loops.ControlLoop;
 
@@ -79,7 +102,7 @@ queue_group DrivetrainQueue {
     .frc971.MultiSpline spline;
 
     // Which spline to follow.
-    uint32_t spline_handle;
+    int32_t spline_handle;
   };
 
   message Position {
@@ -159,6 +182,7 @@ queue_group DrivetrainQueue {
     // Information about shifting logic and curent gear, for logging purposes
     GearLogging gear_logging;
     CIMLogging cim_logging;
+    TrajectoryLogging trajectory_logging;
   };
 
   queue Goal goal;
