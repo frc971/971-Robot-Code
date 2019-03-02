@@ -65,7 +65,16 @@ cc_library(
         "-Wno-switch-enum",
         "-Wno-format-nonliteral",
         "-Wno-unused-parameter",
-    ],
+    ] + select({
+        "//tools:cpu_roborio": [
+            # This is sketchy under the standard, but it's a known issue with
+            # libjpeg which isn't particularly well defined by the JPEG standard
+            # either. We should be fine because all our platforms are two's
+            # complement.
+            "-Wno-shift-negative-value",
+        ],
+        "//conditions:default": [],
+    }),
     includes = ["src/main/c"],
     visibility = ["//visibility:public"],
 )

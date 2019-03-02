@@ -5,13 +5,13 @@
 /* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
-#include "HAL/PWM.h"
+#include "hal/PWM.h"
 #include "frc971/wpilib/ahal/PWM.h"
 
 #include <sstream>
 
-#include "HAL/HAL.h"
-#include "HAL/Ports.h"
+#include "hal/HAL.h"
+#include "hal/Ports.h"
 #include "frc971/wpilib/ahal/Utility.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"
 

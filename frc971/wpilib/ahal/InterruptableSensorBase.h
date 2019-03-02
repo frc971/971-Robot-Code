@@ -9,9 +9,10 @@
 
 #include <memory>
 
-#include "HAL/Interrupts.h"
 #include "frc971/wpilib/ahal/AnalogTriggerType.h"
 #include "frc971/wpilib/ahal/SensorBase.h"
+#include "hal/Interrupts.h"
+#include "hal/cpp/fpga_clock.h"
 
 namespace frc {
 
@@ -26,24 +27,36 @@ class InterruptableSensorBase {
 
   InterruptableSensorBase();
   virtual ~InterruptableSensorBase() = default;
+
   virtual HAL_Handle GetPortHandleForRouting() const = 0;
   virtual AnalogTriggerType GetAnalogTriggerTypeForRouting() const = 0;
-  virtual void RequestInterrupts(
-      HAL_InterruptHandlerFunction handler,
-      void *param);                  ///< Asynchronous handler version.
-  virtual void RequestInterrupts();  ///< Synchronous Wait version.
-  virtual void
-  CancelInterrupts();  ///< Free up the underlying chipobject functions.
-  virtual WaitResult WaitForInterrupt(
-      double timeout,
-      bool ignorePrevious = true);  ///< Synchronous version.
-  virtual void
-  EnableInterrupts();  ///< Enable interrupts - after finishing setup.
-  virtual void DisableInterrupts();       ///< Disable, but don't deallocate.
-  virtual double ReadRisingTimestamp();   ///< Return the timestamp for the
-                                          /// rising interrupt that occurred.
-  virtual double ReadFallingTimestamp();  ///< Return the timestamp for the
-                                          /// falling interrupt that occurred.
+
+  // Requests interrupts in synchronous mode. This means you should call
+  // WaitForInterrupt to receive interrupts.
+  virtual void RequestInterrupts();
+
+  // Prevents any more interrupts from occuring.
+  virtual void CancelInterrupts();
+
+  // Waits for an interrupt or timeout to occur.
+  //
+  // Must be synchronized with all other operations on the input.
+  //
+  // timeout is in seconds.
+  virtual WaitResult WaitForInterrupt(double timeout,
+                                      bool ignorePrevious = true);
+
+  // Enables interrupts to occur based on the current configuration.
+  virtual void EnableInterrupts();
+
+  // Returns the timestamp for the most recent rising interrupt.
+  virtual hal::fpga_clock::time_point ReadRisingTimestamp();
+  // Returns the timestamp for the most recent falling interrupt.
+  virtual hal::fpga_clock::time_point ReadFallingTimestamp();
+
+  // Configures which edges to interrupt on.
+  //
+  // The default is on rising edges only.
   virtual void SetUpSourceEdge(bool risingEdge, bool fallingEdge);
 
  protected:

@@ -9,6 +9,7 @@
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/wpilib/ahal/DigitalGlitchFilter.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"
+#include "frc971/wpilib/ahal/DriverStation.h"
 #include "frc971/wpilib/dma.h"
 #include "frc971/wpilib/dma_edge_counting.h"
 #include "frc971/wpilib/encoder_and_potentiometer.h"
@@ -43,8 +44,10 @@ class SensorReader {
     dma_synchronizer_->Add(handler);
   }
 
-  // Sets the pwm trigger.
-  void set_pwm_trigger(::std::unique_ptr<frc::DigitalInput> pwm_trigger);
+  // Sets PWM trigger mode.  If true, synchronize the control loops with the PWM
+  // pulses.  The sensors are sampled 50 uS after the falling edge of the PWM
+  // pulse.
+  void set_pwm_trigger(bool trigger) { pwm_trigger_ = trigger; }
 
   // Stops the pwm trigger on the next iteration.
   void Quit() { run_ = false; }
@@ -177,21 +180,16 @@ class SensorReader {
   // Gets called right before the DMA synchronizer is up and running.
   virtual void Start() {}
 
-  // Uses the pwm trigger to find the pwm cycle width and offset for that
-  // iteration.
-  void RunPWMDetecter();
+  // Returns the monotonic time of the start of the first PWM cycle.
+  // Returns min_time if no start time could be calculated.
+  monotonic_clock::time_point GetPWMStartTime();
 
-  ::std::unique_ptr<frc::DigitalInput> pwm_trigger_;
-
-  // Mutex to manage access to the period and tick time variables.
-  ::aos::stl_mutex tick_time_mutex_;
-  monotonic_clock::time_point last_tick_time_monotonic_timepoint_ =
-      monotonic_clock::min_time;
-  chrono::nanoseconds last_period_;
+  bool pwm_trigger_;
 
   ::std::unique_ptr<::frc971::wpilib::DMASynchronizer> dma_synchronizer_;
 
   ::std::atomic<bool> run_{true};
+  ::frc::DriverStation *ds_;
 };
 
 }  // namespace wpilib

@@ -2,10 +2,10 @@
 
 #include <inttypes.h>
 
-#include <HAL/HAL.h>
-#include <HAL/Ports.h>
-#include <HAL/Solenoid.h>
 #include "aos/logging/logging.h"
+#include "hal/HAL.h"
+#include "hal/Ports.h"
+#include "hal/Solenoid.h"
 
 namespace frc971 {
 namespace wpilib {

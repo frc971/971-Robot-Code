@@ -106,8 +106,9 @@ new_http_archive(
 new_http_archive(
     name = "arm_frc_linux_gnueabi_repo",
     build_file = "tools/cpp/arm-frc-linux-gnueabi/arm-frc-linux-gnueabi.BUILD",
-    sha256 = "875b23bec5138e09e3d21cc1ff2727ea3ecbec57509c37589514ba50f92979c7",
-    url = "http://www.frc971.org/Build-Dependencies/roborio-compiler-2018.tar.xz",
+    sha256 = "d627c5e437db99780a938392499ef71aecbfb0e9b3fffd53bde7e402a6af4f32",
+    strip_prefix = "frc2019/roborio/",
+    url = "http://www.frc971.org/Build-Dependencies/FRC-2019-Linux-Toolchain-6.3.0-v2019-3.tar.gz",
 )
 
 # Recompressed version of the one downloaded from Linaro at
@@ -299,7 +300,7 @@ new_http_archive(
 java_runtime(
     name = 'jdk',
     srcs = glob(['**']),
-    visibility = ['//visibility:public']
+    visibility = ['//visibility:public'],
 )
 """,
     sha256 = "f27cb933de4f9e7fe9a703486cf44c84bc8e9f138be0c270c9e5716a32367e87",
@@ -328,4 +329,89 @@ local_repository(
 local_repository(
     name = "com_google_ceres_solver",
     path = "third_party/ceres",
+)
+
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/api-cpp/5.12.1/.
+new_http_archive(
+    name = "ctre_phoenix_api_cpp_headers_2019",
+    build_file_content = """
+cc_library(
+    name = 'api-cpp',
+    visibility = ['//visibility:public'],
+    hdrs = glob(['ctre/phoenix/**/*.h']),
+)
+""",
+    sha256 = "eb625897a16f1894a4854dd60f68f495875f9b0baed826ea1a38f0afdb14712d",
+    urls = [
+        "http://www.frc971.org/Build-Dependencies/api-cpp-5.12.1-headers.zip",
+    ],
+)
+
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/api-cpp/5.12.1/.
+new_http_archive(
+    name = "ctre_phoenix_api_cpp_athena_2019",
+    build_file_content = """
+cc_library(
+    name = 'api-cpp',
+    visibility = ['//visibility:public'],
+    srcs = ['linux/athena/static/libCTRE_Phoenix.a'],
+    restricted_to = ['@//tools:roborio'],
+    deps = [
+    '@ctre_phoenix_core_headers_2019//:core',
+    ],
+)
+""",
+    sha256 = "f6afe6d35b8abcef16b09b2e65c59049091c88a0eb471bf65e77bc510de3f571",
+    urls = [
+        "http://www.frc971.org/Build-Dependencies/api-cpp-5.12.1-linuxathenastatic.zip",
+    ],
+)
+
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/cci/5.12.1/.
+new_http_archive(
+    name = "ctre_phoenix_cci_headers_2019",
+    build_file_content = """
+cc_library(
+    name = 'cci',
+    visibility = ['//visibility:public'],
+    hdrs = glob(['ctre/phoenix/**/*.h']),
+)
+""",
+    sha256 = "98f30180fc2cdd8119482364b7d47d38ee02b7746aeecd4cf1d2c25cbde7837b",
+    urls = [
+        "http://www.frc971.org/Build-Dependencies/cci-5.12.1-headers.zip",
+    ],
+)
+
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/cci/5.12.1/.
+new_http_archive(
+    name = "ctre_phoenix_cci_athena_2019",
+    build_file_content = """
+cc_library(
+    name = 'cci',
+    visibility = ['//visibility:public'],
+    srcs = ['linux/athena/static/libCTRE_PhoenixCCI.a'],
+    restricted_to = ['@//tools:roborio'],
+)
+""",
+    sha256 = "2fdc8dd0c2bcb463cd7a5082f2a378554497861508b4257b0cc4bab6a4a8316f",
+    urls = [
+        "http://www.frc971.org/Build-Dependencies/cci-5.12.1-linuxathenastatic.zip",
+    ],
+)
+
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/core/5.12.1/.
+new_http_archive(
+    name = "ctre_phoenix_core_headers_2019",
+    build_file_content = """
+cc_library(
+    name = 'core',
+    visibility = ['//visibility:public'],
+    hdrs = glob(['ctre/phoenix/**/*.h']),
+)
+""",
+    sha256 = "ddd7d740787279359d9773a4096696770411aec22e092c20749a4f5388779edf",
+    urls = [
+        "http://www.frc971.org/Build-Dependencies/core-5.12.1-headers.zip",
+    ],
 )

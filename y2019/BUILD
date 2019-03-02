@@ -70,8 +70,8 @@ cc_binary(
         "//frc971/wpilib:sensor_reader",
         "//frc971/wpilib:wpilib_interface",
         "//frc971/wpilib:wpilib_robot_base",
+        "//third_party:phoenix",
         "//third_party:wpilib",
-        "//third_party/Phoenix-frc-lib:phoenix",
         "//y2019/control_loops/superstructure:superstructure_queue",
     ],
 )

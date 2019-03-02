@@ -7,7 +7,7 @@
 
 #include "frc971/wpilib/ahal/Spark.h"
 
-#include <HAL/HAL.h>
+#include <hal/HAL.h>
 
 using namespace frc;
 

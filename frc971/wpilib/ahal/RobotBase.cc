@@ -9,7 +9,7 @@
 
 #include <cstdio>
 
-#include "HAL/HAL.h"
+#include "hal/HAL.h"
 #include "frc971/wpilib/ahal/DriverStation.h"
 #include "frc971/wpilib/ahal/Utility.h"
 #include "frc971/wpilib/ahal/WPILibVersion.h"

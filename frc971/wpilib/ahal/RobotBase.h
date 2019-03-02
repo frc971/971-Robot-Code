@@ -11,7 +11,7 @@
 #include <iostream>
 #include <thread>
 
-#include "HAL/HAL.h"
+#include "hal/HAL.h"
 #include "frc971/wpilib/ahal/Base.h"
 
 namespace frc {

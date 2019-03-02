@@ -9,9 +9,9 @@
 
 #include <sstream>
 
-#include "HAL/HAL.h"
-#include "HAL/PDP.h"
-#include "HAL/Ports.h"
+#include "hal/HAL.h"
+#include "hal/PDP.h"
+#include "hal/Ports.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"
 
 using namespace frc;

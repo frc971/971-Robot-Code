@@ -63,9 +63,10 @@ cc_library(
     srcs = glob(
         include = [
             "hal/src/main/native/athena/*.cpp",
-            "hal/src/main/native/athena/cpp/*.cpp",
+            "hal/src/main/native/cpp/cpp/*.cpp",
             "hal/src/main/native/athena/ctre/*.cpp",
             "hal/src/main/native/shared/handles/*.cpp",
+            "hal/src/main/native/cpp/handles/*.cpp",
         ],
         exclude = ["**/%s.*" % d for d in _excluded_devices],
     ),

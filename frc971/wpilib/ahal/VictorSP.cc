@@ -7,7 +7,7 @@
 
 #include "frc971/wpilib/ahal/VictorSP.h"
 
-#include "HAL/HAL.h"
+#include "hal/HAL.h"
 
 using namespace frc;
 

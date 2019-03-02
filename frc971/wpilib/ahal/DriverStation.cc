@@ -10,13 +10,13 @@
 #include <chrono>
 
 #include "FRC_NetworkCommunication/FRCComm.h"
-#include "HAL/HAL.h"
-#include "HAL/Power.h"
 #include "aos/make_unique.h"
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Utility.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"
-#include "llvm/SmallString.h"
+#include "hal/HAL.h"
+#include "hal/Power.h"
+#include "wpi/SmallString.h"
 
 using namespace frc;
 
@@ -43,9 +43,10 @@ DriverStation &DriverStation::GetInstance() {
  *
  * The error is also printed to the program console.
  */
-void DriverStation::ReportError(llvm::StringRef error) {
-  llvm::SmallString<128> temp;
-  HAL_SendError(1, 1, 0, error.c_str(temp), "", "", 1);
+void DriverStation::ReportError(const wpi::Twine &error) {
+  wpi::SmallString<128> temp;
+  HAL_SendError(1, 1, 0, error.toNullTerminatedStringRef(temp).data(), "", "",
+                1);
 }
 
 /**
@@ -53,9 +54,10 @@ void DriverStation::ReportError(llvm::StringRef error) {
  *
  * The warning is also printed to the program console.
  */
-void DriverStation::ReportWarning(llvm::StringRef error) {
-  llvm::SmallString<128> temp;
-  HAL_SendError(0, 1, 0, error.c_str(temp), "", "", 1);
+void DriverStation::ReportWarning(const wpi::Twine &error) {
+  wpi::SmallString<128> temp;
+  HAL_SendError(0, 1, 0, error.toNullTerminatedStringRef(temp).data(), "", "",
+                1);
 }
 
 /**
@@ -64,13 +66,16 @@ void DriverStation::ReportWarning(llvm::StringRef error) {
  * The error is also printed to the program console.
  */
 void DriverStation::ReportError(bool is_error, int32_t code,
-                                llvm::StringRef error, llvm::StringRef location,
-                                llvm::StringRef stack) {
-  llvm::SmallString<128> errorTemp;
-  llvm::SmallString<128> locationTemp;
-  llvm::SmallString<128> stackTemp;
-  HAL_SendError(is_error, code, 0, error.c_str(errorTemp),
-                location.c_str(locationTemp), stack.c_str(stackTemp), 1);
+                                const wpi::Twine &error,
+                                const wpi::Twine &location,
+                                const wpi::Twine &stack) {
+  wpi::SmallString<128> errorTemp;
+  wpi::SmallString<128> locationTemp;
+  wpi::SmallString<128> stackTemp;
+  HAL_SendError(is_error, code, 0,
+                error.toNullTerminatedStringRef(errorTemp).data(),
+                location.toNullTerminatedStringRef(locationTemp).data(),
+                stack.toNullTerminatedStringRef(stackTemp).data(), 1);
 }
 
 /**
@@ -394,17 +399,17 @@ DriverStation::DriverStation() {
   // DS, and if the DS thinks you don't have robot code, then you can't enable).
   HAL_ObserveUserProgramStarting();
 
-  m_joystickAxes = std::make_unique<HAL_JoystickAxes[]>(kJoystickPorts);
-  m_joystickPOVs = std::make_unique<HAL_JoystickPOVs[]>(kJoystickPorts);
-  m_joystickButtons = std::make_unique<HAL_JoystickButtons[]>(kJoystickPorts);
+  m_joystickAxes = aos::make_unique<HAL_JoystickAxes[]>(kJoystickPorts);
+  m_joystickPOVs = aos::make_unique<HAL_JoystickPOVs[]>(kJoystickPorts);
+  m_joystickButtons = aos::make_unique<HAL_JoystickButtons[]>(kJoystickPorts);
   m_joystickDescriptor =
-      std::make_unique<HAL_JoystickDescriptor[]>(kJoystickPorts);
-  m_joystickAxesCache = std::make_unique<HAL_JoystickAxes[]>(kJoystickPorts);
-  m_joystickPOVsCache = std::make_unique<HAL_JoystickPOVs[]>(kJoystickPorts);
+      aos::make_unique<HAL_JoystickDescriptor[]>(kJoystickPorts);
+  m_joystickAxesCache = aos::make_unique<HAL_JoystickAxes[]>(kJoystickPorts);
+  m_joystickPOVsCache = aos::make_unique<HAL_JoystickPOVs[]>(kJoystickPorts);
   m_joystickButtonsCache =
-      std::make_unique<HAL_JoystickButtons[]>(kJoystickPorts);
+      aos::make_unique<HAL_JoystickButtons[]>(kJoystickPorts);
   m_joystickDescriptorCache =
-      std::make_unique<HAL_JoystickDescriptor[]>(kJoystickPorts);
+      aos::make_unique<HAL_JoystickDescriptor[]>(kJoystickPorts);
 
   // All joysticks should default to having zero axes, povs and buttons, so
   // uninitialized memory doesn't get sent to speed controllers.

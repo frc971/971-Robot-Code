@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include <HAL/HAL.h>
+#include <hal/HAL.h>
 
 #include "frc971/wpilib/buffered_solenoid.h"
 

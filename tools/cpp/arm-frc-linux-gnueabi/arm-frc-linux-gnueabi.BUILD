@@ -1,72 +1,75 @@
 package(default_visibility = ["//visibility:public"])
 
+prefix = "arm-frc2019-linux-gnueabi"
+
 filegroup(
     name = "gcc",
     srcs = [
-        "usr/bin/arm-frc-linux-gnueabi-gcc",
+        "bin/" + prefix + "-gcc",
     ],
 )
 
 filegroup(
     name = "ar",
     srcs = [
-        "usr/bin/arm-frc-linux-gnueabi-ar",
+        "bin/" + prefix + "-ar",
     ],
 )
 
 filegroup(
     name = "as",
     srcs = [
-        "usr/bin/arm-frc-linux-gnueabi-as",
+        "bin/" + prefix + "-as",
     ],
 )
 
 filegroup(
     name = "ld",
     srcs = [
-        "usr/bin/arm-frc-linux-gnueabi-ld",
+        "bin/" + prefix + "-ld",
     ],
 )
 
 filegroup(
     name = "nm",
     srcs = [
-        "usr/bin/arm-frc-linux-gnueabi-nm",
+        "bin/" + prefix + "-nm",
     ],
 )
 
 filegroup(
     name = "objcopy",
     srcs = [
-        "usr/bin/arm-frc-linux-gnueabi-objcopy",
+        "bin/" + prefix + "-objcopy",
     ],
 )
 
 filegroup(
     name = "objdump",
     srcs = [
-        "usr/bin/arm-frc-linux-gnueabi-objdump",
+        "bin/" + prefix + "-objdump",
     ],
 )
 
 filegroup(
     name = "strip",
     srcs = [
-        "usr/bin/arm-frc-linux-gnueabi-strip",
+        "bin/" + prefix + "-strip",
     ],
 )
 
 filegroup(
     name = "compiler_pieces",
-    srcs = glob([
-        "usr/bin/**/*",
-        "usr/include/**/*",
-        "usr/lib/**/*",
-        "usr/arm-frc-linux-gnueabi/**/*",
-        "usr/lib/x86_64-linux-gnu/gcc/**/*",
-    ]) + [
-        "@arm_frc_gnueabi_deps",
-    ],
+    srcs = glob([prefix + "/" + s for s in [
+        "usr/include/**",
+        "usr/lib/**",
+        "lib/**",
+        "bin/**",
+        "**"
+    ]] + [
+        "libexec/gcc/" + prefix + "/6.3.0/**",
+        "bin/**",
+    ]),
 )
 
 filegroup(

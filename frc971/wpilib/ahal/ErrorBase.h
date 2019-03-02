@@ -8,7 +8,7 @@
 #pragma once
 
 #include "frc971/wpilib/ahal/Base.h"
-#include "llvm/StringRef.h"
+#include "wpi/StringRef.h"
 
 #define wpi_setErrnoErrorWithContext(context) \
   this->SetErrnoError((context), __FILE__, __FUNCTION__, __LINE__)

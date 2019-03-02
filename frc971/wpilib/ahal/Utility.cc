@@ -15,10 +15,12 @@
 #include <cstring>
 #include <sstream>
 
-#include "HAL/DriverStation.h"
-#include "HAL/HAL.h"
 #include "frc971/wpilib/ahal/ErrorBase.h"
-#include "llvm/SmallString.h"
+#include "hal/DriverStation.h"
+#include "hal/HAL.h"
+#include "wpi/Path.h"
+#include "wpi/SmallString.h"
+#include "wpi/raw_ostream.h"
 
 using namespace frc;
 
@@ -28,31 +30,31 @@ using namespace frc;
  * The users don't call this, but instead use the wpi_assert macros in
  * Utility.h.
  */
-bool wpi_assert_impl(bool conditionValue, llvm::StringRef conditionText,
-                     llvm::StringRef message, llvm::StringRef fileName,
-                     int lineNumber, llvm::StringRef funcName) {
+bool wpi_assert_impl(bool conditionValue, const wpi::Twine &conditionText,
+                     const wpi::Twine &message, wpi::StringRef fileName,
+                     int lineNumber, wpi::StringRef funcName) {
   if (!conditionValue) {
-    std::stringstream locStream;
-    locStream << funcName << " [";
-    llvm::SmallString<128> fileTemp;
-    locStream << basename(fileName.c_str(fileTemp)) << ":" << lineNumber << "]";
+    wpi::SmallString<128> locBuf;
+    wpi::raw_svector_ostream locStream(locBuf);
+    locStream << funcName << " [" << wpi::sys::path::filename(fileName) << ":"
+              << lineNumber << "]";
 
-    std::stringstream errorStream;
+    wpi::SmallString<128> errorBuf;
+    wpi::raw_svector_ostream errorStream(errorBuf);
 
     errorStream << "Assertion \"" << conditionText << "\" ";
 
-    if (message[0] != '\0') {
-      errorStream << "failed: " << message << std::endl;
+    if (message.isTriviallyEmpty() ||
+        (message.isSingleStringRef() && message.getSingleStringRef().empty())) {
+      errorStream << "failed.\n";
     } else {
-      errorStream << "failed." << std::endl;
+      errorStream << "failed: " << message << "\n";
     }
 
     std::string stack = GetStackTrace(2);
-    std::string location = locStream.str();
-    std::string error = errorStream.str();
 
     // Print the error and send it to the DriverStation
-    HAL_SendError(1, 1, 0, error.c_str(), location.c_str(), stack.c_str(), 1);
+    HAL_SendError(1, 1, 0, errorBuf.c_str(), locBuf.c_str(), stack.c_str(), 1);
   }
 
   return conditionValue;
@@ -63,33 +65,34 @@ bool wpi_assert_impl(bool conditionValue, llvm::StringRef conditionText,
  * This should not be called directly; it should only be used by
  * wpi_assertEqual_impl and wpi_assertNotEqual_impl.
  */
-void wpi_assertEqual_common_impl(llvm::StringRef valueA, llvm::StringRef valueB,
-                                 llvm::StringRef equalityType,
-                                 llvm::StringRef message,
-                                 llvm::StringRef fileName, int lineNumber,
-                                 llvm::StringRef funcName) {
-  std::stringstream locStream;
-  locStream << funcName << " [";
-  llvm::SmallString<128> fileTemp;
-  locStream << basename(fileName.c_str(fileTemp)) << ":" << lineNumber << "]";
+void wpi_assertEqual_common_impl(const wpi::Twine &valueA,
+                                 const wpi::Twine &valueB,
+                                 const wpi::Twine &equalityType,
+                                 const wpi::Twine &message,
+                                 wpi::StringRef fileName, int lineNumber,
+                                 wpi::StringRef funcName) {
+  wpi::SmallString<128> locBuf;
+  wpi::raw_svector_ostream locStream(locBuf);
+  locStream << funcName << " [" << wpi::sys::path::filename(fileName) << ":"
+            << lineNumber << "]";
 
-  std::stringstream errorStream;
+  wpi::SmallString<128> errorBuf;
+  wpi::raw_svector_ostream errorStream(errorBuf);
 
   errorStream << "Assertion \"" << valueA << " " << equalityType << " "
               << valueB << "\" ";
 
-  if (message[0] != '\0') {
-    errorStream << "failed: " << message << std::endl;
+  if (message.isTriviallyEmpty() ||
+      (message.isSingleStringRef() && message.getSingleStringRef().empty())) {
+    errorStream << "failed.\n";
   } else {
-    errorStream << "failed." << std::endl;
+    errorStream << "failed: " << message << "\n";
   }
 
   std::string trace = GetStackTrace(3);
-  std::string location = locStream.str();
-  std::string error = errorStream.str();
 
   // Print the error and send it to the DriverStation
-  HAL_SendError(1, 1, 0, error.c_str(), location.c_str(), trace.c_str(), 1);
+  HAL_SendError(1, 1, 0, errorBuf.c_str(), locBuf.c_str(), trace.c_str(), 1);
 }
 
 /**
@@ -99,10 +102,11 @@ void wpi_assertEqual_common_impl(llvm::StringRef valueA, llvm::StringRef valueB,
  * The users don't call this, but instead use the wpi_assertEqual macros in
  * Utility.h.
  */
-bool wpi_assertEqual_impl(int valueA, int valueB, llvm::StringRef valueAString,
-                          llvm::StringRef valueBString, llvm::StringRef message,
-                          llvm::StringRef fileName, int lineNumber,
-                          llvm::StringRef funcName) {
+bool wpi_assertEqual_impl(int valueA, int valueB,
+                          const wpi::Twine &valueAString,
+                          const wpi::Twine &valueBString,
+                          const wpi::Twine &message, wpi::StringRef fileName,
+                          int lineNumber, wpi::StringRef funcName) {
   if (!(valueA == valueB)) {
     wpi_assertEqual_common_impl(valueAString, valueBString, "==", message,
                                 fileName, lineNumber, funcName);
@@ -118,10 +122,10 @@ bool wpi_assertEqual_impl(int valueA, int valueB, llvm::StringRef valueAString,
  * Utility.h.
  */
 bool wpi_assertNotEqual_impl(int valueA, int valueB,
-                             llvm::StringRef valueAString,
-                             llvm::StringRef valueBString,
-                             llvm::StringRef message, llvm::StringRef fileName,
-                             int lineNumber, llvm::StringRef funcName) {
+                             const wpi::Twine &valueAString,
+                             const wpi::Twine &valueBString,
+                             const wpi::Twine &message, wpi::StringRef fileName,
+                             int lineNumber, wpi::StringRef funcName) {
   if (!(valueA != valueB)) {
     wpi_assertEqual_common_impl(valueAString, valueBString, "!=", message,
                                 fileName, lineNumber, funcName);

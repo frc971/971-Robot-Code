@@ -13,9 +13,9 @@
 #include <string>
 #include <thread>
 
-#include "HAL/DriverStation.h"
+#include "hal/DriverStation.h"
 #include "frc971/wpilib/ahal/SensorBase.h"
-#include "llvm/StringRef.h"
+#include "wpi/Twine.h"
 
 namespace frc {
 
@@ -29,10 +29,10 @@ class DriverStation {
 
   virtual ~DriverStation();
   static DriverStation &GetInstance();
-  static void ReportError(llvm::StringRef error);
-  static void ReportWarning(llvm::StringRef error);
-  static void ReportError(bool is_error, int code, llvm::StringRef error,
-                          llvm::StringRef location, llvm::StringRef stack);
+  static void ReportError(const wpi::Twine &error);
+  static void ReportWarning(const wpi::Twine &error);
+  static void ReportError(bool is_error, int code, const wpi::Twine &error,
+                          const wpi::Twine &location, const wpi::Twine &stack);
 
   static const int kJoystickPorts = 6;
 

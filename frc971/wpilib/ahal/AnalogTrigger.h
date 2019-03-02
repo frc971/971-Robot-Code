@@ -9,7 +9,7 @@
 
 #include <memory>
 
-#include "HAL/Types.h"
+#include "hal/Types.h"
 #include "frc971/wpilib/ahal/AnalogTriggerOutput.h"
 #include "frc971/wpilib/ahal/SensorBase.h"
 

@@ -40,9 +40,9 @@ def cpu_select(values):
     if key not in all_cpus and key != 'else':
       fail('Not sure what a %s CPU is!' % key, 'values')
   return select({
-    '//tools:cpu_k8': values['amd64'],
-    '//tools:cpu_roborio': values['roborio'],
-    '//tools:cpu_armhf': values['armhf'],
+    '@//tools:cpu_k8': values['amd64'],
+    '@//tools:cpu_roborio': values['roborio'],
+    '@//tools:cpu_armhf': values['armhf'],
   })
 
 """A select wrapper for address space sizes.
@@ -58,9 +58,9 @@ def address_size_select(values):
   if '64' not in values:
     fail('Need to handle 64 bit addresses!', 'values')
   return select({
-    '//tools:cpu_k8': values['64'],
-    '//tools:cpu_roborio': values['32'],
-    '//tools:cpu_armhf': values['32'],
+    '@//tools:cpu_k8': values['64'],
+    '@//tools:cpu_roborio': values['32'],
+    '@//tools:cpu_armhf': values['32'],
   })
 
 """A select wrapper for compilers.

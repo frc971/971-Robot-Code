@@ -79,6 +79,7 @@ cc_library(
         "-Wno-unused-parameter",
         "-Wno-missing-field-initializers",
         "-Wno-unused-function",
+        "-Wno-unused-but-set-variable",
     ],
     restricted_to = ["@//tools:k8"],
     deps = [

@@ -343,6 +343,10 @@ toolchain {
     path: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-ar"
   }
   tool_path {
+    name: "as"
+    path: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-as"
+  }
+  tool_path {
     name: "compat-ld"
     path: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-ld"
   }
@@ -398,13 +402,10 @@ toolchain {
   linking_mode_flags {
     mode: DYNAMIC
   }
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/arm-frc-linux-gnueabi/include)%/c++/5.4.0"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/arm-frc-linux-gnueabi/include)%/c++/5.4.0/arm-frc-linux-gnueabi"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/arm-frc-linux-gnueabi/include)%/c++/5.4.0/backward"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include)%"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include-fixed)%"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/arm-frc-linux-gnueabi/include)%"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//usr/arm-frc-linux-gnueabi/usr/include)%"
+  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//arm-frc2019-linux-gnueabi/usr/lib/gcc/arm-frc2019-linux-gnueabi/6.3.0/include)%"
+  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//arm-frc2019-linux-gnueabi/usr/lib/gcc/arm-frc2019-linux-gnueabi/6.3.0/include-fixed)%"
+  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//arm-frc2019-linux-gnueabi/usr/include/c++/6.3.0/arm-frc2019-linux-gnueabi)%"
+  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//arm-frc2019-linux-gnueabi/usr/include/c++/6.3.0/backward)%"
   builtin_sysroot: ""
   unfiltered_cxx_flag: "-no-canonical-prefixes"
   unfiltered_cxx_flag: "-Wno-builtin-macro-redefined"
@@ -429,14 +430,41 @@ toolchain {
       action: "lto-backend"
       action: "clif-match"
       flag_group {
-        flag: "--sysroot=external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi"
+        flag: "--sysroot=external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi"
         flag: "-nostdinc"
         flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include"
+        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi/usr/lib/gcc/arm-frc2019-linux-gnueabi/6.3.0/include"
         flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include-fixed"
+        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi/usr/lib/gcc/arm-frc2019-linux-gnueabi/6.3.0/include-fixed"
+      }
+    }
+    flag_set {
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-module-compile"
+      action: "c++-module-codegen"
+      flag_group {
         flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/usr/include"
+        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi/usr/include/c++/6.3.0"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi/usr/include/c++/6.3.0/arm-frc2019-linux-gnueabi"
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi/usr/include/c++/6.3.0/backward"
+      }
+    }
+    flag_set {
+      action: "assemble"
+      action: "preprocess-assemble"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-module-compile"
+      action: "c++-module-codegen"
+      action: "lto-backend"
+      action: "clif-match"
+      flag_group {
+        flag: "-isystem"
+        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi/usr/include"
         flag: "-mfpu=neon"
         flag: "-D__STDC_FORMAT_MACROS"
         flag: "-D__STDC_CONSTANT_MACROS"
@@ -496,34 +524,6 @@ toolchain {
       }
     }
     implies: "opt_post"
-  }
-  feature {
-    name: "compile_flags2"
-    flag_set {
-      action: "c++-compile"
-      action: "c++-header-parsing"
-      action: "c++-module-compile"
-      action: "c++-module-codegen"
-      action: "lto-backend"
-      action: "clif-match"
-      flag_group {
-        flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0"
-        flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0/arm-frc-linux-gnueabi"
-        flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include/c++/5.4.0/backward"
-        flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include"
-        flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/5.4.0/include-fixed"
-        flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/include"
-        flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi/usr/include"
-      }
-    }
-    enabled: true
   }
   feature {
     name: "dependency_file"
@@ -676,6 +676,7 @@ toolchain {
       action: "c++-module-compile"
       flag_group {
         flag: "-std=gnu++1y"
+        flag: "-fno-sized-deallocation"
       }
     }
     flag_set {

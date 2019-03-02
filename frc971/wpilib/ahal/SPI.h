@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "HAL/SPI.h"
+#include "hal/SPI.h"
 
 namespace frc {
 

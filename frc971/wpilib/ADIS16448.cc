@@ -238,7 +238,10 @@ void ADIS16448::operator()() {
     }
 
     auto message = imu_values.MakeMessage();
-    message->fpga_timestamp = dio1_->ReadRisingTimestamp();
+    message->fpga_timestamp =
+        chrono::duration_cast<chrono::duration<double>>(
+            dio1_->ReadRisingTimestamp().time_since_epoch())
+            .count();
     message->monotonic_timestamp_ns =
         chrono::duration_cast<chrono::nanoseconds>(read_time.time_since_epoch())
             .count();

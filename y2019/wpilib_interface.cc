@@ -42,7 +42,7 @@
 #include "frc971/wpilib/pdp_fetcher.h"
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
-#include "third_party/Phoenix-frc-lib/cpp/include/ctre/phoenix/MotorControl/CAN/TalonSRX.h"
+#include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
 #include "y2019/constants.h"
 #include "y2019/control_loops/superstructure/superstructure.q.h"
 
@@ -460,7 +460,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_stilts_absolute_pwm(make_unique<frc::DigitalInput>(3));
     reader.set_stilts_potentiometer(make_unique<frc::AnalogInput>(3));
 
-    reader.set_pwm_trigger(make_unique<frc::DigitalInput>(25));
+    reader.set_pwm_trigger(true);
     reader.set_vacuum_sensor(7);
 
     ::std::thread reader_thread(::std::ref(reader));

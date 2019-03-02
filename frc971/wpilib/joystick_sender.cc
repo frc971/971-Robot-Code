@@ -5,8 +5,8 @@
 #include "aos/network/team_number.h"
 #include "aos/robot_state/robot_state.q.h"
 
-#include "HAL/HAL.h"
 #include "frc971/wpilib/ahal/DriverStation.h"
+#include "hal/HAL.h"
 
 namespace frc971 {
 namespace wpilib {
@@ -32,7 +32,6 @@ void JoystickSender::operator()() {
         new_state->scale_left = match_info.gameSpecificMessage[1] == 'L' ||
                                 match_info.gameSpecificMessage[1] == 'l';
       }
-      HAL_FreeMatchInfo(&match_info);
 
       new_state->test_mode = ds->IsTestMode();
       new_state->fms_attached = ds->IsFmsAttached();
