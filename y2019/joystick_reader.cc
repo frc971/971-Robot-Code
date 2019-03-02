@@ -146,11 +146,11 @@ class Reader : public ::aos::input::ActionJoystickInput {
     // TODO(sabina): max height please?
     if (data.IsPressed(kFallOver)) {
       new_superstructure_goal->stilts.unsafe_goal = 0.71;
-      new_superstructure_goal->stilts.profile_params.max_velocity = 0.45;
+      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
       new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
     } else if (data.IsPressed(kDeployStilt)) {
       new_superstructure_goal->stilts.unsafe_goal = 0.50;
-      new_superstructure_goal->stilts.profile_params.max_velocity = 0.45;
+      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
       if (stilts_was_above_) {
         new_superstructure_goal->stilts.profile_params.max_acceleration = 0.75;
       } else {
