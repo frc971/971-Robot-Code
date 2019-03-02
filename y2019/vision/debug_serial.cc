@@ -68,10 +68,9 @@ void main(int argc, char **argv) {
       if (n >= 1) {
         CameraCalibration calibration{};
         if (data[0] == 'p') {
-          calibration.camera_command =
-              CameraCalibration::CameraCommand::kCameraPassthrough;
+          calibration.camera_command = CameraCommand::kCameraPassthrough;
         } else {
-          calibration.camera_command = CameraCalibration::CameraCommand::kUsb;
+          calibration.camera_command = CameraCommand::kUsb;
         }
         if (write(itsDev, "\0", 1) == 1) {
           const auto out_data = frc971::jevois::UartPackToCamera(calibration);

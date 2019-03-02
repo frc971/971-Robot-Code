@@ -639,7 +639,7 @@ __attribute__((unused)) void TransferData() {
         CameraCalibration calibration{};
         calibration.teensy_now = aos::monotonic_clock::now();
         calibration.realtime_now = aos::realtime_clock::min_time;
-        calibration.camera_command = CameraCalibration::CameraCommand::kNormal;
+        calibration.camera_command = CameraCommand::kNormal;
         // TODO(Brian): Actually fill out the calibration field.
         transmit_buffers[0].MaybeWritePacket(calibration);
         transmit_buffers[1].MaybeWritePacket(calibration);

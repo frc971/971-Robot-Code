@@ -106,17 +106,17 @@ struct Frame {
   camera_duration age;
 };
 
+enum class CameraCommand : char {
+  // Stay in normal mode.
+  kNormal,
+  // Go to camera passthrough mode.
+  kCameraPassthrough,
+  // Go to being a useful USB device.
+  kUsb,
+};
+
 // This is all the information sent from the Teensy to each camera.
 struct CameraCalibration {
-  enum class CameraCommand : char {
-    // Stay in normal mode.
-    kNormal,
-    // Go to camera passthrough mode.
-    kCameraPassthrough,
-    // Go to being a useful USB device.
-    kUsb,
-  };
-
   bool operator==(const CameraCalibration &other) const {
     if (other.calibration != calibration) {
       return false;
@@ -194,6 +194,9 @@ struct RoborioToTeensy {
 
   // The current time.
   aos::realtime_clock::time_point realtime_now;
+
+  // A command to send to all the cameras.
+  CameraCommand camera_command;
 };
 
 }  // namespace jevois

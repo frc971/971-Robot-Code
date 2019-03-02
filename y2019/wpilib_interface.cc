@@ -283,6 +283,7 @@ class CameraReader {
     using namespace frc971::jevois;
     RoborioToTeensy to_teensy{};
     to_teensy.realtime_now = aos::realtime_clock::now();
+    to_teensy.camera_command = CameraCommand::kNormal;
 
     std::array<char, spi_transfer_size() + 1> to_send{};
     {

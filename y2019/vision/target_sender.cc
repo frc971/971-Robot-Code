@@ -275,7 +275,7 @@ int main(int argc, char **argv) {
   (void)argc;
   (void)argv;
   using namespace y2019::vision;
-  using frc971::jevois::CameraCalibration;
+  using frc971::jevois::CameraCommand;
   // gflags::ParseCommandLineFlags(&argc, &argv, false);
   ::aos::logging::Init();
   ::aos::logging::AddImplementation(
@@ -382,11 +382,11 @@ int main(int argc, char **argv) {
           if (calibration_question) {
             const auto &calibration = *calibration_question;
             switch (calibration.camera_command) {
-              case CameraCalibration::CameraCommand::kNormal:
+              case CameraCommand::kNormal:
                 break;
-              case CameraCalibration::CameraCommand::kUsb:
+              case CameraCommand::kUsb:
                 return 0;
-              case CameraCalibration::CameraCommand::kCameraPassthrough:
+              case CameraCommand::kCameraPassthrough:
                 return system("touch /tmp/do_not_export_sd_card");
             }
           } else {
