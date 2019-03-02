@@ -232,11 +232,9 @@ void DrivetrainLoop::RunIteration(
     Y << position->left_encoder, position->right_encoder, last_gyro_rate_,
         last_accel_;
     kf_.Correct(Y);
-    // TODO(james): Account for delayed_U as appropriate (should be
-    // last_last_*_voltage).
-    localizer_->Update({last_left_voltage_, last_right_voltage_}, monotonic_now,
-                       position->left_encoder, position->right_encoder,
-                       last_gyro_rate_, last_accel_);
+    localizer_->Update({last_last_left_voltage_, last_last_right_voltage_},
+                       monotonic_now, position->left_encoder,
+                       position->right_encoder, last_gyro_rate_, last_accel_);
   }
 
   dt_openloop_.SetPosition(position, left_gear_, right_gear_);
@@ -348,6 +346,8 @@ void DrivetrainLoop::RunIteration(
   // Gyro heading vs left-right
   // Voltage error.
 
+  last_last_left_voltage_ = last_left_voltage_;
+  last_last_right_voltage_ = last_right_voltage_;
   Eigen::Matrix<double, 2, 1> U;
   U(0, 0) = last_left_voltage_;
   U(1, 0) = last_right_voltage_;

@@ -64,6 +64,9 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
 
   double last_left_voltage_ = 0;
   double last_right_voltage_ = 0;
+  // The left/right voltages previous to last_*_voltage_.
+  double last_last_left_voltage_ = 0;
+  double last_last_right_voltage_ = 0;
 
   bool left_high_requested_;
   bool right_high_requested_;
