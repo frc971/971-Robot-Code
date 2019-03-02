@@ -117,7 +117,7 @@ class TypedCamera {
     Reading noise;
 
     // The target that this view corresponds to.
-    const TypedTarget<Scalar> *target;
+    const TypedTarget<Scalar> *target = nullptr;
     // The Pose the camera was at when viewing the target:
     Pose camera_pose;
   };
@@ -151,6 +151,9 @@ class TypedCamera {
     // height, since there will be extremely low resolution on it.
     Scalar nominal_height_noise;  // meters
   };
+
+  // Provide a default constructor to make life easier.
+  TypedCamera() {}
 
   // Creates a camera:
   // pose: The Pose of the camera, relative to the robot at least transitively.
@@ -201,6 +204,41 @@ class TypedCamera {
   const Pose &pose() const { return pose_; }
   Scalar fov() const { return fov_; }
 
+  // Estimates the noise values of a target based on the raw readings.
+  // Also estimates whether we would expect the target to be visible, and
+  // populates is_visible if is_visible is not nullptr.
+  void PopulateNoise(TargetView *view, bool *is_visible = nullptr) const {
+    // Calculate the width of the target as it appears in the image.
+    // This number is unitless and if greater than 1, implies that the target is
+    // visible to the camera and if less than 1 implies it is too small to be
+    // registered on the camera.
+    Scalar apparent_width =
+        ::std::max<Scalar>(0.0, ::std::cos(view->reading.skew) *
+                                    noise_parameters_.max_viewable_distance /
+                                    view->reading.distance);
+    // As both a sanity check and for the sake of numerical stability, manually
+    // set apparent_width to something "very small" if the distance is too
+    // close.
+    if (view->reading.distance < 0.01) {
+      apparent_width = 0.01;
+    }
+
+    if (is_visible != nullptr) {
+      *is_visible = apparent_width >= 1.0;
+    }
+
+    view->noise.heading = noise_parameters_.heading_noise;
+
+    const Scalar normalized_width =
+        apparent_width / noise_parameters_.max_viewable_distance;
+    view->noise.distance =
+        noise_parameters_.nominal_distance_noise / normalized_width;
+    view->noise.skew =
+        noise_parameters_.nominal_skew_noise / normalized_width;
+    view->noise.height =
+        noise_parameters_.nominal_height_noise / normalized_width;
+  }
+
  private:
 
   // If the specified target is visible from the current camera Pose, adds it to
@@ -210,24 +248,24 @@ class TypedCamera {
       ::aos::SizedArray<TargetView, num_targets> *views) const;
 
   // The Pose of this camera.
-  const Pose pose_;
+  Pose pose_;
 
   // Field of view of the camera, in radians.
-  const Scalar fov_;
+  Scalar fov_;
 
   // Various constants to calclate sensor noise; see definition of
   // NoiseParameters for more detail.
-  const NoiseParameters noise_parameters_;
+  NoiseParameters noise_parameters_;
 
   // A list of all the targets on the field.
   // TODO(james): Is it worth creating some sort of cache for the targets and
   // obstacles? e.g., passing around pointer to the targets/obstacles.
-  const ::std::array<TypedTarget<Scalar>, num_targets> targets_;
+  ::std::array<TypedTarget<Scalar>, num_targets> targets_;
   // Known obstacles on the field which can interfere with our view of the
   // targets. An "obstacle" is a line segment which we cannot see through, as
   // such a logical obstacle (e.g., the cargo ship) may consist of many
   // obstacles in this list to account for all of its sides.
-  const ::std::array<LineSegment, num_obstacles> obstacles_;
+  ::std::array<LineSegment, num_obstacles> obstacles_;
 }; // class TypedCamera
 
 template <int num_targets, int num_obstacles, typename Scalar>
@@ -250,15 +288,19 @@ void TypedCamera<num_targets, num_obstacles, Scalar>::AddTargetIfVisible(
     return;
   }
 
-  // Calculate the width of the target as it appears in the image.
-  // This number is unitless and if greater than 1, implies that the target is
-  // visible to the camera and if less than 1 implies it is too small to be
-  // registered on the camera.
-  const Scalar apparent_width = ::std::max<Scalar>(
-      0.0,
-      ::std::cos(skew) * noise_parameters_.max_viewable_distance / distance);
+  TargetView view;
+  view.reading.heading = heading;
+  view.reading.distance = distance;
+  view.reading.skew = skew;
+  view.reading.height = target.pose().abs_pos().z();
+  view.target = &target;
+  view.camera_pose = camera_abs_pose;
 
-  if (apparent_width < 1.0) {
+  bool is_visible = false;
+
+  PopulateNoise(&view, &is_visible);
+
+  if (!is_visible) {
     return;
   }
 
@@ -270,22 +312,8 @@ void TypedCamera<num_targets, num_obstacles, Scalar>::AddTargetIfVisible(
     }
   }
 
-  Scalar normalized_width =
-      apparent_width / noise_parameters_.max_viewable_distance;
-  Scalar distance_noise =
-      noise_parameters_.nominal_distance_noise / normalized_width;
-  Scalar skew_noise = noise_parameters_.nominal_skew_noise / normalized_width;
-  Scalar height_noise =
-      noise_parameters_.nominal_height_noise / normalized_width;
-
-  // If we've made it here, the target is visible to the camera and we should
-  // provide the actual TargetView in question.
-  TargetView view;
-  view.reading = {heading, distance, target.pose().abs_pos().z(), skew};
-  view.noise = {noise_parameters_.heading_noise, distance_noise, height_noise,
-                skew_noise};
-  view.target = &target;
-  view.camera_pose = camera_abs_pose;
+  // At this point, we've passed all the checks to ensure that the target is
+  // visible and we can add it to the list of targets.
   views->push_back(view);
 }
 
