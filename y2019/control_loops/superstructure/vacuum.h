@@ -1,8 +1,8 @@
 #ifndef Y2019_CONTROL_LOOPS_SUPERSTRUCTURE_VACUUM_H_
 #define Y2019_CONTROL_LOOPS_SUPERSTRUCTURE_VACUUM_H_
 
-#include "y2019/control_loops/superstructure/superstructure.q.h"
 #include "aos/controls/control_loop.h"
+#include "y2019/control_loops/superstructure/superstructure.q.h"
 
 namespace y2019 {
 namespace control_loops {
@@ -15,7 +15,6 @@ class Vacuum {
                SuperstructureQueue::Output *output, bool *has_piece,
                aos::EventLoop *event_loop);
 
-
   // Voltage to the vaccum pump when we are attempting to acquire a piece
   static constexpr double kPumpVoltage = 8.0;
 
@@ -26,13 +25,13 @@ class Vacuum {
   static constexpr aos::monotonic_clock::duration kTimeAtHigherVoltage =
       std::chrono::milliseconds(100);
 
-  // Time to continue the pump after getting a no suck goal
-  static constexpr aos::monotonic_clock::duration kTimeToKeepPumpRunning =
-      std::chrono::milliseconds(750);
+  // Time required for the game piece to be released from a vacuum
+  static constexpr aos::monotonic_clock::duration kReleaseTime =
+      std::chrono::milliseconds(250);
 
  private:
   bool had_piece_ = false;
-  aos::monotonic_clock::time_point time_at_last_evacuate_goal_ =
+  aos::monotonic_clock::time_point last_release_time_ =
       aos::monotonic_clock::epoch();
   aos::monotonic_clock::time_point time_at_last_acquisition_ =
       aos::monotonic_clock::epoch();
