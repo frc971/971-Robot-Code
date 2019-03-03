@@ -25,6 +25,7 @@ struct ContourNode {
   ContourNode *pappend(int x, int y, AnalysisAllocator *alloc) {
     return alloc->cons_obj<ContourNode>(x, y, this);
   }
+  void set_point(Point new_pt) { pt = new_pt; }
 
   Point pt;
   ContourNode *next;

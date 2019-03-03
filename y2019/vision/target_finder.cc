@@ -33,13 +33,64 @@ void TargetFinder::PreFilter(BlobList *imgs) {
       imgs->end());
 }
 
+ContourNode* TargetFinder::GetContour(const RangeImage &blob) {
+  alloc_.reset();
+  return RangeImgToContour(blob, &alloc_);
+}
+
+// TODO(ben): These values will be moved into a configuration file.
+namespace {
+
+constexpr double mtx00 = 481.4957;
+constexpr double mtx02 = 341.215;
+constexpr double mtx11 = 484.314;
+constexpr double mtx12 = 251.29;
+
+constexpr double new_cam00 = 363.1424;
+constexpr double new_cam02 = 337.9895;
+constexpr double new_cam11 = 366.4837;
+constexpr double new_cam12 = 240.0702;
+
+constexpr double dist00 = -0.2739;
+constexpr double dist01 = 0.01583;
+constexpr double dist04 = 0.04201;
+
+constexpr int iterations = 7;
+
+}
+
+Point UnWarpPoint(const Point &point, int iterations) {
+  const double x0 = ((double)point.x - mtx02) / mtx00;
+  const double y0 = ((double)point.y - mtx12) / mtx11;
+  double x = x0;
+  double y = y0;
+  for (int i = 0; i < iterations; i++) {
+    const double r_sqr = x * x + y * y;
+    const double coeff =
+        1.0 + r_sqr * (dist00 + dist01 * r_sqr * (1.0 + dist04 * r_sqr));
+    x = x0 / coeff;
+    y = y0 / coeff;
+  }
+  double nx = x * new_cam00 + new_cam02;
+  double ny = y * new_cam11 + new_cam12;
+  Point p = {static_cast<int>(nx), static_cast<int>(ny)};
+  return p;
+}
+
+void TargetFinder::UnWarpContour(ContourNode *start) const {
+  ContourNode *node = start;
+  while (node->next != start) {
+    node->set_point(UnWarpPoint(node->pt, iterations));
+    node = node->next;
+  }
+  node->set_point(UnWarpPoint(node->pt, iterations));
+}
+
 // TODO: Try hierarchical merge for this.
 // Convert blobs into polygons.
 std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
-    const RangeImage &blob, bool verbose) {
+    ContourNode* start, bool verbose) {
   if (verbose) printf("Process Polygon.\n");
-  alloc_.reset();
-  ContourNode *start = RangeImgToContour(blob, &alloc_);
 
   struct Pt {
     float x;
