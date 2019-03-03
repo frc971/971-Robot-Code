@@ -72,6 +72,7 @@ cc_binary(
         "//frc971/wpilib:wpilib_robot_base",
         "//third_party:phoenix",
         "//third_party:wpilib",
+        "//y2019/control_loops/drivetrain:camera_queue",
         "//y2019/control_loops/superstructure:superstructure_queue",
         "//y2019/jevois:spi",
     ],

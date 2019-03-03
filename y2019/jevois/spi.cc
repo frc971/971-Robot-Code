@@ -32,9 +32,10 @@
 //     2. 8 bits distance
 //     3. 6 bits skew
 //     4. 6 bits height
-//     5. 1 bit target valid (a present frame has all-valid targets)
-//     6. 1 bit target present (a present frame can have from 0 to 3
-//          targets, depending on how many were found)
+//     5. 2 bits of quantity+index
+//   The 6 bits of quantity+index (between all three targets) are:
+//     1. 4 bits camera index + 1 (0 means this isn't a valid frame)
+//     2. 2 bits target count
 //   Note that empty frames are still sent to indicate that the camera is
 //   still working even though it doesn't see any targets.
 
@@ -110,26 +111,29 @@ float height_unpack(gsl::span<const char> source) {
                                               integer);
 }
 
-constexpr int valid_bits() { return 1; }
-constexpr int valid_offset() { return height_offset() + height_bits(); }
-void valid_pack(bool valid, gsl::span<char> destination) {
-  aos::PackBits<uint32_t, valid_bits(), valid_offset()>(valid, destination);
+constexpr int quantity_index_offset() { return height_offset() + height_bits(); }
+void camera_index_pack(int camera_index, gsl::span<char> destination) {
+  aos::PackBits<uint32_t, 2, quantity_index_offset()>(camera_index & 3,
+                                                      destination);
+  aos::PackBits<uint32_t, 2, quantity_index_offset() + 32>(
+      (camera_index >> 2) & 3, destination);
 }
-bool valid_unpack(gsl::span<const char> source) {
-  return aos::UnpackBits<uint32_t, valid_bits(), valid_offset()>(source);
+int camera_index_unpack(gsl::span<const char> source) {
+  int result = 0;
+  result |= aos::UnpackBits<uint32_t, 2, quantity_index_offset()>(source);
+  result |= aos::UnpackBits<uint32_t, 2, quantity_index_offset() + 32>(source)
+            << 2;
+  return result;
+}
+void target_count_pack(int target_count, gsl::span<char> destination) {
+  aos::PackBits<uint32_t, 2, quantity_index_offset() + 32 * 2>(target_count,
+                                                               destination);
+}
+int target_count_unpack(gsl::span<const char> source) {
+  return aos::UnpackBits<uint32_t, 2, quantity_index_offset() + 32 * 2>(source);
 }
 
-constexpr int present_bits() { return 1; }
-constexpr int present_offset() { return valid_offset() + valid_bits(); }
-void present_pack(bool present, gsl::span<char> destination) {
-  aos::PackBits<uint32_t, present_bits(), present_offset()>(present,
-                                                            destination);
-}
-bool present_unpack(gsl::span<const char> source) {
-  return aos::UnpackBits<uint32_t, present_bits(), present_offset()>(source);
-}
-
-constexpr int next_offset() { return present_offset() + present_bits(); }
+constexpr int next_offset() { return quantity_index_offset() + 2; }
 static_assert(next_offset() <= 32, "Target is too big");
 
 }  // namespace
@@ -138,14 +142,17 @@ SpiTransfer SpiPackToRoborio(const TeensyToRoborio &message) {
   SpiTransfer transfer;
   gsl::span<char> remaining_space = transfer;
   for (int frame = 0; frame < 3; ++frame) {
-    for (int target = 0; target < 3; ++target) {
-      remaining_space[0] = 0;
-      remaining_space[1] = 0;
-      remaining_space[2] = 0;
-      remaining_space[3] = 0;
+    // Zero out all three targets and the age.
+    for (int i = 0; i < 3 * 4 + 1; ++i) {
+      remaining_space[i] = 0;
+    }
 
-      if (static_cast<int>(message.frames.size()) > frame) {
-        valid_pack(true, remaining_space);
+    if (static_cast<int>(message.frames.size()) > frame) {
+      camera_index_pack(message.frames[frame].camera_index + 1,
+                        remaining_space);
+      target_count_pack(message.frames[frame].targets.size(), remaining_space);
+
+      for (int target = 0; target < 3; ++target) {
         if (static_cast<int>(message.frames[frame].targets.size()) > target) {
           heading_pack(message.frames[frame].targets[target].heading,
                        remaining_space);
@@ -155,23 +162,16 @@ SpiTransfer SpiPackToRoborio(const TeensyToRoborio &message) {
                     remaining_space);
           height_pack(message.frames[frame].targets[target].height,
                       remaining_space);
-          present_pack(true, remaining_space);
-        } else {
-          present_pack(false, remaining_space);
         }
-      } else {
-        valid_pack(false, remaining_space);
+        remaining_space = remaining_space.subspan(4);
       }
 
-      remaining_space = remaining_space.subspan(4);
-    }
-    if (static_cast<int>(message.frames.size()) > frame) {
       const uint8_t age_count = message.frames[frame].age.count();
       memcpy(&remaining_space[0], &age_count, 1);
+      remaining_space = remaining_space.subspan(1);
     } else {
-      remaining_space[0] = 0;
+      remaining_space = remaining_space.subspan(4 * 3 + 1);
     }
-    remaining_space = remaining_space.subspan(1);
   }
   {
     uint16_t crc = jevois_crc_init();
@@ -191,13 +191,14 @@ tl::optional<TeensyToRoborio> SpiUnpackToRoborio(
   TeensyToRoborio message;
   gsl::span<const char> remaining_input = transfer;
   for (int frame = 0; frame < 3; ++frame) {
-    const bool have_frame = valid_unpack(remaining_input);
-    if (have_frame) {
+    const int camera_index_plus = camera_index_unpack(remaining_input);
+    if (camera_index_plus > 0) {
       message.frames.push_back({});
-    }
-    for (int target = 0; target < 3; ++target) {
-      if (present_unpack(remaining_input)) {
-        if (have_frame) {
+      message.frames.back().camera_index = camera_index_plus - 1;
+
+      const int target_count = target_count_unpack(remaining_input);
+      for (int target = 0; target < 3; ++target) {
+        if (target < target_count) {
           message.frames.back().targets.push_back({});
           message.frames.back().targets.back().heading =
               heading_unpack(remaining_input);
@@ -208,16 +209,18 @@ tl::optional<TeensyToRoborio> SpiUnpackToRoborio(
           message.frames.back().targets.back().height =
               height_unpack(remaining_input);
         }
+        remaining_input = remaining_input.subspan(4);
       }
 
-      remaining_input = remaining_input.subspan(4);
+      {
+        uint8_t age_count;
+        memcpy(&age_count, &remaining_input[0], 1);
+        message.frames.back().age = camera_duration(age_count);
+      }
+      remaining_input = remaining_input.subspan(1);
+    } else {
+      remaining_input = remaining_input.subspan(4 * 3 + 1);
     }
-    if (have_frame) {
-      uint8_t age_count;
-      memcpy(&age_count, &remaining_input[0], 1);
-      message.frames.back().age = camera_duration(age_count);
-    }
-    remaining_input = remaining_input.subspan(1);
   }
   {
     uint16_t calculated_crc = jevois_crc_init();

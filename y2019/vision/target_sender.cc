@@ -334,7 +334,7 @@ int main(int argc, char **argv) {
 
     // TODO: Select top 3 (randomly?)
 
-    frc971::jevois::Frame frame{};
+    frc971::jevois::CameraFrame frame{};
 
     for (size_t i = 0; i < results.size() && i < frame.targets.max_size();
          ++i) {

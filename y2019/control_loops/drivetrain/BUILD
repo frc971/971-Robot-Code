@@ -88,6 +88,7 @@ queue_library(
     srcs = [
         "camera.q",
     ],
+    visibility = ["//visibility:public"],
 )
 
 cc_library(

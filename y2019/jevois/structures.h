@@ -85,8 +85,8 @@ struct Target {
 // The information extracted from a single camera frame.
 //
 // This is all the information sent from each camera to the Teensy.
-struct Frame {
-  bool operator==(const Frame &other) const {
+struct CameraFrame {
+  bool operator==(const CameraFrame &other) const {
     if (other.targets != targets) {
       return false;
     }
@@ -95,7 +95,7 @@ struct Frame {
     }
     return true;
   }
-  bool operator!=(const Frame &other) const {
+  bool operator!=(const CameraFrame &other) const {
     return !(*this == other);
   }
 
@@ -104,6 +104,34 @@ struct Frame {
 
   // How long ago from the current time this frame was captured.
   camera_duration age;
+};
+
+// The information extracted from a single camera frame, from a given camera.
+struct RoborioFrame {
+  bool operator==(const RoborioFrame &other) const {
+    if (other.targets != targets) {
+      return false;
+    }
+    if (other.age != age) {
+      return false;
+    }
+    if (other.camera_index != camera_index) {
+      return false;
+    }
+    return true;
+  }
+  bool operator!=(const RoborioFrame &other) const {
+    return !(*this == other);
+  }
+
+  // The top most interesting targets found in this frame.
+  aos::SizedArray<Target, 3> targets;
+
+  // How long ago from the current time this frame was captured.
+  camera_duration age;
+  // Which camera this is from (which position on the robot, not a serial
+  // number).
+  int camera_index;
 };
 
 enum class CameraCommand : char {
@@ -170,7 +198,7 @@ struct TeensyToRoborio {
 
   // The newest frames received from up to three cameras. These will be the
   // three earliest-received of all buffered frames.
-  aos::SizedArray<Frame, 3> frames;
+  aos::SizedArray<RoborioFrame, 3> frames;
 };
 
 // This is all the information the RoboRIO sends to the Teensy.
@@ -180,6 +208,12 @@ struct RoborioToTeensy {
       return false;
     }
     if (other.light_rings != light_rings) {
+      return false;
+    }
+    if (other.realtime_now != realtime_now) {
+      return false;
+    }
+    if (other.camera_command != camera_command) {
       return false;
     }
     return true;

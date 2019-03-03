@@ -29,8 +29,8 @@ constexpr size_t uart_to_camera_size() {
 using UartToCameraBuffer =
     aos::SizedArray<char, CobsMaxEncodedSize(uart_to_camera_size())>;
 
-UartToTeensyBuffer UartPackToTeensy(const Frame &message);
-tl::optional<Frame> UartUnpackToTeensy(gsl::span<const char> buffer);
+UartToTeensyBuffer UartPackToTeensy(const CameraFrame &message);
+tl::optional<CameraFrame> UartUnpackToTeensy(gsl::span<const char> buffer);
 
 UartToCameraBuffer UartPackToCamera(const CameraCalibration &message);
 tl::optional<CameraCalibration> UartUnpackToCamera(

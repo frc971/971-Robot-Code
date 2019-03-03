@@ -15,7 +15,7 @@
 namespace frc971 {
 namespace jevois {
 
-UartToTeensyBuffer UartPackToTeensy(const Frame &message) {
+UartToTeensyBuffer UartPackToTeensy(const CameraFrame &message) {
   std::array<char, uart_to_teensy_size()> buffer;
   gsl::span<char> remaining_space = buffer;
   remaining_space[0] = message.targets.size();
@@ -55,7 +55,7 @@ UartToTeensyBuffer UartPackToTeensy(const Frame &message) {
   return result;
 }
 
-tl::optional<Frame> UartUnpackToTeensy(gsl::span<const char> encoded_buffer) {
+tl::optional<CameraFrame> UartUnpackToTeensy(gsl::span<const char> encoded_buffer) {
   std::array<char, uart_to_teensy_size()> buffer;
   if (static_cast<size_t>(
           CobsDecode<uart_to_teensy_size()>(encoded_buffer, &buffer).size()) !=
@@ -63,7 +63,7 @@ tl::optional<Frame> UartUnpackToTeensy(gsl::span<const char> encoded_buffer) {
     return tl::nullopt;
   }
 
-  Frame message;
+  CameraFrame message;
   gsl::span<const char> remaining_input = buffer;
   const int number_targets = remaining_input[0];
   remaining_input = remaining_input.subspan(1);
