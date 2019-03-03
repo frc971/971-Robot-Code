@@ -12,6 +12,7 @@
 #include "frc971/control_loops/drivetrain/localizer.h"
 #include "frc971/control_loops/drivetrain/polydrivetrain.h"
 #include "frc971/control_loops/drivetrain/ssdrivetrain.h"
+#include "frc971/control_loops/drivetrain/line_follow_drivetrain.h"
 #include "frc971/control_loops/drivetrain/splinedrivetrain.h"
 
 namespace frc971 {
@@ -50,6 +51,7 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
   PolyDrivetrain<double> dt_openloop_;
   DrivetrainMotorsSS dt_closedloop_;
   SplineDrivetrain dt_spline_;
+  LineFollowDrivetrain dt_line_follow_;
   ::aos::monotonic_clock::time_point last_gyro_time_ =
       ::aos::monotonic_clock::min_time;
 
@@ -62,6 +64,9 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
 
   double last_left_voltage_ = 0;
   double last_right_voltage_ = 0;
+  // The left/right voltages previous to last_*_voltage_.
+  double last_last_left_voltage_ = 0;
+  double last_last_right_voltage_ = 0;
 
   bool left_high_requested_;
   bool right_high_requested_;

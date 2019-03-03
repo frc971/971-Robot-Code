@@ -719,6 +719,42 @@ TEST_F(DrivetrainTest, OnlyPlanSpline) {
   VerifyNearSplineGoal();
 }
 
+// The LineFollowDrivetrain logic is tested in line_follow_drivetrain_test. This
+// tests that the integration with drivetrain_lib worked properly.
+TEST_F(DrivetrainTest, BasicLineFollow) {
+  localizer_.target_selector()->set_has_target(true);
+  localizer_.target_selector()->set_pose({{1.0, 1.0, 0.0}, M_PI_4});
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> goal =
+      my_drivetrain_queue_.goal.MakeMessage();
+  goal->controller_type = 3;
+  goal->throttle = 0.5;
+  goal.Send();
+
+  RunForTime(chrono::seconds(5));
+  // Should have run off the end of the target, running along the y=x line.
+  EXPECT_LT(1.0, drivetrain_motor_plant_.GetPosition().x());
+  EXPECT_NEAR(drivetrain_motor_plant_.GetPosition().x(),
+              drivetrain_motor_plant_.GetPosition().y(), 1e-4);
+}
+
+// Tests that the line follower will not run and defer to regular open-loop
+// driving when there is no target yet:
+TEST_F(DrivetrainTest, LineFollowDefersToOpenLoop) {
+  localizer_.target_selector()->set_has_target(false);
+  localizer_.target_selector()->set_pose({{1.0, 1.0, 0.0}, M_PI_4});
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> goal =
+      my_drivetrain_queue_.goal.MakeMessage();
+  goal->controller_type = 3;
+  goal->throttle = 0.5;
+  goal.Send();
+
+  RunForTime(chrono::seconds(5));
+  // Should have run straight (because we just set throttle, with wheel = 0)
+  // along X-axis.
+  EXPECT_LT(1.0, drivetrain_motor_plant_.GetPosition().x());
+  EXPECT_NEAR(0.0, drivetrain_motor_plant_.GetPosition().y(), 1e-4);
+}
+
 ::aos::controls::HVPolytope<2, 4, 4> MakeBox(double x1_min, double x1_max,
                                              double x2_min, double x2_max) {
   Eigen::Matrix<double, 4, 2> box_H;

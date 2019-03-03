@@ -3,10 +3,26 @@
 
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/hybrid_ekf.h"
+#include "frc971/control_loops/pose.h"
 
 namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
+
+// An interface for target selection. This provides an object that will take in
+// state updates and then determine what poes we should be driving to.
+class TargetSelectorInterface {
+ public:
+  // Take the state as [x, y, theta, left_vel, right_vel]
+  // If unable to determine what target to go for, returns false. If a viable
+  // target is selected, then returns true and sets target_pose.
+  // TODO(james): Some implementations may also want a drivetrain goal so that
+  // driver intent can be divined more directly.
+  virtual bool UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state) = 0;
+  // Gets the current target pose. Should only be called if UpdateSelection has
+  // returned true.
+  virtual TypedPose<double> TargetPose() const = 0;
+};
 
 // Defines an interface for classes that provide field-global localization.
 class LocalizerInterface {
@@ -34,6 +50,25 @@ class LocalizerInterface {
   virtual double right_velocity() const = 0;
   virtual double left_voltage_error() const = 0;
   virtual double right_voltage_error() const = 0;
+  virtual TargetSelectorInterface *target_selector() = 0;
+};
+
+// A target selector, primarily for testing purposes, that just lets a user
+// manually set the target selector state.
+class TrivialTargetSelector : public TargetSelectorInterface {
+ public:
+  bool UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &) override {
+    return has_target_;
+  }
+  TypedPose<double> TargetPose() const override { return pose_; }
+
+  void set_pose(const TypedPose<double> &pose) { pose_ = pose; }
+  void set_has_target(bool has_target) { has_target_ = has_target; }
+  bool has_target() const { return has_target_; }
+
+ private:
+  bool has_target_ = true;
+  TypedPose<double> pose_;
 };
 
 // Uses the generic HybridEkf implementation to provide a basic field estimator.
@@ -46,6 +81,7 @@ class DeadReckonEkf : public LocalizerInterface {
   DeadReckonEkf(const DrivetrainConfig<double> &dt_config) : ekf_(dt_config) {
     ekf_.ResetInitialState(::aos::monotonic_clock::now(), Ekf::State::Zero(),
                            ekf_.P());
+    target_selector_.set_has_target(false);
   }
 
   void Update(const ::Eigen::Matrix<double, 2, 1> &U,
@@ -72,8 +108,13 @@ class DeadReckonEkf : public LocalizerInterface {
     return ekf_.X_hat(StateIdx::kRightVoltageError);
   }
 
+  TrivialTargetSelector *target_selector() override {
+    return &target_selector_;
+  }
+
  private:
   Ekf ekf_;
+  TrivialTargetSelector target_selector_;
 };
 
 }  // namespace drivetrain

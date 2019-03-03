@@ -81,7 +81,8 @@ queue_group DrivetrainQueue {
     // Type of controller in charge of the drivetrain.
     //  0: polydrive
     //  1: motion profiled position drive (statespace)
-    //  2: spline follower.
+    //  2: spline follower
+    //  3: line follower (for guiding into a target)
     uint8_t controller_type;
 
     // Position goals for each drivetrain side (in meters) when the

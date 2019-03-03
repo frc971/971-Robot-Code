@@ -76,7 +76,6 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
   void RunIteration() {
     drivetrain_motor_plant_.SendPositionMessage();
     drivetrain_motor_.Iterate();
-    drivetrain_motor_plant_.Simulate();
     if (enable_cameras_) {
       SendDelayedFrames();
       if (last_frame_ + ::std::chrono::milliseconds(33) <
@@ -85,6 +84,7 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
         last_frame_ = monotonic_clock::now();
       }
     }
+    drivetrain_motor_plant_.Simulate();
     SimulateTimestep(true, dt_config_.dt);
   }
 
@@ -107,14 +107,14 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
                 drivetrain_motor_plant_.GetRightPosition(), 1e-3);
   }
 
-  void VerifyEstimatorAccurate() {
+  void VerifyEstimatorAccurate(double eps) {
     const Eigen::Matrix<double, 5, 1> true_state =
         drivetrain_motor_plant_.state();
-    EXPECT_NEAR(localizer_.x(), true_state(0, 0), 1e-5);
-    EXPECT_NEAR(localizer_.y(), true_state(1, 0), 1e-5);
-    EXPECT_NEAR(localizer_.theta(), true_state(2, 0), 1e-5);
-    EXPECT_NEAR(localizer_.left_velocity(), true_state(3, 0), 1e-5);
-    EXPECT_NEAR(localizer_.right_velocity(), true_state(4, 0), 1e-5);
+    EXPECT_NEAR(localizer_.x(), true_state(0, 0), eps);
+    EXPECT_NEAR(localizer_.y(), true_state(1, 0), eps);
+    EXPECT_NEAR(localizer_.theta(), true_state(2, 0), eps);
+    EXPECT_NEAR(localizer_.left_velocity(), true_state(3, 0), eps);
+    EXPECT_NEAR(localizer_.right_velocity(), true_state(4, 0), eps);
   }
 
   void CaptureFrames() {
@@ -199,7 +199,20 @@ TEST_F(LocalizedDrivetrainTest, NoCameraUpdate) {
       .Send();
   RunForTime(chrono::seconds(3));
   VerifyNearGoal();
-  VerifyEstimatorAccurate();
+  VerifyEstimatorAccurate(1e-10);
+}
+
+// Tests that camera udpates with a perfect models results in no errors.
+TEST_F(LocalizedDrivetrainTest, PerfectCameraUpdate) {
+  set_enable_cameras(true);
+  my_drivetrain_queue_.goal.MakeWithBuilder()
+      .controller_type(1)
+      .left_goal(-1.0)
+      .right_goal(1.0)
+      .Send();
+  RunForTime(chrono::seconds(3));
+  VerifyNearGoal();
+  VerifyEstimatorAccurate(1e-8);
 }
 
 // Tests that not having cameras with an initial disturbance results in
@@ -237,7 +250,7 @@ TEST_F(LocalizedDrivetrainTest, CameraUpdate) {
       .Send();
   RunForTime(chrono::seconds(3));
   VerifyNearGoal();
-  VerifyEstimatorAccurate();
+  VerifyEstimatorAccurate(1e-5);
 }
 
 }  // namespace testing

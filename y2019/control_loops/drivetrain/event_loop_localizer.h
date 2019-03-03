@@ -58,6 +58,11 @@ class EventLoopLocalizer
     return localizer_.X_hat(StateIdx::kRightVoltageError);
   }
 
+  ::frc971::control_loops::drivetrain::TrivialTargetSelector *target_selector()
+      override {
+    return &target_selector_;
+  }
+
  private:
   void HandleFrame(const CameraFrame &frame);
 
@@ -71,6 +76,7 @@ class EventLoopLocalizer
   Pose robot_pose_;
   const ::std::array<Camera, constants::Values::kNumCameras> cameras_;
   Localizer localizer_;
+  ::frc971::control_loops::drivetrain::TrivialTargetSelector target_selector_;
 };
 
 // Constructs the cameras based on the constants in the //y2019/constants.*
