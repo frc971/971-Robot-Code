@@ -10,6 +10,7 @@ namespace vision {
 
 // Position of the idealized camera in 3d space.
 struct CameraGeometry {
+  static constexpr size_t kNumParams = 4;
   // In Meters from floor under imu center.
   std::array<double, 3> location{{0, 0, 0}};
   double heading = 0.0;
@@ -28,6 +29,8 @@ struct CameraGeometry {
     out.heading = data[3];
     return out;
   }
+
+  void dump(std::basic_ostream<char> &o) const;
 };
 
 struct IntrinsicParams {
@@ -50,6 +53,7 @@ struct IntrinsicParams {
     out.barrel_mount = data[2];
     return out;
   }
+  void dump(std::basic_ostream<char> &o) const;
 };
 
 // Metadata about the calibration results (Should be good enough to reproduce).
@@ -62,6 +66,9 @@ struct DatasetInfo {
   // This will multiply tape_measure_direction and thus has no units.
   double beginning_tape_measure_reading;
   const char *filename_prefix;
+  int num_images;
+
+  void dump(std::basic_ostream<char> &o) const;
 };
 
 struct CameraCalibration {
@@ -71,6 +78,8 @@ struct CameraCalibration {
 };
 
 const CameraCalibration *GetCamera(int camera_id);
+
+void DumpCameraConstants(int camera_id, const CameraCalibration &value);
 
 }  // namespace vision
 }  // namespace y2019

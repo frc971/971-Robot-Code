@@ -90,7 +90,7 @@ cc_binary(
 
 cc_binary(
     name = "global_calibration",
-    srcs = ["global_calibration.cc"],
+    srcs = ["global_calibration.cc", "constants_formatting.cc"],
     deps = [
          ":target_finder",
          "//aos/logging",
