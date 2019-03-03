@@ -28,6 +28,7 @@
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
+#include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/wpilib/ADIS16448.h"
@@ -42,8 +43,8 @@
 #include "frc971/wpilib/pdp_fetcher.h"
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
-#include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
 #include "y2019/constants.h"
+#include "y2019/control_loops/drivetrain/camera.q.h"
 #include "y2019/control_loops/superstructure/superstructure.q.h"
 #include "y2019/jevois/spi.h"
 
@@ -319,7 +320,22 @@ class CameraReader {
       return;
     }
 
-    // TODO(Brian): Do something useful with the targets.
+    const auto now = aos::monotonic_clock::now();
+    for (const auto &received : unpacked->frames) {
+      auto to_send = control_loops::drivetrain::camera_frames.MakeMessage();
+      to_send->timestamp =
+          std::chrono::nanoseconds((now + received.age).time_since_epoch())
+              .count();
+      to_send->num_targets = received.targets.size();
+      for (size_t i = 0; i < received.targets.size(); ++i) {
+        to_send->targets[i].distance = received.targets[i].distance;
+        to_send->targets[i].height = received.targets[i].height;
+        to_send->targets[i].heading = received.targets[i].heading;
+        to_send->targets[i].skew = received.targets[i].skew;
+      }
+      to_send->camera = received.camera_index;
+      to_send.Send();
+    }
 
     if (dummy_spi_) {
       uint8_t dummy_send, dummy_receive;

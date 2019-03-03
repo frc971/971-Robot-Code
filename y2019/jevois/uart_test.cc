@@ -10,7 +10,7 @@ namespace testing {
 
 // Tests packing and then unpacking a message with arbitrary values.
 TEST(UartToTeensyTest, Basic) {
-  Frame input_message;
+  CameraFrame input_message;
   for (int i = 0; i < 3; ++i) {
     input_message.targets.push_back({});
     Target *const target = &input_message.targets.back();
@@ -29,7 +29,7 @@ TEST(UartToTeensyTest, Basic) {
 // Tests packing and then unpacking a message with arbitrary values and no
 // frames.
 TEST(UartToTeensyTest, NoFrames) {
-  Frame input_message;
+  CameraFrame input_message;
   input_message.age = camera_duration(123);
   const UartToTeensyBuffer buffer = UartPackToTeensy(input_message);
   const auto output_message = UartUnpackToTeensy(buffer);
@@ -39,7 +39,7 @@ TEST(UartToTeensyTest, NoFrames) {
 
 // Tests packing and then unpacking a message with just one frame.
 TEST(UartToTeensyTest, OneFrame) {
-  Frame input_message;
+  CameraFrame input_message;
   {
     input_message.targets.push_back({});
     Target *const target = &input_message.targets.back();
@@ -75,7 +75,7 @@ TEST(UartToCameraTest, Basic) {
 
 // Tests that corrupting the data in various ways is handled properly.
 TEST(UartToTeensyTest, CorruptData) {
-  Frame input_message{};
+  CameraFrame input_message{};
   {
     UartToTeensyBuffer buffer = UartPackToTeensy(input_message);
     buffer[0]++;

@@ -269,9 +269,10 @@ class FrameQueue {
   FrameQueue(const FrameQueue &) = delete;
   FrameQueue &operator=(const FrameQueue &) = delete;
 
-  void UpdateFrame(int camera, const Frame &frame) {
+  void UpdateFrame(int camera, const CameraFrame &frame) {
     frames_[camera].targets = frame.targets;
     frames_[camera].capture_time = aos::monotonic_clock::now() - frame.age;
+    frames_[camera].camera_index = camera;
     const aos::SizedArray<int, 3> old_last_frames = last_frames_;
     last_frames_.clear();
     for (int index : old_last_frames) {
@@ -302,6 +303,7 @@ class FrameQueue {
     aos::SizedArray<Target, 3> targets;
     aos::monotonic_clock::time_point capture_time =
         aos::monotonic_clock::min_time;
+    int camera_index;
   };
 
   std::array<FrameData, 5> frames_;
@@ -327,7 +329,7 @@ SpiTransfer FrameQueue::MakeTransfer() {
     const FrameData &frame = frames_[index];
     const auto age = aos::monotonic_clock::now() - frame.capture_time;
     const auto rounded_age = aos::time::round<camera_duration>(age);
-    message.frames.push_back({frame.targets, rounded_age});
+    message.frames.push_back({frame.targets, rounded_age, frame.camera_index});
     last_frames_.push_back(index);
   }
   return SpiPackToRoborio(message);
@@ -658,7 +660,6 @@ __attribute__((unused)) void TransferData(
             UartUnpackToTeensy(packetizers[i].received_packet());
         packetizers[i].clear_received_packet();
         if (decoded) {
-          printf("got one with %d\n", (int)decoded->targets.size());
           frame_queue.UpdateFrame(i, *decoded);
         }
       }
