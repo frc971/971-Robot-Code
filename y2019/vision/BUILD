@@ -11,8 +11,8 @@ VISION_TARGETS = [
 
 cc_library(
     name = "constants",
-    hdrs = ["constants.h"],
     srcs = ["constants.cc"],
+    hdrs = ["constants.h"],
 )
 
 cc_library(
@@ -70,9 +70,19 @@ cc_binary(
         "//y2019/jevois:serial",
         "//y2019/jevois:structures",
         "//y2019/jevois:uart",
-        "//y2019/jevois/camera:reader",
         "//y2019/jevois/camera:image_stream",
+        "//y2019/jevois/camera:reader",
         "@com_google_ceres_solver//:ceres",
+    ],
+)
+
+cc_binary(
+    name = "serial_waiter",
+    srcs = ["serial_waiter.cc"],
+    restricted_to = VISION_TARGETS,
+    deps = [
+        "//aos/time",
+        "//y2019/jevois:serial",
     ],
 )
 
@@ -80,30 +90,33 @@ cc_binary(
     name = "debug_serial",
     srcs = ["debug_serial.cc"],
     deps = [
+        "//aos/logging",
+        "//aos/logging:implementations",
         "//y2019/jevois:serial",
         "//y2019/jevois:structures",
         "//y2019/jevois:uart",
-         "//aos/logging",
-         "//aos/logging:implementations",
     ],
 )
 
 cc_binary(
     name = "global_calibration",
-    srcs = ["global_calibration.cc", "constants_formatting.cc"],
-    deps = [
-         ":target_finder",
-         "//aos/logging",
-         "//aos/logging:implementations",
-         "//aos/vision/blob:find_blob",
-         "//aos/vision/blob:codec",
-         "//aos/vision/events:epoll_events",
-         "//aos/vision/events:socket_types",
-         "//aos/vision/events:udp",
-         "//aos/vision/image:image_stream",
-         "//aos/vision/image:image_dataset",
-         "//aos/vision/image:reader",
-         "@com_google_ceres_solver//:ceres",
+    srcs = [
+        "constants_formatting.cc",
+        "global_calibration.cc",
     ],
     restricted_to = VISION_TARGETS,
+    deps = [
+        ":target_finder",
+        "//aos/logging",
+        "//aos/logging:implementations",
+        "//aos/vision/blob:codec",
+        "//aos/vision/blob:find_blob",
+        "//aos/vision/events:epoll_events",
+        "//aos/vision/events:socket_types",
+        "//aos/vision/events:udp",
+        "//aos/vision/image:image_dataset",
+        "//aos/vision/image:image_stream",
+        "//aos/vision/image:reader",
+        "@com_google_ceres_solver//:ceres",
+    ],
 )
