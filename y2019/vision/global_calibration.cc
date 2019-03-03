@@ -17,6 +17,8 @@
 // CERES Clashes with logging symbols...
 #include "ceres/ceres.h"
 
+DEFINE_int32(camera_id, -1, "The camera ID to calibrate");
+
 using ::aos::events::DataSocket;
 using ::aos::events::RXUdpSocket;
 using ::aos::events::TCPServer;
@@ -74,16 +76,13 @@ std::array<double, 3> GetError(const DatasetInfo &info,
 }
 
 void main(int argc, char **argv) {
-  (void)argc;
-  (void)argv;
   using namespace y2019::vision;
-  // gflags::ParseCommandLineFlags(&argc, &argv, false);
+  gflags::ParseCommandLineFlags(&argc, &argv, false);
 
-  int camera_id = 5;
   const char *base_directory = "/home/parker/data/frc/2019_calibration/";
 
   DatasetInfo info = {
-      camera_id,
+      FLAGS_camera_id,
       {{12.5 * kInchesToMeters, 0.5 * kInchesToMeters}},
       {{kInchesToMeters, 0.0}},
       26,
@@ -248,7 +247,7 @@ void main(int argc, char **argv) {
   results.dataset = info;
   results.intrinsics = IntrinsicParams::get(&intrinsics[0]);
   results.geometry = CameraGeometry::get(&geometry[0]);
-  DumpCameraConstants(camera_id, results);
+  DumpCameraConstants(info.camera_id, results);
 }
 
 }  // namespace y2019
