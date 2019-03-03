@@ -309,9 +309,11 @@ int main(int argc, char **argv) {
     bool verbose = false;
     std::vector<std::vector<Segment<2>>> raw_polys;
     for (const RangeImage &blob : imgs) {
-      std::vector<Segment<2>> polygon = finder_.FillPolygon(blob, verbose);
-      if (polygon.empty()) {
-      } else {
+      // Convert blobs to contours in the corrected space.
+      ContourNode* contour = finder_.GetContour(blob);
+      finder_.UnWarpContour(contour);
+      std::vector<Segment<2>> polygon = finder_.FillPolygon(contour, verbose);
+      if (!polygon.empty()) {
         raw_polys.push_back(polygon);
       }
     }

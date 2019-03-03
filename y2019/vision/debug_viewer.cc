@@ -92,10 +92,23 @@ class FilterHarness : public aos::vision::FilterHarness {
     // Find polygons from blobs.
     std::vector<std::vector<Segment<2>>> raw_polys;
     for (const RangeImage &blob : imgs) {
+      // Convert blobs to contours in the corrected space.
+      ContourNode* contour = finder_.GetContour(blob);
+      if (draw_contours_) {
+        DrawContour(contour, {255, 0, 0});
+      }
+      finder_.UnWarpContour(contour);
+      if (draw_contours_) {
+        DrawContour(contour, {0, 0, 255});
+      }
+
+      // Process to polygons.
       std::vector<Segment<2>> polygon =
-          finder_.FillPolygon(blob, draw_raw_poly_);
+          finder_.FillPolygon(contour, draw_raw_poly_);
       if (polygon.empty()) {
-        DrawBlob(blob, {255, 0, 0});
+        if (!draw_contours_) {
+          DrawBlob(blob, {255, 0, 0});
+        }
       } else {
         raw_polys.push_back(polygon);
         if (draw_select_blob_) {
@@ -168,7 +181,20 @@ class FilterHarness : public aos::vision::FilterHarness {
       } else if (key == 'b') {
         draw_raw_poly_ = !draw_raw_poly_;
       } else if (key == 'n') {
+        draw_contours_ = !draw_contours_;
+      } else if (key == 'm') {
         draw_select_blob_ = !draw_select_blob_;
+      } else if (key == 'h') {
+        printf("Key Mappings:\n");
+        printf(" z: Toggle drawing final target pose.\n");
+        printf(" x: Toggle drawing re-projected targets and print solver results.\n");
+        printf(" c: Toggle drawing proposed target groupings.\n");
+        printf(" v: Toggle drawing ordered target components.\n");
+        printf(" b: Toggle drawing proposed target components.\n");
+        printf(" n: Toggle drawing countours before and after warping.\n");
+        printf(" m: Toggle drawing raw blob data (may need to change image to toggle a redraw).\n");
+        printf(" h: Print this message.\n");
+        printf(" q: Exit the application.\n");
       } else if (key == 'q') {
         printf("User requested shutdown.\n");
         exit(0);
@@ -176,6 +202,17 @@ class FilterHarness : public aos::vision::FilterHarness {
       HandleBlobs(imgs_last_, fmt_last_);
       viewer_->Redraw();
     };
+  }
+
+  void DrawContour(ContourNode *contour, PixelRef color) {
+    if (viewer_) {
+      for (ContourNode *node = contour; node->next != contour;) {
+        Vector<2> a(node->pt.x, node->pt.y);
+        Vector<2> b(node->next->pt.x, node->next->pt.y);
+        overlay_.AddLine(a, b, color);
+        node = node->next;
+      }
+    }
   }
 
   void DrawComponent(const TargetComponent &comp, PixelRef top_color,
@@ -252,6 +289,7 @@ class FilterHarness : public aos::vision::FilterHarness {
   BlobList imgs_last_;
   ImageFormat fmt_last_;
   bool draw_select_blob_ = false;
+  bool draw_contours_ = false;
   bool draw_raw_poly_ = false;
   bool draw_components_ = false;
   bool draw_raw_target_ = false;

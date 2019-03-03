@@ -4,6 +4,7 @@
 #include "aos/vision/blob/region_alloc.h"
 #include "aos/vision/blob/threshold.h"
 #include "aos/vision/blob/transpose.h"
+#include "aos/vision/blob/contour.h"
 #include "aos/vision/debug/overlay.h"
 #include "aos/vision/math/vector.h"
 #include "y2019/vision/target_types.h"
@@ -15,6 +16,7 @@ using aos::vision::ImageRange;
 using aos::vision::RangeImage;
 using aos::vision::BlobList;
 using aos::vision::Vector;
+using aos::vision::ContourNode;
 
 class TargetFinder {
  public:
@@ -28,8 +30,11 @@ class TargetFinder {
   // filter out obvious or durranged blobs.
   void PreFilter(BlobList *imgs);
 
+  ContourNode* GetContour(const RangeImage &blob);
+  void UnWarpContour(ContourNode* start) const;
+
   // Turn a blob into a polgygon.
-  std::vector<aos::vision::Segment<2>> FillPolygon(const RangeImage &blob,
+  std::vector<aos::vision::Segment<2>> FillPolygon(ContourNode *start,
                                                    bool verbose);
 
   // Turn a bloblist into components of a target.
