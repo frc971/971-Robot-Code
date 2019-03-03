@@ -71,23 +71,23 @@ const ElevatorWristPosition kPanelHPIntakeBackwardPos{0.04, -M_PI / 2.0};
 const ElevatorWristPosition kPanelForwardLowerPos{0.0, M_PI / 2.0};
 const ElevatorWristPosition kPanelBackwardLowerPos{0.0, -M_PI / 2.0};
 
-const ElevatorWristPosition kPanelForwardMiddlePos{0.7412, M_PI / 2.0};
-const ElevatorWristPosition kPanelBackwardMiddlePos{0.7412, -M_PI / 2.0};
+const ElevatorWristPosition kPanelForwardMiddlePos{0.75, M_PI / 2.0};
+const ElevatorWristPosition kPanelBackwardMiddlePos{0.78, -M_PI / 2.0};
 
-const ElevatorWristPosition kPanelForwardUpperPos{1.4524, M_PI / 2.0};
-const ElevatorWristPosition kPanelBackwardUpperPos{1.4524, -M_PI / 2.0};
+const ElevatorWristPosition kPanelForwardUpperPos{1.51, M_PI / 2.0};
+const ElevatorWristPosition kPanelBackwardUpperPos{1.50, -M_PI / 2.0};
 
-const ElevatorWristPosition kBallForwardLowerPos{0.0, 0.98};
-const ElevatorWristPosition kBallBackwardLowerPos{0.607, -2.281};
+const ElevatorWristPosition kBallForwardLowerPos{0.4598, 1.5863};
+const ElevatorWristPosition kBallBackwardLowerPos{0.175, -1.61};
 
-const ElevatorWristPosition kBallForwardMiddlePos{0.67945, 1.22};
-const ElevatorWristPosition kBallBackwardMiddlePos{0.93345, -1.83};
+const ElevatorWristPosition kBallForwardMiddlePos{1.16, 1.546};
+const ElevatorWristPosition kBallBackwardMiddlePos{0.876021, -1.546};
 
-const ElevatorWristPosition kBallForwardUpperPos{1.41605, 1.22};
-const ElevatorWristPosition kBallBackwardUpperPos{1.41605, -1.36};
+const ElevatorWristPosition kBallForwardUpperPos{1.50, 0.961};
+const ElevatorWristPosition kBallBackwardUpperPos{1.41, -1.217};
 
-const ElevatorWristPosition kBallCargoForwardPos{0.73025, M_PI / 2};
-const ElevatorWristPosition kBallCargoBackwardPos{0.80645, -1.92};
+const ElevatorWristPosition kBallCargoForwardPos{0.699044, 1.353};
+const ElevatorWristPosition kBallCargoBackwardPos{0.828265, -1.999};
 
 const ElevatorWristPosition kBallHPIntakeForwardPos{0.340, 0.737};
 const ElevatorWristPosition kBallHPIntakeBackwardPos{0.52, -1.1};
