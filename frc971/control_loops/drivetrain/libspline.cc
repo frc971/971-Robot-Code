@@ -197,9 +197,9 @@ extern "C" {
   void TrajectoryGetPlanXVA(::std::vector<::Eigen::Matrix<double, 3, 1>> *vec,
                             double *X, double *V, double *A) {
     for (size_t i = 0; i < vec->size(); ++i) {
-      X[i] = (*vec)[0][0];
-      V[i] = (*vec)[0][1];
-      A[i] = (*vec)[0][2];
+      X[i] = (*vec)[i][0];
+      V[i] = (*vec)[i][1];
+      A[i] = (*vec)[i][2];
     }
   }
 
