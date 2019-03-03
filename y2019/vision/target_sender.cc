@@ -390,6 +390,7 @@ int main(int argc, char **argv) {
 
             switch (calibration.camera_command) {
               case CameraCommand::kNormal:
+              case CameraCommand::kAs:
                 break;
               case CameraCommand::kUsb:
                 return 0;

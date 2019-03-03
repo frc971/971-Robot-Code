@@ -87,6 +87,12 @@ struct TransmitBuffer {
       buffer.PushSingle(0);
     }
   }
+
+  void FillAs() {
+    while (!buffer.full()) {
+      buffer.PushSingle('a');
+    }
+  }
 };
 
 InterruptBufferedSpi *global_spi_instance = nullptr;
@@ -368,7 +374,8 @@ class DebugLight {
   aos::monotonic_clock::time_point last_cycle_start_ =
       aos::monotonic_clock::min_time;
 
-  aos::monotonic_clock::duration next_off_time_ = std::chrono::milliseconds(100);
+  aos::monotonic_clock::duration next_off_time_ =
+      std::chrono::milliseconds(100);
   aos::monotonic_clock::time_point current_off_point_ =
       aos::monotonic_clock::min_time;
 };
@@ -682,30 +689,38 @@ __attribute__((unused)) void TransferData(
     }
     {
       const auto now = aos::monotonic_clock::now();
-      if (last_camera_send + std::chrono::milliseconds(1000) < now) {
-        last_camera_send = now;
-        CameraCalibration calibration{};
-        calibration.teensy_now = aos::monotonic_clock::now();
-        calibration.realtime_now = aos::realtime_clock::min_time;
-        if (last_roborio_camera_command != CameraCommand::kNormal) {
-          calibration.camera_command = last_roborio_camera_command;
-        } else {
-          calibration.camera_command = stdin_camera_command;
+      CameraCommand current_camera_command = CameraCommand::kNormal;
+      if (last_roborio_camera_command != CameraCommand::kNormal) {
+        current_camera_command = last_roborio_camera_command;
+      } else {
+        current_camera_command = stdin_camera_command;
+      }
+      if (current_camera_command == CameraCommand::kUsb) {
+        debug_light.set_next_off_time(std::chrono::milliseconds(900));
+      } else if (current_camera_command == CameraCommand::kCameraPassthrough) {
+        debug_light.set_next_off_time(std::chrono::milliseconds(500));
+      } else {
+        debug_light.set_next_off_time(std::chrono::milliseconds(100));
+      }
+
+      if (current_camera_command == CameraCommand::kAs) {
+        for (size_t i = 0; i < transmit_buffers.size(); ++i) {
+          transmit_buffers[i].FillAs();
         }
-        if (calibration.camera_command == CameraCommand::kUsb) {
-          debug_light.set_next_off_time(std::chrono::milliseconds(900));
-        } else if (calibration.camera_command ==
-                   CameraCommand::kCameraPassthrough) {
-          debug_light.set_next_off_time(std::chrono::milliseconds(500));
-        } else {
-          debug_light.set_next_off_time(std::chrono::milliseconds(100));
+      } else {
+        if (last_camera_send + std::chrono::milliseconds(1000) < now) {
+          last_camera_send = now;
+          CameraCalibration calibration{};
+          calibration.teensy_now = aos::monotonic_clock::now();
+          calibration.realtime_now = aos::realtime_clock::min_time;
+          calibration.camera_command = current_camera_command;
+          // TODO(Brian): Actually fill out the calibration field.
+          transmit_buffers[0].MaybeWritePacket(calibration);
+          transmit_buffers[1].MaybeWritePacket(calibration);
+          transmit_buffers[2].MaybeWritePacket(calibration);
+          transmit_buffers[3].MaybeWritePacket(calibration);
+          transmit_buffers[4].MaybeWritePacket(calibration);
         }
-        // TODO(Brian): Actually fill out the calibration field.
-        transmit_buffers[0].MaybeWritePacket(calibration);
-        transmit_buffers[1].MaybeWritePacket(calibration);
-        transmit_buffers[2].MaybeWritePacket(calibration);
-        transmit_buffers[3].MaybeWritePacket(calibration);
-        transmit_buffers[4].MaybeWritePacket(calibration);
       }
       for (TransmitBuffer &transmit_buffer : transmit_buffers) {
         transmit_buffer.Tick(now);
@@ -727,6 +742,10 @@ __attribute__((unused)) void TransferData(
           case 'n':
             printf("Entering normal mode\n");
             stdin_camera_command = CameraCommand::kNormal;
+            break;
+          case 'a':
+            printf("Entering all-A mode\n");
+            stdin_camera_command = CameraCommand::kAs;
             break;
           default:
             printf("Unrecognized character\n");

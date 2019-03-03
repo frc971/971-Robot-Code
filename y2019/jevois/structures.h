@@ -141,6 +141,9 @@ enum class CameraCommand : char {
   kCameraPassthrough,
   // Go to being a useful USB device.
   kUsb,
+  // Send As, which triggers the bootstrap script to drop directly into USB
+  // mode.
+  kAs,
 };
 
 // This is all the information sent from the Teensy to each camera.
