@@ -252,6 +252,8 @@ SpiTransfer SpiPackToTeensy(const RoborioToTeensy &message) {
     memcpy(remaining_space.data(), &realtime_now, sizeof(realtime_now));
     remaining_space = remaining_space.subspan(sizeof(realtime_now));
   }
+  memcpy(remaining_space.data(), &message.camera_command, 1);
+  remaining_space = remaining_space.subspan(1);
   {
     uint16_t crc = jevois_crc_init();
     crc = jevois_crc_update(crc, transfer.data(),
@@ -281,6 +283,8 @@ tl::optional<RoborioToTeensy> SpiUnpackToTeensy(
         aos::realtime_clock::duration(realtime_now));
     remaining_input = remaining_input.subspan(sizeof(realtime_now));
   }
+  memcpy(&message.camera_command, remaining_input.data(), 1);
+  remaining_input = remaining_input.subspan(1);
   {
     uint16_t calculated_crc = jevois_crc_init();
     calculated_crc =

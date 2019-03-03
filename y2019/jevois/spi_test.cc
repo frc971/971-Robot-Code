@@ -107,7 +107,28 @@ TEST(SpiToRoborioPackTest, Target) {
 
 // Tests packing and then unpacking an empty message.
 TEST(SpiToTeensyPackTest, Empty) {
+  RoborioToTeensy input_message{};
+  const SpiTransfer transfer = SpiPackToTeensy(input_message);
+  const auto output_message = SpiUnpackToTeensy(transfer);
+  ASSERT_TRUE(output_message);
+  EXPECT_EQ(input_message, output_message.value());
+}
+
+// Tests packing and then unpacking a message with all the fields set.
+TEST(SpiToTeensyPackTest, Full) {
   RoborioToTeensy input_message;
+  input_message.beacon_brightness[0] = 9;
+  input_message.beacon_brightness[1] = 7;
+  input_message.beacon_brightness[2] = 1;
+  input_message.light_rings[0] = 1;
+  input_message.light_rings[1] = 0;
+  input_message.light_rings[2] = 0;
+  input_message.light_rings[3] = 1;
+  input_message.light_rings[4] = 0;
+  input_message.realtime_now =
+      aos::realtime_clock::epoch() + std::chrono::seconds(971254);
+  input_message.camera_command = CameraCommand::kUsb;
+
   const SpiTransfer transfer = SpiPackToTeensy(input_message);
   const auto output_message = SpiUnpackToTeensy(transfer);
   ASSERT_TRUE(output_message);

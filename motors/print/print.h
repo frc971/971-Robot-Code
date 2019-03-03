@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "aos/containers/sized_array.h"
 #include "motors/core/kinetis.h"
 #include "third_party/GSL/include/gsl/gsl"
 
@@ -29,6 +30,11 @@ class PrintingImplementation {
   // Writes something to a separate debug stream. Some implementations will
   // always ignore this, and others will ignore it under some conditions.
   virtual int WriteDebug(gsl::span<const char> buffer) { return buffer.size(); }
+
+  // Reads any characters which are available (never blocks).
+  //
+  // The default never returns any data.
+  virtual aos::SizedArray<char, 4> ReadStdin() { return {}; }
 };
 
 // A trivial printing "implementation" which simply does nothing. This is used

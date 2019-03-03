@@ -28,6 +28,12 @@ class UsbPrinting final : public PrintingImplementation {
     return debug_tty_->Write(buffer.data(), buffer.size());
   }
 
+  aos::SizedArray<char, 4> ReadStdin() override {
+    aos::SizedArray<char, 4> result;
+    result.set_size(stdout_tty_->Read(result.data(), result.max_size()));
+    return result;
+  }
+
  private:
   teensy::AcmTty *const stdout_tty_;
   teensy::AcmTty *const debug_tty_;
@@ -48,6 +54,12 @@ class DedicatedUsbPrinting final : public PrintingImplementation {
 
   int WriteDebug(gsl::span<const char> buffer) override {
     return debug_tty_.Write(buffer.data(), buffer.size());
+  }
+
+  aos::SizedArray<char, 4> ReadStdin() override {
+    aos::SizedArray<char, 4> result;
+    result.set_size(stdout_tty_.Read(result.data(), result.max_size()));
+    return result;
   }
 
  private:

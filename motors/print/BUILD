@@ -8,6 +8,7 @@ cc_library(
     restricted_to = mcu_cpus,
     visibility = ["//visibility:public"],
     deps = [
+        "//aos/containers:sized_array",
         "//motors/core",
         "//third_party/GSL",
     ],

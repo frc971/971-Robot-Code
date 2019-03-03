@@ -66,8 +66,7 @@ TEST(UartToCameraTest, Basic) {
   input_message.teensy_now =
       aos::monotonic_clock::time_point(std::chrono::seconds(1678));
   input_message.realtime_now = aos::realtime_clock::min_time;
-  input_message.camera_command =
-      CameraCalibration::CameraCommand::kCameraPassthrough;
+  input_message.camera_command = CameraCommand::kCameraPassthrough;
   const UartToCameraBuffer buffer = UartPackToCamera(input_message);
   const auto output_message = UartUnpackToCamera(buffer);
   ASSERT_TRUE(output_message);
