@@ -251,12 +251,8 @@ class HybridEkf {
                    StateSquare *P) {
     StateSquare A_c = AForState(*state);
     StateSquare A_d;
-    Eigen::Matrix<Scalar, kNStates, 0> dummy_B;
-    controls::C2D<Scalar, kNStates, 0>(
-        A_c, Eigen::Matrix<Scalar, kNStates, 0>::Zero(), dt, &A_d, &dummy_B);
     StateSquare Q_d;
-    controls::DiscretizeQ(Q_continuous_, A_c, dt, &Q_d);
-    *P = A_d * *P * A_d.transpose() + Q_d;
+    controls::DiscretizeQAFast(Q_continuous_, A_c, dt, &Q_d, &A_d);
 
     *state = RungeKuttaU(
         [this](const State &X,
@@ -264,6 +260,9 @@ class HybridEkf {
         *state, U,
         ::std::chrono::duration_cast<::std::chrono::duration<double>>(dt)
             .count());
+
+    StateSquare Ptemp = A_d * *P * A_d.transpose() + Q_d;
+    *P = Ptemp;
   }
 
   void CorrectImpl(const Eigen::Matrix<Scalar, kNOutputs, kNOutputs> &R,
@@ -274,8 +273,9 @@ class HybridEkf {
     Eigen::Matrix<Scalar, kNStates, kNOutputs> PH = *P * H.transpose();
     Eigen::Matrix<Scalar, kNOutputs, kNOutputs> S = H * PH + R;
     Eigen::Matrix<Scalar, kNStates, kNOutputs> K = PH * S.inverse();
-    *state = *state + K * err;
-    *P = (StateSquare::Identity() - K * H) * *P;
+    *state += K * err;
+    StateSquare Ptemp = (StateSquare::Identity() - K * H) * *P;
+    *P = Ptemp;
   }
 
   void ProcessObservation(Observation *obs, const std::chrono::nanoseconds dt,

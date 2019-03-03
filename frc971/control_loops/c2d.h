@@ -64,8 +64,60 @@ void DiscretizeQ(
   Eigen::Matrix<Scalar, num_states, num_states> phi22 =
       phi.block(num_states, num_states, num_states, num_states);
 
-  *Q_d = phi22.transpose() * phi12;
-  *Q_d = (*Q_d + Q_d->transpose()) / static_cast<Scalar>(2.0);
+  Qtemp = phi22.transpose() * phi12;
+  *Q_d = (Qtemp + Qtemp.transpose()) / static_cast<Scalar>(2.0);
+}
+
+// Does a faster approximation for the discretizing A/Q, for if solving a 2Nx2N
+// matrix exponential is too expensive.
+// Basic reasoning/method:
+// The original algorithm does a matrix exponential on a 2N x 2N matrix (the
+// block matrix made of of A and Q). This is extremely expensive for larg-ish
+// matrices. This function takes advantage of the structure of the matrix
+// we are taking the exponential and notes that we care about two things:
+// 1) The exponential of A*t, which is only NxN and so is relatively cheap.
+// 2) The upper-right quarter of the 2Nx2N matrix, which we can approximate
+//    using a taylor series to several terms and still be substantially cheaper
+//    than taking the big exponential.
+template <typename Scalar, int num_states>
+void DiscretizeQAFast(
+    const Eigen::Matrix<Scalar, num_states, num_states> &Q_continuous,
+    const Eigen::Matrix<Scalar, num_states, num_states> &A_continuous,
+    ::std::chrono::nanoseconds dt,
+    Eigen::Matrix<Scalar, num_states, num_states> *Q_d,
+    Eigen::Matrix<Scalar, num_states, num_states> *A_d) {
+  Eigen::Matrix<Scalar, num_states, num_states> Qtemp =
+      (Q_continuous + Q_continuous.transpose()) / static_cast<Scalar>(2.0);
+  Scalar dt_d =
+      ::std::chrono::duration_cast<::std::chrono::duration<Scalar>>(dt).count();
+  Eigen::Matrix<Scalar, num_states, num_states> last_term = Qtemp;
+  double last_coeff = dt_d;
+  const Eigen::Matrix<Scalar, num_states, num_states> At =
+      A_continuous.transpose();
+  Eigen::Matrix<Scalar, num_states, num_states> Atn = At;
+  Eigen::Matrix<Scalar, num_states, num_states> phi12 = last_term * last_coeff;
+  Eigen::Matrix<Scalar, num_states, num_states> phi22 =
+      At.Identity() + Atn * last_coeff;
+  // TODO(james): Tune this once we have the robot up; ii < 6 is enough to get
+  // beyond any real numerical issues. 5 should be fine, but just happened to
+  // kick a test over to failing. 4 would probably work.
+  for (int ii = 2; ii < 6; ++ii) {
+    Eigen::Matrix<Scalar, num_states, num_states> next_term =
+        -A_continuous * last_term + Qtemp * Atn;
+    last_coeff *= dt_d / static_cast<Scalar>(ii);
+    phi12 += next_term * last_coeff;
+
+    last_term = next_term;
+
+    Atn *= At;
+    phi22 += last_coeff * Atn;
+  }
+  Eigen::Matrix<Scalar, num_states, num_states> phi22t =
+    phi22.transpose();
+
+  Qtemp = phi22t * phi12;
+  *Q_d = (Qtemp + Qtemp.transpose()) / static_cast<Scalar>(2.0);
+  *A_d = phi22t;
 }
 
 }  // namespace controls

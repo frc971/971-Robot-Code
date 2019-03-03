@@ -69,6 +69,21 @@ TEST_F(C2DTest, DiscretizeQ) {
       << "\nQ_d_integrated:\n" << Q_d_integrated;
 }
 
+// Tests that the "fast" discretization produces nearly identical results.
+TEST_F(C2DTest, DiscretizeQAFast) {
+  Eigen::Matrix<double, 2, 2> Q_d;
+  Eigen::Matrix<double, 2, 2> Q_d_fast;
+  Eigen::Matrix<double, 2, 2> A_d;
+  Eigen::Matrix<double, 2, 2> A_d_fast;
+  Eigen::Matrix<double, 2, 1> B_d;
+  const auto dt = ::std::chrono::seconds(1);
+  DiscretizeQ(Q_continuous, A_continuous, dt, &Q_d);
+  C2D(A_continuous, B_continuous, dt, &A_d, &B_d);
+  DiscretizeQAFast(Q_continuous, A_continuous, dt, &Q_d_fast, &A_d_fast);
+  EXPECT_LT((Q_d - Q_d_fast).norm(), 1e-20);
+  EXPECT_LT((A_d - A_d_fast).norm(), 1e-20);
+}
+
 }  // namespace testing
 }  // namespace controls
 }  // namespace frc971
