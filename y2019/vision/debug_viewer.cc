@@ -194,6 +194,7 @@ class FilterHarness : public aos::vision::FilterHarness {
         printf(" n: Toggle drawing countours before and after warping.\n");
         printf(" m: Toggle drawing raw blob data (may need to change image to toggle a redraw).\n");
         printf(" h: Print this message.\n");
+        printf(" a: May log camera image to /tmp/debug_viewer_jpeg_<#>.yuyv"
         printf(" q: Exit the application.\n");
       } else if (key == 'q') {
         printf("User requested shutdown.\n");

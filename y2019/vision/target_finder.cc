@@ -38,41 +38,41 @@ ContourNode* TargetFinder::GetContour(const RangeImage &blob) {
   return RangeImgToContour(blob, &alloc_);
 }
 
-// TODO(ben): These values will be moved into a configuration file.
+// TODO(ben): These values will be moved into the constants.h file.
 namespace {
 
-constexpr double mtx00 = 481.4957;
-constexpr double mtx02 = 341.215;
-constexpr double mtx11 = 484.314;
-constexpr double mtx12 = 251.29;
+constexpr double f_x = 481.4957;
+constexpr double c_x = 341.215;
+constexpr double f_y = 484.314;
+constexpr double c_y = 251.29;
 
-constexpr double new_cam00 = 363.1424;
-constexpr double new_cam02 = 337.9895;
-constexpr double new_cam11 = 366.4837;
-constexpr double new_cam12 = 240.0702;
+constexpr double f_x_prime = 363.1424;
+constexpr double c_x_prime = 337.9895;
+constexpr double f_y_prime = 366.4837;
+constexpr double c_y_prime = 240.0702;
 
-constexpr double dist00 = -0.2739;
-constexpr double dist01 = 0.01583;
-constexpr double dist04 = 0.04201;
+constexpr double k_1 = -0.2739;
+constexpr double k_2 = 0.01583;
+constexpr double k_3 = 0.04201;
 
 constexpr int iterations = 7;
 
 }
 
 Point UnWarpPoint(const Point &point, int iterations) {
-  const double x0 = ((double)point.x - mtx02) / mtx00;
-  const double y0 = ((double)point.y - mtx12) / mtx11;
+  const double x0 = ((double)point.x - c_x) / f_x;
+  const double y0 = ((double)point.y - c_y) / f_y;
   double x = x0;
   double y = y0;
   for (int i = 0; i < iterations; i++) {
     const double r_sqr = x * x + y * y;
     const double coeff =
-        1.0 + r_sqr * (dist00 + dist01 * r_sqr * (1.0 + dist04 * r_sqr));
+        1.0 + r_sqr * (k_1 + k_2 * r_sqr * (1.0 + k_3 * r_sqr));
     x = x0 / coeff;
     y = y0 / coeff;
   }
-  double nx = x * new_cam00 + new_cam02;
-  double ny = y * new_cam11 + new_cam12;
+  double nx = x * f_x_prime + c_x_prime;
+  double ny = y * f_y_prime + c_y_prime;
   Point p = {static_cast<int>(nx), static_cast<int>(ny)};
   return p;
 }
