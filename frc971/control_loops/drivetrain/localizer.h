@@ -40,6 +40,8 @@ class LocalizerInterface {
                       ::aos::monotonic_clock::time_point now,
                       double left_encoder, double right_encoder,
                       double gyro_rate, double longitudinal_accelerometer) = 0;
+  // Reset the absolute position of the estimator.
+  virtual void ResetPosition(double x, double y, double theta) = 0;
   // There are several subtly different norms floating around for state
   // matrices. In order to avoid that mess, we jus tprovide direct accessors for
   // the values that most people care about.
@@ -91,6 +93,13 @@ class DeadReckonEkf : public LocalizerInterface {
                       double /*longitudinal_accelerometer*/) override {
     ekf_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate, U, now);
   }
+
+  void ResetPosition(double x, double y, double theta) override {
+    ekf_.ResetInitialState(
+        ::aos::monotonic_clock::now(),
+        (Ekf::State() << x, y, theta, 0, 0, 0, 0, 0, 0, 0).finished(),
+        ekf_.P());
+  };
 
   double x() const override { return ekf_.X_hat(StateIdx::kX); }
   double y() const override { return ekf_.X_hat(StateIdx::kY); }
