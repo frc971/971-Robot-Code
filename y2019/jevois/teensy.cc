@@ -333,6 +333,44 @@ SpiTransfer FrameQueue::MakeTransfer() {
   return SpiPackToRoborio(message);
 }
 
+// Manages turning the debug light on and off periodically.
+//
+// It blinks at 1Hz with a variable duty cycle.
+class DebugLight {
+ public:
+  static constexpr aos::monotonic_clock::duration period() {
+    return std::chrono::seconds(1);
+  }
+
+  void set_next_off_time(aos::monotonic_clock::duration next_off_time) {
+    next_off_time_ = next_off_time;
+  }
+
+  void Tick() {
+    const auto now = aos::monotonic_clock::now();
+    if (last_cycle_start_ == aos::monotonic_clock::min_time) {
+      last_cycle_start_ = now;
+      current_off_point_ = last_cycle_start_ + next_off_time_;
+    } else if (now > last_cycle_start_ + period()) {
+      last_cycle_start_ += period();
+      current_off_point_ = last_cycle_start_ + next_off_time_;
+    }
+    if (now > current_off_point_) {
+      GPIOC_PCOR = 1 << 5;
+    } else {
+      GPIOC_PSOR = 1 << 5;
+    }
+  }
+
+ private:
+  aos::monotonic_clock::time_point last_cycle_start_ =
+      aos::monotonic_clock::min_time;
+
+  aos::monotonic_clock::duration next_off_time_ = std::chrono::milliseconds(100);
+  aos::monotonic_clock::time_point current_off_point_ =
+      aos::monotonic_clock::min_time;
+};
+
 extern "C" {
 
 void *__stack_chk_guard = (void *)0x67111971;
@@ -588,9 +626,12 @@ __attribute__((unused)) void TransferData(
       aos::monotonic_clock::min_time;
   CameraCommand stdin_camera_command = CameraCommand::kNormal;
   CameraCommand last_roborio_camera_command = CameraCommand::kNormal;
+  DebugLight debug_light;
 
   bool first = true;
   while (true) {
+    debug_light.Tick();
+
     {
       const auto received_transfer = SpiQueue::global_instance->Tick();
       if (received_transfer) {
@@ -649,6 +690,14 @@ __attribute__((unused)) void TransferData(
           calibration.camera_command = last_roborio_camera_command;
         } else {
           calibration.camera_command = stdin_camera_command;
+        }
+        if (calibration.camera_command == CameraCommand::kUsb) {
+          debug_light.set_next_off_time(std::chrono::milliseconds(900));
+        } else if (calibration.camera_command ==
+                   CameraCommand::kCameraPassthrough) {
+          debug_light.set_next_off_time(std::chrono::milliseconds(500));
+        } else {
+          debug_light.set_next_off_time(std::chrono::milliseconds(100));
         }
         // TODO(Brian): Actually fill out the calibration field.
         transmit_buffers[0].MaybeWritePacket(calibration);
