@@ -150,15 +150,14 @@ class FilterHarness : public aos::vision::FilterHarness {
     // Use the solver to generate an intermediate version of our results.
     std::vector<IntermediateResult> results;
     for (const Target &target : target_list) {
-      results.emplace_back(finder_.ProcessTargetToResult(target, true));
+      results.emplace_back(finder_.ProcessTargetToResult(target, draw_raw_IR_));
       if (draw_raw_IR_) DrawResult(results.back(), {255, 128, 0});
     }
 
     // Check that our current results match possible solutions.
-    results = finder_.FilterResults(results);
+    results = finder_.FilterResults(results, 0);
     if (draw_results_) {
       for (const IntermediateResult &res : results) {
-        DrawResult(res, {0, 255, 0});
         DrawTarget(res, {0, 255, 0});
       }
     }
@@ -194,7 +193,7 @@ class FilterHarness : public aos::vision::FilterHarness {
         printf(" n: Toggle drawing countours before and after warping.\n");
         printf(" m: Toggle drawing raw blob data (may need to change image to toggle a redraw).\n");
         printf(" h: Print this message.\n");
-        printf(" a: May log camera image to /tmp/debug_viewer_jpeg_<#>.yuyv"
+        printf(" a: May log camera image to /tmp/debug_viewer_jpeg_<#>.yuyv\n");
         printf(" q: Exit the application.\n");
       } else if (key == 'q') {
         printf("User requested shutdown.\n");

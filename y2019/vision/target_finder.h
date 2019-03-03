@@ -49,7 +49,7 @@ class TargetFinder {
   IntermediateResult ProcessTargetToResult(const Target &target, bool verbose);
 
   std::vector<IntermediateResult> FilterResults(
-      const std::vector<IntermediateResult> &results);
+      const std::vector<IntermediateResult> &results, uint64_t print_rate);
 
   // Get the local overlay for debug if we are doing that.
   aos::vision::PixelLinesOverlay *GetOverlay() { return &overlay_; }
@@ -78,6 +78,10 @@ class TargetFinder {
   IntrinsicParams intrinsics_;
 
   ExtrinsicParams default_extrinsics_;
+
+  // Counts for logging.
+  size_t frame_count_;
+  size_t valid_result_count_;
 };
 
 }  // namespace vision

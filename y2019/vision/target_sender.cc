@@ -289,12 +289,11 @@ int main(int argc, char **argv) {
 
   TargetFinder finder_;
 
-  // Check that our current results match possible solutions.
   aos::vision::CameraParams params0;
-  params0.set_exposure(400);
+  params0.set_exposure(50);
   params0.set_brightness(40);
   params0.set_width(640);
-  // params0.set_fps(10);
+  params0.set_fps(15);
   params0.set_height(480);
 
   ::std::unique_ptr<CameraStream> camera0(
@@ -302,9 +301,11 @@ int main(int argc, char **argv) {
   camera0->set_on_frame([&](DataRef data,
                             monotonic_clock::time_point monotonic_now) {
     aos::vision::ImageFormat fmt{640, 480};
+    // Use threshold from aos::vision. This will run at 15 FPS.
     aos::vision::BlobList imgs =
-        aos::vision::FindBlobs(::DoThresholdYUYV(fmt, data.data(), 120));
+        aos::vision::FindBlobs(aos::vision::DoThresholdYUYV(fmt, data.data(), 120));
     finder_.PreFilter(&imgs);
+    LOG(INFO, "Blobs: (%zu).\n", imgs.size());
 
     bool verbose = false;
     std::vector<std::vector<Segment<2>>> raw_polys;
@@ -317,22 +318,27 @@ int main(int argc, char **argv) {
         raw_polys.push_back(polygon);
       }
     }
+    LOG(INFO, "Polygons: (%zu).\n", raw_polys.size());
 
     // Calculate each component side of a possible target.
     std::vector<TargetComponent> target_component_list =
         finder_.FillTargetComponentList(raw_polys);
+    LOG(INFO, "Components: (%zu).\n", target_component_list.size());
 
     // Put the compenents together into targets.
     std::vector<Target> target_list =
         finder_.FindTargetsFromComponents(target_component_list, verbose);
+    LOG(INFO, "Potential Target: (%zu).\n", target_list.size());
 
     // Use the solver to generate an intermediate version of our results.
     std::vector<IntermediateResult> results;
     for (const Target &target : target_list) {
       results.emplace_back(finder_.ProcessTargetToResult(target, verbose));
     }
+    LOG(INFO, "Raw Results: (%zu).\n", results.size());
 
-    results = finder_.FilterResults(results);
+    results = finder_.FilterResults(results, 30);
+    LOG(INFO, "Results: (%zu).\n", results.size());
 
     // TODO: Select top 3 (randomly?)
 

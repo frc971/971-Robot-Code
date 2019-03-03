@@ -7,8 +7,11 @@ bazel build ${BAZEL_OPTIONS} \
     //y2019/vision:target_sender \
     //y2019/vision:serial_waiter
 
-echo "Mount jevois ..."
-./jevois-cmd usbsd
+if [ ! -d /media/$USER/JEVOIS ]
+then
+  echo "Mount jevois at /media/$USER/JEVOIS ..."
+  ./jevois-cmd usbsd
+fi
 
 echo "Waiting for fs ..."
 while [ ! -d /media/$USER/JEVOIS ]

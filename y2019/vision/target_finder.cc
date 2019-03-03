@@ -419,13 +419,24 @@ std::vector<Target> TargetFinder::FindTargetsFromComponents(
 }
 
 std::vector<IntermediateResult> TargetFinder::FilterResults(
-    const std::vector<IntermediateResult> &results) {
+    const std::vector<IntermediateResult> &results, uint64_t print_rate) {
   std::vector<IntermediateResult> filtered;
   for (const IntermediateResult &res : results) {
     if (res.solver_error < 75.0) {
       filtered.emplace_back(res);
     }
   }
+  frame_count_++;
+  if (!filtered.empty()) {
+    valid_result_count_++;
+  }
+  if (print_rate > 0 && frame_count_ > print_rate) {
+    LOG(INFO, "Found (%zu / %zu)(%.2f) targets.\n", valid_result_count_,
+        frame_count_, (double)valid_result_count_ / (double)frame_count_);
+    frame_count_ = 0;
+    valid_result_count_ = 0;
+  }
+
   return filtered;
 }
 
