@@ -161,7 +161,7 @@ extern "C" {
 
   // This assumes that res is created in python to be getPathLength() long.
   // Likely to SEGFAULT otherwise.
-  void Distances(Trajectory *t, double *res) {
+  void TrajectoryDistances(Trajectory *t, double *res) {
     const ::std::vector<double> &distances = t->Distances();
     ::std::memcpy(res, distances.data(), sizeof(double) * distances.size());
   }
