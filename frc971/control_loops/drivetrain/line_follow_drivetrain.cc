@@ -233,6 +233,15 @@ void LineFollowDrivetrain::Update(
   U_ *= (maxU > kMaxVoltage) ? kMaxVoltage / maxU : 1.0;
 }
 
+void LineFollowDrivetrain::PopulateStatus(
+    ::frc971::control_loops::DrivetrainQueue::Status *status) const {
+  status->line_follow_logging.frozen = freeze_target_;
+  status->line_follow_logging.have_target = have_target_;
+  status->line_follow_logging.x = target_pose_.abs_pos().x();
+  status->line_follow_logging.y = target_pose_.abs_pos().y();
+  status->line_follow_logging.theta = target_pose_.abs_theta();
+}
+
 }  // namespace drivetrain
 }  // namespace control_loops
 }  // namespace frc971

@@ -732,6 +732,15 @@ TEST_F(DrivetrainTest, BasicLineFollow) {
   goal.Send();
 
   RunForTime(chrono::seconds(5));
+
+  my_drivetrain_queue_.status.FetchLatest();
+  EXPECT_TRUE(my_drivetrain_queue_.status->line_follow_logging.frozen);
+  EXPECT_TRUE(my_drivetrain_queue_.status->line_follow_logging.have_target);
+  EXPECT_EQ(1.0, my_drivetrain_queue_.status->line_follow_logging.x);
+  EXPECT_EQ(1.0, my_drivetrain_queue_.status->line_follow_logging.y);
+  EXPECT_FLOAT_EQ(M_PI_4,
+                  my_drivetrain_queue_.status->line_follow_logging.theta);
+
   // Should have run off the end of the target, running along the y=x line.
   EXPECT_LT(1.0, drivetrain_motor_plant_.GetPosition().x());
   EXPECT_NEAR(drivetrain_motor_plant_.GetPosition().x(),
