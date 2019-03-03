@@ -69,17 +69,17 @@ void DebugPrint(const BlobList &blobl) {
   RangeImage rimg = MergeRangeImage(blobl);
   int minx = rimg.ranges()[0][0].st;
   int maxx = 0;
-  for (const auto &range : rimg.ranges()) {
-    for (const auto &span : range) {
+  for (const std::vector<ImageRange> &range : rimg.ranges()) {
+    for (const ImageRange &span : range) {
       if (span.st < minx) minx = span.st;
       if (span.ed > maxx) maxx = span.ed;
     }
   }
   printf("maxx: %d minx: %d\n", maxx, minx);
   char buf[maxx - minx];
-  for (const auto &range : rimg.ranges()) {
+  for (const std::vector<ImageRange> &range : rimg.ranges()) {
     int i = minx;
-    for (const auto &span : range) {
+    for (const ImageRange &span : range) {
       for (; i < span.st; ++i) buf[i - minx] = ' ';
       for (; i < span.ed; ++i) buf[i - minx] = '#';
     }

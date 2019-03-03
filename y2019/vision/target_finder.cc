@@ -39,33 +39,39 @@ std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
     const RangeImage &blob, bool verbose) {
   if (verbose) printf("Process Polygon.\n");
   alloc_.reset();
-  auto *st = RangeImgToContour(blob, &alloc_);
+  ContourNode *start = RangeImgToContour(blob, &alloc_);
 
   struct Pt {
     float x;
     float y;
   };
-  std::vector<Pt> pts;
+  std::vector<Pt> points;
 
   // Collect all slopes from the contour.
-  auto opt = st->pt;
-  for (auto *node = st; node->next != st;) {
+  Point previous_point = start->pt;
+  for (ContourNode *node = start; node->next != start;) {
     node = node->next;
 
-    auto npt = node->pt;
+    Point current_point = node->pt;
 
-    pts.push_back(
-        {static_cast<float>(npt.x - opt.x), static_cast<float>(npt.y - opt.y)});
+    points.push_back({static_cast<float>(current_point.x - previous_point.x),
+                      static_cast<float>(current_point.y - previous_point.y)});
 
-    opt = npt;
+    previous_point = current_point;
   }
 
-  const int n = pts.size();
-  auto get_pt = [&](int i) { return pts[(i + n * 2) % n]; };
+  const int num_points = points.size();
+  auto get_pt = [&points, num_points](int i) {
+    return points[(i + num_points * 2) % num_points];
+  };
 
-  std::vector<Pt> pts_new = pts;
-  auto run_box_filter = [&](int window_size) {
-    for (size_t i = 0; i < pts.size(); ++i) {
+  std::vector<Pt> filtered_points = points;
+  // Three box filter makith a guassian?
+  // Run gaussian filter over the slopes 3 times.  That'll get us pretty close
+  // to running a gausian over it.
+  for (int k = 0; k < 3; ++k) {
+    const int window_size = 2;
+    for (size_t i = 0; i < points.size(); ++i) {
       Pt a{0.0, 0.0};
       for (int j = -window_size; j <= window_size; ++j) {
         Pt p = get_pt(j + i);
@@ -75,25 +81,20 @@ std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
       a.x /= (window_size * 2 + 1);
       a.y /= (window_size * 2 + 1);
 
-      float scale = 1.0 + (i / float(pts.size() * 10));
+      const float scale = 1.0 + (i / float(points.size() * 10));
       a.x *= scale;
       a.y *= scale;
-      pts_new[i] = a;
+      filtered_points[i] = a;
     }
-    pts = pts_new;
-  };
-  // Three box filter makith a guassian?
-  // Run gaussian filter over the slopes.
-  run_box_filter(2);
-  run_box_filter(2);
-  run_box_filter(2);
+    points = filtered_points;
+  }
 
   // Heuristic which says if a particular slope is part of a corner.
   auto is_corner = [&](size_t i) {
-    Pt a = get_pt(i - 3);
-    Pt b = get_pt(i + 3);
-    double dx = (a.x - b.x);
-    double dy = (a.y - b.y);
+    const Pt a = get_pt(i - 3);
+    const Pt b = get_pt(i + 3);
+    const double dx = (a.x - b.x);
+    const double dy = (a.y - b.y);
     return dx * dx + dy * dy > 0.25;
   };
 
@@ -102,11 +103,11 @@ std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
   // Find all centers of corners.
   // Because they round, multiple points may be a corner.
   std::vector<size_t> edges;
-  size_t kBad = pts.size() + 10;
+  size_t kBad = points.size() + 10;
   size_t prev_up = kBad;
   size_t wrapped_n = prev_up;
 
-  for (size_t i = 0; i < pts.size(); ++i) {
+  for (size_t i = 0; i < points.size(); ++i) {
     bool v = is_corner(i);
     if (prev_v && !v) {
       if (prev_up == kBad) {
@@ -122,7 +123,7 @@ std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
   }
 
   if (wrapped_n != kBad) {
-    edges.push_back(((prev_up + pts.size() + wrapped_n - 1) / 2) % pts.size());
+    edges.push_back(((prev_up + points.size() + wrapped_n - 1) / 2) % points.size());
   }
 
   if (verbose) printf("Edge Count (%zu).\n", edges.size());
@@ -133,7 +134,7 @@ std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
   {
     std::vector<ContourNode *> segments_all;
 
-    for (ContourNode *node = st; node->next != st;) {
+    for (ContourNode *node = start; node->next != start;) {
       node = node->next;
       segments_all.push_back(node);
     }
@@ -147,12 +148,13 @@ std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
   std::vector<Segment<2>> seg_list;
   if (segments.size() == 4) {
     for (size_t i = 0; i < segments.size(); ++i) {
-      auto *ed = segments[(i + 1) % segments.size()];
-      auto *st = segments[i];
+      ContourNode *segment_end = segments[(i + 1) % segments.size()];
+      ContourNode *segment_start = segments[i];
       float mx = 0.0;
       float my = 0.0;
       int n = 0;
-      for (auto *node = st; node != ed; node = node->next) {
+      for (ContourNode *node = segment_start; node != segment_end;
+           node = node->next) {
         mx += node->pt.x;
         my += node->pt.y;
         ++n;
@@ -164,26 +166,27 @@ std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
       float xx = 0.0;
       float xy = 0.0;
       float yy = 0.0;
-      for (auto *node = st; node != ed; node = node->next) {
-        float x = node->pt.x - mx;
-        float y = node->pt.y - my;
+      for (ContourNode *node = segment_start; node != segment_end;
+           node = node->next) {
+        const float x = node->pt.x - mx;
+        const float y = node->pt.y - my;
         xx += x * x;
         xy += x * y;
         yy += y * y;
       }
 
       // TODO: Extract common to hierarchical merge.
-      float neg_b_over_2 = (xx + yy) / 2.0;
-      float c = (xx * yy - xy * xy);
+      const float neg_b_over_2 = (xx + yy) / 2.0;
+      const float c = (xx * yy - xy * xy);
 
-      float sqr = sqrt(neg_b_over_2 * neg_b_over_2 - c);
+      const float sqr = sqrt(neg_b_over_2 * neg_b_over_2 - c);
 
       {
-        float lam = neg_b_over_2 + sqr;
+        const float lam = neg_b_over_2 + sqr;
         float x = xy;
         float y = lam - xx;
 
-        float norm = sqrt(x * x + y * y);
+        const float norm = hypot(x, y);
         x /= norm;
         y /= norm;
 
@@ -212,7 +215,7 @@ std::vector<TargetComponent> TargetFinder::FillTargetComponentList(
     const std::vector<std::vector<Segment<2>>> &seg_list) {
   std::vector<TargetComponent> list;
   TargetComponent new_target;
-  for (const auto &poly : seg_list) {
+  for (const std::vector<Segment<2>> &poly : seg_list) {
     // Reject missized pollygons for now. Maybe rectify them here in the future;
     if (poly.size() != 4) continue;
     std::vector<Vector<2>> corners;
