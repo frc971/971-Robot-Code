@@ -51,8 +51,9 @@ void DatasetInfo::Dump(std::basic_ostream<char> *o) const {
      << "\"" << filename_prefix << "\",\n        " << num_images << ",\n    }";
 }
 
-void DumpCameraConstants(int camera_id, const CameraCalibration &value) {
-  std::ofstream o("y2019/vision/constants.cc");
+void DumpCameraConstants(const char *fname, int camera_id,
+                         const CameraCalibration &value) {
+  std::ofstream o(fname);
   o << R"(#include "y2019/vision/constants.h"
 
 namespace y2019 {

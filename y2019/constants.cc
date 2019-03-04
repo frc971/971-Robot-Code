@@ -16,6 +16,7 @@
 #include "y2019/control_loops/superstructure/intake/integral_intake_plant.h"
 #include "y2019/control_loops/superstructure/stilts/integral_stilts_plant.h"
 #include "y2019/control_loops/superstructure/wrist/integral_wrist_plant.h"
+#include "y2019/vision/constants.h"
 
 namespace y2019 {
 namespace constants {
@@ -39,6 +40,24 @@ constexpr double InchToMeters(double in) {
 }
 constexpr double DegToRad(double deg) {
   return deg * M_PI / 180.0;
+}
+
+// Populates camera Pose information from the calibrated vision constants.
+void FillCameraPoses(
+    uint32_t teensy_processor_id,
+    ::std::array<Values::CameraCalibration, Values::kNumCameras> *cameras) {
+  ::std::array<int, 5> camera_ids =
+      vision::CameraSerialNumbers(teensy_processor_id);
+  for (size_t ii = 0; ii < camera_ids.size(); ++ii) {
+    const vision::CameraCalibration *calibration =
+        vision::GetCamera(camera_ids[ii]);
+    if (calibration != nullptr) {
+      vision::CameraGeometry geometry = calibration->geometry;
+      *cameras->at(ii).pose.mutable_pos() << geometry.location[0],
+          geometry.location[1], geometry.location[2];
+      cameras->at(ii).pose.set_theta(geometry.heading);
+    }
+  }
 }
 
 const Values *DoGetValuesForTeam(uint16_t team) {
@@ -129,7 +148,12 @@ const Values *DoGetValuesForTeam(uint16_t team) {
                                 .nominal_skew_noise = 0.1,
                                 .nominal_height_noise = 0.01};
 
-  constexpr double kInchesToMeters = 0.0254;
+  // Deliberately make FOV a bit large so that we are overly conservative in
+  // our EKF.
+  for (auto &camera : r->cameras) {
+    camera.fov = M_PI_2 * 1.1;
+  }
+
   switch (team) {
     // A set of constants for tests.
     case 1:
@@ -144,11 +168,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       stilts_params->zeroing_constants.measured_absolute_position = 0.0;
       stilts->potentiometer_offset = 0.0;
 
-      // Deliberately make FOV a bit large so that we are overly conservative in
-      // our EKF.
-      for (auto &camera : r->cameras) {
-        camera.fov = M_PI_2 * 1.1;
-      }
+      // For the simulation, just place cameras at the center of the robot with
+      // nominal angles (back/sides + 15 degree offset front cameras).
       r->cameras[0].pose.set_theta(M_PI);
       r->cameras[1].pose.set_theta(0.26);
       r->cameras[2].pose.set_theta(-0.26);
@@ -194,23 +215,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       stilts_params->zeroing_constants.measured_absolute_position = 0.0;
       stilts->potentiometer_offset = 0.0;
 
-      // Deliberately make FOV a bit large so that we are overly conservative in
-      // our EKF.
-      for (auto &camera : r->cameras) {
-        camera.fov = M_PI_2 * 1.1;
-      }
-      // 0 - 2 ar ecurrently unpopulated:
-      r->cameras[0].pose.set_theta(M_PI);
-      r->cameras[1].pose.set_theta(0.26);
-      r->cameras[2].pose.set_theta(-0.26);
-      // 3 is front right
-      r->cameras[3].pose.set_theta(-12.2377 / 180.0 * M_PI);
-      *r->cameras[3].pose.mutable_pos() << 4.98126 * kInchesToMeters,
-          1.96988 * kInchesToMeters, 33.4276 * kInchesToMeters;
-      // 4 is back
-      r->cameras[4].pose.set_theta(M_PI + 2.581 * M_PI / 180.0);
-      *r->cameras[4].pose.mutable_pos() << -6.93309 * kInchesToMeters,
-          2.64735 * kInchesToMeters, 32.8758 * kInchesToMeters;
+      FillCameraPoses(vision::CodeBotTeensyId(), &r->cameras);
+
       break;
 
     default:

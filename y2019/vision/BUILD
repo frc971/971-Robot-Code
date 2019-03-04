@@ -12,10 +12,39 @@ VISION_TARGETS = [
 
 cc_library(
     name = "constants",
-    srcs = ["constants.cc"],
+    srcs = [
+        "constants.cc",
+        "constants_formatting.cc",
+    ],
     hdrs = ["constants.h"],
     compatible_with = mcu_cpus,
     visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "constants_formatting",
+    srcs = ["constants_formatting_main.cc"],
+    deps = [":constants"],
+)
+
+genrule(
+    name = "generate_constants",
+    outs = ["validate_constants.cc"],
+    cmd = "$(location :constants_formatting) $(OUTS)",
+    tools = [":constants_formatting"],
+)
+
+sh_test(
+    name = "constants_formatting_test",
+    srcs = ["constants_formatting_test.sh"],
+    args = [
+        "$(location :constants.cc)",
+        "$(location :validate_constants.cc)",
+    ],
+    data = [
+        ":constants.cc",
+        ":validate_constants.cc",
+    ],
 )
 
 cc_library(
@@ -104,7 +133,6 @@ cc_binary(
 cc_binary(
     name = "global_calibration",
     srcs = [
-        "constants_formatting.cc",
         "global_calibration.cc",
     ],
     restricted_to = VISION_TARGETS,

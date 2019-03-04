@@ -192,8 +192,6 @@ struct Values {
   PotAndAbsConstants stilts;
 
   struct CameraCalibration {
-    // constants matrix to send to camera for calibration.
-    Eigen::Matrix<float, 3, 4> for_camera;
     // Pose of the camera relative to the robot.
     ::frc971::control_loops::TypedPose<double> pose;
     // Field of view, in radians. This is total horizontal FOV, from left

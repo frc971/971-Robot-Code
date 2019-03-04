@@ -32,6 +32,7 @@ cc_library(
         "//y2019/control_loops/superstructure/intake:intake_plants",
         "//y2019/control_loops/superstructure/stilts:stilts_plants",
         "//y2019/control_loops/superstructure/wrist:wrist_plants",
+        "//y2019/vision:constants",
     ],
 )
 

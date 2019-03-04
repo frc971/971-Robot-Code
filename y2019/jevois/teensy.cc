@@ -389,15 +389,6 @@ uint32_t ProcessorIdentifier() {
   return r;
 }
 
-std::array<int, 5> CameraSerialNumbers() {
-  switch (ProcessorIdentifier()) {
-    case 0xffff322e: // CODE bot
-      return {{0, 0, 0, 16, 19}};
-    default:
-      return {{0, 0, 0, 0, 0}};
-  }
-}
-
 extern "C" {
 
 void *__stack_chk_guard = (void *)0x67111971;
@@ -770,7 +761,8 @@ __attribute__((unused)) void TransferData(
 
           for (int i = 0; i < 5; ++i) {
             const y2019::vision::CameraCalibration *const constants =
-                y2019::vision::GetCamera(CameraSerialNumbers()[i]);
+                y2019::vision::GetCamera(y2019::vision::CameraSerialNumbers(
+                    ProcessorIdentifier())[i]);
             (void)constants;
             calibration.calibration(0, 0) = constants->intrinsics.mount_angle;
             calibration.calibration(0, 1) = constants->intrinsics.focal_length;
@@ -807,8 +799,9 @@ __attribute__((unused)) void TransferData(
           case 'c':
             printf("This UART board is 0x%" PRIx32 "\n", ProcessorIdentifier());
             for (int i = 0; i < 5; ++i) {
-              printf("Camera slot %d's serial number is %d\n", i,
-                     CameraSerialNumbers()[i]);
+              printf(
+                  "Camera slot %d's serial number is %d\n", i,
+                  y2019::vision::CameraSerialNumbers(ProcessorIdentifier())[i]);
             }
             break;
           case 'v':

@@ -82,9 +82,9 @@ CameraCalibration camera_19 = {
         -0.341036 / 180.0 * M_PI, 324.626, 1.2545 / 180.0 * M_PI,
     },
     {
-        {{6.93309 * kInchesToMeters, -2.64735 * kInchesToMeters,
+        {{-6.93309 * kInchesToMeters, 2.64735 * kInchesToMeters,
           32.8758 * kInchesToMeters}},
-        2.58102 / 180.0 * M_PI,
+        -177.419 / 180.0 * M_PI,
     },
     {
         19,

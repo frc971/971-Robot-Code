@@ -247,7 +247,7 @@ void main(int argc, char **argv) {
   results.dataset = info;
   results.intrinsics = IntrinsicParams::get(&intrinsics[0]);
   results.geometry = CameraGeometry::get(&geometry[0]);
-  DumpCameraConstants(info.camera_id, results);
+  DumpCameraConstants("y2019/vision/constants.cc", info.camera_id, results);
 }
 
 }  // namespace y2019
