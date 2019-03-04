@@ -129,6 +129,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
                                 .nominal_skew_noise = 0.1,
                                 .nominal_height_noise = 0.01};
 
+  constexpr double kInchesToMeters = 0.0254;
   switch (team) {
     // A set of constants for tests.
     case 1:
@@ -192,6 +193,24 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
       stilts_params->zeroing_constants.measured_absolute_position = 0.0;
       stilts->potentiometer_offset = 0.0;
+
+      // Deliberately make FOV a bit large so that we are overly conservative in
+      // our EKF.
+      for (auto &camera : r->cameras) {
+        camera.fov = M_PI_2 * 1.1;
+      }
+      // 0 - 2 ar ecurrently unpopulated:
+      r->cameras[0].pose.set_theta(M_PI);
+      r->cameras[1].pose.set_theta(0.26);
+      r->cameras[2].pose.set_theta(-0.26);
+      // 3 is front right
+      r->cameras[3].pose.set_theta(-12.2377 / 180.0 * M_PI);
+      *r->cameras[3].pose.mutable_pos() << 4.98126 * kInchesToMeters,
+          1.96988 * kInchesToMeters, 33.4276 * kInchesToMeters;
+      // 4 is back
+      r->cameras[4].pose.set_theta(M_PI + 2.581 * M_PI / 180.0);
+      *r->cameras[4].pose.mutable_pos() << -6.93309 * kInchesToMeters,
+          2.64735 * kInchesToMeters, 32.8758 * kInchesToMeters;
       break;
 
     default:

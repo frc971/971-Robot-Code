@@ -59,6 +59,8 @@ CameraCalibration camera_16 = {
      55,
     }};
 
+// Note: x/y should be negated and heading should be offset by 180 deg to
+// account for this being calibrated on the rear of the robot.
 CameraCalibration camera_19 = {
     {
      -0.341036 / 180.0 * M_PI, 324.626, 1.2545 / 180.0 * M_PI,
