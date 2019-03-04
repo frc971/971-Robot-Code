@@ -246,6 +246,7 @@ cc_binary(
         "//motors/peripheral:uart",
         "//motors/print:usb",
         "//third_party/GSL",
+        "//y2019/vision:constants",
     ],
 )
 

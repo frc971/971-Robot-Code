@@ -1,3 +1,6 @@
+#include <inttypes.h>
+#include <stdio.h>
+
 #include "aos/time/time.h"
 #include "motors/core/kinetis.h"
 #include "motors/core/time.h"
@@ -10,6 +13,7 @@
 #include "y2019/jevois/cobs.h"
 #include "y2019/jevois/spi.h"
 #include "y2019/jevois/uart.h"
+#include "y2019/vision/constants.h"
 
 using frc971::teensy::InterruptBufferedUart;
 using frc971::teensy::InterruptBufferedSpi;
@@ -380,6 +384,23 @@ class DebugLight {
       aos::monotonic_clock::min_time;
 };
 
+// Returns an identifier for the processor we're running on.
+uint32_t ProcessorIdentifier() {
+  uint32_t r = 0;
+  r |= SIM_UIDH << 24;
+  r |= SIM_UIDMH << 16;
+  r |= SIM_UIDML << 8;
+  r |= SIM_UIDL << 0;
+  return r;
+}
+
+std::array<int, 5> CameraSerialNumbers() {
+  switch (ProcessorIdentifier()) {
+    default:
+      return {{0, 0, 0, 0, 0}};
+  }
+}
+
 extern "C" {
 
 void *__stack_chk_guard = (void *)0x67111971;
@@ -714,12 +735,14 @@ __attribute__((unused)) void TransferData(
           calibration.teensy_now = aos::monotonic_clock::now();
           calibration.realtime_now = aos::realtime_clock::min_time;
           calibration.camera_command = current_camera_command;
-          // TODO(Brian): Actually fill out the calibration field.
-          transmit_buffers[0].MaybeWritePacket(calibration);
-          transmit_buffers[1].MaybeWritePacket(calibration);
-          transmit_buffers[2].MaybeWritePacket(calibration);
-          transmit_buffers[3].MaybeWritePacket(calibration);
-          transmit_buffers[4].MaybeWritePacket(calibration);
+
+          for (int i = 0; i < 5; ++i) {
+            const y2019::vision::CameraCalibration *const constants =
+                y2019::vision::GetCamera(CameraSerialNumbers()[i]);
+            (void)constants;
+            // TODO(Brian): Actually fill out the calibration field.
+            transmit_buffers[i].MaybeWritePacket(calibration);
+          }
         }
       }
       for (TransmitBuffer &transmit_buffer : transmit_buffers) {
@@ -732,20 +755,35 @@ __attribute__((unused)) void TransferData(
       if (!stdin_data.empty()) {
         switch (stdin_data.back()) {
           case 'p':
-            printf("Entering passthrough mode\n");
+            printf("Sending passthrough mode\n");
             stdin_camera_command = CameraCommand::kCameraPassthrough;
             break;
           case 'u':
-            printf("Entering USB mode\n");
+            printf("Sending USB mode\n");
             stdin_camera_command = CameraCommand::kUsb;
             break;
           case 'n':
-            printf("Entering normal mode\n");
+            printf("Sending normal mode\n");
             stdin_camera_command = CameraCommand::kNormal;
             break;
           case 'a':
-            printf("Entering all-A mode\n");
+            printf("Sending all 'a's\n");
             stdin_camera_command = CameraCommand::kAs;
+            break;
+          case 'c':
+            printf("This UART board is 0x%" PRIx32 "\n", ProcessorIdentifier());
+            for (int i = 0; i < 5; ++i) {
+              printf("Camera slot %d's serial number is %d\n", i,
+                     CameraSerialNumbers()[i]);
+            }
+            break;
+          case 'h':
+            printf("UART board commands:\n");
+            printf("  p: Send passthrough mode\n");
+            printf("  u: Send USB mode\n");
+            printf("  n: Send normal mode\n");
+            printf("  a: Send all-'a' mode\n");
+            printf("  c: Dump camera configuration\n");
             break;
           default:
             printf("Unrecognized character\n");
