@@ -31,7 +31,7 @@ then
 fi
 
 # need to disable some new features on 17.x
-sudo mkfs.ext4 -L JEVOIS -O ^64bit,uninit_bg,^metadata_csum ${DEV_BASE}3
+sudo mkfs.ext3 -L JEVOIS ${DEV_BASE}3
 
 echo "Mounting JEVOIS."
 mkdir -p /tmp/JEVOIS
