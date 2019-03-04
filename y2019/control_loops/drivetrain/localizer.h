@@ -56,7 +56,7 @@ class TypedLocalizer
     if (t > HybridEkf::latest_t()) {
       LOG(ERROR,
           "target observations must be older than most recent encoder/gyro "
-          "update.");
+          "update.\n");
       return;
     }
 

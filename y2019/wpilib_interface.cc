@@ -324,7 +324,7 @@ class CameraReader {
     for (const auto &received : unpacked->frames) {
       auto to_send = control_loops::drivetrain::camera_frames.MakeMessage();
       to_send->timestamp =
-          std::chrono::nanoseconds((now + received.age).time_since_epoch())
+          std::chrono::nanoseconds((now - received.age).time_since_epoch())
               .count();
       to_send->num_targets = received.targets.size();
       for (size_t i = 0; i < received.targets.size(); ++i) {
