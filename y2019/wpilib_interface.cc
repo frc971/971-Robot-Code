@@ -334,6 +334,7 @@ class CameraReader {
         to_send->targets[i].skew = received.targets[i].skew;
       }
       to_send->camera = received.camera_index;
+      LOG_STRUCT(DEBUG, "camera_frames", *to_send);
       to_send.Send();
     }
 
