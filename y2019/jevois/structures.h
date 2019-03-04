@@ -66,7 +66,7 @@ struct Target {
   // center of the camera's image plane to the center of the target.
   float distance;
 
-  // Height of the target in meters. Specifically, the distance from the floor
+  // Height of the target in meters. Specifically, the distance from the camera
   // to the center of the target.
   float height;
 

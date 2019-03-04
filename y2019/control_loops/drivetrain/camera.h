@@ -108,7 +108,7 @@ class TypedCamera {
       Scalar heading;   // radians
       // The distance from the camera to the target.
       Scalar distance;  // meters
-      // Height of the target from the floor.
+      // Height of the target from the camera.
       Scalar height;    // meters
       // The angle of the target relative to the frame of the camera.
       Scalar skew;      // radians
@@ -292,7 +292,7 @@ void TypedCamera<num_targets, num_obstacles, Scalar>::AddTargetIfVisible(
   view.reading.heading = heading;
   view.reading.distance = distance;
   view.reading.skew = skew;
-  view.reading.height = target.pose().abs_pos().z();
+  view.reading.height = relative_pose.rel_pos().z();
   view.target = &target;
   view.camera_pose = camera_abs_pose;
 
