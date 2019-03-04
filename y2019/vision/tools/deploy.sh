@@ -1,4 +1,6 @@
 #!/bin/sh
+set -e
+
 echo "Building executables"
 readonly BAZEL_OPTIONS="-c opt --cpu=armhf-debian"
 readonly BAZEL_BIN="$(bazel info ${BAZEL_OPTIONS} bazel-bin)"
