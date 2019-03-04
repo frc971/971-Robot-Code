@@ -740,7 +740,9 @@ __attribute__((unused)) void TransferData(
             const y2019::vision::CameraCalibration *const constants =
                 y2019::vision::GetCamera(CameraSerialNumbers()[i]);
             (void)constants;
-            // TODO(Brian): Actually fill out the calibration field.
+            calibration.calibration(0, 0) = constants->intrinsics.mount_angle;
+            calibration.calibration(0, 1) = constants->intrinsics.focal_length;
+            calibration.calibration(0, 2) = constants->intrinsics.barrel_mount;
             transmit_buffers[i].MaybeWritePacket(calibration);
           }
         }
