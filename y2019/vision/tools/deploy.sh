@@ -2,34 +2,35 @@
 echo "Building executables"
 readonly BAZEL_OPTIONS="-c opt --cpu=armhf-debian"
 readonly BAZEL_BIN="$(bazel info ${BAZEL_OPTIONS} bazel-bin)"
+readonly TARGET_DIR=/media/$USER/JEVOIS
 
 bazel build ${BAZEL_OPTIONS} \
     //y2019/vision:target_sender \
     //y2019/vision:serial_waiter
 
-if [ ! -d /media/$USER/JEVOIS ]
+if [ ! -d "${TARGET_DIR}" ]
 then
-  echo "Mount jevois at /media/$USER/JEVOIS ..."
+  echo "Mount jevois at ${TARGET_DIR} ..."
   ./jevois-cmd usbsd
 fi
 
 echo "Waiting for fs ..."
-while [ ! -d /media/$USER/JEVOIS ]
+while [ ! -d "${TARGET_DIR}" ]
 do
   sleep 1
 done
 echo "OK"
 
 echo "Copying files ..."
-cp ./austin_cam.sh /media/$USER/JEVOIS/
-cp ./launch.sh /media/$USER/JEVOIS/deploy/
+cp ./austin_cam.sh "${TARGET_DIR}"/
+cp ./launch.sh "${TARGET_DIR}"/deploy/
 
 cp "${BAZEL_BIN}/y2019/vision/target_sender" \
   "${BAZEL_BIN}/y2019/vision/serial_waiter" \
-  /media/$USER/JEVOIS/deploy/
+  "${TARGET_DIR}"/deploy/
 
 echo "Unmount sd card ..."
-umount /media/$USER/JEVOIS
+umount "${TARGET_DIR}"
 echo "OK"
 
 echo "Rebooting Jevois."
