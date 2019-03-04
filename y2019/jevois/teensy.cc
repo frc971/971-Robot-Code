@@ -396,6 +396,8 @@ uint32_t ProcessorIdentifier() {
 
 std::array<int, 5> CameraSerialNumbers() {
   switch (ProcessorIdentifier()) {
+    case 0xffff322e: // CODE bot
+      return {{0, 0, 0, 16, 19}};
     default:
       return {{0, 0, 0, 0, 0}};
   }
