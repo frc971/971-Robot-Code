@@ -30,26 +30,25 @@ static std::string fmt_meters(double v) {
   return ss.str();
 }
 
-void IntrinsicParams::dump(std::basic_ostream<char> &o) const {
-  o << "    {\n        " << fmt_rad(mount_angle) << ", " << focal_length;
-  o << ", " << fmt_rad(barrel_mount) << ",\n    },\n";
+void IntrinsicParams::Dump(std::basic_ostream<char> *o) const {
+  *o << "    {\n        " << fmt_rad(mount_angle) << ", " << focal_length;
+  *o << ", " << fmt_rad(barrel_mount) << ",\n    },\n";
 }
 
-void CameraGeometry::dump(std::basic_ostream<char> &o) const {
-  o << "{{{" << fmt_meters(location[0]) << ", " << fmt_meters(location[1])
-    << ", " << fmt_meters(location[2]) << "}}," << fmt_rad(heading) << ",},";
+void CameraGeometry::Dump(std::basic_ostream<char> *o) const {
+  *o << "    {\n        {{" << fmt_meters(location[0]) << ", "
+     << fmt_meters(location[1]) << ",\n          " << fmt_meters(location[2])
+     << "}},\n        " << fmt_rad(heading) << ",\n    },\n    ";
 }
 
-void DatasetInfo::dump(std::basic_ostream<char> &o) const {
-  o << "{\n"
-    << camera_id << ", "
-    << "{{" << fmt_meters(to_tape_measure_start[0]) << ", "
-    << fmt_meters(to_tape_measure_start[1]) << "}},\n"
-    << "{{" << fmt_meters(tape_measure_direction[0]) << ", "
-    << fmt_meters(tape_measure_direction[1]) << "}},\n"
-    << beginning_tape_measure_reading << ",\n"
-    << "\"" << filename_prefix << "\",\n"
-    << num_images << ",\n}";
+void DatasetInfo::Dump(std::basic_ostream<char> *o) const {
+  *o << "{\n        " << camera_id << ",\n        "
+     << "{{" << fmt_meters(to_tape_measure_start[0]) << ", "
+     << fmt_meters(to_tape_measure_start[1]) << "}},\n        "
+     << "{{" << fmt_meters(tape_measure_direction[0]) << ", "
+     << fmt_meters(tape_measure_direction[1]) << "}},\n        "
+     << beginning_tape_measure_reading << ",\n        "
+     << "\"" << filename_prefix << "\",\n        " << num_images << ",\n    }";
 }
 
 void DumpCameraConstants(int camera_id, const CameraCalibration &value) {
@@ -68,9 +67,9 @@ static constexpr double kInchesToMeters = 0.0254;
     auto *params = (i == camera_id) ? &value : GetCamera(i);
     if (params) {
       o << "\nCameraCalibration camera_" << i << " = {\n";
-      params->intrinsics.dump(o);
-      params->geometry.dump(o);
-      params->dataset.dump(o);
+      params->intrinsics.Dump(&o);
+      params->geometry.Dump(&o);
+      params->dataset.Dump(&o);
       o << "};\n";
     }
   }
@@ -81,10 +80,11 @@ const CameraCalibration *GetCamera(int camera_id) {
 )";
   for (int i = 0; i < kMaxNumCameras; ++i) {
     if (i == camera_id || GetCamera(i) != nullptr) {
-      o << "  case " << i << ": return &camera_" << i << ";\n";
+      o << "    case " << i << ":\n      return &camera_" << i << ";\n";
     }
   }
-  o << R"(  default: return nullptr;
+  o << R"(    default:
+      return nullptr;
   }
 }
 
