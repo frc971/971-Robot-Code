@@ -358,8 +358,7 @@ class DebugLight {
     next_off_time_ = next_off_time;
   }
 
-  void Tick() {
-    const auto now = aos::monotonic_clock::now();
+  bool Tick(aos::monotonic_clock::time_point now) {
     if (last_cycle_start_ == aos::monotonic_clock::min_time) {
       last_cycle_start_ = now;
       current_off_point_ = last_cycle_start_ + next_off_time_;
@@ -367,11 +366,7 @@ class DebugLight {
       last_cycle_start_ += period();
       current_off_point_ = last_cycle_start_ + next_off_time_;
     }
-    if (now > current_off_point_) {
-      GPIOC_PCOR = 1 << 5;
-    } else {
-      GPIOC_PSOR = 1 << 5;
-    }
+    return now > current_off_point_;
   }
 
  private:
@@ -639,6 +634,23 @@ __attribute__((unused)) void TestIo() {
   }
 }
 
+struct LightRingState {
+  DebugLight debug_light;
+  aos::monotonic_clock::time_point last_frame = aos::monotonic_clock::max_time;
+
+  bool Tick(aos::monotonic_clock::time_point now) {
+    if (last_frame == aos::monotonic_clock::max_time) {
+      last_frame = now;
+    }
+    if (now > last_frame + std::chrono::seconds(1)) {
+      debug_light.set_next_off_time(std::chrono::milliseconds(500));
+    } else {
+      debug_light.set_next_off_time(std::chrono::seconds(0));
+    }
+    return debug_light.Tick(now);
+  }
+};
+
 // Does the normal work of transferring data in all directions.
 //
 // https://community.nxp.com/thread/466937#comment-983881 is a post from NXP
@@ -651,16 +663,25 @@ __attribute__((unused)) void TransferData(
   std::array<CobsPacketizer<uart_to_teensy_size()>, 5> packetizers;
   std::array<TransmitBuffer, 5> transmit_buffers{
       {&uarts->cam0, &uarts->cam1, &uarts->cam2, &uarts->cam3, &uarts->cam4}};
+  std::array<LightRingState, 5> light_rings;
   FrameQueue frame_queue;
   aos::monotonic_clock::time_point last_camera_send =
       aos::monotonic_clock::min_time;
   CameraCommand stdin_camera_command = CameraCommand::kNormal;
   CameraCommand last_roborio_camera_command = CameraCommand::kNormal;
-  DebugLight debug_light;
+  DebugLight teensy_debug_light;
 
   bool first = true;
   while (true) {
-    debug_light.Tick();
+    {
+      const auto now = aos::monotonic_clock::now();
+      PERIPHERAL_BITBAND(GPIOC_PDOR, 5) = !teensy_debug_light.Tick(now);
+      PERIPHERAL_BITBAND(GPIOC_PDOR, 11) = light_rings[0].Tick(now);
+      PERIPHERAL_BITBAND(GPIOC_PDOR, 10) = light_rings[1].Tick(now);
+      PERIPHERAL_BITBAND(GPIOC_PDOR, 8) = light_rings[2].Tick(now);
+      PERIPHERAL_BITBAND(GPIOC_PDOR, 9) = light_rings[3].Tick(now);
+      PERIPHERAL_BITBAND(GPIOB_PDOR, 18) = light_rings[4].Tick(now);
+    }
 
     {
       const auto received_transfer = SpiQueue::global_instance->Tick();
@@ -669,7 +690,7 @@ __attribute__((unused)) void TransferData(
         if (unpacked) {
           last_roborio_camera_command = unpacked->camera_command;
         } else {
-          printf("UART decode error\n");
+          printf("SPI decode error\n");
         }
       }
     }
@@ -689,6 +710,9 @@ __attribute__((unused)) void TransferData(
         packetizers[i].clear_received_packet();
         if (decoded) {
           frame_queue.UpdateFrame(i, *decoded);
+          light_rings[i].last_frame = aos::monotonic_clock::now();
+        } else {
+          printf("UART decode error\n");
         }
       }
     }
@@ -717,11 +741,11 @@ __attribute__((unused)) void TransferData(
         current_camera_command = stdin_camera_command;
       }
       if (current_camera_command == CameraCommand::kUsb) {
-        debug_light.set_next_off_time(std::chrono::milliseconds(900));
+        teensy_debug_light.set_next_off_time(std::chrono::milliseconds(900));
       } else if (current_camera_command == CameraCommand::kCameraPassthrough) {
-        debug_light.set_next_off_time(std::chrono::milliseconds(500));
+        teensy_debug_light.set_next_off_time(std::chrono::milliseconds(500));
       } else {
-        debug_light.set_next_off_time(std::chrono::milliseconds(100));
+        teensy_debug_light.set_next_off_time(std::chrono::milliseconds(100));
       }
 
       if (current_camera_command == CameraCommand::kAs) {
