@@ -30,7 +30,7 @@ struct CameraGeometry {
     return out;
   }
 
-  void dump(std::basic_ostream<char> &o) const;
+  void Dump(std::basic_ostream<char> *o) const;
 };
 
 struct IntrinsicParams {
@@ -53,7 +53,7 @@ struct IntrinsicParams {
     out.barrel_mount = data[2];
     return out;
   }
-  void dump(std::basic_ostream<char> &o) const;
+  void Dump(std::basic_ostream<char> *o) const;
 };
 
 // Metadata about the calibration results (Should be good enough to reproduce).
@@ -68,7 +68,7 @@ struct DatasetInfo {
   const char *filename_prefix;
   int num_images;
 
-  void dump(std::basic_ostream<char> &o) const;
+  void Dump(std::basic_ostream<char> *o) const;
 };
 
 struct CameraCalibration {
