@@ -673,6 +673,8 @@ __attribute__((unused)) void TransferData(
   CameraCommand last_roborio_camera_command = CameraCommand::kNormal;
   DebugLight teensy_debug_light;
 
+  bool verbose = false;
+
   bool first = true;
   while (true) {
     {
@@ -711,6 +713,10 @@ __attribute__((unused)) void TransferData(
             UartUnpackToTeensy(packetizers[i].received_packet());
         packetizers[i].clear_received_packet();
         if (decoded) {
+          if (verbose) {
+            printf("uart frame cam %d, %d targets\n", (int)i,
+                   (int)decoded->targets.size());
+          }
           frame_queue.UpdateFrame(i, *decoded);
           light_rings[i].last_frame = aos::monotonic_clock::now();
         } else {
@@ -805,6 +811,10 @@ __attribute__((unused)) void TransferData(
                      CameraSerialNumbers()[i]);
             }
             break;
+          case 'v':
+            printf("Toggling verbose mode\n");
+            verbose = !verbose;
+            break;
           case 'h':
             printf("UART board commands:\n");
             printf("  p: Send passthrough mode\n");
@@ -812,6 +822,7 @@ __attribute__((unused)) void TransferData(
             printf("  n: Send normal mode\n");
             printf("  a: Send all-'a' mode\n");
             printf("  c: Dump camera configuration\n");
+            printf("  v: Toggle verbose print\n");
             break;
           default:
             printf("Unrecognized character\n");
