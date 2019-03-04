@@ -66,7 +66,7 @@ const ButtonLocation kRelease(2, 4);
 const ElevatorWristPosition kStowPos{0.36, 0.0};
 
 const ElevatorWristPosition kPanelHPIntakeForwrdPos{0.04, M_PI / 2.0};
-const ElevatorWristPosition kPanelHPIntakeBackwardPos{0.04, -M_PI / 2.0};
+const ElevatorWristPosition kPanelHPIntakeBackwardPos{0.05, -M_PI / 2.0};
 
 const ElevatorWristPosition kPanelForwardLowerPos{0.0, M_PI / 2.0};
 const ElevatorWristPosition kPanelBackwardLowerPos{0.0, -M_PI / 2.0};
@@ -77,8 +77,11 @@ const ElevatorWristPosition kPanelBackwardMiddlePos{0.78, -M_PI / 2.0};
 const ElevatorWristPosition kPanelForwardUpperPos{1.51, M_PI / 2.0};
 const ElevatorWristPosition kPanelBackwardUpperPos{1.50, -M_PI / 2.0};
 
-const ElevatorWristPosition kBallForwardLowerPos{0.4598, 1.5863};
-const ElevatorWristPosition kBallBackwardLowerPos{0.175, -1.61};
+const ElevatorWristPosition kPanelCargoForwardPos{0.0, M_PI / 2.0};
+const ElevatorWristPosition kPanelCargoBackwardPos{0.0, -M_PI / 2.0};
+
+const ElevatorWristPosition kBallForwardLowerPos{0.46, M_PI / 2.0};
+const ElevatorWristPosition kBallBackwardLowerPos{0.15, -M_PI / 2.0};
 
 const ElevatorWristPosition kBallForwardMiddlePos{1.16, 1.546};
 const ElevatorWristPosition kBallBackwardMiddlePos{0.876021, -1.546};
@@ -89,8 +92,8 @@ const ElevatorWristPosition kBallBackwardUpperPos{1.41, -1.217};
 const ElevatorWristPosition kBallCargoForwardPos{0.699044, 1.353};
 const ElevatorWristPosition kBallCargoBackwardPos{0.828265, -1.999};
 
-const ElevatorWristPosition kBallHPIntakeForwardPos{0.340, 0.737};
-const ElevatorWristPosition kBallHPIntakeBackwardPos{0.52, -1.1};
+const ElevatorWristPosition kBallHPIntakeForwardPos{0.55, 1.097};
+const ElevatorWristPosition kBallHPIntakeBackwardPos{0.89, -2.018};
 
 const ElevatorWristPosition kBallIntakePos{0.29, 2.14};
 
@@ -224,6 +227,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
         elevator_wrist_pos_ = kPanelForwardUpperPos;
       } else if (data.IsPressed(kRocketBackwardUpper)) {
         elevator_wrist_pos_ = kPanelBackwardUpperPos;
+      } else if (data.IsPressed(kCargoForward)) {
+        elevator_wrist_pos_ = kPanelCargoForwardPos;
+      } else if (data.IsPressed(kCargoBackward)) {
+        elevator_wrist_pos_ = kPanelCargoBackwardPos;
       }
     }
 
