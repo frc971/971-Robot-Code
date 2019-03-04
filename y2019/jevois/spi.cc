@@ -61,10 +61,7 @@ float heading_unpack(gsl::span<const char> source) {
 }
 
 constexpr float distance_min() { return 0; }
-constexpr float distance_max() {
-  // The field is 18.4m diagonally.
-  return 18.4;
-}
+constexpr float distance_max() { return 10.0; }
 constexpr int distance_bits() { return 8; }
 constexpr int distance_offset() { return heading_offset() + heading_bits(); }
 void distance_pack(float distance, gsl::span<char> destination) {
