@@ -254,6 +254,7 @@ class TypedLocalizer
     }
 
     if (camera_views.size() == 0) {
+      LOG(DEBUG, "Unable to identify potential target matches.\n");
       // If we can't get a match, provide H = zero, which will make this
       // correction step a nop.
       *h = [](const State &, const Input &) { return Output::Zero(); };
@@ -279,6 +280,10 @@ class TypedLocalizer
         const TargetView target_view = target_views[ii];
         const Scalar match_score = scores(ii, view_idx);
         if (match_score > kRejectionScore) {
+          LOG(DEBUG,
+              "Rejecting target at (%f, %f, %f, %f) due to high score.\n",
+              target_view.reading.heading, target_view.reading.distance,
+              target_view.reading.skew, target_view.reading.height);
           h_functions->push_back(
               [](const State &, const Input &) { return Output::Zero(); });
           dhdx_functions->push_back([](const State &) {
@@ -296,8 +301,8 @@ class TypedLocalizer
                 best_view.target->pose().Rebase(&camera.pose());
             const Scalar heading = relative_pose.heading();
             const Scalar distance = relative_pose.xy_norm();
-            const Scalar skew =
-                ::aos::math::NormalizeAngle(relative_pose.rel_theta());
+            const Scalar skew = ::aos::math::NormalizeAngle(
+                relative_pose.rel_theta() - heading);
             return Output(heading, distance, skew);
           });
 
@@ -333,8 +338,10 @@ class TypedLocalizer
     Scalar ddistdx = -diffx / distance;
     Scalar ddistdy = -diffy / distance;
 
-    // Skew = target.theta - camera.theta:
-    Scalar dskewdtheta = -1.0;
+    // Skew = target.theta - camera.theta - heading
+    //      = target.theta - arctan2(target_pos - camera_pos)
+    Scalar dskewdx = -dheadingdx;
+    Scalar dskewdy = -dheadingdy;
     Eigen::Matrix<Scalar, kNOutputs, kNStates> H;
     H.setZero();
     H(0, 0) = dheadingdx;
@@ -342,7 +349,8 @@ class TypedLocalizer
     H(0, 2) = dheadingdtheta;
     H(1, 0) = ddistdx;
     H(1, 1) = ddistdy;
-    H(2, 2) = dskewdtheta;
+    H(2, 0) = dskewdx;
+    H(2, 1) = dskewdy;
     return H;
   }
 
