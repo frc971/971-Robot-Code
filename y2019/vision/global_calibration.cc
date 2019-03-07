@@ -114,7 +114,7 @@ void main(int argc, char **argv) {
   Solver::Summary summary;
 
   std::cout << summary.BriefReport() << "\n";
-  auto intrinsics_ = IntrinsicParams::get(&intrinsics[0]);
+  IntrinsicParams intrinsics_ = IntrinsicParams::get(&intrinsics[0]);
   std::cout << "rup = " << intrinsics_.mount_angle * 180 / M_PI << ";\n";
   std::cout << "fl = " << intrinsics_.focal_length << ";\n";
   std::cout << "error = " << summary.final_cost << ";\n";
@@ -187,7 +187,7 @@ void main(int argc, char **argv) {
 
       auto ftor = [&info, i](const double *const extrinsics,
                              const double *const geometry, double *residual) {
-        auto err = GetError(info, extrinsics, geometry, i);
+        std::array<double, 3> err = GetError(info, extrinsics, geometry, i);
         residual[0] = 32.0 * err[0];
         residual[1] = 32.0 * err[1];
         residual[2] = 32.0 * err[2];
@@ -209,8 +209,8 @@ void main(int argc, char **argv) {
 
   {
     std::cout << summary.BriefReport() << "\n";
-    auto intrinsics_ = IntrinsicParams::get(&intrinsics[0]);
-    auto geometry_ = CameraGeometry::get(&geometry[0]);
+    IntrinsicParams intrinsics_ = IntrinsicParams::get(&intrinsics[0]);
+    CameraGeometry geometry_ = CameraGeometry::get(&geometry[0]);
     std::cout << "rup = " << intrinsics_.mount_angle * 180 / M_PI << ";\n";
     std::cout << "fl = " << intrinsics_.focal_length << ";\n";
     std::cout << "error = " << summary.final_cost << ";\n";
@@ -225,11 +225,11 @@ void main(int argc, char **argv) {
     std::cout << "camera_barrel = " << intrinsics_.barrel_mount * 180.0 / M_PI
               << "\n";
 
-    for (auto &sample : all_extrinsics) {
+    for (const Sample &sample : all_extrinsics) {
       int i = sample.i;
       double *data = sample.extrinsics.get();
 
-      auto extn = ExtrinsicParams::get(data);
+      ExtrinsicParams extn = ExtrinsicParams::get(data);
 
       auto err = GetError(info, data, &geometry[0], i);
 

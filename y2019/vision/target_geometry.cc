@@ -53,20 +53,20 @@ std::array<Vector<2>, 8> Target::ToPointList() const {
 
 Vector<2> Project(Vector<2> pt, const IntrinsicParams &intrinsics,
                   const ExtrinsicParams &extrinsics) {
-  double y = extrinsics.y;
-  double z = extrinsics.z;
-  double r1 = extrinsics.r1;
-  double r2 = extrinsics.r2;
-  double rup = intrinsics.mount_angle;
-  double rbarrel = intrinsics.barrel_mount;
-  double fl = intrinsics.focal_length;
+  const double y = extrinsics.y;
+  const double z = extrinsics.z;
+  const double r1 = extrinsics.r1;
+  const double r2 = extrinsics.r2;
+  const double rup = intrinsics.mount_angle;
+  const double rbarrel = intrinsics.barrel_mount;
+  const double fl = intrinsics.focal_length;
 
   ::Eigen::Matrix<double, 1, 3> pts{pt.x(), pt.y() + y, 0.0};
 
   {
-    double theta = r1;
-    double s = sin(theta);
-    double c = cos(theta);
+    const double theta = r1;
+    const double s = sin(theta);
+    const double c = cos(theta);
     pts = (::Eigen::Matrix<double, 3, 3>() << c, 0, -s, 0, 1, 0, s, 0,
            c).finished() *
           pts.transpose();
@@ -75,9 +75,9 @@ Vector<2> Project(Vector<2> pt, const IntrinsicParams &intrinsics,
   pts(2) += z;
 
   {
-    double theta = r2;
-    double s = sin(theta);
-    double c = cos(theta);
+    const double theta = r2;
+    const double s = sin(theta);
+    const double c = cos(theta);
     pts = (::Eigen::Matrix<double, 3, 3>() << c, 0, -s, 0, 1, 0, s, 0,
            c).finished() *
           pts.transpose();
@@ -85,9 +85,9 @@ Vector<2> Project(Vector<2> pt, const IntrinsicParams &intrinsics,
 
   // TODO: Apply 15 degree downward rotation.
   {
-    double theta = rup;
-    double s = sin(theta);
-    double c = cos(theta);
+    const double theta = rup;
+    const double s = sin(theta);
+    const double c = cos(theta);
 
     pts = (::Eigen::Matrix<double, 3, 3>() << 1, 0, 0, 0, c, -s, 0, s,
            c).finished() *
@@ -100,9 +100,9 @@ Vector<2> Project(Vector<2> pt, const IntrinsicParams &intrinsics,
         pts.transpose();
 
   // TODO: Final image projection.
-  ::Eigen::Matrix<double, 1, 3> res = pts;
+  const ::Eigen::Matrix<double, 1, 3> res = pts;
 
-  float scale = fl / res.z();
+  const float scale = fl / res.z();
   return Vector<2>(res.x() * scale + 320.0, 240.0 - res.y() * scale);
 }
 
