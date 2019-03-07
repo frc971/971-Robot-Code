@@ -268,10 +268,19 @@ std::vector<TargetComponent> TargetFinder::FillTargetComponentList(
   TargetComponent new_target;
   for (const std::vector<Segment<2>> &poly : seg_list) {
     // Reject missized pollygons for now. Maybe rectify them here in the future;
-    if (poly.size() != 4) continue;
+    if (poly.size() != 4) {
+      continue;
+    }
     std::vector<Vector<2>> corners;
     for (size_t i = 0; i < 4; ++i) {
-      corners.push_back(poly[i].Intersect(poly[(i + 1) % 4]));
+      Vector<2> corner = poly[i].Intersect(poly[(i + 1) % 4]);
+      if (::std::isnan(corner.x()) || ::std::isnan(corner.y())) {
+        break;
+      }
+      corners.push_back(corner);
+    }
+    if (corners.size() != 4) {
+      continue;
     }
 
     // Select the closest two points. Short side of the rectangle.
