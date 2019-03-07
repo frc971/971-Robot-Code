@@ -25,7 +25,7 @@ class TargetFinder {
   aos::vision::RangeImage Threshold(aos::vision::ImagePtr image);
 
   // Value against which we threshold.
-  uint8_t GetThresholdValue() { return 120; }
+  static uint8_t GetThresholdValue() { return 100; }
 
   // filter out obvious or durranged blobs.
   void PreFilter(BlobList *imgs);

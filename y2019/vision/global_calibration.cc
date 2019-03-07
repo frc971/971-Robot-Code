@@ -125,8 +125,9 @@ void main(int argc, char **argv) {
                                        std::to_string(i) + ".yuyv");
 
     aos::vision::ImageFormat fmt{640, 480};
-    aos::vision::BlobList imgs = aos::vision::FindBlobs(
-        aos::vision::DoThresholdYUYV(fmt, frame.data.data(), 120));
+    aos::vision::BlobList imgs =
+        aos::vision::FindBlobs(aos::vision::DoThresholdYUYV(
+            fmt, frame.data.data(), TargetFinder::GetThresholdValue()));
     finder_.PreFilter(&imgs);
 
     bool verbose = false;
