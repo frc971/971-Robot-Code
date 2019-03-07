@@ -382,6 +382,7 @@ int main(int argc, char **argv) {
       char data[kBufferSize];
       ssize_t n = read(itsDev, &data[0], kBufferSize);
       if (n >= 1) {
+        LOG(INFO, "Serial bytes: %zd", n);
         cobs.ParseData(gsl::span<const char>(&data[0], n));
         auto packet = cobs.received_packet();
         if (!packet.empty()) {
