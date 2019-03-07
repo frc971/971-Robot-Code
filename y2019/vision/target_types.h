@@ -40,7 +40,7 @@ struct Target {
 
   static Target MakeTemplate();
   // Get the points in some order (will match against the template).
-  std::array<aos::vision::Vector<2>, 8> toPointList() const;
+  std::array<aos::vision::Vector<2>, 8> ToPointList() const;
 };
 
 struct ExtrinsicParams {

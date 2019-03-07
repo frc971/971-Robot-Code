@@ -153,16 +153,19 @@ void main(int argc, char **argv) {
     // Use the solver to generate an intermediate version of our results.
     std::vector<IntermediateResult> results;
     for (const Target &target : target_list) {
-      auto target_value = target.toPointList();
-      auto template_value = finder_.GetTemplateTarget().toPointList();
+      ::std::array<aos::vision::Vector<2>, 8> target_value =
+          target.ToPointList();
+      ::std::array<aos::vision::Vector<2>, 8> template_value =
+          finder_.GetTemplateTarget().ToPointList();
 
-      auto *extrinsics = new double[ExtrinsicParams::kNumParams];
+      // TODO(austin): Memory leak below, fix.
+      double *extrinsics = new double[ExtrinsicParams::kNumParams];
       ExtrinsicParams().set(extrinsics);
       all_extrinsics.push_back({std::unique_ptr<double[]>(extrinsics), i});
 
       for (size_t j = 0; j < 8; ++j) {
-        auto temp = template_value[j];
-        auto targ = target_value[j];
+        aos::vision::Vector<2> temp = template_value[j];
+        aos::vision::Vector<2> targ = target_value[j];
 
         auto ftor = [temp, targ, i](const double *const intrinsics,
                                     const double *const extrinsics,

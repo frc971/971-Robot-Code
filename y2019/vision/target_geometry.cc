@@ -45,7 +45,7 @@ Target Target::MakeTemplate() {
   return out;
 }
 
-std::array<Vector<2>, 8> Target::toPointList() const {
+std::array<Vector<2>, 8> Target::ToPointList() const {
   return std::array<Vector<2>, 8>{{right.top, right.inside, right.bottom,
                                    right.outside, left.top, left.inside,
                                    left.bottom, left.outside}};
@@ -153,12 +153,13 @@ IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
 
   Problem problem;
 
-  auto target_value = target.toPointList();
-  auto template_value = target_template_.toPointList();
+  ::std::array<aos::vision::Vector<2>, 8> target_value = target.ToPointList();
+  ::std::array<aos::vision::Vector<2>, 8> template_value =
+      target_template_.ToPointList();
 
   for (size_t i = 0; i < 8; ++i) {
-    auto a = template_value[i];
-    auto b = target_value[i];
+    aos::vision::Vector<2> a = template_value[i];
+    aos::vision::Vector<2> b = target_value[i];
 
     problem.AddResidualBlock(
         new NumericDiffCostFunction<RuntimeCostFunctor, CENTRAL, 2, 4>(
