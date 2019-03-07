@@ -59,7 +59,7 @@ class FilterHarness : public aos::vision::FilterHarness {
 
   void InstallViewer(aos::vision::BlobStreamViewer *viewer) override {
     viewer_ = viewer;
-    viewer_->SetScale(0.75);
+    viewer_->SetScale(2.0);
     overlays_.push_back(&overlay_);
     overlays_.push_back(finder_.GetOverlay());
     viewer_->view()->SetOverlays(&overlays_);
