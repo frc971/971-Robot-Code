@@ -36,6 +36,8 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
     : aos::controls::ControlLoop<::frc971::control_loops::DrivetrainQueue>(
           event_loop, name),
       dt_config_(dt_config),
+      localizer_control_fetcher_(event_loop->MakeFetcher<LocalizerControl>(
+          ".frc971.control_loops.drivetrain.localizer_control")),
       localizer_(localizer),
       kf_(dt_config_.make_kf_drivetrain_loop()),
       dt_openloop_(dt_config_, &kf_),
@@ -232,6 +234,15 @@ void DrivetrainLoop::RunIteration(
     Y << position->left_encoder, position->right_encoder, last_gyro_rate_,
         last_accel_;
     kf_.Correct(Y);
+    // If we get a new message setting the absolute position, then reset the
+    // localizer.
+    // TODO(james): Use a watcher (instead of a fetcher) once we support it in
+    // simulation.
+    if (localizer_control_fetcher_.Fetch()) {
+      localizer_->ResetPosition(localizer_control_fetcher_->x,
+                                localizer_control_fetcher_->y,
+                                localizer_control_fetcher_->theta);
+    }
     localizer_->Update({last_last_left_voltage_, last_last_right_voltage_},
                        monotonic_now, position->left_encoder,
                        position->right_encoder, last_gyro_rate_, last_accel_);

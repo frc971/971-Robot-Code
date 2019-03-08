@@ -238,6 +238,28 @@ TEST_F(LocalizedDrivetrainTest, NoCameraWithDisturbanceFails) {
   EXPECT_NEAR(true_state(4, 0), localizer_.right_velocity(), 1e-5);
 }
 
+// Tests that when we reset the position of the localizer via the queue to
+// compensate for the disturbance, the estimator behaves perfectly.
+TEST_F(LocalizedDrivetrainTest, ResetLocalizer) {
+  set_enable_cameras(false);
+  (*drivetrain_motor_plant_.mutable_state())(0, 0) += 0.05;
+  my_drivetrain_queue_.goal.MakeWithBuilder()
+      .controller_type(1)
+      .left_goal(-1.0)
+      .right_goal(1.0)
+      .Send();
+  ::aos::Queue<::frc971::control_loops::drivetrain::LocalizerControl>
+      localizer_queue(".frc971.control_loops.drivetrain.localizer_control");
+  ASSERT_TRUE(localizer_queue.MakeWithBuilder()
+                  .x(drivetrain_motor_plant_.state().x())
+                  .y(drivetrain_motor_plant_.state().y())
+                  .theta(drivetrain_motor_plant_.state()(2, 0))
+                  .Send());
+  RunForTime(chrono::seconds(3));
+  VerifyNearGoal();
+  VerifyEstimatorAccurate(1e-5);
+}
+
 // Tests that, when a small error in X is introduced, the camera corrections do
 // correct for it.
 TEST_F(LocalizedDrivetrainTest, CameraUpdate) {

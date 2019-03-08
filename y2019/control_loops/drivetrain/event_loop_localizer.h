@@ -33,6 +33,9 @@ class EventLoopLocalizer
       ::aos::EventLoop *event_loop);
 
   void Reset(const Localizer::State &state);
+  void ResetPosition(double x, double y, double theta) override {
+    Reset((Localizer::State() << x, y, theta, 0, 0, 0, 0, 0, 0, 0).finished());
+  }
 
   void Update(const ::Eigen::Matrix<double, 2, 1> &U,
               ::aos::monotonic_clock::time_point now, double left_encoder,

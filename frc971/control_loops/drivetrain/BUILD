@@ -65,6 +65,13 @@ cc_test(
     ],
 )
 
+queue_library(
+    name = "localizer_queue",
+    srcs = [
+        "localizer.q",
+    ],
+)
+
 cc_library(
     name = "localizer",
     hdrs = ["localizer.h"],
@@ -262,6 +269,7 @@ cc_library(
         ":gear",
         ":line_follow_drivetrain",
         ":localizer",
+        ":localizer_queue",
         ":polydrivetrain",
         ":splinedrivetrain",
         ":ssdrivetrain",
@@ -308,6 +316,7 @@ cc_test(
     deps = [
         ":drivetrain_config",
         ":drivetrain_lib",
+        ":localizer_queue",
         ":drivetrain_queue",
         ":drivetrain_test_lib",
         "//aos:queues",

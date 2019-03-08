@@ -17,6 +17,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
+#include "frc971/control_loops/drivetrain/localizer.q.h"
 #include "frc971/queues/gyro.q.h"
 
 DEFINE_bool(plot, false, "If true, plot");
@@ -753,6 +754,22 @@ TEST_F(DrivetrainTest, LineFollowDefersToOpenLoop) {
   // along X-axis.
   EXPECT_LT(1.0, drivetrain_motor_plant_.GetPosition().x());
   EXPECT_NEAR(0.0, drivetrain_motor_plant_.GetPosition().y(), 1e-4);
+}
+
+// Tests that we can reset the localizer to a new position.
+TEST_F(DrivetrainTest, ResetLocalizer) {
+  EXPECT_EQ(0.0, localizer_.x());
+  EXPECT_EQ(0.0, localizer_.y());
+  EXPECT_EQ(0.0, localizer_.theta());
+  ::aos::Queue<LocalizerControl> localizer_queue(
+      ".frc971.control_loops.drivetrain.localizer_control");
+  ASSERT_TRUE(
+      localizer_queue.MakeWithBuilder().x(9.0).y(7.0).theta(1.0).Send());
+  RunIteration();
+
+  EXPECT_EQ(9.0, localizer_.x());
+  EXPECT_EQ(7.0, localizer_.y());
+  EXPECT_EQ(1.0, localizer_.theta());
 }
 
 ::aos::controls::HVPolytope<2, 4, 4> MakeBox(double x1_min, double x1_max,
