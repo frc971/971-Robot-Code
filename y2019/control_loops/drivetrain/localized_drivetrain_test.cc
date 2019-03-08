@@ -212,7 +212,7 @@ TEST_F(LocalizedDrivetrainTest, PerfectCameraUpdate) {
       .Send();
   RunForTime(chrono::seconds(3));
   VerifyNearGoal();
-  VerifyEstimatorAccurate(1e-8);
+  VerifyEstimatorAccurate(1e-7);
 }
 
 // Tests that not having cameras with an initial disturbance results in

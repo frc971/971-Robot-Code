@@ -110,7 +110,8 @@ class TypedCamera {
       Scalar distance;  // meters
       // Height of the target from the camera.
       Scalar height;    // meters
-      // The angle of the target relative to the frame of the camera.
+      // The angle of the target relative to line between the camera and
+      // the center of the target.
       Scalar skew;      // radians
     };
     Reading reading;
@@ -281,7 +282,8 @@ void TypedCamera<num_targets, num_obstacles, Scalar>::AddTargetIfVisible(
   const Pose relative_pose = target.pose().Rebase(&camera_abs_pose);
   const Scalar heading = relative_pose.heading();
   const Scalar distance = relative_pose.xy_norm();
-  const Scalar skew = ::aos::math::NormalizeAngle(relative_pose.rel_theta());
+  const Scalar skew =
+      ::aos::math::NormalizeAngle(relative_pose.rel_theta() - heading);
 
   // Check if the camera is in the angular FOV.
   if (::std::abs(heading) > fov_ / 2.0) {

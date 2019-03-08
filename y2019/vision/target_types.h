@@ -46,9 +46,15 @@ struct Target {
 struct ExtrinsicParams {
   static constexpr size_t kNumParams = 4;
 
+  // Height of the target
   double y = 18.0 * 0.0254;
+  // Distance to the target
   double z = 23.0 * 0.0254;
+  // Skew of the target relative to the line-of-sight from the camera to the
+  // target.
   double r1 = 1.0 / 180 * M_PI;
+  // Heading from the camera to the target, relative to the center of the view
+  // from the camera.
   double r2 = -1.0 / 180 * M_PI;
 
   void set(double *data) {

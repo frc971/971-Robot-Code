@@ -53,17 +53,21 @@ std::array<Vector<2>, 8> Target::ToPointList() const {
 
 Vector<2> Project(Vector<2> pt, const IntrinsicParams &intrinsics,
                   const ExtrinsicParams &extrinsics) {
-  const double y = extrinsics.y;
-  const double z = extrinsics.z;
-  const double r1 = extrinsics.r1;
-  const double r2 = extrinsics.r2;
+  const double y = extrinsics.y;    // height
+  const double z = extrinsics.z;    // distance
+  const double r1 = extrinsics.r1;  // skew
+  const double r2 = extrinsics.r2;  // heading
   const double rup = intrinsics.mount_angle;
   const double rbarrel = intrinsics.barrel_mount;
   const double fl = intrinsics.focal_length;
 
+  // Start by translating point in target-space to be at correct height.
   ::Eigen::Matrix<double, 1, 3> pts{pt.x(), pt.y() + y, 0.0};
 
   {
+    // Rotate to compensate for skew angle, to get into a frame still at the
+    // same (x, y) position as the target but rotated to be facing straight
+    // towards the camera.
     const double theta = r1;
     const double s = sin(theta);
     const double c = cos(theta);
@@ -72,9 +76,13 @@ Vector<2> Project(Vector<2> pt, const IntrinsicParams &intrinsics,
           pts.transpose();
   }
 
+  // Translate the coordinate frame to have (x, y) centered at the camera, but
+  // still oriented to be facing along the line from the camera to the target.
   pts(2) += z;
 
   {
+    // Rotate out the heading so that the frame is oriented to line up with the
+    // camera's viewpoint in the yaw-axis.
     const double theta = r2;
     const double s = sin(theta);
     const double c = cos(theta);
@@ -85,6 +93,8 @@ Vector<2> Project(Vector<2> pt, const IntrinsicParams &intrinsics,
 
   // TODO: Apply 15 degree downward rotation.
   {
+    // Compensate for rotation in the pitch of the camera up/down to get into
+    // the coordinate frame lined up with the plane of the camera sensor.
     const double theta = rup;
     const double s = sin(theta);
     const double c = cos(theta);
@@ -94,6 +104,10 @@ Vector<2> Project(Vector<2> pt, const IntrinsicParams &intrinsics,
           pts.transpose();
   }
 
+  // Compensate for rotation of the barrel of the camera, i.e. about the axis
+  // that points straight out from the camera lense, using an AngleAxis instead
+  // of manually constructing the rotation matrices because once you get into
+  // this frame you no longer need to be masochistic.
   // TODO: Maybe barrel should be extrinsics to allow rocking?
   // Also, in this case, barrel should go above the rotation above?
   pts = ::Eigen::AngleAxis<double>(rbarrel, ::Eigen::Vector3d(0.0, 0.0, 1.0)) *
@@ -102,6 +116,8 @@ Vector<2> Project(Vector<2> pt, const IntrinsicParams &intrinsics,
   // TODO: Final image projection.
   const ::Eigen::Matrix<double, 1, 3> res = pts;
 
+  // Finally, scale to account for focal length and translate to get into
+  // pixel-space.
   const float scale = fl / res.z();
   return Vector<2>(res.x() * scale + 320.0, 240.0 - res.y() * scale);
 }
