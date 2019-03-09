@@ -12,14 +12,14 @@ namespace vision {
 struct CameraGeometry {
   static constexpr size_t kNumParams = 4;
   // In Meters from floor under imu center.
-  std::array<double, 3> location{{0, 0, 0}};
+  ::std::array<double, 3> location{{0.0, 0.0, 0.0}};
   double heading = 0.0;
 
   void set(double *data) {
-    location[0] = data[0];
-    location[1] = data[1];
-    location[2] = data[2];
-    heading = data[3];
+    data[0] = location[0];
+    data[1] = location[1];
+    data[2] = location[2];
+    data[3] = heading;
   }
   static CameraGeometry get(const double *data) {
     CameraGeometry out;
