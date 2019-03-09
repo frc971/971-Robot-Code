@@ -38,6 +38,9 @@ struct Target {
   TargetComponent left;
   TargetComponent right;
 
+  // Returns a target.  The resulting target is in meters with 0, 0 centered
+  // between the upper inner corners of the two pieces of tape, y being up and x
+  // being to the right.
   static Target MakeTemplate();
   // Get the points in some order (will match against the template).
   std::array<aos::vision::Vector<2>, 8> ToPointList() const;

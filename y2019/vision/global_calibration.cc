@@ -54,22 +54,18 @@ constexpr double kInchesToMeters = 0.0254;
   // Take the tape measure starting point (this will be at the perimeter of the
   // robot), add the offset to the first sample, and then add the per sample
   // offset.
-  const double dx =
-      (info.to_tape_measure_start[0] +
-       (info.beginning_tape_measure_reading + i) *
-           info.tape_measure_direction[0]) /
-          kInchesToMeters -
-      (geo.location[0] + c * extrinsic_params.z) / kInchesToMeters;
-  const double dy =
-      (info.to_tape_measure_start[1] +
-       (info.beginning_tape_measure_reading + i) *
-           info.tape_measure_direction[1]) /
-          kInchesToMeters -
-      (geo.location[1] + s * extrinsic_params.z) / kInchesToMeters;
+  const double dx = (info.to_tape_measure_start[0] +
+                     (info.beginning_tape_measure_reading + i) *
+                         info.tape_measure_direction[0]) -
+                    (geo.location[0] + c * extrinsic_params.z);
+  const double dy = (info.to_tape_measure_start[1] +
+                     (info.beginning_tape_measure_reading + i) *
+                         info.tape_measure_direction[1]) -
+                    (geo.location[1] + s * extrinsic_params.z);
 
-  constexpr double kCalibrationTargetHeight = 28.5;
-  const double dz = kCalibrationTargetHeight -
-                    (geo.location[2] + extrinsic_params.y) / kInchesToMeters;
+  constexpr double kCalibrationTargetHeight = 28.5 * kInchesToMeters;
+  const double dz =
+      kCalibrationTargetHeight - (geo.location[2] + extrinsic_params.y);
   return {{dx, dy, dz}};
 }
 
@@ -193,12 +189,19 @@ void main(int argc, char **argv) {
             NULL, &intrinsics[0], extrinsics);
       }
 
+      // Now, compare the estimated location of the target that we just solved
+      // for with the extrinsic params above with the known location of the
+      // target.
       auto ftor = [&info, i](const double *const extrinsics,
                              const double *const geometry, double *residual) {
-        std::array<double, 3> err = GetError(info, extrinsics, geometry, i);
-        residual[0] = 32.0 * err[0];
-        residual[1] = 32.0 * err[1];
-        residual[2] = 32.0 * err[2];
+        const ::std::array<double, 3> err =
+            GetError(info, extrinsics, geometry, i);
+        // We care a lot more about geometry than pixels.  Especially since
+        // pixels are small and meters are big, so there's a small penalty to
+        // being off by meters.
+        residual[0] = err[0] * 1259.0;
+        residual[1] = err[1] * 1259.0;
+        residual[2] = err[2] * 1259.0;
         return true;
       };
 
@@ -248,9 +251,9 @@ void main(int argc, char **argv) {
       ::std::cout << extrinsic_params.r2 * 180 / M_PI << ", ";
       // TODO: Methodology problem: This should really have a separate solve for
       // extrinsics...
-      std::cout << err[0] << ", ";
-      std::cout << err[1] << ", ";
-      std::cout << err[2] << "\n";
+      ::std::cout << error[0] << "m, ";
+      ::std::cout << error[1] << "m, ";
+      ::std::cout << error[2] << "m" << ::std::endl;
     }
   }
 
