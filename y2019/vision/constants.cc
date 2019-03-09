@@ -59,6 +59,60 @@ CameraCalibration camera_6 = {
         75,
     }};
 
+CameraCalibration camera_7 = {
+    {
+        -2.30729 / 180.0 * M_PI, 339.894, 1.16684 / 180.0 * M_PI,
+    },
+    {
+        {{3.62399 * kInchesToMeters, 3.94792 * kInchesToMeters,
+          33.3196 * kInchesToMeters}},
+        18.5828 / 180.0 * M_PI,
+    },
+    {
+        7,
+        {{12.5 * kInchesToMeters, 0.0}},
+        {{1 * kInchesToMeters, 0.0}},
+        21,
+        "data/cam7_0/debug_viewer_jpeg_",
+        65,
+    }};
+
+CameraCalibration camera_8 = {
+    {
+        37.0966 / 180.0 * M_PI, 339.997, 0.265968 / 180.0 * M_PI,
+    },
+    {
+        {{3.53674 * kInchesToMeters, 5.25891 * kInchesToMeters,
+          12.6869 * kInchesToMeters}},
+        92.4773 / 180.0 * M_PI,
+    },
+    {
+        8,
+        {{6.5 * kInchesToMeters, -11 * kInchesToMeters}},
+        {{0.0, 1 * kInchesToMeters}},
+        25,
+        "data/cam8_0/debug_viewer_jpeg_",
+        61,
+    }};
+
+CameraCalibration camera_9 = {
+    {
+        35.3461 / 180.0 * M_PI, 337.599, 3.34351 / 180.0 * M_PI,
+    },
+    {
+        {{4.24216 * kInchesToMeters, -2.97032 * kInchesToMeters,
+          11.323 * kInchesToMeters}},
+        -93.3026 / 180.0 * M_PI,
+    },
+    {
+        9,
+        {{-6.5 * kInchesToMeters, 11 * kInchesToMeters}},
+        {{0.0, -1 * kInchesToMeters}},
+        30,
+        "data/cam9_0/debug_viewer_jpeg_",
+        56,
+    }};
+
 CameraCalibration camera_10 = {
     {
         -0.165199 / 180.0 * M_PI, 340.666, 0.596842 / 180.0 * M_PI,
@@ -121,6 +175,12 @@ const CameraCalibration *GetCamera(int camera_id) {
       return &camera_5;
     case 6:
       return &camera_6;
+    case 7:
+      return &camera_7;
+    case 8:
+      return &camera_8;
+    case 9:
+      return &camera_9;
     case 10:
       return &camera_10;
     case 16:
