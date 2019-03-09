@@ -100,7 +100,20 @@ void main(int argc, char **argv) {
   IntrinsicParams().set(&intrinsics[0]);
 
   double geometry[CameraGeometry::kNumParams];
-  CameraGeometry().set(&geometry[0]);
+  {
+    // Assume the camera is near the center of the robot, and start by pointing
+    // it from the center of the robot to the location of the first target.
+    CameraGeometry camera_geometry;
+    const double x =
+        info.to_tape_measure_start[0] +
+        info.beginning_tape_measure_reading * info.tape_measure_direction[0];
+    const double y =
+        info.to_tape_measure_start[1] +
+        info.beginning_tape_measure_reading * info.tape_measure_direction[1];
+    camera_geometry.heading = ::std::atan2(y, x);
+    printf("Inital heading is %f\n", camera_geometry.heading);
+    camera_geometry.set(&geometry[0]);
+  }
 
   Solver::Options options;
   options.minimizer_progress_to_stdout = false;
