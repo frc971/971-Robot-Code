@@ -18,6 +18,7 @@
 #include "ceres/ceres.h"
 
 DEFINE_int32(camera_id, -1, "The camera ID to calibrate");
+DEFINE_string(prefix, "", "The image filename prefix");
 
 using ::aos::events::DataSocket;
 using ::aos::events::RXUdpSocket;
@@ -71,16 +72,14 @@ constexpr double kInchesToMeters = 0.0254;
 
 void main(int argc, char **argv) {
   using namespace y2019::vision;
-  gflags::ParseCommandLineFlags(&argc, &argv, false);
-
-  const char *base_directory = "/home/parker/data/frc/2019_calibration/";
+  ::gflags::ParseCommandLineFlags(&argc, &argv, false);
 
   DatasetInfo info = {
       FLAGS_camera_id,
       {{12.5 * kInchesToMeters, 0.5 * kInchesToMeters}},
       {{kInchesToMeters, 0.0}},
       26,
-      "cam5_0/debug_viewer_jpeg_",
+      FLAGS_prefix.c_str(),
       59,
   };
 
@@ -114,9 +113,8 @@ void main(int argc, char **argv) {
   ::std::cout << "error = " << summary.final_cost << ";\n";
 
   for (int i = 0; i < info.num_images; ++i) {
-    auto frame = aos::vision::LoadFile(std::string(base_directory) +
-                                       info.filename_prefix +
-                                       std::to_string(i) + ".yuyv");
+    ::aos::vision::DatasetFrame frame =
+        aos::vision::LoadFile(FLAGS_prefix + std::to_string(i) + ".yuyv");
 
     const ::aos::vision::ImageFormat fmt{640, 480};
     ::aos::vision::BlobList imgs =
