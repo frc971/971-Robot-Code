@@ -20,6 +20,9 @@
 DEFINE_int32(camera_id, -1, "The camera ID to calibrate");
 DEFINE_string(prefix, "", "The image filename prefix");
 
+DEFINE_string(constants, "y2019/vision/constants.cc",
+              "Path to the constants file to update");
+
 DEFINE_double(beginning_tape_measure_reading, 11,
              "The tape measure measurement (in inches) of the first image.");
 DEFINE_int32(image_count, 75, "The number of images to capture");
@@ -293,7 +296,7 @@ void main(int argc, char **argv) {
   results.dataset = info;
   results.intrinsics = IntrinsicParams::get(&intrinsics[0]);
   results.geometry = CameraGeometry::get(&geometry[0]);
-  DumpCameraConstants("y2019/vision/constants.cc", info.camera_id, results);
+  DumpCameraConstants(FLAGS_constants.c_str(), info.camera_id, results);
 }
 
 }  // namespace y2019
