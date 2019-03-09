@@ -124,20 +124,18 @@ Vector<2> Project(Vector<2> pt, const IntrinsicParams &intrinsics,
 
 Target Project(const Target &target, const IntrinsicParams &intrinsics,
                const ExtrinsicParams &extrinsics) {
-  auto project = [&](Vector<2> pt) {
-    return Project(pt, intrinsics, extrinsics);
-  };
   Target new_targ;
   new_targ.right.is_right = true;
-  new_targ.right.top = project(target.right.top);
-  new_targ.right.inside = project(target.right.inside);
-  new_targ.right.bottom = project(target.right.bottom);
-  new_targ.right.outside = project(target.right.outside);
+  new_targ.right.top = Project(target.right.top, intrinsics, extrinsics);
+  new_targ.right.inside = Project(target.right.inside, intrinsics, extrinsics);
+  new_targ.right.bottom = Project(target.right.bottom, intrinsics, extrinsics);
+  new_targ.right.outside =
+      Project(target.right.outside, intrinsics, extrinsics);
 
-  new_targ.left.top = project(target.left.top);
-  new_targ.left.inside = project(target.left.inside);
-  new_targ.left.bottom = project(target.left.bottom);
-  new_targ.left.outside = project(target.left.outside);
+  new_targ.left.top = Project(target.left.top, intrinsics, extrinsics);
+  new_targ.left.inside = Project(target.left.inside, intrinsics, extrinsics);
+  new_targ.left.bottom = Project(target.left.bottom, intrinsics, extrinsics);
+  new_targ.left.outside = Project(target.left.outside, intrinsics, extrinsics);
 
   return new_targ;
 }

@@ -7,7 +7,7 @@ using namespace aos::vision;
 namespace y2019 {
 namespace vision {
 
-TargetFinder::TargetFinder() { target_template_ = Target::MakeTemplate(); }
+TargetFinder::TargetFinder() : target_template_(Target::MakeTemplate()) {}
 
 aos::vision::RangeImage TargetFinder::Threshold(aos::vision::ImagePtr image) {
   const uint8_t threshold_value = GetThresholdValue();

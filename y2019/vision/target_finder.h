@@ -73,7 +73,7 @@ class TargetFinder {
   aos::vision::AnalysisAllocator alloc_;
 
   // The template for the default target in the standard space.
-  Target target_template_;
+  const Target target_template_;
 
   IntrinsicParams intrinsics_;
 

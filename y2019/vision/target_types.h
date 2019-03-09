@@ -72,6 +72,7 @@ struct ExtrinsicParams {
     return out;
   }
 };
+
 // Projects a point from idealized template space to camera space.
 aos::vision::Vector<2> Project(aos::vision::Vector<2> pt,
                                const IntrinsicParams &intrinsics,

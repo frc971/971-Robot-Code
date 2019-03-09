@@ -36,19 +36,17 @@ using ceres::Solve;
 
 namespace y2019 {
 namespace vision {
+namespace {
 
 constexpr double kInchesToMeters = 0.0254;
 
-template <size_t k, size_t n, size_t n2, typename T>
-T *MakeFunctor(T &&t) {
-  return new T(std::move(t));
-}
+}  // namespace
 
-std::array<double, 3> GetError(const DatasetInfo &info,
-                               const double *const extrinsics,
-                               const double *const geometry, int i) {
-  auto extrinsic_params = ExtrinsicParams::get(extrinsics);
-  auto geo = CameraGeometry::get(geometry);
+::std::array<double, 3> GetError(const DatasetInfo &info,
+                                 const double *const extrinsics,
+                                 const double *const geometry, int i) {
+  const ExtrinsicParams extrinsic_params = ExtrinsicParams::get(extrinsics);
+  const CameraGeometry geo = CameraGeometry::get(geometry);
 
   const double s = sin(geo.heading + extrinsic_params.r2);
   const double c = cos(geo.heading + extrinsic_params.r2);
@@ -94,15 +92,15 @@ void main(int argc, char **argv) {
   ::aos::logging::AddImplementation(
       new ::aos::logging::StreamLogImplementation(stderr));
 
-  TargetFinder finder_;
+  TargetFinder target_finder;
 
   ceres::Problem problem;
 
   struct Sample {
-    std::unique_ptr<double[]> extrinsics;
+    ::std::unique_ptr<double[]> extrinsics;
     int i;
   };
-  std::vector<Sample> all_extrinsics;
+  ::std::vector<Sample> all_extrinsics;
   double intrinsics[IntrinsicParams::kNumParams];
   IntrinsicParams().set(&intrinsics[0]);
 
@@ -113,51 +111,51 @@ void main(int argc, char **argv) {
   options.minimizer_progress_to_stdout = false;
   Solver::Summary summary;
 
-  std::cout << summary.BriefReport() << "\n";
+  ::std::cout << summary.BriefReport() << "\n";
   IntrinsicParams intrinsics_ = IntrinsicParams::get(&intrinsics[0]);
-  std::cout << "rup = " << intrinsics_.mount_angle * 180 / M_PI << ";\n";
-  std::cout << "fl = " << intrinsics_.focal_length << ";\n";
-  std::cout << "error = " << summary.final_cost << ";\n";
+  ::std::cout << "rup = " << intrinsics_.mount_angle * 180 / M_PI << ";\n";
+  ::std::cout << "fl = " << intrinsics_.focal_length << ";\n";
+  ::std::cout << "error = " << summary.final_cost << ";\n";
 
   for (int i = 0; i < info.num_images; ++i) {
     auto frame = aos::vision::LoadFile(std::string(base_directory) +
                                        info.filename_prefix +
                                        std::to_string(i) + ".yuyv");
 
-    aos::vision::ImageFormat fmt{640, 480};
-    aos::vision::BlobList imgs =
-        aos::vision::FindBlobs(aos::vision::DoThresholdYUYV(
+    const ::aos::vision::ImageFormat fmt{640, 480};
+    ::aos::vision::BlobList imgs =
+        ::aos::vision::FindBlobs(aos::vision::DoThresholdYUYV(
             fmt, frame.data.data(), TargetFinder::GetThresholdValue()));
-    finder_.PreFilter(&imgs);
+    target_finder.PreFilter(&imgs);
 
-    bool verbose = false;
-    std::vector<std::vector<Segment<2>>> raw_polys;
+    constexpr bool verbose = false;
+    ::std::vector<std::vector<Segment<2>>> raw_polys;
     for (const RangeImage &blob : imgs) {
       // Convert blobs to contours in the corrected space.
-      ContourNode* contour = finder_.GetContour(blob);
-      finder_.UnWarpContour(contour);
-      std::vector<Segment<2>> polygon = finder_.FillPolygon(contour, verbose);
-      if (polygon.empty()) {
-      } else {
+      ContourNode *contour = target_finder.GetContour(blob);
+      target_finder.UnWarpContour(contour);
+      const ::std::vector<Segment<2>> polygon =
+          target_finder.FillPolygon(contour, verbose);
+      if (!polygon.empty()) {
         raw_polys.push_back(polygon);
       }
     }
 
     // Calculate each component side of a possible target.
-    std::vector<TargetComponent> target_component_list =
-        finder_.FillTargetComponentList(raw_polys);
+    const ::std::vector<TargetComponent> target_component_list =
+        target_finder.FillTargetComponentList(raw_polys);
 
     // Put the compenents together into targets.
-    std::vector<Target> target_list =
-        finder_.FindTargetsFromComponents(target_component_list, verbose);
+    const ::std::vector<Target> target_list =
+        target_finder.FindTargetsFromComponents(target_component_list, verbose);
 
     // Use the solver to generate an intermediate version of our results.
     std::vector<IntermediateResult> results;
     for (const Target &target : target_list) {
-      ::std::array<aos::vision::Vector<2>, 8> target_value =
+      const ::std::array<::aos::vision::Vector<2>, 8> target_value =
           target.ToPointList();
-      ::std::array<aos::vision::Vector<2>, 8> template_value =
-          finder_.GetTemplateTarget().ToPointList();
+      const ::std::array<::aos::vision::Vector<2>, 8> template_value =
+          target_finder.GetTemplateTarget().ToPointList();
 
       // TODO(austin): Memory leak below, fix.
       double *extrinsics = new double[ExtrinsicParams::kNumParams];
@@ -165,24 +163,33 @@ void main(int argc, char **argv) {
       all_extrinsics.push_back({std::unique_ptr<double[]>(extrinsics), i});
 
       for (size_t j = 0; j < 8; ++j) {
-        aos::vision::Vector<2> temp = template_value[j];
-        aos::vision::Vector<2> targ = target_value[j];
+        // Template target in target space as documented by GetTemplateTarget()
+        const ::aos::vision::Vector<2> template_point = template_value[j];
+        // Target in pixel space.
+        const ::aos::vision::Vector<2> target_point = target_value[j];
 
-        auto ftor = [temp, targ, i](const double *const intrinsics,
-                                    const double *const extrinsics,
-                                    double *residual) {
-          auto in = IntrinsicParams::get(intrinsics);
-          auto extrinsic_params = ExtrinsicParams::get(extrinsics);
-          auto pt = targ - Project(temp, in, extrinsic_params);
-          residual[0] = pt.x();
-          residual[1] = pt.y();
+        // Now build up the residual block.
+        auto ftor = [template_point, target_point, i](
+            const double *const intrinsics, const double *const extrinsics,
+            double *residual) {
+          const IntrinsicParams intrinsic_params =
+              IntrinsicParams::get(intrinsics);
+          const ExtrinsicParams extrinsic_params =
+              ExtrinsicParams::get(extrinsics);
+          // Project the target location into pixel coordinates.
+          const ::aos::vision::Vector<2> projected_point =
+              Project(template_point, intrinsic_params, extrinsic_params);
+          const ::aos::vision::Vector<2> residual_point =
+              target_point - projected_point;
+          residual[0] = residual_point.x();
+          residual[1] = residual_point.y();
           return true;
         };
         problem.AddResidualBlock(
             new NumericDiffCostFunction<decltype(ftor), CENTRAL, 2,
                                         IntrinsicParams::kNumParams,
                                         ExtrinsicParams::kNumParams>(
-                new decltype(ftor)(std::move(ftor))),
+                new decltype(ftor)(::std::move(ftor))),
             NULL, &intrinsics[0], extrinsics);
       }
 
@@ -199,7 +206,7 @@ void main(int argc, char **argv) {
           new NumericDiffCostFunction<decltype(ftor), CENTRAL, 3,
                                       ExtrinsicParams::kNumParams,
                                       CameraGeometry::kNumParams>(
-              new decltype(ftor)(std::move(ftor))),
+              new decltype(ftor)(::std::move(ftor))),
           NULL, extrinsics, &geometry[0]);
     }
   }
@@ -209,36 +216,36 @@ void main(int argc, char **argv) {
   Solve(options, &problem, &summary);
 
   {
-    std::cout << summary.BriefReport() << "\n";
+    ::std::cout << summary.BriefReport() << ::std::endl;
     IntrinsicParams intrinsics_ = IntrinsicParams::get(&intrinsics[0]);
     CameraGeometry geometry_ = CameraGeometry::get(&geometry[0]);
-    std::cout << "rup = " << intrinsics_.mount_angle * 180 / M_PI << ";\n";
-    std::cout << "fl = " << intrinsics_.focal_length << ";\n";
-    std::cout << "error = " << summary.final_cost << ";\n";
+    ::std::cout << "rup = " << intrinsics_.mount_angle * 180 / M_PI << ";"
+                << ::std::endl;
+    ::std::cout << "fl = " << intrinsics_.focal_length << ";" << ::std::endl;
+    ::std::cout << "error = " << summary.final_cost << ";" << ::std::endl;
 
-    std::cout << "camera_angle = " << geometry_.heading * 180 / M_PI << "\n";
-    std::cout << "camera_x = " << geometry_.location[0] / kInchesToMeters
-              << "\n";
-    std::cout << "camera_y = " << geometry_.location[1] / kInchesToMeters
-              << "\n";
-    std::cout << "camera_z = " << geometry_.location[2] / kInchesToMeters
-              << "\n";
-    std::cout << "camera_barrel = " << intrinsics_.barrel_mount * 180.0 / M_PI
-              << "\n";
+    ::std::cout << "camera_angle = " << geometry_.heading * 180 / M_PI
+                << ::std::endl;
+    ::std::cout << "camera_x = " << geometry_.location[0] << ::std::endl;
+    ::std::cout << "camera_y = " << geometry_.location[1] << ::std::endl;
+    ::std::cout << "camera_z = " << geometry_.location[2] << ::std::endl;
+    ::std::cout << "camera_barrel = " << intrinsics_.barrel_mount * 180.0 / M_PI
+                << ::std::endl;
 
     for (const Sample &sample : all_extrinsics) {
-      int i = sample.i;
+      const int i = sample.i;
       double *data = sample.extrinsics.get();
 
-      ExtrinsicParams extn = ExtrinsicParams::get(data);
+      const ExtrinsicParams extrinsic_params = ExtrinsicParams::get(data);
 
-      auto err = GetError(info, data, &geometry[0], i);
+      const ::std::array<double, 3> error =
+          GetError(info, data, &geometry[0], i);
 
-      std::cout << i << ", ";
-      std::cout << extn.z / kInchesToMeters << ", ";
-      std::cout << extn.y / kInchesToMeters << ", ";
-      std::cout << extn.r1 * 180 / M_PI << ", ";
-      std::cout << extn.r2 * 180 / M_PI << ", ";
+      ::std::cout << i << ", ";
+      ::std::cout << extrinsic_params.z << "m, ";
+      ::std::cout << extrinsic_params.y << "m, ";
+      ::std::cout << extrinsic_params.r1 * 180 / M_PI << ", ";
+      ::std::cout << extrinsic_params.r2 * 180 / M_PI << ", ";
       // TODO: Methodology problem: This should really have a separate solve for
       // extrinsics...
       std::cout << err[0] << ", ";
