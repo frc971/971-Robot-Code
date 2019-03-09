@@ -154,10 +154,11 @@ TEST_F(CameraTest, HighlySkewedTest) {
   EXPECT_EQ(1u, camera_.target_views().size());
 }
 
+using Reading = TestCamera::TargetView::Reading;
+
 // Checks that reading noises have the expected characteristics (mostly, going
 // up linearly with distance):
 TEST_F(CameraTest, DistanceNoiseTest) {
-  using Reading = TestCamera::TargetView::Reading;
   const Reading normal_noise = camera_.target_views()[0].noise;
   // Get twice as close:
   base_pose_.mutable_pos()->y() /= 2.0;
@@ -168,6 +169,40 @@ TEST_F(CameraTest, DistanceNoiseTest) {
   // Heading reading should be equally good.
   EXPECT_EQ(normal_noise.heading, closer_noise.heading);
 }
+
+class CameraViewParamTest : public CameraTest,
+                            public ::testing::WithParamInterface<Reading> {};
+
+// Checks that invalid or absurd measurements result in large but finite noises
+// and non-visible targets.
+TEST_P(CameraViewParamTest, InvalidReading) {
+  TestCamera::TargetView view;
+  view.reading = GetParam();
+  bool visible = true;
+  camera_.PopulateNoise(&view, &visible);
+  // Target should not be visible
+  EXPECT_FALSE(visible);
+  // We should end up with finite but very large noises when things are invalid.
+  EXPECT_TRUE(::std::isfinite(view.noise.heading));
+  EXPECT_TRUE(::std::isfinite(view.noise.distance));
+  EXPECT_TRUE(::std::isfinite(view.noise.skew));
+  EXPECT_TRUE(::std::isfinite(view.noise.height));
+  // Don't check heading noise because it is always constant.
+  EXPECT_LT(10, view.noise.distance);
+  EXPECT_LT(10, view.noise.skew);
+  EXPECT_LT(5, view.noise.height);
+}
+
+INSTANTIATE_TEST_CASE_P(
+    InvalidMeasurements, CameraViewParamTest,
+    ::testing::Values(
+        // heading, distance, height, skew
+        Reading({100.0, -10.0, -10.0, -3.0}), Reading({0.0, 1.0, 0.0, -3.0}),
+        Reading({0.0, 1.0, 0.0, 3.0}), Reading({0.0, 1.0, 0.0, 9.0}),
+        Reading({0.0, ::std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0}),
+        Reading({0.0, ::std::numeric_limits<double>::infinity(), 0.0, 0.0}),
+        Reading({0.0, 1.0, 0.0, ::std::numeric_limits<double>::infinity()}),
+        Reading({0.0, 1.0, 0.0, ::std::numeric_limits<double>::quiet_NaN()})));
 
 }  // namespace testing
 }  // namespace control_loops

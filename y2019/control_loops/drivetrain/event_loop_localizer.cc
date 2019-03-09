@@ -58,6 +58,16 @@ void EventLoopLocalizer::Update(
 void EventLoopLocalizer::HandleFrame(const CameraFrame &frame) {
   // We need to construct TargetView's and pass them to the localizer:
   ::aos::SizedArray<TargetView, kMaxTargetsPerFrame> views;
+  // Note: num_targets and camera are unsigned integers and so don't need to be
+  // checked for < 0.
+  if (frame.num_targets > kMaxTargetsPerFrame) {
+    LOG(ERROR, "Got bad num_targets %d\n", frame.num_targets);
+    return;
+  }
+  if (frame.camera > cameras_.size()) {
+    LOG(ERROR, "Got bad camera number %d\n", frame.camera);
+    return;
+  }
   for (int ii = 0; ii < frame.num_targets; ++ii) {
     TargetView view;
     view.reading.heading = frame.targets[ii].heading;

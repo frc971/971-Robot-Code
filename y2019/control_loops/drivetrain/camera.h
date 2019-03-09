@@ -213,14 +213,18 @@ class TypedCamera {
     // This number is unitless and if greater than 1, implies that the target is
     // visible to the camera and if less than 1 implies it is too small to be
     // registered on the camera.
-    Scalar apparent_width =
-        ::std::max<Scalar>(0.0, ::std::cos(view->reading.skew) *
-                                    noise_parameters_.max_viewable_distance /
-                                    view->reading.distance);
+    const Scalar cosskew = ::std::cos(view->reading.skew);
+    Scalar apparent_width = ::std::max<Scalar>(
+        0.0, cosskew * noise_parameters_.max_viewable_distance /
+                 view->reading.distance);
+    // If we got wildly invalid distance or skew measurements, then set a very
+    // small apparent width.
+    if (view->reading.distance < 0 || cosskew < 0) {
+      apparent_width = 0.01;
+    }
     // As both a sanity check and for the sake of numerical stability, manually
-    // set apparent_width to something "very small" if the distance is too
-    // close.
-    if (view->reading.distance < 0.01) {
+    // set apparent_width to something "very small" if it is near zero.
+    if (apparent_width < 0.01) {
       apparent_width = 0.01;
     }
 
