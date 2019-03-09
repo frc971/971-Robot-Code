@@ -41,6 +41,24 @@ CameraCalibration camera_5 = {
         59,
     }};
 
+CameraCalibration camera_6 = {
+    {
+        -1.17595 / 180.0 * M_PI, 346.997, 0.987547 / 180.0 * M_PI,
+    },
+    {
+        {{4.88124 * kInchesToMeters, 2.15528 * kInchesToMeters,
+          33.1686 * kInchesToMeters}},
+        -12.0018 / 180.0 * M_PI,
+    },
+    {
+        6,
+        {{12.5 * kInchesToMeters, 0.0}},
+        {{1 * kInchesToMeters, 0.0}},
+        11,
+        "data/cam6_0/debug_viewer_jpeg_",
+        75,
+    }};
+
 CameraCalibration camera_10 = {
     {
         -0.165199 / 180.0 * M_PI, 340.666, 0.596842 / 180.0 * M_PI,
@@ -101,6 +119,8 @@ const CameraCalibration *GetCamera(int camera_id) {
       return &camera_4;
     case 5:
       return &camera_5;
+    case 6:
+      return &camera_6;
     case 10:
       return &camera_10;
     case 16:
