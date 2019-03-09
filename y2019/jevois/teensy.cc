@@ -508,28 +508,6 @@ __attribute__((unused)) void TestIo() {
   PERIPHERAL_BITBAND(GPIOD_PDDR, 1) = 0;
   PORTD_PCR1 = PORT_PCR_DSE | PORT_PCR_MUX(1);
 
-  // Set LED pins to GPIO.
-  PERIPHERAL_BITBAND(GPIOC_PDDR, 11) = 1;
-  PORTC_PCR11 = PORT_PCR_DSE | PORT_PCR_MUX(1);
-  PERIPHERAL_BITBAND(GPIOC_PDDR, 10) = 1;
-  PORTC_PCR10 = PORT_PCR_DSE | PORT_PCR_MUX(1);
-  PERIPHERAL_BITBAND(GPIOC_PDDR, 8) = 1;
-  PORTC_PCR8 = PORT_PCR_DSE | PORT_PCR_MUX(1);
-  PERIPHERAL_BITBAND(GPIOC_PDDR, 9) = 1;
-  PORTC_PCR9 = PORT_PCR_DSE | PORT_PCR_MUX(1);
-  PERIPHERAL_BITBAND(GPIOB_PDDR, 18) = 1;
-  PORTB_PCR18 = PORT_PCR_DSE | PORT_PCR_MUX(1);
-  PERIPHERAL_BITBAND(GPIOC_PDDR, 2) = 1;
-  PORTC_PCR2 = PORT_PCR_DSE | PORT_PCR_MUX(1);
-  PERIPHERAL_BITBAND(GPIOD_PDDR, 7) = 1;
-  PORTD_PCR7 = PORT_PCR_DSE | PORT_PCR_MUX(1);
-  PERIPHERAL_BITBAND(GPIOC_PDDR, 1) = 1;
-  PORTC_PCR1 = PORT_PCR_DSE | PORT_PCR_MUX(1);
-  PERIPHERAL_BITBAND(GPIOB_PDDR, 19) = 1;
-  PORTB_PCR19 = PORT_PCR_DSE | PORT_PCR_MUX(1);
-  PERIPHERAL_BITBAND(GPIOD_PDDR, 5) = 1;
-  PORTD_PCR5 = PORT_PCR_DSE | PORT_PCR_MUX(1);
-
   auto next = aos::monotonic_clock::now();
   static constexpr auto kTick = std::chrono::seconds(1);
   while (true) {
@@ -705,8 +683,8 @@ __attribute__((unused)) void TransferData(
         packetizers[i].clear_received_packet();
         if (decoded) {
           if (verbose) {
-            printf("uart frame cam %d, %d targets\n", (int)i,
-                   (int)decoded->targets.size());
+            printf("uart frame cam %d, %d targets\n", static_cast<int>(i),
+                   static_cast<int>(decoded->targets.size()));
           }
           frame_queue.UpdateFrame(i, *decoded);
           light_rings[i].last_frame = aos::monotonic_clock::now();
@@ -763,7 +741,6 @@ __attribute__((unused)) void TransferData(
             const y2019::vision::CameraCalibration *const constants =
                 y2019::vision::GetCamera(y2019::vision::CameraSerialNumbers(
                     ProcessorIdentifier())[i]);
-            (void)constants;
             calibration.calibration(0, 0) = constants->intrinsics.mount_angle;
             calibration.calibration(0, 1) = constants->intrinsics.focal_length;
             calibration.calibration(0, 2) = constants->intrinsics.barrel_mount;
@@ -892,6 +869,9 @@ int Main() {
   // Clear the interrupt flag now that we've reconfigured it.
   PORTA_ISFR = 1 << 17;
 
+  // For now, we have no need to dim the LEDs, so we're just going to set them
+  // all to GPIO mode for simplicity of programming.
+#if 0
   // FTM0_CH0 is LED0 (7 in silkscreen, a beacon channel).
   PORTC_PCR1 = PORT_PCR_DSE | PORT_PCR_MUX(4);
   // FTM0_CH1 is LED1 (5 in silkscreen, a beacon channel).
@@ -914,6 +894,29 @@ int Main() {
   PORTC_PCR10 = PORT_PCR_DSE | PORT_PCR_MUX(3);
   // FTM3_CH7 is LED9 (for CAM0).
   PORTC_PCR11 = PORT_PCR_DSE | PORT_PCR_MUX(3);
+#else
+  // Set all the LED pins to GPIO.
+  PERIPHERAL_BITBAND(GPIOC_PDDR, 11) = 1;
+  PORTC_PCR11 = PORT_PCR_DSE | PORT_PCR_MUX(1);
+  PERIPHERAL_BITBAND(GPIOC_PDDR, 10) = 1;
+  PORTC_PCR10 = PORT_PCR_DSE | PORT_PCR_MUX(1);
+  PERIPHERAL_BITBAND(GPIOC_PDDR, 8) = 1;
+  PORTC_PCR8 = PORT_PCR_DSE | PORT_PCR_MUX(1);
+  PERIPHERAL_BITBAND(GPIOC_PDDR, 9) = 1;
+  PORTC_PCR9 = PORT_PCR_DSE | PORT_PCR_MUX(1);
+  PERIPHERAL_BITBAND(GPIOB_PDDR, 18) = 1;
+  PORTB_PCR18 = PORT_PCR_DSE | PORT_PCR_MUX(1);
+  PERIPHERAL_BITBAND(GPIOC_PDDR, 2) = 1;
+  PORTC_PCR2 = PORT_PCR_DSE | PORT_PCR_MUX(1);
+  PERIPHERAL_BITBAND(GPIOD_PDDR, 7) = 1;
+  PORTD_PCR7 = PORT_PCR_DSE | PORT_PCR_MUX(1);
+  PERIPHERAL_BITBAND(GPIOC_PDDR, 1) = 1;
+  PORTC_PCR1 = PORT_PCR_DSE | PORT_PCR_MUX(1);
+  PERIPHERAL_BITBAND(GPIOB_PDDR, 19) = 1;
+  PORTB_PCR19 = PORT_PCR_DSE | PORT_PCR_MUX(1);
+  PERIPHERAL_BITBAND(GPIOD_PDDR, 5) = 1;
+  PORTD_PCR5 = PORT_PCR_DSE | PORT_PCR_MUX(1);
+#endif
 
   // This hardware has been deactivated, but keep this comment for now to
   // document which pins it is on.
