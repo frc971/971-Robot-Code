@@ -145,18 +145,20 @@ void main(int argc, char **argv) {
     const ::std::vector<Target> target_list =
         target_finder.FindTargetsFromComponents(target_component_list, verbose);
 
-    // Use the solver to generate an intermediate version of our results.
-    std::vector<IntermediateResult> results;
+    // Now, iterate over the targets (in pixel space).  Generate a residual
+    // block for each valid target which compares the actual pixel locations
+    // with the expected pixel locations given the intrinsics and extrinsics.
     for (const Target &target : target_list) {
       const ::std::array<::aos::vision::Vector<2>, 8> target_value =
           target.ToPointList();
       const ::std::array<::aos::vision::Vector<2>, 8> template_value =
           target_finder.GetTemplateTarget().ToPointList();
 
-      // TODO(austin): Memory leak below, fix.
-      double *extrinsics = new double[ExtrinsicParams::kNumParams];
+      all_extrinsics.push_back(
+          {::std::unique_ptr<double[]>(new double[ExtrinsicParams::kNumParams]),
+           i});
+      double *extrinsics = all_extrinsics.back().extrinsics.get();
       ExtrinsicParams().set(extrinsics);
-      all_extrinsics.push_back({std::unique_ptr<double[]>(extrinsics), i});
 
       for (size_t j = 0; j < 8; ++j) {
         // Template target in target space as documented by GetTemplateTarget()
