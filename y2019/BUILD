@@ -114,6 +114,7 @@ cc_binary(
     ],
     deps = [
         ":status_light",
+        ":vision_proto",
         "//aos:init",
         "//aos/actions:action_lib",
         "//aos/input:action_joystick_input",
@@ -130,6 +131,7 @@ cc_binary(
         "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//y2019/control_loops/drivetrain:drivetrain_base",
         "//y2019/control_loops/superstructure:superstructure_queue",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 

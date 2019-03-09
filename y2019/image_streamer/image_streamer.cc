@@ -12,6 +12,7 @@
 #include "aos/vision/events/udp.h"
 #include "aos/vision/image/reader.h"
 #include "gflags/gflags.h"
+#include "y2019/image_streamer/flip_image.h"
 #include "y2019/vision.pb.h"
 
 using ::aos::events::DataSocket;
@@ -195,7 +196,7 @@ class MjpegDataSocket : public aos::events::SocketConnection {
       fprintf(stderr, "wrong sized buffer\n");
       exit(-1);
     }
-    LOG(INFO, "Frame size in bytes: data.size() = %zu\n",data.size());
+    LOG(INFO, "Frame size in bytes: data.size() = %zu\n", data.size());
     output_buffer_.push_back(aos::vision::DataRef(data_header_tmp_, n_written));
     output_buffer_.push_back(data);
     output_buffer_.push_back("\r\n\r\n");
@@ -255,6 +256,8 @@ class CameraStream : public ::aos::vision::ImageStreamEvent {
 
   void set_active(bool active) { active_ = active; }
 
+  void set_flip(bool flip) { flip_ = flip; }
+
   bool active() const { return active_; }
 
   void ProcessImage(DataRef data,
@@ -276,8 +279,18 @@ class CameraStream : public ::aos::vision::ImageStreamEvent {
       sampling = 0;
     }
 
+    std::string image_out;
+
+    if (flip_) {
+      unsigned int out_size = image_buffer_out_.size();
+      flip_image(data.data(), data.size(), &image_buffer_out_[0], &out_size);
+      image_out.assign(&image_buffer_out_[0], &image_buffer_out_[out_size]);
+    } else {
+      image_out = std::string(data);
+    }
+
     if (active_) {
-      auto frame = std::make_shared<Frame>(Frame{std::string(data)});
+      auto frame = std::make_shared<Frame>(Frame{image_out});
       tcp_server_->Broadcast(
           [frame](MjpegDataSocket *event) { event->NewFrame(frame); });
     }
@@ -290,6 +303,8 @@ class CameraStream : public ::aos::vision::ImageStreamEvent {
   ::std::unique_ptr<BlobLog> log_;
   ::std::function<void()> frame_callback_;
   bool active_ = false;
+  bool flip_ = false;
+  std::array<JOCTET, 100000> image_buffer_out_;
 };
 
 int main(int argc, char **argv) {
@@ -343,7 +358,9 @@ int main(int argc, char **argv) {
   ProtoUdpClient<VisionControl> udp_client(
       5000, [&camera0, &camera1](const VisionControl &vision_control) {
         bool cam0_active = false;
+        camera0->set_flip(vision_control.flip_image());
         if (camera1) {
+          camera1->set_flip(vision_control.flip_image());
           cam0_active = !vision_control.high_video();
           camera0->set_active(!vision_control.high_video());
           camera1->set_active(vision_control.high_video());
