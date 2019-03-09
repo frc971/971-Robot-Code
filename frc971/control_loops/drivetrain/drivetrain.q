@@ -57,6 +57,18 @@ struct TrajectoryLogging {
   float right_velocity;
 };
 
+// For logging state of the line follower.
+struct LineFollowLogging {
+  // Whether we are currently freezing target choice.
+  bool frozen;
+  // Whether we currently have a target.
+  bool have_target;
+  // Absolute position of the current goal.
+  float x;
+  float y;
+  float theta;
+};
+
 queue_group DrivetrainQueue {
   implements aos.control_loops.ControlLoop;
 
@@ -184,6 +196,7 @@ queue_group DrivetrainQueue {
     GearLogging gear_logging;
     CIMLogging cim_logging;
     TrajectoryLogging trajectory_logging;
+    LineFollowLogging line_follow_logging;
   };
 
   queue Goal goal;

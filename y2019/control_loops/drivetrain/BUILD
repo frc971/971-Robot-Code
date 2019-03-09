@@ -121,12 +121,34 @@ cc_library(
 )
 
 cc_library(
+    name = "target_selector",
+    srcs = ["target_selector.cc"],
+    hdrs = ["target_selector.h"],
+    deps = [
+        ":camera",
+        "//frc971/control_loops:pose",
+        "//frc971/control_loops/drivetrain:localizer",
+        "//y2019:constants",
+    ],
+)
+
+cc_test(
+    name = "target_selector_test",
+    srcs = ["target_selector_test.cc"],
+    deps = [
+        ":target_selector",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
     name = "event_loop_localizer",
     srcs = ["event_loop_localizer.cc"],
     hdrs = ["event_loop_localizer.h"],
     deps = [
         ":camera_queue",
         ":localizer",
+        ":target_selector",
         "//frc971/control_loops/drivetrain:localizer",
         "//y2019:constants",
     ],

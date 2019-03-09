@@ -35,7 +35,6 @@ EventLoopLocalizer::EventLoopLocalizer(
                                Localizer::State::Zero(), localizer_.P());
   frame_fetcher_ = event_loop_->MakeFetcher<CameraFrame>(
       ".y2019.control_loops.drivetrain.camera_frames");
-  target_selector_.set_has_target(false);
 }
 
 void EventLoopLocalizer::Reset(const Localizer::State &state) {

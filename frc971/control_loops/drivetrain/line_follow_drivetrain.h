@@ -41,9 +41,8 @@ class LineFollowDrivetrain {
   // over.
   bool SetOutput(
       ::frc971::control_loops::DrivetrainQueue::Output *output);
-  // TODO(james): Populate.
   void PopulateStatus(
-      ::frc971::control_loops::DrivetrainQueue::Status * /*status*/) const {}
+      ::frc971::control_loops::DrivetrainQueue::Status *status) const;
 
  private:
   // Nominal max voltage.
