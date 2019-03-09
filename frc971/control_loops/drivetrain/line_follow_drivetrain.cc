@@ -11,7 +11,6 @@ namespace control_loops {
 namespace drivetrain {
 
 constexpr double LineFollowDrivetrain::kMaxVoltage;
-constexpr double LineFollowDrivetrain::kPolyN;
 
 namespace {
 ::Eigen::Matrix<double, 3, 3> AContinuous(
@@ -99,71 +98,34 @@ LineFollowDrivetrain::LineFollowDrivetrain(
       target_selector_(target_selector),
       U_(0, 0) {}
 
-double LineFollowDrivetrain::GoalTheta(
-    const ::Eigen::Matrix<double, 5, 1> &state) const {
-  // TODO(james): Consider latching the sign of the goal so that the driver
-  // can back up without the robot trying to turn around...
-  // On the other hand, we may just want to force the driver to take over
-  // entirely if they need to backup.
-  int sign = ::aos::sign(goal_velocity_);
-  // Given a Nth degree polynomial with just a single term that
-  // has its minimum (with a slope of zero) at (0, 0) and passing
-  // through (x0, y0), we will have:
-  // y = a * x^N
-  // a = y0 / x0^N
-  // And the slope of the tangent line at (x0, y0) will be
-  // N * a * x0^(N-1)
-  // = N * y0 / x0^N * x0^(N-1)
-  // = N * y0 / x0
-  // Giving a heading of
-  // atan2(-N * y0, -x0)
-  // where we add the negative signs to make things work out properly when we
-  // are trying to drive forwards towards zero. We reverse the sign of both
-  // terms if we want to drive backwards.
-  return ::std::atan2(-sign * kPolyN * state.y(), -sign * state.x());
-}
-
-double LineFollowDrivetrain::GoalThetaDot(
-    const ::Eigen::Matrix<double, 5, 1> &state) const {
-  // theta = atan2(-N * y0, -x0)
-  // Note: d(atan2(p(t), q(t)))/dt
-  //       = (p(t) * q'(t) - q(t) * p'(t)) / (p(t)^2 + q(t)^2)
-  // Note: x0' = cos(theta) * v, y0' = sin(theta) * v
-  // Note that for the sin/cos calculations we discard the
-  //   negatives in the arctangent to make the signs work out (the
-  //   dtheta/dt needs to be correct as we travel along the path). This
-  //   also corresponds with the fact that thetadot is agnostic towards
-  //   whether the robot is driving forwards or backwards, so long as it is
-  //   trying to drive towards the target.
-  // Note: sin(theta) = sin(atan2(N * y0, x0))
-  //       = N * y0 / sqrt(N^2 * y0^2 + x0^2)
-  // Note: cos(theta) = cos(atan2(N * y0, x0))
-  //       = x0 / sqrt(N^2 * y0^2 + x0^2)
-  // dtheta/dt
-  // = (-x0 * (-N * y0') - -N * y0 * (-x0')) / (N^2 * y0^2 + x0^2)
-  // = N * (x0 * v * sin(theta) - y0 * v * cos(theta)) / (N^2 * y0^2 + x0^2)
-  // = N * v * (x0 * (N * y0) - y0 * (x0)) / (N^2 * y0^2 + x0^2)^1.5
-  // = N * v * (N - 1) * x0 * y0 / (N^2 * y0^2 + x0^2)^1.5
-  const double linear_vel = (state(3, 0) + state(4, 0)) / 2.0;
-  const double x2 = ::std::pow(state.x(), 2);
-  const double y2 = ::std::pow(state.y(), 2);
-  const double norm = y2 * kPolyN * kPolyN + x2;
-  // When we get too near the goal, avoid singularity in a sane manner.
-  if (norm < 1e-3) {
-    return 0.0;
-  }
-  return kPolyN * (kPolyN - 1) * linear_vel * state.x() * state.y() /
-         (norm * ::std::sqrt(norm));
-}
-
 void LineFollowDrivetrain::SetGoal(
+    ::aos::monotonic_clock::time_point now,
     const ::frc971::control_loops::DrivetrainQueue::Goal &goal) {
   // TODO(james): More properly calculate goal velocity from throttle.
-  goal_velocity_ = goal.throttle;
+  goal_velocity_ = 4.0 * goal.throttle;
+  // The amount of time to freeze the target choice after the driver releases
+  // the button. Depending on the current state, we vary how long this timeout
+  // is so that we can avoid button glitches causing issues.
+  ::std::chrono::nanoseconds freeze_delay = ::std::chrono::seconds(0);
   // Freeze the target once the driver presses the button; if we haven't yet
   // confirmed a target when the driver presses the button, we will not do
   // anything and report not ready until we have a target.
-  freeze_target_ = goal.controller_type == 3;
+  if (goal.controller_type == 3) {
+    last_enable_ = now;
+    // If we already acquired a target, we want to keep track if it.
+    if (have_target_) {
+      freeze_delay = ::std::chrono::milliseconds(500);
+      // If we've had the target acquired for a while, the driver is probably
+      // happy with the current target selection, so we really want to keep it.
+      if (now - start_of_target_acquire_ > ::std::chrono::milliseconds(1000)) {
+        freeze_delay = ::std::chrono::milliseconds(2000);
+      }
+    }
+  }
+  freeze_target_ = now <= freeze_delay + last_enable_;
+  // Set an adjustment that lets the driver tweak the offset for where we place
+  // the target left/right.
+  side_adjust_ = -goal.wheel * 0.1;
 }
 
 bool LineFollowDrivetrain::SetOutput(
@@ -177,7 +139,48 @@ bool LineFollowDrivetrain::SetOutput(
   return have_target_;
 }
 
+double LineFollowDrivetrain::GoalTheta(
+    const ::Eigen::Matrix<double, 5, 1> &abs_state, double relative_y_offset,
+    double velocity_sign) {
+  // Calculates the goal angle for the drivetrain given our position.
+  // The calculated goal will be such that a point disc_rad to one side of the
+  // drivetrain (the side depends on where we approach from) will end up hitting
+  // the plane of the target exactly disc_rad from the center of the target.
+  // This allows us to better approach targets in the 2019 game from an
+  // angle--radii of zero imply driving straight in.
+  const double disc_rad = target_selector_->TargetRadius();
+  // Depending on whether we are to the right or left of the target, we work off
+  // of a different side of the robot.
+  const double edge_sign = relative_y_offset > 0 ? 1.0 : -1.0;
+  // Note side_adjust which is the input from the driver's wheel to allow
+  // shifting the goal target left/right.
+  const double edge_offset = edge_sign * disc_rad - side_adjust_;
+  // The point that we are trying to get the disc to hit.
+  const Pose corner = Pose(&target_pose_, {0.0, edge_offset, 0.0}, 0.0);
+  // A pose for the current robot position that is square to the target.
+  Pose square_robot =
+      Pose({abs_state.x(), abs_state.y(), 0.0}, 0.0).Rebase(&corner);
+  // To prevent numerical issues, we limit x so that when the localizer isn't
+  // working properly and ends up driving past the target, we still get sane
+  // results.
+  square_robot.mutable_pos()->x() =
+      ::std::min(::std::min(square_robot.mutable_pos()->x(), -disc_rad), -0.01);
+  // Distance from the edge of the disc on the robot to the velcro we want to
+  // hit on the target.
+  const double dist_to_corner = square_robot.xy_norm();
+  // The following actually handles calculating the heading we need the robot to
+  // take (relative to the plane of the target).
+  const double alpha = ::std::acos(disc_rad / dist_to_corner);
+  const double heading_to_robot = edge_sign * square_robot.heading();
+  double theta = -edge_sign * (M_PI - alpha - (heading_to_robot - M_PI_2));
+  if (velocity_sign < 0) {
+    theta = ::aos::math::NormalizeAngle(theta + M_PI);
+  }
+  return theta;
+}
+
 void LineFollowDrivetrain::Update(
+    ::aos::monotonic_clock::time_point now,
     const ::Eigen::Matrix<double, 5, 1> &abs_state) {
   // Because we assume the target selector may have some internal state (e.g.,
   // not confirming a target until some time as passed), we should call
@@ -189,6 +192,8 @@ void LineFollowDrivetrain::Update(
     // target before.
     if (!have_target_ && new_target) {
       have_target_ = true;
+      start_of_target_acquire_ = now;
+      velocity_sign_ = goal_velocity_ >= 0.0 ? 1.0 : -1.0;
       target_pose_ = target_selector_->TargetPose();
     }
   } else {
@@ -197,12 +202,15 @@ void LineFollowDrivetrain::Update(
     have_target_ = new_target;
     if (have_target_) {
       target_pose_ = target_selector_->TargetPose();
+      velocity_sign_ = goal_velocity_ >= 0.0 ? 1.0 : -1.0;
     }
   }
-
   // Get the robot pose in the target coordinate frame.
-  const Pose relative_robot_pose = Pose({abs_state.x(), abs_state.y(), 0.0},
-                                        abs_state(2, 0)).Rebase(&target_pose_);
+  relative_pose_ = Pose({abs_state.x(), abs_state.y(), 0.0}, abs_state(2, 0))
+                       .Rebase(&target_pose_);
+  double goal_theta =
+      GoalTheta(abs_state, relative_pose_.rel_pos().y(), velocity_sign_);
+
   // Always force a slight negative X, so that the driver can continue to drive
   // past zero if they want.
   // The "slight negative" needs to be large enough that we won't force
@@ -210,28 +218,38 @@ void LineFollowDrivetrain::Update(
   // line--because, in practice, the driver should never be trying to drive to a
   // target where they are significantly off laterally at <0.1m from the target,
   // this should not be a problem.
-  const double relative_x = ::std::min(relative_robot_pose.rel_pos().x(), -0.1);
+  const double relative_x = ::std::min(relative_pose_.rel_pos().x(), -0.1);
   const ::Eigen::Matrix<double, 5, 1> rel_state =
       (::Eigen::Matrix<double, 5, 1>() << relative_x,
-       relative_robot_pose.rel_pos().y(), relative_robot_pose.rel_theta(),
-       abs_state(3, 0), abs_state(4, 0))
-          .finished();
-  ::Eigen::Matrix<double, 3, 1> controls_goal(
-      GoalTheta(rel_state), goal_velocity_, GoalThetaDot(rel_state));
+       relative_pose_.rel_pos().y(), relative_pose_.rel_theta(),
+       abs_state(3, 0), abs_state(4, 0)).finished();
+  if (velocity_sign_ * goal_velocity_ < 0)  {
+    goal_theta = rel_state(2, 0);
+  }
+  controls_goal_ << goal_theta, goal_velocity_, 0.0;
   ::Eigen::Matrix<double, 3, 1> controls_state;
   controls_state(0, 0) = rel_state(2, 0);
   controls_state.block<2, 1>(1, 0) =
       dt_config_.Tlr_to_la() * rel_state.block<2, 1>(3, 0);
-  ::Eigen::Matrix<double, 3, 1> controls_err = controls_goal - controls_state;
+  ::Eigen::Matrix<double, 3, 1> controls_err = controls_goal_ - controls_state;
   // Because we are taking the difference of an angle, normaliez to [-pi, pi].
   controls_err(0, 0) = ::aos::math::NormalizeAngle(controls_err(0, 0));
   // TODO(james): Calculate the next goal so that we are properly doing
   // feed-forwards.
   ::Eigen::Matrix<double, 2, 1> U_ff =
-      Kff_ * (controls_goal - A_d_ * controls_goal);
+      Kff_ * (controls_goal_ - A_d_ * controls_goal_);
   U_ = K_ * controls_err + U_ff;
-  const double maxU = U_.lpNorm<::Eigen::Infinity>();
-  U_ *= (maxU > kMaxVoltage) ? kMaxVoltage / maxU : 1.0;
+  const double maxU = ::std::max(U_(0, 0), U_(1, 0));
+  const double minU = ::std::min(U_(0, 0), U_(1, 0));
+  const double diffU = ::std::abs(U_(1, 0) - U_(0, 0));
+  const double maxAbsU = ::std::max(maxU, -minU);
+  if (diffU > 24.0) {
+    U_ *= (maxAbsU > kMaxVoltage) ? kMaxVoltage / maxAbsU : 1.0;
+  } else if (maxU > 12.0) {
+    U_ = U_ + U_.Ones() * (12.0 - maxU);
+  } else if (minU < -12.0) {
+    U_ = U_ - U_.Ones() * (minU + 12.0);
+  }
 }
 
 void LineFollowDrivetrain::PopulateStatus(
@@ -241,6 +259,11 @@ void LineFollowDrivetrain::PopulateStatus(
   status->line_follow_logging.x = target_pose_.abs_pos().x();
   status->line_follow_logging.y = target_pose_.abs_pos().y();
   status->line_follow_logging.theta = target_pose_.abs_theta();
+  status->line_follow_logging.offset = relative_pose_.rel_pos().y();
+  status->line_follow_logging.distance_to_target =
+      -relative_pose_.rel_pos().x();
+  status->line_follow_logging.goal_theta = controls_goal_(0, 0);
+  status->line_follow_logging.rel_theta = relative_pose_.rel_theta();
 }
 
 }  // namespace drivetrain
