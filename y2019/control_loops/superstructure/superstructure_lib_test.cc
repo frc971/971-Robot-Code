@@ -10,6 +10,7 @@
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
 #include "y2019/constants.h"
+#include "y2019/status_light.q.h"
 #include "y2019/control_loops/superstructure/elevator/elevator_plant.h"
 #include "y2019/control_loops/superstructure/intake/intake_plant.h"
 #include "y2019/control_loops/superstructure/stilts/stilts_plant.h"
@@ -288,6 +289,7 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
             ".y2019.control_loops.superstructure.superstructure_queue."
             "position"),
         superstructure_(&event_loop_) {
+    status_light.Clear();
     set_team_id(::frc971::control_loops::testing::kTeamNumber);
   }
 
@@ -712,8 +714,7 @@ TEST_F(SuperstructureTest, VacuumDetectsPiece) {
   // Turn on suction
   {
     auto goal = superstructure_queue_.goal.MakeMessage();
-    goal->suction.top = true;
-    goal->suction.bottom = true;
+    goal->suction.grab_piece = true;
 
     ASSERT_TRUE(goal.Send());
   }
@@ -734,8 +735,7 @@ TEST_F(SuperstructureTest, VacuumBacksOff) {
   // Turn on suction
   {
     auto goal = superstructure_queue_.goal.MakeMessage();
-    goal->suction.top = true;
-    goal->suction.bottom = true;
+    goal->suction.grab_piece = true;
 
     ASSERT_TRUE(goal.Send());
   }
@@ -761,8 +761,7 @@ TEST_F(SuperstructureTest, VacuumStopsQuickly) {
   // Turn on suction
   {
     auto goal = superstructure_queue_.goal.MakeMessage();
-    goal->suction.top = true;
-    goal->suction.bottom = true;
+    goal->suction.grab_piece = true;
 
     ASSERT_TRUE(goal.Send());
   }
@@ -776,8 +775,7 @@ TEST_F(SuperstructureTest, VacuumStopsQuickly) {
   // Turn off suction
   {
     auto goal = superstructure_queue_.goal.MakeMessage();
-    goal->suction.top = false;
-    goal->suction.bottom = false;
+    goal->suction.grab_piece = false;
     ASSERT_TRUE(goal.Send());
   }
 

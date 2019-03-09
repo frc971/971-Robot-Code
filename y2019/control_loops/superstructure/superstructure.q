@@ -4,10 +4,13 @@ import "aos/controls/control_loops.q";
 import "frc971/control_loops/profiled_subsystem.q";
 
 struct SuctionGoal {
-  // True = open solenoid (apply suction)
-  // Top/bottom are when wrist is forward
-  bool top;
-  bool bottom;
+  // True = apply suction
+  bool grab_piece;
+
+  // 0 = ball mode
+  // 1 = disk mode
+
+  int32_t gamepiece_mode;
 };
 
 queue_group SuperstructureQueue {

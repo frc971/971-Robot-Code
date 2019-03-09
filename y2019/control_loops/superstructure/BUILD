@@ -24,10 +24,11 @@ cc_library(
     ],
     deps = [
         ":collision_avoidance",
-        ":vacuum",
         ":superstructure_queue",
+        ":vacuum",
         "//aos/controls:control_loop",
         "//y2019:constants",
+        "//y2019:status_light",
     ],
 )
 
@@ -47,6 +48,7 @@ cc_test(
         "//frc971/control_loops:capped_test_plant",
         "//frc971/control_loops:position_sensor_sim",
         "//frc971/control_loops:team_number_test_environment",
+        "//y2019:status_light",
         "//y2019/control_loops/superstructure/intake:intake_plants",
     ],
 )
@@ -88,7 +90,7 @@ cc_library(
     ],
     deps = [
         ":superstructure_queue",
-        "//aos/controls:control_loop"
+        "//aos/controls:control_loop",
     ],
 )
 

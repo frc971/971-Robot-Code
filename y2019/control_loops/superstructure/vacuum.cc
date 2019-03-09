@@ -32,7 +32,7 @@ void Vacuum::Iterate(const SuctionGoal *unsafe_goal, float suction_pressure,
   low_pump_voltage = *has_piece;
 
   if (unsafe_goal && output) {
-    const bool release = !unsafe_goal->top && !unsafe_goal->bottom;
+    const bool release = !unsafe_goal->grab_piece;
 
     if (release) {
       last_release_time_ = monotonic_now;
@@ -44,8 +44,16 @@ void Vacuum::Iterate(const SuctionGoal *unsafe_goal, float suction_pressure,
     output->pump_voltage =
         release ? 0 : (low_pump_voltage ? kPumpHasPieceVoltage : kPumpVoltage);
 
-    output->intake_suction_top = unsafe_goal->top;
-    output->intake_suction_bottom = unsafe_goal->bottom;
+    if (unsafe_goal->grab_piece && unsafe_goal->gamepiece_mode == 0) {
+      output->intake_suction_top = false;
+      output->intake_suction_bottom = true;
+    } else if (unsafe_goal->grab_piece && unsafe_goal->gamepiece_mode == 1) {
+      output->intake_suction_top = true;
+      output->intake_suction_bottom = true;
+    } else {
+      output->intake_suction_top = false;
+      output->intake_suction_bottom = false;
+    }
 
     // If we intend to release, or recently released, set has_piece to false so
     // that we give the part of the vacuum circuit with the pressure sensor time
