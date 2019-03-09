@@ -135,10 +135,18 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
            ++jj) {
         EventLoopLocalizer::TargetView view = target_views[jj];
         ++frame.num_targets;
-        frame.targets[jj].heading = view.reading.heading;
-        frame.targets[jj].distance = view.reading.distance;
-        frame.targets[jj].skew = view.reading.skew;
-        frame.targets[jj].height = view.reading.height;
+        const float nan = ::std::numeric_limits<float>::quiet_NaN();
+        if (send_bad_frames_) {
+          frame.targets[jj].heading = nan;
+          frame.targets[jj].distance = nan;
+          frame.targets[jj].skew = nan;
+          frame.targets[jj].height = nan;
+        } else {
+          frame.targets[jj].heading = view.reading.heading;
+          frame.targets[jj].distance = view.reading.distance;
+          frame.targets[jj].skew = view.reading.skew;
+          frame.targets[jj].height = view.reading.height;
+        }
       }
       camera_delay_queue_.emplace(monotonic_clock::now(), frame);
     }
@@ -183,15 +191,31 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
       camera_delay_queue_;
 
   void set_enable_cameras(bool enable) { enable_cameras_ = enable; }
+  void set_bad_frames(bool enable) { send_bad_frames_ = enable; }
 
  private:
   bool enable_cameras_ = false;
+  bool send_bad_frames_ = false;
 };
 
 // Tests that no camera updates, combined with a perfect model, results in no
 // error.
 TEST_F(LocalizedDrivetrainTest, NoCameraUpdate) {
   set_enable_cameras(false);
+  my_drivetrain_queue_.goal.MakeWithBuilder()
+      .controller_type(1)
+      .left_goal(-1.0)
+      .right_goal(1.0)
+      .Send();
+  RunForTime(chrono::seconds(3));
+  VerifyNearGoal();
+  VerifyEstimatorAccurate(1e-10);
+}
+
+// Bad camera updates (NaNs) should have no effect.
+TEST_F(LocalizedDrivetrainTest, BadCameraUpdate) {
+  set_enable_cameras(true);
+  set_bad_frames(true);
   my_drivetrain_queue_.goal.MakeWithBuilder()
       .controller_type(1)
       .left_goal(-1.0)

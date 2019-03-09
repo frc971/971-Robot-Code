@@ -327,6 +327,8 @@ class ParameterizedLocalizerTest
   ::std::normal_distribution<> normal_;
 };
 
+using ::std::chrono::milliseconds;
+
 // Tests that, when we attempt to follow a spline and use the localizer to
 // perform the state estimation, we end up roughly where we should and that
 // the localizer has a valid position estimate.
@@ -340,15 +342,20 @@ TEST_P(ParameterizedLocalizerTest, SplineTest) {
   // we just trigger all the cameras at once, rather than offsetting them or
   // anything.
   const int camera_period = 5; // cycles
-  // The amount of time to delay the camera images from when they are taken.
-  const ::std::chrono::milliseconds camera_latency(50);
+  // The amount of time to delay the camera images from when they are taken, for
+  // each camera.
+  const ::std::array<milliseconds, 4> camera_latencies{
+      {milliseconds(45), milliseconds(50), milliseconds(55),
+       milliseconds(100)}};
 
-  // A queue of camera frames so that we can add a time delay to the data
-  // coming from the cameras.
-  ::std::queue<::std::tuple<
-      ::aos::monotonic_clock::time_point, const TestCamera *,
-      ::aos::SizedArray<TestCamera::TargetView, kNumTargetsPerFrame>>>
-      camera_queue;
+  // A queue of camera frames for each camera so that we can add a time delay to
+  // the data coming from the cameras.
+  ::std::array<
+      ::std::queue<::std::tuple<
+          ::aos::monotonic_clock::time_point, const TestCamera *,
+          ::aos::SizedArray<TestCamera::TargetView, kNumTargetsPerFrame>>>,
+      4>
+      camera_queues;
 
   // Start time, for debugging.
   const auto begin = ::std::chrono::steady_clock::now();
@@ -431,34 +438,37 @@ TEST_P(ParameterizedLocalizerTest, SplineTest) {
                                      right_enc + Normal(encoder_noise_),
                                      gyro + Normal(gyro_noise_), U, t);
 
-    // Clear out the camera frames that we are ready to pass to the localizer.
-    while (!camera_queue.empty() &&
-           ::std::get<0>(camera_queue.front()) < t - camera_latency) {
-      const auto tuple = camera_queue.front();
-      camera_queue.pop();
-      ::aos::monotonic_clock::time_point t_obs = ::std::get<0>(tuple);
-      const TestCamera *camera = ::std::get<1>(tuple);
-      ::aos::SizedArray<TestCamera::TargetView, kNumTargetsPerFrame> views =
-          ::std::get<2>(tuple);
-      localizer_.UpdateTargets(*camera, views, t_obs);
-    }
+    for (size_t cam_idx = 0; cam_idx < camera_queues.size(); ++cam_idx) {
+      auto &camera_queue = camera_queues[cam_idx];
+      // Clear out the camera frames that we are ready to pass to the localizer.
+      while (!camera_queue.empty() && ::std::get<0>(camera_queue.front()) <
+                                          t - camera_latencies[cam_idx]) {
+        const auto tuple = camera_queue.front();
+        camera_queue.pop();
+        ::aos::monotonic_clock::time_point t_obs = ::std::get<0>(tuple);
+        const TestCamera *camera = ::std::get<1>(tuple);
+        ::aos::SizedArray<TestCamera::TargetView, kNumTargetsPerFrame> views =
+            ::std::get<2>(tuple);
+        localizer_.UpdateTargets(*camera, views, t_obs);
+      }
 
-    // Actually take all the images and store them in the queue.
-    if (i % camera_period == 0) {
-      for (size_t jj = 0; jj < true_cameras_.size(); ++jj) {
-        const auto target_views = true_cameras_[jj].target_views();
-        ::aos::SizedArray<TestCamera::TargetView, kNumTargetsPerFrame>
-            pass_views;
-        for (size_t ii = 0;
-             ii < ::std::min(kNumTargetsPerFrame, target_views.size()); ++ii) {
-          TestCamera::TargetView view = target_views[ii];
-          Noisify(&view);
-          pass_views.push_back(view);
+      // Actually take all the images and store them in the queue.
+      if (i % camera_period == 0) {
+        for (size_t jj = 0; jj < true_cameras_.size(); ++jj) {
+          const auto target_views = true_cameras_[jj].target_views();
+          ::aos::SizedArray<TestCamera::TargetView, kNumTargetsPerFrame>
+              pass_views;
+          for (size_t ii = 0;
+               ii < ::std::min(kNumTargetsPerFrame, target_views.size());
+               ++ii) {
+            TestCamera::TargetView view = target_views[ii];
+            Noisify(&view);
+            pass_views.push_back(view);
+          }
+          camera_queue.emplace(t, &robot_cameras_[jj], pass_views);
         }
-        camera_queue.emplace(t, &robot_cameras_[jj], pass_views);
       }
     }
-
   }
 
   const auto end = ::std::chrono::steady_clock::now();
@@ -604,7 +614,7 @@ INSTANTIATE_TEST_CASE_P(
                 .finished(),
             /*noisify=*/true,
             /*disturb=*/false,
-            /*estimate_tolerance=*/0.1,
+            /*estimate_tolerance=*/0.15,
             /*goal_tolerance=*/0.5,
         })));
 

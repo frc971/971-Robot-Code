@@ -53,6 +53,11 @@ class TypedLocalizer
       return;
     }
 
+    if (!SanitizeTargets(targets)) {
+      LOG(ERROR, "Throwing out targets due to in insane values.\n");
+      return;
+    }
+
     if (t > HybridEkf::latest_t()) {
       LOG(ERROR,
           "target observations must be older than most recent encoder/gyro "
@@ -97,11 +102,36 @@ class TypedLocalizer
   // TODO(james): Tune
   static constexpr Scalar kRejectionScore = 1.0;
 
+  // Checks that the targets coming in make some sense--mostly to prevent NaNs
+  // or the such from propagating.
+  bool SanitizeTargets(
+      const ::aos::SizedArray<TargetView, max_targets_per_frame> &targets) {
+    for (const TargetView &view : targets) {
+      const typename TargetView::Reading reading = view.reading;
+      if (!(::std::isfinite(reading.heading) &&
+            ::std::isfinite(reading.distance) &&
+            ::std::isfinite(reading.skew) && ::std::isfinite(reading.height))) {
+        LOG(ERROR, "Got non-finite values in target.\n");
+        return false;
+      }
+      if (reading.distance < 0) {
+        LOG(ERROR, "Got negative distance.\n");
+        return false;
+      }
+      if (::std::abs(::aos::math::NormalizeAngle(reading.skew)) > M_PI_2) {
+        LOG(ERROR, "Got skew > pi / 2.\n");
+        return false;
+      }
+    }
+    return true;
+  }
+
   // Computes the measurement (z) and noise covariance (R) matrices for a given
   // TargetView.
   void TargetViewToMatrices(const TargetView &view, Output *z,
                             Eigen::Matrix<Scalar, kNOutputs, kNOutputs> *R) {
-    *z << view.reading.heading, view.reading.distance, view.reading.skew;
+    *z << view.reading.heading, view.reading.distance,
+        ::aos::math::NormalizeAngle(view.reading.skew);
     // TODO(james): R should account as well for our confidence in the target
     // matching. However, handling that properly requires thing a lot more about
     // the probabilities.
@@ -273,7 +303,11 @@ class TypedLocalizer
       ::std::array<int, max_targets_per_frame> best_frames =
           MatchFrames(scores, best_matches, target_views.size());
       for (size_t ii = 0; ii < target_views.size(); ++ii) {
-        int view_idx = best_frames[ii];
+        size_t view_idx = best_frames[ii];
+        if (view_idx < 0 || view_idx >= camera_views.size()) {
+          LOG(ERROR, "Somehow, the view scorer failed.\n");
+          continue;
+        }
         const Eigen::Matrix<Scalar, kNOutputs, kNStates> best_H =
             all_H_matrices[ii][view_idx];
         const TargetView best_view = camera_views[view_idx];
@@ -364,6 +398,7 @@ class TypedLocalizer
           best_matches,
       int n_views) {
     ::std::array<int, max_targets_per_frame> best_set;
+    best_set.fill(-1);
     Scalar best_score;
     // We start out without having "used" any views/targets:
     ::aos::SizedArray<bool, max_targets_per_frame> used_views;
