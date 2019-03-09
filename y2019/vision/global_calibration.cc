@@ -20,6 +20,23 @@
 DEFINE_int32(camera_id, -1, "The camera ID to calibrate");
 DEFINE_string(prefix, "", "The image filename prefix");
 
+DEFINE_double(beginning_tape_measure_reading, 11,
+             "The tape measure measurement (in inches) of the first image.");
+DEFINE_int32(image_count, 75, "The number of images to capture");
+DEFINE_double(
+    tape_start_x, -12.5,
+    "The starting location of the tape measure in x relative to the CG in inches.");
+DEFINE_double(
+    tape_start_y, -0.5,
+    "The starting location of the tape measure in y relative to the CG in inches.");
+
+DEFINE_double(
+    tape_direction_x, -1.0,
+    "The x component of \"1\" inch along the tape measure in meters.");
+DEFINE_double(
+    tape_direction_y, 0.0,
+    "The y component of \"1\" inch along the tape measure in meters.");
+
 using ::aos::events::DataSocket;
 using ::aos::events::RXUdpSocket;
 using ::aos::events::TCPServer;
@@ -76,11 +93,13 @@ void main(int argc, char **argv) {
 
   DatasetInfo info = {
       FLAGS_camera_id,
-      {{12.5 * kInchesToMeters, 0.5 * kInchesToMeters}},
-      {{kInchesToMeters, 0.0}},
-      26,
+      {{FLAGS_tape_start_x * kInchesToMeters,
+        FLAGS_tape_start_y * kInchesToMeters}},
+      {{FLAGS_tape_direction_x * kInchesToMeters,
+        FLAGS_tape_direction_y * kInchesToMeters}},
+      FLAGS_beginning_tape_measure_reading,
       FLAGS_prefix.c_str(),
-      59,
+      FLAGS_image_count,
   };
 
   ::aos::logging::Init();
