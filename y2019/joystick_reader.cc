@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <chrono>
 
 #include "aos/actions/actions.h"
 #include "aos/init.h"
@@ -316,7 +317,11 @@ class Reader : public ::aos::input::ActionJoystickInput {
       LOG(ERROR, "Sending superstructure goal failed.\n");
     }
 
-    video_tx_->Send(vision_control_);
+    auto time_now = ::aos::monotonic_clock::now();
+    if (time_now > last_vision_control_ + ::std::chrono::milliseconds(50)) {
+      video_tx_->Send(vision_control_);
+      last_vision_control_ = time_now;
+    }
   }
 
  private:
@@ -329,6 +334,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
   VisionControl vision_control_;
   ::std::unique_ptr<ProtoTXUdpSocket<VisionControl>> video_tx_;
+  ::aos::monotonic_clock::time_point last_vision_control_ =
+      ::aos::monotonic_clock::time_point::min();
 };
 
 }  // namespace joysticks
