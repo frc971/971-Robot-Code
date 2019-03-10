@@ -111,12 +111,17 @@ std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
     return slopes[(i + num_points * 2) % num_points];
   };
 
+  // Bigger objects should be more filtered.  Filter roughly proportional to the
+  // perimeter of the object.
+  const int range = slopes.size() / 50;
+  if (verbose) printf("Corner range: %d.\n", range);
+
   ::std::vector<::Eigen::Vector2f> filtered_slopes = slopes;
   // Three box filter makith a guassian?
   // Run gaussian filter over the slopes 3 times.  That'll get us pretty close
   // to running a gausian over it.
   for (int k = 0; k < 3; ++k) {
-    const int window_size = 2;
+    const int window_size = ::std::max(2, range);
     for (size_t i = 0; i < slopes.size(); ++i) {
       ::Eigen::Vector2f a = ::Eigen::Vector2f::Zero();
       for (int j = -window_size; j <= window_size; ++j) {
@@ -125,55 +130,109 @@ std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
       }
       a /= (window_size * 2 + 1);
 
-      const float scale = 1.0 + (i / float(slopes.size() * 10));
-      a *= scale;
       filtered_slopes[i] = a;
     }
     slopes = filtered_slopes;
   }
+  if (verbose) printf("Point count: %zu.\n", slopes.size());
 
-  // Heuristic which says if a particular slope is part of a corner.
-  auto is_corner = [&](size_t i) {
-    const ::Eigen::Vector2f a = get_pt(i - 3);
-    const ::Eigen::Vector2f b = get_pt(i + 3);
-    const double dx = (a.x() - b.x());
-    const double dy = (a.y() - b.y());
-    return dx * dx + dy * dy > 0.25;
-  };
+  ::std::vector<float> corner_metric(slopes.size(), 0.0);
 
-  bool prev_v = is_corner(-1);
+  for (size_t i = 0; i < slopes.size(); ++i) {
+    const ::Eigen::Vector2f a = get_pt(i - ::std::max(3, range));
+    const ::Eigen::Vector2f b = get_pt(i + ::std::max(3, range));
+    corner_metric[i] = (a - b).squaredNorm();
+  }
+
+  // We want to find the Nth highest peaks.
+  // Clever algorithm: Find the highest point.  Then, walk forwards and
+  // backwards to find the next valley each direction which is over x% lower
+  // than the peak.
+  // We want to ignore those points in the future.  Set them to 0.
+  // Repeat until we've found the Nth highest peak.
 
   // Find all centers of corners.
   // Because they round, multiple slopes may be a corner.
   ::std::vector<size_t> edges;
-  const size_t kBad = slopes.size() + 10;
-  size_t prev_up = kBad;
-  size_t wrapped_n = prev_up;
 
-  for (size_t i = 0; i < slopes.size(); ++i) {
-    bool v = is_corner(i);
-    if (prev_v && !v) {
-      if (prev_up == kBad) {
-        wrapped_n = i;
-      } else {
-        edges.push_back((prev_up + i - 1) / 2);
+  ::std::vector<size_t> peaks;
+
+  constexpr float peak_acceptance_ratio = 0.16;
+  constexpr float valley_ratio = 0.75;
+
+  float highest_peak_value = 0.0;
+
+  // Nth higest points.
+  for (int j = 0; j < 5; ++j) {
+    const ::std::vector<float>::iterator max_element =
+        ::std::max_element(corner_metric.begin(), corner_metric.end());
+    const size_t highest_index =
+        ::std::distance(corner_metric.begin(), max_element);
+    const float max_value = *max_element;
+    if (j == 0) {
+      highest_peak_value = max_value;
+    }
+    if (max_value < highest_peak_value * peak_acceptance_ratio && j == 4) {
+      if (verbose)
+        printf("Rejecting index: %zu, %f (%f %%)\n", highest_index, max_value,
+               max_value / highest_peak_value);
+      break;
+    }
+    const float valley_value = max_value * valley_ratio;
+
+    if (verbose)
+      printf("Highest index: %zu, %f (%f %%)\n", highest_index, max_value,
+             max_value / highest_peak_value);
+
+    {
+      float min_value = max_value;
+      size_t fwd_index = (highest_index + 1) % corner_metric.size();
+      while (true) {
+        const float current_value = corner_metric[fwd_index];
+        min_value = ::std::min(current_value, min_value);
+
+        if (current_value == 0.0 ||
+            (min_value < valley_value && current_value > min_value)) {
+          break;
+        }
+        // Kill!!!
+        corner_metric[fwd_index] = 0.0;
+
+        fwd_index = (fwd_index + 1) % corner_metric.size();
       }
     }
-    if (v && !prev_v) {
-      prev_up = i;
+
+    {
+      float min_value = max_value;
+      size_t rev_index =
+          (highest_index - 1 + corner_metric.size()) % corner_metric.size();
+      while (true) {
+        const float current_value = corner_metric[rev_index];
+        min_value = ::std::min(current_value, min_value);
+
+        if (current_value == 0.0 ||
+            (min_value < valley_value && current_value > min_value)) {
+          break;
+        }
+        // Kill!!!
+        corner_metric[rev_index] = 0.0;
+
+        rev_index =
+            (rev_index - 1 + corner_metric.size()) % corner_metric.size();
+      }
     }
-    prev_v = v;
+
+    *max_element = 0.0;
+    edges.push_back(highest_index);
   }
 
-  if (wrapped_n != kBad) {
-    edges.push_back(((prev_up + slopes.size() + wrapped_n - 1) / 2) % slopes.size());
-  }
+  ::std::sort(edges.begin(), edges.end());
 
   if (verbose) printf("Edge Count (%zu).\n", edges.size());
 
   // Run best-fits over each line segment.
   ::std::vector<Segment<2>> seg_list;
-  if (edges.size() == 4) {
+  if (edges.size() >= 3) {
     for (size_t i = 0; i < edges.size(); ++i) {
       // Include the corners in both line fits.
       const size_t segment_start_index = edges[i];
