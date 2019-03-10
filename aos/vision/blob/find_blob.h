@@ -1,5 +1,5 @@
-#ifndef _AOS_VISION_BLOB_FIND_BLOB_H_
-#define _AOS_VISION_BLOB_FIND_BLOB_H_
+#ifndef AOS_VISION_BLOB_FIND_BLOB_H_
+#define AOS_VISION_BLOB_FIND_BLOB_H_
 
 #include "aos/vision/blob/range_image.h"
 
@@ -8,9 +8,9 @@ namespace vision {
 
 // Uses disjoint sets to group ranges into disjoint RangeImage.
 // ranges that overlap are grouped into the same output RangeImage.
-BlobList FindBlobs(const RangeImage &rimg);
+BlobList FindBlobs(const RangeImage &input_image);
 
 }  // namespace vision
 }  // namespace aos
 
-#endif  // _AOS_VISION_BLOB_FIND_BLOB_H_
+#endif  // AOS_VISION_BLOB_FIND_BLOB_H_

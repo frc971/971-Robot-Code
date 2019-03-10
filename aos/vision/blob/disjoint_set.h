@@ -6,7 +6,7 @@
 namespace aos {
 namespace vision {
 
-// Disjoint set algorithm:
+// Disjoint set algorithm, which is similar to what this class does:
 // https://en.wikipedia.org/wiki/Disjoint-set_data_structure
 class DisjointSet {
  public:

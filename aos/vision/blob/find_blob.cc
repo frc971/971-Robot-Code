@@ -93,54 +93,82 @@ class BlobDisjointSet {
   std::vector<BlobBuilder> items;
 };
 
-BlobList FindBlobs(const RangeImage &rimg) {
+BlobList FindBlobs(const RangeImage &input_image) {
   BlobDisjointSet blob_set;
-  // prev and current ids.
-  std::vector<int> pids;
-  std::vector<int> cids;
-  for (ImageRange rng : rimg.ranges()[0]) {
-    pids.push_back(blob_set.AddBlob(0, rng));
+  std::vector<int> previous_ids;
+  std::vector<int> current_ids;
+  for (ImageRange input_range : input_image.ranges()[0]) {
+    previous_ids.push_back(blob_set.AddBlob(0, input_range));
   }
 
-  for (int i = 1; i < rimg.size(); i++) {
-    int mi = 0;
-    int mj = 0;
-    const std::vector<ImageRange> &pranges = rimg.ranges()[i - 1];
-    const std::vector<ImageRange> &cranges = rimg.ranges()[i];
-    cids.clear();
+  for (int input_row = 1; input_row < input_image.size(); input_row++) {
+    // The index of previous_ranges we're currently considering.
+    int previous_location = 0;
+    // The index of current_ranges we're currently considering.
+    int current_location = 0;
+    const std::vector<ImageRange> &previous_ranges =
+        input_image.ranges()[input_row - 1];
+    const std::vector<ImageRange> &current_ranges =
+        input_image.ranges()[input_row];
+    current_ids.clear();
 
-    // Merge sort pids and cids.
-    while (mi < static_cast<int>(pranges.size()) &&
-           mj < static_cast<int>(cranges.size())) {
-      ImageRange rprev = pranges[mi];
-      ImageRange rcur = cranges[mj];
-      if (rcur.last() < rprev.st) {
-        if (static_cast<int>(cids.size()) == mj) {
-          cids.push_back(blob_set.AddBlob(i, cranges[mj]));
+    while (previous_location < static_cast<int>(previous_ranges.size()) &&
+           current_location < static_cast<int>(current_ranges.size())) {
+      const ImageRange previous_range = previous_ranges[previous_location];
+      const ImageRange current_range = current_ranges[current_location];
+      if (current_range.last() < previous_range.st) {
+        // If current_range ends before previous_range starts, then they don't
+        // overlap, so we might want to add current_range to a separate blob.
+        if (static_cast<int>(current_ids.size()) == current_location) {
+          // We only want to add it if we haven't already added this
+          // current_range to a blob.
+          current_ids.push_back(blob_set.AddBlob(input_row, current_range));
         }
-        mj++;
-      } else if (rprev.last() < rcur.st) {
-        mi++;
+        current_location++;
+      } else if (previous_range.last() < current_range.st) {
+        // If previous_range ends before current_range starts, then they don't
+        // overlap. Definitely nothing to merge before current_range in the
+        // current row.
+        previous_location++;
       } else {
-        if (static_cast<int>(cids.size()) > mj) {
-          blob_set.MergeInBlob(cids[mj], pids[mi]);
+        if (static_cast<int>(current_ids.size()) > current_location) {
+          // If we've already added current_range, and they still overlap, then
+          // we should merge the blobs.
+          blob_set.MergeInBlob(current_ids[current_location],
+                               previous_ids[previous_location]);
         } else {
-          cids.push_back(blob_set.AddToBlob(pids[mi], i, cranges[mj]));
+          // If we haven't yet added current_range to a blob, then do that now.
+          current_ids.push_back(
+              blob_set.AddToBlob(previous_ids[previous_location], input_row,
+                                 current_ranges[current_location]));
         }
-        if (rcur.last() < rprev.last()) {
-          mj++;
+        // Increment the furthest-left-ending range in either row. The
+        // further-right-ending one might merge with the next one in the other
+        // row, so we need to look at it again next iteration.
+        if (current_range.last() < previous_range.last()) {
+          current_location++;
         } else {
-          mi++;
+          previous_location++;
         }
       }
     }
-    while (mj < static_cast<int>(cranges.size())) {
-      if (static_cast<int>(cids.size()) == mj) {
-        cids.push_back(blob_set.AddBlob(i, cranges[mj]));
+    // Finish processing the current row. This is sometimes necessary if the
+    // previous row was fully processed first.
+    //
+    // Note that we don't care if the previous row didn't get fully iterated
+    // over.
+    while (current_location < static_cast<int>(current_ranges.size())) {
+      if (static_cast<int>(current_ids.size()) == current_location) {
+        // We only want to add it if we haven't already added this range to a
+        // blob.
+        current_ids.push_back(
+            blob_set.AddBlob(input_row, current_ranges[current_location]));
       }
-      mj++;
+      current_location++;
     }
-    std::swap(pids, cids);
+
+    // Update previous_ids for the next iteration.
+    std::swap(previous_ids, current_ids);
   }
   return blob_set.MoveBlobs();
 }
