@@ -65,6 +65,12 @@ const ButtonLocation kPanelHPIntakeBackward(5, 5);
 
 const ButtonLocation kRelease(2, 4);
 
+const ButtonLocation kAutoPanel(3, 10);
+const ButtonLocation kAutoPanelIntermediate(4, 6);
+
+const ElevatorWristPosition kAutoPanelPos{0.0, -M_PI / 2.0};
+const ElevatorWristPosition kAutoPanelIntermediatePos{0.34, -M_PI / 2.0};
+
 const ElevatorWristPosition kStowPos{0.36, 0.0};
 
 const ElevatorWristPosition kPanelHPIntakeForwrdPos{0.04, M_PI / 2.0};
@@ -173,6 +179,12 @@ class Reader : public ::aos::input::ActionJoystickInput {
       stilts_was_above_ = true;
     } else if (superstructure_queue.status->stilts.position < 0.1) {
       stilts_was_above_ = false;
+    }
+
+    if (data.IsPressed(kAutoPanel)) {
+      elevator_wrist_pos_ = kAutoPanelPos;
+    } else if (data.IsPressed(kAutoPanelIntermediate)) {
+      elevator_wrist_pos_ = kAutoPanelIntermediatePos;
     }
 
     if (switch_ball_) {
