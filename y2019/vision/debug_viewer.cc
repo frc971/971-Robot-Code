@@ -8,6 +8,7 @@
 #include "aos/vision/blob/transpose.h"
 #include "aos/vision/debug/debug_framework.h"
 #include "aos/vision/math/vector.h"
+#include "gflags/gflags.h"
 
 using aos::vision::ImageRange;
 using aos::vision::ImageFormat;
@@ -17,6 +18,8 @@ using aos::vision::BlobList;
 using aos::vision::Vector;
 using aos::vision::Segment;
 using aos::vision::PixelRef;
+
+DEFINE_int32(camera, 10, "The camera to use the intrinsics for");
 
 namespace y2019 {
 namespace vision {
@@ -53,15 +56,18 @@ std::vector<PixelRef> GetNColors(size_t num_colors) {
 
 class FilterHarness : public aos::vision::FilterHarness {
  public:
+ FilterHarness() {
+   *(target_finder_.mutable_intrinsics()) = GetCamera(FLAGS_camera)->intrinsics;
+ }
   aos::vision::RangeImage Threshold(aos::vision::ImagePtr image) override {
-    return finder_.Threshold(image);
+    return target_finder_.Threshold(image);
   }
 
   void InstallViewer(aos::vision::BlobStreamViewer *viewer) override {
     viewer_ = viewer;
     viewer_->SetScale(2.0);
     overlays_.push_back(&overlay_);
-    overlays_.push_back(finder_.GetOverlay());
+    overlays_.push_back(target_finder_.GetOverlay());
     viewer_->view()->SetOverlays(&overlays_);
   }
 
@@ -87,25 +93,25 @@ class FilterHarness : public aos::vision::FilterHarness {
     }
 
     // Remove bad blobs.
-    finder_.PreFilter(&imgs);
+    target_finder_.PreFilter(&imgs);
 
     // Find polygons from blobs.
     std::vector<std::vector<Segment<2>>> raw_polys;
     for (const RangeImage &blob : imgs) {
       // Convert blobs to contours in the corrected space.
-      ContourNode* contour = finder_.GetContour(blob);
+      ContourNode *contour = target_finder_.GetContour(blob);
       if (draw_contours_) {
         DrawContour(contour, {255, 0, 0});
       }
       const ::std::vector<::Eigen::Vector2f> unwarped_contour =
-          finder_.UnWarpContour(contour);
+          target_finder_.UnWarpContour(contour);
       if (draw_contours_) {
         DrawContour(unwarped_contour, {0, 0, 255});
       }
 
       // Process to polygons.
       std::vector<Segment<2>> polygon =
-          finder_.FillPolygon(unwarped_contour, draw_raw_poly_);
+          target_finder_.FillPolygon(unwarped_contour, draw_raw_poly_);
       if (polygon.empty()) {
         if (!draw_contours_) {
           DrawBlob(blob, {255, 0, 0});
@@ -133,7 +139,7 @@ class FilterHarness : public aos::vision::FilterHarness {
 
     // Calculate each component side of a possible target.
     std::vector<TargetComponent> target_component_list =
-        finder_.FillTargetComponentList(raw_polys);
+        target_finder_.FillTargetComponentList(raw_polys);
     if (draw_components_) {
       for (const TargetComponent &comp : target_component_list) {
         DrawComponent(comp, {0, 255, 255}, {0, 255, 255}, {255, 0, 0},
@@ -142,7 +148,7 @@ class FilterHarness : public aos::vision::FilterHarness {
     }
 
     // Put the compenents together into targets.
-    std::vector<Target> target_list = finder_.FindTargetsFromComponents(
+    std::vector<Target> target_list = target_finder_.FindTargetsFromComponents(
         target_component_list, draw_raw_target_);
     if (draw_raw_target_) {
       for (const Target &target : target_list) {
@@ -153,12 +159,13 @@ class FilterHarness : public aos::vision::FilterHarness {
     // Use the solver to generate an intermediate version of our results.
     std::vector<IntermediateResult> results;
     for (const Target &target : target_list) {
-      results.emplace_back(finder_.ProcessTargetToResult(target, draw_raw_IR_));
+      results.emplace_back(
+          target_finder_.ProcessTargetToResult(target, draw_raw_IR_));
       if (draw_raw_IR_) DrawResult(results.back(), {255, 128, 0});
     }
 
     // Check that our current results match possible solutions.
-    results = finder_.FilterResults(results, 0);
+    results = target_finder_.FilterResults(results, 0);
     if (draw_results_) {
       for (const IntermediateResult &res : results) {
         DrawTarget(res, {0, 255, 0});
@@ -254,15 +261,15 @@ class FilterHarness : public aos::vision::FilterHarness {
   }
 
   void DrawResult(const IntermediateResult &result, PixelRef color) {
-    Target target =
-        Project(finder_.GetTemplateTarget(), intrinsics(), result.extrinsics);
+    Target target = Project(target_finder_.GetTemplateTarget(), intrinsics(),
+                            result.extrinsics);
     DrawComponent(target.left, color, color, color, color);
     DrawComponent(target.right, color, color, color, color);
   }
 
   void DrawTarget(const IntermediateResult &result, PixelRef color) {
-    Target target =
-        Project(finder_.GetTemplateTarget(), intrinsics(), result.extrinsics);
+    Target target = Project(target_finder_.GetTemplateTarget(), intrinsics(),
+                            result.extrinsics);
     Segment<2> leftAx((target.left.top + target.left.inside) * 0.5,
                       (target.left.bottom + target.left.outside) * 0.5);
     leftAx.Set(leftAx.A() * 0.9 + leftAx.B() * 0.1,
@@ -293,11 +300,13 @@ class FilterHarness : public aos::vision::FilterHarness {
     overlay_.AddLine(p3 + leftAx.B(), p3 + rightAx.B(), {0, 255, 0});
   }
 
-  const IntrinsicParams &intrinsics() const { return finder_.intrinsics(); }
+  const IntrinsicParams &intrinsics() const {
+    return target_finder_.intrinsics();
+  }
 
  private:
   // implementation of the filter pipeline.
-  TargetFinder finder_;
+  TargetFinder target_finder_;
   aos::vision::BlobStreamViewer *viewer_ = nullptr;
   aos::vision::PixelLinesOverlay overlay_;
   std::vector<aos::vision::OverlayBase *> overlays_;
@@ -317,6 +326,7 @@ class FilterHarness : public aos::vision::FilterHarness {
 
 int main(int argc, char **argv) {
   y2019::vision::FilterHarness filter_harness;
+  ::gflags::ParseCommandLineFlags(&argc, &argv, true);
   aos::vision::DebugFrameworkMain(argc, argv, &filter_harness,
                                   aos::vision::CameraParams());
 }
