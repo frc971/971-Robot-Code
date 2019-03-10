@@ -25,12 +25,20 @@ struct TargetComponent {
     }
   }
   bool is_right;
-  aos::vision::Vector<2> top;
-  aos::vision::Vector<2> inside;
-  aos::vision::Vector<2> outside;
-  aos::vision::Vector<2> bottom;
+  // The point which is the upper outside point on this side of the target pair.
+  ::aos::vision::Vector<2> top;
+  // The point which is the upper inside point on this side of the target pair.
+  ::aos::vision::Vector<2> inside;
+  // The point which is the outer bottom point on this side of the target pair.
+  ::aos::vision::Vector<2> outside;
+  // The point which is the inner bottom point on this side of the target pair.
+  ::aos::vision::Vector<2> bottom;
 
   aos::vision::Segment<2> major_axis;
+
+  // The point with is the "lowest" along the outer edge.  This point is useful
+  // for making sure clipped targets are "big enough" to cover all the pixels.
+  ::Eigen::Vector2f bottom_point;
 };
 
 // Convert back to screen space for final result.

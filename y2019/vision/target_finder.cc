@@ -34,13 +34,17 @@ void TargetFinder::PreFilter(BlobList *imgs) {
       imgs->end());
 }
 
-ContourNode* TargetFinder::GetContour(const RangeImage &blob) {
+ContourNode *TargetFinder::GetContour(const RangeImage &blob) {
   alloc_.reset();
   return RangeImgToContour(blob, &alloc_);
 }
 
 // TODO(ben): These values will be moved into the constants.h file.
 namespace {
+
+::Eigen::Vector2f AosVectorToEigenVector(Vector<2> in) {
+  return ::Eigen::Vector2f(in.x(), in.y());
+}
 
 constexpr double f_x = 481.4957;
 constexpr double c_x = 341.215;
@@ -323,14 +327,15 @@ Polygon TargetFinder::FindPolygon(::std::vector<::Eigen::Vector2f> &&contour,
     const ::std::vector<Polygon> &seg_list, bool verbose) {
   ::std::vector<TargetComponent> list;
   TargetComponent new_target;
-  for (const Polygon &poly : seg_list) {
+  for (const Polygon &polygon : seg_list) {
     // Reject missized pollygons for now. Maybe rectify them here in the future;
-    if (poly.segments.size() != 4) {
+    if (polygon.segments.size() != 4) {
       continue;
     }
     ::std::vector<Vector<2>> corners;
     for (size_t i = 0; i < 4; ++i) {
-      Vector<2> corner = poly.segments[i].Intersect(poly.segments[(i + 1) % 4]);
+      Vector<2> corner =
+          polygon.segments[i].Intersect(polygon.segments[(i + 1) % 4]);
       if (::std::isnan(corner.x()) || ::std::isnan(corner.y())) {
         break;
       }
@@ -428,8 +433,33 @@ Polygon TargetFinder::FindPolygon(::std::vector<::Eigen::Vector2f> &&contour,
       }
     }
 
+    // Take the vector which points from the bottom to the top of the target
+    // along the outside edge.
+    const ::Eigen::Vector2f outer_edge_vector =
+        AosVectorToEigenVector(new_target.top - new_target.outside);
+    // Now, dot each point in the perimeter along this vector.  The one with the
+    // smallest component will be the one closest to the bottom along this
+    // direction vector.
+    ::Eigen::Vector2f smallest_point = polygon.contour[0];
+    float smallest_value = outer_edge_vector.transpose() * smallest_point;
+    for (const ::Eigen::Vector2f point : polygon.contour) {
+      const float current_value = outer_edge_vector.transpose() * point;
+      if (current_value < smallest_value) {
+        smallest_value = current_value;
+        smallest_point = point;
+      }
+    }
+
+    // This piece of the target should be ready now.
+    new_target.bottom_point = smallest_point;
+    if (verbose) {
+      printf("Lowest point in the blob is (%f, %f)\n", smallest_point.x(),
+             smallest_point.y());
+    }
+
     // This piece of the target should be ready now.
     list.emplace_back(new_target);
+
     if (verbose) printf("Happy with a target\n");
   }
 

@@ -96,7 +96,7 @@ class FilterHarness : public aos::vision::FilterHarness {
     target_finder_.PreFilter(&imgs);
 
     // Find polygons from blobs.
-    std::vector<Polygon> raw_polys;
+    ::std::vector<Polygon> raw_polys;
     for (const RangeImage &blob : imgs) {
       // Convert blobs to contours in the corrected space.
       ContourNode *contour = target_finder_.GetContour(blob);
@@ -142,9 +142,10 @@ class FilterHarness : public aos::vision::FilterHarness {
     std::vector<TargetComponent> target_component_list =
         target_finder_.FillTargetComponentList(raw_polys, draw_components_);
     if (draw_components_) {
-      for (const TargetComponent &comp : target_component_list) {
-        DrawComponent(comp, {0, 255, 255}, {0, 255, 255}, {255, 0, 0},
+      for (const TargetComponent &component : target_component_list) {
+        DrawComponent(component, {0, 255, 255}, {0, 255, 255}, {255, 0, 0},
                       {0, 0, 255});
+        overlay_.DrawCross(component.bottom_point, 4, {128, 0, 255});
       }
     }
 

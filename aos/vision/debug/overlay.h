@@ -129,6 +129,11 @@ class PixelLinesOverlay : public OverlayBase {
     lines_.emplace_back(std::pair<Segment<2>, PixelRef>(seg, newColor));
   }
 
+  void DrawCross(::Eigen::Vector2f center, int width,
+                 aos::vision::PixelRef color) {
+    DrawCross(aos::vision::Vector<2>(center.x(), center.y()), width, color);
+  }
+
   void DrawCross(aos::vision::Vector<2> center, int width,
                  aos::vision::PixelRef color) {
     using namespace aos::vision;
