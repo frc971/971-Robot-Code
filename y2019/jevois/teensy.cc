@@ -932,38 +932,38 @@ int Main() {
   PORTD_PCR6 = PORT_PCR_MUX(1);
 
   // These go to CAM1.
-  // UART0_RX (peripheral) is UART1_RX (schematic).
+  // UART0_RX (peripheral) is UART1_RX (schematic) is UART1_TX_RAW (label TX).
   PORTA_PCR15 = PORT_PCR_DSE | PORT_PCR_MUX(3) | PORT_PCR_PE /* Do a pull */ |
                 0 /* !PS to pull down */;
-  // UART0_TX (peripheral) is UART1_TX (schematic).
+  // UART0_TX (peripheral) is UART1_TX (schematic) is UART1_RX_RAW (label RX).
   PORTA_PCR14 = PORT_PCR_DSE | PORT_PCR_MUX(3);
 
   // These go to CAM0.
-  // UART1_RX (peripheral) is UART0_RX (schematic).
+  // UART1_RX (peripheral) is UART0_RX (schematic) is UART0_TX_RAW (label TX).
   PORTC_PCR3 = PORT_PCR_DSE | PORT_PCR_MUX(3) | PORT_PCR_PE /* Do a pull */ |
                0 /* !PS to pull down */;
-  // UART1_TX (peripheral) is UART0_TX (schematic).
+  // UART1_TX (peripheral) is UART0_TX (schematic) is UART0_RX_RAW (label RX).
   PORTC_PCR4 = PORT_PCR_DSE | PORT_PCR_MUX(3);
 
   // These go to CAM2.
-  // UART2_RX
+  // UART2_RX is UART2_TX_RAW (label TX).
   PORTD_PCR2 = PORT_PCR_DSE | PORT_PCR_MUX(3) | PORT_PCR_PE /* Do a pull */ |
                0 /* !PS to pull down */;
-  // UART2_TX
+  // UART2_TX is UART2_RX_RAW (label RX).
   PORTD_PCR3 = PORT_PCR_DSE | PORT_PCR_MUX(3);
 
   // These go to CAM3.
-  // UART3_RX
+  // UART3_RX is UART3_TX_RAW (label TX).
   PORTB_PCR10 = PORT_PCR_DSE | PORT_PCR_MUX(3) | PORT_PCR_PE /* Do a pull */ |
                 0 /* !PS to pull down */;
-  // UART3_TX
+  // UART3_TX is UART3_RX_RAW (label RX).
   PORTB_PCR11 = PORT_PCR_DSE | PORT_PCR_MUX(3);
 
   // These go to CAM4.
-  // UART4_RX
+  // UART4_RX is UART4_TX_RAW (label TX).
   PORTE_PCR25 = PORT_PCR_DSE | PORT_PCR_MUX(3) | PORT_PCR_PE /* Do a pull */ |
                 0 /* !PS to pull down */;
-  // UART4_TX
+  // UART4_TX is UART4_RX_RAW (label RX).
   PORTE_PCR24 = PORT_PCR_DSE | PORT_PCR_MUX(3);
 
   Uarts uarts;
