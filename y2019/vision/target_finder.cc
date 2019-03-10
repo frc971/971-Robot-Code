@@ -59,7 +59,7 @@ constexpr int iterations = 7;
 
 }
 
-Point UnWarpPoint(const Point &point, int iterations) {
+::Eigen::Vector2f UnWarpPoint(const Point point) {
   const double x0 = ((double)point.x - c_x) / f_x;
   const double y0 = ((double)point.y - c_y) / f_y;
   double x = x0;
@@ -71,94 +71,86 @@ Point UnWarpPoint(const Point &point, int iterations) {
     x = x0 / coeff;
     y = y0 / coeff;
   }
-  double nx = x * f_x_prime + c_x_prime;
-  double ny = y * f_y_prime + c_y_prime;
-  Point p = {static_cast<int>(nx), static_cast<int>(ny)};
-  return p;
+  const double nx = x * f_x_prime + c_x_prime;
+  const double ny = y * f_y_prime + c_y_prime;
+  return ::Eigen::Vector2f(nx, ny);
 }
 
-void TargetFinder::UnWarpContour(ContourNode *start) const {
+::std::vector<::Eigen::Vector2f> TargetFinder::UnWarpContour(
+    ContourNode *start) const {
+  ::std::vector<::Eigen::Vector2f> result;
   ContourNode *node = start;
   while (node->next != start) {
-    node->set_point(UnWarpPoint(node->pt, iterations));
+    result.push_back(UnWarpPoint(node->pt));
     node = node->next;
   }
-  node->set_point(UnWarpPoint(node->pt, iterations));
+  result.push_back(UnWarpPoint(node->pt));
+  return result;
 }
 
 // TODO: Try hierarchical merge for this.
 // Convert blobs into polygons.
 std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
-    ContourNode* start, bool verbose) {
+    const ::std::vector<::Eigen::Vector2f> &contour, bool verbose) {
   if (verbose) printf("Process Polygon.\n");
 
-  struct Pt {
-    float x;
-    float y;
-  };
-  std::vector<Pt> points;
+  ::std::vector<::Eigen::Vector2f> slopes;
 
   // Collect all slopes from the contour.
-  Point previous_point = start->pt;
-  for (ContourNode *node = start; node->next != start;) {
-    node = node->next;
+  ::Eigen::Vector2f previous_point = contour[0];
+  for (size_t i = 0; i < contour.size(); ++i) {
+    ::Eigen::Vector2f next_point = contour[(i + 1) % contour.size()];
 
-    Point current_point = node->pt;
+    slopes.push_back(next_point - previous_point);
 
-    points.push_back({static_cast<float>(current_point.x - previous_point.x),
-                      static_cast<float>(current_point.y - previous_point.y)});
-
-    previous_point = current_point;
+    previous_point = next_point;
   }
 
-  const int num_points = points.size();
-  auto get_pt = [&points, num_points](int i) {
-    return points[(i + num_points * 2) % num_points];
+  const int num_points = slopes.size();
+  auto get_pt = [&slopes, num_points](int i) {
+    return slopes[(i + num_points * 2) % num_points];
   };
 
-  std::vector<Pt> filtered_points = points;
+  ::std::vector<::Eigen::Vector2f> filtered_slopes = slopes;
   // Three box filter makith a guassian?
   // Run gaussian filter over the slopes 3 times.  That'll get us pretty close
   // to running a gausian over it.
   for (int k = 0; k < 3; ++k) {
     const int window_size = 2;
-    for (size_t i = 0; i < points.size(); ++i) {
-      Pt a{0.0, 0.0};
+    for (size_t i = 0; i < slopes.size(); ++i) {
+      ::Eigen::Vector2f a = ::Eigen::Vector2f::Zero();
       for (int j = -window_size; j <= window_size; ++j) {
-        Pt p = get_pt(j + i);
-        a.x += p.x;
-        a.y += p.y;
+        ::Eigen::Vector2f p = get_pt(j + i);
+        a += p;
       }
-      a.x /= (window_size * 2 + 1);
-      a.y /= (window_size * 2 + 1);
+      a /= (window_size * 2 + 1);
 
-      const float scale = 1.0 + (i / float(points.size() * 10));
-      a.x *= scale;
-      a.y *= scale;
-      filtered_points[i] = a;
+      const float scale = 1.0 + (i / float(slopes.size() * 10));
+      a *= scale;
+      filtered_slopes[i] = a;
     }
-    points = filtered_points;
+    slopes = filtered_slopes;
   }
 
   // Heuristic which says if a particular slope is part of a corner.
   auto is_corner = [&](size_t i) {
-    const Pt a = get_pt(i - 3);
-    const Pt b = get_pt(i + 3);
-    const double dx = (a.x - b.x);
-    const double dy = (a.y - b.y);
+    const ::Eigen::Vector2f a = get_pt(i - 3);
+    const ::Eigen::Vector2f b = get_pt(i + 3);
+    const double dx = (a.x() - b.x());
+    const double dy = (a.y() - b.y());
     return dx * dx + dy * dy > 0.25;
   };
 
   bool prev_v = is_corner(-1);
 
   // Find all centers of corners.
-  // Because they round, multiple points may be a corner.
-  std::vector<size_t> edges;
-  size_t kBad = points.size() + 10;
+  // Because they round, multiple slopes may be a corner.
+  ::std::vector<size_t> edges;
+  const size_t kBad = slopes.size() + 10;
   size_t prev_up = kBad;
   size_t wrapped_n = prev_up;
 
-  for (size_t i = 0; i < points.size(); ++i) {
+  for (size_t i = 0; i < slopes.size(); ++i) {
     bool v = is_corner(i);
     if (prev_v && !v) {
       if (prev_up == kBad) {
@@ -174,40 +166,26 @@ std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
   }
 
   if (wrapped_n != kBad) {
-    edges.push_back(((prev_up + points.size() + wrapped_n - 1) / 2) % points.size());
+    edges.push_back(((prev_up + slopes.size() + wrapped_n - 1) / 2) % slopes.size());
   }
 
   if (verbose) printf("Edge Count (%zu).\n", edges.size());
 
-  // Get all CountourNodes from the contour.
-  using aos::vision::PixelRef;
-  std::vector<ContourNode *> segments;
-  {
-    std::vector<ContourNode *> segments_all;
-
-    for (ContourNode *node = start; node->next != start;) {
-      node = node->next;
-      segments_all.push_back(node);
-    }
-    for (size_t i : edges) {
-      segments.push_back(segments_all[i]);
-    }
-  }
-  if (verbose) printf("Segment Count (%zu).\n", segments.size());
-
   // Run best-fits over each line segment.
-  std::vector<Segment<2>> seg_list;
-  if (segments.size() == 4) {
-    for (size_t i = 0; i < segments.size(); ++i) {
-      ContourNode *segment_end = segments[(i + 1) % segments.size()];
-      ContourNode *segment_start = segments[i];
+  ::std::vector<Segment<2>> seg_list;
+  if (edges.size() == 4) {
+    for (size_t i = 0; i < edges.size(); ++i) {
+      // Include the corners in both line fits.
+      const size_t segment_start_index = edges[i];
+      const size_t segment_end_index =
+          (edges[(i + 1) % edges.size()] + 1) % contour.size();
       float mx = 0.0;
       float my = 0.0;
       int n = 0;
-      for (ContourNode *node = segment_start; node != segment_end;
-           node = node->next) {
-        mx += node->pt.x;
-        my += node->pt.y;
+      for (size_t j = segment_start_index; j != segment_end_index;
+           (j = (j + 1) % contour.size())) {
+        mx += contour[j].x();
+        my += contour[j].y();
         ++n;
         // (x - [x] / N) ** 2 = [x * x] - 2 * [x] * [x] / N + [x] * [x] / N / N;
       }
@@ -217,10 +195,10 @@ std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
       float xx = 0.0;
       float xy = 0.0;
       float yy = 0.0;
-      for (ContourNode *node = segment_start; node != segment_end;
-           node = node->next) {
-        const float x = node->pt.x - mx;
-        const float y = node->pt.y - my;
+      for (size_t j = segment_start_index; j != segment_end_index;
+           (j = (j + 1) % contour.size())) {
+        const float x = contour[j].x() - mx;
+        const float y = contour[j].y() - my;
         xx += x * x;
         xy += x * y;
         yy += y * y;

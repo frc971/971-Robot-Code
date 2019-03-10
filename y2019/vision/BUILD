@@ -74,7 +74,6 @@ cc_library(
 gtk_dependent_cc_binary(
     name = "debug_viewer",
     srcs = ["debug_viewer.cc"],
-    copts = ["-Wno-unused-variable"],
     restricted_to = VISION_TARGETS,
     deps = [
         ":target_finder",
@@ -83,6 +82,7 @@ gtk_dependent_cc_binary(
         "//aos/vision/blob:transpose",
         "//aos/vision/debug:debug_framework",
         "//aos/vision/math:vector",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 

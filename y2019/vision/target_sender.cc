@@ -312,8 +312,10 @@ int main(int argc, char **argv) {
     for (const RangeImage &blob : imgs) {
       // Convert blobs to contours in the corrected space.
       ContourNode* contour = finder_.GetContour(blob);
-      finder_.UnWarpContour(contour);
-      std::vector<Segment<2>> polygon = finder_.FillPolygon(contour, verbose);
+      const ::std::vector<::Eigen::Vector2f> unwarped_contour =
+          finder_.UnWarpContour(contour);
+      ::std::vector<Segment<2>> polygon =
+          finder_.FillPolygon(unwarped_contour, verbose);
       if (!polygon.empty()) {
         raw_polys.push_back(polygon);
       }
