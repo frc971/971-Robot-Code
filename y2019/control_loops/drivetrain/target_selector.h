@@ -29,14 +29,15 @@ class TargetSelector
 
   TargetSelector();
 
-  bool UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state) override;
+  bool UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
+                       double command_speed) override;
   Pose TargetPose() const override { return target_pose_; }
 
  private:
-  static constexpr double kFakeFov = M_PI;
+  static constexpr double kFakeFov = M_PI * 0.7;
   // Longitudinal speed at which the robot must be going in order for us to make
   // a decision.
-  static constexpr double kMinDecisionSpeed = 0.1;  // m/s
+  static constexpr double kMinDecisionSpeed = 0.7;  // m/s
   Pose robot_pose_;
   Pose target_pose_;
   // For the noise of our fake cameras, we only really care about the max

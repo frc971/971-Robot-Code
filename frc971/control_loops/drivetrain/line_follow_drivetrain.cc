@@ -182,7 +182,8 @@ void LineFollowDrivetrain::Update(
   // Because we assume the target selector may have some internal state (e.g.,
   // not confirming a target until some time as passed), we should call
   // UpdateSelection every time.
-  bool new_target = target_selector_->UpdateSelection(abs_state);
+  bool new_target =
+      target_selector_->UpdateSelection(abs_state, goal_velocity_);
   if (freeze_target_) {
     // When freezing the target, only make changes if we didn't have a good
     // target before.

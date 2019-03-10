@@ -310,11 +310,11 @@ TEST_F(LocalizedDrivetrainTest, LineFollowToHPSlot) {
   SetStartingPosition({4, 3, M_PI});
   my_drivetrain_queue_.goal.MakeWithBuilder()
       .controller_type(3)
-      .throttle(0.5)
+      .throttle(0.9)
       .Send();
   RunForTime(chrono::seconds(10));
 
-  VerifyEstimatorAccurate(1e-10);
+  VerifyEstimatorAccurate(1e-8);
   // Due to the fact that we aren't modulating the throttle, we don't try to hit
   // the target exactly. Instead, just run slightly past the target:
   EXPECT_LT(::std::abs(::aos::math::DiffAngle(

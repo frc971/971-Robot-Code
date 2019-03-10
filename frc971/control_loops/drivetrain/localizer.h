@@ -16,9 +16,12 @@ class TargetSelectorInterface {
   // Take the state as [x, y, theta, left_vel, right_vel]
   // If unable to determine what target to go for, returns false. If a viable
   // target is selected, then returns true and sets target_pose.
+  // command_speed is the goal speed of the current drivetrain, generally
+  // generated from the throttle and meant to signify driver intent.
   // TODO(james): Some implementations may also want a drivetrain goal so that
   // driver intent can be divined more directly.
-  virtual bool UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state) = 0;
+  virtual bool UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
+                               double command_speed) = 0;
   // Gets the current target pose. Should only be called if UpdateSelection has
   // returned true.
   virtual TypedPose<double> TargetPose() const = 0;
@@ -59,7 +62,7 @@ class LocalizerInterface {
 // manually set the target selector state.
 class TrivialTargetSelector : public TargetSelectorInterface {
  public:
-  bool UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &) override {
+  bool UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &, double) override {
     return has_target_;
   }
   TypedPose<double> TargetPose() const override { return pose_; }

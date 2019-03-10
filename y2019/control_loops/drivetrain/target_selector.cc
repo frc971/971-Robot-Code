@@ -11,9 +11,9 @@ TargetSelector::TargetSelector()
       back_viewer_({&robot_pose_, {0.0, 0.0, 0.0}, M_PI}, kFakeFov, fake_noise_,
                    constants::Field().targets(), {}) {}
 
-bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state) {
-  const double speed = (state(3, 0) + state(4, 0)) / 2.0;
-  if (::std::abs(speed) < kMinDecisionSpeed) {
+bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
+                                     double command_speed) {
+  if (::std::abs(command_speed) < kMinDecisionSpeed) {
     return false;
   }
   *robot_pose_.mutable_pos() << state.x(), state.y(), 0.0;
@@ -21,7 +21,7 @@ bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state)
   ::aos::SizedArray<FakeCamera::TargetView,
                     y2019::constants::Field::kNumTargets>
       target_views;
-  if (speed > 0) {
+  if (command_speed > 0) {
     target_views = front_viewer_.target_views();
   } else {
     target_views = back_viewer_.target_views();
