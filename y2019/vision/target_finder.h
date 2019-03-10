@@ -39,7 +39,8 @@ class TargetFinder {
 
   // Turn a bloblist into components of a target.
   std::vector<TargetComponent> FillTargetComponentList(
-      const std::vector<std::vector<aos::vision::Segment<2>>> &seg_list);
+      const std::vector<std::vector<aos::vision::Segment<2>>> &seg_list,
+      bool verbose);
 
   // Piece the compenents together into a target.
   std::vector<Target> FindTargetsFromComponents(
