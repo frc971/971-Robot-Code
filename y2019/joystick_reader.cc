@@ -11,7 +11,10 @@
 #include "aos/input/joystick_input.h"
 #include "aos/logging/logging.h"
 #include "aos/logging/logging.h"
+#include "aos/network/team_number.h"
 #include "aos/util/log_interval.h"
+#include "aos/vision/events/udp.h"
+#include "external/com_google_protobuf/src/google/protobuf/stubs/stringprintf.h"
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
@@ -19,16 +22,20 @@
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
 #include "y2019/control_loops/superstructure/superstructure.q.h"
 #include "y2019/status_light.q.h"
+#include "y2019/vision.pb.h"
 
 using ::y2019::control_loops::superstructure::superstructure_queue;
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::ControlBit;
 using ::aos::input::driver_station::JoystickAxis;
 using ::aos::input::driver_station::POVLocation;
+using ::aos::events::ProtoTXUdpSocket;
 
 namespace y2019 {
 namespace input {
 namespace joysticks {
+
+using google::protobuf::StringPrintf;
 
 const ButtonLocation kSuctionBall(3, 13);
 const ButtonLocation kSuctionHatch(3, 12);
@@ -105,10 +112,13 @@ class Reader : public ::aos::input::ActionJoystickInput {
       : ::aos::input::ActionJoystickInput(
             event_loop,
             ::y2019::control_loops::drivetrain::GetDrivetrainConfig()) {
+    const uint16_t team = ::aos::network::GetTeamNumber();
     superstructure_queue.goal.FetchLatest();
     if (superstructure_queue.goal.get()) {
       grab_piece_ = superstructure_queue.goal->suction.grab_piece;
     }
+    video_tx_.reset(new ProtoTXUdpSocket<VisionControl>(
+        StringPrintf("10.%d.%d.179", team / 100, team % 100), 5000));
   }
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
@@ -268,6 +278,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
       new_superstructure_goal->suction.gamepiece_mode = 1;
     }
 
+    vision_control_.set_flip_image(elevator_wrist_pos_.wrist < 0);
+
     new_superstructure_goal->suction.grab_piece = grab_piece_;
 
     new_superstructure_goal->elevator.unsafe_goal =
@@ -278,6 +290,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
     if (!new_superstructure_goal.Send()) {
       LOG(ERROR, "Sending superstructure goal failed.\n");
     }
+
+    video_tx_->Send(vision_control_);
   }
 
  private:
@@ -287,6 +301,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
   bool switch_ball_ = false;
   bool stilts_was_above_ = false;
+
+  VisionControl vision_control_;
+  ::std::unique_ptr<ProtoTXUdpSocket<VisionControl>> video_tx_;
 };
 
 }  // namespace joysticks
