@@ -35,7 +35,16 @@ class EventLoopLocalizer
 
   void Reset(const Localizer::State &state);
   void ResetPosition(double x, double y, double theta) override {
-    Reset((Localizer::State() << x, y, theta, 0, 0, 0, 0, 0, 0, 0).finished());
+    Localizer::State new_state = localizer_.X_hat();
+    new_state.x() = x;
+    new_state.y() = y;
+    new_state(2, 0) = theta;
+    new_state(4, 0) = 0.0;
+    new_state(6, 0) = 0.0;
+    new_state(7, 0) = 0.0;
+    new_state(8, 0) = 0.0;
+    new_state(9, 0) = 0.0;
+    Reset(new_state);
   }
 
   void Update(const ::Eigen::Matrix<double, 2, 1> &U,
