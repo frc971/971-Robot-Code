@@ -15,12 +15,14 @@
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/localizer.q.h"
 
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
 #include "y2019/control_loops/superstructure/superstructure.q.h"
 #include "y2019/status_light.q.h"
 
 using ::y2019::control_loops::superstructure::superstructure_queue;
+using ::frc971::control_loops::drivetrain::localizer_control;
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::ControlBit;
 using ::aos::input::driver_station::JoystickAxis;
@@ -64,6 +66,7 @@ const ButtonLocation kPanelHPIntakeForward(5, 6);
 const ButtonLocation kPanelHPIntakeBackward(5, 5);
 
 const ButtonLocation kRelease(2, 4);
+const ButtonLocation kResetLocalizer(4, 3);
 
 const ElevatorWristPosition kStowPos{0.36, 0.0};
 
@@ -121,6 +124,16 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
+
+    if (data.PosEdge(kResetLocalizer)) {
+      auto localizer_resetter = localizer_control.MakeMessage();
+      localizer_resetter->x = 0.4;
+      localizer_resetter->y = 3.4;
+      localizer_resetter->theta = 0.0;
+      if (!localizer_resetter.Send()) {
+        LOG(ERROR, "Failed to reset localizer.\n");
+      }
+    }
 
     if (data.IsPressed(kSuctionBall)) {
       grab_piece_ = true;
