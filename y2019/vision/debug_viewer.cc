@@ -166,7 +166,7 @@ class FilterHarness : public aos::vision::FilterHarness {
     }
 
     // Check that our current results match possible solutions.
-    results = target_finder_.FilterResults(results, 0);
+    results = target_finder_.FilterResults(results, 0, draw_results_);
     if (draw_results_) {
       for (const IntermediateResult &res : results) {
         DrawTarget(res, {0, 255, 0});

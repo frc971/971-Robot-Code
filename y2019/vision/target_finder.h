@@ -53,7 +53,8 @@ class TargetFinder {
   IntermediateResult ProcessTargetToResult(const Target &target, bool verbose);
 
   std::vector<IntermediateResult> FilterResults(
-      const std::vector<IntermediateResult> &results, uint64_t print_rate);
+      const std::vector<IntermediateResult> &results, uint64_t print_rate,
+      bool verbose);
 
   // Get the local overlay for debug if we are doing that.
   aos::vision::PixelLinesOverlay *GetOverlay() { return &overlay_; }

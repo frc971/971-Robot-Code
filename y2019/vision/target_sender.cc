@@ -339,7 +339,7 @@ int main(int argc, char **argv) {
     }
     LOG(INFO, "Raw Results: (%zu).\n", results.size());
 
-    results = finder_.FilterResults(results, 30);
+    results = finder_.FilterResults(results, 30, verbose);
     LOG(INFO, "Results: (%zu).\n", results.size());
 
     // TODO: Select top 3 (randomly?)
