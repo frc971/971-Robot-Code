@@ -46,6 +46,7 @@ cc_library(
     deps = [
         ":drivetrain_config",
         "//aos/containers:priority_queue",
+        "//aos/util:math",
         "//frc971/control_loops:c2d",
         "//frc971/control_loops:runge_kutta",
         "//third_party/eigen",

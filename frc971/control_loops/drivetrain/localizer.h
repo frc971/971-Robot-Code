@@ -95,9 +95,12 @@ class DeadReckonEkf : public LocalizerInterface {
   }
 
   void ResetPosition(double x, double y, double theta) override {
+    const double left_encoder = ekf_.X_hat(StateIdx::kLeftEncoder);
+    const double right_encoder = ekf_.X_hat(StateIdx::kRightEncoder);
     ekf_.ResetInitialState(
         ::aos::monotonic_clock::now(),
-        (Ekf::State() << x, y, theta, 0, 0, 0, 0, 0, 0, 0).finished(),
+        (Ekf::State() << x, y, theta, left_encoder, 0, right_encoder, 0)
+            .finished(),
         ekf_.P());
   };
 
@@ -110,12 +113,8 @@ class DeadReckonEkf : public LocalizerInterface {
   double right_velocity() const override {
     return ekf_.X_hat(StateIdx::kRightVelocity);
   }
-  double left_voltage_error() const override {
-    return ekf_.X_hat(StateIdx::kLeftVoltageError);
-  }
-  double right_voltage_error() const override {
-    return ekf_.X_hat(StateIdx::kRightVoltageError);
-  }
+  double left_voltage_error() const override { return 0.0; }
+  double right_voltage_error() const override { return 0.0; }
 
   TrivialTargetSelector *target_selector() override {
     return &target_selector_;

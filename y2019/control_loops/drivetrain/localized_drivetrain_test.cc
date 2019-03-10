@@ -67,7 +67,7 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
   void SetStartingPosition(const Eigen::Matrix<double, 3, 1> &xytheta) {
     *drivetrain_motor_plant_.mutable_state() << xytheta.x(), xytheta.y(),
         xytheta(2, 0), 0.0, 0.0;
-    Eigen::Matrix<double, 10, 1> localizer_state;
+    Eigen::Matrix<double, 7, 1> localizer_state;
     localizer_state.setZero();
     localizer_state.block<3, 1>(0, 0) = xytheta;
     localizer_.Reset(localizer_state);
@@ -296,7 +296,7 @@ TEST_F(LocalizedDrivetrainTest, CameraUpdate) {
       .Send();
   RunForTime(chrono::seconds(3));
   VerifyNearGoal();
-  VerifyEstimatorAccurate(1e-5);
+  VerifyEstimatorAccurate(1e-4);
 }
 
 namespace {
