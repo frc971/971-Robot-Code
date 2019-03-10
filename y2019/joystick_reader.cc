@@ -164,7 +164,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
       new_superstructure_goal->stilts.profile_params.max_acceleration = 0.75;
     } else {
-      new_superstructure_goal->stilts.unsafe_goal = 0.01;
+      new_superstructure_goal->stilts.unsafe_goal = 0.005;
       new_superstructure_goal->stilts.profile_params.max_velocity = 0.25;
       new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
     }
