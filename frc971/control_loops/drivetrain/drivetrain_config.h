@@ -92,6 +92,9 @@ struct DrivetrainConfig {
 
   Scalar wheel_multiplier;
 
+  // Whether the shift button on the pistol grip enables line following mode.
+  bool pistol_grip_shift_enables_line_follow = false;
+
   // Converts the robot state to a linear distance position, velocity.
   static Eigen::Matrix<Scalar, 2, 1> LeftRightToLinear(
       const Eigen::Matrix<Scalar, 7, 1> &left_right) {
