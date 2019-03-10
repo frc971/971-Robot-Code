@@ -5,18 +5,10 @@
 
 namespace aos {
 namespace vision {
+namespace {
 
-void DrawRangeImage(const RangeImage &rimg, ImagePtr outbuf, PixelRef color) {
-  for (int i = 0; i < (int)rimg.ranges().size(); ++i) {
-    int y = rimg.min_y() + i;
-    for (ImageRange rng : rimg.ranges()[i]) {
-      for (int x = rng.st; x < rng.ed; ++x) {
-        outbuf.get_px(x, y) = color;
-      }
-    }
-  }
-}
-
+// Merge sort of multiple range images into a single range image.
+// They must not overlap.
 RangeImage MergeRangeImage(const BlobList &blobl) {
   if (blobl.size() == 1) return blobl[0];
 
@@ -47,6 +39,8 @@ RangeImage MergeRangeImage(const BlobList &blobl) {
     ++i;
   }
 }
+
+}  // namespace
 
 std::string ShortDebugPrint(const BlobList &blobl) {
   RangeImage rimg = MergeRangeImage(blobl);

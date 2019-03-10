@@ -46,7 +46,13 @@ class RangeImage {
 
   int size() const { return ranges_.size(); }
 
+  // Returns the total number of included pixels.
   int npixels();
+  // Calculates the total number of included pixels.
+  //
+  // TODO(Brian): Present a nicer API than the current duality between this and
+  // npixels(), which is annoying because npixels() has to modify the cached
+  // data so it can't be const.
   int calc_area() const;
 
   void Flip(ImageFormat fmt) { Flip(fmt.w, fmt.h); }
@@ -84,12 +90,6 @@ void PrintTo(const RangeImage &range, std::ostream *os);
 
 typedef std::vector<RangeImage> BlobList;
 typedef std::vector<const RangeImage *> BlobLRef;
-
-void DrawRangeImage(const RangeImage &rimg, ImagePtr outbuf, PixelRef color);
-
-// Merge sort of multiple range images into a single range image.
-// They must not overlap.
-RangeImage MergeRangeImage(const BlobList &blobl);
 
 // Debug print range image as ranges.
 std::string ShortDebugPrint(const BlobList &blobl);
