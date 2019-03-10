@@ -49,6 +49,19 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "threshold_test",
+    srcs = [
+        "threshold_test.cc",
+    ],
+    deps = [
+        ":range_image",
+        ":threshold",
+        "//aos/testing:googletest",
+        "//aos/vision/image:image_types",
+    ],
+)
+
 cc_library(
     name = "hierarchical_contour_merge",
     srcs = ["hierarchical_contour_merge.cc"],

@@ -21,7 +21,13 @@ struct ImageRange {
   int calc_width() const { return ed - st; }
 
   bool operator<(const ImageRange &o) const { return st < o.st; }
+  bool operator==(const ImageRange &other) const {
+    return st == other.st && ed == other.ed;
+  }
+  bool operator!=(const ImageRange &other) const { return !(*this == other); }
 };
+
+void PrintTo(const ImageRange &range, std::ostream *os);
 
 // Image in pre-thresholded run-length encoded format.
 class RangeImage {
@@ -30,6 +36,13 @@ class RangeImage {
       : min_y_(min_y), ranges_(std::move(ranges)) {}
   explicit RangeImage(int l) { ranges_.reserve(l); }
   RangeImage() {}
+
+  bool operator==(const RangeImage &other) const {
+    if (min_y_ != other.min_y_) { return false; }
+    if (ranges_ != other.ranges_) { return false; }
+    return true;
+  }
+  bool operator!=(const RangeImage &other) const { return !(*this == other); }
 
   int size() const { return ranges_.size(); }
 
@@ -59,12 +72,15 @@ class RangeImage {
   // minimum index in y where the blob starts
   int min_y_ = 0;
 
-  // ranges are always sorted in y then x order
+  // Each vector<ImageRange> represents all the matched ranges in a given row.
+  // Each ImageRange within that row represents a run of pixels which matches.
   std::vector<std::vector<ImageRange>> ranges_;
 
   // Cached pixel count.
   int npixelsc_ = -1;
 };
+
+void PrintTo(const RangeImage &range, std::ostream *os);
 
 typedef std::vector<RangeImage> BlobList;
 typedef std::vector<const RangeImage *> BlobLRef;

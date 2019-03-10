@@ -88,6 +88,10 @@ void DebugPrint(const BlobList &blobl) {
   }
 }
 
+void PrintTo(const ImageRange &range, std::ostream *os) {
+  *os << "{" << range.st << ", " << range.ed << "}";
+}
+
 void RangeImage::Flip(int image_width, int image_height) {
   std::reverse(ranges_.begin(), ranges_.end());
   for (std::vector<ImageRange> &range : ranges_) {
@@ -100,6 +104,31 @@ void RangeImage::Flip(int image_width, int image_height) {
   }
 
   min_y_ = image_height - static_cast<int>(ranges_.size()) - min_y_;
+}
+
+void PrintTo(const RangeImage &range, std::ostream *os) {
+  *os << "{min_y=" << range.min_y()
+      << ", ranges={";
+  bool first_row = true;
+  for (const auto &row : range) {
+    if (first_row) {
+      first_row = false;
+    } else {
+      *os << ", ";
+    }
+    *os << "{";
+    bool first_value = true;
+    for (const auto &value : row) {
+      if (first_value) {
+        first_value = false;
+      } else {
+        *os << ", ";
+      }
+      *os << "{" << value.st << ", " << value.ed << "}";
+    }
+    *os << "}";
+  }
+  *os << "}}";
 }
 
 int RangeImage::npixels() {
