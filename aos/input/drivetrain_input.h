@@ -35,17 +35,28 @@ namespace input {
 // joystick types.
 class DrivetrainInputReader {
  public:
+  // What to use the turn1/2 buttons for.
+  enum class TurnButtonUse {
+    // Use the button to enable control loop driving.
+    kControlLoopDriving,
+    // Use the button to set line following mode.
+    kLineFollow,
+  };
   // Inputs driver station button and joystick locations
   DrivetrainInputReader(driver_station::JoystickAxis wheel,
                         driver_station::JoystickAxis throttle,
                         driver_station::ButtonLocation quick_turn,
                         driver_station::ButtonLocation turn1,
-                        driver_station::ButtonLocation turn2)
+                        TurnButtonUse turn1_use,
+                        driver_station::ButtonLocation turn2,
+                        TurnButtonUse turn2_use)
       : wheel_(wheel),
         throttle_(throttle),
         quick_turn_(quick_turn),
         turn1_(turn1),
-        turn2_(turn2) {}
+        turn1_use_(turn1_use),
+        turn2_(turn2),
+        turn2_use_(turn2_use) {}
 
   virtual ~DrivetrainInputReader() = default;
 
@@ -78,8 +89,12 @@ class DrivetrainInputReader {
   const driver_station::JoystickAxis wheel_;
   const driver_station::JoystickAxis throttle_;
   const driver_station::ButtonLocation quick_turn_;
+  // Button for enabling control loop driving.
   const driver_station::ButtonLocation turn1_;
+  const TurnButtonUse turn1_use_;
+  // But for enabling line following.
   const driver_station::ButtonLocation turn2_;
+  const TurnButtonUse turn2_use_;
 
   // Structure containing the (potentially adjusted) steering and throttle
   // values from the joysticks.
@@ -134,9 +149,18 @@ class PistolDrivetrainInputReader : public DrivetrainInputReader {
  public:
   using DrivetrainInputReader::DrivetrainInputReader;
 
+  // What to use the top two buttons for on the pistol grip.
+  enum class TopButtonUse {
+    // Normal shifting.
+    kShift,
+    // Line following (currently just uses top button).
+    kLineFollow,
+  };
+
   // Creates a DrivetrainInputReader with the corresponding joystick ports and
   // axis for the (cheap) pistol grip controller.
-  static std::unique_ptr<PistolDrivetrainInputReader> Make(bool default_high_gear);
+  static std::unique_ptr<PistolDrivetrainInputReader> Make(
+      bool default_high_gear, TopButtonUse top_button_use);
 
  private:
   PistolDrivetrainInputReader(
@@ -158,7 +182,8 @@ class PistolDrivetrainInputReader : public DrivetrainInputReader {
       driver_station::ButtonLocation turn1,
       driver_station::ButtonLocation turn2)
       : DrivetrainInputReader(wheel_high, throttle_high, quick_turn, turn1,
-                              turn2),
+                              TurnButtonUse::kLineFollow, turn2,
+                              TurnButtonUse::kLineFollow),
         wheel_low_(wheel_low),
         wheel_velocity_high_(wheel_velocity_high),
         wheel_velocity_low_(wheel_velocity_low),

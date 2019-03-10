@@ -28,20 +28,31 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
       ::frc971::control_loops::drivetrain::GyroType::IMU_Z_GYRO,
       ::frc971::control_loops::drivetrain::IMUType::IMU_X,
 
-      drivetrain::MakeDrivetrainLoop, drivetrain::MakeVelocityDrivetrainLoop,
+      drivetrain::MakeDrivetrainLoop,
+      drivetrain::MakeVelocityDrivetrainLoop,
       drivetrain::MakeKFDrivetrainLoop,
       drivetrain::MakeHybridVelocityDrivetrainLoop,
 
       chrono::duration_cast<chrono::nanoseconds>(
           chrono::duration<double>(drivetrain::kDt)),
-      drivetrain::kRobotRadius, drivetrain::kWheelRadius, drivetrain::kV,
+      drivetrain::kRobotRadius,
+      drivetrain::kWheelRadius,
+      drivetrain::kV,
 
-      drivetrain::kHighGearRatio, drivetrain::kLowGearRatio, drivetrain::kJ,
-      drivetrain::kMass, kThreeStateDriveShifter, kThreeStateDriveShifter,
-      true /* default_high_gear */, 0 /* down_offset if using constants use
-                                   constants::GetValues().down_error */,
-      0.7 /* wheel_non_linearity */, 1.2 /* quickturn_wheel_multiplier */,
+      drivetrain::kHighGearRatio,
+      drivetrain::kLowGearRatio,
+      drivetrain::kJ,
+      drivetrain::kMass,
+      kThreeStateDriveShifter,
+      kThreeStateDriveShifter,
+      true /* default_high_gear */,
+      0 /* down_offset if using constants use
+     constants::GetValues().down_error */
+      ,
+      0.7 /* wheel_non_linearity */,
+      1.2 /* quickturn_wheel_multiplier */,
       1.2 /* wheel_multiplier */,
+      true /*pistol_grip_shift_enables_line_follow*/,
   };
 
   return kDrivetrainConfig;

@@ -35,15 +35,15 @@ class EventLoopLocalizer
 
   void Reset(const Localizer::State &state);
   void ResetPosition(double x, double y, double theta) override {
+    // When we reset the state, we want to keep the encoder positions intact, so
+    // we copy from the original state and reset everything else.
     Localizer::State new_state = localizer_.X_hat();
     new_state.x() = x;
     new_state.y() = y;
     new_state(2, 0) = theta;
+    // Velocity terms.
     new_state(4, 0) = 0.0;
     new_state(6, 0) = 0.0;
-    new_state(7, 0) = 0.0;
-    new_state(8, 0) = 0.0;
-    new_state(9, 0) = 0.0;
     Reset(new_state);
   }
 
@@ -64,12 +64,8 @@ class EventLoopLocalizer
   double right_velocity() const override {
     return localizer_.X_hat(StateIdx::kRightVelocity);
   }
-  double left_voltage_error() const override {
-    return localizer_.X_hat(StateIdx::kLeftVoltageError);
-  }
-  double right_voltage_error() const override {
-    return localizer_.X_hat(StateIdx::kRightVoltageError);
-  }
+  double left_voltage_error() const override { return 0.0; }
+  double right_voltage_error() const override { return 0.0; }
 
   TargetSelector *target_selector() override {
     return &target_selector_;

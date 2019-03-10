@@ -67,7 +67,7 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
   void SetStartingPosition(const Eigen::Matrix<double, 3, 1> &xytheta) {
     *drivetrain_motor_plant_.mutable_state() << xytheta.x(), xytheta.y(),
         xytheta(2, 0), 0.0, 0.0;
-    Eigen::Matrix<double, 10, 1> localizer_state;
+    Eigen::Matrix<double, 7, 1> localizer_state;
     localizer_state.setZero();
     localizer_state.block<3, 1>(0, 0) = xytheta;
     localizer_.Reset(localizer_state);
@@ -296,7 +296,7 @@ TEST_F(LocalizedDrivetrainTest, CameraUpdate) {
       .Send();
   RunForTime(chrono::seconds(3));
   VerifyNearGoal();
-  VerifyEstimatorAccurate(1e-5);
+  VerifyEstimatorAccurate(1e-4);
 }
 
 namespace {
@@ -310,11 +310,11 @@ TEST_F(LocalizedDrivetrainTest, LineFollowToHPSlot) {
   SetStartingPosition({4, 3, M_PI});
   my_drivetrain_queue_.goal.MakeWithBuilder()
       .controller_type(3)
-      .throttle(0.5)
+      .throttle(0.9)
       .Send();
   RunForTime(chrono::seconds(10));
 
-  VerifyEstimatorAccurate(1e-10);
+  VerifyEstimatorAccurate(1e-8);
   // Due to the fact that we aren't modulating the throttle, we don't try to hit
   // the target exactly. Instead, just run slightly past the target:
   EXPECT_LT(::std::abs(::aos::math::DiffAngle(

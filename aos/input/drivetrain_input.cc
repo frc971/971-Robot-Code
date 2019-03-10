@@ -23,8 +23,6 @@ const ButtonLocation kShiftHigh(2, 3), kShiftHigh2(2, 2), kShiftLow(2, 1);
 
 void DrivetrainInputReader::HandleDrivetrain(
     const ::aos::input::driver_station::Data &data) {
-  bool is_control_loop_driving = false;
-
   const auto wheel_and_throttle = GetWheelAndThrottle(data);
   const double wheel = wheel_and_throttle.wheel;
   const double wheel_velocity = wheel_and_throttle.wheel_velocity;
@@ -39,7 +37,32 @@ void DrivetrainInputReader::HandleDrivetrain(
     robot_velocity_ = drivetrain_queue.status->robot_speed;
   }
 
-  if (data.PosEdge(turn1_) || data.PosEdge(turn2_)) {
+  bool is_control_loop_driving = false;
+  bool is_line_following = false;
+
+  if (data.IsPressed(turn1_)) {
+    switch (turn1_use_) {
+      case TurnButtonUse::kControlLoopDriving:
+        is_control_loop_driving = true;
+        break;
+      case TurnButtonUse::kLineFollow:
+        is_line_following = true;
+        break;
+    }
+  }
+
+  if (data.IsPressed(turn2_)) {
+    switch (turn2_use_) {
+      case TurnButtonUse::kControlLoopDriving:
+        is_control_loop_driving = true;
+        break;
+      case TurnButtonUse::kLineFollow:
+        is_line_following = true;
+        break;
+    }
+  }
+
+  if (is_control_loop_driving) {
     if (drivetrain_queue.status.get()) {
       left_goal_ = drivetrain_queue.status->estimated_left_position;
       right_goal_ = drivetrain_queue.status->estimated_right_position;
@@ -49,9 +72,6 @@ void DrivetrainInputReader::HandleDrivetrain(
       left_goal_ - wheel * wheel_multiplier_ + throttle * 0.3;
   const double current_right_goal =
       right_goal_ + wheel * wheel_multiplier_ + throttle * 0.3;
-  if (data.IsPressed(turn1_) || data.IsPressed(turn2_)) {
-    is_control_loop_driving = true;
-  }
   auto new_drivetrain_goal = drivetrain_queue.goal.MakeMessage();
   new_drivetrain_goal->wheel = wheel;
   new_drivetrain_goal->wheel_velocity = wheel_velocity;
@@ -61,7 +81,8 @@ void DrivetrainInputReader::HandleDrivetrain(
   new_drivetrain_goal->throttle_torque = throttle_torque;
   new_drivetrain_goal->highgear = high_gear;
   new_drivetrain_goal->quickturn = data.IsPressed(quick_turn_);
-  new_drivetrain_goal->controller_type = is_control_loop_driving ? 1 : 0;
+  new_drivetrain_goal->controller_type =
+      is_line_following ? 3 : (is_control_loop_driving ? 1 : 0);
   new_drivetrain_goal->left_goal = current_left_goal;
   new_drivetrain_goal->right_goal = current_right_goal;
 
@@ -192,15 +213,17 @@ SteeringWheelDrivetrainInputReader::Make(bool default_high_gear) {
   const ButtonLocation kTurn1(1, 7);
   const ButtonLocation kTurn2(1, 11);
   std::unique_ptr<SteeringWheelDrivetrainInputReader> result(
-      new SteeringWheelDrivetrainInputReader(kSteeringWheel, kDriveThrottle,
-                                             kQuickTurn, kTurn1, kTurn2));
+      new SteeringWheelDrivetrainInputReader(
+          kSteeringWheel, kDriveThrottle, kQuickTurn, kTurn1,
+          TurnButtonUse::kControlLoopDriving, kTurn2,
+          TurnButtonUse::kControlLoopDriving));
   result.get()->set_default_high_gear(default_high_gear);
 
   return result;
 }
 
 std::unique_ptr<PistolDrivetrainInputReader> PistolDrivetrainInputReader::Make(
-    bool default_high_gear) {
+    bool default_high_gear, TopButtonUse top_button_use) {
   // Pistol Grip controller
   const JoystickAxis kTriggerHigh(1, 1), kTriggerLow(1, 4),
       kTriggerVelocityHigh(1, 2), kTriggerVelocityLow(1, 5),
@@ -211,12 +234,23 @@ std::unique_ptr<PistolDrivetrainInputReader> PistolDrivetrainInputReader::Make(
       kWheelTorqueLow(2, 6);
 
   const ButtonLocation kQuickTurn(1, 3);
-  const ButtonLocation kShiftHigh(1, 1);
-  const ButtonLocation kShiftLow(1, 2);
 
-  // Nop
-  const ButtonLocation kTurn1(1, 9);
-  const ButtonLocation kTurn2(1, 10);
+  const ButtonLocation TopButton(1, 1);
+  const ButtonLocation SecondButton(1, 2);
+  // Non-existant button for nops.
+  const ButtonLocation DummyButton(1, 10);
+
+  // TODO(james): Make a copy assignment operator for ButtonLocation so we don't
+  // have to shoehorn in these ternary operators.
+  const ButtonLocation kTurn1 =
+      (top_button_use == TopButtonUse::kLineFollow) ? TopButton : DummyButton;
+  // Turn2 currently does nothing on the pistol grip, ever.
+  const ButtonLocation kTurn2 = DummyButton;
+  const ButtonLocation kShiftHigh =
+      (top_button_use == TopButtonUse::kShift) ? TopButton : DummyButton;
+  const ButtonLocation kShiftLow =
+      (top_button_use == TopButtonUse::kShift) ? SecondButton : DummyButton;
+
   std::unique_ptr<PistolDrivetrainInputReader> result(
       new PistolDrivetrainInputReader(
           kWheelHigh, kWheelLow, kTriggerVelocityHigh, kTriggerVelocityLow,
@@ -239,7 +273,9 @@ std::unique_ptr<XboxDrivetrainInputReader> XboxDrivetrainInputReader::Make() {
 
   std::unique_ptr<XboxDrivetrainInputReader> result(
       new XboxDrivetrainInputReader(kSteeringWheel, kDriveThrottle, kQuickTurn,
-                                    kTurn1, kTurn2));
+                                    kTurn1, TurnButtonUse::kControlLoopDriving,
+                                    kTurn2,
+                                    TurnButtonUse::kControlLoopDriving));
   return result;
 }
 ::std::unique_ptr<DrivetrainInputReader> DrivetrainInputReader::Make(
@@ -256,8 +292,11 @@ std::unique_ptr<XboxDrivetrainInputReader> XboxDrivetrainInputReader::Make() {
           SteeringWheelDrivetrainInputReader::Make(dt_config.default_high_gear);
       break;
     case InputType::kPistol:
-      drivetrain_input_reader =
-          PistolDrivetrainInputReader::Make(dt_config.default_high_gear);
+      drivetrain_input_reader = PistolDrivetrainInputReader::Make(
+          dt_config.default_high_gear,
+          dt_config.pistol_grip_shift_enables_line_follow
+              ? PistolDrivetrainInputReader::TopButtonUse::kLineFollow
+              : PistolDrivetrainInputReader::TopButtonUse::kShift);
       break;
     case InputType::kXbox:
       drivetrain_input_reader = XboxDrivetrainInputReader::Make();

@@ -4,6 +4,7 @@
 #include <chrono>
 
 #include "aos/containers/priority_queue.h"
+#include "aos/util/math.h"
 #include "frc971/control_loops/c2d.h"
 #include "frc971/control_loops/runge_kutta.h"
 #include "Eigen/Dense"
@@ -48,11 +49,8 @@ class HybridEkf {
     kLeftVelocity = 4,
     kRightEncoder = 5,
     kRightVelocity = 6,
-    kLeftVoltageError = 7,
-    kRightVoltageError = 8 ,
-    kAngularError = 9,
   };
-  static constexpr int kNStates = 10;
+  static constexpr int kNStates = 7;
   static constexpr int kNInputs = 2;
   // Number of previous samples to save.
   static constexpr int kSaveSamples = 50;
@@ -70,19 +68,11 @@ class HybridEkf {
   // variable-size measurement updates.
   typedef Eigen::Matrix<Scalar, kNOutputs, 1> Output;
   typedef Eigen::Matrix<Scalar, kNStates, kNStates> StateSquare;
-  // State is [x_position, y_position, theta, Kalman States], where
-  // Kalman States are the states from the standard drivetrain Kalman Filter,
-  // which is: [left encoder, left ground vel, right encoder, right ground vel,
-  // left voltage error, right voltage error, angular_error], where:
-  // left/right encoder should correspond directly to encoder readings
-  // left/right velocities are the velocity of the left/right sides over the
+  // State is [x_position, y_position, theta, left encoder, left ground vel,
+  // right encoder, right ground vel]. left/right encoder should correspond
+  // directly to encoder readings left/right velocities are the velocity of the
+  // left/right sides over the
   //   ground (i.e., corrected for angular_error).
-  // voltage errors are the difference between commanded and effective voltage,
-  //   used to estimate consistent modelling errors (e.g., friction).
-  // angular error is the difference between the angular velocity as estimated
-  //   by the encoders vs. estimated by the gyro, such as might be caused by
-  //   wheels on one side of the drivetrain being too small or one side's
-  //   wheels slipping more than the other.
   typedef Eigen::Matrix<Scalar, kNStates, 1> State;
 
   // Constructs a HybridEkf for a particular drivetrain.
@@ -406,9 +396,7 @@ void HybridEkf<Scalar>::InitializeMatrices() {
 
   // Encoder derivatives
   A_continuous_(kLeftEncoder, kLeftVelocity) = 1.0;
-  A_continuous_(kLeftEncoder, kAngularError) = 1.0;
   A_continuous_(kRightEncoder, kRightVelocity) = 1.0;
-  A_continuous_(kRightEncoder, kAngularError) = -1.0;
 
   // Pull velocity derivatives from velocity matrices.
   // Note that this looks really awkward (doesn't use
@@ -425,21 +413,22 @@ void HybridEkf<Scalar>::InitializeMatrices() {
   B_continuous_.setZero();
   B_continuous_.row(kLeftVelocity) = vel_coefs.B_continuous.row(0);
   B_continuous_.row(kRightVelocity) = vel_coefs.B_continuous.row(1);
-  A_continuous_.template block<kNStates, kNInputs>(0, 7) = B_continuous_;
 
   Q_continuous_.setZero();
   // TODO(james): Improve estimates of process noise--e.g., X/Y noise can
   // probably be reduced when we are stopped because you rarely jump randomly.
   // Or maybe it's more appropriate to scale wheelspeed noise with wheelspeed,
   // since the wheels aren't likely to slip much stopped.
-  Q_continuous_(kX, kX) = 0.005;
-  Q_continuous_(kY, kY) = 0.005;
-  Q_continuous_(kTheta, kTheta) = 0.001;
-  Q_continuous_.template block<7, 7>(3, 3) =
-      dt_config_.make_kf_drivetrain_loop().observer().coefficients().Q;
+  Q_continuous_(kX, kX) = 0.01;
+  Q_continuous_(kY, kY) = 0.01;
+  Q_continuous_(kTheta, kTheta) = 0.0002;
+  Q_continuous_(kLeftEncoder, kLeftEncoder) = ::std::pow(0.03, 2.0);
+  Q_continuous_(kRightEncoder, kRightEncoder) = ::std::pow(0.03, 2.0);
+  Q_continuous_(kLeftVelocity, kLeftVelocity) = ::std::pow(0.1, 2.0);
+  Q_continuous_(kRightVelocity, kRightVelocity) = ::std::pow(0.1, 2.0);
 
   P_.setZero();
-  P_.diagonal() << 0.1, 0.1, 0.01, 0.02, 0.01, 0.02, 0.01, 1, 1, 0.03;
+  P_.diagonal() << 0.1, 0.1, 0.01, 0.02, 0.01, 0.02, 0.01;
 
   H_encoders_and_gyro_.setZero();
   // Encoders are stored directly in the state matrix, so are a minor

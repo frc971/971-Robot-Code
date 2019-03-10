@@ -143,9 +143,9 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   stilts_params->zeroing_constants.allowable_encoder_error = 0.9;
 
   r->camera_noise_parameters = {.max_viewable_distance = 10.0,
-                                .heading_noise = 0.02,
-                                .nominal_distance_noise = 0.06,
-                                .nominal_skew_noise = 0.1,
+                                .heading_noise = 0.2,
+                                .nominal_distance_noise = 0.3,
+                                .nominal_skew_noise = 0.35,
                                 .nominal_height_noise = 0.01};
 
   // Deliberately make FOV a bit large so that we are overly conservative in
@@ -201,6 +201,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
       stilts_params->zeroing_constants.measured_absolute_position = 0.043580;
       stilts->potentiometer_offset = -0.093820 + 0.0124 - 0.008334 + 0.004507;
+
+      FillCameraPoses(vision::PracticeBotTeensyId(), &r->cameras);
       break;
 
     case kCodingRobotTeamNumber:
@@ -306,8 +308,8 @@ Field::Field() {
   constexpr double kHpSlotY = InchToMeters((26 * 12 + 10.5) / 2.0 - 25.9);
   constexpr double kHpSlotTheta = M_PI;
 
-  constexpr double kNormalZ = 0.80;
-  constexpr double kPortZ = 0.99;
+  constexpr double kNormalZ = 0.85;
+  constexpr double kPortZ = 1.04;
 
   const Pose far_side_cargo_bay({kFarSideCargoBayX, kSideCargoBayY, kNormalZ},
                                 kSideCargoBayTheta);

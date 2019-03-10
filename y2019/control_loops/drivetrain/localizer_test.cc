@@ -399,7 +399,7 @@ TEST_P(ParameterizedLocalizerTest, SplineTest) {
     U(1, 0) = ::std::max(::std::min(U(1, 0), 12.0), -12.0);
 
     state = ::frc971::control_loops::RungeKuttaU(
-        [this](const ::Eigen::Matrix<double, 10, 1> &X,
+        [this](const ::Eigen::Matrix<double, 7, 1> &X,
                const ::Eigen::Matrix<double, 2, 1> &U) { return DiffEq(X, U); },
         state, U,
         ::std::chrono::duration_cast<::std::chrono::duration<double>>(
@@ -418,7 +418,7 @@ TEST_P(ParameterizedLocalizerTest, SplineTest) {
                            ::std::pow(state(StateIdx::kRightVelocity, 0), 2)) /
                    3.0);
       TestLocalizer::State disturbance;
-      disturbance << 0.02, 0.02, 0.001, 0.03, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0;
+      disturbance << 0.02, 0.02, 0.001, 0.03, 0.02, 0.0, 0.0;
       disturbance *= disturbance_scale;
       state += disturbance;
     }
@@ -498,11 +498,9 @@ INSTANTIATE_TEST_CASE_P(
         LocalizerTestParams({
             /*control_pts_x=*/{{0.0, 3.0, 3.0, 0.0, 1.0, 1.0}},
             /*control_pts_y=*/{{-5.0, -5.0, 2.0, 2.0, 2.0, 3.0}},
-            (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+            (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0)
                 .finished(),
-            (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+            (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0)
                 .finished(),
             /*noisify=*/false,
             /*disturb=*/false,
@@ -514,11 +512,9 @@ INSTANTIATE_TEST_CASE_P(
         LocalizerTestParams({
             /*control_pts_x=*/{{0.0, 3.0, 3.0, 0.0, 1.0, 1.0}},
             /*control_pts_y=*/{{-5.0, -5.0, 2.0, 2.0, 2.0, 3.0}},
-            (TestLocalizer::State() << 0.0, -4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+            (TestLocalizer::State() << 0.0, -4.0, 0.0, 0.0, 0.0, 0.0, 0.0)
                 .finished(),
-            (TestLocalizer::State() << 0.0, -4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+            (TestLocalizer::State() << 0.0, -4.0, 0.0, 0.0, 0.0, 0.0, 0.0)
                 .finished(),
             /*noisify=*/false,
             /*disturb=*/false,
@@ -529,11 +525,9 @@ INSTANTIATE_TEST_CASE_P(
         LocalizerTestParams({
             /*control_pts_x=*/{{0.0, 3.0, 3.0, 0.0, 1.0, 1.0}},
             /*control_pts_y=*/{{-5.0, -5.0, 2.0, 2.0, 2.0, 3.0}},
-            (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+            (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0)
                 .finished(),
-            (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+            (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0)
                 .finished(),
             /*noisify=*/true,
             /*disturb=*/false,
@@ -544,26 +538,9 @@ INSTANTIATE_TEST_CASE_P(
         LocalizerTestParams({
             /*control_pts_x=*/{{0.0, 3.0, 3.0, 0.0, 1.0, 1.0}},
             /*control_pts_y=*/{{-5.0, -5.0, 2.0, 2.0, 2.0, 3.0}},
-            (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+            (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0)
                 .finished(),
-            (TestLocalizer::State() << 0.1, -5.1, -0.01, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0, 0.0)
-                .finished(),
-            /*noisify=*/false,
-            /*disturb=*/false,
-            /*estimate_tolerance=*/1e-4,
-            /*goal_tolerance=*/2e-2,
-        }),
-        // Repeats perfect scenario, but add voltage + angular errors:
-        LocalizerTestParams({
-            /*control_pts_x=*/{{0.0, 3.0, 3.0, 0.0, 1.0, 1.0}},
-            /*control_pts_y=*/{{-5.0, -5.0, 2.0, 2.0, 2.0, 3.0}},
-            (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-             0.5, 0.02)
-                .finished(),
-            (TestLocalizer::State() << 0.1, -5.1, -0.01, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0, 0.0)
+            (TestLocalizer::State() << 0.1, -5.1, -0.01, 0.0, 0.0, 0.0, 0.0)
                 .finished(),
             /*noisify=*/false,
             /*disturb=*/false,
@@ -574,11 +551,9 @@ INSTANTIATE_TEST_CASE_P(
         LocalizerTestParams({
             /*control_pts_x=*/{{0.0, 3.0, 3.0, 0.0, 1.0, 1.0}},
             /*control_pts_y=*/{{-5.0, -5.0, 2.0, 2.0, 2.0, 3.0}},
-            (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+            (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0)
                 .finished(),
-            (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+            (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0)
                 .finished(),
             /*noisify=*/false,
             /*disturb=*/true,
@@ -589,16 +564,14 @@ INSTANTIATE_TEST_CASE_P(
         LocalizerTestParams({
             /*control_pts_x=*/{{0.0, 3.0, 3.0, 0.0, 1.0, 1.0}},
             /*control_pts_y=*/{{-5.0, -5.0, 2.0, 2.0, 2.0, 3.0}},
-            (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+            (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0)
                 .finished(),
-            (TestLocalizer::State() << 0.1, -5.1, 0.03, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+            (TestLocalizer::State() << 0.1, -5.1, 0.03, 0.0, 0.0, 0.0, 0.0)
                 .finished(),
             /*noisify=*/true,
             /*disturb=*/true,
             /*estimate_tolerance=*/0.15,
-            /*goal_tolerance=*/0.5,
+            /*goal_tolerance=*/0.8,
         }),
         // Try another spline, just in case the one I was using is special for
         // some reason; this path will also go straight up to a target, to
@@ -606,11 +579,9 @@ INSTANTIATE_TEST_CASE_P(
         LocalizerTestParams({
             /*control_pts_x=*/{{0.5, 3.5, 4.0, 8.0, 11.0, 10.2}},
             /*control_pts_y=*/{{1.0, 1.0, -3.0, -2.0, -3.5, -3.65}},
-            (TestLocalizer::State() << 0.6, 1.01, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+            (TestLocalizer::State() << 0.6, 1.01, 0.01, 0.0, 0.0, 0.0, 0.0)
                 .finished(),
-            (TestLocalizer::State() << 0.5, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+            (TestLocalizer::State() << 0.5, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0)
                 .finished(),
             /*noisify=*/true,
             /*disturb=*/false,

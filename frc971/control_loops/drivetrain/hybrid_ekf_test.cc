@@ -52,22 +52,16 @@ class HybridEkfTest : public ::testing::Test {
     EXPECT_EQ(Xdot_ekf(StateIdx::kX, 0), ctheta * (left_vel + right_vel) / 2.0);
     EXPECT_EQ(Xdot_ekf(StateIdx::kY, 0), stheta * (left_vel + right_vel) / 2.0);
     EXPECT_EQ(Xdot_ekf(StateIdx::kTheta, 0), (right_vel - left_vel) / diameter);
-    EXPECT_EQ(Xdot_ekf(StateIdx::kLeftEncoder, 0),
-              left_vel + X(StateIdx::kAngularError, 0));
-    EXPECT_EQ(Xdot_ekf(StateIdx::kRightEncoder, 0),
-              right_vel - X(StateIdx::kAngularError, 0));
+    EXPECT_EQ(Xdot_ekf(StateIdx::kLeftEncoder, 0), left_vel);
+    EXPECT_EQ(Xdot_ekf(StateIdx::kRightEncoder, 0), right_vel);
 
     Eigen::Matrix<double, 2, 1> vel_x(X(StateIdx::kLeftVelocity, 0),
                                       X(StateIdx::kRightVelocity, 0));
     Eigen::Matrix<double, 2, 1> expected_vel_X =
         velocity_plant_coefs_.A_continuous * vel_x +
-        velocity_plant_coefs_.B_continuous *
-            (U + X.middleRows<2>(StateIdx::kLeftVoltageError));
+        velocity_plant_coefs_.B_continuous * U;
     EXPECT_EQ(Xdot_ekf(StateIdx::kLeftVelocity, 0), expected_vel_X(0, 0));
     EXPECT_EQ(Xdot_ekf(StateIdx::kRightVelocity, 0), expected_vel_X(1, 0));
-
-    // Dynamics don't expect error terms to change:
-    EXPECT_EQ(0.0, Xdot_ekf.bottomRows<3>().squaredNorm());
   }
   State DiffEq(const State &X, const Input &U) {
     return ekf_.DiffEq(X, U);
@@ -93,18 +87,14 @@ TEST_F(HybridEkfTest, CheckDynamics) {
   CheckDiffEq(State::Zero(), Input::Zero());
   CheckDiffEq(State::Zero(), {-5.0, 5.0});
   CheckDiffEq(State::Zero(), {12.0, -3.0});
-  CheckDiffEq((State() << 100.0, 200.0, M_PI, 1.234, 0.5, 1.2, 0.6, 3.0, -4.0,
-               0.3).finished(),
+  CheckDiffEq((State() << 100.0, 200.0, M_PI, 1.234, 0.5, 1.2, 0.6).finished(),
               {5.0, 6.0});
-  CheckDiffEq((State() << 100.0, 200.0, 2.0, 1.234, 0.5, 1.2, 0.6, 3.0, -4.0,
-               0.3).finished(),
+  CheckDiffEq((State() << 100.0, 200.0, 2.0, 1.234, 0.5, 1.2, 0.6).finished(),
               {5.0, 6.0});
-  CheckDiffEq((State() << 100.0, 200.0, -2.0, 1.234, 0.5, 1.2, 0.6, 3.0, -4.0,
-               0.3).finished(),
+  CheckDiffEq((State() << 100.0, 200.0, -2.0, 1.234, 0.5, 1.2, 0.6).finished(),
               {5.0, 6.0});
   // And check that a theta outisde of [-M_PI, M_PI] works.
-  CheckDiffEq((State() << 100.0, 200.0, 200.0, 1.234, 0.5, 1.2, 0.6, 3.0, -4.0,
-               0.3).finished(),
+  CheckDiffEq((State() << 100.0, 200.0, 200.0, 1.234, 0.5, 1.2, 0.6).finished(),
               {5.0, 6.0});
 }
 
@@ -112,7 +102,7 @@ TEST_F(HybridEkfTest, CheckDynamics) {
 // with zero change in time, the state should approach the estimation.
 TEST_F(HybridEkfTest, ZeroTimeCorrect) {
   HybridEkf<>::Output Z(0.5, 0.5, 1);
-  Eigen::Matrix<double, 3, 10> H;
+  Eigen::Matrix<double, 3, 7> H;
   H.setIdentity();
   auto h = [H](const State &X, const Input &) { return H * X; };
   auto dhdx = [H](const State &) { return H; };
@@ -140,7 +130,7 @@ TEST_F(HybridEkfTest, PredictionsAreSane) {
   HybridEkf<>::Output Z(0, 0, 0);
   // Use true_X to track what we think the true robot state is.
   State true_X = ekf_.X_hat();
-  Eigen::Matrix<double, 3, 10> H;
+  Eigen::Matrix<double, 3, 7> H;
   H.setZero();
   auto h = [H](const State &X, const Input &) { return H * X; };
   auto dhdx = [H](const State &) { return H; };
@@ -171,9 +161,6 @@ TEST_F(HybridEkfTest, PredictionsAreSane) {
   EXPECT_NEAR(ekf_.X_hat(StateIdx::kLeftVelocity) * 0.8,
               ekf_.X_hat(StateIdx::kRightVelocity),
               ekf_.X_hat(StateIdx::kLeftVelocity) * 0.1);
-  EXPECT_EQ(0.0, ekf_.X_hat(StateIdx::kLeftVoltageError));
-  EXPECT_EQ(0.0, ekf_.X_hat(StateIdx::kRightVoltageError));
-  EXPECT_EQ(0.0, ekf_.X_hat(StateIdx::kAngularError));
   const double ending_p_norm = ekf_.P().norm();
   // Due to lack of corrections, noise should've increased.
   EXPECT_GT(ending_p_norm, starting_p_norm * 1.10);
@@ -193,7 +180,7 @@ class HybridEkfOldCorrectionsTest
 TEST_P(HybridEkfOldCorrectionsTest, CreateOldCorrection) {
   HybridEkf<>::Output Z;
   Z.setZero();
-  Eigen::Matrix<double, 3, 10> H;
+  Eigen::Matrix<double, 3, 7> H;
   H.setZero();
   auto h_zero = [H](const State &X, const Input &) { return H * X; };
   auto dhdx_zero = [H](const State &) { return H; };
@@ -231,7 +218,7 @@ TEST_P(HybridEkfOldCorrectionsTest, CreateOldCorrection) {
   expected_X_hat(0, 0) = Z(0, 0);
   expected_X_hat(1, 0) = Z(1, 0) + modeled_X_hat(0, 0);
   expected_X_hat(2, 0) = Z(2, 0);
-  EXPECT_LT((expected_X_hat.topRows<7>() - ekf_.X_hat().topRows<7>()).norm(),
+  EXPECT_LT((expected_X_hat - ekf_.X_hat()).norm(),
            1e-3)
       << "X_hat: " << ekf_.X_hat() << " expected " << expected_X_hat;
   // The covariance after the predictions but before the corrections should
@@ -249,7 +236,7 @@ INSTANTIATE_TEST_CASE_P(OldCorrectionTest, HybridEkfOldCorrectionsTest,
 TEST_F(HybridEkfTest, DiscardTooOldCorrection) {
   HybridEkf<>::Output Z;
   Z.setZero();
-  Eigen::Matrix<double, 3, 10> H;
+  Eigen::Matrix<double, 3, 7> H;
   H.setZero();
   auto h_zero = [H](const State &X, const Input &) { return H * X; };
   auto dhdx_zero = [H](const State &) { return H; };
@@ -304,11 +291,11 @@ TEST_F(HybridEkfTest, PerfectEncoderUpdate) {
 }
 
 // Tests that encoder updates cause everything to converge properly in the
-// presence of voltage error.
+// presence of an initial velocity error.
 TEST_F(HybridEkfTest, PerfectEncoderUpdatesWithVoltageError) {
   State true_X = ekf_.X_hat();
-  true_X(StateIdx::kLeftVoltageError, 0) = 2.0;
-  true_X(StateIdx::kRightVoltageError, 0) = 2.0;
+  true_X(StateIdx::kLeftVelocity, 0) = 0.2;
+  true_X(StateIdx::kRightVelocity, 0) = 0.2;
   Input U(5.0, 5.0);
   for (int ii = 0; ii < 1000; ++ii) {
     true_X = Update(true_X, U);
@@ -328,11 +315,11 @@ TEST_F(HybridEkfTest, PerfectEncoderUpdatesWithVoltageError) {
 
 // Tests encoder/gyro updates when we have some errors in our estimate.
 TEST_F(HybridEkfTest, PerfectEncoderUpdateConverges) {
-  // In order to simulate modelling errors, we add an angular_error and start
-  // the encoder values slightly off.
+  // In order to simulate modelling errors, we start the encoder values slightly
+  // off.
   State true_X = ekf_.X_hat();
-  true_X(StateIdx::kAngularError, 0) = 1.0;
   true_X(StateIdx::kLeftEncoder, 0) += 2.0;
+  true_X(StateIdx::kLeftVelocity, 0) = 0.1;
   true_X(StateIdx::kRightEncoder, 0) -= 2.0;
   // After enough time, everything should converge to near-perfect (if there
   // were any errors in the original absolute state (x/y/theta) state, then we
@@ -350,7 +337,7 @@ TEST_F(HybridEkfTest, PerfectEncoderUpdateConverges) {
                                    dt_config_.robot_radius / 2.0,
                                U, t0_ + (ii + 1) * dt_config_.dt);
   }
-  EXPECT_NEAR((true_X - ekf_.X_hat()).norm(), 0.0, 1e-5)
+  EXPECT_NEAR((true_X - ekf_.X_hat()).norm(), 0.0, 1e-4)
       << "Expected non-x/y estimates to converge to correct. "
          "Estimated X_hat:\n"
       << ekf_.X_hat() << "\ntrue X:\n"
@@ -359,11 +346,11 @@ TEST_F(HybridEkfTest, PerfectEncoderUpdateConverges) {
 
 // Tests encoder/gyro updates in a realistic-ish scenario with noise:
 TEST_F(HybridEkfTest, RealisticEncoderUpdateConverges) {
-  // In order to simulate modelling errors, we add an angular_error and start
-  // the encoder values slightly off.
+  // In order to simulate modelling errors, we start the encoder values slightly
+  // off.
   State true_X = ekf_.X_hat();
-  true_X(StateIdx::kAngularError, 0) = 1.0;
   true_X(StateIdx::kLeftEncoder, 0) += 2.0;
+  true_X(StateIdx::kLeftVelocity, 0) = 0.1;
   true_X(StateIdx::kRightEncoder, 0) -= 2.0;
   Input U(10.0, 5.0);
   for (int ii = 0; ii < 100; ++ii) {
@@ -377,7 +364,7 @@ TEST_F(HybridEkfTest, RealisticEncoderUpdateConverges) {
         U, t0_ + (ii + 1) * dt_config_.dt);
   }
   EXPECT_NEAR(
-      (true_X.bottomRows<9>() - ekf_.X_hat().bottomRows<9>()).squaredNorm(),
+      (true_X.bottomRows<6>() - ekf_.X_hat().bottomRows<6>()).squaredNorm(),
       0.0, 2e-3)
       << "Expected non-x/y estimates to converge to correct. "
          "Estimated X_hat:\n" << ekf_.X_hat() << "\ntrue X:\n" << true_X;
@@ -411,7 +398,7 @@ TEST_F(HybridEkfDeathTest, DieOnNoH) {
   // Check that we die when only one of h and dhdx are provided:
   EXPECT_DEATH(ekf_.Correct({1, 2, 3}, &U, {}, {},
                             [](const State &) {
-                              return Eigen::Matrix<double, 3, 10>::Zero();
+                              return Eigen::Matrix<double, 3, 7>::Zero();
                             },
                             {}, t0_ + ::std::chrono::seconds(1)),
                "make_h");
