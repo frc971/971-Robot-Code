@@ -173,7 +173,7 @@ void main(int argc, char **argv) {
 
     // Calculate each component side of a possible target.
     const ::std::vector<TargetComponent> target_component_list =
-        target_finder.FillTargetComponentList(raw_polys);
+        target_finder.FillTargetComponentList(raw_polys, verbose);
 
     // Put the compenents together into targets.
     const ::std::vector<Target> target_list =

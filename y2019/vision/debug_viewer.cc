@@ -139,7 +139,7 @@ class FilterHarness : public aos::vision::FilterHarness {
 
     // Calculate each component side of a possible target.
     std::vector<TargetComponent> target_component_list =
-        target_finder_.FillTargetComponentList(raw_polys);
+        target_finder_.FillTargetComponentList(raw_polys, draw_components_);
     if (draw_components_) {
       for (const TargetComponent &comp : target_component_list) {
         DrawComponent(comp, {0, 255, 255}, {0, 255, 255}, {255, 0, 0},

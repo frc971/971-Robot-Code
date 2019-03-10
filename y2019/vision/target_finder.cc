@@ -155,24 +155,23 @@ std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
   // Because they round, multiple slopes may be a corner.
   ::std::vector<size_t> edges;
 
-  ::std::vector<size_t> peaks;
-
   constexpr float peak_acceptance_ratio = 0.16;
   constexpr float valley_ratio = 0.75;
 
   float highest_peak_value = 0.0;
 
   // Nth higest points.
-  for (int j = 0; j < 5; ++j) {
+  while (edges.size() < 5) {
     const ::std::vector<float>::iterator max_element =
         ::std::max_element(corner_metric.begin(), corner_metric.end());
     const size_t highest_index =
         ::std::distance(corner_metric.begin(), max_element);
     const float max_value = *max_element;
-    if (j == 0) {
+    if (edges.size() == 0) {
       highest_peak_value = max_value;
     }
-    if (max_value < highest_peak_value * peak_acceptance_ratio && j == 4) {
+    if (max_value < highest_peak_value * peak_acceptance_ratio &&
+        edges.size() == 4) {
       if (verbose)
         printf("Rejecting index: %zu, %f (%f %%)\n", highest_index, max_value,
                max_value / highest_peak_value);
@@ -184,19 +183,28 @@ std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
       printf("Highest index: %zu, %f (%f %%)\n", highest_index, max_value,
              max_value / highest_peak_value);
 
+    bool foothill = false;
     {
       float min_value = max_value;
       size_t fwd_index = (highest_index + 1) % corner_metric.size();
       while (true) {
         const float current_value = corner_metric[fwd_index];
+
+        if (current_value == -1.0) {
+          if (min_value >= valley_value) {
+            if (verbose) printf("Foothill\n");
+            foothill = true;
+          }
+          break;
+        }
+
         min_value = ::std::min(current_value, min_value);
 
-        if (current_value == 0.0 ||
-            (min_value < valley_value && current_value > min_value)) {
+        if (min_value < valley_value && current_value > min_value) {
           break;
         }
         // Kill!!!
-        corner_metric[fwd_index] = 0.0;
+        corner_metric[fwd_index] = -1.0;
 
         fwd_index = (fwd_index + 1) % corner_metric.size();
       }
@@ -208,22 +216,32 @@ std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
           (highest_index - 1 + corner_metric.size()) % corner_metric.size();
       while (true) {
         const float current_value = corner_metric[rev_index];
+
+        if (current_value == -1.0) {
+          if (min_value >= valley_value) {
+            if (verbose) printf("Foothill\n");
+            foothill = true;
+          }
+          break;
+        }
+
         min_value = ::std::min(current_value, min_value);
 
-        if (current_value == 0.0 ||
-            (min_value < valley_value && current_value > min_value)) {
+        if (min_value < valley_value && current_value > min_value) {
           break;
         }
         // Kill!!!
-        corner_metric[rev_index] = 0.0;
+        corner_metric[rev_index] = -1.0;
 
         rev_index =
             (rev_index - 1 + corner_metric.size()) % corner_metric.size();
       }
     }
 
-    *max_element = 0.0;
-    edges.push_back(highest_index);
+    *max_element = -1.0;
+    if (!foothill) {
+      edges.push_back(highest_index);
+    }
   }
 
   ::std::sort(edges.begin(), edges.end());
@@ -300,7 +318,7 @@ std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
 
 // Convert segments into target components (left or right)
 std::vector<TargetComponent> TargetFinder::FillTargetComponentList(
-    const std::vector<std::vector<Segment<2>>> &seg_list) {
+    const std::vector<std::vector<Segment<2>>> &seg_list, bool verbose) {
   std::vector<TargetComponent> list;
   TargetComponent new_target;
   for (const std::vector<Segment<2>> &poly : seg_list) {
@@ -308,7 +326,7 @@ std::vector<TargetComponent> TargetFinder::FillTargetComponentList(
     if (poly.size() != 4) {
       continue;
     }
-    std::vector<Vector<2>> corners;
+    ::std::vector<Vector<2>> corners;
     for (size_t i = 0; i < 4; ++i) {
       Vector<2> corner = poly[i].Intersect(poly[(i + 1) % 4]);
       if (::std::isnan(corner.x()) || ::std::isnan(corner.y())) {
@@ -322,7 +340,7 @@ std::vector<TargetComponent> TargetFinder::FillTargetComponentList(
 
     // Select the closest two points. Short side of the rectangle.
     double min_dist = -1;
-    std::pair<size_t, size_t> closest;
+    ::std::pair<size_t, size_t> closest;
     for (size_t i = 0; i < 4; ++i) {
       size_t next = (i + 1) % 4;
       double nd = corners[i].SquaredDistanceTo(corners[next]);
@@ -410,6 +428,7 @@ std::vector<TargetComponent> TargetFinder::FillTargetComponentList(
 
     // This piece of the target should be ready now.
     list.emplace_back(new_target);
+    if (verbose) printf("Happy with a target\n");
   }
 
   return list;

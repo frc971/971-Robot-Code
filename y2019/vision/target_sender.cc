@@ -307,8 +307,8 @@ int main(int argc, char **argv) {
     finder_.PreFilter(&imgs);
     LOG(INFO, "Blobs: (%zu).\n", imgs.size());
 
-    bool verbose = false;
-    std::vector<std::vector<Segment<2>>> raw_polys;
+    constexpr bool verbose = false;
+    ::std::vector<std::vector<Segment<2>>> raw_polys;
     for (const RangeImage &blob : imgs) {
       // Convert blobs to contours in the corrected space.
       ContourNode* contour = finder_.GetContour(blob);
@@ -323,17 +323,17 @@ int main(int argc, char **argv) {
     LOG(INFO, "Polygons: (%zu).\n", raw_polys.size());
 
     // Calculate each component side of a possible target.
-    std::vector<TargetComponent> target_component_list =
-        finder_.FillTargetComponentList(raw_polys);
+    ::std::vector<TargetComponent> target_component_list =
+        finder_.FillTargetComponentList(raw_polys, verbose);
     LOG(INFO, "Components: (%zu).\n", target_component_list.size());
 
     // Put the compenents together into targets.
-    std::vector<Target> target_list =
+    ::std::vector<Target> target_list =
         finder_.FindTargetsFromComponents(target_component_list, verbose);
     LOG(INFO, "Potential Target: (%zu).\n", target_list.size());
 
     // Use the solver to generate an intermediate version of our results.
-    std::vector<IntermediateResult> results;
+    ::std::vector<IntermediateResult> results;
     for (const Target &target : target_list) {
       results.emplace_back(finder_.ProcessTargetToResult(target, verbose));
     }
