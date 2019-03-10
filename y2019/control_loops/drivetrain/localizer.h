@@ -237,7 +237,7 @@ class TypedLocalizer
         // Compute the ckalman update for this step:
         const TargetView &view = camera_views[jj];
         const Eigen::Matrix<Scalar, kNOutputs, kNStates> H =
-            HMatrix(*view.target, target_view);
+            HMatrix(*view.target, camera.pose());
         const Eigen::Matrix<Scalar, kNStates, kNOutputs> PH = P * H.transpose();
         const Eigen::Matrix<Scalar, kNOutputs, kNOutputs> S = H * PH + R;
         // Note: The inverse here should be very cheap so long as kNOutputs = 3.
@@ -354,11 +354,11 @@ class TypedLocalizer
   }
 
   Eigen::Matrix<Scalar, kNOutputs, kNStates> HMatrix(
-      const Target &target, const TargetView &target_view) {
+      const Target &target, const Pose &camera_pose) {
     // To calculate dheading/d{x,y,theta}:
     // heading = arctan2(target_pos - camera_pos) - camera_theta
     Eigen::Matrix<Scalar, 3, 1> target_pos = target.pose().abs_pos();
-    Eigen::Matrix<Scalar, 3, 1> camera_pos = target_view.camera_pose.abs_pos();
+    Eigen::Matrix<Scalar, 3, 1> camera_pos = camera_pose.abs_pos();
     Scalar diffx = target_pos.x() - camera_pos.x();
     Scalar diffy = target_pos.y() - camera_pos.y();
     Scalar norm2 = diffx * diffx + diffy * diffy;
