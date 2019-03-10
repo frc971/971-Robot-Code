@@ -97,14 +97,15 @@ class FilterHarness : public aos::vision::FilterHarness {
       if (draw_contours_) {
         DrawContour(contour, {255, 0, 0});
       }
-      finder_.UnWarpContour(contour);
+      const ::std::vector<::Eigen::Vector2f> unwarped_contour =
+          finder_.UnWarpContour(contour);
       if (draw_contours_) {
-        DrawContour(contour, {0, 0, 255});
+        DrawContour(unwarped_contour, {0, 0, 255});
       }
 
       // Process to polygons.
       std::vector<Segment<2>> polygon =
-          finder_.FillPolygon(contour, draw_raw_poly_);
+          finder_.FillPolygon(unwarped_contour, draw_raw_poly_);
       if (polygon.empty()) {
         if (!draw_contours_) {
           DrawBlob(blob, {255, 0, 0});
@@ -117,12 +118,14 @@ class FilterHarness : public aos::vision::FilterHarness {
         if (draw_raw_poly_) {
           std::vector<PixelRef> colors = GetNColors(polygon.size());
           std::vector<Vector<2>> corners;
-          for (size_t i = 0; i < 4; ++i) {
-            corners.push_back(polygon[i].Intersect(polygon[(i + 1) % 4]));
+          for (size_t i = 0; i < polygon.size(); ++i) {
+            corners.push_back(
+                polygon[i].Intersect(polygon[(i + 1) % polygon.size()]));
           }
 
-          for (size_t i = 0; i < 4; ++i) {
-            overlay_.AddLine(corners[i], corners[(i + 1) % 4], colors[i]);
+          for (size_t i = 0; i < polygon.size(); ++i) {
+            overlay_.AddLine(corners[i], corners[(i + 1) % polygon.size()],
+                             colors[i]);
           }
         }
       }
@@ -211,6 +214,18 @@ class FilterHarness : public aos::vision::FilterHarness {
         Vector<2> b(node->next->pt.x, node->next->pt.y);
         overlay_.AddLine(a, b, color);
         node = node->next;
+      }
+    }
+  }
+
+  void DrawContour(const ::std::vector<::Eigen::Vector2f> &contour,
+                   PixelRef color) {
+    if (viewer_) {
+      for (size_t i = 0; i < contour.size(); ++i) {
+        Vector<2> a(contour[i].x(), contour[i].y());
+        Vector<2> b(contour[(i + 1) % contour.size()].x(),
+                    contour[(i + 1) % contour.size()].y());
+        overlay_.AddLine(a, b, color);
       }
     }
   }

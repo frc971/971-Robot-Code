@@ -30,12 +30,12 @@ class TargetFinder {
   // filter out obvious or durranged blobs.
   void PreFilter(BlobList *imgs);
 
-  ContourNode* GetContour(const RangeImage &blob);
-  void UnWarpContour(ContourNode* start) const;
+  ContourNode *GetContour(const RangeImage &blob);
+  ::std::vector<::Eigen::Vector2f> UnWarpContour(ContourNode *start) const;
 
   // Turn a blob into a polgygon.
-  std::vector<aos::vision::Segment<2>> FillPolygon(ContourNode *start,
-                                                   bool verbose);
+  std::vector<aos::vision::Segment<2>> FillPolygon(
+      const ::std::vector<::Eigen::Vector2f> &contour, bool verbose);
 
   // Turn a bloblist into components of a target.
   std::vector<TargetComponent> FillTargetComponentList(
