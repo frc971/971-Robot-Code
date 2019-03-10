@@ -18,6 +18,11 @@ using aos::vision::BlobList;
 using aos::vision::Vector;
 using aos::vision::ContourNode;
 
+struct Polygon {
+  ::std::vector<aos::vision::Segment<2>> segments;
+  ::std::vector<::Eigen::Vector2f> contour;
+};
+
 class TargetFinder {
  public:
   TargetFinder();
@@ -34,13 +39,11 @@ class TargetFinder {
   ::std::vector<::Eigen::Vector2f> UnWarpContour(ContourNode *start) const;
 
   // Turn a blob into a polgygon.
-  std::vector<aos::vision::Segment<2>> FillPolygon(
-      const ::std::vector<::Eigen::Vector2f> &contour, bool verbose);
+  Polygon FindPolygon(::std::vector<::Eigen::Vector2f> &&contour, bool verbose);
 
   // Turn a bloblist into components of a target.
   std::vector<TargetComponent> FillTargetComponentList(
-      const std::vector<std::vector<aos::vision::Segment<2>>> &seg_list,
-      bool verbose);
+      const ::std::vector<Polygon> &seg_list, bool verbose);
 
   // Piece the compenents together into a target.
   std::vector<Target> FindTargetsFromComponents(

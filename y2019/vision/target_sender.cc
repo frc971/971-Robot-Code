@@ -308,15 +308,15 @@ int main(int argc, char **argv) {
     LOG(INFO, "Blobs: (%zu).\n", imgs.size());
 
     constexpr bool verbose = false;
-    ::std::vector<std::vector<Segment<2>>> raw_polys;
+    ::std::vector<Polygon> raw_polys;
     for (const RangeImage &blob : imgs) {
       // Convert blobs to contours in the corrected space.
       ContourNode* contour = finder_.GetContour(blob);
-      const ::std::vector<::Eigen::Vector2f> unwarped_contour =
+      ::std::vector<::Eigen::Vector2f> unwarped_contour =
           finder_.UnWarpContour(contour);
-      ::std::vector<Segment<2>> polygon =
-          finder_.FillPolygon(unwarped_contour, verbose);
-      if (!polygon.empty()) {
+      const Polygon polygon =
+          finder_.FindPolygon(::std::move(unwarped_contour), verbose);
+      if (!polygon.segments.empty()) {
         raw_polys.push_back(polygon);
       }
     }

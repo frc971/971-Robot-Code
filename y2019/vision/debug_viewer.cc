@@ -96,23 +96,23 @@ class FilterHarness : public aos::vision::FilterHarness {
     target_finder_.PreFilter(&imgs);
 
     // Find polygons from blobs.
-    std::vector<std::vector<Segment<2>>> raw_polys;
+    std::vector<Polygon> raw_polys;
     for (const RangeImage &blob : imgs) {
       // Convert blobs to contours in the corrected space.
       ContourNode *contour = target_finder_.GetContour(blob);
       if (draw_contours_) {
         DrawContour(contour, {255, 0, 0});
       }
-      const ::std::vector<::Eigen::Vector2f> unwarped_contour =
+      ::std::vector<::Eigen::Vector2f> unwarped_contour =
           target_finder_.UnWarpContour(contour);
       if (draw_contours_) {
         DrawContour(unwarped_contour, {0, 0, 255});
       }
 
       // Process to polygons.
-      std::vector<Segment<2>> polygon =
-          target_finder_.FillPolygon(unwarped_contour, draw_raw_poly_);
-      if (polygon.empty()) {
+      const Polygon polygon = target_finder_.FindPolygon(
+          ::std::move(unwarped_contour), draw_raw_poly_);
+      if (polygon.segments.empty()) {
         if (!draw_contours_) {
           DrawBlob(blob, {255, 0, 0});
         }
@@ -122,15 +122,16 @@ class FilterHarness : public aos::vision::FilterHarness {
           DrawBlob(blob, {0, 0, 255});
         }
         if (draw_raw_poly_) {
-          std::vector<PixelRef> colors = GetNColors(polygon.size());
+          std::vector<PixelRef> colors = GetNColors(polygon.segments.size());
           std::vector<Vector<2>> corners;
-          for (size_t i = 0; i < polygon.size(); ++i) {
-            corners.push_back(
-                polygon[i].Intersect(polygon[(i + 1) % polygon.size()]));
+          for (size_t i = 0; i < polygon.segments.size(); ++i) {
+            corners.push_back(polygon.segments[i].Intersect(
+                polygon.segments[(i + 1) % polygon.segments.size()]));
           }
 
-          for (size_t i = 0; i < polygon.size(); ++i) {
-            overlay_.AddLine(corners[i], corners[(i + 1) % polygon.size()],
+          for (size_t i = 0; i < polygon.segments.size(); ++i) {
+            overlay_.AddLine(corners[i],
+                             corners[(i + 1) % polygon.segments.size()],
                              colors[i]);
           }
         }

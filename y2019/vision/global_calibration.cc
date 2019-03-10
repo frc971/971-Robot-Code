@@ -158,15 +158,15 @@ void main(int argc, char **argv) {
     target_finder.PreFilter(&imgs);
 
     constexpr bool verbose = false;
-    ::std::vector<std::vector<Segment<2>>> raw_polys;
+    ::std::vector<Polygon> raw_polys;
     for (const RangeImage &blob : imgs) {
       // Convert blobs to contours in the corrected space.
       ContourNode *contour = target_finder.GetContour(blob);
-      const ::std::vector<::Eigen::Vector2f> unwarped_contour =
+      ::std::vector<::Eigen::Vector2f> unwarped_contour =
           target_finder.UnWarpContour(contour);
-      const ::std::vector<Segment<2>> polygon =
-          target_finder.FillPolygon(unwarped_contour, verbose);
-      if (!polygon.empty()) {
+      const Polygon polygon =
+          target_finder.FindPolygon(::std::move(unwarped_contour), verbose);
+      if (!polygon.segments.empty()) {
         raw_polys.push_back(polygon);
       }
     }
