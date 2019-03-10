@@ -11,13 +11,14 @@ TargetFinder::TargetFinder() : target_template_(Target::MakeTemplate()) {}
 
 aos::vision::RangeImage TargetFinder::Threshold(aos::vision::ImagePtr image) {
   const uint8_t threshold_value = GetThresholdValue();
-  return aos::vision::DoThreshold(image, [&](aos::vision::PixelRef &px) {
-    if (px.g > threshold_value && px.b > threshold_value &&
-        px.r > threshold_value) {
-      return true;
-    }
-    return false;
-  });
+  return aos::vision::ThresholdImageWithFunction(
+      image, [&](aos::vision::PixelRef px) {
+        if (px.g > threshold_value && px.b > threshold_value &&
+            px.r > threshold_value) {
+          return true;
+        }
+        return false;
+      });
 }
 
 // Filter blobs on size.

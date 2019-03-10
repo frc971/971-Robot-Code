@@ -1,15 +1,22 @@
-#ifndef _AOS_VIISON_BLOB_THRESHOLD_H_
-#define _AOS_VIISON_BLOB_THRESHOLD_H_
+#ifndef AOS_VISION_BLOB_THRESHOLD_H_
+#define AOS_VISION_BLOB_THRESHOLD_H_
 
 #include "aos/vision/blob/range_image.h"
 #include "aos/vision/image/image_types.h"
 
 namespace aos {
 namespace vision {
+namespace threshold_internal {
 
-// ThresholdFn should be a lambda.
-template <typename ThresholdFn>
-RangeImage DoThreshold(ImageFormat fmt, ThresholdFn &&fn) {
+// Performs thresholding in a given region using a function which determines
+// whether a given point is in or out of the region.
+//
+// fn must return a bool when called with two integers (x, y).
+template <typename PointTestFn>
+RangeImage ThresholdPointsWithFunction(ImageFormat fmt, PointTestFn &&fn) {
+  static_assert(
+      std::is_convertible<PointTestFn, std::function<bool(int, int)>>::value,
+      "Invalid threshold function");
   std::vector<std::vector<ImageRange>> ranges;
   ranges.reserve(fmt.h);
   for (int y = 0; y < fmt.h; ++y) {
@@ -34,23 +41,43 @@ RangeImage DoThreshold(ImageFormat fmt, ThresholdFn &&fn) {
   return RangeImage(0, std::move(ranges));
 }
 
-// ThresholdFn should be a lambda.
+}  // namespace threshold_internal
+
+// Thresholds an image using a function which determines whether a given pixel
+// value is in or out of the region.
+//
+// fn must return a bool when called with a PixelRef.
 template <typename ThresholdFn>
-RangeImage DoThreshold(const ImagePtr &img, ThresholdFn &&fn) {
-  return DoThreshold(img.fmt(),
-                     [&](int x, int y) { return fn(img.get_px(x, y)); });
+RangeImage ThresholdImageWithFunction(const ImagePtr &img, ThresholdFn &&fn) {
+  static_assert(
+      std::is_convertible<ThresholdFn, std::function<bool(PixelRef)>>::value,
+      "Invalid threshold function");
+  return threshold_internal::ThresholdPointsWithFunction(
+      img.fmt(), [&](int x, int y) { return fn(img.get_px(x, y)); });
 }
 
-// YUYV image types:
-inline RangeImage DoThresholdYUYV(ImageFormat fmt, const char *data,
-                                  uint8_t value) {
-  return DoThreshold(fmt, [&](int x, int y) {
-    uint8_t v = data[y * fmt.w * 2 + x * 2];
-    return v > value;
-  });
+// Thresholds an image in YUYV format, selecting pixels with a Y (luma) greater
+// than value.
+//
+// This is implemented via a simple function that pulls out the Y values and
+// compares them each. It mostly exists for tests to compare against
+// FastYuyvYThreshold, because it's obviously correct.
+inline RangeImage SlowYuyvYThreshold(ImageFormat fmt, const char *data,
+                                     uint8_t value) {
+  return threshold_internal::ThresholdPointsWithFunction(
+      fmt, [&](int x, int y) {
+        uint8_t v = data[x * 2 + y * fmt.w * 2];
+        return v > value;
+      });
 }
+
+// Thresholds an image in YUYV format, selecting pixels with a Y (luma) greater
+// than value.
+//
+// This is implemented via some tricky bit shuffling that goes fast.
+RangeImage FastYuyvYThreshold(ImageFormat fmt, const char *data, uint8_t value);
 
 }  // namespace vision
 }  // namespace aos
 
-#endif  //  _AOS_VIISON_BLOB_THRESHOLD_H_
+#endif  //  AOS_VISION_BLOB_THRESHOLD_H_

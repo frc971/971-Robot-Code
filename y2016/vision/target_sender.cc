@@ -98,8 +98,8 @@ class ImageSender : public ImageStreamEvent {
     DecodeJpeg(data, &image_);
     auto fmt = image_.fmt();
 
-    RangeImage rimg =
-        DoThreshold(image_.get(), [](PixelRef &px) { return (px.g > 88); });
+    RangeImage rimg = ThresholdImageWithFunction(
+        image_.get(), [](PixelRef px) { return (px.g > 88); });
 
     // flip the right image as this camera is mount backward
     if (camera_index_ == 0) {

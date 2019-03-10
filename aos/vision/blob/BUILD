@@ -37,7 +37,12 @@ cc_library(
 
 cc_library(
     name = "threshold",
-    hdrs = ["threshold.h"],
+    srcs = [
+        "threshold.cc",
+    ],
+    hdrs = [
+        "threshold.h",
+    ],
     deps = [
         ":range_image",
         "//aos/vision/image:image_types",

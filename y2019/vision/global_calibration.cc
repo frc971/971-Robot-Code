@@ -153,7 +153,7 @@ void main(int argc, char **argv) {
 
     const ::aos::vision::ImageFormat fmt{640, 480};
     ::aos::vision::BlobList imgs =
-        ::aos::vision::FindBlobs(aos::vision::DoThresholdYUYV(
+        ::aos::vision::FindBlobs(aos::vision::SlowYuyvYThreshold(
             fmt, frame.data.data(), TargetFinder::GetThresholdValue()));
     target_finder.PreFilter(&imgs);
 
