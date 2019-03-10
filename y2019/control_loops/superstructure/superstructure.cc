@@ -96,13 +96,16 @@ void Superstructure::RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
     // Light Logic
     if (status->estopped) {
       // Estop is red
-      SendColors(0.5, 0.0, 0.0);
-    } else if (unsafe_goal->suction.gamepiece_mode == 0) {
-      // Ball mode is blue
-      SendColors(0.0, 0.0, 0.5);
-    } else if (unsafe_goal->suction.gamepiece_mode == 1) {
-      // Disk mode is yellow
-      SendColors(0.5, 0.5, 0.0);
+      SendColors(1.0, 0.0, 0.0);
+    } else if (status->has_piece) {
+      // Having suction is green
+      SendColors(0.0, 1.0, 0.0);
+    } else if (unsafe_goal->suction.gamepiece_mode == 0 && !status->has_piece) {
+      // Ball mode is orange
+      SendColors(1.0, 0.1, 0.0);
+    } else if (unsafe_goal->suction.gamepiece_mode == 1 && !status->has_piece) {
+      // Disk mode is deep blue
+      SendColors(0.05, 0.1, 0.5);
     } else {
       SendColors(0.0, 0.0, 0.0);
     }
