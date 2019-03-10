@@ -90,8 +90,8 @@ constexpr int iterations = 7;
 
 // TODO: Try hierarchical merge for this.
 // Convert blobs into polygons.
-std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
-    const ::std::vector<::Eigen::Vector2f> &contour, bool verbose) {
+Polygon TargetFinder::FindPolygon(::std::vector<::Eigen::Vector2f> &&contour,
+                                  bool verbose) {
   if (verbose) printf("Process Polygon.\n");
 
   ::std::vector<::Eigen::Vector2f> slopes;
@@ -249,7 +249,7 @@ std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
   if (verbose) printf("Edge Count (%zu).\n", edges.size());
 
   // Run best-fits over each line segment.
-  ::std::vector<Segment<2>> seg_list;
+  Polygon polygon;
   if (edges.size() >= 3) {
     for (size_t i = 0; i < edges.size(); ++i) {
       // Include the corners in both line fits.
@@ -296,7 +296,7 @@ std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
         x /= norm;
         y /= norm;
 
-        seg_list.push_back(
+        polygon.segments.push_back(
             Segment<2>(Vector<2>(mx, my), Vector<2>(mx + x, my + y)));
       }
 
@@ -312,23 +312,24 @@ std::vector<aos::vision::Segment<2>> TargetFinder::FillPolygon(
       */
     }
   }
-  if (verbose) printf("Poly Count (%zu).\n", seg_list.size());
-  return seg_list;
+  if (verbose) printf("Poly Count (%zu).\n", polygon.segments.size());
+  polygon.contour = ::std::move(contour);
+  return polygon;
 }
 
 // Convert segments into target components (left or right)
-std::vector<TargetComponent> TargetFinder::FillTargetComponentList(
-    const std::vector<std::vector<Segment<2>>> &seg_list, bool verbose) {
-  std::vector<TargetComponent> list;
+::std::vector<TargetComponent> TargetFinder::FillTargetComponentList(
+    const ::std::vector<Polygon> &seg_list, bool verbose) {
+  ::std::vector<TargetComponent> list;
   TargetComponent new_target;
-  for (const std::vector<Segment<2>> &poly : seg_list) {
+  for (const Polygon &poly : seg_list) {
     // Reject missized pollygons for now. Maybe rectify them here in the future;
-    if (poly.size() != 4) {
+    if (poly.segments.size() != 4) {
       continue;
     }
     ::std::vector<Vector<2>> corners;
     for (size_t i = 0; i < 4; ++i) {
-      Vector<2> corner = poly[i].Intersect(poly[(i + 1) % 4]);
+      Vector<2> corner = poly.segments[i].Intersect(poly.segments[(i + 1) % 4]);
       if (::std::isnan(corner.x()) || ::std::isnan(corner.y())) {
         break;
       }
