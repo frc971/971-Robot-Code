@@ -33,6 +33,7 @@ namespace joysticks {
 const ButtonLocation kSuctionBall(3, 13);
 const ButtonLocation kSuctionHatch(3, 12);
 const ButtonLocation kDeployStilt(3, 8);
+const ButtonLocation kHalfStilt(3, 6);
 const ButtonLocation kFallOver(3, 9);
 
 struct ElevatorWristPosition {
@@ -158,6 +159,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
       } else {
         new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
       }
+    } else if (data.IsPressed(kHalfStilt)) {
+      new_superstructure_goal->stilts.unsafe_goal = 0.345;
+      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
+      new_superstructure_goal->stilts.profile_params.max_acceleration = 0.75;
     } else {
       new_superstructure_goal->stilts.unsafe_goal = 0.01;
       new_superstructure_goal->stilts.profile_params.max_velocity = 0.25;

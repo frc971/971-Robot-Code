@@ -82,7 +82,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   elevator_params->zeroing_voltage = 3.0;
   elevator_params->operating_voltage = 12.0;
   elevator_params->zeroing_profile_params = {0.1, 1.0};
-  elevator_params->default_profile_params = {4.0, 16.0};
+  elevator_params->default_profile_params = {4.0, 13.0};
   elevator_params->range = Values::kElevatorRange();
   elevator_params->make_integral_loop =
       &control_loops::superstructure::elevator::MakeIntegralElevatorLoop;
