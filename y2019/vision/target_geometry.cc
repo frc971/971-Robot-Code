@@ -266,6 +266,18 @@ IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
         NULL, &params_8point[0]);
   }
 
+  Solver::Options options;
+  options.minimizer_progress_to_stdout = false;
+  Solver::Summary summary_8point;
+  Solve(options, &problem_8point, &summary_8point);
+
+
+  // So, let's sneak up on it.  Start by warm-starting it with where we got on the 8 point solution.
+  ExtrinsicParams::get(&params_8point[0]).set(&params_4point[0]);
+  // Then solve without the bottom constraint.
+  Solver::Summary summary_4point1;
+  Solve(options, &problem_4point, &summary_4point1);
+
   // Now, add a large cost for the bottom point being below the bottom line.
   problem_4point.AddResidualBlock(
       new NumericDiffCostFunction<BottomPointCostFunctor, CENTRAL, 1, 4>(
@@ -284,18 +296,15 @@ IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
                                      intrinsics_)),
       NULL, &params_4point[0]);
 
-  Solver::Options options;
-  options.minimizer_progress_to_stdout = false;
-  Solver::Summary summary_8point;
-  Solve(options, &problem_8point, &summary_8point);
-  Solver::Summary summary_4point;
-  Solve(options, &problem_4point, &summary_4point);
+  // And then re-solve.
+  Solver::Summary summary_4point2;
+  Solve(options, &problem_4point, &summary_4point2);
 
   IntermediateResult IR;
   IR.extrinsics = ExtrinsicParams::get(&params_8point[0]);
   IR.solver_error = summary_8point.final_cost;
   IR.backup_extrinsics = ExtrinsicParams::get(&params_4point[0]);
-  IR.backup_solver_error = summary_4point.final_cost;
+  IR.backup_solver_error = summary_4point2.final_cost;
 
   if (verbose) {
     std::cout << "rup = " << intrinsics_.mount_angle * 180 / M_PI << ";\n";
@@ -308,8 +317,11 @@ IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
     std::cout << "r1 = " << IR.extrinsics.r1 * 180 / M_PI << ";\n";
     std::cout << "r2 = " << IR.extrinsics.r2 * 180 / M_PI << ";\n";
     std::cout << "4 points:\n";
-    std::cout << summary_4point.BriefReport() << "\n";
-    std::cout << "error = " << summary_4point.final_cost << ";\n\n";
+    std::cout << summary_4point1.BriefReport() << "\n";
+    std::cout << "error = " << summary_4point1.final_cost << ";\n\n";
+    std::cout << "4 points:\n";
+    std::cout << summary_4point2.BriefReport() << "\n";
+    std::cout << "error = " << summary_4point2.final_cost << ";\n\n";
     std::cout << "y = " << IR.backup_extrinsics.y / kInchesToMeters << ";\n";
     std::cout << "z = " << IR.backup_extrinsics.z / kInchesToMeters << ";\n";
     std::cout << "r1 = " << IR.backup_extrinsics.r1 * 180 / M_PI << ";\n";
