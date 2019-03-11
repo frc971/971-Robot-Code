@@ -332,8 +332,9 @@ class FilterHarness : public aos::vision::FilterHarness {
 }  // namespace y2017
 
 int main(int argc, char **argv) {
-  y2019::vision::FilterHarness filter_harness;
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
+
+  y2019::vision::FilterHarness filter_harness;
   aos::vision::DebugFrameworkMain(argc, argv, &filter_harness,
                                   aos::vision::CameraParams());
 }
