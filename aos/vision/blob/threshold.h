@@ -17,28 +17,31 @@ RangeImage ThresholdPointsWithFunction(ImageFormat fmt, PointTestFn &&fn) {
   static_assert(
       std::is_convertible<PointTestFn, std::function<bool(int, int)>>::value,
       "Invalid threshold function");
-  std::vector<std::vector<ImageRange>> ranges;
-  ranges.reserve(fmt.h);
+  std::vector<std::vector<ImageRange>> result;
+  result.reserve(fmt.h);
+  // Iterate through each row.
   for (int y = 0; y < fmt.h; ++y) {
-    bool p_score = false;
-    int pstart = -1;
-    std::vector<ImageRange> rngs;
+    // Whether we're currently in a range.
+    bool in_range = false;
+    int current_range_start = -1;
+    std::vector<ImageRange> current_row_ranges;
+    // Iterate through each pixel.
     for (int x = 0; x < fmt.w; ++x) {
-      if (fn(x, y) != p_score) {
-        if (p_score) {
-          rngs.emplace_back(ImageRange(pstart, x));
+      if (fn(x, y) != in_range) {
+        if (in_range) {
+          current_row_ranges.emplace_back(ImageRange(current_range_start, x));
         } else {
-          pstart = x;
+          current_range_start = x;
         }
-        p_score = !p_score;
+        in_range = !in_range;
       }
     }
-    if (p_score) {
-      rngs.emplace_back(ImageRange(pstart, fmt.w));
+    if (in_range) {
+      current_row_ranges.emplace_back(ImageRange(current_range_start, fmt.w));
     }
-    ranges.push_back(rngs);
+    result.push_back(current_row_ranges);
   }
-  return RangeImage(0, std::move(ranges));
+  return RangeImage(0, std::move(result));
 }
 
 }  // namespace threshold_internal
@@ -72,7 +75,7 @@ inline RangeImage SlowYuyvYThreshold(ImageFormat fmt, const char *data,
 }
 
 // Thresholds an image in YUYV format, selecting pixels with a Y (luma) greater
-// than value.
+// than value. The width must be a multiple of 4.
 //
 // This is implemented via some tricky bit shuffling that goes fast.
 RangeImage FastYuyvYThreshold(ImageFormat fmt, const char *data, uint8_t value);

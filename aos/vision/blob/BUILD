@@ -45,6 +45,7 @@ cc_library(
     ],
     deps = [
         ":range_image",
+        "//aos/logging",
         "//aos/vision/image:image_types",
     ],
 )
