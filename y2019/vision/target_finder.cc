@@ -71,8 +71,7 @@ constexpr int iterations = 7;
   double y = y0;
   for (int i = 0; i < iterations; i++) {
     const double r_sqr = x * x + y * y;
-    const double coeff =
-        1.0 + r_sqr * (k_1 + k_2 * r_sqr * (1.0 + k_3 * r_sqr));
+    const double coeff = 1.0 + r_sqr * (k_1 + r_sqr * (k_2 + r_sqr * (k_3)));
     x = x0 / coeff;
     y = y0 / coeff;
   }
