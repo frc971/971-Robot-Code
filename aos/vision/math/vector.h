@@ -91,6 +91,7 @@ class Vector {
   double Mag() const { return data_.norm(); }
 
   // Get underlying data structure
+  // TODO(austin): Everyone uses column not row vectors.
   ::Eigen::Matrix<double, 1, size> GetData() const { return data_; }
 
   // Set underlying data structure

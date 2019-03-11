@@ -46,6 +46,8 @@ Target Target::MakeTemplate() {
 }
 
 std::array<Vector<2>, 8> Target::ToPointList() const {
+  // Note, the even points are fit with the line solver in the 4 point solution
+  // while the odds are fit with the point matcher.
   return std::array<Vector<2>, 8>{{right.top, right.outside, right.inside,
                                    right.bottom, left.top, left.outside,
                                    left.inside, left.bottom}};
@@ -168,8 +170,8 @@ struct LineCostFunctor {
 
   bool operator()(const double *const x, double *residual) const {
     const auto extrinsics = ExtrinsicParams::get(x);
-    const auto p1 = Project(template_seg.A(), intrinsics, extrinsics);
-    const auto p2 = Project(template_seg.B(), intrinsics, extrinsics);
+    const Vector<2> p1 = Project(template_seg.A(), intrinsics, extrinsics);
+    const Vector<2> p2 = Project(template_seg.B(), intrinsics, extrinsics);
     // distance from line (P1, P2) to point result
     double dx = p2.x() - p1.x();
     double dy = p2.y() - p1.y();
@@ -183,6 +185,45 @@ struct LineCostFunctor {
   Vector<2> result;
   Segment<2> template_seg;
   IntrinsicParams intrinsics;
+};
+
+// Find the distance that the bottom point is outside the target and penalize
+// that linearly.
+class BottomPointCostFunctor {
+ public:
+  BottomPointCostFunctor(::Eigen::Vector2f bottom_point,
+                         Segment<2> template_seg, IntrinsicParams intrinsics)
+      : bottom_point_(bottom_point.x(), bottom_point.y()),
+        template_seg_(template_seg),
+        intrinsics_(intrinsics) {}
+
+  bool operator()(const double *const x, double *residual) const {
+    const ExtrinsicParams extrinsics = ExtrinsicParams::get(x);
+    const Vector<2> p1 = Project(template_seg_.A(), intrinsics_, extrinsics);
+    const Vector<2> p2 = Project(template_seg_.B(), intrinsics_, extrinsics);
+
+    // Construct a vector pointed perpendicular to the line.  This vector is
+    // pointed down out the bottom of the target.
+    ::Eigen::Vector2d down_axis(-(p1.y() - p2.y()), p1.x() - p2.x());
+    down_axis.normalize();
+
+    // Positive means out.
+    const double component =
+        down_axis.transpose() * (bottom_point_ - p1.GetData().transpose());
+
+    if (component > 0) {
+      residual[0] = component * 1.0;
+    } else {
+      residual[0] = 0.0;
+    }
+    return true;
+  }
+
+ private:
+  ::Eigen::Vector2d bottom_point_;
+  Segment<2> template_seg_;
+
+  IntrinsicParams intrinsics_;
 };
 
 IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
@@ -211,19 +252,37 @@ IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
       problem_4point.AddResidualBlock(
           new NumericDiffCostFunction<LineCostFunctor, CENTRAL, 1, 4>(
               new LineCostFunctor(b, line, intrinsics_)),
-          NULL, &params_8point[0]);
+          NULL, &params_4point[0]);
     } else {
       problem_4point.AddResidualBlock(
           new NumericDiffCostFunction<PointCostFunctor, CENTRAL, 2, 4>(
               new PointCostFunctor(b, a, intrinsics_)),
-          NULL, &params_8point[0]);
+          NULL, &params_4point[0]);
     }
 
     problem_8point.AddResidualBlock(
         new NumericDiffCostFunction<PointCostFunctor, CENTRAL, 2, 4>(
             new PointCostFunctor(b, a, intrinsics_)),
-        NULL, &params_4point[0]);
+        NULL, &params_8point[0]);
   }
+
+  // Now, add a large cost for the bottom point being below the bottom line.
+  problem_4point.AddResidualBlock(
+      new NumericDiffCostFunction<BottomPointCostFunctor, CENTRAL, 1, 4>(
+          new BottomPointCostFunctor(target.left.bottom_point,
+                                     Segment<2>(target_template_.left.outside,
+                                                target_template_.left.bottom),
+                                     intrinsics_)),
+      NULL, &params_4point[0]);
+  // Make sure to point the segment the other way so when we do a -pi/2 rotation
+  // on the line, it points down in target space.
+  problem_4point.AddResidualBlock(
+      new NumericDiffCostFunction<BottomPointCostFunctor, CENTRAL, 1, 4>(
+          new BottomPointCostFunctor(target.right.bottom_point,
+                                     Segment<2>(target_template_.right.bottom,
+                                                target_template_.right.outside),
+                                     intrinsics_)),
+      NULL, &params_4point[0]);
 
   Solver::Options options;
   options.minimizer_progress_to_stdout = false;

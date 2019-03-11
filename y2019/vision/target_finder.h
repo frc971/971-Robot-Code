@@ -52,6 +52,10 @@ class TargetFinder {
   // Given a target solve for the transformation of the template target.
   IntermediateResult ProcessTargetToResult(const Target &target, bool verbose);
 
+  // Returns true if a target is good, and false otherwise.  Picks the 4 vs 8
+  // point solution depending on which one looks right.
+  bool MaybePickAndUpdateResult(IntermediateResult *result, bool verbose);
+
   std::vector<IntermediateResult> FilterResults(
       const std::vector<IntermediateResult> &results, uint64_t print_rate,
       bool verbose);

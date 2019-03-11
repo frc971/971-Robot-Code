@@ -163,7 +163,12 @@ class FilterHarness : public aos::vision::FilterHarness {
     for (const Target &target : target_list) {
       results.emplace_back(
           target_finder_.ProcessTargetToResult(target, draw_raw_IR_));
-      if (draw_raw_IR_) DrawResult(results.back(), {255, 128, 0});
+      if (draw_raw_IR_) {
+        IntermediateResult updatable_result = results.back();
+        target_finder_.MaybePickAndUpdateResult(&updatable_result,
+                                                draw_raw_IR_);
+        DrawResult(updatable_result, {255, 128, 0});
+      }
     }
 
     // Check that our current results match possible solutions.

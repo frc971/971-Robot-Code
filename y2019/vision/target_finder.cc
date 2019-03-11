@@ -508,32 +508,42 @@ std::vector<Target> TargetFinder::FindTargetsFromComponents(
   return target_list;
 }
 
+bool TargetFinder::MaybePickAndUpdateResult(IntermediateResult *result,
+                                            bool verbose) {
+  // Based on a linear regression between error and distance to target.
+  // Closer targets can have a higher error because they are bigger.
+  const double acceptable_error =
+      std::max(2 * (21 - 12 * result->extrinsics.z), 50.0);
+  if (result->solver_error < acceptable_error) {
+    if (verbose) {
+      printf("Using an 8 point solve: %f < %f \n", result->solver_error,
+             acceptable_error);
+    }
+    return true;
+  } else if (result->backup_solver_error < acceptable_error) {
+    if (verbose) {
+      printf("Using a 4 point solve: %f < %f \n", result->backup_solver_error,
+             acceptable_error);
+    }
+    IntermediateResult backup;
+    result->extrinsics = result->backup_extrinsics;
+    result->solver_error = result->backup_solver_error;
+    return true;
+  } else if (verbose) {
+    printf("Rejecting a target with errors: (%f, %f) > %f \n",
+           result->solver_error, result->backup_solver_error, acceptable_error);
+  }
+  return false;
+}
+
 std::vector<IntermediateResult> TargetFinder::FilterResults(
     const std::vector<IntermediateResult> &results, uint64_t print_rate,
     bool verbose) {
   std::vector<IntermediateResult> filtered;
   for (const IntermediateResult &res : results) {
-    // Based on a linear regression between error and distance to target.
-    // Closer targets can have a higher error because they are bigger.
-    double acceptable_error = std::max(2 * (21 - 12 * res.extrinsics.z), 50.0);
-    if (res.solver_error < acceptable_error) {
-      if (verbose) {
-        printf("Using an 8 point solve: %f < %f \n", res.solver_error,
-               acceptable_error);
-      }
-      filtered.emplace_back(res);
-    } else if (res.backup_solver_error < acceptable_error) {
-      if (verbose) {
-        printf("Using a 4 point solve: %f < %f \n", res.backup_solver_error,
-               acceptable_error);
-      }
-      IntermediateResult backup;
-      backup.extrinsics = res.backup_extrinsics;
-      backup.solver_error= res.backup_solver_error;
-      filtered.emplace_back(backup);
-    } else if (verbose) {
-      printf("Rejecting a target with errors: (%f, %f) > %f \n",
-             res.solver_error, res.backup_solver_error, acceptable_error);
+    IntermediateResult updatable_result = res;
+    if (MaybePickAndUpdateResult(&updatable_result, verbose)) {
+      filtered.emplace_back(updatable_result);
     }
   }
   frame_count_++;
