@@ -453,16 +453,6 @@ std::vector<Target> TargetFinder::FindTargetsFromComponents(
       Target new_target;
       const TargetComponent &b = component_list[j];
 
-      // Reject targets that are too far off vertically.
-      Vector<2> a_center = a.major_axis.Center();
-      if (a_center.y() > b.bottom.y() || a_center.y() < b.top.y()) {
-        continue;
-      }
-      Vector<2> b_center = b.major_axis.Center();
-      if (b_center.y() > a.bottom.y() || b_center.y() < a.top.y()) {
-        continue;
-      }
-
       if (a.is_right && !b.is_right) {
         if (a.top.x() > b.top.x()) {
           new_target.right = a;
@@ -475,6 +465,9 @@ std::vector<Target> TargetFinder::FindTargetsFromComponents(
           new_target.left = a;
           target_valid = true;
         }
+      } else if (verbose) {
+        printf("Found same side components: %s.\n",
+               a.is_right ? "right" : "left");
       }
       if (target_valid) {
         target_list.emplace_back(new_target);
@@ -486,11 +479,31 @@ std::vector<Target> TargetFinder::FindTargetsFromComponents(
 }
 
 std::vector<IntermediateResult> TargetFinder::FilterResults(
-    const std::vector<IntermediateResult> &results, uint64_t print_rate) {
+    const std::vector<IntermediateResult> &results, uint64_t print_rate,
+    bool verbose) {
   std::vector<IntermediateResult> filtered;
   for (const IntermediateResult &res : results) {
-    if (res.solver_error < 75.0) {
+    // Based on a linear regression between error and distance to target.
+    // Closer targets can have a higher error because they are bigger.
+    double acceptable_error = std::max(2 * (21 - 12 * res.extrinsics.z), 50.0);
+    if (res.solver_error < acceptable_error) {
+      if (verbose) {
+        printf("Using an 8 point solve: %f < %f \n", res.solver_error,
+               acceptable_error);
+      }
       filtered.emplace_back(res);
+    } else if (res.backup_solver_error < acceptable_error) {
+      if (verbose) {
+        printf("Using a 4 point solve: %f < %f \n", res.backup_solver_error,
+               acceptable_error);
+      }
+      IntermediateResult backup;
+      backup.extrinsics = res.backup_extrinsics;
+      backup.solver_error= res.backup_solver_error;
+      filtered.emplace_back(backup);
+    } else if (verbose) {
+      printf("Rejecting a target with errors: (%f, %f) > %f \n",
+             res.solver_error, res.backup_solver_error, acceptable_error);
     }
   }
   frame_count_++;

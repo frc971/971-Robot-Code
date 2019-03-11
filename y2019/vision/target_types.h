@@ -92,6 +92,11 @@ struct IntermediateResult {
 
   // Error from solver calulations.
   double solver_error;
+
+  // extrinsics and error from a more relaxed problem.
+  ExtrinsicParams backup_extrinsics;
+
+  double backup_solver_error;
 };
 
 // Final foramtting ready for output on the wire.

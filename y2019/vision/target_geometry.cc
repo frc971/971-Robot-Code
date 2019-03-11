@@ -46,9 +46,9 @@ Target Target::MakeTemplate() {
 }
 
 std::array<Vector<2>, 8> Target::ToPointList() const {
-  return std::array<Vector<2>, 8>{{right.top, right.inside, right.bottom,
-                                   right.outside, left.top, left.inside,
-                                   left.bottom, left.outside}};
+  return std::array<Vector<2>, 8>{{right.top, right.outside, right.inside,
+                                   right.bottom, left.top, left.outside,
+                                   left.inside, left.bottom}};
 }
 
 Vector<2> Project(Vector<2> pt, const IntrinsicParams &intrinsics,
@@ -141,8 +141,8 @@ Target Project(const Target &target, const IntrinsicParams &intrinsics,
 }
 
 // Used at runtime on a single image given camera parameters.
-struct RuntimeCostFunctor {
-  RuntimeCostFunctor(Vector<2> result, Vector<2> template_pt,
+struct PointCostFunctor {
+  PointCostFunctor(Vector<2> result, Vector<2> template_pt,
                      IntrinsicParams intrinsics)
       : result(result), template_pt(template_pt), intrinsics(intrinsics) {}
 
@@ -159,13 +159,42 @@ struct RuntimeCostFunctor {
   IntrinsicParams intrinsics;
 };
 
+// Find the distance from a lower target point to the 'vertical' line it should
+// be on.
+struct LineCostFunctor {
+  LineCostFunctor(Vector<2> result, Segment<2> template_seg,
+                  IntrinsicParams intrinsics)
+      : result(result), template_seg(template_seg), intrinsics(intrinsics) {}
+
+  bool operator()(const double *const x, double *residual) const {
+    const auto extrinsics = ExtrinsicParams::get(x);
+    const auto p1 = Project(template_seg.A(), intrinsics, extrinsics);
+    const auto p2 = Project(template_seg.B(), intrinsics, extrinsics);
+    // distance from line (P1, P2) to point result
+    double dx = p2.x() - p1.x();
+    double dy = p2.y() - p1.y();
+    double denom = p2.DistanceTo(p1);
+    residual[0] = ::std::abs(dy * result.x() - dx * result.y() +
+                             p2.x() * p1.y() - p2.y() * p1.x()) /
+                  denom;
+    return true;
+  }
+
+  Vector<2> result;
+  Segment<2> template_seg;
+  IntrinsicParams intrinsics;
+};
+
 IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
                                                        bool verbose) {
   // Memory for the ceres solver.
-  double params[ExtrinsicParams::kNumParams];
-  default_extrinsics_.set(&params[0]);
+  double params_8point[ExtrinsicParams::kNumParams];
+  default_extrinsics_.set(&params_8point[0]);
+  double params_4point[ExtrinsicParams::kNumParams];
+  default_extrinsics_.set(&params_4point[0]);
 
-  Problem problem;
+  Problem problem_8point;
+  Problem problem_4point;
 
   ::std::array<aos::vision::Vector<2>, 8> target_value = target.ToPointList();
   ::std::array<aos::vision::Vector<2>, 8> template_value =
@@ -175,30 +204,57 @@ IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
     aos::vision::Vector<2> a = template_value[i];
     aos::vision::Vector<2> b = target_value[i];
 
-    problem.AddResidualBlock(
-        new NumericDiffCostFunction<RuntimeCostFunctor, CENTRAL, 2, 4>(
-            new RuntimeCostFunctor(b, a, intrinsics_)),
-        NULL, &params[0]);
+    if (i % 2 == 1) {
+      aos::vision::Vector<2> a2 = template_value[i-1];
+      aos::vision::Segment<2> line = Segment<2>(a, a2);
+
+      problem_4point.AddResidualBlock(
+          new NumericDiffCostFunction<LineCostFunctor, CENTRAL, 1, 4>(
+              new LineCostFunctor(b, line, intrinsics_)),
+          NULL, &params_8point[0]);
+    } else {
+      problem_4point.AddResidualBlock(
+          new NumericDiffCostFunction<PointCostFunctor, CENTRAL, 2, 4>(
+              new PointCostFunctor(b, a, intrinsics_)),
+          NULL, &params_8point[0]);
+    }
+
+    problem_8point.AddResidualBlock(
+        new NumericDiffCostFunction<PointCostFunctor, CENTRAL, 2, 4>(
+            new PointCostFunctor(b, a, intrinsics_)),
+        NULL, &params_4point[0]);
   }
 
   Solver::Options options;
   options.minimizer_progress_to_stdout = false;
-  Solver::Summary summary;
-  Solve(options, &problem, &summary);
+  Solver::Summary summary_8point;
+  Solve(options, &problem_8point, &summary_8point);
+  Solver::Summary summary_4point;
+  Solve(options, &problem_4point, &summary_4point);
 
   IntermediateResult IR;
-  IR.extrinsics = ExtrinsicParams::get(&params[0]);
-  IR.solver_error = summary.final_cost;
+  IR.extrinsics = ExtrinsicParams::get(&params_8point[0]);
+  IR.solver_error = summary_8point.final_cost;
+  IR.backup_extrinsics = ExtrinsicParams::get(&params_4point[0]);
+  IR.backup_solver_error = summary_4point.final_cost;
 
   if (verbose) {
-    std::cout << summary.BriefReport() << "\n";
+    std::cout << "rup = " << intrinsics_.mount_angle * 180 / M_PI << ";\n";
+    std::cout << "fl = " << intrinsics_.focal_length << ";\n";
+    std::cout << "8 points:\n";
+    std::cout << summary_8point.BriefReport() << "\n";
+    std::cout << "error = " << summary_8point.final_cost << ";\n";
     std::cout << "y = " << IR.extrinsics.y / kInchesToMeters << ";\n";
     std::cout << "z = " << IR.extrinsics.z / kInchesToMeters << ";\n";
     std::cout << "r1 = " << IR.extrinsics.r1 * 180 / M_PI << ";\n";
     std::cout << "r2 = " << IR.extrinsics.r2 * 180 / M_PI << ";\n";
-    std::cout << "rup = " << intrinsics_.mount_angle * 180 / M_PI << ";\n";
-    std::cout << "fl = " << intrinsics_.focal_length << ";\n";
-    std::cout << "error = " << summary.final_cost << ";\n";
+    std::cout << "4 points:\n";
+    std::cout << summary_4point.BriefReport() << "\n";
+    std::cout << "error = " << summary_4point.final_cost << ";\n\n";
+    std::cout << "y = " << IR.backup_extrinsics.y / kInchesToMeters << ";\n";
+    std::cout << "z = " << IR.backup_extrinsics.z / kInchesToMeters << ";\n";
+    std::cout << "r1 = " << IR.backup_extrinsics.r1 * 180 / M_PI << ";\n";
+    std::cout << "r2 = " << IR.backup_extrinsics.r2 * 180 / M_PI << ";\n";
   }
   return IR;
 }
