@@ -22,7 +22,7 @@ void ActionJoystickInput::RunIteration(
     }
   }
 
-  if (!auto_running_) {
+  if (!auto_running_ || (run_teleop_in_auto_ && !action_queue_.Running())) {
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       action_queue_.CancelAllActions();
       LOG(DEBUG, "Canceling\n");
