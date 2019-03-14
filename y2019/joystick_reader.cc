@@ -34,6 +34,8 @@ using ::aos::input::driver_station::JoystickAxis;
 using ::aos::input::driver_station::POVLocation;
 using ::aos::events::ProtoTXUdpSocket;
 
+namespace chrono = ::std::chrono;
+
 namespace y2019 {
 namespace input {
 namespace joysticks {
@@ -135,12 +137,18 @@ class Reader : public ::aos::input::ActionJoystickInput {
   }
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
+    ::aos::monotonic_clock::time_point monotonic_now =
+        ::aos::monotonic_clock::now();
     superstructure_queue.position.FetchLatest();
     superstructure_queue.status.FetchLatest();
     if (!superstructure_queue.status.get() ||
         !superstructure_queue.position.get()) {
       LOG(ERROR, "Got no superstructure status packet.\n");
       return;
+    }
+
+    if (!superstructure_queue.status->has_piece) {
+      last_not_has_piece_ = monotonic_now;
     }
 
     auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
@@ -279,7 +287,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     if (switch_ball_) {
       if (kDoBallOutake ||
-          (kDoBallIntake && !superstructure_queue.status->has_piece)) {
+          (kDoBallIntake &&
+           monotonic_now < last_not_has_piece_ + chrono::milliseconds(100))) {
         new_superstructure_goal->intake.unsafe_goal = 0.959327;
       }
 
@@ -291,7 +300,6 @@ class Reader : public ::aos::input::ActionJoystickInput {
         if (kDoBallOutake) {
           new_superstructure_goal->roller_voltage = -6.0;
         } else {
-          new_superstructure_goal->intake.unsafe_goal = -1.2;
           new_superstructure_goal->roller_voltage = 0.0;
         }
       }
@@ -320,10 +328,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
       LOG(ERROR, "Sending superstructure goal failed.\n");
     }
 
-    auto time_now = ::aos::monotonic_clock::now();
-    if (time_now > last_vision_control_ + ::std::chrono::milliseconds(50)) {
+    if (monotonic_now >
+        last_vision_control_ + ::std::chrono::milliseconds(50)) {
       video_tx_->Send(vision_control_);
-      last_vision_control_ = time_now;
+      last_vision_control_ = monotonic_now;
     }
   }
 
@@ -338,6 +346,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
   VisionControl vision_control_;
   ::std::unique_ptr<ProtoTXUdpSocket<VisionControl>> video_tx_;
   ::aos::monotonic_clock::time_point last_vision_control_ =
+      ::aos::monotonic_clock::time_point::min();
+
+  // Time at which we last did not have a game piece.
+  ::aos::monotonic_clock::time_point last_not_has_piece_ =
       ::aos::monotonic_clock::time_point::min();
 };
 
