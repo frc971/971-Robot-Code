@@ -16,6 +16,7 @@ void ActionJoystickInput::RunIteration(
                   data.GetControlBit(ControlBit::kEnabled);
   if (auto_running_ != last_auto_running) {
     if (auto_running_) {
+      auto_was_running_ = true;
       StartAuto();
     } else {
       StopAuto();
@@ -23,6 +24,10 @@ void ActionJoystickInput::RunIteration(
   }
 
   if (!auto_running_ || (run_teleop_in_auto_ && !action_queue_.Running())) {
+    if (auto_was_running_) {
+      AutoEnded();
+      auto_was_running_ = false;
+    }
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       action_queue_.CancelAllActions();
       LOG(DEBUG, "Canceling\n");

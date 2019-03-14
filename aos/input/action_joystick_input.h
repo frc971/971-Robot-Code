@@ -30,6 +30,8 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
   }
 
  private:
+  // Handles anything that needs to be cleaned up when the auto action exits.
+  virtual void AutoEnded() {}
   // Handles any year specific superstructure code.
   virtual void HandleTeleop(const ::aos::input::driver_station::Data &data) = 0;
 
@@ -48,6 +50,10 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
   // action ends (either when it's done, or when the driver triggers it to
   // finish early), we will run teleop regardless of the mode.
   bool run_teleop_in_auto_ = false;
+
+  // Bool to track if auto was running the last cycle through.  This lets us
+  // call AutoEnded when the auto mode function stops.
+  bool auto_was_running_ = false;
 
   ::std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
   ::aos::common::actions::ActionQueue action_queue_;
