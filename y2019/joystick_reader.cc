@@ -136,7 +136,13 @@ class Reader : public ::aos::input::ActionJoystickInput {
         StringPrintf("10.%d.%d.179", team / 100, team % 100), 5000));
   }
 
-  void HandleTeleop(const ::aos::input::driver_station::Data &data) {
+  void AutoEnded() override {
+    LOG(INFO, "Auto ended, assuming disc and have piece\n");
+    grab_piece_ = true;
+    switch_ball_ = false;
+  }
+
+  void HandleTeleop(const ::aos::input::driver_station::Data &data) override {
     ::aos::monotonic_clock::time_point monotonic_now =
         ::aos::monotonic_clock::now();
     superstructure_queue.position.FetchLatest();
