@@ -122,6 +122,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
       : ::aos::input::ActionJoystickInput(
             event_loop,
             ::y2019::control_loops::drivetrain::GetDrivetrainConfig()) {
+    // Set teleop to immediately resume after auto ends for sandstorm mode.
+    set_run_teleop_in_auto(true);
+
     const uint16_t team = ::aos::network::GetTeamNumber();
     superstructure_queue.goal.FetchLatest();
     if (superstructure_queue.goal.get()) {

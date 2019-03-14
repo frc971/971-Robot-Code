@@ -24,6 +24,11 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
 
   virtual ~ActionJoystickInput() {}
 
+ protected:
+  void set_run_teleop_in_auto(bool run_teleop_in_auto) {
+    run_teleop_in_auto_ = run_teleop_in_auto;
+  }
+
  private:
   // Handles any year specific superstructure code.
   virtual void HandleTeleop(const ::aos::input::driver_station::Data &data) = 0;
@@ -37,6 +42,12 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
   bool auto_running_ = false;
   // True if an action was running last cycle.
   bool was_running_ = false;
+
+  // If true, we will run teleop during auto mode after auto mode ends.  This is
+  // to support the 2019 sandstorm mode.  Auto will run, and then when the
+  // action ends (either when it's done, or when the driver triggers it to
+  // finish early), we will run teleop regardless of the mode.
+  bool run_teleop_in_auto_ = false;
 
   ::std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
   ::aos::common::actions::ActionQueue action_queue_;
