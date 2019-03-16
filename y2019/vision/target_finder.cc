@@ -512,7 +512,7 @@ bool TargetFinder::MaybePickAndUpdateResult(IntermediateResult *result,
   // Based on a linear regression between error and distance to target.
   // Closer targets can have a higher error because they are bigger.
   const double acceptable_error =
-      std::max(2 * (21 - 12 * result->extrinsics.z), 50.0);
+      std::max(2 * (75 - 12 * result->extrinsics.z), 75.0);
   if (result->solver_error < acceptable_error) {
     if (verbose) {
       printf("Using an 8 point solve: %f < %f \n", result->solver_error,

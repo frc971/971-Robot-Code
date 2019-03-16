@@ -10,7 +10,7 @@ message CameraParams {
   optional int32 height = 2 [default = 960];
 
   // Exposure setting.
-  optional int32 exposure = 3 [default = 10];
+  optional int32 exposure = 3 [default = 200];
 
   // Brightness setting.
   optional int32 brightness = 4 [default = 128];
