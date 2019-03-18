@@ -230,35 +230,6 @@ class Reader : public ::aos::input::ActionJoystickInput {
       switch_ball_ = true;
     }
 
-    // TODO(sabina): max height please?
-    if (data.IsPressed(kFallOver)) {
-      new_superstructure_goal->stilts.unsafe_goal = 0.71;
-      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
-      new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
-    } else if (data.IsPressed(kDeployStilt)) {
-      new_superstructure_goal->stilts.unsafe_goal = 0.50;
-      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
-      if (stilts_was_above_) {
-        new_superstructure_goal->stilts.profile_params.max_acceleration = 0.75;
-      } else {
-        new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
-      }
-    } else if (data.IsPressed(kHalfStilt)) {
-      new_superstructure_goal->stilts.unsafe_goal = 0.345;
-      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
-      new_superstructure_goal->stilts.profile_params.max_acceleration = 0.75;
-    } else {
-      new_superstructure_goal->stilts.unsafe_goal = 0.005;
-      new_superstructure_goal->stilts.profile_params.max_velocity = 0.25;
-      new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
-    }
-
-    if (superstructure_queue.status->stilts.position > 0.65) {
-      stilts_was_above_ = true;
-    } else if (superstructure_queue.status->stilts.position < 0.1) {
-      stilts_was_above_ = false;
-    }
-
     if (switch_ball_) {
       if (superstructure_queue.status->has_piece) {
         new_superstructure_goal->wrist.profile_params.max_acceleration = 20;
@@ -342,6 +313,33 @@ class Reader : public ::aos::input::ActionJoystickInput {
       }
     }
 
+    constexpr double kDeployStiltPosition = 0.5;
+
+    // TODO(sabina): max height please?
+    if (data.IsPressed(kFallOver)) {
+      new_superstructure_goal->stilts.unsafe_goal = 0.71;
+      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
+      new_superstructure_goal->stilts.profile_params.max_acceleration = 1.25;
+    } else if (data.IsPressed(kDeployStilt)) {
+      new_superstructure_goal->stilts.unsafe_goal = kDeployStiltPosition;
+      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
+      new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
+    } else if (data.IsPressed(kHalfStilt)) {
+      new_superstructure_goal->stilts.unsafe_goal = 0.345;
+      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
+    } else {
+      new_superstructure_goal->stilts.unsafe_goal = 0.005;
+      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
+      new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
+    }
+
+    if (superstructure_queue.status->stilts.position > kDeployStiltPosition &&
+        new_superstructure_goal->stilts.unsafe_goal == kDeployStiltPosition) {
+      new_superstructure_goal->stilts.profile_params.max_velocity = 0.30;
+      new_superstructure_goal->stilts.profile_params.max_acceleration = 0.75;
+    }
+
+
     if (data.IsPressed(kRelease)) {
       grab_piece_ = false;
     }
@@ -378,7 +376,6 @@ class Reader : public ::aos::input::ActionJoystickInput {
   bool grab_piece_ = false;
 
   bool switch_ball_ = false;
-  bool stilts_was_above_ = false;
 
   VisionControl vision_control_;
   ::std::unique_ptr<ProtoTXUdpSocket<VisionControl>> video_tx_;
