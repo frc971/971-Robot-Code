@@ -76,13 +76,11 @@ const ButtonLocation kPanelHPIntakeForward(5, 6);
 const ButtonLocation kPanelHPIntakeBackward(5, 5);
 
 const ButtonLocation kRelease(2, 4);
-const ButtonLocation kResetLocalizer(4, 3);
+const ButtonLocation kResetLocalizerLeftForwards(3, 14);
+const ButtonLocation kResetLocalizerLeftBackwards(4, 12);
 
-const ButtonLocation kAutoPanel(3, 10);
-const ButtonLocation kAutoPanelIntermediate(4, 6);
-
-const ElevatorWristPosition kAutoPanelPos{0.0, -M_PI / 2.0};
-const ElevatorWristPosition kAutoPanelIntermediatePos{0.34, -M_PI / 2.0};
+const ButtonLocation kResetLocalizerRightForwards(4, 1);
+const ButtonLocation kResetLocalizerRightBackwards(4, 11);
 
 const ElevatorWristPosition kStowPos{0.36, 0.0};
 
@@ -131,6 +129,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     superstructure_queue.goal.FetchLatest();
     if (superstructure_queue.goal.get()) {
       grab_piece_ = superstructure_queue.goal->suction.grab_piece;
+      switch_ball_ = superstructure_queue.goal->suction.gamepiece_mode == 0;
     }
     video_tx_.reset(new ProtoTXUdpSocket<VisionControl>(
         StringPrintf("10.%d.%d.179", team / 100, team % 100), 5000));
@@ -159,11 +158,49 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
 
-    if (data.PosEdge(kResetLocalizer)) {
+    if (data.PosEdge(kResetLocalizerLeftForwards)) {
       auto localizer_resetter = localizer_control.MakeMessage();
       localizer_resetter->x = 0.4;
       localizer_resetter->y = 3.4;
       localizer_resetter->theta = 0.0;
+
+      if (!localizer_resetter.Send()) {
+        LOG(ERROR, "Failed to reset localizer.\n");
+      }
+    }
+
+    if (data.PosEdge(kResetLocalizerLeftBackwards)) {
+      auto localizer_resetter = localizer_control.MakeMessage();
+      // Start at the left feeder station.
+      localizer_resetter->x = 0.4;
+      localizer_resetter->y = 3.4;
+      localizer_resetter->theta = M_PI;
+
+      if (!localizer_resetter.Send()) {
+        LOG(ERROR, "Failed to reset localizer.\n");
+      }
+    }
+
+    // TODO(austin): Check y location.
+    if (data.PosEdge(kResetLocalizerRightForwards)) {
+      auto localizer_resetter = localizer_control.MakeMessage();
+      // Start at the left feeder station.
+      localizer_resetter->x = 0.4;
+      localizer_resetter->y = -3.4;
+      localizer_resetter->theta = 0.0;
+
+      if (!localizer_resetter.Send()) {
+        LOG(ERROR, "Failed to reset localizer.\n");
+      }
+    }
+
+    if (data.PosEdge(kResetLocalizerRightBackwards)) {
+      auto localizer_resetter = localizer_control.MakeMessage();
+      // Start at the left feeder station.
+      localizer_resetter->x = 0.4;
+      localizer_resetter->y = -3.4;
+      localizer_resetter->theta = M_PI;
+
       if (!localizer_resetter.Send()) {
         LOG(ERROR, "Failed to reset localizer.\n");
       }
@@ -220,12 +257,6 @@ class Reader : public ::aos::input::ActionJoystickInput {
       stilts_was_above_ = true;
     } else if (superstructure_queue.status->stilts.position < 0.1) {
       stilts_was_above_ = false;
-    }
-
-    if (data.IsPressed(kAutoPanel)) {
-      elevator_wrist_pos_ = kAutoPanelPos;
-    } else if (data.IsPressed(kAutoPanelIntermediate)) {
-      elevator_wrist_pos_ = kAutoPanelIntermediatePos;
     }
 
     if (switch_ball_) {
