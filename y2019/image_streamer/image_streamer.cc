@@ -280,15 +280,12 @@ class CameraStream : public ::aos::vision::ImageStreamEvent {
       sampling = 0;
     }
 
-    std::string image_out;
+    ::std::string image_out;
 
-    if (flip_) {
-      unsigned int out_size = image_buffer_out_.size();
-      flip_image(data.data(), data.size(), &image_buffer_out_[0], &out_size);
-      image_out.assign(&image_buffer_out_[0], &image_buffer_out_[out_size]);
-    } else {
-      image_out = std::string(data);
-    }
+    unsigned int out_size = image_buffer_out_.size();
+    flip_image(data.data(), data.size(), &image_buffer_out_[0], &out_size,
+               flip_);
+    image_out.assign(&image_buffer_out_[0], &image_buffer_out_[out_size]);
 
     if (active_) {
       auto frame = std::make_shared<Frame>(Frame{image_out});
