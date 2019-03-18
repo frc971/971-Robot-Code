@@ -62,12 +62,13 @@ void DrivetrainInputReader::HandleDrivetrain(
     }
   }
 
-  if (is_control_loop_driving) {
-    if (drivetrain_queue.status.get()) {
+  if (drivetrain_queue.status.get()) {
+    if (is_control_loop_driving && !last_is_control_loop_driving_) {
       left_goal_ = drivetrain_queue.status->estimated_left_position;
       right_goal_ = drivetrain_queue.status->estimated_right_position;
     }
   }
+
   const double current_left_goal =
       left_goal_ - wheel * wheel_multiplier_ + throttle * 0.3;
   const double current_right_goal =
@@ -92,6 +93,8 @@ void DrivetrainInputReader::HandleDrivetrain(
   if (!new_drivetrain_goal.Send()) {
     LOG(WARNING, "sending stick values failed\n");
   }
+
+  last_is_control_loop_driving_ = is_control_loop_driving;
 }
 
 DrivetrainInputReader::WheelAndThrottle
@@ -242,10 +245,13 @@ std::unique_ptr<PistolDrivetrainInputReader> PistolDrivetrainInputReader::Make(
 
   // TODO(james): Make a copy assignment operator for ButtonLocation so we don't
   // have to shoehorn in these ternary operators.
-  const ButtonLocation kTurn1 =
+  const ButtonLocation kTurn1 = (top_button_use == TopButtonUse::kLineFollow)
+                                    ? SecondButton
+                                    : DummyButton;
+  // Turn2 does closed loop driving.
+  const ButtonLocation kTurn2 =
       (top_button_use == TopButtonUse::kLineFollow) ? TopButton : DummyButton;
-  // Turn2 currently does nothing on the pistol grip, ever.
-  const ButtonLocation kTurn2 = DummyButton;
+
   const ButtonLocation kShiftHigh =
       (top_button_use == TopButtonUse::kShift) ? TopButton : DummyButton;
   const ButtonLocation kShiftLow =

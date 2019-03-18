@@ -186,8 +186,9 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       wrist_params->zeroing_constants.measured_absolute_position = 0.163840;
       wrist->potentiometer_offset = -4.257454;
 
-      stilts_params->zeroing_constants.measured_absolute_position = 0.030049;
-      stilts->potentiometer_offset = -0.015760 + 0.011604;
+      stilts_params->zeroing_constants.measured_absolute_position = 0.072829;
+      stilts->potentiometer_offset = -0.015760 + 0.011604 - 0.061213;
+      FillCameraPoses(vision::CompBotTeensyId(), &r->cameras);
       break;
 
     case kPracticeTeamNumber:

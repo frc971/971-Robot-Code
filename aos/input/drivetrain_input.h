@@ -96,6 +96,8 @@ class DrivetrainInputReader {
   const driver_station::ButtonLocation turn2_;
   const TurnButtonUse turn2_use_;
 
+  bool last_is_control_loop_driving_ = false;
+
   // Structure containing the (potentially adjusted) steering and throttle
   // values from the joysticks.
   struct WheelAndThrottle {
@@ -183,7 +185,7 @@ class PistolDrivetrainInputReader : public DrivetrainInputReader {
       driver_station::ButtonLocation turn2)
       : DrivetrainInputReader(wheel_high, throttle_high, quick_turn, turn1,
                               TurnButtonUse::kLineFollow, turn2,
-                              TurnButtonUse::kLineFollow),
+                              TurnButtonUse::kControlLoopDriving),
         wheel_low_(wheel_low),
         wheel_velocity_high_(wheel_velocity_high),
         wheel_velocity_low_(wheel_velocity_low),
