@@ -25,6 +25,11 @@ class TargetSelectorInterface {
   // Gets the current target pose. Should only be called if UpdateSelection has
   // returned true.
   virtual TypedPose<double> TargetPose() const = 0;
+  // The "radius" of the target--for y2019, we wanted to drive in so that a disc
+  // with radius r would hit the plane of the target at an offset of exactly r
+  // from the TargetPose--this is distinct from wanting the center of the
+  // robot to project straight onto the center of the target.
+  virtual double TargetRadius() const = 0;
 };
 
 // Defines an interface for classes that provide field-global localization.
@@ -66,14 +71,17 @@ class TrivialTargetSelector : public TargetSelectorInterface {
     return has_target_;
   }
   TypedPose<double> TargetPose() const override { return pose_; }
+  double TargetRadius() const override { return target_radius_; }
 
   void set_pose(const TypedPose<double> &pose) { pose_ = pose; }
+  void set_target_radius(double radius) { target_radius_ = radius; }
   void set_has_target(bool has_target) { has_target_ = has_target; }
   bool has_target() const { return has_target_; }
 
  private:
   bool has_target_ = true;
   TypedPose<double> pose_;
+  double target_radius_ = 0.0;
 };
 
 // Uses the generic HybridEkf implementation to provide a basic field estimator.

@@ -36,8 +36,16 @@ bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
   // means the largest target in the camera view).
   double largest_target_noise = ::std::numeric_limits<double>::infinity();
   for (const auto &view : target_views) {
+    // Skip targets that aren't viable for going to (e.g., on the opposite side
+    // of the field).
+    // TODO(james): Support ball vs. hatch mode filtering.
+    if (view.target->goal_type() == Target::GoalType::kNone ||
+        view.target->goal_type() == Target::GoalType::kBalls) {
+      continue;
+    }
     if (view.noise.distance < largest_target_noise) {
       target_pose_ = view.target->pose();
+      target_radius_ = view.target->radius();
       largest_target_noise = view.noise.distance;
     }
   }

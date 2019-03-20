@@ -13,7 +13,7 @@ namespace {
 // Accessors to get some useful particular targets on the field:
 Pose HPSlotLeft() { return constants::Field().targets()[7].pose(); }
 Pose CargoNearLeft() { return constants::Field().targets()[2].pose(); }
-Pose RocketPortalLeft() { return constants::Field().targets()[4].pose(); }
+Pose RocketHatchFarLeft() { return constants::Field().targets()[6].pose(); }
 }  // namespace
 
 // Tests the target selector with:
@@ -72,7 +72,7 @@ INSTANTIATE_TEST_CASE_P(
         TestParams{(State() << 4.0, 2.0, M_PI, 0.5, 0.5).finished(), 1.0, true,
                    HPSlotLeft()},
         // Put ourselves between the rocket and cargo ship; we should see the
-        // portal driving one direction and the near cargo ship port the other.
+        // hatches driving one direction and the near cargo ship port the other.
         // We also command a speed opposite the current direction of motion and
         // confirm that that behaves as expected.
         TestParams{(State() << 6.0, 2.0, -M_PI_2, -0.5, -0.5).finished(), 1.0,
@@ -80,9 +80,9 @@ INSTANTIATE_TEST_CASE_P(
         TestParams{(State() << 6.0, 2.0, M_PI_2, 0.5, 0.5).finished(), -1.0,
                    true, CargoNearLeft()},
         TestParams{(State() << 6.0, 2.0, -M_PI_2, 0.5, 0.5).finished(), -1.0,
-                   true, RocketPortalLeft()},
+                   true, RocketHatchFarLeft()},
         TestParams{(State() << 6.0, 2.0, M_PI_2, -0.5, -0.5).finished(), 1.0,
-                   true, RocketPortalLeft()},
+                   true, RocketHatchFarLeft()},
         // And we shouldn't see anything spinning in place:
         TestParams{(State() << 6.0, 2.0, M_PI_2, -0.5, 0.5).finished(),
                    0.0,
