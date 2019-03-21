@@ -1,5 +1,18 @@
-#!/bin/sh
+#!/bin/bash
 set -e
+
+BRANCH=$(git rev-parse --symbolic-full-name --abbrev-ref HEAD)
+if [[ "$BRANCH" != "master" ]]; then
+  read -p "Not on master, deploy anyway (y/n) " ANSWER
+  if [[ $ANSWER =~ ^[Yy]$ ]]; then
+    echo "Master check overridden, deploying anyway"
+  else
+    echo "Cancelling deploy"
+    exit 1
+  fi
+else
+  echo "On master, deploying"
+fi
 
 echo "Building executables"
 readonly BAZEL_OPTIONS="-c opt --cpu=armhf-debian"
