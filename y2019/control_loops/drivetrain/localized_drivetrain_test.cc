@@ -67,10 +67,11 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
   void SetStartingPosition(const Eigen::Matrix<double, 3, 1> &xytheta) {
     *drivetrain_motor_plant_.mutable_state() << xytheta.x(), xytheta.y(),
         xytheta(2, 0), 0.0, 0.0;
-    Eigen::Matrix<double, 7, 1> localizer_state;
+    Eigen::Matrix<double, EventLoopLocalizer::Localizer::kNStates, 1>
+        localizer_state;
     localizer_state.setZero();
     localizer_state.block<3, 1>(0, 0) = xytheta;
-    localizer_.Reset(localizer_state);
+    localizer_.Reset(monotonic_clock::now(), localizer_state);
   }
 
   void RunIteration() {
@@ -310,7 +311,7 @@ TEST_F(LocalizedDrivetrainTest, LineFollowToHPSlot) {
   SetStartingPosition({4, HPSlotLeft().abs_pos().y(), M_PI});
   my_drivetrain_queue_.goal.MakeWithBuilder()
       .controller_type(3)
-      .throttle(0.9)
+      .throttle(0.5)
       .Send();
   RunForTime(chrono::seconds(6));
 

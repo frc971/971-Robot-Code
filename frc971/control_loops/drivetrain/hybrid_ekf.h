@@ -49,8 +49,11 @@ class HybridEkf {
     kLeftVelocity = 4,
     kRightEncoder = 5,
     kRightVelocity = 6,
+    kLeftVoltageError = 7,
+    kRightVoltageError = 8 ,
+    kAngularError = 9,
   };
-  static constexpr int kNStates = 7;
+  static constexpr int kNStates = 10;
   static constexpr int kNInputs = 2;
   // Number of previous samples to save.
   static constexpr int kSaveSamples = 50;
@@ -68,11 +71,19 @@ class HybridEkf {
   // variable-size measurement updates.
   typedef Eigen::Matrix<Scalar, kNOutputs, 1> Output;
   typedef Eigen::Matrix<Scalar, kNStates, kNStates> StateSquare;
-  // State is [x_position, y_position, theta, left encoder, left ground vel,
-  // right encoder, right ground vel]. left/right encoder should correspond
-  // directly to encoder readings left/right velocities are the velocity of the
-  // left/right sides over the
+  // State is [x_position, y_position, theta, Kalman States], where
+  // Kalman States are the states from the standard drivetrain Kalman Filter,
+  // which is: [left encoder, left ground vel, right encoder, right ground vel,
+  // left voltage error, right voltage error, angular_error], where:
+  // left/right encoder should correspond directly to encoder readings
+  // left/right velocities are the velocity of the left/right sides over the
   //   ground (i.e., corrected for angular_error).
+  // voltage errors are the difference between commanded and effective voltage,
+  //   used to estimate consistent modelling errors (e.g., friction).
+  // angular error is the difference between the angular velocity as estimated
+  //   by the encoders vs. estimated by the gyro, such as might be caused by
+  //   wheels on one side of the drivetrain being too small or one side's
+  //   wheels slipping more than the other.
   typedef Eigen::Matrix<Scalar, kNStates, 1> State;
 
   // Constructs a HybridEkf for a particular drivetrain.
@@ -96,6 +107,7 @@ class HybridEkf {
                          const State &state, const StateSquare &P) {
     observations_.clear();
     X_hat_ = state;
+    have_zeroed_encoders_ = true;
     P_ = P;
     observations_.PushFromBottom(
         {t,
@@ -140,6 +152,27 @@ class HybridEkf {
                              const Scalar right_encoder, const Scalar gyro_rate,
                              const Input &U,
                              ::aos::monotonic_clock::time_point t) {
+    // Because the check below for have_zeroed_encoders_ will add an
+    // Observation, do a check here to ensure that initialization has been
+    // performed and so there is at least one observation.
+    CHECK(!observations_.empty());
+    if (!have_zeroed_encoders_) {
+      // This logic handles ensuring that on the first encoder reading, we
+      // update the internal state for the encoders to match the reading.
+      // Otherwise, if we restart the drivetrain without restarting
+      // wpilib_interface, then we can get some obnoxious initial corrections
+      // that mess up the localization.
+      State newstate = X_hat_;
+      newstate(kLeftEncoder, 0) = left_encoder;
+      newstate(kRightEncoder, 0) = right_encoder;
+      newstate(kLeftVoltageError, 0) = 0.0;
+      newstate(kRightVoltageError, 0) = 0.0;
+      newstate(kAngularError, 0) = 0.0;
+      ResetInitialState(t, newstate, P_);
+      // We need to set have_zeroed_encoders_ after ResetInitialPosition because
+      // the reset clears have_zeroed_encoders_...
+      have_zeroed_encoders_ = true;
+    }
     Output z(left_encoder, right_encoder, gyro_rate);
     Eigen::Matrix<Scalar, kNOutputs, kNOutputs> R;
     R.setZero();
@@ -294,6 +327,8 @@ class HybridEkf {
   Scalar encoder_noise_, gyro_noise_;
   Eigen::Matrix<Scalar, kNStates, kNInputs> B_continuous_;
 
+  bool have_zeroed_encoders_ = false;
+
   aos::PriorityQueue<Observation, kSaveSamples, ::std::less<Observation>>
       observations_;
 
@@ -396,7 +431,9 @@ void HybridEkf<Scalar>::InitializeMatrices() {
 
   // Encoder derivatives
   A_continuous_(kLeftEncoder, kLeftVelocity) = 1.0;
+  A_continuous_(kLeftEncoder, kAngularError) = 1.0;
   A_continuous_(kRightEncoder, kRightVelocity) = 1.0;
+  A_continuous_(kRightEncoder, kAngularError) = -1.0;
 
   // Pull velocity derivatives from velocity matrices.
   // Note that this looks really awkward (doesn't use
@@ -413,6 +450,7 @@ void HybridEkf<Scalar>::InitializeMatrices() {
   B_continuous_.setZero();
   B_continuous_.row(kLeftVelocity) = vel_coefs.B_continuous.row(0);
   B_continuous_.row(kRightVelocity) = vel_coefs.B_continuous.row(1);
+  A_continuous_.template block<kNStates, kNInputs>(0, 7) = B_continuous_;
 
   Q_continuous_.setZero();
   // TODO(james): Improve estimates of process noise--e.g., X/Y noise can
@@ -422,13 +460,16 @@ void HybridEkf<Scalar>::InitializeMatrices() {
   Q_continuous_(kX, kX) = 0.01;
   Q_continuous_(kY, kY) = 0.01;
   Q_continuous_(kTheta, kTheta) = 0.0002;
-  Q_continuous_(kLeftEncoder, kLeftEncoder) = ::std::pow(0.03, 2.0);
-  Q_continuous_(kRightEncoder, kRightEncoder) = ::std::pow(0.03, 2.0);
-  Q_continuous_(kLeftVelocity, kLeftVelocity) = ::std::pow(0.1, 2.0);
-  Q_continuous_(kRightVelocity, kRightVelocity) = ::std::pow(0.1, 2.0);
+  Q_continuous_(kLeftEncoder, kLeftEncoder) = ::std::pow(0.15, 2.0);
+  Q_continuous_(kRightEncoder, kRightEncoder) = ::std::pow(0.15, 2.0);
+  Q_continuous_(kLeftVelocity, kLeftVelocity) = ::std::pow(0.5, 2.0);
+  Q_continuous_(kRightVelocity, kRightVelocity) = ::std::pow(0.5, 2.0);
+  Q_continuous_(kLeftVoltageError, kLeftVoltageError) = ::std::pow(10.0, 2.0);
+  Q_continuous_(kRightVoltageError, kRightVoltageError) = ::std::pow(10.0, 2.0);
+  Q_continuous_(kAngularError, kAngularError) = ::std::pow(2.0, 2.0);
 
   P_.setZero();
-  P_.diagonal() << 0.1, 0.1, 0.01, 0.02, 0.01, 0.02, 0.01;
+  P_.diagonal() << 0.1, 0.1, 0.01, 0.02, 0.01, 0.02, 0.01, 1, 1, 0.03;
 
   H_encoders_and_gyro_.setZero();
   // Encoders are stored directly in the state matrix, so are a minor
@@ -441,8 +482,10 @@ void HybridEkf<Scalar>::InitializeMatrices() {
 
   const Eigen::Matrix<Scalar, 4, 4> R_kf_drivetrain =
       dt_config_.make_kf_drivetrain_loop().observer().coefficients().R;
-  encoder_noise_ = R_kf_drivetrain(0, 0);
-  gyro_noise_ = R_kf_drivetrain(2, 2);
+  // TODO(james): The multipliers here are hand-waving things that I put in when
+  // tuning things. I haven't yet tried messing with these values again.
+  encoder_noise_ = 0.05 * R_kf_drivetrain(0, 0);
+  gyro_noise_ = 0.1 * R_kf_drivetrain(2, 2);
 }
 
 }  // namespace drivetrain

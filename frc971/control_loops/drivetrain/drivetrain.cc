@@ -242,7 +242,8 @@ void DrivetrainLoop::RunIteration(
     // TODO(james): Use a watcher (instead of a fetcher) once we support it in
     // simulation.
     if (localizer_control_fetcher_.Fetch()) {
-      localizer_->ResetPosition(localizer_control_fetcher_->x,
+      LOG_STRUCT(DEBUG, "localizer_control", *localizer_control_fetcher_);
+      localizer_->ResetPosition(monotonic_now, localizer_control_fetcher_->x,
                                 localizer_control_fetcher_->y,
                                 localizer_control_fetcher_->theta);
     }

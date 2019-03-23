@@ -49,7 +49,8 @@ class LocalizerInterface {
                       double left_encoder, double right_encoder,
                       double gyro_rate, double longitudinal_accelerometer) = 0;
   // Reset the absolute position of the estimator.
-  virtual void ResetPosition(double x, double y, double theta) = 0;
+  virtual void ResetPosition(::aos::monotonic_clock::time_point t, double x,
+                             double y, double theta) = 0;
   // There are several subtly different norms floating around for state
   // matrices. In order to avoid that mess, we jus tprovide direct accessors for
   // the values that most people care about.
@@ -58,6 +59,8 @@ class LocalizerInterface {
   virtual double theta() const = 0;
   virtual double left_velocity() const = 0;
   virtual double right_velocity() const = 0;
+  virtual double left_encoder() const = 0;
+  virtual double right_encoder() const = 0;
   virtual double left_voltage_error() const = 0;
   virtual double right_voltage_error() const = 0;
   virtual TargetSelectorInterface *target_selector() = 0;
@@ -105,27 +108,36 @@ class DeadReckonEkf : public LocalizerInterface {
     ekf_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate, U, now);
   }
 
-  void ResetPosition(double x, double y, double theta) override {
+  void ResetPosition(::aos::monotonic_clock::time_point t, double x, double y,
+                     double theta) override {
     const double left_encoder = ekf_.X_hat(StateIdx::kLeftEncoder);
     const double right_encoder = ekf_.X_hat(StateIdx::kRightEncoder);
-    ekf_.ResetInitialState(
-        ::aos::monotonic_clock::now(),
-        (Ekf::State() << x, y, theta, left_encoder, 0, right_encoder, 0)
-            .finished(),
-        ekf_.P());
+    ekf_.ResetInitialState(t, (Ekf::State() << x, y, theta, left_encoder, 0,
+                               right_encoder, 0, 0, 0, 0).finished(),
+                           ekf_.P());
   };
 
   double x() const override { return ekf_.X_hat(StateIdx::kX); }
   double y() const override { return ekf_.X_hat(StateIdx::kY); }
   double theta() const override { return ekf_.X_hat(StateIdx::kTheta); }
+  double left_encoder() const override {
+    return ekf_.X_hat(StateIdx::kLeftEncoder);
+  }
+  double right_encoder() const override {
+    return ekf_.X_hat(StateIdx::kRightEncoder);
+  }
   double left_velocity() const override {
     return ekf_.X_hat(StateIdx::kLeftVelocity);
   }
   double right_velocity() const override {
     return ekf_.X_hat(StateIdx::kRightVelocity);
   }
-  double left_voltage_error() const override { return 0.0; }
-  double right_voltage_error() const override { return 0.0; }
+  double left_voltage_error() const override {
+    return ekf_.X_hat(StateIdx::kLeftVoltageError);
+  }
+  double right_voltage_error() const override {
+    return ekf_.X_hat(StateIdx::kRightVoltageError);
+  }
 
   TrivialTargetSelector *target_selector() override {
     return &target_selector_;

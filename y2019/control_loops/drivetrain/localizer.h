@@ -100,7 +100,7 @@ class TypedLocalizer
   // The threshold to use for completely rejecting potentially bad target
   // matches.
   // TODO(james): Tune
-  static constexpr Scalar kRejectionScore = 1.0;
+  static constexpr Scalar kRejectionScore = 1000000.0;
 
   // Checks that the targets coming in make some sense--mostly to prevent NaNs
   // or the such from propagating.
@@ -306,6 +306,11 @@ class TypedLocalizer
         size_t view_idx = best_frames[ii];
         if (view_idx < 0 || view_idx >= camera_views.size()) {
           LOG(ERROR, "Somehow, the view scorer failed.\n");
+          h_functions->push_back(
+              [](const State &, const Input &) { return Output::Zero(); });
+          dhdx_functions->push_back([](const State &) {
+            return Eigen::Matrix<Scalar, kNOutputs, kNStates>::Zero();
+          });
           continue;
         }
         const Eigen::Matrix<Scalar, kNOutputs, kNStates> best_H =

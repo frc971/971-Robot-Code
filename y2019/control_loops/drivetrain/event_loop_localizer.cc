@@ -33,14 +33,14 @@ EventLoopLocalizer::EventLoopLocalizer(
       localizer_(dt_config, &robot_pose_) {
   localizer_.ResetInitialState(::aos::monotonic_clock::now(),
                                Localizer::State::Zero(), localizer_.P());
-  ResetPosition(0.5, 3.4, 0.0);
+  ResetPosition(::aos::monotonic_clock::now(), 0.5, 3.4, 0.0);
   frame_fetcher_ = event_loop_->MakeFetcher<CameraFrame>(
       ".y2019.control_loops.drivetrain.camera_frames");
 }
 
-void EventLoopLocalizer::Reset(const Localizer::State &state) {
-  localizer_.ResetInitialState(::aos::monotonic_clock::now(), state,
-                               localizer_.P());
+void EventLoopLocalizer::Reset(::aos::monotonic_clock::time_point now,
+                               const Localizer::State &state) {
+  localizer_.ResetInitialState(now, state, localizer_.P());
 }
 
 void EventLoopLocalizer::Update(

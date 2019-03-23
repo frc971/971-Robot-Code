@@ -33,8 +33,10 @@ class EventLoopLocalizer
           &dt_config,
       ::aos::EventLoop *event_loop);
 
-  void Reset(const Localizer::State &state);
-  void ResetPosition(double x, double y, double theta) override {
+  void Reset(::aos::monotonic_clock::time_point t,
+             const Localizer::State &state);
+  void ResetPosition(::aos::monotonic_clock::time_point t, double x, double y,
+                     double theta) override {
     // When we reset the state, we want to keep the encoder positions intact, so
     // we copy from the original state and reset everything else.
     Localizer::State new_state = localizer_.X_hat();
@@ -44,7 +46,11 @@ class EventLoopLocalizer
     // Velocity terms.
     new_state(4, 0) = 0.0;
     new_state(6, 0) = 0.0;
-    Reset(new_state);
+    // Voltage/angular error terms.
+    new_state(7, 0) = 0.0;
+    new_state(8, 0) = 0.0;
+    new_state(9, 0) = 0.0;
+    Reset(t, new_state);
   }
 
   void Update(const ::Eigen::Matrix<double, 2, 1> &U,
@@ -58,14 +64,24 @@ class EventLoopLocalizer
     return localizer_.X_hat(StateIdx::kY); }
   double theta() const override {
     return localizer_.X_hat(StateIdx::kTheta); }
+  double left_encoder() const override {
+    return localizer_.X_hat(StateIdx::kLeftEncoder);
+  }
+  double right_encoder() const override {
+    return localizer_.X_hat(StateIdx::kRightEncoder);
+  }
   double left_velocity() const override {
     return localizer_.X_hat(StateIdx::kLeftVelocity);
   }
   double right_velocity() const override {
     return localizer_.X_hat(StateIdx::kRightVelocity);
   }
-  double left_voltage_error() const override { return 0.0; }
-  double right_voltage_error() const override { return 0.0; }
+  double left_voltage_error() const override {
+    return localizer_.X_hat(StateIdx::kLeftVoltageError);
+  }
+  double right_voltage_error() const override {
+    return localizer_.X_hat(StateIdx::kRightVoltageError);
+  }
 
   TargetSelector *target_selector() override {
     return &target_selector_;
