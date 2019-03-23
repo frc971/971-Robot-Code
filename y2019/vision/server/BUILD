@@ -38,6 +38,8 @@ cc_binary(
         "//aos:init",
         "//aos/logging",
         "//aos/time",
+        "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//third_party/seasocks",
+        "//y2019/control_loops/drivetrain:camera_queue",
     ],
 )
