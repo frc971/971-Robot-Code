@@ -1,6 +1,15 @@
 load("//aos/seasocks:gen_embedded.bzl", "gen_embedded")
 load("//aos/downloader:downloader.bzl", "aos_downloader_dir")
 
+load("@build_bazel_rules_typescript//:defs.bzl", "ts_library")
+
+ts_library(
+    name = "demo5",
+    srcs = [
+        "demo.ts",
+    ],
+)
+
 gen_embedded(
     name = "gen_embedded",
     srcs = glob(

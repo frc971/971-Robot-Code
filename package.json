@@ -1,0 +1,9 @@
+{
+  "name": "971-Robot-Code",
+  "license": "MIT",
+  "devDependencies": {
+    "@bazel/bazel": "^0.19.1",
+    "@bazel/typescript": "0.21.0",
+    "typescript": "^3.1.6"
+  }
+}
