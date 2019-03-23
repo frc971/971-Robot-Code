@@ -93,13 +93,13 @@ bool AutonomousActor::RunAction(
   if (!WaitForGamePiece()) return true;
   LOG(INFO, "Has game piece\n");
 
-  StartDrive(-4.5, 0.0, kJumpDrive, kTurn);
-  if (!WaitForDriveNear(3.8, 10.0)) return true;
+  StartDrive(-4.0, 0.0, kJumpDrive, kTurn);
+  if (!WaitForDriveNear(3.3, 10.0)) return true;
   LOG(INFO, "Lifting\n");
   set_elevator_goal(0.30);
   SendSuperstructureGoal();
 
-  if (!WaitForDriveNear(3.3, 10.0)) return true;
+  if (!WaitForDriveNear(2.8, 10.0)) return true;
   LOG(INFO, "Off the platform\n");
 
   StartDrive(0.0, 1.00, kDrive, kTurn);
@@ -107,7 +107,7 @@ bool AutonomousActor::RunAction(
   if (!WaitForSuperstructureDone()) return true;
   LOG(INFO, "Superstructure done\n");
 
-  if (!WaitForDriveNear(1.2, 10.0)) return true;
+  if (!WaitForDriveNear(0.7, 10.0)) return true;
   StartDrive(0.0, -0.35, kDrive, kTurn);
 
   LOG(INFO, "Elevator up\n");
@@ -120,14 +120,6 @@ bool AutonomousActor::RunAction(
   if (!WaitForSuperstructureDone()) return true;
 
   LOG(INFO, "Done %f\n", DoubleSeconds(monotonic_clock::now() - start_time));
-
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                      ::std::chrono::milliseconds(5) / 2);
-
-  while (!ShouldCancel()) {
-    phased_loop.SleepUntilNext();
-  }
-  LOG(DEBUG, "Done running\n");
 
   return true;
 }
