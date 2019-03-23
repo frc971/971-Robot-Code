@@ -160,6 +160,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     if (data.PosEdge(kResetLocalizerLeftForwards)) {
       auto localizer_resetter = localizer_control.MakeMessage();
+      // Start at the left feeder station.
       localizer_resetter->x = 0.4;
       localizer_resetter->y = 3.4;
       localizer_resetter->theta = 0.0;
@@ -181,10 +182,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
       }
     }
 
-    // TODO(austin): Check y location.
     if (data.PosEdge(kResetLocalizerRightForwards)) {
       auto localizer_resetter = localizer_control.MakeMessage();
-      // Start at the left feeder station.
+      // Start at the right feeder station.
       localizer_resetter->x = 0.4;
       localizer_resetter->y = -3.4;
       localizer_resetter->theta = 0.0;
@@ -196,7 +196,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     if (data.PosEdge(kResetLocalizerRightBackwards)) {
       auto localizer_resetter = localizer_control.MakeMessage();
-      // Start at the left feeder station.
+      // Start at the right feeder station.
       localizer_resetter->x = 0.4;
       localizer_resetter->y = -3.4;
       localizer_resetter->theta = M_PI;
