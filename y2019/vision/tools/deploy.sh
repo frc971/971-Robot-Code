@@ -23,10 +23,38 @@ bazel build ${BAZEL_OPTIONS} \
     //y2019/vision:target_sender \
     //y2019/vision:serial_waiter
 
-if [ ! -d "${TARGET_DIR}" ]
+JEVOIS_DEV="/dev/null"
+for dev in /dev/ttyACM*; do
+  if udevadm info -a -n "${dev}" | grep "JeVois-A33 Smart Camera" -q;
+  then
+    JEVOIS_DEV="${dev}"
+  fi
+done
+
+if [[ "${JEVOIS_DEV}" == "/dev/null" ]];
+then
+  echo "Can't find jevois"
+  exit 1;
+fi;
+
+if ! mount | grep "${TARGET_DIR}" -q
 then
   echo "Mount jevois at ${TARGET_DIR} ..."
-  ./jevois-cmd usbsd
+  ./jevois-cmd -d "${JEVOIS_DEV}" usbsd
+fi
+
+sleep 5
+
+if udevadm info -a -n /dev/sda | grep JeVois -q;
+then
+  echo "Jevois at /dev/sda"
+fi
+
+if ! mount | grep "${TARGET_DIR}" -q
+then
+  sudo mkdir -p "${TARGET_DIR}"
+
+  sudo mount /dev/sda "${TARGET_DIR}"
 fi
 
 echo "Waiting for fs ..."
@@ -45,8 +73,8 @@ sudo cp "${BAZEL_BIN}/y2019/vision/target_sender" \
   "${TARGET_DIR}"/deploy/
 
 echo "Unmount sd card ..."
-umount "${TARGET_DIR}"
+sudo umount "${TARGET_DIR}"
 echo "OK"
 
 echo "Rebooting Jevois."
-./jevois-cmd restart
+./jevois-cmd -d "${JEVOIS_DEV}" restart
