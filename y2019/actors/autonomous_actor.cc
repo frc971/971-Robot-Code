@@ -26,6 +26,10 @@ double DoubleSeconds(monotonic_clock::duration duration) {
       .count();
 }
 
+constexpr bool is_left = false;
+
+constexpr double turn_scalar = is_left ? 1.0 : -1.0;
+
 }  // namespace
 
 AutonomousActor::AutonomousActor(
@@ -53,7 +57,7 @@ void AutonomousActor::Reset() {
     auto localizer_resetter = localizer_control.MakeMessage();
     // Start on the left l2.
     localizer_resetter->x = 1.0;
-    localizer_resetter->y = 1.5;
+    localizer_resetter->y = 1.5 * turn_scalar;
     localizer_resetter->theta = M_PI;
     if (!localizer_resetter.Send()) {
       LOG(ERROR, "Failed to reset localizer.\n");
@@ -102,13 +106,13 @@ bool AutonomousActor::RunAction(
   if (!WaitForDriveNear(2.8, 10.0)) return true;
   LOG(INFO, "Off the platform\n");
 
-  StartDrive(0.0, 1.00, kDrive, kTurn);
+  StartDrive(0.0, 1.00 * turn_scalar, kDrive, kTurn);
   LOG(INFO, "Turn started\n");
   if (!WaitForSuperstructureDone()) return true;
   LOG(INFO, "Superstructure done\n");
 
   if (!WaitForDriveNear(0.7, 10.0)) return true;
-  StartDrive(0.0, -0.35, kDrive, kTurn);
+  StartDrive(0.0, -0.35 * turn_scalar, kDrive, kTurn);
 
   LOG(INFO, "Elevator up\n");
   set_elevator_goal(0.01);

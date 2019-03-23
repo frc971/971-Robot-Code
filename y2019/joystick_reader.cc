@@ -76,18 +76,16 @@ const ButtonLocation kPanelHPIntakeForward(5, 6);
 const ButtonLocation kPanelHPIntakeBackward(5, 5);
 
 const ButtonLocation kRelease(2, 4);
-const ButtonLocation kResetLocalizer(4, 3);
+const ButtonLocation kResetLocalizerLeftForwards(3, 14);
+const ButtonLocation kResetLocalizerLeftBackwards(4, 12);
 
-const ButtonLocation kAutoPanel(3, 10);
-const ButtonLocation kAutoPanelIntermediate(4, 6);
-
-const ElevatorWristPosition kAutoPanelPos{0.0, -M_PI / 2.0};
-const ElevatorWristPosition kAutoPanelIntermediatePos{0.34, -M_PI / 2.0};
+const ButtonLocation kResetLocalizerRightForwards(4, 1);
+const ButtonLocation kResetLocalizerRightBackwards(4, 11);
 
 const ElevatorWristPosition kStowPos{0.36, 0.0};
 
-const ElevatorWristPosition kPanelHPIntakeForwrdPos{0.04, M_PI / 2.0};
-const ElevatorWristPosition kPanelHPIntakeBackwardPos{0.05, -M_PI / 2.0};
+const ElevatorWristPosition kPanelHPIntakeForwrdPos{0.01, M_PI / 2.0};
+const ElevatorWristPosition kPanelHPIntakeBackwardPos{0.015, -M_PI / 2.0};
 
 const ElevatorWristPosition kPanelForwardLowerPos{0.0, M_PI / 2.0};
 const ElevatorWristPosition kPanelBackwardLowerPos{0.0, -M_PI / 2.0};
@@ -101,17 +99,17 @@ const ElevatorWristPosition kPanelBackwardUpperPos{1.50, -M_PI / 2.0};
 const ElevatorWristPosition kPanelCargoForwardPos{0.0, M_PI / 2.0};
 const ElevatorWristPosition kPanelCargoBackwardPos{0.0, -M_PI / 2.0};
 
-const ElevatorWristPosition kBallForwardLowerPos{0.46, M_PI / 2.0};
-const ElevatorWristPosition kBallBackwardLowerPos{0.15, -M_PI / 2.0};
+const ElevatorWristPosition kBallForwardLowerPos{0.42, M_PI / 2.0};
+const ElevatorWristPosition kBallBackwardLowerPos{0.14, -M_PI / 2.0};
 
 const ElevatorWristPosition kBallForwardMiddlePos{1.16, 1.546};
-const ElevatorWristPosition kBallBackwardMiddlePos{0.876021, -1.546};
+const ElevatorWristPosition kBallBackwardMiddlePos{0.90, -1.546};
 
-const ElevatorWristPosition kBallForwardUpperPos{1.50, 0.961};
-const ElevatorWristPosition kBallBackwardUpperPos{1.41, -1.217};
+const ElevatorWristPosition kBallForwardUpperPos{1.51, 0.961};
+const ElevatorWristPosition kBallBackwardUpperPos{1.44, -1.217};
 
-const ElevatorWristPosition kBallCargoForwardPos{0.699044, 1.353};
-const ElevatorWristPosition kBallCargoBackwardPos{0.828265, -1.999};
+const ElevatorWristPosition kBallCargoForwardPos{0.739044, 1.353};
+const ElevatorWristPosition kBallCargoBackwardPos{0.868265, -1.999};
 
 const ElevatorWristPosition kBallHPIntakeForwardPos{0.55, 1.097};
 const ElevatorWristPosition kBallHPIntakeBackwardPos{0.89, -2.018};
@@ -131,6 +129,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     superstructure_queue.goal.FetchLatest();
     if (superstructure_queue.goal.get()) {
       grab_piece_ = superstructure_queue.goal->suction.grab_piece;
+      switch_ball_ = superstructure_queue.goal->suction.gamepiece_mode == 0;
     }
     video_tx_.reset(new ProtoTXUdpSocket<VisionControl>(
         StringPrintf("10.%d.%d.179", team / 100, team % 100), 5000));
@@ -159,11 +158,49 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
 
-    if (data.PosEdge(kResetLocalizer)) {
+    if (data.PosEdge(kResetLocalizerLeftForwards)) {
       auto localizer_resetter = localizer_control.MakeMessage();
       localizer_resetter->x = 0.4;
       localizer_resetter->y = 3.4;
       localizer_resetter->theta = 0.0;
+
+      if (!localizer_resetter.Send()) {
+        LOG(ERROR, "Failed to reset localizer.\n");
+      }
+    }
+
+    if (data.PosEdge(kResetLocalizerLeftBackwards)) {
+      auto localizer_resetter = localizer_control.MakeMessage();
+      // Start at the left feeder station.
+      localizer_resetter->x = 0.4;
+      localizer_resetter->y = 3.4;
+      localizer_resetter->theta = M_PI;
+
+      if (!localizer_resetter.Send()) {
+        LOG(ERROR, "Failed to reset localizer.\n");
+      }
+    }
+
+    // TODO(austin): Check y location.
+    if (data.PosEdge(kResetLocalizerRightForwards)) {
+      auto localizer_resetter = localizer_control.MakeMessage();
+      // Start at the left feeder station.
+      localizer_resetter->x = 0.4;
+      localizer_resetter->y = -3.4;
+      localizer_resetter->theta = 0.0;
+
+      if (!localizer_resetter.Send()) {
+        LOG(ERROR, "Failed to reset localizer.\n");
+      }
+    }
+
+    if (data.PosEdge(kResetLocalizerRightBackwards)) {
+      auto localizer_resetter = localizer_control.MakeMessage();
+      // Start at the left feeder station.
+      localizer_resetter->x = 0.4;
+      localizer_resetter->y = -3.4;
+      localizer_resetter->theta = M_PI;
+
       if (!localizer_resetter.Send()) {
         LOG(ERROR, "Failed to reset localizer.\n");
       }
@@ -191,41 +228,6 @@ class Reader : public ::aos::input::ActionJoystickInput {
       switch_ball_ = false;
     } else if (data.IsPressed(kCargoSwitch)) {
       switch_ball_ = true;
-    }
-
-    // TODO(sabina): max height please?
-    if (data.IsPressed(kFallOver)) {
-      new_superstructure_goal->stilts.unsafe_goal = 0.71;
-      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
-      new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
-    } else if (data.IsPressed(kDeployStilt)) {
-      new_superstructure_goal->stilts.unsafe_goal = 0.50;
-      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
-      if (stilts_was_above_) {
-        new_superstructure_goal->stilts.profile_params.max_acceleration = 0.75;
-      } else {
-        new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
-      }
-    } else if (data.IsPressed(kHalfStilt)) {
-      new_superstructure_goal->stilts.unsafe_goal = 0.345;
-      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
-      new_superstructure_goal->stilts.profile_params.max_acceleration = 0.75;
-    } else {
-      new_superstructure_goal->stilts.unsafe_goal = 0.005;
-      new_superstructure_goal->stilts.profile_params.max_velocity = 0.25;
-      new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
-    }
-
-    if (superstructure_queue.status->stilts.position > 0.65) {
-      stilts_was_above_ = true;
-    } else if (superstructure_queue.status->stilts.position < 0.1) {
-      stilts_was_above_ = false;
-    }
-
-    if (data.IsPressed(kAutoPanel)) {
-      elevator_wrist_pos_ = kAutoPanelPos;
-    } else if (data.IsPressed(kAutoPanelIntermediate)) {
-      elevator_wrist_pos_ = kAutoPanelIntermediatePos;
     }
 
     if (switch_ball_) {
@@ -311,6 +313,33 @@ class Reader : public ::aos::input::ActionJoystickInput {
       }
     }
 
+    constexpr double kDeployStiltPosition = 0.5;
+
+    // TODO(sabina): max height please?
+    if (data.IsPressed(kFallOver)) {
+      new_superstructure_goal->stilts.unsafe_goal = 0.71;
+      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
+      new_superstructure_goal->stilts.profile_params.max_acceleration = 1.25;
+    } else if (data.IsPressed(kDeployStilt)) {
+      new_superstructure_goal->stilts.unsafe_goal = kDeployStiltPosition;
+      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
+      new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
+    } else if (data.IsPressed(kHalfStilt)) {
+      new_superstructure_goal->stilts.unsafe_goal = 0.345;
+      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
+    } else {
+      new_superstructure_goal->stilts.unsafe_goal = 0.005;
+      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
+      new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
+    }
+
+    if (superstructure_queue.status->stilts.position > kDeployStiltPosition &&
+        new_superstructure_goal->stilts.unsafe_goal == kDeployStiltPosition) {
+      new_superstructure_goal->stilts.profile_params.max_velocity = 0.30;
+      new_superstructure_goal->stilts.profile_params.max_acceleration = 0.75;
+    }
+
+
     if (data.IsPressed(kRelease)) {
       grab_piece_ = false;
     }
@@ -347,7 +376,6 @@ class Reader : public ::aos::input::ActionJoystickInput {
   bool grab_piece_ = false;
 
   bool switch_ball_ = false;
-  bool stilts_was_above_ = false;
 
   VisionControl vision_control_;
   ::std::unique_ptr<ProtoTXUdpSocket<VisionControl>> video_tx_;
