@@ -112,8 +112,10 @@ void FillInMessageStructure(log_level level,
   FillInMessageBase(level, message);
 
   if (message_string.size() + size > sizeof(message->structure.serialized)) {
-    LOG(FATAL, "serialized struct %s (size %zd) and message %s too big\n",
-        type->name.c_str(), size, message_string.c_str());
+    LOG(FATAL,
+        "serialized struct %s (size %zd + %zd > %zd) and message %s too big\n",
+        type->name.c_str(), message_string.size(), size,
+        sizeof(message->structure.serialized), message_string.c_str());
   }
   message->structure.string_length = message_string.size();
   memcpy(message->structure.serialized, message_string.data(),
