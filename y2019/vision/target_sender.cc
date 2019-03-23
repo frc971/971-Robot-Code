@@ -12,6 +12,7 @@
 #include "y2019/jevois/serial.h"
 #include "y2019/jevois/structures.h"
 #include "y2019/jevois/uart.h"
+#include "y2019/vision/image_writer.h"
 #include "y2019/vision/target_finder.h"
 
 using ::aos::events::DataSocket;
@@ -81,6 +82,7 @@ int main(int argc, char **argv) {
   // dup2(itsDev, 2);
 
   TargetFinder finder_;
+  ImageWriter writer_;
 
   aos::vision::CameraParams params0;
   params0.set_exposure(50);
@@ -163,6 +165,8 @@ int main(int argc, char **argv) {
         LOG(INFO, "Some problem happened");
       }
     }
+
+    writer_.ProcessImage(data, results.size());
   });
 
   aos::events::EpollLoop loop;
