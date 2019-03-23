@@ -67,6 +67,14 @@ struct LineFollowLogging {
   float x;
   float y;
   float theta;
+  // Current lateral offset from line pointing straight out of the target.
+  float offset;
+  // Current distance from the plane of the target, in meters.
+  float distance_to_target;
+  // Current goal heading.
+  float goal_theta;
+  // Current relative heading.
+  float rel_theta;
 };
 
 queue_group DrivetrainQueue {

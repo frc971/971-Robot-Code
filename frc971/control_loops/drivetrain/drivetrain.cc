@@ -257,7 +257,7 @@ void DrivetrainLoop::RunIteration(
     dt_closedloop_.SetGoal(*goal);
     dt_openloop_.SetGoal(*goal);
     dt_spline_.SetGoal(*goal);
-    dt_line_follow_.SetGoal(*goal);
+    dt_line_follow_.SetGoal(monotonic_now, *goal);
   }
 
   dt_openloop_.Update(robot_state().voltage_battery);
@@ -272,7 +272,7 @@ void DrivetrainLoop::RunIteration(
 
   dt_spline_.Update(output != NULL && controller_type == 2, trajectory_state);
 
-  dt_line_follow_.Update(trajectory_state);
+  dt_line_follow_.Update(monotonic_now, trajectory_state);
 
   switch (controller_type) {
     case 0:

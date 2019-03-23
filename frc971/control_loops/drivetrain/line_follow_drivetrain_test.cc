@@ -53,8 +53,8 @@ class LineFollowDrivetrainTest : public ::testing::Test {
     ::frc971::control_loops::DrivetrainQueue::Goal goal;
     goal.throttle = driver_model_(state_);
     goal.controller_type = freeze_target_ ? 3 : 0;
-    drivetrain_.SetGoal(goal);
-    drivetrain_.Update(state_);
+    drivetrain_.SetGoal(t_, goal);
+    drivetrain_.Update(t_, state_);
 
     ::frc971::control_loops::DrivetrainQueue::Output output;
     EXPECT_EQ(expect_output_, drivetrain_.SetOutput(&output));
@@ -85,51 +85,26 @@ class LineFollowDrivetrainTest : public ::testing::Test {
     simulation_ur_.push_back(U(1, 0));
     simulation_x_.push_back(state_.x());
     simulation_y_.push_back(state_.y());
+    simulation_theta_.push_back(state_(3, 0));
   }
 
   // Check that left/right velocities are near zero and the absolute position is
   // near that of the goal Pose.
   void VerifyNearGoal() const {
-    EXPECT_NEAR(goal_pose().abs_pos().x(), state_(0, 0), 1e-3);
-    EXPECT_NEAR(goal_pose().abs_pos().y(), state_(1, 0), 1e-3);
-    // state should be at 0 or PI (we should've come in striaght on or straight
-    // backwards).
-    const double angle_err =
-        ::aos::math::DiffAngle(goal_pose().abs_theta(), state_(2, 0));
-    const double angle_pi_err = ::aos::math::DiffAngle(angle_err, M_PI);
-    EXPECT_LT(::std::min(::std::abs(angle_err), ::std::abs(angle_pi_err)),
-              1e-3);
+    EXPECT_NEAR(goal_pose().abs_pos().x(), state_(0, 0), 1e-2);
+    EXPECT_NEAR(goal_pose().abs_pos().y(), state_(1, 0), 1e-2);
     // Left/right velocities are zero:
-    EXPECT_NEAR(0.0, state_(3, 0), 1e-3);
-    EXPECT_NEAR(0.0, state_(4, 0), 1e-3);
+    EXPECT_NEAR(0.0, state_(3, 0), 1e-2);
+    EXPECT_NEAR(0.0, state_(4, 0), 1e-2);
   }
 
-  void CheckGoalTheta(double x, double y, double v, double expected_theta,
-                          double expected_thetadot) {
+  double GoalTheta(double x, double y, double v, double throttle) {
+    ::frc971::control_loops::DrivetrainQueue::Goal goal;
+    goal.throttle = throttle;
+    drivetrain_.SetGoal(t_, goal);
     ::Eigen::Matrix<double, 5, 1> state;
     state << x, y, 0.0, v, v;
-    const double theta = drivetrain_.GoalTheta(state);
-    const double thetadot = drivetrain_.GoalThetaDot(state);
-    EXPECT_EQ(expected_theta, theta) << "x " << x << " y " << y << " v " << v;
-    EXPECT_EQ(expected_thetadot, thetadot)
-        << "x " << x << " y " << y << " v " << v;
-  }
-
-  void CheckGoalThetaDotAtState(double x, double y, double v) {
-    ::Eigen::Matrix<double, 5, 1> state;
-    state << x, y, 0.0, v, v;
-    const double theta = drivetrain_.GoalTheta(state);
-    const double thetadot = drivetrain_.GoalThetaDot(state);
-    const double dx = v * ::std::cos(theta);
-    const double dy = v * ::std::sin(theta);
-    constexpr double kEps = 1e-5;
-    state(0, 0) += dx * kEps;
-    state(1, 0) += dy * kEps;
-    const double next_theta = drivetrain_.GoalTheta(state);
-    EXPECT_NEAR(thetadot, ::aos::math::DiffAngle(next_theta, theta) / kEps,
-                1e-4)
-        << "theta: " << theta << " nexttheta: " << next_theta << " x " << x
-        << " y " << y << " v " << v;
+    return drivetrain_.GoalTheta(state, y, throttle > 0.0 ? 1.0 : -1.0);
   }
 
   void TearDown() override {
@@ -137,6 +112,7 @@ class LineFollowDrivetrainTest : public ::testing::Test {
       matplotlibcpp::figure();
       matplotlibcpp::plot(time_, simulation_ul_, {{"label", "ul"}});
       matplotlibcpp::plot(time_, simulation_ur_, {{"label", "ur"}});
+      matplotlibcpp::plot(time_, simulation_theta_, {{"label", "theta"}});
       matplotlibcpp::legend();
 
       TypedPose<double> target = goal_pose();
@@ -194,18 +170,33 @@ class LineFollowDrivetrainTest : public ::testing::Test {
   ::std::vector<double> simulation_ur_;
   ::std::vector<double> simulation_x_;
   ::std::vector<double> simulation_y_;
+  ::std::vector<double> simulation_theta_;
 };
 
-TEST_F(LineFollowDrivetrainTest, ValidGoalThetaDot) {
+TEST_F(LineFollowDrivetrainTest, BasicGoalThetaCheck) {
   for (double x : {1.0, 0.0, -1.0, -2.0, -3.0}) {
     for (double y : {-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0}) {
       for (double v : {-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0}) {
-        if (x == 0.0 && y == 0.0) {
-          // When x/y are zero, we can encounter singularities. The code should
-          // just provide zeros in this case.
-          CheckGoalTheta(x, y, v, 0.0, 0.0);
-        } else {
-          CheckGoalThetaDotAtState(x, y, v);
+        for (double throttle : {-1.0, 1.0}) {
+          target_selector_.set_target_radius(0.0);
+          const double zero_rad_theta = GoalTheta(x, y, v, throttle);
+          EXPECT_NEAR(
+              0.0,
+              ::aos::math::DiffAngle((throttle > 0.0 ? M_PI : 0.0) +
+                                         ::std::atan2(y, ::std::min(-0.01, x)),
+                                     zero_rad_theta),
+              1e-14);
+          target_selector_.set_target_radius(0.05);
+          const double small_rad_theta = GoalTheta(x, y, v, throttle);
+          if (y > 0) {
+            EXPECT_LT(small_rad_theta, zero_rad_theta);
+          } else if (y == 0) {
+            EXPECT_NEAR(0.0,
+                        ::aos::math::DiffAngle(small_rad_theta, zero_rad_theta),
+                        1e-14);
+          } else {
+            EXPECT_GT(small_rad_theta, zero_rad_theta);
+          }
         }
       }
     }
@@ -215,8 +206,12 @@ TEST_F(LineFollowDrivetrainTest, ValidGoalThetaDot) {
 // If the driver commands the robot to keep going, we should just run straight
 // off the end and keep going along the line:
 TEST_F(LineFollowDrivetrainTest, RunOffEnd) {
-  state_ << -1.0, 0.1, 0.0, 0.0, 0.0;
-  driver_model_ = [](const ::Eigen::Matrix<double, 5, 1> &) { return 1.0; };
+  freeze_target_ = true;
+  state_ << -1.0, 0.0, 0.0, 0.0, 0.0;
+  // TODO(james): This test currently relies on the scalar on the throttle to
+  // velocity conversion being 4.0. This should probably be moved out into a
+  // config.
+  driver_model_ = [](const ::Eigen::Matrix<double, 5, 1> &) { return 0.25; };
   RunForTime(chrono::seconds(10));
   EXPECT_LT(6.0, state_.x());
   EXPECT_NEAR(0.0, state_.y(), 1e-4);
@@ -250,7 +245,8 @@ TEST_F(LineFollowDrivetrainTest, FreezeOnControllerType) {
   set_goal_pose({{1.0, 1.0, 0.0}, M_PI_2});
 
   RunForTime(::std::chrono::seconds(5));
-  EXPECT_NEAR(0.0, state_.squaredNorm(), 1e-25);
+  EXPECT_NEAR(0.0, state_.squaredNorm(), 1e-25)
+      << "Expected state of zero, got: " << state_.transpose();
 }
 
 // Tests that when we freeze the controller without having acquired a target, we
@@ -268,9 +264,9 @@ TEST_F(LineFollowDrivetrainTest, FreezeWithoutAcquiringTarget) {
 
   // Now, provide a target:
   target_selector_.set_has_target(true);
-  set_goal_pose({{1.0, 1.0, 0.0}, M_PI_2});
+  set_goal_pose({{1.0, 2.0, 0.0}, M_PI_2});
   driver_model_ = [this](const ::Eigen::Matrix<double, 5, 1> &state) {
-    return (state.topRows<2>() - goal_pose().abs_pos().topRows<2>()).norm();
+    return -(state.y() - goal_pose().abs_pos().y());
   };
   expect_output_ = true;
 
@@ -289,10 +285,13 @@ class LineFollowDrivetrainTargetParamTest
     : public LineFollowDrivetrainTest,
       public ::testing::WithParamInterface<Pose> {};
 TEST_P(LineFollowDrivetrainTargetParamTest, NonZeroTargetTest) {
+  freeze_target_ = true;
+  target_selector_.set_has_target(true);
   // Start the state at zero and then put the target in a
   state_.setZero();
   driver_model_ = [this](const ::Eigen::Matrix<double, 5, 1> &state) {
-    return (state.topRows<2>() - GetParam().abs_pos().topRows<2>()).norm();
+    return 0.2 *
+           (state.topRows<2>() - GetParam().abs_pos().topRows<2>()).norm();
   };
   set_goal_pose(GetParam());
   RunForTime(chrono::seconds(10));
@@ -353,13 +352,13 @@ INSTANTIATE_TEST_CASE_P(
                 .finished()),
         ::testing::Values(
             [](const ::Eigen::Matrix<double, 5, 1> &state) {
-              return -5.0 * state.x();
+              return -1.0 * state.x();
             },
             [](const ::Eigen::Matrix<double, 5, 1> &state) {
-              return 5.0 * state.x();
+              return 1.0 * state.x();
             },
             [](const ::Eigen::Matrix<double, 5, 1> &state) {
-              return -1.0 * ::std::abs(state.x()) - 0.5 * state.x() * state.x();
+              return -0.25 * ::std::abs(state.x()) - 0.125 * state.x() * state.x();
             })));
 
 }  // namespace testing
