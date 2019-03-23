@@ -26,7 +26,7 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
       ::frc971::control_loops::drivetrain::ShifterType::SIMPLE_SHIFTER,
       ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
       ::frc971::control_loops::drivetrain::GyroType::IMU_Z_GYRO,
-      ::frc971::control_loops::drivetrain::IMUType::IMU_X,
+      ::frc971::control_loops::drivetrain::IMUType::IMU_FLIPPED_X,
 
       drivetrain::MakeDrivetrainLoop,
       drivetrain::MakeVelocityDrivetrainLoop,

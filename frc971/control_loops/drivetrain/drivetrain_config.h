@@ -34,8 +34,9 @@ enum class GyroType : int32_t {
 };
 
 enum class IMUType : int32_t {
-  IMU_X = 0, // Use the x-axis of the IMU.
-  IMU_Y = 1, // Use the y-axis of the IMU.
+  IMU_X = 0,          // Use the x-axis of the IMU.
+  IMU_Y = 1,          // Use the y-axis of the IMU.
+  IMU_FLIPPED_X = 2,  // Use the flipped x-axis of the IMU.
 };
 
 template <typename Scalar = double>

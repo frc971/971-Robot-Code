@@ -151,6 +151,9 @@ void DrivetrainLoop::RunIteration(
       case IMUType::IMU_X:
         last_accel_ = -::frc971::imu_values->accelerometer_x;
         break;
+      case IMUType::IMU_FLIPPED_X:
+        last_accel_ = ::frc971::imu_values->accelerometer_x;
+        break;
       case IMUType::IMU_Y:
         last_accel_ = -::frc971::imu_values->accelerometer_y;
         break;
