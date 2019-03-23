@@ -2,6 +2,7 @@
 
 #include "aos/controls/control_loops.q.h"
 #include "frc971/control_loops/control_loops.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 
 #include "y2019/status_light.q.h"
@@ -92,22 +93,48 @@ void Superstructure::RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
   intake_.set_min_position(collision_avoidance_.min_intake_goal());
   intake_.set_max_position(collision_avoidance_.max_intake_goal());
 
+  ::frc971::control_loops::drivetrain_queue.status.FetchLatest();
+
   if (status && unsafe_goal) {
     // Light Logic
     if (status->estopped) {
       // Estop is red
       SendColors(1.0, 0.0, 0.0);
-    } else if (status->has_piece) {
-      // Having suction is green
-      SendColors(0.0, 1.0, 0.0);
-    } else if (unsafe_goal->suction.gamepiece_mode == 0 && !status->has_piece) {
-      // Ball mode is orange
-      SendColors(1.0, 0.1, 0.0);
-    } else if (unsafe_goal->suction.gamepiece_mode == 1 && !status->has_piece) {
-      // Disk mode is deep blue
-      SendColors(0.05, 0.1, 0.5);
+    } else if (::frc971::control_loops::drivetrain_queue.status.get() &&
+               ::frc971::control_loops::drivetrain_queue.status
+                   ->line_follow_logging.frozen) {
+      // Vision align is flashing white.
+      ++line_blink_count_;
+      if (line_blink_count_ < 20) {
+        SendColors(1.0, 1.0, 1.0);
+      } else {
+        // And then flash with green if we have a game piece.
+        if (status->has_piece) {
+          SendColors(0.0, 1.0, 0.0);
+        } else {
+          SendColors(0.0, 0.0, 0.0);
+        }
+      }
+
+      if (line_blink_count_ > 40) {
+        line_blink_count_ = 0;
+      }
     } else {
-      SendColors(0.0, 0.0, 0.0);
+      line_blink_count_ = 0;
+      if (status->has_piece) {
+        // Green if we have a game piece.
+        SendColors(0.0, 1.0, 0.0);
+      } else if (unsafe_goal->suction.gamepiece_mode == 0 &&
+                 !status->has_piece) {
+        // Ball mode is orange
+        SendColors(1.0, 0.1, 0.0);
+      } else if (unsafe_goal->suction.gamepiece_mode == 1 &&
+                 !status->has_piece) {
+        // Disk mode is deep blue
+        SendColors(0.05, 0.1, 0.5);
+      } else {
+        SendColors(0.0, 0.0, 0.0);
+      }
     }
   }
 }

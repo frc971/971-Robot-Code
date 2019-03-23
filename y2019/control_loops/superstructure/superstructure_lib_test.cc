@@ -6,16 +6,17 @@
 #include "aos/controls/control_loop_test.h"
 #include "aos/queue.h"
 #include "frc971/control_loops/capped_test_plant.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
 #include "y2019/constants.h"
-#include "y2019/status_light.q.h"
 #include "y2019/control_loops/superstructure/elevator/elevator_plant.h"
 #include "y2019/control_loops/superstructure/intake/intake_plant.h"
 #include "y2019/control_loops/superstructure/stilts/stilts_plant.h"
 #include "y2019/control_loops/superstructure/superstructure.h"
 #include "y2019/control_loops/superstructure/wrist/wrist_plant.h"
+#include "y2019/status_light.q.h"
 
 namespace y2019 {
 namespace control_loops {
@@ -290,6 +291,7 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
             "position"),
         superstructure_(&event_loop_) {
     status_light.Clear();
+    ::frc971::control_loops::drivetrain_queue.status.Clear();
     set_team_id(::frc971::control_loops::testing::kTeamNumber);
   }
 

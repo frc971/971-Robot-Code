@@ -50,6 +50,8 @@ class Superstructure
 
   CollisionAvoidance collision_avoidance_;
 
+  int line_blink_count_ = 0;
+
   static constexpr double kMinIntakeAngleForRollers = -0.7;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
