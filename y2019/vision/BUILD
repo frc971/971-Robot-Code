@@ -67,6 +67,7 @@ cc_library(
     restricted_to = VISION_TARGETS,
     deps = [
         ":constants",
+        "//aos/util:math",
         "//aos/vision/blob:contour",
         "//aos/vision/blob:hierarchical_contour_merge",
         "//aos/vision/blob:region_alloc",

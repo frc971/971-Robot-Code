@@ -4,6 +4,8 @@
 
 #include <math.h>
 
+#include "aos/util/math.h"
+
 using ceres::NumericDiffCostFunction;
 using ceres::CENTRAL;
 using ceres::CostFunction;
@@ -305,6 +307,12 @@ IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
   IR.solver_error = summary_8point.final_cost;
   IR.backup_extrinsics = ExtrinsicParams::get(&params_4point[0]);
   IR.backup_solver_error = summary_4point2.final_cost;
+
+  // Normalize all angles to (-M_PI, M_PI]
+  IR.extrinsics.r1 = ::aos::math::NormalizeAngle(IR.extrinsics.r1);
+  IR.extrinsics.r2 = ::aos::math::NormalizeAngle(IR.extrinsics.r2);
+  IR.backup_extrinsics.r1 = ::aos::math::NormalizeAngle(IR.backup_extrinsics.r1);
+  IR.backup_extrinsics.r2 = ::aos::math::NormalizeAngle(IR.backup_extrinsics.r2);
 
   if (verbose) {
     std::cout << "rup = " << intrinsics_.mount_angle * 180 / M_PI << ";\n";
