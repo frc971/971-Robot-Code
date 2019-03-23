@@ -8,6 +8,7 @@
 #include <thread>
 #include <vector>
 
+#include "internal/Embedded.h"
 #include "seasocks/Server.h"
 
 #include "aos/init.h"
@@ -21,8 +22,6 @@
 #include "y2016/vision/vision.q.h"
 #include "y2016/control_loops/superstructure/superstructure.q.h"
 #include "y2016/queues/ball_detector.q.h"
-
-#include "y2016/dashboard/embedded.h"
 
 namespace chrono = ::std::chrono;
 
@@ -292,6 +291,9 @@ void SeasocksLogger::log(Level level, const char *message) {
 }  // namespace y2016
 
 int main(int, char *[]) {
+  // Make sure to reference this to force the linker to include it.
+  findEmbeddedContent("");
+
   ::aos::InitNRT();
 
   ::seasocks::Server server(::std::shared_ptr<seasocks::Logger>(
