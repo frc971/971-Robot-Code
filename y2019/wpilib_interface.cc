@@ -563,20 +563,20 @@ class SolenoidWriter {
       time_since_last_send = 0;
     }
     if (status_light.green != last_green_ || time_since_last_send == 0) {
-      canifier_.SetLEDOutput(1.0 - status_light.green,
-                             ::ctre::phoenix::CANifier::LEDChannelB);
+      canifier_.SetLEDOutput(status_light.green,
+                             ::ctre::phoenix::CANifier::LEDChannelA);
       last_green_ = status_light.green;
     }
 
     if (status_light.blue != last_blue_ || time_since_last_send == 0) {
-      canifier_.SetLEDOutput(1.0 - status_light.blue,
-                             ::ctre::phoenix::CANifier::LEDChannelA);
+      canifier_.SetLEDOutput(status_light.blue,
+                             ::ctre::phoenix::CANifier::LEDChannelC);
       last_blue_ = status_light.blue;
     }
 
     if (status_light.red != last_red_ || time_since_last_send == 0) {
-      canifier_.SetLEDOutput(1.0 - status_light.red,
-                             ::ctre::phoenix::CANifier::LEDChannelC);
+      canifier_.SetLEDOutput(status_light.red,
+                             ::ctre::phoenix::CANifier::LEDChannelB);
       last_red_ = status_light.red;
     }
   }
