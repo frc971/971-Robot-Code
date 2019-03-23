@@ -8,6 +8,7 @@ robot_downloader(
         ":wpilib_interface",
         "//y2019/control_loops/drivetrain:drivetrain",
         "//y2019/control_loops/superstructure:superstructure",
+        "//y2019/actors:binaries",
     ],
 )
 
