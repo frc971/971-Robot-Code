@@ -32,6 +32,7 @@ cc_library(
     deps = [
         ":binary_log_file",
         ":logging",
+        ":queue_logging",
         "//aos:queues",
         "//aos/events:event-loop",
         "//aos/ipc_lib:queue",

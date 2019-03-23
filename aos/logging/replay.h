@@ -10,6 +10,7 @@
 #include "aos/ipc_lib/queue.h"
 #include "aos/logging/binary_log_file.h"
 #include "aos/logging/logging.h"
+#include "aos/logging/queue_logging.h"
 #include "aos/macros.h"
 #include "aos/queue.h"
 #include "aos/queue_types.h"

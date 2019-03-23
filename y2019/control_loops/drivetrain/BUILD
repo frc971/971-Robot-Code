@@ -31,6 +31,39 @@ genrule(
     ],
 )
 
+cc_binary(
+    name = "replay_localizer",
+    srcs = [
+        "replay_localizer.cc",
+    ],
+    defines =
+        cpu_select({
+            "amd64": [
+                "SUPPORT_PLOT=1",
+            ],
+            "arm": [],
+        }),
+    linkstatic = True,
+    deps = [
+        "//frc971/control_loops/drivetrain:localizer_queue",
+        ":localizer",
+        ":event_loop_localizer",
+        ":drivetrain_base",
+        "@com_github_gflags_gflags//:gflags",
+        "//y2019:constants",
+        "//frc971/control_loops/drivetrain:drivetrain_queue",
+        "//aos:init",
+        "//aos/controls:replay_control_loop",
+        "//frc971/queues:gyro",
+        "//frc971/wpilib:imu_queue",
+    ] + cpu_select({
+        "amd64": [
+            "//third_party/matplotlib-cpp",
+        ],
+        "arm": [],
+    }),
+)
+
 cc_library(
     name = "polydrivetrain_plants",
     srcs = [
