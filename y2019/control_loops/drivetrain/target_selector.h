@@ -33,6 +33,8 @@ class TargetSelector
                        double command_speed) override;
   Pose TargetPose() const override { return target_pose_; }
 
+  double TargetRadius() const override { return target_radius_; }
+
  private:
   static constexpr double kFakeFov = M_PI * 0.7;
   // Longitudinal speed at which the robot must be going in order for us to make
@@ -40,6 +42,7 @@ class TargetSelector
   static constexpr double kMinDecisionSpeed = 0.7;  // m/s
   Pose robot_pose_;
   Pose target_pose_;
+  double target_radius_;
   // For the noise of our fake cameras, we only really care about the max
   // distance, which will be the maximum distance we let ourselves guide in
   // from. The distance noise is set so that we can use the camera's estimate of

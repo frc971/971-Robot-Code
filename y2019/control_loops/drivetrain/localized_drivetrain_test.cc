@@ -296,7 +296,7 @@ TEST_F(LocalizedDrivetrainTest, CameraUpdate) {
       .Send();
   RunForTime(chrono::seconds(3));
   VerifyNearGoal();
-  VerifyEstimatorAccurate(1e-4);
+  VerifyEstimatorAccurate(5e-4);
 }
 
 namespace {
@@ -307,12 +307,12 @@ EventLoopLocalizer::Pose HPSlotLeft() { return constants::Field().targets()[7].p
 // forward from roughly the right spot gets us to the HP slot.
 TEST_F(LocalizedDrivetrainTest, LineFollowToHPSlot) {
   set_enable_cameras(false);
-  SetStartingPosition({4, 3, M_PI});
+  SetStartingPosition({4, HPSlotLeft().abs_pos().y(), M_PI});
   my_drivetrain_queue_.goal.MakeWithBuilder()
       .controller_type(3)
       .throttle(0.9)
       .Send();
-  RunForTime(chrono::seconds(10));
+  RunForTime(chrono::seconds(6));
 
   VerifyEstimatorAccurate(1e-8);
   // Due to the fact that we aren't modulating the throttle, we don't try to hit

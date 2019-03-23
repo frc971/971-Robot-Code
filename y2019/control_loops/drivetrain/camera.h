@@ -34,12 +34,32 @@ template <typename Scalar = double>
 class TypedTarget {
  public:
   typedef ::frc971::control_loops::TypedPose<Scalar> Pose;
-  TypedTarget(const Pose &pose) : pose_(pose) {}
+  // The nature of the target as a goal--to mark what modes it is a valid
+  // potential goal pose and to mark targets on the opposite side of the field
+  // as not being viable targets.
+  enum class GoalType {
+    // None marks targets that are on the opposite side of the field and not
+    // viable goal poses.
+    kNone,
+    // Spots where we can touch hatch panels.
+    kHatches,
+    // Spots where we can mess with balls.
+    kBalls,
+    // Spots for both (cargo ship, human loading).
+    kBoth,
+  };
+  TypedTarget(const Pose &pose, double radius = 0,
+              GoalType goal_type = GoalType::kBoth)
+      : pose_(pose), radius_(radius), goal_type_(goal_type) {}
   TypedTarget() {}
   Pose pose() const { return pose_; }
+  Pose *mutable_pose() { return &pose_; }
 
   bool occluded() const { return occluded_; }
   void set_occluded(bool occluded) { occluded_ = occluded; }
+  double radius() const { return radius_; }
+  GoalType goal_type() const { return goal_type_; }
+  void set_goal_type(GoalType goal_type) { goal_type_ = goal_type; }
 
   // Get a list of points for plotting. These points should be plotted on
   // an x/y plane in the global frame with lines connecting the points.
@@ -63,6 +83,13 @@ class TypedTarget {
  private:
   Pose pose_;
   bool occluded_ = false;
+  // The effective radius of the target--for placing discs, this should be the
+  // radius of the disc; for fetching discs and working with balls this should
+  // be near zero.
+  // TODO(james): We may actually want a non-zero (possibly negative?) number
+  // here for balls.
+  double radius_ = 0.0;
+  GoalType goal_type_ = GoalType::kBoth;
 };  // class TypedTarget
 
 typedef TypedTarget<double> Target;

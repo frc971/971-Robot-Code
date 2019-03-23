@@ -143,9 +143,9 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   stilts_params->zeroing_constants.allowable_encoder_error = 0.9;
 
   r->camera_noise_parameters = {.max_viewable_distance = 10.0,
-                                .heading_noise = 0.2,
+                                .heading_noise = 0.25,
                                 .nominal_distance_noise = 0.3,
-                                .nominal_skew_noise = 0.35,
+                                .nominal_skew_noise = 0.45,
                                 .nominal_height_noise = 0.01};
 
   // Deliberately make FOV a bit large so that we are overly conservative in
@@ -308,59 +308,74 @@ Field::Field() {
   constexpr double kHpSlotY = InchToMeters((26 * 12 + 10.5) / 2.0 - 25.9);
   constexpr double kHpSlotTheta = M_PI;
 
-  constexpr double kNormalZ = 0.85;
-  constexpr double kPortZ = 1.04;
+  constexpr double kNormalZ = 0.80;
+  constexpr double kPortZ = 1.00;
 
-  const Pose far_side_cargo_bay({kFarSideCargoBayX, kSideCargoBayY, kNormalZ},
-                                kSideCargoBayTheta);
-  const Pose mid_side_cargo_bay({kMidSideCargoBayX, kSideCargoBayY, kNormalZ},
-                                kSideCargoBayTheta);
-  const Pose near_side_cargo_bay({kNearSideCargoBayX, kSideCargoBayY, kNormalZ},
-                                 kSideCargoBayTheta);
+  constexpr double kDiscRadius = InchToMeters(19.0 / 2.0);
+  // radius to use for placing the ball (not necessarily the radius of the ball
+  // itself...).
+  constexpr double kBallRadius = 0.05;
 
-  const Pose face_cargo_bay({kFaceCargoBayX, kFaceCargoBayY, kNormalZ},
-                            kFaceCargoBayTheta);
+  constexpr Target::GoalType kBothGoal = Target::GoalType::kBoth;
+  constexpr Target::GoalType kBallGoal = Target::GoalType::kBalls;
+  constexpr Target::GoalType kDiscGoal = Target::GoalType::kHatches;
+  constexpr Target::GoalType kNoneGoal = Target::GoalType::kNone;
 
-  const Pose rocket_port({kRocketPortX, kRocketPortY, kPortZ},
-                         kRocketPortTheta);
+  const Target far_side_cargo_bay(
+      {{kFarSideCargoBayX, kSideCargoBayY, kNormalZ}, kSideCargoBayTheta},
+      kDiscRadius, kBothGoal);
+  const Target mid_side_cargo_bay(
+      {{kMidSideCargoBayX, kSideCargoBayY, kNormalZ}, kSideCargoBayTheta},
+      kDiscRadius, kBothGoal);
+  const Target near_side_cargo_bay(
+      {{kNearSideCargoBayX, kSideCargoBayY, kNormalZ}, kSideCargoBayTheta},
+      kDiscRadius, kBothGoal);
 
-  const Pose rocket_near({kRocketNearX, kRocketHatchY, kNormalZ},
-                         kRocketNearTheta);
-  const Pose rocket_far({kRocketFarX, kRocketHatchY, kNormalZ},
-                        kRocketFarTheta);
+  const Target face_cargo_bay(
+      {{kFaceCargoBayX, kFaceCargoBayY, kNormalZ}, kFaceCargoBayTheta},
+      kDiscRadius, kBothGoal);
 
-  const Pose hp_slot({0.0, kHpSlotY, kNormalZ}, kHpSlotTheta);
+  const Target rocket_port(
+      {{kRocketPortX, kRocketPortY, kPortZ}, kRocketPortTheta}, kBallRadius,
+      kBallGoal);
 
-  const ::std::array<Pose, 8> quarter_field_targets{
+  const Target rocket_near(
+      {{kRocketNearX, kRocketHatchY, kNormalZ}, kRocketNearTheta}, kDiscRadius,
+      kDiscGoal);
+  const Target rocket_far(
+      {{kRocketFarX, kRocketHatchY, kNormalZ}, kRocketFarTheta}, kDiscRadius,
+      kDiscGoal);
+
+  const Target hp_slot({{0.0, kHpSlotY, kNormalZ}, kHpSlotTheta}, 0.05,
+                       kBothGoal);
+
+  const ::std::array<Target, 8> quarter_field_targets{
       {far_side_cargo_bay, mid_side_cargo_bay, near_side_cargo_bay,
        face_cargo_bay, rocket_port, rocket_near, rocket_far, hp_slot}};
 
   // Mirror across center field mid-line (short field axis):
-  ::std::array<Pose, 16> half_field_targets;
+  ::std::array<Target, 16> half_field_targets;
   ::std::copy(quarter_field_targets.begin(), quarter_field_targets.end(),
               half_field_targets.begin());
   for (int ii = 0; ii < 8; ++ii) {
     const int jj = ii + 8;
     half_field_targets[jj] = quarter_field_targets[ii];
-    half_field_targets[jj].mutable_pos()->x() =
-        2.0 * kCenterFieldX - half_field_targets[jj].rel_pos().x();
-    half_field_targets[jj].set_theta(
-        aos::math::NormalizeAngle(M_PI - half_field_targets[jj].rel_theta()));
+    half_field_targets[jj].mutable_pose()->mutable_pos()->x() =
+        2.0 * kCenterFieldX - half_field_targets[jj].pose().rel_pos().x();
+    half_field_targets[jj].mutable_pose()->set_theta(aos::math::NormalizeAngle(
+        M_PI - half_field_targets[jj].pose().rel_theta()));
+    // Targets on the opposite side of the field can't be driven to.
+    half_field_targets[jj].set_goal_type(kNoneGoal);
   }
-
-  ::std::array<Pose, 32> target_poses_;
 
   // Mirror across x-axis (long field axis):
   ::std::copy(half_field_targets.begin(), half_field_targets.end(),
-              target_poses_.begin());
+              targets_.begin());
   for (int ii = 0; ii < 16; ++ii) {
     const int jj = ii + 16;
-    target_poses_[jj] = half_field_targets[ii];
-    target_poses_[jj].mutable_pos()->y() *= -1;
-    target_poses_[jj].set_theta(-target_poses_[jj].rel_theta());
-  }
-  for (int ii = 0; ii < 32; ++ii) {
-    targets_[ii] = {target_poses_[ii]};
+    targets_[jj] = half_field_targets[ii];
+    targets_[jj].mutable_pose()->mutable_pos()->y() *= -1;
+    targets_[jj].mutable_pose()->set_theta(-targets_[jj].pose().rel_theta());
   }
 
   // Define rocket obstacles as just being a single line that should block any
