@@ -64,8 +64,10 @@ void DrivetrainInputReader::HandleDrivetrain(
 
   if (drivetrain_queue.status.get()) {
     if (is_control_loop_driving && !last_is_control_loop_driving_) {
-      left_goal_ = drivetrain_queue.status->estimated_left_position;
-      right_goal_ = drivetrain_queue.status->estimated_right_position;
+      left_goal_ = drivetrain_queue.status->estimated_left_position +
+                   wheel * wheel_multiplier_;
+      right_goal_ = drivetrain_queue.status->estimated_right_position -
+                    wheel * wheel_multiplier_;
     }
   }
 
