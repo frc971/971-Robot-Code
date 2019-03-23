@@ -1,7 +1,9 @@
-#include <iostream>
 #include "frc971/control_loops/drivetrain/line_follow_drivetrain.h"
 
+#include <chrono>
+
 #include "aos/commonmath.h"
+#include "aos/time/time.h"
 #include "aos/util/math.h"
 #include "frc971/control_loops/c2d.h"
 #include "frc971/control_loops/dlqr.h"
@@ -9,6 +11,9 @@
 namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
+namespace {
+namespace chrono = ::std::chrono;
+}  // namespace
 
 constexpr double LineFollowDrivetrain::kMaxVoltage;
 
@@ -106,7 +111,7 @@ void LineFollowDrivetrain::SetGoal(
   // The amount of time to freeze the target choice after the driver releases
   // the button. Depending on the current state, we vary how long this timeout
   // is so that we can avoid button glitches causing issues.
-  ::std::chrono::nanoseconds freeze_delay = ::std::chrono::seconds(0);
+  chrono::nanoseconds freeze_delay = chrono::seconds(0);
   // Freeze the target once the driver presses the button; if we haven't yet
   // confirmed a target when the driver presses the button, we will not do
   // anything and report not ready until we have a target.
@@ -114,11 +119,11 @@ void LineFollowDrivetrain::SetGoal(
     last_enable_ = now;
     // If we already acquired a target, we want to keep track if it.
     if (have_target_) {
-      freeze_delay = ::std::chrono::milliseconds(500);
+      freeze_delay = chrono::milliseconds(500);
       // If we've had the target acquired for a while, the driver is probably
       // happy with the current target selection, so we really want to keep it.
-      if (now - start_of_target_acquire_ > ::std::chrono::milliseconds(1000)) {
-        freeze_delay = ::std::chrono::milliseconds(2000);
+      if (now > chrono::milliseconds(1000) + start_of_target_acquire_) {
+        freeze_delay = chrono::milliseconds(2000);
       }
     }
   }
