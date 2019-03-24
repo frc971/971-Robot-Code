@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
                             monotonic_clock::time_point monotonic_now) {
     aos::vision::ImageFormat fmt{640, 480};
     aos::vision::BlobList imgs = aos::vision::FindBlobs(
-        aos::vision::SlowYuyvYThreshold(fmt, data.data(), 120));
+        aos::vision::FastYuyvYThreshold(fmt, data.data(), 120));
     finder_.PreFilter(&imgs);
     LOG(INFO, "Blobs: (%zu).\n", imgs.size());
 
