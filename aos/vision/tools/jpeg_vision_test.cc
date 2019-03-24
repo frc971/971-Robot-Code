@@ -74,7 +74,7 @@ class ChannelImageStream : public ImageStreamEvent {
     prev_data_ = data.to_string();
 
     // Threshold the image with the given lambda.
-    RangeImage rimg = ThresholdImageWithFunction(img_ptr, [](PixelRef &px) {
+    RangeImage rimg = ThresholdImageWithFunction(img_ptr, [](PixelRef px) {
       if (px.g > 88) {
         uint8_t min = std::min(px.b, px.r);
         uint8_t max = std::max(px.b, px.r);
