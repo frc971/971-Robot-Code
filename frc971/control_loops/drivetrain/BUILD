@@ -499,7 +499,7 @@ cc_binary(
         "//aos/network:team_number",
         "//third_party/eigen",
         "//third_party/matplotlib-cpp",
-        "//y2016/control_loops/drivetrain:drivetrain_base",
+        "//y2019/control_loops/drivetrain:drivetrain_base",
         "@com_github_gflags_gflags//:gflags",
     ],
 )

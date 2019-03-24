@@ -9,7 +9,7 @@
 #include "frc971/control_loops/dlqr.h"
 #include "gflags/gflags.h"
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
-#include "y2016/control_loops/drivetrain/drivetrain_base.h"
+#include "y2019/control_loops/drivetrain/drivetrain_base.h"
 
 // Notes:
 //   Basic ideas from spline following are from Jared Russell and
@@ -55,7 +55,7 @@ void Main() {
                      .finished())));
   Trajectory trajectory(
       &distance_spline,
-      ::y2016::control_loops::drivetrain::GetDrivetrainConfig());
+      ::y2019::control_loops::drivetrain::GetDrivetrainConfig());
   trajectory.set_lateral_acceleration(2.0);
   trajectory.set_longitudal_acceleration(1.0);
 
