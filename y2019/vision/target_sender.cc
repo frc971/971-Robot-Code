@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
     ::std::vector<Polygon> raw_polys;
     for (const RangeImage &blob : imgs) {
       // Convert blobs to contours in the corrected space.
-      ContourNode* contour = finder_.GetContour(blob);
+      ContourNode *contour = finder_.GetContour(blob);
       ::std::vector<::Eigen::Vector2f> unwarped_contour =
           finder_.UnWarpContour(contour);
       const Polygon polygon =
@@ -149,8 +149,8 @@ int main(int argc, char **argv) {
     frame.age = std::chrono::duration_cast<frc971::jevois::camera_duration>(
         aos::monotonic_clock::now() - monotonic_now);
 
-    // If we succeed in writing our delimiter, then write out the rest of the
-    // frame. If not, no point in continuing.
+    // If we succeed in writing our delimiter, then write out the rest of
+    // the frame. If not, no point in continuing.
     if (write(itsDev, "\0", 1) == 1) {
       const auto serialized_frame = frc971::jevois::UartPackToTeensy(frame);
       // We don't really care if this succeeds or not. If it fails for some
@@ -176,7 +176,6 @@ int main(int argc, char **argv) {
       char data[kBufferSize];
       ssize_t n = read(itsDev, &data[0], kBufferSize);
       if (n >= 1) {
-        LOG(INFO, "Serial bytes: %zd", n);
         cobs.ParseData(gsl::span<const char>(&data[0], n));
         auto packet = cobs.received_packet();
         if (!packet.empty()) {
