@@ -68,6 +68,10 @@ echo "Copying files ..."
 sudo cp ./austin_cam.sh "${TARGET_DIR}"/
 sudo cp ./launch.sh "${TARGET_DIR}"/deploy/
 
+(echo "git log"; git log -1; echo "git status"; git status) > /tmp/jevois_deploy_version
+
+sudo cp /tmp/jevois_deploy_version "${TARGET_DIR}"/version
+
 sudo cp "${BAZEL_BIN}/y2019/vision/target_sender" \
   "${BAZEL_BIN}/y2019/vision/serial_waiter" \
   "${TARGET_DIR}"/deploy/
