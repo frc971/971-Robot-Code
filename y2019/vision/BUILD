@@ -34,13 +34,6 @@ genrule(
     tools = [":constants_formatting"],
 )
 
-cc_library(
-    name = "image_writer",
-    srcs = ["image_writer.cc"],
-    hdrs = ["image_writer.h"],
-    deps = ["//aos/vision/image:image_types"],
-)
-
 sh_test(
     name = "constants_formatting_test",
     srcs = ["constants_formatting_test.sh"],
@@ -98,7 +91,6 @@ cc_binary(
     srcs = ["target_sender.cc"],
     restricted_to = VISION_TARGETS,
     deps = [
-        ":image_writer",
         ":target_finder",
         "//aos/logging",
         "//aos/logging:implementations",
