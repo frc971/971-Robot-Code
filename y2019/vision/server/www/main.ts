@@ -1,5 +1,5 @@
 import {FT_TO_M, FIELD_WIDTH} from './constants';
-import {drawField} from './field';
+import {drawField, drawTarget} from './field';
 import {drawRobot} from './robot';
 
 const FIELD_WIDTH = 27 * FT_TO_M;
@@ -12,6 +12,11 @@ class Visualiser {
   private x = 3;
   private y = 0;
   private theta = 0;
+
+  private drawLocked = false;
+  private lockedX = 0;
+  private lockedY = 0;
+  private lockedTheta = 0;
 
   constructor() {
     const canvas = <HTMLCanvasElement>document.getElementById('field');
@@ -26,6 +31,13 @@ class Visualiser {
       this.x = j.robot.x;
       this.y = j.robot.y;
       this.theta = j.robot.theta;
+
+      if(j.target) {
+        this.drawLocked = true;
+        this.lockedX = j.target.x;
+        this.lockedY = j.target.y;
+        this.lockedTheta = j.target.theta;
+      }
     });
     socket.addEventListener('message', (event) => {
       reader.readAsText(event.data);
@@ -46,8 +58,6 @@ class Visualiser {
     const M_TO_PX = size / FIELD_WIDTH
     ctx.scale(M_TO_PX, M_TO_PX);
     ctx.lineWidth = 1 / M_TO_PX;
-
-    ctx.beginPath();
   }
 
   draw(ctx : CanvasRenderingContext2D) : void {
@@ -55,6 +65,12 @@ class Visualiser {
 
     drawField(ctx);
     drawRobot(ctx, this.x, this.y, this.theta);
+    if (this.drawLocked) {
+      ctx.save();
+      ctx.strokeStyle = 'red';
+      drawTarget(ctx, this.lockedX, this.lockedY, this.lockedTheta);
+      ctx.restore();
+    }
     window.requestAnimationFrame(() => this.draw(ctx));
   }
 }

@@ -159,6 +159,13 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
       stream << "\"x\": " << drivetrain_status->x << ",";
       stream << "\"y\": " << drivetrain_status->y << ",";
       stream << "\"theta\": " << drivetrain_status->theta;
+      if (drivetrain_status->line_follow_logging.frozen) {
+        stream << "\"target\": {";
+        stream << "\"x\": " << drivetrain_status->line_follow_logging.x << ",";
+        stream << "\"y\": " << drivetrain_status->line_follow_logging.y << ",";
+        stream << "\"theta\": " << drivetrain_status->line_follow_logging.theta;
+        stream << "}\n";
+      }
       stream << "}\n";
 
       stream << "}";

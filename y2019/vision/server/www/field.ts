@@ -57,64 +57,38 @@ function drawTargets(ctx : CanvasRenderingContext2D) : void {
 }
 
 function drawHP(ctx : CanvasRenderingContext2D) : void {
-  ctx.save();
-  ctx.translate(0, HP_Y)
-  ctx.rotate(HP_THETA);
-  drawTarget(ctx);
-  ctx.restore();
+  drawTarget(ctx, 0, HP_Y, HP_THETA);
 }
 
 function drawRocket(ctx : CanvasRenderingContext2D) : void {
-  ctx.save();
-  ctx.translate(ROCKET_PORT_X, ROCKET_PORT_Y)
-  ctx.rotate(ROCKET_PORT_THETA);
-  drawTarget(ctx);
-  ctx.restore();
+  drawTarget(ctx, ROCKET_PORT_X, ROCKET_PORT_Y, ROCKET_PORT_THETA);
 
-  ctx.save();
-  ctx.translate(ROCKET_NEAR_X, ROCKET_HATCH_Y)
-  ctx.rotate(ROCKET_NEAR_THETA);
-  drawTarget(ctx);
-  ctx.restore();
+  drawTarget(ctx, ROCKET_NEAR_X, ROCKET_HATCH_Y, ROCKET_NEAR_THETA);
 
-  ctx.save();
-  ctx.translate(ROCKET_FAR_X, ROCKET_HATCH_Y)
-  ctx.rotate(ROCKET_FAR_THETA);
-  drawTarget(ctx);
-  ctx.restore();
+  drawTarget(ctx, ROCKET_FAR_X, ROCKET_HATCH_Y, ROCKET_FAR_THETA);
 }
 
 function drawHalfCargo(ctx : CanvasRenderingContext2D) : void {
-  ctx.save();
-  ctx.translate(FAR_CARGO_X, SIDE_CARGO_Y)
-  ctx.rotate(SIDE_CARGO_THETA);
-  drawTarget(ctx);
-  ctx.restore();
+  drawTarget(ctx, FAR_CARGO_X, SIDE_CARGO_Y, SIDE_CARGO_THETA);
 
-  ctx.save();
-  ctx.translate(MID_CARGO_X, SIDE_CARGO_Y)
-  ctx.rotate(SIDE_CARGO_THETA);
-  drawTarget(ctx);
-  ctx.restore();
+  drawTarget(ctx, MID_CARGO_X, SIDE_CARGO_Y, SIDE_CARGO_THETA);
 
-  ctx.save();
-  ctx.translate(NEAR_CARGO_X, SIDE_CARGO_Y)
-  ctx.rotate(SIDE_CARGO_THETA);
-  drawTarget(ctx);
-  ctx.restore();
+  drawTarget(ctx, NEAR_CARGO_X, SIDE_CARGO_Y, SIDE_CARGO_THETA);
 
-  ctx.save();
-  ctx.translate(FACE_CARGO_X, FACE_CARGO_Y)
-  ctx.rotate(FACE_CARGO_THETA);
-  drawTarget(ctx);
-  ctx.restore();
+  drawTarget(ctx, FACE_CARGO_X, FACE_CARGO_Y, FACE_CARGO_THETA);
 }
 
-function drawTarget(ctx : CanvasRenderingContext2D) : void {
+export function drawTarget(ctx : CanvasRenderingContext2D, x: number, y: number, theta: number) : void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(theta);
+
+  ctx.beginPath();
   ctx.moveTo(0, -0.15);
   ctx.lineTo(0, 0.15);
   ctx.moveTo(0, 0);
   ctx.lineTo(-0.15, 0);
-  ctx.closePath();
   ctx.stroke();
+
+  ctx.restore();
 }
