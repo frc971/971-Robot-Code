@@ -194,16 +194,16 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       break;
 
     case kPracticeTeamNumber:
-      elevator_params->zeroing_constants.measured_absolute_position = 0.147809;
-      elevator->potentiometer_offset = -0.022320 + 0.020567 - 0.022355 - 0.006497 + 0.019690;
+      elevator_params->zeroing_constants.measured_absolute_position = 0.132216;
+      elevator->potentiometer_offset = -0.022320 + 0.020567 - 0.022355 - 0.006497 + 0.019690 + 0.009151;
 
       intake->zeroing_constants.measured_absolute_position = 1.756847;
 
       wrist_params->zeroing_constants.measured_absolute_position = 0.192576;
       wrist->potentiometer_offset = -4.200894 - 0.187134;
 
-      stilts_params->zeroing_constants.measured_absolute_position = 0.052049;
-      stilts->potentiometer_offset = -0.093820 + 0.0124 - 0.008334 + 0.004507 - 0.007973;
+      stilts_params->zeroing_constants.measured_absolute_position = 0.050550;
+      stilts->potentiometer_offset = -0.093820 + 0.0124 - 0.008334 + 0.004507 - 0.007973 + -0.001221;
 
       FillCameraPoses(vision::PracticeBotTeensyId(), &r->cameras);
       break;
