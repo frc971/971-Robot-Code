@@ -484,7 +484,7 @@ void HybridEkf<Scalar>::InitializeMatrices() {
       dt_config_.make_kf_drivetrain_loop().observer().coefficients().R;
   // TODO(james): The multipliers here are hand-waving things that I put in when
   // tuning things. I haven't yet tried messing with these values again.
-  encoder_noise_ = 0.05 * R_kf_drivetrain(0, 0);
+  encoder_noise_ = 0.5 * R_kf_drivetrain(0, 0);
   gyro_noise_ = 0.1 * R_kf_drivetrain(2, 2);
 }
 

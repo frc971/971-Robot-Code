@@ -614,7 +614,7 @@ INSTANTIATE_TEST_CASE_P(
                 .finished(),
             /*noisify=*/true,
             /*disturb=*/false,
-            /*estimate_tolerance=*/0.25,
+            /*estimate_tolerance=*/0.3,
             /*goal_tolerance=*/0.7,
         })));
 
