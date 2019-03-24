@@ -356,7 +356,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
     }
 
-    if (superstructure_queue.status->stilts.position > 0.3) {
+    if (superstructure_queue.status->stilts.position > 0.1) {
       elevator_wrist_pos_ = kClimbPos;
     }
 
