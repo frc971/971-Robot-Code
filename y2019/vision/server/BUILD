@@ -10,12 +10,6 @@ ts_library(
     ],
 )
 
-rollup_bundle(
-    name = "bundle",
-    entry_point = "y2019/vision/server/demo",
-    deps = [":demo"],
-)
-
 gen_embedded(
     name = "gen_embedded",
     srcs = glob(
@@ -26,10 +20,9 @@ gen_embedded(
 
 aos_downloader_dir(
     name = "www_files",
-    srcs = glob([
-        "www/**/*",
-    ]) + [
-        ":bundle",
+    srcs = [
+        "//y2019/vision/server/www:visualizer_bundle",
+        "//y2019/vision/server/www:files",
     ],
     dir = "www",
     visibility = ["//visibility:public"],
@@ -40,10 +33,9 @@ cc_binary(
     srcs = [
         "server.cc",
     ],
-    data = glob([
-        "www/**/*",
-    ]) + [
-        ":bundle",
+    data = [
+        "//y2019/vision/server/www:visualizer_bundle",
+        "//y2019/vision/server/www:files",
     ],
     visibility = ["//visibility:public"],
     deps = [

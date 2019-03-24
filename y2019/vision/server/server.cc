@@ -155,10 +155,10 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
       std::ostringstream stream;
       stream << "{\n";
 
-      stream << "'robot': {";
-      stream << "'x': " << drivetrain_status->x << ",";
-      stream << "'y': " << drivetrain_status->y << ",";
-      stream << "'theta': " << drivetrain_status->theta;
+      stream << "\"robot\": {";
+      stream << "\"x\": " << drivetrain_status->x << ",";
+      stream << "\"y\": " << drivetrain_status->y << ",";
+      stream << "\"theta\": " << drivetrain_status->theta;
       stream << "}\n";
 
       stream << "}";
