@@ -103,10 +103,16 @@ void Superstructure::RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
     } else if (::frc971::control_loops::drivetrain_queue.status.get() &&
                ::frc971::control_loops::drivetrain_queue.status
                    ->line_follow_logging.frozen) {
-      // Vision align is flashing white.
+      // Vision align is flashing white for button pressed, purple for target
+      // acquired.
       ++line_blink_count_;
       if (line_blink_count_ < 20) {
-        SendColors(1.0, 1.0, 1.0);
+        if (::frc971::control_loops::drivetrain_queue.status
+                ->line_follow_logging.have_target) {
+          SendColors(1.0, 0.0, 1.0);
+        } else {
+          SendColors(1.0, 1.0, 1.0);
+        }
       } else {
         // And then flash with green if we have a game piece.
         if (status->has_piece) {
