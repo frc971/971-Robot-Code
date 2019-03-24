@@ -5,9 +5,6 @@ load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 cc_library(
     name = "image_types",
     hdrs = ["image_types.h"],
-    deps = [
-        "//aos/logging",
-    ],
 )
 
 cc_proto_library(
@@ -52,8 +49,10 @@ cc_library(
 
 cc_library(
     name = "image_stream",
+    srcs = ["image_stream.cc"],
     hdrs = ["image_stream.h"],
     deps = [
+        "//aos/logging",
         "//aos/vision/events:epoll_events",
         "//aos/vision/image:reader",
     ],

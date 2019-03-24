@@ -6,6 +6,7 @@
 #include <thread>
 
 #include "aos/vision/events/epoll_events.h"
+#include "aos/logging/logging.h"
 
 namespace aos {
 namespace events {

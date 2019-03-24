@@ -12,6 +12,18 @@
 namespace aos {
 namespace events {
 
+void EpollEvent::DirectEvent(uint32_t events) {
+  if ((events & ~(EPOLLIN | EPOLLPRI | EPOLLERR)) != 0) {
+    LOG(FATAL, "unexpected epoll events set in %x on %d\n", events, fd());
+  }
+  ReadEvent();
+}
+
+void EpollEvent::SetEvents(uint32_t events) {
+  events_ |= events;
+  CHECK(!loop_);
+}
+
 EpollLoop::EpollLoop() : epoll_fd_(PCHECK(epoll_create1(0))) {}
 
 void EpollLoop::Add(EpollEvent *event) {

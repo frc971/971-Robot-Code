@@ -9,8 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include "aos/logging/logging.h"
-
 namespace aos {
 namespace vision {
 
@@ -22,12 +20,12 @@ class AnalysisAllocator {
   T *cons_obj(Args &&... args) {
     uint8_t *ptr = NULL;
     if (sizeof(T) + alignof(T) > block_size_) {
-      LOG(FATAL, "allocating %d too much\n", (int)sizeof(T));
+      __builtin_trap();
     }
     while (ptr == NULL) {
       if (next_free_ >= memory_.size()) {
         if (next_free_ >= 1024) {
-          LOG(FATAL, "too much alloc\n");
+          __builtin_trap();
         }
         memory_.emplace_back(new uint8_t[block_size_]);
       } else if ((used_size_ % alignof(T)) != 0) {

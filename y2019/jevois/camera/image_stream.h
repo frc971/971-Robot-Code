@@ -1,5 +1,5 @@
-#ifndef _AOS_VISION_IMAGE_IMAGE_STREAM_H_
-#define _AOS_VISION_IMAGE_IMAGE_STREAM_H_
+#ifndef Y2019_JEVOIS_CAMERA_IMAGE_STREAM_H_
+#define Y2019_JEVOIS_CAMERA_IMAGE_STREAM_H_
 
 #include "aos/vision/events/epoll_events.h"
 #include "aos/vision/image/camera_params.pb.h"
@@ -33,13 +33,7 @@ class ImageStreamEvent : public ::aos::events::EpollEvent {
       : ImageStreamEvent(GetCamera(fname, this, params)) {}
 
   void ProcessHelper(aos::vision::DataRef data,
-                     aos::monotonic_clock::time_point timestamp) {
-    if (data.size() < 300) {
-      LOG(INFO, "got bad img of size(%d)\n", static_cast<int>(data.size()));
-      return;
-    }
-    ProcessImage(data, timestamp);
-  }
+                     aos::monotonic_clock::time_point timestamp);
   virtual void ProcessImage(aos::vision::DataRef data,
                             aos::monotonic_clock::time_point timestamp) = 0;
 
@@ -49,7 +43,7 @@ class ImageStreamEvent : public ::aos::events::EpollEvent {
   std::unique_ptr<Reader> reader_;
 };
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace camera
+}  // namespace y2019
 
-#endif  // _AOS_VISION_DEBUG_IMAGE_STREAM_H_
+#endif  // Y2019_JEVOIS_CAMERA_IMAGE_STREAM_H_

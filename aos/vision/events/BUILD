@@ -69,6 +69,7 @@ gtk_dependent_cc_library(
     srcs = ["gtk_event.cc"],
     deps = [
         ":epoll_events",
+        "//aos/logging",
         "@usr_repo//:gtk+-3.0",
     ],
 )

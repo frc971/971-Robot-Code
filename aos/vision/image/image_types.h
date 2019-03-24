@@ -7,7 +7,6 @@
 #include <sstream>
 
 #include <experimental/string_view>
-#include "aos/logging/logging.h"
 
 namespace aos {
 namespace vision {
@@ -65,7 +64,7 @@ class Array2dPtr {
   ImageType &get_px(int x, int y) const {
 #ifndef NDEBUG
     if (x < 0 || x >= fmt_.w || y < 0 || y >= fmt_.h) {
-      LOG(FATAL, "%d, %d out of range [%dx %d]\n", x, y, fmt_.w, fmt_.h);
+      __builtin_trap();
     }
 #endif  // NBOUNDSCHECK
     return data_[(x + y * fmt_.w)];

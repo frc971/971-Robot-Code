@@ -295,6 +295,7 @@ cc_library(
         "file.h",
     ],
     deps = [
+        "//aos/logging",
         "//aos/scoped:scoped_fd",
     ],
 )

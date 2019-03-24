@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include "aos/logging/logging.h"
 #include "aos/scoped/scoped_fd.h"
 
 namespace aos {

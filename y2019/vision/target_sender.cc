@@ -1,7 +1,7 @@
+#include "y2019/vision/target_finder.h"
+
 #include <fstream>
 
-#include "aos/logging/implementations.h"
-#include "aos/logging/logging.h"
 #include "aos/vision/blob/codec.h"
 #include "aos/vision/blob/find_blob.h"
 #include "aos/vision/events/socket_types.h"
@@ -12,7 +12,10 @@
 #include "y2019/jevois/serial.h"
 #include "y2019/jevois/structures.h"
 #include "y2019/jevois/uart.h"
-#include "y2019/vision/target_finder.h"
+
+// This has to be last to preserve compatibility with other headers using AOS
+// logging.
+#include "glog/logging.h"
 
 using ::aos::events::DataSocket;
 using ::aos::events::RXUdpSocket;
@@ -29,7 +32,7 @@ class CameraStream : public ::y2019::camera::ImageStreamEvent {
       : ImageStreamEvent(fname, params) {}
 
   void ProcessImage(DataRef data, monotonic_clock::time_point monotonic_now) {
-    LOG(INFO, "got frame: %d\n", (int)data.size());
+    LOG(INFO) << "got frame: " << data.size();
 
     if (on_frame_) on_frame_(data, monotonic_now);
   }
@@ -70,9 +73,8 @@ int main(int argc, char **argv) {
   using namespace y2019::vision;
   using frc971::jevois::CameraCommand;
   // gflags::ParseCommandLineFlags(&argc, &argv, false);
-  ::aos::logging::Init();
-  ::aos::logging::AddImplementation(
-      new ::aos::logging::StreamLogImplementation(stderr));
+  FLAGS_logtostderr = true;
+  google::InitGoogleLogging(argv[0]);
 
   int itsDev = open_terminos("/dev/ttyS0");
   frc971::jevois::CobsPacketizer<frc971::jevois::uart_to_camera_size()> cobs;
@@ -97,7 +99,7 @@ int main(int argc, char **argv) {
     aos::vision::BlobList imgs = aos::vision::FindBlobs(
         aos::vision::FastYuyvYThreshold(fmt, data.data(), 120));
     finder_.PreFilter(&imgs);
-    LOG(INFO, "Blobs: (%zu).\n", imgs.size());
+    LOG(INFO) << "Blobs: " << imgs.size();
 
     constexpr bool verbose = false;
     ::std::vector<Polygon> raw_polys;
@@ -112,27 +114,27 @@ int main(int argc, char **argv) {
         raw_polys.push_back(polygon);
       }
     }
-    LOG(INFO, "Polygons: (%zu).\n", raw_polys.size());
+    LOG(INFO) << "Polygons: " << raw_polys.size();
 
     // Calculate each component side of a possible target.
     ::std::vector<TargetComponent> target_component_list =
         finder_.FillTargetComponentList(raw_polys, verbose);
-    LOG(INFO, "Components: (%zu).\n", target_component_list.size());
+    LOG(INFO) << "Components: " << target_component_list.size();
 
     // Put the compenents together into targets.
     ::std::vector<Target> target_list =
         finder_.FindTargetsFromComponents(target_component_list, verbose);
-    LOG(INFO, "Potential Target: (%zu).\n", target_list.size());
+    LOG(INFO) << "Potential Target: " << target_list.size();
 
     // Use the solver to generate an intermediate version of our results.
     ::std::vector<IntermediateResult> results;
     for (const Target &target : target_list) {
       results.emplace_back(finder_.ProcessTargetToResult(target, verbose));
     }
-    LOG(INFO, "Raw Results: (%zu).\n", results.size());
+    LOG(INFO) << "Raw Results: " << results.size();
 
     results = finder_.FilterResults(results, 30, verbose);
-    LOG(INFO, "Results: (%zu).\n", results.size());
+    LOG(INFO) << "Results: " << results.size();
 
     // TODO: Select top 3 (randomly?)
 
@@ -160,7 +162,7 @@ int main(int argc, char **argv) {
           write(itsDev, serialized_frame.data(), serialized_frame.size());
 
       if (n != (ssize_t)serialized_frame.size()) {
-        LOG(INFO, "Some problem happened");
+        LOG(INFO) << "Some problem happened";
       }
     }
   });
@@ -198,7 +200,7 @@ int main(int argc, char **argv) {
                 return system("touch /tmp/do_not_export_sd_card");
             }
           } else {
-            printf("bad frame\n");
+            fprintf(stderr, "bad frame\n");
           }
           cobs.clear_received_packet();
         }
