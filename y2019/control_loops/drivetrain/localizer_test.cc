@@ -538,7 +538,7 @@ INSTANTIATE_TEST_CASE_P(
             /*noisify=*/true,
             /*disturb=*/false,
             /*estimate_tolerance=*/0.2,
-            /*goal_tolerance=*/0.3,
+            /*goal_tolerance=*/0.4,
         }),
         // Repeats perfect scenario, but add initial estimator error.
         LocalizerTestParams({

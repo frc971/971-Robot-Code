@@ -457,8 +457,8 @@ void HybridEkf<Scalar>::InitializeMatrices() {
   // probably be reduced when we are stopped because you rarely jump randomly.
   // Or maybe it's more appropriate to scale wheelspeed noise with wheelspeed,
   // since the wheels aren't likely to slip much stopped.
-  Q_continuous_(kX, kX) = 0.01;
-  Q_continuous_(kY, kY) = 0.01;
+  Q_continuous_(kX, kX) = 0.002;
+  Q_continuous_(kY, kY) = 0.002;
   Q_continuous_(kTheta, kTheta) = 0.0002;
   Q_continuous_(kLeftEncoder, kLeftEncoder) = ::std::pow(0.15, 2.0);
   Q_continuous_(kRightEncoder, kRightEncoder) = ::std::pow(0.15, 2.0);
