@@ -10,6 +10,7 @@
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/localizer.q.h"
+#include "y2019/actors/auto_splines.h"
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
 
 namespace y2019 {

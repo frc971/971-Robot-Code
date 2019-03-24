@@ -99,6 +99,7 @@ class SplineDrivetrain {
   ::std::unique_ptr<Trajectory> past_trajectory_;
   ::std::unique_ptr<Trajectory> future_trajectory_;
   int32_t future_spline_idx_ = 0;  // Current spline being computed.
+  ::std::atomic<int32_t> planning_spline_idx_{-1};
 
   // TODO(alex): pull this out of dt_config.
   const ::Eigen::DiagonalMatrix<double, 5> Q =

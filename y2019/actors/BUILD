@@ -17,9 +17,11 @@ filegroup(
 cc_library(
     name = "autonomous_action_lib",
     srcs = [
+        "auto_splines.cc",
         "autonomous_actor.cc",
     ],
     hdrs = [
+        "auto_splines.h",
         "autonomous_actor.h",
     ],
     deps = [

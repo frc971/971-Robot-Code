@@ -20,6 +20,32 @@ class BaseAutonomousActor
       const control_loops::drivetrain::DrivetrainConfig<double> &dt_config);
 
  protected:
+  class SplineHandle {
+   public:
+    bool IsPlanned();
+    bool WaitForPlan();
+    void Start();
+
+    bool IsDone();
+    bool WaitForDone();
+
+    // Wait for done, wait until X from the end, wait for distance from the end
+
+   private:
+    friend BaseAutonomousActor;
+    SplineHandle(int32_t spline_handle,
+                 BaseAutonomousActor *base_autonomous_actor)
+        : spline_handle_(spline_handle),
+          base_autonomous_actor_(base_autonomous_actor) {}
+
+    int32_t spline_handle_;
+    BaseAutonomousActor *base_autonomous_actor_;
+  };
+
+  // Starts planning the spline, and returns a handle to be used to manipulate
+  // it.
+  SplineHandle PlanSpline(const ::frc971::MultiSpline &spline);
+
   void ResetDrivetrain();
   void InitializeEncoders();
   void StartDrive(double distance, double angle, ProfileParameters linear,
@@ -67,7 +93,14 @@ class BaseAutonomousActor
   }
 
  private:
+  friend class SplineHandle;
+
   double max_drivetrain_voltage_ = 12.0;
+
+  // Unique counter so we get unique spline handles.
+  int spline_handle_ = 0;
+  // Last goal spline handle;
+  int32_t goal_spline_handle_ = 0;
 };
 
 using AutonomousAction =

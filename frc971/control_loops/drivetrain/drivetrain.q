@@ -46,8 +46,14 @@ struct TrajectoryLogging {
   // State of the spline execution.
   bool is_executing;
 
-  int32_t current_spline_handle;
+  // The handle of the goal spline.  0 means stop requested.
+  int32_t goal_spline_handle;
+  // Handle of the executing spline.  -1 means none requested.  If there was no
+  // spline executing when a spline finished optimizing, it will become the
+  // current spline even if we aren't ready to start yet.
   int32_t current_spline_idx;
+  // Handle of the spline that is being optimized and staged.
+  int32_t planning_spline_idx;
 
   // Expected position and velocity on the spline
   float x;

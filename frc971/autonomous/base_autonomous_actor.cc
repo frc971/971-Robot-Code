@@ -66,7 +66,7 @@ void BaseAutonomousActor::StartDrive(double distance, double angle,
   drivetrain_message->linear = linear;
   drivetrain_message->angular = angular;
 
-  LOG_STRUCT(DEBUG, "drivetrain_goal", *drivetrain_message);
+  LOG_STRUCT(DEBUG, "dtg", *drivetrain_message);
 
   drivetrain_message.Send();
 }
@@ -346,6 +346,96 @@ double BaseAutonomousActor::DriveDistanceLeft() {
     return (left_error + right_error) / 2.0;
   } else {
     return 0;
+  }
+}
+
+BaseAutonomousActor::SplineHandle BaseAutonomousActor::PlanSpline(
+    const ::frc971::MultiSpline &spline) {
+  LOG(INFO, "Planning spline\n");
+
+  int32_t spline_handle = (++spline_handle_) | ((getpid() & 0xFFFF) << 15);
+
+  drivetrain_queue.goal.FetchLatest();
+
+  auto drivetrain_message = drivetrain_queue.goal.MakeMessage();
+  drivetrain_message->controller_type = 2;
+
+  drivetrain_message->spline = spline;
+  drivetrain_message->spline.spline_idx = spline_handle;
+  drivetrain_message->spline_handle = goal_spline_handle_;
+
+  LOG_STRUCT(DEBUG, "dtg", *drivetrain_message);
+
+  drivetrain_message.Send();
+
+  return BaseAutonomousActor::SplineHandle(spline_handle, this);
+}
+
+bool BaseAutonomousActor::SplineHandle::IsPlanned() {
+  drivetrain_queue.status.FetchLatest();
+  LOG_STRUCT(INFO, "dts", *drivetrain_queue.status.get());
+  if (drivetrain_queue.status.get() &&
+      ((drivetrain_queue.status->trajectory_logging.planning_spline_idx ==
+            spline_handle_ &&
+        drivetrain_queue.status->trajectory_logging.planning_state == 3) ||
+       drivetrain_queue.status->trajectory_logging.current_spline_idx ==
+           spline_handle_)) {
+    return true;
+  }
+  return false;
+}
+
+bool BaseAutonomousActor::SplineHandle::WaitForPlan() {
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
+  while (true) {
+    if (base_autonomous_actor_->ShouldCancel()) {
+      return false;
+    }
+    phased_loop.SleepUntilNext();
+    if (IsPlanned()) {
+      return true;
+    }
+  }
+}
+
+void BaseAutonomousActor::SplineHandle::Start() {
+  auto drivetrain_message = drivetrain_queue.goal.MakeMessage();
+  drivetrain_message->controller_type = 2;
+
+  LOG(INFO, "Starting spline\n");
+
+  drivetrain_message->spline_handle = spline_handle_;
+  base_autonomous_actor_->goal_spline_handle_ = spline_handle_;
+
+  LOG_STRUCT(DEBUG, "dtg", *drivetrain_message);
+
+  drivetrain_message.Send();
+}
+
+bool BaseAutonomousActor::SplineHandle::IsDone() {
+  drivetrain_queue.status.FetchLatest();
+  LOG_STRUCT(INFO, "dts", *drivetrain_queue.status.get());
+
+  if (drivetrain_queue.status.get() &&
+      drivetrain_queue.status->trajectory_logging.current_spline_idx ==
+          spline_handle_) {
+    return false;
+  }
+  return true;
+}
+
+bool BaseAutonomousActor::SplineHandle::WaitForDone() {
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
+  while (true) {
+    if (base_autonomous_actor_->ShouldCancel()) {
+      return false;
+    }
+    phased_loop.SleepUntilNext();
+    if (IsDone()) {
+      return true;
+    }
   }
 }
 

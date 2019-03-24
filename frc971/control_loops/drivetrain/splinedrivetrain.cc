@@ -41,6 +41,7 @@ void SplineDrivetrain::ComputeTrajectory() {
     plan_state_ = PlanState::kBuildingTrajectory;
     const ::frc971::MultiSpline &multispline = goal_.spline;
     future_spline_idx_ = multispline.spline_idx;
+    planning_spline_idx_ = future_spline_idx_;
     auto x = multispline.spline_x;
     auto y = multispline.spline_y;
     ::std::vector<Spline> splines = ::std::vector<Spline>();
@@ -187,8 +188,15 @@ void SplineDrivetrain::PopulateStatus(
     }
     status->trajectory_logging.planning_state = static_cast<int8_t>(plan_state_.load());
     status->trajectory_logging.is_executing = !IsAtEnd();
-    status->trajectory_logging.current_spline_handle = current_spline_handle_;
+    status->trajectory_logging.goal_spline_handle = current_spline_handle_;
     status->trajectory_logging.current_spline_idx = current_spline_idx_;
+
+    int32_t planning_spline_idx = planning_spline_idx_;
+    if (current_spline_idx_ == planning_spline_idx) {
+      status->trajectory_logging.planning_spline_idx = 0;
+    } else {
+      status->trajectory_logging.planning_spline_idx = planning_spline_idx_;
+    }
   }
 }
 
