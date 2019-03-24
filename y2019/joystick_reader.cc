@@ -22,11 +22,13 @@
 #include "frc971/control_loops/drivetrain/localizer.q.h"
 
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
+#include "y2019/control_loops/drivetrain/target_selector.q.h"
 #include "y2019/control_loops/superstructure/superstructure.q.h"
 #include "y2019/status_light.q.h"
 #include "y2019/vision.pb.h"
 
 using ::y2019::control_loops::superstructure::superstructure_queue;
+using ::y2019::control_loops::drivetrain::target_selector_hint;
 using ::frc971::control_loops::drivetrain::localizer_control;
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::ControlBit;
@@ -81,6 +83,10 @@ const ButtonLocation kResetLocalizerLeftBackwards(4, 12);
 
 const ButtonLocation kResetLocalizerRightForwards(4, 1);
 const ButtonLocation kResetLocalizerRightBackwards(4, 11);
+
+const ButtonLocation kNearCargoHint(3, 15);
+const ButtonLocation kMidCargoHint(3, 16);
+const ButtonLocation kFarCargoHint(4, 2);
 
 const ElevatorWristPosition kStowPos{0.36, 0.0};
 
@@ -157,6 +163,22 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
+
+    {
+      auto target_hint = target_selector_hint.MakeMessage();
+      if (data.IsPressed(kNearCargoHint)) {
+        target_hint->suggested_target = 1;
+      } else if (data.IsPressed(kMidCargoHint)) {
+        target_hint->suggested_target = 2;
+      } else if (data.IsPressed(kFarCargoHint)) {
+        target_hint->suggested_target = 3;
+      } else {
+        target_hint->suggested_target = 0;
+      }
+      if (!target_hint.Send()) {
+        LOG(ERROR, "Failed to send target selector hint.\n");
+      }
+    }
 
     if (data.PosEdge(kResetLocalizerLeftForwards)) {
       auto localizer_resetter = localizer_control.MakeMessage();

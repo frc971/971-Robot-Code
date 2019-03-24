@@ -315,42 +315,42 @@ Field::Field() {
   constexpr double kPortZ = 1.00;
 
   constexpr double kDiscRadius = InchToMeters(19.0 / 2.0);
-  // radius to use for placing the ball (not necessarily the radius of the ball
-  // itself...).
-  constexpr double kBallRadius = 0.05;
 
   constexpr Target::GoalType kBothGoal = Target::GoalType::kBoth;
   constexpr Target::GoalType kBallGoal = Target::GoalType::kBalls;
   constexpr Target::GoalType kDiscGoal = Target::GoalType::kHatches;
   constexpr Target::GoalType kNoneGoal = Target::GoalType::kNone;
+  using TargetType = Target::TargetType;
 
   const Target far_side_cargo_bay(
       {{kFarSideCargoBayX, kSideCargoBayY, kNormalZ}, kSideCargoBayTheta},
-      kDiscRadius, kBothGoal);
+      kDiscRadius, TargetType::kFarSideCargoBay, kBothGoal);
   const Target mid_side_cargo_bay(
       {{kMidSideCargoBayX, kSideCargoBayY, kNormalZ}, kSideCargoBayTheta},
-      kDiscRadius, kBothGoal);
+      kDiscRadius, TargetType::kMidSideCargoBay, kBothGoal);
   const Target near_side_cargo_bay(
       {{kNearSideCargoBayX, kSideCargoBayY, kNormalZ}, kSideCargoBayTheta},
-      kDiscRadius, kBothGoal);
+      kDiscRadius, TargetType::kNearSideCargoBay, kBothGoal);
 
   const Target face_cargo_bay(
       {{kFaceCargoBayX, kFaceCargoBayY, kNormalZ}, kFaceCargoBayTheta},
-      kDiscRadius, kBothGoal);
+      kDiscRadius, TargetType::kFaceCargoBay, kBothGoal);
 
+  // The rocket port, since it is only for balls, has no meaningful radius
+  // to work with (and is over-ridden with zero in target_selector).
   const Target rocket_port(
-      {{kRocketPortX, kRocketPortY, kPortZ}, kRocketPortTheta}, kBallRadius,
-      kBallGoal);
+      {{kRocketPortX, kRocketPortY, kPortZ}, kRocketPortTheta}, 0.0,
+      TargetType::kRocketPortal, kBallGoal);
 
   const Target rocket_near(
       {{kRocketNearX, kRocketHatchY, kNormalZ}, kRocketNearTheta}, kDiscRadius,
-      kDiscGoal);
+      TargetType::kNearRocket, kDiscGoal);
   const Target rocket_far(
       {{kRocketFarX, kRocketHatchY, kNormalZ}, kRocketFarTheta}, kDiscRadius,
-      kDiscGoal);
+      TargetType::kFarRocket, kDiscGoal);
 
   const Target hp_slot({{0.0, kHpSlotY, kNormalZ}, kHpSlotTheta}, 0.00,
-                       kBothGoal);
+                       TargetType::kHPSlot, kBothGoal);
 
   const ::std::array<Target, 8> quarter_field_targets{
       {far_side_cargo_bay, mid_side_cargo_bay, near_side_cargo_bay,

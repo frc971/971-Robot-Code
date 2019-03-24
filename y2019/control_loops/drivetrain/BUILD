@@ -84,6 +84,14 @@ cc_binary(
 )
 
 queue_library(
+    name = "target_selector_queue",
+    srcs = [
+        "target_selector.q",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+queue_library(
     name = "camera_queue",
     srcs = [
         "camera.q",
@@ -126,9 +134,11 @@ cc_library(
     hdrs = ["target_selector.h"],
     deps = [
         ":camera",
+        ":target_selector_queue",
         "//frc971/control_loops:pose",
         "//frc971/control_loops/drivetrain:localizer",
         "//y2019:constants",
+        "//y2019/control_loops/superstructure:superstructure_queue",
     ],
 )
 
@@ -138,6 +148,7 @@ cc_test(
     deps = [
         ":target_selector",
         "//aos/testing:googletest",
+        "//aos/testing:test_shm",
     ],
 )
 

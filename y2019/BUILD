@@ -136,6 +136,7 @@ cc_binary(
         "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//frc971/control_loops/drivetrain:localizer_queue",
         "//y2019/control_loops/drivetrain:drivetrain_base",
+        "//y2019/control_loops/drivetrain:target_selector_queue",
         "//y2019/control_loops/superstructure:superstructure_queue",
         "@com_google_protobuf//:protobuf",
     ],

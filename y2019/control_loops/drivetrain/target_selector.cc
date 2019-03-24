@@ -5,16 +5,34 @@ namespace control_loops {
 
 constexpr double TargetSelector::kFakeFov;
 
-TargetSelector::TargetSelector()
+TargetSelector::TargetSelector(::aos::EventLoop *event_loop)
     : front_viewer_({&robot_pose_, {0.0, 0.0, 0.0}, 0.0}, kFakeFov, fake_noise_,
                     constants::Field().targets(), {}),
       back_viewer_({&robot_pose_, {0.0, 0.0, 0.0}, M_PI}, kFakeFov, fake_noise_,
-                   constants::Field().targets(), {}) {}
+                   constants::Field().targets(), {}),
+      hint_fetcher_(event_loop->MakeFetcher<drivetrain::TargetSelectorHint>(
+          ".y2019.control_loops.drivetrain.target_selector_hint")),
+      superstructure_goal_fetcher_(event_loop->MakeFetcher<
+          superstructure::SuperstructureQueue::Goal>(
+          ".y2019.control_loops.superstructure.superstructure_queue.goal")) {}
 
 bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
                                      double command_speed) {
   if (::std::abs(command_speed) < kMinDecisionSpeed) {
     return false;
+  }
+  if (superstructure_goal_fetcher_.Fetch()) {
+    ball_mode_ = superstructure_goal_fetcher_->suction.gamepiece_mode == 0;
+  }
+  if (hint_fetcher_.Fetch()) {
+    LOG_STRUCT(DEBUG, "selector_hint", *hint_fetcher_);
+    // suggested_target is unsigned so we don't check for >= 0.
+    if (hint_fetcher_->suggested_target < 4) {
+      target_hint_ =
+          static_cast<SelectionHint>(hint_fetcher_->suggested_target);
+    } else {
+      LOG(ERROR, "Got invalid suggested target.\n");
+    }
   }
   *robot_pose_.mutable_pos() << state.x(), state.y(), 0.0;
   robot_pose_.set_theta(state(2, 0));
@@ -40,12 +58,37 @@ bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
     // of the field).
     // TODO(james): Support ball vs. hatch mode filtering.
     if (view.target->goal_type() == Target::GoalType::kNone ||
-        view.target->goal_type() == Target::GoalType::kBalls) {
+        view.target->goal_type() == (ball_mode_ ? Target::GoalType::kHatches
+                                                : Target::GoalType::kBalls)) {
       continue;
+    }
+    switch (target_hint_) {
+      case SelectionHint::kNearShip:
+        if (view.target->target_type() !=
+            Target::TargetType::kNearSideCargoBay) {
+          continue;
+        }
+        break;
+      case SelectionHint::kMidShip:
+        if (view.target->target_type() !=
+            Target::TargetType::kMidSideCargoBay) {
+          continue;
+        }
+        break;
+      case SelectionHint::kFarShip:
+        if (view.target->target_type() !=
+            Target::TargetType::kFarSideCargoBay) {
+          continue;
+        }
+        break;
+      case SelectionHint::kNone:
+      default:
+        break;
     }
     if (view.noise.distance < largest_target_noise) {
       target_pose_ = view.target->pose();
-      target_radius_ = view.target->radius();
+      // If we are in ball mode, use a radius of zero.
+      target_radius_ = ball_mode_ ? 0.0 : view.target->radius();
       largest_target_noise = view.noise.distance;
     }
   }

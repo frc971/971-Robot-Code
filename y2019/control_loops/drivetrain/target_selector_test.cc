@@ -1,6 +1,8 @@
 #include "y2019/control_loops/drivetrain/target_selector.h"
 
+#include "aos/testing/test_shm.h"
 #include "gtest/gtest.h"
+#include "y2019/control_loops/superstructure/superstructure.q.h"
 
 namespace y2019 {
 namespace control_loops {
@@ -8,12 +10,15 @@ namespace testing {
 
 typedef ::frc971::control_loops::TypedPose<double> Pose;
 typedef ::Eigen::Matrix<double, 5, 1> State;
+using SelectionHint = TargetSelector::SelectionHint;
 
 namespace {
 // Accessors to get some useful particular targets on the field:
 Pose HPSlotLeft() { return constants::Field().targets()[7].pose(); }
 Pose CargoNearLeft() { return constants::Field().targets()[2].pose(); }
 Pose RocketHatchFarLeft() { return constants::Field().targets()[6].pose(); }
+Pose RocketPortal() { return constants::Field().targets()[4].pose(); }
+double HatchRadius() { return constants::Field().targets()[6].radius(); }
 }  // namespace
 
 // Tests the target selector with:
@@ -23,14 +28,40 @@ Pose RocketHatchFarLeft() { return constants::Field().targets()[6].pose(); }
 // -If (1) is true, the pose we expect to get back.
 struct TestParams {
   State state;
+  bool ball_mode;
+  SelectionHint selection_hint;
   double command_speed;
   bool expect_target;
   Pose expected_pose;
+  double expected_radius;
 };
-class TargetSelectorParamTest : public ::testing::TestWithParam<TestParams> {};
+class TargetSelectorParamTest : public ::testing::TestWithParam<TestParams> {
+ protected:
+  virtual void TearDown() override {
+    ::y2019::control_loops::superstructure::superstructure_queue.goal.Clear();
+    ::y2019::control_loops::drivetrain::target_selector_hint.Clear();
+  }
+  ::aos::ShmEventLoop event_loop_;
+
+ private:
+  ::aos::testing::TestSharedMemory my_shm_;
+};
 
 TEST_P(TargetSelectorParamTest, ExpectReturn) {
-  TargetSelector selector;
+  TargetSelector selector(&event_loop_);
+  {
+    auto super_goal =
+        ::y2019::control_loops::superstructure::superstructure_queue.goal
+            .MakeMessage();
+    super_goal->suction.gamepiece_mode = GetParam().ball_mode ? 0 : 1;
+    ASSERT_TRUE(super_goal.Send());
+  }
+  {
+    auto hint =
+        ::y2019::control_loops::drivetrain::target_selector_hint.MakeMessage();
+    hint->suggested_target = static_cast<int>(GetParam().selection_hint);
+    ASSERT_TRUE(hint.Send());
+  }
   bool expect_target = GetParam().expect_target;
   const State state = GetParam().state;
   ASSERT_EQ(expect_target,
@@ -49,6 +80,8 @@ TEST_P(TargetSelectorParamTest, ExpectReturn) {
         << " but got " << actual_pos.transpose() << " with the robot at "
         << state.transpose();
     EXPECT_EQ(expected_angle, actual_angle);
+    EXPECT_EQ(GetParam().expected_radius, selector.TargetRadius());
+    EXPECT_EQ(expected_angle, actual_angle);
   }
 }
 
@@ -57,42 +90,82 @@ INSTANTIATE_TEST_CASE_P(
     ::testing::Values(
         // When we are far away from anything, we should not register any
         // targets:
-        TestParams{
-            (State() << 0.0, 0.0, 0.0, 1.0, 1.0).finished(), 1.0, false, {}},
+        TestParams{(State() << 0.0, 0.0, 0.0, 1.0, 1.0).finished(),
+                   /*ball_mode=*/false,
+                   SelectionHint::kNone,
+                   1.0,
+                   false,
+                   {},
+                   /*expected_radius=*/0.0},
         // Aim for a human-player spot; at low speeds we should not register
         // anything.
         TestParams{(State() << 4.0, 2.0, M_PI, 0.05, 0.05).finished(),
+                   /*ball_mode=*/false,
+                   SelectionHint::kNone,
                    0.05,
                    false,
-                   {}},
+                   {},
+                   /*expected_radius=*/0.0},
         TestParams{(State() << 4.0, 2.0, M_PI, -0.05, -0.05).finished(),
+                   /*ball_mode=*/false,
+                   SelectionHint::kNone,
                    -0.05,
                    false,
-                   {}},
-        TestParams{(State() << 4.0, 2.0, M_PI, 0.5, 0.5).finished(), 1.0, true,
-                   HPSlotLeft()},
+                   {},
+                   /*expected_radius=*/0.0},
+        TestParams{(State() << 4.0, 2.0, M_PI, 0.5, 0.5).finished(),
+                   /*ball_mode=*/false, SelectionHint::kNone, 1.0, true,
+                   HPSlotLeft(), /*expected_radius=*/0.0},
         // Put ourselves between the rocket and cargo ship; we should see the
         // hatches driving one direction and the near cargo ship port the other.
         // We also command a speed opposite the current direction of motion and
         // confirm that that behaves as expected.
-        TestParams{(State() << 6.0, 2.0, -M_PI_2, -0.5, -0.5).finished(), 1.0,
-                   true, CargoNearLeft()},
-        TestParams{(State() << 6.0, 2.0, M_PI_2, 0.5, 0.5).finished(), -1.0,
-                   true, CargoNearLeft()},
-        TestParams{(State() << 6.0, 2.0, -M_PI_2, 0.5, 0.5).finished(), -1.0,
-                   true, RocketHatchFarLeft()},
-        TestParams{(State() << 6.0, 2.0, M_PI_2, -0.5, -0.5).finished(), 1.0,
-                   true, RocketHatchFarLeft()},
+        TestParams{(State() << 6.0, 2.0, -M_PI_2, -0.5, -0.5).finished(),
+                   /*ball_mode=*/false, SelectionHint::kNone, 1.0, true,
+                   CargoNearLeft(), /*expected_radius=*/HatchRadius()},
+        TestParams{(State() << 6.0, 2.0, M_PI_2, 0.5, 0.5).finished(),
+                   /*ball_mode=*/false, SelectionHint::kNone, -1.0, true,
+                   CargoNearLeft(), /*expected_radius=*/HatchRadius()},
+        TestParams{(State() << 6.0, 2.0, -M_PI_2, 0.5, 0.5).finished(),
+                   /*ball_mode=*/false, SelectionHint::kNone, -1.0, true,
+                   RocketHatchFarLeft(), /*expected_radius=*/HatchRadius()},
+        TestParams{(State() << 6.0, 2.0, M_PI_2, -0.5, -0.5).finished(),
+                   /*ball_mode=*/false, SelectionHint::kNone, 1.0, true,
+                   RocketHatchFarLeft(), /*expected_radius=*/HatchRadius()},
         // And we shouldn't see anything spinning in place:
         TestParams{(State() << 6.0, 2.0, M_PI_2, -0.5, 0.5).finished(),
+                   /*ball_mode=*/false,
+                   SelectionHint::kNone,
                    0.0,
                    false,
-                   {}},
+                   {},
+                   /*expected_radius=*/0.0},
         // Drive backwards off the field--we should not see anything.
         TestParams{(State() << -0.1, 0.0, 0.0, -0.5, -0.5).finished(),
+                   /*ball_mode=*/false,
+                   SelectionHint::kNone,
                    -1.0,
                    false,
-                   {}}));
+                   {},
+                   /*expected_radius=*/0.0},
+        // In ball mode, we should be able to see the portal, and get zero
+        // radius.
+        TestParams{(State() << 6.0, 2.0, M_PI_2, 0.5, 0.5).finished(),
+                   /*ball_mode=*/true,
+                   SelectionHint::kNone,
+                   1.0,
+                   true,
+                   RocketPortal(),
+                   /*expected_radius=*/0.0},
+        // Reversing direction should get cargo ship with zero radius.
+        TestParams{(State() << 6.0, 2.0, M_PI_2, 0.5, 0.5).finished(),
+                   /*ball_mode=*/true,
+                   SelectionHint::kNone,
+                   -1.0,
+                   true,
+                   CargoNearLeft(),
+                   /*expected_radius=*/0.0}
+                   ));
 
 }  // namespace testing
 }  // namespace control_loops
