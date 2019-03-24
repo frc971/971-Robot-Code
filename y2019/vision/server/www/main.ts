@@ -33,10 +33,10 @@ class Visualiser {
       this.theta = j.robot.theta;
 
       if(j.target) {
-        this.drawLocked = true;
-        this.lockedX = j.target.x;
-        this.lockedY = j.target.y;
-        this.lockedTheta = j.target.theta;
+        this.targetLocked = j.target.frozen && j.target.have_target;
+        this.targetX = j.target.x;
+        this.targetY = j.target.y;
+        this.targetTheta = j.target.theta;
       }
     });
     socket.addEventListener('message', (event) => {
@@ -65,12 +65,15 @@ class Visualiser {
 
     drawField(ctx);
     drawRobot(ctx, this.x, this.y, this.theta);
-    if (this.drawLocked) {
-      ctx.save();
+    ctx.save();
+    ctx.lineWidth = 2.0 * ctx.lineWidth;
+    if (this.targetLocked) {
+      ctx.strokeStyle = 'blue';
+    } else {
       ctx.strokeStyle = 'red';
-      drawTarget(ctx, this.lockedX, this.lockedY, this.lockedTheta);
-      ctx.restore();
     }
+    drawTarget(ctx, this.targetX, this.targetY, this.targetTheta);
+    ctx.restore();
     window.requestAnimationFrame(() => this.draw(ctx));
   }
 }
