@@ -3,12 +3,16 @@ load("//aos/build:queues.bzl", "queue_library")
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 
 robot_downloader(
+    dirs = [
+        "//y2019/vision/server:www_files",
+    ],
     start_binaries = [
         ":joystick_reader",
         ":wpilib_interface",
         "//y2019/control_loops/drivetrain:drivetrain",
         "//y2019/control_loops/superstructure:superstructure",
         "//y2019/actors:binaries",
+        "//y2019/vision/server",
     ],
 )
 
