@@ -1,3 +1,6 @@
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <array>
 #include <memory>
 #include <set>
@@ -184,7 +187,18 @@ int main(int, char *[]) {
     y2019::vision::DataThread(&server, websocket_handler.get());
   }};
 
-  server.serve("/home/admin/robot_code/www", 1180);
+  // See if we are on a robot.  If so, serve the robot www folder.
+  bool serve_www = false;
+  {
+    struct stat result;
+    if (stat("/home/admin/robot_code/www", &result) == 0) {
+      serve_www = true;
+    }
+  }
+
+  server.serve(
+      serve_www ? "/home/admin/robot_code/www" : "y2019/vision/server/www",
+      1180);
 
   return 0;
 }
