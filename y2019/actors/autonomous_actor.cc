@@ -116,7 +116,7 @@ bool AutonomousActor::RunAction(
   StartDrive(0.0, -0.35 * turn_scalar, kDrive, kTurn);
 
   LOG(INFO, "Elevator up\n");
-  set_elevator_goal(0.01);
+  set_elevator_goal(0.78);
   SendSuperstructureGoal();
 
   if (!WaitForDriveDone()) return true;
