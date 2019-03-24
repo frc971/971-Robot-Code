@@ -106,11 +106,11 @@ const ElevatorWristPosition kPanelBackwardUpperPos{1.50, -M_PI / 2.0};
 const ElevatorWristPosition kPanelCargoForwardPos{0.0, M_PI / 2.0};
 const ElevatorWristPosition kPanelCargoBackwardPos{0.0, -M_PI / 2.0};
 
-const ElevatorWristPosition kBallForwardLowerPos{0.42, M_PI / 2.0};
-const ElevatorWristPosition kBallBackwardLowerPos{0.14, -M_PI / 2.0};
+const ElevatorWristPosition kBallForwardLowerPos{0.21, 1.27};
+const ElevatorWristPosition kBallBackwardLowerPos{0.40, -1.99};
 
-const ElevatorWristPosition kBallForwardMiddlePos{1.16, 1.546};
-const ElevatorWristPosition kBallBackwardMiddlePos{0.90, -1.546};
+const ElevatorWristPosition kBallForwardMiddlePos{0.90, 1.21};
+const ElevatorWristPosition kBallBackwardMiddlePos{1.17, -1.98};
 
 const ElevatorWristPosition kBallForwardUpperPos{1.51, 0.961};
 const ElevatorWristPosition kBallBackwardUpperPos{1.44, -1.217};
