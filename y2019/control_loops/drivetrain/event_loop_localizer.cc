@@ -25,12 +25,13 @@ MakeCameras(EventLoopLocalizer::Pose *pose) {
 }
 
 EventLoopLocalizer::EventLoopLocalizer(
-    const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>
-        &dt_config,
+    const ::frc971::control_loops::drivetrain::DrivetrainConfig<double> &
+        dt_config,
     ::aos::EventLoop *event_loop)
     : event_loop_(event_loop),
       cameras_(MakeCameras(&robot_pose_)),
-      localizer_(dt_config, &robot_pose_) {
+      localizer_(dt_config, &robot_pose_),
+      target_selector_(event_loop) {
   localizer_.ResetInitialState(::aos::monotonic_clock::now(),
                                Localizer::State::Zero(), localizer_.P());
   ResetPosition(::aos::monotonic_clock::now(), 0.5, 3.4, 0.0);

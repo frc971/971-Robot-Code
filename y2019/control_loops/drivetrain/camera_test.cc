@@ -8,7 +8,8 @@ namespace testing {
 
 // Check that a Target's basic operations work.
 TEST(TargetTest, BasicTargetTest) {
-  Target target({{1, 2, 3}, M_PI / 2.0}, 1.234, Target::GoalType::kHatches);
+  Target target({{1, 2, 3}, M_PI / 2.0}, 1.234,
+                Target::TargetType::kFaceCargoBay, Target::GoalType::kHatches);
 
   EXPECT_EQ(1.0, target.pose().abs_pos().x());
   EXPECT_EQ(2.0, target.pose().abs_pos().y());
@@ -16,6 +17,7 @@ TEST(TargetTest, BasicTargetTest) {
   EXPECT_EQ(M_PI / 2.0, target.pose().abs_theta());
   EXPECT_EQ(1.234, target.radius());
   EXPECT_EQ(Target::GoalType::kHatches, target.goal_type());
+  EXPECT_EQ(Target::TargetType::kFaceCargoBay, target.target_type());
 
   EXPECT_FALSE(target.occluded());
   target.set_occluded(true);

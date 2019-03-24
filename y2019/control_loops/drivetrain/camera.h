@@ -48,9 +48,24 @@ class TypedTarget {
     // Spots for both (cargo ship, human loading).
     kBoth,
   };
+  // Which target this is within a given field quadrant:
+  enum class TargetType {
+    kHPSlot,
+    kFaceCargoBay,
+    kNearSideCargoBay,
+    kMidSideCargoBay,
+    kFarSideCargoBay,
+    kNearRocket,
+    kFarRocket,
+    kRocketPortal,
+  };
   TypedTarget(const Pose &pose, double radius = 0,
+              TargetType target_type = TargetType::kHPSlot,
               GoalType goal_type = GoalType::kBoth)
-      : pose_(pose), radius_(radius), goal_type_(goal_type) {}
+      : pose_(pose),
+        radius_(radius),
+        target_type_(target_type),
+        goal_type_(goal_type) {}
   TypedTarget() {}
   Pose pose() const { return pose_; }
   Pose *mutable_pose() { return &pose_; }
@@ -60,6 +75,8 @@ class TypedTarget {
   double radius() const { return radius_; }
   GoalType goal_type() const { return goal_type_; }
   void set_goal_type(GoalType goal_type) { goal_type_ = goal_type; }
+  TargetType target_type() const { return target_type_; }
+  void set_target_type(TargetType target_type) { target_type_ = target_type; }
 
   // Get a list of points for plotting. These points should be plotted on
   // an x/y plane in the global frame with lines connecting the points.
@@ -89,6 +106,7 @@ class TypedTarget {
   // TODO(james): We may actually want a non-zero (possibly negative?) number
   // here for balls.
   double radius_ = 0.0;
+  TargetType target_type_ = TargetType::kHPSlot;
   GoalType goal_type_ = GoalType::kBoth;
 };  // class TypedTarget
 

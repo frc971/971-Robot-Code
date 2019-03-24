@@ -5,6 +5,8 @@
 #include "frc971/control_loops/drivetrain/localizer.h"
 #include "y2019/constants.h"
 #include "y2019/control_loops/drivetrain/camera.h"
+#include "y2019/control_loops/drivetrain/target_selector.q.h"
+#include "y2019/control_loops/superstructure/superstructure.q.h"
 
 namespace y2019 {
 namespace control_loops {
@@ -27,7 +29,16 @@ class TargetSelector
   typedef TypedCamera<y2019::constants::Field::kNumTargets,
                       /*num_obstacles=*/0, double> FakeCamera;
 
-  TargetSelector();
+  enum class SelectionHint {
+    // No hint
+    kNone = 0,
+    // Cargo ship bays
+    kNearShip = 1,
+    kMidShip = 2,
+    kFarShip = 3,
+  };
+
+  TargetSelector(::aos::EventLoop *event_loop);
 
   bool UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
                        double command_speed) override;
@@ -54,6 +65,14 @@ class TargetSelector
                                              .nominal_height_noise = 0};
   FakeCamera front_viewer_;
   FakeCamera back_viewer_;
+
+  ::aos::Fetcher<drivetrain::TargetSelectorHint> hint_fetcher_;
+  ::aos::Fetcher<superstructure::SuperstructureQueue::Goal>
+      superstructure_goal_fetcher_;
+
+  // Whether we are currently in ball mode.
+  bool ball_mode_ = false;
+  SelectionHint target_hint_ = SelectionHint::kNone;
 };
 
 }  // namespace control_loops
