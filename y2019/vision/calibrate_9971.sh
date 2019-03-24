@@ -17,7 +17,7 @@ calibration() {
 calibration \
     --camera_id 1 \
     --tape_start_x=-12.5 \
-    --tape_start_y=0.0 \
+    --tape_start_y=-1.0 \
     --tape_direction_x=-1.0 \
     --tape_direction_y=0.0 \
     --beginning_tape_measure_reading=16 \

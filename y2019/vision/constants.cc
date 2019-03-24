@@ -7,16 +7,16 @@ static constexpr double kInchesToMeters = 0.0254;
 
 CameraCalibration camera_1 = {
     {
-        -0.873939 / 180.0 * M_PI, 338.976, 2.44587 / 180.0 * M_PI,
+        -1.01208 / 180.0 * M_PI, 342.679, 1.79649 / 180.0 * M_PI,
     },
     {
-        {{-5.46283 * kInchesToMeters, 2.98951 * kInchesToMeters,
-          33.0848 * kInchesToMeters}},
-        181.951 / 180.0 * M_PI,
+        {{-5.08996 * kInchesToMeters, 1.82468 * kInchesToMeters,
+          33.2047 * kInchesToMeters}},
+        -178.111 / 180.0 * M_PI,
     },
     {
         1,
-        {{-12.5 * kInchesToMeters, 0.0}},
+        {{-12.5 * kInchesToMeters, -1 * kInchesToMeters}},
         {{-1 * kInchesToMeters, 0.0}},
         16,
         "/home/alex/cam1/debug_viewer_jpeg_",
