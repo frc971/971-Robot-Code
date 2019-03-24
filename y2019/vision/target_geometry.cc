@@ -236,8 +236,10 @@ IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
   double params_4point[ExtrinsicParams::kNumParams];
   default_extrinsics_.set(&params_4point[0]);
 
-  Problem problem_8point;
-  Problem problem_4point;
+  Problem::Options problem_options;
+  problem_options.context = ceres_context_.get();
+  Problem problem_8point(problem_options);
+  Problem problem_4point(problem_options);
 
   ::std::array<aos::vision::Vector<2>, 8> target_value = target.ToPointList();
   ::std::array<aos::vision::Vector<2>, 8> template_value =

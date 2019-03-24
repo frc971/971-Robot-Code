@@ -1,13 +1,18 @@
 #include "y2019/vision/target_finder.h"
 
 #include "aos/vision/blob/hierarchical_contour_merge.h"
+#include "ceres/ceres.h"
 
 using namespace aos::vision;
 
 namespace y2019 {
 namespace vision {
 
-TargetFinder::TargetFinder() : target_template_(Target::MakeTemplate()) {}
+TargetFinder::TargetFinder()
+    : target_template_(Target::MakeTemplate()),
+      ceres_context_(ceres::Context::Create()) {}
+
+TargetFinder::~TargetFinder() {}
 
 aos::vision::RangeImage TargetFinder::Threshold(aos::vision::ImagePtr image) {
   const uint8_t threshold_value = GetThresholdValue();
@@ -550,8 +555,9 @@ std::vector<IntermediateResult> TargetFinder::FilterResults(
     valid_result_count_++;
   }
   if (print_rate > 0 && frame_count_ > print_rate) {
-    LOG(INFO, "Found (%zu / %zu)(%.2f) targets.\n", valid_result_count_,
-        frame_count_, (double)valid_result_count_ / (double)frame_count_);
+    LOG(INFO) << "Found (" << valid_result_count_ << " / " << frame_count_
+              << ")(" << ((double)valid_result_count_ / (double)frame_count_)
+              << " targets.";
     frame_count_ = 0;
     valid_result_count_ = 0;
   }

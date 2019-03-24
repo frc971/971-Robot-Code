@@ -1,14 +1,21 @@
 #ifndef _Y2019_VISION_TARGET_FINDER_H_
 #define _Y2019_VISION_TARGET_FINDER_H_
 
+#include <memory>
+
+#include "aos/vision/blob/contour.h"
 #include "aos/vision/blob/region_alloc.h"
 #include "aos/vision/blob/threshold.h"
 #include "aos/vision/blob/transpose.h"
-#include "aos/vision/blob/contour.h"
 #include "aos/vision/debug/overlay.h"
 #include "aos/vision/math/vector.h"
 #include "y2019/vision/target_types.h"
 
+namespace ceres {
+
+class Context;
+
+}  // namespace ceres
 namespace y2019 {
 namespace vision {
 
@@ -26,6 +33,8 @@ struct Polygon {
 class TargetFinder {
  public:
   TargetFinder();
+  ~TargetFinder();
+
   // Turn a raw image into blob range image.
   aos::vision::RangeImage Threshold(aos::vision::ImagePtr image);
 
@@ -87,6 +96,8 @@ class TargetFinder {
   IntrinsicParams intrinsics_;
 
   ExtrinsicParams default_extrinsics_;
+
+  const std::unique_ptr<ceres::Context> ceres_context_;
 
   // Counts for logging.
   size_t frame_count_;
