@@ -111,8 +111,8 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
     double expected_x = my_drivetrain_queue_.status->trajectory_logging.x;
     double expected_y = my_drivetrain_queue_.status->trajectory_logging.y;
     auto actual = drivetrain_motor_plant_.GetPosition();
-    EXPECT_NEAR(actual(0), expected_x, 3e-3);
-    EXPECT_NEAR(actual(1), expected_y, 3e-3);
+    EXPECT_NEAR(actual(0), expected_x, 1e-2);
+    EXPECT_NEAR(actual(1), expected_y, 1e-2);
   }
 
   void WaitForTrajectoryPlan() {
