@@ -89,6 +89,7 @@ const ButtonLocation kMidCargoHint(3, 16);
 const ButtonLocation kFarCargoHint(4, 2);
 
 const ElevatorWristPosition kStowPos{0.36, 0.0};
+const ElevatorWristPosition kClimbPos{0.0, M_PI / 4.0};
 
 const ElevatorWristPosition kPanelHPIntakeForwrdPos{0.01, M_PI / 2.0};
 const ElevatorWristPosition kPanelHPIntakeBackwardPos{0.015, -M_PI / 2.0};
@@ -353,6 +354,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
       new_superstructure_goal->stilts.unsafe_goal = 0.005;
       new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
       new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
+    }
+
+    if (superstructure_queue.status->stilts.position > 0.3) {
+      elevator_wrist_pos_ = kClimbPos;
     }
 
     if (superstructure_queue.status->stilts.position > kDeployStiltPosition &&
