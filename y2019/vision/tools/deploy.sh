@@ -45,16 +45,24 @@ fi
 
 sleep 5
 
-if udevadm info -a -n /dev/sda | grep JeVois -q;
-then
-  echo "Jevois at /dev/sda"
+JEVOIS_SD=
+for SD in /dev/sd[a-z]; do
+  if udevadm info -a -n "${SD}" | grep JeVois -q; then
+    echo "Jevois at ${SD}"
+    JEVOIS_SD="${SD}"
+    break
+  fi
+done
+if [[ -z ${JEVOIS_SD} ]]; then
+  echo "Failed to find Jevois. Stopping now"
+  exit 1
 fi
 
 if ! mount | grep "${TARGET_DIR}" -q
 then
   sudo mkdir -p "${TARGET_DIR}"
 
-  sudo mount /dev/sda "${TARGET_DIR}"
+  sudo mount "${JEVOIS_SD}" "${TARGET_DIR}"
 fi
 
 echo "Waiting for fs ..."
