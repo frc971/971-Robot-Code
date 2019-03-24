@@ -89,13 +89,15 @@ int main(int argc, char **argv) {
   params0.set_fps(15);
   params0.set_height(480);
 
+  aos::vision::FastYuyvYPooledThresholder thresholder;
+
   ::std::unique_ptr<CameraStream> camera0(
       new CameraStream(params0, "/dev/video0"));
   camera0->set_on_frame([&](DataRef data,
                             monotonic_clock::time_point monotonic_now) {
     aos::vision::ImageFormat fmt{640, 480};
-    aos::vision::BlobList imgs = aos::vision::FindBlobs(
-        aos::vision::FastYuyvYThreshold(fmt, data.data(), 120));
+    aos::vision::BlobList imgs =
+        aos::vision::FindBlobs(thresholder.Threshold(fmt, data.data(), 120));
     finder_.PreFilter(&imgs);
     LOG(INFO, "Blobs: (%zu).\n", imgs.size());
 
