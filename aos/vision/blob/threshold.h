@@ -1,6 +1,10 @@
 #ifndef AOS_VISION_BLOB_THRESHOLD_H_
 #define AOS_VISION_BLOB_THRESHOLD_H_
 
+#include <condition_variable>
+#include <mutex>
+#include <thread>
+
 #include "aos/vision/blob/range_image.h"
 #include "aos/vision/image/image_types.h"
 
@@ -79,6 +83,58 @@ inline RangeImage SlowYuyvYThreshold(ImageFormat fmt, const char *data,
 //
 // This is implemented via some tricky bit shuffling that goes fast.
 RangeImage FastYuyvYThreshold(ImageFormat fmt, const char *data, uint8_t value);
+
+// Manages a pool of threads which do sharded thresholding.
+class FastYuyvYPooledThresholder {
+ public:
+  // The number of threads we'll use.
+  static constexpr int kThreads = 4;
+
+  FastYuyvYPooledThresholder();
+  // Shuts down and joins the threads.
+  ~FastYuyvYPooledThresholder();
+
+  // Actually does a threshold, merges the result, and returns it.
+  RangeImage Threshold(ImageFormat fmt, const char *data, uint8_t value);
+
+ private:
+  enum class ThreadState {
+    // Each thread moves itself into this state once it's done processing the
+    // previous input data.
+    kWaitingForInputData,
+    // The main thread moves all the threads into this state once it has
+    // finished setting up new input data.
+    kProcessing,
+  };
+
+  // The main function for a thread.
+  void RunThread(int index);
+
+  // Returns true if all threads are currently done.
+  bool AllThreadsDone() const {
+    for (ThreadState state : states_) {
+      if (state != ThreadState::kWaitingForInputData) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  std::array<std::thread, kThreads> threads_;
+  // Protects access to the states_ and coordinates with condition_variable_.
+  std::mutex mutex_;
+  // Signals changes to states_ and quit_.
+  std::condition_variable condition_variable_;
+  bool quit_ = false;
+
+  std::array<ThreadState, kThreads> states_;
+
+  // Access to these is protected by coordination via states_.
+  ImageFormat input_format_;
+  const char *input_data_;
+  uint8_t input_value_;
+  std::array<RangeImage, kThreads> outputs_;
+};
 
 }  // namespace vision
 }  // namespace aos
