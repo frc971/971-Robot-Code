@@ -6,6 +6,7 @@ message LocalizerControl {
   float x;      // X position, meters
   float y;      // Y position, meters
   float theta;  // heading, radians
+  double theta_uncertainty; // Uncertainty in theta.
 };
 
 queue LocalizerControl localizer_control;

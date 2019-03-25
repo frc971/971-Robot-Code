@@ -60,6 +60,7 @@ void AutonomousActor::Reset() {
     localizer_resetter->x = 1.0;
     localizer_resetter->y = 1.5 * turn_scalar;
     localizer_resetter->theta = M_PI;
+    localizer_resetter->theta_uncertainty = 0.0000001;
     if (!localizer_resetter.Send()) {
       LOG(ERROR, "Failed to reset localizer.\n");
     }

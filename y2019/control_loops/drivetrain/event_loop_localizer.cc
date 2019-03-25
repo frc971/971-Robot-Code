@@ -34,14 +34,19 @@ EventLoopLocalizer::EventLoopLocalizer(
       target_selector_(event_loop) {
   localizer_.ResetInitialState(::aos::monotonic_clock::now(),
                                Localizer::State::Zero(), localizer_.P());
-  ResetPosition(::aos::monotonic_clock::now(), 0.5, 3.4, 0.0);
+  ResetPosition(::aos::monotonic_clock::now(), 0.5, 3.4, 0.0, 0.0);
   frame_fetcher_ = event_loop_->MakeFetcher<CameraFrame>(
       ".y2019.control_loops.drivetrain.camera_frames");
 }
 
 void EventLoopLocalizer::Reset(::aos::monotonic_clock::time_point now,
-                               const Localizer::State &state) {
-  localizer_.ResetInitialState(now, state, localizer_.P());
+                               const Localizer::State &state,
+                               double theta_uncertainty) {
+  Localizer::StateSquare newP = localizer_.P();
+  if (theta_uncertainty > 0.0) {
+    newP(StateIdx::kTheta, StateIdx::kTheta) = theta_uncertainty;
+  }
+  localizer_.ResetInitialState(now, state, newP);
 }
 
 void EventLoopLocalizer::Update(
