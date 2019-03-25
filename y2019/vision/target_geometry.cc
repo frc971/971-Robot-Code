@@ -313,8 +313,67 @@ IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
   // Normalize all angles to (-M_PI, M_PI]
   IR.extrinsics.r1 = ::aos::math::NormalizeAngle(IR.extrinsics.r1);
   IR.extrinsics.r2 = ::aos::math::NormalizeAngle(IR.extrinsics.r2);
-  IR.backup_extrinsics.r1 = ::aos::math::NormalizeAngle(IR.backup_extrinsics.r1);
-  IR.backup_extrinsics.r2 = ::aos::math::NormalizeAngle(IR.backup_extrinsics.r2);
+  IR.backup_extrinsics.r1 =
+      ::aos::math::NormalizeAngle(IR.backup_extrinsics.r1);
+  IR.backup_extrinsics.r2 =
+      ::aos::math::NormalizeAngle(IR.backup_extrinsics.r2);
+
+  // Ok, let's look at how perpendicular the corners are.
+  // Vector from the outside to inside along the top on the left.
+  const ::Eigen::Vector2d top_left_vector =
+      (target.left.top.GetData() - target.left.inside.GetData())
+          .transpose()
+          .normalized();
+  // Vector up the outside of the left target.
+  const ::Eigen::Vector2d outer_left_vector =
+      (target.left.top.GetData() - target.left.outside.GetData())
+          .transpose()
+          .normalized();
+  // Vector up the inside of the left target.
+  const ::Eigen::Vector2d inner_left_vector =
+      (target.left.inside.GetData() - target.left.bottom.GetData())
+          .transpose()
+          .normalized();
+
+  // Vector from the outside to inside along the top on the right.
+  const ::Eigen::Vector2d top_right_vector =
+      (target.right.top.GetData() - target.right.inside.GetData())
+          .transpose()
+          .normalized();
+  // Vector up the outside of the right target.
+  const ::Eigen::Vector2d outer_right_vector =
+      (target.right.top.GetData() - target.right.outside.GetData())
+          .transpose()
+          .normalized();
+  // Vector up the inside of the right target.
+  const ::Eigen::Vector2d inner_right_vector =
+      (target.right.inside.GetData() - target.right.bottom.GetData())
+          .transpose()
+          .normalized();
+
+  // Now dot the vectors and use that to compute angles.
+  // Left side, outside corner.
+  const double left_outer_corner_dot =
+      (outer_left_vector.transpose() * top_left_vector)(0);
+  // Left side, inside corner.
+  const double left_inner_corner_dot =
+      (inner_left_vector.transpose() * top_left_vector)(0);
+  // Right side, outside corner.
+  const double right_outer_corner_dot =
+      (outer_right_vector.transpose() * top_right_vector)(0);
+  // Right side, inside corner.
+  const double right_inner_corner_dot =
+      (inner_right_vector.transpose() * top_right_vector)(0);
+
+  constexpr double kCornerThreshold = 0.35;
+  if (::std::abs(left_outer_corner_dot) < kCornerThreshold &&
+      ::std::abs(left_inner_corner_dot) < kCornerThreshold &&
+      ::std::abs(right_outer_corner_dot) < kCornerThreshold &&
+      ::std::abs(right_inner_corner_dot) < kCornerThreshold) {
+    IR.good_corners = true;
+  } else {
+    IR.good_corners = false;
+  }
 
   if (verbose) {
     std::cout << "rup = " << intrinsics_.mount_angle * 180 / M_PI << ";\n";
@@ -336,6 +395,21 @@ IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
     std::cout << "z = " << IR.backup_extrinsics.z / kInchesToMeters << ";\n";
     std::cout << "r1 = " << IR.backup_extrinsics.r1 * 180 / M_PI << ";\n";
     std::cout << "r2 = " << IR.backup_extrinsics.r2 * 180 / M_PI << ";\n";
+
+
+    printf("left upper outer corner angle: %f, top (%f, %f), outer (%f, %f)\n",
+           (outer_left_vector.transpose() * top_left_vector)(0),
+           top_left_vector(0, 0), top_left_vector(1, 0),
+           outer_left_vector(0, 0), outer_left_vector(1, 0));
+    printf("left upper inner corner angle: %f\n",
+           (inner_left_vector.transpose() * top_left_vector)(0));
+
+    printf("right upper outer corner angle: %f, top (%f, %f), outer (%f, %f)\n",
+           (outer_right_vector.transpose() * top_right_vector)(0),
+           top_right_vector(0, 0), top_right_vector(1, 0),
+           outer_right_vector(0, 0), outer_right_vector(1, 0));
+    printf("right upper inner corner angle: %f\n",
+           (inner_right_vector.transpose() * top_right_vector)(0));
   }
   return IR;
 }

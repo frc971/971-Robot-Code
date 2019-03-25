@@ -320,11 +320,11 @@ class FilterHarness : public aos::vision::FilterHarness {
   BlobList imgs_last_;
   ImageFormat fmt_last_;
   bool draw_select_blob_ = false;
-  bool draw_contours_ = false;
-  bool draw_raw_poly_ = false;
+  bool draw_contours_ = true;
+  bool draw_raw_poly_ = true;
   bool draw_components_ = false;
   bool draw_raw_target_ = false;
-  bool draw_raw_IR_ = false;
+  bool draw_raw_IR_ = true;
   bool draw_results_ = true;
 };
 

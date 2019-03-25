@@ -518,7 +518,12 @@ bool TargetFinder::MaybePickAndUpdateResult(IntermediateResult *result,
   // Closer targets can have a higher error because they are bigger.
   const double acceptable_error =
       std::max(2 * (75 - 12 * result->extrinsics.z), 75.0);
-  if (result->solver_error < acceptable_error) {
+  if (!result->good_corners) {
+    if (verbose) {
+      printf("Rejecting a target with bad corners: (%f, %f)\n",
+             result->solver_error, result->backup_solver_error);
+    }
+  } else if (result->solver_error < acceptable_error) {
     if (verbose) {
       printf("Using an 8 point solve: %f < %f \n", result->solver_error,
              acceptable_error);

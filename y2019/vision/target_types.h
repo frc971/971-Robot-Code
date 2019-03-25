@@ -105,6 +105,8 @@ struct IntermediateResult {
   ExtrinsicParams backup_extrinsics;
 
   double backup_solver_error;
+
+  bool good_corners;
 };
 
 // Final foramtting ready for output on the wire.
