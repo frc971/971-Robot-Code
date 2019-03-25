@@ -145,6 +145,10 @@ cc_binary(
 gtk_dependent_cc_binary(
     name = "debug_receiver",
     srcs = ["debug_receiver.cc"],
+    restricted_to = [
+        "//tools:k8",
+        "//tools:armhf-debian",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":blob_filters",
