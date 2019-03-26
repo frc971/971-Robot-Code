@@ -71,7 +71,7 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
         localizer_state;
     localizer_state.setZero();
     localizer_state.block<3, 1>(0, 0) = xytheta;
-    localizer_.Reset(monotonic_clock::now(), localizer_state);
+    localizer_.Reset(monotonic_clock::now(), localizer_state, 0.0);
   }
 
   void RunIteration() {
