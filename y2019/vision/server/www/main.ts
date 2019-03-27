@@ -2,8 +2,6 @@ import {FT_TO_M, FIELD_WIDTH} from './constants';
 import {drawField, drawTarget} from './field';
 import {drawRobot} from './robot';
 
-const FIELD_WIDTH = 27 * FT_TO_M;
-
 function main(): void {
   const vis = new Visualiser();
 }
@@ -14,9 +12,10 @@ class Visualiser {
   private theta = 0;
 
   private drawLocked = false;
-  private lockedX = 0;
-  private lockedY = 0;
-  private lockedTheta = 0;
+  private targetLocked = false;
+  private targetX = 0;
+  private targetY = 0;
+  private targetTheta = 0;
 
   constructor() {
     const canvas = <HTMLCanvasElement>document.getElementById('field');

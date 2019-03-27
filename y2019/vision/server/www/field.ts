@@ -29,17 +29,37 @@ const ROCKET_FAR_THETA = Math.PI - ROCKET_NEAR_THETA;
 const HP_Y = ((26 * 12 + 10.5) / 2 - 25.9) * IN_TO_M;
 const HP_THETA = Math.PI;
 
+const HAB_LENGTH = 4 * FT_TO_M;
+const HALF_HAB_3_WIDTH = 2 * FT_TO_M;
+const HAB_2_WIDTH = (3 * 12 + 4) * IN_TO_M;
+const HALF_HAB_1_WIDTH = (6 * 12 + 3.25) * IN_TO_M;
+const HAB_1_LENGTH = (3 * 12 + 11.25) * IN_TO_M;
+
+const DEPOT_WIDTH = (12 + 10.625) * IN_TO_M;
+
 export function drawField(ctx : CanvasRenderingContext2D) : void {
   drawTargets(ctx);
+  drawHab(ctx);
 }
 
 function drawHab(ctx : CanvasRenderingContext2D) : void {
-  ctx.fillstyle = 'rgb(100,100,100)';
-  const habLeft = 5 * FT_TO_M;
-  const habWidth = 5 * FT_TO_M;
-  const habTop = -5 * FT_TO_M;
-  const habHeight = 10 * FT_TO_M;
-  ctx.fillRect(habLeft,habTop,habWidth,habHeight);
+  drawHalfHab(ctx);
+  ctx.save();
+
+  ctx.scale(1, -1);
+  drawHalfHab(ctx);
+
+  ctx.restore();
+}
+
+function drawHalfHab(ctx : CanvasRenderingContext2D) : void {
+  ctx.fillStyle = 'rgb(50, 50, 50)';
+  ctx.fillRect(0, 0, HAB_LENGTH, HALF_HAB_3_WIDTH);
+  ctx.fillStyle = 'rgb(100, 100, 100)';
+  ctx.fillRect(0, HALF_HAB_3_WIDTH, HAB_LENGTH, HAB_2_WIDTH);
+  ctx.fillStyle = 'rgb(200, 200, 200)';
+  ctx.fillRect(HAB_LENGTH, 0, HAB_1_LENGTH, HALF_HAB_1_WIDTH);
+  ctx.strokeRect(0, HALF_HAB_3_WIDTH + HAB_2_WIDTH, HAB_LENGTH, DEPOT_WIDTH);
 }
 
 function drawTargets(ctx : CanvasRenderingContext2D) : void {
