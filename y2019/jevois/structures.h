@@ -144,6 +144,8 @@ enum class CameraCommand : char {
   // Send As, which triggers the bootstrap script to drop directly into USB
   // mode.
   kAs,
+  // Log camera images
+  kLog,
 };
 
 // This is all the information sent from the Teensy to each camera.

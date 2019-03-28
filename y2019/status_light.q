@@ -8,3 +8,9 @@ message StatusLight {
 };
 
 queue StatusLight status_light;
+
+message CameraLog {
+  bool log;
+};
+
+queue CameraLog camera_log;

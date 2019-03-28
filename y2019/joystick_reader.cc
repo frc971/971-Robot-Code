@@ -88,6 +88,8 @@ const ButtonLocation kNearCargoHint(3, 15);
 const ButtonLocation kMidCargoHint(3, 16);
 const ButtonLocation kFarCargoHint(4, 2);
 
+const ButtonLocation kCameraLog(3, 7);
+
 const ElevatorWristPosition kStowPos{0.36, 0.0};
 const ElevatorWristPosition kClimbPos{0.0, M_PI / 4.0};
 
@@ -396,6 +398,13 @@ class Reader : public ::aos::input::ActionJoystickInput {
         last_vision_control_ + ::std::chrono::milliseconds(50)) {
       video_tx_->Send(vision_control_);
       last_vision_control_ = monotonic_now;
+    }
+
+    {
+      auto camera_log_message = camera_log.MakeMessage();
+      camera_log_message->log = data.IsPressed(kCameraLog);
+      LOG_STRUCT(DEBUG, "camera_log", *camera_log_message);
+      camera_log_message.Send();
     }
   }
 

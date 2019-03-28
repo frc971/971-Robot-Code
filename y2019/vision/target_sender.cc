@@ -8,10 +8,10 @@
 #include "aos/vision/events/udp.h"
 #include "y2019/jevois/camera/image_stream.h"
 #include "y2019/jevois/camera/reader.h"
-
 #include "y2019/jevois/serial.h"
 #include "y2019/jevois/structures.h"
 #include "y2019/jevois/uart.h"
+#include "y2019/vision/image_writer.h"
 
 // This has to be last to preserve compatibility with other headers using AOS
 // logging.
@@ -83,6 +83,9 @@ int main(int argc, char **argv) {
   // dup2(itsDev, 2);
 
   TargetFinder finder_;
+  ImageWriter writer;
+  uint32_t image_count = 0;
+  bool log_images = false;
 
   aos::vision::CameraParams params0;
   params0.set_exposure(50);
@@ -167,6 +170,13 @@ int main(int argc, char **argv) {
         LOG(INFO) << "Some problem happened";
       }
     }
+
+    if (log_images) {
+      if ((image_count % 5) == 0) {
+        writer.WriteImage(data);
+      }
+      ++image_count;
+    }
   });
 
   aos::events::EpollLoop loop;
@@ -195,6 +205,10 @@ int main(int argc, char **argv) {
             switch (calibration.camera_command) {
               case CameraCommand::kNormal:
               case CameraCommand::kAs:
+                log_images = false;
+                break;
+              case CameraCommand::kLog:
+                log_images = true;
                 break;
               case CameraCommand::kUsb:
                 return 0;

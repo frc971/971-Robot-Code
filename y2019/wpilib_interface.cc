@@ -314,10 +314,13 @@ class CameraReader {
     using namespace frc971::jevois;
     RoborioToTeensy to_teensy{};
     to_teensy.realtime_now = aos::realtime_clock::now();
+    camera_log.FetchLatest();
     if (activate_usb_ && !activate_usb_->Get()) {
       to_teensy.camera_command = CameraCommand::kUsb;
     } else if (activate_passthrough_ && !activate_passthrough_->Get()) {
       to_teensy.camera_command = CameraCommand::kCameraPassthrough;
+    } else if (camera_log.get() && camera_log->log) {
+      to_teensy.camera_command = CameraCommand::kLog;
     } else {
       to_teensy.camera_command = CameraCommand::kNormal;
     }

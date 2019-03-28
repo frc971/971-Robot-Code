@@ -774,6 +774,10 @@ __attribute__((unused)) void TransferData(
             printf("Sending USB mode\n");
             stdin_camera_command = CameraCommand::kUsb;
             break;
+          case 'l':
+            printf("Log mode\n");
+            stdin_camera_command = CameraCommand::kLog;
+            break;
           case 'n':
             printf("Sending normal mode\n");
             stdin_camera_command = CameraCommand::kNormal;
@@ -798,6 +802,7 @@ __attribute__((unused)) void TransferData(
             printf("UART board commands:\n");
             printf("  p: Send passthrough mode\n");
             printf("  u: Send USB mode\n");
+            printf("  l: Send Log mode\n");
             printf("  n: Send normal mode\n");
             printf("  a: Send all-'a' mode\n");
             printf("  c: Dump camera configuration\n");
