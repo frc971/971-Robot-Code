@@ -80,6 +80,7 @@ class FilterHarness : public aos::vision::FilterHarness {
   }
 
   bool HandleBlobs(BlobList imgs, ImageFormat fmt) override {
+    const CameraGeometry camera_geometry = GetCamera(FLAGS_camera)->geometry;
     imgs_last_ = imgs;
     fmt_last_ = fmt;
     // reset for next drawing cycle
@@ -174,8 +175,23 @@ class FilterHarness : public aos::vision::FilterHarness {
     // Check that our current results match possible solutions.
     results = target_finder_.FilterResults(results, 0, draw_results_);
     if (draw_results_) {
-      for (const IntermediateResult &res : results) {
-        DrawTarget(res, {0, 255, 0});
+      for (const IntermediateResult &result : results) {
+        ::std::cout << "Found target x: "
+                    << camera_geometry.location[0] +
+                           ::std::cos(camera_geometry.heading +
+                                      result.extrinsics.r2) *
+                               result.extrinsics.z
+                    << ::std::endl;
+        ::std::cout << "Found target y: "
+                    << camera_geometry.location[1] +
+                           ::std::sin(camera_geometry.heading +
+                                      result.extrinsics.r2) *
+                               result.extrinsics.z
+                    << ::std::endl;
+        ::std::cout << "Found target z: "
+                    << camera_geometry.location[2] + result.extrinsics.y
+                    << ::std::endl;
+        DrawTarget(result, {0, 255, 0});
       }
     }
 
