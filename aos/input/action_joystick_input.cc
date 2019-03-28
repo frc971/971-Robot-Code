@@ -43,7 +43,8 @@ void ActionJoystickInput::RunIteration(
 
 void ActionJoystickInput::StartAuto() {
   LOG(INFO, "Starting auto mode\n");
-  action_queue_.EnqueueAction(::frc971::autonomous::MakeAutonomousAction(0));
+  action_queue_.EnqueueAction(
+      ::frc971::autonomous::MakeAutonomousAction(GetAutonomousMode()));
 }
 
 void ActionJoystickInput::StopAuto() {

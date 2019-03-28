@@ -40,6 +40,10 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
   void StartAuto();
   void StopAuto();
 
+  // Returns the current autonomous mode which has been selected by robot
+  // inputs.
+  virtual uint32_t GetAutonomousMode() { return 0; }
+
   // True if the internal state machine thinks auto is running right now.
   bool auto_running_ = false;
   // True if an action was running last cycle.

@@ -26,7 +26,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
       const ::frc971::autonomous::AutonomousActionParams &params) override;
 
  private:
-  void Reset();
+  void Reset(bool is_left);
 
   double elevator_goal_ = 0.0;
   double wrist_goal_ = 0.0;
