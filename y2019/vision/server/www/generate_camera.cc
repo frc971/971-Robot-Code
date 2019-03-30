@@ -15,6 +15,8 @@ void DumpTypescriptConstants(const char *fname) {
   out_file << "export const CAMERA_POSES = [\n";
   for (size_t ii = 0; ii < constants::Values::kNumCameras; ++ii) {
     out_file << "    ";
+    // TODO(james): Decide how to manage visualization for practice and code
+    // bots.
     DumpPose(&out_file,
              GetCamera(CameraSerialNumbers(CompBotTeensyId())[ii])->geometry);
     out_file << ",\n";

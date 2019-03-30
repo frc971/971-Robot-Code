@@ -1,4 +1,5 @@
 load("//aos/seasocks:gen_embedded.bzl", "gen_embedded")
+load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 load("//aos/downloader:downloader.bzl", "aos_downloader_dir")
 load("@build_bazel_rules_typescript//:defs.bzl", "ts_library")
 load("@build_bazel_rules_nodejs//:defs.bzl", "rollup_bundle")
@@ -21,11 +22,16 @@ gen_embedded(
 aos_downloader_dir(
     name = "www_files",
     srcs = [
-        "//y2019/vision/server/www:visualizer_bundle",
         "//y2019/vision/server/www:files",
+        "//y2019/vision/server/www:visualizer_bundle",
     ],
     dir = "www",
     visibility = ["//visibility:public"],
+)
+
+cc_proto_library(
+    name = "server_data_proto",
+    srcs = ["server_data.proto"],
 )
 
 cc_binary(
@@ -34,12 +40,13 @@ cc_binary(
         "server.cc",
     ],
     data = [
-        "//y2019/vision/server/www:visualizer_bundle",
         "//y2019/vision/server/www:files",
+        "//y2019/vision/server/www:visualizer_bundle",
     ],
     visibility = ["//visibility:public"],
     deps = [
         ":gen_embedded",
+        ":server_data_proto",
         "//aos:init",
         "//aos/logging",
         "//aos/time",

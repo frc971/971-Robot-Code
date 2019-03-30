@@ -11,11 +11,13 @@
 #include "aos/time/time.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "internal/Embedded.h"
+#include "google/protobuf/util/json_util.h"
 #include "seasocks/PrintfLogger.h"
 #include "seasocks/Server.h"
 #include "seasocks/StringUtil.h"
 #include "seasocks/WebSocket.h"
 #include "y2019/control_loops/drivetrain/camera.q.h"
+#include "y2019/vision/server/server_data.pb.h"
 
 namespace y2019 {
 namespace vision {
@@ -146,7 +148,8 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
                 std::chrono::nanoseconds(new_frame.timestamp));
         latest_frames[new_frame.camera].targets.clear();
         if (new_frame.num_targets > 0) {
-          last_target_time[new_frame.camera] = now;
+          last_target_time[new_frame.camera] =
+              latest_frames[new_frame.camera].capture_time;
         }
         for (int target = 0; target < new_frame.num_targets; ++target) {
           latest_frames[new_frame.camera].targets.emplace_back();
@@ -159,40 +162,43 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
       // TODO(james): Use protobuf or the such to generate JSON rather than
       // doing so manually.
       last_send_time = now;
-      std::ostringstream stream;
-      stream << "{\n";
-
-      stream << "\"robot\": {";
-      stream << "\"x\": " << drivetrain_status->x << ",";
-      stream << "\"y\": " << drivetrain_status->y << ",";
-      stream << "\"theta\": " << drivetrain_status->theta;
-      stream << "}\n";
-      stream << ",\"target\": {";
-      stream << "\"x\": " << drivetrain_status->line_follow_logging.x << ",";
-      stream << "\"y\": " << drivetrain_status->line_follow_logging.y << ",";
-      stream << "\"theta\": " << drivetrain_status->line_follow_logging.theta
-             << ",";
-      stream << "\"frozen\": " << drivetrain_status->line_follow_logging.frozen
-             << ",";
-      stream << "\"have_target\": "
-             << drivetrain_status->line_follow_logging.have_target;
-      stream << "} ";
-
-      stream << ", \"last_target_age\": [";
-      bool first = true;
-      for (const auto t : last_target_time) {
-        if (!first) {
-          stream << ",";
-        }
-        first = false;
-        stream << ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-                      now - t).count();
+      DebugData debug_data;
+      debug_data.mutable_robot_pose()->set_x(drivetrain_status->x);
+      debug_data.mutable_robot_pose()->set_y(drivetrain_status->y);
+      debug_data.mutable_robot_pose()->set_theta(drivetrain_status->theta);
+      {
+        LineFollowDebug *line_debug = debug_data.mutable_line_follow_debug();
+        line_debug->set_frozen(drivetrain_status->line_follow_logging.frozen);
+        line_debug->set_have_target(
+            drivetrain_status->line_follow_logging.have_target);
+        line_debug->mutable_goal_target()->set_x(
+            drivetrain_status->line_follow_logging.x);
+        line_debug->mutable_goal_target()->set_y(
+            drivetrain_status->line_follow_logging.y);
+        line_debug->mutable_goal_target()->set_theta(
+            drivetrain_status->line_follow_logging.theta);
       }
-      stream << "]";
+      for (size_t ii = 0; ii < latest_frames.size(); ++ii) {
+        CameraDebug *camera_debug = debug_data.add_camera_debug();
+        LocalCameraFrame cur_frame = latest_frames[ii];
 
-      stream << "}";
+        camera_debug->set_current_frame_age(
+            ::std::chrono::duration_cast<::std::chrono::duration<double>>(
+                now - cur_frame.capture_time).count());
+        camera_debug->set_time_since_last_target(
+            ::std::chrono::duration_cast<::std::chrono::duration<double>>(
+                now - last_target_time[ii]).count());
+        for (const auto &target : cur_frame.targets) {
+          Pose *pose = camera_debug->add_targets();
+          pose->set_x(target.x);
+          pose->set_y(target.y);
+          pose->set_theta(target.theta);
+        }
+      }
+      ::std::string json;
+      google::protobuf::util::MessageToJsonString(debug_data, &json);
       server->execute(
-          std::make_shared<UpdateData>(websocket_handler, stream.str()));
+          std::make_shared<UpdateData>(websocket_handler, ::std::move(json)));
     }
   }
 }

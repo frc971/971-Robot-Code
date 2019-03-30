@@ -28,18 +28,18 @@ class Visualiser {
     reader.addEventListener('loadend', (e) => {
       const text = e.srcElement.result;
       const j = JSON.parse(text);
-      this.x = j.robot.x;
-      this.y = j.robot.y;
-      this.theta = j.robot.theta;
+      this.x = j.robotPose.x;
+      this.y = j.robotPose.y;
+      this.theta = j.robotPose.theta;
 
-      if(j.target) {
-        this.targetLocked = j.target.frozen && j.target.have_target;
-        this.targetX = j.target.x;
-        this.targetY = j.target.y;
-        this.targetTheta = j.target.theta;
+      if(j.lineFollowDebug) {
+        this.targetLocked = j.lineFollowDebug.frozen && j.lineFollowDebug.haveTarget;
+        this.targetX = j.lineFollowDebug.goalTarget.x;
+        this.targetY = j.lineFollowDebug.goalTarget.y;
+        this.targetTheta = j.lineFollowDebug.goalTarget.theta;
       }
       for (let ii of [0, 1, 2, 3, 4]) {
-        if (j.last_target_age[ii] > 0.25) {
+        if (j.cameraDebug[ii].timeSinceLastTarget > 0.25) {
           this.cameraColors[ii] = 'red';
         } else {
           this.cameraColors[ii] = 'green';
