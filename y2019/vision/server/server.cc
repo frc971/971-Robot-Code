@@ -125,6 +125,8 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
   auto &drivetrain_status = frc971::control_loops::drivetrain_queue.status;
 
   std::array<LocalCameraFrame, 5> latest_frames;
+  std::array<aos::monotonic_clock::time_point, 5> last_target_time;
+  last_target_time.fill(aos::monotonic_clock::epoch());
   aos::monotonic_clock::time_point last_send_time = aos::monotonic_clock::now();
 
   while (true) {
@@ -134,6 +136,7 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
       // Try again if we don't have any drivetrain statuses.
       continue;
     }
+    const auto now = aos::monotonic_clock::now();
 
     {
       const auto &new_frame = *camera_frames;
@@ -142,6 +145,9 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
             aos::monotonic_clock::time_point(
                 std::chrono::nanoseconds(new_frame.timestamp));
         latest_frames[new_frame.camera].targets.clear();
+        if (new_frame.num_targets > 0) {
+          last_target_time[new_frame.camera] = now;
+        }
         for (int target = 0; target < new_frame.num_targets; ++target) {
           latest_frames[new_frame.camera].targets.emplace_back();
           // TODO: Do something useful.
@@ -149,8 +155,9 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
       }
     }
 
-    const auto now = aos::monotonic_clock::now();
     if (now > last_send_time + std::chrono::milliseconds(100)) {
+      // TODO(james): Use protobuf or the such to generate JSON rather than
+      // doing so manually.
       last_send_time = now;
       std::ostringstream stream;
       stream << "{\n";
@@ -170,6 +177,18 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
       stream << "\"have_target\": "
              << drivetrain_status->line_follow_logging.have_target;
       stream << "} ";
+
+      stream << ", \"last_target_age\": [";
+      bool first = true;
+      for (const auto t : last_target_time) {
+        if (!first) {
+          stream << ",";
+        }
+        first = false;
+        stream << ::std::chrono::duration_cast<::std::chrono::duration<double>>(
+                      now - t).count();
+      }
+      stream << "]";
 
       stream << "}";
       server->execute(
