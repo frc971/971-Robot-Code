@@ -133,20 +133,20 @@ CameraCalibration camera_9 = {
 
 CameraCalibration camera_10 = {
     {
-        -0.190556 / 180.0 * M_PI, 345.022, 0.468494 / 180.0 * M_PI,
+        -0.305107 / 180.0 * M_PI, 336.952, -0.0804389 / 180.0 * M_PI,
     },
     {
-        {{-4.83005 * kInchesToMeters, 2.95565 * kInchesToMeters,
-          33.3624 * kInchesToMeters}},
-        182.204 / 180.0 * M_PI,
+        {{-5.64467 * kInchesToMeters, 2.41348 * kInchesToMeters,
+          33.1669 * kInchesToMeters}},
+        181.598 / 180.0 * M_PI,
     },
     {
         10,
         {{-12.5 * kInchesToMeters, 0.0}},
         {{-1 * kInchesToMeters, 0.0}},
         11,
-        "data/cam10_0/debug_viewer_jpeg_",
-        75,
+        "data/cam10_1/debug_viewer_jpeg_",
+        69,
     }};
 
 CameraCalibration camera_14 = {

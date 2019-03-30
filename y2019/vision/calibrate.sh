@@ -21,9 +21,9 @@ calibration \
     --tape_direction_x=-1.0 \
     --tape_direction_y=0.0 \
     --beginning_tape_measure_reading=11 \
-    --image_count=75 \
+    --image_count=69 \
     --constants=constants.cc \
-    --prefix data/cam10_0/debug_viewer_jpeg_
+    --prefix data/cam10_1/debug_viewer_jpeg_
 
 calibration \
     --camera_id 6 \
