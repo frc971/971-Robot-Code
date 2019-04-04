@@ -6,7 +6,7 @@ package(default_visibility = ["//visibility:public"])
 filegroup(
     name = "files",
     srcs = glob([
-        "**/*",
+        "**/*.html",
     ]),
 )
 
@@ -14,7 +14,20 @@ ts_library(
     name = "visualizer",
     srcs = glob([
         "*.ts",
-    ]),
+    ]) + ["camera_constants.ts"],
+)
+
+cc_binary(
+    name = "generate_camera",
+    srcs = ["generate_camera.cc"],
+    deps = ["//y2019:constants"],
+)
+
+genrule(
+    name = "gen_cam_ts",
+    outs = ["camera_constants.ts"],
+    cmd = "$(location :generate_camera) $@",
+    tools = [":generate_camera"],
 )
 
 rollup_bundle(

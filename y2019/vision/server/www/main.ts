@@ -16,6 +16,7 @@ class Visualiser {
   private targetX = 0;
   private targetY = 0;
   private targetTheta = 0;
+  private cameraColors = ['red', 'red', 'red', 'red', 'red'];
 
   constructor() {
     const canvas = <HTMLCanvasElement>document.getElementById('field');
@@ -36,6 +37,13 @@ class Visualiser {
         this.targetX = j.target.x;
         this.targetY = j.target.y;
         this.targetTheta = j.target.theta;
+      }
+      for (let ii of [0, 1, 2, 3, 4]) {
+        if (j.last_target_age[ii] > 0.25) {
+          this.cameraColors[ii] = 'red';
+        } else {
+          this.cameraColors[ii] = 'green';
+        }
       }
     });
     socket.addEventListener('message', (event) => {
@@ -63,7 +71,7 @@ class Visualiser {
     this.reset(ctx);
 
     drawField(ctx);
-    drawRobot(ctx, this.x, this.y, this.theta);
+    drawRobot(ctx, this.x, this.y, this.theta, this.cameraColors);
     ctx.save();
     ctx.lineWidth = 2.0 * ctx.lineWidth;
     if (this.targetLocked) {
