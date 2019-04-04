@@ -7,12 +7,6 @@
 #include <array>
 
 #include "third_party/GSL/include/gsl/gsl"
-#ifdef __linux__
-#include "aos/logging/logging.h"
-#else
-#define CHECK(...)
-#define CHECK_LE(...)
-#endif
 
 // This file contains code for encoding and decoding Consistent Overhead Byte
 // Stuffing data. <http://www.stuartcheshire.org/papers/cobsforton.pdf> has
@@ -101,14 +95,18 @@ gsl::span<char> CobsEncode(
     gsl::span<const char> input,
     std::array<char, CobsMaxEncodedSize(max_decoded_size)> *output_buffer) {
   static_assert(max_decoded_size > 0, "Empty buffers not supported");
-  CHECK_LE(static_cast<size_t>(input.size()), max_decoded_size);
+  if (static_cast<size_t>(input.size()) > max_decoded_size) {
+    __builtin_trap();
+  }
   auto input_pointer = input.begin();
   auto output_pointer = output_buffer->begin();
   auto code_pointer = output_pointer;
   ++output_pointer;
   uint8_t code = 1;
   while (input_pointer < input.end()) {
-    CHECK(output_pointer < output_buffer->end());
+    if (output_pointer >= output_buffer->end()) {
+      __builtin_trap();
+    }
     if (*input_pointer == 0u) {
       *code_pointer = code;
       code_pointer = output_pointer;
@@ -128,7 +126,9 @@ gsl::span<char> CobsEncode(
     ++input_pointer;
   }
   *code_pointer = code;
-  CHECK(output_pointer <= output_buffer->end());
+  if (output_pointer > output_buffer->end()) {
+    __builtin_trap();
+  }
   return gsl::span<char>(*output_buffer)
       .subspan(0, output_pointer - output_buffer->begin());
 }
@@ -137,8 +137,10 @@ template <size_t max_decoded_size>
 gsl::span<char> CobsDecode(gsl::span<const char> input,
                            std::array<char, max_decoded_size> *output_buffer) {
   static_assert(max_decoded_size > 0, "Empty buffers not supported");
-  CHECK_LE(static_cast<size_t>(input.size()),
-           CobsMaxEncodedSize(max_decoded_size));
+  if (static_cast<size_t>(input.size()) >
+      CobsMaxEncodedSize(max_decoded_size)) {
+    __builtin_trap();
+  }
   auto input_pointer = input.begin();
   auto output_pointer = output_buffer->begin();
   while (input_pointer < input.end()) {

@@ -93,8 +93,6 @@ cc_binary(
     restricted_to = VISION_TARGETS,
     deps = [
         ":target_finder",
-        "//aos/logging",
-        "//aos/logging:implementations",
         "//aos/vision/blob:codec",
         "//aos/vision/blob:find_blob",
         "//aos/vision/events:epoll_events",
@@ -105,6 +103,7 @@ cc_binary(
         "//y2019/jevois:uart",
         "//y2019/jevois/camera:image_stream",
         "//y2019/jevois/camera:reader",
+        "@com_github_google_glog//:glog",
         "@com_google_ceres_solver//:ceres",
     ],
 )

@@ -1,9 +1,8 @@
-#ifndef _AOS_SCOPED_FD_
-#define _AOS_SCOPED_FD_
+#ifndef AOS_SCOPED_SCOPED_FD_H_
+#define AOS_SCOPED_SCOPED_FD_H_
 
 #include <unistd.h>
 
-#include "aos/logging/logging.h"
 #include "aos/macros.h"
 
 namespace aos {
@@ -29,16 +28,10 @@ class ScopedFD {
 
  private:
   int fd_;
-  void Close() {
-    if (fd_ != -1) {
-      if (close(fd_) == -1) {
-        PLOG(WARNING, "close(%d) failed", fd_);
-      }
-    }
-  }
+  void Close();
   DISALLOW_COPY_AND_ASSIGN(ScopedFD);
 };
 
 }  // namespace aos
 
-#endif  // _AOS_SCOPED_FD_
+#endif  // AOS_SCOPED_SCOPED_FD_H_

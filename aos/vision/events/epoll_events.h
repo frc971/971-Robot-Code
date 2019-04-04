@@ -75,20 +75,11 @@ class EpollEvent {
   virtual void ReadEvent() = 0;
 
   // Handle Events directly from epoll.
-  virtual void DirectEvent(uint32_t events) {
-    if ((events & ~(EPOLLIN | EPOLLPRI | EPOLLERR)) != 0) {
-      LOG(FATAL, "unexpected epoll events set in %x on %d\n",
-          events, fd());
-    }
-    ReadEvent();
-  }
+  virtual void DirectEvent(uint32_t events);
 
   EpollLoop *loop() { return loop_; }
 
-  void SetEvents(uint32_t events) {
-    events_ |= events;
-    CHECK(!loop_);
-  }
+  void SetEvents(uint32_t events);
 
   uint32_t events() const { return events_; }
 

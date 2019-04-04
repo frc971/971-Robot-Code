@@ -12,8 +12,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "aos/logging/logging.h"
 #include "aos/time/time.h"
+#include "glog/logging.h"
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
@@ -45,29 +45,27 @@ Reader::Reader(const std::string &dev_name, ProcessCb process,
     : dev_name_(dev_name), process_(std::move(process)), params_(params) {
   struct stat st;
   if (stat(dev_name.c_str(), &st) == -1) {
-    PLOG(FATAL, "Cannot identify '%s'", dev_name.c_str());
+    PLOG(FATAL) << "Cannot identify '" << dev_name << "'";
   }
   if (!S_ISCHR(st.st_mode)) {
-    PLOG(FATAL, "%s is no device\n", dev_name.c_str());
+    PLOG(FATAL) << dev_name << " is no device";
   }
 
   fd_ = open(dev_name.c_str(), O_RDWR /* required */ | O_NONBLOCK, 0);
   if (fd_ == -1) {
-    PLOG(FATAL, "Cannot open '%s'", dev_name.c_str());
+    PLOG(FATAL) << "Cannot open '" << dev_name << "'";
   }
 
   Init();
 
   InitMMap();
-  LOG(INFO, "Bat Vision Successfully Initialized.\n");
+  LOG(INFO) << "Bat Vision Successfully Initialized.";
 }
 
 void Reader::QueueBuffer(v4l2_buffer *buf) {
   if (xioctl(fd_, VIDIOC_QBUF, buf) == -1) {
-    PLOG(WARNING,
-         "ioctl VIDIOC_QBUF(%d, %p)."
-         " losing buf #%" PRIu32 "\n",
-         fd_, &buf, buf->index);
+    PLOG(WARNING) << "ioctl VIDIOC_QBUF(" << fd_ << ", " << &buf
+                  << "). losing buf #" << buf->index;
   } else {
     ++queued_;
   }
@@ -81,7 +79,7 @@ void Reader::HandleFrame() {
 
   if (xioctl(fd_, VIDIOC_DQBUF, &buf) == -1) {
     if (errno != EAGAIN) {
-      PLOG(ERROR, "ioctl VIDIOC_DQBUF(%d, %p)", fd_, &buf);
+      PLOG(ERROR) << "ioctl VIDIOC_DQBUF(" << fd_ << ", " << &buf << ")";
     }
     return;
   }
@@ -110,15 +108,15 @@ void Reader::MMapBuffers() {
     buf.memory = V4L2_MEMORY_MMAP;
     buf.index = n;
     if (xioctl(fd_, VIDIOC_QUERYBUF, &buf) == -1) {
-      PLOG(FATAL, "ioctl VIDIOC_QUERYBUF(%d, %p)", fd_, &buf);
+      PLOG(FATAL) << "ioctl VIDIOC_QUERYBUF(" << fd_ << ", " << &buf << ")";
     }
     buffers_[n].length = buf.length;
     buffers_[n].start = mmap(NULL, buf.length, PROT_READ | PROT_WRITE,
                              MAP_SHARED, fd_, buf.m.offset);
     if (buffers_[n].start == MAP_FAILED) {
-      PLOG(FATAL,
-           "mmap(NULL, %zd, PROT_READ | PROT_WRITE, MAP_SHARED, %d, %jd)",
-           (size_t)buf.length, fd_, static_cast<intmax_t>(buf.m.offset));
+      PLOG(FATAL) << "mmap(NULL, " << buf.length
+                  << ", PROT_READ | PROT_WRITE, MAP_SHARED, " << fd_ << ", "
+                  << buf.m.offset << ")";
     }
   }
 }
@@ -131,14 +129,14 @@ void Reader::InitMMap() {
   req.memory = V4L2_MEMORY_MMAP;
   if (xioctl(fd_, VIDIOC_REQBUFS, &req) == -1) {
     if (EINVAL == errno) {
-      LOG(FATAL, "%s does not support memory mapping\n", dev_name_.c_str());
+      LOG(FATAL) << dev_name_ << " does not support memory mapping\n";
     } else {
-      PLOG(FATAL, "ioctl VIDIOC_REQBUFS(%d, %p)\n", fd_, &req);
+      LOG(FATAL) << "ioctl VIDIOC_REQBUFS(" << fd_ << ", " << &req << ")";
     }
   }
   queued_ = kNumBuffers;
   if (req.count != kNumBuffers) {
-    LOG(FATAL, "Insufficient buffer memory on %s\n", dev_name_.c_str());
+    LOG(FATAL) << "Insufficient buffer memory on " << dev_name_;
   }
 }
 
@@ -153,11 +151,11 @@ bool Reader::SetCameraControl(uint32_t id, const char *name, int value) {
   r = xioctl(fd_, 0xc00c561b, &getArg);
   if (r == 0) {
     if (getArg.value == value) {
-      LOG(DEBUG, "Camera control %s was already %d\n", name, getArg.value);
+      VLOG(1) << "Camera control " << name << " was already " << getArg.value;
       return true;
     }
   } else if (errno == EINVAL) {
-    LOG(DEBUG, "Camera control %s is invalid\n", name);
+    VLOG(1) << "Camera control " << name << " is invalid";
     errno = 0;
     return false;
   }
@@ -167,12 +165,12 @@ bool Reader::SetCameraControl(uint32_t id, const char *name, int value) {
   // Jevois wants this incorrect number below:.
   r = xioctl(fd_, 0xc00c561c, &setArg);
   if (r == 0) {
-    LOG(DEBUG, "Set camera control %s from %d to %d\n", name, getArg.value,
-        value);
+    VLOG(1) << "Set camera control " << name << " from " << getArg.value
+            << " to " << value;
     return true;
   }
 
-  LOG(DEBUG, "Couldn't set camera control %s to %d", name, value);
+  VLOG(1) << "Couldn't set camera control " << name << " to " << value;
   errno = 0;
   return false;
 }
@@ -181,16 +179,16 @@ void Reader::Init() {
   v4l2_capability cap;
   if (xioctl(fd_, VIDIOC_QUERYCAP, &cap) == -1) {
     if (EINVAL == errno) {
-      LOG(FATAL, "%s is no V4L2 device\n", dev_name_.c_str());
+      LOG(FATAL) << dev_name_ << " is no V4L2 device";
     } else {
-      PLOG(FATAL, "ioctl VIDIOC_QUERYCAP(%d, %p)", fd_, &cap);
+      PLOG(FATAL) << "ioctl VIDIOC_QUERYCAP(" << fd_ << ", " << &cap << ")";
     }
   }
   if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
-    LOG(FATAL, "%s is no video capture device\n", dev_name_.c_str());
+    LOG(FATAL) << dev_name_ << " is no video capture device";
   }
   if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
-    LOG(FATAL, "%s does not support streaming i/o\n", dev_name_.c_str());
+    LOG(FATAL) << dev_name_ << " does not support streaming i/o";
   }
 
   int camidx = -1;
@@ -208,8 +206,7 @@ void Reader::Init() {
   }
 
   if (xioctl(fd_, VIDIOC_S_INPUT, &camidx) == -1) {
-    LOG(FATAL, "ioctl VIDIOC_S_INPUT(%d) failed with %d: %s\n", fd_, errno,
-        strerror(errno));
+    PLOG(FATAL) << "ioctl VIDIOC_S_INPUT(" << fd_ << ") failed";
   }
   printf("camera idx: %d\n", camidx);
 
@@ -220,8 +217,7 @@ void Reader::Init() {
 
   fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   if (xioctl(fd_, VIDIOC_G_FMT, &fmt) == -1) {
-    LOG(FATAL, "ioctl VIDIC_G_FMT(%d, %p) failed with %d: %s\n", fd_, &fmt,
-        errno, strerror(errno));
+    PLOG(FATAL) << "ioctl VIDIC_G_FMT(" << fd_ << ", " << &fmt << ") failed";
   }
 
   fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -231,8 +227,7 @@ void Reader::Init() {
   fmt.fmt.pix.field = V4L2_FIELD_NONE;
   fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
   if (xioctl(fd_, VIDIOC_S_FMT, &fmt) == -1) {
-    LOG(FATAL, "ioctl VIDIC_S_FMT(%d, %p) failed with %d: %s\n", fd_, &fmt,
-        errno, strerror(errno));
+    PLOG(FATAL) << "ioctl VIDIC_S_FMT(" << fd_ << ", " << &fmt << ") failed";
   }
   /* Note VIDIOC_S_FMT may change width and height. */
 
@@ -250,21 +245,21 @@ void Reader::Init() {
   setfps->parm.capture.timeperframe.numerator = 1;
   setfps->parm.capture.timeperframe.denominator = params_.fps();
   if (xioctl(fd_, VIDIOC_S_PARM, setfps) == -1) {
-    PLOG(FATAL, "ioctl VIDIOC_S_PARM(%d, %p)\n", fd_, setfps);
+    PLOG(FATAL) << "ioctl VIDIOC_S_PARM(" << fd_ << ", " << setfps << ")";
   }
-  LOG(INFO, "framerate ended up at %d/%d\n",
-      setfps->parm.capture.timeperframe.numerator,
-      setfps->parm.capture.timeperframe.denominator);
+  LOG(INFO) << "framerate ended up at "
+            << setfps->parm.capture.timeperframe.numerator << "/"
+            << setfps->parm.capture.timeperframe.denominator;
 
   for (int j = 0; j < 2; ++j) {
     if (!SetCameraControl(V4L2_CID_EXPOSURE_AUTO, "V4L2_CID_EXPOSURE_AUTO",
                           V4L2_EXPOSURE_MANUAL)) {
-      LOG(FATAL, "Failed to set exposure\n");
+      LOG(FATAL) << "Failed to set exposure";
     }
 
     if (!SetCameraControl(V4L2_CID_EXPOSURE_ABSOLUTE,
                           "V4L2_CID_EXPOSURE_ABSOLUTE", params_.exposure())) {
-      LOG(FATAL, "Failed to set exposure\n");
+      LOG(FATAL) << "Failed to set exposure";
     }
     sleep(1);
   }
@@ -274,7 +269,7 @@ aos::vision::ImageFormat Reader::get_format() {
   struct v4l2_format fmt;
   fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   if (xioctl(fd_, VIDIOC_G_FMT, &fmt) == -1) {
-    PLOG(FATAL, "ioctl VIDIC_G_FMT(%d, %p)\n", fd_, &fmt);
+    PLOG(FATAL) << "ioctl VIDIC_G_FMT(" << fd_ << ", " << &fmt << ")";
   }
 
   return aos::vision::ImageFormat{(int)fmt.fmt.pix.width,
@@ -282,7 +277,7 @@ aos::vision::ImageFormat Reader::get_format() {
 }
 
 void Reader::Start() {
-  LOG(DEBUG, "queueing buffers for the first time\n");
+  VLOG(1) << "queueing buffers for the first time";
   v4l2_buffer buf;
   for (unsigned int i = 0; i < kNumBuffers; ++i) {
     CLEAR(buf);
@@ -291,11 +286,11 @@ void Reader::Start() {
     buf.index = i;
     QueueBuffer(&buf);
   }
-  LOG(DEBUG, "done with first queue\n");
+  VLOG(1) << "done with first queue";
 
   v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   if (xioctl(fd_, VIDIOC_STREAMON, &type) == -1) {
-    PLOG(FATAL, "ioctl VIDIOC_STREAMON(%d, %p)\n", fd_, &type);
+    PLOG(FATAL) << "ioctl VIDIOC_STREAMON(" << fd_ << ", " << &type << ")";
   }
 }
 

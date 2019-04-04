@@ -12,6 +12,8 @@
 #include "aos/vision/blob/stream_view.h"
 #include "aos/vision/debug/overlay.h"
 
+#include "glog/logging.h"
+
 namespace aos {
 namespace vision {
 
@@ -52,7 +54,7 @@ class InputFile {
   InputFile(const std::string &fname)
       : ifs_(fname, std::ifstream::in), len_(GetFileSize(fname)) {
     if (len_ <= 0) {
-      LOG(FATAL, "File (%s) not found. Size (%d)\n", fname.c_str(), (int)len_);
+      LOG(FATAL) << "File (" << fname << ") not found. Size (" << len_ << ")";
     }
     // assert(len_ > 0);
     tmp_buf_.resize(len_, 0);

@@ -1,5 +1,5 @@
-#ifndef _AOS_VISION_IMAGE_IMAGE_STREAM_H_
-#define _AOS_VISION_IMAGE_IMAGE_STREAM_H_
+#ifndef AOS_VISION_IMAGE_IMAGE_STREAM_H_
+#define AOS_VISION_IMAGE_IMAGE_STREAM_H_
 
 #include "aos/vision/events/epoll_events.h"
 #include "aos/vision/image/camera_params.pb.h"
@@ -32,23 +32,18 @@ class ImageStreamEvent : public ::aos::events::EpollEvent {
                             aos::vision::CameraParams params)
       : ImageStreamEvent(GetCamera(fname, this, params)) {}
 
-  void ProcessHelper(DataRef data, aos::monotonic_clock::time_point timestamp) {
-    if (data.size() < 300) {
-      LOG(INFO, "got bad img of size(%d)\n", static_cast<int>(data.size()));
-      return;
-    }
-    ProcessImage(data, timestamp);
-  }
   virtual void ProcessImage(DataRef data,
                             aos::monotonic_clock::time_point timestamp) = 0;
 
   void ReadEvent() override { reader_->HandleFrame(); }
 
  private:
+  void ProcessHelper(DataRef data, aos::monotonic_clock::time_point timestamp);
+
   std::unique_ptr<::camera::Reader> reader_;
 };
 
 }  // namespace vision
 }  // namespace aos
 
-#endif  // _AOS_VISION_DEBUG_IMAGE_STREAM_H_
+#endif  // AOS_VISION_IMAGE_IMAGE_STREAM_H_

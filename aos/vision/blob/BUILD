@@ -18,9 +18,6 @@ cc_library(
 cc_library(
     name = "region_alloc",
     hdrs = ["region_alloc.h"],
-    deps = [
-        "//aos/logging",
-    ],
 )
 
 cc_library(

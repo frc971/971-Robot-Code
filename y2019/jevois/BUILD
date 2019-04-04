@@ -189,7 +189,6 @@ cc_library(
         "cobs.h",
     ],
     deps = [
-        "//aos/logging",
         "//third_party/GSL",
     ],
 )
