@@ -45,6 +45,8 @@ class ADIS16448 {
   // readings.
   void operator()();
 
+  // Sets a function to be called immediately after each time this class uses
+  // the SPI bus. This is a good place to do other things on the bus.
   void set_spi_idle_callback(std::function<void()> spi_idle_callback) {
     spi_idle_callback_ = std::move(spi_idle_callback);
   }
