@@ -308,6 +308,8 @@ class FrameQueue {
     last_frames_.clear();
   }
 
+  bool HaveLatestFrames() const { return !last_frames_.empty(); }
+
  private:
   struct FrameData {
     aos::SizedArray<Target, 3> targets;
@@ -695,18 +697,25 @@ __attribute__((unused)) void TransferData(
     }
     {
       bool made_transfer = false;
-      if (!first) {
+      const bool have_old_frames = frame_queue.HaveLatestFrames();
+      {
+        const auto new_transfer = frame_queue.MakeTransfer();
         DisableInterrupts disable_interrupts;
-        made_transfer =
-            !SpiQueue::global_instance->HaveTransfer(disable_interrupts);
+        if (!first) {
+          made_transfer =
+              !SpiQueue::global_instance->HaveTransfer(disable_interrupts);
+        }
+        // If we made a transfer just now, then new_transfer might contain
+        // duplicate targets, in which case don't use it.
+        if (!have_old_frames || !made_transfer) {
+          SpiQueue::global_instance->UpdateTransfer(new_transfer,
+                                                    disable_interrupts);
+        }
       }
+      // If we made a transfer, then make sure we aren't remembering any
+      // in-flight frames.
       if (made_transfer) {
         frame_queue.RemoveLatestFrames();
-      }
-      const auto transfer = frame_queue.MakeTransfer();
-      {
-        DisableInterrupts disable_interrupts;
-        SpiQueue::global_instance->UpdateTransfer(transfer, disable_interrupts);
       }
     }
     {
