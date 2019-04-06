@@ -400,6 +400,15 @@ class Reader : public ::aos::input::ActionJoystickInput {
   }
 
  private:
+  uint32_t GetAutonomousMode() override {
+    ::frc971::autonomous::auto_mode.FetchLatest();
+    if (::frc971::autonomous::auto_mode.get() == nullptr) {
+      LOG(WARNING, "no auto mode values\n");
+      return 0;
+    }
+    return ::frc971::autonomous::auto_mode->mode;
+  }
+
   // Current goals here.
   ElevatorWristPosition elevator_wrist_pos_ = kStowPos;
   bool grab_piece_ = false;

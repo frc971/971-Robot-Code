@@ -203,6 +203,11 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     vacuum_sensor_ = make_unique<frc::AnalogInput>(port);
   }
 
+  // Auto mode switches.
+  void set_autonomous_mode(int i, ::std::unique_ptr<frc::DigitalInput> sensor) {
+    autonomous_modes_.at(i) = ::std::move(sensor);
+  }
+
   void RunIteration() override {
     {
       auto drivetrain_message = drivetrain_queue.position.MakeMessage();
@@ -254,6 +259,18 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       superstructure_message.Send();
     }
+
+    {
+      auto auto_mode_message = ::frc971::autonomous::auto_mode.MakeMessage();
+      auto_mode_message->mode = 0;
+      for (size_t i = 0; i < autonomous_modes_.size(); ++i) {
+        if (autonomous_modes_[i] && autonomous_modes_[i]->Get()) {
+          auto_mode_message->mode |= 1 << i;
+        }
+      }
+      LOG_STRUCT(DEBUG, "auto mode", *auto_mode_message);
+      auto_mode_message.Send();
+    }
   }
 
  private:
@@ -261,6 +278,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       wrist_encoder_, stilts_encoder_;
 
   ::std::unique_ptr<frc::AnalogInput> vacuum_sensor_;
+
+  ::std::array<::std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 
   ::frc971::wpilib::AbsoluteEncoder intake_encoder_;
   // TODO(sabina): Add wrist and elevator hall effects.
@@ -645,6 +664,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     reader.set_pwm_trigger(true);
     reader.set_vacuum_sensor(7);
+
+    reader.set_autonomous_mode(0, make_unique<frc::DigitalInput>(22));
+    reader.set_autonomous_mode(0, make_unique<frc::DigitalInput>(23));
 
     ::std::thread reader_thread(::std::ref(reader));
 

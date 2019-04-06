@@ -27,10 +27,6 @@ double DoubleSeconds(monotonic_clock::duration duration) {
       .count();
 }
 
-constexpr bool is_left = false;
-
-constexpr double turn_scalar = is_left ? 1.0 : -1.0;
-
 }  // namespace
 
 AutonomousActor::AutonomousActor(
@@ -38,7 +34,8 @@ AutonomousActor::AutonomousActor(
     : frc971::autonomous::BaseAutonomousActor(
           s, control_loops::drivetrain::GetDrivetrainConfig()) {}
 
-void AutonomousActor::Reset() {
+void AutonomousActor::Reset(bool is_left) {
+  const double turn_scalar = is_left ? 1.0 : -1.0;
   elevator_goal_ = 0.01;
   wrist_goal_ = -M_PI / 2.0;
   intake_goal_ = -1.2;
@@ -86,8 +83,15 @@ const ProfileParameters kTurn = {5.0, 15.0};
 bool AutonomousActor::RunAction(
     const ::frc971::autonomous::AutonomousActionParams &params) {
   monotonic_clock::time_point start_time = monotonic_clock::now();
-  LOG(INFO, "Starting autonomous action with mode %" PRId32 "\n", params.mode);
-  Reset();
+  const bool is_left = params.mode == 0;
+
+  {
+    LOG(INFO, "Starting autonomous action with mode %" PRId32 " %s\n",
+        params.mode, is_left ? "left" : "right");
+  }
+  const double turn_scalar = is_left ? 1.0 : -1.0;
+
+  Reset(is_left);
 
   // Grab the disk, wait until we have vacuum, then jump
   set_elevator_goal(0.01);
