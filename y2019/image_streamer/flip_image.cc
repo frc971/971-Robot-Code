@@ -10,7 +10,9 @@ void flip_image(const char *input, const int input_size, JOCTET *buffer,
   ::cimg_library::CImg<unsigned char> image;
   image.load_jpeg_buffer((JOCTET *)(input), input_size);
   if (flip) {
-    image.mirror("xy");
+    image.rotate(90);
+  } else {
+    image.rotate(270);
   }
 
   image.save_jpeg_buffer(buffer, *buffer_size, 80);
