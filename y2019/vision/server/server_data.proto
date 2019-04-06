@@ -1,0 +1,48 @@
+syntax = "proto2";
+
+package y2019.vision;
+
+// Various proto definitions for use with the websocket server for debugging the
+// vision code.
+
+// Representation of a 2D pose on the field, generally referenced off of the
+// center of the driver's station wall with positive X out towards the field and
+// positive Y to the left from the driver's perspective. theta is zero when
+// pointed straight along the positive X axis and increases towards positive Y
+// (counter-clockwise).
+message Pose {
+  optional float x = 1;      // meters
+  optional float y = 2;      // meters
+  optional float theta = 3;  // radians
+}
+
+// Debugging information for the line following.
+message LineFollowDebug {
+  // Pose of the target that we are currently latched onto.
+  optional Pose goal_target = 1;
+  // Whether we are currently in line following mode and so will freeze the
+  // target shortly.
+  optional bool frozen = 2;
+  // Whether we have chosen a target (otherwise, goal_target may be arbitrary).
+  optional bool have_target = 3;
+}
+
+// Data for a single camera at a given instance in time (corresponding to a
+// camera frame).
+message CameraDebug {
+  // The time that has passed, in seconds, since we last got a frame with a
+  // target in it.
+  optional float time_since_last_target = 1;
+  // The age of the most recent frame and the one that contains the targets included below.
+  optional float current_frame_age = 2;
+  // Target Pose is relative to the camera, *not* the field, so (0, 0) is at the
+  // camera.
+  repeated Pose targets = 3;
+}
+
+// The overall package of data that we send to the webpage.
+message DebugData {
+  optional Pose robot_pose = 1;
+  optional LineFollowDebug line_follow_debug = 2;
+  repeated CameraDebug camera_debug = 3;
+}
