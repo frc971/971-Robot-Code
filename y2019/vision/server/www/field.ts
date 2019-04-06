@@ -1,4 +1,4 @@
-import {IN_TO_M, FT_TO_M} from './constants';
+import {FT_TO_M, IN_TO_M} from './constants';
 
 const CENTER_FIELD_X = 27 * FT_TO_M + 1.125 * IN_TO_M;
 
@@ -37,12 +37,12 @@ const HAB_1_LENGTH = (3 * 12 + 11.25) * IN_TO_M;
 
 const DEPOT_WIDTH = (12 + 10.625) * IN_TO_M;
 
-export function drawField(ctx : CanvasRenderingContext2D) : void {
+export function drawField(ctx: CanvasRenderingContext2D): void {
   drawTargets(ctx);
   drawHab(ctx);
 }
 
-function drawHab(ctx : CanvasRenderingContext2D) : void {
+function drawHab(ctx: CanvasRenderingContext2D): void {
   drawHalfHab(ctx);
   ctx.save();
 
@@ -52,7 +52,7 @@ function drawHab(ctx : CanvasRenderingContext2D) : void {
   ctx.restore();
 }
 
-function drawHalfHab(ctx : CanvasRenderingContext2D) : void {
+function drawHalfHab(ctx: CanvasRenderingContext2D): void {
   ctx.fillStyle = 'rgb(50, 50, 50)';
   ctx.fillRect(0, 0, HAB_LENGTH, HALF_HAB_3_WIDTH);
   ctx.fillStyle = 'rgb(100, 100, 100)';
@@ -62,7 +62,7 @@ function drawHalfHab(ctx : CanvasRenderingContext2D) : void {
   ctx.strokeRect(0, HALF_HAB_3_WIDTH + HAB_2_WIDTH, HAB_LENGTH, DEPOT_WIDTH);
 }
 
-function drawTargets(ctx : CanvasRenderingContext2D) : void {
+function drawTargets(ctx: CanvasRenderingContext2D): void {
   drawHalfCargo(ctx);
   drawRocket(ctx);
   drawHP(ctx);
@@ -76,11 +76,11 @@ function drawTargets(ctx : CanvasRenderingContext2D) : void {
   ctx.restore();
 }
 
-function drawHP(ctx : CanvasRenderingContext2D) : void {
+function drawHP(ctx: CanvasRenderingContext2D): void {
   drawTarget(ctx, 0, HP_Y, HP_THETA);
 }
 
-function drawRocket(ctx : CanvasRenderingContext2D) : void {
+function drawRocket(ctx: CanvasRenderingContext2D): void {
   drawTarget(ctx, ROCKET_PORT_X, ROCKET_PORT_Y, ROCKET_PORT_THETA);
 
   drawTarget(ctx, ROCKET_NEAR_X, ROCKET_HATCH_Y, ROCKET_NEAR_THETA);
@@ -88,7 +88,7 @@ function drawRocket(ctx : CanvasRenderingContext2D) : void {
   drawTarget(ctx, ROCKET_FAR_X, ROCKET_HATCH_Y, ROCKET_FAR_THETA);
 }
 
-function drawHalfCargo(ctx : CanvasRenderingContext2D) : void {
+function drawHalfCargo(ctx: CanvasRenderingContext2D): void {
   drawTarget(ctx, FAR_CARGO_X, SIDE_CARGO_Y, SIDE_CARGO_THETA);
 
   drawTarget(ctx, MID_CARGO_X, SIDE_CARGO_Y, SIDE_CARGO_THETA);
@@ -98,7 +98,8 @@ function drawHalfCargo(ctx : CanvasRenderingContext2D) : void {
   drawTarget(ctx, FACE_CARGO_X, FACE_CARGO_Y, FACE_CARGO_THETA);
 }
 
-export function drawTarget(ctx : CanvasRenderingContext2D, x: number, y: number, theta: number) : void {
+export function drawTarget(
+    ctx: CanvasRenderingContext2D, x: number, y: number, theta: number): void {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(theta);
