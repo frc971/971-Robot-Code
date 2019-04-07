@@ -93,7 +93,7 @@ void SplineDrivetrain::SetGoal(
     const ::frc971::control_loops::DrivetrainQueue::Goal &goal) {
   current_spline_handle_ = goal.spline_handle;
   // If told to stop, set the executing spline to an invalid index.
-  if (current_spline_handle_ == 0) {
+  if (current_spline_handle_ == 0 && has_started_execution_) {
     current_spline_idx_ = -1;
   }
 
@@ -119,6 +119,7 @@ void SplineDrivetrain::SetGoal(
       // Reset internal state to a trajectory start position.
       current_xva_ = current_trajectory_->FFAcceleration(0);
       current_xva_(1) = 0.0;
+      has_started_execution_ = false;
     }
     mutex_.Unlock();
   }
@@ -133,6 +134,7 @@ void SplineDrivetrain::Update(bool enable, const ::Eigen::Matrix<double, 5, 1> &
     ::Eigen::Matrix<double, 2, 1> U_ff = ::Eigen::Matrix<double, 2, 1>::Zero();
     if (!IsAtEnd() &&
         current_spline_handle_ == current_spline_idx_) {
+      has_started_execution_ = true;
       // TODO(alex): It takes about a cycle for the outputs to propagate to the
       // motors. Consider delaying the output by a cycle.
       U_ff = current_trajectory_->FFVoltage(current_xva_(0));
@@ -187,7 +189,7 @@ void SplineDrivetrain::PopulateStatus(
       status->trajectory_logging.right_velocity = goal_state(4);
     }
     status->trajectory_logging.planning_state = static_cast<int8_t>(plan_state_.load());
-    status->trajectory_logging.is_executing = !IsAtEnd();
+    status->trajectory_logging.is_executing = !IsAtEnd() && has_started_execution_;
     status->trajectory_logging.goal_spline_handle = current_spline_handle_;
     status->trajectory_logging.current_spline_idx = current_spline_idx_;
 

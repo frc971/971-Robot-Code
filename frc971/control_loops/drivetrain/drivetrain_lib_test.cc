@@ -106,6 +106,13 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
                 drivetrain_motor_plant_.GetRightPosition(), 1e-3);
   }
 
+  void VerifyNearPosition(double x, double y) {
+    my_drivetrain_queue_.status.FetchLatest();
+    auto actual = drivetrain_motor_plant_.GetPosition();
+    EXPECT_NEAR(actual(0), x, 1e-2);
+    EXPECT_NEAR(actual(1), y, 1e-2);
+  }
+
   void VerifyNearSplineGoal() {
     my_drivetrain_queue_.status.FetchLatest();
     double expected_x = my_drivetrain_queue_.status->trajectory_logging.x;
@@ -718,6 +725,29 @@ TEST_F(DrivetrainTest, OnlyPlanSpline) {
     ::std::this_thread::sleep_for(::std::chrono::milliseconds(2));
   }
   VerifyNearSplineGoal();
+}
+
+//Tests that a trajectory can be executed after it is planned.
+TEST_F(DrivetrainTest, SplineExecuteAfterPlan) {
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> goal =
+      my_drivetrain_queue_.goal.MakeMessage();
+  goal->controller_type = 2;
+  goal->spline.spline_idx = 1;
+  goal->spline.spline_count = 1;
+  goal->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
+  goal->spline.spline_y = {{0.0, 0.0, 0.25, 0.75, 1.0, 1.0}};
+  goal.Send();
+  WaitForTrajectoryPlan();
+  RunForTime(chrono::milliseconds(2000));
+
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
+      start_goal = my_drivetrain_queue_.goal.MakeMessage();
+  start_goal->controller_type = 2;
+  start_goal->spline_handle = 1;
+  start_goal.Send();
+  RunForTime(chrono::milliseconds(2000));
+
+  VerifyNearPosition(1.0, 1.0);
 }
 
 // The LineFollowDrivetrain logic is tested in line_follow_drivetrain_test. This
