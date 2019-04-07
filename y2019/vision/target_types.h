@@ -141,15 +141,19 @@ struct TargetResult {
   float skew;
 };
 
+template<typename T>
+::Eigen::Matrix<T, 2, 1> ToEigenMatrix(aos::vision::Vector<2> pt) {
+  return (::Eigen::Matrix<T, 2, 1>() << T(pt.x()), T(pt.y())).finished();
+}
+
 template <typename Extrinsics>
 aos::vision::Vector<2> Project(aos::vision::Vector<2> pt,
                                const IntrinsicParams &intrinsics,
                                const Extrinsics &extrinsics) {
-  const ::Eigen::Matrix<double, 2, 1> eigen_pt =
-      (::Eigen::Matrix<double, 2, 1>() << pt.x(), pt.y()).finished();
+  const ::Eigen::Matrix<double, 2, 1> eigen_pt = ToEigenMatrix<double>(pt);
   const ::Eigen::Matrix<double, 2, 1> res =
       Project(eigen_pt, intrinsics, extrinsics);
-  return aos::vision::Vector<2>(res(0, 0), res(0, 1));
+  return aos::vision::Vector<2>(res(0, 0), res(1, 0));
 }
 
 template <typename T, typename Extrinsics>

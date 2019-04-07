@@ -6,7 +6,6 @@
 
 #include "aos/util/math.h"
 
-using ceres::NumericDiffCostFunction;
 using ceres::CENTRAL;
 using ceres::CostFunction;
 using ceres::Problem;
@@ -79,11 +78,13 @@ struct PointCostFunctor {
                      IntrinsicParams intrinsics)
       : result(result), template_pt(template_pt), intrinsics(intrinsics) {}
 
-  bool operator()(const double *const x, double *residual) const {
-    auto extrinsics = ExtrinsicParams::get(x);
-    auto pt = result - Project(template_pt, intrinsics, extrinsics);
-    residual[0] = pt.x();
-    residual[1] = pt.y();
+  template <typename T>
+  bool operator()(const T *const x, T *residual) const {
+    const auto extrinsics = TemplatedExtrinsicParams<T>::get(x);
+    ::Eigen::Matrix<T, 2, 1> pt =
+        Project<T>(ToEigenMatrix<T>(template_pt), intrinsics, extrinsics);
+    residual[0] = result.x() - pt(0, 0);
+    residual[1] = result.y() - pt(0, 1);
     return true;
   }
 
@@ -99,15 +100,18 @@ struct LineCostFunctor {
                   IntrinsicParams intrinsics)
       : result(result), template_seg(template_seg), intrinsics(intrinsics) {}
 
-  bool operator()(const double *const x, double *residual) const {
-    const auto extrinsics = ExtrinsicParams::get(x);
-    const Vector<2> p1 = Project(template_seg.A(), intrinsics, extrinsics);
-    const Vector<2> p2 = Project(template_seg.B(), intrinsics, extrinsics);
-    // distance from line (P1, P2) to point result
-    double dx = p2.x() - p1.x();
-    double dy = p2.y() - p1.y();
-    double denom = p2.DistanceTo(p1);
-    residual[0] = ::std::abs(dy * result.x() - dx * result.y() +
+  template <typename T>
+  bool operator()(const T *const x, T *residual) const {
+    const auto extrinsics = TemplatedExtrinsicParams<T>::get(x);
+    const ::Eigen::Matrix<T, 2, 1> p1 =
+        Project<T>(ToEigenMatrix<T>(template_seg.A()), intrinsics, extrinsics);
+    const ::Eigen::Matrix<T, 2, 1> p2 =
+        Project<T>(ToEigenMatrix<T>(template_seg.B()), intrinsics, extrinsics);
+    // Distance from line(P1, P2) to point result
+    T dx = p2.x() - p1.x();
+    T dy = p2.y() - p1.y();
+    T denom = (p2-p1).norm();
+    residual[0] = ceres::abs(dy * result.x() - dx * result.y() +
                              p2.x() * p1.y() - p2.y() * p1.x()) /
                   denom;
     return true;
@@ -128,24 +132,28 @@ class BottomPointCostFunctor {
         template_seg_(template_seg),
         intrinsics_(intrinsics) {}
 
-  bool operator()(const double *const x, double *residual) const {
-    const ExtrinsicParams extrinsics = ExtrinsicParams::get(x);
-    const Vector<2> p1 = Project(template_seg_.A(), intrinsics_, extrinsics);
-    const Vector<2> p2 = Project(template_seg_.B(), intrinsics_, extrinsics);
+  template <typename T>
+  bool operator()(const T *const x, T *residual) const {
+    const auto extrinsics = TemplatedExtrinsicParams<T>::get(x);
+    const ::Eigen::Matrix<T, 2, 1> p1 = Project<T>(
+        ToEigenMatrix<T>(template_seg_.A()), intrinsics_, extrinsics);
+    const ::Eigen::Matrix<T, 2, 1> p2 = Project<T>(
+        ToEigenMatrix<T>(template_seg_.B()), intrinsics_, extrinsics);
 
     // Construct a vector pointed perpendicular to the line.  This vector is
     // pointed down out the bottom of the target.
-    ::Eigen::Vector2d down_axis(-(p1.y() - p2.y()), p1.x() - p2.x());
+    ::Eigen::Matrix<T, 2, 1> down_axis;
+    down_axis << -(p1.y() - p2.y()), p1.x() - p2.x();
     down_axis.normalize();
 
     // Positive means out.
-    const double component =
-        down_axis.transpose() * (bottom_point_ - p1.GetData().transpose());
+    const T component =
+        down_axis.transpose() * (bottom_point_ - p1);
 
-    if (component > 0) {
+    if (component > T(0)) {
       residual[0] = component * 1.0;
     } else {
-      residual[0] = 0.0;
+      residual[0] = T(0);
     }
     return true;
   }
@@ -183,18 +191,18 @@ IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
       aos::vision::Segment<2> line = Segment<2>(a, a2);
 
       problem_4point.AddResidualBlock(
-          new NumericDiffCostFunction<LineCostFunctor, CENTRAL, 1, 4>(
+          new ceres::AutoDiffCostFunction<LineCostFunctor, 1, 4>(
               new LineCostFunctor(b, line, intrinsics_)),
           NULL, &params_4point[0]);
     } else {
       problem_4point.AddResidualBlock(
-          new NumericDiffCostFunction<PointCostFunctor, CENTRAL, 2, 4>(
+          new ceres::AutoDiffCostFunction<PointCostFunctor, 2, 4>(
               new PointCostFunctor(b, a, intrinsics_)),
           NULL, &params_4point[0]);
     }
 
     problem_8point.AddResidualBlock(
-        new NumericDiffCostFunction<PointCostFunctor, CENTRAL, 2, 4>(
+        new ceres::AutoDiffCostFunction<PointCostFunctor, 2, 4>(
             new PointCostFunctor(b, a, intrinsics_)),
         NULL, &params_8point[0]);
   }
@@ -213,7 +221,7 @@ IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
 
   // Now, add a large cost for the bottom point being below the bottom line.
   problem_4point.AddResidualBlock(
-      new NumericDiffCostFunction<BottomPointCostFunctor, CENTRAL, 1, 4>(
+      new ceres::AutoDiffCostFunction<BottomPointCostFunctor, 1, 4>(
           new BottomPointCostFunctor(target.left.bottom_point,
                                      Segment<2>(target_template_.left.outside,
                                                 target_template_.left.bottom),
@@ -222,7 +230,7 @@ IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
   // Make sure to point the segment the other way so when we do a -pi/2 rotation
   // on the line, it points down in target space.
   problem_4point.AddResidualBlock(
-      new NumericDiffCostFunction<BottomPointCostFunctor, CENTRAL, 1, 4>(
+      new ceres::AutoDiffCostFunction<BottomPointCostFunctor, 1, 4>(
           new BottomPointCostFunctor(target.right.bottom_point,
                                      Segment<2>(target_template_.right.bottom,
                                                 target_template_.right.outside),
