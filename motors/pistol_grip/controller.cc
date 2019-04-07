@@ -249,6 +249,51 @@ float WheelCenteringCurrent(float scalar, float angle, float velocity) {
   return goal_current * scalar + friction_goal_current;
 }
 
+float CoggingCurrent1(uint32_t encoder, int32_t absolute_encoder) {
+  constexpr float kP = 0.05f;
+  constexpr float kI = 0.00001f;
+  static int goal = -6700;
+
+  const int error = goal - static_cast<int>(absolute_encoder);
+  static float error_sum = 0.0f;
+  float goal_current = static_cast<float>(error) * kP + error_sum * kI;
+
+  goal_current = ::std::min(1.0f, ::std::max(-1.0f, goal_current));
+
+  static int i = 0;
+  if (error == 0) {
+    ++i;
+  } else {
+    i = 0;
+  }
+  if (i >= 100) {
+    printf("reading1: %d %d a:%d e:%d\n", goal,
+           static_cast<int>(goal_current * 10000.0f),
+           static_cast<int>(encoder),
+           static_cast<int>(error));
+    static int counting_up = 0;
+    if (absolute_encoder <= -6900) {
+      counting_up = 1;
+    } else if (absolute_encoder >= 6900) {
+      counting_up = 0;
+    }
+    if (counting_up) {
+      ++goal;
+    } else {
+      --goal;
+    }
+    i = 0;
+  }
+
+  error_sum += static_cast<float>(error);
+  if (error_sum > 1.0f / kI) {
+    error_sum = 1.0f / kI;
+  } else if (error_sum < -1.0f / kI) {
+    error_sum = -1.0f / kI;
+  }
+  return goal_current;
+}
+
 extern "C" void ftm0_isr() {
   SmallAdcReadings readings;
   {
@@ -262,14 +307,17 @@ extern "C" void ftm0_isr() {
 
   const float angle = absolute_encoder / static_cast<float>((15320 - 1488) / 2);
 
+  (void)CoggingCurrent1;
   float goal_current = global_wheel_current.load(::std::memory_order_relaxed) +
                        kWheelCoggingTorque[encoder];
+  //float goal_current = CoggingCurrent1(encoder, absolute_encoder);
   //float goal_current = kWheelCoggingTorque[encoder];
   //float goal_current = 0.0f;
 
   global_motor1.load(::std::memory_order_relaxed)->SetGoalCurrent(goal_current);
   global_motor1.load(::std::memory_order_relaxed)
       ->CurrentInterrupt(BalanceSimpleReadings(readings.currents), encoder);
+  //global_motor1.load(::std::memory_order_relaxed)->CycleFixedPhaseInterupt();
 
   global_wheel_angle.store(angle);
 
@@ -335,6 +383,51 @@ float TriggerCenteringCurrent(float trigger_angle) {
   return goal_current;
 }
 
+float CoggingCurrent0(uint32_t encoder, int32_t absolute_encoder) {
+  constexpr float kP = 0.05f;
+  constexpr float kI = 0.00001f;
+  static int goal = 0;
+
+  const int error = goal - static_cast<int>(absolute_encoder);
+  static float error_sum = 0.0f;
+  float goal_current = static_cast<float>(error) * kP + error_sum * kI;
+
+  goal_current = ::std::min(1.0f, ::std::max(-1.0f, goal_current));
+
+  static int i = 0;
+  if (error == 0) {
+    ++i;
+  } else {
+    i = 0;
+  }
+
+  if (i >= 100) {
+    printf("reading0: %d %d a:%d e:%d\n", goal,
+           static_cast<int>(goal_current * 10000.0f),
+           static_cast<int>(encoder),
+           static_cast<int>(error));
+    static int counting_up = 0;
+    if (absolute_encoder <= -1390) {
+      counting_up = 1;
+    } else if (absolute_encoder >= 1390) {
+      counting_up = 0;
+    }
+    if (counting_up) {
+      ++goal;
+    } else {
+      --goal;
+    }
+  }
+
+  error_sum += static_cast<float>(error);
+  if (error_sum > 1.0f / kI) {
+    error_sum = 1.0f / kI;
+  } else if (error_sum < -1.0f / kI) {
+    error_sum = -1.0f / kI;
+  }
+  return goal_current;
+}
+
 extern "C" void ftm3_isr() {
   SmallAdcReadings readings;
   {
@@ -350,15 +443,18 @@ extern "C" void ftm3_isr() {
 
   const float trigger_angle = absolute_encoder / 1370.f;
 
+  (void)CoggingCurrent0;
   const float goal_current =
       global_trigger_torque.load(::std::memory_order_relaxed) +
       kTriggerCoggingTorque[encoder];
   //const float goal_current = kTriggerCoggingTorque[encoder];
   //const float goal_current = 0.0f;
+  //const float goal_current = CoggingCurrent0(encoder, absolute_encoder);
 
   global_motor0.load(::std::memory_order_relaxed)->SetGoalCurrent(goal_current);
   global_motor0.load(::std::memory_order_relaxed)
       ->CurrentInterrupt(BalanceSimpleReadings(readings.currents), encoder);
+  //global_motor0.load(::std::memory_order_relaxed)->CycleFixedPhaseInterupt();
 
   global_trigger_angle.store(trigger_angle);
 
