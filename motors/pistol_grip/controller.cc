@@ -197,10 +197,15 @@ constexpr float InterpolateFloat(float x1, float x0, float y1, float y0, float x
 }
 
 float absolute_wheel(float wheel_position) {
-  if (wheel_position < 0.43f) {
+  const float kCenterOffset = (ProcessorIndex() == 1) ? -0.683f : -0.935f;
+
+  wheel_position += kCenterOffset;
+
+  if (wheel_position > 0.5f) {
+    wheel_position -= 1.0f;
+  } else if (wheel_position < -0.5f) {
     wheel_position += 1.0f;
   }
-  wheel_position -= 0.462f + 0.473f;
   return wheel_position;
 }
 
@@ -1006,15 +1011,34 @@ extern "C" int main() {
   const float motor1_offset_scaled = analog_ratio(motor1_offset);
   // Good for the initial trigger.
   {
-    constexpr float kZeroOffset0 = 0.27f;
+    // Calibrate winding phase error here.
+    const float kZeroOffset0 = ProcessorIndex() == 1 ? 0.275f : 0.27f;
     const int motor0_starting_point = static_cast<int>(
         (motor0_offset_scaled + (kZeroOffset0 / 7.0f)) * 4096.0f);
     printf("Motor 0 starting at %d\n", motor0_starting_point);
     motor0.set_encoder_calibration_offset(motor0_starting_point);
     motor0.set_encoder_multiplier(-1);
 
-    // Calibrate neutral here.
-    motor0.set_encoder_offset(motor0.encoder_offset() - 2065 + 20);
+    // Calibrate output coordinate neutral here.
+    motor0.set_encoder_offset(
+        motor0.encoder_offset() +
+        (ProcessorIndex() == 1 ? (-3096 - 430 - 30 - 6) : (-2065 + 20)));
+
+    while (true) {
+      const uint32_t encoder =
+          global_motor0.load(::std::memory_order_relaxed)->wrapped_encoder();
+      const int32_t absolute_encoder =
+          global_motor0.load(::std::memory_order_relaxed)
+              ->absolute_encoder(encoder);
+
+      if (absolute_encoder > 2047) {
+        motor0.set_encoder_offset(motor0.encoder_offset() - 4096);
+      } else if (absolute_encoder < -2047) {
+        motor0.set_encoder_offset(motor0.encoder_offset() + 4096);
+      } else {
+        break;
+      }
+    }
 
     uint32_t new_encoder = motor0.wrapped_encoder();
     int32_t absolute_encoder = motor0.absolute_encoder(new_encoder);
@@ -1023,7 +1047,7 @@ extern "C" int main() {
   }
 
   {
-    constexpr float kZeroOffset1 = 0.26f;
+    const float kZeroOffset1 = ProcessorIndex() == 1 ? 0.420f : 0.26f;
     const int motor1_starting_point = static_cast<int>(
         (motor1_offset_scaled + (kZeroOffset1 / 7.0f)) * 4096.0f);
     printf("Motor 1 starting at %d\n", motor1_starting_point);
@@ -1038,7 +1062,8 @@ extern "C" int main() {
            static_cast<int>(wheel_position * 1000.0f), encoder);
 
     constexpr float kWheelGearRatio = (1.25f + 0.02f) / 0.35f;
-    constexpr float kWrappedWheelAtZero = 0.6586310546875f;
+    const float kWrappedWheelAtZero =
+        ProcessorIndex() == 1 ? (0.934630859375f) : 0.6586310546875f;
 
     const int encoder_wraps =
         static_cast<int>(lround(wheel_position * kWheelGearRatio -
