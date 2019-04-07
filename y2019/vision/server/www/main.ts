@@ -1,4 +1,4 @@
-import {FT_TO_M, FIELD_WIDTH} from './constants';
+import {FIELD_WIDTH, FT_TO_M} from './constants';
 import {drawField, drawTarget} from './field';
 import {drawRobot} from './robot';
 
@@ -23,6 +23,11 @@ class Visualiser {
     const ctx = canvas.getContext('2d');
 
     const server = location.host;
+    this.initWebSocket(server);
+    window.requestAnimationFrame(() => this.draw(ctx));
+  }
+
+  initWebSocket(server: string): void {
     const socket = new WebSocket(`ws://${server}/ws`);
     const reader = new FileReader();
     reader.addEventListener('loadend', (e) => {
@@ -32,8 +37,9 @@ class Visualiser {
       this.y = j.robotPose.y;
       this.theta = j.robotPose.theta;
 
-      if(j.lineFollowDebug) {
-        this.targetLocked = j.lineFollowDebug.frozen && j.lineFollowDebug.haveTarget;
+      if (j.lineFollowDebug) {
+        this.targetLocked =
+            j.lineFollowDebug.frozen && j.lineFollowDebug.haveTarget;
         this.targetX = j.lineFollowDebug.goalTarget.x;
         this.targetY = j.lineFollowDebug.goalTarget.y;
         this.targetTheta = j.lineFollowDebug.goalTarget.theta;
@@ -49,17 +55,21 @@ class Visualiser {
     socket.addEventListener('message', (event) => {
       reader.readAsText(event.data);
     });
-    window.requestAnimationFrame(() => this.draw(ctx));
+    socket.addEventListener('close', (event) => {
+      setTimeout(() => {
+        this.initWebSocket(server);
+      }, 1000);
+    });
   }
 
-  reset(ctx : CanvasRenderingContext2D) : void {
-    ctx.setTransform(1,0,0,1,0,0);
+  reset(ctx: CanvasRenderingContext2D): void {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     const size = Math.min(window.innerHeight, window.innerWidth) * 0.98;
     ctx.canvas.height = size;
     ctx.canvas.width = size;
-    ctx.clearRect(0,0,size,size);
+    ctx.clearRect(0, 0, size, size);
 
-    ctx.translate(size/2, size);
+    ctx.translate(size / 2, size);
     ctx.rotate(-Math.PI / 2);
     ctx.scale(1, -1);
     const M_TO_PX = size / FIELD_WIDTH
@@ -67,7 +77,7 @@ class Visualiser {
     ctx.lineWidth = 1 / M_TO_PX;
   }
 
-  draw(ctx : CanvasRenderingContext2D) : void {
+  draw(ctx: CanvasRenderingContext2D): void {
     this.reset(ctx);
 
     drawField(ctx);
