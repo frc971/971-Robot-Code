@@ -103,7 +103,6 @@ void Motor::Start() {
 
 #define USE_ABSOLUTE_CUTOFF 0
 #define DO_CONTROLS 1
-#define DO_FIXED_PULSE 0
 
 #define USE_CUTOFF 1
 #define PRINT_READINGS 0
@@ -113,6 +112,58 @@ void Motor::Start() {
 #define DO_STEP_RESPONSE 0
 #define DO_PULSE_SWEEP 0
 #define PRINT_TIMING 0
+
+void Motor::CycleFixedPhaseInterupt() {
+  pwm_ftm_->SC &= ~FTM_SC_TOF;
+  // Step through all the phases one by one in a loop.  This should slowly move
+  // the trigger.
+  // If we fire phase 1, we should go to PI radians.
+  // If we fire phase 2, we should go to 1.0 * PI / 3.0 radians.
+  // If we fire phase 3, we should go to -1.0 * PI / 3.0 radians.
+  // These numbers were confirmed by the python motor simulation.
+  static int phase_to_fire_count = -300000;
+  static int phase_to_fire = 0;
+  ++phase_to_fire_count;
+  if (phase_to_fire_count > 500000) {
+    phase_to_fire_count = 0;
+    ++phase_to_fire;
+    if (phase_to_fire > 2) {
+      phase_to_fire = 0;
+    }
+  }
+  phase_to_fire = 0;
+
+  // An on-width of 60 with 30V in means about 50A through the motor and about
+  // 30W total power dumped by the motor for the big one.
+  // For the small one, an on-width of 120/3000 with 14V in means about 2A
+  // through the motor.
+  //constexpr int kPhaseFireWidth = 80;
+  constexpr int kPhaseFireWidth = 80;
+  output_registers_[0][0] = 0;
+  output_registers_[0][2] = phase_to_fire == 0 ? kPhaseFireWidth : 0;
+
+  const float switching_points_max = static_cast<float>(counts_per_cycle());
+  switching_points_ratio_[0] =
+      static_cast<float>(output_registers_[0][2]) / switching_points_max;
+  output_registers_[1][0] = 0;
+  output_registers_[1][2] = phase_to_fire == 1 ? kPhaseFireWidth : 0;
+  switching_points_ratio_[1] =
+      static_cast<float>(output_registers_[1][2]) / switching_points_max;
+  output_registers_[2][0] = 0;
+  output_registers_[2][2] = phase_to_fire == 2 ? kPhaseFireWidth : 0;
+  switching_points_ratio_[2] =
+      static_cast<float>(output_registers_[2][2]) / switching_points_max;
+
+  // Tell the hardware to use the new switching points.
+  // TODO(Brian): Somehow verify that we consistently hit the first or second
+  // timer-cycle with the new values (if there's two).
+  pwm_ftm_->PWMLOAD = FTM_PWMLOAD_LDOK;
+
+  // If another cycle has already started, turn the light on right now.
+  if (pwm_ftm_->SC & FTM_SC_TOF) {
+    GPIOC_PSOR = 1 << 5;
+  }
+}
 
 void Motor::CurrentInterrupt(const BalancedReadings &balanced,
                              uint32_t captured_wrapped_encoder) {
@@ -193,45 +244,7 @@ void Motor::CurrentInterrupt(const BalancedReadings &balanced,
     output_registers_[2][0] = 0;
     output_registers_[2][2] = 0;
   }
-#elif DO_FIXED_PULSE  // DO_CONTROLS
-  // Step through all the phases one by one in a loop.  This should slowly move
-  // the trigger.
-  // If we fire phase 1, we should go to 0 radians.
-  // If we fire phase 2, we should go to -2.0 * PI / 3.0 radians.
-  // If we fire phase 3, we should go to 2.0 * PI / 3.0 radians.
-  // These numbers were confirmed by the python motor simulation.
-  static int phase_to_fire_count = -300000;
-  static int phase_to_fire = 0;
-  ++phase_to_fire_count;
-  if (phase_to_fire_count > 200000) {
-    phase_to_fire_count = 0;
-    ++phase_to_fire;
-    if (phase_to_fire > 2) {
-      phase_to_fire = 0;
-    }
-  }
-
-  // An on-width of 60 with 30V in means about 50A through the motor and about
-  // 30W total power dumped by the motor for the big one.
-  // For the small one, an on-width of 120/3000 with 14V in means about 2A
-  // through the motor.
-  constexpr int kPhaseFireWidth = 90;
-  output_registers_[0][0] = 0;
-  output_registers_[0][2] =
-      phase_to_fire == 0 ? kPhaseFireWidth : 0;
-
-  const float switching_points_max = static_cast<float>(counts_per_cycle());
-  switching_points_ratio_[0] =
-      static_cast<float>(output_registers_[0][2]) / switching_points_max;
-  output_registers_[1][0] = 0;
-  output_registers_[1][2] = phase_to_fire == 1 ? kPhaseFireWidth : 0;
-  switching_points_ratio_[1] =
-      static_cast<float>(output_registers_[1][2]) / switching_points_max;
-  output_registers_[2][0] = 0;
-  output_registers_[2][2] = phase_to_fire == 2 ? kPhaseFireWidth : 0;
-  switching_points_ratio_[2] =
-      static_cast<float>(output_registers_[2][2]) / switching_points_max;
-#endif  // DO_CONTROLS/DO_FIXED_PULSE
+#endif  // DO_CONTROLS
   (void)balanced;
   (void)captured_wrapped_encoder;
 #if PRINT_READINGS
