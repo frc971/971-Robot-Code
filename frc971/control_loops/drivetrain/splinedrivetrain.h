@@ -70,6 +70,7 @@ class SplineDrivetrain {
 
   int32_t current_spline_handle_ = 0;  // Current spline told to excecute.
   int32_t current_spline_idx_ = 0;     // Current executing spline.
+  bool has_started_execution_ = false;
 
   ::std::unique_ptr<DistanceSpline> current_distance_spline_;
   ::std::unique_ptr<Trajectory> current_trajectory_;
