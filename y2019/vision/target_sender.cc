@@ -1,6 +1,7 @@
 #include "y2019/vision/target_finder.h"
 
 #include <fstream>
+#include <random>
 
 #include "aos/vision/blob/codec.h"
 #include "aos/vision/blob/find_blob.h"
@@ -96,6 +97,10 @@ int main(int argc, char **argv) {
 
   aos::vision::FastYuyvYPooledThresholder thresholder;
 
+  // A source of psuedorandom numbers which gives different numbers each time we
+  // need to drop targets.
+  std::minstd_rand random_engine;
+
   ::std::unique_ptr<CameraStream> camera0(
       new CameraStream(params0, "/dev/video0"));
   camera0->set_on_frame([&](DataRef data,
@@ -129,11 +134,32 @@ int main(int argc, char **argv) {
     // Put the compenents together into targets.
     ::std::vector<Target> target_list =
         finder_.FindTargetsFromComponents(target_component_list, verbose);
-    LOG(INFO) << "Potential Target: " << target_list.size();
+    static constexpr size_t kMaximumPotentialTargets = 8;
+    LOG(INFO) << "Potential Targets (will filter to "
+              << kMaximumPotentialTargets << "): " << target_list.size();
+
+    // A list of all the indices into target_list which we're going to actually
+    // use.
+    std::vector<int> target_list_indices;
+    target_list_indices.resize(target_list.size());
+    for (size_t i = 0; i < target_list.size(); ++i) {
+      target_list_indices[i] = i;
+    }
+    // Drop random elements until we get sufficiently few of them. We drop
+    // different elements each time to ensure we will see different valid
+    // targets on successive frames, which provides more useful information to
+    // the localization.
+    while (target_list_indices.size() > kMaximumPotentialTargets) {
+      std::uniform_int_distribution<size_t> distribution(
+          0, target_list_indices.size() - 1);
+      const size_t index = distribution(random_engine);
+      target_list_indices.erase(target_list_indices.begin() + index);
+    }
 
     // Use the solver to generate an intermediate version of our results.
     ::std::vector<IntermediateResult> results;
-    for (const Target &target : target_list) {
+    for (size_t index : target_list_indices) {
+      const Target &target = target_list[index];
       results.emplace_back(finder_.ProcessTargetToResult(target, verbose));
     }
     LOG(INFO) << "Raw Results: " << results.size();
