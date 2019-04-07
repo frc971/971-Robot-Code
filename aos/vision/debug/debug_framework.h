@@ -39,6 +39,16 @@ class FilterHarness {
   virtual std::function<void(uint32_t)> RegisterKeyPress() {
     return std::function<void(uint32_t)>();
   }
+
+  // The DebugFramework will tells us where to call to get the camera.
+  void InstallSetExposure(std::function<void(int)> set_exp) {
+    set_exposure_ = set_exp;
+  }
+  void SetExposure(int abs_exp) {
+    set_exposure_(abs_exp);
+  }
+ private:
+  std::function<void(int)> set_exposure_;
 };
 
 // For ImageSource implementations only. Allows registering key press events
@@ -50,6 +60,12 @@ class DebugFrameworkInterface {
   void InstallKeyPress(std::function<void(uint32_t)> key_press_event) {
     key_press_events_.emplace_back(std::move(key_press_event));
   }
+
+  // The camera will tell us where to call to set exposure.
+  void InstallSetExposure(std::function<void(int)> set_exp) {
+    set_exposure_ = std::move(set_exp);
+  }
+  void SetExposure(int abs_exp) { set_exposure_(abs_exp); }
 
   // The return value bool here for all of these is
   // if the frame is "interesting" ie has a target.
@@ -76,6 +92,8 @@ class DebugFrameworkInterface {
 
  private:
   std::vector<std::function<void(uint32_t)>> key_press_events_;
+
+  std::function<void(int)> set_exposure_;
 };
 
 // Implemented by each source type. Will stream frames to

@@ -195,6 +195,12 @@ class FilterHarness : public aos::vision::FilterHarness {
       }
     }
 
+    int desired_exposure;
+    if (target_finder_.TestExposure(results, &desired_exposure)) {
+      printf("Switching exposure to %d.\n", desired_exposure);
+      SetExposure(desired_exposure);
+    }
+
     // If the target list is not empty then we found a target.
     return !results.empty();
   }

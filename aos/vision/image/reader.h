@@ -32,10 +32,11 @@ class Reader {
   }
   int fd() { return fd_; }
 
+  bool SetCameraControl(uint32_t id, const char *name, int value);
+
  private:
   void QueueBuffer(v4l2_buffer *buf);
   void InitMMap();
-  bool SetCameraControl(uint32_t id, const char *name, int value);
   void Init();
   void Start();
   void MMapBuffers();

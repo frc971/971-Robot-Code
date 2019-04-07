@@ -46,6 +46,9 @@ class AveugleImageSource : public ImageSource {
           ++i_;
         }
       });
+      interface_->InstallSetExposure([this](int abs_exp) {
+          this->SetExposure(abs_exp);
+      });
     }
     void ProcessImage(DataRef data, aos::monotonic_clock::time_point) override {
       prev_data_ = std::string(data);

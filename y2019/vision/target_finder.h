@@ -71,6 +71,9 @@ class TargetFinder {
       const std::vector<IntermediateResult> &results, uint64_t print_rate,
       bool verbose);
 
+  bool TestExposure(const std::vector<IntermediateResult> &results,
+                    int *desired_exposure);
+
   // Get the local overlay for debug if we are doing that.
   aos::vision::PixelLinesOverlay *GetOverlay() { return &overlay_; }
 
@@ -104,6 +107,8 @@ class TargetFinder {
   // Counts for logging.
   size_t frame_count_;
   size_t valid_result_count_;
+
+  int current_exposure_ = 0;
 };
 
 }  // namespace vision

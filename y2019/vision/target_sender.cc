@@ -262,7 +262,10 @@ int main(int argc, char **argv) {
     results = finder.FilterResults(results, 30, verbose);
     LOG(INFO) << "Results: " << results.size();
 
-    // TODO: Select top 3 (randomly?)
+    int desired_exposure;
+    if (finder.TestExposure(results, &desired_exposure)) {
+      camera0->SetExposure(desired_exposure);
+    }
 
     frc971::jevois::CameraFrame frame{};
 

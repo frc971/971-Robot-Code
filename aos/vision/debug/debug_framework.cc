@@ -60,6 +60,11 @@ class DebugFramework : public DebugFrameworkInterface {
     if (GetScreenHeight() < 1024) {
       view_.SetScale(1.0);
     }
+
+    // Pass along the set exposure so that users can acceess it.
+    filter->InstallSetExposure([this](uint32_t abs_exp) {
+        this->SetExposure(abs_exp);
+    });
   }
 
   // This the first stage in the pipeline that takes

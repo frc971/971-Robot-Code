@@ -37,6 +37,11 @@ class ImageStreamEvent : public ::aos::events::EpollEvent {
 
   void ReadEvent() override { reader_->HandleFrame(); }
 
+  bool SetExposure(int abs_exp) {
+    return reader_->SetCameraControl(V4L2_CID_EXPOSURE_ABSOLUTE,
+                                     "V4L2_CID_EXPOSURE_ABSOLUTE", abs_exp);
+  }
+
  private:
   void ProcessHelper(DataRef data, aos::monotonic_clock::time_point timestamp);
 

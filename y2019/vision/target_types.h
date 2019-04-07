@@ -48,6 +48,8 @@ struct Target {
   TargetComponent left;
   TargetComponent right;
 
+  double width() const { return left.inside.DistanceTo(right.inside); }
+
   // Returns a target.  The resulting target is in meters with 0, 0 centered
   // between the upper inner corners of the two pieces of tape, y being up and x
   // being to the right.
@@ -108,6 +110,9 @@ Target Project(const Target &target, const IntrinsicParams &intrinsics,
 // the wire.
 struct IntermediateResult {
   ExtrinsicParams extrinsics;
+
+  // Width of the target in pixels. Distance from inner most points.
+  double target_width;
 
   // Error from solver calulations.
   double solver_error;

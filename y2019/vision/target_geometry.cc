@@ -254,6 +254,7 @@ IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
       ::aos::math::NormalizeAngle(IR.backup_extrinsics.r1);
   IR.backup_extrinsics.r2 =
       ::aos::math::NormalizeAngle(IR.backup_extrinsics.r2);
+  IR.target_width = target.width();
 
   // Ok, let's look at how perpendicular the corners are.
   // Vector from the outside to inside along the top on the left.

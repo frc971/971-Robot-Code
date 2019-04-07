@@ -85,17 +85,6 @@ void Reader::HandleFrame() {
   }
   --queued_;
 
-  if (tick_id_ % 10 == 0) {
-    if (!SetCameraControl(V4L2_CID_EXPOSURE_AUTO, "V4L2_CID_EXPOSURE_AUTO",
-                          V4L2_EXPOSURE_MANUAL)) {
-      LOG(FATAL, "Failed to set exposure\n");
-    }
-
-    if (!SetCameraControl(V4L2_CID_EXPOSURE_ABSOLUTE,
-                          "V4L2_CID_EXPOSURE_ABSOLUTE", params_.exposure())) {
-      LOG(FATAL, "Failed to set exposure\n");
-    }
-  }
   ++tick_id_;
   // Get a timestamp now as proxy for when the image was taken
   // TODO(ben): the image should come with a timestamp, parker
@@ -171,8 +160,6 @@ bool Reader::SetCameraControl(uint32_t id, const char *name, int value) {
   struct v4l2_control setArg = {id, value};
   r = xioctl(fd_, VIDIOC_S_CTRL, &setArg);
   if (r == 0) {
-    LOG(DEBUG, "Set camera control %s from %d to %d\n", name, getArg.value,
-        value);
     return true;
   }
 
