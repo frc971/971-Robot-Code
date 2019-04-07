@@ -10,12 +10,12 @@
 
 #include "aos/controls/control_loop.h"
 #include "aos/util/trapezoid_profile.h"
+#include "frc971/constants.h"
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/profiled_subsystem.q.h"
 #include "frc971/control_loops/simple_capped_state_feedback_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/zeroing/zeroing.h"
-#include "frc971/constants.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -59,12 +59,14 @@ class ProfiledSubsystem {
   }
 
   // Returns the controller.
-  const StateFeedbackLoop<number_of_states, number_of_inputs, number_of_outputs> &
-  controller() const {
+  const StateFeedbackLoop<number_of_states, number_of_inputs, number_of_outputs>
+      &controller() const {
     return *loop_;
   }
 
   int controller_index() const { return loop_->index(); }
+
+  void set_controller_index(int index) { loop_->set_index(index); }
 
   // Returns whether the estimators have been initialized and zeroed.
   bool initialized() const { return initialized_; }
@@ -140,7 +142,8 @@ class ProfiledSubsystem {
 template <typename ZeroingEstimator =
               ::frc971::zeroing::PotAndIndexPulseZeroingEstimator>
 class SingleDOFProfiledSubsystem
-    : public ::frc971::control_loops::ProfiledSubsystem<3, 1, ZeroingEstimator> {
+    : public ::frc971::control_loops::ProfiledSubsystem<3, 1,
+                                                        ZeroingEstimator> {
  public:
   SingleDOFProfiledSubsystem(
       ::std::unique_ptr<SimpleCappedStateFeedbackLoop<3, 1, 1>> loop,

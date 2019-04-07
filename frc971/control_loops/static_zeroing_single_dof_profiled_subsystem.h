@@ -74,6 +74,10 @@ class StaticZeroingSingleDOFProfiledSubsystem {
 
   void TriggerEstimatorError() { profiled_subsystem_.TriggerEstimatorError(); }
 
+  void set_controller_index(int index) {
+    profiled_subsystem_.set_controller_index(index);
+  }
+
   enum class State : int32_t {
     UNINITIALIZED,
     DISABLED_INITIALIZED,

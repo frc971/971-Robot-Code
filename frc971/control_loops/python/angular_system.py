@@ -375,26 +375,42 @@ def WriteAngularSystem(params, plant_files, controller_files, year_namespaces):
     """Writes out the constants for a angular system to a file.
 
     Args:
-      params: AngularSystemParams, the parameters defining the system.
+      params: list of AngularSystemParams or AngularSystemParams, the
+        parameters defining the system.
       plant_files: list of strings, the cc and h files for the plant.
       controller_files: list of strings, the cc and h files for the integral
         controller.
       year_namespaces: list of strings, the namespace list to use.
     """
     # Write the generated constants out to a file.
-    angular_system = AngularSystem(params, params.name)
+    angular_systems = []
+    integral_angular_systems = []
+
+    if type(params) is list:
+        name = params[0].name
+        for index, param in enumerate(params):
+            angular_systems.append(
+                AngularSystem(param, param.name + str(index)))
+            integral_angular_systems.append(
+                IntegralAngularSystem(param, 'Integral' + param.name + str(
+                    index)))
+    else:
+        name = params.name
+        angular_systems.append(AngularSystem(params, params.name))
+        integral_angular_systems.append(
+            IntegralAngularSystem(params, 'Integral' + params.name))
+
     loop_writer = control_loop.ControlLoopWriter(
-        angular_system.name, [angular_system], namespaces=year_namespaces)
+        name, angular_systems, namespaces=year_namespaces)
     loop_writer.AddConstant(
-        control_loop.Constant('kOutputRatio', '%f', angular_system.G))
+        control_loop.Constant('kOutputRatio', '%f', angular_systems[0].G))
     loop_writer.AddConstant(
-        control_loop.Constant('kFreeSpeed', '%f',
-                              angular_system.motor.free_speed))
+        control_loop.Constant('kFreeSpeed', '%f', angular_systems[0]
+                              .motor.free_speed))
     loop_writer.Write(plant_files[0], plant_files[1])
 
-    integral_angular_system = IntegralAngularSystem(params,
-                                                    'Integral' + params.name)
     integral_loop_writer = control_loop.ControlLoopWriter(
-        integral_angular_system.name, [integral_angular_system],
+        'Integral' + name,
+        integral_angular_systems,
         namespaces=year_namespaces)
     integral_loop_writer.Write(controller_files[0], controller_files[1])
