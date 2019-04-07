@@ -1,6 +1,8 @@
 #ifndef _Y2019_VISION_TARGET_TYPES_H_
 #define _Y2019_VISION_TARGET_TYPES_H_
 
+#include "Eigen/Dense"
+
 #include "aos/vision/math/segment.h"
 #include "aos/vision/math/vector.h"
 #include "y2019/vision/constants.h"
@@ -54,28 +56,29 @@ struct Target {
   std::array<aos::vision::Vector<2>, 8> ToPointList() const;
 };
 
-struct ExtrinsicParams {
+template <typename Scalar>
+struct TemplatedExtrinsicParams {
   static constexpr size_t kNumParams = 4;
 
   // Height of the target
-  double y = 18.0 * 0.0254;
+  Scalar y = Scalar(18.0 * 0.0254);
   // Distance to the target
-  double z = 23.0 * 0.0254;
+  Scalar z = Scalar(23.0 * 0.0254);
   // Skew of the target relative to the line-of-sight from the camera to the
   // target.
-  double r1 = 1.0 / 180 * M_PI;
+  Scalar r1 = Scalar(1.0 / 180 * M_PI);
   // Heading from the camera to the target, relative to the center of the view
   // from the camera.
-  double r2 = -1.0 / 180 * M_PI;
+  Scalar r2 = Scalar(-1.0 / 180 * M_PI);
 
-  void set(double *data) {
+  void set(Scalar *data) {
     data[0] = y;
     data[1] = z;
     data[2] = r1;
     data[3] = r2;
   }
-  static ExtrinsicParams get(const double *data) {
-    ExtrinsicParams out;
+  static TemplatedExtrinsicParams get(const Scalar *data) {
+    TemplatedExtrinsicParams out;
     out.y = data[0];
     out.z = data[1];
     out.r1 = data[2];
@@ -84,10 +87,18 @@ struct ExtrinsicParams {
   }
 };
 
+using ExtrinsicParams = TemplatedExtrinsicParams<double>;
+
 // Projects a point from idealized template space to camera space.
+template <typename Extrinsics>
 aos::vision::Vector<2> Project(aos::vision::Vector<2> pt,
-                               const IntrinsicParams &intrinsics,
-                               const ExtrinsicParams &extrinsics);
+                                  const IntrinsicParams &intrinsics,
+                                  const Extrinsics &extrinsics);
+
+template <typename T, typename Extrinsics>
+::Eigen::Matrix<T, 2, 1> Project(::Eigen::Matrix<T, 2, 1> pt,
+                                  const IntrinsicParams &intrinsics,
+                                  const Extrinsics &extrinsics);
 
 Target Project(const Target &target, const IntrinsicParams &intrinsics,
                const ExtrinsicParams &extrinsics);
@@ -129,6 +140,92 @@ struct TargetResult {
   // (looking at a camera image) is closer are at a positive angle.
   float skew;
 };
+
+template <typename Extrinsics>
+aos::vision::Vector<2> Project(aos::vision::Vector<2> pt,
+                               const IntrinsicParams &intrinsics,
+                               const Extrinsics &extrinsics) {
+  const ::Eigen::Matrix<double, 2, 1> eigen_pt =
+      (::Eigen::Matrix<double, 2, 1>() << pt.x(), pt.y()).finished();
+  const ::Eigen::Matrix<double, 2, 1> res =
+      Project(eigen_pt, intrinsics, extrinsics);
+  return aos::vision::Vector<2>(res(0, 0), res(0, 1));
+}
+
+template <typename T, typename Extrinsics>
+::Eigen::Matrix<T, 2, 1> Project(::Eigen::Matrix<T, 2, 1> pt,
+                              const IntrinsicParams &intrinsics,
+                              const Extrinsics &extrinsics) {
+  const T y = extrinsics.y;    // height
+  const T z = extrinsics.z;    // distance
+  const T r1 = extrinsics.r1;  // skew
+  const T r2 = extrinsics.r2;  // heading
+  const double rup = intrinsics.mount_angle;
+  const double rbarrel = intrinsics.barrel_mount;
+  const double fl = intrinsics.focal_length;
+
+  // Start by translating point in target-space to be at correct height.
+  ::Eigen::Matrix<T, 3, 1> pts{pt(0, 0), pt(1, 0) + y, T(0.0)};
+
+  {
+    // Rotate to compensate for skew angle, to get into a frame still at the
+    // same (x, y) position as the target but rotated to be facing straight
+    // towards the camera.
+    const T theta = r1;
+    const T s = sin(theta);
+    const T c = cos(theta);
+    pts = (::Eigen::Matrix<T, 3, 3>() << c, T(0), -s, T(0), T(1), T(0), s, T(0),
+           c).finished() *
+          pts;
+  }
+
+  // Translate the coordinate frame to have (x, y) centered at the camera, but
+  // still oriented to be facing along the line from the camera to the target.
+  pts(2) += z;
+
+  {
+    // Rotate out the heading so that the frame is oriented to line up with the
+    // camera's viewpoint in the yaw-axis.
+    const T theta = r2;
+    const T s = sin(theta);
+    const T c = cos(theta);
+    pts = (::Eigen::Matrix<T, 3, 3>() << c, T(0), -s, T(0), T(1), T(0), s, T(0),
+           c).finished() *
+          pts;
+  }
+
+  // TODO: Apply 15 degree downward rotation.
+  {
+    // Compensate for rotation in the pitch of the camera up/down to get into
+    // the coordinate frame lined up with the plane of the camera sensor.
+    const double theta = rup;
+    const T s = T(sin(theta));
+    const T c = T(cos(theta));
+
+    pts = (::Eigen::Matrix<T, 3, 3>() << T(1), T(0), T(0), T(0), c, -s, T(0), s,
+           c).finished() *
+          pts;
+  }
+
+  // Compensate for rotation of the barrel of the camera, i.e. about the axis
+  // that points straight out from the camera lense, using an AngleAxis instead
+  // of manually constructing the rotation matrices because once you get into
+  // this frame you no longer need to be masochistic.
+  // TODO: Maybe barrel should be extrinsics to allow rocking?
+  // Also, in this case, barrel should go above the rotation above?
+  pts = ::Eigen::AngleAxis<T>(T(rbarrel),
+                              ::Eigen::Matrix<T, 3, 1>(T(0), T(0), T(1))) *
+        pts;
+
+  // TODO: Final image projection.
+  const ::Eigen::Matrix<T, 3, 1> res = pts;
+
+  // Finally, scale to account for focal length and translate to get into
+  // pixel-space.
+  const T scale = fl / res.z();
+  return ::Eigen::Matrix<T, 2, 1>(res.x() * scale + 320.0,
+                                   240.0 - res.y() * scale);
+}
 
 }  // namespace vision
 }  // namespace y2019

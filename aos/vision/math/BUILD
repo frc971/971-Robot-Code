@@ -13,6 +13,7 @@ cc_library(
     ],
     deps = [
         "//third_party/eigen",
+        "@com_google_ceres_solver//:ceres",
     ],
 )
 
