@@ -130,6 +130,8 @@ queue_group DrivetrainQueue {
 
     // Which spline to follow.
     int32_t spline_handle;
+    // Whether to follow the spline driving forwards or backwards.
+    bool drive_spline_backwards;
   };
 
   message Position {

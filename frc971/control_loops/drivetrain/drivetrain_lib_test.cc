@@ -118,8 +118,8 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
     double expected_x = my_drivetrain_queue_.status->trajectory_logging.x;
     double expected_y = my_drivetrain_queue_.status->trajectory_logging.y;
     auto actual = drivetrain_motor_plant_.GetPosition();
-    EXPECT_NEAR(actual(0), expected_x, 1e-2);
-    EXPECT_NEAR(actual(1), expected_y, 1e-2);
+    EXPECT_NEAR(actual(0), expected_x, 2e-2);
+    EXPECT_NEAR(actual(1), expected_y, 2e-2);
   }
 
   void WaitForTrajectoryPlan() {
@@ -435,6 +435,30 @@ TEST_F(DrivetrainTest, SplineSimple) {
   VerifyNearSplineGoal();
 }
 
+// Tests that we can drive a spline backwards.
+TEST_F(DrivetrainTest, SplineSimpleBackwards) {
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> goal =
+      my_drivetrain_queue_.goal.MakeMessage();
+  goal->drive_spline_backwards = true;
+  goal->controller_type = 2;
+  goal->spline.spline_idx = 1;
+  goal->spline.spline_count = 1;
+  goal->spline.spline_x = {{0.0, -0.25, -0.5, -0.5, -0.75, -1.0}};
+  goal->spline.spline_y = {{0.0, 0.0, -0.25 ,-0.75, -1.0, -1.0}};
+  goal.Send();
+  RunIteration();
+
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
+      start_goal = my_drivetrain_queue_.goal.MakeMessage();
+  start_goal->controller_type = 2;
+  start_goal->spline_handle = 1;
+  start_goal.Send();
+  WaitForTrajectoryPlan();
+
+  RunForTime(chrono::milliseconds(2000));
+  VerifyNearSplineGoal();
+}
+
 // Tests that simple spline with a single goal message.
 TEST_F(DrivetrainTest, SplineSingleGoal) {
   ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> goal =
@@ -528,8 +552,8 @@ TEST_F(DrivetrainTest, SplineOffset) {
   goal->controller_type = 2;
   goal->spline.spline_idx = 1;
   goal->spline.spline_count = 1;
-  goal->spline.spline_x = {{0.5, 0.25, 0.5, 0.5, 0.75, 1.0}};
-  goal->spline.spline_y = {{0.0, 0.0, 0.25 ,0.75, 1.0, 1.0}};
+  goal->spline.spline_x = {{0.2, 0.25, 0.5, 0.5, 0.75, 1.0}};
+  goal->spline.spline_y = {{0.2, 0.0, 0.25 ,0.75, 1.0, 1.0}};
   goal.Send();
   RunIteration();
 

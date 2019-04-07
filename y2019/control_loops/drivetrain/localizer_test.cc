@@ -410,7 +410,7 @@ TEST_P(ParameterizedLocalizerTest, SplineTest) {
     // interest here are that we (a) stop adding disturbances at the very end of
     // the trajectory, to allow us to actually converge to the goal, and (b)
     // scale disturbances by the corruent velocity.
-    if (GetParam().disturb && i % 50 == 0) {
+    if (GetParam().disturb && i % 75 == 0) {
       // Scale the disturbance so that when we have near-zero velocity we don't
       // have much disturbance.
       double disturbance_scale = ::std::min(
@@ -582,7 +582,7 @@ INSTANTIATE_TEST_CASE_P(
                 .finished(),
             /*noisify=*/false,
             /*disturb=*/true,
-            /*estimate_tolerance=*/2e-2,
+            /*estimate_tolerance=*/2.5e-2,
             /*goal_tolerance=*/0.15,
         }),
         // Add noise and some initial error in addition:

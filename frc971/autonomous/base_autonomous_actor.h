@@ -42,9 +42,16 @@ class BaseAutonomousActor
     BaseAutonomousActor *base_autonomous_actor_;
   };
 
+  // Represents the direction that we will drive along a spline.
+  enum class SplineDirection {
+    kForward,
+    kBackward,
+  };
+
   // Starts planning the spline, and returns a handle to be used to manipulate
   // it.
-  SplineHandle PlanSpline(const ::frc971::MultiSpline &spline);
+  SplineHandle PlanSpline(const ::frc971::MultiSpline &spline,
+                          SplineDirection direction);
 
   void ResetDrivetrain();
   void InitializeEncoders();

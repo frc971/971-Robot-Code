@@ -71,6 +71,7 @@ class SplineDrivetrain {
   int32_t current_spline_handle_ = 0;  // Current spline told to excecute.
   int32_t current_spline_idx_ = 0;     // Current executing spline.
   bool has_started_execution_ = false;
+  bool drive_spline_backwards_ = false;
 
   ::std::unique_ptr<DistanceSpline> current_distance_spline_;
   ::std::unique_ptr<Trajectory> current_trajectory_;
@@ -105,8 +106,8 @@ class SplineDrivetrain {
   // TODO(alex): pull this out of dt_config.
   const ::Eigen::DiagonalMatrix<double, 5> Q =
       (::Eigen::DiagonalMatrix<double, 5>().diagonal()
-           << 1.0 / ::std::pow(0.07, 2),
-       1.0 / ::std::pow(0.07, 2), 1.0 / ::std::pow(0.2, 2),
+           << 1.0 / ::std::pow(0.12, 2),
+       1.0 / ::std::pow(0.12, 2), 1.0 / ::std::pow(0.1, 2),
        1.0 / ::std::pow(1.5, 2), 1.0 / ::std::pow(1.5, 2))
           .finished()
           .asDiagonal();
