@@ -272,6 +272,39 @@ extern "C" void ftm0_isr() {
       ->CurrentInterrupt(BalanceSimpleReadings(readings.currents), encoder);
 
   global_wheel_angle.store(angle);
+
+  /*
+  SmallInitReadings position_readings;
+  {
+    DisableInterrupts disable_interrupts;
+    position_readings = AdcReadSmallInit(disable_interrupts);
+  }
+
+  static int i = 0;
+  if (i == 1000) {
+    i = 0;
+    float wheel_position =
+        absolute_wheel(analog_ratio(position_readings.wheel_abs));
+    printf(
+        "ecnt %" PRIu32 " arev:%d erev:%d abs:%d awp:%d uncalwheel:%d\n",
+        encoder,
+        static_cast<int>((1.0f - analog_ratio(position_readings.motor1_abs)) *
+                         7000.0f),
+        static_cast<int>(encoder * 7.0f / 4096.0f * 1000.0f),
+        static_cast<int>(absolute_encoder),
+        static_cast<int>(wheel_position * 1000.0f),
+        static_cast<int>(analog_ratio(position_readings.wheel_abs) * 1000.0f));
+  } else if (i == 200) {
+    printf("out %" PRIu32 " %" PRIu32 " %" PRIu32 "\n",
+           global_motor1.load(::std::memory_order_relaxed)
+               ->output_registers()[0][2],
+           global_motor1.load(::std::memory_order_relaxed)
+               ->output_registers()[1][2],
+           global_motor1.load(::std::memory_order_relaxed)
+               ->output_registers()[2][2]);
+  }
+  ++i;
+  */
 }
 
 constexpr float kTriggerMaxExtension = -0.70f;
@@ -328,6 +361,33 @@ extern "C" void ftm3_isr() {
       ->CurrentInterrupt(BalanceSimpleReadings(readings.currents), encoder);
 
   global_trigger_angle.store(trigger_angle);
+
+  /*
+  SmallInitReadings position_readings;
+  {
+    DisableInterrupts disable_interrupts;
+    position_readings = AdcReadSmallInit(disable_interrupts);
+  }
+
+  static int i = 0;
+  if (i == 1000) {
+    i = 0;
+    printf("ecnt %" PRIu32 " arev:%d erev:%d abs:%d\n", encoder,
+           static_cast<int>((analog_ratio(position_readings.motor0_abs)) *
+                            7000.0f),
+           static_cast<int>(encoder * 7.0f / 4096.0f * 1000.0f),
+           static_cast<int>(absolute_encoder));
+  } else if (i == 200) {
+    printf("out %" PRIu32 " %" PRIu32 " %" PRIu32 "\n",
+           global_motor0.load(::std::memory_order_relaxed)
+               ->output_registers()[0][2],
+           global_motor0.load(::std::memory_order_relaxed)
+               ->output_registers()[1][2],
+           global_motor0.load(::std::memory_order_relaxed)
+               ->output_registers()[2][2]);
+  }
+  ++i;
+  */
 }
 
 int ConvertFloat16(float val) {
