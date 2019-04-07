@@ -84,7 +84,7 @@ struct PointCostFunctor {
     ::Eigen::Matrix<T, 2, 1> pt =
         Project<T>(ToEigenMatrix<T>(template_pt), intrinsics, extrinsics);
     residual[0] = result.x() - pt(0, 0);
-    residual[1] = result.y() - pt(0, 1);
+    residual[1] = result.y() - pt(1, 0);
     return true;
   }
 
