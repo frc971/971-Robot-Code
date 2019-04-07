@@ -31,15 +31,20 @@ kElevator = linear_system.LinearSystemParams(
     kalman_q_voltage=35.0,
     kalman_r_position=0.05)
 
+kElevatorBall = copy.copy(kElevator)
+kElevatorBall.q_pos = 0.15
+kElevatorBall.q_vel = 1.5
+
 kElevatorModel = copy.copy(kElevator)
 kElevatorModel.mass = carriage_mass + first_stage_mass + 1.0
+
 
 def main(argv):
     if FLAGS.plot:
         R = numpy.matrix([[1.5], [0.0]])
-        linear_system.PlotKick(kElevator, R, plant_params=kElevatorModel)
+        linear_system.PlotKick(kElevatorBall, R, plant_params=kElevatorModel)
         linear_system.PlotMotion(
-            kElevator, R, max_velocity=5.0, plant_params=kElevatorModel)
+            kElevatorBall, R, max_velocity=5.0, plant_params=kElevatorModel)
 
     # Write the generated constants out to a file.
     if len(argv) != 5:
@@ -48,8 +53,8 @@ def main(argv):
         )
     else:
         namespaces = ['y2019', 'control_loops', 'superstructure', 'elevator']
-        linear_system.WriteLinearSystem(kElevator, argv[1:3], argv[3:5],
-                                        namespaces)
+        linear_system.WriteLinearSystem([kElevator, kElevatorBall, kElevator],
+                                        argv[1:3], argv[3:5], namespaces)
 
 
 if __name__ == '__main__':

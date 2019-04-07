@@ -83,6 +83,19 @@ void Superstructure::RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
     }
   }
 
+  if (unsafe_goal) {
+    if (!unsafe_goal->suction.grab_piece) {
+      wrist_.set_controller_index(0);
+      elevator_.set_controller_index(0);
+    } else if (unsafe_goal->suction.gamepiece_mode == 0) {
+      wrist_.set_controller_index(1);
+      elevator_.set_controller_index(1);
+    } else {
+      wrist_.set_controller_index(2);
+      elevator_.set_controller_index(2);
+    }
+  }
+
   // TODO(theo) move these up when Iterate() is split
   // update the goals
   collision_avoidance_.UpdateGoal(status, unsafe_goal);
