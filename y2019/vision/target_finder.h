@@ -59,6 +59,8 @@ class TargetFinder {
       const std::vector<TargetComponent> component_list, bool verbose);
 
   // Given a target solve for the transformation of the template target.
+  //
+  // This is safe to call concurrently.
   IntermediateResult ProcessTargetToResult(const Target &target, bool verbose);
 
   // Returns true if a target is good, and false otherwise.  Picks the 4 vs 8
