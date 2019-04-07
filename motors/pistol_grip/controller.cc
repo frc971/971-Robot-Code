@@ -21,12 +21,25 @@
 #define MOTOR1_PWM_FTM FTM0
 #define MOTOR1_ENCODER_FTM FTM1
 
-extern const float kWheelCoggingTorque[4096];
-extern const float kTriggerCoggingTorque[4096];
+extern const float kWheelCoggingTorque0[4096];
+extern const float kWheelCoggingTorque1[4096];
+extern const float kTriggerCoggingTorque0[4096];
+extern const float kTriggerCoggingTorque1[4096];
 
 namespace frc971 {
 namespace motors {
 namespace {
+
+::std::atomic<const float *> trigger_cogging_torque{nullptr};
+::std::atomic<const float *> wheel_cogging_torque{nullptr};
+
+float TriggerCoggingTorque(uint32_t index) {
+  return trigger_cogging_torque.load(::std::memory_order_relaxed)[index];
+}
+
+float WheelCoggingTorque(uint32_t index) {
+  return wheel_cogging_torque.load(::std::memory_order_relaxed)[index];
+}
 
 using ::frc971::control_loops::drivetrain::MakeIntegralHapticTriggerPlant;
 using ::frc971::control_loops::drivetrain::MakeIntegralHapticTriggerObserver;
@@ -314,7 +327,7 @@ extern "C" void ftm0_isr() {
 
   (void)CoggingCurrent1;
   float goal_current = global_wheel_current.load(::std::memory_order_relaxed) +
-                       kWheelCoggingTorque[encoder];
+                       WheelCoggingTorque(encoder);
   //float goal_current = CoggingCurrent1(encoder, absolute_encoder);
   //float goal_current = kWheelCoggingTorque[encoder];
   //float goal_current = 0.0f;
@@ -451,7 +464,7 @@ extern "C" void ftm3_isr() {
   (void)CoggingCurrent0;
   const float goal_current =
       global_trigger_torque.load(::std::memory_order_relaxed) +
-      kTriggerCoggingTorque[encoder];
+      TriggerCoggingTorque(encoder);
   //const float goal_current = kTriggerCoggingTorque[encoder];
   //const float goal_current = 0.0f;
   //const float goal_current = CoggingCurrent0(encoder, absolute_encoder);
@@ -999,6 +1012,11 @@ extern "C" int main() {
   printf("data: %p-%p\n", __data_ram_start__, __data_ram_end__);
   printf("heap start: %p\n", __heap_start__);
   printf("stack start: %p\n", __stack_end__);
+
+  trigger_cogging_torque.store(ProcessorIndex() == 0 ? kTriggerCoggingTorque0
+                                                     : kTriggerCoggingTorque1);
+  wheel_cogging_torque.store(ProcessorIndex() == 0 ? kWheelCoggingTorque0
+                                                   : kWheelCoggingTorque1);
 
   printf("Zeroing motors for %d:%x\n", static_cast<int>(ProcessorIndex()),
          (unsigned int)ProcessorIdentifier());

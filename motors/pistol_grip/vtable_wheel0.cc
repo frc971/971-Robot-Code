@@ -1,5 +1,5 @@
-extern const float kWheelCoggingTorque[4096];
-const float kWheelCoggingTorque[4096] = {
+extern const float kWheelCoggingTorque0[4096];
+const float kWheelCoggingTorque0[4096] = {
     -0.161690f,
     -0.114243f,
     -0.106662f,

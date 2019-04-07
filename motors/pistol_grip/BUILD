@@ -28,8 +28,10 @@ cc_binary(
     name = "controller.elf",
     srcs = [
         "controller.cc",
-        "vtable_trigger.cc",
-        "vtable_wheel.cc",
+        "vtable_trigger0.cc",
+        "vtable_trigger1.cc",
+        "vtable_wheel0.cc",
+        "vtable_wheel1.cc",
     ],
     restricted_to = mcu_cpus,
     deps = [
