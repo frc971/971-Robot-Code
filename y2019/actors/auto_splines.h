@@ -22,6 +22,9 @@ class AutonomousSplines {
 
   // HP to near side rocket
   static ::frc971::MultiSpline HPToNearRocket();
+
+  static ::frc971::MultiSpline HabToFarRocket();
+  static ::frc971::MultiSpline FarRockettoHP();
 };
 
 }  // namespace actors
