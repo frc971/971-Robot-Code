@@ -39,8 +39,8 @@ cc_library(
     srcs = ["image_writer.cc"],
     hdrs = ["image_writer.h"],
     deps = [
-        "//aos/logging",
         "//aos/vision/image:image_types",
+        "@com_github_google_glog//:glog",
     ],
 )
 
