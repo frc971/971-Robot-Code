@@ -109,21 +109,21 @@ const ElevatorWristPosition kPanelCargoForwardPos{0.0, M_PI / 2.0};
 const ElevatorWristPosition kPanelCargoBackwardPos{0.0, -M_PI / 2.0};
 
 const ElevatorWristPosition kBallForwardLowerPos{0.21, 1.27};
-const ElevatorWristPosition kBallBackwardLowerPos{0.40, -1.99};
+const ElevatorWristPosition kBallBackwardLowerPos{0.43, -1.99};
 
-const ElevatorWristPosition kBallForwardMiddlePos{0.90, 1.21};
-const ElevatorWristPosition kBallBackwardMiddlePos{1.17, -1.98};
+const ElevatorWristPosition kBallForwardMiddlePos{0.925, 1.21};
+const ElevatorWristPosition kBallBackwardMiddlePos{1.19, -1.98};
 
 const ElevatorWristPosition kBallForwardUpperPos{1.51, 0.961};
 const ElevatorWristPosition kBallBackwardUpperPos{1.44, -1.217};
 
-const ElevatorWristPosition kBallCargoForwardPos{0.739044, 1.353};
-const ElevatorWristPosition kBallCargoBackwardPos{0.868265, -1.999};
+const ElevatorWristPosition kBallCargoForwardPos{0.59, 1.2};
+const ElevatorWristPosition kBallCargoBackwardPos{0.868265, -2.1};
 
 const ElevatorWristPosition kBallHPIntakeForwardPos{0.55, 1.097};
 const ElevatorWristPosition kBallHPIntakeBackwardPos{0.89, -2.018};
 
-const ElevatorWristPosition kBallIntakePos{0.29, 2.14};
+const ElevatorWristPosition kBallIntakePos{0.309, 2.13};
 
 class Reader : public ::aos::input::ActionJoystickInput {
  public:
@@ -321,7 +321,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     if (switch_ball_) {
       if (kDoBallOutake ||
           (kDoBallIntake &&
-           monotonic_now < last_not_has_piece_ + chrono::milliseconds(100))) {
+           monotonic_now < last_not_has_piece_ + chrono::milliseconds(200))) {
         new_superstructure_goal->intake.unsafe_goal = 0.959327;
       }
 

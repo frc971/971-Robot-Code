@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
   bool log_images = false;
 
   aos::vision::CameraParams params0;
-  params0.set_exposure(50);
+  params0.set_exposure(60);
   params0.set_brightness(40);
   params0.set_width(640);
   params0.set_fps(15);

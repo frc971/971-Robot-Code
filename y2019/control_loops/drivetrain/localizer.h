@@ -100,7 +100,7 @@ class TypedLocalizer
   // The threshold to use for completely rejecting potentially bad target
   // matches.
   // TODO(james): Tune
-  static constexpr Scalar kRejectionScore = 1000000.0;
+  static constexpr Scalar kRejectionScore = 1.0;
 
   // Checks that the targets coming in make some sense--mostly to prevent NaNs
   // or the such from propagating.
