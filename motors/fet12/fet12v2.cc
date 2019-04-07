@@ -256,7 +256,7 @@ void ftm0_isr(void) {
   global_motor.load(::std::memory_order_relaxed)
       ->SetGoalCurrent(goal_current);
   global_motor.load(::std::memory_order_relaxed)
-      ->HandleInterrupt(balanced, wrapped_encoder);
+      ->CurrentInterrupt(balanced, wrapped_encoder);
 
   global_debug_buffer.count.fetch_add(1);
 

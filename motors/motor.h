@@ -130,8 +130,8 @@ class Motor final {
   // If the global time base is in use, it must be activated after this.
   void Start();
 
-  void HandleInterrupt(const BalancedReadings &readings,
-                       uint32_t captured_wrapped_encoder);
+  void CurrentInterrupt(const BalancedReadings &readings,
+                        uint32_t captured_wrapped_encoder);
 
   void SetGoalCurrent(float goal_current) {
     DisableInterrupts disable_interrupts;

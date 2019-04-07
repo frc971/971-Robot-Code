@@ -114,8 +114,8 @@ void Motor::Start() {
 #define DO_PULSE_SWEEP 0
 #define PRINT_TIMING 0
 
-void Motor::HandleInterrupt(const BalancedReadings &balanced,
-                            uint32_t captured_wrapped_encoder) {
+void Motor::CurrentInterrupt(const BalancedReadings &balanced,
+                             uint32_t captured_wrapped_encoder) {
   pwm_ftm_->SC &= ~FTM_SC_TOF;
 
 #if PRINT_TIMING
