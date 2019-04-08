@@ -144,6 +144,27 @@ cc_binary(
 )
 
 hex_from_elf(
+    name = "simpler_receiver",
+    restricted_to = mcu_cpus,
+)
+
+cc_binary(
+    name = "simpler_receiver.elf",
+    srcs = [
+        "simpler_receiver.cc",
+    ],
+    restricted_to = mcu_cpus,
+    deps = [
+        ":util",
+        "//motors/core",
+        "//motors/peripheral:can",
+        "//motors/peripheral:configuration",
+        "//motors/print:usb",
+        "//motors/seems_reasonable:drivetrain_lib",
+    ],
+)
+
+hex_from_elf(
     name = "simple_receiver",
     restricted_to = mcu_cpus,
 )

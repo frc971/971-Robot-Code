@@ -86,6 +86,7 @@ void can_init(uint32_t id0, uint32_t id1) {
   // more stable than the PLL-based peripheral clock, which matters.
   // We're going with a sample point fraction of 0.875 because that's what
   // SocketCAN defaults to.
+  // This results in a baud rate of 500 kHz.
   CAN0_CTRL1 = CAN_CTRL1_PRESDIV(
                    1) /* Divide the crystal frequency by 2 to get 8 MHz. */ |
                CAN_CTRL1_RJW(0) /* RJW/SJW of 1, which is most common. */ |
