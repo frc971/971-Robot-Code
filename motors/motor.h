@@ -133,6 +133,9 @@ class Motor final {
   void CurrentInterrupt(const BalancedReadings &readings,
                         uint32_t captured_wrapped_encoder);
 
+  // Runs each phase at a fixed duty cycle.
+  void CycleFixedPhaseInterupt();
+
   void SetGoalCurrent(float goal_current) {
     DisableInterrupts disable_interrupts;
     goal_current_ = goal_current;
