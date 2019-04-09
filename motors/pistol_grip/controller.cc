@@ -33,6 +33,30 @@ using ::frc971::control_loops::drivetrain::MakeIntegralHapticTriggerObserver;
 using ::frc971::control_loops::drivetrain::MakeIntegralHapticWheelPlant;
 using ::frc971::control_loops::drivetrain::MakeIntegralHapticWheelObserver;
 
+// Returns an identifier for the processor we're running on.
+// This isn't guaranteed to be unique, but it should be close enough.
+uint8_t ProcessorIdentifier() {
+  // This XORs together all the bytes of the unique identifier provided by the
+  // hardware.
+  uint8_t r = 0;
+  for (uint8_t uid : {SIM_UIDH, SIM_UIDMH, SIM_UIDML, SIM_UIDL}) {
+    r = r ^ ((uid >> 0) & 0xFF);
+    r = r ^ ((uid >> 8) & 0xFF);
+    r = r ^ ((uid >> 16) & 0xFF);
+    r = r ^ ((uid >> 24) & 0xFF);
+  }
+  return r;
+}
+
+uint8_t ProcessorIndex() {
+  switch (ProcessorIdentifier()) {
+    case static_cast<uint8_t>(0xaa):
+      return 1;
+    default:
+      return 0;
+  }
+}
+
 struct SmallAdcReadings {
   uint16_t currents[3];
 };
@@ -665,21 +689,6 @@ bool ZeroMotors(uint16_t *motor0_offset, uint16_t *motor1_offset,
   return true;
 }
 
-// Returns an identifier for the processor we're running on.
-// This isn't guaranteed to be unique, but it should be close enough.
-uint8_t ProcessorIdentifier() {
-  // This XORs together all the bytes of the unique identifier provided by the
-  // hardware.
-  uint8_t r = 0;
-  for (uint8_t uid : {SIM_UIDH, SIM_UIDMH, SIM_UIDML, SIM_UIDL}) {
-    r = r ^ ((uid >> 0) & 0xFF);
-    r = r ^ ((uid >> 8) & 0xFF);
-    r = r ^ ((uid >> 16) & 0xFF);
-    r = r ^ ((uid >> 24) & 0xFF);
-  }
-  return r;
-}
-
 }  // namespace
 
 extern "C" int main() {
@@ -830,7 +839,8 @@ extern "C" int main() {
   printf("heap start: %p\n", __heap_start__);
   printf("stack start: %p\n", __stack_end__);
 
-  printf("Zeroing motors for %x\n", (unsigned int)ProcessorIdentifier());
+  printf("Zeroing motors for %d:%x\n", static_cast<int>(ProcessorIndex()),
+         (unsigned int)ProcessorIdentifier());
   uint16_t motor0_offset, motor1_offset, wheel_offset;
   while (!ZeroMotors(&motor0_offset, &motor1_offset, &wheel_offset)) {
   }
