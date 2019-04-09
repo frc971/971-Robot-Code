@@ -394,8 +394,8 @@ extern "C" void pit3_isr() {
     vesc_set_duty(0, -output.left_voltage / 12.0f);
     vesc_set_duty(1, -output.left_voltage / 12.0f);
 
-    vesc_set_duty(2, -output.right_voltage / 12.0f);
-    vesc_set_duty(3, -output.right_voltage / 12.0f);
+    vesc_set_duty(2, output.right_voltage / 12.0f);
+    vesc_set_duty(3, output.right_voltage / 12.0f);
   }
 }
 
