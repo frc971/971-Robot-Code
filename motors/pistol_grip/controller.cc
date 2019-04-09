@@ -237,14 +237,17 @@ extern "C" void ftm0_isr() {
                                  ->absolute_encoder(encoder);
 
   const float angle = absolute_encoder / static_cast<float>((15320 - 1488) / 2);
-  global_wheel_angle.store(angle);
 
-  float goal_current = -global_wheel_current.load(::std::memory_order_relaxed) +
+  float goal_current = global_wheel_current.load(::std::memory_order_relaxed) +
                        kWheelCoggingTorque[encoder];
+  //float goal_current = kWheelCoggingTorque[encoder];
+  //float goal_current = 0.0f;
 
   global_motor1.load(::std::memory_order_relaxed)->SetGoalCurrent(goal_current);
   global_motor1.load(::std::memory_order_relaxed)
-      ->HandleInterrupt(BalanceSimpleReadings(readings.currents), encoder);
+      ->CurrentInterrupt(BalanceSimpleReadings(readings.currents), encoder);
+
+  global_wheel_angle.store(angle);
 }
 
 constexpr float kTriggerMaxExtension = -0.70f;
@@ -281,20 +284,24 @@ extern "C" void ftm3_isr() {
     DisableInterrupts disable_interrupts;
     readings = AdcReadSmall0(disable_interrupts);
   }
-  uint32_t encoder =
-      global_motor0.load(::std::memory_order_relaxed)->wrapped_encoder();
-  int32_t absolute_encoder = global_motor0.load(::std::memory_order_relaxed)
-                                 ->absolute_encoder(encoder);
 
-  float trigger_angle = absolute_encoder / 1370.f;
+  const uint32_t encoder =
+      global_motor0.load(::std::memory_order_relaxed)->wrapped_encoder();
+  const int32_t absolute_encoder =
+      global_motor0.load(::std::memory_order_relaxed)
+          ->absolute_encoder(encoder);
+
+  const float trigger_angle = absolute_encoder / 1370.f;
 
   const float goal_current =
-      -global_trigger_torque.load(::std::memory_order_relaxed) +
+      global_trigger_torque.load(::std::memory_order_relaxed) +
       kTriggerCoggingTorque[encoder];
+  //const float goal_current = kTriggerCoggingTorque[encoder];
+  //const float goal_current = 0.0f;
 
   global_motor0.load(::std::memory_order_relaxed)->SetGoalCurrent(goal_current);
   global_motor0.load(::std::memory_order_relaxed)
-      ->HandleInterrupt(BalanceSimpleReadings(readings.currents), encoder);
+      ->CurrentInterrupt(BalanceSimpleReadings(readings.currents), encoder);
 
   global_trigger_angle.store(trigger_angle);
 }

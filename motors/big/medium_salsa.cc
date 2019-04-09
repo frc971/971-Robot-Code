@@ -133,7 +133,7 @@ void ftm0_isr(void) {
   }
   const BalancedReadings balanced = BalanceReadings(to_balance);
 
-  global_motor.load(::std::memory_order_relaxed)->HandleInterrupt(
+  global_motor.load(::std::memory_order_relaxed)->CurrentInterrupt(
       balanced,
       global_motor.load(::std::memory_order_relaxed)->wrapped_encoder());
 }
