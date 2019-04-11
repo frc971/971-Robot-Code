@@ -1,5 +1,5 @@
-extern const float kTriggerCoggingTorque[4096];
-const float kTriggerCoggingTorque[4096] = {
+extern const float kTriggerCoggingTorque0[4096];
+const float kTriggerCoggingTorque0[4096] = {
     0.095850f,
     0.095850f,
     0.095850f,

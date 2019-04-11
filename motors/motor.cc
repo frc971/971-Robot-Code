@@ -105,7 +105,6 @@ void Motor::Start() {
 #define DO_CONTROLS 1
 
 #define USE_CUTOFF 1
-#define PRINT_READINGS 0
 #define PRINT_ALL_READINGS 0
 #define TAKE_SAMPLE 0
 #define SAMPLE_UNTIL_DONE 0
@@ -247,49 +246,14 @@ void Motor::CurrentInterrupt(const BalancedReadings &balanced,
 #endif  // DO_CONTROLS
   (void)balanced;
   (void)captured_wrapped_encoder;
-#if PRINT_READINGS
-  static int i = 0;
-  if (i == 1000) {
-    i = 0;
-    //SmallInitReadings readings;
-    //{
-      //DisableInterrupts disable_interrupts;
-      //readings = AdcReadSmallInit(disable_interrupts);
-    //}
-    //printf(
-        //"enc %" PRIu32 " %d %d\n", captured_wrapped_encoder,
-        //static_cast<int>((1.0f - analog_ratio(readings.motor1_abs)) * 7000.0f),
-        //static_cast<int>(captured_wrapped_encoder * 7.0f / 4096.0f * 1000.0f));
-    //float wheel_position = absolute_wheel(analog_ratio(readings.wheel_abs));
-
-    printf(
-        "ecnt %" PRIu32
-        //" arev:%d"
-        " erev:%d"
-        //" %d"
-        "\n", captured_wrapped_encoder,
-        //static_cast<int>((analog_ratio(readings.motor1_abs)) * 7000.0f),
-        static_cast<int>(captured_wrapped_encoder / 4096.0f * 1000.0f)
-        //static_cast<int>(wheel_position * 1000.0f)
-        );
-  } else if (i == 200) {
-#if DO_CONTROLS
-    printf("out %" PRIu32 " %" PRIu32 " %" PRIu32 "\n", switching_points[0],
-           switching_points[1], switching_points[2]);
-#else  // DO_CONTROLS
-    printf("out %" PRIu32 " %" PRIu32 " %" PRIu32 "\n", output_registers_[0][2],
-           output_registers_[1][2], output_registers_[2][2]);
-#endif  // DO_CONTROLS
-  }
-  ++i;
-#elif PRINT_ALL_READINGS  // PRINT_READINGS
+#if PRINT_ALL_READINGS
   printf("ref=%" PRIu16 " 0.0=%" PRIu16 " 1.0=%" PRIu16 " 2.0=%" PRIu16
          " in=%" PRIu16 " 0.1=%" PRIu16 " 1.1=%" PRIu16 " 2.1=%" PRIu16 "\n",
          adc_readings.motor_current_ref, adc_readings.motor_currents[0][0],
          adc_readings.motor_currents[1][0], adc_readings.motor_currents[2][0],
          adc_readings.input_voltage, adc_readings.motor_currents[0][1],
          adc_readings.motor_currents[1][1], adc_readings.motor_currents[2][1]);
-#elif TAKE_SAMPLE  // PRINT_READINGS/PRINT_ALL_READINGS
+#elif TAKE_SAMPLE  // PRINT_ALL_READINGS
 #if 0
   constexpr int kStartupWait = 50000;
 #elif 0
@@ -435,7 +399,7 @@ void Motor::CurrentInterrupt(const BalancedReadings &balanced,
     }
 #endif
   }
-#endif  // PRINT_READINGS/PRINT_ALL_READINGS/TAKE_SAMPLE
+#endif  // PRINT_ALL_READINGS/TAKE_SAMPLE
   (void)balanced;
 
   // Tell the hardware to use the new switching points.

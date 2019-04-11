@@ -167,6 +167,10 @@ class Motor final {
     return controls_->overall_measured_current();
   }
 
+  ::std::array<volatile uint32_t *, 3> output_registers() const {
+    return output_registers_;
+  }
+
  private:
   uint32_t CalculateOnTime(uint32_t width) const;
   uint32_t CalculateOffTime(uint32_t width) const;

@@ -21,12 +21,25 @@
 #define MOTOR1_PWM_FTM FTM0
 #define MOTOR1_ENCODER_FTM FTM1
 
-extern const float kWheelCoggingTorque[4096];
-extern const float kTriggerCoggingTorque[4096];
+extern const float kWheelCoggingTorque0[4096];
+extern const float kWheelCoggingTorque1[4096];
+extern const float kTriggerCoggingTorque0[4096];
+extern const float kTriggerCoggingTorque1[4096];
 
 namespace frc971 {
 namespace motors {
 namespace {
+
+::std::atomic<const float *> trigger_cogging_torque{nullptr};
+::std::atomic<const float *> wheel_cogging_torque{nullptr};
+
+float TriggerCoggingTorque(uint32_t index) {
+  return trigger_cogging_torque.load(::std::memory_order_relaxed)[index];
+}
+
+float WheelCoggingTorque(uint32_t index) {
+  return wheel_cogging_torque.load(::std::memory_order_relaxed)[index];
+}
 
 using ::frc971::control_loops::drivetrain::MakeIntegralHapticTriggerPlant;
 using ::frc971::control_loops::drivetrain::MakeIntegralHapticTriggerObserver;
@@ -197,10 +210,15 @@ constexpr float InterpolateFloat(float x1, float x0, float y1, float y0, float x
 }
 
 float absolute_wheel(float wheel_position) {
-  if (wheel_position < 0.43f) {
+  const float kCenterOffset = (ProcessorIndex() == 1) ? -0.683f : -0.935f;
+
+  wheel_position += kCenterOffset;
+
+  if (wheel_position > 0.5f) {
+    wheel_position -= 1.0f;
+  } else if (wheel_position < -0.5f) {
     wheel_position += 1.0f;
   }
-  wheel_position -= 0.462f + 0.473f;
   return wheel_position;
 }
 
@@ -249,6 +267,51 @@ float WheelCenteringCurrent(float scalar, float angle, float velocity) {
   return goal_current * scalar + friction_goal_current;
 }
 
+float CoggingCurrent1(uint32_t encoder, int32_t absolute_encoder) {
+  constexpr float kP = 0.05f;
+  constexpr float kI = 0.00001f;
+  static int goal = -6700;
+
+  const int error = goal - static_cast<int>(absolute_encoder);
+  static float error_sum = 0.0f;
+  float goal_current = static_cast<float>(error) * kP + error_sum * kI;
+
+  goal_current = ::std::min(1.0f, ::std::max(-1.0f, goal_current));
+
+  static int i = 0;
+  if (error == 0) {
+    ++i;
+  } else {
+    i = 0;
+  }
+  if (i >= 100) {
+    printf("reading1: %d %d a:%d e:%d\n", goal,
+           static_cast<int>(goal_current * 10000.0f),
+           static_cast<int>(encoder),
+           static_cast<int>(error));
+    static int counting_up = 0;
+    if (absolute_encoder <= -6900) {
+      counting_up = 1;
+    } else if (absolute_encoder >= 6900) {
+      counting_up = 0;
+    }
+    if (counting_up) {
+      ++goal;
+    } else {
+      --goal;
+    }
+    i = 0;
+  }
+
+  error_sum += static_cast<float>(error);
+  if (error_sum > 1.0f / kI) {
+    error_sum = 1.0f / kI;
+  } else if (error_sum < -1.0f / kI) {
+    error_sum = -1.0f / kI;
+  }
+  return goal_current;
+}
+
 extern "C" void ftm0_isr() {
   SmallAdcReadings readings;
   {
@@ -262,16 +325,52 @@ extern "C" void ftm0_isr() {
 
   const float angle = absolute_encoder / static_cast<float>((15320 - 1488) / 2);
 
+  (void)CoggingCurrent1;
   float goal_current = global_wheel_current.load(::std::memory_order_relaxed) +
-                       kWheelCoggingTorque[encoder];
+                       WheelCoggingTorque(encoder);
+  //float goal_current = CoggingCurrent1(encoder, absolute_encoder);
   //float goal_current = kWheelCoggingTorque[encoder];
   //float goal_current = 0.0f;
 
   global_motor1.load(::std::memory_order_relaxed)->SetGoalCurrent(goal_current);
   global_motor1.load(::std::memory_order_relaxed)
       ->CurrentInterrupt(BalanceSimpleReadings(readings.currents), encoder);
+  //global_motor1.load(::std::memory_order_relaxed)->CycleFixedPhaseInterupt();
 
   global_wheel_angle.store(angle);
+
+  /*
+  SmallInitReadings position_readings;
+  {
+    DisableInterrupts disable_interrupts;
+    position_readings = AdcReadSmallInit(disable_interrupts);
+  }
+
+  static int i = 0;
+  if (i == 1000) {
+    i = 0;
+    float wheel_position =
+        absolute_wheel(analog_ratio(position_readings.wheel_abs));
+    printf(
+        "ecnt %" PRIu32 " arev:%d erev:%d abs:%d awp:%d uncalwheel:%d\n",
+        encoder,
+        static_cast<int>((1.0f - analog_ratio(position_readings.motor1_abs)) *
+                         7000.0f),
+        static_cast<int>(encoder * 7.0f / 4096.0f * 1000.0f),
+        static_cast<int>(absolute_encoder),
+        static_cast<int>(wheel_position * 1000.0f),
+        static_cast<int>(analog_ratio(position_readings.wheel_abs) * 1000.0f));
+  } else if (i == 200) {
+    printf("out %" PRIu32 " %" PRIu32 " %" PRIu32 "\n",
+           global_motor1.load(::std::memory_order_relaxed)
+               ->output_registers()[0][2],
+           global_motor1.load(::std::memory_order_relaxed)
+               ->output_registers()[1][2],
+           global_motor1.load(::std::memory_order_relaxed)
+               ->output_registers()[2][2]);
+  }
+  ++i;
+  */
 }
 
 constexpr float kTriggerMaxExtension = -0.70f;
@@ -302,6 +401,51 @@ float TriggerCenteringCurrent(float trigger_angle) {
   return goal_current;
 }
 
+float CoggingCurrent0(uint32_t encoder, int32_t absolute_encoder) {
+  constexpr float kP = 0.05f;
+  constexpr float kI = 0.00001f;
+  static int goal = 0;
+
+  const int error = goal - static_cast<int>(absolute_encoder);
+  static float error_sum = 0.0f;
+  float goal_current = static_cast<float>(error) * kP + error_sum * kI;
+
+  goal_current = ::std::min(1.0f, ::std::max(-1.0f, goal_current));
+
+  static int i = 0;
+  if (error == 0) {
+    ++i;
+  } else {
+    i = 0;
+  }
+
+  if (i >= 100) {
+    printf("reading0: %d %d a:%d e:%d\n", goal,
+           static_cast<int>(goal_current * 10000.0f),
+           static_cast<int>(encoder),
+           static_cast<int>(error));
+    static int counting_up = 0;
+    if (absolute_encoder <= -1390) {
+      counting_up = 1;
+    } else if (absolute_encoder >= 1390) {
+      counting_up = 0;
+    }
+    if (counting_up) {
+      ++goal;
+    } else {
+      --goal;
+    }
+  }
+
+  error_sum += static_cast<float>(error);
+  if (error_sum > 1.0f / kI) {
+    error_sum = 1.0f / kI;
+  } else if (error_sum < -1.0f / kI) {
+    error_sum = -1.0f / kI;
+  }
+  return goal_current;
+}
+
 extern "C" void ftm3_isr() {
   SmallAdcReadings readings;
   {
@@ -317,17 +461,47 @@ extern "C" void ftm3_isr() {
 
   const float trigger_angle = absolute_encoder / 1370.f;
 
+  (void)CoggingCurrent0;
   const float goal_current =
       global_trigger_torque.load(::std::memory_order_relaxed) +
-      kTriggerCoggingTorque[encoder];
+      TriggerCoggingTorque(encoder);
   //const float goal_current = kTriggerCoggingTorque[encoder];
   //const float goal_current = 0.0f;
+  //const float goal_current = CoggingCurrent0(encoder, absolute_encoder);
 
   global_motor0.load(::std::memory_order_relaxed)->SetGoalCurrent(goal_current);
   global_motor0.load(::std::memory_order_relaxed)
       ->CurrentInterrupt(BalanceSimpleReadings(readings.currents), encoder);
+  //global_motor0.load(::std::memory_order_relaxed)->CycleFixedPhaseInterupt();
 
   global_trigger_angle.store(trigger_angle);
+
+  /*
+  SmallInitReadings position_readings;
+  {
+    DisableInterrupts disable_interrupts;
+    position_readings = AdcReadSmallInit(disable_interrupts);
+  }
+
+  static int i = 0;
+  if (i == 1000) {
+    i = 0;
+    printf("ecnt %" PRIu32 " arev:%d erev:%d abs:%d\n", encoder,
+           static_cast<int>((analog_ratio(position_readings.motor0_abs)) *
+                            7000.0f),
+           static_cast<int>(encoder * 7.0f / 4096.0f * 1000.0f),
+           static_cast<int>(absolute_encoder));
+  } else if (i == 200) {
+    printf("out %" PRIu32 " %" PRIu32 " %" PRIu32 "\n",
+           global_motor0.load(::std::memory_order_relaxed)
+               ->output_registers()[0][2],
+           global_motor0.load(::std::memory_order_relaxed)
+               ->output_registers()[1][2],
+           global_motor0.load(::std::memory_order_relaxed)
+               ->output_registers()[2][2]);
+  }
+  ++i;
+  */
 }
 
 int ConvertFloat16(float val) {
@@ -839,6 +1013,11 @@ extern "C" int main() {
   printf("heap start: %p\n", __heap_start__);
   printf("stack start: %p\n", __stack_end__);
 
+  trigger_cogging_torque.store(ProcessorIndex() == 0 ? kTriggerCoggingTorque0
+                                                     : kTriggerCoggingTorque1);
+  wheel_cogging_torque.store(ProcessorIndex() == 0 ? kWheelCoggingTorque0
+                                                   : kWheelCoggingTorque1);
+
   printf("Zeroing motors for %d:%x\n", static_cast<int>(ProcessorIndex()),
          (unsigned int)ProcessorIdentifier());
   uint16_t motor0_offset, motor1_offset, wheel_offset;
@@ -850,15 +1029,34 @@ extern "C" int main() {
   const float motor1_offset_scaled = analog_ratio(motor1_offset);
   // Good for the initial trigger.
   {
-    constexpr float kZeroOffset0 = 0.27f;
+    // Calibrate winding phase error here.
+    const float kZeroOffset0 = ProcessorIndex() == 1 ? 0.275f : 0.27f;
     const int motor0_starting_point = static_cast<int>(
         (motor0_offset_scaled + (kZeroOffset0 / 7.0f)) * 4096.0f);
     printf("Motor 0 starting at %d\n", motor0_starting_point);
     motor0.set_encoder_calibration_offset(motor0_starting_point);
     motor0.set_encoder_multiplier(-1);
 
-    // Calibrate neutral here.
-    motor0.set_encoder_offset(motor0.encoder_offset() - 2065 + 20);
+    // Calibrate output coordinate neutral here.
+    motor0.set_encoder_offset(
+        motor0.encoder_offset() +
+        (ProcessorIndex() == 1 ? (-3096 - 430 - 30 - 6) : (-2065 + 20)));
+
+    while (true) {
+      const uint32_t encoder =
+          global_motor0.load(::std::memory_order_relaxed)->wrapped_encoder();
+      const int32_t absolute_encoder =
+          global_motor0.load(::std::memory_order_relaxed)
+              ->absolute_encoder(encoder);
+
+      if (absolute_encoder > 2047) {
+        motor0.set_encoder_offset(motor0.encoder_offset() - 4096);
+      } else if (absolute_encoder < -2047) {
+        motor0.set_encoder_offset(motor0.encoder_offset() + 4096);
+      } else {
+        break;
+      }
+    }
 
     uint32_t new_encoder = motor0.wrapped_encoder();
     int32_t absolute_encoder = motor0.absolute_encoder(new_encoder);
@@ -867,7 +1065,7 @@ extern "C" int main() {
   }
 
   {
-    constexpr float kZeroOffset1 = 0.26f;
+    const float kZeroOffset1 = ProcessorIndex() == 1 ? 0.420f : 0.26f;
     const int motor1_starting_point = static_cast<int>(
         (motor1_offset_scaled + (kZeroOffset1 / 7.0f)) * 4096.0f);
     printf("Motor 1 starting at %d\n", motor1_starting_point);
@@ -882,7 +1080,8 @@ extern "C" int main() {
            static_cast<int>(wheel_position * 1000.0f), encoder);
 
     constexpr float kWheelGearRatio = (1.25f + 0.02f) / 0.35f;
-    constexpr float kWrappedWheelAtZero = 0.6586310546875f;
+    const float kWrappedWheelAtZero =
+        ProcessorIndex() == 1 ? (0.934630859375f) : 0.6586310546875f;
 
     const int encoder_wraps =
         static_cast<int>(lround(wheel_position * kWheelGearRatio -
