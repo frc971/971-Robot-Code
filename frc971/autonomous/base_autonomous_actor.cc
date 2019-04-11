@@ -28,6 +28,7 @@ BaseAutonomousActor::BaseAutonomousActor(
 void BaseAutonomousActor::ResetDrivetrain() {
   LOG(INFO, "resetting the drivetrain\n");
   max_drivetrain_voltage_ = 12.0;
+  goal_spline_handle_ = 0;
   drivetrain_queue.goal.MakeWithBuilder()
       .controller_type(0)
       .highgear(true)
@@ -350,7 +351,7 @@ double BaseAutonomousActor::DriveDistanceLeft() {
 }
 
 BaseAutonomousActor::SplineHandle BaseAutonomousActor::PlanSpline(
-    const ::frc971::MultiSpline &spline) {
+    const ::frc971::MultiSpline &spline, SplineDirection direction) {
   LOG(INFO, "Planning spline\n");
 
   int32_t spline_handle = (++spline_handle_) | ((getpid() & 0xFFFF) << 15);
@@ -363,6 +364,8 @@ BaseAutonomousActor::SplineHandle BaseAutonomousActor::PlanSpline(
   drivetrain_message->spline = spline;
   drivetrain_message->spline.spline_idx = spline_handle;
   drivetrain_message->spline_handle = goal_spline_handle_;
+  drivetrain_message->drive_spline_backwards =
+      direction == SplineDirection::kBackward;
 
   LOG_STRUCT(DEBUG, "dtg", *drivetrain_message);
 
@@ -417,9 +420,17 @@ bool BaseAutonomousActor::SplineHandle::IsDone() {
   drivetrain_queue.status.FetchLatest();
   LOG_STRUCT(INFO, "dts", *drivetrain_queue.status.get());
 
+  // We check that the spline we are waiting on is neither currently planning
+  // nor executing; note that we do *not* check the is_executing bit because
+  // immediately after calling Start we may still receive an old Status message
+  // that has not been updated. We check for planning so that the user can go
+  // straight from starting the planner to executing without a WaitForPlan in
+  // between.
   if (drivetrain_queue.status.get() &&
-      drivetrain_queue.status->trajectory_logging.current_spline_idx ==
-          spline_handle_) {
+      (drivetrain_queue.status->trajectory_logging.current_spline_idx ==
+           spline_handle_ ||
+       drivetrain_queue.status->trajectory_logging.planning_spline_idx ==
+           spline_handle_)) {
     return false;
   }
   return true;

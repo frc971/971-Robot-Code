@@ -3,6 +3,7 @@
 #include "Eigen/Dense"
 
 #include "aos/init.h"
+#include "aos/util/math.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 
@@ -99,6 +100,7 @@ void SplineDrivetrain::SetGoal(
 
   ::aos::Mutex::State mutex_state = mutex_.TryLock();
   if (mutex_state == ::aos::Mutex::State::kLocked) {
+    drive_spline_backwards_ = goal_.drive_spline_backwards;
     if (goal.spline.spline_idx && future_spline_idx_ != goal.spline.spline_idx) {
       goal_ = goal;
       new_goal_.Broadcast();
@@ -143,7 +145,17 @@ void SplineDrivetrain::Update(bool enable, const ::Eigen::Matrix<double, 5, 1> &
     ::Eigen::Matrix<double, 2, 5> K =
         current_trajectory_->KForState(state, dt_config_.dt, Q, R);
     ::Eigen::Matrix<double, 5, 1> goal_state = CurrentGoalState();
+    if (drive_spline_backwards_) {
+      ::Eigen::Matrix<double, 2, 1> swapU(U_ff(1, 0), U_ff(0, 0));
+      U_ff = -swapU;
+      goal_state(2, 0) += M_PI;
+      double left_goal = goal_state(3, 0);
+      double right_goal = goal_state(4, 0);
+      goal_state(3, 0) = -right_goal;
+      goal_state(4, 0) = -left_goal;
+    }
     ::Eigen::Matrix<double, 5, 1> state_error = goal_state - state;
+    state_error(2, 0) = ::aos::math::NormalizeAngle(state_error(2, 0));
     ::Eigen::Matrix<double, 2, 1> U_fb = K * state_error;
 
     ::Eigen::Matrix<double, 2, 1> xv_state = current_xva_.block<2,1>(0,0);

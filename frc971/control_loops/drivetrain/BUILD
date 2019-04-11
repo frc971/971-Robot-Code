@@ -106,6 +106,7 @@ cc_library(
         ":spline",
         ":trajectory",
         "//aos:init",
+        "//aos/util:math",
     ],
 )
 
