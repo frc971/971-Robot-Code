@@ -2,6 +2,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <array>
+#include <cmath>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -10,12 +11,14 @@
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/pose.h"
 #include "internal/Embedded.h"
 #include "google/protobuf/util/json_util.h"
 #include "seasocks/PrintfLogger.h"
 #include "seasocks/Server.h"
 #include "seasocks/StringUtil.h"
 #include "seasocks/WebSocket.h"
+#include "y2019/constants.h"
 #include "y2019/control_loops/drivetrain/camera.q.h"
 #include "y2019/vision/server/server_data.pb.h"
 
@@ -142,6 +145,8 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
 
     {
       const auto &new_frame = *camera_frames;
+      // TODO(james): Maybe we only want to fill out a new frame if it has
+      // targets or the saved target is > 0.1 sec old? Not sure, but for now
       if (new_frame.camera < latest_frames.size()) {
         latest_frames[new_frame.camera].capture_time =
             aos::monotonic_clock::time_point(
@@ -153,7 +158,14 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
         }
         for (int target = 0; target < new_frame.num_targets; ++target) {
           latest_frames[new_frame.camera].targets.emplace_back();
-          // TODO: Do something useful.
+          const float heading = new_frame.targets[target].heading;
+          const float distance = new_frame.targets[target].distance;
+          latest_frames[new_frame.camera].targets.back().x =
+              ::std::cos(heading) * distance;
+          latest_frames[new_frame.camera].targets.back().y =
+              ::std::sin(heading) * distance;
+          latest_frames[new_frame.camera].targets.back().theta =
+              new_frame.targets[target].skew;
         }
       }
     }
@@ -166,6 +178,9 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
       debug_data.mutable_robot_pose()->set_x(drivetrain_status->x);
       debug_data.mutable_robot_pose()->set_y(drivetrain_status->y);
       debug_data.mutable_robot_pose()->set_theta(drivetrain_status->theta);
+      frc971::control_loops::TypedPose<double> robot_pose(
+          {drivetrain_status->x, drivetrain_status->y, 0},
+          drivetrain_status->theta);
       {
         LineFollowDebug *line_debug = debug_data.mutable_line_follow_debug();
         line_debug->set_frozen(drivetrain_status->line_follow_logging.frozen);
@@ -181,6 +196,10 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
       for (size_t ii = 0; ii < latest_frames.size(); ++ii) {
         CameraDebug *camera_debug = debug_data.add_camera_debug();
         LocalCameraFrame cur_frame = latest_frames[ii];
+        constants::Values::CameraCalibration camera_info =
+            constants::GetValues().cameras[ii];
+        frc971::control_loops::TypedPose<double> camera_pose =
+            camera_info.pose.Rebase(&robot_pose);
 
         camera_debug->set_current_frame_age(
             ::std::chrono::duration_cast<::std::chrono::duration<double>>(
@@ -189,10 +208,12 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
             ::std::chrono::duration_cast<::std::chrono::duration<double>>(
                 now - last_target_time[ii]).count());
         for (const auto &target : cur_frame.targets) {
+          frc971::control_loops::TypedPose<double> target_pose(
+              &camera_pose, {target.x, target.y, 0}, target.theta);
           Pose *pose = camera_debug->add_targets();
-          pose->set_x(target.x);
-          pose->set_y(target.y);
-          pose->set_theta(target.theta);
+          pose->set_x(target_pose.abs_pos().x());
+          pose->set_y(target_pose.abs_pos().y());
+          pose->set_theta(target_pose.abs_theta());
         }
       }
       ::std::string json;

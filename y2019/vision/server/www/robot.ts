@@ -1,28 +1,45 @@
 import {CAMERA_POSES} from './camera_constants';
 import {FT_TO_M, IN_TO_M} from './constants';
+import {drawTarget} from './field';
 
 const ROBOT_WIDTH = 25 * IN_TO_M;
 const ROBOT_LENGTH = 31 * IN_TO_M;
-const CAMERA_SCALE = 0.3;
+const CAMERA_SCALE = 0.2;
+
+interface Pose {
+  x : number;
+  y : number;
+  theta: number;
+}
+
+export interface Frame {
+  timeSinceLastTarget : number;
+  currentFrameAge : number;
+  targets : Pose[];
+}
 
 function drawCamera(
-    ctx: CanvasRenderingContext2D,
-    pose: {x: number, y: number, theta: number}): void {
+    ctx: CanvasRenderingContext2D, pose: Pose, frame: Frame): void {
+  ctx.save();
+  ctx.translate(pose.x, pose.y);
+  ctx.rotate(pose.theta);
+  if (frame.timeSinceLastTarget > 0.25) {
+    ctx.strokeStyle = 'red';
+  } else {
+    ctx.strokeStyle = 'green';
+  }
   ctx.beginPath();
-  ctx.moveTo(pose.x, pose.y);
-  ctx.lineTo(
-      pose.x + CAMERA_SCALE * Math.cos(pose.theta + Math.PI / 4.0),
-      pose.y + CAMERA_SCALE * Math.sin(pose.theta + Math.PI / 4.0));
-  ctx.lineTo(
-      pose.x + CAMERA_SCALE * Math.cos(pose.theta - Math.PI / 4.0),
-      pose.y + CAMERA_SCALE * Math.sin(pose.theta - Math.PI / 4.0));
+  ctx.moveTo(0, 0);
+  ctx.lineTo(CAMERA_SCALE, CAMERA_SCALE);
+  ctx.lineTo(CAMERA_SCALE, -CAMERA_SCALE);
   ctx.closePath();
   ctx.stroke();
+  ctx.restore();
 }
 
 export function drawRobot(
     ctx: CanvasRenderingContext2D, x: number, y: number, theta: number,
-    camera_colors: string[]): void {
+    cameraFrames: Frame[]): void {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(theta);
@@ -39,9 +56,19 @@ export function drawRobot(
   ctx.stroke();
   ctx.lineWidth = 3.0 * ctx.lineWidth;
   for (let ii of [0, 1, 2, 3, 4]) {
-    ctx.strokeStyle = camera_colors[ii];
-    drawCamera(ctx, CAMERA_POSES[ii]);
+    if (ii < cameraFrames.length) {
+      drawCamera(ctx, CAMERA_POSES[ii], cameraFrames[ii]);
+    }
   }
 
   ctx.restore();
+
+  for (let frame of cameraFrames) {
+    if (frame.targets) {
+      for (let target of frame.targets) {
+        ctx.strokeStyle = 'yellow';
+        drawTarget(ctx, target.x, target.y, target.theta);
+      }
+    }
+  }
 }

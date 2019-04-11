@@ -51,7 +51,9 @@ cc_binary(
         "//aos/logging",
         "//aos/time",
         "//frc971/control_loops/drivetrain:drivetrain_queue",
+        "//frc971/control_loops:pose",
         "//third_party/seasocks",
+        "//y2019:constants",
         "//y2019/control_loops/drivetrain:camera_queue",
     ],
 )
