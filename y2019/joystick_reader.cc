@@ -78,6 +78,8 @@ const ButtonLocation kPanelHPIntakeForward(5, 6);
 const ButtonLocation kPanelHPIntakeBackward(5, 5);
 
 const ButtonLocation kRelease(2, 4);
+// Reuse quickturn for the cancel button.
+const ButtonLocation kCancelAutoMode(2, 3);
 const ButtonLocation kReleaseButtonBoard(3, 4);
 const ButtonLocation kResetLocalizerLeftForwards(3, 10);
 const ButtonLocation kResetLocalizerLeftBackwards(3, 9);
@@ -131,10 +133,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
   Reader(::aos::EventLoop *event_loop)
       : ::aos::input::ActionJoystickInput(
             event_loop,
-            ::y2019::control_loops::drivetrain::GetDrivetrainConfig()) {
-    // Set teleop to immediately resume after auto ends for sandstorm mode.
-    set_run_teleop_in_auto(true);
-
+            ::y2019::control_loops::drivetrain::GetDrivetrainConfig(),
+            {.run_teleop_in_auto = true,
+             .cancel_auto_button = kCancelAutoMode}) {
     const uint16_t team = ::aos::network::GetTeamNumber();
     superstructure_queue.goal.FetchLatest();
     if (superstructure_queue.goal.get()) {
