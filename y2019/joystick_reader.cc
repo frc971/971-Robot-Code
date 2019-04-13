@@ -44,16 +44,16 @@ namespace joysticks {
 
 using google::protobuf::StringPrintf;
 
-const ButtonLocation kSuctionBall(3, 13);
-const ButtonLocation kSuctionHatch(3, 12);
-const ButtonLocation kDeployStilt(3, 8);
-const ButtonLocation kHalfStilt(3, 6);
-const ButtonLocation kFallOver(3, 9);
-
 struct ElevatorWristPosition {
   double elevator;
   double wrist;
 };
+
+const ButtonLocation kSuctionBall(4, 2);
+const ButtonLocation kSuctionHatch(3, 15);
+const ButtonLocation kDeployStilt(4, 1);
+const ButtonLocation kHalfStilt(4, 3);
+const ButtonLocation kFallOver(3, 16);
 
 const ButtonLocation kRocketForwardLower(5, 1);
 const ButtonLocation kRocketForwardMiddle(5, 2);
@@ -78,17 +78,18 @@ const ButtonLocation kPanelHPIntakeForward(5, 6);
 const ButtonLocation kPanelHPIntakeBackward(5, 5);
 
 const ButtonLocation kRelease(2, 4);
-const ButtonLocation kResetLocalizerLeftForwards(3, 14);
-const ButtonLocation kResetLocalizerLeftBackwards(4, 12);
+const ButtonLocation kReleaseButtonBoard(3, 4);
+const ButtonLocation kResetLocalizerLeftForwards(3, 10);
+const ButtonLocation kResetLocalizerLeftBackwards(3, 9);
 
-const ButtonLocation kResetLocalizerRightForwards(4, 1);
-const ButtonLocation kResetLocalizerRightBackwards(4, 11);
+const ButtonLocation kResetLocalizerRightForwards(3, 8);
+const ButtonLocation kResetLocalizerRightBackwards(3, 7);
 
-const ButtonLocation kNearCargoHint(3, 15);
-const ButtonLocation kMidCargoHint(3, 16);
-const ButtonLocation kFarCargoHint(4, 2);
+const ButtonLocation kNearCargoHint(3, 3);
+const ButtonLocation kMidCargoHint(3, 5);
+const ButtonLocation kFarCargoHint(3, 6);
 
-const ButtonLocation kCameraLog(3, 7);
+const ButtonLocation kCameraLog(3, 14);
 
 const ElevatorWristPosition kStowPos{0.36, 0.0};
 const ElevatorWristPosition kClimbPos{0.0, M_PI / 4.0};
@@ -236,6 +237,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     } else if (data.IsPressed(kSuctionHatch)) {
       grab_piece_ = true;
     } else if (data.IsPressed(kRelease) ||
+               data.IsPressed(kReleaseButtonBoard) ||
                !superstructure_queue.status->has_piece) {
       grab_piece_ = false;
     }
@@ -370,8 +372,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       new_superstructure_goal->stilts.profile_params.max_acceleration = 0.75;
     }
 
-
-    if (data.IsPressed(kRelease)) {
+    if (data.IsPressed(kRelease) || data.IsPressed(kReleaseButtonBoard)) {
       grab_piece_ = false;
     }
 
