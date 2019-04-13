@@ -71,10 +71,10 @@ class SplineDrivetrain {
   int32_t current_spline_handle_ = 0;  // Current spline told to excecute.
   int32_t current_spline_idx_ = 0;     // Current executing spline.
   bool has_started_execution_ = false;
-  bool drive_spline_backwards_ = false;
 
   ::std::unique_ptr<DistanceSpline> current_distance_spline_;
   ::std::unique_ptr<Trajectory> current_trajectory_;
+  bool current_drive_spline_backwards_ = false;
 
   // State required to compute the next iteration's output.
   ::Eigen::Matrix<double, 3, 1> current_xva_, next_xva_;
@@ -100,6 +100,7 @@ class SplineDrivetrain {
   ::std::unique_ptr<DistanceSpline> future_distance_spline_;
   ::std::unique_ptr<Trajectory> past_trajectory_;
   ::std::unique_ptr<Trajectory> future_trajectory_;
+  bool future_drive_spline_backwards_ = false;
   int32_t future_spline_idx_ = 0;  // Current spline being computed.
   ::std::atomic<int32_t> planning_spline_idx_{-1};
 

@@ -56,6 +56,8 @@ void SplineDrivetrain::ComputeTrajectory() {
       splines.emplace_back(Spline(points));
     }
 
+    future_drive_spline_backwards_ = goal_.spline.drive_spline_backwards;
+
     future_distance_spline_ = ::std::unique_ptr<DistanceSpline>(
         new DistanceSpline(::std::move(splines)));
 
@@ -93,18 +95,26 @@ void SplineDrivetrain::ComputeTrajectory() {
 void SplineDrivetrain::SetGoal(
     const ::frc971::control_loops::DrivetrainQueue::Goal &goal) {
   current_spline_handle_ = goal.spline_handle;
-  // If told to stop, set the executing spline to an invalid index.
-  if (current_spline_handle_ == 0 && has_started_execution_) {
+  // If told to stop, set the executing spline to an invalid index and clear out
+  // its plan:
+  if (current_spline_handle_ == 0 &&
+      current_spline_idx_ != goal.spline.spline_idx) {
     current_spline_idx_ = -1;
   }
 
   ::aos::Mutex::State mutex_state = mutex_.TryLock();
   if (mutex_state == ::aos::Mutex::State::kLocked) {
-    drive_spline_backwards_ = goal_.drive_spline_backwards;
     if (goal.spline.spline_idx && future_spline_idx_ != goal.spline.spline_idx) {
       goal_ = goal;
       new_goal_.Broadcast();
+      if (current_spline_handle_ != current_spline_idx_) {
+        // If we aren't going to actively execute the current spline, evict it's
+        // plan.
+        past_trajectory_ = std::move(current_trajectory_);
+        past_distance_spline_ = std::move(current_distance_spline_);
+      }
     }
+    // If you never started executing the previous spline, you're screwed.
     if (future_trajectory_ &&
         (!current_trajectory_ ||
          current_trajectory_->is_at_end(current_xva_.block<2, 1>(0, 0)) ||
@@ -116,6 +126,7 @@ void SplineDrivetrain::SetGoal(
       // Move the computed data to be executed.
       current_trajectory_ = std::move(future_trajectory_);
       current_distance_spline_ = std::move(future_distance_spline_);
+      current_drive_spline_backwards_ = future_drive_spline_backwards_;
       current_spline_idx_ = future_spline_idx_;
 
       // Reset internal state to a trajectory start position.
@@ -145,7 +156,7 @@ void SplineDrivetrain::Update(bool enable, const ::Eigen::Matrix<double, 5, 1> &
     ::Eigen::Matrix<double, 2, 5> K =
         current_trajectory_->KForState(state, dt_config_.dt, Q, R);
     ::Eigen::Matrix<double, 5, 1> goal_state = CurrentGoalState();
-    if (drive_spline_backwards_) {
+    if (current_drive_spline_backwards_) {
       ::Eigen::Matrix<double, 2, 1> swapU(U_ff(1, 0), U_ff(0, 0));
       U_ff = -swapU;
       goal_state(2, 0) += M_PI;
@@ -196,12 +207,15 @@ void SplineDrivetrain::PopulateStatus(
       ::Eigen::Matrix<double, 5, 1> goal_state = CurrentGoalState();
       status->trajectory_logging.x = goal_state(0);
       status->trajectory_logging.y = goal_state(1);
-      status->trajectory_logging.theta = goal_state(2);
+      status->trajectory_logging.theta = ::aos::math::NormalizeAngle(
+          goal_state(2) + (current_drive_spline_backwards_ ? M_PI : 0.0));
       status->trajectory_logging.left_velocity = goal_state(3);
       status->trajectory_logging.right_velocity = goal_state(4);
     }
     status->trajectory_logging.planning_state = static_cast<int8_t>(plan_state_.load());
     status->trajectory_logging.is_executing = !IsAtEnd() && has_started_execution_;
+    status->trajectory_logging.is_executed =
+        (current_spline_idx_ != -1) && IsAtEnd();
     status->trajectory_logging.goal_spline_handle = current_spline_handle_;
     status->trajectory_logging.current_spline_idx = current_spline_idx_;
 

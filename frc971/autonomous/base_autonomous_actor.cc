@@ -364,7 +364,7 @@ BaseAutonomousActor::SplineHandle BaseAutonomousActor::PlanSpline(
   drivetrain_message->spline = spline;
   drivetrain_message->spline.spline_idx = spline_handle;
   drivetrain_message->spline_handle = goal_spline_handle_;
-  drivetrain_message->drive_spline_backwards =
+  drivetrain_message->spline.drive_spline_backwards =
       direction == SplineDirection::kBackward;
 
   LOG_STRUCT(DEBUG, "dtg", *drivetrain_message);
@@ -421,14 +421,14 @@ bool BaseAutonomousActor::SplineHandle::IsDone() {
   LOG_STRUCT(INFO, "dts", *drivetrain_queue.status.get());
 
   // We check that the spline we are waiting on is neither currently planning
-  // nor executing; note that we do *not* check the is_executing bit because
-  // immediately after calling Start we may still receive an old Status message
-  // that has not been updated. We check for planning so that the user can go
-  // straight from starting the planner to executing without a WaitForPlan in
-  // between.
+  // nor executing (we check is_executed because it is possible to receive
+  // status messages with is_executing false before the execution has started).
+  // We check for planning so that the user can go straight from starting the
+  // planner to executing without a WaitForPlan in between.
   if (drivetrain_queue.status.get() &&
-      (drivetrain_queue.status->trajectory_logging.current_spline_idx ==
-           spline_handle_ ||
+      ((!drivetrain_queue.status->trajectory_logging.is_executed &&
+        drivetrain_queue.status->trajectory_logging.current_spline_idx ==
+            spline_handle_) ||
        drivetrain_queue.status->trajectory_logging.planning_spline_idx ==
            spline_handle_)) {
     return false;
