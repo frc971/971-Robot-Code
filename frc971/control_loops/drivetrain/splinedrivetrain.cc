@@ -218,6 +218,9 @@ void SplineDrivetrain::PopulateStatus(
         (current_spline_idx_ != -1) && IsAtEnd();
     status->trajectory_logging.goal_spline_handle = current_spline_handle_;
     status->trajectory_logging.current_spline_idx = current_spline_idx_;
+    status->trajectory_logging.distance_remaining =
+        current_trajectory_ ? current_trajectory_->length() - current_xva_.x()
+                            : 0.0;
 
     int32_t planning_spline_idx = planning_spline_idx_;
     if (current_spline_idx_ == planning_spline_idx) {

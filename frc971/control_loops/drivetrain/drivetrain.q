@@ -63,6 +63,7 @@ struct TrajectoryLogging {
   float theta;
   float left_velocity;
   float right_velocity;
+  float distance_remaining;
 };
 
 // For logging state of the line follower.
