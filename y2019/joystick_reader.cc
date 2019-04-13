@@ -87,9 +87,15 @@ const ButtonLocation kResetLocalizerLeftBackwards(3, 9);
 const ButtonLocation kResetLocalizerRightForwards(3, 8);
 const ButtonLocation kResetLocalizerRightBackwards(3, 7);
 
+const ButtonLocation kResetLocalizerLeft(3, 11);
+const ButtonLocation kResetLocalizerRight(3, 13);
+
 const ButtonLocation kNearCargoHint(3, 3);
 const ButtonLocation kMidCargoHint(3, 5);
 const ButtonLocation kFarCargoHint(3, 6);
+
+const JoystickAxis kCargoSelectorY(5, 6);
+const JoystickAxis kCargoSelectorX(5, 5);
 
 const ButtonLocation kCameraLog(3, 14);
 
@@ -178,10 +184,44 @@ class Reader : public ::aos::input::ActionJoystickInput {
       } else if (data.IsPressed(kFarCargoHint)) {
         target_hint->suggested_target = 3;
       } else {
-        target_hint->suggested_target = 0;
+        const double cargo_joy_y = data.GetAxis(kCargoSelectorY);
+        const double cargo_joy_x = data.GetAxis(kCargoSelectorX);
+        if (cargo_joy_y > 0.5) {
+          target_hint->suggested_target = 3;
+        } else if (cargo_joy_y < -0.5) {
+          target_hint->suggested_target = 1;
+        } else if (::std::abs(cargo_joy_x) > 0.5) {
+          target_hint->suggested_target = 2;
+        } else {
+          target_hint->suggested_target = 0;
+        }
       }
       if (!target_hint.Send()) {
         LOG(ERROR, "Failed to send target selector hint.\n");
+      }
+    }
+
+    if (data.PosEdge(kResetLocalizerLeft)) {
+      auto localizer_resetter = localizer_control.MakeMessage();
+      // Start at the left feeder station.
+      localizer_resetter->x = 0.6;
+      localizer_resetter->y = 3.4;
+      localizer_resetter->keep_current_theta = true;
+
+      if (!localizer_resetter.Send()) {
+        LOG(ERROR, "Failed to reset localizer.\n");
+      }
+    }
+
+    if (data.PosEdge(kResetLocalizerRight)) {
+      auto localizer_resetter = localizer_control.MakeMessage();
+      // Start at the left feeder station.
+      localizer_resetter->x = 0.6;
+      localizer_resetter->y = -3.4;
+      localizer_resetter->keep_current_theta = true;
+
+      if (!localizer_resetter.Send()) {
+        LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
 

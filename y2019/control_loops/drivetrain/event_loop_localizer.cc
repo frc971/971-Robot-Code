@@ -34,7 +34,7 @@ EventLoopLocalizer::EventLoopLocalizer(
       target_selector_(event_loop) {
   localizer_.ResetInitialState(::aos::monotonic_clock::now(),
                                Localizer::State::Zero(), localizer_.P());
-  ResetPosition(::aos::monotonic_clock::now(), 0.5, 3.4, 0.0, 0.0);
+  ResetPosition(::aos::monotonic_clock::now(), 0.5, 3.4, 0.0, 0.0, true);
   frame_fetcher_ = event_loop_->MakeFetcher<CameraFrame>(
       ".y2019.control_loops.drivetrain.camera_frames");
 }

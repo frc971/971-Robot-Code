@@ -36,13 +36,16 @@ class EventLoopLocalizer
   void Reset(::aos::monotonic_clock::time_point t,
              const Localizer::State &state, double theta_uncertainty);
   void ResetPosition(::aos::monotonic_clock::time_point t, double x, double y,
-                     double theta, double theta_uncertainty) override {
+                     double theta, double theta_uncertainty,
+                     bool reset_theta) override {
     // When we reset the state, we want to keep the encoder positions intact, so
     // we copy from the original state and reset everything else.
     Localizer::State new_state = localizer_.X_hat();
     new_state.x() = x;
     new_state.y() = y;
-    new_state(2, 0) = theta;
+    if (reset_theta) {
+      new_state(2, 0) = theta;
+    }
     // Velocity terms.
     new_state(4, 0) = 0.0;
     new_state(6, 0) = 0.0;

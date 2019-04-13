@@ -7,6 +7,7 @@ message LocalizerControl {
   float y;      // Y position, meters
   float theta;  // heading, radians
   double theta_uncertainty; // Uncertainty in theta.
+  bool keep_current_theta; // Whether to keep the current theta value.
 };
 
 queue LocalizerControl localizer_control;

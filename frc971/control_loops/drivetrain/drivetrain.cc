@@ -243,10 +243,11 @@ void DrivetrainLoop::RunIteration(
     // simulation.
     if (localizer_control_fetcher_.Fetch()) {
       LOG_STRUCT(DEBUG, "localizer_control", *localizer_control_fetcher_);
-      localizer_->ResetPosition(monotonic_now, localizer_control_fetcher_->x,
-                                localizer_control_fetcher_->y,
-                                localizer_control_fetcher_->theta,
-                                localizer_control_fetcher_->theta_uncertainty);
+      localizer_->ResetPosition(
+          monotonic_now, localizer_control_fetcher_->x,
+          localizer_control_fetcher_->y, localizer_control_fetcher_->theta,
+          localizer_control_fetcher_->theta_uncertainty,
+          !localizer_control_fetcher_->keep_current_theta);
     }
     localizer_->Update({last_last_left_voltage_, last_last_right_voltage_},
                        monotonic_now, position->left_encoder,
