@@ -182,7 +182,8 @@ class PistolDrivetrainInputReader : public DrivetrainInputReader {
       driver_station::ButtonLocation shift_high,
       driver_station::ButtonLocation shift_low,
       driver_station::ButtonLocation turn1,
-      driver_station::ButtonLocation turn2)
+      driver_station::ButtonLocation turn2,
+      driver_station::ButtonLocation slow_down)
       : DrivetrainInputReader(wheel_high, throttle_high, quick_turn, turn1,
                               TurnButtonUse::kLineFollow, turn2,
                               TurnButtonUse::kControlLoopDriving),
@@ -197,7 +198,8 @@ class PistolDrivetrainInputReader : public DrivetrainInputReader {
         throttle_torque_high_(throttle_torque_high),
         throttle_torque_low_(throttle_torque_low),
         shift_high_(shift_high),
-        shift_low_(shift_low) {}
+        shift_low_(shift_low),
+        slow_down_(slow_down) {}
 
   WheelAndThrottle GetWheelAndThrottle(
       const ::aos::input::driver_station::Data &data) override;
@@ -222,6 +224,7 @@ class PistolDrivetrainInputReader : public DrivetrainInputReader {
 
   const driver_station::ButtonLocation shift_high_;
   const driver_station::ButtonLocation shift_low_;
+  const driver_station::ButtonLocation slow_down_;
 
   bool high_gear_;
   bool default_high_gear_;

@@ -170,6 +170,10 @@ PistolDrivetrainInputReader::GetWheelAndThrottle(
     throttle = ::std::max(-1.0, throttle / 0.7);
   }
 
+  if (data.IsPressed(slow_down_)) {
+    throttle *= 0.5;
+  }
+
   if (!data.GetControlBit(ControlBit::kEnabled)) {
     high_gear_ = default_high_gear_;
   }
@@ -242,6 +246,7 @@ std::unique_ptr<PistolDrivetrainInputReader> PistolDrivetrainInputReader::Make(
 
   const ButtonLocation TopButton(1, 1);
   const ButtonLocation SecondButton(1, 2);
+  const ButtonLocation BottomButton(1, 4);
   // Non-existant button for nops.
   const ButtonLocation DummyButton(1, 10);
 
@@ -264,7 +269,8 @@ std::unique_ptr<PistolDrivetrainInputReader> PistolDrivetrainInputReader::Make(
           kWheelHigh, kWheelLow, kTriggerVelocityHigh, kTriggerVelocityLow,
           kTriggerTorqueHigh, kTriggerTorqueLow, kTriggerHigh, kTriggerLow,
           kWheelVelocityHigh, kWheelVelocityLow, kWheelTorqueHigh,
-          kWheelTorqueLow, kQuickTurn, kShiftHigh, kShiftLow, kTurn1, kTurn2));
+          kWheelTorqueLow, kQuickTurn, kShiftHigh, kShiftLow, kTurn1, kTurn2,
+          BottomButton));
 
   result->set_default_high_gear(default_high_gear);
   return result;
