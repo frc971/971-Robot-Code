@@ -28,6 +28,8 @@ cc_binary(
     name = "controller.elf",
     srcs = [
         "controller.cc",
+        "controller_adc.cc",
+        "controller_adc.h",
         "vtable_trigger0.cc",
         "vtable_trigger1.cc",
         "vtable_wheel0.cc",
