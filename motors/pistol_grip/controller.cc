@@ -70,6 +70,8 @@ uint8_t ProcessorIndex() {
   }
 }
 
+// Cached version for speed.
+const uint8_t processor_index = ProcessorIndex();
 
 constexpr float kHapticWheelCurrentLimit = static_cast<float>(
     ::frc971::control_loops::drivetrain::kHapticWheelCurrentLimit);
@@ -94,7 +96,7 @@ constexpr float kHapticTriggerCurrentLimit = static_cast<float>(
 
 // Torques for the current loop to apply.
 ::std::atomic<float> global_wheel_current{0.0f};
-::std::atomic<float> global_trigger_torque{0.0f};
+::std::atomic<float> global_trigger_current{0.0f};
 
 constexpr int kSwitchingDivisor = 2;
 
@@ -110,7 +112,7 @@ constexpr float InterpolateFloat(float x1, float x0, float y1, float y0, float x
 }
 
 float absolute_wheel(float wheel_position) {
-  const float kCenterOffset = (ProcessorIndex() == 1) ? -0.683f : -0.935f;
+  const float kCenterOffset = (processor_index == 1) ? -0.683f : -0.935f;
 
   wheel_position += kCenterOffset;
 
@@ -229,15 +231,21 @@ extern "C" void ftm0_isr() {
   float goal_current = global_wheel_current.load(::std::memory_order_relaxed) +
                        WheelCoggingTorque(encoder);
   //float goal_current = CoggingCurrent1(encoder, absolute_encoder);
-  //float goal_current = kWheelCoggingTorque[encoder];
-  //float goal_current = 0.0f;
+  // float goal_current = kWheelCoggingTorque[encoder];
+  // float goal_current = 0.0f;
 
-  global_motor1.load(::std::memory_order_relaxed)->SetGoalCurrent(goal_current);
-  global_motor1.load(::std::memory_order_relaxed)
-      ->CurrentInterrupt(BalanceSimpleReadings(readings.currents), encoder);
+  // Controller 0 is mechanical and doesn't need the motor controls.
+  if (processor_index == 0) {
+    global_motor1.load(::std::memory_order_relaxed)->CycleFixedPhaseInterupt(0);
+  } else {
+    global_motor1.load(::std::memory_order_relaxed)
+        ->SetGoalCurrent(goal_current);
+    global_motor1.load(::std::memory_order_relaxed)
+        ->CurrentInterrupt(BalanceSimpleReadings(readings.currents), encoder);
+    global_wheel_angle.store(angle);
+  }
   //global_motor1.load(::std::memory_order_relaxed)->CycleFixedPhaseInterupt();
 
-  global_wheel_angle.store(angle);
 
   /*
   SmallInitReadings position_readings;
@@ -363,18 +371,23 @@ extern "C" void ftm3_isr() {
 
   (void)CoggingCurrent0;
   const float goal_current =
-      global_trigger_torque.load(::std::memory_order_relaxed) +
+      global_trigger_current.load(::std::memory_order_relaxed) +
       TriggerCoggingTorque(encoder);
   //const float goal_current = kTriggerCoggingTorque[encoder];
   //const float goal_current = 0.0f;
   //const float goal_current = CoggingCurrent0(encoder, absolute_encoder);
 
-  global_motor0.load(::std::memory_order_relaxed)->SetGoalCurrent(goal_current);
-  global_motor0.load(::std::memory_order_relaxed)
-      ->CurrentInterrupt(BalanceSimpleReadings(readings.currents), encoder);
+  if (processor_index == 0) {
+    global_motor0.load(::std::memory_order_relaxed)->CycleFixedPhaseInterupt(0);
+  } else {
+    global_motor0.load(::std::memory_order_relaxed)
+        ->SetGoalCurrent(goal_current);
+    global_motor0.load(::std::memory_order_relaxed)
+        ->CurrentInterrupt(BalanceSimpleReadings(readings.currents), encoder);
+    global_trigger_angle.store(trigger_angle);
+  }
   //global_motor0.load(::std::memory_order_relaxed)->CycleFixedPhaseInterupt();
 
-  global_trigger_angle.store(trigger_angle);
 
   /*
   SmallInitReadings position_readings;
@@ -425,6 +438,47 @@ int ConvertFloat14(float val) {
 
 extern "C" void pit3_isr() {
   PIT_TFLG3 = 1;
+
+  // If we are a mechanical pistol grip, do the encoder angle calculation here
+  // since the high frequency interrupt isn't running.
+  if (processor_index == 0) {
+    const uint32_t trigger_encoder =
+        global_motor0.load(::std::memory_order_relaxed)->wrapped_encoder();
+    const int32_t trigger_absolute_encoder =
+        global_motor0.load(::std::memory_order_relaxed)
+            ->absolute_encoder(trigger_encoder);
+
+    const float trigger_angle =
+        trigger_absolute_encoder /
+        (trigger_absolute_encoder < 0.0 ? 198.0f : 252.0f);
+    global_trigger_angle.store(
+        ::std::max(-1.0f, ::std::min(1.0f, trigger_angle)));
+
+    uint32_t wheel_encoder =
+        global_motor1.load(::std::memory_order_relaxed)->wrapped_encoder();
+    int32_t wheel_absolute_encoder =
+        global_motor1.load(::std::memory_order_relaxed)
+            ->absolute_encoder(wheel_encoder);
+
+    const float wheel_angle = wheel_absolute_encoder / 1787.0f;
+    global_wheel_angle.store(::std::max(-1.0f, ::std::min(1.0f, wheel_angle)));
+
+    /*
+    // Calibration constants
+    static int k = 0;
+    ++k;
+    if (k > 100) {
+      printf("trigger: %d -> %d  wheel %d -> %d -> %d\n",
+             static_cast<int>(trigger_encoder),
+             static_cast<int>(global_trigger_angle * 1000.0f),
+             static_cast<int>(wheel_encoder),
+             static_cast<int>(wheel_absolute_encoder),
+             static_cast<int>(global_wheel_angle * 1000.0f));
+      k = 0;
+    }
+    */
+  }
+
   const float absolute_trigger_angle =
       global_trigger_angle.load(::std::memory_order_relaxed);
   const float absolute_wheel_angle =
@@ -432,6 +486,7 @@ extern "C" void pit3_isr() {
 
   // Force a barrier here so we sample everything guaranteed at the beginning.
   __asm__("" ::: "memory");
+
   const float absolute_wheel_angle_radians =
       absolute_wheel_angle * static_cast<float>(M_PI) * (338.16f / 360.0f);
   const float absolute_trigger_angle_radians =
@@ -589,7 +644,6 @@ extern "C" void pit3_isr() {
   } else if (wheel_goal_current < -kHapticWheelCurrentLimit) {
     wheel_goal_current = -kHapticWheelCurrentLimit;
   }
-  global_wheel_current.store(wheel_goal_current, ::std::memory_order_relaxed);
 
   constexpr float kTriggerP =
       static_cast<float>(::frc971::control_loops::drivetrain::kHapticTriggerP);
@@ -611,8 +665,14 @@ extern "C" void pit3_isr() {
   } else if (trigger_goal_current < -kHapticTriggerCurrentLimit) {
     trigger_goal_current = -kHapticTriggerCurrentLimit;
   }
-  global_trigger_torque.store(trigger_goal_current,
-                              ::std::memory_order_relaxed);
+
+  if (processor_index == 0) {
+    wheel_goal_current = 0.0f;
+    trigger_goal_current = 0.0f;
+  }
+  global_wheel_current.store(wheel_goal_current, ::std::memory_order_relaxed);
+  global_trigger_current.store(trigger_goal_current,
+                               ::std::memory_order_relaxed);
 
   uint8_t buttons = 0;
   if (!PERIPHERAL_BITBAND(GPIOA_PDIR, 14)) {
@@ -913,12 +973,12 @@ extern "C" int main() {
   printf("heap start: %p\n", __heap_start__);
   printf("stack start: %p\n", __stack_end__);
 
-  trigger_cogging_torque.store(ProcessorIndex() == 0 ? kTriggerCoggingTorque0
+  trigger_cogging_torque.store(processor_index == 0 ? kTriggerCoggingTorque0
                                                      : kTriggerCoggingTorque1);
-  wheel_cogging_torque.store(ProcessorIndex() == 0 ? kWheelCoggingTorque0
+  wheel_cogging_torque.store(processor_index == 0 ? kWheelCoggingTorque0
                                                    : kWheelCoggingTorque1);
 
-  printf("Zeroing motors for %d:%x\n", static_cast<int>(ProcessorIndex()),
+  printf("Zeroing motors for %d:%x\n", static_cast<int>(processor_index),
          (unsigned int)ProcessorIdentifier());
   uint16_t motor0_offset, motor1_offset, wheel_offset;
   while (!ZeroMotors(&motor0_offset, &motor1_offset, &wheel_offset)) {
@@ -930,7 +990,7 @@ extern "C" int main() {
   // Good for the initial trigger.
   {
     // Calibrate winding phase error here.
-    const float kZeroOffset0 = ProcessorIndex() == 1 ? 0.275f : 0.27f;
+    const float kZeroOffset0 = processor_index == 1 ? 0.275f : 0.0f;
     const int motor0_starting_point = static_cast<int>(
         (motor0_offset_scaled + (kZeroOffset0 / 7.0f)) * 4096.0f);
     printf("Motor 0 starting at %d\n", motor0_starting_point);
@@ -940,7 +1000,7 @@ extern "C" int main() {
     // Calibrate output coordinate neutral here.
     motor0.set_encoder_offset(
         motor0.encoder_offset() +
-        (ProcessorIndex() == 1 ? (-3096 - 430 - 30 - 6) : (-2065 + 20)));
+        (processor_index == 1 ? (-3096 - 430 - 30 - 6) : (-1978)));
 
     while (true) {
       const uint32_t encoder =
@@ -965,7 +1025,8 @@ extern "C" int main() {
   }
 
   {
-    const float kZeroOffset1 = ProcessorIndex() == 1 ? 0.420f : 0.26f;
+    const float kZeroOffset1 = processor_index == 1 ? 0.420f : 0.0f;
+
     const int motor1_starting_point = static_cast<int>(
         (motor1_offset_scaled + (kZeroOffset1 / 7.0f)) * 4096.0f);
     printf("Motor 1 starting at %d\n", motor1_starting_point);
@@ -981,18 +1042,21 @@ extern "C" int main() {
 
     constexpr float kWheelGearRatio = (1.25f + 0.02f) / 0.35f;
     const float kWrappedWheelAtZero =
-        ProcessorIndex() == 1 ? (0.934630859375f) : 0.6586310546875f;
+        processor_index == 1 ? (0.934630859375f) : (1809.f / 4096.f);
 
+    // If we are pistol grip 0, we are the mechanical pistol grip and can't
+    // wrap.  People are very very likely to zero it at the zero position too.
     const int encoder_wraps =
-        static_cast<int>(lround(wheel_position * kWheelGearRatio -
-                                (encoder / 4096.f) + kWrappedWheelAtZero));
+        processor_index == 0 ? 0
+                             : static_cast<int>(lround(
+                                   wheel_position * kWheelGearRatio -
+                                   (encoder / 4096.f) + kWrappedWheelAtZero));
 
     printf("Wraps: %d\n", encoder_wraps);
     motor1.set_encoder_offset(4096 * encoder_wraps + motor1.encoder_offset() -
-                              static_cast<int>(kWrappedWheelAtZero * 4096));
+                              static_cast<int>(kWrappedWheelAtZero * 4096.0f));
     printf("Wheel encoder now at %d\n",
-           static_cast<int>(1000.f / 4096.f *
-                            motor1.absolute_encoder(motor1.wrapped_encoder())));
+           static_cast<int>(motor1.absolute_encoder(motor1.wrapped_encoder())));
   }
 
   // Turn an LED on for Austin.
