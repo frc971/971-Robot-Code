@@ -29,7 +29,10 @@ class BaseAutonomousActor
     bool IsDone();
     bool WaitForDone();
 
-    // Wait for done, wait until X from the end, wait for distance from the end
+    // Whether there is less than a certain distance, in meters, remaining in
+    // the current spline.
+    bool SplineDistanceRemaining(double distance);
+    bool WaitForSplineDistanceRemaining(double distance);
 
    private:
     friend BaseAutonomousActor;
@@ -66,6 +69,8 @@ class BaseAutonomousActor
 
   // Returns true if the drive has finished.
   bool IsDriveDone();
+
+  void LineFollowAtVelocity(double velocity);
 
   // Waits until the robot is pitched up above the specified angle, or the move
   // finishes.  Returns true on success, and false if it cancels.
