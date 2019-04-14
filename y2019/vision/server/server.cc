@@ -198,8 +198,8 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
         LocalCameraFrame cur_frame = latest_frames[ii];
         constants::Values::CameraCalibration camera_info =
             constants::GetValues().cameras[ii];
-        frc971::control_loops::TypedPose<double> camera_pose =
-            camera_info.pose.Rebase(&robot_pose);
+        frc971::control_loops::TypedPose<double> camera_pose = camera_info.pose;
+        camera_pose.set_base(&robot_pose);
 
         camera_debug->set_current_frame_age(
             ::std::chrono::duration_cast<::std::chrono::duration<double>>(
