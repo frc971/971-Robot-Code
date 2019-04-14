@@ -13,9 +13,10 @@
 
 #include "aos/init.h"
 #include "aos/logging/logging.h"
+#include "aos/mutex/mutex.h"
+#include "aos/seasocks/seasocks_logger.h"
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
-#include "aos/mutex/mutex.h"
 
 #include "frc971/autonomous/auto.q.h"
 
@@ -261,32 +262,6 @@ void SocketHandler::Quit() {
   data_collector_thread_.join();
 }
 
-SeasocksLogger::SeasocksLogger(Level min_level_to_log)
-    : PrintfLogger(min_level_to_log) {}
-
-void SeasocksLogger::log(Level level, const char *message) {
-  // Convert Seasocks error codes to AOS.
-  log_level aos_level;
-  switch (level) {
-    case seasocks::Logger::INFO:
-      aos_level = INFO;
-      break;
-    case seasocks::Logger::WARNING:
-      aos_level = WARNING;
-      break;
-    case seasocks::Logger::ERROR:
-    case seasocks::Logger::SEVERE:
-      aos_level = ERROR;
-      break;
-    case seasocks::Logger::DEBUG:
-    case seasocks::Logger::ACCESS:
-    default:
-      aos_level = DEBUG;
-      break;
-  }
-  LOG(aos_level, "Seasocks: %s\n", message);
-}
-
 }  // namespace dashboard
 }  // namespace y2016
 
@@ -297,7 +272,7 @@ int main(int, char *[]) {
   ::aos::InitNRT();
 
   ::seasocks::Server server(::std::shared_ptr<seasocks::Logger>(
-      new ::y2016::dashboard::SeasocksLogger(seasocks::Logger::INFO)));
+      new ::aos::seasocks::SeasocksLogger(::seasocks::Logger::Level::Info)));
   ::y2016::dashboard::SocketHandler socket_handler;
 
   server.addWebSocketHandler(

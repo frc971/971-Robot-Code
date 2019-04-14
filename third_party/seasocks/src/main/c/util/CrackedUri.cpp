@@ -1,26 +1,26 @@
-// Copyright (c) 2013, Matt Godbolt
+// Copyright (c) 2013-2017, Matt Godbolt
 // All rights reserved.
-// 
-// Redistribution and use in source and binary forms, with or without 
+//
+// Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
-// 
-// Redistributions of source code must retain the above copyright notice, this 
+//
+// Redistributions of source code must retain the above copyright notice, this
 // list of conditions and the following disclaimer.
-// 
-// Redistributions in binary form must reproduce the above copyright notice, 
-// this list of conditions and the following disclaimer in the documentation 
+//
+// Redistributions in binary form must reproduce the above copyright notice,
+// this list of conditions and the following disclaimer in the documentation
 // and/or other materials provided with the distribution.
-// 
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
-// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE 
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include "seasocks/StringUtil.h"
@@ -30,10 +30,10 @@
 #include <sstream>
 #include <stdexcept>
 
-#define THROW(stuff) \
-    do {\
-        std::ostringstream err; \
-        err << stuff; \
+#define THROW(stuff)                         \
+    do {                                     \
+        std::ostringstream err;              \
+        err << stuff;                        \
         throw std::runtime_error(err.str()); \
     } while (0);
 
@@ -49,7 +49,9 @@ std::string unescape(std::string uri) {
     size_t pos = 0;
     while (pos < uri.size()) {
         pos = uri.find('%', pos);
-        if (pos == uri.npos) break;
+        if (pos == std::string::npos) {
+            break;
+        }
         if (pos + 2 > uri.size()) {
             THROW("Truncated uri: '" << uri << "'");
         }
@@ -74,7 +76,7 @@ CrackedUri::CrackedUri(const std::string& uri) {
     auto endOfPath = uri.find('?');
     std::string path;
     std::string remainder;
-    if (endOfPath == uri.npos) {
+    if (endOfPath == std::string::npos) {
         path = uri.substr(1);
     } else {
         path = uri.substr(1, endOfPath - 1);
@@ -85,9 +87,11 @@ CrackedUri::CrackedUri(const std::string& uri) {
     std::transform(_path.begin(), _path.end(), _path.begin(), unescape);
 
     auto splitRemainder = split(remainder, '&');
-    for (auto iter = splitRemainder.cbegin(); iter != splitRemainder.cend(); ++iter) {
-        if (iter->empty()) continue;
-        auto split = seasocks::split(*iter, '=');
+    for (const auto& iter : splitRemainder) {
+        if (iter.empty()) {
+            continue;
+        }
+        auto split = seasocks::split(iter, '=');
         std::transform(split.begin(), split.end(), split.begin(), unescape);
         if (split.size() == 1) {
             _queryParams.insert(std::make_pair(split[0], std::string()));
@@ -110,8 +114,9 @@ std::string CrackedUri::queryParam(const std::string& param, const std::string& 
 
 std::vector<std::string> CrackedUri::allQueryParams(const std::string& param) const {
     std::vector<std::string> params;
-    for (auto iter = _queryParams.find(param); iter != _queryParams.end() && iter->first == param; ++iter)
+    for (auto iter = _queryParams.find(param); iter != _queryParams.end() && iter->first == param; ++iter) {
         params.push_back(iter->second);
+    }
     return params;
 }
 

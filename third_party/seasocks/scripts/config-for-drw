@@ -2,18 +2,18 @@
 
 set -e
 
-autoconf 
-
-GMOCK_DIR=.gmock/gmock-1.7.0
-
-if [ ! -d "${GMOCK_DIR}" ]; then
-    echo "Grabbing gmock"
-    mkdir -p .gmock
-    pushd .gmock
-    wget https://googlemock.googlecode.com/files/gmock-1.7.0.zip
-    unzip gmock-1.7.0.zip
-    popd
+pushd /tmp
+GCC_HOME=$(fig -m gcc/5.2.0-1 -g GCC_HOME)
+popd
+export CC=${GCC_HOME}/bin/gcc
+export CXX=${GCC_HOME}/bin/g++
+GCC_MULTIARCH=$(gcc -print-multiarch 2>/dev/null)
+if [[ "$GCC_MULTIARCH" != "" ]]; then
+    export LIBRARY_PATH=/usr/lib/$GCC_MULTIARCH
+    export C_INCLUDE_PATH=/usr/include/$GCC_MULTIARCH
+    export CPLUS_INCLUDE_PATH=/usr/include/$GCC_MULTIARCH
 fi
-
-GCC_HOME=$(fig -m gcc/4.9.0-2 -g GCC_HOME)
-LDFLAGS="-Wl,--rpath,${GCC_HOME}/lib64" CXX=${GCC_HOME}/bin/g++ ./configure --with-gmock=${GMOCK_DIR}
+export LDFLAGS="-Wl,--rpath,${GCC_HOME}/lib64"
+mkdir -p build
+cd build
+cmake ..

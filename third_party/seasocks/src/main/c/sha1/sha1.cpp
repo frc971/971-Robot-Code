@@ -1,26 +1,26 @@
-// Copyright (c) 2013, Matt Godbolt
+// Copyright (c) 2013-2017, Matt Godbolt
 // All rights reserved.
-// 
-// Redistribution and use in source and binary forms, with or without 
+//
+// Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
-// 
-// Redistributions of source code must retain the above copyright notice, this 
+//
+// Redistributions of source code must retain the above copyright notice, this
 // list of conditions and the following disclaimer.
-// 
-// Redistributions in binary form must reproduce the above copyright notice, 
-// this list of conditions and the following disclaimer in the documentation 
+//
+// Redistributions in binary form must reproduce the above copyright notice,
+// this list of conditions and the following disclaimer in the documentation
 // and/or other materials provided with the distribution.
-// 
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
-// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE 
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
 // DO NOT REFORMAT <- for tidy
@@ -66,7 +66,7 @@
 
 #include "sha1.h"
 
-/*  
+/*
  *  SHA1
  *
  *  Description:
@@ -81,32 +81,11 @@
  *  Comments:
  *
  */
-SHA1::SHA1()
-{
+SHA1::SHA1() {
     Reset();
 }
 
-/*  
- *  ~SHA1
- *
- *  Description:
- *      This is the destructor for the sha1 class
- *
- *  Parameters:
- *      None.
- *
- *  Returns:
- *      Nothing.
- *
- *  Comments:
- *
- */
-SHA1::~SHA1()
-{
-    // The destructor does nothing
-}
-
-/*  
+/*
  *  Reset
  *
  *  Description:
@@ -122,23 +101,22 @@ SHA1::~SHA1()
  *  Comments:
  *
  */
-void SHA1::Reset()
-{
-    Length_Low          = 0;
-    Length_High         = 0;
+void SHA1::Reset() {
+    Length_Low = 0;
+    Length_High = 0;
     Message_Block_Index = 0;
 
-    H[0]        = 0x67452301;
-    H[1]        = 0xEFCDAB89;
-    H[2]        = 0x98BADCFE;
-    H[3]        = 0x10325476;
-    H[4]        = 0xC3D2E1F0;
+    H[0] = 0x67452301;
+    H[1] = 0xEFCDAB89;
+    H[2] = 0x98BADCFE;
+    H[3] = 0x10325476;
+    H[4] = 0xC3D2E1F0;
 
-    Computed    = false;
-    Corrupted   = false;
+    Computed = false;
+    Corrupted = false;
 }
 
-/*  
+/*
  *  Result
  *
  *  Description:
@@ -156,30 +134,26 @@ void SHA1::Reset()
  *  Comments:
  *
  */
-bool SHA1::Result(unsigned *message_digest_array)
-{
-    int i;                                  // Counter
+bool SHA1::Result(unsigned* message_digest_array) {
+    int i; // Counter
 
-    if (Corrupted)
-    {
+    if (Corrupted) {
         return false;
     }
 
-    if (!Computed)
-    {
+    if (!Computed) {
         PadMessage();
         Computed = true;
     }
 
-    for(i = 0; i < 5; i++)
-    {
+    for (i = 0; i < 5; i++) {
         message_digest_array[i] = H[i];
     }
 
     return true;
 }
 
-/*  
+/*
  *  Input
  *
  *  Description:
@@ -197,38 +171,31 @@ bool SHA1::Result(unsigned *message_digest_array)
  *  Comments:
  *
  */
-void SHA1::Input(   const unsigned char *message_array,
-                    unsigned            length)
-{
-    if (!length)
-    {
+void SHA1::Input(const unsigned char* message_array,
+                 unsigned length) {
+    if (!length) {
         return;
     }
 
-    if (Computed || Corrupted)
-    {
+    if (Computed || Corrupted) {
         Corrupted = true;
         return;
     }
 
-    while(length-- && !Corrupted)
-    {
+    while (length-- && !Corrupted) {
         Message_Block[Message_Block_Index++] = (*message_array & 0xFF);
 
         Length_Low += 8;
-        Length_Low &= 0xFFFFFFFF;               // Force it to 32 bits
-        if (Length_Low == 0)
-        {
+        Length_Low &= 0xFFFFFFFF; // Force it to 32 bits
+        if (Length_Low == 0) {
             Length_High++;
-            Length_High &= 0xFFFFFFFF;          // Force it to 32 bits
-            if (Length_High == 0)
-            {
-                Corrupted = true;               // Message is too long
+            Length_High &= 0xFFFFFFFF; // Force it to 32 bits
+            if (Length_High == 0) {
+                Corrupted = true; // Message is too long
             }
         }
 
-        if (Message_Block_Index == 64)
-        {
+        if (Message_Block_Index == 64) {
             ProcessMessageBlock();
         }
 
@@ -236,7 +203,7 @@ void SHA1::Input(   const unsigned char *message_array,
     }
 }
 
-/*  
+/*
  *  Input
  *
  *  Description:
@@ -256,13 +223,12 @@ void SHA1::Input(   const unsigned char *message_array,
  *  Comments:
  *
  */
-void SHA1::Input(   const char  *message_array,
-                    unsigned    length)
-{
-    Input((unsigned char *) message_array, length);
+void SHA1::Input(const char* message_array,
+                 unsigned length) {
+    Input((unsigned char*) message_array, length);
 }
 
-/*  
+/*
  *  Input
  *
  *  Description:
@@ -278,12 +244,11 @@ void SHA1::Input(   const char  *message_array,
  *  Comments:
  *
  */
-void SHA1::Input(unsigned char message_element)
-{
+void SHA1::Input(unsigned char message_element) {
     Input(&message_element, 1);
 }
 
-/*  
+/*
  *  Input
  *
  *  Description:
@@ -299,12 +264,11 @@ void SHA1::Input(unsigned char message_element)
  *  Comments:
  *
  */
-void SHA1::Input(char message_element)
-{
-    Input((unsigned char *) &message_element, 1);
+void SHA1::Input(char message_element) {
+    Input((unsigned char*) &message_element, 1);
 }
 
-/*  
+/*
  *  operator<<
  *
  *  Description:
@@ -322,12 +286,10 @@ void SHA1::Input(char message_element)
  *      Each character is assumed to hold 8 bits of information.
  *
  */
-SHA1& SHA1::operator<<(const char *message_array)
-{
-    const char *p = message_array;
+SHA1& SHA1::operator<<(const char* message_array) {
+    const char* p = message_array;
 
-    while(*p)
-    {
+    while (*p) {
         Input(*p);
         p++;
     }
@@ -335,7 +297,7 @@ SHA1& SHA1::operator<<(const char *message_array)
     return *this;
 }
 
-/*  
+/*
  *  operator<<
  *
  *  Description:
@@ -353,12 +315,10 @@ SHA1& SHA1::operator<<(const char *message_array)
  *      Each character is assumed to hold 8 bits of information.
  *
  */
-SHA1& SHA1::operator<<(const unsigned char *message_array)
-{
-    const unsigned char *p = message_array;
+SHA1& SHA1::operator<<(const unsigned char* message_array) {
+    const unsigned char* p = message_array;
 
-    while(*p)
-    {
+    while (*p) {
         Input(*p);
         p++;
     }
@@ -366,7 +326,7 @@ SHA1& SHA1::operator<<(const unsigned char *message_array)
     return *this;
 }
 
-/*  
+/*
  *  operator<<
  *
  *  Description:
@@ -383,14 +343,13 @@ SHA1& SHA1::operator<<(const unsigned char *message_array)
  *      The character is assumed to hold 8 bits of information.
  *
  */
-SHA1& SHA1::operator<<(const char message_element)
-{
-    Input((unsigned char *) &message_element, 1);
+SHA1& SHA1::operator<<(const char message_element) {
+    Input((unsigned char*) &message_element, 1);
 
     return *this;
 }
 
-/*  
+/*
  *  operator<<
  *
  *  Description:
@@ -407,14 +366,13 @@ SHA1& SHA1::operator<<(const char message_element)
  *      The character is assumed to hold 8 bits of information.
  *
  */
-SHA1& SHA1::operator<<(const unsigned char message_element)
-{
+SHA1& SHA1::operator<<(const unsigned char message_element) {
     Input(&message_element, 1);
 
     return *this;
 }
 
-/*  
+/*
  *  ProcessMessageBlock
  *
  *  Description:
@@ -433,33 +391,29 @@ SHA1& SHA1::operator<<(const unsigned char message_element)
  *      in the publication.
  *
  */
-void SHA1::ProcessMessageBlock()
-{
-    const unsigned K[] =    {               // Constants defined for SHA-1
-                                0x5A827999,
-                                0x6ED9EBA1,
-                                0x8F1BBCDC,
-                                0xCA62C1D6
-                            };
-    int         t;                          // Loop counter
-    unsigned    temp;                       // Temporary word value
-    unsigned    W[80];                      // Word sequence
-    unsigned    A, B, C, D, E;              // Word buffers
+void SHA1::ProcessMessageBlock() {
+    const unsigned K[] = {// Constants defined for SHA-1
+                          0x5A827999,
+                          0x6ED9EBA1,
+                          0x8F1BBCDC,
+                          0xCA62C1D6};
+    int t;                  // Loop counter
+    unsigned temp;          // Temporary word value
+    unsigned W[80];         // Word sequence
+    unsigned A, B, C, D, E; // Word buffers
 
     /*
      *  Initialize the first 16 words in the array W
      */
-    for(t = 0; t < 16; t++)
-    {
+    for (t = 0; t < 16; t++) {
         W[t] = ((unsigned) Message_Block[t * 4]) << 24;
         W[t] |= ((unsigned) Message_Block[t * 4 + 1]) << 16;
         W[t] |= ((unsigned) Message_Block[t * 4 + 2]) << 8;
         W[t] |= ((unsigned) Message_Block[t * 4 + 3]);
     }
 
-    for(t = 16; t < 80; t++)
-    {
-       W[t] = CircularShift(1,W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16]);
+    for (t = 16; t < 80; t++) {
+        W[t] = CircularShift(1, W[t - 3] ^ W[t - 8] ^ W[t - 14] ^ W[t - 16]);
     }
 
     A = H[0];
@@ -468,47 +422,43 @@ void SHA1::ProcessMessageBlock()
     D = H[3];
     E = H[4];
 
-    for(t = 0; t < 20; t++)
-    {
-        temp = CircularShift(5,A) + ((B & C) | ((~B) & D)) + E + W[t] + K[0];
+    for (t = 0; t < 20; t++) {
+        temp = CircularShift(5, A) + ((B & C) | ((~B) & D)) + E + W[t] + K[0];
         temp &= 0xFFFFFFFF;
         E = D;
         D = C;
-        C = CircularShift(30,B);
+        C = CircularShift(30, B);
         B = A;
         A = temp;
     }
 
-    for(t = 20; t < 40; t++)
-    {
-        temp = CircularShift(5,A) + (B ^ C ^ D) + E + W[t] + K[1];
+    for (t = 20; t < 40; t++) {
+        temp = CircularShift(5, A) + (B ^ C ^ D) + E + W[t] + K[1];
         temp &= 0xFFFFFFFF;
         E = D;
         D = C;
-        C = CircularShift(30,B);
+        C = CircularShift(30, B);
         B = A;
         A = temp;
     }
 
-    for(t = 40; t < 60; t++)
-    {
-        temp = CircularShift(5,A) +
+    for (t = 40; t < 60; t++) {
+        temp = CircularShift(5, A) +
                ((B & C) | (B & D) | (C & D)) + E + W[t] + K[2];
         temp &= 0xFFFFFFFF;
         E = D;
         D = C;
-        C = CircularShift(30,B);
+        C = CircularShift(30, B);
         B = A;
         A = temp;
     }
 
-    for(t = 60; t < 80; t++)
-    {
-        temp = CircularShift(5,A) + (B ^ C ^ D) + E + W[t] + K[3];
+    for (t = 60; t < 80; t++) {
+        temp = CircularShift(5, A) + (B ^ C ^ D) + E + W[t] + K[3];
         temp &= 0xFFFFFFFF;
         E = D;
         D = C;
-        C = CircularShift(30,B);
+        C = CircularShift(30, B);
         B = A;
         A = temp;
     }
@@ -522,7 +472,7 @@ void SHA1::ProcessMessageBlock()
     Message_Block_Index = 0;
 }
 
-/*  
+/*
  *  PadMessage
  *
  *  Description:
@@ -543,36 +493,28 @@ void SHA1::ProcessMessageBlock()
  *  Comments:
  *
  */
-void SHA1::PadMessage()
-{
+void SHA1::PadMessage() {
     /*
      *  Check to see if the current message block is too small to hold
      *  the initial padding bits and length.  If so, we will pad the
      *  block, process it, and then continue padding into a second block.
      */
-    if (Message_Block_Index > 55)
-    {
+    if (Message_Block_Index > 55) {
         Message_Block[Message_Block_Index++] = 0x80;
-        while(Message_Block_Index < 64)
-        {
+        while (Message_Block_Index < 64) {
             Message_Block[Message_Block_Index++] = 0;
         }
 
         ProcessMessageBlock();
 
-        while(Message_Block_Index < 56)
-        {
+        while (Message_Block_Index < 56) {
             Message_Block[Message_Block_Index++] = 0;
         }
-    }
-    else
-    {
+    } else {
         Message_Block[Message_Block_Index++] = 0x80;
-        while(Message_Block_Index < 56)
-        {
+        while (Message_Block_Index < 56) {
             Message_Block[Message_Block_Index++] = 0;
         }
-
     }
 
     /*
@@ -581,17 +523,17 @@ void SHA1::PadMessage()
     Message_Block[56] = (Length_High >> 24) & 0xFF;
     Message_Block[57] = (Length_High >> 16) & 0xFF;
     Message_Block[58] = (Length_High >> 8) & 0xFF;
-    Message_Block[59] = (Length_High) & 0xFF;
+    Message_Block[59] = (Length_High) &0xFF;
     Message_Block[60] = (Length_Low >> 24) & 0xFF;
     Message_Block[61] = (Length_Low >> 16) & 0xFF;
     Message_Block[62] = (Length_Low >> 8) & 0xFF;
-    Message_Block[63] = (Length_Low) & 0xFF;
+    Message_Block[63] = (Length_Low) &0xFF;
 
     ProcessMessageBlock();
 }
 
 
-/*  
+/*
  *  CircularShift
  *
  *  Description:
@@ -609,7 +551,6 @@ void SHA1::PadMessage()
  *  Comments:
  *
  */
-unsigned SHA1::CircularShift(int bits, unsigned word)
-{
-    return ((word << bits) & 0xFFFFFFFF) | ((word & 0xFFFFFFFF) >> (32-bits));
+unsigned SHA1::CircularShift(int bits, unsigned word) {
+    return ((word << bits) & 0xFFFFFFFF) | ((word & 0xFFFFFFFF) >> (32 - bits));
 }

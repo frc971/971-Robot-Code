@@ -1,4 +1,4 @@
-// Copyright (c) 2013, Matt Godbolt
+// Copyright (c) 2013-2017, Matt Godbolt
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,8 @@
 namespace seasocks {
 
 char* skipWhitespace(char* str) {
-    while (isspace(*str)) ++str;
+    while (isspace(*str))
+        ++str;
     return str;
 }
 
@@ -46,13 +47,13 @@ char* skipNonWhitespace(char* str) {
 }
 
 char* shift(char*& str) {
-    if (str == NULL) {
-        return NULL;
+    if (str == nullptr) {
+        return nullptr;
     }
     char* startOfWord = skipWhitespace(str);
     if (*startOfWord == 0) {
         str = startOfWord;
-        return NULL;
+        return nullptr;
     }
     char* endOfWord = skipNonWhitespace(startOfWord);
     if (*endOfWord != 0) {
@@ -62,9 +63,21 @@ char* shift(char*& str) {
     return startOfWord;
 }
 
-std::string getLastError(){
+std::string trimWhitespace(const std::string& str) {
+    auto* start = str.c_str();
+    while (isspace(*start))
+        ++start;
+    auto* end = &str.back();
+    while (end >= start && isspace(*end))
+        --end;
+    return std::string(start, end - start + 1);
+}
+
+std::string getLastError() {
     char errbuf[1024];
-    return strerror_r(errno, errbuf, sizeof(errbuf));
+    const auto ignore = strerror_r(errno, errbuf, sizeof(errbuf));
+    static_cast<void>(ignore);
+    return errbuf;
 }
 
 std::string formatAddress(const sockaddr_in& address) {
@@ -80,7 +93,8 @@ std::string formatAddress(const sockaddr_in& address) {
 }
 
 std::vector<std::string> split(const std::string& input, char splitChar) {
-    if (input.empty()) return std::vector<std::string>();
+    if (input.empty())
+        return std::vector<std::string>();
     std::vector<std::string> result;
     size_t pos = 0;
     size_t newPos;
@@ -92,7 +106,12 @@ std::vector<std::string> split(const std::string& input, char splitChar) {
     return result;
 }
 
-void replace(std::string& string, const std::string& find, const std::string& replace) {
+void replace(std::string& string, const std::string& find,
+             const std::string& replace) {
+    if (find.empty()) {
+        return;
+    }
+
     size_t pos = 0;
     const size_t findLen = find.length();
     const size_t replaceLen = replace.length();
@@ -102,8 +121,21 @@ void replace(std::string& string, const std::string& find, const std::string& re
     }
 }
 
-bool caseInsensitiveSame(const std::string &lhs, const std::string &rhs) {
+bool caseInsensitiveSame(const std::string& lhs, const std::string& rhs) {
     return strcasecmp(lhs.c_str(), rhs.c_str()) == 0;
+}
+
+std::string webtime(time_t time) {
+    struct tm timeValue;
+    gmtime_r(&time, &timeValue);
+    char buf[1024];
+    // Wed, 20 Apr 2011 17:31:28 GMT
+    strftime(buf, sizeof(buf) - 1, "%a, %d %b %Y %H:%M:%S %Z", &timeValue);
+    return buf;
+}
+
+std::string now() {
+    return webtime(time(nullptr));
 }
 
 }

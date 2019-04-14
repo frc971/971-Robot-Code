@@ -2,7 +2,10 @@ licenses(["notice"])
 
 cc_library(
     name = "seasocks",
-    srcs = glob(include = ["src/main/c/**/*.cpp"]),
+    srcs = glob(
+        include = ["src/main/c/**/*.cpp"],
+        exclude = ["src/main/c/seasocks/ZlibContext.cpp"],
+    ),
     hdrs = glob(
         include = [
             "src/main/c/**/*.h",

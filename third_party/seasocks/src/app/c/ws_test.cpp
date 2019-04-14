@@ -1,26 +1,26 @@
-// Copyright (c) 2013, Matt Godbolt
+// Copyright (c) 2013-2017, Matt Godbolt
 // All rights reserved.
-// 
-// Redistribution and use in source and binary forms, with or without 
+//
+// Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
-// 
-// Redistributions of source code must retain the above copyright notice, this 
+//
+// Redistributions of source code must retain the above copyright notice, this
 // list of conditions and the following disclaimer.
-// 
-// Redistributions in binary form must reproduce the above copyright notice, 
-// this list of conditions and the following disclaimer in the documentation 
+//
+// Redistributions in binary form must reproduce the above copyright notice,
+// this list of conditions and the following disclaimer in the documentation
 // and/or other materials provided with the distribution.
-// 
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
-// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE 
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
 // An extraordinarily simple test which presents a web page with some buttons.
@@ -43,56 +43,54 @@
 #include <string>
 
 using namespace seasocks;
-using namespace std;
 
-class MyHandler: public WebSocket::Handler {
+class MyHandler : public WebSocket::Handler {
 public:
-    MyHandler(Server* server) : _server(server), _currentValue(0) {
+    explicit MyHandler(Server* server)
+            : _server(server), _currentValue(0) {
         setValue(1);
     }
 
-    virtual void onConnect(WebSocket* connection) {
+    virtual void onConnect(WebSocket* connection) override {
         _connections.insert(connection);
         connection->send(_currentSetValue.c_str());
-        cout << "Connected: " << connection->getRequestUri()
-                << " : " << formatAddress(connection->getRemoteAddress())
-                << endl;
-        cout << "Credentials: " << *(connection->credentials()) << endl;
+        std::cout << "Connected: " << connection->getRequestUri()
+                  << " : " << formatAddress(connection->getRemoteAddress())
+                  << "\nCredentials: " << *(connection->credentials()) << "\n";
     }
 
-    virtual void onData(WebSocket* connection, const char* data) {
+    virtual void onData(WebSocket* connection, const char* data) override {
         if (0 == strcmp("die", data)) {
             _server->terminate();
             return;
         }
         if (0 == strcmp("close", data)) {
-            cout << "Closing.." << endl;
+            std::cout << "Closing..\n";
             connection->close();
-            cout << "Closed." << endl;
+            std::cout << "Closed.\n";
             return;
         }
 
-        int value = atoi(data) + 1;
+        const int value = std::stoi(data) + 1;
         if (value > _currentValue) {
             setValue(value);
-            for (auto connection : _connections) {
-                connection->send(_currentSetValue.c_str());
+            for (auto c : _connections) {
+                c->send(_currentSetValue.c_str());
             }
         }
     }
 
-    virtual void onDisconnect(WebSocket* connection) {
+    virtual void onDisconnect(WebSocket* connection) override {
         _connections.erase(connection);
-        cout << "Disconnected: " << connection->getRequestUri()
-                << " : " << formatAddress(connection->getRemoteAddress())
-                << endl;
+        std::cout << "Disconnected: " << connection->getRequestUri()
+                  << " : " << formatAddress(connection->getRemoteAddress()) << "\n";
     }
 
 private:
-    set<WebSocket*> _connections;
+    std::set<WebSocket*> _connections;
     Server* _server;
     int _currentValue;
-    string _currentSetValue;
+    std::string _currentSetValue;
 
     void setValue(int value) {
         _currentValue = value;
@@ -100,12 +98,12 @@ private:
     }
 };
 
-int main(int argc, const char* argv[]) {
-    shared_ptr<Logger> logger(new PrintfLogger(Logger::DEBUG));
+int main(int /*argc*/, const char* /*argv*/[]) {
+    auto logger = std::make_shared<PrintfLogger>(Logger::Level::Debug);
 
     Server server(logger);
 
-    shared_ptr<MyHandler> handler(new MyHandler(&server));
+    auto handler = std::make_shared<MyHandler>(&server);
     server.addWebSocketHandler("/ws", handler);
     server.serve("src/ws_test_web", 9090);
     return 0;
