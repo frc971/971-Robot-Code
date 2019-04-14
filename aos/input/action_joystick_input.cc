@@ -23,7 +23,8 @@ void ActionJoystickInput::RunIteration(
     }
   }
 
-  if (!auto_running_ || (run_teleop_in_auto_ && !action_queue_.Running())) {
+  if (!auto_running_ ||
+      (input_config_.run_teleop_in_auto && !action_queue_.Running())) {
     if (auto_was_running_) {
       AutoEnded();
       auto_was_running_ = false;
@@ -36,6 +37,11 @@ void ActionJoystickInput::RunIteration(
     HandleTeleop(data);
   }
 
+  if (auto_action_running_ &&
+      data.IsPressed(input_config_.cancel_auto_button)) {
+    StopAuto();
+  }
+
   // Process pending actions.
   action_queue_.Tick();
   was_running_ = action_queue_.Running();
@@ -45,11 +51,13 @@ void ActionJoystickInput::StartAuto() {
   LOG(INFO, "Starting auto mode\n");
   action_queue_.EnqueueAction(
       ::frc971::autonomous::MakeAutonomousAction(GetAutonomousMode()));
+  auto_action_running_ = true;
 }
 
 void ActionJoystickInput::StopAuto() {
   LOG(INFO, "Stopping auto mode\n");
   action_queue_.CancelAllActions();
+  auto_action_running_ = false;
 }
 
 }  // namespace input

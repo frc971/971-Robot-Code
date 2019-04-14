@@ -14,20 +14,28 @@ namespace input {
 // Turns out we do the same thing every year, so let's stop copying it.
 class ActionJoystickInput : public ::aos::input::JoystickInput {
  public:
+   // Configuration parameters that don't really belong in the DrivetrainConfig.
+  struct InputConfig {
+    // If true, we will run teleop during auto mode after auto mode ends.  This
+    // is to support the 2019 sandstorm mode.  Auto will run, and then when the
+    // action ends (either when it's done, or when the driver triggers it to
+    // finish early), we will run teleop regardless of the mode.
+    bool run_teleop_in_auto = false;
+    // A button, for use with the run_teleop_in_auto, that will cancel the auto
+    // mode, and if run_telop_in_auto is specified, resume teloperation.
+    const driver_station::ButtonLocation cancel_auto_button;
+  };
   ActionJoystickInput(
       ::aos::EventLoop *event_loop,
-      const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>
-          &dt_config)
+      const ::frc971::control_loops::drivetrain::DrivetrainConfig<double> &
+          dt_config,
+      const InputConfig &input_config)
       : ::aos::input::JoystickInput(event_loop),
+        input_config_(input_config),
         drivetrain_input_reader_(DrivetrainInputReader::Make(
             DrivetrainInputReader::InputType::kPistol, dt_config)) {}
 
   virtual ~ActionJoystickInput() {}
-
- protected:
-  void set_run_teleop_in_auto(bool run_teleop_in_auto) {
-    run_teleop_in_auto_ = run_teleop_in_auto;
-  }
 
  private:
   // Handles anything that needs to be cleaned up when the auto action exits.
@@ -46,19 +54,16 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
 
   // True if the internal state machine thinks auto is running right now.
   bool auto_running_ = false;
+  // True if we think that the auto *action* is running right now.
+  bool auto_action_running_ = false;
   // True if an action was running last cycle.
   bool was_running_ = false;
 
-  // If true, we will run teleop during auto mode after auto mode ends.  This is
-  // to support the 2019 sandstorm mode.  Auto will run, and then when the
-  // action ends (either when it's done, or when the driver triggers it to
-  // finish early), we will run teleop regardless of the mode.
-  bool run_teleop_in_auto_ = false;
+  const InputConfig input_config_;
 
   // Bool to track if auto was running the last cycle through.  This lets us
   // call AutoEnded when the auto mode function stops.
   bool auto_was_running_ = false;
-
   ::std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
   ::aos::common::actions::ActionQueue action_queue_;
 };
