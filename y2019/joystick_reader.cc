@@ -273,11 +273,26 @@ class Reader : public ::aos::input::ActionJoystickInput {
       }
     }
 
+    if (data.PosEdge(kRelease) &&
+        monotonic_now >
+            last_release_button_press_ + ::std::chrono::milliseconds(500)) {
+      if (superstructure_queue.status->has_piece) {
+        release_mode_ = ReleaseButtonMode::kRelease;
+      } else {
+        release_mode_ = ReleaseButtonMode::kBallIntake;
+      }
+    }
+
+    if (data.IsPressed(kRelease)) {
+      last_release_button_press_ = monotonic_now;
+    }
+
     if (data.IsPressed(kSuctionBall)) {
       grab_piece_ = true;
     } else if (data.IsPressed(kSuctionHatch)) {
       grab_piece_ = true;
-    } else if (data.IsPressed(kRelease) ||
+    } else if ((release_mode_ == ReleaseButtonMode::kRelease &&
+                data.IsPressed(kRelease)) ||
                data.IsPressed(kReleaseButtonBoard) ||
                !superstructure_queue.status->has_piece) {
       grab_piece_ = false;
@@ -289,7 +304,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
     new_superstructure_goal->intake.unsafe_goal = -1.2;
     new_superstructure_goal->roller_voltage = 0.0;
 
-    const bool kDoBallIntake = data.GetAxis(kBallIntake) > 0.9;
+    const bool kDoBallIntake =
+        (!climbed_ && release_mode_ == ReleaseButtonMode::kBallIntake &&
+         data.IsPressed(kRelease)) ||
+        data.GetAxis(kBallIntake) > 0.9;
     const bool kDoBallOutake = data.GetAxis(kBallOutake) > 0.9;
 
     if (data.IsPressed(kPanelSwitch)) {
@@ -403,6 +421,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     if (superstructure_queue.status->stilts.position > 0.1) {
       elevator_wrist_pos_ = kClimbPos;
+      climbed_ = true;
       new_superstructure_goal->wrist.profile_params.max_acceleration = 10;
       new_superstructure_goal->elevator.profile_params.max_acceleration = 6;
     }
@@ -425,7 +444,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
       new_superstructure_goal->stilts.profile_params.max_acceleration = 0.75;
     }
 
-    if (data.IsPressed(kRelease) || data.IsPressed(kReleaseButtonBoard)) {
+    if ((release_mode_ == ReleaseButtonMode::kRelease &&
+         data.IsPressed(kRelease)) ||
+        data.IsPressed(kReleaseButtonBoard)) {
       grab_piece_ = false;
     }
 
@@ -481,6 +502,17 @@ class Reader : public ::aos::input::ActionJoystickInput {
   bool grab_piece_ = false;
 
   bool switch_ball_ = false;
+
+  bool climbed_ = false;
+
+  enum class ReleaseButtonMode {
+    kBallIntake,
+    kRelease,
+  };
+
+  ReleaseButtonMode release_mode_ = ReleaseButtonMode::kRelease;
+  aos::monotonic_clock::time_point last_release_button_press_ =
+      aos::monotonic_clock::min_time;
 
   VisionControl vision_control_;
   ::std::unique_ptr<ProtoTXUdpSocket<VisionControl>> video_tx_;
