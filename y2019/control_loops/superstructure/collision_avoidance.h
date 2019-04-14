@@ -59,7 +59,7 @@ class CollisionAvoidance {
   static constexpr double kElevatorClearIntakeHeight = 0.4;
 
   // Angle constraints for the wrist when below kElevatorClearDownHeight
-  static constexpr double kWristMaxAngle = M_PI / 2.0 + 0.05;
+  static constexpr double kWristMaxAngle = M_PI / 2.0 + 0.15;
   static constexpr double kWristMinAngle = -M_PI / 2.0 - 0.25;
 
   // Angles outside of which the intake is fully clear of the wrist.
