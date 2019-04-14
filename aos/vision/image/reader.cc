@@ -56,6 +56,8 @@ Reader::Reader(const std::string &dev_name, ProcessCb process,
   Init();
 
   InitMMap();
+
+  SetExposure(params.exposure());
   LOG(INFO, "Bat Vision Successfully Initialized.\n");
 }
 
@@ -166,6 +168,11 @@ bool Reader::SetCameraControl(uint32_t id, const char *name, int value) {
   LOG(DEBUG, "Couldn't set camera control %s to %d", name, value);
   errno = 0;
   return false;
+}
+
+bool Reader::SetExposure(int abs_exp) {
+  return SetCameraControl(V4L2_CID_EXPOSURE_ABSOLUTE,
+                          "V4L2_CID_EXPOSURE_ABSOLUTE", abs_exp);
 }
 
 void Reader::Init() {
