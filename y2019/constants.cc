@@ -197,7 +197,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       elevator_params->zeroing_constants.measured_absolute_position = 0.131806;
       elevator->potentiometer_offset = -0.022320 + 0.020567 - 0.022355 - 0.006497 + 0.019690 + 0.009151 - 0.007513 + 0.007311;
 
-      intake->zeroing_constants.measured_absolute_position = 1.756847;
+      intake->zeroing_constants.measured_absolute_position = 1.928755;
 
       wrist_params->zeroing_constants.measured_absolute_position = 0.192576;
       wrist->potentiometer_offset = -4.200894 - 0.187134;
