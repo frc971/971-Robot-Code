@@ -29,11 +29,10 @@ class Visualiser {
 
   initWebSocket(server: string): void {
     const socket = new WebSocket(`ws://${server}/ws`);
-    const reader = new FileReader();
     this.cameraFrames = [];
-    reader.addEventListener('loadend', (e) => {
-      const text = e.srcElement.result;
-      const j = JSON.parse(text);
+
+    socket.addEventListener('message', (event) => {
+      const j = JSON.parse(event.data);
       this.x = j.robotPose.x;
       this.y = j.robotPose.y;
       this.theta = j.robotPose.theta;
@@ -46,9 +45,6 @@ class Visualiser {
         this.targetTheta = j.lineFollowDebug.goalTarget.theta;
       }
       this.cameraFrames = j.cameraDebug;
-    });
-    socket.addEventListener('message', (event) => {
-      reader.readAsText(event.data);
     });
     socket.addEventListener('close', (event) => {
       setTimeout(() => {

@@ -76,6 +76,8 @@ startup --host_jvm_args=-Dbazel.DigestFunction=SHA256
 build --spawn_strategy=linux-sandbox
 build --experimental_sandbox_default_allow_network=false
 
+build --strategy=TypeScriptCompile=worker --strategy=AngularTemplateCompile=worker
+
 # Use our hermetic JDK.
 # Note that this doesn't quite work fully, but it should. See
 # https://github.com/bazelbuild/bazel/issues/6341 for ongoing discussion with

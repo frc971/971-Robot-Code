@@ -60,8 +60,7 @@ void WebsocketHandler::onDisconnect(seasocks::WebSocket *connection) {
 
 void WebsocketHandler::SendData(const std::string &data) {
   for (seasocks::WebSocket *websocket : connections_) {
-    websocket->send(reinterpret_cast<const uint8_t *>(data.data()),
-                    data.size());
+    websocket->send(data.c_str());
   }
 }
 
