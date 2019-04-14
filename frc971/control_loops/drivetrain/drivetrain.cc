@@ -331,7 +331,7 @@ void DrivetrainLoop::RunIteration(
 
     status->x = localizer_->x();
     status->y = localizer_->y();
-    status->theta = localizer_->theta();
+    status->theta = ::aos::math::NormalizeAngle(localizer_->theta());
 
     status->ground_angle = down_estimator_.X_hat(0) + dt_config_.down_offset;
 

@@ -145,7 +145,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   r->camera_noise_parameters = {.max_viewable_distance = 10.0,
                                 .heading_noise = 0.1,
                                 .nominal_distance_noise = 0.15,
-                                .nominal_skew_noise = 0.45,
+                                .nominal_skew_noise = 0.75,
                                 .nominal_height_noise = 0.01};
 
   // Deliberately make FOV a bit large so that we are overly conservative in
