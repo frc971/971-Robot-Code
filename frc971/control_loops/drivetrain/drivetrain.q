@@ -45,6 +45,8 @@ struct TrajectoryLogging {
 
   // State of the spline execution.
   bool is_executing;
+  // Whether we have finished the spline specified by current_spline_idx.
+  bool is_executed;
 
   // The handle of the goal spline.  0 means stop requested.
   int32_t goal_spline_handle;
@@ -130,8 +132,6 @@ queue_group DrivetrainQueue {
 
     // Which spline to follow.
     int32_t spline_handle;
-    // Whether to follow the spline driving forwards or backwards.
-    bool drive_spline_backwards;
   };
 
   message Position {

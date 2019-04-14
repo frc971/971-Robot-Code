@@ -216,5 +216,8 @@ struct MultiSpline {
   float[36] spline_x;
   float[36] spline_y;
 
+  // Whether to follow the spline driving forwards or backwards.
+  bool drive_spline_backwards;
+
   Constraint[6] constraints;
 };

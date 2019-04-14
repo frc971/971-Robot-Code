@@ -136,7 +136,7 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
     do {
       RunIteration();
       my_drivetrain_queue_.status.FetchLatest();
-    } while (my_drivetrain_queue_.status->trajectory_logging.is_executing);
+    } while (!my_drivetrain_queue_.status->trajectory_logging.is_executed);
   }
 
   virtual ~DrivetrainTest() { ::frc971::sensors::gyro_reading.Clear(); }
@@ -439,10 +439,10 @@ TEST_F(DrivetrainTest, SplineSimple) {
 TEST_F(DrivetrainTest, SplineSimpleBackwards) {
   ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> goal =
       my_drivetrain_queue_.goal.MakeMessage();
-  goal->drive_spline_backwards = true;
   goal->controller_type = 2;
   goal->spline.spline_idx = 1;
   goal->spline.spline_count = 1;
+  goal->spline.drive_spline_backwards = true;
   goal->spline.spline_x = {{0.0, -0.25, -0.5, -0.5, -0.75, -1.0}};
   goal->spline.spline_y = {{0.0, 0.0, -0.25 ,-0.75, -1.0, -1.0}};
   goal.Send();
@@ -455,8 +455,26 @@ TEST_F(DrivetrainTest, SplineSimpleBackwards) {
   start_goal.Send();
   WaitForTrajectoryPlan();
 
-  RunForTime(chrono::milliseconds(2000));
+  // Check that we are right on the spline at the start (otherwise the feedback
+  // will tend to correct for going the wrong direction).
+  for (int ii = 0; ii < 10; ++ii) {
+    RunForTime(chrono::milliseconds(100));
+    VerifyNearSplineGoal();
+  }
+
+  WaitForTrajectoryExecution();
+
   VerifyNearSplineGoal();
+  // Check that we are pointed the right direction:
+  my_drivetrain_queue_.status.FetchLatest();
+  auto actual = drivetrain_motor_plant_.state();
+  const double expected_theta =
+      my_drivetrain_queue_.status->trajectory_logging.theta;
+  // As a sanity check, compare both against absolute angle and the spline's
+  // goal angle.
+  EXPECT_NEAR(0.0, ::aos::math::DiffAngle(actual(2), 0.0), 2e-2);
+  EXPECT_NEAR(0.0, ::aos::math::DiffAngle(actual(2), expected_theta),
+              2e-2);
 }
 
 // Tests that simple spline with a single goal message.
@@ -695,6 +713,46 @@ TEST_F(DrivetrainTest, SplineStopFirst) {
 
   WaitForTrajectoryExecution();
   VerifyNearSplineGoal();
+}
+
+// Tests that we can run a second spline after having planned but never executed
+// the first spline.
+TEST_F(DrivetrainTest, CancelSplineBeforeExecuting) {
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal> goal =
+      my_drivetrain_queue_.goal.MakeMessage();
+  goal->controller_type = 2;
+  goal->spline.spline_idx = 1;
+  goal->spline.spline_count = 1;
+  goal->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
+  goal->spline.spline_y = {{0.0, 0.0, 0.25 ,0.75, 1.0, 1.0}};
+  // Don't start running the splane.
+  goal->spline_handle = 0;
+  goal.Send();
+  WaitForTrajectoryPlan();
+
+  RunForTime(chrono::milliseconds(1000));
+
+  // Plan another spline, but don't start it yet:
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
+      second_spline_goal = my_drivetrain_queue_.goal.MakeMessage();
+  second_spline_goal->controller_type = 2;
+  second_spline_goal->spline.spline_idx = 2;
+  second_spline_goal->spline.spline_count = 1;
+  second_spline_goal->spline.spline_x = {{0.0, 0.75, 1.25, 1.5, 1.25, 1.0}};
+  second_spline_goal->spline.spline_y = {{0.0, 0.75, 1.25, 1.5, 1.75, 2.0}};
+  second_spline_goal->spline_handle = 0;
+  second_spline_goal.Send();
+  WaitForTrajectoryPlan();
+
+  ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
+      execute_goal = my_drivetrain_queue_.goal.MakeMessage();
+  execute_goal->controller_type = 2;
+  execute_goal->spline_handle = 2;
+  execute_goal.Send();
+
+  WaitForTrajectoryExecution();
+  VerifyNearSplineGoal();
+  VerifyNearPosition(1.0, 2.0);
 }
 
 // Tests that splines can excecute and plan at the same time.
