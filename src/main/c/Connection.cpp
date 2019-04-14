@@ -1,26 +1,26 @@
-// Copyright (c) 2013, Matt Godbolt
+// Copyright (c) 2013-2017, Matt Godbolt
 // All rights reserved.
-// 
-// Redistribution and use in source and binary forms, with or without 
+//
+// Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
-// 
-// Redistributions of source code must retain the above copyright notice, this 
+//
+// Redistributions of source code must retain the above copyright notice, this
 // list of conditions and the following disclaimer.
-// 
-// Redistributions in binary form must reproduce the above copyright notice, 
-// this list of conditions and the following disclaimer in the documentation 
+//
+// Redistributions in binary form must reproduce the above copyright notice,
+// this list of conditions and the following disclaimer in the documentation
 // and/or other materials provided with the distribution.
-// 
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
-// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE 
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include "internal/Config.h"
@@ -30,7 +30,7 @@
 #include "internal/HybiPacketDecoder.h"
 #include "internal/LogStream.h"
 #include "internal/PageRequest.h"
-#include "internal/Version.h"
+#include "internal/RaiiFd.h"
 
 #include "md5/md5.h"
 
@@ -41,22 +41,29 @@
 #include "seasocks/Server.h"
 #include "seasocks/StringUtil.h"
 #include "seasocks/ToString.h"
+#include "seasocks/ResponseWriter.h"
+#include "seasocks/ZlibContext.h"
 
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include <assert.h>
-#include <ctype.h>
-#include <errno.h>
+#include <algorithm>
+#include <cassert>
+#include <cctype>
+#include <cerrno>
 #include <fcntl.h>
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <sstream>
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include <unistd.h>
+#include <byteswap.h>
 #include <unordered_map>
+#include <memory>
 
 namespace {
 
@@ -73,85 +80,51 @@ uint32_t parseWebSocketKey(const std::string& key) {
     return numSpaces > 0 ? keyNumber / numSpaces : 0;
 }
 
-char* extractLine(uint8_t*& first, uint8_t* last, char** colon = NULL) {
+char* extractLine(uint8_t*& first, uint8_t* last, char** colon = nullptr) {
     for (uint8_t* ptr = first; ptr < last - 1; ++ptr) {
         if (ptr[0] == '\r' && ptr[1] == '\n') {
             ptr[0] = 0;
             uint8_t* result = first;
             first = ptr + 2;
-            return reinterpret_cast<char*> (result);
+            return reinterpret_cast<char*>(result);
         }
-        if (colon && ptr[0] == ':' && *colon == NULL) {
-            *colon = reinterpret_cast<char*> (ptr);
-        }
-    }
-    return NULL;
-}
-
-std::string webtime(time_t time) {
-    struct tm tm;
-    gmtime_r(&time, &tm);
-    char buf[1024];
-    // Wed, 20 Apr 2011 17:31:28 GMT
-    strftime(buf, sizeof(buf)-1, "%a, %d %b %Y %H:%M:%S %Z", &tm);
-    return buf;
-}
-
-std::string now() {
-    return webtime(time(NULL));
-}
-
-class RaiiFd {
-    int _fd;
-public:
-    RaiiFd(const char* filename) {
-        _fd = ::open(filename, O_RDONLY);
-    }
-    RaiiFd(const RaiiFd&) = delete;
-    RaiiFd& operator=(const RaiiFd&) = delete;
-    ~RaiiFd() {
-        if (_fd != -1) {
-            ::close(_fd);
+        if (colon && ptr[0] == ':' && *colon == nullptr) {
+            *colon = reinterpret_cast<char*>(ptr);
         }
     }
-    bool ok() const {
-        return _fd != -1;
-    }
-    operator int() const {
-        return _fd;
-    }
-};
+    return nullptr;
+}
 
 const std::unordered_map<std::string, std::string> contentTypes = {
-    { "txt", "text/plain" },
-    { "css", "text/css" },
-    { "csv", "text/csv" },
-    { "htm", "text/html" },
-    { "html", "text/html" },
-    { "xml", "text/xml" },
-    { "js", "text/javascript" }, // Technically it should be application/javascript (RFC 4329), but IE8 struggles with that
-    { "xhtml", "application/xhtml+xml" },
-    { "json", "application/json" },
-    { "pdf", "application/pdf" },
-    { "zip", "application/zip" },
-    { "tar", "application/x-tar" },
-    { "gif", "image/gif" },
-    { "jpeg", "image/jpeg" },
-    { "jpg", "image/jpeg" },
-    { "tiff", "image/tiff" },
-    { "tif", "image/tiff" },
-    { "png", "image/png" },
-    { "svg", "image/svg+xml" },
-    { "ico", "image/x-icon" },
-    { "swf", "application/x-shockwave-flash" },
-    { "mp3", "audio/mpeg" },
-    { "wav", "audio/x-wav" },
-    { "ttf", "font/ttf" },
+    {"txt", "text/plain"},
+    {"css", "text/css"},
+    {"csv", "text/csv"},
+    {"htm", "text/html"},
+    {"html", "text/html"},
+    {"xml", "text/xml"},
+    {"js", "text/javascript"}, // Technically it should be application/javascript (RFC 4329), but IE8 struggles with that
+    {"xhtml", "application/xhtml+xml"},
+    {"json", "application/json"},
+    {"pdf", "application/pdf"},
+    {"zip", "application/zip"},
+    {"tar", "application/x-tar"},
+    {"gif", "image/gif"},
+    {"jpeg", "image/jpeg"},
+    {"jpg", "image/jpeg"},
+    {"tiff", "image/tiff"},
+    {"tif", "image/tiff"},
+    {"png", "image/png"},
+    {"svg", "image/svg+xml"},
+    {"ico", "image/x-icon"},
+    {"swf", "application/x-shockwave-flash"},
+    {"mp3", "audio/mpeg"},
+    {"wav", "audio/x-wav"},
+    {"ttf", "font/ttf"},
 };
 
 std::string getExt(const std::string& path) {
     auto lastDot = path.find_last_of('.');
-    if (lastDot != path.npos) {
+    if (lastDot != std::string::npos) {
         return path.substr(lastDot + 1);
     }
     return "";
@@ -177,24 +150,25 @@ bool isCacheable(const std::string& path) {
     return false;
 }
 
-const size_t MaxBufferSize = 16 * 1024 * 1024;
-const size_t ReadWriteBufferSize = 16 * 1024;
-const size_t MaxWebsocketMessageSize = 16384;
-const size_t MaxHeadersSize = 64 * 1024;
+constexpr size_t ReadWriteBufferSize = 16 * 1024;
+constexpr size_t MaxWebsocketMessageSize = 16384;
+constexpr size_t MaxHeadersSize = 64 * 1024;
 
 class PrefixWrapper : public seasocks::Logger {
     std::string _prefix;
     std::shared_ptr<Logger> _logger;
+
 public:
     PrefixWrapper(const std::string& prefix, std::shared_ptr<Logger> logger)
-    : _prefix(prefix), _logger(logger) {}
+            : _prefix(prefix), _logger(logger) {
+    }
 
-    virtual void log(Level level, const char* message) {
+    virtual void log(Level level, const char* message) override {
         _logger->log(level, (_prefix + message).c_str());
     }
 };
 
-bool hasConnectionType(const std::string &connection, const std::string &type) {
+bool hasConnectionType(const std::string& connection, const std::string& type) {
     for (auto conType : seasocks::split(connection, ',')) {
         while (!conType.empty() && isspace(conType[0]))
             conType = conType.substr(1);
@@ -204,27 +178,66 @@ bool hasConnectionType(const std::string &connection, const std::string &type) {
     return false;
 }
 
-}  // namespace
+} // namespace
 
 namespace seasocks {
 
+struct Connection::Writer : ResponseWriter {
+    Connection* _connection;
+    explicit Writer(Connection& connection)
+            : _connection(&connection) {
+    }
+
+    void detach() {
+        _connection = nullptr;
+    }
+
+    void begin(ResponseCode responseCode, TransferEncoding encoding) override {
+        if (_connection)
+            _connection->begin(responseCode, encoding);
+    }
+    void header(const std::string& header, const std::string& value) override {
+        if (_connection)
+            _connection->header(header, value);
+    }
+    void payload(const void* data, size_t size, bool flush) override {
+        if (_connection)
+            _connection->payload(data, size, flush);
+    }
+    void finish(bool keepConnectionOpen) override {
+        if (_connection)
+            _connection->finish(keepConnectionOpen);
+    }
+    void error(ResponseCode responseCode, const std::string& payload) override {
+        if (_connection)
+            _connection->error(responseCode, payload);
+    }
+
+    bool isActive() const override {
+        return _connection;
+    }
+};
+
 Connection::Connection(
-        std::shared_ptr<Logger> logger,
-        ServerImpl& server,
-        int fd,
-        const sockaddr_in& address)
-    : _logger(new PrefixWrapper(formatAddress(address) + " : ", logger)),
-      _server(server),
-      _fd(fd),
-      _shutdown(false),
-      _hadSendError(false),
-      _closeOnEmpty(false),
-      _registeredForWriteEvents(false),
-      _address(address),
-      _bytesSent(0),
-      _bytesReceived(0),
-      _shutdownByUser(false),
-      _state(READING_HEADERS) {
+    std::shared_ptr<Logger> logger,
+    ServerImpl& server,
+    int fd,
+    const sockaddr_in& address)
+        : _logger(std::make_shared<PrefixWrapper>(formatAddress(address) + " : ", logger)),
+          _server(server),
+          _fd(fd),
+          _shutdown(false),
+          _hadSendError(false),
+          _closeOnEmpty(false),
+          _registeredForWriteEvents(false),
+          _address(address),
+          _bytesSent(0),
+          _bytesReceived(0),
+          _shutdownByUser(false),
+          _transferEncoding(TransferEncoding::Raw),
+          _chunk(0u),
+          _writer(std::make_shared<Writer>(*this)),
+          _state(State::READING_HEADERS) {
 }
 
 Connection::~Connection() {
@@ -258,6 +271,12 @@ void Connection::closeInternal() {
 
 
 void Connection::finalise() {
+    if (_response) {
+        _response->cancel();
+        _response.reset();
+        _writer->detach();
+        _writer.reset();
+    }
     if (_webSocketHandler) {
         _webSocketHandler->onDisconnect(this);
         _webSocketHandler.reset();
@@ -270,12 +289,12 @@ void Connection::finalise() {
     _fd = -1;
 }
 
-int Connection::safeSend(const void* data, size_t size) {
+ssize_t Connection::safeSend(const void* data, size_t size) {
     if (_fd == -1 || _hadSendError || _shutdown) {
         // Ignore further writes to the socket, it's already closed or has been shutdown
         return -1;
     }
-    int sendResult = ::send(_fd, data, size, MSG_NOSIGNAL);
+    auto sendResult = ::send(_fd, data, size, MSG_NOSIGNAL);
     if (sendResult == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             // Treat this as if zero bytes were written.
@@ -294,7 +313,7 @@ bool Connection::write(const void* data, size_t size, bool flushIt) {
         return false;
     }
     if (size) {
-        int bytesSent = 0;
+        ssize_t bytesSent = 0;
         if (_outBuf.empty() && flushIt) {
             // Attempt fast path, send directly.
             bytesSent = safeSend(data, size);
@@ -309,9 +328,9 @@ bool Connection::write(const void* data, size_t size, bool flushIt) {
         size_t bytesToBuffer = size - bytesSent;
         size_t endOfBuffer = _outBuf.size();
         size_t newBufferSize = endOfBuffer + bytesToBuffer;
-        if (newBufferSize >= MaxBufferSize) {
-            LS_WARNING(_logger, "Closing connection: buffer size too large (" 
-                    << newBufferSize << " >= " << MaxBufferSize << ")");
+        if (newBufferSize >= _server.clientBufferSize()) {
+            LS_WARNING(_logger, "Closing connection: buffer size too large ("
+                                    << newBufferSize << " >= " << _server.clientBufferSize() << ")");
             closeInternal();
             return false;
         }
@@ -325,8 +344,9 @@ bool Connection::write(const void* data, size_t size, bool flushIt) {
 }
 
 bool Connection::bufferLine(const char* line) {
-    static const char crlf[] = { '\r', '\n' };
-    if (!write(line, strlen(line), false)) return false;
+    static const char crlf[] = {'\r', '\n'};
+    if (!write(line, strlen(line), false))
+        return false;
     return write(crlf, 2, false);
 }
 
@@ -341,7 +361,7 @@ void Connection::handleDataReadyForRead() {
     }
     size_t curSize = _inBuf.size();
     _inBuf.resize(curSize + ReadWriteBufferSize);
-    int result = ::read(_fd, &_inBuf[curSize], ReadWriteBufferSize);
+    auto result = ::read(_fd, &_inBuf[curSize], ReadWriteBufferSize);
     if (result == -1) {
         LS_WARNING(_logger, "Unable to read from socket : " << getLastError());
         return;
@@ -367,12 +387,12 @@ bool Connection::flush() {
     if (_outBuf.empty()) {
         return true;
     }
-    int numSent = safeSend(&_outBuf[0], _outBuf.size());
+    auto numSent = safeSend(&_outBuf[0], _outBuf.size());
     if (numSent == -1) {
         return false;
     }
     _outBuf.erase(_outBuf.begin(), _outBuf.begin() + numSent);
-    if (_outBuf.size() > 0 && !_registeredForWriteEvents) {
+    if (!_outBuf.empty() && !_registeredForWriteEvents) {
         if (!_server.subscribeToWriteEvents(this)) {
             return false;
         }
@@ -396,24 +416,28 @@ bool Connection::closed() const {
 
 void Connection::handleNewData() {
     switch (_state) {
-    case READING_HEADERS:
-        handleHeaders();
-        break;
-    case READING_WEBSOCKET_KEY3:
-        handleWebSocketKey3();
-        break;
-    case HANDLING_HIXIE_WEBSOCKET:
-        handleHixieWebSocket();
-        break;
-    case HANDLING_HYBI_WEBSOCKET:
-        handleHybiWebSocket();
-        break;
-    case BUFFERING_POST_DATA:
-        handleBufferingPostData();
-        break;
-    default:
-        assert(false);
-        break;
+        case State::READING_HEADERS:
+            handleHeaders();
+            break;
+        case State::READING_WEBSOCKET_KEY3:
+            handleWebSocketKey3();
+            break;
+        case State::HANDLING_HIXIE_WEBSOCKET:
+            handleHixieWebSocket();
+            break;
+        case State::HANDLING_HYBI_WEBSOCKET:
+            handleHybiWebSocket();
+            break;
+        case State::BUFFERING_POST_DATA:
+            handleBufferingPostData();
+            break;
+        case State::AWAITING_RESPONSE_BEGIN:
+        case State::SENDING_RESPONSE_BODY:
+        case State::SENDING_RESPONSE_HEADERS:
+            break;
+        default:
+            assert(false);
+            break;
     }
 }
 
@@ -423,9 +447,9 @@ void Connection::handleHeaders() {
     }
     for (size_t i = 0; i <= _inBuf.size() - 4; ++i) {
         if (_inBuf[i] == '\r' &&
-            _inBuf[i+1] == '\n' &&
-            _inBuf[i+2] == '\r' &&
-            _inBuf[i+3] == '\n') {
+            _inBuf[i + 1] == '\n' &&
+            _inBuf[i + 2] == '\r' &&
+            _inBuf[i + 3] == '\n') {
             if (!processHeaders(&_inBuf[0], &_inBuf[i + 2])) {
                 closeInternal();
                 return;
@@ -474,7 +498,7 @@ void Connection::handleWebSocketKey3() {
     bufferLine("Connection: Upgrade");
     bool allowCrossOrigin = _server.isCrossOriginAllowed(_request->getRequestUri());
     if (_request->hasHeader("Origin") && allowCrossOrigin) {
-        bufferLine("Sec-WebSocket-Origin: " +  _request->getHeader("Origin"));
+        bufferLine("Sec-WebSocket-Origin: " + _request->getHeader("Origin"));
     }
     if (_request->hasHeader("Host")) {
         auto host = _request->getHeader("Host");
@@ -483,20 +507,39 @@ void Connection::handleWebSocketKey3() {
         }
         bufferLine("Sec-WebSocket-Location: ws://" + host + _request->getRequestUri());
     }
+    pickProtocol();
     bufferLine("");
 
     write(&digest, 16, true);
 
-    _state = HANDLING_HIXIE_WEBSOCKET;
+    _state = State::HANDLING_HIXIE_WEBSOCKET;
     _inBuf.erase(_inBuf.begin(), _inBuf.begin() + 8);
     if (_webSocketHandler) {
         _webSocketHandler->onConnect(this);
     }
 }
 
+void Connection::pickProtocol() {
+    static std::string protocolHeader = "Sec-WebSocket-Protocol";
+    if (!_request->hasHeader(protocolHeader) || !_webSocketHandler)
+        return;
+    // Ideally we need o support this header being set multiple times...but the headers don't support that.
+    auto protocols = split(_request->getHeader(protocolHeader), ',');
+    LS_DEBUG(_logger, "Requested protocols:");
+    std::transform(protocols.begin(), protocols.end(), protocols.begin(), trimWhitespace);
+    for (auto&& p : protocols) {
+        LS_DEBUG(_logger, "  " + p);
+    }
+    auto choice = _webSocketHandler->chooseProtocol(protocols);
+    if (choice >= 0 && choice < static_cast<ssize_t>(protocols.size())) {
+        LS_DEBUG(_logger, "Chose protocol " + protocols[choice]);
+        bufferLine(protocolHeader + ": " + protocols[choice]);
+    }
+}
+
 void Connection::handleBufferingPostData() {
     if (_request->consumeContent(_inBuf)) {
-        _state = READING_HEADERS;
+        _state = State::READING_HEADERS;
         if (!handlePageRequest()) {
             closeInternal();
         }
@@ -512,18 +555,21 @@ void Connection::send(const char* webSocketResponse) {
         return;
     }
     auto messageLength = strlen(webSocketResponse);
-    if (_state == HANDLING_HIXIE_WEBSOCKET) {
+    if (_state == State::HANDLING_HIXIE_WEBSOCKET) {
         uint8_t zero = 0;
-        if (!write(&zero, 1, false)) return;
-        if (!write(webSocketResponse, messageLength, false)) return;
+        if (!write(&zero, 1, false))
+            return;
+        if (!write(webSocketResponse, messageLength, false))
+            return;
         uint8_t effeff = 0xff;
         write(&effeff, 1, true);
         return;
     }
-    sendHybi(HybiPacketDecoder::OPCODE_TEXT, reinterpret_cast<const uint8_t*>(webSocketResponse), messageLength);
+    sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Text),
+             reinterpret_cast<const uint8_t*>(webSocketResponse), messageLength);
 }
 
-void Connection::send(const uint8_t* data, size_t length) {
+void Connection::send(const uint8_t* webSocketResponse, size_t length) {
     _server.checkThread();
     if (_shutdown) {
         if (_shutdownByUser) {
@@ -531,29 +577,51 @@ void Connection::send(const uint8_t* data, size_t length) {
         }
         return;
     }
-    if (_state == HANDLING_HIXIE_WEBSOCKET) {
+    if (_state == State::HANDLING_HIXIE_WEBSOCKET) {
         LS_ERROR(_logger, "Hixie does not support binary");
         return;
     }
-    sendHybi(HybiPacketDecoder::OPCODE_BINARY, data, length);
+    sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Binary), webSocketResponse, length);
 }
 
-void Connection::sendHybi(int opcode, const uint8_t* webSocketResponse, size_t messageLength) {
+void Connection::sendHybi(uint8_t opcode, const uint8_t* webSocketResponse, size_t messageLength) {
     uint8_t firstByte = 0x80 | opcode;
-    if (!write(&firstByte, 1, false)) return;
+    if (_perMessageDeflate)
+        firstByte |= 0x40;
+    if (!write(&firstByte, 1, false))
+        return;
+
+    if (_perMessageDeflate) {
+        std::vector<uint8_t> compressed;
+
+        zlibContext.deflate(webSocketResponse, messageLength, compressed);
+
+        LS_DEBUG(_logger, "Compression result: " << messageLength << " bytes -> " << compressed.size() << " bytes");
+        sendHybiData(compressed.data(), compressed.size());
+    } else {
+        sendHybiData(webSocketResponse, messageLength);
+    }
+}
+
+void Connection::sendHybiData(const uint8_t* webSocketResponse, size_t messageLength) {
     if (messageLength < 126) {
         uint8_t nextByte = messageLength; // No MASK bit set.
-        if (!write(&nextByte, 1, false)) return;
+        if (!write(&nextByte, 1, false))
+            return;
     } else if (messageLength < 65536) {
         uint8_t nextByte = 126; // No MASK bit set.
-        if (!write(&nextByte, 1, false)) return;
+        if (!write(&nextByte, 1, false))
+            return;
         auto lengthBytes = htons(messageLength);
-        if (!write(&lengthBytes, 2, false)) return;
+        if (!write(&lengthBytes, 2, false))
+            return;
     } else {
         uint8_t nextByte = 127; // No MASK bit set.
-        if (!write(&nextByte, 1, false)) return;
+        if (!write(&nextByte, 1, false))
+            return;
         uint64_t lengthBytes = __bswap_64(messageLength);
-        if (!write(&lengthBytes, 8, false)) return;
+        if (!write(&lengthBytes, 8, false))
+            return;
     }
     write(webSocketResponse, messageLength, true);
 }
@@ -570,7 +638,7 @@ void Connection::handleHixieWebSocket() {
     size_t messageStart = 0;
     while (messageStart < _inBuf.size()) {
         if (_inBuf[messageStart] != 0) {
-            LS_WARNING(_logger, "Error in WebSocket input stream (got " << (int)_inBuf[messageStart] << ")");
+            LS_WARNING(_logger, "Error in WebSocket input stream (got " << (int) _inBuf[messageStart] << ")");
             closeInternal();
             return;
         }
@@ -607,31 +675,67 @@ void Connection::handleHybiWebSocket() {
     bool done = false;
     while (!done) {
         std::vector<uint8_t> decodedMessage;
-        switch (decoder.decodeNextMessage(decodedMessage)) {
-        default:
-            closeInternal();
-            LS_WARNING(_logger, "Unknown HybiPacketDecoder state");
-            return;
-        case HybiPacketDecoder::Error:
-            closeInternal();
-            return;
-        case HybiPacketDecoder::TextMessage:
-            decodedMessage.push_back(0);  // avoids a copy
-            handleWebSocketTextMessage(reinterpret_cast<const char*>(&decodedMessage[0]));
-            break;
-        case HybiPacketDecoder::BinaryMessage:
-            handleWebSocketBinaryMessage(decodedMessage);
-            break;
-        case HybiPacketDecoder::Ping:
-            sendHybi(HybiPacketDecoder::OPCODE_PONG, &decodedMessage[0], decodedMessage.size());
-            break;
-        case HybiPacketDecoder::NoMessage:
-            done = true;
-            break;
-        case HybiPacketDecoder::Close:
-            LS_DEBUG(_logger, "Received WebSocket close");
-            closeInternal();
-            return;
+        bool deflateNeeded = false;
+
+        auto messageState = decoder.decodeNextMessage(decodedMessage, deflateNeeded);
+
+        if (deflateNeeded) {
+            if (!_perMessageDeflate) {
+                LS_WARNING(_logger, "Received deflated hybi frame but deflate wasn't negotiated");
+                closeInternal();
+                return;
+            }
+
+            size_t compressed_size = decodedMessage.size();
+
+            std::vector<uint8_t> decompressed;
+            int zlibError;
+
+            // Note: inflate() alters decodedMessage
+            bool success = zlibContext.inflate(decodedMessage, decompressed, zlibError);
+
+            if (!success) {
+                LS_WARNING(_logger, "Decompression error from zlib: " << zlibError);
+                closeInternal();
+                return;
+            }
+
+            LS_DEBUG(_logger, "Decompression result: " << compressed_size << " bytes -> " << decodedMessage.size() << " bytes");
+
+            decodedMessage.swap(decompressed);
+        }
+
+
+        switch (messageState) {
+            default:
+                closeInternal();
+                LS_WARNING(_logger, "Unknown HybiPacketDecoder state");
+                return;
+            case HybiPacketDecoder::MessageState::Error:
+                closeInternal();
+                return;
+            case HybiPacketDecoder::MessageState::TextMessage:
+                decodedMessage.push_back(0); // avoids a copy
+                handleWebSocketTextMessage(reinterpret_cast<const char*>(&decodedMessage[0]));
+                break;
+            case HybiPacketDecoder::MessageState::BinaryMessage:
+                handleWebSocketBinaryMessage(decodedMessage);
+                break;
+            case HybiPacketDecoder::MessageState::Ping:
+                sendHybi(static_cast<uint8_t>(HybiPacketDecoder::Opcode::Pong),
+                         &decodedMessage[0], decodedMessage.size());
+                break;
+            case HybiPacketDecoder::MessageState::Pong:
+                // Pongs can be sent unsolicited (MSIE and Edge do this)
+                // The spec says to ignore them.
+                break;
+            case HybiPacketDecoder::MessageState::NoMessage:
+                done = true;
+                break;
+            case HybiPacketDecoder::MessageState::Close:
+                LS_DEBUG(_logger, "Received WebSocket close");
+                closeInternal();
+                return;
         }
     }
     if (decoder.numBytesDecoded() != 0) {
@@ -658,7 +762,7 @@ void Connection::handleWebSocketBinaryMessage(const std::vector<uint8_t>& messag
 }
 
 bool Connection::sendError(ResponseCode errorCode, const std::string& body) {
-    assert(_state != HANDLING_HIXIE_WEBSOCKET);
+    assert(_state != State::HANDLING_HIXIE_WEBSOCKET);
     auto errorNumber = static_cast<int>(errorCode);
     auto message = ::name(errorCode);
     bufferResponseAndCommonHeaders(errorCode);
@@ -672,8 +776,9 @@ bool Connection::sendError(ResponseCode errorCode, const std::string& body) {
     } else {
         std::stringstream documentStr;
         documentStr << "<html><head><title>" << errorNumber << " - " << message << "</title></head>"
-                << "<body><h1>" << errorNumber << " - " << message << "</h1>"
-                << "<div>" << body << "</div><hr/><div><i>Powered by seasocks</i></div></body></html>";
+                    << "<body><h1>" << errorNumber << " - " << message << "</h1>"
+                    << "<div>" << body << "</div><hr/><div><i>Powered by "
+                                          "<a href=\"https://github.com/mattgodbolt/seasocks\">Seasocks</a></i></div></body></html>";
         document = documentStr.str();
     }
     bufferLine("Content-Length: " + toString(document.length()));
@@ -717,7 +822,7 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
     // Be careful about lifetimes though and multiple requests coming in, should
     // we ever support HTTP pipelining and/or long-lived requests.
     char* requestLine = extractLine(first, last);
-    assert(requestLine != NULL);
+    assert(requestLine != nullptr);
 
     LS_ACCESS(_logger, "Request: " << requestLine);
 
@@ -730,12 +835,12 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
         return sendBadRequest("Malformed request line");
     }
     const char* requestUri = shift(requestLine);
-    if (requestUri == NULL) {
+    if (requestUri == nullptr) {
         return sendBadRequest("Malformed request line");
     }
 
     const char* httpVersion = shift(requestLine);
-    if (httpVersion == NULL) {
+    if (httpVersion == nullptr) {
         return sendBadRequest("Malformed request line");
     }
     if (strcmp(httpVersion, "HTTP/1.1") != 0) {
@@ -747,26 +852,20 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
 
     HeaderMap headers(31);
     while (first < last) {
-        char* colonPos = NULL;
+        char* colonPos = nullptr;
         char* headerLine = extractLine(first, last, &colonPos);
-        assert(headerLine != NULL);
-        if (colonPos == NULL) {
+        assert(headerLine != nullptr);
+        if (colonPos == nullptr) {
             return sendBadRequest("Malformed header");
         }
         *colonPos = 0;
         const char* key = headerLine;
         const char* value = skipWhitespace(colonPos + 1);
         LS_DEBUG(_logger, "Key: " << key << " || " << value);
-#if HAVE_UNORDERED_MAP_EMPLACE
         headers.emplace(key, value);
-#else
-        headers.insert(std::make_pair(key, value));
-#endif
     }
 
-    if (headers.count("Connection") && headers.count("Upgrade")
-            && hasConnectionType(headers["Connection"], "Upgrade")
-            && caseInsensitiveSame(headers["Upgrade"], "websocket")) {
+    if (headers.count("Connection") && headers.count("Upgrade") && hasConnectionType(headers["Connection"], "Upgrade") && caseInsensitiveSame(headers["Upgrade"], "websocket")) {
         LS_INFO(_logger, "Websocket request for " << requestUri << "'");
         if (verb != Request::Verb::Get) {
             return sendBadRequest("Non-GET WebSocket request");
@@ -777,23 +876,30 @@ bool Connection::processHeaders(uint8_t* first, uint8_t* last) {
             return send404();
         }
         verb = Request::Verb::WebSocket;
+
+        if (_server.server().getPerMessageDeflateEnabled() && headers.count("Sec-WebSocket-Extensions")) {
+            parsePerMessageDeflateHeader(headers["Sec-WebSocket-Extensions"]);
+        }
     }
 
-    _request.reset(new PageRequest(_address, requestUri, verb, std::move(headers)));
+    _request = std::make_unique<PageRequest>(_address, requestUri, _server.server(),
+                                             verb, std::move(headers));
 
-    const EmbeddedContent *embedded = findEmbeddedContent(requestUri);
+    const EmbeddedContent* embedded = findEmbeddedContent(requestUri);
     if (verb == Request::Verb::Get && embedded) {
         // MRG: one day, this could be a request handler.
         return sendData(getContentType(requestUri), embedded->data, embedded->length);
+    } else if (verb == Request::Verb::Head && embedded) {
+        return sendHeader(getContentType(requestUri), embedded->length);
     }
 
-    if (_request->contentLength() > MaxBufferSize) {
+    if (_request->contentLength() > _server.clientBufferSize()) {
         return sendBadRequest("Content length too long");
     }
     if (_request->contentLength() == 0) {
         return handlePageRequest();
     }
-    _state = BUFFERING_POST_DATA;
+    _state = State::BUFFERING_POST_DATA;
     return true;
 }
 
@@ -811,14 +917,14 @@ bool Connection::handlePageRequest() {
     auto uri = _request->getRequestUri();
     if (!response && _request->verb() == Request::Verb::WebSocket) {
         _webSocketHandler = _server.getWebSocketHandler(uri.c_str());
-        auto webSocketVersion = atoi(_request->getHeader("Sec-WebSocket-Version").c_str());
+        const auto webSocketVersion = std::stoi(_request->getHeader("Sec-WebSocket-Version"));
         if (!_webSocketHandler) {
             LS_WARNING(_logger, "Couldn't find WebSocket end point for '" << uri << "'");
             return send404();
         }
         if (webSocketVersion == 0) {
             // Hixie
-            _state = READING_WEBSOCKET_KEY3;
+            _state = State::READING_WEBSOCKET_KEY3;
             return true;
         }
         auto hybiKey = _request->getHeader("Sec-WebSocket-Key");
@@ -828,47 +934,108 @@ bool Connection::handlePageRequest() {
 }
 
 bool Connection::sendResponse(std::shared_ptr<Response> response) {
-    const auto requestUri = _request->getRequestUri();
     if (response == Response::unhandled()) {
         return sendStaticData();
     }
-    if (response->responseCode() == ResponseCode::NotFound) {
-        // TODO: better here; we use this purely to serve our own embedded content.
-        return send404();
-    } else if (!isOk(response->responseCode())) {
-        return sendError(response->responseCode(), response->payload());
-    }
-
-    bufferResponseAndCommonHeaders(response->responseCode());
-    bufferLine("Content-Length: " + toString(response->payloadSize()));
-    bufferLine("Content-Type: " + response->contentType());
-    if (response->keepConnectionAlive()) {
-        bufferLine("Connection: keep-alive");
-    } else {
-        bufferLine("Connection: close");
-    }
-    bufferLine("Last-Modified: " + now());
-    bufferLine("Cache-Control: no-store");
-    bufferLine("Pragma: no-cache");
-    bufferLine("Expires: " + now());
-    auto headers = response->getAdditionalHeaders();
-    for (auto it = headers.begin(); it != headers.end(); ++it) {
-        bufferLine(it->first + ": " + it->second);
-    }
-    bufferLine("");
-
-    if (!write(response->payload(), response->payloadSize(), true)) {
-        return false;
-    }
-    if (!response->keepConnectionAlive()) {
-        closeWhenEmpty();
-    }
+    assert(_response.get() == nullptr);
+    _state = State::AWAITING_RESPONSE_BEGIN;
+    _transferEncoding = TransferEncoding::Raw;
+    _chunk = 0;
+    _response = response;
+    _response->handle(_writer);
     return true;
 }
 
+void Connection::error(ResponseCode responseCode, const std::string& payload) {
+    _server.checkThread();
+    if (_state != State::AWAITING_RESPONSE_BEGIN) {
+        LS_ERROR(_logger, "error() called when in wrong state");
+        return;
+    }
+    if (isOk(responseCode)) {
+        LS_ERROR(_logger, "error() called with a non-error code");
+    }
+    if (responseCode == ResponseCode::NotFound) {
+        // TODO: better here; we use this purely to serve our own embedded content.
+        send404();
+    } else {
+        sendError(responseCode, payload);
+    }
+}
+
+void Connection::begin(ResponseCode responseCode, TransferEncoding encoding) {
+    _server.checkThread();
+    if (_state != State::AWAITING_RESPONSE_BEGIN) {
+        LS_ERROR(_logger, "begin() called when in wrong state");
+        return;
+    }
+    _state = State::SENDING_RESPONSE_HEADERS;
+    bufferResponseAndCommonHeaders(responseCode);
+    _transferEncoding = encoding;
+    if (_transferEncoding == TransferEncoding::Chunked) {
+        bufferLine("Transfer-encoding: chunked");
+    }
+}
+
+void Connection::header(const std::string& header, const std::string& value) {
+    _server.checkThread();
+    if (_state != State::SENDING_RESPONSE_HEADERS) {
+        LS_ERROR(_logger, "header() called when in wrong state");
+        return;
+    }
+    bufferLine(header + ": " + value);
+}
+void Connection::payload(const void* data, size_t size, bool flush) {
+    _server.checkThread();
+    if (_state == State::SENDING_RESPONSE_HEADERS) {
+        bufferLine("");
+        _state = State::SENDING_RESPONSE_BODY;
+    } else if (_state != State::SENDING_RESPONSE_BODY) {
+        LS_ERROR(_logger, "payload() called when in wrong state");
+        return;
+    }
+    if (size && _transferEncoding == TransferEncoding::Chunked) {
+        writeChunkHeader(size);
+    }
+    write(data, size, flush);
+}
+
+void Connection::writeChunkHeader(size_t size) {
+    std::ostringstream lengthStr;
+    if (_chunk)
+        lengthStr << "\r\n";
+    lengthStr << std::hex << size << "\r\n";
+    auto length = lengthStr.str();
+    _chunk++;
+    write(length.c_str(), length.size(), false);
+}
+
+void Connection::finish(bool keepConnectionOpen) {
+    _server.checkThread();
+    if (_state == State::SENDING_RESPONSE_HEADERS) {
+        bufferLine("");
+    } else if (_state != State::SENDING_RESPONSE_BODY) {
+        LS_ERROR(_logger, "finish() called when in wrong state");
+        return;
+    }
+    if (_transferEncoding == TransferEncoding::Chunked) {
+        writeChunkHeader(0);
+        write("\r\n", 2, false);
+    }
+
+    flush();
+
+    if (!keepConnectionOpen) {
+        closeWhenEmpty();
+    }
+
+    _state = State::READING_HEADERS;
+    _response.reset();
+}
+
 bool Connection::handleHybiHandshake(
-        int webSocketVersion,
-        const std::string& webSocketKey) {
+    int webSocketVersion,
+    const std::string& webSocketKey) {
     if (webSocketVersion != 8 && webSocketVersion != 13) {
         return sendBadRequest("Invalid websocket version");
     }
@@ -880,14 +1047,31 @@ bool Connection::handleHybiHandshake(
     bufferLine("Upgrade: websocket");
     bufferLine("Connection: Upgrade");
     bufferLine("Sec-WebSocket-Accept: " + getAcceptKey(webSocketKey));
+    if (_perMessageDeflate)
+        bufferLine("Sec-WebSocket-Extensions: permessage-deflate");
+    pickProtocol();
     bufferLine("");
     flush();
 
     if (_webSocketHandler) {
         _webSocketHandler->onConnect(this);
     }
-    _state = HANDLING_HYBI_WEBSOCKET;
+    _state = State::HANDLING_HYBI_WEBSOCKET;
     return true;
+}
+
+void Connection::parsePerMessageDeflateHeader(const std::string& header) {
+    for (auto& extField : seasocks::split(header, ';')) {
+        while (!extField.empty() && isspace(extField[0])) {
+            extField = extField.substr(1);
+        }
+
+        if (seasocks::caseInsensitiveSame(extField, "permessage-deflate")) {
+            LS_INFO(_logger, "Enabling per-message deflate");
+            _perMessageDeflate = true;
+            zlibContext.initialise();
+        }
+    }
 }
 
 bool Connection::parseRange(const std::string& rangeStr, Range& range) const {
@@ -898,15 +1082,15 @@ bool Connection::parseRange(const std::string& rangeStr, Range& range) const {
     }
     if (minusPos == 0) {
         // A range like "-500" means 500 bytes from end of file to end.
-        range.start = atoi(rangeStr.c_str());
+        range.start = std::stoi(rangeStr);
         range.end = std::numeric_limits<long>::max();
         return true;
     } else {
-        range.start = atoi(rangeStr.substr(0, minusPos).c_str());
-        if (minusPos == rangeStr.size()-1) {
+        range.start = std::stoi(rangeStr.substr(0, minusPos));
+        if (minusPos == rangeStr.size() - 1) {
             range.end = std::numeric_limits<long>::max();
         } else {
-            range.end = atoi(rangeStr.substr(minusPos + 1).c_str());
+            range.end = std::stoi(rangeStr.substr(minusPos + 1));
         }
         return true;
     }
@@ -920,9 +1104,9 @@ bool Connection::parseRanges(const std::string& range, std::list<Range>& ranges)
         return false;
     }
     auto rangesText = split(range.substr(expectedPrefix.length()), ',');
-    for (auto it = rangesText.begin(); it != rangesText.end(); ++it) {
+    for (auto& it : rangesText) {
         Range r;
-        if (!parseRange(*it, r)) {
+        if (!parseRange(it, r)) {
             return false;
         }
         ranges.push_back(r);
@@ -937,7 +1121,7 @@ std::list<Connection::Range> Connection::processRangesForStaticData(const std::l
         // Easy case: a non-range request.
         bufferResponseAndCommonHeaders(ResponseCode::Ok);
         bufferLine("Content-Length: " + toString(fileSize));
-        return { Range { 0, fileSize - 1 } };
+        return {Range{0, fileSize - 1}};
     }
 
     // Partial content request.
@@ -946,8 +1130,7 @@ std::list<Connection::Range> Connection::processRangesForStaticData(const std::l
     std::ostringstream rangeLine;
     rangeLine << "Content-Range: bytes ";
     std::list<Range> sendRanges;
-    for (auto rangeIter = origRanges.cbegin(); rangeIter != origRanges.cend(); ++rangeIter) {
-        Range actualRange = *rangeIter;
+    for (auto actualRange : origRanges) {
         if (actualRange.start < 0) {
             actualRange.start += fileSize;
         }
@@ -973,26 +1156,27 @@ bool Connection::sendStaticData() {
     auto rangeHeader = getHeader("Range");
     // Trim any trailing queries.
     size_t queryPos = path.find('?');
-    if (queryPos != path.npos) {
+    if (queryPos != std::string::npos) {
         path.resize(queryPos);
     }
     if (*path.rbegin() == '/') {
         path += "index.html";
     }
-    RaiiFd input(path.c_str());
-    struct stat stat;
-    if (!input.ok() || ::fstat(input, &stat) == -1) {
+
+    RaiiFd input{::open(path.c_str(), O_RDONLY)};
+    struct stat fileStat;
+    if (!input.ok() || ::fstat(input, &fileStat) == -1) {
         return send404();
     }
     std::list<Range> ranges;
     if (!rangeHeader.empty() && !parseRanges(rangeHeader, ranges)) {
         return sendBadRequest("Bad range header");
     }
-    ranges = processRangesForStaticData(ranges, stat.st_size);
+    ranges = processRangesForStaticData(ranges, fileStat.st_size);
     bufferLine("Content-Type: " + getContentType(path));
     bufferLine("Connection: keep-alive");
     bufferLine("Accept-Ranges: bytes");
-    bufferLine("Last-Modified: " + webtime(stat.st_mtime));
+    bufferLine("Last-Modified: " + webtime(fileStat.st_mtime));
     if (!isCacheable(path)) {
         bufferLine("Cache-Control: no-store");
         bufferLine("Pragma: no-cache");
@@ -1003,12 +1187,12 @@ bool Connection::sendStaticData() {
         return false;
     }
 
-    for (auto rangeIter = ranges.cbegin(); rangeIter != ranges.cend(); ++rangeIter) {
-        if (::lseek(input, rangeIter->start, SEEK_SET) == -1) {
+    for (auto range : ranges) {
+        if (::lseek(input, range.start, SEEK_SET) == -1) {
             // We've (probably) already sent data.
             return false;
         }
-        auto bytesLeft = rangeIter->length();
+        auto bytesLeft = range.length();
         while (bytesLeft) {
             char buf[ReadWriteBufferSize];
             auto bytesRead = ::read(input, buf, std::min(sizeof(buf), bytesLeft));
@@ -1027,6 +1211,14 @@ bool Connection::sendStaticData() {
     return true;
 }
 
+bool Connection::sendHeader(const std::string& type, size_t size) {
+    bufferResponseAndCommonHeaders(ResponseCode::Ok);
+    bufferLine("Content-Type: " + type);
+    bufferLine("Content-Length: " + toString(size));
+    bufferLine("Connection: keep-alive");
+    return bufferLine("");
+}
+
 bool Connection::sendData(const std::string& type, const char* start, size_t size) {
     bufferResponseAndCommonHeaders(ResponseCode::Ok);
     bufferLine("Content-Type: " + type);
@@ -1043,7 +1235,7 @@ void Connection::bufferResponseAndCommonHeaders(ResponseCode code) {
     auto response = std::string("HTTP/1.1 " + toString(responseCodeInt) + " " + responseCodeName);
     LS_ACCESS(_logger, "Response: " << response);
     bufferLine(response);
-    bufferLine("Server: " SEASOCKS_VERSION_STRING);
+    bufferLine("Server: " + std::string(Config::version));
     bufferLine("Date: " + now());
     bufferLine("Access-Control-Allow-Origin: *");
 }
@@ -1053,7 +1245,7 @@ void Connection::setLinger() {
         return;
     }
     const int secondsToLinger = 1;
-    struct linger linger = { true, secondsToLinger };
+    struct linger linger = {true, secondsToLinger};
     if (::setsockopt(_fd, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger)) == -1) {
         LS_INFO(_logger, "Unable to set linger on socket");
     }
@@ -1072,4 +1264,8 @@ const std::string& Connection::getRequestUri() const {
     return _request ? _request->getRequestUri() : empty;
 }
 
-}  // seasocks
+Server& Connection::server() const {
+    return _server.server();
+}
+
+} // seasocks

@@ -1,4 +1,4 @@
-// Copyright (c) 2013, Matt Godbolt
+// Copyright (c) 2013-2017, Matt Godbolt
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <functional>
 #include <list>
 #include <map>
 #include <memory>
@@ -49,24 +50,13 @@ class Response;
 
 class Server : private ServerImpl {
 public:
-    Server(std::shared_ptr<Logger> logger);
+    explicit Server(std::shared_ptr<Logger> logger);
     virtual ~Server();
 
     void addPageHandler(std::shared_ptr<PageHandler> handler);
 
     void addWebSocketHandler(const char* endpoint, std::shared_ptr<WebSocket::Handler> handler,
-            bool allowCrossOriginRequests = false);
-
-    // If we haven't heard anything ever on a connection for this long, kill it.
-    // This is possibly caused by bad WebSocket implementation in Chrome.
-    void setLameConnectionTimeoutSeconds(int seconds);
-
-    // Sets the maximum number of TCP level keepalives that we can miss before
-    // we let the OS consider the connection dead. We configure keepalives every second,
-    // so this is also the minimum number of seconds it takes to notice a badly-behaved
-    // dead connection, e.g. a laptop going into sleep mode or a hard-crashed machine.
-    // A value of 0 disables keep alives, which is the default.
-    void setMaxKeepAliveDrops(int maxKeepAliveDrops);
+                             bool allowCrossOriginRequests = false);
 
     // Serves static content from the given port on the current thread, until terminate is called.
     // Roughly equivalent to startListening(port); setStaticPath(staticPath); loop();
@@ -80,6 +70,10 @@ public:
     // Starts listening on a port on all interfaces.
     // Returns true if all was ok.
     bool startListening(int port);
+
+    // Starts listening on a unix domain socket.
+    // Returns true if all was ok.
+    bool startListeningUnix(const char* socketPath);
 
     // Sets the path to server static content from.
     void setStaticPath(const char* staticPath);
@@ -102,42 +96,77 @@ public:
     // Returns a file descriptor that can be polled for changes (e.g. by
     // placing it in an epoll set. The poll() method above only need be called
     // when this file descriptor is readable.
-    int fd() const { return _epollFd; }
+    int fd() const {
+        return _epollFd;
+    }
 
     // Terminate any loop() or poll(). May be called from any thread.
     void terminate();
 
+    // If we haven't heard anything ever on a connection for this long, kill it.
+    // This is possibly caused by bad WebSocket implementation in Chrome.
+    void setLameConnectionTimeoutSeconds(int seconds);
+
+    // Sets the maximum number of TCP level keepalives that we can miss before
+    // we let the OS consider the connection dead. We configure keepalives every second,
+    // so this is also the minimum number of seconds it takes to notice a badly-behaved
+    // dead connection, e.g. a laptop going into sleep mode or a hard-crashed machine.
+    // A value of 0 disables keep alives, which is the default.
+    void setMaxKeepAliveDrops(int maxKeepAliveDrops);
+
+    // Set the maximum amount of data we'll buffer for a client before we close the
+    // connection assuming the client can't keep up with the data rate. Default
+    // is available here too.
+    static constexpr size_t DefaultClientBufferSize = 16 * 1024 * 1024u;
+    void setClientBufferSize(size_t bytesToBuffer);
+    size_t clientBufferSize() const override {
+        return _clientBufferSize;
+    }
+
+    void setPerMessageDeflateEnabled(bool enabled);
+    bool getPerMessageDeflateEnabled() {
+        return _perMessageDeflateEnabled;
+    }
+
     class Runnable {
     public:
-        virtual ~Runnable() {}
+        virtual ~Runnable() = default;
         virtual void run() = 0;
     };
-    // Execute a task on the SeaSocks thread.
+    // Execute a task on the Seasocks thread.
     void execute(std::shared_ptr<Runnable> runnable);
+    using Executable = std::function<void()>;
+    void execute(Executable toExecute);
 
 private:
     // From ServerImpl
     virtual void remove(Connection* connection) override;
     virtual bool subscribeToWriteEvents(Connection* connection) override;
     virtual bool unsubscribeFromWriteEvents(Connection* connection) override;
-    virtual const std::string& getStaticPath() const override { return _staticPath; }
+    virtual const std::string& getStaticPath() const override {
+        return _staticPath;
+    }
     virtual std::shared_ptr<WebSocket::Handler> getWebSocketHandler(const char* endpoint) const override;
-    virtual bool isCrossOriginAllowed(const std::string &endpoint) const override;
-    virtual std::shared_ptr<Response> handle(const Request &request) override;
+    virtual bool isCrossOriginAllowed(const std::string& endpoint) const override;
+    virtual std::shared_ptr<Response> handle(const Request& request) override;
     virtual std::string getStatsDocument() const override;
     virtual void checkThread() const override;
+    virtual Server& server() override {
+        return *this;
+    }
 
     bool makeNonBlocking(int fd) const;
     bool configureSocket(int fd) const;
     void handleAccept();
-    std::shared_ptr<Runnable> popNextRunnable();
     void processEventQueue();
+    void runExecutables();
 
     void shutdown();
 
     void checkAndDispatchEpoll(int epollMillis);
     void handlePipe();
-    enum NewState { KeepOpen, Close };
+    enum class NewState { KeepOpen,
+                          Close };
     NewState handleConnectionEvents(Connection* connection, uint32_t events);
 
     // Connections, mapped to initial connection time.
@@ -148,7 +177,11 @@ private:
     int _eventFd;
     int _maxKeepAliveDrops;
     int _lameConnectionTimeoutSeconds;
+    size_t _clientBufferSize;
     time_t _nextDeadConnectionCheck;
+
+    // Compression settings
+    bool _perMessageDeflateEnabled = false;
 
     struct WebSocketHandlerEntry {
         std::shared_ptr<WebSocket::Handler> handler;
@@ -159,8 +192,8 @@ private:
 
     std::list<std::shared_ptr<PageHandler>> _pageHandlers;
 
-    std::mutex _pendingRunnableMutex;
-    std::list<std::shared_ptr<Runnable>> _pendingRunnables;
+    std::mutex _pendingExecutableMutex;
+    std::list<Executable> _pendingExecutables;
 
     pid_t _threadId;
 
@@ -169,4 +202,4 @@ private:
     std::atomic<bool> _expectedTerminate;
 };
 
-}  // namespace seasocks
+} // namespace seasocks
