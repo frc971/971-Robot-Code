@@ -187,9 +187,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
         const double cargo_joy_y = data.GetAxis(kCargoSelectorY);
         const double cargo_joy_x = data.GetAxis(kCargoSelectorX);
         if (cargo_joy_y > 0.5) {
-          target_hint->suggested_target = 3;
-        } else if (cargo_joy_y < -0.5) {
           target_hint->suggested_target = 1;
+        } else if (cargo_joy_y < -0.5) {
+          target_hint->suggested_target = 3;
         } else if (::std::abs(cargo_joy_x) > 0.5) {
           target_hint->suggested_target = 2;
         } else {
