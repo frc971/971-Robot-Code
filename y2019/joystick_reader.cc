@@ -158,7 +158,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     superstructure_queue.status.FetchLatest();
     if (!superstructure_queue.status.get() ||
         !superstructure_queue.position.get()) {
-      LOG(ERROR, "Got no superstructure status packet.\n");
+      LOG(ERROR, "Got no superstructure status or position packet.\n");
       return;
     }
 
@@ -342,18 +342,18 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     constexpr double kDeployStiltPosition = 0.5;
 
-    // TODO(sabina): max height please?
     if (data.IsPressed(kFallOver)) {
       new_superstructure_goal->stilts.unsafe_goal = 0.71;
       new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
       new_superstructure_goal->stilts.profile_params.max_acceleration = 1.25;
-    } else if (data.IsPressed(kDeployStilt)) {
+    } else if (data.IsPressed(kHalfStilt)) {
+      was_above_ = false;
+      new_superstructure_goal->stilts.unsafe_goal = 0.345;
+      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
+    } else if (data.IsPressed(kDeployStilt) || was_above_) {
       new_superstructure_goal->stilts.unsafe_goal = kDeployStiltPosition;
       new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
       new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
-    } else if (data.IsPressed(kHalfStilt)) {
-      new_superstructure_goal->stilts.unsafe_goal = 0.345;
-      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
     } else {
       new_superstructure_goal->stilts.unsafe_goal = 0.005;
       new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
@@ -364,6 +364,18 @@ class Reader : public ::aos::input::ActionJoystickInput {
       elevator_wrist_pos_ = kClimbPos;
       new_superstructure_goal->wrist.profile_params.max_acceleration = 10;
       new_superstructure_goal->elevator.profile_params.max_acceleration = 6;
+    }
+
+    // If we've been asked to go above deploy and made it up that high, latch
+    // was_above.
+    if (new_superstructure_goal->stilts.unsafe_goal > kDeployStiltPosition &&
+        superstructure_queue.status->stilts.position >= kDeployStiltPosition) {
+      was_above_ = true;
+    } else if ((superstructure_queue.position->platform_left_detect ||
+                superstructure_queue.position->platform_right_detect) &&
+               !data.IsPressed(kDeployStilt) && !data.IsPressed(kFallOver)) {
+      // TODO(austin): Should make this && rather than ||
+      was_above_ = false;
     }
 
     if (superstructure_queue.status->stilts.position > kDeployStiltPosition &&
@@ -418,6 +430,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
     return ::frc971::autonomous::auto_mode->mode;
   }
+
+  // Bool to track if we've been above the deploy position.  Once this bool is
+  // set, don't let the stilts retract until we see the platform.
+  bool was_above_ = false;
 
   // Current goals here.
   ElevatorWristPosition elevator_wrist_pos_ = kStowPos;
