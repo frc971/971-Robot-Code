@@ -72,6 +72,12 @@ queue_group SuperstructureQueue {
 
     // Position of the stilts, 0 when retracted (defualt), positive lifts robot.
     .frc971.PotAndAbsolutePosition stilts;
+
+    // True if the platform detection sensors detect the platform directly
+    // below the robot right behind the left and right wheels.  Useful for
+    // determining when the robot is all the way on the platform.
+    bool platform_left_detect;
+    bool platform_right_detect;
   };
 
   message Output {

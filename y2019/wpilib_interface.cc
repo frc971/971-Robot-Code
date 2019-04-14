@@ -198,6 +198,16 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     stilts_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
+  void set_platform_left_detect(
+      ::std::unique_ptr<frc::DigitalInput> platform_left_detect) {
+    platform_left_detect_ = ::std::move(platform_left_detect);
+  }
+
+  void set_platform_right_detect(
+      ::std::unique_ptr<frc::DigitalInput> platform_right_detect) {
+    platform_right_detect_ = ::std::move(platform_right_detect);
+  }
+
   // Vacuum pressure sensor
   void set_vacuum_sensor(int port) {
     vacuum_sensor_ = make_unique<frc::AnalogInput>(port);
@@ -257,6 +267,11 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
           (vacuum_sensor_->GetVoltage() - kMinVoltage) /
           (kMaxVoltage - kMinVoltage);
 
+      superstructure_message->platform_left_detect =
+          !platform_left_detect_->Get();
+      superstructure_message->platform_right_detect =
+          !platform_right_detect_->Get();
+
       superstructure_message.Send();
     }
 
@@ -276,6 +291,9 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
  private:
   ::frc971::wpilib::AbsoluteEncoderAndPotentiometer elevator_encoder_,
       wrist_encoder_, stilts_encoder_;
+
+  ::std::unique_ptr<frc::DigitalInput> platform_left_detect_;
+  ::std::unique_ptr<frc::DigitalInput> platform_right_detect_;
 
   ::std::unique_ptr<frc::AnalogInput> vacuum_sensor_;
 
@@ -667,6 +685,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     reader.set_pwm_trigger(true);
     reader.set_vacuum_sensor(7);
+
+    reader.set_platform_right_detect(make_unique<frc::DigitalInput>(6));
+    reader.set_platform_left_detect(make_unique<frc::DigitalInput>(7));
 
     reader.set_autonomous_mode(0, make_unique<frc::DigitalInput>(22));
     reader.set_autonomous_mode(0, make_unique<frc::DigitalInput>(23));
