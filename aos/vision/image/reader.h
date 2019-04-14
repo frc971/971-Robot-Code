@@ -33,6 +33,7 @@ class Reader {
   int fd() { return fd_; }
 
   bool SetCameraControl(uint32_t id, const char *name, int value);
+  bool SetExposure(int abs_exp);
 
  private:
   void QueueBuffer(v4l2_buffer *buf);
