@@ -112,7 +112,11 @@ void Motor::Start() {
 #define DO_PULSE_SWEEP 0
 #define PRINT_TIMING 0
 
-void Motor::CycleFixedPhaseInterupt() {
+// An on-width of 60 with 30V in means about 50A through the motor and about
+// 30W total power dumped by the motor for the big one.
+// For the small one, an on-width of 120/3000 with 14V in means about 2A
+// through the motor.
+void Motor::CycleFixedPhaseInterupt(int period) {
   pwm_ftm_->SC &= ~FTM_SC_TOF;
   // Step through all the phases one by one in a loop.  This should slowly move
   // the trigger.
@@ -132,24 +136,18 @@ void Motor::CycleFixedPhaseInterupt() {
   }
   phase_to_fire = 0;
 
-  // An on-width of 60 with 30V in means about 50A through the motor and about
-  // 30W total power dumped by the motor for the big one.
-  // For the small one, an on-width of 120/3000 with 14V in means about 2A
-  // through the motor.
-  //constexpr int kPhaseFireWidth = 80;
-  constexpr int kPhaseFireWidth = 80;
   output_registers_[0][0] = 0;
-  output_registers_[0][2] = phase_to_fire == 0 ? kPhaseFireWidth : 0;
+  output_registers_[0][2] = phase_to_fire == 0 ? period : 0;
 
   const float switching_points_max = static_cast<float>(counts_per_cycle());
   switching_points_ratio_[0] =
       static_cast<float>(output_registers_[0][2]) / switching_points_max;
   output_registers_[1][0] = 0;
-  output_registers_[1][2] = phase_to_fire == 1 ? kPhaseFireWidth : 0;
+  output_registers_[1][2] = phase_to_fire == 1 ? period : 0;
   switching_points_ratio_[1] =
       static_cast<float>(output_registers_[1][2]) / switching_points_max;
   output_registers_[2][0] = 0;
-  output_registers_[2][2] = phase_to_fire == 2 ? kPhaseFireWidth : 0;
+  output_registers_[2][2] = phase_to_fire == 2 ? period : 0;
   switching_points_ratio_[2] =
       static_cast<float>(output_registers_[2][2]) / switching_points_max;
 

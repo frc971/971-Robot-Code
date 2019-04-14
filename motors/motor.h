@@ -134,7 +134,7 @@ class Motor final {
                         uint32_t captured_wrapped_encoder);
 
   // Runs each phase at a fixed duty cycle.
-  void CycleFixedPhaseInterupt();
+  void CycleFixedPhaseInterupt(int period = 80);
 
   void SetGoalCurrent(float goal_current) {
     DisableInterrupts disable_interrupts;
