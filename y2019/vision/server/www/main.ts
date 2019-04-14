@@ -18,8 +18,23 @@ class Visualiser {
   private targetTheta = 0;
   private cameraFrames : Frame[];
 
+  private wrist: number = -1;
+  private elevator: number = -1;
+  private intake: number = -1;
+  private stilts: number = -1;
+
+  private wrist_div: HTMLDivElement;
+  private elevator_div: HTMLDivElement;
+  private intake_div: HTMLDivElement;
+  private stilts_div: HTMLDivElement;
+
   constructor() {
     const canvas = <HTMLCanvasElement>document.getElementById('field');
+    this.wrist_div = <HTMLDivElement>document.getElementById('wrist');
+    this.elevator_div = <HTMLDivElement>document.getElementById('elevator');
+    this.intake_div = <HTMLDivElement>document.getElementById('intake');
+    this.stilts_div = <HTMLDivElement>document.getElementById('stilts');
+
     const ctx = canvas.getContext('2d');
 
     const server = location.host;
@@ -45,6 +60,11 @@ class Visualiser {
         this.targetTheta = j.lineFollowDebug.goalTarget.theta;
       }
       this.cameraFrames = j.cameraDebug;
+
+      this.wrist = j.sensors.wrist;
+      this.elevator = j.sensors.elevator;
+      this.intake = j.sensors.intake;
+      this.stilts = j.sensors.stilts;
     });
     socket.addEventListener('close', (event) => {
       setTimeout(() => {
@@ -66,6 +86,11 @@ class Visualiser {
     const M_TO_PX = size / FIELD_WIDTH
     ctx.scale(M_TO_PX, M_TO_PX);
     ctx.lineWidth = 1 / M_TO_PX;
+
+    this.wrist_div.textContent = "";
+    this.elevator_div.textContent = "";
+    this.intake_div.textContent = "";
+    this.stilts_div.textContent = "";
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
@@ -82,6 +107,13 @@ class Visualiser {
     }
     drawTarget(ctx, this.targetX, this.targetY, this.targetTheta);
     ctx.restore();
+
+    // Now update the superstructure positions.
+    this.wrist_div.textContent = this.wrist.toFixed(3);
+    this.elevator_div.textContent = this.elevator.toFixed(3);
+    this.intake_div.textContent = this.intake.toFixed(3);
+    this.stilts_div.textContent = this.stilts.toFixed(3);
+
     window.requestAnimationFrame(() => this.draw(ctx));
   }
 }

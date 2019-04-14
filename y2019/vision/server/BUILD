@@ -56,5 +56,6 @@ cc_binary(
         "//third_party/seasocks",
         "//y2019:constants",
         "//y2019/control_loops/drivetrain:camera_queue",
+        "//y2019/control_loops/superstructure:superstructure_queue",
     ],
 )

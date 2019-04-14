@@ -2,9 +2,69 @@
 <html>
   <head>
     <title>Vision Debug Server</title>
+    <style type="text/css">
+      * {margin: 0; padding: 0;}
+      #field {
+        float: left;
+        display: inline-block;
+        border: 1px solid;
+      }
+      #debugdata {
+        float: right;
+        display: inline-block;
+      }
+      .dof_container {
+        padding: 5px;
+        overflow: hidden;
+      }
+      .dof_name {
+        float: left;
+        padding-right: 15px;
+        display: inline-block;
+      }
+      .dof {
+        float: right;
+        display: inline-block;
+      }
+    </style>
   </head>
   <body style="overflow:hidden">
-    <canvas id="field" style="border: 1px solid"></canvas>
+    <div style="overflow:hidden">
+      <canvas id="field"></canvas>
+      <div id="debugdata">
+        <div class="dof_container">
+          <div class="dof_name">
+            wrist
+          </div>
+          <div id="wrist" class="dof">
+          </div>
+        </div>
+
+        <div class="dof_container">
+          <div class="dof_name">
+            elevator
+          </div>
+          <div id="elevator" class="dof">
+          </div>
+        </div>
+
+        <div class="dof_container">
+          <div class="dof_name">
+            intake
+          </div>
+          <div id="intake" class="dof">
+          </div>
+        </div>
+
+        <div class="dof_container">
+          <div class="dof_name">
+            stilts
+          </div>
+          <div id="stilts" class="dof">
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
   <script src="visualizer_bundle.min.js"></script>
 </html>

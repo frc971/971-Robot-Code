@@ -20,6 +20,7 @@
 #include "seasocks/WebSocket.h"
 #include "y2019/constants.h"
 #include "y2019/control_loops/drivetrain/camera.q.h"
+#include "y2019/control_loops/superstructure/superstructure.q.h"
 #include "y2019/vision/server/server_data.pb.h"
 
 namespace y2019 {
@@ -97,6 +98,8 @@ class UpdateData : public seasocks::Server::Runnable {
 void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
   auto &camera_frames = y2019::control_loops::drivetrain::camera_frames;
   auto &drivetrain_status = frc971::control_loops::drivetrain_queue.status;
+  auto &superstructure_status =
+      ::y2019::control_loops::superstructure::superstructure_queue.status;
 
   std::array<LocalCameraFrame, 5> latest_frames;
   std::array<aos::monotonic_clock::time_point, 5> last_target_time;
@@ -106,7 +109,8 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
   while (true) {
     camera_frames.FetchNextBlocking();
     drivetrain_status.FetchLatest();
-    if (!drivetrain_status.get()) {
+    superstructure_status.FetchLatest();
+    if (!drivetrain_status.get() || !superstructure_status.get()) {
       // Try again if we don't have any drivetrain statuses.
       continue;
     }
@@ -185,6 +189,13 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
           pose->set_theta(target_pose.abs_theta());
         }
       }
+
+      Sensors *sensors = debug_data.mutable_sensors();
+      sensors->set_wrist(superstructure_status->wrist.position);
+      sensors->set_elevator(superstructure_status->elevator.position);
+      sensors->set_intake(superstructure_status->intake.position);
+      sensors->set_stilts(superstructure_status->stilts.position);
+
       ::std::string json;
       google::protobuf::util::MessageToJsonString(debug_data, &json);
       server->execute(
