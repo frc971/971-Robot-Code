@@ -1,21 +1,149 @@
-language: cpp
-compiler:
-  - gcc
-  - clang
-before_install:
-  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-  - sudo add-apt-repository ppa:h-rayflood/llvm -y
-  - sudo apt-get update -qq
+language: generic
+
+dist: xenial
+
+matrix:
+    include:
+    - env: CXX=g++-8 CC=gcc-8
+      addons:
+        apt:
+          packages:
+            - g++-8
+            - valgrind
+          sources: &sources
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty
+            - llvm-toolchain-xenial-8
+            - llvm-toolchain-xenial-7
+            - llvm-toolchain-xenial-6.0
+            - llvm-toolchain-xenial-5.0
+            - llvm-toolchain-trusty-4.0
+            - llvm-toolchain-trusty-3.9
+            - llvm-toolchain-precise-3.8
+            - llvm-toolchain-precise-3.7
+            - llvm-toolchain-precise-3.6
+    - env: CXX=g++-7 CC=gcc-7
+      addons:
+        apt:
+          packages:
+            - g++-7
+            - valgrind
+          sources: *sources
+    - env: CXX=g++-6 CC=gcc-6 EXTRA_CMAKE=-DDEFLATE_SUPPORT=Off
+      addons:
+        apt:
+          packages:
+            - g++-6
+            - valgrind
+          sources: *sources
+    - env: CXX=g++-6 CC=gcc-6
+      addons:
+        apt:
+          packages:
+            - g++-6
+            - valgrind
+          sources: *sources
+    - env: CXX=g++-5 CC=gcc-5
+      addons:
+        apt:
+          packages:
+            - g++-5
+            - valgrind
+          sources: *sources
+    - env: CXX=g++-4.9 CC=gcc-4.9
+      addons:
+        apt:
+          packages:
+            - g++-4.9
+            - valgrind
+          sources: *sources
+    - env: CXX=clang++-8 CC=clang-8
+      addons:
+        apt:
+          packages:
+            - clang-8
+            - libc++-8-dev
+            - libc++abi-8-dev
+            - valgrind
+          sources: *sources
+    - env: CXX=clang++-7 CC=clang-7
+      addons:
+        apt:
+          packages:
+            - clang-7
+            - libc++-7-dev
+            - libc++abi-7-dev
+            - valgrind
+          sources: *sources
+    - env: CXX=clang++-6.0 CC=clang-6.0
+      addons:
+        apt:
+          packages:
+            - clang-6.0
+            - libc++-dev
+            - valgrind
+          sources: *sources
+    - env: CXX=clang++-5.0 CC=clang-5.0
+      addons:
+        apt:
+          packages:
+            - clang-5.0
+            - libc++-dev
+            - valgrind
+          sources: *sources
+    - env: CXX=clang++-4.0 CC=clang-4.0
+      addons:
+        apt:
+          packages:
+            - clang-4.0
+            - libc++-dev
+            - valgrind
+          sources: *sources
+    - env: CXX=clang++-3.9 CC=clang-3.9 EXTRA_CMAKE=-DCOVERAGE=Off
+      addons:
+        apt:
+          packages:
+            - clang-3.9
+            - libc++-dev
+            - valgrind
+          sources: *sources
+    - env: CXX=clang++-3.8 CC=clang-3.8
+      addons:
+        apt:
+          packages:
+            - clang-3.8
+            - libc++-dev
+            - valgrind
+          sources: *sources
+    - env: CXX=clang++-3.7 CC=clang-3.7
+      addons:
+        apt:
+          packages:
+            - clang-3.7
+            - libc++-dev
+            - valgrind
+          sources: *sources
+    - env: CXX=clang++-3.6 CC=clang-3.6
+      addons:
+        apt:
+          packages:
+            - clang-3.6
+            - libc++-dev
+            - valgrind
+          sources: *sources
+
 install:
-  - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.7; fi
-  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.7" CC="gcc-4.7"; fi
-  - if [ "$CXX" = "clang++" ]; then sudo apt-get install -qq --allow-unauthenticated clang-3.4; fi
-  - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.4" CC="clang-3.4"; fi
-  - wget "https://googlemock.googlecode.com/files/gmock-1.7.0.zip"
-  - unzip gmock-1.7.0.zip
-  - sudo apt-get install valgrind
+    - if [[ "$CXX" == clang* ]]; then export CXXFLAGS="-stdlib=libc++"; fi
+    - JOBS=2
+
+before_script:
+    - cmake --version
+    - cmake . -Bbuild -DCMAKE_BUILD_TYPE=Release -DCOVERAGE=On ${EXTRA_CMAKE}
+    - cmake --build build -- -j${JOBS}
+
 script:
-  - autoconf
-  - ./configure --with-gmock=gmock-1.7.0
-  - make
-  - make test
+    - cd build
+    - cmake --build . --target unittest
+    - ctest -D ExperimentalBuild -j${JOBS}
+    - ctest -D ExperimentalMemCheck -j${JOBS}
+    - bash <(curl -s https://codecov.io/bash)

@@ -1,4 +1,4 @@
-// Copyright (c) 2013, Matt Godbolt
+// Copyright (c) 2013-2017, Matt Godbolt
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -49,56 +49,54 @@
 #include <sys/epoll.h>
 
 using namespace seasocks;
-using namespace std;
 
-class MyHandler: public WebSocket::Handler {
+class MyHandler : public WebSocket::Handler {
 public:
-    MyHandler(Server* server) : _server(server), _currentValue(0) {
+    explicit MyHandler(Server* server)
+            : _server(server), _currentValue(0) {
         setValue(1);
     }
 
-    virtual void onConnect(WebSocket* connection) {
+    virtual void onConnect(WebSocket* connection) override {
         _connections.insert(connection);
         connection->send(_currentSetValue.c_str());
-        cout << "Connected: " << connection->getRequestUri()
-                << " : " << formatAddress(connection->getRemoteAddress())
-                << endl;
-        cout << "Credentials: " << *(connection->credentials()) << endl;
+        std::cout << "Connected: " << connection->getRequestUri()
+                  << " : " << formatAddress(connection->getRemoteAddress())
+                  << "\nCredentials: " << *(connection->credentials()) << "\n";
     }
 
-    virtual void onData(WebSocket* connection, const char* data) {
+    virtual void onData(WebSocket* connection, const char* data) override {
         if (0 == strcmp("die", data)) {
             _server->terminate();
             return;
         }
         if (0 == strcmp("close", data)) {
-            cout << "Closing.." << endl;
+            std::cout << "Closing..\n";
             connection->close();
-            cout << "Closed." << endl;
+            std::cout << "Closed.\n";
             return;
         }
 
-        int value = atoi(data) + 1;
+        const int value = std::stoi(data) + 1;
         if (value > _currentValue) {
             setValue(value);
-            for (auto connection : _connections) {
-                connection->send(_currentSetValue.c_str());
+            for (auto c : _connections) {
+                c->send(_currentSetValue.c_str());
             }
         }
     }
 
-    virtual void onDisconnect(WebSocket* connection) {
+    virtual void onDisconnect(WebSocket* connection) override {
         _connections.erase(connection);
-        cout << "Disconnected: " << connection->getRequestUri()
-                << " : " << formatAddress(connection->getRemoteAddress())
-                << endl;
+        std::cout << "Disconnected: " << connection->getRequestUri()
+                  << " : " << formatAddress(connection->getRemoteAddress()) << "\n";
     }
 
 private:
-    set<WebSocket*> _connections;
+    std::set<WebSocket*> _connections;
     Server* _server;
     int _currentValue;
-    string _currentSetValue;
+    std::string _currentSetValue;
 
     void setValue(int value) {
         _currentValue = value;
@@ -106,42 +104,44 @@ private:
     }
 };
 
-int main(int argc, const char* argv[]) {
-    shared_ptr<Logger> logger(new PrintfLogger(Logger::DEBUG));
+int main(int /*argc*/, const char* /*argv*/[]) {
+    auto logger = std::make_shared<PrintfLogger>(Logger::Level::Debug);
 
     Server server(logger);
 
-    shared_ptr<MyHandler> handler(new MyHandler(&server));
+    auto handler = std::make_shared<MyHandler>(&server);
     server.addWebSocketHandler("/ws", handler);
     server.setStaticPath("src/ws_test_web");
     if (!server.startListening(9090)) {
-        cerr << "couldn't start listening" << endl;
+        std::cerr << "couldn't start listening\n";
         return 1;
     }
     int myEpoll = epoll_create(10);
-    epoll_event wakeSeasocks = { EPOLLIN|EPOLLOUT|EPOLLERR, { &server } };
+    epoll_event wakeSeasocks = {EPOLLIN | EPOLLOUT | EPOLLERR, {&server}};
     epoll_ctl(myEpoll, EPOLL_CTL_ADD, server.fd(), &wakeSeasocks);
 
     // Also poll stdin
-    epoll_event wakeStdin = { EPOLLIN, { nullptr } };
+    epoll_event wakeStdin = {EPOLLIN, {nullptr}};
     epoll_ctl(myEpoll, EPOLL_CTL_ADD, STDIN_FILENO, &wakeStdin);
     auto prevFlags = fcntl(STDIN_FILENO, F_GETFL, 0);
     fcntl(STDIN_FILENO, F_SETFL, prevFlags | O_NONBLOCK);
 
-    cout << "Will echo anything typed in stdin: " << flush;
+    std::cout << "Will echo anything typed in stdin: " << std::flush;
     while (true) {
         constexpr auto maxEvents = 2;
         epoll_event events[maxEvents];
         auto res = epoll_wait(myEpoll, events, maxEvents, -1);
         if (res < 0) {
-            cerr << "epoll returned an error" << endl;
+            std::cerr << "epoll returned an error\n";
             return 1;
         }
         for (auto i = 0; i < res; ++i) {
             if (events[i].data.ptr == &server) {
                 auto seasocksResult = server.poll(0);
-                if (seasocksResult == Server::PollResult::Terminated) return 0;
-                if (seasocksResult == Server::PollResult::Error) return 1;
+                if (seasocksResult == Server::PollResult::Terminated)
+                    return 0;
+                if (seasocksResult == Server::PollResult::Error)
+                    return 1;
             } else if (events[i].data.ptr == nullptr) {
                 // Echo stdin to stdout to show we can read from that too.
                 for (;;) {
@@ -149,17 +149,17 @@ int main(int argc, const char* argv[]) {
                     auto numRead = ::read(STDIN_FILENO, buf, sizeof(buf));
                     if (numRead < 0) {
                         if (errno != EWOULDBLOCK && errno != EAGAIN) {
-                            cerr << "Error reading stdin" << endl;
+                            std::cerr << "Error reading stdin\n";
                             return 1;
                         }
                         break;
                     } else if (numRead > 0) {
                         auto written = write(STDOUT_FILENO, buf, numRead);
                         if (written != numRead) {
-                            cerr << "Truncated write" << endl;
+                            std::cerr << "Truncated write\n";
                         }
                     } else if (numRead == 0) {
-                        cerr << "EOF on stdin" << endl;
+                        std::cerr << "EOF on stdin\n";
                         return 0;
                     }
                 }

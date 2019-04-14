@@ -1,7 +1,8 @@
-SeaSocks - A tiny embeddable C++ HTTP and WebSocket server
+Seasocks - A tiny embeddable C++ HTTP and WebSocket server
 ==========================================================
 
 [![Build Status](https://travis-ci.org/mattgodbolt/seasocks.svg?branch=master)](https://travis-ci.org/mattgodbolt/seasocks)
+[![codecov](https://codecov.io/gh/mattgodbolt/seasocks/branch/master/graph/badge.svg)](https://codecov.io/gh/mattgodbolt/seasocks)
 
 Features
 --------
@@ -14,11 +15,11 @@ Features
 Stuff it doesn't do
 -------------------
 It's not nearly as configurable as Apache, Lighttpd, Nginx, Jetty, etc.
-It provides only very limited support for custom content generation (e.g. Servlets).
-It has been optimized for WebSocket based control.
+It provides only limited support for custom content generation (e.g. Servlets).
+It has been designed for WebSocket based control.
 
 Getting started
 ---------------
-Check out the [tutorial](https://github.com/mattgodbolt/seasocks/wiki/SeaSocks-quick-tutorial) on the wiki.
+Check out the [tutorial](https://github.com/mattgodbolt/seasocks/wiki/Seasocks-quick-tutorial) on the wiki.
 
 See [src/app/c/ws_test.cpp](https://github.com/mattgodbolt/seasocks/blob/master/src/app/c/ws_test.cpp) for an example.

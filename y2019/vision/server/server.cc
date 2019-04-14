@@ -9,12 +9,12 @@
 
 #include "aos/init.h"
 #include "aos/logging/logging.h"
+#include "aos/seasocks/seasocks_logger.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/pose.h"
-#include "internal/Embedded.h"
 #include "google/protobuf/util/json_util.h"
-#include "seasocks/PrintfLogger.h"
+#include "internal/Embedded.h"
 #include "seasocks/Server.h"
 #include "seasocks/StringUtil.h"
 #include "seasocks/WebSocket.h"
@@ -63,36 +63,6 @@ void WebsocketHandler::SendData(const std::string &data) {
     websocket->send(reinterpret_cast<const uint8_t *>(data.data()),
                     data.size());
   }
-}
-
-// TODO(Brian): Put this somewhere shared.
-class SeasocksLogger : public seasocks::PrintfLogger {
- public:
-  SeasocksLogger(Level min_level_to_log) : PrintfLogger(min_level_to_log) {}
-  void log(Level level, const char* message) override;
-};
-
-void SeasocksLogger::log(Level level, const char *message) {
-  // Convert Seasocks error codes to AOS.
-  log_level aos_level;
-  switch (level) {
-    case seasocks::Logger::INFO:
-      aos_level = INFO;
-      break;
-    case seasocks::Logger::WARNING:
-      aos_level = WARNING;
-      break;
-    case seasocks::Logger::ERROR:
-    case seasocks::Logger::SEVERE:
-      aos_level = ERROR;
-      break;
-    case seasocks::Logger::DEBUG:
-    case seasocks::Logger::ACCESS:
-    default:
-      aos_level = DEBUG;
-      break;
-  }
-  LOG(aos_level, "Seasocks: %s\n", message);
 }
 
 struct LocalCameraTarget {
@@ -234,7 +204,7 @@ int main(int, char *[]) {
   aos::InitNRT();
 
   seasocks::Server server(::std::shared_ptr<seasocks::Logger>(
-      new y2019::vision::SeasocksLogger(seasocks::Logger::INFO)));
+      new ::aos::seasocks::SeasocksLogger(seasocks::Logger::Level::Info)));
 
   auto websocket_handler = std::make_shared<y2019::vision::WebsocketHandler>();
   server.addWebSocketHandler("/ws", websocket_handler);
