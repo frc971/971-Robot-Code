@@ -47,10 +47,10 @@ class TargetSelector
   double TargetRadius() const override { return target_radius_; }
 
  private:
-  static constexpr double kFakeFov = M_PI * 0.7;
+  static constexpr double kFakeFov = M_PI * 0.9;
   // Longitudinal speed at which the robot must be going in order for us to make
   // a decision.
-  static constexpr double kMinDecisionSpeed = 0.7;  // m/s
+  static constexpr double kMinDecisionSpeed = 0.3;  // m/s
   Pose robot_pose_;
   Pose target_pose_;
   double target_radius_;

@@ -63,12 +63,15 @@ export function drawRobot(
 
   ctx.restore();
 
+  ctx.save();
+  ctx.lineWidth = 3.0 * ctx.lineWidth;
+  ctx.strokeStyle = 'yellow';
   for (let frame of cameraFrames) {
     if (frame.targets) {
       for (let target of frame.targets) {
-        ctx.strokeStyle = 'yellow';
         drawTarget(ctx, target.x, target.y, target.theta);
       }
     }
   }
+  ctx.restore();
 }

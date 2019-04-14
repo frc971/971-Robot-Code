@@ -459,7 +459,7 @@ void HybridEkf<Scalar>::InitializeMatrices() {
   // since the wheels aren't likely to slip much stopped.
   Q_continuous_(kX, kX) = 0.002;
   Q_continuous_(kY, kY) = 0.002;
-  Q_continuous_(kTheta, kTheta) = 0.0002;
+  Q_continuous_(kTheta, kTheta) = 0.0001;
   Q_continuous_(kLeftEncoder, kLeftEncoder) = ::std::pow(0.15, 2.0);
   Q_continuous_(kRightEncoder, kRightEncoder) = ::std::pow(0.15, 2.0);
   Q_continuous_(kLeftVelocity, kLeftVelocity) = ::std::pow(0.5, 2.0);

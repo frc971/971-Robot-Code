@@ -350,6 +350,41 @@ double BaseAutonomousActor::DriveDistanceLeft() {
   }
 }
 
+bool BaseAutonomousActor::SplineHandle::SplineDistanceRemaining(
+    double distance) {
+  drivetrain_queue.status.FetchLatest();
+  if (drivetrain_queue.status.get()) {
+    return drivetrain_queue.status->trajectory_logging.is_executing &&
+           drivetrain_queue.status->trajectory_logging.distance_remaining <
+               distance;
+  }
+  return false;
+}
+bool BaseAutonomousActor::SplineHandle::WaitForSplineDistanceRemaining(
+    double distance) {
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
+  while (true) {
+    if (base_autonomous_actor_->ShouldCancel()) {
+      return false;
+    }
+    phased_loop.SleepUntilNext();
+    if (SplineDistanceRemaining(distance)) {
+      return true;
+    }
+  }
+}
+
+void BaseAutonomousActor::LineFollowAtVelocity(double velocity) {
+  auto drivetrain_message = drivetrain_queue.goal.MakeMessage();
+  drivetrain_message->controller_type = 3;
+  // TODO(james): Currently the 4.0 is copied from the
+  // line_follow_drivetrain.cc, but it is somewhat year-specific, so we should
+  // factor it out in some way.
+  drivetrain_message->throttle = velocity / 4.0;
+  drivetrain_message.Send();
+}
+
 BaseAutonomousActor::SplineHandle BaseAutonomousActor::PlanSpline(
     const ::frc971::MultiSpline &spline, SplineDirection direction) {
   LOG(INFO, "Planning spline\n");
