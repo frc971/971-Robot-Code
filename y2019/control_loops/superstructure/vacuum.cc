@@ -1,8 +1,14 @@
 #include "y2019/control_loops/superstructure/vacuum.h"
 
+#include <chrono>
+
+#include "y2019/control_loops/superstructure/superstructure.q.h"
+
 namespace y2019 {
 namespace control_loops {
 namespace superstructure {
+
+namespace chrono = ::std::chrono;
 
 constexpr double Vacuum::kPumpVoltage;
 constexpr double Vacuum::kPumpHasPieceVoltage;
@@ -19,7 +25,10 @@ void Vacuum::Iterate(const SuctionGoal *unsafe_goal, float suction_pressure,
   filtered_pressure_ = kSuctionAlpha * suction_pressure +
                        (1 - kSuctionAlpha) * filtered_pressure_;
 
-  const bool new_has_piece = filtered_pressure_ < kVacuumThreshold;
+  const bool new_has_piece =
+      filtered_pressure_ < (filtered_had_piece_near_disabled_
+                                ? kVacuumOffThreshold
+                                : kVacuumOnThreshold);
 
   if (new_has_piece && !had_piece_) {
     time_at_last_acquisition_ = monotonic_now;
@@ -28,8 +37,13 @@ void Vacuum::Iterate(const SuctionGoal *unsafe_goal, float suction_pressure,
       monotonic_now > time_at_last_acquisition_ + kTimeAtHigherVoltage &&
       new_has_piece;
 
+  if (!output && *has_piece) {
+    last_disable_has_piece_time_ = monotonic_now;
+  }
+
+
   // If we've had the piece for enough time, go to lower pump_voltage
-  low_pump_voltage = *has_piece;
+  low_pump_voltage = *has_piece && filtered_pressure_ < kVacuumOnThreshold;
 
   if (unsafe_goal && output) {
     const bool release = !unsafe_goal->grab_piece;
@@ -63,6 +77,10 @@ void Vacuum::Iterate(const SuctionGoal *unsafe_goal, float suction_pressure,
     }
   }
   had_piece_ = new_has_piece;
+
+  filtered_had_piece_near_disabled_ =
+      *has_piece &&
+      monotonic_now < last_disable_has_piece_time_ + chrono::milliseconds(250);
 }
 
 }  // namespace superstructure
