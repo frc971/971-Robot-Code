@@ -105,6 +105,7 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
   std::array<aos::monotonic_clock::time_point, 5> last_target_time;
   last_target_time.fill(aos::monotonic_clock::epoch());
   aos::monotonic_clock::time_point last_send_time = aos::monotonic_clock::now();
+  DebugData debug_data;
 
   while (true) {
     camera_frames.FetchNextBlocking();
@@ -143,17 +144,40 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
       }
     }
 
+    frc971::control_loops::TypedPose<double> robot_pose(
+        {drivetrain_status->x, drivetrain_status->y, 0},
+        drivetrain_status->theta);
+    for (size_t ii = 0; ii < latest_frames.size(); ++ii) {
+      CameraDebug *camera_debug = debug_data.add_camera_debug();
+      LocalCameraFrame cur_frame = latest_frames[ii];
+      constants::Values::CameraCalibration camera_info =
+          constants::GetValues().cameras[ii];
+      frc971::control_loops::TypedPose<double> camera_pose = camera_info.pose;
+      camera_pose.set_base(&robot_pose);
+
+      camera_debug->set_current_frame_age(
+          ::std::chrono::duration_cast<::std::chrono::duration<double>>(
+              now - cur_frame.capture_time)
+              .count());
+      camera_debug->set_time_since_last_target(
+          ::std::chrono::duration_cast<::std::chrono::duration<double>>(
+              now - last_target_time[ii])
+              .count());
+      for (const auto &target : cur_frame.targets) {
+        frc971::control_loops::TypedPose<double> target_pose(
+            &camera_pose, {target.x, target.y, 0}, target.theta);
+        Pose *pose = camera_debug->add_targets();
+        pose->set_x(target_pose.abs_pos().x());
+        pose->set_y(target_pose.abs_pos().y());
+        pose->set_theta(target_pose.abs_theta());
+      }
+    }
+
     if (now > last_send_time + std::chrono::milliseconds(100)) {
-      // TODO(james): Use protobuf or the such to generate JSON rather than
-      // doing so manually.
       last_send_time = now;
-      DebugData debug_data;
       debug_data.mutable_robot_pose()->set_x(drivetrain_status->x);
       debug_data.mutable_robot_pose()->set_y(drivetrain_status->y);
       debug_data.mutable_robot_pose()->set_theta(drivetrain_status->theta);
-      frc971::control_loops::TypedPose<double> robot_pose(
-          {drivetrain_status->x, drivetrain_status->y, 0},
-          drivetrain_status->theta);
       {
         LineFollowDebug *line_debug = debug_data.mutable_line_follow_debug();
         line_debug->set_frozen(drivetrain_status->line_follow_logging.frozen);
@@ -166,29 +190,6 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
         line_debug->mutable_goal_target()->set_theta(
             drivetrain_status->line_follow_logging.theta);
       }
-      for (size_t ii = 0; ii < latest_frames.size(); ++ii) {
-        CameraDebug *camera_debug = debug_data.add_camera_debug();
-        LocalCameraFrame cur_frame = latest_frames[ii];
-        constants::Values::CameraCalibration camera_info =
-            constants::GetValues().cameras[ii];
-        frc971::control_loops::TypedPose<double> camera_pose = camera_info.pose;
-        camera_pose.set_base(&robot_pose);
-
-        camera_debug->set_current_frame_age(
-            ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-                now - cur_frame.capture_time).count());
-        camera_debug->set_time_since_last_target(
-            ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-                now - last_target_time[ii]).count());
-        for (const auto &target : cur_frame.targets) {
-          frc971::control_loops::TypedPose<double> target_pose(
-              &camera_pose, {target.x, target.y, 0}, target.theta);
-          Pose *pose = camera_debug->add_targets();
-          pose->set_x(target_pose.abs_pos().x());
-          pose->set_y(target_pose.abs_pos().y());
-          pose->set_theta(target_pose.abs_theta());
-        }
-      }
 
       Sensors *sensors = debug_data.mutable_sensors();
       sensors->set_wrist(superstructure_status->wrist.position);
@@ -200,6 +201,8 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
       google::protobuf::util::MessageToJsonString(debug_data, &json);
       server->execute(
           std::make_shared<UpdateData>(websocket_handler, ::std::move(json)));
+
+      debug_data.Clear();
     }
   }
 }
