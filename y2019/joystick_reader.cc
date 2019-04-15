@@ -431,10 +431,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
     if (new_superstructure_goal->stilts.unsafe_goal > kDeployStiltPosition &&
         superstructure_queue.status->stilts.position >= kDeployStiltPosition) {
       was_above_ = true;
-    } else if ((superstructure_queue.position->platform_left_detect ||
+    } else if ((superstructure_queue.position->platform_left_detect &&
                 superstructure_queue.position->platform_right_detect) &&
                !data.IsPressed(kDeployStilt) && !data.IsPressed(kFallOver)) {
-      // TODO(austin): Should make this && rather than ||
       was_above_ = false;
     }
 
