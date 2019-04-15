@@ -118,5 +118,41 @@ TEST_F(RingBufferTest, ResetWorks) {
   }
 }
 
+// Test that an iterator over the buffer works.
+TEST_F(RingBufferTest, Iterator) {
+  // Over fill it, and then clear it out.
+  ASSERT_TRUE(buffer_.empty());
+
+  for (int i = 0; i < 12; ++i) {
+    buffer_.Push(i);
+  }
+
+  int i = 0;
+  for (int element : buffer_) {
+    EXPECT_EQ(i + 2, element);
+    ++i;
+  }
+  EXPECT_EQ(i, buffer_.size());
+}
+
+// Test that a const iterator over the buffer works.
+TEST_F(RingBufferTest, CIterator) {
+  // Over fill it, and then clear it out.
+  ASSERT_TRUE(buffer_.empty());
+
+  for (int i = 0; i < 12; ++i) {
+    buffer_.Push(i);
+  }
+
+  const RingBuffer<int, 10> &cbuffer = buffer_;
+
+  int i = 0;
+  for (const int element : cbuffer) {
+    EXPECT_EQ(i + 2, element);
+    ++i;
+  }
+  EXPECT_EQ(i, buffer_.size());
+}
+
 }  // namespace testing
 }  // namespace aos
