@@ -55,6 +55,74 @@ class RingBuffer {
   // Clears all the data out of the buffer.
   void Reset() { size_ = 0; }
 
+  class iterator {
+   public:
+    using iterator_category = ::std::forward_iterator_tag;
+    using value_type = Data;
+    using difference_type = ::std::ptrdiff_t;
+    using pointer = Data *;
+    using reference = Data &;
+
+    explicit iterator(RingBuffer *buffer, size_t index)
+        : buffer_(buffer), index_(index) {}
+
+    iterator &operator++() {
+      ++index_;
+      return *this;
+    }
+    iterator operator++(int) {
+      iterator retval = *this;
+      ++(*this);
+      return retval;
+    }
+    bool operator==(iterator other) const {
+      return buffer_ == other.buffer_ && index_ == other.index_;
+    }
+    bool operator!=(iterator other) const { return !(*this == other); }
+    reference operator*() const { return (*buffer_)[index_]; }
+
+   private:
+    RingBuffer *buffer_;
+    size_t index_;
+  };
+
+  class const_iterator {
+   public:
+    using iterator_category = ::std::forward_iterator_tag;
+    using value_type = Data;
+    using difference_type = ::std::ptrdiff_t;
+    using pointer = Data *;
+    using reference = Data &;
+
+    explicit const_iterator(const RingBuffer *buffer, size_t index)
+        : buffer_(buffer), index_(index) {}
+
+    const_iterator &operator++() {
+      ++index_;
+      return *this;
+    }
+    const_iterator operator++(int) {
+      const_iterator retval = *this;
+      ++(*this);
+      return retval;
+    }
+    bool operator==(const_iterator other) const {
+      return buffer_ == other.buffer_ && index_ == other.index_;
+    }
+    bool operator!=(const_iterator other) const { return !(*this == other); }
+    const Data &operator*() const { return (*buffer_)[index_]; }
+
+   private:
+    const RingBuffer *buffer_;
+    size_t index_;
+  };
+
+  iterator begin() { return iterator(this, 0); }
+  iterator end() { return iterator(this, size()); }
+
+  const_iterator begin() const { return const_iterator(this, 0); }
+  const_iterator end() const { return const_iterator(this, size()); }
+
  private:
   ::std::array<Data, buffer_size> data_;
 
