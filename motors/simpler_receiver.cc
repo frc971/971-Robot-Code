@@ -10,7 +10,6 @@
 #include "frc971/control_loops/drivetrain/polydrivetrain.h"
 #include "motors/core/kinetis.h"
 #include "motors/core/time.h"
-#include "motors/peripheral/can.h"
 #include "motors/peripheral/configuration.h"
 #include "motors/print/print.h"
 #include "motors/seems_reasonable/drivetrain_dog_motor_plant.h"
@@ -104,158 +103,7 @@ float convert_input_width(int channel) {
          1.0f;
 }
 
-// Sends a SET_RPM command to the specified VESC.
-// Note that sending 6 VESC commands every 1ms doesn't quite fit in the CAN
-// bandwidth.
-void vesc_set_rpm(int vesc_id, float rpm) {
-  const int32_t rpm_int = rpm;
-  uint32_t id = CAN_EFF_FLAG;
-  id |= vesc_id;
-  id |= (0x03 /* SET_RPM */) << 8;
-  uint8_t data[4] = {
-      static_cast<uint8_t>((rpm_int >> 24) & 0xFF),
-      static_cast<uint8_t>((rpm_int >> 16) & 0xFF),
-      static_cast<uint8_t>((rpm_int >> 8) & 0xFF),
-      static_cast<uint8_t>((rpm_int >> 0) & 0xFF),
-  };
-  can_send(id, data, sizeof(data), 2 + vesc_id);
-}
-
-// Sends a SET_CURRENT command to the specified VESC.
-// current is in amps.
-// Note that sending 6 VESC commands every 1ms doesn't quite fit in the CAN
-// bandwidth.
-void vesc_set_current(int vesc_id, float current) {
-  constexpr float kMaxCurrent = 80.0f;
-  const int32_t current_int =
-      ::std::max(-kMaxCurrent, ::std::min(kMaxCurrent, current)) * 1000.0f;
-  uint32_t id = CAN_EFF_FLAG;
-  id |= vesc_id;
-  id |= (0x01 /* SET_CURRENT */) << 8;
-  uint8_t data[4] = {
-      static_cast<uint8_t>((current_int >> 24) & 0xFF),
-      static_cast<uint8_t>((current_int >> 16) & 0xFF),
-      static_cast<uint8_t>((current_int >> 8) & 0xFF),
-      static_cast<uint8_t>((current_int >> 0) & 0xFF),
-  };
-  can_send(id, data, sizeof(data), 2 + vesc_id);
-}
-
-// Sends a SET_DUTY command to the specified VESC.
-// duty is from -1 to 1.
-// Note that sending 6 VESC commands every 1ms doesn't quite fit in the CAN
-// bandwidth.
-void vesc_set_duty(int vesc_id, float duty) {
-  constexpr int32_t kMaxDuty = 99999;
-  const int32_t duty_int = ::std::max(
-      -kMaxDuty, ::std::min(kMaxDuty, static_cast<int32_t>(duty * 100000.0f)));
-  uint32_t id = CAN_EFF_FLAG;
-  id |= vesc_id;
-  id |= (0x00 /* SET_DUTY */) << 8;
-  uint8_t data[4] = {
-      static_cast<uint8_t>((duty_int >> 24) & 0xFF),
-      static_cast<uint8_t>((duty_int >> 16) & 0xFF),
-      static_cast<uint8_t>((duty_int >> 8) & 0xFF),
-      static_cast<uint8_t>((duty_int >> 0) & 0xFF),
-  };
-  can_send(id, data, sizeof(data), 2 + vesc_id);
-}
-
-// TODO(Brian): Move these two test functions somewhere else.
-__attribute__((unused)) void DoVescTest() {
-  uint32_t time = micros();
-  while (true) {
-    for (int i = 0; i < 6; ++i) {
-      const uint32_t end = time_add(time, 500000);
-      while (true) {
-        const bool done = time_after(micros(), end);
-        float current;
-        if (done) {
-          current = -6;
-        } else {
-          current = 6;
-        }
-        vesc_set_current(i, current);
-        if (done) {
-          break;
-        }
-        delay(5);
-      }
-      time = end;
-    }
-  }
-}
-
-__attribute__((unused)) void DoReceiverTest2() {
-  static constexpr float kMaxRpm = 10000.0f;
-  while (true) {
-    const bool flip = convert_input_width(2) > 0;
-
-    {
-      const float value = convert_input_width(0);
-
-      {
-        float rpm = ::std::min(0.0f, value) * kMaxRpm;
-        if (flip) {
-          rpm *= -1.0f;
-        }
-        vesc_set_rpm(0, rpm);
-      }
-
-      {
-        float rpm = ::std::max(0.0f, value) * kMaxRpm;
-        if (flip) {
-          rpm *= -1.0f;
-        }
-        vesc_set_rpm(1, rpm);
-      }
-    }
-
-    {
-      const float value = convert_input_width(1);
-
-      {
-        float rpm = ::std::min(0.0f, value) * kMaxRpm;
-        if (flip) {
-          rpm *= -1.0f;
-        }
-        vesc_set_rpm(2, rpm);
-      }
-
-      {
-        float rpm = ::std::max(0.0f, value) * kMaxRpm;
-        if (flip) {
-          rpm *= -1.0f;
-        }
-        vesc_set_rpm(3, rpm);
-      }
-    }
-
-    {
-      const float value = convert_input_width(4);
-
-      {
-        float rpm = ::std::min(0.0f, value) * kMaxRpm;
-        if (flip) {
-          rpm *= -1.0f;
-        }
-        vesc_set_rpm(4, rpm);
-      }
-
-      {
-        float rpm = ::std::max(0.0f, value) * kMaxRpm;
-        if (flip) {
-          rpm *= -1.0f;
-        }
-        vesc_set_rpm(5, rpm);
-      }
-    }
-    // Give the CAN frames a chance to go out.
-    delay(5);
-  }
-}
-
-void SetupPwmFtm(BigFTM *ftm) {
+void SetupPwmInFtm(BigFTM *ftm) {
   ftm->MODE = FTM_MODE_WPDIS;
   ftm->MODE = FTM_MODE_WPDIS | FTM_MODE_FTMEN;
   ftm->SC = FTM_SC_CLKS(0) /* Disable counting for now */;
@@ -297,6 +145,87 @@ void SetupPwmFtm(BigFTM *ftm) {
             FTM_SC_PS(4) /* Prescaler=32 */;
 
   ftm->MODE &= ~FTM_MODE_WPDIS;
+}
+
+constexpr int kOutputCounts = 37500;
+constexpr int kOutputPrescalerShift = 5;
+
+void SetOutputWidth(int output, float ms) {
+  static constexpr float kScale = static_cast<float>(
+      static_cast<double>(kOutputCounts) / 20.0 /* milliseconds per period */);
+  const int width = static_cast<int>(ms * kScale + 0.5f);
+  switch (output) {
+    case 0:
+      FTM3->C0V = width - 1;
+      break;
+    case 1:
+      FTM3->C2V = width - 1;
+      break;
+    case 2:
+      FTM3->C3V = width - 1;
+      break;
+    case 3:
+      FTM3->C1V = width - 1;
+      break;
+  }
+  FTM3->PWMLOAD = FTM_PWMLOAD_LDOK;
+}
+
+// 1ms - 2ms (default for a VESC).
+void SetupPwmOutFtm(BigFTM *const pwm_ftm) {
+  // PWMSYNC doesn't matter because we set SYNCMODE down below.
+  pwm_ftm->MODE = FTM_MODE_WPDIS;
+  pwm_ftm->MODE = FTM_MODE_WPDIS | FTM_MODE_FTMEN;
+  pwm_ftm->SC = FTM_SC_CLKS(0) /* Disable counting for now */ |
+                FTM_SC_PS(kOutputPrescalerShift);
+
+  pwm_ftm->CNTIN = 0;
+  pwm_ftm->CNT = 0;
+  pwm_ftm->MOD = kOutputCounts - 1;
+
+  // High-true edge-aligned mode (turns on at start, off at match).
+  pwm_ftm->C0SC = FTM_CSC_MSB | FTM_CSC_ELSB;
+  pwm_ftm->C1SC = FTM_CSC_MSB | FTM_CSC_ELSB;
+  pwm_ftm->C2SC = FTM_CSC_MSB | FTM_CSC_ELSB;
+  pwm_ftm->C3SC = FTM_CSC_MSB | FTM_CSC_ELSB;
+  pwm_ftm->C4SC = FTM_CSC_MSB | FTM_CSC_ELSB;
+  pwm_ftm->C5SC = FTM_CSC_MSB | FTM_CSC_ELSB;
+  pwm_ftm->C6SC = FTM_CSC_MSB | FTM_CSC_ELSB;
+  pwm_ftm->C7SC = FTM_CSC_MSB | FTM_CSC_ELSB;
+
+  pwm_ftm->COMBINE = FTM_COMBINE_SYNCEN3 /* Synchronize updates usefully */ |
+                     FTM_COMBINE_SYNCEN2 /* Synchronize updates usefully */ |
+                     FTM_COMBINE_SYNCEN1 /* Synchronize updates usefully */ |
+                     FTM_COMBINE_SYNCEN0 /* Synchronize updates usefully */;
+
+  // Initialize all the channels to 0.
+  pwm_ftm->OUTINIT = 0;
+
+  // All of the channels are active high.
+  pwm_ftm->POL = 0;
+
+  pwm_ftm->SYNCONF =
+      FTM_SYNCONF_HWWRBUF /* Hardware trigger flushes switching points */ |
+      FTM_SYNCONF_SWWRBUF /* Software trigger flushes switching points */ |
+      FTM_SYNCONF_SWRSTCNT /* Software trigger resets the count */ |
+      FTM_SYNCONF_SYNCMODE /* Use the new synchronization mode */;
+
+  // Don't want any intermediate loading points.
+  pwm_ftm->PWMLOAD = 0;
+
+  // This has to happen after messing with SYNCONF, and should happen after
+  // messing with various other things so the values can get flushed out of the
+  // buffers.
+  pwm_ftm->SYNC = FTM_SYNC_SWSYNC /* Flush everything out right now */ |
+                  FTM_SYNC_CNTMAX /* Load new values at the end of the cycle */;
+  // Wait for the software synchronization to finish.
+  while (pwm_ftm->SYNC & FTM_SYNC_SWSYNC) {
+  }
+
+  pwm_ftm->SC = FTM_SC_TOIE /* Interrupt on overflow */ |
+                FTM_SC_CLKS(1) /* Use the system clock */ |
+                FTM_SC_PS(kOutputPrescalerShift);
+  pwm_ftm->MODE &= ~FTM_MODE_WPDIS;
 }
 
 extern "C" void ftm0_isr() {
@@ -391,11 +320,9 @@ extern "C" void pit3_isr() {
                (int)(output.right_voltage * 100));
       }
     }
-    vesc_set_duty(0, -output.left_voltage / 12.0f);
-    vesc_set_duty(1, -output.left_voltage / 12.0f);
 
-    vesc_set_duty(2, output.right_voltage / 12.0f);
-    vesc_set_duty(3, output.right_voltage / 12.0f);
+    SetOutputWidth(0, 1.5f - output.left_voltage / 12.0f * 0.5f);
+    SetOutputWidth(1, 1.5f + output.right_voltage / 12.0f * 0.5f);
   }
 }
 
@@ -422,7 +349,6 @@ extern "C" int main(void) {
   // more manageable.
   NVIC_SET_SANE_PRIORITY(IRQ_USBOTG, 0x7);
   NVIC_SET_SANE_PRIORITY(IRQ_FTM0, 0xa);
-  NVIC_SET_SANE_PRIORITY(IRQ_FTM3, 0xa);
   NVIC_SET_SANE_PRIORITY(IRQ_PIT_CH3, 0x5);
 
   // Builtin LED.
@@ -430,9 +356,21 @@ extern "C" int main(void) {
   PORTC_PCR5 = PORT_PCR_DSE | PORT_PCR_SRE | PORT_PCR_MUX(1);
   PERIPHERAL_BITBAND(GPIOC_PDDR, 5) = 1;
 
-  // Set up the CAN pins.
-  PORTA_PCR12 = PORT_PCR_DSE | PORT_PCR_MUX(2);
-  PORTA_PCR13 = PORT_PCR_DSE | PORT_PCR_MUX(2);
+  // PWM_OUT0
+  // FTM3_CH0
+  PORTD_PCR0 = PORT_PCR_DSE | PORT_PCR_MUX(4);
+
+  // PWM_OUT1
+  // FTM3_CH2
+  PORTD_PCR2 = PORT_PCR_DSE | PORT_PCR_MUX(4);
+
+  // PWM_OUT2
+  // FTM3_CH3
+  PORTD_PCR3 = PORT_PCR_DSE | PORT_PCR_MUX(4);
+
+  // PWM_OUT3
+  // FTM3_CH1
+  PORTD_PCR1 = PORT_PCR_DSE | PORT_PCR_MUX(4);
 
   // PWM_IN0
   // FTM0_CH1 (doesn't work)
@@ -473,9 +411,8 @@ extern "C" int main(void) {
   PIT_LDVAL3 = (BUS_CLOCK_FREQUENCY / 200) - 1;
   PIT_TCTRL3 = PIT_TCTRL_TIE | PIT_TCTRL_TEN;
 
-  can_init(0, 1);
-  SetupPwmFtm(FTM0);
-  SetupPwmFtm(FTM3);
+  SetupPwmInFtm(FTM0);
+  SetupPwmOutFtm(FTM3);
 
   PolyDrivetrain<float> polydrivetrain(GetDrivetrainConfig(), nullptr);
   global_polydrivetrain.store(&polydrivetrain, ::std::memory_order_release);
@@ -488,7 +425,6 @@ extern "C" int main(void) {
   PERIPHERAL_BITBAND(GPIOC_PDOR, 5) = 0;
 
   NVIC_ENABLE_IRQ(IRQ_FTM0);
-  NVIC_ENABLE_IRQ(IRQ_FTM3);
   NVIC_ENABLE_IRQ(IRQ_PIT_CH3);
   printf("Done starting up2\n");
 

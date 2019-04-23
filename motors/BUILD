@@ -157,7 +157,6 @@ cc_binary(
     deps = [
         ":util",
         "//motors/core",
-        "//motors/peripheral:can",
         "//motors/peripheral:configuration",
         "//motors/print:usb",
         "//motors/seems_reasonable:drivetrain_lib",
