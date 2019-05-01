@@ -17,7 +17,7 @@ namespace motors {
 namespace {
 
 struct Fet12AdcReadings {
-  // 1100 off, 3160 floored
+  // 1100 off, 3160 floored (without divider??)
   uint16_t throttle;
 };
 
@@ -156,7 +156,7 @@ extern "C" int main(void) {
       FTM_SC_CLKS(1) /* Use the system clock (not sure it matters) */ |
       FTM_SC_PS(0) /* Don't prescale the clock (not sure it matters) */;
 
-  encoder_ftm->MOD = 1023;
+  encoder_ftm->MOD = 4095;
 
   // I think you have to set this to something other than 0 for the quadrature
   // encoder mode to actually work? This is "input capture on rising edge only",
@@ -263,37 +263,38 @@ extern "C" int main(void) {
       DisableInterrupts disable_interrupts;
       adc_readings = AdcReadFet12(disable_interrupts);
     }
+    static constexpr int kThrottleMin = 700;
+    static constexpr int kThrottleMax = 2000;
+    //static constexpr int kThrottleMin = 1100;
+    //static constexpr int kThrottleMax = 3190;
     const float pedal_position = ::std::min(
         1.0f,
-        ::std::max(0.0f, static_cast<float>(adc_readings.throttle - 1200) /
-                             static_cast<float>(3120 - 1200)));
+        ::std::max(0.0f,
+                   static_cast<float>(adc_readings.throttle - kThrottleMin) /
+                       static_cast<float>(kThrottleMax - kThrottleMin)));
 
     const uint16_t new_encoder = FTM1->CNT;
     // Full speed is ~418.
     // Low gear is positive.
     int16_t encoder_delta =
         static_cast<int16_t>(new_encoder) - static_cast<int16_t>(old_encoder);
-    if (encoder_delta < -512) {
-      encoder_delta += 1024;
+    if (encoder_delta < -2048) {
+      encoder_delta += 4096;
     }
-    if (encoder_delta > 512) {
-      encoder_delta -= 1024;
+    if (encoder_delta > 2048) {
+      encoder_delta -= 4096;
     }
     old_encoder = new_encoder;
 
     // Positive -> low gear
     float speed = ::std::min(
-        1.0f, ::std::max(-1.0f, static_cast<float>(encoder_delta) / 418.0f));
+        1.0f,
+        ::std::max(-1.0f, static_cast<float>(encoder_delta) / 418.0f / 2.0f));
 
-    float out_command;
-    if (ReadButton()) {
-      out_command = pedal_position;
-    } else {
-      out_command = -pedal_position;
-    }
+    float out_command = pedal_position;
 
-    static constexpr float kMaxCurrentFull = 0.155f;
-    static constexpr float kMaxCurrentStopped = 0.29f;
+    static constexpr float kMaxCurrentFull = 0.14f;
+    static constexpr float kMaxCurrentStopped = 0.27f;
     float abs_speed;
     if (speed > 0.0f) {
       abs_speed = speed;
@@ -302,8 +303,8 @@ extern "C" int main(void) {
     }
     float max_current =
         abs_speed * (kMaxCurrentFull - kMaxCurrentStopped) + kMaxCurrentStopped;
-    if (abs_speed < 0.06f) {
-      max_current = 0.27f;
+    if (abs_speed < 0.042f) {
+      max_current = 0.4f;
     }
     if (speed > 0.0f) {
       out_command =
@@ -312,6 +313,11 @@ extern "C" int main(void) {
     } else {
       out_command = ::std::min(speed + 2.0f * max_current,
                                ::std::max(speed - max_current, out_command));
+    }
+    if (speed > 0.04f) {
+      // Force some command as long as we're rolling to avoid engaging motor
+      // braking.
+      out_command = ::std::max(0.10f, out_command);
     }
 
     static float slew_limited_command = 0.0f;
@@ -329,7 +335,7 @@ extern "C" int main(void) {
     SetOutputWidth(pwm_out);
 
     static int i = 0;
-    if (i == 100) {
+    if (i == 500) {
       i = 0;
       printf("enc %" PRIu32 " throttle %" PRIu16 " %d out %d %d %d\n",
              FTM1->CNT, adc_readings.throttle, ReadButton(),

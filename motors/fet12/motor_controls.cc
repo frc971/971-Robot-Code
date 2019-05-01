@@ -38,16 +38,15 @@ constexpr double kVcc = 31.5;
 // 3.6 and 1.15 are adjustments from calibrations.
 constexpr double Kv = 22000.0 * 2.0 * M_PI / 60.0 / 30.0 * 3.6 * 1.15;
 
-constexpr double kL = 3e-06;
+constexpr double kL = 5e-06;
 constexpr double kM = 0;
-constexpr double kR = 0.01008;
-constexpr float kAdiscrete_diagonal = 0.845354f;
+constexpr double kR = 0.0079;
+constexpr float kAdiscrete_diagonal = 0.92404f;
 constexpr float kAdiscrete_offdiagonal = 0.0f;
-constexpr float kBdiscrete_inv_diagonal = 0.0651811f;
+constexpr float kBdiscrete_inv_diagonal = 0.104002f;
 constexpr float kBdiscrete_inv_offdiagonal = 0.0f;
 constexpr double kOneAmpScalar = 1.46785;
-constexpr double kMaxOneAmpDrivingVoltage = 0.0265038;
-
+constexpr double kMaxOneAmpDrivingVoltage = 0.0434948;
 
 ::Eigen::Matrix<float, 3, 3> A_discrete() {
   ::Eigen::Matrix<float, 3, 3> r;
