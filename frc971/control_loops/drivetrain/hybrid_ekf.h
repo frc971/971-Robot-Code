@@ -469,7 +469,7 @@ void HybridEkf<Scalar>::InitializeMatrices() {
   Q_continuous_(kAngularError, kAngularError) = ::std::pow(2.0, 2.0);
 
   P_.setZero();
-  P_.diagonal() << 0.1, 0.1, 0.01, 0.02, 0.01, 0.02, 0.01, 1, 1, 0.03;
+  P_.diagonal() << 0.01, 0.01, 0.01, 0.02, 0.01, 0.02, 0.01, 1, 1, 0.03;
 
   H_encoders_and_gyro_.setZero();
   // Encoders are stored directly in the state matrix, so are a minor
