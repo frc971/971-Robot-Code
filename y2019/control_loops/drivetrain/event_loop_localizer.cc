@@ -54,6 +54,10 @@ void EventLoopLocalizer::Update(
     ::aos::monotonic_clock::time_point now, double left_encoder,
     double right_encoder, double gyro_rate,
     double /*longitudinal_accelerometer*/) {
+  CHECK(U.allFinite());
+  CHECK(::std::isfinite(left_encoder));
+  CHECK(::std::isfinite(right_encoder));
+  CHECK(::std::isfinite(gyro_rate));
   localizer_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate, U,
                                    now);
   while (frame_fetcher_.FetchNext()) {
