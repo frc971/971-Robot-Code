@@ -400,7 +400,13 @@ BaseAutonomousActor::SplineHandle BaseAutonomousActor::PlanSpline(
   drivetrain_queue.goal.FetchLatest();
 
   auto drivetrain_message = drivetrain_queue.goal.MakeMessage();
-  drivetrain_message->controller_type = 2;
+
+  int controller_type = 2;
+  if (drivetrain_queue.goal.get()) {
+    controller_type = drivetrain_queue.goal->controller_type;
+    drivetrain_message->throttle = drivetrain_queue.goal->throttle;
+  }
+  drivetrain_message->controller_type = controller_type;
 
   drivetrain_message->spline = spline;
   drivetrain_message->spline.spline_idx = spline_handle;
