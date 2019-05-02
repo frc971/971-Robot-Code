@@ -48,6 +48,7 @@ cc_binary(
         ":gen_embedded",
         ":server_data_proto",
         "//aos:init",
+        "//aos/containers:ring_buffer",
         "//aos/logging",
         "//aos/seasocks:seasocks_logger",
         "//aos/time",

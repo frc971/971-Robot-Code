@@ -7,6 +7,7 @@
 #include <set>
 #include <sstream>
 
+#include "aos/containers/ring_buffer.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/seasocks/seasocks_logger.h"
@@ -25,6 +26,8 @@
 
 namespace y2019 {
 namespace vision {
+
+namespace chrono = ::std::chrono;
 
 class WebsocketHandler : public seasocks::WebSocket::Handler {
  public:
@@ -75,7 +78,7 @@ struct LocalCameraFrame {
   std::vector<LocalCameraTarget> targets;
 
   bool IsValid(aos::monotonic_clock::time_point now) {
-    return capture_time + std::chrono::seconds(1) > now;
+    return capture_time + chrono::seconds(1) > now;
   }
 };
 
@@ -95,6 +98,41 @@ class UpdateData : public seasocks::Server::Runnable {
   const std::string data_;
 };
 
+struct DrivetrainPosition {
+  ::aos::monotonic_clock::time_point time;
+  double x;
+  double y;
+  double theta;
+};
+
+DrivetrainPosition ComputePosition(
+    const ::aos::RingBuffer<DrivetrainPosition, 200> &data,
+    ::aos::monotonic_clock::time_point time) {
+  DrivetrainPosition drivetrain_now{time, 0.0f, 0.0f, 0.0f};
+
+  const size_t after_index = ::std::max(
+      static_cast<size_t>(1),
+      static_cast<size_t>(::std::distance(
+          data.begin(),
+          ::std::lower_bound(
+              data.begin(), data.end(), drivetrain_now,
+              [](const DrivetrainPosition &a, const DrivetrainPosition &b) {
+                return a.time < b.time;
+              }))));
+  const size_t before_index = after_index - 1;
+
+  const DrivetrainPosition &before = data[before_index];
+  const DrivetrainPosition &after = data[after_index];
+
+  double alpha = static_cast<double>((time - before.time).count()) /
+                 static_cast<double>((after.time - before.time).count());
+  drivetrain_now.x = (1.0 - alpha) * before.x + alpha * after.x;
+  drivetrain_now.y = (1.0 - alpha) * before.y + alpha * after.y;
+  drivetrain_now.theta = (1.0 - alpha) * before.theta + alpha * after.theta;
+
+  return drivetrain_now;
+}
+
 void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
   auto &camera_frames = y2019::control_loops::drivetrain::camera_frames;
   auto &drivetrain_status = frc971::control_loops::drivetrain_queue.status;
@@ -106,10 +144,17 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
   last_target_time.fill(aos::monotonic_clock::epoch());
   aos::monotonic_clock::time_point last_send_time = aos::monotonic_clock::now();
   DebugData debug_data;
+  ::aos::RingBuffer<DrivetrainPosition, 200> drivetrain_log;
 
   while (true) {
     camera_frames.FetchNextBlocking();
-    drivetrain_status.FetchLatest();
+    while (drivetrain_status.FetchNext()) {
+      DrivetrainPosition drivetrain_position{
+          drivetrain_status->sent_time, drivetrain_status->x,
+          drivetrain_status->y, drivetrain_status->theta};
+
+      drivetrain_log.Push(drivetrain_position);
+    }
     superstructure_status.FetchLatest();
     if (!drivetrain_status.get() || !superstructure_status.get()) {
       // Try again if we don't have any drivetrain statuses.
@@ -124,7 +169,7 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
       if (new_frame.camera < latest_frames.size()) {
         latest_frames[new_frame.camera].capture_time =
             aos::monotonic_clock::time_point(
-                std::chrono::nanoseconds(new_frame.timestamp));
+                chrono::nanoseconds(new_frame.timestamp));
         latest_frames[new_frame.camera].targets.clear();
         if (new_frame.num_targets > 0) {
           last_target_time[new_frame.camera] =
@@ -144,24 +189,27 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
       }
     }
 
-    frc971::control_loops::TypedPose<double> robot_pose(
-        {drivetrain_status->x, drivetrain_status->y, 0},
-        drivetrain_status->theta);
     for (size_t ii = 0; ii < latest_frames.size(); ++ii) {
       CameraDebug *camera_debug = debug_data.add_camera_debug();
       LocalCameraFrame cur_frame = latest_frames[ii];
       constants::Values::CameraCalibration camera_info =
           constants::GetValues().cameras[ii];
       frc971::control_loops::TypedPose<double> camera_pose = camera_info.pose;
+
+      const DrivetrainPosition robot_position = ComputePosition(
+          drivetrain_log, cur_frame.capture_time);
+      const ::frc971::control_loops::TypedPose<double> robot_pose(
+          {robot_position.x, robot_position.y, 0}, robot_position.theta);
+
       camera_pose.set_base(&robot_pose);
 
       camera_debug->set_current_frame_age(
-          ::std::chrono::duration_cast<::std::chrono::duration<double>>(
+          chrono::duration_cast<chrono::duration<double>>(
               now - cur_frame.capture_time)
               .count());
       camera_debug->set_time_since_last_target(
-          ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-              now - last_target_time[ii])
+          chrono::duration_cast<chrono::duration<double>>(now -
+                                                          last_target_time[ii])
               .count());
       for (const auto &target : cur_frame.targets) {
         frc971::control_loops::TypedPose<double> target_pose(
@@ -173,7 +221,7 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
       }
     }
 
-    if (now > last_send_time + std::chrono::milliseconds(100)) {
+    if (now > last_send_time + chrono::milliseconds(100)) {
       last_send_time = now;
       debug_data.mutable_robot_pose()->set_x(drivetrain_status->x);
       debug_data.mutable_robot_pose()->set_y(drivetrain_status->y);
