@@ -289,15 +289,16 @@ TEST_F(LocalizedDrivetrainTest, ResetLocalizer) {
 // correct for it.
 TEST_F(LocalizedDrivetrainTest, CameraUpdate) {
   set_enable_cameras(true);
+  SetStartingPosition({4.0, 0.5, 0.0});
   (*drivetrain_motor_plant_.mutable_state())(0, 0) += 0.05;
   my_drivetrain_queue_.goal.MakeWithBuilder()
       .controller_type(1)
       .left_goal(-1.0)
       .right_goal(1.0)
       .Send();
-  RunForTime(chrono::seconds(3));
+  RunForTime(chrono::seconds(5));
   VerifyNearGoal();
-  VerifyEstimatorAccurate(5e-4);
+  VerifyEstimatorAccurate(5e-3);
 }
 
 namespace {
