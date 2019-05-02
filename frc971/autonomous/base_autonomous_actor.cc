@@ -9,9 +9,12 @@
 #include "aos/logging/logging.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/localizer.q.h"
+#include "y2019/control_loops/drivetrain/target_selector.q.h"
 
 using ::frc971::control_loops::drivetrain_queue;
 using ::aos::monotonic_clock;
+using ::y2019::control_loops::drivetrain::target_selector_hint;
 namespace chrono = ::std::chrono;
 namespace this_thread = ::std::this_thread;
 
@@ -375,7 +378,7 @@ bool BaseAutonomousActor::SplineHandle::WaitForSplineDistanceRemaining(
   }
 }
 
-void BaseAutonomousActor::LineFollowAtVelocity(double velocity) {
+void BaseAutonomousActor::LineFollowAtVelocity(double velocity, int hint) {
   auto drivetrain_message = drivetrain_queue.goal.MakeMessage();
   drivetrain_message->controller_type = 3;
   // TODO(james): Currently the 4.0 is copied from the
@@ -383,6 +386,9 @@ void BaseAutonomousActor::LineFollowAtVelocity(double velocity) {
   // factor it out in some way.
   drivetrain_message->throttle = velocity / 4.0;
   drivetrain_message.Send();
+  auto target_hint = target_selector_hint.MakeMessage();
+  target_hint->suggested_target = hint;
+  target_hint.Send();
 }
 
 BaseAutonomousActor::SplineHandle BaseAutonomousActor::PlanSpline(

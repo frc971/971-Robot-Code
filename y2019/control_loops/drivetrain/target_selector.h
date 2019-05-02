@@ -36,6 +36,7 @@ class TargetSelector
     kNearShip = 1,
     kMidShip = 2,
     kFarShip = 3,
+    kFarRocket = 4,
   };
 
   TargetSelector(::aos::EventLoop *event_loop);
