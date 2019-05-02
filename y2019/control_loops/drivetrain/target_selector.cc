@@ -81,6 +81,11 @@ bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
           continue;
         }
         break;
+      case SelectionHint::kFarRocket:
+        if (view.target->target_type() != Target::TargetType::kFarRocket) {
+          continue;
+        }
+        break;
       case SelectionHint::kNone:
       default:
         break;

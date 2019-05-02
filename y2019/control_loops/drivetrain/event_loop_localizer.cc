@@ -54,6 +54,10 @@ void EventLoopLocalizer::Update(
     ::aos::monotonic_clock::time_point now, double left_encoder,
     double right_encoder, double gyro_rate,
     double /*longitudinal_accelerometer*/) {
+  CHECK(U.allFinite());
+  CHECK(::std::isfinite(left_encoder));
+  CHECK(::std::isfinite(right_encoder));
+  CHECK(::std::isfinite(gyro_rate));
   localizer_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate, U,
                                    now);
   while (frame_fetcher_.FetchNext()) {
@@ -80,8 +84,10 @@ void EventLoopLocalizer::HandleFrame(const CameraFrame &frame) {
     view.reading.distance = frame.targets[ii].distance;
     view.reading.skew = frame.targets[ii].skew;
     view.reading.height = frame.targets[ii].height;
-    cameras_[frame.camera].PopulateNoise(&view);
-    views.push_back(view);
+    if (view.reading.distance < 2.25) {
+      cameras_[frame.camera].PopulateNoise(&view);
+      views.push_back(view);
+    }
   }
   ::aos::monotonic_clock::time_point t(
       ::std::chrono::nanoseconds(frame.timestamp));

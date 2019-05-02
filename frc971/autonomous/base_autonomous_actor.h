@@ -70,7 +70,7 @@ class BaseAutonomousActor
   // Returns true if the drive has finished.
   bool IsDriveDone();
 
-  void LineFollowAtVelocity(double velocity);
+  void LineFollowAtVelocity(double velocity, int hint = 0);
 
   // Waits until the robot is pitched up above the specified angle, or the move
   // finishes.  Returns true on success, and false if it cancels.
