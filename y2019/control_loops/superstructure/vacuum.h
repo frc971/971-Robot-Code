@@ -1,7 +1,7 @@
 #ifndef Y2019_CONTROL_LOOPS_SUPERSTRUCTURE_VACUUM_H_
 #define Y2019_CONTROL_LOOPS_SUPERSTRUCTURE_VACUUM_H_
 
-#include "aos/controls/control_loop.h"
+#include "aos/events/event-loop.h"
 #include "y2019/control_loops/superstructure/superstructure.q.h"
 
 namespace y2019 {
@@ -33,11 +33,17 @@ class Vacuum {
   bool had_piece_ = false;
   aos::monotonic_clock::time_point last_release_time_ =
       aos::monotonic_clock::epoch();
+  // Time since the last time we had a game piece while disabled.
+  aos::monotonic_clock::time_point last_disable_has_piece_time_ =
+      aos::monotonic_clock::min_time;
   aos::monotonic_clock::time_point time_at_last_acquisition_ =
       aos::monotonic_clock::epoch();
   double filtered_pressure_ = 1.0;
 
-  static constexpr double kVacuumThreshold = 0.70;
+  bool filtered_had_piece_near_disabled_ = false;
+
+  static constexpr double kVacuumOnThreshold = 0.70;
+  static constexpr double kVacuumOffThreshold = 0.85;
 
   static constexpr double kFilterTimeConstant = 0.1;
   static constexpr double dt = .00505;
