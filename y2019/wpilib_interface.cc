@@ -365,9 +365,12 @@ class CameraReader {
     const auto now = aos::monotonic_clock::now();
     for (const auto &received : unpacked->frames) {
       auto to_send = control_loops::drivetrain::camera_frames.MakeMessage();
+      // Add an extra 10ms delay to account for unmodeled delays that Austin
+      // thinks exists.
       to_send->timestamp =
-          std::chrono::nanoseconds((now - received.age).time_since_epoch())
-              .count();
+          std::chrono::nanoseconds(
+              (now - received.age - ::std::chrono::milliseconds(10))
+                  .time_since_epoch()).count();
       to_send->num_targets = received.targets.size();
       for (size_t i = 0; i < received.targets.size(); ++i) {
         to_send->targets[i].distance = received.targets[i].distance;
