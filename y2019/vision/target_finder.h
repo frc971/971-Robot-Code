@@ -41,6 +41,8 @@ class TargetFinder {
   // Value against which we threshold.
   static uint8_t GetThresholdValue() { return 100; }
 
+  int PixelCount(BlobList *imgs);
+
   // filter out obvious or durranged blobs.
   void PreFilter(BlobList *imgs);
 
@@ -72,7 +74,7 @@ class TargetFinder {
       bool verbose);
 
   bool TestExposure(const std::vector<IntermediateResult> &results,
-                    int *desired_exposure);
+                    int pixel_count, int *desired_exposure);
 
   // Get the local overlay for debug if we are doing that.
   aos::vision::PixelLinesOverlay *GetOverlay() { return &overlay_; }
@@ -107,6 +109,8 @@ class TargetFinder {
   // Counts for logging.
   size_t frame_count_;
   size_t valid_result_count_;
+
+  int close_bucket_ = 0;
 
   int current_exposure_ = 0;
 };

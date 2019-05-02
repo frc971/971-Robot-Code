@@ -26,6 +26,14 @@ aos::vision::RangeImage TargetFinder::Threshold(aos::vision::ImagePtr image) {
       });
 }
 
+int TargetFinder::PixelCount(BlobList *imgs) {
+  int num_pixels = 0;
+  for (RangeImage &img : *imgs) {
+    num_pixels += img.npixels();
+  }
+  return num_pixels;
+}
+
 // Filter blobs on size.
 void TargetFinder::PreFilter(BlobList *imgs) {
   imgs->erase(
@@ -577,13 +585,11 @@ std::vector<IntermediateResult> TargetFinder::FilterResults(
 }
 
 bool TargetFinder::TestExposure(const std::vector<IntermediateResult> &results,
-                                int *desired_exposure) {
+                                int pixel_count, int *desired_exposure) {
   // TODO(ben): Add these values to config file.
   constexpr double low_dist = 0.8;
-  constexpr double high_dist = 2.0;
   constexpr int low_exposure  = 60;
-  constexpr int mid_exposure  = 300;
-  constexpr int high_exposure = 500;
+  constexpr int mid_exposure  = 200;
 
   bool needs_update = false;
   if (results.size() > 0) {
@@ -591,10 +597,11 @@ bool TargetFinder::TestExposure(const std::vector<IntermediateResult> &results,
     // based on the distance to that target.
     // First result should always be the closest target.
     if (results[0].extrinsics.z < low_dist) {
+      LOG(INFO) << "Low exposure";
       *desired_exposure = low_exposure;
-    } else if (results[0].extrinsics.z > high_dist) {
-      *desired_exposure = high_exposure;
+      close_bucket_ = 4;
     } else {
+      LOG(INFO) << "Mid exposure";
       *desired_exposure = mid_exposure;
     }
     if (*desired_exposure != current_exposure_) {
@@ -602,32 +609,23 @@ bool TargetFinder::TestExposure(const std::vector<IntermediateResult> &results,
       current_exposure_ = *desired_exposure;
     }
   } else {
-    // We don't see a target, but part of the problem might
-    // be the exposure setting. Lets try changing it and see
-    // if things get better.
-    const int offset = std::rand() % 10;
-
-    // At random with 3/X probability try a higher or lower.
-    if (offset == 0) {
-      if (low_exposure != current_exposure_) {
-        needs_update = true;
-        current_exposure_ = low_exposure;
-        *desired_exposure = low_exposure;
-      }
-    } else if (offset == 1) {
-      if (mid_exposure != current_exposure_) {
-        needs_update = true;
-        current_exposure_ = mid_exposure;
-        *desired_exposure = mid_exposure;
-      }
-    } else if (offset == 2) {
-      if (high_exposure != current_exposure_) {
-        needs_update = true;
-        current_exposure_ = high_exposure;
-        *desired_exposure = high_exposure;
+    close_bucket_ = ::std::max(0, close_bucket_ - 1);
+    // It's been a while since we saw a target.
+    if (close_bucket_ == 0) {
+      if (pixel_count > 6000) {
+        if (low_exposure != current_exposure_) {
+          needs_update = true;
+          current_exposure_ = low_exposure;
+          *desired_exposure = low_exposure;
+        }
+      } else {
+        if (mid_exposure != current_exposure_) {
+          needs_update = true;
+          current_exposure_ = mid_exposure;
+          *desired_exposure = mid_exposure;
+        }
       }
     }
-    // If one of our cases is not hit don't change anything.
   }
   return needs_update;
 }
