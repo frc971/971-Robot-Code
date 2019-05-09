@@ -47,6 +47,7 @@ message Sensors {
   optional float elevator = 2;
   optional float intake = 3;
   optional float stilts = 4;
+  optional bool has_piece = 5;
 }
 
 // The overall package of data that we send to the webpage.

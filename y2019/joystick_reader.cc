@@ -287,6 +287,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       last_release_button_press_ = monotonic_now;
     }
 
+    LOG(INFO, "has_piece: %d\n", superstructure_queue.status->has_piece);
     if (data.IsPressed(kSuctionBall)) {
       grab_piece_ = true;
     } else if (data.IsPressed(kSuctionHatch)) {
@@ -296,6 +297,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
                data.IsPressed(kReleaseButtonBoard) ||
                !superstructure_queue.status->has_piece) {
       grab_piece_ = false;
+      LOG(INFO, "releasing due to other thing\n");
     }
 
     if (data.IsPressed(kRocketBackwardUnpressed)) {
@@ -447,6 +449,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
          data.IsPressed(kRelease)) ||
         data.IsPressed(kReleaseButtonBoard)) {
       grab_piece_ = false;
+      LOG(INFO, "Releasing due to button\n");
     }
 
     if (switch_ball_) {

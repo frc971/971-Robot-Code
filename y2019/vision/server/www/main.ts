@@ -22,11 +22,13 @@ class Visualiser {
   private elevator: number = -1;
   private intake: number = -1;
   private stilts: number = -1;
+  private has_piece: number = 0;
 
   private wrist_div: HTMLDivElement;
   private elevator_div: HTMLDivElement;
   private intake_div: HTMLDivElement;
   private stilts_div: HTMLDivElement;
+  private has_piece_div: HTMLDivElement;
 
   constructor() {
     const canvas = <HTMLCanvasElement>document.getElementById('field');
@@ -34,6 +36,7 @@ class Visualiser {
     this.elevator_div = <HTMLDivElement>document.getElementById('elevator');
     this.intake_div = <HTMLDivElement>document.getElementById('intake');
     this.stilts_div = <HTMLDivElement>document.getElementById('stilts');
+    this.has_piece_div = <HTMLDivElement>document.getElementById('has_piece');
 
     const ctx = canvas.getContext('2d');
 
@@ -65,6 +68,7 @@ class Visualiser {
       this.elevator = j.sensors.elevator;
       this.intake = j.sensors.intake;
       this.stilts = j.sensors.stilts;
+      this.has_piece = j.sensors.hasPiece;
     });
     socket.addEventListener('close', (event) => {
       setTimeout(() => {
@@ -91,6 +95,7 @@ class Visualiser {
     this.elevator_div.textContent = "";
     this.intake_div.textContent = "";
     this.stilts_div.textContent = "";
+    this.has_piece_div.textContent = "";
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
@@ -113,6 +118,11 @@ class Visualiser {
     this.elevator_div.textContent = this.elevator.toFixed(3);
     this.intake_div.textContent = this.intake.toFixed(3);
     this.stilts_div.textContent = this.stilts.toFixed(3);
+    if (this.has_piece) {
+      this.has_piece_div.textContent = "t";
+    } else {
+      this.has_piece_div.textContent = "f";
+    }
 
     window.requestAnimationFrame(() => this.draw(ctx));
   }

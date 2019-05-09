@@ -244,6 +244,7 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
       sensors->set_elevator(superstructure_status->elevator.position);
       sensors->set_intake(superstructure_status->intake.position);
       sensors->set_stilts(superstructure_status->stilts.position);
+      sensors->set_has_piece(superstructure_status->has_piece);
 
       ::std::string json;
       google::protobuf::util::MessageToJsonString(debug_data, &json);
