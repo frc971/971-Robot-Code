@@ -202,6 +202,8 @@ int main(int argc, char **argv) {
     aos::vision::ImageFormat fmt{640, 480};
     aos::vision::BlobList imgs =
         aos::vision::FindBlobs(thresholder.Threshold(fmt, data.data(), 120));
+    const int num_pixels = finder.PixelCount(&imgs);
+    LOG(INFO) << "Number pixels: " << num_pixels;
     finder.PreFilter(&imgs);
     LOG(INFO) << "Blobs: " << imgs.size();
 
@@ -263,7 +265,7 @@ int main(int argc, char **argv) {
     LOG(INFO) << "Results: " << results.size();
 
     int desired_exposure;
-    if (finder.TestExposure(results, &desired_exposure)) {
+    if (finder.TestExposure(results, num_pixels, &desired_exposure)) {
       camera0->SetExposure(desired_exposure);
     }
 
