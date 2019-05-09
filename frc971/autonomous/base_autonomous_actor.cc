@@ -423,7 +423,7 @@ BaseAutonomousActor::SplineHandle BaseAutonomousActor::PlanSpline(
 
 bool BaseAutonomousActor::SplineHandle::IsPlanned() {
   drivetrain_queue.status.FetchLatest();
-  LOG_STRUCT(INFO, "dts", *drivetrain_queue.status.get());
+  LOG_STRUCT(DEBUG, "dts", *drivetrain_queue.status.get());
   if (drivetrain_queue.status.get() &&
       ((drivetrain_queue.status->trajectory_logging.planning_spline_idx ==
             spline_handle_ &&
