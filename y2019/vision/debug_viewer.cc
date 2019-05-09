@@ -93,6 +93,9 @@ class FilterHarness : public aos::vision::FilterHarness {
       printf("_____ New Image _____\n");
     }
 
+    const int num_pixels = target_finder_.PixelCount(&imgs);
+    printf("Number pixels: %d\n", num_pixels);
+
     // Remove bad blobs.
     target_finder_.PreFilter(&imgs);
 
@@ -196,7 +199,7 @@ class FilterHarness : public aos::vision::FilterHarness {
     }
 
     int desired_exposure;
-    if (target_finder_.TestExposure(results, &desired_exposure)) {
+    if (target_finder_.TestExposure(results, num_pixels, &desired_exposure)) {
       printf("Switching exposure to %d.\n", desired_exposure);
       SetExposure(desired_exposure);
     }
