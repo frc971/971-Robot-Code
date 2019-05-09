@@ -58,6 +58,7 @@ void ActionJoystickInput::StopAuto() {
   LOG(INFO, "Stopping auto mode\n");
   action_queue_.CancelAllActions();
   auto_action_running_ = false;
+  AutoEnded();
 }
 
 }  // namespace input

@@ -18,6 +18,11 @@ namespace actors {
 using ::frc971::ProfileParameters;
 using ::y2019::control_loops::superstructure::superstructure_queue;
 
+struct ElevatorWristPosition {
+  double elevator;
+  double wrist;
+};
+
 class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  public:
   explicit AutonomousActor(::frc971::autonomous::AutonomousActionQueueGroup *s);
@@ -62,6 +67,11 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
   void set_wrist_max_acceleration(double wrist_max_acceleration) {
     wrist_max_acceleration_ = wrist_max_acceleration;
+  }
+
+  void set_elevator_wrist_goal(ElevatorWristPosition goal) {
+    set_elevator_goal(goal.elevator);
+    set_wrist_goal(goal.wrist);
   }
 
   void SendSuperstructureGoal() {
@@ -112,6 +122,20 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     }
   }
 
+  bool WaitForMilliseconds(std::chrono::milliseconds wait) {
+    ::aos::monotonic_clock::time_point end_time =
+        ::aos::monotonic_clock::now() + wait;
+
+    while (::aos::monotonic_clock::now() < end_time) {
+      if (ShouldCancel()) {
+        return false;
+      }
+      // TODO(james): Allow non-multiples of 5.
+      ::std::this_thread::sleep_for(::std::chrono::milliseconds(5));
+    }
+    return true;
+  }
+
   bool IsSuperstructureDone() {
     superstructure_queue.status.FetchLatest();
 
@@ -150,6 +174,12 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
       }
     }
   }
+
+  // Waits until the robot's x > x.
+  bool WaitForDriveXGreater(double x);
+
+  // Waits until y is within y of zero.
+  bool WaitForDriveYCloseToZero(double y);
 };
 
 }  // namespace actors

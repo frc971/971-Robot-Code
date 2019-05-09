@@ -34,6 +34,42 @@ AutonomousActor::AutonomousActor(
     : frc971::autonomous::BaseAutonomousActor(
           s, control_loops::drivetrain::GetDrivetrainConfig()) {}
 
+bool AutonomousActor::WaitForDriveXGreater(double x) {
+  LOG(INFO, "Waiting until x > %f\n", x);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
+
+  while (true) {
+    if (ShouldCancel()) {
+      return false;
+    }
+    phased_loop.SleepUntilNext();
+    drivetrain_queue.status.FetchLatest();
+    if (drivetrain_queue.status->x > x) {
+      LOG(INFO, "X at %f\n", drivetrain_queue.status->x);
+      return true;
+    }
+  }
+}
+
+bool AutonomousActor::WaitForDriveYCloseToZero(double y) {
+  LOG(INFO, "Waiting until |y| < %f\n", y);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
+
+  while (true) {
+    if (ShouldCancel()) {
+      return false;
+    }
+    phased_loop.SleepUntilNext();
+    drivetrain_queue.status.FetchLatest();
+    if (::std::abs(drivetrain_queue.status->y) < y) {
+      LOG(INFO, "Y at %f\n", drivetrain_queue.status->y);
+      return true;
+    }
+  }
+}
+
 void AutonomousActor::Reset(bool is_left) {
   const double turn_scalar = is_left ? 1.0 : -1.0;
   elevator_goal_ = 0.01;
@@ -55,9 +91,9 @@ void AutonomousActor::Reset(bool is_left) {
     auto localizer_resetter = localizer_control.MakeMessage();
     // Start on the left l2.
     localizer_resetter->x = 1.0;
-    localizer_resetter->y = 1.5 * turn_scalar;
+    localizer_resetter->y = 1.35 * turn_scalar;
     localizer_resetter->theta = M_PI;
-    localizer_resetter->theta_uncertainty = 0.0000001;
+    localizer_resetter->theta_uncertainty = 0.00001;
     if (!localizer_resetter.Send()) {
       LOG(ERROR, "Failed to reset localizer.\n");
     }
@@ -80,54 +116,240 @@ const ProfileParameters kJumpDrive = {2.0, 3.0};
 const ProfileParameters kDrive = {4.0, 3.0};
 const ProfileParameters kTurn = {5.0, 15.0};
 
+const ElevatorWristPosition kPanelHPIntakeForwrdPos{0.01, M_PI / 2.0};
+const ElevatorWristPosition kPanelHPIntakeBackwardPos{0.015, -M_PI / 2.0};
+
+const ElevatorWristPosition kPanelForwardMiddlePos{0.75, M_PI / 2.0};
+const ElevatorWristPosition kPanelBackwardMiddlePos{0.78, -M_PI / 2.0};
+
+const ElevatorWristPosition kPanelBackwardUpperPos{1.50, -M_PI / 2.0};
+
+const ElevatorWristPosition kPanelCargoBackwardPos{0.0, -M_PI / 2.0};
+
 bool AutonomousActor::RunAction(
     const ::frc971::autonomous::AutonomousActionParams &params) {
-  monotonic_clock::time_point start_time = monotonic_clock::now();
+  const monotonic_clock::time_point start_time = monotonic_clock::now();
   const bool is_left = params.mode == 0;
 
   {
     LOG(INFO, "Starting autonomous action with mode %" PRId32 " %s\n",
         params.mode, is_left ? "left" : "right");
   }
+
   const double turn_scalar = is_left ? 1.0 : -1.0;
 
   Reset(is_left);
+  enum class Mode { kTesting, kRocket, kCargoship };
+  Mode mode = Mode::kCargoship;
+  if (mode == Mode::kRocket) {
+    SplineHandle spline1 =
+        PlanSpline(AutonomousSplines::HabToFarRocketTest(is_left),
+                   SplineDirection::kBackward);
 
-  // Grab the disk, wait until we have vacuum, then jump
-  set_elevator_goal(0.01);
-  set_wrist_goal(-M_PI / 2.0);
-  set_intake_goal(-1.2);
-  set_suction_goal(true, 1);
-  SendSuperstructureGoal();
+    // Grab the disk, jump, wait until we have vacuum, then raise the elevator
+    set_elevator_goal(0.010);
+    set_wrist_goal(-M_PI / 2.0);
+    set_intake_goal(-1.2);
+    set_suction_goal(true, 1);
+    SendSuperstructureGoal();
 
-  if (!WaitForGamePiece()) return true;
-  LOG(INFO, "Has game piece\n");
+    // if planned start the spline and plan the next
+    if (!spline1.WaitForPlan()) return true;
+    LOG(INFO, "Planned\n");
+    spline1.Start();
 
-  StartDrive(-4.0, 0.0, kJumpDrive, kTurn);
-  if (!WaitForDriveNear(3.3, 10.0)) return true;
-  LOG(INFO, "Lifting\n");
-  set_elevator_goal(0.30);
-  SendSuperstructureGoal();
+    // If suction, move the superstructure to score
+    if (!WaitForGamePiece()) return true;
+    LOG(INFO, "Has game piece\n");
+    if (!spline1.WaitForSplineDistanceRemaining(3.5)) return true;
+    set_elevator_wrist_goal(kPanelBackwardMiddlePos);
+    SendSuperstructureGoal();
 
-  if (!WaitForDriveNear(2.8, 10.0)) return true;
-  LOG(INFO, "Off the platform\n");
+    if (!spline1.WaitForSplineDistanceRemaining(2.0)) return true;
+    set_elevator_wrist_goal(kPanelForwardMiddlePos);
+    SendSuperstructureGoal();
 
-  StartDrive(0.0, 1.00 * turn_scalar, kDrive, kTurn);
-  LOG(INFO, "Turn started\n");
-  if (!WaitForSuperstructureDone()) return true;
-  LOG(INFO, "Superstructure done\n");
+    // END SPLINE 1
 
-  if (!WaitForDriveNear(0.7, 10.0)) return true;
-  StartDrive(0.0, -0.35 * turn_scalar, kDrive, kTurn);
+    if (!spline1.WaitForSplineDistanceRemaining(0.2)) return true;
+    LineFollowAtVelocity(1.3, 4);
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(1200))) return true;
 
-  LOG(INFO, "Elevator up\n");
-  set_elevator_goal(0.78);
-  SendSuperstructureGoal();
+    set_suction_goal(false, 1);
+    SendSuperstructureGoal();
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(200))) return true;
+    LineFollowAtVelocity(-1.0, 4);
+    SplineHandle spline2 = PlanSpline(AutonomousSplines::FarRocketToHP(is_left),
+                                      SplineDirection::kBackward);
 
-  if (!WaitForDriveDone()) return true;
-  LOG(INFO, "Done driving\n");
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(150))) return true;
+    if (!spline2.WaitForPlan()) return true;
+    LOG(INFO, "Planned\n");
+    // Drive back to hp and set the superstructure accordingly
+    spline2.Start();
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(500))) return true;
+    set_elevator_wrist_goal(kPanelHPIntakeBackwardPos);
+    SendSuperstructureGoal();
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(1000))) return true;
+    set_suction_goal(true, 1);
+    SendSuperstructureGoal();
 
-  if (!WaitForSuperstructureDone()) return true;
+    if (!spline2.WaitForSplineDistanceRemaining(1.6)) return true;
+    LineFollowAtVelocity(-1.6);
+
+    // As soon as we pick up Panel 2 go score on the back rocket
+    if (!WaitForGamePiece()) return true;
+    LineFollowAtVelocity(1.5);
+    SplineHandle spline3 = PlanSpline(AutonomousSplines::HPToFarRocket(is_left),
+                                      SplineDirection::kForward);
+    if (!WaitForDriveXGreater(0.50)) return true;
+    if (!spline3.WaitForPlan()) return true;
+    spline3.Start();
+    LOG(INFO, "Has game piece\n");
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(1000))) return true;
+    set_elevator_wrist_goal(kPanelBackwardMiddlePos);
+    SendSuperstructureGoal();
+    if (!WaitForDriveXGreater(7.1)) return true;
+    LineFollowAtVelocity(-1.5, 4);
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(1000))) return true;
+    set_elevator_wrist_goal(kPanelBackwardUpperPos);
+    SendSuperstructureGoal();
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(1500))) return true;
+    set_suction_goal(false, 1);
+    SendSuperstructureGoal();
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(400))) return true;
+    LineFollowAtVelocity(1.0, 4);
+    SendSuperstructureGoal();
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(200))) return true;
+  } else if (mode == Mode::kCargoship) {
+    SplineHandle spline1 =
+        PlanSpline(AutonomousSplines::HABToSecondCargoShipBay(is_left),
+                   SplineDirection::kBackward);
+    set_elevator_goal(0.01);
+    set_wrist_goal(-M_PI / 2.0);
+    set_intake_goal(-1.2);
+    set_suction_goal(true, 1);
+    SendSuperstructureGoal();
+
+    // if planned start the spline and plan the next
+    if (!spline1.WaitForPlan()) return true;
+    LOG(INFO, "Planned\n");
+    spline1.Start();
+
+    // If suction, move the superstructure to score
+    if (!WaitForGamePiece()) return true;
+    LOG(INFO, "Has game piece\n");
+    // unstick the hatch panel
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(500))) return true;
+    set_elevator_goal(0.5);
+    set_wrist_goal(-M_PI / 2.0);
+    SendSuperstructureGoal();
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(500))) return true;
+    set_elevator_wrist_goal(kPanelCargoBackwardPos);
+    SendSuperstructureGoal();
+
+    if (!spline1.WaitForSplineDistanceRemaining(0.8)) return true;
+    // Line follow in to the first disc.
+    LineFollowAtVelocity(-0.9, 2);
+    if (!WaitForDriveYCloseToZero(1.2)) return true;
+
+    set_suction_goal(false, 1);
+    SendSuperstructureGoal();
+    LOG(INFO, "Dropping disc 1 %f\n",
+        DoubleSeconds(monotonic_clock::now() - start_time));
+
+    if (!WaitForDriveYCloseToZero(1.13)) return true;
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(300))) return true;
+
+    LineFollowAtVelocity(0.9, 2);
+    SplineHandle spline2 =
+        PlanSpline(AutonomousSplines::SecondCargoShipBayToHP(is_left),
+                   SplineDirection::kForward);
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(400))) return true;
+    if (!spline2.WaitForPlan()) return true;
+    LOG(INFO, "Planned\n");
+    // Drive back to hp and set the superstructure accordingly
+    spline2.Start();
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(200))) return true;
+    set_elevator_wrist_goal(kPanelHPIntakeForwrdPos);
+    SendSuperstructureGoal();
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(1000))) return true;
+    set_suction_goal(true, 1);
+    SendSuperstructureGoal();
+
+    if (!spline2.WaitForSplineDistanceRemaining(1.75)) return true;
+    LineFollowAtVelocity(1.5);
+    // As soon as we pick up Panel 2 go score on the rocket
+    if (!WaitForGamePiece()) return true;
+    LOG(INFO, "Got gamepiece %f\n",
+        DoubleSeconds(monotonic_clock::now() - start_time));
+    LineFollowAtVelocity(-4.0);
+    SplineHandle spline3 =
+        PlanSpline(AutonomousSplines::HPToThirdCargoShipBay(is_left),
+                   SplineDirection::kBackward);
+    if (!WaitForDriveXGreater(0.55)) return true;
+    if (!spline3.WaitForPlan()) return true;
+    spline3.Start();
+    // Wait until we are a bit out to lift.
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(1000))) return true;
+    set_elevator_wrist_goal(kPanelCargoBackwardPos);
+    SendSuperstructureGoal();
+
+    if (!spline3.WaitForSplineDistanceRemaining(0.7)) return true;
+    // Line follow in to the second disc.
+    LineFollowAtVelocity(-0.7, 3);
+    LOG(INFO, "Drawing in disc 2 %f\n",
+        DoubleSeconds(monotonic_clock::now() - start_time));
+    if (!WaitForDriveYCloseToZero(1.2)) return true;
+
+    set_suction_goal(false, 1);
+    SendSuperstructureGoal();
+    LOG(INFO, "Dropping disc 2 %f\n",
+        DoubleSeconds(monotonic_clock::now() - start_time));
+
+    if (!WaitForDriveYCloseToZero(1.13)) return true;
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(200))) return true;
+    LOG(INFO, "Backing up %f\n",
+        DoubleSeconds(monotonic_clock::now() - start_time));
+    LineFollowAtVelocity(0.9, 3);
+    if (!WaitForMilliseconds(::std::chrono::milliseconds(400))) return true;
+  } else {
+    // Grab the disk, wait until we have vacuum, then jump
+    set_elevator_goal(0.01);
+    set_wrist_goal(-M_PI / 2.0);
+    set_intake_goal(-1.2);
+    set_suction_goal(true, 1);
+    SendSuperstructureGoal();
+
+    if (!WaitForGamePiece()) return true;
+    LOG(INFO, "Has game piece\n");
+
+    StartDrive(-4.0, 0.0, kJumpDrive, kTurn);
+    if (!WaitForDriveNear(3.3, 10.0)) return true;
+    LOG(INFO, "Lifting\n");
+    set_elevator_goal(0.30);
+    SendSuperstructureGoal();
+
+    if (!WaitForDriveNear(2.8, 10.0)) return true;
+    LOG(INFO, "Off the platform\n");
+
+    StartDrive(0.0, 1.00 * turn_scalar, kDrive, kTurn);
+    LOG(INFO, "Turn started\n");
+    if (!WaitForSuperstructureDone()) return true;
+    LOG(INFO, "Superstructure done\n");
+
+    if (!WaitForDriveNear(0.7, 10.0)) return true;
+    StartDrive(0.0, -0.35 * turn_scalar, kDrive, kTurn);
+
+    LOG(INFO, "Elevator up\n");
+    set_elevator_goal(0.78);
+    SendSuperstructureGoal();
+
+    if (!WaitForDriveDone()) return true;
+    LOG(INFO, "Done driving\n");
+
+    if (!WaitForSuperstructureDone()) return true;
+  }
 
   LOG(INFO, "Done %f\n", DoubleSeconds(monotonic_clock::now() - start_time));
 
