@@ -385,7 +385,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       if (kDoBallOutake ||
           (kDoBallIntake &&
            monotonic_now < last_not_has_piece_ + chrono::milliseconds(200))) {
-        new_superstructure_goal->intake.unsafe_goal = 0.959327;
+        new_superstructure_goal->intake.unsafe_goal = 0.83;
       }
 
       if (kDoBallIntake && !superstructure_queue.status->has_piece) {
