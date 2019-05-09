@@ -178,15 +178,16 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       break;
 
     case kCompTeamNumber:
-      elevator_params->zeroing_constants.measured_absolute_position = 0.152217;
+      elevator_params->zeroing_constants.measured_absolute_position = 0.145498;
       elevator->potentiometer_offset =
           -0.075017 + 0.015837 + 0.009793 - 0.012017 + 0.019915 + 0.010126 +
-          0.005541 + 0.006088 - 0.039687 + 0.005843 + 0.009007;
+          0.005541 + 0.006088 - 0.039687 + 0.005843 + 0.009007 + 0.008604 -
+          0.004621 + 0.003305;
 
-      intake->zeroing_constants.measured_absolute_position = 1.860016;
+      intake->zeroing_constants.measured_absolute_position = 1.672706;
 
-      wrist_params->zeroing_constants.measured_absolute_position = 0.164498;
-      wrist->potentiometer_offset = -4.257454 - 0.058039;
+      wrist_params->zeroing_constants.measured_absolute_position = 0.151466;
+      wrist->potentiometer_offset = -4.257454 - 0.058039 + 0.270233;
 
       stilts_params->zeroing_constants.measured_absolute_position = 0.066843;
       stilts->potentiometer_offset = -0.015760 + 0.011604 - 0.061213 + 0.006690;
