@@ -2,8 +2,9 @@
 
 #include <chrono>
 
-#include "aos/logging/queue_logging.h"
+#include "aos/events/event-loop.h"
 #include "aos/init.h"
+#include "aos/logging/queue_logging.h"
 #include "aos/util/phased_loop.h"
 #include "frc971/wpilib/ahal/PowerDistributionPanel.h"
 #include "frc971/wpilib/pdp_values.q.h"
@@ -19,6 +20,7 @@ void PDPFetcher::operator()() {
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(20),
                                       ::std::chrono::milliseconds(4));
 
+  // TODO(austin): Event loop instead of while loop.
   while (true) {
     {
       const int iterations = phased_loop.SleepUntilNext();
@@ -26,7 +28,7 @@ void PDPFetcher::operator()() {
         LOG(DEBUG, "PDPFetcher skipped %d iterations\n", iterations - 1);
       }
     }
-    auto message = pdp_values.MakeMessage();
+    auto message = pdp_values_sender_.MakeMessage();
     message->voltage = pdp->GetVoltage();
     message->temperature = pdp->GetTemperature();
     message->power = pdp->GetTotalPower();

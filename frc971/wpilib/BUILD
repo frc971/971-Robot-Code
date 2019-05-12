@@ -207,6 +207,7 @@ cc_library(
     deps = [
         ":pdp_values",
         "//aos:init",
+        "//aos/events:event-loop",
         "//aos/logging:queue_logging",
         "//aos/util:phased_loop",
         "//third_party:wpilib",

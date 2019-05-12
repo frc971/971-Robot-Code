@@ -279,7 +279,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     JoystickSender joystick_sender(&event_loop);
     ::std::thread joystick_thread(::std::ref(joystick_sender));
 
-    ::frc971::wpilib::PDPFetcher pdp_fetcher;
+    ::frc971::wpilib::PDPFetcher pdp_fetcher(&event_loop);
     ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
 
     // TODO(comran): IO ports are placeholders at the moment, so match them to

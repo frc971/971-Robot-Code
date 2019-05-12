@@ -685,7 +685,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::frc971::wpilib::JoystickSender joystick_sender(&event_loop);
     ::std::thread joystick_thread(::std::ref(joystick_sender));
 
-    ::frc971::wpilib::PDPFetcher pdp_fetcher;
+    ::frc971::wpilib::PDPFetcher pdp_fetcher(&event_loop);
     ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
     SensorReader reader(&event_loop);
 
