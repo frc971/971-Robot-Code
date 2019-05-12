@@ -14,7 +14,6 @@
 
 using ::frc971::control_loops::drivetrain_queue;
 using ::aos::monotonic_clock;
-using ::y2019::control_loops::drivetrain::target_selector_hint;
 namespace chrono = ::std::chrono;
 namespace this_thread = ::std::this_thread;
 
@@ -26,7 +25,11 @@ BaseAutonomousActor::BaseAutonomousActor(
     const control_loops::drivetrain::DrivetrainConfig<double> &dt_config)
     : aos::common::actions::ActorBase<AutonomousActionQueueGroup>(s),
       dt_config_(dt_config),
-      initial_drivetrain_({0.0, 0.0}) {}
+      initial_drivetrain_({0.0, 0.0}),
+      target_selector_hint_sender_(
+          event_loop_.MakeSender<
+              ::y2019::control_loops::drivetrain::TargetSelectorHint>(
+              ".y2019.control_loops.drivetrain.target_selector_hint")) {}
 
 void BaseAutonomousActor::ResetDrivetrain() {
   LOG(INFO, "resetting the drivetrain\n");
@@ -386,7 +389,7 @@ void BaseAutonomousActor::LineFollowAtVelocity(double velocity, int hint) {
   // factor it out in some way.
   drivetrain_message->throttle = velocity / 4.0;
   drivetrain_message.Send();
-  auto target_hint = target_selector_hint.MakeMessage();
+  auto target_hint = target_selector_hint_sender_.MakeMessage();
   target_hint->suggested_target = hint;
   target_hint.Send();
 }

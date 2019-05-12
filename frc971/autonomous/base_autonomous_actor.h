@@ -5,9 +5,11 @@
 
 #include "aos/actions/actions.h"
 #include "aos/actions/actor.h"
+#include "aos/events/shm-event-loop.h"
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "y2019/control_loops/drivetrain/target_selector.q.h"
 
 namespace frc971 {
 namespace autonomous {
@@ -88,6 +90,10 @@ class BaseAutonomousActor
   bool WaitForTurnProfileNear(double tolerance);
   bool WaitForTurnProfileDone();
 
+  void set_max_drivetrain_voltage(double max_drivetrain_voltage) {
+    max_drivetrain_voltage_ = max_drivetrain_voltage;
+  }
+
   // Returns the distance left to go.
   double DriveDistanceLeft();
 
@@ -100,12 +106,12 @@ class BaseAutonomousActor
   };
   InitialDrivetrain initial_drivetrain_;
 
-  void set_max_drivetrain_voltage(double max_drivetrain_voltage) {
-    max_drivetrain_voltage_ = max_drivetrain_voltage;
-  }
-
  private:
   friend class SplineHandle;
+  ::aos::ShmEventLoop event_loop_;
+
+  ::aos::Sender<::y2019::control_loops::drivetrain::TargetSelectorHint>
+      target_selector_hint_sender_;
 
   double max_drivetrain_voltage_ = 12.0;
 

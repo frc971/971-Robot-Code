@@ -1,5 +1,6 @@
 #include "y2019/control_loops/drivetrain/target_selector.h"
 
+#include "aos/events/shm-event-loop.h"
 #include "aos/testing/test_shm.h"
 #include "gtest/gtest.h"
 #include "y2019/control_loops/superstructure/superstructure.q.h"
@@ -36,15 +37,27 @@ struct TestParams {
   double expected_radius;
 };
 class TargetSelectorParamTest : public ::testing::TestWithParam<TestParams> {
- protected:
-  virtual void TearDown() override {
-    ::y2019::control_loops::superstructure::superstructure_queue.goal.Clear();
-    ::y2019::control_loops::drivetrain::target_selector_hint.Clear();
-  }
-  ::aos::ShmEventLoop event_loop_;
+ public:
+  TargetSelectorParamTest()
+      : target_selector_hint_sender_(
+            test_event_loop_.MakeSender<
+                ::y2019::control_loops::drivetrain::TargetSelectorHint>(
+                ".y2019.control_loops.drivetrain.target_selector_hint")) {}
 
  private:
   ::aos::testing::TestSharedMemory my_shm_;
+
+ protected:
+  virtual void TearDown() override {
+    ::y2019::control_loops::superstructure::superstructure_queue.goal.Clear();
+  }
+
+  ::aos::ShmEventLoop event_loop_;
+  ::aos::ShmEventLoop test_event_loop_;
+
+  ::aos::Sender<::y2019::control_loops::drivetrain::TargetSelectorHint>
+      target_selector_hint_sender_;
+
 };
 
 TEST_P(TargetSelectorParamTest, ExpectReturn) {
@@ -57,8 +70,7 @@ TEST_P(TargetSelectorParamTest, ExpectReturn) {
     ASSERT_TRUE(super_goal.Send());
   }
   {
-    auto hint =
-        ::y2019::control_loops::drivetrain::target_selector_hint.MakeMessage();
+    auto hint = target_selector_hint_sender_.MakeMessage();
     hint->suggested_target = static_cast<int>(GetParam().selection_hint);
     ASSERT_TRUE(hint.Send());
   }

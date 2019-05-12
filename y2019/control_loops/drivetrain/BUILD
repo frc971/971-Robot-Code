@@ -147,6 +147,7 @@ cc_test(
     srcs = ["target_selector_test.cc"],
     deps = [
         ":target_selector",
+        "//aos/events:shm-event-loop",
         "//aos/testing:googletest",
         "//aos/testing:test_shm",
     ],

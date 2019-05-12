@@ -28,7 +28,6 @@
 #include "y2019/vision.pb.h"
 
 using ::y2019::control_loops::superstructure::superstructure_queue;
-using ::y2019::control_loops::drivetrain::target_selector_hint;
 using ::frc971::control_loops::drivetrain::localizer_control;
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::ControlBit;
@@ -141,7 +140,11 @@ class Reader : public ::aos::input::ActionJoystickInput {
             event_loop,
             ::y2019::control_loops::drivetrain::GetDrivetrainConfig(),
             {.run_teleop_in_auto = true,
-             .cancel_auto_button = kCancelAutoMode}) {
+             .cancel_auto_button = kCancelAutoMode}),
+        target_selector_hint_sender_(
+            event_loop->MakeSender<
+                ::y2019::control_loops::drivetrain::TargetSelectorHint>(
+                ".y2019.control_loops.drivetrain.target_selector_hint")) {
     const uint16_t team = ::aos::network::GetTeamNumber();
     superstructure_queue.goal.FetchLatest();
     if (superstructure_queue.goal.get()) {
@@ -176,7 +179,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
 
     {
-      auto target_hint = target_selector_hint.MakeMessage();
+      auto target_hint = target_selector_hint_sender_.MakeMessage();
       if (data.IsPressed(kNearCargoHint)) {
         target_hint->suggested_target = 1;
       } else if (data.IsPressed(kMidCargoHint)) {
@@ -494,6 +497,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
     return ::frc971::autonomous::auto_mode->mode;
   }
+
+  ::aos::Sender<::y2019::control_loops::drivetrain::TargetSelectorHint>
+      target_selector_hint_sender_;
 
   // Bool to track if we've been above the deploy position.  Once this bool is
   // set, don't let the stilts retract until we see the platform.
