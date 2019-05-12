@@ -48,7 +48,7 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
                              ".frc971.control_loops.drivetrain_queue.position",
                              ".frc971.control_loops.drivetrain_queue.output",
                              ".frc971.control_loops.drivetrain_queue.status"),
-        camera_queue_(::y2019::control_loops::drivetrain::camera_frames.name()),
+        camera_queue_(".y2019.control_loops.drivetrain.camera_frames"),
         localizer_(dt_config_, &event_loop_),
         drivetrain_motor_(dt_config_, &event_loop_, &localizer_),
         drivetrain_motor_plant_(&simulation_event_loop_, dt_config_),
@@ -60,7 +60,6 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
     // is just prone to causing confusion.
     SetStartingPosition({3.0, 2.0, 0.0});
     ::frc971::sensors::gyro_reading.Clear();
-    ::y2019::control_loops::drivetrain::camera_frames.Clear();
     set_battery_voltage(12.0);
   }
 
@@ -168,7 +167,6 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
 
   virtual ~LocalizedDrivetrainTest() {
     ::frc971::sensors::gyro_reading.Clear();
-    ::y2019::control_loops::drivetrain::camera_frames.Clear();
   }
 
   const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>

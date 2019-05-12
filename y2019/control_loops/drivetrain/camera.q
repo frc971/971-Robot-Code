@@ -8,6 +8,8 @@ struct CameraTarget {
   float skew;
 };
 
+// Frames from a camera.
+// Published on ".y2019.control_loops.drivetrain.camera_frames"
 message CameraFrame {
   // Number of nanoseconds since the aos::monotonic_clock epoch at which this
   // frame was captured.
@@ -22,5 +24,3 @@ message CameraFrame {
   // Index of the camera position (not serial number) which this frame is from.
   uint8_t camera;
 };
-
-queue CameraFrame camera_frames;

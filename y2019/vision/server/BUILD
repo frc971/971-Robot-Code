@@ -49,6 +49,7 @@ cc_binary(
         ":server_data_proto",
         "//aos:init",
         "//aos/containers:ring_buffer",
+        "//aos/events:shm-event-loop",
         "//aos/logging",
         "//aos/seasocks:seasocks_logger",
         "//aos/time",

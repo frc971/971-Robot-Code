@@ -56,6 +56,7 @@ cc_binary(
         "//aos:make_unique",
         "//aos:math",
         "//aos/controls:control_loop",
+        "//aos/events:shm-event-loop",
         "//aos/logging",
         "//aos/logging:queue_logging",
         "//aos/robot_state",

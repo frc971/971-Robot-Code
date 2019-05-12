@@ -20,6 +20,7 @@
 #undef ERROR
 
 #include "aos/commonmath.h"
+#include "aos/events/event-loop.h"
 #include "aos/events/shm-event-loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
@@ -307,7 +308,12 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
 class CameraReader {
  public:
-  CameraReader() = default;
+  CameraReader(::aos::EventLoop *event_loop)
+      : camera_frame_sender_(
+            event_loop
+                ->MakeSender<::y2019::control_loops::drivetrain::CameraFrame>(
+                    ".y2019.control_loops.drivetrain.camera_frames")) {}
+
   CameraReader(const CameraReader &) = delete;
   CameraReader &operator=(const CameraReader &) = delete;
 
@@ -366,7 +372,7 @@ class CameraReader {
 
     const auto now = aos::monotonic_clock::now();
     for (const auto &received : unpacked->frames) {
-      auto to_send = control_loops::drivetrain::camera_frames.MakeMessage();
+      auto to_send = camera_frame_sender_.MakeMessage();
       // Add an extra 10ms delay to account for unmodeled delays that Austin
       // thinks exists.
       to_send->timestamp =
@@ -420,6 +426,9 @@ class CameraReader {
   }
 
  private:
+  ::aos::Sender<::y2019::control_loops::drivetrain::CameraFrame>
+      camera_frame_sender_;
+
   frc::SPI *spi_ = nullptr;
   ::std::unique_ptr<frc::SPI> dummy_spi_;
 
@@ -709,7 +718,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     ::std::thread reader_thread(::std::ref(reader));
 
-    CameraReader camera_reader;
+    CameraReader camera_reader(&event_loop);
     frc::SPI camera_spi(frc::SPI::Port::kOnboardCS3);
     camera_reader.set_spi(&camera_spi);
     camera_reader.SetDummySPI(frc::SPI::Port::kOnboardCS2);
