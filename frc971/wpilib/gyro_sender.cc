@@ -27,7 +27,9 @@ using ::aos::monotonic_clock;
 GyroSender::GyroSender(::aos::EventLoop *event_loop)
     : event_loop_(event_loop),
       joystick_state_fetcher_(event_loop_->MakeFetcher<::aos::JoystickState>(
-          ".aos.joystick_state")) {
+          ".aos.joystick_state")),
+      uid_sender_(event_loop_->MakeSender<::frc971::sensors::Uid>(
+          ".frc971.sensors.gyro_part_id")) {
   PCHECK(
       system("ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
              "33") == 0);
@@ -42,7 +44,7 @@ void GyroSender::operator()() {
   }
   LOG(INFO, "gyro initialized successfully\n");
 
-  auto message = ::frc971::sensors::gyro_part_id.MakeMessage();
+  auto message = uid_sender_.MakeMessage();
   message->uid = gyro_.ReadPartID();
   LOG_STRUCT(INFO, "gyro ID", *message);
   message.Send();

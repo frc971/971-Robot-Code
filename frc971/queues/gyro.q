@@ -10,7 +10,7 @@ message GyroReading {
 };
 queue GyroReading gyro_reading;
 
+// Published on ".frc971.sensors.gyro_part_id"
 message Uid {
 	uint32_t uid;
 };
-queue Uid gyro_part_id;
