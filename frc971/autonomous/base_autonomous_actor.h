@@ -18,7 +18,7 @@ class BaseAutonomousActor
     : public ::aos::common::actions::ActorBase<AutonomousActionQueueGroup> {
  public:
   explicit BaseAutonomousActor(
-      AutonomousActionQueueGroup *s,
+      ::aos::EventLoop *event_loop, AutonomousActionQueueGroup *s,
       const control_loops::drivetrain::DrivetrainConfig<double> &dt_config);
 
  protected:
@@ -108,8 +108,6 @@ class BaseAutonomousActor
 
  private:
   friend class SplineHandle;
-  ::aos::ShmEventLoop event_loop_;
-
   ::aos::Sender<::y2019::control_loops::drivetrain::TargetSelectorHint>
       target_selector_hint_sender_;
 

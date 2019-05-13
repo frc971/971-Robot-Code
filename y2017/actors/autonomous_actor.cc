@@ -41,9 +41,10 @@ const ProfileParameters kSmashTurn = {1.5, 5.0};
 }  // namespace
 
 AutonomousActor::AutonomousActor(
+    ::aos::EventLoop *event_loop,
     ::frc971::autonomous::AutonomousActionQueueGroup *s)
     : frc971::autonomous::BaseAutonomousActor(
-          s, control_loops::drivetrain::GetDrivetrainConfig()) {}
+          event_loop, s, control_loops::drivetrain::GetDrivetrainConfig()) {}
 
 bool AutonomousActor::RunAction(
     const ::frc971::autonomous::AutonomousActionParams &params) {

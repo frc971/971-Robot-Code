@@ -28,7 +28,6 @@
 #include "y2019/vision.pb.h"
 
 using ::y2019::control_loops::superstructure::superstructure_queue;
-using ::frc971::control_loops::drivetrain::localizer_control;
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::ControlBit;
 using ::aos::input::driver_station::JoystickAxis;
@@ -144,7 +143,11 @@ class Reader : public ::aos::input::ActionJoystickInput {
         target_selector_hint_sender_(
             event_loop->MakeSender<
                 ::y2019::control_loops::drivetrain::TargetSelectorHint>(
-                ".y2019.control_loops.drivetrain.target_selector_hint")) {
+                ".y2019.control_loops.drivetrain.target_selector_hint")),
+        localizer_control_sender_(
+            event_loop->MakeSender<
+                ::frc971::control_loops::drivetrain::LocalizerControl>(
+                ".frc971.control_loops.drivetrain.localizer_control")) {
     const uint16_t team = ::aos::network::GetTeamNumber();
     superstructure_queue.goal.FetchLatest();
     if (superstructure_queue.goal.get()) {
@@ -205,7 +208,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     if (data.PosEdge(kResetLocalizerLeft)) {
-      auto localizer_resetter = localizer_control.MakeMessage();
+      auto localizer_resetter = localizer_control_sender_.MakeMessage();
       // Start at the left feeder station.
       localizer_resetter->x = 0.6;
       localizer_resetter->y = 3.4;
@@ -217,7 +220,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     if (data.PosEdge(kResetLocalizerRight)) {
-      auto localizer_resetter = localizer_control.MakeMessage();
+      auto localizer_resetter = localizer_control_sender_.MakeMessage();
       // Start at the left feeder station.
       localizer_resetter->x = 0.6;
       localizer_resetter->y = -3.4;
@@ -229,7 +232,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     if (data.PosEdge(kResetLocalizerLeftForwards)) {
-      auto localizer_resetter = localizer_control.MakeMessage();
+      auto localizer_resetter = localizer_control_sender_.MakeMessage();
       // Start at the left feeder station.
       localizer_resetter->x = 0.4;
       localizer_resetter->y = 3.4;
@@ -241,7 +244,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     if (data.PosEdge(kResetLocalizerLeftBackwards)) {
-      auto localizer_resetter = localizer_control.MakeMessage();
+      auto localizer_resetter = localizer_control_sender_.MakeMessage();
       // Start at the left feeder station.
       localizer_resetter->x = 0.4;
       localizer_resetter->y = 3.4;
@@ -253,7 +256,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     if (data.PosEdge(kResetLocalizerRightForwards)) {
-      auto localizer_resetter = localizer_control.MakeMessage();
+      auto localizer_resetter = localizer_control_sender_.MakeMessage();
       // Start at the right feeder station.
       localizer_resetter->x = 0.4;
       localizer_resetter->y = -3.4;
@@ -265,7 +268,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     if (data.PosEdge(kResetLocalizerRightBackwards)) {
-      auto localizer_resetter = localizer_control.MakeMessage();
+      auto localizer_resetter = localizer_control_sender_.MakeMessage();
       // Start at the right feeder station.
       localizer_resetter->x = 0.4;
       localizer_resetter->y = -3.4;
@@ -500,6 +503,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
   ::aos::Sender<::y2019::control_loops::drivetrain::TargetSelectorHint>
       target_selector_hint_sender_;
+
+  ::aos::Sender<::frc971::control_loops::drivetrain::LocalizerControl>
+      localizer_control_sender_;
 
   // Bool to track if we've been above the deploy position.  Once this bool is
   // set, don't let the stilts retract until we see the platform.

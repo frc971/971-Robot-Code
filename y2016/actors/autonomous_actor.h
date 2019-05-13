@@ -6,6 +6,7 @@
 
 #include "aos/actions/actions.h"
 #include "aos/actions/actor.h"
+#include "aos/events/event-loop.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
@@ -17,7 +18,8 @@ using ::frc971::ProfileParameters;
 
 class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  public:
-  explicit AutonomousActor(::frc971::autonomous::AutonomousActionQueueGroup *s);
+  explicit AutonomousActor(::aos::EventLoop *event_loop,
+                           ::frc971::autonomous::AutonomousActionQueueGroup *s);
 
   bool RunAction(
       const ::frc971::autonomous::AutonomousActionParams &params) override;

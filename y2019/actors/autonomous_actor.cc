@@ -16,7 +16,6 @@
 namespace y2019 {
 namespace actors {
 using ::frc971::control_loops::drivetrain_queue;
-using ::frc971::control_loops::drivetrain::localizer_control;
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
 
@@ -30,9 +29,14 @@ double DoubleSeconds(monotonic_clock::duration duration) {
 }  // namespace
 
 AutonomousActor::AutonomousActor(
+    ::aos::EventLoop *event_loop,
     ::frc971::autonomous::AutonomousActionQueueGroup *s)
     : frc971::autonomous::BaseAutonomousActor(
-          s, control_loops::drivetrain::GetDrivetrainConfig()) {}
+          event_loop, s, control_loops::drivetrain::GetDrivetrainConfig()),
+      localizer_control_sender_(
+          event_loop->MakeSender<
+              ::frc971::control_loops::drivetrain::LocalizerControl>(
+              ".frc971.control_loops.drivetrain.localizer_control")) {}
 
 bool AutonomousActor::WaitForDriveXGreater(double x) {
   LOG(INFO, "Waiting until x > %f\n", x);
@@ -88,7 +92,7 @@ void AutonomousActor::Reset(bool is_left) {
   SendSuperstructureGoal();
 
   {
-    auto localizer_resetter = localizer_control.MakeMessage();
+    auto localizer_resetter = localizer_control_sender_.MakeMessage();
     // Start on the left l2.
     localizer_resetter->x = 1.0;
     localizer_resetter->y = 1.35 * turn_scalar;

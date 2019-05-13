@@ -50,9 +50,10 @@ double DoubleSeconds(monotonic_clock::duration duration) {
 }  // namespace
 
 AutonomousActor::AutonomousActor(
+    ::aos::EventLoop *event_loop,
     ::frc971::autonomous::AutonomousActionQueueGroup *s)
     : frc971::autonomous::BaseAutonomousActor(
-          s, control_loops::drivetrain::GetDrivetrainConfig()) {}
+          event_loop, s, control_loops::drivetrain::GetDrivetrainConfig()) {}
 
 constexpr double kDoNotTurnCare = 2.0;
 

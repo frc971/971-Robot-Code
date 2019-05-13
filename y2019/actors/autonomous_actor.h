@@ -10,6 +10,7 @@
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/drivetrain/localizer.q.h"
 #include "y2019/control_loops/superstructure/superstructure.q.h"
 
 namespace y2019 {
@@ -25,7 +26,8 @@ struct ElevatorWristPosition {
 
 class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  public:
-  explicit AutonomousActor(::frc971::autonomous::AutonomousActionQueueGroup *s);
+  explicit AutonomousActor(::aos::EventLoop *event_loop,
+                           ::frc971::autonomous::AutonomousActionQueueGroup *s);
 
   bool RunAction(
       const ::frc971::autonomous::AutonomousActionParams &params) override;
@@ -180,6 +182,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   // Waits until y is within y of zero.
   bool WaitForDriveYCloseToZero(double y);
+
+  ::aos::Sender<::frc971::control_loops::drivetrain::LocalizerControl>
+      localizer_control_sender_;
 };
 
 }  // namespace actors

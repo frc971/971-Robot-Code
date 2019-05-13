@@ -1,132 +1,134 @@
-package(default_visibility = ['//visibility:public'])
+package(default_visibility = ["//visibility:public"])
 
-load('//aos/build:queues.bzl', 'queue_library')
+load("//aos/build:queues.bzl", "queue_library")
 
 filegroup(
-  name = 'binaries',
-  srcs = [
-    ':superstructure_action',
-    ':autonomous_action',
-  ],
+    name = "binaries",
+    srcs = [
+        ":autonomous_action",
+        ":superstructure_action",
+    ],
 )
 
 queue_library(
-  name = 'superstructure_action_queue',
-  srcs = [
-    'superstructure_action.q',
-  ],
-  deps = [
-    '//aos/actions:action_queue',
-  ],
+    name = "superstructure_action_queue",
+    srcs = [
+        "superstructure_action.q",
+    ],
+    deps = [
+        "//aos/actions:action_queue",
+    ],
 )
 
 cc_library(
-  name = 'superstructure_action_lib',
-  srcs = [
-    'superstructure_actor.cc',
-  ],
-  hdrs = [
-    'superstructure_actor.h',
-  ],
-  deps = [
-    ':superstructure_action_queue',
-    '//aos/util:phased_loop',
-    '//aos/logging',
-    '//aos/actions:action_lib',
-    '//y2016/control_loops/superstructure:superstructure_queue',
-  ],
+    name = "superstructure_action_lib",
+    srcs = [
+        "superstructure_actor.cc",
+    ],
+    hdrs = [
+        "superstructure_actor.h",
+    ],
+    deps = [
+        ":superstructure_action_queue",
+        "//aos/actions:action_lib",
+        "//aos/events:event-loop",
+        "//aos/logging",
+        "//aos/util:phased_loop",
+        "//y2016/control_loops/superstructure:superstructure_queue",
+    ],
 )
 
 cc_binary(
-  name = 'superstructure_action',
-  srcs = [
-    'superstructure_actor_main.cc',
-  ],
-  deps = [
-    ':superstructure_action_lib',
-    ':superstructure_action_queue',
-    '//aos:init',
-  ],
+    name = "superstructure_action",
+    srcs = [
+        "superstructure_actor_main.cc",
+    ],
+    deps = [
+        ":superstructure_action_lib",
+        ":superstructure_action_queue",
+        "//aos:init",
+        "//aos/events:shm-event-loop",
+    ],
 )
 
 cc_library(
-  name = 'autonomous_action_lib',
-  srcs = [
-    'autonomous_actor.cc',
-  ],
-  hdrs = [
-    'autonomous_actor.h',
-  ],
-  deps = [
-    ':vision_align_action_lib',
-    '//aos/util:phased_loop',
-    '//aos/logging',
-    '//aos/actions:action_lib',
-    '//frc971/autonomous:base_autonomous_actor',
-    '//frc971/control_loops/drivetrain:drivetrain_queue',
-    '//y2016/queues:ball_detector',
-    '//y2016/control_loops/superstructure:superstructure_queue',
-    '//y2016/control_loops/shooter:shooter_queue',
-    '//y2016/control_loops/drivetrain:drivetrain_base',
-    '//y2016/queues:profile_params',
-    '//y2016/vision:vision_queue',
-  ],
+    name = "autonomous_action_lib",
+    srcs = [
+        "autonomous_actor.cc",
+    ],
+    hdrs = [
+        "autonomous_actor.h",
+    ],
+    deps = [
+        ":vision_align_action_lib",
+        "//aos/actions:action_lib",
+        "//aos/logging",
+        "//aos/util:phased_loop",
+        "//frc971/autonomous:base_autonomous_actor",
+        "//frc971/control_loops/drivetrain:drivetrain_queue",
+        "//y2016/control_loops/drivetrain:drivetrain_base",
+        "//y2016/control_loops/shooter:shooter_queue",
+        "//y2016/control_loops/superstructure:superstructure_queue",
+        "//y2016/queues:ball_detector",
+        "//y2016/queues:profile_params",
+        "//y2016/vision:vision_queue",
+    ],
 )
 
 cc_binary(
-  name = 'autonomous_action',
-  srcs = [
-    'autonomous_actor_main.cc',
-  ],
-  deps = [
-    ':autonomous_action_lib',
-    '//aos:init',
-  ],
+    name = "autonomous_action",
+    srcs = [
+        "autonomous_actor_main.cc",
+    ],
+    deps = [
+        ":autonomous_action_lib",
+        "//aos:init",
+    ],
 )
 
 queue_library(
-  name = 'vision_align_action_queue',
-  srcs = [
-    'vision_align_action.q',
-  ],
-  deps = [
-    '//aos/actions:action_queue',
-  ],
+    name = "vision_align_action_queue",
+    srcs = [
+        "vision_align_action.q",
+    ],
+    deps = [
+        "//aos/actions:action_queue",
+    ],
 )
 
 cc_library(
-  name = 'vision_align_action_lib',
-  srcs = [
-    'vision_align_actor.cc',
-  ],
-  hdrs = [
-    'vision_align_actor.h',
-  ],
-  deps = [
-    ':vision_align_action_queue',
-    '//aos/time:time',
-    '//aos:math',
-    '//aos/util:phased_loop',
-    '//aos/logging',
-    '//aos/actions:action_lib',
-    '//aos/logging:queue_logging',
-    '//aos/util:trapezoid_profile',
-    '//frc971/control_loops/drivetrain:drivetrain_queue',
-    '//third_party/eigen',
-    '//y2016:constants',
-    '//y2016/control_loops/drivetrain:drivetrain_base',
-    '//y2016/vision:vision_queue',
-  ],
+    name = "vision_align_action_lib",
+    srcs = [
+        "vision_align_actor.cc",
+    ],
+    hdrs = [
+        "vision_align_actor.h",
+    ],
+    deps = [
+        ":vision_align_action_queue",
+        "//aos:math",
+        "//aos/actions:action_lib",
+        "//aos/logging",
+        "//aos/logging:queue_logging",
+        "//aos/time",
+        "//aos/util:phased_loop",
+        "//aos/util:trapezoid_profile",
+        "//frc971/control_loops/drivetrain:drivetrain_queue",
+        "//third_party/eigen",
+        "//y2016:constants",
+        "//y2016/control_loops/drivetrain:drivetrain_base",
+        "//y2016/vision:vision_queue",
+    ],
 )
 
 cc_binary(
-  name = 'vision_align_action',
-  srcs = [
-    'vision_align_actor_main.cc',
-  ],
-  deps = [
-    ':vision_align_action_lib',
-    ':vision_align_action_queue',
-    '//aos:init',
-  ],
+    name = "vision_align_action",
+    srcs = [
+        "vision_align_actor_main.cc",
+    ],
+    deps = [
+        ":vision_align_action_lib",
+        ":vision_align_action_queue",
+        "//aos:init",
+    ],
 )

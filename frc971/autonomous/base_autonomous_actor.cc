@@ -21,13 +21,13 @@ namespace frc971 {
 namespace autonomous {
 
 BaseAutonomousActor::BaseAutonomousActor(
-    AutonomousActionQueueGroup *s,
+    ::aos::EventLoop *event_loop, AutonomousActionQueueGroup *s,
     const control_loops::drivetrain::DrivetrainConfig<double> &dt_config)
     : aos::common::actions::ActorBase<AutonomousActionQueueGroup>(s),
       dt_config_(dt_config),
       initial_drivetrain_({0.0, 0.0}),
       target_selector_hint_sender_(
-          event_loop_.MakeSender<
+          event_loop->MakeSender<
               ::y2019::control_loops::drivetrain::TargetSelectorHint>(
               ".y2019.control_loops.drivetrain.target_selector_hint")) {}
 

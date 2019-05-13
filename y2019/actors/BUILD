@@ -25,6 +25,7 @@ cc_library(
         "autonomous_actor.h",
     ],
     deps = [
+        "//aos/events:event-loop",
         "//aos/logging",
         "//aos/util:phased_loop",
         "//frc971/autonomous:base_autonomous_actor",
@@ -45,6 +46,7 @@ cc_binary(
     deps = [
         ":autonomous_action_lib",
         "//aos:init",
+        "//aos/events:shm-event-loop",
         "//frc971/autonomous:auto_queue",
     ],
 )
