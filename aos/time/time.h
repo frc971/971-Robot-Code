@@ -2,17 +2,16 @@
 #define AOS_TIME_H_
 
 #include <stdint.h>
-#include <time.h>
 #include <sys/time.h>
-#include <stdint.h>
+#include <time.h>
 
-#include <type_traits>
 #include <chrono>
-#include <thread>
 #include <ostream>
+#include <thread>
+#include <type_traits>
 
-#include "aos/type_traits/type_traits.h"
 #include "aos/macros.h"
+#include "aos/type_traits/type_traits.h"
 
 namespace aos {
 
@@ -96,6 +95,16 @@ constexpr ::std::chrono::nanoseconds FromRate(int hertz) {
   return ::std::chrono::duration_cast<::std::chrono::nanoseconds>(
              ::std::chrono::seconds(1)) /
          hertz;
+}
+
+template <typename Scalar>
+constexpr Scalar TypedDurationInSeconds(monotonic_clock::duration dt) {
+  return ::std::chrono::duration_cast<::std::chrono::duration<Scalar>>(dt)
+      .count();
+}
+
+constexpr double DurationInSeconds(monotonic_clock::duration dt) {
+  return TypedDurationInSeconds<double>(dt);
 }
 
 // RAII class that freezes monotonic_clock::now() (to avoid making large numbers

@@ -256,9 +256,7 @@ class SuperstructureSimulation {
     freeze_indexer_ = freeze_indexer;
   }
   // Triggers the turret to freeze relative to the indexer.
-  void set_freeze_turret(bool freeze_turret) {
-    freeze_turret_ = freeze_turret;
-  }
+  void set_freeze_turret(bool freeze_turret) { freeze_turret_ = freeze_turret; }
 
   // Simulates the superstructure for a single timestep.
   void Simulate() {
@@ -511,9 +509,8 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
 
       RunIteration(enabled);
 
-      const double loop_time =
-          chrono::duration_cast<chrono::duration<double>>(
-              monotonic_clock::now() - loop_start_time).count();
+      const double loop_time = ::aos::time::DurationInSeconds(
+          monotonic_clock::now() - loop_start_time);
       const double intake_acceleration =
           (superstructure_plant_.intake_velocity() - begin_intake_velocity) /
           loop_time;
@@ -958,7 +955,6 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
   superstructure_plant_.set_hood_voltage_offset(0.0);
   RunForTime(chrono::seconds(5), false);
 
-
   EXPECT_EQ(hood::Hood::State::RUNNING, superstructure_.hood().state());
   EXPECT_EQ(intake::Intake::State::RUNNING, superstructure_.intake().state());
   EXPECT_EQ(column::Column::State::RUNNING, superstructure_.column().state());
@@ -985,7 +981,6 @@ TEST_F(SuperstructureTest, ShooterSpinUpAndDown) {
     goal->indexer.angular_velocity = 20.0;
     ASSERT_TRUE(goal.Send());
   }
-
 
   RunForTime(chrono::seconds(5));
   VerifyNearGoal();

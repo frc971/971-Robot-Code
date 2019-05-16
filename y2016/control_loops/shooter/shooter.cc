@@ -8,7 +8,6 @@
 
 #include "y2016/control_loops/shooter/shooter_plant.h"
 
-
 namespace y2016 {
 namespace control_loops {
 namespace shooter {
@@ -37,9 +36,7 @@ void ShooterSide::set_position(double current_position) {
   history_position_ = (history_position_ + 1) % kHistoryLength;
 }
 
-double ShooterSide::voltage() const {
-  return loop_->U(0, 0);
-}
+double ShooterSide::voltage() const { return loop_->U(0, 0); }
 
 void ShooterSide::Update(bool disabled) {
   loop_->mutable_R() = loop_->next_R();
@@ -60,8 +57,7 @@ void ShooterSide::SetStatus(ShooterSideStatus *status) {
   // Compute the distance moved over that time period.
   status->avg_angular_velocity =
       (history_[oldest_history_position] - history_[history_position_]) /
-      (chrono::duration_cast<chrono::duration<double>>(
-           ::aos::controls::kLoopFrequency).count() *
+      (::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency) *
        static_cast<double>(kHistoryLength - 1));
 
   status->angular_velocity = loop_->X_hat(1, 0);

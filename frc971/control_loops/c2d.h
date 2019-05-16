@@ -4,6 +4,7 @@
 #include <chrono>
 
 #include <Eigen/Dense>
+#include "aos/time/time.h"
 // We need to include MatrixFunctions for the matrix exponential.
 #include "unsupported/Eigen/MatrixFunctions"
 
@@ -23,11 +24,9 @@ void C2D(const ::Eigen::Matrix<Scalar, num_states, num_states> &A_continuous,
       M_state_continuous;
   M_state_continuous.setZero();
   M_state_continuous.template block<num_states, num_states>(0, 0) =
-      A_continuous *
-      ::std::chrono::duration_cast<::std::chrono::duration<Scalar>>(dt).count();
+      A_continuous * ::aos::time::TypedDurationInSeconds<Scalar>(dt);
   M_state_continuous.template block<num_states, num_inputs>(0, num_states) =
-      B_continuous *
-      ::std::chrono::duration_cast<::std::chrono::duration<Scalar>>(dt).count();
+      B_continuous * ::aos::time::TypedDurationInSeconds<Scalar>(dt);
 
   Eigen::Matrix<Scalar, num_states + num_inputs, num_states + num_inputs>
       M_state = M_state_continuous.exp();
@@ -52,9 +51,7 @@ void DiscretizeQ(
       A_continuous.transpose();
 
   Eigen::Matrix<Scalar, 2 * num_states, 2 *num_states> phi =
-      (M_gain *
-       ::std::chrono::duration_cast<::std::chrono::duration<Scalar>>(dt)
-           .count()).exp();
+      (M_gain * ::aos::time::TypedDurationInSeconds<Scalar>(dt)).exp();
 
   // Phi12 = phi[0:num_states, num_states:2*num_states]
   // Phi22 = phi[num_states:2*num_states,
@@ -88,8 +85,7 @@ void DiscretizeQAFast(
     Eigen::Matrix<Scalar, num_states, num_states> *A_d) {
   Eigen::Matrix<Scalar, num_states, num_states> Qtemp =
       (Q_continuous + Q_continuous.transpose()) / static_cast<Scalar>(2.0);
-  Scalar dt_d =
-      ::std::chrono::duration_cast<::std::chrono::duration<Scalar>>(dt).count();
+  Scalar dt_d = ::aos::time::TypedDurationInSeconds<Scalar>(dt);
   Eigen::Matrix<Scalar, num_states, num_states> last_term = Qtemp;
   double last_coeff = dt_d;
   const Eigen::Matrix<Scalar, num_states, num_states> At =
@@ -112,8 +108,7 @@ void DiscretizeQAFast(
     Atn *= At;
     phi22 += last_coeff * Atn;
   }
-  Eigen::Matrix<Scalar, num_states, num_states> phi22t =
-    phi22.transpose();
+  Eigen::Matrix<Scalar, num_states, num_states> phi22t = phi22.transpose();
 
   Qtemp = phi22t * phi12;
   *Q_d = (Qtemp + Qtemp.transpose()) / static_cast<Scalar>(2.0);

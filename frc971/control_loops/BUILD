@@ -303,6 +303,7 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "//aos/time",
         "//third_party/eigen",
     ],
 )

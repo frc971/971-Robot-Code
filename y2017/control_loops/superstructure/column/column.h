@@ -148,9 +148,7 @@ void ColumnProfiledSubsystem::PopulateTurretStatus(StatusType *status) {
   status->voltage_error = X_hat(5, 0);
   status->calculated_velocity =
       (turret_position() - turret_last_position_) /
-      ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-          ::aos::controls::kLoopFrequency)
-          .count();
+      ::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency);
 
   status->estimator_state = EstimatorState(0);
 

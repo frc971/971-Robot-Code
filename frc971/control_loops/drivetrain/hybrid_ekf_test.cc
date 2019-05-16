@@ -4,8 +4,8 @@
 
 #include "aos/testing/random_seed.h"
 #include "aos/testing/test_shm.h"
-#include "frc971/control_loops/drivetrain/trajectory.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
+#include "frc971/control_loops/drivetrain/trajectory.h"
 #include "gtest/gtest.h"
 
 namespace frc971 {
@@ -14,7 +14,6 @@ namespace drivetrain {
 namespace testing {
 
 typedef HybridEkf<>::StateIdx StateIdx;
-
 
 class HybridEkfTest : public ::testing::Test {
  public:
@@ -37,8 +36,7 @@ class HybridEkfTest : public ::testing::Test {
     return RungeKuttaU(
         ::std::bind(&HybridEkfTest::DiffEq, this, ::std::placeholders::_1,
                     ::std::placeholders::_2),
-        X, U, ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-                  dt_config_.dt).count());
+        X, U, ::aos::time::DurationInSeconds(dt_config_.dt));
   }
   void CheckDiffEq(const State &X, const Input &U) {
     // Re-implement dynamics as a sanity check:
@@ -69,15 +67,11 @@ class HybridEkfTest : public ::testing::Test {
     // Dynamics don't expect error terms to change:
     EXPECT_EQ(0.0, Xdot_ekf.bottomRows<3>().squaredNorm());
   }
-  State DiffEq(const State &X, const Input &U) {
-    return ekf_.DiffEq(X, U);
-  }
+  State DiffEq(const State &X, const Input &U) { return ekf_.DiffEq(X, U); }
 
   // Returns a random value sampled from a normal distribution with a standard
   // deviation of std and a mean of zero.
-  double Normal(double std) {
-    return normal_(gen_) * std;
-  }
+  double Normal(double std) { return normal_(gen_) * std; }
 
   DrivetrainConfig<double> dt_config_;
   HybridEkf<> ekf_;
@@ -93,19 +87,23 @@ TEST_F(HybridEkfTest, CheckDynamics) {
   CheckDiffEq(State::Zero(), Input::Zero());
   CheckDiffEq(State::Zero(), {-5.0, 5.0});
   CheckDiffEq(State::Zero(), {12.0, -3.0});
-  CheckDiffEq((State() << 100.0, 200.0, M_PI, 1.234, 0.5, 1.2, 0.6, 3.0, -4.0,
-               0.3).finished(),
-              {5.0, 6.0});
-  CheckDiffEq((State() << 100.0, 200.0, 2.0, 1.234, 0.5, 1.2, 0.6, 3.0, -4.0,
-               0.3).finished(),
-              {5.0, 6.0});
-  CheckDiffEq((State() << 100.0, 200.0, -2.0, 1.234, 0.5, 1.2, 0.6, 3.0, -4.0,
-               0.3).finished(),
-              {5.0, 6.0});
+  CheckDiffEq(
+      (State() << 100.0, 200.0, M_PI, 1.234, 0.5, 1.2, 0.6, 3.0, -4.0, 0.3)
+          .finished(),
+      {5.0, 6.0});
+  CheckDiffEq(
+      (State() << 100.0, 200.0, 2.0, 1.234, 0.5, 1.2, 0.6, 3.0, -4.0, 0.3)
+          .finished(),
+      {5.0, 6.0});
+  CheckDiffEq(
+      (State() << 100.0, 200.0, -2.0, 1.234, 0.5, 1.2, 0.6, 3.0, -4.0, 0.3)
+          .finished(),
+      {5.0, 6.0});
   // And check that a theta outisde of [-M_PI, M_PI] works.
-  CheckDiffEq((State() << 100.0, 200.0, 200.0, 1.234, 0.5, 1.2, 0.6, 3.0, -4.0,
-               0.3).finished(),
-              {5.0, 6.0});
+  CheckDiffEq(
+      (State() << 100.0, 200.0, 200.0, 1.234, 0.5, 1.2, 0.6, 3.0, -4.0, 0.3)
+          .finished(),
+      {5.0, 6.0});
 }
 
 // Tests that if we provide a bunch of observations of the position
@@ -232,7 +230,7 @@ TEST_P(HybridEkfOldCorrectionsTest, CreateOldCorrection) {
   expected_X_hat(1, 0) = Z(1, 0) + modeled_X_hat(0, 0);
   expected_X_hat(2, 0) = Z(2, 0);
   EXPECT_LT((expected_X_hat.topRows<7>() - ekf_.X_hat().topRows<7>()).norm(),
-           1e-3)
+            1e-3)
       << "X_hat: " << ekf_.X_hat() << " expected " << expected_X_hat;
   // The covariance after the predictions but before the corrections should
   // be higher than after the corrections are made.
@@ -299,7 +297,9 @@ TEST_F(HybridEkfTest, PerfectEncoderUpdate) {
                                U, t0_ + (ii + 1) * dt_config_.dt);
     EXPECT_NEAR((true_X - ekf_.X_hat()).squaredNorm(), 0.0, 1e-25)
         << "Expected only floating point precision errors in update step. "
-           "Estimated X_hat:\n" << ekf_.X_hat() << "\ntrue X:\n" << true_X;
+           "Estimated X_hat:\n"
+        << ekf_.X_hat() << "\ntrue X:\n"
+        << true_X;
   }
 }
 
@@ -373,14 +373,17 @@ TEST_F(HybridEkfTest, RealisticEncoderUpdateConverges) {
         true_X(StateIdx::kRightEncoder, 0) + Normal(1e-3),
         (true_X(StateIdx::kRightVelocity, 0) -
          true_X(StateIdx::kLeftVelocity, 0)) /
-            dt_config_.robot_radius / 2.0 + Normal(1e-4),
+                dt_config_.robot_radius / 2.0 +
+            Normal(1e-4),
         U, t0_ + (ii + 1) * dt_config_.dt);
   }
   EXPECT_NEAR(
       (true_X.bottomRows<9>() - ekf_.X_hat().bottomRows<9>()).squaredNorm(),
       0.0, 2e-3)
       << "Expected non-x/y estimates to converge to correct. "
-         "Estimated X_hat:\n" << ekf_.X_hat() << "\ntrue X:\n" << true_X;
+         "Estimated X_hat:\n"
+      << ekf_.X_hat() << "\ntrue X:\n"
+      << true_X;
 }
 
 class HybridEkfDeathTest : public HybridEkfTest {};

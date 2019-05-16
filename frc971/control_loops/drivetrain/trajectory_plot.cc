@@ -15,7 +15,8 @@
 //   Basic ideas from spline following are from Jared Russell and
 //   http://msc.fe.uni-lj.si/Papers/Chapter10_MobileRobotsNewResearch_Lepetic2005.pdf
 //
-// For the future, I'd like to use the following to measure distance to the path.
+// For the future, I'd like to use the following to measure distance to the
+// path.
 //   http://home.eps.hw.ac.uk/~ab226/papers/dist.pdf
 //
 // LQR controller was inspired by
@@ -109,9 +110,7 @@ void Main() {
   ::std::vector<double> length_plan_vl;
   ::std::vector<double> length_plan_vr;
   const chrono::nanoseconds kDt = chrono::microseconds(5050);
-  const double kDtDouble =
-      ::std::chrono::duration_cast<::std::chrono::duration<double>>(kDt)
-          .count();
+  const double kDtDouble = ::aos::time::DurationInSeconds(kDt);
   {
     ::std::vector<::Eigen::Matrix<double, 3, 1>> length_plan_xva =
         trajectory.PlanXVA(kDt);

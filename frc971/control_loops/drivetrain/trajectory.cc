@@ -4,8 +4,8 @@
 
 #include "Eigen/Dense"
 #include "aos/logging/matrix_logging.h"
-#include "frc971/control_loops/dlqr.h"
 #include "frc971/control_loops/c2d.h"
+#include "frc971/control_loops/dlqr.h"
 #include "frc971/control_loops/drivetrain/distance_spline.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/hybrid_state_feedback_loop.h"
@@ -259,7 +259,6 @@ const ::std::vector<double> Trajectory::Distances() const {
 
 ::Eigen::Matrix<double, 5, 5> Trajectory::ALinearizedContinuous(
     const ::Eigen::Matrix<double, 5, 1> &state) const {
-
   const double sintheta = ::std::sin(state(2));
   const double costheta = ::std::cos(state(2));
   const ::Eigen::Matrix<double, 2, 1> linear_angular =
@@ -268,7 +267,7 @@ const ::std::vector<double> Trajectory::Distances() const {
   // When stopped, just roll with a min velocity.
   double linear_velocity = 0.0;
   constexpr double kMinVelocity = 0.1;
-  if (::std::abs(linear_angular(0)) < kMinVelocity / 100.0)  {
+  if (::std::abs(linear_angular(0)) < kMinVelocity / 100.0) {
     linear_velocity = 0.1;
   } else if (::std::abs(linear_angular(0)) > kMinVelocity) {
     linear_velocity = linear_angular(0);
@@ -312,8 +311,7 @@ void Trajectory::AB(const ::Eigen::Matrix<double, 5, 1> &state,
       BLinearizedContinuous();
 
   // Now, convert it to discrete.
-  controls::C2D(A_linearized_continuous, B_linearized_continuous,
-                dt, A, B);
+  controls::C2D(A_linearized_continuous, B_linearized_continuous, dt, A, B);
 }
 
 ::Eigen::Matrix<double, 2, 5> Trajectory::KForState(
@@ -355,24 +353,25 @@ const ::Eigen::Matrix<double, 5, 1> Trajectory::GoalState(double distance,
   result.block<2, 1>(0, 0) = spline_->XY(distance);
   result(2, 0) = spline_->Theta(distance);
 
-  result.block<2, 1>(3, 0) = Tla_to_lr_ *
-                             (::Eigen::Matrix<double, 2, 1>() << velocity,
-                              spline_->DThetaDt(distance, velocity))
-                                 .finished();
+  result.block<2, 1>(3, 0) =
+      Tla_to_lr_ * (::Eigen::Matrix<double, 2, 1>() << velocity,
+                    spline_->DThetaDt(distance, velocity))
+                       .finished();
   return result;
 }
 
 ::Eigen::Matrix<double, 3, 1> Trajectory::GetNextXVA(
     ::std::chrono::nanoseconds dt, ::Eigen::Matrix<double, 2, 1> *state) {
-  double dt_float =
-      ::std::chrono::duration_cast<::std::chrono::duration<double>>(dt).count();
+  double dt_float = ::aos::time::DurationInSeconds(dt);
 
   // TODO(austin): This feels like something that should be pulled out into
   // a library for re-use.
-  *state = RungeKutta([this](const ::Eigen::Matrix<double, 2, 1> x) {
-    ::Eigen::Matrix<double, 3, 1> xva = FFAcceleration(x(0));
-    return (::Eigen::Matrix<double, 2, 1>() << x(1), xva(2)).finished();
-  }, *state, dt_float);
+  *state = RungeKutta(
+      [this](const ::Eigen::Matrix<double, 2, 1> x) {
+        ::Eigen::Matrix<double, 3, 1> xva = FFAcceleration(x(0));
+        return (::Eigen::Matrix<double, 2, 1>() << x(1), xva(2)).finished();
+      },
+      *state, dt_float);
 
   ::Eigen::Matrix<double, 3, 1> result = FFAcceleration((*state)(0));
   (*state)(1) = result(1);

@@ -224,9 +224,8 @@ class IntakeSystemTest : public ::aos::testing::ControlLoopTest {
 
       RunIteration(enabled, null_goal);
 
-      const double loop_time = chrono::duration_cast<chrono::duration<double>>(
-                                   monotonic_clock::now() - loop_start_time)
-                                   .count();
+      const double loop_time = ::aos::time::DurationInSeconds(
+          monotonic_clock::now() - loop_start_time);
       const double subsystem_acceleration =
           (subsystem_plant_.subsystem_velocity() - begin_subsystem_velocity) /
           loop_time;

@@ -19,11 +19,6 @@ namespace chrono = ::std::chrono;
 
 namespace {
 
-double DoubleSeconds(monotonic_clock::duration duration) {
-  return ::std::chrono::duration_cast<::std::chrono::duration<double>>(duration)
-      .count();
-}
-
 const ProfileParameters kDrive = {5.0, 2.5};
 const ProfileParameters kTurn = {8.0, 3.0};
 
@@ -44,7 +39,8 @@ bool AutonomousActor::RunAction(
   StartDrive(1.0, 0.0, kDrive, kTurn);
   if (!WaitForDriveDone()) return true;
 
-  LOG(INFO, "Done %f\n", DoubleSeconds(monotonic_clock::now() - start_time));
+  LOG(INFO, "Done %f\n",
+      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
 
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
                                       ::std::chrono::milliseconds(5) / 2);

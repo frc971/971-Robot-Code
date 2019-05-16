@@ -59,12 +59,8 @@ double Interpolate(monotonic_clock::time_point before_time, double before_data,
                    monotonic_clock::time_point after_time, double after_data,
                    monotonic_clock::time_point current_time) {
   const double age_ratio =
-      ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-          current_time - before_time)
-          .count() /
-      ::std::chrono::duration_cast<::std::chrono::duration<double>>(after_time -
-                                                                    before_time)
-          .count();
+      ::aos::time::DurationInSeconds(current_time - before_time) /
+      ::aos::time::DurationInSeconds(after_time - before_time);
   return before_data * (1 - age_ratio) + after_data * age_ratio;
 }
 
@@ -142,8 +138,7 @@ void VisionTimeAdjuster::Tick(monotonic_clock::time_point monotonic_now,
     if (column_angle_is_valid && drivetrain_angle_is_valid) {
       LOG(INFO, "Accepting Vision angle of %f, age %f\n",
           most_recent_vision_angle_,
-          chrono::duration_cast<chrono::duration<double>>(
-              monotonic_now - last_target_time).count());
+          ::aos::time::DurationInSeconds(monotonic_now - last_target_time));
       most_recent_vision_reading_ = vision_status->angle;
       most_recent_vision_angle_ =
           vision_status->angle + column_angle + drivetrain_angle;

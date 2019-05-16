@@ -127,9 +127,7 @@ void ColumnProfiledSubsystem::Correct(const ColumnPosition &new_position) {
 
   indexer_dt_velocity_ =
       (new_position.indexer.encoder - indexer_last_position_) /
-      chrono::duration_cast<chrono::duration<double>>(
-          ::aos::controls::kLoopFrequency)
-          .count();
+      ::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency);
   indexer_last_position_ = new_position.indexer.encoder;
 
   stuck_indexer_detector_->Correct(Y_);
@@ -144,9 +142,7 @@ void ColumnProfiledSubsystem::Correct(const ColumnPosition &new_position) {
   indexer_average_angular_velocity_ =
       (indexer_history_[indexer_oldest_history_position] -
        indexer_history_[indexer_history_position_]) /
-      (chrono::duration_cast<chrono::duration<double>>(
-           ::aos::controls::kLoopFrequency)
-           .count() *
+      (::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency) *
        static_cast<double>(kHistoryLength - 1));
 
   // Ready if average angular velocity is close to the goal.
@@ -255,9 +251,8 @@ void ColumnProfiledSubsystem::Update(bool disable) {
     ::Eigen::Matrix<double, 2, 1> goal_state =
         profile_.Update(unprofiled_goal_(2, 0), unprofiled_goal_(3, 0));
 
-    constexpr double kDt = chrono::duration_cast<chrono::duration<double>>(
-                               ::aos::controls::kLoopFrequency)
-                               .count();
+    constexpr double kDt =
+        ::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency);
 
     loop_->mutable_next_R(0, 0) = 0.0;
     // TODO(austin): This might not handle saturation right, but I'm not sure I
@@ -297,7 +292,8 @@ void ColumnProfiledSubsystem::Update(bool disable) {
 bool ColumnProfiledSubsystem::CheckHardLimits() {
   // Returns whether hard limits have been exceeded.
 
-  if (turret_position() > range_.upper_hard || turret_position() < range_.lower_hard) {
+  if (turret_position() > range_.upper_hard ||
+      turret_position() < range_.lower_hard) {
     LOG(ERROR,
         "ColumnProfiledSubsystem at %f out of bounds [%f, %f], ESTOPing\n",
         turret_position(), range_.lower_hard, range_.upper_hard);

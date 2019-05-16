@@ -1,8 +1,8 @@
 #ifndef AOS_UTIL_LOG_INTERVAL_H_
 #define AOS_UTIL_LOG_INTERVAL_H_
 
-#include "aos/time/time.h"
 #include "aos/logging/logging.h"
+#include "aos/time/time.h"
 
 #include <string>
 
@@ -78,8 +78,7 @@ class SimpleLogInterval {
       log_do(level_, "%s: %.*s %d times over %f sec\n", context_,
              static_cast<int>(message_.size()), message_.data(),
              interval_.Count(),
-             ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-                 interval_.interval()).count());
+             ::aos::time::DurationInSeconds(interval_.interval()));
       context_ = NULL;
     }
   }

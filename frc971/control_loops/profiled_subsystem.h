@@ -265,9 +265,7 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::PopulateStatus(
   status->voltage_error = this->X_hat(2, 0);
   status->calculated_velocity =
       (position() - last_position_) /
-      ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-          ::aos::controls::kLoopFrequency)
-          .count();
+      ::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency);
 
   status->estimator_state = this->EstimatorState(0);
 

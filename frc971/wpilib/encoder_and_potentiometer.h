@@ -7,6 +7,7 @@
 
 #include "aos/macros.h"
 #include "aos/mutex/mutex.h"
+#include "aos/time/time.h"
 
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Counter.h"
@@ -236,9 +237,7 @@ class DutyCycleReader {
   static constexpr ::std::chrono::nanoseconds kNominalPeriod =
       ::std::chrono::microseconds(4096);
   static constexpr double kMaxPeriod =
-      (::std::chrono::duration_cast<::std::chrono::duration<double>>(
-           kNominalPeriod) *
-       2).count();
+      ::aos::time::DurationInSeconds(kNominalPeriod * 2);
 
   ::std::unique_ptr<::frc::Counter> high_counter_, period_length_counter_;
   ::std::unique_ptr<::frc::DigitalInput> input_;

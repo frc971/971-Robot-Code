@@ -47,9 +47,7 @@ class IntakeController {
       loop_;
 
   constexpr static double kDt =
-      ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-          ::aos::controls::kLoopFrequency)
-          .count();
+      ::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency);
 
   // Sets the offset of the controller to be the zeroing estimator offset when
   // possible otherwise zero.
@@ -93,9 +91,7 @@ class IntakeSide {
 
   State state() const { return state_; }
 
-  bool clear_of_box() const {
-    return controller_.output_position() < -0.1;
-  }
+  bool clear_of_box() const { return controller_.output_position() < -0.1; }
 
   double output_position() const { return controller_.output_position(); }
 

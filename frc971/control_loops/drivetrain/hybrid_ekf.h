@@ -3,12 +3,12 @@
 
 #include <chrono>
 
+#include "Eigen/Dense"
 #include "aos/containers/priority_queue.h"
 #include "aos/util/math.h"
 #include "frc971/control_loops/c2d.h"
-#include "frc971/control_loops/runge_kutta.h"
-#include "Eigen/Dense"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/runge_kutta.h"
 
 namespace y2019 {
 namespace control_loops {
@@ -50,7 +50,7 @@ class HybridEkf {
     kRightEncoder = 5,
     kRightVelocity = 6,
     kLeftVoltageError = 7,
-    kRightVoltageError = 8 ,
+    kRightVoltageError = 8,
     kAngularError = 9,
   };
   static constexpr int kNStates = 10;
@@ -140,10 +140,12 @@ class HybridEkf {
           void(const State &, const StateSquare &,
                ::std::function<Output(const State &, const Input &)> *,
                ::std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(
-                   const State &)> *)> make_h,
+                   const State &)> *)>
+          make_h,
       ::std::function<Output(const State &, const Input &)> h,
       ::std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(const State &)>
-          dhdx, const Eigen::Matrix<Scalar, kNOutputs, kNOutputs> &R,
+          dhdx,
+      const Eigen::Matrix<Scalar, kNOutputs, kNOutputs> &R,
       aos::monotonic_clock::time_point t);
 
   // A utility function for specifically updating with encoder and gyro
@@ -177,9 +179,10 @@ class HybridEkf {
     Eigen::Matrix<Scalar, kNOutputs, kNOutputs> R;
     R.setZero();
     R.diagonal() << encoder_noise_, encoder_noise_, gyro_noise_;
-    Correct(z, &U, {}, [this](const State &X, const Input &) {
-                         return H_encoders_and_gyro_ * X;
-                       },
+    Correct(z, &U, {},
+            [this](const State &X, const Input &) {
+              return H_encoders_and_gyro_ * X;
+            },
             [this](const State &) { return H_encoders_and_gyro_; }, R, t);
   }
 
@@ -210,11 +213,12 @@ class HybridEkf {
     // estimate. This is used by the camera to make it so that we only have to
     // match targets once.
     // Only called if h and dhdx are empty.
-    ::std::function<
-        void(const State &, const StateSquare &,
-             ::std::function<Output(const State &, const Input &)> *,
-             ::std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(
-                 const State &)> *)> make_h;
+    ::std::function<void(
+        const State &, const StateSquare &,
+        ::std::function<Output(const State &, const Input &)> *,
+        ::std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(
+            const State &)> *)>
+        make_h;
     // A function to calculate the expected output at a given state/input.
     // TODO(james): For encoders/gyro, it is linear and the function call may
     // be expensive. Potential source of optimization.
@@ -226,14 +230,14 @@ class HybridEkf {
     // recalculate it to be strictly correct, but I was both too lazy to do
     // so and it seemed unnecessary). This is a potential source for future
     // optimizations if function calls are being expensive.
-    ::std::function<
-        Eigen::Matrix<Scalar, kNOutputs, kNStates>(const State &)> dhdx;
+    ::std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(const State &)>
+        dhdx;
     // The measurement noise matrix.
     Eigen::Matrix<Scalar, kNOutputs, kNOutputs> R;
 
     // In order to sort the observations in the PriorityQueue object, we
     // need a comparison function.
-    friend bool operator <(const Observation &l, const Observation &r) {
+    friend bool operator<(const Observation &l, const Observation &r) {
       return l.t < r.t;
     }
   };
@@ -278,11 +282,8 @@ class HybridEkf {
     controls::DiscretizeQAFast(Q_continuous_, A_c, dt, &Q_d, &A_d);
 
     *state = RungeKuttaU(
-        [this](const State &X,
-               const Input &U) { return DiffEq(X, U); },
-        *state, U,
-        ::std::chrono::duration_cast<::std::chrono::duration<double>>(dt)
-            .count());
+        [this](const State &X, const Input &U) { return DiffEq(X, U); }, *state,
+        U, ::aos::time::DurationInSeconds(dt));
 
     StateSquare Ptemp = A_d * *P * A_d.transpose() + Q_d;
     *P = Ptemp;
@@ -342,11 +343,13 @@ void HybridEkf<Scalar>::Correct(
     ::std::function<
         void(const State &, const StateSquare &,
              ::std::function<Output(const State &, const Input &)> *,
-             ::std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(
-                 const State &)> *)> make_h,
+             ::std::function<
+                 Eigen::Matrix<Scalar, kNOutputs, kNStates>(const State &)> *)>
+        make_h,
     ::std::function<Output(const State &, const Input &)> h,
     ::std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(const State &)>
-        dhdx, const Eigen::Matrix<Scalar, kNOutputs, kNOutputs> &R,
+        dhdx,
+    const Eigen::Matrix<Scalar, kNOutputs, kNOutputs> &R,
     aos::monotonic_clock::time_point t) {
   CHECK(!observations_.empty());
   if (!observations_.full() && t < observations_.begin()->t) {
@@ -362,10 +365,9 @@ void HybridEkf<Scalar>::Correct(
     LOG(DEBUG,
         "Camera dropped off of end with time of %fs; earliest observation in "
         "queue has time of %fs.\n",
-        ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-            t.time_since_epoch()).count(),
-        ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-            observations_.begin()->t.time_since_epoch()).count());
+        ::aos::time::DurationInSeconds(t.time_since_epoch()),
+        ::aos::time::DurationInSeconds(
+            observations_.begin()->t.time_since_epoch()));
     return;
   }
 

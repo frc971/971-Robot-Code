@@ -3,10 +3,10 @@
 
 #include <assert.h>
 
+#include <chrono>
 #include <memory>
 #include <utility>
 #include <vector>
-#include <chrono>
 
 #include "Eigen/Dense"
 #include "unsupported/Eigen/MatrixFunctions"
@@ -198,7 +198,6 @@ class StateFeedbackHybridPlant {
   Eigen::Matrix<Scalar, number_of_states, number_of_states> A_;
   Eigen::Matrix<Scalar, number_of_states, number_of_inputs> B_;
 
-
   ::std::vector<::std::unique_ptr<StateFeedbackHybridPlantCoefficients<
       number_of_states, number_of_inputs, number_of_outputs>>>
       coefficients_;
@@ -208,7 +207,6 @@ class StateFeedbackHybridPlant {
   DISALLOW_COPY_AND_ASSIGN(StateFeedbackHybridPlant);
 };
 
-
 // A container for all the observer coefficients.
 template <int number_of_states, int number_of_inputs, int number_of_outputs,
           typename Scalar = double>
@@ -216,8 +214,10 @@ struct HybridKalmanCoefficients final {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
   const Eigen::Matrix<Scalar, number_of_states, number_of_states> Q_continuous;
-  const Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> R_continuous;
-  const Eigen::Matrix<Scalar, number_of_states, number_of_states> P_steady_state;
+  const Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs>
+      R_continuous;
+  const Eigen::Matrix<Scalar, number_of_states, number_of_states>
+      P_steady_state;
 
   HybridKalmanCoefficients(
       const Eigen::Matrix<Scalar, number_of_states, number_of_states>
@@ -239,7 +239,8 @@ class HybridKalman {
 
   explicit HybridKalman(
       ::std::vector<::std::unique_ptr<HybridKalmanCoefficients<
-          number_of_states, number_of_inputs, number_of_outputs, Scalar>>> *observers)
+          number_of_states, number_of_inputs, number_of_outputs, Scalar>>>
+          *observers)
       : coefficients_(::std::move(*observers)) {}
 
   HybridKalman(HybridKalman &&other)
@@ -345,9 +346,7 @@ class HybridKalman {
          coefficients().R_continuous.transpose()) /
         static_cast<Scalar>(2.0);
 
-    R_ = Rtemp /
-         ::std::chrono::duration_cast<::std::chrono::duration<Scalar>>(dt)
-             .count();
+    R_ = Rtemp / ::aos::time::TypedDurationInSeconds<Scalar>(dt);
   }
 
   // Internal state estimate.

@@ -10,11 +10,11 @@
 #include <thread>
 #include <vector>
 
+#include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/logging/queue_logging.h"
 #include "aos/mutex/mutex.h"
 #include "aos/time/time.h"
-#include "aos/init.h"
 #include "aos/vision/events/udp.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
@@ -179,12 +179,11 @@ void CalculateFiltered(const CameraHandler &older, const CameraHandler &newer,
                        double angle, double last_angle,
                        ::aos::vision::Vector<2> *interpolated_result,
                        double *interpolated_angle) {
-  const double age_ratio = chrono::duration_cast<chrono::duration<double>>(
-                               older.capture_time() - newer.last_capture_time())
-                               .count() /
-                           chrono::duration_cast<chrono::duration<double>>(
-                               newer.capture_time() - newer.last_capture_time())
-                               .count();
+  const double age_ratio =
+      ::aos::time::DurationInSeconds(older.capture_time() -
+                                     newer.last_capture_time()) /
+      ::aos::time::DurationInSeconds(newer.capture_time() -
+                                     newer.last_capture_time());
   interpolated_result->Set(
       newer_center.x() * age_ratio + (1 - age_ratio) * last_newer_center.x(),
       newer_center.y() * age_ratio + (1 - age_ratio) * last_newer_center.y());
@@ -226,12 +225,9 @@ class DrivetrainOffsetCalculator {
       status->drivetrain_left_position = before.left;
       status->drivetrain_right_position = before.right;
     } else {
-      const double age_ratio = chrono::duration_cast<chrono::duration<double>>(
-                                   capture_time - before.time)
-                                   .count() /
-                               chrono::duration_cast<chrono::duration<double>>(
-                                   after.time - before.time)
-                                   .count();
+      const double age_ratio =
+          ::aos::time::DurationInSeconds(capture_time - before.time) /
+          ::aos::time::DurationInSeconds(after.time - before.time);
       status->drivetrain_left_position =
           before.left * (1 - age_ratio) + after.left * age_ratio;
       status->drivetrain_right_position =

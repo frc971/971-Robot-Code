@@ -20,9 +20,9 @@
 
 #include "frc971/autonomous/auto.q.h"
 
-#include "y2016/vision/vision.q.h"
 #include "y2016/control_loops/superstructure/superstructure.q.h"
 #include "y2016/queues/ball_detector.q.h"
+#include "y2016/vision/vision.q.h"
 
 namespace chrono = ::std::chrono;
 
@@ -128,7 +128,7 @@ void DataCollector::RunIteration() {
 
   AddPoint("big indicator", big_indicator);
   AddPoint("superstructure state indicator", superstructure_state_indicator);
-  if(auto_mode_indicator != 15) {
+  if (auto_mode_indicator != 15) {
     AddPoint("auto mode indicator", auto_mode_indicator);
   }
 #endif
@@ -198,11 +198,10 @@ void DataCollector::AddPoint(const ::std::string &name, double value) {
     if (static_cast<size_t>(adjusted_index) <
         sample_items_.at(0).datapoints.size()) {
       message << cur_sample << "%"
-              << chrono::duration_cast<chrono::duration<double>>(
+              << ::aos::time::DurationInSeconds(
                      sample_items_.at(0)
                          .datapoints.at(adjusted_index)
                          .time.time_since_epoch())
-                     .count()
               << "%";  // Send time.
       // Add comma-separated list of data points.
       for (size_t cur_measure = 0; cur_measure < sample_items_.size();

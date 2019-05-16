@@ -15,18 +15,9 @@
 
 namespace y2019 {
 namespace actors {
-using ::frc971::control_loops::drivetrain_queue;
 using ::aos::monotonic_clock;
+using ::frc971::control_loops::drivetrain_queue;
 namespace chrono = ::std::chrono;
-
-namespace {
-
-double DoubleSeconds(monotonic_clock::duration duration) {
-  return ::std::chrono::duration_cast<::std::chrono::duration<double>>(duration)
-      .count();
-}
-
-}  // namespace
 
 AutonomousActor::AutonomousActor(
     ::aos::EventLoop *event_loop,
@@ -260,7 +251,7 @@ bool AutonomousActor::RunAction(
     set_suction_goal(false, 1);
     SendSuperstructureGoal();
     LOG(INFO, "Dropping disc 1 %f\n",
-        DoubleSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
 
     if (!WaitForDriveYCloseToZero(1.13)) return true;
     if (!WaitForMilliseconds(::std::chrono::milliseconds(300))) return true;
@@ -286,7 +277,7 @@ bool AutonomousActor::RunAction(
     // As soon as we pick up Panel 2 go score on the rocket
     if (!WaitForGamePiece()) return true;
     LOG(INFO, "Got gamepiece %f\n",
-        DoubleSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
     LineFollowAtVelocity(-4.0);
     SplineHandle spline3 =
         PlanSpline(AutonomousSplines::HPToThirdCargoShipBay(is_left),
@@ -303,18 +294,18 @@ bool AutonomousActor::RunAction(
     // Line follow in to the second disc.
     LineFollowAtVelocity(-0.7, 3);
     LOG(INFO, "Drawing in disc 2 %f\n",
-        DoubleSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
     if (!WaitForDriveYCloseToZero(1.2)) return true;
 
     set_suction_goal(false, 1);
     SendSuperstructureGoal();
     LOG(INFO, "Dropping disc 2 %f\n",
-        DoubleSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
 
     if (!WaitForDriveYCloseToZero(1.13)) return true;
     if (!WaitForMilliseconds(::std::chrono::milliseconds(200))) return true;
     LOG(INFO, "Backing up %f\n",
-        DoubleSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
     LineFollowAtVelocity(0.9, 3);
     if (!WaitForMilliseconds(::std::chrono::milliseconds(400))) return true;
   } else {
@@ -355,7 +346,8 @@ bool AutonomousActor::RunAction(
     if (!WaitForSuperstructureDone()) return true;
   }
 
-  LOG(INFO, "Done %f\n", DoubleSeconds(monotonic_clock::now() - start_time));
+  LOG(INFO, "Done %f\n",
+      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
 
   return true;
 }

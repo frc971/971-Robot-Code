@@ -111,8 +111,7 @@ void DrivetrainSimulation::Reinitialize() {
   drivetrain_plant_.mutable_X(1, 0) = 0.0;
   drivetrain_plant_.mutable_X(2, 0) = 0.0;
   drivetrain_plant_.mutable_X(3, 0) = 0.0;
-  drivetrain_plant_.mutable_Y() =
-      drivetrain_plant_.C() * drivetrain_plant_.X();
+  drivetrain_plant_.mutable_Y() = drivetrain_plant_.C() * drivetrain_plant_.X();
   last_left_position_ = drivetrain_plant_.Y(0, 0);
   last_right_position_ = drivetrain_plant_.Y(1, 0);
 }
@@ -134,8 +133,8 @@ void DrivetrainSimulation::SendPositionMessage() {
   {
     ::aos::ScopedMessagePtr<::frc971::sensors::GyroReading> gyro =
         gyro_reading_.MakeMessage();
-    gyro->angle = (right_encoder - left_encoder) /
-                  (dt_config_.robot_radius * 2.0);
+    gyro->angle =
+        (right_encoder - left_encoder) / (dt_config_.robot_radius * 2.0);
     gyro->velocity = (drivetrain_plant_.X(3, 0) - drivetrain_plant_.X(1, 0)) /
                      (dt_config_.robot_radius * 2.0);
     gyro.Send();
@@ -177,10 +176,7 @@ void DrivetrainSimulation::Simulate() {
   U(0, 0) += drivetrain_plant_.left_voltage_offset();
   U(1, 0) += drivetrain_plant_.right_voltage_offset();
   drivetrain_plant_.Update(U);
-  double dt_float =
-      ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-          dt_config_.dt)
-          .count();
+  double dt_float = ::aos::time::DurationInSeconds(dt_config_.dt);
   state_ = RungeKuttaU(
       [this](const ::Eigen::Matrix<double, 5, 1> &X,
              const ::Eigen::Matrix<double, 2, 1> &U) {

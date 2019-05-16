@@ -63,7 +63,6 @@ class LineFollowDrivetrainTest : public ::testing::Test {
       EXPECT_EQ(0.0, output.right_voltage);
     }
 
-
     EXPECT_LE(::std::abs(output.left_voltage), 12.0 + 1e-6);
     EXPECT_LE(::std::abs(output.right_voltage), 12.0 + 1e-6);
 
@@ -75,12 +74,10 @@ class LineFollowDrivetrainTest : public ::testing::Test {
           return ContinuousDynamics(velocity_drivetrain_->plant(), Tlr_to_la_,
                                     X, U);
         },
-        state_, U,
-        chrono::duration_cast<chrono::duration<double>>(config_.dt).count());
+        state_, U, ::aos::time::DurationInSeconds(config_.dt));
     t_ += config_.dt;
 
-    time_.push_back(chrono::duration_cast<chrono::duration<double>>(
-                        t_.time_since_epoch()).count());
+    time_.push_back(::aos::time::DurationInSeconds(t_.time_since_epoch()));
     simulation_ul_.push_back(U(0, 0));
     simulation_ur_.push_back(U(1, 0));
     simulation_x_.push_back(state_.x());
@@ -350,16 +347,15 @@ INSTANTIATE_TEST_CASE_P(
                 .finished(),
             (::Eigen::Matrix<double, 5, 1>() << -2.0, -1.0, 0.0, 0.5, -0.5)
                 .finished()),
-        ::testing::Values(
-            [](const ::Eigen::Matrix<double, 5, 1> &state) {
-              return -1.0 * state.x();
-            },
-            [](const ::Eigen::Matrix<double, 5, 1> &state) {
-              return 1.0 * state.x();
-            },
-            [](const ::Eigen::Matrix<double, 5, 1> &state) {
-              return -0.25 * ::std::abs(state.x()) - 0.125 * state.x() * state.x();
-            })));
+        ::testing::Values([](const ::Eigen::Matrix<double, 5, 1>
+                                 &state) { return -1.0 * state.x(); },
+                          [](const ::Eigen::Matrix<double, 5, 1> &state) {
+                            return 1.0 * state.x();
+                          },
+                          [](const ::Eigen::Matrix<double, 5, 1> &state) {
+                            return -0.25 * ::std::abs(state.x()) -
+                                   0.125 * state.x() * state.x();
+                          })));
 
 }  // namespace testing
 }  // namespace drivetrain

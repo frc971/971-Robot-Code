@@ -5,8 +5,8 @@
 #include <chrono>
 #include <cmath>
 
-#include "aos/util/phased_loop.h"
 #include "aos/logging/logging.h"
+#include "aos/util/phased_loop.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2016/control_loops/drivetrain/drivetrain_base.h"
@@ -17,8 +17,8 @@
 
 namespace y2016 {
 namespace actors {
-using ::frc971::control_loops::drivetrain_queue;
 using ::aos::monotonic_clock;
+using ::frc971::control_loops::drivetrain_queue;
 namespace chrono = ::std::chrono;
 namespace this_thread = ::std::this_thread;
 
@@ -43,10 +43,6 @@ const ProfileParameters kTwoBallReturnSlow = {3.0, 2.5};
 const ProfileParameters kTwoBallBallPickup = {2.0, 1.75};
 const ProfileParameters kTwoBallBallPickupAccel = {2.0, 2.5};
 
-double DoubleSeconds(monotonic_clock::duration duration) {
-  return ::std::chrono::duration_cast<::std::chrono::duration<double>>(duration)
-      .count();
-}
 }  // namespace
 
 AutonomousActor::AutonomousActor(
@@ -594,7 +590,7 @@ void AutonomousActor::TwoBallAuto() {
 
   WaitForIntake();
   LOG(INFO, "Intake done at %f seconds, starting to drive\n",
-      DoubleSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
   if (ShouldCancel()) return;
   const double kDriveDistance = 5.05;
   StartDrive(-kDriveDistance, 0.0, kTwoBallLowDrive, kSlowTurn);
@@ -609,12 +605,12 @@ void AutonomousActor::TwoBallAuto() {
     const bool ball_detected = ::y2016::sensors::ball_detector->voltage > 2.5;
     first_ball_there = ball_detected;
     LOG(INFO, "Saw the ball: %d at %f\n", first_ball_there,
-        DoubleSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
   }
   MoveSuperstructure(0.10, -0.010, 0.0, {8.0, 40.0}, {4.0, 10.0}, {10.0, 25.0},
                      false, 0.0);
   LOG(INFO, "Shutting off rollers at %f seconds, starting to straighten out\n",
-      DoubleSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
   StartDrive(0.0, -0.4, kTwoBallLowDrive, kSwerveTurn);
   MoveSuperstructure(-0.05, -0.010, 0.0, {8.0, 40.0}, {4.0, 10.0}, {10.0, 25.0},
                      false, 0.0);
@@ -634,7 +630,7 @@ void AutonomousActor::TwoBallAuto() {
 
   if (!WaitForDriveDone()) return;
   LOG(INFO, "First shot done driving at %f seconds\n",
-      DoubleSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
 
   WaitForSuperstructureProfile();
 
@@ -657,7 +653,7 @@ void AutonomousActor::TwoBallAuto() {
   }
 
   LOG(INFO, "First shot at %f seconds\n",
-      DoubleSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
   if (ShouldCancel()) return;
 
   SetShooterSpeed(0.0);
@@ -677,7 +673,7 @@ void AutonomousActor::TwoBallAuto() {
 
   if (!WaitForDriveNear(0.06, kDoNotTurnCare)) return;
   LOG(INFO, "At Low Bar %f\n",
-      DoubleSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
 
   OpenShooter();
   constexpr double kSecondBallAfterBarDrive = 2.10;
@@ -695,7 +691,7 @@ void AutonomousActor::TwoBallAuto() {
                      false, 12.0);
 
   LOG(INFO, "Done backing up %f\n",
-      DoubleSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
 
   constexpr double kDriveBackDistance = 5.15 - 0.4;
   StartDrive(-kDriveBackDistance, 0.0, kTwoBallLowDrive, kFinishTurn);
@@ -704,7 +700,7 @@ void AutonomousActor::TwoBallAuto() {
 
   StartDrive(0.0, -kBallSmallWallTurn, kTwoBallLowDrive, kFinishTurn);
   LOG(INFO, "Straightening up at %f\n",
-      DoubleSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
 
   CloseIfBall();
   if (!WaitForDriveNear(kDriveBackDistance - 2.3, kDoNotTurnCare)) return;
@@ -715,7 +711,7 @@ void AutonomousActor::TwoBallAuto() {
     if (!ball_detected) {
       if (!WaitForDriveDone()) return;
       LOG(INFO, "Aborting, no ball %f\n",
-          DoubleSeconds(monotonic_clock::now() - start_time));
+          ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
       return;
     }
   }
@@ -732,7 +728,7 @@ void AutonomousActor::TwoBallAuto() {
 
   if (!WaitForDriveDone()) return;
   LOG(INFO, "Second shot done driving at %f seconds\n",
-      DoubleSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
   WaitForSuperstructure();
   AlignWithVisionGoal();
   if (ShouldCancel()) return;
@@ -743,7 +739,7 @@ void AutonomousActor::TwoBallAuto() {
   // 2.2 with 0.4 of vision.
   // 1.8 without any vision.
   LOG(INFO, "Going to vision align at %f\n",
-      DoubleSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
   WaitForAlignedWithVision(
       (start_time + chrono::milliseconds(13500) + kVisionExtra * 2) -
       monotonic_clock::now());
@@ -751,21 +747,23 @@ void AutonomousActor::TwoBallAuto() {
   WaitForSuperstructureProfile();
   if (ShouldCancel()) return;
   LOG(INFO, "Shoot at %f\n",
-      DoubleSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
   Shoot();
 
   LOG(INFO, "Second shot at %f seconds\n",
-      DoubleSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
   if (ShouldCancel()) return;
 
   SetShooterSpeed(0.0);
   LOG(INFO, "Folding superstructure back down\n");
   TuckArm(true, false);
-  LOG(INFO, "Shot %f\n", DoubleSeconds(monotonic_clock::now() - start_time));
+  LOG(INFO, "Shot %f\n",
+      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
 
   WaitForSuperstructureLow();
 
-  LOG(INFO, "Done %f\n", DoubleSeconds(monotonic_clock::now() - start_time));
+  LOG(INFO, "Done %f\n",
+      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
 }
 
 void AutonomousActor::StealAndMoveOverBy(double distance) {
@@ -932,7 +930,8 @@ bool AutonomousActor::RunAction(
   StartDrive(0.5, 0.0, kMoatDrive, kFastTurn);
   if (!WaitForDriveDone()) return true;
 
-  LOG(INFO, "Done %f\n", DoubleSeconds(monotonic_clock::now() - start_time));
+  LOG(INFO, "Done %f\n",
+      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
 
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
                                       ::std::chrono::milliseconds(5) / 2);

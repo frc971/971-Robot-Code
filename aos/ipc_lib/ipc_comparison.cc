@@ -23,12 +23,12 @@
 
 #include "aos/condition.h"
 #include "aos/event.h"
+#include "aos/init.h"
+#include "aos/ipc_lib/queue.h"
 #include "aos/logging/implementations.h"
 #include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"
 #include "aos/time/time.h"
-#include "aos/init.h"
-#include "aos/ipc_lib/queue.h"
 
 DEFINE_string(method, "", "Which IPC method to use");
 DEFINE_int32(messages, 1000000, "How many messages to send back and forth");
@@ -427,7 +427,6 @@ class SemaphorePingPonger : public StaticPingPonger {
   const ::std::unique_ptr<SemaphoreInterface> ping_, pong_;
 };
 
-
 class AOSMutexPingPonger : public ConditionVariablePingPonger {
  public:
   AOSMutexPingPonger()
@@ -457,10 +456,8 @@ class AOSEventPingPonger : public SemaphorePingPonger {
  public:
   AOSEventPingPonger()
       : SemaphorePingPonger(
-            ::std::unique_ptr<SemaphoreInterface>(
-                new AOSEventSemaphore()),
-            ::std::unique_ptr<SemaphoreInterface>(
-                new AOSEventSemaphore())) {}
+            ::std::unique_ptr<SemaphoreInterface>(new AOSEventSemaphore()),
+            ::std::unique_ptr<SemaphoreInterface>(new AOSEventSemaphore())) {}
 
  private:
   class AOSEventSemaphore : public SemaphoreInterface {
@@ -572,8 +569,7 @@ class SysvSemaphorePingPonger : public SemaphorePingPonger {
  private:
   class SysvSemaphore : public SemaphoreInterface {
    public:
-    SysvSemaphore()
-        : sem_id_(PCHECK(semget(IPC_PRIVATE, 1, 0600))) {}
+    SysvSemaphore() : sem_id_(PCHECK(semget(IPC_PRIVATE, 1, 0600))) {}
 
    private:
     void Get() override {
@@ -606,8 +602,7 @@ class PosixSemaphorePingPonger : public SemaphorePingPonger {
  private:
   class PosixSemaphore : public SemaphoreInterface {
    public:
-    PosixSemaphore(sem_t *sem)
-        : sem_(sem) {}
+    PosixSemaphore(sem_t *sem) : sem_(sem) {}
 
    private:
     void Get() override { PCHECK(sem_wait(sem_)); }
@@ -909,8 +904,7 @@ int Main(int /*argc*/, char **argv) {
   server.join();
 
   LOG(INFO, "Took %f seconds to send %" PRId32 " messages\n",
-      chrono::duration_cast<chrono::duration<double>>(end - start).count(),
-      FLAGS_messages);
+      ::aos::time::DurationInSeconds(end - start), FLAGS_messages);
   const chrono::nanoseconds per_message = (end - start) / FLAGS_messages;
   if (per_message >= chrono::seconds(1)) {
     LOG(INFO, "More than 1 second per message ?!?\n");

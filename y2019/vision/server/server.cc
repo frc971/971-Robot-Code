@@ -32,9 +32,9 @@ namespace chrono = ::std::chrono;
 class WebsocketHandler : public seasocks::WebSocket::Handler {
  public:
   WebsocketHandler();
-  void onConnect(seasocks::WebSocket* connection) override;
-  void onData(seasocks::WebSocket* connection, const char* data) override;
-  void onDisconnect(seasocks::WebSocket* connection) override;
+  void onConnect(seasocks::WebSocket *connection) override;
+  void onData(seasocks::WebSocket *connection, const char *data) override;
+  void onDisconnect(seasocks::WebSocket *connection) override;
 
   void SendData(const std::string &data);
 
@@ -42,8 +42,7 @@ class WebsocketHandler : public seasocks::WebSocket::Handler {
   std::set<seasocks::WebSocket *> connections_;
 };
 
-WebsocketHandler::WebsocketHandler() {
-}
+WebsocketHandler::WebsocketHandler() {}
 
 void WebsocketHandler::onConnect(seasocks::WebSocket *connection) {
   connections_.insert(connection);
@@ -221,13 +220,9 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
           camera_pose.set_base(&robot_pose);
 
           camera_debug->set_current_frame_age(
-              chrono::duration_cast<chrono::duration<double>>(
-                  now - cur_frame.capture_time)
-                  .count());
+              ::aos::time::DurationInSeconds(now - cur_frame.capture_time));
           camera_debug->set_time_since_last_target(
-              chrono::duration_cast<chrono::duration<double>>(
-                  now - last_target_time[ii])
-                  .count());
+              ::aos::time::DurationInSeconds(now - last_target_time[ii]));
           for (const auto &target : cur_frame.targets) {
             frc971::control_loops::TypedPose<double> target_pose(
                 &camera_pose, {target.x, target.y, 0}, target.theta);

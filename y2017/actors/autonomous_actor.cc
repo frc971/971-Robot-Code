@@ -5,25 +5,20 @@
 #include <chrono>
 #include <cmath>
 
-#include "aos/util/phased_loop.h"
 #include "aos/logging/logging.h"
+#include "aos/util/phased_loop.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2017/control_loops/drivetrain/drivetrain_base.h"
 
 namespace y2017 {
 namespace actors {
-using ::frc971::control_loops::drivetrain_queue;
 using ::aos::monotonic_clock;
+using ::frc971::control_loops::drivetrain_queue;
 namespace chrono = ::std::chrono;
 namespace this_thread = ::std::this_thread;
 
 namespace {
-
-double DoubleSeconds(monotonic_clock::duration duration) {
-  return ::std::chrono::duration_cast<::std::chrono::duration<double>>(duration)
-      .count();
-}
 
 const ProfileParameters kGearBallBackDrive = {3.0, 3.5};
 const ProfileParameters kGearDrive = {1.5, 2.0};
@@ -163,11 +158,11 @@ bool AutonomousActor::RunAction(
       SendSuperstructureGoal();
 
       // Shoot from the peg.
-      //set_indexer_angular_velocity(-2.1 * M_PI);
-      //SendSuperstructureGoal();
-      //this_thread::sleep_for(chrono::milliseconds(1750));
+      // set_indexer_angular_velocity(-2.1 * M_PI);
+      // SendSuperstructureGoal();
+      // this_thread::sleep_for(chrono::milliseconds(1750));
 
-      //this_thread::sleep_for(chrono::milliseconds(500));
+      // this_thread::sleep_for(chrono::milliseconds(500));
       this_thread::sleep_for(chrono::milliseconds(750));
       set_indexer_angular_velocity(0.0);
       set_vision_track(false);
@@ -180,7 +175,7 @@ bool AutonomousActor::RunAction(
 
       SendSuperstructureGoal();
       LOG(INFO, "Starting drive back %f\n",
-          DoubleSeconds(monotonic_clock::now() - start_time));
+          ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
 
       StartDrive(-2.75, kDriveDirection * 1.24, kSlowDrive,
                  kFirstGearStartTurn);
@@ -192,8 +187,7 @@ bool AutonomousActor::RunAction(
       if (!WaitForDriveNear(0.2, 0.0)) return true;
       this_thread::sleep_for(chrono::milliseconds(200));
       // Trip the hopper
-      StartDrive(0.0, kDriveDirection * 1.10, kSlowDrive,
-                 kSmashTurn);
+      StartDrive(0.0, kDriveDirection * 1.10, kSlowDrive, kSmashTurn);
 
       if (!WaitForDriveNear(0.2, 0.35)) return true;
       set_vision_track(true);
@@ -201,11 +195,10 @@ bool AutonomousActor::RunAction(
       SendSuperstructureGoal();
 
       if (!WaitForDriveNear(0.2, 0.2)) return true;
-      StartDrive(0.0, -kDriveDirection * 0.15, kSlowDrive,
-                 kSmashTurn);
+      StartDrive(0.0, -kDriveDirection * 0.15, kSlowDrive, kSmashTurn);
 
       LOG(INFO, "Starting second shot %f\n",
-          DoubleSeconds(monotonic_clock::now() - start_time));
+          ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
       set_indexer_angular_velocity(-2.15 * M_PI);
       SendSuperstructureGoal();
       if (!WaitForDriveNear(0.2, 0.1)) return true;
@@ -235,7 +228,8 @@ bool AutonomousActor::RunAction(
       set_intake_goal(0.07);
       SendSuperstructureGoal();
 
-      StartDrive(-3.42, kDriveDirection * (M_PI / 10 - 0.057) , kSlowDrive, kFirstTurn);
+      StartDrive(-3.42, kDriveDirection * (M_PI / 10 - 0.057), kSlowDrive,
+                 kFirstTurn);
       if (!WaitForDriveNear(3.30, 0.0)) return true;
       LOG(INFO, "Turn ended: %f left to go\n", DriveDistanceLeft());
       // We can go to 2.50 before we hit the previous profile.
@@ -281,7 +275,7 @@ bool AutonomousActor::RunAction(
       SendSuperstructureGoal();
 
       LOG(INFO, "Started shooting at %f\n",
-          DoubleSeconds(monotonic_clock::now() - start_time));
+          ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
 
       this_thread::sleep_for(start_time + chrono::seconds(9) -
                              monotonic_clock::now());
@@ -302,7 +296,8 @@ bool AutonomousActor::RunAction(
     } break;
   }
 
-  LOG(INFO, "Done %f\n", DoubleSeconds(monotonic_clock::now() - start_time));
+  LOG(INFO, "Done %f\n",
+      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
 
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
                                       ::std::chrono::milliseconds(5) / 2);

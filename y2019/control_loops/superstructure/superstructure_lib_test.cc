@@ -29,8 +29,8 @@ constexpr double kNoiseScalar = 0.01;
 
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
-using ::frc971::control_loops::PositionSensorSimulator;
 using ::frc971::control_loops::CappedTestPlant;
+using ::frc971::control_loops::PositionSensorSimulator;
 typedef Superstructure::PotAndAbsoluteEncoderSubsystem
     PotAndAbsoluteEncoderSubsystem;
 typedef Superstructure::AbsoluteEncoderSubsystem AbsoluteEncoderSubsystem;
@@ -354,9 +354,8 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
         CheckCollisions();
       }
 
-      const double loop_time = chrono::duration_cast<chrono::duration<double>>(
-                                   monotonic_clock::now() - loop_start_time)
-                                   .count();
+      const double loop_time = ::aos::time::DurationInSeconds(
+          monotonic_clock::now() - loop_start_time);
 
       const double elevator_acceleration =
           (superstructure_plant_.elevator_velocity() -

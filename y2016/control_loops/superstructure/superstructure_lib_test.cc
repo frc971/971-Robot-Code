@@ -88,11 +88,12 @@ class SuperstructureSimulation {
         pot_encoder_shoulder_(
             constants::Values::kShoulderEncoderIndexDifference),
         pot_encoder_wrist_(constants::Values::kWristEncoderIndexDifference),
-        superstructure_queue_(".y2016.control_loops.superstructure_queue",
-                              ".y2016.control_loops.superstructure_queue.goal",
-                              ".y2016.control_loops.superstructure_queue.position",
-                              ".y2016.control_loops.superstructure_queue.output",
-                              ".y2016.control_loops.superstructure_queue.status") {
+        superstructure_queue_(
+            ".y2016.control_loops.superstructure_queue",
+            ".y2016.control_loops.superstructure_queue.goal",
+            ".y2016.control_loops.superstructure_queue.position",
+            ".y2016.control_loops.superstructure_queue.output",
+            ".y2016.control_loops.superstructure_queue.status") {
     InitializeIntakePosition(0.0);
     InitializeShoulderPosition(0.0);
     InitializeRelativeWristPosition(0.0);
@@ -246,11 +247,12 @@ class SuperstructureSimulation {
 class SuperstructureTest : public ::aos::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
-      : superstructure_queue_(".y2016.control_loops.superstructure_queue",
-                              ".y2016.control_loops.superstructure_queue.goal",
-                              ".y2016.control_loops.superstructure_queue.position",
-                              ".y2016.control_loops.superstructure_queue.output",
-                              ".y2016.control_loops.superstructure_queue.status"),
+      : superstructure_queue_(
+            ".y2016.control_loops.superstructure_queue",
+            ".y2016.control_loops.superstructure_queue.goal",
+            ".y2016.control_loops.superstructure_queue.position",
+            ".y2016.control_loops.superstructure_queue.output",
+            ".y2016.control_loops.superstructure_queue.status"),
         superstructure_(&event_loop_),
         superstructure_plant_() {}
 
@@ -300,9 +302,8 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
       double begin_wrist_velocity =
           superstructure_plant_.wrist_angular_velocity();
       RunIteration(enabled);
-      const double loop_time =
-          chrono::duration_cast<chrono::duration<double>>(
-              monotonic_clock::now() - loop_start_time).count();
+      const double loop_time = ::aos::time::DurationInSeconds(
+          monotonic_clock::now() - loop_start_time);
       const double shoulder_acceleration =
           (superstructure_plant_.shoulder_angular_velocity() -
            begin_shoulder_velocity) /
@@ -921,8 +922,8 @@ TEST_F(SuperstructureTest, WristAccelerationLimitTest) {
       superstructure_queue_.goal.MakeWithBuilder()
           .angle_intake(0.0)
           .angle_shoulder(
-               CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference +
-               0.1)
+              CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference +
+              0.1)
           .angle_wrist(0.0)
           .max_angular_velocity_intake(20)
           .max_angular_acceleration_intake(20)
@@ -941,8 +942,8 @@ TEST_F(SuperstructureTest, WristAccelerationLimitTest) {
       superstructure_queue_.goal.MakeWithBuilder()
           .angle_intake(0.0)
           .angle_shoulder(
-               CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference +
-               0.1)
+              CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference +
+              0.1)
           .angle_wrist(0.5)
           .max_angular_velocity_intake(1)
           .max_angular_acceleration_intake(1)
@@ -967,7 +968,7 @@ TEST_F(SuperstructureTest, SaturatedIntakeProfileTest) {
       superstructure_queue_.goal.MakeWithBuilder()
           .angle_intake(0.0)
           .angle_shoulder(
-               CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference)
+              CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference)
           .angle_wrist(0.0)
           .max_angular_velocity_intake(20)
           .max_angular_acceleration_intake(20)
@@ -986,7 +987,7 @@ TEST_F(SuperstructureTest, SaturatedIntakeProfileTest) {
       superstructure_queue_.goal.MakeWithBuilder()
           .angle_intake(0.5)
           .angle_shoulder(
-               CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference)
+              CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference)
           .angle_wrist(0.0)
           .max_angular_velocity_intake(4.5)
           .max_angular_acceleration_intake(800)
@@ -1051,8 +1052,8 @@ TEST_F(SuperstructureTest, SaturatedWristProfileTest) {
       superstructure_queue_.goal.MakeWithBuilder()
           .angle_intake(0.0)
           .angle_shoulder(
-               CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference +
-               0.1)
+              CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference +
+              0.1)
           .angle_wrist(0.0)
           .max_angular_velocity_intake(20)
           .max_angular_acceleration_intake(20)
@@ -1071,8 +1072,8 @@ TEST_F(SuperstructureTest, SaturatedWristProfileTest) {
       superstructure_queue_.goal.MakeWithBuilder()
           .angle_intake(0.0)
           .angle_shoulder(
-               CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference +
-               0.1)
+              CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference +
+              0.1)
           .angle_wrist(1.3)
           .max_angular_velocity_intake(1.0)
           .max_angular_acceleration_intake(1.0)
@@ -1139,7 +1140,7 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenMovingArmFromStart) {
       superstructure_queue_.goal.MakeWithBuilder()
           .angle_intake(constants::Values::kIntakeRange.upper)  // stowed
           .angle_shoulder(M_PI / 2.0)  // in the collision area
-          .angle_wrist(M_PI)     // forward
+          .angle_wrist(M_PI)           // forward
           .Send());
 
   RunForTime(chrono::seconds(5));
@@ -1341,4 +1342,4 @@ TEST_F(SuperstructureTest, TakeOffQuickly) {
 }  // namespace testing
 }  // namespace superstructure
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2016

@@ -1,19 +1,19 @@
 #include "y2019/control_loops/drivetrain/localizer.h"
 
-#include <random>
 #include <queue>
+#include <random>
 
 #include "aos/testing/random_seed.h"
 #include "aos/testing/test_shm.h"
-#include "frc971/control_loops/drivetrain/trajectory.h"
 #include "frc971/control_loops/drivetrain/splinedrivetrain.h"
+#include "frc971/control_loops/drivetrain/trajectory.h"
 #include "gflags/gflags.h"
 #if defined(SUPPORT_PLOT)
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
 #endif
 #include "gtest/gtest.h"
-#include "y2019/control_loops/drivetrain/drivetrain_base.h"
 #include "y2019/constants.h"
+#include "y2019/control_loops/drivetrain/drivetrain_base.h"
 
 DEFINE_bool(plot, false, "If true, plot");
 
@@ -27,7 +27,8 @@ constexpr size_t kNumCameras = 4;
 constexpr size_t kNumTargetsPerFrame = 3;
 
 typedef TypedLocalizer<kNumCameras, Field::kNumTargets, Field::kNumObstacles,
-                       kNumTargetsPerFrame, double> TestLocalizer;
+                       kNumTargetsPerFrame, double>
+    TestLocalizer;
 typedef typename TestLocalizer::Camera TestCamera;
 typedef typename TestCamera::Pose Pose;
 typedef typename TestCamera::LineSegment Obstacle;
@@ -47,7 +48,7 @@ void PlotPlotPts(const ::std::vector<Pose> &poses,
                  const ::std::map<::std::string, ::std::string> &kwargs) {
   ::std::vector<double> x;
   ::std::vector<double> y;
-  for (const Pose & p : poses) {
+  for (const Pose &p : poses) {
     x.push_back(p.abs_pos().x());
     y.push_back(p.abs_pos().y());
   }
@@ -152,7 +153,7 @@ class ParameterizedLocalizerTest
     spline_drivetrain_.SetGoal(goal);
 
     // Let the spline drivetrain compute the spline.
-     ::frc971::control_loops::DrivetrainQueue::Status status;
+    ::frc971::control_loops::DrivetrainQueue::Status status;
     do {
       ::std::this_thread::sleep_for(::std::chrono::milliseconds(5));
       spline_drivetrain_.PopulateStatus(&status);
@@ -177,7 +178,7 @@ class ParameterizedLocalizerTest
       matplotlibcpp::plot(simulation_x_, simulation_y_, {{"label", "robot"}});
       matplotlibcpp::plot(estimated_x_, estimated_y_,
                           {{"label", "estimation"}});
-      for (const Target & target : targets_) {
+      for (const Target &target : targets_) {
         PlotPlotPts(target.PlotPoints(), {{"c", "g"}});
       }
       for (const Obstacle &obstacle : true_obstacles_) {
@@ -341,7 +342,7 @@ TEST_P(ParameterizedLocalizerTest, SplineTest) {
   // The period with which we should take frames from the cameras. Currently,
   // we just trigger all the cameras at once, rather than offsetting them or
   // anything.
-  const int camera_period = 5; // cycles
+  const int camera_period = 5;  // cycles
   // The amount of time to delay the camera images from when they are taken, for
   // each camera.
   const ::std::array<milliseconds, 4> camera_latencies{
@@ -381,9 +382,7 @@ TEST_P(ParameterizedLocalizerTest, SplineTest) {
     const ::Eigen::Matrix<double, 5, 1> goal_state =
         spline_drivetrain_.CurrentGoalState();
     simulation_t_.push_back(
-        ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-            t.time_since_epoch())
-            .count());
+        ::aos::time::DurationInSeconds(t.time_since_epoch()));
     spline_x_.push_back(goal_state(0, 0));
     spline_y_.push_back(goal_state(1, 0));
     simulation_x_.push_back(state(StateIdx::kX, 0));
@@ -401,10 +400,7 @@ TEST_P(ParameterizedLocalizerTest, SplineTest) {
     state = ::frc971::control_loops::RungeKuttaU(
         [this](const ::Eigen::Matrix<double, 10, 1> &X,
                const ::Eigen::Matrix<double, 2, 1> &U) { return DiffEq(X, U); },
-        state, U,
-        ::std::chrono::duration_cast<::std::chrono::duration<double>>(
-            dt_config_.dt)
-            .count());
+        state, U, ::aos::time::DurationInSeconds(dt_config_.dt));
 
     // Add arbitrary disturbances at some arbitrary interval. The main points of
     // interest here are that we (a) stop adding disturbances at the very end of

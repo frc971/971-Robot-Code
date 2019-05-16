@@ -7,10 +7,10 @@
 #include <math.h>
 #include <chrono>
 
+#include "aos/init.h"
 #include "aos/logging/queue_logging.h"
 #include "aos/robot_state/robot_state.q.h"
 #include "aos/time/time.h"
-#include "aos/init.h"
 #include "frc971/wpilib/imu.q.h"
 #include "frc971/zeroing/averager.h"
 
@@ -214,9 +214,8 @@ void ADIS16448::operator()() {
     // interrupt delay among other things), but it will catch the code
     // constantly falling behind, which seems like the most likely failure
     // scenario.
-    if (!dio1_->Get() ||
-        dio1_->WaitForInterrupt(0, false) !=
-            frc::InterruptableSensorBase::kTimeout) {
+    if (!dio1_->Get() || dio1_->WaitForInterrupt(0, false) !=
+                             frc::InterruptableSensorBase::kTimeout) {
       LOG(ERROR, "IMU read took too long\n");
       continue;
     }
@@ -243,10 +242,8 @@ void ADIS16448::operator()() {
     }
 
     auto message = imu_values.MakeMessage();
-    message->fpga_timestamp =
-        chrono::duration_cast<chrono::duration<double>>(
-            dio1_->ReadRisingTimestamp().time_since_epoch())
-            .count();
+    message->fpga_timestamp = ::aos::time::DurationInSeconds(
+        dio1_->ReadRisingTimestamp().time_since_epoch());
     message->monotonic_timestamp_ns =
         chrono::duration_cast<chrono::nanoseconds>(read_time.time_since_epoch())
             .count();
