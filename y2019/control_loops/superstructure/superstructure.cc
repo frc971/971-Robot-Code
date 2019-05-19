@@ -1,33 +1,21 @@
 #include "y2019/control_loops/superstructure/superstructure.h"
 
 #include "aos/controls/control_loops.q.h"
+#include "aos/events/event-loop.h"
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
-
 #include "y2019/status_light.q.h"
 
 namespace y2019 {
 namespace control_loops {
 namespace superstructure {
 
-namespace {
-
-void SendColors(float red, float green, float blue) {
-  auto new_status_light = status_light.MakeMessage();
-  new_status_light->red = red;
-  new_status_light->green = green;
-  new_status_light->blue = blue;
-
-  if (!new_status_light.Send()) {
-    LOG(ERROR, "Failed to send lights.\n");
-  }
-}
-}  // namespace
-
 Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
     : aos::controls::ControlLoop<SuperstructureQueue>(event_loop, name),
+      status_light_sender_(
+          event_loop->MakeSender<::y2019::StatusLight>(".y2019.status_light")),
       elevator_(constants::GetValues().elevator.subsystem_params),
       wrist_(constants::GetValues().wrist.subsystem_params),
       intake_(constants::GetValues().intake),
@@ -155,6 +143,17 @@ void Superstructure::RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
         SendColors(0.0, 0.0, 0.0);
       }
     }
+  }
+}
+
+void Superstructure::SendColors(float red, float green, float blue) {
+  auto new_status_light = status_light_sender_.MakeMessage();
+  new_status_light->red = red;
+  new_status_light->green = green;
+  new_status_light->blue = blue;
+
+  if (!new_status_light.Send()) {
+    LOG(ERROR, "Failed to send lights.\n");
   }
 }
 

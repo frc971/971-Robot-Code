@@ -67,6 +67,8 @@ class Sender {
     // if the message was successfully sent, and false otherwise.
     bool Send() {
       RawSender *sender = &msg_.get_deleter();
+      // TODO(austin): This lets multiple senders reorder messages since time
+      // isn't acquired with a lock held.
       msg_->SetTimeToNow();
       return sender->Send(
           reinterpret_cast<RawSender::SendContext *>(msg_.release()));

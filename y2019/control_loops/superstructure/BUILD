@@ -27,6 +27,7 @@ cc_library(
         ":superstructure_queue",
         ":vacuum",
         "//aos/controls:control_loop",
+        "//aos/events:event-loop",
         "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//y2019:constants",
         "//y2019:status_light",

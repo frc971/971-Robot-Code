@@ -526,10 +526,14 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
 
 class SolenoidWriter {
  public:
-  SolenoidWriter()
-      : superstructure_(
-            ".y2019.control_loops.superstructure.superstructure_queue.output") {
-  }
+  SolenoidWriter(::aos::EventLoop *event_loop)
+      : event_loop_(event_loop),
+        superstructure_fetcher_(event_loop->MakeFetcher<
+                                ::y2019::control_loops::superstructure::
+                                    SuperstructureQueue::Output>(
+            ".y2019.control_loops.superstructure.superstructure_queue.output")),
+        status_light_fetcher_(event_loop->MakeFetcher<::y2019::StatusLight>(
+            ".y2019.status_light")) {}
 
   void set_big_suction_cup(int index0, int index1) {
     big_suction_cup0_ = pcm_.MakeSolenoid(index0);
@@ -563,18 +567,20 @@ class SolenoidWriter {
       }
 
       {
-        superstructure_.FetchLatest();
-        if (superstructure_.get()) {
-          LOG_STRUCT(DEBUG, "solenoids", *superstructure_);
+        superstructure_fetcher_.Fetch();
+        if (superstructure_fetcher_.get()) {
+          LOG_STRUCT(DEBUG, "solenoids", *superstructure_fetcher_);
 
-          big_suction_cup0_->Set(!superstructure_->intake_suction_bottom);
-          big_suction_cup1_->Set(!superstructure_->intake_suction_bottom);
-          small_suction_cup0_->Set(superstructure_->intake_suction_top);
-          small_suction_cup1_->Set(superstructure_->intake_suction_top);
+          big_suction_cup0_->Set(
+              !superstructure_fetcher_->intake_suction_bottom);
+          big_suction_cup1_->Set(
+              !superstructure_fetcher_->intake_suction_bottom);
+          small_suction_cup0_->Set(superstructure_fetcher_->intake_suction_top);
+          small_suction_cup1_->Set(superstructure_fetcher_->intake_suction_top);
 
           intake_rollers_talon_->Set(
               ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
-              ::aos::Clip(superstructure_->intake_roller_voltage,
+              ::aos::Clip(superstructure_fetcher_->intake_roller_voltage,
                           -kMaxBringupPower, kMaxBringupPower) /
                   12.0);
         }
@@ -588,11 +594,12 @@ class SolenoidWriter {
         LOG_STRUCT(DEBUG, "pneumatics info", to_log);
       }
 
-      status_light.FetchLatest();
+      status_light_fetcher_.Fetch();
       // If we don't have a light request (or it's an old one), we are borked.
       // Flash the red light slowly.
-      if (!status_light.get() ||
-          status_light.Age() > chrono::milliseconds(100)) {
+      if (!status_light_fetcher_.get() ||
+          status_light_fetcher_.get()->sent_time + chrono::milliseconds(100) <
+              event_loop_->monotonic_now()) {
         StatusLight color;
         color.red = 0.0;
         color.green = 0.0;
@@ -610,8 +617,8 @@ class SolenoidWriter {
         LOG_STRUCT(DEBUG, "color", color);
         SetColor(color);
       } else {
-        LOG_STRUCT(DEBUG, "color", *status_light);
-        SetColor(*status_light);
+        LOG_STRUCT(DEBUG, "color", *status_light_fetcher_.get());
+        SetColor(*status_light_fetcher_.get());
       }
     }
   }
@@ -646,6 +653,8 @@ class SolenoidWriter {
   void Quit() { run_ = false; }
 
  private:
+  ::aos::EventLoop *event_loop_;
+
   ::frc971::wpilib::BufferedPcm pcm_;
 
   ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> big_suction_cup0_,
@@ -654,9 +663,10 @@ class SolenoidWriter {
   ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonSRX>
       intake_rollers_talon_;
 
-  ::aos::Queue<
+  ::aos::Fetcher<
       ::y2019::control_loops::superstructure::SuperstructureQueue::Output>
-      superstructure_;
+      superstructure_fetcher_;
+  ::aos::Fetcher<::y2019::StatusLight> status_light_fetcher_;
 
   ::ctre::phoenix::CANifier canifier_{0};
 
@@ -681,6 +691,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::aos::SetCurrentThreadName("StartCompetition");
 
     ::aos::ShmEventLoop event_loop;
+    ::aos::ShmEventLoop solenoid_event_loop;
 
     ::frc971::wpilib::JoystickSender joystick_sender(&event_loop);
     ::std::thread joystick_thread(::std::ref(joystick_sender));
@@ -762,7 +773,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread superstructure_writer_thread(
         ::std::ref(superstructure_writer));
 
-    SolenoidWriter solenoid_writer;
+    SolenoidWriter solenoid_writer(&solenoid_event_loop);
     solenoid_writer.set_intake_roller_talon(
         make_unique<::ctre::phoenix::motorcontrol::can::TalonSRX>(10));
     solenoid_writer.set_big_suction_cup(0, 1);
