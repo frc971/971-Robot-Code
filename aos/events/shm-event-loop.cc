@@ -71,6 +71,14 @@ class ShmSender : public RawSender {
 
   bool Send(SendContext *msg) override {
     assert(queue_ != NULL);
+    {
+      ::aos::Message *aos_msg = reinterpret_cast<Message *>(msg);
+      // TODO(austin): This lets multiple senders reorder messages since time
+      // isn't acquired with a lock held.
+      if (aos_msg->sent_time == monotonic_clock::min_time) {
+        aos_msg->sent_time = monotonic_clock::now();
+      }
+    }
     return queue_->WriteMessage(msg, RawQueue::kOverride);
   }
 

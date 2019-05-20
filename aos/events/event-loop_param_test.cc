@@ -7,7 +7,10 @@ struct TestMessage : public ::aos::Message {
   enum { kQueueLength = 100, kHash = 0x696c0cdc };
   int msg_value;
 
-  void Zero() { msg_value = 0; }
+  void Zero() {
+    ::aos::Message::Zero();
+    msg_value = 0;
+  }
   static size_t Size() { return 1 + ::aos::Message::Size(); }
   size_t Print(char *buffer, size_t length) const;
   TestMessage() { Zero(); }
@@ -168,5 +171,37 @@ TEST_P(AbstractEventLoopTest, TimerDisable) {
 
   EXPECT_EQ(iteration_list.size(), 3);
 }
+
+// Verify that the send time on a message is roughly right.
+TEST_P(AbstractEventLoopTest, MessageSendTime) {
+  auto loop1 = Make();
+  auto loop2 = Make();
+  auto sender = loop1->MakeSender<TestMessage>("/test");
+  auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
+
+  auto test_timer = loop1->AddTimer([&sender]() {
+    auto msg = sender.MakeMessage();
+    msg->msg_value = 200;
+    msg.Send();
+  });
+
+  test_timer->Setup(loop1->monotonic_now() + ::std::chrono::seconds(1));
+
+  EndEventLoop(loop1.get(), ::std::chrono::seconds(2));
+  loop1->Run();
+
+  EXPECT_TRUE(fetcher.Fetch());
+
+  monotonic_clock::duration time_offset =
+      fetcher->sent_time - (loop1->monotonic_now() - ::std::chrono::seconds(1));
+
+  EXPECT_TRUE(time_offset > ::std::chrono::milliseconds(-500))
+      << ": Got " << fetcher->sent_time.time_since_epoch().count() << " expected "
+      << loop1->monotonic_now().time_since_epoch().count();
+  EXPECT_TRUE(time_offset < ::std::chrono::milliseconds(500))
+      << ": Got " << fetcher->sent_time.time_since_epoch().count()
+      << " expected " << loop1->monotonic_now().time_since_epoch().count();
+}
+
 }  // namespace testing
 }  // namespace aos
