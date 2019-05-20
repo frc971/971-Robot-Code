@@ -124,8 +124,10 @@ class SimulatedEventLoop : public EventLoop {
       EventScheduler *scheduler,
       ::std::map<::std::pair<::std::string, QueueTypeInfo>, SimulatedQueue>
           *queues)
-      : scheduler_(scheduler), queues_(queues) {}
-  ~SimulatedEventLoop() override {};
+      : scheduler_(scheduler), queues_(queues) {
+    scheduler_->AddRawEventLoop(this);
+  }
+  ~SimulatedEventLoop() override { scheduler_->RemoveRawEventLoop(this); };
 
   ::aos::monotonic_clock::time_point monotonic_now() override {
     return scheduler_->monotonic_now();
@@ -150,11 +152,10 @@ class SimulatedEventLoop : public EventLoop {
     scheduler_->Schedule(scheduler_->monotonic_now(), on_run);
   }
   void Run() override {
-    set_is_running(true);
+    LOG(FATAL, "Run from the factory instead\n");
     scheduler_->Run();
   }
   void Exit() override {
-    set_is_running(false);
     scheduler_->Exit();
   }
 
@@ -180,7 +181,36 @@ void EventScheduler::Deschedule(EventScheduler::Token token) {
   events_list_.erase(token);
 }
 
+void EventScheduler::RunFor(monotonic_clock::duration duration) {
+  const ::aos::monotonic_clock::time_point end_time =
+      monotonic_now() + duration;
+  for (RawEventLoop *event_loop : raw_event_loops_) {
+    event_loop->set_is_running(true);
+  }
+  is_running_ = true;
+  while (!events_list_.empty() && is_running_) {
+    auto iter = events_list_.begin();
+    ::aos::monotonic_clock::time_point next_time = iter->first;
+    if (next_time > end_time) {
+      break;
+    }
+    now_ = iter->first;
+    ::std::function<void()> callback = ::std::move(iter->second);
+    events_list_.erase(iter);
+    callback();
+  }
+  now_ = end_time;
+  if (!is_running_) {
+    for (RawEventLoop *event_loop : raw_event_loops_) {
+      event_loop->set_is_running(false);
+    }
+  }
+}
+
 void EventScheduler::Run() {
+  for (RawEventLoop *event_loop : raw_event_loops_) {
+    event_loop->set_is_running(true);
+  }
   is_running_ = true;
   while (!events_list_.empty() && is_running_) {
     auto iter = events_list_.begin();
@@ -188,6 +218,11 @@ void EventScheduler::Run() {
     ::std::function<void()> callback = ::std::move(iter->second);
     events_list_.erase(iter);
     callback();
+  }
+  if (!is_running_) {
+    for (RawEventLoop *event_loop : raw_event_loops_) {
+      event_loop->set_is_running(false);
+    }
   }
 }
 

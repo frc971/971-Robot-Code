@@ -1,6 +1,7 @@
 #ifndef _AOS_EVENTS_SIMULATED_EVENT_LOOP_H_
 #define _AOS_EVENTS_SIMULATED_EVENT_LOOP_H_
 
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <unordered_set>
@@ -92,8 +93,19 @@ class EventScheduler {
   void Deschedule(Token token);
 
   void Run();
+  void RunFor(::aos::monotonic_clock::duration duration);
 
-  void Exit() { is_running_ = false; }
+  void Exit() {
+    is_running_ = false;
+  }
+
+  void AddRawEventLoop(RawEventLoop *event_loop) {
+    raw_event_loops_.push_back(event_loop);
+  }
+  void RemoveRawEventLoop(RawEventLoop *event_loop) {
+    raw_event_loops_.erase(::std::find(raw_event_loops_.begin(),
+                                       raw_event_loops_.end(), event_loop));
+  }
 
   ::aos::monotonic_clock::time_point monotonic_now() const { return now_; }
 
@@ -101,6 +113,7 @@ class EventScheduler {
   ::aos::monotonic_clock::time_point now_ = ::aos::monotonic_clock::epoch();
   QueueType events_list_;
   bool is_running_ = false;
+  ::std::vector<RawEventLoop *> raw_event_loops_;
 };
 
 class SimulatedQueue {
@@ -147,6 +160,9 @@ class SimulatedEventLoopFactory {
   ::std::unique_ptr<EventLoop> MakeEventLoop();
 
   void Run() { scheduler_.Run(); }
+  void RunFor(monotonic_clock::duration duration) {
+    scheduler_.RunFor(duration);
+  }
 
   monotonic_clock::time_point monotonic_now() const {
     return scheduler_.monotonic_now();

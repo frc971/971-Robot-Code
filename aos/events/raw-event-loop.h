@@ -114,6 +114,8 @@ class TimerHandler {
   virtual void Disable() = 0;
 };
 
+class EventScheduler;
+
 // Virtual base class for all event queue-types.
 class RawEventLoop {
  public:
@@ -124,7 +126,7 @@ class RawEventLoop {
 
   // The passed in function will be called when the event loop starts.
   // Use this to run code once the thread goes into "real-time-mode",
-  virtual void OnRun(std::function<void()> on_run) = 0;
+  virtual void OnRun(::std::function<void()> on_run) = 0;
 
   bool is_running() const { return is_running_.load(); }
 
@@ -132,13 +134,14 @@ class RawEventLoop {
   // Returns a TimerHandle for configuration of the timer
   virtual TimerHandler *AddTimer(::std::function<void()> callback) = 0;
 
-  // Starts receiving events.
-  virtual void Run() = 0;
-
   // Stops receiving events.
   virtual void Exit() = 0;
 
+  // TODO(austin): This shouldn't belong.
+  virtual void Run() = 0;
+
  protected:
+  friend class EventScheduler;
   void set_is_running(bool value) { is_running_.store(value); }
 
   // Will send new messages from (path, type).
@@ -155,7 +158,7 @@ class RawEventLoop {
       std::function<void(const Message *message)> watcher) = 0;
 
  private:
-  std::atomic<bool> is_running_{false};
+  ::std::atomic<bool> is_running_{false};
 };
 
 }  // namespace aos

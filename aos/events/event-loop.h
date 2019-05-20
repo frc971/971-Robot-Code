@@ -127,9 +127,6 @@ class EventLoop : public RawEventLoop {
   // Use this to run code once the thread goes into "real-time-mode",
   virtual void OnRun(std::function<void()>) = 0;
 
-  // Starts receiving events.
-  virtual void Run() = 0;
-
   // TODO(austin): Sort out how to switch to realtime on run.
   // virtual void RunRealtime() = 0;
 
