@@ -4,7 +4,9 @@
 #include <stdint.h>
 
 #include "aos/containers/ring_buffer.h"
+#include "aos/events/event-loop.h"
 #include "aos/time/time.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2017/vision/vision.q.h"
 
 namespace y2017 {
@@ -13,7 +15,7 @@ namespace superstructure {
 
 class VisionTimeAdjuster {
  public:
-  VisionTimeAdjuster();
+  VisionTimeAdjuster(::aos::EventLoop *event_loop);
 
   // This needs to be called at the same interval as the control loops so that
   // it can attempt to make accurate goal recommendations.
@@ -48,6 +50,10 @@ class VisionTimeAdjuster {
   }
 
  private:
+  // Fetcher to grab the latest drivetrain message.
+  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+      drivetrain_status_fetcher_;
+
   // Buffer space to store the most recent drivetrain and turret messages from
   // the last second.
   ::aos::RingBuffer<ColumnAngle, 200> column_data_;

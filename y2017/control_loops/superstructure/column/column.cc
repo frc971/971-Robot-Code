@@ -364,8 +364,9 @@ void ColumnProfiledSubsystem::PopulateIndexerStatus(IndexerStatus *status) {
   status->stuck_voltage = IndexerStuckVoltage();
 }
 
-Column::Column()
-    : profiled_subsystem_(
+Column::Column(::aos::EventLoop *event_loop)
+    : vision_time_adjuster_(event_loop),
+      profiled_subsystem_(
           ::std::unique_ptr<
               ::frc971::control_loops::SimpleCappedStateFeedbackLoop<6, 2, 2>>(
               new ::frc971::control_loops::SimpleCappedStateFeedbackLoop<

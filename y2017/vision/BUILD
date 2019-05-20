@@ -61,6 +61,7 @@ cc_binary(
         ":vision_queue",
         ":vision_result",
         "//aos:init",
+        "//aos/events:shm-event-loop",
         "//aos/logging",
         "//aos/logging:queue_logging",
         "//aos/mutex",

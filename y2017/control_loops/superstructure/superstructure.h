@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "aos/controls/control_loop.h"
+#include "aos/events/event-loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "y2017/control_loops/superstructure/column/column.h"
 #include "y2017/control_loops/superstructure/hood/hood.h"
@@ -41,6 +42,8 @@ class Superstructure
       control_loops::SuperstructureQueue::Status *status) override;
 
  private:
+  ::aos::Fetcher<::y2017::vision::VisionStatus> vision_status_fetcher_;
+
   hood::Hood hood_;
   intake::Intake intake_;
   shooter::Shooter shooter_;

@@ -26,7 +26,11 @@ using ::frc971::control_loops::drivetrain_queue;
 Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
     : aos::controls::ControlLoop<control_loops::SuperstructureQueue>(event_loop,
-                                                                     name) {
+                                                                     name),
+      vision_status_fetcher_(
+          event_loop->MakeFetcher<::y2017::vision::VisionStatus>(
+              ".y2017.vision.vision_status")),
+      column_(event_loop) {
   shot_interpolation_table_ =
       ::frc971::shooter_interpolation::InterpolationTable<ShotParams>({
           // { distance_to_target, { shot_angle, shot_power, indexer_velocity }},
@@ -57,8 +61,8 @@ void Superstructure::RunIteration(
   }
 
   const vision::VisionStatus *vision_status = nullptr;
-  if (vision::vision_status.FetchLatest()) {
-    vision_status = vision::vision_status.get();
+  if (vision_status_fetcher_.Fetch()) {
+    vision_status = vision_status_fetcher_.get();
   }
 
   // Create a copy of the goals so that we can modify them.

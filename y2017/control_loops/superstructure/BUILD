@@ -26,6 +26,7 @@ cc_library(
         ":superstructure_queue",
         ":vision_distance_average",
         "//aos/controls:control_loop",
+        "//aos/events:event-loop",
         "//y2017:constants",
         "//y2017/control_loops/superstructure/column",
         "//y2017/control_loops/superstructure/hood",
@@ -93,8 +94,9 @@ cc_test(
     ],
     deps = [
         ":vision_time_adjuster",
+        "//aos/events:simulated_event_loop",
         "//aos/testing:googletest",
-        "//aos/testing:test_shm",
+        "//aos/testing:test_logging",
         "//aos/time",
     ],
 )

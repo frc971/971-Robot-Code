@@ -102,7 +102,11 @@ bool ComputeAngle(const ::aos::RingBuffer<Data, buffer_size> &data,
 
 }  // namespace
 
-VisionTimeAdjuster::VisionTimeAdjuster() {}
+VisionTimeAdjuster::VisionTimeAdjuster(::aos::EventLoop *event_loop)
+    : drivetrain_status_fetcher_(
+          event_loop
+              ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
+                  ".frc971.control_loops.drivetrain_queue.status")) {}
 
 void VisionTimeAdjuster::Tick(monotonic_clock::time_point monotonic_now,
                               double turret_position,
@@ -111,8 +115,8 @@ void VisionTimeAdjuster::Tick(monotonic_clock::time_point monotonic_now,
   column_data_.Push({.time = monotonic_now, .turret = turret_position});
 
   // If we have new drivetrain data, we store it.
-  if (::frc971::control_loops::drivetrain_queue.status.FetchLatest()) {
-    const auto &position = ::frc971::control_loops::drivetrain_queue.status;
+  if (drivetrain_status_fetcher_.Fetch()) {
+    const auto &position = drivetrain_status_fetcher_.get();
     DrivetrainAngle new_position{.time = position->sent_time,
                                  .left = position->estimated_left_position,
                                  .right = position->estimated_right_position};

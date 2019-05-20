@@ -1,5 +1,6 @@
 package y2017.vision;
 
+// Published on ".y2017.vision.vision_status"
 message VisionStatus {
   bool image_valid;
 
@@ -11,4 +12,3 @@ message VisionStatus {
   // Capture time of the angle using the clock behind monotonic_clock::now().
   int64_t target_time;
 };
-queue VisionStatus vision_status;

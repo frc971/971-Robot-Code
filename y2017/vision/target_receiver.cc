@@ -1,9 +1,10 @@
 #include <netdb.h>
 
+#include "aos/events/shm-event-loop.h"
+#include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/logging/queue_logging.h"
 #include "aos/time/time.h"
-#include "aos/init.h"
 #include "aos/vision/events/udp.h"
 #include "y2017/vision/target_finder.h"
 #include "y2017/vision/vision.q.h"
@@ -19,6 +20,11 @@ int Main() {
   char raw_data[65507];
   // TODO(parker): Have this pull in a config from somewhere.
   TargetFinder finder;
+  ::aos::ShmEventLoop event_loop;
+
+  ::aos::Sender<::y2017::vision::VisionStatus> vision_status_sender =
+      event_loop.MakeSender<::y2017::vision::VisionStatus>(
+          ".y2017.vision.vision_status");
 
   while (true) {
     // TODO(austin): Don't malloc.
@@ -36,7 +42,7 @@ int Main() {
       continue;
     }
 
-    auto new_vision_status = vision_status.MakeMessage();
+    auto new_vision_status = vision_status_sender.MakeMessage();
     new_vision_status->image_valid = target.has_target();
     if (new_vision_status->image_valid) {
       new_vision_status->target_time =

@@ -159,7 +159,7 @@ void ColumnProfiledSubsystem::PopulateTurretStatus(StatusType *status) {
 
 class Column {
  public:
-  Column();
+  Column(::aos::EventLoop *event_loop);
   double goal(int row, int col) const {
     return profiled_subsystem_.goal(row, col);
   }

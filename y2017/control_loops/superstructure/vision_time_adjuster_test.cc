@@ -2,8 +2,9 @@
 
 #include "gtest/gtest.h"
 
+#include "aos/events/simulated-event-loop.h"
+#include "aos/testing/test_logging.h"
 #include "aos/time/time.h"
-#include "aos/testing/test_shm.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2017/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2017/vision/vision.q.h"
@@ -14,22 +15,31 @@ namespace superstructure {
 
 class VisionTimeAdjusterTest : public ::testing::Test {
  public:
-  VisionTimeAdjusterTest() : ::testing::Test() {
+  VisionTimeAdjusterTest()
+      : ::testing::Test(),
+        simulation_event_loop_(simulated_event_loop_factory_.MakeEventLoop()),
+        drivetrain_status_sender_(
+            simulation_event_loop_
+                ->MakeSender<::frc971::control_loops::DrivetrainQueue::Status>(
+                    ".frc971.control_loops.drivetrain_queue.status")),
+        vision_status_sender_(
+            simulation_event_loop_->MakeSender<::y2017::vision::VisionStatus>(
+                ".y2017.vision.vision_status")),
+        vision_time_adjuster_event_loop_(
+            simulated_event_loop_factory_.MakeEventLoop()),
+        vision_status_fetcher_(vision_time_adjuster_event_loop_
+                                   ->MakeFetcher<::y2017::vision::VisionStatus>(
+                                       ".y2017.vision.vision_status")),
+        adjuster_(vision_time_adjuster_event_loop_.get()) {
+    ::aos::testing::EnableTestLogging();
     static_assert(kVisionDelay % kTimeTick == ::std::chrono::milliseconds(0),
                   "kVisionDelay must be a multiple of kTimeTick.");
     static_assert(
         kVisionDelay / kTimeTick == decltype(turret_history_)::kBufferSize,
         "We need a different amount of space to hold the turret data.");
-    ::aos::time::EnableMockTime(current_time_);
-    ::frc971::control_loops::drivetrain_queue.status.Clear();
-    vision::vision_status.Clear();
   }
 
-  ~VisionTimeAdjusterTest() {
-    ::frc971::control_loops::drivetrain_queue.status.Clear();
-    vision::vision_status.Clear();
-    ::aos::time::DisableMockTime();
-  }
+  ~VisionTimeAdjusterTest() {}
 
  protected:
   static constexpr ::std::chrono::milliseconds kTimeTick{5};
@@ -47,20 +57,14 @@ class VisionTimeAdjusterTest : public ::testing::Test {
 
   void SetVisionAngle(double angle) { vision_angle_ = angle; }
 
-  void RunForTime(::aos::monotonic_clock::duration run_for) {
-    const auto start_time = ::aos::monotonic_clock::now();
-    while (::aos::monotonic_clock::now() < start_time + run_for) {
-      RunIteration();
-    }
-  }
-
   void RunIteration() {
     SendMessages();
     const vision::VisionStatus *vision_status = nullptr;
-    if (vision::vision_status.FetchLatest()) {
-      vision_status = vision::vision_status.get();
+    if (vision_status_fetcher_.Fetch()) {
+      vision_status = vision_status_fetcher_.get();
     }
-    adjuster_.Tick(::aos::monotonic_clock::now(), turret_angle_, vision_status);
+    adjuster_.Tick(vision_time_adjuster_event_loop_->monotonic_now(),
+                   turret_angle_, vision_status);
     TickTime();
   }
 
@@ -68,14 +72,15 @@ class VisionTimeAdjusterTest : public ::testing::Test {
     return kVisionDelay / kTimeTick;
   }
 
-  VisionTimeAdjuster adjuster_;
+  VisionTimeAdjuster *adjuster() { return &adjuster_; }
 
  private:
-  void TickTime() { ::aos::time::SetMockTime(current_time_ += kTimeTick); }
+  void TickTime() { simulated_event_loop_factory_.RunFor(kTimeTick); }
 
   void SendMessages() {
     SendDrivetrainPosition();
-    if (::aos::monotonic_clock::now().time_since_epoch() % kVisionTick ==
+    if (simulated_event_loop_factory_.monotonic_now().time_since_epoch() %
+            kVisionTick ==
         kVisionDelay) {
       SendVisionTarget();
     }
@@ -84,18 +89,18 @@ class VisionTimeAdjusterTest : public ::testing::Test {
   }
 
   void SendDrivetrainPosition() {
-    auto message =
-        ::frc971::control_loops::drivetrain_queue.status.MakeMessage();
+    auto message = drivetrain_status_sender_.MakeMessage();
     message->estimated_left_position = drivetrain_left_;
     message->estimated_right_position = drivetrain_right_;
     ASSERT_TRUE(message.Send());
   }
 
   void SendVisionTarget() {
-    auto message = vision::vision_status.MakeMessage();
-    message->target_time = (::aos::monotonic_clock::now() - kVisionDelay)
-                               .time_since_epoch()
-                               .count();
+    auto message = vision_status_sender_.MakeMessage();
+    message->target_time =
+        (simulation_event_loop_->monotonic_now() - kVisionDelay)
+            .time_since_epoch()
+            .count();
     message->distance = vision_distance_;
     ASSERT_EQ(turret_history_.capacity(), turret_history_.size());
     ASSERT_EQ(drivetrain_history_.capacity(), drivetrain_history_.size());
@@ -110,7 +115,16 @@ class VisionTimeAdjusterTest : public ::testing::Test {
            (drivetrain::kRobotRadius * 2.0);
   }
 
-  ::aos::testing::TestSharedMemory my_shm_;
+  ::aos::SimulatedEventLoopFactory simulated_event_loop_factory_;
+  ::std::unique_ptr<::aos::EventLoop> simulation_event_loop_;
+  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Status>
+      drivetrain_status_sender_;
+  ::aos::Sender<::y2017::vision::VisionStatus> vision_status_sender_;
+
+  ::std::unique_ptr<::aos::EventLoop> vision_time_adjuster_event_loop_;
+  ::aos::Fetcher<::y2017::vision::VisionStatus> vision_status_fetcher_;
+
+  VisionTimeAdjuster adjuster_;
 
   ::aos::monotonic_clock::time_point current_time_ =
       ::aos::monotonic_clock::epoch();
@@ -144,10 +158,10 @@ TEST_F(VisionTimeAdjusterTest, TurretRotationOnly) {
     ASSERT_NO_FATAL_FAILURE(RunIteration());
 
     if (i < GetVisionDelayCount()) {
-      EXPECT_FALSE(adjuster_.valid());
+      EXPECT_FALSE(adjuster()->valid());
     } else {
-      ASSERT_TRUE(adjuster_.valid());
-      EXPECT_NEAR(M_PI / 5, adjuster_.goal(), 0.00001);
+      ASSERT_TRUE(adjuster()->valid());
+      EXPECT_NEAR(M_PI / 5, adjuster()->goal(), 0.00001);
     }
   }
 }
@@ -164,10 +178,10 @@ TEST_F(VisionTimeAdjusterTest, DrivetrainRotationOnly) {
     ASSERT_NO_FATAL_FAILURE(RunIteration());
 
     if (i < GetVisionDelayCount()) {
-      EXPECT_FALSE(adjuster_.valid());
+      EXPECT_FALSE(adjuster()->valid());
     } else {
-      ASSERT_TRUE(adjuster_.valid());
-      EXPECT_NEAR(2 * angle, adjuster_.goal(), 0.00001);
+      ASSERT_TRUE(adjuster()->valid());
+      EXPECT_NEAR(2 * angle, adjuster()->goal(), 0.00001);
     }
   }
 }
@@ -186,10 +200,11 @@ TEST_F(VisionTimeAdjusterTest, DrivetrainAndTurretTogether) {
     ASSERT_NO_FATAL_FAILURE(RunIteration());
 
     if (i < GetVisionDelayCount()) {
-      EXPECT_FALSE(adjuster_.valid());
+      EXPECT_FALSE(adjuster()->valid());
     } else {
-      ASSERT_TRUE(adjuster_.valid());
-      EXPECT_NEAR(-M_PI / 6 - 2 * drivetrain_angle, adjuster_.goal(), 0.00001);
+      ASSERT_TRUE(adjuster()->valid());
+      EXPECT_NEAR(-M_PI / 6 - 2 * drivetrain_angle, adjuster()->goal(),
+                  0.00001);
     }
   }
 }
