@@ -312,7 +312,9 @@ class CameraReader {
       : camera_frame_sender_(
             event_loop
                 ->MakeSender<::y2019::control_loops::drivetrain::CameraFrame>(
-                    ".y2019.control_loops.drivetrain.camera_frames")) {}
+                    ".y2019.control_loops.drivetrain.camera_frames")),
+        camera_log_fetcher_(
+            event_loop->MakeFetcher<::y2019::CameraLog>(".y2019.camera_log")) {}
 
   CameraReader(const CameraReader &) = delete;
   CameraReader &operator=(const CameraReader &) = delete;
@@ -340,12 +342,12 @@ class CameraReader {
     using namespace frc971::jevois;
     RoborioToTeensy to_teensy{};
     to_teensy.realtime_now = aos::realtime_clock::now();
-    camera_log.FetchLatest();
+    camera_log_fetcher_.Fetch();
     if (activate_usb_ && !activate_usb_->Get()) {
       to_teensy.camera_command = CameraCommand::kUsb;
     } else if (activate_passthrough_ && !activate_passthrough_->Get()) {
       to_teensy.camera_command = CameraCommand::kCameraPassthrough;
-    } else if (camera_log.get() && camera_log->log) {
+    } else if (camera_log_fetcher_.get() && camera_log_fetcher_->log) {
       to_teensy.camera_command = CameraCommand::kLog;
     } else {
       to_teensy.camera_command = CameraCommand::kNormal;
@@ -428,6 +430,7 @@ class CameraReader {
  private:
   ::aos::Sender<::y2019::control_loops::drivetrain::CameraFrame>
       camera_frame_sender_;
+  ::aos::Fetcher<::y2019::CameraLog> camera_log_fetcher_;
 
   frc::SPI *spi_ = nullptr;
   ::std::unique_ptr<frc::SPI> dummy_spi_;
