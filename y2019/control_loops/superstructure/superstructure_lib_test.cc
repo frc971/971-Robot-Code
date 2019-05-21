@@ -16,7 +16,6 @@
 #include "y2019/control_loops/superstructure/stilts/stilts_plant.h"
 #include "y2019/control_loops/superstructure/superstructure.h"
 #include "y2019/control_loops/superstructure/wrist/wrist_plant.h"
-#include "y2019/status_light.q.h"
 
 namespace y2019 {
 namespace control_loops {
@@ -290,7 +289,6 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
             ".y2019.control_loops.superstructure.superstructure_queue."
             "position"),
         superstructure_(&event_loop_) {
-    status_light.Clear();
     ::frc971::control_loops::drivetrain_queue.status.Clear();
     set_team_id(::frc971::control_loops::testing::kTeamNumber);
   }
