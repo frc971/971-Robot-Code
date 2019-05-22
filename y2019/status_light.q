@@ -12,5 +12,3 @@ message StatusLight {
 message CameraLog {
   bool log;
 };
-
-queue CameraLog camera_log;

@@ -147,7 +147,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
         localizer_control_sender_(
             event_loop->MakeSender<
                 ::frc971::control_loops::drivetrain::LocalizerControl>(
-                ".frc971.control_loops.drivetrain.localizer_control")) {
+                ".frc971.control_loops.drivetrain.localizer_control")),
+        camera_log_sender_(
+            event_loop->MakeSender<::y2019::CameraLog>(".y2019.camera_log")) {
     const uint16_t team = ::aos::network::GetTeamNumber();
     superstructure_queue.goal.FetchLatest();
     if (superstructure_queue.goal.get()) {
@@ -484,7 +486,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     {
-      auto camera_log_message = camera_log.MakeMessage();
+      auto camera_log_message = camera_log_sender_.MakeMessage();
       camera_log_message->log = data.IsPressed(kCameraLog);
       LOG_STRUCT(DEBUG, "camera_log", *camera_log_message);
       camera_log_message.Send();
@@ -506,6 +508,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
   ::aos::Sender<::frc971::control_loops::drivetrain::LocalizerControl>
       localizer_control_sender_;
+
+  ::aos::Sender<::y2019::CameraLog> camera_log_sender_;
 
   // Bool to track if we've been above the deploy position.  Once this bool is
   // set, don't let the stilts retract until we see the platform.
