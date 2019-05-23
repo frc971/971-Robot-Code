@@ -29,7 +29,7 @@ cc_binary(
         ":constants",
         "//aos:init",
         "//aos/actions:action_lib",
-        "//aos/input:joystick_input",
+        "//aos/input:action_joystick_input",
         "//aos/logging",
         "//aos/time",
         "//aos/util:log_interval",
@@ -38,6 +38,7 @@ cc_binary(
         "//frc971/queues:gyro",
         "//y2014/actors:shoot_action_lib",
         "//y2014/control_loops/claw:claw_queue",
+        "//y2014/control_loops/drivetrain:drivetrain_base",
         "//y2014/control_loops/shooter:shooter_queue",
     ],
 )
@@ -50,7 +51,6 @@ robot_downloader(
         "//y2014/control_loops/drivetrain:drivetrain",
         "//y2014/control_loops/claw:claw",
         "//y2014/control_loops/shooter:shooter",
-        "//y2014/autonomous:auto",
         "//y2014/actors:binaries",
     ],
 )

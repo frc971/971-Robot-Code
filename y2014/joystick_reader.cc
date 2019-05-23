@@ -3,21 +3,22 @@
 #include <unistd.h>
 #include <math.h>
 
+#include "aos/actions/actions.h"
 #include "aos/init.h"
-#include "aos/input/joystick_input.h"
+#include "aos/input/action_joystick_input.h"
 #include "aos/input/driver_station_data.h"
 #include "aos/logging/logging.h"
-#include "aos/util/log_interval.h"
 #include "aos/time/time.h"
-#include "aos/actions/actions.h"
+#include "aos/util/log_interval.h"
 
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "y2014/constants.h"
-#include "frc971/queues/gyro.q.h"
 #include "frc971/autonomous/auto.q.h"
-#include "y2014/control_loops/claw/claw.q.h"
-#include "y2014/control_loops/shooter/shooter.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/queues/gyro.q.h"
 #include "y2014/actors/shoot_actor.h"
+#include "y2014/constants.h"
+#include "y2014/control_loops/claw/claw.q.h"
+#include "y2014/control_loops/drivetrain/drivetrain_base.h"
+#include "y2014/control_loops/shooter/shooter.q.h"
 
 using ::frc971::control_loops::drivetrain_queue;
 using ::frc971::sensors::gyro_reading;
@@ -153,96 +154,17 @@ const ShotGoal kDemoShotGoal = {
 const ClawGoal k254PassGoal = {-1.95, kGrabSeparation};
 const ClawGoal kFlipped254PassGoal = {1.96, kGrabSeparation};
 
-class Reader : public ::aos::input::JoystickInput {
+class Reader : public ::aos::input::ActionJoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop)
-      : ::aos::input::JoystickInput(event_loop),
-        is_high_gear_(false),
+      : ::aos::input::ActionJoystickInput(
+            event_loop, control_loops::GetDrivetrainConfig(),
+            ::aos::input::DrivetrainInputReader::InputType::kSteeringWheel, {}),
         shot_power_(80.0),
         goal_angle_(0.0),
         separation_angle_(kGrabSeparation),
         velocity_compensation_(0.0),
-        intake_power_(0.0),
-        was_running_(false) {}
-
-  void RunIteration(const ::aos::input::driver_station::Data &data) override {
-    bool last_auto_running = auto_running_;
-    auto_running_ = data.GetControlBit(ControlBit::kAutonomous) &&
-                    data.GetControlBit(ControlBit::kEnabled);
-    if (auto_running_ != last_auto_running) {
-      if (auto_running_) {
-        StartAuto();
-      } else {
-        StopAuto();
-      }
-    }
-
-    if (!data.GetControlBit(ControlBit::kAutonomous)) {
-      HandleDrivetrain(data);
-      HandleTeleop(data);
-    }
-  }
-
-  void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
-    bool is_control_loop_driving = false;
-    double left_goal = 0.0;
-    double right_goal = 0.0;
-    const double wheel = -data.GetAxis(kSteeringWheel);
-    const double throttle = -data.GetAxis(kDriveThrottle);
-    const double kThrottleGain = 1.0 / 2.5;
-    if (false && (data.IsPressed(kDriveControlLoopEnable1) ||
-                  data.IsPressed(kDriveControlLoopEnable2))) {
-      if (data.PosEdge(kDriveControlLoopEnable1) ||
-          data.PosEdge(kDriveControlLoopEnable2)) {
-        if (drivetrain_queue.position.FetchLatest() &&
-            gyro_reading.FetchLatest()) {
-          distance_ = (drivetrain_queue.position->left_encoder +
-                      drivetrain_queue.position->right_encoder) /
-                         2.0 -
-                     throttle * kThrottleGain / 2.0;
-          angle_ = gyro_reading->angle;
-          filtered_goal_distance_ = distance_;
-        }
-      }
-      is_control_loop_driving = true;
-
-      // const double gyro_angle = Gyro.View().angle;
-      const double goal_theta = angle_ - wheel * 0.27;
-      const double goal_distance = distance_ + throttle * kThrottleGain;
-      const double robot_width = 22.0 / 100.0 * 2.54;
-      const double kMaxVelocity = 0.6;
-      if (goal_distance > kMaxVelocity * 0.02 + filtered_goal_distance_) {
-        filtered_goal_distance_ += kMaxVelocity * 0.03;
-      } else if (goal_distance <
-                 -kMaxVelocity * 0.02 + filtered_goal_distance_) {
-        filtered_goal_distance_ -= kMaxVelocity * 0.02;
-      } else {
-        filtered_goal_distance_ = goal_distance;
-      }
-      left_goal = filtered_goal_distance_ - robot_width * goal_theta / 2.0;
-      right_goal = filtered_goal_distance_ + robot_width * goal_theta / 2.0;
-      is_high_gear_ = false;
-
-      LOG(DEBUG, "Left goal %f Right goal %f\n", left_goal, right_goal);
-    }
-    if (!drivetrain_queue.goal.MakeWithBuilder()
-             .wheel(wheel)
-             .throttle(throttle)
-             .highgear(is_high_gear_)
-             .quickturn(data.IsPressed(kQuickTurn))
-             .controller_type(is_control_loop_driving ? 1 : 0)
-             .left_goal(left_goal)
-             .right_goal(right_goal)
-             .Send()) {
-      LOG(WARNING, "sending stick values failed\n");
-    }
-    if (data.PosEdge(kShiftLow)) {
-      is_high_gear_ = false;
-    }
-    if (data.PosEdge(kShiftHigh)) {
-      is_high_gear_ = true;
-    }
-  }
+        intake_power_(0.0) {}
 
   void SetGoal(ClawGoal goal) {
     goal_angle_ = goal.angle;
@@ -262,11 +184,7 @@ class Reader : public ::aos::input::JoystickInput {
     intake_power_ = goal.intake_power;
   }
 
-  void HandleTeleop(const ::aos::input::driver_station::Data &data) {
-    if (!data.GetControlBit(ControlBit::kEnabled)) {
-      action_queue_.CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
-    }
+  void HandleTeleop(const ::aos::input::driver_station::Data &data) override {
     if (data.IsPressed(kRollersIn) || data.IsPressed(kRollersOut)) {
       intake_power_ = 0.0;
       separation_angle_ = kGrabSeparation;
@@ -304,120 +222,119 @@ class Reader : public ::aos::input::JoystickInput {
       claw_goal_adjust *= -1;
 
       if (data.IsPressed(kIntakeOpenPosition)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedIntakeOpenGoal);
       } else if (data.IsPressed(kIntakePosition)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedIntakeGoal);
       } else if (data.IsPressed(kVerticalTuck)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kVerticalTuckGoal);
       } else if (data.IsPressed(kTuck)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedTuckGoal);
       } else if (data.PosEdge(kLongShot)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedLongShotGoal);
       } else if (data.PosEdge(kCloseShot)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedMediumShotGoal);
       } else if (data.PosEdge(kFenderShot)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedShortShotGoal);
       } else if (data.PosEdge(kHumanPlayerShot)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedHumanShotGoal);
       } else if (data.PosEdge(kUserLeft)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kFlipped254PassGoal);
       } else if (data.PosEdge(kUserRight)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedDemoShotGoal);
       } else if (data.PosEdge(kTrussShot)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedTrussShotGoal);
       }
     } else {
       if (data.IsPressed(kIntakeOpenPosition)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kIntakeOpenGoal);
       } else if (data.IsPressed(kIntakePosition)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kIntakeGoal);
       } else if (data.IsPressed(kVerticalTuck)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kVerticalTuckGoal);
       } else if (data.IsPressed(kTuck)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kTuckGoal);
       } else if (data.PosEdge(kLongShot)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kLongShotGoal);
       } else if (data.PosEdge(kCloseShot)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kCloseShotGoal);
       } else if (data.PosEdge(kFenderShot)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kFenderShotGoal);
       } else if (data.PosEdge(kHumanPlayerShot)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kHumanShotGoal);
       } else if (data.PosEdge(kUserLeft)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(k254PassGoal);
       } else if (data.PosEdge(kUserRight)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kDemoShotGoal);
       } else if (data.PosEdge(kTrussShot)) {
-        action_queue_.CancelAllActions();
+        CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kTrussShotGoal);
       }
     }
 
     if (data.PosEdge(kFire)) {
-      action_queue_.EnqueueAction(actors::MakeShootAction());
+      EnqueueAction(actors::MakeShootAction());
     } else if (data.NegEdge(kFire)) {
-      action_queue_.CancelCurrentAction();
+      CancelCurrentAction();
     }
 
-    action_queue_.Tick();
     if (data.IsPressed(kUnload) || data.IsPressed(kReload)) {
-      action_queue_.CancelAllActions();
+      CancelAllActions();
         LOG(DEBUG, "Canceling\n");
       intake_power_ = 0.0;
       velocity_compensation_ = 0.0;
     }
 
     // Send out the claw and shooter goals if no actions are running.
-    if (!action_queue_.Running()) {
+    if (!ActionRunning()) {
       goal_angle_ += claw_goal_adjust;
       separation_angle_ += claw_separation_adjust;
 
       // If the action just ended, turn the intake off and stop velocity
       // compensating.
-      if (was_running_) {
+      if (was_running_action()) {
         intake_power_ = 0.0;
         velocity_compensation_ = 0.0;
       }
@@ -473,7 +390,6 @@ class Reader : public ::aos::input::JoystickInput {
         LOG(WARNING, "sending shooter goal failed\n");
       }
     }
-    was_running_ = action_queue_.Running();
   }
 
   double SpeedToAngleOffset(double speed) {
@@ -494,22 +410,12 @@ class Reader : public ::aos::input::JoystickInput {
     ::frc971::autonomous::autonomous.MakeWithBuilder().run_auto(false).Send();
   }
 
-  bool is_high_gear_;
   double shot_power_;
   double goal_angle_;
   double separation_angle_, shot_separation_angle_;
   double velocity_compensation_;
-  // Distance, angle, and filtered goal for closed loop driving.
-  double distance_;
-  double angle_;
-  double filtered_goal_distance_;
   double intake_power_;
-  bool was_running_;
   bool moving_for_shot_ = false;
-
-  bool auto_running_ = false;
-
-  ::aos::common::actions::ActionQueue action_queue_;
 
   ::aos::util::SimpleLogInterval no_drivetrain_status_ =
       ::aos::util::SimpleLogInterval(::std::chrono::milliseconds(200), WARNING,

@@ -23,19 +23,31 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
     bool run_teleop_in_auto = false;
     // A button, for use with the run_teleop_in_auto, that will cancel the auto
     // mode, and if run_telop_in_auto is specified, resume teloperation.
-    const driver_station::ButtonLocation cancel_auto_button;
+    const driver_station::ButtonLocation cancel_auto_button = {-1, -1};
   };
   ActionJoystickInput(
       ::aos::EventLoop *event_loop,
-      const ::frc971::control_loops::drivetrain::DrivetrainConfig<double> &
-          dt_config,
+      const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>
+          &dt_config,
+      DrivetrainInputReader::InputType input_type,
       const InputConfig &input_config)
       : ::aos::input::JoystickInput(event_loop),
         input_config_(input_config),
         drivetrain_input_reader_(DrivetrainInputReader::Make(
-            DrivetrainInputReader::InputType::kPistol, dt_config)) {}
+            input_type, dt_config)) {}
 
   virtual ~ActionJoystickInput() {}
+
+ protected:
+  bool was_running_action() { return was_running_; }
+
+  bool ActionRunning() { return action_queue_.Running(); }
+  void CancelAllActions() { action_queue_.CancelAllActions(); }
+  void CancelCurrentAction() { action_queue_.CancelCurrentAction(); }
+
+  void EnqueueAction(::std::unique_ptr<::aos::common::actions::Action> action) {
+    action_queue_.EnqueueAction(::std::move(action));
+  }
 
  private:
   // Handles anything that needs to be cleaned up when the auto action exits.

@@ -24,6 +24,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   bool RunAction(
       const ::frc971::autonomous::AutonomousActionParams &params) override;
+
  private:
   void Reset() {
     intake_goal_ = 0.0;

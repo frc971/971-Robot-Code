@@ -138,6 +138,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       : ::aos::input::ActionJoystickInput(
             event_loop,
             ::y2019::control_loops::drivetrain::GetDrivetrainConfig(),
+            ::aos::input::DrivetrainInputReader::InputType::kPistol,
             {.run_teleop_in_auto = true,
              .cancel_auto_button = kCancelAutoMode}),
         target_selector_hint_sender_(

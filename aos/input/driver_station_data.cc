@@ -15,6 +15,13 @@ namespace {
 
 bool GetButton(const ButtonLocation location,
                const JoystickState &values) {
+  if (location.joystick() < 0 ||
+      location.joystick() > static_cast<int>(values.joysticks.size())) {
+    return false;
+  }
+  if (location.number() < 0 || location.number() >= 16) {
+    return false;
+  }
   return values.joysticks[location.joystick() - 1].buttons &
       (1 << (location.number() - 1));
 }
