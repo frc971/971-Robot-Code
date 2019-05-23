@@ -384,6 +384,17 @@ toolchain {
     }
 
     flag_set {
+      action: "assemble"
+      action: "preprocess-assemble"
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-header-preprocessing"
+      flag_group {
+        flag: "-fno-canonical-system-headers"
+      }
+    }
+
+    flag_set {
       action: "c++-compile"
       action: "c++-header-parsing"
       action: "c++-module-compile"
