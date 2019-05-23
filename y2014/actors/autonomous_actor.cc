@@ -32,7 +32,9 @@ AutonomousActor::AutonomousActor(
     ::aos::EventLoop *event_loop,
     ::frc971::autonomous::AutonomousActionQueueGroup *s)
     : frc971::autonomous::BaseAutonomousActor(
-          event_loop, s, control_loops::GetDrivetrainConfig()) {}
+          event_loop, s, control_loops::GetDrivetrainConfig()),
+      hot_goal_fetcher_(
+          event_loop->MakeFetcher<::y2014::HotGoal>(".y2014.hot_goal")) {}
 
 void AutonomousActor::PositionClawVertically(double intake_power,
                                              double centering_power) {
@@ -136,12 +138,15 @@ bool AutonomousActor::WaitUntilClawDone() {
 
 class HotGoalDecoder {
  public:
-  HotGoalDecoder() { ResetCounts(); }
+  HotGoalDecoder(::aos::Fetcher<::y2014::HotGoal> *hot_goal_fetcher)
+      : hot_goal_fetcher_(hot_goal_fetcher) {
+    ResetCounts();
+  }
 
   void ResetCounts() {
-    hot_goal.FetchLatest();
-    if (hot_goal.get()) {
-      start_counts_ = *hot_goal;
+    hot_goal_fetcher_->Fetch();
+    if (hot_goal_fetcher_->get()) {
+      start_counts_ = *hot_goal_fetcher_->get();
       LOG_STRUCT(INFO, "counts reset to", start_counts_);
       start_counts_valid_ = true;
     } else {
@@ -150,31 +155,30 @@ class HotGoalDecoder {
     }
   }
 
-  void Update(bool block = false) {
-    if (block) {
-      hot_goal.FetchAnother();
-    } else {
-      hot_goal.FetchLatest();
-    }
-    if (hot_goal.get()) LOG_STRUCT(INFO, "new counts", *hot_goal);
+  void Update() {
+    hot_goal_fetcher_->Fetch();
+    if (hot_goal_fetcher_->get())
+      LOG_STRUCT(INFO, "new counts", *hot_goal_fetcher_->get());
   }
 
   bool left_triggered() const {
-    if (!start_counts_valid_ || !hot_goal.get()) return false;
-    return (hot_goal->left_count - start_counts_.left_count) > kThreshold;
+    if (!start_counts_valid_ || !hot_goal_fetcher_->get()) return false;
+    return (hot_goal_fetcher_->get()->left_count - start_counts_.left_count) >
+           kThreshold;
   }
 
   bool right_triggered() const {
-    if (!start_counts_valid_ || !hot_goal.get()) return false;
-    return (hot_goal->right_count - start_counts_.right_count) > kThreshold;
+    if (!start_counts_valid_ || !hot_goal_fetcher_->get()) return false;
+    return (hot_goal_fetcher_->get()->right_count - start_counts_.right_count) >
+           kThreshold;
   }
 
   bool is_left() const {
-    if (!start_counts_valid_ || !hot_goal.get()) return false;
+    if (!start_counts_valid_ || !hot_goal_fetcher_->get()) return false;
     const uint64_t left_difference =
-        hot_goal->left_count - start_counts_.left_count;
+        hot_goal_fetcher_->get()->left_count - start_counts_.left_count;
     const uint64_t right_difference =
-        hot_goal->right_count - start_counts_.right_count;
+        hot_goal_fetcher_->get()->right_count - start_counts_.right_count;
     if (left_difference > kThreshold) {
       if (right_difference > kThreshold) {
         // We've seen a lot of both, so pick the one we've seen the most of.
@@ -190,11 +194,11 @@ class HotGoalDecoder {
   }
 
   bool is_right() const {
-    if (!start_counts_valid_ || !hot_goal.get()) return false;
+    if (!start_counts_valid_ || !hot_goal_fetcher_->get()) return false;
     const uint64_t left_difference =
-        hot_goal->left_count - start_counts_.left_count;
+        hot_goal_fetcher_->get()->left_count - start_counts_.left_count;
     const uint64_t right_difference =
-        hot_goal->right_count - start_counts_.right_count;
+        hot_goal_fetcher_->get()->right_count - start_counts_.right_count;
     if (right_difference > kThreshold) {
       if (left_difference > kThreshold) {
         // We've seen a lot of both, so pick the one we've seen the most of.
@@ -214,6 +218,8 @@ class HotGoalDecoder {
 
   ::y2014::HotGoal start_counts_;
   bool start_counts_valid_;
+
+  ::aos::Fetcher<::y2014::HotGoal> *hot_goal_fetcher_;
 };
 
 bool AutonomousActor::RunAction(
@@ -258,7 +264,7 @@ bool AutonomousActor::RunAction(
       (auto_version == AutoVersion::kStraight) ? kFastWithBallDrive
                                                : kSlowWithBallDrive;
 
-  HotGoalDecoder hot_goal_decoder;
+  HotGoalDecoder hot_goal_decoder(&hot_goal_fetcher_);
   // True for left, false for right.
   bool first_shot_left, second_shot_left_default, second_shot_left;
 
@@ -309,7 +315,7 @@ bool AutonomousActor::RunAction(
     do {
       // TODO(brians): Wait for next message with timeout or something.
       this_thread::sleep_for(chrono::milliseconds(3));
-      hot_goal_decoder.Update(false);
+      hot_goal_decoder.Update();
       if (ShouldCancel()) return true;
     } while (!hot_goal_decoder.left_triggered() &&
              (monotonic_clock::now() - start_time) < chrono::seconds(9));

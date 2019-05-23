@@ -9,6 +9,7 @@
 #include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "y2014/queues/hot_goal.q.h"
 
 namespace y2014 {
 namespace actors {
@@ -35,6 +36,8 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   void Shoot();
 
   bool WaitUntilClawDone();
+
+  ::aos::Fetcher<::y2014::HotGoal> hot_goal_fetcher_;
 };
 
 }  // namespace actors

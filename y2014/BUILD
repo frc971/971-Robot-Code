@@ -62,6 +62,7 @@ cc_binary(
     ],
     deps = [
         "//aos:init",
+        "//aos/events:shm-event-loop",
         "//aos/logging",
         "//aos/logging:queue_logging",
         "//aos/time",
