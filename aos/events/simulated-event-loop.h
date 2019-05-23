@@ -95,7 +95,7 @@ class EventScheduler {
 
   void Exit() { is_running_ = false; }
 
-  ::aos::monotonic_clock::time_point now() { return now_; }
+  ::aos::monotonic_clock::time_point monotonic_now() const { return now_; }
 
  private:
   ::aos::monotonic_clock::time_point now_ = ::aos::monotonic_clock::epoch();
@@ -109,17 +109,18 @@ class SimulatedQueue {
                           EventScheduler *scheduler)
       : type_(type), name_(name), scheduler_(scheduler){};
 
-  std::unique_ptr<RawSender> MakeRawSender();
+  ::std::unique_ptr<RawSender> MakeRawSender(EventLoop *event_loop);
 
-  std::unique_ptr<RawFetcher> MakeRawFetcher();
+  ::std::unique_ptr<RawFetcher> MakeRawFetcher();
 
-  void MakeRawWatcher(std::function<void(const aos::Message *message)> watcher);
+  void MakeRawWatcher(
+      ::std::function<void(const ::aos::Message *message)> watcher);
 
   void Send(RefCountedBuffer message) {
     index_++;
     latest_message_ = message;
     for (auto &watcher : watchers_) {
-      scheduler_->Schedule(scheduler_->now(),
+      scheduler_->Schedule(scheduler_->monotonic_now(),
                            [watcher, message]() { watcher(message.get()); });
     }
   }
@@ -141,116 +142,21 @@ class SimulatedQueue {
   EventScheduler *scheduler_;
 };
 
-class SimulatedTimerHandler : public TimerHandler {
- public:
-  explicit SimulatedTimerHandler(EventScheduler *scheduler,
-                                 ::std::function<void()> fn)
-      : scheduler_(scheduler), fn_(fn) {}
-  ~SimulatedTimerHandler() {}
-
-  void Setup(monotonic_clock::time_point base,
-             monotonic_clock::duration repeat_offset) override {
-    Disable();
-    auto now = scheduler_->now();
-    base_ = base;
-    repeat_offset_ = repeat_offset;
-    if (base < now) {
-      token_ = scheduler_->Schedule(now, [this]() { HandleEvent(); });
-    } else {
-      token_ = scheduler_->Schedule(base, [this]() { HandleEvent(); });
-    }
-  }
-
-  void HandleEvent() {
-    auto now = scheduler_->now();
-    if (repeat_offset_ != ::aos::monotonic_clock::zero()) {
-      // Reschedule.
-      while (base_ <= now) base_ += repeat_offset_;
-      token_ = scheduler_->Schedule(base_, [this]() { HandleEvent(); });
-    } else {
-      token_ = EventScheduler::Token();
-    }
-    fn_();
-  }
-
-  void Disable() override {
-    if (token_ != EventScheduler::Token()) {
-      scheduler_->Deschedule(token_);
-      token_ = EventScheduler::Token();
-    }
-  }
-
- private:
-  EventScheduler *scheduler_;
-  EventScheduler::Token token_;
-  // Function to be run on the thread
-  ::std::function<void()> fn_;
-  monotonic_clock::time_point base_;
-  monotonic_clock::duration repeat_offset_;
-};
-
-class SimulatedEventLoop : public EventLoop {
- public:
-  explicit SimulatedEventLoop(
-      EventScheduler *scheduler,
-      ::std::map<::std::pair<::std::string, QueueTypeInfo>, SimulatedQueue>
-          *queues) : scheduler_(scheduler), queues_(queues){};
-  ~SimulatedEventLoop() override{};
-
-  ::aos::monotonic_clock::time_point monotonic_now() override {
-    return scheduler_->now();
-  }
-
-  std::unique_ptr<RawSender> MakeRawSender(const std::string &path,
-                                           const QueueTypeInfo &type) override;
-
-  std::unique_ptr<RawFetcher> MakeRawFetcher(
-      const std::string &path, const QueueTypeInfo &type) override;
-
-  void MakeRawWatcher(
-      const std::string &path, const QueueTypeInfo &type,
-      std::function<void(const aos::Message *message)> watcher) override;
-
-  TimerHandler *AddTimer(::std::function<void()> callback) override {
-    timers_.emplace_back(new SimulatedTimerHandler(scheduler_, callback));
-    return timers_.back().get();
-  }
-
-  void OnRun(std::function<void()> on_run) override {
-    scheduler_->Schedule(scheduler_->now(), on_run);
-  }
-  void Run() override {
-    set_is_running(true);
-    scheduler_->Run();
-  }
-  void Exit() override {
-    set_is_running(false);
-    scheduler_->Exit();
-  }
-
-  SimulatedQueue *GetSimulatedQueue(
-      const ::std::pair<::std::string, QueueTypeInfo> &);
-
-  void Take(const ::std::string &path);
-
- private:
-  EventScheduler *scheduler_;
-  ::std::map<::std::pair<::std::string, QueueTypeInfo>, SimulatedQueue>
-      *queues_;
-  ::std::vector<std::string> taken_;
-  ::std::vector<std::unique_ptr<TimerHandler>> timers_;
-};
-
 class SimulatedEventLoopFactory {
  public:
-  ::std::unique_ptr<EventLoop> CreateEventLoop() {
-    return ::std::unique_ptr<EventLoop>(
-        new SimulatedEventLoop(&scheduler_, &queues_));
+  ::std::unique_ptr<EventLoop> MakeEventLoop();
+
+  void Run() { scheduler_.Run(); }
+
+  monotonic_clock::time_point monotonic_now() const {
+    return scheduler_.monotonic_now();
   }
 
  private:
   EventScheduler scheduler_;
   ::std::map<::std::pair<::std::string, QueueTypeInfo>, SimulatedQueue> queues_;
 };
+
 }  // namespace aos
+
 #endif  //_AOS_EVENTS_TEST_EVENT_LOOP_H_

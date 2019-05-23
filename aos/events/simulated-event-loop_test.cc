@@ -5,10 +5,12 @@
 namespace aos {
 namespace testing {
 
+namespace chrono = ::std::chrono;
+
 class SimulatedEventLoopTestFactory : public EventLoopTestFactory {
  public:
-  std::unique_ptr<EventLoop> Make() override {
-    return event_loop.CreateEventLoop();
+  ::std::unique_ptr<EventLoop> Make() override {
+    return event_loop.MakeEventLoop();
   }
  private:
    SimulatedEventLoopFactory event_loop;
