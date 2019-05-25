@@ -33,6 +33,8 @@ AutonomousActor::AutonomousActor(
     ::frc971::autonomous::AutonomousActionQueueGroup *s)
     : frc971::autonomous::BaseAutonomousActor(
           event_loop, s, control_loops::GetDrivetrainConfig()),
+      auto_mode_fetcher_(event_loop->MakeFetcher<::y2014::sensors::AutoMode>(
+          ".y2014.sensors.auto_mode")),
       hot_goal_fetcher_(
           event_loop->MakeFetcher<::y2014::HotGoal>(".y2014.hot_goal")) {}
 
@@ -239,18 +241,17 @@ bool AutonomousActor::RunAction(
   LOG(INFO, "Handling auto mode\n");
 
   AutoVersion auto_version;
-  ::y2014::sensors::auto_mode.FetchLatest();
-  if (!::y2014::sensors::auto_mode.get()) {
+  auto_mode_fetcher_.Fetch();
+  if (!auto_mode_fetcher_.get()) {
     LOG(WARNING, "not sure which auto mode to use\n");
     auto_version = AutoVersion::kStraight;
   } else {
     static const double kSelectorMin = 0.2, kSelectorMax = 4.4;
 
     const double kSelectorStep = (kSelectorMax - kSelectorMin) / 3.0;
-    if (::y2014::sensors::auto_mode->voltage < kSelectorStep + kSelectorMin) {
+    if (auto_mode_fetcher_->voltage < kSelectorStep + kSelectorMin) {
       auto_version = AutoVersion::kSingleHot;
-    } else if (::y2014::sensors::auto_mode->voltage <
-               2 * kSelectorStep + kSelectorMin) {
+    } else if (auto_mode_fetcher_->voltage < 2 * kSelectorStep + kSelectorMin) {
       auto_version = AutoVersion::kStraight;
     } else {
       auto_version = AutoVersion::kDoubleHot;
