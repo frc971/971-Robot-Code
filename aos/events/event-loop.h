@@ -52,7 +52,7 @@ class Sender {
   class Message {
    public:
     Message(RawSender *sender)
-        : msg_(reinterpret_cast<T *>(sender->GetContext()), *sender) {
+        : msg_(reinterpret_cast<T *>(sender->GetMessage()), *sender) {
       msg_->Zero();
     }
 
@@ -67,8 +67,7 @@ class Sender {
     // if the message was successfully sent, and false otherwise.
     bool Send() {
       RawSender *sender = &msg_.get_deleter();
-      return sender->Send(
-          reinterpret_cast<RawSender::SendContext *>(msg_.release()));
+      return sender->Send(msg_.release());
     }
 
    private:
