@@ -1,5 +1,8 @@
 #include "aos/events/event-loop_param_test.h"
 
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+
 namespace aos {
 namespace testing {
 
@@ -34,16 +37,6 @@ TEST_P(AbstractEventLoopTest, Basic) {
 
   auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
 
-  auto msg = sender.MakeMessage();
-
-  msg->msg_value = 200;
-
-  msg.Send();
-
-  EXPECT_TRUE(fetcher.Fetch());
-  ASSERT_FALSE(fetcher.get() == nullptr);
-  EXPECT_EQ(fetcher->msg_value, 200);
-
   bool happened = false;
 
   loop3->OnRun([&]() { happened = true; });
@@ -53,9 +46,86 @@ TEST_P(AbstractEventLoopTest, Basic) {
     loop3->Exit();
   });
 
+  auto msg = sender.MakeMessage();
+  msg->msg_value = 200;
+  msg.Send();
+
+  EXPECT_TRUE(fetcher.Fetch());
+  ASSERT_FALSE(fetcher.get() == nullptr);
+  EXPECT_EQ(fetcher->msg_value, 200);
+
   EXPECT_FALSE(happened);
   Run();
   EXPECT_TRUE(happened);
+}
+
+// Tests that watcher will receive all messages sent if they are sent after
+// initialization and before running.
+TEST_P(AbstractEventLoopTest, DoubleSendAtStartup) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+
+  auto sender = loop1->MakeSender<TestMessage>("/test");
+
+  ::std::vector<int> values;
+
+  loop2->MakeWatcher("/test", [&](const TestMessage &message) {
+    fprintf(stderr, "Got a message\n");
+    values.push_back(message.msg_value);
+    if (values.size() == 2) {
+      loop2->Exit();
+    }
+  });
+
+  {
+    auto msg = sender.MakeMessage();
+    msg->msg_value = 200;
+    msg.Send();
+  }
+  {
+    auto msg = sender.MakeMessage();
+    msg->msg_value = 201;
+    msg.Send();
+  }
+
+  Run();
+
+  EXPECT_THAT(values, ::testing::ElementsAreArray({200, 201}));
+}
+
+// Tests that watcher will not receive messages sent before the watcher is
+// created.
+TEST_P(AbstractEventLoopTest, DoubleSendAfterStartup) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+
+  auto sender = loop1->MakeSender<TestMessage>("/test");
+
+  ::std::vector<int> values;
+
+  {
+    auto msg = sender.MakeMessage();
+    msg->msg_value = 200;
+    msg.Send();
+  }
+  {
+    auto msg = sender.MakeMessage();
+    msg->msg_value = 201;
+    msg.Send();
+  }
+
+  loop2->MakeWatcher("/test", [&](const TestMessage &message) {
+    values.push_back(message.msg_value);
+  });
+
+  // Add a timer to actually quit.
+  auto test_timer = loop2->AddTimer([&loop2]() { loop2->Exit(); });
+  loop2->OnRun([&test_timer, &loop2]() {
+    test_timer->Setup(loop2->monotonic_now(), ::std::chrono::milliseconds(100));
+  });
+
+  Run();
+  EXPECT_EQ(0, values.size());
 }
 
 // Verify that making a fetcher and watcher for "/test" succeeds.
@@ -93,6 +163,12 @@ TEST_P(AbstractEventLoopTest, MultipleWatcherQuit) {
   auto loop1 = Make();
   auto loop2 = MakePrimary();
 
+  loop2->MakeWatcher("/test1", [&](const TestMessage &) {});
+  loop2->MakeWatcher("/test2", [&](const TestMessage &message) {
+    EXPECT_EQ(message.msg_value, 200);
+    loop2->Exit();
+  });
+
   auto sender = loop1->MakeSender<TestMessage>("/test2");
   {
     auto msg = sender.MakeMessage();
@@ -100,11 +176,6 @@ TEST_P(AbstractEventLoopTest, MultipleWatcherQuit) {
     msg.Send();
   }
 
-  loop2->MakeWatcher("/test1", [&](const TestMessage &) {});
-  loop2->MakeWatcher("/test2", [&](const TestMessage &message) {
-    EXPECT_EQ(message.msg_value, 200);
-    loop2->Exit();
-  });
   Run();
 }
 
