@@ -13,9 +13,12 @@ template <typename T>
 class Fetcher {
  public:
   Fetcher() {}
-  // Fetches the next message. Returns whether it fetched a new message.
+  // Fetches the next message. Returns true if it fetched a new message.  This
+  // method will only return messages sent after the Fetcher was created.
   bool FetchNext() { return fetcher_->FetchNext(); }
-  // Fetches the most recent message. Returns whether it fetched a new message.
+  // Fetches the most recent message. Returns true if it fetched a new message.
+  // This will return the latest message regardless of if it was sent before or
+  // after the fetcher was created.
   bool Fetch() { return fetcher_->Fetch(); }
 
   const T *get() const {

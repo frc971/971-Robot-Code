@@ -1,37 +1,13 @@
 #include "aos/events/simulated-event-loop.h"
 
 #include <algorithm>
+#include <deque>
 
 #include "aos/logging/logging.h"
 #include "aos/queue.h"
 
 namespace aos {
 namespace {
-class SimulatedFetcher : public RawFetcher {
- public:
-  explicit SimulatedFetcher(SimulatedQueue *queue) : queue_(queue) {}
-  ~SimulatedFetcher() {}
-
-  bool FetchNext() override {
-    LOG(FATAL, "Simulated event loops do not support FetchNext.");
-    return false;
-  }
-
-  bool Fetch() override {
-    if (index_ == queue_->index()) return false;
-
-    // Fetched message is newer
-    msg_ = queue_->latest_message();
-    index_ = queue_->index();
-    set_most_recent(reinterpret_cast<FetchValue *>(msg_.get()));
-    return true;
-  }
-
- private:
-  int64_t index_ = -1;
-  SimulatedQueue *queue_;
-  RefCountedBuffer msg_;
-};
 
 class SimulatedSender : public RawSender {
  public:
@@ -52,7 +28,7 @@ class SimulatedSender : public RawSender {
       }
     }
     queue_->Send(RefCountedBuffer(msg));
-    return true;  // Maybe false instead? :)
+    return true;
   }
 
   const char *name() const override { return queue_->name(); }
@@ -62,6 +38,55 @@ class SimulatedSender : public RawSender {
   EventLoop *event_loop_;
 };
 }  // namespace
+
+class SimulatedFetcher : public RawFetcher {
+ public:
+  explicit SimulatedFetcher(SimulatedQueue *queue) : queue_(queue) {}
+  ~SimulatedFetcher() { queue_->UnregisterFetcher(this); }
+
+  bool FetchNext() override {
+    if (msgs_.size() == 0) return false;
+
+    msg_ = msgs_.front();
+    msgs_.pop_front();
+    set_most_recent(reinterpret_cast<FetchValue *>(msg_.get()));
+    return true;
+  }
+
+  bool Fetch() override {
+    if (msgs_.size() == 0) {
+      if (!msg_ && queue_->latest_message()) {
+        msg_ = queue_->latest_message();
+        set_most_recent(reinterpret_cast<FetchValue *>(msg_.get()));
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    // We've had a message enqueued, so we don't need to go looking for the
+    // latest message from before we started.
+    msg_ = msgs_.back();
+    msgs_.clear();
+    set_most_recent(reinterpret_cast<FetchValue *>(msg_.get()));
+    return true;
+  }
+
+ private:
+  friend class SimulatedQueue;
+
+  // Internal method for Simulation to add a message to the buffer.
+  void Enqueue(RefCountedBuffer buffer) {
+    msgs_.emplace_back(buffer);
+  }
+
+  SimulatedQueue *queue_;
+  RefCountedBuffer msg_;
+
+  // Messages queued up but not in use.
+  ::std::deque<RefCountedBuffer> msgs_;
+};
+
 
 class SimulatedTimerHandler : public TimerHandler {
  public:
@@ -256,17 +281,34 @@ SimulatedQueue *SimulatedEventLoop::GetSimulatedQueue(
 }
 
 void SimulatedQueue::MakeRawWatcher(
-    std::function<void(const aos::Message *message)> watcher) {
+    ::std::function<void(const aos::Message *message)> watcher) {
   watchers_.push_back(watcher);
 }
 
-std::unique_ptr<RawSender> SimulatedQueue::MakeRawSender(
+::std::unique_ptr<RawSender> SimulatedQueue::MakeRawSender(
     EventLoop *event_loop) {
-  return std::unique_ptr<RawSender>(new SimulatedSender(this, event_loop));
+  return ::std::unique_ptr<RawSender>(new SimulatedSender(this, event_loop));
 }
 
-std::unique_ptr<RawFetcher> SimulatedQueue::MakeRawFetcher() {
-  return std::unique_ptr<RawFetcher>(new SimulatedFetcher(this));
+::std::unique_ptr<RawFetcher> SimulatedQueue::MakeRawFetcher() {
+  ::std::unique_ptr<SimulatedFetcher> fetcher(new SimulatedFetcher(this));
+  fetchers_.push_back(fetcher.get());
+  return ::std::move(fetcher);
+}
+
+void SimulatedQueue::Send(RefCountedBuffer message) {
+  latest_message_ = message;
+  for (auto &watcher : watchers_) {
+    scheduler_->Schedule(scheduler_->monotonic_now(),
+                         [watcher, message]() { watcher(message.get()); });
+  }
+  for (auto &fetcher : fetchers_) {
+    fetcher->Enqueue(message);
+  }
+}
+
+void SimulatedQueue::UnregisterFetcher(SimulatedFetcher *fetcher) {
+  fetchers_.erase(::std::find(fetchers_.begin(), fetchers_.end(), fetcher));
 }
 
 void SimulatedEventLoop::Take(const ::std::string &path) {

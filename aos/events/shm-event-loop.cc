@@ -16,7 +16,14 @@ ShmEventLoop::ShmEventLoop() : thread_state_(std::make_shared<ThreadState>()) {}
 namespace {
 class ShmFetcher : public RawFetcher {
  public:
-  explicit ShmFetcher(RawQueue *queue) : queue_(queue) {}
+  explicit ShmFetcher(RawQueue *queue) : queue_(queue) {
+    // Move index_ to point to the end of the queue as it is at construction
+    // time.  Also grab the oldest message but don't expose it to the user yet.
+    static constexpr Options<RawQueue> kOptions =
+        RawQueue::kFromEnd | RawQueue::kNonBlock;
+    msg_ = static_cast<const FetchValue *>(
+        queue_->ReadMessageIndex(kOptions, &index_));
+  }
   ~ShmFetcher() {
     if (msg_) {
       queue_->FreeMessage(msg_);
@@ -27,12 +34,12 @@ class ShmFetcher : public RawFetcher {
     const FetchValue *msg = static_cast<const FetchValue *>(
         queue_->ReadMessageIndex(RawQueue::kNonBlock, &index_));
     // Only update the internal pointer if we got a new message.
-    if (msg != NULL) {
+    if (msg != nullptr) {
       queue_->FreeMessage(msg_);
       msg_ = msg;
       set_most_recent(msg_);
     }
-    return msg != NULL;
+    return msg != nullptr;
   }
 
   bool Fetch() override {
@@ -41,16 +48,24 @@ class ShmFetcher : public RawFetcher {
     const FetchValue *msg = static_cast<const FetchValue *>(
         queue_->ReadMessageIndex(kOptions, &index_));
     // Only update the internal pointer if we got a new message.
-    if (msg != NULL && msg != msg_) {
+    if (msg != nullptr && msg != msg_) {
       queue_->FreeMessage(msg_);
       msg_ = msg;
       set_most_recent(msg_);
       return true;
+    } else {
+      // The message has to get freed if we didn't use it (and
+      // RawQueue::FreeMessage is ok to call on nullptr).
+      queue_->FreeMessage(msg);
+
+      // We have a message from construction time.  Give it to the user now.
+      if (msg_ != nullptr && most_recent() != msg_) {
+        set_most_recent(msg_);
+        return true;
+      } else {
+        return false;
+      }
     }
-    // The message has to get freed if we didn't use it (and
-    // RawQueue::FreeMessage is ok to call on NULL).
-    queue_->FreeMessage(msg);
-    return false;
   }
 
  private:
@@ -70,7 +85,7 @@ class ShmSender : public RawSender {
   void Free(aos::Message *msg) override { queue_->FreeMessage(msg); }
 
   bool Send(aos::Message *msg) override {
-    assert(queue_ != NULL);
+    assert(queue_ != nullptr);
     {
       // TODO(austin): This lets multiple senders reorder messages since time
       // isn't acquired with a lock held.

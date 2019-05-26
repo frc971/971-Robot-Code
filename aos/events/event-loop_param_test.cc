@@ -37,6 +37,8 @@ TEST_P(AbstractEventLoopTest, Basic) {
 
   auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
 
+  EXPECT_FALSE(fetcher.Fetch());
+
   bool happened = false;
 
   loop3->OnRun([&]() { happened = true; });
@@ -70,7 +72,6 @@ TEST_P(AbstractEventLoopTest, DoubleSendAtStartup) {
   ::std::vector<int> values;
 
   loop2->MakeWatcher("/test", [&](const TestMessage &message) {
-    fprintf(stderr, "Got a message\n");
     values.push_back(message.msg_value);
     if (values.size() == 2) {
       loop2->Exit();
@@ -126,6 +127,187 @@ TEST_P(AbstractEventLoopTest, DoubleSendAfterStartup) {
 
   Run();
   EXPECT_EQ(0, values.size());
+}
+
+// Tests that FetchNext gets all the messages sent after it is constructed.
+TEST_P(AbstractEventLoopTest, FetchNext) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+
+  auto sender = loop1->MakeSender<TestMessage>("/test");
+  auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
+
+  ::std::vector<int> values;
+
+  {
+    auto msg = sender.MakeMessage();
+    msg->msg_value = 200;
+    msg.Send();
+  }
+  {
+    auto msg = sender.MakeMessage();
+    msg->msg_value = 201;
+    msg.Send();
+  }
+
+  // Add a timer to actually quit.
+  auto test_timer = loop2->AddTimer([&loop2, &fetcher, &values]() {
+    while (fetcher.FetchNext()) {
+      values.push_back(fetcher->msg_value);
+    }
+    loop2->Exit();
+  });
+
+  loop2->OnRun([&test_timer, &loop2]() {
+    test_timer->Setup(loop2->monotonic_now(), ::std::chrono::milliseconds(100));
+  });
+
+  Run();
+  EXPECT_THAT(values, ::testing::ElementsAreArray({200, 201}));
+}
+
+// Tests that FetchNext gets no messages sent before it is constructed.
+TEST_P(AbstractEventLoopTest, FetchNextAfterSend) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+
+  auto sender = loop1->MakeSender<TestMessage>("/test");
+
+  ::std::vector<int> values;
+
+  {
+    auto msg = sender.MakeMessage();
+    msg->msg_value = 200;
+    msg.Send();
+  }
+  {
+    auto msg = sender.MakeMessage();
+    msg->msg_value = 201;
+    msg.Send();
+  }
+
+  auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
+
+  // Add a timer to actually quit.
+  auto test_timer = loop2->AddTimer([&loop2, &fetcher, &values]() {
+    while (fetcher.FetchNext()) {
+      values.push_back(fetcher->msg_value);
+    }
+    loop2->Exit();
+  });
+
+  loop2->OnRun([&test_timer, &loop2]() {
+    test_timer->Setup(loop2->monotonic_now(), ::std::chrono::milliseconds(100));
+  });
+
+  Run();
+  EXPECT_THAT(0, values.size());
+}
+
+// Tests that Fetch returns the last message created before the loop was
+// started.
+TEST_P(AbstractEventLoopTest, FetchDataFromBeforeCreation) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+
+  auto sender = loop1->MakeSender<TestMessage>("/test");
+
+  ::std::vector<int> values;
+
+  {
+    auto msg = sender.MakeMessage();
+    msg->msg_value = 200;
+    msg.Send();
+  }
+  {
+    auto msg = sender.MakeMessage();
+    msg->msg_value = 201;
+    msg.Send();
+  }
+
+  auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
+
+  // Add a timer to actually quit.
+  auto test_timer = loop2->AddTimer([&loop2, &fetcher, &values]() {
+    if (fetcher.Fetch()) {
+      values.push_back(fetcher->msg_value);
+    }
+    // Do it again to make sure we don't double fetch.
+    if (fetcher.Fetch()) {
+      values.push_back(fetcher->msg_value);
+    }
+    loop2->Exit();
+  });
+
+  loop2->OnRun([&test_timer, &loop2]() {
+    test_timer->Setup(loop2->monotonic_now(), ::std::chrono::milliseconds(100));
+  });
+
+  Run();
+  EXPECT_THAT(values, ::testing::ElementsAreArray({201}));
+}
+
+// Tests that Fetch and FetchNext interleave as expected.
+TEST_P(AbstractEventLoopTest, FetchAndFetchNextTogether) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+
+  auto sender = loop1->MakeSender<TestMessage>("/test");
+
+  ::std::vector<int> values;
+
+  {
+    auto msg = sender.MakeMessage();
+    msg->msg_value = 200;
+    msg.Send();
+  }
+  {
+    auto msg = sender.MakeMessage();
+    msg->msg_value = 201;
+    msg.Send();
+  }
+
+  auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
+
+  // Add a timer to actually quit.
+  auto test_timer = loop2->AddTimer([&loop2, &fetcher, &values, &sender]() {
+    if (fetcher.Fetch()) {
+      values.push_back(fetcher->msg_value);
+    }
+
+    {
+      auto msg = sender.MakeMessage();
+      msg->msg_value = 202;
+      msg.Send();
+    }
+    {
+      auto msg = sender.MakeMessage();
+      msg->msg_value = 203;
+      msg.Send();
+    }
+    {
+      auto msg = sender.MakeMessage();
+      msg->msg_value = 204;
+      msg.Send();
+    }
+
+    if (fetcher.FetchNext()) {
+      values.push_back(fetcher->msg_value);
+    }
+
+    if (fetcher.Fetch()) {
+      values.push_back(fetcher->msg_value);
+    }
+
+    loop2->Exit();
+  });
+
+  loop2->OnRun([&test_timer, &loop2]() {
+    test_timer->Setup(loop2->monotonic_now(), ::std::chrono::milliseconds(100));
+  });
+
+  Run();
+  EXPECT_THAT(values, ::testing::ElementsAreArray({201, 202, 204}));
 }
 
 // Verify that making a fetcher and watcher for "/test" succeeds.
