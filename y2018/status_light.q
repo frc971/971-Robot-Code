@@ -6,5 +6,3 @@ message StatusLight {
   float green;
   float blue;
 };
-
-queue StatusLight status_light;

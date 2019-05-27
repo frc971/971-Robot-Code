@@ -24,21 +24,12 @@ namespace {
 constexpr double kMaxIntakeRollerVoltage = 12.0;
 }  // namespace
 
-void SendColors(float red, float green, float blue) {
-  auto new_status_light = status_light.MakeMessage();
-  new_status_light->red = red;
-  new_status_light->green = green;
-  new_status_light->blue = blue;
-
-  if (!new_status_light.Send()) {
-    LOG(ERROR, "Failed to send lights.\n");
-  }
-}
-
 Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
     : aos::controls::ControlLoop<control_loops::SuperstructureQueue>(event_loop,
                                                                      name),
+      status_light_sender_(
+          event_loop->MakeSender<::y2018::StatusLight>(".y2018.status_light")),
       intake_left_(constants::GetValues().left_intake.zeroing),
       intake_right_(constants::GetValues().right_intake.zeroing) {}
 
@@ -290,6 +281,17 @@ void Superstructure::RunIteration(
   }
 
   last_box_distance_ = clipped_box_distance;
+}
+
+void Superstructure::SendColors(float red, float green, float blue) {
+  auto new_status_light = status_light_sender_.MakeMessage();
+  new_status_light->red = red;
+  new_status_light->green = green;
+  new_status_light->blue = blue;
+
+  if (!new_status_light.Send()) {
+    LOG(ERROR, "Failed to send lights.\n");
+  }
 }
 
 }  // namespace superstructure

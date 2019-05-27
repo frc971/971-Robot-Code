@@ -382,10 +382,20 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
 class SolenoidWriter {
  public:
-  SolenoidWriter(::frc971::wpilib::BufferedPcm *pcm)
-      : pcm_(pcm),
-        drivetrain_(".frc971.control_loops.drivetrain_queue.output"),
-        superstructure_(".y2018.control_loops.superstructure_queue.output") {}
+  SolenoidWriter(::aos::EventLoop *event_loop,
+                 ::frc971::wpilib::BufferedPcm *pcm)
+      : event_loop_(event_loop),
+        drivetrain_fetcher_(
+            event_loop
+                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Output>(
+                    ".frc971.control_loops.drivetrain_queue.output")),
+        superstructure_fetcher_(
+            event_loop->MakeFetcher<
+                ::y2018::control_loops::SuperstructureQueue::Output>(
+                ".y2018.control_loops.superstructure_queue.output")),
+        status_light_fetcher_(event_loop->MakeFetcher<::y2018::StatusLight>(
+            ".y2018.status_light")),
+        pcm_(pcm) {}
 
   // left drive
   // right drive
@@ -435,23 +445,23 @@ class SolenoidWriter {
       }
 
       {
-        drivetrain_.FetchLatest();
-        if (drivetrain_.get()) {
-          LOG_STRUCT(DEBUG, "solenoids", *drivetrain_);
-          left_drivetrain_shifter_->Set(!drivetrain_->left_high);
-          right_drivetrain_shifter_->Set(!drivetrain_->right_high);
+        drivetrain_fetcher_.Fetch();
+        if (drivetrain_fetcher_.get()) {
+          LOG_STRUCT(DEBUG, "solenoids", *drivetrain_fetcher_);
+          left_drivetrain_shifter_->Set(!drivetrain_fetcher_->left_high);
+          right_drivetrain_shifter_->Set(!drivetrain_fetcher_->right_high);
         }
       }
 
       {
-        superstructure_.FetchLatest();
-        if (superstructure_.get()) {
-          LOG_STRUCT(DEBUG, "solenoids", *superstructure_);
+        superstructure_fetcher_.Fetch();
+        if (superstructure_fetcher_.get()) {
+          LOG_STRUCT(DEBUG, "solenoids", *superstructure_fetcher_);
 
-          claw_->Set(!superstructure_->claw_grabbed);
-          arm_brakes_->Set(superstructure_->release_arm_brake);
-          hook_->Set(superstructure_->hook_release);
-          forks_->Set(superstructure_->forks_release);
+          claw_->Set(!superstructure_fetcher_->claw_grabbed);
+          arm_brakes_->Set(superstructure_fetcher_->release_arm_brake);
+          hook_->Set(superstructure_fetcher_->hook_release);
+          forks_->Set(superstructure_fetcher_->forks_release);
         }
       }
 
@@ -463,11 +473,12 @@ class SolenoidWriter {
         LOG_STRUCT(DEBUG, "pneumatics info", to_log);
       }
 
-      status_light.FetchLatest();
+      status_light_fetcher_.Fetch();
       // If we don't have a light request (or it's an old one), we are borked.
       // Flash the red light slowly.
-      if (!status_light.get() ||
-          status_light.Age() > chrono::milliseconds(100)) {
+      if (!status_light_fetcher_.get() ||
+          event_loop_->monotonic_now() >
+              status_light_fetcher_->sent_time + chrono::milliseconds(100)) {
         StatusLight color;
         color.red = 0.0;
         color.green = 0.0;
@@ -490,8 +501,8 @@ class SolenoidWriter {
         LOG_STRUCT(DEBUG, "color", color);
         SetColor(color);
       } else {
-        LOG_STRUCT(DEBUG, "color", *status_light);
-        SetColor(*status_light);
+        LOG_STRUCT(DEBUG, "color", *status_light_fetcher_);
+        SetColor(*status_light_fetcher_);
       }
     }
   }
@@ -526,15 +537,18 @@ class SolenoidWriter {
   void Quit() { run_ = false; }
 
  private:
+  ::aos::EventLoop *event_loop_;
+  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Output>
+      drivetrain_fetcher_;
+  ::aos::Fetcher<::y2018::control_loops::SuperstructureQueue::Output>
+      superstructure_fetcher_;
+  ::aos::Fetcher<::y2018::StatusLight> status_light_fetcher_;
+
   ::frc971::wpilib::BufferedPcm *pcm_;
 
   ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid>
       left_drivetrain_shifter_, right_drivetrain_shifter_, claw_, arm_brakes_,
       hook_, forks_;
-
-  ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
-  ::aos::Queue<::y2018::control_loops::SuperstructureQueue::Output>
-      superstructure_;
 
   ::ctre::phoenix::CANifier canifier_{0};
 
@@ -736,8 +750,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread superstructure_writer_thread(
         ::std::ref(superstructure_writer));
 
+    // This is a separate event loop because we want to run it at much lower
+    // priority.
+    ::aos::ShmEventLoop solenoid_event_loop;
     ::frc971::wpilib::BufferedPcm pcm;
-    SolenoidWriter solenoid_writer(&pcm);
+    SolenoidWriter solenoid_writer(&solenoid_event_loop, &pcm);
     solenoid_writer.set_left_drivetrain_shifter(pcm.MakeSolenoid(0));
     solenoid_writer.set_right_drivetrain_shifter(pcm.MakeSolenoid(1));
     solenoid_writer.set_claw(pcm.MakeSolenoid(2));

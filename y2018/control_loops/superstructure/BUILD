@@ -24,6 +24,7 @@ cc_library(
     deps = [
         ":superstructure_queue",
         "//aos/controls:control_loop",
+        "//aos/events:event-loop",
         "//frc971/control_loops:queues",
         "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//y2018:constants",

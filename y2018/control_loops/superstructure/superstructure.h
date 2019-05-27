@@ -4,10 +4,12 @@
 #include <memory>
 
 #include "aos/controls/control_loop.h"
+#include "aos/events/event-loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "y2018/control_loops/superstructure/arm/arm.h"
 #include "y2018/control_loops/superstructure/intake/intake.h"
 #include "y2018/control_loops/superstructure/superstructure.q.h"
+#include "y2018/status_light.q.h"
 
 namespace y2018 {
 namespace control_loops {
@@ -32,6 +34,11 @@ class Superstructure
       control_loops::SuperstructureQueue::Status *status) override;
 
  private:
+  // Sends the status light message for the 3 colors provided.
+  void SendColors(float red, float green, float blue);
+
+  ::aos::Sender<::y2018::StatusLight> status_light_sender_;
+
   intake::IntakeSide intake_left_;
   intake::IntakeSide intake_right_;
   arm::Arm arm_;
