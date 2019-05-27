@@ -55,10 +55,6 @@
 #include "y2016/control_loops/superstructure/superstructure.q.h"
 #include "y2016/queues/ball_detector.q.h"
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
 using ::frc971::control_loops::drivetrain_queue;
 using ::y2016::control_loops::shooter::shooter_queue;
 using ::y2016::control_loops::superstructure_queue;
@@ -153,7 +149,10 @@ constexpr double kMaxSuperstructureEncoderPulsesPerSecond =
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
   SensorReader(::aos::EventLoop *event_loop)
-      : ::frc971::wpilib::SensorReader(event_loop) {
+      : ::frc971::wpilib::SensorReader(event_loop),
+        ball_detector_sender_(
+            event_loop->MakeSender<::y2016::sensors::BallDetector>(
+                ".y2016.sensors.ball_detector")) {
     // Set it to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxDrivetrainShooterEncoderPulsesPerSecond);
@@ -293,8 +292,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     }
 
     {
-      auto ball_detector_message =
-          ::y2016::sensors::ball_detector.MakeMessage();
+      auto ball_detector_message = ball_detector_sender_.MakeMessage();
       ball_detector_message->voltage = ball_detector_->GetVoltage();
       LOG_STRUCT(DEBUG, "ball detector", *ball_detector_message);
       ball_detector_message.Send();
@@ -314,6 +312,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
  private:
+  ::aos::Sender<::y2016::sensors::BallDetector> ball_detector_sender_;
+
   ::std::unique_ptr<AnalogInput> drivetrain_left_hall_, drivetrain_right_hall_;
 
   ::std::unique_ptr<Encoder> shooter_left_encoder_, shooter_right_encoder_;

@@ -229,6 +229,9 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
     : aos::controls::ControlLoop<control_loops::SuperstructureQueue>(event_loop,
                                                                      name),
+      ball_detector_fetcher_(
+          event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
+              ".y2016.sensors.ball_detector")),
       collision_avoidance_(&intake_, &arm_) {}
 
 bool Superstructure::IsArmNear(double shoulder_tolerance,
@@ -704,10 +707,10 @@ void Superstructure::RunIteration(
     output->unfold_climber = false;
     if (unsafe_goal) {
       // Ball detector lights.
-      ::y2016::sensors::ball_detector.FetchLatest();
+      ball_detector_fetcher_.Fetch();
       bool ball_detected = false;
-      if (::y2016::sensors::ball_detector.get()) {
-        ball_detected = ::y2016::sensors::ball_detector->voltage > 2.5;
+      if (ball_detector_fetcher_.get()) {
+        ball_detected = ball_detector_fetcher_->voltage > 2.5;
       }
 
       // Climber.

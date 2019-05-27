@@ -54,6 +54,9 @@ DataCollector::DataCollector(::aos::EventLoop *event_loop)
     : vision_status_fetcher_(
           event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
               ".y2016.vision.vision_status")),
+      ball_detector_fetcher_(
+          event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
+              ".y2016.sensors.ball_detector")),
       cur_raw_data_("no data"),
       sample_id_(0),
       measure_index_(0),
@@ -87,7 +90,7 @@ void DataCollector::RunIteration() {
 
   ::frc971::autonomous::auto_mode.FetchLatest();
   ::y2016::control_loops::superstructure_queue.status.FetchLatest();
-  ::y2016::sensors::ball_detector.FetchLatest();
+  ball_detector_fetcher_.Fetch();
   vision_status_fetcher_.Fetch();
 
 // Caused glitching with auto-aim at NASA, so be cautious with this until
@@ -108,11 +111,11 @@ void DataCollector::RunIteration() {
 
   // Ball detector comes after vision because we want to prioritize that
   // indication.
-  if (::y2016::sensors::ball_detector.get()) {
+  if (ball_detector_fetcher_.get()) {
     // TODO(comran): Grab detected voltage from joystick_reader. Except this
     // value may not change, so it may be worth it to keep it as it is right
     // now.
-    if (::y2016::sensors::ball_detector->voltage > 2.5) {
+    if (ball_detector_fetcher_->voltage > 2.5) {
       big_indicator = big_indicator::kBallIntaked;
     }
   }

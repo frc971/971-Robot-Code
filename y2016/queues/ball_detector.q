@@ -1,5 +1,6 @@
 package y2016.sensors;
 
+// Published on ".y2016.sensors.ball_detector"
 message BallDetector {
   // Voltage measured by the ball detector sensor.
 
@@ -10,4 +11,3 @@ message BallDetector {
 
   double voltage;
 };
-queue BallDetector ball_detector;

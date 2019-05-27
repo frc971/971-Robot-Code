@@ -52,7 +52,10 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
           actors::VisionAlignActor::MakeFactory(event_loop)),
       vision_status_fetcher_(
           event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
-              ".y2016.vision.vision_status")) {}
+              ".y2016.vision.vision_status")),
+      ball_detector_fetcher_(
+          event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
+              ".y2016.sensors.ball_detector")) {}
 
 constexpr double kDoNotTurnCare = 2.0;
 
@@ -538,9 +541,9 @@ void AutonomousActor::TwoFromMiddleDrive() {
 }
 
 void AutonomousActor::CloseIfBall() {
-  ::y2016::sensors::ball_detector.FetchLatest();
-  if (::y2016::sensors::ball_detector.get()) {
-    const bool ball_detected = ::y2016::sensors::ball_detector->voltage > 2.5;
+  ball_detector_fetcher_.Fetch();
+  if (ball_detector_fetcher_.get()) {
+    const bool ball_detected = ball_detector_fetcher_->voltage > 2.5;
     if (ball_detected) {
       CloseShooter();
     }
@@ -560,25 +563,12 @@ void AutonomousActor::WaitForBallOrDriveDone() {
       return;
     }
 
-    ::y2016::sensors::ball_detector.FetchLatest();
-    if (::y2016::sensors::ball_detector.get()) {
-      const bool ball_detected = ::y2016::sensors::ball_detector->voltage > 2.5;
+    ball_detector_fetcher_.Fetch();
+    if (ball_detector_fetcher_.get()) {
+      const bool ball_detected = ball_detector_fetcher_->voltage > 2.5;
       if (ball_detected) {
         return;
       }
-    }
-  }
-}
-
-void AutonomousActor::WaitForBall() {
-  while (true) {
-    ::y2016::sensors::ball_detector.FetchAnother();
-    if (::y2016::sensors::ball_detector.get()) {
-      const bool ball_detected = ::y2016::sensors::ball_detector->voltage > 2.5;
-      if (ball_detected) {
-        return;
-      }
-      if (ShouldCancel()) return;
     }
   }
 }
@@ -603,9 +593,9 @@ void AutonomousActor::TwoBallAuto() {
 
   // Check if the ball is there.
   bool first_ball_there = true;
-  ::y2016::sensors::ball_detector.FetchLatest();
-  if (::y2016::sensors::ball_detector.get()) {
-    const bool ball_detected = ::y2016::sensors::ball_detector->voltage > 2.5;
+  ball_detector_fetcher_.Fetch();
+  if (ball_detector_fetcher_.get()) {
+    const bool ball_detected = ball_detector_fetcher_->voltage > 2.5;
     first_ball_there = ball_detected;
     LOG(INFO, "Saw the ball: %d at %f\n", first_ball_there,
         ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
@@ -708,9 +698,9 @@ void AutonomousActor::TwoBallAuto() {
   CloseIfBall();
   if (!WaitForDriveNear(kDriveBackDistance - 2.3, kDoNotTurnCare)) return;
 
-  ::y2016::sensors::ball_detector.FetchLatest();
-  if (::y2016::sensors::ball_detector.get()) {
-    const bool ball_detected = ::y2016::sensors::ball_detector->voltage > 2.5;
+  ball_detector_fetcher_.Fetch();
+  if (ball_detector_fetcher_.get()) {
+    const bool ball_detected = ball_detector_fetcher_->voltage > 2.5;
     if (!ball_detected) {
       if (!WaitForDriveDone()) return;
       LOG(INFO, "Aborting, no ball %f\n",

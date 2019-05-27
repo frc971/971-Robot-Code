@@ -77,6 +77,9 @@ class Reader : public ::aos::input::JoystickInput {
         vision_status_fetcher_(
             event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
                 ".y2016.vision.vision_status")),
+        ball_detector_fetcher_(
+            event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
+                ".y2016.sensors.ball_detector")),
         is_high_gear_(true),
         intake_goal_(0.0),
         shoulder_goal_(M_PI / 2.0),
@@ -286,9 +289,9 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     bool ball_detected = false;
-    ::y2016::sensors::ball_detector.FetchLatest();
-    if (::y2016::sensors::ball_detector.get()) {
-      ball_detected = ::y2016::sensors::ball_detector->voltage > 2.5;
+    ball_detector_fetcher_.Fetch();
+    if (ball_detector_fetcher_.get()) {
+      ball_detected = ball_detector_fetcher_->voltage > 2.5;
     }
     if (data.PosEdge(kIntakeIn)) {
       saw_ball_when_started_intaking_ = ball_detected;
@@ -457,6 +460,7 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
   ::aos::Fetcher<::y2016::vision::VisionStatus> vision_status_fetcher_;
+  ::aos::Fetcher<::y2016::sensors::BallDetector> ball_detector_fetcher_;
 
   bool is_high_gear_;
   // Whatever these are set to are our default goals to send out after zeroing.

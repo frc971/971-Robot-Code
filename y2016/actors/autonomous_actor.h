@@ -11,6 +11,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "y2016/actors/vision_align_actor.h"
+#include "y2016/queues/ball_detector.q.h"
 
 namespace y2016 {
 namespace actors {
@@ -55,7 +56,6 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   void BackLongShotTwoBallFinish();
   void BackLongShotLowBarTwoBall();
   void BackMiddleShot();
-  void WaitForBall();
   void TuckArm(bool arm_down, bool traverse_down);
   void OpenShooter();
   void CloseShooter();
@@ -88,6 +88,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   ::std::unique_ptr<::aos::common::actions::Action> vision_action_;
 
   ::aos::Fetcher<::y2016::vision::VisionStatus> vision_status_fetcher_;
+  ::aos::Fetcher<::y2016::sensors::BallDetector> ball_detector_fetcher_;
 };
 
 }  // namespace actors

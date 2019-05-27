@@ -17,6 +17,7 @@
 #include "aos/events/event-loop.h"
 #include "aos/mutex/mutex.h"
 #include "aos/time/time.h"
+#include "y2016/queues/ball_detector.q.h"
 #include "y2016/vision/vision.q.h"
 
 namespace y2016 {
@@ -64,6 +65,7 @@ class DataCollector {
   };
 
   ::aos::Fetcher<::y2016::vision::VisionStatus> vision_status_fetcher_;
+  ::aos::Fetcher<::y2016::sensors::BallDetector> ball_detector_fetcher_;
 
   // Storage vector that is written and overwritten with data in a FIFO fashion.
   ::std::vector<SampleItem> sample_items_;

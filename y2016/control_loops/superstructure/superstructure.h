@@ -10,6 +10,7 @@
 #include "frc971/zeroing/zeroing.h"
 #include "y2016/control_loops/superstructure/superstructure.q.h"
 #include "y2016/control_loops/superstructure/superstructure_controls.h"
+#include "y2016/queues/ball_detector.q.h"
 
 namespace y2016 {
 namespace control_loops {
@@ -222,6 +223,9 @@ class Superstructure
   friend class testing::SuperstructureTest_UpperHardstopStartup_Test;
   friend class testing::SuperstructureTest_DisabledWhileZeroingHigh_Test;
   friend class testing::SuperstructureTest_DisabledWhileZeroingLow_Test;
+
+  ::aos::Fetcher<::y2016::sensors::BallDetector> ball_detector_fetcher_;
+
   Intake intake_;
   Arm arm_;
 
