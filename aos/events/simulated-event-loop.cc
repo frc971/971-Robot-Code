@@ -39,23 +39,19 @@ class SimulatedSender : public RawSender {
       : queue_(queue), event_loop_(event_loop) {}
   ~SimulatedSender() {}
 
-  SendContext *GetContext() override {
-    return reinterpret_cast<SendContext *>(
-        RefCountedBuffer(queue_->size()).release());
+  aos::Message *GetMessage() override {
+    return RefCountedBuffer(queue_->size()).release();
   }
 
-  void Free(SendContext *context) override {
-    RefCountedBuffer(reinterpret_cast<aos::Message *>(context));
-  }
+  void Free(aos::Message *msg) override { RefCountedBuffer tmp(msg); }
 
-  bool Send(SendContext *context) override {
+  bool Send(aos::Message *msg) override {
     {
-      ::aos::Message *aos_msg = reinterpret_cast<Message *>(context);
-      if (aos_msg->sent_time == monotonic_clock::min_time) {
-        aos_msg->sent_time = event_loop_->monotonic_now();
+      if (msg->sent_time == monotonic_clock::min_time) {
+        msg->sent_time = event_loop_->monotonic_now();
       }
     }
-    queue_->Send(RefCountedBuffer(reinterpret_cast<aos::Message *>(context)));
+    queue_->Send(RefCountedBuffer(msg));
     return true;  // Maybe false instead? :)
   }
 

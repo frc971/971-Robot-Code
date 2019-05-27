@@ -47,21 +47,19 @@ class RawFetcher {
 // Send() or Free().
 class RawSender {
  public:
-  class SendContext;
-
   RawSender() {}
   virtual ~RawSender() {}
 
-  virtual SendContext *GetContext() = 0;
+  virtual aos::Message *GetMessage() = 0;
 
-  virtual void Free(SendContext *context) = 0;
+  virtual void Free(aos::Message *msg) = 0;
 
-  virtual bool Send(SendContext *context) = 0;
+  virtual bool Send(aos::Message *msg) = 0;
 
   // Call operator that calls Free().
   template <typename T>
   void operator()(T *t) {
-    Free(reinterpret_cast<SendContext *>(t));
+    Free(t);
   }
 
   virtual const char *name() const = 0;

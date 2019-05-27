@@ -12,13 +12,30 @@
 
 namespace aos {
 
+// This class manages allocation of queue messages for simulation.
+// Unfortunately, because the current interfaces all assume that we pass around
+// raw pointers to messages we can't use a std::shared_ptr or the such, and
+// because aos::Message's themselves to not have any sort of built-in support
+// for this, we need to manage memory for the Messages in some custom fashion.
+// In this case, we do so by allocating a ref-counter in the bytes immediately
+// preceding the aos::Message. We then provide a constructor that takes just a
+// pointer to an existing message and we assume that it was allocated using this
+// class, and can decrement the counter if the RefCountedBuffer we constructed
+// goes out of scope. There are currently no checks to ensure that pointers
+// passed into this class were actually allocated using this class.
 class RefCountedBuffer {
  public:
   RefCountedBuffer() {}
   ~RefCountedBuffer() { clear(); }
 
+  // Create a RefCountedBuffer for some Message that was already allocated using
+  // a RefCountedBuffer class. This, or some function like it, is required to
+  // allow us to let users of the simulated event loops work with raw pointers
+  // to messages.
   explicit RefCountedBuffer(aos::Message *data) : data_(data) {}
 
+  // Allocates memory for a new message of a given size. Does not initialize the
+  // memory or call any constructors.
   explicit RefCountedBuffer(size_t size) {
     data_ = reinterpret_cast<uint8_t *>(malloc(kRefCountSize + size)) +
             kRefCountSize;
