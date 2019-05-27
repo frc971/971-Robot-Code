@@ -85,6 +85,12 @@ class DrivetrainInputReader {
   // Returns the current robot velocity in m/s.
   double robot_velocity() const { return robot_velocity_; }
 
+  void set_vision_align_fn(
+      ::std::function<bool(const ::aos::input::driver_station::Data &data)>
+          vision_align_fn) {
+    vision_align_fn_ = vision_align_fn;
+  }
+
  protected:
   const driver_station::JoystickAxis wheel_;
   const driver_station::JoystickAxis throttle_;
@@ -122,6 +128,9 @@ class DrivetrainInputReader {
   // The scale for the joysticks for closed loop mode converting
   // joysticks to meters displacement on the two wheels.
   double wheel_multiplier_ = 0.5;
+
+  ::std::function<bool(const ::aos::input::driver_station::Data &data)>
+      vision_align_fn_;
 };
 
 // Implements DrivetrainInputReader for the original steering wheel.

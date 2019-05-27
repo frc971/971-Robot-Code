@@ -3,13 +3,13 @@
 #include <unistd.h>
 #include <math.h>
 
+#include "aos/actions/actions.h"
 #include "aos/init.h"
-#include "aos/input/joystick_input.h"
+#include "aos/input/action_joystick_input.h"
 #include "aos/input/driver_station_data.h"
 #include "aos/logging/logging.h"
-#include "aos/util/log_interval.h"
 #include "aos/time/time.h"
-#include "aos/actions/actions.h"
+#include "aos/util/log_interval.h"
 
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
@@ -69,49 +69,32 @@ const ButtonLocation kVisionAlign(3, 4);
 const ButtonLocation kExpand(3, 6);
 const ButtonLocation kWinch(3, 5);
 
-// TODO(austin): ActionJoystickInput
-class Reader : public ::aos::input::JoystickInput {
+class Reader : public ::aos::input::ActionJoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop)
-      : ::aos::input::JoystickInput(event_loop),
+      : ::aos::input::ActionJoystickInput(
+            event_loop, control_loops::drivetrain::GetDrivetrainConfig(),
+            ::aos::input::DrivetrainInputReader::InputType::kSteeringWheel, {}),
         vision_status_fetcher_(
             event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
                 ".y2016.vision.vision_status")),
         ball_detector_fetcher_(
             event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
                 ".y2016.sensors.ball_detector")),
-        is_high_gear_(true),
         intake_goal_(0.0),
         shoulder_goal_(M_PI / 2.0),
         wrist_goal_(0.0),
-        dt_config_(control_loops::drivetrain::GetDrivetrainConfig()),
-        autonomous_action_factory_(
-            ::frc971::autonomous::BaseAutonomousActor::MakeFactory(event_loop)),
         vision_align_action_factory_(
             actors::VisionAlignActor::MakeFactory(event_loop)),
         superstructure_action_factory_(
-            actors::SuperstructureActor::MakeFactory(event_loop)) {}
+            actors::SuperstructureActor::MakeFactory(event_loop)) {
+    set_vision_align_fn([this](const ::aos::input::driver_station::Data &data) {
+      return VisionAlign(data);
+    });
+  }
 
-  // TODO(austin): Move this to the ActionJoystickInput class.
-  void RunIteration(const ::aos::input::driver_station::Data &data) override {
-    bool last_auto_running = auto_running_;
-    auto_running_ = data.GetControlBit(ControlBit::kAutonomous) &&
-                    data.GetControlBit(ControlBit::kEnabled);
-    if (auto_running_ != last_auto_running) {
-      if (auto_running_) {
-        StartAuto();
-      } else {
-        StopAuto();
-      }
-    }
-
-    if (!data.GetControlBit(ControlBit::kEnabled)) {
-      // If we are not enabled, reset the waiting for zero bit.
-      LOG(DEBUG, "Waiting for zero.\n");
-      waiting_for_zero_ = true;
-      is_high_gear_ = true;
-    }
-
+  // Returns true when we are vision aligning
+  bool VisionAlign(const ::aos::input::driver_station::Data &data) {
     vision_valid_ = false;
 
     vision_status_fetcher_.Fetch();
@@ -122,27 +105,10 @@ class Reader : public ::aos::input::JoystickInput {
       last_angle_ = vision_status_fetcher_->horizontal_angle;
     }
 
-    if (!auto_running_) {
-      HandleDrivetrain(data);
-      HandleTeleop(data);
-    }
-
-    // Process any pending actions.
-    action_queue_.Tick();
-    was_running_ = action_queue_.Running();
-  }
-
-  void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
-    bool is_control_loop_driving = false;
-
-    const double wheel = -data.GetAxis(kSteeringWheel);
-    const double throttle = -data.GetAxis(kDriveThrottle);
-    drivetrain_queue.status.FetchLatest();
-
     if (data.IsPressed(kVisionAlign)) {
       if (vision_valid_ && !vision_action_running_) {
         actors::VisionAlignActionParams params;
-        action_queue_.EnqueueAction(vision_align_action_factory_.Make(params));
+        EnqueueAction(vision_align_action_factory_.Make(params));
         vision_action_running_ = true;
         LOG(INFO, "Starting vision align\n");
       } else {
@@ -153,55 +119,29 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     if (data.NegEdge(kVisionAlign)) {
-      action_queue_.CancelAllActions();
+      CancelAllActions();
     }
     if (!data.IsPressed(kVisionAlign)) {
       vision_action_running_ = false;
     }
 
-    // Don't do any normal drivetrain stuff if vision is in charge.
-    if (vision_action_running_) {
-      return;
-    }
-
-    if (data.PosEdge(kTurn1) || data.PosEdge(kTurn2)) {
-      if (drivetrain_queue.status.get()) {
-        left_goal_ = drivetrain_queue.status->estimated_left_position;
-        right_goal_ = drivetrain_queue.status->estimated_right_position;
-      }
-    }
-    if (data.IsPressed(kTurn1) || data.IsPressed(kTurn2)) {
-      is_control_loop_driving = true;
-    }
-    if (!drivetrain_queue.goal.MakeWithBuilder()
-             .wheel(wheel)
-             .throttle(throttle)
-             .highgear(is_high_gear_)
-             .quickturn(data.IsPressed(kQuickTurn))
-             .controller_type(is_control_loop_driving ? 1 : 0)
-             .left_goal(left_goal_ - wheel * 0.5 + throttle * 0.3)
-             .right_goal(right_goal_ + wheel * 0.5 + throttle * 0.3)
-             .Send()) {
-      LOG(WARNING, "sending stick values failed\n");
-    }
-
-    if (data.PosEdge(kShiftLow)) {
-      is_high_gear_ = false;
-    }
-
-    if (data.PosEdge(kShiftHigh) || data.PosEdge(kShiftHigh2)) {
-      is_high_gear_ = true;
-    }
+    return vision_action_running_;
   }
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
+    if (!data.GetControlBit(ControlBit::kEnabled)) {
+      // If we are not enabled, reset the waiting for zero bit.
+      LOG(DEBUG, "Waiting for zero.\n");
+      waiting_for_zero_ = true;
+    }
+
     float voltage_climber = 0.0;
     // Default the intake to up.
     intake_goal_ = constants::Values::kIntakeRange.upper - 0.04;
 
     bool force_lights_on = false;
     if (!data.GetControlBit(ControlBit::kEnabled)) {
-      action_queue_.CancelAllActions();
+      CancelAllActions();
       LOG(DEBUG, "Canceling\n");
     }
 
@@ -272,8 +212,7 @@ class Reader : public ::aos::input::JoystickInput {
         params.delay_time = 0.7;
         params.full_angle = shoulder_goal_;
         params.shooter_angle = wrist_goal_;
-        action_queue_.EnqueueAction(
-            superstructure_action_factory_.Make(params));
+        EnqueueAction(superstructure_action_factory_.Make(params));
       }
       if (data.IsPressed(kWinch)) {
         voltage_climber = 12.0;
@@ -285,7 +224,7 @@ class Reader : public ::aos::input::JoystickInput {
     }
     if (data.NegEdge(kExpand) || voltage_climber > 1.0) {
       is_expanding_ = false;
-      action_queue_.CancelAllActions();
+      CancelAllActions();
     }
 
     bool ball_detected = false;
@@ -326,7 +265,7 @@ class Reader : public ::aos::input::JoystickInput {
           if (vision_action_running_ && ::std::abs(last_angle_) < 0.02 &&
               ::std::abs((left_goal - right_goal) -
                          (left_current - right_current)) /
-                      dt_config_.robot_radius / 2.0 <
+                      dt_config().robot_radius / 2.0 <
                   0.02 &&
               ::std::abs(left_velocity - right_velocity) < 0.01) {
             ++ready_to_fire_;
@@ -440,41 +379,14 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
  private:
-  void StartAuto() {
-    LOG(INFO, "Starting auto mode\n");
-
-    ::frc971::autonomous::AutonomousActionParams params;
-    ::frc971::autonomous::auto_mode.FetchLatest();
-    if (::frc971::autonomous::auto_mode.get() != nullptr) {
-      params.mode = ::frc971::autonomous::auto_mode->mode;
-    } else {
-      LOG(WARNING, "no auto mode values\n");
-      params.mode = 0;
-    }
-    action_queue_.EnqueueAction(autonomous_action_factory_.Make(params));
-  }
-
-  void StopAuto() {
-    LOG(INFO, "Stopping auto mode\n");
-    action_queue_.CancelAllActions();
-  }
-
   ::aos::Fetcher<::y2016::vision::VisionStatus> vision_status_fetcher_;
   ::aos::Fetcher<::y2016::sensors::BallDetector> ball_detector_fetcher_;
 
-  bool is_high_gear_;
   // Whatever these are set to are our default goals to send out after zeroing.
   double intake_goal_;
   double shoulder_goal_;
   double wrist_goal_;
   double shooter_velocity_ = 0.0;
-
-  // Turning goals
-  double left_goal_;
-  double right_goal_;
-
-  bool was_running_ = false;
-  bool auto_running_ = false;
 
   bool traverse_unlatched_ = false;
   bool traverse_down_ = false;
@@ -497,13 +409,8 @@ class Reader : public ::aos::input::JoystickInput {
 
   int ready_to_fire_ = 0;
 
-  ::aos::common::actions::ActionQueue action_queue_;
-
-  const ::frc971::control_loops::drivetrain::DrivetrainConfig<double> dt_config_;
-
   bool is_expanding_ = false;
 
-  ::frc971::autonomous::BaseAutonomousActor::Factory autonomous_action_factory_;
   actors::VisionAlignActor::Factory vision_align_action_factory_;
   actors::SuperstructureActor::Factory superstructure_action_factory_;
 

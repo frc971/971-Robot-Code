@@ -401,16 +401,6 @@ class Reader : public ::aos::input::ActionJoystickInput {
   }
 
  private:
-  void StartAuto() {
-    LOG(INFO, "Starting auto mode\n");
-    ::frc971::autonomous::autonomous.MakeWithBuilder().run_auto(true).Send();
-  }
-
-  void StopAuto() {
-    LOG(INFO, "Stopping auto mode\n");
-    ::frc971::autonomous::autonomous.MakeWithBuilder().run_auto(false).Send();
-  }
-
   double shot_power_;
   double goal_angle_;
   double separation_angle_, shot_separation_angle_;

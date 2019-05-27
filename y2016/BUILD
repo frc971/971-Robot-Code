@@ -30,7 +30,7 @@ cc_binary(
         ":constants",
         "//aos:init",
         "//aos/actions:action_lib",
-        "//aos/input:joystick_input",
+        "//aos/input:action_joystick_input",
         "//aos/logging",
         "//aos/time",
         "//aos/util:log_interval",

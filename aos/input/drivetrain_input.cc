@@ -37,6 +37,14 @@ void DrivetrainInputReader::HandleDrivetrain(
     robot_velocity_ = drivetrain_queue.status->robot_speed;
   }
 
+  // If we have a vision align function, and it is in control, don't run the
+  // normal driving code.
+  if (vision_align_fn_) {
+    if (vision_align_fn_(data)) {
+      return;
+    }
+  }
+
   bool is_control_loop_driving = false;
   bool is_line_following = false;
 

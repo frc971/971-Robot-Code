@@ -9,7 +9,7 @@
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
 #include "aos/input/drivetrain_input.h"
-#include "aos/input/joystick_input.h"
+#include "aos/input/action_joystick_input.h"
 #include "aos/init.h"
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
@@ -49,62 +49,23 @@ const ButtonLocation kExtra1(3, 11);
 const ButtonLocation kExtra2(3, 10);
 const ButtonLocation kHang(3, 2);
 
-std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
-
-class Reader : public ::aos::input::JoystickInput {
+class Reader : public ::aos::input::ActionJoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop)
-      : ::aos::input::JoystickInput(event_loop),
-        autonomous_action_factory_(
-            ::frc971::autonomous::BaseAutonomousActor::MakeFactory(
-                event_loop)) {
-    drivetrain_input_reader_ = DrivetrainInputReader::Make(
-        DrivetrainInputReader::InputType::kSteeringWheel,
-        ::y2017::control_loops::drivetrain::GetDrivetrainConfig());
-  }
+      : ::aos::input::ActionJoystickInput(
+            event_loop,
+            ::y2017::control_loops::drivetrain::GetDrivetrainConfig(),
+            DrivetrainInputReader::InputType::kSteeringWheel, {}) {}
 
   enum class ShotDistance { VISION_SHOT, MIDDLE_SHOT, FAR_SHOT };
 
   ShotDistance last_shot_distance_ = ShotDistance::VISION_SHOT;
-
-  void RunIteration(const ::aos::input::driver_station::Data &data) override {
-    bool last_auto_running = auto_running_;
-    auto_running_ = data.GetControlBit(ControlBit::kAutonomous) &&
-                    data.GetControlBit(ControlBit::kEnabled);
-    if (auto_running_ != last_auto_running) {
-      if (auto_running_) {
-        StartAuto();
-      } else {
-        StopAuto();
-      }
-    }
-
-    if (!auto_running_) {
-      HandleDrivetrain(data);
-      HandleTeleop(data);
-    }
-
-    // Process any pending actions.
-    action_queue_.Tick();
-    was_running_ = action_queue_.Running();
-  }
-  int intake_accumulator_ = 0;
-
-  void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
-    drivetrain_input_reader_->HandleDrivetrain(data);
-    robot_velocity_ = drivetrain_input_reader_->robot_velocity();
-  }
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
     // Default the intake to in.
     intake_goal_ = 0.07;
     bool lights_on = false;
     bool vision_track = false;
-
-    if (!data.GetControlBit(ControlBit::kEnabled)) {
-      action_queue_.CancelAllActions();
-      LOG(DEBUG, "Canceling\n");
-    }
 
     superstructure_queue.status.FetchLatest();
     if (!superstructure_queue.status.get()) {
@@ -245,7 +206,7 @@ class Reader : public ::aos::input::JoystickInput {
       new_superstructure_goal->intake.voltage_rollers = -10.0;
       new_superstructure_goal->intake.disable_intake = true;
     } else if (data.IsPressed(kIntakeIn) || data.IsPressed(kFire)) {
-      if (robot_velocity_ > 2.0) {
+      if (robot_velocity() > 2.0) {
         new_superstructure_goal->intake.voltage_rollers = 12.0;
       } else {
         new_superstructure_goal->intake.voltage_rollers = 11.0;
@@ -285,42 +246,16 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
  private:
-  void StartAuto() {
-    LOG(INFO, "Starting auto mode\n");
-
-    ::frc971::autonomous::AutonomousActionParams params;
-    ::frc971::autonomous::auto_mode.FetchLatest();
-    if (::frc971::autonomous::auto_mode.get() != nullptr) {
-      params.mode = ::frc971::autonomous::auto_mode->mode;
-    } else {
-      LOG(WARNING, "no auto mode values\n");
-      params.mode = 0;
-    }
-    action_queue_.EnqueueAction(autonomous_action_factory_.Make(params));
-  }
-
-  void StopAuto() {
-    LOG(INFO, "Stopping auto mode\n");
-    action_queue_.CancelAllActions();
-  }
-
   // Current goals to send to the robot.
   double intake_goal_ = 0.0;
   double turret_goal_ = 0.0;
   double hood_goal_ = 0.3;
   double shooter_velocity_ = 0.0;
-
-  bool was_running_ = false;
-  bool auto_running_ = false;
+  int intake_accumulator_ = 0;
 
   bool vision_distance_shot_ = false;
 
   bool fire_ = false;
-  double robot_velocity_ = 0.0;
-
-  ::aos::common::actions::ActionQueue action_queue_;
-
-  ::frc971::autonomous::BaseAutonomousActor::Factory autonomous_action_factory_;
 };
 
 }  // namespace joysticks

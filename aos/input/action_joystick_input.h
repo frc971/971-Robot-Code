@@ -35,21 +35,49 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
         input_config_(input_config),
         drivetrain_input_reader_(
             DrivetrainInputReader::Make(input_type, dt_config)),
+        dt_config_(dt_config),
         autonomous_action_factory_(
-            ::frc971::autonomous::BaseAutonomousActor::MakeFactory(
-                event_loop)) {}
+            ::frc971::autonomous::BaseAutonomousActor::MakeFactory(event_loop)),
+        autonomous_mode_fetcher_(
+            event_loop->MakeFetcher<::frc971::autonomous::AutonomousMode>(
+                ".frc971.autonomous.auto_mode")) {}
 
   virtual ~ActionJoystickInput() {}
 
  protected:
   bool was_running_action() { return was_running_; }
 
+  // Returns true if an action is running.
   bool ActionRunning() { return action_queue_.Running(); }
+  // Cancels all actions.
   void CancelAllActions() { action_queue_.CancelAllActions(); }
+  // Cancels the current action.
   void CancelCurrentAction() { action_queue_.CancelCurrentAction(); }
 
+  // Enqueues an action.
   void EnqueueAction(::std::unique_ptr<::aos::common::actions::Action> action) {
     action_queue_.EnqueueAction(::std::move(action));
+  }
+
+  // Returns the current robot velocity.
+  double robot_velocity() const {
+    return drivetrain_input_reader_->robot_velocity();
+  }
+
+  // Returns the drivetrain config.
+  const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>
+  dt_config() const {
+    return dt_config_;
+  }
+
+  // Sets the vision align function.  This function runs before the normal
+  // drivetrain code runs.  If it returns true, we are in vision align mode and
+  // no drivetain code is run.  If it returns false, the vision align function
+  // is assumed to be disabled and normal drive code is run.
+  void set_vision_align_fn(
+      ::std::function<bool(const ::aos::input::driver_station::Data &data)>
+          vision_align_fn) {
+    drivetrain_input_reader_->set_vision_align_fn(vision_align_fn);
   }
 
  private:
@@ -65,7 +93,14 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
 
   // Returns the current autonomous mode which has been selected by robot
   // inputs.
-  virtual uint32_t GetAutonomousMode() { return 0; }
+  virtual uint32_t GetAutonomousMode() {
+    autonomous_mode_fetcher_.Fetch();
+    if (autonomous_mode_fetcher_.get() == nullptr) {
+      LOG(WARNING, "no auto mode values\n");
+      return 0;
+    }
+    return autonomous_mode_fetcher_->mode;
+  }
 
   // True if the internal state machine thinks auto is running right now.
   bool auto_running_ = false;
@@ -82,7 +117,12 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
   ::std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
   ::aos::common::actions::ActionQueue action_queue_;
 
+  const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>
+      dt_config_;
+
   ::frc971::autonomous::BaseAutonomousActor::Factory autonomous_action_factory_;
+
+  ::aos::Fetcher<::frc971::autonomous::AutonomousMode> autonomous_mode_fetcher_;
 };
 
 }  // namespace input

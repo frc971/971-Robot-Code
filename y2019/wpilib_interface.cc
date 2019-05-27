@@ -131,7 +131,10 @@ static_assert(kMaxMediumEncoderPulsesPerSecond <= 400000,
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
   SensorReader(::aos::EventLoop *event_loop)
-      : ::frc971::wpilib::SensorReader(event_loop) {
+      : ::frc971::wpilib::SensorReader(event_loop),
+        auto_mode_sender_(
+            event_loop->MakeSender<::frc971::autonomous::AutonomousMode>(
+                ".frc971.autonomous.auto_mode")) {
     // Set to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
@@ -279,7 +282,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     }
 
     {
-      auto auto_mode_message = ::frc971::autonomous::auto_mode.MakeMessage();
+      auto auto_mode_message = auto_mode_sender_.MakeMessage();
       auto_mode_message->mode = 0;
       for (size_t i = 0; i < autonomous_modes_.size(); ++i) {
         if (autonomous_modes_[i] && autonomous_modes_[i]->Get()) {
@@ -292,6 +295,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
  private:
+  ::aos::Sender<::frc971::autonomous::AutonomousMode> auto_mode_sender_;
+
   ::frc971::wpilib::AbsoluteEncoderAndPotentiometer elevator_encoder_,
       wrist_encoder_, stilts_encoder_;
 

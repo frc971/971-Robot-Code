@@ -32,7 +32,6 @@
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
-#include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/wpilib/ADIS16448.h"
@@ -258,11 +257,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     box_back_beambreak_ = ::std::move(input);
   }
 
-  // Auto mode switches.
-  void set_autonomous_mode(int i, ::std::unique_ptr<frc::DigitalInput> sensor) {
-    autonomous_modes_.at(i) = ::std::move(sensor);
-  }
-
   void set_lidar_lite_input(::std::unique_ptr<frc::DigitalInput> lidar_lite_input) {
     lidar_lite_input_ = ::std::move(lidar_lite_input);
     lidar_lite_.set_input(lidar_lite_input_.get());
@@ -342,18 +336,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       superstructure_message.Send();
     }
-
-    {
-      auto auto_mode_message = ::frc971::autonomous::auto_mode.MakeMessage();
-      auto_mode_message->mode = 0;
-      for (size_t i = 0; i < autonomous_modes_.size(); ++i) {
-        if (autonomous_modes_[i] && autonomous_modes_[i]->Get()) {
-          auto_mode_message->mode |= 1 << i;
-        }
-      }
-      LOG_STRUCT(DEBUG, "auto mode", *auto_mode_message);
-      auto_mode_message.Send();
-    }
   }
 
  private:
@@ -373,8 +355,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   ::std::unique_ptr<frc::DigitalInput> claw_beambreak_;
   ::std::unique_ptr<frc::DigitalInput> box_back_beambreak_;
-
-  ::std::array<::std::unique_ptr<frc::DigitalInput>, 4> autonomous_modes_;
 
   ::std::unique_ptr<frc::DigitalInput> lidar_lite_input_;
   ::frc971::wpilib::DMAPulseWidthReader lidar_lite_;

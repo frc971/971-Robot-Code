@@ -13,7 +13,7 @@
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
 #include "aos/input/drivetrain_input.h"
-#include "aos/input/joystick_input.h"
+#include "aos/input/action_joystick_input.h"
 #include "aos/init.h"
 #include "aos/vision/events/udp.h"
 #include "frc971/autonomous/auto.q.h"
@@ -85,55 +85,23 @@ const ButtonLocation kArmPickupBoxFromIntake(4, 3);
 const ButtonLocation kClawOpen(4, 4);
 const ButtonLocation kDriverClawOpen(2, 4);
 
-class Reader : public ::aos::input::JoystickInput {
+class Reader : public ::aos::input::ActionJoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop)
-      : ::aos::input::JoystickInput(event_loop),
-        autonomous_action_factory_(
-            ::frc971::autonomous::BaseAutonomousActor::MakeFactory(
-                event_loop)) {
+      : ::aos::input::ActionJoystickInput(
+            event_loop,
+            ::y2018::control_loops::drivetrain::GetDrivetrainConfig(),
+            ::aos::network::GetTeamNumber() == 971
+                ? DrivetrainInputReader::InputType::kPistol
+                : DrivetrainInputReader::InputType::kSteeringWheel,
+            {}) {
     const uint16_t team = ::aos::network::GetTeamNumber();
 
-    drivetrain_input_reader_ = DrivetrainInputReader::Make(
-        team == 971 ? DrivetrainInputReader::InputType::kPistol
-                    : DrivetrainInputReader::InputType::kSteeringWheel,
-        ::y2018::control_loops::drivetrain::GetDrivetrainConfig());
     video_tx_.reset(new ProtoTXUdpSocket<VisionControl>(
         StringPrintf("10.%d.%d.179", team / 100, team % 100), 5000));
   }
 
-  void RunIteration(const ::aos::input::driver_station::Data &data) override {
-    bool last_auto_running = auto_running_;
-    auto_running_ = data.GetControlBit(ControlBit::kAutonomous) &&
-                    data.GetControlBit(ControlBit::kEnabled);
-    if (auto_running_ != last_auto_running) {
-      if (auto_running_) {
-        StartAuto();
-      } else {
-        StopAuto();
-      }
-    }
-
-    if (!auto_running_) {
-      HandleDrivetrain(data);
-      HandleTeleop(data);
-    }
-
-    // Process any pending actions.
-    action_queue_.Tick();
-    was_running_ = action_queue_.Running();
-  }
-
-  void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
-    drivetrain_input_reader_->HandleDrivetrain(data);
-  }
-
-  void HandleTeleop(const ::aos::input::driver_station::Data &data) {
-    if (!data.GetControlBit(ControlBit::kEnabled)) {
-      action_queue_.CancelAllActions();
-      LOG(DEBUG, "Canceling\n");
-    }
-
+  void HandleTeleop(const ::aos::input::driver_station::Data &data) override {
     superstructure_queue.position.FetchLatest();
     superstructure_queue.status.FetchLatest();
     if (!superstructure_queue.status.get() ||
@@ -191,7 +159,7 @@ class Reader : public ::aos::input::JoystickInput {
           } else {
             intake_goal_ = -0.10;
           }
-          if (drivetrain_input_reader_->robot_velocity() < -0.1 &&
+          if (robot_velocity() < -0.1 &&
               superstructure_queue.position->box_distance > 0.15) {
             intake_goal_ += 0.10;
           }
@@ -363,32 +331,14 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
  private:
-  void StartAuto() {
-    LOG(INFO, "Starting auto mode\n");
-
-    ::frc971::autonomous::AutonomousActionParams params;
-    ::frc971::autonomous::auto_mode.FetchLatest();
-    if (::frc971::autonomous::auto_mode.get() != nullptr) {
-      params.mode = ::frc971::autonomous::auto_mode->mode << 2;
-    } else {
-      LOG(WARNING, "no auto mode values\n");
-      params.mode = 0;
-    }
+  uint32_t GetAutonomousMode() override {
     // Low bit is switch, high bit is scale.  1 means left, 0 means right.
-    params.mode = mode();
-    action_queue_.EnqueueAction(autonomous_action_factory_.Make(params));
-  }
-
-  void StopAuto() {
-    LOG(INFO, "Stopping auto mode\n");
-    action_queue_.CancelAllActions();
+    return mode();
   }
 
   // Current goals to send to the robot.
   double intake_goal_ = 0.0;
 
-  bool was_running_ = false;
-  bool auto_running_ = false;
   bool never_disabled_ = true;
 
   uint32_t arm_goal_position_ = 0;
@@ -397,13 +347,7 @@ class Reader : public ::aos::input::JoystickInput {
   decltype(FrontPoints()) front_points_ = FrontPoints();
   decltype(BackPoints()) back_points_ = BackPoints();
 
-  ::aos::common::actions::ActionQueue action_queue_;
-
   ::std::unique_ptr<ProtoTXUdpSocket<VisionControl>> video_tx_;
-
-  ::std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
-
-  ::frc971::autonomous::BaseAutonomousActor::Factory autonomous_action_factory_;
 };
 
 }  // namespace joysticks

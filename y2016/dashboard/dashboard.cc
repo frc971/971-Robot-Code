@@ -18,9 +18,7 @@
 #include "aos/seasocks/seasocks_logger.h"
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
-
 #include "frc971/autonomous/auto.q.h"
-
 #include "y2016/control_loops/superstructure/superstructure.q.h"
 #include "y2016/queues/ball_detector.q.h"
 #include "y2016/vision/vision.q.h"
@@ -57,6 +55,9 @@ DataCollector::DataCollector(::aos::EventLoop *event_loop)
       ball_detector_fetcher_(
           event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
               ".y2016.sensors.ball_detector")),
+      autonomous_mode_fetcher_(
+          event_loop->MakeFetcher<::frc971::autonomous::AutonomousMode>(
+              ".frc971.autonomous.auto_mode")),
       cur_raw_data_("no data"),
       sample_id_(0),
       measure_index_(0),
@@ -88,7 +89,7 @@ void DataCollector::RunIteration() {
   // gone wrong with reading the auto queue.
   int auto_mode_indicator = -1;
 
-  ::frc971::autonomous::auto_mode.FetchLatest();
+  autonomous_mode_fetcher_.Fetch();
   ::y2016::control_loops::superstructure_queue.status.FetchLatest();
   ball_detector_fetcher_.Fetch();
   vision_status_fetcher_.Fetch();
@@ -129,8 +130,8 @@ void DataCollector::RunIteration() {
     }
   }
 
-  if (::frc971::autonomous::auto_mode.get()) {
-    auto_mode_indicator = ::frc971::autonomous::auto_mode->mode;
+  if (autonomous_mode_fetcher_.get()) {
+    auto_mode_indicator = autonomous_mode_fetcher_->mode;
   }
 
   AddPoint("big indicator", big_indicator);

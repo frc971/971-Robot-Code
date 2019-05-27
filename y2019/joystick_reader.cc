@@ -495,15 +495,6 @@ class Reader : public ::aos::input::ActionJoystickInput {
   }
 
  private:
-  uint32_t GetAutonomousMode() override {
-    ::frc971::autonomous::auto_mode.FetchLatest();
-    if (::frc971::autonomous::auto_mode.get() == nullptr) {
-      LOG(WARNING, "no auto mode values\n");
-      return 0;
-    }
-    return ::frc971::autonomous::auto_mode->mode;
-  }
-
   ::aos::Sender<::y2019::control_loops::drivetrain::TargetSelectorHint>
       target_selector_hint_sender_;
 

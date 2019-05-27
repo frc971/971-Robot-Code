@@ -152,7 +152,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       : ::frc971::wpilib::SensorReader(event_loop),
         ball_detector_sender_(
             event_loop->MakeSender<::y2016::sensors::BallDetector>(
-                ".y2016.sensors.ball_detector")) {
+                ".y2016.sensors.ball_detector")),
+        auto_mode_sender_(
+            event_loop->MakeSender<::frc971::autonomous::AutonomousMode>(
+                ".frc971.autonomous.auto_mode")) {
     // Set it to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxDrivetrainShooterEncoderPulsesPerSecond);
@@ -299,7 +302,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     }
 
     {
-      auto auto_mode_message = ::frc971::autonomous::auto_mode.MakeMessage();
+      auto auto_mode_message = auto_mode_sender_.MakeMessage();
       auto_mode_message->mode = 0;
       for (size_t i = 0; i < autonomous_modes_.size(); ++i) {
         if (autonomous_modes_[i]->Get()) {
@@ -313,6 +316,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
  private:
   ::aos::Sender<::y2016::sensors::BallDetector> ball_detector_sender_;
+  ::aos::Sender<::frc971::autonomous::AutonomousMode> auto_mode_sender_;
 
   ::std::unique_ptr<AnalogInput> drivetrain_left_hall_, drivetrain_right_hall_;
 
