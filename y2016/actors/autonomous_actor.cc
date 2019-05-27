@@ -49,7 +49,10 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
     : frc971::autonomous::BaseAutonomousActor(
           event_loop, control_loops::drivetrain::GetDrivetrainConfig()),
       vision_align_actor_factory_(
-          actors::VisionAlignActor::MakeFactory(event_loop)) {}
+          actors::VisionAlignActor::MakeFactory(event_loop)),
+      vision_status_fetcher_(
+          event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
+              ".y2016.vision.vision_status")) {}
 
 constexpr double kDoNotTurnCare = 2.0;
 
@@ -211,11 +214,11 @@ void AutonomousActor::WaitForAlignedWithVision(
   while (end_time > monotonic_clock::now()) {
     if (ShouldCancel()) break;
 
-    ::y2016::vision::vision_status.FetchLatest();
-    if (::y2016::vision::vision_status.get()) {
-      vision_valid = (::y2016::vision::vision_status->left_image_valid &&
-                      ::y2016::vision::vision_status->right_image_valid);
-      last_angle = ::y2016::vision::vision_status->horizontal_angle;
+    vision_status_fetcher_.Fetch();
+    if (vision_status_fetcher_.get()) {
+      vision_valid = (vision_status_fetcher_->left_image_valid &&
+                      vision_status_fetcher_->right_image_valid);
+      last_angle = vision_status_fetcher_->horizontal_angle;
     }
 
     drivetrain_queue.status.FetchLatest();

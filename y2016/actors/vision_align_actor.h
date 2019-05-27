@@ -3,11 +3,11 @@
 
 #include <memory>
 
-#include "aos/actions/actor.h"
 #include "aos/actions/actions.h"
+#include "aos/actions/actor.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-
 #include "y2016/actors/vision_align_action.q.h"
+#include "y2016/vision/vision.q.h"
 
 namespace y2016 {
 namespace actors {
@@ -26,6 +26,9 @@ class VisionAlignActor
   }
 
   bool RunAction(const actors::VisionAlignActionParams &params) override;
+
+ private:
+  ::aos::Fetcher<::y2016::vision::VisionStatus> vision_status_fetcher_;
 };
 
 }  // namespace actors

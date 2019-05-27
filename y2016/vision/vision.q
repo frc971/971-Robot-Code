@@ -34,4 +34,3 @@ message VisionStatus {
   double drivetrain_left_position;
   double drivetrain_right_position;
 };
-queue VisionStatus vision_status;

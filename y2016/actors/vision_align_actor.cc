@@ -24,7 +24,10 @@ using ::frc971::control_loops::drivetrain_queue;
 
 VisionAlignActor::VisionAlignActor(::aos::EventLoop *event_loop)
     : aos::common::actions::ActorBase<actors::VisionAlignActionQueueGroup>(
-          event_loop, ".y2016.actors.vision_align_action") {}
+          event_loop, ".y2016.actors.vision_align_action"),
+      vision_status_fetcher_(
+          event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
+              ".y2016.vision.vision_status")) {}
 
 bool VisionAlignActor::RunAction(
     const actors::VisionAlignActionParams & /*params*/) {
@@ -42,10 +45,10 @@ bool VisionAlignActor::RunAction(
     if (ShouldCancel()) {
       return true;
     }
-    if (!::y2016::vision::vision_status.FetchLatest()) {
+    if (!vision_status_fetcher_.Fetch()) {
       continue;
     }
-    const auto &vision_status = *::y2016::vision::vision_status;
+    const auto &vision_status = *vision_status_fetcher_;
 
     if (!vision_status.left_image_valid || !vision_status.right_image_valid) {
       continue;

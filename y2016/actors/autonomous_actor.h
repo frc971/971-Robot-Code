@@ -86,6 +86,8 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   actors::VisionAlignActor::Factory vision_align_actor_factory_;
   ::std::unique_ptr<::aos::common::actions::Action> vision_action_;
+
+  ::aos::Fetcher<::y2016::vision::VisionStatus> vision_status_fetcher_;
 };
 
 }  // namespace actors
