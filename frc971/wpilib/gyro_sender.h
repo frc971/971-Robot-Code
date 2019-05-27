@@ -32,6 +32,7 @@ class GyroSender {
   ::aos::EventLoop *event_loop_;
   ::aos::Fetcher<::aos::JoystickState> joystick_state_fetcher_;
   ::aos::Sender<::frc971::sensors::Uid> uid_sender_;
+  ::aos::Sender<::frc971::sensors::GyroReading> gyro_reading_sender_;
 
   // Readings per second.
   static const int kReadingRate = 200;

@@ -19,7 +19,6 @@
 #include "y2014_bot3/control_loops/rollers/rollers.q.h"
 
 using ::frc971::control_loops::drivetrain_queue;
-using ::frc971::sensors::gyro_reading;
 
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::POVLocation;

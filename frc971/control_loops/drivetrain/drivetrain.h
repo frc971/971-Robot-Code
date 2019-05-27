@@ -15,6 +15,7 @@
 #include "frc971/control_loops/drivetrain/polydrivetrain.h"
 #include "frc971/control_loops/drivetrain/splinedrivetrain.h"
 #include "frc971/control_loops/drivetrain/ssdrivetrain.h"
+#include "frc971/queues/gyro.q.h"
 #include "frc971/wpilib/imu.q.h"
 
 namespace frc971 {
@@ -49,6 +50,7 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
 
   ::aos::Fetcher<LocalizerControl> localizer_control_fetcher_;
   ::aos::Fetcher<::frc971::IMUValues> imu_values_fetcher_;
+  ::aos::Fetcher<::frc971::sensors::GyroReading> gyro_reading_fetcher_;
   LocalizerInterface *localizer_;
 
   StateFeedbackLoop<7, 2, 4> kf_;

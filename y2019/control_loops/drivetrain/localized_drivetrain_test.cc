@@ -59,7 +59,6 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
     // obstacle, it ends up confusing the localizer; as such, starting there
     // is just prone to causing confusion.
     SetStartingPosition({3.0, 2.0, 0.0});
-    ::frc971::sensors::gyro_reading.Clear();
     set_battery_voltage(12.0);
   }
 
@@ -165,9 +164,7 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
     }
   }
 
-  virtual ~LocalizedDrivetrainTest() {
-    ::frc971::sensors::gyro_reading.Clear();
-  }
+  virtual ~LocalizedDrivetrainTest() {}
 
   const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>
       dt_config_;

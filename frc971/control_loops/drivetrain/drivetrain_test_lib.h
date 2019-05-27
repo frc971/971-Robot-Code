@@ -82,7 +82,7 @@ class DrivetrainSimulation {
   DrivetrainPlant drivetrain_plant_;
 
   ::frc971::control_loops::DrivetrainQueue my_drivetrain_queue_;
-  ::aos::Queue<::frc971::sensors::GyroReading> gyro_reading_;
+  ::aos::Sender<::frc971::sensors::GyroReading> gyro_reading_sender_;
 
   // This state is [x, y, theta, left_velocity, right_velocity].
   ::Eigen::Matrix<double, 5, 1> state_ = ::Eigen::Matrix<double, 5, 1>::Zero();

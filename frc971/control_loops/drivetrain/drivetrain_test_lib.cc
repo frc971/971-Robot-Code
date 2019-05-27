@@ -93,7 +93,9 @@ DrivetrainSimulation::DrivetrainSimulation(
                            ".frc971.control_loops.drivetrain_queue.position",
                            ".frc971.control_loops.drivetrain_queue.output",
                            ".frc971.control_loops.drivetrain_queue.status"),
-      gyro_reading_(::frc971::sensors::gyro_reading.name()),
+      gyro_reading_sender_(
+          event_loop->MakeSender<::frc971::sensors::GyroReading>(
+              ".frc971.sensors.gyro_reading")),
       velocity_drivetrain_(
           ::std::unique_ptr<StateFeedbackLoop<2, 2, 2, double,
                                               StateFeedbackHybridPlant<2, 2, 2>,
@@ -131,8 +133,7 @@ void DrivetrainSimulation::SendPositionMessage() {
   }
 
   {
-    ::aos::ScopedMessagePtr<::frc971::sensors::GyroReading> gyro =
-        gyro_reading_.MakeMessage();
+    auto gyro = gyro_reading_sender_.MakeMessage();
     gyro->angle =
         (right_encoder - left_encoder) / (dt_config_.robot_radius * 2.0);
     gyro->velocity = (drivetrain_plant_.X(3, 0) - drivetrain_plant_.X(1, 0)) /

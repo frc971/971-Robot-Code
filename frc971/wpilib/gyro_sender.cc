@@ -29,7 +29,10 @@ GyroSender::GyroSender(::aos::EventLoop *event_loop)
       joystick_state_fetcher_(event_loop_->MakeFetcher<::aos::JoystickState>(
           ".aos.joystick_state")),
       uid_sender_(event_loop_->MakeSender<::frc971::sensors::Uid>(
-          ".frc971.sensors.gyro_part_id")) {
+          ".frc971.sensors.gyro_part_id")),
+      gyro_reading_sender_(
+          event_loop_->MakeSender<::frc971::sensors::GyroReading>(
+              ".frc971.sensors.gyro_reading")) {
   PCHECK(
       system("ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
              "33") == 0);
@@ -119,7 +122,7 @@ void GyroSender::operator()() {
 
     const double angle_rate = gyro_.ExtractAngle(result);
     const double new_angle = angle_rate / static_cast<double>(kReadingRate);
-    auto message = ::frc971::sensors::gyro_reading.MakeMessage();
+    auto message = gyro_reading_sender_.MakeMessage();
     if (zeroed) {
       angle += (new_angle + zero_offset) * number_readings;
       message->angle = angle;

@@ -57,7 +57,6 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
         localizer_(dt_config_),
         drivetrain_motor_(dt_config_, &event_loop_, &localizer_),
         drivetrain_motor_plant_(&simulation_event_loop_, dt_config_) {
-    ::frc971::sensors::gyro_reading.Clear();
     set_battery_voltage(12.0);
   }
 
@@ -142,7 +141,7 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
     } while (!my_drivetrain_queue_.status->trajectory_logging.is_executed);
   }
 
-  virtual ~DrivetrainTest() { ::frc971::sensors::gyro_reading.Clear(); }
+  virtual ~DrivetrainTest() {}
 
  private:
   ::std::vector<double> actual_x_;

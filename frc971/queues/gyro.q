@@ -1,5 +1,6 @@
 package frc971.sensors;
 
+// Published on ".frc971.sensors.gyro_reading"
 message GyroReading {
 	// Positive is counter-clockwise (Austin says "it's Positive").
 	// Right-hand coordinate system around the Z-axis going up.
@@ -8,7 +9,6 @@ message GyroReading {
   // The angular velocity in radians/sec
 	double velocity;
 };
-queue GyroReading gyro_reading;
 
 // Published on ".frc971.sensors.gyro_part_id"
 message Uid {

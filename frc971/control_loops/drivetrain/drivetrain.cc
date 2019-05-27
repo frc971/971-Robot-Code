@@ -20,7 +20,6 @@
 #include "frc971/shifter_hall_effect.h"
 #include "frc971/wpilib/imu.q.h"
 
-using frc971::sensors::gyro_reading;
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
 
@@ -39,6 +38,9 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
           ".frc971.control_loops.drivetrain.localizer_control")),
       imu_values_fetcher_(
           event_loop->MakeFetcher<::frc971::IMUValues>(".frc971.imu_values")),
+      gyro_reading_fetcher_(
+          event_loop->MakeFetcher<::frc971::sensors::GyroReading>(
+              ".frc971.sensors.gyro_reading")),
       localizer_(localizer),
       kf_(dt_config_.make_kf_drivetrain_loop()),
       dt_openloop_(dt_config_, &kf_),
@@ -209,16 +211,16 @@ void DrivetrainLoop::RunIteration(
       }
       break;
     case GyroType::SPARTAN_GYRO:
-      if (gyro_reading.FetchLatest()) {
-        LOG_STRUCT(DEBUG, "using", *gyro_reading.get());
-        last_gyro_rate_ = gyro_reading->velocity;
+      if (gyro_reading_fetcher_.Fetch()) {
+        LOG_STRUCT(DEBUG, "using", *gyro_reading_fetcher_.get());
+        last_gyro_rate_ = gyro_reading_fetcher_->velocity;
         last_gyro_time_ = monotonic_now;
       }
       break;
     case GyroType::FLIPPED_SPARTAN_GYRO:
-      if (gyro_reading.FetchLatest()) {
-        LOG_STRUCT(DEBUG, "using", *gyro_reading.get());
-        last_gyro_rate_ = -gyro_reading->velocity;
+      if (gyro_reading_fetcher_.Fetch()) {
+        LOG_STRUCT(DEBUG, "using", *gyro_reading_fetcher_.get());
+        last_gyro_rate_ = -gyro_reading_fetcher_->velocity;
         last_gyro_time_ = monotonic_now;
       }
       break;

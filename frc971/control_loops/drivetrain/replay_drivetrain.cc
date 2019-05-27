@@ -26,7 +26,6 @@ int main(int argc, char **argv) {
       replayer.ProcessFile(argv[i]);
     }
   }
-  ::frc971::sensors::gyro_reading.Clear();
   ::frc971::control_loops::drivetrain_queue.goal.Clear();
   ::frc971::control_loops::drivetrain_queue.status.Clear();
   ::frc971::control_loops::drivetrain_queue.position.Clear();

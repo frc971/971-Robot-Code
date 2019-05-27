@@ -119,23 +119,6 @@ cc_library(
 )
 
 cc_library(
-    name = "lpd8806",
-    srcs = [
-        "LPD8806.cc",
-    ],
-    hdrs = [
-        "LPD8806.h",
-    ],
-    restricted_to = ["//tools:roborio"],
-    deps = [
-        "//aos/mutex",
-        "//aos/time",
-        "//frc971/queues:gyro",
-        "//third_party:wpilib",
-    ],
-)
-
-cc_library(
     name = "loop_output_handler",
     srcs = [
         "loop_output_handler.cc",
