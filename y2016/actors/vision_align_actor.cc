@@ -22,8 +22,9 @@ namespace y2016 {
 namespace actors {
 using ::frc971::control_loops::drivetrain_queue;
 
-VisionAlignActor::VisionAlignActor(actors::VisionAlignActionQueueGroup *s)
-    : aos::common::actions::ActorBase<actors::VisionAlignActionQueueGroup>(s) {}
+VisionAlignActor::VisionAlignActor(::aos::EventLoop *event_loop)
+    : aos::common::actions::ActorBase<actors::VisionAlignActionQueueGroup>(
+          event_loop, ".y2016.actors.vision_align_action") {}
 
 bool VisionAlignActor::RunAction(
     const actors::VisionAlignActionParams & /*params*/) {
@@ -74,12 +75,6 @@ bool VisionAlignActor::RunAction(
 
   LOG(INFO, "Done moving\n");
   return true;
-}
-
-::std::unique_ptr<VisionAlignAction> MakeVisionAlignAction(
-    const ::y2016::actors::VisionAlignActionParams &params) {
-  return ::std::unique_ptr<VisionAlignAction>(
-      new VisionAlignAction(&::y2016::actors::vision_align_action, params));
 }
 
 }  // namespace actors

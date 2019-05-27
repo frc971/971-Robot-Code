@@ -51,6 +51,8 @@ class TestLogImplementation : public logging::HandleMessageLogImplementation {
     }
   }
 
+  bool fill_type_cache() override { return false; }
+
   void PrintMessagesAsTheyComeIn() { print_as_messages_come_in_ = true; }
 
  private:

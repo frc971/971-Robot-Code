@@ -11,6 +11,7 @@
 #include "internal/Embedded.h"
 #include "seasocks/Server.h"
 
+#include "aos/events/shm-event-loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"
@@ -49,8 +50,11 @@ constexpr int kEstopped = 2;
 // caused problems in the past when auto aiming that still need to be addressed.
 //#define DASHBOARD_READ_VISION_QUEUE
 
-DataCollector::DataCollector()
-    : cur_raw_data_("no data"),
+DataCollector::DataCollector(::aos::EventLoop *event_loop)
+    : vision_status_fetcher_(
+          event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
+              ".y2016.vision.vision_status")),
+      cur_raw_data_("no data"),
       sample_id_(0),
       measure_index_(0),
       overflow_id_(1) {}
@@ -84,16 +88,16 @@ void DataCollector::RunIteration() {
   ::frc971::autonomous::auto_mode.FetchLatest();
   ::y2016::control_loops::superstructure_queue.status.FetchLatest();
   ::y2016::sensors::ball_detector.FetchLatest();
-  ::y2016::vision::vision_status.FetchLatest();
+  vision_status_fetcher_.Fetch();
 
 // Caused glitching with auto-aim at NASA, so be cautious with this until
 // we find a good fix.
 #ifdef DASHBOARD_READ_VISION_QUEUE
-  if (::y2016::vision::vision_status.get() &&
-      (::y2016::vision::vision_status->left_image_valid ||
-       ::y2016::vision::vision_status->right_image_valid)) {
+  if (vision_status_fetcher_.get() &&
+      (vision_status_fetcher_->left_image_valid ||
+       vision_status_fetcher_->right_image_valid)) {
     big_indicator = big_indicator::kAiming;
-    if (::std::abs(::y2016::vision::vision_status->horizontal_angle) < 0.002) {
+    if (::std::abs(vision_status_fetcher_->horizontal_angle) < 0.002) {
       big_indicator = big_indicator::kLockedOn;
     }
   }
@@ -234,8 +238,9 @@ void DataCollector::operator()() {
   }
 }
 
-SocketHandler::SocketHandler()
-    : data_collector_thread_(::std::ref(data_collector_)) {}
+SocketHandler::SocketHandler(::aos::EventLoop *event_loop)
+    : data_collector_(event_loop),
+      data_collector_thread_(::std::ref(data_collector_)) {}
 
 void SocketHandler::onConnect(seasocks::WebSocket *connection) {
   connections_.insert(connection);
@@ -270,9 +275,11 @@ int main(int, char *[]) {
 
   ::aos::InitNRT();
 
+  ::aos::ShmEventLoop event_loop;
+
   ::seasocks::Server server(::std::shared_ptr<seasocks::Logger>(
       new ::aos::seasocks::SeasocksLogger(::seasocks::Logger::Level::Info)));
-  ::y2016::dashboard::SocketHandler socket_handler;
+  ::y2016::dashboard::SocketHandler socket_handler(&event_loop);
 
   server.addWebSocketHandler(
       "/ws",

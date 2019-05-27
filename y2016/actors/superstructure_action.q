@@ -21,5 +21,3 @@ queue_group SuperstructureActionQueueGroup {
   queue Goal goal;
   queue aos.common.actions.Status status;
 };
-
-queue_group SuperstructureActionQueueGroup superstructure_action;

@@ -19,11 +19,9 @@ using ::aos::monotonic_clock;
 using ::frc971::control_loops::drivetrain_queue;
 namespace chrono = ::std::chrono;
 
-AutonomousActor::AutonomousActor(
-    ::aos::EventLoop *event_loop,
-    ::frc971::autonomous::AutonomousActionQueueGroup *s)
+AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
     : frc971::autonomous::BaseAutonomousActor(
-          event_loop, s, control_loops::drivetrain::GetDrivetrainConfig()),
+          event_loop, control_loops::drivetrain::GetDrivetrainConfig()),
       localizer_control_sender_(
           event_loop->MakeSender<
               ::frc971::control_loops::drivetrain::LocalizerControl>(

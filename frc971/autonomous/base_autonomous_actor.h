@@ -17,9 +17,16 @@ namespace autonomous {
 class BaseAutonomousActor
     : public ::aos::common::actions::ActorBase<AutonomousActionQueueGroup> {
  public:
+  typedef ::aos::common::actions::TypedActionFactory<AutonomousActionQueueGroup>
+      Factory;
+
   explicit BaseAutonomousActor(
-      ::aos::EventLoop *event_loop, AutonomousActionQueueGroup *s,
+      ::aos::EventLoop *event_loop,
       const control_loops::drivetrain::DrivetrainConfig<double> &dt_config);
+
+  static Factory MakeFactory(::aos::EventLoop *event_loop) {
+    return Factory(event_loop, ".frc971.autonomous.autonomous_action");
+  }
 
  protected:
   class SplineHandle {
@@ -118,13 +125,6 @@ class BaseAutonomousActor
   // Last goal spline handle;
   int32_t goal_spline_handle_ = 0;
 };
-
-using AutonomousAction =
-    ::aos::common::actions::TypedAction<AutonomousActionQueueGroup>;
-
-// Makes a new AutonomousActor action.
-::std::unique_ptr<AutonomousAction> MakeAutonomousAction(
-    const AutonomousActionParams &params);
 
 }  // namespace autonomous
 }  // namespace frc971

@@ -14,7 +14,15 @@ namespace actors {
 class ShootActor
     : public ::aos::common::actions::ActorBase<actors::ShootActionQueueGroup> {
  public:
-  explicit ShootActor(actors::ShootActionQueueGroup* s);
+  typedef ::aos::common::actions::TypedActionFactory<
+      actors::ShootActionQueueGroup>
+      Factory;
+
+  explicit ShootActor(::aos::EventLoop *event_loop);
+
+  static Factory MakeFactory(::aos::EventLoop *event_loop) {
+    return Factory(event_loop, ".y2014.actors.shoot_action");
+  }
 
   // Actually execute the action of moving the claw and shooter into position
   // and actually firing them.
@@ -39,12 +47,6 @@ class ShootActor
   // to track when shot is complete
   int previous_shots_;
 };
-
-typedef ::aos::common::actions::TypedAction<actors::ShootActionQueueGroup>
-    ShootAction;
-
-// Makes a new ShootActor action.
-::std::unique_ptr<ShootAction> MakeShootAction();
 
 }  // namespace actors
 }  // namespace y2014

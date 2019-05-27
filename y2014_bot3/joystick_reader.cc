@@ -49,7 +49,10 @@ const ButtonLocation kHumanPlayer(4, 11);
 class Reader : public ::aos::input::JoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop)
-      : ::aos::input::JoystickInput(event_loop) {
+      : ::aos::input::JoystickInput(event_loop),
+        autonomous_action_factory_(
+            ::frc971::autonomous::BaseAutonomousActor::MakeFactory(
+                event_loop)) {
     drivetrain_input_reader_ = DrivetrainInputReader::Make(
         DrivetrainInputReader::InputType::kSteeringWheel,
         ::y2014_bot3::control_loops::drivetrain::GetDrivetrainConfig());
@@ -109,8 +112,7 @@ class Reader : public ::aos::input::JoystickInput {
     LOG(INFO, "Starting auto mode.\n");
     ::frc971::autonomous::AutonomousActionParams params;
     params.mode = 0;
-    action_queue_.EnqueueAction(
-        ::frc971::autonomous::MakeAutonomousAction(params));
+    action_queue_.EnqueueAction(autonomous_action_factory_.Make(params));
   }
 
   void StopAuto() {
@@ -127,6 +129,8 @@ class Reader : public ::aos::input::JoystickInput {
   ::aos::common::actions::ActionQueue action_queue_;
 
   ::std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
+
+  ::frc971::autonomous::BaseAutonomousActor::Factory autonomous_action_factory_;
 };
 
 }  // namespace joysticks

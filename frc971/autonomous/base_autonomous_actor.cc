@@ -21,9 +21,10 @@ namespace frc971 {
 namespace autonomous {
 
 BaseAutonomousActor::BaseAutonomousActor(
-    ::aos::EventLoop *event_loop, AutonomousActionQueueGroup *s,
+    ::aos::EventLoop *event_loop,
     const control_loops::drivetrain::DrivetrainConfig<double> &dt_config)
-    : aos::common::actions::ActorBase<AutonomousActionQueueGroup>(s),
+    : aos::common::actions::ActorBase<AutonomousActionQueueGroup>(
+          event_loop, ".frc971.autonomous.autonomous_action"),
       dt_config_(dt_config),
       initial_drivetrain_({0.0, 0.0}),
       target_selector_hint_sender_(
@@ -498,12 +499,6 @@ bool BaseAutonomousActor::SplineHandle::WaitForDone() {
       return true;
     }
   }
-}
-
-::std::unique_ptr<AutonomousAction> MakeAutonomousAction(
-    const AutonomousActionParams &params) {
-  return ::std::unique_ptr<AutonomousAction>(
-      new AutonomousAction(&autonomous_action, params));
 }
 
 }  // namespace autonomous

@@ -9,9 +9,10 @@
 #include <atomic>
 #include <memory>
 
+#include "aos/events/event-loop.h"
 #include "aos/logging/logging.h"
-#include "aos/queue.h"
 #include "aos/logging/queue_logging.h"
+#include "aos/queue.h"
 
 namespace aos {
 namespace common {
@@ -69,12 +70,9 @@ class Action {
   // Starts the action.
   void Start() { DoStart(); }
 
-  // Waits until the action has finished.
-  void WaitUntilDone() { DoWaitUntilDone(); }
-
   // Run all the checks for one iteration of waiting. Will return true when the
   // action has completed, successfully or not. This is non-blocking.
-  bool CheckIteration() { return DoCheckIteration(false); }
+  bool CheckIteration() { return DoCheckIteration(); }
 
   // Retrieves the internal state of the action for testing.
   // See comments on the private members of TypedAction<T, S> for details.
@@ -93,10 +91,8 @@ class Action {
   virtual bool DoRunning() = 0;
   // Starts the action if a goal has been created.
   virtual void DoStart() = 0;
-  // Blocks until complete.
-  virtual void DoWaitUntilDone() = 0;
   // Updates status for one cycle of waiting
-  virtual bool DoCheckIteration(bool blocking) = 0;
+  virtual bool DoCheckIteration() = 0;
   // For testing we will need to get the internal state.
   // See comments on the private members of TypedAction<T, S> for details.
   virtual void DoGetState(bool* has_started, bool* sent_started,
@@ -111,12 +107,17 @@ class TypedAction : public Action {
   // A convenient way to refer to the type of our goals.
   typedef typename std::remove_reference<decltype(
       *(static_cast<T*>(nullptr)->goal.MakeMessage().get()))>::type GoalType;
+  typedef typename std::remove_reference<decltype(
+      *(static_cast<T*>(nullptr)->status.MakeMessage().get()))>::type StatusType;
   typedef typename std::remove_reference<
       decltype(static_cast<GoalType*>(nullptr)->params)>::type ParamType;
 
-  TypedAction(T* queue_group, const ParamType &params)
-      : queue_group_(queue_group),
-        goal_(queue_group_->goal.MakeMessage()),
+  TypedAction(typename ::aos::Fetcher<StatusType> *status_fetcher,
+              typename ::aos::Sender<GoalType> *goal_sender,
+              const ParamType &params)
+      : status_fetcher_(status_fetcher),
+        goal_sender_(goal_sender),
+        goal_(goal_sender_->MakeMessage()),
         // This adds 1 to the counter (atomically because it's potentially
         // shared across threads) and then bitwise-ORs the bottom of the PID to
         // differentiate it from other processes's values (ie a unique id).
@@ -124,11 +125,11 @@ class TypedAction : public Action {
                    ((getpid() & 0xFFFF) << 16)),
         params_(params) {
     LOG(DEBUG, "Action %" PRIx32 " created on queue %s\n", run_value_,
-        queue_group_->goal.name());
+        goal_sender_->name());
     // Clear out any old status messages from before now.
-    queue_group_->status.FetchLatest();
-    if (queue_group_->status.get()) {
-      LOG_STRUCT(DEBUG, "have status", *queue_group_->status);
+    status_fetcher_->Fetch();
+    if (status_fetcher_->get()) {
+      LOG_STRUCT(DEBUG, "have status", *status_fetcher_->get());
     }
   }
 
@@ -137,17 +138,12 @@ class TypedAction : public Action {
     DoCancel();
   }
 
-  // Returns the current goal that will be sent when the action is sent.
-  GoalType* GetGoal() { return goal_.get(); }
-
  private:
   void DoCancel() override;
 
   bool DoRunning() override;
 
-  void DoWaitUntilDone() override;
-
-  bool DoCheckIteration(bool blocking) override;
+  bool DoCheckIteration() override;
 
   // Sets the started flag (also possibly the interrupted flag).
   void CheckStarted();
@@ -168,8 +164,9 @@ class TypedAction : public Action {
     if (old_run_value != nullptr) *old_run_value = old_run_value_;
   }
 
-  T* const queue_group_;
-  ::aos::ScopedMessagePtr<GoalType> goal_;
+  typename ::aos::Fetcher<StatusType> *status_fetcher_;
+  typename ::aos::Sender<GoalType> *goal_sender_;
+  typename ::aos::Sender<GoalType>::Message goal_;
 
   // Track if we have seen a response to the start message.
   bool has_started_ = false;
@@ -197,26 +194,62 @@ class TypedAction : public Action {
 };
 
 template <typename T>
+class TypedActionFactory {
+ public:
+  typedef typename std::remove_reference<decltype(
+      *(static_cast<T*>(nullptr)->goal.MakeMessage().get()))>::type GoalType;
+  typedef typename std::remove_reference<decltype(
+      *(static_cast<T*>(nullptr)->status.MakeMessage().get()))>::type StatusType;
+  typedef typename std::remove_reference<decltype(
+      static_cast<GoalType *>(nullptr)->params)>::type ParamType;
+
+  explicit TypedActionFactory(::aos::EventLoop *event_loop,
+                              const ::std::string &name)
+      : name_(name),
+        status_fetcher_(event_loop->MakeFetcher<StatusType>(name + ".status")),
+        goal_sender_(event_loop->MakeSender<GoalType>(name + ".goal")) {}
+
+  ::std::unique_ptr<TypedAction<T>> Make(const ParamType &param) {
+    return ::std::unique_ptr<TypedAction<T>>(
+        new TypedAction<T>(&status_fetcher_, &goal_sender_, param));
+  }
+
+  TypedActionFactory(TypedActionFactory &&other)
+      : name_(::std::move(other.name_)),
+        status_fetcher_(::std::move(other.status_fetcher_)),
+        goal_sender_(::std::move(other.goal_sender_)) {}
+
+ private:
+  const ::std::string name_;
+  typename ::aos::Fetcher<StatusType> status_fetcher_;
+  typename ::aos::Sender<GoalType> goal_sender_;
+};
+
+template <typename T>
 ::std::atomic<uint16_t> TypedAction<T>::run_counter_{0};
 
 template <typename T>
 void TypedAction<T>::DoCancel() {
   if (!sent_started_) {
     LOG(INFO, "Action %" PRIx32 " on queue %s was never started\n", run_value_,
-        queue_group_->goal.name());
+        goal_sender_->name());
   } else {
     if (interrupted_) {
       LOG(INFO,
           "Action %" PRIx32 " on queue %s was interrupted -> not cancelling\n",
-          run_value_, queue_group_->goal.name());
+          run_value_, goal_sender_->name());
     } else {
       if (sent_cancel_) {
         LOG(DEBUG, "Action %" PRIx32 " on queue %s already cancelled\n",
-            run_value_, queue_group_->goal.name());
+            run_value_, goal_sender_->name());
       } else {
         LOG(DEBUG, "Canceling action %" PRIx32 " on queue %s\n", run_value_,
-            queue_group_->goal.name());
-        queue_group_->goal.MakeWithBuilder().run(0).Send();
+            goal_sender_->name());
+        {
+          auto goal_message = goal_sender_->MakeMessage();
+          goal_message->run = 0;
+          goal_message.Send();
+        }
         sent_cancel_ = true;
       }
     }
@@ -230,11 +263,11 @@ bool TypedAction<T>::DoRunning() {
     return false;
   }
   if (has_started_) {
-    queue_group_->status.FetchNext();
+    status_fetcher_->FetchNext();
     CheckInterrupted();
   } else {
-    while (queue_group_->status.FetchNext()) {
-      LOG_STRUCT(DEBUG, "got status", *queue_group_->status);
+    while (status_fetcher_->FetchNext()) {
+      LOG_STRUCT(DEBUG, "got status", *status_fetcher_->get());
       CheckStarted();
       if (has_started_) CheckInterrupted();
     }
@@ -243,41 +276,23 @@ bool TypedAction<T>::DoRunning() {
   // We've asked it to start but haven't gotten confirmation that it's started
   // yet.
   if (!has_started_) return true;
-  return queue_group_->status.get() &&
-         queue_group_->status->running == run_value_;
+  return status_fetcher_->get() &&
+         status_fetcher_->get()->running == run_value_;
 }
 
 template <typename T>
-void TypedAction<T>::DoWaitUntilDone() {
-  CHECK(sent_started_);
-  queue_group_->status.FetchNext();
-  LOG_STRUCT(DEBUG, "got status", *queue_group_->status);
-  CheckInterrupted();
-  while (true) {
-    if (DoCheckIteration(true)) {
-      return;
-    }
-  }
-}
-
-template <typename T>
-bool TypedAction<T>::DoCheckIteration(bool blocking) {
+bool TypedAction<T>::DoCheckIteration() {
   CHECK(sent_started_);
   if (interrupted_) return true;
   CheckStarted();
-  if (blocking) {
-    queue_group_->status.FetchNextBlocking();
-    LOG_STRUCT(DEBUG, "got status", *queue_group_->status);
-  } else {
-    if (!queue_group_->status.FetchNext()) {
-      return false;
-    }
-    LOG_STRUCT(DEBUG, "got status", *queue_group_->status);
+  if (!status_fetcher_->FetchNext()) {
+    return false;
   }
+  LOG_STRUCT(DEBUG, "got status", *status_fetcher_->get());
   CheckStarted();
   CheckInterrupted();
-  if (has_started_ && (queue_group_->status.get() &&
-                       queue_group_->status->running != run_value_)) {
+  if (has_started_ && (status_fetcher_->get() &&
+                       status_fetcher_->get()->running != run_value_)) {
     return true;
   }
   return false;
@@ -286,21 +301,21 @@ bool TypedAction<T>::DoCheckIteration(bool blocking) {
 template <typename T>
 void TypedAction<T>::CheckStarted() {
   if (has_started_) return;
-  if (queue_group_->status.get()) {
-    if (queue_group_->status->running == run_value_ ||
-        (queue_group_->status->running == 0 &&
-         queue_group_->status->last_running == run_value_)) {
+  if (status_fetcher_->get()) {
+    if (status_fetcher_->get()->running == run_value_ ||
+        (status_fetcher_->get()->running == 0 &&
+         status_fetcher_->get()->last_running == run_value_)) {
       // It's currently running our instance.
       has_started_ = true;
       LOG(DEBUG, "Action %" PRIx32 " on queue %s has been started\n",
-          run_value_, queue_group_->goal.name());
+          run_value_, goal_sender_->name());
     } else if (old_run_value_ != 0 &&
-               queue_group_->status->running == old_run_value_) {
+               status_fetcher_->get()->running == old_run_value_) {
       LOG(DEBUG, "still running old instance %" PRIx32 "\n", old_run_value_);
     } else {
       LOG(WARNING, "Action %" PRIx32 " on queue %s interrupted by %" PRIx32
                    " before starting\n",
-          run_value_, queue_group_->goal.name(), queue_group_->status->running);
+          run_value_, goal_sender_->name(), status_fetcher_->get()->running);
       has_started_ = true;
       interrupted_ = true;
     }
@@ -311,43 +326,43 @@ void TypedAction<T>::CheckStarted() {
 
 template <typename T>
 void TypedAction<T>::CheckInterrupted() {
-  if (!interrupted_ && has_started_ && queue_group_->status.get()) {
-    if (queue_group_->status->running != 0 &&
-        queue_group_->status->running != run_value_) {
+  if (!interrupted_ && has_started_ && status_fetcher_->get()) {
+    if (status_fetcher_->get()->running != 0 &&
+        status_fetcher_->get()->running != run_value_) {
       LOG(WARNING, "Action %" PRIx32 " on queue %s interrupted by %" PRIx32
                    " after starting\n",
-          run_value_, queue_group_->goal.name(), queue_group_->status->running);
+          run_value_, goal_sender_->name(), status_fetcher_->get()->running);
     }
   }
 }
 
 template <typename T>
 void TypedAction<T>::DoStart() {
-  if (goal_) {
+  if (!sent_started_) {
     LOG(DEBUG, "Starting action %" PRIx32 "\n", run_value_);
     goal_->run = run_value_;
     goal_->params = params_;
     sent_started_ = true;
     if (!goal_.Send()) {
       LOG(ERROR, "sending goal for action %" PRIx32 " on queue %s failed\n",
-          run_value_, queue_group_->goal.name());
+          run_value_, goal_sender_->name());
       // Don't wait to see a message with it.
       has_started_ = true;
     }
-    queue_group_->status.FetchNext();
-    if (queue_group_->status.get()) {
-      LOG_STRUCT(DEBUG, "got status", *queue_group_->status);
+    status_fetcher_->FetchNext();
+    if (status_fetcher_->get()) {
+      LOG_STRUCT(DEBUG, "got status", *status_fetcher_->get());
     }
-    if (queue_group_->status.get() && queue_group_->status->running != 0) {
-      old_run_value_ = queue_group_->status->running;
+    if (status_fetcher_->get() && status_fetcher_->get()->running != 0) {
+      old_run_value_ = status_fetcher_->get()->running;
       LOG(INFO, "Action %" PRIx32 " on queue %s already running\n",
-          old_run_value_, queue_group_->goal.name());
+          old_run_value_, goal_sender_->name());
     } else {
       old_run_value_ = 0;
     }
   } else {
     LOG(WARNING, "Action %" PRIx32 " on queue %s already started\n", run_value_,
-        queue_group_->goal.name());
+        goal_sender_->name());
   }
 }
 

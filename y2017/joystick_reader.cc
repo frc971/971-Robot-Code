@@ -54,7 +54,10 @@ std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
 class Reader : public ::aos::input::JoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop)
-      : ::aos::input::JoystickInput(event_loop) {
+      : ::aos::input::JoystickInput(event_loop),
+        autonomous_action_factory_(
+            ::frc971::autonomous::BaseAutonomousActor::MakeFactory(
+                event_loop)) {
     drivetrain_input_reader_ = DrivetrainInputReader::Make(
         DrivetrainInputReader::InputType::kSteeringWheel,
         ::y2017::control_loops::drivetrain::GetDrivetrainConfig());
@@ -293,8 +296,7 @@ class Reader : public ::aos::input::JoystickInput {
       LOG(WARNING, "no auto mode values\n");
       params.mode = 0;
     }
-    action_queue_.EnqueueAction(
-        ::frc971::autonomous::MakeAutonomousAction(params));
+    action_queue_.EnqueueAction(autonomous_action_factory_.Make(params));
   }
 
   void StopAuto() {
@@ -317,6 +319,8 @@ class Reader : public ::aos::input::JoystickInput {
   double robot_velocity_ = 0.0;
 
   ::aos::common::actions::ActionQueue action_queue_;
+
+  ::frc971::autonomous::BaseAutonomousActor::Factory autonomous_action_factory_;
 };
 
 }  // namespace joysticks

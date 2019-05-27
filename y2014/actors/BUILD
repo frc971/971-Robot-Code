@@ -58,6 +58,7 @@ cc_binary(
         ":shoot_action_lib",
         ":shoot_action_queue",
         "//aos:init",
+        "//aos/events:shm-event-loop",
     ],
 )
 

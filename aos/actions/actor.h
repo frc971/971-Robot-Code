@@ -21,46 +21,32 @@ template <class T>
 class ActorBase {
  public:
   typedef typename std::remove_reference<decltype(
-      *(static_cast<T*>(nullptr)->goal.MakeMessage().get()))>::type GoalType;
-  typedef typename std::remove_reference<
-      decltype(static_cast<GoalType*>(nullptr)->params)>::type ParamType;
+      *(static_cast<T *>(nullptr)->goal.MakeMessage().get()))>::type GoalType;
+  typedef typename std::remove_reference<decltype(*(
+      static_cast<T *>(nullptr)->status.MakeMessage().get()))>::type StatusType;
+  typedef typename std::remove_reference<decltype(
+      static_cast<GoalType *>(nullptr)->params)>::type ParamType;
 
-  ActorBase(T* acq) : action_q_(acq) {}
+  ActorBase(::aos::EventLoop *event_loop, const ::std::string &name)
+      : event_loop_(event_loop),
+        status_sender_(event_loop->MakeSender<StatusType>(name + ".status")),
+        goal_fetcher_(event_loop->MakeFetcher<GoalType>(name + ".goal")) {
+    LOG(INFO, "Constructing action %s\n", name.c_str());
+    event_loop->MakeWatcher(name + ".goal",
+                            [this](const GoalType &goal) { HandleGoal(goal); });
 
-  // Will return true if finished or asked to cancel.
-  // Will return false if it failed accomplish its goal
-  // due to a problem with the system.
-  virtual bool RunAction(const ParamType& params) = 0;
-
-  // Runs action while enabled.
-  void Run();
-
-  // Gets ready to run actions.
-  void Initialize();
-
-  // Checks if an action was initially running when the thread started.
-  bool CheckInitialRunning();
-
-  // Wait here until someone asks us to go.
-  void WaitForActionRequest();
-
-  // Do work son.
-  uint32_t RunIteration();
-
-  // Wait for stop is signalled.
-  void WaitForStop(uint32_t running_id);
-
-  // Will run until the done condition is met or times out.
-  // Will return false if successful or end_time is reached and true if the
-  // action was canceled or failed.
-  // Done condition are defined as functions that return true when done and have
-  // some sort of blocking statement (such as FetchNextBlocking) to throttle
-  // spin rate.
-  // end_time is when to stop and return true. Time(0, 0) (the default) means
-  // never time out.
-  bool WaitUntil(::std::function<bool(void)> done_condition,
-                 ::aos::monotonic_clock::time_point end_time =
-                     ::aos::monotonic_clock::min_time);
+    // Send out an inital status saying we aren't running to wake up any users
+    // who might be waiting forever for the previous action.
+    event_loop->OnRun([this]() {
+      auto status_message = status_sender_.MakeMessage();
+      status_message->running = 0;
+      status_message->last_running = 0;
+      status_message->success = !abort_;
+      if (!status_message.Send()) {
+        LOG(ERROR, "Failed to send the status.\n");
+      }
+    });
+  }
 
   // Waits for a certain amount of time from when this method is called.
   // Returns false if the action was canceled or failed, and true if the wait
@@ -73,138 +59,123 @@ class ActorBase {
           phased_loop.SleepUntilNext();
           return false;
         },
-        ::aos::monotonic_clock::now() + duration);
+        event_loop_->monotonic_now() + duration);
   }
 
   // Returns true if the action should be canceled.
   bool ShouldCancel();
 
+  enum class State {
+    WAITING_FOR_ACTION,
+    RUNNING_ACTION,
+    WAITING_FOR_STOPPED,
+  };
+
+  // Returns the number of times we have run.
+  int running_count() const { return running_count_; }
+
+  // Returns the current action id being run, or 0 if stopped.
+  uint32_t current_id() const { return current_id_; }
+
  protected:
+  // Will run until the done condition is met or times out.
+  // Will return false if successful or end_time is reached and true if the
+  // action was canceled or failed.
+  // Done condition are defined as functions that return true when done and have
+  // some sort of blocking statement to throttle spin rate.
+  // end_time is when to stop and return true. Time(0, 0) (the default) means
+  // never time out.
+  bool WaitUntil(::std::function<bool(void)> done_condition,
+                 ::aos::monotonic_clock::time_point end_time =
+                     ::aos::monotonic_clock::min_time);
+
   // Set to true when we should stop ASAP.
   bool abort_ = false;
 
-  // The queue for this action.
-  T* action_q_;
+ private:
+  // Checks if an action was initially running when the thread started.
+  bool CheckInitialRunning();
+
+  // Will return true if finished or asked to cancel.
+  // Will return false if it failed accomplish its goal
+  // due to a problem with the system.
+  virtual bool RunAction(const ParamType& params) = 0;
+
+  void HandleGoal(const GoalType &goal);
+
+  ::aos::EventLoop *event_loop_;
+
+  // Number of times we've run.
+  int running_count_ = 0;
+
+  uint32_t current_id_ = 0;
+
+  ::aos::Sender<StatusType> status_sender_;
+  ::aos::Fetcher<GoalType> goal_fetcher_;
+
+  State state_ = State::WAITING_FOR_ACTION;
 };
 
 template <class T>
-bool ActorBase<T>::CheckInitialRunning() {
-  LOG(DEBUG, "Waiting for input to start\n");
-
-  if (action_q_->goal.FetchLatest()) {
-    LOG_STRUCT(DEBUG, "goal queue", *action_q_->goal);
-    const uint32_t initially_running = action_q_->goal->run;
-    if (initially_running != 0) {
-      while (action_q_->goal->run == initially_running) {
-        LOG(INFO, "run is still %" PRIx32 "\n", initially_running);
-        action_q_->goal.FetchNextBlocking();
-        LOG_STRUCT(DEBUG, "goal queue", *action_q_->goal);
+void ActorBase<T>::HandleGoal(const GoalType &goal) {
+  LOG_STRUCT(DEBUG, "action goal", goal);
+  switch (state_) {
+    case State::WAITING_FOR_ACTION:
+      if (goal.run) {
+        state_ = State::RUNNING_ACTION;
+      } else {
+        auto status_message = status_sender_.MakeMessage();
+        status_message->running = 0;
+        status_message->last_running = 0;
+        status_message->success = !abort_;
+        if (!status_message.Send()) {
+          LOG(ERROR, "Failed to send the status.\n");
+        }
+        break;
       }
-    }
-    LOG(DEBUG, "Done waiting, goal\n");
-    return true;
-  }
-  LOG(DEBUG, "Done waiting, no goal\n");
-  return false;
-}
-
-template <class T>
-void ActorBase<T>::WaitForActionRequest() {
-  while (action_q_->goal.get() == nullptr || !action_q_->goal->run) {
-    LOG(INFO, "Waiting for an action request.\n");
-    action_q_->goal.FetchNextBlocking();
-    LOG_STRUCT(DEBUG, "goal queue", *action_q_->goal);
-    if (!action_q_->goal->run) {
-      if (!action_q_->status.MakeWithBuilder()
-               .running(0)
-               .last_running(0)
-               .success(!abort_)
-               .Send()) {
-        LOG(ERROR, "Failed to send the status.\n");
+    case State::RUNNING_ACTION: {
+      ++running_count_;
+      const uint32_t running_id = goal.run;
+      current_id_ = running_id;
+      LOG(INFO, "Starting action %" PRIx32 "\n", running_id);
+      {
+        auto status_message = status_sender_.MakeMessage();
+        status_message->running = running_id;
+        status_message->last_running = 0;
+        status_message->success = !abort_;
+        if (!status_message.Send()) {
+          LOG(ERROR, "Failed to send the status.\n");
+        }
       }
-    }
-  }
-}
 
-template <class T>
-uint32_t ActorBase<T>::RunIteration() {
-  CHECK(action_q_->goal.get() != nullptr);
-  const uint32_t running_id = action_q_->goal->run;
-  LOG(INFO, "Starting action %" PRIx32 "\n", running_id);
-  if (!action_q_->status.MakeWithBuilder()
-           .running(running_id)
-           .last_running(0)
-           .success(!abort_)
-           .Send()) {
-    LOG(ERROR, "Failed to send the status.\n");
-  }
-  LOG_STRUCT(INFO, "goal", *action_q_->goal);
-  abort_ = !RunAction(action_q_->goal->params);
-  LOG(INFO, "Done with action %" PRIx32 "\n", running_id);
+      LOG_STRUCT(INFO, "goal", goal);
+      abort_ = !RunAction(goal.params);
+      LOG(INFO, "Done with action %" PRIx32 "\n", running_id);
+      current_id_ = 0u;
 
-  // If we have a new one to run, we shouldn't say we're stopped in between.
-  if (action_q_->goal->run == 0 || action_q_->goal->run == running_id) {
-    if (!action_q_->status.MakeWithBuilder()
-             .running(0)
-             .last_running(running_id)
-             .success(!abort_)
-             .Send()) {
-      LOG(ERROR, "Failed to send the status.\n");
-    } else {
-      LOG(INFO, "Sending Done status %" PRIx32 "\n", running_id);
-    }
-  } else {
-    LOG(INFO, "skipping sending stopped status for %" PRIx32 "\n", running_id);
-  }
+      {
+        auto status_message = status_sender_.MakeMessage();
+        status_message->running = 0;
+        status_message->last_running = running_id;
+        status_message->success = !abort_;
 
-  return running_id;
-}
+        if (!status_message.Send()) {
+          LOG(ERROR, "Failed to send the status.\n");
+        } else {
+          LOG(INFO, "Sending Done status %" PRIx32 "\n", running_id);
+        }
+      }
 
-template <class T>
-void ActorBase<T>::WaitForStop(uint32_t running_id) {
-  assert(action_q_->goal.get() != nullptr);
-  while (action_q_->goal->run == running_id) {
-    LOG(INFO, "Waiting for the action (%" PRIx32 ") to be stopped.\n",
-        running_id);
-    action_q_->goal.FetchNextBlocking();
-    LOG_STRUCT(DEBUG, "goal queue", *action_q_->goal);
-  }
-}
-
-template <class T>
-void ActorBase<T>::Run() {
-  Initialize();
-
-  while (true) {
-    // Wait for a request to come in before starting.
-    WaitForActionRequest();
-
-    LOG_STRUCT(INFO, "running with goal", *action_q_->goal);
-
-    // Perform the action once.
-    uint32_t running_id = RunIteration();
-
-    LOG(INFO, "done running\n");
-
-    // Don't start again until asked.
-    WaitForStop(running_id);
-    LOG(DEBUG, "action %" PRIx32 " was stopped\n", running_id);
-  }
-}
-
-template <class T>
-void ActorBase<T>::Initialize() {
-  // Make sure the last job is done and we have a signal.
-  if (CheckInitialRunning()) {
-    LOG(DEBUG, "action %" PRIx32 " was stopped\n", action_q_->goal->run);
-  }
-
-  if (!action_q_->status.MakeWithBuilder()
-           .running(0)
-           .last_running(0)
-           .success(!abort_)
-           .Send()) {
-    LOG(ERROR, "Failed to send the status.\n");
+      state_ = State::WAITING_FOR_STOPPED;
+      LOG(INFO, "Waiting for the action (%" PRIx32 ") to be stopped.\n",
+          running_id);
+    } break;
+    case State::WAITING_FOR_STOPPED:
+      if (goal.run == 0) {
+        LOG(INFO, "Action stopped.\n");
+        state_ = State::WAITING_FOR_ACTION;
+      }
+      break;
   }
 }
 
@@ -234,10 +205,10 @@ bool ActorBase<T>::WaitUntil(::std::function<bool(void)> done_condition,
 
 template <class T>
 bool ActorBase<T>::ShouldCancel() {
-  if (action_q_->goal.FetchNext()) {
-    LOG_STRUCT(DEBUG, "goal queue", *action_q_->goal);
+  if (goal_fetcher_.Fetch()) {
+    LOG_STRUCT(DEBUG, "goal queue", *goal_fetcher_);
   }
-  bool ans = !action_q_->goal->run;
+  bool ans = !goal_fetcher_->run || goal_fetcher_->run != current_id_;
   if (ans) {
     LOG(INFO, "Time to stop action\n");
   }

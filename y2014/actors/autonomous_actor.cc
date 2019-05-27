@@ -28,15 +28,14 @@ namespace this_thread = ::std::this_thread;
 using ::aos::monotonic_clock;
 using ::frc971::ProfileParameters;
 
-AutonomousActor::AutonomousActor(
-    ::aos::EventLoop *event_loop,
-    ::frc971::autonomous::AutonomousActionQueueGroup *s)
+AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
     : frc971::autonomous::BaseAutonomousActor(
-          event_loop, s, control_loops::GetDrivetrainConfig()),
+          event_loop, control_loops::GetDrivetrainConfig()),
       auto_mode_fetcher_(event_loop->MakeFetcher<::y2014::sensors::AutoMode>(
           ".y2014.sensors.auto_mode")),
       hot_goal_fetcher_(
-          event_loop->MakeFetcher<::y2014::HotGoal>(".y2014.hot_goal")) {}
+          event_loop->MakeFetcher<::y2014::HotGoal>(".y2014.hot_goal")),
+      shoot_action_factory_(actors::ShootActor::MakeFactory(event_loop)) {}
 
 void AutonomousActor::PositionClawVertically(double intake_power,
                                              double centering_power) {
@@ -105,7 +104,7 @@ const ProfileParameters kFastTurn = {3.0, 10.0};
 
 void AutonomousActor::Shoot() {
   // Shoot.
-  auto shoot_action = actors::MakeShootAction();
+  auto shoot_action = shoot_action_factory_.Make(0.0);
   shoot_action->Start();
   WaitUntilDoneOrCanceled(::std::move(shoot_action));
 }

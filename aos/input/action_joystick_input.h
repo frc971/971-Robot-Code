@@ -33,8 +33,11 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
       const InputConfig &input_config)
       : ::aos::input::JoystickInput(event_loop),
         input_config_(input_config),
-        drivetrain_input_reader_(DrivetrainInputReader::Make(
-            input_type, dt_config)) {}
+        drivetrain_input_reader_(
+            DrivetrainInputReader::Make(input_type, dt_config)),
+        autonomous_action_factory_(
+            ::frc971::autonomous::BaseAutonomousActor::MakeFactory(
+                event_loop)) {}
 
   virtual ~ActionJoystickInput() {}
 
@@ -78,6 +81,8 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
   bool auto_was_running_ = false;
   ::std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
   ::aos::common::actions::ActionQueue action_queue_;
+
+  ::frc971::autonomous::BaseAutonomousActor::Factory autonomous_action_factory_;
 };
 
 }  // namespace input

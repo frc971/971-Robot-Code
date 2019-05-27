@@ -13,7 +13,15 @@ namespace actors {
 class SuperstructureActor
     : public ::aos::common::actions::ActorBase<SuperstructureActionQueueGroup> {
  public:
-  explicit SuperstructureActor(SuperstructureActionQueueGroup *s);
+  typedef ::aos::common::actions::TypedActionFactory<
+      SuperstructureActionQueueGroup>
+      Factory;
+
+  explicit SuperstructureActor(::aos::EventLoop *event_loop);
+
+  static Factory MakeFactory(::aos::EventLoop *event_loop) {
+    return Factory(event_loop, ".y2016.actors.superstructure_action");
+  }
 
   // Internal struct holding superstructure goals sent by autonomous to the
   // loop.
@@ -29,13 +37,6 @@ class SuperstructureActor
   bool SuperstructureProfileDone();
   bool SuperstructureDone();
 };
-
-using SuperstructureAction =
-    ::aos::common::actions::TypedAction<SuperstructureActionQueueGroup>;
-
-// Makes a new SuperstructureActor action.
-::std::unique_ptr<SuperstructureAction> MakeSuperstructureAction(
-    const ::y2016::actors::SuperstructureActionParams &params);
 
 }  // namespace actors
 }  // namespace y2016

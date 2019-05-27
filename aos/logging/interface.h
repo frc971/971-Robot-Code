@@ -60,6 +60,8 @@ class LogImplementation {
   // logger other than this one available while this is called.
   virtual void set_next(LogImplementation *next) { next_ = next; }
 
+  virtual bool fill_type_cache() { return true; }
+
  protected:
   // Actually logs the given message. Implementations should somehow create a
   // LogMessage and then call internal::FillInMessage.

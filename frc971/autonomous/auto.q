@@ -32,5 +32,3 @@ queue_group AutonomousActionQueueGroup {
   queue Goal goal;
   queue aos.common.actions.Status status;
 };
-
-queue_group AutonomousActionQueueGroup autonomous_action;

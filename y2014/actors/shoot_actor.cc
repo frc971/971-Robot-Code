@@ -40,8 +40,9 @@ constexpr double ShootActor::kOffsetRadians;
 constexpr double ShootActor::kClawShootingSeparation;
 constexpr double ShootActor::kClawShootingSeparationGoal;
 
-ShootActor::ShootActor(actors::ShootActionQueueGroup* s)
-    : ::aos::common::actions::ActorBase<actors::ShootActionQueueGroup>(s) {}
+ShootActor::ShootActor(::aos::EventLoop *event_loop)
+    : ::aos::common::actions::ActorBase<actors::ShootActionQueueGroup>(
+          event_loop, ".y2014.actors.shoot_action") {}
 
 double ShootActor::SpeedToAngleOffset(double speed) {
   const constants::Values& values = constants::GetValues();
@@ -167,11 +168,6 @@ bool ShootActor::DoneShot() {
     return true;
   }
   return false;
-}
-
-::std::unique_ptr<ShootAction> MakeShootAction() {
-  return ::std::unique_ptr<ShootAction>(
-      new ShootAction(&::y2014::actors::shoot_action, 0.0));
 }
 
 }  // namespace actors

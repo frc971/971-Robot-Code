@@ -26,8 +26,7 @@ struct ElevatorWristPosition {
 
 class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  public:
-  explicit AutonomousActor(::aos::EventLoop *event_loop,
-                           ::frc971::autonomous::AutonomousActionQueueGroup *s);
+  explicit AutonomousActor(::aos::EventLoop *event_loop);
 
   bool RunAction(
       const ::frc971::autonomous::AutonomousActionParams &params) override;

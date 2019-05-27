@@ -69,16 +69,27 @@ const ButtonLocation kVisionAlign(3, 4);
 const ButtonLocation kExpand(3, 6);
 const ButtonLocation kWinch(3, 5);
 
+// TODO(austin): ActionJoystickInput
 class Reader : public ::aos::input::JoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop)
       : ::aos::input::JoystickInput(event_loop),
+        vision_status_fetcher_(
+            event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
+                ".y2016.vision.vision_status")),
         is_high_gear_(true),
         intake_goal_(0.0),
         shoulder_goal_(M_PI / 2.0),
         wrist_goal_(0.0),
-        dt_config_(control_loops::drivetrain::GetDrivetrainConfig()) {}
+        dt_config_(control_loops::drivetrain::GetDrivetrainConfig()),
+        autonomous_action_factory_(
+            ::frc971::autonomous::BaseAutonomousActor::MakeFactory(event_loop)),
+        vision_align_action_factory_(
+            actors::VisionAlignActor::MakeFactory(event_loop)),
+        superstructure_action_factory_(
+            actors::SuperstructureActor::MakeFactory(event_loop)) {}
 
+  // TODO(austin): Move this to the ActionJoystickInput class.
   void RunIteration(const ::aos::input::driver_station::Data &data) override {
     bool last_auto_running = auto_running_;
     auto_running_ = data.GetControlBit(ControlBit::kAutonomous) &&
@@ -100,12 +111,12 @@ class Reader : public ::aos::input::JoystickInput {
 
     vision_valid_ = false;
 
-    ::y2016::vision::vision_status.FetchLatest();
+    vision_status_fetcher_.Fetch();
 
-    if (::y2016::vision::vision_status.get()) {
-      vision_valid_ = (::y2016::vision::vision_status->left_image_valid &&
-                      ::y2016::vision::vision_status->right_image_valid);
-      last_angle_ = ::y2016::vision::vision_status->horizontal_angle;
+    if (vision_status_fetcher_.get()) {
+      vision_valid_ = (vision_status_fetcher_->left_image_valid &&
+                       vision_status_fetcher_->right_image_valid);
+      last_angle_ = vision_status_fetcher_->horizontal_angle;
     }
 
     if (!auto_running_) {
@@ -128,7 +139,7 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.IsPressed(kVisionAlign)) {
       if (vision_valid_ && !vision_action_running_) {
         actors::VisionAlignActionParams params;
-        action_queue_.EnqueueAction(actors::MakeVisionAlignAction(params));
+        action_queue_.EnqueueAction(vision_align_action_factory_.Make(params));
         vision_action_running_ = true;
         LOG(INFO, "Starting vision align\n");
       } else {
@@ -258,7 +269,8 @@ class Reader : public ::aos::input::JoystickInput {
         params.delay_time = 0.7;
         params.full_angle = shoulder_goal_;
         params.shooter_angle = wrist_goal_;
-        action_queue_.EnqueueAction(actors::MakeSuperstructureAction(params));
+        action_queue_.EnqueueAction(
+            superstructure_action_factory_.Make(params));
       }
       if (data.IsPressed(kWinch)) {
         voltage_climber = 12.0;
@@ -436,14 +448,15 @@ class Reader : public ::aos::input::JoystickInput {
       LOG(WARNING, "no auto mode values\n");
       params.mode = 0;
     }
-    action_queue_.EnqueueAction(
-        ::frc971::autonomous::MakeAutonomousAction(params));
+    action_queue_.EnqueueAction(autonomous_action_factory_.Make(params));
   }
 
   void StopAuto() {
     LOG(INFO, "Stopping auto mode\n");
     action_queue_.CancelAllActions();
   }
+
+  ::aos::Fetcher<::y2016::vision::VisionStatus> vision_status_fetcher_;
 
   bool is_high_gear_;
   // Whatever these are set to are our default goals to send out after zeroing.
@@ -485,6 +498,10 @@ class Reader : public ::aos::input::JoystickInput {
   const ::frc971::control_loops::drivetrain::DrivetrainConfig<double> dt_config_;
 
   bool is_expanding_ = false;
+
+  ::frc971::autonomous::BaseAutonomousActor::Factory autonomous_action_factory_;
+  actors::VisionAlignActor::Factory vision_align_action_factory_;
+  actors::SuperstructureActor::Factory superstructure_action_factory_;
 
   ::aos::util::SimpleLogInterval no_drivetrain_status_ =
       ::aos::util::SimpleLogInterval(::std::chrono::milliseconds(200), WARNING,

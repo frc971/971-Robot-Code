@@ -8,5 +8,3 @@ queue_group ShootActionQueueGroup {
   queue aos.common.actions.Goal goal;
   queue aos.common.actions.Status status;
 };
-
-queue_group ShootActionQueueGroup shoot_action;

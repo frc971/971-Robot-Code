@@ -18,5 +18,3 @@ queue_group VisionAlignActionQueueGroup {
   queue Goal goal;
   queue aos.common.actions.Status status;
 };
-
-queue_group VisionAlignActionQueueGroup vision_align_action;

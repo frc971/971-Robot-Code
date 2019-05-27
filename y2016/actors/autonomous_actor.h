@@ -18,8 +18,7 @@ using ::frc971::ProfileParameters;
 
 class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  public:
-  explicit AutonomousActor(::aos::EventLoop *event_loop,
-                           ::frc971::autonomous::AutonomousActionQueueGroup *s);
+  explicit AutonomousActor(::aos::EventLoop *event_loop);
 
   bool RunAction(
       const ::frc971::autonomous::AutonomousActionParams &params) override;
@@ -85,7 +84,8 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   void TwoBallAuto();
 
-  ::std::unique_ptr<actors::VisionAlignAction> vision_action_;
+  actors::VisionAlignActor::Factory vision_align_actor_factory_;
+  ::std::unique_ptr<::aos::common::actions::Action> vision_action_;
 };
 
 }  // namespace actors

@@ -9,9 +9,9 @@ int main(int /*argc*/, char * /*argv*/ []) {
   ::aos::Init(-1);
 
   ::aos::ShmEventLoop event_loop;
-  ::y2014_bot3::actors::AutonomousActor autonomous(
-      &event_loop, &::frc971::autonomous::autonomous_action);
-  autonomous.Run();
+  ::y2014_bot3::actors::AutonomousActor autonomous(&event_loop);
+
+  event_loop.Run();
 
   ::aos::Cleanup();
   return 0;

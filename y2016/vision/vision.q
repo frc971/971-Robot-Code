@@ -1,5 +1,6 @@
 package y2016.vision;
 
+// Published on ".y2016.vision.vision_status"
 message VisionStatus {
   bool left_image_valid;
   bool right_image_valid;

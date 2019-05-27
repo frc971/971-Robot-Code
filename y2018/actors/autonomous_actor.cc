@@ -44,11 +44,9 @@ const ProfileParameters kFinalFrontFarSwitchDrive = {2.0, 2.0};
 
 }  // namespace
 
-AutonomousActor::AutonomousActor(
-    ::aos::EventLoop *event_loop,
-    ::frc971::autonomous::AutonomousActionQueueGroup *s)
+AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
     : frc971::autonomous::BaseAutonomousActor(
-          event_loop, s, control_loops::drivetrain::GetDrivetrainConfig()) {}
+          event_loop, control_loops::drivetrain::GetDrivetrainConfig()) {}
 
 bool AutonomousActor::RunAction(
     const ::frc971::autonomous::AutonomousActionParams &params) {

@@ -88,7 +88,10 @@ const ButtonLocation kDriverClawOpen(2, 4);
 class Reader : public ::aos::input::JoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop)
-      : ::aos::input::JoystickInput(event_loop) {
+      : ::aos::input::JoystickInput(event_loop),
+        autonomous_action_factory_(
+            ::frc971::autonomous::BaseAutonomousActor::MakeFactory(
+                event_loop)) {
     const uint16_t team = ::aos::network::GetTeamNumber();
 
     drivetrain_input_reader_ = DrivetrainInputReader::Make(
@@ -373,8 +376,7 @@ class Reader : public ::aos::input::JoystickInput {
     }
     // Low bit is switch, high bit is scale.  1 means left, 0 means right.
     params.mode = mode();
-    action_queue_.EnqueueAction(
-        ::frc971::autonomous::MakeAutonomousAction(params));
+    action_queue_.EnqueueAction(autonomous_action_factory_.Make(params));
   }
 
   void StopAuto() {
@@ -400,6 +402,8 @@ class Reader : public ::aos::input::JoystickInput {
   ::std::unique_ptr<ProtoTXUdpSocket<VisionControl>> video_tx_;
 
   ::std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
+
+  ::frc971::autonomous::BaseAutonomousActor::Factory autonomous_action_factory_;
 };
 
 }  // namespace joysticks

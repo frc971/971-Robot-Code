@@ -10,15 +10,15 @@
 #include <thread>
 #include <vector>
 
+#include "aos/events/event-loop.h"
+#include "aos/events/shm-event-loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/logging/queue_logging.h"
 #include "aos/mutex/mutex.h"
 #include "aos/time/time.h"
 #include "aos/vision/events/udp.h"
-
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-
 #include "y2016/constants.h"
 #include "y2016/vision/stereo_geometry.h"
 #include "y2016/vision/vision.q.h"
@@ -302,6 +302,12 @@ class DrivetrainOffsetCalculator {
 };
 
 void Main() {
+  ::aos::ShmEventLoop event_loop;
+
+  ::aos::Sender<::y2016::vision::VisionStatus> vision_status_sender =
+      event_loop.MakeSender<::y2016::vision::VisionStatus>(
+          ".y2016.vision.vision_status");
+
   StereoGeometry stereo(constants::GetValues().vision_name);
   LOG(INFO, "calibration: %s\n",
       stereo.calibration().ShortDebugString().c_str());
@@ -339,7 +345,7 @@ void Main() {
       const bool left_image_valid = left.is_valid();
       const bool right_image_valid = right.is_valid();
 
-      auto new_vision_status = vision_status.MakeMessage();
+      auto new_vision_status = vision_status_sender.MakeMessage();
       new_vision_status->left_image_valid = left_image_valid;
       new_vision_status->right_image_valid = right_image_valid;
       if (left_image_valid && right_image_valid) {

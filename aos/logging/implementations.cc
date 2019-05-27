@@ -101,12 +101,14 @@ void FillInMessageBase(log_level level, LogMessage *message) {
 
 }  // namespace
 
-void FillInMessageStructure(log_level level,
+void FillInMessageStructure(bool add_to_type_cache, log_level level,
                             const ::std::string &message_string, size_t size,
                             const MessageType *type,
                             const ::std::function<size_t(char *)> &serialize,
                             LogMessage *message) {
-  type_cache::AddShm(type->id);
+  if (add_to_type_cache) {
+    type_cache::AddShm(type->id);
+  }
   message->structure.type_id = type->id;
 
   FillInMessageBase(level, message);
@@ -280,8 +282,8 @@ void HandleMessageLogImplementation::LogStruct(
     log_level level, const ::std::string &message_string, size_t size,
     const MessageType *type, const ::std::function<size_t(char *)> &serialize) {
   LogMessage message;
-  internal::FillInMessageStructure(level, message_string, size, type, serialize,
-                                   &message);
+  internal::FillInMessageStructure(fill_type_cache(), level, message_string,
+                                   size, type, serialize, &message);
   HandleMessage(message);
 }
 
@@ -403,8 +405,8 @@ class LinuxQueueLogImplementation : public LogImplementation {
                  size_t size, const MessageType *type,
                  const ::std::function<size_t(char *)> &serialize) override {
     LogMessage *message = GetMessageOrDie();
-    internal::FillInMessageStructure(level, message_string, size, type,
-                                     serialize, message);
+    internal::FillInMessageStructure(fill_type_cache(), level, message_string,
+                                     size, type, serialize, message);
     Write(message);
   }
 

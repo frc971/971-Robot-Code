@@ -15,17 +15,18 @@ namespace actors {
 class VisionAlignActor
     : public ::aos::common::actions::ActorBase<VisionAlignActionQueueGroup> {
  public:
-  explicit VisionAlignActor(VisionAlignActionQueueGroup *s);
+  typedef ::aos::common::actions::TypedActionFactory<
+      VisionAlignActionQueueGroup>
+      Factory;
+
+  explicit VisionAlignActor(::aos::EventLoop *event_loop);
+
+  static Factory MakeFactory(::aos::EventLoop *event_loop) {
+    return Factory(event_loop, ".y2016.actors.vision_align_action");
+  }
 
   bool RunAction(const actors::VisionAlignActionParams &params) override;
 };
-
-typedef ::aos::common::actions::TypedAction<VisionAlignActionQueueGroup>
-    VisionAlignAction;
-
-// Makes a new VisionAlignActor action.
-::std::unique_ptr<VisionAlignAction> MakeVisionAlignAction(
-    const ::y2016::actors::VisionAlignActionParams &params);
 
 }  // namespace actors
 }  // namespace y2016

@@ -28,6 +28,8 @@ cc_binary(
     deps = [
         ":gen_embedded",
         "//aos:init",
+        "//aos/events:event-loop",
+        "//aos/events:shm-event-loop",
         "//aos/logging",
         "//aos/seasocks:seasocks_logger",
         "//aos/time",

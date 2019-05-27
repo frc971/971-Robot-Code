@@ -9,6 +9,7 @@
 #include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "y2014/actors/shoot_actor.h"
 #include "y2014/queues/auto_mode.q.h"
 #include "y2014/queues/hot_goal.q.h"
 
@@ -17,8 +18,7 @@ namespace actors {
 
 class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  public:
-  explicit AutonomousActor(::aos::EventLoop *event_loop,
-                           ::frc971::autonomous::AutonomousActionQueueGroup *s);
+  explicit AutonomousActor(::aos::EventLoop *event_loop);
 
   bool RunAction(
       const ::frc971::autonomous::AutonomousActionParams &params) override;
@@ -40,6 +40,8 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   ::aos::Fetcher<::y2014::sensors::AutoMode> auto_mode_fetcher_;
   ::aos::Fetcher<::y2014::HotGoal> hot_goal_fetcher_;
+
+  actors::ShootActor::Factory shoot_action_factory_;
 };
 
 }  // namespace actors

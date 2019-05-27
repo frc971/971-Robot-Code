@@ -12,10 +12,9 @@ namespace actors {
 
 namespace chrono = ::std::chrono;
 
-SuperstructureActor::SuperstructureActor(
-    actors::SuperstructureActionQueueGroup *s)
+SuperstructureActor::SuperstructureActor(::aos::EventLoop *event_loop)
     : aos::common::actions::ActorBase<actors::SuperstructureActionQueueGroup>(
-          s) {}
+          event_loop, ".y2016.actors.superstructure_action") {}
 
 bool SuperstructureActor::RunAction(
     const actors::SuperstructureActionParams &params) {
@@ -103,12 +102,6 @@ void SuperstructureActor::WaitForSuperstructure() {
     if (ShouldCancel()) return;
     if (SuperstructureDone()) return;
   }
-}
-
-::std::unique_ptr<SuperstructureAction> MakeSuperstructureAction(
-    const ::y2016::actors::SuperstructureActionParams& params) {
-  return ::std::unique_ptr<SuperstructureAction>(new SuperstructureAction(
-      &::y2016::actors::superstructure_action, params));
 }
 
 }  // namespace actors

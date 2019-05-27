@@ -1,3 +1,6 @@
+#ifndef Y2016_DASHBOARD_DASHBOARD_H_
+#define Y2016_DASHBOARD_DASHBOARD_H_
+
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -11,10 +14,10 @@
 #include "seasocks/StringUtil.h"
 #include "seasocks/WebSocket.h"
 
-#include "aos/init.h"
-#include "aos/time/time.h"
-#include "aos/util/phased_loop.h"
+#include "aos/events/event-loop.h"
 #include "aos/mutex/mutex.h"
+#include "aos/time/time.h"
+#include "y2016/vision/vision.q.h"
 
 namespace y2016 {
 namespace dashboard {
@@ -31,7 +34,7 @@ namespace dashboard {
 
 class DataCollector {
  public:
-  DataCollector();
+  DataCollector(::aos::EventLoop *event_loop);
   void RunIteration();
 
   // Store a datapoint. In this case, we are reading data points to determine
@@ -60,6 +63,8 @@ class DataCollector {
     ::std::vector<ItemDatapoint> datapoints;
   };
 
+  ::aos::Fetcher<::y2016::vision::VisionStatus> vision_status_fetcher_;
+
   // Storage vector that is written and overwritten with data in a FIFO fashion.
   ::std::vector<SampleItem> sample_items_;
 
@@ -74,7 +79,7 @@ class DataCollector {
 
 class SocketHandler : public seasocks::WebSocket::Handler {
  public:
-  SocketHandler();
+  SocketHandler(::aos::EventLoop *event_loop);
   void onConnect(seasocks::WebSocket* connection) override;
   void onData(seasocks::WebSocket* connection, const char* data) override;
   void onDisconnect(seasocks::WebSocket* connection) override;
@@ -94,3 +99,5 @@ class SeasocksLogger : public seasocks::PrintfLogger {
 
 }  // namespace dashboard
 }  // namespace y2016
+
+#endif  // Y2016_DASHBOARD_DASHBOARD_H_

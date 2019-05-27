@@ -164,7 +164,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
         goal_angle_(0.0),
         separation_angle_(kGrabSeparation),
         velocity_compensation_(0.0),
-        intake_power_(0.0) {}
+        intake_power_(0.0),
+        shoot_action_factory_(actors::ShootActor::MakeFactory(event_loop)) {}
 
   void SetGoal(ClawGoal goal) {
     goal_angle_ = goal.angle;
@@ -315,7 +316,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     if (data.PosEdge(kFire)) {
-      EnqueueAction(actors::MakeShootAction());
+      EnqueueAction(shoot_action_factory_.Make(0.0));
     } else if (data.NegEdge(kFire)) {
       CancelCurrentAction();
     }
@@ -416,6 +417,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
   double velocity_compensation_;
   double intake_power_;
   bool moving_for_shot_ = false;
+
+  actors::ShootActor::Factory shoot_action_factory_;
 
   ::aos::util::SimpleLogInterval no_drivetrain_status_ =
       ::aos::util::SimpleLogInterval(::std::chrono::milliseconds(200), WARNING,

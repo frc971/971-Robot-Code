@@ -45,11 +45,11 @@ const ProfileParameters kTwoBallBallPickupAccel = {2.0, 2.5};
 
 }  // namespace
 
-AutonomousActor::AutonomousActor(
-    ::aos::EventLoop *event_loop,
-    ::frc971::autonomous::AutonomousActionQueueGroup *s)
+AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
     : frc971::autonomous::BaseAutonomousActor(
-          event_loop, s, control_loops::drivetrain::GetDrivetrainConfig()) {}
+          event_loop, control_loops::drivetrain::GetDrivetrainConfig()),
+      vision_align_actor_factory_(
+          actors::VisionAlignActor::MakeFactory(event_loop)) {}
 
 constexpr double kDoNotTurnCare = 2.0;
 
@@ -194,7 +194,7 @@ void AutonomousActor::WaitForShooterSpeed() {
 
 void AutonomousActor::AlignWithVisionGoal() {
   actors::VisionAlignActionParams params;
-  vision_action_ = actors::MakeVisionAlignAction(params);
+  vision_action_ = vision_align_actor_factory_.Make(params);
   vision_action_->Start();
 }
 

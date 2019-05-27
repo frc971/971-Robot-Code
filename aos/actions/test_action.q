@@ -30,6 +30,3 @@ queue_group TestAction2QueueGroup {
   queue Goal goal;
   queue aos.common.actions.Status status;
 };
-
-queue_group TestActionQueueGroup test_action;
-queue_group TestAction2QueueGroup test_action2;
