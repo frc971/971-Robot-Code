@@ -403,13 +403,5 @@ int main(int argc, char *argv[]) {
   ::y2019::control_loops::drivetrain::LocalizerReplayer replay;
   replay.ProcessFile(FLAGS_logfile.c_str());
 
-  // TODO(james): No clue if the Clear() functions are actually accomplishing
-  // things. Mostly just paranoia left over from earlier on.
-  ::frc971::imu_values.Clear();
-  ::frc971::control_loops::drivetrain_queue.goal.Clear();
-  ::frc971::control_loops::drivetrain_queue.status.Clear();
-  ::frc971::control_loops::drivetrain_queue.position.Clear();
-  ::frc971::control_loops::drivetrain_queue.output.Clear();
-
   ::aos::Cleanup();
 }

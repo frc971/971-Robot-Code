@@ -123,6 +123,8 @@ ADIS16448::ADIS16448(::aos::EventLoop *event_loop, frc::SPI::Port port,
     : event_loop_(event_loop),
       joystick_state_fetcher_(event_loop_->MakeFetcher<::aos::JoystickState>(
           ".aos.joystick_state")),
+      imu_values_sender_(
+          event_loop_->MakeSender<::frc971::IMUValues>(".frc971.imu_values")),
       spi_(new frc::SPI(port)),
       dio1_(dio1) {
   // 1MHz is the maximum supported for burst reads, but we
@@ -241,7 +243,7 @@ void ADIS16448::operator()() {
       }
     }
 
-    auto message = imu_values.MakeMessage();
+    auto message = imu_values_sender_.MakeMessage();
     message->fpga_timestamp = ::aos::time::DurationInSeconds(
         dio1_->ReadRisingTimestamp().time_since_epoch());
     message->monotonic_timestamp_ns =

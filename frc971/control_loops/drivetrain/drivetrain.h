@@ -9,12 +9,13 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/gear.h"
-#include "frc971/control_loops/drivetrain/localizer.h"
-#include "frc971/control_loops/drivetrain/polydrivetrain.h"
-#include "frc971/control_loops/drivetrain/ssdrivetrain.h"
 #include "frc971/control_loops/drivetrain/line_follow_drivetrain.h"
+#include "frc971/control_loops/drivetrain/localizer.h"
 #include "frc971/control_loops/drivetrain/localizer.q.h"
+#include "frc971/control_loops/drivetrain/polydrivetrain.h"
 #include "frc971/control_loops/drivetrain/splinedrivetrain.h"
+#include "frc971/control_loops/drivetrain/ssdrivetrain.h"
+#include "frc971/wpilib/imu.q.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -47,6 +48,7 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
   const DrivetrainConfig<double> dt_config_;
 
   ::aos::Fetcher<LocalizerControl> localizer_control_fetcher_;
+  ::aos::Fetcher<::frc971::IMUValues> imu_values_fetcher_;
   LocalizerInterface *localizer_;
 
   StateFeedbackLoop<7, 2, 4> kf_;

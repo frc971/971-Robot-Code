@@ -21,7 +21,6 @@
 #include "frc971/wpilib/imu.q.h"
 
 using frc971::sensors::gyro_reading;
-using frc971::imu_values;
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
 
@@ -38,6 +37,8 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
       dt_config_(dt_config),
       localizer_control_fetcher_(event_loop->MakeFetcher<LocalizerControl>(
           ".frc971.control_loops.drivetrain.localizer_control")),
+      imu_values_fetcher_(
+          event_loop->MakeFetcher<::frc971::IMUValues>(".frc971.imu_values")),
       localizer_(localizer),
       kf_(dt_config_.make_kf_drivetrain_loop()),
       dt_openloop_(dt_config_, &kf_),
@@ -134,28 +135,26 @@ void DrivetrainLoop::RunIteration(
     status->gear_logging.controller_index = kf_.index();
   }
 
-  const bool is_latest_imu_values = ::frc971::imu_values.FetchLatest();
+  const bool is_latest_imu_values = imu_values_fetcher_.Fetch();
   if (is_latest_imu_values) {
-    const double rate = -::frc971::imu_values->gyro_y;
-    const double accel_squared = ::frc971::imu_values->accelerometer_x *
-                                     ::frc971::imu_values->accelerometer_x +
-                                 ::frc971::imu_values->accelerometer_y *
-                                     ::frc971::imu_values->accelerometer_y +
-                                 ::frc971::imu_values->accelerometer_z *
-                                     ::frc971::imu_values->accelerometer_z;
-    const double angle = ::std::atan2(::frc971::imu_values->accelerometer_x,
-                                      ::frc971::imu_values->accelerometer_z) +
+    const double rate = -imu_values_fetcher_->gyro_y;
+    const double accel_squared =
+        ::std::pow(imu_values_fetcher_->accelerometer_x, 2.0) +
+        ::std::pow(imu_values_fetcher_->accelerometer_y, 2.0) +
+        ::std::pow(imu_values_fetcher_->accelerometer_z, 2.0);
+    const double angle = ::std::atan2(imu_values_fetcher_->accelerometer_x,
+                                      imu_values_fetcher_->accelerometer_z) +
                          0.008;
 
     switch (dt_config_.imu_type) {
       case IMUType::IMU_X:
-        last_accel_ = -::frc971::imu_values->accelerometer_x;
+        last_accel_ = -imu_values_fetcher_->accelerometer_x;
         break;
       case IMUType::IMU_FLIPPED_X:
-        last_accel_ = ::frc971::imu_values->accelerometer_x;
+        last_accel_ = imu_values_fetcher_->accelerometer_x;
         break;
       case IMUType::IMU_Y:
-        last_accel_ = -::frc971::imu_values->accelerometer_y;
+        last_accel_ = -imu_values_fetcher_->accelerometer_y;
         break;
     }
 
@@ -183,29 +182,29 @@ void DrivetrainLoop::RunIteration(
   switch (dt_config_.gyro_type) {
     case GyroType::IMU_X_GYRO:
       if (is_latest_imu_values) {
-        LOG_STRUCT(DEBUG, "using", *imu_values.get());
-        last_gyro_rate_ = imu_values->gyro_x;
+        LOG_STRUCT(DEBUG, "using", *imu_values_fetcher_.get());
+        last_gyro_rate_ = imu_values_fetcher_->gyro_x;
         last_gyro_time_ = monotonic_now;
       }
       break;
     case GyroType::IMU_Y_GYRO:
       if (is_latest_imu_values) {
-        LOG_STRUCT(DEBUG, "using", *imu_values.get());
-        last_gyro_rate_ = imu_values->gyro_y;
+        LOG_STRUCT(DEBUG, "using", *imu_values_fetcher_.get());
+        last_gyro_rate_ = imu_values_fetcher_->gyro_y;
         last_gyro_time_ = monotonic_now;
       }
       break;
     case GyroType::IMU_Z_GYRO:
       if (is_latest_imu_values) {
-        LOG_STRUCT(DEBUG, "using", *imu_values.get());
-        last_gyro_rate_ = imu_values->gyro_z;
+        LOG_STRUCT(DEBUG, "using", *imu_values_fetcher_.get());
+        last_gyro_rate_ = imu_values_fetcher_->gyro_z;
         last_gyro_time_ = monotonic_now;
       }
       break;
     case GyroType::FLIPPED_IMU_Z_GYRO:
       if (is_latest_imu_values) {
-        LOG_STRUCT(DEBUG, "using", *imu_values.get());
-        last_gyro_rate_ = -imu_values->gyro_z;
+        LOG_STRUCT(DEBUG, "using", *imu_values_fetcher_.get());
+        last_gyro_rate_ = -imu_values_fetcher_->gyro_z;
         last_gyro_time_ = monotonic_now;
       }
       break;

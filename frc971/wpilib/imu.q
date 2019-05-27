@@ -1,6 +1,7 @@
 package frc971;
 
 // Values returned from an IMU.
+// Published on ".frc971.imu_values"
 message IMUValues {
   // Gyro readings in radians/second.
   // Positive is clockwise looking at the connector.
@@ -37,5 +38,3 @@ message IMUValues {
   // CLOCK_MONOTONIC time in nanoseconds when the values were captured.
   int64_t monotonic_timestamp_ns;
 };
-
-queue IMUValues imu_values;
