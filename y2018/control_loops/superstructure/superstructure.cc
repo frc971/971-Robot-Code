@@ -30,6 +30,9 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                                                      name),
       status_light_sender_(
           event_loop->MakeSender<::y2018::StatusLight>(".y2018.status_light")),
+      vision_status_fetcher_(
+          event_loop->MakeFetcher<::y2018::vision::VisionStatus>(
+              ".y2018.vision.vision_status")),
       intake_left_(constants::GetValues().left_intake.zeroing),
       intake_right_(constants::GetValues().right_intake.zeroing) {}
 
@@ -255,11 +258,13 @@ void Superstructure::RunIteration(
 
   ::frc971::control_loops::drivetrain_queue.output.FetchLatest();
 
-  ::y2018::vision::vision_status.FetchLatest();
+  vision_status_fetcher_.Fetch();
+  monotonic_clock::time_point monotonic_now = event_loop()->monotonic_now();
   if (status->estopped) {
     SendColors(0.5, 0.0, 0.0);
-  } else if (!y2018::vision::vision_status.get() ||
-             y2018::vision::vision_status.Age() > chrono::seconds(1)) {
+  } else if (!vision_status_fetcher_.get() ||
+             monotonic_now >
+                 vision_status_fetcher_->sent_time + chrono::seconds(1)) {
     SendColors(0.5, 0.5, 0.0);
   } else if (rotation_state_ == RotationState::ROTATING_LEFT ||
              rotation_state_ == RotationState::ROTATING_RIGHT) {

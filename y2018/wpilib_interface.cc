@@ -395,6 +395,9 @@ class SolenoidWriter {
                 ".y2018.control_loops.superstructure_queue.output")),
         status_light_fetcher_(event_loop->MakeFetcher<::y2018::StatusLight>(
             ".y2018.status_light")),
+        vision_status_fetcher_(
+            event_loop->MakeFetcher<::y2018::vision::VisionStatus>(
+                ".y2018.vision.vision_status")),
         pcm_(pcm) {}
 
   // left drive
@@ -473,23 +476,25 @@ class SolenoidWriter {
         LOG_STRUCT(DEBUG, "pneumatics info", to_log);
       }
 
+      monotonic_clock::time_point monotonic_now = event_loop_->monotonic_now();
       status_light_fetcher_.Fetch();
       // If we don't have a light request (or it's an old one), we are borked.
       // Flash the red light slowly.
       if (!status_light_fetcher_.get() ||
-          event_loop_->monotonic_now() >
+          monotonic_now >
               status_light_fetcher_->sent_time + chrono::milliseconds(100)) {
         StatusLight color;
         color.red = 0.0;
         color.green = 0.0;
         color.blue = 0.0;
 
-        ::y2018::vision::vision_status.FetchLatest();
+        vision_status_fetcher_.Fetch();
         ++light_flash_;
         if (light_flash_ > 10) {
           color.red = 0.5;
-        } else if (!y2018::vision::vision_status.get() ||
-                   y2018::vision::vision_status.Age() > chrono::seconds(1)) {
+        } else if (!vision_status_fetcher_.get() ||
+                   monotonic_now >
+                       vision_status_fetcher_->sent_time + chrono::seconds(1)) {
           color.red = 0.5;
           color.green = 0.5;
         }
@@ -543,6 +548,7 @@ class SolenoidWriter {
   ::aos::Fetcher<::y2018::control_loops::SuperstructureQueue::Output>
       superstructure_fetcher_;
   ::aos::Fetcher<::y2018::StatusLight> status_light_fetcher_;
+  ::aos::Fetcher<::y2018::vision::VisionStatus> vision_status_fetcher_;
 
   ::frc971::wpilib::BufferedPcm *pcm_;
 

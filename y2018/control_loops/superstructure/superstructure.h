@@ -10,6 +10,7 @@
 #include "y2018/control_loops/superstructure/intake/intake.h"
 #include "y2018/control_loops/superstructure/superstructure.q.h"
 #include "y2018/status_light.q.h"
+#include "y2018/vision/vision.q.h"
 
 namespace y2018 {
 namespace control_loops {
@@ -38,6 +39,7 @@ class Superstructure
   void SendColors(float red, float green, float blue);
 
   ::aos::Sender<::y2018::StatusLight> status_light_sender_;
+  ::aos::Fetcher<::y2018::vision::VisionStatus> vision_status_fetcher_;
 
   intake::IntakeSide intake_left_;
   intake::IntakeSide intake_right_;
