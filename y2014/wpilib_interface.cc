@@ -119,7 +119,9 @@ static const double kMaximumEncoderPulsesPerSecond =
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
   SensorReader(::aos::EventLoop *event_loop)
-      : ::frc971::wpilib::SensorReader(event_loop) {
+      : ::frc971::wpilib::SensorReader(event_loop),
+        auto_mode_sender_(event_loop->MakeSender<::y2014::sensors::AutoMode>(
+            ".y2014.sensors.auto_mode")) {
     // Set it to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateMediumEncoderFilterHz(kMaximumEncoderPulsesPerSecond);
@@ -265,9 +267,11 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       drivetrain_message.Send();
     }
 
-    ::y2014::sensors::auto_mode.MakeWithBuilder()
-        .voltage(auto_selector_analog_->GetVoltage())
-        .Send();
+    {
+      auto auto_mode_message = auto_mode_sender_.MakeMessage();
+      auto_mode_message->voltage = auto_selector_analog_->GetVoltage();
+      auto_mode_message.Send();
+    }
   }
 
   void RunDmaIteration() {
@@ -389,6 +393,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     output->posedge_value =
         shooter_translate(counter->last_negative_encoder_value());
   }
+
+  ::aos::Sender<::y2014::sensors::AutoMode> auto_mode_sender_;
 
   ::std::unique_ptr<AnalogInput> auto_selector_analog_;
 

@@ -96,24 +96,25 @@ class WatcherThreadState {
                      std::function<void(const aos::Message *message)> watcher)
       : thread_state_(std::move(thread_state)),
         queue_(queue),
-        watcher_(std::move(watcher)) {}
+        index_(0),
+        watcher_(std::move(watcher)) {
+    static constexpr Options<RawQueue> kOptions =
+        RawQueue::kFromEnd | RawQueue::kNonBlock;
+    const void *msg = queue_->ReadMessageIndex(kOptions, &index_);
+    if (msg) {
+      queue_->FreeMessage(msg);
+    }
+  }
 
   void Run() {
     thread_state_->WaitForStart();
 
     if (!thread_state_->is_running()) return;
 
-    int32_t index = 0;
-
-    static constexpr Options<RawQueue> kOptions =
-        RawQueue::kFromEnd | RawQueue::kNonBlock;
-    const void *msg = queue_->ReadMessageIndex(kOptions, &index);
-
+    const void *msg = nullptr;
     while (true) {
-      if (msg == nullptr) {
-        msg = queue_->ReadMessageIndex(RawQueue::kBlock, &index);
-        assert(msg != nullptr);
-      }
+      msg = queue_->ReadMessageIndex(RawQueue::kBlock, &index_);
+      assert(msg != nullptr);
 
       {
         MutexLocker locker(&thread_state_->mutex_);
@@ -124,7 +125,6 @@ class WatcherThreadState {
         if (!thread_state_->is_running()) break;
       }
       queue_->FreeMessage(msg);
-      msg = nullptr;
     }
 
     queue_->FreeMessage(msg);
@@ -133,6 +133,8 @@ class WatcherThreadState {
  private:
   std::shared_ptr<ShmEventLoop::ThreadState> thread_state_;
   RawQueue *queue_;
+  int32_t index_;
+
   std::function<void(const Message *message)> watcher_;
 };
 

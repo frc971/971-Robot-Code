@@ -9,6 +9,7 @@
 #include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "y2014/queues/auto_mode.q.h"
 #include "y2014/queues/hot_goal.q.h"
 
 namespace y2014 {
@@ -37,6 +38,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   bool WaitUntilClawDone();
 
+  ::aos::Fetcher<::y2014::sensors::AutoMode> auto_mode_fetcher_;
   ::aos::Fetcher<::y2014::HotGoal> hot_goal_fetcher_;
 };
 
