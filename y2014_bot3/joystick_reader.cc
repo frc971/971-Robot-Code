@@ -19,7 +19,6 @@
 #include "y2014_bot3/control_loops/rollers/rollers.q.h"
 
 using ::frc971::control_loops::drivetrain_queue;
-using ::y2014_bot3::control_loops::rollers_queue;
 using ::frc971::sensors::gyro_reading;
 
 using ::aos::input::driver_station::ButtonLocation;
@@ -50,6 +49,10 @@ class Reader : public ::aos::input::JoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop)
       : ::aos::input::JoystickInput(event_loop),
+        rollers_goal_sender_(
+            event_loop
+                ->MakeSender<::y2014_bot3::control_loops::RollersQueue::Goal>(
+                    ".y2014_bot3.control_loops.rollers_queue.goal")),
         autonomous_action_factory_(
             ::frc971::autonomous::BaseAutonomousActor::MakeFactory(
                 event_loop)) {
@@ -89,7 +92,7 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     // Rollers.
-    auto rollers_goal = control_loops::rollers_queue.goal.MakeMessage();
+    auto rollers_goal = rollers_goal_sender_.MakeMessage();
     rollers_goal->Zero();
     if (data.IsPressed(kFrontRollersIn)) {
       rollers_goal->intake = 1;
@@ -129,6 +132,8 @@ class Reader : public ::aos::input::JoystickInput {
   ::aos::common::actions::ActionQueue action_queue_;
 
   ::std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
+  ::aos::Sender<::y2014_bot3::control_loops::RollersQueue::Goal>
+      rollers_goal_sender_;
 
   ::frc971::autonomous::BaseAutonomousActor::Factory autonomous_action_factory_;
 };

@@ -78,7 +78,11 @@ double drivetrain_velocity_translate(double in) {
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
   SensorReader(::aos::EventLoop *event_loop)
-      : ::frc971::wpilib::SensorReader(event_loop) {}
+      : ::frc971::wpilib::SensorReader(event_loop),
+        rollers_position_sender_(
+            event_loop->MakeSender<
+                ::y2014_bot3::control_loops::RollersQueue::Position>(
+                ".y2014_bot3.control_loops.rollers_queue.position")) {}
 
   void RunIteration() {
     // Drivetrain
@@ -98,10 +102,14 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
     // Rollers
     {
-      auto rollers_message = rollers_queue.position.MakeMessage();
+      auto rollers_message = rollers_position_sender_.MakeMessage();
       rollers_message.Send();
     }
   }
+
+ private:
+  ::aos::Sender<::y2014_bot3::control_loops::RollersQueue::Position>
+      rollers_position_sender_;
 };
 
 // Writes out our pneumatic outputs.
