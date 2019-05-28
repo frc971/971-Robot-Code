@@ -22,7 +22,7 @@ namespace chrono = ::std::chrono;
 class TestLogImplementation : public SimpleLogImplementation {
   __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
   void DoLog(log_level level, const char *format, va_list ap) override {
-    internal::FillInMessage(level, format, ap, &message_);
+    internal::FillInMessage(level, monotonic_now(), format, ap, &message_);
 
     if (level == FATAL) {
       internal::PrintMessage(stderr, message_);

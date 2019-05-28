@@ -57,7 +57,6 @@ cc_library(
 
 cc_test(
     name = "simulated_event_loop_test",
-    testonly = True,
     srcs = ["simulated-event-loop_test.cc"],
     deps = [
         ":event-loop_param_test",
@@ -68,6 +67,7 @@ cc_test(
 
 cc_library(
     name = "simulated_event_loop",
+    testonly = True,
     srcs = ["simulated-event-loop.cc"],
     hdrs = ["simulated-event-loop.h"],
     visibility = ["//visibility:public"],
@@ -75,5 +75,6 @@ cc_library(
         ":event-loop",
         "//aos:queues",
         "//aos/logging",
+        "//aos/testing:test_logging",
     ],
 )

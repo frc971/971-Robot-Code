@@ -19,8 +19,9 @@
 #include "aos/logging/sizes.h"
 #include "aos/macros.h"
 #include "aos/mutex/mutex.h"
-#include "aos/type_traits/type_traits.h"
 #include "aos/once.h"
+#include "aos/time/time.h"
+#include "aos/type_traits/type_traits.h"
 
 namespace aos {
 
@@ -102,6 +103,11 @@ static inline log_level str_log(const char *str) {
 // A LogImplementation where LogStruct and LogMatrix just create a string with
 // PrintMessage and then forward on to DoLog.
 class SimpleLogImplementation : public LogImplementation {
+ protected:
+  virtual ::aos::monotonic_clock::time_point monotonic_now() const {
+    return ::aos::monotonic_clock::now();
+  }
+
  private:
   void LogStruct(log_level level, const ::std::string &message, size_t size,
                  const MessageType *type,
@@ -114,6 +120,11 @@ class SimpleLogImplementation : public LogImplementation {
 // Implements all of the DoLog* methods in terms of a (pure virtual in this
 // class) HandleMessage method that takes a pointer to the message.
 class HandleMessageLogImplementation : public LogImplementation {
+ protected:
+  virtual ::aos::monotonic_clock::time_point monotonic_now() const {
+    return ::aos::monotonic_clock::now();
+  }
+
  private:
   __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
   void DoLog(log_level level, const char *format, va_list ap) override;
@@ -177,7 +188,8 @@ namespace internal {
 
 // Fills in all the parts of message according to the given inputs (with type
 // kStruct).
-void FillInMessageStructure(log_level level,
+void FillInMessageStructure(bool add_to_type_cache, log_level level,
+                            ::aos::monotonic_clock::time_point monotonic_now,
                             const ::std::string &message_string, size_t size,
                             const MessageType *type,
                             const ::std::function<size_t(char *)> &serialize,
@@ -186,22 +198,25 @@ void FillInMessageStructure(log_level level,
 // Fills in all the parts of the message according to the given inputs (with
 // type kMatrix).
 void FillInMessageMatrix(log_level level,
+                         ::aos::monotonic_clock::time_point monotonic_now,
                          const ::std::string &message_string, uint32_t type_id,
                          int rows, int cols, const void *data,
                          LogMessage *message);
 
 // Fills in *message according to the given inputs (with type kString).
 // Used for implementing LogImplementation::DoLog.
-void FillInMessage(log_level level, const char *format, va_list ap,
-                   LogMessage *message)
-    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 2, 0)));
+void FillInMessage(log_level level,
+                   ::aos::monotonic_clock::time_point monotonic_now,
+                   const char *format, va_list ap, LogMessage *message)
+    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)));
 
-__attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 4)))
-static inline void FillInMessageVarargs(log_level level, LogMessage *message,
-                                        const char *format, ...) {
+__attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 4, 5))) static inline void
+FillInMessageVarargs(log_level level,
+                     ::aos::monotonic_clock::time_point monotonic_now,
+                     LogMessage *message, const char *format, ...) {
   va_list ap;
   va_start(ap, format);
-  FillInMessage(level, format, ap, message);
+  FillInMessage(level, monotonic_now, format, ap, message);
   va_end(ap);
 }
 

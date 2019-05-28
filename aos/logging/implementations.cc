@@ -35,7 +35,7 @@ class RootLogImplementation : public SimpleLogImplementation {
   __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
   void DoLog(log_level level, const char *format, va_list ap) override {
     LogMessage message;
-    internal::FillInMessage(level, format, ap, &message);
+    internal::FillInMessage(level, monotonic_now(), format, ap, &message);
     internal::PrintMessage(stderr, message);
     if (!only_implementation_) {
       fputs("root logger got used, see stderr for message\n", stdout);
@@ -79,7 +79,9 @@ void *DoInit() {
 namespace internal {
 namespace {
 
-void FillInMessageBase(log_level level, LogMessage *message) {
+void FillInMessageBase(log_level level,
+                       monotonic_clock::time_point monotonic_now,
+                       LogMessage *message) {
   Context *context = Context::Get();
 
   message->level = level;
@@ -87,7 +89,6 @@ void FillInMessageBase(log_level level, LogMessage *message) {
   memcpy(message->name, context->name, context->name_size);
   message->name_length = context->name_size;
 
-  monotonic_clock::time_point monotonic_now = monotonic_clock::now();
   message->seconds =
       chrono::duration_cast<chrono::seconds>(monotonic_now.time_since_epoch())
           .count();
@@ -102,6 +103,7 @@ void FillInMessageBase(log_level level, LogMessage *message) {
 }  // namespace
 
 void FillInMessageStructure(bool add_to_type_cache, log_level level,
+                            monotonic_clock::time_point monotonic_now,
                             const ::std::string &message_string, size_t size,
                             const MessageType *type,
                             const ::std::function<size_t(char *)> &serialize,
@@ -111,7 +113,7 @@ void FillInMessageStructure(bool add_to_type_cache, log_level level,
   }
   message->structure.type_id = type->id;
 
-  FillInMessageBase(level, message);
+  FillInMessageBase(level, monotonic_now, message);
 
   if (message_string.size() + size > sizeof(message->structure.serialized)) {
     LOG(FATAL,
@@ -129,6 +131,7 @@ void FillInMessageStructure(bool add_to_type_cache, log_level level,
 }
 
 void FillInMessageMatrix(log_level level,
+                         monotonic_clock::time_point monotonic_now,
                          const ::std::string &message_string, uint32_t type_id,
                          int rows, int cols, const void *data,
                          LogMessage *message) {
@@ -137,7 +140,7 @@ void FillInMessageMatrix(log_level level,
 
   const auto element_size = MessageType::Sizeof(type_id);
 
-  FillInMessageBase(level, message);
+  FillInMessageBase(level, monotonic_now, message);
 
   message->message_length = rows * cols * element_size;
   if (message_string.size() + message->message_length >
@@ -157,9 +160,9 @@ void FillInMessageMatrix(log_level level,
   message->type = LogMessage::Type::kMatrix;
 }
 
-void FillInMessage(log_level level, const char *format, va_list ap,
-                   LogMessage *message) {
-  FillInMessageBase(level, message);
+void FillInMessage(log_level level, monotonic_clock::time_point monotonic_now,
+                   const char *format, va_list ap, LogMessage *message) {
+  FillInMessageBase(level, monotonic_now, message);
 
   message->message_length =
       ExecuteFormat(message->message, sizeof(message->message), format, ap);
@@ -274,7 +277,7 @@ void SimpleLogImplementation::LogMatrix(
 void HandleMessageLogImplementation::DoLog(log_level level, const char *format,
                                            va_list ap) {
   LogMessage message;
-  internal::FillInMessage(level, format, ap, &message);
+  internal::FillInMessage(level, monotonic_now(), format, ap, &message);
   HandleMessage(message);
 }
 
@@ -282,8 +285,9 @@ void HandleMessageLogImplementation::LogStruct(
     log_level level, const ::std::string &message_string, size_t size,
     const MessageType *type, const ::std::function<size_t(char *)> &serialize) {
   LogMessage message;
-  internal::FillInMessageStructure(fill_type_cache(), level, message_string,
-                                   size, type, serialize, &message);
+  internal::FillInMessageStructure(fill_type_cache(), level, monotonic_now(),
+                                   message_string, size, type, serialize,
+                                   &message);
   HandleMessage(message);
 }
 
@@ -291,8 +295,8 @@ void HandleMessageLogImplementation::LogMatrix(
     log_level level, const ::std::string &message_string, uint32_t type_id,
     int rows, int cols, const void *data) {
   LogMessage message;
-  internal::FillInMessageMatrix(level, message_string, type_id, rows, cols,
-                                data, &message);
+  internal::FillInMessageMatrix(level, monotonic_now(), message_string, type_id,
+                                rows, cols, data, &message);
   HandleMessage(message);
 }
 
@@ -367,7 +371,7 @@ void Write(LogMessage *msg) {
         chrono::duration_cast<chrono::nanoseconds>(
             dropped_start.time_since_epoch() - dropped_start_sec);
     internal::FillInMessageVarargs(
-        ERROR, dropped_message,
+        ERROR, message_time, dropped_message,
         "%d logs starting at %" PRId32 ".%" PRId32 " dropped\n",
         dropped_messages, static_cast<int32_t>(dropped_start_sec.count()),
         static_cast<int32_t>(dropped_start_nsec.count()));
@@ -394,10 +398,14 @@ void Write(LogMessage *msg) {
 }
 
 class LinuxQueueLogImplementation : public LogImplementation {
+  virtual ::aos::monotonic_clock::time_point monotonic_now() const {
+    return ::aos::monotonic_clock::now();
+  }
+
   __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
   void DoLog(log_level level, const char *format, va_list ap) override {
     LogMessage *message = GetMessageOrDie();
-    internal::FillInMessage(level, format, ap, message);
+    internal::FillInMessage(level, monotonic_now(), format, ap, message);
     Write(message);
   }
 
@@ -405,8 +413,9 @@ class LinuxQueueLogImplementation : public LogImplementation {
                  size_t size, const MessageType *type,
                  const ::std::function<size_t(char *)> &serialize) override {
     LogMessage *message = GetMessageOrDie();
-    internal::FillInMessageStructure(fill_type_cache(), level, message_string,
-                                     size, type, serialize, message);
+    internal::FillInMessageStructure(fill_type_cache(), level, monotonic_now(),
+                                     message_string, size, type, serialize,
+                                     message);
     Write(message);
   }
 
@@ -414,8 +423,8 @@ class LinuxQueueLogImplementation : public LogImplementation {
                  uint32_t type_id, int rows, int cols,
                  const void *data) override {
     LogMessage *message = GetMessageOrDie();
-    internal::FillInMessageMatrix(level, message_string, type_id, rows, cols,
-                                  data, message);
+    internal::FillInMessageMatrix(level, monotonic_now(), message_string,
+                                  type_id, rows, cols, data, message);
     Write(message);
   }
 };

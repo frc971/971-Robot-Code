@@ -5,6 +5,7 @@
 
 #include "aos/logging/logging.h"
 #include "aos/queue.h"
+#include "aos/testing/test_logging.h"
 
 namespace aos {
 namespace {
@@ -205,6 +206,7 @@ void EventScheduler::Deschedule(EventScheduler::Token token) {
 void EventScheduler::RunFor(monotonic_clock::duration duration) {
   const ::aos::monotonic_clock::time_point end_time =
       monotonic_now() + duration;
+  testing::MockTime(monotonic_now());
   for (RawEventLoop *event_loop : raw_event_loops_) {
     event_loop->set_is_running(true);
   }
@@ -216,6 +218,7 @@ void EventScheduler::RunFor(monotonic_clock::duration duration) {
       break;
     }
     now_ = iter->first;
+    testing::MockTime(now_);
     ::std::function<void()> callback = ::std::move(iter->second);
     events_list_.erase(iter);
     callback();
@@ -226,9 +229,11 @@ void EventScheduler::RunFor(monotonic_clock::duration duration) {
       event_loop->set_is_running(false);
     }
   }
+  testing::UnMockTime();
 }
 
 void EventScheduler::Run() {
+  testing::MockTime(monotonic_now());
   for (RawEventLoop *event_loop : raw_event_loops_) {
     event_loop->set_is_running(true);
   }
@@ -236,6 +241,7 @@ void EventScheduler::Run() {
   while (!events_list_.empty() && is_running_) {
     auto iter = events_list_.begin();
     now_ = iter->first;
+    testing::MockTime(now_);
     ::std::function<void()> callback = ::std::move(iter->second);
     events_list_.erase(iter);
     callback();
@@ -245,6 +251,7 @@ void EventScheduler::Run() {
       event_loop->set_is_running(false);
     }
   }
+  testing::UnMockTime();
 }
 
 void SimulatedEventLoop::MakeRawWatcher(

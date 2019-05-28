@@ -1,6 +1,8 @@
 #ifndef AOS_TESTING_TEST_LOGGING_H_
 #define AOS_TESTING_TEST_LOGGING_H_
 
+#include "aos/time/time.h"
+
 namespace aos {
 namespace testing {
 
@@ -20,6 +22,13 @@ void SetLogFileName(const char* filename);
 // otherwise be printed. This is also useful for tests that do pass, but where
 // we want to use graphing tools to verify what's happening.
 void ForcePrintLogsDuringTests();
+
+// Sets the current mock logging time to monotonic_now.  This only applies to
+// the current thread.
+void MockTime(::aos::monotonic_clock::time_point monotonic_now);
+// Clears the mock logging time for the current thread and goes back to using
+// monotonic_clock::now().
+void UnMockTime();
 
 }  // namespace testing
 }  // namespace aos
