@@ -6,6 +6,7 @@
 #include <chrono>
 #include <stdexcept>
 
+#include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/queue.h"
 
@@ -122,9 +123,13 @@ class WatcherThreadState {
   }
 
   void Run() {
+    thread_state_->MaybeSetCurrentThreadRealtimePriority();
     thread_state_->WaitForStart();
 
-    if (!thread_state_->is_running()) return;
+    if (!thread_state_->is_running()) {
+      ::aos::UnsetCurrentThreadRealtimePriority();
+      return;
+    }
 
     const void *msg = nullptr;
     while (true) {
@@ -143,6 +148,7 @@ class WatcherThreadState {
     }
 
     queue_->FreeMessage(msg);
+    ::aos::UnsetCurrentThreadRealtimePriority();
   }
 
  private:
@@ -180,6 +186,7 @@ class TimerHandlerState : public TimerHandler {
   }
 
   void Run() {
+    thread_state_->MaybeSetCurrentThreadRealtimePriority();
     thread_state_->WaitForStart();
 
     while (true) {
@@ -196,6 +203,7 @@ class TimerHandlerState : public TimerHandler {
         if (!thread_state_->is_running()) break;
       }
     }
+    ::aos::UnsetCurrentThreadRealtimePriority();
   }
 
  private:
@@ -256,11 +264,13 @@ void ShmEventLoop::OnRun(std::function<void()> on_run) {
 }
 
 void ShmEventLoop::Run() {
+  thread_state_->MaybeSetCurrentThreadRealtimePriority();
   set_is_running(true);
   for (const auto &run : on_run_) run();
   // TODO(austin): epoll event loop in main thread (if needed), and async safe
   // quit handler.
   thread_state_->Run();
+  ::aos::UnsetCurrentThreadRealtimePriority();
 }
 
 void ShmEventLoop::ThreadState::Run() {
@@ -272,6 +282,12 @@ void ShmEventLoop::ThreadState::Run() {
     if (loop_running_cond_.Wait()) {
       ::aos::Die("ShmEventLoop mutex lock problem.\n");
     }
+  }
+}
+
+void ShmEventLoop::ThreadState::MaybeSetCurrentThreadRealtimePriority() {
+  if (priority_ != -1) {
+    ::aos::SetCurrentThreadRealtimePriority(priority_);
   }
 }
 

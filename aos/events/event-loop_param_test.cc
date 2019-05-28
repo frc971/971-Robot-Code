@@ -310,6 +310,42 @@ TEST_P(AbstractEventLoopTest, FetchAndFetchNextTogether) {
   EXPECT_THAT(values, ::testing::ElementsAreArray({201, 202, 204}));
 }
 
+
+// Tests that FetchNext behaves correctly when we get two messages in the queue
+// but don't consume the first until after the second has been sent.
+TEST_P(AbstractEventLoopTest, FetchNextTest) {
+
+  auto send_loop = Make();
+  auto fetch_loop = Make();
+  auto sender = send_loop->MakeSender<TestMessage>("/test");
+  Fetcher<TestMessage> fetcher = fetch_loop->MakeFetcher<TestMessage>("/test");
+
+  {
+    auto msg = sender.MakeMessage();
+    msg->msg_value = 100;
+    ASSERT_TRUE(msg.Send());
+  }
+
+  {
+    auto msg = sender.MakeMessage();
+    msg->msg_value = 200;
+    ASSERT_TRUE(msg.Send());
+  }
+
+  ASSERT_TRUE(fetcher.FetchNext());
+  ASSERT_NE(nullptr, fetcher.get());
+  EXPECT_EQ(100, fetcher->msg_value);
+
+  ASSERT_TRUE(fetcher.FetchNext());
+  ASSERT_NE(nullptr, fetcher.get());
+  EXPECT_EQ(200, fetcher->msg_value);
+
+  // When we run off the end of the queue, expect to still have the old message:
+  ASSERT_FALSE(fetcher.FetchNext());
+  ASSERT_NE(nullptr, fetcher.get());
+  EXPECT_EQ(200, fetcher->msg_value);
+}
+
 // Verify that making a fetcher and watcher for "/test" succeeds.
 TEST_P(AbstractEventLoopTest, FetcherAndWatcher) {
   auto loop = Make();
@@ -330,6 +366,17 @@ TEST_P(AbstractEventLoopTest, TwoWatcher) {
   loop->MakeWatcher("/test", [&](const TestMessage &) {});
   EXPECT_DEATH(loop->MakeWatcher("/test", [&](const TestMessage &) {}),
                "/test");
+}
+
+// Verify that SetRuntimeRealtimePriority fails while running.
+TEST_P(AbstractEventLoopTest, SetRuntimeRealtimePriority) {
+  auto loop = MakePrimary();
+  // Confirm that runtime priority calls work when not realtime.
+  loop->SetRuntimeRealtimePriority(5);
+
+  loop->OnRun([&]() { loop->SetRuntimeRealtimePriority(5); });
+
+  EXPECT_DEATH(Run(), "realtime");
 }
 
 // Verify that registering a watcher and a sender for "/test" fails.
