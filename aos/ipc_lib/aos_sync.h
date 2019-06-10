@@ -1,10 +1,11 @@
 #ifndef AOS_IPC_LIB_SYNC_H_
 #define AOS_IPC_LIB_SYNC_H_
 
-#include <stdlib.h>
 #include <signal.h>
-#include <stdint.h>
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -142,8 +143,10 @@ int futex_unset(aos_futex *m);
 // this function returns.
 // NOTE: The relocking of m is not atomic with stopping the actual wait and
 // other process(es) may lock (+unlock) the mutex first.
-// Returns 0 on success or 1 if the previous owner died.
-int condition_wait(aos_condition *c, struct aos_mutex *m)
+// Returns 0 on success, 1 if the previous owner died or -1 if we timed out.
+// Will only return -1 on timeout if end_time is not null.
+int condition_wait(aos_condition *c, struct aos_mutex *m,
+                   struct timespec *end_time)
     __attribute__((warn_unused_result));
 // If any other processes are condition_waiting on c, wake 1 of them. Does not
 // require m to be locked.
