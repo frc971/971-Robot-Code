@@ -86,21 +86,6 @@ using ::aos::linux_code::ipc_lib::FutexAccessorObserver;
 //
 // The value of an aos_condition is just a generation counter.
 
-// Whether or not to use the REQUEUE_PI operation. Using it is better (less
-// syscalls and the highest priority waiter is always the one that gets woken),
-// but there's a kernel bug that results in random memory corruption while using
-// them.
-// The alternative is to just wake everybody and have them all race to relock
-// the mutex (classic thundering herd).
-// Currently just whether or not we're not on ARM because we only run this on
-// ARM kernels with the patch to fix that issue applied. This will likely change
-// to something based on kernel version at some point.
-#ifdef __arm__
-#define USE_REQUEUE_PI 1
-#else
-#define USE_REQUEUE_PI 0
-#endif
-
 #ifdef AOS_SANITIZER_thread
 extern "C" void AnnotateHappensBefore(const char *file, int line,
                                       uintptr_t addr);
@@ -743,39 +728,28 @@ void condition_wake(aos_condition *c, aos_mutex *m, int number_requeue) {
   //     sleep in the kernel because of this.
   uint32_t new_value = __atomic_add_fetch(c, 1, __ATOMIC_SEQ_CST);
 
-  if (USE_REQUEUE_PI) {
-    while (true) {
-      // This really wants to be FUTEX_REQUEUE_PI, but the kernel doesn't have
-      // that... However, the code to support that is in the kernel, so it might
-      // be a good idea to patch it to support that and use it iff it's there.
-      const int ret =
-          sys_futex_cmp_requeue_pi(c, 1, number_requeue, &m->futex, new_value);
-      if (ret < 0) {
-        // If the value got changed out from under us (aka somebody else did a
-        // condition_wake).
-        if (__builtin_expect(ret == -EAGAIN, true)) {
-          // If we're doing a broadcast, the other guy might have done a signal
-          // instead, so we have to try again.
-          // If we're doing a signal, we have to go again to make sure that 2
-          // signals wake 2 processes.
-          new_value = __atomic_load_n(c, __ATOMIC_RELAXED);
-          continue;
-        }
-        my_robust_list::robust_head.pending_next = 0;
-        PELOG(FATAL, -ret, "FUTEX_CMP_REQUEUE_PI(%p, 1, %d, %p, *%p) failed",
-              c, number_requeue, &m->futex, c);
-      } else {
-        return;
+  while (true) {
+    // This really wants to be FUTEX_REQUEUE_PI, but the kernel doesn't have
+    // that... However, the code to support that is in the kernel, so it might
+    // be a good idea to patch it to support that and use it iff it's there.
+    const int ret =
+        sys_futex_cmp_requeue_pi(c, 1, number_requeue, &m->futex, new_value);
+    if (ret < 0) {
+      // If the value got changed out from under us (aka somebody else did a
+      // condition_wake).
+      if (__builtin_expect(ret == -EAGAIN, true)) {
+        // If we're doing a broadcast, the other guy might have done a signal
+        // instead, so we have to try again.
+        // If we're doing a signal, we have to go again to make sure that 2
+        // signals wake 2 processes.
+        new_value = __atomic_load_n(c, __ATOMIC_RELAXED);
+        continue;
       }
-    }
-  } else {
-    const int ret = sys_futex_wake(
-        c, ::std::min(::std::max(number_requeue, 1), INT_MAX - 4096));
-    if (__builtin_expect(
-            static_cast<unsigned int>(ret) > static_cast<unsigned int>(-4096),
-            false)) {
       my_robust_list::robust_head.pending_next = 0;
-      PELOG(FATAL, -ret, "FUTEX_WAKE(%p, %d) failed", c, INT_MAX - 4096);
+      PELOG(FATAL, -ret, "FUTEX_CMP_REQUEUE_PI(%p, 1, %d, %p, *%p) failed", c,
+            number_requeue, &m->futex, c);
+    } else {
+      return;
     }
   }
 }
@@ -886,12 +860,7 @@ int condition_wait(aos_condition *c, aos_mutex *m) {
   while (true) {
     // Wait in the kernel iff the value of it doesn't change (ie somebody else
     // does a wake) from before we unlocked the mutex.
-    int ret;
-    if (USE_REQUEUE_PI) {
-      ret = sys_futex_wait_requeue_pi(c, wait_start, nullptr, &m->futex);
-    } else {
-      ret = sys_futex_wait(FUTEX_WAIT, c, wait_start, nullptr);
-    }
+    int ret = sys_futex_wait_requeue_pi(c, wait_start, nullptr, &m->futex);
     if (ret != 0) {
       // If it failed because somebody else did a wake and changed the value
       // before we actually made it to sleep.
@@ -911,26 +880,11 @@ int condition_wait(aos_condition *c, aos_mutex *m) {
       // Try again if it was because of a signal.
       if (__builtin_expect(ret == -EINTR, true)) continue;
       my_robust_list::robust_head.pending_next = 0;
-      if (USE_REQUEUE_PI) {
-        PELOG(FATAL, -ret, "FUTEX_WAIT_REQUEUE_PI(%p, %" PRIu32 ", %p) failed",
-              c, wait_start, &m->futex);
-      } else {
-        PELOG(FATAL, -ret, "FUTEX_WAIT(%p, %" PRIu32 ", nullptr) failed",
-              c, wait_start);
-      }
+      PELOG(FATAL, -ret, "FUTEX_WAIT_REQUEUE_PI(%p, %" PRIu32 ", %p) failed", c,
+            wait_start, &m->futex);
     } else {
-      if (USE_REQUEUE_PI) {
-        // Record that the kernel relocked it for us.
-        lock_pthread_mutex(m);
-      } else {
-        // We have to take the lock ourself because the kernel won't, but
-        // there's no need for it to be anything special because all waiters
-        // just relock it like usual.
-        const int r = mutex_do_get(m, false, nullptr, tid);
-        assert(__builtin_expect(r == 0 || r == 1, true));
-        adder.Add();
-        return r;
-      }
+      // Record that the kernel relocked it for us.
+      lock_pthread_mutex(m);
 
       // We succeeded in waiting, and the kernel took care of locking the mutex
       // for us and setting FUTEX_WAITERS iff it needed to (for REQUEUE_PI).
