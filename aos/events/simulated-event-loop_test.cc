@@ -22,6 +22,11 @@ class SimulatedEventLoopTestFactory : public EventLoopTestFactory {
    SimulatedEventLoopFactory event_loop_factory_;
 };
 
+INSTANTIATE_TEST_CASE_P(SimulatedEventLoopDeathTest, AbstractEventLoopDeathTest,
+                        ::testing::Values([]() {
+                          return new SimulatedEventLoopTestFactory();
+                        }));
+
 INSTANTIATE_TEST_CASE_P(SimulatedEventLoopTest, AbstractEventLoopTest,
                         ::testing::Values([]() {
                           return new SimulatedEventLoopTestFactory();

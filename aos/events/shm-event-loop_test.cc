@@ -35,6 +35,11 @@ INSTANTIATE_TEST_CASE_P(ShmEventLoopTest, AbstractEventLoopTest,
                           return new ShmEventLoopTestFactory();
                         }));
 
+INSTANTIATE_TEST_CASE_P(ShmEventLoopDeathTest, AbstractEventLoopDeathTest,
+                        ::testing::Values([]() {
+                          return new ShmEventLoopTestFactory();
+                        }));
+
 struct TestMessage : public ::aos::Message {
   enum { kQueueLength = 100, kHash = 0x696c0cdc };
   int msg_value;

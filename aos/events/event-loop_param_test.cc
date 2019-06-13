@@ -26,9 +26,37 @@ void EndEventLoop(EventLoop *loop, ::std::chrono::milliseconds duration) {
                    ::std::chrono::milliseconds(duration));
 }
 
-// Tests that watcher and fetcher can fetch from a sender.
+// Tests that watcher can receive messages from a sender.
 // Also tests that OnRun() works.
 TEST_P(AbstractEventLoopTest, Basic) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+
+  auto sender = loop1->MakeSender<TestMessage>("/test");
+
+  bool happened = false;
+
+  loop2->OnRun([&]() {
+    happened = true;
+
+    auto msg = sender.MakeMessage();
+    msg->msg_value = 200;
+    msg.Send();
+  });
+
+  loop2->MakeWatcher("/test", [&](const TestMessage &message) {
+    EXPECT_EQ(message.msg_value, 200);
+    loop2->Exit();
+  });
+
+  EXPECT_FALSE(happened);
+  Run();
+  EXPECT_TRUE(happened);
+}
+
+// Tests that a fetcher can fetch from a sender.
+// Also tests that OnRun() works.
+TEST_P(AbstractEventLoopTest, FetchWithoutRun) {
   auto loop1 = Make();
   auto loop2 = Make();
   auto loop3 = MakePrimary();
@@ -39,15 +67,6 @@ TEST_P(AbstractEventLoopTest, Basic) {
 
   EXPECT_FALSE(fetcher.Fetch());
 
-  bool happened = false;
-
-  loop3->OnRun([&]() { happened = true; });
-
-  loop3->MakeWatcher("/test", [&](const TestMessage &message) {
-    EXPECT_EQ(message.msg_value, 200);
-    loop3->Exit();
-  });
-
   auto msg = sender.MakeMessage();
   msg->msg_value = 200;
   msg.Send();
@@ -55,10 +74,6 @@ TEST_P(AbstractEventLoopTest, Basic) {
   EXPECT_TRUE(fetcher.Fetch());
   ASSERT_FALSE(fetcher.get() == nullptr);
   EXPECT_EQ(fetcher->msg_value, 200);
-
-  EXPECT_FALSE(happened);
-  Run();
-  EXPECT_TRUE(happened);
 }
 
 // Tests that watcher will receive all messages sent if they are sent after
@@ -78,16 +93,25 @@ TEST_P(AbstractEventLoopTest, DoubleSendAtStartup) {
     }
   });
 
+  // Before Run, should be ignored.
   {
     auto msg = sender.MakeMessage();
-    msg->msg_value = 200;
+    msg->msg_value = 199;
     msg.Send();
   }
-  {
-    auto msg = sender.MakeMessage();
-    msg->msg_value = 201;
-    msg.Send();
-  }
+
+  loop2->OnRun([&]() {
+    {
+      auto msg = sender.MakeMessage();
+      msg->msg_value = 200;
+      msg.Send();
+    }
+    {
+      auto msg = sender.MakeMessage();
+      msg->msg_value = 201;
+      msg.Send();
+    }
+  });
 
   Run();
 
@@ -361,7 +385,7 @@ TEST_P(AbstractEventLoopTest, TwoFetcher) {
 }
 
 // Verify that registering a watcher twice for "/test" fails.
-TEST_P(AbstractEventLoopTest, TwoWatcher) {
+TEST_P(AbstractEventLoopDeathTest, TwoWatcher) {
   auto loop = Make();
   loop->MakeWatcher("/test", [&](const TestMessage &) {});
   EXPECT_DEATH(loop->MakeWatcher("/test", [&](const TestMessage &) {}),
@@ -369,7 +393,7 @@ TEST_P(AbstractEventLoopTest, TwoWatcher) {
 }
 
 // Verify that SetRuntimeRealtimePriority fails while running.
-TEST_P(AbstractEventLoopTest, SetRuntimeRealtimePriority) {
+TEST_P(AbstractEventLoopDeathTest, SetRuntimeRealtimePriority) {
   auto loop = MakePrimary();
   // Confirm that runtime priority calls work when not realtime.
   loop->SetRuntimeRealtimePriority(5);
@@ -380,11 +404,31 @@ TEST_P(AbstractEventLoopTest, SetRuntimeRealtimePriority) {
 }
 
 // Verify that registering a watcher and a sender for "/test" fails.
-TEST_P(AbstractEventLoopTest, WatcherAndSender) {
+TEST_P(AbstractEventLoopDeathTest, WatcherAndSender) {
   auto loop = Make();
   auto sender = loop->MakeSender<TestMessage>("/test");
   EXPECT_DEATH(loop->MakeWatcher("/test", [&](const TestMessage &) {}),
                "/test");
+}
+
+// Verify that we can't create a sender inside OnRun.
+TEST_P(AbstractEventLoopDeathTest, SenderInOnRun) {
+  auto loop1 = MakePrimary();
+
+  loop1->OnRun(
+      [&]() { auto sender = loop1->MakeSender<TestMessage>("/test2"); });
+
+  EXPECT_DEATH(Run(), "running");
+}
+
+// Verify that we can't create a watcher inside OnRun.
+TEST_P(AbstractEventLoopDeathTest, WatcherInOnRun) {
+  auto loop1 = MakePrimary();
+
+  loop1->OnRun(
+      [&]() { loop1->MakeWatcher("/test", [&](const TestMessage &) {}); });
+
+  EXPECT_DEATH(Run(), "running");
 }
 
 // Verify that Quit() works when there are multiple watchers.
@@ -399,11 +443,12 @@ TEST_P(AbstractEventLoopTest, MultipleWatcherQuit) {
   });
 
   auto sender = loop1->MakeSender<TestMessage>("/test2");
-  {
+
+  loop2->OnRun([&]() {
     auto msg = sender.MakeMessage();
     msg->msg_value = 200;
     msg.Send();
-  }
+  });
 
   Run();
 }

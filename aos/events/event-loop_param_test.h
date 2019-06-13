@@ -23,10 +23,10 @@ class EventLoopTestFactory {
   virtual void Run() = 0;
 };
 
-class AbstractEventLoopTest
+class AbstractEventLoopTestBase
     : public ::testing::TestWithParam<std::function<EventLoopTestFactory *()>> {
  public:
-  AbstractEventLoopTest() { factory_.reset(GetParam()()); }
+  AbstractEventLoopTestBase() { factory_.reset(GetParam()()); }
 
   ::std::unique_ptr<EventLoop> Make() { return factory_->Make(); }
   ::std::unique_ptr<EventLoop> MakePrimary() { return factory_->MakePrimary(); }
@@ -38,6 +38,9 @@ class AbstractEventLoopTest
  private:
   ::std::unique_ptr<EventLoopTestFactory> factory_;
 };
+
+typedef AbstractEventLoopTestBase AbstractEventLoopDeathTest;
+typedef AbstractEventLoopTestBase AbstractEventLoopTest;
 
 }  // namespace testing
 }  // namespace aos

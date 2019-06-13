@@ -1,4 +1,14 @@
 cc_library(
+    name = "epoll",
+    srcs = ["epoll.cc"],
+    hdrs = ["epoll.h"],
+    deps = [
+        "//aos/logging",
+        "//aos/time",
+    ],
+)
+
+cc_library(
     name = "raw-event-loop",
     hdrs = ["raw-event-loop.h"],
     deps = [
@@ -28,6 +38,7 @@ cc_library(
     hdrs = ["shm-event-loop.h"],
     visibility = ["//visibility:public"],
     deps = [
+        ":epoll",
         ":event-loop",
         "//aos:init",
         "//aos:queues",
@@ -38,6 +49,7 @@ cc_library(
 cc_test(
     name = "shm-event-loop_test",
     srcs = ["shm-event-loop_test.cc"],
+    shard_count = 5,
     deps = [
         ":event-loop_param_test",
         ":shm-event-loop",

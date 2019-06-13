@@ -313,9 +313,11 @@ void SimulatedQueue::MakeRawWatcher(
 
 void SimulatedQueue::Send(RefCountedBuffer message) {
   latest_message_ = message;
-  for (auto &watcher : watchers_) {
-    scheduler_->Schedule(scheduler_->monotonic_now(),
-                         [watcher, message]() { watcher(message.get()); });
+  if (scheduler_->is_running()) {
+    for (auto &watcher : watchers_) {
+      scheduler_->Schedule(scheduler_->monotonic_now(),
+                           [watcher, message]() { watcher(message.get()); });
+    }
   }
   for (auto &fetcher : fetchers_) {
     fetcher->Enqueue(message);

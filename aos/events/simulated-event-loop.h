@@ -120,6 +120,8 @@ class EventScheduler {
     is_running_ = false;
   }
 
+  bool is_running() const { return is_running_; }
+
   void AddRawEventLoop(RawEventLoop *event_loop) {
     raw_event_loops_.push_back(event_loop);
   }

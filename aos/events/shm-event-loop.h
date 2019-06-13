@@ -3,9 +3,11 @@
 
 #include <unordered_set>
 #include <vector>
+
 #include "aos/condition.h"
-#include "aos/mutex/mutex.h"
+#include "aos/events/epoll.h"
 #include "aos/events/event-loop.h"
+#include "aos/mutex/mutex.h"
 
 namespace aos {
 namespace internal {
@@ -30,26 +32,28 @@ class ShmEventLoop : public EventLoop {
     return ::aos::monotonic_clock::now();
   }
 
-  std::unique_ptr<RawSender> MakeRawSender(const std::string &path,
-                                           const QueueTypeInfo &type) override;
-  std::unique_ptr<RawFetcher> MakeRawFetcher(
-      const std::string &path, const QueueTypeInfo &type) override;
+  ::std::unique_ptr<RawSender> MakeRawSender(
+      const ::std::string &path, const QueueTypeInfo &type) override;
+  ::std::unique_ptr<RawFetcher> MakeRawFetcher(
+      const ::std::string &path, const QueueTypeInfo &type) override;
 
   void MakeRawWatcher(
-      const std::string &path, const QueueTypeInfo &type,
-      std::function<void(const aos::Message *message)> watcher) override;
+      const ::std::string &path, const QueueTypeInfo &type,
+      ::std::function<void(const aos::Message *message)> watcher) override;
 
   TimerHandler *AddTimer(::std::function<void()> callback) override;
 
-  void OnRun(std::function<void()> on_run) override;
+  void OnRun(::std::function<void()> on_run) override;
   void Run() override;
   void Exit() override;
+
+  // TODO(austin): Add a function to register control-C call.
 
   void SetRuntimeRealtimePriority(int priority) override {
     if (is_running()) {
       ::aos::Die("Cannot set realtime priority while running.");
     }
-    thread_state_->priority_ = priority;
+    thread_state_.priority_ = priority;
   }
 
  private:
@@ -65,7 +69,7 @@ class ShmEventLoop : public EventLoop {
 
     bool is_running() { return loop_running_; }
 
-    void Run();
+    void Start();
 
     void Exit();
 
@@ -77,23 +81,26 @@ class ShmEventLoop : public EventLoop {
     friend class ShmEventLoop;
 
     // This mutex ensures that only one watch event happens at a time.
-    aos::Mutex mutex_;
+    ::aos::Mutex mutex_;
     // Block on this until the loop starts.
-    aos::Condition loop_running_cond_{&mutex_};
+    ::aos::Condition loop_running_cond_{&mutex_};
     // Used to notify watchers that the loop is done.
-    std::atomic<bool> loop_running_{false};
+    ::std::atomic<bool> loop_running_{false};
     bool loop_finished_ = false;
     int priority_ = -1;
   };
 
-  // Exclude multiple of the same type for path.
+  // Tracks that we can't have multiple watchers or a sender and a watcher (or
+  // multiple senders) on a single queue (path).
+  void Take(const ::std::string &path);
 
-  std::vector<std::function<void()>> on_run_;
-  std::shared_ptr<ThreadState> thread_state_;
+  ::std::vector<::std::function<void()>> on_run_;
+  ThreadState thread_state_;
+  ::std::vector<::std::string> taken_;
+  internal::EPoll epoll_;
 
-  void Take(const std::string &path);
-
-  std::vector<::std::string> taken_;
+  ::std::vector<::std::unique_ptr<internal::TimerHandlerState>> timers_;
+  ::std::vector<::std::unique_ptr<internal::WatcherThreadState>> watchers_;
 };
 
 }  // namespace aos
