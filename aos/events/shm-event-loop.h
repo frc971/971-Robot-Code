@@ -45,6 +45,13 @@ class ShmEventLoop : public EventLoop {
   void Run() override;
   void Exit() override;
 
+  void SetRuntimeRealtimePriority(int priority) override {
+    if (is_running()) {
+      ::aos::Die("Cannot set realtime priority while running.");
+    }
+    thread_state_->priority_ = priority;
+  }
+
  private:
   friend class internal::WatcherThreadState;
   friend class internal::TimerHandlerState;
@@ -62,6 +69,8 @@ class ShmEventLoop : public EventLoop {
 
     void Exit();
 
+    void MaybeSetCurrentThreadRealtimePriority();
+
    private:
     friend class internal::WatcherThreadState;
     friend class internal::TimerHandlerState;
@@ -74,6 +83,7 @@ class ShmEventLoop : public EventLoop {
     // Used to notify watchers that the loop is done.
     std::atomic<bool> loop_running_{false};
     bool loop_finished_ = false;
+    int priority_ = -1;
   };
 
   // Exclude multiple of the same type for path.

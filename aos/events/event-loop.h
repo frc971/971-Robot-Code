@@ -129,11 +129,14 @@ class EventLoop : public RawEventLoop {
   // Use this to run code once the thread goes into "real-time-mode",
   virtual void OnRun(std::function<void()>) = 0;
 
-  // TODO(austin): Sort out how to switch to realtime on run.
-  // virtual void RunRealtime() = 0;
+  // TODO(austin): OnExit
 
   // Stops receiving events
   virtual void Exit() = 0;
+
+  // Sets the scheduler priority to run the event loop at.  This may not be
+  // called after we go into "real-time-mode".
+  virtual void SetRuntimeRealtimePriority(int priority) = 0;
 };
 
 }  // namespace aos

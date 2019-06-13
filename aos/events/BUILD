@@ -29,6 +29,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":event-loop",
+        "//aos:init",
         "//aos:queues",
         "//aos/logging",
     ],

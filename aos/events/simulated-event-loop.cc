@@ -13,7 +13,9 @@ namespace {
 class SimulatedSender : public RawSender {
  public:
   SimulatedSender(SimulatedQueue *queue, EventLoop *event_loop)
-      : queue_(queue), event_loop_(event_loop) {}
+      : queue_(queue), event_loop_(event_loop) {
+    testing::EnableTestLogging();
+  }
   ~SimulatedSender() {}
 
   aos::Message *GetMessage() override {
@@ -185,6 +187,12 @@ class SimulatedEventLoop : public EventLoop {
       const ::std::pair<::std::string, QueueTypeInfo> &);
 
   void Take(const ::std::string &path);
+
+  void SetRuntimeRealtimePriority(int /*priority*/) override {
+    if (is_running()) {
+      ::aos::Die("Cannot set realtime priority while running.");
+    }
+  }
 
  private:
   EventScheduler *scheduler_;

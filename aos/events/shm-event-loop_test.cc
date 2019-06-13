@@ -7,6 +7,7 @@
 namespace aos {
 namespace testing {
 namespace {
+namespace chrono = ::std::chrono;
 
 class ShmEventLoopTestFactory : public EventLoopTestFactory {
  public:
@@ -46,42 +47,55 @@ struct TestMessage : public ::aos::Message {
 
 }  // namespace
 
-// Tests that FetchNext behaves correctly when we get two messages in the queue
-// but don't consume the first until after the second has been sent.
-// This cannot be abstracted to AbstractEventLoopTest because not all
-// event loops currently support FetchNext().
-TEST(ShmEventLoopTest, FetchNextTest) {
-  ::aos::testing::TestSharedMemory my_shm;
-
-  ShmEventLoop send_loop;
-  ShmEventLoop fetch_loop;
-  auto sender = send_loop.MakeSender<TestMessage>("/test");
-  Fetcher<TestMessage> fetcher = fetch_loop.MakeFetcher<TestMessage>("/test");
-
-  {
-    auto msg = sender.MakeMessage();
-    msg->msg_value = 100;
-    ASSERT_TRUE(msg.Send());
+bool IsRealtime() {
+  int scheduler;
+  if ((scheduler = sched_getscheduler(0)) == -1) {
+    PLOG(FATAL, "sched_getscheduler(0) failed\n");
   }
+  LOG(INFO, "scheduler is %d\n", scheduler);
+  return scheduler == SCHED_FIFO || scheduler == SCHED_RR;
+}
 
-  {
+// Tests that every handler type is realtime and runs.  There are threads
+// involved and it's easy to miss one.
+TEST(ShmEventLoopTest, AllHandlersAreRealtime) {
+  ShmEventLoopTestFactory factory;
+  auto loop = factory.MakePrimary();
+  auto loop2 = factory.Make();
+
+  loop->SetRuntimeRealtimePriority(1);
+
+  auto sender = loop2->MakeSender<TestMessage>("/test");
+
+  bool did_onrun = false;
+  bool did_timer = false;
+  bool did_watcher = false;
+
+  auto timer = loop->AddTimer([&did_timer, &loop]() {
+    EXPECT_TRUE(IsRealtime());
+    did_timer = true;
+    loop->Exit();
+  });
+
+  loop->MakeWatcher("/test", [&did_watcher](const TestMessage &) {
+    EXPECT_TRUE(IsRealtime());
+    did_watcher = true;
+  });
+
+  loop->OnRun([&loop, &did_onrun, &sender, timer]() {
+    EXPECT_TRUE(IsRealtime());
+    did_onrun = true;
+    timer->Setup(loop->monotonic_now() + chrono::milliseconds(100));
     auto msg = sender.MakeMessage();
     msg->msg_value = 200;
-    ASSERT_TRUE(msg.Send());
-  }
+    msg.Send();
+  });
 
-  ASSERT_TRUE(fetcher.FetchNext());
-  ASSERT_NE(nullptr, fetcher.get());
-  EXPECT_EQ(100, fetcher->msg_value);
+  factory.Run();
 
-  ASSERT_TRUE(fetcher.FetchNext());
-  ASSERT_NE(nullptr, fetcher.get());
-  EXPECT_EQ(200, fetcher->msg_value);
-
-  // When we run off the end of the queue, expect to still have the old message:
-  ASSERT_FALSE(fetcher.FetchNext());
-  ASSERT_NE(nullptr, fetcher.get());
-  EXPECT_EQ(200, fetcher->msg_value);
+  EXPECT_TRUE(did_onrun);
+  EXPECT_TRUE(did_timer);
+  EXPECT_TRUE(did_watcher);
 }
 }  // namespace testing
 }  // namespace aos
