@@ -1,4 +1,5 @@
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 
 # In order to use deb packages in the build you have to follow these steps:
 #
@@ -71,10 +72,11 @@ def generate_repositories_for_debs(files):
   for f in files.keys():
     name = _convert_deb_to_target(f)
     if name not in native.existing_rules():
-      native.http_file(
+      http_file(
           name = name,
-          url = 'http://www.frc971.org/Build-Dependencies/%s' % f,
+          urls = ['http://www.frc971.org/Build-Dependencies/%s' % f],
           sha256 = files[f],
+          downloaded_file_path = f,
       )
 
 def generate_deb_tarball(name, files):
