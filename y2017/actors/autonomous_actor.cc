@@ -298,6 +298,7 @@ bool AutonomousActor::RunAction(
       ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
 
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
 
   while (!ShouldCancel()) {

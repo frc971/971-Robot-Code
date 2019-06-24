@@ -112,6 +112,7 @@ void AutonomousActor::Shoot() {
 bool AutonomousActor::WaitUntilClawDone() {
   while (true) {
     ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(10),
+                                        event_loop()->monotonic_now(),
                                         ::std::chrono::milliseconds(10) / 2);
     // Poll the running bit and auto done bits.
     phased_loop.SleepUntilNext();

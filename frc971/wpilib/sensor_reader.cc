@@ -100,7 +100,7 @@ void SensorReader::operator()() {
     LOG(INFO, "Defaulting to open loop pwm synchronization\n");
   }
   ::aos::time::PhasedLoop phased_loop(
-      period,
+      period, ::aos::monotonic_clock::now(),
       pwm_trigger_ ? ::std::chrono::milliseconds(3) : chrono::milliseconds(4));
 
   ::aos::SetCurrentThreadRealtimePriority(40);

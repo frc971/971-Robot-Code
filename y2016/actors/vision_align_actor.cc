@@ -34,6 +34,7 @@ bool VisionAlignActor::RunAction(
   const double robot_radius =
       control_loops::drivetrain::GetDrivetrainConfig().robot_radius;
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
   while (true) {
     const int iterations = phased_loop.SleepUntilNext();

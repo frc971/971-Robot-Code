@@ -65,6 +65,8 @@ class DataCollector {
     ::std::vector<ItemDatapoint> datapoints;
   };
 
+  ::aos::EventLoop *event_loop_;
+
   ::aos::Fetcher<::y2016::vision::VisionStatus> vision_status_fetcher_;
   ::aos::Fetcher<::y2016::sensors::BallDetector> ball_detector_fetcher_;
   ::aos::Fetcher<::frc971::autonomous::AutonomousMode> autonomous_mode_fetcher_;

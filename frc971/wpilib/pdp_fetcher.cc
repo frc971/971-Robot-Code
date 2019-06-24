@@ -18,6 +18,7 @@ void PDPFetcher::operator()() {
       new frc::PowerDistributionPanel());
 
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(20),
+                                      ::aos::monotonic_clock::now(),
                                       ::std::chrono::milliseconds(4));
 
   // TODO(austin): Event loop instead of while loop.

@@ -64,6 +64,7 @@ void GyroSender::operator()() {
   ::aos::SetCurrentThreadRealtimePriority(33);
 
   ::aos::time::PhasedLoop phased_loop(::aos::time::FromRate(kReadingRate),
+                                      event_loop_->monotonic_now(),
                                       chrono::milliseconds(4));
   // How many timesteps the next reading represents.
   int number_readings = 0;

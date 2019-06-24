@@ -87,6 +87,7 @@ void BaseAutonomousActor::WaitUntilDoneOrCanceled(
   }
 
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
   while (true) {
     // Poll the running bit and see if we should cancel.
@@ -99,6 +100,7 @@ void BaseAutonomousActor::WaitUntilDoneOrCanceled(
 
 bool BaseAutonomousActor::WaitForDriveDone() {
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
 
   while (true) {
@@ -140,6 +142,7 @@ bool BaseAutonomousActor::IsDriveDone() {
 
 bool BaseAutonomousActor::WaitForAboveAngle(double angle) {
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
   while (true) {
     if (ShouldCancel()) {
@@ -160,6 +163,7 @@ bool BaseAutonomousActor::WaitForAboveAngle(double angle) {
 
 bool BaseAutonomousActor::WaitForBelowAngle(double angle) {
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
   while (true) {
     if (ShouldCancel()) {
@@ -180,6 +184,7 @@ bool BaseAutonomousActor::WaitForBelowAngle(double angle) {
 
 bool BaseAutonomousActor::WaitForMaxBy(double angle) {
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
   double max_angle = -M_PI;
   while (true) {
@@ -204,6 +209,7 @@ bool BaseAutonomousActor::WaitForMaxBy(double angle) {
 
 bool BaseAutonomousActor::WaitForDriveNear(double distance, double angle) {
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
   constexpr double kPositionTolerance = 0.02;
   constexpr double kProfileTolerance = 0.001;
@@ -272,6 +278,7 @@ bool BaseAutonomousActor::WaitForDriveNear(double distance, double angle) {
 
 bool BaseAutonomousActor::WaitForDriveProfileNear(double tolerance) {
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
   while (true) {
     if (ShouldCancel()) {
@@ -307,6 +314,7 @@ bool BaseAutonomousActor::WaitForDriveProfileDone() {
 
 bool BaseAutonomousActor::WaitForTurnProfileNear(double tolerance) {
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
   while (true) {
     if (ShouldCancel()) {
@@ -369,8 +377,10 @@ bool BaseAutonomousActor::SplineHandle::SplineDistanceRemaining(
 }
 bool BaseAutonomousActor::SplineHandle::WaitForSplineDistanceRemaining(
     double distance) {
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                      ::std::chrono::milliseconds(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(
+      ::std::chrono::milliseconds(5),
+      base_autonomous_actor_->event_loop()->monotonic_now(),
+      ::std::chrono::milliseconds(5) / 2);
   while (true) {
     if (base_autonomous_actor_->ShouldCancel()) {
       return false;
@@ -440,8 +450,10 @@ bool BaseAutonomousActor::SplineHandle::IsPlanned() {
 }
 
 bool BaseAutonomousActor::SplineHandle::WaitForPlan() {
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                      ::std::chrono::milliseconds(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(
+      ::std::chrono::milliseconds(5),
+      base_autonomous_actor_->event_loop()->monotonic_now(),
+      ::std::chrono::milliseconds(5) / 2);
   while (true) {
     if (base_autonomous_actor_->ShouldCancel()) {
       return false;
@@ -488,8 +500,10 @@ bool BaseAutonomousActor::SplineHandle::IsDone() {
 }
 
 bool BaseAutonomousActor::SplineHandle::WaitForDone() {
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                      ::std::chrono::milliseconds(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(
+      ::std::chrono::milliseconds(5),
+      base_autonomous_actor_->event_loop()->monotonic_now(),
+      ::std::chrono::milliseconds(5) / 2);
   while (true) {
     if (base_autonomous_actor_->ShouldCancel()) {
       return false;

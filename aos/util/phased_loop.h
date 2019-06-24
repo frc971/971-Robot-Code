@@ -19,12 +19,13 @@ class PhasedLoop {
   // offset must be >= chrono::seconds(0) and < interval.
   PhasedLoop(
       const monotonic_clock::duration interval,
+      const monotonic_clock::time_point monotonic_now,
       const monotonic_clock::duration offset = monotonic_clock::duration(0))
       : interval_(interval), offset_(offset), last_time_(offset) {
     CHECK_GE(offset, monotonic_clock::duration(0));
     CHECK_GT(interval, monotonic_clock::duration(0));
     CHECK_LT(offset, interval);
-    Reset();
+    Reset(monotonic_now);
   }
 
   // Updates the offset and interval.
@@ -52,8 +53,7 @@ class PhasedLoop {
   // Resets the count of skipped iterations.
   // Iterate(monotonic_now) will return 1 and set sleep_time() to something
   // within interval of monotonic_now.
-  void Reset(const monotonic_clock::time_point monotonic_now =
-                 monotonic_clock::now()) {
+  void Reset(const monotonic_clock::time_point monotonic_now) {
     Iterate(monotonic_now - interval_);
   }
 

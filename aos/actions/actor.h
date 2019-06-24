@@ -53,6 +53,7 @@ class ActorBase {
   // succeeded.
   bool WaitOrCancel(monotonic_clock::duration duration) {
     ::aos::time::PhasedLoop phased_loop(::aos::controls::kLoopFrequency,
+                                        event_loop_->monotonic_now(),
                                         ::std::chrono::milliseconds(5) / 2);
     return !WaitUntil(
         [&phased_loop]() {
@@ -91,6 +92,8 @@ class ActorBase {
 
   // Set to true when we should stop ASAP.
   bool abort_ = false;
+
+  ::aos::EventLoop *event_loop() { return event_loop_; }
 
  private:
   // Checks if an action was initially running when the thread started.

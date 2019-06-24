@@ -110,6 +110,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   bool WaitForGamePiece() {
     ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                        event_loop()->monotonic_now(),
                                         ::std::chrono::milliseconds(5) / 2);
 
     while (true) {
@@ -161,6 +162,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   bool WaitForSuperstructureDone() {
     ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                        event_loop()->monotonic_now(),
                                         ::std::chrono::milliseconds(5) / 2);
 
     while (true) {

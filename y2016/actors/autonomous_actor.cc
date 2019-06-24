@@ -166,6 +166,7 @@ void AutonomousActor::Shoot() {
   }
 
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
   while (true) {
     if (ShouldCancel()) return;
@@ -183,6 +184,7 @@ void AutonomousActor::Shoot() {
 
 void AutonomousActor::WaitForShooterSpeed() {
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
   while (true) {
     if (ShouldCancel()) return;
@@ -211,6 +213,7 @@ void AutonomousActor::WaitForAlignedWithVision(
   int ready_to_fire = 0;
 
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
   monotonic_clock::time_point end_time =
       monotonic_clock::now() + align_duration;
@@ -552,6 +555,7 @@ void AutonomousActor::CloseIfBall() {
 
 void AutonomousActor::WaitForBallOrDriveDone() {
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
   while (true) {
     if (ShouldCancel()) {
@@ -927,6 +931,7 @@ bool AutonomousActor::RunAction(
       ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
 
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
 
   while (!ShouldCancel()) {

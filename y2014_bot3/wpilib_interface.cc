@@ -149,6 +149,7 @@ class SolenoidWriter {
     ::aos::SetCurrentThreadRealtimePriority(27);
 
     ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(20),
+                                        ::aos::monotonic_clock::now(),
                                         ::std::chrono::milliseconds(1));
 
     while (run_) {

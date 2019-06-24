@@ -49,7 +49,8 @@ constexpr int kEstopped = 2;
 //#define DASHBOARD_READ_VISION_QUEUE
 
 DataCollector::DataCollector(::aos::EventLoop *event_loop)
-    : vision_status_fetcher_(
+    : event_loop_(event_loop),
+      vision_status_fetcher_(
           event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
               ".y2016.vision.vision_status")),
       ball_detector_fetcher_(
@@ -235,6 +236,7 @@ void DataCollector::operator()() {
   ::aos::SetCurrentThreadName("DashboardData");
 
   ::aos::time::PhasedLoop phased_loop(chrono::milliseconds(100),
+                                      event_loop_->monotonic_now(),
                                       chrono::seconds(0));
   while (run_) {
     phased_loop.SleepUntilNext();

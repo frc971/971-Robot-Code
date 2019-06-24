@@ -30,6 +30,7 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
 bool AutonomousActor::WaitForDriveXGreater(double x) {
   LOG(INFO, "Waiting until x > %f\n", x);
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
 
   while (true) {
@@ -48,6 +49,7 @@ bool AutonomousActor::WaitForDriveXGreater(double x) {
 bool AutonomousActor::WaitForDriveYCloseToZero(double y) {
   LOG(INFO, "Waiting until |y| < %f\n", y);
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
 
   while (true) {
