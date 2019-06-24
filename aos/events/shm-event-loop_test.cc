@@ -24,6 +24,10 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
 
   void Run() override { CHECK_NOTNULL(primary_event_loop_)->Run(); }
 
+  void SleepFor(::std::chrono::nanoseconds duration) override {
+    ::std::this_thread::sleep_for(duration);
+  }
+
  private:
   ::aos::testing::TestSharedMemory my_shm_;
 
@@ -102,5 +106,55 @@ TEST(ShmEventLoopTest, AllHandlersAreRealtime) {
   EXPECT_TRUE(did_timer);
   EXPECT_TRUE(did_watcher);
 }
+
+// Tests that missing a deadline inside the function still results in PhasedLoop
+// running at the right offset.
+TEST(ShmEventLoopTest, DelayedPhasedLoop) {
+  ShmEventLoopTestFactory factory;
+  auto loop1 = factory.MakePrimary();
+
+  ::std::vector<::aos::monotonic_clock::time_point> times;
+
+  constexpr chrono::milliseconds kOffset = chrono::milliseconds(400);
+
+  loop1->AddPhasedLoop(
+      [&times, &loop1, &kOffset](int count) {
+        const ::aos::monotonic_clock::time_point monotonic_now =
+            loop1->monotonic_now();
+
+        // Compute our offset.
+        const ::aos::monotonic_clock::duration remainder =
+            monotonic_now.time_since_epoch() -
+            chrono::duration_cast<chrono::seconds>(
+                monotonic_now.time_since_epoch());
+
+        // Make sure we we are called near where we should be even when we
+        // delay.
+        constexpr chrono::milliseconds kEpsilon(200);
+        EXPECT_LT(remainder, kOffset + kEpsilon);
+        EXPECT_GT(remainder, kOffset - kEpsilon);
+
+        // Confirm that we see the missed count when we sleep.
+        if (times.size() == 0) {
+          EXPECT_EQ(count, 1);
+        } else {
+          EXPECT_EQ(count, 3);
+        }
+
+        times.push_back(loop1->monotonic_now());
+        if (times.size() == 2) {
+          loop1->Exit();
+        }
+
+        // Now, add a large delay.  This should push us up to 3 cycles.
+        ::std::this_thread::sleep_for(chrono::milliseconds(2500));
+      },
+      chrono::seconds(1), kOffset);
+
+  factory.Run();
+
+  EXPECT_EQ(times.size(), 2u);
+}
+
 }  // namespace testing
 }  // namespace aos

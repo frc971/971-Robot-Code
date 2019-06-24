@@ -1,10 +1,15 @@
 #include "aos/events/event-loop_param_test.h"
 
+#include <chrono>
+
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {
+namespace {
+namespace chrono = ::std::chrono;
+}  // namespace
 
 struct TestMessage : public ::aos::Message {
   enum { kQueueLength = 100, kHash = 0x696c0cdc };
@@ -462,6 +467,7 @@ TEST_P(AbstractEventLoopTest, TimerIntervalAndDuration) {
     iteration_list.push_back(loop->monotonic_now());
   });
 
+  // TODO(austin): This should be an error...  Should be done in OnRun only.
   test_timer->Setup(loop->monotonic_now(), ::std::chrono::milliseconds(20));
   EndEventLoop(loop.get(), ::std::chrono::milliseconds(150));
   // Testing that the timer thread waits for the event loop to start before
@@ -484,7 +490,6 @@ TEST_P(AbstractEventLoopTest, TimerChangeParameters) {
   auto modifier_timer = loop->AddTimer([&loop, &test_timer]() {
     test_timer->Setup(loop->monotonic_now(), ::std::chrono::milliseconds(30));
   });
-
 
   test_timer->Setup(loop->monotonic_now(), ::std::chrono::milliseconds(20));
   modifier_timer->Setup(loop->monotonic_now() +
@@ -541,11 +546,75 @@ TEST_P(AbstractEventLoopTest, MessageSendTime) {
       fetcher->sent_time - (loop1->monotonic_now() - ::std::chrono::seconds(1));
 
   EXPECT_TRUE(time_offset > ::std::chrono::milliseconds(-500))
-      << ": Got " << fetcher->sent_time.time_since_epoch().count() << " expected "
-      << loop1->monotonic_now().time_since_epoch().count();
+      << ": Got " << fetcher->sent_time.time_since_epoch().count()
+      << " expected " << loop1->monotonic_now().time_since_epoch().count();
   EXPECT_TRUE(time_offset < ::std::chrono::milliseconds(500))
       << ": Got " << fetcher->sent_time.time_since_epoch().count()
       << " expected " << loop1->monotonic_now().time_since_epoch().count();
+}
+
+// Tests that a couple phased loops run in a row result in the correct offset
+// and period.
+TEST_P(AbstractEventLoopTest, PhasedLoopTest) {
+  const chrono::milliseconds kOffset = chrono::milliseconds(400);
+  const int kCount = 5;
+
+  auto loop1 = MakePrimary();
+
+  // Collect up a couple of samples.
+  ::std::vector<::aos::monotonic_clock::time_point> times;
+
+  // Run kCount iterations.
+  loop1->AddPhasedLoop(
+      [&times, &loop1](int count) {
+        EXPECT_EQ(count, 1);
+        times.push_back(loop1->monotonic_now());
+        LOG(INFO, "%zu\n", times.size());
+        if (times.size() == kCount) {
+          loop1->Exit();
+        }
+      },
+      chrono::seconds(1), kOffset);
+
+  // Add a delay to make sure that delay during startup doesn't result in a
+  // "missed cycle".
+  SleepFor(chrono::seconds(2));
+
+  Run();
+
+  // Confirm that we got both the right number of samples, and it's odd.
+  EXPECT_EQ(times.size(), static_cast<size_t>(kCount));
+  EXPECT_EQ((times.size() % 2), 1);
+
+  // Grab the middle sample.
+  ::aos::monotonic_clock::time_point middle_time = times[times.size() / 2 + 1];
+
+  // Add up all the delays of all the times.
+  ::aos::monotonic_clock::duration sum = chrono::seconds(0);
+  for (const ::aos::monotonic_clock::time_point time : times) {
+    sum += time - middle_time;
+  }
+
+  // Average and add to the middle to find the average time.
+  sum /= times.size();
+  middle_time += sum;
+
+  // Compute the offset from the start of the second of the average time.  This
+  // should be pretty close to the offset.
+  const ::aos::monotonic_clock::duration remainder =
+      middle_time.time_since_epoch() -
+      chrono::duration_cast<chrono::seconds>(middle_time.time_since_epoch());
+
+  const chrono::milliseconds kEpsilon(100);
+  EXPECT_LT(remainder, kOffset + kEpsilon);
+  EXPECT_GT(remainder, kOffset - kEpsilon);
+
+  // Make sure that the average duration is close to 1 second.
+  EXPECT_NEAR(chrono::duration_cast<chrono::duration<double>>(times.back() -
+                                                              times.front())
+                      .count() /
+                  static_cast<double>(times.size() - 1),
+              1.0, 0.1);
 }
 
 }  // namespace testing

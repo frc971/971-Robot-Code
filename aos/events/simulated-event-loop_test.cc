@@ -18,6 +18,10 @@ class SimulatedEventLoopTestFactory : public EventLoopTestFactory {
 
   void Run() override { event_loop_factory_.Run(); }
 
+  // TODO(austin): Implement this.  It's used currently for a phased loop test.
+  // I'm not sure how much that matters.
+  void SleepFor(::std::chrono::nanoseconds /*duration*/) override {}
+
  private:
    SimulatedEventLoopFactory event_loop_factory_;
 };

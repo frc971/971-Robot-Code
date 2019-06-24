@@ -6,6 +6,7 @@
 #include "aos/logging/logging.h"
 #include "aos/queue.h"
 #include "aos/testing/test_logging.h"
+#include "aos/util/phased_loop.h"
 
 namespace aos {
 namespace {
@@ -90,7 +91,6 @@ class SimulatedFetcher : public RawFetcher {
   ::std::deque<RefCountedBuffer> msgs_;
 };
 
-
 class SimulatedTimerHandler : public TimerHandler {
  public:
   explicit SimulatedTimerHandler(EventScheduler *scheduler,
@@ -132,6 +132,10 @@ class SimulatedTimerHandler : public TimerHandler {
     }
   }
 
+  ::aos::monotonic_clock::time_point monotonic_now() const {
+    return scheduler_->monotonic_now();
+  }
+
  private:
   EventScheduler *scheduler_;
   EventScheduler::Token token_;
@@ -141,6 +145,49 @@ class SimulatedTimerHandler : public TimerHandler {
   monotonic_clock::duration repeat_offset_;
 };
 
+class SimulatedPhasedLoopHandler : public PhasedLoopHandler {
+ public:
+  SimulatedPhasedLoopHandler(EventScheduler *scheduler,
+                             ::std::function<void(int)> fn,
+                             const monotonic_clock::duration interval,
+                             const monotonic_clock::duration offset)
+      : simulated_timer_handler_(scheduler, [this]() { HandleTimerWakeup(); }),
+        phased_loop_(interval, simulated_timer_handler_.monotonic_now(),
+                     offset),
+        fn_(fn) {
+    // TODO(austin): This assumes time doesn't change between when the
+    // constructor is called and when we start running.  It's probably a safe
+    // assumption.
+    Reschedule();
+  }
+
+  void HandleTimerWakeup() {
+    fn_(cycles_elapsed_);
+    Reschedule();
+  }
+
+  void set_interval_and_offset(
+      const monotonic_clock::duration interval,
+      const monotonic_clock::duration offset) override {
+    phased_loop_.set_interval_and_offset(interval, offset);
+  }
+
+  void Reschedule() {
+    cycles_elapsed_ =
+        phased_loop_.Iterate(simulated_timer_handler_.monotonic_now());
+    simulated_timer_handler_.Setup(phased_loop_.sleep_time(),
+                                   ::aos::monotonic_clock::zero());
+  }
+
+ private:
+  SimulatedTimerHandler simulated_timer_handler_;
+
+  time::PhasedLoop phased_loop_;
+
+  int cycles_elapsed_ = 1;
+
+  ::std::function<void(int)> fn_;
+};
 
 class SimulatedEventLoop : public EventLoop {
  public:
@@ -172,6 +219,15 @@ class SimulatedEventLoop : public EventLoop {
     return timers_.back().get();
   }
 
+  PhasedLoopHandler *AddPhasedLoop(::std::function<void(int)> callback,
+                                   const monotonic_clock::duration interval,
+                                   const monotonic_clock::duration offset =
+                                       ::std::chrono::seconds(0)) override {
+    phased_loops_.emplace_back(
+        new SimulatedPhasedLoopHandler(scheduler_, callback, interval, offset));
+    return phased_loops_.back().get();
+  }
+
   void OnRun(::std::function<void()> on_run) override {
     scheduler_->Schedule(scheduler_->monotonic_now(), on_run);
   }
@@ -200,6 +256,7 @@ class SimulatedEventLoop : public EventLoop {
       *queues_;
   ::std::vector<std::string> taken_;
   ::std::vector<std::unique_ptr<TimerHandler>> timers_;
+  ::std::vector<std::unique_ptr<PhasedLoopHandler>> phased_loops_;
 };
 
 EventScheduler::Token EventScheduler::Schedule(

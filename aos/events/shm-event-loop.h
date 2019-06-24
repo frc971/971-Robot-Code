@@ -14,6 +14,7 @@ namespace internal {
 
 class WatcherThreadState;
 class TimerHandlerState;
+class PhasedLoopHandler;
 
 }  // namespace internal
 
@@ -42,6 +43,11 @@ class ShmEventLoop : public EventLoop {
       ::std::function<void(const aos::Message *message)> watcher) override;
 
   TimerHandler *AddTimer(::std::function<void()> callback) override;
+  ::aos::PhasedLoopHandler *AddPhasedLoop(
+      ::std::function<void(int)> callback,
+      const monotonic_clock::duration interval,
+      const monotonic_clock::duration offset =
+          ::std::chrono::seconds(0)) override;
 
   void OnRun(::std::function<void()> on_run) override;
   void Run() override;
@@ -59,6 +65,7 @@ class ShmEventLoop : public EventLoop {
  private:
   friend class internal::WatcherThreadState;
   friend class internal::TimerHandlerState;
+  friend class internal::PhasedLoopHandler;
   // This ThreadState ensures that two watchers in the same loop cannot be
   // triggered concurrently.  Because watchers block threads indefinitely, this
   // has to be shared_ptr in case the EventLoop is destroyed before the thread
@@ -78,6 +85,7 @@ class ShmEventLoop : public EventLoop {
    private:
     friend class internal::WatcherThreadState;
     friend class internal::TimerHandlerState;
+    friend class internal::PhasedLoopHandler;
     friend class ShmEventLoop;
 
     // This mutex ensures that only one watch event happens at a time.
@@ -100,6 +108,7 @@ class ShmEventLoop : public EventLoop {
   internal::EPoll epoll_;
 
   ::std::vector<::std::unique_ptr<internal::TimerHandlerState>> timers_;
+  ::std::vector<::std::unique_ptr<internal::PhasedLoopHandler>> phased_loops_;
   ::std::vector<::std::unique_ptr<internal::WatcherThreadState>> watchers_;
 };
 

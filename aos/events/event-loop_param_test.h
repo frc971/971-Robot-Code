@@ -21,6 +21,9 @@ class EventLoopTestFactory {
 
   // Runs the loops until they quit.
   virtual void Run() = 0;
+
+  // Advances time by sleeping.  Can't be called from inside a loop.
+  virtual void SleepFor(::std::chrono::nanoseconds duration) = 0;
 };
 
 class AbstractEventLoopTestBase
@@ -32,6 +35,10 @@ class AbstractEventLoopTestBase
   ::std::unique_ptr<EventLoop> MakePrimary() { return factory_->MakePrimary(); }
 
   void Run() { return factory_->Run(); }
+
+  void SleepFor(::std::chrono::nanoseconds duration) {
+    return factory_->SleepFor(duration);
+  }
   // You can implement all the usual fixture class members here.
   // To access the test parameter, call GetParam() from class
   // TestWithParam<T>.

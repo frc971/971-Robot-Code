@@ -10,6 +10,7 @@
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/queue.h"
+#include "aos/util/phased_loop.h"
 
 namespace aos {
 
@@ -244,6 +245,8 @@ class WatcherThreadState {
 };
 
 // Adapter class to adapt a timerfd to a TimerHandler.
+// The part of the API which is accessed by the TimerHandler interface needs to
+// be threadsafe.  This means Setup and Disable.
 class TimerHandlerState : public TimerHandler {
  public:
   TimerHandlerState(ShmEventLoop *shm_event_loop, ::std::function<void()> fn)
@@ -259,10 +262,14 @@ class TimerHandlerState : public TimerHandler {
 
   void Setup(monotonic_clock::time_point base,
              monotonic_clock::duration repeat_offset) override {
+    // SetTime is threadsafe already.
     timerfd_.SetTime(base, repeat_offset);
   }
 
-  void Disable() override { timerfd_.Disable(); }
+  void Disable() override {
+    // Disable is also threadsafe already.
+    timerfd_.Disable();
+  }
 
  private:
   ShmEventLoop *shm_event_loop_;
@@ -271,6 +278,70 @@ class TimerHandlerState : public TimerHandler {
 
   // Function to be run on the thread
   ::std::function<void()> fn_;
+};
+
+// Adapter class to the timerfd and PhasedLoop.
+// The part of the API which is accessed by the PhasedLoopHandler interface
+// needs to be threadsafe.  This means set_interval_and_offset
+class PhasedLoopHandler : public ::aos::PhasedLoopHandler {
+ public:
+  PhasedLoopHandler(ShmEventLoop *shm_event_loop, ::std::function<void(int)> fn,
+                    const monotonic_clock::duration interval,
+                    const monotonic_clock::duration offset)
+      : shm_event_loop_(shm_event_loop),
+        phased_loop_(interval, shm_event_loop_->monotonic_now(), offset),
+        fn_(::std::move(fn)) {
+    shm_event_loop_->epoll_.OnReadable(timerfd_.fd(), [this]() {
+      MutexLocker locker(&shm_event_loop_->thread_state_.mutex_);
+      {
+        MutexLocker locker(&mutex_);
+        timerfd_.Read();
+      }
+      // Call the function.  To avoid needing a recursive mutex, drop the lock
+      // before running the function.
+      fn_(cycles_elapsed_);
+      {
+        MutexLocker locker(&mutex_);
+        Reschedule();
+      }
+    });
+  }
+
+  ~PhasedLoopHandler() { shm_event_loop_->epoll_.DeleteFd(timerfd_.fd()); }
+
+  void set_interval_and_offset(
+      const monotonic_clock::duration interval,
+      const monotonic_clock::duration offset) override {
+    MutexLocker locker(&mutex_);
+    phased_loop_.set_interval_and_offset(interval, offset);
+  }
+
+  void Startup() {
+    MutexLocker locker(&mutex_);
+    phased_loop_.Reset(shm_event_loop_->monotonic_now());
+    Reschedule();
+  }
+
+ private:
+  // Reschedules the timer.  Must be called with the mutex held.
+  void Reschedule() {
+    cycles_elapsed_ = phased_loop_.Iterate(shm_event_loop_->monotonic_now());
+    timerfd_.SetTime(phased_loop_.sleep_time(), ::aos::monotonic_clock::zero());
+  }
+
+  ShmEventLoop *shm_event_loop_;
+
+  // Mutex to protect access to the timerfd_ (not strictly necessary), and the
+  // phased_loop (necessary).
+  ::aos::Mutex mutex_;
+
+  TimerFd timerfd_;
+  time::PhasedLoop phased_loop_;
+
+  int cycles_elapsed_ = 1;
+
+  // Function to be run
+  const ::std::function<void(int)> fn_;
 };
 }  // namespace internal
 
@@ -308,6 +379,19 @@ TimerHandler *ShmEventLoop::AddTimer(::std::function<void()> callback) {
   return timers_.back().get();
 }
 
+PhasedLoopHandler *ShmEventLoop::AddPhasedLoop(
+    ::std::function<void(int)> callback,
+    const monotonic_clock::duration interval,
+    const monotonic_clock::duration offset) {
+  ::std::unique_ptr<internal::PhasedLoopHandler> phased_loop(
+      new internal::PhasedLoopHandler(this, ::std::move(callback), interval,
+                                      offset));
+
+  phased_loops_.push_back(::std::move(phased_loop));
+
+  return phased_loops_.back().get();
+}
+
 void ShmEventLoop::OnRun(::std::function<void()> on_run) {
   on_run_.push_back(::std::move(on_run));
 }
@@ -331,6 +415,12 @@ void ShmEventLoop::Run() {
   // Now that we are RT, run all the OnRun handlers.
   for (const auto &run : on_run_) {
     run();
+  }
+
+  // Start up all the phased loops.
+  for (::std::unique_ptr<internal::PhasedLoopHandler> &phased_loop :
+       phased_loops_) {
+    phased_loop->Startup();
   }
   // TODO(austin): We don't need a separate watcher thread if there are only
   // watchers and fetchers.  Could lazily create the epoll loop and pick a

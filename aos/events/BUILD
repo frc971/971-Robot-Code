@@ -43,6 +43,7 @@ cc_library(
         "//aos:init",
         "//aos:queues",
         "//aos/logging",
+        "//aos/util:phased_loop",
     ],
 )
 
@@ -89,5 +90,6 @@ cc_library(
         "//aos:queues",
         "//aos/logging",
         "//aos/testing:test_logging",
+        "//aos/util:phased_loop",
     ],
 )

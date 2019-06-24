@@ -112,6 +112,18 @@ class TimerHandler {
   virtual void Disable() = 0;
 };
 
+// Interface for phased loops.  They are built on timers.
+class PhasedLoopHandler {
+ public:
+  virtual ~PhasedLoopHandler() {}
+
+  // Sets the interval and offset.  Any changes to interval and offset only take
+  // effect when the handler finishes running.
+  virtual void set_interval_and_offset(
+      const monotonic_clock::duration interval,
+      const monotonic_clock::duration offset) = 0;
+};
+
 class EventScheduler;
 
 // Virtual base class for all event queue-types.
@@ -126,16 +138,25 @@ class RawEventLoop {
   // Use this to run code once the thread goes into "real-time-mode",
   virtual void OnRun(::std::function<void()> on_run) = 0;
 
+  // Threadsafe.
   bool is_running() const { return is_running_.load(); }
 
   // Creates a timer that executes callback when the timer expires
   // Returns a TimerHandle for configuration of the timer
   virtual TimerHandler *AddTimer(::std::function<void()> callback) = 0;
 
+  // Creates a timer that executes callback periodically at the specified
+  // interval and offset.  Returns a PhasedLoopHandler for interacting with the
+  // timer.
+  virtual PhasedLoopHandler *AddPhasedLoop(
+      ::std::function<void(int)> callback,
+      const monotonic_clock::duration interval,
+      const monotonic_clock::duration offset = ::std::chrono::seconds(0)) = 0;
+
   // Stops receiving events.
   virtual void Exit() = 0;
 
-  // TODO(austin): This shouldn't belong.
+  // TODO(austin): This shouldn't belong here.
   virtual void Run() = 0;
 
  protected:
