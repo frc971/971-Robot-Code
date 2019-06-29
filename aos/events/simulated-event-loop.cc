@@ -239,6 +239,8 @@ class SimulatedEventLoop : public EventLoop {
     scheduler_->Exit();
   }
 
+  void set_name(const char *name) override { name_ = name; }
+
   SimulatedQueue *GetSimulatedQueue(
       const ::std::pair<::std::string, QueueTypeInfo> &);
 
@@ -257,6 +259,8 @@ class SimulatedEventLoop : public EventLoop {
   ::std::vector<std::string> taken_;
   ::std::vector<std::unique_ptr<TimerHandler>> timers_;
   ::std::vector<std::unique_ptr<PhasedLoopHandler>> phased_loops_;
+
+  ::std::string name_;
 };
 
 EventScheduler::Token EventScheduler::Schedule(

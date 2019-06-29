@@ -181,6 +181,8 @@ class WatcherThreadState {
 
   // Runs the watcher callback on new messages.
   void Run() {
+    ::aos::SetCurrentThreadName(thread_state_->name() + ".watcher");
+
     // Signal the main thread that we are now ready.
     thread_state_->MaybeSetCurrentThreadRealtimePriority();
     {
@@ -396,11 +398,15 @@ void ShmEventLoop::OnRun(::std::function<void()> on_run) {
   on_run_.push_back(::std::move(on_run));
 }
 
+void ShmEventLoop::set_name(const char *name) { thread_state_.name_ = name; }
+
 void ShmEventLoop::Run() {
   // Start all the watcher threads.
   for (::std::unique_ptr<internal::WatcherThreadState> &watcher : watchers_) {
     watcher->Start();
   }
+
+  ::aos::SetCurrentThreadName(thread_state_.name());
 
   // Now, all the threads are up.  Go RT.
   thread_state_.MaybeSetCurrentThreadRealtimePriority();

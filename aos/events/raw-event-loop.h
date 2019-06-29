@@ -138,6 +138,9 @@ class RawEventLoop {
   // Use this to run code once the thread goes into "real-time-mode",
   virtual void OnRun(::std::function<void()> on_run) = 0;
 
+  // Sets the name of the event loop.
+  virtual void set_name(const char *name) = 0;
+
   // Threadsafe.
   bool is_running() const { return is_running_.load(); }
 

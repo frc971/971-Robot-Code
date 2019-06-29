@@ -62,6 +62,8 @@ class ShmEventLoop : public EventLoop {
     thread_state_.priority_ = priority;
   }
 
+  void set_name(const char *name) override;
+
  private:
   friend class internal::WatcherThreadState;
   friend class internal::TimerHandlerState;
@@ -82,6 +84,8 @@ class ShmEventLoop : public EventLoop {
 
     void MaybeSetCurrentThreadRealtimePriority();
 
+    const ::std::string &name() const { return name_; }
+
    private:
     friend class internal::WatcherThreadState;
     friend class internal::TimerHandlerState;
@@ -96,6 +100,9 @@ class ShmEventLoop : public EventLoop {
     ::std::atomic<bool> loop_running_{false};
     bool loop_finished_ = false;
     int priority_ = -1;
+
+    // Immutable after Start is called.
+    ::std::string name_;
   };
 
   // Tracks that we can't have multiple watchers or a sender and a watcher (or
