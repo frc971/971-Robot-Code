@@ -38,5 +38,3 @@ queue_group RollersQueue {
   queue Output output;
   queue Status status;
 };
-
-queue_group RollersQueue rollers_queue;

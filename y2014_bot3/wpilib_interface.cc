@@ -50,7 +50,6 @@
 
 using ::aos::util::SimpleLogInterval;
 using ::frc971::control_loops::drivetrain_queue;
-using ::y2014_bot3::control_loops::rollers_queue;
 using ::frc971::wpilib::BufferedPcm;
 using ::frc971::wpilib::BufferedSolenoid;
 using ::frc971::wpilib::LoopOutputHandler;
