@@ -21,7 +21,6 @@
 
 #include "aos/commonmath.h"
 #include "aos/events/shm-event-loop.h"
-#include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/logging/queue_logging.h"
 #include "aos/make_unique.h"
@@ -29,7 +28,6 @@
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
-#include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/control_loops.q.h"
@@ -58,8 +56,9 @@
 using ::frc971::control_loops::drivetrain_queue;
 using ::y2016::control_loops::shooter::shooter_queue;
 using ::y2016::control_loops::superstructure_queue;
-using namespace frc;
 using aos::make_unique;
+using ::frc971::wpilib::LoopOutputHandler;
+using ::y2016::control_loops::shooter::ShooterQueue;
 
 namespace y2016 {
 namespace wpilib {
@@ -163,78 +162,81 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     hall_filter_.SetPeriodNanoSeconds(100000);
   }
 
-  void set_drivetrain_left_hall(::std::unique_ptr<AnalogInput> analog) {
+  void set_drivetrain_left_hall(::std::unique_ptr<::frc::AnalogInput> analog) {
     drivetrain_left_hall_ = ::std::move(analog);
   }
 
-  void set_drivetrain_right_hall(::std::unique_ptr<AnalogInput> analog) {
+  void set_drivetrain_right_hall(::std::unique_ptr<::frc::AnalogInput> analog) {
     drivetrain_right_hall_ = ::std::move(analog);
   }
 
   // Shooter setters.
-  void set_shooter_left_encoder(::std::unique_ptr<Encoder> encoder) {
+  void set_shooter_left_encoder(::std::unique_ptr<::frc::Encoder> encoder) {
     fast_encoder_filter_.Add(encoder.get());
     shooter_left_encoder_ = ::std::move(encoder);
   }
 
-  void set_shooter_right_encoder(::std::unique_ptr<Encoder> encoder) {
+  void set_shooter_right_encoder(::std::unique_ptr<::frc::Encoder> encoder) {
     fast_encoder_filter_.Add(encoder.get());
     shooter_right_encoder_ = ::std::move(encoder);
   }
 
   // Intake setters.
-  void set_intake_encoder(::std::unique_ptr<Encoder> encoder) {
+  void set_intake_encoder(::std::unique_ptr<::frc::Encoder> encoder) {
     medium_encoder_filter_.Add(encoder.get());
     intake_encoder_.set_encoder(::std::move(encoder));
   }
 
-  void set_intake_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
+  void set_intake_potentiometer(
+      ::std::unique_ptr<::frc::AnalogInput> potentiometer) {
     intake_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
-  void set_intake_index(::std::unique_ptr<DigitalInput> index) {
+  void set_intake_index(::std::unique_ptr<::frc::DigitalInput> index) {
     medium_encoder_filter_.Add(index.get());
     intake_encoder_.set_index(::std::move(index));
   }
 
   // Shoulder setters.
-  void set_shoulder_encoder(::std::unique_ptr<Encoder> encoder) {
+  void set_shoulder_encoder(::std::unique_ptr<::frc::Encoder> encoder) {
     medium_encoder_filter_.Add(encoder.get());
     shoulder_encoder_.set_encoder(::std::move(encoder));
   }
 
   void set_shoulder_potentiometer(
-      ::std::unique_ptr<AnalogInput> potentiometer) {
+      ::std::unique_ptr<::frc::AnalogInput> potentiometer) {
     shoulder_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
-  void set_shoulder_index(::std::unique_ptr<DigitalInput> index) {
+  void set_shoulder_index(::std::unique_ptr<::frc::DigitalInput> index) {
     medium_encoder_filter_.Add(index.get());
     shoulder_encoder_.set_index(::std::move(index));
   }
 
   // Wrist setters.
-  void set_wrist_encoder(::std::unique_ptr<Encoder> encoder) {
+  void set_wrist_encoder(::std::unique_ptr<::frc::Encoder> encoder) {
     medium_encoder_filter_.Add(encoder.get());
     wrist_encoder_.set_encoder(::std::move(encoder));
   }
 
-  void set_wrist_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
+  void set_wrist_potentiometer(
+      ::std::unique_ptr<::frc::AnalogInput> potentiometer) {
     wrist_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
-  void set_wrist_index(::std::unique_ptr<DigitalInput> index) {
+  void set_wrist_index(::std::unique_ptr<::frc::DigitalInput> index) {
     medium_encoder_filter_.Add(index.get());
     wrist_encoder_.set_index(::std::move(index));
   }
 
   // Ball detector setter.
-  void set_ball_detector(::std::unique_ptr<AnalogInput> analog) {
+  void set_ball_detector(::std::unique_ptr<::frc::AnalogInput> analog) {
     ball_detector_ = ::std::move(analog);
   }
 
   // Autonomous mode switch setter.
-  void set_autonomous_mode(int i, ::std::unique_ptr<DigitalInput> sensor) {
+  void set_autonomous_mode(int i,
+                           ::std::unique_ptr<::frc::DigitalInput> sensor) {
     autonomous_modes_.at(i) = ::std::move(sensor);
   }
 
@@ -318,27 +320,45 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   ::aos::Sender<::y2016::sensors::BallDetector> ball_detector_sender_;
   ::aos::Sender<::frc971::autonomous::AutonomousMode> auto_mode_sender_;
 
-  ::std::unique_ptr<AnalogInput> drivetrain_left_hall_, drivetrain_right_hall_;
+  ::std::unique_ptr<::frc::AnalogInput> drivetrain_left_hall_,
+      drivetrain_right_hall_;
 
-  ::std::unique_ptr<Encoder> shooter_left_encoder_, shooter_right_encoder_;
+  ::std::unique_ptr<::frc::Encoder> shooter_left_encoder_,
+      shooter_right_encoder_;
   ::frc971::wpilib::DMAEncoderAndPotentiometer intake_encoder_,
       shoulder_encoder_, wrist_encoder_;
-  ::std::unique_ptr<AnalogInput> ball_detector_;
+  ::std::unique_ptr<::frc::AnalogInput> ball_detector_;
 
-  ::std::array<::std::unique_ptr<DigitalInput>, 4> autonomous_modes_;
+  ::std::array<::std::unique_ptr<::frc::DigitalInput>, 4> autonomous_modes_;
 
-  DigitalGlitchFilter hall_filter_;
+  ::frc::DigitalGlitchFilter hall_filter_;
 };
 
 class SolenoidWriter {
  public:
-  SolenoidWriter(const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
+  SolenoidWriter(::aos::EventLoop *event_loop,
+                 const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
       : pcm_(pcm),
-        drivetrain_(".frc971.control_loops.drivetrain_queue.output"),
-        shooter_(".y2016.control_loops.shooter.shooter_queue.output"),
-        superstructure_(".y2016.control_loops.superstructure_queue.output") {}
+        drivetrain_(
+            event_loop
+                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Output>(
+                    ".frc971.control_loops.drivetrain_queue.output")),
+        shooter_(event_loop->MakeFetcher<ShooterQueue::Output>(
+            ".y2016.control_loops.shooter.shooter_queue.output")),
+        superstructure_(event_loop->MakeFetcher<
+                        ::y2016::control_loops::SuperstructureQueue::Output>(
+            ".y2016.control_loops.superstructure_queue.output")) {
+    event_loop->set_name("Solenoids");
+    event_loop->SetRuntimeRealtimePriority(27);
 
-  void set_compressor(::std::unique_ptr<Compressor> compressor) {
+    event_loop->OnRun([this]() { compressor_->Start(); });
+
+    event_loop->AddPhasedLoop([this](int iterations) { Loop(iterations); },
+                              ::std::chrono::milliseconds(20),
+                              ::std::chrono::milliseconds(1));
+  }
+
+  void set_compressor(::std::unique_ptr<::frc::Compressor> compressor) {
     compressor_ = ::std::move(compressor);
   }
 
@@ -375,185 +395,163 @@ class SolenoidWriter {
     lights_ = ::std::move(s);
   }
 
-  void set_flashlight(::std::unique_ptr<Relay> relay) {
+  void set_flashlight(::std::unique_ptr<::frc::Relay> relay) {
     flashlight_ = ::std::move(relay);
   }
 
-  void operator()() {
-    compressor_->Start();
-    ::aos::SetCurrentThreadName("Solenoids");
-    ::aos::SetCurrentThreadRealtimePriority(27);
+ private:
+  void Loop(const int iterations) {
+    if (iterations != 1) {
+      LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
+    }
 
-    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(20),
-                                        ::aos::monotonic_clock::now(),
-                                        ::std::chrono::milliseconds(1));
-
-    while (run_) {
-      {
-        const int iterations = phased_loop.SleepUntilNext();
-        if (iterations != 1) {
-          LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
-        }
+    {
+      drivetrain_.Fetch();
+      if (drivetrain_.get()) {
+        LOG_STRUCT(DEBUG, "solenoids", *drivetrain_);
+        drivetrain_shifter_->Set(
+            !(drivetrain_->left_high || drivetrain_->right_high));
       }
+    }
 
-      {
-        drivetrain_.FetchLatest();
-        if (drivetrain_.get()) {
-          LOG_STRUCT(DEBUG, "solenoids", *drivetrain_);
-          drivetrain_shifter_->Set(
-              !(drivetrain_->left_high || drivetrain_->right_high));
-        }
-      }
-
-      {
-        shooter_.FetchLatest();
-        if (shooter_.get()) {
-          LOG_STRUCT(DEBUG, "solenoids", *shooter_);
-          shooter_clamp_->Set(shooter_->clamp_open);
-          shooter_pusher_->Set(shooter_->push_to_shooter);
-          lights_->Set(shooter_->lights_on);
-          if (shooter_->forwards_flashlight) {
-            if (shooter_->backwards_flashlight) {
-              flashlight_->Set(Relay::kOn);
-            } else {
-              flashlight_->Set(Relay::kReverse);
-            }
+    {
+      shooter_.Fetch();
+      if (shooter_.get()) {
+        LOG_STRUCT(DEBUG, "solenoids", *shooter_);
+        shooter_clamp_->Set(shooter_->clamp_open);
+        shooter_pusher_->Set(shooter_->push_to_shooter);
+        lights_->Set(shooter_->lights_on);
+        if (shooter_->forwards_flashlight) {
+          if (shooter_->backwards_flashlight) {
+            flashlight_->Set(::frc::Relay::kOn);
           } else {
-            if (shooter_->backwards_flashlight) {
-              flashlight_->Set(Relay::kForward);
-            } else {
-              flashlight_->Set(Relay::kOff);
-            }
+            flashlight_->Set(::frc::Relay::kReverse);
+          }
+        } else {
+          if (shooter_->backwards_flashlight) {
+            flashlight_->Set(::frc::Relay::kForward);
+          } else {
+            flashlight_->Set(::frc::Relay::kOff);
           }
         }
       }
+    }
 
-      {
-        superstructure_.FetchLatest();
-        if (superstructure_.get()) {
-          LOG_STRUCT(DEBUG, "solenoids", *superstructure_);
+    {
+      superstructure_.Fetch();
+      if (superstructure_.get()) {
+        LOG_STRUCT(DEBUG, "solenoids", *superstructure_);
 
-          climber_trigger_->Set(superstructure_->unfold_climber);
+        climber_trigger_->Set(superstructure_->unfold_climber);
 
-          traverse_->Set(superstructure_->traverse_down);
-          traverse_latch_->Set(superstructure_->traverse_unlatched);
-        }
+        traverse_->Set(superstructure_->traverse_down);
+        traverse_latch_->Set(superstructure_->traverse_unlatched);
       }
+    }
 
-      {
-        ::frc971::wpilib::PneumaticsToLog to_log;
-        { to_log.compressor_on = compressor_->Enabled(); }
+    {
+      ::frc971::wpilib::PneumaticsToLog to_log;
+      { to_log.compressor_on = compressor_->Enabled(); }
 
-        pcm_->Flush();
-        to_log.read_solenoids = pcm_->GetAll();
-        LOG_STRUCT(DEBUG, "pneumatics info", to_log);
-      }
+      pcm_->Flush();
+      to_log.read_solenoids = pcm_->GetAll();
+      LOG_STRUCT(DEBUG, "pneumatics info", to_log);
     }
   }
 
-  void Quit() { run_ = false; }
-
- private:
   const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm_;
 
   ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> drivetrain_shifter_,
       shooter_clamp_, shooter_pusher_, lights_, traverse_, traverse_latch_,
       climber_trigger_;
-  ::std::unique_ptr<Relay> flashlight_;
-  ::std::unique_ptr<Compressor> compressor_;
+  ::std::unique_ptr<::frc::Relay> flashlight_;
+  ::std::unique_ptr<::frc::Compressor> compressor_;
 
-  ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
-  ::aos::Queue<::y2016::control_loops::shooter::ShooterQueue::Output> shooter_;
-  ::aos::Queue<::y2016::control_loops::SuperstructureQueue::Output>
+  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
+  ::aos::Fetcher<ShooterQueue::Output> shooter_;
+  ::aos::Fetcher<::y2016::control_loops::SuperstructureQueue::Output>
       superstructure_;
-
-  ::std::atomic<bool> run_{true};
 };
 
-class ShooterWriter : public ::frc971::wpilib::LoopOutputHandler {
+class ShooterWriter : public LoopOutputHandler<ShooterQueue::Output> {
  public:
   ShooterWriter(::aos::EventLoop *event_loop)
-      : ::frc971::wpilib::LoopOutputHandler(event_loop) {}
+      : LoopOutputHandler<ShooterQueue::Output>(
+            event_loop, ".y2016.control_loops.shooter.shooter_queue.output") {}
 
-  void set_shooter_left_talon(::std::unique_ptr<Talon> t) {
+  void set_shooter_left_talon(::std::unique_ptr<::frc::Talon> t) {
     shooter_left_talon_ = ::std::move(t);
   }
 
-  void set_shooter_right_talon(::std::unique_ptr<Talon> t) {
+  void set_shooter_right_talon(::std::unique_ptr<::frc::Talon> t) {
     shooter_right_talon_ = ::std::move(t);
   }
 
  private:
-  virtual void Read() override {
-    ::y2016::control_loops::shooter::shooter_queue.output.FetchAnother();
+  void Write(const ShooterQueue::Output &output) override {
+    LOG_STRUCT(DEBUG, "will output", output);
+
+    shooter_left_talon_->SetSpeed(output.voltage_left / 12.0);
+    shooter_right_talon_->SetSpeed(-output.voltage_right / 12.0);
   }
 
-  virtual void Write() override {
-    auto &queue = ::y2016::control_loops::shooter::shooter_queue.output;
-    LOG_STRUCT(DEBUG, "will output", *queue);
-
-    shooter_left_talon_->SetSpeed(queue->voltage_left / 12.0);
-    shooter_right_talon_->SetSpeed(-queue->voltage_right / 12.0);
-  }
-
-  virtual void Stop() override {
+  void Stop() override {
     LOG(WARNING, "Shooter output too old.\n");
     shooter_left_talon_->SetDisabled();
     shooter_right_talon_->SetDisabled();
   }
 
-  ::std::unique_ptr<Talon> shooter_left_talon_, shooter_right_talon_;
+  ::std::unique_ptr<::frc::Talon> shooter_left_talon_, shooter_right_talon_;
 };
 
-class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
+class SuperstructureWriter
+    : public LoopOutputHandler<
+          ::y2016::control_loops::SuperstructureQueue::Output> {
  public:
   SuperstructureWriter(::aos::EventLoop *event_loop)
-      : ::frc971::wpilib::LoopOutputHandler(event_loop) {}
+      : LoopOutputHandler<::y2016::control_loops::SuperstructureQueue::Output>(
+            event_loop, ".y2016.control_loops.superstructure_queue.output") {}
 
-  void set_intake_talon(::std::unique_ptr<Talon> t) {
+  void set_intake_talon(::std::unique_ptr<::frc::Talon> t) {
     intake_talon_ = ::std::move(t);
   }
 
-  void set_shoulder_talon(::std::unique_ptr<Talon> t) {
+  void set_shoulder_talon(::std::unique_ptr<::frc::Talon> t) {
     shoulder_talon_ = ::std::move(t);
   }
 
-  void set_wrist_talon(::std::unique_ptr<Talon> t) {
+  void set_wrist_talon(::std::unique_ptr<::frc::Talon> t) {
     wrist_talon_ = ::std::move(t);
   }
 
-  void set_top_rollers_talon(::std::unique_ptr<Talon> t) {
+  void set_top_rollers_talon(::std::unique_ptr<::frc::Talon> t) {
     top_rollers_talon_ = ::std::move(t);
   }
 
-  void set_bottom_rollers_talon(::std::unique_ptr<Talon> t) {
+  void set_bottom_rollers_talon(::std::unique_ptr<::frc::Talon> t) {
     bottom_rollers_talon_ = ::std::move(t);
   }
 
-  void set_climber_talon(::std::unique_ptr<Talon> t) {
+  void set_climber_talon(::std::unique_ptr<::frc::Talon> t) {
     climber_talon_ = ::std::move(t);
   }
 
  private:
-  virtual void Read() override {
-    ::y2016::control_loops::superstructure_queue.output.FetchAnother();
-  }
-
-  virtual void Write() override {
-    auto &queue = ::y2016::control_loops::superstructure_queue.output;
-    LOG_STRUCT(DEBUG, "will output", *queue);
-    intake_talon_->SetSpeed(::aos::Clip(queue->voltage_intake,
+  virtual void Write(const ::y2016::control_loops::SuperstructureQueue::Output
+                         &output) override {
+    LOG_STRUCT(DEBUG, "will output", output);
+    intake_talon_->SetSpeed(::aos::Clip(output.voltage_intake,
                                         -kMaxBringupPower, kMaxBringupPower) /
                             12.0);
-    shoulder_talon_->SetSpeed(::aos::Clip(-queue->voltage_shoulder,
+    shoulder_talon_->SetSpeed(::aos::Clip(-output.voltage_shoulder,
                                           -kMaxBringupPower, kMaxBringupPower) /
                               12.0);
     wrist_talon_->SetSpeed(
-        ::aos::Clip(queue->voltage_wrist, -kMaxBringupPower, kMaxBringupPower) /
+        ::aos::Clip(output.voltage_wrist, -kMaxBringupPower, kMaxBringupPower) /
         12.0);
-    top_rollers_talon_->SetSpeed(-queue->voltage_top_rollers / 12.0);
-    bottom_rollers_talon_->SetSpeed(-queue->voltage_bottom_rollers / 12.0);
-    climber_talon_->SetSpeed(-queue->voltage_climber / 12.0);
+    top_rollers_talon_->SetSpeed(-output.voltage_top_rollers / 12.0);
+    bottom_rollers_talon_->SetSpeed(-output.voltage_bottom_rollers / 12.0);
+    climber_talon_->SetSpeed(-output.voltage_climber / 12.0);
   }
 
   virtual void Stop() override {
@@ -563,101 +561,110 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     wrist_talon_->SetDisabled();
   }
 
-  ::std::unique_ptr<Talon> intake_talon_, shoulder_talon_, wrist_talon_,
+  ::std::unique_ptr<::frc::Talon> intake_talon_, shoulder_talon_, wrist_talon_,
       top_rollers_talon_, bottom_rollers_talon_, climber_talon_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
  public:
-  ::std::unique_ptr<Encoder> make_encoder(int index) {
-    return make_unique<Encoder>(10 + index * 2, 11 + index * 2, false,
-                                Encoder::k4X);
+  ::std::unique_ptr<::frc::Encoder> make_encoder(int index) {
+    return make_unique<::frc::Encoder>(10 + index * 2, 11 + index * 2, false,
+                                       ::frc::Encoder::k4X);
   }
 
   void Run() override {
-    ::aos::InitNRT();
-    ::aos::SetCurrentThreadName("StartCompetition");
+    // Thread 1.
+    ::aos::ShmEventLoop joystick_sender_event_loop;
+    ::frc971::wpilib::JoystickSender joystick_sender(
+        &joystick_sender_event_loop);
+    AddLoop(&joystick_sender_event_loop);
 
-    ::aos::ShmEventLoop event_loop;
+    // Thread 2.
+    ::aos::ShmEventLoop pdp_fetcher_event_loop;
+    ::frc971::wpilib::PDPFetcher pdp_fetcher(&pdp_fetcher_event_loop);
+    AddLoop(&pdp_fetcher_event_loop);
 
-    ::frc971::wpilib::JoystickSender joystick_sender(&event_loop);
-    ::std::thread joystick_thread(::std::ref(joystick_sender));
+    // Thread 3.
+    ::aos::ShmEventLoop sensor_reader_event_loop;
+    SensorReader sensor_reader(&sensor_reader_event_loop);
 
-    ::frc971::wpilib::PDPFetcher pdp_fetcher(&event_loop);
-    ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
-    SensorReader reader(&event_loop);
+    sensor_reader.set_drivetrain_left_encoder(make_encoder(5));
+    sensor_reader.set_drivetrain_right_encoder(make_encoder(6));
+    sensor_reader.set_drivetrain_left_hall(make_unique<::frc::AnalogInput>(5));
+    sensor_reader.set_drivetrain_right_hall(make_unique<::frc::AnalogInput>(6));
 
-    reader.set_drivetrain_left_encoder(make_encoder(5));
-    reader.set_drivetrain_right_encoder(make_encoder(6));
-    reader.set_drivetrain_left_hall(make_unique<AnalogInput>(5));
-    reader.set_drivetrain_right_hall(make_unique<AnalogInput>(6));
+    sensor_reader.set_shooter_left_encoder(make_encoder(7));
+    sensor_reader.set_shooter_right_encoder(make_encoder(-3));
 
-    reader.set_shooter_left_encoder(make_encoder(7));
-    reader.set_shooter_right_encoder(make_encoder(-3));
+    sensor_reader.set_intake_encoder(make_encoder(0));
+    sensor_reader.set_intake_index(make_unique<::frc::DigitalInput>(0));
+    sensor_reader.set_intake_potentiometer(make_unique<::frc::AnalogInput>(0));
 
-    reader.set_intake_encoder(make_encoder(0));
-    reader.set_intake_index(make_unique<DigitalInput>(0));
-    reader.set_intake_potentiometer(make_unique<AnalogInput>(0));
+    sensor_reader.set_shoulder_encoder(make_encoder(4));
+    sensor_reader.set_shoulder_index(make_unique<::frc::DigitalInput>(2));
+    sensor_reader.set_shoulder_potentiometer(
+        make_unique<::frc::AnalogInput>(2));
 
-    reader.set_shoulder_encoder(make_encoder(4));
-    reader.set_shoulder_index(make_unique<DigitalInput>(2));
-    reader.set_shoulder_potentiometer(make_unique<AnalogInput>(2));
+    sensor_reader.set_wrist_encoder(make_encoder(1));
+    sensor_reader.set_wrist_index(make_unique<::frc::DigitalInput>(1));
+    sensor_reader.set_wrist_potentiometer(make_unique<::frc::AnalogInput>(1));
 
-    reader.set_wrist_encoder(make_encoder(1));
-    reader.set_wrist_index(make_unique<DigitalInput>(1));
-    reader.set_wrist_potentiometer(make_unique<AnalogInput>(1));
+    sensor_reader.set_ball_detector(make_unique<::frc::AnalogInput>(7));
 
-    reader.set_ball_detector(make_unique<AnalogInput>(7));
-
-    reader.set_autonomous_mode(0, make_unique<DigitalInput>(9));
-    reader.set_autonomous_mode(1, make_unique<DigitalInput>(8));
-    reader.set_autonomous_mode(2, make_unique<DigitalInput>(7));
-    reader.set_autonomous_mode(3, make_unique<DigitalInput>(6));
-
-    ::std::thread reader_thread(::std::ref(reader));
+    sensor_reader.set_autonomous_mode(0, make_unique<::frc::DigitalInput>(9));
+    sensor_reader.set_autonomous_mode(1, make_unique<::frc::DigitalInput>(8));
+    sensor_reader.set_autonomous_mode(2, make_unique<::frc::DigitalInput>(7));
+    sensor_reader.set_autonomous_mode(3, make_unique<::frc::DigitalInput>(6));
+    AddLoop(&sensor_reader_event_loop);
 
     // TODO(Brian): This interacts poorly with the SpiRxClearer in ADIS16448.
-    ::frc971::wpilib::GyroSender gyro_sender(&event_loop);
-    ::std::thread gyro_thread(::std::ref(gyro_sender));
+    // Thread 4.
+    ::aos::ShmEventLoop gyro_event_loop;
+    ::frc971::wpilib::GyroSender gyro_sender(&gyro_event_loop);
+    AddLoop(&gyro_event_loop);
 
-    auto imu_trigger = make_unique<DigitalInput>(3);
-    ::frc971::wpilib::ADIS16448 imu(&event_loop, SPI::Port::kMXP,
+    // Thread 5.
+    ::aos::ShmEventLoop imu_event_loop;
+    auto imu_trigger = make_unique<::frc::DigitalInput>(3);
+    ::frc971::wpilib::ADIS16448 imu(&imu_event_loop, ::frc::SPI::Port::kMXP,
                                     imu_trigger.get());
-    ::std::thread imu_thread(::std::ref(imu));
+    AddLoop(&imu_event_loop);
 
-    ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&event_loop);
+    // Thread 5.
+    ::aos::ShmEventLoop output_event_loop;
+    ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&output_event_loop);
     drivetrain_writer.set_left_controller0(
-        ::std::unique_ptr<Talon>(new Talon(5)), false);
+        ::std::unique_ptr<::frc::Talon>(new ::frc::Talon(5)), false);
     drivetrain_writer.set_right_controller0(
-        ::std::unique_ptr<Talon>(new Talon(4)), true);
-    ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
+        ::std::unique_ptr<::frc::Talon>(new ::frc::Talon(4)), true);
 
-    ShooterWriter shooter_writer(&event_loop);
+    ShooterWriter shooter_writer(&output_event_loop);
     shooter_writer.set_shooter_left_talon(
-        ::std::unique_ptr<Talon>(new Talon(9)));
+        ::std::unique_ptr<::frc::Talon>(new ::frc::Talon(9)));
     shooter_writer.set_shooter_right_talon(
-        ::std::unique_ptr<Talon>(new Talon(8)));
-    ::std::thread shooter_writer_thread(::std::ref(shooter_writer));
+        ::std::unique_ptr<::frc::Talon>(new ::frc::Talon(8)));
 
-    SuperstructureWriter superstructure_writer(&event_loop);
+    SuperstructureWriter superstructure_writer(&output_event_loop);
     superstructure_writer.set_intake_talon(
-        ::std::unique_ptr<Talon>(new Talon(3)));
+        ::std::unique_ptr<::frc::Talon>(new ::frc::Talon(3)));
     superstructure_writer.set_shoulder_talon(
-        ::std::unique_ptr<Talon>(new Talon(6)));
+        ::std::unique_ptr<::frc::Talon>(new ::frc::Talon(6)));
     superstructure_writer.set_wrist_talon(
-        ::std::unique_ptr<Talon>(new Talon(2)));
+        ::std::unique_ptr<::frc::Talon>(new ::frc::Talon(2)));
     superstructure_writer.set_top_rollers_talon(
-        ::std::unique_ptr<Talon>(new Talon(1)));
+        ::std::unique_ptr<::frc::Talon>(new ::frc::Talon(1)));
     superstructure_writer.set_bottom_rollers_talon(
-        ::std::unique_ptr<Talon>(new Talon(0)));
+        ::std::unique_ptr<::frc::Talon>(new ::frc::Talon(0)));
     superstructure_writer.set_climber_talon(
-        ::std::unique_ptr<Talon>(new Talon(7)));
-    ::std::thread superstructure_writer_thread(
-        ::std::ref(superstructure_writer));
+        ::std::unique_ptr<::frc::Talon>(new ::frc::Talon(7)));
 
+    AddLoop(&output_event_loop);
+
+    // Thread 6.
+    ::aos::ShmEventLoop solenoid_writer_event_loop;
     ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
         new ::frc971::wpilib::BufferedPcm());
-    SolenoidWriter solenoid_writer(pcm);
+    SolenoidWriter solenoid_writer(&solenoid_writer_event_loop, pcm);
     solenoid_writer.set_drivetrain_shifter(pcm->MakeSolenoid(0));
     solenoid_writer.set_traverse_latch(pcm->MakeSolenoid(2));
     solenoid_writer.set_traverse(pcm->MakeSolenoid(3));
@@ -665,45 +672,12 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     solenoid_writer.set_shooter_pusher(pcm->MakeSolenoid(5));
     solenoid_writer.set_lights(pcm->MakeSolenoid(6));
     solenoid_writer.set_climber_trigger(pcm->MakeSolenoid(1));
-    solenoid_writer.set_flashlight(make_unique<Relay>(0));
+    solenoid_writer.set_flashlight(make_unique<::frc::Relay>(0));
 
-    solenoid_writer.set_compressor(make_unique<Compressor>());
+    solenoid_writer.set_compressor(make_unique<::frc::Compressor>());
+    AddLoop(&solenoid_writer_event_loop);
 
-    ::std::thread solenoid_thread(::std::ref(solenoid_writer));
-
-    // Wait forever. Not much else to do...
-    while (true) {
-      const int r = select(0, nullptr, nullptr, nullptr, nullptr);
-      if (r != 0) {
-        PLOG(WARNING, "infinite select failed");
-      } else {
-        PLOG(WARNING, "infinite select succeeded??\n");
-      }
-    }
-
-    LOG(ERROR, "Exiting WPILibRobot\n");
-
-    joystick_sender.Quit();
-    joystick_thread.join();
-    pdp_fetcher.Quit();
-    pdp_fetcher_thread.join();
-    reader.Quit();
-    reader_thread.join();
-    gyro_sender.Quit();
-    gyro_thread.join();
-    imu.Quit();
-    imu_thread.join();
-
-    drivetrain_writer.Quit();
-    drivetrain_writer_thread.join();
-    shooter_writer.Quit();
-    shooter_writer_thread.join();
-    superstructure_writer.Quit();
-    superstructure_writer_thread.join();
-    solenoid_writer.Quit();
-    solenoid_thread.join();
-
-    ::aos::Cleanup();
+    RunLoops();
   }
 };
 

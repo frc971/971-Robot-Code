@@ -10,25 +10,21 @@
 namespace frc971 {
 namespace wpilib {
 
-void DrivetrainWriter::Write() {
-  auto &queue = ::frc971::control_loops::drivetrain_queue.output;
-  LOG_STRUCT(DEBUG, "will output", *queue);
-  left_controller0_->SetSpeed(SafeSpeed(reversed_left0_, queue->left_voltage));
+void DrivetrainWriter::Write(
+    const ::frc971::control_loops::DrivetrainQueue::Output &output) {
+  LOG_STRUCT(DEBUG, "will output", output);
+  left_controller0_->SetSpeed(SafeSpeed(reversed_left0_, output.left_voltage));
   right_controller0_->SetSpeed(
-      SafeSpeed(reversed_right0_, queue->right_voltage));
+      SafeSpeed(reversed_right0_, output.right_voltage));
 
   if (left_controller1_) {
     left_controller1_->SetSpeed(
-        SafeSpeed(reversed_left1_, queue->left_voltage));
+        SafeSpeed(reversed_left1_, output.left_voltage));
   }
   if (right_controller1_) {
     right_controller1_->SetSpeed(
-        SafeSpeed(reversed_right1_, queue->right_voltage));
+        SafeSpeed(reversed_right1_, output.right_voltage));
   }
-}
-
-void DrivetrainWriter::Read() {
-  ::frc971::control_loops::drivetrain_queue.output.FetchAnother();
 }
 
 void DrivetrainWriter::Stop() {

@@ -43,25 +43,21 @@ class ADIS16448 {
   // Sets the reset line for the IMU to use for error recovery.
   void set_reset(frc::DigitalOutput *output) { reset_ = output; }
 
-  // For ::std::thread to call.
-  //
-  // Initializes the sensor and then loops until Quit() is called taking
-  // readings.
-  void operator()();
-
   // Sets a function to be called immediately after each time this class uses
   // the SPI bus. This is a good place to do other things on the bus.
   void set_spi_idle_callback(std::function<void()> spi_idle_callback) {
     spi_idle_callback_ = std::move(spi_idle_callback);
   }
 
-  void Quit() { run_ = false; }
-
   double gyro_x_zeroed_offset() const { return gyro_x_zeroed_offset_; }
   double gyro_y_zeroed_offset() const { return gyro_y_zeroed_offset_; }
   double gyro_z_zeroed_offset() const { return gyro_z_zeroed_offset_; }
 
  private:
+  // Initializes the sensor and then loops until Quit() is called taking
+  // readings.
+  void DoRun();
+
   // Try to initialize repeatedly as long as we're supposed to be running.
   void InitializeUntilSuccessful();
 
@@ -104,7 +100,6 @@ class ADIS16448 {
   frc::DigitalOutput *reset_ = nullptr;
 
   std::function<void()> spi_idle_callback_ = []() {};
-  ::std::atomic<bool> run_{true};
 
   // The averaged values of the gyro over 6 seconds after power up.
   bool gyros_are_zeroed_ = false;

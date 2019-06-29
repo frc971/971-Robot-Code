@@ -59,7 +59,7 @@
 #endif
 
 using ::frc971::control_loops::drivetrain_queue;
-using ::y2017::control_loops::superstructure_queue;
+using ::y2017::control_loops::SuperstructureQueue;
 using ::y2017::constants::Values;
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
@@ -129,7 +129,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       : ::frc971::wpilib::SensorReader(event_loop),
         auto_mode_sender_(
             event_loop->MakeSender<::frc971::autonomous::AutonomousMode>(
-                ".frc971.autonomous.auto_mode")) {
+                ".frc971.autonomous.auto_mode")),
+        superstructure_position_sender_(
+            event_loop->MakeSender<SuperstructureQueue::Position>(
+                ".y2017.control_loops.superstructure_queue.position")) {
     // Set to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
@@ -220,7 +223,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     const auto values = constants::GetValues();
 
     {
-      auto superstructure_message = superstructure_queue.position.MakeMessage();
+      auto superstructure_message = superstructure_position_sender_.MakeMessage();
       CopyPosition(intake_encoder_, &superstructure_message->intake,
                    Values::kIntakeEncoderCountsPerRevolution,
                    Values::kIntakeEncoderRatio, intake_pot_translate, true,
@@ -261,6 +264,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
  private:
   ::aos::Sender<::frc971::autonomous::AutonomousMode> auto_mode_sender_;
+  ::aos::Sender<SuperstructureQueue::Position> superstructure_position_sender_;
 
   DigitalGlitchFilter hall_filter_;
 
@@ -282,8 +286,17 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
 class SolenoidWriter {
  public:
-  SolenoidWriter()
-      : superstructure_(".y2017.control_loops.superstructure_queue.output") {}
+  SolenoidWriter(::aos::EventLoop *event_loop)
+      : superstructure_output_fetcher_(
+            event_loop->MakeFetcher<SuperstructureQueue::Output>(
+                ".y2017.control_loops.superstructure_queue.output")) {
+    event_loop->set_name("Solenoids");
+    event_loop->SetRuntimeRealtimePriority(27);
+
+    event_loop->AddPhasedLoop([this](int iterations) { Loop(iterations); },
+                              ::std::chrono::milliseconds(20),
+                              ::std::chrono::milliseconds(1));
+  }
 
   ::frc971::wpilib::BufferedPcm *pcm() { return &pcm_; }
 
@@ -295,54 +308,40 @@ class SolenoidWriter {
     rgb_lights_ = ::std::move(s);
   }
 
-  void operator()() {
-    ::aos::SetCurrentThreadName("Solenoids");
-    ::aos::SetCurrentThreadRealtimePriority(27);
-
-    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(20),
-                                        ::aos::monotonic_clock::now(),
-                                        ::std::chrono::milliseconds(1));
-
-    while (run_) {
-      {
-        const int iterations = phased_loop.SleepUntilNext();
-        if (iterations != 1) {
-          LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
-        }
-      }
-
-      {
-        superstructure_.FetchLatest();
-        if (superstructure_.get()) {
-          LOG_STRUCT(DEBUG, "solenoids", *superstructure_);
-          lights_->Set(superstructure_->lights_on);
-          rgb_lights_->Set(superstructure_->red_light_on |
-                           superstructure_->green_light_on |
-                           superstructure_->blue_light_on);
-        }
-      }
-
-      pcm_.Flush();
+  void Loop(const int iterations) {
+    if (iterations != 1) {
+      LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
     }
-  }
 
-  void Quit() { run_ = false; }
+    {
+      superstructure_output_fetcher_.Fetch();
+      if (superstructure_output_fetcher_.get()) {
+        LOG_STRUCT(DEBUG, "solenoids", *superstructure_output_fetcher_);
+        lights_->Set(superstructure_output_fetcher_->lights_on);
+        rgb_lights_->Set(superstructure_output_fetcher_->red_light_on |
+                         superstructure_output_fetcher_->green_light_on |
+                         superstructure_output_fetcher_->blue_light_on);
+      }
+    }
+
+    pcm_.Flush();
+  }
 
  private:
   ::frc971::wpilib::BufferedPcm pcm_;
 
   ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> lights_, rgb_lights_;
 
-  ::aos::Queue<::y2017::control_loops::SuperstructureQueue::Output>
-      superstructure_;
-
-  ::std::atomic<bool> run_{true};
+  ::aos::Fetcher<::y2017::control_loops::SuperstructureQueue::Output>
+      superstructure_output_fetcher_;
 };
 
-class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
+class SuperstructureWriter
+    : public ::frc971::wpilib::LoopOutputHandler<SuperstructureQueue::Output> {
  public:
   SuperstructureWriter(::aos::EventLoop *event_loop)
-      : ::frc971::wpilib::LoopOutputHandler(event_loop) {}
+      : ::frc971::wpilib::LoopOutputHandler<SuperstructureQueue::Output>(
+            event_loop, ".y2017.control_loops.superstructure_queue.output") {}
 
   void set_intake_victor(::std::unique_ptr<::frc::VictorSP> t) {
     intake_victor_ = ::std::move(t);
@@ -382,32 +381,27 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
   }
 
  private:
-  virtual void Read() override {
-    ::y2017::control_loops::superstructure_queue.output.FetchAnother();
-  }
-
-  virtual void Write() override {
-    auto &queue = ::y2017::control_loops::superstructure_queue.output;
-    LOG_STRUCT(DEBUG, "will output", *queue);
-    intake_victor_->SetSpeed(::aos::Clip(queue->voltage_intake,
+  virtual void Write(const SuperstructureQueue::Output &output) override {
+    LOG_STRUCT(DEBUG, "will output", output);
+    intake_victor_->SetSpeed(::aos::Clip(output.voltage_intake,
                                          -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
-    intake_rollers_victor_->SetSpeed(queue->voltage_intake_rollers / 12.0);
-    indexer_victor_->SetSpeed(-queue->voltage_indexer / 12.0);
-    indexer_roller_victor_->SetSpeed(queue->voltage_indexer_rollers / 12.0);
-    turret_victor_->SetSpeed(::aos::Clip(-queue->voltage_turret,
+    intake_rollers_victor_->SetSpeed(output.voltage_intake_rollers / 12.0);
+    indexer_victor_->SetSpeed(-output.voltage_indexer / 12.0);
+    indexer_roller_victor_->SetSpeed(output.voltage_indexer_rollers / 12.0);
+    turret_victor_->SetSpeed(::aos::Clip(-output.voltage_turret,
                                          -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
     hood_victor_->SetSpeed(
-        ::aos::Clip(queue->voltage_hood, -kMaxBringupPower, kMaxBringupPower) /
+        ::aos::Clip(output.voltage_hood, -kMaxBringupPower, kMaxBringupPower) /
         12.0);
-    shooter_victor_->SetSpeed(queue->voltage_shooter / 12.0);
+    shooter_victor_->SetSpeed(output.voltage_shooter / 12.0);
 
-    red_light_->Set(queue->red_light_on);
-    green_light_->Set(queue->green_light_on);
-    blue_light_->Set(queue->blue_light_on);
+    red_light_->Set(output.red_light_on);
+    green_light_->Set(output.green_light_on);
+    blue_light_->Set(output.blue_light_on);
 
-    gear_servo_->SetPosition(queue->gear_servo);
+    gear_servo_->SetPosition(output.gear_servo);
   }
 
   virtual void Stop() override {
@@ -444,60 +438,64 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
   }
 
   void Run() override {
-    ::aos::InitNRT();
-    ::aos::SetCurrentThreadName("StartCompetition");
+    // Thread 1.
+    ::aos::ShmEventLoop joystick_sender_event_loop;
+    ::frc971::wpilib::JoystickSender joystick_sender(
+        &joystick_sender_event_loop);
+    AddLoop(&joystick_sender_event_loop);
 
-    ::aos::ShmEventLoop event_loop;
+    // Thread 2.
+    ::aos::ShmEventLoop pdp_fetcher_event_loop;
+    ::frc971::wpilib::PDPFetcher pdp_fetcher(&pdp_fetcher_event_loop);
+    AddLoop(&pdp_fetcher_event_loop);
 
-    ::frc971::wpilib::JoystickSender joystick_sender(&event_loop);
-    ::std::thread joystick_thread(::std::ref(joystick_sender));
+    // Thread 3.
+    ::aos::ShmEventLoop sensor_reader_event_loop;
+    SensorReader sensor_reader(&sensor_reader_event_loop);
 
-    ::frc971::wpilib::PDPFetcher pdp_fetcher(&event_loop);
-    ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
-    SensorReader reader(&event_loop);
+    sensor_reader.set_drivetrain_left_encoder(make_encoder(0));
+    sensor_reader.set_drivetrain_right_encoder(make_encoder(1));
 
-    // TODO(campbell): Update port numbers
-    reader.set_drivetrain_left_encoder(make_encoder(0));
-    reader.set_drivetrain_right_encoder(make_encoder(1));
+    sensor_reader.set_intake_encoder(make_encoder(3));
+    sensor_reader.set_intake_absolute(make_unique<DigitalInput>(0));
+    sensor_reader.set_intake_potentiometer(make_unique<AnalogInput>(4));
 
-    reader.set_intake_encoder(make_encoder(3));
-    reader.set_intake_absolute(make_unique<DigitalInput>(0));
-    reader.set_intake_potentiometer(make_unique<AnalogInput>(4));
+    sensor_reader.set_indexer_encoder(make_encoder(5));
+    sensor_reader.set_indexer_hall(make_unique<DigitalInput>(4));
 
-    reader.set_indexer_encoder(make_encoder(5));
-    reader.set_indexer_hall(make_unique<DigitalInput>(4));
+    sensor_reader.set_turret_encoder(make_encoder(6));
+    sensor_reader.set_turret_hall(make_unique<DigitalInput>(2));
 
-    reader.set_turret_encoder(make_encoder(6));
-    reader.set_turret_hall(make_unique<DigitalInput>(2));
+    sensor_reader.set_hood_encoder(make_encoder(4));
+    sensor_reader.set_hood_index(make_unique<DigitalInput>(1));
 
-    reader.set_hood_encoder(make_encoder(4));
-    reader.set_hood_index(make_unique<DigitalInput>(1));
+    sensor_reader.set_shooter_encoder(make_encoder(2));
 
-    reader.set_shooter_encoder(make_encoder(2));
+    sensor_reader.set_autonomous_mode(0, make_unique<DigitalInput>(9));
+    sensor_reader.set_autonomous_mode(1, make_unique<DigitalInput>(8));
 
-    reader.set_autonomous_mode(0, make_unique<DigitalInput>(9));
-    reader.set_autonomous_mode(1, make_unique<DigitalInput>(8));
+    sensor_reader.set_pwm_trigger(true);
 
-    reader.set_pwm_trigger(true);
+    AddLoop(&sensor_reader_event_loop);
 
-    ::std::thread reader_thread(::std::ref(reader));
-
+    // Thread 5.
+    ::aos::ShmEventLoop imu_event_loop;
     auto imu_trigger = make_unique<DigitalInput>(3);
-    ::frc971::wpilib::ADIS16448 imu(&event_loop, SPI::Port::kOnboardCS1,
+    ::frc971::wpilib::ADIS16448 imu(&imu_event_loop, SPI::Port::kOnboardCS1,
                                     imu_trigger.get());
     imu.SetDummySPI(SPI::Port::kOnboardCS2);
     auto imu_reset = make_unique<DigitalOutput>(6);
     imu.set_reset(imu_reset.get());
-    ::std::thread imu_thread(::std::ref(imu));
+    AddLoop(&imu_event_loop);
 
-    ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&event_loop);
+    ::aos::ShmEventLoop output_event_loop;
+    ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&output_event_loop);
     drivetrain_writer.set_left_controller0(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(7)), true);
     drivetrain_writer.set_right_controller0(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(3)), false);
-    ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
-    SuperstructureWriter superstructure_writer(&event_loop);
+    SuperstructureWriter superstructure_writer(&output_event_loop);
     superstructure_writer.set_intake_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)));
     superstructure_writer.set_intake_rollers_victor(
@@ -523,42 +521,16 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_blue_light(
         ::std::unique_ptr<DigitalOutput>(new DigitalOutput(25)));
 
-    ::std::thread superstructure_writer_thread(
-        ::std::ref(superstructure_writer));
+    AddLoop(&output_event_loop);
 
-    SolenoidWriter solenoid_writer;
+    // Thread 6.
+    ::aos::ShmEventLoop solenoid_writer_event_loop;
+    SolenoidWriter solenoid_writer(&solenoid_writer_event_loop);
     solenoid_writer.set_lights(solenoid_writer.pcm()->MakeSolenoid(0));
     solenoid_writer.set_rgb_light(solenoid_writer.pcm()->MakeSolenoid(1));
+    AddLoop(&solenoid_writer_event_loop);
 
-    ::std::thread solenoid_thread(::std::ref(solenoid_writer));
-
-    // Wait forever. Not much else to do...
-    while (true) {
-      const int r = select(0, nullptr, nullptr, nullptr, nullptr);
-      if (r != 0) {
-        PLOG(WARNING, "infinite select failed");
-      } else {
-        PLOG(WARNING, "infinite select succeeded??\n");
-      }
-    }
-
-    LOG(ERROR, "Exiting WPILibRobot\n");
-
-    joystick_sender.Quit();
-    joystick_thread.join();
-    pdp_fetcher.Quit();
-    pdp_fetcher_thread.join();
-    reader.Quit();
-    reader_thread.join();
-    imu.Quit();
-    imu_thread.join();
-
-    drivetrain_writer.Quit();
-    drivetrain_writer_thread.join();
-    superstructure_writer.Quit();
-    superstructure_writer_thread.join();
-
-    ::aos::Cleanup();
+    RunLoops();
   }
 };
 

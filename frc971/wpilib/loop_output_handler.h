@@ -21,24 +21,37 @@ namespace wpilib {
 // The intended use is to have a subclass for each loop which implements the
 // pure virtual methods and is then run in a separate thread. The operator()
 // loops writing values until Quit() is called.
+template <typename T>
 class LoopOutputHandler {
  public:
   LoopOutputHandler(
-      ::aos::EventLoop *event_loop,
-      ::std::chrono::nanoseconds timeout = ::std::chrono::milliseconds(100));
+      ::aos::EventLoop *event_loop, const ::std::string &name,
+      ::std::chrono::nanoseconds timeout = ::std::chrono::milliseconds(100))
+      : event_loop_(event_loop), timeout_(timeout) {
+    event_loop_->SetRuntimeRealtimePriority(30);
+    // TODO(austin): Name thread.
+    event_loop_->MakeWatcher(name, [this](const T &t) {
+      // Push the watchdog out a bit further.
+      timer_handler_->Setup(event_loop_->monotonic_now() + timeout_);
+      Write(t);
+    });
 
-  void Quit() { run_ = false; }
+    // TODO(austin): Set name.
+    timer_handler_ = event_loop_->AddTimer([this]() { Stop(); });
 
-  void operator()();
+    event_loop_->OnRun([this, timeout]() {
+      timer_handler_->Setup(event_loop_->monotonic_now() + timeout_);
+    });
+  }
+
+  void Quit() { event_loop_->Exit(); }
+
+  // Note, all subclasses should call Stop.
+  virtual ~LoopOutputHandler() {}
 
  protected:
-  // Read a message from the appropriate queue.
-  // This must block.
-  virtual void Read() = 0;
-
   // Send the output from the appropriate queue to the hardware.
-  // Read() will always be called at least once before per invocation of this.
-  virtual void Write() = 0;
+  virtual void Write(const T &t) = 0;
 
   // Stop all outputs. This will be called in a separate thread (if at all).
   // The subclass implementation should handle any appropriate logging.
@@ -50,46 +63,9 @@ class LoopOutputHandler {
   ::aos::EventLoop *event_loop() { return event_loop_; }
 
  private:
-  // The thread that actually contains a timerfd to implement timeouts. The
-  // idea is to have a timerfd that is repeatedly set to the timeout expiration
-  // in the future so it will never actually expire unless it is not reset for
-  // too long.
-  //
-  // This class nicely encapsulates the raw fd and manipulating it. Its
-  // operator() loops until Quit() is called, calling Stop() on its associated
-  // LoopOutputHandler whenever the timerfd expires.
-  class Watchdog {
-   public:
-    Watchdog(LoopOutputHandler *handler, ::std::chrono::nanoseconds timeout);
-
-    void operator()();
-
-    void Reset();
-
-    void Quit() { run_ = false; }
-
-   private:
-    LoopOutputHandler *const handler_;
-
-    const ::std::chrono::nanoseconds timeout_;
-
-    ::aos::ScopedFD timerfd_;
-
-    ::std::atomic<bool> run_{true};
-  };
-
   ::aos::EventLoop *event_loop_;
-  ::aos::Fetcher<::aos::JoystickState> joystick_state_fetcher_;
-  Watchdog watchdog_;
-
-  ::std::atomic<bool> run_{true};
-
-  ::aos::util::SimpleLogInterval no_joystick_state_ =
-      ::aos::util::SimpleLogInterval(::std::chrono::milliseconds(500), INFO,
-                                     "no joystick state -> not outputting");
-  ::aos::util::SimpleLogInterval fake_joystick_state_ =
-      ::aos::util::SimpleLogInterval(::std::chrono::milliseconds(500), DEBUG,
-                                     "fake joystick state -> not outputting");
+  const ::std::chrono::nanoseconds timeout_;
+  ::aos::TimerHandler *timer_handler_;
 };
 
 }  // namespace wpilib

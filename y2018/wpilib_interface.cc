@@ -57,7 +57,7 @@
 #endif
 
 using ::frc971::control_loops::drivetrain_queue;
-using ::y2018::control_loops::superstructure_queue;
+using ::y2018::control_loops::SuperstructureQueue;
 using ::y2018::constants::Values;
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
@@ -145,7 +145,10 @@ static_assert(kMaxMediumEncoderPulsesPerSecond <= 400000,
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
   SensorReader(::aos::EventLoop *event_loop)
-      : ::frc971::wpilib::SensorReader(event_loop) {
+      : ::frc971::wpilib::SensorReader(event_loop),
+        superstructure_position_sender_(
+            event_loop->MakeSender<SuperstructureQueue::Position>(
+                ".y2018.control_loops.superstructure_queue.position")) {
     // Set to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
@@ -291,7 +294,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     const auto values = constants::GetValues();
 
     {
-      auto superstructure_message = superstructure_queue.position.MakeMessage();
+      auto superstructure_message =
+          superstructure_position_sender_.MakeMessage();
 
       CopyPosition(proximal_encoder_, &superstructure_message->arm.proximal,
                    Values::kProximalEncoderCountsPerRevolution(),
@@ -339,6 +343,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
  private:
+  ::aos::Sender<SuperstructureQueue::Position> superstructure_position_sender_;
+
   ::std::unique_ptr<frc::AnalogInput> left_drivetrain_shifter_,
       right_drivetrain_shifter_;
 
@@ -370,15 +376,33 @@ class SolenoidWriter {
                 ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Output>(
                     ".frc971.control_loops.drivetrain_queue.output")),
         superstructure_fetcher_(
-            event_loop->MakeFetcher<
-                ::y2018::control_loops::SuperstructureQueue::Output>(
+            event_loop->MakeFetcher<SuperstructureQueue::Output>(
                 ".y2018.control_loops.superstructure_queue.output")),
         status_light_fetcher_(event_loop->MakeFetcher<::y2018::StatusLight>(
             ".y2018.status_light")),
         vision_status_fetcher_(
             event_loop->MakeFetcher<::y2018::vision::VisionStatus>(
                 ".y2018.vision.vision_status")),
-        pcm_(pcm) {}
+        pcm_(pcm) {
+    event_loop_->set_name("Solenoids");
+    event_loop_->SetRuntimeRealtimePriority(27);
+
+    int32_t status = 0;
+    HAL_CompressorHandle compressor_ = HAL_InitializeCompressor(0, &status);
+    if (status != 0) {
+      LOG(ERROR, "Compressor status is nonzero, %d\n",
+          static_cast<int>(status));
+    }
+    HAL_SetCompressorClosedLoopControl(compressor_, true, &status);
+    if (status != 0) {
+      LOG(ERROR, "Compressor status is nonzero, %d\n",
+          static_cast<int>(status));
+    }
+
+    event_loop_->AddPhasedLoop([this](int iterations) { Loop(iterations); },
+                               ::std::chrono::milliseconds(20),
+                               ::std::chrono::milliseconds(1));
+  }
 
   // left drive
   // right drive
@@ -412,84 +436,72 @@ class SolenoidWriter {
     forks_ = ::std::move(s);
   }
 
-  void operator()() {
-    ::aos::SetCurrentThreadName("Solenoids");
-    ::aos::SetCurrentThreadRealtimePriority(27);
+  void Loop(const int iterations) {
+    if (iterations != 1) {
+      LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
+    }
 
-    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(20),
-                                        ::aos::monotonic_clock::now(),
-                                        ::std::chrono::milliseconds(1));
+    {
+      drivetrain_fetcher_.Fetch();
+      if (drivetrain_fetcher_.get()) {
+        LOG_STRUCT(DEBUG, "solenoids", *drivetrain_fetcher_);
+        left_drivetrain_shifter_->Set(!drivetrain_fetcher_->left_high);
+        right_drivetrain_shifter_->Set(!drivetrain_fetcher_->right_high);
+      }
+    }
 
-    while (run_) {
-      {
-        const int iterations = phased_loop.SleepUntilNext();
-        if (iterations != 1) {
-          LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
-        }
+    {
+      superstructure_fetcher_.Fetch();
+      if (superstructure_fetcher_.get()) {
+        LOG_STRUCT(DEBUG, "solenoids", *superstructure_fetcher_);
+
+        claw_->Set(!superstructure_fetcher_->claw_grabbed);
+        arm_brakes_->Set(superstructure_fetcher_->release_arm_brake);
+        hook_->Set(superstructure_fetcher_->hook_release);
+        forks_->Set(superstructure_fetcher_->forks_release);
+      }
+    }
+
+    {
+      ::frc971::wpilib::PneumaticsToLog to_log;
+
+      pcm_->Flush();
+      to_log.read_solenoids = pcm_->GetAll();
+      LOG_STRUCT(DEBUG, "pneumatics info", to_log);
+    }
+
+    monotonic_clock::time_point monotonic_now = event_loop_->monotonic_now();
+    status_light_fetcher_.Fetch();
+    // If we don't have a light request (or it's an old one), we are borked.
+    // Flash the red light slowly.
+    if (!status_light_fetcher_.get() ||
+        monotonic_now >
+            status_light_fetcher_->sent_time + chrono::milliseconds(100)) {
+      StatusLight color;
+      color.red = 0.0;
+      color.green = 0.0;
+      color.blue = 0.0;
+
+      vision_status_fetcher_.Fetch();
+      ++light_flash_;
+      if (light_flash_ > 10) {
+        color.red = 0.5;
+      } else if (!vision_status_fetcher_.get() ||
+                 monotonic_now >
+                     vision_status_fetcher_->sent_time + chrono::seconds(1)) {
+        color.red = 0.5;
+        color.green = 0.5;
       }
 
-      {
-        drivetrain_fetcher_.Fetch();
-        if (drivetrain_fetcher_.get()) {
-          LOG_STRUCT(DEBUG, "solenoids", *drivetrain_fetcher_);
-          left_drivetrain_shifter_->Set(!drivetrain_fetcher_->left_high);
-          right_drivetrain_shifter_->Set(!drivetrain_fetcher_->right_high);
-        }
+      if (light_flash_ > 20) {
+        light_flash_ = 0;
       }
 
-      {
-        superstructure_fetcher_.Fetch();
-        if (superstructure_fetcher_.get()) {
-          LOG_STRUCT(DEBUG, "solenoids", *superstructure_fetcher_);
-
-          claw_->Set(!superstructure_fetcher_->claw_grabbed);
-          arm_brakes_->Set(superstructure_fetcher_->release_arm_brake);
-          hook_->Set(superstructure_fetcher_->hook_release);
-          forks_->Set(superstructure_fetcher_->forks_release);
-        }
-      }
-
-      {
-        ::frc971::wpilib::PneumaticsToLog to_log;
-
-        pcm_->Flush();
-        to_log.read_solenoids = pcm_->GetAll();
-        LOG_STRUCT(DEBUG, "pneumatics info", to_log);
-      }
-
-      monotonic_clock::time_point monotonic_now = event_loop_->monotonic_now();
-      status_light_fetcher_.Fetch();
-      // If we don't have a light request (or it's an old one), we are borked.
-      // Flash the red light slowly.
-      if (!status_light_fetcher_.get() ||
-          monotonic_now >
-              status_light_fetcher_->sent_time + chrono::milliseconds(100)) {
-        StatusLight color;
-        color.red = 0.0;
-        color.green = 0.0;
-        color.blue = 0.0;
-
-        vision_status_fetcher_.Fetch();
-        ++light_flash_;
-        if (light_flash_ > 10) {
-          color.red = 0.5;
-        } else if (!vision_status_fetcher_.get() ||
-                   monotonic_now >
-                       vision_status_fetcher_->sent_time + chrono::seconds(1)) {
-          color.red = 0.5;
-          color.green = 0.5;
-        }
-
-        if (light_flash_ > 20) {
-          light_flash_ = 0;
-        }
-
-        LOG_STRUCT(DEBUG, "color", color);
-        SetColor(color);
-      } else {
-        LOG_STRUCT(DEBUG, "color", *status_light_fetcher_);
-        SetColor(*status_light_fetcher_);
-      }
+      LOG_STRUCT(DEBUG, "color", color);
+      SetColor(color);
+    } else {
+      LOG_STRUCT(DEBUG, "color", *status_light_fetcher_);
+      SetColor(*status_light_fetcher_);
     }
   }
 
@@ -526,8 +538,7 @@ class SolenoidWriter {
   ::aos::EventLoop *event_loop_;
   ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Output>
       drivetrain_fetcher_;
-  ::aos::Fetcher<::y2018::control_loops::SuperstructureQueue::Output>
-      superstructure_fetcher_;
+  ::aos::Fetcher<SuperstructureQueue::Output> superstructure_fetcher_;
   ::aos::Fetcher<::y2018::StatusLight> status_light_fetcher_;
   ::aos::Fetcher<::y2018::vision::VisionStatus> vision_status_fetcher_;
 
@@ -536,6 +547,8 @@ class SolenoidWriter {
   ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid>
       left_drivetrain_shifter_, right_drivetrain_shifter_, claw_, arm_brakes_,
       hook_, forks_;
+
+  HAL_CompressorHandle compressor_;
 
   ::ctre::phoenix::CANifier canifier_{0};
 
@@ -548,10 +561,12 @@ class SolenoidWriter {
   int light_flash_ = 0;
 };
 
-class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
+class SuperstructureWriter
+    : public ::frc971::wpilib::LoopOutputHandler<SuperstructureQueue::Output> {
  public:
   SuperstructureWriter(::aos::EventLoop *event_loop)
-      : ::frc971::wpilib::LoopOutputHandler(event_loop) {}
+      : ::frc971::wpilib::LoopOutputHandler<SuperstructureQueue::Output>(
+            event_loop, ".y2018.control_loops.superstructure_queue.output") {}
 
   void set_proximal_victor(::std::unique_ptr<::frc::VictorSP> t) {
     proximal_victor_ = ::std::move(t);
@@ -580,44 +595,39 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
   }
 
  private:
-  virtual void Read() override {
-    ::y2018::control_loops::superstructure_queue.output.FetchAnother();
-  }
-
-  virtual void Write() override {
-    auto &queue = ::y2018::control_loops::superstructure_queue.output;
-    LOG_STRUCT(DEBUG, "will output", *queue);
+  virtual void Write(const SuperstructureQueue::Output &output) override {
+    LOG_STRUCT(DEBUG, "will output", output);
 
     left_intake_elastic_victor_->SetSpeed(
-        ::aos::Clip(-queue->left_intake.voltage_elastic, -kMaxBringupPower,
+        ::aos::Clip(-output.left_intake.voltage_elastic, -kMaxBringupPower,
                     kMaxBringupPower) /
         12.0);
 
     right_intake_elastic_victor_->SetSpeed(
-        ::aos::Clip(queue->right_intake.voltage_elastic, -kMaxBringupPower,
+        ::aos::Clip(output.right_intake.voltage_elastic, -kMaxBringupPower,
                     kMaxBringupPower) /
         12.0);
 
     left_intake_rollers_victor_->SetSpeed(
-        ::aos::Clip(-queue->left_intake.voltage_rollers, -kMaxBringupPower,
+        ::aos::Clip(-output.left_intake.voltage_rollers, -kMaxBringupPower,
                     kMaxBringupPower) /
         12.0);
 
     right_intake_rollers_victor_->SetSpeed(
-        ::aos::Clip(queue->right_intake.voltage_rollers, -kMaxBringupPower,
+        ::aos::Clip(output.right_intake.voltage_rollers, -kMaxBringupPower,
                     kMaxBringupPower) /
         12.0);
 
-    proximal_victor_->SetSpeed(::aos::Clip(-queue->voltage_proximal,
+    proximal_victor_->SetSpeed(::aos::Clip(-output.voltage_proximal,
                                            -kMaxBringupPower,
                                            kMaxBringupPower) /
                                12.0);
 
-    distal_victor_->SetSpeed(::aos::Clip(queue->voltage_distal,
+    distal_victor_->SetSpeed(::aos::Clip(output.voltage_distal,
                                          -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
     hanger_victor_->SetSpeed(
-        ::aos::Clip(-queue->voltage_winch, -kMaxBringupPower, kMaxBringupPower) /
+        ::aos::Clip(-output.voltage_winch, -kMaxBringupPower, kMaxBringupPower) /
         12.0);
   }
 
@@ -648,76 +658,87 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
   }
 
   void Run() override {
-    ::aos::InitNRT();
-    ::aos::SetCurrentThreadName("StartCompetition");
+    // Thread 1.
+    ::aos::ShmEventLoop joystick_sender_event_loop;
+    ::frc971::wpilib::JoystickSender joystick_sender(
+        &joystick_sender_event_loop);
+    AddLoop(&joystick_sender_event_loop);
 
-    ::aos::ShmEventLoop event_loop;
+    // Thread 2.
+    ::aos::ShmEventLoop pdp_fetcher_event_loop;
+    ::frc971::wpilib::PDPFetcher pdp_fetcher(&pdp_fetcher_event_loop);
+    AddLoop(&pdp_fetcher_event_loop);
 
-    ::frc971::wpilib::JoystickSender joystick_sender(&event_loop);
-    ::std::thread joystick_thread(::std::ref(joystick_sender));
-
-    ::frc971::wpilib::PDPFetcher pdp_fetcher(&event_loop);
-    ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
-
-    SensorReader reader(&event_loop);
-
-    // TODO(Sabina): Update port numbers(Sensors and Victors)
-    reader.set_drivetrain_left_encoder(make_encoder(0));
-    reader.set_left_drivetrain_shifter_potentiometer(
+    // Thread 3.
+    ::aos::ShmEventLoop sensor_reader_event_loop;
+    SensorReader sensor_reader(&sensor_reader_event_loop);
+    sensor_reader.set_drivetrain_left_encoder(make_encoder(0));
+    sensor_reader.set_left_drivetrain_shifter_potentiometer(
         make_unique<frc::AnalogInput>(6));
-    reader.set_drivetrain_right_encoder(make_encoder(1));
-    reader.set_right_drivetrain_shifter_potentiometer(
+    sensor_reader.set_drivetrain_right_encoder(make_encoder(1));
+    sensor_reader.set_right_drivetrain_shifter_potentiometer(
         make_unique<frc::AnalogInput>(7));
 
-    reader.set_proximal_encoder(make_encoder(4));
-    reader.set_proximal_absolute_pwm(make_unique<frc::DigitalInput>(2));
-    reader.set_proximal_potentiometer(make_unique<frc::AnalogInput>(2));
+    sensor_reader.set_proximal_encoder(make_encoder(4));
+    sensor_reader.set_proximal_absolute_pwm(make_unique<frc::DigitalInput>(2));
+    sensor_reader.set_proximal_potentiometer(make_unique<frc::AnalogInput>(2));
 
-    reader.set_distal_encoder(make_encoder(2));
-    reader.set_distal_absolute_pwm(make_unique<frc::DigitalInput>(3));
-    reader.set_distal_potentiometer(make_unique<frc::AnalogInput>(3));
+    sensor_reader.set_distal_encoder(make_encoder(2));
+    sensor_reader.set_distal_absolute_pwm(make_unique<frc::DigitalInput>(3));
+    sensor_reader.set_distal_potentiometer(make_unique<frc::AnalogInput>(3));
 
-    reader.set_right_intake_encoder(make_encoder(5));
-    reader.set_right_intake_absolute_pwm(make_unique<frc::DigitalInput>(7));
-    reader.set_right_intake_potentiometer(make_unique<frc::AnalogInput>(1));
-    reader.set_right_intake_spring_angle(make_unique<frc::AnalogInput>(5));
-    reader.set_right_intake_cube_detector(make_unique<frc::DigitalInput>(1));
+    sensor_reader.set_right_intake_encoder(make_encoder(5));
+    sensor_reader.set_right_intake_absolute_pwm(
+        make_unique<frc::DigitalInput>(7));
+    sensor_reader.set_right_intake_potentiometer(
+        make_unique<frc::AnalogInput>(1));
+    sensor_reader.set_right_intake_spring_angle(
+        make_unique<frc::AnalogInput>(5));
+    sensor_reader.set_right_intake_cube_detector(
+        make_unique<frc::DigitalInput>(1));
 
-    reader.set_left_intake_encoder(make_encoder(3));
-    reader.set_left_intake_absolute_pwm(make_unique<frc::DigitalInput>(4));
-    reader.set_left_intake_potentiometer(make_unique<frc::AnalogInput>(0));
-    reader.set_left_intake_spring_angle(make_unique<frc::AnalogInput>(4));
-    reader.set_left_intake_cube_detector(make_unique<frc::DigitalInput>(0));
+    sensor_reader.set_left_intake_encoder(make_encoder(3));
+    sensor_reader.set_left_intake_absolute_pwm(
+        make_unique<frc::DigitalInput>(4));
+    sensor_reader.set_left_intake_potentiometer(
+        make_unique<frc::AnalogInput>(0));
+    sensor_reader.set_left_intake_spring_angle(
+        make_unique<frc::AnalogInput>(4));
+    sensor_reader.set_left_intake_cube_detector(
+        make_unique<frc::DigitalInput>(0));
 
-    reader.set_claw_beambreak(make_unique<frc::DigitalInput>(8));
-    reader.set_box_back_beambreak(make_unique<frc::DigitalInput>(9));
+    sensor_reader.set_claw_beambreak(make_unique<frc::DigitalInput>(8));
+    sensor_reader.set_box_back_beambreak(make_unique<frc::DigitalInput>(9));
 
-    reader.set_pwm_trigger(true);
+    sensor_reader.set_pwm_trigger(true);
 
-    reader.set_lidar_lite_input(make_unique<frc::DigitalInput>(22));
+    sensor_reader.set_lidar_lite_input(make_unique<frc::DigitalInput>(22));
+    AddLoop(&sensor_reader_event_loop);
 
-    ::std::thread reader_thread(::std::ref(reader));
-
+    // Thread 4.
+    ::aos::ShmEventLoop imu_event_loop;
     auto imu_trigger = make_unique<frc::DigitalInput>(5);
-    ::frc971::wpilib::ADIS16448 imu(&event_loop, frc::SPI::Port::kOnboardCS1,
+    ::frc971::wpilib::ADIS16448 imu(&imu_event_loop, frc::SPI::Port::kOnboardCS1,
                                     imu_trigger.get());
     imu.SetDummySPI(frc::SPI::Port::kOnboardCS2);
     auto imu_reset = make_unique<frc::DigitalOutput>(6);
     imu.set_reset(imu_reset.get());
-    ::std::thread imu_thread(::std::ref(imu));
+    AddLoop(&imu_event_loop);
 
     // While as of 2/9/18 the drivetrain Victors are SPX, it appears as though
     // they are identical, as far as DrivetrainWriter is concerned, to the SP
     // variety so all the Victors are written as SPs.
 
-    ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&event_loop);
+    // Thread 5.
+    ::aos::ShmEventLoop output_event_loop;
+
+    ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&output_event_loop);
     drivetrain_writer.set_left_controller0(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(2)), false);
     drivetrain_writer.set_right_controller0(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(3)), true);
-    ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
-    SuperstructureWriter superstructure_writer(&event_loop);
+    SuperstructureWriter superstructure_writer(&output_event_loop);
     superstructure_writer.set_left_intake_elastic_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(4)));
     superstructure_writer.set_left_intake_rollers_victor(
@@ -730,66 +751,26 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)));
     superstructure_writer.set_distal_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)));
-
     superstructure_writer.set_hanger_victor(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(8)));
 
-    ::std::thread superstructure_writer_thread(
-        ::std::ref(superstructure_writer));
+    AddLoop(&output_event_loop);
 
+    // Thread 6.
     // This is a separate event loop because we want to run it at much lower
     // priority.
-    ::aos::ShmEventLoop solenoid_event_loop;
+    ::aos::ShmEventLoop solenoid_writer_event_loop;
     ::frc971::wpilib::BufferedPcm pcm;
-    SolenoidWriter solenoid_writer(&solenoid_event_loop, &pcm);
+    SolenoidWriter solenoid_writer(&solenoid_writer_event_loop, &pcm);
     solenoid_writer.set_left_drivetrain_shifter(pcm.MakeSolenoid(0));
     solenoid_writer.set_right_drivetrain_shifter(pcm.MakeSolenoid(1));
     solenoid_writer.set_claw(pcm.MakeSolenoid(2));
     solenoid_writer.set_arm_brakes(pcm.MakeSolenoid(3));
     solenoid_writer.set_hook(pcm.MakeSolenoid(4));
     solenoid_writer.set_forks(pcm.MakeSolenoid(5));
+    AddLoop(&solenoid_writer_event_loop);
 
-    ::std::thread solenoid_thread(::std::ref(solenoid_writer));
-
-    int32_t status = 0;
-    HAL_CompressorHandle compressor = HAL_InitializeCompressor(0, &status);
-    if (status != 0) {
-      LOG(ERROR, "Compressor status is nonzero, %d\n",
-          static_cast<int>(status));
-    }
-    HAL_SetCompressorClosedLoopControl(compressor, true, &status);
-    if (status != 0) {
-      LOG(ERROR, "Compressor status is nonzero, %d\n",
-          static_cast<int>(status));
-    }
-
-    // Wait forever. Not much else to do...
-    while (true) {
-      const int r = select(0, nullptr, nullptr, nullptr, nullptr);
-      if (r != 0) {
-        PLOG(WARNING, "infinite select failed");
-      } else {
-        PLOG(WARNING, "infinite select succeeded??\n");
-      }
-    }
-
-    LOG(ERROR, "Exiting WPILibRobot\n");
-
-    joystick_sender.Quit();
-    joystick_thread.join();
-    pdp_fetcher.Quit();
-    pdp_fetcher_thread.join();
-    reader.Quit();
-    reader_thread.join();
-    imu.Quit();
-    imu_thread.join();
-
-    drivetrain_writer.Quit();
-    drivetrain_writer_thread.join();
-    superstructure_writer.Quit();
-    superstructure_writer_thread.join();
-
-    ::aos::Cleanup();
+    RunLoops();
   }
 };
 

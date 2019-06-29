@@ -139,6 +139,17 @@ ADIS16448::ADIS16448(::aos::EventLoop *event_loop, frc::SPI::Port port,
 
   dio1_->RequestInterrupts();
   dio1_->SetUpSourceEdge(true, false);
+
+  // NI's SPI driver defaults to SCHED_OTHER.  Find it's PID with ps, and change
+  // it to a RT priority of 33.
+  PCHECK(
+      system("ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
+             "33") == 0);
+
+  event_loop_->set_name("IMU");
+  event_loop_->SetRuntimeRealtimePriority(33);
+
+  event_loop_->OnRun([this]() { DoRun(); });
 }
 
 void ADIS16448::SetDummySPI(frc::SPI::Port port) {
@@ -155,7 +166,7 @@ void ADIS16448::SetDummySPI(frc::SPI::Port port) {
 }
 
 void ADIS16448::InitializeUntilSuccessful() {
-  while (run_ && !Initialize()) {
+  while (event_loop_->is_running() && !Initialize()) {
     if (reset_) {
       reset_->Set(false);
       // Datasheet says this needs to be at least 10 us long, so 10 ms is
@@ -170,19 +181,9 @@ void ADIS16448::InitializeUntilSuccessful() {
     }
   }
   LOG(INFO, "IMU initialized successfully\n");
-
-  ::aos::SetCurrentThreadRealtimePriority(33);
 }
 
-void ADIS16448::operator()() {
-  // NI's SPI driver defaults to SCHED_OTHER.  Find it's PID with ps, and change
-  // it to a RT priority of 33.
-  PCHECK(
-      system("ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
-             "33") == 0);
-
-  ::aos::SetCurrentThreadName("IMU");
-
+void ADIS16448::DoRun() {
   InitializeUntilSuccessful();
 
   // Rounded to approximate the 204.8 Hz.
@@ -193,8 +194,10 @@ void ADIS16448::operator()() {
   zeroing::Averager<double, 6 * kImuSendRate> average_gyro_z;
 
   bool got_an_interrupt = false;
-  while (run_) {
+  while (event_loop_->is_running()) {
     {
+      // Wait for an interrupt.  (This prevents us from going to sleep in the
+      // event loop like we normally would)
       const frc::InterruptableSensorBase::WaitResult result =
           dio1_->WaitForInterrupt(0.1, !got_an_interrupt);
       if (result == frc::InterruptableSensorBase::kTimeout) {

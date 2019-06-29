@@ -11,18 +11,12 @@ namespace wpilib {
 
 class JoystickSender {
  public:
-  JoystickSender(::aos::EventLoop *event_loop)
-      : event_loop_(event_loop),
-        joystick_state_sender_(event_loop_->MakeSender<::aos::JoystickState>(
-            ".aos.joystick_state")) {}
-  void operator()();
-
-  void Quit() { run_ = false; }
+  JoystickSender(::aos::EventLoop *event_loop);
 
  private:
   ::aos::EventLoop *event_loop_;
   ::aos::Sender<::aos::JoystickState> joystick_state_sender_;
-  ::std::atomic<bool> run_{true};
+  const uint16_t team_id_;
 };
 
 }  // namespace wpilib

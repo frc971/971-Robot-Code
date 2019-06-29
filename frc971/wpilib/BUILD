@@ -118,6 +118,13 @@ cc_library(
     ],
 )
 
+queue_library(
+    name = "loop_output_handler_test_queue",
+    srcs = [
+        "loop_output_handler_test.q",
+    ],
+)
+
 cc_library(
     name = "loop_output_handler",
     srcs = [
@@ -133,6 +140,21 @@ cc_library(
         "//aos/scoped:scoped_fd",
         "//aos/time",
         "//aos/util:log_interval",
+    ],
+)
+
+cc_test(
+    name = "loop_output_handler_test",
+    srcs = [
+        "loop_output_handler_test.cc",
+    ],
+    deps = [
+        ":loop_output_handler",
+        ":loop_output_handler_test_queue",
+        "//aos/events:simulated_event_loop",
+        "//aos/logging:queue_logging",
+        "//aos/testing:googletest",
+        "//aos/testing:test_logging",
     ],
 )
 

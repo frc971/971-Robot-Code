@@ -7,29 +7,28 @@
 #include "aos/events/event-loop.h"
 #include "frc971/wpilib/pdp_values.q.h"
 
+namespace frc {
+class PowerDistributionPanel;
+}  // namespace frc
+
 namespace frc971 {
 namespace wpilib {
 
-// Handles fetching values from the PDP. This is slow, so it has to happen in a
-// separate thread.
+// Handles fetching values from the PDP.
 class PDPFetcher {
  public:
-  PDPFetcher(::aos::EventLoop *event_loop)
-      : event_loop_(event_loop),
-        pdp_values_sender_(event_loop_->MakeSender<::frc971::PDPValues>(
-            ".frc971.pdp_values")) {}
+  PDPFetcher(::aos::EventLoop *event_loop);
 
-  void Quit() { run_ = false; }
-
-  // To be called by a ::std::thread.
-  void operator()();
+  ~PDPFetcher();
 
  private:
+  void Loop(int iterations);
+
   ::aos::EventLoop *event_loop_;
 
   ::aos::Sender<::frc971::PDPValues> pdp_values_sender_;
 
-  ::std::atomic<bool> run_{true};
+  ::std::unique_ptr<::frc::PowerDistributionPanel> pdp_;
 };
 
 }  // namespace wpilib

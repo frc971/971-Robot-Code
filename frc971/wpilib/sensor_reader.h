@@ -59,8 +59,6 @@ class SensorReader {
   // sensor has been added to DMA.
   virtual void RunDmaIteration() {}
 
-  void operator()();
-
  protected:
   // Copies a DMAEncoder to a IndexPosition with the correct unit and direction
   // changes.
@@ -185,16 +183,33 @@ class SensorReader {
   // Gets called right before the DMA synchronizer is up and running.
   virtual void Start() {}
 
+  // Sets up everything during startup.
+  void DoStart();
+
+  // Runs a single iteration.
+  void Loop(int iterations);
+
   // Returns the monotonic time of the start of the first PWM cycle.
   // Returns min_time if no start time could be calculated.
   monotonic_clock::time_point GetPWMStartTime();
 
-  bool pwm_trigger_;
+  bool pwm_trigger_ = false;
 
   ::std::unique_ptr<::frc971::wpilib::DMASynchronizer> dma_synchronizer_;
 
   ::std::atomic<bool> run_{true};
   ::frc::DriverStation *ds_;
+
+  const int32_t my_pid_;
+
+  // Pointer to the phased loop handler used to modify the wakeup.
+  ::aos::PhasedLoopHandler *phased_loop_handler_;
+
+  // Last time we got called.
+  ::aos::monotonic_clock::time_point last_monotonic_now_ =
+      ::aos::monotonic_clock::min_time;
+  // The current period.
+  chrono::microseconds period_ = chrono::microseconds(5000);
 };
 
 }  // namespace wpilib

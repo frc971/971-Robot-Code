@@ -19,12 +19,23 @@ namespace wpilib {
 SensorReader::SensorReader(::aos::EventLoop *event_loop)
     : event_loop_(event_loop),
       robot_state_sender_(
-          event_loop_->MakeSender<::aos::RobotState>(".aos.robot_state")) {
+          event_loop_->MakeSender<::aos::RobotState>(".aos.robot_state")),
+      my_pid_(getpid()) {
   // Set some defaults.  We don't tend to exceed these, so old robots should
   // just work with them.
   UpdateFastEncoderFilterHz(500000);
   UpdateMediumEncoderFilterHz(100000);
   ds_ = &::frc::DriverStation::GetInstance();
+
+  event_loop->SetRuntimeRealtimePriority(40);
+
+  // Fill in the no pwm trigger defaults.
+  phased_loop_handler_ =
+      event_loop_->AddPhasedLoop([this](int iterations) { Loop(iterations); },
+                                 period_, chrono::milliseconds(4));
+
+  event_loop->set_name("SensorReader");
+  event_loop->OnRun([this]() { DoStart(); });
 }
 
 void SensorReader::UpdateFastEncoderFilterHz(int hz) {
@@ -82,77 +93,75 @@ monotonic_clock::time_point SensorReader::GetPWMStartTime() {
   }
 }
 
-void SensorReader::operator()() {
-  ::aos::SetCurrentThreadName("SensorReader");
-
-  int32_t my_pid = getpid();
-
+void SensorReader::DoStart() {
   Start();
   if (dma_synchronizer_) {
     dma_synchronizer_->Start();
   }
 
-  const chrono::microseconds period =
+  period_ =
       pwm_trigger_ ? chrono::microseconds(5050) : chrono::microseconds(5000);
   if (pwm_trigger_) {
     LOG(INFO, "Using PWM trigger and a 5.05 ms period\n");
   } else {
     LOG(INFO, "Defaulting to open loop pwm synchronization\n");
   }
-  ::aos::time::PhasedLoop phased_loop(
-      period, ::aos::monotonic_clock::now(),
+
+  // Now that we are configured, actually fill in the defaults.
+  phased_loop_handler_->set_interval_and_offset(
+      period_,
       pwm_trigger_ ? ::std::chrono::milliseconds(3) : chrono::milliseconds(4));
 
-  ::aos::SetCurrentThreadRealtimePriority(40);
-  monotonic_clock::time_point last_monotonic_now = monotonic_clock::now();
-  while (run_) {
-    {
-      const int iterations = phased_loop.SleepUntilNext();
-      if (iterations != 1) {
-        LOG(WARNING, "SensorReader skipped %d iterations\n", iterations - 1);
-      }
+  last_monotonic_now_ = monotonic_clock::now();
+}
+
+void SensorReader::Loop(const int iterations) {
+  if (iterations != 1) {
+    LOG(WARNING, "SensorReader skipped %d iterations\n", iterations - 1);
+  }
+
+  const monotonic_clock::time_point monotonic_now =
+      event_loop_->monotonic_now();
+
+  {
+    auto new_state = robot_state_sender_.MakeMessage();
+    ::frc971::wpilib::PopulateRobotState(new_state.get(), my_pid_);
+    LOG_STRUCT(DEBUG, "robot_state", *new_state);
+    new_state.Send();
+  }
+  RunIteration();
+  if (dma_synchronizer_) {
+    dma_synchronizer_->RunIteration();
+    RunDmaIteration();
+  }
+
+  if (pwm_trigger_) {
+    LOG(DEBUG, "PWM wakeup delta: %lld\n",
+        (monotonic_now - last_monotonic_now_).count());
+    last_monotonic_now_ = monotonic_now;
+
+    monotonic_clock::time_point last_tick_timepoint = GetPWMStartTime();
+    if (last_tick_timepoint == monotonic_clock::min_time) {
+      return;
     }
-    const monotonic_clock::time_point monotonic_now = monotonic_clock::now();
 
-    {
-      auto new_state = robot_state_sender_.MakeMessage();
-      ::frc971::wpilib::PopulateRobotState(new_state.get(), my_pid);
-      LOG_STRUCT(DEBUG, "robot_state", *new_state);
-      new_state.Send();
-    }
-    RunIteration();
-    if (dma_synchronizer_) {
-      dma_synchronizer_->RunIteration();
-      RunDmaIteration();
+    last_tick_timepoint +=
+        ((monotonic_now - last_tick_timepoint) / period_) * period_;
+    // If it's over 1/2 of a period back in time, that's wrong.  Move it
+    // forwards to now.
+    if (last_tick_timepoint - monotonic_now < -period_ / 2) {
+      last_tick_timepoint += period_;
     }
 
-    if (pwm_trigger_) {
-      LOG(DEBUG, "PWM wakeup delta: %lld\n",
-          (monotonic_now - last_monotonic_now).count());
-      last_monotonic_now = monotonic_now;
+    // We should be sampling our sensors to kick off the control cycle 50 uS
+    // after the falling edge.  This gives us a little bit of buffer for
+    // errors in waking up.  The PWM cycle starts at the falling edge of the
+    // PWM pulse.
+    chrono::nanoseconds new_offset =
+        ::aos::time::PhasedLoop::OffsetFromIntervalAndTime(
+            period_, last_tick_timepoint + chrono::microseconds(50));
 
-      monotonic_clock::time_point last_tick_timepoint = GetPWMStartTime();
-      if (last_tick_timepoint == monotonic_clock::min_time) {
-        continue;
-      }
-
-      last_tick_timepoint +=
-          (monotonic_now - last_tick_timepoint) / period * period;
-      // If it's over 1/2 of a period back in time, that's wrong.  Move it
-      // forwards to now.
-      if (last_tick_timepoint - monotonic_now < -period / 2) {
-        last_tick_timepoint += period;
-      }
-
-      // We should be sampling our sensors to kick off the control cycle 50 uS
-      // after the falling edge.  This gives us a little bit of buffer for
-      // errors in waking up.  The PWM cycle starts at the falling edge of the
-      // PWM pulse.
-      chrono::nanoseconds new_offset = phased_loop.OffsetFromIntervalAndTime(
-          period, last_tick_timepoint + chrono::microseconds(50));
-
-      phased_loop.set_interval_and_offset(period, new_offset);
-    }
+    phased_loop_handler_->set_interval_and_offset(period_, new_offset);
   }
 }
 
