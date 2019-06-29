@@ -15,7 +15,6 @@
 #include "y2012/control_loops/accessories/accessories.q.h"
 
 using ::frc971::control_loops::drivetrain_queue;
-using ::y2012::control_loops::accessories_queue;
 
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::JoystickAxis;
@@ -82,7 +81,12 @@ const JoystickAxis kAdjustClawSeparation(3, 1);
 class Reader : public ::aos::input::JoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop)
-      : ::aos::input::JoystickInput(event_loop), is_high_gear_(false) {}
+      : ::aos::input::JoystickInput(event_loop),
+        accessories_goal_sender_(
+            event_loop
+                ->MakeSender<::y2012::control_loops::AccessoriesQueue::Message>(
+                    ".y2012.control_loops.accessories_queue.goal")),
+        is_high_gear_(false) {}
 
   void RunIteration(const ::aos::input::driver_station::Data &data) override {
     if (!data.GetControlBit(ControlBit::kAutonomous)) {
@@ -111,30 +115,22 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
-    if (!data.GetControlBit(ControlBit::kEnabled)) {
-      action_queue_.CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+    auto accessories_message = accessories_goal_sender_.MakeMessage();
+    accessories_message->solenoids[0] = data.IsPressed(kLongShot);
+    accessories_message->solenoids[1] = data.IsPressed(kCloseShot);
+    accessories_message->solenoids[2] = data.IsPressed(kFenderShot);
+    accessories_message->sticks[0] = data.GetAxis(kAdjustClawGoal);
+    accessories_message->sticks[1] = data.GetAxis(kAdjustClawSeparation);
+    if (!accessories_message.Send()) {
+      LOG(WARNING, "sending accessories goal failed\n");
     }
-
-    {
-      auto accessories_message = accessories_queue.goal.MakeMessage();
-      accessories_message->solenoids[0] = data.IsPressed(kLongShot);
-      accessories_message->solenoids[1] = data.IsPressed(kCloseShot);
-      accessories_message->solenoids[2] = data.IsPressed(kFenderShot);
-      accessories_message->sticks[0] = data.GetAxis(kAdjustClawGoal);
-      accessories_message->sticks[1] = data.GetAxis(kAdjustClawSeparation);
-      if (!accessories_message.Send()) {
-        LOG(WARNING, "sending accessories goal failed\n");
-      }
-    }
-
-    action_queue_.Tick();
   }
 
  private:
-  bool is_high_gear_;
+  ::aos::Sender<::y2012::control_loops::AccessoriesQueue::Message>
+      accessories_goal_sender_;
 
-  ::aos::common::actions::ActionQueue action_queue_;
+  bool is_high_gear_;
 };
 
 }  // namespace joysticks

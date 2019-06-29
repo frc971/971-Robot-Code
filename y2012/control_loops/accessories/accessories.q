@@ -2,6 +2,7 @@ package y2012.control_loops;
 
 import "aos/controls/control_loops.q";
 
+// Published on ".y2012.control_loops.accessories_queue"
 queue_group AccessoriesQueue {
   implements aos.control_loops.ControlLoop;
   message Message {
@@ -14,5 +15,3 @@ queue_group AccessoriesQueue {
   queue Message output;
   queue .aos.control_loops.Status status;
 };
-
-queue_group AccessoriesQueue accessories_queue;
