@@ -15,9 +15,6 @@
 
 namespace y2018 {
 namespace actors {
-using ::frc971::control_loops::drivetrain_queue;
-
-namespace arm = ::y2018::control_loops::superstructure::arm;
 
 class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  public:
@@ -31,7 +28,8 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     roller_voltage_ = 0.0;
     left_intake_angle_ = -3.2;
     right_intake_angle_ = -3.2;
-    arm_goal_position_ = arm::NeutralIndex();
+    arm_goal_position_ =
+        ::y2018::control_loops::superstructure::arm::NeutralIndex();
     grab_box_ = false;
     open_claw_ = false;
     close_claw_ = false;
@@ -50,7 +48,8 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   double roller_voltage_ = 0.0;
   double left_intake_angle_ = -3.2;
   double right_intake_angle_ = -3.2;
-  uint32_t arm_goal_position_ = arm::NeutralIndex();
+  uint32_t arm_goal_position_ =
+      ::y2018::control_loops::superstructure::arm::NeutralIndex();
   bool grab_box_ = false;
   bool open_claw_ = false;
   bool close_claw_ = false;
@@ -125,22 +124,22 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
       }
 
       superstructure_status_fetcher_.Fetch();
-      drivetrain_queue.status.FetchLatest();
-      if (drivetrain_queue.status.get() &&
+      drivetrain_status_fetcher_.Fetch();
+      if (drivetrain_status_fetcher_.get() &&
           superstructure_status_fetcher_.get()) {
         const double left_profile_error =
             (initial_drivetrain_.left -
-             drivetrain_queue.status->profiled_left_position_goal);
+             drivetrain_status_fetcher_->profiled_left_position_goal);
         const double right_profile_error =
             (initial_drivetrain_.right -
-             drivetrain_queue.status->profiled_right_position_goal);
+             drivetrain_status_fetcher_->profiled_right_position_goal);
 
         const double left_error =
             (initial_drivetrain_.left -
-             drivetrain_queue.status->estimated_left_position);
+             drivetrain_status_fetcher_->estimated_left_position);
         const double right_error =
             (initial_drivetrain_.right -
-             drivetrain_queue.status->estimated_right_position);
+             drivetrain_status_fetcher_->estimated_right_position);
 
         const double profile_distance_to_go =
             (left_profile_error + right_profile_error) / 2.0;

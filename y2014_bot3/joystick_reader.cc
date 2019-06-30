@@ -18,8 +18,6 @@
 #include "y2014_bot3/control_loops/drivetrain/drivetrain_base.h"
 #include "y2014_bot3/control_loops/rollers/rollers.q.h"
 
-using ::frc971::control_loops::drivetrain_queue;
-
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::POVLocation;
 using ::aos::input::driver_station::JoystickAxis;
@@ -56,7 +54,7 @@ class Reader : public ::aos::input::JoystickInput {
             ::frc971::autonomous::BaseAutonomousActor::MakeFactory(
                 event_loop)) {
     drivetrain_input_reader_ = DrivetrainInputReader::Make(
-        DrivetrainInputReader::InputType::kSteeringWheel,
+        event_loop, DrivetrainInputReader::InputType::kSteeringWheel,
         ::y2014_bot3::control_loops::drivetrain::GetDrivetrainConfig());
   }
 

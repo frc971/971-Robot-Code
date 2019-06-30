@@ -5,6 +5,7 @@
 
 #include "aos/controls/control_loop.h"
 #include "aos/events/event-loop.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "y2018/control_loops/superstructure/arm/arm.h"
 #include "y2018/control_loops/superstructure/intake/intake.h"
@@ -40,6 +41,8 @@ class Superstructure
 
   ::aos::Sender<::y2018::StatusLight> status_light_sender_;
   ::aos::Fetcher<::y2018::vision::VisionStatus> vision_status_fetcher_;
+  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Output>
+      drivetrain_output_fetcher_;
 
   intake::IntakeSide intake_left_;
   intake::IntakeSide intake_right_;

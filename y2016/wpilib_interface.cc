@@ -53,7 +53,6 @@
 #include "y2016/control_loops/superstructure/superstructure.q.h"
 #include "y2016/queues/ball_detector.q.h"
 
-using ::frc971::control_loops::drivetrain_queue;
 using aos::make_unique;
 using ::frc971::wpilib::LoopOutputHandler;
 using ::y2016::control_loops::shooter::ShooterQueue;
@@ -158,7 +157,11 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
             ".y2016.control_loops.shooter.shooter_queue.position")),
         superstructure_position_sender_(
             event_loop->MakeSender<SuperstructureQueue::Position>(
-                ".y2016.control_loops.superstructure_queue.position")) {
+                ".y2016.control_loops.superstructure_queue.position")),
+        drivetrain_position_sender_(
+            event_loop->MakeSender<
+                ::frc971::control_loops::DrivetrainQueue::Position>(
+                ".frc971.control_loops.drivetrain_queue.position")) {
     // Set it to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxDrivetrainShooterEncoderPulsesPerSecond);
@@ -255,7 +258,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   void RunIteration() {
     {
-      auto drivetrain_message = drivetrain_queue.position.MakeMessage();
+      auto drivetrain_message = drivetrain_position_sender_.MakeMessage();
       drivetrain_message->right_encoder =
           drivetrain_translate(-drivetrain_right_encoder_->GetRaw());
       drivetrain_message->left_encoder =
@@ -326,6 +329,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   ::aos::Sender<::frc971::autonomous::AutonomousMode> auto_mode_sender_;
   ::aos::Sender<ShooterQueue::Position> shooter_position_sender_;
   ::aos::Sender<SuperstructureQueue::Position> superstructure_position_sender_;
+  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Position>
+      drivetrain_position_sender_;
 
   ::std::unique_ptr<::frc::AnalogInput> drivetrain_left_hall_,
       drivetrain_right_hall_;

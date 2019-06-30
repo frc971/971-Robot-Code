@@ -25,8 +25,6 @@
 #include "y2016/queues/ball_detector.q.h"
 #include "y2016/vision/vision.q.h"
 
-using ::frc971::control_loops::drivetrain_queue;
-
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::ControlBit;
 using ::aos::input::driver_station::JoystickAxis;
@@ -91,6 +89,14 @@ class Reader : public ::aos::input::ActionJoystickInput {
             event_loop
                 ->MakeSender<::y2016::control_loops::SuperstructureQueue::Goal>(
                     ".y2016.control_loops.superstructure_queue.goal")),
+        drivetrain_goal_fetcher_(
+            event_loop
+                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Goal>(
+                    ".frc971.control_loops.drivetrain_queue.goal")),
+        drivetrain_status_fetcher_(
+            event_loop
+                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
+                    ".frc971.control_loops.drivetrain_queue.status")),
         intake_goal_(0.0),
         shoulder_goal_(M_PI / 2.0),
         wrist_goal_(0.0),
@@ -183,8 +189,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
       // Forwards shot
       shoulder_goal_ = M_PI / 2.0 + 0.1;
       wrist_goal_ = M_PI + 0.41 + 0.02 - 0.005;
-      if (drivetrain_queue.status.get()) {
-        wrist_goal_ += drivetrain_queue.status->ground_angle;
+      drivetrain_status_fetcher_.Fetch();
+      if (drivetrain_status_fetcher_.get()) {
+        wrist_goal_ += drivetrain_status_fetcher_->ground_angle;
       }
       shooter_velocity_ = 640.0;
       intake_goal_ = intake_when_shooting;
@@ -192,8 +199,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
       // Backwards shot
       shoulder_goal_ = M_PI / 2.0 - 0.4;
       wrist_goal_ = -0.62 - 0.02;
-      if (drivetrain_queue.status.get()) {
-        wrist_goal_ += drivetrain_queue.status->ground_angle;
+      drivetrain_status_fetcher_.Fetch();
+      if (drivetrain_status_fetcher_.get()) {
+        wrist_goal_ += drivetrain_status_fetcher_->ground_angle;
       }
       shooter_velocity_ = 640.0;
       intake_goal_ = intake_when_shooting;
@@ -259,19 +267,20 @@ class Reader : public ::aos::input::ActionJoystickInput {
     if (data.IsPressed(kFire) && shooter_velocity_ != 0.0) {
       if (data.IsPressed(kVisionAlign)) {
         // Make sure that we are lined up.
-        drivetrain_queue.status.FetchLatest();
-        drivetrain_queue.goal.FetchLatest();
-        if (drivetrain_queue.status.get() && drivetrain_queue.goal.get()) {
-          const double left_goal = drivetrain_queue.goal->left_goal;
-          const double right_goal = drivetrain_queue.goal->right_goal;
+        drivetrain_status_fetcher_.Fetch();
+        drivetrain_goal_fetcher_.Fetch();
+        if (drivetrain_status_fetcher_.get() &&
+            drivetrain_goal_fetcher_.get()) {
+          const double left_goal = drivetrain_goal_fetcher_->left_goal;
+          const double right_goal = drivetrain_goal_fetcher_->right_goal;
           const double left_current =
-              drivetrain_queue.status->estimated_left_position;
+              drivetrain_status_fetcher_->estimated_left_position;
           const double right_current =
-              drivetrain_queue.status->estimated_right_position;
+              drivetrain_status_fetcher_->estimated_right_position;
           const double left_velocity =
-              drivetrain_queue.status->estimated_left_velocity;
+              drivetrain_status_fetcher_->estimated_left_velocity;
           const double right_velocity =
-              drivetrain_queue.status->estimated_right_velocity;
+              drivetrain_status_fetcher_->estimated_right_velocity;
           if (vision_action_running_ && ::std::abs(last_angle_) < 0.02 &&
               ::std::abs((left_goal - right_goal) -
                          (left_current - right_current)) /
@@ -399,6 +408,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
       superstructure_status_fetcher_;
   ::aos::Sender<::y2016::control_loops::SuperstructureQueue::Goal>
       superstructure_goal_sender_;
+  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Goal>
+      drivetrain_goal_fetcher_;
+  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+      drivetrain_status_fetcher_;
 
   // Whatever these are set to are our default goals to send out after zeroing.
   double intake_goal_;

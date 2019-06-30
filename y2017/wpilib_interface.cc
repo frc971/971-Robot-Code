@@ -58,7 +58,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-using ::frc971::control_loops::drivetrain_queue;
 using ::y2017::control_loops::SuperstructureQueue;
 using ::y2017::constants::Values;
 using ::aos::monotonic_clock;
@@ -132,7 +131,11 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                 ".frc971.autonomous.auto_mode")),
         superstructure_position_sender_(
             event_loop->MakeSender<SuperstructureQueue::Position>(
-                ".y2017.control_loops.superstructure_queue.position")) {
+                ".y2017.control_loops.superstructure_queue.position")),
+        drivetrain_position_sender_(
+            event_loop->MakeSender<
+                ::frc971::control_loops::DrivetrainQueue::Position>(
+                ".frc971.control_loops.drivetrain_queue.position")) {
     // Set to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
@@ -204,7 +207,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   void RunIteration() {
     {
-      auto drivetrain_message = drivetrain_queue.position.MakeMessage();
+      auto drivetrain_message = drivetrain_position_sender_.MakeMessage();
       drivetrain_message->right_encoder =
           drivetrain_translate(drivetrain_right_encoder_->GetRaw());
       drivetrain_message->right_speed =
@@ -265,6 +268,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
  private:
   ::aos::Sender<::frc971::autonomous::AutonomousMode> auto_mode_sender_;
   ::aos::Sender<SuperstructureQueue::Position> superstructure_position_sender_;
+  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Position>
+      drivetrain_position_sender_;
 
   DigitalGlitchFilter hall_filter_;
 

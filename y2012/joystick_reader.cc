@@ -14,8 +14,6 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2012/control_loops/accessories/accessories.q.h"
 
-using ::frc971::control_loops::drivetrain_queue;
-
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::JoystickAxis;
 using ::aos::input::driver_station::ControlBit;
@@ -82,6 +80,10 @@ class Reader : public ::aos::input::JoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop)
       : ::aos::input::JoystickInput(event_loop),
+        drivetrain_goal_sender_(
+            event_loop
+                ->MakeSender<::frc971::control_loops::DrivetrainQueue::Goal>(
+                    ".frc971.control_loops.drivetrain_queue.goal")),
         accessories_goal_sender_(
             event_loop
                 ->MakeSender<::y2012::control_loops::AccessoriesQueue::Message>(
@@ -104,12 +106,13 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.PosEdge(kShiftHigh)) {
       is_high_gear_ = true;
     }
-    if (!drivetrain_queue.goal.MakeWithBuilder()
-             .wheel(wheel)
-             .throttle(throttle)
-             .highgear(is_high_gear_)
-             .quickturn(data.IsPressed(kQuickTurn))
-             .Send()) {
+    auto drivetrain_message = drivetrain_goal_sender_.MakeMessage();
+    drivetrain_message->wheel = wheel;
+    drivetrain_message->throttle = throttle;
+    drivetrain_message->highgear = is_high_gear_;
+    drivetrain_message->quickturn = data.IsPressed(kQuickTurn);
+
+    if (!drivetrain_message.Send()) {
       LOG(WARNING, "sending stick values failed\n");
     }
   }
@@ -127,6 +130,8 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
  private:
+  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Goal>
+      drivetrain_goal_sender_;
   ::aos::Sender<::y2012::control_loops::AccessoriesQueue::Message>
       accessories_goal_sender_;
 

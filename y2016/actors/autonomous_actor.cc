@@ -18,7 +18,6 @@
 namespace y2016 {
 namespace actors {
 using ::aos::monotonic_clock;
-using ::frc971::control_loops::drivetrain_queue;
 namespace chrono = ::std::chrono;
 namespace this_thread = ::std::this_thread;
 
@@ -245,20 +244,20 @@ void AutonomousActor::WaitForAlignedWithVision(
       last_angle = vision_status_fetcher_->horizontal_angle;
     }
 
-    drivetrain_queue.status.FetchLatest();
-    drivetrain_queue.goal.FetchLatest();
+    drivetrain_status_fetcher_.Fetch();
+    drivetrain_goal_fetcher_.Fetch();
 
-    if (drivetrain_queue.status.get() && drivetrain_queue.goal.get()) {
-      const double left_goal = drivetrain_queue.goal->left_goal;
-      const double right_goal = drivetrain_queue.goal->right_goal;
+    if (drivetrain_status_fetcher_.get() && drivetrain_goal_fetcher_.get()) {
+      const double left_goal = drivetrain_goal_fetcher_->left_goal;
+      const double right_goal = drivetrain_goal_fetcher_->right_goal;
       const double left_current =
-          drivetrain_queue.status->estimated_left_position;
+          drivetrain_status_fetcher_->estimated_left_position;
       const double right_current =
-          drivetrain_queue.status->estimated_right_position;
+          drivetrain_status_fetcher_->estimated_right_position;
       const double left_velocity =
-          drivetrain_queue.status->estimated_left_velocity;
+          drivetrain_status_fetcher_->estimated_left_velocity;
       const double right_velocity =
-          drivetrain_queue.status->estimated_right_velocity;
+          drivetrain_status_fetcher_->estimated_right_velocity;
 
       if (vision_valid && ::std::abs(last_angle) < 0.02 &&
           ::std::abs((left_goal - right_goal) -
@@ -496,14 +495,14 @@ void AutonomousActor::TippyDrive(double goal_distance, double tip_distance,
   if (!WaitForAboveAngle(above)) return;
   // Ok, we are good now.  Compensate by moving the goal by the error.
   // Should be here at 2.7
-  drivetrain_queue.status.FetchLatest();
-  if (drivetrain_queue.status.get()) {
+  drivetrain_status_fetcher_.Fetch();
+  if (drivetrain_status_fetcher_.get()) {
     const double left_error =
         (initial_drivetrain_.left -
-         drivetrain_queue.status->estimated_left_position);
+         drivetrain_status_fetcher_->estimated_left_position);
     const double right_error =
         (initial_drivetrain_.right -
-         drivetrain_queue.status->estimated_right_position);
+         drivetrain_status_fetcher_->estimated_right_position);
     const double distance_to_go = (left_error + right_error) / 2.0;
     const double distance_compensation =
         goal_distance - tip_distance - distance_to_go;
@@ -558,7 +557,7 @@ void AutonomousActor::WaitForBallOrDriveDone() {
       return;
     }
     phased_loop.SleepUntilNext();
-    drivetrain_queue.status.FetchLatest();
+    drivetrain_status_fetcher_.Fetch();
     if (IsDriveDone()) {
       return;
     }

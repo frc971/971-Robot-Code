@@ -43,7 +43,8 @@ class DrivetrainInputReader {
     kLineFollow,
   };
   // Inputs driver station button and joystick locations
-  DrivetrainInputReader(driver_station::JoystickAxis wheel,
+  DrivetrainInputReader(::aos::EventLoop *event_loop,
+                        driver_station::JoystickAxis wheel,
                         driver_station::JoystickAxis throttle,
                         driver_station::ButtonLocation quick_turn,
                         driver_station::ButtonLocation turn1,
@@ -56,7 +57,15 @@ class DrivetrainInputReader {
         turn1_(turn1),
         turn1_use_(turn1_use),
         turn2_(turn2),
-        turn2_use_(turn2_use) {}
+        turn2_use_(turn2_use),
+        drivetrain_status_fetcher_(
+            event_loop
+                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
+                    ".frc971.control_loops.drivetrain_queue.status")),
+        drivetrain_goal_sender_(
+            event_loop
+                ->MakeSender<::frc971::control_loops::DrivetrainQueue::Goal>(
+                    ".frc971.control_loops.drivetrain_queue.goal")) {}
 
   virtual ~DrivetrainInputReader() = default;
 
@@ -69,7 +78,7 @@ class DrivetrainInputReader {
 
   // Constructs the appropriate DrivetrainInputReader.
   static std::unique_ptr<DrivetrainInputReader> Make(
-      InputType type,
+      ::aos::EventLoop *event_loop, InputType type,
       const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>
           &dt_config);
 
@@ -121,6 +130,11 @@ class DrivetrainInputReader {
   virtual WheelAndThrottle GetWheelAndThrottle(
       const ::aos::input::driver_station::Data &data) = 0;
 
+  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+      drivetrain_status_fetcher_;
+  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Goal>
+      drivetrain_goal_sender_;
+
   double robot_velocity_ = 0.0;
   // Goals to send to the drivetrain in closed loop mode.
   double left_goal_ = 0.0;
@@ -141,7 +155,7 @@ class SteeringWheelDrivetrainInputReader : public DrivetrainInputReader {
   // Creates a DrivetrainInputReader with the corresponding joystick ports and
   // axis for the big steering wheel and throttle stick.
   static std::unique_ptr<SteeringWheelDrivetrainInputReader> Make(
-      bool default_high_gear);
+      ::aos::EventLoop *event_loop, bool default_high_gear);
 
   // Sets the default shifter position
   void set_default_high_gear(bool default_high_gear) {
@@ -171,11 +185,12 @@ class PistolDrivetrainInputReader : public DrivetrainInputReader {
   // Creates a DrivetrainInputReader with the corresponding joystick ports and
   // axis for the (cheap) pistol grip controller.
   static std::unique_ptr<PistolDrivetrainInputReader> Make(
-      bool default_high_gear, TopButtonUse top_button_use);
+      ::aos::EventLoop *event_loop, bool default_high_gear,
+      TopButtonUse top_button_use);
 
  private:
   PistolDrivetrainInputReader(
-      driver_station::JoystickAxis wheel_high,
+      ::aos::EventLoop *event_loop, driver_station::JoystickAxis wheel_high,
       driver_station::JoystickAxis wheel_low,
       driver_station::JoystickAxis wheel_velocity_high,
       driver_station::JoystickAxis wheel_velocity_low,
@@ -193,8 +208,8 @@ class PistolDrivetrainInputReader : public DrivetrainInputReader {
       driver_station::ButtonLocation turn1,
       driver_station::ButtonLocation turn2,
       driver_station::ButtonLocation slow_down)
-      : DrivetrainInputReader(wheel_high, throttle_high, quick_turn, turn1,
-                              TurnButtonUse::kLineFollow, turn2,
+      : DrivetrainInputReader(event_loop, wheel_high, throttle_high, quick_turn,
+                              turn1, TurnButtonUse::kLineFollow, turn2,
                               TurnButtonUse::kControlLoopDriving),
         wheel_low_(wheel_low),
         wheel_velocity_high_(wheel_velocity_high),
@@ -245,7 +260,8 @@ class XboxDrivetrainInputReader : public DrivetrainInputReader {
 
   // Creates a DrivetrainInputReader with the corresponding joystick ports and
   // axis for the Xbox controller.
-  static std::unique_ptr<XboxDrivetrainInputReader> Make();
+  static std::unique_ptr<XboxDrivetrainInputReader> Make(
+      ::aos::EventLoop *event_loop);
 
  private:
   WheelAndThrottle GetWheelAndThrottle(

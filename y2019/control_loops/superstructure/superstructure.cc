@@ -16,6 +16,10 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
     : aos::controls::ControlLoop<SuperstructureQueue>(event_loop, name),
       status_light_sender_(
           event_loop->MakeSender<::y2019::StatusLight>(".y2019.status_light")),
+      drivetrain_status_fetcher_(
+          event_loop
+              ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
+                  ".frc971.control_loops.drivetrain_queue.status")),
       elevator_(constants::GetValues().elevator.subsystem_params),
       wrist_(constants::GetValues().wrist.subsystem_params),
       intake_(constants::GetValues().intake),
@@ -94,22 +98,20 @@ void Superstructure::RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
   intake_.set_min_position(collision_avoidance_.min_intake_goal());
   intake_.set_max_position(collision_avoidance_.max_intake_goal());
 
-  ::frc971::control_loops::drivetrain_queue.status.FetchLatest();
+  drivetrain_status_fetcher_.Fetch();
 
   if (status && unsafe_goal) {
     // Light Logic
     if (status->estopped) {
       // Estop is red
       SendColors(1.0, 0.0, 0.0);
-    } else if (::frc971::control_loops::drivetrain_queue.status.get() &&
-               ::frc971::control_loops::drivetrain_queue.status
-                   ->line_follow_logging.frozen) {
+    } else if (drivetrain_status_fetcher_.get() &&
+               drivetrain_status_fetcher_->line_follow_logging.frozen) {
       // Vision align is flashing white for button pressed, purple for target
       // acquired.
       ++line_blink_count_;
       if (line_blink_count_ < 20) {
-        if (::frc971::control_loops::drivetrain_queue.status
-                ->line_follow_logging.have_target) {
+        if (drivetrain_status_fetcher_->line_follow_logging.have_target) {
           SendColors(1.0, 0.0, 1.0);
         } else {
           SendColors(1.0, 1.0, 1.0);

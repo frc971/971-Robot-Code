@@ -10,7 +10,6 @@
 #include "aos/logging/logging.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 
-using ::frc971::control_loops::drivetrain_queue;
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::ControlBit;
 using ::aos::input::driver_station::JoystickAxis;
@@ -32,9 +31,9 @@ void DrivetrainInputReader::HandleDrivetrain(
   const double throttle_torque = wheel_and_throttle.throttle_torque;
   const bool high_gear = wheel_and_throttle.high_gear;
 
-  drivetrain_queue.status.FetchLatest();
-  if (drivetrain_queue.status.get()) {
-    robot_velocity_ = drivetrain_queue.status->robot_speed;
+  drivetrain_status_fetcher_.Fetch();
+  if (drivetrain_status_fetcher_.get()) {
+    robot_velocity_ = drivetrain_status_fetcher_->robot_speed;
   }
 
   // If we have a vision align function, and it is in control, don't run the
@@ -70,11 +69,11 @@ void DrivetrainInputReader::HandleDrivetrain(
     }
   }
 
-  if (drivetrain_queue.status.get()) {
+  if (drivetrain_status_fetcher_.get()) {
     if (is_control_loop_driving && !last_is_control_loop_driving_) {
-      left_goal_ = drivetrain_queue.status->estimated_left_position +
+      left_goal_ = drivetrain_status_fetcher_->estimated_left_position +
                    wheel * wheel_multiplier_;
-      right_goal_ = drivetrain_queue.status->estimated_right_position -
+      right_goal_ = drivetrain_status_fetcher_->estimated_right_position -
                     wheel * wheel_multiplier_;
     }
   }
@@ -83,7 +82,7 @@ void DrivetrainInputReader::HandleDrivetrain(
       left_goal_ - wheel * wheel_multiplier_ + throttle * 0.3;
   const double current_right_goal =
       right_goal_ + wheel * wheel_multiplier_ + throttle * 0.3;
-  auto new_drivetrain_goal = drivetrain_queue.goal.MakeMessage();
+  auto new_drivetrain_goal = drivetrain_goal_sender_.MakeMessage();
   new_drivetrain_goal->wheel = wheel;
   new_drivetrain_goal->wheel_velocity = wheel_velocity;
   new_drivetrain_goal->wheel_torque = wheel_torque;
@@ -224,14 +223,15 @@ XboxDrivetrainInputReader::GetWheelAndThrottle(
 }
 
 std::unique_ptr<SteeringWheelDrivetrainInputReader>
-SteeringWheelDrivetrainInputReader::Make(bool default_high_gear) {
+SteeringWheelDrivetrainInputReader::Make(::aos::EventLoop *event_loop,
+                                         bool default_high_gear) {
   const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
   const ButtonLocation kQuickTurn(1, 5);
   const ButtonLocation kTurn1(1, 7);
   const ButtonLocation kTurn2(1, 11);
   std::unique_ptr<SteeringWheelDrivetrainInputReader> result(
       new SteeringWheelDrivetrainInputReader(
-          kSteeringWheel, kDriveThrottle, kQuickTurn, kTurn1,
+          event_loop, kSteeringWheel, kDriveThrottle, kQuickTurn, kTurn1,
           TurnButtonUse::kControlLoopDriving, kTurn2,
           TurnButtonUse::kControlLoopDriving));
   result.get()->set_default_high_gear(default_high_gear);
@@ -240,7 +240,8 @@ SteeringWheelDrivetrainInputReader::Make(bool default_high_gear) {
 }
 
 std::unique_ptr<PistolDrivetrainInputReader> PistolDrivetrainInputReader::Make(
-    bool default_high_gear, TopButtonUse top_button_use) {
+    ::aos::EventLoop *event_loop, bool default_high_gear,
+    TopButtonUse top_button_use) {
   // Pistol Grip controller
   const JoystickAxis kTriggerHigh(1, 1), kTriggerLow(1, 4),
       kTriggerVelocityHigh(1, 2), kTriggerVelocityLow(1, 5),
@@ -274,17 +275,18 @@ std::unique_ptr<PistolDrivetrainInputReader> PistolDrivetrainInputReader::Make(
 
   std::unique_ptr<PistolDrivetrainInputReader> result(
       new PistolDrivetrainInputReader(
-          kWheelHigh, kWheelLow, kTriggerVelocityHigh, kTriggerVelocityLow,
-          kTriggerTorqueHigh, kTriggerTorqueLow, kTriggerHigh, kTriggerLow,
-          kWheelVelocityHigh, kWheelVelocityLow, kWheelTorqueHigh,
-          kWheelTorqueLow, kQuickTurn, kShiftHigh, kShiftLow, kTurn1, kTurn2,
-          BottomButton));
+          event_loop, kWheelHigh, kWheelLow, kTriggerVelocityHigh,
+          kTriggerVelocityLow, kTriggerTorqueHigh, kTriggerTorqueLow,
+          kTriggerHigh, kTriggerLow, kWheelVelocityHigh, kWheelVelocityLow,
+          kWheelTorqueHigh, kWheelTorqueLow, kQuickTurn, kShiftHigh, kShiftLow,
+          kTurn1, kTurn2, BottomButton));
 
   result->set_default_high_gear(default_high_gear);
   return result;
 }
 
-std::unique_ptr<XboxDrivetrainInputReader> XboxDrivetrainInputReader::Make() {
+std::unique_ptr<XboxDrivetrainInputReader> XboxDrivetrainInputReader::Make(
+    ::aos::EventLoop *event_loop) {
   // xbox
   const JoystickAxis kSteeringWheel(1, 5), kDriveThrottle(1, 2);
   const ButtonLocation kQuickTurn(1, 5);
@@ -294,14 +296,14 @@ std::unique_ptr<XboxDrivetrainInputReader> XboxDrivetrainInputReader::Make() {
   const ButtonLocation kTurn2(1, 2);
 
   std::unique_ptr<XboxDrivetrainInputReader> result(
-      new XboxDrivetrainInputReader(kSteeringWheel, kDriveThrottle, kQuickTurn,
-                                    kTurn1, TurnButtonUse::kControlLoopDriving,
-                                    kTurn2,
+      new XboxDrivetrainInputReader(event_loop, kSteeringWheel, kDriveThrottle,
+                                    kQuickTurn, kTurn1,
+                                    TurnButtonUse::kControlLoopDriving, kTurn2,
                                     TurnButtonUse::kControlLoopDriving));
   return result;
 }
 ::std::unique_ptr<DrivetrainInputReader> DrivetrainInputReader::Make(
-    InputType type,
+    ::aos::EventLoop *event_loop, InputType type,
     const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>
         &dt_config) {
   std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader;
@@ -310,18 +312,18 @@ std::unique_ptr<XboxDrivetrainInputReader> XboxDrivetrainInputReader::Make() {
 
   switch (type) {
     case InputType::kSteeringWheel:
-      drivetrain_input_reader =
-          SteeringWheelDrivetrainInputReader::Make(dt_config.default_high_gear);
+      drivetrain_input_reader = SteeringWheelDrivetrainInputReader::Make(
+          event_loop, dt_config.default_high_gear);
       break;
     case InputType::kPistol:
       drivetrain_input_reader = PistolDrivetrainInputReader::Make(
-          dt_config.default_high_gear,
+          event_loop, dt_config.default_high_gear,
           dt_config.pistol_grip_shift_enables_line_follow
               ? PistolDrivetrainInputReader::TopButtonUse::kLineFollow
               : PistolDrivetrainInputReader::TopButtonUse::kShift);
       break;
     case InputType::kXbox:
-      drivetrain_input_reader = XboxDrivetrainInputReader::Make();
+      drivetrain_input_reader = XboxDrivetrainInputReader::Make(event_loop);
       break;
   }
   return drivetrain_input_reader;

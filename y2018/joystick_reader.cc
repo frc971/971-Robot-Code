@@ -25,7 +25,6 @@
 #include "y2018/vision.pb.h"
 
 using ::aos::monotonic_clock;
-using ::frc971::control_loops::drivetrain_queue;
 using ::aos::events::ProtoTXUdpSocket;
 using ::aos::events::RXUdpSocket;
 using ::aos::input::driver_station::ButtonLocation;

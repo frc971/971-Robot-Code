@@ -18,8 +18,6 @@
 #include "y2017/control_loops/superstructure/superstructure.q.h"
 #include "y2017/control_loops/drivetrain/drivetrain_base.h"
 
-using ::frc971::control_loops::drivetrain_queue;
-
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::ControlBit;
 using ::aos::input::driver_station::JoystickAxis;

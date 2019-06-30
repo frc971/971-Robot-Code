@@ -6,7 +6,6 @@
 #include "aos/controls/control_loop_test.h"
 #include "aos/queue.h"
 #include "frc971/control_loops/capped_test_plant.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
@@ -289,7 +288,6 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
             ".y2019.control_loops.superstructure.superstructure_queue."
             "position"),
         superstructure_(&event_loop_) {
-    ::frc971::control_loops::drivetrain_queue.status.Clear();
     set_team_id(::frc971::control_loops::testing::kTeamNumber);
   }
 

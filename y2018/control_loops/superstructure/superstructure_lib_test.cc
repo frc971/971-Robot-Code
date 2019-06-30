@@ -274,7 +274,6 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
                               ".y2018.control_loops.superstructure.status",
                               ".y2018.control_loops.superstructure.position"),
         superstructure_(&event_loop_, ".y2018.control_loops.superstructure") {
-    ::frc971::control_loops::drivetrain_queue.output.Clear();
     set_team_id(::frc971::control_loops::testing::kTeamNumber);
   }
 

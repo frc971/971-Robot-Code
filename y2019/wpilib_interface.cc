@@ -56,7 +56,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-using ::frc971::control_loops::drivetrain_queue;
 using ::y2019::control_loops::superstructure::SuperstructureQueue;
 using ::y2019::constants::Values;
 using ::aos::monotonic_clock;
@@ -138,7 +137,11 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
         superstructure_position_sender_(
             event_loop->MakeSender<SuperstructureQueue::Position>(
                 ".y2019.control_loops.superstructure.superstructure_queue."
-                "position")) {
+                "position")),
+        drivetrain_position_sender_(
+            event_loop->MakeSender<
+                ::frc971::control_loops::DrivetrainQueue::Position>(
+                ".frc971.control_loops.drivetrain_queue.position")) {
     // Set to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
@@ -230,7 +233,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   void RunIteration() override {
     {
-      auto drivetrain_message = drivetrain_queue.position.MakeMessage();
+      auto drivetrain_message = drivetrain_position_sender_.MakeMessage();
       drivetrain_message->left_encoder =
           drivetrain_translate(drivetrain_left_encoder_->GetRaw());
       drivetrain_message->left_speed =
@@ -302,6 +305,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
  private:
   ::aos::Sender<::frc971::autonomous::AutonomousMode> auto_mode_sender_;
   ::aos::Sender<SuperstructureQueue::Position> superstructure_position_sender_;
+  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Position>
+      drivetrain_position_sender_;
 
   ::frc971::wpilib::AbsoluteEncoderAndPotentiometer elevator_encoder_,
       wrist_encoder_, stilts_encoder_;

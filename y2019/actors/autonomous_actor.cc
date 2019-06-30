@@ -16,7 +16,6 @@
 namespace y2019 {
 namespace actors {
 using ::aos::monotonic_clock;
-using ::frc971::control_loops::drivetrain_queue;
 namespace chrono = ::std::chrono;
 
 AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
@@ -46,9 +45,9 @@ bool AutonomousActor::WaitForDriveXGreater(double x) {
       return false;
     }
     phased_loop.SleepUntilNext();
-    drivetrain_queue.status.FetchLatest();
-    if (drivetrain_queue.status->x > x) {
-      LOG(INFO, "X at %f\n", drivetrain_queue.status->x);
+    drivetrain_status_fetcher_.Fetch();
+    if (drivetrain_status_fetcher_->x > x) {
+      LOG(INFO, "X at %f\n", drivetrain_status_fetcher_->x);
       return true;
     }
   }
@@ -65,9 +64,9 @@ bool AutonomousActor::WaitForDriveYCloseToZero(double y) {
       return false;
     }
     phased_loop.SleepUntilNext();
-    drivetrain_queue.status.FetchLatest();
-    if (::std::abs(drivetrain_queue.status->y) < y) {
-      LOG(INFO, "Y at %f\n", drivetrain_queue.status->y);
+    drivetrain_status_fetcher_.Fetch();
+    if (::std::abs(drivetrain_status_fetcher_->y) < y) {
+      LOG(INFO, "Y at %f\n", drivetrain_status_fetcher_->y);
       return true;
     }
   }
@@ -104,12 +103,12 @@ void AutonomousActor::Reset(bool is_left) {
 
   // Wait for the drivetrain to run so it has time to reset the heading.
   // Otherwise our drivetrain reset will do a 180 right at the start.
-  drivetrain_queue.status.FetchAnother();
-  LOG(INFO, "Heading is %f\n", drivetrain_queue.status->estimated_heading);
+  WaitUntil([this]() { return drivetrain_status_fetcher_.Fetch(); });
+  LOG(INFO, "Heading is %f\n", drivetrain_status_fetcher_->estimated_heading);
   InitializeEncoders();
   ResetDrivetrain();
-  drivetrain_queue.status.FetchAnother();
-  LOG(INFO, "Heading is %f\n", drivetrain_queue.status->estimated_heading);
+  WaitUntil([this]() { return drivetrain_status_fetcher_.Fetch(); });
+  LOG(INFO, "Heading is %f\n", drivetrain_status_fetcher_->estimated_heading);
 
   ResetDrivetrain();
   InitializeEncoders();

@@ -113,11 +113,17 @@ class BaseAutonomousActor
   };
   InitialDrivetrain initial_drivetrain_;
 
- private:
-  friend class SplineHandle;
   ::aos::Sender<::y2019::control_loops::drivetrain::TargetSelectorHint>
       target_selector_hint_sender_;
+  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Goal>
+      drivetrain_goal_sender_;
+  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+      drivetrain_status_fetcher_;
+  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Goal>
+      drivetrain_goal_fetcher_;
 
+ private:
+  friend class SplineHandle;
   double max_drivetrain_voltage_ = 12.0;
 
   // Unique counter so we get unique spline handles.

@@ -3,6 +3,7 @@
 
 #include "aos/controls/control_loop.h"
 #include "aos/events/event-loop.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 #include "y2019/constants.h"
 #include "y2019/control_loops/superstructure/collision_avoidance.h"
@@ -47,6 +48,8 @@ class Superstructure
   void SendColors(float red, float green, float blue);
 
   ::aos::Sender<::y2019::StatusLight> status_light_sender_;
+  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+      drivetrain_status_fetcher_;
 
   PotAndAbsoluteEncoderSubsystem elevator_;
   PotAndAbsoluteEncoderSubsystem wrist_;

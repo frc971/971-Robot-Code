@@ -43,6 +43,8 @@ class Superstructure
 
  private:
   ::aos::Fetcher<::y2017::vision::VisionStatus> vision_status_fetcher_;
+  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+      drivetrain_status_fetcher_;
 
   hood::Hood hood_;
   intake::Intake intake_;

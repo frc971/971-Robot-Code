@@ -16,11 +16,12 @@ namespace actors {
 using ::frc971::ProfileParameters;
 
 using ::aos::monotonic_clock;
-using ::frc971::control_loops::drivetrain_queue;
 namespace chrono = ::std::chrono;
 namespace this_thread = ::std::this_thread;
 
 namespace {
+
+namespace arm = ::y2018::control_loops::superstructure::arm;
 
 const ProfileParameters kFinalSwitchDrive = {0.5, 1.5};
 const ProfileParameters kDrive = {5.0, 2.5};

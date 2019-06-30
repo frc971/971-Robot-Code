@@ -15,10 +15,17 @@ int main(int argc, char **argv) {
 
   ::aos::InitNRT();
 
+  ::frc971::control_loops::DrivetrainQueue drivetrain_queue(
+      ".frc971.control_loops.drivetrain_queue",
+      ".frc971.control_loops.drivetrain_queue.goal",
+      ".frc971.control_loops.drivetrain_queue.position",
+      ".frc971.control_loops.drivetrain_queue.output",
+      ".frc971.control_loops.drivetrain_queue.status");
+
   {
     ::aos::controls::ControlLoopReplayer<
         ::frc971::control_loops::DrivetrainQueue>
-        replayer(&::frc971::control_loops::drivetrain_queue, "drivetrain");
+        replayer(&drivetrain_queue, "drivetrain");
 
     replayer.AddDirectQueueSender<::frc971::sensors::GyroReading>(
         "wpilib_interface.Gyro", "sending", ".frc971.sensors.gyro_reading");
@@ -26,10 +33,6 @@ int main(int argc, char **argv) {
       replayer.ProcessFile(argv[i]);
     }
   }
-  ::frc971::control_loops::drivetrain_queue.goal.Clear();
-  ::frc971::control_loops::drivetrain_queue.status.Clear();
-  ::frc971::control_loops::drivetrain_queue.position.Clear();
-  ::frc971::control_loops::drivetrain_queue.output.Clear();
 
   ::aos::Cleanup();
 }

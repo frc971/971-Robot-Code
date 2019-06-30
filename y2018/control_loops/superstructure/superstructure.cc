@@ -33,6 +33,10 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       vision_status_fetcher_(
           event_loop->MakeFetcher<::y2018::vision::VisionStatus>(
               ".y2018.vision.vision_status")),
+      drivetrain_output_fetcher_(
+          event_loop
+              ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Output>(
+                  ".frc971.control_loops.drivetrain_queue.output")),
       intake_left_(constants::GetValues().left_intake.zeroing),
       intake_right_(constants::GetValues().right_intake.zeroing) {}
 
@@ -256,7 +260,7 @@ void Superstructure::RunIteration(
   }
   status->rotation_state = static_cast<uint32_t>(rotation_state_);
 
-  ::frc971::control_loops::drivetrain_queue.output.FetchLatest();
+  drivetrain_output_fetcher_.Fetch();
 
   vision_status_fetcher_.Fetch();
   monotonic_clock::time_point monotonic_now = event_loop()->monotonic_now();
@@ -275,11 +279,10 @@ void Superstructure::RunIteration(
     SendColors(0.0, 0.0, 0.5);
   } else if (position->box_distance < 0.2) {
     SendColors(0.0, 0.5, 0.0);
-  } else if (::frc971::control_loops::drivetrain_queue.output.get() &&
-             ::std::max(::std::abs(::frc971::control_loops::drivetrain_queue
-                                       .output->left_voltage),
-                        ::std::abs(::frc971::control_loops::drivetrain_queue
-                                       .output->right_voltage)) > 11.5) {
+  } else if (drivetrain_output_fetcher_.get() &&
+             ::std::max(::std::abs(drivetrain_output_fetcher_->left_voltage),
+                        ::std::abs(drivetrain_output_fetcher_->right_voltage)) >
+                 11.5) {
     SendColors(0.5, 0.0, 0.5);
   } else {
     SendColors(0.0, 0.0, 0.0);

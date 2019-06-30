@@ -49,7 +49,6 @@
 #endif
 
 using ::aos::util::SimpleLogInterval;
-using ::frc971::control_loops::drivetrain_queue;
 using ::frc971::wpilib::BufferedPcm;
 using ::frc971::wpilib::BufferedSolenoid;
 using ::frc971::wpilib::LoopOutputHandler;
@@ -80,12 +79,16 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
         rollers_position_sender_(
             event_loop->MakeSender<
                 ::y2014_bot3::control_loops::RollersQueue::Position>(
-                ".y2014_bot3.control_loops.rollers_queue.position")) {}
+                ".y2014_bot3.control_loops.rollers_queue.position")),
+        drivetrain_position_sender_(
+            event_loop->MakeSender<
+                ::frc971::control_loops::DrivetrainQueue::Position>(
+                ".frc971.control_loops.drivetrain_queue.position")) {}
 
   void RunIteration() {
     // Drivetrain
     {
-      auto drivetrain_message = drivetrain_queue.position.MakeMessage();
+      auto drivetrain_message = drivetrain_position_sender_.MakeMessage();
       drivetrain_message->right_encoder =
           -drivetrain_translate(drivetrain_right_encoder_->GetRaw());
       drivetrain_message->left_encoder =
@@ -108,6 +111,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
  private:
   ::aos::Sender<::y2014_bot3::control_loops::RollersQueue::Position>
       rollers_position_sender_;
+  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Position>
+      drivetrain_position_sender_;
 };
 
 // Writes out our pneumatic outputs.

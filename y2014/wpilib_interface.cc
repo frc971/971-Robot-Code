@@ -53,7 +53,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-using ::frc971::control_loops::drivetrain_queue;
 using ::y2014::control_loops::ClawQueue;
 using ::y2014::control_loops::ShooterQueue;
 using aos::make_unique;
@@ -124,7 +123,11 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
         shooter_position_sender_(event_loop->MakeSender<ShooterQueue::Position>(
             ".y2014.control_loops.shooter_queue.position")),
         claw_position_sender_(event_loop->MakeSender<ClawQueue::Position>(
-            ".y2014.control_loops.claw_queue.position")) {
+            ".y2014.control_loops.claw_queue.position")),
+        drivetrain_position_sender_(
+            event_loop->MakeSender<
+                ::frc971::control_loops::DrivetrainQueue::Position>(
+                ".frc971.control_loops.drivetrain_queue.position")) {
     // Set it to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateMediumEncoderFilterHz(kMaximumEncoderPulsesPerSecond);
@@ -246,7 +249,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     const auto &values = constants::GetValues();
 
     {
-      auto drivetrain_message = drivetrain_queue.position.MakeMessage();
+      auto drivetrain_message = drivetrain_position_sender_.MakeMessage();
       drivetrain_message->right_encoder =
           drivetrain_translate(drivetrain_right_encoder_->GetRaw());
       drivetrain_message->left_encoder =
@@ -402,6 +405,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   ::aos::Sender<::y2014::sensors::AutoMode> auto_mode_sender_;
   ::aos::Sender<ShooterQueue::Position> shooter_position_sender_;
   ::aos::Sender<ClawQueue::Position> claw_position_sender_;
+  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Position>
+      drivetrain_position_sender_;
 
   ::std::unique_ptr<::frc::AnalogInput> auto_selector_analog_;
 

@@ -20,8 +20,6 @@
 #include "y2014/control_loops/drivetrain/drivetrain_base.h"
 #include "y2014/control_loops/shooter/shooter.q.h"
 
-using ::frc971::control_loops::drivetrain_queue;
-
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::JoystickAxis;
 using ::aos::input::driver_station::ControlBit;
@@ -168,6 +166,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
         shooter_goal_sender_(
             event_loop->MakeSender<::y2014::control_loops::ShooterQueue::Goal>(
                 ".y2014.control_loops.shooter_queue.goal")),
+        drivetrain_status_fetcher_(
+            event_loop
+                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
+                    ".frc971.control_loops.drivetrain_queue.status")),
         shot_power_(80.0),
         goal_angle_(0.0),
         separation_angle_(kGrabSeparation),
@@ -348,11 +350,11 @@ class Reader : public ::aos::input::ActionJoystickInput {
         velocity_compensation_ = 0.0;
       }
 
-      ::frc971::control_loops::drivetrain_queue.status.FetchLatest();
+      drivetrain_status_fetcher_.Fetch();
       double goal_angle = goal_angle_;
-      if (::frc971::control_loops::drivetrain_queue.status.get()) {
-        goal_angle += SpeedToAngleOffset(
-            ::frc971::control_loops::drivetrain_queue.status->robot_speed);
+      if (drivetrain_status_fetcher_.get()) {
+        goal_angle +=
+            SpeedToAngleOffset(drivetrain_status_fetcher_->robot_speed);
       } else {
         LOG_INTERVAL(no_drivetrain_status_);
       }
@@ -417,6 +419,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
       claw_status_fetcher_;
   ::aos::Sender<::y2014::control_loops::ClawQueue::Goal> claw_goal_sender_;
   ::aos::Sender<::y2014::control_loops::ShooterQueue::Goal> shooter_goal_sender_;
+  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+      drivetrain_status_fetcher_;
 
   double shot_power_;
   double goal_angle_;

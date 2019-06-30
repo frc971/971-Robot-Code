@@ -86,6 +86,7 @@ struct LineFollowLogging {
   float rel_theta;
 };
 
+// Published on ".frc971.control_loops.drivetrain_queue"
 queue_group DrivetrainQueue {
   implements aos.control_loops.ControlLoop;
 
@@ -221,5 +222,3 @@ queue_group DrivetrainQueue {
   queue Output output;
   queue Status status;
 };
-
-queue_group DrivetrainQueue drivetrain_queue;

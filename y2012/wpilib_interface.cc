@@ -48,7 +48,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-using ::frc971::control_loops::drivetrain_queue;
 using ::y2012::control_loops::AccessoriesQueue;
 using namespace frc;
 using aos::make_unique;
@@ -75,11 +74,15 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       : ::frc971::wpilib::SensorReader(event_loop),
         accessories_position_sender_(
             event_loop->MakeSender<::aos::control_loops::Position>(
-                ".y2012.control_loops.accessories_queue.position")) {}
+                ".y2012.control_loops.accessories_queue.position")),
+        drivetrain_position_sender_(
+            event_loop->MakeSender<
+                ::frc971::control_loops::DrivetrainQueue::Position>(
+                ".frc971.control_loops.drivetrain_queue.position")) {}
 
   void RunIteration() {
     {
-      auto drivetrain_message = drivetrain_queue.position.MakeMessage();
+      auto drivetrain_message = drivetrain_position_sender_.MakeMessage();
       drivetrain_message->right_encoder =
           drivetrain_translate(drivetrain_right_encoder_->GetRaw());
       drivetrain_message->left_encoder =
@@ -97,6 +100,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
  private:
   ::aos::Sender<::aos::control_loops::Position> accessories_position_sender_;
+  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Position>
+      drivetrain_position_sender_;
 };
 
 class SolenoidWriter {

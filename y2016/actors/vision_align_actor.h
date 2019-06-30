@@ -5,6 +5,7 @@
 
 #include "aos/actions/actions.h"
 #include "aos/actions/actor.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "y2016/actors/vision_align_action.q.h"
 #include "y2016/vision/vision.q.h"
@@ -29,6 +30,8 @@ class VisionAlignActor
 
  private:
   ::aos::Fetcher<::y2016::vision::VisionStatus> vision_status_fetcher_;
+  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Goal>
+      drivetrain_goal_sender_;
 };
 
 }  // namespace actors

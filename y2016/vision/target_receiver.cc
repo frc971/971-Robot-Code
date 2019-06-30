@@ -194,26 +194,25 @@ void CalculateFiltered(const CameraHandler &older, const CameraHandler &newer,
 // Handles calculating drivetrain offsets.
 class DrivetrainOffsetCalculator {
  public:
-  // To be called by ::std::thread.
-  void operator()() {
-    auto &status = ::frc971::control_loops::drivetrain_queue.status;
-    while (run_) {
-      status.FetchAnother();
-
-      ::aos::MutexLocker locker(&lock_);
-      data_[data_index_].time = status->sent_time;
-      data_[data_index_].left = status->estimated_left_position;
-      data_[data_index_].right = status->estimated_right_position;
-      ++data_index_;
-      if (data_index_ == data_.size()) data_index_ = 0;
-      if (valid_data_ < data_.size()) ++valid_data_;
-    }
-  }
+  DrivetrainOffsetCalculator(::aos::EventLoop *event_loop)
+      : drivetrain_status_fetcher_(
+            event_loop
+                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
+                    ".frc971.control_loops.drivetrain_queue.status")) {}
 
   // Takes a vision status message with everything except
   // drivetrain_{left,right}_position set and sets those.
   // Returns false if it doesn't have enough data to fill them out.
   bool CompleteVisionStatus(::y2016::vision::VisionStatus *status) {
+    while (drivetrain_status_fetcher_.FetchNext()) {
+      data_[data_index_].time = drivetrain_status_fetcher_->sent_time;
+      data_[data_index_].left = drivetrain_status_fetcher_->estimated_left_position;
+      data_[data_index_].right = drivetrain_status_fetcher_->estimated_right_position;
+      ++data_index_;
+      if (data_index_ == data_.size()) data_index_ = 0;
+      if (valid_data_ < data_.size()) ++valid_data_;
+    }
+
     if (valid_data_ == 0) return false;
 
     const monotonic_clock::time_point capture_time =
@@ -237,8 +236,6 @@ class DrivetrainOffsetCalculator {
     return true;
   }
 
-  void Quit() { run_ = false; }
-
  private:
   struct DrivetrainData {
     monotonic_clock::time_point time;
@@ -250,7 +247,6 @@ class DrivetrainOffsetCalculator {
   // Do not call this if valid_data_ is 0.
   void FindBeforeAfter(DrivetrainData *before, DrivetrainData *after,
                        monotonic_clock::time_point capture_time) {
-    ::aos::MutexLocker locker(&lock_);
     size_t location = 0;
     while (true) {
       // We hit the end of our data. Just fill them both out as the last data
@@ -290,15 +286,14 @@ class DrivetrainOffsetCalculator {
     }
   }
 
+  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+      drivetrain_status_fetcher_;
+
   ::std::array<DrivetrainData, 200> data_;
   // The index into data_ the next data point is going at.
   size_t data_index_ = 0;
   // How many elemets of data_ are valid.
   size_t valid_data_ = 0;
-
-  ::aos::Mutex lock_;
-
-  ::std::atomic<bool> run_{true};
 };
 
 void Main() {
@@ -312,8 +307,7 @@ void Main() {
   LOG(INFO, "calibration: %s\n",
       stereo.calibration().ShortDebugString().c_str());
 
-  DrivetrainOffsetCalculator drivetrain_offset;
-  ::std::thread drivetrain_offset_thread(::std::ref(drivetrain_offset));
+  DrivetrainOffsetCalculator drivetrain_offset(&event_loop);
 
   CameraHandler left;
   CameraHandler right;
@@ -426,9 +420,6 @@ void Main() {
           right.target().ShortDebugString().c_str());
     }
   }
-
-  drivetrain_offset.Quit();
-  drivetrain_offset_thread.join();
 }
 
 }  // namespace vision

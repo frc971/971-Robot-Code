@@ -34,7 +34,7 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
       : ::aos::input::JoystickInput(event_loop),
         input_config_(input_config),
         drivetrain_input_reader_(
-            DrivetrainInputReader::Make(input_type, dt_config)),
+            DrivetrainInputReader::Make(event_loop, input_type, dt_config)),
         dt_config_(dt_config),
         autonomous_action_factory_(
             ::frc971::autonomous::BaseAutonomousActor::MakeFactory(event_loop)),

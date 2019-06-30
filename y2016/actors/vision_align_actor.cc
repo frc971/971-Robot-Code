@@ -20,14 +20,17 @@
 
 namespace y2016 {
 namespace actors {
-using ::frc971::control_loops::drivetrain_queue;
 
 VisionAlignActor::VisionAlignActor(::aos::EventLoop *event_loop)
     : aos::common::actions::ActorBase<actors::VisionAlignActionQueueGroup>(
           event_loop, ".y2016.actors.vision_align_action"),
       vision_status_fetcher_(
           event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
-              ".y2016.vision.vision_status")) {}
+              ".y2016.vision.vision_status")),
+      drivetrain_goal_sender_(
+          event_loop
+              ->MakeSender<::frc971::control_loops::DrivetrainQueue::Goal>(
+                  ".frc971.control_loops.drivetrain_queue.goal")) {}
 
 bool VisionAlignActor::RunAction(
     const actors::VisionAlignActionParams & /*params*/) {
@@ -64,15 +67,16 @@ bool VisionAlignActor::RunAction(
     const double left_current = vision_status.drivetrain_left_position;
     const double right_current = vision_status.drivetrain_right_position;
 
-    if (!drivetrain_queue.goal.MakeWithBuilder()
-             .wheel(0.0)
-             .throttle(0.0)
-             .highgear(false)
-             .quickturn(false)
-             .controller_type(1)
-             .left_goal(left_current + side_distance_change)
-             .right_goal(right_current - side_distance_change)
-             .Send()) {
+    auto drivetrain_message = drivetrain_goal_sender_.MakeMessage();
+    drivetrain_message->wheel = 0.0;
+    drivetrain_message->throttle = 0.0;
+    drivetrain_message->highgear = false;
+    drivetrain_message->quickturn = false;
+    drivetrain_message->controller_type = 1;
+    drivetrain_message->left_goal = left_current + side_distance_change;
+    drivetrain_message->right_goal = right_current - side_distance_change;
+
+    if (!drivetrain_message.Send()) {
       LOG(WARNING, "sending drivetrain goal failed\n");
     }
   }

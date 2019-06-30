@@ -21,7 +21,6 @@ constexpr double kMaxIndexerRollerVoltage = 12.0;
 }  // namespace
 
 typedef ::y2017::constants::Values::ShotParams ShotParams;
-using ::frc971::control_loops::drivetrain_queue;
 
 Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
@@ -30,6 +29,10 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       vision_status_fetcher_(
           event_loop->MakeFetcher<::y2017::vision::VisionStatus>(
               ".y2017.vision.vision_status")),
+      drivetrain_status_fetcher_(
+          event_loop
+              ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
+                  ".frc971.control_loops.drivetrain_queue.status")),
       column_(event_loop) {
   shot_interpolation_table_ =
       ::frc971::shooter_interpolation::InterpolationTable<ShotParams>({
@@ -84,9 +87,9 @@ void Superstructure::RunIteration(
 
     // If we are moving too fast, disable shooting and clear the accumulator.
     double robot_velocity = 0.0;
-    drivetrain_queue.status.FetchLatest();
-    if (drivetrain_queue.status.get()) {
-      robot_velocity = drivetrain_queue.status->robot_speed;
+    drivetrain_status_fetcher_.Fetch();
+    if (drivetrain_status_fetcher_.get()) {
+      robot_velocity = drivetrain_status_fetcher_->robot_speed;
     }
 
     if (::std::abs(robot_velocity) > 0.2) {

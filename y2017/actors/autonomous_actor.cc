@@ -14,7 +14,6 @@
 namespace y2017 {
 namespace actors {
 using ::aos::monotonic_clock;
-using ::frc971::control_loops::drivetrain_queue;
 namespace chrono = ::std::chrono;
 namespace this_thread = ::std::this_thread;
 
