@@ -617,5 +617,41 @@ TEST_P(AbstractEventLoopTest, PhasedLoopTest) {
               1.0, 0.1);
 }
 
+// Verify that sending lots and lots of messages and using FetchNext gets a
+// contiguous block of messages and doesn't crash.
+// TODO(austin): We should store the same number of messages in simulation and
+// reality.
+TEST_P(AbstractEventLoopTest, LotsOfSends) {
+  auto loop1 = MakePrimary();
+  auto loop2 = Make();
+  auto sender = loop1->MakeSender<TestMessage>("/test");
+  auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
+
+  auto test_timer = loop1->AddTimer([&sender, &fetcher, &loop1]() {
+    for (int i = 0; i < 100000; ++i) {
+      auto msg = sender.MakeMessage();
+      msg->msg_value = i;
+      msg.Send();
+    }
+
+    int last = 0;
+    if (fetcher.FetchNext()) {
+      last = fetcher->msg_value;
+    }
+    while (fetcher.FetchNext()) {
+      EXPECT_EQ(last + 1, fetcher->msg_value);
+      ++last;
+    }
+
+    loop1->Exit();
+  });
+
+  loop1->OnRun([&test_timer, &loop1]() {
+    test_timer->Setup(loop1->monotonic_now() + ::std::chrono::milliseconds(10));
+  });
+
+  Run();
+}
+
 }  // namespace testing
 }  // namespace aos
