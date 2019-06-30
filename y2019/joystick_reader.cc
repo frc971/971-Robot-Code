@@ -27,7 +27,6 @@
 #include "y2019/status_light.q.h"
 #include "y2019/vision.pb.h"
 
-using ::y2019::control_loops::superstructure::superstructure_queue;
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::ControlBit;
 using ::aos::input::driver_station::JoystickAxis;
@@ -150,12 +149,30 @@ class Reader : public ::aos::input::ActionJoystickInput {
                 ::frc971::control_loops::drivetrain::LocalizerControl>(
                 ".frc971.control_loops.drivetrain.localizer_control")),
         camera_log_sender_(
-            event_loop->MakeSender<::y2019::CameraLog>(".y2019.camera_log")) {
+            event_loop->MakeSender<::y2019::CameraLog>(".y2019.camera_log")),
+        superstructure_goal_fetcher_(event_loop->MakeFetcher<
+                                     ::y2019::control_loops::superstructure::
+                                         SuperstructureQueue::Goal>(
+            ".y2019.control_loops.superstructure.superstructure_queue.goal")),
+        superstructure_goal_sender_(event_loop->MakeSender<
+                                    ::y2019::control_loops::superstructure::
+                                        SuperstructureQueue::Goal>(
+            ".y2019.control_loops.superstructure.superstructure_queue.goal")),
+        superstructure_position_fetcher_(
+            event_loop->MakeFetcher<::y2019::control_loops::superstructure::
+                                        SuperstructureQueue::Position>(
+                ".y2019.control_loops.superstructure.superstructure_queue."
+                "position")),
+        superstructure_status_fetcher_(
+            event_loop->MakeFetcher<::y2019::control_loops::superstructure::
+                                        SuperstructureQueue::Status>(
+                ".y2019.control_loops.superstructure.superstructure_queue."
+                "status")) {
     const uint16_t team = ::aos::network::GetTeamNumber();
-    superstructure_queue.goal.FetchLatest();
-    if (superstructure_queue.goal.get()) {
-      grab_piece_ = superstructure_queue.goal->suction.grab_piece;
-      switch_ball_ = superstructure_queue.goal->suction.gamepiece_mode == 0;
+    superstructure_goal_fetcher_.Fetch();
+    if (superstructure_goal_fetcher_.get()) {
+      grab_piece_ = superstructure_goal_fetcher_->suction.grab_piece;
+      switch_ball_ = superstructure_goal_fetcher_->suction.gamepiece_mode == 0;
     }
     video_tx_.reset(new ProtoTXUdpSocket<VisionControl>(
         StringPrintf("10.%d.%d.179", team / 100, team % 100), 5000));
@@ -170,19 +187,19 @@ class Reader : public ::aos::input::ActionJoystickInput {
   void HandleTeleop(const ::aos::input::driver_station::Data &data) override {
     ::aos::monotonic_clock::time_point monotonic_now =
         ::aos::monotonic_clock::now();
-    superstructure_queue.position.FetchLatest();
-    superstructure_queue.status.FetchLatest();
-    if (!superstructure_queue.status.get() ||
-        !superstructure_queue.position.get()) {
+    superstructure_position_fetcher_.Fetch();
+    superstructure_status_fetcher_.Fetch();
+    if (!superstructure_status_fetcher_.get() ||
+        !superstructure_position_fetcher_.get()) {
       LOG(ERROR, "Got no superstructure status or position packet.\n");
       return;
     }
 
-    if (!superstructure_queue.status->has_piece) {
+    if (!superstructure_status_fetcher_->has_piece) {
       last_not_has_piece_ = monotonic_now;
     }
 
-    auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
+    auto new_superstructure_goal = superstructure_goal_sender_.MakeMessage();
 
     {
       auto target_hint = target_selector_hint_sender_.MakeMessage();
@@ -285,7 +302,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     if (data.PosEdge(kRelease) &&
         monotonic_now >
             last_release_button_press_ + ::std::chrono::milliseconds(500)) {
-      if (superstructure_queue.status->has_piece) {
+      if (superstructure_status_fetcher_->has_piece) {
         release_mode_ = ReleaseButtonMode::kRelease;
       } else {
         release_mode_ = ReleaseButtonMode::kBallIntake;
@@ -296,7 +313,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       last_release_button_press_ = monotonic_now;
     }
 
-    LOG(INFO, "has_piece: %d\n", superstructure_queue.status->has_piece);
+    LOG(INFO, "has_piece: %d\n", superstructure_status_fetcher_->has_piece);
     if (data.IsPressed(kSuctionBall)) {
       grab_piece_ = true;
     } else if (data.IsPressed(kSuctionHatch)) {
@@ -304,7 +321,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     } else if ((release_mode_ == ReleaseButtonMode::kRelease &&
                 data.IsPressed(kRelease)) ||
                data.IsPressed(kReleaseButtonBoard) ||
-               !superstructure_queue.status->has_piece) {
+               !superstructure_status_fetcher_->has_piece) {
       grab_piece_ = false;
       LOG(INFO, "releasing due to other thing\n");
     }
@@ -328,7 +345,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     if (switch_ball_) {
-      if (superstructure_queue.status->has_piece) {
+      if (superstructure_status_fetcher_->has_piece) {
         new_superstructure_goal->wrist.profile_params.max_acceleration = 20;
       }
 
@@ -397,7 +414,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
         new_superstructure_goal->intake.unsafe_goal = 0.83;
       }
 
-      if (kDoBallIntake && !superstructure_queue.status->has_piece) {
+      if (kDoBallIntake && !superstructure_status_fetcher_->has_piece) {
         elevator_wrist_pos_ = kBallIntakePos;
         new_superstructure_goal->roller_voltage = 9.0;
         grab_piece_ = true;
@@ -430,7 +447,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
     }
 
-    if (superstructure_queue.status->stilts.position > 0.1) {
+    if (superstructure_status_fetcher_->stilts.position > 0.1) {
       elevator_wrist_pos_ = kClimbPos;
       climbed_ = true;
       new_superstructure_goal->wrist.profile_params.max_acceleration = 10;
@@ -440,15 +457,17 @@ class Reader : public ::aos::input::ActionJoystickInput {
     // If we've been asked to go above deploy and made it up that high, latch
     // was_above.
     if (new_superstructure_goal->stilts.unsafe_goal > kDeployStiltPosition &&
-        superstructure_queue.status->stilts.position >= kDeployStiltPosition) {
+        superstructure_status_fetcher_->stilts.position >=
+            kDeployStiltPosition) {
       was_above_ = true;
-    } else if ((superstructure_queue.position->platform_left_detect &&
-                superstructure_queue.position->platform_right_detect) &&
+    } else if ((superstructure_position_fetcher_->platform_left_detect &&
+                superstructure_position_fetcher_->platform_right_detect) &&
                !data.IsPressed(kDeployStilt) && !data.IsPressed(kFallOver)) {
       was_above_ = false;
     }
 
-    if (superstructure_queue.status->stilts.position > kDeployStiltPosition &&
+    if (superstructure_status_fetcher_->stilts.position >
+            kDeployStiltPosition &&
         new_superstructure_goal->stilts.unsafe_goal == kDeployStiltPosition) {
       new_superstructure_goal->stilts.profile_params.max_velocity = 0.30;
       new_superstructure_goal->stilts.profile_params.max_acceleration = 0.75;
@@ -502,6 +521,22 @@ class Reader : public ::aos::input::ActionJoystickInput {
       localizer_control_sender_;
 
   ::aos::Sender<::y2019::CameraLog> camera_log_sender_;
+
+  ::aos::Fetcher<
+      ::y2019::control_loops::superstructure::SuperstructureQueue::Goal>
+      superstructure_goal_fetcher_;
+
+  ::aos::Sender<
+      ::y2019::control_loops::superstructure::SuperstructureQueue::Goal>
+      superstructure_goal_sender_;
+
+  ::aos::Fetcher<
+      ::y2019::control_loops::superstructure::SuperstructureQueue::Position>
+      superstructure_position_fetcher_;
+  ::aos::Fetcher<
+      ::y2019::control_loops::superstructure::SuperstructureQueue::Status>
+      superstructure_status_fetcher_;
+
 
   // Bool to track if we've been above the deploy position.  Once this bool is
   // set, don't let the stilts retract until we see the platform.

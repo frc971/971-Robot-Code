@@ -17,7 +17,6 @@ namespace y2019 {
 namespace actors {
 
 using ::frc971::ProfileParameters;
-using ::y2019::control_loops::superstructure::superstructure_queue;
 
 struct ElevatorWristPosition {
   double elevator;
@@ -76,7 +75,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 
   void SendSuperstructureGoal() {
-    auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
+    auto new_superstructure_goal = superstructure_goal_sender_.MakeMessage();
     new_superstructure_goal->elevator.unsafe_goal = elevator_goal_;
     new_superstructure_goal->wrist.unsafe_goal = wrist_goal_;
     new_superstructure_goal->intake.unsafe_goal = intake_goal_;
@@ -100,10 +99,10 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 
   bool IsSucked() {
-    superstructure_queue.status.FetchLatest();
+    superstructure_status_fetcher_.Fetch();
 
-    if (superstructure_queue.status.get()) {
-      return superstructure_queue.status->has_piece;
+    if (superstructure_status_fetcher_.get()) {
+      return superstructure_status_fetcher_->has_piece;
     }
     return false;
   }
@@ -139,20 +138,20 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 
   bool IsSuperstructureDone() {
-    superstructure_queue.status.FetchLatest();
+    superstructure_status_fetcher_.Fetch();
 
     double kElevatorTolerance = 0.01;
     double kWristTolerance = 0.05;
 
-    if (superstructure_queue.status.get()) {
+    if (superstructure_status_fetcher_.get()) {
       const bool elevator_at_goal =
           ::std::abs(elevator_goal_ -
-                     superstructure_queue.status->elevator.position) <
+                     superstructure_status_fetcher_->elevator.position) <
           kElevatorTolerance;
 
       const bool wrist_at_goal =
           ::std::abs(wrist_goal_ -
-                     superstructure_queue.status->wrist.position) <
+                     superstructure_status_fetcher_->wrist.position) <
           kWristTolerance;
 
       return elevator_at_goal && wrist_at_goal;
@@ -170,8 +169,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
         return false;
       }
       phased_loop.SleepUntilNext();
-      superstructure_queue.status.FetchLatest();
-      superstructure_queue.goal.FetchLatest();
+      superstructure_status_fetcher_.Fetch();
       if (IsSuperstructureDone()) {
         return true;
       }
@@ -186,6 +184,12 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   ::aos::Sender<::frc971::control_loops::drivetrain::LocalizerControl>
       localizer_control_sender_;
+  ::aos::Sender<
+      ::y2019::control_loops::superstructure::SuperstructureQueue::Goal>
+      superstructure_goal_sender_;
+  ::aos::Fetcher<
+      ::y2019::control_loops::superstructure::SuperstructureQueue::Status>
+      superstructure_status_fetcher_;
 };
 
 }  // namespace actors

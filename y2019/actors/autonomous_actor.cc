@@ -25,7 +25,15 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
       localizer_control_sender_(
           event_loop->MakeSender<
               ::frc971::control_loops::drivetrain::LocalizerControl>(
-              ".frc971.control_loops.drivetrain.localizer_control")) {}
+              ".frc971.control_loops.drivetrain.localizer_control")),
+      superstructure_goal_sender_(
+          event_loop->MakeSender<::y2019::control_loops::superstructure::
+                                     SuperstructureQueue::Goal>(
+              ".y2019.control_loops.superstructure.superstructure_queue.goal")),
+      superstructure_status_fetcher_(event_loop->MakeFetcher<
+                                     ::y2019::control_loops::superstructure::
+                                         SuperstructureQueue::Status>(
+          ".y2019.control_loops.superstructure.superstructure_queue.status")) {}
 
 bool AutonomousActor::WaitForDriveXGreater(double x) {
   LOG(INFO, "Waiting until x > %f\n", x);

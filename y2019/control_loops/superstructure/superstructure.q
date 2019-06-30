@@ -13,6 +13,7 @@ struct SuctionGoal {
   int32_t gamepiece_mode;
 };
 
+// Published on ".y2019.control_loops.superstructure.superstructure_queue"
 queue_group SuperstructureQueue {
   implements aos.control_loops.ControlLoop;
 
@@ -112,5 +113,3 @@ queue_group SuperstructureQueue {
   queue Status status;
   queue Position position;
 };
-
-queue_group SuperstructureQueue superstructure_queue;

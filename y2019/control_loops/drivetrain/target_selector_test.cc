@@ -42,30 +42,30 @@ class TargetSelectorParamTest : public ::testing::TestWithParam<TestParams> {
       : target_selector_hint_sender_(
             test_event_loop_.MakeSender<
                 ::y2019::control_loops::drivetrain::TargetSelectorHint>(
-                ".y2019.control_loops.drivetrain.target_selector_hint")) {}
+                ".y2019.control_loops.drivetrain.target_selector_hint")),
+        superstructure_goal_sender_(test_event_loop_.MakeSender<
+                                    ::y2019::control_loops::superstructure::
+                                        SuperstructureQueue::Goal>(
+            ".y2019.control_loops.superstructure.superstructure_queue.goal")) {}
 
  private:
   ::aos::testing::TestSharedMemory my_shm_;
 
  protected:
-  virtual void TearDown() override {
-    ::y2019::control_loops::superstructure::superstructure_queue.goal.Clear();
-  }
-
   ::aos::ShmEventLoop event_loop_;
   ::aos::ShmEventLoop test_event_loop_;
 
   ::aos::Sender<::y2019::control_loops::drivetrain::TargetSelectorHint>
       target_selector_hint_sender_;
+  ::aos::Sender<::y2019::control_loops::superstructure::SuperstructureQueue::Goal>
+      superstructure_goal_sender_;
 
 };
 
 TEST_P(TargetSelectorParamTest, ExpectReturn) {
   TargetSelector selector(&event_loop_);
   {
-    auto super_goal =
-        ::y2019::control_loops::superstructure::superstructure_queue.goal
-            .MakeMessage();
+    auto super_goal = superstructure_goal_sender_.MakeMessage();
     super_goal->suction.gamepiece_mode = GetParam().ball_mode ? 0 : 1;
     ASSERT_TRUE(super_goal.Send());
   }
