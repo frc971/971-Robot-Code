@@ -15,7 +15,6 @@
 
 namespace y2018 {
 namespace actors {
-using ::y2018::control_loops::superstructure_queue;
 using ::frc971::control_loops::drivetrain_queue;
 
 namespace arm = ::y2018::control_loops::superstructure::arm;
@@ -26,6 +25,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   bool RunAction(
       const ::frc971::autonomous::AutonomousActionParams &params) override;
+
  private:
   void Reset() {
     roller_voltage_ = 0.0;
@@ -41,6 +41,11 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     ResetDrivetrain();
     SendSuperstructureGoal();
   }
+
+  ::aos::Sender<::y2018::control_loops::SuperstructureQueue::Goal>
+      superstructure_goal_sender_;
+  ::aos::Fetcher<::y2018::control_loops::SuperstructureQueue::Status>
+      superstructure_status_fetcher_;
 
   double roller_voltage_ = 0.0;
   double left_intake_angle_ = -3.2;
@@ -78,7 +83,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 
   void SendSuperstructureGoal() {
-    auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
+    auto new_superstructure_goal = superstructure_goal_sender_.MakeMessage();
     new_superstructure_goal->intake.roller_voltage = roller_voltage_;
     new_superstructure_goal->intake.left_intake_angle = left_intake_angle_;
     new_superstructure_goal->intake.right_intake_angle = right_intake_angle_;
@@ -119,9 +124,10 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
         return false;
       }
 
-      superstructure_queue.status.FetchLatest();
+      superstructure_status_fetcher_.Fetch();
       drivetrain_queue.status.FetchLatest();
-      if (drivetrain_queue.status.get() && superstructure_queue.status.get()) {
+      if (drivetrain_queue.status.get() &&
+          superstructure_status_fetcher_.get()) {
         const double left_profile_error =
             (initial_drivetrain_.left -
              drivetrain_queue.status->profiled_left_position_goal);
@@ -142,12 +148,12 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
         const double distance_to_go = (left_error + right_error) / 2.0;
 
         // Check superstructure first.
-        if (superstructure_queue.status->arm.current_node ==
+        if (superstructure_status_fetcher_->arm.current_node ==
                 arm_goal_position_ &&
-            superstructure_queue.status->arm.path_distance_to_go <
+            superstructure_status_fetcher_->arm.path_distance_to_go <
                 arm_threshold) {
           LOG(INFO, "Arm finished first: %f, drivetrain %f distance\n",
-              superstructure_queue.status->arm.path_distance_to_go,
+              superstructure_status_fetcher_->arm.path_distance_to_go,
               ::std::abs(distance_to_go));
           return true;
         }
@@ -158,7 +164,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
             ::std::abs(distance_to_go) < drive_threshold + kPositionTolerance) {
           LOG(INFO,
               "Drivetrain finished first: arm %f, drivetrain %f distance\n",
-              superstructure_queue.status->arm.path_distance_to_go,
+              superstructure_status_fetcher_->arm.path_distance_to_go,
               ::std::abs(distance_to_go));
           return true;
         }
@@ -176,11 +182,12 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
         return false;
       }
 
-      superstructure_queue.status.FetchLatest();
-      if (superstructure_queue.status.get()) {
-        if (superstructure_queue.status->arm.current_node ==
+      superstructure_status_fetcher_.Fetch();
+      if (superstructure_status_fetcher_.get()) {
+        if (superstructure_status_fetcher_->arm.current_node ==
                 arm_goal_position_ &&
-            superstructure_queue.status->arm.path_distance_to_go < threshold) {
+            superstructure_status_fetcher_->arm.path_distance_to_go <
+                threshold) {
           return true;
         }
       }
@@ -197,9 +204,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
         return false;
       }
 
-      superstructure_queue.status.FetchLatest();
-      if (superstructure_queue.status.get()) {
-        if (superstructure_queue.status->arm.grab_state == 4) {
+      superstructure_status_fetcher_.Fetch();
+      if (superstructure_status_fetcher_.get()) {
+        if (superstructure_status_fetcher_->arm.grab_state == 4) {
           return true;
         }
       }

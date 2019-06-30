@@ -26,7 +26,6 @@
 
 using ::aos::monotonic_clock;
 using ::frc971::control_loops::drivetrain_queue;
-using ::y2018::control_loops::superstructure_queue;
 using ::aos::events::ProtoTXUdpSocket;
 using ::aos::events::RXUdpSocket;
 using ::aos::input::driver_station::ButtonLocation;
@@ -94,7 +93,19 @@ class Reader : public ::aos::input::ActionJoystickInput {
             ::aos::network::GetTeamNumber() == 971
                 ? DrivetrainInputReader::InputType::kPistol
                 : DrivetrainInputReader::InputType::kSteeringWheel,
-            {}) {
+            {}),
+        superstructure_position_fetcher_(
+            event_loop->MakeFetcher<
+                ::y2018::control_loops::SuperstructureQueue::Position>(
+                ".frc971.control_loops.superstructure_queue.position")),
+        superstructure_status_fetcher_(
+            event_loop->MakeFetcher<
+                ::y2018::control_loops::SuperstructureQueue::Status>(
+                ".frc971.control_loops.superstructure_queue.status")),
+        superstructure_goal_sender_(
+            event_loop
+                ->MakeSender<::y2018::control_loops::SuperstructureQueue::Goal>(
+                    ".frc971.control_loops.superstructure_queue.goal")) {
     const uint16_t team = ::aos::network::GetTeamNumber();
 
     video_tx_.reset(new ProtoTXUdpSocket<VisionControl>(
@@ -102,15 +113,15 @@ class Reader : public ::aos::input::ActionJoystickInput {
   }
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) override {
-    superstructure_queue.position.FetchLatest();
-    superstructure_queue.status.FetchLatest();
-    if (!superstructure_queue.status.get() ||
-        !superstructure_queue.position.get()) {
+    superstructure_position_fetcher_.Fetch();
+    superstructure_status_fetcher_.Fetch();
+    if (!superstructure_status_fetcher_.get() ||
+        !superstructure_position_fetcher_.get()) {
       LOG(ERROR, "Got no superstructure status packet.\n");
       return;
     }
 
-    auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
+    auto new_superstructure_goal = superstructure_goal_sender_.MakeMessage();
 
     new_superstructure_goal->intake.left_intake_angle = intake_goal_;
     new_superstructure_goal->intake.right_intake_angle = intake_goal_;
@@ -133,11 +144,11 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     if (data.IsPressed(kSmallBox)) {
       // Deploy the intake.
-      if (superstructure_queue.position->box_back_beambreak_triggered) {
+      if (superstructure_position_fetcher_->box_back_beambreak_triggered) {
         intake_goal_ = 0.30;
       } else {
         if (new_superstructure_goal->intake.roller_voltage > 0.1 &&
-            superstructure_queue.position->box_distance < 0.15) {
+            superstructure_position_fetcher_->box_distance < 0.15) {
           intake_goal_ = 0.18;
         } else {
           intake_goal_ = -0.60;
@@ -145,22 +156,22 @@ class Reader : public ::aos::input::ActionJoystickInput {
       }
     } else if (data.IsPressed(kIntakeClosed)) {
       // Deploy the intake.
-      if (superstructure_queue.position->box_back_beambreak_triggered) {
+      if (superstructure_position_fetcher_->box_back_beambreak_triggered) {
         intake_goal_ = 0.30;
       } else {
         if (new_superstructure_goal->intake.roller_voltage > 0.1) {
-          if (superstructure_queue.position->box_distance < 0.10) {
+          if (superstructure_position_fetcher_->box_distance < 0.10) {
             new_superstructure_goal->intake.roller_voltage -= 3.0;
             intake_goal_ = 0.22;
-          } else if (superstructure_queue.position->box_distance < 0.17) {
+          } else if (superstructure_position_fetcher_->box_distance < 0.17) {
             intake_goal_ = 0.13;
-          } else if (superstructure_queue.position->box_distance < 0.25) {
+          } else if (superstructure_position_fetcher_->box_distance < 0.25) {
             intake_goal_ = 0.05;
           } else {
             intake_goal_ = -0.10;
           }
           if (robot_velocity() < -0.1 &&
-              superstructure_queue.position->box_distance > 0.15) {
+              superstructure_position_fetcher_->box_distance > 0.15) {
             intake_goal_ += 0.10;
           }
         } else {
@@ -174,7 +185,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     if (new_superstructure_goal->intake.roller_voltage > 0.1 &&
         intake_goal_ > 0.0) {
-      if (superstructure_queue.position->box_distance < 0.10) {
+      if (superstructure_position_fetcher_->box_distance < 0.10) {
         new_superstructure_goal->intake.roller_voltage -= 3.0;
       }
       new_superstructure_goal->intake.roller_voltage += 3.0;
@@ -183,7 +194,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     // If we are disabled, stay at the node closest to where we start.  This
     // should remove long motions when enabled.
     if (!data.GetControlBit(ControlBit::kEnabled) || never_disabled_) {
-      arm_goal_position_ = superstructure_queue.status->arm.current_node;
+      arm_goal_position_ = superstructure_status_fetcher_->arm.current_node;
       never_disabled_ = false;
     }
 
@@ -192,8 +203,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
       grab_box = true;
     }
     const bool near_goal =
-        superstructure_queue.status->arm.current_node == arm_goal_position_ &&
-        superstructure_queue.status->arm.path_distance_to_go < 1e-3;
+        superstructure_status_fetcher_->arm.current_node ==
+            arm_goal_position_ &&
+        superstructure_status_fetcher_->arm.path_distance_to_go < 1e-3;
     if (data.IsPressed(kArmStepDown) && near_goal) {
       uint32_t *front_point = ::std::find(
           front_points_.begin(), front_points_.end(), arm_goal_position_);
@@ -264,7 +276,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       arm_goal_position_ = arm::BackMiddle1BoxIndex();
     } else if (data.IsPressed(kArmBackLowBox)) {
       arm_goal_position_ = arm::BackLowBoxIndex();
-    }  else if (data.IsPressed(kArmBackSwitch)) {
+    } else if (data.IsPressed(kArmBackSwitch)) {
       arm_goal_position_ = arm::BackSwitchIndex();
     } else if (data.IsPressed(kArmAboveHang)) {
       if (data.IsPressed(kIntakeIn)) {
@@ -335,6 +347,13 @@ class Reader : public ::aos::input::ActionJoystickInput {
     // Low bit is switch, high bit is scale.  1 means left, 0 means right.
     return mode();
   }
+
+  ::aos::Fetcher<::y2018::control_loops::SuperstructureQueue::Position>
+      superstructure_position_fetcher_;
+  ::aos::Fetcher<::y2018::control_loops::SuperstructureQueue::Status>
+      superstructure_status_fetcher_;
+  ::aos::Sender<::y2018::control_loops::SuperstructureQueue::Goal>
+      superstructure_goal_sender_;
 
   // Current goals to send to the robot.
   double intake_goal_ = 0.0;

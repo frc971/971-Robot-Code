@@ -46,7 +46,15 @@ const ProfileParameters kFinalFrontFarSwitchDrive = {2.0, 2.0};
 
 AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
     : frc971::autonomous::BaseAutonomousActor(
-          event_loop, control_loops::drivetrain::GetDrivetrainConfig()) {}
+          event_loop, control_loops::drivetrain::GetDrivetrainConfig()),
+      superstructure_goal_sender_(
+          event_loop
+              ->MakeSender<::y2018::control_loops::SuperstructureQueue::Goal>(
+                  ".frc971.control_loops.superstructure_queue.goal")),
+      superstructure_status_fetcher_(
+          event_loop->MakeFetcher<
+              ::y2018::control_loops::SuperstructureQueue::Status>(
+              ".frc971.control_loops.superstructure_queue.status")) {}
 
 bool AutonomousActor::RunAction(
     const ::frc971::autonomous::AutonomousActionParams &params) {

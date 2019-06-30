@@ -120,6 +120,7 @@ struct IntakeVoltage {
   double voltage_rollers;
 };
 
+// Published on ".y2018.control_loops.superstructure_queue"
 queue_group SuperstructureQueue {
   implements aos.control_loops.ControlLoop;
 
@@ -219,5 +220,3 @@ queue_group SuperstructureQueue {
   queue Status status;
   queue Position position;
 };
-
-queue_group SuperstructureQueue superstructure_queue;
