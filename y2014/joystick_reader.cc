@@ -159,6 +159,12 @@ class Reader : public ::aos::input::ActionJoystickInput {
       : ::aos::input::ActionJoystickInput(
             event_loop, control_loops::GetDrivetrainConfig(),
             ::aos::input::DrivetrainInputReader::InputType::kSteeringWheel, {}),
+        claw_status_fetcher_(
+            event_loop->MakeFetcher<::y2014::control_loops::ClawQueue::Status>(
+                ".y2014.control_loops.claw_queue.status")),
+        claw_goal_sender_(
+            event_loop->MakeSender<::y2014::control_loops::ClawQueue::Goal>(
+                ".y2014.control_loops.claw_queue.goal")),
         shot_power_(80.0),
         goal_angle_(0.0),
         separation_angle_(kGrabSeparation),
@@ -349,10 +355,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
       }
 
       if (moving_for_shot_) {
-        auto &claw_status = control_loops::claw_queue.status;
-        claw_status.FetchLatest();
-        if (claw_status.get()) {
-          if (::std::abs(claw_status->bottom - goal_angle) < 0.2) {
+        claw_status_fetcher_.Fetch();
+        if (claw_status_fetcher_.get()) {
+          if (::std::abs(claw_status_fetcher_->bottom - goal_angle) < 0.2) {
             moving_for_shot_ = false;
             separation_angle_ = shot_separation_angle_;
           }
@@ -370,15 +375,18 @@ class Reader : public ::aos::input::ActionJoystickInput {
       bool intaking =
           data.IsPressed(kRollersIn) || data.IsPressed(kIntakePosition) ||
           data.IsPressed(kIntakeOpenPosition) || data.IsPressed(kCatch);
-      if (!control_loops::claw_queue.goal.MakeWithBuilder()
-               .bottom_angle(goal_angle)
-               .separation_angle(separation_angle)
-               .intake(intaking ? 12.0
-                                : (data.IsPressed(kRollersOut) ? -12.0
-                                                               : intake_power_))
-               .centering(intaking ? 12.0 : 0.0)
-               .Send()) {
-        LOG(WARNING, "sending claw goal failed\n");
+      {
+        auto goal_message = claw_goal_sender_.MakeMessage();
+        goal_message->bottom_angle = goal_angle;
+        goal_message->separation_angle = separation_angle;
+        goal_message->intake =
+            intaking ? 12.0
+                     : (data.IsPressed(kRollersOut) ? -12.0 : intake_power_);
+        goal_message->centering = intaking ? 12.0 : 0.0;
+
+        if (!goal_message.Send()) {
+          LOG(WARNING, "sending claw goal failed\n");
+        }
       }
 
       if (!control_loops::shooter_queue.goal.MakeWithBuilder()
@@ -400,6 +408,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
   }
 
  private:
+  ::aos::Fetcher<::y2014::control_loops::ClawQueue::Status>
+      claw_status_fetcher_;
+  ::aos::Sender<::y2014::control_loops::ClawQueue::Goal> claw_goal_sender_;
+
   double shot_power_;
   double goal_angle_;
   double separation_angle_, shot_separation_angle_;

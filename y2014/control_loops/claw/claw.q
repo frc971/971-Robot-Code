@@ -16,6 +16,7 @@ struct HalfClawPosition {
 };
 
 // All angles here are 0 vertical, positive "up" (aka backwards).
+// Published on ".y2014.control_loops.claw_queue"
 queue_group ClawQueue {
   implements aos.control_loops.ControlLoop;
 
@@ -66,8 +67,6 @@ queue_group ClawQueue {
   queue Output output;
   queue Status status;
 };
-
-queue_group ClawQueue claw_queue;
 
 struct ClawPositionToLog {
 	double top;

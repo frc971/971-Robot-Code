@@ -4,37 +4,13 @@
 
 #include "aos/logging/logging.h"
 
-#include "y2014/control_loops/shooter/shooter.q.h"
-#include "y2014/control_loops/claw/claw.q.h"
-#include "y2014/constants.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "y2014/constants.h"
+#include "y2014/control_loops/claw/claw.q.h"
+#include "y2014/control_loops/shooter/shooter.q.h"
 
 namespace y2014 {
 namespace actors {
-namespace {
-
-bool IntakeOff() {
-  control_loops::claw_queue.goal.FetchLatest();
-  if (!control_loops::claw_queue.goal.get()) {
-    LOG(WARNING, "no claw goal\n");
-    // If it doesn't have a goal, then the intake isn't on so we don't have to
-    // turn it off.
-    return true;
-  } else {
-    if (!control_loops::claw_queue.goal.MakeWithBuilder()
-             .bottom_angle(control_loops::claw_queue.goal->bottom_angle)
-             .separation_angle(control_loops::claw_queue.goal->separation_angle)
-             .intake(0.0)
-             .centering(0.0)
-             .Send()) {
-      LOG(WARNING, "sending claw goal failed\n");
-      return false;
-    }
-  }
-  return true;
-}
-
-}  // namespace
 
 constexpr double ShootActor::kOffsetRadians;
 constexpr double ShootActor::kClawShootingSeparation;
@@ -42,12 +18,44 @@ constexpr double ShootActor::kClawShootingSeparationGoal;
 
 ShootActor::ShootActor(::aos::EventLoop *event_loop)
     : ::aos::common::actions::ActorBase<actors::ShootActionQueueGroup>(
-          event_loop, ".y2014.actors.shoot_action") {}
+          event_loop, ".y2014.actors.shoot_action"),
+      claw_goal_fetcher_(
+          event_loop->MakeFetcher<::y2014::control_loops::ClawQueue::Goal>(
+              ".y2014.control_loops.claw_queue.goal")),
+      claw_status_fetcher_(
+          event_loop->MakeFetcher<::y2014::control_loops::ClawQueue::Status>(
+              ".y2014.control_loops.claw_queue.status")),
+      claw_goal_sender_(
+          event_loop->MakeSender<::y2014::control_loops::ClawQueue::Goal>(
+              ".y2014.control_loops.claw_queue.goal")) {}
 
 double ShootActor::SpeedToAngleOffset(double speed) {
-  const constants::Values& values = constants::GetValues();
+  const constants::Values &values = constants::GetValues();
   // scale speed to a [0.0-1.0] on something close to the max
   return (speed / values.drivetrain_max_speed) * kOffsetRadians;
+}
+
+bool ShootActor::IntakeOff() {
+  claw_goal_fetcher_.Fetch();
+  if (!claw_goal_fetcher_.get()) {
+    LOG(WARNING, "no claw goal\n");
+    // If it doesn't have a goal, then the intake isn't on so we don't have to
+    // turn it off.
+    return true;
+  } else {
+    auto goal_message = claw_goal_sender_.MakeMessage();
+
+    goal_message->bottom_angle = claw_goal_fetcher_->bottom_angle;
+    goal_message->separation_angle = claw_goal_fetcher_->separation_angle;
+    goal_message->intake = 0.0;
+    goal_message->centering = 0.0;
+
+    if (!goal_message.Send()) {
+      LOG(WARNING, "sending claw goal failed\n");
+      return false;
+    }
+  }
+  return true;
 }
 
 bool ShootActor::RunAction(const double&) {
@@ -105,23 +113,22 @@ void ShootActor::InnerRunAction() {
   if (!IntakeOff()) return;
 }
 
-bool ClawIsReady() {
-  control_loops::claw_queue.goal.FetchLatest();
+bool ShootActor::ClawIsReady() {
+  claw_goal_fetcher_.Fetch();
 
-  bool ans =
-      control_loops::claw_queue.status->zeroed &&
-      (::std::abs(control_loops::claw_queue.status->bottom_velocity) < 0.5) &&
-      (::std::abs(control_loops::claw_queue.status->bottom -
-                  control_loops::claw_queue.goal->bottom_angle) < 0.10) &&
-      (::std::abs(control_loops::claw_queue.status->separation -
-                  control_loops::claw_queue.goal->separation_angle) < 0.4);
+  bool ans = claw_status_fetcher_->zeroed &&
+             (::std::abs(claw_status_fetcher_->bottom_velocity) < 0.5) &&
+             (::std::abs(claw_status_fetcher_->bottom -
+                         claw_goal_fetcher_->bottom_angle) < 0.10) &&
+             (::std::abs(claw_status_fetcher_->separation -
+                         claw_goal_fetcher_->separation_angle) < 0.4);
   LOG(DEBUG, "Claw is %sready zeroed %d bottom_velocity %f bottom %f sep %f\n",
-      ans ? "" : "not ", control_loops::claw_queue.status->zeroed,
-      ::std::abs(control_loops::claw_queue.status->bottom_velocity),
-      ::std::abs(control_loops::claw_queue.status->bottom -
-                 control_loops::claw_queue.goal->bottom_angle),
-      ::std::abs(control_loops::claw_queue.status->separation -
-                 control_loops::claw_queue.goal->separation_angle));
+      ans ? "" : "not ", claw_status_fetcher_->zeroed,
+      ::std::abs(claw_status_fetcher_->bottom_velocity),
+      ::std::abs(claw_status_fetcher_->bottom -
+                 claw_goal_fetcher_->bottom_angle),
+      ::std::abs(claw_status_fetcher_->separation -
+                 claw_goal_fetcher_->separation_angle));
   return ans;
 }
 
@@ -141,7 +148,7 @@ bool ShooterIsReady() {
 
 bool ShootActor::DoneSetupShot() {
   control_loops::shooter_queue.status.FetchAnother();
-  control_loops::claw_queue.status.FetchAnother();
+  claw_status_fetcher_.Fetch();
   // Make sure that both the shooter and claw have reached the necessary
   // states.
   if (ShooterIsReady() && ClawIsReady()) {
@@ -153,8 +160,8 @@ bool ShootActor::DoneSetupShot() {
 }
 
 bool ShootActor::DonePreShotOpen() {
-  control_loops::claw_queue.status.FetchAnother();
-  if (control_loops::claw_queue.status->separation > kClawShootingSeparation) {
+  claw_status_fetcher_.Fetch();
+  if (claw_status_fetcher_->separation > kClawShootingSeparation) {
     LOG(INFO, "Opened up enough to shoot.\n");
     return true;
   }

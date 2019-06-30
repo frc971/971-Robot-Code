@@ -10,6 +10,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "y2014/actors/shoot_actor.h"
+#include "y2014/control_loops/shooter/shooter.q.h"
 #include "y2014/queues/auto_mode.q.h"
 #include "y2014/queues/hot_goal.q.h"
 
@@ -40,6 +41,12 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   ::aos::Fetcher<::y2014::sensors::AutoMode> auto_mode_fetcher_;
   ::aos::Fetcher<::y2014::HotGoal> hot_goal_fetcher_;
+  ::aos::Sender<::y2014::control_loops::ClawQueue::Goal> claw_goal_sender_;
+  ::aos::Fetcher<::y2014::control_loops::ClawQueue::Goal> claw_goal_fetcher_;
+  ::aos::Fetcher<::y2014::control_loops::ClawQueue::Status>
+      claw_status_fetcher_;
+  ::aos::Sender<::y2014::control_loops::ShooterQueue::Goal>
+      shooter_goal_sender_;
 
   actors::ShootActor::Factory shoot_action_factory_;
 };

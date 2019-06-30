@@ -52,15 +52,8 @@ class ActorBase {
   // Returns false if the action was canceled or failed, and true if the wait
   // succeeded.
   bool WaitOrCancel(monotonic_clock::duration duration) {
-    ::aos::time::PhasedLoop phased_loop(::aos::controls::kLoopFrequency,
-                                        event_loop_->monotonic_now(),
-                                        ::std::chrono::milliseconds(5) / 2);
-    return !WaitUntil(
-        [&phased_loop]() {
-          phased_loop.SleepUntilNext();
-          return false;
-        },
-        event_loop_->monotonic_now() + duration);
+    return !WaitUntil([]() { return false; },
+                      event_loop_->monotonic_now() + duration);
   }
 
   // Returns true if the action should be canceled.
@@ -82,10 +75,10 @@ class ActorBase {
   // Will run until the done condition is met or times out.
   // Will return false if successful or end_time is reached and true if the
   // action was canceled or failed.
-  // Done condition are defined as functions that return true when done and have
-  // some sort of blocking statement to throttle spin rate.
+  // Done condition are defined as functions that return true when done
   // end_time is when to stop and return true. Time(0, 0) (the default) means
   // never time out.
+  // This will be polled at ::aos::controls::kLoopFrequency
   bool WaitUntil(::std::function<bool(void)> done_condition,
                  ::aos::monotonic_clock::time_point end_time =
                      ::aos::monotonic_clock::min_time);
@@ -185,6 +178,10 @@ void ActorBase<T>::HandleGoal(const GoalType &goal) {
 template <class T>
 bool ActorBase<T>::WaitUntil(::std::function<bool(void)> done_condition,
                              ::aos::monotonic_clock::time_point end_time) {
+  ::aos::time::PhasedLoop phased_loop(::aos::controls::kLoopFrequency,
+                                      event_loop_->monotonic_now(),
+                                      ::std::chrono::milliseconds(5) / 2);
+
   while (!done_condition()) {
     if (ShouldCancel() || abort_) {
       // Clear abort bit as we have just aborted.
@@ -196,6 +193,7 @@ bool ActorBase<T>::WaitUntil(::std::function<bool(void)> done_condition,
       LOG(DEBUG, "WaitUntil timed out\n");
       return false;
     }
+    phased_loop.SleepUntilNext();
   }
   if (ShouldCancel() || abort_) {
     // Clear abort bit as we have just aborted.

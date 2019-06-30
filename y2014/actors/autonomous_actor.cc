@@ -35,27 +35,40 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
           ".y2014.sensors.auto_mode")),
       hot_goal_fetcher_(
           event_loop->MakeFetcher<::y2014::HotGoal>(".y2014.hot_goal")),
+      claw_goal_sender_(
+          event_loop->MakeSender<::y2014::control_loops::ClawQueue::Goal>(
+              ".y2014.control_loops.claw_queue.goal")),
+      claw_goal_fetcher_(
+          event_loop->MakeFetcher<::y2014::control_loops::ClawQueue::Goal>(
+              ".y2014.control_loops.claw_queue.goal")),
+      claw_status_fetcher_(
+          event_loop->MakeFetcher<::y2014::control_loops::ClawQueue::Status>(
+              ".y2014.control_loops.claw_queue.status")),
+      shooter_goal_sender_(
+          event_loop->MakeSender<::y2014::control_loops::ShooterQueue::Goal>(
+              ".y2014.control_loops.shooter_queue.goal")),
       shoot_action_factory_(actors::ShootActor::MakeFactory(event_loop)) {}
 
 void AutonomousActor::PositionClawVertically(double intake_power,
                                              double centering_power) {
-  if (!control_loops::claw_queue.goal.MakeWithBuilder()
-           .bottom_angle(0.0)
-           .separation_angle(0.0)
-           .intake(intake_power)
-           .centering(centering_power)
-           .Send()) {
+  auto goal_message = claw_goal_sender_.MakeMessage();
+  goal_message->bottom_angle = 0.0;
+  goal_message->separation_angle = 0.0;
+  goal_message->intake = intake_power;
+  goal_message->centering = centering_power;
+
+  if (!goal_message.Send()) {
     LOG(WARNING, "sending claw goal failed\n");
   }
 }
 
 void AutonomousActor::PositionClawBackIntake() {
-  if (!control_loops::claw_queue.goal.MakeWithBuilder()
-           .bottom_angle(-2.273474)
-           .separation_angle(0.0)
-           .intake(12.0)
-           .centering(12.0)
-           .Send()) {
+  auto goal_message = claw_goal_sender_.MakeMessage();
+  goal_message->bottom_angle = -2.273474;
+  goal_message->separation_angle = 0.0;
+  goal_message->intake = 12.0;
+  goal_message->centering = 12.0;
+  if (!goal_message.Send()) {
     LOG(WARNING, "sending claw goal failed\n");
   }
 }
@@ -63,35 +76,35 @@ void AutonomousActor::PositionClawBackIntake() {
 void AutonomousActor::PositionClawUpClosed() {
   // Move the claw to where we're going to shoot from but keep it closed until
   // it gets there.
-  if (!control_loops::claw_queue.goal.MakeWithBuilder()
-           .bottom_angle(0.86)
-           .separation_angle(0.0)
-           .intake(4.0)
-           .centering(1.0)
-           .Send()) {
+  auto goal_message = claw_goal_sender_.MakeMessage();
+  goal_message->bottom_angle = 0.86;
+  goal_message->separation_angle = 0.0;
+  goal_message->intake = 4.0;
+  goal_message->centering = 1.0;
+  if (!goal_message.Send()) {
     LOG(WARNING, "sending claw goal failed\n");
   }
 }
 
 void AutonomousActor::PositionClawForShot() {
-  if (!control_loops::claw_queue.goal.MakeWithBuilder()
-           .bottom_angle(0.86)
-           .separation_angle(0.10)
-           .intake(4.0)
-           .centering(1.0)
-           .Send()) {
+  auto goal_message = claw_goal_sender_.MakeMessage();
+  goal_message->bottom_angle = 0.86;
+  goal_message->separation_angle = 0.10;
+  goal_message->intake = 4.0;
+  goal_message->centering = 1.0;
+  if (!goal_message.Send()) {
     LOG(WARNING, "sending claw goal failed\n");
   }
 }
 
 void AutonomousActor::SetShotPower(double power) {
   LOG(INFO, "Setting shot power to %f\n", power);
-  if (!control_loops::shooter_queue.goal.MakeWithBuilder()
-           .shot_power(power)
-           .shot_requested(false)
-           .unload_requested(false)
-           .load_requested(false)
-           .Send()) {
+  auto goal_message = shooter_goal_sender_.MakeMessage();
+  goal_message->shot_power = power;
+  goal_message->shot_requested = false;
+  goal_message->unload_requested = false;
+  goal_message->load_requested = false;
+  if (!goal_message.Send()) {
     LOG(WARNING, "sending shooter goal failed\n");
   }
 }
@@ -116,22 +129,21 @@ bool AutonomousActor::WaitUntilClawDone() {
                                         ::std::chrono::milliseconds(10) / 2);
     // Poll the running bit and auto done bits.
     phased_loop.SleepUntilNext();
-    control_loops::claw_queue.status.FetchLatest();
-    control_loops::claw_queue.goal.FetchLatest();
+    claw_status_fetcher_.Fetch();
+    claw_goal_fetcher_.Fetch();
     if (ShouldCancel()) {
       return false;
     }
-    if (control_loops::claw_queue.status.get() == nullptr ||
-        control_loops::claw_queue.goal.get() == nullptr) {
+    if (claw_status_fetcher_.get() == nullptr ||
+        claw_goal_fetcher_.get() == nullptr) {
       continue;
     }
-    bool ans =
-        control_loops::claw_queue.status->zeroed &&
-        (::std::abs(control_loops::claw_queue.status->bottom_velocity) < 1.0) &&
-        (::std::abs(control_loops::claw_queue.status->bottom -
-                    control_loops::claw_queue.goal->bottom_angle) < 0.10) &&
-        (::std::abs(control_loops::claw_queue.status->separation -
-                    control_loops::claw_queue.goal->separation_angle) < 0.4);
+    bool ans = claw_status_fetcher_->zeroed &&
+               (::std::abs(claw_status_fetcher_->bottom_velocity) < 1.0) &&
+               (::std::abs(claw_status_fetcher_->bottom -
+                           claw_goal_fetcher_->bottom_angle) < 0.10) &&
+               (::std::abs(claw_status_fetcher_->separation -
+                           claw_goal_fetcher_->separation_angle) < 0.4);
     if (ans) {
       return true;
     }

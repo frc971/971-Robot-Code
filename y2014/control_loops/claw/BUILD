@@ -2,18 +2,6 @@ package(default_visibility = ["//visibility:public"])
 
 load("//aos/build:queues.bzl", "queue_library")
 
-cc_binary(
-    name = "replay_claw",
-    srcs = [
-        "replay_claw.cc",
-    ],
-    deps = [
-        ":claw_queue",
-        "//aos:init",
-        "//aos/controls:replay_control_loop",
-    ],
-)
-
 queue_library(
     name = "claw_queue",
     srcs = [
@@ -77,19 +65,6 @@ cc_test(
         "//aos/testing:googletest",
         "//frc971/control_loops:state_feedback_loop",
         "//frc971/control_loops:team_number_test_environment",
-    ],
-)
-
-cc_binary(
-    name = "claw_calibration",
-    srcs = [
-        "claw_calibration.cc",
-    ],
-    deps = [
-        ":claw_queue",
-        "//aos:init",
-        "//aos/controls:control_loop",
-        "//y2014:constants",
     ],
 )
 

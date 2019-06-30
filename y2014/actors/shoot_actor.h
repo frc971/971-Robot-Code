@@ -3,10 +3,10 @@
 
 #include <memory>
 
-#include "aos/actions/actor.h"
 #include "aos/actions/actions.h"
-
+#include "aos/actions/actor.h"
 #include "y2014/actors/shoot_action.q.h"
+#include "y2014/control_loops/claw/claw.q.h"
 
 namespace y2014 {
 namespace actors {
@@ -43,6 +43,15 @@ class ShootActor
   bool DonePreShotOpen();
   // in the right place
   bool DoneSetupShot();
+
+  bool IntakeOff();
+  bool ClawIsReady();
+
+ private:
+  ::aos::Fetcher<::y2014::control_loops::ClawQueue::Goal> claw_goal_fetcher_;
+  ::aos::Fetcher<::y2014::control_loops::ClawQueue::Status>
+      claw_status_fetcher_;
+  ::aos::Sender<::y2014::control_loops::ClawQueue::Goal> claw_goal_sender_;
 
   // to track when shot is complete
   int previous_shots_;
