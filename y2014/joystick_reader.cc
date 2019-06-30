@@ -165,6 +165,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
         claw_goal_sender_(
             event_loop->MakeSender<::y2014::control_loops::ClawQueue::Goal>(
                 ".y2014.control_loops.claw_queue.goal")),
+        shooter_goal_sender_(
+            event_loop->MakeSender<::y2014::control_loops::ShooterQueue::Goal>(
+                ".y2014.control_loops.shooter_queue.goal")),
         shot_power_(80.0),
         goal_angle_(0.0),
         separation_angle_(kGrabSeparation),
@@ -389,13 +392,15 @@ class Reader : public ::aos::input::ActionJoystickInput {
         }
       }
 
-      if (!control_loops::shooter_queue.goal.MakeWithBuilder()
-               .shot_power(shot_power_)
-               .shot_requested(data.IsPressed(kFire))
-               .unload_requested(data.IsPressed(kUnload))
-               .load_requested(data.IsPressed(kReload))
-               .Send()) {
-        LOG(WARNING, "sending shooter goal failed\n");
+      {
+        auto goal_message = shooter_goal_sender_.MakeMessage();
+        goal_message->shot_power = shot_power_;
+        goal_message->shot_requested = data.IsPressed(kFire);
+        goal_message->unload_requested = data.IsPressed(kUnload);
+        goal_message->load_requested = data.IsPressed(kReload);
+        if (!goal_message.Send()) {
+          LOG(WARNING, "sending shooter goal failed\n");
+        }
       }
     }
   }
@@ -411,6 +416,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
   ::aos::Fetcher<::y2014::control_loops::ClawQueue::Status>
       claw_status_fetcher_;
   ::aos::Sender<::y2014::control_loops::ClawQueue::Goal> claw_goal_sender_;
+  ::aos::Sender<::y2014::control_loops::ShooterQueue::Goal> shooter_goal_sender_;
 
   double shot_power_;
   double goal_angle_;

@@ -2,18 +2,6 @@ package(default_visibility = ["//visibility:public"])
 
 load("//aos/build:queues.bzl", "queue_library")
 
-cc_binary(
-    name = "replay_shooter",
-    srcs = [
-        "replay_shooter.cc",
-    ],
-    deps = [
-        ":shooter_queue",
-        "//aos:init",
-        "//aos/controls:replay_control_loop",
-    ],
-)
-
 queue_library(
     name = "shooter_queue",
     srcs = [

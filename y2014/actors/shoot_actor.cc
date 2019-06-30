@@ -27,7 +27,16 @@ ShootActor::ShootActor(::aos::EventLoop *event_loop)
               ".y2014.control_loops.claw_queue.status")),
       claw_goal_sender_(
           event_loop->MakeSender<::y2014::control_loops::ClawQueue::Goal>(
-              ".y2014.control_loops.claw_queue.goal")) {}
+              ".y2014.control_loops.claw_queue.goal")),
+      shooter_status_fetcher_(
+          event_loop->MakeFetcher<::y2014::control_loops::ShooterQueue::Status>(
+              ".y2014.control_loops.shooter_queue.status")),
+      shooter_goal_fetcher_(
+          event_loop->MakeFetcher<::y2014::control_loops::ShooterQueue::Goal>(
+              ".y2014.control_loops.shooter_queue.goal")),
+      shooter_goal_sender_(
+          event_loop->MakeSender<::y2014::control_loops::ShooterQueue::Goal>(
+              ".y2014.control_loops.shooter_queue.goal")) {}
 
 double ShootActor::SpeedToAngleOffset(double speed) {
   const constants::Values &values = constants::GetValues();
@@ -63,16 +72,16 @@ bool ShootActor::RunAction(const double&) {
 
   // Now do our 'finally' block and make sure that we aren't requesting shots
   // continually.
-  control_loops::shooter_queue.goal.FetchLatest();
-  if (control_loops::shooter_queue.goal.get() == nullptr) {
+  shooter_goal_fetcher_.Fetch();
+  if (shooter_goal_fetcher_.get() == nullptr) {
     return true;
   }
-  if (!control_loops::shooter_queue.goal.MakeWithBuilder()
-           .shot_power(control_loops::shooter_queue.goal->shot_power)
-           .shot_requested(false)
-           .unload_requested(false)
-           .load_requested(false)
-           .Send()) {
+  auto goal_message = shooter_goal_sender_.MakeMessage();
+  goal_message->shot_power = shooter_goal_fetcher_->shot_power;
+  goal_message->shot_requested = false;
+  goal_message->unload_requested = false;
+  goal_message->load_requested = false;
+  if (!goal_message.Send()) {
     LOG(WARNING, "sending shooter goal failed\n");
     return false;
   }
@@ -92,19 +101,22 @@ void ShootActor::InnerRunAction() {
   if (!IntakeOff()) return;
 
   // Make sure that we have the latest shooter status.
-  control_loops::shooter_queue.status.FetchLatest();
+  shooter_status_fetcher_.Fetch();
   // Get the number of shots fired up to this point. This should not be updated
   // again for another few cycles.
-  previous_shots_ = control_loops::shooter_queue.status->shots;
+  previous_shots_ = shooter_status_fetcher_->shots;
   // Shoot!
-  if (!control_loops::shooter_queue.goal.MakeWithBuilder()
-           .shot_power(control_loops::shooter_queue.goal->shot_power)
-           .shot_requested(true)
-           .unload_requested(false)
-           .load_requested(false)
-           .Send()) {
-    LOG(WARNING, "sending shooter goal failed\n");
-    return;
+  shooter_goal_fetcher_.Fetch();
+  {
+    auto goal_message = shooter_goal_sender_.MakeMessage();
+    goal_message->shot_power = shooter_goal_fetcher_->shot_power;
+    goal_message->shot_requested = true;
+    goal_message->unload_requested = false;
+    goal_message->load_requested = false;
+    if (!goal_message.Send()) {
+      LOG(WARNING, "sending shooter goal failed\n");
+      return;
+    }
   }
 
   // wait for record of shot having been fired
@@ -132,22 +144,22 @@ bool ShootActor::ClawIsReady() {
   return ans;
 }
 
-bool ShooterIsReady() {
-  control_loops::shooter_queue.goal.FetchLatest();
+bool ShootActor::ShooterIsReady() {
+  shooter_goal_fetcher_.Fetch();
 
   LOG(DEBUG, "Power error is %f - %f -> %f, ready %d\n",
-      control_loops::shooter_queue.status->hard_stop_power,
-      control_loops::shooter_queue.goal->shot_power,
-      ::std::abs(control_loops::shooter_queue.status->hard_stop_power -
-                 control_loops::shooter_queue.goal->shot_power),
-      control_loops::shooter_queue.status->ready);
-  return (::std::abs(control_loops::shooter_queue.status->hard_stop_power -
-                     control_loops::shooter_queue.goal->shot_power) < 1.0) &&
-         control_loops::shooter_queue.status->ready;
+      shooter_status_fetcher_->hard_stop_power,
+      shooter_goal_fetcher_->shot_power,
+      ::std::abs(shooter_status_fetcher_->hard_stop_power -
+                 shooter_goal_fetcher_->shot_power),
+      shooter_status_fetcher_->ready);
+  return (::std::abs(shooter_status_fetcher_->hard_stop_power -
+                     shooter_goal_fetcher_->shot_power) < 1.0) &&
+         shooter_status_fetcher_->ready;
 }
 
 bool ShootActor::DoneSetupShot() {
-  control_loops::shooter_queue.status.FetchAnother();
+  shooter_status_fetcher_.Fetch();
   claw_status_fetcher_.Fetch();
   // Make sure that both the shooter and claw have reached the necessary
   // states.
@@ -169,8 +181,9 @@ bool ShootActor::DonePreShotOpen() {
 }
 
 bool ShootActor::DoneShot() {
-  control_loops::shooter_queue.status.FetchAnother();
-  if (control_loops::shooter_queue.status->shots > previous_shots_) {
+  shooter_status_fetcher_.Fetch();
+  if (shooter_status_fetcher_.get() &&
+      shooter_status_fetcher_->shots > previous_shots_) {
     LOG(INFO, "Shot succeeded!\n");
     return true;
   }

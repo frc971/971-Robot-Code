@@ -3,6 +3,7 @@ package y2014.control_loops;
 import "aos/controls/control_loops.q";
 import "frc971/control_loops/control_loops.q";
 
+// Published on ".y2014.control_loops.shooter_queue"
 queue_group ShooterQueue {
   implements aos.control_loops.ControlLoop;
 
@@ -60,8 +61,6 @@ queue_group ShooterQueue {
   queue Output output;
   queue Status status;
 };
-
-queue_group ShooterQueue shooter_queue;
 
 struct ShooterStateToLog {
 	double absolute_position;

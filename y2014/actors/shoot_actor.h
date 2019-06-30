@@ -7,6 +7,7 @@
 #include "aos/actions/actor.h"
 #include "y2014/actors/shoot_action.q.h"
 #include "y2014/control_loops/claw/claw.q.h"
+#include "y2014/control_loops/shooter/shooter.q.h"
 
 namespace y2014 {
 namespace actors {
@@ -43,6 +44,7 @@ class ShootActor
   bool DonePreShotOpen();
   // in the right place
   bool DoneSetupShot();
+  bool ShooterIsReady();
 
   bool IntakeOff();
   bool ClawIsReady();
@@ -52,6 +54,12 @@ class ShootActor
   ::aos::Fetcher<::y2014::control_loops::ClawQueue::Status>
       claw_status_fetcher_;
   ::aos::Sender<::y2014::control_loops::ClawQueue::Goal> claw_goal_sender_;
+  ::aos::Fetcher<::y2014::control_loops::ShooterQueue::Status>
+      shooter_status_fetcher_;
+  ::aos::Fetcher<::y2014::control_loops::ShooterQueue::Goal>
+      shooter_goal_fetcher_;
+  ::aos::Sender<::y2014::control_loops::ShooterQueue::Goal>
+      shooter_goal_sender_;
 
   // to track when shot is complete
   int previous_shots_;
