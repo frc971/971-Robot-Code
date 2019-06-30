@@ -179,6 +179,7 @@ struct TurretProfiledSubsystemStatus {
   double turret_encoder_angle;
 };
 
+// Published on ".y2017.control_loops.superstructure_queue"
 queue_group SuperstructureQueue {
   implements aos.control_loops.ControlLoop;
 
@@ -255,5 +256,3 @@ queue_group SuperstructureQueue {
   queue Output output;
   queue Status status;
 };
-
-queue_group SuperstructureQueue superstructure_queue;

@@ -15,8 +15,6 @@ namespace y2017 {
 namespace actors {
 using ::frc971::ProfileParameters;
 
-using ::y2017::control_loops::superstructure_queue;
-
 class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  public:
   explicit AutonomousActor(::aos::EventLoop *event_loop);
@@ -39,6 +37,11 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     ResetDrivetrain();
     SendSuperstructureGoal();
   }
+
+  ::aos::Fetcher<::y2017::control_loops::SuperstructureQueue::Status>
+      superstructure_status_fetcher_;
+  ::aos::Sender<::y2017::control_loops::SuperstructureQueue::Goal>
+      superstructure_goal_sender_;
 
   double intake_goal_ = 0.0;
   double turret_goal_ = 0.0;
@@ -77,9 +80,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     while (true) {
       if (ShouldCancel()) return;
 
-      superstructure_queue.status.FetchLatest();
-      if (superstructure_queue.status.get()) {
-        if (superstructure_queue.status->hood.zeroed) {
+      superstructure_status_fetcher_.Fetch();
+      if (superstructure_status_fetcher_.get()) {
+        if (superstructure_status_fetcher_->hood.zeroed) {
           return;
         }
       }
@@ -88,7 +91,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 
   void SendSuperstructureGoal() {
-    auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
+    auto new_superstructure_goal = superstructure_goal_sender_.MakeMessage();
     new_superstructure_goal->intake.distance = intake_goal_;
     new_superstructure_goal->intake.disable_intake = false;
     new_superstructure_goal->turret.angle = turret_goal_;

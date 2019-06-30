@@ -19,7 +19,6 @@
 #include "y2017/control_loops/drivetrain/drivetrain_base.h"
 
 using ::frc971::control_loops::drivetrain_queue;
-using ::y2017::control_loops::superstructure_queue;
 
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::ControlBit;
@@ -55,11 +54,17 @@ class Reader : public ::aos::input::ActionJoystickInput {
       : ::aos::input::ActionJoystickInput(
             event_loop,
             ::y2017::control_loops::drivetrain::GetDrivetrainConfig(),
-            DrivetrainInputReader::InputType::kSteeringWheel, {}) {}
+            DrivetrainInputReader::InputType::kSteeringWheel, {}),
+        superstructure_status_fetcher_(
+            event_loop->MakeFetcher<
+                ::y2017::control_loops::SuperstructureQueue::Status>(
+                ".y2017.control_loops.superstructure_queue.status")),
+        superstructure_goal_sender_(
+            event_loop
+                ->MakeSender<::y2017::control_loops::SuperstructureQueue::Goal>(
+                    ".y2017.control_loops.superstructure_queue.goal")) {}
 
   enum class ShotDistance { VISION_SHOT, MIDDLE_SHOT, FAR_SHOT };
-
-  ShotDistance last_shot_distance_ = ShotDistance::VISION_SHOT;
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
     // Default the intake to in.
@@ -67,8 +72,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
     bool lights_on = false;
     bool vision_track = false;
 
-    superstructure_queue.status.FetchLatest();
-    if (!superstructure_queue.status.get()) {
+    superstructure_status_fetcher_.Fetch();
+    if (!superstructure_status_fetcher_.get()) {
       LOG(ERROR, "Got no superstructure status packet.\n");
       return;
     }
@@ -147,10 +152,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     fire_ = data.IsPressed(kFire) && shooter_velocity_ != 0.0;
     if (data.IsPressed(kVisionAlign)) {
-      fire_ = fire_ && superstructure_queue.status->turret.vision_tracking;
+      fire_ = fire_ && superstructure_status_fetcher_->turret.vision_tracking;
     }
 
-    auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
+    auto new_superstructure_goal = superstructure_goal_sender_.MakeMessage();
     if (data.IsPressed(kHang)) {
       intake_goal_ = 0.23;
     }
@@ -191,13 +196,14 @@ class Reader : public ::aos::input::ActionJoystickInput {
       new_superstructure_goal->use_vision_for_shots = false;
     }
 
-    if (superstructure_queue.status->intake.position >
-        superstructure_queue.status->intake.unprofiled_goal_position + 0.01) {
+    if (superstructure_status_fetcher_->intake.position >
+        superstructure_status_fetcher_->intake.unprofiled_goal_position +
+            0.01) {
       intake_accumulator_ = 10;
     }
     if (intake_accumulator_ > 0) {
       --intake_accumulator_;
-      if (!superstructure_queue.status->intake.estopped) {
+      if (!superstructure_status_fetcher_->intake.estopped) {
         new_superstructure_goal->intake.voltage_rollers = 10.0;
       }
     }
@@ -246,6 +252,13 @@ class Reader : public ::aos::input::ActionJoystickInput {
   }
 
  private:
+  ::aos::Fetcher<::y2017::control_loops::SuperstructureQueue::Status>
+      superstructure_status_fetcher_;
+  ::aos::Sender<::y2017::control_loops::SuperstructureQueue::Goal>
+      superstructure_goal_sender_;
+
+  ShotDistance last_shot_distance_ = ShotDistance::VISION_SHOT;
+
   // Current goals to send to the robot.
   double intake_goal_ = 0.0;
   double turret_goal_ = 0.0;
