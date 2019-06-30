@@ -3,9 +3,10 @@
 
 #include <memory>
 
-#include "aos/actions/actor.h"
 #include "aos/actions/actions.h"
+#include "aos/actions/actor.h"
 #include "y2016/actors/superstructure_action.q.h"
+#include "y2016/control_loops/superstructure/superstructure.q.h"
 
 namespace y2016 {
 namespace actors {
@@ -23,6 +24,11 @@ class SuperstructureActor
     return Factory(event_loop, ".y2016.actors.superstructure_action");
   }
 
+ private:
+  ::aos::Sender<::y2016::control_loops::SuperstructureQueue::Goal>
+      superstructure_goal_sender_;
+  ::aos::Fetcher<::y2016::control_loops::SuperstructureQueue::Status>
+      superstructure_status_fetcher_;
   // Internal struct holding superstructure goals sent by autonomous to the
   // loop.
   struct SuperstructureGoal {

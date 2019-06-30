@@ -26,7 +26,6 @@
 #include "y2016/vision/vision.q.h"
 
 using ::frc971::control_loops::drivetrain_queue;
-using ::y2016::control_loops::superstructure_queue;
 
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::ControlBit;
@@ -84,6 +83,14 @@ class Reader : public ::aos::input::ActionJoystickInput {
             event_loop->MakeSender<
                 ::y2016::control_loops::shooter::ShooterQueue::Goal>(
                 ".y2016.control_loops.shooter.shooter_queue.goal")),
+        superstructure_status_fetcher_(
+            event_loop->MakeFetcher<
+                ::y2016::control_loops::SuperstructureQueue::Status>(
+                ".y2016.control_loops.superstructure_queue.status")),
+        superstructure_goal_sender_(
+            event_loop
+                ->MakeSender<::y2016::control_loops::SuperstructureQueue::Goal>(
+                    ".y2016.control_loops.superstructure_queue.goal")),
         intake_goal_(0.0),
         shoulder_goal_(M_PI / 2.0),
         wrist_goal_(0.0),
@@ -148,13 +155,13 @@ class Reader : public ::aos::input::ActionJoystickInput {
       LOG(DEBUG, "Canceling\n");
     }
 
-    superstructure_queue.status.FetchLatest();
-    if (!superstructure_queue.status.get()) {
+    superstructure_status_fetcher_.Fetch();
+    if (!superstructure_status_fetcher_.get()) {
       LOG(ERROR, "Got no superstructure status packet.\n");
     }
 
-    if (superstructure_queue.status.get() &&
-        superstructure_queue.status->zeroed) {
+    if (superstructure_status_fetcher_.get() &&
+        superstructure_status_fetcher_->zeroed) {
       if (waiting_for_zero_) {
         LOG(DEBUG, "Zeroed! Starting teleop mode.\n");
         waiting_for_zero_ = false;
@@ -315,7 +322,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     if (!waiting_for_zero_) {
       if (!is_expanding_) {
-        auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
+        auto new_superstructure_goal =
+            superstructure_goal_sender_.MakeMessage();
         new_superstructure_goal->angle_intake = intake_goal_;
         new_superstructure_goal->angle_shoulder = shoulder_goal_;
         new_superstructure_goal->angle_wrist = wrist_goal_;
@@ -387,6 +395,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
   ::aos::Fetcher<::y2016::sensors::BallDetector> ball_detector_fetcher_;
   ::aos::Sender<::y2016::control_loops::shooter::ShooterQueue::Goal>
       shooter_goal_sender_;
+  ::aos::Fetcher<::y2016::control_loops::SuperstructureQueue::Status>
+      superstructure_status_fetcher_;
+  ::aos::Sender<::y2016::control_loops::SuperstructureQueue::Goal>
+      superstructure_goal_sender_;
 
   // Whatever these are set to are our default goals to send out after zeroing.
   double intake_goal_;

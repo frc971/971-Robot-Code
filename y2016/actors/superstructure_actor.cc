@@ -14,7 +14,15 @@ namespace chrono = ::std::chrono;
 
 SuperstructureActor::SuperstructureActor(::aos::EventLoop *event_loop)
     : aos::common::actions::ActorBase<actors::SuperstructureActionQueueGroup>(
-          event_loop, ".y2016.actors.superstructure_action") {}
+          event_loop, ".y2016.actors.superstructure_action"),
+      superstructure_goal_sender_(
+          event_loop
+              ->MakeSender<::y2016::control_loops::SuperstructureQueue::Goal>(
+                  ".y2016.control_loops.superstructure_queue.goal")),
+      superstructure_status_fetcher_(
+          event_loop->MakeFetcher<
+              ::y2016::control_loops::SuperstructureQueue::Status>(
+              ".y2016.control_loops.superstructure_queue.status")) {}
 
 bool SuperstructureActor::RunAction(
     const actors::SuperstructureActionParams &params) {
@@ -37,8 +45,7 @@ void SuperstructureActor::MoveSuperstructure(double shoulder, double shooter,
                                              bool unfold_climber) {
   superstructure_goal_ = {0, shoulder, shooter};
 
-  auto new_superstructure_goal =
-      ::y2016::control_loops::superstructure_queue.goal.MakeMessage();
+  auto new_superstructure_goal = superstructure_goal_sender_.MakeMessage();
 
   new_superstructure_goal->angle_intake = 0;
   new_superstructure_goal->angle_shoulder = shoulder;
@@ -67,25 +74,25 @@ void SuperstructureActor::MoveSuperstructure(double shoulder, double shooter,
 
 bool SuperstructureActor::SuperstructureProfileDone() {
   constexpr double kProfileError = 1e-2;
-  return ::std::abs(
-             control_loops::superstructure_queue.status->intake.goal_angle -
-             superstructure_goal_.intake) < kProfileError &&
+  return ::std::abs(superstructure_status_fetcher_->intake.goal_angle -
+                    superstructure_goal_.intake) < kProfileError &&
+         ::std::abs(superstructure_status_fetcher_->shoulder.goal_angle -
+                    superstructure_goal_.shoulder) < kProfileError &&
          ::std::abs(
-             control_loops::superstructure_queue.status->shoulder.goal_angle -
-             superstructure_goal_.shoulder) < kProfileError &&
-         ::std::abs(control_loops::superstructure_queue.status->intake
-                        .goal_angular_velocity) < kProfileError &&
-         ::std::abs(control_loops::superstructure_queue.status->shoulder
-                        .goal_angular_velocity) < kProfileError;
+             superstructure_status_fetcher_->intake.goal_angular_velocity) <
+             kProfileError &&
+         ::std::abs(
+             superstructure_status_fetcher_->shoulder.goal_angular_velocity) <
+             kProfileError;
 }
 
 bool SuperstructureActor::SuperstructureDone() {
-  control_loops::superstructure_queue.status.FetchAnother();
+  superstructure_status_fetcher_.Fetch();
 
   // We are no longer running if we are in the zeroing states (below 12), or
   // estopped.
-  if (control_loops::superstructure_queue.status->state < 12 ||
-      control_loops::superstructure_queue.status->state == 16) {
+  if (superstructure_status_fetcher_->state < 12 ||
+      superstructure_status_fetcher_->state == 16) {
     LOG(ERROR, "Superstructure no longer running, aborting action\n");
     return true;
   }
@@ -98,10 +105,7 @@ bool SuperstructureActor::SuperstructureDone() {
 }
 
 void SuperstructureActor::WaitForSuperstructure() {
-  while (true) {
-    if (ShouldCancel()) return;
-    if (SuperstructureDone()) return;
-  }
+  WaitUntil(::std::bind(&SuperstructureActor::SuperstructureDone, this));
 }
 
 }  // namespace actors

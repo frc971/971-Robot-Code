@@ -54,10 +54,10 @@
 #include "y2016/queues/ball_detector.q.h"
 
 using ::frc971::control_loops::drivetrain_queue;
-using ::y2016::control_loops::superstructure_queue;
 using aos::make_unique;
 using ::frc971::wpilib::LoopOutputHandler;
 using ::y2016::control_loops::shooter::ShooterQueue;
+using ::y2016::control_loops::SuperstructureQueue;
 
 namespace y2016 {
 namespace wpilib {
@@ -155,7 +155,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
             event_loop->MakeSender<::frc971::autonomous::AutonomousMode>(
                 ".frc971.autonomous.auto_mode")),
         shooter_position_sender_(event_loop->MakeSender<ShooterQueue::Position>(
-            ".y2016.control_loops.shooter.shooter_queue.position")) {
+            ".y2016.control_loops.shooter.shooter_queue.position")),
+        superstructure_position_sender_(
+            event_loop->MakeSender<SuperstructureQueue::Position>(
+                ".y2016.control_loops.superstructure_queue.position")) {
     // Set it to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxDrivetrainShooterEncoderPulsesPerSecond);
@@ -283,7 +286,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     }
 
     {
-      auto superstructure_message = superstructure_queue.position.MakeMessage();
+      auto superstructure_message =
+          superstructure_position_sender_.MakeMessage();
       CopyPosition(intake_encoder_, &superstructure_message->intake,
                    intake_translate, intake_pot_translate, false,
                    values.intake.pot_offset);
@@ -321,6 +325,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   ::aos::Sender<::y2016::sensors::BallDetector> ball_detector_sender_;
   ::aos::Sender<::frc971::autonomous::AutonomousMode> auto_mode_sender_;
   ::aos::Sender<ShooterQueue::Position> shooter_position_sender_;
+  ::aos::Sender<SuperstructureQueue::Position> superstructure_position_sender_;
 
   ::std::unique_ptr<::frc::AnalogInput> drivetrain_left_hall_,
       drivetrain_right_hall_;

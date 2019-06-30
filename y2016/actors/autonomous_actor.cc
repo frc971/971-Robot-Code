@@ -63,7 +63,15 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
       shooter_status_fetcher_(
           event_loop->MakeFetcher<
               ::y2016::control_loops::shooter::ShooterQueue::Status>(
-              ".y2016.control_loops.shooter.shooter_queue.status")) {}
+              ".y2016.control_loops.shooter.shooter_queue.status")),
+      superstructure_status_fetcher_(
+          event_loop->MakeFetcher<
+              ::y2016::control_loops::SuperstructureQueue::Status>(
+              ".y2016.control_loops.superstructure_queue.status")),
+      superstructure_goal_sender_(
+          event_loop
+              ->MakeSender<::y2016::control_loops::SuperstructureQueue::Goal>(
+                  ".y2016.control_loops.superstructure_queue.goal")) {}
 
 constexpr double kDoNotTurnCare = 2.0;
 
@@ -75,8 +83,7 @@ void AutonomousActor::MoveSuperstructure(
     double roller_power) {
   superstructure_goal_ = {intake, shoulder, wrist};
 
-  auto new_superstructure_goal =
-      ::y2016::control_loops::superstructure_queue.goal.MakeMessage();
+  auto new_superstructure_goal = superstructure_goal_sender_.MakeMessage();
 
   new_superstructure_goal->angle_intake = intake;
   new_superstructure_goal->angle_shoulder = shoulder;
@@ -277,25 +284,25 @@ void AutonomousActor::WaitForAlignedWithVision(
 }
 
 bool AutonomousActor::IntakeDone() {
-  control_loops::superstructure_queue.status.FetchAnother();
+  superstructure_status_fetcher_.Fetch();
 
   constexpr double kProfileError = 1e-5;
   constexpr double kEpsilon = 0.15;
 
-  if (control_loops::superstructure_queue.status->state < 12 ||
-      control_loops::superstructure_queue.status->state == 16) {
+  if (superstructure_status_fetcher_->state < 12 ||
+      superstructure_status_fetcher_->state == 16) {
     LOG(ERROR, "Superstructure no longer running, aborting action\n");
     return true;
   }
 
-  if (::std::abs(control_loops::superstructure_queue.status->intake.goal_angle -
+  if (::std::abs(superstructure_status_fetcher_->intake.goal_angle -
                  superstructure_goal_.intake) < kProfileError &&
-      ::std::abs(control_loops::superstructure_queue.status->intake
+      ::std::abs(superstructure_status_fetcher_->intake
                      .goal_angular_velocity) < kProfileError) {
     LOG(DEBUG, "Profile done.\n");
-    if (::std::abs(control_loops::superstructure_queue.status->intake.angle -
+    if (::std::abs(superstructure_status_fetcher_->intake.angle -
                    superstructure_goal_.intake) < kEpsilon &&
-        ::std::abs(control_loops::superstructure_queue.status->intake
+        ::std::abs(superstructure_status_fetcher_->intake
                        .angular_velocity) < kEpsilon) {
       LOG(INFO, "Near goal, done.\n");
       return true;
@@ -305,48 +312,47 @@ bool AutonomousActor::IntakeDone() {
 }
 
 bool AutonomousActor::SuperstructureProfileDone() {
-  constexpr double kProfileError = 1e-5;
-  return ::std::abs(
-             control_loops::superstructure_queue.status->intake.goal_angle -
-             superstructure_goal_.intake) < kProfileError &&
-         ::std::abs(
-             control_loops::superstructure_queue.status->shoulder.goal_angle -
-             superstructure_goal_.shoulder) < kProfileError &&
-         ::std::abs(
-             control_loops::superstructure_queue.status->wrist.goal_angle -
-             superstructure_goal_.wrist) < kProfileError &&
-         ::std::abs(control_loops::superstructure_queue.status->intake
-                        .goal_angular_velocity) < kProfileError &&
-         ::std::abs(control_loops::superstructure_queue.status->shoulder
-                        .goal_angular_velocity) < kProfileError &&
-         ::std::abs(control_loops::superstructure_queue.status->wrist
-                        .goal_angular_velocity) < kProfileError;
-}
-
-bool AutonomousActor::SuperstructureDone() {
-  control_loops::superstructure_queue.status.FetchAnother();
-
-  constexpr double kEpsilon = 0.03;
-
-  if (control_loops::superstructure_queue.status->state < 12 ||
-      control_loops::superstructure_queue.status->state == 16) {
+  if (superstructure_status_fetcher_->state < 12 ||
+      superstructure_status_fetcher_->state == 16) {
     LOG(ERROR, "Superstructure no longer running, aborting action\n");
     return true;
   }
 
+  constexpr double kProfileError = 1e-5;
+  return ::std::abs(
+             superstructure_status_fetcher_->intake.goal_angle -
+             superstructure_goal_.intake) < kProfileError &&
+         ::std::abs(
+             superstructure_status_fetcher_->shoulder.goal_angle -
+             superstructure_goal_.shoulder) < kProfileError &&
+         ::std::abs(
+             superstructure_status_fetcher_->wrist.goal_angle -
+             superstructure_goal_.wrist) < kProfileError &&
+         ::std::abs(superstructure_status_fetcher_->intake
+                        .goal_angular_velocity) < kProfileError &&
+         ::std::abs(superstructure_status_fetcher_->shoulder
+                        .goal_angular_velocity) < kProfileError &&
+         ::std::abs(superstructure_status_fetcher_->wrist
+                        .goal_angular_velocity) < kProfileError;
+}
+
+bool AutonomousActor::SuperstructureDone() {
+  superstructure_status_fetcher_.Fetch();
+
+  constexpr double kEpsilon = 0.03;
   if (SuperstructureProfileDone()) {
     LOG(DEBUG, "Profile done.\n");
-    if (::std::abs(control_loops::superstructure_queue.status->intake.angle -
+    if (::std::abs(superstructure_status_fetcher_->intake.angle -
                    superstructure_goal_.intake) < (kEpsilon + 0.1) &&
-        ::std::abs(control_loops::superstructure_queue.status->shoulder.angle -
+        ::std::abs(superstructure_status_fetcher_->shoulder.angle -
                    superstructure_goal_.shoulder) < (kEpsilon + 0.05) &&
-        ::std::abs(control_loops::superstructure_queue.status->wrist.angle -
+        ::std::abs(superstructure_status_fetcher_->wrist.angle -
                    superstructure_goal_.wrist) < (kEpsilon + 0.01) &&
-        ::std::abs(control_loops::superstructure_queue.status->intake
+        ::std::abs(superstructure_status_fetcher_->intake
                        .angular_velocity) < (kEpsilon + 0.1) &&
-        ::std::abs(control_loops::superstructure_queue.status->shoulder
+        ::std::abs(superstructure_status_fetcher_->shoulder
                        .angular_velocity) < (kEpsilon + 0.10) &&
-        ::std::abs(control_loops::superstructure_queue.status->wrist
+        ::std::abs(superstructure_status_fetcher_->wrist
                        .angular_velocity) < (kEpsilon + 0.05)) {
       LOG(INFO, "Near goal, done.\n");
       return true;
@@ -356,50 +362,29 @@ bool AutonomousActor::SuperstructureDone() {
 }
 
 void AutonomousActor::WaitForIntake() {
-  while (true) {
-    if (ShouldCancel()) return;
-    if (IntakeDone()) return;
-  }
+  WaitUntil(::std::bind(&AutonomousActor::IntakeDone, this));
 }
 
 void AutonomousActor::WaitForSuperstructure() {
-  while (true) {
-    if (ShouldCancel()) return;
-    if (SuperstructureDone()) return;
-  }
+  WaitUntil(::std::bind(&AutonomousActor::SuperstructureDone, this));
 }
 
 void AutonomousActor::WaitForSuperstructureProfile() {
-  while (true) {
-    if (ShouldCancel()) return;
-    control_loops::superstructure_queue.status.FetchAnother();
-
-    if (control_loops::superstructure_queue.status->state < 12 ||
-        control_loops::superstructure_queue.status->state == 16) {
-      LOG(ERROR, "Superstructure no longer running, aborting action\n");
-      return;
-    }
-
-    if (SuperstructureProfileDone()) return;
-  }
+  WaitUntil([this]() {
+    superstructure_status_fetcher_.Fetch();
+    return SuperstructureProfileDone();
+  });
 }
 
 void AutonomousActor::WaitForSuperstructureLow() {
-  while (true) {
-    if (ShouldCancel()) return;
-    control_loops::superstructure_queue.status.FetchAnother();
+  WaitUntil([this]() {
+    superstructure_status_fetcher_.Fetch();
 
-    if (control_loops::superstructure_queue.status->state < 12 ||
-        control_loops::superstructure_queue.status->state == 16) {
-      LOG(ERROR, "Superstructure no longer running, aborting action\n");
-      return;
-    }
-    if (SuperstructureProfileDone()) return;
-    if (control_loops::superstructure_queue.status->shoulder.angle < 0.1) {
-      return;
-    }
-  }
+    return SuperstructureProfileDone() ||
+           superstructure_status_fetcher_->shoulder.angle < 0.1;
+  });
 }
+
 void AutonomousActor::BackLongShotLowBarTwoBall() {
   LOG(INFO, "Expanding for back long shot\n");
   MoveSuperstructure(0.00, M_PI / 2.0 - 0.2, -0.55, {7.0, 40.0}, {4.0, 6.0},

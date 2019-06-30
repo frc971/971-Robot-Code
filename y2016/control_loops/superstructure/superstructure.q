@@ -32,6 +32,7 @@ struct JointState {
   .frc971.EstimatorState estimator_state;
 };
 
+// Published on ".y2016.control_loops.superstructure_queue"
 queue_group SuperstructureQueue {
   implements aos.control_loops.ControlLoop;
 
@@ -142,5 +143,3 @@ queue_group SuperstructureQueue {
   queue Output output;
   queue Status status;
 };
-
-queue_group SuperstructureQueue superstructure_queue;

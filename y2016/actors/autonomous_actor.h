@@ -12,6 +12,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "y2016/actors/vision_align_actor.h"
 #include "y2016/control_loops/shooter/shooter.q.h"
+#include "y2016/control_loops/superstructure/superstructure.q.h"
 #include "y2016/queues/ball_detector.q.h"
 
 namespace y2016 {
@@ -94,6 +95,10 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
       shooter_goal_sender_;
   ::aos::Fetcher<::y2016::control_loops::shooter::ShooterQueue::Status>
       shooter_status_fetcher_;
+  ::aos::Fetcher<::y2016::control_loops::SuperstructureQueue::Status>
+      superstructure_status_fetcher_;
+  ::aos::Sender<::y2016::control_loops::SuperstructureQueue::Goal>
+      superstructure_goal_sender_;
 };
 
 }  // namespace actors

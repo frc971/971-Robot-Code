@@ -59,6 +59,10 @@ DataCollector::DataCollector(::aos::EventLoop *event_loop)
       autonomous_mode_fetcher_(
           event_loop->MakeFetcher<::frc971::autonomous::AutonomousMode>(
               ".frc971.autonomous.auto_mode")),
+      superstructure_status_fetcher_(
+          event_loop->MakeFetcher<
+              ::y2016::control_loops::SuperstructureQueue::Status>(
+              ".y2016.control_loops.superstructure_queue.status")),
       cur_raw_data_("no data"),
       sample_id_(0),
       measure_index_(0),
@@ -91,7 +95,7 @@ void DataCollector::RunIteration() {
   int auto_mode_indicator = -1;
 
   autonomous_mode_fetcher_.Fetch();
-  ::y2016::control_loops::superstructure_queue.status.FetchLatest();
+  superstructure_status_fetcher_.Fetch();
   ball_detector_fetcher_.Fetch();
   vision_status_fetcher_.Fetch();
 
@@ -122,11 +126,11 @@ void DataCollector::RunIteration() {
     }
   }
 
-  if (::y2016::control_loops::superstructure_queue.status.get()) {
-    if (!::y2016::control_loops::superstructure_queue.status->zeroed) {
+  if (superstructure_status_fetcher_.get()) {
+    if (!superstructure_status_fetcher_->zeroed) {
       superstructure_state_indicator = superstructure_indicator::kNotZeroed;
     }
-    if (::y2016::control_loops::superstructure_queue.status->estopped) {
+    if (superstructure_status_fetcher_->estopped) {
       superstructure_state_indicator = superstructure_indicator::kEstopped;
     }
   }
