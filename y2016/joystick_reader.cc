@@ -26,7 +26,6 @@
 #include "y2016/vision/vision.q.h"
 
 using ::frc971::control_loops::drivetrain_queue;
-using ::y2016::control_loops::shooter::shooter_queue;
 using ::y2016::control_loops::superstructure_queue;
 
 using ::aos::input::driver_station::ButtonLocation;
@@ -81,6 +80,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
         ball_detector_fetcher_(
             event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
                 ".y2016.sensors.ball_detector")),
+        shooter_goal_sender_(
+            event_loop->MakeSender<
+                ::y2016::control_loops::shooter::ShooterQueue::Goal>(
+                ".y2016.control_loops.shooter.shooter_queue.goal")),
         intake_goal_(0.0),
         shoulder_goal_(M_PI / 2.0),
         wrist_goal_(0.0),
@@ -366,13 +369,14 @@ class Reader : public ::aos::input::ActionJoystickInput {
         }
       }
 
-      if (!shooter_queue.goal.MakeWithBuilder()
-               .angular_velocity(shooter_velocity_)
-               .clamp_open(is_intaking_ || is_outtaking_)
-               .push_to_shooter(fire_)
-               .force_lights_on(force_lights_on)
-               .shooting_forwards(wrist_goal_ > 0)
-               .Send()) {
+      auto shooter_message = shooter_goal_sender_.MakeMessage();
+      shooter_message->angular_velocity = shooter_velocity_;
+      shooter_message->clamp_open = is_intaking_ || is_outtaking_;
+      shooter_message->push_to_shooter = fire_;
+      shooter_message->force_lights_on = force_lights_on;
+      shooter_message->shooting_forwards = wrist_goal_ > 0;
+
+      if (!shooter_message.Send()) {
         LOG(ERROR, "Sending shooter goal failed.\n");
       }
     }
@@ -381,6 +385,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
  private:
   ::aos::Fetcher<::y2016::vision::VisionStatus> vision_status_fetcher_;
   ::aos::Fetcher<::y2016::sensors::BallDetector> ball_detector_fetcher_;
+  ::aos::Sender<::y2016::control_loops::shooter::ShooterQueue::Goal>
+      shooter_goal_sender_;
 
   // Whatever these are set to are our default goals to send out after zeroing.
   double intake_goal_;

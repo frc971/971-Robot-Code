@@ -11,6 +11,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "y2016/actors/vision_align_actor.h"
+#include "y2016/control_loops/shooter/shooter.q.h"
 #include "y2016/queues/ball_detector.q.h"
 
 namespace y2016 {
@@ -89,6 +90,10 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   ::aos::Fetcher<::y2016::vision::VisionStatus> vision_status_fetcher_;
   ::aos::Fetcher<::y2016::sensors::BallDetector> ball_detector_fetcher_;
+  ::aos::Sender<::y2016::control_loops::shooter::ShooterQueue::Goal>
+      shooter_goal_sender_;
+  ::aos::Fetcher<::y2016::control_loops::shooter::ShooterQueue::Status>
+      shooter_status_fetcher_;
 };
 
 }  // namespace actors

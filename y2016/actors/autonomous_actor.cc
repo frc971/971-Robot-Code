@@ -55,7 +55,15 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
               ".y2016.vision.vision_status")),
       ball_detector_fetcher_(
           event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
-              ".y2016.sensors.ball_detector")) {}
+              ".y2016.sensors.ball_detector")),
+      shooter_goal_sender_(
+          event_loop
+              ->MakeSender<::y2016::control_loops::shooter::ShooterQueue::Goal>(
+                  ".y2016.control_loops.shooter.shooter_queue.goal")),
+      shooter_status_fetcher_(
+          event_loop->MakeFetcher<
+              ::y2016::control_loops::shooter::ShooterQueue::Status>(
+              ".y2016.control_loops.shooter.shooter_queue.status")) {}
 
 constexpr double kDoNotTurnCare = 2.0;
 
@@ -104,12 +112,12 @@ void AutonomousActor::MoveSuperstructure(
 void AutonomousActor::OpenShooter() {
   shooter_speed_ = 0.0;
 
-  if (!control_loops::shooter::shooter_queue.goal.MakeWithBuilder()
-           .angular_velocity(shooter_speed_)
-           .clamp_open(true)
-           .push_to_shooter(false)
-           .force_lights_on(false)
-           .Send()) {
+  auto shooter_goal = shooter_goal_sender_.MakeMessage();
+  shooter_goal->angular_velocity = shooter_speed_;
+  shooter_goal->clamp_open = true;
+  shooter_goal->push_to_shooter = false;
+  shooter_goal->force_lights_on = false;
+  if (!shooter_goal.Send()) {
     LOG(ERROR, "Sending shooter goal failed.\n");
   }
 }
@@ -117,12 +125,13 @@ void AutonomousActor::OpenShooter() {
 void AutonomousActor::CloseShooter() {
   shooter_speed_ = 0.0;
 
-  if (!control_loops::shooter::shooter_queue.goal.MakeWithBuilder()
-           .angular_velocity(shooter_speed_)
-           .clamp_open(false)
-           .push_to_shooter(false)
-           .force_lights_on(false)
-           .Send()) {
+  auto shooter_goal = shooter_goal_sender_.MakeMessage();
+  shooter_goal->angular_velocity = shooter_speed_;
+  shooter_goal->clamp_open = false;
+  shooter_goal->push_to_shooter = false;
+  shooter_goal->force_lights_on = false;
+
+  if (!shooter_goal.Send()) {
     LOG(ERROR, "Sending shooter goal failed.\n");
   }
 }
@@ -134,12 +143,13 @@ void AutonomousActor::SetShooterSpeed(double speed) {
   // hope of a human aligning the robot.
   bool force_lights_on = shooter_speed_ > 1.0;
 
-  if (!control_loops::shooter::shooter_queue.goal.MakeWithBuilder()
-           .angular_velocity(shooter_speed_)
-           .clamp_open(false)
-           .push_to_shooter(false)
-           .force_lights_on(force_lights_on)
-           .Send()) {
+  auto shooter_goal = shooter_goal_sender_.MakeMessage();
+  shooter_goal->angular_velocity = shooter_speed_;
+  shooter_goal->clamp_open = false;
+  shooter_goal->push_to_shooter = false;
+  shooter_goal->force_lights_on = force_lights_on;
+
+  if (!shooter_goal.Send()) {
     LOG(ERROR, "Sending shooter goal failed.\n");
   }
 }
@@ -147,21 +157,22 @@ void AutonomousActor::SetShooterSpeed(double speed) {
 void AutonomousActor::Shoot() {
   uint32_t initial_shots = 0;
 
-  control_loops::shooter::shooter_queue.status.FetchLatest();
-  if (control_loops::shooter::shooter_queue.status.get()) {
-    initial_shots = control_loops::shooter::shooter_queue.status->shots;
+  shooter_status_fetcher_.Fetch();
+  if (shooter_status_fetcher_.get()) {
+    initial_shots = shooter_status_fetcher_->shots;
   }
 
   // In auto, we want to have the lights on whenever possible since we have no
   // hope of a human aligning the robot.
   bool force_lights_on = shooter_speed_ > 1.0;
 
-  if (!control_loops::shooter::shooter_queue.goal.MakeWithBuilder()
-           .angular_velocity(shooter_speed_)
-           .clamp_open(false)
-           .push_to_shooter(true)
-           .force_lights_on(force_lights_on)
-           .Send()) {
+  auto shooter_goal = shooter_goal_sender_.MakeMessage();
+  shooter_goal->angular_velocity = shooter_speed_;
+  shooter_goal->clamp_open = false;
+  shooter_goal->push_to_shooter = true;
+  shooter_goal->force_lights_on = force_lights_on;
+
+  if (!shooter_goal.Send()) {
     LOG(ERROR, "Sending shooter goal failed.\n");
   }
 
@@ -172,9 +183,9 @@ void AutonomousActor::Shoot() {
     if (ShouldCancel()) return;
 
     // Wait for the shot count to change so we know when the shot is complete.
-    control_loops::shooter::shooter_queue.status.FetchLatest();
-    if (control_loops::shooter::shooter_queue.status.get()) {
-      if (initial_shots < control_loops::shooter::shooter_queue.status->shots) {
+    shooter_status_fetcher_.Fetch();
+    if (shooter_status_fetcher_.get()) {
+      if (initial_shots < shooter_status_fetcher_->shots) {
         return;
       }
     }
@@ -189,10 +200,10 @@ void AutonomousActor::WaitForShooterSpeed() {
   while (true) {
     if (ShouldCancel()) return;
 
-    control_loops::shooter::shooter_queue.status.FetchLatest();
-    if (control_loops::shooter::shooter_queue.status.get()) {
-      if (control_loops::shooter::shooter_queue.status->left.ready &&
-          control_loops::shooter::shooter_queue.status->right.ready) {
+    shooter_status_fetcher_.Fetch();
+    if (shooter_status_fetcher_.get()) {
+      if (shooter_status_fetcher_->left.ready &&
+          shooter_status_fetcher_->right.ready) {
         return;
       }
     }

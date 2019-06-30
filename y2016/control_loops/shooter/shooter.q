@@ -12,6 +12,7 @@ struct ShooterSideStatus {
   double angular_velocity;
 };
 
+// Published on ".y2016.control_loops.shooter.shooter_queue"
 queue_group ShooterQueue {
   implements aos.control_loops.ControlLoop;
 
@@ -78,5 +79,3 @@ queue_group ShooterQueue {
   queue Output output;
   queue Status status;
 };
-
-queue_group ShooterQueue shooter_queue;
