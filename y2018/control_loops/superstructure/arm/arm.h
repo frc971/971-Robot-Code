@@ -34,13 +34,13 @@ class Arm {
   static constexpr double kPathlessVMax() { return 5.0; }
   static constexpr double kGotoPathVMax() { return 6.0; }
 
-  void Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
+  void Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
+               const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
                bool close_claw, const control_loops::ArmPosition *position,
                const bool claw_beambreak_triggered,
                const bool box_back_beambreak_triggered,
-               const bool intake_clear_of_box,
-               bool suicide, bool trajectory_override,
-               double *proximal_output,
+               const bool intake_clear_of_box, bool suicide,
+               bool trajectory_override, double *proximal_output,
                double *distal_output, bool *release_arm_brake,
                bool *claw_closed, control_loops::ArmStatus *status);
 

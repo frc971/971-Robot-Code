@@ -45,6 +45,8 @@ void Superstructure::RunIteration(
     const control_loops::SuperstructureQueue::Position *position,
     control_loops::SuperstructureQueue::Output *output,
     control_loops::SuperstructureQueue::Status *status) {
+  const monotonic_clock::time_point monotonic_now =
+      event_loop()->monotonic_now();
   if (WasReset()) {
     LOG(ERROR, "WPILib reset, restarting\n");
     intake_left_.Reset();
@@ -105,6 +107,7 @@ void Superstructure::RunIteration(
     }
   }
   arm_.Iterate(
+      monotonic_now,
       unsafe_goal != nullptr ? &(unsafe_goal->arm_goal_position) : nullptr,
       unsafe_goal != nullptr ? unsafe_goal->grab_box : false, open_claw,
       unsafe_goal != nullptr ? unsafe_goal->close_claw : false,
@@ -148,7 +151,6 @@ void Superstructure::RunIteration(
       rotation_count_ = 0;
       stuck_count_ = 0;
     } else {
-      monotonic_clock::time_point monotonic_now = monotonic_clock::now();
       const bool stuck = position->box_distance < 0.20 &&
                    filtered_box_velocity_ > -0.05 &&
                    !position->box_back_beambreak_triggered;
@@ -263,7 +265,6 @@ void Superstructure::RunIteration(
   drivetrain_output_fetcher_.Fetch();
 
   vision_status_fetcher_.Fetch();
-  monotonic_clock::time_point monotonic_now = event_loop()->monotonic_now();
   if (status->estopped) {
     SendColors(0.5, 0.0, 0.0);
   } else if (!vision_status_fetcher_.get() ||

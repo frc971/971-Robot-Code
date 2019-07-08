@@ -44,7 +44,8 @@ Arm::Arm()
 
 void Arm::Reset() { state_ = State::UNINITIALIZED; }
 
-void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
+void Arm::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
+                  const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
                   bool close_claw, const control_loops::ArmPosition *position,
                   const bool claw_beambreak_triggered,
                   const bool box_back_beambreak_triggered,
@@ -261,7 +262,7 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
         if (claw_beambreak_triggered) {
           grab_state_ = GrabState::CLAW_CLOSE;
           // Snap time for the delay here.
-          claw_close_start_time_ = ::aos::monotonic_clock::now();
+          claw_close_start_time_ = monotonic_now;
         } else {
           grab_state_ = GrabState::SHORT_BOX;
         }
@@ -275,14 +276,14 @@ void Arm::Iterate(const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
         if (claw_beambreak_triggered) {
           grab_state_ = GrabState::CLAW_CLOSE;
           // Snap time for the delay here.
-          claw_close_start_time_ = ::aos::monotonic_clock::now();
+          claw_close_start_time_ = monotonic_now;
         } else {
           grab_state_ = GrabState::WAIT_FOR_BOX;
         }
       }
       break;
     case GrabState::CLAW_CLOSE:
-      if (::aos::monotonic_clock::now() >
+      if (monotonic_now >
           claw_close_start_time_ + ::std::chrono::milliseconds(300)) {
         grab_state_ = GrabState::OPEN_INTAKE;
       }
