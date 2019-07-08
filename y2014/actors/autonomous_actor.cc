@@ -249,7 +249,7 @@ bool AutonomousActor::RunAction(
   static const double kPickupDistance = 0.5;
   static const double kTurnAngle = 0.3;
 
-  monotonic_clock::time_point start_time = monotonic_clock::now();
+  const monotonic_clock::time_point start_time = monotonic_now();
   LOG(INFO, "Handling auto mode\n");
 
   AutoVersion auto_version;
@@ -285,7 +285,7 @@ bool AutonomousActor::RunAction(
 
   // Turn the claw on, keep it straight up until the ball has been grabbed.
   LOG(INFO, "Claw going up at %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   PositionClawVertically(12.0, 4.0);
   SetShotPower(115.0);
 
@@ -293,7 +293,7 @@ bool AutonomousActor::RunAction(
   this_thread::sleep_for(chrono::milliseconds(250));
   if (ShouldCancel()) return true;
   LOG(INFO, "Readying claw for shot at %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   if (ShouldCancel()) return true;
   // Drive to the goal.
@@ -331,14 +331,14 @@ bool AutonomousActor::RunAction(
       hot_goal_decoder.Update();
       if (ShouldCancel()) return true;
     } while (!hot_goal_decoder.left_triggered() &&
-             (monotonic_clock::now() - start_time) < chrono::seconds(9));
+             (monotonic_now() - start_time) < chrono::seconds(9));
   } else if (auto_version == AutoVersion::kStraight) {
     this_thread::sleep_for(chrono::milliseconds(400));
   }
 
   // Shoot.
   LOG(INFO, "Shooting at %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   Shoot();
   this_thread::sleep_for(chrono::milliseconds(50));
 
@@ -350,7 +350,7 @@ bool AutonomousActor::RunAction(
     if (ShouldCancel()) return true;
   } else if (auto_version == AutoVersion::kSingleHot) {
     LOG(INFO, "auto done at %f\n",
-        ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
     PositionClawVertically(0.0, 0.0);
     return true;
   }
@@ -359,21 +359,21 @@ bool AutonomousActor::RunAction(
     if (ShouldCancel()) return true;
     // Intake the new ball.
     LOG(INFO, "Claw ready for intake at %f\n",
-        ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
     PositionClawBackIntake();
     StartDrive(kShootDistance + kPickupDistance, 0.0, drive_params, kFastTurn);
     LOG(INFO, "Waiting until drivetrain is finished\n");
     WaitForDriveProfileDone();
     if (ShouldCancel()) return true;
     LOG(INFO, "Wait for the claw at %f\n",
-        ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
     if (!WaitUntilClawDone()) return true;
   }
 
   // Drive back.
   {
     LOG(INFO, "Driving back at %f\n",
-        ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
     StartDrive(-(kShootDistance + kPickupDistance), 0.0, drive_params,
                kFastTurn);
     this_thread::sleep_for(chrono::milliseconds(300));
@@ -411,7 +411,7 @@ bool AutonomousActor::RunAction(
   }
 
   LOG(INFO, "Shooting at %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   // Shoot
   Shoot();
   if (ShouldCancel()) return true;

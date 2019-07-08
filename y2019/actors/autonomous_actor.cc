@@ -130,7 +130,7 @@ const ElevatorWristPosition kPanelCargoBackwardPos{0.0, -M_PI / 2.0};
 
 bool AutonomousActor::RunAction(
     const ::frc971::autonomous::AutonomousActionParams &params) {
-  const monotonic_clock::time_point start_time = monotonic_clock::now();
+  const monotonic_clock::time_point start_time = monotonic_now();
   const bool is_left = params.mode == 0;
 
   {
@@ -258,7 +258,7 @@ bool AutonomousActor::RunAction(
     set_suction_goal(false, 1);
     SendSuperstructureGoal();
     LOG(INFO, "Dropping disc 1 %f\n",
-        ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
     if (!WaitForDriveYCloseToZero(1.13)) return true;
     if (!WaitForMilliseconds(::std::chrono::milliseconds(300))) return true;
@@ -284,7 +284,7 @@ bool AutonomousActor::RunAction(
     // As soon as we pick up Panel 2 go score on the rocket
     if (!WaitForGamePiece()) return true;
     LOG(INFO, "Got gamepiece %f\n",
-        ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
     LineFollowAtVelocity(-4.0);
     SplineHandle spline3 =
         PlanSpline(AutonomousSplines::HPToThirdCargoShipBay(is_left),
@@ -301,18 +301,18 @@ bool AutonomousActor::RunAction(
     // Line follow in to the second disc.
     LineFollowAtVelocity(-0.7, 3);
     LOG(INFO, "Drawing in disc 2 %f\n",
-        ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
     if (!WaitForDriveYCloseToZero(1.2)) return true;
 
     set_suction_goal(false, 1);
     SendSuperstructureGoal();
     LOG(INFO, "Dropping disc 2 %f\n",
-        ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
     if (!WaitForDriveYCloseToZero(1.13)) return true;
     if (!WaitForMilliseconds(::std::chrono::milliseconds(200))) return true;
     LOG(INFO, "Backing up %f\n",
-        ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
     LineFollowAtVelocity(0.9, 3);
     if (!WaitForMilliseconds(::std::chrono::milliseconds(400))) return true;
   } else {
@@ -354,7 +354,7 @@ bool AutonomousActor::RunAction(
   }
 
   LOG(INFO, "Done %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   return true;
 }

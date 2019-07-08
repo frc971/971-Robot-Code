@@ -124,10 +124,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 
   bool WaitForMilliseconds(std::chrono::milliseconds wait) {
-    ::aos::monotonic_clock::time_point end_time =
-        ::aos::monotonic_clock::now() + wait;
+    ::aos::monotonic_clock::time_point end_time = monotonic_now() + wait;
 
-    while (::aos::monotonic_clock::now() < end_time) {
+    while (monotonic_now() < end_time) {
       if (ShouldCancel()) {
         return false;
       }

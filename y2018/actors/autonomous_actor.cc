@@ -59,7 +59,7 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
 
 bool AutonomousActor::RunAction(
     const ::frc971::autonomous::AutonomousActionParams &params) {
-  monotonic_clock::time_point start_time = monotonic_clock::now();
+  const monotonic_clock::time_point start_time = monotonic_now();
   LOG(INFO, "Starting autonomous action with mode %" PRId32 "\n", params.mode);
   Reset();
 
@@ -112,7 +112,7 @@ bool AutonomousActor::RunAction(
   */
 
   LOG(INFO, "Done %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
                                       event_loop()->monotonic_now(),
@@ -170,7 +170,7 @@ bool AutonomousActor::FarSwitch(monotonic_clock::time_point start_time,
 
     if (!WaitForArmTrajectoryClose(0.001)) return true;
     LOG(INFO, "Arm close at %f\n",
-        ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
     ::std::this_thread::sleep_for(chrono::milliseconds(1000));
 
@@ -257,7 +257,7 @@ bool AutonomousActor::FarScale(monotonic_clock::time_point start_time) {
   if (!WaitForDriveProfileNear(kFullDriveLength - (kSecondTurnDistance)))
     return true;
   LOG(INFO, "Final turn at %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   StartDrive(0.0, M_PI / 2.0, kFarScaleFinalTurnDrive, kFarScaleSweepingTurn);
   if (!WaitForDriveProfileNear(0.15)) return true;
@@ -265,13 +265,13 @@ bool AutonomousActor::FarScale(monotonic_clock::time_point start_time) {
   StartDrive(0.0, 0.3, kFarScaleFinalTurnDrive, kFarScaleSweepingTurn);
 
   LOG(INFO, "Dropping at %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   set_open_claw(true);
   SendSuperstructureGoal();
 
   ::std::this_thread::sleep_for(chrono::milliseconds(1000));
   LOG(INFO, "Backing up at %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   StartDrive(1.5, -0.55, kFarScaleFinalTurnDrive, kFarScaleSweepingTurn);
 
@@ -313,7 +313,7 @@ bool AutonomousActor::FarScale(monotonic_clock::time_point start_time) {
   ::std::this_thread::sleep_for(chrono::milliseconds(500));
 
   LOG(INFO, "Dropping second box at %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   set_open_claw(true);
   SendSuperstructureGoal();
 
@@ -346,7 +346,7 @@ bool AutonomousActor::FarReadyScale(monotonic_clock::time_point start_time) {
   set_arm_goal_position(arm::UpIndex());
   SendSuperstructureGoal();
   LOG(INFO, "Lifting arm at %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   if (!WaitForTurnProfileDone()) return true;
 
   StartDrive(0.0, 0.0, kDrive, kTurn);
@@ -379,7 +379,7 @@ bool AutonomousActor::CloseSwitch(monotonic_clock::time_point start_time,
   if (!WaitForDriveNear(0.2, 0.2)) return true;
   set_max_drivetrain_voltage(6.0);
   LOG(INFO, "Lowered drivetrain voltage %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   ::std::this_thread::sleep_for(chrono::milliseconds(300));
 
   set_open_claw(true);
@@ -431,7 +431,7 @@ bool AutonomousActor::ThreeCubeAuto(monotonic_clock::time_point start_time) {
   SendSuperstructureGoal();
   set_intake_angle(-0.60);
   LOG(INFO, "Dropped first box %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   ::std::this_thread::sleep_for(chrono::milliseconds(700));
 
@@ -439,7 +439,7 @@ bool AutonomousActor::ThreeCubeAuto(monotonic_clock::time_point start_time) {
   SendSuperstructureGoal();
 
   LOG(INFO, "Starting second box drive %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   constexpr double kSecondBoxSwerveAngle = 0.35;
   constexpr double kSecondBoxDrive = 1.38;
   StartDrive(kSecondBoxDrive, 0.0, kDrive, kFastTurn);
@@ -466,7 +466,7 @@ bool AutonomousActor::ThreeCubeAuto(monotonic_clock::time_point start_time) {
   SendSuperstructureGoal();
 
   LOG(INFO, "Grabbing second box %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   ::std::this_thread::sleep_for(chrono::milliseconds(200));
   StartDrive(-0.04, 0.0, kThirdBoxSlowBackup, kThirdBoxSlowTurn);
 
@@ -474,7 +474,7 @@ bool AutonomousActor::ThreeCubeAuto(monotonic_clock::time_point start_time) {
   set_max_drivetrain_voltage(12.0);
 
   LOG(INFO, "Got second box %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   ::std::this_thread::sleep_for(chrono::milliseconds(500));
 
   set_grab_box(false);
@@ -484,7 +484,7 @@ bool AutonomousActor::ThreeCubeAuto(monotonic_clock::time_point start_time) {
   set_disable_box_correct(false);
   SendSuperstructureGoal();
   LOG(INFO, "Driving to place second box %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   StartDrive(-kSecondBoxDrive + 0.16, kSecondBoxSwerveAngle, kDrive, kFastTurn);
   if (!WaitForDriveNear(0.4, M_PI / 2.0)) return true;
@@ -494,7 +494,7 @@ bool AutonomousActor::ThreeCubeAuto(monotonic_clock::time_point start_time) {
              kFastTurn);
 
   LOG(INFO, "Starting throw %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   if (!WaitForDriveNear(0.4, M_PI / 2.0)) return true;
   if (!WaitForArmTrajectoryClose(0.25)) return true;
   SendSuperstructureGoal();
@@ -506,7 +506,7 @@ bool AutonomousActor::ThreeCubeAuto(monotonic_clock::time_point start_time) {
   set_open_claw(true);
   set_intake_angle(-M_PI / 4.0);
   LOG(INFO, "Releasing second box %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   SendSuperstructureGoal();
 
   ::std::this_thread::sleep_for(chrono::milliseconds(700));
@@ -514,7 +514,7 @@ bool AutonomousActor::ThreeCubeAuto(monotonic_clock::time_point start_time) {
   SendSuperstructureGoal();
 
   LOG(INFO, "Driving to third box %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   StartDrive(kThirdCubeDrive, kSecondBoxEndExtraAngle, kThirdBoxDrive,
              kFastTurn);
   if (!WaitForDriveNear(kThirdCubeDrive - 0.1, M_PI / 4.0)) return true;
@@ -535,15 +535,15 @@ bool AutonomousActor::ThreeCubeAuto(monotonic_clock::time_point start_time) {
   if (!WaitForDriveProfileDone()) return true;
 
   LOG(INFO, "Waiting for third box %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   if (!WaitForBoxGrabed()) return true;
   LOG(INFO, "Third box grabbed %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   const bool too_late =
-      monotonic_clock::now() > start_time + chrono::milliseconds(12500);
+      monotonic_now() > start_time + chrono::milliseconds(12500);
   if (too_late) {
     LOG(INFO, "Third box too long, going up. %f\n",
-        ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
     set_grab_box(false);
     set_arm_goal_position(arm::UpIndex());
     set_roller_voltage(0.0);
@@ -573,20 +573,20 @@ bool AutonomousActor::ThreeCubeAuto(monotonic_clock::time_point start_time) {
     SendSuperstructureGoal();
 
     LOG(INFO, "Final open %f\n",
-        ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   }
 
   if (!WaitForDriveProfileDone()) return true;
   if (!WaitForTurnProfileDone()) return true;
 
   ::std::this_thread::sleep_for(chrono::milliseconds(14750) -
-                                (monotonic_clock::now() - start_time));
+                                (monotonic_now() - start_time));
 
   set_arm_goal_position(arm::UpIndex());
   SendSuperstructureGoal();
 
   ::std::this_thread::sleep_for(chrono::milliseconds(15000) -
-                                (monotonic_clock::now() - start_time));
+                                (monotonic_now() - start_time));
 
   set_close_claw(true);
   SendSuperstructureGoal();

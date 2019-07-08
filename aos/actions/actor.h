@@ -88,6 +88,10 @@ class ActorBase {
 
   ::aos::EventLoop *event_loop() { return event_loop_; }
 
+  ::aos::monotonic_clock::time_point monotonic_now() {
+    return event_loop_->monotonic_now();
+  }
+
  private:
   // Checks if an action was initially running when the thread started.
   bool CheckInitialRunning();

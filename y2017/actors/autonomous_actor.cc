@@ -48,7 +48,7 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
 
 bool AutonomousActor::RunAction(
     const ::frc971::autonomous::AutonomousActionParams &params) {
-  monotonic_clock::time_point start_time = monotonic_clock::now();
+  const monotonic_clock::time_point start_time = monotonic_now();
   LOG(INFO, "Starting autonomous action with mode %" PRId32 "\n", params.mode);
   Reset();
 
@@ -106,7 +106,7 @@ bool AutonomousActor::RunAction(
       SendSuperstructureGoal();
 
       this_thread::sleep_for(start_time + chrono::seconds(15) -
-                             monotonic_clock::now());
+                             monotonic_now());
       if (ShouldCancel()) return true;
 
       set_shooter_velocity(0.0);
@@ -180,7 +180,7 @@ bool AutonomousActor::RunAction(
 
       SendSuperstructureGoal();
       LOG(INFO, "Starting drive back %f\n",
-          ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
       StartDrive(-2.75, kDriveDirection * 1.24, kSlowDrive,
                  kFirstGearStartTurn);
@@ -203,19 +203,19 @@ bool AutonomousActor::RunAction(
       StartDrive(0.0, -kDriveDirection * 0.15, kSlowDrive, kSmashTurn);
 
       LOG(INFO, "Starting second shot %f\n",
-          ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
       set_indexer_angular_velocity(-2.15 * M_PI);
       SendSuperstructureGoal();
       if (!WaitForDriveNear(0.2, 0.1)) return true;
 
       this_thread::sleep_for(start_time + chrono::seconds(11) -
-                             monotonic_clock::now());
+                             monotonic_now());
       if (ShouldCancel()) return true;
       set_intake_max_velocity(0.05);
       set_intake_goal(0.08);
 
       this_thread::sleep_for(start_time + chrono::seconds(15) -
-                             monotonic_clock::now());
+                             monotonic_now());
       if (ShouldCancel()) return true;
 
       set_intake_max_velocity(0.50);
@@ -280,10 +280,9 @@ bool AutonomousActor::RunAction(
       SendSuperstructureGoal();
 
       LOG(INFO, "Started shooting at %f\n",
-          ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
-      this_thread::sleep_for(start_time + chrono::seconds(9) -
-                             monotonic_clock::now());
+      this_thread::sleep_for(start_time + chrono::seconds(9) - monotonic_now());
       if (ShouldCancel()) return true;
 
       set_intake_max_velocity(0.05);
@@ -291,7 +290,7 @@ bool AutonomousActor::RunAction(
       SendSuperstructureGoal();
 
       this_thread::sleep_for(start_time + chrono::seconds(15) -
-                             monotonic_clock::now());
+                             monotonic_now());
       if (ShouldCancel()) return true;
 
       set_shooter_velocity(0.0);
@@ -302,7 +301,7 @@ bool AutonomousActor::RunAction(
   }
 
   LOG(INFO, "Done %f\n",
-      ::aos::time::DurationInSeconds(monotonic_clock::now() - start_time));
+      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
                                       event_loop()->monotonic_now(),
