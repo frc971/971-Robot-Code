@@ -55,6 +55,8 @@ void Superstructure::RunIteration(
     const control_loops::SuperstructureQueue::Position *position,
     control_loops::SuperstructureQueue::Output *output,
     control_loops::SuperstructureQueue::Status *status) {
+  const ::aos::monotonic_clock::time_point monotonic_now =
+      event_loop()->monotonic_now();
   if (WasReset()) {
     LOG(ERROR, "WPILib reset, restarting\n");
     hood_.Reset();
@@ -82,7 +84,7 @@ void Superstructure::RunIteration(
       distance_average_.Reset();
     }
 
-    distance_average_.Tick(::aos::monotonic_clock::now(), vision_status);
+    distance_average_.Tick(monotonic_now, vision_status);
     status->vision_distance = distance_average_.Get();
 
     // If we are moving too fast, disable shooting and clear the accumulator.
@@ -124,9 +126,10 @@ void Superstructure::RunIteration(
     }
   }
 
-  hood_.Iterate(
-      unsafe_goal != nullptr ? &hood_goal : nullptr, &(position->hood),
-      output != nullptr ? &(output->voltage_hood) : nullptr, &(status->hood));
+  hood_.Iterate(monotonic_now, unsafe_goal != nullptr ? &hood_goal : nullptr,
+                &(position->hood),
+                output != nullptr ? &(output->voltage_hood) : nullptr,
+                &(status->hood));
   shooter_.Iterate(unsafe_goal != nullptr ? &shooter_goal : nullptr,
                    &(position->theta_shooter), position->sent_time,
                    output != nullptr ? &(output->voltage_shooter) : nullptr,
@@ -179,7 +182,8 @@ void Superstructure::RunIteration(
                   output != nullptr ? &(output->voltage_intake) : nullptr,
                   &(status->intake));
 
-  column_.Iterate(unsafe_goal != nullptr ? &indexer_goal : nullptr,
+  column_.Iterate(monotonic_now,
+                  unsafe_goal != nullptr ? &indexer_goal : nullptr,
                   unsafe_goal != nullptr ? &(unsafe_goal->turret) : nullptr,
                   &(position->column), vision_status,
                   output != nullptr ? &(output->voltage_indexer) : nullptr,

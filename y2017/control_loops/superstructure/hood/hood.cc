@@ -61,7 +61,8 @@ void Hood::Reset() {
   last_position_ = 0;
 }
 
-void Hood::Iterate(const control_loops::HoodGoal *unsafe_goal,
+void Hood::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
+                   const control_loops::HoodGoal *unsafe_goal,
                    const ::frc971::IndexPosition *position, double *output,
                    ::frc971::control_loops::IndexProfiledJointStatus *status) {
   bool disable = output == nullptr;
@@ -177,11 +178,11 @@ void Hood::Iterate(const control_loops::HoodGoal *unsafe_goal,
   if (::std::abs(profiled_subsystem_.position() - last_position_) >
       kErrorOnPositionTillNotMoving) {
     // Currently moving. Update time of last move.
-    last_move_time_ = ::aos::monotonic_clock::now();
+    last_move_time_ = monotonic_now;
     // Save last position.
     last_position_ = profiled_subsystem_.position();
   }
-  if (::aos::monotonic_clock::now() > kTimeTillNotMoving + last_move_time_) {
+  if (monotonic_now > kTimeTillNotMoving + last_move_time_) {
     error_voltage = kNotMovingVoltage;
   }
 

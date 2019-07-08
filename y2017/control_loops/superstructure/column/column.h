@@ -179,7 +179,8 @@ class Column {
   static constexpr double kTurretMin = -0.1;
   static constexpr double kTurretMax = M_PI / 2.0 + 0.1;
 
-  void Iterate(const control_loops::IndexerGoal *unsafe_indexer_goal,
+  void Iterate(::aos::monotonic_clock::time_point monotonic_now,
+               const control_loops::IndexerGoal *unsafe_indexer_goal,
                const control_loops::TurretGoal *unsafe_turret_goal,
                const ColumnPosition *position,
                const vision::VisionStatus *vision_status,

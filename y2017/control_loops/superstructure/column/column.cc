@@ -384,7 +384,8 @@ void Column::Reset() {
   freeze_ = false;
 }
 
-void Column::Iterate(const control_loops::IndexerGoal *unsafe_indexer_goal,
+void Column::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
+                     const control_loops::IndexerGoal *unsafe_indexer_goal,
                      const control_loops::TurretGoal *unsafe_turret_goal,
                      const ColumnPosition *position,
                      const vision::VisionStatus *vision_status,
@@ -395,8 +396,8 @@ void Column::Iterate(const control_loops::IndexerGoal *unsafe_indexer_goal,
   bool disable = turret_output == nullptr || indexer_output == nullptr;
   profiled_subsystem_.Correct(*position);
 
-  vision_time_adjuster_.Tick(::aos::monotonic_clock::now(),
-                             profiled_subsystem_.X_hat(2, 0), vision_status);
+  vision_time_adjuster_.Tick(monotonic_now, profiled_subsystem_.X_hat(2, 0),
+                             vision_status);
 
   switch (state_) {
     case State::UNINITIALIZED:
@@ -560,8 +561,6 @@ void Column::Iterate(const control_loops::IndexerGoal *unsafe_indexer_goal,
   // If a "stuck" event is detected, reverse.  Stay reversed until either
   // unstuck, or 0.5 seconds have elapsed.
   // Then, start going forwards.  Don't detect stuck for 0.5 seconds.
-
-  monotonic_clock::time_point monotonic_now = monotonic_clock::now();
   switch (indexer_state_) {
     case IndexerState::RUNNING:
       // The velocity goal is already set above in this case, so leave it

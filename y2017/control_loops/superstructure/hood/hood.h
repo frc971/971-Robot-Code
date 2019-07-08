@@ -45,7 +45,8 @@ class Hood {
       ::std::chrono::milliseconds(15);
   static constexpr double kNotMovingVoltage = 2.0;
 
-  void Iterate(const control_loops::HoodGoal *unsafe_goal,
+  void Iterate(::aos::monotonic_clock::time_point monotonic_now,
+               const control_loops::HoodGoal *unsafe_goal,
                const ::frc971::IndexPosition *position, double *output,
                ::frc971::control_loops::IndexProfiledJointStatus *status);
 
