@@ -83,8 +83,9 @@ void ControlLoop<T>::IteratePosition(const PositionType &position) {
     }
   }
 
-  const ::aos::monotonic_clock::time_point now = ::aos::monotonic_clock::now();
-  const bool motors_off = now >= kPwmDisableTime + last_pwm_sent_;
+  const ::aos::monotonic_clock::time_point monotonic_now =
+      event_loop_->monotonic_now();
+  const bool motors_off = monotonic_now >= kPwmDisableTime + last_pwm_sent_;
   joystick_state_fetcher_.Fetch();
   if (motors_off) {
     if (joystick_state_fetcher_.get() && joystick_state_fetcher_->enabled) {
