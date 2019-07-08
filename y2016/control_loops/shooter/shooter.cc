@@ -77,6 +77,8 @@ void Shooter::RunIteration(const ShooterQueue::Goal *goal,
                            const ShooterQueue::Position *position,
                            ShooterQueue::Output *output,
                            ShooterQueue::Status *status) {
+  const ::aos::monotonic_clock::time_point monotonic_now =
+      event_loop()->monotonic_now();
   if (goal) {
     // Update position/goal for our two shooter sides.
     left_.set_goal(goal->angular_velocity);
@@ -128,7 +130,7 @@ void Shooter::RunIteration(const ShooterQueue::Goal *goal,
               shoot = true;
             }
           }
-          last_pre_shot_timeout_ = monotonic_clock::now() + chrono::seconds(1);
+          last_pre_shot_timeout_ = monotonic_now + chrono::seconds(1);
           break;
         case ShooterLatchState::WAITING_FOR_SPINDOWN:
           shoot = true;
@@ -137,7 +139,7 @@ void Shooter::RunIteration(const ShooterQueue::Goal *goal,
             state_ = ShooterLatchState::WAITING_FOR_SPINUP;
           }
           if (::std::abs(goal->angular_velocity) < 10 ||
-              last_pre_shot_timeout_ < monotonic_clock::now()) {
+              last_pre_shot_timeout_ < monotonic_now) {
             state_ = ShooterLatchState::INCREMENT_SHOT_COUNT;
           }
           break;
@@ -148,7 +150,7 @@ void Shooter::RunIteration(const ShooterQueue::Goal *goal,
             state_ = ShooterLatchState::INCREMENT_SHOT_COUNT;
           }
           if (::std::abs(goal->angular_velocity) < 10 ||
-              last_pre_shot_timeout_ < monotonic_clock::now()) {
+              last_pre_shot_timeout_ < monotonic_now) {
             state_ = ShooterLatchState::INCREMENT_SHOT_COUNT;
           }
           break;
