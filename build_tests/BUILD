@@ -1,6 +1,12 @@
 load("//tools/build_rules:ruby.bzl", "ruby_binary")
 load("//aos/build:queues.bzl", "queue_library")
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
+load("//tools/cpp/emscripten:defs.bzl", "emcc_binary")
+
+emcc_binary(
+    name = "helloworld.html",
+    srcs = ["helloworld.cc"],
+)
 
 cc_test(
     name = "gflags_build_test",

@@ -416,6 +416,38 @@ http_archive(
     url = "https://github.com/bazelbuild/rules_typescript/archive/0.21.0.zip",
 )
 
+emscripten_version = "1.38.31"
+http_archive(
+    name = "emscripten_toolchain",
+    urls = ["https://github.com/emscripten-core/emscripten/archive/" + emscripten_version + ".tar.gz"],
+    strip_prefix = "emscripten-" + emscripten_version,
+    # TODO(james): Once a functioning release contains this patch, convert
+    # to that. See https://github.com/emscripten-core/emscripten/pull/9048
+    patches = ["@//debian:emscripten_toolchain.patch"],
+    sha256 = "c87e42cb6a104094e7daf2b7e61ac835f83674ac0168f533455838a1129cc764",
+    build_file_content = """
+filegroup(
+    name = 'all',
+    visibility = ['//visibility:public'],
+    srcs = glob(['**']),
+)
+""",
+)
+
+new_http_archive(
+    name = "emscripten_clang",
+    sha256 = "a0c2f2c5a897577f40af0fdf68dcf3cf65557ff20c081df26678c066a4fed4b1",
+    strip_prefix = "emscripten-llvm-e" + emscripten_version,
+    url = "https://s3.amazonaws.com/mozilla-games/emscripten/packages/llvm/tag/linux_64bit/emscripten-llvm-e" + emscripten_version + ".tar.gz",
+    build_file_content = """
+filegroup(
+    name = 'all',
+    visibility = ['//visibility:public'],
+    srcs = glob(['**']),
+)
+""",
+)
+
 # Fetch our Bazel dependencies that aren't distributed on npm
 load("@build_bazel_rules_typescript//:package.bzl", "rules_typescript_dependencies")
 
