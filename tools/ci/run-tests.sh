@@ -3,7 +3,7 @@ set -e
 set -x
 
 readonly TARGETS='//... @com_github_google_glog//... @com_google_ceres_solver//...'
-readonly M4F_TARGETS='//motors/... //y2019/jevois/...'
+readonly M4F_TARGETS='//...'
 readonly COMMON='-c opt --stamp=no --curses=no --color=no --symlink_prefix=/'
 
 # Put everything in different output bases so we can get 4 bazel servers

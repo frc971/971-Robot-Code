@@ -7,6 +7,7 @@ all_cpus = [
     "amd64",
     "roborio",
     "armhf",
+    "cortex-m",
 ]
 
 """All of the CPUs we know about."""
@@ -15,9 +16,9 @@ all_cpus = [
 
 Args:
   values: A mapping from architecture names (as strings) to other things.
-          Currently amd64, roborio, and armhf are recognized.
+          Currently amd64, roborio, armhf, and cortex are recognized.
           'else' is also allowed as a default.
-          'arm' is allowed instead of roborio and armhf.
+          'arm' is allowed instead of roborio, armhf, and cortex.
 Returns a select which evaluates to the correct element of values.
 """
 
@@ -29,6 +30,7 @@ def cpu_select(values):
         new_values[cpu] = values[cpu]
     new_values['armhf'] = values['arm']
     new_values['roborio'] = values['arm']
+    new_values['cortex-m'] = values['arm']
     values = new_values
   for cpu in all_cpus:
     if cpu not in values:
@@ -43,6 +45,8 @@ def cpu_select(values):
     '@//tools:cpu_k8': values['amd64'],
     '@//tools:cpu_roborio': values['roborio'],
     '@//tools:cpu_armhf': values['armhf'],
+    '@//tools:cpu_cortex_m4f': values['cortex-m'],
+    '@//tools:cpu_cortex_m4f_k22': values['cortex-m'],
   })
 
 """A select wrapper for address space sizes.
@@ -61,6 +65,8 @@ def address_size_select(values):
     '@//tools:cpu_k8': values['64'],
     '@//tools:cpu_roborio': values['32'],
     '@//tools:cpu_armhf': values['32'],
+    '@//tools:cpu_cortex_m4f': values['32'],
+    '@//tools:cpu_cortex_m4f_k22': values['32'],
   })
 
 """A select wrapper for compilers.
