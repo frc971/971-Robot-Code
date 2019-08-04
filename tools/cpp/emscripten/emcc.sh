@@ -25,15 +25,17 @@ export EMCC_TEMP_DIR="$(pwd -P)/tmp"
 
 # Prepare the cache content so emscripten doesn't try to rebuild it all the time
 cache_source=tools/cpp/emscripten/emscripten_cache
-if [ -d toolchain/emscripten_cache ]; then
-  cache_source=toolchain/emscripten_cache
+# TODO(james): How do I avoid hardcoding this path? This is needed to make
+# gencache.sh work properly and to have it put the files in the correct spot.
+if [ -d bazel-out/host/bin/tools/cpp/emscripten/emscripten_cache ]; then
+  cache_source=bazel-out/host/bin/tools/cpp/emscripten/emscripten_cache
 elif [ -d external/rules_emscripten/toolchain/emscripten_cache ]; then
   cache_source=external/rules_emscripten/toolchain/emscripten_cache
 fi
 (
   cd tmp/emscripten_cache;
   for n in "../../$cache_source"/*;do
-    ln -s "$n"
+    ln -f -s "$n"
   done
 )
 

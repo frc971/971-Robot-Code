@@ -30,4 +30,63 @@
 
    if should_exit:
      sys.exit(0)
+--- tools/system_libs.py
++++ tools/system_libs.py
+@@ -89,10 +89,20 @@ def calculate(temp_files, in_temp, stdout_, stderr_, forced=[]):
+       if os.name != 'nt' and '\r\n' in content:
+         raise Exception('Windows newlines \\r\\n detected in symbols file "' + path + '"! This could happen for example when copying Emscripten checkout from Windows to Linux or macOS. Please use Unix line endings on checkouts of Emscripten on Linux and macOS!')
 
+       return shared.Building.parse_symbols(content).defs
+
+-  default_opts = ['-Werror']
++  default_opts = ['-Werror',
++                  '-isystem',
++                  shared.path_from_root('system', 'include'),
++                  '-isystem',
++                  shared.path_from_root('system', 'include', 'libcxx'),
++                  '-isystem',
++                  shared.path_from_root('system', 'lib', 'libc', 'musl', 'arch', 'emscripten'),
++                  '-isystem',
++                  shared.path_from_root('system', 'include', 'compat'),
++                  '-isystem',
++                  shared.path_from_root('system', 'include', 'libc')]
+
+   # XXX We also need to add libc symbols that use malloc, for example strdup. It's very rare to use just them and not
+   #     a normal malloc symbol (like free, after calling strdup), so we haven't hit this yet, but it is possible.
+   libc_symbols = read_symbols(shared.path_from_root('system', 'lib', 'libc.symbols'))
+@@ -426,5 +436,5 @@ def calculate(temp_files, in_temp, stdout_, stderr_, forced=[]):
+   def create_al(libname): # libname is ignored, this is just one .o file
+     o = in_temp('al.o')
+-    check_call([shared.PYTHON, shared.EMCC, shared.path_from_root('system', 'lib', 'al.c'), '-o', o, '-Os'] + get_cflags())
++    check_call([shared.PYTHON, shared.EMCC, shared.path_from_root('system', 'lib', 'al.c'), '-o', o, '-Os'] + get_cflags() + default_opts)
+     return o
+
+@@ -447,5 +455,5 @@ def create_compiler_rt(libname):
+     for src in files:
+       o = in_temp(os.path.basename(src) + '.o')
+-      commands.append([shared.PYTHON, shared.EMCC, shared.path_from_root('system', 'lib', src), '-O2', '-o', o] + get_cflags())
++      commands.append([shared.PYTHON, shared.EMCC, shared.path_from_root('system', 'lib', src), '-O2', '-o', o] + get_cflags() + default_opts)
+       o_s.append(o)
+     run_commands(commands)
+@@ -500,5 +506,5 @@ def calculate(temp_files, in_temp, stdout_, stderr_, forced=[]):
+   def create_malloc(out_name):
+     o = in_temp(out_name)
+-    cflags = ['-O2', '-fno-builtin']
++    cflags = default_opts + ['-O2', '-fno-builtin']
+     if shared.Settings.USE_PTHREADS:
+       cflags += ['-s', 'USE_PTHREADS=1']
+--- tools/gen_struct_info.py
++++ tools/gen_struct_info.py
+@@ -401,4 +401,12 @@ def inspect_code(headers, cpp_opts, structs, defines):
+   # Compile the program.
+   show('Compiling generated code...')
++  cpp_opts += ['-isystem',
++               shared.path_from_root('system', 'include'),
++               '-isystem',
++               shared.path_from_root('system', 'include', 'libcxx'),
++               '-isystem',
++               shared.path_from_root('system', 'lib', 'libc', 'musl', 'arch', 'emscripten'),
++               '-isystem',
++               shared.path_from_root('system', 'include', 'libc')]
+   # -Oz optimizes enough to avoid warnings on code size/num locals
+   cmd = [shared.PYTHON, shared.EMCC] + cpp_opts + ['-o', js_file[1], src_file[1], '-s', 'BOOTSTRAPPING_STRUCT_INFO=1', '-s', 'WARN_ON_UNDEFINED_SYMBOLS=0', '-O0', '--js-opts', '0', '--memory-init-file', '0', '-s', 'SINGLE_FILE=1', '-Wno-format']

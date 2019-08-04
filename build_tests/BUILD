@@ -8,6 +8,22 @@ emcc_binary(
     srcs = ["helloworld.cc"],
 )
 
+emcc_binary(
+    name = "webgl.html",
+    srcs = ["webgl_draw_triangle.c"],
+)
+
+emcc_binary(
+    name = "webgl2.html",
+    srcs = ["webgl2_draw_packed_triangle.c"],
+    # Enable WEBGL2 (-s is used by the emscripten
+    # compiler to specify sundry options).
+    linkopts = [
+        "-s",
+        "USE_WEBGL2=1",
+    ],
+)
+
 cc_test(
     name = "gflags_build_test",
     size = "small",
