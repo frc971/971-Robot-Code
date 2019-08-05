@@ -117,13 +117,15 @@ class RawQueue {
   // Calling with both kPeek and kFromEnd in options isn't valid because that
   // would mean ignoring index, which would make this function the same as
   // ReadMessage (which should be used instead).
-  const void *ReadMessageIndex(Options<RawQueue> options, int *index) {
+  const void *ReadMessageIndex(
+      Options<RawQueue> options, int *index,
+      ::std::chrono::nanoseconds timeout = ::std::chrono::nanoseconds(0)) {
     CheckReadOptions(options);
     static constexpr Options<RawQueue> kFromEndAndPeek = kFromEnd | kPeek;
     if (options.AllSet(kFromEndAndPeek)) {
       LOG(FATAL, "ReadMessageIndex(kFromEnd | kPeek) is not allowed\n");
     }
-    return DoReadMessageIndex(options, index);
+    return DoReadMessageIndex(options, index, timeout);
   }
 
   // Retrieves ("allocates") a message that can then be written to the queue.
@@ -153,7 +155,8 @@ class RawQueue {
   // The public wrappers around these are inlined and do argument checking.
   bool DoWriteMessage(void *msg, Options<RawQueue> options);
   const void *DoReadMessage(Options<RawQueue> options);
-  const void *DoReadMessageIndex(Options<RawQueue> options, int *index);
+  const void *DoReadMessageIndex(Options<RawQueue> options, int *index,
+                                 ::std::chrono::nanoseconds timeout);
   void CheckReadOptions(Options<RawQueue> options) {
     static constexpr Options<RawQueue> kValidOptions =
         kPeek | kFromEnd | kNonBlock | kBlock;
@@ -216,7 +219,8 @@ class RawQueue {
   // Must be called with data_lock_ locked.
   // *read_data will be initialized.
   // Returns with a readable message in data_ or false.
-  bool ReadCommonStart(Options<RawQueue> options, int *index);
+  bool ReadCommonStart(Options<RawQueue> options, int *index,
+                       ::std::chrono::nanoseconds timeout);
   // Deals with setting/unsetting readable_ and writable_.
   // Must be called after data_lock_ has been unlocked.
   // read_data should be the same thing that was passed in to ReadCommonStart.

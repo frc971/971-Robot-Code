@@ -1,6 +1,8 @@
 #ifndef AOS_CONDITION_H_
 #define AOS_CONDITION_H_
 
+#include <chrono>
+
 #include "aos/ipc_lib/aos_sync.h"
 
 namespace aos {
@@ -48,6 +50,8 @@ class Condition {
   // object will hold on to a reference to it but does not take ownership.
   explicit Condition(Mutex *m);
 
+  enum class WaitResult { kOk, kOwnerDied, kTimeout };
+
   // Waits for the condition variable to be signalled, atomically unlocking the
   // mutex associated with this condition variable at the same time. The mutex
   // associated with this condition variable must be locked when this is called
@@ -56,6 +60,10 @@ class Condition {
   // up.
   // Returns true if the previous owner of the mutex died before we relocked it.
   bool Wait() __attribute__((warn_unused_result));
+
+  // Waits for the condition variable to be signalled with a timeout.
+  WaitResult WaitTimed(::std::chrono::nanoseconds timeout)
+      __attribute__((warn_unused_result));
 
   // Signals approximately 1 other process currently Wait()ing on this condition
   // variable. Calling this does not require the mutex associated with this
