@@ -23,26 +23,7 @@ void ControlLoop<T>::ZeroOutputs() {
 }
 
 template <class T>
-void ControlLoop<T>::Iterate() {
-  if (!has_iterate_fetcher_) {
-    iterate_position_fetcher_ =
-        event_loop_->MakeFetcher<PositionType>(name_ + ".position");
-    has_iterate_fetcher_ = true;
-  }
-  const bool did_fetch = iterate_position_fetcher_.Fetch();
-  if (!did_fetch) {
-    LOG(FATAL, "Failed to fetch from position queue\n");
-  }
-  IteratePosition(*iterate_position_fetcher_);
-}
-
-template <class T>
 void ControlLoop<T>::IteratePosition(const PositionType &position) {
-  // Since Exit() isn't async safe, we want to call Exit from the periodic
-  // handler.
-  if (!run_) {
-    event_loop_->Exit();
-  }
   no_goal_.Print();
   no_sensor_state_.Print();
   motors_off_log_.Print();
@@ -118,29 +99,6 @@ void ControlLoop<T>::IteratePosition(const PositionType &position) {
   LOG_STRUCT(DEBUG, "status", *status);
   status.Send();
 }
-
-template <class T>
-void ControlLoop<T>::Run() {
-  struct sigaction action;
-  action.sa_handler = &ControlLoop<T>::Quit;
-  sigemptyset(&action.sa_mask);
-  action.sa_flags = SA_RESETHAND;
-
-  PCHECK(sigaction(SIGTERM, &action, nullptr));
-  PCHECK(sigaction(SIGQUIT, &action, nullptr));
-  PCHECK(sigaction(SIGINT, &action, nullptr));
-
-  event_loop_->MakeWatcher(name_ + ".position",
-                           [this](const PositionType &position) {
-                             this->IteratePosition(position);
-                           });
-
-  event_loop_->Run();
-  LOG(INFO, "Shutting down\n");
-}
-
-template <class T>
-::std::atomic<bool> ControlLoop<T>::run_{true};
 
 }  // namespace controls
 }  // namespace aos

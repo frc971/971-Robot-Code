@@ -16,21 +16,36 @@ namespace frc971 {
 namespace codelab {
 namespace testing {
 
+namespace chrono = ::std::chrono;
+using aos::monotonic_clock;
+
 // Class which simulates stuff and sends out queue messages with the
 // position.
 class BasicSimulation {
  public:
-  BasicSimulation()
-      : basic_queue_(".frc971.codelab.basic_queue",
-                     ".frc971.codelab.basic_queue.goal",
-                     ".frc971.codelab.basic_queue.position",
-                     ".frc971.codelab.basic_queue.output",
-                     ".frc971.codelab.basic_queue.status") {}
+  BasicSimulation(::aos::EventLoop *event_loop, chrono::nanoseconds dt)
+      : event_loop_(event_loop),
+        position_sender_(event_loop_->MakeSender<BasicQueue::Position>(
+            ".frc971.codelab.basic_queue.position")),
+        status_fetcher_(event_loop_->MakeFetcher<BasicQueue::Status>(
+            ".frc971.codelab.basic_queue.status")),
+        output_fetcher_(event_loop_->MakeFetcher<BasicQueue::Output>(
+            ".frc971.codelab.basic_queue.output")) {
+    event_loop_->AddPhasedLoop(
+        [this](int) {
+          // Skip this the first time.
+          if (!first_) {
+            Simulate();
+          }
+          first_ = false;
+          SendPositionMessage();
+        },
+        dt);
+  }
 
   // Sends a queue message with the position data.
   void SendPositionMessage() {
-    ::aos::ScopedMessagePtr<BasicQueue::Position> position =
-        basic_queue_.position.MakeMessage();
+    auto position = position_sender_.MakeMessage();
 
     position->limit_sensor = limit_sensor_;
 
@@ -38,68 +53,81 @@ class BasicSimulation {
   }
 
   void VerifyResults(double voltage, bool status) {
-    basic_queue_.output.FetchLatest();
-    basic_queue_.status.FetchLatest();
+    output_fetcher_.Fetch();
+    status_fetcher_.Fetch();
 
-    ASSERT_TRUE(basic_queue_.output.get() != nullptr);
-    ASSERT_TRUE(basic_queue_.status.get() != nullptr);
+    ASSERT_TRUE(output_fetcher_.get() != nullptr);
+    ASSERT_TRUE(status_fetcher_.get() != nullptr);
 
-    EXPECT_EQ(basic_queue_.output->intake_voltage, voltage);
-    EXPECT_EQ(basic_queue_.status->intake_complete, status);
+    EXPECT_EQ(output_fetcher_->intake_voltage, voltage);
+    EXPECT_EQ(status_fetcher_->intake_complete, status);
   }
 
   void set_limit_sensor(bool value) { limit_sensor_ = value; }
 
   // Simulates basic control loop for a single timestep.
-  void Simulate() { EXPECT_TRUE(basic_queue_.output.FetchLatest()); }
+  void Simulate() { EXPECT_TRUE(output_fetcher_.Fetch()); }
 
  private:
-  BasicQueue basic_queue_;
+  ::aos::EventLoop *event_loop_;
+
+  ::aos::Sender<BasicQueue::Position> position_sender_;
+  ::aos::Fetcher<BasicQueue::Status> status_fetcher_;
+  ::aos::Fetcher<BasicQueue::Output> output_fetcher_;
+
   bool limit_sensor_ = false;
+
+  bool first_ = true;
 };
 
 class BasicControlLoopTest : public ::aos::testing::ControlLoopTest {
  public:
   BasicControlLoopTest()
-      : basic_queue_(".frc971.codelab.basic_queue",
-                     ".frc971.codelab.basic_queue.goal",
-                     ".frc971.codelab.basic_queue.position",
-                     ".frc971.codelab.basic_queue.output",
-                     ".frc971.codelab.basic_queue.status"),
-        basic_loop_(&event_loop_, ".frc971.codelab.basic_queue") {
+      : ::aos::testing::ControlLoopTest(chrono::microseconds(5050)),
+        test_event_loop_(MakeEventLoop()),
+        goal_sender_(test_event_loop_->MakeSender<BasicQueue::Goal>(
+            ".frc971.codelab.basic_queue.goal")),
+
+        basic_event_loop_(MakeEventLoop()),
+        basic_(basic_event_loop_.get(), ".frc971.codelab.basic_queue"),
+
+        basic_simulation_event_loop_(MakeEventLoop()),
+        basic_simulation_(basic_simulation_event_loop_.get(), dt()) {
     set_team_id(control_loops::testing::kTeamNumber);
   }
 
-  // Runs one iteration of the whole simulation.
-  void RunIteration(bool enabled = true) {
-    SendMessages(enabled);
+  ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
+  ::aos::Sender<BasicQueue::Goal> goal_sender_;
 
-    basic_simulation_.SendPositionMessage();
-    basic_loop_.Iterate();
-    basic_simulation_.Simulate();
+  ::std::unique_ptr<::aos::EventLoop> basic_event_loop_;
+  Basic basic_;
 
-    TickTime();
-  }
-
-  BasicQueue basic_queue_;
-  ::aos::ShmEventLoop event_loop_;
-  Basic basic_loop_;
+  ::std::unique_ptr<::aos::EventLoop> basic_simulation_event_loop_;
   BasicSimulation basic_simulation_;
 };
 
 // Tests that when the motor has finished intaking it stops.
 TEST_F(BasicControlLoopTest, IntakeLimitTransitionsToTrue) {
-  ASSERT_TRUE(basic_queue_.goal.MakeWithBuilder().intake(true).Send());
+  {
+    auto message = goal_sender_.MakeMessage();
+    message->intake = true;
+    ASSERT_TRUE(message.Send());
+  }
+
   basic_simulation_.set_limit_sensor(false);
 
-  RunIteration();
+  RunFor(dt() * 2);
 
   basic_simulation_.VerifyResults(12.0, false);
 
-  ASSERT_TRUE(basic_queue_.goal.MakeWithBuilder().intake(true).Send());
+  {
+    auto message = goal_sender_.MakeMessage();
+    message->intake = true;
+    ASSERT_TRUE(message.Send());
+  }
   basic_simulation_.set_limit_sensor(true);
 
-  RunIteration();
+  RunFor(dt() * 2);
 
   basic_simulation_.VerifyResults(0.0, true);
 }
@@ -107,10 +135,14 @@ TEST_F(BasicControlLoopTest, IntakeLimitTransitionsToTrue) {
 // Tests that the intake goes on if the sensor is not pressed
 // and intake is requested.
 TEST_F(BasicControlLoopTest, IntakeLimitNotSet) {
-  ASSERT_TRUE(basic_queue_.goal.MakeWithBuilder().intake(true).Send());
+  {
+    auto message = goal_sender_.MakeMessage();
+    message->intake = true;
+    ASSERT_TRUE(message.Send());
+  }
   basic_simulation_.set_limit_sensor(false);
 
-  RunIteration();
+  RunFor(dt() * 2);
 
   basic_simulation_.VerifyResults(12.0, false);
 }
@@ -118,10 +150,14 @@ TEST_F(BasicControlLoopTest, IntakeLimitNotSet) {
 // Tests that the intake is off if no intake is requested,
 // even if the limit sensor is off.
 TEST_F(BasicControlLoopTest, NoIntakeLimitNotSet) {
-  ASSERT_TRUE(basic_queue_.goal.MakeWithBuilder().intake(false).Send());
+  {
+    auto message = goal_sender_.MakeMessage();
+    message->intake = false;
+    ASSERT_TRUE(message.Send());
+  }
   basic_simulation_.set_limit_sensor(false);
 
-  RunIteration();
+  RunFor(dt() * 2);
 
   basic_simulation_.VerifyResults(0.0, false);
 }
@@ -129,20 +165,28 @@ TEST_F(BasicControlLoopTest, NoIntakeLimitNotSet) {
 // Tests that the intake is off even if the limit sensor
 // is pressed and intake is requested.
 TEST_F(BasicControlLoopTest, IntakeLimitSet) {
-  ASSERT_TRUE(basic_queue_.goal.MakeWithBuilder().intake(true).Send());
+  {
+    auto message = goal_sender_.MakeMessage();
+    message->intake = true;
+    ASSERT_TRUE(message.Send());
+  }
   basic_simulation_.set_limit_sensor(true);
 
-  RunIteration();
+  RunFor(dt() * 2);
 
   basic_simulation_.VerifyResults(0.0, true);
 }
 
 // Tests that the intake is off if no intake is requested,
 TEST_F(BasicControlLoopTest, NoIntakeLimitSet) {
-  ASSERT_TRUE(basic_queue_.goal.MakeWithBuilder().intake(false).Send());
+  {
+    auto message = goal_sender_.MakeMessage();
+    message->intake = false;
+    ASSERT_TRUE(message.Send());
+  }
   basic_simulation_.set_limit_sensor(true);
 
-  RunIteration();
+  RunFor(dt() * 2);
 
   basic_simulation_.VerifyResults(0.0, false);
 }
@@ -151,7 +195,7 @@ TEST_F(BasicControlLoopTest, NoIntakeLimitSet) {
 TEST_F(BasicControlLoopTest, NoGoalSet) {
   basic_simulation_.set_limit_sensor(true);
 
-  RunIteration();
+  RunFor(dt() * 2);
 
   basic_simulation_.VerifyResults(0.0, false);
 }
@@ -160,9 +204,14 @@ TEST_F(BasicControlLoopTest, NoGoalSet) {
 TEST_F(BasicControlLoopTest, Disabled) {
   basic_simulation_.set_limit_sensor(true);
 
-  ASSERT_TRUE(basic_queue_.goal.MakeWithBuilder().intake(true).Send());
+  {
+    auto message = goal_sender_.MakeMessage();
+    message->intake = true;
+    ASSERT_TRUE(message.Send());
+  }
 
-  RunIteration(false);
+  SetEnabled(false);
+  RunFor(dt() * 2);
 
   basic_simulation_.VerifyResults(0.0, false);
 }

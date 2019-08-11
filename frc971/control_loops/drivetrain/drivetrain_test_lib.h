@@ -52,12 +52,6 @@ class DrivetrainSimulation {
   double GetLeftPosition() const { return drivetrain_plant_.Y(0, 0); }
   double GetRightPosition() const { return drivetrain_plant_.Y(1, 0); }
 
-  // Sends out the position queue messages.
-  void SendPositionMessage();
-
-  // Simulates the drivetrain moving for one timestep.
-  void Simulate();
-
   void set_left_voltage_offset(double left_voltage_offset) {
     drivetrain_plant_.set_left_voltage_offset(left_voltage_offset);
   }
@@ -73,16 +67,29 @@ class DrivetrainSimulation {
     return state_.block<2,1>(0,0);
   }
 
+  void MaybePlot();
+
  private:
+  // Sends out the position queue messages.
+  void SendPositionMessage();
+
+  // Simulates the drivetrain moving for one timestep.
+  void Simulate();
+
   ::aos::EventLoop *event_loop_;
   ::aos::Fetcher<::aos::RobotState> robot_state_fetcher_;
+
+  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Position>
+      drivetrain_position_sender_;
+  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Output>
+      drivetrain_output_fetcher_;
+  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+      drivetrain_status_fetcher_;
+  ::aos::Sender<::frc971::sensors::GyroReading> gyro_reading_sender_;
 
   DrivetrainConfig<double> dt_config_;
 
   DrivetrainPlant drivetrain_plant_;
-
-  ::frc971::control_loops::DrivetrainQueue my_drivetrain_queue_;
-  ::aos::Sender<::frc971::sensors::GyroReading> gyro_reading_sender_;
 
   // This state is [x, y, theta, left_velocity, right_velocity].
   ::Eigen::Matrix<double, 5, 1> state_ = ::Eigen::Matrix<double, 5, 1>::Zero();
@@ -96,6 +103,12 @@ class DrivetrainSimulation {
 
   bool left_gear_high_ = false;
   bool right_gear_high_ = false;
+  bool first_ = true;
+
+  ::std::vector<double> actual_x_;
+  ::std::vector<double> actual_y_;
+  ::std::vector<double> trajectory_x_;
+  ::std::vector<double> trajectory_y_;
 };
 
 }  // namespace testing

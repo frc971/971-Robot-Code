@@ -4,10 +4,13 @@
 #include "aos/init.h"
 
 int main() {
-  ::aos::Init();
+  ::aos::InitNRT(true);
+
   ::aos::ShmEventLoop event_loop;
   ::y2014::control_loops::ClawMotor claw(&event_loop);
-  claw.Run();
+
+  event_loop.Run();
+
   ::aos::Cleanup();
   return 0;
 }

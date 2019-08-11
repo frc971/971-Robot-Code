@@ -10,10 +10,6 @@
 namespace aos {
 namespace input {
 
-::std::atomic<bool> JoystickInput::run_;
-
-void JoystickInput::Quit(int /*signum*/) { run_ = false; }
-
 void JoystickInput::HandleData(const ::aos::JoystickState &joystick_state) {
   data_.Update(joystick_state);
 
@@ -63,27 +59,6 @@ void JoystickInput::HandleData(const ::aos::JoystickState &joystick_state) {
   }
 
   RunIteration(data_);
-
-  if (!run_) {
-    event_loop_->Exit();
-  }
-}
-
-void JoystickInput::Run() {
-  // TODO(austin): We need a better sigint story for event loops in general.
-  run_ = true;
-  struct sigaction action;
-  action.sa_handler = &JoystickInput::Quit;
-  sigemptyset(&action.sa_mask);
-  action.sa_flags = SA_RESETHAND;
-
-  PCHECK(sigaction(SIGTERM, &action, nullptr));
-  PCHECK(sigaction(SIGQUIT, &action, nullptr));
-  PCHECK(sigaction(SIGINT, &action, nullptr));
-
-  event_loop_->Run();
-
-  LOG(INFO, "Shutting down\n");
 }
 
 }  // namespace input

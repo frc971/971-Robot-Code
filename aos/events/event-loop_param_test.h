@@ -22,6 +22,9 @@ class EventLoopTestFactory {
   // Runs the loops until they quit.
   virtual void Run() = 0;
 
+  // Quits the loops.
+  virtual void Exit() = 0;
+
   // Advances time by sleeping.  Can't be called from inside a loop.
   virtual void SleepFor(::std::chrono::nanoseconds duration) = 0;
 };
@@ -36,9 +39,19 @@ class AbstractEventLoopTestBase
 
   void Run() { return factory_->Run(); }
 
+  void Exit() { return factory_->Exit(); }
+
   void SleepFor(::std::chrono::nanoseconds duration) {
     return factory_->SleepFor(duration);
   }
+
+  // Ends the given event loop at the given time from now.
+  void EndEventLoop(EventLoop *loop, ::std::chrono::milliseconds duration) {
+    auto end_timer = loop->AddTimer([this]() { this->Exit(); });
+    end_timer->Setup(loop->monotonic_now() +
+                     ::std::chrono::milliseconds(duration));
+  }
+
   // You can implement all the usual fixture class members here.
   // To access the test parameter, call GetParam() from class
   // TestWithParam<T>.

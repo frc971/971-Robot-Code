@@ -50,8 +50,8 @@ class ShmEventLoop : public EventLoop {
           ::std::chrono::seconds(0)) override;
 
   void OnRun(::std::function<void()> on_run) override;
-  void Run() override;
-  void Exit() override;
+  void Run();
+  void Exit();
 
   // TODO(austin): Add a function to register control-C call.
 

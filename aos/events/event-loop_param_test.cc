@@ -5,6 +5,8 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
+#include "aos/logging/queue_logging.h"
+
 namespace aos {
 namespace testing {
 namespace {
@@ -23,13 +25,6 @@ struct TestMessage : public ::aos::Message {
   size_t Print(char *buffer, size_t length) const;
   TestMessage() { Zero(); }
 };
-
-// Ends the given event loop at the given time from now.
-void EndEventLoop(EventLoop *loop, ::std::chrono::milliseconds duration) {
-  auto end_timer = loop->AddTimer([loop]() { loop->Exit(); });
-  end_timer->Setup(loop->monotonic_now() +
-                   ::std::chrono::milliseconds(duration));
-}
 
 // Tests that watcher can receive messages from a sender.
 // Also tests that OnRun() works.
@@ -51,7 +46,7 @@ TEST_P(AbstractEventLoopTest, Basic) {
 
   loop2->MakeWatcher("/test", [&](const TestMessage &message) {
     EXPECT_EQ(message.msg_value, 200);
-    loop2->Exit();
+    this->Exit();
   });
 
   EXPECT_FALSE(happened);
@@ -94,7 +89,7 @@ TEST_P(AbstractEventLoopTest, DoubleSendAtStartup) {
   loop2->MakeWatcher("/test", [&](const TestMessage &message) {
     values.push_back(message.msg_value);
     if (values.size() == 2) {
-      loop2->Exit();
+      this->Exit();
     }
   });
 
@@ -149,7 +144,7 @@ TEST_P(AbstractEventLoopTest, DoubleSendAfterStartup) {
   });
 
   // Add a timer to actually quit.
-  auto test_timer = loop2->AddTimer([&loop2]() { loop2->Exit(); });
+  auto test_timer = loop2->AddTimer([this]() { this->Exit(); });
   loop2->OnRun([&test_timer, &loop2]() {
     test_timer->Setup(loop2->monotonic_now(), ::std::chrono::milliseconds(100));
   });
@@ -180,11 +175,11 @@ TEST_P(AbstractEventLoopTest, FetchNext) {
   }
 
   // Add a timer to actually quit.
-  auto test_timer = loop2->AddTimer([&loop2, &fetcher, &values]() {
+  auto test_timer = loop2->AddTimer([&fetcher, &values, this]() {
     while (fetcher.FetchNext()) {
       values.push_back(fetcher->msg_value);
     }
-    loop2->Exit();
+    this->Exit();
   });
 
   loop2->OnRun([&test_timer, &loop2]() {
@@ -218,11 +213,11 @@ TEST_P(AbstractEventLoopTest, FetchNextAfterSend) {
   auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
 
   // Add a timer to actually quit.
-  auto test_timer = loop2->AddTimer([&loop2, &fetcher, &values]() {
+  auto test_timer = loop2->AddTimer([&fetcher, &values, this]() {
     while (fetcher.FetchNext()) {
       values.push_back(fetcher->msg_value);
     }
-    loop2->Exit();
+    this->Exit();
   });
 
   loop2->OnRun([&test_timer, &loop2]() {
@@ -257,7 +252,7 @@ TEST_P(AbstractEventLoopTest, FetchDataFromBeforeCreation) {
   auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
 
   // Add a timer to actually quit.
-  auto test_timer = loop2->AddTimer([&loop2, &fetcher, &values]() {
+  auto test_timer = loop2->AddTimer([&fetcher, &values, this]() {
     if (fetcher.Fetch()) {
       values.push_back(fetcher->msg_value);
     }
@@ -265,7 +260,7 @@ TEST_P(AbstractEventLoopTest, FetchDataFromBeforeCreation) {
     if (fetcher.Fetch()) {
       values.push_back(fetcher->msg_value);
     }
-    loop2->Exit();
+    this->Exit();
   });
 
   loop2->OnRun([&test_timer, &loop2]() {
@@ -299,7 +294,7 @@ TEST_P(AbstractEventLoopTest, FetchAndFetchNextTogether) {
   auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
 
   // Add a timer to actually quit.
-  auto test_timer = loop2->AddTimer([&loop2, &fetcher, &values, &sender]() {
+  auto test_timer = loop2->AddTimer([&fetcher, &values, &sender, this]() {
     if (fetcher.Fetch()) {
       values.push_back(fetcher->msg_value);
     }
@@ -328,7 +323,7 @@ TEST_P(AbstractEventLoopTest, FetchAndFetchNextTogether) {
       values.push_back(fetcher->msg_value);
     }
 
-    loop2->Exit();
+    this->Exit();
   });
 
   loop2->OnRun([&test_timer, &loop2]() {
@@ -444,7 +439,7 @@ TEST_P(AbstractEventLoopTest, MultipleWatcherQuit) {
   loop2->MakeWatcher("/test1", [&](const TestMessage &) {});
   loop2->MakeWatcher("/test2", [&](const TestMessage &message) {
     EXPECT_EQ(message.msg_value, 200);
-    loop2->Exit();
+    this->Exit();
   });
 
   auto sender = loop1->MakeSender<TestMessage>("/test2");
@@ -566,12 +561,12 @@ TEST_P(AbstractEventLoopTest, PhasedLoopTest) {
 
   // Run kCount iterations.
   loop1->AddPhasedLoop(
-      [&times, &loop1](int count) {
+      [&times, &loop1, this](int count) {
         EXPECT_EQ(count, 1);
         times.push_back(loop1->monotonic_now());
         LOG(INFO, "%zu\n", times.size());
         if (times.size() == kCount) {
-          loop1->Exit();
+          this->Exit();
         }
       },
       chrono::seconds(1), kOffset);
@@ -627,7 +622,7 @@ TEST_P(AbstractEventLoopTest, LotsOfSends) {
   auto sender = loop1->MakeSender<TestMessage>("/test");
   auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
 
-  auto test_timer = loop1->AddTimer([&sender, &fetcher, &loop1]() {
+  auto test_timer = loop1->AddTimer([&sender, &fetcher, this]() {
     for (int i = 0; i < 100000; ++i) {
       auto msg = sender.MakeMessage();
       msg->msg_value = i;
@@ -643,7 +638,7 @@ TEST_P(AbstractEventLoopTest, LotsOfSends) {
       ++last;
     }
 
-    loop1->Exit();
+    this->Exit();
   });
 
   loop1->OnRun([&test_timer, &loop1]() {

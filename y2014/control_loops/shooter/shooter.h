@@ -175,14 +175,14 @@ class ShooterMotor
   friend class testing::ShooterTest_RezeroWhileUnloading_Test;
 
   // Enter state STATE_UNLOAD
-  void Unload() {
+  void Unload(::aos::monotonic_clock::time_point monotonic_now) {
     state_ = STATE_UNLOAD;
-    unload_timeout_ = ::aos::monotonic_clock::now() + kUnloadTimeout;
+    unload_timeout_ = monotonic_now + kUnloadTimeout;
   }
   // Enter state STATE_LOAD
-  void Load() {
+  void Load(::aos::monotonic_clock::time_point monotonic_now) {
     state_ = STATE_LOAD;
-    load_timeout_ = ::aos::monotonic_clock::now() + kLoadTimeout;
+    load_timeout_ = monotonic_now + kLoadTimeout;
   }
 
   ::y2014::control_loops::ShooterQueue::Position last_position_;

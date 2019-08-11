@@ -4,10 +4,13 @@
 #include "aos/init.h"
 
 int main() {
-  ::aos::Init();
+  ::aos::InitNRT(true);
+
   ::aos::ShmEventLoop event_loop;
   ::y2014_bot3::control_loops::Rollers rollers(&event_loop);
-  rollers.Run();
+
+  event_loop.Run();
+
   ::aos::Cleanup();
   return 0;
 }

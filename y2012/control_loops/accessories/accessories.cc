@@ -32,9 +32,12 @@ class AccessoriesLoop : public ::aos::controls::ControlLoop<
 }  // namespace y2012
 
 int main() {
-  ::aos::Init();
+  ::aos::InitNRT(true);
+
   ::aos::ShmEventLoop event_loop;
   ::y2012::control_loops::accessories::AccessoriesLoop accessories(&event_loop);
-  accessories.Run();
+
+  event_loop.Run();
+
   ::aos::Cleanup();
 }

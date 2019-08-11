@@ -5,11 +5,13 @@
 
 int main() {
   ::aos::InitNRT(true);
+
   ::aos::ShmEventLoop event_loop;
   ::y2018::control_loops::superstructure::Superstructure superstructure(
       &event_loop);
-  ::aos::GoRT();
-  superstructure.Run();
+
+  event_loop.Run();
+
   ::aos::Cleanup();
   return 0;
 }

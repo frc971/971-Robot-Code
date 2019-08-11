@@ -49,7 +49,7 @@ template <typename T>
 class WPILibAdapterRobot : public frc::RobotBase {
  public:
   void StartCompetition() override {
-    ::aos::InitNRT();
+    ::aos::InitNRT(true);
 
     robot_.Run();
   }

@@ -187,8 +187,9 @@ class ArmSimulation {
 
 class SuperstructureSimulation {
  public:
-  SuperstructureSimulation()
-      : left_intake_(::y2018::control_loops::superstructure::intake::
+  SuperstructureSimulation(::aos::EventLoop *event_loop)
+      : event_loop_(event_loop),
+        left_intake_(::y2018::control_loops::superstructure::intake::
                          MakeDelayedIntakePlant(),
                      constants::GetValues().left_intake.zeroing),
         right_intake_(::y2018::control_loops::superstructure::intake::
@@ -196,17 +197,32 @@ class SuperstructureSimulation {
                       constants::GetValues().right_intake.zeroing),
         arm_(constants::GetValues().arm_proximal.zeroing,
              constants::GetValues().arm_distal.zeroing),
-        superstructure_queue_(".y2018.control_loops.superstructure",
-                              ".y2018.control_loops.superstructure.goal",
-                              ".y2018.control_loops.superstructure.output",
-                              ".y2018.control_loops.superstructure.status",
-                              ".y2018.control_loops.superstructure.position") {
+        superstructure_position_sender_(
+            event_loop_->MakeSender<SuperstructureQueue::Position>(
+                ".y2018.control_loops.superstructure.position")),
+        superstructure_status_fetcher_(
+            event_loop_->MakeFetcher<SuperstructureQueue::Status>(
+                ".y2018.control_loops.superstructure.status")),
+        superstructure_output_fetcher_(
+            event_loop_->MakeFetcher<SuperstructureQueue::Output>(
+                ".y2018.control_loops.superstructure.output")) {
     // Start the intake out in the middle by default.
     InitializeIntakePosition((constants::Values::kIntakeRange().lower +
                               constants::Values::kIntakeRange().upper) /
                              2.0);
 
     InitializeArmPosition(arm::UpPoint());
+
+    phased_loop_handle_ = event_loop_->AddPhasedLoop(
+        [this](int) {
+          // Skip this the first time.
+          if (!first_) {
+            Simulate();
+          }
+          first_ = false;
+          SendPositionMessage();
+        },
+        ::std::chrono::microseconds(5050));
   }
 
   void InitializeIntakePosition(double start_pos) {
@@ -219,8 +235,7 @@ class SuperstructureSimulation {
   }
 
   void SendPositionMessage() {
-    ::aos::ScopedMessagePtr<SuperstructureQueue::Position> position =
-        superstructure_queue_.position.MakeMessage();
+    auto position = superstructure_position_sender_.MakeMessage();
 
     left_intake_.GetSensorValues(&position->left_intake);
     right_intake_.GetSensorValues(&position->right_intake);
@@ -245,110 +260,116 @@ class SuperstructureSimulation {
 
   // Simulates the intake for a single timestep.
   void Simulate() {
-    ASSERT_TRUE(superstructure_queue_.output.FetchLatest());
-    ASSERT_TRUE(superstructure_queue_.status.FetchLatest());
+    ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+    ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
 
-    left_intake_.Simulate(superstructure_queue_.output->left_intake);
-    right_intake_.Simulate(superstructure_queue_.output->right_intake);
+    left_intake_.Simulate(superstructure_output_fetcher_->left_intake);
+    right_intake_.Simulate(superstructure_output_fetcher_->right_intake);
     arm_.Simulate((::Eigen::Matrix<double, 2, 1>()
-                       << superstructure_queue_.output->voltage_proximal,
-                   superstructure_queue_.output->voltage_distal)
+                       << superstructure_output_fetcher_->voltage_proximal,
+                   superstructure_output_fetcher_->voltage_distal)
                       .finished(),
-                  superstructure_queue_.output->release_arm_brake);
+                  superstructure_output_fetcher_->release_arm_brake);
   }
 
  private:
+  ::aos::EventLoop *event_loop_;
+  ::aos::PhasedLoopHandler *phased_loop_handle_ = nullptr;
+
   IntakeSideSimulation left_intake_;
   IntakeSideSimulation right_intake_;
   ArmSimulation arm_;
 
-  SuperstructureQueue superstructure_queue_;
+  ::aos::Sender<SuperstructureQueue::Position> superstructure_position_sender_;
+  ::aos::Fetcher<SuperstructureQueue::Status> superstructure_status_fetcher_;
+  ::aos::Fetcher<SuperstructureQueue::Output> superstructure_output_fetcher_;
+
+  bool first_ = true;
 };
 
 class SuperstructureTest : public ::aos::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
-      : superstructure_queue_(".y2018.control_loops.superstructure",
-                              ".y2018.control_loops.superstructure.goal",
-                              ".y2018.control_loops.superstructure.output",
-                              ".y2018.control_loops.superstructure.status",
-                              ".y2018.control_loops.superstructure.position"),
-        superstructure_(&event_loop_, ".y2018.control_loops.superstructure") {
+      : ::aos::testing::ControlLoopTest(::std::chrono::microseconds(5050)),
+        test_event_loop_(MakeEventLoop()),
+        superstructure_goal_fetcher_(
+            test_event_loop_->MakeFetcher<SuperstructureQueue::Goal>(
+                ".y2018.control_loops.superstructure.goal")),
+        superstructure_goal_sender_(
+            test_event_loop_->MakeSender<SuperstructureQueue::Goal>(
+                ".y2018.control_loops.superstructure.goal")),
+        superstructure_status_fetcher_(
+            test_event_loop_->MakeFetcher<SuperstructureQueue::Status>(
+                ".y2018.control_loops.superstructure.status")),
+        superstructure_output_fetcher_(
+            test_event_loop_->MakeFetcher<SuperstructureQueue::Output>(
+                ".y2018.control_loops.superstructure.output")),
+        superstructure_event_loop_(MakeEventLoop()),
+        superstructure_(superstructure_event_loop_.get(),
+                        ".y2018.control_loops.superstructure"),
+        superstructure_plant_event_loop_(MakeEventLoop()),
+        superstructure_plant_(superstructure_plant_event_loop_.get()) {
     set_team_id(::frc971::control_loops::testing::kTeamNumber);
   }
 
   void VerifyNearGoal() {
-    superstructure_queue_.goal.FetchLatest();
-    superstructure_queue_.status.FetchLatest();
+    superstructure_goal_fetcher_.Fetch();
+    superstructure_status_fetcher_.Fetch();
 
-    ASSERT_TRUE(superstructure_queue_.goal.get() != nullptr) << ": No goal";
-    ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
+    ASSERT_TRUE(superstructure_goal_fetcher_.get() != nullptr) << ": No goal";
+    ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
     // Left side test.
-    EXPECT_NEAR(superstructure_queue_.goal->intake.left_intake_angle,
-                superstructure_queue_.status->left_intake.spring_position +
-                    superstructure_queue_.status->left_intake.motor_position,
+    EXPECT_NEAR(superstructure_goal_fetcher_->intake.left_intake_angle,
+                superstructure_status_fetcher_->left_intake.spring_position +
+                    superstructure_status_fetcher_->left_intake.motor_position,
                 0.001);
-    EXPECT_NEAR(superstructure_queue_.goal->intake.left_intake_angle,
+    EXPECT_NEAR(superstructure_goal_fetcher_->intake.left_intake_angle,
                 superstructure_plant_.left_intake().spring_position(), 0.001);
 
     // Right side test.
-    EXPECT_NEAR(superstructure_queue_.goal->intake.right_intake_angle,
-                superstructure_queue_.status->right_intake.spring_position +
-                    superstructure_queue_.status->right_intake.motor_position,
+    EXPECT_NEAR(superstructure_goal_fetcher_->intake.right_intake_angle,
+                superstructure_status_fetcher_->right_intake.spring_position +
+                    superstructure_status_fetcher_->right_intake.motor_position,
                 0.001);
-    EXPECT_NEAR(superstructure_queue_.goal->intake.right_intake_angle,
+    EXPECT_NEAR(superstructure_goal_fetcher_->intake.right_intake_angle,
                 superstructure_plant_.right_intake().spring_position(), 0.001);
   }
 
-  // Runs one iteration of the whole simulation.
-  void RunIteration(bool enabled = true) {
-    SendMessages(enabled);
+  ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
 
-    superstructure_plant_.SendPositionMessage();
-    superstructure_.Iterate();
-    superstructure_plant_.Simulate();
-
-    TickTime(::std::chrono::microseconds(5050));
-  }
-
-  // Runs iterations until the specified amount of simulated time has elapsed.
-  void RunForTime(const monotonic_clock::duration run_for,
-                  bool enabled = true) {
-    const auto end_time = monotonic_clock::now() + run_for;
-    while (monotonic_clock::now() < end_time) {
-      RunIteration(enabled);
-    }
-  }
-
-  ::aos::ShmEventLoop event_loop_;
-  // Create a new instance of the test queue so that it invalidates the queue
-  // that it points to.  Otherwise, we will have a pointer to shared memory
-  // that is no longer valid.
-  SuperstructureQueue superstructure_queue_;
+  ::aos::Fetcher<SuperstructureQueue::Goal> superstructure_goal_fetcher_;
+  ::aos::Sender<SuperstructureQueue::Goal> superstructure_goal_sender_;
+  ::aos::Fetcher<SuperstructureQueue::Status> superstructure_status_fetcher_;
+  ::aos::Fetcher<SuperstructureQueue::Output> superstructure_output_fetcher_;
 
   // Create a control loop and simulation.
+  ::std::unique_ptr<::aos::EventLoop> superstructure_event_loop_;
   Superstructure superstructure_;
+
+  ::std::unique_ptr<::aos::EventLoop> superstructure_plant_event_loop_;
   SuperstructureSimulation superstructure_plant_;
 };
 
 // Tests that the loop zeroes when run for a while without a goal.
 TEST_F(SuperstructureTest, ZeroNoGoalAndDoesNothing) {
-  RunForTime(chrono::seconds(2));
-  superstructure_queue_.output.FetchLatest();
+  SetEnabled(true);
+  RunFor(chrono::seconds(2));
+  superstructure_output_fetcher_.Fetch();
 
   EXPECT_EQ(intake::IntakeSide::State::RUNNING,
             superstructure_.intake_left().state());
   EXPECT_EQ(intake::IntakeSide::State::RUNNING,
             superstructure_.intake_right().state());
-  EXPECT_EQ(superstructure_queue_.output->left_intake.voltage_elastic, 0.0);
-  EXPECT_EQ(superstructure_queue_.output->right_intake.voltage_elastic, 0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->left_intake.voltage_elastic, 0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->right_intake.voltage_elastic, 0.0);
 }
 
 // Tests that the intake loop can reach a goal.
 TEST_F(SuperstructureTest, ReachesGoal) {
+  SetEnabled(true);
   // Set a reasonable goal.
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
 
     goal->intake.left_intake_angle = 0.1;
     goal->intake.right_intake_angle = 0.2;
@@ -359,7 +380,7 @@ TEST_F(SuperstructureTest, ReachesGoal) {
   }
 
   // Give it a lot of time to get there.
-  RunForTime(chrono::seconds(8));
+  RunFor(chrono::seconds(8));
 
   VerifyNearGoal();
 }
@@ -367,11 +388,12 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 // Tests that the intake loop can reach a goal after starting at a non-zero
 // position.
 TEST_F(SuperstructureTest, OffsetStartReachesGoal) {
+  SetEnabled(true);
   superstructure_plant_.InitializeIntakePosition(0.5);
 
   // Set a reasonable goal.
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
 
     goal->intake.left_intake_angle = 0.1;
     goal->intake.right_intake_angle = 0.2;
@@ -382,7 +404,7 @@ TEST_F(SuperstructureTest, OffsetStartReachesGoal) {
   }
 
   // Give it a lot of time to get there.
-  RunForTime(chrono::seconds(8));
+  RunFor(chrono::seconds(8));
 
   VerifyNearGoal();
 }
@@ -390,9 +412,10 @@ TEST_F(SuperstructureTest, OffsetStartReachesGoal) {
 // Tests that the intake loops doesn't try and go beyond the
 // physical range of the mechanisms.
 TEST_F(SuperstructureTest, RespectsRange) {
+  SetEnabled(true);
   // Set some ridiculous goals to test upper limits.
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
 
     goal->intake.left_intake_angle = 5.0 * M_PI;
     goal->intake.right_intake_angle = 5.0 * M_PI;
@@ -401,27 +424,27 @@ TEST_F(SuperstructureTest, RespectsRange) {
 
     ASSERT_TRUE(goal.Send());
   }
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
 
   // Check that we are near our soft limit.
-  superstructure_queue_.status.FetchLatest();
+  superstructure_status_fetcher_.Fetch();
 
-  EXPECT_NEAR(0.0, superstructure_queue_.status->left_intake.spring_position,
+  EXPECT_NEAR(0.0, superstructure_status_fetcher_->left_intake.spring_position,
               0.001);
   EXPECT_NEAR(constants::Values::kIntakeRange().upper,
-              superstructure_queue_.status->left_intake.spring_position +
-                  superstructure_queue_.status->left_intake.motor_position,
+              superstructure_status_fetcher_->left_intake.spring_position +
+                  superstructure_status_fetcher_->left_intake.motor_position,
               0.001);
 
-  EXPECT_NEAR(0.0, superstructure_queue_.status->right_intake.spring_position,
+  EXPECT_NEAR(0.0, superstructure_status_fetcher_->right_intake.spring_position,
               0.001);
   EXPECT_NEAR(constants::Values::kIntakeRange().upper,
-                  superstructure_queue_.status->right_intake.motor_position,
+                  superstructure_status_fetcher_->right_intake.motor_position,
               0.001);
 
   // Set some ridiculous goals to test lower limits.
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
 
     goal->intake.left_intake_angle = -5.0 * M_PI;
     goal->intake.right_intake_angle = -5.0 * M_PI;
@@ -431,67 +454,70 @@ TEST_F(SuperstructureTest, RespectsRange) {
     ASSERT_TRUE(goal.Send());
   }
 
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
 
   // Check that we are near our soft limit.
-  superstructure_queue_.status.FetchLatest();
+  superstructure_status_fetcher_.Fetch();
 
   EXPECT_NEAR(constants::Values::kIntakeRange().lower,
-              superstructure_queue_.status->left_intake.motor_position, 0.001);
-  EXPECT_NEAR(0.0, superstructure_queue_.status->left_intake.spring_position,
+              superstructure_status_fetcher_->left_intake.motor_position, 0.001);
+  EXPECT_NEAR(0.0, superstructure_status_fetcher_->left_intake.spring_position,
               0.001);
 
   EXPECT_NEAR(constants::Values::kIntakeRange().lower,
-              superstructure_queue_.status->right_intake.motor_position, 0.001);
-  EXPECT_NEAR(0.0, superstructure_queue_.status->right_intake.spring_position,
+              superstructure_status_fetcher_->right_intake.motor_position, 0.001);
+  EXPECT_NEAR(0.0, superstructure_status_fetcher_->right_intake.spring_position,
               0.001);
 }
 
 TEST_F(SuperstructureTest, DISABLED_LowerHardstopStartup) {
+  SetEnabled(true);
   superstructure_plant_.InitializeIntakePosition(
       constants::Values::kIntakeRange().lower_hard);
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->intake.left_intake_angle = constants::Values::kIntakeRange().lower;
     goal->intake.right_intake_angle = constants::Values::kIntakeRange().lower;
     goal->arm_goal_position = arm::UpIndex();
     goal->open_claw = true;
     ASSERT_TRUE(goal.Send());
   }
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->intake.left_intake_angle = 1.0;
     goal->intake.right_intake_angle = 1.0;
     ASSERT_TRUE(goal.Send());
   }
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
   VerifyNearGoal();
 }
 
 // Tests that starting at the upper hardstops doesn't cause an abort.
 TEST_F(SuperstructureTest, DISABLED_UpperHardstopStartup) {
+  SetEnabled(true);
   superstructure_plant_.InitializeIntakePosition(
       constants::Values::kIntakeRange().upper_hard);
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->intake.left_intake_angle = constants::Values::kIntakeRange().upper;
     goal->intake.right_intake_angle = constants::Values::kIntakeRange().upper;
     goal->arm_goal_position = arm::UpIndex();
     goal->open_claw = true;
     ASSERT_TRUE(goal.Send());
   }
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
 
   VerifyNearGoal();
 }
 
 // Tests that resetting WPILib results in a rezero.
 TEST_F(SuperstructureTest, ResetTest) {
+  SetEnabled(true);
   superstructure_plant_.InitializeIntakePosition(
       constants::Values::kIntakeRange().upper);
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->intake.left_intake_angle =
         constants::Values::kIntakeRange().upper - 0.1;
     goal->intake.right_intake_angle =
@@ -500,7 +526,7 @@ TEST_F(SuperstructureTest, ResetTest) {
     goal->open_claw = true;
     ASSERT_TRUE(goal.Send());
   }
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
 
   EXPECT_EQ(intake::IntakeSide::State::RUNNING,
             superstructure_.intake_left().state());
@@ -509,14 +535,14 @@ TEST_F(SuperstructureTest, ResetTest) {
 
   VerifyNearGoal();
   SimulateSensorReset();
-  RunForTime(chrono::milliseconds(100));
+  RunFor(chrono::milliseconds(100));
 
   EXPECT_EQ(intake::IntakeSide::State::ZEROING,
             superstructure_.intake_left().state());
   EXPECT_EQ(intake::IntakeSide::State::ZEROING,
             superstructure_.intake_right().state());
 
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
 
   EXPECT_EQ(intake::IntakeSide::State::RUNNING,
             superstructure_.intake_left().state());
@@ -528,10 +554,11 @@ TEST_F(SuperstructureTest, ResetTest) {
 
 // Tests that we don't freak out without a goal.
 TEST_F(SuperstructureTest, ArmSimpleGoal) {
-  RunForTime(chrono::seconds(5));
+  SetEnabled(true);
+  RunFor(chrono::seconds(5));
 
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->intake.left_intake_angle = -0.8;
     goal->intake.right_intake_angle = -0.8;
     goal->arm_goal_position = arm::FrontHighBoxIndex();
@@ -544,20 +571,22 @@ TEST_F(SuperstructureTest, ArmSimpleGoal) {
 
 // Tests that we can can execute a move.
 TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
+  SetEnabled(true);
+  {
+    auto goal = superstructure_goal_sender_.MakeMessage();
+    goal->intake.left_intake_angle = 0.0;
+    goal->intake.right_intake_angle = 0.0;
+    goal->arm_goal_position = arm::FrontHighBoxIndex();
+    goal->open_claw = true;
+    ASSERT_TRUE(goal.Send());
+  }
 
-  auto goal = superstructure_queue_.goal.MakeMessage();
-  goal->intake.left_intake_angle = 0.0;
-  goal->intake.right_intake_angle = 0.0;
-  goal->arm_goal_position = arm::FrontHighBoxIndex();
-  goal->open_claw = true;
-  ASSERT_TRUE(goal.Send());
-
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
 
   VerifyNearGoal();
 
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->intake.left_intake_angle = 0.0;
     goal->intake.right_intake_angle = 0.0;
     goal->arm_goal_position = arm::ReadyAboveBoxIndex();
@@ -565,27 +594,30 @@ TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
     ASSERT_TRUE(goal.Send());
   }
 
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
   VerifyNearGoal();
 }
 
 // Tests that we can can execute a move which moves through multiple nodes.
 TEST_F(SuperstructureTest, ArmMultistepMove) {
+  SetEnabled(true);
   superstructure_plant_.InitializeArmPosition(arm::ReadyAboveBoxPoint());
 
-  auto goal = superstructure_queue_.goal.MakeMessage();
-  goal->intake.left_intake_angle = 0.0;
-  goal->intake.right_intake_angle = 0.0;
-  goal->arm_goal_position = arm::BackLowBoxIndex();
-  goal->open_claw = true;
-  ASSERT_TRUE(goal.Send());
+  {
+    auto goal = superstructure_goal_sender_.MakeMessage();
+    goal->intake.left_intake_angle = 0.0;
+    goal->intake.right_intake_angle = 0.0;
+    goal->arm_goal_position = arm::BackLowBoxIndex();
+    goal->open_claw = true;
+    ASSERT_TRUE(goal.Send());
+  }
 
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
 
   VerifyNearGoal();
 
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->intake.left_intake_angle = 0.0;
     goal->intake.right_intake_angle = 0.0;
     goal->arm_goal_position = arm::ReadyAboveBoxIndex();
@@ -593,7 +625,7 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
     ASSERT_TRUE(goal.Send());
   }
 
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
   VerifyNearGoal();
 }
 

@@ -19,6 +19,8 @@ class CollisionAvoidance {
 
   // Reports if the superstructure is collided.
   bool IsCollided(const SuperstructureQueue::Status *status);
+  bool IsCollided(double wrist_position, double elevator_position,
+                  double intake_position, bool has_piece);
 
   // Checks and alters goals to make sure they're safe.
   // TODO(austin): Either we will have a unit delay because this has to happen

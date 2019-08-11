@@ -23,6 +23,11 @@ void InitCreate();
 // exit gracefully).
 void Cleanup();
 
+// Locks everything into memory and sets the limits.  This plus InitNRT are
+// everything you need to do before SetCurrentThreadRealtimePriority will make
+// your thread RT.  Called as part of ShmEventLoop::Run()
+void InitRT();
+
 // Performs the realtime parts of initialization after InitNRT(true) has been called.
 void GoRT(int relative_priority = 0);
 

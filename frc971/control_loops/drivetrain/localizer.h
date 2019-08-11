@@ -1,6 +1,7 @@
 #ifndef FRC971_CONTROL_LOOPS_DRIVETRAIN_FIELD_ESTIMATOR_H_
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_FIELD_ESTIMATOR_H_
 
+#include "aos/events/event-loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/hybrid_ekf.h"
 #include "frc971/control_loops/pose.h"
@@ -94,18 +95,22 @@ class TrivialTargetSelector : public TargetSelectorInterface {
 class DeadReckonEkf : public LocalizerInterface {
   typedef HybridEkf<double> Ekf;
   typedef typename Ekf::StateIdx StateIdx;
+
  public:
-  DeadReckonEkf(const DrivetrainConfig<double> &dt_config) : ekf_(dt_config) {
-    ekf_.ResetInitialState(::aos::monotonic_clock::now(), Ekf::State::Zero(),
-                           ekf_.P());
+  DeadReckonEkf(::aos::EventLoop *event_loop,
+                const DrivetrainConfig<double> &dt_config)
+      : ekf_(dt_config) {
+    event_loop->OnRun([this, event_loop]() {
+      ekf_.ResetInitialState(event_loop->monotonic_now(), Ekf::State::Zero(),
+                             ekf_.P());
+    });
     target_selector_.set_has_target(false);
   }
 
   void Update(const ::Eigen::Matrix<double, 2, 1> &U,
-                      ::aos::monotonic_clock::time_point now,
-                      double left_encoder, double right_encoder,
-                      double gyro_rate,
-                      double /*longitudinal_accelerometer*/) override {
+              ::aos::monotonic_clock::time_point now, double left_encoder,
+              double right_encoder, double gyro_rate,
+              double /*longitudinal_accelerometer*/) override {
     ekf_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate, U, now);
   }
 
@@ -115,7 +120,8 @@ class DeadReckonEkf : public LocalizerInterface {
     const double left_encoder = ekf_.X_hat(StateIdx::kLeftEncoder);
     const double right_encoder = ekf_.X_hat(StateIdx::kRightEncoder);
     ekf_.ResetInitialState(t, (Ekf::State() << x, y, theta, left_encoder, 0,
-                               right_encoder, 0, 0, 0, 0).finished(),
+                               right_encoder, 0, 0, 0,
+                               0).finished(),
                            ekf_.P());
   };
 

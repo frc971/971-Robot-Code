@@ -441,9 +441,12 @@ class Reader : public ::aos::input::ActionJoystickInput {
 }  // namespace y2014
 
 int main() {
-  ::aos::Init(-1);
+  ::aos::InitNRT(true);
+
   ::aos::ShmEventLoop event_loop;
   ::y2014::input::joysticks::Reader reader(&event_loop);
-  reader.Run();
+
+  event_loop.Run();
+
   ::aos::Cleanup();
 }

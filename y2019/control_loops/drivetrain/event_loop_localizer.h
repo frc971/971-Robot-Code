@@ -29,9 +29,9 @@ class EventLoopLocalizer
   typedef typename Localizer::Pose Pose;
 
   EventLoopLocalizer(
+      ::aos::EventLoop *event_loop,
       const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>
-          &dt_config,
-      ::aos::EventLoop *event_loop);
+          &dt_config);
 
   void Reset(::aos::monotonic_clock::time_point t,
              const Localizer::State &state, double theta_uncertainty);

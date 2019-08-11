@@ -31,11 +31,14 @@ CollisionAvoidance::CollisionAvoidance() {
 }
 
 bool CollisionAvoidance::IsCollided(const SuperstructureQueue::Status *status) {
-  const double wrist_position = status->wrist.position;
-  const double elevator_position = status->elevator.position;
-  const double intake_position = status->intake.position;
-  const bool has_piece = status->has_piece;
+  return IsCollided(status->wrist.position, status->elevator.position,
+                    status->intake.position, status->has_piece);
+}
 
+bool CollisionAvoidance::IsCollided(const double wrist_position,
+                                    const double elevator_position,
+                                    const double intake_position,
+                                    const bool has_piece) {
   const double wrist_elevator_collision_max_angle =
       has_piece ? kWristElevatorCollisionMaxAngle
                 : kWristElevatorCollisionMaxAngleWithoutObject;

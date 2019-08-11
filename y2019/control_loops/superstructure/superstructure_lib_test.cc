@@ -37,8 +37,20 @@ typedef Superstructure::AbsoluteEncoderSubsystem AbsoluteEncoderSubsystem;
 // the position.
 class SuperstructureSimulation {
  public:
-  SuperstructureSimulation()
-      : elevator_plant_(
+  SuperstructureSimulation(::aos::EventLoop *event_loop, chrono::nanoseconds dt)
+      : event_loop_(event_loop),
+        dt_(dt),
+        superstructure_position_sender_(
+            event_loop_->MakeSender<SuperstructureQueue::Position>(
+                ".y2019.control_loops.superstructure.superstructure_queue."
+                "position")),
+        superstructure_status_fetcher_(event_loop_->MakeFetcher<
+                                       SuperstructureQueue::Status>(
+            ".y2019.control_loops.superstructure.superstructure_queue.status")),
+        superstructure_output_fetcher_(event_loop_->MakeFetcher<
+                                       SuperstructureQueue::Output>(
+            ".y2019.control_loops.superstructure.superstructure_queue.output")),
+        elevator_plant_(
             new CappedTestPlant(::y2019::control_loops::superstructure::
                                     elevator::MakeElevatorPlant())),
         elevator_pot_encoder_(M_PI * 2.0 *
@@ -57,15 +69,7 @@ class SuperstructureSimulation {
         stilts_plant_(new CappedTestPlant(
             ::y2019::control_loops::superstructure::stilts::MakeStiltsPlant())),
         stilts_pot_encoder_(M_PI * 2.0 *
-                            constants::Values::kStiltsEncoderRatio()),
-
-        superstructure_queue_(
-            ".y2019.control_loops.superstructure.superstructure_queue",
-            ".y2019.control_loops.superstructure.superstructure_queue.goal",
-            ".y2019.control_loops.superstructure.superstructure_queue.output",
-            ".y2019.control_loops.superstructure.superstructure_queue.status",
-            ".y2019.control_loops.superstructure.superstructure_queue."
-            "position") {
+                            constants::Values::kStiltsEncoderRatio()) {
     // Start the elevator out in the middle by default.
     InitializeElevatorPosition(constants::Values::kElevatorRange().upper);
 
@@ -76,6 +80,17 @@ class SuperstructureSimulation {
 
     // Start the stilts out in the middle by default.
     InitializeStiltsPosition(constants::Values::kStiltsRange().lower);
+
+    phased_loop_handle_ = event_loop_->AddPhasedLoop(
+        [this](int) {
+          // Skip this the first time.
+          if (!first_) {
+            Simulate();
+          }
+          first_ = false;
+          SendPositionMessage();
+        },
+        dt);
   }
 
   void InitializeElevatorPosition(double start_pos) {
@@ -121,8 +136,8 @@ class SuperstructureSimulation {
 
   // Sends a queue message with the position of the superstructure.
   void SendPositionMessage() {
-    ::aos::ScopedMessagePtr<SuperstructureQueue::Position> position =
-        superstructure_queue_.position.MakeMessage();
+    ::aos::Sender<SuperstructureQueue::Position>::Message position =
+        superstructure_position_sender_.MakeMessage();
 
     elevator_pot_encoder_.GetSensorValues(&position->elevator);
     wrist_pot_encoder_.GetSensorValues(&position->wrist);
@@ -148,85 +163,78 @@ class SuperstructureSimulation {
   // Sets the difference between the commanded and applied powers.
   // This lets us test that the integrators work.
 
-  void set_elevator_voltage_offset(double voltage_offset) {
-    elevator_plant_->set_voltage_offset(voltage_offset);
-  }
-
-  void set_wrist_voltage_offset(double voltage_offset) {
-    wrist_plant_->set_voltage_offset(voltage_offset);
-  }
-
-  void set_intake_voltage_offset(double voltage_offset) {
-    intake_plant_->set_voltage_offset(voltage_offset);
-  }
-
-  void set_stilts_voltage_offset(double voltage_offset) {
-    stilts_plant_->set_voltage_offset(voltage_offset);
-  }
-
   void set_simulated_pressure(double pressure) {
     simulated_pressure_ = pressure;
   }
 
   // Simulates the superstructure for a single timestep.
   void Simulate() {
-    EXPECT_TRUE(superstructure_queue_.output.FetchLatest());
-    EXPECT_TRUE(superstructure_queue_.status.FetchLatest());
+    const double last_elevator_velocity = elevator_velocity();
+    const double last_wrist_velocity = wrist_velocity();
+    const double last_intake_velocity = intake_velocity();
+    const double last_stilts_velocity = stilts_velocity();
+
+    EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
+    EXPECT_TRUE(superstructure_status_fetcher_.Fetch());
+
+    if (check_collisions_) {
+      CheckCollisions(superstructure_status_fetcher_.get());
+    }
 
     const double voltage_check_elevator =
         (static_cast<PotAndAbsoluteEncoderSubsystem::State>(
-             superstructure_queue_.status->elevator.state) ==
+             superstructure_status_fetcher_->elevator.state) ==
          PotAndAbsoluteEncoderSubsystem::State::RUNNING)
             ? constants::GetValues().elevator.subsystem_params.operating_voltage
             : constants::GetValues().elevator.subsystem_params.zeroing_voltage;
 
     const double voltage_check_wrist =
         (static_cast<PotAndAbsoluteEncoderSubsystem::State>(
-             superstructure_queue_.status->wrist.state) ==
+             superstructure_status_fetcher_->wrist.state) ==
          PotAndAbsoluteEncoderSubsystem::State::RUNNING)
             ? constants::GetValues().wrist.subsystem_params.operating_voltage
             : constants::GetValues().wrist.subsystem_params.zeroing_voltage;
 
     const double voltage_check_intake =
         (static_cast<AbsoluteEncoderSubsystem::State>(
-             superstructure_queue_.status->intake.state) ==
+             superstructure_status_fetcher_->intake.state) ==
          AbsoluteEncoderSubsystem::State::RUNNING)
             ? constants::GetValues().intake.operating_voltage
             : constants::GetValues().intake.zeroing_voltage;
 
     const double voltage_check_stilts =
         (static_cast<PotAndAbsoluteEncoderSubsystem::State>(
-             superstructure_queue_.status->stilts.state) ==
+             superstructure_status_fetcher_->stilts.state) ==
          PotAndAbsoluteEncoderSubsystem::State::RUNNING)
             ? constants::GetValues().stilts.subsystem_params.operating_voltage
             : constants::GetValues().stilts.subsystem_params.zeroing_voltage;
 
-    EXPECT_NEAR(superstructure_queue_.output->elevator_voltage, 0.0,
+    EXPECT_NEAR(superstructure_output_fetcher_->elevator_voltage, 0.0,
                 voltage_check_elevator);
 
-    EXPECT_NEAR(superstructure_queue_.output->wrist_voltage, 0.0,
+    EXPECT_NEAR(superstructure_output_fetcher_->wrist_voltage, 0.0,
                 voltage_check_wrist);
 
-    EXPECT_NEAR(superstructure_queue_.output->intake_joint_voltage, 0.0,
+    EXPECT_NEAR(superstructure_output_fetcher_->intake_joint_voltage, 0.0,
                 voltage_check_intake);
 
-    EXPECT_NEAR(superstructure_queue_.output->stilts_voltage, 0.0,
+    EXPECT_NEAR(superstructure_output_fetcher_->stilts_voltage, 0.0,
                 voltage_check_stilts);
 
     ::Eigen::Matrix<double, 1, 1> elevator_U;
-    elevator_U << superstructure_queue_.output->elevator_voltage +
+    elevator_U << superstructure_output_fetcher_->elevator_voltage +
                       elevator_plant_->voltage_offset();
 
     ::Eigen::Matrix<double, 1, 1> wrist_U;
-    wrist_U << superstructure_queue_.output->wrist_voltage +
+    wrist_U << superstructure_output_fetcher_->wrist_voltage +
                    wrist_plant_->voltage_offset();
 
     ::Eigen::Matrix<double, 1, 1> intake_U;
-    intake_U << superstructure_queue_.output->intake_joint_voltage +
+    intake_U << superstructure_output_fetcher_->intake_joint_voltage +
                     intake_plant_->voltage_offset();
 
     ::Eigen::Matrix<double, 1, 1> stilts_U;
-    stilts_U << superstructure_queue_.output->stilts_voltage +
+    stilts_U << superstructure_output_fetcher_->stilts_voltage +
                     stilts_plant_->voltage_offset();
 
     elevator_plant_->Update(elevator_U);
@@ -257,140 +265,42 @@ class SuperstructureSimulation {
 
     EXPECT_GE(position_stilts, constants::Values::kStiltsRange().lower_hard);
     EXPECT_LE(position_stilts, constants::Values::kStiltsRange().upper_hard);
-  }
 
- private:
-  ::std::unique_ptr<CappedTestPlant> elevator_plant_;
-  PositionSensorSimulator elevator_pot_encoder_;
-
-  ::std::unique_ptr<CappedTestPlant> wrist_plant_;
-  PositionSensorSimulator wrist_pot_encoder_;
-
-  ::std::unique_ptr<CappedTestPlant> intake_plant_;
-  PositionSensorSimulator intake_pot_encoder_;
-
-  ::std::unique_ptr<CappedTestPlant> stilts_plant_;
-  PositionSensorSimulator stilts_pot_encoder_;
-
-  double simulated_pressure_ = 1.0;
-
-  SuperstructureQueue superstructure_queue_;
-};
-
-class SuperstructureTest : public ::aos::testing::ControlLoopTest {
- protected:
-  SuperstructureTest()
-      : superstructure_queue_(
-            ".y2019.control_loops.superstructure.superstructure_queue",
-            ".y2019.control_loops.superstructure.superstructure_queue.goal",
-            ".y2019.control_loops.superstructure.superstructure_queue.output",
-            ".y2019.control_loops.superstructure.superstructure_queue.status",
-            ".y2019.control_loops.superstructure.superstructure_queue."
-            "position"),
-        superstructure_(&event_loop_) {
-    set_team_id(::frc971::control_loops::testing::kTeamNumber);
-  }
-
-  void VerifyNearGoal() {
-    superstructure_queue_.goal.FetchLatest();
-    superstructure_queue_.status.FetchLatest();
-
-    EXPECT_NEAR(superstructure_queue_.goal->elevator.unsafe_goal,
-                superstructure_queue_.status->elevator.position, 0.001);
-    EXPECT_NEAR(superstructure_queue_.goal->wrist.unsafe_goal,
-                superstructure_plant_.wrist_position(), 0.001);
-    EXPECT_NEAR(superstructure_queue_.goal->intake.unsafe_goal,
-                superstructure_queue_.status->intake.position, 0.001);
-    EXPECT_NEAR(superstructure_queue_.goal->stilts.unsafe_goal,
-                superstructure_plant_.stilts_position(), 0.001);
-  }
-
-  // Runs one iteration of the whole simulation.
-  void RunIteration(bool enabled = true) {
-    SendMessages(enabled);
-
-    superstructure_plant_.SendPositionMessage();
-    superstructure_.Iterate();
-    superstructure_plant_.Simulate();
-
-    TickTime(chrono::microseconds(5050));
-  }
-
-  void CheckCollisions() {
-    superstructure_queue_.status.FetchLatest();
-    ASSERT_FALSE(
-        collision_avoidance_.IsCollided(superstructure_queue_.status.get()));
-  }
-
-  void WaitUntilZeroed() {
-    int i = 0;
-    do {
-      i++;
-      RunIteration();
-      superstructure_queue_.status.FetchLatest();
-      // 2 Seconds
-      ASSERT_LE(i, 2 * 1.0 / .00505);
-    } while (!superstructure_queue_.status.get()->zeroed);
-  }
-
-  // Runs iterations until the specified amount of simulated time has elapsed.
-  void RunForTime(const monotonic_clock::duration run_for, bool enabled = true,
-                  bool check_collisions = true) {
-    const auto start_time = monotonic_clock::now();
-    while (monotonic_clock::now() < start_time + run_for) {
-      const auto loop_start_time = monotonic_clock::now();
-      double begin_elevator_velocity =
-          superstructure_plant_.elevator_velocity();
-      double begin_wrist_velocity = superstructure_plant_.wrist_velocity();
-      double begin_intake_velocity = superstructure_plant_.intake_velocity();
-      double begin_stilts_velocity = superstructure_plant_.stilts_velocity();
-
-      RunIteration(enabled);
-      if (check_collisions) {
-        CheckCollisions();
-      }
-
-      const double loop_time = ::aos::time::DurationInSeconds(
-          monotonic_clock::now() - loop_start_time);
-
-      const double elevator_acceleration =
-          (superstructure_plant_.elevator_velocity() -
-           begin_elevator_velocity) /
-          loop_time;
-      const double wrist_acceleration =
-          (superstructure_plant_.wrist_velocity() - begin_wrist_velocity) /
-          loop_time;
-      const double intake_acceleration =
-          (superstructure_plant_.intake_velocity() - begin_intake_velocity) /
-          loop_time;
-      const double stilts_acceleration =
-          (superstructure_plant_.stilts_velocity() - begin_stilts_velocity) /
-          loop_time;
-
-      EXPECT_GE(peak_elevator_acceleration_, elevator_acceleration);
-      EXPECT_LE(-peak_elevator_acceleration_, elevator_acceleration);
-      EXPECT_GE(peak_elevator_velocity_,
-                superstructure_plant_.elevator_velocity());
-      EXPECT_LE(-peak_elevator_velocity_,
-                superstructure_plant_.elevator_velocity());
-
-      EXPECT_GE(peak_wrist_acceleration_, wrist_acceleration);
-      EXPECT_LE(-peak_wrist_acceleration_, wrist_acceleration);
-      EXPECT_GE(peak_wrist_velocity_, superstructure_plant_.wrist_velocity());
-      EXPECT_LE(-peak_wrist_velocity_, superstructure_plant_.wrist_velocity());
-
-      EXPECT_GE(peak_intake_acceleration_, intake_acceleration);
-      EXPECT_LE(-peak_intake_acceleration_, intake_acceleration);
-      EXPECT_GE(peak_intake_velocity_, superstructure_plant_.intake_velocity());
-      EXPECT_LE(-peak_intake_velocity_,
-                superstructure_plant_.intake_velocity());
-
-      EXPECT_GE(peak_stilts_acceleration_, stilts_acceleration);
-      EXPECT_LE(-peak_stilts_acceleration_, stilts_acceleration);
-      EXPECT_GE(peak_stilts_velocity_, superstructure_plant_.stilts_velocity());
-      EXPECT_LE(-peak_stilts_velocity_,
-                superstructure_plant_.stilts_velocity());
+    // Check that no constraints have been violated.
+    if (check_collisions_) {
+      CheckCollisions(superstructure_status_fetcher_.get());
     }
+
+    const double loop_time = ::aos::time::DurationInSeconds(dt_);
+
+    const double elevator_acceleration =
+        (elevator_velocity() - last_elevator_velocity) / loop_time;
+    const double wrist_acceleration =
+        (wrist_velocity() - last_wrist_velocity) / loop_time;
+    const double intake_acceleration =
+        (intake_velocity() - last_intake_velocity) / loop_time;
+    const double stilts_acceleration =
+        (stilts_velocity() - last_stilts_velocity) / loop_time;
+
+    EXPECT_GE(peak_elevator_acceleration_, elevator_acceleration);
+    EXPECT_LE(-peak_elevator_acceleration_, elevator_acceleration);
+    EXPECT_GE(peak_elevator_velocity_, elevator_velocity());
+    EXPECT_LE(-peak_elevator_velocity_, elevator_velocity());
+
+    EXPECT_GE(peak_wrist_acceleration_, wrist_acceleration);
+    EXPECT_LE(-peak_wrist_acceleration_, wrist_acceleration);
+    EXPECT_GE(peak_wrist_velocity_, wrist_velocity());
+    EXPECT_LE(-peak_wrist_velocity_, wrist_velocity());
+
+    EXPECT_GE(peak_intake_acceleration_, intake_acceleration);
+    EXPECT_LE(-peak_intake_acceleration_, intake_acceleration);
+    EXPECT_GE(peak_intake_velocity_, intake_velocity());
+    EXPECT_LE(-peak_intake_velocity_, intake_velocity());
+
+    EXPECT_GE(peak_stilts_acceleration_, stilts_acceleration);
+    EXPECT_LE(-peak_stilts_acceleration_, stilts_acceleration);
+    EXPECT_GE(peak_stilts_velocity_, stilts_velocity());
+    EXPECT_LE(-peak_stilts_velocity_, stilts_velocity());
   }
 
   void set_peak_elevator_acceleration(double value) {
@@ -415,20 +325,43 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
   }
   void set_peak_stilts_velocity(double value) { peak_stilts_velocity_ = value; }
 
-  ::aos::ShmEventLoop event_loop_;
-  // Create a new instance of the test queue so that it invalidates the queue
-  // that it points to.  Otherwise, we will have a pointer to shared memory
-  // that is no longer valid.
-  SuperstructureQueue superstructure_queue_;
-
-  // Create a control loop and simulation.
-  Superstructure superstructure_;
-  SuperstructureSimulation superstructure_plant_;
-
-  // Creat a collision avoidance object
-  CollisionAvoidance collision_avoidance_;
+  void set_check_collisions(bool check_collisions) {
+    check_collisions_ = check_collisions;
+  }
 
  private:
+  void CheckCollisions(const SuperstructureQueue::Status *status) {
+    ASSERT_FALSE(
+        collision_avoidance_.IsCollided(wrist_position(), elevator_position(),
+                                        intake_position(), status->has_piece));
+  }
+
+  ::aos::EventLoop *event_loop_;
+  const chrono::nanoseconds dt_;
+  ::aos::PhasedLoopHandler *phased_loop_handle_ = nullptr;
+
+  ::aos::Sender<SuperstructureQueue::Position> superstructure_position_sender_;
+  ::aos::Fetcher<SuperstructureQueue::Status> superstructure_status_fetcher_;
+  ::aos::Fetcher<SuperstructureQueue::Output> superstructure_output_fetcher_;
+
+  bool first_ = true;
+
+  ::std::unique_ptr<CappedTestPlant> elevator_plant_;
+  PositionSensorSimulator elevator_pot_encoder_;
+
+  ::std::unique_ptr<CappedTestPlant> wrist_plant_;
+  PositionSensorSimulator wrist_pot_encoder_;
+
+  ::std::unique_ptr<CappedTestPlant> intake_plant_;
+  PositionSensorSimulator intake_pot_encoder_;
+
+  ::std::unique_ptr<CappedTestPlant> stilts_plant_;
+  PositionSensorSimulator stilts_pot_encoder_;
+
+  double simulated_pressure_ = 1.0;
+
+  bool check_collisions_ = true;
+
   // The acceleration limits to check for while moving.
   double peak_elevator_acceleration_ = 1e10;
   double peak_wrist_acceleration_ = 1e10;
@@ -440,10 +373,84 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
   double peak_wrist_velocity_ = 1e10;
   double peak_intake_velocity_ = 1e10;
   double peak_stilts_velocity_ = 1e10;
+
+  // Creat a collision avoidance object
+  CollisionAvoidance collision_avoidance_;
+};
+
+class SuperstructureTest : public ::aos::testing::ControlLoopTest {
+ protected:
+  SuperstructureTest()
+      : ::aos::testing::ControlLoopTest(chrono::microseconds(5050)),
+        test_event_loop_(MakeEventLoop()),
+        superstructure_goal_fetcher_(test_event_loop_->MakeFetcher<
+                                     SuperstructureQueue::Goal>(
+            ".y2019.control_loops.superstructure.superstructure_queue.goal")),
+        superstructure_goal_sender_(test_event_loop_->MakeSender<
+                                    SuperstructureQueue::Goal>(
+            ".y2019.control_loops.superstructure.superstructure_queue.goal")),
+        superstructure_status_fetcher_(test_event_loop_->MakeFetcher<
+                                       SuperstructureQueue::Status>(
+            ".y2019.control_loops.superstructure.superstructure_queue.status")),
+        superstructure_output_fetcher_(test_event_loop_->MakeFetcher<
+                                       SuperstructureQueue::Output>(
+            ".y2019.control_loops.superstructure.superstructure_queue.output")),
+        superstructure_position_fetcher_(
+            test_event_loop_->MakeFetcher<SuperstructureQueue::Position>(
+                ".y2019.control_loops.superstructure.superstructure_queue."
+                "position")),
+        superstructure_event_loop_(MakeEventLoop()),
+        superstructure_(superstructure_event_loop_.get()),
+        superstructure_plant_event_loop_(MakeEventLoop()),
+        superstructure_plant_(superstructure_plant_event_loop_.get(), dt()) {
+    set_team_id(::frc971::control_loops::testing::kTeamNumber);
+  }
+
+  void VerifyNearGoal() {
+    superstructure_goal_fetcher_.Fetch();
+    superstructure_status_fetcher_.Fetch();
+
+    EXPECT_NEAR(superstructure_goal_fetcher_->elevator.unsafe_goal,
+                superstructure_status_fetcher_->elevator.position, 0.001);
+    EXPECT_NEAR(superstructure_goal_fetcher_->wrist.unsafe_goal,
+                superstructure_plant_.wrist_position(), 0.001);
+    EXPECT_NEAR(superstructure_goal_fetcher_->intake.unsafe_goal,
+                superstructure_status_fetcher_->intake.position, 0.001);
+    EXPECT_NEAR(superstructure_goal_fetcher_->stilts.unsafe_goal,
+                superstructure_plant_.stilts_position(), 0.001);
+  }
+
+  void WaitUntilZeroed() {
+    int i = 0;
+    do {
+      i++;
+      RunFor(dt());
+      superstructure_status_fetcher_.Fetch();
+      // 2 Seconds
+      ASSERT_LE(i, 2 * 1.0 / .00505);
+    } while (!superstructure_status_fetcher_.get()->zeroed);
+  }
+
+  ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
+
+  ::aos::Fetcher<SuperstructureQueue::Goal> superstructure_goal_fetcher_;
+  ::aos::Sender<SuperstructureQueue::Goal> superstructure_goal_sender_;
+  ::aos::Fetcher<SuperstructureQueue::Status> superstructure_status_fetcher_;
+  ::aos::Fetcher<SuperstructureQueue::Output> superstructure_output_fetcher_;
+  ::aos::Fetcher<SuperstructureQueue::Position>
+      superstructure_position_fetcher_;
+
+  // Create a control loop and simulation.
+  ::std::unique_ptr<::aos::EventLoop> superstructure_event_loop_;
+  Superstructure superstructure_;
+
+  ::std::unique_ptr<::aos::EventLoop> superstructure_plant_event_loop_;
+  SuperstructureSimulation superstructure_plant_;
 };
 
 // Tests that the superstructure does nothing when the goal is zero.
 TEST_F(SuperstructureTest, DoesNothing) {
+  SetEnabled(true);
   superstructure_plant_.InitializeElevatorPosition(1.4);
   superstructure_plant_.InitializeWristPosition(1.0);
   superstructure_plant_.InitializeIntakePosition(1.1);
@@ -452,7 +459,7 @@ TEST_F(SuperstructureTest, DoesNothing) {
   WaitUntilZeroed();
 
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
 
     goal->elevator.unsafe_goal = 1.4;
     goal->wrist.unsafe_goal = 1.0;
@@ -460,14 +467,15 @@ TEST_F(SuperstructureTest, DoesNothing) {
     goal->stilts.unsafe_goal = 0.1;
     ASSERT_TRUE(goal.Send());
   }
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
   VerifyNearGoal();
 
-  EXPECT_TRUE(superstructure_queue_.output.FetchLatest());
+  EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
 }
 
 // Tests that loops can reach a goal.
 TEST_F(SuperstructureTest, ReachesGoal) {
+  SetEnabled(true);
   // Set a reasonable goal.
 
   superstructure_plant_.InitializeElevatorPosition(1.4);
@@ -477,7 +485,7 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 
   WaitUntilZeroed();
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->elevator.unsafe_goal = 1.4;
     goal->elevator.profile_params.max_velocity = 1;
     goal->elevator.profile_params.max_acceleration = 0.5;
@@ -498,7 +506,7 @@ TEST_F(SuperstructureTest, ReachesGoal) {
   }
 
   // Give it a lot of time to get there.
-  RunForTime(chrono::seconds(8));
+  RunFor(chrono::seconds(8));
 
   VerifyNearGoal();
 }
@@ -508,10 +516,11 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 //
 // We are going to disable collision detection to make this easier to implement.
 TEST_F(SuperstructureTest, SaturationTest) {
+  SetEnabled(true);
   // Zero it before we move.
   WaitUntilZeroed();
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->elevator.unsafe_goal = constants::Values::kElevatorRange().upper;
     goal->wrist.unsafe_goal = constants::Values::kWristRange().upper;
     goal->intake.unsafe_goal = constants::Values::kIntakeRange().upper;
@@ -519,13 +528,13 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
     ASSERT_TRUE(goal.Send());
   }
-  RunForTime(chrono::seconds(8));
+  RunFor(chrono::seconds(8));
   VerifyNearGoal();
 
   // Try a low acceleration move with a high max velocity and verify the
   // acceleration is capped like expected.
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->elevator.unsafe_goal = constants::Values::kElevatorRange().upper;
     goal->elevator.profile_params.max_velocity = 20.0;
     goal->elevator.profile_params.max_acceleration = 0.1;
@@ -544,21 +553,21 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
     ASSERT_TRUE(goal.Send());
   }
-  set_peak_elevator_velocity(23.0);
-  set_peak_elevator_acceleration(0.2);
-  set_peak_wrist_velocity(23.0);
-  set_peak_wrist_acceleration(0.2);
-  set_peak_intake_velocity(23.0);
-  set_peak_intake_acceleration(0.2);
-  set_peak_stilts_velocity(23.0);
-  set_peak_stilts_acceleration(0.2);
+  superstructure_plant_.set_peak_elevator_velocity(23.0);
+  superstructure_plant_.set_peak_elevator_acceleration(0.2);
+  superstructure_plant_.set_peak_wrist_velocity(23.0);
+  superstructure_plant_.set_peak_wrist_acceleration(0.2);
+  superstructure_plant_.set_peak_intake_velocity(23.0);
+  superstructure_plant_.set_peak_intake_acceleration(0.2);
+  superstructure_plant_.set_peak_stilts_velocity(23.0);
+  superstructure_plant_.set_peak_stilts_acceleration(0.2);
 
-  RunForTime(chrono::seconds(8));
+  RunFor(chrono::seconds(8));
   VerifyNearGoal();
 
   // Now do a high acceleration move with a low velocity limit.
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->elevator.unsafe_goal = constants::Values::kElevatorRange().lower;
     goal->elevator.profile_params.max_velocity = 0.1;
     goal->elevator.profile_params.max_acceleration = 10.0;
@@ -575,14 +584,14 @@ TEST_F(SuperstructureTest, SaturationTest) {
     goal->stilts.profile_params.max_velocity = 0.1;
     goal->stilts.profile_params.max_acceleration = 10.0;
   }
-  set_peak_elevator_velocity(0.2);
-  set_peak_elevator_acceleration(11.0);
-  set_peak_wrist_velocity(0.2);
-  set_peak_wrist_acceleration(11.0);
-  set_peak_intake_velocity(0.2);
-  set_peak_intake_acceleration(11.0);
-  set_peak_stilts_velocity(0.2);
-  set_peak_stilts_acceleration(11.0);
+  superstructure_plant_.set_peak_elevator_velocity(0.2);
+  superstructure_plant_.set_peak_elevator_acceleration(11.0);
+  superstructure_plant_.set_peak_wrist_velocity(0.2);
+  superstructure_plant_.set_peak_wrist_acceleration(11.0);
+  superstructure_plant_.set_peak_intake_velocity(0.2);
+  superstructure_plant_.set_peak_intake_acceleration(11.0);
+  superstructure_plant_.set_peak_stilts_velocity(0.2);
+  superstructure_plant_.set_peak_stilts_acceleration(11.0);
 
   VerifyNearGoal();
 }
@@ -595,7 +604,7 @@ TEST_F(SuperstructureTest, ZeroTest) {
   superstructure_plant_.InitializeStiltsPosition(0.1);
 
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
 
     goal->elevator.unsafe_goal = 1.4;
     goal->elevator.profile_params.max_velocity = 1;
@@ -621,8 +630,9 @@ TEST_F(SuperstructureTest, ZeroTest) {
 
 // Tests that the loop zeroes when run for a while without a goal.
 TEST_F(SuperstructureTest, ZeroNoGoal) {
+  SetEnabled(true);
   WaitUntilZeroed();
-  RunForTime(chrono::seconds(2));
+  RunFor(chrono::seconds(2));
   EXPECT_EQ(PotAndAbsoluteEncoderSubsystem::State::RUNNING,
             superstructure_.elevator().state());
 
@@ -638,6 +648,7 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
 
 // Move wrist front to back and see if we collide
 TEST_F(SuperstructureTest, CollisionTest) {
+  SetEnabled(true);
   // Set a reasonable goal.
   superstructure_plant_.InitializeElevatorPosition(
       constants::Values::kElevatorRange().lower);
@@ -649,7 +660,7 @@ TEST_F(SuperstructureTest, CollisionTest) {
 
   WaitUntilZeroed();
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->elevator.unsafe_goal = constants::Values::kElevatorRange().lower;
     goal->wrist.unsafe_goal = -M_PI / 3.0;
     goal->intake.unsafe_goal =
@@ -659,19 +670,20 @@ TEST_F(SuperstructureTest, CollisionTest) {
   }
 
   // Give it a lot of time to get there.
-  RunForTime(chrono::seconds(20), true, true);
+  RunFor(chrono::seconds(20));
 
   VerifyNearGoal();
 }
 
 // Tests that the rollers spin when allowed
 TEST_F(SuperstructureTest, IntakeRollerTest) {
+  SetEnabled(true);
   WaitUntilZeroed();
 
   // Get the elevator and wrist out of the way and set the Intake to where
   // we should be able to spin and verify that they do
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->elevator.unsafe_goal = constants::Values::kElevatorRange().upper;
     goal->wrist.unsafe_goal = 0.0;
     goal->intake.unsafe_goal = constants::Values::kIntakeRange().upper;
@@ -680,16 +692,16 @@ TEST_F(SuperstructureTest, IntakeRollerTest) {
     ASSERT_TRUE(goal.Send());
   }
 
-  RunForTime(chrono::seconds(5), true, true);
-  superstructure_queue_.goal.FetchLatest();
-  superstructure_queue_.output.FetchLatest();
-  EXPECT_EQ(superstructure_queue_.output->intake_roller_voltage,
-            superstructure_queue_.goal->roller_voltage);
+  RunFor(chrono::seconds(5));
+  superstructure_goal_fetcher_.Fetch();
+  superstructure_output_fetcher_.Fetch();
+  EXPECT_EQ(superstructure_output_fetcher_->intake_roller_voltage,
+            superstructure_goal_fetcher_->roller_voltage);
   VerifyNearGoal();
 
   // Move the intake where we oughtn't to spin the rollers and verify they don't
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->elevator.unsafe_goal = constants::Values::kElevatorRange().upper;
     goal->wrist.unsafe_goal = 0.0;
     goal->intake.unsafe_goal = constants::Values::kIntakeRange().lower;
@@ -698,40 +710,41 @@ TEST_F(SuperstructureTest, IntakeRollerTest) {
     ASSERT_TRUE(goal.Send());
   }
 
-  RunForTime(chrono::seconds(5), true, true);
-  superstructure_queue_.goal.FetchLatest();
-  superstructure_queue_.output.FetchLatest();
-  EXPECT_EQ(superstructure_queue_.output->intake_roller_voltage, 0.0);
+  RunFor(chrono::seconds(5));
+  superstructure_goal_fetcher_.Fetch();
+  superstructure_output_fetcher_.Fetch();
+  EXPECT_EQ(superstructure_output_fetcher_->intake_roller_voltage, 0.0);
   VerifyNearGoal();
 }
 
 // Tests the Vacuum detects a gamepiece
 TEST_F(SuperstructureTest, VacuumDetectsPiece) {
+  SetEnabled(true);
   WaitUntilZeroed();
   // Turn on suction
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->suction.grab_piece = true;
 
     ASSERT_TRUE(goal.Send());
   }
 
-  RunForTime(Vacuum::kTimeAtHigherVoltage - chrono::milliseconds(10), true,
-             false);
+  RunFor(Vacuum::kTimeAtHigherVoltage - chrono::milliseconds(10));
 
   // Verify that at 0 pressure after short time voltage is still 12
   superstructure_plant_.set_simulated_pressure(0.0);
-  RunForTime(chrono::seconds(2));
-  superstructure_queue_.status.FetchLatest();
-  EXPECT_TRUE(superstructure_queue_.status->has_piece);
+  RunFor(chrono::seconds(2));
+  superstructure_status_fetcher_.Fetch();
+  EXPECT_TRUE(superstructure_status_fetcher_->has_piece);
 }
 
 // Tests the Vacuum backs off after acquiring a gamepiece
 TEST_F(SuperstructureTest, VacuumBacksOff) {
+  SetEnabled(true);
   WaitUntilZeroed();
   // Turn on suction
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->suction.grab_piece = true;
 
     ASSERT_TRUE(goal.Send());
@@ -739,25 +752,25 @@ TEST_F(SuperstructureTest, VacuumBacksOff) {
 
   // Verify that at 0 pressure after short time voltage is still high
   superstructure_plant_.set_simulated_pressure(0.0);
-  RunForTime(Vacuum::kTimeAtHigherVoltage - chrono::milliseconds(10), true,
-             false);
-  superstructure_queue_.output.FetchLatest();
-  EXPECT_EQ(superstructure_queue_.output->pump_voltage, Vacuum::kPumpVoltage);
+  RunFor(Vacuum::kTimeAtHigherVoltage - chrono::milliseconds(10));
+  superstructure_output_fetcher_.Fetch();
+  EXPECT_EQ(superstructure_output_fetcher_->pump_voltage, Vacuum::kPumpVoltage);
 
   // Verify that after waiting with a piece the pump voltage goes to the
   // has piece voltage
-  RunForTime(chrono::seconds(2), true, false);
-  superstructure_queue_.output.FetchLatest();
-  EXPECT_EQ(superstructure_queue_.output->pump_voltage,
+  RunFor(chrono::seconds(2));
+  superstructure_output_fetcher_.Fetch();
+  EXPECT_EQ(superstructure_output_fetcher_->pump_voltage,
             Vacuum::kPumpHasPieceVoltage);
 }
 
 // Tests the Vacuum stops immediately after getting a no suck goal
 TEST_F(SuperstructureTest, VacuumStopsQuickly) {
+  SetEnabled(true);
   WaitUntilZeroed();
   // Turn on suction
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->suction.grab_piece = true;
 
     ASSERT_TRUE(goal.Send());
@@ -765,27 +778,28 @@ TEST_F(SuperstructureTest, VacuumStopsQuickly) {
 
   // Get a Gamepiece
   superstructure_plant_.set_simulated_pressure(0.0);
-  RunForTime(chrono::seconds(2));
-  superstructure_queue_.status.FetchLatest();
-  EXPECT_TRUE(superstructure_queue_.status->has_piece);
+  RunFor(chrono::seconds(2));
+  superstructure_status_fetcher_.Fetch();
+  EXPECT_TRUE(superstructure_status_fetcher_->has_piece);
 
   // Turn off suction
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->suction.grab_piece = false;
     ASSERT_TRUE(goal.Send());
   }
 
   superstructure_plant_.set_simulated_pressure(1.0);
   // Run for a short while and check that voltage dropped to 0
-  RunForTime(chrono::milliseconds(10), true, false);
-  superstructure_queue_.output.FetchLatest();
-  EXPECT_EQ(superstructure_queue_.output->pump_voltage, 0.0);
+  RunFor(chrono::milliseconds(10));
+  superstructure_output_fetcher_.Fetch();
+  EXPECT_EQ(superstructure_output_fetcher_->pump_voltage, 0.0);
 }
 
 // Tests that running disabled, ya know, works
 TEST_F(SuperstructureTest, DiasableTest) {
-  RunForTime(chrono::seconds(2), false, false);
+  superstructure_plant_.set_check_collisions(false);
+  RunFor(chrono::seconds(2));
 }
 
 }  // namespace testing

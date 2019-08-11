@@ -180,7 +180,7 @@ cc_test(
     srcs = ["target_selector_test.cc"],
     deps = [
         ":target_selector",
-        "//aos/events:shm-event-loop",
+        "//aos/events:simulated_event_loop",
         "//aos/testing:googletest",
         "//aos/testing:test_shm",
     ],
@@ -210,6 +210,7 @@ cc_test(
             "arm": [],
         }),
     linkstatic = True,
+    shard_count = 5,
     deps = [
         ":localizer",
         ":drivetrain_base",

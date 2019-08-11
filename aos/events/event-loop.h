@@ -131,9 +131,6 @@ class EventLoop : public RawEventLoop {
 
   // TODO(austin): OnExit
 
-  // Stops receiving events
-  virtual void Exit() = 0;
-
   // Sets the scheduler priority to run the event loop at.  This may not be
   // called after we go into "real-time-mode".
   virtual void SetRuntimeRealtimePriority(int priority) = 0;

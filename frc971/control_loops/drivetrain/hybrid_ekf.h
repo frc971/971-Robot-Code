@@ -488,6 +488,9 @@ void HybridEkf<Scalar>::InitializeMatrices() {
   // tuning things. I haven't yet tried messing with these values again.
   encoder_noise_ = 0.5 * R_kf_drivetrain(0, 0);
   gyro_noise_ = 0.1 * R_kf_drivetrain(2, 2);
+
+  X_hat_.setZero();
+  P_.setZero();
 }
 
 }  // namespace drivetrain

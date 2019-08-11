@@ -6,11 +6,17 @@
 
 #include "frc971/control_loops/drivetrain/trajectory.h"
 #include "frc971/control_loops/state_feedback_loop.h"
+#include "gflags/gflags.h"
+#if defined(SUPPORT_PLOT)
+#include "third_party/matplotlib-cpp/matplotlibcpp.h"
+#endif
 #include "y2016/constants.h"
 #include "y2016/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2016/control_loops/drivetrain/hybrid_velocity_drivetrain.h"
 #include "y2016/control_loops/drivetrain/kalman_drivetrain_motor_plant.h"
 #include "y2016/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
+
+DEFINE_bool(plot, false, "If true, plot");
 
 namespace frc971 {
 namespace control_loops {
@@ -86,16 +92,23 @@ DrivetrainSimulation::DrivetrainSimulation(
     : event_loop_(event_loop),
       robot_state_fetcher_(
           event_loop_->MakeFetcher<::aos::RobotState>(".aos.robot_state")),
-      dt_config_(dt_config),
-      drivetrain_plant_(MakePlantFromConfig(dt_config_)),
-      my_drivetrain_queue_(".frc971.control_loops.drivetrain_queue",
-                           ".frc971.control_loops.drivetrain_queue.goal",
-                           ".frc971.control_loops.drivetrain_queue.position",
-                           ".frc971.control_loops.drivetrain_queue.output",
-                           ".frc971.control_loops.drivetrain_queue.status"),
+      drivetrain_position_sender_(
+          event_loop_
+              ->MakeSender<::frc971::control_loops::DrivetrainQueue::Position>(
+                  ".frc971.control_loops.drivetrain_queue.position")),
+      drivetrain_output_fetcher_(
+          event_loop_
+              ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Output>(
+                  ".frc971.control_loops.drivetrain_queue.output")),
+      drivetrain_status_fetcher_(
+          event_loop_
+              ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
+                  ".frc971.control_loops.drivetrain_queue.status")),
       gyro_reading_sender_(
           event_loop->MakeSender<::frc971::sensors::GyroReading>(
               ".frc971.sensors.gyro_reading")),
+      dt_config_(dt_config),
+      drivetrain_plant_(MakePlantFromConfig(dt_config_)),
       velocity_drivetrain_(
           ::std::unique_ptr<StateFeedbackLoop<2, 2, 2, double,
                                               StateFeedbackHybridPlant<2, 2, 2>,
@@ -106,6 +119,29 @@ DrivetrainSimulation::DrivetrainSimulation(
                   dt_config_.make_hybrid_drivetrain_velocity_loop()))) {
   Reinitialize();
   last_U_.setZero();
+
+  event_loop_->AddPhasedLoop(
+      [this](int) {
+        // Skip this the first time.
+        if (!first_) {
+          Simulate();
+          if (FLAGS_plot) {
+            EXPECT_TRUE(drivetrain_status_fetcher_.Fetch());
+
+            ::Eigen::Matrix<double, 2, 1> actual_position = GetPosition();
+            actual_x_.push_back(actual_position(0));
+            actual_y_.push_back(actual_position(1));
+
+            trajectory_x_.push_back(
+                drivetrain_status_fetcher_->trajectory_logging.x);
+            trajectory_y_.push_back(
+                drivetrain_status_fetcher_->trajectory_logging.y);
+          }
+        }
+        first_ = false;
+        SendPositionMessage();
+      },
+      dt_config_.dt);
 }
 
 void DrivetrainSimulation::Reinitialize() {
@@ -123,8 +159,8 @@ void DrivetrainSimulation::SendPositionMessage() {
   const double right_encoder = GetRightPosition();
 
   {
-    ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Position>
-        position = my_drivetrain_queue_.position.MakeMessage();
+    ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Position>::Message
+        position = drivetrain_position_sender_.MakeMessage();
     position->left_encoder = left_encoder;
     position->right_encoder = right_encoder;
     position->left_shifter_position = left_gear_high_ ? 1.0 : 0.0;
@@ -146,10 +182,10 @@ void DrivetrainSimulation::SendPositionMessage() {
 void DrivetrainSimulation::Simulate() {
   last_left_position_ = drivetrain_plant_.Y(0, 0);
   last_right_position_ = drivetrain_plant_.Y(1, 0);
-  EXPECT_TRUE(my_drivetrain_queue_.output.FetchLatest());
+  EXPECT_TRUE(drivetrain_output_fetcher_.Fetch());
   ::Eigen::Matrix<double, 2, 1> U = last_U_;
-  last_U_ << my_drivetrain_queue_.output->left_voltage,
-      my_drivetrain_queue_.output->right_voltage;
+  last_U_ << drivetrain_output_fetcher_->left_voltage,
+      drivetrain_output_fetcher_->right_voltage;
   {
     robot_state_fetcher_.Fetch();
     const double scalar = robot_state_fetcher_.get()
@@ -157,8 +193,8 @@ void DrivetrainSimulation::Simulate() {
                               : 1.0;
     last_U_ *= scalar;
   }
-  left_gear_high_ = my_drivetrain_queue_.output->left_high;
-  right_gear_high_ = my_drivetrain_queue_.output->right_high;
+  left_gear_high_ = drivetrain_output_fetcher_->left_high;
+  right_gear_high_ = drivetrain_output_fetcher_->right_high;
 
   if (left_gear_high_) {
     if (right_gear_high_) {
@@ -185,6 +221,20 @@ void DrivetrainSimulation::Simulate() {
                                   dt_config_.Tlr_to_la(), X, U);
       },
       state_, U, dt_float);
+}
+
+void DrivetrainSimulation::MaybePlot() {
+#if defined(SUPPORT_PLOT)
+  if (FLAGS_plot) {
+    std::cout << "Plotting." << ::std::endl;
+    matplotlibcpp::figure();
+    matplotlibcpp::plot(actual_x_, actual_y_, {{"label", "actual position"}});
+    matplotlibcpp::plot(trajectory_x_, trajectory_y_,
+                        {{"label", "trajectory position"}});
+    matplotlibcpp::legend();
+    matplotlibcpp::show();
+  }
+#endif
 }
 
 }  // namespace testing

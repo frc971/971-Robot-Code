@@ -48,21 +48,33 @@ class ShooterPlant : public StateFeedbackPlant<2, 1, 1> {
 class ShooterSimulation {
  public:
   // Constructs a shooter simulation.
-  ShooterSimulation()
-      : shooter_plant_left_(new ShooterPlant(
+  ShooterSimulation(::aos::EventLoop *event_loop, chrono::nanoseconds dt)
+      : event_loop_(event_loop),
+        shooter_position_sender_(
+            event_loop_->MakeSender<ShooterQueue::Position>(
+                ".y2016.control_loops.shooter.shooter_queue.position")),
+        shooter_output_fetcher_(event_loop_->MakeFetcher<ShooterQueue::Output>(
+            ".y2016.control_loops.shooter.shooter_queue.output")),
+        shooter_plant_left_(new ShooterPlant(
             ::y2016::control_loops::shooter::MakeShooterPlant())),
         shooter_plant_right_(new ShooterPlant(
-            ::y2016::control_loops::shooter::MakeShooterPlant())),
-        shooter_queue_(".y2016.control_loops.shooter.shooter_queue",
-                       ".y2016.control_loops.shooter.shooter_queue.goal",
-                       ".y2016.control_loops.shooter.shooter_queue.position",
-                       ".y2016.control_loops.shooter.shooter_queue.output",
-                       ".y2016.control_loops.shooter.shooter_queue.status") {}
+            ::y2016::control_loops::shooter::MakeShooterPlant())) {
+    event_loop_->AddPhasedLoop(
+        [this](int) {
+          // Skip this the first time.
+          if (!first_) {
+            Simulate();
+          }
+          first_ = false;
+          SendPositionMessage();
+        },
+        dt);
+  }
 
   // Sends a queue message with the position of the shooter.
   void SendPositionMessage() {
-    ::aos::ScopedMessagePtr<ShooterQueue::Position> position =
-        shooter_queue_.position.MakeMessage();
+    ::aos::Sender<ShooterQueue::Position>::Message position =
+        shooter_position_sender_.MakeMessage();
 
     position->theta_left = shooter_plant_left_->Y(0, 0);
     position->theta_right = shooter_plant_right_->Y(0, 0);
@@ -79,170 +91,190 @@ class ShooterSimulation {
 
   // Simulates shooter for a single timestep.
   void Simulate() {
-    EXPECT_TRUE(shooter_queue_.output.FetchLatest());
+    EXPECT_TRUE(shooter_output_fetcher_.Fetch());
 
     ::Eigen::Matrix<double, 1, 1> U_left;
     ::Eigen::Matrix<double, 1, 1> U_right;
-    U_left(0, 0) = shooter_queue_.output->voltage_left +
+    U_left(0, 0) = shooter_output_fetcher_->voltage_left +
                    shooter_plant_left_->voltage_offset();
-    U_right(0, 0) = shooter_queue_.output->voltage_right +
+    U_right(0, 0) = shooter_output_fetcher_->voltage_right +
                     shooter_plant_right_->voltage_offset();
 
     shooter_plant_left_->Update(U_left);
     shooter_plant_right_->Update(U_right);
   }
 
+ private:
+  ::aos::EventLoop *event_loop_;
+
+  ::aos::Sender<ShooterQueue::Position> shooter_position_sender_;
+  ::aos::Fetcher<ShooterQueue::Output> shooter_output_fetcher_;
+
   ::std::unique_ptr<ShooterPlant> shooter_plant_left_, shooter_plant_right_;
 
- private:
-  ShooterQueue shooter_queue_;
+  bool first_ = true;
 };
 
 class ShooterTest : public ::aos::testing::ControlLoopTest {
  protected:
   ShooterTest()
-      : shooter_queue_(".y2016.control_loops.shooter.shooter_queue",
-                       ".y2016.control_loops.shooter.shooter_queue.goal",
-                       ".y2016.control_loops.shooter.shooter_queue.position",
-                       ".y2016.control_loops.shooter.shooter_queue.output",
-                       ".y2016.control_loops.shooter.shooter_queue.status"),
-        shooter_(&event_loop_),
-        shooter_plant_() {
+      : ::aos::testing::ControlLoopTest(chrono::microseconds(5000)),
+        test_event_loop_(MakeEventLoop()),
+        shooter_goal_fetcher_(test_event_loop_->MakeFetcher<ShooterQueue::Goal>(
+            ".y2016.control_loops.shooter.shooter_queue.goal")),
+        shooter_goal_sender_(test_event_loop_->MakeSender<ShooterQueue::Goal>(
+            ".y2016.control_loops.shooter.shooter_queue.goal")),
+        shooter_status_fetcher_(
+            test_event_loop_->MakeFetcher<ShooterQueue::Status>(
+                ".y2016.control_loops.shooter.shooter_queue.status")),
+        shooter_output_fetcher_(
+            test_event_loop_->MakeFetcher<ShooterQueue::Output>(
+                ".y2016.control_loops.shooter.shooter_queue.output")),
+        shooter_event_loop_(MakeEventLoop()),
+        shooter_(shooter_event_loop_.get()),
+        shooter_plant_event_loop_(MakeEventLoop()),
+        shooter_plant_(shooter_plant_event_loop_.get(), dt()) {
     set_team_id(kTeamNumber);
   }
 
   void VerifyNearGoal() {
-    shooter_queue_.goal.FetchLatest();
-    shooter_queue_.status.FetchLatest();
+    shooter_goal_fetcher_.Fetch();
+    shooter_status_fetcher_.Fetch();
 
-    EXPECT_TRUE(shooter_queue_.goal.get() != nullptr);
-    EXPECT_TRUE(shooter_queue_.status.get() != nullptr);
+    EXPECT_TRUE(shooter_goal_fetcher_.get() != nullptr);
+    EXPECT_TRUE(shooter_status_fetcher_.get() != nullptr);
 
-    EXPECT_NEAR(shooter_queue_.goal->angular_velocity,
-                shooter_queue_.status->left.angular_velocity, 10.0);
-    EXPECT_NEAR(shooter_queue_.goal->angular_velocity,
-                shooter_queue_.status->right.angular_velocity, 10.0);
+    EXPECT_NEAR(shooter_goal_fetcher_->angular_velocity,
+                shooter_status_fetcher_->left.angular_velocity, 10.0);
+    EXPECT_NEAR(shooter_goal_fetcher_->angular_velocity,
+                shooter_status_fetcher_->right.angular_velocity, 10.0);
 
-    EXPECT_NEAR(shooter_queue_.goal->angular_velocity,
-                shooter_queue_.status->left.avg_angular_velocity, 10.0);
-    EXPECT_NEAR(shooter_queue_.goal->angular_velocity,
-                shooter_queue_.status->right.avg_angular_velocity, 10.0);
+    EXPECT_NEAR(shooter_goal_fetcher_->angular_velocity,
+                shooter_status_fetcher_->left.avg_angular_velocity, 10.0);
+    EXPECT_NEAR(shooter_goal_fetcher_->angular_velocity,
+                shooter_status_fetcher_->right.avg_angular_velocity, 10.0);
   }
 
-  // Runs one iteration of the whole simulation.
-  void RunIteration(bool enabled = true) {
-    SendMessages(enabled);
+  ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
+  ::aos::Fetcher<ShooterQueue::Goal> shooter_goal_fetcher_;
+  ::aos::Sender<ShooterQueue::Goal> shooter_goal_sender_;
+  ::aos::Fetcher<ShooterQueue::Status> shooter_status_fetcher_;
+  ::aos::Fetcher<ShooterQueue::Output> shooter_output_fetcher_;
 
-    shooter_plant_.SendPositionMessage();
-    shooter_.Iterate();
-    shooter_plant_.Simulate();
-
-    TickTime();
-  }
-
-  // Runs iterations until the specified amount of simulated time has elapsed.
-  void RunForTime(const monotonic_clock::duration run_for, bool enabled = true) {
-    const auto start_time = monotonic_clock::now();
-    while (monotonic_clock::now() < start_time + run_for) {
-      RunIteration(enabled);
-    }
-  }
-
-  // Create a new instance of the test queue so that it invalidates the queue
-  // that it points to.  Otherwise, we will have a pointer to shared memory that
-  // is no longer valid.
-  ShooterQueue shooter_queue_;
-
-  ::aos::ShmEventLoop event_loop_;
   // Create a control loop and simulation.
+  ::std::unique_ptr<::aos::EventLoop> shooter_event_loop_;
   Shooter shooter_;
+
+  ::std::unique_ptr<::aos::EventLoop> shooter_plant_event_loop_;
   ShooterSimulation shooter_plant_;
 };
 
 // Tests that the shooter does nothing when the goal is zero.
 TEST_F(ShooterTest, DoesNothing) {
-  ASSERT_TRUE(shooter_queue_.goal.MakeWithBuilder()
-                  .angular_velocity(0.0)
-                  .Send());
-  RunIteration();
+  SetEnabled(true);
+  {
+    auto message = shooter_goal_sender_.MakeMessage();
+    message->angular_velocity = 0.0;
+    EXPECT_TRUE(message.Send());
+  }
+
+  RunFor(dt());
 
   VerifyNearGoal();
 
-  EXPECT_TRUE(shooter_queue_.output.FetchLatest());
-  EXPECT_EQ(shooter_queue_.output->voltage_left, 0.0);
-  EXPECT_EQ(shooter_queue_.output->voltage_right, 0.0);
+  EXPECT_TRUE(shooter_output_fetcher_.Fetch());
+  EXPECT_EQ(shooter_output_fetcher_->voltage_left, 0.0);
+  EXPECT_EQ(shooter_output_fetcher_->voltage_right, 0.0);
 }
 
 // Tests that the shooter spins up to speed and that it then spins down
 // without applying any power.
 TEST_F(ShooterTest, SpinUpAndDown) {
+  SetEnabled(true);
   // Spin up.
-  EXPECT_TRUE(
-      shooter_queue_.goal.MakeWithBuilder().angular_velocity(450.0).Send());
-  RunForTime(chrono::seconds(1));
+  {
+    auto message = shooter_goal_sender_.MakeMessage();
+    message->angular_velocity = 450.0;
+    EXPECT_TRUE(message.Send());
+  }
+
+  RunFor(chrono::seconds(1));
   VerifyNearGoal();
-  EXPECT_TRUE(shooter_queue_.status->ready);
-  EXPECT_TRUE(
-      shooter_queue_.goal.MakeWithBuilder().angular_velocity(0.0).Send());
+  shooter_status_fetcher_.Fetch();
+  EXPECT_TRUE(shooter_status_fetcher_->ready);
+  {
+    auto message = shooter_goal_sender_.MakeMessage();
+    message->angular_velocity = 0.0;
+    EXPECT_TRUE(message.Send());
+  }
 
   // Make sure we don't apply voltage on spin-down.
-  RunIteration();
-  EXPECT_TRUE(shooter_queue_.output.FetchLatest());
-  EXPECT_EQ(0.0, shooter_queue_.output->voltage_left);
-  EXPECT_EQ(0.0, shooter_queue_.output->voltage_right);
+  RunFor(dt());
+  EXPECT_TRUE(shooter_output_fetcher_.Fetch());
+  EXPECT_EQ(0.0, shooter_output_fetcher_->voltage_left);
+  EXPECT_EQ(0.0, shooter_output_fetcher_->voltage_right);
 
   // Continue to stop.
-  RunForTime(chrono::seconds(5));
-  EXPECT_TRUE(shooter_queue_.output.FetchLatest());
-  EXPECT_EQ(0.0, shooter_queue_.output->voltage_left);
-  EXPECT_EQ(0.0, shooter_queue_.output->voltage_right);
+  RunFor(chrono::seconds(5));
+  EXPECT_TRUE(shooter_output_fetcher_.Fetch());
+  EXPECT_EQ(0.0, shooter_output_fetcher_->voltage_left);
+  EXPECT_EQ(0.0, shooter_output_fetcher_->voltage_right);
 }
 
 // Tests that the shooter doesn't say it is ready if one side isn't up to speed.
 // According to our tuning, we may overshoot the goal on one shooter and
 // mistakenly say that we are ready. This test should look at both extremes.
 TEST_F(ShooterTest, SideLagTest) {
+  SetEnabled(true);
   // Spin up.
-  EXPECT_TRUE(
-      shooter_queue_.goal.MakeWithBuilder().angular_velocity(20.0).Send());
+  {
+    auto message = shooter_goal_sender_.MakeMessage();
+    message->angular_velocity = 20.0;
+    EXPECT_TRUE(message.Send());
+  }
   // Cause problems by adding a voltage error on one side.
   shooter_plant_.set_right_voltage_offset(-4.0);
-  RunForTime(chrono::milliseconds(100));
+  RunFor(chrono::milliseconds(100));
 
-  shooter_queue_.goal.FetchLatest();
-  shooter_queue_.status.FetchLatest();
+  shooter_goal_fetcher_.Fetch();
+  shooter_status_fetcher_.Fetch();
 
-  EXPECT_TRUE(shooter_queue_.goal.get() != nullptr);
-  EXPECT_TRUE(shooter_queue_.status.get() != nullptr);
+  EXPECT_TRUE(shooter_goal_fetcher_.get() != nullptr);
+  EXPECT_TRUE(shooter_status_fetcher_.get() != nullptr);
 
   // Left should be up to speed, right shouldn't.
-  EXPECT_TRUE(shooter_queue_.status->left.ready);
-  EXPECT_FALSE(shooter_queue_.status->right.ready);
-  EXPECT_FALSE(shooter_queue_.status->ready);
+  EXPECT_TRUE(shooter_status_fetcher_->left.ready);
+  EXPECT_FALSE(shooter_status_fetcher_->right.ready);
+  EXPECT_FALSE(shooter_status_fetcher_->ready);
 
-  RunForTime(chrono::seconds(5));
+  RunFor(chrono::seconds(5));
 
-  shooter_queue_.goal.FetchLatest();
-  shooter_queue_.status.FetchLatest();
+  shooter_goal_fetcher_.Fetch();
+  shooter_status_fetcher_.Fetch();
 
-  EXPECT_TRUE(shooter_queue_.goal.get() != nullptr);
-  EXPECT_TRUE(shooter_queue_.status.get() != nullptr);
+  EXPECT_TRUE(shooter_goal_fetcher_.get() != nullptr);
+  EXPECT_TRUE(shooter_status_fetcher_.get() != nullptr);
 
   // Both should be up to speed.
-  EXPECT_TRUE(shooter_queue_.status->left.ready);
-  EXPECT_TRUE(shooter_queue_.status->right.ready);
-  EXPECT_TRUE(shooter_queue_.status->ready);
+  EXPECT_TRUE(shooter_status_fetcher_->left.ready);
+  EXPECT_TRUE(shooter_status_fetcher_->right.ready);
+  EXPECT_TRUE(shooter_status_fetcher_->ready);
 }
 
 // Tests that the shooter can spin up nicely after being disabled for a while.
 TEST_F(ShooterTest, Disabled) {
-  ASSERT_TRUE(shooter_queue_.goal.MakeWithBuilder()
-                  .angular_velocity(200.0)
-                  .Send());
-  RunForTime(chrono::seconds(5), false);
-  EXPECT_EQ(nullptr, shooter_queue_.output.get());
+  {
+    auto message = shooter_goal_sender_.MakeMessage();
+    message->angular_velocity = 200.0;
+    EXPECT_TRUE(message.Send());
+  }
+  RunFor(chrono::seconds(5));
+  EXPECT_TRUE(shooter_output_fetcher_.Fetch());
+  EXPECT_EQ(shooter_output_fetcher_->voltage_left, 0.0);
+  EXPECT_EQ(shooter_output_fetcher_->voltage_right, 0.0);
 
-  RunForTime(chrono::seconds(5));
+  SetEnabled(true);
+  RunFor(chrono::seconds(5));
 
   VerifyNearGoal();
 }

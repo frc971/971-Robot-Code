@@ -41,6 +41,7 @@ cc_test(
     srcs = [
         "superstructure_lib_test.cc",
     ],
+    shard_count = 5,
     deps = [
         ":superstructure_lib",
         ":superstructure_queue",

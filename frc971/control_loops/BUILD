@@ -243,6 +243,17 @@ queue_library(
     ],
 )
 
+queue_library(
+    name = "static_zeroing_single_dof_profiled_subsystem_test_queue",
+    srcs = [
+        "static_zeroing_single_dof_profiled_subsystem_test.q",
+    ],
+    deps = [
+        ":profiled_subsystem_queue",
+        ":queues",
+    ],
+)
+
 cc_library(
     name = "profiled_subsystem",
     srcs = [
@@ -407,6 +418,7 @@ cc_test(
         ":position_sensor_sim",
         ":static_zeroing_single_dof_profiled_subsystem",
         ":static_zeroing_single_dof_profiled_subsystem_test_plants",
+        ":static_zeroing_single_dof_profiled_subsystem_test_queue",
         "//aos/controls:control_loop_test",
         "//aos/testing:googletest",
     ],

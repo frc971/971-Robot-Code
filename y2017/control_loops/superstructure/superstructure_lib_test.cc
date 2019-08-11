@@ -117,29 +117,31 @@ class IntakePlant : public StateFeedbackPlant<2, 1, 1> {
 // the position.
 class SuperstructureSimulation {
  public:
-  SuperstructureSimulation()
-      : hood_plant_(new HoodPlant(
+  SuperstructureSimulation(::aos::EventLoop *event_loop, chrono::nanoseconds dt)
+      : event_loop_(event_loop),
+        dt_(dt),
+        superstructure_position_sender_(
+            event_loop_->MakeSender<SuperstructureQueue::Position>(
+                ".y2017.control_loops.superstructure_queue.position")),
+        superstructure_status_fetcher_(
+            event_loop_->MakeFetcher<SuperstructureQueue::Status>(
+                ".y2017.control_loops.superstructure_queue.status")),
+        superstructure_output_fetcher_(
+            event_loop_->MakeFetcher<SuperstructureQueue::Output>(
+                ".y2017.control_loops.superstructure_queue.output")),
+        hood_plant_(new HoodPlant(
             ::y2017::control_loops::superstructure::hood::MakeHoodPlant())),
         hood_encoder_(constants::Values::kHoodEncoderIndexDifference),
-
         intake_plant_(new IntakePlant(
             ::y2017::control_loops::superstructure::intake::MakeIntakePlant())),
         intake_pot_encoder_(constants::Values::kIntakeEncoderIndexDifference),
 
         shooter_plant_(new ShooterPlant(::y2017::control_loops::superstructure::
                                             shooter::MakeShooterPlant())),
-
         indexer_encoder_(2.0 * M_PI),
         turret_encoder_(2.0 * M_PI),
-        column_plant_(new ColumnPlant(
-            ::y2017::control_loops::superstructure::column::MakeColumnPlant())),
-
-        superstructure_queue_(
-            ".y2017.control_loops.superstructure_queue",
-            ".y2017.control_loops.superstructure_queue.goal",
-            ".y2017.control_loops.superstructure_queue.position",
-            ".y2017.control_loops.superstructure_queue.output",
-            ".y2017.control_loops.superstructure_queue.status") {
+        column_plant_(new ColumnPlant(::y2017::control_loops::superstructure::
+                                          column::MakeColumnPlant())) {
     // Start the hood out in the middle by default.
     InitializeHoodPosition((constants::Values::kHoodRange.lower +
                             constants::Values::kHoodRange.upper) /
@@ -157,6 +159,17 @@ class SuperstructureSimulation {
     InitializeIntakePosition((constants::Values::kIntakeRange.lower +
                               constants::Values::kIntakeRange.upper) /
                              2.0);
+
+    event_loop_->AddPhasedLoop(
+        [this](int) {
+          // Skip this the first time.
+          if (!first_) {
+            Simulate();
+          }
+          first_ = false;
+          SendPositionMessage();
+        },
+        dt);
   }
 
   void InitializeHoodPosition(double start_pos) {
@@ -203,8 +216,8 @@ class SuperstructureSimulation {
 
   // Sends a queue message with the position of the superstructure.
   void SendPositionMessage() {
-    ::aos::ScopedMessagePtr<SuperstructureQueue::Position> position =
-        superstructure_queue_.position.MakeMessage();
+    ::aos::Sender<SuperstructureQueue::Position>::Message position =
+        superstructure_position_sender_.MakeMessage();
 
     hood_encoder_.GetSensorValues(&position->hood);
     intake_pot_encoder_.GetSensorValues(&position->intake);
@@ -260,66 +273,70 @@ class SuperstructureSimulation {
 
   // Simulates the superstructure for a single timestep.
   void Simulate() {
-    EXPECT_TRUE(superstructure_queue_.output.FetchLatest());
-    EXPECT_TRUE(superstructure_queue_.status.FetchLatest());
+    const double last_intake_velocity = intake_velocity();
+    const double last_turret_velocity = turret_angular_velocity();
+    const double last_hood_velocity = hood_angular_velocity();
+
+    EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
+    EXPECT_TRUE(superstructure_status_fetcher_.Fetch());
 
     const double voltage_check_hood =
         (static_cast<hood::Hood::State>(
-             superstructure_queue_.status->hood.state) ==
+             superstructure_status_fetcher_->hood.state) ==
          hood::Hood::State::RUNNING)
             ? superstructure::hood::Hood::kOperatingVoltage
             : superstructure::hood::Hood::kZeroingVoltage;
 
     const double voltage_check_indexer =
         (static_cast<column::Column::State>(
-             superstructure_queue_.status->turret.state) ==
+             superstructure_status_fetcher_->turret.state) ==
          column::Column::State::RUNNING)
             ? superstructure::column::Column::kOperatingVoltage
             : superstructure::column::Column::kZeroingVoltage;
 
     const double voltage_check_turret =
         (static_cast<column::Column::State>(
-             superstructure_queue_.status->turret.state) ==
+             superstructure_status_fetcher_->turret.state) ==
          column::Column::State::RUNNING)
             ? superstructure::column::Column::kOperatingVoltage
             : superstructure::column::Column::kZeroingVoltage;
 
     const double voltage_check_intake =
         (static_cast<intake::Intake::State>(
-             superstructure_queue_.status->intake.state) ==
+             superstructure_status_fetcher_->intake.state) ==
          intake::Intake::State::RUNNING)
             ? superstructure::intake::Intake::kOperatingVoltage
             : superstructure::intake::Intake::kZeroingVoltage;
 
-    CHECK_LE(::std::abs(superstructure_queue_.output->voltage_hood),
+    CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_hood),
              voltage_check_hood);
 
-    CHECK_LE(::std::abs(superstructure_queue_.output->voltage_intake),
+    CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_intake),
              voltage_check_intake);
 
-    EXPECT_LE(::std::abs(superstructure_queue_.output->voltage_indexer),
+    EXPECT_LE(::std::abs(superstructure_output_fetcher_->voltage_indexer),
               voltage_check_indexer)
         << ": check voltage " << voltage_check_indexer;
 
-    CHECK_LE(::std::abs(superstructure_queue_.output->voltage_turret),
+    CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_turret),
              voltage_check_turret);
 
     ::Eigen::Matrix<double, 1, 1> hood_U;
-    hood_U << superstructure_queue_.output->voltage_hood +
+    hood_U << superstructure_output_fetcher_->voltage_hood +
                   hood_plant_->voltage_offset();
 
     ::Eigen::Matrix<double, 1, 1> intake_U;
-    intake_U << superstructure_queue_.output->voltage_intake +
+    intake_U << superstructure_output_fetcher_->voltage_intake +
                     intake_plant_->voltage_offset();
 
     ::Eigen::Matrix<double, 1, 1> shooter_U;
-    shooter_U << superstructure_queue_.output->voltage_shooter +
+    shooter_U << superstructure_output_fetcher_->voltage_shooter +
                      shooter_plant_->voltage_offset();
 
     ::Eigen::Matrix<double, 2, 1> column_U;
-    column_U << superstructure_queue_.output->voltage_indexer +
+    column_U << superstructure_output_fetcher_->voltage_indexer +
                     column_plant_->indexer_voltage_offset(),
-        superstructure_queue_.output->voltage_turret +
+        superstructure_output_fetcher_->voltage_turret +
             column_plant_->turret_voltage_offset();
 
     hood_plant_->Update(hood_U);
@@ -407,140 +424,28 @@ class SuperstructureSimulation {
     EXPECT_LE(angle_turret, constants::Values::kTurretRange.upper_hard);
     EXPECT_GE(position_intake, constants::Values::kIntakeRange.lower_hard);
     EXPECT_LE(position_intake, constants::Values::kIntakeRange.upper_hard);
-  }
 
- private:
-  ::std::unique_ptr<HoodPlant> hood_plant_;
-  PositionSensorSimulator hood_encoder_;
+    // Check to make sure no constriants are violated.
+    const double loop_time = ::aos::time::DurationInSeconds(dt_);
+    const double intake_acceleration =
+        (intake_velocity() - last_intake_velocity) / loop_time;
+    const double turret_acceleration =
+        (turret_angular_velocity() - last_turret_velocity) / loop_time;
+    const double hood_acceleration =
+        (hood_angular_velocity() - last_hood_velocity) / loop_time;
+    EXPECT_GE(peak_intake_acceleration_, intake_acceleration);
+    EXPECT_LE(-peak_intake_acceleration_, intake_acceleration);
+    EXPECT_GE(peak_turret_acceleration_, turret_acceleration);
+    EXPECT_LE(-peak_turret_acceleration_, turret_acceleration);
+    EXPECT_GE(peak_hood_acceleration_, hood_acceleration);
+    EXPECT_LE(-peak_hood_acceleration_, hood_acceleration);
 
-  ::std::unique_ptr<IntakePlant> intake_plant_;
-  PositionSensorSimulator intake_pot_encoder_;
-
-  ::std::unique_ptr<ShooterPlant> shooter_plant_;
-
-  PositionSensorSimulator indexer_encoder_;
-  PositionSensorSimulator turret_encoder_;
-  ::std::unique_ptr<ColumnPlant> column_plant_;
-
-  bool freeze_indexer_ = false;
-  bool freeze_turret_ = false;
-
-  SuperstructureQueue superstructure_queue_;
-};
-
-class SuperstructureTest : public ::aos::testing::ControlLoopTest {
- protected:
-  SuperstructureTest()
-      : superstructure_queue_(
-            ".y2017.control_loops.superstructure_queue",
-            ".y2017.control_loops.superstructure_queue.goal",
-            ".y2017.control_loops.superstructure_queue.position",
-            ".y2017.control_loops.superstructure_queue.output",
-            ".y2017.control_loops.superstructure_queue.status"),
-        superstructure_(&event_loop_) {
-    set_team_id(::frc971::control_loops::testing::kTeamNumber);
-  }
-
-  void VerifyNearGoal() {
-    superstructure_queue_.goal.FetchLatest();
-    superstructure_queue_.status.FetchLatest();
-
-    ASSERT_TRUE(superstructure_queue_.goal.get() != nullptr);
-    ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
-
-    EXPECT_NEAR(superstructure_queue_.goal->hood.angle,
-                superstructure_queue_.status->hood.position, 0.001);
-    EXPECT_NEAR(superstructure_queue_.goal->hood.angle,
-                superstructure_plant_.hood_position(), 0.001);
-
-    EXPECT_NEAR(superstructure_queue_.goal->turret.angle,
-                superstructure_queue_.status->turret.position, 0.001);
-    EXPECT_NEAR(superstructure_queue_.goal->turret.angle,
-                superstructure_plant_.turret_position(), 0.001);
-
-    EXPECT_NEAR(superstructure_queue_.goal->intake.distance,
-                superstructure_queue_.status->intake.position, 0.001);
-    EXPECT_NEAR(superstructure_queue_.goal->intake.distance,
-                superstructure_plant_.intake_position(), 0.001);
-
-    // Check that the angular velocity, average angular velocity, and estimated
-    // angular velocity match when we are done for the shooter.
-    EXPECT_NEAR(superstructure_queue_.goal->shooter.angular_velocity,
-                superstructure_queue_.status->shooter.angular_velocity, 0.1);
-    EXPECT_NEAR(superstructure_queue_.goal->shooter.angular_velocity,
-                superstructure_queue_.status->shooter.avg_angular_velocity,
-                0.1);
-    EXPECT_NEAR(superstructure_queue_.goal->shooter.angular_velocity,
-                superstructure_plant_.shooter_velocity(), 0.1);
-
-    // Check that the angular velocity, average angular velocity, and estimated
-    // angular velocity match when we are done for the indexer.
-    EXPECT_NEAR(superstructure_queue_.goal->indexer.angular_velocity,
-                superstructure_queue_.status->indexer.angular_velocity, 0.1);
-    EXPECT_NEAR(superstructure_queue_.goal->indexer.angular_velocity,
-                superstructure_queue_.status->indexer.avg_angular_velocity,
-                0.1);
-    EXPECT_NEAR(superstructure_queue_.goal->indexer.angular_velocity,
-                superstructure_plant_.indexer_velocity(), 0.1);
-  }
-
-  // Runs one iteration of the whole simulation.
-  void RunIteration(bool enabled = true) {
-    SendMessages(enabled);
-
-    superstructure_plant_.SendPositionMessage();
-    superstructure_.Iterate();
-    superstructure_plant_.Simulate();
-
-    TickTime(::std::chrono::microseconds(5050));
-  }
-
-  // Runs iterations until the specified amount of simulated time has elapsed.
-  void RunForTime(const monotonic_clock::duration run_for,
-                  bool enabled = true) {
-    const auto start_time = monotonic_clock::now();
-    while (monotonic_clock::now() < start_time + run_for) {
-      const auto loop_start_time = monotonic_clock::now();
-      double begin_intake_velocity = superstructure_plant_.intake_velocity();
-      double begin_turret_velocity =
-          superstructure_plant_.turret_angular_velocity();
-      double begin_hood_velocity =
-          superstructure_plant_.hood_angular_velocity();
-
-      RunIteration(enabled);
-
-      const double loop_time = ::aos::time::DurationInSeconds(
-          monotonic_clock::now() - loop_start_time);
-      const double intake_acceleration =
-          (superstructure_plant_.intake_velocity() - begin_intake_velocity) /
-          loop_time;
-      const double turret_acceleration =
-          (superstructure_plant_.turret_angular_velocity() -
-           begin_turret_velocity) /
-          loop_time;
-      const double hood_acceleration =
-          (superstructure_plant_.hood_angular_velocity() -
-           begin_hood_velocity) /
-          loop_time;
-      EXPECT_GE(peak_intake_acceleration_, intake_acceleration);
-      EXPECT_LE(-peak_intake_acceleration_, intake_acceleration);
-      EXPECT_GE(peak_turret_acceleration_, turret_acceleration);
-      EXPECT_LE(-peak_turret_acceleration_, turret_acceleration);
-      EXPECT_GE(peak_hood_acceleration_, hood_acceleration);
-      EXPECT_LE(-peak_hood_acceleration_, hood_acceleration);
-
-      EXPECT_GE(peak_intake_velocity_, superstructure_plant_.intake_velocity());
-      EXPECT_LE(-peak_intake_velocity_,
-                superstructure_plant_.intake_velocity());
-      EXPECT_GE(peak_turret_velocity_,
-                superstructure_plant_.turret_angular_velocity());
-      EXPECT_LE(-peak_turret_velocity_,
-                superstructure_plant_.turret_angular_velocity());
-      EXPECT_GE(peak_hood_velocity_,
-                superstructure_plant_.hood_angular_velocity());
-      EXPECT_LE(-peak_hood_velocity_,
-                superstructure_plant_.hood_angular_velocity());
-    }
+    EXPECT_GE(peak_intake_velocity_, intake_velocity());
+    EXPECT_LE(-peak_intake_velocity_, intake_velocity());
+    EXPECT_GE(peak_turret_velocity_, turret_angular_velocity());
+    EXPECT_LE(-peak_turret_velocity_, turret_angular_velocity());
+    EXPECT_GE(peak_hood_velocity_, hood_angular_velocity());
+    EXPECT_LE(-peak_hood_velocity_, hood_angular_velocity());
   }
 
   void set_peak_intake_acceleration(double value) {
@@ -556,17 +461,31 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
   void set_peak_turret_velocity(double value) { peak_turret_velocity_ = value; }
   void set_peak_hood_velocity(double value) { peak_hood_velocity_ = value; }
 
-  // Create a new instance of the test queue so that it invalidates the queue
-  // that it points to.  Otherwise, we will have a pointer to shared memory
-  // that is no longer valid.
-  SuperstructureQueue superstructure_queue_;
-
-  ::aos::ShmEventLoop event_loop_;
-  // Create a control loop and simulation.
-  Superstructure superstructure_;
-  SuperstructureSimulation superstructure_plant_;
-
  private:
+  ::aos::EventLoop *event_loop_;
+  const chrono::nanoseconds dt_;
+
+  ::aos::Sender<SuperstructureQueue::Position> superstructure_position_sender_;
+  ::aos::Fetcher<SuperstructureQueue::Status> superstructure_status_fetcher_;
+  ::aos::Fetcher<SuperstructureQueue::Output> superstructure_output_fetcher_;
+
+  ::std::unique_ptr<HoodPlant> hood_plant_;
+  PositionSensorSimulator hood_encoder_;
+
+  ::std::unique_ptr<IntakePlant> intake_plant_;
+  PositionSensorSimulator intake_pot_encoder_;
+
+  ::std::unique_ptr<ShooterPlant> shooter_plant_;
+
+  PositionSensorSimulator indexer_encoder_;
+  PositionSensorSimulator turret_encoder_;
+  ::std::unique_ptr<ColumnPlant> column_plant_;
+
+  bool freeze_indexer_ = false;
+  bool freeze_turret_ = false;
+
+  bool first_ = true;
+
   // The acceleration limits to check for while moving.
   double peak_intake_acceleration_ = 1e10;
   double peak_turret_acceleration_ = 1e10;
@@ -577,27 +496,118 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
   double peak_hood_velocity_ = 1e10;
 };
 
+class SuperstructureTest : public ::aos::testing::ControlLoopTest {
+ protected:
+  SuperstructureTest()
+      : ::aos::testing::ControlLoopTest(chrono::microseconds(5050)),
+        test_event_loop_(MakeEventLoop()),
+        superstructure_goal_fetcher_(
+            test_event_loop_->MakeFetcher<SuperstructureQueue::Goal>(
+                ".y2017.control_loops.superstructure_queue.goal")),
+        superstructure_goal_sender_(
+            test_event_loop_->MakeSender<SuperstructureQueue::Goal>(
+                ".y2017.control_loops.superstructure_queue.goal")),
+        superstructure_status_fetcher_(
+            test_event_loop_->MakeFetcher<SuperstructureQueue::Status>(
+                ".y2017.control_loops.superstructure_queue.status")),
+        superstructure_output_fetcher_(
+            test_event_loop_->MakeFetcher<SuperstructureQueue::Output>(
+                ".y2017.control_loops.superstructure_queue.output")),
+        superstructure_position_fetcher_(
+            test_event_loop_->MakeFetcher<SuperstructureQueue::Position>(
+                ".y2017.control_loops.superstructure_queue.position")),
+        superstructure_event_loop_(MakeEventLoop()),
+        superstructure_(superstructure_event_loop_.get()),
+        superstructure_plant_event_loop_(MakeEventLoop()),
+        superstructure_plant_(superstructure_plant_event_loop_.get(), dt()) {
+    set_team_id(::frc971::control_loops::testing::kTeamNumber);
+  }
+
+  void VerifyNearGoal() {
+    superstructure_goal_fetcher_.Fetch();
+    superstructure_status_fetcher_.Fetch();
+
+    ASSERT_TRUE(superstructure_goal_fetcher_.get() != nullptr);
+    ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
+
+    EXPECT_NEAR(superstructure_goal_fetcher_->hood.angle,
+                superstructure_status_fetcher_->hood.position, 0.001);
+    EXPECT_NEAR(superstructure_goal_fetcher_->hood.angle,
+                superstructure_plant_.hood_position(), 0.001);
+
+    EXPECT_NEAR(superstructure_goal_fetcher_->turret.angle,
+                superstructure_status_fetcher_->turret.position, 0.001);
+    EXPECT_NEAR(superstructure_goal_fetcher_->turret.angle,
+                superstructure_plant_.turret_position(), 0.001);
+
+    EXPECT_NEAR(superstructure_goal_fetcher_->intake.distance,
+                superstructure_status_fetcher_->intake.position, 0.001);
+    EXPECT_NEAR(superstructure_goal_fetcher_->intake.distance,
+                superstructure_plant_.intake_position(), 0.001);
+
+    // Check that the angular velocity, average angular velocity, and estimated
+    // angular velocity match when we are done for the shooter.
+    EXPECT_NEAR(superstructure_goal_fetcher_->shooter.angular_velocity,
+                superstructure_status_fetcher_->shooter.angular_velocity, 0.1);
+    EXPECT_NEAR(superstructure_goal_fetcher_->shooter.angular_velocity,
+                superstructure_status_fetcher_->shooter.avg_angular_velocity,
+                0.1);
+    EXPECT_NEAR(superstructure_goal_fetcher_->shooter.angular_velocity,
+                superstructure_plant_.shooter_velocity(), 0.1);
+
+    // Check that the angular velocity, average angular velocity, and estimated
+    // angular velocity match when we are done for the indexer.
+    EXPECT_NEAR(superstructure_goal_fetcher_->indexer.angular_velocity,
+                superstructure_status_fetcher_->indexer.angular_velocity, 0.1);
+    EXPECT_NEAR(superstructure_goal_fetcher_->indexer.angular_velocity,
+                superstructure_status_fetcher_->indexer.avg_angular_velocity,
+                0.1);
+    EXPECT_NEAR(superstructure_goal_fetcher_->indexer.angular_velocity,
+                superstructure_plant_.indexer_velocity(), 0.1);
+  }
+
+  ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
+
+  ::aos::Fetcher<SuperstructureQueue::Goal> superstructure_goal_fetcher_;
+  ::aos::Sender<SuperstructureQueue::Goal> superstructure_goal_sender_;
+  ::aos::Fetcher<SuperstructureQueue::Status> superstructure_status_fetcher_;
+  ::aos::Fetcher<SuperstructureQueue::Output> superstructure_output_fetcher_;
+  ::aos::Fetcher<SuperstructureQueue::Position>
+      superstructure_position_fetcher_;
+
+  // Create a control loop and simulation.
+  ::std::unique_ptr<::aos::EventLoop> superstructure_event_loop_;
+  Superstructure superstructure_;
+
+  ::std::unique_ptr<::aos::EventLoop> superstructure_plant_event_loop_;
+  SuperstructureSimulation superstructure_plant_;
+};
+
 // Tests that the superstructure does nothing when the goal is zero.
 TEST_F(SuperstructureTest, DoesNothing) {
+  SetEnabled(true);
+
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->hood.angle = 0.2;
     goal->turret.angle = 0.0;
     goal->intake.distance = 0.05;
     ASSERT_TRUE(goal.Send());
   }
-  RunForTime(chrono::seconds(5));
+  RunFor(chrono::seconds(5));
 
   VerifyNearGoal();
 
-  EXPECT_TRUE(superstructure_queue_.output.FetchLatest());
+  EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
 }
 
 // Tests that the hood, turret and intake loops can reach a goal.
 TEST_F(SuperstructureTest, ReachesGoal) {
+  SetEnabled(true);
+
   // Set a reasonable goal.
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->hood.angle = 0.1;
     goal->hood.profile_params.max_velocity = 1;
     goal->hood.profile_params.max_acceleration = 0.5;
@@ -614,7 +624,7 @@ TEST_F(SuperstructureTest, ReachesGoal) {
   }
 
   // Give it a lot of time to get there.
-  RunForTime(chrono::seconds(8));
+  RunFor(chrono::seconds(8));
 
   VerifyNearGoal();
 }
@@ -624,15 +634,17 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 //
 // We are going to disable collision detection to make this easier to implement.
 TEST_F(SuperstructureTest, SaturationTest) {
+  SetEnabled(true);
+
   // Zero it before we move.
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->intake.distance = constants::Values::kIntakeRange.upper;
     goal->turret.angle = constants::Values::kTurretRange.upper;
     goal->hood.angle = constants::Values::kHoodRange.upper;
     ASSERT_TRUE(goal.Send());
   }
-  RunForTime(chrono::seconds(8));
+  RunFor(chrono::seconds(8));
   VerifyNearGoal();
 
   superstructure_.set_ignore_collisions(true);
@@ -640,7 +652,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
   // Try a low acceleration move with a high max velocity and verify the
   // acceleration is capped like expected.
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->intake.distance = constants::Values::kIntakeRange.lower;
     goal->intake.profile_params.max_velocity = 20.0;
     goal->intake.profile_params.max_acceleration = 0.1;
@@ -652,19 +664,19 @@ TEST_F(SuperstructureTest, SaturationTest) {
     goal->hood.profile_params.max_acceleration = 1.0;
     ASSERT_TRUE(goal.Send());
   }
-  set_peak_intake_velocity(23.0);
-  set_peak_turret_velocity(23.0);
-  set_peak_hood_velocity(23.0);
-  set_peak_intake_acceleration(0.2);
-  set_peak_turret_acceleration(1.1);
-  set_peak_hood_acceleration(1.1);
+  superstructure_plant_.set_peak_intake_velocity(23.0);
+  superstructure_plant_.set_peak_turret_velocity(23.0);
+  superstructure_plant_.set_peak_hood_velocity(23.0);
+  superstructure_plant_.set_peak_intake_acceleration(0.2);
+  superstructure_plant_.set_peak_turret_acceleration(1.1);
+  superstructure_plant_.set_peak_hood_acceleration(1.1);
 
-  RunForTime(chrono::seconds(8));
+  RunFor(chrono::seconds(8));
   VerifyNearGoal();
 
   // Now do a high acceleration move with a low velocity limit.
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->intake.distance = constants::Values::kIntakeRange.upper;
     goal->intake.profile_params.max_velocity = 0.1;
     goal->intake.profile_params.max_acceleration = 100;
@@ -677,13 +689,13 @@ TEST_F(SuperstructureTest, SaturationTest) {
     ASSERT_TRUE(goal.Send());
   }
 
-  set_peak_intake_velocity(0.2);
-  set_peak_turret_velocity(1.1);
-  set_peak_hood_velocity(1.1);
-  set_peak_intake_acceleration(103);
-  set_peak_turret_acceleration(103);
-  set_peak_hood_acceleration(103);
-  RunForTime(chrono::seconds(8));
+  superstructure_plant_.set_peak_intake_velocity(0.2);
+  superstructure_plant_.set_peak_turret_velocity(1.1);
+  superstructure_plant_.set_peak_hood_velocity(1.1);
+  superstructure_plant_.set_peak_intake_acceleration(103);
+  superstructure_plant_.set_peak_turret_acceleration(103);
+  superstructure_plant_.set_peak_hood_acceleration(103);
+  RunFor(chrono::seconds(8));
 
   VerifyNearGoal();
 }
@@ -691,9 +703,11 @@ TEST_F(SuperstructureTest, SaturationTest) {
 // Tests that the hood, turret and intake loops doesn't try and go beyond the
 // physical range of the mechanisms.
 TEST_F(SuperstructureTest, RespectsRange) {
+  SetEnabled(true);
+
   // Set some ridiculous goals to test upper limits.
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->hood.angle = 100.0;
     goal->hood.profile_params.max_velocity = 1;
     goal->hood.profile_params.max_acceleration = 0.5;
@@ -708,22 +722,22 @@ TEST_F(SuperstructureTest, RespectsRange) {
 
     ASSERT_TRUE(goal.Send());
   }
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
 
   // Check that we are near our soft limit.
-  superstructure_queue_.status.FetchLatest();
+  superstructure_status_fetcher_.Fetch();
   EXPECT_NEAR(constants::Values::kHoodRange.upper,
-              superstructure_queue_.status->hood.position, 0.001);
+              superstructure_status_fetcher_->hood.position, 0.001);
 
   EXPECT_NEAR(constants::Values::kTurretRange.upper,
-              superstructure_queue_.status->turret.position, 0.001);
+              superstructure_status_fetcher_->turret.position, 0.001);
 
   EXPECT_NEAR(constants::Values::kIntakeRange.upper,
-              superstructure_queue_.status->intake.position, 0.001);
+              superstructure_status_fetcher_->intake.position, 0.001);
 
   // Set some ridiculous goals to test lower limits.
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->hood.angle = -100.0;
     goal->hood.profile_params.max_velocity = 1;
     goal->hood.profile_params.max_acceleration = 0.5;
@@ -739,23 +753,23 @@ TEST_F(SuperstructureTest, RespectsRange) {
     ASSERT_TRUE(goal.Send());
   }
 
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
 
   // Check that we are near our soft limit.
-  superstructure_queue_.status.FetchLatest();
+  superstructure_status_fetcher_.Fetch();
   EXPECT_NEAR(constants::Values::kHoodRange.lower,
-              superstructure_queue_.status->hood.position, 0.001);
+              superstructure_status_fetcher_->hood.position, 0.001);
 
   EXPECT_NEAR(constants::Values::kTurretRange.lower,
-              superstructure_queue_.status->turret.position, 0.001);
+              superstructure_status_fetcher_->turret.position, 0.001);
 
   EXPECT_NEAR(column::Column::kIntakeZeroingMinDistance,
-              superstructure_queue_.status->intake.position, 0.001);
+              superstructure_status_fetcher_->intake.position, 0.001);
 
   // Now, center the turret so we can try ridiculous things without having the
   // intake pushed out.
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->hood.angle = -100.0;
     goal->hood.profile_params.max_velocity = 1;
     goal->hood.profile_params.max_acceleration = 0.5;
@@ -771,23 +785,25 @@ TEST_F(SuperstructureTest, RespectsRange) {
     ASSERT_TRUE(goal.Send());
   }
 
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
 
   // Check that we are near our soft limit.
-  superstructure_queue_.status.FetchLatest();
+  superstructure_status_fetcher_.Fetch();
   EXPECT_NEAR(constants::Values::kHoodRange.lower,
-              superstructure_queue_.status->hood.position, 0.001);
+              superstructure_status_fetcher_->hood.position, 0.001);
 
-  EXPECT_NEAR(0.0, superstructure_queue_.status->turret.position, 0.001);
+  EXPECT_NEAR(0.0, superstructure_status_fetcher_->turret.position, 0.001);
 
   EXPECT_NEAR(constants::Values::kIntakeRange.lower,
-              superstructure_queue_.status->intake.position, 0.001);
+              superstructure_status_fetcher_->intake.position, 0.001);
 }
 
 // Tests that the hood, turret and intake loops zeroes when run for a while.
 TEST_F(SuperstructureTest, ZeroTest) {
+  SetEnabled(true);
+
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->hood.angle = constants::Values::kHoodRange.lower;
     goal->hood.profile_params.max_velocity = 1;
     goal->hood.profile_params.max_acceleration = 0.5;
@@ -802,14 +818,15 @@ TEST_F(SuperstructureTest, ZeroTest) {
     ASSERT_TRUE(goal.Send());
   }
 
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
 
   VerifyNearGoal();
 }
 
 // Tests that the loop zeroes when run for a while without a goal.
 TEST_F(SuperstructureTest, ZeroNoGoal) {
-  RunForTime(chrono::seconds(5));
+  SetEnabled(true);
+  RunFor(chrono::seconds(5));
 
   EXPECT_EQ(hood::Hood::State::RUNNING, superstructure_.hood().state());
   EXPECT_EQ(intake::Intake::State::RUNNING, superstructure_.intake().state());
@@ -817,6 +834,7 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
 }
 
 TEST_F(SuperstructureTest, LowerHardstopStartup) {
+  SetEnabled(true);
   superstructure_plant_.InitializeHoodPosition(
       constants::Values::kHoodRange.lower_hard);
 
@@ -826,19 +844,20 @@ TEST_F(SuperstructureTest, LowerHardstopStartup) {
   superstructure_plant_.InitializeIntakePosition(
       constants::Values::kIntakeRange.lower_hard);
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->hood.angle = constants::Values::kHoodRange.lower;
     goal->turret.angle = constants::Values::kTurretRange.lower;
     goal->intake.distance = constants::Values::kIntakeRange.upper;
     ASSERT_TRUE(goal.Send());
   }
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
 
   VerifyNearGoal();
 }
 
 // Tests that starting at the upper hardstops doesn't cause an abort.
 TEST_F(SuperstructureTest, UpperHardstopStartup) {
+  SetEnabled(true);
   superstructure_plant_.InitializeHoodPosition(
       constants::Values::kHoodRange.upper_hard);
 
@@ -848,19 +867,20 @@ TEST_F(SuperstructureTest, UpperHardstopStartup) {
   superstructure_plant_.InitializeIntakePosition(
       constants::Values::kIntakeRange.upper_hard);
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->hood.angle = constants::Values::kHoodRange.upper;
     goal->turret.angle = constants::Values::kTurretRange.upper;
     goal->intake.distance = constants::Values::kIntakeRange.upper;
     ASSERT_TRUE(goal.Send());
   }
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
 
   VerifyNearGoal();
 }
 
 // Tests that resetting WPILib results in a rezero.
 TEST_F(SuperstructureTest, ResetTest) {
+  SetEnabled(true);
   superstructure_plant_.InitializeHoodPosition(
       constants::Values::kHoodRange.upper);
 
@@ -869,14 +889,14 @@ TEST_F(SuperstructureTest, ResetTest) {
   superstructure_plant_.InitializeIntakePosition(
       constants::Values::kIntakeRange.upper);
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->hood.angle = constants::Values::kHoodRange.upper - 0.1;
     goal->turret.angle = constants::Values::kTurretRange.upper - 0.1;
     goal->intake.distance = constants::Values::kIntakeRange.upper - 0.1;
     goal->indexer.angular_velocity = -5.0;
     ASSERT_TRUE(goal.Send());
   }
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
 
   EXPECT_EQ(hood::Hood::State::RUNNING, superstructure_.hood().state());
   EXPECT_EQ(intake::Intake::State::RUNNING, superstructure_.intake().state());
@@ -884,7 +904,7 @@ TEST_F(SuperstructureTest, ResetTest) {
 
   VerifyNearGoal();
   SimulateSensorReset();
-  RunForTime(chrono::milliseconds(100));
+  RunFor(chrono::milliseconds(100));
 
   EXPECT_EQ(hood::Hood::State::ZEROING, superstructure_.hood().state());
   EXPECT_EQ(intake::Intake::State::UNINITIALIZED,
@@ -892,7 +912,7 @@ TEST_F(SuperstructureTest, ResetTest) {
   EXPECT_EQ(column::Column::State::ZEROING_UNINITIALIZED,
             superstructure_.column().state());
 
-  RunForTime(chrono::seconds(10));
+  RunFor(chrono::seconds(10));
 
   EXPECT_EQ(hood::Hood::State::RUNNING, superstructure_.hood().state());
   EXPECT_EQ(intake::Intake::State::RUNNING, superstructure_.intake().state());
@@ -902,22 +922,26 @@ TEST_F(SuperstructureTest, ResetTest) {
 
 // Tests that the internal goals don't change while disabled.
 TEST_F(SuperstructureTest, DisabledGoalTest) {
-  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder().Send());
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
+    ASSERT_TRUE(goal.Send());
+  }
+  {
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->hood.angle = constants::Values::kHoodRange.lower + 0.03;
     goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
     goal->intake.distance = constants::Values::kIntakeRange.lower + 0.03;
     ASSERT_TRUE(goal.Send());
   }
 
-  RunForTime(chrono::milliseconds(100), false);
+  RunFor(chrono::milliseconds(100));
   EXPECT_EQ(0.0, superstructure_.hood().goal(0, 0));
   EXPECT_EQ(0.0, superstructure_.intake().goal(0, 0));
   EXPECT_EQ(0.0, superstructure_.column().goal(2, 0));
 
   // Now make sure they move correctly
-  RunForTime(chrono::seconds(4), true);
+  SetEnabled(true);
+  RunFor(chrono::seconds(4));
   EXPECT_NE(0.0, superstructure_.hood().goal(0, 0));
   EXPECT_NE(0.0, superstructure_.intake().goal(0, 0));
   EXPECT_NE(0.0, superstructure_.column().goal(2, 0));
@@ -931,7 +955,7 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
       constants::GetValues().hood.zeroing.measured_index_position - 0.001);
 
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->hood.angle = constants::Values::kHoodRange.lower;
     goal->turret.angle = 0.0;
     goal->intake.distance = constants::Values::kIntakeRange.lower;
@@ -939,7 +963,7 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
   }
 
   // Run disabled for 2 seconds
-  RunForTime(chrono::seconds(2), false);
+  RunFor(chrono::seconds(2));
   EXPECT_EQ(hood::Hood::State::DISABLED_INITIALIZED,
             superstructure_.hood().state());
   EXPECT_EQ(intake::Intake::State::RUNNING, superstructure_.intake().state());
@@ -951,9 +975,9 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
   superstructure_plant_.set_turret_voltage_offset(-1.0);
   superstructure_plant_.set_indexer_voltage_offset(2.0);
 
-  RunForTime(chrono::seconds(1), false);
+  RunFor(chrono::seconds(1));
   superstructure_plant_.set_hood_voltage_offset(0.0);
-  RunForTime(chrono::seconds(5), false);
+  RunFor(chrono::seconds(5));
 
   EXPECT_EQ(hood::Hood::State::RUNNING, superstructure_.hood().state());
   EXPECT_EQ(intake::Intake::State::RUNNING, superstructure_.intake().state());
@@ -961,7 +985,8 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
   superstructure_plant_.set_turret_voltage_offset(0.0);
   superstructure_plant_.set_indexer_voltage_offset(0.0);
 
-  RunForTime(chrono::seconds(4), true);
+  SetEnabled(true);
+  RunFor(chrono::seconds(4));
 
   VerifyNearGoal();
 }
@@ -971,9 +996,11 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
 // Tests that the shooter spins up to speed and that it then spins down
 // without applying any power.
 TEST_F(SuperstructureTest, ShooterSpinUpAndDown) {
+  SetEnabled(true);
+
   // Spin up.
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->hood.angle = constants::Values::kHoodRange.lower + 0.03;
     goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
     goal->intake.distance = constants::Values::kIntakeRange.upper - 0.03;
@@ -982,11 +1009,11 @@ TEST_F(SuperstructureTest, ShooterSpinUpAndDown) {
     ASSERT_TRUE(goal.Send());
   }
 
-  RunForTime(chrono::seconds(5));
+  RunFor(chrono::seconds(5));
   VerifyNearGoal();
-  EXPECT_TRUE(superstructure_queue_.status->shooter.ready);
+  EXPECT_TRUE(superstructure_status_fetcher_->shooter.ready);
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->hood.angle = constants::Values::kHoodRange.lower + 0.03;
     goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
     goal->intake.distance = constants::Values::kIntakeRange.upper - 0.03;
@@ -996,19 +1023,20 @@ TEST_F(SuperstructureTest, ShooterSpinUpAndDown) {
   }
 
   // Make sure we don't apply voltage on spin-down.
-  RunIteration();
-  EXPECT_TRUE(superstructure_queue_.output.FetchLatest());
-  EXPECT_EQ(0.0, superstructure_queue_.output->voltage_shooter);
+  RunFor(dt());
+
+  EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
+  EXPECT_EQ(0.0, superstructure_output_fetcher_->voltage_shooter);
   // Continue to stop.
-  RunForTime(chrono::seconds(5));
-  EXPECT_TRUE(superstructure_queue_.output.FetchLatest());
-  EXPECT_EQ(0.0, superstructure_queue_.output->voltage_shooter);
+  RunFor(chrono::seconds(5));
+  EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
+  EXPECT_EQ(0.0, superstructure_output_fetcher_->voltage_shooter);
 }
 
 // Tests that the shooter can spin up nicely after being disabled for a while.
 TEST_F(SuperstructureTest, ShooterDisabled) {
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->hood.angle = constants::Values::kHoodRange.lower + 0.03;
     goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
     goal->intake.distance = constants::Values::kIntakeRange.upper - 0.03;
@@ -1016,19 +1044,22 @@ TEST_F(SuperstructureTest, ShooterDisabled) {
     goal->indexer.angular_velocity = 20.0;
     ASSERT_TRUE(goal.Send());
   }
-  RunForTime(chrono::seconds(5), false);
-  EXPECT_EQ(nullptr, superstructure_queue_.output.get());
+  RunFor(chrono::seconds(5));
+  EXPECT_EQ(nullptr, superstructure_output_fetcher_.get());
 
-  RunForTime(chrono::seconds(5));
+  SetEnabled(true);
+  RunFor(chrono::seconds(5));
 
   VerifyNearGoal();
 }
 
 // Tests that when the indexer gets stuck, it detects it and unjams.
 TEST_F(SuperstructureTest, StuckIndexerTest) {
+  SetEnabled(true);
+
   // Spin up.
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->hood.angle = constants::Values::kHoodRange.lower + 0.03;
     goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
     goal->intake.distance = constants::Values::kIntakeRange.upper - 0.03;
@@ -1037,44 +1068,44 @@ TEST_F(SuperstructureTest, StuckIndexerTest) {
     ASSERT_TRUE(goal.Send());
   }
 
-  RunForTime(chrono::seconds(5));
+  RunFor(chrono::seconds(5));
   VerifyNearGoal();
-  EXPECT_TRUE(superstructure_queue_.status->indexer.ready);
+  EXPECT_TRUE(superstructure_status_fetcher_->indexer.ready);
 
   // Now, stick it.
-  const auto stuck_start_time = monotonic_clock::now();
+  const auto stuck_start_time = monotonic_now();
   superstructure_plant_.set_freeze_indexer(true);
-  while (monotonic_clock::now() < stuck_start_time + chrono::seconds(1)) {
-    RunIteration();
-    superstructure_queue_.status.FetchLatest();
-    ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
+  while (monotonic_now() < stuck_start_time + chrono::seconds(1)) {
+    RunFor(dt());
+    superstructure_status_fetcher_.Fetch();
+    ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
     if (static_cast<column::Column::IndexerState>(
-            superstructure_queue_.status->indexer.state) ==
+            superstructure_status_fetcher_->indexer.state) ==
         column::Column::IndexerState::REVERSING) {
       break;
     }
   }
 
   // Make sure it detected it reasonably fast.
-  const auto stuck_detection_time = monotonic_clock::now();
+  const auto stuck_detection_time = monotonic_now();
   EXPECT_TRUE(stuck_detection_time - stuck_start_time <
               chrono::milliseconds(200));
 
   // Grab the position we were stuck at.
-  superstructure_queue_.position.FetchLatest();
-  ASSERT_TRUE(superstructure_queue_.position.get() != nullptr);
+  superstructure_position_fetcher_.Fetch();
+  ASSERT_TRUE(superstructure_position_fetcher_.get() != nullptr);
   const double indexer_position =
-      superstructure_queue_.position->column.indexer.encoder;
+      superstructure_position_fetcher_->column.indexer.encoder;
 
   // Now, unstick it.
   superstructure_plant_.set_freeze_indexer(false);
-  const auto unstuck_start_time = monotonic_clock::now();
-  while (monotonic_clock::now() < unstuck_start_time + chrono::seconds(1)) {
-    RunIteration();
-    superstructure_queue_.status.FetchLatest();
-    ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
+  const auto unstuck_start_time = monotonic_now();
+  while (monotonic_now() < unstuck_start_time + chrono::seconds(1)) {
+    RunFor(dt());
+    superstructure_status_fetcher_.Fetch();
+    ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
     if (static_cast<column::Column::IndexerState>(
-            superstructure_queue_.status->indexer.state) ==
+            superstructure_status_fetcher_->indexer.state) ==
         column::Column::IndexerState::RUNNING) {
       break;
     }
@@ -1082,30 +1113,32 @@ TEST_F(SuperstructureTest, StuckIndexerTest) {
 
   // Make sure it took some time, but not too much to detect us not being stuck
   // anymore.
-  const auto unstuck_detection_time = monotonic_clock::now();
+  const auto unstuck_detection_time = monotonic_now();
   EXPECT_TRUE(unstuck_detection_time - unstuck_start_time <
               chrono::milliseconds(600));
   EXPECT_TRUE(unstuck_detection_time - unstuck_start_time >
               chrono::milliseconds(100));
 
   // Verify that it actually moved.
-  superstructure_queue_.position.FetchLatest();
-  ASSERT_TRUE(superstructure_queue_.position.get() != nullptr);
+  superstructure_position_fetcher_.Fetch();
+  ASSERT_TRUE(superstructure_position_fetcher_.get() != nullptr);
   const double unstuck_indexer_position =
-      superstructure_queue_.position->column.indexer.encoder;
+      superstructure_position_fetcher_->column.indexer.encoder;
   EXPECT_LT(unstuck_indexer_position, indexer_position - 0.1);
 
   // Now, verify that everything works as expected.
-  RunForTime(chrono::seconds(5));
+  RunFor(chrono::seconds(5));
   VerifyNearGoal();
 }
 
 // Tests that when the indexer gets stuck forever, it switches back and forth at
 // a reasonable rate.
 TEST_F(SuperstructureTest, ReallyStuckIndexerTest) {
+  SetEnabled(true);
+
   // Spin up.
   {
-    auto goal = superstructure_queue_.goal.MakeMessage();
+    auto goal = superstructure_goal_sender_.MakeMessage();
     goal->hood.angle = constants::Values::kHoodRange.lower + 0.03;
     goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
     goal->intake.distance = constants::Values::kIntakeRange.upper - 0.03;
@@ -1114,37 +1147,37 @@ TEST_F(SuperstructureTest, ReallyStuckIndexerTest) {
     ASSERT_TRUE(goal.Send());
   }
 
-  RunForTime(chrono::seconds(5));
+  RunFor(chrono::seconds(5));
   VerifyNearGoal();
-  EXPECT_TRUE(superstructure_queue_.status->indexer.ready);
+  EXPECT_TRUE(superstructure_status_fetcher_->indexer.ready);
 
   // Now, stick it.
-  const auto stuck_start_time = monotonic_clock::now();
+  const auto stuck_start_time = monotonic_now();
   superstructure_plant_.set_freeze_indexer(true);
-  while (monotonic_clock::now() < stuck_start_time + chrono::seconds(1)) {
-    RunIteration();
-    superstructure_queue_.status.FetchLatest();
-    ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
+  while (monotonic_now() < stuck_start_time + chrono::seconds(1)) {
+    RunFor(dt());
+    superstructure_status_fetcher_.Fetch();
+    ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
     if (static_cast<column::Column::IndexerState>(
-            superstructure_queue_.status->indexer.state) ==
+            superstructure_status_fetcher_->indexer.state) ==
         column::Column::IndexerState::REVERSING) {
       break;
     }
   }
 
   // Make sure it detected it reasonably fast.
-  const auto stuck_detection_time = monotonic_clock::now();
+  const auto stuck_detection_time = monotonic_now();
   EXPECT_TRUE(stuck_detection_time - stuck_start_time <
               chrono::milliseconds(200));
 
   // Now, try to unstick it.
-  const auto unstuck_start_time = monotonic_clock::now();
-  while (monotonic_clock::now() < unstuck_start_time + chrono::seconds(1)) {
-    RunIteration();
-    superstructure_queue_.status.FetchLatest();
-    ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
+  const auto unstuck_start_time = monotonic_now();
+  while (monotonic_now() < unstuck_start_time + chrono::seconds(1)) {
+    RunFor(dt());
+    superstructure_status_fetcher_.Fetch();
+    ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
     if (static_cast<column::Column::IndexerState>(
-            superstructure_queue_.status->indexer.state) ==
+            superstructure_status_fetcher_->indexer.state) ==
         column::Column::IndexerState::RUNNING) {
       break;
     }
@@ -1152,7 +1185,7 @@ TEST_F(SuperstructureTest, ReallyStuckIndexerTest) {
 
   // Make sure it took some time, but not too much to detect us not being stuck
   // anymore.
-  const auto unstuck_detection_time = monotonic_clock::now();
+  const auto unstuck_detection_time = monotonic_now();
   EXPECT_TRUE(unstuck_detection_time - unstuck_start_time <
               chrono::milliseconds(1050));
   EXPECT_TRUE(unstuck_detection_time - unstuck_start_time >
@@ -1162,21 +1195,21 @@ TEST_F(SuperstructureTest, ReallyStuckIndexerTest) {
           (unstuck_detection_time - unstuck_start_time).count() / 1000000));
 
   // Now, make sure it transitions to stuck again after a delay.
-  const auto restuck_start_time = monotonic_clock::now();
+  const auto restuck_start_time = monotonic_now();
   superstructure_plant_.set_freeze_indexer(true);
-  while (monotonic_clock::now() < restuck_start_time + chrono::seconds(1)) {
-    RunIteration();
-    superstructure_queue_.status.FetchLatest();
-    ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
+  while (monotonic_now() < restuck_start_time + chrono::seconds(1)) {
+    RunFor(dt());
+    superstructure_status_fetcher_.Fetch();
+    ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
     if (static_cast<column::Column::IndexerState>(
-            superstructure_queue_.status->indexer.state) ==
+            superstructure_status_fetcher_->indexer.state) ==
         column::Column::IndexerState::REVERSING) {
       break;
     }
   }
 
   // Make sure it detected it reasonably fast.
-  const auto restuck_detection_time = monotonic_clock::now();
+  const auto restuck_detection_time = monotonic_now();
   EXPECT_TRUE(restuck_detection_time - restuck_start_time >
               chrono::milliseconds(400));
   EXPECT_TRUE(restuck_detection_time - restuck_start_time <

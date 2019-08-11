@@ -189,10 +189,16 @@ class SimulatedEventLoopFactory {
  public:
   ::std::unique_ptr<EventLoop> MakeEventLoop();
 
+  // Starts executing the event loops unconditionally.
   void Run() { scheduler_.Run(); }
+  // Executes the event loops for a duration.
   void RunFor(monotonic_clock::duration duration) {
     scheduler_.RunFor(duration);
   }
+
+  // Stops executing all event loops.  Meant to be called from within an event
+  // loop handler.
+  void Exit() { scheduler_.Exit(); }
 
   monotonic_clock::time_point monotonic_now() const {
     return scheduler_.monotonic_now();

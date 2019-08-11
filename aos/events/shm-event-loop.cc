@@ -408,7 +408,10 @@ void ShmEventLoop::Run() {
 
   ::aos::SetCurrentThreadName(thread_state_.name());
 
-  // Now, all the threads are up.  Go RT.
+  // Now, all the threads are up.  Lock everything into memory and go RT.
+  if (thread_state_.priority_ != -1) {
+    ::aos::InitRT();
+  }
   thread_state_.MaybeSetCurrentThreadRealtimePriority();
   set_is_running(true);
 

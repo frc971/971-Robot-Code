@@ -64,7 +64,8 @@ cc_library(
     srcs = ["event-loop_param_test.cc"],
     hdrs = ["event-loop_param_test.h"],
     deps = [
-        "event-loop",
+        ":event-loop",
+        "//aos/logging:queue_logging",
         "//aos/testing:googletest",
     ],
 )

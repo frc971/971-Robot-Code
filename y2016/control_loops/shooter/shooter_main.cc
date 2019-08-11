@@ -4,10 +4,13 @@
 #include "aos/init.h"
 
 int main() {
-  ::aos::Init();
+  ::aos::InitNRT(true);
+
   ::aos::ShmEventLoop event_loop;
   ::y2016::control_loops::shooter::Shooter shooter(&event_loop);
-  shooter.Run();
+
+  event_loop.Run();
+
   ::aos::Cleanup();
   return 0;
 }

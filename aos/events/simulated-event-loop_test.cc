@@ -17,6 +17,7 @@ class SimulatedEventLoopTestFactory : public EventLoopTestFactory {
   }
 
   void Run() override { event_loop_factory_.Run(); }
+  void Exit() override { event_loop_factory_.Exit(); }
 
   // TODO(austin): Implement this.  It's used currently for a phased loop test.
   // I'm not sure how much that matters.

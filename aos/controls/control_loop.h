@@ -15,16 +15,6 @@
 namespace aos {
 namespace controls {
 
-// Interface to describe runnable jobs.
-class Runnable {
- public:
-  virtual ~Runnable() {}
-  // Runs forever.
-  virtual void Run() = 0;
-  // Does one quick piece of work and return.  Does _not_ block.
-  virtual void Iterate() = 0;
-};
-
 // Control loops run this often, "starting" at time 0.
 constexpr ::std::chrono::nanoseconds kLoopFrequency =
     ::std::chrono::milliseconds(5);
@@ -35,7 +25,7 @@ constexpr ::std::chrono::nanoseconds kLoopFrequency =
 // It will then call the RunIteration method every cycle that it has enough
 // valid data for the control loop to run.
 template <class T>
-class ControlLoop : public Runnable {
+class ControlLoop {
  public:
   // Create some convenient typedefs to reference the Goal, Position, Status,
   // and Output structures.
@@ -58,6 +48,11 @@ class ControlLoop : public Runnable {
         event_loop_->MakeFetcher<::aos::RobotState>(".aos.robot_state");
     joystick_state_fetcher_ =
         event_loop_->MakeFetcher<::aos::JoystickState>(".aos.joystick_state");
+
+    event_loop_->MakeWatcher(name_ + ".position",
+                             [this](const PositionType &position) {
+                               this->IteratePosition(position);
+                             });
   }
 
   const ::aos::RobotState &robot_state() const { return *robot_state_fetcher_; }
@@ -87,21 +82,11 @@ class ControlLoop : public Runnable {
   // subsystem.
   virtual void Zero(OutputType *output) { output->Zero(); }
 
-  // Runs the loop forever.
-  // TODO(austin): This should move to the event loop once it gets hoisted out.
-  void Run() override;
-
-  // Runs one cycle of the loop.
-  // TODO(austin): This should go away when all the tests use event loops
-  // directly.
-  void Iterate() override;
-
  protected:
+  // Runs one cycle of the loop.
   void IteratePosition(const PositionType &position);
 
   EventLoop *event_loop() { return event_loop_; }
-
-  static void Quit(int /*signum*/) { run_ = false; }
 
   // Runs an iteration of the control loop.
   // goal is the last goal that was sent.  It might be any number of cycles old
@@ -126,7 +111,6 @@ class ControlLoop : public Runnable {
       ::std::chrono::milliseconds(100);
 
   // Pointer to the queue group
-  ::std::unique_ptr<ShmEventLoop> shm_event_loop_;
   EventLoop *event_loop_;
   ::std::string name_;
 
@@ -154,8 +138,6 @@ class ControlLoop : public Runnable {
       SimpleLogInterval(kStaleLogInterval, WARNING, "motors disabled");
   SimpleLogInterval no_goal_ =
       SimpleLogInterval(kStaleLogInterval, ERROR, "no goal");
-
-  static ::std::atomic<bool> run_;
 };
 
 }  // namespace controls

@@ -120,15 +120,19 @@ void Init(int relative_priority) {
   GoRT(relative_priority);
 }
 
+void InitRT() {
+  LockAllMemory();
+
+  // Only let rt processes run for 3 seconds straight.
+  SetSoftRLimit(RLIMIT_RTTIME, 3000000, true);
+
+  // Allow rt processes up to priority 40.
+  SetSoftRLimit(RLIMIT_RTPRIO, 40, false);
+}
+
 void GoRT(int relative_priority) {
   if (ShouldBeRealtime()) {
-    LockAllMemory();
-
-    // Only let rt processes run for 3 seconds straight.
-    SetSoftRLimit(RLIMIT_RTTIME, 3000000, true);
-
-    // Allow rt processes up to priority 40.
-    SetSoftRLimit(RLIMIT_RTPRIO, 40, false);
+    InitRT();
 
     // Set our process to the appropriate priority.
     struct sched_param param;
@@ -137,9 +141,10 @@ void GoRT(int relative_priority) {
       PDie("%s-init: setting SCHED_FIFO failed", program_invocation_short_name);
     }
   } else {
-    fprintf(stderr, "%s not doing realtime initialization because environment"
-            " variable %s is set\n", program_invocation_short_name,
-            kNoRealtimeEnvironmentVariable);
+    fprintf(stderr,
+            "%s not doing realtime initialization because environment"
+            " variable %s is set\n",
+            program_invocation_short_name, kNoRealtimeEnvironmentVariable);
     printf("no realtime for %s. see stderr\n", program_invocation_short_name);
   }
 

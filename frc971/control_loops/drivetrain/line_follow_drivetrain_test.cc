@@ -9,7 +9,7 @@
 #include "gtest/gtest.h"
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
 
-DEFINE_bool(plot, false, "If true, plot");
+DECLARE_bool(plot);
 
 namespace chrono = ::std::chrono;
 

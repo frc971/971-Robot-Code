@@ -24,6 +24,8 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
 
   void Run() override { CHECK_NOTNULL(primary_event_loop_)->Run(); }
 
+  void Exit() override { CHECK_NOTNULL(primary_event_loop_)->Exit(); }
+
   void SleepFor(::std::chrono::nanoseconds duration) override {
     ::std::this_thread::sleep_for(duration);
   }
@@ -80,10 +82,10 @@ TEST(ShmEventLoopTest, AllHandlersAreRealtime) {
   bool did_timer = false;
   bool did_watcher = false;
 
-  auto timer = loop->AddTimer([&did_timer, &loop]() {
+  auto timer = loop->AddTimer([&did_timer, &loop, &factory]() {
     EXPECT_TRUE(IsRealtime());
     did_timer = true;
-    loop->Exit();
+    factory.Exit();
   });
 
   loop->MakeWatcher("/test", [&did_watcher](const TestMessage &) {
@@ -118,7 +120,7 @@ TEST(ShmEventLoopTest, DelayedPhasedLoop) {
   constexpr chrono::milliseconds kOffset = chrono::milliseconds(400);
 
   loop1->AddPhasedLoop(
-      [&times, &loop1, &kOffset](int count) {
+      [&times, &loop1, &kOffset, &factory](int count) {
         const ::aos::monotonic_clock::time_point monotonic_now =
             loop1->monotonic_now();
 
@@ -143,7 +145,7 @@ TEST(ShmEventLoopTest, DelayedPhasedLoop) {
 
         times.push_back(loop1->monotonic_now());
         if (times.size() == 2) {
-          loop1->Exit();
+          factory.Exit();
         }
 
         // Now, add a large delay.  This should push us up to 3 cycles.

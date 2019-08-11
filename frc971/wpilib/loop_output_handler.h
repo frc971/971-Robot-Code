@@ -19,8 +19,7 @@ namespace wpilib {
 // long efficiently.
 //
 // The intended use is to have a subclass for each loop which implements the
-// pure virtual methods and is then run in a separate thread. The operator()
-// loops writing values until Quit() is called.
+// pure virtual methods.
 template <typename T>
 class LoopOutputHandler {
  public:
@@ -43,8 +42,6 @@ class LoopOutputHandler {
       timer_handler_->Setup(event_loop_->monotonic_now() + timeout_);
     });
   }
-
-  void Quit() { event_loop_->Exit(); }
 
   // Note, all subclasses should call Stop.
   virtual ~LoopOutputHandler() {}

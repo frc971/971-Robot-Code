@@ -7,14 +7,17 @@
 using ::frc971::control_loops::drivetrain::DrivetrainLoop;
 
 int main() {
-  ::aos::Init();
+  ::aos::InitNRT(true);
+
   ::aos::ShmEventLoop event_loop;
   ::frc971::control_loops::drivetrain::DeadReckonEkf localizer(
-      ::y2016::control_loops::drivetrain::GetDrivetrainConfig());
+      &event_loop, ::y2016::control_loops::drivetrain::GetDrivetrainConfig());
   DrivetrainLoop drivetrain(
       ::y2016::control_loops::drivetrain::GetDrivetrainConfig(), &event_loop,
       &localizer);
-  drivetrain.Run();
+
+  event_loop.Run();
+
   ::aos::Cleanup();
   return 0;
 }

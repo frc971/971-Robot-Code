@@ -156,12 +156,6 @@ class RawEventLoop {
       const monotonic_clock::duration interval,
       const monotonic_clock::duration offset = ::std::chrono::seconds(0)) = 0;
 
-  // Stops receiving events.
-  virtual void Exit() = 0;
-
-  // TODO(austin): This shouldn't belong here.
-  virtual void Run() = 0;
-
  protected:
   friend class EventScheduler;
   void set_is_running(bool value) { is_running_.store(value); }

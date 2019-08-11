@@ -93,7 +93,8 @@ void DrivetrainLoop::RunIteration(
     const ::frc971::control_loops::DrivetrainQueue::Position *position,
     ::frc971::control_loops::DrivetrainQueue::Output *output,
     ::frc971::control_loops::DrivetrainQueue::Status *status) {
-  monotonic_clock::time_point monotonic_now = monotonic_clock::now();
+  const monotonic_clock::time_point monotonic_now =
+      event_loop()->monotonic_now();
 
   if (!has_been_enabled_ && output) {
     has_been_enabled_ = true;

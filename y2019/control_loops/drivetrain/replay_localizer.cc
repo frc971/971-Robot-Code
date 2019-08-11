@@ -64,7 +64,7 @@ class LocalizerReplayer {
   typedef ::frc971::IMUValues IMUValues;
   typedef ::aos::JoystickState JoystickState;
 
-  LocalizerReplayer() : localizer_(GetDrivetrainConfig(), &event_loop_) {
+  LocalizerReplayer() : localizer_(&event_loop_, GetDrivetrainConfig()) {
     replayer_.AddDirectQueueSender<CameraFrame>(
         "wpilib_interface.stripped.IMU", "camera_frames",
         ".y2019.control_loops.drivetrain.camera_frames");

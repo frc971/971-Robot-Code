@@ -157,9 +157,9 @@ class ZeroedJoint {
   // position is null if the position data is stale, output_enabled is true if
   // the output will actually go to the motors, and goal_angle and goal_velocity
   // are the goal position and velocities.
-  double Update(const ZeroedJoint<kNumZeroSensors>::PositionData *position,
-                bool output_enabled,
-                double goal_angle, double goal_velocity);
+  double Update(const ::aos::monotonic_clock::time_point monotonic_now,
+                const ZeroedJoint<kNumZeroSensors>::PositionData *position,
+                bool output_enabled, double goal_angle, double goal_velocity);
 
   // True if the code is zeroing.
   bool is_zeroing() const { return state_ == ZEROING; }
@@ -270,9 +270,9 @@ template <int kNumZeroSensors>
 // Updates the zeroed joint controller and state machine.
 template <int kNumZeroSensors>
 double ZeroedJoint<kNumZeroSensors>::Update(
+    const ::aos::monotonic_clock::time_point monotonic_now,
     const ZeroedJoint<kNumZeroSensors>::PositionData *position,
-    bool output_enabled,
-    double goal_angle, double goal_velocity) {
+    bool output_enabled, double goal_angle, double goal_velocity) {
   // Uninitialize the bot if too many cycles pass without an encoder.
   if (position == NULL) {
     LOG(WARNING, "no new pos given\n");
@@ -282,7 +282,7 @@ double ZeroedJoint<kNumZeroSensors>::Update(
     output_enabled = false;
     LOG(WARNING, "err_count is %d so disabling\n", error_count_);
 
-    if (::aos::monotonic_clock::now() > kRezeroTime + last_good_time_) {
+    if (monotonic_now > kRezeroTime + last_good_time_) {
       LOG(WARNING, "err_count is %d (or 1st time) so forcing a re-zero\n",
           error_count_);
       state_ = UNINITIALIZED;
@@ -290,7 +290,7 @@ double ZeroedJoint<kNumZeroSensors>::Update(
     }
   }
   if (position != NULL) {
-    last_good_time_ = ::aos::monotonic_clock::now();
+    last_good_time_ = monotonic_now;
     error_count_ = 0;
   }
 

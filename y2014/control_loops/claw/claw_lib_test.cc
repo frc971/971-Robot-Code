@@ -34,15 +34,27 @@ class ClawMotorSimulation {
  public:
   // Constructs a motor simulation.  initial_position is the inital angle of the
   // wrist, which will be treated as 0 by the encoder.
-  ClawMotorSimulation(double initial_top_position,
+  ClawMotorSimulation(::aos::EventLoop *event_loop, chrono::nanoseconds dt,
+                      double initial_top_position,
                       double initial_bottom_position)
-      : claw_plant_(new StateFeedbackPlant<4, 2, 2>(MakeClawPlant())),
-        claw_queue(".y2014.control_loops.claw_queue",
-                   ".y2014.control_loops.claw_queue.goal",
-                   ".y2014.control_loops.claw_queue.position",
-                   ".y2014.control_loops.claw_queue.output",
-                   ".y2014.control_loops.claw_queue.status") {
+      : event_loop_(event_loop),
+        claw_position_sender_(event_loop_->MakeSender<ClawQueue::Position>(
+            ".y2014.control_loops.claw_queue.position")),
+        claw_output_fetcher_(event_loop_->MakeFetcher<ClawQueue::Output>(
+            ".y2014.control_loops.claw_queue.output")),
+        claw_plant_(new StateFeedbackPlant<4, 2, 2>(MakeClawPlant())) {
     Reinitialize(initial_top_position, initial_bottom_position);
+
+    event_loop_->AddPhasedLoop(
+        [this](int) {
+          // Skip this the first time.
+          if (!first_) {
+            Simulate();
+          }
+          first_ = false;
+          SendPositionMessage();
+        },
+        dt);
   }
 
   void Reinitialize(double initial_top_position,
@@ -177,8 +189,8 @@ class ClawMotorSimulation {
 
   // Sends out the position queue messages.
   void SendPositionMessage() {
-    ::aos::ScopedMessagePtr<::y2014::control_loops::ClawQueue::Position>
-        position = claw_queue.position.MakeMessage();
+    ::aos::Sender<::y2014::control_loops::ClawQueue::Position>::Message
+        position = claw_position_sender_.MakeMessage();
 
     // Initialize all the counters to their previous values.
     *position = last_position_;
@@ -203,11 +215,11 @@ class ClawMotorSimulation {
   // Simulates the claw moving for one timestep.
   void Simulate() {
     const constants::Values& v = constants::GetValues();
-    EXPECT_TRUE(claw_queue.output.FetchLatest());
+    EXPECT_TRUE(claw_output_fetcher_.Fetch());
 
     Eigen::Matrix<double, 2, 1> U;
-    U << claw_queue.output->bottom_claw_voltage,
-        claw_queue.output->top_claw_voltage;
+    U << claw_output_fetcher_->bottom_claw_voltage,
+        claw_output_fetcher_->top_claw_voltage;
     claw_plant_->Update(U);
 
     // Check that the claw is within the limits.
@@ -222,87 +234,92 @@ class ClawMotorSimulation {
     EXPECT_GE(claw_plant_->Y(1, 0) - claw_plant_->Y(0, 0),
               v.claw.claw_min_separation);
   }
+
+ private:
+  ::aos::EventLoop *event_loop_;
+  ::aos::Sender<ClawQueue::Position> claw_position_sender_;
+  ::aos::Fetcher<ClawQueue::Output> claw_output_fetcher_;
+
   // The whole claw.
   ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> claw_plant_;
 
- private:
+  bool first_ = true;
+
   // Resets the plant so that it starts at initial_position.
   void ReinitializePartial(ClawType type, double initial_position) {
     initial_position_[type] = initial_position;
   }
 
-  ::y2014::control_loops::ClawQueue claw_queue;
   double initial_position_[CLAW_COUNT];
 
   ::y2014::control_loops::ClawQueue::Position last_position_;
 };
 
-
 class ClawTest : public ::aos::testing::ControlLoopTest {
  protected:
-  // Create a new instance of the test queue so that it invalidates the queue
-  // that it points to.  Otherwise, we will have a pointer to shared memory that
-  // is no longer valid.
-  ::y2014::control_loops::ClawQueue claw_queue;
+  ClawTest()
+      : ::aos::testing::ControlLoopTest(chrono::microseconds(5000)),
+        test_event_loop_(MakeEventLoop()),
+        claw_goal_sender_(test_event_loop_->MakeSender<ClawQueue::Goal>(
+            ".y2014.control_loops.claw_queue.goal")),
+        claw_goal_fetcher_(test_event_loop_->MakeFetcher<ClawQueue::Goal>(
+            ".y2014.control_loops.claw_queue.goal")),
+        claw_event_loop_(MakeEventLoop()),
+        claw_motor_(claw_event_loop_.get()),
+        claw_plant_event_loop_(MakeEventLoop()),
+        claw_motor_plant_(claw_plant_event_loop_.get(), dt(), 0.4, 0.2),
+        min_separation_(constants::GetValues().claw.claw_min_separation) {}
 
-  ::aos::ShmEventLoop event_loop_;
+  void VerifyNearGoal() {
+    claw_goal_fetcher_.Fetch();
+    double bottom = claw_motor_plant_.GetAbsolutePosition(BOTTOM_CLAW);
+    double separation =
+        claw_motor_plant_.GetAbsolutePosition(TOP_CLAW) - bottom;
+    EXPECT_NEAR(claw_goal_fetcher_->bottom_angle, bottom, 1e-4);
+    EXPECT_NEAR(claw_goal_fetcher_->separation_angle, separation, 1e-4);
+    EXPECT_LE(min_separation_, separation);
+  }
+
+  ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
+  ::aos::Sender<ClawQueue::Goal> claw_goal_sender_;
+  ::aos::Fetcher<ClawQueue::Goal> claw_goal_fetcher_;
+
   // Create a loop and simulation plant.
+  ::std::unique_ptr<::aos::EventLoop> claw_event_loop_;
   ClawMotor claw_motor_;
+
+  ::std::unique_ptr<::aos::EventLoop> claw_plant_event_loop_;
   ClawMotorSimulation claw_motor_plant_;
 
   // Minimum amount of acceptable separation between the top and bottom of the
   // claw.
   double min_separation_;
 
-  ClawTest()
-      : claw_queue(".y2014.control_loops.claw_queue",
-                   ".y2014.control_loops.claw_queue.goal",
-                   ".y2014.control_loops.claw_queue.position",
-                   ".y2014.control_loops.claw_queue.output",
-                   ".y2014.control_loops.claw_queue.status"),
-        claw_motor_(&event_loop_),
-        claw_motor_plant_(0.4, 0.2),
-        min_separation_(constants::GetValues().claw.claw_min_separation) {}
-
-  void VerifyNearGoal() {
-    claw_queue.goal.FetchLatest();
-    claw_queue.position.FetchLatest();
-    double bottom = claw_motor_plant_.GetAbsolutePosition(BOTTOM_CLAW);
-    double separation =
-        claw_motor_plant_.GetAbsolutePosition(TOP_CLAW) - bottom;
-    EXPECT_NEAR(claw_queue.goal->bottom_angle, bottom, 1e-4);
-    EXPECT_NEAR(claw_queue.goal->separation_angle, separation, 1e-4);
-    EXPECT_LE(min_separation_, separation);
-  }
 };
 
 TEST_F(ClawTest, HandlesNAN) {
-  claw_queue.goal.MakeWithBuilder()
-      .bottom_angle(::std::nan(""))
-      .separation_angle(::std::nan(""))
-      .Send();
-  while (monotonic_clock::now() <
-         monotonic_clock::time_point(chrono::seconds(5))) {
-    claw_motor_plant_.SendPositionMessage();
-    claw_motor_.Iterate();
-    claw_motor_plant_.Simulate();
-    SimulateTimestep(true);
+  {
+    auto message = claw_goal_sender_.MakeMessage();
+    message->bottom_angle = ::std::nan("");
+    message->separation_angle = ::std::nan("");
+    EXPECT_TRUE(message.Send());
   }
+
+  SetEnabled(true);
+  RunFor(chrono::seconds(5));
 }
 
 // Tests that the wrist zeros correctly and goes to a position.
 TEST_F(ClawTest, ZerosCorrectly) {
-  claw_queue.goal.MakeWithBuilder()
-      .bottom_angle(0.1)
-      .separation_angle(0.2)
-      .Send();
-  while (monotonic_clock::now() <
-         monotonic_clock::time_point(chrono::seconds(5))) {
-    claw_motor_plant_.SendPositionMessage();
-    claw_motor_.Iterate();
-    claw_motor_plant_.Simulate();
-    SimulateTimestep(true);
+  {
+    auto message = claw_goal_sender_.MakeMessage();
+    message->bottom_angle = 0.1;
+    message->separation_angle = 0.2;
+    EXPECT_TRUE(message.Send());
   }
+
+  SetEnabled(true);
+  RunFor(chrono::seconds(5));
   VerifyNearGoal();
 }
 
@@ -391,18 +408,16 @@ class ZeroingClawTest
 TEST_P(ZeroingClawTest, ParameterizedZero) {
   claw_motor_plant_.Reinitialize(GetParam().first, GetParam().second);
 
-  claw_queue.goal.MakeWithBuilder()
-      .bottom_angle(0.1)
-      .separation_angle(0.2)
-      .Send();
-  while (monotonic_clock::now() <
-         monotonic_clock::time_point(chrono::seconds(7))) {
-    claw_motor_plant_.SendPositionMessage();
-    claw_motor_.Iterate();
-    claw_motor_plant_.Simulate();
-
-    SimulateTimestep(true);
+  {
+    auto message = claw_goal_sender_.MakeMessage();
+    message->bottom_angle = 0.1;
+    message->separation_angle = 0.2;
+    EXPECT_TRUE(message.Send());
   }
+
+  SetEnabled(true);
+  RunFor(chrono::seconds(7));
+
   VerifyNearGoal();
 }
 
@@ -509,15 +524,15 @@ class WindupClawTest : public ClawTest {
  protected:
   void TestWindup(ClawMotor::CalibrationMode mode,
                   monotonic_clock::time_point start_time, double offset) {
+    SetEnabled(true);
     int capped_count = 0;
     const constants::Values& values = constants::GetValues();
     bool kicked = false;
     bool measured = false;
-    while (monotonic_clock::now() <
+    while (test_event_loop_->monotonic_now() <
            monotonic_clock::time_point(chrono::seconds(7))) {
-      claw_motor_plant_.SendPositionMessage();
-      if (monotonic_clock::now() >= start_time && mode == claw_motor_.mode() &&
-          !kicked) {
+      if (test_event_loop_->monotonic_now() >= start_time &&
+          mode == claw_motor_.mode() && !kicked) {
         EXPECT_EQ(mode, claw_motor_.mode());
         // Move the zeroing position far away and verify that it gets moved
         // back.
@@ -558,9 +573,7 @@ class WindupClawTest : public ClawTest {
         }
       }
 
-      claw_motor_.Iterate();
-      claw_motor_plant_.Simulate();
-      SimulateTimestep(true);
+      RunFor(dt());
     }
     EXPECT_TRUE(kicked);
     EXPECT_TRUE(measured);
@@ -572,10 +585,12 @@ class WindupClawTest : public ClawTest {
 // Tests that the wrist can't get too far away from the zeroing position if the
 // zeroing position is saturating the goal.
 TEST_F(WindupClawTest, NoWindupPositive) {
-  claw_queue.goal.MakeWithBuilder()
-      .bottom_angle(0.1)
-      .separation_angle(0.2)
-      .Send();
+  {
+    auto message = claw_goal_sender_.MakeMessage();
+    message->bottom_angle = 0.1;
+    message->separation_angle = 0.2;
+    EXPECT_TRUE(message.Send());
+  }
 
   TestWindup(ClawMotor::UNKNOWN_LOCATION,
              monotonic_clock::time_point(chrono::seconds(1)), 971.0);
@@ -586,10 +601,12 @@ TEST_F(WindupClawTest, NoWindupPositive) {
 // Tests that the wrist can't get too far away from the zeroing position if the
 // zeroing position is saturating the goal.
 TEST_F(WindupClawTest, NoWindupNegative) {
-  claw_queue.goal.MakeWithBuilder()
-      .bottom_angle(0.1)
-      .separation_angle(0.2)
-      .Send();
+  {
+    auto message = claw_goal_sender_.MakeMessage();
+    message->bottom_angle = 0.1;
+    message->separation_angle = 0.2;
+    EXPECT_TRUE(message.Send());
+  }
 
   TestWindup(ClawMotor::UNKNOWN_LOCATION,
              monotonic_clock::time_point(chrono::seconds(1)), -971.0);
@@ -600,10 +617,12 @@ TEST_F(WindupClawTest, NoWindupNegative) {
 // Tests that the wrist can't get too far away from the zeroing position if the
 // zeroing position is saturating the goal.
 TEST_F(WindupClawTest, NoWindupNegativeFineTune) {
-  claw_queue.goal.MakeWithBuilder()
-      .bottom_angle(0.1)
-      .separation_angle(0.2)
-      .Send();
+  {
+    auto message = claw_goal_sender_.MakeMessage();
+    message->bottom_angle = 0.1;
+    message->separation_angle = 0.2;
+    EXPECT_TRUE(message.Send());
+  }
 
   TestWindup(ClawMotor::FINE_TUNE_BOTTOM,
              monotonic_clock::time_point(chrono::seconds(2)), -971.0);

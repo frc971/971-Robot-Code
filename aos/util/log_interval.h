@@ -28,6 +28,7 @@ class LogInterval {
 
   void WantToLog() {
     if (count_ == 0) {
+      // TODO(austin): event loops!
       last_done_ = ::aos::monotonic_clock::now();
     }
     ++count_;

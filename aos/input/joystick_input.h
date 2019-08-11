@@ -23,9 +23,8 @@ class JoystickInput {
         [this](const ::aos::JoystickState &joystick_state) {
           this->HandleData(joystick_state);
         });
+    event_loop->SetRuntimeRealtimePriority(29);
   }
-
-  void Run();
 
  protected:
   int mode() const { return mode_; }
@@ -35,10 +34,6 @@ class JoystickInput {
 
   // Subclasses should do whatever they want with data here.
   virtual void RunIteration(const driver_station::Data &data) = 0;
-
-  static void Quit(int /*signum*/);
-
-  static ::std::atomic<bool> run_;
 
   EventLoop *event_loop_;
   driver_station::Data data_;

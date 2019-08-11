@@ -231,13 +231,6 @@ class SimulatedEventLoop : public EventLoop {
   void OnRun(::std::function<void()> on_run) override {
     scheduler_->Schedule(scheduler_->monotonic_now(), on_run);
   }
-  void Run() override {
-    LOG(FATAL, "Run from the factory instead\n");
-    scheduler_->Run();
-  }
-  void Exit() override {
-    scheduler_->Exit();
-  }
 
   void set_name(const char *name) override { name_ = name; }
 

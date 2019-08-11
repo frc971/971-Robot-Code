@@ -1,7 +1,6 @@
 #include "y2019/control_loops/drivetrain/target_selector.h"
 
-#include "aos/events/shm-event-loop.h"
-#include "aos/testing/test_shm.h"
+#include "aos/events/simulated-event-loop.h"
 #include "gtest/gtest.h"
 #include "y2019/control_loops/superstructure/superstructure.q.h"
 
@@ -39,21 +38,23 @@ struct TestParams {
 class TargetSelectorParamTest : public ::testing::TestWithParam<TestParams> {
  public:
   TargetSelectorParamTest()
-      : target_selector_hint_sender_(
-            test_event_loop_.MakeSender<
+      : event_loop_(this->event_loop_factory_.MakeEventLoop()),
+        test_event_loop_(this->event_loop_factory_.MakeEventLoop()),
+        target_selector_hint_sender_(
+            test_event_loop_->MakeSender<
                 ::y2019::control_loops::drivetrain::TargetSelectorHint>(
                 ".y2019.control_loops.drivetrain.target_selector_hint")),
-        superstructure_goal_sender_(test_event_loop_.MakeSender<
+        superstructure_goal_sender_(test_event_loop_->MakeSender<
                                     ::y2019::control_loops::superstructure::
                                         SuperstructureQueue::Goal>(
             ".y2019.control_loops.superstructure.superstructure_queue.goal")) {}
 
  private:
-  ::aos::testing::TestSharedMemory my_shm_;
+  ::aos::SimulatedEventLoopFactory event_loop_factory_;
 
  protected:
-  ::aos::ShmEventLoop event_loop_;
-  ::aos::ShmEventLoop test_event_loop_;
+  ::std::unique_ptr<::aos::EventLoop> event_loop_;
+  ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
 
   ::aos::Sender<::y2019::control_loops::drivetrain::TargetSelectorHint>
       target_selector_hint_sender_;
@@ -63,7 +64,7 @@ class TargetSelectorParamTest : public ::testing::TestWithParam<TestParams> {
 };
 
 TEST_P(TargetSelectorParamTest, ExpectReturn) {
-  TargetSelector selector(&event_loop_);
+  TargetSelector selector(event_loop_.get());
   {
     auto super_goal = superstructure_goal_sender_.MakeMessage();
     super_goal->suction.gamepiece_mode = GetParam().ball_mode ? 0 : 1;

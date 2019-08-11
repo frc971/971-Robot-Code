@@ -42,73 +42,76 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
   // We must use the 2019 drivetrain config so that we don't have to deal
   // with shifting:
   LocalizedDrivetrainTest()
-      : dt_config_(GetTest2019DrivetrainConfig()),
-        my_drivetrain_queue_(".frc971.control_loops.drivetrain_queue",
-                             ".frc971.control_loops.drivetrain_queue.goal",
-                             ".frc971.control_loops.drivetrain_queue.position",
-                             ".frc971.control_loops.drivetrain_queue.output",
-                             ".frc971.control_loops.drivetrain_queue.status"),
-        camera_queue_(".y2019.control_loops.drivetrain.camera_frames"),
-        localizer_(dt_config_, &event_loop_),
-        drivetrain_motor_(dt_config_, &event_loop_, &localizer_),
-        drivetrain_motor_plant_(&simulation_event_loop_, dt_config_),
+      : ::aos::testing::ControlLoopTest(GetTest2019DrivetrainConfig().dt),
+        test_event_loop_(MakeEventLoop()),
+        drivetrain_goal_sender_(
+            test_event_loop_
+                ->MakeSender<::frc971::control_loops::DrivetrainQueue::Goal>(
+                    ".frc971.control_loops.drivetrain_queue.goal")),
+        drivetrain_goal_fetcher_(
+            test_event_loop_
+                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Goal>(
+                    ".frc971.control_loops.drivetrain_queue.goal")),
+        localizer_control_sender_(
+            test_event_loop_->MakeSender<
+                ::frc971::control_loops::drivetrain::LocalizerControl>(
+                ".frc971.control_loops.drivetrain.localizer_control")),
+
+        drivetrain_event_loop_(MakeEventLoop()),
+        dt_config_(GetTest2019DrivetrainConfig()),
+        camera_sender_(test_event_loop_->MakeSender<CameraFrame>(
+            ".y2019.control_loops.drivetrain.camera_frames")),
+        localizer_(drivetrain_event_loop_.get(), dt_config_),
+        drivetrain_(dt_config_, drivetrain_event_loop_.get(), &localizer_),
+
+        drivetrain_plant_event_loop_(MakeEventLoop()),
+        drivetrain_plant_(drivetrain_plant_event_loop_.get(), dt_config_),
         cameras_(MakeCameras(&robot_pose_)),
-        last_frame_(monotonic_clock::now()) {
+        last_frame_(monotonic_now()) {
     set_team_id(::frc971::control_loops::testing::kTeamNumber);
     // Because 0, 0 is on the top level of the Hab and right on the edge of an
     // obstacle, it ends up confusing the localizer; as such, starting there
     // is just prone to causing confusion.
     SetStartingPosition({3.0, 2.0, 0.0});
     set_battery_voltage(12.0);
+
+    test_event_loop_->MakeWatcher(
+        ".frc971.control_loops.drivetrain_queue.status",
+        [this](const ::frc971::control_loops::DrivetrainQueue::Status &) {
+          // Needs to do camera updates right after we run the control loop.
+          if (enable_cameras_) {
+            SendDelayedFrames();
+            if (last_frame_ + ::std::chrono::milliseconds(33) <
+                monotonic_now()) {
+              CaptureFrames();
+              last_frame_ = monotonic_now();
+            }
+          }
+        });
   }
 
+  virtual ~LocalizedDrivetrainTest() {}
+
   void SetStartingPosition(const Eigen::Matrix<double, 3, 1> &xytheta) {
-    *drivetrain_motor_plant_.mutable_state() << xytheta.x(), xytheta.y(),
+    *drivetrain_plant_.mutable_state() << xytheta.x(), xytheta.y(),
         xytheta(2, 0), 0.0, 0.0;
     Eigen::Matrix<double, EventLoopLocalizer::Localizer::kNStates, 1>
         localizer_state;
     localizer_state.setZero();
     localizer_state.block<3, 1>(0, 0) = xytheta;
-    localizer_.Reset(monotonic_clock::now(), localizer_state, 0.0);
-  }
-
-  void RunIteration() {
-    drivetrain_motor_plant_.SendPositionMessage();
-    drivetrain_motor_.Iterate();
-    if (enable_cameras_) {
-      SendDelayedFrames();
-      if (last_frame_ + ::std::chrono::milliseconds(33) <
-          monotonic_clock::now()) {
-        CaptureFrames();
-        last_frame_ = monotonic_clock::now();
-      }
-    }
-    drivetrain_motor_plant_.Simulate();
-    SimulateTimestep(true, dt_config_.dt);
-  }
-
-  void RunForTime(monotonic_clock::duration run_for) {
-    const auto end_time = monotonic_clock::now() + run_for;
-    while (monotonic_clock::now() < end_time) {
-      RunIteration();
-    }
-    // Let the estimator catch up with the final simulation step:
-    drivetrain_motor_plant_.SendPositionMessage();
-    drivetrain_motor_.Iterate();
+    localizer_.Reset(monotonic_now(), localizer_state, 0.0);
   }
 
   void VerifyNearGoal() {
-    my_drivetrain_queue_.goal.FetchLatest();
-    my_drivetrain_queue_.position.FetchLatest();
-    EXPECT_NEAR(my_drivetrain_queue_.goal->left_goal,
-                drivetrain_motor_plant_.GetLeftPosition(), 1e-3);
-    EXPECT_NEAR(my_drivetrain_queue_.goal->right_goal,
-                drivetrain_motor_plant_.GetRightPosition(), 1e-3);
+    drivetrain_goal_fetcher_.Fetch();
+    EXPECT_NEAR(drivetrain_goal_fetcher_->left_goal,
+                drivetrain_plant_.GetLeftPosition(), 1e-3);
+    EXPECT_NEAR(drivetrain_goal_fetcher_->right_goal,
+                drivetrain_plant_.GetRightPosition(), 1e-3);
   }
 
   void VerifyEstimatorAccurate(double eps) {
-    const Eigen::Matrix<double, 5, 1> true_state =
-        drivetrain_motor_plant_.state();
+    const Eigen::Matrix<double, 5, 1> true_state = drivetrain_plant_.state();
     EXPECT_NEAR(localizer_.x(), true_state(0, 0), eps);
     EXPECT_NEAR(localizer_.y(), true_state(1, 0), eps);
     EXPECT_NEAR(localizer_.theta(), true_state(2, 0), eps);
@@ -117,14 +120,14 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
   }
 
   void CaptureFrames() {
-    *robot_pose_.mutable_pos() << drivetrain_motor_plant_.GetPosition().x(),
-        drivetrain_motor_plant_.GetPosition().y(), 0.0;
-    robot_pose_.set_theta(drivetrain_motor_plant_.state()(2, 0));
+    *robot_pose_.mutable_pos() << drivetrain_plant_.GetPosition().x(),
+        drivetrain_plant_.GetPosition().y(), 0.0;
+    robot_pose_.set_theta(drivetrain_plant_.state()(2, 0));
     for (size_t ii = 0; ii < cameras_.size(); ++ii) {
       const auto target_views = cameras_[ii].target_views();
       CameraFrame frame;
       frame.timestamp = chrono::duration_cast<chrono::nanoseconds>(
-                            monotonic_clock::now().time_since_epoch())
+                            monotonic_now().time_since_epoch())
                             .count();
       frame.camera = ii;
       frame.num_targets = 0;
@@ -147,7 +150,7 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
           frame.targets[jj].height = view.reading.height;
         }
       }
-      camera_delay_queue_.emplace(monotonic_clock::now(), frame);
+      camera_delay_queue_.emplace(monotonic_now(), frame);
     }
   }
 
@@ -155,28 +158,33 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
     const ::std::chrono::milliseconds camera_latency(50);
     while (!camera_delay_queue_.empty() &&
            ::std::get<0>(camera_delay_queue_.front()) <
-               monotonic_clock::now() - camera_latency) {
-      ::aos::ScopedMessagePtr<CameraFrame> message =
-          camera_queue_.MakeMessage();
+               monotonic_now() - camera_latency) {
+      auto message = camera_sender_.MakeMessage();
       *message = ::std::get<1>(camera_delay_queue_.front());
       ASSERT_TRUE(message.Send());
       camera_delay_queue_.pop();
     }
   }
 
-  virtual ~LocalizedDrivetrainTest() {}
+  ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
+  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Goal>
+      drivetrain_goal_sender_;
+  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Goal>
+      drivetrain_goal_fetcher_;
+  ::aos::Sender<::frc971::control_loops::drivetrain::LocalizerControl>
+      localizer_control_sender_;
 
+  ::std::unique_ptr<::aos::EventLoop> drivetrain_event_loop_;
   const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>
       dt_config_;
 
-  ::frc971::control_loops::DrivetrainQueue my_drivetrain_queue_;
-  ::aos::Queue<CameraFrame> camera_queue_;
-  ::aos::ShmEventLoop event_loop_;
-  ::aos::ShmEventLoop simulation_event_loop_;
+  ::aos::Sender<CameraFrame> camera_sender_;
 
   EventLoopLocalizer localizer_;
-  DrivetrainLoop drivetrain_motor_;
-  DrivetrainSimulation drivetrain_motor_plant_;
+  DrivetrainLoop drivetrain_;
+
+  ::std::unique_ptr<::aos::EventLoop> drivetrain_plant_event_loop_;
+  DrivetrainSimulation drivetrain_plant_;
   EventLoopLocalizer::Pose robot_pose_;
   const ::std::array<EventLoopLocalizer::Camera, constants::Values::kNumCameras>
       cameras_;
@@ -198,40 +206,50 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
 // Tests that no camera updates, combined with a perfect model, results in no
 // error.
 TEST_F(LocalizedDrivetrainTest, NoCameraUpdate) {
+  SetEnabled(true);
   set_enable_cameras(false);
-  my_drivetrain_queue_.goal.MakeWithBuilder()
-      .controller_type(1)
-      .left_goal(-1.0)
-      .right_goal(1.0)
-      .Send();
-  RunForTime(chrono::seconds(3));
+  VerifyEstimatorAccurate(1e-10);
+  {
+    auto message = drivetrain_goal_sender_.MakeMessage();
+    message->controller_type = 1;
+    message->left_goal = -1.0;
+    message->right_goal = 1.0;
+    EXPECT_TRUE(message.Send());
+  }
+  RunFor(chrono::seconds(3));
   VerifyNearGoal();
   VerifyEstimatorAccurate(1e-10);
 }
 
 // Bad camera updates (NaNs) should have no effect.
 TEST_F(LocalizedDrivetrainTest, BadCameraUpdate) {
+  SetEnabled(true);
   set_enable_cameras(true);
   set_bad_frames(true);
-  my_drivetrain_queue_.goal.MakeWithBuilder()
-      .controller_type(1)
-      .left_goal(-1.0)
-      .right_goal(1.0)
-      .Send();
-  RunForTime(chrono::seconds(3));
+  {
+    auto message = drivetrain_goal_sender_.MakeMessage();
+      message->controller_type = 1;
+      message->left_goal = -1.0;
+      message->right_goal = 1.0;
+    EXPECT_TRUE(message.Send());
+  }
+  RunFor(chrono::seconds(3));
   VerifyNearGoal();
   VerifyEstimatorAccurate(1e-10);
 }
 
 // Tests that camera udpates with a perfect models results in no errors.
 TEST_F(LocalizedDrivetrainTest, PerfectCameraUpdate) {
+  SetEnabled(true);
   set_enable_cameras(true);
-  my_drivetrain_queue_.goal.MakeWithBuilder()
-      .controller_type(1)
-      .left_goal(-1.0)
-      .right_goal(1.0)
-      .Send();
-  RunForTime(chrono::seconds(3));
+  {
+    auto message = drivetrain_goal_sender_.MakeMessage();
+      message->controller_type = 1;
+      message->left_goal = -1.0;
+      message->right_goal = 1.0;
+    EXPECT_TRUE(message.Send());
+  }
+  RunFor(chrono::seconds(3));
   VerifyNearGoal();
   VerifyEstimatorAccurate(1e-7);
 }
@@ -239,18 +257,21 @@ TEST_F(LocalizedDrivetrainTest, PerfectCameraUpdate) {
 // Tests that not having cameras with an initial disturbance results in
 // estimator error. This is to test the test.
 TEST_F(LocalizedDrivetrainTest, NoCameraWithDisturbanceFails) {
+  SetEnabled(true);
   set_enable_cameras(false);
-  (*drivetrain_motor_plant_.mutable_state())(0, 0) += 0.05;
-  my_drivetrain_queue_.goal.MakeWithBuilder()
-      .controller_type(1)
-      .left_goal(-1.0)
-      .right_goal(1.0)
-      .Send();
-  RunForTime(chrono::seconds(3));
+  (*drivetrain_plant_.mutable_state())(0, 0) += 0.05;
+  {
+    auto message = drivetrain_goal_sender_.MakeMessage();
+      message->controller_type = 1;
+      message->left_goal = -1.0;
+      message->right_goal = 1.0;
+    EXPECT_TRUE(message.Send());
+  }
+  RunFor(chrono::seconds(3));
   // VerifyNearGoal succeeds because it is just checking wheel positions:
   VerifyNearGoal();
   const Eigen::Matrix<double, 5, 1> true_state =
-      drivetrain_motor_plant_.state();
+      drivetrain_plant_.state();
   // Everything but X-value should be correct:
   EXPECT_NEAR(true_state.x(), localizer_.x() + 0.05, 1e-5);
   EXPECT_NEAR(true_state.y(), localizer_.y(), 1e-5);
@@ -262,21 +283,25 @@ TEST_F(LocalizedDrivetrainTest, NoCameraWithDisturbanceFails) {
 // Tests that when we reset the position of the localizer via the queue to
 // compensate for the disturbance, the estimator behaves perfectly.
 TEST_F(LocalizedDrivetrainTest, ResetLocalizer) {
+  SetEnabled(true);
   set_enable_cameras(false);
-  (*drivetrain_motor_plant_.mutable_state())(0, 0) += 0.05;
-  my_drivetrain_queue_.goal.MakeWithBuilder()
-      .controller_type(1)
-      .left_goal(-1.0)
-      .right_goal(1.0)
-      .Send();
-  ::aos::Queue<::frc971::control_loops::drivetrain::LocalizerControl>
-      localizer_queue(".frc971.control_loops.drivetrain.localizer_control");
-  ASSERT_TRUE(localizer_queue.MakeWithBuilder()
-                  .x(drivetrain_motor_plant_.state().x())
-                  .y(drivetrain_motor_plant_.state().y())
-                  .theta(drivetrain_motor_plant_.state()(2, 0))
-                  .Send());
-  RunForTime(chrono::seconds(3));
+  (*drivetrain_plant_.mutable_state())(0, 0) += 0.05;
+  {
+    auto message = drivetrain_goal_sender_.MakeMessage();
+      message->controller_type = 1;
+      message->left_goal = -1.0;
+      message->right_goal = 1.0;
+    EXPECT_TRUE(message.Send());
+  }
+
+  {
+    auto message = localizer_control_sender_.MakeMessage();
+    message->x = drivetrain_plant_.state().x();
+    message->y = drivetrain_plant_.state().y();
+    message->theta = drivetrain_plant_.state()(2, 0);
+    ASSERT_TRUE(message.Send());
+  }
+  RunFor(chrono::seconds(3));
   VerifyNearGoal();
   VerifyEstimatorAccurate(1e-5);
 }
@@ -284,15 +309,18 @@ TEST_F(LocalizedDrivetrainTest, ResetLocalizer) {
 // Tests that, when a small error in X is introduced, the camera corrections do
 // correct for it.
 TEST_F(LocalizedDrivetrainTest, CameraUpdate) {
+  SetEnabled(true);
   set_enable_cameras(true);
   SetStartingPosition({4.0, 0.5, 0.0});
-  (*drivetrain_motor_plant_.mutable_state())(0, 0) += 0.05;
-  my_drivetrain_queue_.goal.MakeWithBuilder()
-      .controller_type(1)
-      .left_goal(-1.0)
-      .right_goal(1.0)
-      .Send();
-  RunForTime(chrono::seconds(5));
+  (*drivetrain_plant_.mutable_state())(0, 0) += 0.05;
+  {
+    auto message = drivetrain_goal_sender_.MakeMessage();
+      message->controller_type = 1;
+      message->left_goal = -1.0;
+      message->right_goal = 1.0;
+    EXPECT_TRUE(message.Send());
+  }
+  RunFor(chrono::seconds(5));
   VerifyNearGoal();
   VerifyEstimatorAccurate(5e-3);
 }
@@ -304,23 +332,25 @@ EventLoopLocalizer::Pose HPSlotLeft() { return constants::Field().targets()[7].p
 // Tests that using the line following drivetrain and just driving straight
 // forward from roughly the right spot gets us to the HP slot.
 TEST_F(LocalizedDrivetrainTest, LineFollowToHPSlot) {
+  SetEnabled(true);
   set_enable_cameras(false);
   SetStartingPosition({4, HPSlotLeft().abs_pos().y(), M_PI});
-  my_drivetrain_queue_.goal.MakeWithBuilder()
-      .controller_type(3)
-      .throttle(0.5)
-      .Send();
-  RunForTime(chrono::seconds(6));
+  {
+    auto message = drivetrain_goal_sender_.MakeMessage();
+    message->controller_type = 3;
+    message->throttle = 0.5;
+    EXPECT_TRUE(message.Send());
+  }
+  RunFor(chrono::seconds(6));
 
   VerifyEstimatorAccurate(1e-8);
   // Due to the fact that we aren't modulating the throttle, we don't try to hit
   // the target exactly. Instead, just run slightly past the target:
-  EXPECT_LT(::std::abs(::aos::math::DiffAngle(
-                M_PI, drivetrain_motor_plant_.state()(2, 0))),
-            1e-5);
-  EXPECT_GT(HPSlotLeft().abs_pos().x(), drivetrain_motor_plant_.state().x());
-  EXPECT_NEAR(HPSlotLeft().abs_pos().y(),
-              drivetrain_motor_plant_.state().y(), 1e-4);
+  EXPECT_LT(
+      ::std::abs(::aos::math::DiffAngle(M_PI, drivetrain_plant_.state()(2, 0))),
+      1e-5);
+  EXPECT_GT(HPSlotLeft().abs_pos().x(), drivetrain_plant_.state().x());
+  EXPECT_NEAR(HPSlotLeft().abs_pos().y(), drivetrain_plant_.state().y(), 1e-4);
 }
 
 }  // namespace testing

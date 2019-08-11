@@ -25,16 +25,26 @@ MakeCameras(EventLoopLocalizer::Pose *pose) {
 }
 
 EventLoopLocalizer::EventLoopLocalizer(
-    const ::frc971::control_loops::drivetrain::DrivetrainConfig<double> &
-        dt_config,
-    ::aos::EventLoop *event_loop)
+    ::aos::EventLoop *event_loop,
+    const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>
+        &dt_config)
     : event_loop_(event_loop),
       cameras_(MakeCameras(&robot_pose_)),
       localizer_(dt_config, &robot_pose_),
       target_selector_(event_loop) {
-  localizer_.ResetInitialState(::aos::monotonic_clock::now(),
-                               Localizer::State::Zero(), localizer_.P());
-  ResetPosition(::aos::monotonic_clock::now(), 0.5, 3.4, 0.0, 0.0, true);
+  const ::aos::monotonic_clock::time_point monotonic_now =
+      event_loop_->monotonic_now();
+  localizer_.ResetInitialState(monotonic_now, Localizer::State::Zero(),
+                               localizer_.P());
+  ResetPosition(monotonic_now, 0.5, 3.4, 0.0, 0.0, true);
+  event_loop->OnRun([this]() {
+    // Reset time now that we have an official start time.  Reset the states to
+    // their current state since nothing will have moved.
+    const ::aos::monotonic_clock::time_point monotonic_now =
+        event_loop_->monotonic_now();
+    localizer_.ResetInitialState(monotonic_now, localizer_.X_hat(),
+                                 localizer_.P());
+  });
   frame_fetcher_ = event_loop_->MakeFetcher<CameraFrame>(
       ".y2019.control_loops.drivetrain.camera_frames");
 }
