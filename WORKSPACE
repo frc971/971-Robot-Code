@@ -2,7 +2,6 @@ workspace(name = "org_frc971")
 
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
-
 load(
     "//debian:python.bzl",
     python_debs = "files",
@@ -193,9 +192,9 @@ bind(
 # Recompressed from libusb-1.0.21.7z.
 http_file(
     name = "libusb_1_0_windows",
+    downloaded_file_path = "libusb-1.0.21-windows.tar.xz",
     sha256 = "fc2ba03992f343aabbaf9eb90559c6e00cdc6a2bd914d7cebea85857d5244015",
     urls = ["http://www.frc971.org/Build-Dependencies/libusb-1.0.21-windows.tar.xz"],
-    downloaded_file_path = "libusb-1.0.21-windows.tar.xz",
 )
 
 # The data tarball of the same-named Debian package.
@@ -437,4 +436,10 @@ yarn_install(
     name = "npm",
     package_json = "//:package.json",
     yarn_lock = "//:yarn.lock",
+)
+
+# Flatbuffers
+local_repository(
+    name = "com_github_google_flatbuffers",
+    path = "third_party/flatbuffers",
 )
