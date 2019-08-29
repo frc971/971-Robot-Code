@@ -209,7 +209,7 @@ def ceres_library(name,
         ],
         visibility = ["//visibility:public"],
         deps = [
-            "@//third_party/eigen",
             "@com_github_google_glog//:glog",
+            "@org_tuxfamily_eigen//:eigen",
         ],
     )

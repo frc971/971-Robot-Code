@@ -1,7 +1,7 @@
 #include "aos/input/action_joystick_input.h"
 
 #include "aos/input/driver_station_data.h"
-#include "frc971/autonomous/auto.q.h"
+#include "frc971/autonomous/auto_generated.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
 
 using ::aos::input::driver_station::ControlBit;
@@ -49,8 +49,10 @@ void ActionJoystickInput::RunIteration(
 
 void ActionJoystickInput::StartAuto() {
   AOS_LOG(INFO, "Starting auto mode\n");
-  action_queue_.EnqueueAction(
-      autonomous_action_factory_.Make(GetAutonomousMode()));
+  frc971::autonomous::AutonomousActionParamsT params;
+  params.mode = GetAutonomousMode();
+
+  action_queue_.EnqueueAction(autonomous_action_factory_.Make(params));
   auto_action_running_ = true;
 }
 

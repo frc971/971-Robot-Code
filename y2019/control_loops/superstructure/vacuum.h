@@ -1,8 +1,11 @@
 #ifndef Y2019_CONTROL_LOOPS_SUPERSTRUCTURE_VACUUM_H_
 #define Y2019_CONTROL_LOOPS_SUPERSTRUCTURE_VACUUM_H_
 
-#include "aos/events/event-loop.h"
-#include "y2019/control_loops/superstructure/superstructure.q.h"
+#include "aos/events/event_loop.h"
+#include "frc971/control_loops/control_loops_generated.h"
+#include "frc971/control_loops/profiled_subsystem_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_output_generated.h"
 
 namespace y2019 {
 namespace control_loops {
@@ -12,8 +15,7 @@ class Vacuum {
  public:
   Vacuum() {}
   void Iterate(const SuctionGoal *unsafe_goal, float suction_pressure,
-               SuperstructureQueue::Output *output, bool *has_piece,
-               aos::EventLoop *event_loop);
+               OutputT *output, bool *has_piece, aos::EventLoop *event_loop);
 
   // Voltage to the vaccum pump when we are attempting to acquire a piece
   static constexpr double kPumpVoltage = 8.0;

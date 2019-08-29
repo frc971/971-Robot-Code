@@ -1,6 +1,6 @@
 licenses(["notice"])
 
-load("//tools:environments.bzl", "mcu_cpus")
+load("@//tools:environments.bzl", "mcu_cpus")
 
 cc_library(
     name = "eigen",

@@ -7,18 +7,16 @@
 
 #include "aos/actions/actions.h"
 #include "aos/logging/logging.h"
-#include "aos/logging/queue_logging.h"
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
-#include "frc971/autonomous/auto.q.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2014/actors/shoot_actor.h"
 #include "y2014/constants.h"
-#include "y2014/control_loops/claw/claw.q.h"
+#include "y2014/control_loops/claw/claw_goal_generated.h"
+#include "y2014/control_loops/claw/claw_status_generated.h"
 #include "y2014/control_loops/drivetrain/drivetrain_base.h"
-#include "y2014/control_loops/shooter/shooter.q.h"
-#include "y2014/queues/auto_mode.q.h"
-#include "y2014/queues/hot_goal.q.h"
+#include "y2014/control_loops/shooter/shooter_goal_generated.h"
+#include "y2014/queues/auto_mode_generated.h"
+#include "y2014/queues/hot_goal_generated.h"
 
 namespace y2014 {
 namespace actors {
@@ -26,49 +24,50 @@ namespace actors {
 namespace chrono = ::std::chrono;
 namespace this_thread = ::std::this_thread;
 using ::aos::monotonic_clock;
-using ::frc971::ProfileParameters;
+using ::frc971::ProfileParametersT;
 
 AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
     : frc971::autonomous::BaseAutonomousActor(
           event_loop, control_loops::GetDrivetrainConfig()),
-      auto_mode_fetcher_(event_loop->MakeFetcher<::y2014::sensors::AutoMode>(
-          ".y2014.sensors.auto_mode")),
-      hot_goal_fetcher_(
-          event_loop->MakeFetcher<::y2014::HotGoal>(".y2014.hot_goal")),
+      auto_mode_fetcher_(
+          event_loop->MakeFetcher<::y2014::sensors::AutoMode>("/aos")),
+      hot_goal_fetcher_(event_loop->MakeFetcher<::y2014::HotGoal>("/")),
       claw_goal_sender_(
-          event_loop->MakeSender<::y2014::control_loops::ClawQueue::Goal>(
-              ".y2014.control_loops.claw_queue.goal")),
+          event_loop->MakeSender<::y2014::control_loops::claw::Goal>("/claw")),
       claw_goal_fetcher_(
-          event_loop->MakeFetcher<::y2014::control_loops::ClawQueue::Goal>(
-              ".y2014.control_loops.claw_queue.goal")),
+          event_loop->MakeFetcher<::y2014::control_loops::claw::Goal>("/claw")),
       claw_status_fetcher_(
-          event_loop->MakeFetcher<::y2014::control_loops::ClawQueue::Status>(
-              ".y2014.control_loops.claw_queue.status")),
+          event_loop->MakeFetcher<::y2014::control_loops::claw::Status>(
+              "/claw")),
       shooter_goal_sender_(
-          event_loop->MakeSender<::y2014::control_loops::ShooterQueue::Goal>(
-              ".y2014.control_loops.shooter_queue.goal")),
+          event_loop->MakeSender<::y2014::control_loops::shooter::Goal>(
+              "/shooter")),
       shoot_action_factory_(actors::ShootActor::MakeFactory(event_loop)) {}
 
 void AutonomousActor::PositionClawVertically(double intake_power,
                                              double centering_power) {
-  auto goal_message = claw_goal_sender_.MakeMessage();
-  goal_message->bottom_angle = 0.0;
-  goal_message->separation_angle = 0.0;
-  goal_message->intake = intake_power;
-  goal_message->centering = centering_power;
+  auto builder = claw_goal_sender_.MakeBuilder();
+  control_loops::claw::Goal::Builder goal_builder =
+      builder.MakeBuilder<control_loops::claw::Goal>();
+  goal_builder.add_bottom_angle(0.0);
+  goal_builder.add_separation_angle(0.0);
+  goal_builder.add_intake(intake_power);
+  goal_builder.add_centering(centering_power);
 
-  if (!goal_message.Send()) {
+  if (!builder.Send(goal_builder.Finish())) {
     AOS_LOG(WARNING, "sending claw goal failed\n");
   }
 }
 
 void AutonomousActor::PositionClawBackIntake() {
-  auto goal_message = claw_goal_sender_.MakeMessage();
-  goal_message->bottom_angle = -2.273474;
-  goal_message->separation_angle = 0.0;
-  goal_message->intake = 12.0;
-  goal_message->centering = 12.0;
-  if (!goal_message.Send()) {
+  auto builder = claw_goal_sender_.MakeBuilder();
+  control_loops::claw::Goal::Builder goal_builder =
+      builder.MakeBuilder<control_loops::claw::Goal>();
+  goal_builder.add_bottom_angle(-2.273474);
+  goal_builder.add_separation_angle(0.0);
+  goal_builder.add_intake(12.0);
+  goal_builder.add_centering(12.0);
+  if (!builder.Send(goal_builder.Finish())) {
     AOS_LOG(WARNING, "sending claw goal failed\n");
   }
 }
@@ -76,48 +75,63 @@ void AutonomousActor::PositionClawBackIntake() {
 void AutonomousActor::PositionClawUpClosed() {
   // Move the claw to where we're going to shoot from but keep it closed until
   // it gets there.
-  auto goal_message = claw_goal_sender_.MakeMessage();
-  goal_message->bottom_angle = 0.86;
-  goal_message->separation_angle = 0.0;
-  goal_message->intake = 4.0;
-  goal_message->centering = 1.0;
-  if (!goal_message.Send()) {
+  auto builder = claw_goal_sender_.MakeBuilder();
+  control_loops::claw::Goal::Builder goal_builder =
+      builder.MakeBuilder<control_loops::claw::Goal>();
+  goal_builder.add_bottom_angle(0.86);
+  goal_builder.add_separation_angle(0.0);
+  goal_builder.add_intake(4.0);
+  goal_builder.add_centering(1.0);
+  if (!builder.Send(goal_builder.Finish())) {
     AOS_LOG(WARNING, "sending claw goal failed\n");
   }
 }
 
 void AutonomousActor::PositionClawForShot() {
-  auto goal_message = claw_goal_sender_.MakeMessage();
-  goal_message->bottom_angle = 0.86;
-  goal_message->separation_angle = 0.10;
-  goal_message->intake = 4.0;
-  goal_message->centering = 1.0;
-  if (!goal_message.Send()) {
+  auto builder = claw_goal_sender_.MakeBuilder();
+  control_loops::claw::Goal::Builder goal_builder =
+      builder.MakeBuilder<control_loops::claw::Goal>();
+  goal_builder.add_bottom_angle(0.86);
+  goal_builder.add_separation_angle(0.10);
+  goal_builder.add_intake(4.0);
+  goal_builder.add_centering(1.0);
+  if (!builder.Send(goal_builder.Finish())) {
     AOS_LOG(WARNING, "sending claw goal failed\n");
   }
 }
 
 void AutonomousActor::SetShotPower(double power) {
   AOS_LOG(INFO, "Setting shot power to %f\n", power);
-  auto goal_message = shooter_goal_sender_.MakeMessage();
-  goal_message->shot_power = power;
-  goal_message->shot_requested = false;
-  goal_message->unload_requested = false;
-  goal_message->load_requested = false;
-  if (!goal_message.Send()) {
+  auto builder = shooter_goal_sender_.MakeBuilder();
+  control_loops::shooter::Goal::Builder goal_builder =
+      builder.MakeBuilder<control_loops::shooter::Goal>();
+  goal_builder.add_shot_power(power);
+  goal_builder.add_shot_requested(false);
+  goal_builder.add_unload_requested(false);
+  goal_builder.add_load_requested(false);
+  if (!builder.Send(goal_builder.Finish())) {
     AOS_LOG(WARNING, "sending shooter goal failed\n");
   }
 }
 
-const ProfileParameters kFastDrive = {3.0, 2.5};
-const ProfileParameters kSlowDrive = {2.5, 2.5};
-const ProfileParameters kFastWithBallDrive = {3.0, 2.0};
-const ProfileParameters kSlowWithBallDrive = {2.5, 2.0};
-const ProfileParameters kFastTurn = {3.0, 10.0};
+ProfileParametersT MakeProfileParameters(float max_velocity,
+                                         float max_acceleration) {
+  ProfileParametersT result;
+  result.max_velocity = max_velocity;
+  result.max_acceleration = max_acceleration;
+  return result;
+}
+
+const ProfileParametersT kFastDrive = MakeProfileParameters(3.0, 2.5);
+const ProfileParametersT kSlowDrive = MakeProfileParameters(2.5, 2.5);
+const ProfileParametersT kFastWithBallDrive = MakeProfileParameters(3.0, 2.0);
+const ProfileParametersT kSlowWithBallDrive = MakeProfileParameters(2.5, 2.0);
+const ProfileParametersT kFastTurn = MakeProfileParameters(3.0, 10.0);
 
 void AutonomousActor::Shoot() {
   // Shoot.
-  auto shoot_action = shoot_action_factory_.Make(0.0);
+  aos::common::actions::DoubleParamT param;
+  auto shoot_action = shoot_action_factory_.Make(param);
   shoot_action->Start();
   WaitUntilDoneOrCanceled(::std::move(shoot_action));
 }
@@ -138,12 +152,12 @@ bool AutonomousActor::WaitUntilClawDone() {
         claw_goal_fetcher_.get() == nullptr) {
       continue;
     }
-    bool ans = claw_status_fetcher_->zeroed &&
-               (::std::abs(claw_status_fetcher_->bottom_velocity) < 1.0) &&
-               (::std::abs(claw_status_fetcher_->bottom -
-                           claw_goal_fetcher_->bottom_angle) < 0.10) &&
-               (::std::abs(claw_status_fetcher_->separation -
-                           claw_goal_fetcher_->separation_angle) < 0.4);
+    bool ans = claw_status_fetcher_->zeroed() &&
+               (::std::abs(claw_status_fetcher_->bottom_velocity()) < 1.0) &&
+               (::std::abs(claw_status_fetcher_->bottom() -
+                           claw_goal_fetcher_->bottom_angle()) < 0.10) &&
+               (::std::abs(claw_status_fetcher_->separation() -
+                           claw_goal_fetcher_->separation_angle()) < 0.4);
     if (ans) {
       return true;
     }
@@ -160,8 +174,7 @@ class HotGoalDecoder {
   void ResetCounts() {
     hot_goal_fetcher_->Fetch();
     if (hot_goal_fetcher_->get()) {
-      start_counts_ = *hot_goal_fetcher_->get();
-      AOS_LOG_STRUCT(INFO, "counts reset to", start_counts_);
+      hot_goal_fetcher_->get()->UnPackTo(&start_counts_);
       start_counts_valid_ = true;
     } else {
       AOS_LOG(WARNING, "no hot goal message. ignoring\n");
@@ -169,30 +182,26 @@ class HotGoalDecoder {
     }
   }
 
-  void Update() {
-    hot_goal_fetcher_->Fetch();
-    if (hot_goal_fetcher_->get())
-      AOS_LOG_STRUCT(INFO, "new counts", *hot_goal_fetcher_->get());
-  }
+  void Update() { hot_goal_fetcher_->Fetch(); }
 
   bool left_triggered() const {
     if (!start_counts_valid_ || !hot_goal_fetcher_->get()) return false;
-    return (hot_goal_fetcher_->get()->left_count - start_counts_.left_count) >
+    return (hot_goal_fetcher_->get()->left_count() - start_counts_.left_count) >
            kThreshold;
   }
 
   bool right_triggered() const {
     if (!start_counts_valid_ || !hot_goal_fetcher_->get()) return false;
-    return (hot_goal_fetcher_->get()->right_count - start_counts_.right_count) >
-           kThreshold;
+    return (hot_goal_fetcher_->get()->right_count() -
+            start_counts_.right_count) > kThreshold;
   }
 
   bool is_left() const {
     if (!start_counts_valid_ || !hot_goal_fetcher_->get()) return false;
     const uint64_t left_difference =
-        hot_goal_fetcher_->get()->left_count - start_counts_.left_count;
+        hot_goal_fetcher_->get()->left_count() - start_counts_.left_count;
     const uint64_t right_difference =
-        hot_goal_fetcher_->get()->right_count - start_counts_.right_count;
+        hot_goal_fetcher_->get()->right_count() - start_counts_.right_count;
     if (left_difference > kThreshold) {
       if (right_difference > kThreshold) {
         // We've seen a lot of both, so pick the one we've seen the most of.
@@ -210,9 +219,9 @@ class HotGoalDecoder {
   bool is_right() const {
     if (!start_counts_valid_ || !hot_goal_fetcher_->get()) return false;
     const uint64_t left_difference =
-        hot_goal_fetcher_->get()->left_count - start_counts_.left_count;
+        hot_goal_fetcher_->get()->left_count() - start_counts_.left_count;
     const uint64_t right_difference =
-        hot_goal_fetcher_->get()->right_count - start_counts_.right_count;
+        hot_goal_fetcher_->get()->right_count() - start_counts_.right_count;
     if (right_difference > kThreshold) {
       if (left_difference > kThreshold) {
         // We've seen a lot of both, so pick the one we've seen the most of.
@@ -230,14 +239,14 @@ class HotGoalDecoder {
  private:
   static const uint64_t kThreshold = 5;
 
-  ::y2014::HotGoal start_counts_;
+  ::y2014::HotGoalT start_counts_;
   bool start_counts_valid_;
 
   ::aos::Fetcher<::y2014::HotGoal> *hot_goal_fetcher_;
 };
 
 bool AutonomousActor::RunAction(
-    const ::frc971::autonomous::AutonomousActionParams & /*params*/) {
+    const ::frc971::autonomous::AutonomousActionParams * /*params*/) {
   enum class AutoVersion : uint8_t {
     kStraight,
     kDoubleHot,
@@ -261,9 +270,9 @@ bool AutonomousActor::RunAction(
     static const double kSelectorMin = 0.2, kSelectorMax = 4.4;
 
     const double kSelectorStep = (kSelectorMax - kSelectorMin) / 3.0;
-    if (auto_mode_fetcher_->voltage < kSelectorStep + kSelectorMin) {
+    if (auto_mode_fetcher_->voltage() < kSelectorStep + kSelectorMin) {
       auto_version = AutoVersion::kSingleHot;
-    } else if (auto_mode_fetcher_->voltage < 2 * kSelectorStep + kSelectorMin) {
+    } else if (auto_mode_fetcher_->voltage() < 2 * kSelectorStep + kSelectorMin) {
       auto_version = AutoVersion::kStraight;
     } else {
       auto_version = AutoVersion::kDoubleHot;
@@ -272,9 +281,9 @@ bool AutonomousActor::RunAction(
   AOS_LOG(INFO, "running auto %" PRIu8 "\n",
           static_cast<uint8_t>(auto_version));
 
-  const ProfileParameters &drive_params =
+  const ProfileParametersT drive_params =
       (auto_version == AutoVersion::kStraight) ? kFastDrive : kSlowDrive;
-  const ProfileParameters &drive_with_ball_params =
+  const ProfileParametersT drive_with_ball_params =
       (auto_version == AutoVersion::kStraight) ? kFastWithBallDrive
                                                : kSlowWithBallDrive;
 

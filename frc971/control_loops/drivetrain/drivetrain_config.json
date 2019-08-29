@@ -1,0 +1,43 @@
+{
+  "channels":
+  [
+    {
+      "name": "/drivetrain",
+      "type": "frc971.IMUValues",
+      "frequency": 200
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.sensors.GyroReading",
+      "frequency": 200
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.Goal",
+      "frequency": 200
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.Position",
+      "frequency": 200
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.Status",
+      "frequency": 200
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.Output",
+      "frequency": 200
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.LocalizerControl",
+      "frequency": 200
+    }
+  ],
+  "imports": [
+    "../../../aos/robot_state/robot_state_config.json"
+  ]
+}

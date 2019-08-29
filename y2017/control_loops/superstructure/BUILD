@@ -1,17 +1,47 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//aos/build:queues.bzl", "queue_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
-queue_library(
-    name = "superstructure_queue",
+flatbuffer_cc_library(
+    name = "superstructure_goal_fbs",
     srcs = [
-        "superstructure.q",
+        "superstructure_goal.fbs",
     ],
-    deps = [
-        "//aos/controls:control_loop_queues",
-        "//frc971/control_loops:profiled_subsystem_queue",
-        "//frc971/control_loops:queues",
+    gen_reflections = 1,
+    includes = [
+        "//frc971/control_loops:control_loops_fbs_includes",
     ],
+)
+
+flatbuffer_cc_library(
+    name = "superstructure_position_fbs",
+    srcs = [
+        "superstructure_position.fbs",
+    ],
+    gen_reflections = 1,
+    includes = [
+        "//frc971/control_loops:control_loops_fbs_includes",
+    ],
+)
+
+flatbuffer_cc_library(
+    name = "superstructure_status_fbs",
+    srcs = [
+        "superstructure_status.fbs",
+    ],
+    gen_reflections = 1,
+    includes = [
+        "//frc971/control_loops:control_loops_fbs_includes",
+        "//frc971/control_loops:profiled_subsystem_fbs_includes",
+    ],
+)
+
+flatbuffer_cc_library(
+    name = "superstructure_output_fbs",
+    srcs = [
+        "superstructure_output.fbs",
+    ],
+    gen_reflections = 1,
 )
 
 cc_library(
@@ -23,10 +53,13 @@ cc_library(
         "superstructure.h",
     ],
     deps = [
-        ":superstructure_queue",
+        ":superstructure_goal_fbs",
+        ":superstructure_output_fbs",
+        ":superstructure_position_fbs",
+        ":superstructure_status_fbs",
         ":vision_distance_average",
         "//aos/controls:control_loop",
-        "//aos/events:event-loop",
+        "//aos/events:event_loop",
         "//y2017:constants",
         "//y2017/control_loops/superstructure/column",
         "//y2017/control_loops/superstructure/hood",
@@ -40,11 +73,14 @@ cc_test(
     srcs = [
         "superstructure_lib_test.cc",
     ],
+    data = ["//y2017:config.json"],
     deps = [
+        ":superstructure_goal_fbs",
         ":superstructure_lib",
-        ":superstructure_queue",
+        ":superstructure_output_fbs",
+        ":superstructure_position_fbs",
+        ":superstructure_status_fbs",
         "//aos:math",
-        "//aos:queues",
         "//aos/controls:control_loop_test",
         "//aos/testing:googletest",
         "//aos/time",
@@ -64,9 +100,8 @@ cc_binary(
     ],
     deps = [
         ":superstructure_lib",
-        ":superstructure_queue",
         "//aos:init",
-        "//aos/events:shm-event-loop",
+        "//aos/events:shm_event_loop",
     ],
 )
 
@@ -79,11 +114,12 @@ cc_library(
         "vision_time_adjuster.h",
     ],
     deps = [
-        ":superstructure_queue",
         "//aos/containers:ring_buffer",
-        "//frc971/control_loops/drivetrain:drivetrain_queue",
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//y2017/control_loops/drivetrain:polydrivetrain_plants",
-        "//y2017/vision:vision_queue",
+        "//y2017/vision:vision_fbs",
     ],
 )
 
@@ -92,6 +128,7 @@ cc_test(
     srcs = [
         "vision_time_adjuster_test.cc",
     ],
+    data = ["//y2017:config.json"],
     deps = [
         ":vision_time_adjuster",
         "//aos/events:simulated_event_loop",
@@ -109,7 +146,7 @@ cc_library(
     deps = [
         "//aos/containers:ring_buffer",
         "//aos/time",
-        "//y2017/vision:vision_queue",
+        "//y2017/vision:vision_fbs",
     ],
 )
 
@@ -120,6 +157,7 @@ cc_test(
     ],
     deps = [
         ":vision_distance_average",
+        "//aos:flatbuffers",
         "//aos/testing:googletest",
         "//aos/time",
     ],

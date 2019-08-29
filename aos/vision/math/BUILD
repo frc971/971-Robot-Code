@@ -12,8 +12,7 @@ cc_library(
         "vector.h",
     ],
     deps = [
-        "//third_party/eigen",
-        "@com_google_ceres_solver//:ceres",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 

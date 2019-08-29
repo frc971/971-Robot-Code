@@ -11,7 +11,7 @@
 
 #include "frc971/zeroing/zeroing.h"
 #include "y2016/control_loops/superstructure/integral_arm_plant.h"
-#include "y2016/control_loops/superstructure/superstructure.q.h"
+#include "y2016/control_loops/superstructure/superstructure_position_generated.h"
 
 namespace y2016 {
 namespace control_loops {
@@ -111,8 +111,8 @@ class Arm : public ::frc971::control_loops::ProfiledSubsystem<6, 2> {
   Arm();
 
   // Updates our estimator with the latest position.
-  void Correct(::frc971::PotAndIndexPosition position_shoulder,
-               ::frc971::PotAndIndexPosition position_wrist);
+  void Correct(const ::frc971::PotAndIndexPosition *position_shoulder,
+               const ::frc971::PotAndIndexPosition *position_wrist);
 
   // Forces the goal to be the provided goal.
   void ForceGoal(double unprofiled_goal_shoulder, double unprofiled_goal_wrist);

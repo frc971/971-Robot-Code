@@ -9,6 +9,7 @@ cc_library(
         "scoped_fd.h",
     ],
     deps = [
-        "//aos/logging",
+        "//aos:macros",
+        "@com_github_google_glog//:glog",
     ],
 )

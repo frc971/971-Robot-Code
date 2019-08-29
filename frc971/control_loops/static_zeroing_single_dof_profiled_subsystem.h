@@ -6,6 +6,12 @@
 namespace frc971 {
 namespace control_loops {
 
+// TODO(austin): Use ProfileParametersT...
+struct ProfileParametersStruct {
+  float max_velocity;
+  float max_acceleration;
+};
+
 template <typename ZeroingEstimator>
 struct StaticZeroingSingleDOFProfiledSubsystemParams {
   // Maximum voltage while the subsystem is zeroing
@@ -15,11 +21,11 @@ struct StaticZeroingSingleDOFProfiledSubsystemParams {
   double operating_voltage;
 
   // Maximum velocity (units/s) and acceleration while State::ZEROING
-  ::frc971::ProfileParameters zeroing_profile_params;
+  ProfileParametersStruct zeroing_profile_params;
 
   // Maximum velocity (units/s) and acceleration while State::RUNNING if max
   // velocity or acceleration in goal profile_params is 0
-  ::frc971::ProfileParameters default_profile_params;
+  ProfileParametersStruct default_profile_params;
 
   // Maximum range of the subsystem in meters
   ::frc971::constants::Range range;
@@ -65,9 +71,10 @@ class StaticZeroingSingleDOFProfiledSubsystem {
   // Returns the current position
   double position() const { return profiled_subsystem_.position(); }
 
-  void Iterate(const StaticZeroingSingleDOFProfiledSubsystemGoal *goal,
-               const typename ZeroingEstimator::Position *position,
-               double *output, ProfiledJointStatus *status);
+  flatbuffers::Offset<ProfiledJointStatus> Iterate(
+      const StaticZeroingSingleDOFProfiledSubsystemGoal *goal,
+      const typename ZeroingEstimator::Position *position, double *output,
+      flatbuffers::FlatBufferBuilder *status_fbb);
 
   // Resets the profiled subsystem and returns to uninitialized
   void Reset();
@@ -125,11 +132,11 @@ void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator,
 }
 
 template <typename ZeroingEstimator, typename ProfiledJointStatus>
-void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator,
-                                             ProfiledJointStatus>::
+flatbuffers::Offset<ProfiledJointStatus>
+StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus>::
     Iterate(const StaticZeroingSingleDOFProfiledSubsystemGoal *goal,
             const typename ZeroingEstimator::Position *position, double *output,
-            ProfiledJointStatus *status) {
+            flatbuffers::FlatBufferBuilder *status_fbb) {
   bool disabled = output == nullptr;
   profiled_subsystem_.Correct(*position);
 
@@ -159,7 +166,9 @@ void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator,
       // jump.
       profiled_subsystem_.ForceGoal(profiled_subsystem_.position());
       // Set up the profile to be the zeroing profile.
-      profiled_subsystem_.AdjustProfile(params_.zeroing_profile_params);
+      profiled_subsystem_.AdjustProfile(
+          params_.zeroing_profile_params.max_velocity,
+          params_.zeroing_profile_params.max_acceleration);
 
       // We are not ready to start doing anything yet.
       disabled = true;
@@ -181,9 +190,9 @@ void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator,
       }
 
       if (goal) {
-        profiled_subsystem_.AdjustProfile(goal->profile_params);
+        profiled_subsystem_.AdjustProfile(goal->profile_params());
 
-        double safe_goal = goal->unsafe_goal;
+        double safe_goal = goal->unsafe_goal();
         if (safe_goal < min_position_) {
           AOS_LOG(DEBUG, "Limiting to %f from %f\n", min_position_, safe_goal);
           safe_goal = min_position_;
@@ -217,11 +226,14 @@ void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator,
     *output = profiled_subsystem_.voltage();
   }
 
-  status->zeroed = profiled_subsystem_.zeroed();
+  typename ProfiledJointStatus::Builder status_builder =
+      profiled_subsystem_
+          .template BuildStatus<typename ProfiledJointStatus::Builder>(
+              status_fbb);
 
-  profiled_subsystem_.PopulateStatus(status);
-  status->estopped = (state_ == State::ESTOP);
-  status->state = static_cast<int32_t>(state_);
+  status_builder.add_estopped(state_ == State::ESTOP);
+  status_builder.add_state(static_cast<int32_t>(state_));
+  return status_builder.Finish();
 }
 
 }  // namespace control_loops

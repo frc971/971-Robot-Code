@@ -61,10 +61,12 @@ void Hood::Reset() {
   last_position_ = 0;
 }
 
-void Hood::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
-                   const control_loops::HoodGoal *unsafe_goal,
-                   const ::frc971::IndexPosition *position, double *output,
-                   ::frc971::control_loops::IndexProfiledJointStatus *status) {
+flatbuffers::Offset<frc971::control_loops::IndexProfiledJointStatus>
+Hood::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
+              const double *unsafe_goal,
+              const frc971::ProfileParameters *unsafe_goal_profile_parameters,
+              const ::frc971::IndexPosition *position, double *output,
+              flatbuffers::FlatBufferBuilder *fbb) {
   bool disable = output == nullptr;
   profiled_subsystem_.Correct(*position);
 
@@ -151,8 +153,8 @@ void Hood::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
 
       // If we have a goal, go to it.  Otherwise stay where we are.
       if (unsafe_goal) {
-        profiled_subsystem_.AdjustProfile(unsafe_goal->profile_params);
-        profiled_subsystem_.set_unprofiled_goal(unsafe_goal->angle);
+        profiled_subsystem_.AdjustProfile(unsafe_goal_profile_parameters);
+        profiled_subsystem_.set_unprofiled_goal(*unsafe_goal);
       }
 
       // ESTOP if we hit the hard limits.
@@ -198,12 +200,14 @@ void Hood::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
   }
 
   // Save debug/internal state.
+  frc971::control_loops::IndexProfiledJointStatus::Builder status_builder =
+      profiled_subsystem_.BuildStatus<
+          frc971::control_loops::IndexProfiledJointStatus::Builder>(fbb);
   // TODO(austin): Save more.
-  status->zeroed = profiled_subsystem_.zeroed();
+  status_builder.add_estopped((state_ == State::ESTOP));
+  status_builder.add_state(static_cast<int32_t>(state_));
 
-  profiled_subsystem_.PopulateStatus(status);
-  status->estopped = (state_ == State::ESTOP);
-  status->state = static_cast<int32_t>(state_);
+  return status_builder.Finish();
 }
 
 }  // namespace hood

@@ -1,0 +1,92 @@
+#ifndef AOS_EVENTS_SHM_EVENT_LOOP_H_
+#define AOS_EVENTS_SHM_EVENT_LOOP_H_
+
+#include <unordered_set>
+#include <vector>
+
+#include "aos/events/epoll.h"
+#include "aos/events/event_loop.h"
+#include "aos/ipc_lib/signalfd.h"
+#include "aos/mutex/mutex.h"
+
+namespace aos {
+namespace internal {
+
+class WatcherState;
+class TimerHandlerState;
+class PhasedLoopHandler;
+
+}  // namespace internal
+
+// Specialization of EventLoop that is built from queues running out of shared
+// memory. See more details at aos/queue.h
+//
+// This object must be interacted with from one thread, but the Senders and
+// Fetchers may be used from multiple threads afterwords (as long as their
+// destructors are called back in one thread again)
+class ShmEventLoop : public EventLoop {
+ public:
+  ShmEventLoop(const Configuration *configuration);
+  ~ShmEventLoop() override;
+
+  aos::monotonic_clock::time_point monotonic_now() override {
+    return aos::monotonic_clock::now();
+  }
+  aos::realtime_clock::time_point realtime_now() override {
+    return aos::realtime_clock::now();
+  }
+
+  std::unique_ptr<RawSender> MakeRawSender(const Channel *channel) override;
+  std::unique_ptr<RawFetcher> MakeRawFetcher(const Channel *channel) override;
+
+  void MakeRawWatcher(
+      const Channel *channel,
+      std::function<void(const Context &context, const void *message)> watcher)
+      override;
+
+  TimerHandler *AddTimer(std::function<void()> callback) override;
+  aos::PhasedLoopHandler *AddPhasedLoop(
+      std::function<void(int)> callback,
+      const monotonic_clock::duration interval,
+      const monotonic_clock::duration offset =
+          std::chrono::seconds(0)) override;
+
+  void OnRun(std::function<void()> on_run) override;
+  void Run();
+  void Exit();
+
+  // TODO(austin): Add a function to register control-C call.
+
+  void SetRuntimeRealtimePriority(int priority) override;
+
+  void set_name(const absl::string_view name) override {
+    name_ = std::string(name);
+  }
+  const absl::string_view name() const override { return name_; }
+
+  int priority() const { return priority_; }
+
+ private:
+  friend class internal::WatcherState;
+  friend class internal::TimerHandlerState;
+  friend class internal::PhasedLoopHandler;
+
+  // Tracks that we can't have multiple watchers or a sender and a watcher (or
+  // multiple senders) on a single queue (path).
+  void Take(const Channel *channel);
+
+  std::vector<std::function<void()>> on_run_;
+  int priority_ = 0;
+  std::string name_;
+  std::vector<std::string> taken_;
+
+  internal::EPoll epoll_;
+
+  std::vector<std::unique_ptr<internal::TimerHandlerState>> timers_;
+  std::vector<std::unique_ptr<internal::PhasedLoopHandler>> phased_loops_;
+  std::vector<std::unique_ptr<internal::WatcherState>> watchers_;
+};
+
+}  // namespace aos
+
+#endif  // AOS_EVENTS_SHM_EVENT_LOOP_H_

@@ -1,0 +1,20 @@
+{
+  "channels": [
+    {
+      "name": "/test_action",
+      "type": "aos.common.actions.TestActionGoal"
+    },
+    {
+      "name": "/test_action",
+      "type": "aos.common.actions.Status"
+    },
+    {
+      "name": "/test_action2",
+      "type": "aos.common.actions.TestAction2Goal"
+    },
+    {
+      "name": "/test_action2",
+      "type": "aos.common.actions.Status"
+    }
+  ]
+}

@@ -37,10 +37,10 @@ std::vector<std::string> Split(DataRef inp, char delim) {
   res.reserve(pos.size() + 1);
   i = 0;
   for (auto p : pos) {
-    res.emplace_back(inp.substr(i, p - i).to_string());
+    res.emplace_back(std::string(inp.substr(i, p - i)));
     i = p + 1;
   }
-  res.emplace_back(inp.substr(i).to_string());
+  res.emplace_back(std::string(inp.substr(i)));
   return res;
 }
 }  // namespace

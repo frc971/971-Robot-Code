@@ -1,16 +1,37 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//aos/build:queues.bzl", "queue_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
-queue_library(
-    name = "shooter_queue",
+flatbuffer_cc_library(
+    name = "shooter_goal_fbs",
     srcs = [
-        "shooter.q",
+        "shooter_goal.fbs",
     ],
-    deps = [
-        "//aos/controls:control_loop_queues",
-        "//frc971/control_loops:queues",
+    gen_reflections = 1,
+)
+
+flatbuffer_cc_library(
+    name = "shooter_position_fbs",
+    srcs = [
+        "shooter_position.fbs",
     ],
+    gen_reflections = 1,
+)
+
+flatbuffer_cc_library(
+    name = "shooter_output_fbs",
+    srcs = [
+        "shooter_output.fbs",
+    ],
+    gen_reflections = 1,
+)
+
+flatbuffer_cc_library(
+    name = "shooter_status_fbs",
+    srcs = [
+        "shooter_status.fbs",
+    ],
+    gen_reflections = 1,
 )
 
 genrule(
@@ -52,8 +73,11 @@ cc_library(
         "shooter.h",
     ],
     deps = [
+        ":shooter_goal_fbs",
+        ":shooter_output_fbs",
         ":shooter_plants",
-        ":shooter_queue",
+        ":shooter_position_fbs",
+        ":shooter_status_fbs",
         "//aos/controls:control_loop",
     ],
 )
@@ -63,10 +87,13 @@ cc_test(
     srcs = [
         "shooter_lib_test.cc",
     ],
+    data = ["//y2016:config.json"],
     deps = [
+        ":shooter_goal_fbs",
         ":shooter_lib",
-        ":shooter_queue",
-        "//aos:queues",
+        ":shooter_output_fbs",
+        ":shooter_position_fbs",
+        ":shooter_status_fbs",
         "//aos/controls:control_loop_test",
         "//aos/testing:googletest",
         "//frc971/control_loops:state_feedback_loop",
@@ -80,9 +107,12 @@ cc_binary(
         "shooter_main.cc",
     ],
     deps = [
+        ":shooter_goal_fbs",
         ":shooter_lib",
-        ":shooter_queue",
+        ":shooter_output_fbs",
+        ":shooter_position_fbs",
+        ":shooter_status_fbs",
         "//aos:init",
-        "//aos/events:shm-event-loop",
+        "//aos/events:shm_event_loop",
     ],
 )

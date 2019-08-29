@@ -6,8 +6,10 @@
 #include <cstdint>
 #include <vector>
 
-#include "frc971/control_loops/control_loops.q.h"
+#include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/constants.h"
+
+#include "flatbuffers/flatbuffers.h"
 
 // TODO(pschrader): Flag an error if encoder index pulse is not n revolutions
 // away from the last one (i.e. got extra counts from noise, etc..)
@@ -53,7 +55,8 @@ class ZeroingEstimator {
   virtual void UpdateEstimate(const Position &) = 0;
 
   // Returns the state of the estimator
-  virtual State GetEstimatorState() const = 0;
+  virtual flatbuffers::Offset<State> GetEstimatorState(
+      flatbuffers::FlatBufferBuilder *fbb) const = 0;
 };
 
 // Estimates the position with an incremental encoder with an index pulse and a
@@ -98,7 +101,8 @@ class PotAndIndexPulseZeroingEstimator : public ZeroingEstimator<PotAndIndexPosi
   }
 
   // Returns information about our current state.
-  State GetEstimatorState() const override;
+  virtual flatbuffers::Offset<State> GetEstimatorState(
+      flatbuffers::FlatBufferBuilder *fbb) const override;
 
  private:
   // This function calculates the start position given the internal state and
@@ -168,7 +172,8 @@ class HallEffectAndPositionZeroingEstimator
   bool offset_ready() const override { return zeroed_; }
 
   // Returns information about our current state.
-  State GetEstimatorState() const override;
+  virtual flatbuffers::Offset<State> GetEstimatorState(
+      flatbuffers::FlatBufferBuilder *fbb) const override;
 
  private:
   // Sets the minimum and maximum posedge position values.
@@ -217,7 +222,7 @@ class HallEffectAndPositionZeroingEstimator
 
 // Class to encapsulate the logic to decide when we are moving and which samples
 // are safe to use.
-template <typename Position>
+template <typename Position, typename PositionBuffer>
 class MoveDetector {
  public:
   MoveDetector(size_t filter_size) {
@@ -235,9 +240,10 @@ class MoveDetector {
   // buffer_size is the number of samples in the moving buffer, and
   // zeroing_threshold is the max amount we can move within the period specified
   // by buffer_size.
-  bool Update(const Position &position, size_t buffer_size,
+  bool Update(const PositionBuffer &position_buffer, size_t buffer_size,
               double zeroing_threshold) {
     bool moving = true;
+    Position position(position_buffer);
     if (buffered_samples_.size() < buffer_size) {
       // Not enough samples to start determining if the robot is moving or not,
       // don't use the samples yet.
@@ -312,9 +318,20 @@ class PotAndAbsoluteEncoderZeroingEstimator
   }
 
   // Returns information about our current state.
-  State GetEstimatorState() const override;
+  virtual flatbuffers::Offset<State> GetEstimatorState(
+      flatbuffers::FlatBufferBuilder *fbb) const override;
 
  private:
+  struct PositionStruct {
+    PositionStruct(const PotAndAbsolutePosition &position_buffer)
+        : absolute_encoder(position_buffer.absolute_encoder()),
+          encoder(position_buffer.encoder()),
+          pot(position_buffer.pot()) {}
+    double absolute_encoder;
+    double encoder;
+    double pot;
+  };
+
   // The zeroing constants used to describe the configuration of the system.
   const constants::PotAndAbsoluteEncoderZeroingConstants constants_;
 
@@ -335,7 +352,7 @@ class PotAndAbsoluteEncoderZeroingEstimator
   // Offset between the Pot and Relative encoder position.
   ::std::vector<double> offset_samples_;
 
-  MoveDetector<PotAndAbsolutePosition> move_detector_;
+  MoveDetector<PositionStruct, PotAndAbsolutePosition> move_detector_;
 
   // Estimated offset between the pot and relative encoder.
   double pot_relative_encoder_offset_ = 0;
@@ -380,7 +397,8 @@ class PulseIndexZeroingEstimator : public ZeroingEstimator<IndexPosition,
   void UpdateEstimate(const IndexPosition &info) override;
 
   // Returns information about our current state.
-  State GetEstimatorState() const override;
+  virtual flatbuffers::Offset<State> GetEstimatorState(
+      flatbuffers::FlatBufferBuilder *fbb) const override;
 
   void TriggerError() override { error_ = true; }
 
@@ -453,9 +471,18 @@ class AbsoluteEncoderZeroingEstimator
   }
 
   // Returns information about our current state.
-  State GetEstimatorState() const override;
+  virtual flatbuffers::Offset<State> GetEstimatorState(
+      flatbuffers::FlatBufferBuilder *fbb) const override;
 
  private:
+  struct PositionStruct {
+    PositionStruct(const AbsolutePosition &position_buffer)
+        : absolute_encoder(position_buffer.absolute_encoder()),
+          encoder(position_buffer.encoder()) {}
+    double absolute_encoder;
+    double encoder;
+  };
+
   // The zeroing constants used to describe the configuration of the system.
   const constants::AbsoluteEncoderZeroingConstants constants_;
 
@@ -474,7 +501,7 @@ class AbsoluteEncoderZeroingEstimator
   // absolute encoder.
   ::std::vector<double> relative_to_absolute_offset_samples_;
 
-  MoveDetector<AbsolutePosition> move_detector_;
+  MoveDetector<PositionStruct, AbsolutePosition> move_detector_;
 
   // Estimated start position of the mechanism
   double offset_ = 0;

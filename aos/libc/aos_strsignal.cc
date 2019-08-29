@@ -2,14 +2,15 @@
 
 #include <signal.h>
 
-#include "aos/logging/logging.h"
+#include "glog/logging.h"
 
 const char *aos_strsignal(int signal) {
   static thread_local char buffer[512];
 
   if (signal >= SIGRTMIN && signal <= SIGRTMAX) {
-    AOS_CHECK(snprintf(buffer, sizeof(buffer), "Real-time signal %d",
-                       signal - SIGRTMIN) > 0);
+    CHECK_GT(snprintf(buffer, sizeof(buffer), "Real-time signal %d",
+                      signal - SIGRTMIN),
+             0);
     return buffer;
   }
 
@@ -17,6 +18,6 @@ const char *aos_strsignal(int signal) {
     return sys_siglist[signal];
   }
 
-  AOS_CHECK(snprintf(buffer, sizeof(buffer), "Unknown signal %d", signal) > 0);
+  CHECK_GT(snprintf(buffer, sizeof(buffer), "Unknown signal %d", signal), 0);
   return buffer;
 }

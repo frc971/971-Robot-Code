@@ -6,6 +6,7 @@
 #include <sys/timerfd.h>
 #include <unistd.h>
 #include <atomic>
+#include <functional>
 #include <vector>
 
 #include "aos/time/time.h"

@@ -29,10 +29,11 @@ void Intake::Reset() {
   disable_count_ = 0;
 }
 
-void Intake::Iterate(
-    const control_loops::IntakeGoal *unsafe_goal,
-    const ::frc971::PotAndAbsolutePosition *position, double *output,
-    ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus *status) {
+flatbuffers::Offset<
+    frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>
+Intake::Iterate(const IntakeGoal *unsafe_goal,
+                const ::frc971::PotAndAbsolutePosition *position,
+                double *output, flatbuffers::FlatBufferBuilder *fbb) {
   bool disable = output == nullptr;
   profiled_subsystem_.Correct(*position);
 
@@ -84,9 +85,9 @@ void Intake::Iterate(
       }
 
       if (unsafe_goal) {
-        profiled_subsystem_.AdjustProfile(unsafe_goal->profile_params);
-        profiled_subsystem_.set_unprofiled_goal(unsafe_goal->distance);
-        if (unsafe_goal->disable_intake) {
+        profiled_subsystem_.AdjustProfile(unsafe_goal->profile_params());
+        profiled_subsystem_.set_unprofiled_goal(unsafe_goal->distance());
+        if (unsafe_goal->disable_intake()) {
           if (disable_count_ > 100) {
             disable = true;
           }
@@ -133,13 +134,16 @@ void Intake::Iterate(
     *output = profiled_subsystem_.voltage();
   }
 
-  // Save debug/internal state.
-  // TODO(austin): Save more.
-  status->zeroed = profiled_subsystem_.zeroed();
+  frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus::Builder
+      status_builder = profiled_subsystem_.BuildStatus<
+          frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus::
+              Builder>(fbb);
 
-  profiled_subsystem_.PopulateStatus(status);
-  status->estopped = (state_ == State::ESTOP);
-  status->state = static_cast<int32_t>(state_);
+  // Save debug/internal state.
+  status_builder.add_estopped((state_ == State::ESTOP));
+  status_builder.add_state(static_cast<int32_t>(state_));
+
+  return status_builder.Finish();
 }
 
 }  // namespace intake

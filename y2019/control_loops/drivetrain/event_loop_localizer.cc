@@ -45,8 +45,7 @@ EventLoopLocalizer::EventLoopLocalizer(
     localizer_.ResetInitialState(monotonic_now, localizer_.X_hat(),
                                  localizer_.P());
   });
-  frame_fetcher_ = event_loop_->MakeFetcher<CameraFrame>(
-      ".y2019.control_loops.drivetrain.camera_frames");
+  frame_fetcher_ = event_loop_->MakeFetcher<CameraFrame>("/drivetrain");
 }
 
 void EventLoopLocalizer::Reset(::aos::monotonic_clock::time_point now,
@@ -71,37 +70,39 @@ void EventLoopLocalizer::Update(
   localizer_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate, U,
                                    now);
   while (frame_fetcher_.FetchNext()) {
-    HandleFrame(*frame_fetcher_.get());
+    HandleFrame(frame_fetcher_.get());
   }
 }
 
-void EventLoopLocalizer::HandleFrame(const CameraFrame &frame) {
+void EventLoopLocalizer::HandleFrame(const CameraFrame *frame) {
   // We need to construct TargetView's and pass them to the localizer:
   ::aos::SizedArray<TargetView, kMaxTargetsPerFrame> views;
   // Note: num_targets and camera are unsigned integers and so don't need to be
   // checked for < 0.
-  if (frame.num_targets > kMaxTargetsPerFrame) {
-    AOS_LOG(ERROR, "Got bad num_targets %d\n", frame.num_targets);
+  size_t camera = frame->camera();
+  if (!frame->has_targets() || frame->targets()->size() > kMaxTargetsPerFrame) {
+    AOS_LOG(ERROR, "Got bad num_targets %d\n",
+            frame->has_targets() ? frame->targets()->size() : 0);
     return;
   }
-  if (frame.camera > cameras_.size()) {
-    AOS_LOG(ERROR, "Got bad camera number %d\n", frame.camera);
+  if (camera > cameras_.size()) {
+    AOS_LOG(ERROR, "Got bad camera number %zu\n", camera);
     return;
   }
-  for (int ii = 0; ii < frame.num_targets; ++ii) {
+  for (const CameraTarget *target : *frame->targets()) {
     TargetView view;
-    view.reading.heading = frame.targets[ii].heading;
-    view.reading.distance = frame.targets[ii].distance;
-    view.reading.skew = frame.targets[ii].skew;
-    view.reading.height = frame.targets[ii].height;
+    view.reading.heading = target->heading();
+    view.reading.distance = target->distance();
+    view.reading.skew = target->skew();
+    view.reading.height = target->height();
     if (view.reading.distance < 2.25) {
-      cameras_[frame.camera].PopulateNoise(&view);
+      cameras_[camera].PopulateNoise(&view);
       views.push_back(view);
     }
   }
   ::aos::monotonic_clock::time_point t(
-      ::std::chrono::nanoseconds(frame.timestamp));
-  localizer_.UpdateTargets(cameras_[frame.camera], views, t);
+      ::std::chrono::nanoseconds(frame->timestamp()));
+  localizer_.UpdateTargets(cameras_[camera], views, t);
 }
 
 }  // namespace drivetrain

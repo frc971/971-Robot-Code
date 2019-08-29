@@ -5,19 +5,21 @@
 
 #include "aos/controls/control_loop_test.h"
 #include "aos/controls/polytope.h"
-#include "aos/events/event-loop.h"
-#include "aos/events/shm-event-loop.h"
+#include "aos/events/event_loop.h"
 #include "aos/time/time.h"
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"
 
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
-#include "frc971/control_loops/drivetrain/localizer.q.h"
-#include "frc971/queues/gyro.q.h"
+#include "frc971/control_loops/drivetrain/localizer_generated.h"
+#include "frc971/queues/gyro_generated.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -30,27 +32,21 @@ using ::aos::monotonic_clock;
 class DrivetrainTest : public ::aos::testing::ControlLoopTest {
  protected:
   DrivetrainTest()
-      : ::aos::testing::ControlLoopTest(GetTestDrivetrainConfig().dt),
+      : ::aos::testing::ControlLoopTest(
+            aos::configuration::ReadConfig(
+                "frc971/control_loops/drivetrain/config.json"),
+            GetTestDrivetrainConfig().dt),
         test_event_loop_(MakeEventLoop()),
         drivetrain_goal_sender_(
-            test_event_loop_
-                ->MakeSender<::frc971::control_loops::DrivetrainQueue::Goal>(
-                    ".frc971.control_loops.drivetrain_queue.goal")),
+            test_event_loop_->MakeSender<Goal>("/drivetrain")),
         drivetrain_goal_fetcher_(
-            test_event_loop_
-                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Goal>(
-                    ".frc971.control_loops.drivetrain_queue.goal")),
+            test_event_loop_->MakeFetcher<Goal>("/drivetrain")),
         drivetrain_status_fetcher_(
-            test_event_loop_
-                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
-                    ".frc971.control_loops.drivetrain_queue.status")),
+            test_event_loop_->MakeFetcher<Status>("/drivetrain")),
         drivetrain_output_fetcher_(
-            test_event_loop_
-                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Output>(
-                    ".frc971.control_loops.drivetrain_queue.output")),
+            test_event_loop_->MakeFetcher<Output>("/drivetrain")),
         localizer_control_sender_(
-            test_event_loop_->MakeSender<LocalizerControl>(
-                ".frc971.control_loops.drivetrain.localizer_control")),
+            test_event_loop_->MakeSender<LocalizerControl>("/drivetrain")),
         drivetrain_event_loop_(MakeEventLoop()),
         dt_config_(GetTestDrivetrainConfig()),
         localizer_(drivetrain_event_loop_.get(), dt_config_),
@@ -65,9 +61,9 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
 
   void VerifyNearGoal() {
     drivetrain_goal_fetcher_.Fetch();
-    EXPECT_NEAR(drivetrain_goal_fetcher_->left_goal,
+    EXPECT_NEAR(drivetrain_goal_fetcher_->left_goal(),
                 drivetrain_plant_.GetLeftPosition(), 1e-3);
-    EXPECT_NEAR(drivetrain_goal_fetcher_->right_goal,
+    EXPECT_NEAR(drivetrain_goal_fetcher_->right_goal(),
                 drivetrain_plant_.GetRightPosition(), 1e-3);
   }
 
@@ -79,8 +75,10 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
 
   void VerifyNearSplineGoal() {
     drivetrain_status_fetcher_.Fetch();
-    const double expected_x = drivetrain_status_fetcher_->trajectory_logging.x;
-    const double expected_y = drivetrain_status_fetcher_->trajectory_logging.y;
+    const double expected_x =
+        CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->x();
+    const double expected_y =
+        CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->y();
     const ::Eigen::Vector2d actual = drivetrain_plant_.GetPosition();
     EXPECT_NEAR(actual(0), expected_x, 2e-2);
     EXPECT_NEAR(actual(1), expected_y, 2e-2);
@@ -92,7 +90,8 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
       ::std::this_thread::sleep_for(::std::chrono::milliseconds(5));
       RunFor(dt());
       EXPECT_TRUE(drivetrain_status_fetcher_.Fetch());
-    } while (drivetrain_status_fetcher_->trajectory_logging.planning_state !=
+    } while (CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())
+                 ->planning_state() !=
              (int8_t)SplineDrivetrain::PlanState::kPlannedTrajectory);
   }
 
@@ -100,17 +99,18 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
     do {
       RunFor(dt());
       EXPECT_TRUE(drivetrain_status_fetcher_.Fetch());
-    } while (!drivetrain_status_fetcher_->trajectory_logging.is_executed);
+    } while (!CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())
+                  ->is_executed());
   }
 
   ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
-  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Goal>
+  ::aos::Sender<::frc971::control_loops::drivetrain::Goal>
       drivetrain_goal_sender_;
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Goal>
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Goal>
       drivetrain_goal_fetcher_;
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Output>
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Output>
       drivetrain_output_fetcher_;
   ::aos::Sender<LocalizerControl> localizer_control_sender_;
 
@@ -128,11 +128,12 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
 TEST_F(DrivetrainTest, ConvergesCorrectly) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 1;
-    message->left_goal = -1.0;
-    message->right_goal = 1.0;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_MOTION_PROFILE);
+    goal_builder.add_left_goal(-1.0);
+    goal_builder.add_right_goal(1.0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(2));
   VerifyNearGoal();
@@ -143,11 +144,12 @@ TEST_F(DrivetrainTest, ConvergesCorrectly) {
 TEST_F(DrivetrainTest, ConvergesWithVoltageError) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 1;
-    message->left_goal = -1.0;
-    message->right_goal = 1.0;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_MOTION_PROFILE);
+    goal_builder.add_left_goal(-1.0);
+    goal_builder.add_right_goal(1.0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   drivetrain_plant_.set_left_voltage_offset(1.0);
   drivetrain_plant_.set_right_voltage_offset(1.0);
@@ -158,11 +160,12 @@ TEST_F(DrivetrainTest, ConvergesWithVoltageError) {
 // Tests that it survives disabling.
 TEST_F(DrivetrainTest, SurvivesDisabling) {
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 1;
-    message->left_goal = -1.0;
-    message->right_goal = 1.0;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_MOTION_PROFILE);
+    goal_builder.add_left_goal(-1.0);
+    goal_builder.add_right_goal(1.0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   for (int i = 0; i < 500; ++i) {
     if (i > 20 && i < 200) {
@@ -187,20 +190,21 @@ TEST_F(DrivetrainTest, NoGoalWithRobotState) {
 TEST_F(DrivetrainTest, DriveStraightForward) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 1;
-    message->left_goal = 4.0;
-    message->right_goal = 4.0;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_MOTION_PROFILE);
+    goal_builder.add_left_goal(4.0);
+    goal_builder.add_right_goal(4.0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   for (int i = 0; i < 500; ++i) {
     RunFor(dt());
     ASSERT_TRUE(drivetrain_output_fetcher_.Fetch());
-    EXPECT_NEAR(drivetrain_output_fetcher_->left_voltage,
-                drivetrain_output_fetcher_->right_voltage, 1e-4);
-    EXPECT_GT(drivetrain_output_fetcher_->left_voltage, -11);
-    EXPECT_GT(drivetrain_output_fetcher_->right_voltage, -11);
+    EXPECT_NEAR(drivetrain_output_fetcher_->left_voltage(),
+                drivetrain_output_fetcher_->right_voltage(), 1e-4);
+    EXPECT_GT(drivetrain_output_fetcher_->left_voltage(), -11);
+    EXPECT_GT(drivetrain_output_fetcher_->right_voltage(), -11);
   }
   VerifyNearGoal();
 }
@@ -210,17 +214,18 @@ TEST_F(DrivetrainTest, DriveStraightForward) {
 TEST_F(DrivetrainTest, DriveAlmostStraightForward) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 1;
-    message->left_goal = 4.0;
-    message->right_goal = 3.9;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_MOTION_PROFILE);
+    goal_builder.add_left_goal(4.0);
+    goal_builder.add_right_goal(3.9);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   for (int i = 0; i < 500; ++i) {
     RunFor(dt());
     ASSERT_TRUE(drivetrain_output_fetcher_.Fetch());
-    EXPECT_GT(drivetrain_output_fetcher_->left_voltage, -11);
-    EXPECT_GT(drivetrain_output_fetcher_->right_voltage, -11);
+    EXPECT_GT(drivetrain_output_fetcher_->left_voltage(), -11);
+    EXPECT_GT(drivetrain_output_fetcher_->right_voltage(), -11);
   }
   VerifyNearGoal();
 }
@@ -254,26 +259,39 @@ TEST_F(DrivetrainTest, LinearToAngularAndBack) {
 TEST_F(DrivetrainTest, ProfileStraightForward) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 1;
-    message->left_goal = 4.0;
-    message->right_goal = 4.0;
-    message->linear.max_velocity = 1.0;
-    message->linear.max_acceleration = 3.0;
-    message->angular.max_velocity = 1.0;
-    message->angular.max_acceleration = 3.0;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    ProfileParameters::Builder linear_builder =
+        builder.MakeBuilder<ProfileParameters>();
+    linear_builder.add_max_velocity(1.0);
+    linear_builder.add_max_acceleration(3.0);
+    flatbuffers::Offset<ProfileParameters> linear_offset =
+        linear_builder.Finish();
+
+    ProfileParameters::Builder angular_builder =
+        builder.MakeBuilder<ProfileParameters>();
+    angular_builder.add_max_velocity(1.0);
+    angular_builder.add_max_acceleration(3.0);
+    flatbuffers::Offset<ProfileParameters> angular_offset =
+        angular_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_MOTION_PROFILE);
+    goal_builder.add_left_goal(4.0);
+    goal_builder.add_right_goal(4.0);
+    goal_builder.add_linear(linear_offset);
+    goal_builder.add_angular(angular_offset);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   while (monotonic_now() < monotonic_clock::time_point(chrono::seconds(6))) {
     RunFor(dt());
     ASSERT_TRUE(drivetrain_output_fetcher_.Fetch());
-    EXPECT_NEAR(drivetrain_output_fetcher_->left_voltage,
-                drivetrain_output_fetcher_->right_voltage, 1e-4);
-    EXPECT_GT(drivetrain_output_fetcher_->left_voltage, -6);
-    EXPECT_GT(drivetrain_output_fetcher_->right_voltage, -6);
-    EXPECT_LT(drivetrain_output_fetcher_->left_voltage, 6);
-    EXPECT_LT(drivetrain_output_fetcher_->right_voltage, 6);
+    EXPECT_NEAR(drivetrain_output_fetcher_->left_voltage(),
+                drivetrain_output_fetcher_->right_voltage(), 1e-4);
+    EXPECT_GT(drivetrain_output_fetcher_->left_voltage(), -6);
+    EXPECT_GT(drivetrain_output_fetcher_->right_voltage(), -6);
+    EXPECT_LT(drivetrain_output_fetcher_->left_voltage(), 6);
+    EXPECT_LT(drivetrain_output_fetcher_->right_voltage(), 6);
   }
   VerifyNearGoal();
 }
@@ -282,26 +300,39 @@ TEST_F(DrivetrainTest, ProfileStraightForward) {
 TEST_F(DrivetrainTest, ProfileTurn) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 1;
-    message->left_goal = -1.0;
-    message->right_goal = 1.0;
-    message->linear.max_velocity = 1.0;
-    message->linear.max_acceleration = 3.0;
-    message->angular.max_velocity = 1.0;
-    message->angular.max_acceleration = 3.0;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    ProfileParameters::Builder linear_builder =
+        builder.MakeBuilder<ProfileParameters>();
+    linear_builder.add_max_velocity(1.0);
+    linear_builder.add_max_acceleration(3.0);
+    flatbuffers::Offset<ProfileParameters> linear_offset =
+        linear_builder.Finish();
+
+    ProfileParameters::Builder angular_builder =
+        builder.MakeBuilder<ProfileParameters>();
+    angular_builder.add_max_velocity(1.0);
+    angular_builder.add_max_acceleration(3.0);
+    flatbuffers::Offset<ProfileParameters> angular_offset =
+        angular_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_MOTION_PROFILE);
+    goal_builder.add_left_goal(-1.0);
+    goal_builder.add_right_goal(1.0);
+    goal_builder.add_linear(linear_offset);
+    goal_builder.add_angular(angular_offset);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   while (monotonic_now() < monotonic_clock::time_point(chrono::seconds(6))) {
     RunFor(dt());
     ASSERT_TRUE(drivetrain_output_fetcher_.Fetch());
-    EXPECT_NEAR(drivetrain_output_fetcher_->left_voltage,
-                -drivetrain_output_fetcher_->right_voltage, 1e-4);
-    EXPECT_GT(drivetrain_output_fetcher_->left_voltage, -6);
-    EXPECT_GT(drivetrain_output_fetcher_->right_voltage, -6);
-    EXPECT_LT(drivetrain_output_fetcher_->left_voltage, 6);
-    EXPECT_LT(drivetrain_output_fetcher_->right_voltage, 6);
+    EXPECT_NEAR(drivetrain_output_fetcher_->left_voltage(),
+                -drivetrain_output_fetcher_->right_voltage(), 1e-4);
+    EXPECT_GT(drivetrain_output_fetcher_->left_voltage(), -6);
+    EXPECT_GT(drivetrain_output_fetcher_->right_voltage(), -6);
+    EXPECT_LT(drivetrain_output_fetcher_->left_voltage(), 6);
+    EXPECT_LT(drivetrain_output_fetcher_->right_voltage(), 6);
   }
   VerifyNearGoal();
 }
@@ -310,15 +341,28 @@ TEST_F(DrivetrainTest, ProfileTurn) {
 TEST_F(DrivetrainTest, SaturatedTurnDrive) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 1;
-    message->left_goal = 5.0;
-    message->right_goal = 4.0;
-    message->linear.max_velocity = 6.0;
-    message->linear.max_acceleration = 4.0;
-    message->angular.max_velocity = 2.0;
-    message->angular.max_acceleration = 4.0;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    ProfileParameters::Builder linear_builder =
+        builder.MakeBuilder<ProfileParameters>();
+    linear_builder.add_max_velocity(6.0);
+    linear_builder.add_max_acceleration(4.0);
+    flatbuffers::Offset<ProfileParameters> linear_offset =
+        linear_builder.Finish();
+
+    ProfileParameters::Builder angular_builder =
+        builder.MakeBuilder<ProfileParameters>();
+    angular_builder.add_max_velocity(2.0);
+    angular_builder.add_max_acceleration(4.0);
+    flatbuffers::Offset<ProfileParameters> angular_offset =
+        angular_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_MOTION_PROFILE);
+    goal_builder.add_left_goal(5.0);
+    goal_builder.add_right_goal(4.0);
+    goal_builder.add_linear(linear_offset);
+    goal_builder.add_angular(angular_offset);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   while (monotonic_now() < monotonic_clock::time_point(chrono::seconds(3))) {
@@ -333,61 +377,77 @@ TEST_F(DrivetrainTest, SaturatedTurnDrive) {
 TEST_F(DrivetrainTest, OpenLoopThenClosed) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 0;
-    message->wheel = 0.0;
-    message->throttle = 1.0;
-    message->highgear = true;
-    message->quickturn = false;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_POLYDRIVE);
+    goal_builder.add_wheel(0.0);
+    goal_builder.add_throttle(1.0);
+    goal_builder.add_highgear(true);
+    goal_builder.add_quickturn(false);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(1));
 
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 0;
-    message->wheel = 0.0;
-    message->throttle = -0.3;
-    message->highgear = true;
-    message->quickturn = false;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_POLYDRIVE);
+    goal_builder.add_wheel(0.0);
+    goal_builder.add_throttle(-0.3);
+    goal_builder.add_highgear(true);
+    goal_builder.add_quickturn(false);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(1));
 
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 0;
-    message->wheel = 0.0;
-    message->throttle = 0.0;
-    message->highgear = true;
-    message->quickturn = false;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_POLYDRIVE);
+    goal_builder.add_wheel(0.0);
+    goal_builder.add_throttle(0.0);
+    goal_builder.add_highgear(true);
+    goal_builder.add_quickturn(false);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(10));
 
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 1;
-    message->left_goal = 5.0;
-    message->right_goal = 4.0;
-    message->linear.max_velocity = 1.0;
-    message->linear.max_acceleration = 2.0;
-    message->angular.max_velocity = 1.0;
-    message->angular.max_acceleration = 2.0;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    ProfileParameters::Builder linear_builder =
+        builder.MakeBuilder<ProfileParameters>();
+    linear_builder.add_max_velocity(1.0);
+    linear_builder.add_max_acceleration(2.0);
+    flatbuffers::Offset<ProfileParameters> linear_offset =
+        linear_builder.Finish();
+
+    ProfileParameters::Builder angular_builder =
+        builder.MakeBuilder<ProfileParameters>();
+    angular_builder.add_max_velocity(1.0);
+    angular_builder.add_max_acceleration(2.0);
+    flatbuffers::Offset<ProfileParameters> angular_offset =
+        angular_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_MOTION_PROFILE);
+    goal_builder.add_left_goal(5.0);
+    goal_builder.add_right_goal(4.0);
+    goal_builder.add_linear(linear_offset);
+    goal_builder.add_angular(angular_offset);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   const auto end_time = monotonic_now() + chrono::seconds(4);
   while (monotonic_now() < end_time) {
     RunFor(dt());
     ASSERT_TRUE(drivetrain_output_fetcher_.Fetch());
-    EXPECT_GT(drivetrain_output_fetcher_->left_voltage, -6);
-    EXPECT_GT(drivetrain_output_fetcher_->right_voltage, -6);
-    EXPECT_LT(drivetrain_output_fetcher_->left_voltage, 6);
-    EXPECT_LT(drivetrain_output_fetcher_->right_voltage, 6);
+    EXPECT_GT(drivetrain_output_fetcher_->left_voltage(), -6);
+    EXPECT_GT(drivetrain_output_fetcher_->right_voltage(), -6);
+    EXPECT_LT(drivetrain_output_fetcher_->left_voltage(), 6);
+    EXPECT_LT(drivetrain_output_fetcher_->right_voltage(), 6);
   }
   VerifyNearGoal();
 }
@@ -396,22 +456,44 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
 TEST_F(DrivetrainTest, SplineSimple) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline.spline_idx = 1;
-    message->spline.spline_count = 1;
-    message->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
-    message->spline.spline_y = {{0.0, 0.0, 0.25, 0.75, 1.0, 1.0}};
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.25, 0.5, 0.5, 0.75, 1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.0, 0.25, 0.75, 1.0, 1.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(1);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(1);
+    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline(spline_goal_offset);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(dt());
 
   // Send the start goal
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline_handle = 1;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline_handle(1);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitForTrajectoryPlan();
 
@@ -423,22 +505,43 @@ TEST_F(DrivetrainTest, SplineSimple) {
 TEST_F(DrivetrainTest, SplineSimpleBackwards) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline.spline_idx = 1;
-    message->spline.spline_count = 1;
-    message->spline.drive_spline_backwards = true;
-    message->spline.spline_x = {{0.0, -0.25, -0.5, -0.5, -0.75, -1.0}};
-    message->spline.spline_y = {{0.0, 0.0, -0.25, -0.75, -1.0, -1.0}};
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>({0.0, -0.25, -0.5, -0.5, -0.75, -1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.0, -0.25, -0.75, -1.0, -1.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(1);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(1);
+    spline_goal_builder.add_drive_spline_backwards(true);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline(spline_goal_offset);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(dt());
 
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline_handle = 1;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline_handle(1);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitForTrajectoryPlan();
 
@@ -456,7 +559,7 @@ TEST_F(DrivetrainTest, SplineSimpleBackwards) {
   drivetrain_status_fetcher_.Fetch();
   auto actual = drivetrain_plant_.state();
   const double expected_theta =
-      drivetrain_status_fetcher_->trajectory_logging.theta;
+      CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->theta();
   // As a sanity check, compare both against absolute angle and the spline's
   // goal angle.
   EXPECT_NEAR(0.0, ::aos::math::DiffAngle(actual(2), 0.0), 2e-2);
@@ -467,14 +570,35 @@ TEST_F(DrivetrainTest, SplineSimpleBackwards) {
 TEST_F(DrivetrainTest, SplineSingleGoal) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline.spline_idx = 1;
-    message->spline.spline_count = 1;
-    message->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
-    message->spline.spline_y = {{0.0, 0.0, 0.25, 0.75, 1.0, 1.0}};
-    message->spline_handle = 1;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.25, 0.5, 0.5, 0.75, 1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.0, 0.25, 0.75, 1.0, 1.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(1);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(1);
+    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline(spline_goal_offset);
+    goal_builder.add_spline_handle(1);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitForTrajectoryPlan();
 
@@ -486,100 +610,179 @@ TEST_F(DrivetrainTest, SplineSingleGoal) {
 TEST_F(DrivetrainTest, SplineStop) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline.spline_idx = 1;
-    message->spline.spline_count = 1;
-    message->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
-    message->spline.spline_y = {{0.0, 0.0, 0.25, 0.75, 1.0, 1.0}};
-    message->spline_handle = 1;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.25, 0.5, 0.5, 0.75, 1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.0, 0.25, 0.75, 1.0, 1.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(1);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(1);
+    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline(spline_goal_offset);
+    goal_builder.add_spline_handle(1);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitForTrajectoryPlan();
 
   RunFor(chrono::milliseconds(500));
   drivetrain_status_fetcher_.Fetch();
-  const double goal_x = drivetrain_status_fetcher_->trajectory_logging.x;
-  const double goal_y = drivetrain_status_fetcher_->trajectory_logging.y;
+  const double goal_x =
+      CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->x();
+  const double goal_y =
+      CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->y();
 
   // Now stop.
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline_handle = 0;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline_handle(0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::milliseconds(2000));
 
   // The goal shouldn't change after being stopped.
   drivetrain_status_fetcher_.Fetch();
-  EXPECT_NEAR(drivetrain_status_fetcher_->trajectory_logging.x, goal_x, 1e-9);
-  EXPECT_NEAR(drivetrain_status_fetcher_->trajectory_logging.y, goal_y, 1e-9);
+  EXPECT_NEAR(
+      CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->x(),
+      goal_x, 1e-9);
+  EXPECT_NEAR(
+      CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->y(),
+      goal_y, 1e-9);
 }
 
 // Tests that a spline can't be restarted.
 TEST_F(DrivetrainTest, SplineRestart) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline.spline_idx = 1;
-    message->spline.spline_count = 1;
-    message->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
-    message->spline.spline_y = {{0.0, 0.0, 0.25, 0.75, 1.0, 1.0}};
-    message->spline_handle = 1;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.25, 0.5, 0.5, 0.75, 1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.0, 0.25, 0.75, 1.0, 1.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(1);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(1);
+    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline(spline_goal_offset);
+    goal_builder.add_spline_handle(1);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitForTrajectoryPlan();
 
   RunFor(chrono::milliseconds(500));
   drivetrain_status_fetcher_.Fetch();
-  const double goal_x = drivetrain_status_fetcher_->trajectory_logging.x;
-  const double goal_y = drivetrain_status_fetcher_->trajectory_logging.y;
+  const double goal_x =
+      CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->x();
+  const double goal_y =
+      CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->y();
 
   // Send a stop goal.
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline_handle = 0;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline_handle(0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::milliseconds(500));
 
   // Send a restart.
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline_handle = 1;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline_handle(1);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::milliseconds(2000));
 
   // The goal shouldn't change after being stopped and restarted.
   drivetrain_status_fetcher_.Fetch();
-  EXPECT_NEAR(drivetrain_status_fetcher_->trajectory_logging.x, goal_x, 1e-9);
-  EXPECT_NEAR(drivetrain_status_fetcher_->trajectory_logging.y, goal_y, 1e-9);
+  EXPECT_NEAR(
+      CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->x(),
+      goal_x, 1e-9);
+  EXPECT_NEAR(
+      CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->y(),
+      goal_y, 1e-9);
 }
 
 // Tests that simple spline converges when it doesn't start where it thinks.
 TEST_F(DrivetrainTest, SplineOffset) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline.spline_idx = 1;
-    message->spline.spline_count = 1;
-    message->spline.spline_x = {{0.2, 0.25, 0.5, 0.5, 0.75, 1.0}};
-    message->spline.spline_y = {{0.2, 0.0, 0.25, 0.75, 1.0, 1.0}};
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>({0.2, 0.25, 0.5, 0.5, 0.75, 1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>({0.2, 0.0, 0.25, 0.75, 1.0, 1.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(1);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(1);
+    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline(spline_goal_offset);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(dt());
 
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline_handle = 1;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline_handle(1);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitForTrajectoryPlan();
 
@@ -592,21 +795,43 @@ TEST_F(DrivetrainTest, SplineOffset) {
 TEST_F(DrivetrainTest, SplineSideOffset) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline.spline_idx = 1;
-    message->spline.spline_count = 1;
-    message->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
-    message->spline.spline_y = {{0.5, 0.0, 0.25, 0.75, 1.0, 1.0}};
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.25, 0.5, 0.5, 0.75, 1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>({0.5, 0.0, 0.25, 0.75, 1.0, 1.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(1);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(1);
+    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline(spline_goal_offset);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(dt());
 
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline_handle = 1;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline_handle(1);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitForTrajectoryPlan();
 
@@ -618,23 +843,45 @@ TEST_F(DrivetrainTest, SplineSideOffset) {
 TEST_F(DrivetrainTest, MultiSpline) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline.spline_idx = 1;
-    message->spline.spline_count = 2;
-    message->spline.spline_x = {
-        {0.0, 0.25, 0.5, 0.5, 0.75, 1.0, 1.25, 1.5, 1.5, 1.25, 1.0}};
-    message->spline.spline_y = {
-        {0.0, 0.0, 0.25, 0.75, 1.0, 1.0, 1.0, 1.25, 1.5, 1.75, 2.0}};
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>(
+            {0.0, 0.25, 0.5, 0.5, 0.75, 1.0, 1.25, 1.5, 1.5, 1.25, 1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>(
+            {0.0, 0.0, 0.25, 0.75, 1.0, 1.0, 1.0, 1.25, 1.5, 1.75, 2.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(2);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(1);
+    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline(spline_goal_offset);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(dt());
 
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline_handle = 1;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline_handle(1);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitForTrajectoryPlan();
 
@@ -646,21 +893,43 @@ TEST_F(DrivetrainTest, MultiSpline) {
 TEST_F(DrivetrainTest, SequentialSplines) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline.spline_idx = 1;
-    message->spline.spline_count = 1;
-    message->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
-    message->spline.spline_y = {{0.0, 0.0, 0.25, 0.75, 1.0, 1.0}};
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.25, 0.5, 0.5, 0.75, 1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.0, 0.25, 0.75, 1.0, 1.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(1);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(1);
+    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline(spline_goal_offset);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(dt());
 
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline_handle = 1;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline_handle(1);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitForTrajectoryPlan();
 
@@ -670,22 +939,44 @@ TEST_F(DrivetrainTest, SequentialSplines) {
 
   // Second spline.
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline.spline_idx = 2;
-    message->spline.spline_count = 1;
-    message->spline.spline_x = {{1.0, 1.25, 1.5, 1.5, 1.25, 1.0}};
-    message->spline.spline_y = {{1.0, 1.0, 1.25, 1.5, 1.75, 2.0}};
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>({1.0, 1.25, 1.5, 1.5, 1.25, 1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>({1.0, 1.0, 1.25, 1.5, 1.75, 2.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(1);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(2);
+    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline(spline_goal_offset);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(dt());
 
   // And then start it.
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline_handle = 2;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline_handle(2);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitForTrajectoryPlan();
 
@@ -696,14 +987,35 @@ TEST_F(DrivetrainTest, SequentialSplines) {
 TEST_F(DrivetrainTest, SplineStopFirst) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline.spline_idx = 1;
-    message->spline.spline_count = 1;
-    message->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
-    message->spline.spline_y = {{0.0, 0.0, 0.25, 0.75, 1.0, 1.0}};
-    message->spline_handle = 1;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.25, 0.5, 0.5, 0.75, 1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.0, 0.25, 0.75, 1.0, 1.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(1);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(1);
+    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline_handle(1);
+    goal_builder.add_spline(spline_goal_offset);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitForTrajectoryPlan();
 
@@ -711,23 +1023,45 @@ TEST_F(DrivetrainTest, SplineStopFirst) {
 
   // Stop goal
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline_handle = 0;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline_handle(0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::milliseconds(500));
 
   // Second spline goal.
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline.spline_idx = 2;
-    message->spline.spline_count = 1;
-    message->spline.spline_x = {{1.0, 1.25, 1.5, 1.5, 1.25, 1.0}};
-    message->spline.spline_y = {{1.0, 1.0, 1.25, 1.5, 1.75, 2.0}};
-    message->spline_handle = 2;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>({1.0, 1.25, 1.5, 1.5, 1.25, 1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>({1.0, 1.0, 1.25, 1.5, 1.75, 2.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(1);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(2);
+    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline(spline_goal_offset);
+    goal_builder.add_spline_handle(2);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitForTrajectoryPlan();
 
@@ -740,15 +1074,35 @@ TEST_F(DrivetrainTest, SplineStopFirst) {
 TEST_F(DrivetrainTest, CancelSplineBeforeExecuting) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline.spline_idx = 1;
-    message->spline.spline_count = 1;
-    message->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
-    message->spline.spline_y = {{0.0, 0.0, 0.25, 0.75, 1.0, 1.0}};
-    // Don't start running the splane.
-    message->spline_handle = 0;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.25, 0.5, 0.5, 0.75, 1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.0, 0.25, 0.75, 1.0, 1.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(1);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(1);
+    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline(spline_goal_offset);
+    goal_builder.add_spline_handle(0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitForTrajectoryPlan();
 
@@ -756,23 +1110,45 @@ TEST_F(DrivetrainTest, CancelSplineBeforeExecuting) {
 
   // Plan another spline, but don't start it yet:
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline.spline_idx = 2;
-    message->spline.spline_count = 1;
-    message->spline.spline_x = {{0.0, 0.75, 1.25, 1.5, 1.25, 1.0}};
-    message->spline.spline_y = {{0.0, 0.75, 1.25, 1.5, 1.75, 2.0}};
-    message->spline_handle = 0;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.75, 1.25, 1.5, 1.25, 1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.75, 1.25, 1.5, 1.75, 2.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(1);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(2);
+    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline(spline_goal_offset);
+    goal_builder.add_spline_handle(0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitForTrajectoryPlan();
 
   // Now execute it.
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline_handle = 2;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline_handle(2);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   WaitForTrajectoryExecution();
@@ -784,35 +1160,78 @@ TEST_F(DrivetrainTest, CancelSplineBeforeExecuting) {
 TEST_F(DrivetrainTest, ParallelSplines) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline.spline_idx = 1;
-    message->spline.spline_count = 1;
-    message->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
-    message->spline.spline_y = {{0.0, 0.0, 0.25, 0.75, 1.0, 1.0}};
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.25, 0.5, 0.5, 0.75, 1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.0, 0.25, 0.75, 1.0, 1.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(1);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(1);
+    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline(spline_goal_offset);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitForTrajectoryPlan();
 
   // Second spline goal
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->spline_handle = 1;
-    message->controller_type = 2;
-    message->spline.spline_idx = 2;
-    message->spline.spline_count = 1;
-    message->spline.spline_x = {{1.0, 1.25, 1.5, 1.5, 1.25, 1.0}};
-    message->spline.spline_y = {{1.0, 1.0, 1.25, 1.5, 1.75, 2.0}};
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>({1.0, 1.25, 1.5, 1.5, 1.25, 1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>({1.0, 1.0, 1.25, 1.5, 1.75, 2.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(1);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(2);
+    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline(spline_goal_offset);
+    goal_builder.add_spline_handle(1);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitForTrajectoryExecution();
 
   // Second start goal
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline_handle = 2;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline_handle(2);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::milliseconds(4000));
@@ -823,20 +1242,42 @@ TEST_F(DrivetrainTest, ParallelSplines) {
 TEST_F(DrivetrainTest, OnlyPlanSpline) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline.spline_idx = 1;
-    message->spline.spline_count = 1;
-    message->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
-    message->spline.spline_y = {{0.0, 0.0, 0.25, 0.75, 1.0, 1.0}};
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.25, 0.5, 0.5, 0.75, 1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.0, 0.25, 0.75, 1.0, 1.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(1);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(1);
+    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline(spline_goal_offset);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitForTrajectoryPlan();
 
   for (int i = 0; i < 100; ++i) {
     RunFor(dt());
     drivetrain_status_fetcher_.Fetch();
-    EXPECT_EQ(drivetrain_status_fetcher_->trajectory_logging.planning_state,
+    EXPECT_EQ(CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())
+                  ->planning_state(),
               3);
     ::std::this_thread::sleep_for(::std::chrono::milliseconds(2));
   }
@@ -847,23 +1288,45 @@ TEST_F(DrivetrainTest, OnlyPlanSpline) {
 TEST_F(DrivetrainTest, SplineExecuteAfterPlan) {
   SetEnabled(true);
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline.spline_idx = 1;
-    message->spline.spline_count = 1;
-    message->spline.spline_x = {{0.0, 0.25, 0.5, 0.5, 0.75, 1.0}};
-    message->spline.spline_y = {{0.0, 0.0, 0.25, 0.75, 1.0, 1.0}};
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.25, 0.5, 0.5, 0.75, 1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.0, 0.25, 0.75, 1.0, 1.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(1);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(1);
+    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline(spline_goal_offset);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitForTrajectoryPlan();
   RunFor(chrono::milliseconds(2000));
 
   // Start goal
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 2;
-    message->spline_handle = 1;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_spline_handle(1);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::milliseconds(2000));
 
@@ -877,21 +1340,29 @@ TEST_F(DrivetrainTest, BasicLineFollow) {
   localizer_.target_selector()->set_has_target(true);
   localizer_.target_selector()->set_pose({{1.0, 1.0, 0.0}, M_PI_4});
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 3;
-    message->throttle = 0.5;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_LINE_FOLLOWER);
+    goal_builder.add_throttle(0.5);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(5));
 
   drivetrain_status_fetcher_.Fetch();
-  EXPECT_TRUE(drivetrain_status_fetcher_->line_follow_logging.frozen);
-  EXPECT_TRUE(drivetrain_status_fetcher_->line_follow_logging.have_target);
-  EXPECT_EQ(1.0, drivetrain_status_fetcher_->line_follow_logging.x);
-  EXPECT_EQ(1.0, drivetrain_status_fetcher_->line_follow_logging.y);
-  EXPECT_FLOAT_EQ(M_PI_4,
-                  drivetrain_status_fetcher_->line_follow_logging.theta);
+  EXPECT_TRUE(CHECK_NOTNULL(drivetrain_status_fetcher_->line_follow_logging())
+                  ->frozen());
+  EXPECT_TRUE(CHECK_NOTNULL(drivetrain_status_fetcher_->line_follow_logging())
+                  ->have_target());
+  EXPECT_EQ(
+      1.0,
+      CHECK_NOTNULL(drivetrain_status_fetcher_->line_follow_logging())->x());
+  EXPECT_EQ(
+      1.0,
+      CHECK_NOTNULL(drivetrain_status_fetcher_->line_follow_logging())->y());
+  EXPECT_FLOAT_EQ(
+      M_PI_4, CHECK_NOTNULL(drivetrain_status_fetcher_->line_follow_logging())
+                  ->theta());
 
   // Should have run off the end of the target, running along the y=x line.
   EXPECT_LT(1.0, drivetrain_plant_.GetPosition().x());
@@ -906,10 +1377,11 @@ TEST_F(DrivetrainTest, LineFollowDefersToOpenLoop) {
   localizer_.target_selector()->set_has_target(false);
   localizer_.target_selector()->set_pose({{1.0, 1.0, 0.0}, M_PI_4});
   {
-    auto message = drivetrain_goal_sender_.MakeMessage();
-    message->controller_type = 3;
-    message->throttle = 0.5;
-    EXPECT_TRUE(message.Send());
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType_LINE_FOLLOWER);
+    goal_builder.add_throttle(0.5);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(5));
@@ -926,11 +1398,13 @@ TEST_F(DrivetrainTest, ResetLocalizer) {
   EXPECT_EQ(0.0, localizer_.y());
   EXPECT_EQ(0.0, localizer_.theta());
   {
-    auto message = localizer_control_sender_.MakeMessage();
-    message->x = 9.0;
-    message->y = 7.0;
-    message->theta = 1.0;
-    ASSERT_TRUE(message.Send());
+    auto builder = localizer_control_sender_.MakeBuilder();
+    LocalizerControl::Builder localizer_control_builder =
+        builder.MakeBuilder<LocalizerControl>();
+    localizer_control_builder.add_x(9.0);
+    localizer_control_builder.add_y(7.0);
+    localizer_control_builder.add_theta(1.0);
+    ASSERT_TRUE(builder.Send(localizer_control_builder.Finish()));
   }
   RunFor(dt());
 

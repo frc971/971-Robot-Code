@@ -1,3 +1,4 @@
+#include "flatbuffers/flatbuffers.h"
 #include "gtest/gtest.h"
 
 #include "aos/controls/control_loop.h"
@@ -5,9 +6,10 @@
 #include "frc971/control_loops/capped_test_plant.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
-#include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem_test.q.h"
+#include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem_test_generated.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem_test_integral_plant.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem_test_plant.h"
+#include "frc971/zeroing/zeroing.h"
 
 using ::frc971::control_loops::PositionSensorSimulator;
 
@@ -20,20 +22,32 @@ namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
 
 using SZSDPS_PotAndAbsEncoder = StaticZeroingSingleDOFProfiledSubsystem<
-    zeroing::PotAndAbsoluteEncoderZeroingEstimator,
+    ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator,
     ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>;
 
 using SZSDPS_AbsEncoder = StaticZeroingSingleDOFProfiledSubsystem<
-    zeroing::AbsoluteEncoderZeroingEstimator,
+    ::frc971::zeroing::AbsoluteEncoderZeroingEstimator,
     ::frc971::control_loops::AbsoluteEncoderProfiledJointStatus>;
 
+using FBB = flatbuffers::FlatBufferBuilder;
+
+struct PotAndAbsoluteEncoderQueueGroup {
+  typedef PotAndAbsoluteEncoderProfiledJointStatus Status;
+  typedef PotAndAbsolutePosition Position;
+  typedef ::frc971::control_loops::zeroing::testing::SubsystemGoal Goal;
+  typedef ::frc971::control_loops::zeroing::testing::SubsystemOutput Output;
+};
+
+struct AbsoluteEncoderQueueGroup {
+  typedef AbsoluteEncoderProfiledJointStatus Status;
+  typedef AbsolutePosition Position;
+  typedef zeroing::testing::SubsystemGoal Goal;
+  typedef zeroing::testing::SubsystemOutput Output;
+};
+
 typedef ::testing::Types<
-    ::std::pair<
-        SZSDPS_AbsEncoder,
-        StaticZeroingSingleDOFProfiledSubsystemAbsoluteEncoderTestQueueGroup>,
-    ::std::pair<
-        SZSDPS_PotAndAbsEncoder,
-        StaticZeroingSingleDOFProfiledSubsystemPotAndAbsoluteEncoderTestQueueGroup>>
+    ::std::pair<SZSDPS_AbsEncoder, AbsoluteEncoderQueueGroup>,
+    ::std::pair<SZSDPS_PotAndAbsEncoder, PotAndAbsoluteEncoderQueueGroup>>
     TestTypes;
 
 constexpr ::frc971::constants::Range kRange{
@@ -54,14 +68,15 @@ struct TestIntakeSystemValues {
 };
 
 template <>
-const zeroing::PotAndAbsoluteEncoderZeroingEstimator::ZeroingConstants
+const frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator::ZeroingConstants
     TestIntakeSystemValues<
-        zeroing::PotAndAbsoluteEncoderZeroingEstimator>::kZeroing{
+        frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>::kZeroing{
         kZeroingSampleSize, kEncoderIndexDifference, 0, 0.0005, 20, 1.9};
 
 template <>
-const zeroing::AbsoluteEncoderZeroingEstimator::ZeroingConstants
-    TestIntakeSystemValues<zeroing::AbsoluteEncoderZeroingEstimator>::kZeroing{
+const frc971::zeroing::AbsoluteEncoderZeroingEstimator::ZeroingConstants
+    TestIntakeSystemValues<
+        frc971::zeroing::AbsoluteEncoderZeroingEstimator>::kZeroing{
         kZeroingSampleSize, kEncoderIndexDifference, 0.0, 0.2, 0.0005, 20, 1.9};
 
 template <typename ZeroingEstimator>
@@ -83,29 +98,21 @@ TestIntakeSystemValues<ZeroingEstimator>::make_params() {
 template <typename SZSDPS, typename QueueGroup>
 class TestIntakeSystemSimulation {
  public:
-  typedef typename std::remove_reference<decltype(
-      *(static_cast<QueueGroup *>(NULL)->goal.MakeMessage().get()))>::type
-      GoalType;
-  typedef typename std::remove_reference<decltype(
-      *(static_cast<QueueGroup *>(NULL)->position.MakeMessage().get()))>::type
-      PositionType;
-  typedef typename std::remove_reference<decltype(
-      *(static_cast<QueueGroup *>(NULL)->status.MakeMessage().get()))>::type
-      StatusType;
-  typedef typename std::remove_reference<decltype(
-      *(static_cast<QueueGroup *>(NULL)->output.MakeMessage().get()))>::type
-      OutputType;
+  typedef typename QueueGroup::Goal GoalType;
+  typedef typename QueueGroup::Status StatusType;
+  typedef typename QueueGroup::Position PositionType;
+  typedef typename QueueGroup::Output OutputType;
 
   TestIntakeSystemSimulation(::aos::EventLoop *event_loop,
                              chrono::nanoseconds dt)
       : event_loop_(event_loop),
         dt_(dt),
         subsystem_position_sender_(
-            event_loop_->MakeSender<PositionType>(".position")),
+            event_loop_->MakeSender<PositionType>("/loop")),
         subsystem_status_fetcher_(
-            event_loop_->MakeFetcher<StatusType>(".status")),
+            event_loop_->MakeFetcher<StatusType>("/loop")),
         subsystem_output_fetcher_(
-            event_loop_->MakeFetcher<OutputType>(".output")),
+            event_loop_->MakeFetcher<OutputType>("/loop")),
         subsystem_plant_(new CappedTestPlant(
             ::frc971::control_loops::MakeTestIntakeSystemPlant())),
         subsystem_sensor_sim_(kEncoderIndexDifference) {
@@ -133,8 +140,8 @@ class TestIntakeSystemSimulation {
 
   void InitializeSensorSim(double start_pos);
 
-  double subsystem_position() const { return this->subsystem_plant_->X(0, 0); }
-  double subsystem_velocity() const { return this->subsystem_plant_->X(1, 0); }
+  double subsystem_position() const { return subsystem_plant_->X(0, 0); }
+  double subsystem_velocity() const { return subsystem_plant_->X(1, 0); }
 
   // Sets the difference between the commanded and applied powers.
   // This lets us test that the integrators work.
@@ -144,12 +151,13 @@ class TestIntakeSystemSimulation {
 
   // Sends a queue message with the position.
   void SendPositionMessage() {
-    typename ::aos::Sender<PositionType>::Message position =
-        subsystem_position_sender_.MakeMessage();
+    typename ::aos::Sender<PositionType>::Builder position =
+        subsystem_position_sender_.MakeBuilder();
 
-    this->subsystem_sensor_sim_.GetSensorValues(&position->position);
-
-    position.Send();
+    auto position_builder = position.template MakeBuilder<PositionType>();
+    position.Send(this->subsystem_sensor_sim_
+                      .template GetSensorValues<typename PositionType::Builder>(
+                          &position_builder));
   }
 
   void set_peak_subsystem_acceleration(double value) {
@@ -168,15 +176,15 @@ class TestIntakeSystemSimulation {
 
     const double voltage_check_subsystem =
         (static_cast<typename SZSDPS::State>(
-             subsystem_status_fetcher_->status.state) == SZSDPS::State::RUNNING)
+             subsystem_status_fetcher_->state()) == SZSDPS::State::RUNNING)
             ? kOperatingVoltage
             : kZeroingVoltage;
 
-    EXPECT_LE(::std::abs(subsystem_output_fetcher_->output),
+    EXPECT_LE(::std::abs(subsystem_output_fetcher_->output()),
               voltage_check_subsystem);
 
     ::Eigen::Matrix<double, 1, 1> subsystem_U;
-    subsystem_U << subsystem_output_fetcher_->output +
+    subsystem_U << subsystem_output_fetcher_->output() +
                        subsystem_plant_->voltage_offset();
     subsystem_plant_->Update(subsystem_U);
 
@@ -211,13 +219,14 @@ class TestIntakeSystemSimulation {
   double peak_subsystem_acceleration_ = 1e10;
   // The velocity limits to check for while moving.
   double peak_subsystem_velocity_ = 1e10;
+
+  flatbuffers::FlatBufferBuilder fbb;
 };
 
 template <>
 void TestIntakeSystemSimulation<
     SZSDPS_PotAndAbsEncoder,
-    StaticZeroingSingleDOFProfiledSubsystemPotAndAbsoluteEncoderTestQueueGroup>::
-    InitializeSensorSim(double start_pos) {
+    PotAndAbsoluteEncoderQueueGroup>::InitializeSensorSim(double start_pos) {
   subsystem_sensor_sim_.Initialize(
       start_pos, kNoiseScalar, 0.0,
       TestIntakeSystemValues<
@@ -226,9 +235,7 @@ void TestIntakeSystemSimulation<
 }
 
 template <>
-void TestIntakeSystemSimulation<
-    SZSDPS_AbsEncoder,
-    StaticZeroingSingleDOFProfiledSubsystemAbsoluteEncoderTestQueueGroup>::
+void TestIntakeSystemSimulation<SZSDPS_AbsEncoder, AbsoluteEncoderQueueGroup>::
     InitializeSensorSim(double start_pos) {
   subsystem_sensor_sim_.Initialize(
       start_pos, kNoiseScalar, 0.0,
@@ -240,46 +247,73 @@ void TestIntakeSystemSimulation<
 // Class to represent a module using a subsystem.  This lets us use event loops
 // to wrap it.
 template <typename QueueGroup, typename SZSDPS>
-class Subsystem : public ::aos::controls::ControlLoop<QueueGroup> {
+class Subsystem
+    : public ::aos::controls::ControlLoop<
+          typename QueueGroup::Goal, typename QueueGroup::Position,
+          typename QueueGroup::Status, typename QueueGroup::Output> {
  public:
-  typedef typename std::remove_reference<decltype(
-      *(static_cast<QueueGroup *>(NULL)->goal.MakeMessage().get()))>::type
-      GoalType;
-  typedef typename std::remove_reference<decltype(
-      *(static_cast<QueueGroup *>(NULL)->position.MakeMessage().get()))>::type
-      PositionType;
-  typedef typename std::remove_reference<decltype(
-      *(static_cast<QueueGroup *>(NULL)->status.MakeMessage().get()))>::type
-      StatusType;
-  typedef typename std::remove_reference<decltype(
-      *(static_cast<QueueGroup *>(NULL)->output.MakeMessage().get()))>::type
-      OutputType;
+  typedef typename QueueGroup::Goal GoalType;
+  typedef typename QueueGroup::Status StatusType;
+  typedef typename QueueGroup::Position PositionType;
+  typedef typename QueueGroup::Output OutputType;
 
   Subsystem(::aos::EventLoop *event_loop, const ::std::string &name)
-      : aos::controls::ControlLoop<QueueGroup>(event_loop, name),
+      : aos::controls::ControlLoop<
+            typename QueueGroup::Goal, typename QueueGroup::Position,
+            typename QueueGroup::Status, typename QueueGroup::Output>(
+            event_loop, name),
         subsystem_(TestIntakeSystemValues<
                    typename SZSDPS::ZeroingEstimator>::make_params()) {}
 
   void RunIteration(const GoalType *unsafe_goal, const PositionType *position,
-                    OutputType *output, StatusType *status) {
+                    typename ::aos::Sender<OutputType>::Builder *output,
+                    typename ::aos::Sender<StatusType>::Builder *status) {
     if (this->WasReset()) {
       AOS_LOG(ERROR, "WPILib reset, restarting\n");
       subsystem_.Reset();
     }
 
     // Convert one goal type to another...
-    StaticZeroingSingleDOFProfiledSubsystemGoal goal;
+    // TODO(austin): This mallocs...
+    FBB fbb;
+    ProfileParametersBuilder params_builder(fbb);
     if (unsafe_goal != nullptr ) {
-      goal.unsafe_goal = unsafe_goal->unsafe_goal;
-      goal.profile_params.max_velocity =
-          unsafe_goal->profile_params.max_velocity;
-      goal.profile_params.max_acceleration =
-          unsafe_goal->profile_params.max_acceleration;
+      if (unsafe_goal->profile_params() != nullptr) {
+        params_builder.add_max_velocity(
+            unsafe_goal->profile_params()->max_velocity());
+        params_builder.add_max_acceleration(
+            unsafe_goal->profile_params()->max_acceleration());
+      }
+
+      const auto params_builder_offset = params_builder.Finish();
+      StaticZeroingSingleDOFProfiledSubsystemGoalBuilder goal_builder(fbb);
+      goal_builder.add_unsafe_goal(unsafe_goal->unsafe_goal());
+      goal_builder.add_profile_params(params_builder_offset);
+      fbb.Finish(goal_builder.Finish());
+    } else {
+      params_builder.add_max_velocity(0.0);
+      params_builder.add_max_acceleration(0.0);
+      const auto params_builder_offset = params_builder.Finish();
+      StaticZeroingSingleDOFProfiledSubsystemGoalBuilder goal_builder(fbb);
+      goal_builder.add_profile_params(params_builder_offset);
+      fbb.Finish(goal_builder.Finish());
     }
 
-    subsystem_.Iterate(
-        unsafe_goal == nullptr ? nullptr : &goal, &position->position,
-        output == nullptr ? nullptr : &output->output, &status->status);
+    double output_voltage;
+
+    flatbuffers::Offset<StatusType> status_offset = subsystem_.Iterate(
+        unsafe_goal == nullptr
+            ? nullptr
+            : flatbuffers::GetRoot<StaticZeroingSingleDOFProfiledSubsystemGoal>(
+                  fbb.GetBufferPointer()),
+        position, output == nullptr ? nullptr : &output_voltage, status->fbb());
+    status->Send(status_offset);
+    if (output != nullptr) {
+      typename OutputType::Builder output_builder =
+          output->template MakeBuilder<OutputType>();
+      output_builder.add_output(output_voltage);
+      output->Send(output_builder.Finish());
+    }
   }
 
   SZSDPS *subsystem() { return &subsystem_; }
@@ -296,29 +330,58 @@ class IntakeSystemTest : public ::aos::testing::ControlLoopTest {
   using ZeroingEstimator = typename SZSDPS::ZeroingEstimator;
   using ProfiledJointStatus = typename SZSDPS::ProfiledJointStatus;
 
-  typedef typename std::remove_reference<decltype(
-      *(static_cast<QueueGroup *>(NULL)->goal.MakeMessage().get()))>::type
-      GoalType;
-  typedef typename std::remove_reference<decltype(
-      *(static_cast<QueueGroup *>(NULL)->position.MakeMessage().get()))>::type
-      PositionType;
-  typedef typename std::remove_reference<decltype(
-      *(static_cast<QueueGroup *>(NULL)->status.MakeMessage().get()))>::type
-      StatusType;
-  typedef typename std::remove_reference<decltype(
-      *(static_cast<QueueGroup *>(NULL)->output.MakeMessage().get()))>::type
-      OutputType;
+  typedef typename QueueGroup::Goal GoalType;
+  typedef typename QueueGroup::Status StatusType;
+  typedef typename QueueGroup::Position PositionType;
+  typedef typename QueueGroup::Output OutputType;
 
   IntakeSystemTest()
-      : ::aos::testing::ControlLoopTest(chrono::microseconds(5050)),
+      : ::aos::testing::ControlLoopTest(
+            "{\n"
+            "  \"channels\": [ \n"
+            "    {\n"
+            "      \"name\": \"/aos\",\n"
+            "      \"type\": \"aos.JoystickState\"\n"
+            "    },\n"
+            "    {\n"
+            "      \"name\": \"/aos\",\n"
+            "      \"type\": \"aos.RobotState\"\n"
+            "    },\n"
+            "    {\n"
+            "      \"name\": \"/loop\",\n"
+            "      \"type\": \"frc971.control_loops.zeroing.testing.SubsystemGoal\"\n"
+            "    },\n"
+            "    {\n"
+            "      \"name\": \"/loop\",\n"
+            "      \"type\": \"frc971.control_loops.zeroing.testing.SubsystemOutput\"\n"
+            "    },\n"
+            "    {\n"
+            "      \"name\": \"/loop\",\n"
+            "      \"type\": \"frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus\"\n"
+            "    },\n"
+            "    {\n"
+            "      \"name\": \"/loop\",\n"
+            "      \"type\": \"frc971.AbsolutePosition\"\n"
+            "    },\n"
+            "    {\n"
+            "      \"name\": \"/loop\",\n"
+            "      \"type\": \"frc971.PotAndAbsolutePosition\"\n"
+            "    },\n"
+            "    {\n"
+            "      \"name\": \"/loop\",\n"
+            "      \"type\": \"frc971.control_loops.AbsoluteEncoderProfiledJointStatus\"\n"
+            "    }\n"
+            "  ]\n"
+            "}\n",
+            chrono::microseconds(5050)),
         test_event_loop_(MakeEventLoop()),
-        subsystem_goal_sender_(test_event_loop_->MakeSender<GoalType>(".goal")),
+        subsystem_goal_sender_(test_event_loop_->MakeSender<GoalType>("/loop")),
         subsystem_goal_fetcher_(
-            test_event_loop_->MakeFetcher<GoalType>(".goal")),
+            test_event_loop_->MakeFetcher<GoalType>("/loop")),
         subsystem_status_fetcher_(
-            test_event_loop_->MakeFetcher<StatusType>(".status")),
+            test_event_loop_->MakeFetcher<StatusType>("/loop")),
         subsystem_event_loop_(MakeEventLoop()),
-        subsystem_(subsystem_event_loop_.get(), ""),
+        subsystem_(subsystem_event_loop_.get(), "/loop"),
         subsystem_plant_event_loop_(MakeEventLoop()),
         subsystem_plant_(subsystem_plant_event_loop_.get(), dt()) {}
 
@@ -327,20 +390,20 @@ class IntakeSystemTest : public ::aos::testing::ControlLoopTest {
     EXPECT_TRUE(subsystem_goal_fetcher_.get() != nullptr);
     EXPECT_TRUE(subsystem_status_fetcher_.Fetch());
 
-    EXPECT_NEAR(subsystem_goal_fetcher_->unsafe_goal,
-                subsystem_status_fetcher_->status.position, 0.001);
-    EXPECT_NEAR(subsystem_goal_fetcher_->unsafe_goal,
+    EXPECT_NEAR(subsystem_goal_fetcher_->unsafe_goal(),
+                subsystem_status_fetcher_->position(), 0.001);
+    EXPECT_NEAR(subsystem_goal_fetcher_->unsafe_goal(),
                 subsystem_plant_.subsystem_position(), 0.001);
-    EXPECT_NEAR(subsystem_status_fetcher_->status.velocity, 0, 0.001);
+    EXPECT_NEAR(subsystem_status_fetcher_->velocity(), 0, 0.001);
   }
 
   SZSDPS *subsystem() { return subsystem_.subsystem(); }
 
   void set_peak_subsystem_acceleration(double value) {
-    set_peak_subsystem_acceleration(value);
+    subsystem_plant_.set_peak_subsystem_acceleration(value);
   }
   void set_peak_subsystem_velocity(double value) {
-    set_peak_subsystem_velocity(value);
+    subsystem_plant_.set_peak_subsystem_velocity(value);
   }
 
   ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
@@ -363,9 +426,9 @@ TYPED_TEST_P(IntakeSystemTest, DoesNothing) {
   this->SetEnabled(true);
   // Intake system uses 0.05 to test for 0.
   {
-    auto message = this->subsystem_goal_sender_.MakeMessage();
-    message->unsafe_goal = 0.05;
-    EXPECT_TRUE(message.Send());
+    auto message = this->subsystem_goal_sender_.MakeBuilder();
+    EXPECT_TRUE(message.Send(
+        zeroing::testing::CreateSubsystemGoal(*message.fbb(), 0.05)));
   }
   this->RunFor(chrono::seconds(5));
 
@@ -377,11 +440,13 @@ TYPED_TEST_P(IntakeSystemTest, ReachesGoal) {
   this->SetEnabled(true);
   // Set a reasonable goal.
   {
-    auto message = this->subsystem_goal_sender_.MakeMessage();
-    message->unsafe_goal = 0.1;
-    message->profile_params.max_velocity = 1;
-    message->profile_params.max_acceleration = 0.5;
-    EXPECT_TRUE(message.Send());
+    auto message = this->subsystem_goal_sender_.MakeBuilder();
+    auto profile_builder =
+        message.template MakeBuilder<frc971::ProfileParameters>();
+    profile_builder.add_max_velocity(1);
+    profile_builder.add_max_acceleration(0.5);
+    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
+        *message.fbb(), 0.10, profile_builder.Finish())));
   }
 
   // Give it a lot of time to get there.
@@ -396,9 +461,9 @@ TYPED_TEST_P(IntakeSystemTest, SaturationTest) {
   this->SetEnabled(true);
   // Zero it before we move.
   {
-    auto message = this->subsystem_goal_sender_.MakeMessage();
-    message->unsafe_goal = kRange.upper;
-    EXPECT_TRUE(message.Send());
+    auto message = this->subsystem_goal_sender_.MakeBuilder();
+    EXPECT_TRUE(message.Send(
+        zeroing::testing::CreateSubsystemGoal(*message.fbb(), kRange.upper)));
   }
   this->RunFor(chrono::seconds(8));
   this->VerifyNearGoal();
@@ -406,11 +471,12 @@ TYPED_TEST_P(IntakeSystemTest, SaturationTest) {
   // Try a low acceleration move with a high max velocity and verify the
   // acceleration is capped like expected.
   {
-    auto message = this->subsystem_goal_sender_.MakeMessage();
-    message->unsafe_goal = kRange.lower;
-    message->profile_params.max_velocity = 20.0;
-    message->profile_params.max_acceleration = 0.1;
-    EXPECT_TRUE(message.Send());
+    auto message = this->subsystem_goal_sender_.MakeBuilder();
+    auto profile_builder = message.template MakeBuilder<frc971::ProfileParameters>();
+    profile_builder.add_max_velocity(20.0);
+    profile_builder.add_max_acceleration(0.1);
+    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
+        *message.fbb(), kRange.lower, profile_builder.Finish())));
   }
   this->set_peak_subsystem_velocity(23.0);
   this->set_peak_subsystem_acceleration(0.2);
@@ -420,11 +486,13 @@ TYPED_TEST_P(IntakeSystemTest, SaturationTest) {
 
   // Now do a high acceleration move with a low velocity limit.
   {
-    auto message = this->subsystem_goal_sender_.MakeMessage();
-    message->unsafe_goal = kRange.upper;
-    message->profile_params.max_velocity = 0.1;
-    message->profile_params.max_acceleration = 100;
-    EXPECT_TRUE(message.Send());
+    auto message = this->subsystem_goal_sender_.MakeBuilder();
+    auto profile_builder =
+        message.template MakeBuilder<frc971::ProfileParameters>();
+    profile_builder.add_max_velocity(0.1);
+    profile_builder.add_max_acceleration(100.0);
+    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
+        *message.fbb(), kRange.upper, profile_builder.Finish())));
   }
 
   this->set_peak_subsystem_velocity(0.2);
@@ -441,34 +509,34 @@ TYPED_TEST_P(IntakeSystemTest, RespectsRange) {
 
   // Set some ridiculous goals to test upper limits.
   {
-    auto message = this->subsystem_goal_sender_.MakeMessage();
-    message->unsafe_goal = 100.0;
-    message->profile_params.max_velocity = 1;
-    message->profile_params.max_acceleration = 0.5;
-    EXPECT_TRUE(message.Send());
+    auto message = this->subsystem_goal_sender_.MakeBuilder();
+    auto profile_builder = message.template MakeBuilder<frc971::ProfileParameters>();
+    profile_builder.add_max_velocity(1.0);
+    profile_builder.add_max_acceleration(0.5);
+    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
+        *message.fbb(), 100.0, profile_builder.Finish())));
   }
   this->RunFor(chrono::seconds(10));
 
   // Check that we are near our soft limit.
   EXPECT_TRUE(this->subsystem_status_fetcher_.Fetch());
-  EXPECT_NEAR(kRange.upper, this->subsystem_status_fetcher_->status.position,
-              0.001);
+  EXPECT_NEAR(kRange.upper, this->subsystem_status_fetcher_->position(), 0.001);
 
   // Set some ridiculous goals to test lower limits.
   {
-    auto message = this->subsystem_goal_sender_.MakeMessage();
-    message->unsafe_goal = -100.0;
-    message->profile_params.max_velocity = 1;
-    message->profile_params.max_acceleration = 0.5;
-    EXPECT_TRUE(message.Send());
+    auto message = this->subsystem_goal_sender_.MakeBuilder();
+    auto profile_builder = message.template MakeBuilder<frc971::ProfileParameters>();
+    profile_builder.add_max_velocity(1.0);
+    profile_builder.add_max_acceleration(0.5);
+    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
+        *message.fbb(), -100.0, profile_builder.Finish())));
   }
 
   this->RunFor(chrono::seconds(10));
 
   // Check that we are near our soft limit.
   EXPECT_TRUE(this->subsystem_status_fetcher_.Fetch());
-  EXPECT_NEAR(kRange.lower, this->subsystem_status_fetcher_->status.position,
-              0.001);
+  EXPECT_NEAR(kRange.lower, this->subsystem_status_fetcher_->position(), 0.001);
 }
 
 // Tests that the subsystem loop zeroes when run for a while.
@@ -476,11 +544,12 @@ TYPED_TEST_P(IntakeSystemTest, ZeroTest) {
   this->SetEnabled(true);
 
   {
-    auto message = this->subsystem_goal_sender_.MakeMessage();
-    message->unsafe_goal = kRange.upper;
-    message->profile_params.max_velocity = 1;
-    message->profile_params.max_acceleration = 0.5;
-    EXPECT_TRUE(message.Send());
+    auto message = this->subsystem_goal_sender_.MakeBuilder();
+    auto profile_builder = message.template MakeBuilder<frc971::ProfileParameters>();
+    profile_builder.add_max_velocity(1.0);
+    profile_builder.add_max_acceleration(0.5);
+    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
+        *message.fbb(), kRange.upper, profile_builder.Finish())));
   }
 
   this->RunFor(chrono::seconds(10));
@@ -500,9 +569,9 @@ TYPED_TEST_P(IntakeSystemTest, LowerHardstopStartup) {
   this->SetEnabled(true);
   this->subsystem_plant_.InitializeSubsystemPosition(kRange.lower_hard);
   {
-    auto message = this->subsystem_goal_sender_.MakeMessage();
-    message->unsafe_goal = kRange.upper;
-    EXPECT_TRUE(message.Send());
+    auto message = this->subsystem_goal_sender_.MakeBuilder();
+    EXPECT_TRUE(message.Send(
+        zeroing::testing::CreateSubsystemGoal(*message.fbb(), kRange.upper)));
   }
   this->RunFor(chrono::seconds(10));
 
@@ -515,9 +584,9 @@ TYPED_TEST_P(IntakeSystemTest, UpperHardstopStartup) {
 
   this->subsystem_plant_.InitializeSubsystemPosition(kRange.upper_hard);
   {
-    auto message = this->subsystem_goal_sender_.MakeMessage();
-    message->unsafe_goal = kRange.upper;
-    EXPECT_TRUE(message.Send());
+    auto message = this->subsystem_goal_sender_.MakeBuilder();
+    EXPECT_TRUE(message.Send(
+        zeroing::testing::CreateSubsystemGoal(*message.fbb(), kRange.upper)));
   }
   this->RunFor(chrono::seconds(10));
 
@@ -530,9 +599,9 @@ TYPED_TEST_P(IntakeSystemTest, ResetTest) {
 
   this->subsystem_plant_.InitializeSubsystemPosition(kRange.upper);
   {
-    auto message = this->subsystem_goal_sender_.MakeMessage();
-    message->unsafe_goal = kRange.upper - 0.1;
-    EXPECT_TRUE(message.Send());
+    auto message = this->subsystem_goal_sender_.MakeBuilder();
+    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
+        *message.fbb(), kRange.upper - 0.1)));
   }
   this->RunFor(chrono::seconds(10));
 
@@ -554,9 +623,9 @@ TYPED_TEST_P(IntakeSystemTest, ResetTest) {
 // Tests that the internal goals don't change while disabled.
 TYPED_TEST_P(IntakeSystemTest, DisabledGoalTest) {
   {
-    auto message = this->subsystem_goal_sender_.MakeMessage();
-    message->unsafe_goal = kRange.lower + 0.03;
-    EXPECT_TRUE(message.Send());
+    auto message = this->subsystem_goal_sender_.MakeBuilder();
+    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
+        *message.fbb(), kRange.lower + 0.03)));
   }
 
   // Checks that the subsystem has not moved from its starting position at 0
@@ -572,9 +641,9 @@ TYPED_TEST_P(IntakeSystemTest, DisabledGoalTest) {
 // Tests that zeroing while disabled works.
 TYPED_TEST_P(IntakeSystemTest, DisabledZeroTest) {
   {
-    auto message = this->subsystem_goal_sender_.MakeMessage();
-    message->unsafe_goal = kRange.lower;
-    EXPECT_TRUE(message.Send());
+    auto message = this->subsystem_goal_sender_.MakeBuilder();
+    EXPECT_TRUE(message.Send(
+        zeroing::testing::CreateSubsystemGoal(*message.fbb(), kRange.lower)));
   }
 
   // Run disabled for 2 seconds
@@ -591,16 +660,16 @@ TYPED_TEST_P(IntakeSystemTest, DisabledZeroTest) {
 TYPED_TEST_P(IntakeSystemTest, MinPositionTest) {
   this->SetEnabled(true);
   {
-    auto message = this->subsystem_goal_sender_.MakeMessage();
-    message->unsafe_goal = kRange.lower_hard;
-    EXPECT_TRUE(message.Send());
+    auto message = this->subsystem_goal_sender_.MakeBuilder();
+    EXPECT_TRUE(message.Send(
+        zeroing::testing::CreateSubsystemGoal(*message.fbb(), kRange.lower_hard)));
   }
   this->RunFor(chrono::seconds(2));
 
   // Check that kRange.lower is used as the default min position
   EXPECT_EQ(this->subsystem()->goal(0), kRange.lower);
   EXPECT_TRUE(this->subsystem_status_fetcher_.Fetch());
-  EXPECT_NEAR(kRange.lower, this->subsystem_status_fetcher_->status.position,
+  EXPECT_NEAR(kRange.lower, this->subsystem_status_fetcher_->position(),
               0.001);
 
   // Set min position and check that the subsystem increases to that position
@@ -608,7 +677,7 @@ TYPED_TEST_P(IntakeSystemTest, MinPositionTest) {
   this->RunFor(chrono::seconds(2));
   EXPECT_EQ(this->subsystem()->goal(0), kRange.lower + 0.05);
   EXPECT_TRUE(this->subsystem_status_fetcher_.Fetch());
-  EXPECT_NEAR(kRange.lower + 0.05, this->subsystem_status_fetcher_->status.position,
+  EXPECT_NEAR(kRange.lower + 0.05, this->subsystem_status_fetcher_->position(),
               0.001);
 
   // Clear min position and check that the subsystem returns to kRange.lower
@@ -616,7 +685,7 @@ TYPED_TEST_P(IntakeSystemTest, MinPositionTest) {
   this->RunFor(chrono::seconds(2));
   EXPECT_EQ(this->subsystem()->goal(0), kRange.lower);
   EXPECT_TRUE(this->subsystem_status_fetcher_.Fetch());
-  EXPECT_NEAR(kRange.lower, this->subsystem_status_fetcher_->status.position,
+  EXPECT_NEAR(kRange.lower, this->subsystem_status_fetcher_->position(),
               0.001);
 }
 
@@ -625,16 +694,16 @@ TYPED_TEST_P(IntakeSystemTest, MaxPositionTest) {
   this->SetEnabled(true);
 
   {
-    auto message = this->subsystem_goal_sender_.MakeMessage();
-    message->unsafe_goal = kRange.upper_hard;
-    EXPECT_TRUE(message.Send());
+    auto message = this->subsystem_goal_sender_.MakeBuilder();
+    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
+        *message.fbb(), kRange.upper_hard)));
   }
   this->RunFor(chrono::seconds(2));
 
   // Check that kRange.upper is used as the default max position
   EXPECT_EQ(this->subsystem()->goal(0), kRange.upper);
   EXPECT_TRUE(this->subsystem_status_fetcher_.Fetch());
-  EXPECT_NEAR(kRange.upper, this->subsystem_status_fetcher_->status.position,
+  EXPECT_NEAR(kRange.upper, this->subsystem_status_fetcher_->position(),
               0.001);
 
   // Set max position and check that the subsystem lowers to that position
@@ -642,7 +711,7 @@ TYPED_TEST_P(IntakeSystemTest, MaxPositionTest) {
   this->RunFor(chrono::seconds(2));
   EXPECT_EQ(this->subsystem()->goal(0), kRange.upper - 0.05);
   EXPECT_TRUE(this->subsystem_status_fetcher_.Fetch());
-  EXPECT_NEAR(kRange.upper - 0.05, this->subsystem_status_fetcher_->status.position,
+  EXPECT_NEAR(kRange.upper - 0.05, this->subsystem_status_fetcher_->position(),
               0.001);
 
   // Clear max position and check that the subsystem returns to kRange.upper
@@ -650,7 +719,7 @@ TYPED_TEST_P(IntakeSystemTest, MaxPositionTest) {
   this->RunFor(chrono::seconds(2));
   EXPECT_EQ(this->subsystem()->goal(0), kRange.upper);
   EXPECT_TRUE(this->subsystem_status_fetcher_.Fetch());
-  EXPECT_NEAR(kRange.upper, this->subsystem_status_fetcher_->status.position,
+  EXPECT_NEAR(kRange.upper, this->subsystem_status_fetcher_->position(),
               0.001);
 }
 

@@ -4,8 +4,8 @@
 #include <unistd.h>
 
 #include "absl/strings/string_view.h"
-#include "aos/logging/logging.h"
 #include "aos/scoped/scoped_fd.h"
+#include "glog/logging.h"
 
 namespace aos {
 namespace util {
@@ -13,22 +13,36 @@ namespace util {
 ::std::string ReadFileToStringOrDie(const absl::string_view filename) {
   ::std::string r;
   ScopedFD fd(open(::std::string(filename).c_str(), O_RDONLY));
-  if (fd.get() == -1) {
-    AOS_PLOG(FATAL, "opening %*s", static_cast<int>(filename.size()),
-             filename.data());
-  }
+  PCHECK(fd.get() != -1) << ": opening " << filename;
   while (true) {
     char buffer[1024];
     const ssize_t result = read(fd.get(), buffer, sizeof(buffer));
-    if (result < 0) {
-      AOS_PLOG(FATAL, "reading from %*s", static_cast<int>(filename.size()),
-               filename.data());
-    } else if (result == 0) {
+    PCHECK(result >= 0) << ": reading from " << filename;
+    if (result == 0) {
       break;
     }
     r.append(buffer, result);
   }
   return r;
+}
+
+void WriteStringToFileOrDie(const absl::string_view filename,
+                            const absl::string_view contents) {
+  ::std::string r;
+  ScopedFD fd(open(::std::string(filename).c_str(),
+                   O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU));
+  PCHECK(fd.get() != -1) << ": opening " << filename;
+  size_t size_written = 0;
+  while (size_written != contents.size()) {
+    const ssize_t result = write(fd.get(), contents.data() + size_written,
+                                 contents.size() - size_written);
+    PCHECK(result >= 0) << ": reading from " << filename;
+    if (result == 0) {
+      break;
+    }
+
+    size_written += result;
+  }
 }
 
 }  // namespace util

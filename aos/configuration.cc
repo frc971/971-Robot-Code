@@ -22,11 +22,6 @@ namespace aos {
 
 // Define the compare and equal operators for Channel and Application so we can
 // insert them in the btree below.
-//
-// These are not in headers because they are only comparing part of the
-// flatbuffer, and it seems weird to expose that as *the* compare operator.  And
-// I can't put them in an anonymous namespace because they wouldn't be found
-// that way by the btree.
 bool operator<(const FlatbufferDetachedBuffer<Channel> &lhs,
                const FlatbufferDetachedBuffer<Channel> &rhs) {
   int name_compare = lhs.message().name()->string_view().compare(
@@ -154,8 +149,12 @@ absl::string_view ExtractFolder(const absl::string_view filename) {
 
 FlatbufferDetachedBuffer<Configuration> ReadConfig(
     const absl::string_view path, absl::btree_set<std::string> *visited_paths) {
-  FlatbufferDetachedBuffer<Configuration> config(JsonToFlatbuffer(
-      util::ReadFileToStringOrDie(path), ConfigurationTypeTable()));
+  flatbuffers::DetachedBuffer buffer = JsonToFlatbuffer(
+      util::ReadFileToStringOrDie(path), ConfigurationTypeTable());
+
+  CHECK_GT(buffer.size(), 0u) << ": Failed to parse JSON file";
+
+  FlatbufferDetachedBuffer<Configuration> config(std::move(buffer));
   // Depth first.  Take the following example:
   //
   // config1.json:
@@ -222,7 +221,54 @@ FlatbufferDetachedBuffer<Configuration> ReadConfig(
   return config;
 }
 
-// Remove duplicate entries, and handle overrides.
+// Compares (c < p) a channel, and a name, type tuple.
+bool CompareChannels(const Channel *c,
+                     ::std::pair<absl::string_view, absl::string_view> p) {
+  int name_compare = c->name()->string_view().compare(p.first);
+  if (name_compare == 0) {
+    return c->type()->string_view() < p.second;
+  } else if (name_compare < 0) {
+    return true;
+  } else {
+    return false;
+  }
+};
+
+// Compares for equality (c == p) a channel, and a name, type tuple.
+bool EqualsChannels(const Channel *c,
+                     ::std::pair<absl::string_view, absl::string_view> p) {
+  return c->name()->string_view() == p.first &&
+         c->type()->string_view() == p.second;
+}
+
+// Compares (c < p) an application, and a name;
+bool CompareApplications(const Application *a, absl::string_view name) {
+  return a->name()->string_view() < name;
+};
+
+// Compares for equality (c == p) an application, and a name;
+bool EqualsApplications(const Application *a, absl::string_view name) {
+  return a->name()->string_view() == name;
+}
+
+// Maps name for the provided maps.  Modifies name.
+void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
+                absl::string_view *name) {
+  // For the same reason we merge configs in reverse order, we want to process
+  // maps in reverse order.  That lets the outer config overwrite channels from
+  // the inner configs.
+  for (auto i = maps->rbegin(); i != maps->rend(); ++i) {
+    if (i->has_match() && i->match()->has_name() && i->has_rename() &&
+        i->rename()->has_name() && i->match()->name()->string_view() == *name) {
+      VLOG(1) << "Renamed \"" << *name << "\" to \""
+              << i->rename()->name()->string_view() << "\"";
+      *name = i->rename()->name()->string_view();
+    }
+  }
+}
+
+}  // namespace
+
 FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
     const Flatbuffer<Configuration> &config) {
   // Store all the channels in a sorted set.  This lets us track channels we
@@ -316,54 +362,6 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   return fbb.Release();
 }
 
-// Compares (c < p) a channel, and a name, type tuple.
-bool CompareChannels(const Channel *c,
-                     ::std::pair<absl::string_view, absl::string_view> p) {
-  int name_compare = c->name()->string_view().compare(p.first);
-  if (name_compare == 0) {
-    return c->type()->string_view() < p.second;
-  } else if (name_compare < 0) {
-    return true;
-  } else {
-    return false;
-  }
-};
-
-// Compares for equality (c == p) a channel, and a name, type tuple.
-bool EqualsChannels(const Channel *c,
-                     ::std::pair<absl::string_view, absl::string_view> p) {
-  return c->name()->string_view() == p.first &&
-         c->type()->string_view() == p.second;
-}
-
-// Compares (c < p) an application, and a name;
-bool CompareApplications(const Application *a, absl::string_view name) {
-  return a->name()->string_view() < name;
-};
-
-// Compares for equality (c == p) an application, and a name;
-bool EqualsApplications(const Application *a, absl::string_view name) {
-  return a->name()->string_view() == name;
-}
-
-// Maps name for the provided maps.  Modifies name.
-void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
-                absl::string_view *name) {
-  // For the same reason we merge configs in reverse order, we want to process
-  // maps in reverse order.  That lets the outer config overwrite channels from
-  // the inner configs.
-  for (auto i = maps->rbegin(); i != maps->rend(); ++i) {
-    if (i->has_match() && i->match()->has_name() && i->has_rename() &&
-        i->rename()->has_name() && i->match()->name()->string_view() == *name) {
-      VLOG(1) << "Renamed \"" << *name << "\" to \""
-              << i->rename()->name()->string_view() << "\"";
-      *name = i->rename()->name()->string_view();
-    }
-  }
-}
-
-}  // namespace
-
 const char *GetRootDirectory() {
   static  char* root_dir;// return value
   static absl::once_flag once_;
@@ -417,6 +415,9 @@ const Channel *GetChannel(const Configuration *config, absl::string_view name,
     HandleMaps(config->maps(), &name);
   }
 
+  VLOG(1) << "Acutally looking up { \"name\": \"" << name << "\", \"type\": \""
+          << type << "\" }";
+
   // Then look for the channel.
   auto channel_iterator =
       std::lower_bound(config->channels()->cbegin(),
@@ -433,6 +434,97 @@ const Channel *GetChannel(const Configuration *config, absl::string_view name,
             << type << "\" }";
     return nullptr;
   }
+}
+
+FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
+    const Flatbuffer<Configuration> &config,
+    const std::vector<aos::FlatbufferString<reflection::Schema>> &schemas) {
+  flatbuffers::FlatBufferBuilder fbb;
+  fbb.ForceDefaults(1);
+
+  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Channel>>>
+      channels_offset;
+  if (config.message().has_channels()) {
+    std::vector<flatbuffers::Offset<Channel>> channel_offsets;
+    for (const Channel *c : *config.message().channels()) {
+      flatbuffers::FlatBufferBuilder channel_fbb;
+      channel_fbb.ForceDefaults(1);
+
+      // Search for a schema with a matching type.
+      const aos::FlatbufferString<reflection::Schema> *found_schema = nullptr;
+      for (const aos::FlatbufferString<reflection::Schema> &schema: schemas) {
+        if (schema.message().root_table() != nullptr) {
+          if (schema.message().root_table()->name()->string_view() ==
+              c->type()->string_view()) {
+            found_schema = &schema;
+          }
+        }
+      }
+
+      CHECK(found_schema != nullptr)
+          << ": Failed to find schema for " << FlatbufferToJson(c);
+
+      // The following is wasteful, but works.
+      //
+      // Copy it into a Channel object by creating an object with only the
+      // schema populated and merge that into the current channel.
+      flatbuffers::Offset<reflection::Schema> schema_offset =
+          CopyFlatBuffer<reflection::Schema>(&found_schema->message(),
+                                             &channel_fbb);
+      Channel::Builder channel_builder(channel_fbb);
+      channel_builder.add_schema(schema_offset);
+      channel_fbb.Finish(channel_builder.Finish());
+      FlatbufferDetachedBuffer<Channel> channel_schema_flatbuffer(
+          channel_fbb.Release());
+
+      FlatbufferDetachedBuffer<Channel> merged_channel(
+          MergeFlatBuffers(channel_schema_flatbuffer, CopyFlatBuffer(c)));
+
+      channel_offsets.emplace_back(
+          CopyFlatBuffer<Channel>(&merged_channel.message(), &fbb));
+    }
+    channels_offset = fbb.CreateVector(channel_offsets);
+  }
+
+  // Copy the applications and maps unmodified.
+  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Application>>>
+      applications_offset;
+  {
+    ::std::vector<flatbuffers::Offset<Application>> applications_offsets;
+    if (config.message().has_applications()) {
+      for (const Application *a : *config.message().applications()) {
+        applications_offsets.emplace_back(CopyFlatBuffer<Application>(a, &fbb));
+      }
+    }
+    applications_offset = fbb.CreateVector(applications_offsets);
+  }
+
+  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Map>>>
+      maps_offset;
+  {
+    ::std::vector<flatbuffers::Offset<Map>> map_offsets;
+    if (config.message().has_maps()) {
+      for (const Map *m : *config.message().maps()) {
+        map_offsets.emplace_back(CopyFlatBuffer<Map>(m, &fbb));
+      }
+      maps_offset = fbb.CreateVector(map_offsets);
+    }
+  }
+
+  // Now insert eerything else in unmodified.
+  ConfigurationBuilder configuration_builder(fbb);
+  if (config.message().has_channels()) {
+    configuration_builder.add_channels(channels_offset);
+  }
+  if (config.message().has_maps()) {
+    configuration_builder.add_maps(maps_offset);
+  }
+  if (config.message().has_applications()) {
+    configuration_builder.add_applications(applications_offset);
+  }
+
+  fbb.Finish(configuration_builder.Finish());
+  return fbb.Release();
 }
 
 }  // namespace configuration

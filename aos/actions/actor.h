@@ -7,9 +7,9 @@
 #include <chrono>
 #include <functional>
 
+#include "aos/actions/actions_generated.h"
 #include "aos/controls/control_loop.h"
 #include "aos/logging/logging.h"
-#include "aos/logging/queue_logging.h"
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
 
@@ -20,29 +20,27 @@ namespace actions {
 template <class T>
 class ActorBase {
  public:
+  typedef T GoalType;
   typedef typename std::remove_reference<decltype(
-      *(static_cast<T *>(nullptr)->goal.MakeMessage().get()))>::type GoalType;
-  typedef typename std::remove_reference<decltype(*(
-      static_cast<T *>(nullptr)->status.MakeMessage().get()))>::type StatusType;
-  typedef typename std::remove_reference<decltype(
-      static_cast<GoalType *>(nullptr)->params)>::type ParamType;
+      *static_cast<GoalType *>(nullptr)->params())>::type ParamType;
 
   ActorBase(::aos::EventLoop *event_loop, const ::std::string &name)
       : event_loop_(event_loop),
-        status_sender_(event_loop->MakeSender<StatusType>(name + ".status")),
-        goal_fetcher_(event_loop->MakeFetcher<GoalType>(name + ".goal")) {
+        status_sender_(event_loop->MakeSender<Status>(name)),
+        goal_fetcher_(event_loop->MakeFetcher<GoalType>(name)) {
     AOS_LOG(INFO, "Constructing action %s\n", name.c_str());
-    event_loop->MakeWatcher(name + ".goal",
+    event_loop->MakeWatcher(name,
                             [this](const GoalType &goal) { HandleGoal(goal); });
 
     // Send out an inital status saying we aren't running to wake up any users
     // who might be waiting forever for the previous action.
     event_loop->OnRun([this]() {
-      auto status_message = status_sender_.MakeMessage();
-      status_message->running = 0;
-      status_message->last_running = 0;
-      status_message->success = !abort_;
-      if (!status_message.Send()) {
+      auto builder = status_sender_.MakeBuilder();
+      Status::Builder status_builder = builder.template MakeBuilder<Status>();
+      status_builder.add_running(0);
+      status_builder.add_last_running(0);
+      status_builder.add_success(!abort_);
+      if (!builder.Send(status_builder.Finish())) {
         AOS_LOG(ERROR, "Failed to send the status.\n");
       }
     });
@@ -99,7 +97,7 @@ class ActorBase {
   // Will return true if finished or asked to cancel.
   // Will return false if it failed accomplish its goal
   // due to a problem with the system.
-  virtual bool RunAction(const ParamType& params) = 0;
+  virtual bool RunAction(const ParamType *params) = 0;
 
   void HandleGoal(const GoalType &goal);
 
@@ -110,7 +108,7 @@ class ActorBase {
 
   uint32_t current_id_ = 0;
 
-  ::aos::Sender<StatusType> status_sender_;
+  ::aos::Sender<Status> status_sender_;
   ::aos::Fetcher<GoalType> goal_fetcher_;
 
   State state_ = State::WAITING_FOR_ACTION;
@@ -118,48 +116,51 @@ class ActorBase {
 
 template <class T>
 void ActorBase<T>::HandleGoal(const GoalType &goal) {
-  AOS_LOG_STRUCT(DEBUG, "action goal", goal);
+  VLOG(1) << "action goal " << FlatbufferToJson(&goal);
   switch (state_) {
     case State::WAITING_FOR_ACTION:
-      if (goal.run) {
+      if (goal.run()) {
         state_ = State::RUNNING_ACTION;
       } else {
-        auto status_message = status_sender_.MakeMessage();
-        status_message->running = 0;
-        status_message->last_running = 0;
-        status_message->success = !abort_;
-        if (!status_message.Send()) {
+        auto builder = status_sender_.MakeBuilder();
+        Status::Builder status_builder = builder.template MakeBuilder<Status>();
+        status_builder.add_running(0);
+        status_builder.add_last_running(0);
+        status_builder.add_success(!abort_);
+        if (!builder.Send(status_builder.Finish())) {
           AOS_LOG(ERROR, "Failed to send the status.\n");
         }
         break;
       }
     case State::RUNNING_ACTION: {
       ++running_count_;
-      const uint32_t running_id = goal.run;
+      const uint32_t running_id = goal.run();
       current_id_ = running_id;
       AOS_LOG(INFO, "Starting action %" PRIx32 "\n", running_id);
       {
-        auto status_message = status_sender_.MakeMessage();
-        status_message->running = running_id;
-        status_message->last_running = 0;
-        status_message->success = !abort_;
-        if (!status_message.Send()) {
+        auto builder = status_sender_.MakeBuilder();
+        Status::Builder status_builder = builder.template MakeBuilder<Status>();
+        status_builder.add_running(running_id);
+        status_builder.add_last_running(0);
+        status_builder.add_success(!abort_);
+        if (!builder.Send(status_builder.Finish())) {
           AOS_LOG(ERROR, "Failed to send the status.\n");
         }
       }
 
-      AOS_LOG_STRUCT(INFO, "goal", goal);
-      abort_ = !RunAction(goal.params);
+      VLOG(1) << "goal " << FlatbufferToJson(&goal);
+      abort_ = !RunAction(goal.params());
       AOS_LOG(INFO, "Done with action %" PRIx32 "\n", running_id);
       current_id_ = 0u;
 
       {
-        auto status_message = status_sender_.MakeMessage();
-        status_message->running = 0;
-        status_message->last_running = running_id;
-        status_message->success = !abort_;
+        auto builder = status_sender_.MakeBuilder();
+        Status::Builder status_builder = builder.template MakeBuilder<Status>();
+        status_builder.add_running(0);
+        status_builder.add_last_running(running_id);
+        status_builder.add_success(!abort_);
 
-        if (!status_message.Send()) {
+        if (!builder.Send(status_builder.Finish())) {
           AOS_LOG(ERROR, "Failed to send the status.\n");
         } else {
           AOS_LOG(INFO, "Sending Done status %" PRIx32 "\n", running_id);
@@ -171,7 +172,7 @@ void ActorBase<T>::HandleGoal(const GoalType &goal) {
               running_id);
     } break;
     case State::WAITING_FOR_STOPPED:
-      if (goal.run == 0) {
+      if (goal.run() == 0) {
         AOS_LOG(INFO, "Action stopped.\n");
         state_ = State::WAITING_FOR_ACTION;
       }
@@ -211,9 +212,9 @@ bool ActorBase<T>::WaitUntil(::std::function<bool(void)> done_condition,
 template <class T>
 bool ActorBase<T>::ShouldCancel() {
   if (goal_fetcher_.Fetch()) {
-    AOS_LOG_STRUCT(DEBUG, "goal queue", *goal_fetcher_);
+    VLOG(1) << "goal queue " << FlatbufferToJson(goal_fetcher_.get());
   }
-  bool ans = !goal_fetcher_->run || goal_fetcher_->run != current_id_;
+  bool ans = !goal_fetcher_->run() || goal_fetcher_->run() != current_id_;
   if (ans) {
     AOS_LOG(INFO, "Time to stop action\n");
   }

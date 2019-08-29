@@ -20,11 +20,10 @@ namespace frc971 {
 namespace motors {
 namespace {
 
-using ::frc971::control_loops::drivetrain::DrivetrainConfig;
-using ::frc971::control_loops::drivetrain::PolyDrivetrain;
 using ::frc971::constants::ShifterHallEffect;
-using ::frc971::control_loops::DrivetrainQueue_Goal;
-using ::frc971::control_loops::DrivetrainQueue_Output;
+using ::frc971::control_loops::drivetrain::DrivetrainConfig;
+using ::frc971::control_loops::drivetrain::OutputT;
+using ::frc971::control_loops::drivetrain::PolyDrivetrain;
 
 namespace chrono = ::std::chrono;
 
@@ -286,29 +285,29 @@ extern "C" void pit3_isr() {
   }
 
   if (polydrivetrain != nullptr) {
-    DrivetrainQueue_Goal goal;
-    goal.control_loop_driving = false;
+    float throttle;
+    float wheel;
     if (lost_drive_channel) {
-      goal.throttle = 0.0f;
-      goal.wheel = 0.0f;
+      throttle = 0.0f;
+      wheel = 0.0f;
     } else {
-      goal.throttle = convert_input_width(1);
-      goal.wheel = -convert_input_width(3);
+      throttle = convert_input_width(1);
+      wheel = -convert_input_width(3);
     }
-    goal.quickturn = ::std::abs(polydrivetrain->velocity()) < 0.25f;
+    const bool quickturn = ::std::abs(polydrivetrain->velocity()) < 0.25f;
 
     if (false) {
       static int count = 0;
       if (++count == 50) {
         count = 0;
-        printf("throttle: %d wheel: %d\n", (int)(goal.throttle * 100),
-               (int)(goal.wheel * 100));
+        printf("throttle: %d wheel: %d\n", (int)(throttle * 100),
+               (int)(wheel * 100));
       }
     }
 
-    DrivetrainQueue_Output output;
+    OutputT output;
 
-    polydrivetrain->SetGoal(goal);
+    polydrivetrain->SetGoal(wheel, throttle, quickturn, false);
     polydrivetrain->Update(12.0f);
     polydrivetrain->SetOutput(&output);
 

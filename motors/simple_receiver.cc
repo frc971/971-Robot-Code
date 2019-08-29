@@ -22,11 +22,10 @@ namespace frc971 {
 namespace motors {
 namespace {
 
-using ::frc971::control_loops::drivetrain::DrivetrainConfig;
-using ::frc971::control_loops::drivetrain::PolyDrivetrain;
 using ::frc971::constants::ShifterHallEffect;
-using ::frc971::control_loops::DrivetrainQueue_Goal;
-using ::frc971::control_loops::DrivetrainQueue_Output;
+using ::frc971::control_loops::drivetrain::DrivetrainConfig;
+using ::frc971::control_loops::drivetrain::OutputT;
+using ::frc971::control_loops::drivetrain::PolyDrivetrain;
 using ::motors::seems_reasonable::Spring;
 
 namespace chrono = ::std::chrono;
@@ -547,20 +546,20 @@ extern "C" void pit3_isr() {
                                   (::std::abs(convert_input_width(4)) < 0.5f);
 
   if (polydrivetrain != nullptr && spring != nullptr) {
-    DrivetrainQueue_Goal goal;
-    goal.control_loop_driving = false;
+    float throttle;
+    float wheel;
     if (lost_drive_channel) {
-      goal.throttle = 0.0f;
-      goal.wheel = 0.0f;
+      throttle = 0.0f;
+      wheel = 0.0f;
     } else {
-      goal.throttle = convert_input_width(1);
-      goal.wheel = -convert_input_width(0);
+      throttle = convert_input_width(1);
+      wheel = -convert_input_width(0);
     }
-    goal.quickturn = ::std::abs(polydrivetrain->velocity()) < 0.25f;
+    const bool quickturn = ::std::abs(polydrivetrain->velocity()) < 0.25f;
 
-    DrivetrainQueue_Output output;
+    OutputT output;
 
-    polydrivetrain->SetGoal(goal);
+    polydrivetrain->SetGoal(wheel, throttle, quickturn, false);
     polydrivetrain->Update(12.0f);
     polydrivetrain->SetOutput(&output);
 

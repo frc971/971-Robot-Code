@@ -8,11 +8,15 @@
 #include "aos/time/time.h"
 
 #include "y2014/constants.h"
+#include "y2014/control_loops/shooter/shooter_goal_generated.h"
 #include "y2014/control_loops/shooter/shooter_motor_plant.h"
-#include "y2014/control_loops/shooter/shooter.q.h"
+#include "y2014/control_loops/shooter/shooter_output_generated.h"
+#include "y2014/control_loops/shooter/shooter_position_generated.h"
+#include "y2014/control_loops/shooter/shooter_status_generated.h"
 
 namespace y2014 {
 namespace control_loops {
+namespace shooter {
 namespace testing {
 class ShooterTest_UnloadWindupPositive_Test;
 class ShooterTest_UnloadWindupNegative_Test;
@@ -127,19 +131,17 @@ static constexpr ::std::chrono::nanoseconds kPrepareFireEndTime =
     ::std::chrono::milliseconds(40);
 
 class ShooterMotor
-    : public aos::controls::ControlLoop<::y2014::control_loops::ShooterQueue> {
+    : public aos::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
-  explicit ShooterMotor(
-      ::aos::EventLoop *event_loop,
-      const ::std::string &name = ".y2014.control_loops.shooter_queue");
+  explicit ShooterMotor(::aos::EventLoop *event_loop,
+                        const ::std::string &name = "/shooter");
 
   // True if the goal was moved to avoid goal windup.
   bool capped_goal() const { return shooter_.capped_goal(); }
 
   double PowerToPosition(double power);
   double PositionToPower(double position);
-  void CheckCalibrations(
-      const ::y2014::control_loops::ShooterQueue::Position *position);
+  void CheckCalibrations(const Position *position);
 
   typedef enum {
     STATE_INITIALIZE = 0,
@@ -159,15 +161,14 @@ class ShooterMotor
   State state() { return state_; }
 
  protected:
-  void RunIteration(
-      const ::y2014::control_loops::ShooterQueue::Goal *goal,
-      const ::y2014::control_loops::ShooterQueue::Position *position,
-      ::y2014::control_loops::ShooterQueue::Output *output,
-      ::y2014::control_loops::ShooterQueue::Status *status) override;
+  void RunIteration(const Goal *goal, const Position *position,
+                    aos::Sender<Output>::Builder *output,
+                    aos::Sender<Status>::Builder *status) override;
 
  private:
   // We have to override this to keep the pistons in the correct positions.
-  void Zero(::y2014::control_loops::ShooterQueue::Output *output) override;
+  flatbuffers::Offset<Output> Zero(
+      aos::Sender<Output>::Builder *output) override;
 
   // Friend the test classes for acces to the internal state.
   friend class testing::ShooterTest_UnloadWindupPositive_Test;
@@ -185,7 +186,9 @@ class ShooterMotor
     load_timeout_ = monotonic_now + kLoadTimeout;
   }
 
-  ::y2014::control_loops::ShooterQueue::Position last_position_;
+  bool last_position_latch_ = false;
+  bool last_position_plunger_ = false;
+  double last_position_position_ = 0.0;
 
   ZeroedStateFeedbackLoop shooter_;
 
@@ -232,6 +235,7 @@ class ShooterMotor
   DISALLOW_COPY_AND_ASSIGN(ShooterMotor);
 };
 
+}  // namespace shooter
 }  // namespace control_loops
 }  // namespace y2014
 

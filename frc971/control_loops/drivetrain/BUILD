@@ -1,30 +1,117 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//aos/build:queues.bzl", "queue_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos:config.bzl", "aos_config")
 load("//tools:environments.bzl", "mcu_cpus")
-load("//tools/build_rules:select.bzl", "cpu_select", "compiler_select")
+load("//tools/build_rules:select.bzl", "compiler_select", "cpu_select")
 
-cc_binary(
-    name = "replay_drivetrain",
-    srcs = [
-        "replay_drivetrain.cc",
-    ],
-    deps = [
-        ":drivetrain_queue",
-        "//aos:init",
-        "//aos/controls:replay_control_loop",
-        "//frc971/queues:gyro",
-    ],
+flatbuffer_cc_library(
+    name = "drivetrain_goal_fbs",
+    srcs = ["drivetrain_goal.fbs"],
+    compatible_with = mcu_cpus,
+    gen_reflections = 1,
+    includes = ["//frc971/control_loops:control_loops_fbs_includes"],
 )
 
-queue_library(
-    name = "drivetrain_queue",
-    srcs = [
-        "drivetrain.q",
+flatbuffer_cc_library(
+    name = "drivetrain_output_fbs",
+    srcs = ["drivetrain_output.fbs"],
+    compatible_with = mcu_cpus,
+    gen_reflections = 1,
+)
+
+flatbuffer_cc_library(
+    name = "drivetrain_position_fbs",
+    srcs = ["drivetrain_position.fbs"],
+    compatible_with = mcu_cpus,
+    gen_reflections = 1,
+)
+
+flatbuffer_cc_library(
+    name = "drivetrain_status_fbs",
+    srcs = ["drivetrain_status.fbs"],
+    compatible_with = mcu_cpus,
+    gen_reflections = 1,
+    includes = ["//frc971/control_loops:control_loops_fbs_includes"],
+)
+
+genrule(
+    name = "drivetrain_goal_float_fbs_generated",
+    srcs = ["drivetrain_goal.fbs"],
+    outs = ["drivetrain_goal_float.fbs"],
+    cmd = "cat $(SRCS) | sed 's/double/float/g' > $(OUTS)",
+    compatible_with = mcu_cpus,
+)
+
+genrule(
+    name = "drivetrain_position_float_fbs_generated",
+    srcs = ["drivetrain_position.fbs"],
+    outs = ["drivetrain_position_float.fbs"],
+    cmd = "cat $(SRCS) | sed 's/double/float/g' > $(OUTS)",
+    compatible_with = mcu_cpus,
+)
+
+genrule(
+    name = "drivetrain_output_float_fbs_generated",
+    srcs = ["drivetrain_output.fbs"],
+    outs = ["drivetrain_output_float.fbs"],
+    cmd = "cat $(SRCS) | sed 's/double/float/g' > $(OUTS)",
+    compatible_with = mcu_cpus,
+)
+
+genrule(
+    name = "drivetrain_status_float_fbs_generated",
+    srcs = ["drivetrain_status.fbs"],
+    outs = ["drivetrain_status_float.fbs"],
+    cmd = "cat $(SRCS) | sed 's/double/float/g' > $(OUTS)",
+    compatible_with = mcu_cpus,
+)
+
+flatbuffer_cc_library(
+    name = "drivetrain_goal_float_fbs",
+    srcs = ["drivetrain_goal_float.fbs"],
+    compatible_with = mcu_cpus,
+    gen_reflections = 1,
+    includes = ["//frc971/control_loops:control_loops_fbs_includes"],
+)
+
+flatbuffer_cc_library(
+    name = "drivetrain_output_float_fbs",
+    srcs = ["drivetrain_output_float.fbs"],
+    compatible_with = mcu_cpus,
+    gen_reflections = 1,
+)
+
+flatbuffer_cc_library(
+    name = "drivetrain_position_float_fbs",
+    srcs = ["drivetrain_position_float.fbs"],
+    compatible_with = mcu_cpus,
+    gen_reflections = 1,
+)
+
+flatbuffer_cc_library(
+    name = "drivetrain_status_float_fbs",
+    srcs = ["drivetrain_status_float.fbs"],
+    compatible_with = mcu_cpus,
+    gen_reflections = 1,
+    includes = ["//frc971/control_loops:control_loops_fbs_includes"],
+)
+
+aos_config(
+    name = "config",
+    src = "drivetrain_config.json",
+    flatbuffers = [
+        ":drivetrain_goal_fbs",
+        ":drivetrain_output_fbs",
+        ":drivetrain_status_fbs",
+        ":drivetrain_position_fbs",
+        ":localizer_fbs",
+        "//frc971/queues:gyro",
+        "//frc971/wpilib:imu_fbs",
     ],
+    visibility = ["//visibility:public"],
     deps = [
-        "//aos/controls:control_loop_queues",
-        "//frc971/control_loops:queues",
+        "//aos/robot_state:config",
     ],
 )
 
@@ -49,7 +136,7 @@ cc_library(
         "//aos/util:math",
         "//frc971/control_loops:c2d",
         "//frc971/control_loops:runge_kutta",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -66,11 +153,10 @@ cc_test(
     ],
 )
 
-queue_library(
-    name = "localizer_queue",
-    srcs = [
-        "localizer.q",
-    ],
+flatbuffer_cc_library(
+    name = "localizer_fbs",
+    srcs = ["localizer.fbs"],
+    gen_reflections = 1,
 )
 
 cc_library(
@@ -102,11 +188,14 @@ cc_library(
     deps = [
         ":distance_spline",
         ":drivetrain_config",
-        ":drivetrain_queue",
+        ":drivetrain_goal_fbs",
+        ":drivetrain_output_fbs",
+        ":drivetrain_status_fbs",
         ":spline",
         ":trajectory",
         "//aos:init",
         "//aos/util:math",
+        "//frc971/control_loops:control_loops_fbs",
     ],
 )
 
@@ -120,14 +209,19 @@ cc_library(
     ],
     deps = [
         ":drivetrain_config",
-        ":drivetrain_queue",
+        ":drivetrain_goal_fbs",
+        ":drivetrain_output_fbs",
+        ":drivetrain_status_fbs",
         ":localizer",
         "//aos:math",
         "//aos/util:math",
         "//frc971/control_loops:c2d",
+        "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:dlqr",
         "//frc971/control_loops:pose",
-        "//third_party/eigen",
+        "//frc971/control_loops:profiled_subsystem_fbs",
+        "//y2019/control_loops/superstructure:superstructure_goal_fbs",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -158,19 +252,20 @@ cc_library(
     ],
     deps = [
         ":drivetrain_config",
-        ":drivetrain_queue",
+        ":drivetrain_goal_fbs",
+        ":drivetrain_output_fbs",
+        ":drivetrain_status_fbs",
         ":gear",
         ":localizer",
         "//aos:math",
         "//aos/controls:control_loop",
         "//aos/controls:polytope",
-        "//aos/logging:matrix_logging",
-        "//aos/logging:queue_logging",
-        "//aos/robot_state",
+        "//aos/robot_state:robot_state_fbs",
         "//aos/util:log_interval",
         "//aos/util:trapezoid_profile",
         "//frc971:shifter_hall_effect",
         "//frc971/control_loops:coerce_goal",
+        "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:state_feedback_loop",
     ],
 )
@@ -185,15 +280,17 @@ cc_library(
     ],
     deps = [
         ":drivetrain_config",
-        ":drivetrain_queue",
+        ":drivetrain_goal_fbs",
+        ":drivetrain_output_fbs",
+        ":drivetrain_position_fbs",
+        ":drivetrain_status_fbs",
         ":gear",
         "//aos:math",
         "//aos/controls:polytope",
-        "//aos/logging:matrix_logging",
-        "//aos/logging:queue_logging",
-        "//aos/robot_state",
+        "//aos/robot_state:robot_state_fbs",
         "//aos/util:log_interval",
         "//frc971/control_loops:coerce_goal",
+        "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:state_feedback_loop",
     ],
 )
@@ -213,20 +310,24 @@ cc_library(
 cc_library(
     name = "polydrivetrain_uc",
     srcs = [
-        "drivetrain_uc.q.cc",
         "polydrivetrain.cc",
     ],
     hdrs = [
-        "drivetrain_uc.q.h",
         "polydrivetrain.h",
     ],
+    copts = ["-Wno-type-limits"],
     restricted_to = mcu_cpus,
     deps = [
         ":drivetrain_config_uc",
+        ":drivetrain_goal_float_fbs",
+        ":drivetrain_output_float_fbs",
+        ":drivetrain_position_float_fbs",
+        ":drivetrain_status_float_fbs",
         ":gear",
         "//aos:math",
         "//aos/controls:polytope_uc",
         "//frc971/control_loops:coerce_goal_uc",
+        "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:state_feedback_loop_uc",
     ],
 )
@@ -267,21 +368,22 @@ cc_library(
     ],
     deps = [
         ":down_estimator",
-        ":drivetrain_queue",
+        ":drivetrain_goal_fbs",
+        ":drivetrain_output_fbs",
+        ":drivetrain_position_fbs",
+        ":drivetrain_status_fbs",
         ":gear",
         ":line_follow_drivetrain",
         ":localizer",
-        ":localizer_queue",
+        ":localizer_fbs",
         ":polydrivetrain",
         ":splinedrivetrain",
         ":ssdrivetrain",
         "//aos/controls:control_loop",
-        "//aos/logging:matrix_logging",
-        "//aos/logging:queue_logging",
         "//aos/util:log_interval",
         "//frc971/control_loops:runge_kutta",
         "//frc971/queues:gyro",
-        "//frc971/wpilib:imu_queue",
+        "//frc971/wpilib:imu_fbs",
     ],
 )
 
@@ -292,10 +394,14 @@ cc_library(
     hdrs = ["drivetrain_test_lib.h"],
     deps = [
         ":drivetrain_config",
-        ":drivetrain_queue",
+        ":drivetrain_goal_fbs",
+        ":drivetrain_output_fbs",
+        ":drivetrain_position_fbs",
+        ":drivetrain_status_fbs",
         ":trajectory",
-        "//aos/events:event-loop",
+        "//aos/events:event_loop",
         "//aos/testing:googletest",
+        "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:state_feedback_loop",
         "//frc971/queues:gyro",
         "//y2016:constants",
@@ -308,6 +414,7 @@ cc_test(
     srcs = [
         "drivetrain_lib_test.cc",
     ],
+    data = ["config.json"],
     defines =
         cpu_select({
             "amd64": [
@@ -319,10 +426,12 @@ cc_test(
     deps = [
         ":drivetrain_config",
         ":drivetrain_lib",
-        ":localizer_queue",
-        ":drivetrain_queue",
+        ":localizer_fbs",
+        ":drivetrain_goal_fbs",
+        ":drivetrain_status_fbs",
+        ":drivetrain_position_fbs",
+        ":drivetrain_output_fbs",
         ":drivetrain_test_lib",
-        "//aos:queues",
         "//aos/controls:control_loop_test",
         "//aos/testing:googletest",
         "//frc971/queues:gyro",
@@ -399,7 +508,7 @@ cc_library(
     hdrs = ["spline.h"],
     deps = [
         "//frc971/control_loops:binomial",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -413,8 +522,8 @@ cc_binary(
         ":trajectory",
         "//aos/logging:implementations",
         "//aos/network:team_number",
-        "//third_party/eigen",
         "//y2019/control_loops/drivetrain:drivetrain_base",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -440,7 +549,7 @@ cc_library(
         ":spline",
         "//aos/logging",
         "//frc971/control_loops:fixed_quadrature",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -477,13 +586,12 @@ cc_library(
     deps = [
         ":distance_spline",
         ":drivetrain_config",
-        "//aos/logging:matrix_logging",
         "//frc971/control_loops:c2d",
         "//frc971/control_loops:dlqr",
         "//frc971/control_loops:hybrid_state_feedback_loop",
         "//frc971/control_loops:runge_kutta",
         "//frc971/control_loops:state_feedback_loop",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -497,12 +605,11 @@ cc_binary(
         ":distance_spline",
         ":trajectory",
         "//aos/logging:implementations",
-        "//aos/logging:matrix_logging",
         "//aos/network:team_number",
-        "//third_party/eigen",
         "//third_party/matplotlib-cpp",
         "//y2019/control_loops/drivetrain:drivetrain_base",
         "@com_github_gflags_gflags//:gflags",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 

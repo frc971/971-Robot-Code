@@ -1,0 +1,23 @@
+namespace y2019.control_loops.drivetrain;
+
+// These should match the SelectionHint enum in target_selector.h.
+enum SelectionHint : byte {
+  // No selection, we should just default to whatever.
+  NONE,
+  // Near, middle, and far targets.
+  NEAR_SHIP,
+  MID_SHIP,
+  FAR_SHIP,
+  // Far side of the rocket ship.
+  FAR_ROCKET,
+}
+
+
+// A message to provide information to the target selector about what it should
+// The drivetrain listens on ".y2019.control_loops.drivetrain.target_selector_hint"
+table TargetSelectorHint {
+  // Which target we should go for:
+  suggested_target:SelectionHint;
+}
+
+root_type TargetSelectorHint;

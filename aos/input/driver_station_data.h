@@ -4,9 +4,10 @@
 // This file defines several types to support nicely looking at the data
 // received from the driver's station.
 
+#include <array>
 #include <memory>
 
-#include "aos/robot_state/robot_state.q.h"
+#include "aos/robot_state/joystick_state_generated.h"
 
 namespace aos {
 namespace input {
@@ -20,8 +21,7 @@ class JoystickFeature {
       : joystick_(joystick), number_(number) {}
 
   // How many joysticks there are.
-  static const int kJoysticks = sizeof(JoystickState::joysticks) /
-                                sizeof(JoystickState::joysticks[0]);
+  static const int kJoysticks = 6;
 
   // Which joystick number this is (1-based).
   int joystick() const { return joystick_; }
@@ -68,8 +68,7 @@ class JoystickAxis : public JoystickFeature {
       : JoystickFeature(joystick, number) {}
 
   // How many axes there are available on each joystick.
-  static const int kAxes = sizeof(Joystick::axis) /
-                           sizeof(Joystick::axis[0]);
+  static const int kAxes = 6;
 };
 
 class Data {
@@ -79,7 +78,7 @@ class Data {
   Data();
 
   // Updates the current information with a new set of values.
-  void Update(const JoystickState &new_values);
+  void Update(const JoystickState *new_values);
 
   bool IsPressed(POVLocation location) const;
   bool PosEdge(POVLocation location) const;
@@ -101,7 +100,34 @@ class Data {
   float GetAxis(JoystickAxis axis) const;
 
  private:
-  JoystickState current_values_, old_values_;
+  struct SavedJoystickState {
+    struct SavedJoystick {
+      uint16_t buttons = 0;
+      std::array<double, JoystickAxis::kAxes> axis;
+      int pov = 0;
+    };
+
+    std::array<SavedJoystick, JoystickFeature::kJoysticks> joysticks;
+    bool test_mode = false;
+    bool fms_attached = false;
+    bool enabled = false;
+    bool autonomous = false;
+    uint16_t team_id = 0;
+
+    // 2018 scale and switch positions.
+    bool switch_left = false;
+    bool scale_left = false;
+  };
+
+  static bool GetButton(const ButtonLocation location,
+                        const Data::SavedJoystickState &values);
+  static bool DoGetPOV(const POVLocation location,
+                       const Data::SavedJoystickState &values);
+
+  static bool GetControlBitValue(const ControlBit bit,
+                                 const Data::SavedJoystickState &values);
+
+  SavedJoystickState current_values_, old_values_;
 };
 
 }  // namespace driver_station

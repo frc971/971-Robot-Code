@@ -11,10 +11,10 @@
 #include "frc971/wpilib/ahal/SPI.h"
 #undef ERROR
 
-#include "aos/events/event-loop.h"
+#include "aos/events/event_loop.h"
 #include "aos/logging/logging.h"
-#include "aos/robot_state/robot_state.q.h"
-#include "frc971/wpilib/imu.q.h"
+#include "aos/robot_state/robot_state_generated.h"
+#include "frc971/wpilib/imu_generated.h"
 #include "frc971/wpilib/spi_rx_clearer.h"
 
 namespace frc971 {
@@ -90,7 +90,7 @@ class ADIS16448 {
   bool Initialize();
 
   ::aos::EventLoop *event_loop_;
-  ::aos::Fetcher<::aos::JoystickState> joystick_state_fetcher_;
+  ::aos::Fetcher<::aos::RobotState> robot_state_fetcher_;
   ::aos::Sender<::frc971::IMUValues> imu_values_sender_;
 
   // TODO(Brian): This object has no business owning these ones.

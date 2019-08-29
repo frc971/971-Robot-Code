@@ -7,8 +7,7 @@
 #include "third_party/cddlib/lib-src/setoper.h"
 #include "third_party/cddlib/lib-src/cdd.h"
 
-#include "aos/logging/logging.h"
-#include "aos/logging/matrix_logging.h"
+#include "glog/logging.h"
 #endif  // __linux__
 
 namespace aos {
@@ -191,9 +190,9 @@ HPolytope<number_of_dimensions>::CalculateVertices(
   if (error != dd_NoError || polyhedra == NULL) {
     dd_WriteErrorMessages(stderr, error);
     dd_FreeMatrix(matrix);
-    AOS_LOG_MATRIX(ERROR, "bad H", H);
-    AOS_LOG_MATRIX(ERROR, "bad k_", k);
-    AOS_LOG(FATAL, "dd_DDMatrix2Poly failed\n");
+    LOG(ERROR) << "bad H" << H;
+    LOG(ERROR) << "bad k_" << k;
+    LOG(FATAL) << "dd_DDMatrix2Poly failed";
   }
 
   dd_MatrixPtr vertex_matrix = dd_CopyGenerators(polyhedra);
@@ -209,7 +208,7 @@ HPolytope<number_of_dimensions>::CalculateVertices(
   }
 
   // Rays are unsupported right now.  This may change in the future.
-  AOS_CHECK_EQ(0, num_rays);
+  CHECK_EQ(0, num_rays);
 
   Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic> vertices(
       number_of_dimensions, num_vertices);

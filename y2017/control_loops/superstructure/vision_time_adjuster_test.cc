@@ -2,12 +2,13 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/events/simulated-event-loop.h"
+#include "aos/configuration.h"
+#include "aos/events/simulated_event_loop.h"
 #include "aos/testing/test_logging.h"
 #include "aos/time/time.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2017/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
-#include "y2017/vision/vision.q.h"
+#include "y2017/vision/vision_generated.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -17,19 +18,20 @@ class VisionTimeAdjusterTest : public ::testing::Test {
  public:
   VisionTimeAdjusterTest()
       : ::testing::Test(),
-        simulation_event_loop_(simulated_event_loop_factory_.MakeEventLoop()),
+        configuration_(aos::configuration::ReadConfig("y2017/config.json")),
+        event_loop_factory_(&configuration_.message()),
+        simulation_event_loop_(event_loop_factory_.MakeEventLoop()),
         drivetrain_status_sender_(
             simulation_event_loop_
-                ->MakeSender<::frc971::control_loops::DrivetrainQueue::Status>(
-                    ".frc971.control_loops.drivetrain_queue.status")),
+                ->MakeSender<::frc971::control_loops::drivetrain::Status>(
+                    "/drivetrain")),
         vision_status_sender_(
             simulation_event_loop_->MakeSender<::y2017::vision::VisionStatus>(
-                ".y2017.vision.vision_status")),
-        vision_time_adjuster_event_loop_(
-            simulated_event_loop_factory_.MakeEventLoop()),
-        vision_status_fetcher_(vision_time_adjuster_event_loop_
-                                   ->MakeFetcher<::y2017::vision::VisionStatus>(
-                                       ".y2017.vision.vision_status")),
+                "/vision")),
+        vision_time_adjuster_event_loop_(event_loop_factory_.MakeEventLoop()),
+        vision_status_fetcher_(
+            vision_time_adjuster_event_loop_
+                ->MakeFetcher<::y2017::vision::VisionStatus>("/vision")),
         adjuster_(vision_time_adjuster_event_loop_.get()) {
     ::aos::testing::EnableTestLogging();
     static_assert(kVisionDelay % kTimeTick == ::std::chrono::milliseconds(0),
@@ -75,11 +77,11 @@ class VisionTimeAdjusterTest : public ::testing::Test {
   VisionTimeAdjuster *adjuster() { return &adjuster_; }
 
  private:
-  void TickTime() { simulated_event_loop_factory_.RunFor(kTimeTick); }
+  void TickTime() { event_loop_factory_.RunFor(kTimeTick); }
 
   void SendMessages() {
     SendDrivetrainPosition();
-    if (simulated_event_loop_factory_.monotonic_now().time_since_epoch() %
+    if (event_loop_factory_.monotonic_now().time_since_epoch() %
             kVisionTick ==
         kVisionDelay) {
       SendVisionTarget();
@@ -89,25 +91,33 @@ class VisionTimeAdjusterTest : public ::testing::Test {
   }
 
   void SendDrivetrainPosition() {
-    auto message = drivetrain_status_sender_.MakeMessage();
-    message->estimated_left_position = drivetrain_left_;
-    message->estimated_right_position = drivetrain_right_;
-    ASSERT_TRUE(message.Send());
+    auto builder = drivetrain_status_sender_.MakeBuilder();
+
+    frc971::control_loops::drivetrain::Status::Builder status_builder =
+        builder.MakeBuilder<frc971::control_loops::drivetrain::Status>();
+    status_builder.add_estimated_left_position(drivetrain_left_);
+    status_builder.add_estimated_right_position(drivetrain_right_);
+
+    ASSERT_TRUE(builder.Send(status_builder.Finish()));
   }
 
   void SendVisionTarget() {
-    auto message = vision_status_sender_.MakeMessage();
-    message->target_time =
+    auto builder = vision_status_sender_.MakeBuilder();
+
+    vision::VisionStatus::Builder vision_status_builder =
+        builder.MakeBuilder<vision::VisionStatus>();
+    vision_status_builder.add_target_time(
         (simulation_event_loop_->monotonic_now() - kVisionDelay)
             .time_since_epoch()
-            .count();
-    message->distance = vision_distance_;
+            .count());
+    vision_status_builder.add_distance(vision_distance_);
     ASSERT_EQ(turret_history_.capacity(), turret_history_.size());
     ASSERT_EQ(drivetrain_history_.capacity(), drivetrain_history_.size());
-    message->angle =
-        vision_angle_ - turret_history_[0] - drivetrain_history_[0];
-    message->image_valid = true;
-    ASSERT_TRUE(message.Send());
+    vision_status_builder.add_angle(vision_angle_ - turret_history_[0] -
+                                    drivetrain_history_[0]);
+    vision_status_builder.add_image_valid(true);
+
+    ASSERT_TRUE(builder.Send(vision_status_builder.Finish()));
   }
 
   double GetDriveTrainAngle() const {
@@ -115,9 +125,10 @@ class VisionTimeAdjusterTest : public ::testing::Test {
            (drivetrain::kRobotRadius * 2.0);
   }
 
-  ::aos::SimulatedEventLoopFactory simulated_event_loop_factory_;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> configuration_;
+  ::aos::SimulatedEventLoopFactory event_loop_factory_;
   ::std::unique_ptr<::aos::EventLoop> simulation_event_loop_;
-  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Status>
+  ::aos::Sender<::frc971::control_loops::drivetrain::Status>
       drivetrain_status_sender_;
   ::aos::Sender<::y2017::vision::VisionStatus> vision_status_sender_;
 

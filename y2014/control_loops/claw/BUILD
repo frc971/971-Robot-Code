@@ -1,16 +1,40 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//aos/build:queues.bzl", "queue_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
-queue_library(
-    name = "claw_queue",
+flatbuffer_cc_library(
+    name = "claw_goal_fbs",
     srcs = [
-        "claw.q",
+        "claw_goal.fbs",
     ],
-    deps = [
-        "//aos/controls:control_loop_queues",
-        "//frc971/control_loops:queues",
+    gen_reflections = 1,
+)
+
+flatbuffer_cc_library(
+    name = "claw_position_fbs",
+    srcs = [
+        "claw_position.fbs",
     ],
+    gen_reflections = 1,
+    includes = [
+        "//frc971/control_loops:control_loops_fbs_includes",
+    ],
+)
+
+flatbuffer_cc_library(
+    name = "claw_output_fbs",
+    srcs = [
+        "claw_output.fbs",
+    ],
+    gen_reflections = 1,
+)
+
+flatbuffer_cc_library(
+    name = "claw_status_fbs",
+    srcs = [
+        "claw_status.fbs",
+    ],
+    gen_reflections = 1,
 )
 
 genrule(
@@ -40,12 +64,13 @@ cc_library(
         "-lm",
     ],
     deps = [
-        ":claw_queue",
+        ":claw_goal_fbs",
+        ":claw_output_fbs",
+        ":claw_position_fbs",
+        ":claw_status_fbs",
         "//aos:math",
         "//aos/controls:control_loop",
         "//aos/controls:polytope",
-        "//aos/logging:matrix_logging",
-        "//aos/logging:queue_logging",
         "//frc971/control_loops:coerce_goal",
         "//frc971/control_loops:hall_effect_tracker",
         "//frc971/control_loops:state_feedback_loop",
@@ -58,9 +83,13 @@ cc_test(
     srcs = [
         "claw_lib_test.cc",
     ],
+    data = ["//y2014:config.json"],
     deps = [
+        ":claw_goal_fbs",
         ":claw_lib",
-        ":claw_queue",
+        ":claw_output_fbs",
+        ":claw_position_fbs",
+        ":claw_status_fbs",
         "//aos/controls:control_loop_test",
         "//aos/testing:googletest",
         "//frc971/control_loops:state_feedback_loop",
@@ -76,6 +105,6 @@ cc_binary(
     deps = [
         ":claw_lib",
         "//aos:init",
-        "//aos/events:shm-event-loop",
+        "//aos/events:shm_event_loop",
     ],
 )

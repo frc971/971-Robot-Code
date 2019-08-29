@@ -1,10 +1,11 @@
-package(default_visibility = ['//visibility:public'])
+package(default_visibility = ["//visibility:public"])
 
-load('//aos/build:queues.bzl', 'queue_library')
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
-queue_library(
-  name = 'gyro',
-  srcs = [
-    'gyro.q',
-  ],
+flatbuffer_cc_library(
+    name = "gyro",
+    srcs = [
+        "gyro.fbs",
+    ],
+    gen_reflections = 1,
 )

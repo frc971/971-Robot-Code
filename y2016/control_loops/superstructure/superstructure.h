@@ -8,9 +8,12 @@
 #include "frc971/control_loops/state_feedback_loop.h"
 
 #include "frc971/zeroing/zeroing.h"
-#include "y2016/control_loops/superstructure/superstructure.q.h"
 #include "y2016/control_loops/superstructure/superstructure_controls.h"
-#include "y2016/queues/ball_detector.q.h"
+#include "y2016/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2016/control_loops/superstructure/superstructure_output_generated.h"
+#include "y2016/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2016/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2016/queues/ball_detector_generated.h"
 
 namespace y2016 {
 namespace control_loops {
@@ -105,11 +108,10 @@ class CollisionAvoidance {
 };
 
 class Superstructure
-    : public ::aos::controls::ControlLoop<control_loops::SuperstructureQueue> {
+    : public ::aos::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
-  explicit Superstructure(
-      ::aos::EventLoop *event_loop,
-      const ::std::string &name = ".y2016.control_loops.superstructure_queue");
+  explicit Superstructure(::aos::EventLoop *event_loop,
+                          const ::std::string &name = "/superstructure");
 
   static constexpr double kZeroingVoltage = 6.0;
   static constexpr double kShooterHangingVoltage = 6.0;
@@ -209,11 +211,9 @@ class Superstructure
   bool collided() const { return collision_avoidance_.collided(); }
 
  protected:
-  virtual void RunIteration(
-      const control_loops::SuperstructureQueue::Goal *unsafe_goal,
-      const control_loops::SuperstructureQueue::Position *position,
-      control_loops::SuperstructureQueue::Output *output,
-      control_loops::SuperstructureQueue::Status *status) override;
+  virtual void RunIteration(const Goal *unsafe_goal, const Position *position,
+                            aos::Sender<Output>::Builder *output,
+                            aos::Sender<Status>::Builder *status) override;
 
  private:
   friend class testing::SuperstructureTest_DisabledGoalTest_Test;

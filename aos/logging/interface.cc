@@ -19,7 +19,7 @@ size_t ExecuteFormat(char *output, size_t output_size, const char *format,
   static const char *const continued = "...\n";
   const size_t size = output_size - strlen(continued);
   const int ret = vsnprintf(output, size, format, ap);
-  typedef ::std::common_type<typeof(ret), typeof(size)>::type RetType;
+  typedef ::std::common_type<int, size_t>::type RetType;
   if (ret < 0) {
     AOS_PLOG(FATAL, "vsnprintf(%p, %zd, %s, args) failed",
          output, size, format);

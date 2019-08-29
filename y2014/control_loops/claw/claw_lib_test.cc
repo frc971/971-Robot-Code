@@ -8,16 +8,18 @@
 #include "gtest/gtest.h"
 #include "y2014/constants.h"
 #include "y2014/control_loops/claw/claw.h"
-#include "y2014/control_loops/claw/claw.q.h"
+#include "y2014/control_loops/claw/claw_goal_generated.h"
 #include "y2014/control_loops/claw/claw_motor_plant.h"
+#include "y2014/control_loops/claw/claw_output_generated.h"
+#include "y2014/control_loops/claw/claw_position_generated.h"
+#include "y2014/control_loops/claw/claw_status_generated.h"
 
 namespace y2014 {
 namespace control_loops {
+namespace claw {
 namespace testing {
 
-using ::y2014::control_loops::claw::MakeClawPlant;
-using ::frc971::HallEffectStruct;
-using ::y2014::control_loops::HalfClawPosition;
+using ::frc971::HallEffectStructT;
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
 
@@ -38,10 +40,8 @@ class ClawMotorSimulation {
                       double initial_top_position,
                       double initial_bottom_position)
       : event_loop_(event_loop),
-        claw_position_sender_(event_loop_->MakeSender<ClawQueue::Position>(
-            ".y2014.control_loops.claw_queue.position")),
-        claw_output_fetcher_(event_loop_->MakeFetcher<ClawQueue::Output>(
-            ".y2014.control_loops.claw_queue.output")),
+        claw_position_sender_(event_loop_->MakeSender<Position>("/claw")),
+        claw_output_fetcher_(event_loop_->MakeFetcher<Output>("/claw")),
         claw_plant_(new StateFeedbackPlant<4, 2, 2>(MakeClawPlant())) {
     Reinitialize(initial_top_position, initial_bottom_position);
 
@@ -69,7 +69,9 @@ class ClawMotorSimulation {
 
     ReinitializePartial(TOP_CLAW, initial_top_position);
     ReinitializePartial(BOTTOM_CLAW, initial_bottom_position);
-    last_position_.Zero();
+
+    last_position_.top.reset();
+    last_position_.bottom.reset();
     SetPhysicalSensors(&last_position_);
   }
 
@@ -99,44 +101,58 @@ class ClawMotorSimulation {
 
   void SetHallEffect(double pos,
                      const constants::Values::Claws::AnglePair &pair,
-                     HallEffectStruct *hall_effect) {
+                     HallEffectStructT *hall_effect) {
     hall_effect->current = CheckRange(pos, pair);
   }
 
   void SetClawHallEffects(double pos,
                           const constants::Values::Claws::Claw &claw,
-                          HalfClawPosition *half_claw) {
-    SetHallEffect(pos, claw.front, &half_claw->front);
-    SetHallEffect(pos, claw.calibration, &half_claw->calibration);
-    SetHallEffect(pos, claw.back, &half_claw->back);
+                          HalfClawPositionT *half_claw) {
+    if (!half_claw->front) {
+      half_claw->front.reset(new HallEffectStructT());
+    }
+    if (!half_claw->calibration) {
+      half_claw->calibration.reset(new HallEffectStructT());
+    }
+    if (!half_claw->back) {
+      half_claw->back.reset(new HallEffectStructT());
+    }
+    SetHallEffect(pos, claw.front, half_claw->front.get());
+    SetHallEffect(pos, claw.calibration, half_claw->calibration.get());
+    SetHallEffect(pos, claw.back, half_claw->back.get());
   }
 
   // Sets the values of the physical sensors that can be directly observed
   // (encoder, hall effect).
-  void SetPhysicalSensors(
-      ::y2014::control_loops::ClawQueue::Position *position) {
-    position->top.position = GetPosition(TOP_CLAW);
-    position->bottom.position = GetPosition(BOTTOM_CLAW);
+  void SetPhysicalSensors(PositionT *position) {
+    if (!position->top) {
+      position->top.reset(new HalfClawPositionT());
+    }
+    if (!position->bottom) {
+      position->bottom.reset(new HalfClawPositionT());
+    }
+
+    position->top->position = GetPosition(TOP_CLAW);
+    position->bottom->position = GetPosition(BOTTOM_CLAW);
 
     double pos[2] = {GetAbsolutePosition(TOP_CLAW),
                      GetAbsolutePosition(BOTTOM_CLAW)};
     AOS_LOG(DEBUG, "Physical claws are at {top: %f, bottom: %f}\n",
             pos[TOP_CLAW], pos[BOTTOM_CLAW]);
 
-    const constants::Values& values = constants::GetValues();
+    const constants::Values &values = constants::GetValues();
 
     // Signal that each hall effect sensor has been triggered if it is within
     // the correct range.
-    SetClawHallEffects(pos[TOP_CLAW], values.claw.upper_claw, &position->top);
+    SetClawHallEffects(pos[TOP_CLAW], values.claw.upper_claw,
+                       position->top.get());
     SetClawHallEffects(pos[BOTTOM_CLAW], values.claw.lower_claw,
-                       &position->bottom);
+                       position->bottom.get());
   }
 
-  void UpdateHallEffect(double angle,
-                        double last_angle,
-                        double initial_position,
-                        HallEffectStruct *position,
-                        const HallEffectStruct &last_position,
+  void UpdateHallEffect(double angle, double last_angle,
+                        double initial_position, HallEffectStructT *position,
+                        const HallEffectStructT &last_position,
                         const constants::Values::Claws::AnglePair &pair,
                         const char *claw_name, const char *hall_effect_name) {
     if (position->current && !last_position.current) {
@@ -167,49 +183,64 @@ class ClawMotorSimulation {
     }
   }
 
-  void UpdateClawHallEffects(
-      HalfClawPosition *position,
-      const HalfClawPosition &last_position,
-      const constants::Values::Claws::Claw &claw, double initial_position,
-      const char *claw_name) {
-    UpdateHallEffect(position->position + initial_position,
+  void UpdateClawHallEffects(HalfClawPositionT *half_claw,
+                             const HalfClawPositionT &last_position,
+                             const constants::Values::Claws::Claw &claw,
+                             double initial_position, const char *claw_name) {
+    if (!half_claw->front) {
+      half_claw->front.reset(new HallEffectStructT());
+    }
+    if (!half_claw->calibration) {
+      half_claw->calibration.reset(new HallEffectStructT());
+    }
+    if (!half_claw->back) {
+      half_claw->back.reset(new HallEffectStructT());
+    }
+    UpdateHallEffect(half_claw->position + initial_position,
                      last_position.position + initial_position,
-                     initial_position, &position->front, last_position.front,
-                     claw.front, claw_name, "front");
-    UpdateHallEffect(position->position + initial_position,
+                     initial_position, half_claw->front.get(),
+                     *last_position.front.get(), claw.front, claw_name, "front");
+    UpdateHallEffect(half_claw->position + initial_position,
                      last_position.position + initial_position,
-                     initial_position, &position->calibration,
-                     last_position.calibration, claw.calibration, claw_name,
-                     "calibration");
-    UpdateHallEffect(position->position + initial_position,
+                     initial_position, half_claw->calibration.get(),
+                     *last_position.calibration.get(), claw.calibration,
+                     claw_name, "calibration");
+    UpdateHallEffect(half_claw->position + initial_position,
                      last_position.position + initial_position,
-                     initial_position, &position->back, last_position.back,
-                     claw.back, claw_name, "back");
+                     initial_position, half_claw->back.get(),
+                     *last_position.back.get(), claw.back, claw_name, "back");
   }
 
   // Sends out the position queue messages.
   void SendPositionMessage() {
-    ::aos::Sender<::y2014::control_loops::ClawQueue::Position>::Message
-        position = claw_position_sender_.MakeMessage();
+    ::aos::Sender<Position>::Builder builder =
+        claw_position_sender_.MakeBuilder();
 
     // Initialize all the counters to their previous values.
-    *position = last_position_;
 
-    SetPhysicalSensors(position.get());
+    PositionT position;
 
-    const constants::Values& values = constants::GetValues();
+    flatbuffers::FlatBufferBuilder fbb;
+    flatbuffers::Offset<Position> position_offset =
+        Position::Pack(fbb, &last_position_);
+    fbb.Finish(position_offset);
 
-    UpdateClawHallEffects(&position->top, last_position_.top,
+    flatbuffers::GetRoot<Position>(fbb.GetBufferPointer())->UnPackTo(&position);
+    SetPhysicalSensors(&position);
+
+    const constants::Values &values = constants::GetValues();
+
+    UpdateClawHallEffects(position.top.get(), *last_position_.top.get(),
                           values.claw.upper_claw, initial_position_[TOP_CLAW],
                           "Top");
-    UpdateClawHallEffects(&position->bottom, last_position_.bottom,
+    UpdateClawHallEffects(position.bottom.get(), *last_position_.bottom.get(),
                           values.claw.lower_claw,
                           initial_position_[BOTTOM_CLAW], "Bottom");
 
     // Only set calibration if it changed last cycle.  Calibration starts out
     // with a value of 0.
-    last_position_ = *position;
-    position.Send();
+    builder.Send(Position::Pack(*builder.fbb(), &position));
+    last_position_ = std::move(position);
   }
 
   // Simulates the claw moving for one timestep.
@@ -218,8 +249,8 @@ class ClawMotorSimulation {
     EXPECT_TRUE(claw_output_fetcher_.Fetch());
 
     Eigen::Matrix<double, 2, 1> U;
-    U << claw_output_fetcher_->bottom_claw_voltage,
-        claw_output_fetcher_->top_claw_voltage;
+    U << claw_output_fetcher_->bottom_claw_voltage(),
+        claw_output_fetcher_->top_claw_voltage();
     claw_plant_->Update(U);
 
     // Check that the claw is within the limits.
@@ -237,8 +268,8 @@ class ClawMotorSimulation {
 
  private:
   ::aos::EventLoop *event_loop_;
-  ::aos::Sender<ClawQueue::Position> claw_position_sender_;
-  ::aos::Fetcher<ClawQueue::Output> claw_output_fetcher_;
+  ::aos::Sender<Position> claw_position_sender_;
+  ::aos::Fetcher<Output> claw_output_fetcher_;
 
   // The whole claw.
   ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> claw_plant_;
@@ -252,18 +283,18 @@ class ClawMotorSimulation {
 
   double initial_position_[CLAW_COUNT];
 
-  ::y2014::control_loops::ClawQueue::Position last_position_;
+  PositionT last_position_;
 };
 
 class ClawTest : public ::aos::testing::ControlLoopTest {
  protected:
   ClawTest()
-      : ::aos::testing::ControlLoopTest(chrono::microseconds(5000)),
+      : ::aos::testing::ControlLoopTest(
+            aos::configuration::ReadConfig("y2014/config.json"),
+            chrono::microseconds(5000)),
         test_event_loop_(MakeEventLoop()),
-        claw_goal_sender_(test_event_loop_->MakeSender<ClawQueue::Goal>(
-            ".y2014.control_loops.claw_queue.goal")),
-        claw_goal_fetcher_(test_event_loop_->MakeFetcher<ClawQueue::Goal>(
-            ".y2014.control_loops.claw_queue.goal")),
+        claw_goal_sender_(test_event_loop_->MakeSender<Goal>("/claw")),
+        claw_goal_fetcher_(test_event_loop_->MakeFetcher<Goal>("/claw")),
         claw_event_loop_(MakeEventLoop()),
         claw_motor_(claw_event_loop_.get()),
         claw_plant_event_loop_(MakeEventLoop()),
@@ -275,14 +306,14 @@ class ClawTest : public ::aos::testing::ControlLoopTest {
     double bottom = claw_motor_plant_.GetAbsolutePosition(BOTTOM_CLAW);
     double separation =
         claw_motor_plant_.GetAbsolutePosition(TOP_CLAW) - bottom;
-    EXPECT_NEAR(claw_goal_fetcher_->bottom_angle, bottom, 1e-4);
-    EXPECT_NEAR(claw_goal_fetcher_->separation_angle, separation, 1e-4);
+    EXPECT_NEAR(claw_goal_fetcher_->bottom_angle(), bottom, 1e-4);
+    EXPECT_NEAR(claw_goal_fetcher_->separation_angle(), separation, 1e-4);
     EXPECT_LE(min_separation_, separation);
   }
 
   ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
-  ::aos::Sender<ClawQueue::Goal> claw_goal_sender_;
-  ::aos::Fetcher<ClawQueue::Goal> claw_goal_fetcher_;
+  ::aos::Sender<Goal> claw_goal_sender_;
+  ::aos::Fetcher<Goal> claw_goal_fetcher_;
 
   // Create a loop and simulation plant.
   ::std::unique_ptr<::aos::EventLoop> claw_event_loop_;
@@ -294,15 +325,15 @@ class ClawTest : public ::aos::testing::ControlLoopTest {
   // Minimum amount of acceptable separation between the top and bottom of the
   // claw.
   double min_separation_;
-
 };
 
 TEST_F(ClawTest, HandlesNAN) {
   {
-    auto message = claw_goal_sender_.MakeMessage();
-    message->bottom_angle = ::std::nan("");
-    message->separation_angle = ::std::nan("");
-    EXPECT_TRUE(message.Send());
+    auto builder = claw_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_bottom_angle(::std::nan(""));
+    goal_builder.add_separation_angle(::std::nan(""));
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   SetEnabled(true);
@@ -312,10 +343,11 @@ TEST_F(ClawTest, HandlesNAN) {
 // Tests that the wrist zeros correctly and goes to a position.
 TEST_F(ClawTest, ZerosCorrectly) {
   {
-    auto message = claw_goal_sender_.MakeMessage();
-    message->bottom_angle = 0.1;
-    message->separation_angle = 0.2;
-    EXPECT_TRUE(message.Send());
+    auto builder = claw_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_bottom_angle(0.1);
+    goal_builder.add_separation_angle(0.2);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   SetEnabled(true);
@@ -409,10 +441,11 @@ TEST_P(ZeroingClawTest, ParameterizedZero) {
   claw_motor_plant_.Reinitialize(GetParam().first, GetParam().second);
 
   {
-    auto message = claw_goal_sender_.MakeMessage();
-    message->bottom_angle = 0.1;
-    message->separation_angle = 0.2;
-    EXPECT_TRUE(message.Send());
+    auto builder = claw_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_bottom_angle(0.1);
+    goal_builder.add_separation_angle(0.2);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   SetEnabled(true);
@@ -586,10 +619,11 @@ class WindupClawTest : public ClawTest {
 // zeroing position is saturating the goal.
 TEST_F(WindupClawTest, NoWindupPositive) {
   {
-    auto message = claw_goal_sender_.MakeMessage();
-    message->bottom_angle = 0.1;
-    message->separation_angle = 0.2;
-    EXPECT_TRUE(message.Send());
+    auto builder = claw_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_bottom_angle(0.1);
+    goal_builder.add_separation_angle(0.2);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   TestWindup(ClawMotor::UNKNOWN_LOCATION,
@@ -602,10 +636,11 @@ TEST_F(WindupClawTest, NoWindupPositive) {
 // zeroing position is saturating the goal.
 TEST_F(WindupClawTest, NoWindupNegative) {
   {
-    auto message = claw_goal_sender_.MakeMessage();
-    message->bottom_angle = 0.1;
-    message->separation_angle = 0.2;
-    EXPECT_TRUE(message.Send());
+    auto builder = claw_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_bottom_angle(0.1);
+    goal_builder.add_separation_angle(0.2);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   TestWindup(ClawMotor::UNKNOWN_LOCATION,
@@ -618,10 +653,11 @@ TEST_F(WindupClawTest, NoWindupNegative) {
 // zeroing position is saturating the goal.
 TEST_F(WindupClawTest, NoWindupNegativeFineTune) {
   {
-    auto message = claw_goal_sender_.MakeMessage();
-    message->bottom_angle = 0.1;
-    message->separation_angle = 0.2;
-    EXPECT_TRUE(message.Send());
+    auto builder = claw_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_bottom_angle(0.1);
+    goal_builder.add_separation_angle(0.2);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   TestWindup(ClawMotor::FINE_TUNE_BOTTOM,
@@ -631,5 +667,6 @@ TEST_F(WindupClawTest, NoWindupNegativeFineTune) {
 }
 
 }  // namespace testing
+}  // namespace claw
 }  // namespace control_loops
 }  // namespace y2014

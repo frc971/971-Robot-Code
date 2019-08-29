@@ -1,0 +1,74 @@
+include "frc971/control_loops/control_loops.fbs";
+
+namespace y2017.control_loops.superstructure;
+
+table IntakeGoal {
+  // Zero for the intake is when the front tube is tangent with the front of the
+  // frame. Positive is out.
+
+  // Goal distance of the intake.
+  distance:double;
+
+  // Caps on velocity/acceleration for profiling. 0 for the default.
+  profile_params:frc971.ProfileParameters;
+
+  // Voltage to send to the rollers. Positive is sucking in.
+  voltage_rollers:double;
+
+  // If true, disable the intake so we can hang.
+  disable_intake:bool;
+
+  // The gear servo value.
+  gear_servo:double;
+}
+
+table IndexerGoal {
+  // Indexer angular velocity goals in radians/second.
+  angular_velocity:double;
+
+  // Roller voltage. Positive is sucking in.
+  voltage_rollers:double;
+}
+
+table TurretGoal {
+  // An angle of zero means the turrent faces toward the front of the
+  // robot where the intake is located. The angle increases when the turret
+  // turns clockwise (towards right from the front), and decreases when
+  // the turrent turns counter-clockwise (towards left from the front).
+  // These are from a top view above the robot.
+  angle:double;
+
+  // If true, ignore the angle and track using vision.  If we don't see
+  // anything, we'll use the turret goal above.
+  track:bool;
+
+  // Caps on velocity/acceleration for profiling. 0 for the default.
+  profile_params:frc971.ProfileParameters;
+}
+
+table HoodGoal {
+  // Angle the hood is currently at. An angle of zero is at the lower hard
+  // stop, angle increases as hood rises.
+  angle:double;
+
+  // Caps on velocity/acceleration for profiling. 0 for the default.
+  profile_params:frc971.ProfileParameters;
+}
+
+table ShooterGoal {
+  // Angular velocity goals in radians/second. Positive is shooting out of the
+  // robot.
+  angular_velocity:double;
+}
+
+table Goal {
+  intake:IntakeGoal;
+  indexer:IndexerGoal;
+  turret:TurretGoal;
+  hood:HoodGoal;
+  shooter:ShooterGoal;
+  lights_on:bool;
+  use_vision_for_shots:bool;
+}
+
+root_type Goal;

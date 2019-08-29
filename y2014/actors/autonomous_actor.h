@@ -7,12 +7,11 @@
 #include "aos/actions/actions.h"
 #include "aos/actions/actor.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "y2014/actors/shoot_actor.h"
-#include "y2014/control_loops/shooter/shooter.q.h"
-#include "y2014/queues/auto_mode.q.h"
-#include "y2014/queues/hot_goal.q.h"
+#include "y2014/control_loops/shooter/shooter_goal_generated.h"
+#include "y2014/queues/auto_mode_generated.h"
+#include "y2014/queues/hot_goal_generated.h"
 
 namespace y2014 {
 namespace actors {
@@ -22,7 +21,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   explicit AutonomousActor(::aos::EventLoop *event_loop);
 
   bool RunAction(
-      const ::frc971::autonomous::AutonomousActionParams &params) override;
+      const ::frc971::autonomous::AutonomousActionParams *params) override;
 
  private:
   void Reset() {
@@ -41,12 +40,10 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   ::aos::Fetcher<::y2014::sensors::AutoMode> auto_mode_fetcher_;
   ::aos::Fetcher<::y2014::HotGoal> hot_goal_fetcher_;
-  ::aos::Sender<::y2014::control_loops::ClawQueue::Goal> claw_goal_sender_;
-  ::aos::Fetcher<::y2014::control_loops::ClawQueue::Goal> claw_goal_fetcher_;
-  ::aos::Fetcher<::y2014::control_loops::ClawQueue::Status>
-      claw_status_fetcher_;
-  ::aos::Sender<::y2014::control_loops::ShooterQueue::Goal>
-      shooter_goal_sender_;
+  ::aos::Sender<::y2014::control_loops::claw::Goal> claw_goal_sender_;
+  ::aos::Fetcher<::y2014::control_loops::claw::Goal> claw_goal_fetcher_;
+  ::aos::Fetcher<::y2014::control_loops::claw::Status> claw_status_fetcher_;
+  ::aos::Sender<::y2014::control_loops::shooter::Goal> shooter_goal_sender_;
 
   actors::ShootActor::Factory shoot_action_factory_;
 };

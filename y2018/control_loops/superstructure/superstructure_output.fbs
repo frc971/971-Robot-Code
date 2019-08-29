@@ -1,0 +1,40 @@
+namespace y2018.control_loops.superstructure;
+
+table IntakeVoltage {
+  // Voltage of the motors on the series elastic on one side (left or right) of
+  // the intake.
+  voltage_elastic:double;
+
+  // Voltage of the rollers on one side (left or right) of the intake.
+  voltage_rollers:double;
+}
+
+table Output {
+  // Voltage sent to the parts on the left side of the intake.
+  left_intake:IntakeVoltage;
+
+  // Voltage sent to the parts on the right side of the intake.
+  right_intake:IntakeVoltage;
+
+  // Voltage sent to the motors on the proximal joint of the arm.
+  voltage_proximal:double;
+
+  // Voltage sent to the motors on the distal joint of the arm.
+  voltage_distal:double;
+
+  // Voltage sent to the hanger.  Positive pulls the robot up.
+  voltage_winch:double;
+
+  // Clamped (when true) or unclamped (when false) status sent to the
+  // pneumatic claw on the arm.
+  claw_grabbed:bool;
+
+  // If true, release the arm brakes.
+  release_arm_brake:bool;
+  // If true, release the hook
+  hook_release:bool;
+  // If true, release the forks
+  forks_release:bool;
+}
+
+root_type Output;

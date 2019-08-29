@@ -1,0 +1,27 @@
+namespace y2016.control_loops.shooter;
+
+table ShooterSideStatus {
+  // True if the shooter side is up to speed and stable.
+  ready:bool;
+  // The current average velocity in radians/second.
+  avg_angular_velocity:double;
+  // The current instantaneous filtered velocity in radians/second.
+  angular_velocity:double;
+}
+
+table Status {
+  // Left side status.
+  left:ShooterSideStatus;
+  // Right side status.
+  right:ShooterSideStatus;
+
+  // True if the shooter is ready.  It is better to compare the velocities
+  // directly so there isn't confusion on if the goal is up to date.
+  ready:bool;
+
+  // The number of shots that have been fired since the start of the shooter
+  // control loop.
+  shots:uint;
+}
+
+root_type Status;

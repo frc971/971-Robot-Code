@@ -1,0 +1,7 @@
+namespace aos;
+
+table TestMessage {
+  value:int;
+}
+
+root_type TestMessage;

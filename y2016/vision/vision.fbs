@@ -1,0 +1,38 @@
+namespace y2016.vision;
+
+// Published on ".y2016.vision.vision_status"
+table VisionStatus {
+  left_image_valid:bool;
+  right_image_valid:bool;
+  // Times when the images were taken as nanoseconds on CLOCK_MONOTONIC on the
+  // TK1.
+  left_image_timestamp:long;
+  right_image_timestamp:long;
+  // Times when the images were sent from the TK1 as nanoseconds on the TK1's
+  // CLOCK_MONOTONIC.
+  left_send_timestamp:long;
+  right_send_timestamp:long;
+
+  // Horizontal angle of the goal in radians.
+  // TODO(Brian): Figure out which way is positive.
+  horizontal_angle:double;
+  // Vertical angle of the goal in radians.
+  // TODO(Brian): Figure out which way is positive.
+  vertical_angle:double;
+  // Distance to the target in meters.
+  distance:double;
+  // The angle in radians of the bottom of the target.
+  angle:double;
+
+  // Capture time of the angle using the clock behind monotonic_clock::now().
+  target_time:long;
+
+  // The estimated positions of both sides of the drivetrain when the frame
+  // was captured.
+  // These are the estimated_left_position and estimated_right_position members
+  // of the drivetrain queue.
+  drivetrain_left_position:double;
+  drivetrain_right_position:double;
+}
+
+root_type VisionStatus;

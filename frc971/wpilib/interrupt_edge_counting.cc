@@ -2,8 +2,8 @@
 
 #include <chrono>
 
+#include "aos/realtime.h"
 #include "aos/time/time.h"
-#include "aos/init.h"
 
 namespace frc971 {
 namespace wpilib {

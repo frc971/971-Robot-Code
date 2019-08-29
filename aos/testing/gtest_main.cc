@@ -25,6 +25,7 @@ GTEST_API_ int main(int argc, char **argv) {
   FLAGS_logtostderr = true;
   google::InitGoogleLogging(argv[0]);
   ::gflags::ParseCommandLineFlags(&argc, &argv, false);
+  google::InstallFailureSignalHandler();
 
   if (FLAGS_print_logs) {
     if (::aos::testing::ForcePrintLogsDuringTests) {

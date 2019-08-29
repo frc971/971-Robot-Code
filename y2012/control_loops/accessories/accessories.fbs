@@ -1,0 +1,8 @@
+namespace y2012.control_loops.accessories;
+
+table Message {
+  solenoids:[bool]; // Exactly 3 values
+  sticks:[double]; // Exactly 2 values
+}
+
+root_type Message;

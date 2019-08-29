@@ -1,0 +1,54 @@
+{
+  "channels":
+  [
+    {
+      "name": "/shooter",
+      "type": "y2014.control_loops.shooter.Goal",
+      "frequency": 200
+    },
+    {
+      "name": "/shooter",
+      "type": "y2014.control_loops.shooter.Status",
+      "frequency": 200
+    },
+    {
+      "name": "/shooter",
+      "type": "y2014.control_loops.shooter.Output",
+      "frequency": 200
+    },
+    {
+      "name": "/shooter",
+      "type": "y2014.control_loops.shooter.Position",
+      "frequency": 200
+    },
+    {
+      "name": "/claw",
+      "type": "y2014.control_loops.claw.Goal",
+      "frequency": 200
+    },
+    {
+      "name": "/claw",
+      "type": "y2014.control_loops.claw.Status",
+      "frequency": 200
+    },
+    {
+      "name": "/claw",
+      "type": "y2014.control_loops.claw.Output",
+      "frequency": 200
+    },
+    {
+      "name": "/claw",
+      "type": "y2014.control_loops.claw.Position",
+      "frequency": 200
+    }
+  ],
+  "applications": [
+    {
+      "name": "drivetrain"
+    }
+  ],
+  "imports": [
+    "../aos/robot_state/robot_state_config.json",
+    "../frc971/control_loops/drivetrain/drivetrain_config.json"
+  ]
+}

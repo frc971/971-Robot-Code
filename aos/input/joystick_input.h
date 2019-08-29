@@ -3,7 +3,7 @@
 
 #include <atomic>
 
-#include "aos/events/event-loop.h"
+#include "aos/events/event_loop.h"
 #include "aos/input/driver_station_data.h"
 
 namespace aos {
@@ -21,7 +21,7 @@ class JoystickInput {
     event_loop_->MakeWatcher(
         ".aos.joystick_state",
         [this](const ::aos::JoystickState &joystick_state) {
-          this->HandleData(joystick_state);
+          this->HandleData(&joystick_state);
         });
     event_loop->SetRuntimeRealtimePriority(29);
   }
@@ -30,7 +30,7 @@ class JoystickInput {
   int mode() const { return mode_; }
 
  private:
-  void HandleData(const ::aos::JoystickState &joystick_state);
+  void HandleData(const ::aos::JoystickState *joystick_state);
 
   // Subclasses should do whatever they want with data here.
   virtual void RunIteration(const driver_station::Data &data) = 0;
@@ -39,12 +39,6 @@ class JoystickInput {
   driver_station::Data data_;
 
   int mode_;
-};
-
-// Class which will proxy joystick information from UDP packets to the queues.
-class JoystickProxy {
- public:
-  void Run();
 };
 
 }  // namespace input

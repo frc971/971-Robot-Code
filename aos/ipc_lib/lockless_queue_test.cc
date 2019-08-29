@@ -11,11 +11,10 @@
 
 #include "aos/event.h"
 #include "aos/events/epoll.h"
-#include "aos/init.h"
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/queue_racer.h"
 #include "aos/ipc_lib/signalfd.h"
-#include "aos/testing/test_logging.h"
+#include "aos/realtime.h"
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"
 
@@ -43,7 +42,6 @@ namespace chrono = ::std::chrono;
 class LocklessQueueTest : public ::testing::Test {
  public:
   LocklessQueueTest() {
-    ::aos::testing::EnableTestLogging();
     config_.num_watchers = 10;
     config_.num_senders = 100;
     config_.queue_size = 10000;
@@ -247,8 +245,8 @@ TEST_F(LocklessQueueTest, Send) {
   // Send enough messages to wrap.
   for (int i = 0; i < 20000; ++i) {
     // Confirm that the queue index makes sense given the number of sends.
-    EXPECT_EQ(queue.LatestQueueIndex(),
-              i == 0 ? LocklessQueue::empty_queue_index() : i - 1);
+    EXPECT_EQ(queue.LatestQueueIndex().index(),
+              i == 0 ? LocklessQueue::empty_queue_index().index() : i - 1);
 
     // Send a trivial piece of data.
     char data[100];
@@ -257,7 +255,7 @@ TEST_F(LocklessQueueTest, Send) {
 
     // Confirm that the queue index still makes sense.  This is easier since the
     // empty case has been handled.
-    EXPECT_EQ(queue.LatestQueueIndex(), i);
+    EXPECT_EQ(queue.LatestQueueIndex().index(), i);
 
     // Read a result from 5 in the past.
     ::aos::monotonic_clock::time_point monotonic_sent_time;

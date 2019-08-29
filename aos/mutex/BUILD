@@ -9,10 +9,9 @@ cc_library(
         "mutex.h",
     ],
     deps = [
-        "//aos:die",
-        "//aos/type_traits:type_traits",
-        "//aos/logging",
         "//aos/ipc_lib:aos_sync",
+        "//aos/type_traits",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -22,14 +21,13 @@ cc_test(
         "mutex_test.cc",
     ],
     deps = [
-        "//aos:die",
         ":mutex",
-        "//aos/time:time",
-        "//aos/logging",
-        "//aos/util:death_test_log_implementation",
-        "//aos/util:thread",
         "//aos/testing:googletest",
         "//aos/testing:test_logging",
         "//aos/testing:test_shm",
+        "//aos/time",
+        "//aos/util:death_test_log_implementation",
+        "//aos/util:thread",
+        "@com_github_google_glog//:glog",
     ],
 )

@@ -1,0 +1,23 @@
+namespace y2016.control_loops.shooter;
+
+// All angles are in radians, and angular velocities are in radians/second.
+// For all angular velocities, positive is shooting the ball out of the robot.
+table Goal {
+  // Angular velocity goals in radians/second.
+  angular_velocity:double;
+
+  clamp_open:bool; // True to release our clamp on the ball.
+  // True to push the ball into the shooter.
+  // If we are in the act of shooting with a goal velocity != 0, wait until it
+  // is up to speed, push the ball into the shooter, and then wait until it
+  // spins up and down before letting the piston be released.
+  push_to_shooter:bool;
+
+  // Forces the lights on.
+  force_lights_on:bool;
+
+  // If true, the robot is shooting forwards.
+  shooting_forwards:bool;
+}
+
+root_type Goal;

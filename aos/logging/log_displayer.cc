@@ -13,7 +13,6 @@
 
 #include "aos/configuration.h"
 #include "aos/logging/binary_log_file.h"
-#include "aos/queue_types.h"
 #include "aos/logging/logging.h"
 #include "aos/logging/implementations.h"
 #include "aos/logging/printf_formats.h"
@@ -267,28 +266,6 @@ int main(int argc, char **argv) {
       return 0;
     }
 
-    if (msg->type == LogFileMessageHeader::MessageType::kStructType) {
-      size_t bytes = msg->message_size;
-      ::aos::MessageType *type = ::aos::MessageType::Deserialize(
-          reinterpret_cast<const char *>(msg + 1), &bytes);
-      if (type == nullptr) {
-        AOS_LOG(INFO, "Trying old version of type decoding.\n");
-        bytes = msg->message_size;
-        type = ::aos::MessageType::Deserialize(
-            reinterpret_cast<const char *>(msg + 1), &bytes, false);
-      }
-
-      if (type == nullptr) {
-        AOS_LOG(WARNING,
-                "Error deserializing MessageType of size %" PRIx32
-                " starting at %zx.\n",
-                msg->message_size, reader.file_offset(msg + 1));
-      } else {
-        ::aos::type_cache::Add(*type);
-      }
-      continue;
-    }
-
     if (source_pid >= 0 && msg->source != source_pid) {
       // Message is from the wrong process.
       continue;
@@ -342,69 +319,10 @@ int main(int argc, char **argv) {
         fprintf(stdout, AOS_LOGGING_BASE_FORMAT "%.*s", BASE_ARGS,
                 static_cast<int>(msg->message_size), position);
         break;
-      case LogFileMessageHeader::MessageType::kStruct: {
-        uint32_t type_id;
-        memcpy(&type_id, position, sizeof(type_id));
-        position += sizeof(type_id);
-
-        uint32_t string_length;
-        memcpy(&string_length, position, sizeof(string_length));
-        position += sizeof(string_length);
-
-        char buffer[4096];
-        size_t output_length = sizeof(buffer);
-        size_t input_length =
-            msg->message_size -
-            (sizeof(type_id) + sizeof(uint32_t) + string_length);
-        if (!PrintMessage(buffer, &output_length, position + string_length,
-                          &input_length, ::aos::type_cache::Get(type_id))) {
-          AOS_LOG(FATAL,
-                  "printing message (%.*s) of type %s into %zu-byte buffer "
-                  "failed\n",
-                  static_cast<int>(string_length), position,
-                  ::aos::type_cache::Get(type_id).name.c_str(), sizeof(buffer));
-        }
-        if (input_length > 0) {
-          AOS_LOG(WARNING, "%zu extra bytes on message of type %s\n",
-                  input_length, ::aos::type_cache::Get(type_id).name.c_str());
-        }
-        fprintf(stdout, AOS_LOGGING_BASE_FORMAT "%.*s: %.*s\n", BASE_ARGS,
-                static_cast<int>(string_length), position,
-                static_cast<int>(sizeof(buffer) - output_length), buffer);
-      } break;
-      case LogFileMessageHeader::MessageType::kMatrix: {
-        uint32_t type;
-        memcpy(&type, position, sizeof(type));
-        position += sizeof(type);
-
-        uint32_t string_length;
-        memcpy(&string_length, position, sizeof(string_length));
-        position += sizeof(string_length);
-
-        uint16_t rows;
-        memcpy(&rows, position, sizeof(rows));
-        position += sizeof(rows);
-        uint16_t cols;
-        memcpy(&cols, position, sizeof(cols));
-        position += sizeof(cols);
-
-        const size_t matrix_bytes =
-            msg->message_size -
-            (sizeof(type) + sizeof(uint32_t) + sizeof(uint16_t) +
-             sizeof(uint16_t) + string_length);
-        AOS_CHECK_EQ(matrix_bytes,
-                     ::aos::MessageType::Sizeof(type) * rows * cols);
-        char buffer[4096];
-        size_t output_length = sizeof(buffer);
-        if (!::aos::PrintMatrix(buffer, &output_length,
-                                position + string_length, type, rows, cols)) {
-          AOS_LOG(FATAL, "printing %dx%d matrix of type %" PRIu32 " failed\n",
-                  rows, cols, type);
-        }
-        fprintf(stdout, AOS_LOGGING_BASE_FORMAT "%.*s: %.*s\n", BASE_ARGS,
-                static_cast<int>(string_length), position,
-                static_cast<int>(sizeof(buffer) - output_length), buffer);
-      } break;
+      case LogFileMessageHeader::MessageType::kStruct:
+      case LogFileMessageHeader::MessageType::kMatrix:
+        AOS_LOG(FATAL, "Unsupported matrix or struct\n");
+        break;
       case LogFileMessageHeader::MessageType::kStructType:
         AOS_LOG(FATAL, "shouldn't get here\n");
         break;

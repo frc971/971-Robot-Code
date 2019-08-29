@@ -1,11 +1,20 @@
 #include "aos/logging/context.h"
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE /* See feature_test_macros(7) */
+#endif
+
 #include <string.h>
 #include <sys/prctl.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #include <string>
+
+#include <errno.h>
+
+extern char *program_invocation_name;
+extern char *program_invocation_short_name;
 
 #include "aos/die.h"
 #include "aos/complex_thread_local.h"

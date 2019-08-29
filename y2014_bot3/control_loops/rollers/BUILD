@@ -1,16 +1,37 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//aos/build:queues.bzl", "queue_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
-queue_library(
-    name = "rollers_queue",
+flatbuffer_cc_library(
+    name = "rollers_goal_fbs",
     srcs = [
-        "rollers.q",
+        "rollers_goal.fbs",
     ],
-    deps = [
-        "//aos/controls:control_loop_queues",
-        "//frc971/control_loops:queues",
+    gen_reflections = 1,
+)
+
+flatbuffer_cc_library(
+    name = "rollers_position_fbs",
+    srcs = [
+        "rollers_position.fbs",
     ],
+    gen_reflections = 1,
+)
+
+flatbuffer_cc_library(
+    name = "rollers_output_fbs",
+    srcs = [
+        "rollers_output.fbs",
+    ],
+    gen_reflections = 1,
+)
+
+flatbuffer_cc_library(
+    name = "rollers_status_fbs",
+    srcs = [
+        "rollers_status.fbs",
+    ],
+    gen_reflections = 1,
 )
 
 cc_library(
@@ -22,7 +43,10 @@ cc_library(
         "rollers.h",
     ],
     deps = [
-        ":rollers_queue",
+        ":rollers_goal_fbs",
+        ":rollers_output_fbs",
+        ":rollers_position_fbs",
+        ":rollers_status_fbs",
         "//aos/controls:control_loop",
         "//aos/logging",
     ],
@@ -36,6 +60,6 @@ cc_binary(
     deps = [
         ":rollers_lib",
         "//aos:init",
-        "//aos/events:shm-event-loop",
+        "//aos/events:shm_event_loop",
     ],
 )

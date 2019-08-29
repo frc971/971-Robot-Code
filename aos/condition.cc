@@ -4,9 +4,9 @@
 #include <inttypes.h>
 #include <time.h>
 
-#include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"
 #include "aos/type_traits/type_traits.h"
+#include "glog/logging.h"
 
 namespace aos {
 
@@ -28,7 +28,7 @@ Condition::WaitResult Condition::WaitTimed(chrono::nanoseconds timeout) {
   const bool do_timeout = timeout != chrono::nanoseconds(0);
 
   if (do_timeout) {
-    AOS_PCHECK(clock_gettime(CLOCK_MONOTONIC, &end_time) == 0);
+    PCHECK(clock_gettime(CLOCK_MONOTONIC, &end_time) == 0);
     timeout += chrono::nanoseconds(end_time.tv_nsec);
     chrono::seconds timeout_seconds =
         chrono::duration_cast<chrono::seconds>(timeout);

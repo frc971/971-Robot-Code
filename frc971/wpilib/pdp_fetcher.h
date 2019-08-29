@@ -4,8 +4,8 @@
 #include <atomic>
 #include <memory>
 
-#include "aos/events/event-loop.h"
-#include "frc971/wpilib/pdp_values.q.h"
+#include "aos/events/event_loop.h"
+#include "frc971/wpilib/pdp_values_generated.h"
 
 namespace frc {
 class PowerDistributionPanel;

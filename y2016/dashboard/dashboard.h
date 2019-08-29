@@ -14,13 +14,13 @@
 #include "seasocks/StringUtil.h"
 #include "seasocks/WebSocket.h"
 
-#include "aos/events/event-loop.h"
+#include "aos/events/event_loop.h"
 #include "aos/mutex/mutex.h"
 #include "aos/time/time.h"
-#include "frc971/autonomous/auto.q.h"
-#include "y2016/control_loops/superstructure/superstructure.q.h"
-#include "y2016/queues/ball_detector.q.h"
-#include "y2016/vision/vision.q.h"
+#include "frc971/autonomous/auto_generated.h"
+#include "y2016/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2016/queues/ball_detector_generated.h"
+#include "y2016/vision/vision_generated.h"
 
 namespace y2016 {
 namespace dashboard {
@@ -71,7 +71,7 @@ class DataCollector {
   ::aos::Fetcher<::y2016::vision::VisionStatus> vision_status_fetcher_;
   ::aos::Fetcher<::y2016::sensors::BallDetector> ball_detector_fetcher_;
   ::aos::Fetcher<::frc971::autonomous::AutonomousMode> autonomous_mode_fetcher_;
-  ::aos::Fetcher<::y2016::control_loops::SuperstructureQueue::Status>
+  ::aos::Fetcher<::y2016::control_loops::superstructure::Status>
       superstructure_status_fetcher_;
 
   // Storage vector that is written and overwritten with data in a FIFO fashion.

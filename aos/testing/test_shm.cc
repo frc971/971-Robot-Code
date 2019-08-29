@@ -2,7 +2,7 @@
 
 #include <sys/mman.h>
 
-#include "aos/queue.h"
+#include "aos/ipc_lib/queue.h"
 #include "aos/logging/logging.h"
 #include "aos/testing/test_logging.h"
 

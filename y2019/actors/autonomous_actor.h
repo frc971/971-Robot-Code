@@ -7,16 +7,18 @@
 #include "aos/actions/actions.h"
 #include "aos/actions/actor.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
-#include "frc971/control_loops/control_loops.q.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
-#include "frc971/control_loops/drivetrain/localizer.q.h"
-#include "y2019/control_loops/superstructure/superstructure.q.h"
+#include "frc971/control_loops/drivetrain/localizer_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2019 {
 namespace actors {
 
-using ::frc971::ProfileParameters;
+using ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
+
+namespace superstructure = y2019::control_loops::superstructure;
 
 struct ElevatorWristPosition {
   double elevator;
@@ -28,7 +30,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   explicit AutonomousActor(::aos::EventLoop *event_loop);
 
   bool RunAction(
-      const ::frc971::autonomous::AutonomousActionParams &params) override;
+      const ::frc971::autonomous::AutonomousActionParams *params) override;
 
  private:
   void Reset(bool is_left);
@@ -75,25 +77,83 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 
   void SendSuperstructureGoal() {
-    auto new_superstructure_goal = superstructure_goal_sender_.MakeMessage();
-    new_superstructure_goal->elevator.unsafe_goal = elevator_goal_;
-    new_superstructure_goal->wrist.unsafe_goal = wrist_goal_;
-    new_superstructure_goal->intake.unsafe_goal = intake_goal_;
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    new_superstructure_goal->suction.grab_piece = suction_on_;
-    new_superstructure_goal->suction.gamepiece_mode = suction_gamepiece_;
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        elevator_offset;
 
-    new_superstructure_goal->elevator.profile_params.max_velocity =
-        elevator_max_velocity_;
-    new_superstructure_goal->elevator.profile_params.max_acceleration =
-        elevator_max_acceleration_;
+    {
+      frc971::ProfileParameters::Builder profile_params_builder =
+          builder.MakeBuilder<frc971::ProfileParameters>();
+      profile_params_builder.add_max_velocity(elevator_max_velocity_);
+      profile_params_builder.add_max_acceleration(elevator_max_acceleration_);
 
-    new_superstructure_goal->wrist.profile_params.max_velocity =
-        wrist_max_velocity_;
-    new_superstructure_goal->wrist.profile_params.max_acceleration =
-        wrist_max_acceleration_;
+      flatbuffers::Offset<frc971::ProfileParameters> profile_params_offset =
+          profile_params_builder.Finish();
 
-    if (!new_superstructure_goal.Send()) {
+      StaticZeroingSingleDOFProfiledSubsystemGoal::Builder elevator_builder =
+          builder.MakeBuilder<StaticZeroingSingleDOFProfiledSubsystemGoal>();
+
+      elevator_builder.add_unsafe_goal(elevator_goal_);
+      elevator_builder.add_profile_params(profile_params_offset);
+
+      elevator_offset = elevator_builder.Finish();
+    }
+
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        wrist_offset;
+
+    {
+      frc971::ProfileParameters::Builder profile_params_builder =
+          builder.MakeBuilder<frc971::ProfileParameters>();
+      profile_params_builder.add_max_velocity(wrist_max_velocity_);
+      profile_params_builder.add_max_acceleration(wrist_max_acceleration_);
+
+      flatbuffers::Offset<frc971::ProfileParameters> profile_params_offset =
+          profile_params_builder.Finish();
+
+      StaticZeroingSingleDOFProfiledSubsystemGoal::Builder wrist_builder =
+          builder.MakeBuilder<StaticZeroingSingleDOFProfiledSubsystemGoal>();
+
+      wrist_builder.add_unsafe_goal(wrist_goal_);
+      wrist_builder.add_profile_params(profile_params_offset);
+
+      wrist_offset = wrist_builder.Finish();
+    }
+
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset;
+
+    {
+      StaticZeroingSingleDOFProfiledSubsystemGoal::Builder intake_builder =
+          builder.MakeBuilder<StaticZeroingSingleDOFProfiledSubsystemGoal>();
+
+      intake_builder.add_unsafe_goal(intake_goal_);
+
+      intake_offset = intake_builder.Finish();
+    }
+
+    flatbuffers::Offset<superstructure::SuctionGoal> suction_offset;
+
+    {
+      superstructure::SuctionGoal::Builder suction_builder =
+          builder.MakeBuilder<superstructure::SuctionGoal>();
+
+      suction_builder.add_grab_piece(suction_on_);
+      suction_builder.add_gamepiece_mode(suction_gamepiece_);
+
+      suction_offset = suction_builder.Finish();
+    }
+
+    superstructure::Goal::Builder superstructure_builder =
+        builder.MakeBuilder<superstructure::Goal>();
+
+    superstructure_builder.add_elevator(elevator_offset);
+    superstructure_builder.add_wrist(wrist_offset);
+    superstructure_builder.add_intake(intake_offset);
+    superstructure_builder.add_suction(suction_offset);
+
+    if (!builder.Send(superstructure_builder.Finish())) {
       AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
     }
   }
@@ -102,7 +162,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     superstructure_status_fetcher_.Fetch();
 
     if (superstructure_status_fetcher_.get()) {
-      return superstructure_status_fetcher_->has_piece;
+      return superstructure_status_fetcher_->has_piece();
     }
     return false;
   }
@@ -145,12 +205,12 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     if (superstructure_status_fetcher_.get()) {
       const bool elevator_at_goal =
           ::std::abs(elevator_goal_ -
-                     superstructure_status_fetcher_->elevator.position) <
+                     superstructure_status_fetcher_->elevator()->position()) <
           kElevatorTolerance;
 
       const bool wrist_at_goal =
           ::std::abs(wrist_goal_ -
-                     superstructure_status_fetcher_->wrist.position) <
+                     superstructure_status_fetcher_->wrist()->position()) <
           kWristTolerance;
 
       return elevator_at_goal && wrist_at_goal;
@@ -183,11 +243,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   ::aos::Sender<::frc971::control_loops::drivetrain::LocalizerControl>
       localizer_control_sender_;
-  ::aos::Sender<
-      ::y2019::control_loops::superstructure::SuperstructureQueue::Goal>
+  ::aos::Sender<::y2019::control_loops::superstructure::Goal>
       superstructure_goal_sender_;
-  ::aos::Fetcher<
-      ::y2019::control_loops::superstructure::SuperstructureQueue::Status>
+  ::aos::Fetcher<::y2019::control_loops::superstructure::Status>
       superstructure_status_fetcher_;
 };
 

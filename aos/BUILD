@@ -1,6 +1,5 @@
 load("//tools:environments.bzl", "mcu_cpus")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
-load("//aos/build:queues.bzl", "queue_library")
 
 filegroup(
     name = "prime_binaries",
@@ -116,100 +115,6 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-genrule(
-    name = "gen_print_field",
-    outs = ["print_field.cc"],
-    cmd = "$(location //aos/build/queues:print_field) $@",
-    tools = ["//aos/build/queues:print_field"],
-    visibility = ["//visibility:private"],
-)
-
-cc_library(
-    name = "queue_types",
-    srcs = [
-        "print_field_helpers.h",
-        "queue_types.cc",
-        ":gen_print_field",
-    ],
-    hdrs = [
-        "queue_types.h",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":generated_queue_headers",
-        "//aos:byteorder",
-        "//aos/ipc_lib:core_lib",
-        "//aos/ipc_lib:shared_mem",
-        "//aos/logging:printf_formats",
-        "//aos/mutex",
-        "//aos/time",
-    ],
-)
-
-cc_test(
-    name = "queue_types_test",
-    srcs = [
-        "queue_types_test.cc",
-    ],
-    deps = [
-        ":queue_types",
-        ":test_queue",
-        "//aos/logging",
-        "//aos/testing:googletest",
-        "//aos/testing:test_logging",
-    ],
-)
-
-cc_library(
-    name = "queues",
-    hdrs = [
-        "queue.h",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//aos:queue",
-        "//aos/ipc_lib:queue",
-        "//aos/messages",
-    ],
-)
-
-queue_library(
-    name = "test_queue",
-    srcs = [
-        "test_queue.q",
-    ],
-)
-
-genrule(
-    name = "gen_queue_primitives",
-    outs = ["queue_primitives.h"],
-    cmd = "$(location //aos/build/queues:queue_primitives) $@",
-    tools = ["//aos/build/queues:queue_primitives"],
-    visibility = ["//visibility:private"],
-)
-
-cc_library(
-    name = "generated_queue_headers",
-    hdrs = [
-        ":gen_queue_primitives",
-    ],
-    visibility = ["//aos/logging:__pkg__"],
-)
-
-cc_test(
-    name = "queue_test",
-    srcs = [
-        "queue_test.cc",
-    ],
-    deps = [
-        ":test_queue",
-        "//aos:die",
-        "//aos/testing:googletest",
-        "//aos/testing:test_shm",
-        "//aos/util:thread",
-    ],
-)
-
 cc_library(
     name = "unique_malloc_ptr",
     hdrs = [
@@ -229,8 +134,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos/ipc_lib:aos_sync",
-        "//aos/logging",
         "//aos/mutex",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -291,8 +196,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos/ipc_lib:aos_sync",
-        "//aos/logging",
         "//aos/time",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -319,14 +224,6 @@ cc_binary(
         "//aos/logging:implementations",
         "//aos/time",
     ],
-)
-
-cc_library(
-    name = "queue",
-    hdrs = [
-        "queue-tmpl.h",
-    ],
-    visibility = ["//aos:__pkg__"],
 )
 
 cc_library(
@@ -370,15 +267,31 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        ":realtime",
         "//aos:die",
         "//aos/ipc_lib:shared_mem",
         "//aos/logging:implementations",
     ],
 )
 
+cc_library(
+    name = "realtime",
+    srcs = [
+        "realtime.cc",
+    ],
+    hdrs = [
+        "realtime.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_google_glog//:glog",
+    ],
+)
+
 flatbuffer_cc_library(
-    name = "configuration_flatbuffer",
+    name = "configuration_fbs",
     srcs = ["configuration.fbs"],
+    visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -391,13 +304,12 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        ":configuration_flatbuffer",
+        ":configuration_fbs",
         ":flatbuffer_merge",
         ":flatbuffers",
         ":json_to_flatbuffer",
         "@com_google_absl//absl/base",
         "//aos:unique_malloc_ptr",
-        "//aos/logging",
         "//aos/util:file",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:btree",
@@ -443,6 +355,7 @@ cc_library(
     srcs = ["json_tokenizer.cc"],
     hdrs = ["json_tokenizer.h"],
     deps = [
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -451,11 +364,11 @@ cc_library(
     name = "json_to_flatbuffer",
     srcs = ["json_to_flatbuffer.cc"],
     hdrs = ["json_to_flatbuffer.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":flatbuffer_utils",
         ":flatbuffers",
         ":json_tokenizer",
-        "//aos/logging",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
@@ -479,6 +392,7 @@ cc_library(
     srcs = ["flatbuffer_merge.cc"],
     hdrs = ["flatbuffer_merge.h"],
     copts = ["-Wno-cast-align"],
+    visibility = ["//visibility:public"],
     deps = [
         ":flatbuffer_utils",
         ":flatbuffers",
@@ -511,6 +425,7 @@ cc_library(
     deps = [
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -520,15 +435,32 @@ cc_test(
         "configuration_test.cc",
     ],
     data = [
+        "testdata/backwards.json",
         "testdata/config1.json",
         "testdata/config1_bad.json",
         "testdata/config2.json",
         "testdata/config3.json",
         "testdata/expected.json",
+        "//aos/events:config.fb.json",
+        "//aos/events:pingpong.bfbs",
     ],
     deps = [
         ":configuration",
         "//aos/testing:googletest",
         "//aos/testing:test_logging",
+    ],
+)
+
+cc_binary(
+    name = "config_flattener",
+    srcs = [
+        "config_flattener.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":configuration",
+        ":init",
+        "//aos/util:file",
+        "@com_github_google_glog//:glog",
     ],
 )

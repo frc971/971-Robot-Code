@@ -21,6 +21,16 @@ namespace configuration {
 FlatbufferDetachedBuffer<Configuration> ReadConfig(
     const absl::string_view path);
 
+// Sorts and merges entries in a config.
+FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
+    const Flatbuffer<Configuration> &config);
+
+// Adds schema definitions to a sorted and merged config from the provided
+// schema list.
+FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
+    const Flatbuffer<Configuration> &config,
+    const std::vector<aos::FlatbufferString<reflection::Schema>> &schemas);
+
 // Returns the resolved location for a name, type, and application name. Returns
 // nullptr if none is found.
 //
@@ -37,6 +47,8 @@ inline const Channel *GetChannel(const Flatbuffer<Configuration> &config,
   return GetChannel(&config.message(), name, type, application_name);
 }
 
+// TODO(austin): GetSchema<T>(const Flatbuffer<Configuration> &config);
+
 // Returns "our" IP address.
 const in_addr &GetOwnIPAddress();
 
@@ -51,6 +63,13 @@ const char *GetRootDirectory();
 const char *GetLoggingDirectory();
 
 }  // namespace configuration
+
+// Compare and equality operators for Channel.  Note: these only check the name
+// and type for equality.
+bool operator<(const FlatbufferDetachedBuffer<Channel> &lhs,
+               const FlatbufferDetachedBuffer<Channel> &rhs);
+bool operator==(const FlatbufferDetachedBuffer<Channel> &lhs,
+                const FlatbufferDetachedBuffer<Channel> &rhs);
 }  // namespace aos
 
 #endif  // AOS_CONFIGURATION_H_

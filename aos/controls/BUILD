@@ -1,21 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//aos/build:queues.bzl", "queue_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("//tools:environments.bzl", "mcu_cpus")
-
-cc_library(
-    name = "replay_control_loop",
-    hdrs = [
-        "replay_control_loop.h",
-    ],
-    deps = [
-        ":control_loop",
-        "//aos:queues",
-        "//aos/logging:queue_logging",
-        "//aos/logging:replay",
-        "//aos/time",
-    ],
-)
 
 cc_library(
     name = "control_loop_test",
@@ -27,11 +13,13 @@ cc_library(
         "control_loop_test.h",
     ],
     deps = [
+        "//aos:flatbuffers",
+        "//aos:json_to_flatbuffer",
         "//aos/events:simulated_event_loop",
-        "//aos/logging:queue_logging",
-        "//aos/robot_state",
+        "//aos/robot_state:joystick_state_fbs",
+        "//aos/robot_state:robot_state_fbs",
         "//aos/testing:googletest",
-        "//aos/testing:test_shm",
+        "//aos/testing:test_logging",
         "//aos/time",
     ],
 )
@@ -43,7 +31,7 @@ cc_library(
     ],
     restricted_to = mcu_cpus,
     deps = [
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -54,9 +42,9 @@ cc_library(
     ],
     deps = [
         "//aos/logging",
-        "//aos/logging:matrix_logging",
         "//third_party/cddlib",
-        "//third_party/eigen",
+        "@com_github_google_glog//:glog",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -69,14 +57,14 @@ cc_test(
         ":polytope",
         "//aos/testing:googletest",
         "//aos/testing:test_logging",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
-queue_library(
-    name = "control_loop_queues",
+flatbuffer_cc_library(
+    name = "control_loop_fbs",
     srcs = [
-        "control_loops.q",
+        "control_loops.fbs",
     ],
 )
 
@@ -90,13 +78,11 @@ cc_library(
         "control_loop.h",
     ],
     deps = [
-        ":control_loop_queues",
-        "//aos:queues",
-        "//aos/events:event-loop",
-        "//aos/events:shm-event-loop",
+        "//aos/events:event_loop",
+        "//aos/events:shm_event_loop",
         "//aos/logging",
-        "//aos/logging:queue_logging",
-        "//aos/robot_state",
+        "//aos/robot_state:joystick_state_fbs",
+        "//aos/robot_state:robot_state_fbs",
         "//aos/time",
         "//aos/util:log_interval",
     ],

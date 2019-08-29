@@ -2,11 +2,12 @@
 
 #include "aos/commonmath.h"
 #include "aos/controls/polytope.h"
-#include "aos/logging/matrix_logging.h"
 
 #include "frc971/control_loops/coerce_goal.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 
 namespace frc971 {
@@ -60,8 +61,6 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
 
   const Eigen::Matrix<double, 7, 1> error = kf_->R() - kf_->X_hat();
 
-  AOS_LOG_MATRIX(DEBUG, "U_uncapped", *U);
-
   Eigen::Matrix<double, 2, 2> position_K;
   position_K << kf_->controller().K(0, 0), kf_->controller().K(0, 2),
       kf_->controller().K(1, 0), kf_->controller().K(1, 2);
@@ -75,7 +74,6 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
   const auto drive_error = T_inverse_ * position_error;
   Eigen::Matrix<double, 2, 1> velocity_error;
   velocity_error << error(1, 0), error(3, 0);
-  AOS_LOG_MATRIX(DEBUG, "error", error);
 
   Eigen::Matrix<double, 2, 1> U_integral;
   U_integral << kf_->X_hat(4, 0), kf_->X_hat(5, 0);
@@ -144,23 +142,31 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
 }
 
 void DrivetrainMotorsSS::SetGoal(
-    const ::frc971::control_loops::DrivetrainQueue::Goal &goal) {
-  unprofiled_goal_ << goal.left_goal, 0.0, goal.right_goal, 0.0, 0.0, 0.0, 0.0;
-  if (::std::abs(goal.max_ss_voltage) < 0.01) {
+    const ::frc971::control_loops::drivetrain::Goal *goal) {
+  unprofiled_goal_ << goal->left_goal(), 0.0, goal->right_goal(), 0.0, 0.0, 0.0,
+      0.0;
+  if (!goal->has_max_ss_voltage()) {
     max_voltage_ = kMaxVoltage;
   } else {
-    max_voltage_ = goal.max_ss_voltage;
+    max_voltage_ = goal->has_max_ss_voltage();
   }
 
-  use_profile_ =
-      !kf_->controller().Kff().isZero(0) &&
-      (goal.linear.max_velocity != 0.0 && goal.linear.max_acceleration != 0.0 &&
-       goal.angular.max_velocity != 0.0 &&
-       goal.angular.max_acceleration != 0.0);
-  linear_profile_.set_maximum_velocity(goal.linear.max_velocity);
-  linear_profile_.set_maximum_acceleration(goal.linear.max_acceleration);
-  angular_profile_.set_maximum_velocity(goal.angular.max_velocity);
-  angular_profile_.set_maximum_acceleration(goal.angular.max_acceleration);
+  use_profile_ = !kf_->controller().Kff().isZero(0) &&
+                 (goal->has_linear() && goal->has_angular() &&
+                  goal->linear()->has_max_velocity() &&
+                  goal->linear()->has_max_acceleration() &&
+                  goal->angular()->has_max_velocity() &&
+                  goal->angular()->has_max_acceleration());
+  if (goal->has_linear()) {
+    linear_profile_.set_maximum_velocity(goal->linear()->max_velocity());
+    linear_profile_.set_maximum_acceleration(
+        goal->linear()->max_acceleration());
+  }
+  if (goal->has_angular()) {
+    angular_profile_.set_maximum_velocity(goal->angular()->max_velocity());
+    angular_profile_.set_maximum_acceleration(
+        goal->angular()->max_acceleration());
+  }
 }
 
 void DrivetrainMotorsSS::Update(bool enable_control_loop) {
@@ -255,7 +261,7 @@ void DrivetrainMotorsSS::Update(bool enable_control_loop) {
 }
 
 void DrivetrainMotorsSS::SetOutput(
-    ::frc971::control_loops::DrivetrainQueue::Output *output) const {
+    ::frc971::control_loops::drivetrain::OutputT *output) const {
   if (output) {
     output->left_voltage = kf_->U(0, 0);
     output->right_voltage = kf_->U(1, 0);
@@ -265,7 +271,7 @@ void DrivetrainMotorsSS::SetOutput(
 }
 
 void DrivetrainMotorsSS::PopulateStatus(
-    ::frc971::control_loops::DrivetrainQueue::Status *status) const {
+    ::frc971::control_loops::drivetrain::StatusBuilder *builder) const {
   Eigen::Matrix<double, 2, 1> profiled_linear =
       dt_config_.LeftRightToLinear(kf_->next_R());
   Eigen::Matrix<double, 2, 1> profiled_angular =
@@ -276,10 +282,10 @@ void DrivetrainMotorsSS::PopulateStatus(
   Eigen::Matrix<double, 4, 1> profiled_gyro_left_right =
       dt_config_.AngularLinearToLeftRight(profiled_linear, profiled_angular);
 
-  status->profiled_left_position_goal = profiled_gyro_left_right(0, 0);
-  status->profiled_left_velocity_goal = profiled_gyro_left_right(1, 0);
-  status->profiled_right_position_goal = profiled_gyro_left_right(2, 0);
-  status->profiled_right_velocity_goal = profiled_gyro_left_right(3, 0);
+  builder->add_profiled_left_position_goal(profiled_gyro_left_right(0, 0));
+  builder->add_profiled_left_velocity_goal(profiled_gyro_left_right(1, 0));
+  builder->add_profiled_right_position_goal(profiled_gyro_left_right(2, 0));
+  builder->add_profiled_right_velocity_goal(profiled_gyro_left_right(3, 0));
 }
 
 }  // namespace drivetrain

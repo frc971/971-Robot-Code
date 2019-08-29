@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//aos/build:queues.bzl", "queue_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 cc_library(
     name = "action_lib",
@@ -13,30 +13,22 @@ cc_library(
         "actor.h",
     ],
     deps = [
-        "//aos:queues",
+        ":actions_fbs",
         "//aos/controls:control_loop",
         "//aos/logging",
-        "//aos/logging:queue_logging",
         "//aos/time",
         "//aos/util:phased_loop",
     ],
 )
 
-queue_library(
-    name = "action_queue",
-    srcs = [
-        "actions.q",
-    ],
+flatbuffer_cc_library(
+    name = "actions_fbs",
+    srcs = ["actions.fbs"],
 )
 
-queue_library(
-    name = "test_action_queue",
-    srcs = [
-        "test_action.q",
-    ],
-    deps = [
-        ":action_queue",
-    ],
+flatbuffer_cc_library(
+    name = "test_action_fbs",
+    srcs = ["test_action.fbs"],
 )
 
 cc_test(
@@ -44,15 +36,14 @@ cc_test(
     srcs = [
         "action_test.cc",
     ],
+    data = ["action_test_config.json"],
     deps = [
         ":action_lib",
-        ":action_queue",
-        ":test_action_queue",
+        ":actions_fbs",
+        ":test_action_fbs",
         "//aos:event",
-        "//aos:queues",
         "//aos/events:simulated_event_loop",
         "//aos/logging",
-        "//aos/logging:queue_logging",
         "//aos/testing:googletest",
         "//aos/testing:test_shm",
         "//aos/time",

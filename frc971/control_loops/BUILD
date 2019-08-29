@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//aos/build:queues.bzl", "queue_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("//tools:environments.bzl", "mcu_cpus")
 
 cc_library(
@@ -34,7 +34,7 @@ cc_library(
     hdrs = ["pose.h"],
     deps = [
         "//aos/util:math",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -53,15 +53,16 @@ cc_library(
         "hall_effect_tracker.h",
     ],
     deps = [
-        ":queues",
+        ":control_loops_fbs",
     ],
 )
 
-queue_library(
-    name = "queues",
+flatbuffer_cc_library(
+    name = "control_loops_fbs",
     srcs = [
-        "control_loops.q",
+        "control_loops.fbs",
     ],
+    compatible_with = mcu_cpus,
 )
 
 cc_test(
@@ -70,8 +71,8 @@ cc_test(
         "position_sensor_sim_test.cc",
     ],
     deps = [
+        ":control_loops_fbs",
         ":position_sensor_sim",
-        ":queues",
         "//aos/logging",
         "//aos/testing:googletest",
     ],
@@ -90,8 +91,8 @@ cc_library(
         "-lm",
     ],
     deps = [
+        ":control_loops_fbs",
         ":gaussian_noise",
-        ":queues",
         "//aos/testing:random_seed",
     ],
 )
@@ -120,7 +121,7 @@ cc_library(
     restricted_to = mcu_cpus,
     deps = [
         "//aos/controls:polytope_uc",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -137,7 +138,7 @@ cc_library(
     ],
     deps = [
         "//aos/controls:polytope",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -151,7 +152,7 @@ cc_library(
     restricted_to = mcu_cpus,
     deps = [
         "//aos:macros",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -163,7 +164,7 @@ cc_library(
     deps = [
         "//aos:macros",
         "//aos/logging",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -178,7 +179,7 @@ cc_library(
         "//aos:macros",
         "//aos/controls:control_loop",
         "//aos/logging",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -189,7 +190,7 @@ cc_library(
     ],
     deps = [
         ":state_feedback_loop",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -199,7 +200,7 @@ cc_library(
         "runge_kutta.h",
     ],
     deps = [
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -211,7 +212,7 @@ cc_test(
     deps = [
         ":runge_kutta",
         "//aos/testing:googletest",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -233,24 +234,13 @@ cc_test(
     ],
 )
 
-queue_library(
-    name = "profiled_subsystem_queue",
+flatbuffer_cc_library(
+    name = "profiled_subsystem_fbs",
     srcs = [
-        "profiled_subsystem.q",
+        "profiled_subsystem.fbs",
     ],
-    deps = [
-        ":queues",
-    ],
-)
-
-queue_library(
-    name = "static_zeroing_single_dof_profiled_subsystem_test_queue",
-    srcs = [
-        "static_zeroing_single_dof_profiled_subsystem_test.q",
-    ],
-    deps = [
-        ":profiled_subsystem_queue",
-        ":queues",
+    includes = [
+        ":control_loops_fbs_includes",
     ],
 )
 
@@ -263,7 +253,8 @@ cc_library(
         "profiled_subsystem.h",
     ],
     deps = [
-        ":profiled_subsystem_queue",
+        ":control_loops_fbs",
+        ":profiled_subsystem_fbs",
         ":simple_capped_state_feedback_loop",
         ":state_feedback_loop",
         "//aos/controls:control_loop",
@@ -278,7 +269,7 @@ cc_library(
         "jacobian.h",
     ],
     deps = [
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -290,7 +281,7 @@ cc_test(
     deps = [
         ":jacobian",
         "//aos/testing:googletest",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -315,7 +306,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos/time",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -326,7 +317,7 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
         "@slycot_repo//:slicot",
     ],
 )
@@ -408,6 +399,17 @@ cc_library(
     ],
 )
 
+flatbuffer_cc_library(
+    name = "static_zeroing_single_dof_profiled_subsystem_test_fbs",
+    srcs = [
+        "static_zeroing_single_dof_profiled_subsystem_test.fbs",
+    ],
+    includes = [
+        ":control_loops_fbs_includes",
+        ":profiled_subsystem_fbs_includes",
+    ],
+)
+
 cc_test(
     name = "static_zeroing_single_dof_profiled_subsystem_test",
     srcs = [
@@ -417,8 +419,8 @@ cc_test(
         ":capped_test_plant",
         ":position_sensor_sim",
         ":static_zeroing_single_dof_profiled_subsystem",
+        ":static_zeroing_single_dof_profiled_subsystem_test_fbs",
         ":static_zeroing_single_dof_profiled_subsystem_test_plants",
-        ":static_zeroing_single_dof_profiled_subsystem_test_queue",
         "//aos/controls:control_loop_test",
         "//aos/testing:googletest",
     ],

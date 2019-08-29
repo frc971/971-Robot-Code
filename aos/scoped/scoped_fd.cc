@@ -1,13 +1,13 @@
 #include "aos/scoped/scoped_fd.h"
 
-#include "aos/logging/logging.h"
+#include "glog/logging.h"
 
 namespace aos {
 
 void ScopedFD::Close() {
   if (fd_ != -1) {
     if (close(fd_) == -1) {
-      AOS_PLOG(WARNING, "close(%d) failed", fd_);
+      PLOG(WARNING) << "close(" << fd_ << ") failed";
     }
   }
 }

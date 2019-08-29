@@ -11,17 +11,18 @@
 #include "internal/Embedded.h"
 #include "seasocks/Server.h"
 
-#include "aos/events/shm-event-loop.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"
+#include "aos/realtime.h"
 #include "aos/seasocks/seasocks_logger.h"
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
-#include "frc971/autonomous/auto.q.h"
-#include "y2016/control_loops/superstructure/superstructure.q.h"
-#include "y2016/queues/ball_detector.q.h"
-#include "y2016/vision/vision.q.h"
+#include "frc971/autonomous/auto_generated.h"
+#include "y2016/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2016/queues/ball_detector_generated.h"
+#include "y2016/vision/vision_generated.h"
 
 namespace chrono = ::std::chrono;
 
@@ -52,17 +53,17 @@ DataCollector::DataCollector(::aos::EventLoop *event_loop)
     : event_loop_(event_loop),
       vision_status_fetcher_(
           event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
-              ".y2016.vision.vision_status")),
+              "/superstructure")),
       ball_detector_fetcher_(
           event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
-              ".y2016.sensors.ball_detector")),
+              "/superstructure")),
       autonomous_mode_fetcher_(
           event_loop->MakeFetcher<::frc971::autonomous::AutonomousMode>(
-              ".frc971.autonomous.auto_mode")),
+              "/aos")),
       superstructure_status_fetcher_(
-          event_loop->MakeFetcher<
-              ::y2016::control_loops::SuperstructureQueue::Status>(
-              ".y2016.control_loops.superstructure_queue.status")),
+          event_loop
+              ->MakeFetcher<::y2016::control_loops::superstructure::Status>(
+                  "/superstructure")),
       cur_raw_data_("no data"),
       sample_id_(0),
       measure_index_(0),
@@ -121,22 +122,22 @@ void DataCollector::RunIteration() {
     // TODO(comran): Grab detected voltage from joystick_reader. Except this
     // value may not change, so it may be worth it to keep it as it is right
     // now.
-    if (ball_detector_fetcher_->voltage > 2.5) {
+    if (ball_detector_fetcher_->voltage() > 2.5) {
       big_indicator = big_indicator::kBallIntaked;
     }
   }
 
   if (superstructure_status_fetcher_.get()) {
-    if (!superstructure_status_fetcher_->zeroed) {
+    if (!superstructure_status_fetcher_->zeroed()) {
       superstructure_state_indicator = superstructure_indicator::kNotZeroed;
     }
-    if (superstructure_status_fetcher_->estopped) {
+    if (superstructure_status_fetcher_->estopped()) {
       superstructure_state_indicator = superstructure_indicator::kEstopped;
     }
   }
 
   if (autonomous_mode_fetcher_.get()) {
-    auto_mode_indicator = autonomous_mode_fetcher_->mode;
+    auto_mode_indicator = autonomous_mode_fetcher_->mode();
   }
 
   AddPoint("big indicator", big_indicator);
@@ -285,7 +286,10 @@ int main(int, char *[]) {
 
   ::aos::InitNRT();
 
-  ::aos::ShmEventLoop event_loop;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig("config.json");
+
+  ::aos::ShmEventLoop event_loop(&config.message());
 
   ::seasocks::Server server(::std::shared_ptr<seasocks::Logger>(
       new ::aos::seasocks::SeasocksLogger(::seasocks::Logger::Level::Info)));

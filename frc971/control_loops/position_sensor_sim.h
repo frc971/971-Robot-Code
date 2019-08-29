@@ -1,9 +1,11 @@
 #ifndef FRC971_CONTROL_LOOPS_POSITION_SENSOR_SIM_H_
 #define FRC971_CONTROL_LOOPS_POSITION_SENSOR_SIM_H_
 
+#include "flatbuffers/flatbuffers.h"
+
 #include "aos/testing/random_seed.h"
 
-#include "frc971/control_loops/control_loops.q.h"
+#include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/gaussian_noise.h"
 
 namespace frc971 {
@@ -58,11 +60,17 @@ class PositionSensorSimulator {
   // values: The target structure will be populated with simulated sensor
   //         readings. The readings will be in SI units. For example the units
   //         can be given in radians, meters, etc.
-  void GetSensorValues(IndexPosition *values);
-  void GetSensorValues(PotAndIndexPosition *values);
-  void GetSensorValues(AbsolutePosition *values);
-  void GetSensorValues(PotAndAbsolutePosition *values);
-  void GetSensorValues(HallEffectAndPosition *values);
+  template <typename PositionBuilder>
+  flatbuffers::Offset<typename PositionBuilder::Table> GetSensorValues(
+      PositionBuilder *builder);
+  template <typename Position>
+  const Position *FillSensorValues(flatbuffers::FlatBufferBuilder *fbb) {
+    fbb->Clear();
+    typename Position::Builder values(*fbb);
+
+    fbb->Finish(GetSensorValues(&values));
+    return flatbuffers::GetRoot<Position>(fbb->GetBufferPointer());
+  }
 
  private:
   // It turns out that we can re-use a lot of the same logic to count the index
@@ -84,7 +92,7 @@ class PositionSensorSimulator {
       index_count_ = 0;
     }
 
-    double index_count() const { return index_count_; }
+    int index_count() const { return index_count_; }
     double latched_pot() const { return latched_pot_; }
     int current_index_segment() const { return current_index_segment_; }
 

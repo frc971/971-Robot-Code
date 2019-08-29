@@ -4,7 +4,6 @@
 #include <unistd.h>
 
 #include "aos/init.h"
-#include "aos/logging/queue_logging.h"
 #include "aos/util/compiler_memory_barrier.h"
 #include "aos/util/phased_loop.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"
@@ -124,10 +123,8 @@ void SensorReader::Loop(const int iterations) {
       event_loop_->monotonic_now();
 
   {
-    auto new_state = robot_state_sender_.MakeMessage();
-    ::frc971::wpilib::PopulateRobotState(new_state.get(), my_pid_);
-    AOS_LOG_STRUCT(DEBUG, "robot_state", *new_state);
-    new_state.Send();
+    auto builder = robot_state_sender_.MakeBuilder();
+    builder.Send(::frc971::wpilib::PopulateRobotState(&builder, my_pid_));
   }
   RunIteration();
   if (dma_synchronizer_) {

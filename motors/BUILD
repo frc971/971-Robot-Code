@@ -131,6 +131,7 @@ cc_binary(
     srcs = [
         "simple_receiver.cc",
     ],
+    copts = ["-Wno-type-limits"],
     restricted_to = mcu_cpus,
     deps = [
         ":util",
@@ -153,6 +154,7 @@ cc_binary(
     srcs = [
         "simpler_receiver.cc",
     ],
+    copts = ["-Wno-type-limits"],
     restricted_to = mcu_cpus,
     deps = [
         ":util",

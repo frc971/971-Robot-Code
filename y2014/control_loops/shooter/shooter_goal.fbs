@@ -1,0 +1,12 @@
+namespace y2014.control_loops.shooter;
+
+table Goal {
+  // Shot power in joules.
+  shot_power:double;
+  // Shoots as soon as this is true.
+  shot_requested:bool;
+  unload_requested:bool;
+  load_requested:bool;
+}
+
+root_type Goal;

@@ -3,7 +3,7 @@
 
 #include "frc971/control_loops/profiled_subsystem.h"
 #include "y2017/constants.h"
-#include "y2017/control_loops/superstructure/superstructure.q.h"
+#include "y2017/control_loops/superstructure/superstructure_goal_generated.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -32,10 +32,11 @@ class Intake {
   static constexpr double kZeroingVoltage = 2.5;
   static constexpr double kOperatingVoltage = 12.0;
 
-  void Iterate(const control_loops::IntakeGoal *unsafe_goal,
-               const ::frc971::PotAndAbsolutePosition *position, double *output,
-               ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus
-                   *status);
+  flatbuffers::Offset<
+      ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>
+  Iterate(const IntakeGoal *unsafe_goal,
+          const ::frc971::PotAndAbsolutePosition *position, double *output,
+          flatbuffers::FlatBufferBuilder *fbb);
 
   void Reset();
 

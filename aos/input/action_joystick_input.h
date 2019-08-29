@@ -4,7 +4,7 @@
 #include "aos/input/driver_station_data.h"
 #include "aos/input/drivetrain_input.h"
 #include "aos/input/joystick_input.h"
-#include "frc971/autonomous/auto.q.h"
+#include "frc971/autonomous/auto_generated.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
 
 namespace aos {
@@ -99,7 +99,7 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
       AOS_LOG(WARNING, "no auto mode values\n");
       return 0;
     }
-    return autonomous_mode_fetcher_->mode;
+    return autonomous_mode_fetcher_->mode();
   }
 
   // True if the internal state machine thinks auto is running right now.

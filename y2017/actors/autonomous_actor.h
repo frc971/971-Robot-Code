@@ -7,9 +7,9 @@
 #include "aos/actions/actions.h"
 #include "aos/actions/actor.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
-#include "y2017/control_loops/superstructure/superstructure.q.h"
+#include "y2017/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2017/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2017 {
 namespace actors {
@@ -20,7 +20,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   explicit AutonomousActor(::aos::EventLoop *event_loop);
 
   bool RunAction(
-      const ::frc971::autonomous::AutonomousActionParams &params) override;
+      const ::frc971::autonomous::AutonomousActionParams *params) override;
 
  private:
   void Reset() {
@@ -38,9 +38,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     SendSuperstructureGoal();
   }
 
-  ::aos::Fetcher<::y2017::control_loops::SuperstructureQueue::Status>
+  ::aos::Fetcher<::y2017::control_loops::superstructure::Status>
       superstructure_status_fetcher_;
-  ::aos::Sender<::y2017::control_loops::SuperstructureQueue::Goal>
+  ::aos::Sender<::y2017::control_loops::superstructure::Goal>
       superstructure_goal_sender_;
 
   double intake_goal_ = 0.0;
@@ -82,7 +82,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
       superstructure_status_fetcher_.Fetch();
       if (superstructure_status_fetcher_.get()) {
-        if (superstructure_status_fetcher_->hood.zeroed) {
+        if (superstructure_status_fetcher_->hood()->zeroed()) {
           return;
         }
       }
@@ -91,40 +91,81 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 
   void SendSuperstructureGoal() {
-    auto new_superstructure_goal = superstructure_goal_sender_.MakeMessage();
-    new_superstructure_goal->intake.distance = intake_goal_;
-    new_superstructure_goal->intake.disable_intake = false;
-    new_superstructure_goal->turret.angle = turret_goal_;
-    new_superstructure_goal->turret.track = vision_track_;
-    new_superstructure_goal->hood.angle = hood_goal_;
-    new_superstructure_goal->shooter.angular_velocity = shooter_velocity_;
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    new_superstructure_goal->intake.profile_params.max_velocity =
-        intake_max_velocity_;
-    new_superstructure_goal->turret.profile_params.max_velocity = 6.0;
-    new_superstructure_goal->hood.profile_params.max_velocity = 5.0;
+    flatbuffers::Offset<frc971::ProfileParameters>
+        intake_profile_parameters_offset = frc971::CreateProfileParameters(
+            *builder.fbb(), intake_max_velocity_, 5.0);
 
-    new_superstructure_goal->intake.profile_params.max_acceleration = 5.0;
-    new_superstructure_goal->turret.profile_params.max_acceleration = 15.0;
-    new_superstructure_goal->hood.profile_params.max_acceleration = 25.0;
+    control_loops::superstructure::IntakeGoal::Builder intake_builder =
+        builder.MakeBuilder<control_loops::superstructure::IntakeGoal>();
+    intake_builder.add_distance(intake_goal_);
+    intake_builder.add_disable_intake(false);
+    intake_builder.add_profile_params(intake_profile_parameters_offset);
+    intake_builder.add_voltage_rollers(0.0);
+    intake_builder.add_disable_intake(false);
+    intake_builder.add_gear_servo(gear_servo_);
+    flatbuffers::Offset<control_loops::superstructure::IntakeGoal>
+        intake_offset = intake_builder.Finish();
 
-    new_superstructure_goal->intake.voltage_rollers = 0.0;
-    new_superstructure_goal->lights_on = true;
-    new_superstructure_goal->intake.disable_intake = false;
-    new_superstructure_goal->intake.gear_servo = gear_servo_;
-    new_superstructure_goal->use_vision_for_shots = use_vision_for_shots_;
+    control_loops::superstructure::IndexerGoal::Builder indexer_builder =
+        builder.MakeBuilder<control_loops::superstructure::IndexerGoal>();
+    indexer_builder.add_angular_velocity(indexer_angular_velocity_);
+    indexer_builder.add_voltage_rollers(0.0);
+    flatbuffers::Offset<control_loops::superstructure::IndexerGoal>
+        indexer_offset = indexer_builder.Finish();
 
-    new_superstructure_goal->indexer.angular_velocity =
-        indexer_angular_velocity_;
+    flatbuffers::Offset<frc971::ProfileParameters>
+        turret_profile_parameters_offset = frc971::CreateProfileParameters(
+            *builder.fbb(), 6.0, 15.0);
+    control_loops::superstructure::TurretGoal::Builder turret_builder =
+        builder.MakeBuilder<control_loops::superstructure::TurretGoal>();
+    turret_builder.add_angle(turret_goal_);
+    turret_builder.add_track(vision_track_);
+    turret_builder.add_profile_params(turret_profile_parameters_offset);
+    flatbuffers::Offset<control_loops::superstructure::TurretGoal> turret_offset =
+      turret_builder.Finish();
+
+    flatbuffers::Offset<frc971::ProfileParameters>
+        hood_profile_parameters_offset = frc971::CreateProfileParameters(
+            *builder.fbb(), 5.0, 25.0);
+    control_loops::superstructure::HoodGoal::Builder hood_builder =
+        builder.MakeBuilder<control_loops::superstructure::HoodGoal>();
+    hood_builder.add_angle(hood_goal_);
+    hood_builder.add_profile_params(hood_profile_parameters_offset);
+    flatbuffers::Offset<control_loops::superstructure::HoodGoal> hood_offset =
+        hood_builder.Finish();
+
+    control_loops::superstructure::ShooterGoal::Builder shooter_builder =
+        builder.MakeBuilder<control_loops::superstructure::ShooterGoal>();
+    shooter_builder.add_angular_velocity(shooter_velocity_);
+    flatbuffers::Offset<control_loops::superstructure::ShooterGoal>
+        shooter_offset = shooter_builder.Finish();
+
+    control_loops::superstructure::Goal::Builder goal_builder =
+        builder.MakeBuilder<control_loops::superstructure::Goal>();
+    goal_builder.add_lights_on(true);
+    goal_builder.add_use_vision_for_shots(use_vision_for_shots_);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_indexer(indexer_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_shooter(shooter_offset);
+
+    flatbuffers::Offset<control_loops::superstructure::Goal> goal_offset =
+        goal_builder.Finish();
+
+    control_loops::superstructure::Goal *goal =
+        GetMutableTemporaryPointer(*builder.fbb(), goal_offset);
 
     if (indexer_angular_velocity_ < -0.1) {
-      new_superstructure_goal->indexer.voltage_rollers = 12.0;
-      new_superstructure_goal->intake.voltage_rollers = 6.0;
+      goal->mutable_indexer()->mutate_voltage_rollers(12.0);
+      goal->mutable_intake()->mutate_voltage_rollers(6.0);
     } else {
-      new_superstructure_goal->indexer.voltage_rollers = 0.0;
+      goal->mutable_indexer()->mutate_voltage_rollers(0.0);
     }
 
-    if (!new_superstructure_goal.Send()) {
+    if (!builder.Send(goal_offset)) {
       AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
     }
   }

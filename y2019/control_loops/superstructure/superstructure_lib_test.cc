@@ -4,7 +4,6 @@
 #include <memory>
 
 #include "aos/controls/control_loop_test.h"
-#include "aos/queue.h"
 #include "frc971/control_loops/capped_test_plant.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
@@ -27,8 +26,12 @@ constexpr double kNoiseScalar = 0.01;
 
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
+using ::frc971::CreateProfileParameters;
 using ::frc971::control_loops::CappedTestPlant;
+using ::frc971::control_loops::
+    CreateStaticZeroingSingleDOFProfiledSubsystemGoal;
 using ::frc971::control_loops::PositionSensorSimulator;
+using ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
 typedef Superstructure::PotAndAbsoluteEncoderSubsystem
     PotAndAbsoluteEncoderSubsystem;
 typedef Superstructure::AbsoluteEncoderSubsystem AbsoluteEncoderSubsystem;
@@ -41,15 +44,11 @@ class SuperstructureSimulation {
       : event_loop_(event_loop),
         dt_(dt),
         superstructure_position_sender_(
-            event_loop_->MakeSender<SuperstructureQueue::Position>(
-                ".y2019.control_loops.superstructure.superstructure_queue."
-                "position")),
-        superstructure_status_fetcher_(event_loop_->MakeFetcher<
-                                       SuperstructureQueue::Status>(
-            ".y2019.control_loops.superstructure.superstructure_queue.status")),
-        superstructure_output_fetcher_(event_loop_->MakeFetcher<
-                                       SuperstructureQueue::Output>(
-            ".y2019.control_loops.superstructure.superstructure_queue.output")),
+            event_loop_->MakeSender<Position>("/superstructure")),
+        superstructure_status_fetcher_(
+            event_loop_->MakeFetcher<Status>("/superstructure")),
+        superstructure_output_fetcher_(
+            event_loop_->MakeFetcher<Output>("/superstructure")),
         elevator_plant_(
             new CappedTestPlant(::y2019::control_loops::superstructure::
                                     elevator::MakeElevatorPlant())),
@@ -136,16 +135,38 @@ class SuperstructureSimulation {
 
   // Sends a queue message with the position of the superstructure.
   void SendPositionMessage() {
-    ::aos::Sender<SuperstructureQueue::Position>::Message position =
-        superstructure_position_sender_.MakeMessage();
+    ::aos::Sender<Position>::Builder builder =
+        superstructure_position_sender_.MakeBuilder();
 
-    elevator_pot_encoder_.GetSensorValues(&position->elevator);
-    wrist_pot_encoder_.GetSensorValues(&position->wrist);
-    intake_pot_encoder_.GetSensorValues(&position->intake_joint);
-    stilts_pot_encoder_.GetSensorValues(&position->stilts);
-    position->suction_pressure = simulated_pressure_;
+    frc971::PotAndAbsolutePosition::Builder elevator_builder =
+        builder.MakeBuilder<frc971::PotAndAbsolutePosition>();
+    flatbuffers::Offset<frc971::PotAndAbsolutePosition> elevator_offset =
+        elevator_pot_encoder_.GetSensorValues(&elevator_builder);
 
-    position.Send();
+    frc971::PotAndAbsolutePosition::Builder wrist_builder =
+        builder.MakeBuilder<frc971::PotAndAbsolutePosition>();
+    flatbuffers::Offset<frc971::PotAndAbsolutePosition> wrist_offset =
+        wrist_pot_encoder_.GetSensorValues(&wrist_builder);
+
+    frc971::AbsolutePosition::Builder intake_builder =
+        builder.MakeBuilder<frc971::AbsolutePosition>();
+    flatbuffers::Offset<frc971::AbsolutePosition> intake_offset =
+        intake_pot_encoder_.GetSensorValues(&intake_builder);
+
+    frc971::PotAndAbsolutePosition::Builder stilts_builder =
+        builder.MakeBuilder<frc971::PotAndAbsolutePosition>();
+    flatbuffers::Offset<frc971::PotAndAbsolutePosition> stilts_offset =
+        stilts_pot_encoder_.GetSensorValues(&stilts_builder);
+
+    Position::Builder position_builder = builder.MakeBuilder<Position>();
+
+    position_builder.add_elevator(elevator_offset);
+    position_builder.add_wrist(wrist_offset);
+    position_builder.add_intake_joint(intake_offset);
+    position_builder.add_stilts(stilts_offset);
+    position_builder.add_suction_pressure(simulated_pressure_);
+
+    builder.Send(position_builder.Finish());
   }
 
   double elevator_position() const { return elevator_plant_->X(0, 0); }
@@ -183,58 +204,58 @@ class SuperstructureSimulation {
 
     const double voltage_check_elevator =
         (static_cast<PotAndAbsoluteEncoderSubsystem::State>(
-             superstructure_status_fetcher_->elevator.state) ==
+             superstructure_status_fetcher_->elevator()->state()) ==
          PotAndAbsoluteEncoderSubsystem::State::RUNNING)
             ? constants::GetValues().elevator.subsystem_params.operating_voltage
             : constants::GetValues().elevator.subsystem_params.zeroing_voltage;
 
     const double voltage_check_wrist =
         (static_cast<PotAndAbsoluteEncoderSubsystem::State>(
-             superstructure_status_fetcher_->wrist.state) ==
+             superstructure_status_fetcher_->wrist()->state()) ==
          PotAndAbsoluteEncoderSubsystem::State::RUNNING)
             ? constants::GetValues().wrist.subsystem_params.operating_voltage
             : constants::GetValues().wrist.subsystem_params.zeroing_voltage;
 
     const double voltage_check_intake =
         (static_cast<AbsoluteEncoderSubsystem::State>(
-             superstructure_status_fetcher_->intake.state) ==
+             superstructure_status_fetcher_->intake()->state()) ==
          AbsoluteEncoderSubsystem::State::RUNNING)
             ? constants::GetValues().intake.operating_voltage
             : constants::GetValues().intake.zeroing_voltage;
 
     const double voltage_check_stilts =
         (static_cast<PotAndAbsoluteEncoderSubsystem::State>(
-             superstructure_status_fetcher_->stilts.state) ==
+             superstructure_status_fetcher_->stilts()->state()) ==
          PotAndAbsoluteEncoderSubsystem::State::RUNNING)
             ? constants::GetValues().stilts.subsystem_params.operating_voltage
             : constants::GetValues().stilts.subsystem_params.zeroing_voltage;
 
-    EXPECT_NEAR(superstructure_output_fetcher_->elevator_voltage, 0.0,
+    EXPECT_NEAR(superstructure_output_fetcher_->elevator_voltage(), 0.0,
                 voltage_check_elevator);
 
-    EXPECT_NEAR(superstructure_output_fetcher_->wrist_voltage, 0.0,
+    EXPECT_NEAR(superstructure_output_fetcher_->wrist_voltage(), 0.0,
                 voltage_check_wrist);
 
-    EXPECT_NEAR(superstructure_output_fetcher_->intake_joint_voltage, 0.0,
+    EXPECT_NEAR(superstructure_output_fetcher_->intake_joint_voltage(), 0.0,
                 voltage_check_intake);
 
-    EXPECT_NEAR(superstructure_output_fetcher_->stilts_voltage, 0.0,
+    EXPECT_NEAR(superstructure_output_fetcher_->stilts_voltage(), 0.0,
                 voltage_check_stilts);
 
     ::Eigen::Matrix<double, 1, 1> elevator_U;
-    elevator_U << superstructure_output_fetcher_->elevator_voltage +
+    elevator_U << superstructure_output_fetcher_->elevator_voltage() +
                       elevator_plant_->voltage_offset();
 
     ::Eigen::Matrix<double, 1, 1> wrist_U;
-    wrist_U << superstructure_output_fetcher_->wrist_voltage +
+    wrist_U << superstructure_output_fetcher_->wrist_voltage() +
                    wrist_plant_->voltage_offset();
 
     ::Eigen::Matrix<double, 1, 1> intake_U;
-    intake_U << superstructure_output_fetcher_->intake_joint_voltage +
+    intake_U << superstructure_output_fetcher_->intake_joint_voltage() +
                     intake_plant_->voltage_offset();
 
     ::Eigen::Matrix<double, 1, 1> stilts_U;
-    stilts_U << superstructure_output_fetcher_->stilts_voltage +
+    stilts_U << superstructure_output_fetcher_->stilts_voltage() +
                     stilts_plant_->voltage_offset();
 
     elevator_plant_->Update(elevator_U);
@@ -330,19 +351,19 @@ class SuperstructureSimulation {
   }
 
  private:
-  void CheckCollisions(const SuperstructureQueue::Status *status) {
-    ASSERT_FALSE(
-        collision_avoidance_.IsCollided(wrist_position(), elevator_position(),
-                                        intake_position(), status->has_piece));
+  void CheckCollisions(const Status *status) {
+    ASSERT_FALSE(collision_avoidance_.IsCollided(
+        wrist_position(), elevator_position(), intake_position(),
+        status->has_piece()));
   }
 
   ::aos::EventLoop *event_loop_;
   const chrono::nanoseconds dt_;
   ::aos::PhasedLoopHandler *phased_loop_handle_ = nullptr;
 
-  ::aos::Sender<SuperstructureQueue::Position> superstructure_position_sender_;
-  ::aos::Fetcher<SuperstructureQueue::Status> superstructure_status_fetcher_;
-  ::aos::Fetcher<SuperstructureQueue::Output> superstructure_output_fetcher_;
+  ::aos::Sender<Position> superstructure_position_sender_;
+  ::aos::Fetcher<Status> superstructure_status_fetcher_;
+  ::aos::Fetcher<Output> superstructure_output_fetcher_;
 
   bool first_ = true;
 
@@ -381,24 +402,20 @@ class SuperstructureSimulation {
 class SuperstructureTest : public ::aos::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
-      : ::aos::testing::ControlLoopTest(chrono::microseconds(5050)),
+      : ::aos::testing::ControlLoopTest(
+            aos::configuration::ReadConfig("y2019/config.json"),
+            chrono::microseconds(5050)),
         test_event_loop_(MakeEventLoop()),
-        superstructure_goal_fetcher_(test_event_loop_->MakeFetcher<
-                                     SuperstructureQueue::Goal>(
-            ".y2019.control_loops.superstructure.superstructure_queue.goal")),
-        superstructure_goal_sender_(test_event_loop_->MakeSender<
-                                    SuperstructureQueue::Goal>(
-            ".y2019.control_loops.superstructure.superstructure_queue.goal")),
-        superstructure_status_fetcher_(test_event_loop_->MakeFetcher<
-                                       SuperstructureQueue::Status>(
-            ".y2019.control_loops.superstructure.superstructure_queue.status")),
-        superstructure_output_fetcher_(test_event_loop_->MakeFetcher<
-                                       SuperstructureQueue::Output>(
-            ".y2019.control_loops.superstructure.superstructure_queue.output")),
+        superstructure_goal_fetcher_(
+            test_event_loop_->MakeFetcher<Goal>("/superstructure")),
+        superstructure_goal_sender_(
+            test_event_loop_->MakeSender<Goal>("/superstructure")),
+        superstructure_status_fetcher_(
+            test_event_loop_->MakeFetcher<Status>("/superstructure")),
+        superstructure_output_fetcher_(
+            test_event_loop_->MakeFetcher<Output>("/superstructure")),
         superstructure_position_fetcher_(
-            test_event_loop_->MakeFetcher<SuperstructureQueue::Position>(
-                ".y2019.control_loops.superstructure.superstructure_queue."
-                "position")),
+            test_event_loop_->MakeFetcher<Position>("/superstructure")),
         superstructure_event_loop_(MakeEventLoop()),
         superstructure_(superstructure_event_loop_.get()),
         superstructure_plant_event_loop_(MakeEventLoop()),
@@ -410,13 +427,13 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
     superstructure_goal_fetcher_.Fetch();
     superstructure_status_fetcher_.Fetch();
 
-    EXPECT_NEAR(superstructure_goal_fetcher_->elevator.unsafe_goal,
-                superstructure_status_fetcher_->elevator.position, 0.001);
-    EXPECT_NEAR(superstructure_goal_fetcher_->wrist.unsafe_goal,
+    EXPECT_NEAR(superstructure_goal_fetcher_->elevator()->unsafe_goal(),
+                superstructure_status_fetcher_->elevator()->position(), 0.001);
+    EXPECT_NEAR(superstructure_goal_fetcher_->wrist()->unsafe_goal(),
                 superstructure_plant_.wrist_position(), 0.001);
-    EXPECT_NEAR(superstructure_goal_fetcher_->intake.unsafe_goal,
-                superstructure_status_fetcher_->intake.position, 0.001);
-    EXPECT_NEAR(superstructure_goal_fetcher_->stilts.unsafe_goal,
+    EXPECT_NEAR(superstructure_goal_fetcher_->intake()->unsafe_goal(),
+                superstructure_status_fetcher_->intake()->position(), 0.001);
+    EXPECT_NEAR(superstructure_goal_fetcher_->stilts()->unsafe_goal(),
                 superstructure_plant_.stilts_position(), 0.001);
   }
 
@@ -428,17 +445,16 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
       superstructure_status_fetcher_.Fetch();
       // 2 Seconds
       ASSERT_LE(i, 2 * 1.0 / .00505);
-    } while (!superstructure_status_fetcher_.get()->zeroed);
+    } while (!superstructure_status_fetcher_.get()->zeroed());
   }
 
   ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
 
-  ::aos::Fetcher<SuperstructureQueue::Goal> superstructure_goal_fetcher_;
-  ::aos::Sender<SuperstructureQueue::Goal> superstructure_goal_sender_;
-  ::aos::Fetcher<SuperstructureQueue::Status> superstructure_status_fetcher_;
-  ::aos::Fetcher<SuperstructureQueue::Output> superstructure_output_fetcher_;
-  ::aos::Fetcher<SuperstructureQueue::Position>
-      superstructure_position_fetcher_;
+  ::aos::Fetcher<Goal> superstructure_goal_fetcher_;
+  ::aos::Sender<Goal> superstructure_goal_sender_;
+  ::aos::Fetcher<Status> superstructure_status_fetcher_;
+  ::aos::Fetcher<Output> superstructure_output_fetcher_;
+  ::aos::Fetcher<Position> superstructure_position_fetcher_;
 
   // Create a control loop and simulation.
   ::std::unique_ptr<::aos::EventLoop> superstructure_event_loop_;
@@ -459,13 +475,29 @@ TEST_F(SuperstructureTest, DoesNothing) {
   WaitUntilZeroed();
 
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    goal->elevator.unsafe_goal = 1.4;
-    goal->wrist.unsafe_goal = 1.0;
-    goal->intake.unsafe_goal = 1.1;
-    goal->stilts.unsafe_goal = 0.1;
-    ASSERT_TRUE(goal.Send());
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        elevator_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.4);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.0);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.1);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        stilts_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 0.1);
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_elevator(elevator_offset);
+    goal_builder.add_wrist(wrist_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_stilts(stilts_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(10));
   VerifyNearGoal();
@@ -485,24 +517,36 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 
   WaitUntilZeroed();
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->elevator.unsafe_goal = 1.4;
-    goal->elevator.profile_params.max_velocity = 1;
-    goal->elevator.profile_params.max_acceleration = 0.5;
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    goal->wrist.unsafe_goal = 1.0;
-    goal->wrist.profile_params.max_velocity = 1;
-    goal->wrist.profile_params.max_acceleration = 0.5;
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        elevator_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.4,
+            CreateProfileParameters(*builder.fbb(), 1.0, 0.5));
 
-    goal->intake.unsafe_goal = 1.1;
-    goal->intake.profile_params.max_velocity = 1;
-    goal->intake.profile_params.max_acceleration = 0.5;
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.0,
+            CreateProfileParameters(*builder.fbb(), 1.0, 0.5));
 
-    goal->stilts.unsafe_goal = 0.1;
-    goal->stilts.profile_params.max_velocity = 1;
-    goal->stilts.profile_params.max_acceleration = 0.5;
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.1,
+            CreateProfileParameters(*builder.fbb(), 1.0, 0.5));
 
-    ASSERT_TRUE(goal.Send());
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        stilts_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 0.1,
+            CreateProfileParameters(*builder.fbb(), 1.0, 0.5));
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_elevator(elevator_offset);
+    goal_builder.add_wrist(wrist_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_stilts(stilts_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   // Give it a lot of time to get there.
@@ -520,13 +564,33 @@ TEST_F(SuperstructureTest, SaturationTest) {
   // Zero it before we move.
   WaitUntilZeroed();
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->elevator.unsafe_goal = constants::Values::kElevatorRange().upper;
-    goal->wrist.unsafe_goal = constants::Values::kWristRange().upper;
-    goal->intake.unsafe_goal = constants::Values::kIntakeRange().upper;
-    goal->stilts.unsafe_goal = constants::Values::kStiltsRange().upper;
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    ASSERT_TRUE(goal.Send());
+
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        elevator_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kElevatorRange().upper);
+
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kWristRange().upper);
+
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kIntakeRange().upper);
+
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        stilts_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kStiltsRange().upper);
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_elevator(elevator_offset);
+    goal_builder.add_wrist(wrist_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_stilts(stilts_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(8));
   VerifyNearGoal();
@@ -534,24 +598,36 @@ TEST_F(SuperstructureTest, SaturationTest) {
   // Try a low acceleration move with a high max velocity and verify the
   // acceleration is capped like expected.
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->elevator.unsafe_goal = constants::Values::kElevatorRange().upper;
-    goal->elevator.profile_params.max_velocity = 20.0;
-    goal->elevator.profile_params.max_acceleration = 0.1;
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    goal->wrist.unsafe_goal = constants::Values::kWristRange().upper;
-    goal->wrist.profile_params.max_velocity = 20.0;
-    goal->wrist.profile_params.max_acceleration = 0.1;
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        elevator_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kElevatorRange().upper,
+            CreateProfileParameters(*builder.fbb(), 20.0, 0.1));
 
-    goal->intake.unsafe_goal = constants::Values::kIntakeRange().upper;
-    goal->intake.profile_params.max_velocity = 20.0;
-    goal->intake.profile_params.max_acceleration = 0.1;
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kWristRange().upper,
+            CreateProfileParameters(*builder.fbb(), 20.0, 0.1));
 
-    goal->stilts.unsafe_goal = constants::Values::kStiltsRange().lower;
-    goal->stilts.profile_params.max_velocity = 20.0;
-    goal->stilts.profile_params.max_acceleration = 0.1;
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kIntakeRange().upper,
+            CreateProfileParameters(*builder.fbb(), 20.0, 0.1));
 
-    ASSERT_TRUE(goal.Send());
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        stilts_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kStiltsRange().lower,
+            CreateProfileParameters(*builder.fbb(), 20.0, 0.1));
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_elevator(elevator_offset);
+    goal_builder.add_wrist(wrist_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_stilts(stilts_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   superstructure_plant_.set_peak_elevator_velocity(23.0);
   superstructure_plant_.set_peak_elevator_acceleration(0.2);
@@ -564,36 +640,6 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
   RunFor(chrono::seconds(8));
   VerifyNearGoal();
-
-  // Now do a high acceleration move with a low velocity limit.
-  {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->elevator.unsafe_goal = constants::Values::kElevatorRange().lower;
-    goal->elevator.profile_params.max_velocity = 0.1;
-    goal->elevator.profile_params.max_acceleration = 10.0;
-
-    goal->wrist.unsafe_goal = constants::Values::kWristRange().lower;
-    goal->wrist.profile_params.max_velocity = 0.1;
-    goal->wrist.profile_params.max_acceleration = 10.0;
-
-    goal->intake.unsafe_goal = constants::Values::kIntakeRange().lower;
-    goal->intake.profile_params.max_velocity = 0.1;
-    goal->intake.profile_params.max_acceleration = 10.0;
-
-    goal->stilts.unsafe_goal = constants::Values::kStiltsRange().lower;
-    goal->stilts.profile_params.max_velocity = 0.1;
-    goal->stilts.profile_params.max_acceleration = 10.0;
-  }
-  superstructure_plant_.set_peak_elevator_velocity(0.2);
-  superstructure_plant_.set_peak_elevator_acceleration(11.0);
-  superstructure_plant_.set_peak_wrist_velocity(0.2);
-  superstructure_plant_.set_peak_wrist_acceleration(11.0);
-  superstructure_plant_.set_peak_intake_velocity(0.2);
-  superstructure_plant_.set_peak_intake_acceleration(11.0);
-  superstructure_plant_.set_peak_stilts_velocity(0.2);
-  superstructure_plant_.set_peak_stilts_acceleration(11.0);
-
-  VerifyNearGoal();
 }
 
 // Tests if the robot zeroes properly... maybe redundant?
@@ -604,25 +650,36 @@ TEST_F(SuperstructureTest, ZeroTest) {
   superstructure_plant_.InitializeStiltsPosition(0.1);
 
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    goal->elevator.unsafe_goal = 1.4;
-    goal->elevator.profile_params.max_velocity = 1;
-    goal->elevator.profile_params.max_acceleration = 0.5;
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        elevator_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.4,
+            CreateProfileParameters(*builder.fbb(), 1.0, 0.5));
 
-    goal->wrist.unsafe_goal = 1.0;
-    goal->wrist.profile_params.max_velocity = 1;
-    goal->wrist.profile_params.max_acceleration = 0.5;
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.0,
+            CreateProfileParameters(*builder.fbb(), 1.0, 0.5));
 
-    goal->intake.unsafe_goal = 1.1;
-    goal->intake.profile_params.max_velocity = 1;
-    goal->intake.profile_params.max_acceleration = 0.5;
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.1,
+            CreateProfileParameters(*builder.fbb(), 1.0, 0.5));
 
-    goal->stilts.unsafe_goal = 0.1;
-    goal->stilts.profile_params.max_velocity = 1;
-    goal->stilts.profile_params.max_acceleration = 0.5;
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        stilts_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 0.1,
+            CreateProfileParameters(*builder.fbb(), 1.0, 0.5));
 
-    ASSERT_TRUE(goal.Send());
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_elevator(elevator_offset);
+    goal_builder.add_wrist(wrist_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_stilts(stilts_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   WaitUntilZeroed();
   VerifyNearGoal();
@@ -660,13 +717,30 @@ TEST_F(SuperstructureTest, CollisionTest) {
 
   WaitUntilZeroed();
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->elevator.unsafe_goal = constants::Values::kElevatorRange().lower;
-    goal->wrist.unsafe_goal = -M_PI / 3.0;
-    goal->intake.unsafe_goal =
-        CollisionAvoidance::kIntakeInAngle - CollisionAvoidance::kEpsIntake;
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    ASSERT_TRUE(goal.Send());
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        elevator_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kElevatorRange().lower);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), -M_PI / 3.0);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), CollisionAvoidance::kIntakeInAngle -
+                                CollisionAvoidance::kEpsIntake);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        stilts_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 0.1);
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_elevator(elevator_offset);
+    goal_builder.add_wrist(wrist_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_stilts(stilts_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   // Give it a lot of time to get there.
@@ -683,37 +757,71 @@ TEST_F(SuperstructureTest, IntakeRollerTest) {
   // Get the elevator and wrist out of the way and set the Intake to where
   // we should be able to spin and verify that they do
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->elevator.unsafe_goal = constants::Values::kElevatorRange().upper;
-    goal->wrist.unsafe_goal = 0.0;
-    goal->intake.unsafe_goal = constants::Values::kIntakeRange().upper;
-    goal->roller_voltage = 6.0;
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    ASSERT_TRUE(goal.Send());
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        elevator_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kElevatorRange().upper);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 0.0);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kIntakeRange().upper);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        stilts_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 0.1);
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_elevator(elevator_offset);
+    goal_builder.add_wrist(wrist_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_stilts(stilts_offset);
+    goal_builder.add_roller_voltage(6.0);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(5));
   superstructure_goal_fetcher_.Fetch();
   superstructure_output_fetcher_.Fetch();
-  EXPECT_EQ(superstructure_output_fetcher_->intake_roller_voltage,
-            superstructure_goal_fetcher_->roller_voltage);
+  EXPECT_EQ(superstructure_output_fetcher_->intake_roller_voltage(),
+            superstructure_goal_fetcher_->roller_voltage());
   VerifyNearGoal();
 
   // Move the intake where we oughtn't to spin the rollers and verify they don't
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->elevator.unsafe_goal = constants::Values::kElevatorRange().upper;
-    goal->wrist.unsafe_goal = 0.0;
-    goal->intake.unsafe_goal = constants::Values::kIntakeRange().lower;
-    goal->roller_voltage = 6.0;
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    ASSERT_TRUE(goal.Send());
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        elevator_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kElevatorRange().upper);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 0.0);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kIntakeRange().lower);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        stilts_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 0.1);
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_elevator(elevator_offset);
+    goal_builder.add_wrist(wrist_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_stilts(stilts_offset);
+    goal_builder.add_roller_voltage(6.0);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(5));
   superstructure_goal_fetcher_.Fetch();
   superstructure_output_fetcher_.Fetch();
-  EXPECT_EQ(superstructure_output_fetcher_->intake_roller_voltage, 0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->intake_roller_voltage(), 0.0);
   VerifyNearGoal();
 }
 
@@ -723,10 +831,33 @@ TEST_F(SuperstructureTest, VacuumDetectsPiece) {
   WaitUntilZeroed();
   // Turn on suction
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->suction.grab_piece = true;
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    ASSERT_TRUE(goal.Send());
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        elevator_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.4);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.0);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.1);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        stilts_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 0.1);
+
+    flatbuffers::Offset<SuctionGoal> suction_offset =
+        CreateSuctionGoal(*builder.fbb(), true);
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_elevator(elevator_offset);
+    goal_builder.add_wrist(wrist_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_stilts(stilts_offset);
+    goal_builder.add_suction(suction_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(Vacuum::kTimeAtHigherVoltage - chrono::milliseconds(10));
@@ -735,7 +866,7 @@ TEST_F(SuperstructureTest, VacuumDetectsPiece) {
   superstructure_plant_.set_simulated_pressure(0.0);
   RunFor(chrono::seconds(2));
   superstructure_status_fetcher_.Fetch();
-  EXPECT_TRUE(superstructure_status_fetcher_->has_piece);
+  EXPECT_TRUE(superstructure_status_fetcher_->has_piece());
 }
 
 // Tests the Vacuum backs off after acquiring a gamepiece
@@ -744,23 +875,47 @@ TEST_F(SuperstructureTest, VacuumBacksOff) {
   WaitUntilZeroed();
   // Turn on suction
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->suction.grab_piece = true;
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    ASSERT_TRUE(goal.Send());
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        elevator_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.4);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.0);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.1);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        stilts_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 0.1);
+
+    flatbuffers::Offset<SuctionGoal> suction_offset =
+        CreateSuctionGoal(*builder.fbb(), true);
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_elevator(elevator_offset);
+    goal_builder.add_wrist(wrist_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_stilts(stilts_offset);
+    goal_builder.add_suction(suction_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   // Verify that at 0 pressure after short time voltage is still high
   superstructure_plant_.set_simulated_pressure(0.0);
   RunFor(Vacuum::kTimeAtHigherVoltage - chrono::milliseconds(10));
   superstructure_output_fetcher_.Fetch();
-  EXPECT_EQ(superstructure_output_fetcher_->pump_voltage, Vacuum::kPumpVoltage);
+  EXPECT_EQ(superstructure_output_fetcher_->pump_voltage(),
+            Vacuum::kPumpVoltage);
 
   // Verify that after waiting with a piece the pump voltage goes to the
   // has piece voltage
   RunFor(chrono::seconds(2));
   superstructure_output_fetcher_.Fetch();
-  EXPECT_EQ(superstructure_output_fetcher_->pump_voltage,
+  EXPECT_EQ(superstructure_output_fetcher_->pump_voltage(),
             Vacuum::kPumpHasPieceVoltage);
 }
 
@@ -770,30 +925,77 @@ TEST_F(SuperstructureTest, VacuumStopsQuickly) {
   WaitUntilZeroed();
   // Turn on suction
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->suction.grab_piece = true;
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    ASSERT_TRUE(goal.Send());
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        elevator_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.4);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.0);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.1);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        stilts_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 0.1);
+
+    flatbuffers::Offset<SuctionGoal> suction_offset =
+        CreateSuctionGoal(*builder.fbb(), true);
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_elevator(elevator_offset);
+    goal_builder.add_wrist(wrist_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_stilts(stilts_offset);
+    goal_builder.add_suction(suction_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   // Get a Gamepiece
   superstructure_plant_.set_simulated_pressure(0.0);
   RunFor(chrono::seconds(2));
   superstructure_status_fetcher_.Fetch();
-  EXPECT_TRUE(superstructure_status_fetcher_->has_piece);
+  EXPECT_TRUE(superstructure_status_fetcher_->has_piece());
 
   // Turn off suction
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->suction.grab_piece = false;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        elevator_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.4);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.0);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 1.1);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        stilts_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 0.1);
+
+    flatbuffers::Offset<SuctionGoal> suction_offset =
+        CreateSuctionGoal(*builder.fbb(), false);
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_elevator(elevator_offset);
+    goal_builder.add_wrist(wrist_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_stilts(stilts_offset);
+    goal_builder.add_suction(suction_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   superstructure_plant_.set_simulated_pressure(1.0);
   // Run for a short while and check that voltage dropped to 0
   RunFor(chrono::milliseconds(10));
   superstructure_output_fetcher_.Fetch();
-  EXPECT_EQ(superstructure_output_fetcher_->pump_voltage, 0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->pump_voltage(), 0.0);
 }
 
 // Tests that running disabled, ya know, works

@@ -2,9 +2,8 @@
 
 #include <chrono>
 
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2017/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
-#include "y2017/control_loops/superstructure/superstructure.q.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -104,9 +103,8 @@ bool ComputeAngle(const ::aos::RingBuffer<Data, buffer_size> &data,
 
 VisionTimeAdjuster::VisionTimeAdjuster(::aos::EventLoop *event_loop)
     : drivetrain_status_fetcher_(
-          event_loop
-              ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
-                  ".frc971.control_loops.drivetrain_queue.status")) {}
+          event_loop->MakeFetcher<::frc971::control_loops::drivetrain::Status>(
+              "/drivetrain")) {}
 
 void VisionTimeAdjuster::Tick(monotonic_clock::time_point monotonic_now,
                               double turret_position,
@@ -117,18 +115,19 @@ void VisionTimeAdjuster::Tick(monotonic_clock::time_point monotonic_now,
   // If we have new drivetrain data, we store it.
   if (drivetrain_status_fetcher_.Fetch()) {
     const auto &position = drivetrain_status_fetcher_.get();
-    DrivetrainAngle new_position{.time = position->sent_time,
-                                 .left = position->estimated_left_position,
-                                 .right = position->estimated_right_position};
+    DrivetrainAngle new_position{
+        .time = drivetrain_status_fetcher_.context().monotonic_sent_time,
+        .left = position->estimated_left_position(),
+        .right = position->estimated_right_position()};
     drivetrain_data_.Push(new_position);
     most_recent_drivetrain_angle_ = ComputeDrivetrainPosition(new_position);
   }
 
   // If we have new vision data, compute the newest absolute angle at which the
   // target is.
-  if (vision_status != nullptr && vision_status->image_valid) {
+  if (vision_status != nullptr && vision_status->image_valid()) {
     monotonic_clock::time_point last_target_time(
-        monotonic_clock::duration(vision_status->target_time));
+        monotonic_clock::duration(vision_status->target_time()));
 
     double column_angle = 0;
     double drivetrain_angle = 0;
@@ -143,9 +142,9 @@ void VisionTimeAdjuster::Tick(monotonic_clock::time_point monotonic_now,
       AOS_LOG(INFO, "Accepting Vision angle of %f, age %f\n",
               most_recent_vision_angle_,
               ::aos::time::DurationInSeconds(monotonic_now - last_target_time));
-      most_recent_vision_reading_ = vision_status->angle;
+      most_recent_vision_reading_ = vision_status->angle();
       most_recent_vision_angle_ =
-          vision_status->angle + column_angle + drivetrain_angle;
+          vision_status->angle() + column_angle + drivetrain_angle;
       most_recent_vision_time_ = monotonic_now;
     }
   }

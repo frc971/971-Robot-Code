@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "aos/type_traits/type_traits.h"
-#include "aos/logging/logging.h"
+#include "glog/logging.h"
 
 namespace aos {
 
@@ -19,8 +19,8 @@ bool Mutex::Lock() {
   } else if (ret == 1) {
     return true;
   } else {
-    AOS_LOG(FATAL, "mutex_grab(%p(=%" PRIu32 ")) failed with %d\n", &impl_,
-            impl_.futex, ret);
+    LOG(FATAL) << "mutex_grab(" << &impl_ << "(=" << std::hex << impl_.futex
+               << ")) failed with " << ret;
   }
 }
 
@@ -38,8 +38,8 @@ Mutex::State Mutex::TryLock() {
     case 4:
       return State::kLockFailed;
     default:
-      AOS_LOG(FATAL, "mutex_trylock(%p(=%" PRIu32 ")) failed with %d\n", &impl_,
-              impl_.futex, ret);
+      LOG(FATAL) << "mutex_trylock(" << &impl_ << "(=" << std::hex
+                 << impl_.futex << ")) failed with " << ret;
   }
 }
 

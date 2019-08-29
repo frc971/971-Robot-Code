@@ -11,9 +11,6 @@
 #include "aos/vision/image/reader.h"
 #include "y2019/vision/target_finder.h"
 
-#undef CHECK_NOTNULL
-#undef CHECK_OP
-#undef PCHECK
 // CERES Clashes with logging symbols...
 #include "ceres/ceres.h"
 

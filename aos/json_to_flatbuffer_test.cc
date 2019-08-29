@@ -57,6 +57,12 @@ TEST_F(JsonToFlatbufferTest, Basic) {
   EXPECT_TRUE(JsonAndBack("{ \"foo_float\": 5.0 }"));
   EXPECT_TRUE(JsonAndBack("{ \"foo_double\": 5.0 }"));
 
+  EXPECT_TRUE(JsonAndBack("{ \"foo_enum\": \"None\" }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_enum\": \"UType\" }"));
+
+  EXPECT_TRUE(JsonAndBack("{ \"foo_enum_default\": \"None\" }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_enum_default\": \"UType\" }"));
+
   EXPECT_TRUE(JsonAndBack("{ \"foo_string\": \"baz\" }"));
 }
 
@@ -70,6 +76,13 @@ TEST_F(JsonToFlatbufferTest, DecimalPoint) {
 // Test what happens if you pass a field name that we don't know.
 TEST_F(JsonToFlatbufferTest, InvalidFieldName) {
   EXPECT_FALSE(JsonAndBack("{ \"foo\": 5 }"));
+}
+
+// Tests that an invalid enum type is handled correctly.
+TEST_F(JsonToFlatbufferTest, InvalidEnumName) {
+  EXPECT_FALSE(JsonAndBack("{ \"foo_enum\": \"5ype\" }"));
+
+  EXPECT_FALSE(JsonAndBack("{ \"foo_enum_default\": \"7ype\" }"));
 }
 
 // Test that adding a duplicate field results in an error.
@@ -106,19 +119,29 @@ TEST_F(JsonToFlatbufferTest, InvalidSyntax) {
 // Test arrays of simple types.
 TEST_F(JsonToFlatbufferTest, Array) {
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_byte\": [ 9, 7, 1 ] }"));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_byte\": [  ] }"));
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_ubyte\": [ 9, 7, 1 ] }"));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_ubyte\": [  ] }"));
 
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_short\": [ 9, 7, 1 ] }"));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_short\": [  ] }"));
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_ushort\": [ 9, 7, 1 ] }"));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_ushort\": [  ] }"));
 
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_int\": [ 9, 7, 1 ] }"));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_int\": [  ] }"));
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_uint\": [ 9, 7, 1 ] }"));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_uint\": [  ] }"));
 
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_long\": [ 9, 7, 1 ] }"));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_long\": [  ] }"));
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_ulong\": [ 9, 7, 1 ] }"));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_ulong\": [  ] }"));
 
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_float\": [ 9.0, 7.0, 1.0 ] }"));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_float\": [  ] }"));
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }"));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_double\": [  ] }"));
 
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_float\": [ 9, 7, 1 ] }",
                           "{ \"vector_foo_float\": [ 9.0, 7.0, 1.0 ] }"));
@@ -126,6 +149,9 @@ TEST_F(JsonToFlatbufferTest, Array) {
                           "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }"));
 
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_string\": [ \"bar\", \"baz\" ] }"));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_string\": [  ] }"));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_enum\": [ \"None\", \"UType\", \"Bool\" ] }"));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_enum\": [  ] }"));
 }
 
 // Test nested messages, and arrays of nested messages.
@@ -133,8 +159,13 @@ TEST_F(JsonToFlatbufferTest, NestedStruct) {
   EXPECT_TRUE(
       JsonAndBack("{ \"single_application\": { \"name\": \"woot\" } }"));
 
+  EXPECT_TRUE(JsonAndBack("{ \"single_application\": {  } }"));
+
   EXPECT_TRUE(JsonAndBack(
       "{ \"apps\": [ { \"name\": \"woot\" }, { \"name\": \"wow\" } ] }"));
+
+  EXPECT_TRUE(JsonAndBack(
+      "{ \"apps\": [ {  }, {  } ] }"));
 }
 
 // Test that we can parse an empty message.
@@ -158,8 +189,13 @@ TEST_F(JsonToFlatbufferTest, MultipleArrays) {
                   "\"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }"));
 }
 
+// Tests that multiple arrays get properly handled.
+TEST_F(JsonToFlatbufferTest, NestedArrays) {
+  EXPECT_TRUE(
+      JsonAndBack("{ \"vov\": { \"v\": [ { \"str\": [ \"a\", \"b\" ] }, { \"str\": [ \"c\", \"d\" ] } ] } }"));
+}
+
 // TODO(austin): Missmatched values.
-// TODO(austin): enums
 //
 // TODO(austin): unions?
 

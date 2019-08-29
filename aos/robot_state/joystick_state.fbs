@@ -1,0 +1,41 @@
+namespace aos;
+
+table Joystick {
+  // A bitmask of the butotn state.
+  buttons:ushort;
+
+  // The 6 joystick axes.
+  // TODO: Should have size of 6
+  axis:[double];
+
+  // The POV axis.
+  pov:int;
+}
+
+// This message is checked by all control loops to make sure that the
+// joystick code hasn't died.  It is published on "/aos"
+table JoystickState {
+  //TODO: should have fixed size.
+  joysticks:[Joystick];
+
+  test_mode:bool;
+  fms_attached:bool;
+  enabled:bool;
+  autonomous:bool;
+  team_id:ushort;
+
+  // 2018 scale and switch positions.
+  // TODO(austin): Push these out to a new message?
+  switch_left:bool;
+  scale_left:bool;
+
+  // If this is true, then this message isn't actually from the control
+  // system and so should not be trusted as evidence that the button inputs
+  // etc are actually real and should be acted on.
+  // However, most things should ignore this so that sending fake messages is
+  // useful for testing. The only difference in behavior should be motors not
+  // actually turning on.
+  fake:bool;
+}
+
+root_type JoystickState;

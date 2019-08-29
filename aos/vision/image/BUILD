@@ -5,6 +5,9 @@ load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 cc_library(
     name = "image_types",
     hdrs = ["image_types.h"],
+    deps = [
+        "@com_google_absl//absl/strings",
+    ],
 )
 
 cc_proto_library(

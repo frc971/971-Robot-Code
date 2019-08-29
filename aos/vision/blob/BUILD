@@ -11,7 +11,7 @@ cc_library(
         "//aos/vision/image:image_types",
         "//aos/vision/math:segment",
         "//aos/vision/math:vector",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -72,7 +72,7 @@ cc_library(
         ":contour",
         ":disjoint_set",
         ":range_image",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -90,7 +90,7 @@ cc_library(
         ":range_image",
         "//aos/vision/debug:overlay",
         "//aos/vision/math:segment",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -102,7 +102,7 @@ cc_library(
         ":range_image",
         "//aos/vision/debug:overlay",
         "//aos/vision/math:segment",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 

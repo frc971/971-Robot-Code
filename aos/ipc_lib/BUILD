@@ -1,5 +1,3 @@
-package(default_visibility = ["//visibility:public"])
-
 cc_library(
     name = "aos_sync",
     srcs = [
@@ -11,11 +9,12 @@ cc_library(
     linkopts = [
         "-lpthread",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//aos:macros",
-        "@com_google_absl//absl/base",
-        "//aos/logging",
         "//aos/util:compiler_memory_barrier",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/base",
     ],
 )
 
@@ -27,6 +26,7 @@ cc_library(
     hdrs = [
         "core_lib.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":aos_sync",
         ":shared_mem_types",
@@ -36,7 +36,7 @@ cc_library(
 cc_library(
     name = "shared_mem",
     srcs = [
-        "shared_mem.c",
+        "shared_mem.cc",
     ],
     hdrs = [
         "shared_mem.h",
@@ -44,11 +44,12 @@ cc_library(
     linkopts = [
         "-lrt",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":aos_sync",
         ":core_lib",
         ":shared_mem_types",
-        "//aos/logging",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -75,11 +76,11 @@ cc_library(
     linkopts = [
         "-lrt",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":core_lib",
         ":shared_mem",
         "//aos:condition",
-        "//aos/logging",
         "//aos/mutex",
         "//aos/util:options",
     ],
@@ -157,8 +158,9 @@ cc_library(
     hdrs = [
         "signalfd.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
-        "//aos/logging",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -166,6 +168,7 @@ cc_library(
     name = "index",
     srcs = ["index.cc"],
     hdrs = ["index.h"],
+    visibility = ["//visibility:public"],
 )
 
 cc_test(
@@ -174,7 +177,7 @@ cc_test(
     deps = [
         ":index",
         "//aos/testing:googletest",
-        "//aos/testing:test_logging",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -185,11 +188,11 @@ cc_library(
         "lockless_queue_memory.h",
     ],
     hdrs = ["lockless_queue.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":aos_sync",
         ":index",
-        "//aos:init",
-        "//aos/logging",
+        "//aos:realtime",
         "//aos/time",
         "//aos/util:compiler_memory_barrier",
         "@com_github_google_glog//:glog",
@@ -208,7 +211,7 @@ cc_library(
     deps = [
         ":lockless_queue",
         "//aos:event",
-        "//third_party/googletest:gtest",
+        "//aos/testing:googletest",
     ],
 )
 
@@ -225,7 +228,6 @@ cc_test(
         "//aos/libc:aos_strsignal",
         "//aos/testing:googletest",
         "//aos/testing:prevent_exit",
-        "//aos/testing:test_logging",
     ],
 )
 

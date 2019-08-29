@@ -3,7 +3,7 @@
 #include <pthread.h>
 #include <signal.h>
 
-#include "aos/logging/logging.h"
+#include "glog/logging.h"
 
 namespace aos {
 namespace util {
@@ -11,24 +11,24 @@ namespace util {
 Thread::Thread() : started_(false), joined_(false), should_terminate_(false) {}
 
 Thread::~Thread() {
-  AOS_CHECK(!(started_ && !joined_));
+  CHECK(!(started_ && !joined_));
 }
 
 void Thread::Start() {
-  AOS_CHECK(!started_);
+  CHECK(!started_);
   started_ = true;
-  AOS_CHECK(pthread_create(&thread_, NULL, &Thread::StaticRun, this) == 0);
+  CHECK(pthread_create(&thread_, NULL, &Thread::StaticRun, this) == 0);
 }
 
 void Thread::Join() {
-  AOS_CHECK(!joined_ && started_);
+  CHECK(!joined_ && started_);
   joined_ = true;
   should_terminate_.store(true);
-  AOS_CHECK(pthread_join(thread_, NULL) == 0);
+  CHECK(pthread_join(thread_, NULL) == 0);
 }
 
 bool Thread::TryJoin() {
-  AOS_CHECK(!joined_ && started_);
+  CHECK(!joined_ && started_);
 #ifdef AOS_SANITIZER_thread
   // ThreadSanitizer misses the tryjoin and then complains about leaking the
   // thread. Instead, we'll just check if the thread is still around and then
@@ -39,7 +39,8 @@ bool Thread::TryJoin() {
   if (kill_ret == 0) return false;
   // If it died, we'll get ESRCH. Otherwise, something went wrong.
   if (kill_ret != ESRCH) {
-    AOS_PELOG(FATAL, kill_ret, "pthread_kill(thread_, 0) failed");
+    errno = kill_ret;
+    PLOG(FATAL) << "pthread_kill(thread_, 0) failed";
   }
   Join();
   return true;
@@ -51,20 +52,22 @@ bool Thread::TryJoin() {
   } else if (ret == EBUSY) {
     return false;
   } else {
-    AOS_PELOG(FATAL, ret, "pthread_tryjoin_np(thread_, nullptr) failed");
+    errno = ret;
+    PLOG(FATAL) << "pthread_tryjoin_np(thread_, nullptr) failed";
+    return false;
   }
 #endif
 }
 
 void Thread::RequestStop() {
-  AOS_CHECK(!joined_ && started_);
+  CHECK(!joined_ && started_);
   should_terminate_.store(true);
 }
 
 void Thread::WaitUntilDone() {
-  AOS_CHECK(!joined_ && started_);
+  CHECK(!joined_ && started_);
   joined_ = true;
-  AOS_CHECK(pthread_join(thread_, NULL) == 0);
+  CHECK(pthread_join(thread_, NULL) == 0);
 }
 
 void *Thread::StaticRun(void *self) {

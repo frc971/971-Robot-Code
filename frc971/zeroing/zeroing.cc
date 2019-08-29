@@ -8,6 +8,9 @@
 
 #include "frc971/zeroing/wrap.h"
 
+#include "flatbuffers/flatbuffers.h"
+#include "glog/logging.h"
+
 namespace frc971 {
 namespace zeroing {
 
@@ -30,7 +33,7 @@ void PotAndIndexPulseZeroingEstimator::Reset() {
 
 void PotAndIndexPulseZeroingEstimator::TriggerError() {
   if (!error_) {
-    AOS_LOG(ERROR, "Manually triggered zeroing error.\n");
+    VLOG(1) << "Manually triggered zeroing error.";
     error_ = true;
   }
 }
@@ -57,14 +60,14 @@ void PotAndIndexPulseZeroingEstimator::UpdateEstimate(
   // reset and wait for that count to change before we consider ourselves
   // zeroed.
   if (wait_for_index_pulse_) {
-    last_used_index_pulse_count_ = info.index_pulses;
+    last_used_index_pulse_count_ = info.index_pulses();
     wait_for_index_pulse_ = false;
   }
 
   if (start_pos_samples_.size() < constants_.average_filter_size) {
-    start_pos_samples_.push_back(info.pot - info.encoder);
+    start_pos_samples_.push_back(info.pot() - info.encoder());
   } else {
-    start_pos_samples_[samples_idx_] = info.pot - info.encoder;
+    start_pos_samples_[samples_idx_] = info.pot() - info.encoder();
   }
 
   // Drop the oldest sample when we run this function the next time around.
@@ -83,14 +86,14 @@ void PotAndIndexPulseZeroingEstimator::UpdateEstimate(
   // have a well-filtered starting position then we use the filtered value as
   // our best guess.
   if (!zeroed_ &&
-      (info.index_pulses == last_used_index_pulse_count_ || !offset_ready())) {
+      (info.index_pulses() == last_used_index_pulse_count_ || !offset_ready())) {
     offset_ = start_average;
-  } else if (!zeroed_ || last_used_index_pulse_count_ != info.index_pulses) {
+  } else if (!zeroed_ || last_used_index_pulse_count_ != info.index_pulses()) {
     // Note the accurate start position and the current index pulse count so
     // that we only run this logic once per index pulse. That should be more
     // resilient to corrupted intermediate data.
-    offset_ = CalculateStartPosition(start_average, info.latched_encoder);
-    last_used_index_pulse_count_ = info.index_pulses;
+    offset_ = CalculateStartPosition(start_average, info.latched_encoder());
+    last_used_index_pulse_count_ = info.index_pulses();
 
     // TODO(austin): Reject encoder positions which have x% error rather than
     // rounding to the closest index pulse.
@@ -98,7 +101,7 @@ void PotAndIndexPulseZeroingEstimator::UpdateEstimate(
     // Save the first starting position.
     if (!zeroed_) {
       first_start_pos_ = offset_;
-      AOS_LOG(INFO, "latching start position %f\n", first_start_pos_);
+      VLOG(2) << "latching start position" << first_start_pos_;
     }
 
     // Now that we have an accurate starting position we can consider ourselves
@@ -109,29 +112,30 @@ void PotAndIndexPulseZeroingEstimator::UpdateEstimate(
     if (::std::abs(first_start_pos_ - offset_) >
         constants_.allowable_encoder_error * constants_.index_difference) {
       if (!error_) {
-        AOS_LOG(
-            ERROR,
-            "Encoder ticks out of range since last index pulse. first start "
-            "position: %f recent starting position: %f, allowable error: %f\n",
-            first_start_pos_, offset_,
-            constants_.allowable_encoder_error * constants_.index_difference);
+        VLOG(1)
+            << "Encoder ticks out of range since last index pulse. first start "
+               "position: "
+            << first_start_pos_ << " recent starting position: " << offset_
+            << ", allowable error: "
+            << constants_.allowable_encoder_error * constants_.index_difference;
         error_ = true;
       }
     }
   }
 
-  position_ = offset_ + info.encoder;
-  filtered_position_ = start_average + info.encoder;
+  position_ = offset_ + info.encoder();
+  filtered_position_ = start_average + info.encoder();
 }
 
-PotAndIndexPulseZeroingEstimator::State
-PotAndIndexPulseZeroingEstimator::GetEstimatorState() const {
-  State r;
-  r.error = error_;
-  r.zeroed = zeroed_;
-  r.position = position_;
-  r.pot_position = filtered_position_;
-  return r;
+flatbuffers::Offset<PotAndIndexPulseZeroingEstimator::State>
+PotAndIndexPulseZeroingEstimator::GetEstimatorState(
+    flatbuffers::FlatBufferBuilder *fbb) const {
+  State::Builder builder(*fbb);
+  builder.add_error(error_);
+  builder.add_zeroed(zeroed_);
+  builder.add_position(position_);
+  builder.add_pot_position(filtered_position_);
+  return builder.Finish();
 }
 
 HallEffectAndPositionZeroingEstimator::HallEffectAndPositionZeroingEstimator(
@@ -157,7 +161,7 @@ void HallEffectAndPositionZeroingEstimator::Reset() {
 
 void HallEffectAndPositionZeroingEstimator::TriggerError() {
   if (!error_) {
-    AOS_LOG(ERROR, "Manually triggered zeroing error.\n");
+    VLOG(1) << "Manually triggered zeroing error.\n";
     error_ = true;
   }
 }
@@ -165,15 +169,15 @@ void HallEffectAndPositionZeroingEstimator::TriggerError() {
 void HallEffectAndPositionZeroingEstimator::StoreEncoderMaxAndMin(
     const HallEffectAndPosition &info) {
   // If we have a new posedge.
-  if (!info.current) {
+  if (!info.current()) {
     if (last_hall_) {
-      min_low_position_ = max_low_position_ = info.encoder;
+      min_low_position_ = max_low_position_ = info.encoder();
     } else {
-      min_low_position_ = ::std::min(min_low_position_, info.encoder);
-      max_low_position_ = ::std::max(max_low_position_, info.encoder);
+      min_low_position_ = ::std::min(min_low_position_, info.encoder());
+      max_low_position_ = ::std::max(max_low_position_, info.encoder());
     }
   }
-  last_hall_ = info.current;
+  last_hall_ = info.current();
 }
 
 void HallEffectAndPositionZeroingEstimator::UpdateEstimate(
@@ -183,49 +187,49 @@ void HallEffectAndPositionZeroingEstimator::UpdateEstimate(
   // that count to change and for the hall effect to stay high before we
   // consider ourselves zeroed.
   if (!initialized_) {
-    last_used_posedge_count_ = info.posedge_count;
+    last_used_posedge_count_ = info.posedge_count();
     initialized_ = true;
-    last_hall_ = info.current;
+    last_hall_ = info.current();
   }
 
   StoreEncoderMaxAndMin(info);
 
-  if (info.current) {
+  if (info.current()) {
     cycles_high_++;
   } else {
     cycles_high_ = 0;
-    last_used_posedge_count_ = info.posedge_count;
+    last_used_posedge_count_ = info.posedge_count();
   }
 
   high_long_enough_ = cycles_high_ >= constants_.hall_trigger_zeroing_length;
 
   bool moving_backward = false;
   if (constants_.zeroing_move_direction) {
-    moving_backward = info.encoder > min_low_position_;
+    moving_backward = info.encoder() > min_low_position_;
   } else {
-    moving_backward = info.encoder < max_low_position_;
+    moving_backward = info.encoder() < max_low_position_;
   }
 
   // If there are no posedges to use or we don't have enough samples yet to
   // have a well-filtered starting position then we use the filtered value as
   // our best guess.
-  if (last_used_posedge_count_ != info.posedge_count && high_long_enough_ &&
+  if (last_used_posedge_count_ != info.posedge_count() && high_long_enough_ &&
       moving_backward) {
     // Note the offset and the current posedge count so that we only run this
     // logic once per posedge. That should be more resilient to corrupted
     // intermediate data.
-    offset_ = -info.posedge_value;
+    offset_ = -info.posedge_value();
     if (constants_.zeroing_move_direction) {
       offset_ += constants_.lower_hall_position;
     } else {
       offset_ += constants_.upper_hall_position;
     }
-    last_used_posedge_count_ = info.posedge_count;
+    last_used_posedge_count_ = info.posedge_count();
 
     // Save the first starting position.
     if (!zeroed_) {
       first_start_pos_ = offset_;
-      AOS_LOG(INFO, "latching start position %f\n", first_start_pos_);
+      VLOG(2) << "latching start position" << first_start_pos_;
     }
 
     // Now that we have an accurate starting position we can consider ourselves
@@ -233,18 +237,19 @@ void HallEffectAndPositionZeroingEstimator::UpdateEstimate(
     zeroed_ = true;
   }
 
-  position_ = info.encoder - offset_;
+  position_ = info.encoder() - offset_;
 }
 
-HallEffectAndPositionZeroingEstimator::State
-HallEffectAndPositionZeroingEstimator::GetEstimatorState() const {
-  State r;
-  r.error = error_;
-  r.zeroed = zeroed_;
-  r.encoder = position_;
-  r.high_long_enough = high_long_enough_;
-  r.offset = offset_;
-  return r;
+flatbuffers::Offset<HallEffectAndPositionZeroingEstimator::State>
+HallEffectAndPositionZeroingEstimator::GetEstimatorState(
+    flatbuffers::FlatBufferBuilder *fbb) const {
+  State::Builder builder(*fbb);
+  builder.add_error(error_);
+  builder.add_zeroed(zeroed_);
+  builder.add_encoder(position_);
+  builder.add_high_long_enough(high_long_enough_);
+  builder.add_offset(offset_);
+  return builder.Finish();
 }
 
 PotAndAbsoluteEncoderZeroingEstimator::PotAndAbsoluteEncoderZeroingEstimator(
@@ -291,23 +296,22 @@ void PotAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
     const PotAndAbsolutePosition &info) {
   // Check for Abs Encoder NaN value that would mess up the rest of the zeroing
   // code below. NaN values are given when the Absolute Encoder is disconnected.
-  if (::std::isnan(info.absolute_encoder)) {
+  if (::std::isnan(info.absolute_encoder())) {
     if (zeroed_) {
-      AOS_LOG(ERROR, "NAN on absolute encoder\n");
+      VLOG(1) << "NAN on absolute encoder.";
       error_ = true;
     } else {
       ++nan_samples_;
-      AOS_LOG(ERROR, "NAN on absolute encoder while zeroing %d\n",
-              static_cast<int>(nan_samples_));
+      VLOG(1) << "NAN on absolute encoder while zeroing" << nan_samples_;
       if (nan_samples_ >= constants_.average_filter_size) {
         error_ = true;
         zeroed_ = true;
       }
     }
     // Throw some dummy values in for now.
-    filtered_absolute_encoder_ = info.absolute_encoder;
-    filtered_position_ = pot_relative_encoder_offset_ + info.encoder;
-    position_ = offset_ + info.encoder;
+    filtered_absolute_encoder_ = info.absolute_encoder();
+    filtered_position_ = pot_relative_encoder_offset_ + info.encoder();
+    position_ = offset_ + info.encoder();
     return;
   }
 
@@ -315,7 +319,7 @@ void PotAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
                                             constants_.zeroing_threshold);
 
   if (!moving) {
-    const PotAndAbsolutePosition &sample = move_detector_.GetSample();
+    const PositionStruct &sample = move_detector_.GetSample();
 
     // Compute the average offset between the absolute encoder and relative
     // encoder.  If we have 0 samples, assume it is 0.
@@ -402,13 +406,10 @@ void PotAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
       if (::std::abs(first_offset_ - offset_) >
           constants_.allowable_encoder_error *
               constants_.one_revolution_distance) {
-        AOS_LOG(
-            ERROR,
-            "Offset moved too far. Initial: %f, current %f, allowable change: "
-            "%f\n",
-            first_offset_, offset_,
-            constants_.allowable_encoder_error *
-                constants_.one_revolution_distance);
+        VLOG(1) << "Offset moved too far. Initial: " << first_offset_
+                << ", current " << offset_ << ", allowable change: "
+                << constants_.allowable_encoder_error *
+                       constants_.one_revolution_distance;
         error_ = true;
       }
 
@@ -417,19 +418,20 @@ void PotAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
   }
 
   // Update the position.
-  filtered_position_ = pot_relative_encoder_offset_ + info.encoder;
-  position_ = offset_ + info.encoder;
+  filtered_position_ = pot_relative_encoder_offset_ + info.encoder();
+  position_ = offset_ + info.encoder();
 }
 
-PotAndAbsoluteEncoderZeroingEstimator::State
-PotAndAbsoluteEncoderZeroingEstimator::GetEstimatorState() const {
-  State r;
-  r.error = error_;
-  r.zeroed = zeroed_;
-  r.position = position_;
-  r.pot_position = filtered_position_;
-  r.absolute_position = filtered_absolute_encoder_;
-  return r;
+flatbuffers::Offset<PotAndAbsoluteEncoderZeroingEstimator::State>
+PotAndAbsoluteEncoderZeroingEstimator::GetEstimatorState(
+    flatbuffers::FlatBufferBuilder *fbb) const {
+  State::Builder builder(*fbb);
+  builder.add_error(error_);
+  builder.add_zeroed(zeroed_);
+  builder.add_position(position_);
+  builder.add_pot_position(filtered_position_);
+  builder.add_absolute_position(filtered_absolute_encoder_);
+  return builder.Finish();
 }
 
 void PulseIndexZeroingEstimator::Reset() {
@@ -444,16 +446,16 @@ void PulseIndexZeroingEstimator::Reset() {
 void PulseIndexZeroingEstimator::StoreIndexPulseMaxAndMin(
     const IndexPosition &info) {
   // If we have a new index pulse.
-  if (last_used_index_pulse_count_ != info.index_pulses) {
+  if (last_used_index_pulse_count_ != info.index_pulses()) {
     // If the latest pulses's position is outside the range we've currently
     // seen, record it appropriately.
-    if (info.latched_encoder > max_index_position_) {
-      max_index_position_ = info.latched_encoder;
+    if (info.latched_encoder() > max_index_position_) {
+      max_index_position_ = info.latched_encoder();
     }
-    if (info.latched_encoder < min_index_position_) {
-      min_index_position_ = info.latched_encoder;
+    if (info.latched_encoder() < min_index_position_) {
+      min_index_position_ = info.latched_encoder();
     }
-    last_used_index_pulse_count_ = info.index_pulses;
+    last_used_index_pulse_count_ = info.index_pulses();
   }
 }
 
@@ -474,9 +476,9 @@ void PulseIndexZeroingEstimator::UpdateEstimate(const IndexPosition &info) {
   const int index_pulse_count = IndexPulseCount();
   if (index_pulse_count > constants_.index_pulse_count) {
     if (!error_) {
-      AOS_LOG(ERROR,
-              "Got more index pulses than expected. Got %d expected %d.\n",
-              index_pulse_count, constants_.index_pulse_count);
+      VLOG(1) << "Got more index pulses than expected. Got "
+              << index_pulse_count << " expected "
+              << constants_.index_pulse_count;
       error_ = true;
     }
   }
@@ -493,7 +495,7 @@ void PulseIndexZeroingEstimator::UpdateEstimate(const IndexPosition &info) {
     // Detect whether the index pulse is somewhere other than where we expect
     // it to be. First we compute the position of the most recent index pulse.
     double index_pulse_distance =
-        info.latched_encoder + offset_ - constants_.measured_index_position;
+        info.latched_encoder() + offset_ - constants_.measured_index_position;
     // Second we compute the position of the index pulse in terms of
     // the index difference. I.e. if this index pulse is two pulses away from
     // the index pulse that we know about then this number should be positive
@@ -506,32 +508,34 @@ void PulseIndexZeroingEstimator::UpdateEstimate(const IndexPosition &info) {
     // This lets us check if the index pulse is within an acceptable error
     // margin of where we expected it to be.
     if (::std::abs(error) > constants_.allowable_encoder_error) {
-      AOS_LOG(ERROR,
-              "Encoder ticks out of range since last index pulse. known index "
-              "pulse: %f, expected index pulse: %f, actual index pulse: %f, "
-              "allowable error: %f\n",
-              constants_.measured_index_position,
-              round(relative_distance) * constants_.index_difference +
-                  constants_.measured_index_position,
-              info.latched_encoder + offset_,
-              constants_.allowable_encoder_error * constants_.index_difference);
+      VLOG(1)
+          << "Encoder ticks out of range since last index pulse. known index "
+             "pulse: "
+          << constants_.measured_index_position << ", expected index pulse: "
+          << round(relative_distance) * constants_.index_difference +
+                 constants_.measured_index_position
+          << ", actual index pulse: " << info.latched_encoder() + offset_
+          << ", "
+             "allowable error: "
+          << constants_.allowable_encoder_error * constants_.index_difference;
       error_ = true;
     }
   }
 
-  position_ = info.encoder + offset_;
+  position_ = info.encoder() + offset_;
 }
 
-PulseIndexZeroingEstimator::State
-PulseIndexZeroingEstimator::GetEstimatorState() const {
-  State r;
-  r.error = error_;
-  r.zeroed = zeroed_;
-  r.position = position_;
-  r.min_index_position = min_index_position_;
-  r.max_index_position = max_index_position_;
-  r.index_pulses_seen = IndexPulseCount();
-  return r;
+flatbuffers::Offset<PulseIndexZeroingEstimator::State>
+PulseIndexZeroingEstimator::GetEstimatorState(
+    flatbuffers::FlatBufferBuilder *fbb) const {
+  State::Builder builder(*fbb);
+  builder.add_error(error_);
+  builder.add_zeroed(zeroed_);
+  builder.add_position(position_);
+  builder.add_min_index_position(min_index_position_);
+  builder.add_max_index_position(max_index_position_);
+  builder.add_index_pulses_seen(IndexPulseCount());
+  return builder.Finish();
 }
 
 AbsoluteEncoderZeroingEstimator::AbsoluteEncoderZeroingEstimator(
@@ -570,22 +574,21 @@ void AbsoluteEncoderZeroingEstimator::UpdateEstimate(
     const AbsolutePosition &info) {
   // Check for Abs Encoder NaN value that would mess up the rest of the zeroing
   // code below. NaN values are given when the Absolute Encoder is disconnected.
-  if (::std::isnan(info.absolute_encoder)) {
+  if (::std::isnan(info.absolute_encoder())) {
     if (zeroed_) {
-      AOS_LOG(ERROR, "NAN on absolute encoder\n");
+      VLOG(1) << "NAN on absolute encoder.";
       error_ = true;
     } else {
       ++nan_samples_;
-      AOS_LOG(ERROR, "NAN on absolute encoder while zeroing %d\n",
-              static_cast<int>(nan_samples_));
+      VLOG(1) << "NAN on absolute encoder while zeroing " << nan_samples_;
       if (nan_samples_ >= constants_.average_filter_size) {
         error_ = true;
         zeroed_ = true;
       }
     }
     // Throw some dummy values in for now.
-    filtered_absolute_encoder_ = info.absolute_encoder;
-    position_ = offset_ + info.encoder;
+    filtered_absolute_encoder_ = info.absolute_encoder();
+    position_ = offset_ + info.encoder();
     return;
   }
 
@@ -593,7 +596,7 @@ void AbsoluteEncoderZeroingEstimator::UpdateEstimate(
                                             constants_.zeroing_threshold);
 
   if (!moving) {
-    const AbsolutePosition &sample = move_detector_.GetSample();
+    const PositionStruct &sample = move_detector_.GetSample();
 
     // Compute the average offset between the absolute encoder and relative
     // encoder.  If we have 0 samples, assume it is 0.
@@ -673,13 +676,10 @@ void AbsoluteEncoderZeroingEstimator::UpdateEstimate(
       if (::std::abs(first_offset_ - offset_) >
           constants_.allowable_encoder_error *
               constants_.one_revolution_distance) {
-        AOS_LOG(
-            ERROR,
-            "Offset moved too far. Initial: %f, current %f, allowable change: "
-            "%f\n",
-            first_offset_, offset_,
-            constants_.allowable_encoder_error *
-                constants_.one_revolution_distance);
+        VLOG(1) << "Offset moved too far. Initial: " << first_offset_
+                << ", current " << offset_ << ", allowable change: "
+                << constants_.allowable_encoder_error *
+                       constants_.one_revolution_distance;
         error_ = true;
       }
 
@@ -688,17 +688,18 @@ void AbsoluteEncoderZeroingEstimator::UpdateEstimate(
   }
 
   // Update the position.
-  position_ = offset_ + info.encoder;
+  position_ = offset_ + info.encoder();
 }
 
-AbsoluteEncoderZeroingEstimator::State
-  AbsoluteEncoderZeroingEstimator::GetEstimatorState() const {
-  State r;
-  r.error = error_;
-  r.zeroed = zeroed_;
-  r.position = position_;
-  r.absolute_position = filtered_absolute_encoder_;
-  return r;
+flatbuffers::Offset<AbsoluteEncoderZeroingEstimator::State>
+AbsoluteEncoderZeroingEstimator::GetEstimatorState(
+    flatbuffers::FlatBufferBuilder *fbb) const {
+  State::Builder builder(*fbb);
+  builder.add_error(error_);
+  builder.add_zeroed(zeroed_);
+  builder.add_position(position_);
+  builder.add_absolute_position(filtered_absolute_encoder_);
+  return builder.Finish();
 }
 
 }  // namespace zeroing

@@ -5,21 +5,20 @@
 #include <random>
 
 #include "gtest/gtest.h"
+#include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/zeroing/zeroing.h"
-#include "frc971/control_loops/control_loops.q.h"
-#include "aos/testing/test_shm.h"
-#include "aos/util/thread.h"
 #include "aos/die.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 
 namespace frc971 {
 namespace zeroing {
 
-using control_loops::PositionSensorSimulator;
 using constants::AbsoluteEncoderZeroingConstants;
 using constants::EncoderPlusIndexZeroingConstants;
 using constants::PotAndAbsoluteEncoderZeroingConstants;
 using constants::PotAndIndexPulseZeroingConstants;
+using control_loops::PositionSensorSimulator;
+using FBB = flatbuffers::FlatBufferBuilder;
 
 static const size_t kSampleSize = 30;
 static const double kAcceptableUnzeroedError = 0.2;
@@ -28,53 +27,58 @@ static const size_t kMovingBufferSize = 3;
 
 class ZeroingTest : public ::testing::Test {
  protected:
-  void SetUp() override { aos::SetDieTestMode(true); }
+  void SetUp() override {}
 
   void MoveTo(PositionSensorSimulator *simulator,
               PotAndIndexPulseZeroingEstimator *estimator,
               double new_position) {
-    PotAndIndexPosition sensor_values;
     simulator->MoveTo(new_position);
-    simulator->GetSensorValues(&sensor_values);
-    estimator->UpdateEstimate(sensor_values);
+    FBB fbb;
+    estimator->UpdateEstimate(
+        *simulator->FillSensorValues<PotAndIndexPosition>(&fbb));
   }
 
   void MoveTo(PositionSensorSimulator *simulator,
-              AbsoluteEncoderZeroingEstimator *estimator,
-              double new_position) {
-    AbsolutePosition sensor_values_;
+              AbsoluteEncoderZeroingEstimator *estimator, double new_position) {
     simulator->MoveTo(new_position);
-    simulator->GetSensorValues(&sensor_values_);
-    estimator->UpdateEstimate(sensor_values_);
+    FBB fbb;
+    estimator->UpdateEstimate(
+        *simulator->FillSensorValues<AbsolutePosition>(&fbb));
   }
 
   void MoveTo(PositionSensorSimulator *simulator,
               PotAndAbsoluteEncoderZeroingEstimator *estimator,
               double new_position) {
-    PotAndAbsolutePosition sensor_values_;
     simulator->MoveTo(new_position);
-    simulator->GetSensorValues(&sensor_values_);
-    estimator->UpdateEstimate(sensor_values_);
+    FBB fbb;
+    estimator->UpdateEstimate(
+        *simulator->FillSensorValues<PotAndAbsolutePosition>(&fbb));
   }
 
   void MoveTo(PositionSensorSimulator *simulator,
               PulseIndexZeroingEstimator *estimator, double new_position) {
-    IndexPosition sensor_values_;
     simulator->MoveTo(new_position);
-    simulator->GetSensorValues(&sensor_values_);
-    estimator->UpdateEstimate(sensor_values_);
+    FBB fbb;
+    estimator->UpdateEstimate(
+        *simulator->FillSensorValues<IndexPosition>(&fbb));
   }
 
   void MoveTo(PositionSensorSimulator *simulator,
               HallEffectAndPositionZeroingEstimator *estimator,
               double new_position) {
-    HallEffectAndPosition sensor_values_;
     simulator->MoveTo(new_position);
-    simulator->GetSensorValues(&sensor_values_);
-    estimator->UpdateEstimate(sensor_values_);
+    FBB fbb;
+    estimator->UpdateEstimate(
+        *simulator->FillSensorValues<HallEffectAndPosition>(&fbb));
   }
 
-  ::aos::testing::TestSharedMemory my_shm_;
+  template <typename T>
+  double GetEstimatorPosition(T *estimator) {
+    FBB fbb;
+    fbb.Finish(estimator->GetEstimatorState(&fbb));
+    return flatbuffers::GetRoot<typename T::State>(fbb.GetBufferPointer())
+        ->position();
+  }
 };
 
 TEST_F(ZeroingTest, TestMovingAverageFilter) {
@@ -90,13 +94,13 @@ TEST_F(ZeroingTest, TestMovingAverageFilter) {
   for (int i = 0; i < 300; i++) {
     MoveTo(&sim, &estimator, 3.3 * index_diff);
   }
-  ASSERT_NEAR(3.3 * index_diff, estimator.GetEstimatorState().position,
+  ASSERT_NEAR(3.3 * index_diff, GetEstimatorPosition(&estimator),
               kAcceptableUnzeroedError * index_diff);
 
   for (int i = 0; i < 300; i++) {
     MoveTo(&sim, &estimator, 3.9 * index_diff);
   }
-  ASSERT_NEAR(3.9 * index_diff, estimator.GetEstimatorState().position,
+  ASSERT_NEAR(3.9 * index_diff, GetEstimatorPosition(&estimator),
               kAcceptableUnzeroedError * index_diff);
 }
 
@@ -133,25 +137,25 @@ TEST_F(ZeroingTest, TestLotsOfMovement) {
   for (int i = 0; i < 300; i++) {
     MoveTo(&sim, &estimator, 3.6);
   }
-  ASSERT_NEAR(3.6, estimator.GetEstimatorState().position,
+  ASSERT_NEAR(3.6, GetEstimatorPosition(&estimator),
               kAcceptableUnzeroedError * index_diff);
 
   // With a single index pulse the zeroing estimator should be able to lock
   // onto the true value of the position.
   MoveTo(&sim, &estimator, 4.01);
-  ASSERT_NEAR(4.01, estimator.GetEstimatorState().position, 0.001);
+  ASSERT_NEAR(4.01, GetEstimatorPosition(&estimator), 0.001);
 
   MoveTo(&sim, &estimator, 4.99);
-  ASSERT_NEAR(4.99, estimator.GetEstimatorState().position, 0.001);
+  ASSERT_NEAR(4.99, GetEstimatorPosition(&estimator), 0.001);
 
   MoveTo(&sim, &estimator, 3.99);
-  ASSERT_NEAR(3.99, estimator.GetEstimatorState().position, 0.001);
+  ASSERT_NEAR(3.99, GetEstimatorPosition(&estimator), 0.001);
 
   MoveTo(&sim, &estimator, 3.01);
-  ASSERT_NEAR(3.01, estimator.GetEstimatorState().position, 0.001);
+  ASSERT_NEAR(3.01, GetEstimatorPosition(&estimator), 0.001);
 
   MoveTo(&sim, &estimator, 13.55);
-  ASSERT_NEAR(13.55, estimator.GetEstimatorState().position, 0.001);
+  ASSERT_NEAR(13.55, GetEstimatorPosition(&estimator), 0.001);
 }
 
 TEST_F(ZeroingTest, TestDifferentIndexDiffs) {
@@ -167,25 +171,25 @@ TEST_F(ZeroingTest, TestDifferentIndexDiffs) {
   for (int i = 0; i < 300; i++) {
     MoveTo(&sim, &estimator, 3.5 * index_diff);
   }
-  ASSERT_NEAR(3.5 * index_diff, estimator.GetEstimatorState().position,
+  ASSERT_NEAR(3.5 * index_diff, GetEstimatorPosition(&estimator),
               kAcceptableUnzeroedError * index_diff);
 
   // With a single index pulse the zeroing estimator should be able to lock
   // onto the true value of the position.
   MoveTo(&sim, &estimator, 4.01);
-  ASSERT_NEAR(4.01, estimator.GetEstimatorState().position, 0.001);
+  ASSERT_NEAR(4.01, GetEstimatorPosition(&estimator), 0.001);
 
   MoveTo(&sim, &estimator, 4.99);
-  ASSERT_NEAR(4.99, estimator.GetEstimatorState().position, 0.001);
+  ASSERT_NEAR(4.99, GetEstimatorPosition(&estimator), 0.001);
 
   MoveTo(&sim, &estimator, 3.99);
-  ASSERT_NEAR(3.99, estimator.GetEstimatorState().position, 0.001);
+  ASSERT_NEAR(3.99, GetEstimatorPosition(&estimator), 0.001);
 
   MoveTo(&sim, &estimator, 3.01);
-  ASSERT_NEAR(3.01, estimator.GetEstimatorState().position, 0.001);
+  ASSERT_NEAR(3.01, GetEstimatorPosition(&estimator), 0.001);
 
   MoveTo(&sim, &estimator, 13.55);
-  ASSERT_NEAR(13.55, estimator.GetEstimatorState().position, 0.001);
+  ASSERT_NEAR(13.55, GetEstimatorPosition(&estimator), 0.001);
 }
 
 TEST_F(ZeroingTest, TestPercentage) {
@@ -278,12 +282,12 @@ TEST_F(ZeroingTest, TestNonZeroIndexPulseOffsets) {
   MoveTo(&sim, &estimator, 3.7 * index_diff);
   ASSERT_TRUE(estimator.zeroed());
   ASSERT_DOUBLE_EQ(3.3 * index_diff, estimator.offset());
-  ASSERT_DOUBLE_EQ(3.7 * index_diff, estimator.GetEstimatorState().position);
+  ASSERT_DOUBLE_EQ(3.7 * index_diff, GetEstimatorPosition(&estimator));
 
   // Trigger one more index pulse and check the offset.
   MoveTo(&sim, &estimator, 4.7 * index_diff);
   ASSERT_DOUBLE_EQ(3.3 * index_diff, estimator.offset());
-  ASSERT_DOUBLE_EQ(4.7 * index_diff, estimator.GetEstimatorState().position);
+  ASSERT_DOUBLE_EQ(4.7 * index_diff, GetEstimatorPosition(&estimator));
 }
 
 TEST_F(ZeroingTest, BasicErrorAPITest) {
@@ -379,12 +383,12 @@ TEST_F(ZeroingTest, TestPotAndAbsoluteEncoderZeroingIgnoresNAN) {
   PotAndAbsoluteEncoderZeroingEstimator estimator(constants);
 
   // We tolerate a couple NANs before we start.
-  PotAndAbsolutePosition sensor_values;
-  sensor_values.absolute_encoder = ::std::numeric_limits<double>::quiet_NaN();
-  sensor_values.encoder = 0.0;
-  sensor_values.pot = 0.0;
+  FBB fbb;
+  fbb.Finish(CreatePotAndAbsolutePosition(
+      fbb, 0.0, ::std::numeric_limits<double>::quiet_NaN(), 0.0));
   for (size_t i = 0; i < kSampleSize - 1; ++i) {
-    estimator.UpdateEstimate(sensor_values);
+    estimator.UpdateEstimate(
+        *flatbuffers::GetRoot<PotAndAbsolutePosition>(fbb.GetBufferPointer()));
   }
 
   for (size_t i = 0; i < kSampleSize + kMovingBufferSize - 1; ++i) {
@@ -431,17 +435,17 @@ TEST_F(ZeroingTest, TestPotAndAbsoluteEncoderZeroingWithNaN) {
 
   PotAndAbsoluteEncoderZeroingEstimator estimator(constants);
 
-  PotAndAbsolutePosition sensor_values;
-  sensor_values.absolute_encoder = ::std::numeric_limits<double>::quiet_NaN();
-  sensor_values.encoder = 0.0;
-  sensor_values.pot = 0.0;
-  // We tolerate a couple NANs before we start.
+  FBB fbb;
+  fbb.Finish(CreatePotAndAbsolutePosition(
+      fbb, 0.0, ::std::numeric_limits<double>::quiet_NaN(), 0.0));
+  const auto sensor_values =
+      flatbuffers::GetRoot<PotAndAbsolutePosition>(fbb.GetBufferPointer());
   for (size_t i = 0; i < kSampleSize - 1; ++i) {
-    estimator.UpdateEstimate(sensor_values);
+    estimator.UpdateEstimate(*sensor_values);
   }
   ASSERT_FALSE(estimator.error());
 
-  estimator.UpdateEstimate(sensor_values);
+  estimator.UpdateEstimate(*sensor_values);
   ASSERT_TRUE(estimator.error());
 }
 
@@ -493,11 +497,11 @@ TEST_F(ZeroingTest, TestRelativeEncoderZeroing) {
 
   ASSERT_DOUBLE_EQ(start_pos, estimator.offset());
   ASSERT_DOUBLE_EQ(3.5 * constants.index_difference,
-                   estimator.GetEstimatorState().position);
+                   GetEstimatorPosition(&estimator));
 
   MoveTo(&sim, &estimator, 0.5 * constants.index_difference);
   ASSERT_DOUBLE_EQ(0.5 * constants.index_difference,
-                   estimator.GetEstimatorState().position);
+                   GetEstimatorPosition(&estimator));
 }
 
 // Tests that we can detect when an index pulse occurs where we didn't expect
@@ -716,11 +720,13 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingIgnoresNAN) {
   AbsoluteEncoderZeroingEstimator estimator(constants);
 
   // We tolerate a couple NANs before we start.
-  AbsolutePosition sensor_values;
-  sensor_values.absolute_encoder = ::std::numeric_limits<double>::quiet_NaN();
-  sensor_values.encoder = 0.0;
+  FBB fbb;
+  fbb.Finish(CreateAbsolutePosition(
+      fbb, 0.0, ::std::numeric_limits<double>::quiet_NaN()));
+  const auto sensor_values =
+      flatbuffers::GetRoot<AbsolutePosition>(fbb.GetBufferPointer());
   for (size_t i = 0; i < kSampleSize - 1; ++i) {
-    estimator.UpdateEstimate(sensor_values);
+    estimator.UpdateEstimate(*sensor_values);
   }
 
   for (size_t i = 0; i < kSampleSize + kMovingBufferSize - 1; ++i) {
@@ -769,16 +775,17 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithNaN) {
 
   AbsoluteEncoderZeroingEstimator estimator(constants);
 
-  AbsolutePosition sensor_values;
-  sensor_values.absolute_encoder = ::std::numeric_limits<double>::quiet_NaN();
-  sensor_values.encoder = 0.0;
-  // We tolerate a couple NANs before we start.
+  FBB fbb;
+  fbb.Finish(CreateAbsolutePosition(
+      fbb, 0.0, ::std::numeric_limits<double>::quiet_NaN()));
+  const auto sensor_values =
+      flatbuffers::GetRoot<AbsolutePosition>(fbb.GetBufferPointer());
   for (size_t i = 0; i < kSampleSize - 1; ++i) {
-    estimator.UpdateEstimate(sensor_values);
+    estimator.UpdateEstimate(*sensor_values);
   }
   ASSERT_FALSE(estimator.error());
 
-  estimator.UpdateEstimate(sensor_values);
+  estimator.UpdateEstimate(*sensor_values);
   ASSERT_TRUE(estimator.error());
 }
 

@@ -118,17 +118,18 @@ void ColumnProfiledSubsystem::Correct(const ColumnPosition &new_position) {
   }
 
   turret_last_position_ = turret_position();
-  Y_ << new_position.indexer.encoder, new_position.turret.encoder;
+  Y_ << new_position.indexer()->encoder(), new_position.turret()->encoder();
   Y_ += offset_;
   loop_->Correct(Y_);
 
-  indexer_history_[indexer_history_position_] = new_position.indexer.encoder;
+  indexer_history_[indexer_history_position_] =
+      new_position.indexer()->encoder();
   indexer_history_position_ = (indexer_history_position_ + 1) % kHistoryLength;
 
   indexer_dt_velocity_ =
-      (new_position.indexer.encoder - indexer_last_position_) /
+      (new_position.indexer()->encoder() - indexer_last_position_) /
       ::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency);
-  indexer_last_position_ = new_position.indexer.encoder;
+  indexer_last_position_ = new_position.indexer()->encoder();
 
   stuck_indexer_detector_->Correct(Y_);
 
@@ -304,9 +305,11 @@ bool ColumnProfiledSubsystem::CheckHardLimits() {
 }
 
 void ColumnProfiledSubsystem::AdjustProfile(
-    const ::frc971::ProfileParameters &profile_parameters) {
-  AdjustProfile(profile_parameters.max_velocity,
-                profile_parameters.max_acceleration);
+    const ::frc971::ProfileParameters *profile_parameters) {
+  AdjustProfile(
+      profile_parameters == nullptr ? 0.0 : profile_parameters->max_velocity(),
+      profile_parameters == nullptr ? 0.0
+                                    : profile_parameters->max_acceleration());
 }
 
 void ColumnProfiledSubsystem::AdjustProfile(double max_angular_velocity,
@@ -348,20 +351,46 @@ void ColumnProfiledSubsystem::PartialTurretReset() {
   stuck_indexer_detector_->mutable_X_hat(5, 0) = 0.0;
 }
 
-void ColumnProfiledSubsystem::PopulateIndexerStatus(IndexerStatus *status) {
-  status->avg_angular_velocity = indexer_average_angular_velocity_;
+void ColumnProfiledSubsystem::PopulateIndexerStatus(
+    IndexerStatus::Builder *status_builder) {
+  status_builder->add_avg_angular_velocity(indexer_average_angular_velocity_);
 
-  status->angular_velocity = X_hat_current_(1, 0);
-  status->ready = indexer_ready_;
+  status_builder->add_angular_velocity(X_hat_current_(1, 0));
+  status_builder->add_ready(indexer_ready_);
 
-  status->voltage_error = X_hat_current_(4, 0);
-  status->stuck_voltage_error = stuck_indexer_X_hat_current_(4, 0);
-  status->position_error = indexer_position_error_;
-  status->instantaneous_velocity = indexer_dt_velocity_;
+  status_builder->add_voltage_error(X_hat_current_(4, 0));
+  status_builder->add_stuck_voltage_error(stuck_indexer_X_hat_current_(4, 0));
+  status_builder->add_position_error(indexer_position_error_);
+  status_builder->add_instantaneous_velocity(indexer_dt_velocity_);
 
-  status->stuck = IsIndexerStuck();
+  status_builder->add_stuck(IsIndexerStuck());
 
-  status->stuck_voltage = IndexerStuckVoltage();
+  status_builder->add_stuck_voltage(IndexerStuckVoltage());
+}
+
+void ColumnProfiledSubsystem::PopulateTurretStatus(
+    TurretProfiledSubsystemStatus::Builder *status_builder,
+    flatbuffers::Offset<ColumnZeroingEstimator::State> estimator_state_offset) {
+  status_builder->add_zeroed(zeroed());
+
+  status_builder->add_position(X_hat(2, 0));
+  status_builder->add_velocity(X_hat(3, 0));
+  status_builder->add_goal_position(goal(2, 0));
+  status_builder->add_goal_velocity(goal(3, 0));
+  status_builder->add_unprofiled_goal_position(unprofiled_goal(2, 0));
+  status_builder->add_unprofiled_goal_velocity(unprofiled_goal(3, 0));
+  status_builder->add_voltage_error(X_hat(5, 0));
+  status_builder->add_calculated_velocity(
+      (turret_position() - turret_last_position_) /
+      ::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency));
+
+  status_builder->add_estimator_state(estimator_state_offset);
+
+  Eigen::Matrix<double, 6, 1> error = controller().error();
+  status_builder->add_position_power(controller().controller().K(0, 0) *
+                                     error(0, 0));
+  status_builder->add_velocity_power(controller().controller().K(0, 1) *
+                                     error(1, 0));
 }
 
 Column::Column(::aos::EventLoop *event_loop)
@@ -384,15 +413,15 @@ void Column::Reset() {
   freeze_ = false;
 }
 
-void Column::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
-                     const control_loops::IndexerGoal *unsafe_indexer_goal,
-                     const control_loops::TurretGoal *unsafe_turret_goal,
-                     const ColumnPosition *position,
-                     const vision::VisionStatus *vision_status,
-                     double *indexer_output, double *turret_output,
-                     IndexerStatus *indexer_status,
-                     TurretProfiledSubsystemStatus *turret_status,
-                     intake::Intake *intake) {
+std::pair<flatbuffers::Offset<IndexerStatus>,
+          flatbuffers::Offset<TurretProfiledSubsystemStatus>>
+Column::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
+                const IndexerGoalT *unsafe_indexer_goal,
+                const TurretGoal *unsafe_turret_goal,
+                const ColumnPosition *position,
+                const vision::VisionStatus *vision_status,
+                double *indexer_output, double *turret_output,
+                flatbuffers::FlatBufferBuilder *fbb, intake::Intake *intake) {
   bool disable = turret_output == nullptr || indexer_output == nullptr;
   profiled_subsystem_.Correct(*position);
 
@@ -526,11 +555,12 @@ void Column::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
       }
 
       if (unsafe_turret_goal && unsafe_indexer_goal) {
-        profiled_subsystem_.AdjustProfile(unsafe_turret_goal->profile_params);
+        profiled_subsystem_.AdjustProfile(unsafe_turret_goal->profile_params());
         profiled_subsystem_.set_unprofiled_goal(
-            unsafe_indexer_goal->angular_velocity, unsafe_turret_goal->angle);
+            unsafe_indexer_goal->angular_velocity,
+            unsafe_turret_goal->angle());
 
-        if (unsafe_turret_goal->track) {
+        if (unsafe_turret_goal->track()) {
           if (vision_time_adjuster_.valid()) {
             AOS_LOG(INFO, "Vision aligning to %f\n",
                     vision_time_adjuster_.goal());
@@ -623,23 +653,40 @@ void Column::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
 
   // Save debug/internal state.
   // TODO(austin): Save more.
-  turret_status->zeroed = profiled_subsystem_.zeroed();
-  profiled_subsystem_.PopulateTurretStatus(turret_status);
-  turret_status->estopped = (state_ == State::ESTOP);
-  turret_status->state = static_cast<int32_t>(state_);
-  turret_status->turret_encoder_angle = profiled_subsystem_.turret_position();
+  flatbuffers::Offset<ColumnZeroingEstimator::State>
+      column_estimator_state_offset =
+          profiled_subsystem_.EstimatorState(fbb, 0);
+
+  TurretProfiledSubsystemStatus::Builder turret_status_builder(*fbb);
+  profiled_subsystem_.PopulateTurretStatus(&turret_status_builder,
+                                           column_estimator_state_offset);
+  turret_status_builder.add_estopped((state_ == State::ESTOP));
+  turret_status_builder.add_state(static_cast<int32_t>(state_));
+  turret_status_builder.add_turret_encoder_angle(
+      profiled_subsystem_.turret_position());
   if (vision_time_adjuster_.valid()) {
-    turret_status->vision_angle = vision_time_adjuster_.goal();
-    turret_status->raw_vision_angle =
-        vision_time_adjuster_.most_recent_vision_reading();
-    turret_status->vision_tracking = true;
+    turret_status_builder.add_vision_angle(vision_time_adjuster_.goal());
+    turret_status_builder.add_raw_vision_angle(
+        vision_time_adjuster_.most_recent_vision_reading());
+    turret_status_builder.add_vision_tracking(true);
   } else {
-    turret_status->vision_angle = ::std::numeric_limits<double>::quiet_NaN();
-    turret_status->vision_tracking = false;
+    turret_status_builder.add_vision_angle(
+        ::std::numeric_limits<double>::quiet_NaN());
+    turret_status_builder.add_vision_tracking(false);
   }
 
-  profiled_subsystem_.PopulateIndexerStatus(indexer_status);
-  indexer_status->state = static_cast<int32_t>(indexer_state_);
+  flatbuffers::Offset<TurretProfiledSubsystemStatus> turret_status_offset =
+      turret_status_builder.Finish();
+
+  IndexerStatus::Builder indexer_status_builder(*fbb);
+  profiled_subsystem_.PopulateIndexerStatus(&indexer_status_builder);
+
+  indexer_status_builder.add_state(static_cast<int32_t>(indexer_state_));
+
+  flatbuffers::Offset<IndexerStatus> indexer_status_offset =
+      indexer_status_builder.Finish();
+
+  return std::make_pair(indexer_status_offset, turret_status_offset);
 }
 
 }  // namespace column

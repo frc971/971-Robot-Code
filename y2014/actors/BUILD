@@ -1,5 +1,3 @@
-load("//aos/build:queues.bzl", "queue_library")
-
 filegroup(
     name = "binaries",
     srcs = [
@@ -18,16 +16,6 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-queue_library(
-    name = "shoot_action_queue",
-    srcs = [
-        "shoot_action.q",
-    ],
-    deps = [
-        "//aos/actions:action_queue",
-    ],
-)
-
 cc_library(
     name = "shoot_action_lib",
     srcs = [
@@ -38,14 +26,13 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        ":shoot_action_queue",
         "//aos/actions:action_lib",
         "//aos/logging",
-        "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//y2014:constants",
-        "//y2014/control_loops/claw:claw_queue",
-        "//y2014/control_loops/shooter:shooter_queue",
-        "//y2014/queues:profile_params",
+        "//y2014/control_loops/claw:claw_goal_fbs",
+        "//y2014/control_loops/claw:claw_status_fbs",
+        "//y2014/control_loops/shooter:shooter_goal_fbs",
+        "//y2014/control_loops/shooter:shooter_status_fbs",
     ],
 )
 
@@ -56,9 +43,8 @@ cc_binary(
     ],
     deps = [
         ":shoot_action_lib",
-        ":shoot_action_queue",
         "//aos:init",
-        "//aos/events:shm-event-loop",
+        "//aos/events:shm_event_loop",
     ],
 )
 
@@ -72,19 +58,18 @@ cc_library(
     ],
     deps = [
         "//aos/actions:action_lib",
-        "//aos/events:event-loop",
+        "//aos/events:event_loop",
         "//aos/logging",
         "//aos/util:phased_loop",
         "//frc971/autonomous:base_autonomous_actor",
         "//frc971/control_loops/drivetrain:drivetrain_config",
-        "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//y2014/actors:shoot_action_lib",
-        "//y2014/control_loops/claw:claw_queue",
+        "//y2014/control_loops/claw:claw_goal_fbs",
+        "//y2014/control_loops/claw:claw_status_fbs",
         "//y2014/control_loops/drivetrain:drivetrain_base",
-        "//y2014/control_loops/shooter:shooter_queue",
-        "//y2014/queues:auto_mode",
-        "//y2014/queues:hot_goal",
-        "//y2014/queues:profile_params",
+        "//y2014/control_loops/shooter:shooter_goal_fbs",
+        "//y2014/queues:auto_mode_fbs",
+        "//y2014/queues:hot_goal_fbs",
     ],
 )
 
@@ -96,7 +81,6 @@ cc_binary(
     deps = [
         ":autonomous_action_lib",
         "//aos:init",
-        "//aos/events:shm-event-loop",
-        "//frc971/autonomous:auto_queue",
+        "//aos/events:shm_event_loop",
     ],
 )

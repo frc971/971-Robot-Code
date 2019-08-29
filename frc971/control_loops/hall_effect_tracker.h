@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "frc971/control_loops/control_loops.q.h"
+#include "frc971/control_loops/control_loops_generated.h"
 
 namespace frc971 {
 
@@ -27,22 +27,22 @@ class HallEffectTracker {
   double posedge_value() const { return posedge_value_; }
   double negedge_value() const { return negedge_value_; }
 
-  void Update(const HallEffectStruct &position) {
+  void Update(const HallEffectStruct *position) {
     last_value_ = value_;
-    value_ = position.current;
-    posedge_value_ = position.posedge_value;
-    negedge_value_ = position.negedge_value;
-    posedges_.update(position.posedge_count);
-    negedges_.update(position.negedge_count);
+    value_ = position->current();
+    posedge_value_ = position->posedge_value();
+    negedge_value_ = position->negedge_value();
+    posedges_.update(position->posedge_count());
+    negedges_.update(position->negedge_count());
   }
 
-  void Reset(const HallEffectStruct &position) {
-    posedges_.Reset(position.posedge_count);
-    negedges_.Reset(position.negedge_count);
-    value_ = position.current;
-    last_value_ = position.current;
-    posedge_value_ = position.posedge_value;
-    negedge_value_ = position.negedge_value;
+  void Reset(const HallEffectStruct *position) {
+    posedges_.Reset(position->posedge_count());
+    negedges_.Reset(position->negedge_count());
+    value_ = position->current();
+    last_value_ = position->current();
+    posedge_value_ = position->posedge_value();
+    negedge_value_ = position->negedge_value();
   }
 
  private:

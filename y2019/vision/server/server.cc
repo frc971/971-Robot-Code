@@ -8,11 +8,12 @@
 #include <sstream>
 
 #include "aos/containers/ring_buffer.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/seasocks/seasocks_logger.h"
 #include "aos/time/time.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/pose.h"
 #include "google/protobuf/util/json_util.h"
 #include "internal/Embedded.h"
@@ -20,8 +21,8 @@
 #include "seasocks/StringUtil.h"
 #include "seasocks/WebSocket.h"
 #include "y2019/constants.h"
-#include "y2019/control_loops/drivetrain/camera.q.h"
-#include "y2019/control_loops/superstructure/superstructure.q.h"
+#include "y2019/control_loops/drivetrain/camera_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2019/vision/server/server_data.pb.h"
 
 namespace y2019 {
@@ -133,19 +134,21 @@ DrivetrainPosition ComputePosition(
 }
 
 void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
-  ::aos::ShmEventLoop event_loop;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig("config.json");
 
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+  ::aos::ShmEventLoop event_loop(&config.message());
+
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher =
-          event_loop
-              .MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
-                  ".frc971.control_loops.drivetrain_queue.status");
+          event_loop.MakeFetcher<::frc971::control_loops::drivetrain::Status>(
+              "/drivetrain");
 
-  ::aos::Fetcher<
-      ::y2019::control_loops::superstructure::SuperstructureQueue::Status>
-      superstructure_status_fetcher = event_loop.MakeFetcher<
-          ::y2019::control_loops::superstructure::SuperstructureQueue::Status>(
-          ".y2019.control_loops.superstructure.superstructure_queue.status");
+  ::aos::Fetcher<::y2019::control_loops::superstructure::Status>
+      superstructure_status_fetcher =
+          event_loop
+              .MakeFetcher<::y2019::control_loops::superstructure::Status>(
+                  "/superstructure");
 
   ::std::array<LocalCameraFrame, 5> latest_frames;
   ::std::array<aos::monotonic_clock::time_point, 5> last_target_time;
@@ -155,7 +158,7 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
   ::aos::RingBuffer<DrivetrainPosition, 200> drivetrain_log;
 
   event_loop.MakeWatcher(
-      ".y2019.control_loops.drivetrain.camera_frames",
+      "/drivetrain",
       [websocket_handler, server, &latest_frames, &last_target_time,
        &drivetrain_status_fetcher, &superstructure_status_fetcher,
        &last_send_time, &drivetrain_log,
@@ -163,9 +166,9 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
                         &camera_frames) {
         while (drivetrain_status_fetcher.FetchNext()) {
           DrivetrainPosition drivetrain_position{
-              drivetrain_status_fetcher->sent_time,
-              drivetrain_status_fetcher->x, drivetrain_status_fetcher->y,
-              drivetrain_status_fetcher->theta};
+              drivetrain_status_fetcher.context().monotonic_sent_time,
+              drivetrain_status_fetcher->x(), drivetrain_status_fetcher->y(),
+              drivetrain_status_fetcher->theta()};
 
           drivetrain_log.Push(drivetrain_position);
         }
@@ -181,25 +184,26 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
           const auto &new_frame = camera_frames;
           // TODO(james): Maybe we only want to fill out a new frame if it has
           // targets or the saved target is > 0.1 sec old? Not sure, but for now
-          if (new_frame.camera < latest_frames.size()) {
-            latest_frames[new_frame.camera].capture_time =
+          if (new_frame.camera() < latest_frames.size()) {
+            latest_frames[new_frame.camera()].capture_time =
                 aos::monotonic_clock::time_point(
-                    chrono::nanoseconds(new_frame.timestamp));
-            latest_frames[new_frame.camera].targets.clear();
-            if (new_frame.num_targets > 0) {
-              last_target_time[new_frame.camera] =
-                  latest_frames[new_frame.camera].capture_time;
+                    chrono::nanoseconds(new_frame.timestamp()));
+            latest_frames[new_frame.camera()].targets.clear();
+            if (new_frame.has_targets() && new_frame.targets()->size() > 0) {
+              last_target_time[new_frame.camera()] =
+                  latest_frames[new_frame.camera()].capture_time;
             }
-            for (int target = 0; target < new_frame.num_targets; ++target) {
-              latest_frames[new_frame.camera].targets.emplace_back();
-              const float heading = new_frame.targets[target].heading;
-              const float distance = new_frame.targets[target].distance;
-              latest_frames[new_frame.camera].targets.back().x =
+            for (const control_loops::drivetrain::CameraTarget *target :
+                 *new_frame.targets()) {
+              latest_frames[new_frame.camera()].targets.emplace_back();
+              const float heading = target->heading();
+              const float distance = target->distance();
+              latest_frames[new_frame.camera()].targets.back().x =
                   ::std::cos(heading) * distance;
-              latest_frames[new_frame.camera].targets.back().y =
+              latest_frames[new_frame.camera()].targets.back().y =
                   ::std::sin(heading) * distance;
-              latest_frames[new_frame.camera].targets.back().theta =
-                  new_frame.targets[target].skew;
+              latest_frames[new_frame.camera()].targets.back().theta =
+                  target->skew();
             }
           }
         }
@@ -235,32 +239,33 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
 
         if (now > last_send_time + chrono::milliseconds(100)) {
           last_send_time = now;
-          debug_data.mutable_robot_pose()->set_x(drivetrain_status_fetcher->x);
-          debug_data.mutable_robot_pose()->set_y(drivetrain_status_fetcher->y);
+          debug_data.mutable_robot_pose()->set_x(drivetrain_status_fetcher->x());
+          debug_data.mutable_robot_pose()->set_y(drivetrain_status_fetcher->y());
           debug_data.mutable_robot_pose()->set_theta(
-              drivetrain_status_fetcher->theta);
+              drivetrain_status_fetcher->theta());
           {
             LineFollowDebug *line_debug =
                 debug_data.mutable_line_follow_debug();
             line_debug->set_frozen(
-                drivetrain_status_fetcher->line_follow_logging.frozen);
+                drivetrain_status_fetcher->line_follow_logging()->frozen());
             line_debug->set_have_target(
-                drivetrain_status_fetcher->line_follow_logging.have_target);
+                drivetrain_status_fetcher->line_follow_logging()->have_target());
             line_debug->mutable_goal_target()->set_x(
-                drivetrain_status_fetcher->line_follow_logging.x);
+                drivetrain_status_fetcher->line_follow_logging()->x());
             line_debug->mutable_goal_target()->set_y(
-                drivetrain_status_fetcher->line_follow_logging.y);
+                drivetrain_status_fetcher->line_follow_logging()->y());
             line_debug->mutable_goal_target()->set_theta(
-                drivetrain_status_fetcher->line_follow_logging.theta);
+                drivetrain_status_fetcher->line_follow_logging()->theta());
           }
 
           Sensors *sensors = debug_data.mutable_sensors();
-          sensors->set_wrist(superstructure_status_fetcher->wrist.position);
+          sensors->set_wrist(
+              superstructure_status_fetcher->wrist()->position());
           sensors->set_elevator(
-              superstructure_status_fetcher->elevator.position);
-          sensors->set_intake(superstructure_status_fetcher->intake.position);
-          sensors->set_stilts(superstructure_status_fetcher->stilts.position);
-          sensors->set_has_piece(superstructure_status_fetcher->has_piece);
+              superstructure_status_fetcher->elevator()->position());
+          sensors->set_intake(superstructure_status_fetcher->intake()->position());
+          sensors->set_stilts(superstructure_status_fetcher->stilts()->position());
+          sensors->set_has_piece(superstructure_status_fetcher->has_piece());
 
           ::std::string json;
           google::protobuf::util::MessageToJsonString(debug_data, &json);

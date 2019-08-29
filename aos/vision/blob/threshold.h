@@ -1,6 +1,7 @@
 #ifndef AOS_VISION_BLOB_THRESHOLD_H_
 #define AOS_VISION_BLOB_THRESHOLD_H_
 
+#include <array>
 #include <condition_variable>
 #include <mutex>
 #include <thread>

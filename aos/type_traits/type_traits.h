@@ -12,8 +12,10 @@ struct has_trivial_copy_assign : public std::integral_constant<bool,
 // 4.6 seems like a reasonable place to switch.
 #if ((__GNUC__ < 4) || (__GNUC__ == 4 && __GNUC_MINOR__ < 6)) && !defined(__clang__)
     ::std::has_trivial_assign<Tp>::value> {};
-#else
+#elif (__clang_major__ < 5)
     ::std::has_trivial_copy_assign<Tp>::value> {};
+#else
+    ::std::is_trivially_copy_assignable<Tp>::value> {};
 #endif
 
 }  // namespace
@@ -31,10 +33,15 @@ template <typename Tp>
 struct shm_ok : public std::integral_constant<
                     bool,
 #if ((__GNUC__ < 5))
-                    (::std::has_trivial_copy_constructor<Tp>::value &&
+#if (__clang_major__ > 5)
+                    (::std::is_trivially_copy_constructible<Tp>::value &&
                      ::aos::has_trivial_copy_assign<Tp>::value)
 #else
-                    (::std::is_trivially_copyable<Tp>::value)
+                    (::std::has_trivial_copy_constructor<Tp>::value &&
+                     ::aos::has_trivial_copy_assign<Tp>::value)
+#endif
+#else
+                    (::std::is_trivially_copy_constructible<Tp>::value)
 #endif
                     > {
 };

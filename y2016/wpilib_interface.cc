@@ -20,18 +20,18 @@
 #undef ERROR
 
 #include "aos/commonmath.h"
-#include "aos/events/shm-event-loop.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/logging/logging.h"
-#include "aos/logging/queue_logging.h"
 #include "aos/make_unique.h"
-#include "aos/robot_state/robot_state.q.h"
+#include "aos/robot_state/robot_state_generated.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
 #include "aos/util/wrapping_counter.h"
-#include "frc971/autonomous/auto.q.h"
-#include "frc971/control_loops/control_loops.q.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/autonomous/auto_generated.h"
+//#include "frc971/control_loops/control_loops.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/wpilib/ADIS16448.h"
 #include "frc971/wpilib/buffered_pcm.h"
 #include "frc971/wpilib/buffered_solenoid.h"
@@ -42,21 +42,22 @@
 #include "frc971/wpilib/gyro_sender.h"
 #include "frc971/wpilib/interrupt_edge_counting.h"
 #include "frc971/wpilib/joystick_sender.h"
-#include "frc971/wpilib/logging.q.h"
+#include "frc971/wpilib/logging_generated.h"
 #include "frc971/wpilib/loop_output_handler.h"
 #include "frc971/wpilib/pdp_fetcher.h"
 #include "frc971/wpilib/sensor_reader.h"
 #include "y2016/constants.h"
 #include "y2016/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
-#include "y2016/control_loops/shooter/shooter.q.h"
-#include "y2016/control_loops/shooter/shooter.q.h"
-#include "y2016/control_loops/superstructure/superstructure.q.h"
-#include "y2016/queues/ball_detector.q.h"
+#include "y2016/control_loops/shooter/shooter_output_generated.h"
+#include "y2016/control_loops/shooter/shooter_position_generated.h"
+#include "y2016/control_loops/superstructure/superstructure_output_generated.h"
+#include "y2016/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2016/queues/ball_detector_generated.h"
 
 using aos::make_unique;
 using ::frc971::wpilib::LoopOutputHandler;
-using ::y2016::control_loops::shooter::ShooterQueue;
-using ::y2016::control_loops::SuperstructureQueue;
+namespace shooter = ::y2016::control_loops::shooter;
+namespace superstructure = ::y2016::control_loops::superstructure;
 
 namespace y2016 {
 namespace wpilib {
@@ -149,19 +150,19 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       : ::frc971::wpilib::SensorReader(event_loop),
         ball_detector_sender_(
             event_loop->MakeSender<::y2016::sensors::BallDetector>(
-                ".y2016.sensors.ball_detector")),
+                "/superstructure")),
         auto_mode_sender_(
             event_loop->MakeSender<::frc971::autonomous::AutonomousMode>(
-                ".frc971.autonomous.auto_mode")),
-        shooter_position_sender_(event_loop->MakeSender<ShooterQueue::Position>(
-            ".y2016.control_loops.shooter.shooter_queue.position")),
+                "/aos")),
+        shooter_position_sender_(
+            event_loop->MakeSender<shooter::Position>("/shooter")),
         superstructure_position_sender_(
-            event_loop->MakeSender<SuperstructureQueue::Position>(
-                ".y2016.control_loops.superstructure_queue.position")),
+            event_loop->MakeSender<superstructure::Position>(
+                "/superstructure")),
         drivetrain_position_sender_(
-            event_loop->MakeSender<
-                ::frc971::control_loops::DrivetrainQueue::Position>(
-                ".frc971.control_loops.drivetrain_queue.position")) {
+            event_loop
+                ->MakeSender<::frc971::control_loops::drivetrain::Position>(
+                    "/drivetrain")) {
     // Set it to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxDrivetrainShooterEncoderPulsesPerSecond);
@@ -258,78 +259,101 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   void RunIteration() {
     {
-      auto drivetrain_message = drivetrain_position_sender_.MakeMessage();
-      drivetrain_message->right_encoder =
-          drivetrain_translate(-drivetrain_right_encoder_->GetRaw());
-      drivetrain_message->left_encoder =
-          -drivetrain_translate(drivetrain_left_encoder_->GetRaw());
-      drivetrain_message->left_speed =
-          drivetrain_velocity_translate(drivetrain_left_encoder_->GetPeriod());
-      drivetrain_message->right_speed =
-          drivetrain_velocity_translate(drivetrain_right_encoder_->GetPeriod());
+      auto builder = drivetrain_position_sender_.MakeBuilder();
+      frc971::control_loops::drivetrain::Position::Builder position_builder =
+          builder.MakeBuilder<frc971::control_loops::drivetrain::Position>();
 
-      drivetrain_message->left_shifter_position =
-          hall_translate(drivetrain_left_hall_->GetVoltage());
-      drivetrain_message->right_shifter_position =
-          hall_translate(drivetrain_right_hall_->GetVoltage());
+      position_builder.add_right_encoder(
+          drivetrain_translate(-drivetrain_right_encoder_->GetRaw()));
+      position_builder.add_left_encoder(
+          -drivetrain_translate(drivetrain_left_encoder_->GetRaw()));
+      position_builder.add_left_speed(
+          drivetrain_velocity_translate(drivetrain_left_encoder_->GetPeriod()));
+      position_builder.add_right_speed(drivetrain_velocity_translate(
+          drivetrain_right_encoder_->GetPeriod()));
 
-      drivetrain_message.Send();
+      position_builder.add_left_shifter_position(
+          hall_translate(drivetrain_left_hall_->GetVoltage()));
+      position_builder.add_right_shifter_position(
+          hall_translate(drivetrain_right_hall_->GetVoltage()));
+
+      builder.Send(position_builder.Finish());
     }
   }
 
   void RunDmaIteration() {
     const auto &values = constants::GetValues();
     {
-      auto shooter_message = shooter_position_sender_.MakeMessage();
-      shooter_message->theta_left =
-          shooter_translate(-shooter_left_encoder_->GetRaw());
-      shooter_message->theta_right =
-          shooter_translate(shooter_right_encoder_->GetRaw());
-      shooter_message.Send();
+      auto builder = shooter_position_sender_.MakeBuilder();
+      shooter::Position::Builder shooter_builder =
+          builder.MakeBuilder<shooter::Position>();
+      shooter_builder.add_theta_left(
+          shooter_translate(-shooter_left_encoder_->GetRaw()));
+      shooter_builder.add_theta_right(
+          shooter_translate(shooter_right_encoder_->GetRaw()));
+      builder.Send(shooter_builder.Finish());
     }
 
     {
-      auto superstructure_message =
-          superstructure_position_sender_.MakeMessage();
-      CopyPosition(intake_encoder_, &superstructure_message->intake,
-                   intake_translate, intake_pot_translate, false,
-                   values.intake.pot_offset);
-      CopyPosition(shoulder_encoder_, &superstructure_message->shoulder,
-                   shoulder_translate, shoulder_pot_translate, false,
-                   values.shoulder.pot_offset);
-      CopyPosition(wrist_encoder_, &superstructure_message->wrist,
-                   wrist_translate, wrist_pot_translate, true,
-                   values.wrist.pot_offset);
+      auto builder = superstructure_position_sender_.MakeBuilder();
 
-      superstructure_message.Send();
+      frc971::PotAndIndexPositionT intake;
+      CopyPosition(intake_encoder_, &intake, intake_translate,
+                   intake_pot_translate, false, values.intake.pot_offset);
+      flatbuffers::Offset<frc971::PotAndIndexPosition> intake_offset =
+          frc971::PotAndIndexPosition::Pack(*builder.fbb(), &intake);
+
+      frc971::PotAndIndexPositionT shoulder;
+      CopyPosition(shoulder_encoder_, &shoulder, shoulder_translate,
+                   shoulder_pot_translate, false, values.shoulder.pot_offset);
+      flatbuffers::Offset<frc971::PotAndIndexPosition> shoulder_offset =
+          frc971::PotAndIndexPosition::Pack(*builder.fbb(), &shoulder);
+
+      frc971::PotAndIndexPositionT wrist;
+      CopyPosition(wrist_encoder_, &wrist, wrist_translate, wrist_pot_translate,
+                   true, values.wrist.pot_offset);
+      flatbuffers::Offset<frc971::PotAndIndexPosition> wrist_offset =
+          frc971::PotAndIndexPosition::Pack(*builder.fbb(), &wrist);
+
+      superstructure::Position::Builder position_builder =
+          builder.MakeBuilder<superstructure::Position>();
+
+      position_builder.add_intake(intake_offset);
+      position_builder.add_shoulder(shoulder_offset);
+      position_builder.add_wrist(wrist_offset);
+
+      builder.Send(position_builder.Finish());
     }
 
     {
-      auto ball_detector_message = ball_detector_sender_.MakeMessage();
-      ball_detector_message->voltage = ball_detector_->GetVoltage();
-      AOS_LOG_STRUCT(DEBUG, "ball detector", *ball_detector_message);
-      ball_detector_message.Send();
+      auto builder = ball_detector_sender_.MakeBuilder();
+      ::y2016::sensors::BallDetector::Builder ball_detector_builder =
+          builder.MakeBuilder<y2016::sensors::BallDetector>();
+      ball_detector_builder.add_voltage(ball_detector_->GetVoltage());
+      builder.Send(ball_detector_builder.Finish());
     }
 
     {
-      auto auto_mode_message = auto_mode_sender_.MakeMessage();
-      auto_mode_message->mode = 0;
+      auto builder = auto_mode_sender_.MakeBuilder();
+      ::frc971::autonomous::AutonomousMode::Builder auto_builder =
+          builder.MakeBuilder<frc971::autonomous::AutonomousMode>();
+      int mode = 0;
       for (size_t i = 0; i < autonomous_modes_.size(); ++i) {
         if (autonomous_modes_[i]->Get()) {
-          auto_mode_message->mode |= 1 << i;
+          mode |= 1 << i;
         }
       }
-      AOS_LOG_STRUCT(DEBUG, "auto mode", *auto_mode_message);
-      auto_mode_message.Send();
+      auto_builder.add_mode(mode);
+      builder.Send(auto_builder.Finish());
     }
   }
 
  private:
   ::aos::Sender<::y2016::sensors::BallDetector> ball_detector_sender_;
   ::aos::Sender<::frc971::autonomous::AutonomousMode> auto_mode_sender_;
-  ::aos::Sender<ShooterQueue::Position> shooter_position_sender_;
-  ::aos::Sender<SuperstructureQueue::Position> superstructure_position_sender_;
-  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Position>
+  ::aos::Sender<shooter::Position> shooter_position_sender_;
+  ::aos::Sender<superstructure::Position> superstructure_position_sender_;
+  ::aos::Sender<::frc971::control_loops::drivetrain::Position>
       drivetrain_position_sender_;
 
   ::std::unique_ptr<::frc::AnalogInput> drivetrain_left_hall_,
@@ -349,17 +373,19 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 class SolenoidWriter {
  public:
   SolenoidWriter(::aos::EventLoop *event_loop,
-                 const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
+                 ::frc971::wpilib::BufferedPcm *pcm)
       : pcm_(pcm),
+        pneumatics_to_log_sender_(
+            event_loop->MakeSender<::frc971::wpilib::PneumaticsToLog>("/aos")),
         drivetrain_(
             event_loop
-                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Output>(
-                    ".frc971.control_loops.drivetrain_queue.output")),
-        shooter_(event_loop->MakeFetcher<ShooterQueue::Output>(
-            ".y2016.control_loops.shooter.shooter_queue.output")),
-        superstructure_(event_loop->MakeFetcher<
-                        ::y2016::control_loops::SuperstructureQueue::Output>(
-            ".y2016.control_loops.superstructure_queue.output")) {
+                ->MakeFetcher<::frc971::control_loops::drivetrain::Output>(
+                    "/drivetrain")),
+        shooter_(event_loop->MakeFetcher<shooter::Output>("/shooter")),
+        superstructure_(
+            event_loop
+                ->MakeFetcher<::y2016::control_loops::superstructure::Output>(
+                    "/superstructure")) {
     event_loop->set_name("Solenoids");
     event_loop->SetRuntimeRealtimePriority(27);
 
@@ -420,27 +446,25 @@ class SolenoidWriter {
     {
       drivetrain_.Fetch();
       if (drivetrain_.get()) {
-        AOS_LOG_STRUCT(DEBUG, "solenoids", *drivetrain_);
         drivetrain_shifter_->Set(
-            !(drivetrain_->left_high || drivetrain_->right_high));
+            !(drivetrain_->left_high() || drivetrain_->right_high()));
       }
     }
 
     {
       shooter_.Fetch();
       if (shooter_.get()) {
-        AOS_LOG_STRUCT(DEBUG, "solenoids", *shooter_);
-        shooter_clamp_->Set(shooter_->clamp_open);
-        shooter_pusher_->Set(shooter_->push_to_shooter);
-        lights_->Set(shooter_->lights_on);
-        if (shooter_->forwards_flashlight) {
-          if (shooter_->backwards_flashlight) {
+        shooter_clamp_->Set(shooter_->clamp_open());
+        shooter_pusher_->Set(shooter_->push_to_shooter());
+        lights_->Set(shooter_->lights_on());
+        if (shooter_->forwards_flashlight()) {
+          if (shooter_->backwards_flashlight()) {
             flashlight_->Set(::frc::Relay::kOn);
           } else {
             flashlight_->Set(::frc::Relay::kReverse);
           }
         } else {
-          if (shooter_->backwards_flashlight) {
+          if (shooter_->backwards_flashlight()) {
             flashlight_->Set(::frc::Relay::kForward);
           } else {
             flashlight_->Set(::frc::Relay::kOff);
@@ -452,26 +476,29 @@ class SolenoidWriter {
     {
       superstructure_.Fetch();
       if (superstructure_.get()) {
-        AOS_LOG_STRUCT(DEBUG, "solenoids", *superstructure_);
+        climber_trigger_->Set(superstructure_->unfold_climber());
 
-        climber_trigger_->Set(superstructure_->unfold_climber);
-
-        traverse_->Set(superstructure_->traverse_down);
-        traverse_latch_->Set(superstructure_->traverse_unlatched);
+        traverse_->Set(superstructure_->traverse_down());
+        traverse_latch_->Set(superstructure_->traverse_unlatched());
       }
     }
 
     {
-      ::frc971::wpilib::PneumaticsToLog to_log;
-      { to_log.compressor_on = compressor_->Enabled(); }
+      auto builder = pneumatics_to_log_sender_.MakeBuilder();
+
+      ::frc971::wpilib::PneumaticsToLog::Builder to_log_builder =
+          builder.MakeBuilder<frc971::wpilib::PneumaticsToLog>();
+
+      to_log_builder.add_compressor_on(compressor_->Enabled());
 
       pcm_->Flush();
-      to_log.read_solenoids = pcm_->GetAll();
-      AOS_LOG_STRUCT(DEBUG, "pneumatics info", to_log);
+      to_log_builder.add_read_solenoids(pcm_->GetAll());
+      builder.Send(to_log_builder.Finish());
     }
   }
 
-  const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm_;
+  ::frc971::wpilib::BufferedPcm *pcm_;
+  aos::Sender<::frc971::wpilib::PneumaticsToLog> pneumatics_to_log_sender_;
 
   ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> drivetrain_shifter_,
       shooter_clamp_, shooter_pusher_, lights_, traverse_, traverse_latch_,
@@ -479,17 +506,16 @@ class SolenoidWriter {
   ::std::unique_ptr<::frc::Relay> flashlight_;
   ::std::unique_ptr<::frc::Compressor> compressor_;
 
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
-  ::aos::Fetcher<ShooterQueue::Output> shooter_;
-  ::aos::Fetcher<::y2016::control_loops::SuperstructureQueue::Output>
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Output> drivetrain_;
+  ::aos::Fetcher<shooter::Output> shooter_;
+  ::aos::Fetcher<::y2016::control_loops::superstructure::Output>
       superstructure_;
 };
 
-class ShooterWriter : public LoopOutputHandler<ShooterQueue::Output> {
+class ShooterWriter : public LoopOutputHandler<shooter::Output> {
  public:
   ShooterWriter(::aos::EventLoop *event_loop)
-      : LoopOutputHandler<ShooterQueue::Output>(
-            event_loop, ".y2016.control_loops.shooter.shooter_queue.output") {}
+      : LoopOutputHandler<shooter::Output>(event_loop, "/shooter") {}
 
   void set_shooter_left_talon(::std::unique_ptr<::frc::Talon> t) {
     shooter_left_talon_ = ::std::move(t);
@@ -500,11 +526,9 @@ class ShooterWriter : public LoopOutputHandler<ShooterQueue::Output> {
   }
 
  private:
-  void Write(const ShooterQueue::Output &output) override {
-    AOS_LOG_STRUCT(DEBUG, "will output", output);
-
-    shooter_left_talon_->SetSpeed(output.voltage_left / 12.0);
-    shooter_right_talon_->SetSpeed(-output.voltage_right / 12.0);
+  void Write(const shooter::Output &output) override {
+    shooter_left_talon_->SetSpeed(output.voltage_left() / 12.0);
+    shooter_right_talon_->SetSpeed(-output.voltage_right() / 12.0);
   }
 
   void Stop() override {
@@ -516,13 +540,11 @@ class ShooterWriter : public LoopOutputHandler<ShooterQueue::Output> {
   ::std::unique_ptr<::frc::Talon> shooter_left_talon_, shooter_right_talon_;
 };
 
-class SuperstructureWriter
-    : public LoopOutputHandler<
-          ::y2016::control_loops::SuperstructureQueue::Output> {
+class SuperstructureWriter : public LoopOutputHandler<superstructure::Output> {
  public:
   SuperstructureWriter(::aos::EventLoop *event_loop)
-      : LoopOutputHandler<::y2016::control_loops::SuperstructureQueue::Output>(
-            event_loop, ".y2016.control_loops.superstructure_queue.output") {}
+      : LoopOutputHandler<superstructure::Output>(event_loop,
+                                                  "/superstructure") {}
 
   void set_intake_talon(::std::unique_ptr<::frc::Talon> t) {
     intake_talon_ = ::std::move(t);
@@ -549,21 +571,19 @@ class SuperstructureWriter
   }
 
  private:
-  virtual void Write(const ::y2016::control_loops::SuperstructureQueue::Output
-                         &output) override {
-    AOS_LOG_STRUCT(DEBUG, "will output", output);
-    intake_talon_->SetSpeed(::aos::Clip(output.voltage_intake,
+  virtual void Write(const superstructure::Output &output) override {
+    intake_talon_->SetSpeed(::aos::Clip(output.voltage_intake(),
                                         -kMaxBringupPower, kMaxBringupPower) /
                             12.0);
-    shoulder_talon_->SetSpeed(::aos::Clip(-output.voltage_shoulder,
+    shoulder_talon_->SetSpeed(::aos::Clip(-output.voltage_shoulder(),
                                           -kMaxBringupPower, kMaxBringupPower) /
                               12.0);
-    wrist_talon_->SetSpeed(
-        ::aos::Clip(output.voltage_wrist, -kMaxBringupPower, kMaxBringupPower) /
-        12.0);
-    top_rollers_talon_->SetSpeed(-output.voltage_top_rollers / 12.0);
-    bottom_rollers_talon_->SetSpeed(-output.voltage_bottom_rollers / 12.0);
-    climber_talon_->SetSpeed(-output.voltage_climber / 12.0);
+    wrist_talon_->SetSpeed(::aos::Clip(output.voltage_wrist(),
+                                       -kMaxBringupPower, kMaxBringupPower) /
+                           12.0);
+    top_rollers_talon_->SetSpeed(-output.voltage_top_rollers() / 12.0);
+    bottom_rollers_talon_->SetSpeed(-output.voltage_bottom_rollers() / 12.0);
+    climber_talon_->SetSpeed(-output.voltage_climber() / 12.0);
   }
 
   virtual void Stop() override {
@@ -585,19 +605,22 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
   }
 
   void Run() override {
+    aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+        aos::configuration::ReadConfig("config.json");
+
     // Thread 1.
-    ::aos::ShmEventLoop joystick_sender_event_loop;
+    ::aos::ShmEventLoop joystick_sender_event_loop(&config.message());
     ::frc971::wpilib::JoystickSender joystick_sender(
         &joystick_sender_event_loop);
     AddLoop(&joystick_sender_event_loop);
 
     // Thread 2.
-    ::aos::ShmEventLoop pdp_fetcher_event_loop;
+    ::aos::ShmEventLoop pdp_fetcher_event_loop(&config.message());
     ::frc971::wpilib::PDPFetcher pdp_fetcher(&pdp_fetcher_event_loop);
     AddLoop(&pdp_fetcher_event_loop);
 
     // Thread 3.
-    ::aos::ShmEventLoop sensor_reader_event_loop;
+    ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
     SensorReader sensor_reader(&sensor_reader_event_loop);
 
     sensor_reader.set_drivetrain_left_encoder(make_encoder(5));
@@ -631,19 +654,19 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     // TODO(Brian): This interacts poorly with the SpiRxClearer in ADIS16448.
     // Thread 4.
-    ::aos::ShmEventLoop gyro_event_loop;
+    ::aos::ShmEventLoop gyro_event_loop(&config.message());
     ::frc971::wpilib::GyroSender gyro_sender(&gyro_event_loop);
     AddLoop(&gyro_event_loop);
 
     // Thread 5.
-    ::aos::ShmEventLoop imu_event_loop;
+    ::aos::ShmEventLoop imu_event_loop(&config.message());
     auto imu_trigger = make_unique<::frc::DigitalInput>(3);
     ::frc971::wpilib::ADIS16448 imu(&imu_event_loop, ::frc::SPI::Port::kMXP,
                                     imu_trigger.get());
     AddLoop(&imu_event_loop);
 
     // Thread 5.
-    ::aos::ShmEventLoop output_event_loop;
+    ::aos::ShmEventLoop output_event_loop(&config.message());
     ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&output_event_loop);
     drivetrain_writer.set_left_controller0(
         ::std::unique_ptr<::frc::Talon>(new ::frc::Talon(5)), false);
@@ -673,10 +696,10 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     AddLoop(&output_event_loop);
 
     // Thread 6.
-    ::aos::ShmEventLoop solenoid_writer_event_loop;
+    ::aos::ShmEventLoop solenoid_writer_event_loop(&config.message());
     ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
         new ::frc971::wpilib::BufferedPcm());
-    SolenoidWriter solenoid_writer(&solenoid_writer_event_loop, pcm);
+    SolenoidWriter solenoid_writer(&solenoid_writer_event_loop, pcm.get());
     solenoid_writer.set_drivetrain_shifter(pcm->MakeSolenoid(0));
     solenoid_writer.set_traverse_latch(pcm->MakeSolenoid(2));
     solenoid_writer.set_traverse(pcm->MakeSolenoid(3));

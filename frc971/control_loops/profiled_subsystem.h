@@ -11,8 +11,8 @@
 #include "aos/controls/control_loop.h"
 #include "aos/util/trapezoid_profile.h"
 #include "frc971/constants.h"
-#include "frc971/control_loops/control_loops.q.h"
-#include "frc971/control_loops/profiled_subsystem.q.h"
+#include "frc971/control_loops/control_loops_generated.h"
+#include "frc971/control_loops/profiled_subsystem_generated.h"
 #include "frc971/control_loops/simple_capped_state_feedback_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/zeroing/zeroing.h"
@@ -106,8 +106,9 @@ class ProfiledSubsystem {
   }
 
   // Returns the current internal estimator state for logging.
-  typename ZeroingEstimator::State EstimatorState(int index) {
-    return estimators_[index].GetEstimatorState();
+  flatbuffers::Offset<typename ZeroingEstimator::State> EstimatorState(
+      flatbuffers::FlatBufferBuilder *fbb, int index) {
+    return estimators_[index].GetEstimatorState(fbb);
   }
 
   // Sets the maximum voltage that will be commanded by the loop.
@@ -152,13 +153,14 @@ class SingleDOFProfiledSubsystem
       double default_angular_acceleration);
 
   // Updates our estimator with the latest position.
-  void Correct(typename ZeroingEstimator::Position position);
+  void Correct(const typename ZeroingEstimator::Position &position);
   // Runs the controller and profile generator for a cycle.
   void Update(bool disabled);
 
   // Fills out the ProfiledJointStatus structure with the current state.
-  template <class StatusType>
-  void PopulateStatus(StatusType *status);
+  template <class StatusTypeBuilder>
+  StatusTypeBuilder BuildStatus(
+      flatbuffers::FlatBufferBuilder *fbb);
 
   // Forces the current goal to the provided goal, bypassing the profiler.
   void ForceGoal(double goal);
@@ -166,7 +168,7 @@ class SingleDOFProfiledSubsystem
   // this goal.
   void set_unprofiled_goal(double unprofiled_goal);
   // Limits our profiles to a max velocity and acceleration for proper motion.
-  void AdjustProfile(const ::frc971::ProfileParameters &profile_parameters);
+  void AdjustProfile(const ::frc971::ProfileParameters *profile_parameters);
   void AdjustProfile(double max_angular_velocity,
                      double max_angular_acceleration);
 
@@ -248,37 +250,41 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::UpdateOffset(double offset) {
 }
 
 template <class ZeroingEstimator>
-template <class StatusType>
-void SingleDOFProfiledSubsystem<ZeroingEstimator>::PopulateStatus(
-    StatusType *status) {
-  status->zeroed = this->zeroed();
-  status->state = -1;
+template <class StatusTypeBuilder>
+StatusTypeBuilder SingleDOFProfiledSubsystem<ZeroingEstimator>::BuildStatus(
+    flatbuffers::FlatBufferBuilder *fbb) {
+  flatbuffers::Offset<typename ZeroingEstimator::State> estimator_state =
+      this->EstimatorState(fbb, 0);
+
+  StatusTypeBuilder builder(*fbb);
+
+  builder.add_zeroed(this->zeroed());
   // We don't know, so default to the bad case.
-  status->estopped = true;
 
-  status->position = this->X_hat(0, 0);
-  status->velocity = this->X_hat(1, 0);
-  status->goal_position = this->goal(0, 0);
-  status->goal_velocity = this->goal(1, 0);
-  status->unprofiled_goal_position = this->unprofiled_goal(0, 0);
-  status->unprofiled_goal_velocity = this->unprofiled_goal(1, 0);
-  status->voltage_error = this->X_hat(2, 0);
-  status->calculated_velocity =
+  builder.add_position(this->X_hat(0, 0));
+  builder.add_velocity(this->X_hat(1, 0));
+  builder.add_goal_position(this->goal(0, 0));
+  builder.add_goal_velocity(this->goal(1, 0));
+  builder.add_unprofiled_goal_position(this->unprofiled_goal(0, 0));
+  builder.add_unprofiled_goal_velocity(this->unprofiled_goal(1, 0));
+  builder.add_voltage_error(this->X_hat(2, 0));
+  builder.add_calculated_velocity(
       (position() - last_position_) /
-      ::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency);
+      ::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency));
 
-  status->estimator_state = this->EstimatorState(0);
+  builder.add_estimator_state(estimator_state);
 
   Eigen::Matrix<double, 3, 1> error = this->controller().error();
-  status->position_power =
-      this->controller().controller().K(0, 0) * error(0, 0);
-  status->velocity_power =
-      this->controller().controller().K(0, 1) * error(1, 0);
+  builder.add_position_power(
+      this->controller().controller().K(0, 0) * error(0, 0));
+  builder.add_velocity_power(
+      this->controller().controller().K(0, 1) * error(1, 0));
+  return builder;
 }
 
 template <class ZeroingEstimator>
 void SingleDOFProfiledSubsystem<ZeroingEstimator>::Correct(
-    typename ZeroingEstimator::Position new_position) {
+    const typename ZeroingEstimator::Position &new_position) {
   this->estimators_[0].UpdateEstimate(new_position);
 
   if (this->estimators_[0].error()) {
@@ -299,7 +305,7 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::Correct(
   }
 
   last_position_ = position();
-  this->Y_ << new_position.encoder;
+  this->Y_ << new_position.encoder();
   this->Y_ += this->offset_;
   this->loop_->Correct(Y_);
 }
@@ -385,9 +391,11 @@ bool SingleDOFProfiledSubsystem<ZeroingEstimator>::CheckHardLimits() {
 
 template <class ZeroingEstimator>
 void SingleDOFProfiledSubsystem<ZeroingEstimator>::AdjustProfile(
-    const ::frc971::ProfileParameters &profile_parameters) {
-  AdjustProfile(profile_parameters.max_velocity,
-                profile_parameters.max_acceleration);
+    const ::frc971::ProfileParameters *profile_parameters) {
+  AdjustProfile(
+      profile_parameters != nullptr ? profile_parameters->max_velocity() : 0.0,
+      profile_parameters != nullptr ? profile_parameters->max_acceleration()
+                                    : 0.0);
 }
 
 template <class ZeroingEstimator>

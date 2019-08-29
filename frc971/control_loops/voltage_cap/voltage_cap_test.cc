@@ -4,7 +4,6 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/queue.h"
 #include "aos/testing/test_shm.h"
 
 namespace frc971 {

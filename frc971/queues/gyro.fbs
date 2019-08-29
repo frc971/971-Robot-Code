@@ -1,0 +1,18 @@
+namespace frc971.sensors;
+
+// Published on "/drivetrain"
+table GyroReading {
+  // Positive is counter-clockwise (Austin says "it's Positive").
+  // Right-hand coordinate system around the Z-axis going up.
+  // The angle is measured in radians.
+  angle:double;
+  // The angular velocity in radians/sec
+  velocity:double;
+}
+
+// Published on "/drivetrain"
+table Uid {
+  uid:uint;
+}
+
+root_type GyroReading;

@@ -1,0 +1,11 @@
+namespace y2014.control_loops.claw;
+
+// All angles here are 0 vertical, positive "up" (aka backwards).
+table Output {
+  intake_voltage:double;
+  top_claw_voltage:double;
+  bottom_claw_voltage:double;
+  tusk_voltage:double;
+}
+
+root_type Output;

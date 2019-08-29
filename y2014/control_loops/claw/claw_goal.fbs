@@ -1,0 +1,15 @@
+namespace y2014.control_loops.claw;
+
+// All angles here are 0 vertical, positive "up" (aka backwards).
+table Goal {
+  // The angle of the bottom claw.
+  bottom_angle:double;
+  // How much higher the top claw is.
+  separation_angle:double;
+  // top claw intake roller
+  intake:double;
+  // bottom claw tusk centering
+  centering:double;
+}
+
+root_type Goal;

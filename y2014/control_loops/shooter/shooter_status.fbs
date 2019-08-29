@@ -1,0 +1,21 @@
+namespace y2014.control_loops.shooter;
+
+table Status {
+  // Whether it's ready to shoot right now.
+  ready:bool;
+  // Whether the plunger is in and out of the way of grabbing a ball.
+  // TODO(ben): Populate these!
+  //cocked:bool;
+  // How many times we've shot.
+  shots:int;
+  //done:bool;
+  // What we think the current position of the hard stop on the shooter is, in
+  // shot power (Joules).
+  hard_stop_power:double;
+
+  absolute_position:double;
+  absolute_velocity:double;
+  state:uint;
+}
+
+root_type Status;

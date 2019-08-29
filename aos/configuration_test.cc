@@ -4,6 +4,8 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/testing/test_logging.h"
 #include "aos/util/file.h"
+#include "flatbuffers/reflection.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 
 namespace aos {
@@ -25,12 +27,25 @@ const char *kExpectedLocation =
 TEST_F(ConfigurationTest, ConfigMerge) {
   FlatbufferDetachedBuffer<Configuration> config =
       ReadConfig("aos/testdata/config1.json");
-  printf("Read: %s\n", FlatbufferToJson(config, true).c_str());
+  LOG(INFO) << "Read: " << FlatbufferToJson(config, true);
 
   EXPECT_EQ(
       absl::StripSuffix(
           util::ReadFileToStringOrDie("aos/testdata/expected.json"), "\n"),
       FlatbufferToJson(config, true));
+}
+
+// Tests that we sort the entries in a config so we can look entries up.
+TEST_F(ConfigurationTest, UnsortedConfig) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig("aos/testdata/backwards.json");
+
+  LOG(INFO) << "Read: " << FlatbufferToJson(config, true);
+
+  EXPECT_EQ(FlatbufferToJson(GetChannel(config, ".aos.robot_state",
+                                        "aos.RobotState", "app1")),
+            "{ \"name\": \".aos.robot_state\", \"type\": \"aos.RobotState\", "
+            "\"max_size\": 5 }");
 }
 
 // Tests that we die when a file is imported twice.

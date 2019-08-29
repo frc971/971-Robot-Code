@@ -106,7 +106,7 @@ size_t LocklessQueueMemorySize(LocklessQueueConfiguration config);
 // Prints to stdout the data inside the queue for debugging.
 void PrintLocklessQueueMemory(LocklessQueueMemory *memory);
 
-const static int kWakeupSignal = SIGRTMIN + 2;
+const static unsigned int kWakeupSignal = SIGRTMIN + 2;
 
 // Class to manage sending and receiving data in the lockless queue.  This is
 // separate from the actual memory backing the queue so that memory can be
@@ -121,6 +121,8 @@ class LocklessQueue {
 
   // Returns the number of messages in the queue.
   size_t QueueSize() const;
+
+  size_t message_data_size() const;
 
   // Registers this thread to receive the kWakeupSignal signal when Wakeup is
   // called. Returns false if there was an error in registration.
@@ -137,8 +139,9 @@ class LocklessQueue {
   // If you ask for a queue index 2 past the newest, you will still get
   // NOTHING_NEW until that gets overwritten with new data.  If you ask for an
   // element newer than QueueSize() from the current message, we consider it
-  // behind by a large amount and return TOO_OLD.
-  enum class ReadResult { TOO_OLD, GOOD, NOTHING_NEW };
+  // behind by a large amount and return TOO_OLD.  If the message is modified
+  // out from underneath us as we read it, return OVERWROTE.
+  enum class ReadResult { TOO_OLD, GOOD, NOTHING_NEW, OVERWROTE };
   ReadResult Read(uint32_t queue_index,
                   ::aos::monotonic_clock::time_point *monotonic_sent_time,
                   ::aos::realtime_clock::time_point *realtime_sent_time,
@@ -147,8 +150,12 @@ class LocklessQueue {
   // Returns the index to the latest queue message.  Returns empty_queue_index()
   // if there are no messages in the queue.  Do note that this index wraps if
   // more than 2^32 messages are sent.
-  uint32_t LatestQueueIndex();
-  static constexpr uint32_t empty_queue_index() { return 0xffffffff; }
+  QueueIndex LatestQueueIndex();
+  static QueueIndex empty_queue_index() { return QueueIndex::Invalid(); }
+
+  // Returns the size of the queue.  This is mostly useful for manipulating
+  // QueueIndex.
+  size_t queue_size() const;
 
   // TODO(austin): Return the oldest queue index.  This lets us catch up nicely
   // if we got behind.
@@ -180,6 +187,14 @@ class LocklessQueue {
     }
 
     ~Sender();
+
+    // Sends a message without copying the data.
+    // Copy at most size() bytes of data into the memory pointed to by Data(),
+    // and then call Send().
+    // Note: calls to Data() are expensive enough that you should cache it.
+    size_t size();
+    void *Data();
+    void Send(size_t length);
 
     // Sends up to length data.  Does not wakeup the target.
     void Send(const char *data, size_t length);

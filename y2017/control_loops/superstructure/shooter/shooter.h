@@ -7,10 +7,11 @@
 #include "aos/controls/control_loop.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-#include "third_party/eigen/Eigen/Dense"
+#include "Eigen/Dense"
 
 #include "y2017/control_loops/superstructure/shooter/shooter_integral_plant.h"
-#include "y2017/control_loops/superstructure/superstructure.q.h"
+#include "y2017/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2017/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -27,7 +28,8 @@ class ShooterController {
   void set_position(double current_position);
 
   // Populates the status structure.
-  void SetStatus(control_loops::ShooterStatus *status);
+  flatbuffers::Offset<ShooterStatus> BuildStatus(
+      flatbuffers::FlatBufferBuilder *fbb);
 
   // Returns the control loop calculated voltage.
   double voltage() const;
@@ -45,6 +47,8 @@ class ShooterController {
 
   // Resets the kalman filter and any other internal state.
   void Reset();
+
+  bool ready() { return ready_; }
 
  private:
   // The current sensor measurement.
@@ -86,9 +90,10 @@ class Shooter {
   // Iterates the shooter control loop one cycle.  position and status must
   // never be nullptr.  goal can be nullptr if no goal exists, and output should
   // be nullptr if disabled.
-  void Iterate(const control_loops::ShooterGoal *goal, const double *position,
-               ::aos::monotonic_clock::time_point position_time, double *output,
-               control_loops::ShooterStatus *status);
+  flatbuffers::Offset<ShooterStatus> Iterate(
+      const ShooterGoalT *goal, const double position,
+      ::aos::monotonic_clock::time_point position_time, double *output,
+      flatbuffers::FlatBufferBuilder *fbb);
 
   // Sets the shooter up to reset the kalman filter next time Iterate is called.
   void Reset();

@@ -5,29 +5,30 @@
 
 #include "aos/actions/actions.h"
 #include "aos/actions/actor.h"
-#include "y2014/actors/shoot_action.q.h"
-#include "y2014/control_loops/claw/claw.q.h"
-#include "y2014/control_loops/shooter/shooter.q.h"
+#include "y2014/control_loops/claw/claw_goal_generated.h"
+#include "y2014/control_loops/claw/claw_status_generated.h"
+#include "y2014/control_loops/shooter/shooter_goal_generated.h"
+#include "y2014/control_loops/shooter/shooter_status_generated.h"
 
 namespace y2014 {
 namespace actors {
 
 class ShootActor
-    : public ::aos::common::actions::ActorBase<actors::ShootActionQueueGroup> {
+    : public ::aos::common::actions::ActorBase<aos::common::actions::Goal> {
  public:
   typedef ::aos::common::actions::TypedActionFactory<
-      actors::ShootActionQueueGroup>
+      aos::common::actions::Goal>
       Factory;
 
   explicit ShootActor(::aos::EventLoop *event_loop);
 
   static Factory MakeFactory(::aos::EventLoop *event_loop) {
-    return Factory(event_loop, ".y2014.actors.shoot_action");
+    return Factory(event_loop, "/shoot_action");
   }
 
   // Actually execute the action of moving the claw and shooter into position
   // and actually firing them.
-  bool RunAction(const double &params) override;
+  bool RunAction(const aos::common::actions::DoubleParam *params) override;
   void InnerRunAction();
 
   // calc an offset to our requested shot based on robot speed
@@ -50,16 +51,13 @@ class ShootActor
   bool ClawIsReady();
 
  private:
-  ::aos::Fetcher<::y2014::control_loops::ClawQueue::Goal> claw_goal_fetcher_;
-  ::aos::Fetcher<::y2014::control_loops::ClawQueue::Status>
-      claw_status_fetcher_;
-  ::aos::Sender<::y2014::control_loops::ClawQueue::Goal> claw_goal_sender_;
-  ::aos::Fetcher<::y2014::control_loops::ShooterQueue::Status>
+  ::aos::Fetcher<::y2014::control_loops::claw::Goal> claw_goal_fetcher_;
+  ::aos::Fetcher<::y2014::control_loops::claw::Status> claw_status_fetcher_;
+  ::aos::Sender<::y2014::control_loops::claw::Goal> claw_goal_sender_;
+  ::aos::Fetcher<::y2014::control_loops::shooter::Status>
       shooter_status_fetcher_;
-  ::aos::Fetcher<::y2014::control_loops::ShooterQueue::Goal>
-      shooter_goal_fetcher_;
-  ::aos::Sender<::y2014::control_loops::ShooterQueue::Goal>
-      shooter_goal_sender_;
+  ::aos::Fetcher<::y2014::control_loops::shooter::Goal> shooter_goal_fetcher_;
+  ::aos::Sender<::y2014::control_loops::shooter::Goal> shooter_goal_sender_;
 
   // to track when shot is complete
   int previous_shots_;

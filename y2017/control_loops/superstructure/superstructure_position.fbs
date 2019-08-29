@@ -1,0 +1,31 @@
+include "frc971/control_loops/control_loops.fbs";
+
+namespace y2017.control_loops.superstructure;
+
+table ColumnPosition {
+  // Indexer angle in radians relative to the base.  Positive is according to
+  // the right hand rule around +z.
+  indexer:frc971.HallEffectAndPosition;
+  // Turret angle in radians relative to the indexer.  Positive is the same as
+  // the indexer.
+  turret:frc971.HallEffectAndPosition;
+}
+
+
+table Position {
+  // Position of the intake, zero when the intake is in, positive when it is
+  // out.
+  intake:frc971.PotAndAbsolutePosition;
+
+  // The position of the column.
+  column:ColumnPosition;
+
+  // The sensor readings for the hood. The units and sign are defined the
+  // same as what's in the Goal message.
+  hood:frc971.IndexPosition;
+
+  // Shooter wheel angle in radians.
+  theta_shooter:double;
+}
+
+root_type Position;

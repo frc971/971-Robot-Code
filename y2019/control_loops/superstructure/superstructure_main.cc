@@ -1,12 +1,15 @@
 #include "y2019/control_loops/superstructure/superstructure.h"
 
-#include "aos/events/shm-event-loop.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 
-int main() {
+int main(int /*argc*/, char * /*argv*/ []) {
   ::aos::InitNRT(true);
 
-  ::aos::ShmEventLoop event_loop;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig("config.json");
+
+  ::aos::ShmEventLoop event_loop(&config.message());
   ::y2019::control_loops::superstructure::Superstructure superstructure(
       &event_loop);
 

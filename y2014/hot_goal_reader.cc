@@ -7,20 +7,22 @@
 #include <unistd.h>
 
 #include "aos/byteorder.h"
-#include "aos/events/shm-event-loop.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
-#include "aos/logging/queue_logging.h"
 #include "aos/time/time.h"
-#include "y2014/queues/hot_goal.q.h"
+#include "y2014/queues/hot_goal_generated.h"
 
 int main() {
   ::aos::InitNRT();
 
-  ::aos::ShmEventLoop shm_event_loop;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig("config.json");
+
+  ::aos::ShmEventLoop shm_event_loop(&config.message());
 
   ::aos::Sender<::y2014::HotGoal> hot_goal_sender =
-      shm_event_loop.MakeSender<::y2014::HotGoal>(".y2014.hot_goal");
+      shm_event_loop.MakeSender<::y2014::HotGoal>("/");
 
   uint64_t left_count = 0, right_count = 0;
   int my_socket = -1;
@@ -82,11 +84,12 @@ int main() {
           }
           if (data & 0x01) ++right_count;
           if (data & 0x02) ++left_count;
-          auto message = hot_goal_sender.MakeMessage();
-          message->left_count = left_count;
-          message->right_count = right_count;
-          AOS_LOG_STRUCT(DEBUG, "sending", *message);
-          message.Send();
+          auto builder = hot_goal_sender.MakeBuilder();
+          y2014::HotGoal::Builder hot_goal_builder =
+              builder.MakeBuilder<y2014::HotGoal>();
+          hot_goal_builder.add_left_count(left_count);
+          hot_goal_builder.add_right_count(right_count);
+          builder.Send(hot_goal_builder.Finish());
         } break;
         case 0:
           AOS_LOG(WARNING, "read on %d timed out\n", connection);

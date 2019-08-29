@@ -6,8 +6,6 @@
 #include <memory>
 
 #include "aos/controls/control_loop_test.h"
-#include "aos/queue.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
@@ -15,8 +13,8 @@
 #include "y2018/control_loops/superstructure/arm/dynamics.h"
 #include "y2018/control_loops/superstructure/arm/generated_graph.h"
 #include "y2018/control_loops/superstructure/intake/intake_plant.h"
-#include "y2018/status_light.q.h"
-#include "y2018/vision/vision.q.h"
+#include "y2018/status_light_generated.h"
+#include "y2018/vision/vision_generated.h"
 
 using ::frc971::control_loops::PositionSensorSimulator;
 
@@ -71,9 +69,18 @@ class IntakeSideSimulation {
         zeroing_constants_.measured_absolute_position);
   }
 
-  void GetSensorValues(IntakeElasticSensors *position) {
-    pot_encoder_.GetSensorValues(&position->motor_position);
-    position->spring_angle = plant_.Y(0);
+  flatbuffers::Offset<IntakeElasticSensors> GetSensorValues(
+      flatbuffers::FlatBufferBuilder *fbb) {
+    frc971::PotAndAbsolutePosition::Builder motor_position_builder(*fbb);
+    flatbuffers::Offset<frc971::PotAndAbsolutePosition> motor_position_offset =
+        pot_encoder_.GetSensorValues(&motor_position_builder);
+
+    IntakeElasticSensors::Builder intake_elastic_sensors_builder(*fbb);
+
+    intake_elastic_sensors_builder.add_motor_position(motor_position_offset);
+    intake_elastic_sensors_builder.add_spring_angle(plant_.Y(0));
+
+    return intake_elastic_sensors_builder.Finish();
   }
 
   double spring_position() const { return plant_.X(0); }
@@ -85,14 +92,14 @@ class IntakeSideSimulation {
     plant_.set_voltage_offset(voltage_offset);
   }
 
-  void Simulate(const IntakeVoltage &intake_voltage) {
+  void Simulate(const IntakeVoltage *intake_voltage) {
     const double voltage_check =
         superstructure::intake::IntakeSide::kOperatingVoltage();
 
-    AOS_CHECK_LE(::std::abs(intake_voltage.voltage_elastic), voltage_check);
+    AOS_CHECK_LE(::std::abs(intake_voltage->voltage_elastic()), voltage_check);
 
     ::Eigen::Matrix<double, 1, 1> U;
-    U << intake_voltage.voltage_elastic + plant_.voltage_offset();
+    U << intake_voltage->voltage_elastic() + plant_.voltage_offset();
 
     plant_.Update(U);
 
@@ -141,9 +148,21 @@ class ArmSimulation {
         distal_zeroing_constants_.measured_absolute_position);
   }
 
-  void GetSensorValues(ArmPosition *position) {
-    proximal_pot_encoder_.GetSensorValues(&position->proximal);
-    distal_pot_encoder_.GetSensorValues(&position->distal);
+  flatbuffers::Offset<ArmPosition> GetSensorValues(
+      flatbuffers::FlatBufferBuilder *fbb) {
+    frc971::PotAndAbsolutePosition::Builder proximal_builder(*fbb);
+    flatbuffers::Offset<frc971::PotAndAbsolutePosition> proximal_offset =
+        proximal_pot_encoder_.GetSensorValues(&proximal_builder);
+
+    frc971::PotAndAbsolutePosition::Builder distal_builder(*fbb);
+    flatbuffers::Offset<frc971::PotAndAbsolutePosition> distal_offset =
+        distal_pot_encoder_.GetSensorValues(&distal_builder);
+
+    ArmPosition::Builder arm_position_builder(*fbb);
+    arm_position_builder.add_proximal(proximal_offset);
+    arm_position_builder.add_distal(distal_offset);
+
+    return arm_position_builder.Finish();
   }
 
   double proximal_position() const { return X_(0, 0); }
@@ -184,7 +203,6 @@ class ArmSimulation {
   PositionSensorSimulator distal_pot_encoder_;
 };
 
-
 class SuperstructureSimulation {
  public:
   SuperstructureSimulation(::aos::EventLoop *event_loop)
@@ -198,14 +216,14 @@ class SuperstructureSimulation {
         arm_(constants::GetValues().arm_proximal.zeroing,
              constants::GetValues().arm_distal.zeroing),
         superstructure_position_sender_(
-            event_loop_->MakeSender<SuperstructureQueue::Position>(
-                ".y2018.control_loops.superstructure.position")),
+            event_loop_->MakeSender<superstructure::Position>(
+                "/superstructure")),
         superstructure_status_fetcher_(
-            event_loop_->MakeFetcher<SuperstructureQueue::Status>(
-                ".y2018.control_loops.superstructure.status")),
+            event_loop_->MakeFetcher<superstructure::Status>(
+                "/superstructure")),
         superstructure_output_fetcher_(
-            event_loop_->MakeFetcher<SuperstructureQueue::Output>(
-                ".y2018.control_loops.superstructure.output")) {
+            event_loop_->MakeFetcher<superstructure::Output>(
+                "/superstructure")) {
     // Start the intake out in the middle by default.
     InitializeIntakePosition((constants::Values::kIntakeRange().lower +
                               constants::Values::kIntakeRange().upper) /
@@ -235,13 +253,20 @@ class SuperstructureSimulation {
   }
 
   void SendPositionMessage() {
-    auto position = superstructure_position_sender_.MakeMessage();
+    auto builder = superstructure_position_sender_.MakeBuilder();
 
-    left_intake_.GetSensorValues(&position->left_intake);
-    right_intake_.GetSensorValues(&position->right_intake);
-    arm_.GetSensorValues(&position->arm);
-    AOS_LOG_STRUCT(INFO, "sim position", *position);
-    position.Send();
+    flatbuffers::Offset<IntakeElasticSensors> left_intake_offset =
+        left_intake_.GetSensorValues(builder.fbb());
+    flatbuffers::Offset<IntakeElasticSensors> right_intake_offset =
+        right_intake_.GetSensorValues(builder.fbb());
+    flatbuffers::Offset<ArmPosition> arm_offset =
+        arm_.GetSensorValues(builder.fbb());
+
+    Position::Builder position_builder = builder.MakeBuilder<Position>();
+    position_builder.add_left_intake(left_intake_offset);
+    position_builder.add_right_intake(right_intake_offset);
+    position_builder.add_arm(arm_offset);
+    EXPECT_TRUE(builder.Send(position_builder.Finish()));
   }
 
   // Sets the difference between the commanded and applied powers.
@@ -263,13 +288,13 @@ class SuperstructureSimulation {
     ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
     ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
 
-    left_intake_.Simulate(superstructure_output_fetcher_->left_intake);
-    right_intake_.Simulate(superstructure_output_fetcher_->right_intake);
+    left_intake_.Simulate(superstructure_output_fetcher_->left_intake());
+    right_intake_.Simulate(superstructure_output_fetcher_->right_intake());
     arm_.Simulate((::Eigen::Matrix<double, 2, 1>()
-                       << superstructure_output_fetcher_->voltage_proximal,
-                   superstructure_output_fetcher_->voltage_distal)
+                       << superstructure_output_fetcher_->voltage_proximal(),
+                   superstructure_output_fetcher_->voltage_distal())
                       .finished(),
-                  superstructure_output_fetcher_->release_arm_brake);
+                  superstructure_output_fetcher_->release_arm_brake());
   }
 
  private:
@@ -280,9 +305,9 @@ class SuperstructureSimulation {
   IntakeSideSimulation right_intake_;
   ArmSimulation arm_;
 
-  ::aos::Sender<SuperstructureQueue::Position> superstructure_position_sender_;
-  ::aos::Fetcher<SuperstructureQueue::Status> superstructure_status_fetcher_;
-  ::aos::Fetcher<SuperstructureQueue::Output> superstructure_output_fetcher_;
+  ::aos::Sender<superstructure::Position> superstructure_position_sender_;
+  ::aos::Fetcher<superstructure::Status> superstructure_status_fetcher_;
+  ::aos::Fetcher<superstructure::Output> superstructure_output_fetcher_;
 
   bool first_ = true;
 };
@@ -290,23 +315,24 @@ class SuperstructureSimulation {
 class SuperstructureTest : public ::aos::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
-      : ::aos::testing::ControlLoopTest(::std::chrono::microseconds(5050)),
+      : ::aos::testing::ControlLoopTest(
+            aos::configuration::ReadConfig("y2018/config.json"),
+            ::std::chrono::microseconds(5050)),
         test_event_loop_(MakeEventLoop()),
         superstructure_goal_fetcher_(
-            test_event_loop_->MakeFetcher<SuperstructureQueue::Goal>(
-                ".y2018.control_loops.superstructure.goal")),
+            test_event_loop_->MakeFetcher<superstructure::Goal>(
+                "/superstructure")),
         superstructure_goal_sender_(
-            test_event_loop_->MakeSender<SuperstructureQueue::Goal>(
-                ".y2018.control_loops.superstructure.goal")),
+            test_event_loop_->MakeSender<superstructure::Goal>(
+                "/superstructure")),
         superstructure_status_fetcher_(
-            test_event_loop_->MakeFetcher<SuperstructureQueue::Status>(
-                ".y2018.control_loops.superstructure.status")),
+            test_event_loop_->MakeFetcher<superstructure::Status>(
+                "/superstructure")),
         superstructure_output_fetcher_(
-            test_event_loop_->MakeFetcher<SuperstructureQueue::Output>(
-                ".y2018.control_loops.superstructure.output")),
+            test_event_loop_->MakeFetcher<superstructure::Output>(
+                "/superstructure")),
         superstructure_event_loop_(MakeEventLoop()),
-        superstructure_(superstructure_event_loop_.get(),
-                        ".y2018.control_loops.superstructure"),
+        superstructure_(superstructure_event_loop_.get(), "/superstructure"),
         superstructure_plant_event_loop_(MakeEventLoop()),
         superstructure_plant_(superstructure_plant_event_loop_.get()) {
     set_team_id(::frc971::control_loops::testing::kTeamNumber);
@@ -319,28 +345,30 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
     ASSERT_TRUE(superstructure_goal_fetcher_.get() != nullptr) << ": No goal";
     ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
     // Left side test.
-    EXPECT_NEAR(superstructure_goal_fetcher_->intake.left_intake_angle,
-                superstructure_status_fetcher_->left_intake.spring_position +
-                    superstructure_status_fetcher_->left_intake.motor_position,
-                0.001);
-    EXPECT_NEAR(superstructure_goal_fetcher_->intake.left_intake_angle,
+    EXPECT_NEAR(
+        superstructure_goal_fetcher_->intake()->left_intake_angle(),
+        superstructure_status_fetcher_->left_intake()->spring_position() +
+            superstructure_status_fetcher_->left_intake()->motor_position(),
+        0.001);
+    EXPECT_NEAR(superstructure_goal_fetcher_->intake()->left_intake_angle(),
                 superstructure_plant_.left_intake().spring_position(), 0.001);
 
     // Right side test.
-    EXPECT_NEAR(superstructure_goal_fetcher_->intake.right_intake_angle,
-                superstructure_status_fetcher_->right_intake.spring_position +
-                    superstructure_status_fetcher_->right_intake.motor_position,
-                0.001);
-    EXPECT_NEAR(superstructure_goal_fetcher_->intake.right_intake_angle,
+    EXPECT_NEAR(
+        superstructure_goal_fetcher_->intake()->right_intake_angle(),
+        superstructure_status_fetcher_->right_intake()->spring_position() +
+            superstructure_status_fetcher_->right_intake()->motor_position(),
+        0.001);
+    EXPECT_NEAR(superstructure_goal_fetcher_->intake()->right_intake_angle(),
                 superstructure_plant_.right_intake().spring_position(), 0.001);
   }
 
   ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
 
-  ::aos::Fetcher<SuperstructureQueue::Goal> superstructure_goal_fetcher_;
-  ::aos::Sender<SuperstructureQueue::Goal> superstructure_goal_sender_;
-  ::aos::Fetcher<SuperstructureQueue::Status> superstructure_status_fetcher_;
-  ::aos::Fetcher<SuperstructureQueue::Output> superstructure_output_fetcher_;
+  ::aos::Fetcher<superstructure::Goal> superstructure_goal_fetcher_;
+  ::aos::Sender<superstructure::Goal> superstructure_goal_sender_;
+  ::aos::Fetcher<superstructure::Status> superstructure_status_fetcher_;
+  ::aos::Fetcher<superstructure::Output> superstructure_output_fetcher_;
 
   // Create a control loop and simulation.
   ::std::unique_ptr<::aos::EventLoop> superstructure_event_loop_;
@@ -360,8 +388,10 @@ TEST_F(SuperstructureTest, ZeroNoGoalAndDoesNothing) {
             superstructure_.intake_left().state());
   EXPECT_EQ(intake::IntakeSide::State::RUNNING,
             superstructure_.intake_right().state());
-  EXPECT_EQ(superstructure_output_fetcher_->left_intake.voltage_elastic, 0.0);
-  EXPECT_EQ(superstructure_output_fetcher_->right_intake.voltage_elastic, 0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->left_intake()->voltage_elastic(),
+            0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->right_intake()->voltage_elastic(),
+            0.0);
 }
 
 // Tests that the intake loop can reach a goal.
@@ -369,14 +399,20 @@ TEST_F(SuperstructureTest, ReachesGoal) {
   SetEnabled(true);
   // Set a reasonable goal.
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    goal->intake.left_intake_angle = 0.1;
-    goal->intake.right_intake_angle = 0.2;
-    goal->arm_goal_position = arm::UpIndex();
-    goal->open_claw = true;
+    IntakeGoal::Builder intake_goal_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_goal_builder.add_left_intake_angle(0.1);
+    intake_goal_builder.add_right_intake_angle(0.2);
 
-    ASSERT_TRUE(goal.Send());
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_arm_goal_position(arm::UpIndex());
+    goal_builder.add_open_claw(true);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   // Give it a lot of time to get there.
@@ -393,14 +429,20 @@ TEST_F(SuperstructureTest, OffsetStartReachesGoal) {
 
   // Set a reasonable goal.
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    goal->intake.left_intake_angle = 0.1;
-    goal->intake.right_intake_angle = 0.2;
-    goal->arm_goal_position = arm::UpIndex();
-    goal->open_claw = true;
+    IntakeGoal::Builder intake_goal_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_goal_builder.add_left_intake_angle(0.1);
+    intake_goal_builder.add_right_intake_angle(0.2);
 
-    ASSERT_TRUE(goal.Send());
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_arm_goal_position(arm::UpIndex());
+    goal_builder.add_open_claw(true);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   // Give it a lot of time to get there.
@@ -415,43 +457,58 @@ TEST_F(SuperstructureTest, RespectsRange) {
   SetEnabled(true);
   // Set some ridiculous goals to test upper limits.
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    goal->intake.left_intake_angle = 5.0 * M_PI;
-    goal->intake.right_intake_angle = 5.0 * M_PI;
-    goal->arm_goal_position = arm::UpIndex();
-    goal->open_claw = true;
+    IntakeGoal::Builder intake_goal_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_goal_builder.add_left_intake_angle(5.0 * M_PI);
+    intake_goal_builder.add_right_intake_angle(5.0 * M_PI);
 
-    ASSERT_TRUE(goal.Send());
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_arm_goal_position(arm::UpIndex());
+    goal_builder.add_open_claw(true);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(10));
 
   // Check that we are near our soft limit.
   superstructure_status_fetcher_.Fetch();
 
-  EXPECT_NEAR(0.0, superstructure_status_fetcher_->left_intake.spring_position,
+  EXPECT_NEAR(0.0,
+              superstructure_status_fetcher_->left_intake()->spring_position(),
               0.001);
-  EXPECT_NEAR(constants::Values::kIntakeRange().upper,
-              superstructure_status_fetcher_->left_intake.spring_position +
-                  superstructure_status_fetcher_->left_intake.motor_position,
-              0.001);
+  EXPECT_NEAR(
+      constants::Values::kIntakeRange().upper,
+      superstructure_status_fetcher_->left_intake()->spring_position() +
+          superstructure_status_fetcher_->left_intake()->motor_position(),
+      0.001);
 
-  EXPECT_NEAR(0.0, superstructure_status_fetcher_->right_intake.spring_position,
+  EXPECT_NEAR(0.0,
+              superstructure_status_fetcher_->right_intake()->spring_position(),
               0.001);
   EXPECT_NEAR(constants::Values::kIntakeRange().upper,
-                  superstructure_status_fetcher_->right_intake.motor_position,
+              superstructure_status_fetcher_->right_intake()->motor_position(),
               0.001);
 
   // Set some ridiculous goals to test lower limits.
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    goal->intake.left_intake_angle = -5.0 * M_PI;
-    goal->intake.right_intake_angle = -5.0 * M_PI;
-    goal->arm_goal_position = arm::UpIndex();
-    goal->open_claw = true;
+    IntakeGoal::Builder intake_goal_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_goal_builder.add_left_intake_angle(-5.0 * M_PI);
+    intake_goal_builder.add_right_intake_angle(-5.0 * M_PI);
 
-    ASSERT_TRUE(goal.Send());
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_arm_goal_position(arm::UpIndex());
+    goal_builder.add_open_claw(true);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(10));
@@ -460,13 +517,17 @@ TEST_F(SuperstructureTest, RespectsRange) {
   superstructure_status_fetcher_.Fetch();
 
   EXPECT_NEAR(constants::Values::kIntakeRange().lower,
-              superstructure_status_fetcher_->left_intake.motor_position, 0.001);
-  EXPECT_NEAR(0.0, superstructure_status_fetcher_->left_intake.spring_position,
+              superstructure_status_fetcher_->left_intake()->motor_position(),
+              0.001);
+  EXPECT_NEAR(0.0,
+              superstructure_status_fetcher_->left_intake()->spring_position(),
               0.001);
 
   EXPECT_NEAR(constants::Values::kIntakeRange().lower,
-              superstructure_status_fetcher_->right_intake.motor_position, 0.001);
-  EXPECT_NEAR(0.0, superstructure_status_fetcher_->right_intake.spring_position,
+              superstructure_status_fetcher_->right_intake()->motor_position(),
+              0.001);
+  EXPECT_NEAR(0.0,
+              superstructure_status_fetcher_->right_intake()->spring_position(),
               0.001);
 }
 
@@ -475,19 +536,40 @@ TEST_F(SuperstructureTest, DISABLED_LowerHardstopStartup) {
   superstructure_plant_.InitializeIntakePosition(
       constants::Values::kIntakeRange().lower_hard);
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->intake.left_intake_angle = constants::Values::kIntakeRange().lower;
-    goal->intake.right_intake_angle = constants::Values::kIntakeRange().lower;
-    goal->arm_goal_position = arm::UpIndex();
-    goal->open_claw = true;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    IntakeGoal::Builder intake_goal_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_goal_builder.add_left_intake_angle(
+        constants::Values::kIntakeRange().lower);
+    intake_goal_builder.add_right_intake_angle(
+        constants::Values::kIntakeRange().lower);
+
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_arm_goal_position(arm::UpIndex());
+    goal_builder.add_open_claw(true);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(10));
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->intake.left_intake_angle = 1.0;
-    goal->intake.right_intake_angle = 1.0;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    IntakeGoal::Builder intake_goal_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_goal_builder.add_left_intake_angle(1.0);
+    intake_goal_builder.add_right_intake_angle(1.0);
+
+    flatbuffers::Offset<IntakeGoal> intake_offset =
+        intake_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_arm_goal_position(arm::UpIndex());
+    goal_builder.add_open_claw(true);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(10));
   VerifyNearGoal();
@@ -499,12 +581,22 @@ TEST_F(SuperstructureTest, DISABLED_UpperHardstopStartup) {
   superstructure_plant_.InitializeIntakePosition(
       constants::Values::kIntakeRange().upper_hard);
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->intake.left_intake_angle = constants::Values::kIntakeRange().upper;
-    goal->intake.right_intake_angle = constants::Values::kIntakeRange().upper;
-    goal->arm_goal_position = arm::UpIndex();
-    goal->open_claw = true;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    IntakeGoal::Builder intake_goal_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_goal_builder.add_left_intake_angle(
+        constants::Values::kIntakeRange().upper);
+    intake_goal_builder.add_right_intake_angle(
+        constants::Values::kIntakeRange().upper);
+
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_arm_goal_position(arm::UpIndex());
+    goal_builder.add_open_claw(true);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(10));
 
@@ -517,14 +609,22 @@ TEST_F(SuperstructureTest, ResetTest) {
   superstructure_plant_.InitializeIntakePosition(
       constants::Values::kIntakeRange().upper);
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->intake.left_intake_angle =
-        constants::Values::kIntakeRange().upper - 0.1;
-    goal->intake.right_intake_angle =
-        constants::Values::kIntakeRange().upper - 0.1;
-    goal->arm_goal_position = arm::UpIndex();
-    goal->open_claw = true;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    IntakeGoal::Builder intake_goal_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_goal_builder.add_left_intake_angle(
+        constants::Values::kIntakeRange().upper - 0.1);
+    intake_goal_builder.add_right_intake_angle(
+        constants::Values::kIntakeRange().upper - 0.1);
+
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_arm_goal_position(arm::UpIndex());
+    goal_builder.add_open_claw(true);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(10));
 
@@ -558,12 +658,20 @@ TEST_F(SuperstructureTest, ArmSimpleGoal) {
   RunFor(chrono::seconds(5));
 
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->intake.left_intake_angle = -0.8;
-    goal->intake.right_intake_angle = -0.8;
-    goal->arm_goal_position = arm::FrontHighBoxIndex();
-    goal->open_claw = true;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    IntakeGoal::Builder intake_goal_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_goal_builder.add_left_intake_angle(-0.8);
+    intake_goal_builder.add_right_intake_angle(-0.8);
+
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_arm_goal_position(arm::FrontHighBoxIndex());
+    goal_builder.add_open_claw(true);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   EXPECT_EQ(arm::Arm::State::RUNNING, superstructure_.arm().state());
@@ -573,12 +681,20 @@ TEST_F(SuperstructureTest, ArmSimpleGoal) {
 TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
   SetEnabled(true);
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->intake.left_intake_angle = 0.0;
-    goal->intake.right_intake_angle = 0.0;
-    goal->arm_goal_position = arm::FrontHighBoxIndex();
-    goal->open_claw = true;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    IntakeGoal::Builder intake_goal_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_goal_builder.add_left_intake_angle(0.0);
+    intake_goal_builder.add_right_intake_angle(0.0);
+
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_arm_goal_position(arm::FrontHighBoxIndex());
+    goal_builder.add_open_claw(true);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(10));
@@ -586,12 +702,20 @@ TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
   VerifyNearGoal();
 
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->intake.left_intake_angle = 0.0;
-    goal->intake.right_intake_angle = 0.0;
-    goal->arm_goal_position = arm::ReadyAboveBoxIndex();
-    goal->open_claw = true;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    IntakeGoal::Builder intake_goal_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_goal_builder.add_left_intake_angle(0.0);
+    intake_goal_builder.add_right_intake_angle(0.0);
+
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_arm_goal_position(arm::ReadyAboveBoxIndex());
+    goal_builder.add_open_claw(true);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(10));
@@ -604,12 +728,20 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
   superstructure_plant_.InitializeArmPosition(arm::ReadyAboveBoxPoint());
 
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->intake.left_intake_angle = 0.0;
-    goal->intake.right_intake_angle = 0.0;
-    goal->arm_goal_position = arm::BackLowBoxIndex();
-    goal->open_claw = true;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    IntakeGoal::Builder intake_goal_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_goal_builder.add_left_intake_angle(0.0);
+    intake_goal_builder.add_right_intake_angle(0.0);
+
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_arm_goal_position(arm::BackLowBoxIndex());
+    goal_builder.add_open_claw(true);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(10));
@@ -617,12 +749,20 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
   VerifyNearGoal();
 
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->intake.left_intake_angle = 0.0;
-    goal->intake.right_intake_angle = 0.0;
-    goal->arm_goal_position = arm::ReadyAboveBoxIndex();
-    goal->open_claw = true;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    IntakeGoal::Builder intake_goal_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_goal_builder.add_left_intake_angle(0.0);
+    intake_goal_builder.add_right_intake_angle(0.0);
+
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_arm_goal_position(arm::ReadyAboveBoxIndex());
+    goal_builder.add_open_claw(true);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(10));

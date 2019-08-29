@@ -11,15 +11,18 @@ DEFAULT_INCLUDE_PATHS = [
     "./",
     "$(GENDIR)",
     "$(BINDIR)",
+    "$(execpath @com_github_google_flatbuffers//:flatc).runfiles/com_github_google_flatbuffers",
 ]
 
 DEFAULT_FLATC_ARGS = [
     "--gen-object-api",
     "--gen-compare",
-    "--no-includes",
+    "--keep-prefix",
     "--gen-mutable",
     "--reflect-names",
     "--cpp-ptr-type flatbuffers::unique_ptr",
+    "--force-empty",
+    "--gen-name-strings",
 ]
 
 def flatbuffer_library_public(
@@ -33,6 +36,7 @@ def flatbuffer_library_public(
         flatc_args = DEFAULT_FLATC_ARGS,
         reflection_name = "",
         reflection_visibility = None,
+        compatible_with = None,
         output_to_bindir = False):
     """Generates code files for reading/writing the given flatbuffers in the requested language using the public compiler.
 
@@ -83,6 +87,7 @@ def flatbuffer_library_public(
         tools = [flatc_path],
         cmd = genrule_cmd,
         message = "Generating flatbuffer files for %s:" % (name),
+        compatible_with = compatible_with,
     )
     if reflection_name:
         reflection_genrule_cmd = " ".join([
@@ -109,20 +114,20 @@ def flatbuffer_library_public(
             tools = [flatc_path],
             cmd = reflection_genrule_cmd,
             message = "Generating flatbuffer reflection binary for %s:" % (name),
+            compatible_with = compatible_with,
         )
-        native.Fileset(
-            name = reflection_name,
-            out = "%s_out" % reflection_name,
-            entries = [
-                native.FilesetEntry(files = reflection_outs),
-            ],
+        native.filegroup(
+            name = "%s_out" % reflection_name,
+            srcs = reflection_outs,
             visibility = reflection_visibility,
+            compatible_with = compatible_with,
         )
 
 def flatbuffer_cc_library(
         name,
         srcs,
         srcs_filegroup_name = "",
+        compatible_with = None,
         out_prefix = "",
         includes = [],
         include_paths = DEFAULT_INCLUDE_PATHS,
@@ -208,6 +213,7 @@ def flatbuffer_cc_library(
         flatc_args = flatc_args,
         reflection_name = reflection_name,
         reflection_visibility = visibility,
+        compatible_with = compatible_with,
     )
     native.cc_library(
         name = name,
@@ -226,6 +232,7 @@ def flatbuffer_cc_library(
         includes = [],
         linkstatic = 1,
         visibility = visibility,
+        compatible_with = compatible_with,
     )
 
     # A filegroup for the `srcs`. That is, all the schema files for this
@@ -234,4 +241,5 @@ def flatbuffer_cc_library(
         name = srcs_filegroup_name if srcs_filegroup_name else "%s_includes" % (name),
         srcs = srcs,
         visibility = srcs_filegroup_visibility if srcs_filegroup_visibility != None else visibility,
+        compatible_with = compatible_with,
     )

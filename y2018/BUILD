@@ -1,6 +1,7 @@
 load("//frc971:downloader.bzl", "robot_downloader")
-load("//aos/build:queues.bzl", "queue_library")
+load("//aos:config.bzl", "aos_config")
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 robot_downloader(
     start_binaries = [
@@ -30,11 +31,12 @@ cc_binary(
         "//aos/time",
         "//aos/util:log_interval",
         "//aos/vision/events:udp",
-        "//frc971/autonomous:auto_queue",
+        "//frc971/autonomous:auto_fbs",
         "//frc971/autonomous:base_autonomous_actor",
-        "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//y2018/control_loops/drivetrain:drivetrain_base",
-        "//y2018/control_loops/superstructure:superstructure_queue",
+        "//y2018/control_loops/superstructure:superstructure_goal_fbs",
+        "//y2018/control_loops/superstructure:superstructure_position_fbs",
+        "//y2018/control_loops/superstructure:superstructure_status_fbs",
         "//y2018/control_loops/superstructure/arm:generated_graph",
     ],
 )
@@ -67,21 +69,21 @@ cc_binary(
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
-        ":status_light",
+        ":status_light_fbs",
         "//aos:init",
         "//aos:make_unique",
         "//aos:math",
         "//aos/controls:control_loop",
         "//aos/logging",
-        "//aos/logging:queue_logging",
-        "//aos/robot_state",
+        "//aos/robot_state:robot_state_fbs",
         "//aos/time",
         "//aos/util:log_interval",
         "//aos/util:phased_loop",
         "//aos/util:wrapping_counter",
-        "//frc971/autonomous:auto_queue",
-        "//frc971/control_loops:queues",
-        "//frc971/control_loops/drivetrain:drivetrain_queue",
+        "//frc971/autonomous:auto_fbs",
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_position_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//frc971/wpilib:ADIS16448",
         "//frc971/wpilib:buffered_pcm",
         "//frc971/wpilib:dma",
@@ -89,7 +91,7 @@ cc_binary(
         "//frc971/wpilib:drivetrain_writer",
         "//frc971/wpilib:encoder_and_potentiometer",
         "//frc971/wpilib:joystick_sender",
-        "//frc971/wpilib:logging_queue",
+        "//frc971/wpilib:logging_fbs",
         "//frc971/wpilib:loop_output_handler",
         "//frc971/wpilib:pdp_fetcher",
         "//frc971/wpilib:sensor_reader",
@@ -97,17 +99,37 @@ cc_binary(
         "//third_party:phoenix",
         "//third_party:wpilib",
         "//y2018:constants",
-        "//y2018/control_loops/superstructure:superstructure_queue",
-        "//y2018/vision:vision_queue",
+        "//y2018/control_loops/superstructure:superstructure_output_fbs",
+        "//y2018/control_loops/superstructure:superstructure_position_fbs",
+        "//y2018/vision:vision_fbs",
     ],
 )
 
-queue_library(
-    name = "status_light",
+flatbuffer_cc_library(
+    name = "status_light_fbs",
     srcs = [
-        "status_light.q",
+        "status_light.fbs",
+    ],
+    gen_reflections = 1,
+    visibility = ["//visibility:public"],
+)
+
+aos_config(
+    name = "config",
+    src = "y2018.json",
+    flatbuffers = [
+        ":status_light_fbs",
+        "//y2018/control_loops/superstructure:superstructure_goal_fbs",
+        "//y2018/control_loops/superstructure:superstructure_output_fbs",
+        "//y2018/control_loops/superstructure:superstructure_position_fbs",
+        "//y2018/control_loops/superstructure:superstructure_status_fbs",
+        "//y2018/vision:vision_fbs",
     ],
     visibility = ["//visibility:public"],
+    deps = [
+        "//aos/robot_state:config",
+        "//frc971/control_loops/drivetrain:config",
+    ],
 )
 
 cc_proto_library(

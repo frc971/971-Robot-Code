@@ -3,7 +3,7 @@
 
 #include "frc971/control_loops/drivetrain/localizer.h"
 #include "y2019/constants.h"
-#include "y2019/control_loops/drivetrain/camera.q.h"
+#include "y2019/control_loops/drivetrain/camera_generated.h"
 #include "y2019/control_loops/drivetrain/localizer.h"
 #include "y2019/control_loops/drivetrain/target_selector.h"
 
@@ -92,7 +92,7 @@ class EventLoopLocalizer
   }
 
  private:
-  void HandleFrame(const CameraFrame &frame);
+  void HandleFrame(const CameraFrame *frame);
 
   ::aos::EventLoop *event_loop_;
   // TODO(james): Make this use Watchers once we have them working in our

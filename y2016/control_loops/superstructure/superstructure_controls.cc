@@ -1,6 +1,5 @@
 #include "y2016/control_loops/superstructure/superstructure_controls.h"
 
-#include "aos/controls/control_loops.q.h"
 #include "aos/logging/logging.h"
 
 #include "y2016/control_loops/superstructure/integral_intake_plant.h"
@@ -96,10 +95,10 @@ void Arm::UpdateShoulderOffset(double offset) {
 
 // TODO(austin): Handle zeroing errors.
 
-void Arm::Correct(PotAndIndexPosition position_shoulder,
-                  PotAndIndexPosition position_wrist) {
-  estimators_[kShoulderIndex].UpdateEstimate(position_shoulder);
-  estimators_[kWristIndex].UpdateEstimate(position_wrist);
+void Arm::Correct(const PotAndIndexPosition *position_shoulder,
+                  const PotAndIndexPosition *position_wrist) {
+  estimators_[kShoulderIndex].UpdateEstimate(*position_shoulder);
+  estimators_[kWristIndex].UpdateEstimate(*position_wrist);
 
   // Handle zeroing errors
   if (estimators_[kShoulderIndex].error()) {
@@ -130,7 +129,7 @@ void Arm::Correct(PotAndIndexPosition position_shoulder,
   }
 
   {
-    Y_ << position_shoulder.encoder, position_wrist.encoder;
+    Y_ << position_shoulder->encoder(), position_wrist->encoder();
     Y_ += offset_;
     loop_->Correct(Y_);
   }

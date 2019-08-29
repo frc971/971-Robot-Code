@@ -6,43 +6,49 @@
 #include "aos/controls/control_loop.h"
 #include "aos/controls/polytope.h"
 #include "aos/util/log_interval.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/drivetrain/gear.h"
 #include "frc971/control_loops/drivetrain/line_follow_drivetrain.h"
 #include "frc971/control_loops/drivetrain/localizer.h"
-#include "frc971/control_loops/drivetrain/localizer.q.h"
+#include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "frc971/control_loops/drivetrain/polydrivetrain.h"
 #include "frc971/control_loops/drivetrain/splinedrivetrain.h"
 #include "frc971/control_loops/drivetrain/ssdrivetrain.h"
-#include "frc971/queues/gyro.q.h"
-#include "frc971/wpilib/imu.q.h"
+#include "frc971/queues/gyro_generated.h"
+#include "frc971/wpilib/imu_generated.h"
 
 namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
-class DrivetrainLoop : public aos::controls::ControlLoop<
-                           ::frc971::control_loops::DrivetrainQueue> {
+class DrivetrainLoop
+    : public aos::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
   // Constructs a control loop which can take a Drivetrain or defaults to the
   // drivetrain at frc971::control_loops::drivetrain
-  explicit DrivetrainLoop(
-      const DrivetrainConfig<double> &dt_config, ::aos::EventLoop *event_loop,
-      LocalizerInterface *localizer,
-      const ::std::string &name = ".frc971.control_loops.drivetrain_queue");
+  explicit DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
+                          ::aos::EventLoop *event_loop,
+                          LocalizerInterface *localizer,
+                          const ::std::string &name = "/drivetrain");
 
   int ControllerIndexFromGears();
 
  protected:
   // Executes one cycle of the control loop.
   void RunIteration(
-      const ::frc971::control_loops::DrivetrainQueue::Goal *goal,
-      const ::frc971::control_loops::DrivetrainQueue::Position *position,
-      ::frc971::control_loops::DrivetrainQueue::Output *output,
-      ::frc971::control_loops::DrivetrainQueue::Status *status) override;
+      const ::frc971::control_loops::drivetrain::Goal *goal,
+      const ::frc971::control_loops::drivetrain::Position *position,
+      aos::Sender<::frc971::control_loops::drivetrain::Output>::Builder *output,
+      aos::Sender<::frc971::control_loops::drivetrain::Status>::Builder *status)
+      override;
 
-  void Zero(::frc971::control_loops::DrivetrainQueue::Output *output) override;
+  flatbuffers::Offset<drivetrain::Output> Zero(
+      aos::Sender<drivetrain::Output>::Builder *builder) override;
 
   double last_gyro_rate_ = 0.0;
 

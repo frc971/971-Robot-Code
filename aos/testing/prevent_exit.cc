@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "aos/logging/logging.h"
+#include "glog/logging.h"
 
 namespace aos {
 namespace testing {
@@ -16,7 +16,7 @@ void TerminateExitHandler() {
 }  // namespace
 
 void PreventExit() {
-  AOS_CHECK_EQ(atexit(TerminateExitHandler), 0);
+  CHECK_EQ(atexit(TerminateExitHandler), 0);
 }
 
 }  // namespace testing

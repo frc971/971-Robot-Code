@@ -1,0 +1,17 @@
+namespace frc971.autonomous;
+
+// Published on ".frc971.autonomous.auto_mode"
+table AutonomousMode {
+  // Mode read from the mode setting sensors.
+  mode:int;
+}
+
+table AutonomousActionParams {
+  // The mode from the sensors when auto starts.
+  mode:int;
+}
+
+table Goal {
+  run:uint;
+  params:AutonomousActionParams;
+}

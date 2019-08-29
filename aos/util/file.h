@@ -12,6 +12,10 @@ namespace util {
 // encountered.
 ::std::string ReadFileToStringOrDie(const absl::string_view filename);
 
+// Creates filename if it doesn't exist and sets the contents to contents.
+void WriteStringToFileOrDie(const absl::string_view filename,
+                            const absl::string_view contents);
+
 }  // namespace util
 }  // namespace aos
 

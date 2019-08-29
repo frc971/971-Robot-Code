@@ -8,12 +8,11 @@
 #include "aos/logging/logging.h"
 #include "aos/util/phased_loop.h"
 
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2018/control_loops/drivetrain/drivetrain_base.h"
 
 namespace y2018 {
 namespace actors {
-using ::frc971::ProfileParameters;
+using ::frc971::ProfileParametersT;
 
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
@@ -23,25 +22,34 @@ namespace {
 
 namespace arm = ::y2018::control_loops::superstructure::arm;
 
-const ProfileParameters kFinalSwitchDrive = {0.5, 1.5};
-const ProfileParameters kDrive = {5.0, 2.5};
-const ProfileParameters kThirdBoxDrive = {3.0, 2.5};
-const ProfileParameters kSlowDrive = {1.5, 2.5};
-const ProfileParameters kScaleTurnDrive = {3.0, 2.5};
-const ProfileParameters kFarSwitchTurnDrive = {2.0, 2.5};
-const ProfileParameters kFarScaleFinalTurnDrive = kFarSwitchTurnDrive;
-const ProfileParameters kTurn = {4.0, 2.0};
-const ProfileParameters kSweepingTurn = {5.0, 7.0};
-const ProfileParameters kFarScaleSweepingTurn = kSweepingTurn;
-const ProfileParameters kFastTurn = {5.0, 7.0};
-const ProfileParameters kReallyFastTurn = {1.5, 9.0};
+ProfileParametersT MakeProfileParameters(float max_velocity,
+                                         float max_acceleration) {
+  ProfileParametersT result;
+  result.max_velocity = max_velocity;
+  result.max_acceleration = max_acceleration;
+  return result;
+}
 
-const ProfileParameters kThirdBoxSlowBackup = {0.35, 1.5};
-const ProfileParameters kThirdBoxSlowTurn = {1.5, 4.0};
+const ProfileParametersT kFinalSwitchDrive = MakeProfileParameters(0.5, 1.5);
+const ProfileParametersT kDrive = MakeProfileParameters(5.0, 2.5);
+const ProfileParametersT kThirdBoxDrive = MakeProfileParameters(3.0, 2.5);
+const ProfileParametersT kSlowDrive = MakeProfileParameters(1.5, 2.5);
+const ProfileParametersT kScaleTurnDrive = MakeProfileParameters(3.0, 2.5);
+const ProfileParametersT kFarSwitchTurnDrive = MakeProfileParameters(2.0, 2.5);
+const ProfileParametersT kFarScaleFinalTurnDrive = kFarSwitchTurnDrive;
+const ProfileParametersT kTurn = MakeProfileParameters(4.0, 2.0);
+const ProfileParametersT kSweepingTurn = MakeProfileParameters(5.0, 7.0);
+const ProfileParametersT kFarScaleSweepingTurn = kSweepingTurn;
+const ProfileParametersT kFastTurn = MakeProfileParameters(5.0, 7.0);
+const ProfileParametersT kReallyFastTurn = MakeProfileParameters(1.5, 9.0);
 
-const ProfileParameters kThirdBoxPlaceDrive = {4.0, 2.0};
+const ProfileParametersT kThirdBoxSlowBackup = MakeProfileParameters(0.35, 1.5);
+const ProfileParametersT kThirdBoxSlowTurn = MakeProfileParameters(1.5, 4.0);
 
-const ProfileParameters kFinalFrontFarSwitchDrive = {2.0, 2.0};
+const ProfileParametersT kThirdBoxPlaceDrive = MakeProfileParameters(4.0, 2.0);
+
+const ProfileParametersT kFinalFrontFarSwitchDrive =
+    MakeProfileParameters(2.0, 2.0);
 
 }  // namespace
 
@@ -49,24 +57,23 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
     : frc971::autonomous::BaseAutonomousActor(
           event_loop, control_loops::drivetrain::GetDrivetrainConfig()),
       superstructure_goal_sender_(
-          event_loop
-              ->MakeSender<::y2018::control_loops::SuperstructureQueue::Goal>(
-                  ".frc971.control_loops.superstructure_queue.goal")),
+          event_loop->MakeSender<::y2018::control_loops::superstructure::Goal>(
+              "/superstructure")),
       superstructure_status_fetcher_(
-          event_loop->MakeFetcher<
-              ::y2018::control_loops::SuperstructureQueue::Status>(
-              ".frc971.control_loops.superstructure_queue.status")) {}
+          event_loop
+              ->MakeFetcher<::y2018::control_loops::superstructure::Status>(
+                  "/superstructure")) {}
 
 bool AutonomousActor::RunAction(
-    const ::frc971::autonomous::AutonomousActionParams &params) {
+    const ::frc971::autonomous::AutonomousActionParams *params) {
   const monotonic_clock::time_point start_time = monotonic_now();
   AOS_LOG(INFO, "Starting autonomous action with mode %" PRId32 "\n",
-          params.mode);
+          params->mode());
   Reset();
 
   // Switch
   /*
-  switch (params.mode) {
+  switch (params->mode()) {
     case 0:
     case 2: {
       if (FarSwitch(start_time, true)) return true;
@@ -79,7 +86,7 @@ bool AutonomousActor::RunAction(
   }
   */
   // Scale
-  switch (params.mode) {
+  switch (params->mode()) {
     case 0:
     case 1: {
       if (FarScale(start_time)) return true;
@@ -91,7 +98,7 @@ bool AutonomousActor::RunAction(
     } break;
   }
   /*
-  switch (params.mode) {
+  switch (params->mode()) {
     case 1: {
       if (FarScale(start_time)) return true;
       //if (CloseSwitch(start_time)) return true;

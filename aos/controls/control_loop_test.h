@@ -5,10 +5,12 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/events/simulated-event-loop.h"
-#include "aos/logging/queue_logging.h"
-#include "aos/robot_state/robot_state.q.h"
-#include "aos/testing/test_shm.h"
+#include "aos/events/simulated_event_loop.h"
+#include "aos/flatbuffers.h"
+#include "aos/json_to_flatbuffer.h"
+#include "aos/robot_state/joystick_state_generated.h"
+#include "aos/robot_state/robot_state_generated.h"
+#include "aos/testing/test_logging.h"
 #include "aos/time/time.h"
 
 namespace aos {
@@ -22,14 +24,28 @@ namespace testing {
 template <typename TestBaseClass>
 class ControlLoopTestTemplated : public TestBaseClass {
  public:
-  ControlLoopTestTemplated(::std::chrono::nanoseconds dt = kTimeTick)
-      : dt_(dt), robot_status_event_loop_(MakeEventLoop()) {
+  // Builds a control loop test with the provided configuration.  Note: this
+  // merges and sorts the config to reduce user errors.
+  ControlLoopTestTemplated(absl::string_view configuration,
+                           ::std::chrono::nanoseconds dt = kTimeTick)
+      : ControlLoopTestTemplated(
+            configuration::MergeConfiguration(
+                aos::FlatbufferDetachedBuffer<Configuration>(JsonToFlatbuffer(
+                    configuration, Configuration::MiniReflectTypeTable()))),
+            dt) {}
+
+  ControlLoopTestTemplated(
+      FlatbufferDetachedBuffer<Configuration> configuration,
+      ::std::chrono::nanoseconds dt = kTimeTick)
+      : configuration_(std::move(configuration)),
+        event_loop_factory_(&configuration_.message()),
+        dt_(dt),
+        robot_status_event_loop_(MakeEventLoop()) {
+    testing::EnableTestLogging();
     robot_state_sender_ =
-        robot_status_event_loop_->MakeSender<::aos::RobotState>(
-            ".aos.robot_state");
+        robot_status_event_loop_->MakeSender<::aos::RobotState>("/aos");
     joystick_state_sender_ =
-        robot_status_event_loop_->MakeSender<::aos::JoystickState>(
-            ".aos.joystick_state");
+        robot_status_event_loop_->MakeSender<::aos::JoystickState>("/aos");
 
     // Schedule the robot status send 1 nanosecond before the loop runs.
     send_robot_state_phased_loop_ = robot_status_event_loop_->AddPhasedLoop(
@@ -91,15 +107,17 @@ class ControlLoopTestTemplated : public TestBaseClass {
   void SendJoystickState() {
     if (monotonic_now() >= kDSPacketTime + last_ds_time_ ||
         last_enabled_ != enabled_) {
-      auto new_state = joystick_state_sender_.MakeMessage();
-      new_state->fake = true;
+      auto new_state = joystick_state_sender_.MakeBuilder();
+      ::aos::JoystickState::Builder builder =
+          new_state.template MakeBuilder<::aos::JoystickState>();
 
-      new_state->enabled = enabled_;
-      new_state->autonomous = false;
-      new_state->team_id = team_id_;
+      builder.add_fake(true);
 
-      AOS_LOG_STRUCT(INFO, "joystick_state", *new_state);
-      new_state.Send();
+      builder.add_enabled(enabled_);
+      builder.add_autonomous(false);
+      builder.add_team_id(team_id_);
+
+      new_state.Send(builder.Finish());
 
       last_ds_time_ = monotonic_now();
       last_enabled_ = enabled_;
@@ -109,30 +127,34 @@ class ControlLoopTestTemplated : public TestBaseClass {
   bool last_enabled_ = false;
 
   void SendRobotState() {
-    auto new_state = robot_state_sender_.MakeMessage();
+    auto new_state = robot_state_sender_.MakeBuilder();
 
-    new_state->reader_pid = reader_pid_;
-    new_state->outputs_enabled = enabled_;
-    new_state->browned_out = false;
+    ::aos::RobotState::Builder builder =
+        new_state.template MakeBuilder<::aos::RobotState>();
 
-    new_state->is_3v3_active = true;
-    new_state->is_5v_active = true;
-    new_state->voltage_3v3 = 3.3;
-    new_state->voltage_5v = 5.0;
+    builder.add_reader_pid(reader_pid_);
+    builder.add_outputs_enabled(enabled_);
+    builder.add_browned_out(false);
 
-    new_state->voltage_roborio_in = battery_voltage_;
-    new_state->voltage_battery = battery_voltage_;
+    builder.add_is_3v3_active(true);
+    builder.add_is_5v_active(true);
+    builder.add_voltage_3v3(3.3);
+    builder.add_voltage_5v(5.0);
 
-    AOS_LOG_STRUCT(INFO, "robot_state", *new_state);
-    new_state.Send();
+    builder.add_voltage_roborio_in(battery_voltage_);
+    builder.add_voltage_battery(battery_voltage_);
+
+    new_state.Send(builder.Finish());
   }
 
   static constexpr ::std::chrono::microseconds kTimeTick{5000};
   static constexpr ::std::chrono::milliseconds kDSPacketTime{20};
 
-  const ::std::chrono::nanoseconds dt_;
+  FlatbufferDetachedBuffer<Configuration> configuration_;
 
   SimulatedEventLoopFactory event_loop_factory_;
+
+  const ::std::chrono::nanoseconds dt_;
 
   uint16_t team_id_ = 971;
   int32_t reader_pid_ = 1;

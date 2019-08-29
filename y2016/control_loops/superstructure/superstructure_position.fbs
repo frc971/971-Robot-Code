@@ -1,0 +1,19 @@
+include "frc971/control_loops/control_loops.fbs";
+
+namespace y2016.control_loops.superstructure;
+
+table Position {
+  // Zero for the intake potentiometer value is horizontal, and positive is
+  // up.
+  // Zero for the shoulder potentiometer value is horizontal, and positive is
+  // up.
+  // Zero for the wrist potentiometer value is parallel to the arm and with
+  // the shooter wheels pointed towards the shoulder joint.  This is measured
+  // relative to the arm, not the ground, not like the world we actually
+  // present to users.
+  intake:frc971.PotAndIndexPosition;
+  shoulder:frc971.PotAndIndexPosition;
+  wrist:frc971.PotAndIndexPosition;
+}
+
+root_type Position;

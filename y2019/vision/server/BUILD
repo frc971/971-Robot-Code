@@ -1,6 +1,6 @@
 load("//aos/seasocks:gen_embedded.bzl", "gen_embedded")
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
-load("//aos/downloader:downloader.bzl", "aos_downloader_dir")
+load("//frc971/downloader:downloader.bzl", "aos_downloader_dir")
 load("@build_bazel_rules_typescript//:defs.bzl", "ts_library")
 load("@build_bazel_rules_nodejs//:defs.bzl", "rollup_bundle")
 
@@ -49,15 +49,15 @@ cc_binary(
         ":server_data_proto",
         "//aos:init",
         "//aos/containers:ring_buffer",
-        "//aos/events:shm-event-loop",
+        "//aos/events:shm_event_loop",
         "//aos/logging",
         "//aos/seasocks:seasocks_logger",
         "//aos/time",
         "//frc971/control_loops:pose",
-        "//frc971/control_loops/drivetrain:drivetrain_queue",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//third_party/seasocks",
         "//y2019:constants",
-        "//y2019/control_loops/drivetrain:camera_queue",
-        "//y2019/control_loops/superstructure:superstructure_queue",
+        "//y2019/control_loops/drivetrain:camera_fbs",
+        "//y2019/control_loops/superstructure:superstructure_status_fbs",
     ],
 )

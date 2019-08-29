@@ -20,25 +20,6 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "replay",
-    srcs = [
-        "replay.cc",
-    ],
-    hdrs = [
-        "replay.h",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":binary_log_file",
-        ":logging",
-        ":queue_logging",
-        "//aos:queues",
-        "//aos/events:event-loop",
-        "//aos/ipc_lib:queue",
-    ],
-)
-
 cc_binary(
     name = "binary_log_writer",
     srcs = [
@@ -52,7 +33,6 @@ cc_binary(
         "//aos:configuration",
         "//aos:die",
         "//aos:init",
-        "//aos:queue_types",
         "//aos/ipc_lib:queue",
         "//aos/time",
     ],
@@ -85,7 +65,6 @@ cc_binary(
         ":logging",
         "//aos:configuration",
         "//aos:init",
-        "//aos:queue_types",
         "//aos/util:string_to_num",
     ],
 )
@@ -123,42 +102,6 @@ cc_test(
 )
 
 cc_library(
-    name = "queue_logging",
-    srcs = [
-        "queue_logging.cc",
-    ],
-    hdrs = [
-        "queue_logging.h",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":logging",
-        ":sizes",
-        "//aos:die",
-        "//aos:queue_types",
-    ],
-)
-
-cc_library(
-    name = "matrix_logging",
-    srcs = [
-        "matrix_logging.cc",
-    ],
-    hdrs = [
-        "matrix_logging.h",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":logging",
-        ":sizes",
-        "//aos:die",
-        "//aos:generated_queue_headers",
-        "//aos:queue_types",
-        "//third_party/eigen",
-    ],
-)
-
-cc_library(
     name = "printf_formats",
     hdrs = [
         "printf_formats.h",
@@ -183,11 +126,11 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":logging",
+        ":printf_formats",
         ":sizes",
         "//aos:die",
         "//aos:macros",
         "//aos:once",
-        "//aos:queue_types",
         "//aos/ipc_lib:queue",
         "//aos/mutex",
         "//aos/time",

@@ -6,7 +6,7 @@
 
 #include "aos/actions/actions.h"
 #include "aos/actions/actor.h"
-#include "aos/events/event-loop.h"
+#include "aos/events/event_loop.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
 
 namespace y2014_bot3 {
@@ -17,7 +17,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   explicit AutonomousActor(::aos::EventLoop *event_loop);
 
   bool RunAction(
-      const ::frc971::autonomous::AutonomousActionParams &params) override;
+      const ::frc971::autonomous::AutonomousActionParams *params) override;
 
  private:
   void Reset() {

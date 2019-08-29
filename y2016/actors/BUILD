@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//aos/build:queues.bzl", "queue_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 filegroup(
     name = "binaries",
@@ -10,14 +10,13 @@ filegroup(
     ],
 )
 
-queue_library(
-    name = "superstructure_action_queue",
+flatbuffer_cc_library(
+    name = "superstructure_action_fbs",
     srcs = [
-        "superstructure_action.q",
+        "superstructure_action.fbs",
     ],
-    deps = [
-        "//aos/actions:action_queue",
-    ],
+    gen_reflections = 1,
+    visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -29,12 +28,14 @@ cc_library(
         "superstructure_actor.h",
     ],
     deps = [
-        ":superstructure_action_queue",
+        ":superstructure_action_fbs",
         "//aos/actions:action_lib",
-        "//aos/events:event-loop",
+        "//aos/events:event_loop",
         "//aos/logging",
         "//aos/util:phased_loop",
-        "//y2016/control_loops/superstructure:superstructure_queue",
+        "//frc971/control_loops:control_loops_fbs",
+        "//y2016/control_loops/superstructure:superstructure_goal_fbs",
+        "//y2016/control_loops/superstructure:superstructure_status_fbs",
     ],
 )
 
@@ -44,10 +45,10 @@ cc_binary(
         "superstructure_actor_main.cc",
     ],
     deps = [
+        ":superstructure_action_fbs",
         ":superstructure_action_lib",
-        ":superstructure_action_queue",
         "//aos:init",
-        "//aos/events:shm-event-loop",
+        "//aos/events:shm_event_loop",
     ],
 )
 
@@ -65,13 +66,13 @@ cc_library(
         "//aos/logging",
         "//aos/util:phased_loop",
         "//frc971/autonomous:base_autonomous_actor",
-        "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//y2016/control_loops/drivetrain:drivetrain_base",
-        "//y2016/control_loops/shooter:shooter_queue",
-        "//y2016/control_loops/superstructure:superstructure_queue",
-        "//y2016/queues:ball_detector",
-        "//y2016/queues:profile_params",
-        "//y2016/vision:vision_queue",
+        "//y2016/control_loops/shooter:shooter_goal_fbs",
+        "//y2016/control_loops/shooter:shooter_status_fbs",
+        "//y2016/control_loops/superstructure:superstructure_goal_fbs",
+        "//y2016/control_loops/superstructure:superstructure_status_fbs",
+        "//y2016/queues:ball_detector_fbs",
+        "//y2016/vision:vision_fbs",
     ],
 )
 
@@ -86,14 +87,13 @@ cc_binary(
     ],
 )
 
-queue_library(
-    name = "vision_align_action_queue",
+flatbuffer_cc_library(
+    name = "vision_align_action_fbs",
     srcs = [
-        "vision_align_action.q",
+        "vision_align_action.fbs",
     ],
-    deps = [
-        "//aos/actions:action_queue",
-    ],
+    gen_reflections = 1,
+    visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -105,19 +105,19 @@ cc_library(
         "vision_align_actor.h",
     ],
     deps = [
-        ":vision_align_action_queue",
+        ":vision_align_action_fbs",
         "//aos:math",
         "//aos/actions:action_lib",
         "//aos/logging",
-        "//aos/logging:queue_logging",
         "//aos/time",
         "//aos/util:phased_loop",
         "//aos/util:trapezoid_profile",
-        "//frc971/control_loops/drivetrain:drivetrain_queue",
-        "//third_party/eigen",
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_goal_fbs",
         "//y2016:constants",
         "//y2016/control_loops/drivetrain:drivetrain_base",
-        "//y2016/vision:vision_queue",
+        "//y2016/vision:vision_fbs",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -127,8 +127,8 @@ cc_binary(
         "vision_align_actor_main.cc",
     ],
     deps = [
+        ":vision_align_action_fbs",
         ":vision_align_action_lib",
-        ":vision_align_action_queue",
         "//aos:init",
     ],
 )

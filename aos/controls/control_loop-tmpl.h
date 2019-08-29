@@ -2,65 +2,63 @@
 #include <inttypes.h>
 
 #include "aos/logging/logging.h"
-#include "aos/logging/queue_logging.h"
 
 namespace aos {
 namespace controls {
 
 // TODO(aschuh): Tests.
 
-template <class T>
-constexpr ::std::chrono::milliseconds ControlLoop<T>::kStaleLogInterval;
-template <class T>
-constexpr ::std::chrono::milliseconds ControlLoop<T>::kPwmDisableTime;
+template <class GoalType, class PositionType, class StatusType,
+          class OutputType>
+constexpr ::std::chrono::milliseconds ControlLoop<
+    GoalType, PositionType, StatusType, OutputType>::kStaleLogInterval;
+template <class GoalType, class PositionType, class StatusType,
+          class OutputType>
+constexpr ::std::chrono::milliseconds ControlLoop<
+    GoalType, PositionType, StatusType, OutputType>::kPwmDisableTime;
 
-template <class T>
-void ControlLoop<T>::ZeroOutputs() {
-  typename ::aos::Sender<OutputType>::Message output =
-      output_sender_.MakeMessage();
-  Zero(output.get());
-  output.Send();
+template <class GoalType, class PositionType, class StatusType,
+          class OutputType>
+void ControlLoop<GoalType, PositionType, StatusType, OutputType>::ZeroOutputs() {
+  typename ::aos::Sender<OutputType>::Builder builder =
+      output_sender_.MakeBuilder();
+  builder.Send(Zero(&builder));
 }
 
-template <class T>
-void ControlLoop<T>::IteratePosition(const PositionType &position) {
+template <class GoalType, class PositionType, class StatusType,
+          class OutputType>
+void ControlLoop<GoalType, PositionType, StatusType,
+                 OutputType>::IteratePosition(const PositionType &position) {
   no_goal_.Print();
   no_sensor_state_.Print();
   motors_off_log_.Print();
-
-  AOS_LOG_STRUCT(DEBUG, "position", position);
 
   // Fetch the latest control loop goal. If there is no new
   // goal, we will just reuse the old one.
   goal_fetcher_.Fetch();
   const GoalType *goal = goal_fetcher_.get();
-  if (goal) {
-    AOS_LOG_STRUCT(DEBUG, "goal", *goal);
-  } else {
-    AOS_LOG_INTERVAL(no_goal_);
-  }
 
   const bool new_robot_state = robot_state_fetcher_.Fetch();
   if (!robot_state_fetcher_.get()) {
     AOS_LOG_INTERVAL(no_sensor_state_);
     return;
   }
-  if (sensor_reader_pid_ != robot_state_fetcher_->reader_pid) {
+  if (sensor_reader_pid_ != robot_state_fetcher_->reader_pid()) {
     AOS_LOG(INFO, "new sensor reader PID %" PRId32 ", old was %" PRId32 "\n",
-            robot_state_fetcher_->reader_pid, sensor_reader_pid_);
+            robot_state_fetcher_->reader_pid(), sensor_reader_pid_);
     reset_ = true;
-    sensor_reader_pid_ = robot_state_fetcher_->reader_pid;
+    sensor_reader_pid_ = robot_state_fetcher_->reader_pid();
   }
 
-  bool outputs_enabled = robot_state_fetcher_->outputs_enabled;
+  bool outputs_enabled = robot_state_fetcher_->outputs_enabled();
 
   // Check to see if we got a driver station packet recently.
   if (new_robot_state) {
-    if (robot_state_fetcher_->outputs_enabled) {
+    if (robot_state_fetcher_->outputs_enabled()) {
       // If the driver's station reports being disabled, we're probably not
       // actually going to send motor values regardless of what the FPGA
       // reports.
-      last_pwm_sent_ = robot_state_fetcher_->sent_time;
+      last_pwm_sent_ = robot_state_fetcher_.context().monotonic_sent_time;
     }
   }
 
@@ -69,35 +67,27 @@ void ControlLoop<T>::IteratePosition(const PositionType &position) {
   const bool motors_off = monotonic_now >= kPwmDisableTime + last_pwm_sent_;
   joystick_state_fetcher_.Fetch();
   if (motors_off) {
-    if (joystick_state_fetcher_.get() && joystick_state_fetcher_->enabled) {
+    if (joystick_state_fetcher_.get() && joystick_state_fetcher_->enabled()) {
       AOS_LOG_INTERVAL(motors_off_log_);
     }
     outputs_enabled = false;
   }
 
-  typename ::aos::Sender<StatusType>::Message status =
-      status_sender_.MakeMessage();
-  if (status.get() == nullptr) {
-    return;
-  }
-
+  typename ::aos::Sender<StatusType>::Builder status =
+      status_sender_.MakeBuilder();
   if (outputs_enabled) {
-    typename ::aos::Sender<OutputType>::Message output =
-        output_sender_.MakeMessage();
-    RunIteration(goal, &position, output.get(), status.get());
+    typename ::aos::Sender<OutputType>::Builder output =
+        output_sender_.MakeBuilder();
+    RunIteration(goal, &position, &output, &status);
 
-    output->SetTimeToNow();
-    AOS_LOG_STRUCT(DEBUG, "output", *output);
-    output.Send();
+    output.CheckSent();
   } else {
     // The outputs are disabled, so pass nullptr in for the output.
-    RunIteration(goal, &position, nullptr, status.get());
+    RunIteration(goal, &position, nullptr, &status);
     ZeroOutputs();
   }
 
-  status->SetTimeToNow();
-  AOS_LOG_STRUCT(DEBUG, "status", *status);
-  status.Send();
+  status.CheckSent();
 }
 
 }  // namespace controls

@@ -1,6 +1,9 @@
 #ifndef AOS_FLATBUFFERS_H_
 #define AOS_FLATBUFFERS_H_
 
+#include <array>
+
+#include "absl/strings/string_view.h"
 #include "flatbuffers/flatbuffers.h"
 
 namespace aos {
@@ -20,6 +23,8 @@ class FixedAllocatorBase : public flatbuffers::Allocator {
   virtual uint8_t *data() = 0;
   virtual size_t size() const = 0;
 
+  void Reset() { is_allocated_ = false; }
+
  private:
   bool is_allocated_ = false;
 };
@@ -37,11 +42,27 @@ class FixedAllocator : public FixedAllocatorBase {
   std::array<uint8_t, S> buffer_;
 };
 
+// This class adapts a preallocated memory region to an Allocator.
+class PreallocatedAllocator : public FixedAllocatorBase {
+ public:
+  PreallocatedAllocator(void *data, size_t size) : data_(data), size_(size) {}
+  uint8_t *data() override { return reinterpret_cast<uint8_t *>(data_); }
+  const uint8_t *data() const override {
+    return reinterpret_cast<const uint8_t *>(data_);
+  }
+  size_t size() const override { return size_; }
+
+ private:
+  void* data_;
+  size_t size_;
+};
+
 // Base class representing an object which holds the memory representing a root
 // flatbuffer.
 template <typename T>
 class Flatbuffer {
  public:
+  virtual ~Flatbuffer() {}
   // Returns the MiniReflectTypeTable for T.
   static const flatbuffers::TypeTable *MiniReflectTypeTable() {
     return T::MiniReflectTypeTable();
@@ -82,6 +103,8 @@ class FlatbufferArray : public Flatbuffer<T> {
     return *this;
   }
 
+  virtual ~FlatbufferArray() override {}
+
   // Creates a builder wrapping the underlying data.
   flatbuffers::FlatBufferBuilder FlatBufferBuilder() {
     data_.deallocate(data_.data(), data_.size());
@@ -97,6 +120,39 @@ class FlatbufferArray : public Flatbuffer<T> {
  private:
   FixedAllocator<8 * 1024> data_;
   size_t size_ = data_.size();
+};
+
+// String backed flatbuffer.
+template <typename T>
+class FlatbufferString : public Flatbuffer<T> {
+ public:
+  // Builds a flatbuffer using the contents of the string.
+  FlatbufferString(const absl::string_view data) : data_(data) {}
+  // Builds a Flatbuffer by copying the data from the other flatbuffer.
+  FlatbufferString(const Flatbuffer<T> &other) {
+    data_ = std::string(other.data(), other.size());
+  }
+
+  // Coppies the data from the other flatbuffer.
+  FlatbufferString &operator=(const Flatbuffer<T> &other) {
+    data_ = std::string(other.data(), other.size());
+    return *this;
+  }
+
+  virtual ~FlatbufferString() override {}
+
+  const uint8_t *data() const override {
+    return reinterpret_cast<const uint8_t *>(data_.data());
+  }
+  uint8_t *data() override {
+    // TODO(james): when we get c++17, can we drop the second cast?
+    return const_cast<uint8_t *>(
+        reinterpret_cast<const uint8_t *>(data_.data()));
+  }
+  size_t size() const override { return data_.size(); }
+
+ private:
+  std::string data_;
 };
 
 // This object associates the message type with the memory storing the
@@ -119,6 +175,8 @@ class FlatbufferDetachedBuffer : public Flatbuffer<T> {
     ::std::swap(buffer_, fb.buffer_);
     return *this;
   }
+
+  virtual ~FlatbufferDetachedBuffer() override {}
 
   // Constructs an empty flatbuffer of type T.
   static FlatbufferDetachedBuffer<T> Empty() {

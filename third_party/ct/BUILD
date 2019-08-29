@@ -275,7 +275,7 @@ cc_library(
         "//third_party/boostorg/config",
         "//third_party/boostorg/odeint",
         "//third_party/boostorg/property_tree",
-        "//third_party/eigen",
         "//third_party/hpipm",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )

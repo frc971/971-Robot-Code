@@ -105,9 +105,9 @@ LineFollowDrivetrain::LineFollowDrivetrain(
 
 void LineFollowDrivetrain::SetGoal(
     ::aos::monotonic_clock::time_point now,
-    const ::frc971::control_loops::DrivetrainQueue::Goal &goal) {
+    const ::frc971::control_loops::drivetrain::Goal *goal) {
   // TODO(james): More properly calculate goal velocity from throttle.
-  goal_velocity_ = 4.0 * goal.throttle;
+  goal_velocity_ = 4.0 * goal->throttle();
   // The amount of time to freeze the target choice after the driver releases
   // the button. Depending on the current state, we vary how long this timeout
   // is so that we can avoid button glitches causing issues.
@@ -115,7 +115,7 @@ void LineFollowDrivetrain::SetGoal(
   // Freeze the target once the driver presses the button; if we haven't yet
   // confirmed a target when the driver presses the button, we will not do
   // anything and report not ready until we have a target.
-  if (goal.controller_type == 3) {
+  if (goal->controller_type() == drivetrain::ControllerType_LINE_FOLLOWER) {
     last_enable_ = now;
     // If we already acquired a target, we want to keep track if it.
     if (have_target_) {
@@ -130,11 +130,11 @@ void LineFollowDrivetrain::SetGoal(
   freeze_target_ = now <= freeze_delay + last_enable_;
   // Set an adjustment that lets the driver tweak the offset for where we place
   // the target left/right.
-  side_adjust_ = -goal.wheel * 0.1;
+  side_adjust_ = -goal->wheel() * 0.1;
 }
 
 bool LineFollowDrivetrain::SetOutput(
-    ::frc971::control_loops::DrivetrainQueue::Output *output) {
+    ::frc971::control_loops::drivetrain::OutputT *output) {
   // TODO(james): Account for voltage error terms, and/or provide driver with
   // ability to influence steering.
   if (output != nullptr && have_target_) {
@@ -257,18 +257,20 @@ void LineFollowDrivetrain::Update(
   }
 }
 
-void LineFollowDrivetrain::PopulateStatus(
-    ::frc971::control_loops::DrivetrainQueue::Status *status) const {
-  status->line_follow_logging.frozen = freeze_target_;
-  status->line_follow_logging.have_target = have_target_;
-  status->line_follow_logging.x = target_pose_.abs_pos().x();
-  status->line_follow_logging.y = target_pose_.abs_pos().y();
-  status->line_follow_logging.theta = target_pose_.abs_theta();
-  status->line_follow_logging.offset = relative_pose_.rel_pos().y();
-  status->line_follow_logging.distance_to_target =
-      -relative_pose_.rel_pos().x();
-  status->line_follow_logging.goal_theta = controls_goal_(0, 0);
-  status->line_follow_logging.rel_theta = relative_pose_.rel_theta();
+flatbuffers::Offset<LineFollowLogging> LineFollowDrivetrain::PopulateStatus(
+    aos::Sender<drivetrain::Status>::Builder *builder) const {
+  LineFollowLogging::Builder line_follow_logging_builder =
+      builder->MakeBuilder<LineFollowLogging>();
+  line_follow_logging_builder.add_frozen(freeze_target_);
+  line_follow_logging_builder.add_have_target(have_target_);
+  line_follow_logging_builder.add_x(target_pose_.abs_pos().x());
+  line_follow_logging_builder.add_y(target_pose_.abs_pos().y());
+  line_follow_logging_builder.add_theta(target_pose_.abs_theta());
+  line_follow_logging_builder.add_offset(relative_pose_.rel_pos().y());
+  line_follow_logging_builder.add_distance_to_target(-relative_pose_.rel_pos().x());
+  line_follow_logging_builder.add_goal_theta(controls_goal_(0, 0));
+  line_follow_logging_builder.add_rel_theta(relative_pose_.rel_theta());
+  return line_follow_logging_builder.Finish();
 }
 
 }  // namespace drivetrain

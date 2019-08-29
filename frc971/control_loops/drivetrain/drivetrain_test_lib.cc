@@ -90,23 +90,20 @@ void DrivetrainPlant::CheckU(const Eigen::Matrix<double, 2, 1> &U) {
 DrivetrainSimulation::DrivetrainSimulation(
     ::aos::EventLoop *event_loop, const DrivetrainConfig<double> &dt_config)
     : event_loop_(event_loop),
-      robot_state_fetcher_(
-          event_loop_->MakeFetcher<::aos::RobotState>(".aos.robot_state")),
+      robot_state_fetcher_(event_loop_->MakeFetcher<::aos::RobotState>("/aos")),
       drivetrain_position_sender_(
           event_loop_
-              ->MakeSender<::frc971::control_loops::DrivetrainQueue::Position>(
-                  ".frc971.control_loops.drivetrain_queue.position")),
+              ->MakeSender<::frc971::control_loops::drivetrain::Position>(
+                  "/drivetrain")),
       drivetrain_output_fetcher_(
-          event_loop_
-              ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Output>(
-                  ".frc971.control_loops.drivetrain_queue.output")),
+          event_loop_->MakeFetcher<::frc971::control_loops::drivetrain::Output>(
+              "/drivetrain")),
       drivetrain_status_fetcher_(
-          event_loop_
-              ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
-                  ".frc971.control_loops.drivetrain_queue.status")),
+          event_loop_->MakeFetcher<::frc971::control_loops::drivetrain::Status>(
+              "/drivetrain")),
       gyro_reading_sender_(
           event_loop->MakeSender<::frc971::sensors::GyroReading>(
-              ".frc971.sensors.gyro_reading")),
+              "/drivetrain")),
       dt_config_(dt_config),
       drivetrain_plant_(MakePlantFromConfig(dt_config_)),
       velocity_drivetrain_(
@@ -133,9 +130,9 @@ DrivetrainSimulation::DrivetrainSimulation(
             actual_y_.push_back(actual_position(1));
 
             trajectory_x_.push_back(
-                drivetrain_status_fetcher_->trajectory_logging.x);
+                drivetrain_status_fetcher_->trajectory_logging()->x());
             trajectory_y_.push_back(
-                drivetrain_status_fetcher_->trajectory_logging.y);
+                drivetrain_status_fetcher_->trajectory_logging()->y());
           }
         }
         first_ = false;
@@ -159,22 +156,27 @@ void DrivetrainSimulation::SendPositionMessage() {
   const double right_encoder = GetRightPosition();
 
   {
-    ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Position>::Message
-        position = drivetrain_position_sender_.MakeMessage();
-    position->left_encoder = left_encoder;
-    position->right_encoder = right_encoder;
-    position->left_shifter_position = left_gear_high_ ? 1.0 : 0.0;
-    position->right_shifter_position = right_gear_high_ ? 1.0 : 0.0;
-    position.Send();
+    ::aos::Sender<::frc971::control_loops::drivetrain::Position>::Builder
+        builder = drivetrain_position_sender_.MakeBuilder();
+    frc971::control_loops::drivetrain::Position::Builder position_builder =
+        builder.MakeBuilder<frc971::control_loops::drivetrain::Position>();
+    position_builder.add_left_encoder(left_encoder);
+    position_builder.add_right_encoder(right_encoder);
+    position_builder.add_left_shifter_position(left_gear_high_ ? 1.0 : 0.0);
+    position_builder.add_right_shifter_position(right_gear_high_ ? 1.0 : 0.0);
+    builder.Send(position_builder.Finish());
   }
 
   {
-    auto gyro = gyro_reading_sender_.MakeMessage();
-    gyro->angle =
-        (right_encoder - left_encoder) / (dt_config_.robot_radius * 2.0);
-    gyro->velocity = (drivetrain_plant_.X(3, 0) - drivetrain_plant_.X(1, 0)) /
-                     (dt_config_.robot_radius * 2.0);
-    gyro.Send();
+    auto builder = gyro_reading_sender_.MakeBuilder();
+    frc971::sensors::GyroReading::Builder gyro_builder =
+        builder.MakeBuilder<frc971::sensors::GyroReading>();
+    gyro_builder.add_angle((right_encoder - left_encoder) /
+                           (dt_config_.robot_radius * 2.0));
+    gyro_builder.add_velocity(
+        (drivetrain_plant_.X(3, 0) - drivetrain_plant_.X(1, 0)) /
+        (dt_config_.robot_radius * 2.0));
+    builder.Send(gyro_builder.Finish());
   }
 }
 
@@ -184,17 +186,17 @@ void DrivetrainSimulation::Simulate() {
   last_right_position_ = drivetrain_plant_.Y(1, 0);
   EXPECT_TRUE(drivetrain_output_fetcher_.Fetch());
   ::Eigen::Matrix<double, 2, 1> U = last_U_;
-  last_U_ << drivetrain_output_fetcher_->left_voltage,
-      drivetrain_output_fetcher_->right_voltage;
+  last_U_ << drivetrain_output_fetcher_->left_voltage(),
+      drivetrain_output_fetcher_->right_voltage();
   {
     robot_state_fetcher_.Fetch();
     const double scalar = robot_state_fetcher_.get()
-                              ? robot_state_fetcher_->voltage_battery / 12.0
+                              ? robot_state_fetcher_->voltage_battery() / 12.0
                               : 1.0;
     last_U_ *= scalar;
   }
-  left_gear_high_ = drivetrain_output_fetcher_->left_high;
-  right_gear_high_ = drivetrain_output_fetcher_->right_high;
+  left_gear_high_ = drivetrain_output_fetcher_->left_high();
+  right_gear_high_ = drivetrain_output_fetcher_->right_high();
 
   if (left_gear_high_) {
     if (right_gear_high_) {

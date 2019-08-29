@@ -1,0 +1,11 @@
+namespace y2016.control_loops.shooter;
+
+// All angles are in radians, and angular velocities are in radians/second.
+// For all angular velocities, positive is shooting the ball out of the robot.
+table Position {
+  // Wheel angle in radians/second.
+  theta_left:double;
+  theta_right:double;
+}
+
+root_type Position;

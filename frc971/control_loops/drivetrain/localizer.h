@@ -1,7 +1,7 @@
 #ifndef FRC971_CONTROL_LOOPS_DRIVETRAIN_FIELD_ESTIMATOR_H_
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_FIELD_ESTIMATOR_H_
 
-#include "aos/events/event-loop.h"
+#include "aos/events/event_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/hybrid_ekf.h"
 #include "frc971/control_loops/pose.h"

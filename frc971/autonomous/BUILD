@@ -1,15 +1,11 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//aos/build:queues.bzl", "queue_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
-queue_library(
-    name = "auto_queue",
-    srcs = [
-        "auto.q",
-    ],
-    deps = [
-        "//aos/actions:action_queue",
-    ],
+flatbuffer_cc_library(
+    name = "auto_fbs",
+    srcs = ["auto.fbs"],
+    visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -21,13 +17,15 @@ cc_library(
         "base_autonomous_actor.h",
     ],
     deps = [
-        ":auto_queue",
+        ":auto_fbs",
         "//aos/actions:action_lib",
         "//aos/logging",
         "//aos/util:phased_loop",
+        "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_config",
-        "//frc971/control_loops/drivetrain:drivetrain_queue",
-        "//frc971/control_loops/drivetrain:localizer_queue",
-        "//y2019/control_loops/drivetrain:target_selector_queue",
+        "//frc971/control_loops/drivetrain:drivetrain_goal_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+        "//frc971/control_loops/drivetrain:localizer_fbs",
+        "//y2019/control_loops/drivetrain:target_selector_fbs",
     ],
 )

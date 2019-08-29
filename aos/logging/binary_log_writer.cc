@@ -18,7 +18,6 @@
 #include "aos/die.h"
 #include "aos/logging/binary_log_file.h"
 #include "aos/logging/implementations.h"
-#include "aos/queue_types.h"
 #include "aos/time/time.h"
 #include "aos/configuration.h"
 #include "aos/init.h"
@@ -28,41 +27,6 @@ namespace aos {
 namespace logging {
 namespace linux_code {
 namespace {
-
-void CheckTypeWritten(uint32_t type_id, LogFileWriter *writer,
-                      ::std::unordered_set<uint32_t> *written_type_ids) {
-  if (written_type_ids->count(type_id) > 0) return;
-  if (MessageType::IsPrimitive(type_id)) return;
-
-  const MessageType &type = type_cache::Get(type_id);
-  for (int i = 0; i < type.number_fields; ++i) {
-    CheckTypeWritten(type.fields[i]->type, writer, written_type_ids);
-  }
-
-  char buffer[1024];
-  ssize_t size = type.Serialize(buffer, sizeof(buffer));
-  if (size == -1) {
-    AOS_LOG(WARNING, "%zu-byte buffer is too small to serialize type %s\n",
-            sizeof(buffer), type.name.c_str());
-    return;
-  }
-  LogFileMessageHeader *const output =
-      writer->GetWritePosition(sizeof(LogFileMessageHeader) + size);
-
-  output->time_sec = output->time_nsec = 0;
-  output->source = getpid();
-  output->name_size = 0;
-  output->sequence = 0;
-  output->level = FATAL;
-
-  memcpy(output + 1, buffer, size);
-  output->message_size = size;
-
-  output->type = LogFileMessageHeader::MessageType::kStructType;
-  futex_set(&output->marker);
-
-  written_type_ids->insert(type_id);
-}
 
 void AllocateLogName(char **filename, const char *directory) {
   int fileindex = 0;
@@ -205,7 +169,6 @@ int BinaryLogReaderMain() {
   RawQueue *queue = GetLoggingQueue();
 
   ::std::unordered_set<uint32_t> written_type_ids;
-  off_t clear_type_ids_cookie = 0;
 
   while (true) {
     const LogMessage *const msg =
@@ -222,21 +185,6 @@ int BinaryLogReaderMain() {
     const size_t raw_output_length =
         sizeof(LogFileMessageHeader) + msg->name_length + msg->message_length;
     size_t output_length = raw_output_length;
-    if (msg->type == LogMessage::Type::kStruct) {
-      output_length += sizeof(msg->structure.type_id) + sizeof(uint32_t) +
-                       msg->structure.string_length;
-      if (writer.ShouldClearSeekableData(&clear_type_ids_cookie,
-                                         output_length)) {
-        writer.ForceNewPage();
-        written_type_ids.clear();
-      }
-      CheckTypeWritten(msg->structure.type_id, &writer, &written_type_ids);
-    } else if (msg->type == LogMessage::Type::kMatrix) {
-      output_length +=
-          sizeof(msg->matrix.type) + sizeof(uint32_t) + sizeof(uint16_t) +
-          sizeof(uint16_t) + msg->matrix.string_length;
-      AOS_CHECK(MessageType::IsPrimitive(msg->matrix.type));
-    }
     LogFileMessageHeader *const output = writer.GetWritePosition(output_length);
     char *output_strings = reinterpret_cast<char *>(output) + sizeof(*output);
     output->name_size = msg->name_length;
@@ -254,50 +202,6 @@ int BinaryLogReaderMain() {
                msg->message_length);
         output->type = LogFileMessageHeader::MessageType::kString;
         break;
-      case LogMessage::Type::kStruct: {
-        char *position = output_strings + msg->name_length;
-
-        memcpy(position, &msg->structure.type_id,
-               sizeof(msg->structure.type_id));
-        position += sizeof(msg->structure.type_id);
-        output->message_size += sizeof(msg->structure.type_id);
-
-        const uint32_t length = msg->structure.string_length;
-        memcpy(position, &length, sizeof(length));
-        position += sizeof(length);
-        memcpy(position, msg->structure.serialized,
-               length + msg->message_length);
-        position += length + msg->message_length;
-        output->message_size += sizeof(length) + length;
-
-        output->type = LogFileMessageHeader::MessageType::kStruct;
-      } break;
-      case LogMessage::Type::kMatrix: {
-        char *position = output_strings + msg->name_length;
-
-        memcpy(position, &msg->matrix.type, sizeof(msg->matrix.type));
-        position += sizeof(msg->matrix.type);
-        output->message_size += sizeof(msg->matrix.type);
-
-        uint32_t length = msg->matrix.string_length;
-        memcpy(position, &length, sizeof(length));
-        position += sizeof(length);
-        output->message_size += sizeof(length);
-
-        uint16_t rows = msg->matrix.rows, cols = msg->matrix.cols;
-        memcpy(position, &rows, sizeof(rows));
-        position += sizeof(rows);
-        memcpy(position, &cols, sizeof(cols));
-        position += sizeof(cols);
-        output->message_size += sizeof(rows) + sizeof(cols);
-        AOS_CHECK_EQ(msg->message_length,
-                     MessageType::Sizeof(msg->matrix.type) * rows * cols);
-
-        memcpy(position, msg->matrix.data, msg->message_length + length);
-        output->message_size += length;
-
-        output->type = LogFileMessageHeader::MessageType::kMatrix;
-      } break;
     }
 
     if (output->message_size - msg->message_length !=

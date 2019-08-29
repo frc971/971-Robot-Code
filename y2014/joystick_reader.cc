@@ -11,14 +11,13 @@
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
 
-#include "frc971/autonomous/auto.q.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "frc971/queues/gyro.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2014/actors/shoot_actor.h"
 #include "y2014/constants.h"
-#include "y2014/control_loops/claw/claw.q.h"
+#include "y2014/control_loops/claw/claw_goal_generated.h"
+#include "y2014/control_loops/claw/claw_status_generated.h"
 #include "y2014/control_loops/drivetrain/drivetrain_base.h"
-#include "y2014/control_loops/shooter/shooter.q.h"
+#include "y2014/control_loops/shooter/shooter_goal_generated.h"
 
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::JoystickAxis;
@@ -158,18 +157,18 @@ class Reader : public ::aos::input::ActionJoystickInput {
             event_loop, control_loops::GetDrivetrainConfig(),
             ::aos::input::DrivetrainInputReader::InputType::kSteeringWheel, {}),
         claw_status_fetcher_(
-            event_loop->MakeFetcher<::y2014::control_loops::ClawQueue::Status>(
-                ".y2014.control_loops.claw_queue.status")),
+            event_loop->MakeFetcher<::y2014::control_loops::claw::Status>(
+                "/claw")),
         claw_goal_sender_(
-            event_loop->MakeSender<::y2014::control_loops::ClawQueue::Goal>(
-                ".y2014.control_loops.claw_queue.goal")),
+            event_loop->MakeSender<::y2014::control_loops::claw::Goal>(
+                "/claw")),
         shooter_goal_sender_(
-            event_loop->MakeSender<::y2014::control_loops::ShooterQueue::Goal>(
-                ".y2014.control_loops.shooter_queue.goal")),
+            event_loop->MakeSender<::y2014::control_loops::shooter::Goal>(
+                "/shooter")),
         drivetrain_status_fetcher_(
             event_loop
-                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
-                    ".frc971.control_loops.drivetrain_queue.status")),
+                ->MakeFetcher<::frc971::control_loops::drivetrain::Status>(
+                    "/drivetrain")),
         shot_power_(80.0),
         goal_angle_(0.0),
         separation_angle_(kGrabSeparation),
@@ -326,7 +325,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     if (data.PosEdge(kFire)) {
-      EnqueueAction(shoot_action_factory_.Make(0.0));
+      aos::common::actions::DoubleParamT param;
+      EnqueueAction(shoot_action_factory_.Make(param));
     } else if (data.NegEdge(kFire)) {
       CancelCurrentAction();
     }
@@ -354,7 +354,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       double goal_angle = goal_angle_;
       if (drivetrain_status_fetcher_.get()) {
         goal_angle +=
-            SpeedToAngleOffset(drivetrain_status_fetcher_->robot_speed);
+            SpeedToAngleOffset(drivetrain_status_fetcher_->robot_speed());
       } else {
         AOS_LOG_INTERVAL(no_drivetrain_status_);
       }
@@ -362,7 +362,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       if (moving_for_shot_) {
         claw_status_fetcher_.Fetch();
         if (claw_status_fetcher_.get()) {
-          if (::std::abs(claw_status_fetcher_->bottom - goal_angle) < 0.2) {
+          if (::std::abs(claw_status_fetcher_->bottom() - goal_angle) < 0.2) {
             moving_for_shot_ = false;
             separation_angle_ = shot_separation_angle_;
           }
@@ -381,26 +381,30 @@ class Reader : public ::aos::input::ActionJoystickInput {
           data.IsPressed(kRollersIn) || data.IsPressed(kIntakePosition) ||
           data.IsPressed(kIntakeOpenPosition) || data.IsPressed(kCatch);
       {
-        auto goal_message = claw_goal_sender_.MakeMessage();
-        goal_message->bottom_angle = goal_angle;
-        goal_message->separation_angle = separation_angle;
-        goal_message->intake =
+        auto builder = claw_goal_sender_.MakeBuilder();
+        control_loops::claw::Goal::Builder goal_builder =
+            builder.MakeBuilder<control_loops::claw::Goal>();
+        goal_builder.add_bottom_angle(goal_angle);
+        goal_builder.add_separation_angle(separation_angle);
+        goal_builder.add_intake(
             intaking ? 12.0
-                     : (data.IsPressed(kRollersOut) ? -12.0 : intake_power_);
-        goal_message->centering = intaking ? 12.0 : 0.0;
+                     : (data.IsPressed(kRollersOut) ? -12.0 : intake_power_));
+        goal_builder.add_centering(intaking ? 12.0 : 0.0);
 
-        if (!goal_message.Send()) {
+        if (!builder.Send(goal_builder.Finish())) {
           AOS_LOG(WARNING, "sending claw goal failed\n");
         }
       }
 
       {
-        auto goal_message = shooter_goal_sender_.MakeMessage();
-        goal_message->shot_power = shot_power_;
-        goal_message->shot_requested = data.IsPressed(kFire);
-        goal_message->unload_requested = data.IsPressed(kUnload);
-        goal_message->load_requested = data.IsPressed(kReload);
-        if (!goal_message.Send()) {
+        auto builder = shooter_goal_sender_.MakeBuilder();
+        control_loops::shooter::Goal::Builder goal_builder =
+            builder.MakeBuilder<control_loops::shooter::Goal>();
+        goal_builder.add_shot_power(shot_power_);
+        goal_builder.add_shot_requested(data.IsPressed(kFire));
+        goal_builder.add_unload_requested(data.IsPressed(kUnload));
+        goal_builder.add_load_requested(data.IsPressed(kReload));
+        if (!builder.Send(goal_builder.Finish())) {
           AOS_LOG(WARNING, "sending shooter goal failed\n");
         }
       }
@@ -415,11 +419,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
   }
 
  private:
-  ::aos::Fetcher<::y2014::control_loops::ClawQueue::Status>
-      claw_status_fetcher_;
-  ::aos::Sender<::y2014::control_loops::ClawQueue::Goal> claw_goal_sender_;
-  ::aos::Sender<::y2014::control_loops::ShooterQueue::Goal> shooter_goal_sender_;
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+  ::aos::Fetcher<::y2014::control_loops::claw::Status> claw_status_fetcher_;
+  ::aos::Sender<::y2014::control_loops::claw::Goal> claw_goal_sender_;
+  ::aos::Sender<::y2014::control_loops::shooter::Goal> shooter_goal_sender_;
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
 
   double shot_power_;
@@ -443,7 +446,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
 int main() {
   ::aos::InitNRT(true);
 
-  ::aos::ShmEventLoop event_loop;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig("config.json");
+
+  ::aos::ShmEventLoop event_loop(&config.message());
   ::y2014::input::joysticks::Reader reader(&event_loop);
 
   event_loop.Run();

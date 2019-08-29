@@ -7,11 +7,10 @@
 #include "gtest/gtest.h"
 
 #include "aos/actions/actions.h"
-#include "aos/actions/actions.q.h"
+#include "aos/actions/actions_generated.h"
 #include "aos/actions/actor.h"
-#include "aos/actions/test_action.q.h"
-#include "aos/events/simulated-event-loop.h"
-#include "aos/queue.h"
+#include "aos/actions/test_action_generated.h"
+#include "aos/events/simulated_event_loop.h"
 #include "aos/testing/test_logging.h"
 #include "aos/testing/test_shm.h"
 
@@ -20,24 +19,24 @@ namespace common {
 namespace actions {
 namespace testing {
 
-
 namespace chrono = ::std::chrono;
 
 class TestActorIndex
-    : public aos::common::actions::ActorBase<actions::TestActionQueueGroup> {
+    : public aos::common::actions::ActorBase<actions::TestActionGoal> {
  public:
-  typedef TypedActionFactory<actions::TestActionQueueGroup> Factory;
+  typedef TypedActionFactory<actions::TestActionGoal> Factory;
 
   explicit TestActorIndex(::aos::EventLoop *event_loop)
-      : aos::common::actions::ActorBase<actions::TestActionQueueGroup>(
-            event_loop, ".aos.common.actions.test_action") {}
+      : aos::common::actions::ActorBase<actions::TestActionGoal>(
+            event_loop, "/test_action") {}
 
   static Factory MakeFactory(::aos::EventLoop *event_loop) {
-    return Factory(event_loop, ".aos.common.actions.test_action");
+    return Factory(event_loop, "/test_action");
   }
 
-  bool RunAction(const uint32_t &new_index) override {
-    index = new_index;
+  bool RunAction(const UInt *new_index) override {
+    VLOG(1) << "New index " << FlatbufferToJson(new_index);
+    index = new_index->val();
     return true;
   }
 
@@ -45,35 +44,35 @@ class TestActorIndex
 };
 
 class TestActorNOP
-    : public aos::common::actions::ActorBase<actions::TestActionQueueGroup> {
+    : public aos::common::actions::ActorBase<actions::TestActionGoal> {
  public:
-  typedef TypedActionFactory<actions::TestActionQueueGroup> Factory;
+  typedef TypedActionFactory<actions::TestActionGoal> Factory;
 
   explicit TestActorNOP(::aos::EventLoop *event_loop)
-      : actions::ActorBase<actions::TestActionQueueGroup>(
-            event_loop, ".aos.common.actions.test_action") {}
+      : actions::ActorBase<actions::TestActionGoal>(
+            event_loop, "/test_action") {}
 
   static Factory MakeFactory(::aos::EventLoop *event_loop) {
-    return Factory(event_loop, ".aos.common.actions.test_action");
+    return Factory(event_loop, "/test_action");
   }
 
-  bool RunAction(const uint32_t &) override { return true; }
+  bool RunAction(const UInt *) override { return true; }
 };
 
 class TestActorShouldCancel
-    : public aos::common::actions::ActorBase<actions::TestActionQueueGroup> {
+    : public aos::common::actions::ActorBase<actions::TestActionGoal> {
  public:
-  typedef TypedActionFactory<actions::TestActionQueueGroup> Factory;
+  typedef TypedActionFactory<actions::TestActionGoal> Factory;
 
   explicit TestActorShouldCancel(::aos::EventLoop *event_loop)
-      : aos::common::actions::ActorBase<actions::TestActionQueueGroup>(
-            event_loop, ".aos.common.actions.test_action") {}
+      : aos::common::actions::ActorBase<actions::TestActionGoal>(
+            event_loop, "/test_action") {}
 
   static Factory MakeFactory(::aos::EventLoop *event_loop) {
-    return Factory(event_loop, ".aos.common.actions.test_action");
+    return Factory(event_loop, "/test_action");
   }
 
-  bool RunAction(const uint32_t &) override {
+  bool RunAction(const UInt *) override {
     while (!ShouldCancel()) {
       AOS_LOG(FATAL, "NOT CANCELED!!\n");
     }
@@ -82,29 +81,34 @@ class TestActorShouldCancel
 };
 
 class TestActor2Nop
-    : public aos::common::actions::ActorBase<actions::TestAction2QueueGroup> {
+    : public aos::common::actions::ActorBase<actions::TestAction2Goal> {
  public:
-  typedef TypedActionFactory<actions::TestAction2QueueGroup> Factory;
+  typedef TypedActionFactory<actions::TestAction2Goal> Factory;
 
   explicit TestActor2Nop(::aos::EventLoop *event_loop)
-      : actions::ActorBase<actions::TestAction2QueueGroup>(
-            event_loop, ".aos.common.actions.test_action2") {}
+      : actions::ActorBase<actions::TestAction2Goal>(
+            event_loop, "/test_action2") {}
 
   static Factory MakeFactory(::aos::EventLoop *event_loop) {
-    return Factory(event_loop, ".aos.common.actions.test_action2");
+    return Factory(event_loop, "/test_action2");
   }
 
-  bool RunAction(const actions::MyParams &) { return true; }
+  bool RunAction(const actions::MyParams *) { return true; }
 };
 
 class ActionTest : public ::testing::Test {
  protected:
   ActionTest()
-      : actor1_event_loop_(event_loop_factory_.MakeEventLoop()),
+      : configuration_(
+            configuration::ReadConfig("aos/actions/action_test_config.json")),
+        event_loop_factory_(&configuration_.message()),
+        actor1_event_loop_(event_loop_factory_.MakeEventLoop()),
         actor2_event_loop_(event_loop_factory_.MakeEventLoop()),
         test_event_loop_(event_loop_factory_.MakeEventLoop()) {
     ::aos::testing::EnableTestLogging();
   }
+
+  FlatbufferDetachedBuffer<Configuration> configuration_;
 
   // Bring up and down Core.
   ::aos::SimulatedEventLoopFactory event_loop_factory_;
@@ -112,7 +116,6 @@ class ActionTest : public ::testing::Test {
   ::std::unique_ptr<::aos::EventLoop> actor1_event_loop_;
   ::std::unique_ptr<::aos::EventLoop> actor2_event_loop_;
   ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
-
 };
 
 // Tests that the the actions exist in a safe state at startup.
@@ -130,11 +133,10 @@ TEST_F(ActionTest, DoesNothing) {
 TEST_F(ActionTest, StartWithOldGoal) {
   ::std::unique_ptr<::aos::EventLoop> test2_event_loop =
       event_loop_factory_.MakeEventLoop();
-  ::aos::Sender<TestActionQueueGroup::Goal> goal_sender =
-      test2_event_loop->MakeSender<TestActionQueueGroup::Goal>(
-          ".aos.common.actions.test_action.goal");
-  ::aos::Fetcher<Status> status_fetcher = test2_event_loop->MakeFetcher<Status>(
-      ".aos.common.actions.test_action.status");
+  ::aos::Sender<TestActionGoal> goal_sender =
+      test2_event_loop->MakeSender<TestActionGoal>("/test_action");
+  ::aos::Fetcher<Status> status_fetcher =
+      test2_event_loop->MakeFetcher<Status>("/test_action");
 
   TestActorIndex::Factory nop_actor_factory =
       TestActorNOP::MakeFactory(test_event_loop_.get());
@@ -142,9 +144,14 @@ TEST_F(ActionTest, StartWithOldGoal) {
   ActionQueue action_queue;
 
   {
-    auto goal_message = goal_sender.MakeMessage();
-    goal_message->run = 971;
-    ASSERT_TRUE(goal_message.Send());
+    ::aos::Sender<TestActionGoal>::Builder builder =
+        goal_sender.MakeBuilder();
+
+    TestActionGoal::Builder goal_builder =
+        builder.MakeBuilder<TestActionGoal>();
+
+    goal_builder.add_run(971);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   TestActorNOP nop_act(actor1_event_loop_.get());
@@ -154,10 +161,14 @@ TEST_F(ActionTest, StartWithOldGoal) {
   event_loop_factory_.RunFor(chrono::seconds(1));
 
   ASSERT_TRUE(status_fetcher.Fetch());
-  EXPECT_EQ(0u, status_fetcher->running);
-  EXPECT_EQ(0u, status_fetcher->last_running);
+  EXPECT_EQ(0u, status_fetcher->running());
+  EXPECT_EQ(0u, status_fetcher->last_running());
 
-  action_queue.EnqueueAction(nop_actor_factory.Make(0));
+  {
+    UIntT uint;
+    uint.val = 0;
+    action_queue.EnqueueAction(nop_actor_factory.Make(uint));
+  }
 
   // We started an action and it should be running.
   EXPECT_TRUE(action_queue.Running());
@@ -189,7 +200,11 @@ TEST_F(ActionTest, ActionQueueWasRunning) {
   action_queue.Tick();
   EXPECT_FALSE(action_queue.Running());
 
-  action_queue.EnqueueAction(nop_actor_factory.Make(0));
+  {
+    UIntT uint;
+    uint.val = 0;
+    action_queue.EnqueueAction(nop_actor_factory.Make(uint));
+  }
 
   // We started an action and it should be running.
   EXPECT_TRUE(action_queue.Running());
@@ -223,8 +238,12 @@ TEST_F(ActionTest, ActionQueueCancelAll) {
 
   // Enqueue two actions to test both cancel. We can have an action and a next
   // action so we want to test that.
-  action_queue.EnqueueAction(nop_actor_factory.Make(0));
-  action_queue.EnqueueAction(nop_actor_factory.Make(0));
+  {
+    UIntT uint;
+    uint.val = 0;
+    action_queue.EnqueueAction(nop_actor_factory.Make(uint));
+    action_queue.EnqueueAction(nop_actor_factory.Make(uint));
+  }
 
   action_queue.Tick();
 
@@ -274,7 +293,11 @@ TEST_F(ActionTest, ActionQueueCancelOne) {
   action_queue.Tick();
 
   // Enqueue blocking action.
-  action_queue.EnqueueAction(cancel_action_factory.Make(0));
+  {
+    UIntT uint;
+    uint.val = 0;
+    action_queue.EnqueueAction(cancel_action_factory.Make(uint));
+  }
 
   action_queue.Tick();
   EXPECT_TRUE(action_queue.Running());
@@ -306,7 +329,11 @@ TEST_F(ActionTest, ActionQueueTwoActions) {
   EXPECT_FALSE(action_queue.Running());
 
   // Enqueue action to be canceled.
-  action_queue.EnqueueAction(nop_actor_factory.Make(0));
+  {
+    UIntT uint;
+    uint.val = 0;
+    action_queue.EnqueueAction(nop_actor_factory.Make(uint));
+  }
   action_queue.Tick();
 
   // Should still be running as the actor could not have signalled.
@@ -325,7 +352,11 @@ TEST_F(ActionTest, ActionQueueTwoActions) {
   ASSERT_NE(0u, nop_actor_id);
 
   // Add the next action which should ensure the first stopped.
-  action_queue.EnqueueAction(nop_actor_factory.Make(0));
+  {
+    UIntT uint;
+    uint.val = 0;
+    action_queue.EnqueueAction(nop_actor_factory.Make(uint));
+  }
 
   // id for the second run.
   uint32_t nop_actor2_id = 0;
@@ -382,13 +413,17 @@ TEST_F(ActionTest, ActionIndex) {
   EXPECT_FALSE(action_queue.Running());
 
   // Enqueue action to post index.
-  action_queue.EnqueueAction(test_actor_index_factory.Make(5));
-  ::aos::Fetcher<actions::TestActionQueueGroup::Goal> goal_fetcher_ =
-      test_event_loop_->MakeFetcher<actions::TestActionQueueGroup::Goal>(
-          ".aos.common.actions.test_action.goal");
+  {
+    UIntT uint;
+    uint.val = 5;
+    action_queue.EnqueueAction(test_actor_index_factory.Make(uint));
+  }
+  ::aos::Fetcher<actions::TestActionGoal> goal_fetcher_ =
+      test_event_loop_->MakeFetcher<actions::TestActionGoal>(
+          "/test_action");
 
   ASSERT_TRUE(goal_fetcher_.Fetch());
-  EXPECT_EQ(5u, goal_fetcher_->params);
+  EXPECT_EQ(5u, goal_fetcher_->params()->val());
   EXPECT_EQ(0u, idx_actor.index);
 
   action_queue.Tick();
@@ -400,9 +435,13 @@ TEST_F(ActionTest, ActionIndex) {
   EXPECT_EQ(5u, idx_actor.index);
 
   // Enqueue action to post index.
-  action_queue.EnqueueAction(test_actor_index_factory.Make(3));
+  {
+    UIntT uint;
+    uint.val = 3;
+    action_queue.EnqueueAction(test_actor_index_factory.Make(uint));
+  }
   ASSERT_TRUE(goal_fetcher_.Fetch());
-  EXPECT_EQ(3u, goal_fetcher_->params);
+  EXPECT_EQ(3u, goal_fetcher_->params()->val());
 
   // Run the next action so it can accomplish signal completion.
   event_loop_factory_.RunFor(chrono::seconds(1));
@@ -423,7 +462,7 @@ TEST_F(ActionTest, StructParamType) {
   action_queue.Tick();
   EXPECT_FALSE(action_queue.Running());
 
-  actions::MyParams p;
+  actions::MyParamsT p;
   p.param1 = 5.0;
   p.param2 = 7;
 

@@ -6,7 +6,6 @@
 #include <memory>
 
 #include "aos/controls/control_loop_test.h"
-#include "aos/queue.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
@@ -121,14 +120,11 @@ class SuperstructureSimulation {
       : event_loop_(event_loop),
         dt_(dt),
         superstructure_position_sender_(
-            event_loop_->MakeSender<SuperstructureQueue::Position>(
-                ".y2017.control_loops.superstructure_queue.position")),
+            event_loop_->MakeSender<Position>("/superstructure")),
         superstructure_status_fetcher_(
-            event_loop_->MakeFetcher<SuperstructureQueue::Status>(
-                ".y2017.control_loops.superstructure_queue.status")),
+            event_loop_->MakeFetcher<Status>("/superstructure")),
         superstructure_output_fetcher_(
-            event_loop_->MakeFetcher<SuperstructureQueue::Output>(
-                ".y2017.control_loops.superstructure_queue.output")),
+            event_loop_->MakeFetcher<Output>("/superstructure")),
         hood_plant_(new HoodPlant(
             ::y2017::control_loops::superstructure::hood::MakeHoodPlant())),
         hood_encoder_(constants::Values::kHoodEncoderIndexDifference),
@@ -216,17 +212,42 @@ class SuperstructureSimulation {
 
   // Sends a queue message with the position of the superstructure.
   void SendPositionMessage() {
-    ::aos::Sender<SuperstructureQueue::Position>::Message position =
-        superstructure_position_sender_.MakeMessage();
+    ::aos::Sender<Position>::Builder builder =
+        superstructure_position_sender_.MakeBuilder();
 
-    hood_encoder_.GetSensorValues(&position->hood);
-    intake_pot_encoder_.GetSensorValues(&position->intake);
-    position->theta_shooter = shooter_plant_->Y(0, 0);
+    frc971::IndexPosition::Builder hood_builder =
+        builder.MakeBuilder<frc971::IndexPosition>();
+    flatbuffers::Offset<frc971::IndexPosition> hood_offset =
+        hood_encoder_.GetSensorValues(&hood_builder);
 
-    turret_encoder_.GetSensorValues(&position->column.turret);
-    indexer_encoder_.GetSensorValues(&position->column.indexer);
+    frc971::PotAndAbsolutePosition::Builder intake_builder =
+        builder.MakeBuilder<frc971::PotAndAbsolutePosition>();
+    flatbuffers::Offset<frc971::PotAndAbsolutePosition> intake_offset =
+        intake_pot_encoder_.GetSensorValues(&intake_builder);
 
-    position.Send();
+    frc971::HallEffectAndPosition::Builder turret_builder =
+        builder.MakeBuilder<frc971::HallEffectAndPosition>();
+    flatbuffers::Offset<frc971::HallEffectAndPosition> turret_offset =
+        turret_encoder_.GetSensorValues(&turret_builder);
+
+    frc971::HallEffectAndPosition::Builder indexer_builder =
+        builder.MakeBuilder<frc971::HallEffectAndPosition>();
+    flatbuffers::Offset<frc971::HallEffectAndPosition> indexer_offset =
+        indexer_encoder_.GetSensorValues(&indexer_builder);
+
+    ColumnPosition::Builder column_builder =
+        builder.MakeBuilder<ColumnPosition>();
+    column_builder.add_indexer(indexer_offset);
+    column_builder.add_turret(turret_offset);
+    flatbuffers::Offset<ColumnPosition> column_offset = column_builder.Finish();
+
+    Position::Builder position_builder = builder.MakeBuilder<Position>();
+    position_builder.add_theta_shooter(shooter_plant_->Y(0, 0));
+    position_builder.add_column(column_offset);
+    position_builder.add_intake(intake_offset);
+    position_builder.add_hood(hood_offset);
+
+    builder.Send(position_builder.Finish());
   }
 
   double hood_position() const { return hood_plant_->X(0, 0); }
@@ -282,61 +303,61 @@ class SuperstructureSimulation {
 
     const double voltage_check_hood =
         (static_cast<hood::Hood::State>(
-             superstructure_status_fetcher_->hood.state) ==
+             superstructure_status_fetcher_->hood()->state()) ==
          hood::Hood::State::RUNNING)
             ? superstructure::hood::Hood::kOperatingVoltage
             : superstructure::hood::Hood::kZeroingVoltage;
 
     const double voltage_check_indexer =
         (static_cast<column::Column::State>(
-             superstructure_status_fetcher_->turret.state) ==
+             superstructure_status_fetcher_->turret()->state()) ==
          column::Column::State::RUNNING)
             ? superstructure::column::Column::kOperatingVoltage
             : superstructure::column::Column::kZeroingVoltage;
 
     const double voltage_check_turret =
         (static_cast<column::Column::State>(
-             superstructure_status_fetcher_->turret.state) ==
+             superstructure_status_fetcher_->turret()->state()) ==
          column::Column::State::RUNNING)
             ? superstructure::column::Column::kOperatingVoltage
             : superstructure::column::Column::kZeroingVoltage;
 
     const double voltage_check_intake =
         (static_cast<intake::Intake::State>(
-             superstructure_status_fetcher_->intake.state) ==
+             superstructure_status_fetcher_->intake()->state()) ==
          intake::Intake::State::RUNNING)
             ? superstructure::intake::Intake::kOperatingVoltage
             : superstructure::intake::Intake::kZeroingVoltage;
 
-    AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_hood),
+    AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_hood()),
                  voltage_check_hood);
 
-    AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_intake),
+    AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_intake()),
                  voltage_check_intake);
 
-    EXPECT_LE(::std::abs(superstructure_output_fetcher_->voltage_indexer),
+    EXPECT_LE(::std::abs(superstructure_output_fetcher_->voltage_indexer()),
               voltage_check_indexer)
         << ": check voltage " << voltage_check_indexer;
 
-    AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_turret),
+    AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_turret()),
                  voltage_check_turret);
 
     ::Eigen::Matrix<double, 1, 1> hood_U;
-    hood_U << superstructure_output_fetcher_->voltage_hood +
+    hood_U << superstructure_output_fetcher_->voltage_hood() +
                   hood_plant_->voltage_offset();
 
     ::Eigen::Matrix<double, 1, 1> intake_U;
-    intake_U << superstructure_output_fetcher_->voltage_intake +
+    intake_U << superstructure_output_fetcher_->voltage_intake() +
                     intake_plant_->voltage_offset();
 
     ::Eigen::Matrix<double, 1, 1> shooter_U;
-    shooter_U << superstructure_output_fetcher_->voltage_shooter +
+    shooter_U << superstructure_output_fetcher_->voltage_shooter() +
                      shooter_plant_->voltage_offset();
 
     ::Eigen::Matrix<double, 2, 1> column_U;
-    column_U << superstructure_output_fetcher_->voltage_indexer +
+    column_U << superstructure_output_fetcher_->voltage_indexer() +
                     column_plant_->indexer_voltage_offset(),
-        superstructure_output_fetcher_->voltage_turret +
+        superstructure_output_fetcher_->voltage_turret() +
             column_plant_->turret_voltage_offset();
 
     hood_plant_->Update(hood_U);
@@ -465,9 +486,9 @@ class SuperstructureSimulation {
   ::aos::EventLoop *event_loop_;
   const chrono::nanoseconds dt_;
 
-  ::aos::Sender<SuperstructureQueue::Position> superstructure_position_sender_;
-  ::aos::Fetcher<SuperstructureQueue::Status> superstructure_status_fetcher_;
-  ::aos::Fetcher<SuperstructureQueue::Output> superstructure_output_fetcher_;
+  ::aos::Sender<Position> superstructure_position_sender_;
+  ::aos::Fetcher<Status> superstructure_status_fetcher_;
+  ::aos::Fetcher<Output> superstructure_output_fetcher_;
 
   ::std::unique_ptr<HoodPlant> hood_plant_;
   PositionSensorSimulator hood_encoder_;
@@ -499,23 +520,20 @@ class SuperstructureSimulation {
 class SuperstructureTest : public ::aos::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
-      : ::aos::testing::ControlLoopTest(chrono::microseconds(5050)),
+      : ::aos::testing::ControlLoopTest(
+            aos::configuration::ReadConfig("y2017/config.json"),
+            chrono::microseconds(5050)),
         test_event_loop_(MakeEventLoop()),
         superstructure_goal_fetcher_(
-            test_event_loop_->MakeFetcher<SuperstructureQueue::Goal>(
-                ".y2017.control_loops.superstructure_queue.goal")),
+            test_event_loop_->MakeFetcher<Goal>("/superstructure")),
         superstructure_goal_sender_(
-            test_event_loop_->MakeSender<SuperstructureQueue::Goal>(
-                ".y2017.control_loops.superstructure_queue.goal")),
+            test_event_loop_->MakeSender<Goal>("/superstructure")),
         superstructure_status_fetcher_(
-            test_event_loop_->MakeFetcher<SuperstructureQueue::Status>(
-                ".y2017.control_loops.superstructure_queue.status")),
+            test_event_loop_->MakeFetcher<Status>("/superstructure")),
         superstructure_output_fetcher_(
-            test_event_loop_->MakeFetcher<SuperstructureQueue::Output>(
-                ".y2017.control_loops.superstructure_queue.output")),
+            test_event_loop_->MakeFetcher<Output>("/superstructure")),
         superstructure_position_fetcher_(
-            test_event_loop_->MakeFetcher<SuperstructureQueue::Position>(
-                ".y2017.control_loops.superstructure_queue.position")),
+            test_event_loop_->MakeFetcher<Position>("/superstructure")),
         superstructure_event_loop_(MakeEventLoop()),
         superstructure_(superstructure_event_loop_.get()),
         superstructure_plant_event_loop_(MakeEventLoop()),
@@ -530,50 +548,49 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
     ASSERT_TRUE(superstructure_goal_fetcher_.get() != nullptr);
     ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
 
-    EXPECT_NEAR(superstructure_goal_fetcher_->hood.angle,
-                superstructure_status_fetcher_->hood.position, 0.001);
-    EXPECT_NEAR(superstructure_goal_fetcher_->hood.angle,
+    EXPECT_NEAR(superstructure_goal_fetcher_->hood()->angle(),
+                superstructure_status_fetcher_->hood()->position(), 0.001);
+    EXPECT_NEAR(superstructure_goal_fetcher_->hood()->angle(),
                 superstructure_plant_.hood_position(), 0.001);
 
-    EXPECT_NEAR(superstructure_goal_fetcher_->turret.angle,
-                superstructure_status_fetcher_->turret.position, 0.001);
-    EXPECT_NEAR(superstructure_goal_fetcher_->turret.angle,
+    EXPECT_NEAR(superstructure_goal_fetcher_->turret()->angle(),
+                superstructure_status_fetcher_->turret()->position(), 0.001);
+    EXPECT_NEAR(superstructure_goal_fetcher_->turret()->angle(),
                 superstructure_plant_.turret_position(), 0.001);
 
-    EXPECT_NEAR(superstructure_goal_fetcher_->intake.distance,
-                superstructure_status_fetcher_->intake.position, 0.001);
-    EXPECT_NEAR(superstructure_goal_fetcher_->intake.distance,
+    EXPECT_NEAR(superstructure_goal_fetcher_->intake()->distance(),
+                superstructure_status_fetcher_->intake()->position(), 0.001);
+    EXPECT_NEAR(superstructure_goal_fetcher_->intake()->distance(),
                 superstructure_plant_.intake_position(), 0.001);
 
     // Check that the angular velocity, average angular velocity, and estimated
     // angular velocity match when we are done for the shooter.
-    EXPECT_NEAR(superstructure_goal_fetcher_->shooter.angular_velocity,
-                superstructure_status_fetcher_->shooter.angular_velocity, 0.1);
-    EXPECT_NEAR(superstructure_goal_fetcher_->shooter.angular_velocity,
-                superstructure_status_fetcher_->shooter.avg_angular_velocity,
+    EXPECT_NEAR(superstructure_goal_fetcher_->shooter()->angular_velocity(),
+                superstructure_status_fetcher_->shooter()->angular_velocity(), 0.1);
+    EXPECT_NEAR(superstructure_goal_fetcher_->shooter()->angular_velocity(),
+                superstructure_status_fetcher_->shooter()->avg_angular_velocity(),
                 0.1);
-    EXPECT_NEAR(superstructure_goal_fetcher_->shooter.angular_velocity,
+    EXPECT_NEAR(superstructure_goal_fetcher_->shooter()->angular_velocity(),
                 superstructure_plant_.shooter_velocity(), 0.1);
 
     // Check that the angular velocity, average angular velocity, and estimated
     // angular velocity match when we are done for the indexer.
-    EXPECT_NEAR(superstructure_goal_fetcher_->indexer.angular_velocity,
-                superstructure_status_fetcher_->indexer.angular_velocity, 0.1);
-    EXPECT_NEAR(superstructure_goal_fetcher_->indexer.angular_velocity,
-                superstructure_status_fetcher_->indexer.avg_angular_velocity,
+    EXPECT_NEAR(superstructure_goal_fetcher_->indexer()->angular_velocity(),
+                superstructure_status_fetcher_->indexer()->angular_velocity(), 0.1);
+    EXPECT_NEAR(superstructure_goal_fetcher_->indexer()->angular_velocity(),
+                superstructure_status_fetcher_->indexer()->avg_angular_velocity(),
                 0.1);
-    EXPECT_NEAR(superstructure_goal_fetcher_->indexer.angular_velocity,
+    EXPECT_NEAR(superstructure_goal_fetcher_->indexer()->angular_velocity(),
                 superstructure_plant_.indexer_velocity(), 0.1);
   }
 
   ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
 
-  ::aos::Fetcher<SuperstructureQueue::Goal> superstructure_goal_fetcher_;
-  ::aos::Sender<SuperstructureQueue::Goal> superstructure_goal_sender_;
-  ::aos::Fetcher<SuperstructureQueue::Status> superstructure_status_fetcher_;
-  ::aos::Fetcher<SuperstructureQueue::Output> superstructure_output_fetcher_;
-  ::aos::Fetcher<SuperstructureQueue::Position>
-      superstructure_position_fetcher_;
+  ::aos::Fetcher<Goal> superstructure_goal_fetcher_;
+  ::aos::Sender<Goal> superstructure_goal_sender_;
+  ::aos::Fetcher<Status> superstructure_status_fetcher_;
+  ::aos::Fetcher<Output> superstructure_output_fetcher_;
+  ::aos::Fetcher<Position> superstructure_position_fetcher_;
 
   // Create a control loop and simulation.
   ::std::unique_ptr<::aos::EventLoop> superstructure_event_loop_;
@@ -588,11 +605,36 @@ TEST_F(SuperstructureTest, DoesNothing) {
   SetEnabled(true);
 
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->hood.angle = 0.2;
-    goal->turret.angle = 0.0;
-    goal->intake.distance = 0.05;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(0.2);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
+
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(0.0);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
+
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(0.05);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_shooter(shooter_offset);
+    goal_builder.add_indexer(indexer_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(5));
 
@@ -607,20 +649,48 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 
   // Set a reasonable goal.
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->hood.angle = 0.1;
-    goal->hood.profile_params.max_velocity = 1;
-    goal->hood.profile_params.max_acceleration = 0.5;
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    goal->turret.angle = 0.1;
-    goal->turret.profile_params.max_velocity = 1;
-    goal->turret.profile_params.max_acceleration = 0.5;
+    flatbuffers::Offset<frc971::ProfileParameters>
+        hood_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 1.0, 0.5);
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(0.1);
+    hood_builder.add_profile_params(hood_profile_parameters_offset);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
 
-    goal->intake.distance = 0.1;
-    goal->intake.profile_params.max_velocity = 1;
-    goal->intake.profile_params.max_acceleration = 0.5;
+    flatbuffers::Offset<frc971::ProfileParameters>
+        turret_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 1.0, 0.5);
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(0.1);
+    turret_builder.add_profile_params(turret_profile_parameters_offset);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
 
-    ASSERT_TRUE(goal.Send());
+    flatbuffers::Offset<frc971::ProfileParameters>
+        intake_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 1.0, 0.5);
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(0.1);
+    intake_builder.add_profile_params(intake_profile_parameters_offset);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_shooter(shooter_offset);
+    goal_builder.add_indexer(indexer_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   // Give it a lot of time to get there.
@@ -638,11 +708,36 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
   // Zero it before we move.
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->intake.distance = constants::Values::kIntakeRange.upper;
-    goal->turret.angle = constants::Values::kTurretRange.upper;
-    goal->hood.angle = constants::Values::kHoodRange.upper;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(constants::Values::kHoodRange.upper);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
+
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(constants::Values::kTurretRange.upper);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
+
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(constants::Values::kIntakeRange.upper);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_shooter(shooter_offset);
+    goal_builder.add_indexer(indexer_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(8));
   VerifyNearGoal();
@@ -652,17 +747,48 @@ TEST_F(SuperstructureTest, SaturationTest) {
   // Try a low acceleration move with a high max velocity and verify the
   // acceleration is capped like expected.
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->intake.distance = constants::Values::kIntakeRange.lower;
-    goal->intake.profile_params.max_velocity = 20.0;
-    goal->intake.profile_params.max_acceleration = 0.1;
-    goal->turret.angle = constants::Values::kTurretRange.lower;
-    goal->turret.profile_params.max_velocity = 20.0;
-    goal->turret.profile_params.max_acceleration = 1.0;
-    goal->hood.angle = constants::Values::kHoodRange.lower;
-    goal->hood.profile_params.max_velocity = 20.0;
-    goal->hood.profile_params.max_acceleration = 1.0;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<frc971::ProfileParameters>
+        hood_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 20.0, 1.0);
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(constants::Values::kHoodRange.lower);
+    hood_builder.add_profile_params(hood_profile_parameters_offset);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
+
+    flatbuffers::Offset<frc971::ProfileParameters>
+        turret_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 20.0, 1.0);
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(constants::Values::kTurretRange.lower);
+    turret_builder.add_profile_params(turret_profile_parameters_offset);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
+
+    flatbuffers::Offset<frc971::ProfileParameters>
+        intake_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 20.0, 0.1);
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(constants::Values::kIntakeRange.lower);
+    intake_builder.add_profile_params(intake_profile_parameters_offset);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_shooter(shooter_offset);
+    goal_builder.add_indexer(indexer_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   superstructure_plant_.set_peak_intake_velocity(23.0);
   superstructure_plant_.set_peak_turret_velocity(23.0);
@@ -676,17 +802,48 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
   // Now do a high acceleration move with a low velocity limit.
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->intake.distance = constants::Values::kIntakeRange.upper;
-    goal->intake.profile_params.max_velocity = 0.1;
-    goal->intake.profile_params.max_acceleration = 100;
-    goal->turret.angle = constants::Values::kTurretRange.upper;
-    goal->turret.profile_params.max_velocity = 1;
-    goal->turret.profile_params.max_acceleration = 100;
-    goal->hood.angle = constants::Values::kHoodRange.upper;
-    goal->hood.profile_params.max_velocity = 1;
-    goal->hood.profile_params.max_acceleration = 100;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<frc971::ProfileParameters>
+        hood_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 1.0, 100.0);
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(constants::Values::kHoodRange.upper);
+    hood_builder.add_profile_params(hood_profile_parameters_offset);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
+
+    flatbuffers::Offset<frc971::ProfileParameters>
+        turret_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 1.0, 100.0);
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(constants::Values::kTurretRange.upper);
+    turret_builder.add_profile_params(turret_profile_parameters_offset);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
+
+    flatbuffers::Offset<frc971::ProfileParameters>
+        intake_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 0.1, 100.0);
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(constants::Values::kIntakeRange.upper);
+    intake_builder.add_profile_params(intake_profile_parameters_offset);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_shooter(shooter_offset);
+    goal_builder.add_indexer(indexer_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   superstructure_plant_.set_peak_intake_velocity(0.2);
@@ -707,50 +864,106 @@ TEST_F(SuperstructureTest, RespectsRange) {
 
   // Set some ridiculous goals to test upper limits.
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->hood.angle = 100.0;
-    goal->hood.profile_params.max_velocity = 1;
-    goal->hood.profile_params.max_acceleration = 0.5;
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    goal->turret.angle = 100.0;
-    goal->turret.profile_params.max_velocity = 1;
-    goal->turret.profile_params.max_acceleration = 0.5;
+    flatbuffers::Offset<frc971::ProfileParameters>
+        hood_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 1.0, 0.5);
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(100.0);
+    hood_builder.add_profile_params(hood_profile_parameters_offset);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
 
-    goal->intake.distance = 100.0;
-    goal->intake.profile_params.max_velocity = 1;
-    goal->intake.profile_params.max_acceleration = 0.5;
+    flatbuffers::Offset<frc971::ProfileParameters>
+        turret_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 1.0, 0.5);
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(100.0);
+    turret_builder.add_profile_params(turret_profile_parameters_offset);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
 
-    ASSERT_TRUE(goal.Send());
+    flatbuffers::Offset<frc971::ProfileParameters>
+        intake_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 1.0, 0.5);
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(100.0);
+    intake_builder.add_profile_params(intake_profile_parameters_offset);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_shooter(shooter_offset);
+    goal_builder.add_indexer(indexer_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(10));
 
   // Check that we are near our soft limit.
   superstructure_status_fetcher_.Fetch();
   EXPECT_NEAR(constants::Values::kHoodRange.upper,
-              superstructure_status_fetcher_->hood.position, 0.001);
+              superstructure_status_fetcher_->hood()->position(), 0.001);
 
   EXPECT_NEAR(constants::Values::kTurretRange.upper,
-              superstructure_status_fetcher_->turret.position, 0.001);
+              superstructure_status_fetcher_->turret()->position(), 0.001);
 
   EXPECT_NEAR(constants::Values::kIntakeRange.upper,
-              superstructure_status_fetcher_->intake.position, 0.001);
+              superstructure_status_fetcher_->intake()->position(), 0.001);
 
   // Set some ridiculous goals to test lower limits.
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->hood.angle = -100.0;
-    goal->hood.profile_params.max_velocity = 1;
-    goal->hood.profile_params.max_acceleration = 0.5;
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    goal->turret.angle = -100.0;
-    goal->turret.profile_params.max_velocity = 1;
-    goal->turret.profile_params.max_acceleration = 0.5;
+    flatbuffers::Offset<frc971::ProfileParameters>
+        hood_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 1.0, 0.5);
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(-100.0);
+    hood_builder.add_profile_params(hood_profile_parameters_offset);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
 
-    goal->intake.distance = -100.0;
-    goal->intake.profile_params.max_velocity = 1;
-    goal->intake.profile_params.max_acceleration = 0.5;
+    flatbuffers::Offset<frc971::ProfileParameters>
+        turret_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 1.0, 0.5);
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(-100.0);
+    turret_builder.add_profile_params(turret_profile_parameters_offset);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
 
-    ASSERT_TRUE(goal.Send());
+    flatbuffers::Offset<frc971::ProfileParameters>
+        intake_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 1.0, 0.5);
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(-100.0);
+    intake_builder.add_profile_params(intake_profile_parameters_offset);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_shooter(shooter_offset);
+    goal_builder.add_indexer(indexer_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(10));
@@ -758,31 +971,59 @@ TEST_F(SuperstructureTest, RespectsRange) {
   // Check that we are near our soft limit.
   superstructure_status_fetcher_.Fetch();
   EXPECT_NEAR(constants::Values::kHoodRange.lower,
-              superstructure_status_fetcher_->hood.position, 0.001);
+              superstructure_status_fetcher_->hood()->position(), 0.001);
 
   EXPECT_NEAR(constants::Values::kTurretRange.lower,
-              superstructure_status_fetcher_->turret.position, 0.001);
+              superstructure_status_fetcher_->turret()->position(), 0.001);
 
   EXPECT_NEAR(column::Column::kIntakeZeroingMinDistance,
-              superstructure_status_fetcher_->intake.position, 0.001);
+              superstructure_status_fetcher_->intake()->position(), 0.001);
 
   // Now, center the turret so we can try ridiculous things without having the
   // intake pushed out.
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->hood.angle = -100.0;
-    goal->hood.profile_params.max_velocity = 1;
-    goal->hood.profile_params.max_acceleration = 0.5;
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    goal->turret.angle = 0.0;
-    goal->turret.profile_params.max_velocity = 1;
-    goal->turret.profile_params.max_acceleration = 0.5;
+    flatbuffers::Offset<frc971::ProfileParameters>
+        hood_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 1.0, 0.5);
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(-100.0);
+    hood_builder.add_profile_params(hood_profile_parameters_offset);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
 
-    goal->intake.distance = -100.0;
-    goal->intake.profile_params.max_velocity = 1;
-    goal->intake.profile_params.max_acceleration = 0.5;
+    flatbuffers::Offset<frc971::ProfileParameters>
+        turret_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 1.0, 0.5);
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(0.0);
+    turret_builder.add_profile_params(turret_profile_parameters_offset);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
 
-    ASSERT_TRUE(goal.Send());
+    flatbuffers::Offset<frc971::ProfileParameters>
+        intake_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 1.0, 0.5);
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(-100.0);
+    intake_builder.add_profile_params(intake_profile_parameters_offset);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_shooter(shooter_offset);
+    goal_builder.add_indexer(indexer_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(10));
@@ -790,12 +1031,12 @@ TEST_F(SuperstructureTest, RespectsRange) {
   // Check that we are near our soft limit.
   superstructure_status_fetcher_.Fetch();
   EXPECT_NEAR(constants::Values::kHoodRange.lower,
-              superstructure_status_fetcher_->hood.position, 0.001);
+              superstructure_status_fetcher_->hood()->position(), 0.001);
 
-  EXPECT_NEAR(0.0, superstructure_status_fetcher_->turret.position, 0.001);
+  EXPECT_NEAR(0.0, superstructure_status_fetcher_->turret()->position(), 0.001);
 
   EXPECT_NEAR(constants::Values::kIntakeRange.lower,
-              superstructure_status_fetcher_->intake.position, 0.001);
+              superstructure_status_fetcher_->intake()->position(), 0.001);
 }
 
 // Tests that the hood, turret and intake loops zeroes when run for a while.
@@ -803,19 +1044,48 @@ TEST_F(SuperstructureTest, ZeroTest) {
   SetEnabled(true);
 
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->hood.angle = constants::Values::kHoodRange.lower;
-    goal->hood.profile_params.max_velocity = 1;
-    goal->hood.profile_params.max_acceleration = 0.5;
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    goal->turret.angle = constants::Values::kTurretRange.lower;
-    goal->turret.profile_params.max_velocity = 1;
-    goal->turret.profile_params.max_acceleration = 0.5;
+    flatbuffers::Offset<frc971::ProfileParameters>
+        hood_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 1.0, 0.5);
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(constants::Values::kHoodRange.lower);
+    hood_builder.add_profile_params(hood_profile_parameters_offset);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
 
-    goal->intake.distance = constants::Values::kIntakeRange.upper;
-    goal->intake.profile_params.max_velocity = 1;
-    goal->intake.profile_params.max_acceleration = 0.5;
-    ASSERT_TRUE(goal.Send());
+    flatbuffers::Offset<frc971::ProfileParameters>
+        turret_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 1.0, 0.5);
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(constants::Values::kTurretRange.lower);
+    turret_builder.add_profile_params(turret_profile_parameters_offset);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
+
+    flatbuffers::Offset<frc971::ProfileParameters>
+        intake_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 1.0, 0.5);
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(constants::Values::kIntakeRange.upper);
+    intake_builder.add_profile_params(intake_profile_parameters_offset);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_shooter(shooter_offset);
+    goal_builder.add_indexer(indexer_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(10));
@@ -844,11 +1114,36 @@ TEST_F(SuperstructureTest, LowerHardstopStartup) {
   superstructure_plant_.InitializeIntakePosition(
       constants::Values::kIntakeRange.lower_hard);
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->hood.angle = constants::Values::kHoodRange.lower;
-    goal->turret.angle = constants::Values::kTurretRange.lower;
-    goal->intake.distance = constants::Values::kIntakeRange.upper;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(constants::Values::kHoodRange.lower);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
+
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(constants::Values::kTurretRange.lower);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
+
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(constants::Values::kIntakeRange.upper);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_shooter(shooter_offset);
+    goal_builder.add_indexer(indexer_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(10));
 
@@ -867,11 +1162,36 @@ TEST_F(SuperstructureTest, UpperHardstopStartup) {
   superstructure_plant_.InitializeIntakePosition(
       constants::Values::kIntakeRange.upper_hard);
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->hood.angle = constants::Values::kHoodRange.upper;
-    goal->turret.angle = constants::Values::kTurretRange.upper;
-    goal->intake.distance = constants::Values::kIntakeRange.upper;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(constants::Values::kHoodRange.upper);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
+
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(constants::Values::kTurretRange.upper);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
+
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(constants::Values::kIntakeRange.upper);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_shooter(shooter_offset);
+    goal_builder.add_indexer(indexer_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(10));
 
@@ -889,12 +1209,36 @@ TEST_F(SuperstructureTest, ResetTest) {
   superstructure_plant_.InitializeIntakePosition(
       constants::Values::kIntakeRange.upper);
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->hood.angle = constants::Values::kHoodRange.upper - 0.1;
-    goal->turret.angle = constants::Values::kTurretRange.upper - 0.1;
-    goal->intake.distance = constants::Values::kIntakeRange.upper - 0.1;
-    goal->indexer.angular_velocity = -5.0;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(constants::Values::kHoodRange.upper - 0.1);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
+
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(constants::Values::kTurretRange.upper - 0.1);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
+
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(constants::Values::kIntakeRange.upper - 0.1);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(-5.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_shooter(shooter_offset);
+    goal_builder.add_indexer(indexer_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(10));
 
@@ -923,15 +1267,42 @@ TEST_F(SuperstructureTest, ResetTest) {
 // Tests that the internal goals don't change while disabled.
 TEST_F(SuperstructureTest, DisabledGoalTest) {
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->hood.angle = constants::Values::kHoodRange.lower + 0.03;
-    goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
-    goal->intake.distance = constants::Values::kIntakeRange.lower + 0.03;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(constants::Values::kHoodRange.lower + 0.03);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
+
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(constants::Values::kTurretRange.lower + 0.03);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
+
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(constants::Values::kIntakeRange.lower + 0.03);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_shooter(shooter_offset);
+    goal_builder.add_indexer(indexer_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::milliseconds(100));
@@ -955,11 +1326,36 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
       constants::GetValues().hood.zeroing.measured_index_position - 0.001);
 
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->hood.angle = constants::Values::kHoodRange.lower;
-    goal->turret.angle = 0.0;
-    goal->intake.distance = constants::Values::kIntakeRange.lower;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(constants::Values::kHoodRange.lower);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
+
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(0.0);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
+
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(constants::Values::kIntakeRange.lower);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_shooter(shooter_offset);
+    goal_builder.add_indexer(indexer_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   // Run disabled for 2 seconds
@@ -1000,49 +1396,118 @@ TEST_F(SuperstructureTest, ShooterSpinUpAndDown) {
 
   // Spin up.
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->hood.angle = constants::Values::kHoodRange.lower + 0.03;
-    goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
-    goal->intake.distance = constants::Values::kIntakeRange.upper - 0.03;
-    goal->shooter.angular_velocity = 300.0;
-    goal->indexer.angular_velocity = 20.0;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(constants::Values::kHoodRange.lower + 0.03);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
+
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(constants::Values::kTurretRange.lower + 0.03);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
+
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(constants::Values::kIntakeRange.upper - 0.03);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(300.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(20.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_indexer(indexer_offset);
+    goal_builder.add_shooter(shooter_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(5));
   VerifyNearGoal();
-  EXPECT_TRUE(superstructure_status_fetcher_->shooter.ready);
+  EXPECT_TRUE(superstructure_status_fetcher_->shooter()->ready());
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->hood.angle = constants::Values::kHoodRange.lower + 0.03;
-    goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
-    goal->intake.distance = constants::Values::kIntakeRange.upper - 0.03;
-    goal->shooter.angular_velocity = 0.0;
-    goal->indexer.angular_velocity = 0.0;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(constants::Values::kHoodRange.lower + 0.03);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
+
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(constants::Values::kTurretRange.lower + 0.03);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
+
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(constants::Values::kIntakeRange.upper - 0.03);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_indexer(indexer_offset);
+    goal_builder.add_shooter(shooter_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   // Make sure we don't apply voltage on spin-down.
   RunFor(dt());
 
   EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
-  EXPECT_EQ(0.0, superstructure_output_fetcher_->voltage_shooter);
+  EXPECT_EQ(0.0, superstructure_output_fetcher_->voltage_shooter());
   // Continue to stop.
   RunFor(chrono::seconds(5));
   EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
-  EXPECT_EQ(0.0, superstructure_output_fetcher_->voltage_shooter);
+  EXPECT_EQ(0.0, superstructure_output_fetcher_->voltage_shooter());
 }
 
 // Tests that the shooter can spin up nicely after being disabled for a while.
 TEST_F(SuperstructureTest, ShooterDisabled) {
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->hood.angle = constants::Values::kHoodRange.lower + 0.03;
-    goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
-    goal->intake.distance = constants::Values::kIntakeRange.upper - 0.03;
-    goal->shooter.angular_velocity = 200.0;
-    goal->indexer.angular_velocity = 20.0;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(constants::Values::kHoodRange.lower + 0.03);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
+
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(constants::Values::kTurretRange.lower + 0.03);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
+
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(constants::Values::kIntakeRange.upper - 0.03);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(200.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(20.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_indexer(indexer_offset);
+    goal_builder.add_shooter(shooter_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(5));
   EXPECT_EQ(nullptr, superstructure_output_fetcher_.get());
@@ -1059,18 +1524,41 @@ TEST_F(SuperstructureTest, StuckIndexerTest) {
 
   // Spin up.
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->hood.angle = constants::Values::kHoodRange.lower + 0.03;
-    goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
-    goal->intake.distance = constants::Values::kIntakeRange.upper - 0.03;
-    goal->shooter.angular_velocity = 0.0;
-    goal->indexer.angular_velocity = 5.0;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(constants::Values::kHoodRange.lower + 0.03);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
+
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(constants::Values::kTurretRange.lower + 0.03);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
+
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(constants::Values::kIntakeRange.upper - 0.03);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(5.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_indexer(indexer_offset);
+    goal_builder.add_shooter(shooter_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(5));
   VerifyNearGoal();
-  EXPECT_TRUE(superstructure_status_fetcher_->indexer.ready);
+  EXPECT_TRUE(superstructure_status_fetcher_->indexer()->ready());
 
   // Now, stick it.
   const auto stuck_start_time = monotonic_now();
@@ -1080,7 +1568,7 @@ TEST_F(SuperstructureTest, StuckIndexerTest) {
     superstructure_status_fetcher_.Fetch();
     ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
     if (static_cast<column::Column::IndexerState>(
-            superstructure_status_fetcher_->indexer.state) ==
+            superstructure_status_fetcher_->indexer()->state()) ==
         column::Column::IndexerState::REVERSING) {
       break;
     }
@@ -1095,7 +1583,7 @@ TEST_F(SuperstructureTest, StuckIndexerTest) {
   superstructure_position_fetcher_.Fetch();
   ASSERT_TRUE(superstructure_position_fetcher_.get() != nullptr);
   const double indexer_position =
-      superstructure_position_fetcher_->column.indexer.encoder;
+      superstructure_position_fetcher_->column()->indexer()->encoder();
 
   // Now, unstick it.
   superstructure_plant_.set_freeze_indexer(false);
@@ -1105,7 +1593,7 @@ TEST_F(SuperstructureTest, StuckIndexerTest) {
     superstructure_status_fetcher_.Fetch();
     ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
     if (static_cast<column::Column::IndexerState>(
-            superstructure_status_fetcher_->indexer.state) ==
+            superstructure_status_fetcher_->indexer()->state()) ==
         column::Column::IndexerState::RUNNING) {
       break;
     }
@@ -1123,7 +1611,7 @@ TEST_F(SuperstructureTest, StuckIndexerTest) {
   superstructure_position_fetcher_.Fetch();
   ASSERT_TRUE(superstructure_position_fetcher_.get() != nullptr);
   const double unstuck_indexer_position =
-      superstructure_position_fetcher_->column.indexer.encoder;
+      superstructure_position_fetcher_->column()->indexer()->encoder();
   EXPECT_LT(unstuck_indexer_position, indexer_position - 0.1);
 
   // Now, verify that everything works as expected.
@@ -1138,18 +1626,41 @@ TEST_F(SuperstructureTest, ReallyStuckIndexerTest) {
 
   // Spin up.
   {
-    auto goal = superstructure_goal_sender_.MakeMessage();
-    goal->hood.angle = constants::Values::kHoodRange.lower + 0.03;
-    goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
-    goal->intake.distance = constants::Values::kIntakeRange.upper - 0.03;
-    goal->shooter.angular_velocity = 0.0;
-    goal->indexer.angular_velocity = 5.0;
-    ASSERT_TRUE(goal.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    HoodGoal::Builder hood_builder = builder.MakeBuilder<HoodGoal>();
+    hood_builder.add_angle(constants::Values::kHoodRange.lower + 0.03);
+    flatbuffers::Offset<HoodGoal> hood_offset = hood_builder.Finish();
+
+    TurretGoal::Builder turret_builder = builder.MakeBuilder<TurretGoal>();
+    turret_builder.add_angle(constants::Values::kTurretRange.lower + 0.03);
+    flatbuffers::Offset<TurretGoal> turret_offset = turret_builder.Finish();
+
+    IntakeGoal::Builder intake_builder = builder.MakeBuilder<IntakeGoal>();
+    intake_builder.add_distance(constants::Values::kIntakeRange.upper - 0.03);
+    flatbuffers::Offset<IntakeGoal> intake_offset = intake_builder.Finish();
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+    shooter_builder.add_angular_velocity(0.0);
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    IndexerGoal::Builder indexer_builder = builder.MakeBuilder<IndexerGoal>();
+    indexer_builder.add_angular_velocity(5.0);
+    flatbuffers::Offset<IndexerGoal> indexer_offset = indexer_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_turret(turret_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_indexer(indexer_offset);
+    goal_builder.add_shooter(shooter_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(5));
   VerifyNearGoal();
-  EXPECT_TRUE(superstructure_status_fetcher_->indexer.ready);
+  EXPECT_TRUE(superstructure_status_fetcher_->indexer()->ready());
 
   // Now, stick it.
   const auto stuck_start_time = monotonic_now();
@@ -1159,7 +1670,7 @@ TEST_F(SuperstructureTest, ReallyStuckIndexerTest) {
     superstructure_status_fetcher_.Fetch();
     ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
     if (static_cast<column::Column::IndexerState>(
-            superstructure_status_fetcher_->indexer.state) ==
+            superstructure_status_fetcher_->indexer()->state()) ==
         column::Column::IndexerState::REVERSING) {
       break;
     }
@@ -1177,7 +1688,7 @@ TEST_F(SuperstructureTest, ReallyStuckIndexerTest) {
     superstructure_status_fetcher_.Fetch();
     ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
     if (static_cast<column::Column::IndexerState>(
-            superstructure_status_fetcher_->indexer.state) ==
+            superstructure_status_fetcher_->indexer()->state()) ==
         column::Column::IndexerState::RUNNING) {
       break;
     }
@@ -1202,7 +1713,7 @@ TEST_F(SuperstructureTest, ReallyStuckIndexerTest) {
     superstructure_status_fetcher_.Fetch();
     ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
     if (static_cast<column::Column::IndexerState>(
-            superstructure_status_fetcher_->indexer.state) ==
+            superstructure_status_fetcher_->indexer()->state()) ==
         column::Column::IndexerState::REVERSING) {
       break;
     }

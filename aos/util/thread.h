@@ -13,7 +13,7 @@ namespace util {
 
 // A nice wrapper around a pthreads thread.
 //
-// TODO(aschuh): Test this.
+// TODO(aschuh): replace this with std::thread
 class Thread {
  public:
   Thread();

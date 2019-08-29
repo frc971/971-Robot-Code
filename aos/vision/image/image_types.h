@@ -6,7 +6,7 @@
 #include <memory>
 #include <sstream>
 
-#include <experimental/string_view>
+#include "absl/strings/string_view.h"
 
 namespace aos {
 namespace vision {
@@ -20,7 +20,7 @@ struct ImageBBox {
 };
 
 // This will go into c++17. No sense writing my own version.
-using DataRef = std::experimental::string_view;
+using DataRef = absl::string_view;
 
 // Represents the dimensions of an image.
 struct ImageFormat {

@@ -6,12 +6,13 @@
 
 #include "aos/actions/actions.h"
 #include "aos/actions/actor.h"
-#include "aos/events/event-loop.h"
+#include "aos/events/event_loop.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2018/control_loops/superstructure/arm/generated_graph.h"
-#include "y2018/control_loops/superstructure/superstructure.q.h"
+#include "y2018/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2018/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2018 {
 namespace actors {
@@ -21,7 +22,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   explicit AutonomousActor(::aos::EventLoop *event_loop);
 
   bool RunAction(
-      const ::frc971::autonomous::AutonomousActionParams &params) override;
+      const ::frc971::autonomous::AutonomousActionParams *params) override;
 
  private:
   void Reset() {
@@ -40,9 +41,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     SendSuperstructureGoal();
   }
 
-  ::aos::Sender<::y2018::control_loops::SuperstructureQueue::Goal>
+  ::aos::Sender<::y2018::control_loops::superstructure::Goal>
       superstructure_goal_sender_;
-  ::aos::Fetcher<::y2018::control_loops::SuperstructureQueue::Status>
+  ::aos::Fetcher<::y2018::control_loops::superstructure::Status>
       superstructure_status_fetcher_;
 
   double roller_voltage_ = 0.0;
@@ -82,19 +83,29 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 
   void SendSuperstructureGoal() {
-    auto new_superstructure_goal = superstructure_goal_sender_.MakeMessage();
-    new_superstructure_goal->intake.roller_voltage = roller_voltage_;
-    new_superstructure_goal->intake.left_intake_angle = left_intake_angle_;
-    new_superstructure_goal->intake.right_intake_angle = right_intake_angle_;
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    control_loops::superstructure::IntakeGoal::Builder intake_goal_builder =
+        builder.MakeBuilder<control_loops::superstructure::IntakeGoal>();
+    intake_goal_builder.add_roller_voltage(roller_voltage_);
+    intake_goal_builder.add_left_intake_angle(left_intake_angle_);
+    intake_goal_builder.add_right_intake_angle(right_intake_angle_);
 
-    new_superstructure_goal->arm_goal_position = arm_goal_position_;
-    new_superstructure_goal->grab_box = grab_box_;
-    new_superstructure_goal->open_claw = open_claw_;
-    new_superstructure_goal->close_claw = close_claw_;
-    new_superstructure_goal->deploy_fork = deploy_fork_;
-    new_superstructure_goal->trajectory_override = false;
+    flatbuffers::Offset<control_loops::superstructure::IntakeGoal>
+        intake_offset = intake_goal_builder.Finish();
 
-    if (!new_superstructure_goal.Send()) {
+    control_loops::superstructure::Goal::Builder superstructure_builder =
+        builder.MakeBuilder<control_loops::superstructure::Goal>();
+
+    superstructure_builder.add_intake(intake_offset);
+
+    superstructure_builder.add_arm_goal_position(arm_goal_position_);
+    superstructure_builder.add_grab_box(grab_box_);
+    superstructure_builder.add_open_claw(open_claw_);
+    superstructure_builder.add_close_claw(close_claw_);
+    superstructure_builder.add_deploy_fork(deploy_fork_);
+    superstructure_builder.add_trajectory_override(false);
+
+    if (!builder.Send(superstructure_builder.Finish())) {
       AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
     }
   }
@@ -129,17 +140,17 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
           superstructure_status_fetcher_.get()) {
         const double left_profile_error =
             (initial_drivetrain_.left -
-             drivetrain_status_fetcher_->profiled_left_position_goal);
+             drivetrain_status_fetcher_->profiled_left_position_goal());
         const double right_profile_error =
             (initial_drivetrain_.right -
-             drivetrain_status_fetcher_->profiled_right_position_goal);
+             drivetrain_status_fetcher_->profiled_right_position_goal());
 
         const double left_error =
             (initial_drivetrain_.left -
-             drivetrain_status_fetcher_->estimated_left_position);
+             drivetrain_status_fetcher_->estimated_left_position());
         const double right_error =
             (initial_drivetrain_.right -
-             drivetrain_status_fetcher_->estimated_right_position);
+             drivetrain_status_fetcher_->estimated_right_position());
 
         const double profile_distance_to_go =
             (left_profile_error + right_profile_error) / 2.0;
@@ -147,12 +158,12 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
         const double distance_to_go = (left_error + right_error) / 2.0;
 
         // Check superstructure first.
-        if (superstructure_status_fetcher_->arm.current_node ==
+        if (superstructure_status_fetcher_->arm()->current_node() ==
                 arm_goal_position_ &&
-            superstructure_status_fetcher_->arm.path_distance_to_go <
+            superstructure_status_fetcher_->arm()->path_distance_to_go() <
                 arm_threshold) {
           AOS_LOG(INFO, "Arm finished first: %f, drivetrain %f distance\n",
-                  superstructure_status_fetcher_->arm.path_distance_to_go,
+                  superstructure_status_fetcher_->arm()->path_distance_to_go(),
                   ::std::abs(distance_to_go));
           return true;
         }
@@ -163,7 +174,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
             ::std::abs(distance_to_go) < drive_threshold + kPositionTolerance) {
           AOS_LOG(INFO,
                   "Drivetrain finished first: arm %f, drivetrain %f distance\n",
-                  superstructure_status_fetcher_->arm.path_distance_to_go,
+                  superstructure_status_fetcher_->arm()->path_distance_to_go(),
                   ::std::abs(distance_to_go));
           return true;
         }
@@ -183,9 +194,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
       superstructure_status_fetcher_.Fetch();
       if (superstructure_status_fetcher_.get()) {
-        if (superstructure_status_fetcher_->arm.current_node ==
+        if (superstructure_status_fetcher_->arm()->current_node() ==
                 arm_goal_position_ &&
-            superstructure_status_fetcher_->arm.path_distance_to_go <
+            superstructure_status_fetcher_->arm()->path_distance_to_go() <
                 threshold) {
           return true;
         }
@@ -205,7 +216,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
       superstructure_status_fetcher_.Fetch();
       if (superstructure_status_fetcher_.get()) {
-        if (superstructure_status_fetcher_->arm.grab_state == 4) {
+        if (superstructure_status_fetcher_->arm()->grab_state() == 4) {
           return true;
         }
       }

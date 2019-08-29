@@ -50,10 +50,6 @@ load(
     "//debian:python_gtk.bzl",
     python_gtk_debs = "files",
 )
-load(
-    "//debian:ruby.bzl",
-    ruby_debs = "files",
-)
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
 generate_repositories_for_debs(python_debs)
@@ -80,8 +76,6 @@ generate_repositories_for_debs(arm_frc_gnueabi_deps_debs)
 
 generate_repositories_for_debs(python_gtk_debs)
 
-generate_repositories_for_debs(ruby_debs)
-
 http_archive(
     name = "python_repo",
     build_file = "@//debian:python.BUILD",
@@ -99,6 +93,11 @@ http_archive(
 local_repository(
     name = "com_google_absl",
     path = "third_party/abseil",
+)
+
+local_repository(
+    name = "org_tuxfamily_eigen",
+    path = "third_party/eigen",
 )
 
 # C++ rules for Bazel.
@@ -123,13 +122,6 @@ new_git_repository(
     build_file = "@//debian:slycot.BUILD",
     commit = "5af5f283cb23cbe23c4dfea4d5e56071bdbd6e70",
     remote = "https://github.com/avventi/Slycot.git",
-)
-
-http_archive(
-    name = "ruby_repo",
-    build_file = "@//debian:ruby.BUILD",
-    sha256 = "d3e21cca0abcad933de0d4095da35344a60475d1f5828ee99283ed4250ee1320",
-    url = "http://www.frc971.org/Build-Dependencies/ruby.tar.gz",
 )
 
 http_archive(
@@ -356,6 +348,11 @@ local_repository(
     path = "third_party/google-glog",
 )
 
+local_repository(
+    name = "com_google_googletest",
+    path = "third_party/googletest",
+)
+
 # External dependency: Google Benchmark; has no Bazel build.
 local_repository(
     name = "com_github_google_benchmark",
@@ -459,28 +456,26 @@ http_archive(
 )
 
 emscripten_version = "1.38.31"
+
 http_archive(
     name = "emscripten_toolchain",
-    urls = ["https://github.com/emscripten-core/emscripten/archive/" + emscripten_version + ".tar.gz"],
-    strip_prefix = "emscripten-" + emscripten_version,
+    build_file_content = """
+filegroup(
+    name = 'all',
+    visibility = ['//visibility:public'],
+    srcs = glob(['**']),
+)
+""",
     # TODO(james): Once a functioning release contains this patch, convert
     # to that. See https://github.com/emscripten-core/emscripten/pull/9048
     patches = ["@//debian:emscripten_toolchain.patch"],
     sha256 = "c87e42cb6a104094e7daf2b7e61ac835f83674ac0168f533455838a1129cc764",
-    build_file_content = """
-filegroup(
-    name = 'all',
-    visibility = ['//visibility:public'],
-    srcs = glob(['**']),
-)
-""",
+    strip_prefix = "emscripten-" + emscripten_version,
+    urls = ["https://github.com/emscripten-core/emscripten/archive/" + emscripten_version + ".tar.gz"],
 )
 
 new_http_archive(
     name = "emscripten_clang",
-    sha256 = "a0c2f2c5a897577f40af0fdf68dcf3cf65557ff20c081df26678c066a4fed4b1",
-    strip_prefix = "emscripten-llvm-e" + emscripten_version,
-    url = "https://s3.amazonaws.com/mozilla-games/emscripten/packages/llvm/tag/linux_64bit/emscripten-llvm-e" + emscripten_version + ".tar.gz",
     build_file_content = """
 filegroup(
     name = 'all',
@@ -488,6 +483,9 @@ filegroup(
     srcs = glob(['**']),
 )
 """,
+    sha256 = "a0c2f2c5a897577f40af0fdf68dcf3cf65557ff20c081df26678c066a4fed4b1",
+    strip_prefix = "emscripten-llvm-e" + emscripten_version,
+    url = "https://s3.amazonaws.com/mozilla-games/emscripten/packages/llvm/tag/linux_64bit/emscripten-llvm-e" + emscripten_version + ".tar.gz",
 )
 
 # Fetch our Bazel dependencies that aren't distributed on npm

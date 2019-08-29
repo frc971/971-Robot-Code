@@ -1,8 +1,9 @@
 #ifndef FRC971_WPILIB_NEWROBOTBASE_H_
 #define FRC971_WPILIB_NEWROBOTBASE_H_
 
-#include "aos/events/shm-event-loop.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
+#include "aos/logging/logging.h"
 #include "frc971/wpilib/ahal/RobotBase.h"
 
 namespace frc971 {

@@ -1,0 +1,30 @@
+include "frc971/control_loops/control_loops.fbs";
+
+namespace y2019.control_loops.superstructure;
+
+table Position {
+  // Input from pressure sensor in bar
+  // 1 = 1 atm, 0 = full vacuum
+  suction_pressure:float;
+
+  // Position of the elevator, 0 at lowest position, positive when up.
+  elevator:frc971.PotAndAbsolutePosition;
+
+  // Position of wrist, 0 when up, positive is rotating toward the front,
+  // over the top.
+  wrist:frc971.PotAndAbsolutePosition;
+
+  // Position of the intake. 0 when rollers are retracted, positive extended.
+  intake_joint:frc971.AbsolutePosition;
+
+  // Position of the stilts, 0 when retracted (defualt), positive lifts robot.
+  stilts:frc971.PotAndAbsolutePosition;
+
+  // True if the platform detection sensors detect the platform directly
+  // below the robot right behind the left and right wheels.  Useful for
+  // determining when the robot is all the way on the platform.
+  platform_left_detect:bool;
+  platform_right_detect:bool;
+}
+
+root_type Position;

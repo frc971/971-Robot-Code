@@ -1,0 +1,25 @@
+include "frc971/control_loops/control_loops.fbs";
+
+namespace y2014.control_loops.claw;
+
+// All angles here are 0 vertical, positive "up" (aka backwards).
+table HalfClawPosition {
+  // The current position of this half of the claw.
+  position:double;
+
+  // The hall effect sensor at the front limit.
+  front:frc971.HallEffectStruct;
+  // The hall effect sensor in the middle to use for real calibration.
+  calibration:frc971.HallEffectStruct;
+  // The hall effect at the back limit.
+  back:frc971.HallEffectStruct;
+}
+
+table Position {
+  // All the top claw information.
+  top:HalfClawPosition;
+  // All the bottom claw information.
+  bottom:HalfClawPosition;
+}
+
+root_type Position;

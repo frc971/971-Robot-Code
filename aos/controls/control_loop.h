@@ -4,10 +4,9 @@
 #include <string.h>
 #include <atomic>
 
-#include "aos/events/event-loop.h"
-#include "aos/events/shm-event-loop.h"
-#include "aos/queue.h"
-#include "aos/robot_state/robot_state.q.h"
+#include "aos/events/event_loop.h"
+#include "aos/robot_state/joystick_state_generated.h"
+#include "aos/robot_state/robot_state_generated.h"
 #include "aos/time/time.h"
 #include "aos/type_traits/type_traits.h"
 #include "aos/util/log_interval.h"
@@ -20,39 +19,24 @@ constexpr ::std::chrono::nanoseconds kLoopFrequency =
     ::std::chrono::milliseconds(5);
 
 // Provides helper methods to assist in writing control loops.
-// This template expects to be constructed with a queue group as an argument
-// that has a goal, position, status, and output queue.
 // It will then call the RunIteration method every cycle that it has enough
 // valid data for the control loop to run.
-template <class T>
+template <class GoalType, class PositionType, class StatusType,
+          class OutputType>
 class ControlLoop {
  public:
-  // Create some convenient typedefs to reference the Goal, Position, Status,
-  // and Output structures.
-  typedef typename std::remove_reference<decltype(
-      *(static_cast<T *>(NULL)->goal.MakeMessage().get()))>::type GoalType;
-  typedef typename std::remove_reference<
-      decltype(*(static_cast<T *>(NULL)->position.MakeMessage().get()))>::type
-      PositionType;
-  typedef typename std::remove_reference<decltype(
-      *(static_cast<T *>(NULL)->status.MakeMessage().get()))>::type StatusType;
-  typedef typename std::remove_reference<decltype(
-      *(static_cast<T *>(NULL)->output.MakeMessage().get()))>::type OutputType;
-
   ControlLoop(EventLoop *event_loop, const ::std::string &name)
       : event_loop_(event_loop), name_(name) {
-    output_sender_ = event_loop_->MakeSender<OutputType>(name_ + ".output");
-    status_sender_ = event_loop_->MakeSender<StatusType>(name_ + ".status");
-    goal_fetcher_ = event_loop_->MakeFetcher<GoalType>(name_ + ".goal");
-    robot_state_fetcher_ =
-        event_loop_->MakeFetcher<::aos::RobotState>(".aos.robot_state");
+    output_sender_ = event_loop_->MakeSender<OutputType>(name_);
+    status_sender_ = event_loop_->MakeSender<StatusType>(name_);
+    goal_fetcher_ = event_loop_->MakeFetcher<GoalType>(name_);
+    robot_state_fetcher_ = event_loop_->MakeFetcher<::aos::RobotState>("/aos");
     joystick_state_fetcher_ =
-        event_loop_->MakeFetcher<::aos::JoystickState>(".aos.joystick_state");
+        event_loop_->MakeFetcher<::aos::JoystickState>("/aos");
 
-    event_loop_->MakeWatcher(name_ + ".position",
-                             [this](const PositionType &position) {
-                               this->IteratePosition(position);
-                             });
+    event_loop_->MakeWatcher(name_, [this](const PositionType &position) {
+      this->IteratePosition(position);
+    });
   }
 
   const ::aos::RobotState &robot_state() const { return *robot_state_fetcher_; }
@@ -80,13 +64,20 @@ class ControlLoop {
   // Sets the output to zero.
   // Override this if a value of zero (or false) is not "off" for this
   // subsystem.
-  virtual void Zero(OutputType *output) { output->Zero(); }
+  virtual flatbuffers::Offset<OutputType> Zero(
+      typename ::aos::Sender<OutputType>::Builder *builder) {
+    return builder->template MakeBuilder<OutputType>().Finish();
+  }
 
  protected:
   // Runs one cycle of the loop.
   void IteratePosition(const PositionType &position);
 
   EventLoop *event_loop() { return event_loop_; }
+
+  // Returns the position context.  This is only valid inside the RunIteration
+  // method.
+  const aos::Context &position_context() { return event_loop_->context(); }
 
   // Runs an iteration of the control loop.
   // goal is the last goal that was sent.  It might be any number of cycles old
@@ -97,8 +88,10 @@ class ControlLoop {
   // output is going to be ignored and set to 0.
   // status is the status of the control loop.
   // Both output and status should be filled in by the implementation.
-  virtual void RunIteration(const GoalType *goal, const PositionType *position,
-                            OutputType *output, StatusType *status) = 0;
+  virtual void RunIteration(
+      const GoalType *goal, const PositionType *position,
+      typename ::aos::Sender<OutputType>::Builder *output,
+      typename ::aos::Sender<StatusType>::Builder *status) = 0;
 
  private:
   static constexpr ::std::chrono::milliseconds kStaleLogInterval =

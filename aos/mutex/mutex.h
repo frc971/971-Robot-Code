@@ -1,10 +1,10 @@
 #ifndef AOS_MUTEX_H_
 #define AOS_MUTEX_H_
 
+#include "aos/ipc_lib/aos_sync.h"
 #include "aos/macros.h"
 #include "aos/type_traits/type_traits.h"
-#include "aos/die.h"
-#include "aos/ipc_lib/aos_sync.h"
+#include "glog/logging.h"
 
 namespace aos {
 
@@ -73,8 +73,8 @@ class MutexLocker {
  public:
   explicit MutexLocker(Mutex *mutex) : mutex_(mutex) {
     if (__builtin_expect(mutex_->Lock(), false)) {
-      ::aos::Die("previous owner of mutex %p died but it shouldn't be able to",
-                 this);
+      LOG(FATAL) << "previous owner of mutex " << this
+                 << " died but it shouldn't be able to";
     }
   }
   ~MutexLocker() {
@@ -95,13 +95,14 @@ class IPCMutexLocker {
       : mutex_(mutex), owner_died_(mutex_->Lock()) {}
   ~IPCMutexLocker() {
     if (__builtin_expect(!owner_died_checked_, false)) {
-      ::aos::Die("nobody checked if the previous owner of mutex %p died", this);
+      LOG(FATAL) << "nobody checked if the previous owner of mutex " << this
+                 << " died";
     }
     mutex_->Unlock();
   }
 
   // Whether or not the previous owner died. If this is not called at least
-  // once, the destructor will ::aos::Die.
+  // once, the destructor will LOG(FATAL)
   __attribute__((warn_unused_result)) bool owner_died() {
     owner_died_checked_ = true;
     return __builtin_expect(owner_died_, false);
@@ -125,13 +126,14 @@ class IPCRecursiveMutexLocker {
         owner_died_(locked_ ? mutex_->Lock() : false) {}
   ~IPCRecursiveMutexLocker() {
     if (__builtin_expect(!owner_died_checked_, false)) {
-      ::aos::Die("nobody checked if the previous owner of mutex %p died", this);
+      LOG(FATAL) << "nobody checked if the previous owner of mutex " << this
+                 << " died";
     }
     if (locked_) mutex_->Unlock();
   }
 
   // Whether or not the previous owner died. If this is not called at least
-  // once, the destructor will ::aos::Die.
+  // once, the destructor will LOG(FATAL)
   __attribute__((warn_unused_result)) bool owner_died() {
     owner_died_checked_ = true;
     return __builtin_expect(owner_died_, false);

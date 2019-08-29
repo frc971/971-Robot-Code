@@ -3,7 +3,6 @@
 #include <chrono>
 
 #include "aos/logging/implementations.h"
-#include "aos/logging/matrix_logging.h"
 #include "aos/network/team_number.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/dlqr.h"

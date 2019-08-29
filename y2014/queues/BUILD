@@ -1,24 +1,19 @@
-package(default_visibility = ['//visibility:public'])
+package(default_visibility = ["//visibility:public"])
 
-load('//aos/build:queues.bzl', 'queue_library')
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
-queue_library(
-  name = 'profile_params',
-  srcs = [
-    'profile_params.q',
-  ],
+flatbuffer_cc_library(
+    name = "auto_mode_fbs",
+    srcs = [
+        "auto_mode.fbs",
+    ],
+    gen_reflections = 1,
 )
 
-queue_library(
-  name = 'hot_goal',
-  srcs = [
-    'hot_goal.q',
-  ],
-)
-
-queue_library(
-  name = 'auto_mode',
-  srcs = [
-    'auto_mode.q',
-  ],
+flatbuffer_cc_library(
+    name = "hot_goal_fbs",
+    srcs = [
+        "hot_goal.fbs",
+    ],
+    gen_reflections = 1,
 )

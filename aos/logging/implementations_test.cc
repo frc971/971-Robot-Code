@@ -19,9 +19,13 @@ namespace testing {
 
 namespace chrono = ::std::chrono;
 
-class TestLogImplementation : public SimpleLogImplementation {
-  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
-  void DoLog(log_level level, const char *format, va_list ap) override {
+class TestLogImplementation : public LogImplementation {
+  virtual ::aos::monotonic_clock::time_point monotonic_now() const {
+    return ::aos::monotonic_clock::now();
+  }
+
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0))) void DoLog(
+      log_level level, const char *format, va_list ap) override {
     internal::FillInMessage(level, monotonic_now(), format, ap, &message_);
 
     if (level == FATAL) {
@@ -175,7 +179,8 @@ TEST_F(LoggingTest, Timing) {
   monotonic_clock::time_point end = monotonic_clock::now();
   auto diff = end - start;
   printf("short message took %" PRId64 " nsec for %ld\n",
-         chrono::duration_cast<chrono::nanoseconds>(diff).count(),
+         static_cast<int64_t>(
+             chrono::duration_cast<chrono::nanoseconds>(diff).count()),
          kTimingCycles);
 
   start = monotonic_clock::now();
@@ -185,7 +190,8 @@ TEST_F(LoggingTest, Timing) {
   end = monotonic_clock::now();
   diff = end - start;
   printf("long message took %" PRId64 " nsec for %ld\n",
-         chrono::duration_cast<chrono::nanoseconds>(diff).count(),
+         static_cast<int64_t>(
+             chrono::duration_cast<chrono::nanoseconds>(diff).count()),
          kTimingCycles);
 }
 

@@ -3,7 +3,7 @@
 
 #include "aos/commonmath.h"
 
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
 #include "frc971/wpilib/ahal/PWM.h"
 #include "frc971/wpilib/loop_output_handler.h"
 
@@ -11,12 +11,12 @@ namespace frc971 {
 namespace wpilib {
 
 class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
-                             ::frc971::control_loops::DrivetrainQueue::Output> {
+                             ::frc971::control_loops::drivetrain::Output> {
  public:
   DrivetrainWriter(::aos::EventLoop *event_loop)
       : ::frc971::wpilib::LoopOutputHandler<
-            ::frc971::control_loops::DrivetrainQueue::Output>(
-            event_loop, ".frc971.control_loops.drivetrain_queue.output") {}
+            ::frc971::control_loops::drivetrain::Output>(event_loop,
+                                                         "/drivetrain") {}
 
   void set_left_controller0(::std::unique_ptr<::frc::PWM> t, bool reversed) {
     left_controller0_ = ::std::move(t);
@@ -40,12 +40,11 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
 
  private:
   void Write(
-      const ::frc971::control_loops::DrivetrainQueue::Output &output) override;
+      const ::frc971::control_loops::drivetrain::Output &output) override;
   void Stop() override;
 
   double SafeSpeed(bool reversed, double voltage) {
-    return (::aos::Clip((reversed ? -1.0 : 1.0) * voltage, -12.0, 12.0) /
-            12.0);
+    return (::aos::Clip((reversed ? -1.0 : 1.0) * voltage, -12.0, 12.0) / 12.0);
   }
 
   ::std::unique_ptr<::frc::PWM> left_controller0_, right_controller0_,

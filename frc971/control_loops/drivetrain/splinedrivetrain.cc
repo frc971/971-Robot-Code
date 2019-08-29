@@ -2,10 +2,13 @@
 
 #include "Eigen/Dense"
 
-#include "aos/init.h"
+#include "aos/realtime.h"
 #include "aos/util/math.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -30,7 +33,7 @@ void SplineDrivetrain::ComputeTrajectory() {
 
   ::aos::MutexLocker locker(&mutex_);
   while (run_) {
-    while (goal_.spline.spline_idx == future_spline_idx_) {
+    while (goal_.spline_idx == future_spline_idx_) {
       AOS_CHECK(!new_goal_.Wait());
       if (!run_) {
         return;
@@ -39,10 +42,10 @@ void SplineDrivetrain::ComputeTrajectory() {
     past_distance_spline_.reset();
     past_trajectory_.reset();
 
-    plan_state_ = PlanState::kBuildingTrajectory;
-    const ::frc971::MultiSpline &multispline = goal_.spline;
-    future_spline_idx_ = multispline.spline_idx;
+    plan_state_ = PlanningState_BUILDING_TRAJECTORY;
+    future_spline_idx_ = goal_.spline_idx;
     planning_spline_idx_ = future_spline_idx_;
+    const MultiSpline &multispline = goal_.spline;
     auto x = multispline.spline_x;
     auto y = multispline.spline_y;
     ::std::vector<Spline> splines = ::std::vector<Spline>();
@@ -56,7 +59,7 @@ void SplineDrivetrain::ComputeTrajectory() {
       splines.emplace_back(Spline(points));
     }
 
-    future_drive_spline_backwards_ = goal_.spline.drive_spline_backwards;
+    future_drive_spline_backwards_ = goal_.drive_spline_backwards;
 
     future_distance_spline_ = ::std::unique_ptr<DistanceSpline>(
         new DistanceSpline(::std::move(splines)));
@@ -65,47 +68,79 @@ void SplineDrivetrain::ComputeTrajectory() {
         new Trajectory(future_distance_spline_.get(), dt_config_));
 
     for (size_t i = 0; i < multispline.constraints.size(); ++i) {
-      const ::frc971::Constraint &constraint = multispline.constraints[i];
+      const ::frc971::ConstraintT &constraint = multispline.constraints[i];
       switch (constraint.constraint_type) {
-        case 0:
+        case frc971::ConstraintType_CONSTRAINT_TYPE_UNDEFINED:
           break;
-        case 1:
+        case frc971::ConstraintType_LONGITUDINAL_ACCELERATION:
           future_trajectory_->set_longitudal_acceleration(constraint.value);
           break;
-        case 2:
+        case frc971::ConstraintType_LATERAL_ACCELERATION:
           future_trajectory_->set_lateral_acceleration(constraint.value);
           break;
-        case 3:
+        case frc971::ConstraintType_VOLTAGE:
           future_trajectory_->set_voltage_limit(constraint.value);
           break;
-        case 4:
+        case frc971::ConstraintType_VELOCITY:
           future_trajectory_->LimitVelocity(constraint.start_distance,
                                             constraint.end_distance,
                                             constraint.value);
           break;
       }
     }
-    plan_state_ = PlanState::kPlanningTrajectory;
+    plan_state_ = PlanningState_PLANNING_TRAJECTORY;
 
     future_trajectory_->Plan();
-    plan_state_ = PlanState::kPlannedTrajectory;
+    plan_state_ = PlanningState_PLANNED;
   }
 }
 
 void SplineDrivetrain::SetGoal(
-    const ::frc971::control_loops::DrivetrainQueue::Goal &goal) {
-  current_spline_handle_ = goal.spline_handle;
+    const ::frc971::control_loops::drivetrain::Goal *goal) {
+  current_spline_handle_ = goal->spline_handle();
+
   // If told to stop, set the executing spline to an invalid index and clear out
   // its plan:
   if (current_spline_handle_ == 0 &&
-      current_spline_idx_ != goal.spline.spline_idx) {
+      (goal->spline() == nullptr ||
+       current_spline_idx_ != CHECK_NOTNULL(goal->spline())->spline_idx())) {
     current_spline_idx_ = -1;
   }
 
   ::aos::Mutex::State mutex_state = mutex_.TryLock();
   if (mutex_state == ::aos::Mutex::State::kLocked) {
-    if (goal.spline.spline_idx && future_spline_idx_ != goal.spline.spline_idx) {
-      goal_ = goal;
+    if (goal->spline() != nullptr && goal->spline()->spline_idx() &&
+        future_spline_idx_ != goal->spline()->spline_idx()) {
+      CHECK_NOTNULL(goal->spline());
+      goal_.spline_idx = goal->spline()->spline_idx();
+      goal_.drive_spline_backwards = goal->spline()->drive_spline_backwards();
+
+      const frc971::MultiSpline *multispline = goal->spline()->spline();
+      CHECK_NOTNULL(multispline);
+
+      goal_.spline.spline_count = multispline->spline_count();
+
+      CHECK_EQ(multispline->spline_x()->size(),
+               static_cast<size_t>(goal_.spline.spline_count * 5 + 1));
+      CHECK_EQ(multispline->spline_y()->size(),
+               static_cast<size_t>(goal_.spline.spline_count * 5 + 1));
+
+      std::copy(multispline->spline_x()->begin(),
+                multispline->spline_x()->end(), goal_.spline.spline_x.begin());
+      std::copy(multispline->spline_y()->begin(),
+                multispline->spline_y()->end(), goal_.spline.spline_y.begin());
+
+      for (size_t i = 0; i < 6; ++i) {
+        if (multispline->constraints() != nullptr &&
+            i < multispline->constraints()->size()) {
+          multispline->constraints()->Get(i)->UnPackTo(
+              &goal_.spline.constraints[i]);
+        } else {
+          goal_.spline.constraints[i].constraint_type =
+              ConstraintType_CONSTRAINT_TYPE_UNDEFINED;
+        }
+      }
+
       new_goal_.Broadcast();
       if (current_spline_handle_ != current_spline_idx_) {
         // If we aren't going to actively execute the current spline, evict it's
@@ -178,7 +213,7 @@ void SplineDrivetrain::Update(bool enable, const ::Eigen::Matrix<double, 5, 1> &
 }
 
 void SplineDrivetrain::SetOutput(
-    ::frc971::control_loops::DrivetrainQueue::Output *output) {
+    ::frc971::control_loops::drivetrain::OutputT *output) {
   if (!output) {
     return;
   }
@@ -193,42 +228,52 @@ void SplineDrivetrain::SetOutput(
   output->right_voltage = next_U_(1);
 }
 
+
 void SplineDrivetrain::PopulateStatus(
-    ::frc971::control_loops::DrivetrainQueue::Status *status) const {
-  if (status && enable_) {
-    status->uncapped_left_voltage = uncapped_U_(0);
-    status->uncapped_right_voltage = uncapped_U_(1);
-    status->robot_speed = current_xva_(1);
-    status->output_was_capped = output_was_capped_;
+  drivetrain::Status::Builder *builder) const {
+  if (builder && enable_) {
+    builder->add_uncapped_left_voltage(uncapped_U_(0));
+    builder->add_uncapped_right_voltage(uncapped_U_(1));
+    builder->add_robot_speed(current_xva_(1));
+    builder->add_output_was_capped(output_was_capped_);
   }
+}
 
-  if (status) {
-    if (current_distance_spline_) {
-      ::Eigen::Matrix<double, 5, 1> goal_state = CurrentGoalState();
-      status->trajectory_logging.x = goal_state(0);
-      status->trajectory_logging.y = goal_state(1);
-      status->trajectory_logging.theta = ::aos::math::NormalizeAngle(
-          goal_state(2) + (current_drive_spline_backwards_ ? M_PI : 0.0));
-      status->trajectory_logging.left_velocity = goal_state(3);
-      status->trajectory_logging.right_velocity = goal_state(4);
-    }
-    status->trajectory_logging.planning_state = static_cast<int8_t>(plan_state_.load());
-    status->trajectory_logging.is_executing = !IsAtEnd() && has_started_execution_;
-    status->trajectory_logging.is_executed =
-        (current_spline_idx_ != -1) && IsAtEnd();
-    status->trajectory_logging.goal_spline_handle = current_spline_handle_;
-    status->trajectory_logging.current_spline_idx = current_spline_idx_;
-    status->trajectory_logging.distance_remaining =
-        current_trajectory_ ? current_trajectory_->length() - current_xva_.x()
-                            : 0.0;
-
-    int32_t planning_spline_idx = planning_spline_idx_;
-    if (current_spline_idx_ == planning_spline_idx) {
-      status->trajectory_logging.planning_spline_idx = 0;
-    } else {
-      status->trajectory_logging.planning_spline_idx = planning_spline_idx_;
-    }
+flatbuffers::Offset<TrajectoryLogging> SplineDrivetrain::MakeTrajectoryLogging(
+    flatbuffers::FlatBufferBuilder *builder) const {
+  drivetrain::TrajectoryLogging::Builder trajectory_logging_builder(*builder);
+  if (current_distance_spline_) {
+    ::Eigen::Matrix<double, 5, 1> goal_state = CurrentGoalState();
+    trajectory_logging_builder.add_x(goal_state(0));
+    trajectory_logging_builder.add_y(goal_state(1));
+    trajectory_logging_builder.add_theta(::aos::math::NormalizeAngle(
+        goal_state(2) + (current_drive_spline_backwards_ ? M_PI : 0.0)));
+    trajectory_logging_builder.add_left_velocity(goal_state(3));
+    trajectory_logging_builder.add_right_velocity(goal_state(4));
   }
+  trajectory_logging_builder.add_planning_state(plan_state_.load());
+  trajectory_logging_builder.add_is_executing(!IsAtEnd() &&
+                                              has_started_execution_);
+  trajectory_logging_builder.add_is_executed((current_spline_idx_ != -1) &&
+                                             IsAtEnd());
+  trajectory_logging_builder.add_goal_spline_handle(current_spline_handle_);
+  trajectory_logging_builder.add_current_spline_idx(current_spline_idx_);
+  trajectory_logging_builder.add_distance_remaining(
+      current_trajectory_ ? current_trajectory_->length() - current_xva_.x()
+                          : 0.0);
+
+  int32_t planning_spline_idx = planning_spline_idx_;
+  if (current_spline_idx_ == planning_spline_idx) {
+    trajectory_logging_builder.add_planning_spline_idx(0);
+  } else {
+    trajectory_logging_builder.add_planning_spline_idx(planning_spline_idx_);
+  }
+  return trajectory_logging_builder.Finish();
+}
+
+flatbuffers::Offset<TrajectoryLogging> SplineDrivetrain::MakeTrajectoryLogging(
+    aos::Sender<drivetrain::Status>::Builder *builder) const {
+  return MakeTrajectoryLogging(builder->fbb());
 }
 
 }  // namespace drivetrain

@@ -6,22 +6,22 @@
 #include <google/protobuf/stubs/stringprintf.h>
 
 #include "aos/actions/actions.h"
+#include "aos/init.h"
+#include "aos/input/action_joystick_input.h"
 #include "aos/input/driver_station_data.h"
+#include "aos/input/drivetrain_input.h"
 #include "aos/logging/logging.h"
 #include "aos/network/team_number.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
-#include "aos/input/drivetrain_input.h"
-#include "aos/input/action_joystick_input.h"
-#include "aos/init.h"
 #include "aos/vision/events/udp.h"
-#include "frc971/autonomous/auto.q.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2018/control_loops/drivetrain/drivetrain_base.h"
 #include "y2018/control_loops/superstructure/arm/generated_graph.h"
-#include "y2018/control_loops/superstructure/superstructure.q.h"
+#include "y2018/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2018/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2018/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2018/vision.pb.h"
 
 using ::aos::monotonic_clock;
@@ -95,15 +95,15 @@ class Reader : public ::aos::input::ActionJoystickInput {
             {}),
         superstructure_position_fetcher_(
             event_loop->MakeFetcher<
-                ::y2018::control_loops::SuperstructureQueue::Position>(
+                ::y2018::control_loops::superstructure::Position>(
                 ".frc971.control_loops.superstructure_queue.position")),
         superstructure_status_fetcher_(
             event_loop->MakeFetcher<
-                ::y2018::control_loops::SuperstructureQueue::Status>(
+                ::y2018::control_loops::superstructure::Status>(
                 ".frc971.control_loops.superstructure_queue.status")),
         superstructure_goal_sender_(
             event_loop
-                ->MakeSender<::y2018::control_loops::SuperstructureQueue::Goal>(
+                ->MakeSender<::y2018::control_loops::superstructure::Goal>(
                     ".frc971.control_loops.superstructure_queue.goal")) {
     const uint16_t team = ::aos::network::GetTeamNumber();
 
@@ -120,10 +120,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
       return;
     }
 
-    auto new_superstructure_goal = superstructure_goal_sender_.MakeMessage();
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-    new_superstructure_goal->intake.left_intake_angle = intake_goal_;
-    new_superstructure_goal->intake.right_intake_angle = intake_goal_;
+    double roller_voltage = 0.0;
+    bool trajectory_override = false;
 
     if (data.PosEdge(kIntakeIn) || data.PosEdge(kSmallBox) ||
         data.PosEdge(kIntakeClosed)) {
@@ -132,22 +132,22 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     if (data.IsPressed(kIntakeIn)) {
       // Turn on the rollers.
-      new_superstructure_goal->intake.roller_voltage = 8.0;
+      roller_voltage = 8.0;
     } else if (data.IsPressed(kIntakeOut)) {
       // Turn off the rollers.
-      new_superstructure_goal->intake.roller_voltage = -12.0;
+      roller_voltage = -12.0;
     } else {
       // We don't want the rollers on.
-      new_superstructure_goal->intake.roller_voltage = 0.0;
+      roller_voltage = 0.0;
     }
 
     if (data.IsPressed(kSmallBox)) {
       // Deploy the intake.
-      if (superstructure_position_fetcher_->box_back_beambreak_triggered) {
+      if (superstructure_position_fetcher_->box_back_beambreak_triggered()) {
         intake_goal_ = 0.30;
       } else {
-        if (new_superstructure_goal->intake.roller_voltage > 0.1 &&
-            superstructure_position_fetcher_->box_distance < 0.15) {
+        if (roller_voltage > 0.1 &&
+            superstructure_position_fetcher_->box_distance() < 0.15) {
           intake_goal_ = 0.18;
         } else {
           intake_goal_ = -0.60;
@@ -155,22 +155,22 @@ class Reader : public ::aos::input::ActionJoystickInput {
       }
     } else if (data.IsPressed(kIntakeClosed)) {
       // Deploy the intake.
-      if (superstructure_position_fetcher_->box_back_beambreak_triggered) {
+      if (superstructure_position_fetcher_->box_back_beambreak_triggered()) {
         intake_goal_ = 0.30;
       } else {
-        if (new_superstructure_goal->intake.roller_voltage > 0.1) {
-          if (superstructure_position_fetcher_->box_distance < 0.10) {
-            new_superstructure_goal->intake.roller_voltage -= 3.0;
+        if (roller_voltage > 0.1) {
+          if (superstructure_position_fetcher_->box_distance() < 0.10) {
+            roller_voltage -= 3.0;
             intake_goal_ = 0.22;
-          } else if (superstructure_position_fetcher_->box_distance < 0.17) {
+          } else if (superstructure_position_fetcher_->box_distance() < 0.17) {
             intake_goal_ = 0.13;
-          } else if (superstructure_position_fetcher_->box_distance < 0.25) {
+          } else if (superstructure_position_fetcher_->box_distance() < 0.25) {
             intake_goal_ = 0.05;
           } else {
             intake_goal_ = -0.10;
           }
           if (robot_velocity() < -0.1 &&
-              superstructure_position_fetcher_->box_distance > 0.15) {
+              superstructure_position_fetcher_->box_distance() > 0.15) {
             intake_goal_ += 0.10;
           }
         } else {
@@ -182,18 +182,19 @@ class Reader : public ::aos::input::ActionJoystickInput {
       intake_goal_ = -3.20;
     }
 
-    if (new_superstructure_goal->intake.roller_voltage > 0.1 &&
+    if (roller_voltage > 0.1 &&
         intake_goal_ > 0.0) {
-      if (superstructure_position_fetcher_->box_distance < 0.10) {
-        new_superstructure_goal->intake.roller_voltage -= 3.0;
+      if (superstructure_position_fetcher_->box_distance() < 0.10) {
+        roller_voltage -= 3.0;
       }
-      new_superstructure_goal->intake.roller_voltage += 3.0;
+      roller_voltage += 3.0;
     }
 
     // If we are disabled, stay at the node closest to where we start.  This
     // should remove long motions when enabled.
     if (!data.GetControlBit(ControlBit::kEnabled) || never_disabled_) {
-      arm_goal_position_ = superstructure_status_fetcher_->arm.current_node;
+      arm_goal_position_ =
+          superstructure_status_fetcher_->arm()->current_node();
       never_disabled_ = false;
     }
 
@@ -202,9 +203,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
       grab_box = true;
     }
     const bool near_goal =
-        superstructure_status_fetcher_->arm.current_node ==
+        superstructure_status_fetcher_->arm()->current_node() ==
             arm_goal_position_ &&
-        superstructure_status_fetcher_->arm.path_distance_to_go < 1e-3;
+        superstructure_status_fetcher_->arm()->path_distance_to_go() < 1e-3;
     if (data.IsPressed(kArmStepDown) && near_goal) {
       uint32_t *front_point = ::std::find(
           front_points_.begin(), front_points_.end(), arm_goal_position_);
@@ -291,50 +292,65 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     if (data.IsPressed(kEmergencyDown)) {
       arm_goal_position_ = arm::NeutralIndex();
-      new_superstructure_goal->trajectory_override = true;
+      trajectory_override = true;
     } else if (data.IsPressed(kEmergencyUp)) {
       arm_goal_position_ = arm::UpIndex();
-      new_superstructure_goal->trajectory_override = true;
+      trajectory_override = true;
     } else {
-      new_superstructure_goal->trajectory_override = false;
+      trajectory_override = false;
     }
 
-    new_superstructure_goal->deploy_fork =
+    const bool deploy_fork =
         data.IsPressed(kArmAboveHang) && data.IsPressed(kClawOpen);
 
-    if (new_superstructure_goal->deploy_fork) {
+    if (deploy_fork) {
       intake_goal_ = -2.0;
     }
 
+    control_loops::superstructure::IntakeGoal::Builder intake_goal_builder =
+        builder.MakeBuilder<control_loops::superstructure::IntakeGoal>();
+
+    intake_goal_builder.add_left_intake_angle(intake_goal_);
+    intake_goal_builder.add_right_intake_angle(intake_goal_);
+    intake_goal_builder.add_roller_voltage(roller_voltage);
+
+    flatbuffers::Offset<control_loops::superstructure::IntakeGoal>
+        intake_goal_offset = intake_goal_builder.Finish();
+
+    control_loops::superstructure::Goal::Builder superstructure_builder =
+        builder.MakeBuilder<control_loops::superstructure::Goal>();
+
+    superstructure_builder.add_intake(intake_goal_offset);
+    superstructure_builder.add_grab_box(grab_box);
+    superstructure_builder.add_trajectory_override(trajectory_override);
+    superstructure_builder.add_deploy_fork(deploy_fork);
+
     if (data.IsPressed(kWinch)) {
       AOS_LOG(INFO, "Winching\n");
-      new_superstructure_goal->voltage_winch = 12.0;
+      superstructure_builder.add_voltage_winch(12.0);
     } else {
-      new_superstructure_goal->voltage_winch = 0.0;
+      superstructure_builder.add_voltage_winch(0.0);
     }
 
-    new_superstructure_goal->hook_release = data.IsPressed(kArmBelowHang);
+    superstructure_builder.add_hook_release(data.IsPressed(kArmBelowHang));
 
-    new_superstructure_goal->arm_goal_position = arm_goal_position_;
+    superstructure_builder.add_arm_goal_position(arm_goal_position_);
     if (data.IsPressed(kArmFrontSwitch) || data.IsPressed(kArmBackSwitch)) {
-      new_superstructure_goal->open_threshold = 0.35;
+      superstructure_builder.add_open_threshold(0.35);
     } else {
-      new_superstructure_goal->open_threshold = 0.0;
+      superstructure_builder.add_open_threshold(0.0);
     }
 
     if ((data.IsPressed(kClawOpen) && data.IsPressed(kDriverClawOpen)) ||
         data.PosEdge(kArmPickupBoxFromIntake) ||
         (data.IsPressed(kClawOpen) &&
          (data.IsPressed(kArmFrontSwitch) || data.IsPressed(kArmBackSwitch)))) {
-      new_superstructure_goal->open_claw = true;
+      superstructure_builder.add_open_claw(true);
     } else {
-      new_superstructure_goal->open_claw = false;
+      superstructure_builder.add_open_claw(false);
     }
 
-    new_superstructure_goal->grab_box = grab_box;
-
-    AOS_LOG_STRUCT(DEBUG, "sending goal", *new_superstructure_goal);
-    if (!new_superstructure_goal.Send()) {
+    if (!builder.Send(superstructure_builder.Finish())) {
       AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
     }
 
@@ -347,11 +363,11 @@ class Reader : public ::aos::input::ActionJoystickInput {
     return mode();
   }
 
-  ::aos::Fetcher<::y2018::control_loops::SuperstructureQueue::Position>
+  ::aos::Fetcher<control_loops::superstructure::Position>
       superstructure_position_fetcher_;
-  ::aos::Fetcher<::y2018::control_loops::SuperstructureQueue::Status>
+  ::aos::Fetcher<control_loops::superstructure::Status>
       superstructure_status_fetcher_;
-  ::aos::Sender<::y2018::control_loops::SuperstructureQueue::Goal>
+  ::aos::Sender<control_loops::superstructure::Goal>
       superstructure_goal_sender_;
 
   // Current goals to send to the robot.
@@ -375,7 +391,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
 int main() {
   ::aos::InitNRT(true);
 
-  ::aos::ShmEventLoop event_loop;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig("config.json");
+
+  ::aos::ShmEventLoop event_loop(&config.message());
   ::y2018::input::joysticks::Reader reader(&event_loop);
 
   event_loop.Run();

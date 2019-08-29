@@ -5,12 +5,12 @@
 #include <unistd.h>
 #include <initializer_list>
 
-#include "aos/logging/logging.h"
+#include "glog/logging.h"
 
 namespace aos {
 namespace ipc_lib {
 
-SignalFd::SignalFd(::std::initializer_list<int> signals) {
+SignalFd::SignalFd(::std::initializer_list<unsigned int> signals) {
   // Build up the mask with the provided signals.
   sigemptyset(&mask_);
   for (int signal : signals) {
@@ -18,7 +18,7 @@ SignalFd::SignalFd(::std::initializer_list<int> signals) {
   }
   // Then build a signalfd.  Make it nonblocking so it works well with an epoll
   // loop, and have it close on exec.
-  AOS_PCHECK(fd_ = signalfd(-1, &mask_, SFD_NONBLOCK | SFD_CLOEXEC));
+  PCHECK((fd_ = signalfd(-1, &mask_, SFD_NONBLOCK | SFD_CLOEXEC)) != 0);
   // Now that we have a consumer of the signal, block the signals so the
   // signalfd gets them.
   pthread_sigmask(SIG_BLOCK, &mask_, nullptr);
@@ -27,7 +27,7 @@ SignalFd::SignalFd(::std::initializer_list<int> signals) {
 SignalFd::~SignalFd() {
   // Unwind the constructor.  Unblock the signals and close the fd.
   pthread_sigmask(SIG_UNBLOCK, &mask_, nullptr);
-  AOS_PCHECK(close(fd_));
+  PCHECK(close(fd_) == 0);
 }
 
 signalfd_siginfo SignalFd::Read() {

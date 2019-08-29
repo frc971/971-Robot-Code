@@ -1,5 +1,6 @@
 #include "y2017/control_loops/superstructure/vision_distance_average.h"
 
+#include "aos/flatbuffers.h"
 #include "gtest/gtest.h"
 
 namespace y2017 {
@@ -18,18 +19,28 @@ class VisionDistanceAverageTest : public ::testing::Test {
   }
 
   void TickInvalid() {
-    vision::VisionStatus status;
-    status.image_valid = false;
+    flatbuffers::FlatBufferBuilder fbb;
 
-    average_.Tick(tick_time(), &status);
+    vision::VisionStatus::Builder status_builder(fbb);
+    status_builder.add_image_valid(false);
+    fbb.Finish(status_builder.Finish());
+
+    aos::FlatbufferDetachedBuffer<vision::VisionStatus> status(fbb.Release());
+
+    average_.Tick(tick_time(), &status.message());
   }
 
   void TickValid(double distance) {
-    vision::VisionStatus status;
-    status.image_valid = true;
-    status.distance = distance;
+    flatbuffers::FlatBufferBuilder fbb;
 
-    average_.Tick(tick_time(), &status);
+    vision::VisionStatus::Builder status_builder(fbb);
+    status_builder.add_image_valid(true);
+    status_builder.add_distance(distance);
+    fbb.Finish(status_builder.Finish());
+
+    aos::FlatbufferDetachedBuffer<vision::VisionStatus> status(fbb.Release());
+
+    average_.Tick(tick_time(), &status.message());
   }
 
   void TickNullptr() {

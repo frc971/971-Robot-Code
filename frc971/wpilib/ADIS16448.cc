@@ -8,10 +8,9 @@
 #include <chrono>
 
 #include "aos/init.h"
-#include "aos/logging/queue_logging.h"
-#include "aos/robot_state/robot_state.q.h"
+#include "aos/robot_state/robot_state_generated.h"
 #include "aos/time/time.h"
-#include "frc971/wpilib/imu.q.h"
+#include "frc971/wpilib/imu_generated.h"
 #include "frc971/zeroing/averager.h"
 
 namespace frc971 {
@@ -121,10 +120,9 @@ uint16_t CalculateCrc(const uint8_t *data, size_t data_length) {
 ADIS16448::ADIS16448(::aos::EventLoop *event_loop, frc::SPI::Port port,
                      frc::DigitalInput *dio1)
     : event_loop_(event_loop),
-      joystick_state_fetcher_(event_loop_->MakeFetcher<::aos::JoystickState>(
-          ".aos.joystick_state")),
+      robot_state_fetcher_(event_loop_->MakeFetcher<::aos::RobotState>("/aos")),
       imu_values_sender_(
-          event_loop_->MakeSender<::frc971::IMUValues>(".frc971.imu_values")),
+          event_loop_->MakeSender<::frc971::IMUValues>("/drivetrain")),
       spi_(new frc::SPI(port)),
       dio1_(dio1) {
   // 1MHz is the maximum supported for burst reads, but we
@@ -247,31 +245,35 @@ void ADIS16448::DoRun() {
       }
     }
 
-    auto message = imu_values_sender_.MakeMessage();
-    message->fpga_timestamp = ::aos::time::DurationInSeconds(
-        dio1_->ReadRisingTimestamp().time_since_epoch());
-    message->monotonic_timestamp_ns =
-        chrono::duration_cast<chrono::nanoseconds>(read_time.time_since_epoch())
-            .count();
+    auto builder = imu_values_sender_.MakeBuilder();
 
-    message->gyro_x =
+    IMUValues::Builder imu_builder = builder.MakeBuilder<IMUValues>();
+
+    imu_builder.add_fpga_timestamp(::aos::time::DurationInSeconds(
+        dio1_->ReadRisingTimestamp().time_since_epoch()));
+    imu_builder.add_monotonic_timestamp_ns(
+        chrono::duration_cast<chrono::nanoseconds>(read_time.time_since_epoch())
+            .count());
+
+    float gyro_x =
         ConvertValue(&to_receive[4], kGyroLsbDegreeSecond * M_PI / 180.0);
-    message->gyro_y =
+    float gyro_y =
         ConvertValue(&to_receive[6], kGyroLsbDegreeSecond * M_PI / 180.0);
-    message->gyro_z =
+    float gyro_z =
         ConvertValue(&to_receive[8], kGyroLsbDegreeSecond * M_PI / 180.0);
 
     // The first few seconds of samples are averaged and subtracted from
     // subsequent samples for zeroing purposes.
     if (!gyros_are_zeroed_) {
-      average_gyro_x.AddData(message->gyro_x);
-      average_gyro_y.AddData(message->gyro_y);
-      average_gyro_z.AddData(message->gyro_z);
+      average_gyro_x.AddData(gyro_x);
+      average_gyro_y.AddData(gyro_y);
+      average_gyro_z.AddData(gyro_z);
 
       if (average_gyro_x.full() && average_gyro_y.full() &&
           average_gyro_z.full()) {
-        joystick_state_fetcher_.Fetch();
-        if (joystick_state_fetcher_.get() && joystick_state_fetcher_->enabled) {
+        robot_state_fetcher_.Fetch();
+        if (robot_state_fetcher_.get() &&
+            robot_state_fetcher_->outputs_enabled()) {
           gyro_x_zeroed_offset_ = -average_gyro_x.GetAverage();
           gyro_y_zeroed_offset_ = -average_gyro_y.GetAverage();
           gyro_z_zeroed_offset_ = -average_gyro_z.GetAverage();
@@ -282,33 +284,36 @@ void ADIS16448::DoRun() {
         }
       }
     }
+    gyro_x += gyro_x_zeroed_offset_;
+    gyro_y += gyro_y_zeroed_offset_;
+    gyro_z += gyro_z_zeroed_offset_;
 
-    message->gyro_x += gyro_x_zeroed_offset_;
-    message->gyro_y += gyro_y_zeroed_offset_;
-    message->gyro_z += gyro_z_zeroed_offset_;
+    imu_builder.add_gyro_x(gyro_x);
+    imu_builder.add_gyro_y(gyro_y);
+    imu_builder.add_gyro_z(gyro_z);
 
-    message->accelerometer_x =
-        ConvertValue(&to_receive[10], kAccelerometerLsbG);
-    message->accelerometer_y =
-        ConvertValue(&to_receive[12], kAccelerometerLsbG);
-    message->accelerometer_z =
-        ConvertValue(&to_receive[14], kAccelerometerLsbG);
+    imu_builder.add_accelerometer_x(
+        ConvertValue(&to_receive[10], kAccelerometerLsbG));
+    imu_builder.add_accelerometer_y(
+        ConvertValue(&to_receive[12], kAccelerometerLsbG));
+    imu_builder.add_accelerometer_z(
+        ConvertValue(&to_receive[14], kAccelerometerLsbG));
 
-    message->magnetometer_x =
-        ConvertValue(&to_receive[16], kMagnetometerLsbGauss);
-    message->magnetometer_y =
-        ConvertValue(&to_receive[18], kMagnetometerLsbGauss);
-    message->magnetometer_z =
-        ConvertValue(&to_receive[20], kMagnetometerLsbGauss);
+    imu_builder.add_magnetometer_x(
+        ConvertValue(&to_receive[16], kMagnetometerLsbGauss));
+    imu_builder.add_magnetometer_y(
+        ConvertValue(&to_receive[18], kMagnetometerLsbGauss));
+    imu_builder.add_magnetometer_z(
+        ConvertValue(&to_receive[20], kMagnetometerLsbGauss));
 
-    message->barometer =
-        ConvertValue(&to_receive[22], kBarometerLsbPascal, false);
+    imu_builder.add_barometer(
+        ConvertValue(&to_receive[22], kBarometerLsbPascal, false));
 
-    message->temperature =
-        ConvertValue(&to_receive[24], kTemperatureLsbDegree) + kTemperatureZero;
+    imu_builder.add_temperature(
+        ConvertValue(&to_receive[24], kTemperatureLsbDegree) +
+        kTemperatureZero);
 
-    AOS_LOG_STRUCT(DEBUG, "sending", *message);
-    if (!message.Send()) {
+    if (!builder.Send(imu_builder.Finish())) {
       AOS_LOG(WARNING, "sending queue message failed\n");
     }
 

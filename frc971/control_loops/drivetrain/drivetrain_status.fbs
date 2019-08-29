@@ -1,0 +1,140 @@
+include "frc971/control_loops/control_loops.fbs";
+
+namespace frc971.control_loops.drivetrain;
+
+// For logging information about what the code is doing with the shifters.
+table GearLogging {
+  // Which controller is being used.
+  controller_index:byte;
+
+  // Whether each loop for the drivetrain sides is the high-gear one.
+  left_loop_high:bool;
+  right_loop_high:bool;
+
+  // The states of each drivetrain shifter.
+  left_state:byte;
+  right_state:byte;
+}
+
+// For logging information about the state of the shifters.
+table CIMLogging {
+  // Whether the code thinks each drivetrain side is currently in gear.
+  left_in_gear:bool;
+  right_in_gear:bool;
+
+  // The angular velocities (in rad/s, positive forward) the code thinks motors
+  // on each side of the drivetrain are moving at.
+  left_motor_speed:double;
+  right_motor_speed:double;
+
+  // The velocity estimates for each drivetrain side of the robot (in m/s,
+  // positive forward) that can be used for shifting.
+  left_velocity:double;
+  right_velocity:double;
+}
+
+enum PlanningState : byte {
+  NO_PLAN,
+  BUILDING_TRAJECTORY,
+  PLANNING_TRAJECTORY,
+  PLANNED,
+}
+
+// For logging information about the state of the trajectory planning.
+table TrajectoryLogging {
+  // state of planning the trajectory.
+  planning_state:PlanningState;
+
+  // State of the spline execution.
+  is_executing:bool;
+  // Whether we have finished the spline specified by current_spline_idx.
+  is_executed:bool;
+
+  // The handle of the goal spline.  0 means stop requested.
+  goal_spline_handle:int;
+  // Handle of the executing spline.  -1 means none requested.  If there was no
+  // spline executing when a spline finished optimizing, it will become the
+  // current spline even if we aren't ready to start yet.
+  current_spline_idx:int;
+  // Handle of the spline that is being optimized and staged.
+  planning_spline_idx:int;
+
+  // Expected position and velocity on the spline
+  x:float;
+  y:float;
+  theta:float;
+  left_velocity:float;
+  right_velocity:float;
+  distance_remaining:float;
+}
+
+// For logging state of the line follower.
+table LineFollowLogging {
+  // Whether we are currently freezing target choice.
+  frozen:bool;
+  // Whether we currently have a target.
+  have_target:bool;
+  // Absolute position of the current goal.
+  x:float;
+  y:float;
+  theta:float;
+  // Current lateral offset from line pointing straight out of the target.
+  offset:float;
+  // Current distance from the plane of the target, in meters.
+  distance_to_target:float;
+  // Current goal heading.
+  goal_theta:float;
+  // Current relative heading.
+  rel_theta:float;
+}
+
+table Status {
+  // Estimated speed of the center of the robot in m/s (positive forwards).
+  robot_speed:double;
+
+  // Estimated relative position of each drivetrain side (in meters).
+  estimated_left_position:double;
+  estimated_right_position:double;
+
+  // Estimated velocity of each drivetrain side (in m/s).
+  estimated_left_velocity:double;
+  estimated_right_velocity:double;
+
+  // The voltage we wanted to send to each drivetrain side last cycle.
+  uncapped_left_voltage:double;
+  uncapped_right_voltage:double;
+
+  // The voltage error for the left and right sides.
+  left_voltage_error:double;
+  right_voltage_error:double;
+
+  // The profiled goal states.
+  profiled_left_position_goal:double;
+  profiled_right_position_goal:double;
+  profiled_left_velocity_goal:double;
+  profiled_right_velocity_goal:double;
+
+  // The KF offset
+  estimated_angular_velocity_error:double;
+  // The KF estimated heading.
+  estimated_heading:double;
+
+  // xytheta of the robot.
+  x:double;
+  y:double;
+  theta:double;
+
+  // True if the output voltage was capped last cycle.
+  output_was_capped:bool;
+
+  // The angle of the robot relative to the ground.
+  ground_angle:double;
+
+  // Information about shifting logic and curent gear, for logging purposes
+  gear_logging:GearLogging;
+  cim_logging:CIMLogging;
+  trajectory_logging:TrajectoryLogging;
+  line_follow_logging:LineFollowLogging;
+}
+
+root_type Status;

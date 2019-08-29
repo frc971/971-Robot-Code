@@ -1,0 +1,16 @@
+namespace y2016.actors.superstructure_action;
+
+// Parameters to send with start.
+table SuperstructureActionParams {
+  partial_angle:double;
+  delay_time:double;
+  full_angle:double;
+  shooter_angle:double;
+}
+
+table Goal {
+  run:uint;
+  params:SuperstructureActionParams;
+}
+
+root_type Goal;

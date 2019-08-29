@@ -191,7 +191,8 @@ class RawQueueTest : public ::testing::Test {
       case 0:  // child
         if (kForkSleep != chrono::milliseconds(0)) {
           AOS_LOG(INFO, "pid %jd sleeping for %" PRId64 "ns\n",
-                  static_cast<intmax_t>(getpid()), kForkSleep.count());
+                  static_cast<intmax_t>(getpid()),
+                  static_cast<int64_t>(kForkSleep.count()));
           this_thread::sleep_for(kForkSleep);
         }
         ::aos::testing::PreventExit();

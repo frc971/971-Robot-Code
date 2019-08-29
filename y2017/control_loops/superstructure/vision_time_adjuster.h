@@ -4,10 +4,10 @@
 #include <stdint.h>
 
 #include "aos/containers/ring_buffer.h"
-#include "aos/events/event-loop.h"
+#include "aos/events/event_loop.h"
 #include "aos/time/time.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "y2017/vision/vision.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
+#include "y2017/vision/vision_generated.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -51,7 +51,7 @@ class VisionTimeAdjuster {
 
  private:
   // Fetcher to grab the latest drivetrain message.
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
 
   // Buffer space to store the most recent drivetrain and turret messages from

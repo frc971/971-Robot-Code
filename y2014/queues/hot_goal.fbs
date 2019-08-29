@@ -1,0 +1,9 @@
+namespace y2014;
+
+// Published on "/"
+table HotGoal {
+  left_count:ulong;
+  right_count:ulong;
+}
+
+root_type HotGoal;

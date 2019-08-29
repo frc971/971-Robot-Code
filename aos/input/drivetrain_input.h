@@ -9,8 +9,10 @@
 
 #include "aos/input/driver_station_data.h"
 #include "aos/logging/logging.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 
 namespace aos {
 namespace input {
@@ -60,12 +62,11 @@ class DrivetrainInputReader {
         turn2_use_(turn2_use),
         drivetrain_status_fetcher_(
             event_loop
-                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
-                    ".frc971.control_loops.drivetrain_queue.status")),
+                ->MakeFetcher<::frc971::control_loops::drivetrain::Status>(
+                    "/drivetrain")),
         drivetrain_goal_sender_(
-            event_loop
-                ->MakeSender<::frc971::control_loops::DrivetrainQueue::Goal>(
-                    ".frc971.control_loops.drivetrain_queue.goal")) {}
+            event_loop->MakeSender<::frc971::control_loops::drivetrain::Goal>(
+                "/drivetrain")) {}
 
   virtual ~DrivetrainInputReader() = default;
 
@@ -130,9 +131,9 @@ class DrivetrainInputReader {
   virtual WheelAndThrottle GetWheelAndThrottle(
       const ::aos::input::driver_station::Data &data) = 0;
 
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
-  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Goal>
+  ::aos::Sender<::frc971::control_loops::drivetrain::Goal>
       drivetrain_goal_sender_;
 
   double robot_velocity_ = 0.0;

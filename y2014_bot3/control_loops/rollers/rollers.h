@@ -3,27 +3,31 @@
 
 #include "aos/controls/control_loop.h"
 
-#include "y2014_bot3/control_loops/rollers/rollers.q.h"
+#include "y2014_bot3/control_loops/rollers/rollers_goal_generated.h"
+#include "y2014_bot3/control_loops/rollers/rollers_output_generated.h"
+#include "y2014_bot3/control_loops/rollers/rollers_position_generated.h"
+#include "y2014_bot3/control_loops/rollers/rollers_status_generated.h"
 
 namespace y2014_bot3 {
 namespace control_loops {
+namespace rollers {
 
-class Rollers : public aos::controls::ControlLoop<control_loops::RollersQueue> {
+class Rollers
+    : public aos::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
   // Constructs a control loops which can take a rollers or defaults to the
   // rollers at ::2014_bot3::control_loops::rollers.
-  explicit Rollers(
-      ::aos::EventLoop *event_loop,
-      const ::std::string &name = ".y2014_bot3.control_loops.rollers_queue");
+  explicit Rollers(::aos::EventLoop *event_loop,
+                   const ::std::string &name = "/rollers");
 
  protected:
   // Executes one cycle of the control loop.
-  void RunIteration(const control_loops::RollersQueue::Goal *goal,
-                    const control_loops::RollersQueue::Position *position,
-                    control_loops::RollersQueue::Output *output,
-                    control_loops::RollersQueue::Status *status) override;
+  void RunIteration(const Goal *goal, const Position *position,
+                    aos::Sender<Output>::Builder *output,
+                    aos::Sender<Status>::Builder *status) override;
 };
 
+}  // namespace rollers
 }  // namespace control_loops
 }  // namespace y2014_bot3
 

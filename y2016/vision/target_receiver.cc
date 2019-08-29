@@ -10,19 +10,18 @@
 #include <thread>
 #include <vector>
 
-#include "aos/events/event-loop.h"
-#include "aos/events/shm-event-loop.h"
+#include "aos/events/event_loop.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
-#include "aos/logging/queue_logging.h"
 #include "aos/mutex/mutex.h"
 #include "aos/time/time.h"
 #include "aos/vision/events/udp.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2016/constants.h"
 #include "y2016/vision/stereo_geometry.h"
-#include "y2016/vision/vision.q.h"
 #include "y2016/vision/vision_data.pb.h"
+#include "y2016/vision/vision_generated.h"
 
 namespace y2016 {
 namespace vision {
@@ -197,17 +196,20 @@ class DrivetrainOffsetCalculator {
   DrivetrainOffsetCalculator(::aos::EventLoop *event_loop)
       : drivetrain_status_fetcher_(
             event_loop
-                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
-                    ".frc971.control_loops.drivetrain_queue.status")) {}
+                ->MakeFetcher<::frc971::control_loops::drivetrain::Status>(
+                    "/drivetrain")) {}
 
   // Takes a vision status message with everything except
   // drivetrain_{left,right}_position set and sets those.
   // Returns false if it doesn't have enough data to fill them out.
-  bool CompleteVisionStatus(::y2016::vision::VisionStatus *status) {
+  bool CompleteVisionStatus(::y2016::vision::VisionStatusT *status) {
     while (drivetrain_status_fetcher_.FetchNext()) {
-      data_[data_index_].time = drivetrain_status_fetcher_->sent_time;
-      data_[data_index_].left = drivetrain_status_fetcher_->estimated_left_position;
-      data_[data_index_].right = drivetrain_status_fetcher_->estimated_right_position;
+      data_[data_index_].time =
+          drivetrain_status_fetcher_.context().monotonic_sent_time;
+      data_[data_index_].left =
+          drivetrain_status_fetcher_->estimated_left_position();
+      data_[data_index_].right =
+          drivetrain_status_fetcher_->estimated_right_position();
       ++data_index_;
       if (data_index_ == data_.size()) data_index_ = 0;
       if (valid_data_ < data_.size()) ++valid_data_;
@@ -286,7 +288,7 @@ class DrivetrainOffsetCalculator {
     }
   }
 
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
 
   ::std::array<DrivetrainData, 200> data_;
@@ -297,11 +299,13 @@ class DrivetrainOffsetCalculator {
 };
 
 void Main() {
-  ::aos::ShmEventLoop event_loop;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig("config.json");
+
+  ::aos::ShmEventLoop event_loop(&config.message());
 
   ::aos::Sender<::y2016::vision::VisionStatus> vision_status_sender =
-      event_loop.MakeSender<::y2016::vision::VisionStatus>(
-          ".y2016.vision.vision_status");
+      event_loop.MakeSender<::y2016::vision::VisionStatus>("/superstructure");
 
   StereoGeometry stereo(constants::GetValues().vision_name);
   AOS_LOG(INFO, "calibration: %s\n",
@@ -339,9 +343,10 @@ void Main() {
       const bool left_image_valid = left.is_valid();
       const bool right_image_valid = right.is_valid();
 
-      auto new_vision_status = vision_status_sender.MakeMessage();
-      new_vision_status->left_image_valid = left_image_valid;
-      new_vision_status->right_image_valid = right_image_valid;
+      auto builder = vision_status_sender.MakeBuilder();
+      VisionStatusT new_vision_status;
+      new_vision_status.left_image_valid = left_image_valid;
+      new_vision_status.right_image_valid = right_image_valid;
       if (left_image_valid && right_image_valid) {
         ::aos::vision::Vector<2> center_left(0.0, 0.0);
         ::aos::vision::Vector<2> center_right(0.0, 0.0);
@@ -367,7 +372,7 @@ void Main() {
         if (left.capture_time() < right.capture_time()) {
           filtered_center_left = center_left;
           filtered_angle_left = angle_left;
-          new_vision_status->target_time =
+          new_vision_status.target_time =
               chrono::duration_cast<chrono::nanoseconds>(
                   left.capture_time().time_since_epoch())
                   .count();
@@ -377,7 +382,7 @@ void Main() {
         } else {
           filtered_center_right = center_right;
           filtered_angle_right = angle_right;
-          new_vision_status->target_time =
+          new_vision_status.target_time =
               chrono::duration_cast<chrono::nanoseconds>(
                   right.capture_time().time_since_epoch())
                   .count();
@@ -389,28 +394,27 @@ void Main() {
         double distance, horizontal_angle, vertical_angle;
         stereo.Process(filtered_center_left, filtered_center_right, &distance,
                        &horizontal_angle, &vertical_angle);
-        new_vision_status->left_image_timestamp =
+        new_vision_status.left_image_timestamp =
             left.target().image_timestamp();
-        new_vision_status->right_image_timestamp =
+        new_vision_status.right_image_timestamp =
             right.target().image_timestamp();
-        new_vision_status->left_send_timestamp = left.target().send_timestamp();
-        new_vision_status->right_send_timestamp =
+        new_vision_status.left_send_timestamp = left.target().send_timestamp();
+        new_vision_status.right_send_timestamp =
             right.target().send_timestamp();
-        new_vision_status->horizontal_angle = horizontal_angle;
-        new_vision_status->vertical_angle = vertical_angle;
-        new_vision_status->distance = distance;
-        new_vision_status->angle =
+        new_vision_status.horizontal_angle = horizontal_angle;
+        new_vision_status.vertical_angle = vertical_angle;
+        new_vision_status.distance = distance;
+        new_vision_status.angle =
             (filtered_angle_left + filtered_angle_right) / 2.0;
       }
 
-      if (drivetrain_offset.CompleteVisionStatus(new_vision_status.get())) {
-        AOS_LOG_STRUCT(DEBUG, "vision", *new_vision_status);
-        if (!new_vision_status.Send()) {
+      if (drivetrain_offset.CompleteVisionStatus(&new_vision_status)) {
+        if (!builder.Send(
+                VisionStatus::Pack(*builder.fbb(), &new_vision_status))) {
           AOS_LOG(ERROR, "Failed to send vision information\n");
         }
       } else {
-        AOS_LOG_STRUCT(WARNING, "vision without drivetrain",
-                       *new_vision_status);
+        AOS_LOG(WARNING, "vision without drivetrain");
       }
     }
 

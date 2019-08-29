@@ -5,29 +5,30 @@
 
 #include "aos/actions/actions.h"
 #include "aos/actions/actor.h"
-#include "y2016/actors/superstructure_action.q.h"
-#include "y2016/control_loops/superstructure/superstructure.q.h"
+#include "y2016/actors/superstructure_action_generated.h"
+#include "y2016/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2016/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2016 {
 namespace actors {
 
 class SuperstructureActor
-    : public ::aos::common::actions::ActorBase<SuperstructureActionQueueGroup> {
+    : public ::aos::common::actions::ActorBase<superstructure_action::Goal> {
  public:
   typedef ::aos::common::actions::TypedActionFactory<
-      SuperstructureActionQueueGroup>
+      superstructure_action::Goal>
       Factory;
 
   explicit SuperstructureActor(::aos::EventLoop *event_loop);
 
   static Factory MakeFactory(::aos::EventLoop *event_loop) {
-    return Factory(event_loop, ".y2016.actors.superstructure_action");
+    return Factory(event_loop, "/superstructure_action");
   }
 
  private:
-  ::aos::Sender<::y2016::control_loops::SuperstructureQueue::Goal>
+  ::aos::Sender<::y2016::control_loops::superstructure::Goal>
       superstructure_goal_sender_;
-  ::aos::Fetcher<::y2016::control_loops::SuperstructureQueue::Status>
+  ::aos::Fetcher<::y2016::control_loops::superstructure::Status>
       superstructure_status_fetcher_;
   // Internal struct holding superstructure goals sent by autonomous to the
   // loop.
@@ -37,7 +38,8 @@ class SuperstructureActor
     double wrist;
   };
   SuperstructureGoal superstructure_goal_;
-  bool RunAction(const actors::SuperstructureActionParams &params) override;
+  bool RunAction(
+      const superstructure_action::SuperstructureActionParams *params) override;
   void MoveSuperstructure(double shoulder, double shooter, bool unfold_climber);
   void WaitForSuperstructure();
   bool SuperstructureProfileDone();

@@ -1,0 +1,35 @@
+namespace frc971.codelab;
+
+// The theme of this basic test is a simple intake system.
+//
+// The system will have a motor driven by the voltage returned
+// by output, and then eventually this motor, when run enough,
+// will trigger the limit_sensor. The hypothetical motor should shut
+// off in that hypothetical situation to avoid hypothetical burnout.
+table Goal {
+  // The control loop needs to intake now.
+  intake:bool;
+}
+
+table Position {
+  // This is a potential incoming sensor value letting us know
+  // if we need to be intaking.
+  limit_sensor:bool;
+}
+
+table Status {
+  // Lets consumers of basic_queue.status know if
+  // the requested intake is finished.
+  intake_complete:bool;
+}
+
+table Output {
+  // This would be set up to drive a hypothetical motor that would
+  // hope to intake something.
+  intake_voltage:double;
+}
+
+root_type Goal;
+root_type Position;
+root_type Status;
+root_type Output;

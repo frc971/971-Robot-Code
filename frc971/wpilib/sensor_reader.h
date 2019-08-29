@@ -4,11 +4,11 @@
 #include <atomic>
 #include <chrono>
 
-#include "aos/events/event-loop.h"
-#include "aos/robot_state/robot_state.q.h"
+#include "aos/events/event_loop.h"
+#include "aos/robot_state/robot_state_generated.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
-#include "frc971/control_loops/control_loops.q.h"
+#include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/wpilib/ahal/DigitalGlitchFilter.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"
 #include "frc971/wpilib/ahal/DriverStation.h"
@@ -63,7 +63,7 @@ class SensorReader {
   // Copies a DMAEncoder to a IndexPosition with the correct unit and direction
   // changes.
   void CopyPosition(const ::frc971::wpilib::DMAEncoder &encoder,
-                    ::frc971::IndexPosition *position,
+                    ::frc971::IndexPositionT *position,
                     double encoder_counts_per_revolution, double encoder_ratio,
                     bool reverse) {
     const double multiplier = reverse ? -1.0 : 1.0;
@@ -82,7 +82,7 @@ class SensorReader {
   // the correct unit and direction changes.
   void CopyPosition(
       const ::frc971::wpilib::AbsoluteEncoderAndPotentiometer &encoder,
-      ::frc971::PotAndAbsolutePosition *position,
+      ::frc971::PotAndAbsolutePositionT *position,
       double encoder_counts_per_revolution, double encoder_ratio,
       ::std::function<double(double)> potentiometer_translate, bool reverse,
       double pot_offset) {
@@ -104,7 +104,7 @@ class SensorReader {
   // Copies a DMAEdgeCounter to a HallEffectAndPosition with the correct unit
   // and direction changes.
   void CopyPosition(const ::frc971::wpilib::DMAEdgeCounter &counter,
-                    ::frc971::HallEffectAndPosition *position,
+                    ::frc971::HallEffectAndPositionT *position,
                     double encoder_counts_per_revolution, double encoder_ratio,
                     bool reverse) {
     const double multiplier = reverse ? -1.0 : 1.0;
@@ -129,7 +129,7 @@ class SensorReader {
   // and direction changes.
   void CopyPosition(
       const ::frc971::wpilib::AbsoluteEncoder &encoder,
-      ::frc971::AbsolutePosition *position,
+      ::frc971::AbsolutePositionT *position,
       double encoder_counts_per_revolution, double encoder_ratio,
       bool reverse) {
     const double multiplier = reverse ? -1.0 : 1.0;
@@ -146,7 +146,7 @@ class SensorReader {
 
   void CopyPosition(
       const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
-      ::frc971::PotAndIndexPosition *position,
+      ::frc971::PotAndIndexPositionT *position,
       ::std::function<double(int32_t)> encoder_translate,
       ::std::function<double(double)> potentiometer_translate, bool reverse,
       double pot_offset) {

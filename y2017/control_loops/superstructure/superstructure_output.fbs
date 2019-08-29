@@ -1,0 +1,27 @@
+namespace y2017.control_loops.superstructure;
+
+table Output {
+  // Voltages for some of the subsystems.
+  voltage_intake:double;
+  voltage_indexer:double;
+  voltage_shooter:double;
+
+  // Rollers on the intake.
+  voltage_intake_rollers:double;
+  // Roller on the indexer
+  voltage_indexer_rollers:double;
+
+  voltage_turret:double;
+  voltage_hood:double;
+
+  gear_servo:double;
+
+  // If true, the lights are on.
+  lights_on:bool;
+
+  red_light_on:bool;
+  green_light_on:bool;
+  blue_light_on:bool;
+}
+
+root_type Output;

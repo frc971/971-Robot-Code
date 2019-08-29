@@ -1,0 +1,54 @@
+{
+  "channels":
+  [
+    {
+      "name": "/shooter",
+      "type": "y2016.control_loops.shooter.Goal",
+      "frequency": 200
+    },
+    {
+      "name": "/shooter",
+      "type": "y2016.control_loops.shooter.Status",
+      "frequency": 200
+    },
+    {
+      "name": "/shooter",
+      "type": "y2016.control_loops.shooter.Output",
+      "frequency": 200
+    },
+    {
+      "name": "/shooter",
+      "type": "y2016.control_loops.shooter.Position",
+      "frequency": 200
+    },
+    {
+      "name": "/superstructure",
+      "type": "y2016.control_loops.superstructure.Goal",
+      "frequency": 200
+    },
+    {
+      "name": "/superstructure",
+      "type": "y2016.control_loops.superstructure.Status",
+      "frequency": 200
+    },
+    {
+      "name": "/superstructure",
+      "type": "y2016.control_loops.superstructure.Output",
+      "frequency": 200
+    },
+    {
+      "name": "/superstructure",
+      "type": "y2016.control_loops.superstructure.Position",
+      "frequency": 200
+    },
+    {
+      "name": "/superstructure",
+      "type": "y2016.sensors.BallDetector",
+      "frequency": 200
+    }
+  ],
+  "imports": [
+    "../aos/robot_state/robot_state_config.json",
+    "../frc971/control_loops/drivetrain/drivetrain_config.json"
+  ]
+}

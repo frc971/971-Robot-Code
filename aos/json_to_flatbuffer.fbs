@@ -1,5 +1,26 @@
 namespace aos.testing;
 
+enum BaseType : byte {
+    None,
+    UType,
+    Bool,
+    Byte,
+    UByte,
+    Short,
+    UShort,
+    Int,
+    UInt,
+    Long,
+    ULong,
+    Float,
+    Double,
+    String,
+    Vector,
+    Obj,     // Used for tables & structs.
+    Union,
+    Array
+}
+
 table Location {
   name:string;
   type:string;
@@ -16,6 +37,14 @@ table Application {
   name:string;
   priority:int;
   maps:[Map];
+}
+
+table VectorOfStrings {
+  str:[string];
+}
+
+table VectorOfVectorOfString {
+  v:[VectorOfStrings];
 }
 
 table Configuration {
@@ -48,32 +77,37 @@ table Configuration {
 
   foo_string:string (id: 15);
 
+  foo_enum:BaseType (id: 16);
+  foo_enum_default:BaseType = None (id: 17);
+
   // Test vectors now.
-  vector_foo_byte:[byte] (id: 16);
-  vector_foo_ubyte:[ubyte] (id: 17);
-  vector_foo_bool:[bool] (id: 18);
+  vector_foo_byte:[byte] (id: 18);
+  vector_foo_ubyte:[ubyte] (id: 19);
+  vector_foo_bool:[bool] (id: 20);
 
-  vector_foo_short:[short] (id: 19);
-  vector_foo_ushort:[ushort] (id: 20);
+  vector_foo_short:[short] (id: 21);
+  vector_foo_ushort:[ushort] (id: 22);
 
-  vector_foo_int:[int] (id: 21);
-  vector_foo_uint:[uint] (id: 22);
+  vector_foo_int:[int] (id: 23);
+  vector_foo_uint:[uint] (id: 24);
 
-  vector_foo_long:[long] (id: 23);
-  vector_foo_ulong:[ulong] (id: 24);
+  vector_foo_long:[long] (id: 25);
+  vector_foo_ulong:[ulong] (id: 26);
 
-  vector_foo_float:[float] (id: 25);
-  vector_foo_double:[double] (id: 26);
+  vector_foo_float:[float] (id: 27);
+  vector_foo_double:[double] (id: 28);
 
-  vector_foo_string:[string] (id: 27);
+  vector_foo_string:[string] (id: 29);
+
+  vector_foo_enum:[BaseType] (id: 30);
 
   // And a simple nested application.
-  single_application:Application (id: 28);
-
-  // TODO(austin): enum
+  single_application:Application (id: 31);
 
   // And nest this object to get some crazy coverage.
-  nested_config:Configuration (id: 29);
+  nested_config:Configuration (id: 32);
+
+  vov:VectorOfVectorOfString (id: 33);
 }
 
 root_type Configuration;

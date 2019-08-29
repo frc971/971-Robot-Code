@@ -2,11 +2,7 @@
 
 #include <chrono>
 
-#include "aos/controls/control_loops.q.h"
 #include "aos/logging/logging.h"
-#include "aos/logging/queue_logging.h"
-
-#include "y2017/control_loops/superstructure/shooter/shooter.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -104,31 +100,35 @@ void ShooterController::Update(bool disabled, chrono::nanoseconds dt) {
   loop_->Update(disabled, dt);
 }
 
-void ShooterController::SetStatus(ShooterStatus *status) {
-  status->avg_angular_velocity = average_angular_velocity_;
+flatbuffers::Offset<ShooterStatus> ShooterController::BuildStatus(
+    flatbuffers::FlatBufferBuilder *fbb) {
+  ShooterStatus::Builder status_builder(*fbb);
+  status_builder.add_avg_angular_velocity(average_angular_velocity_);
 
-  status->filtered_velocity = X_hat_current_(1, 0);
-  status->angular_velocity = X_hat_current_(2, 0);
-  status->ready = ready_;
+  status_builder.add_filtered_velocity(X_hat_current_(1, 0));
+  status_builder.add_angular_velocity(X_hat_current_(2, 0));
+  status_builder.add_ready(ready_);
 
-  status->voltage_error = X_hat_current_(3, 0);
-  status->position_error = position_error_;
-  status->instantaneous_velocity = dt_velocity_;
-  status->fixed_instantaneous_velocity = fixed_dt_velocity_;
+  status_builder.add_voltage_error(X_hat_current_(3, 0));
+  status_builder.add_position_error(position_error_);
+  status_builder.add_instantaneous_velocity(dt_velocity_);
+  status_builder.add_fixed_instantaneous_velocity(fixed_dt_velocity_);
+
+  return status_builder.Finish();
 }
 
 void Shooter::Reset() { wheel_.Reset(); }
 
-void Shooter::Iterate(const control_loops::ShooterGoal *goal,
-                      const double *position,
-                      ::aos::monotonic_clock::time_point position_time,
-                      double *output, control_loops::ShooterStatus *status) {
+flatbuffers::Offset<ShooterStatus> Shooter::Iterate(
+    const ShooterGoalT *goal, const double position,
+    ::aos::monotonic_clock::time_point position_time, double *output,
+    flatbuffers::FlatBufferBuilder *fbb) {
   if (goal) {
     // Update position/goal for our wheel.
     wheel_.set_goal(goal->angular_velocity);
   }
 
-  wheel_.set_position(*position);
+  wheel_.set_position(position);
 
   chrono::nanoseconds dt = ::aos::controls::kLoopFrequency;
   if (last_time_ != ::aos::monotonic_clock::min_time) {
@@ -138,20 +138,22 @@ void Shooter::Iterate(const control_loops::ShooterGoal *goal,
 
   wheel_.Update(output == nullptr, dt);
 
-  wheel_.SetStatus(status);
+  flatbuffers::Offset<ShooterStatus> status_offset = wheel_.BuildStatus(fbb);
 
-  if (last_ready_ && !status->ready) {
+  if (last_ready_ && !wheel_.ready()) {
     min_ = wheel_.dt_velocity();
-  } else if (!status->ready) {
+  } else if (!wheel_.ready()) {
     min_ = ::std::min(min_, wheel_.dt_velocity());
-  } else if (!last_ready_ && status->ready) {
+  } else if (!last_ready_ && wheel_.ready()) {
     AOS_LOG(INFO, "Shot min was [%f]\n", min_);
   }
 
   if (output) {
     *output = wheel_.voltage();
   }
-  last_ready_ = status->ready;
+  last_ready_ = wheel_.ready();
+
+  return status_offset;
 }
 
 }  // namespace shooter

@@ -1,0 +1,56 @@
+include "frc971/control_loops/control_loops.fbs";
+
+namespace y2016.control_loops.superstructure;
+
+table JointState {
+  // Angle of the joint in radians.
+  angle:float;
+  // Angular velocity of the joint in radians/second.
+  angular_velocity:float;
+  // Profiled goal angle of the joint in radians.
+  goal_angle:float;
+  // Profiled goal angular velocity of the joint in radians/second.
+  goal_angular_velocity:float;
+  // Unprofiled goal angle of the joint in radians.
+  unprofiled_goal_angle:float;
+  // Unprofiled goal angular velocity of the joint in radians/second.
+  unprofiled_goal_angular_velocity:float;
+
+  // The estimated voltage error.
+  voltage_error:float;
+
+  // The calculated velocity with delta x/delta t
+  calculated_velocity:float;
+
+  // Components of the control loop output
+  position_power:float;
+  velocity_power:float;
+  feedforwards_power:float;
+
+  // State of the estimator.
+  estimator_state:frc971.EstimatorState;
+}
+
+table Status {
+  // Are the superstructure subsystems zeroed?
+  zeroed:bool;
+
+  // If true, we have aborted.
+  estopped:bool;
+
+  // The internal state of the state machine.
+  state:int;
+
+
+  // Estimated angles and angular velocities of the superstructure subsystems.
+  intake:JointState;
+  shoulder:JointState;
+  wrist:JointState;
+
+  shoulder_controller_index:int;
+
+  // Is the superstructure collided?
+  is_collided:bool;
+}
+
+root_type Status;

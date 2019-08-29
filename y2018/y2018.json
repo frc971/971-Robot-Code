@@ -1,0 +1,44 @@
+{
+  "channels":
+  [
+    {
+      "name": "/superstructure",
+      "type": "y2018.control_loops.superstructure.Goal",
+      "frequency": 200
+    },
+    {
+      "name": "/superstructure",
+      "type": "y2018.control_loops.superstructure.Position",
+      "frequency": 200
+    },
+    {
+      "name": "/superstructure",
+      "type": "y2018.control_loops.superstructure.Status",
+      "frequency": 200
+    },
+    {
+      "name": "/superstructure",
+      "type": "y2018.control_loops.superstructure.Output",
+      "frequency": 200
+    },
+    {
+      "name": "/superstructure",
+      "type": "y2018.StatusLight",
+      "frequency": 200
+    },
+    {
+      "name": "/superstructure",
+      "type": "y2018.vision.VisionStatus",
+      "frequency": 200
+    }
+  ],
+  "applications": [
+    {
+      "name": "drivetrain"
+    }
+  ],
+  "imports": [
+    "../aos/robot_state/robot_state_config.json",
+    "../frc971/control_loops/drivetrain/drivetrain_config.json"
+  ]
+}

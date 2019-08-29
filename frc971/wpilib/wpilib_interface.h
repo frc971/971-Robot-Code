@@ -3,13 +3,15 @@
 
 #include <stdint.h>
 
-#include "aos/robot_state/robot_state.q.h"
+#include "aos/events/event_loop.h"
+#include "aos/robot_state/robot_state_generated.h"
 
 namespace frc971 {
 namespace wpilib {
 
 // Sends out a message on ::aos::robot_state.
-void PopulateRobotState(::aos::RobotState *robot_state, int32_t my_pid);
+flatbuffers::Offset<aos::RobotState> PopulateRobotState(
+    aos::Sender<::aos::RobotState>::Builder *builder, int32_t my_pid);
 
 }  // namespace wpilib
 }  // namespace frc971

@@ -4,36 +4,37 @@
 #include <memory>
 
 #include "aos/controls/control_loop.h"
-#include "aos/events/event-loop.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "aos/events/event_loop.h"
+#include "aos/time/time.h"
+#include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "y2018/control_loops/superstructure/arm/arm.h"
 #include "y2018/control_loops/superstructure/intake/intake.h"
-#include "y2018/control_loops/superstructure/superstructure.q.h"
-#include "y2018/status_light.q.h"
-#include "y2018/vision/vision.q.h"
+#include "y2018/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2018/control_loops/superstructure/superstructure_output_generated.h"
+#include "y2018/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2018/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2018/status_light_generated.h"
+#include "y2018/vision/vision_generated.h"
 
 namespace y2018 {
 namespace control_loops {
 namespace superstructure {
 
 class Superstructure
-    : public ::aos::controls::ControlLoop<control_loops::SuperstructureQueue> {
+    : public ::aos::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
-  explicit Superstructure(
-      ::aos::EventLoop *event_loop,
-      const ::std::string &name = ".y2018.control_loops.superstructure_queue");
+  explicit Superstructure(::aos::EventLoop *event_loop,
+                          const ::std::string &name = "/superstructure");
 
   const intake::IntakeSide &intake_left() const { return intake_left_; }
   const intake::IntakeSide &intake_right() const { return intake_right_; }
   const arm::Arm &arm() const { return arm_; }
 
  protected:
-  virtual void RunIteration(
-      const control_loops::SuperstructureQueue::Goal *unsafe_goal,
-      const control_loops::SuperstructureQueue::Position *position,
-      control_loops::SuperstructureQueue::Output *output,
-      control_loops::SuperstructureQueue::Status *status) override;
+  virtual void RunIteration(const Goal *unsafe_goal, const Position *position,
+                            aos::Sender<Output>::Builder *output,
+                            aos::Sender<Status>::Builder *status) override;
 
  private:
   // Sends the status light message for the 3 colors provided.
@@ -41,7 +42,7 @@ class Superstructure
 
   ::aos::Sender<::y2018::StatusLight> status_light_sender_;
   ::aos::Fetcher<::y2018::vision::VisionStatus> vision_status_fetcher_;
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Output>
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Output>
       drivetrain_output_fetcher_;
 
   intake::IntakeSide intake_left_;

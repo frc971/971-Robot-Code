@@ -1,6 +1,5 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//aos/build:queues.bzl", "queue_library")
 load("//tools:environments.bzl", "mcu_cpus")
 
 cc_library(
@@ -31,8 +30,10 @@ cc_library(
     ],
     deps = [
         ":wrap",
+        "//aos/logging",
         "//frc971:constants",
-        "//frc971/control_loops:queues",
+        "//frc971/control_loops:control_loops_fbs",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -44,11 +45,10 @@ cc_test(
     deps = [
         ":zeroing",
         "//aos:die",
-        "//aos/util:thread",
         "//aos/testing:googletest",
         "//aos/testing:test_shm",
+        "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:position_sensor_sim",
-        "//frc971/control_loops:queues",
     ],
 )
 

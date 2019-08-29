@@ -127,72 +127,95 @@ void PositionSensorSimulator::MoveTo(double new_position) {
   current_position_ = new_position;
 }
 
-void PositionSensorSimulator::GetSensorValues(IndexPosition *values) {
-  values->encoder = current_position_ - start_position_;
+template <>
+flatbuffers::Offset<IndexPosition>
+PositionSensorSimulator::GetSensorValues<IndexPositionBuilder>(
+    IndexPositionBuilder *builder) {
+  builder->add_encoder(current_position_ - start_position_);
 
-  values->index_pulses = lower_index_edge_.index_count();
-  if (values->index_pulses == 0) {
-    values->latched_encoder = 0.0;
+  const int index_count = lower_index_edge_.index_count();
+  builder->add_index_pulses(index_count);
+  if (index_count == 0) {
+    builder->add_latched_encoder(0.0);
   } else {
     // Populate the latched encoder samples.
-    values->latched_encoder =
-        lower_index_edge_.IndexPulsePosition() - start_position_;
+    builder->add_latched_encoder(lower_index_edge_.IndexPulsePosition() -
+                                 start_position_);
   }
+  return builder->Finish();
 }
 
-void PositionSensorSimulator::GetSensorValues(PotAndIndexPosition *values) {
-  values->pot = lower_index_edge_.mutable_pot_noise()->AddNoiseToSample(
-      current_position_);
-  values->encoder = current_position_ - start_position_;
+template <>
+flatbuffers::Offset<PotAndIndexPosition>
+PositionSensorSimulator::GetSensorValues<PotAndIndexPositionBuilder>(
+    PotAndIndexPositionBuilder *builder) {
+  builder->add_pot(lower_index_edge_.mutable_pot_noise()->AddNoiseToSample(
+      current_position_));
+  builder->add_encoder(current_position_ - start_position_);
 
   if (lower_index_edge_.index_count() == 0) {
-    values->latched_pot = 0.0;
-    values->latched_encoder = 0.0;
+    builder->add_latched_pot(0.0);
+    builder->add_latched_encoder(0.0);
   } else {
     // Populate the latched pot/encoder samples.
-    values->latched_pot = lower_index_edge_.latched_pot();
-    values->latched_encoder =
-        lower_index_edge_.IndexPulsePosition() - start_position_;
+    builder->add_latched_pot(lower_index_edge_.latched_pot());
+    builder->add_latched_encoder(lower_index_edge_.IndexPulsePosition() -
+                                 start_position_);
   }
 
-  values->index_pulses = lower_index_edge_.index_count();
+  builder->add_index_pulses(lower_index_edge_.index_count());
+  return builder->Finish();
 }
 
-void PositionSensorSimulator::GetSensorValues(PotAndAbsolutePosition *values) {
-  values->pot = lower_index_edge_.mutable_pot_noise()->AddNoiseToSample(
-      current_position_);
-  values->encoder = current_position_ - start_position_;
+template <>
+flatbuffers::Offset<PotAndAbsolutePosition>
+PositionSensorSimulator::GetSensorValues<PotAndAbsolutePositionBuilder>(
+    PotAndAbsolutePositionBuilder *builder) {
+  builder->add_pot(lower_index_edge_.mutable_pot_noise()->AddNoiseToSample(
+      current_position_));
+  builder->add_encoder(current_position_ - start_position_);
   // TODO(phil): Create some lag here since this is a PWM signal it won't be
   // instantaneous like the other signals. Better yet, its lag varies
   // randomly with the distribution varying depending on the reading.
-  values->absolute_encoder = ::std::remainder(
+  double absolute_encoder = ::std::remainder(
       current_position_ + known_absolute_encoder_, distance_per_revolution_);
-  if (values->absolute_encoder < 0) {
-    values->absolute_encoder += distance_per_revolution_;
+  if (absolute_encoder < 0) {
+    absolute_encoder += distance_per_revolution_;
   }
+  builder->add_absolute_encoder(absolute_encoder);
+  return builder->Finish();
 }
 
-void PositionSensorSimulator::GetSensorValues(AbsolutePosition *values) {
-  values->encoder = current_position_ - start_position_;
+template <>
+flatbuffers::Offset<AbsolutePosition>
+PositionSensorSimulator::GetSensorValues<AbsolutePositionBuilder>(
+    AbsolutePositionBuilder *builder) {
+  builder->add_encoder(current_position_ - start_position_);
   // TODO(phil): Create some lag here since this is a PWM signal it won't be
   // instantaneous like the other signals. Better yet, its lag varies
   // randomly with the distribution varying depending on the reading.
-  values->absolute_encoder = ::std::remainder(
+  double absolute_encoder = ::std::remainder(
       current_position_ + known_absolute_encoder_, distance_per_revolution_);
-  if (values->absolute_encoder < 0) {
-    values->absolute_encoder += distance_per_revolution_;
+  if (absolute_encoder < 0) {
+    absolute_encoder += distance_per_revolution_;
   }
+  builder->add_absolute_encoder(absolute_encoder);
+  return builder->Finish();
 }
 
-void PositionSensorSimulator::GetSensorValues(HallEffectAndPosition *values) {
-  values->current = lower_index_edge_.current_index_segment() !=
-                    upper_index_edge_.current_index_segment();
-  values->encoder = current_position_ - start_position_;
+template <>
+flatbuffers::Offset<HallEffectAndPosition>
+PositionSensorSimulator::GetSensorValues<HallEffectAndPositionBuilder>(
+    HallEffectAndPositionBuilder *builder) {
+  builder->add_current(lower_index_edge_.current_index_segment() !=
+                       upper_index_edge_.current_index_segment());
+  builder->add_encoder(current_position_ - start_position_);
 
-  values->posedge_count = posedge_count_;
-  values->negedge_count = negedge_count_;
-  values->posedge_value = posedge_value_ - start_position_;
-  values->negedge_value = negedge_value_ - start_position_;
+  builder->add_posedge_count(posedge_count_);
+  builder->add_negedge_count(negedge_count_);
+  builder->add_posedge_value(posedge_value_ - start_position_);
+  builder->add_negedge_value(negedge_value_ - start_position_);
+  return builder->Finish();
 }
 
 }  // namespace control_loops

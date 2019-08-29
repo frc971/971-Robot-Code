@@ -4,14 +4,16 @@
 #include "aos/commonmath.h"
 #include "aos/controls/control_loop.h"
 #include "aos/controls/polytope.h"
-#include "aos/logging/matrix_logging.h"
 #include "aos/util/trapezoid_profile.h"
 
-#include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/coerce_goal.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/drivetrain/localizer.h"
+#include "frc971/control_loops/state_feedback_loop.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -23,7 +25,7 @@ class DrivetrainMotorsSS {
                      StateFeedbackLoop<7, 2, 4> *kf,
                      LocalizerInterface *localizer);
 
-  void SetGoal(const ::frc971::control_loops::DrivetrainQueue::Goal &goal);
+  void SetGoal(const ::frc971::control_loops::drivetrain::Goal *goal);
 
   // Computes the power to send out as part of the controller.  Should be called
   // when disabled (with enable_control_loop false) so the profiles get computed
@@ -34,10 +36,9 @@ class DrivetrainMotorsSS {
 
   bool output_was_capped() const { return output_was_capped_; }
 
-  void SetOutput(
-      ::frc971::control_loops::DrivetrainQueue::Output *output) const;
+  void SetOutput(::frc971::control_loops::drivetrain::OutputT *output) const;
   void PopulateStatus(
-      ::frc971::control_loops::DrivetrainQueue::Status *status) const;
+      ::frc971::control_loops::drivetrain::StatusBuilder *builder) const;
 
  private:
   void PolyCapU(Eigen::Matrix<double, 2, 1> *U);

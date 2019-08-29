@@ -1,0 +1,129 @@
+include "frc971/control_loops/control_loops.fbs";
+include "frc971/control_loops/profiled_subsystem.fbs";
+
+namespace y2017.control_loops.superstructure;
+
+table IndexerStatus {
+  // The current average velocity in radians/second. Positive is moving balls up
+  // towards the shooter. This is the angular velocity of the inner piece.
+  avg_angular_velocity:double;
+
+  // The current instantaneous filtered velocity in radians/second.
+  angular_velocity:double;
+
+  // True if the indexer is ready.  It is better to compare the velocities
+  // directly so there isn't confusion on if the goal is up to date.
+  ready:bool;
+
+  // True if the indexer is stuck.
+  stuck:bool;
+  stuck_voltage:float;
+
+  // The state of the indexer state machine.
+  state:int;
+
+  // The estimated voltage error from the kalman filter in volts.
+  voltage_error:double;
+  // The estimated voltage error from the stuck indexer kalman filter.
+  stuck_voltage_error:double;
+
+  // The current velocity measured as delta x / delta t in radians/sec.
+  instantaneous_velocity:double;
+
+  // The error between our measurement and expected measurement in radians.
+  position_error:double;
+}
+
+table ShooterStatus {
+  // The current average velocity in radians/second.
+  avg_angular_velocity:double;
+
+  // The current instantaneous filtered velocity in radians/second.
+  angular_velocity:double;
+
+  // True if the shooter is ready.  It is better to compare the velocities
+  // directly so there isn't confusion on if the goal is up to date.
+  ready:bool;
+
+  // The estimated voltage error from the kalman filter in volts.
+  voltage_error:double;
+
+  // The current velocity measured as delta x / delta t in radians/sec.
+  instantaneous_velocity:double;
+  filtered_velocity:double;
+  fixed_instantaneous_velocity:double;
+
+  // The error between our measurement and expected measurement in radians.
+  position_error:double;
+}
+
+table ColumnEstimatorState {
+  error:bool;
+  zeroed:bool;
+  indexer:frc971.HallEffectAndPositionEstimatorState;
+  turret:frc971.HallEffectAndPositionEstimatorState;
+}
+
+table TurretProfiledSubsystemStatus {
+  // Is the subsystem zeroed?
+  zeroed:bool;
+
+  // The state of the subsystem, if applicable.  -1 otherwise.
+  state:int;
+
+  // If true, we have aborted.
+  estopped:bool;
+
+  // Position of the joint.
+  position:float;
+  // Velocity of the joint in units/second.
+  velocity:float;
+  // Profiled goal position of the joint.
+  goal_position:float;
+  // Profiled goal velocity of the joint in units/second.
+  goal_velocity:float;
+  // Unprofiled goal position from absoulte zero of the joint.
+  unprofiled_goal_position:float;
+  // Unprofiled goal velocity of the joint in units/second.
+  unprofiled_goal_velocity:float;
+
+  // The estimated voltage error.
+  voltage_error:float;
+
+  // The calculated velocity with delta x/delta t
+  calculated_velocity:float;
+
+  // Components of the control loop output
+  position_power:float;
+  velocity_power:float;
+  feedforwards_power:float;
+
+  // State of the estimator.
+  estimator_state:ColumnEstimatorState;
+
+  raw_vision_angle:double;
+  vision_angle:double;
+  vision_tracking:bool;
+
+  turret_encoder_angle:double;
+}
+
+table Status {
+  // Are all the subsystems zeroed?
+  zeroed:bool;
+
+  // If true, we have aborted. This is the or of all subsystem estops.
+  estopped:bool;
+
+  // Each subsystems status.
+  intake:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus;
+  hood:frc971.control_loops.IndexProfiledJointStatus;
+  shooter:ShooterStatus;
+
+  turret:TurretProfiledSubsystemStatus;
+  indexer:IndexerStatus;
+
+  vision_distance:float;
+}
+
+root_type Status;

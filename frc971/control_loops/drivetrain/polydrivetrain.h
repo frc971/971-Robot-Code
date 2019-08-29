@@ -7,13 +7,18 @@
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/drivetrain/gear.h"
 #ifdef __linux__
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "aos/logging/logging.h"
-#include "aos/logging/matrix_logging.h"
-#include "aos/logging/queue_logging.h"
-#include "aos/robot_state/robot_state.q.h"
+#include "aos/robot_state/robot_state_generated.h"
+#include "frc971/control_loops/control_loops_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #else
-#include "frc971/control_loops/drivetrain/drivetrain_uc.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_goal_float_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_output_float_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_position_float_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_float_generated.h"
 #endif  // __linux__
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
@@ -35,10 +40,11 @@ class PolyDrivetrain {
   Scalar MotorSpeed(const constants::ShifterHallEffect &hall_effect,
                     Scalar shifter_position, Scalar velocity, Gear gear);
 
-  void SetGoal(const ::frc971::control_loops::DrivetrainQueue::Goal &goal);
+  void SetGoal(const Scalar wheel, const Scalar throttle, const bool quickturn,
+               const bool highgear);
 
   void SetPosition(
-      const ::frc971::control_loops::DrivetrainQueue::Position *position,
+      const ::frc971::control_loops::drivetrain::Position *position,
       Gear left_gear, Gear right_gear);
 
   Scalar FilterVelocity(Scalar throttle) const;
@@ -47,9 +53,10 @@ class PolyDrivetrain {
 
   void Update(Scalar voltage_battery);
 
-  void SetOutput(::frc971::control_loops::DrivetrainQueue::Output *output);
+  void SetOutput(::frc971::control_loops::drivetrain::OutputT *output);
 
-  void PopulateStatus(::frc971::control_loops::DrivetrainQueue::Status *status);
+  flatbuffers::Offset<CIMLogging> PopulateStatus(
+      flatbuffers::FlatBufferBuilder *fbb);
 
   // Computes the next state of a shifter given the current state and the
   // requested state.
@@ -81,8 +88,8 @@ class PolyDrivetrain {
   Gear left_gear_;
   Gear right_gear_;
 
-  ::frc971::control_loops::DrivetrainQueue::Position last_position_;
-  ::frc971::control_loops::DrivetrainQueue::Position position_;
+  ::frc971::control_loops::drivetrain::PositionT last_position_;
+  ::frc971::control_loops::drivetrain::PositionT position_;
   int counter_;
   DrivetrainConfig<Scalar> dt_config_;
 
@@ -123,10 +130,7 @@ PolyDrivetrain<Scalar>::PolyDrivetrain(
       left_gear_(dt_config.default_high_gear ? Gear::HIGH : Gear::LOW),
       right_gear_(dt_config.default_high_gear ? Gear::HIGH : Gear::LOW),
       counter_(0),
-      dt_config_(dt_config) {
-  last_position_.Zero();
-  position_.Zero();
-}
+      dt_config_(dt_config) {}
 
 template <typename Scalar>
 Scalar PolyDrivetrain<Scalar>::MotorSpeed(
@@ -195,13 +199,9 @@ Gear PolyDrivetrain<Scalar>::UpdateSingleGear(Gear requested_gear,
 }
 
 template <typename Scalar>
-void PolyDrivetrain<Scalar>::SetGoal(
-    const ::frc971::control_loops::DrivetrainQueue::Goal &goal) {
-  const Scalar wheel = goal.wheel;
-  const Scalar throttle = goal.throttle;
-  const bool quickturn = goal.quickturn;
-  const bool highgear = goal.highgear;
-
+void PolyDrivetrain<Scalar>::SetGoal(const Scalar wheel, const Scalar throttle,
+                                     const bool quickturn,
+                                     const bool highgear) {
   // Apply a sin function that's scaled to make it feel better.
   const Scalar angular_range =
       static_cast<Scalar>(M_PI_2) * dt_config_.wheel_non_linearity;
@@ -234,12 +234,12 @@ void PolyDrivetrain<Scalar>::SetGoal(
 
 template <typename Scalar>
 void PolyDrivetrain<Scalar>::SetPosition(
-    const ::frc971::control_loops::DrivetrainQueue::Position *position,
+    const ::frc971::control_loops::drivetrain::Position *position,
     Gear left_gear, Gear right_gear) {
   left_gear_ = left_gear;
   right_gear_ = right_gear;
   last_position_ = position_;
-  position_ = *position;
+  position->UnPackTo(&position_);
 }
 
 template <typename Scalar>
@@ -415,8 +415,8 @@ void PolyDrivetrain<Scalar>::Update(Scalar voltage_battery) {
 
 template <typename Scalar>
 void PolyDrivetrain<Scalar>::SetOutput(
-    ::frc971::control_loops::DrivetrainQueue::Output *output) {
-  if (output != NULL) {
+    ::frc971::control_loops::drivetrain::OutputT *output) {
+  if (output != nullptr) {
     output->left_voltage = loop_->U(0, 0);
     output->right_voltage = loop_->U(1, 0);
     output->left_high = MaybeHigh(left_gear_);
@@ -425,18 +425,20 @@ void PolyDrivetrain<Scalar>::SetOutput(
 }
 
 template <typename Scalar>
-void PolyDrivetrain<Scalar>::PopulateStatus(
-    ::frc971::control_loops::DrivetrainQueue::Status *status) {
+flatbuffers::Offset<CIMLogging> PolyDrivetrain<Scalar>::PopulateStatus(
+    flatbuffers::FlatBufferBuilder *fbb) {
+  CIMLogging::Builder builder(*fbb);
 
-  status->cim_logging.left_in_gear = IsInGear(left_gear_);
-  status->cim_logging.left_motor_speed = left_motor_speed_;
-  status->cim_logging.left_velocity = current_left_velocity_;
+  builder.add_left_in_gear(IsInGear(left_gear_));
+  builder.add_left_motor_speed(left_motor_speed_);
+  builder.add_left_velocity(current_left_velocity_);
 
-  status->cim_logging.right_in_gear = IsInGear(right_gear_);
-  status->cim_logging.right_motor_speed = right_motor_speed_;
-  status->cim_logging.right_velocity = current_right_velocity_;
+  builder.add_right_in_gear(IsInGear(right_gear_));
+  builder.add_right_motor_speed(right_motor_speed_);
+  builder.add_right_velocity(current_right_velocity_);
+
+  return builder.Finish();
 }
-
 
 }  // namespace drivetrain
 }  // namespace control_loops

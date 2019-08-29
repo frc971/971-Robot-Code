@@ -66,7 +66,7 @@ cc_library(
     deps = [
         "//aos/containers:sized_array",
         "//aos/time",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -79,7 +79,7 @@ cc_library(
     deps = [
         "//aos/containers:sized_array",
         "//aos/time:time_mcu",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 

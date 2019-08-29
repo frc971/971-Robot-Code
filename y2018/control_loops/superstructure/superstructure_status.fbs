@@ -1,0 +1,98 @@
+include "frc971/control_loops/control_loops.fbs";
+
+namespace y2018.control_loops.superstructure;
+
+table IntakeSideStatus {
+  // Is the subsystem zeroed?
+  zeroed:bool;
+
+  // The state of the subsystem, if applicable.
+  state:int;
+
+  // If true, we have aborted.
+  estopped:bool;
+
+  // Estimated position of the spring.
+  spring_position:float;
+  // Estimated velocity of the spring in units/second.
+  spring_velocity:float;
+
+  // Estimated position of the joint.
+  motor_position:float;
+  // Estimated velocity of the joint in units/second.
+  motor_velocity:float;
+
+  // Goal position of the joint.
+  goal_position:float;
+  // Goal velocity of the joint in units/second.
+  goal_velocity:float;
+
+  // The calculated velocity with delta x/delta t
+  calculated_velocity:float;
+
+  // The voltage given last cycle;
+  delayed_voltage:float;
+
+  // State of the estimator.
+  estimator_state:frc971.PotAndAbsoluteEncoderEstimatorState;
+}
+
+table ArmStatus {
+  // State of the estimators.
+  proximal_estimator_state:frc971.PotAndAbsoluteEncoderEstimatorState;
+  distal_estimator_state:frc971.PotAndAbsoluteEncoderEstimatorState;
+
+  // The node we are currently going to.
+  current_node:uint;
+  // Distance (in radians) to the end of the path.
+  path_distance_to_go:float;
+  // Goal position and velocity (radians)
+  goal_theta0:float;
+  goal_theta1:float;
+  goal_omega0:float;
+  goal_omega1:float;
+
+  // Current position and velocity (radians)
+  theta0:float;
+  theta1:float;
+
+  omega0:float;
+  omega1:float;
+
+  // Estimated voltage error for the two joints.
+  voltage_error0:float;
+  voltage_error1:float;
+
+  // True if we are zeroed.
+  zeroed:bool;
+
+  // True if the arm is zeroed.
+  estopped:bool;
+
+  // The current state machine state.
+  state:uint;
+
+  grab_state:uint;
+
+  // The number of times the LQR solver failed.
+  failed_solutions:uint;
+}
+
+table Status {
+  // Are all the subsystems zeroed?
+  zeroed:bool;
+
+  // If true, any of the subsystems have aborted.
+  estopped:bool;
+
+  // Status of both intake sides.
+  left_intake:IntakeSideStatus;
+  right_intake:IntakeSideStatus;
+
+  arm:ArmStatus;
+
+  filtered_box_velocity:double;
+  rotation_state:uint;
+}
+
+root_type Status;

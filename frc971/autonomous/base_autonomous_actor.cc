@@ -8,13 +8,15 @@
 #include "aos/util/phased_loop.h"
 #include "aos/logging/logging.h"
 
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "frc971/control_loops/drivetrain/localizer.q.h"
-#include "y2019/control_loops/drivetrain/target_selector.q.h"
+#include "frc971/control_loops/control_loops_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
+#include "y2019/control_loops/drivetrain/target_selector_generated.h"
 
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
 namespace this_thread = ::std::this_thread;
+namespace drivetrain = frc971::control_loops::drivetrain;
 
 namespace frc971 {
 namespace autonomous {
@@ -22,41 +24,37 @@ namespace autonomous {
 BaseAutonomousActor::BaseAutonomousActor(
     ::aos::EventLoop *event_loop,
     const control_loops::drivetrain::DrivetrainConfig<double> &dt_config)
-    : aos::common::actions::ActorBase<AutonomousActionQueueGroup>(
-          event_loop, ".frc971.autonomous.autonomous_action"),
+    : aos::common::actions::ActorBase<Goal>(event_loop, "/autonomous"),
       dt_config_(dt_config),
       initial_drivetrain_({0.0, 0.0}),
       target_selector_hint_sender_(
           event_loop->MakeSender<
               ::y2019::control_loops::drivetrain::TargetSelectorHint>(
-              ".y2019.control_loops.drivetrain.target_selector_hint")),
+              "/drivetrain")),
       drivetrain_goal_sender_(
-          event_loop
-              ->MakeSender<::frc971::control_loops::DrivetrainQueue::Goal>(
-                  ".frc971.control_loops.drivetrain_queue.goal")),
+          event_loop->MakeSender<drivetrain::Goal>("/drivetrain")),
       drivetrain_status_fetcher_(
-          event_loop
-              ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
-                  ".frc971.control_loops.drivetrain_queue.status")),
+          event_loop->MakeFetcher<drivetrain::Status>("/drivetrain")),
       drivetrain_goal_fetcher_(
-          event_loop
-              ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Goal>(
-                  ".frc971.control_loops.drivetrain_queue.goal")) {}
+          event_loop->MakeFetcher<drivetrain::Goal>("/drivetrain")) {}
 
 void BaseAutonomousActor::ResetDrivetrain() {
   AOS_LOG(INFO, "resetting the drivetrain\n");
   max_drivetrain_voltage_ = 12.0;
   goal_spline_handle_ = 0;
 
-  auto drivetrain_goal_message = drivetrain_goal_sender_.MakeMessage();
-  drivetrain_goal_message->controller_type = 0;
-  drivetrain_goal_message->highgear = true;
-  drivetrain_goal_message->wheel = 0.0;
-  drivetrain_goal_message->throttle = 0.0;
-  drivetrain_goal_message->left_goal = initial_drivetrain_.left;
-  drivetrain_goal_message->right_goal = initial_drivetrain_.right;
-  drivetrain_goal_message->max_ss_voltage = max_drivetrain_voltage_;
-  drivetrain_goal_message.Send();
+  auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+  drivetrain::Goal::Builder goal_builder =
+      builder.MakeBuilder<drivetrain::Goal>();
+  goal_builder.add_controller_type(drivetrain::ControllerType_POLYDRIVE);
+  goal_builder.add_highgear(true);
+  goal_builder.add_wheel(0.0);
+  goal_builder.add_throttle(0.0);
+  goal_builder.add_left_goal(initial_drivetrain_.left);
+  goal_builder.add_right_goal(initial_drivetrain_.right);
+  goal_builder.add_max_ss_voltage(max_drivetrain_voltage_);
+  builder.Send(goal_builder.Finish());
 }
 
 void BaseAutonomousActor::InitializeEncoders() {
@@ -64,14 +62,14 @@ void BaseAutonomousActor::InitializeEncoders() {
   WaitUntil([this]() { return drivetrain_status_fetcher_.Fetch(); });
 
   initial_drivetrain_.left =
-      drivetrain_status_fetcher_->estimated_left_position;
+      drivetrain_status_fetcher_->estimated_left_position();
   initial_drivetrain_.right =
-      drivetrain_status_fetcher_->estimated_right_position;
+      drivetrain_status_fetcher_->estimated_right_position();
 }
 
 void BaseAutonomousActor::StartDrive(double distance, double angle,
-                                     ProfileParameters linear,
-                                     ProfileParameters angular) {
+                                     ProfileParametersT linear,
+                                     ProfileParametersT angular) {
   AOS_LOG(INFO, "Driving distance %f, angle %f\n", distance, angle);
   {
     const double dangle = angle * dt_config_.robot_radius;
@@ -79,20 +77,25 @@ void BaseAutonomousActor::StartDrive(double distance, double angle,
     initial_drivetrain_.right += distance + dangle;
   }
 
-  auto drivetrain_message = drivetrain_goal_sender_.MakeMessage();
-  drivetrain_message->controller_type = 1;
-  drivetrain_message->highgear = true;
-  drivetrain_message->wheel = 0.0;
-  drivetrain_message->throttle = 0.0;
-  drivetrain_message->left_goal = initial_drivetrain_.left;
-  drivetrain_message->right_goal = initial_drivetrain_.right;
-  drivetrain_message->max_ss_voltage = max_drivetrain_voltage_;
-  drivetrain_message->linear = linear;
-  drivetrain_message->angular = angular;
+  auto builder = drivetrain_goal_sender_.MakeBuilder();
 
-  AOS_LOG_STRUCT(DEBUG, "dtg", *drivetrain_message);
+  auto linear_offset = ProfileParameters::Pack(*builder.fbb(), &linear);
+  auto angular_offset = ProfileParameters::Pack(*builder.fbb(), &angular);
 
-  drivetrain_message.Send();
+  drivetrain::Goal::Builder goal_builder =
+      builder.MakeBuilder<drivetrain::Goal>();
+
+  goal_builder.add_controller_type(drivetrain::ControllerType_MOTION_PROFILE);
+  goal_builder.add_highgear(true);
+  goal_builder.add_wheel(0.0);
+  goal_builder.add_throttle(0.0);
+  goal_builder.add_left_goal(initial_drivetrain_.left);
+  goal_builder.add_right_goal(initial_drivetrain_.right);
+  goal_builder.add_max_ss_voltage(max_drivetrain_voltage_);
+  goal_builder.add_linear(linear_offset);
+  goal_builder.add_angular(angular_offset);
+
+  builder.Send(goal_builder.Finish());
 }
 
 void BaseAutonomousActor::WaitUntilDoneOrCanceled(
@@ -137,17 +140,17 @@ bool BaseAutonomousActor::IsDriveDone() {
   static constexpr double kProfileTolerance = 0.001;
 
   if (drivetrain_status_fetcher_.get()) {
-    if (::std::abs(drivetrain_status_fetcher_->profiled_left_position_goal -
+    if (::std::abs(drivetrain_status_fetcher_->profiled_left_position_goal() -
                    initial_drivetrain_.left) < kProfileTolerance &&
-        ::std::abs(drivetrain_status_fetcher_->profiled_right_position_goal -
+        ::std::abs(drivetrain_status_fetcher_->profiled_right_position_goal() -
                    initial_drivetrain_.right) < kProfileTolerance &&
-        ::std::abs(drivetrain_status_fetcher_->estimated_left_position -
+        ::std::abs(drivetrain_status_fetcher_->estimated_left_position() -
                    initial_drivetrain_.left) < kPositionTolerance &&
-        ::std::abs(drivetrain_status_fetcher_->estimated_right_position -
+        ::std::abs(drivetrain_status_fetcher_->estimated_right_position() -
                    initial_drivetrain_.right) < kPositionTolerance &&
-        ::std::abs(drivetrain_status_fetcher_->estimated_left_velocity) <
+        ::std::abs(drivetrain_status_fetcher_->estimated_left_velocity()) <
             kVelocityTolerance &&
-        ::std::abs(drivetrain_status_fetcher_->estimated_right_velocity) <
+        ::std::abs(drivetrain_status_fetcher_->estimated_right_velocity()) <
             kVelocityTolerance) {
       AOS_LOG(INFO, "Finished drive\n");
       return true;
@@ -170,7 +173,7 @@ bool BaseAutonomousActor::WaitForAboveAngle(double angle) {
       return true;
     }
     if (drivetrain_status_fetcher_.get()) {
-      if (drivetrain_status_fetcher_->ground_angle > angle) {
+      if (drivetrain_status_fetcher_->ground_angle() > angle) {
         return true;
       }
     }
@@ -191,7 +194,7 @@ bool BaseAutonomousActor::WaitForBelowAngle(double angle) {
       return true;
     }
     if (drivetrain_status_fetcher_.get()) {
-      if (drivetrain_status_fetcher_->ground_angle < angle) {
+      if (drivetrain_status_fetcher_->ground_angle() < angle) {
         return true;
       }
     }
@@ -213,10 +216,10 @@ bool BaseAutonomousActor::WaitForMaxBy(double angle) {
       return true;
     }
     if (drivetrain_status_fetcher_.get()) {
-      if (drivetrain_status_fetcher_->ground_angle > max_angle) {
-        max_angle = drivetrain_status_fetcher_->ground_angle;
+      if (drivetrain_status_fetcher_->ground_angle() > max_angle) {
+        max_angle = drivetrain_status_fetcher_->ground_angle();
       }
-      if (drivetrain_status_fetcher_->ground_angle < max_angle - angle) {
+      if (drivetrain_status_fetcher_->ground_angle() < max_angle - angle) {
         return true;
       }
     }
@@ -243,17 +246,17 @@ bool BaseAutonomousActor::WaitForDriveNear(double distance, double angle) {
     if (drivetrain_status_fetcher_.get()) {
       const double left_profile_error =
           (initial_drivetrain_.left -
-           drivetrain_status_fetcher_->profiled_left_position_goal);
+           drivetrain_status_fetcher_->profiled_left_position_goal());
       const double right_profile_error =
           (initial_drivetrain_.right -
-           drivetrain_status_fetcher_->profiled_right_position_goal);
+           drivetrain_status_fetcher_->profiled_right_position_goal());
 
       const double left_error =
           (initial_drivetrain_.left -
-           drivetrain_status_fetcher_->estimated_left_position);
+           drivetrain_status_fetcher_->estimated_left_position());
       const double right_error =
           (initial_drivetrain_.right -
-           drivetrain_status_fetcher_->estimated_right_position);
+           drivetrain_status_fetcher_->estimated_right_position());
 
       const double profile_distance_to_go =
           (left_profile_error + right_profile_error) / 2.0;
@@ -306,9 +309,9 @@ bool BaseAutonomousActor::WaitForDriveProfileNear(double tolerance) {
     const Eigen::Matrix<double, 7, 1> current_error =
         (Eigen::Matrix<double, 7, 1>()
              << initial_drivetrain_.left -
-                    drivetrain_status_fetcher_->profiled_left_position_goal,
+                    drivetrain_status_fetcher_->profiled_left_position_goal(),
          0.0, initial_drivetrain_.right -
-                  drivetrain_status_fetcher_->profiled_right_position_goal,
+                  drivetrain_status_fetcher_->profiled_right_position_goal(),
          0.0, 0.0, 0.0, 0.0)
             .finished();
     const Eigen::Matrix<double, 2, 1> linear_error =
@@ -342,9 +345,9 @@ bool BaseAutonomousActor::WaitForTurnProfileNear(double tolerance) {
     const Eigen::Matrix<double, 7, 1> current_error =
         (Eigen::Matrix<double, 7, 1>()
              << initial_drivetrain_.left -
-                    drivetrain_status_fetcher_->profiled_left_position_goal,
+                    drivetrain_status_fetcher_->profiled_left_position_goal(),
          0.0, initial_drivetrain_.right -
-                  drivetrain_status_fetcher_->profiled_right_position_goal,
+                  drivetrain_status_fetcher_->profiled_right_position_goal(),
          0.0, 0.0, 0.0, 0.0)
             .finished();
     const Eigen::Matrix<double, 2, 1> angular_error =
@@ -369,10 +372,10 @@ double BaseAutonomousActor::DriveDistanceLeft() {
   if (drivetrain_status_fetcher_.get()) {
     const double left_error =
         (initial_drivetrain_.left -
-         drivetrain_status_fetcher_->estimated_left_position);
+         drivetrain_status_fetcher_->estimated_left_position());
     const double right_error =
         (initial_drivetrain_.right -
-         drivetrain_status_fetcher_->estimated_right_position);
+         drivetrain_status_fetcher_->estimated_right_position());
 
     return (left_error + right_error) / 2.0;
   } else {
@@ -385,9 +388,11 @@ bool BaseAutonomousActor::SplineHandle::SplineDistanceRemaining(
   base_autonomous_actor_->drivetrain_status_fetcher_.Fetch();
   if (base_autonomous_actor_->drivetrain_status_fetcher_.get()) {
     return base_autonomous_actor_->drivetrain_status_fetcher_
-               ->trajectory_logging.is_executing &&
+               ->trajectory_logging()
+               ->is_executing() &&
            base_autonomous_actor_->drivetrain_status_fetcher_
-                   ->trajectory_logging.distance_remaining < distance;
+                   ->trajectory_logging()
+                   ->distance_remaining() < distance;
   }
   return false;
 }
@@ -408,61 +413,89 @@ bool BaseAutonomousActor::SplineHandle::WaitForSplineDistanceRemaining(
   }
 }
 
-void BaseAutonomousActor::LineFollowAtVelocity(double velocity, int hint) {
-  auto drivetrain_message = drivetrain_goal_sender_.MakeMessage();
-  drivetrain_message->controller_type = 3;
-  // TODO(james): Currently the 4.0 is copied from the
-  // line_follow_drivetrain.cc, but it is somewhat year-specific, so we should
-  // factor it out in some way.
-  drivetrain_message->throttle = velocity / 4.0;
-  drivetrain_message.Send();
-  auto target_hint = target_selector_hint_sender_.MakeMessage();
-  target_hint->suggested_target = hint;
-  target_hint.Send();
+void BaseAutonomousActor::LineFollowAtVelocity(
+    double velocity, y2019::control_loops::drivetrain::SelectionHint hint) {
+  {
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    drivetrain::Goal::Builder goal_builder =
+        builder.MakeBuilder<drivetrain::Goal>();
+    goal_builder.add_controller_type(
+        drivetrain::ControllerType_SPLINE_FOLLOWER);
+    // TODO(james): Currently the 4.0 is copied from the
+    // line_follow_drivetrain.cc, but it is somewhat year-specific, so we should
+    // factor it out in some way.
+    goal_builder.add_throttle(velocity / 4.0);
+    builder.Send(goal_builder.Finish());
+  }
+
+  {
+    auto builder = target_selector_hint_sender_.MakeBuilder();
+    ::y2019::control_loops::drivetrain::TargetSelectorHint::Builder
+        target_hint_builder = builder.MakeBuilder<
+            ::y2019::control_loops::drivetrain::TargetSelectorHint>();
+
+    target_hint_builder.add_suggested_target(hint);
+    builder.Send(target_hint_builder.Finish());
+  }
 }
 
 BaseAutonomousActor::SplineHandle BaseAutonomousActor::PlanSpline(
-    const ::frc971::MultiSpline &spline, SplineDirection direction) {
+    std::function<flatbuffers::Offset<frc971::MultiSpline>(
+        aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder)>
+        &&multispline_builder,
+    SplineDirection direction) {
   AOS_LOG(INFO, "Planning spline\n");
 
   int32_t spline_handle = (++spline_handle_) | ((getpid() & 0xFFFF) << 15);
 
   drivetrain_goal_fetcher_.Fetch();
 
-  auto drivetrain_message =
-      drivetrain_goal_sender_.MakeMessage();
+  auto builder = drivetrain_goal_sender_.MakeBuilder();
 
-  int controller_type = 2;
+  flatbuffers::Offset<frc971::MultiSpline> multispline_offset =
+      multispline_builder(&builder);
+
+  drivetrain::SplineGoal::Builder spline_builder =
+      builder.MakeBuilder<drivetrain::SplineGoal>();
+  spline_builder.add_spline_idx(spline_handle);
+  spline_builder.add_drive_spline_backwards(direction ==
+                                            SplineDirection::kBackward);
+  spline_builder.add_spline(multispline_offset);
+
+  flatbuffers::Offset<drivetrain::SplineGoal> spline_offset =
+      spline_builder.Finish();
+
+  drivetrain::Goal::Builder goal_builder =
+      builder.MakeBuilder<drivetrain::Goal>();
+
+  drivetrain::ControllerType controller_type =
+      drivetrain::ControllerType_SPLINE_FOLLOWER;
   if (drivetrain_goal_fetcher_.get()) {
-    controller_type = drivetrain_goal_fetcher_->controller_type;
-    drivetrain_message->throttle = drivetrain_goal_fetcher_->throttle;
+    controller_type = drivetrain_goal_fetcher_->controller_type();
+    goal_builder.add_throttle(drivetrain_goal_fetcher_->throttle());
   }
-  drivetrain_message->controller_type = controller_type;
+  goal_builder.add_controller_type(controller_type);
+  goal_builder.add_spline_handle(goal_spline_handle_);
 
-  drivetrain_message->spline = spline;
-  drivetrain_message->spline.spline_idx = spline_handle;
-  drivetrain_message->spline_handle = goal_spline_handle_;
-  drivetrain_message->spline.drive_spline_backwards =
-      direction == SplineDirection::kBackward;
+  goal_builder.add_spline(spline_offset);
 
-  AOS_LOG_STRUCT(DEBUG, "dtg", *drivetrain_message);
-
-  drivetrain_message.Send();
+  builder.Send(goal_builder.Finish());
 
   return BaseAutonomousActor::SplineHandle(spline_handle, this);
 }
 
 bool BaseAutonomousActor::SplineHandle::IsPlanned() {
   base_autonomous_actor_->drivetrain_status_fetcher_.Fetch();
-  AOS_LOG_STRUCT(DEBUG, "dts",
-                 *(base_autonomous_actor_->drivetrain_status_fetcher_.get()));
+  VLOG(1) << aos::FlatbufferToJson(
+      base_autonomous_actor_->drivetrain_status_fetcher_.get());
+
   if (base_autonomous_actor_->drivetrain_status_fetcher_.get() &&
-      ((base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging
-                .planning_spline_idx == spline_handle_ &&
-        base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging
-                .planning_state == 3) ||
-       base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging
-               .current_spline_idx == spline_handle_)) {
+      ((base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging()
+                ->planning_spline_idx() == spline_handle_ &&
+        base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging()
+                ->planning_state() == 3) ||
+       base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging()
+               ->current_spline_idx() == spline_handle_)) {
     return true;
   }
   return false;
@@ -485,24 +518,21 @@ bool BaseAutonomousActor::SplineHandle::WaitForPlan() {
 }
 
 void BaseAutonomousActor::SplineHandle::Start() {
-  auto drivetrain_message =
-      base_autonomous_actor_->drivetrain_goal_sender_.MakeMessage();
-  drivetrain_message->controller_type = 2;
+  auto builder = base_autonomous_actor_->drivetrain_goal_sender_.MakeBuilder();
+  drivetrain::Goal::Builder goal_builder =
+      builder.MakeBuilder<drivetrain::Goal>();
+  goal_builder.add_controller_type(drivetrain::ControllerType_SPLINE_FOLLOWER);
 
   AOS_LOG(INFO, "Starting spline\n");
 
-  drivetrain_message->spline_handle = spline_handle_;
+  goal_builder.add_spline_handle(spline_handle_);
   base_autonomous_actor_->goal_spline_handle_ = spline_handle_;
 
-  AOS_LOG_STRUCT(DEBUG, "dtg", *drivetrain_message);
-
-  drivetrain_message.Send();
+  builder.Send(goal_builder.Finish());
 }
 
 bool BaseAutonomousActor::SplineHandle::IsDone() {
   base_autonomous_actor_->drivetrain_status_fetcher_.Fetch();
-  AOS_LOG_STRUCT(INFO, "dts",
-                 *(base_autonomous_actor_->drivetrain_status_fetcher_.get()));
 
   // We check that the spline we are waiting on is neither currently planning
   // nor executing (we check is_executed because it is possible to receive
@@ -510,12 +540,13 @@ bool BaseAutonomousActor::SplineHandle::IsDone() {
   // We check for planning so that the user can go straight from starting the
   // planner to executing without a WaitForPlan in between.
   if (base_autonomous_actor_->drivetrain_status_fetcher_.get() &&
-      ((!base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging
-             .is_executed &&
-        base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging
-                .current_spline_idx == spline_handle_) ||
-       base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging
-               .planning_spline_idx == spline_handle_)) {
+      ((!base_autonomous_actor_->drivetrain_status_fetcher_
+             ->trajectory_logging()
+             ->is_executed() &&
+        base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging()
+                ->current_spline_idx() == spline_handle_) ||
+       base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging()
+               ->planning_spline_idx() == spline_handle_)) {
     return false;
   }
   return true;

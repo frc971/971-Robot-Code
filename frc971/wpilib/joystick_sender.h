@@ -3,8 +3,8 @@
 
 #include <atomic>
 
-#include "aos/events/event-loop.h"
-#include "aos/robot_state/robot_state.q.h"
+#include "aos/events/event_loop.h"
+#include "aos/robot_state/joystick_state_generated.h"
 
 namespace frc971 {
 namespace wpilib {

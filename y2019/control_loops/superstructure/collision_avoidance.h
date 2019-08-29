@@ -2,9 +2,12 @@
 #define Y2019_CONTROL_LOOPS_SUPERSTRUCTURE_COLLISION_AVOIDANCE_H_
 
 #include <cmath>
-#include "aos/controls/control_loops.q.h"
+
 #include "frc971/constants.h"
-#include "y2019/control_loops/superstructure/superstructure.q.h"
+#include "frc971/control_loops/control_loops_generated.h"
+#include "frc971/control_loops/profiled_subsystem_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2019 {
 namespace control_loops {
@@ -18,15 +21,14 @@ class CollisionAvoidance {
   CollisionAvoidance();
 
   // Reports if the superstructure is collided.
-  bool IsCollided(const SuperstructureQueue::Status *status);
+  bool IsCollided(const Status *status);
   bool IsCollided(double wrist_position, double elevator_position,
                   double intake_position, bool has_piece);
 
   // Checks and alters goals to make sure they're safe.
   // TODO(austin): Either we will have a unit delay because this has to happen
   // after the controls, or we need to be more clever about restructuring.
-  void UpdateGoal(const SuperstructureQueue::Status *status,
-                  const SuperstructureQueue::Goal *unsafe_goal);
+  void UpdateGoal(const Status *status, const Goal *unsafe_goal);
 
   // Returns the goals to give to the respective control loops in
   // superstructure.

@@ -1,13 +1,12 @@
 #include "y2016/control_loops/superstructure/superstructure.h"
-#include "y2016/control_loops/superstructure/superstructure_controls.h"
 
 #include "aos/commonmath.h"
-#include "aos/controls/control_loops.q.h"
 #include "aos/logging/logging.h"
 
-#include "y2016/control_loops/superstructure/integral_intake_plant.h"
 #include "y2016/control_loops/superstructure/integral_arm_plant.h"
-#include "y2016/queues/ball_detector.q.h"
+#include "y2016/control_loops/superstructure/integral_intake_plant.h"
+#include "y2016/control_loops/superstructure/superstructure_controls.h"
+#include "y2016/queues/ball_detector_generated.h"
 
 #include "y2016/constants.h"
 
@@ -229,11 +228,11 @@ constexpr double CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing;
 
 Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
-    : aos::controls::ControlLoop<control_loops::SuperstructureQueue>(event_loop,
-                                                                     name),
+    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
+                                                                 name),
       ball_detector_fetcher_(
           event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
-              ".y2016.sensors.ball_detector")),
+              "/superstructure")),
       collision_avoidance_(&intake_, &arm_) {}
 
 bool Superstructure::IsArmNear(double shoulder_tolerance,
@@ -289,10 +288,10 @@ double Superstructure::MoveButKeepBelow(double reference_angle,
 }
 
 void Superstructure::RunIteration(
-    const control_loops::SuperstructureQueue::Goal *unsafe_goal,
-    const control_loops::SuperstructureQueue::Position *position,
-    control_loops::SuperstructureQueue::Output *output,
-    control_loops::SuperstructureQueue::Status *status) {
+    const Goal *unsafe_goal,
+    const Position *position,
+    aos::Sender<Output>::Builder *output,
+    aos::Sender<Status>::Builder *status) {
   const State state_before_switch = state_;
   if (WasReset()) {
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
@@ -304,8 +303,8 @@ void Superstructure::RunIteration(
   // Bool to track if we should turn the motors on or not.
   bool disable = output == nullptr;
 
-  arm_.Correct(position->shoulder, position->wrist);
-  intake_.Correct(position->intake);
+  arm_.Correct(position->shoulder(), position->wrist());
+  intake_.Correct(*position->intake());
 
   // There are 2 main zeroing paths, HIGH_ARM_ZERO and LOW_ARM_ZERO.
   //
@@ -571,14 +570,14 @@ void Superstructure::RunIteration(
                              4.0,    // Shoulder acceleration,
                              4.0,    // Wrist velocity
                              10.0);  // Wrist acceleration.
-          intake_.AdjustProfile(unsafe_goal->max_angular_velocity_intake,
-                                unsafe_goal->max_angular_acceleration_intake);
+          intake_.AdjustProfile(unsafe_goal->max_angular_velocity_intake(),
+                                unsafe_goal->max_angular_acceleration_intake());
 
           requested_shoulder =
-              ::std::max(unsafe_goal->angle_shoulder,
+              ::std::max(unsafe_goal->angle_shoulder(),
                          constants::Values::kShoulderRange.lower);
           requested_wrist = 0.0;
-          requested_intake = unsafe_goal->angle_intake;
+          requested_intake = unsafe_goal->angle_intake();
           // Transition to landing once the profile is close to finished for the
           // shoulder.
           if (arm_.goal(0, 0) > kShoulderTransitionToLanded + 1e-4 ||
@@ -591,18 +590,18 @@ void Superstructure::RunIteration(
           }
         } else {
           // Otherwise, give the user what he asked for.
-          arm_.AdjustProfile(unsafe_goal->max_angular_velocity_shoulder,
-                             unsafe_goal->max_angular_acceleration_shoulder,
-                             unsafe_goal->max_angular_velocity_wrist,
-                             unsafe_goal->max_angular_acceleration_wrist);
-          intake_.AdjustProfile(unsafe_goal->max_angular_velocity_intake,
-                                unsafe_goal->max_angular_acceleration_intake);
+          arm_.AdjustProfile(unsafe_goal->max_angular_velocity_shoulder(),
+                             unsafe_goal->max_angular_acceleration_shoulder(),
+                             unsafe_goal->max_angular_velocity_wrist(),
+                             unsafe_goal->max_angular_acceleration_wrist());
+          intake_.AdjustProfile(unsafe_goal->max_angular_velocity_intake(),
+                                unsafe_goal->max_angular_acceleration_intake());
 
           // Except, don't let the shoulder go all the way down.
-          requested_shoulder = ::std::max(unsafe_goal->angle_shoulder,
+          requested_shoulder = ::std::max(unsafe_goal->angle_shoulder(),
                                           kShoulderTransitionToLanded);
-          requested_wrist = unsafe_goal->angle_wrist;
-          requested_intake = unsafe_goal->angle_intake;
+          requested_wrist = unsafe_goal->angle_wrist();
+          requested_intake = unsafe_goal->angle_intake();
 
           // Transition to landing once the profile is close to finished for the
           // shoulder.
@@ -641,9 +640,9 @@ void Superstructure::RunIteration(
   if (unsafe_goal) {
     constexpr float kTriggerThreshold = 12.0 * 0.90 / 0.005;
 
-    if (unsafe_goal->voltage_climber > 1.0) {
+    if (unsafe_goal->voltage_climber() > 1.0) {
       kill_shoulder_accumulator_ +=
-          ::std::min(kMaxClimberVoltage, unsafe_goal->voltage_climber);
+          ::std::min(kMaxClimberVoltage, unsafe_goal->voltage_climber());
     } else {
       kill_shoulder_accumulator_ = 0.0;
     }
@@ -673,24 +672,28 @@ void Superstructure::RunIteration(
   }
 
   // Calculate the loops for a cycle.
+  double intake_position_power;
+  double intake_velocity_power;
   {
     Eigen::Matrix<double, 3, 1> error = intake_.controller().error();
-    status->intake.position_power =
+    intake_position_power =
         intake_.controller().controller().K(0, 0) * error(0, 0);
-    status->intake.velocity_power =
+    intake_velocity_power =
         intake_.controller().controller().K(0, 1) * error(1, 0);
   }
 
+  double shoulder_position_power;
+  double shoulder_velocity_power;
+  double wrist_position_power;
+  double wrist_velocity_power;
   {
     Eigen::Matrix<double, 6, 1> error = arm_.controller().error();
-    status->shoulder.position_power =
+    shoulder_position_power =
         arm_.controller().controller().K(0, 0) * error(0, 0);
-    status->shoulder.velocity_power =
+    shoulder_velocity_power =
         arm_.controller().controller().K(0, 1) * error(1, 0);
-    status->wrist.position_power =
-        arm_.controller().controller().K(0, 2) * error(2, 0);
-    status->wrist.velocity_power =
-        arm_.controller().controller().K(0, 3) * error(3, 0);
+    wrist_position_power = arm_.controller().controller().K(0, 2) * error(2, 0);
+    wrist_velocity_power = arm_.controller().controller().K(0, 3) * error(3, 0);
   }
 
   arm_.Update(disable);
@@ -698,98 +701,135 @@ void Superstructure::RunIteration(
 
   // Write out all the voltages.
   if (output) {
-    output->voltage_intake = intake_.voltage();
-    output->voltage_shoulder = arm_.shoulder_voltage();
-    output->voltage_wrist = arm_.wrist_voltage();
+    OutputT output_struct;
+    output_struct.voltage_intake = intake_.voltage();
+    output_struct.voltage_shoulder = arm_.shoulder_voltage();
+    output_struct.voltage_wrist = arm_.wrist_voltage();
 
-    output->voltage_top_rollers = 0.0;
-    output->voltage_bottom_rollers = 0.0;
+    output_struct.voltage_top_rollers = 0.0;
+    output_struct.voltage_bottom_rollers = 0.0;
 
-    output->voltage_climber = 0.0;
-    output->unfold_climber = false;
+    output_struct.voltage_climber = 0.0;
+    output_struct.unfold_climber = false;
     if (unsafe_goal) {
       // Ball detector lights.
       ball_detector_fetcher_.Fetch();
       bool ball_detected = false;
       if (ball_detector_fetcher_.get()) {
-        ball_detected = ball_detector_fetcher_->voltage > 2.5;
+        ball_detected = ball_detector_fetcher_->voltage() > 2.5;
       }
 
       // Climber.
-      output->voltage_climber = ::std::max(
+      output_struct.voltage_climber = ::std::max(
           static_cast<float>(0.0),
-          ::std::min(unsafe_goal->voltage_climber, kMaxClimberVoltage));
-      output->unfold_climber = unsafe_goal->unfold_climber;
+          ::std::min(unsafe_goal->voltage_climber(), kMaxClimberVoltage));
+      output_struct.unfold_climber = unsafe_goal->unfold_climber();
 
       // Intake.
-      if (unsafe_goal->force_intake || !ball_detected) {
-        output->voltage_top_rollers = ::std::max(
+      if (unsafe_goal->force_intake() || !ball_detected) {
+        output_struct.voltage_top_rollers = ::std::max(
             -kMaxIntakeTopVoltage,
-            ::std::min(unsafe_goal->voltage_top_rollers, kMaxIntakeTopVoltage));
-        output->voltage_bottom_rollers =
+            ::std::min(unsafe_goal->voltage_top_rollers(), kMaxIntakeTopVoltage));
+        output_struct.voltage_bottom_rollers =
             ::std::max(-kMaxIntakeBottomVoltage,
-                       ::std::min(unsafe_goal->voltage_bottom_rollers,
+                       ::std::min(unsafe_goal->voltage_bottom_rollers(),
                                   kMaxIntakeBottomVoltage));
       } else {
-        output->voltage_top_rollers = 0.0;
-        output->voltage_bottom_rollers = 0.0;
+        output_struct.voltage_top_rollers = 0.0;
+        output_struct.voltage_bottom_rollers = 0.0;
       }
 
       // Traverse.
-      output->traverse_unlatched = unsafe_goal->traverse_unlatched;
-      output->traverse_down = unsafe_goal->traverse_down;
+      output_struct.traverse_unlatched = unsafe_goal->traverse_unlatched();
+      output_struct.traverse_down = unsafe_goal->traverse_down();
     }
+
+    output->Send(Output::Pack(*output->fbb(), &output_struct));
   }
 
   // Save debug/internal state.
-  status->zeroed = arm_.zeroed() && intake_.zeroed();
+  flatbuffers::Offset<frc971::EstimatorState> shoulder_estimator_state_offset =
+      arm_.EstimatorState(status->fbb(), 0);
 
-  status->shoulder.angle = arm_.X_hat(0, 0);
-  status->shoulder.angular_velocity = arm_.X_hat(1, 0);
-  status->shoulder.goal_angle = arm_.goal(0, 0);
-  status->shoulder.goal_angular_velocity = arm_.goal(1, 0);
-  status->shoulder.unprofiled_goal_angle = arm_.unprofiled_goal(0, 0);
-  status->shoulder.unprofiled_goal_angular_velocity =
-      arm_.unprofiled_goal(1, 0);
-  status->shoulder.voltage_error = arm_.X_hat(4, 0);
-  status->shoulder.calculated_velocity =
-      (arm_.shoulder_angle() - last_shoulder_angle_) / 0.005;
-  status->shoulder.estimator_state = arm_.EstimatorState(0);
+  JointState::Builder shoulder_builder = status->MakeBuilder<JointState>();
 
-  status->wrist.angle = arm_.X_hat(2, 0);
-  status->wrist.angular_velocity = arm_.X_hat(3, 0);
-  status->wrist.goal_angle = arm_.goal(2, 0);
-  status->wrist.goal_angular_velocity = arm_.goal(3, 0);
-  status->wrist.unprofiled_goal_angle = arm_.unprofiled_goal(2, 0);
-  status->wrist.unprofiled_goal_angular_velocity = arm_.unprofiled_goal(3, 0);
-  status->wrist.voltage_error = arm_.X_hat(5, 0);
-  status->wrist.calculated_velocity =
-      (arm_.wrist_angle() - last_wrist_angle_) / 0.005;
-  status->wrist.estimator_state = arm_.EstimatorState(1);
+  shoulder_builder.add_angle(arm_.X_hat(0, 0));
+  shoulder_builder.add_angular_velocity(arm_.X_hat(1, 0));
+  shoulder_builder.add_goal_angle(arm_.goal(0, 0));
+  shoulder_builder.add_goal_angular_velocity(arm_.goal(1, 0));
+  shoulder_builder.add_unprofiled_goal_angle(arm_.unprofiled_goal(0, 0));
+  shoulder_builder.add_unprofiled_goal_angular_velocity(
+      arm_.unprofiled_goal(1, 0));
+  shoulder_builder.add_voltage_error(arm_.X_hat(4, 0));
+  shoulder_builder.add_calculated_velocity(
+      (arm_.shoulder_angle() - last_shoulder_angle_) / 0.005);
+  shoulder_builder.add_position_power(shoulder_position_power);
+  shoulder_builder.add_velocity_power(shoulder_velocity_power);
+  shoulder_builder.add_estimator_state(shoulder_estimator_state_offset);
 
-  status->intake.angle = intake_.X_hat(0, 0);
-  status->intake.angular_velocity = intake_.X_hat(1, 0);
-  status->intake.goal_angle = intake_.goal(0, 0);
-  status->intake.goal_angular_velocity = intake_.goal(1, 0);
-  status->intake.unprofiled_goal_angle = intake_.unprofiled_goal(0, 0);
-  status->intake.unprofiled_goal_angular_velocity =
-      intake_.unprofiled_goal(1, 0);
-  status->intake.calculated_velocity =
-      (intake_.position() - last_intake_angle_) / 0.005;
-  status->intake.voltage_error = intake_.X_hat(2, 0);
-  status->intake.estimator_state = intake_.EstimatorState(0);
-  status->intake.feedforwards_power = intake_.controller().ff_U(0, 0);
+  flatbuffers::Offset<JointState> shoulder_offset = shoulder_builder.Finish();
 
-  status->shoulder_controller_index = arm_.controller_index();
+  flatbuffers::Offset<frc971::EstimatorState> wrist_estimator_state_offset =
+      arm_.EstimatorState(status->fbb(), 1);
+
+  JointState::Builder wrist_builder = status->MakeBuilder<JointState>();
+
+  wrist_builder.add_angle(arm_.X_hat(2, 0));
+  wrist_builder.add_angular_velocity(arm_.X_hat(3, 0));
+  wrist_builder.add_goal_angle(arm_.goal(2, 0));
+  wrist_builder.add_goal_angular_velocity(arm_.goal(3, 0));
+  wrist_builder.add_unprofiled_goal_angle(arm_.unprofiled_goal(2, 0));
+  wrist_builder.add_unprofiled_goal_angular_velocity(
+      arm_.unprofiled_goal(3, 0));
+  wrist_builder.add_voltage_error(arm_.X_hat(5, 0));
+  wrist_builder.add_calculated_velocity(
+      (arm_.wrist_angle() - last_wrist_angle_) / 0.005);
+  wrist_builder.add_position_power(wrist_position_power);
+  wrist_builder.add_velocity_power(wrist_velocity_power);
+  wrist_builder.add_estimator_state(wrist_estimator_state_offset);
+
+  flatbuffers::Offset<JointState> wrist_offset = wrist_builder.Finish();
+
+  flatbuffers::Offset<frc971::EstimatorState> intake_estimator_state_offset =
+      intake_.EstimatorState(status->fbb(), 0);
+
+  JointState::Builder intake_builder = status->MakeBuilder<JointState>();
+  intake_builder.add_position_power(intake_position_power);
+  intake_builder.add_velocity_power(intake_velocity_power);
+  intake_builder.add_angle(intake_.X_hat(0, 0));
+  intake_builder.add_angular_velocity(intake_.X_hat(1, 0));
+  intake_builder.add_goal_angle(intake_.goal(0, 0));
+  intake_builder.add_goal_angular_velocity(intake_.goal(1, 0));
+  intake_builder.add_unprofiled_goal_angle(intake_.unprofiled_goal(0, 0));
+  intake_builder.add_unprofiled_goal_angular_velocity(
+      intake_.unprofiled_goal(1, 0));
+  intake_builder.add_calculated_velocity(
+      (intake_.position() - last_intake_angle_) / 0.005);
+  intake_builder.add_voltage_error(intake_.X_hat(2, 0));
+  intake_builder.add_estimator_state(intake_estimator_state_offset);
+  intake_builder.add_feedforwards_power(intake_.controller().ff_U(0, 0));
+
+  flatbuffers::Offset<JointState> intake_offset = intake_builder.Finish();
+
+  Status::Builder status_builder = status->MakeBuilder<Status>();
+
+  status_builder.add_shoulder(shoulder_offset);
+  status_builder.add_wrist(wrist_offset);
+  status_builder.add_intake(intake_offset);
+
+  status_builder.add_zeroed(arm_.zeroed() && intake_.zeroed());
+  status_builder.add_shoulder_controller_index(arm_.controller_index());
 
   last_shoulder_angle_ = arm_.shoulder_angle();
   last_wrist_angle_ = arm_.wrist_angle();
   last_intake_angle_ = intake_.position();
 
-  status->estopped = (state_ == ESTOP);
+  status_builder.add_estopped((state_ == ESTOP));
 
-  status->state = state_;
-  status->is_collided = is_collided;
+  status_builder.add_state(state_);
+  status_builder.add_is_collided(is_collided);
+
+  status->Send(status_builder.Finish());
 
   last_state_ = state_before_switch;
 }

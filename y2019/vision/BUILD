@@ -1,4 +1,3 @@
-load("//aos/build:queues.bzl", "queue_library")
 load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary", "gtk_dependent_cc_library")
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 load("//tools:environments.bzl", "mcu_cpus")

@@ -5,7 +5,7 @@
 #include "aos/mutex/mutex.h"
 #include "aos/condition.h"
 #include "aos/util/options.h"
-#include "aos/logging/logging.h"
+#include "glog/logging.h"
 
 // TODO(brians) add valgrind client requests to the queue and shared_mem_malloc
 // code to make checking for leaks work better
@@ -90,10 +90,11 @@ class RawQueue {
     static constexpr Options<RawQueue> kWriteFailureOptions =
         kNonBlock | kBlock | kOverride;
     if (!options.NoOthersSet(kWriteFailureOptions)) {
-      AOS_LOG(FATAL, "illegal write options in %x\n", options.printable());
+      LOG(FATAL) << "illegal write options in " << std::hex
+                 << options.printable();
     }
     if (!options.ExactlyOneSet(kWriteFailureOptions)) {
-      AOS_LOG(FATAL, "invalid write options %x\n", options.printable());
+      LOG(FATAL) << "invalid write options " << std::hex << options.printable();
     }
     return DoWriteMessage(msg, options);
   }
@@ -123,7 +124,7 @@ class RawQueue {
     CheckReadOptions(options);
     static constexpr Options<RawQueue> kFromEndAndPeek = kFromEnd | kPeek;
     if (options.AllSet(kFromEndAndPeek)) {
-      AOS_LOG(FATAL, "ReadMessageIndex(kFromEnd | kPeek) is not allowed\n");
+      LOG(FATAL) << "ReadMessageIndex(kFromEnd | kPeek) is not allowed";
     }
     return DoReadMessageIndex(options, index, timeout);
   }
@@ -161,11 +162,12 @@ class RawQueue {
     static constexpr Options<RawQueue> kValidOptions =
         kPeek | kFromEnd | kNonBlock | kBlock;
     if (!options.NoOthersSet(kValidOptions)) {
-      AOS_LOG(FATAL, "illegal read options in %x\n", options.printable());
+      LOG(FATAL) << "illegal read options in " << std::hex
+                 << options.printable();
     }
     static constexpr Options<RawQueue> kBlockChoices = kNonBlock | kBlock;
     if (!options.ExactlyOneSet(kBlockChoices)) {
-      AOS_LOG(FATAL, "invalid read options %x\n", options.printable());
+      LOG(FATAL) << "invalid read options " << std::hex << options.printable();
     }
   }
 

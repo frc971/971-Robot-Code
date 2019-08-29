@@ -1,0 +1,9 @@
+namespace y2014.sensors;
+
+// Published on "/aos"
+table AutoMode {
+  // Voltage of the analog auto selector knob.
+  voltage:double;
+}
+
+root_type AutoMode;

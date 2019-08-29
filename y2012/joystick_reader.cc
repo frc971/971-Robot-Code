@@ -4,15 +4,15 @@
 #include <math.h>
 
 #include "aos/actions/actions.h"
-#include "aos/events/shm-event-loop.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/input/driver_station_data.h"
 #include "aos/input/joystick_input.h"
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"
 
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "y2012/control_loops/accessories/accessories.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
+#include "y2012/control_loops/accessories/accessories_generated.h"
 
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::JoystickAxis;
@@ -81,13 +81,12 @@ class Reader : public ::aos::input::JoystickInput {
   Reader(::aos::EventLoop *event_loop)
       : ::aos::input::JoystickInput(event_loop),
         drivetrain_goal_sender_(
-            event_loop
-                ->MakeSender<::frc971::control_loops::DrivetrainQueue::Goal>(
-                    ".frc971.control_loops.drivetrain_queue.goal")),
+            event_loop->MakeSender<::frc971::control_loops::drivetrain::Goal>(
+                "/drivetrain")),
         accessories_goal_sender_(
             event_loop
-                ->MakeSender<::y2012::control_loops::AccessoriesQueue::Message>(
-                    ".y2012.control_loops.accessories_queue.goal")),
+                ->MakeSender<::y2012::control_loops::accessories::Message>(
+                    "/accessories")),
         is_high_gear_(false) {}
 
   void RunIteration(const ::aos::input::driver_station::Data &data) override {
@@ -106,33 +105,43 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.PosEdge(kShiftHigh)) {
       is_high_gear_ = true;
     }
-    auto drivetrain_message = drivetrain_goal_sender_.MakeMessage();
-    drivetrain_message->wheel = wheel;
-    drivetrain_message->throttle = throttle;
-    drivetrain_message->highgear = is_high_gear_;
-    drivetrain_message->quickturn = data.IsPressed(kQuickTurn);
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    frc971::control_loops::drivetrain::Goal::Builder goal_builder =
+        builder.MakeBuilder<frc971::control_loops::drivetrain::Goal>();
+    goal_builder.add_wheel(wheel);
+    goal_builder.add_throttle(throttle);
+    goal_builder.add_highgear(is_high_gear_);
+    goal_builder.add_quickturn(data.IsPressed(kQuickTurn));
 
-    if (!drivetrain_message.Send()) {
+    if (!builder.Send(goal_builder.Finish())) {
       AOS_LOG(WARNING, "sending stick values failed\n");
     }
   }
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
-    auto accessories_message = accessories_goal_sender_.MakeMessage();
-    accessories_message->solenoids[0] = data.IsPressed(kLongShot);
-    accessories_message->solenoids[1] = data.IsPressed(kCloseShot);
-    accessories_message->solenoids[2] = data.IsPressed(kFenderShot);
-    accessories_message->sticks[0] = data.GetAxis(kAdjustClawGoal);
-    accessories_message->sticks[1] = data.GetAxis(kAdjustClawSeparation);
-    if (!accessories_message.Send()) {
+    auto builder = accessories_goal_sender_.MakeBuilder();
+    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> solenoids_offset =
+        builder.fbb()->CreateVector<uint8_t>({data.IsPressed(kLongShot),
+                                     data.IsPressed(kCloseShot),
+                                     data.IsPressed(kFenderShot)});
+
+    flatbuffers::Offset<flatbuffers::Vector<double>> sticks_offset =
+        builder.fbb()->CreateVector<double>({data.GetAxis(kAdjustClawGoal),
+                                     data.GetAxis(kAdjustClawSeparation)});
+
+    y2012::control_loops::accessories::Message::Builder message_builder =
+        builder.MakeBuilder<y2012::control_loops::accessories::Message>();
+    message_builder.add_solenoids(solenoids_offset);
+    message_builder.add_sticks(sticks_offset);
+    if (!builder.Send(message_builder.Finish())) {
       AOS_LOG(WARNING, "sending accessories goal failed\n");
     }
   }
 
  private:
-  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Goal>
+  ::aos::Sender<::frc971::control_loops::drivetrain::Goal>
       drivetrain_goal_sender_;
-  ::aos::Sender<::y2012::control_loops::AccessoriesQueue::Message>
+  ::aos::Sender<::y2012::control_loops::accessories::Message>
       accessories_goal_sender_;
 
   bool is_high_gear_;
@@ -145,7 +154,10 @@ class Reader : public ::aos::input::JoystickInput {
 int main() {
   ::aos::InitNRT(true);
 
-  ::aos::ShmEventLoop event_loop;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig("config.json");
+
+  ::aos::ShmEventLoop event_loop(&config.message());
   ::y2012::input::joysticks::Reader reader(&event_loop);
 
   event_loop.Run();

@@ -1,13 +1,12 @@
 #include <netdb.h>
 
-#include "aos/events/shm-event-loop.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
-#include "aos/logging/queue_logging.h"
 #include "aos/time/time.h"
 #include "aos/vision/events/udp.h"
 #include "y2017/vision/target_finder.h"
-#include "y2017/vision/vision.q.h"
+#include "y2017/vision/vision_generated.h"
 #include "y2017/vision/vision_result.pb.h"
 
 namespace y2017 {
@@ -20,11 +19,13 @@ int Main() {
   char raw_data[65507];
   // TODO(parker): Have this pull in a config from somewhere.
   TargetFinder finder;
-  ::aos::ShmEventLoop event_loop;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig("config.json");
+
+  ::aos::ShmEventLoop event_loop(&config.message());
 
   ::aos::Sender<::y2017::vision::VisionStatus> vision_status_sender =
-      event_loop.MakeSender<::y2017::vision::VisionStatus>(
-          ".y2017.vision.vision_status");
+      event_loop.MakeSender<::y2017::vision::VisionStatus>("/vision");
 
   while (true) {
     // TODO(austin): Don't malloc.
@@ -42,22 +43,27 @@ int Main() {
       continue;
     }
 
-    auto new_vision_status = vision_status_sender.MakeMessage();
-    new_vision_status->image_valid = target.has_target();
-    if (new_vision_status->image_valid) {
-      new_vision_status->target_time =
+    auto builder = vision_status_sender.MakeBuilder();
+    VisionStatus::Builder vision_status_builder =
+        builder.MakeBuilder<VisionStatus>();
+    vision_status_builder.add_image_valid(target.has_target());
+    if (target.has_target()) {
+      vision_status_builder.add_target_time (
           std::chrono::duration_cast<std::chrono::nanoseconds>(
               target_time.time_since_epoch())
-              .count();
+              .count());
 
+      double distance = 0.0;
+      double angle = 0.0;
       finder.GetAngleDist(
           aos::vision::Vector<2>(target.target().x(), target.target().y()),
           /* TODO: Insert down estimate here in radians: */ 0.0,
-          &new_vision_status->distance, &new_vision_status->angle);
+          &distance, &angle);
+      vision_status_builder.add_distance(distance);
+      vision_status_builder.add_angle(angle);
     }
 
-    AOS_LOG_STRUCT(DEBUG, "vision", *new_vision_status);
-    if (!new_vision_status.Send()) {
+    if (!builder.Send(vision_status_builder.Finish())) {
       AOS_LOG(ERROR, "Failed to send vision information\n");
     }
   }

@@ -8,39 +8,52 @@
 #include "aos/logging/logging.h"
 #include "aos/util/phased_loop.h"
 
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2016/control_loops/drivetrain/drivetrain_base.h"
-#include "y2016/control_loops/shooter/shooter.q.h"
-#include "y2016/control_loops/superstructure/superstructure.q.h"
-#include "y2016/queues/ball_detector.q.h"
-#include "y2016/vision/vision.q.h"
+#include "y2016/control_loops/shooter/shooter_goal_generated.h"
+#include "y2016/control_loops/shooter/shooter_status_generated.h"
+#include "y2016/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2016/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2016/queues/ball_detector_generated.h"
+#include "y2016/vision/vision_generated.h"
 
 namespace y2016 {
 namespace actors {
 using ::aos::monotonic_clock;
+using ::frc971::ProfileParametersT;
+namespace superstructure = y2016::control_loops::superstructure;
+namespace shooter = y2016::control_loops::shooter;
 namespace chrono = ::std::chrono;
 namespace this_thread = ::std::this_thread;
 
 namespace {
-const ProfileParameters kSlowDrive = {0.8, 2.5};
-const ProfileParameters kLowBarDrive = {1.3, 2.5};
-const ProfileParameters kMoatDrive = {1.2, 3.5};
-const ProfileParameters kRealignDrive = {2.0, 2.5};
-const ProfileParameters kRockWallDrive = {0.8, 2.5};
-const ProfileParameters kFastDrive = {3.0, 2.5};
+ProfileParametersT MakeProfileParameters(float max_velocity,
+                                         float max_acceleration) {
+  ProfileParametersT result;
+  result.max_velocity = max_velocity;
+  result.max_acceleration = max_acceleration;
+  return result;
+}
 
-const ProfileParameters kSlowTurn = {0.8, 3.0};
-const ProfileParameters kFastTurn = {3.0, 10.0};
-const ProfileParameters kStealTurn = {4.0, 15.0};
-const ProfileParameters kSwerveTurn = {2.0, 7.0};
-const ProfileParameters kFinishTurn = {2.0, 5.0};
+const ProfileParametersT kSlowDrive = MakeProfileParameters(0.8, 2.5);
+const ProfileParametersT kLowBarDrive = MakeProfileParameters(1.3, 2.5);
+const ProfileParametersT kMoatDrive = MakeProfileParameters(1.2, 3.5);
+const ProfileParametersT kRealignDrive = MakeProfileParameters(2.0, 2.5);
+const ProfileParametersT kRockWallDrive = MakeProfileParameters(0.8, 2.5);
+const ProfileParametersT kFastDrive = MakeProfileParameters(3.0, 2.5);
 
-const ProfileParameters kTwoBallLowDrive = {1.7, 3.5};
-const ProfileParameters kTwoBallFastDrive = {3.0, 1.5};
-const ProfileParameters kTwoBallReturnDrive = {3.0, 1.9};
-const ProfileParameters kTwoBallReturnSlow = {3.0, 2.5};
-const ProfileParameters kTwoBallBallPickup = {2.0, 1.75};
-const ProfileParameters kTwoBallBallPickupAccel = {2.0, 2.5};
+const ProfileParametersT kSlowTurn = MakeProfileParameters(0.8, 3.0);
+const ProfileParametersT kFastTurn = MakeProfileParameters(3.0, 10.0);
+const ProfileParametersT kStealTurn = MakeProfileParameters(4.0, 15.0);
+const ProfileParametersT kSwerveTurn = MakeProfileParameters(2.0, 7.0);
+const ProfileParametersT kFinishTurn = MakeProfileParameters(2.0, 5.0);
+
+const ProfileParametersT kTwoBallLowDrive = MakeProfileParameters(1.7, 3.5);
+const ProfileParametersT kTwoBallFastDrive = MakeProfileParameters(3.0, 1.5);
+const ProfileParametersT kTwoBallReturnDrive = MakeProfileParameters(3.0, 1.9);
+const ProfileParametersT kTwoBallReturnSlow = MakeProfileParameters(3.0, 2.5);
+const ProfileParametersT kTwoBallBallPickup = MakeProfileParameters(2.0, 1.75);
+const ProfileParametersT kTwoBallBallPickupAccel =
+    MakeProfileParameters(2.0, 2.5);
 
 }  // namespace
 
@@ -51,66 +64,66 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
           actors::VisionAlignActor::MakeFactory(event_loop)),
       vision_status_fetcher_(
           event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
-              ".y2016.vision.vision_status")),
+              "/superstructure")),
       ball_detector_fetcher_(
           event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
-              ".y2016.sensors.ball_detector")),
+              "/superstructure")),
       shooter_goal_sender_(
-          event_loop
-              ->MakeSender<::y2016::control_loops::shooter::ShooterQueue::Goal>(
-                  ".y2016.control_loops.shooter.shooter_queue.goal")),
+          event_loop->MakeSender<::y2016::control_loops::shooter::Goal>(
+              "/shooter")),
       shooter_status_fetcher_(
-          event_loop->MakeFetcher<
-              ::y2016::control_loops::shooter::ShooterQueue::Status>(
-              ".y2016.control_loops.shooter.shooter_queue.status")),
+          event_loop->MakeFetcher<::y2016::control_loops::shooter::Status>(
+              "/shooter")),
       superstructure_status_fetcher_(
-          event_loop->MakeFetcher<
-              ::y2016::control_loops::SuperstructureQueue::Status>(
-              ".y2016.control_loops.superstructure_queue.status")),
-      superstructure_goal_sender_(
           event_loop
-              ->MakeSender<::y2016::control_loops::SuperstructureQueue::Goal>(
-                  ".y2016.control_loops.superstructure_queue.goal")) {}
+              ->MakeFetcher<::y2016::control_loops::superstructure::Status>(
+                  "/superstructure")),
+      superstructure_goal_sender_(
+          event_loop->MakeSender<::y2016::control_loops::superstructure::Goal>(
+              "/superstructure")) {}
 
 constexpr double kDoNotTurnCare = 2.0;
 
 void AutonomousActor::MoveSuperstructure(
     double intake, double shoulder, double wrist,
-    const ProfileParameters intake_params,
-    const ProfileParameters shoulder_params,
-    const ProfileParameters wrist_params, bool traverse_up,
+    const ProfileParametersT intake_params,
+    const ProfileParametersT shoulder_params,
+    const ProfileParametersT wrist_params, bool traverse_up,
     double roller_power) {
   superstructure_goal_ = {intake, shoulder, wrist};
 
-  auto new_superstructure_goal = superstructure_goal_sender_.MakeMessage();
+  auto builder = superstructure_goal_sender_.MakeBuilder();
 
-  new_superstructure_goal->angle_intake = intake;
-  new_superstructure_goal->angle_shoulder = shoulder;
-  new_superstructure_goal->angle_wrist = wrist;
+  superstructure::Goal::Builder superstructure_goal_builder =
+      builder.MakeBuilder<superstructure::Goal>();
 
-  new_superstructure_goal->max_angular_velocity_intake =
-      intake_params.max_velocity;
-  new_superstructure_goal->max_angular_velocity_shoulder =
-      shoulder_params.max_velocity;
-  new_superstructure_goal->max_angular_velocity_wrist =
-      wrist_params.max_velocity;
+  superstructure_goal_builder.add_angle_intake(intake);
+  superstructure_goal_builder.add_angle_shoulder(shoulder);
+  superstructure_goal_builder.add_angle_wrist(wrist);
 
-  new_superstructure_goal->max_angular_acceleration_intake =
-      intake_params.max_acceleration;
-  new_superstructure_goal->max_angular_acceleration_shoulder =
-      shoulder_params.max_acceleration;
-  new_superstructure_goal->max_angular_acceleration_wrist =
-      wrist_params.max_acceleration;
+  superstructure_goal_builder.add_max_angular_velocity_intake(
+      intake_params.max_velocity);
+  superstructure_goal_builder.add_max_angular_velocity_shoulder(
+      shoulder_params.max_velocity);
+  superstructure_goal_builder.add_max_angular_velocity_wrist(
+      wrist_params.max_velocity);
 
-  new_superstructure_goal->voltage_top_rollers = roller_power;
-  new_superstructure_goal->voltage_bottom_rollers = roller_power;
+  superstructure_goal_builder.add_max_angular_acceleration_intake(
+      intake_params.max_acceleration);
+  superstructure_goal_builder.add_max_angular_acceleration_shoulder(
+      shoulder_params.max_acceleration);
+  superstructure_goal_builder.add_max_angular_acceleration_wrist(
+      wrist_params.max_acceleration);
 
-  new_superstructure_goal->traverse_unlatched = true;
-  new_superstructure_goal->traverse_down = !traverse_up;
-  new_superstructure_goal->voltage_climber = 0.0;
-  new_superstructure_goal->unfold_climber = false;
+  superstructure_goal_builder.add_voltage_top_rollers(roller_power);
+  superstructure_goal_builder.add_voltage_bottom_rollers(roller_power);
 
-  if (!new_superstructure_goal.Send()) {
+  superstructure_goal_builder.add_traverse_unlatched(true);
+  superstructure_goal_builder.add_traverse_down(!traverse_up);
+  superstructure_goal_builder.add_voltage_climber(0.0);
+  superstructure_goal_builder.add_unfold_climber(false);
+
+  if (!builder.Send(superstructure_goal_builder.Finish())) {
     AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
   }
 }
@@ -118,12 +131,14 @@ void AutonomousActor::MoveSuperstructure(
 void AutonomousActor::OpenShooter() {
   shooter_speed_ = 0.0;
 
-  auto shooter_goal = shooter_goal_sender_.MakeMessage();
-  shooter_goal->angular_velocity = shooter_speed_;
-  shooter_goal->clamp_open = true;
-  shooter_goal->push_to_shooter = false;
-  shooter_goal->force_lights_on = false;
-  if (!shooter_goal.Send()) {
+  auto builder = shooter_goal_sender_.MakeBuilder();
+  shooter::Goal::Builder shooter_goal_builder =
+      builder.MakeBuilder<shooter::Goal>();
+  shooter_goal_builder.add_angular_velocity(shooter_speed_);
+  shooter_goal_builder.add_clamp_open(true);
+  shooter_goal_builder.add_push_to_shooter(false);
+  shooter_goal_builder.add_force_lights_on(false);
+  if (!builder.Send(shooter_goal_builder.Finish())) {
     AOS_LOG(ERROR, "Sending shooter goal failed.\n");
   }
 }
@@ -131,13 +146,15 @@ void AutonomousActor::OpenShooter() {
 void AutonomousActor::CloseShooter() {
   shooter_speed_ = 0.0;
 
-  auto shooter_goal = shooter_goal_sender_.MakeMessage();
-  shooter_goal->angular_velocity = shooter_speed_;
-  shooter_goal->clamp_open = false;
-  shooter_goal->push_to_shooter = false;
-  shooter_goal->force_lights_on = false;
+  auto builder = shooter_goal_sender_.MakeBuilder();
+  shooter::Goal::Builder shooter_goal_builder =
+      builder.MakeBuilder<shooter::Goal>();
+  shooter_goal_builder.add_angular_velocity(shooter_speed_);
+  shooter_goal_builder.add_clamp_open(false);
+  shooter_goal_builder.add_push_to_shooter(false);
+  shooter_goal_builder.add_force_lights_on(false);
 
-  if (!shooter_goal.Send()) {
+  if (!builder.Send(shooter_goal_builder.Finish())) {
     AOS_LOG(ERROR, "Sending shooter goal failed.\n");
   }
 }
@@ -149,13 +166,15 @@ void AutonomousActor::SetShooterSpeed(double speed) {
   // hope of a human aligning the robot.
   bool force_lights_on = shooter_speed_ > 1.0;
 
-  auto shooter_goal = shooter_goal_sender_.MakeMessage();
-  shooter_goal->angular_velocity = shooter_speed_;
-  shooter_goal->clamp_open = false;
-  shooter_goal->push_to_shooter = false;
-  shooter_goal->force_lights_on = force_lights_on;
+  auto builder = shooter_goal_sender_.MakeBuilder();
+  shooter::Goal::Builder shooter_goal_builder =
+      builder.MakeBuilder<shooter::Goal>();
+  shooter_goal_builder.add_angular_velocity(shooter_speed_);
+  shooter_goal_builder.add_clamp_open(false);
+  shooter_goal_builder.add_push_to_shooter(false);
+  shooter_goal_builder.add_force_lights_on(force_lights_on);
 
-  if (!shooter_goal.Send()) {
+  if (!builder.Send(shooter_goal_builder.Finish())) {
     AOS_LOG(ERROR, "Sending shooter goal failed.\n");
   }
 }
@@ -165,20 +184,22 @@ void AutonomousActor::Shoot() {
 
   shooter_status_fetcher_.Fetch();
   if (shooter_status_fetcher_.get()) {
-    initial_shots = shooter_status_fetcher_->shots;
+    initial_shots = shooter_status_fetcher_->shots();
   }
 
   // In auto, we want to have the lights on whenever possible since we have no
   // hope of a human aligning the robot.
   bool force_lights_on = shooter_speed_ > 1.0;
 
-  auto shooter_goal = shooter_goal_sender_.MakeMessage();
-  shooter_goal->angular_velocity = shooter_speed_;
-  shooter_goal->clamp_open = false;
-  shooter_goal->push_to_shooter = true;
-  shooter_goal->force_lights_on = force_lights_on;
+  auto builder = shooter_goal_sender_.MakeBuilder();
+  shooter::Goal::Builder shooter_goal_builder =
+      builder.MakeBuilder<shooter::Goal>();
+  shooter_goal_builder.add_angular_velocity(shooter_speed_);
+  shooter_goal_builder.add_clamp_open(false);
+  shooter_goal_builder.add_push_to_shooter(true);
+  shooter_goal_builder.add_force_lights_on(force_lights_on);
 
-  if (!shooter_goal.Send()) {
+  if (!builder.Send(shooter_goal_builder.Finish())) {
     AOS_LOG(ERROR, "Sending shooter goal failed.\n");
   }
 
@@ -191,7 +212,7 @@ void AutonomousActor::Shoot() {
     // Wait for the shot count to change so we know when the shot is complete.
     shooter_status_fetcher_.Fetch();
     if (shooter_status_fetcher_.get()) {
-      if (initial_shots < shooter_status_fetcher_->shots) {
+      if (initial_shots < shooter_status_fetcher_->shots()) {
         return;
       }
     }
@@ -208,8 +229,8 @@ void AutonomousActor::WaitForShooterSpeed() {
 
     shooter_status_fetcher_.Fetch();
     if (shooter_status_fetcher_.get()) {
-      if (shooter_status_fetcher_->left.ready &&
-          shooter_status_fetcher_->right.ready) {
+      if (shooter_status_fetcher_->left()->ready() &&
+          shooter_status_fetcher_->right()->ready()) {
         return;
       }
     }
@@ -218,7 +239,7 @@ void AutonomousActor::WaitForShooterSpeed() {
 }
 
 void AutonomousActor::AlignWithVisionGoal() {
-  actors::VisionAlignActionParams params;
+  vision_align_action::VisionAlignActionParamsT params;
   vision_action_ = vision_align_actor_factory_.Make(params);
   vision_action_->Start();
 }
@@ -238,25 +259,25 @@ void AutonomousActor::WaitForAlignedWithVision(
 
     vision_status_fetcher_.Fetch();
     if (vision_status_fetcher_.get()) {
-      vision_valid = (vision_status_fetcher_->left_image_valid &&
-                      vision_status_fetcher_->right_image_valid);
-      last_angle = vision_status_fetcher_->horizontal_angle;
+      vision_valid = (vision_status_fetcher_->left_image_valid() &&
+                      vision_status_fetcher_->right_image_valid());
+      last_angle = vision_status_fetcher_->horizontal_angle();
     }
 
     drivetrain_status_fetcher_.Fetch();
     drivetrain_goal_fetcher_.Fetch();
 
     if (drivetrain_status_fetcher_.get() && drivetrain_goal_fetcher_.get()) {
-      const double left_goal = drivetrain_goal_fetcher_->left_goal;
-      const double right_goal = drivetrain_goal_fetcher_->right_goal;
+      const double left_goal = drivetrain_goal_fetcher_->left_goal();
+      const double right_goal = drivetrain_goal_fetcher_->right_goal();
       const double left_current =
-          drivetrain_status_fetcher_->estimated_left_position;
+          drivetrain_status_fetcher_->estimated_left_position();
       const double right_current =
-          drivetrain_status_fetcher_->estimated_right_position;
+          drivetrain_status_fetcher_->estimated_right_position();
       const double left_velocity =
-          drivetrain_status_fetcher_->estimated_left_velocity;
+          drivetrain_status_fetcher_->estimated_left_velocity();
       const double right_velocity =
-          drivetrain_status_fetcher_->estimated_right_velocity;
+          drivetrain_status_fetcher_->estimated_right_velocity();
 
       if (vision_valid && ::std::abs(last_angle) < 0.02 &&
           ::std::abs((left_goal - right_goal) -
@@ -287,21 +308,23 @@ bool AutonomousActor::IntakeDone() {
   constexpr double kProfileError = 1e-5;
   constexpr double kEpsilon = 0.15;
 
-  if (superstructure_status_fetcher_->state < 12 ||
-      superstructure_status_fetcher_->state == 16) {
+  if (superstructure_status_fetcher_->state() < 12 ||
+      superstructure_status_fetcher_->state() == 16) {
     AOS_LOG(ERROR, "Superstructure no longer running, aborting action\n");
     return true;
   }
 
-  if (::std::abs(superstructure_status_fetcher_->intake.goal_angle -
+  if (::std::abs(superstructure_status_fetcher_->intake()->goal_angle() -
                  superstructure_goal_.intake) < kProfileError &&
-      ::std::abs(superstructure_status_fetcher_->intake
-                     .goal_angular_velocity) < kProfileError) {
+      ::std::abs(
+          superstructure_status_fetcher_->intake()->goal_angular_velocity()) <
+          kProfileError) {
     AOS_LOG(DEBUG, "Profile done.\n");
-    if (::std::abs(superstructure_status_fetcher_->intake.angle -
+    if (::std::abs(superstructure_status_fetcher_->intake()->angle() -
                    superstructure_goal_.intake) < kEpsilon &&
-        ::std::abs(superstructure_status_fetcher_->intake
-                       .angular_velocity) < kEpsilon) {
+        ::std::abs(
+            superstructure_status_fetcher_->intake()->angular_velocity()) <
+            kEpsilon) {
       AOS_LOG(INFO, "Near goal, done.\n");
       return true;
     }
@@ -310,28 +333,26 @@ bool AutonomousActor::IntakeDone() {
 }
 
 bool AutonomousActor::SuperstructureProfileDone() {
-  if (superstructure_status_fetcher_->state < 12 ||
-      superstructure_status_fetcher_->state == 16) {
+  if (superstructure_status_fetcher_->state() < 12 ||
+      superstructure_status_fetcher_->state() == 16) {
     AOS_LOG(ERROR, "Superstructure no longer running, aborting action\n");
     return true;
   }
 
   constexpr double kProfileError = 1e-5;
-  return ::std::abs(
-             superstructure_status_fetcher_->intake.goal_angle -
-             superstructure_goal_.intake) < kProfileError &&
+  return ::std::abs(superstructure_status_fetcher_->intake()->goal_angle() -
+                    superstructure_goal_.intake) < kProfileError &&
+         ::std::abs(superstructure_status_fetcher_->shoulder()->goal_angle() -
+                    superstructure_goal_.shoulder) < kProfileError &&
+         ::std::abs(superstructure_status_fetcher_->wrist()->goal_angle() -
+                    superstructure_goal_.wrist) < kProfileError &&
+         ::std::abs(superstructure_status_fetcher_->intake()
+                        ->goal_angular_velocity()) < kProfileError &&
+         ::std::abs(superstructure_status_fetcher_->shoulder()
+                        ->goal_angular_velocity()) < kProfileError &&
          ::std::abs(
-             superstructure_status_fetcher_->shoulder.goal_angle -
-             superstructure_goal_.shoulder) < kProfileError &&
-         ::std::abs(
-             superstructure_status_fetcher_->wrist.goal_angle -
-             superstructure_goal_.wrist) < kProfileError &&
-         ::std::abs(superstructure_status_fetcher_->intake
-                        .goal_angular_velocity) < kProfileError &&
-         ::std::abs(superstructure_status_fetcher_->shoulder
-                        .goal_angular_velocity) < kProfileError &&
-         ::std::abs(superstructure_status_fetcher_->wrist
-                        .goal_angular_velocity) < kProfileError;
+             superstructure_status_fetcher_->wrist()->goal_angular_velocity()) <
+             kProfileError;
 }
 
 bool AutonomousActor::SuperstructureDone() {
@@ -340,18 +361,21 @@ bool AutonomousActor::SuperstructureDone() {
   constexpr double kEpsilon = 0.03;
   if (SuperstructureProfileDone()) {
     AOS_LOG(DEBUG, "Profile done.\n");
-    if (::std::abs(superstructure_status_fetcher_->intake.angle -
+    if (::std::abs(superstructure_status_fetcher_->intake()->angle() -
                    superstructure_goal_.intake) < (kEpsilon + 0.1) &&
-        ::std::abs(superstructure_status_fetcher_->shoulder.angle -
+        ::std::abs(superstructure_status_fetcher_->shoulder()->angle() -
                    superstructure_goal_.shoulder) < (kEpsilon + 0.05) &&
-        ::std::abs(superstructure_status_fetcher_->wrist.angle -
+        ::std::abs(superstructure_status_fetcher_->wrist()->angle() -
                    superstructure_goal_.wrist) < (kEpsilon + 0.01) &&
-        ::std::abs(superstructure_status_fetcher_->intake
-                       .angular_velocity) < (kEpsilon + 0.1) &&
-        ::std::abs(superstructure_status_fetcher_->shoulder
-                       .angular_velocity) < (kEpsilon + 0.10) &&
-        ::std::abs(superstructure_status_fetcher_->wrist
-                       .angular_velocity) < (kEpsilon + 0.05)) {
+        ::std::abs(
+            superstructure_status_fetcher_->intake()->angular_velocity()) <
+            (kEpsilon + 0.1) &&
+        ::std::abs(
+            superstructure_status_fetcher_->shoulder()->angular_velocity()) <
+            (kEpsilon + 0.10) &&
+        ::std::abs(
+            superstructure_status_fetcher_->wrist()->angular_velocity()) <
+            (kEpsilon + 0.05)) {
       AOS_LOG(INFO, "Near goal, done.\n");
       return true;
     }
@@ -379,55 +403,71 @@ void AutonomousActor::WaitForSuperstructureLow() {
     superstructure_status_fetcher_.Fetch();
 
     return SuperstructureProfileDone() ||
-           superstructure_status_fetcher_->shoulder.angle < 0.1;
+           superstructure_status_fetcher_->shoulder()->angle() < 0.1;
   });
 }
 
 void AutonomousActor::BackLongShotLowBarTwoBall() {
   AOS_LOG(INFO, "Expanding for back long shot\n");
-  MoveSuperstructure(0.00, M_PI / 2.0 - 0.2, -0.55, {7.0, 40.0}, {4.0, 6.0},
-                     {10.0, 25.0}, false, 0.0);
+  MoveSuperstructure(0.00, M_PI / 2.0 - 0.2, -0.55,
+                     MakeProfileParameters(7.0, 40.0),
+                     MakeProfileParameters(4.0, 6.0),
+                     MakeProfileParameters(10.0, 25.0), false, 0.0);
 }
 
 void AutonomousActor::BackLongShotTwoBall() {
   AOS_LOG(INFO, "Expanding for back long shot\n");
-  MoveSuperstructure(0.00, M_PI / 2.0 - 0.2, -0.55, {7.0, 40.0}, {4.0, 6.0},
-                     {10.0, 25.0}, false, 0.0);
+  MoveSuperstructure(0.00, M_PI / 2.0 - 0.2, -0.55,
+                     MakeProfileParameters(7.0, 40.0),
+                     MakeProfileParameters(4.0, 6.0),
+                     MakeProfileParameters(10.0, 25.0), false, 0.0);
 }
 
 void AutonomousActor::BackLongShotTwoBallFinish() {
   AOS_LOG(INFO, "Expanding for back long shot\n");
-  MoveSuperstructure(0.00, M_PI / 2.0 - 0.2, -0.625 + 0.03, {7.0, 40.0},
-                     {4.0, 6.0}, {10.0, 25.0}, false, 0.0);
+  MoveSuperstructure(0.00, M_PI / 2.0 - 0.2, -0.625 + 0.03,
+                     MakeProfileParameters(7.0, 40.0),
+                     MakeProfileParameters(4.0, 6.0),
+                     MakeProfileParameters(10.0, 25.0), false, 0.0);
 }
 
 void AutonomousActor::BackLongShot() {
   AOS_LOG(INFO, "Expanding for back long shot\n");
-  MoveSuperstructure(0.80, M_PI / 2.0 - 0.2, -0.62, {7.0, 40.0}, {4.0, 6.0},
-                     {10.0, 25.0}, false, 0.0);
+  MoveSuperstructure(0.80, M_PI / 2.0 - 0.2, -0.62,
+                     MakeProfileParameters(7.0, 40.0),
+                     MakeProfileParameters(4.0, 6.0),
+                     MakeProfileParameters(10.0, 25.0), false, 0.0);
 }
 
 void AutonomousActor::BackMiddleShot() {
   AOS_LOG(INFO, "Expanding for back middle shot\n");
-  MoveSuperstructure(-0.05, M_PI / 2.0 - 0.2, -0.665, {7.0, 40.0}, {4.0, 10.0},
-                     {10.0, 25.0}, false, 0.0);
+  MoveSuperstructure(-0.05, M_PI / 2.0 - 0.2, -0.665,
+                     MakeProfileParameters(7.0, 40.0),
+                     MakeProfileParameters(4.0, 10.0),
+                     MakeProfileParameters(10.0, 25.0), false, 0.0);
 }
 
 void AutonomousActor::FrontLongShot() {
   AOS_LOG(INFO, "Expanding for front long shot\n");
-  MoveSuperstructure(0.80, M_PI / 2.0 + 0.1, M_PI + 0.41 + 0.02, {7.0, 40.0},
-                     {4.0, 6.0}, {10.0, 25.0}, false, 0.0);
+  MoveSuperstructure(0.80, M_PI / 2.0 + 0.1, M_PI + 0.41 + 0.02,
+                     MakeProfileParameters(7.0, 40.0),
+                     MakeProfileParameters(4.0, 6.0),
+                     MakeProfileParameters(10.0, 25.0), false, 0.0);
 }
 
 void AutonomousActor::FrontMiddleShot() {
   AOS_LOG(INFO, "Expanding for front middle shot\n");
-  MoveSuperstructure(-0.05, M_PI / 2.0 + 0.1, M_PI + 0.44, {7.0, 40.0},
-                     {4.0, 10.0}, {10.0, 25.0}, true, 0.0);
+  MoveSuperstructure(-0.05, M_PI / 2.0 + 0.1, M_PI + 0.44,
+                     MakeProfileParameters(7.0, 40.0),
+                     MakeProfileParameters(4.0, 10.0),
+                     MakeProfileParameters(10.0, 25.0), true, 0.0);
 }
 
 void AutonomousActor::TuckArm(bool low_bar, bool traverse_down) {
-  MoveSuperstructure(low_bar ? -0.05 : 2.0, -0.010, 0.0, {7.0, 40.0},
-                     {4.0, 10.0}, {10.0, 25.0}, !traverse_down, 0.0);
+  MoveSuperstructure(low_bar ? -0.05 : 2.0, -0.010, 0.0,
+                     MakeProfileParameters(7.0, 40.0),
+                     MakeProfileParameters(4.0, 10.0),
+                     MakeProfileParameters(10.0, 25.0), !traverse_down, 0.0);
 }
 
 void AutonomousActor::DoFullShot() {
@@ -498,10 +538,10 @@ void AutonomousActor::TippyDrive(double goal_distance, double tip_distance,
   if (drivetrain_status_fetcher_.get()) {
     const double left_error =
         (initial_drivetrain_.left -
-         drivetrain_status_fetcher_->estimated_left_position);
+         drivetrain_status_fetcher_->estimated_left_position());
     const double right_error =
         (initial_drivetrain_.right -
-         drivetrain_status_fetcher_->estimated_right_position);
+         drivetrain_status_fetcher_->estimated_right_position());
     const double distance_to_go = (left_error + right_error) / 2.0;
     const double distance_compensation =
         goal_distance - tip_distance - distance_to_go;
@@ -540,7 +580,7 @@ void AutonomousActor::TwoFromMiddleDrive() {
 void AutonomousActor::CloseIfBall() {
   ball_detector_fetcher_.Fetch();
   if (ball_detector_fetcher_.get()) {
-    const bool ball_detected = ball_detector_fetcher_->voltage > 2.5;
+    const bool ball_detected = ball_detector_fetcher_->voltage() > 2.5;
     if (ball_detected) {
       CloseShooter();
     }
@@ -563,7 +603,7 @@ void AutonomousActor::WaitForBallOrDriveDone() {
 
     ball_detector_fetcher_.Fetch();
     if (ball_detector_fetcher_.get()) {
-      const bool ball_detected = ball_detector_fetcher_->voltage > 2.5;
+      const bool ball_detected = ball_detector_fetcher_->voltage() > 2.5;
       if (ball_detected) {
         return;
       }
@@ -574,8 +614,9 @@ void AutonomousActor::WaitForBallOrDriveDone() {
 void AutonomousActor::TwoBallAuto() {
   const monotonic_clock::time_point start_time = monotonic_now();
   OpenShooter();
-  MoveSuperstructure(0.10, -0.010, 0.0, {8.0, 60.0}, {4.0, 10.0}, {10.0, 25.0},
-                     false, 12.0);
+  MoveSuperstructure(0.10, -0.010, 0.0, MakeProfileParameters(8.0, 60.0),
+                     MakeProfileParameters(4.0, 10.0),
+                     MakeProfileParameters(10.0, 25.0), false, 12.0);
   if (ShouldCancel()) return;
   AOS_LOG(INFO, "Waiting for the intake to come down.\n");
 
@@ -593,19 +634,21 @@ void AutonomousActor::TwoBallAuto() {
   bool first_ball_there = true;
   ball_detector_fetcher_.Fetch();
   if (ball_detector_fetcher_.get()) {
-    const bool ball_detected = ball_detector_fetcher_->voltage > 2.5;
+    const bool ball_detected = ball_detector_fetcher_->voltage() > 2.5;
     first_ball_there = ball_detected;
     AOS_LOG(INFO, "Saw the ball: %d at %f\n", first_ball_there,
             ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   }
-  MoveSuperstructure(0.10, -0.010, 0.0, {8.0, 40.0}, {4.0, 10.0}, {10.0, 25.0},
-                     false, 0.0);
+  MoveSuperstructure(0.10, -0.010, 0.0, MakeProfileParameters(8.0, 40.0),
+                     MakeProfileParameters(4.0, 10.0),
+                     MakeProfileParameters(10.0, 25.0), false, 0.0);
   AOS_LOG(INFO,
           "Shutting off rollers at %f seconds, starting to straighten out\n",
           ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   StartDrive(0.0, -0.4, kTwoBallLowDrive, kSwerveTurn);
-  MoveSuperstructure(-0.05, -0.010, 0.0, {8.0, 40.0}, {4.0, 10.0}, {10.0, 25.0},
-                     false, 0.0);
+  MoveSuperstructure(-0.05, -0.010, 0.0, MakeProfileParameters(8.0, 40.0),
+                     MakeProfileParameters(4.0, 10.0),
+                     MakeProfileParameters(10.0, 25.0), false, 0.0);
   CloseShooter();
   if (!WaitForDriveNear(kDriveDistance - 2.4, kDoNotTurnCare)) return;
 
@@ -674,13 +717,15 @@ void AutonomousActor::TwoBallAuto() {
   constexpr double kBallSmallWallTurn = -0.11;
   StartDrive(0, kBallSmallWallTurn, kTwoBallBallPickup, kFinishTurn);
 
-  MoveSuperstructure(0.03, -0.010, 0.0, {8.0, 60.0}, {4.0, 10.0}, {10.0, 25.0},
-                     false, 12.0);
+  MoveSuperstructure(0.03, -0.010, 0.0, MakeProfileParameters(8.0, 60.0),
+                     MakeProfileParameters(4.0, 10.0),
+                     MakeProfileParameters(10.0, 25.0), false, 12.0);
 
   if (!WaitForDriveProfileDone()) return;
 
-  MoveSuperstructure(0.10, -0.010, 0.0, {8.0, 60.0}, {4.0, 10.0}, {10.0, 25.0},
-                     false, 12.0);
+  MoveSuperstructure(0.10, -0.010, 0.0, MakeProfileParameters(8.0, 60.0),
+                     MakeProfileParameters(4.0, 10.0),
+                     MakeProfileParameters(10.0, 25.0), false, 12.0);
 
   AOS_LOG(INFO, "Done backing up %f\n",
           ::aos::time::DurationInSeconds(monotonic_now() - start_time));
@@ -699,7 +744,7 @@ void AutonomousActor::TwoBallAuto() {
 
   ball_detector_fetcher_.Fetch();
   if (ball_detector_fetcher_.get()) {
-    const bool ball_detected = ball_detector_fetcher_->voltage > 2.5;
+    const bool ball_detected = ball_detector_fetcher_->voltage() > 2.5;
     if (!ball_detected) {
       if (!WaitForDriveDone()) return;
       AOS_LOG(INFO, "Aborting, no ball %f\n",
@@ -760,8 +805,9 @@ void AutonomousActor::TwoBallAuto() {
 
 void AutonomousActor::StealAndMoveOverBy(double distance) {
   OpenShooter();
-  MoveSuperstructure(0.10, -0.010, 0.0, {8.0, 60.0}, {4.0, 10.0}, {10.0, 25.0},
-                     true, 12.0);
+  MoveSuperstructure(0.10, -0.010, 0.0, MakeProfileParameters(8.0, 60.0),
+                     MakeProfileParameters(4.0, 10.0),
+                     MakeProfileParameters(10.0, 25.0), true, 12.0);
   if (ShouldCancel()) return;
   AOS_LOG(INFO, "Waiting for the intake to come down.\n");
 
@@ -770,8 +816,9 @@ void AutonomousActor::StealAndMoveOverBy(double distance) {
   StartDrive(-distance, M_PI / 2.0, kFastDrive, kStealTurn);
   WaitForBallOrDriveDone();
   if (ShouldCancel()) return;
-  MoveSuperstructure(1.0, -0.010, 0.0, {8.0, 60.0}, {4.0, 10.0}, {10.0, 25.0},
-                     true, 12.0);
+  MoveSuperstructure(1.0, -0.010, 0.0, MakeProfileParameters(8.0, 60.0),
+                     MakeProfileParameters(4.0, 10.0),
+                     MakeProfileParameters(10.0, 25.0), true, 12.0);
 
   if (!WaitForDriveDone()) return;
   StartDrive(0.0, M_PI / 2.0, kFastDrive, kStealTurn);
@@ -779,15 +826,15 @@ void AutonomousActor::StealAndMoveOverBy(double distance) {
 }
 
 bool AutonomousActor::RunAction(
-    const ::frc971::autonomous::AutonomousActionParams &params) {
+    const ::frc971::autonomous::AutonomousActionParams *params) {
   monotonic_clock::time_point start_time = monotonic_now();
   AOS_LOG(INFO, "Starting autonomous action with mode %" PRId32 "\n",
-          params.mode);
+          params->mode());
 
   InitializeEncoders();
   ResetDrivetrain();
 
-  switch (params.mode) {
+  switch (params->mode()) {
     case 0:
       LowBarDrive();
       if (!WaitForDriveDone()) return true;
@@ -914,7 +961,7 @@ bool AutonomousActor::RunAction(
 
     } break;
     default:
-      AOS_LOG(ERROR, "Invalid auto mode %d\n", params.mode);
+      AOS_LOG(ERROR, "Invalid auto mode %d\n", params->mode());
       return true;
   }
 

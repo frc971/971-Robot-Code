@@ -11,33 +11,38 @@
 #include "aos/input/drivetrain_input.h"
 #include "aos/input/joystick_input.h"
 #include "aos/logging/logging.h"
-#include "aos/logging/logging.h"
 #include "aos/network/team_number.h"
 #include "aos/util/log_interval.h"
 #include "aos/vision/events/udp.h"
 #include "external/com_google_protobuf/src/google/protobuf/stubs/stringprintf.h"
-#include "frc971/autonomous/auto.q.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "frc971/control_loops/drivetrain/localizer.q.h"
+#include "frc971/control_loops/drivetrain/localizer_generated.h"
 
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
-#include "y2019/control_loops/drivetrain/target_selector.q.h"
-#include "y2019/control_loops/superstructure/superstructure.q.h"
-#include "y2019/status_light.q.h"
+#include "y2019/control_loops/drivetrain/target_selector_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2019/status_light_generated.h"
 #include "y2019/vision.pb.h"
 
-using ::aos::input::driver_station::ButtonLocation;
-using ::aos::input::driver_station::ControlBit;
-using ::aos::input::driver_station::JoystickAxis;
-using ::aos::input::driver_station::POVLocation;
-using ::aos::events::ProtoTXUdpSocket;
+using aos::events::ProtoTXUdpSocket;
+using aos::input::driver_station::ButtonLocation;
+using aos::input::driver_station::ControlBit;
+using aos::input::driver_station::JoystickAxis;
+using aos::input::driver_station::POVLocation;
+using frc971::CreateProfileParameters;
+using frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal;
+using frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
+using frc971::control_loops::drivetrain::LocalizerControl;
 
 namespace chrono = ::std::chrono;
 
 namespace y2019 {
 namespace input {
 namespace joysticks {
+
+namespace superstructure = y2019::control_loops::superstructure;
 
 using google::protobuf::StringPrintf;
 
@@ -143,36 +148,31 @@ class Reader : public ::aos::input::ActionJoystickInput {
         target_selector_hint_sender_(
             event_loop->MakeSender<
                 ::y2019::control_loops::drivetrain::TargetSelectorHint>(
-                ".y2019.control_loops.drivetrain.target_selector_hint")),
+                "/drivetrain")),
         localizer_control_sender_(
-            event_loop->MakeSender<
-                ::frc971::control_loops::drivetrain::LocalizerControl>(
-                ".frc971.control_loops.drivetrain.localizer_control")),
+            event_loop->MakeSender<LocalizerControl>("/drivetrain")),
         camera_log_sender_(
-            event_loop->MakeSender<::y2019::CameraLog>(".y2019.camera_log")),
-        superstructure_goal_fetcher_(event_loop->MakeFetcher<
-                                     ::y2019::control_loops::superstructure::
-                                         SuperstructureQueue::Goal>(
-            ".y2019.control_loops.superstructure.superstructure_queue.goal")),
-        superstructure_goal_sender_(event_loop->MakeSender<
-                                    ::y2019::control_loops::superstructure::
-                                        SuperstructureQueue::Goal>(
-            ".y2019.control_loops.superstructure.superstructure_queue.goal")),
+            event_loop->MakeSender<::y2019::CameraLog>("/camera")),
+        superstructure_goal_fetcher_(
+            event_loop->MakeFetcher<superstructure::Goal>("/superstructure")),
+        superstructure_goal_sender_(
+            event_loop->MakeSender<superstructure::Goal>("/superstructure")),
         superstructure_position_fetcher_(
-            event_loop->MakeFetcher<::y2019::control_loops::superstructure::
-                                        SuperstructureQueue::Position>(
-                ".y2019.control_loops.superstructure.superstructure_queue."
-                "position")),
+            event_loop->MakeFetcher<superstructure::Position>(
+                "/superstructure")),
         superstructure_status_fetcher_(
-            event_loop->MakeFetcher<::y2019::control_loops::superstructure::
-                                        SuperstructureQueue::Status>(
-                ".y2019.control_loops.superstructure.superstructure_queue."
-                "status")) {
+            event_loop->MakeFetcher<superstructure::Status>(
+                "/superstructure")) {
     const uint16_t team = ::aos::network::GetTeamNumber();
     superstructure_goal_fetcher_.Fetch();
     if (superstructure_goal_fetcher_.get()) {
-      grab_piece_ = superstructure_goal_fetcher_->suction.grab_piece;
-      switch_ball_ = superstructure_goal_fetcher_->suction.gamepiece_mode == 0;
+      grab_piece_ = superstructure_goal_fetcher_->has_suction()
+                        ? superstructure_goal_fetcher_->suction()->grab_piece()
+                        : false;
+      switch_ball_ =
+          superstructure_goal_fetcher_->has_suction()
+              ? (superstructure_goal_fetcher_->suction()->gamepiece_mode() == 0)
+              : true;
     }
     video_tx_.reset(new ProtoTXUdpSocket<VisionControl>(
         StringPrintf("10.%d.%d.179", team / 100, team % 100), 5000));
@@ -195,106 +195,172 @@ class Reader : public ::aos::input::ActionJoystickInput {
       return;
     }
 
-    if (!superstructure_status_fetcher_->has_piece) {
+    CHECK(superstructure_status_fetcher_->has_stilts());
+
+    if (!superstructure_status_fetcher_->has_piece()) {
       last_not_has_piece_ = monotonic_now;
     }
 
-    auto new_superstructure_goal = superstructure_goal_sender_.MakeMessage();
+    auto main_superstructure_goal_builder =
+        superstructure_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<superstructure::Goal> superstructure_goal_offset;
 
     {
-      auto target_hint = target_selector_hint_sender_.MakeMessage();
+      flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+          elevator_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+              *main_superstructure_goal_builder.fbb(), 0.0,
+              CreateProfileParameters(*main_superstructure_goal_builder.fbb(),
+                                      0.0, 0.0));
+
+      flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+          intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+              *main_superstructure_goal_builder.fbb(), -1.2);
+
+      flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+          wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+              *main_superstructure_goal_builder.fbb(), 0.0,
+              CreateProfileParameters(*main_superstructure_goal_builder.fbb(),
+                                      0.0, 0.0));
+
+      flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+          stilts_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+              *main_superstructure_goal_builder.fbb(), 0.0,
+              CreateProfileParameters(*main_superstructure_goal_builder.fbb(),
+                                      0.0, 0.0));
+
+      superstructure::Goal::Builder superstructure_goal_builder =
+          main_superstructure_goal_builder.MakeBuilder<superstructure::Goal>();
+
+      superstructure_goal_builder.add_elevator(elevator_offset);
+      superstructure_goal_builder.add_intake(intake_offset);
+      superstructure_goal_builder.add_wrist(wrist_offset);
+      superstructure_goal_builder.add_stilts(stilts_offset);
+      superstructure_goal_builder.add_roller_voltage(0.0);
+
+      superstructure_goal_offset = superstructure_goal_builder.Finish();
+    }
+    superstructure::Goal *mutable_superstructure_goal =
+        GetMutableTemporaryPointer(*main_superstructure_goal_builder.fbb(),
+                                   superstructure_goal_offset);
+
+    {
+      auto builder = target_selector_hint_sender_.MakeBuilder();
+      control_loops::drivetrain::TargetSelectorHint::Builder
+          target_selector_hint_builder =
+              builder
+                  .MakeBuilder<control_loops::drivetrain::TargetSelectorHint>();
       if (data.IsPressed(kNearCargoHint)) {
-        target_hint->suggested_target = 1;
+        target_selector_hint_builder.add_suggested_target(
+            control_loops::drivetrain::SelectionHint_NEAR_SHIP);
       } else if (data.IsPressed(kMidCargoHint)) {
-        target_hint->suggested_target = 2;
+        target_selector_hint_builder.add_suggested_target(
+            control_loops::drivetrain::SelectionHint_MID_SHIP);
       } else if (data.IsPressed(kFarCargoHint)) {
-        target_hint->suggested_target = 3;
+        target_selector_hint_builder.add_suggested_target(
+            control_loops::drivetrain::SelectionHint_FAR_SHIP);
       } else {
         const double cargo_joy_y = data.GetAxis(kCargoSelectorY);
         const double cargo_joy_x = data.GetAxis(kCargoSelectorX);
         if (cargo_joy_y > 0.5) {
-          target_hint->suggested_target = 1;
+          target_selector_hint_builder.add_suggested_target(
+            control_loops::drivetrain::SelectionHint_NEAR_SHIP);
         } else if (cargo_joy_y < -0.5) {
-          target_hint->suggested_target = 3;
+          target_selector_hint_builder.add_suggested_target(
+              control_loops::drivetrain::SelectionHint_FAR_SHIP);
         } else if (::std::abs(cargo_joy_x) > 0.5) {
-          target_hint->suggested_target = 2;
+          target_selector_hint_builder.add_suggested_target(
+            control_loops::drivetrain::SelectionHint_MID_SHIP);
         } else {
-          target_hint->suggested_target = 0;
+          target_selector_hint_builder.add_suggested_target(
+            control_loops::drivetrain::SelectionHint_NONE);
         }
       }
-      if (!target_hint.Send()) {
+      if (!builder.Send(target_selector_hint_builder.Finish())) {
         AOS_LOG(ERROR, "Failed to send target selector hint.\n");
       }
     }
 
     if (data.PosEdge(kResetLocalizerLeft)) {
-      auto localizer_resetter = localizer_control_sender_.MakeMessage();
+      auto builder = localizer_control_sender_.MakeBuilder();
       // Start at the left feeder station.
-      localizer_resetter->x = 0.6;
-      localizer_resetter->y = 3.4;
-      localizer_resetter->keep_current_theta = true;
+      LocalizerControl::Builder localizer_control_builder =
+          builder.MakeBuilder<LocalizerControl>();
+      localizer_control_builder.add_x(0.6);
+      localizer_control_builder.add_y(3.4);
+      localizer_control_builder.add_keep_current_theta(true);
 
-      if (!localizer_resetter.Send()) {
+      if (!builder.Send(localizer_control_builder.Finish())) {
         AOS_LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
 
     if (data.PosEdge(kResetLocalizerRight)) {
-      auto localizer_resetter = localizer_control_sender_.MakeMessage();
-      // Start at the left feeder station.
-      localizer_resetter->x = 0.6;
-      localizer_resetter->y = -3.4;
-      localizer_resetter->keep_current_theta = true;
+      auto builder = localizer_control_sender_.MakeBuilder();
+      // Start at the right feeder station.
+      LocalizerControl::Builder localizer_control_builder =
+          builder.MakeBuilder<LocalizerControl>();
+      localizer_control_builder.add_x(0.6);
+      localizer_control_builder.add_y(-3.4);
+      localizer_control_builder.add_keep_current_theta(true);
 
-      if (!localizer_resetter.Send()) {
+      if (!builder.Send(localizer_control_builder.Finish())) {
         AOS_LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
 
     if (data.PosEdge(kResetLocalizerLeftForwards)) {
-      auto localizer_resetter = localizer_control_sender_.MakeMessage();
+      auto builder = localizer_control_sender_.MakeBuilder();
       // Start at the left feeder station.
-      localizer_resetter->x = 0.4;
-      localizer_resetter->y = 3.4;
-      localizer_resetter->theta = 0.0;
+      LocalizerControl::Builder localizer_control_builder =
+          builder.MakeBuilder<LocalizerControl>();
+      localizer_control_builder.add_x(0.4);
+      localizer_control_builder.add_y(3.4);
+      localizer_control_builder.add_theta(0.0);
 
-      if (!localizer_resetter.Send()) {
+      if (!builder.Send(localizer_control_builder.Finish())) {
         AOS_LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
 
     if (data.PosEdge(kResetLocalizerLeftBackwards)) {
-      auto localizer_resetter = localizer_control_sender_.MakeMessage();
+      auto builder = localizer_control_sender_.MakeBuilder();
       // Start at the left feeder station.
-      localizer_resetter->x = 0.4;
-      localizer_resetter->y = 3.4;
-      localizer_resetter->theta = M_PI;
+      LocalizerControl::Builder localizer_control_builder =
+          builder.MakeBuilder<LocalizerControl>();
+      localizer_control_builder.add_x(0.4);
+      localizer_control_builder.add_y(3.4);
+      localizer_control_builder.add_theta(M_PI);
 
-      if (!localizer_resetter.Send()) {
+      if (!builder.Send(localizer_control_builder.Finish())) {
         AOS_LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
 
     if (data.PosEdge(kResetLocalizerRightForwards)) {
-      auto localizer_resetter = localizer_control_sender_.MakeMessage();
+      auto builder = localizer_control_sender_.MakeBuilder();
       // Start at the right feeder station.
-      localizer_resetter->x = 0.4;
-      localizer_resetter->y = -3.4;
-      localizer_resetter->theta = 0.0;
+      LocalizerControl::Builder localizer_control_builder =
+          builder.MakeBuilder<LocalizerControl>();
+      localizer_control_builder.add_x(0.4);
+      localizer_control_builder.add_y(-3.4);
+      localizer_control_builder.add_theta(0.0);
 
-      if (!localizer_resetter.Send()) {
+      if (!builder.Send(localizer_control_builder.Finish())) {
         AOS_LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
 
     if (data.PosEdge(kResetLocalizerRightBackwards)) {
-      auto localizer_resetter = localizer_control_sender_.MakeMessage();
+      auto builder = localizer_control_sender_.MakeBuilder();
       // Start at the right feeder station.
-      localizer_resetter->x = 0.4;
-      localizer_resetter->y = -3.4;
-      localizer_resetter->theta = M_PI;
+      LocalizerControl::Builder localizer_control_builder =
+          builder.MakeBuilder<LocalizerControl>();
+      localizer_control_builder.add_x(0.4);
+      localizer_control_builder.add_y(-3.4);
+      localizer_control_builder.add_theta(M_PI);
 
-      if (!localizer_resetter.Send()) {
+      if (!builder.Send(localizer_control_builder.Finish())) {
         AOS_LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
@@ -302,7 +368,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     if (data.PosEdge(kRelease) &&
         monotonic_now >
             last_release_button_press_ + ::std::chrono::milliseconds(500)) {
-      if (superstructure_status_fetcher_->has_piece) {
+      if (superstructure_status_fetcher_->has_piece()) {
         release_mode_ = ReleaseButtonMode::kRelease;
       } else {
         release_mode_ = ReleaseButtonMode::kBallIntake;
@@ -313,7 +379,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
       last_release_button_press_ = monotonic_now;
     }
 
-    AOS_LOG(INFO, "has_piece: %d\n", superstructure_status_fetcher_->has_piece);
+    AOS_LOG(INFO, "has_piece: %d\n",
+            superstructure_status_fetcher_->has_piece());
     if (data.IsPressed(kSuctionBall)) {
       grab_piece_ = true;
     } else if (data.IsPressed(kSuctionHatch)) {
@@ -321,7 +388,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     } else if ((release_mode_ == ReleaseButtonMode::kRelease &&
                 data.IsPressed(kRelease)) ||
                data.IsPressed(kReleaseButtonBoard) ||
-               !superstructure_status_fetcher_->has_piece) {
+               !superstructure_status_fetcher_->has_piece()) {
       grab_piece_ = false;
       AOS_LOG(INFO, "releasing due to other thing\n");
     }
@@ -329,8 +396,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
     if (data.IsPressed(kRocketBackwardUnpressed)) {
       elevator_wrist_pos_ = kStowPos;
     }
-    new_superstructure_goal->intake.unsafe_goal = -1.2;
-    new_superstructure_goal->roller_voltage = 0.0;
+    mutable_superstructure_goal->mutable_intake()->mutate_unsafe_goal(-1.2);
+    mutable_superstructure_goal->mutate_roller_voltage(0.0);
 
     const bool kDoBallIntake =
         (!climbed_ && release_mode_ == ReleaseButtonMode::kBallIntake &&
@@ -345,8 +412,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     if (switch_ball_) {
-      if (superstructure_status_fetcher_->has_piece) {
-        new_superstructure_goal->wrist.profile_params.max_acceleration = 20;
+      if (superstructure_status_fetcher_->has_piece()) {
+        mutable_superstructure_goal->mutable_wrist()
+            ->mutable_profile_params()
+            ->mutate_max_acceleration(20);
       }
 
       // Go to intake position and apply vacuum
@@ -411,18 +480,18 @@ class Reader : public ::aos::input::ActionJoystickInput {
       if (kDoBallOutake ||
           (kDoBallIntake &&
            monotonic_now < last_not_has_piece_ + chrono::milliseconds(200))) {
-        new_superstructure_goal->intake.unsafe_goal = 0.83;
+        mutable_superstructure_goal->mutable_intake()->mutate_unsafe_goal(0.83);
       }
 
-      if (kDoBallIntake && !superstructure_status_fetcher_->has_piece) {
+      if (kDoBallIntake && !superstructure_status_fetcher_->has_piece()) {
         elevator_wrist_pos_ = kBallIntakePos;
-        new_superstructure_goal->roller_voltage = 9.0;
+        mutable_superstructure_goal->mutate_roller_voltage(9.0);
         grab_piece_ = true;
       } else {
         if (kDoBallOutake) {
-          new_superstructure_goal->roller_voltage = -6.0;
+          mutable_superstructure_goal->mutate_roller_voltage(-6.0);
         } else {
-          new_superstructure_goal->roller_voltage = 0.0;
+          mutable_superstructure_goal->mutate_roller_voltage(0.0);
         }
       }
     }
@@ -430,47 +499,70 @@ class Reader : public ::aos::input::ActionJoystickInput {
     constexpr double kDeployStiltPosition = 0.5;
 
     if (data.IsPressed(kFallOver)) {
-      new_superstructure_goal->stilts.unsafe_goal = 0.71;
-      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
-      new_superstructure_goal->stilts.profile_params.max_acceleration = 1.25;
+      mutable_superstructure_goal->mutable_stilts()->mutate_unsafe_goal(0.71);
+      mutable_superstructure_goal->mutable_stilts()
+          ->mutable_profile_params()
+          ->mutate_max_velocity(0.65);
+      mutable_superstructure_goal->mutable_stilts()
+          ->mutable_profile_params()
+          ->mutate_max_acceleration(1.25);
     } else if (data.IsPressed(kHalfStilt)) {
       was_above_ = false;
-      new_superstructure_goal->stilts.unsafe_goal = 0.345;
-      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
+      mutable_superstructure_goal->mutable_stilts()->mutate_unsafe_goal ( 0.345);
+      mutable_superstructure_goal->mutable_stilts()->mutable_profile_params()->mutate_max_velocity ( 0.65);
     } else if (data.IsPressed(kDeployStilt) || was_above_) {
-      new_superstructure_goal->stilts.unsafe_goal = kDeployStiltPosition;
-      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
-      new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
+      mutable_superstructure_goal->mutable_stilts()->mutate_unsafe_goal(
+          kDeployStiltPosition);
+      mutable_superstructure_goal->mutable_stilts()
+          ->mutable_profile_params()
+          ->mutate_max_velocity(0.65);
+      mutable_superstructure_goal->mutable_stilts()
+          ->mutable_profile_params()
+          ->mutate_max_acceleration(2.0);
     } else {
-      new_superstructure_goal->stilts.unsafe_goal = 0.005;
-      new_superstructure_goal->stilts.profile_params.max_velocity = 0.65;
-      new_superstructure_goal->stilts.profile_params.max_acceleration = 2.0;
+      mutable_superstructure_goal->mutable_stilts()->mutate_unsafe_goal(0.005);
+      mutable_superstructure_goal->mutable_stilts()
+          ->mutable_profile_params()
+          ->mutate_max_velocity(0.65);
+      mutable_superstructure_goal->mutable_stilts()
+          ->mutable_profile_params()
+          ->mutate_max_acceleration(2.0);
     }
 
-    if (superstructure_status_fetcher_->stilts.position > 0.1) {
+    if (superstructure_status_fetcher_->stilts()->position() > 0.1) {
       elevator_wrist_pos_ = kClimbPos;
       climbed_ = true;
-      new_superstructure_goal->wrist.profile_params.max_acceleration = 10;
-      new_superstructure_goal->elevator.profile_params.max_acceleration = 6;
+      mutable_superstructure_goal->mutable_wrist()
+          ->mutable_profile_params()
+          ->mutate_max_acceleration(10);
+      mutable_superstructure_goal->mutable_elevator()
+          ->mutable_profile_params()
+          ->mutate_max_acceleration(6);
     }
 
     // If we've been asked to go above deploy and made it up that high, latch
     // was_above.
-    if (new_superstructure_goal->stilts.unsafe_goal > kDeployStiltPosition &&
-        superstructure_status_fetcher_->stilts.position >=
+    if (mutable_superstructure_goal->stilts()->unsafe_goal() >
+            kDeployStiltPosition &&
+        superstructure_status_fetcher_->stilts()->position() >=
             kDeployStiltPosition) {
       was_above_ = true;
-    } else if ((superstructure_position_fetcher_->platform_left_detect &&
-                superstructure_position_fetcher_->platform_right_detect) &&
+    } else if ((superstructure_position_fetcher_->platform_left_detect() &&
+                superstructure_position_fetcher_->platform_right_detect()) &&
                !data.IsPressed(kDeployStilt) && !data.IsPressed(kFallOver)) {
       was_above_ = false;
     }
 
-    if (superstructure_status_fetcher_->stilts.position >
+    if (superstructure_status_fetcher_->stilts()->position() >
             kDeployStiltPosition &&
-        new_superstructure_goal->stilts.unsafe_goal == kDeployStiltPosition) {
-      new_superstructure_goal->stilts.profile_params.max_velocity = 0.30;
-      new_superstructure_goal->stilts.profile_params.max_acceleration = 0.75;
+        mutable_superstructure_goal->stilts()->unsafe_goal() ==
+            kDeployStiltPosition) {
+      mutable_superstructure_goal->mutable_stilts()
+          ->mutable_profile_params()
+          ->mutate_max_velocity(0.30);
+      mutable_superstructure_goal->mutable_stilts()
+          ->mutable_profile_params()
+          ->mutate_max_acceleration(0.75);
     }
 
     if ((release_mode_ == ReleaseButtonMode::kRelease &&
@@ -481,21 +573,22 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     if (switch_ball_) {
-      new_superstructure_goal->suction.gamepiece_mode = 0;
+      mutable_superstructure_goal->mutable_suction()->mutate_gamepiece_mode(0);
     } else {
-      new_superstructure_goal->suction.gamepiece_mode = 1;
+      mutable_superstructure_goal->mutable_suction()->mutate_gamepiece_mode(1);
     }
 
     vision_control_.set_flip_image(elevator_wrist_pos_.wrist < 0);
 
-    new_superstructure_goal->suction.grab_piece = grab_piece_;
+    mutable_superstructure_goal->mutable_suction()->mutate_grab_piece(
+        grab_piece_);
 
-    new_superstructure_goal->elevator.unsafe_goal =
-        elevator_wrist_pos_.elevator;
-    new_superstructure_goal->wrist.unsafe_goal = elevator_wrist_pos_.wrist;
+    mutable_superstructure_goal->mutable_elevator()->mutate_unsafe_goal(
+        elevator_wrist_pos_.elevator);
+    mutable_superstructure_goal->mutable_wrist()->mutate_unsafe_goal(
+        elevator_wrist_pos_.wrist);
 
-    AOS_LOG_STRUCT(DEBUG, "sending goal", *new_superstructure_goal);
-    if (!new_superstructure_goal.Send()) {
+    if (!main_superstructure_goal_builder.Send(superstructure_goal_offset)) {
       AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
     }
 
@@ -506,10 +599,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     {
-      auto camera_log_message = camera_log_sender_.MakeMessage();
-      camera_log_message->log = data.IsPressed(kCameraLog);
-      AOS_LOG_STRUCT(DEBUG, "camera_log", *camera_log_message);
-      camera_log_message.Send();
+      auto builder = camera_log_sender_.MakeBuilder();
+      builder.Send(CreateCameraLog(*builder.fbb(), data.IsPressed(kCameraLog)));
     }
   }
 
@@ -517,26 +608,16 @@ class Reader : public ::aos::input::ActionJoystickInput {
   ::aos::Sender<::y2019::control_loops::drivetrain::TargetSelectorHint>
       target_selector_hint_sender_;
 
-  ::aos::Sender<::frc971::control_loops::drivetrain::LocalizerControl>
-      localizer_control_sender_;
+  ::aos::Sender<LocalizerControl> localizer_control_sender_;
 
   ::aos::Sender<::y2019::CameraLog> camera_log_sender_;
 
-  ::aos::Fetcher<
-      ::y2019::control_loops::superstructure::SuperstructureQueue::Goal>
-      superstructure_goal_fetcher_;
+  ::aos::Fetcher<superstructure::Goal> superstructure_goal_fetcher_;
 
-  ::aos::Sender<
-      ::y2019::control_loops::superstructure::SuperstructureQueue::Goal>
-      superstructure_goal_sender_;
+  ::aos::Sender<superstructure::Goal> superstructure_goal_sender_;
 
-  ::aos::Fetcher<
-      ::y2019::control_loops::superstructure::SuperstructureQueue::Position>
-      superstructure_position_fetcher_;
-  ::aos::Fetcher<
-      ::y2019::control_loops::superstructure::SuperstructureQueue::Status>
-      superstructure_status_fetcher_;
-
+  ::aos::Fetcher<superstructure::Position> superstructure_position_fetcher_;
+  ::aos::Fetcher<superstructure::Status> superstructure_status_fetcher_;
 
   // Bool to track if we've been above the deploy position.  Once this bool is
   // set, don't let the stilts retract until we see the platform.
@@ -576,7 +657,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
 int main() {
   ::aos::InitNRT(true);
 
-  ::aos::ShmEventLoop event_loop;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig("config.json");
+
+  ::aos::ShmEventLoop event_loop(&config.message());
   ::y2019::input::joysticks::Reader reader(&event_loop);
 
   event_loop.Run();

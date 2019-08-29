@@ -1,0 +1,13 @@
+namespace frc971;
+
+// Values retrieved from the PDP.
+// Published on ".frc971.pdp_values"
+table PDPValues {
+  voltage:double;
+  temperature:double;
+  power:double;
+  // Array of 16 currents.
+  currents:[double];
+}
+
+root_type PDPValues;

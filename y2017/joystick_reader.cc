@@ -4,19 +4,18 @@
 #include <unistd.h>
 
 #include "aos/actions/actions.h"
+#include "aos/init.h"
+#include "aos/input/action_joystick_input.h"
 #include "aos/input/driver_station_data.h"
+#include "aos/input/drivetrain_input.h"
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
-#include "aos/input/drivetrain_input.h"
-#include "aos/input/action_joystick_input.h"
-#include "aos/init.h"
-#include "frc971/autonomous/auto.q.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2017/constants.h"
-#include "y2017/control_loops/superstructure/superstructure.q.h"
 #include "y2017/control_loops/drivetrain/drivetrain_base.h"
+#include "y2017/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2017/control_loops/superstructure/superstructure_status_generated.h"
 
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::ControlBit;
@@ -27,6 +26,8 @@ using ::aos::input::DrivetrainInputReader;
 namespace y2017 {
 namespace input {
 namespace joysticks {
+
+namespace superstructure = control_loops::superstructure;
 
 const ButtonLocation kGearSlotBack(2, 11);
 
@@ -54,13 +55,13 @@ class Reader : public ::aos::input::ActionJoystickInput {
             ::y2017::control_loops::drivetrain::GetDrivetrainConfig(),
             DrivetrainInputReader::InputType::kSteeringWheel, {}),
         superstructure_status_fetcher_(
-            event_loop->MakeFetcher<
-                ::y2017::control_loops::SuperstructureQueue::Status>(
-                ".y2017.control_loops.superstructure_queue.status")),
+            event_loop
+                ->MakeFetcher<::y2017::control_loops::superstructure::Status>(
+                    "/superstructure")),
         superstructure_goal_sender_(
             event_loop
-                ->MakeSender<::y2017::control_loops::SuperstructureQueue::Goal>(
-                    ".y2017.control_loops.superstructure_queue.goal")) {}
+                ->MakeSender<::y2017::control_loops::superstructure::Goal>(
+                    "/superstructure")) {}
 
   enum class ShotDistance { VISION_SHOT, MIDDLE_SHOT, FAR_SHOT };
 
@@ -150,109 +151,155 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     fire_ = data.IsPressed(kFire) && shooter_velocity_ != 0.0;
     if (data.IsPressed(kVisionAlign)) {
-      fire_ = fire_ && superstructure_status_fetcher_->turret.vision_tracking;
+      fire_ = fire_ && superstructure_status_fetcher_->turret()->vision_tracking();
     }
 
-    auto new_superstructure_goal = superstructure_goal_sender_.MakeMessage();
+    auto builder = superstructure_goal_sender_.MakeBuilder();
     if (data.IsPressed(kHang)) {
       intake_goal_ = 0.23;
     }
 
-    new_superstructure_goal->intake.distance = intake_goal_;
-    new_superstructure_goal->intake.disable_intake = false;
-    new_superstructure_goal->turret.angle = turret_goal_;
-    new_superstructure_goal->turret.track = vision_track;
-    new_superstructure_goal->hood.angle = hood_goal_;
-    new_superstructure_goal->shooter.angular_velocity = shooter_velocity_;
+    bool intake_disable_intake = false;
+    double intake_gear_servo = 0.0;
 
     if (data.IsPressed(kIntakeUp)) {
-      new_superstructure_goal->intake.gear_servo = 0.30;
+      intake_gear_servo = 0.30;
     } else {
       // Clamp the gear
-      new_superstructure_goal->intake.gear_servo = 0.66;
+      intake_gear_servo = 0.66;
     }
 
-    new_superstructure_goal->intake.profile_params.max_velocity = 0.50;
-    new_superstructure_goal->hood.profile_params.max_velocity = 5.0;
+    double intake_voltage_rollers = 0.0;
 
-    new_superstructure_goal->intake.profile_params.max_acceleration = 3.0;
-    if (vision_track) {
-      new_superstructure_goal->turret.profile_params.max_acceleration = 35.0;
-      new_superstructure_goal->turret.profile_params.max_velocity = 10.0;
-    } else {
-      new_superstructure_goal->turret.profile_params.max_acceleration = 15.0;
-      new_superstructure_goal->turret.profile_params.max_velocity = 6.0;
-    }
-    new_superstructure_goal->hood.profile_params.max_acceleration = 25.0;
-
-    new_superstructure_goal->intake.voltage_rollers = 0.0;
-    new_superstructure_goal->lights_on = lights_on;
-
-    if (data.IsPressed(kVisionAlign) && vision_distance_shot_) {
-      new_superstructure_goal->use_vision_for_shots = true;
-    } else {
-      new_superstructure_goal->use_vision_for_shots = false;
-    }
-
-    if (superstructure_status_fetcher_->intake.position >
-        superstructure_status_fetcher_->intake.unprofiled_goal_position +
+    if (superstructure_status_fetcher_->intake()->position() >
+        superstructure_status_fetcher_->intake()->unprofiled_goal_position() +
             0.01) {
       intake_accumulator_ = 10;
     }
     if (intake_accumulator_ > 0) {
       --intake_accumulator_;
-      if (!superstructure_status_fetcher_->intake.estopped) {
-        new_superstructure_goal->intake.voltage_rollers = 10.0;
+      if (!superstructure_status_fetcher_->intake()->estopped()) {
+        intake_voltage_rollers = 10.0;
       }
     }
 
     if (data.IsPressed(kHang)) {
-      new_superstructure_goal->intake.voltage_rollers = -10.0;
-      new_superstructure_goal->intake.disable_intake = true;
+      intake_voltage_rollers = -10.0;
+      intake_disable_intake = true;
     } else if (data.IsPressed(kIntakeIn) || data.IsPressed(kFire)) {
       if (robot_velocity() > 2.0) {
-        new_superstructure_goal->intake.voltage_rollers = 12.0;
+        intake_voltage_rollers = 12.0;
       } else {
-        new_superstructure_goal->intake.voltage_rollers = 11.0;
+        intake_voltage_rollers = 11.0;
       }
     } else if (data.IsPressed(kIntakeOut)) {
-      new_superstructure_goal->intake.voltage_rollers = -8.0;
+      intake_voltage_rollers = -8.0;
     }
     if (intake_goal_ < 0.1) {
-      new_superstructure_goal->intake.voltage_rollers =
-          ::std::min(8.0, new_superstructure_goal->intake.voltage_rollers);
+      intake_voltage_rollers = ::std::min(8.0, intake_voltage_rollers);
     }
 
+    double indexer_voltage_rollers = 0.0;
+    double indexer_angular_velocity = 0.0;
     if (data.IsPressed(kReverseIndexer)) {
-      new_superstructure_goal->indexer.voltage_rollers = -12.0;
-      new_superstructure_goal->indexer.angular_velocity = 4.0;
-      new_superstructure_goal->indexer.angular_velocity = 1.0;
+      indexer_voltage_rollers = -12.0;
+      indexer_angular_velocity = 1.0;
     } else if (fire_) {
-      new_superstructure_goal->indexer.voltage_rollers = 12.0;
+      indexer_voltage_rollers = 12.0;
       switch (last_shot_distance_)  {
         case ShotDistance::VISION_SHOT:
-          new_superstructure_goal->indexer.angular_velocity = -1.25 * M_PI;
+          indexer_angular_velocity = -1.25 * M_PI;
           break;
         case ShotDistance::MIDDLE_SHOT:
         case ShotDistance::FAR_SHOT:
-          new_superstructure_goal->indexer.angular_velocity = -2.25 * M_PI;
+          indexer_angular_velocity = -2.25 * M_PI;
           break;
       }
     } else {
-      new_superstructure_goal->indexer.voltage_rollers = 0.0;
-      new_superstructure_goal->indexer.angular_velocity = 0.0;
+      indexer_voltage_rollers = 0.0;
+      indexer_angular_velocity = 0.0;
     }
 
-    AOS_LOG_STRUCT(DEBUG, "sending goal", *new_superstructure_goal);
-    if (!new_superstructure_goal.Send()) {
+    superstructure::IndexerGoal::Builder indexer_goal_builder =
+        builder.MakeBuilder<superstructure::IndexerGoal>();
+    indexer_goal_builder.add_angular_velocity(indexer_angular_velocity);
+    indexer_goal_builder.add_voltage_rollers(indexer_voltage_rollers);
+
+    flatbuffers::Offset<superstructure::IndexerGoal> indexer_goal_offset =
+        indexer_goal_builder.Finish();
+
+    flatbuffers::Offset<frc971::ProfileParameters>
+        turret_profile_parameters_offset;
+    if (vision_track) {
+      turret_profile_parameters_offset =
+          frc971::CreateProfileParameters(*builder.fbb(), 10.0, 35.0);
+    } else {
+      turret_profile_parameters_offset =
+          frc971::CreateProfileParameters(*builder.fbb(), 6.0, 15.0);
+    }
+    superstructure::TurretGoal::Builder turret_goal_builder =
+        builder.MakeBuilder<superstructure::TurretGoal>();
+    turret_goal_builder.add_angle(turret_goal_);
+    turret_goal_builder.add_track(vision_track);
+    turret_goal_builder.add_profile_params(turret_profile_parameters_offset);
+    flatbuffers::Offset<superstructure::TurretGoal> turret_goal_offset =
+        turret_goal_builder.Finish();
+
+    flatbuffers::Offset<frc971::ProfileParameters>
+        intake_profile_parameters_offset =
+          frc971::CreateProfileParameters(*builder.fbb(), 0.5, 3.0);
+
+    superstructure::IntakeGoal::Builder intake_goal_builder =
+        builder.MakeBuilder<superstructure::IntakeGoal>();
+    intake_goal_builder.add_voltage_rollers(intake_voltage_rollers);
+    intake_goal_builder.add_distance(intake_goal_);
+    intake_goal_builder.add_disable_intake(intake_disable_intake);
+    intake_goal_builder.add_gear_servo(intake_gear_servo);
+    intake_goal_builder.add_profile_params(intake_profile_parameters_offset);
+    flatbuffers::Offset<superstructure::IntakeGoal> intake_goal_offset =
+        intake_goal_builder.Finish();
+
+    flatbuffers::Offset<frc971::ProfileParameters>
+        hood_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 5.0, 25.0);
+
+    superstructure::HoodGoal::Builder hood_goal_builder =
+        builder.MakeBuilder<superstructure::HoodGoal>();
+    hood_goal_builder.add_angle(hood_goal_);
+    hood_goal_builder.add_profile_params(hood_profile_parameters_offset);
+    flatbuffers::Offset<superstructure::HoodGoal> hood_goal_offset =
+        hood_goal_builder.Finish();
+
+    superstructure::ShooterGoal::Builder shooter_goal_builder =
+        builder.MakeBuilder<superstructure::ShooterGoal>();
+    shooter_goal_builder.add_angular_velocity(shooter_velocity_);
+    flatbuffers::Offset<superstructure::ShooterGoal> shooter_goal_offset =
+        shooter_goal_builder.Finish();
+
+    superstructure::Goal::Builder goal_builder =
+        builder.MakeBuilder<superstructure::Goal>();
+    goal_builder.add_lights_on(lights_on);
+    if (data.IsPressed(kVisionAlign) && vision_distance_shot_) {
+      goal_builder.add_use_vision_for_shots(true);
+    } else {
+      goal_builder.add_use_vision_for_shots(false);
+    }
+
+    goal_builder.add_intake(intake_goal_offset);
+    goal_builder.add_indexer(indexer_goal_offset);
+    goal_builder.add_turret(turret_goal_offset);
+    goal_builder.add_hood(hood_goal_offset);
+    goal_builder.add_shooter(shooter_goal_offset);
+
+    if (!builder.Send(goal_builder.Finish())) {
       AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
     }
   }
 
  private:
-  ::aos::Fetcher<::y2017::control_loops::SuperstructureQueue::Status>
+  ::aos::Fetcher<::y2017::control_loops::superstructure::Status>
       superstructure_status_fetcher_;
-  ::aos::Sender<::y2017::control_loops::SuperstructureQueue::Goal>
+  ::aos::Sender<::y2017::control_loops::superstructure::Goal>
       superstructure_goal_sender_;
 
   ShotDistance last_shot_distance_ = ShotDistance::VISION_SHOT;
@@ -276,7 +323,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
 int main() {
   ::aos::InitNRT(true);
 
-  ::aos::ShmEventLoop event_loop;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig("config.json");
+
+  ::aos::ShmEventLoop event_loop(&config.message());
   ::y2017::input::joysticks::Reader reader(&event_loop);
 
   event_loop.Run();

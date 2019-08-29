@@ -6,25 +6,25 @@
 
 #include "aos/actions/actions.h"
 #include "aos/actions/actor.h"
-#include "aos/events/event-loop.h"
+#include "aos/events/event_loop.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "y2016/actors/vision_align_actor.h"
-#include "y2016/control_loops/shooter/shooter.q.h"
-#include "y2016/control_loops/superstructure/superstructure.q.h"
-#include "y2016/queues/ball_detector.q.h"
+#include "y2016/control_loops/shooter/shooter_goal_generated.h"
+#include "y2016/control_loops/shooter/shooter_status_generated.h"
+#include "y2016/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2016/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2016/queues/ball_detector_generated.h"
 
 namespace y2016 {
 namespace actors {
-using ::frc971::ProfileParameters;
 
 class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  public:
   explicit AutonomousActor(::aos::EventLoop *event_loop);
 
   bool RunAction(
-      const ::frc971::autonomous::AutonomousActionParams &params) override;
+      const ::frc971::autonomous::AutonomousActionParams *params) override;
 
  private:
   void WaitForBallOrDriveDone();
@@ -41,9 +41,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   SuperstructureGoal superstructure_goal_;
 
   void MoveSuperstructure(double intake, double shoulder, double wrist,
-                          const ProfileParameters intake_params,
-                          const ProfileParameters shoulder_params,
-                          const ProfileParameters wrist_params,
+                          const frc971::ProfileParametersT intake_params,
+                          const frc971::ProfileParametersT shoulder_params,
+                          const frc971::ProfileParametersT wrist_params,
                           bool traverse_up, double roller_power);
   void WaitForSuperstructure();
   void WaitForSuperstructureProfile();
@@ -91,13 +91,12 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   ::aos::Fetcher<::y2016::vision::VisionStatus> vision_status_fetcher_;
   ::aos::Fetcher<::y2016::sensors::BallDetector> ball_detector_fetcher_;
-  ::aos::Sender<::y2016::control_loops::shooter::ShooterQueue::Goal>
-      shooter_goal_sender_;
-  ::aos::Fetcher<::y2016::control_loops::shooter::ShooterQueue::Status>
+  ::aos::Sender<::y2016::control_loops::shooter::Goal> shooter_goal_sender_;
+  ::aos::Fetcher<::y2016::control_loops::shooter::Status>
       shooter_status_fetcher_;
-  ::aos::Fetcher<::y2016::control_loops::SuperstructureQueue::Status>
+  ::aos::Fetcher<::y2016::control_loops::superstructure::Status>
       superstructure_status_fetcher_;
-  ::aos::Sender<::y2016::control_loops::SuperstructureQueue::Goal>
+  ::aos::Sender<::y2016::control_loops::superstructure::Goal>
       superstructure_goal_sender_;
 };
 

@@ -1,0 +1,13 @@
+include "frc971/control_loops/profiled_subsystem.fbs";
+include "frc971/control_loops/control_loops.fbs";
+
+namespace frc971.control_loops.zeroing.testing;
+
+table SubsystemGoal {
+  unsafe_goal:double;
+  profile_params:frc971.ProfileParameters;
+}
+
+table SubsystemOutput {
+  output:double;
+}

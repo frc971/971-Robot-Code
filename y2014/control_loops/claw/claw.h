@@ -5,15 +5,19 @@
 
 #include "aos/controls/control_loop.h"
 #include "aos/controls/polytope.h"
-#include "y2014/constants.h"
-#include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/coerce_goal.h"
-#include "y2014/control_loops/claw/claw.q.h"
-#include "y2014/control_loops/claw/claw_motor_plant.h"
 #include "frc971/control_loops/hall_effect_tracker.h"
+#include "frc971/control_loops/state_feedback_loop.h"
+#include "y2014/constants.h"
+#include "y2014/control_loops/claw/claw_goal_generated.h"
+#include "y2014/control_loops/claw/claw_motor_plant.h"
+#include "y2014/control_loops/claw/claw_output_generated.h"
+#include "y2014/control_loops/claw/claw_position_generated.h"
+#include "y2014/control_loops/claw/claw_status_generated.h"
 
 namespace y2014 {
 namespace control_loops {
+namespace claw {
 namespace testing {
 class WindupClawTest;
 };
@@ -77,9 +81,9 @@ class ZeroedStateFeedbackLoop {
   }
   JointZeroingState zeroing_state() const { return zeroing_state_; }
 
-  void SetPositionValues(const ::y2014::control_loops::HalfClawPosition &claw);
+  void SetPositionValues(const HalfClawPosition *claw);
 
-  void Reset(const ::y2014::control_loops::HalfClawPosition &claw);
+  void Reset(const HalfClawPosition *claw);
 
   double absolute_position() const { return encoder() + offset(); }
 
@@ -183,11 +187,10 @@ class BottomZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
 };
 
 class ClawMotor
-    : public aos::controls::ControlLoop<::y2014::control_loops::ClawQueue> {
+    : public aos::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
-  explicit ClawMotor(
-      ::aos::EventLoop *event_loop,
-      const ::std::string &name = ".y2014.control_loops.claw_queue");
+  explicit ClawMotor(::aos::EventLoop *event_loop,
+                     const ::std::string &name = "/claw");
 
   // True if the state machine is ready.
   bool capped_goal() const { return capped_goal_; }
@@ -217,11 +220,9 @@ class ClawMotor
   CalibrationMode mode() const { return mode_; }
 
  protected:
-  virtual void RunIteration(
-      const ::y2014::control_loops::ClawQueue::Goal *goal,
-      const ::y2014::control_loops::ClawQueue::Position *position,
-      ::y2014::control_loops::ClawQueue::Output *output,
-      ::y2014::control_loops::ClawQueue::Status *status);
+  virtual void RunIteration(const Goal *goal, const Position *position,
+                            aos::Sender<Output>::Builder *output,
+                            aos::Sender<Status>::Builder *status);
 
   double top_absolute_position() const {
     return claw_.X_hat(1, 0) + claw_.X_hat(0, 0);
@@ -262,6 +263,7 @@ class ClawMotor
 void LimitClawGoal(double *bottom_goal, double *top_goal,
                    const constants::Values &values);
 
+}  // namespace claw
 }  // namespace control_loops
 }  // namespace y2014
 

@@ -25,16 +25,17 @@ cc_library(
         "autonomous_actor.h",
     ],
     deps = [
-        "//aos/events:event-loop",
+        "//aos/events:event_loop",
         "//aos/logging",
         "//aos/util:phased_loop",
         "//frc971/autonomous:base_autonomous_actor",
-        "//frc971/control_loops:queues",
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops:profiled_subsystem_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_config",
-        "//frc971/control_loops/drivetrain:drivetrain_queue",
-        "//frc971/control_loops/drivetrain:localizer_queue",
+        "//frc971/control_loops/drivetrain:localizer_fbs",
         "//y2019/control_loops/drivetrain:drivetrain_base",
-        "//y2019/control_loops/superstructure:superstructure_queue",
+        "//y2019/control_loops/superstructure:superstructure_goal_fbs",
+        "//y2019/control_loops/superstructure:superstructure_status_fbs",
     ],
 )
 
@@ -46,7 +47,7 @@ cc_binary(
     deps = [
         ":autonomous_action_lib",
         "//aos:init",
-        "//aos/events:shm-event-loop",
-        "//frc971/autonomous:auto_queue",
+        "//aos/events:shm_event_loop",
+        "//frc971/autonomous:auto_fbs",
     ],
 )

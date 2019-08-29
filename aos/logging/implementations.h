@@ -43,7 +43,7 @@ namespace logging {
 // Contains all of the information about a given logging call.
 struct LogMessage {
   enum class Type : uint8_t {
-    kString, kStruct, kMatrix
+    kString
   };
 
   int32_t seconds, nseconds;
@@ -100,23 +100,6 @@ static inline log_level str_log(const char *str) {
   return LOG_UNKNOWN;
 }
 
-// A LogImplementation where LogStruct and LogMatrix just create a string with
-// PrintMessage and then forward on to DoLog.
-class SimpleLogImplementation : public LogImplementation {
- protected:
-  virtual ::aos::monotonic_clock::time_point monotonic_now() const {
-    return ::aos::monotonic_clock::now();
-  }
-
- private:
-  void LogStruct(log_level level, const ::std::string &message, size_t size,
-                 const MessageType *type,
-                 const ::std::function<size_t(char *)> &serialize) override;
-  void LogMatrix(log_level level, const ::std::string &message,
-                 uint32_t type_id, int rows, int cols,
-                 const void *data) override;
-};
-
 // Implements all of the DoLog* methods in terms of a (pure virtual in this
 // class) HandleMessage method that takes a pointer to the message.
 class HandleMessageLogImplementation : public LogImplementation {
@@ -128,12 +111,6 @@ class HandleMessageLogImplementation : public LogImplementation {
  private:
   __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
   void DoLog(log_level level, const char *format, va_list ap) override;
-  void LogStruct(log_level level, const ::std::string &message_string,
-                 size_t size, const MessageType *type,
-                 const ::std::function<size_t(char *)> &serialize) override;
-  void LogMatrix(log_level level, const ::std::string &message_string,
-                 uint32_t type_id, int rows, int cols,
-                 const void *data) override;
 
   virtual void HandleMessage(const LogMessage &message) = 0;
 };
@@ -185,23 +162,6 @@ void RegisterQueueImplementation();
 // This is where all of the code that is only used by actual LogImplementations
 // goes.
 namespace internal {
-
-// Fills in all the parts of message according to the given inputs (with type
-// kStruct).
-void FillInMessageStructure(bool add_to_type_cache, log_level level,
-                            ::aos::monotonic_clock::time_point monotonic_now,
-                            const ::std::string &message_string, size_t size,
-                            const MessageType *type,
-                            const ::std::function<size_t(char *)> &serialize,
-                            LogMessage *message);
-
-// Fills in all the parts of the message according to the given inputs (with
-// type kMatrix).
-void FillInMessageMatrix(log_level level,
-                         ::aos::monotonic_clock::time_point monotonic_now,
-                         const ::std::string &message_string, uint32_t type_id,
-                         int rows, int cols, const void *data,
-                         LogMessage *message);
 
 // Fills in *message according to the given inputs (with type kString).
 // Used for implementing LogImplementation::DoLog.

@@ -1,0 +1,39 @@
+include "frc971/control_loops/control_loops.fbs";
+
+namespace y2018.control_loops.superstructure;
+
+table IntakeGoal {
+  roller_voltage:double;
+
+  // Goal angle in radians of the intake.
+  // Zero radians is where the intake is pointing straight out, with positive
+  // radians inward towards the cube.
+  left_intake_angle:double;
+  right_intake_angle:double;
+}
+
+table Goal {
+  intake:IntakeGoal;
+
+  // Used to identiy a position in the planned set of positions on the arm.
+  arm_goal_position:uint;
+  // If true, start the grab box sequence.
+  grab_box:bool;
+
+  open_claw:bool;
+  close_claw:bool;
+
+  deploy_fork:bool;
+
+  hook_release:bool;
+
+  voltage_winch:double;
+
+  open_threshold:double;
+
+  disable_box_correct:bool;
+
+  trajectory_override:bool;
+}
+
+root_type Goal;

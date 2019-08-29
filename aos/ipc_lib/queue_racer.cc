@@ -82,12 +82,15 @@ void QueueRacer::RunIteration(bool race_reads, int write_wrap_count) {
       //
       // So, grab them in order.
       const uint64_t finished_writes = finished_writes_.load();
-      const uint32_t latest_queue_index_uint32_t = queue.LatestQueueIndex();
+      const QueueIndex latest_queue_index_queue_index =
+          queue.LatestQueueIndex();
       const uint64_t started_writes = started_writes_.load();
 
+      const uint32_t latest_queue_index_uint32_t =
+          queue.LatestQueueIndex().index();
       uint64_t latest_queue_index = latest_queue_index_uint32_t;
 
-      if (latest_queue_index_uint32_t != LocklessQueue::empty_queue_index()) {
+      if (latest_queue_index_queue_index != LocklessQueue::empty_queue_index()) {
         // If we got smaller, we wrapped.
         if (latest_queue_index_uint32_t < last_queue_index) {
           ++wrap_count;
@@ -104,19 +107,19 @@ void QueueRacer::RunIteration(bool race_reads, int write_wrap_count) {
 
       // If we are at the beginning, the queue needs to always return empty.
       if (started_writes == 0) {
-        EXPECT_EQ(latest_queue_index_uint32_t,
+        EXPECT_EQ(latest_queue_index_queue_index,
                   LocklessQueue::empty_queue_index());
         EXPECT_EQ(finished_writes, 0);
       } else {
         if (finished_writes == 0) {
           // Plausible to be at the beginning.
-          if (latest_queue_index_uint32_t !=
+          if (latest_queue_index_queue_index !=
               LocklessQueue::empty_queue_index()) {
             // Otherwise, we have started.  The queue is always allowed to
             EXPECT_GE(started_writes, latest_queue_index + 1);
           }
         } else {
-          EXPECT_NE(latest_queue_index_uint32_t,
+          EXPECT_NE(latest_queue_index_queue_index,
                     LocklessQueue::empty_queue_index());
           // latest_queue_index is an index, not a count.  So it always reads 1
           // low.

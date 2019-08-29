@@ -36,7 +36,7 @@ class QueueRacer {
 
   size_t CurrentIndex() {
     LocklessQueue queue(memory_, config_);
-    return queue.LatestQueueIndex();
+    return queue.LatestQueueIndex().index();
   }
 
  private:

@@ -1,0 +1,9 @@
+namespace y2018.vision;
+
+// Published on ".y2018.vision.vision_status"
+table VisionStatus {
+  high_frame_count:uint;
+  low_frame_count:uint;
+}
+
+root_type VisionStatus;

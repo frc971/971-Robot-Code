@@ -1,0 +1,6 @@
+namespace y2014_bot3.control_loops.rollers;
+
+table Position {
+}
+
+root_type Position;

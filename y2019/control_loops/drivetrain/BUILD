@@ -1,5 +1,5 @@
-load("//aos/build:queues.bzl", "queue_library")
-load("//tools/build_rules:select.bzl", "cpu_select", "compiler_select")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//tools/build_rules:select.bzl", "compiler_select", "cpu_select")
 
 genrule(
     name = "genrule_drivetrain",
@@ -29,39 +29,6 @@ genrule(
     tools = [
         "//y2019/control_loops/python:polydrivetrain",
     ],
-)
-
-cc_binary(
-    name = "replay_localizer",
-    srcs = [
-        "replay_localizer.cc",
-    ],
-    defines =
-        cpu_select({
-            "amd64": [
-                "SUPPORT_PLOT=1",
-            ],
-            "arm": [],
-        }),
-    linkstatic = True,
-    deps = [
-        "//frc971/control_loops/drivetrain:localizer_queue",
-        ":localizer",
-        ":event_loop_localizer",
-        ":drivetrain_base",
-        "@com_github_gflags_gflags//:gflags",
-        "//y2019:constants",
-        "//frc971/control_loops/drivetrain:drivetrain_queue",
-        "//aos:init",
-        "//aos/controls:replay_control_loop",
-        "//frc971/queues:gyro",
-        "//frc971/wpilib:imu_queue",
-    ] + cpu_select({
-        "amd64": [
-            "//third_party/matplotlib-cpp",
-        ],
-        "arm": [],
-    }),
 )
 
 cc_library(
@@ -111,24 +78,24 @@ cc_binary(
         ":drivetrain_base",
         ":event_loop_localizer",
         "//aos:init",
-        "//aos/events:shm-event-loop",
+        "//aos/events:shm_event_loop",
         "//frc971/control_loops/drivetrain:drivetrain_lib",
     ],
 )
 
-queue_library(
-    name = "target_selector_queue",
-    srcs = [
-        "target_selector.q",
-    ],
+flatbuffer_cc_library(
+    name = "target_selector_fbs",
+    srcs = ["target_selector.fbs"],
+    gen_reflections = 1,
     visibility = ["//visibility:public"],
 )
 
-queue_library(
-    name = "camera_queue",
+flatbuffer_cc_library(
+    name = "camera_fbs",
     srcs = [
-        "camera.q",
+        "camera.fbs",
     ],
+    gen_reflections = 1,
     visibility = ["//visibility:public"],
 )
 
@@ -167,17 +134,18 @@ cc_library(
     hdrs = ["target_selector.h"],
     deps = [
         ":camera",
-        ":target_selector_queue",
+        ":target_selector_fbs",
         "//frc971/control_loops:pose",
         "//frc971/control_loops/drivetrain:localizer",
         "//y2019:constants",
-        "//y2019/control_loops/superstructure:superstructure_queue",
+        "//y2019/control_loops/superstructure:superstructure_goal_fbs",
     ],
 )
 
 cc_test(
     name = "target_selector_test",
     srcs = ["target_selector_test.cc"],
+    data = ["//y2019:config.json"],
     deps = [
         ":target_selector",
         "//aos/events:simulated_event_loop",
@@ -191,7 +159,7 @@ cc_library(
     srcs = ["event_loop_localizer.cc"],
     hdrs = ["event_loop_localizer.h"],
     deps = [
-        ":camera_queue",
+        ":camera_fbs",
         ":localizer",
         ":target_selector",
         "//frc971/control_loops/drivetrain:localizer",
@@ -232,13 +200,14 @@ cc_test(
 cc_test(
     name = "localized_drivetrain_test",
     srcs = ["localized_drivetrain_test.cc"],
+    data = ["//y2019:config.json"],
     deps = [
-        ":camera_queue",
+        ":camera_fbs",
         ":drivetrain_base",
         ":event_loop_localizer",
         ":localizer",
         "//aos/controls:control_loop_test",
-        "//aos/events:shm-event-loop",
+        "//aos/events:shm_event_loop",
         "//aos/network:team_number",
         "//frc971/control_loops:team_number_test_environment",
         "//frc971/control_loops/drivetrain:drivetrain_lib",

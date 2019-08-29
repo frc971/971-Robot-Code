@@ -2,10 +2,15 @@
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_LINE_FOLLOW_DRIVETRAIN_H_
 #include "Eigen/Dense"
 
-#include "frc971/control_loops/pose.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/drivetrain/localizer.h"
+#include "frc971/control_loops/pose.h"
+#include "frc971/control_loops/profiled_subsystem_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -29,7 +34,7 @@ class LineFollowDrivetrain {
   // a Target; the positive X-axis in the Pose's frame represents the direction
   // we want to go (we approach the pose from the left-half plane).
   void SetGoal(::aos::monotonic_clock::time_point now,
-               const ::frc971::control_loops::DrivetrainQueue::Goal &goal);
+               const ::frc971::control_loops::drivetrain::Goal *goal);
   // State: [x, y, theta, left_vel, right_vel]
   void Update(::aos::monotonic_clock::time_point now,
               const ::Eigen::Matrix<double, 5, 1> &state);
@@ -37,9 +42,11 @@ class LineFollowDrivetrain {
   // yet have a target to track into and so some other drivetrain should take
   // over.
   bool SetOutput(
-      ::frc971::control_loops::DrivetrainQueue::Output *output);
-  void PopulateStatus(
-      ::frc971::control_loops::DrivetrainQueue::Status *status) const;
+      ::frc971::control_loops::drivetrain::OutputT *output);
+
+  flatbuffers::Offset<LineFollowLogging> PopulateStatus(
+      aos::Sender<drivetrain::Status>::Builder *line_follow_logging_builder)
+      const;
 
  private:
   // Nominal max voltage.

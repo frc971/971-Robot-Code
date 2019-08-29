@@ -31,15 +31,16 @@ void ColumnZeroingEstimator::TriggerError() {
 }
 
 void ColumnZeroingEstimator::UpdateEstimate(const ColumnPosition &position) {
-  indexer_.UpdateEstimate(position.indexer);
-  turret_.UpdateEstimate(position.turret);
+  indexer_.UpdateEstimate(*position.indexer());
+  turret_.UpdateEstimate(*position.turret());
 
   if (indexer_.zeroed() && turret_.zeroed()) {
     indexer_offset_ = indexer_.offset();
 
     // Compute the current turret position.
-    const double current_turret = indexer_offset_ + position.indexer.encoder +
-                                  turret_.offset() + position.turret.encoder;
+    const double current_turret =
+        indexer_offset_ + position.indexer()->encoder() + turret_.offset() +
+        position.turret()->encoder();
 
     // Now, we can compute the turret position which is closest to 0 radians
     // (within +- M_PI).
@@ -47,16 +48,16 @@ void ColumnZeroingEstimator::UpdateEstimate(const ColumnPosition &position) {
         ::frc971::zeroing::Wrap(0.0, current_turret, M_PI * 2.0);
 
     // Now, compute the actual turret offset.
-    turret_offset_ = adjusted_turret - position.turret.encoder -
-                     (indexer_offset_ + position.indexer.encoder);
+    turret_offset_ = adjusted_turret - position.turret()->encoder() -
+                     (indexer_offset_ + position.indexer()->encoder());
     offset_ready_ = true;
 
     // If we are close enough to 0, we are zeroed.  Otherwise, we don't know
     // which revolution we are on and need more info.  We will always report the
     // turret position as within +- M_PI from 0 with the provided offset.
-    if (::std::abs(position.indexer.encoder + position.turret.encoder +
-                   indexer_offset_ + turret_offset_) <
-        turret_zeroed_distance_) {
+    if (::std::abs(position.indexer()->encoder() +
+                   position.turret()->encoder() + indexer_offset_ +
+                   turret_offset_) < turret_zeroed_distance_) {
       zeroed_ = true;
     }
 
@@ -65,17 +66,23 @@ void ColumnZeroingEstimator::UpdateEstimate(const ColumnPosition &position) {
   }
 }
 
-ColumnZeroingEstimator::State ColumnZeroingEstimator::GetEstimatorState()
-    const {
-  State r;
-  r.error = error();
-  r.zeroed = zeroed();
-  r.indexer = indexer_.GetEstimatorState();
-  r.turret = turret_.GetEstimatorState();
-  return r;
+flatbuffers::Offset<ColumnZeroingEstimator::State>
+ColumnZeroingEstimator::GetEstimatorState(
+    flatbuffers::FlatBufferBuilder *fbb) const {
+  flatbuffers::Offset<frc971::HallEffectAndPositionEstimatorState> indexer_offset =
+      indexer_.GetEstimatorState(fbb);
+  flatbuffers::Offset<frc971::HallEffectAndPositionEstimatorState> turret_offset =
+      turret_.GetEstimatorState(fbb);
+
+  State::Builder state_builder(*fbb);
+  state_builder.add_indexer(indexer_offset);
+  state_builder.add_turret(turret_offset);
+  state_builder.add_error(error());
+  state_builder.add_zeroed(zeroed());
+  return state_builder.Finish();
 }
 
-}  // column
-}  // superstructure
+}  // namespace column
+}  // namespace superstructure
 }  // control_loops
 }  // y2017

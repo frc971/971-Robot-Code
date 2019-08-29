@@ -5,20 +5,20 @@
 
 #include "aos/actions/actions.h"
 #include "aos/actions/actor.h"
-#include "aos/events/shm-event-loop.h"
-#include "frc971/autonomous/auto.q.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "aos/events/shm_event_loop.h"
+#include "frc971/autonomous/auto_generated.h"
+#include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
-#include "y2019/control_loops/drivetrain/target_selector.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
+#include "y2019/control_loops/drivetrain/target_selector_generated.h"
 
 namespace frc971 {
 namespace autonomous {
 
-class BaseAutonomousActor
-    : public ::aos::common::actions::ActorBase<AutonomousActionQueueGroup> {
+class BaseAutonomousActor : public ::aos::common::actions::ActorBase<Goal> {
  public:
-  typedef ::aos::common::actions::TypedActionFactory<AutonomousActionQueueGroup>
-      Factory;
+  typedef ::aos::common::actions::TypedActionFactory<Goal> Factory;
 
   explicit BaseAutonomousActor(
       ::aos::EventLoop *event_loop,
@@ -62,13 +62,16 @@ class BaseAutonomousActor
 
   // Starts planning the spline, and returns a handle to be used to manipulate
   // it.
-  SplineHandle PlanSpline(const ::frc971::MultiSpline &spline,
-                          SplineDirection direction);
+  SplineHandle PlanSpline(
+      std::function<flatbuffers::Offset<frc971::MultiSpline>(
+          aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
+              *builder)> &&multispline_builder,
+      SplineDirection direction);
 
   void ResetDrivetrain();
   void InitializeEncoders();
-  void StartDrive(double distance, double angle, ProfileParameters linear,
-                  ProfileParameters angular);
+  void StartDrive(double distance, double angle, ProfileParametersT linear,
+                  ProfileParametersT angular);
 
   void WaitUntilDoneOrCanceled(
       ::std::unique_ptr<aos::common::actions::Action> action);
@@ -79,7 +82,10 @@ class BaseAutonomousActor
   // Returns true if the drive has finished.
   bool IsDriveDone();
 
-  void LineFollowAtVelocity(double velocity, int hint = 0);
+  void LineFollowAtVelocity(
+      double velocity,
+      y2019::control_loops::drivetrain::SelectionHint hint =
+          y2019::control_loops::drivetrain::SelectionHint_NONE);
 
   // Waits until the robot is pitched up above the specified angle, or the move
   // finishes.  Returns true on success, and false if it cancels.
@@ -115,11 +121,11 @@ class BaseAutonomousActor
 
   ::aos::Sender<::y2019::control_loops::drivetrain::TargetSelectorHint>
       target_selector_hint_sender_;
-  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Goal>
+  ::aos::Sender<::frc971::control_loops::drivetrain::Goal>
       drivetrain_goal_sender_;
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Goal>
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Goal>
       drivetrain_goal_fetcher_;
 
  private:

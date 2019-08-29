@@ -1,46 +1,51 @@
 #include "y2014_bot3/control_loops/rollers/rollers.h"
 
 #include "aos/logging/logging.h"
+#include "y2014_bot3/control_loops/rollers/rollers_goal_generated.h"
+#include "y2014_bot3/control_loops/rollers/rollers_output_generated.h"
+#include "y2014_bot3/control_loops/rollers/rollers_position_generated.h"
+#include "y2014_bot3/control_loops/rollers/rollers_status_generated.h"
 
 namespace y2014_bot3 {
 namespace control_loops {
+namespace rollers {
 
 Rollers::Rollers(::aos::EventLoop *event_loop, const ::std::string &name)
-    : aos::controls::ControlLoop<control_loops::RollersQueue>(event_loop,
-                                                              name) {}
+    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
+                                                                 name) {}
 
-void Rollers::RunIteration(
-    const control_loops::RollersQueue::Goal *goal,
-    const control_loops::RollersQueue::Position * /*position*/,
-    control_loops::RollersQueue::Output *output,
-    control_loops::RollersQueue::Status * /*status*/) {
+void Rollers::RunIteration(const Goal *goal, const Position * /*position*/,
+                           aos::Sender<Output>::Builder *output,
+                           aos::Sender<Status>::Builder *status) {
   constexpr double k2014Bot3IntakeForwardVoltage = 12.0;
   constexpr double k2014Bot3IntakeBackwardVoltage = -12.0;
   constexpr double k2014Bot3LowGoalForwardVoltage = 6.0;
   constexpr double k2014Bot3LowGoalBackwardVoltage = -6.0;
 
+  status->Send(status->MakeBuilder<Status>().Finish());
+
   if (!output || !goal) {
     return;
   }
 
-  const int intake = goal->intake;
-  const int low_spit = goal->low_spit;
-  const bool human_player = goal->human_player;
+  const int intake = goal->intake();
+  const int low_spit = goal->low_spit();
+  const bool human_player = goal->human_player();
 
-  output->Zero();
+  OutputT output_struct;
 
   switch (low_spit) {
     case 1:
       // Spit towards front
-      output->low_goal_voltage = k2014Bot3LowGoalBackwardVoltage;
-      output->front_intake_voltage = k2014Bot3IntakeBackwardVoltage;
-      output->back_intake_voltage = -k2014Bot3IntakeForwardVoltage;
+      output_struct.low_goal_voltage = k2014Bot3LowGoalBackwardVoltage;
+      output_struct.front_intake_voltage = k2014Bot3IntakeBackwardVoltage;
+      output_struct.back_intake_voltage = -k2014Bot3IntakeForwardVoltage;
       break;
     case -1:
       // Spit towards back
-      output->low_goal_voltage = k2014Bot3LowGoalForwardVoltage;
-      output->back_intake_voltage = -k2014Bot3IntakeBackwardVoltage;
-      output->front_intake_voltage = k2014Bot3IntakeForwardVoltage;
+      output_struct.low_goal_voltage = k2014Bot3LowGoalForwardVoltage;
+      output_struct.back_intake_voltage = -k2014Bot3IntakeBackwardVoltage;
+      output_struct.front_intake_voltage = k2014Bot3IntakeForwardVoltage;
       break;
     default:
       // Stationary
@@ -50,17 +55,17 @@ void Rollers::RunIteration(
   switch (intake) {
     case 1:
       // Front intake.
-      output->front_extended = true;
-      output->back_extended = false;
-      output->front_intake_voltage = k2014Bot3IntakeForwardVoltage;
-      output->back_intake_voltage = 0.0;
+      output_struct.front_extended = true;
+      output_struct.back_extended = false;
+      output_struct.front_intake_voltage = k2014Bot3IntakeForwardVoltage;
+      output_struct.back_intake_voltage = 0.0;
       break;
     case -1:
       // Back intake.
-      output->back_extended = true;
-      output->front_extended = false;
-      output->back_intake_voltage = -k2014Bot3IntakeForwardVoltage;
-      output->front_intake_voltage = 0.0;
+      output_struct.back_extended = true;
+      output_struct.front_extended = false;
+      output_struct.back_intake_voltage = -k2014Bot3IntakeForwardVoltage;
+      output_struct.front_intake_voltage = 0.0;
       break;
     default:
       // Stationary
@@ -69,12 +74,15 @@ void Rollers::RunIteration(
 
   if (human_player) {
     // Intake for human player.
-    output->front_extended = false;
-    output->back_extended = false;
-    output->front_intake_voltage = k2014Bot3IntakeForwardVoltage;
-    output->back_intake_voltage = -k2014Bot3IntakeForwardVoltage;
+    output_struct.front_extended = false;
+    output_struct.back_extended = false;
+    output_struct.front_intake_voltage = k2014Bot3IntakeForwardVoltage;
+    output_struct.back_intake_voltage = -k2014Bot3IntakeForwardVoltage;
   }
+
+  output->Send(Output::Pack(*output->fbb(), &output_struct));
 }
 
+}  //  namespace rollers
 }  //  namespace control_loops
 }  //  namespace y2014_bot3

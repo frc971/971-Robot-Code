@@ -1,0 +1,12 @@
+namespace y2014_bot3.control_loops.rollers;
+
+table Goal {
+  // -1 = back intake, 1 = front intake, all else = stationary.
+  intake:int;
+  // -1 = backwards, 1 = forwards, all else = stationary.
+  low_spit:int;
+  // Whether we want the human player load function.
+  human_player:bool;
+}
+
+root_type Goal;

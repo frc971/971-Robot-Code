@@ -1,0 +1,50 @@
+include "frc971/control_loops/control_loops.fbs";
+
+namespace y2018.control_loops.superstructure;
+
+table IntakeElasticSensors {
+  // Position of the motor end of the series elastic in radians.
+  motor_position:frc971.PotAndAbsolutePosition;
+
+  // Displacement of the spring in radians.
+  spring_angle:double;
+
+  // False if the beam break sensor isn't triggered, true if the beam breaker is
+  // triggered.
+  beam_break:bool;
+}
+
+table ArmPosition {
+  // Values of the encoder and potentiometer at the base of the proximal
+  // (connected to drivebase) arm in radians.
+  proximal:frc971.PotAndAbsolutePosition;
+
+  // Values of the encoder and potentiometer at the base of the distal
+  // (connected to proximal) arm in radians.
+  distal:frc971.PotAndAbsolutePosition;
+}
+
+
+table Position {
+  // Values of the series elastic encoders on the left side of the robot from
+  // the rear perspective in radians.
+  left_intake:IntakeElasticSensors;
+
+  // Values of the series elastic encoders on the right side of the robot from
+  // the rear perspective in radians.
+  right_intake:IntakeElasticSensors;
+
+  arm:ArmPosition;
+
+  // Value of the beam breaker sensor. This value is true if the beam is
+  // broken, false if the beam isn't broken.
+  claw_beambreak_triggered:bool;
+  // Value of the beambreak sensor detecting when the box has hit the frame
+  // cutout.
+  box_back_beambreak_triggered:bool;
+
+  // Distance to the box in meters.
+  box_distance:double;
+}
+
+root_type Position;

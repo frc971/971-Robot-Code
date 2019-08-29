@@ -2,7 +2,10 @@
 
 #include <chrono>
 
-#include "y2019/control_loops/superstructure/superstructure.q.h"
+#include "frc971/control_loops/control_loops_generated.h"
+#include "frc971/control_loops/profiled_subsystem_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_output_generated.h"
 
 namespace y2019 {
 namespace control_loops {
@@ -16,7 +19,7 @@ constexpr aos::monotonic_clock::duration Vacuum::kTimeAtHigherVoltage;
 constexpr aos::monotonic_clock::duration Vacuum::kReleaseTime;
 
 void Vacuum::Iterate(const SuctionGoal *unsafe_goal, float suction_pressure,
-                     SuperstructureQueue::Output *output, bool *has_piece,
+                     OutputT *output, bool *has_piece,
                      aos::EventLoop *event_loop) {
   auto monotonic_now = event_loop->monotonic_now();
   bool low_pump_voltage = false;
@@ -46,7 +49,7 @@ void Vacuum::Iterate(const SuctionGoal *unsafe_goal, float suction_pressure,
   low_pump_voltage = *has_piece && filtered_pressure_ < kVacuumOnThreshold;
 
   if (unsafe_goal && output) {
-    const bool release = !unsafe_goal->grab_piece;
+    const bool release = !unsafe_goal->grab_piece();
 
     if (release) {
       last_release_time_ = monotonic_now;
@@ -58,10 +61,10 @@ void Vacuum::Iterate(const SuctionGoal *unsafe_goal, float suction_pressure,
     output->pump_voltage =
         release ? 0 : (low_pump_voltage ? kPumpHasPieceVoltage : kPumpVoltage);
 
-    if (unsafe_goal->grab_piece && unsafe_goal->gamepiece_mode == 0) {
+    if (unsafe_goal->grab_piece() && unsafe_goal->gamepiece_mode() == 0) {
       output->intake_suction_top = false;
       output->intake_suction_bottom = true;
-    } else if (unsafe_goal->grab_piece && unsafe_goal->gamepiece_mode == 1) {
+    } else if (unsafe_goal->grab_piece() && unsafe_goal->gamepiece_mode() == 1) {
       output->intake_suction_top = true;
       output->intake_suction_bottom = true;
     } else {

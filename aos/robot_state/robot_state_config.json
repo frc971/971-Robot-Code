@@ -1,0 +1,15 @@
+{
+  "channels":
+  [
+    {
+      "name": "/aos",
+      "type": "aos.JoystickState",
+      "frequency": 75
+    },
+    {
+      "name": "/aos",
+      "type": "aos.RobotState",
+      "frequency": 200
+    }
+  ]
+}

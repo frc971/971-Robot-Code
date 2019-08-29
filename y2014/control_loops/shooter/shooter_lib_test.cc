@@ -9,7 +9,10 @@
 #include "gtest/gtest.h"
 #include "y2014/constants.h"
 #include "y2014/control_loops/shooter/shooter.h"
-#include "y2014/control_loops/shooter/shooter.q.h"
+#include "y2014/control_loops/shooter/shooter_goal_generated.h"
+#include "y2014/control_loops/shooter/shooter_output_generated.h"
+#include "y2014/control_loops/shooter/shooter_position_generated.h"
+#include "y2014/control_loops/shooter/shooter_status_generated.h"
 #include "y2014/control_loops/shooter/unaugmented_shooter_motor_plant.h"
 
 namespace chrono = ::std::chrono;
@@ -17,6 +20,7 @@ using ::aos::monotonic_clock;
 
 namespace y2014 {
 namespace control_loops {
+namespace shooter {
 namespace testing {
 
 using ::y2014::control_loops::shooter::kMaxExtension;
@@ -31,11 +35,8 @@ class ShooterSimulation {
   ShooterSimulation(::aos::EventLoop *event_loop, chrono::nanoseconds dt,
                     double initial_position)
       : event_loop_(event_loop),
-        shooter_position_sender_(
-            event_loop_->MakeSender<ShooterQueue::Position>(
-                ".y2014.control_loops.shooter_queue.position")),
-        shooter_output_fetcher_(event_loop_->MakeFetcher<ShooterQueue::Output>(
-            ".y2014.control_loops.shooter_queue.output")),
+        shooter_position_sender_(event_loop_->MakeSender<Position>("/shooter")),
+        shooter_output_fetcher_(event_loop_->MakeFetcher<Output>("/shooter")),
         shooter_plant_(new StateFeedbackPlant<2, 1, 1>(MakeRawShooterPlant())),
         latch_piston_state_(false),
         latch_delay_count_(0),
@@ -69,6 +70,7 @@ class ShooterSimulation {
     plant->mutable_Y() = plant->C() * plant->X();
     last_voltage_ = 0.0;
     last_plant_position_ = 0.0;
+    last_position_ = 0.0;
     SetPhysicalSensors(&last_position_message_);
   }
 
@@ -89,8 +91,7 @@ class ShooterSimulation {
 
   // Sets the values of the physical sensors that can be directly observed
   // (encoder, hall effect).
-  void SetPhysicalSensors(
-      ::y2014::control_loops::ShooterQueue::Position *position) {
+  void SetPhysicalSensors(PositionT *position) {
     const constants::Values &values = constants::GetValues();
 
     position->position = GetPosition();
@@ -113,17 +114,27 @@ class ShooterSimulation {
       position->plunger =
           CheckRange(GetAbsolutePosition(), values.shooter.plunger_back);
     }
-    position->pusher_distal.current =
+
+    if (!position->pusher_distal) {
+      position->pusher_distal.reset(
+          new frc971::PosedgeOnlyCountedHallEffectStructT);
+    }
+    if (!position->pusher_proximal) {
+      position->pusher_proximal.reset(
+          new frc971::PosedgeOnlyCountedHallEffectStructT);
+    }
+
+    position->pusher_distal->current =
         CheckRange(GetAbsolutePosition(), values.shooter.pusher_distal);
-    position->pusher_proximal.current =
+    position->pusher_proximal->current =
         CheckRange(GetAbsolutePosition(), values.shooter.pusher_proximal);
   }
 
   void UpdateEffectEdge(
-      ::frc971::PosedgeOnlyCountedHallEffectStruct *sensor,
-      const ::frc971::PosedgeOnlyCountedHallEffectStruct &last_sensor,
+      ::frc971::PosedgeOnlyCountedHallEffectStructT *sensor,
+      const ::frc971::PosedgeOnlyCountedHallEffectStructT &last_sensor,
       const constants::Values::AnglePair &limits,
-      const ::y2014::control_loops::ShooterQueue::Position &last_position) {
+      float last_position) {
     sensor->posedge_count = last_sensor.posedge_count;
     sensor->negedge_count = last_sensor.negedge_count;
 
@@ -131,7 +142,7 @@ class ShooterSimulation {
 
     if (sensor->current && !last_sensor.current) {
       ++sensor->posedge_count;
-      if (last_position.position + initial_position_ < limits.lower_angle) {
+      if (last_position + initial_position_ < limits.lower_angle) {
         AOS_LOG(DEBUG,
                 "Posedge value on lower edge of sensor, count is now %d\n",
                 sensor->posedge_count);
@@ -159,8 +170,15 @@ class ShooterSimulation {
   // it into a state using the plunger_in_, brake_in_, and latch_in_ values.
   void SendPositionMessage() {
     const constants::Values &values = constants::GetValues();
-    ::aos::Sender<ShooterQueue::Position>::Message position =
-        shooter_position_sender_.MakeMessage();
+    ::aos::Sender<Position>::Builder builder =
+        shooter_position_sender_.MakeBuilder();
+
+    PositionT position;
+
+    position.pusher_distal.reset(
+        new frc971::PosedgeOnlyCountedHallEffectStructT);
+    position.pusher_proximal.reset(
+        new frc971::PosedgeOnlyCountedHallEffectStructT);
 
     if (use_passed_) {
       plunger_latched_ = latch_in_ && plunger_in_;
@@ -168,43 +186,45 @@ class ShooterSimulation {
       brake_piston_state_ = brake_in_;
     }
 
-    SetPhysicalSensors(position.get());
+    SetPhysicalSensors(&position);
 
-    position->latch = latch_piston_state_;
+    position.latch = latch_piston_state_;
 
     // Handle pusher distal hall effect
-    UpdateEffectEdge(&position->pusher_distal,
-                     last_position_message_.pusher_distal,
-                     values.shooter.pusher_distal, last_position_message_);
+    UpdateEffectEdge(position.pusher_distal.get(),
+                     *last_position_message_.pusher_distal.get(),
+                     values.shooter.pusher_distal, last_position_);
 
     // Handle pusher proximal hall effect
-    UpdateEffectEdge(&position->pusher_proximal,
-                     last_position_message_.pusher_proximal,
-                     values.shooter.pusher_proximal, last_position_message_);
+    UpdateEffectEdge(position.pusher_proximal.get(),
+                     *last_position_message_.pusher_proximal.get(),
+                     values.shooter.pusher_proximal, last_position_);
 
-    last_position_message_ = *position;
-    position.Send();
+    builder.Send(Position::Pack(*builder.fbb(), &position));
+
+    last_position_ = position.position;
+    last_position_message_ = std::move(position);
   }
 
   // Simulates the claw moving for one timestep.
   void Simulate() {
     last_plant_position_ = GetAbsolutePosition();
     EXPECT_TRUE(shooter_output_fetcher_.Fetch());
-    if (shooter_output_fetcher_->latch_piston && !latch_piston_state_ &&
+    if (shooter_output_fetcher_->latch_piston() && !latch_piston_state_ &&
         latch_delay_count_ <= 0) {
       ASSERT_EQ(0, latch_delay_count_) << "The test doesn't support that.";
       latch_delay_count_ = 6;
-    } else if (!shooter_output_fetcher_->latch_piston &&
+    } else if (!shooter_output_fetcher_->latch_piston() &&
                latch_piston_state_ && latch_delay_count_ >= 0) {
       ASSERT_EQ(0, latch_delay_count_) << "The test doesn't support that.";
       latch_delay_count_ = -6;
     }
 
-    if (shooter_output_fetcher_->brake_piston && !brake_piston_state_ &&
+    if (shooter_output_fetcher_->brake_piston() && !brake_piston_state_ &&
         brake_delay_count_ <= 0) {
       ASSERT_EQ(0, brake_delay_count_) << "The test doesn't support that.";
       brake_delay_count_ = 5;
-    } else if (!shooter_output_fetcher_->brake_piston &&
+    } else if (!shooter_output_fetcher_->brake_piston() &&
                brake_piston_state_ && brake_delay_count_ >= 0) {
       ASSERT_EQ(0, brake_delay_count_) << "The test doesn't support that.";
       brake_delay_count_ = -5;
@@ -265,13 +285,13 @@ class ShooterSimulation {
     EXPECT_LE(constants::GetValues().shooter.lower_hard_limit,
               GetAbsolutePosition());
 
-    last_voltage_ = shooter_output_fetcher_->voltage;
+    last_voltage_ = shooter_output_fetcher_->voltage();
   }
 
   private:
   ::aos::EventLoop *event_loop_;
-  ::aos::Sender<ShooterQueue::Position> shooter_position_sender_;
-  ::aos::Fetcher<ShooterQueue::Output> shooter_output_fetcher_;
+  ::aos::Sender<Position> shooter_position_sender_;
+  ::aos::Fetcher<Output> shooter_output_fetcher_;
 
   bool first_ = true;
 
@@ -300,7 +320,8 @@ class ShooterSimulation {
   double initial_position_;
   double last_voltage_;
 
-  ShooterQueue::Position last_position_message_;
+  double last_position_ = 0.0;
+  PositionT last_position_message_;
   double last_plant_position_;
 };
 
@@ -310,13 +331,12 @@ class ShooterTestTemplated
  protected:
   ShooterTestTemplated()
       : ::aos::testing::ControlLoopTestTemplated<TestType>(
+            aos::configuration::ReadConfig("y2014/config.json"),
             // TODO(austin): I think this runs at 5 ms in real life.
             chrono::microseconds(5000)),
         test_event_loop_(this->MakeEventLoop()),
-        shooter_goal_fetcher_(test_event_loop_->MakeFetcher<ShooterQueue::Goal>(
-            ".y2014.control_loops.shooter_queue.goal")),
-        shooter_goal_sender_(test_event_loop_->MakeSender<ShooterQueue::Goal>(
-            ".y2014.control_loops.shooter_queue.goal")),
+        shooter_goal_fetcher_(test_event_loop_->MakeFetcher<Goal>("/shooter")),
+        shooter_goal_sender_(test_event_loop_->MakeSender<Goal>("/shooter")),
         shooter_event_loop_(this->MakeEventLoop()),
         shooter_motor_(shooter_event_loop_.get()),
         shooter_plant_event_loop_(this->MakeEventLoop()),
@@ -330,12 +350,12 @@ class ShooterTestTemplated
   void VerifyNearGoal() {
     shooter_goal_fetcher_.Fetch();
     const double pos = shooter_motor_plant_.GetAbsolutePosition();
-    EXPECT_NEAR(shooter_goal_fetcher_->shot_power, pos, 1e-4);
+    EXPECT_NEAR(shooter_goal_fetcher_->shot_power(), pos, 1e-4);
   }
 
   ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
-  ::aos::Fetcher<ShooterQueue::Goal> shooter_goal_fetcher_;
-  ::aos::Sender<ShooterQueue::Goal> shooter_goal_sender_;
+  ::aos::Fetcher<Goal> shooter_goal_fetcher_;
+  ::aos::Sender<Goal> shooter_goal_sender_;
 
   // Create a loop and simulation plant.
   ::std::unique_ptr<::aos::EventLoop> shooter_event_loop_;
@@ -381,18 +401,18 @@ TEST_F(ShooterTest, InversePowerConversion) {
 TEST_F(ShooterTest, GoesToValue) {
   SetEnabled(true);
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->shot_power = 70.0;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_shot_power(70.0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(2));
 
   double pos = shooter_motor_plant_.GetAbsolutePosition();
   EXPECT_TRUE(shooter_goal_fetcher_.Fetch());
   EXPECT_NEAR(
-      shooter_motor_.PowerToPosition(shooter_goal_fetcher_->shot_power),
-      pos, 0.05);
+      shooter_motor_.PowerToPosition(shooter_goal_fetcher_->shot_power()), pos,
+      0.05);
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }
 
@@ -400,19 +420,19 @@ TEST_F(ShooterTest, GoesToValue) {
 TEST_F(ShooterTest, Fire) {
   SetEnabled(true);
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->shot_power = 70.0;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_shot_power(70.0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::milliseconds(1200));
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->shot_power = 35.0;
-    message->shot_requested = true;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_shot_power(35.0);
+    goal_builder.add_shot_requested(true);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   bool hit_fire = false;
@@ -421,11 +441,12 @@ TEST_F(ShooterTest, Fire) {
     RunFor(dt());
     if (shooter_motor_.state() == ShooterMotor::STATE_FIRE) {
       if (!hit_fire) {
-        ::aos::Sender<ShooterQueue::Goal>::Message message =
-            shooter_goal_sender_.MakeMessage();
-        message->shot_power = 17.0;
-        message->shot_requested = false;
-        EXPECT_TRUE(message.Send());
+        ::aos::Sender<Goal>::Builder builder =
+            shooter_goal_sender_.MakeBuilder();
+        Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+        goal_builder.add_shot_power(17.0);
+        goal_builder.add_shot_requested(false);
+        EXPECT_TRUE(builder.Send(goal_builder.Finish()));
       }
       hit_fire = true;
     }
@@ -433,8 +454,9 @@ TEST_F(ShooterTest, Fire) {
 
   double pos = shooter_motor_plant_.GetAbsolutePosition();
   EXPECT_TRUE(shooter_goal_fetcher_.Fetch());
-  EXPECT_NEAR(shooter_motor_.PowerToPosition(shooter_goal_fetcher_->shot_power),
-              pos, 0.05);
+  EXPECT_NEAR(
+      shooter_motor_.PowerToPosition(shooter_goal_fetcher_->shot_power()), pos,
+      0.05);
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   EXPECT_TRUE(hit_fire);
 }
@@ -443,20 +465,20 @@ TEST_F(ShooterTest, Fire) {
 TEST_F(ShooterTest, FireLong) {
   SetEnabled(true);
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->shot_power = 70.0;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_shot_power(70.0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::milliseconds(1500));
 
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->shot_power = 0.0;
-    message->shot_requested = true;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_shot_power(0.0);
+    goal_builder.add_shot_requested(true);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   bool hit_fire = false;
@@ -465,10 +487,11 @@ TEST_F(ShooterTest, FireLong) {
     RunFor(dt());
     if (shooter_motor_.state() == ShooterMotor::STATE_FIRE) {
       if (!hit_fire) {
-        ::aos::Sender<ShooterQueue::Goal>::Message message =
-            shooter_goal_sender_.MakeMessage();
-        message->shot_requested = false;
-        EXPECT_TRUE(message.Send());
+        ::aos::Sender<Goal>::Builder builder =
+            shooter_goal_sender_.MakeBuilder();
+        Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+        goal_builder.add_shot_requested(false);
+        EXPECT_TRUE(builder.Send(goal_builder.Finish()));
       }
       hit_fire = true;
     }
@@ -476,8 +499,9 @@ TEST_F(ShooterTest, FireLong) {
 
   double pos = shooter_motor_plant_.GetAbsolutePosition();
   EXPECT_TRUE(shooter_goal_fetcher_.Fetch());
-  EXPECT_NEAR(shooter_motor_.PowerToPosition(shooter_goal_fetcher_->shot_power),
-              pos, 0.05);
+  EXPECT_NEAR(
+      shooter_motor_.PowerToPosition(shooter_goal_fetcher_->shot_power()), pos,
+      0.05);
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   EXPECT_TRUE(hit_fire);
 }
@@ -487,10 +511,10 @@ TEST_F(ShooterTest, FireLong) {
 TEST_F(ShooterTest, LoadTooFar) {
   SetEnabled(true);
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->shot_power = 500.0;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_shot_power(500.0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   while (test_event_loop_->monotonic_now() <
          monotonic_clock::time_point(chrono::milliseconds(1600))) {
@@ -505,19 +529,19 @@ TEST_F(ShooterTest, LoadTooFar) {
 TEST_F(ShooterTest, MoveGoal) {
   SetEnabled(true);
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->shot_power = 70.0;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_shot_power(70.0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::milliseconds(1500));
 
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->shot_power = 14.0;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_shot_power(14.0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::milliseconds(500));
@@ -525,8 +549,8 @@ TEST_F(ShooterTest, MoveGoal) {
   double pos = shooter_motor_plant_.GetAbsolutePosition();
   EXPECT_TRUE(shooter_goal_fetcher_.Fetch());
   EXPECT_NEAR(
-      shooter_motor_.PowerToPosition(shooter_goal_fetcher_->shot_power),
-      pos, 0.05);
+      shooter_motor_.PowerToPosition(shooter_goal_fetcher_->shot_power()), pos,
+      0.05);
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }
 
@@ -534,18 +558,18 @@ TEST_F(ShooterTest, MoveGoal) {
 TEST_F(ShooterTest, Unload) {
   SetEnabled(true);
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->shot_power = 70.0;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_shot_power(70.0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::milliseconds(1500));
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->unload_requested = true;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_unload_requested(true);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   while (test_event_loop_->monotonic_now() <
@@ -563,10 +587,10 @@ TEST_F(ShooterTest, Unload) {
 TEST_F(ShooterTest, RezeroWhileUnloading) {
   SetEnabled(true);
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->shot_power = 70;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_shot_power(70);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::milliseconds(1500));
 
@@ -576,10 +600,10 @@ TEST_F(ShooterTest, RezeroWhileUnloading) {
   RunFor(chrono::milliseconds(500));
 
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->unload_requested = true;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_unload_requested(true);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   while (test_event_loop_->monotonic_now() <
@@ -597,18 +621,18 @@ TEST_F(ShooterTest, RezeroWhileUnloading) {
 TEST_F(ShooterTest, UnloadWindupNegative) {
   SetEnabled(true);
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->shot_power = 70;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_shot_power(70);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::milliseconds(1500));
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->unload_requested = true;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_unload_requested(true);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   int kicked_delay = 20;
@@ -640,18 +664,18 @@ TEST_F(ShooterTest, UnloadWindupNegative) {
 TEST_F(ShooterTest, UnloadWindupPositive) {
   SetEnabled(true);
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->shot_power = 70;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_shot_power(70);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::milliseconds(1500));
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->unload_requested = true;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_unload_requested(true);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   int kicked_delay = 20;
@@ -688,18 +712,18 @@ TEST_F(ShooterTest, StartsOnDistal) {
   SetEnabled(true);
   Reinitialize(HallEffectMiddle(constants::GetValues().shooter.pusher_distal));
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->shot_power = 70.0;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_shot_power(70.0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(2));
   // EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
   double pos = shooter_motor_plant_.GetAbsolutePosition();
   EXPECT_TRUE(shooter_goal_fetcher_.Fetch());
   EXPECT_NEAR(
-      shooter_motor_.PowerToPosition(shooter_goal_fetcher_->shot_power),
-      pos, 0.05);
+      shooter_motor_.PowerToPosition(shooter_goal_fetcher_->shot_power()), pos,
+      0.05);
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }
 
@@ -710,18 +734,18 @@ TEST_F(ShooterTest, StartsOnProximal) {
   Reinitialize(
       HallEffectMiddle(constants::GetValues().shooter.pusher_proximal));
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->shot_power = 70.0;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_shot_power(70.0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(3));
   // EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
   double pos = shooter_motor_plant_.GetAbsolutePosition();
   EXPECT_TRUE(shooter_goal_fetcher_.Fetch());
   EXPECT_NEAR(
-      shooter_motor_.PowerToPosition(shooter_goal_fetcher_->shot_power),
-      pos, 0.05);
+      shooter_motor_.PowerToPosition(shooter_goal_fetcher_->shot_power()), pos,
+      0.05);
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }
 
@@ -741,10 +765,10 @@ TEST_P(ShooterZeroingTest, AllDisparateStartingZero) {
   bool initialized = false;
   Reinitialize(start_pos);
   {
-    ::aos::Sender<ShooterQueue::Goal>::Message message =
-        shooter_goal_sender_.MakeMessage();
-    message->shot_power = 120.0;
-    EXPECT_TRUE(message.Send());
+    ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_shot_power(120.0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
   while (test_event_loop_->monotonic_now() <
          monotonic_clock::time_point(chrono::seconds(2))) {
@@ -759,8 +783,8 @@ TEST_P(ShooterZeroingTest, AllDisparateStartingZero) {
   double pos = shooter_motor_plant_.GetAbsolutePosition();
   EXPECT_TRUE(shooter_goal_fetcher_.Fetch());
   EXPECT_NEAR(
-      shooter_motor_.PowerToPosition(shooter_goal_fetcher_->shot_power),
-      pos, 0.05);
+      shooter_motor_.PowerToPosition(shooter_goal_fetcher_->shot_power()), pos,
+      0.05);
   ASSERT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }
 
@@ -784,5 +808,6 @@ INSTANTIATE_TEST_CASE_P(
 // TODO(austin): Test all the timeouts...
 
 }  // namespace testing
+}  // namespace shooter
 }  // namespace control_loops
 }  // namespace y2014

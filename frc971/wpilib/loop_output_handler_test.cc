@@ -4,12 +4,11 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/events/simulated-event-loop.h"
+#include "aos/events/simulated_event_loop.h"
 #include "aos/logging/logging.h"
-#include "aos/logging/queue_logging.h"
 #include "aos/testing/test_logging.h"
 #include "aos/time/time.h"
-#include "frc971/wpilib/loop_output_handler_test.q.h"
+#include "frc971/wpilib/loop_output_handler_test_generated.h"
 
 namespace frc971 {
 namespace wpilib {
@@ -23,11 +22,26 @@ class LoopOutputHandlerTest : public ::testing::Test {
  public:
   LoopOutputHandlerTest()
       : ::testing::Test(),
+        configuration_(aos::configuration::MergeConfiguration(
+            aos::FlatbufferDetachedBuffer<aos::Configuration>(
+                aos::JsonToFlatbuffer(
+                    "{\n"
+                    "  \"channels\": [ \n"
+                    "    {\n"
+                    "      \"name\": \"/test\",\n"
+                    "      \"type\": "
+                    "\"frc971.wpilib.LoopOutputHandlerTestOutput\"\n"
+                    "    }\n"
+                    "  ]\n"
+                    "}\n",
+                    aos::Configuration::MiniReflectTypeTable())))),
+        event_loop_factory_(&configuration_.message()),
         loop_output_hander_event_loop_(event_loop_factory_.MakeEventLoop()),
         test_event_loop_(event_loop_factory_.MakeEventLoop()) {
     ::aos::testing::EnableTestLogging();
   }
 
+  aos::FlatbufferDetachedBuffer<aos::Configuration> configuration_;
   ::aos::SimulatedEventLoopFactory event_loop_factory_;
   ::std::unique_ptr<::aos::EventLoop> loop_output_hander_event_loop_;
   ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
@@ -49,14 +63,14 @@ class TestLoopOutputHandler
 
  protected:
   void Write(const LoopOutputHandlerTestOutput &output) override {
-    AOS_LOG_STRUCT(DEBUG, "output", output);
+    LOG(INFO) << "output " << aos::FlatbufferToJson(&output);
     ++count_;
     last_time_ = event_loop()->monotonic_now();
   }
 
   void Stop() override {
     stop_time_ = event_loop()->monotonic_now();
-    AOS_LOG(DEBUG, "Stopping\n");
+    LOG(INFO) << "Stopping";
   }
 
  private:
@@ -71,10 +85,10 @@ class TestLoopOutputHandler
 // Test that the watchdog calls Stop at the right time.
 TEST_F(LoopOutputHandlerTest, WatchdogTest) {
   TestLoopOutputHandler loop_output(loop_output_hander_event_loop_.get(),
-                                    ".test");
+                                    "/test");
 
   ::aos::Sender<LoopOutputHandlerTestOutput> output_sender =
-      test_event_loop_->MakeSender<LoopOutputHandlerTestOutput>(".test");
+      test_event_loop_->MakeSender<LoopOutputHandlerTestOutput>("/test");
 
   const monotonic_clock::time_point start_time =
       test_event_loop_->monotonic_now();
@@ -86,13 +100,15 @@ TEST_F(LoopOutputHandlerTest, WatchdogTest) {
         EXPECT_EQ(count, loop_output.count());
         if (test_event_loop_->monotonic_now() <
             start_time + chrono::seconds(1)) {
-          auto output = output_sender.MakeMessage();
-          output->voltage = 5.0;
-          EXPECT_TRUE(output.Send());
+          auto builder = output_sender.MakeBuilder();
+          LoopOutputHandlerTestOutput::Builder output_builder =
+              builder.MakeBuilder<LoopOutputHandlerTestOutput>();
+          output_builder.add_voltage(5.0);
+          EXPECT_TRUE(builder.Send(output_builder.Finish()));
 
           ++count;
         }
-        AOS_LOG(INFO, "Ping\n");
+        LOG(INFO) << "Ping";
       });
 
   // Kick off the ping timer handler.

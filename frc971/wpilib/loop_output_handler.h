@@ -4,8 +4,7 @@
 #include <atomic>
 #include <chrono>
 
-#include "aos/events/event-loop.h"
-#include "aos/robot_state/robot_state.q.h"
+#include "aos/events/event_loop.h"
 #include "aos/scoped/scoped_fd.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"

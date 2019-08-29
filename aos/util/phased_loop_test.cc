@@ -10,11 +10,7 @@ namespace testing {
 
 using ::std::chrono::milliseconds;
 
-class PhasedLoopTest : public ::testing::Test {
- protected:
-  PhasedLoopTest() { ::aos::testing::EnableTestLogging(); }
-};
-
+typedef ::testing::Test PhasedLoopTest;
 typedef PhasedLoopTest PhasedLoopDeathTest;
 
 monotonic_clock::time_point InMs(int ms) {

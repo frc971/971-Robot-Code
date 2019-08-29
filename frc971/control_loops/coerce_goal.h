@@ -76,7 +76,7 @@ Eigen::Matrix<Scalar, 2, 1> DoCoerceGoal(
   } else {
     Eigen::Matrix<Scalar, 2, 4> region_vertices = region.StaticVertices();
 #ifdef __linux__
-    AOS_CHECK_GT(region_vertices.outerSize(), 0);
+    CHECK_GT(reinterpret_cast<ssize_t>(region_vertices.outerSize()), 0);
 #else
     assert(region_vertices.outerSize() > 0);
 #endif

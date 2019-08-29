@@ -19,18 +19,19 @@
 #include "frc971/wpilib/wpilib_robot_base.h"
 #undef ERROR
 
-#include "aos/events/shm-event-loop.h"
+#include "aos/controls/control_loops_generated.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
-#include "aos/logging/queue_logging.h"
 #include "aos/make_unique.h"
-#include "aos/robot_state/robot_state.q.h"
+#include "aos/robot_state/robot_state_generated.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/wpilib/buffered_pcm.h"
 #include "frc971/wpilib/buffered_solenoid.h"
 #include "frc971/wpilib/dma.h"
@@ -39,16 +40,12 @@
 #include "frc971/wpilib/encoder_and_potentiometer.h"
 #include "frc971/wpilib/interrupt_edge_counting.h"
 #include "frc971/wpilib/joystick_sender.h"
-#include "frc971/wpilib/logging.q.h"
+#include "frc971/wpilib/logging_generated.h"
 #include "frc971/wpilib/loop_output_handler.h"
 #include "frc971/wpilib/sensor_reader.h"
-#include "y2012/control_loops/accessories/accessories.q.h"
+#include "y2012/control_loops/accessories/accessories_generated.h"
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
-using ::y2012::control_loops::AccessoriesQueue;
+namespace accessories = ::y2012::control_loops::accessories;
 using namespace frc;
 using aos::make_unique;
 
@@ -74,33 +71,40 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       : ::frc971::wpilib::SensorReader(event_loop),
         accessories_position_sender_(
             event_loop->MakeSender<::aos::control_loops::Position>(
-                ".y2012.control_loops.accessories_queue.position")),
+                "/accessories")),
         drivetrain_position_sender_(
-            event_loop->MakeSender<
-                ::frc971::control_loops::DrivetrainQueue::Position>(
-                ".frc971.control_loops.drivetrain_queue.position")) {}
+            event_loop
+                ->MakeSender<::frc971::control_loops::drivetrain::Position>(
+                    "/drivetrain")) {}
 
   void RunIteration() {
     {
-      auto drivetrain_message = drivetrain_position_sender_.MakeMessage();
-      drivetrain_message->right_encoder =
-          drivetrain_translate(drivetrain_right_encoder_->GetRaw());
-      drivetrain_message->left_encoder =
-          -drivetrain_translate(drivetrain_left_encoder_->GetRaw());
-      drivetrain_message->left_speed =
-          drivetrain_velocity_translate(drivetrain_left_encoder_->GetPeriod());
-      drivetrain_message->right_speed =
-          drivetrain_velocity_translate(drivetrain_right_encoder_->GetPeriod());
+      auto builder = drivetrain_position_sender_.MakeBuilder();
 
-      drivetrain_message.Send();
+      frc971::control_loops::drivetrain::Position::Builder position_builder =
+          builder.MakeBuilder<frc971::control_loops::drivetrain::Position>();
+      position_builder.add_right_encoder(
+          drivetrain_translate(drivetrain_right_encoder_->GetRaw()));
+      position_builder.add_left_encoder(
+          -drivetrain_translate(drivetrain_left_encoder_->GetRaw()));
+      position_builder.add_left_speed(
+          drivetrain_velocity_translate(drivetrain_left_encoder_->GetPeriod()));
+      position_builder.add_right_speed(drivetrain_velocity_translate(
+          drivetrain_right_encoder_->GetPeriod()));
+
+      builder.Send(position_builder.Finish());
     }
 
-    accessories_position_sender_.MakeMessage().Send();
+    {
+      auto builder = accessories_position_sender_.MakeBuilder();
+      builder.Send(
+          builder.MakeBuilder<::aos::control_loops::Position>().Finish());
+    }
   }
 
  private:
   ::aos::Sender<::aos::control_loops::Position> accessories_position_sender_;
-  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Position>
+  ::aos::Sender<::frc971::control_loops::drivetrain::Position>
       drivetrain_position_sender_;
 };
 
@@ -112,11 +116,14 @@ class SolenoidWriter {
         pcm_(pcm),
         drivetrain_fetcher_(
             event_loop_
-                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Output>(
-                    ".y2012.control_loops.drivetrain_queue.output")),
-        accessories_fetcher_(event_loop_->MakeFetcher<
-                             ::y2012::control_loops::AccessoriesQueue::Message>(
-            ".y2012.control_loops.accessories_queue.output")) {
+                ->MakeFetcher<::frc971::control_loops::drivetrain::Output>(
+                    "/drivetrain")),
+        accessories_fetcher_(
+            event_loop_
+                ->MakeFetcher<::y2012::control_loops::accessories::Message>(
+                    "/accessories")),
+        pneumatics_to_log_sender_(
+            event_loop->MakeSender<::frc971::wpilib::PneumaticsToLog>("/aos")) {
     event_loop_->set_name("Solenoids");
     event_loop_->SetRuntimeRealtimePriority(27);
 
@@ -155,29 +162,30 @@ class SolenoidWriter {
     {
       accessories_fetcher_.Fetch();
       if (accessories_fetcher_.get()) {
-        AOS_LOG_STRUCT(DEBUG, "solenoids", *accessories_fetcher_);
-        s1_->Set(accessories_fetcher_->solenoids[0]);
-        s2_->Set(accessories_fetcher_->solenoids[1]);
-        s3_->Set(accessories_fetcher_->solenoids[2]);
+        s1_->Set(accessories_fetcher_->solenoids()->Get(0));
+        s2_->Set(accessories_fetcher_->solenoids()->Get(1));
+        s3_->Set(accessories_fetcher_->solenoids()->Get(2));
       }
     }
 
     {
       drivetrain_fetcher_.Fetch();
       if (drivetrain_fetcher_.get()) {
-        AOS_LOG_STRUCT(DEBUG, "solenoids", *drivetrain_fetcher_);
-        const bool high =
-            drivetrain_fetcher_->left_high || drivetrain_fetcher_->right_high;
+        const bool high = drivetrain_fetcher_->left_high() ||
+                          drivetrain_fetcher_->right_high();
         drivetrain_high_->Set(high);
         drivetrain_low_->Set(!high);
       }
     }
 
     {
-      ::frc971::wpilib::PneumaticsToLog to_log;
+      auto builder = pneumatics_to_log_sender_.MakeBuilder();
+
+      ::frc971::wpilib::PneumaticsToLog::Builder to_log_builder =
+          builder.MakeBuilder<frc971::wpilib::PneumaticsToLog>();
       pcm_->Flush();
-      to_log.read_solenoids = pcm_->GetAll();
-      AOS_LOG_STRUCT(DEBUG, "pneumatics info", to_log);
+      to_log_builder.add_read_solenoids(pcm_->GetAll());
+      builder.Send(to_log_builder.Finish());
     }
   }
 
@@ -192,28 +200,30 @@ class SolenoidWriter {
 
   ::std::unique_ptr<Compressor> compressor_;
 
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Output>
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Output>
       drivetrain_fetcher_;
-  ::aos::Fetcher<::y2012::control_loops::AccessoriesQueue::Message>
+  ::aos::Fetcher<::y2012::control_loops::accessories::Message>
       accessories_fetcher_;
+
+  aos::Sender<::frc971::wpilib::PneumaticsToLog> pneumatics_to_log_sender_;
 };
 
-class AccessoriesWriter
-    : public ::frc971::wpilib::LoopOutputHandler<AccessoriesQueue::Message> {
+class AccessoriesWriter : public ::frc971::wpilib::LoopOutputHandler<
+                              control_loops::accessories::Message> {
  public:
   AccessoriesWriter(::aos::EventLoop *event_loop)
-      : ::frc971::wpilib::LoopOutputHandler<AccessoriesQueue::Message>(
-            event_loop, ".y2012.control_loops.accessories_queue.output") {}
+      : ::frc971::wpilib::LoopOutputHandler<
+            control_loops::accessories::Message>(event_loop, "/accessories") {}
 
   void set_talon1(::std::unique_ptr<Talon> t) { talon1_ = ::std::move(t); }
 
   void set_talon2(::std::unique_ptr<Talon> t) { talon2_ = ::std::move(t); }
 
  private:
-  virtual void Write(const AccessoriesQueue::Message &output) override {
-    talon1_->SetSpeed(output.sticks[0]);
-    talon2_->SetSpeed(output.sticks[1]);
-    AOS_LOG_STRUCT(DEBUG, "will output", output);
+  virtual void Write(
+      const control_loops::accessories::Message &output) override {
+    talon1_->SetSpeed(output.sticks()->Get(0));
+    talon2_->SetSpeed(output.sticks()->Get(1));
   }
 
   virtual void Stop() override {
@@ -233,21 +243,24 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
   }
 
   void Run() override {
+    aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+        aos::configuration::ReadConfig("config.json");
+
     // Thread 1.
-    ::aos::ShmEventLoop joystick_sender_event_loop;
+    ::aos::ShmEventLoop joystick_sender_event_loop(&config.message());
     ::frc971::wpilib::JoystickSender joystick_sender(
         &joystick_sender_event_loop);
     AddLoop(&joystick_sender_event_loop);
 
     // Thread 2.
-    ::aos::ShmEventLoop sensor_reader_event_loop;
+    ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
     SensorReader sensor_reader(&sensor_reader_event_loop);
     sensor_reader.set_drivetrain_left_encoder(make_encoder(0));
     sensor_reader.set_drivetrain_right_encoder(make_encoder(1));
     AddLoop(&sensor_reader_event_loop);
 
     // Thread 3.
-    ::aos::ShmEventLoop output_event_loop;
+    ::aos::ShmEventLoop output_event_loop(&config.message());
     ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&output_event_loop);
     drivetrain_writer.set_left_controller0(
         ::std::unique_ptr<Talon>(new Talon(3)), true);
@@ -260,7 +273,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     AddLoop(&output_event_loop);
 
     // Thread 4.
-    ::aos::ShmEventLoop solenoid_writer_event_loop;
+    ::aos::ShmEventLoop solenoid_writer_event_loop(&config.message());
     ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
         new ::frc971::wpilib::BufferedPcm());
     SolenoidWriter solenoid_writer(&solenoid_writer_event_loop, pcm);

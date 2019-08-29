@@ -50,13 +50,21 @@ class LineFollowDrivetrainTest : public ::testing::Test {
   }
 
   void Iterate() {
-    ::frc971::control_loops::DrivetrainQueue::Goal goal;
-    goal.throttle = driver_model_(state_);
-    goal.controller_type = freeze_target_ ? 3 : 0;
-    drivetrain_.SetGoal(t_, goal);
+    flatbuffers::FlatBufferBuilder fbb;
+    fbb.ForceDefaults(1);
+    Goal::Builder goal_builder(fbb);
+    goal_builder.add_throttle(driver_model_(state_));
+    goal_builder.add_controller_type(freeze_target_
+                                         ? ControllerType_LINE_FOLLOWER
+                                         : ControllerType_POLYDRIVE);
+    fbb.Finish(goal_builder.Finish());
+
+    aos::FlatbufferDetachedBuffer<Goal> goal(fbb.Release());
+
+    drivetrain_.SetGoal(t_, &goal.message());
     drivetrain_.Update(t_, state_);
 
-    ::frc971::control_loops::DrivetrainQueue::Output output;
+    ::frc971::control_loops::drivetrain::OutputT output;
     EXPECT_EQ(expect_output_, drivetrain_.SetOutput(&output));
     if (!expect_output_) {
       EXPECT_EQ(0.0, output.left_voltage);
@@ -96,9 +104,15 @@ class LineFollowDrivetrainTest : public ::testing::Test {
   }
 
   double GoalTheta(double x, double y, double v, double throttle) {
-    ::frc971::control_loops::DrivetrainQueue::Goal goal;
-    goal.throttle = throttle;
-    drivetrain_.SetGoal(t_, goal);
+    flatbuffers::FlatBufferBuilder fbb;
+    fbb.ForceDefaults(1);
+    Goal::Builder goal_builder(fbb);
+    goal_builder.add_throttle(throttle);
+    fbb.Finish(goal_builder.Finish());
+
+    aos::FlatbufferDetachedBuffer<Goal> goal(fbb.Release());
+
+    drivetrain_.SetGoal(t_, &goal.message());
     ::Eigen::Matrix<double, 5, 1> state;
     state << x, y, 0.0, v, v;
     return drivetrain_.GoalTheta(state, y, throttle > 0.0 ? 1.0 : -1.0);

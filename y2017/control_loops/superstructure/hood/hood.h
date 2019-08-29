@@ -2,8 +2,8 @@
 #define Y2017_CONTROL_LOOPS_SUPERSTRUCTURE_HOOD_HOOD_H_
 
 #include "frc971/control_loops/profiled_subsystem.h"
-#include "y2017/control_loops/superstructure/superstructure.q.h"
 #include "y2017/constants.h"
+#include "y2017/control_loops/superstructure/superstructure_goal_generated.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -45,10 +45,12 @@ class Hood {
       ::std::chrono::milliseconds(15);
   static constexpr double kNotMovingVoltage = 2.0;
 
-  void Iterate(::aos::monotonic_clock::time_point monotonic_now,
-               const control_loops::HoodGoal *unsafe_goal,
-               const ::frc971::IndexPosition *position, double *output,
-               ::frc971::control_loops::IndexProfiledJointStatus *status);
+  flatbuffers::Offset<frc971::control_loops::IndexProfiledJointStatus> Iterate(
+      ::aos::monotonic_clock::time_point monotonic_now,
+      const double *unsafe_goal,
+      const frc971::ProfileParameters *unsafe_goal_profile_parameters,
+      const ::frc971::IndexPosition *position, double *output,
+      flatbuffers::FlatBufferBuilder *fbb);
 
   void Reset();
 

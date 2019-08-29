@@ -8,12 +8,11 @@ cc_library(
     ],
     deps = [
         "//aos/actions:action_lib",
-        "//aos/events:event-loop",
+        "//aos/events:event_loop",
         "//aos/logging",
         "//aos/util:phased_loop",
         "//frc971/autonomous:base_autonomous_actor",
         "//frc971/control_loops/drivetrain:drivetrain_config",
-        "//frc971/control_loops/drivetrain:drivetrain_queue",
         "//y2014_bot3/control_loops/drivetrain:drivetrain_base",
     ],
 )
@@ -27,7 +26,6 @@ cc_binary(
     deps = [
         ":autonomous_action_lib",
         "//aos:init",
-        "//aos/events:shm-event-loop",
-        "//frc971/autonomous:auto_queue",
+        "//aos/events:shm_event_loop",
     ],
 )

@@ -1,7 +1,7 @@
 #include "aos/ipc_lib/index.h"
 
-#include "aos/testing/test_logging.h"
 #include "gtest/gtest.h"
+#include "glog/logging.h"
 
 namespace aos {
 namespace ipc_lib {
@@ -10,7 +10,8 @@ namespace testing {
 class QueueIndexTest : public ::testing::Test {
  protected:
   uint32_t GetIndex(const QueueIndex &index) {
-    printf("Index, count: %x, %x\n", index.index_, index.count_);
+    LOG(INFO) << "Index, count: " << std::hex << index.index_ << ", "
+              << index.count_;
     return index.index();
   }
 

@@ -4,7 +4,6 @@
 #include <iostream>
 
 #include "aos/logging/logging.h"
-#include "aos/logging/queue_logging.h"
 #include "y2018/constants.h"
 #include "y2018/control_loops/superstructure/arm/demo_path.h"
 #include "y2018/control_loops/superstructure/arm/dynamics.h"
@@ -44,15 +43,15 @@ Arm::Arm()
 
 void Arm::Reset() { state_ = State::UNINITIALIZED; }
 
-void Arm::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
-                  const uint32_t *unsafe_goal, bool grab_box, bool open_claw,
-                  bool close_claw, const control_loops::ArmPosition *position,
-                  const bool claw_beambreak_triggered,
-                  const bool box_back_beambreak_triggered,
-                  const bool intake_clear_of_box, bool suicide,
-                  bool trajectory_override, double *proximal_output,
-                  double *distal_output, bool *release_arm_brake,
-                  bool *claw_closed, control_loops::ArmStatus *status) {
+flatbuffers::Offset<superstructure::ArmStatus> Arm::Iterate(
+    const ::aos::monotonic_clock::time_point monotonic_now,
+    const uint32_t *unsafe_goal, bool grab_box, bool open_claw, bool close_claw,
+    const superstructure::ArmPosition *position,
+    const bool claw_beambreak_triggered,
+    const bool box_back_beambreak_triggered, const bool intake_clear_of_box,
+    bool suicide, bool trajectory_override, double *proximal_output,
+    double *distal_output, bool *release_arm_brake, bool *claw_closed,
+    flatbuffers::FlatBufferBuilder *fbb) {
   ::Eigen::Matrix<double, 2, 1> Y;
   const bool outputs_disabled =
       ((proximal_output == nullptr) || (distal_output == nullptr) ||
@@ -86,11 +85,11 @@ void Arm::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
     claw_closed_count_ = 50;
   }
 
-  Y << position->proximal.encoder + proximal_offset_,
-      position->distal.encoder + distal_offset_;
+  Y << position->proximal()->encoder() + proximal_offset_,
+      position->distal()->encoder() + distal_offset_;
 
-  proximal_zeroing_estimator_.UpdateEstimate(position->proximal);
-  distal_zeroing_estimator_.UpdateEstimate(position->distal);
+  proximal_zeroing_estimator_.UpdateEstimate(*position->proximal());
+  distal_zeroing_estimator_.UpdateEstimate(*position->distal());
 
   if (proximal_output != nullptr) {
     *proximal_output = 0.0;
@@ -128,8 +127,8 @@ void Arm::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
         proximal_offset_ = proximal_zeroing_estimator_.offset();
         distal_offset_ = distal_zeroing_estimator_.offset();
 
-        Y << position->proximal.encoder + proximal_offset_,
-            position->distal.encoder + distal_offset_;
+        Y << position->proximal()->encoder() + proximal_offset_,
+            position->distal()->encoder() + distal_offset_;
 
         // TODO(austin): Offset ekf rather than reset it.  Since we aren't
         // moving at this point, it's pretty safe to do this.
@@ -377,17 +376,29 @@ void Arm::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
   follower_.Update(arm_ekf_.X_hat(), disable, kDt(), vmax_,
                    max_operating_voltage);
   AOS_LOG(INFO, "Max voltage: %f\n", max_operating_voltage);
-  status->goal_theta0 = follower_.theta(0);
-  status->goal_theta1 = follower_.theta(1);
-  status->goal_omega0 = follower_.omega(0);
-  status->goal_omega1 = follower_.omega(1);
 
-  status->theta0 = arm_ekf_.X_hat(0);
-  status->theta1 = arm_ekf_.X_hat(2);
-  status->omega0 = arm_ekf_.X_hat(1);
-  status->omega1 = arm_ekf_.X_hat(3);
-  status->voltage_error0 = arm_ekf_.X_hat(4);
-  status->voltage_error1 = arm_ekf_.X_hat(5);
+  flatbuffers::Offset<frc971::PotAndAbsoluteEncoderEstimatorState>
+      proximal_estimator_state_offset =
+          proximal_zeroing_estimator_.GetEstimatorState(fbb);
+  flatbuffers::Offset<frc971::PotAndAbsoluteEncoderEstimatorState>
+      distal_estimator_state_offset =
+          distal_zeroing_estimator_.GetEstimatorState(fbb);
+
+  superstructure::ArmStatus::Builder status_builder(*fbb);
+  status_builder.add_proximal_estimator_state(proximal_estimator_state_offset);
+  status_builder.add_distal_estimator_state(distal_estimator_state_offset);
+
+  status_builder.add_goal_theta0(follower_.theta(0));
+  status_builder.add_goal_theta1(follower_.theta(1));
+  status_builder.add_goal_omega0(follower_.omega(0));
+  status_builder.add_goal_omega1(follower_.omega(1));
+
+  status_builder.add_theta0(arm_ekf_.X_hat(0));
+  status_builder.add_theta1(arm_ekf_.X_hat(2));
+  status_builder.add_omega0(arm_ekf_.X_hat(1));
+  status_builder.add_omega1(arm_ekf_.X_hat(3));
+  status_builder.add_voltage_error0(arm_ekf_.X_hat(4));
+  status_builder.add_voltage_error1(arm_ekf_.X_hat(5));
 
   if (!disable) {
     *proximal_output = ::std::max(
@@ -402,22 +413,17 @@ void Arm::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
     *claw_closed = claw_closed_;
   }
 
-  status->proximal_estimator_state =
-      proximal_zeroing_estimator_.GetEstimatorState();
-  status->distal_estimator_state =
-      distal_zeroing_estimator_.GetEstimatorState();
+  status_builder.add_path_distance_to_go(follower_.path_distance_to_go());
+  status_builder.add_current_node(current_node_);
 
-  status->path_distance_to_go = follower_.path_distance_to_go();
-  status->current_node = current_node_;
-
-  status->zeroed = (proximal_zeroing_estimator_.zeroed() &&
-                    distal_zeroing_estimator_.zeroed());
-  status->estopped = (state_ == State::ESTOP);
-  status->state = static_cast<int32_t>(state_);
-  status->grab_state = static_cast<int32_t>(grab_state_);
-  status->failed_solutions = follower_.failed_solutions();
+  status_builder.add_zeroed(zeroed());
+  status_builder.add_estopped(estopped());
+  status_builder.add_state(static_cast<int32_t>(state_));
+  status_builder.add_grab_state(static_cast<int32_t>(grab_state_));
+  status_builder.add_failed_solutions(follower_.failed_solutions());
 
   arm_ekf_.Predict(follower_.U(), kDt());
+  return status_builder.Finish();
 }
 
 }  // namespace arm

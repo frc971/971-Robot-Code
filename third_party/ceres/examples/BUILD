@@ -37,7 +37,7 @@ EXAMPLE_COPTS = [
 
 EXAMPLE_DEPS = [
     "//:ceres",
-    "@//third_party/eigen",
+    "@org_tuxfamily_eigen//:eigen",
     "@com_github_gflags_gflags//:gflags",
 ]
 

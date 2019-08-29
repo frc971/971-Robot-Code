@@ -2,11 +2,10 @@
 
 #include <chrono>
 
-#include "aos/events/event-loop.h"
-#include "aos/init.h"
-#include "aos/logging/queue_logging.h"
+#include "aos/events/event_loop.h"
+#include "aos/logging/logging.h"
 #include "frc971/wpilib/ahal/PowerDistributionPanel.h"
-#include "frc971/wpilib/pdp_values.q.h"
+#include "frc971/wpilib/pdp_values_generated.h"
 
 namespace frc971 {
 namespace wpilib {
@@ -15,8 +14,7 @@ namespace chrono = ::std::chrono;
 
 PDPFetcher::PDPFetcher(::aos::EventLoop *event_loop)
     : event_loop_(event_loop),
-      pdp_values_sender_(
-          event_loop_->MakeSender<::frc971::PDPValues>(".frc971.pdp_values")),
+      pdp_values_sender_(event_loop_->MakeSender<::frc971::PDPValues>("/aos")),
       pdp_(new frc::PowerDistributionPanel()) {
   event_loop_->set_name("PDPFetcher");
 
@@ -31,15 +29,22 @@ void PDPFetcher::Loop(int iterations) {
   if (iterations != 1) {
     AOS_LOG(DEBUG, "PDPFetcher skipped %d iterations\n", iterations - 1);
   }
-  auto message = pdp_values_sender_.MakeMessage();
-  message->voltage = pdp_->GetVoltage();
-  message->temperature = pdp_->GetTemperature();
-  message->power = pdp_->GetTotalPower();
-  for (int i = 0; i < 16; ++i) {
-    message->currents[i] = pdp_->GetCurrent(i);
+  std::array<double, 16> currents;
+  for (size_t i = 0; i < currents.size(); ++i) {
+    currents[i] = pdp_->GetCurrent(i);
   }
-  AOS_LOG_STRUCT(DEBUG, "got", *message);
-  if (!message.Send()) {
+
+  auto builder = pdp_values_sender_.MakeBuilder();
+  flatbuffers::Offset<flatbuffers::Vector<double>> currents_offset =
+      builder.fbb()->CreateVector(currents.begin(), currents.size());
+
+  PDPValues::Builder pdp_builder = builder.MakeBuilder<PDPValues>();
+  pdp_builder.add_voltage(pdp_->GetVoltage());
+  pdp_builder.add_temperature(pdp_->GetTemperature());
+  pdp_builder.add_power(pdp_->GetTotalPower());
+  pdp_builder.add_currents(currents_offset);
+
+  if (!builder.Send(pdp_builder.Finish())) {
     AOS_LOG(WARNING, "sending pdp values failed\n");
   }
 }

@@ -141,26 +141,75 @@ class ParameterizedLocalizerTest
   }
 
   void SetUp() {
-    ::frc971::control_loops::DrivetrainQueue::Goal goal;
-    goal.controller_type = 2;
-    goal.spline.spline_idx = 1;
-    goal.spline.spline_count = 1;
-    goal.spline_handle = 1;
-    ::std::copy(GetParam().control_pts_x.begin(),
-                GetParam().control_pts_x.end(), goal.spline.spline_x.begin());
-    ::std::copy(GetParam().control_pts_y.begin(),
-                GetParam().control_pts_y.end(), goal.spline.spline_y.begin());
-    spline_drivetrain_.SetGoal(goal);
+    flatbuffers::DetachedBuffer goal_buffer;
+    {
+      flatbuffers::FlatBufferBuilder fbb;
+
+      flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+          fbb.CreateVector<float>(GetParam().control_pts_x.begin(),
+                                  GetParam().control_pts_x.size());
+
+      flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+          fbb.CreateVector<float>(GetParam().control_pts_y.begin(),
+                                  GetParam().control_pts_y.size());
+
+      frc971::MultiSpline::Builder multispline_builder(fbb);
+
+      multispline_builder.add_spline_count(1);
+      multispline_builder.add_spline_x(spline_x_offset);
+      multispline_builder.add_spline_y(spline_y_offset);
+
+      flatbuffers::Offset<frc971::MultiSpline> multispline_offset =
+          multispline_builder.Finish();
+
+      frc971::control_loops::drivetrain::SplineGoal::Builder spline_builder(
+          fbb);
+
+      spline_builder.add_spline_idx(1);
+      spline_builder.add_spline(multispline_offset);
+
+      flatbuffers::Offset<frc971::control_loops::drivetrain::SplineGoal>
+          spline_offset = spline_builder.Finish();
+
+      frc971::control_loops::drivetrain::Goal::Builder goal_builder(fbb);
+
+      goal_builder.add_spline(spline_offset);
+      goal_builder.add_controller_type(
+          frc971::control_loops::drivetrain::ControllerType_SPLINE_FOLLOWER);
+      goal_builder.add_spline_handle(1);
+
+      fbb.Finish(goal_builder.Finish());
+
+      goal_buffer = fbb.Release();
+    }
+    aos::FlatbufferDetachedBuffer<frc971::control_loops::drivetrain::Goal> goal(
+        std::move(goal_buffer));
+
+    spline_drivetrain_.SetGoal(&goal.message());
 
     // Let the spline drivetrain compute the spline.
-    ::frc971::control_loops::DrivetrainQueue::Status status;
-    do {
+    while (true) {
       ::std::this_thread::sleep_for(::std::chrono::milliseconds(5));
-      spline_drivetrain_.PopulateStatus(&status);
-    } while (status.trajectory_logging.planning_state !=
-             (int8_t)::frc971::control_loops::drivetrain::SplineDrivetrain::
-                 PlanState::kPlannedTrajectory);
-    spline_drivetrain_.SetGoal(goal);
+
+      flatbuffers::FlatBufferBuilder fbb;
+
+      flatbuffers::Offset<frc971::control_loops::drivetrain::TrajectoryLogging>
+          trajectory_logging_offset =
+              spline_drivetrain_.MakeTrajectoryLogging(&fbb);
+
+      ::frc971::control_loops::drivetrain::Status::Builder status_builder(fbb);
+      status_builder.add_trajectory_logging(trajectory_logging_offset);
+      spline_drivetrain_.PopulateStatus(&status_builder);
+      fbb.Finish(status_builder.Finish());
+      aos::FlatbufferDetachedBuffer<::frc971::control_loops::drivetrain::Status>
+          status(fbb.Release());
+
+      if (status.message().trajectory_logging()->planning_state() ==
+          ::frc971::control_loops::drivetrain::PlanningState_PLANNED) {
+        break;
+      }
+    }
+    spline_drivetrain_.SetGoal(&goal.message());
   }
 
   void TearDown() {
@@ -373,7 +422,7 @@ TEST_P(ParameterizedLocalizerTest, SplineTest) {
 
     spline_drivetrain_.Update(true, known_state);
 
-    ::frc971::control_loops::DrivetrainQueue::Output output;
+    ::frc971::control_loops::drivetrain::OutputT output;
     output.left_voltage = 0;
     output.right_voltage = 0;
     spline_drivetrain_.SetOutput(&output);

@@ -1,7 +1,5 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//aos/build:queues.bzl", "queue_library")
-
 genrule(
     name = "genrule_drivetrain",
     outs = [
@@ -78,7 +76,7 @@ cc_binary(
     deps = [
         ":drivetrain_base",
         "//aos:init",
-        "//aos/events:shm-event-loop",
+        "//aos/events:shm_event_loop",
         "//frc971/control_loops/drivetrain:drivetrain_lib",
     ],
 )

@@ -5,9 +5,9 @@
 
 #include <atomic>
 
-#include "aos/events/event-loop.h"
-#include "aos/robot_state/robot_state.q.h"
-#include "frc971/queues/gyro.q.h"
+#include "aos/events/event_loop.h"
+#include "aos/robot_state/robot_state_generated.h"
+#include "frc971/queues/gyro_generated.h"
 #include "frc971/wpilib/gyro_interface.h"
 #include "frc971/zeroing/averager.h"
 
@@ -30,7 +30,7 @@ class GyroSender {
   void Loop(const int iterations);
 
   ::aos::EventLoop *event_loop_;
-  ::aos::Fetcher<::aos::JoystickState> joystick_state_fetcher_;
+  ::aos::Fetcher<::aos::RobotState> joystick_state_fetcher_;
   ::aos::Sender<::frc971::sensors::Uid> uid_sender_;
   ::aos::Sender<::frc971::sensors::GyroReading> gyro_reading_sender_;
 

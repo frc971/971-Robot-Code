@@ -1,0 +1,204 @@
+include "frc971/control_loops/control_loops.fbs";
+
+namespace frc971.control_loops;
+
+table ProfiledJointStatus {
+  // Is the subsystem zeroed?
+  zeroed:bool;
+
+  // The state of the subsystem, if applicable.  -1 otherwise.
+  // TODO(alex): replace with enum.
+  state:int;
+
+  // If true, we have aborted.
+  estopped:bool;
+
+  // Position of the joint.
+  position:float;
+  // Velocity of the joint in units/second.
+  velocity:float;
+  // Profiled goal position of the joint.
+  goal_position:float;
+  // Profiled goal velocity of the joint in units/second.
+  goal_velocity:float;
+  // Unprofiled goal position from absoulte zero  of the joint.
+  unprofiled_goal_position:float;
+  // Unprofiled goal velocity of the joint in units/second.
+  unprofiled_goal_velocity:float;
+
+  // The estimated voltage error.
+  voltage_error:float;
+
+  // The calculated velocity with delta x/delta t
+  calculated_velocity:float;
+
+  // Components of the control loop output
+  position_power:float;
+  velocity_power:float;
+  feedforwards_power:float;
+
+  // State of the estimator.
+  estimator_state:frc971.EstimatorState;
+}
+
+table HallProfiledJointStatus {
+  // Is the subsystem zeroed?
+  zeroed:bool;
+
+  // The state of the subsystem, if applicable.  -1 otherwise.
+  // TODO(alex): replace with enum.
+  state:int;
+
+  // If true, we have aborted.
+  estopped:bool;
+
+  // Position of the joint.
+  position:float;
+  // Velocity of the joint in units/second.
+  velocity:float;
+  // Profiled goal position of the joint.
+  goal_position:float;
+  // Profiled goal velocity of the joint in units/second.
+  goal_velocity:float;
+  // Unprofiled goal position from absoulte zero  of the joint.
+  unprofiled_goal_position:float;
+  // Unprofiled goal velocity of the joint in units/second.
+  unprofiled_goal_velocity:float;
+
+  // The estimated voltage error.
+  voltage_error:float;
+
+  // The calculated velocity with delta x/delta t
+  calculated_velocity:float;
+
+  // Components of the control loop output
+  position_power:float;
+  velocity_power:float;
+  feedforwards_power:float;
+
+  // State of the estimator.
+  estimator_state:frc971.HallEffectAndPositionEstimatorState;
+}
+
+table PotAndAbsoluteEncoderProfiledJointStatus {
+  // Is the subsystem zeroed?
+  zeroed:bool;
+
+  // The state of the subsystem, if applicable.  -1 otherwise.
+  // TODO(alex): replace with enum.
+  state:int;
+
+  // If true, we have aborted.
+  estopped:bool;
+
+  // Position of the joint.
+  position:float;
+  // Velocity of the joint in units/second.
+  velocity:float;
+  // Profiled goal position of the joint.
+  goal_position:float;
+  // Profiled goal velocity of the joint in units/second.
+  goal_velocity:float;
+  // Unprofiled goal position from absoulte zero  of the joint.
+  unprofiled_goal_position:float;
+  // Unprofiled goal velocity of the joint in units/second.
+  unprofiled_goal_velocity:float;
+
+  // The estimated voltage error.
+  voltage_error:float;
+
+  // The calculated velocity with delta x/delta t
+  calculated_velocity:float;
+
+  // Components of the control loop output
+  position_power:float;
+  velocity_power:float;
+  feedforwards_power:float;
+
+  // State of the estimator.
+  estimator_state:frc971.PotAndAbsoluteEncoderEstimatorState;
+}
+
+table IndexProfiledJointStatus {
+  // Is the subsystem zeroed?
+  zeroed:bool;
+
+  // The state of the subsystem, if applicable.  -1 otherwise.
+  // TODO(alex): replace with enum.
+  state:int;
+
+  // If true, we have aborted.
+  estopped:bool;
+
+  // Position of the joint.
+  position:float;
+  // Velocity of the joint in units/second.
+  velocity:float;
+  // Profiled goal position of the joint.
+  goal_position:float;
+  // Profiled goal velocity of the joint in units/second.
+  goal_velocity:float;
+  // Unprofiled goal position from absoulte zero  of the joint.
+  unprofiled_goal_position:float;
+  // Unprofiled goal velocity of the joint in units/second.
+  unprofiled_goal_velocity:float;
+
+  // The estimated voltage error.
+  voltage_error:float;
+
+  // The calculated velocity with delta x/delta t
+  calculated_velocity:float;
+
+  // Components of the control loop output
+  position_power:float;
+  velocity_power:float;
+  feedforwards_power:float;
+
+  // State of the estimator.
+  estimator_state:frc971.IndexEstimatorState;
+}
+
+table AbsoluteEncoderProfiledJointStatus {
+  // Is the subsystem zeroed?
+  zeroed:bool;
+
+  // The state of the subsystem, if applicable.  -1 otherwise.
+  // TODO(alex): replace with enum.
+  state:int;
+
+  // If true, we have aborted.
+  estopped:bool;
+
+  // Position of the joint.
+  position:float;
+  // Velocity of the joint in units/second.
+  velocity:float;
+  // Profiled goal position of the joint.
+  goal_position:float;
+  // Profiled goal velocity of the joint in units/second.
+  goal_velocity:float;
+  // Unprofiled goal position from absoulte zero  of the joint.
+  unprofiled_goal_position:float;
+  // Unprofiled goal velocity of the joint in units/second.
+  unprofiled_goal_velocity:float;
+
+  // The estimated voltage error.
+  voltage_error:float;
+
+  // The calculated velocity with delta x/delta t
+  calculated_velocity:float;
+
+  // Components of the control loop output
+  position_power:float;
+  velocity_power:float;
+  feedforwards_power:float;
+
+  // State of the estimator.
+  estimator_state:frc971.AbsoluteEncoderEstimatorState;
+}
+
+table StaticZeroingSingleDOFProfiledSubsystemGoal {
+  unsafe_goal:double;
+
+  profile_params:frc971.ProfileParameters;
+}

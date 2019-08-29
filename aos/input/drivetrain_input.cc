@@ -8,12 +8,16 @@
 #include "aos/commonmath.h"
 #include "aos/input/driver_station_data.h"
 #include "aos/logging/logging.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/control_loops_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::ControlBit;
 using ::aos::input::driver_station::JoystickAxis;
 using ::aos::input::driver_station::POVLocation;
+
+namespace drivetrain = frc971::control_loops::drivetrain;
 
 namespace aos {
 namespace input {
@@ -33,7 +37,7 @@ void DrivetrainInputReader::HandleDrivetrain(
 
   drivetrain_status_fetcher_.Fetch();
   if (drivetrain_status_fetcher_.get()) {
-    robot_velocity_ = drivetrain_status_fetcher_->robot_speed;
+    robot_velocity_ = drivetrain_status_fetcher_->robot_speed();
   }
 
   // If we have a vision align function, and it is in control, don't run the
@@ -71,9 +75,9 @@ void DrivetrainInputReader::HandleDrivetrain(
 
   if (drivetrain_status_fetcher_.get()) {
     if (is_control_loop_driving && !last_is_control_loop_driving_) {
-      left_goal_ = drivetrain_status_fetcher_->estimated_left_position +
+      left_goal_ = drivetrain_status_fetcher_->estimated_left_position() +
                    wheel * wheel_multiplier_;
-      right_goal_ = drivetrain_status_fetcher_->estimated_right_position -
+      right_goal_ = drivetrain_status_fetcher_->estimated_right_position() -
                     wheel * wheel_multiplier_;
     }
   }
@@ -82,24 +86,36 @@ void DrivetrainInputReader::HandleDrivetrain(
       left_goal_ - wheel * wheel_multiplier_ + throttle * 0.3;
   const double current_right_goal =
       right_goal_ + wheel * wheel_multiplier_ + throttle * 0.3;
-  auto new_drivetrain_goal = drivetrain_goal_sender_.MakeMessage();
-  new_drivetrain_goal->wheel = wheel;
-  new_drivetrain_goal->wheel_velocity = wheel_velocity;
-  new_drivetrain_goal->wheel_torque = wheel_torque;
-  new_drivetrain_goal->throttle = throttle;
-  new_drivetrain_goal->throttle_velocity = throttle_velocity;
-  new_drivetrain_goal->throttle_torque = throttle_torque;
-  new_drivetrain_goal->highgear = high_gear;
-  new_drivetrain_goal->quickturn = data.IsPressed(quick_turn_);
-  new_drivetrain_goal->controller_type =
-      is_line_following ? 3 : (is_control_loop_driving ? 1 : 0);
-  new_drivetrain_goal->left_goal = current_left_goal;
-  new_drivetrain_goal->right_goal = current_right_goal;
+  auto builder = drivetrain_goal_sender_.MakeBuilder();
 
-  new_drivetrain_goal->linear.max_velocity = 3.0;
-  new_drivetrain_goal->linear.max_acceleration = 20.0;
+  frc971::ProfileParameters::Builder linear_builder =
+      builder.MakeBuilder<frc971::ProfileParameters>();
 
-  if (!new_drivetrain_goal.Send()) {
+  linear_builder.add_max_velocity(3.0);
+  linear_builder.add_max_acceleration(20.0);
+
+  flatbuffers::Offset<frc971::ProfileParameters> linear_offset =
+      linear_builder.Finish();
+
+  auto goal_builder = builder.MakeBuilder<drivetrain::Goal>();
+  goal_builder.add_wheel(wheel);
+  goal_builder.add_wheel_velocity(wheel_velocity);
+  goal_builder.add_wheel_torque(wheel_torque);
+  goal_builder.add_throttle(throttle);
+  goal_builder.add_throttle_velocity(throttle_velocity);
+  goal_builder.add_throttle_torque(throttle_torque);
+  goal_builder.add_highgear(high_gear);
+  goal_builder.add_quickturn(data.IsPressed(quick_turn_));
+  goal_builder.add_controller_type(
+      is_line_following
+          ? drivetrain::ControllerType_LINE_FOLLOWER
+          : (is_control_loop_driving ? drivetrain::ControllerType_MOTION_PROFILE
+                                     : drivetrain::ControllerType_POLYDRIVE));
+  goal_builder.add_left_goal(current_left_goal);
+  goal_builder.add_right_goal(current_right_goal);
+  goal_builder.add_linear(linear_offset);
+
+  if (!builder.Send(goal_builder.Finish())) {
     AOS_LOG(WARNING, "sending stick values failed\n");
   }
 
@@ -304,8 +320,7 @@ std::unique_ptr<XboxDrivetrainInputReader> XboxDrivetrainInputReader::Make(
 }
 ::std::unique_ptr<DrivetrainInputReader> DrivetrainInputReader::Make(
     ::aos::EventLoop *event_loop, InputType type,
-    const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>
-        &dt_config) {
+    const drivetrain::DrivetrainConfig<double> &dt_config) {
   std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader;
 
   using InputType = DrivetrainInputReader::InputType;

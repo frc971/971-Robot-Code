@@ -1,0 +1,10 @@
+namespace y2018;
+
+table StatusLight {
+  // How bright to make each one. 0 is off, 1 is full on.
+  red:float;
+  green:float;
+  blue:float;
+}
+
+root_type StatusLight;

@@ -7,14 +7,13 @@
 
 #include <chrono>
 
-#include "aos/events/event-loop.h"
+#include "aos/events/event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
-#include "aos/logging/queue_logging.h"
-#include "aos/robot_state/robot_state.q.h"
+#include "aos/robot_state/robot_state_generated.h"
 #include "aos/time/time.h"
 
-#include "frc971/queues/gyro.q.h"
+#include "frc971/queues/gyro_generated.h"
 #include "frc971/zeroing/averager.h"
 
 namespace frc971 {
@@ -25,13 +24,12 @@ using ::aos::monotonic_clock;
 
 GyroSender::GyroSender(::aos::EventLoop *event_loop)
     : event_loop_(event_loop),
-      joystick_state_fetcher_(event_loop_->MakeFetcher<::aos::JoystickState>(
-          ".aos.joystick_state")),
-      uid_sender_(event_loop_->MakeSender<::frc971::sensors::Uid>(
-          ".frc971.sensors.gyro_part_id")),
+      joystick_state_fetcher_(
+          event_loop_->MakeFetcher<aos::RobotState>("/aos")),
+      uid_sender_(event_loop_->MakeSender<frc971::sensors::Uid>("/drivetrain")),
       gyro_reading_sender_(
-          event_loop_->MakeSender<::frc971::sensors::GyroReading>(
-              ".frc971.sensors.gyro_reading")) {
+          event_loop_->MakeSender<frc971::sensors::GyroReading>(
+              "/drivetrain")) {
   AOS_PCHECK(
       system("ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
              "33") == 0);
@@ -55,12 +53,9 @@ void GyroSender::Loop(const int iterations) {
           state_ = State::RUNNING;
           AOS_LOG(INFO, "gyro initialized successfully\n");
 
-          {
-            auto message = uid_sender_.MakeMessage();
-            message->uid = gyro_.ReadPartID();
-            AOS_LOG_STRUCT(INFO, "gyro ID", *message);
-            message.Send();
-          }
+          auto builder = uid_sender_.MakeBuilder();
+          builder.Send(
+              frc971::sensors::CreateUid(*builder.fbb(), gyro_.ReadPartID()));
         }
         last_initialize_time_ = monotonic_now;
       }
@@ -115,30 +110,31 @@ void GyroSender::Loop(const int iterations) {
 
       const double angle_rate = gyro_.ExtractAngle(result);
       const double new_angle = angle_rate / static_cast<double>(kReadingRate);
-      auto message = gyro_reading_sender_.MakeMessage();
+      auto builder = gyro_reading_sender_.MakeBuilder();
       if (zeroed_) {
         angle_ += (new_angle + zero_offset_) * iterations;
-        message->angle = angle_;
-        message->velocity = angle_rate + zero_offset_ * kReadingRate;
-        AOS_LOG_STRUCT(DEBUG, "sending", *message);
-        message.Send();
+        sensors::GyroReading::Builder gyro_builder =
+            builder.MakeBuilder<sensors::GyroReading>();
+        gyro_builder.add_angle(angle_);
+        gyro_builder.add_velocity(angle_rate + zero_offset_ * kReadingRate);
+        builder.Send(gyro_builder.Finish());
       } else {
         // TODO(brian): Don't break without 6 seconds of standing still before
         // enabling. Ideas:
         //   Don't allow driving until we have at least some data?
         //   Some kind of indicator light?
         {
-          message->angle = new_angle;
-          message->velocity = angle_rate;
-          AOS_LOG_STRUCT(DEBUG, "collected while zeroing", *message);
-          message->angle = 0.0;
-          message->velocity = 0.0;
-          message.Send();
+          sensors::GyroReading::Builder gyro_builder =
+              builder.MakeBuilder<sensors::GyroReading>();
+          gyro_builder.add_angle(0.0);
+          gyro_builder.add_velocity(0.0);
+          builder.Send(gyro_builder.Finish());
         }
         zeroing_data_.AddData(new_angle);
 
         joystick_state_fetcher_.Fetch();
-        if (joystick_state_fetcher_.get() && joystick_state_fetcher_->enabled &&
+        if (joystick_state_fetcher_.get() &&
+            joystick_state_fetcher_->outputs_enabled() &&
             zeroing_data_.full()) {
           zero_offset_ = -zeroing_data_.GetAverage();
           AOS_LOG(INFO, "total zero offset %f\n", zero_offset_);

@@ -1,11 +1,15 @@
 #ifndef FRC971_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_TEST_LIB_H_
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_TEST_LIB_H_
 
-#include "aos/events/event-loop.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "aos/events/event_loop.h"
+#include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-#include "frc971/queues/gyro.q.h"
+#include "frc971/queues/gyro_generated.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -79,11 +83,11 @@ class DrivetrainSimulation {
   ::aos::EventLoop *event_loop_;
   ::aos::Fetcher<::aos::RobotState> robot_state_fetcher_;
 
-  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Position>
+  ::aos::Sender<::frc971::control_loops::drivetrain::Position>
       drivetrain_position_sender_;
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Output>
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Output>
       drivetrain_output_fetcher_;
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
   ::aos::Sender<::frc971::sensors::GyroReading> gyro_reading_sender_;
 
@@ -95,7 +99,8 @@ class DrivetrainSimulation {
   ::Eigen::Matrix<double, 5, 1> state_ = ::Eigen::Matrix<double, 5, 1>::Zero();
   ::std::unique_ptr<
       StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
-                        HybridKalman<2, 2, 2>>> velocity_drivetrain_;
+                        HybridKalman<2, 2, 2>>>
+      velocity_drivetrain_;
   double last_left_position_;
   double last_right_position_;
 

@@ -1,0 +1,37 @@
+include "frc971/control_loops/profiled_subsystem.fbs";
+
+namespace y2019.control_loops.superstructure;
+
+table SuctionGoal {
+  // True = apply suction
+  grab_piece:bool;
+
+  // 0 = ball mode
+  // 1 = disk mode
+
+  gamepiece_mode:int;
+}
+
+table Goal {
+  // Meters, 0 = lowest position - mechanical hard stop,
+  // positive = upward
+  elevator:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
+  // 0 = linkage on the sprocket is pointing straight up,
+  // positive = forward
+  intake:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
+  // 0 = Straight up parallel to elevator
+  // Positive rotates toward intake from 0
+  wrist:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
+
+  // Distance stilts extended out of the bottom of the robot. Positive = down.
+  // 0 is the height such that the bottom of the stilts is tangent to the
+  // bottom of the middle wheels.
+  stilts:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
+
+  // Positive is rollers intaking inward.
+  roller_voltage:float;
+
+  suction:SuctionGoal;
+}
+
+root_type Goal;

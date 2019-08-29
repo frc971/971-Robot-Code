@@ -3,9 +3,7 @@
 #include <chrono>
 
 #include "aos/commonmath.h"
-#include "aos/controls/control_loops.q.h"
 #include "aos/logging/logging.h"
-#include "aos/logging/queue_logging.h"
 
 #include "y2018/constants.h"
 #include "y2018/control_loops/superstructure/intake/intake_delayed_plant.h"
@@ -80,15 +78,15 @@ void IntakeController::Update(bool disabled, const double *unsafe_goal) {
   loop_->Update(disabled);
 }
 
-void IntakeController::SetStatus(IntakeSideStatus *status,
+void IntakeController::SetStatus(IntakeSideStatus::Builder *status,
                                  const double *unsafe_goal) {
-  status->goal_position = goal_angle(unsafe_goal);
-  status->goal_velocity = loop_->R(1, 0);
-  status->spring_position = loop_->X_hat(0) - loop_->X_hat(2);
-  status->spring_velocity = loop_->X_hat(1) - loop_->X_hat(3);
-  status->motor_position = loop_->X_hat(2);
-  status->motor_velocity = loop_->X_hat(3);
-  status->delayed_voltage = loop_->X_hat(4);
+  status->add_goal_position(goal_angle(unsafe_goal));
+  status->add_goal_velocity(loop_->R(1, 0));
+  status->add_spring_position(loop_->X_hat(0) - loop_->X_hat(2));
+  status->add_spring_velocity(loop_->X_hat(1) - loop_->X_hat(3));
+  status->add_motor_position(loop_->X_hat(2));
+  status->add_motor_velocity(loop_->X_hat(3));
+  status->add_delayed_voltage(loop_->X_hat(4));
 }
 
 IntakeSide::IntakeSide(
@@ -98,11 +96,12 @@ IntakeSide::IntakeSide(
 
 void IntakeSide::Reset() { state_ = State::UNINITIALIZED; }
 
-void IntakeSide::Iterate(const double *unsafe_goal,
-                         const control_loops::IntakeElasticSensors *position,
-                         control_loops::IntakeVoltage *output,
-                         control_loops::IntakeSideStatus *status) {
-  zeroing_estimator_.UpdateEstimate(position->motor_position);
+flatbuffers::Offset<superstructure::IntakeSideStatus> IntakeSide::Iterate(
+    const double *unsafe_goal,
+    const superstructure::IntakeElasticSensors *position,
+    superstructure::IntakeVoltageT *output,
+    flatbuffers::FlatBufferBuilder *fbb) {
+  zeroing_estimator_.UpdateEstimate(*position->motor_position());
 
   switch (state_) {
     case State::UNINITIALIZED:
@@ -132,8 +131,8 @@ void IntakeSide::Iterate(const double *unsafe_goal,
         state_ = State::UNINITIALIZED;
       }
       // ESTOP if we hit the hard limits.
-      if ((status->motor_position) > controller_.intake_range_.upper ||
-          (status->motor_position) < controller_.intake_range_.lower) {
+      if ((controller_.motor_position()) > controller_.intake_range().upper_hard ||
+          (controller_.motor_position()) < controller_.intake_range().lower_hard) {
         AOS_LOG(ERROR, "Hit hard limits\n");
         state_ = State::ESTOP;
       }
@@ -145,8 +144,8 @@ void IntakeSide::Iterate(const double *unsafe_goal,
   }
 
   const bool disable = (output == nullptr) || state_ != State::RUNNING;
-  controller_.set_position(position->spring_angle,
-                           position->motor_position.encoder);
+  controller_.set_position(position->spring_angle(),
+                           position->motor_position()->encoder());
 
   controller_.Update(disable, unsafe_goal);
 
@@ -154,16 +153,25 @@ void IntakeSide::Iterate(const double *unsafe_goal,
     output->voltage_elastic = controller_.voltage();
   }
 
+  flatbuffers::Offset<frc971::PotAndAbsoluteEncoderEstimatorState>
+      estimator_state = zeroing_estimator_.GetEstimatorState(fbb);
+
+  superstructure::IntakeSideStatus::Builder status_builder(*fbb);
   // Save debug/internal state.
-  status->estimator_state = zeroing_estimator_.GetEstimatorState();
-  controller_.SetStatus(status, unsafe_goal);
-  status->calculated_velocity =
-      (status->estimator_state.position - intake_last_position_) /
-      controller_.kDt;
-  status->zeroed = zeroing_estimator_.zeroed();
-  status->estopped = (state_ == State::ESTOP);
-  status->state = static_cast<int32_t>(state_);
-  intake_last_position_ = status->estimator_state.position;
+  status_builder.add_estimator_state(estimator_state);
+
+  controller_.SetStatus(&status_builder, unsafe_goal);
+  status_builder.add_calculated_velocity(
+      (zeroing_estimator_.offset() + position->motor_position()->encoder() -
+       intake_last_position_) /
+      controller_.kDt);
+  status_builder.add_zeroed(zeroing_estimator_.zeroed());
+  status_builder.add_estopped(estopped());
+  status_builder.add_state ( static_cast<int32_t>(state_));
+  intake_last_position_ =
+      zeroing_estimator_.offset() + position->motor_position()->encoder();
+
+  return status_builder.Finish();
 }
 
 }  // namespace intake

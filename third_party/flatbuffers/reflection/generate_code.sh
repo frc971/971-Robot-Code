@@ -15,4 +15,4 @@
 # limitations under the License.
 set -e
 
-../flatc -c --no-prefix -o ../include/flatbuffers reflection.fbs
+../../../bazel-out/host/bin/external/com_github_google_flatbuffers/flatc -c --gen-object-api --reflect-names --no-prefix -o ../include/flatbuffers reflection.fbs

@@ -11,12 +11,10 @@
 #include "aos/time/time.h"
 
 #include "aos/input/drivetrain_input.h"
-#include "frc971/autonomous/auto.q.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "frc971/queues/gyro.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
 #include "y2014_bot3/control_loops/drivetrain/drivetrain_base.h"
-#include "y2014_bot3/control_loops/rollers/rollers.q.h"
+#include "y2014_bot3/control_loops/rollers/rollers_goal_generated.h"
 
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::POVLocation;
@@ -47,9 +45,8 @@ class Reader : public ::aos::input::JoystickInput {
   Reader(::aos::EventLoop *event_loop)
       : ::aos::input::JoystickInput(event_loop),
         rollers_goal_sender_(
-            event_loop
-                ->MakeSender<::y2014_bot3::control_loops::RollersQueue::Goal>(
-                    ".y2014_bot3.control_loops.rollers_queue.goal")),
+            event_loop->MakeSender<::y2014_bot3::control_loops::rollers::Goal>(
+                "/rollers")),
         autonomous_action_factory_(
             ::frc971::autonomous::BaseAutonomousActor::MakeFactory(
                 event_loop)) {
@@ -89,20 +86,21 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     // Rollers.
-    auto rollers_goal = rollers_goal_sender_.MakeMessage();
-    rollers_goal->Zero();
+    auto builder = rollers_goal_sender_.MakeBuilder();
+    control_loops::rollers::GoalT rollers_goal;
     if (data.IsPressed(kFrontRollersIn)) {
-      rollers_goal->intake = 1;
+      rollers_goal.intake = 1;
     } else if (data.IsPressed(kFrontRollersOut)) {
-      rollers_goal->low_spit = 1;
+      rollers_goal.low_spit = 1;
     } else if (data.IsPressed(kBackRollersIn)) {
-      rollers_goal->intake = -1;
+      rollers_goal.intake = -1;
     } else if (data.IsPressed(kBackRollersOut)) {
-      rollers_goal->low_spit = -1;
+      rollers_goal.low_spit = -1;
     } else if (data.IsPressed(kHumanPlayer)) {
-      rollers_goal->human_player = true;
+      rollers_goal.human_player = true;
     }
-    if (!rollers_goal.Send()) {
+    if (!builder.Send(control_loops::rollers::Goal::Pack(*builder.fbb(),
+                                                         &rollers_goal))) {
       AOS_LOG(WARNING, "Sending rollers values failed.\n");
     }
   }
@@ -110,7 +108,7 @@ class Reader : public ::aos::input::JoystickInput {
  private:
   void StartAuto() {
     AOS_LOG(INFO, "Starting auto mode.\n");
-    ::frc971::autonomous::AutonomousActionParams params;
+    ::frc971::autonomous::AutonomousActionParamsT params;
     params.mode = 0;
     action_queue_.EnqueueAction(autonomous_action_factory_.Make(params));
   }
@@ -129,7 +127,7 @@ class Reader : public ::aos::input::JoystickInput {
   ::aos::common::actions::ActionQueue action_queue_;
 
   ::std::unique_ptr<DrivetrainInputReader> drivetrain_input_reader_;
-  ::aos::Sender<::y2014_bot3::control_loops::RollersQueue::Goal>
+  ::aos::Sender<::y2014_bot3::control_loops::rollers::Goal>
       rollers_goal_sender_;
 
   ::frc971::autonomous::BaseAutonomousActor::Factory autonomous_action_factory_;
@@ -142,7 +140,10 @@ class Reader : public ::aos::input::JoystickInput {
 int main() {
   ::aos::InitNRT(true);
 
-  ::aos::ShmEventLoop event_loop;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig("config.json");
+
+  ::aos::ShmEventLoop event_loop(&config.message());
   ::y2014_bot3::input::joysticks::Reader reader(&event_loop);
 
   event_loop.Run();

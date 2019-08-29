@@ -146,8 +146,8 @@ cc_library(
         "arm_bounds.h",
     ],
     deps = [
-        "//third_party/eigen",
         "@cgal_repo//:cgal",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -163,7 +163,6 @@ cc_binary(
     ],
 )
 
-
 py_binary(
     name = "graph_edit",
     srcs = [
@@ -175,9 +174,9 @@ py_binary(
     restricted_to = ["//tools:k8"],
     srcs_version = "PY3",
     deps = [
+        ":python_init",
         "//frc971/control_loops/python:basic_window",
         "//frc971/control_loops/python:color",
-        ":python_init",
         "@python_gtk",
     ],
 )

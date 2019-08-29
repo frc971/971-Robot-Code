@@ -1,0 +1,24 @@
+namespace aos.control_loops;
+// This file defines basic messages for a Single Input Single Output (SISO)
+// control loop.
+
+table Goal {
+  goal:double;
+}
+
+table Position {
+  position:double;
+}
+
+table Output {
+  voltage:double;
+}
+
+table Status {
+  done:bool;
+}
+
+root_type Goal;
+root_type Position;
+root_type Output;
+root_type Status;

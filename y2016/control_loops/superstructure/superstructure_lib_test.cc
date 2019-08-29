@@ -7,14 +7,16 @@
 
 #include "aos/commonmath.h"
 #include "aos/controls/control_loop_test.h"
-#include "aos/queue.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
 #include "y2016/control_loops/superstructure/arm_plant.h"
 #include "y2016/control_loops/superstructure/intake_plant.h"
-#include "y2016/control_loops/superstructure/superstructure.q.h"
+#include "y2016/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2016/control_loops/superstructure/superstructure_output_generated.h"
+#include "y2016/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2016/control_loops/superstructure/superstructure_status_generated.h"
 
 #include "y2016/constants.h"
 
@@ -85,14 +87,11 @@ class SuperstructureSimulation {
       : event_loop_(event_loop),
         dt_(dt),
         superstructure_position_sender_(
-            event_loop_->MakeSender<SuperstructureQueue::Position>(
-                ".y2016.control_loops.superstructure_queue.position")),
+            event_loop_->MakeSender<Position>("/superstructure")),
         superstructure_status_fetcher_(
-            event_loop_->MakeFetcher<SuperstructureQueue::Status>(
-                ".y2016.control_loops.superstructure_queue.status")),
+            event_loop_->MakeFetcher<Status>("/superstructure")),
         superstructure_output_fetcher_(
-            event_loop_->MakeFetcher<SuperstructureQueue::Output>(
-                ".y2016.control_loops.superstructure_queue.output")),
+            event_loop_->MakeFetcher<Output>("/superstructure")),
         intake_plant_(new IntakePlant(MakeIntakePlant())),
         arm_plant_(new ArmPlant(MakeArmPlant())),
         pot_encoder_intake_(constants::Values::kIntakeEncoderIndexDifference),
@@ -144,14 +143,32 @@ class SuperstructureSimulation {
 
   // Sends a queue message with the position.
   void SendPositionMessage() {
-    ::aos::Sender<control_loops::SuperstructureQueue::Position>::Message
-        position = superstructure_position_sender_.MakeMessage();
+    ::aos::Sender<Position>::Builder builder =
+        superstructure_position_sender_.MakeBuilder();
 
-    pot_encoder_intake_.GetSensorValues(&position->intake);
-    pot_encoder_shoulder_.GetSensorValues(&position->shoulder);
-    pot_encoder_wrist_.GetSensorValues(&position->wrist);
+    frc971::PotAndIndexPosition::Builder intake_builder =
+        builder.MakeBuilder<frc971::PotAndIndexPosition>();
 
-    position.Send();
+    flatbuffers::Offset<frc971::PotAndIndexPosition> intake_offset =
+        pot_encoder_intake_.GetSensorValues(&intake_builder);
+
+    frc971::PotAndIndexPosition::Builder shoulder_builder =
+        builder.MakeBuilder<frc971::PotAndIndexPosition>();
+    flatbuffers::Offset<frc971::PotAndIndexPosition> shoulder_offset =
+        pot_encoder_shoulder_.GetSensorValues(&shoulder_builder);
+
+    frc971::PotAndIndexPosition::Builder wrist_builder =
+        builder.MakeBuilder<frc971::PotAndIndexPosition>();
+    flatbuffers::Offset<frc971::PotAndIndexPosition> wrist_offset =
+        pot_encoder_wrist_.GetSensorValues(&wrist_builder);
+
+    Position::Builder position_builder = builder.MakeBuilder<Position>();
+
+    position_builder.add_intake(intake_offset);
+    position_builder.add_shoulder(shoulder_offset);
+    position_builder.add_wrist(wrist_offset);
+
+    builder.Send(position_builder.Finish());
   }
 
   double shoulder_angle() const { return arm_plant_->X(0, 0); }
@@ -180,37 +197,39 @@ class SuperstructureSimulation {
     // Feed voltages into physics simulation.
     ::Eigen::Matrix<double, 1, 1> intake_U;
     ::Eigen::Matrix<double, 2, 1> arm_U;
-    intake_U << superstructure_output_fetcher_->voltage_intake +
+    intake_U << superstructure_output_fetcher_->voltage_intake() +
                     intake_plant_->voltage_offset();
 
-    arm_U << superstructure_output_fetcher_->voltage_shoulder +
+    arm_U << superstructure_output_fetcher_->voltage_shoulder() +
                  arm_plant_->shoulder_voltage_offset(),
-        superstructure_output_fetcher_->voltage_wrist +
+        superstructure_output_fetcher_->voltage_wrist() +
             arm_plant_->wrist_voltage_offset();
 
     // Verify that the correct power limits are being respected depending on
     // which mode we are in.
     EXPECT_TRUE(superstructure_status_fetcher_.Fetch());
-    if (superstructure_status_fetcher_->state == Superstructure::RUNNING ||
-        superstructure_status_fetcher_->state ==
+    if (superstructure_status_fetcher_->state() == Superstructure::RUNNING ||
+        superstructure_status_fetcher_->state() ==
             Superstructure::LANDING_RUNNING) {
-      AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_intake),
+      AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_intake()),
                    Superstructure::kOperatingVoltage);
-      AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_shoulder),
-                   Superstructure::kOperatingVoltage);
-      AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_wrist),
+      AOS_CHECK_LE(
+          ::std::abs(superstructure_output_fetcher_->voltage_shoulder()),
+          Superstructure::kOperatingVoltage);
+      AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_wrist()),
                    Superstructure::kOperatingVoltage);
     } else {
-      AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_intake),
+      AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_intake()),
                    Superstructure::kZeroingVoltage);
-      AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_shoulder),
-                   Superstructure::kZeroingVoltage);
-      AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_wrist),
+      AOS_CHECK_LE(
+          ::std::abs(superstructure_output_fetcher_->voltage_shoulder()),
+          Superstructure::kZeroingVoltage);
+      AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_wrist()),
                    Superstructure::kZeroingVoltage);
     }
     if (arm_plant_->X(0, 0) <=
         Superstructure::kShoulderTransitionToLanded + 1e-4) {
-      AOS_CHECK_GE(superstructure_output_fetcher_->voltage_shoulder,
+      AOS_CHECK_GE(superstructure_output_fetcher_->voltage_shoulder(),
                    Superstructure::kLandingShoulderDownVoltage - 0.00001);
     }
 
@@ -309,9 +328,9 @@ class SuperstructureSimulation {
 
   bool first_ = true;
 
-  ::aos::Sender<SuperstructureQueue::Position> superstructure_position_sender_;
-  ::aos::Fetcher<SuperstructureQueue::Status> superstructure_status_fetcher_;
-  ::aos::Fetcher<SuperstructureQueue::Output> superstructure_output_fetcher_;
+  ::aos::Sender<Position> superstructure_position_sender_;
+  ::aos::Fetcher<Status> superstructure_status_fetcher_;
+  ::aos::Fetcher<Output> superstructure_output_fetcher_;
 
   ::std::unique_ptr<IntakePlant> intake_plant_;
   ::std::unique_ptr<ArmPlant> arm_plant_;
@@ -334,17 +353,16 @@ class SuperstructureSimulation {
 class SuperstructureTest : public ::aos::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
-      : ::aos::testing::ControlLoopTest(chrono::microseconds(5000)),
+      : ::aos::testing::ControlLoopTest(
+            aos::configuration::ReadConfig("y2016/config.json"),
+            chrono::microseconds(5000)),
         test_event_loop_(MakeEventLoop()),
         superstructure_goal_fetcher_(
-            test_event_loop_->MakeFetcher<SuperstructureQueue::Goal>(
-                ".y2016.control_loops.superstructure_queue.goal")),
+            test_event_loop_->MakeFetcher<Goal>("/superstructure")),
         superstructure_goal_sender_(
-            test_event_loop_->MakeSender<SuperstructureQueue::Goal>(
-                ".y2016.control_loops.superstructure_queue.goal")),
+            test_event_loop_->MakeSender<Goal>("/superstructure")),
         superstructure_status_fetcher_(
-            test_event_loop_->MakeFetcher<SuperstructureQueue::Status>(
-                ".y2016.control_loops.superstructure_queue.status")),
+            test_event_loop_->MakeFetcher<Status>("/superstructure")),
         superstructure_event_loop_(MakeEventLoop()),
         superstructure_(superstructure_event_loop_.get()),
         superstructure_plant_event_loop_(MakeEventLoop()),
@@ -357,26 +375,26 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
     EXPECT_TRUE(superstructure_goal_fetcher_.get() != nullptr);
     EXPECT_TRUE(superstructure_status_fetcher_.get() != nullptr);
 
-    EXPECT_NEAR(superstructure_goal_fetcher_->angle_intake,
-                superstructure_status_fetcher_->intake.angle, 0.001);
-    EXPECT_NEAR(superstructure_goal_fetcher_->angle_shoulder,
-                superstructure_status_fetcher_->shoulder.angle, 0.001);
-    EXPECT_NEAR(superstructure_goal_fetcher_->angle_wrist,
-                superstructure_status_fetcher_->wrist.angle, 0.001);
+    EXPECT_NEAR(superstructure_goal_fetcher_->angle_intake(),
+                superstructure_status_fetcher_->intake()->angle(), 0.001);
+    EXPECT_NEAR(superstructure_goal_fetcher_->angle_shoulder(),
+                superstructure_status_fetcher_->shoulder()->angle(), 0.001);
+    EXPECT_NEAR(superstructure_goal_fetcher_->angle_wrist(),
+                superstructure_status_fetcher_->wrist()->angle(), 0.001);
 
-    EXPECT_NEAR(superstructure_goal_fetcher_->angle_intake,
+    EXPECT_NEAR(superstructure_goal_fetcher_->angle_intake(),
                 superstructure_plant_.intake_angle(), 0.001);
-    EXPECT_NEAR(superstructure_goal_fetcher_->angle_shoulder,
+    EXPECT_NEAR(superstructure_goal_fetcher_->angle_shoulder(),
                 superstructure_plant_.shoulder_angle(), 0.001);
-    EXPECT_NEAR(superstructure_goal_fetcher_->angle_wrist,
+    EXPECT_NEAR(superstructure_goal_fetcher_->angle_wrist(),
                 superstructure_plant_.wrist_angle(), 0.001);
   }
 
   ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
 
-  ::aos::Fetcher<SuperstructureQueue::Goal> superstructure_goal_fetcher_;
-  ::aos::Sender<SuperstructureQueue::Goal> superstructure_goal_sender_;
-  ::aos::Fetcher<SuperstructureQueue::Status> superstructure_status_fetcher_;
+  ::aos::Fetcher<Goal> superstructure_goal_fetcher_;
+  ::aos::Sender<Goal> superstructure_goal_sender_;
+  ::aos::Fetcher<Status> superstructure_status_fetcher_;
 
   // Create a control loop and simulation.
   ::std::unique_ptr<::aos::EventLoop> superstructure_event_loop_;
@@ -390,17 +408,18 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
 TEST_F(SuperstructureTest, DoesNothing) {
   SetEnabled(true);
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0;
-    message->angle_shoulder = 0;
-    message->angle_wrist = 0;
-    message->max_angular_velocity_intake = 20;
-    message->max_angular_velocity_shoulder = 20;
-    message->max_angular_velocity_wrist = 20;
-    message->max_angular_acceleration_intake = 20;
-    message->max_angular_acceleration_shoulder = 20;
-    message->max_angular_acceleration_wrist = 20;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0);
+    goal_builder.add_angle_shoulder(0);
+    goal_builder.add_angle_wrist(0);
+    goal_builder.add_max_angular_velocity_intake(20);
+    goal_builder.add_max_angular_velocity_shoulder(20);
+    goal_builder.add_max_angular_velocity_wrist(20);
+    goal_builder.add_max_angular_acceleration_intake(20);
+    goal_builder.add_max_angular_acceleration_shoulder(20);
+    goal_builder.add_max_angular_acceleration_wrist(20);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(5));
@@ -412,17 +431,18 @@ TEST_F(SuperstructureTest, ReachesGoal) {
   SetEnabled(true);
   // Set a reasonable goal.
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = M_PI / 4.0;
-    message->angle_shoulder = 1.4;
-    message->angle_wrist = M_PI / 4.0;
-    message->max_angular_velocity_intake = 20;
-    message->max_angular_acceleration_intake = 20;
-    message->max_angular_velocity_shoulder = 20;
-    message->max_angular_acceleration_shoulder = 20;
-    message->max_angular_velocity_wrist = 20;
-    message->max_angular_acceleration_wrist = 20;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(M_PI / 4.0);
+    goal_builder.add_angle_shoulder(1.4);
+    goal_builder.add_angle_wrist(M_PI / 4.0);
+    goal_builder.add_max_angular_velocity_intake(20);
+    goal_builder.add_max_angular_acceleration_intake(20);
+    goal_builder.add_max_angular_velocity_shoulder(20);
+    goal_builder.add_max_angular_acceleration_shoulder(20);
+    goal_builder.add_max_angular_velocity_wrist(20);
+    goal_builder.add_max_angular_acceleration_wrist(20);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   // Give it a lot of time to get there.
@@ -437,43 +457,45 @@ TEST_F(SuperstructureTest, RespectsRange) {
   SetEnabled(true);
   // Set some ridiculous goals to test upper limits.
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = M_PI * 10;
-    message->angle_shoulder = M_PI * 10;
-    message->angle_wrist = M_PI * 10;
-    message->max_angular_velocity_intake = 20;
-    message->max_angular_acceleration_intake = 20;
-    message->max_angular_velocity_shoulder = 20;
-    message->max_angular_acceleration_shoulder = 20;
-    message->max_angular_velocity_wrist = 20;
-    message->max_angular_acceleration_wrist = 20;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(M_PI * 10);
+    goal_builder.add_angle_shoulder(M_PI * 10);
+    goal_builder.add_angle_wrist(M_PI * 10);
+    goal_builder.add_max_angular_velocity_intake(20);
+    goal_builder.add_max_angular_acceleration_intake(20);
+    goal_builder.add_max_angular_velocity_shoulder(20);
+    goal_builder.add_max_angular_acceleration_shoulder(20);
+    goal_builder.add_max_angular_velocity_wrist(20);
+    goal_builder.add_max_angular_acceleration_wrist(20);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(10));
 
   // Check that we are near our soft limit.
   superstructure_status_fetcher_.Fetch();
   EXPECT_NEAR(constants::Values::kIntakeRange.upper,
-              superstructure_status_fetcher_->intake.angle, 0.001);
+              superstructure_status_fetcher_->intake()->angle(), 0.001);
   EXPECT_NEAR(constants::Values::kShoulderRange.upper,
-              superstructure_status_fetcher_->shoulder.angle, 0.001);
+              superstructure_status_fetcher_->shoulder()->angle(), 0.001);
   EXPECT_NEAR(constants::Values::kWristRange.upper +
                   constants::Values::kShoulderRange.upper,
-              superstructure_status_fetcher_->wrist.angle, 0.001);
+              superstructure_status_fetcher_->wrist()->angle(), 0.001);
 
   // Set some ridiculous goals to test limits.
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = M_PI * 10;
-    message->angle_shoulder = M_PI * 10;
-    message->angle_wrist = -M_PI * 10.0;
-    message->max_angular_velocity_intake = 20;
-    message->max_angular_acceleration_intake = 20;
-    message->max_angular_velocity_shoulder = 20;
-    message->max_angular_acceleration_shoulder = 20;
-    message->max_angular_velocity_wrist = 20;
-    message->max_angular_acceleration_wrist = 20;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(M_PI * 10);
+    goal_builder.add_angle_shoulder(M_PI * 10);
+    goal_builder.add_angle_wrist(-M_PI * 10.0);
+    goal_builder.add_max_angular_velocity_intake(20);
+    goal_builder.add_max_angular_acceleration_intake(20);
+    goal_builder.add_max_angular_velocity_shoulder(20);
+    goal_builder.add_max_angular_acceleration_shoulder(20);
+    goal_builder.add_max_angular_velocity_wrist(20);
+    goal_builder.add_max_angular_acceleration_wrist(20);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(10));
@@ -481,26 +503,27 @@ TEST_F(SuperstructureTest, RespectsRange) {
   // Check that we are near our soft limit.
   superstructure_status_fetcher_.Fetch();
   EXPECT_NEAR(constants::Values::kIntakeRange.upper,
-              superstructure_status_fetcher_->intake.angle, 0.001);
+              superstructure_status_fetcher_->intake()->angle(), 0.001);
   EXPECT_NEAR(constants::Values::kShoulderRange.upper,
-              superstructure_status_fetcher_->shoulder.angle, 0.001);
+              superstructure_status_fetcher_->shoulder()->angle(), 0.001);
   EXPECT_NEAR(constants::Values::kWristRange.lower +
                   constants::Values::kShoulderRange.upper,
-              superstructure_status_fetcher_->wrist.angle, 0.001);
+              superstructure_status_fetcher_->wrist()->angle(), 0.001);
 
   // Set some ridiculous goals to test lower limits.
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = -M_PI * 10;
-    message->angle_shoulder = -M_PI * 10;
-    message->angle_wrist = 0.0;
-    message->max_angular_velocity_intake = 20;
-    message->max_angular_acceleration_intake = 20;
-    message->max_angular_velocity_shoulder = 20;
-    message->max_angular_acceleration_shoulder = 20;
-    message->max_angular_velocity_wrist = 20;
-    message->max_angular_acceleration_wrist = 20;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(-M_PI * 10);
+    goal_builder.add_angle_shoulder(-M_PI * 10);
+    goal_builder.add_angle_wrist(0.0);
+    goal_builder.add_max_angular_velocity_intake(20);
+    goal_builder.add_max_angular_acceleration_intake(20);
+    goal_builder.add_max_angular_velocity_shoulder(20);
+    goal_builder.add_max_angular_acceleration_shoulder(20);
+    goal_builder.add_max_angular_velocity_wrist(20);
+    goal_builder.add_max_angular_acceleration_wrist(20);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(10));
@@ -508,27 +531,28 @@ TEST_F(SuperstructureTest, RespectsRange) {
   // Check that we are near our soft limit.
   superstructure_status_fetcher_.Fetch();
   EXPECT_NEAR(constants::Values::kIntakeRange.lower,
-              superstructure_status_fetcher_->intake.angle, 0.001);
+              superstructure_status_fetcher_->intake()->angle(), 0.001);
   EXPECT_NEAR(constants::Values::kShoulderRange.lower,
-              superstructure_status_fetcher_->shoulder.angle, 0.001);
-  EXPECT_NEAR(0.0, superstructure_status_fetcher_->wrist.angle, 0.001);
+              superstructure_status_fetcher_->shoulder()->angle(), 0.001);
+  EXPECT_NEAR(0.0, superstructure_status_fetcher_->wrist()->angle(), 0.001);
 }
 
 // Tests that the loop zeroes when run for a while.
 TEST_F(SuperstructureTest, ZeroTest) {
   SetEnabled(true);
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = constants::Values::kIntakeRange.lower;
-    message->angle_shoulder = constants::Values::kShoulderRange.lower;
-    message->angle_wrist = 0.0;
-    message->max_angular_velocity_intake = 20;
-    message->max_angular_acceleration_intake = 20;
-    message->max_angular_velocity_shoulder = 20;
-    message->max_angular_acceleration_shoulder = 20;
-    message->max_angular_velocity_wrist = 20;
-    message->max_angular_acceleration_wrist = 20;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(constants::Values::kIntakeRange.lower);
+    goal_builder.add_angle_shoulder(constants::Values::kShoulderRange.lower);
+    goal_builder.add_angle_wrist(0.0);
+    goal_builder.add_max_angular_velocity_intake(20);
+    goal_builder.add_max_angular_acceleration_intake(20);
+    goal_builder.add_max_angular_velocity_shoulder(20);
+    goal_builder.add_max_angular_acceleration_shoulder(20);
+    goal_builder.add_max_angular_velocity_wrist(20);
+    goal_builder.add_max_angular_acceleration_wrist(20);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(10));
@@ -557,12 +581,13 @@ TEST_F(SuperstructureTest, LowerHardstopStartup) {
   superstructure_plant_.InitializeRelativeWristPosition(
       constants::Values::kWristRange.lower);
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = constants::Values::kIntakeRange.upper;
-    message->angle_shoulder = constants::Values::kShoulderRange.upper;
-    message->angle_wrist = constants::Values::kWristRange.upper +
-                           constants::Values::kShoulderRange.upper;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(constants::Values::kIntakeRange.upper);
+    goal_builder.add_angle_shoulder(constants::Values::kShoulderRange.upper);
+    goal_builder.add_angle_wrist(constants::Values::kWristRange.upper +
+                                 constants::Values::kShoulderRange.upper);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   // We have to wait for it to put the elevator in a safe position as well.
   RunFor(chrono::seconds(15));
@@ -580,11 +605,12 @@ TEST_F(SuperstructureTest, UpperHardstopStartup) {
   superstructure_plant_.InitializeRelativeWristPosition(
       constants::Values::kWristRange.upper);
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = constants::Values::kIntakeRange.lower;
-    message->angle_shoulder = constants::Values::kShoulderRange.lower;
-    message->angle_wrist = 0.0;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(constants::Values::kIntakeRange.lower);
+    goal_builder.add_angle_shoulder(constants::Values::kShoulderRange.lower);
+    goal_builder.add_angle_wrist(0.0);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   // We have to wait for it to put the superstructure in a safe position as
   // well.
@@ -604,11 +630,12 @@ TEST_F(SuperstructureTest, ResetTest) {
       constants::Values::kWristRange.upper);
 
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = constants::Values::kIntakeRange.lower + 0.3;
-    message->angle_shoulder = constants::Values::kShoulderRange.upper;
-    message->angle_wrist = 0.0;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(constants::Values::kIntakeRange.lower + 0.3);
+    goal_builder.add_angle_shoulder(constants::Values::kShoulderRange.upper);
+    goal_builder.add_angle_wrist(0.0);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(15));
 
@@ -628,11 +655,13 @@ TEST_F(SuperstructureTest, DisabledGoalTest) {
   superstructure_plant_.set_check_for_collisions(false);
 
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = constants::Values::kIntakeRange.lower + 0.03;
-    message->angle_shoulder = constants::Values::kShoulderRange.lower + 0.03;
-    message->angle_wrist = constants::Values::kWristRange.lower + 0.03;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(constants::Values::kIntakeRange.lower + 0.03);
+    goal_builder.add_angle_shoulder(constants::Values::kShoulderRange.lower +
+                                    0.03);
+    goal_builder.add_angle_wrist(constants::Values::kWristRange.lower + 0.03);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::milliseconds(100));
@@ -659,17 +688,18 @@ TEST_F(SuperstructureTest, DisabledWhileZeroingHigh) {
       constants::Values::kWristRange.upper);
 
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = constants::Values::kIntakeRange.upper;
-    message->angle_shoulder = constants::Values::kShoulderRange.upper;
-    message->angle_wrist = constants::Values::kWristRange.upper;
-    message->max_angular_velocity_intake = 20;
-    message->max_angular_acceleration_intake = 20;
-    message->max_angular_velocity_shoulder = 20;
-    message->max_angular_acceleration_shoulder = 20;
-    message->max_angular_velocity_wrist = 20;
-    message->max_angular_acceleration_wrist = 20;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(constants::Values::kIntakeRange.upper);
+    goal_builder.add_angle_shoulder(constants::Values::kShoulderRange.upper);
+    goal_builder.add_angle_wrist(constants::Values::kWristRange.upper);
+    goal_builder.add_max_angular_velocity_intake(20);
+    goal_builder.add_max_angular_acceleration_intake(20);
+    goal_builder.add_max_angular_velocity_shoulder(20);
+    goal_builder.add_max_angular_acceleration_shoulder(20);
+    goal_builder.add_max_angular_velocity_wrist(20);
+    goal_builder.add_max_angular_acceleration_wrist(20);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   // Expected states to cycle through and check in order.
@@ -730,17 +760,18 @@ TEST_F(SuperstructureTest, DisabledWhileZeroingLow) {
   superstructure_plant_.InitializeAbsoluteWristPosition(0.0);
 
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = constants::Values::kIntakeRange.lower;
-    message->angle_shoulder = constants::Values::kShoulderRange.lower;
-    message->angle_wrist = constants::Values::kWristRange.lower;
-    message->max_angular_velocity_intake = 20;
-    message->max_angular_acceleration_intake = 20;
-    message->max_angular_velocity_shoulder = 20;
-    message->max_angular_acceleration_shoulder = 20;
-    message->max_angular_velocity_wrist = 20;
-    message->max_angular_acceleration_wrist = 20;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(constants::Values::kIntakeRange.lower);
+    goal_builder.add_angle_shoulder(constants::Values::kShoulderRange.lower);
+    goal_builder.add_angle_wrist(constants::Values::kWristRange.lower);
+    goal_builder.add_max_angular_velocity_intake(20);
+    goal_builder.add_max_angular_acceleration_intake(20);
+    goal_builder.add_max_angular_velocity_shoulder(20);
+    goal_builder.add_max_angular_acceleration_shoulder(20);
+    goal_builder.add_max_angular_velocity_wrist(20);
+    goal_builder.add_max_angular_acceleration_wrist(20);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   // Expected states to cycle through and check in order.
@@ -812,11 +843,12 @@ TEST_F(SuperstructureTest, IntegratorTest) {
   superstructure_plant_.InitializeRelativeWristPosition(0.0);
   superstructure_plant_.set_power_error(1.0, 1.0, 1.0);
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder = 0.0;
-    message->angle_wrist = 0.0;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(0.0);
+    goal_builder.add_angle_wrist(0.0);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(8));
@@ -834,12 +866,13 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
   superstructure_plant_.InitializeRelativeWristPosition(-0.001);
 
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder =
-        constants::Values::kShoulderEncoderIndexDifference * 10;
-    message->angle_wrist = 0.0;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(
+        constants::Values::kShoulderEncoderIndexDifference * 10);
+    goal_builder.add_angle_wrist(0.0);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   // Run disabled for 2 seconds
@@ -883,17 +916,18 @@ TEST_F(SuperstructureTest, IntakeZeroingErrorTest) {
 TEST_F(SuperstructureTest, ShoulderAccelerationLimitTest) {
   SetEnabled(true);
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder = 1.0;
-    message->angle_wrist = 0.0;
-    message->max_angular_velocity_intake = 20;
-    message->max_angular_acceleration_intake = 20;
-    message->max_angular_velocity_shoulder = 20;
-    message->max_angular_acceleration_shoulder = 20;
-    message->max_angular_velocity_wrist = 20;
-    message->max_angular_acceleration_wrist = 20;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(1.0);
+    goal_builder.add_angle_wrist(0.0);
+    goal_builder.add_max_angular_velocity_intake(20);
+    goal_builder.add_max_angular_acceleration_intake(20);
+    goal_builder.add_max_angular_velocity_shoulder(20);
+    goal_builder.add_max_angular_acceleration_shoulder(20);
+    goal_builder.add_max_angular_velocity_wrist(20);
+    goal_builder.add_max_angular_acceleration_wrist(20);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(6));
@@ -902,17 +936,18 @@ TEST_F(SuperstructureTest, ShoulderAccelerationLimitTest) {
   VerifyNearGoal();
 
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder = 1.5;
-    message->angle_wrist = 0.0;
-    message->max_angular_velocity_intake = 1;
-    message->max_angular_acceleration_intake = 1;
-    message->max_angular_velocity_shoulder = 1;
-    message->max_angular_acceleration_shoulder = 1;
-    message->max_angular_velocity_wrist = 1;
-    message->max_angular_acceleration_wrist = 1;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(1.5);
+    goal_builder.add_angle_wrist(0.0);
+    goal_builder.add_max_angular_velocity_intake(1);
+    goal_builder.add_max_angular_acceleration_intake(1);
+    goal_builder.add_max_angular_velocity_shoulder(1);
+    goal_builder.add_max_angular_acceleration_shoulder(1);
+    goal_builder.add_max_angular_velocity_wrist(1);
+    goal_builder.add_max_angular_acceleration_wrist(1);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   // TODO(austin): The profile isn't feasible, so when we try to track it, we
@@ -930,17 +965,18 @@ TEST_F(SuperstructureTest, ShoulderAccelerationLimitTest) {
 TEST_F(SuperstructureTest, IntakeAccelerationLimitTest) {
   SetEnabled(true);
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder = 1.0;
-    message->angle_wrist = 0.0;
-    message->max_angular_velocity_intake = 20;
-    message->max_angular_acceleration_intake = 20;
-    message->max_angular_velocity_shoulder = 20;
-    message->max_angular_acceleration_shoulder = 20;
-    message->max_angular_velocity_wrist = 20;
-    message->max_angular_acceleration_wrist = 20;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(1.0);
+    goal_builder.add_angle_wrist(0.0);
+    goal_builder.add_max_angular_velocity_intake(20);
+    goal_builder.add_max_angular_acceleration_intake(20);
+    goal_builder.add_max_angular_velocity_shoulder(20);
+    goal_builder.add_max_angular_acceleration_shoulder(20);
+    goal_builder.add_max_angular_velocity_wrist(20);
+    goal_builder.add_max_angular_acceleration_wrist(20);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(6));
@@ -949,17 +985,18 @@ TEST_F(SuperstructureTest, IntakeAccelerationLimitTest) {
   VerifyNearGoal();
 
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.5;
-    message->angle_shoulder = 1.0;
-    message->angle_wrist = 0.0;
-    message->max_angular_velocity_intake = 1;
-    message->max_angular_acceleration_intake = 1;
-    message->max_angular_velocity_shoulder = 1;
-    message->max_angular_acceleration_shoulder = 1;
-    message->max_angular_velocity_wrist = 1;
-    message->max_angular_acceleration_wrist = 1;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.5);
+    goal_builder.add_angle_shoulder(1.0);
+    goal_builder.add_angle_wrist(0.0);
+    goal_builder.add_max_angular_velocity_intake(1);
+    goal_builder.add_max_angular_acceleration_intake(1);
+    goal_builder.add_max_angular_velocity_shoulder(1);
+    goal_builder.add_max_angular_acceleration_shoulder(1);
+    goal_builder.add_max_angular_velocity_wrist(1);
+    goal_builder.add_max_angular_acceleration_wrist(1);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   superstructure_plant_.set_peak_intake_acceleration(1.20);
@@ -974,18 +1011,19 @@ TEST_F(SuperstructureTest, IntakeAccelerationLimitTest) {
 TEST_F(SuperstructureTest, WristAccelerationLimitTest) {
   SetEnabled(true);
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder =
-        CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference + 0.1;
-    message->angle_wrist = 0.0;
-    message->max_angular_velocity_intake = 20;
-    message->max_angular_acceleration_intake = 20;
-    message->max_angular_velocity_shoulder = 20;
-    message->max_angular_acceleration_shoulder = 20;
-    message->max_angular_velocity_wrist = 20;
-    message->max_angular_acceleration_wrist = 20;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(
+        CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference + 0.1);
+    goal_builder.add_angle_wrist(0.0);
+    goal_builder.add_max_angular_velocity_intake(20);
+    goal_builder.add_max_angular_acceleration_intake(20);
+    goal_builder.add_max_angular_velocity_shoulder(20);
+    goal_builder.add_max_angular_acceleration_shoulder(20);
+    goal_builder.add_max_angular_velocity_wrist(20);
+    goal_builder.add_max_angular_acceleration_wrist(20);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(6));
@@ -994,18 +1032,19 @@ TEST_F(SuperstructureTest, WristAccelerationLimitTest) {
   VerifyNearGoal();
 
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder =
-        CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference + 0.1;
-    message->angle_wrist = 0.5;
-    message->max_angular_velocity_intake = 1;
-    message->max_angular_acceleration_intake = 1;
-    message->max_angular_velocity_shoulder = 1;
-    message->max_angular_acceleration_shoulder = 1;
-    message->max_angular_velocity_wrist = 1;
-    message->max_angular_acceleration_wrist = 1;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(
+        CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference + 0.1);
+    goal_builder.add_angle_wrist(0.5);
+    goal_builder.add_max_angular_velocity_intake(1);
+    goal_builder.add_max_angular_acceleration_intake(1);
+    goal_builder.add_max_angular_velocity_shoulder(1);
+    goal_builder.add_max_angular_acceleration_shoulder(1);
+    goal_builder.add_max_angular_velocity_wrist(1);
+    goal_builder.add_max_angular_acceleration_wrist(1);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   superstructure_plant_.set_peak_intake_acceleration(1.05);
@@ -1021,18 +1060,19 @@ TEST_F(SuperstructureTest, WristAccelerationLimitTest) {
 TEST_F(SuperstructureTest, SaturatedIntakeProfileTest) {
   SetEnabled(true);
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder =
-        CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference;
-    message->angle_wrist = 0.0;
-    message->max_angular_velocity_intake = 20;
-    message->max_angular_acceleration_intake = 20;
-    message->max_angular_velocity_shoulder = 20;
-    message->max_angular_acceleration_shoulder = 20;
-    message->max_angular_velocity_wrist = 20;
-    message->max_angular_acceleration_wrist = 20;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(
+        CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference);
+    goal_builder.add_angle_wrist(0.0);
+    goal_builder.add_max_angular_velocity_intake(20);
+    goal_builder.add_max_angular_acceleration_intake(20);
+    goal_builder.add_max_angular_velocity_shoulder(20);
+    goal_builder.add_max_angular_acceleration_shoulder(20);
+    goal_builder.add_max_angular_velocity_wrist(20);
+    goal_builder.add_max_angular_acceleration_wrist(20);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(6));
@@ -1041,18 +1081,19 @@ TEST_F(SuperstructureTest, SaturatedIntakeProfileTest) {
   VerifyNearGoal();
 
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.5;
-    message->angle_shoulder =
-        CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference;
-    message->angle_wrist = 0.0;
-    message->max_angular_velocity_intake = 4.5;
-    message->max_angular_acceleration_intake = 800;
-    message->max_angular_velocity_shoulder = 1;
-    message->max_angular_acceleration_shoulder = 100;
-    message->max_angular_velocity_wrist = 1;
-    message->max_angular_acceleration_wrist = 100;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.5);
+    goal_builder.add_angle_shoulder(
+        CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference);
+    goal_builder.add_angle_wrist(0.0);
+    goal_builder.add_max_angular_velocity_intake(4.5);
+    goal_builder.add_max_angular_acceleration_intake(800);
+    goal_builder.add_max_angular_velocity_shoulder(1);
+    goal_builder.add_max_angular_acceleration_shoulder(100);
+    goal_builder.add_max_angular_velocity_wrist(1);
+    goal_builder.add_max_angular_acceleration_wrist(100);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   superstructure_plant_.set_peak_intake_velocity(4.65);
@@ -1068,17 +1109,18 @@ TEST_F(SuperstructureTest, SaturatedIntakeProfileTest) {
 TEST_F(SuperstructureTest, SaturatedShoulderProfileTest) {
   SetEnabled(true);
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder = 1.0;
-    message->angle_wrist = 0.0;
-    message->max_angular_velocity_intake = 20;
-    message->max_angular_acceleration_intake = 20;
-    message->max_angular_velocity_shoulder = 20;
-    message->max_angular_acceleration_shoulder = 20;
-    message->max_angular_velocity_wrist = 20;
-    message->max_angular_acceleration_wrist = 20;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(1.0);
+    goal_builder.add_angle_wrist(0.0);
+    goal_builder.add_max_angular_velocity_intake(20);
+    goal_builder.add_max_angular_acceleration_intake(20);
+    goal_builder.add_max_angular_velocity_shoulder(20);
+    goal_builder.add_max_angular_acceleration_shoulder(20);
+    goal_builder.add_max_angular_velocity_wrist(20);
+    goal_builder.add_max_angular_acceleration_wrist(20);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(6));
@@ -1087,17 +1129,18 @@ TEST_F(SuperstructureTest, SaturatedShoulderProfileTest) {
   VerifyNearGoal();
 
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder = 1.9;
-    message->angle_wrist = 0.0;
-    message->max_angular_velocity_intake = 1.0;
-    message->max_angular_acceleration_intake = 1.0;
-    message->max_angular_velocity_shoulder = 5.0;
-    message->max_angular_acceleration_shoulder = 20;
-    message->max_angular_velocity_wrist = 1;
-    message->max_angular_acceleration_wrist = 100;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(1.9);
+    goal_builder.add_angle_wrist(0.0);
+    goal_builder.add_max_angular_velocity_intake(1.0);
+    goal_builder.add_max_angular_acceleration_intake(1.0);
+    goal_builder.add_max_angular_velocity_shoulder(5.0);
+    goal_builder.add_max_angular_acceleration_shoulder(20);
+    goal_builder.add_max_angular_velocity_wrist(1);
+    goal_builder.add_max_angular_acceleration_wrist(100);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   superstructure_plant_.set_peak_intake_velocity(1.0);
@@ -1113,18 +1156,19 @@ TEST_F(SuperstructureTest, SaturatedShoulderProfileTest) {
 TEST_F(SuperstructureTest, SaturatedWristProfileTest) {
   SetEnabled(true);
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder =
-        CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference + 0.1;
-    message->angle_wrist = 0.0;
-    message->max_angular_velocity_intake = 20;
-    message->max_angular_acceleration_intake = 20;
-    message->max_angular_velocity_shoulder = 20;
-    message->max_angular_acceleration_shoulder = 20;
-    message->max_angular_velocity_wrist = 20;
-    message->max_angular_acceleration_wrist = 20;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(
+        CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference + 0.1);
+    goal_builder.add_angle_wrist(0.0);
+    goal_builder.add_max_angular_velocity_intake(20);
+    goal_builder.add_max_angular_acceleration_intake(20);
+    goal_builder.add_max_angular_velocity_shoulder(20);
+    goal_builder.add_max_angular_acceleration_shoulder(20);
+    goal_builder.add_max_angular_velocity_wrist(20);
+    goal_builder.add_max_angular_acceleration_wrist(20);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(6));
@@ -1133,18 +1177,19 @@ TEST_F(SuperstructureTest, SaturatedWristProfileTest) {
   VerifyNearGoal();
 
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder =
-        CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference + 0.1;
-    message->angle_wrist = 1.3;
-    message->max_angular_velocity_intake = 1.0;
-    message->max_angular_acceleration_intake = 1.0;
-    message->max_angular_velocity_shoulder = 1.0;
-    message->max_angular_acceleration_shoulder = 1.0;
-    message->max_angular_velocity_wrist = 10.0;
-    message->max_angular_acceleration_wrist = 160.0;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(
+        CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference + 0.1);
+    goal_builder.add_angle_wrist(1.3);
+    goal_builder.add_max_angular_velocity_intake(1.0);
+    goal_builder.add_max_angular_acceleration_intake(1.0);
+    goal_builder.add_max_angular_velocity_shoulder(1.0);
+    goal_builder.add_max_angular_acceleration_shoulder(1.0);
+    goal_builder.add_max_angular_velocity_wrist(10.0);
+    goal_builder.add_max_angular_acceleration_wrist(160.0);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   superstructure_plant_.set_peak_intake_velocity(1.0);
@@ -1165,21 +1210,26 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenMovingArmFromStart) {
   superstructure_plant_.InitializeAbsoluteWristPosition(0.0);
 
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = constants::Values::kIntakeRange.upper;  // stowed
-    message->angle_shoulder = constants::Values::kShoulderRange.lower;  // Down
-    message->angle_wrist = 0.0;  // Stowed
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(
+        constants::Values::kIntakeRange.upper);  // stowed
+    goal_builder.add_angle_shoulder(
+        constants::Values::kShoulderRange.lower);  // Down
+    goal_builder.add_angle_wrist(0.0);             // Stowed
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(15));
 
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = constants::Values::kIntakeRange.upper;  // stowed
-    message->angle_shoulder = M_PI / 4.0;  // in the collision area
-    message->angle_wrist = M_PI / 2.0;     // down
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(
+        constants::Values::kIntakeRange.upper);   // stowed
+    goal_builder.add_angle_shoulder(M_PI / 4.0);  // in the collision area
+    goal_builder.add_angle_wrist(M_PI / 2.0);     // down
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(5));
@@ -1188,27 +1238,30 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenMovingArmFromStart) {
   ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
 
   // The intake should be out of the way despite being told to move to stowing.
-  EXPECT_LT(superstructure_status_fetcher_->intake.angle, M_PI);
-  EXPECT_LT(superstructure_status_fetcher_->intake.angle,
+  EXPECT_LT(superstructure_status_fetcher_->intake()->angle(), M_PI);
+  EXPECT_LT(superstructure_status_fetcher_->intake()->angle(),
             constants::Values::kIntakeRange.upper);
-  EXPECT_LT(superstructure_status_fetcher_->intake.angle,
+  EXPECT_LT(superstructure_status_fetcher_->intake()->angle(),
             CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference);
 
   // The arm should have reached its goal.
-  EXPECT_NEAR(M_PI / 4.0, superstructure_status_fetcher_->shoulder.angle, 0.001);
+  EXPECT_NEAR(M_PI / 4.0, superstructure_status_fetcher_->shoulder()->angle(),
+              0.001);
 
   // The wrist should be forced into a stowing position.
   // Since the intake is kicked out, we can be within
   // kMaxWristAngleForMovingByIntake
-  EXPECT_NEAR(0, superstructure_status_fetcher_->wrist.angle,
+  EXPECT_NEAR(0, superstructure_status_fetcher_->wrist()->angle(),
               CollisionAvoidance::kMaxWristAngleForMovingByIntake + 0.001);
 
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = constants::Values::kIntakeRange.upper;  // stowed
-    message->angle_shoulder = M_PI / 2.0;  // in the collision area
-    message->angle_wrist = M_PI;           // forward
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(
+        constants::Values::kIntakeRange.upper);   // stowed
+    goal_builder.add_angle_shoulder(M_PI / 2.0);  // in the collision area
+    goal_builder.add_angle_wrist(M_PI);           // forward
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(5));
@@ -1224,11 +1277,12 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenStowingArm) {
   superstructure_plant_.InitializeAbsoluteWristPosition(M_PI);   // forward
 
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder = 0.0;
-    message->angle_wrist = M_PI;  // intentionally asking for forward
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(0.0);
+    goal_builder.add_angle_wrist(M_PI);  // intentionally asking for forward
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(15));
@@ -1237,12 +1291,12 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenStowingArm) {
   ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
 
   // The intake should be in intaking position, as asked.
-  EXPECT_NEAR(0.0, superstructure_status_fetcher_->intake.angle, 0.001);
+  EXPECT_NEAR(0.0, superstructure_status_fetcher_->intake()->angle(), 0.001);
 
   // The shoulder and wrist should both be at zero degrees (i.e.
   // stowed/intaking position).
-  EXPECT_NEAR(0.0, superstructure_status_fetcher_->shoulder.angle, 0.001);
-  EXPECT_NEAR(0.0, superstructure_status_fetcher_->wrist.angle, 0.001);
+  EXPECT_NEAR(0.0, superstructure_status_fetcher_->shoulder()->angle(), 0.001);
+  EXPECT_NEAR(0.0, superstructure_status_fetcher_->wrist()->angle(), 0.001);
 }
 
 // Make sure that we can properly detect a collision.
@@ -1250,11 +1304,12 @@ TEST_F(SuperstructureTest, DetectAndFixCollisionBetweenArmAndIntake) {
   SetEnabled(true);
   // Zero & go straight up with the shoulder.
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder = M_PI * 0.5;
-    message->angle_wrist = 0.0;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(M_PI * 0.5);
+    goal_builder.add_angle_wrist(0.0);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(6));
@@ -1290,11 +1345,12 @@ TEST_F(SuperstructureTest, DetectAndFixShoulderInDrivebase) {
   SetEnabled(true);
   // Zero & go straight up with the shoulder.
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder = constants::Values::kShoulderRange.lower;
-    message->angle_wrist = 0.0;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(constants::Values::kShoulderRange.lower);
+    goal_builder.add_angle_wrist(0.0);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(6));
@@ -1333,11 +1389,12 @@ TEST_F(SuperstructureTest, LandingDownVoltageLimit) {
   superstructure_plant_.InitializeAbsoluteWristPosition(0.0);
 
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder = constants::Values::kShoulderRange.lower;
-    message->angle_wrist = 0.0;  // intentionally asking for forward
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(constants::Values::kShoulderRange.lower);
+    goal_builder.add_angle_wrist(0.0);  // intentionally asking for forward
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   RunFor(chrono::seconds(6));
@@ -1353,7 +1410,7 @@ TEST_F(SuperstructureTest, LandingDownVoltageLimit) {
   RunFor(chrono::seconds(2));
   superstructure_goal_fetcher_.Fetch();
   EXPECT_LE(constants::Values::kShoulderRange.lower,
-            superstructure_goal_fetcher_->angle_shoulder);
+            superstructure_goal_fetcher_->angle_shoulder());
 }
 
 // Make sure that we land slowly.
@@ -1361,27 +1418,29 @@ TEST_F(SuperstructureTest, LandSlowly) {
   SetEnabled(true);
   // Zero & go to initial position.
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder = M_PI * 0.25;
-    message->angle_wrist = 0.0;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(M_PI * 0.25);
+    goal_builder.add_angle_wrist(0.0);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(8));
 
   // Tell it to land in the bellypan as fast as possible.
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder = 0.0;
-    message->angle_wrist = 0.0;
-    message->max_angular_velocity_intake = 20;
-    message->max_angular_acceleration_intake = 20;
-    message->max_angular_velocity_shoulder = 20;
-    message->max_angular_acceleration_shoulder = 20;
-    message->max_angular_velocity_wrist = 20;
-    message->max_angular_acceleration_wrist = 20;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(0.0);
+    goal_builder.add_angle_wrist(0.0);
+    goal_builder.add_max_angular_velocity_intake(20);
+    goal_builder.add_max_angular_acceleration_intake(20);
+    goal_builder.add_max_angular_velocity_shoulder(20);
+    goal_builder.add_max_angular_acceleration_shoulder(20);
+    goal_builder.add_max_angular_velocity_wrist(20);
+    goal_builder.add_max_angular_acceleration_wrist(20);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   // Wait until we hit the transition point.
@@ -1400,27 +1459,29 @@ TEST_F(SuperstructureTest, TakeOffQuickly) {
   SetEnabled(true);
   // Zero & go to initial position.
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder = 0.0;
-    message->angle_wrist = 0.0;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(0.0);
+    goal_builder.add_angle_wrist(0.0);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(8));
 
   // Tell it to take off as fast as possible.
   {
-    auto message = superstructure_goal_sender_.MakeMessage();
-    message->angle_intake = 0.0;
-    message->angle_shoulder = M_PI / 2.0;
-    message->angle_wrist = 0.0;
-    message->max_angular_velocity_intake = 20;
-    message->max_angular_acceleration_intake = 20;
-    message->max_angular_velocity_shoulder = 20;
-    message->max_angular_acceleration_shoulder = 20;
-    message->max_angular_velocity_wrist = 20;
-    message->max_angular_acceleration_wrist = 20;
-    ASSERT_TRUE(message.Send());
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_angle_intake(0.0);
+    goal_builder.add_angle_shoulder(M_PI / 2.0);
+    goal_builder.add_angle_wrist(0.0);
+    goal_builder.add_max_angular_velocity_intake(20);
+    goal_builder.add_max_angular_acceleration_intake(20);
+    goal_builder.add_max_angular_velocity_shoulder(20);
+    goal_builder.add_max_angular_acceleration_shoulder(20);
+    goal_builder.add_max_angular_velocity_wrist(20);
+    goal_builder.add_max_angular_acceleration_wrist(20);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
   // Wait until we hit the transition point.

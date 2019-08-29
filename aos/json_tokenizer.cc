@@ -1,5 +1,7 @@
 #include "aos/json_tokenizer.h"
 
+#include <cerrno>
+
 namespace aos {
 
 void Tokenizer::ConsumeWhitespace() {
@@ -267,7 +269,13 @@ Tokenizer::TokenType Tokenizer::Next() {
 
         ConsumeWhitespace();
 
-        state_ = State::kExpectField;
+        // And then if we encounter the end again, go to the end state.
+        if (Consume("}")) {
+          ConsumeWhitespace();
+          state_ = State::kExpectObjectEnd;
+        } else {
+          state_ = State::kExpectField;
+        }
         return TokenType::kStartObject;
       } else if (Consume("[")) {
         // Values are in arrays.  Record and recurse.
@@ -293,6 +301,22 @@ Tokenizer::TokenType Tokenizer::Next() {
         field_value_ = "false";
         result = TokenType::kFalseValue;
       } else {
+        switch (object_type_.back()) {
+          case ObjectType::kObject:
+            if (Consume("}")) {
+              ConsumeWhitespace();
+              state_ = State::kExpectObjectEnd;
+              return Next();
+            }
+            break;
+          case ObjectType::kArray:
+            if (Consume("]")) {
+              ConsumeWhitespace();
+              state_ = State::kExpectArrayEnd;
+              return Next();
+            }
+            break;
+        }
         // Couldn't parse, so we have a syntax error.
         fprintf(stderr, "Error line %d, invalid field value.\n", linenumber_);
       }

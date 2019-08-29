@@ -1,7 +1,11 @@
 #include "y2019/control_loops/superstructure/collision_avoidance.h"
 
 #include <cmath>
-#include "y2019/control_loops/superstructure/superstructure.q.h"
+
+#include "frc971/control_loops/control_loops_generated.h"
+#include "frc971/control_loops/profiled_subsystem_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2019 {
 namespace control_loops {
@@ -30,9 +34,9 @@ CollisionAvoidance::CollisionAvoidance() {
   clear_max_intake_goal();
 }
 
-bool CollisionAvoidance::IsCollided(const SuperstructureQueue::Status *status) {
-  return IsCollided(status->wrist.position, status->elevator.position,
-                    status->intake.position, status->has_piece);
+bool CollisionAvoidance::IsCollided(const Status *status) {
+  return IsCollided(status->wrist()->position(), status->elevator()->position(),
+                    status->intake()->position(), status->has_piece());
 }
 
 bool CollisionAvoidance::IsCollided(const double wrist_position,
@@ -73,13 +77,12 @@ bool CollisionAvoidance::IsCollided(const double wrist_position,
   return false;
 }
 
-void CollisionAvoidance::UpdateGoal(
-    const SuperstructureQueue::Status *status,
-    const SuperstructureQueue::Goal *unsafe_goal) {
-  const double wrist_position = status->wrist.position;
-  const double elevator_position = status->elevator.position;
-  const double intake_position = status->intake.position;
-  const bool has_piece = status->has_piece;
+void CollisionAvoidance::UpdateGoal(const Status *status,
+                                    const Goal *unsafe_goal) {
+  const double wrist_position = status->wrist()->position();
+  const double elevator_position = status->elevator()->position();
+  const double intake_position = status->intake()->position();
+  const bool has_piece = status->has_piece();
 
   // Start with our constraints being wide open.
   clear_max_wrist_goal();
@@ -155,8 +158,8 @@ void CollisionAvoidance::UpdateGoal(
   }
 
   if (unsafe_goal) {
-    const double wrist_goal = unsafe_goal->wrist.unsafe_goal;
-    const double intake_goal = unsafe_goal->intake.unsafe_goal;
+    const double wrist_goal = unsafe_goal->wrist()->unsafe_goal();
+    const double intake_goal = unsafe_goal->intake()->unsafe_goal();
 
     // Compute if we need to move the intake.
     const bool intake_needs_to_move = (intake_position < kIntakeMiddleAngle) ^

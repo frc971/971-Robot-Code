@@ -8,9 +8,12 @@
 
 #include "aos/condition.h"
 #include "aos/mutex/mutex.h"
+#include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/distance_spline.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/drivetrain/spline.h"
 #include "frc971/control_loops/drivetrain/trajectory.h"
 
@@ -31,14 +34,18 @@ class SplineDrivetrain {
     worker_thread_.join();
   }
 
-  void SetGoal(const ::frc971::control_loops::DrivetrainQueue::Goal &goal);
+  void SetGoal(const ::frc971::control_loops::drivetrain::Goal *goal);
 
   void Update(bool enabled, const ::Eigen::Matrix<double, 5, 1> &state);
 
-  void SetOutput(
-      ::frc971::control_loops::DrivetrainQueue::Output *output);
+  void SetOutput(::frc971::control_loops::drivetrain::OutputT *output);
+
+  flatbuffers::Offset<TrajectoryLogging> MakeTrajectoryLogging(
+      aos::Sender<drivetrain::Status>::Builder *builder) const;
+  flatbuffers::Offset<TrajectoryLogging> MakeTrajectoryLogging(
+      flatbuffers::FlatBufferBuilder *builder) const;
   void PopulateStatus(
-      ::frc971::control_loops::DrivetrainQueue::Status *status) const;
+      drivetrain::Status::Builder *status) const;
 
   // Accessor for the current goal state, pretty much only present for debugging
   // purposes.
@@ -54,6 +61,9 @@ class SplineDrivetrain {
         ? current_trajectory_->is_at_end(current_xva_.block<2, 1>(0, 0)) :
               true;
   }
+
+  // Returns true if the splinedrivetrain is enabled.
+  bool enable() const { return enable_; }
 
   enum class PlanState : int8_t {
     kNoPlan = 0,
@@ -85,7 +95,7 @@ class SplineDrivetrain {
   bool enable_ = false;
   bool output_was_capped_ = false;
 
-  std::atomic<PlanState> plan_state_ = {PlanState::kNoPlan};
+  std::atomic<PlanningState> plan_state_ = {PlanningState_NO_PLAN};
 
   ::std::thread worker_thread_;
   // mutex_ is held by the worker thread while it is doing work or by the main
@@ -95,7 +105,26 @@ class SplineDrivetrain {
   ::aos::Condition new_goal_;
   // The following variables are guarded by mutex_.
   bool run_ = true;
-  ::frc971::control_loops::DrivetrainQueue::Goal goal_;
+
+  // These two structures mirror the flatbuffer Multispline.
+  // TODO(austin): copy the goal flatbuffer directly instead of recreating it
+  // like this...
+  struct MultiSpline {
+    int32_t spline_count;
+    std::array<float, 36> spline_x;
+    std::array<float, 36> spline_y;
+    std::array<ConstraintT, 6> constraints;
+  };
+
+  struct SplineGoal {
+    int32_t spline_idx = 0;
+
+    bool drive_spline_backwards;
+
+    MultiSpline spline;
+  };
+
+  SplineGoal goal_;
   ::std::unique_ptr<DistanceSpline> past_distance_spline_;
   ::std::unique_ptr<DistanceSpline> future_distance_spline_;
   ::std::unique_ptr<Trajectory> past_trajectory_;

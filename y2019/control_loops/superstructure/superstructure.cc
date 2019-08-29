@@ -1,34 +1,36 @@
 #include "y2019/control_loops/superstructure/superstructure.h"
 
-#include "aos/controls/control_loops.q.h"
-#include "aos/events/event-loop.h"
-#include "frc971/control_loops/control_loops.q.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "aos/events/event_loop.h"
+#include "frc971/control_loops/control_loops_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
-#include "y2019/status_light.q.h"
+#include "y2019/status_light_generated.h"
 
 namespace y2019 {
 namespace control_loops {
 namespace superstructure {
 
+using frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus;
+using frc971::control_loops::AbsoluteEncoderProfiledJointStatus;
+
 Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
-    : aos::controls::ControlLoop<SuperstructureQueue>(event_loop, name),
+    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
+                                                                 name),
       status_light_sender_(
-          event_loop->MakeSender<::y2019::StatusLight>(".y2019.status_light")),
+          event_loop->MakeSender<::y2019::StatusLight>("/superstructure")),
       drivetrain_status_fetcher_(
-          event_loop
-              ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
-                  ".frc971.control_loops.drivetrain_queue.status")),
+          event_loop->MakeFetcher<::frc971::control_loops::drivetrain::Status>(
+              "/drivetrain")),
       elevator_(constants::GetValues().elevator.subsystem_params),
       wrist_(constants::GetValues().wrist.subsystem_params),
       intake_(constants::GetValues().intake),
       stilts_(constants::GetValues().stilts.subsystem_params) {}
 
-void Superstructure::RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
-                                  const SuperstructureQueue::Position *position,
-                                  SuperstructureQueue::Output *output,
-                                  SuperstructureQueue::Status *status) {
+void Superstructure::RunIteration(const Goal *unsafe_goal,
+                                  const Position *position,
+                                  aos::Sender<Output>::Builder *output,
+                                  aos::Sender<Status>::Builder *status) {
   if (WasReset()) {
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
     elevator_.Reset();
@@ -37,49 +39,92 @@ void Superstructure::RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
     stilts_.Reset();
   }
 
-  elevator_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->elevator) : nullptr,
-                    &(position->elevator),
-                    output != nullptr ? &(output->elevator_voltage) : nullptr,
-                    &(status->elevator));
+  OutputT output_struct;
 
-  wrist_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->wrist) : nullptr,
-                 &(position->wrist),
-                 output != nullptr ? &(output->wrist_voltage) : nullptr,
-                 &(status->wrist));
+  flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
+      elevator_status_offset = elevator_.Iterate(
+          unsafe_goal != nullptr ? unsafe_goal->elevator() : nullptr,
+          position->elevator(),
+          output != nullptr ? &(output_struct.elevator_voltage) : nullptr,
+          status->fbb());
 
-  intake_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->intake) : nullptr,
-                  &(position->intake_joint),
-                  output != nullptr ? &(output->intake_joint_voltage) : nullptr,
-                  &(status->intake));
+  flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
+      wrist_status_offset = wrist_.Iterate(
+          unsafe_goal != nullptr ? unsafe_goal->wrist() : nullptr,
+          position->wrist(),
+          output != nullptr ? &(output_struct.wrist_voltage) : nullptr,
+          status->fbb());
 
-  stilts_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->stilts) : nullptr,
-                  &(position->stilts),
-                  output != nullptr ? &(output->stilts_voltage) : nullptr,
-                  &(status->stilts));
+  flatbuffers::Offset<AbsoluteEncoderProfiledJointStatus> intake_status_offset =
+      intake_.Iterate(
+          unsafe_goal != nullptr ? unsafe_goal->intake() : nullptr,
+          position->intake_joint(),
+          output != nullptr ? &(output_struct.intake_joint_voltage) : nullptr,
+          status->fbb());
 
-  vacuum_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->suction) : nullptr,
-                  position->suction_pressure, output, &(status->has_piece),
+  flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
+      stilts_status_offset = stilts_.Iterate(
+          unsafe_goal != nullptr ? unsafe_goal->stilts() : nullptr,
+          position->stilts(),
+          output != nullptr ? &(output_struct.stilts_voltage) : nullptr,
+          status->fbb());
+
+  bool has_piece;
+  vacuum_.Iterate(unsafe_goal != nullptr ? unsafe_goal->suction() : nullptr,
+                  position->suction_pressure(), &output_struct, &has_piece,
                   event_loop());
 
-  status->zeroed = status->elevator.zeroed && status->wrist.zeroed &&
-                   status->intake.zeroed && status->stilts.zeroed;
+  bool zeroed;
+  bool estopped;
+  {
+    PotAndAbsoluteEncoderProfiledJointStatus *elevator_status =
+        GetMutableTemporaryPointer(*status->fbb(), elevator_status_offset);
+    PotAndAbsoluteEncoderProfiledJointStatus *wrist_status =
+        GetMutableTemporaryPointer(*status->fbb(), wrist_status_offset);
+    AbsoluteEncoderProfiledJointStatus *intake_status =
+        GetMutableTemporaryPointer(*status->fbb(), intake_status_offset);
+    PotAndAbsoluteEncoderProfiledJointStatus *stilts_status =
+        GetMutableTemporaryPointer(*status->fbb(), stilts_status_offset);
 
-  status->estopped = status->elevator.estopped || status->wrist.estopped ||
-                     status->intake.estopped || status->stilts.estopped;
+    zeroed = elevator_status->zeroed() && wrist_status->zeroed() &&
+             intake_status->zeroed() && stilts_status->zeroed();
+
+    estopped = elevator_status->estopped() || wrist_status->estopped() ||
+               intake_status->estopped() || stilts_status->estopped();
+  }
+
+  Status::Builder status_builder = status->MakeBuilder<Status>();
+
+  status_builder.add_zeroed(zeroed);
+  status_builder.add_estopped(estopped);
+  status_builder.add_has_piece(has_piece);
+
+  status_builder.add_elevator(elevator_status_offset);
+  status_builder.add_wrist(wrist_status_offset);
+  status_builder.add_intake(intake_status_offset);
+  status_builder.add_stilts(stilts_status_offset);
+
+  flatbuffers::Offset<Status> status_offset = status_builder.Finish();
+
+  Status *status_flatbuffer =
+      GetMutableTemporaryPointer(*status->fbb(), status_offset);
 
   if (output) {
-    if (unsafe_goal && status->intake.position > kMinIntakeAngleForRollers) {
-      output->intake_roller_voltage = unsafe_goal->roller_voltage;
+    if (unsafe_goal &&
+        status_flatbuffer->intake()->position() > kMinIntakeAngleForRollers) {
+      output_struct.intake_roller_voltage = unsafe_goal->roller_voltage();
     } else {
-      output->intake_roller_voltage = 0.0;
+      output_struct.intake_roller_voltage = 0.0;
     }
+
+    output->Send(Output::Pack(*output->fbb(), &output_struct));
   }
 
   if (unsafe_goal) {
-    if (!unsafe_goal->suction.grab_piece) {
+    if (!unsafe_goal->has_suction() || !unsafe_goal->suction()->grab_piece()) {
       wrist_.set_controller_index(0);
       elevator_.set_controller_index(0);
-    } else if (unsafe_goal->suction.gamepiece_mode == 0) {
+    } else if (unsafe_goal->suction()->gamepiece_mode() == 0) {
       wrist_.set_controller_index(1);
       elevator_.set_controller_index(1);
     } else {
@@ -90,7 +135,7 @@ void Superstructure::RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
 
   // TODO(theo) move these up when Iterate() is split
   // update the goals
-  collision_avoidance_.UpdateGoal(status, unsafe_goal);
+  collision_avoidance_.UpdateGoal(status_flatbuffer, unsafe_goal);
 
   elevator_.set_min_position(collision_avoidance_.min_elevator_goal());
   wrist_.set_min_position(collision_avoidance_.min_wrist_goal());
@@ -102,23 +147,23 @@ void Superstructure::RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
 
   if (status && unsafe_goal) {
     // Light Logic
-    if (status->estopped) {
+    if (status_flatbuffer->estopped()) {
       // Estop is red
       SendColors(1.0, 0.0, 0.0);
     } else if (drivetrain_status_fetcher_.get() &&
-               drivetrain_status_fetcher_->line_follow_logging.frozen) {
+               drivetrain_status_fetcher_->line_follow_logging()->frozen()) {
       // Vision align is flashing white for button pressed, purple for target
       // acquired.
       ++line_blink_count_;
       if (line_blink_count_ < 20) {
-        if (drivetrain_status_fetcher_->line_follow_logging.have_target) {
+        if (drivetrain_status_fetcher_->line_follow_logging()->have_target()) {
           SendColors(1.0, 0.0, 1.0);
         } else {
           SendColors(1.0, 1.0, 1.0);
         }
       } else {
         // And then flash with green if we have a game piece.
-        if (status->has_piece) {
+        if (status_flatbuffer->has_piece()) {
           SendColors(0.0, 1.0, 0.0);
         } else {
           SendColors(0.0, 0.0, 0.0);
@@ -130,15 +175,17 @@ void Superstructure::RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
       }
     } else {
       line_blink_count_ = 0;
-      if (status->has_piece) {
+      if (status_flatbuffer->has_piece()) {
         // Green if we have a game piece.
         SendColors(0.0, 1.0, 0.0);
-      } else if (unsafe_goal->suction.gamepiece_mode == 0 &&
-                 !status->has_piece) {
+      } else if ((!unsafe_goal->has_suction() ||
+                  unsafe_goal->suction()->gamepiece_mode() == 0) &&
+                 !status_flatbuffer->has_piece()) {
         // Ball mode is orange
         SendColors(1.0, 0.1, 0.0);
-      } else if (unsafe_goal->suction.gamepiece_mode == 1 &&
-                 !status->has_piece) {
+      } else if (unsafe_goal->has_suction() &&
+                 unsafe_goal->suction()->gamepiece_mode() == 1 &&
+                 !status_flatbuffer->has_piece()) {
         // Disk mode is deep blue
         SendColors(0.05, 0.1, 0.5);
       } else {
@@ -146,15 +193,20 @@ void Superstructure::RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
       }
     }
   }
+
+  status->Send(status_offset);
 }
 
 void Superstructure::SendColors(float red, float green, float blue) {
-  auto new_status_light = status_light_sender_.MakeMessage();
-  new_status_light->red = red;
-  new_status_light->green = green;
-  new_status_light->blue = blue;
+  auto builder = status_light_sender_.MakeBuilder();
 
-  if (!new_status_light.Send()) {
+  StatusLight::Builder status_light_builder =
+      builder.MakeBuilder<StatusLight>();
+  status_light_builder.add_red(red);
+  status_light_builder.add_green(green);
+  status_light_builder.add_blue(blue);
+
+  if (!builder.Send(status_light_builder.Finish())) {
     AOS_LOG(ERROR, "Failed to send lights.\n");
   }
 }

@@ -1,0 +1,50 @@
+namespace y2016.control_loops.superstructure;
+
+table Goal {
+  // Zero on the intake is when the horizontal tube stock members are level
+  // with the top frame rails of the robot.  This will be essentially when we
+  // are in the intaking position.  Positive is up.  The angle is measured
+  // relative to the top
+  // of the robot frame.
+  // Zero on the shoulder is when the shoulder is down against the hard stop
+  // blocks.  Positive is up.  The angle is measured relative to the top of
+  // the robot frame.
+  // Zero on the wrist is horizontal and landed in the bellypan.  Positive is
+  // the same direction as the shoulder.  The angle is measured relative to
+  // the top of the robot frame.  For calibration, 0 is measured as parallel
+  // to the big frame supporting the shooter.
+
+  // Goal angles and angular velocities of the superstructure subsystems.
+  angle_intake:double;
+  angle_shoulder:double;
+  // In relation to the ground plane.
+  angle_wrist:double;
+
+  // Caps on velocity/acceleration for profiling. 0 for the default.
+  max_angular_velocity_intake:float;
+  max_angular_velocity_shoulder:float;
+  max_angular_velocity_wrist:float;
+
+  max_angular_acceleration_intake:float;
+  max_angular_acceleration_shoulder:float;
+  max_angular_acceleration_wrist:float;
+
+  // Voltage to send to the rollers. Positive is sucking in.
+  voltage_top_rollers:float;
+  voltage_bottom_rollers:float;
+
+  // Voltage to sent to the climber. Positive is pulling the robot up.
+  voltage_climber:float;
+  // If true, unlatch the climber and allow it to unfold.
+  unfold_climber:bool;
+
+  force_intake:bool;
+
+  // If true, release the latch which holds the traverse mechanism in the
+  // middle.
+  traverse_unlatched:bool;
+  // If true, fire the traverse mechanism down.
+  traverse_down:bool;
+}
+
+root_type Goal;

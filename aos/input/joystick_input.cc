@@ -3,18 +3,17 @@
 #include <string.h>
 #include <atomic>
 
-#include "aos/robot_state/robot_state.q.h"
 #include "aos/logging/logging.h"
-#include "aos/logging/queue_logging.h"
+#include "aos/robot_state/robot_state_generated.h"
 
 namespace aos {
 namespace input {
 
-void JoystickInput::HandleData(const ::aos::JoystickState &joystick_state) {
+void JoystickInput::HandleData(const ::aos::JoystickState *joystick_state) {
   data_.Update(joystick_state);
 
-  mode_ = static_cast<int>(joystick_state.switch_left) |
-          (static_cast<int>(joystick_state.scale_left) << 1);
+  mode_ = static_cast<int>(joystick_state->switch_left()) |
+          (static_cast<int>(joystick_state->scale_left()) << 1);
 
   {
     using driver_station::JoystickFeature;

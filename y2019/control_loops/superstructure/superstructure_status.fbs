@@ -1,0 +1,23 @@
+include "frc971/control_loops/control_loops.fbs";
+include "frc971/control_loops/profiled_subsystem.fbs";
+
+namespace y2019.control_loops.superstructure;
+
+table Status {
+  // All subsystems know their location.
+  zeroed:bool;
+
+  // If true, we have aborted. This is the or of all subsystem estops.
+  estopped:bool;
+
+  // Whether suction_pressure indicates cargo is held
+  has_piece:bool;
+
+  // Status of each subsystem.
+  elevator:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus;
+  wrist:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus;
+  intake:frc971.control_loops.AbsoluteEncoderProfiledJointStatus;
+  stilts:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus;
+}
+
+root_type Status;

@@ -1,5 +1,7 @@
 licenses(["notice"])
 
+load("@//tools:environments.bzl", "mcu_cpus")
+
 package(
     default_visibility = ["//visibility:public"],
     features = [
@@ -100,6 +102,9 @@ cc_binary(
         "src/idl_gen_text.cpp",
         "src/util.cpp",
     ],
+    data = [
+        "reflection/reflection.fbs",
+    ],
     includes = [
         "grpc/",
         "include/",
@@ -118,6 +123,7 @@ cc_library(
         "include/flatbuffers/stl_emulation.h",
         "include/flatbuffers/util.h",
     ],
+    compatible_with = mcu_cpus,
     includes = ["include/"],
     linkstatic = 1,
 )

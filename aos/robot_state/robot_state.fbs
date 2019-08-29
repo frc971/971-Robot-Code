@@ -1,0 +1,35 @@
+namespace aos;
+
+// This message is sent out on this queue when sensors are read. It contains
+// global robot state and information about whether the process reading sensors
+// has been restarted, along with all counters etc it keeps track of.  It is
+// published on "/aos"
+table RobotState {
+  // The PID of the process reading sensors.
+  // This is here so control loops can tell when it changes.
+  reader_pid:int;
+
+  // True when outputs are enabled.
+  // Motor controllers keep going for a bit after this goes to false.
+  outputs_enabled:bool;
+  // Indicates whether something is browned out (I think motor controller
+  // outputs). IMPORTANT: This is NOT !outputs_enabled. outputs_enabled goes to
+  // false for other reasons too (disabled, e-stopped, maybe more).
+  browned_out:bool;
+
+  // Whether the two sensor rails are currently working.
+  is_3v3_active:bool;
+  is_5v_active:bool;
+  // The current voltages measured on the two sensor rails.
+  voltage_3v3:double;
+  voltage_5v:double;
+
+  // The input voltage to the roboRIO.
+  voltage_roborio_in:double;
+
+  // From the DriverStation object, aka what FMS sees and what shows up on the
+  // actual driver's station.
+  voltage_battery:double;
+}
+
+root_type RobotState;

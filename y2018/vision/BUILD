@@ -1,4 +1,4 @@
-load("//aos/build:queues.bzl", "queue_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 cc_binary(
     name = "image_streamer",
@@ -17,11 +17,12 @@ cc_binary(
     ],
 )
 
-queue_library(
-    name = "vision_queue",
+flatbuffer_cc_library(
+    name = "vision_fbs",
     srcs = [
-        "vision.q",
+        "vision.fbs",
     ],
+    gen_reflections = 1,
     visibility = ["//visibility:public"],
 )
 
@@ -32,11 +33,10 @@ cc_binary(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        ":vision_queue",
+        ":vision_fbs",
         "//aos:init",
-        "//aos/events:shm-event-loop",
+        "//aos/events:shm_event_loop",
         "//aos/logging",
-        "//aos/logging:queue_logging",
         "//aos/time",
         "//aos/vision/events:udp",
         "//y2018:vision_proto",

@@ -6,7 +6,7 @@
 
 #include "aos/containers/ring_buffer.h"
 #include "aos/time/time.h"
-#include "y2017/vision/vision.q.h"
+#include "y2017/vision/vision_generated.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -28,8 +28,8 @@ class VisionDistanceAverage {
       cached_value_ = ComputeValue();
     }
 
-    if (vision_status != nullptr && vision_status->image_valid) {
-      data_.Push({monotonic_now, vision_status->distance});
+    if (vision_status != nullptr && vision_status->image_valid()) {
+      data_.Push({monotonic_now, vision_status->distance()});
       cached_value_ = ComputeValue();
     }
   }

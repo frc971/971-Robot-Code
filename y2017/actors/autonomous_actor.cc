@@ -7,30 +7,37 @@
 
 #include "aos/logging/logging.h"
 #include "aos/util/phased_loop.h"
-
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2017/control_loops/drivetrain/drivetrain_base.h"
 
 namespace y2017 {
 namespace actors {
 using ::aos::monotonic_clock;
+using ::frc971::ProfileParametersT;
 namespace chrono = ::std::chrono;
 namespace this_thread = ::std::this_thread;
 
 namespace {
 
-const ProfileParameters kGearBallBackDrive = {3.0, 3.5};
-const ProfileParameters kGearDrive = {1.5, 2.0};
-const ProfileParameters kGearFastDrive = {2.0, 2.5};
-const ProfileParameters kGearSlowDrive = {1.0, 2.0};
-const ProfileParameters kGearPlaceDrive = {0.40, 2.0};
-const ProfileParameters kSlowDrive = {3.0, 2.0};
-const ProfileParameters kSlowTurn = {3.0, 3.0};
-const ProfileParameters kFirstTurn = {1.0, 1.5};
-const ProfileParameters kFirstGearStartTurn = {2.0, 3.0};
-const ProfileParameters kFirstGearTurn = {2.0, 5.0};
-const ProfileParameters kSecondGearTurn = {3.0, 5.0};
-const ProfileParameters kSmashTurn = {1.5, 5.0};
+ProfileParametersT MakeProfileParameters(float max_velocity,
+                                         float max_acceleration) {
+  ProfileParametersT result;
+  result.max_velocity = max_velocity;
+  result.max_acceleration = max_acceleration;
+  return result;
+}
+
+const ProfileParametersT kGearBallBackDrive = MakeProfileParameters(3.0, 3.5);
+const ProfileParametersT kGearDrive = MakeProfileParameters(1.5, 2.0);
+const ProfileParametersT kGearFastDrive = MakeProfileParameters(2.0, 2.5);
+const ProfileParametersT kGearSlowDrive = MakeProfileParameters(1.0, 2.0);
+const ProfileParametersT kGearPlaceDrive = MakeProfileParameters(0.40, 2.0);
+const ProfileParametersT kSlowDrive = MakeProfileParameters(3.0, 2.0);
+const ProfileParametersT kSlowTurn = MakeProfileParameters(3.0, 3.0);
+const ProfileParametersT kFirstTurn = MakeProfileParameters(1.0, 1.5);
+const ProfileParametersT kFirstGearStartTurn = MakeProfileParameters(2.0, 3.0);
+const ProfileParametersT kFirstGearTurn = MakeProfileParameters(2.0, 5.0);
+const ProfileParametersT kSecondGearTurn = MakeProfileParameters(3.0, 5.0);
+const ProfileParametersT kSmashTurn = MakeProfileParameters(1.5, 5.0);
 
 }  // namespace
 
@@ -38,22 +45,21 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
     : frc971::autonomous::BaseAutonomousActor(
           event_loop, control_loops::drivetrain::GetDrivetrainConfig()),
       superstructure_status_fetcher_(
-          event_loop->MakeFetcher<
-              ::y2017::control_loops::SuperstructureQueue::Status>(
-              ".y2017.control_loops.superstructure_queue.status")),
-      superstructure_goal_sender_(
           event_loop
-              ->MakeSender<::y2017::control_loops::SuperstructureQueue::Goal>(
-                  ".y2017.control_loops.superstructure_queue.goal")) {}
+              ->MakeFetcher<::y2017::control_loops::superstructure::Status>(
+                  "/superstructure")),
+      superstructure_goal_sender_(
+          event_loop->MakeSender<::y2017::control_loops::superstructure::Goal>(
+              "/superstructure")) {}
 
 bool AutonomousActor::RunAction(
-    const ::frc971::autonomous::AutonomousActionParams &params) {
+    const ::frc971::autonomous::AutonomousActionParams *params) {
   const monotonic_clock::time_point start_time = monotonic_now();
   AOS_LOG(INFO, "Starting autonomous action with mode %" PRId32 "\n",
-          params.mode);
+          params->mode());
   Reset();
 
-  switch (params.mode) {
+  switch (params->mode()) {
     case 503: {
       // Middle gear auto.
       // Red is positive.

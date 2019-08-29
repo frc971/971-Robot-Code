@@ -6,15 +6,13 @@
 #include <limits>
 #include <chrono>
 
-#include "aos/controls/control_loops.q.h"
 #include "aos/logging/logging.h"
-#include "aos/logging/queue_logging.h"
-
 #include "y2014/constants.h"
 #include "y2014/control_loops/shooter/shooter_motor_plant.h"
 
 namespace y2014 {
 namespace control_loops {
+namespace shooter {
 
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
@@ -45,10 +43,6 @@ void ZeroedStateFeedbackLoop::CapU() {
   voltage_ = std::max(-max_voltage_, voltage_);
   mutable_U(0, 0) = voltage_ - old_voltage;
 
-  AOS_LOG_STRUCT(
-      DEBUG, "shooter_output",
-      ::y2014::control_loops::ShooterVoltageToLog(X_hat(2, 0), voltage_));
-
   last_voltage_ = voltage_;
   capped_goal_ = false;
 }
@@ -67,8 +61,6 @@ void ZeroedStateFeedbackLoop::CapGoal() {
       mutable_R(0, 0) -= dx;
     }
     capped_goal_ = true;
-    AOS_LOG_STRUCT(DEBUG, "to prevent windup",
-                   ::y2014::control_loops::ShooterMovingGoal(dx));
   } else if (uncapped_voltage() < -max_voltage_) {
     double dx;
     if (index() == 0) {
@@ -82,8 +74,6 @@ void ZeroedStateFeedbackLoop::CapGoal() {
       mutable_R(0, 0) -= dx;
     }
     capped_goal_ = true;
-    AOS_LOG_STRUCT(DEBUG, "to prevent windup",
-                   ::y2014::control_loops::ShooterMovingGoal(dx));
   } else {
     capped_goal_ = false;
   }
@@ -100,7 +90,6 @@ void ZeroedStateFeedbackLoop::RecalculatePowerGoal() {
 
 void ZeroedStateFeedbackLoop::SetCalibration(double encoder_val,
                                              double known_position) {
-  double old_position = absolute_position();
   double previous_offset = offset_;
   offset_ = known_position - encoder_val;
   double doffset = offset_ - previous_offset;
@@ -110,16 +99,12 @@ void ZeroedStateFeedbackLoop::SetCalibration(double encoder_val,
   if (index() == 0) {
     mutable_R(2, 0) += -plant().A(1, 0) / plant().A(1, 2) * (doffset);
   }
-  AOS_LOG_STRUCT(DEBUG, "sensor edge (fake?)",
-                 ::y2014::control_loops::ShooterChangeCalibration(
-                     encoder_val, known_position, old_position,
-                     absolute_position(), previous_offset, offset_));
 }
 
 ShooterMotor::ShooterMotor(::aos::EventLoop *event_loop,
                            const ::std::string &name)
-    : aos::controls::ControlLoop<::y2014::control_loops::ShooterQueue>(
-          event_loop, name),
+    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
+                                                                 name),
       shooter_(MakeShooterLoop()),
       state_(STATE_INITIALIZE),
       cycles_not_moved_(0),
@@ -137,12 +122,8 @@ double ShooterMotor::PowerToPosition(double power) {
                      (kMaxExtension - values.shooter.upper_limit) *
                          (kMaxExtension - values.shooter.upper_limit));
   if (power < 0) {
-    AOS_LOG_STRUCT(WARNING, "negative power",
-                   ::y2014::control_loops::PowerAdjustment(power, 0));
     power = 0;
   } else if (power > maxpower) {
-    AOS_LOG_STRUCT(WARNING, "power too high",
-                   ::y2014::control_loops::PowerAdjustment(power, maxpower));
     power = maxpower;
   }
 
@@ -166,23 +147,23 @@ double ShooterMotor::PositionToPower(double position) {
   return power;
 }
 
-void ShooterMotor::CheckCalibrations(
-    const ::y2014::control_loops::ShooterQueue::Position *position) {
+void ShooterMotor::CheckCalibrations(const Position *position) {
   AOS_CHECK_NOTNULL(position);
   const constants::Values &values = constants::GetValues();
 
   // TODO(austin): Validate that this is the right edge.
   // If we see a posedge on any of the hall effects,
-  if (position->pusher_proximal.posedge_count != last_proximal_posedge_count_ &&
+  if (position->pusher_proximal()->posedge_count() !=
+          last_proximal_posedge_count_ &&
       !last_proximal_current_) {
     proximal_posedge_validation_cycles_left_ = 2;
   }
   if (proximal_posedge_validation_cycles_left_ > 0) {
-    if (position->pusher_proximal.current) {
+    if (position->pusher_proximal()->current()) {
       --proximal_posedge_validation_cycles_left_;
       if (proximal_posedge_validation_cycles_left_ == 0) {
         shooter_.SetCalibration(
-            position->pusher_proximal.posedge_value,
+            position->pusher_proximal()->posedge_value(),
             values.shooter.pusher_proximal.upper_angle);
 
         AOS_LOG(DEBUG, "Setting calibration using proximal sensor\n");
@@ -193,16 +174,17 @@ void ShooterMotor::CheckCalibrations(
     }
   }
 
-  if (position->pusher_distal.posedge_count != last_distal_posedge_count_ &&
+  if (position->pusher_distal()->posedge_count() !=
+          last_distal_posedge_count_ &&
       !last_distal_current_) {
     distal_posedge_validation_cycles_left_ = 2;
   }
   if (distal_posedge_validation_cycles_left_ > 0) {
-    if (position->pusher_distal.current) {
+    if (position->pusher_distal()->current()) {
       --distal_posedge_validation_cycles_left_;
       if (distal_posedge_validation_cycles_left_ == 0) {
         shooter_.SetCalibration(
-            position->pusher_distal.posedge_value,
+            position->pusher_distal()->posedge_value(),
             values.shooter.pusher_distal.upper_angle);
 
         AOS_LOG(DEBUG, "Setting calibration using distal sensor\n");
@@ -216,43 +198,44 @@ void ShooterMotor::CheckCalibrations(
 
 // Positive is out, and positive power is out.
 void ShooterMotor::RunIteration(
-    const ::y2014::control_loops::ShooterQueue::Goal *goal,
-    const ::y2014::control_loops::ShooterQueue::Position *position,
-    ::y2014::control_loops::ShooterQueue::Output *output,
-    ::y2014::control_loops::ShooterQueue::Status *status) {
+    const Goal *goal,
+    const Position *position,
+    aos::Sender<Output>::Builder *output,
+    aos::Sender<Status>::Builder *status) {
+  OutputT output_struct;
   const monotonic_clock::time_point monotonic_now = event_loop()->monotonic_now();
-  if (goal && ::std::isnan(goal->shot_power)) {
+  if (goal && ::std::isnan(goal->shot_power())) {
     state_ = STATE_ESTOP;
     AOS_LOG(ERROR, "Estopping because got a shot power of NAN.\n");
   }
 
   // we must always have these or we have issues.
   if (status == NULL) {
-    if (output) output->voltage = 0;
+    if (output) output_struct.voltage = 0;
     AOS_LOG(ERROR, "Thought I would just check for null and die.\n");
     return;
   }
-  status->ready = false;
+  bool status_ready = false;
 
   if (WasReset()) {
     state_ = STATE_INITIALIZE;
-    last_distal_current_ = position->pusher_distal.current;
-    last_proximal_current_ = position->pusher_proximal.current;
+    last_distal_current_ = position->pusher_distal()->current();
+    last_proximal_current_ = position->pusher_proximal()->current();
   }
   if (position) {
-    shooter_.CorrectPosition(position->position);
+    shooter_.CorrectPosition(position->position());
   }
 
   // Disable the motors now so that all early returns will return with the
   // motors disabled.
-  if (output) output->voltage = 0;
+  if (output) output_struct.voltage = 0;
 
   const constants::Values &values = constants::GetValues();
 
   // Don't even let the control loops run.
   bool shooter_loop_disable = false;
 
-  const bool disabled = !has_joystick_state() || !joystick_state().enabled;
+  const bool disabled = !has_joystick_state() || !joystick_state().enabled();
 
   // If true, move the goal if we saturate.
   bool cap_goal = false;
@@ -263,7 +246,7 @@ void ShooterMotor::RunIteration(
 
   if (position) {
     int last_index = shooter_.index();
-    if (position->plunger && position->latch) {
+    if (position->plunger() && position->latch()) {
       // Use the controller without the spring if the latch is set and the
       // plunger is back
       shooter_.set_index(1);
@@ -280,27 +263,27 @@ void ShooterMotor::RunIteration(
     case STATE_INITIALIZE:
       if (position) {
         // Reinitialize the internal filter state.
-        shooter_.InitializeState(position->position);
+        shooter_.InitializeState(position->position());
 
         // Start off with the assumption that we are at the value
         // futhest back given our sensors.
-        if (position->pusher_distal.current) {
-          shooter_.SetCalibration(position->position,
+        if (position->pusher_distal()->current()) {
+          shooter_.SetCalibration(position->position(),
                                   values.shooter.pusher_distal.lower_angle);
-        } else if (position->pusher_proximal.current) {
-          shooter_.SetCalibration(position->position,
+        } else if (position->pusher_proximal()->current()) {
+          shooter_.SetCalibration(position->position(),
                                   values.shooter.pusher_proximal.upper_angle);
         } else {
-          shooter_.SetCalibration(position->position,
+          shooter_.SetCalibration(position->position(),
                                   values.shooter.upper_limit);
         }
 
         // Go to the current position.
         shooter_.SetGoalPosition(shooter_.absolute_position(), 0.0);
         // If the plunger is all the way back, we want to be latched.
-        latch_piston_ = position->plunger;
+        latch_piston_ = position->plunger();
         brake_piston_ = false;
-        if (position->latch == latch_piston_) {
+        if (position->latch() == latch_piston_) {
           state_ = STATE_REQUEST_LOAD;
         } else {
           shooter_loop_disable = true;
@@ -317,20 +300,20 @@ void ShooterMotor::RunIteration(
     case STATE_REQUEST_LOAD:
       if (position) {
         zeroed_ = false;
-        if (position->pusher_distal.current ||
-            position->pusher_proximal.current) {
+        if (position->pusher_distal()->current() ||
+            position->pusher_proximal()->current()) {
           // We started on the sensor, back up until we are found.
           // If the plunger is all the way back and not latched, it won't be
           // there for long.
           state_ = STATE_LOAD_BACKTRACK;
 
           // The plunger is already back and latched.  Don't release it.
-          if (position->plunger && position->latch) {
+          if (position->plunger() && position->latch()) {
             latch_piston_ = true;
           } else {
             latch_piston_ = false;
           }
-        } else if (position->plunger && position->latch) {
+        } else if (position->plunger() && position->latch()) {
           // The plunger is back and we are latched.  We most likely got here
           // from Initialize, in which case we want to 'load' again anyways to
           // zero.
@@ -361,11 +344,11 @@ void ShooterMotor::RunIteration(
       shooter_.set_max_voltage(4.0);
 
       if (position) {
-        if (!position->pusher_distal.current &&
-            !position->pusher_proximal.current) {
+        if (!position->pusher_distal()->current() &&
+            !position->pusher_proximal()->current()) {
           Load(monotonic_now);
         }
-        latch_piston_ = position->plunger;
+        latch_piston_ = position->plunger();
       }
 
       brake_piston_ = false;
@@ -391,18 +374,19 @@ void ShooterMotor::RunIteration(
 
         // Latch if the plunger is far enough back to trigger the hall effect.
         // This happens when the distal sensor is triggered.
-        latch_piston_ = position->pusher_distal.current || position->plunger;
+        latch_piston_ =
+            position->pusher_distal()->current() || position->plunger();
 
         // Check if we are latched and back.  Make sure the plunger is all the
         // way back as well.
-        if (position->plunger && position->latch &&
-            position->pusher_distal.current) {
+        if (position->plunger() && position->latch() &&
+            position->pusher_distal()->current()) {
           if (!zeroed_) {
             state_ = STATE_REQUEST_LOAD;
           } else {
             state_ = STATE_PREPARE_SHOT;
           }
-        } else if (position->plunger &&
+        } else if (position->plunger() &&
                    ::std::abs(shooter_.absolute_position() -
                               shooter_.goal_position()) < 0.001) {
           // We are at the goal, but not latched.
@@ -415,10 +399,9 @@ void ShooterMotor::RunIteration(
         if (position) {
           // If none of the sensors is triggered, estop.
           // Otherwise, trigger anyways if it has been 0.5 seconds more.
-          if (!(position->pusher_distal.current ||
-                position->pusher_proximal.current) ||
-              (load_timeout_ + chrono::milliseconds(500) <
-               monotonic_now)) {
+          if (!(position->pusher_distal()->current() ||
+                position->pusher_proximal()->current()) ||
+              (load_timeout_ + chrono::milliseconds(500) < monotonic_now)) {
             state_ = STATE_ESTOP;
             AOS_LOG(ERROR, "Estopping because took too long to load.\n");
           }
@@ -436,7 +419,7 @@ void ShooterMotor::RunIteration(
       if (monotonic_now > loading_problem_end_time_) {
         // Timeout by unloading.
         Unload(monotonic_now);
-      } else if (position && position->plunger && position->latch) {
+      } else if (position && position->plunger() && position->latch()) {
         // If both trigger, we are latched.
         state_ = STATE_PREPARE_SHOT;
       }
@@ -448,7 +431,7 @@ void ShooterMotor::RunIteration(
       shooter_.SetGoalPosition(values.shooter.lower_limit, 0.0);
       if (position) {
         AOS_LOG(DEBUG, "Waiting on latch: plunger %d, latch: %d\n",
-                position->plunger, position->latch);
+                position->plunger(), position->latch());
       }
 
       latch_piston_ = true;
@@ -459,16 +442,16 @@ void ShooterMotor::RunIteration(
       // TODO(austin): Timeout.  Low priority.
 
       if (goal) {
-        shooter_.SetGoalPosition(PowerToPosition(goal->shot_power), 0.0);
+        shooter_.SetGoalPosition(PowerToPosition(goal->shot_power()), 0.0);
       }
 
       AOS_LOG(DEBUG, "PDIFF: absolute_position: %.2f, pow: %.2f\n",
               shooter_.absolute_position(),
-              goal ? PowerToPosition(goal->shot_power)
+              goal ? PowerToPosition(goal->shot_power())
                    : ::std::numeric_limits<double>::quiet_NaN());
       if (goal &&
           ::std::abs(shooter_.absolute_position() -
-                     PowerToPosition(goal->shot_power)) < 0.001 &&
+                     PowerToPosition(goal->shot_power())) < 0.001 &&
           ::std::abs(shooter_.absolute_velocity()) < 0.005) {
         // We are there, set the brake and move on.
         latch_piston_ = true;
@@ -479,7 +462,7 @@ void ShooterMotor::RunIteration(
         latch_piston_ = true;
         brake_piston_ = false;
       }
-      if (goal && goal->unload_requested) {
+      if (goal && goal->unload_requested()) {
         Unload(monotonic_now);
       }
       break;
@@ -488,12 +471,12 @@ void ShooterMotor::RunIteration(
       // Wait until the brake is set, and a shot is requested or the shot power
       // is changed.
       if (monotonic_now > shooter_brake_set_time_) {
-        status->ready = true;
+        status_ready = true;
         // We have waited long enough for the brake to set, turn the shooter
         // control loop off.
         shooter_loop_disable = true;
         AOS_LOG(DEBUG, "Brake is now set\n");
-        if (goal && goal->shot_requested && !disabled) {
+        if (goal && goal->shot_requested() && !disabled) {
           AOS_LOG(DEBUG, "Shooting now\n");
           shooter_loop_disable = true;
           shot_end_time_ = monotonic_now + kShotEndTimeout;
@@ -503,24 +486,24 @@ void ShooterMotor::RunIteration(
       }
       if (state_ == STATE_READY && goal &&
           ::std::abs(shooter_.absolute_position() -
-                     PowerToPosition(goal->shot_power)) > 0.002) {
+                     PowerToPosition(goal->shot_power())) > 0.002) {
         // TODO(austin): Add a state to release the brake.
 
         // TODO(austin): Do we want to set the brake here or after shooting?
         // Depends on air usage.
-        status->ready = false;
+        status_ready = false;
         AOS_LOG(DEBUG, "Preparing shot again.\n");
         state_ = STATE_PREPARE_SHOT;
       }
 
       if (goal) {
-        shooter_.SetGoalPosition(PowerToPosition(goal->shot_power), 0.0);
+        shooter_.SetGoalPosition(PowerToPosition(goal->shot_power()), 0.0);
       }
 
       latch_piston_ = true;
       brake_piston_ = true;
 
-      if (goal && goal->unload_requested) {
+      if (goal && goal->unload_requested()) {
         Unload(monotonic_now);
       }
       break;
@@ -528,7 +511,7 @@ void ShooterMotor::RunIteration(
     case STATE_FIRE:
       if (disabled) {
         if (position) {
-          if (position->plunger) {
+          if (position->plunger()) {
             // If disabled and the plunger is still back there, reset the
             // timeout.
             shot_end_time_ = monotonic_now + kShotEndTimeout;
@@ -537,7 +520,7 @@ void ShooterMotor::RunIteration(
       }
       shooter_loop_disable = true;
       // Count the number of contiguous cycles during which we haven't moved.
-      if (::std::abs(last_position_.position - shooter_.absolute_position()) <
+      if (::std::abs(last_position_position_ - shooter_.absolute_position()) <
           0.0005) {
         ++cycles_not_moved_;
       } else {
@@ -551,7 +534,7 @@ void ShooterMotor::RunIteration(
                        shooter_.absolute_position()) > 0.0005 &&
             cycles_not_moved_ > 6) ||
            monotonic_now > shot_end_time_) &&
-          robot_state().voltage_battery > 10.5) {
+          robot_state().voltage_battery() > 10.5) {
         state_ = STATE_REQUEST_LOAD;
         ++shot_count_;
       }
@@ -566,9 +549,9 @@ void ShooterMotor::RunIteration(
       // the plunger.
       bool all_back;
       if (position) {
-        all_back = position->plunger && position->latch;
+        all_back = position->plunger() && position->latch();
       } else {
-        all_back = last_position_.plunger && last_position_.latch;
+        all_back = last_position_plunger_ && last_position_latch_;
       }
 
       if (all_back) {
@@ -632,7 +615,7 @@ void ShooterMotor::RunIteration(
       brake_piston_ = false;
     } break;
     case STATE_READY_UNLOAD:
-      if (goal && goal->load_requested) {
+      if (goal && goal->load_requested()) {
         state_ = STATE_REQUEST_LOAD;
       }
       // If we are ready to load again,
@@ -652,9 +635,6 @@ void ShooterMotor::RunIteration(
   }
 
   if (!shooter_loop_disable) {
-    AOS_LOG_STRUCT(DEBUG, "running the loop",
-                   ::y2014::control_loops::ShooterStatusToLog(
-                       shooter_.goal_position(), shooter_.absolute_position()));
     if (!cap_goal) {
       shooter_.set_max_voltage(12.0);
     }
@@ -664,49 +644,55 @@ void ShooterMotor::RunIteration(
     }
     // We don't really want to output anything if we went through everything
     // assuming the motors weren't working.
-    if (output) output->voltage = shooter_.voltage();
+    if (output) output_struct.voltage = shooter_.voltage();
   } else {
     shooter_.Update(true);
     shooter_.ZeroPower();
-    if (output) output->voltage = 0.0;
+    if (output) output_struct.voltage = 0.0;
   }
 
-  status->hard_stop_power = PositionToPower(shooter_.absolute_position());
+  Status::Builder status_builder = status->MakeBuilder<Status>();
+
+  status_builder.add_ready(status_ready);
+  status_builder.add_hard_stop_power(
+      PositionToPower(shooter_.absolute_position()));
 
   if (output) {
-    output->latch_piston = latch_piston_;
-    output->brake_piston = brake_piston_;
+    output_struct.latch_piston = latch_piston_;
+    output_struct.brake_piston = brake_piston_;
+
+    output->Send(Output::Pack(*output->fbb(), &output_struct));
   }
 
   if (position) {
-    AOS_LOG_STRUCT(
-        DEBUG, "internal state",
-        ::y2014::control_loops::ShooterStateToLog(
-            shooter_.absolute_position(), shooter_.absolute_velocity(), state_,
-            position->latch, position->pusher_proximal.current,
-            position->pusher_distal.current, position->plunger, brake_piston_,
-            latch_piston_));
+    last_position_latch_ = position->latch();
+    last_position_plunger_ = position->plunger();
+    last_position_position_ = position->position();
 
-    last_position_ = *position;
-
-    last_distal_posedge_count_ = position->pusher_distal.posedge_count;
-    last_proximal_posedge_count_ = position->pusher_proximal.posedge_count;
-    last_distal_current_ = position->pusher_distal.current;
-    last_proximal_current_ = position->pusher_proximal.current;
+    last_distal_posedge_count_ = position->pusher_distal()->posedge_count();
+    last_proximal_posedge_count_ = position->pusher_proximal()->posedge_count();
+    last_distal_current_ = position->pusher_distal()->current();
+    last_proximal_current_ = position->pusher_proximal()->current();
   }
 
-  status->absolute_position = shooter_.absolute_position();
-  status->absolute_velocity = shooter_.absolute_velocity();
-  status->state = state_;
+  status_builder.add_absolute_position(shooter_.absolute_position());
+  status_builder.add_absolute_velocity(shooter_.absolute_velocity());
+  status_builder.add_state(state_);
 
-  status->shots = shot_count_;
+  status_builder.add_shots(shot_count_);
+
+  status->Send(status_builder.Finish());
 }
 
-void ShooterMotor::Zero(::y2014::control_loops::ShooterQueue::Output *output) {
-  output->voltage = 0.0;
-  output->latch_piston = latch_piston_;
-  output->brake_piston = brake_piston_;
+flatbuffers::Offset<Output> ShooterMotor::Zero(
+    aos::Sender<Output>::Builder *output) {
+  Output::Builder output_builder = output->MakeBuilder<Output>();
+  output_builder.add_voltage(0.0);
+  output_builder.add_latch_piston(latch_piston_);
+  output_builder.add_brake_piston(brake_piston_);
+  return output_builder.Finish();
 }
 
+}  // namespace shooter
 }  // namespace control_loops
 }  // namespace y2014

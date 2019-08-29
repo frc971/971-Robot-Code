@@ -4,7 +4,7 @@
 #include "aos/controls/control_loop.h"
 #include "aos/time/time.h"
 
-#include "frc971/codelab/basic.q.h"
+#include "frc971/codelab/basic_generated.h"
 
 namespace frc971 {
 namespace codelab {
@@ -41,16 +41,16 @@ namespace codelab {
 // Order of approaching this should be:
 // - Read the BUILD file and learn about what code is being generated.
 // - Read basic.q, and familiarize yourself on the inputs and types involved.
-class Basic : public ::aos::controls::ControlLoop<BasicQueue> {
+class Basic
+    : public ::aos::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
   explicit Basic(::aos::EventLoop *event_loop,
-                 const ::std::string &name = ".frc971.codelab.basic_queue");
+                 const ::std::string &name = "/codelab");
 
  protected:
-  void RunIteration(const BasicQueue::Goal *goal,
-                    const BasicQueue::Position *position,
-                    BasicQueue::Output *output,
-                    BasicQueue::Status *status) override;
+  void RunIteration(const Goal *goal, const Position *position,
+                    aos::Sender<Output>::Builder *output,
+                    aos::Sender<Status>::Builder *status) override;
 };
 
 }  // namespace codelab

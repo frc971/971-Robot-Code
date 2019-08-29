@@ -36,6 +36,6 @@ cc_library(
         "//motors:math",
         "//motors:motor",
         "//motors/peripheral:configuration",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )

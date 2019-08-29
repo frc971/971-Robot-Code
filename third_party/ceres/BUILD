@@ -179,7 +179,7 @@ TEST_COPTS = [
 TEST_DEPS = [
     "//:ceres",
     "//:test_util",
-    "@//third_party/eigen",
+    "@org_tuxfamily_eigen//:eigen",
     "@com_github_gflags_gflags//:gflags",
 ]
 

@@ -1,0 +1,42 @@
+namespace frc971;
+
+// Values returned from an IMU.
+// Published on ".frc971.imu_values"
+table IMUValues {
+  // Gyro readings in radians/second.
+  // Positive is clockwise looking at the connector.
+  gyro_x:float;
+  // Positive is clockwise looking at the right side (from the connector).
+  gyro_y:float;
+  // Positive is counterclockwise looking at the top.
+  gyro_z:float;
+
+  // Accelerometer readings in Gs.
+  // Positive is up.
+  accelerometer_x:float;
+  // Positive is away from the right side (from the connector).
+  accelerometer_y:float;
+  // Positive is away from the connector.
+  accelerometer_z:float;
+
+  // Magnetometer readings in gauss.
+  // Positive is up.
+  magnetometer_x:float;
+  // Positive is away from the right side (from the connector).
+  magnetometer_y:float;
+  // Positive is away from the connector.
+  magnetometer_z:float;
+
+  // Barometer readings in pascals.
+  barometer:float;
+
+  // Temperature readings in degrees Celsius.
+  temperature:float;
+
+  // FPGA timestamp when the values were captured.
+  fpga_timestamp:double;
+  // CLOCK_MONOTONIC time in nanoseconds when the values were captured.
+  monotonic_timestamp_ns:long;
+}
+
+root_type IMUValues;

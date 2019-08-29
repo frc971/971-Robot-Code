@@ -1,5 +1,3 @@
-load("//tools/build_rules:ruby.bzl", "ruby_binary")
-load("//aos/build:queues.bzl", "queue_library")
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 load("//tools/cpp/emscripten:defs.bzl", "emcc_binary")
 
@@ -35,46 +33,6 @@ cc_test(
     ],
     deps = [
         "@com_github_gflags_gflags//:gflags",
-    ],
-)
-
-ruby_binary(
-    name = "ruby_binary",
-    srcs = [
-        "ruby.rb",
-        "ruby_to_require.rb",
-    ],
-    data = [
-        "ruby_to_require.rb",
-    ],
-)
-
-sh_test(
-    name = "ruby_build_test",
-    size = "small",
-    srcs = [
-        "ruby_check.sh",
-    ],
-    data = [
-        ":ruby_binary",
-    ],
-)
-
-queue_library(
-    name = "queue_library",
-    srcs = [
-        "queue.q",
-    ],
-)
-
-cc_test(
-    name = "queue_build_test",
-    size = "small",
-    srcs = [
-        "queue.cc",
-    ],
-    deps = [
-        ":queue_library",
     ],
 )
 

@@ -11,19 +11,20 @@
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
 
-#include "frc971/autonomous/auto.q.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "frc971/queues/gyro.q.h"
+#include "frc971/autonomous/auto_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2016/actors/autonomous_actor.h"
 #include "y2016/actors/superstructure_actor.h"
 #include "y2016/actors/vision_align_actor.h"
 #include "y2016/constants.h"
 #include "y2016/control_loops/drivetrain/drivetrain_base.h"
-#include "y2016/control_loops/shooter/shooter.q.h"
+#include "y2016/control_loops/shooter/shooter_goal_generated.h"
 #include "y2016/control_loops/superstructure/superstructure.h"
-#include "y2016/control_loops/superstructure/superstructure.q.h"
-#include "y2016/queues/ball_detector.q.h"
-#include "y2016/vision/vision.q.h"
+#include "y2016/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2016/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2016/queues/ball_detector_generated.h"
+#include "y2016/vision/vision_generated.h"
 
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::ControlBit;
@@ -73,30 +74,28 @@ class Reader : public ::aos::input::ActionJoystickInput {
             ::aos::input::DrivetrainInputReader::InputType::kSteeringWheel, {}),
         vision_status_fetcher_(
             event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
-                ".y2016.vision.vision_status")),
+                "/superstructure")),
         ball_detector_fetcher_(
             event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
-                ".y2016.sensors.ball_detector")),
+                "/superstructure")),
         shooter_goal_sender_(
-            event_loop->MakeSender<
-                ::y2016::control_loops::shooter::ShooterQueue::Goal>(
-                ".y2016.control_loops.shooter.shooter_queue.goal")),
+            event_loop->MakeSender<::y2016::control_loops::shooter::Goal>(
+                "/shooter")),
         superstructure_status_fetcher_(
-            event_loop->MakeFetcher<
-                ::y2016::control_loops::SuperstructureQueue::Status>(
-                ".y2016.control_loops.superstructure_queue.status")),
+            event_loop
+                ->MakeFetcher<::y2016::control_loops::superstructure::Status>(
+                    "/superstructure")),
         superstructure_goal_sender_(
             event_loop
-                ->MakeSender<::y2016::control_loops::SuperstructureQueue::Goal>(
-                    ".y2016.control_loops.superstructure_queue.goal")),
+                ->MakeSender<::y2016::control_loops::superstructure::Goal>(
+                    "/superstructure")),
         drivetrain_goal_fetcher_(
-            event_loop
-                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Goal>(
-                    ".frc971.control_loops.drivetrain_queue.goal")),
+            event_loop->MakeFetcher<::frc971::control_loops::drivetrain::Goal>(
+                "/drivetrain")),
         drivetrain_status_fetcher_(
             event_loop
-                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
-                    ".frc971.control_loops.drivetrain_queue.status")),
+                ->MakeFetcher<::frc971::control_loops::drivetrain::Status>(
+                    "/drivetrain")),
         intake_goal_(0.0),
         shoulder_goal_(M_PI / 2.0),
         wrist_goal_(0.0),
@@ -116,14 +115,14 @@ class Reader : public ::aos::input::ActionJoystickInput {
     vision_status_fetcher_.Fetch();
 
     if (vision_status_fetcher_.get()) {
-      vision_valid_ = (vision_status_fetcher_->left_image_valid &&
-                       vision_status_fetcher_->right_image_valid);
-      last_angle_ = vision_status_fetcher_->horizontal_angle;
+      vision_valid_ = (vision_status_fetcher_->left_image_valid() &&
+                       vision_status_fetcher_->right_image_valid());
+      last_angle_ = vision_status_fetcher_->horizontal_angle();
     }
 
     if (data.IsPressed(kVisionAlign)) {
       if (vision_valid_ && !vision_action_running_) {
-        actors::VisionAlignActionParams params;
+        actors::vision_align_action::VisionAlignActionParamsT params;
         EnqueueAction(vision_align_action_factory_.Make(params));
         vision_action_running_ = true;
         AOS_LOG(INFO, "Starting vision align\n");
@@ -167,7 +166,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     if (superstructure_status_fetcher_.get() &&
-        superstructure_status_fetcher_->zeroed) {
+        superstructure_status_fetcher_->zeroed()) {
       if (waiting_for_zero_) {
         AOS_LOG(DEBUG, "Zeroed! Starting teleop mode.\n");
         waiting_for_zero_ = false;
@@ -191,7 +190,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       wrist_goal_ = M_PI + 0.41 + 0.02 - 0.005;
       drivetrain_status_fetcher_.Fetch();
       if (drivetrain_status_fetcher_.get()) {
-        wrist_goal_ += drivetrain_status_fetcher_->ground_angle;
+        wrist_goal_ += drivetrain_status_fetcher_->ground_angle();
       }
       shooter_velocity_ = 640.0;
       intake_goal_ = intake_when_shooting;
@@ -201,7 +200,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       wrist_goal_ = -0.62 - 0.02;
       drivetrain_status_fetcher_.Fetch();
       if (drivetrain_status_fetcher_.get()) {
-        wrist_goal_ += drivetrain_status_fetcher_->ground_angle;
+        wrist_goal_ += drivetrain_status_fetcher_->ground_angle();
       }
       shooter_velocity_ = 640.0;
       intake_goal_ = intake_when_shooting;
@@ -225,7 +224,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       intake_goal_ = 0.0;
       if (data.PosEdge(kExpand)) {
         is_expanding_ = true;
-        actors::SuperstructureActionParams params;
+        actors::superstructure_action::SuperstructureActionParamsT params;
         params.partial_angle = 0.3;
         params.delay_time = 0.7;
         params.full_angle = shoulder_goal_;
@@ -248,7 +247,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     bool ball_detected = false;
     ball_detector_fetcher_.Fetch();
     if (ball_detector_fetcher_.get()) {
-      ball_detected = ball_detector_fetcher_->voltage > 2.5;
+      ball_detected = ball_detector_fetcher_->voltage() > 2.5;
     }
     if (data.PosEdge(kIntakeIn)) {
       saw_ball_when_started_intaking_ = ball_detected;
@@ -271,16 +270,16 @@ class Reader : public ::aos::input::ActionJoystickInput {
         drivetrain_goal_fetcher_.Fetch();
         if (drivetrain_status_fetcher_.get() &&
             drivetrain_goal_fetcher_.get()) {
-          const double left_goal = drivetrain_goal_fetcher_->left_goal;
-          const double right_goal = drivetrain_goal_fetcher_->right_goal;
+          const double left_goal = drivetrain_goal_fetcher_->left_goal();
+          const double right_goal = drivetrain_goal_fetcher_->right_goal();
           const double left_current =
-              drivetrain_status_fetcher_->estimated_left_position;
+              drivetrain_status_fetcher_->estimated_left_position();
           const double right_current =
-              drivetrain_status_fetcher_->estimated_right_position;
+              drivetrain_status_fetcher_->estimated_right_position();
           const double left_velocity =
-              drivetrain_status_fetcher_->estimated_left_velocity;
+              drivetrain_status_fetcher_->estimated_left_velocity();
           const double right_velocity =
-              drivetrain_status_fetcher_->estimated_right_velocity;
+              drivetrain_status_fetcher_->estimated_right_velocity();
           if (vision_action_running_ && ::std::abs(last_angle_) < 0.02 &&
               ::std::abs((left_goal - right_goal) -
                          (left_current - right_current)) /
@@ -331,54 +330,57 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     if (!waiting_for_zero_) {
       if (!is_expanding_) {
-        auto new_superstructure_goal =
-            superstructure_goal_sender_.MakeMessage();
-        new_superstructure_goal->angle_intake = intake_goal_;
-        new_superstructure_goal->angle_shoulder = shoulder_goal_;
-        new_superstructure_goal->angle_wrist = wrist_goal_;
+        auto builder = superstructure_goal_sender_.MakeBuilder();
 
-        new_superstructure_goal->max_angular_velocity_intake = 7.0;
-        new_superstructure_goal->max_angular_velocity_shoulder = 4.0;
-        new_superstructure_goal->max_angular_velocity_wrist = 10.0;
+        ::y2016::control_loops::superstructure::Goal::Builder
+            superstructure_builder = builder.MakeBuilder<
+                ::y2016::control_loops::superstructure::Goal>();
+        superstructure_builder.add_angle_intake(intake_goal_);
+        superstructure_builder.add_angle_shoulder(shoulder_goal_);
+        superstructure_builder.add_angle_wrist(wrist_goal_);
+
+        superstructure_builder.add_max_angular_velocity_intake(7.0);
+        superstructure_builder.add_max_angular_velocity_shoulder(4.0);
+        superstructure_builder.add_max_angular_velocity_wrist(10.0);
         if (use_slow_profile) {
-          new_superstructure_goal->max_angular_acceleration_intake = 10.0;
+          superstructure_builder.add_max_angular_acceleration_intake(10.0);
         } else {
-          new_superstructure_goal->max_angular_acceleration_intake = 40.0;
+          superstructure_builder.add_max_angular_acceleration_intake(40.0);
         }
-        new_superstructure_goal->max_angular_acceleration_shoulder = 10.0;
+        superstructure_builder.add_max_angular_acceleration_shoulder(10.0);
         if (shoulder_goal_ > 1.0) {
-          new_superstructure_goal->max_angular_acceleration_wrist = 45.0;
+          superstructure_builder.add_max_angular_acceleration_wrist(45.0);
         } else {
-          new_superstructure_goal->max_angular_acceleration_wrist = 25.0;
+          superstructure_builder.add_max_angular_acceleration_wrist(25.0);
         }
 
         // Granny mode
         /*
-        new_superstructure_goal->max_angular_velocity_intake = 0.2;
-        new_superstructure_goal->max_angular_velocity_shoulder = 0.2;
-        new_superstructure_goal->max_angular_velocity_wrist = 0.2;
-        new_superstructure_goal->max_angular_acceleration_intake = 1.0;
-        new_superstructure_goal->max_angular_acceleration_shoulder = 1.0;
-        new_superstructure_goal->max_angular_acceleration_wrist = 1.0;
+        superstructure_builder.add_max_angular_velocity_intake(0.2);
+        superstructure_builder.add_max_angular_velocity_shoulder(0.2);
+        superstructure_builder.add_max_angular_velocity_wrist(0.2);
+        superstructure_builder.add_max_angular_acceleration_intake(1.0);
+        superstructure_builder.add_max_angular_acceleration_shoulder(1.0);
+        superstructure_builder.add_max_angular_acceleration_wrist(1.0);
         */
         if (is_intaking_) {
-          new_superstructure_goal->voltage_top_rollers = 12.0;
-          new_superstructure_goal->voltage_bottom_rollers = 12.0;
+          superstructure_builder.add_voltage_top_rollers(12.0);
+          superstructure_builder.add_voltage_bottom_rollers(12.0);
         } else if (is_outtaking_) {
-          new_superstructure_goal->voltage_top_rollers = -12.0;
-          new_superstructure_goal->voltage_bottom_rollers = -7.0;
+          superstructure_builder.add_voltage_top_rollers(-12.0);
+          superstructure_builder.add_voltage_bottom_rollers(-7.0);
         } else {
-          new_superstructure_goal->voltage_top_rollers = 0.0;
-          new_superstructure_goal->voltage_bottom_rollers = 0.0;
+          superstructure_builder.add_voltage_top_rollers(0.0);
+          superstructure_builder.add_voltage_bottom_rollers(0.0);
         }
 
-        new_superstructure_goal->traverse_unlatched = traverse_unlatched_;
-        new_superstructure_goal->unfold_climber = false;
-        new_superstructure_goal->voltage_climber = voltage_climber;
-        new_superstructure_goal->traverse_down = traverse_down_;
-        new_superstructure_goal->force_intake = true;
+        superstructure_builder.add_traverse_unlatched(traverse_unlatched_);
+        superstructure_builder.add_unfold_climber(false);
+        superstructure_builder.add_voltage_climber(voltage_climber);
+        superstructure_builder.add_traverse_down(traverse_down_);
+        superstructure_builder.add_force_intake(true);
 
-        if (!new_superstructure_goal.Send()) {
+        if (!builder.Send(superstructure_builder.Finish())) {
           AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
         } else {
           AOS_LOG(DEBUG, "sending goals: intake: %f, shoulder: %f, wrist: %f\n",
@@ -386,15 +388,19 @@ class Reader : public ::aos::input::ActionJoystickInput {
         }
       }
 
-      auto shooter_message = shooter_goal_sender_.MakeMessage();
-      shooter_message->angular_velocity = shooter_velocity_;
-      shooter_message->clamp_open = is_intaking_ || is_outtaking_;
-      shooter_message->push_to_shooter = fire_;
-      shooter_message->force_lights_on = force_lights_on;
-      shooter_message->shooting_forwards = wrist_goal_ > 0;
+      {
+        auto builder = shooter_goal_sender_.MakeBuilder();
+        y2016::control_loops::shooter::Goal::Builder shooter_builder =
+            builder.MakeBuilder<y2016::control_loops::shooter::Goal>();
+        shooter_builder.add_angular_velocity(shooter_velocity_);
+        shooter_builder.add_clamp_open(is_intaking_ || is_outtaking_);
+        shooter_builder.add_push_to_shooter(fire_);
+        shooter_builder.add_force_lights_on(force_lights_on);
+        shooter_builder.add_shooting_forwards(wrist_goal_ > 0);
 
-      if (!shooter_message.Send()) {
-        AOS_LOG(ERROR, "Sending shooter goal failed.\n");
+        if (!builder.Send(shooter_builder.Finish())) {
+          AOS_LOG(ERROR, "Sending shooter goal failed.\n");
+        }
       }
     }
   }
@@ -402,15 +408,15 @@ class Reader : public ::aos::input::ActionJoystickInput {
  private:
   ::aos::Fetcher<::y2016::vision::VisionStatus> vision_status_fetcher_;
   ::aos::Fetcher<::y2016::sensors::BallDetector> ball_detector_fetcher_;
-  ::aos::Sender<::y2016::control_loops::shooter::ShooterQueue::Goal>
+  ::aos::Sender<::y2016::control_loops::shooter::Goal>
       shooter_goal_sender_;
-  ::aos::Fetcher<::y2016::control_loops::SuperstructureQueue::Status>
+  ::aos::Fetcher<::y2016::control_loops::superstructure::Status>
       superstructure_status_fetcher_;
-  ::aos::Sender<::y2016::control_loops::SuperstructureQueue::Goal>
+  ::aos::Sender<::y2016::control_loops::superstructure::Goal>
       superstructure_goal_sender_;
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Goal>
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Goal>
       drivetrain_goal_fetcher_;
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
 
   // Whatever these are set to are our default goals to send out after zeroing.
@@ -457,7 +463,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
 int main() {
   ::aos::InitNRT(true);
 
-  ::aos::ShmEventLoop event_loop;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig("config.json");
+
+  ::aos::ShmEventLoop event_loop(&config.message());
   ::y2016::input::joysticks::Reader reader(&event_loop);
 
   event_loop.Run();

@@ -1,46 +1,46 @@
 genrule(
-  name = 'genrule_intake',
-  cmd = '$(location //y2017/control_loops/python:intake) $(OUTS)',
-  tools = [
-    '//y2017/control_loops/python:intake',
-  ],
-  outs = [
-    'intake_plant.h',
-    'intake_plant.cc',
-    'intake_integral_plant.h',
-    'intake_integral_plant.cc',
-  ],
+    name = "genrule_intake",
+    outs = [
+        "intake_plant.h",
+        "intake_plant.cc",
+        "intake_integral_plant.h",
+        "intake_integral_plant.cc",
+    ],
+    cmd = "$(location //y2017/control_loops/python:intake) $(OUTS)",
+    tools = [
+        "//y2017/control_loops/python:intake",
+    ],
 )
 
 cc_library(
-  name = 'intake_plants',
-  visibility = ['//visibility:public'],
-  srcs = [
-    'intake_plant.cc',
-    'intake_integral_plant.cc',
-  ],
-  hdrs = [
-    'intake_plant.h',
-    'intake_integral_plant.h',
-  ],
-  deps = [
-    '//frc971/control_loops:state_feedback_loop',
-  ],
+    name = "intake_plants",
+    srcs = [
+        "intake_integral_plant.cc",
+        "intake_plant.cc",
+    ],
+    hdrs = [
+        "intake_integral_plant.h",
+        "intake_plant.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//frc971/control_loops:state_feedback_loop",
+    ],
 )
 
 cc_library(
-  name = 'intake',
-  visibility = ['//visibility:public'],
-  srcs = [
-    'intake.cc',
-  ],
-  hdrs = [
-    'intake.h',
-  ],
-  deps = [
-    ':intake_plants',
-    '//frc971/control_loops:profiled_subsystem',
-    '//y2017/control_loops/superstructure:superstructure_queue',
-    '//y2017:constants',
-  ],
+    name = "intake",
+    srcs = [
+        "intake.cc",
+    ],
+    hdrs = [
+        "intake.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":intake_plants",
+        "//frc971/control_loops:profiled_subsystem",
+        "//y2017:constants",
+        "//y2017/control_loops/superstructure:superstructure_goal_fbs",
+    ],
 )

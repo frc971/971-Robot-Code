@@ -4,11 +4,14 @@
 #include <memory>
 
 #include "aos/controls/control_loop.h"
-#include "aos/events/event-loop.h"
+#include "aos/events/event_loop.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-#include "y2016/control_loops/shooter/shooter.q.h"
+#include "y2016/control_loops/shooter/shooter_goal_generated.h"
 #include "y2016/control_loops/shooter/shooter_integral_plant.h"
+#include "y2016/control_loops/shooter/shooter_output_generated.h"
+#include "y2016/control_loops/shooter/shooter_position_generated.h"
+#include "y2016/control_loops/shooter/shooter_status_generated.h"
 
 namespace y2016 {
 namespace control_loops {
@@ -28,7 +31,8 @@ class ShooterSide {
   void set_position(double current_position);
 
   // Populates the status structure.
-  void SetStatus(ShooterSideStatus *status);
+  flatbuffers::Offset<ShooterSideStatus> SetStatus(
+      flatbuffers::FlatBufferBuilder *fbb);
 
   // Returns the control loop calculated voltage.
   double voltage() const;
@@ -53,11 +57,11 @@ class ShooterSide {
   DISALLOW_COPY_AND_ASSIGN(ShooterSide);
 };
 
-class Shooter : public ::aos::controls::ControlLoop<ShooterQueue> {
+class Shooter
+    : public ::aos::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
-  explicit Shooter(
-      ::aos::EventLoop *event_loop,
-      const ::std::string &name = ".y2016.control_loops.shooter.shooter_queue");
+  explicit Shooter(::aos::EventLoop *event_loop,
+                   const ::std::string &name = "/shooter");
 
   enum class ShooterLatchState {
     // Any shoot commands will be passed through without modification.
@@ -73,10 +77,9 @@ class Shooter : public ::aos::controls::ControlLoop<ShooterQueue> {
   };
 
  protected:
-  void RunIteration(const ShooterQueue::Goal *goal,
-                    const ShooterQueue::Position *position,
-                    ShooterQueue::Output *output,
-                    ShooterQueue::Status *status) override;
+  void RunIteration(const Goal *goal, const Position *position,
+                    aos::Sender<Output>::Builder *output,
+                    aos::Sender<Status>::Builder *status) override;
 
  private:
   ShooterSide left_, right_;

@@ -11,10 +11,10 @@
 #include <memory>
 #include <thread>
 
-#include "aos/init.h"
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/lockless_queue_memory.h"
 #include "aos/libc/aos_strsignal.h"
+#include "aos/realtime.h"
 #include "aos/testing/prevent_exit.h"
 #include "aos/testing/test_logging.h"
 #include "gflags/gflags.h"
@@ -507,14 +507,14 @@ TEST(LocklessQueueTest, Death) {
 
   TestShmRobustness(
       config,
-      [this, config, tid](void *memory) {
+      [config, tid](void *memory) {
         // Initialize the queue and grab the tid.
         LocklessQueue queue(
             reinterpret_cast<aos::ipc_lib::LocklessQueueMemory *>(memory),
             config);
         *tid = gettid();
       },
-      [this, config](void *memory) {
+      [config](void *memory) {
         // Now try to write 2 messages.  We will get killed a bunch as this
         // tries to happen.
         LocklessQueue queue(
@@ -527,7 +527,7 @@ TEST(LocklessQueueTest, Death) {
           sender.Send(data, s + 1);
         }
       },
-      [this, config, tid](void *raw_memory) {
+      [config, tid](void *raw_memory) {
         // Confirm that we can create 2 senders (the number in the queue), and
         // send a message.  And that all the messages in the queue are valid.
         ::aos::ipc_lib::LocklessQueueMemory *memory =

@@ -14,9 +14,10 @@
 #include "y2017/constants.h"
 #include "y2017/control_loops/superstructure/column/column_zeroing.h"
 #include "y2017/control_loops/superstructure/intake/intake.h"
-#include "y2017/control_loops/superstructure/superstructure.q.h"
+#include "y2017/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2017/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2017/control_loops/superstructure/vision_time_adjuster.h"
-#include "y2017/vision/vision.q.h"
+#include "y2017/vision/vision_generated.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -41,8 +42,10 @@ class ColumnProfiledSubsystem
   void Update(bool disabled);
 
   // Fills out the ProfiledJointStatus structure with the current state.
-  template <class StatusType>
-  void PopulateTurretStatus(StatusType *status);
+  void PopulateTurretStatus(
+      TurretProfiledSubsystemStatus::Builder *status_builder,
+      flatbuffers::Offset<ColumnZeroingEstimator::State>
+          estimator_state_offset);
 
   // Forces the current goal to the provided goal, bypassing the profiler.
   void ForceGoal(double goal_velocity, double goal);
@@ -52,7 +55,7 @@ class ColumnProfiledSubsystem
   void set_turret_unprofiled_goal(double unprofiled_goal);
   void set_unprofiled_goal(double goal_velocity, double unprofiled_goal);
   // Limits our profiles to a max velocity and acceleration for proper motion.
-  void AdjustProfile(const ::frc971::ProfileParameters &profile_parameters);
+  void AdjustProfile(const ::frc971::ProfileParameters *profile_parameters);
   void AdjustProfile(double max_angular_velocity,
                      double max_angular_acceleration);
 
@@ -86,7 +89,7 @@ class ColumnProfiledSubsystem
   double IndexerStuckVoltage() const;
   void PartialIndexerReset();
   void PartialTurretReset();
-  void PopulateIndexerStatus(IndexerStatus *status);
+  void PopulateIndexerStatus(IndexerStatus::Builder *status_builder);
 
   void AddOffset(double indexer_offset_delta, double turret_offset_delta);
 
@@ -132,31 +135,6 @@ class ColumnProfiledSubsystem
   double turret_last_position_ = 0;
 };
 
-template <typename StatusType>
-void ColumnProfiledSubsystem::PopulateTurretStatus(StatusType *status) {
-  status->zeroed = zeroed();
-  status->state = -1;
-  // We don't know, so default to the bad case.
-  status->estopped = true;
-
-  status->position = X_hat(2, 0);
-  status->velocity = X_hat(3, 0);
-  status->goal_position = goal(2, 0);
-  status->goal_velocity = goal(3, 0);
-  status->unprofiled_goal_position = unprofiled_goal(2, 0);
-  status->unprofiled_goal_velocity = unprofiled_goal(3, 0);
-  status->voltage_error = X_hat(5, 0);
-  status->calculated_velocity =
-      (turret_position() - turret_last_position_) /
-      ::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency);
-
-  status->estimator_state = EstimatorState(0);
-
-  Eigen::Matrix<double, 6, 1> error = controller().error();
-  status->position_power = controller().controller().K(0, 0) * error(0, 0);
-  status->velocity_power = controller().controller().K(0, 1) * error(1, 0);
-}
-
 class Column {
  public:
   Column(::aos::EventLoop *event_loop);
@@ -179,15 +157,16 @@ class Column {
   static constexpr double kTurretMin = -0.1;
   static constexpr double kTurretMax = M_PI / 2.0 + 0.1;
 
-  void Iterate(::aos::monotonic_clock::time_point monotonic_now,
-               const control_loops::IndexerGoal *unsafe_indexer_goal,
-               const control_loops::TurretGoal *unsafe_turret_goal,
-               const ColumnPosition *position,
-               const vision::VisionStatus *vision_status,
-               double *indexer_output, double *turret_output,
-               IndexerStatus *indexer_status,
-               TurretProfiledSubsystemStatus *turret_status,
-               intake::Intake *intake);
+  std::pair<flatbuffers::Offset<IndexerStatus>,
+            flatbuffers::Offset<TurretProfiledSubsystemStatus>>
+  Iterate(::aos::monotonic_clock::time_point monotonic_now,
+          const IndexerGoalT *unsafe_indexer_goal,
+          const TurretGoal *unsafe_turret_goal, const ColumnPosition *position,
+          const vision::VisionStatus *vision_status, double *indexer_output,
+          double *turret_output, flatbuffers::FlatBufferBuilder *fbb,
+          // IndexerStatus *indexer_status,
+          // TurretProfiledSubsystemStatus *turret_status,
+          intake::Intake *intake);
 
   void Reset();
 

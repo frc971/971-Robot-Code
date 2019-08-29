@@ -9,10 +9,10 @@
 #include <atomic>
 #include <memory>
 
-#include "aos/events/event-loop.h"
+#include "aos/actions/actions_generated.h"
+#include "aos/events/event_loop.h"
+#include "aos/json_to_flatbuffer.h"
 #include "aos/logging/logging.h"
-#include "aos/logging/queue_logging.h"
-#include "aos/queue.h"
 
 namespace aos {
 namespace common {
@@ -105,31 +105,28 @@ template <typename T>
 class TypedAction : public Action {
  public:
   // A convenient way to refer to the type of our goals.
+  typedef T GoalType;
   typedef typename std::remove_reference<decltype(
-      *(static_cast<T*>(nullptr)->goal.MakeMessage().get()))>::type GoalType;
-  typedef typename std::remove_reference<decltype(
-      *(static_cast<T*>(nullptr)->status.MakeMessage().get()))>::type StatusType;
-  typedef typename std::remove_reference<
-      decltype(static_cast<GoalType*>(nullptr)->params)>::type ParamType;
+      *static_cast<GoalType *>(nullptr)->params())>::type ParamType;
 
-  TypedAction(typename ::aos::Fetcher<StatusType> *status_fetcher,
+  TypedAction(typename ::aos::Fetcher<Status> *status_fetcher,
               typename ::aos::Sender<GoalType> *goal_sender,
-              const ParamType &params)
+              const typename ParamType::NativeTableType &params)
       : status_fetcher_(status_fetcher),
         goal_sender_(goal_sender),
-        goal_(goal_sender_->MakeMessage()),
         // This adds 1 to the counter (atomically because it's potentially
         // shared across threads) and then bitwise-ORs the bottom of the PID to
         // differentiate it from other processes's values (ie a unique id).
         run_value_(run_counter_.fetch_add(1, ::std::memory_order_relaxed) |
                    ((getpid() & 0xFFFF) << 16)),
         params_(params) {
-    AOS_LOG(DEBUG, "Action %" PRIx32 " created on queue %s\n", run_value_,
-            goal_sender_->name());
+    AOS_LOG(DEBUG, "Action %" PRIx32 " created on queue %.*s\n", run_value_,
+            static_cast<int>(goal_sender_->name().size()),
+            goal_sender_->name().data());
     // Clear out any old status messages from before now.
     status_fetcher_->Fetch();
     if (status_fetcher_->get()) {
-      AOS_LOG_STRUCT(DEBUG, "have status", *status_fetcher_->get());
+      VLOG(1) << "have status" << FlatbufferToJson(status_fetcher_->get());
     }
   }
 
@@ -164,9 +161,8 @@ class TypedAction : public Action {
     if (old_run_value != nullptr) *old_run_value = old_run_value_;
   }
 
-  typename ::aos::Fetcher<StatusType> *status_fetcher_;
+  typename ::aos::Fetcher<Status> *status_fetcher_;
   typename ::aos::Sender<GoalType> *goal_sender_;
-  typename ::aos::Sender<GoalType>::Message goal_;
 
   // Track if we have seen a response to the start message.
   bool has_started_ = false;
@@ -182,7 +178,7 @@ class TypedAction : public Action {
   const uint32_t run_value_;
 
   // flag passed to action in order to have differing types
-  const ParamType params_;
+  const typename ParamType::NativeTableType params_;
 
   // The old value for running that we may have seen. If we see any value other
   // than this or run_value_, somebody else got in the way and we're done. 0 if
@@ -196,20 +192,18 @@ class TypedAction : public Action {
 template <typename T>
 class TypedActionFactory {
  public:
+  typedef T GoalType;
   typedef typename std::remove_reference<decltype(
-      *(static_cast<T*>(nullptr)->goal.MakeMessage().get()))>::type GoalType;
-  typedef typename std::remove_reference<decltype(
-      *(static_cast<T*>(nullptr)->status.MakeMessage().get()))>::type StatusType;
-  typedef typename std::remove_reference<decltype(
-      static_cast<GoalType *>(nullptr)->params)>::type ParamType;
+      *static_cast<GoalType *>(nullptr)->params())>::type ParamType;
 
   explicit TypedActionFactory(::aos::EventLoop *event_loop,
                               const ::std::string &name)
       : name_(name),
-        status_fetcher_(event_loop->MakeFetcher<StatusType>(name + ".status")),
-        goal_sender_(event_loop->MakeSender<GoalType>(name + ".goal")) {}
+        status_fetcher_(event_loop->MakeFetcher<Status>(name)),
+        goal_sender_(event_loop->MakeSender<GoalType>(name)) {}
 
-  ::std::unique_ptr<TypedAction<T>> Make(const ParamType &param) {
+  ::std::unique_ptr<TypedAction<T>> Make(
+      const typename ParamType::NativeTableType &param) {
     return ::std::unique_ptr<TypedAction<T>>(
         new TypedAction<T>(&status_fetcher_, &goal_sender_, param));
   }
@@ -221,7 +215,7 @@ class TypedActionFactory {
 
  private:
   const ::std::string name_;
-  typename ::aos::Fetcher<StatusType> status_fetcher_;
+  typename ::aos::Fetcher<Status> status_fetcher_;
   typename ::aos::Sender<GoalType> goal_sender_;
 };
 
@@ -231,25 +225,31 @@ template <typename T>
 template <typename T>
 void TypedAction<T>::DoCancel() {
   if (!sent_started_) {
-    AOS_LOG(INFO, "Action %" PRIx32 " on queue %s was never started\n",
-            run_value_, goal_sender_->name());
+    AOS_LOG(INFO, "Action %" PRIx32 " on queue %.*s was never started\n",
+            run_value_, static_cast<int>(goal_sender_->name().size()),
+            goal_sender_->name().data());
   } else {
     if (interrupted_) {
       AOS_LOG(INFO,
               "Action %" PRIx32
-              " on queue %s was interrupted -> not cancelling\n",
-              run_value_, goal_sender_->name());
+              " on queue %.*s was interrupted -> not cancelling\n",
+              run_value_, static_cast<int>(goal_sender_->name().size()),
+              goal_sender_->name().data());
     } else {
       if (sent_cancel_) {
-        AOS_LOG(DEBUG, "Action %" PRIx32 " on queue %s already cancelled\n",
-                run_value_, goal_sender_->name());
+        AOS_LOG(DEBUG, "Action %" PRIx32 " on queue %.*s already cancelled\n",
+                run_value_, static_cast<int>(goal_sender_->name().size()),
+                goal_sender_->name().data());
       } else {
-        AOS_LOG(DEBUG, "Canceling action %" PRIx32 " on queue %s\n", run_value_,
-                goal_sender_->name());
+        AOS_LOG(DEBUG, "Canceling action %" PRIx32 " on queue %.*s\n",
+                run_value_, static_cast<int>(goal_sender_->name().size()),
+                goal_sender_->name().data());
         {
-          auto goal_message = goal_sender_->MakeMessage();
-          goal_message->run = 0;
-          goal_message.Send();
+          auto builder = goal_sender_->MakeBuilder();
+          typename GoalType::Builder goal_builder =
+              builder.template MakeBuilder<GoalType>();
+          goal_builder.add_run(0);
+          builder.Send(goal_builder.Finish());
         }
         sent_cancel_ = true;
       }
@@ -268,7 +268,7 @@ bool TypedAction<T>::DoRunning() {
     CheckInterrupted();
   } else {
     while (status_fetcher_->FetchNext()) {
-      AOS_LOG_STRUCT(DEBUG, "got status", *status_fetcher_->get());
+      VLOG(1) << "got status" << FlatbufferToJson(status_fetcher_->get());
       CheckStarted();
       if (has_started_) CheckInterrupted();
     }
@@ -278,7 +278,7 @@ bool TypedAction<T>::DoRunning() {
   // yet.
   if (!has_started_) return true;
   return status_fetcher_->get() &&
-         status_fetcher_->get()->running == run_value_;
+         status_fetcher_->get()->running() == run_value_;
 }
 
 template <typename T>
@@ -289,11 +289,11 @@ bool TypedAction<T>::DoCheckIteration() {
   if (!status_fetcher_->FetchNext()) {
     return false;
   }
-  AOS_LOG_STRUCT(DEBUG, "got status", *status_fetcher_->get());
+  VLOG(1) << "got status" << FlatbufferToJson(status_fetcher_->get());
   CheckStarted();
   CheckInterrupted();
   if (has_started_ && (status_fetcher_->get() &&
-                       status_fetcher_->get()->running != run_value_)) {
+                       status_fetcher_->get()->running() != run_value_)) {
     return true;
   }
   return false;
@@ -303,23 +303,24 @@ template <typename T>
 void TypedAction<T>::CheckStarted() {
   if (has_started_) return;
   if (status_fetcher_->get()) {
-    if (status_fetcher_->get()->running == run_value_ ||
-        (status_fetcher_->get()->running == 0 &&
-         status_fetcher_->get()->last_running == run_value_)) {
+    if (status_fetcher_->get()->running() == run_value_ ||
+        (status_fetcher_->get()->running() == 0 &&
+         status_fetcher_->get()->last_running() == run_value_)) {
       // It's currently running our instance.
       has_started_ = true;
-      AOS_LOG(DEBUG, "Action %" PRIx32 " on queue %s has been started\n",
-              run_value_, goal_sender_->name());
+      AOS_LOG(DEBUG, "Action %" PRIx32 " on queue %.*s has been started\n",
+              run_value_, static_cast<int>(goal_sender_->name().size()),
+              goal_sender_->name().data());
     } else if (old_run_value_ != 0 &&
-               status_fetcher_->get()->running == old_run_value_) {
+               status_fetcher_->get()->running() == old_run_value_) {
       AOS_LOG(DEBUG, "still running old instance %" PRIx32 "\n",
               old_run_value_);
     } else {
       AOS_LOG(WARNING,
-              "Action %" PRIx32 " on queue %s interrupted by %" PRIx32
+              "Action %" PRIx32 " on queue %.*s interrupted by %" PRIx32
               " before starting\n",
-              run_value_, goal_sender_->name(),
-              status_fetcher_->get()->running);
+              run_value_, static_cast<int>(goal_sender_->name().size()),
+              goal_sender_->name().data(), status_fetcher_->get()->running());
       has_started_ = true;
       interrupted_ = true;
     }
@@ -331,13 +332,13 @@ void TypedAction<T>::CheckStarted() {
 template <typename T>
 void TypedAction<T>::CheckInterrupted() {
   if (!interrupted_ && has_started_ && status_fetcher_->get()) {
-    if (status_fetcher_->get()->running != 0 &&
-        status_fetcher_->get()->running != run_value_) {
+    if (status_fetcher_->get()->running() != 0 &&
+        status_fetcher_->get()->running() != run_value_) {
       AOS_LOG(WARNING,
-              "Action %" PRIx32 " on queue %s interrupted by %" PRIx32
+              "Action %" PRIx32 " on queue %.*s interrupted by %" PRIx32
               " after starting\n",
-              run_value_, goal_sender_->name(),
-              status_fetcher_->get()->running);
+              run_value_, static_cast<int>(goal_sender_->name().size()),
+              goal_sender_->name().data(), status_fetcher_->get()->running());
     }
   }
 }
@@ -346,29 +347,38 @@ template <typename T>
 void TypedAction<T>::DoStart() {
   if (!sent_started_) {
     AOS_LOG(DEBUG, "Starting action %" PRIx32 "\n", run_value_);
-    goal_->run = run_value_;
-    goal_->params = params_;
+    auto builder = goal_sender_->MakeBuilder();
+    auto params_offset = ParamType::Pack(*builder.fbb(), &params_);
+
+    auto goal_builder = builder.template MakeBuilder<GoalType>();
+    goal_builder.add_params(params_offset);
+    goal_builder.add_run(run_value_);
+
     sent_started_ = true;
-    if (!goal_.Send()) {
-      AOS_LOG(ERROR, "sending goal for action %" PRIx32 " on queue %s failed\n",
-              run_value_, goal_sender_->name());
+    if (!builder.Send(goal_builder.Finish())) {
+      AOS_LOG(ERROR,
+              "sending goal for action %" PRIx32 " on queue %.*s failed\n",
+              run_value_, static_cast<int>(goal_sender_->name().size()),
+              goal_sender_->name().data());
       // Don't wait to see a message with it.
       has_started_ = true;
     }
     status_fetcher_->FetchNext();
     if (status_fetcher_->get()) {
-      AOS_LOG_STRUCT(DEBUG, "got status", *status_fetcher_->get());
+      VLOG(1) << "got status" << FlatbufferToJson(status_fetcher_->get());
     }
-    if (status_fetcher_->get() && status_fetcher_->get()->running != 0) {
-      old_run_value_ = status_fetcher_->get()->running;
-      AOS_LOG(INFO, "Action %" PRIx32 " on queue %s already running\n",
-              old_run_value_, goal_sender_->name());
+    if (status_fetcher_->get() && status_fetcher_->get()->running() != 0) {
+      old_run_value_ = status_fetcher_->get()->running();
+      AOS_LOG(INFO, "Action %" PRIx32 " on queue %.*s already running\n",
+              old_run_value_, static_cast<int>(goal_sender_->name().size()),
+              goal_sender_->name().data());
     } else {
       old_run_value_ = 0;
     }
   } else {
-    AOS_LOG(WARNING, "Action %" PRIx32 " on queue %s already started\n",
-            run_value_, goal_sender_->name());
+    AOS_LOG(WARNING, "Action %" PRIx32 " on queue %.*s already started\n",
+            run_value_, static_cast<int>(goal_sender_->name().size()),
+            goal_sender_->name().data());
   }
 }
 

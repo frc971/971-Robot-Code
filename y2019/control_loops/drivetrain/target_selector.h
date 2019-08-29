@@ -5,8 +5,8 @@
 #include "frc971/control_loops/drivetrain/localizer.h"
 #include "y2019/constants.h"
 #include "y2019/control_loops/drivetrain/camera.h"
-#include "y2019/control_loops/drivetrain/target_selector.q.h"
-#include "y2019/control_loops/superstructure/superstructure.q.h"
+#include "y2019/control_loops/drivetrain/target_selector_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
 
 namespace y2019 {
 namespace control_loops {
@@ -68,8 +68,7 @@ class TargetSelector
   FakeCamera back_viewer_;
 
   ::aos::Fetcher<drivetrain::TargetSelectorHint> hint_fetcher_;
-  ::aos::Fetcher<superstructure::SuperstructureQueue::Goal>
-      superstructure_goal_fetcher_;
+  ::aos::Fetcher<superstructure::Goal> superstructure_goal_fetcher_;
 
   // Whether we are currently in ball mode.
   bool ball_mode_ = false;

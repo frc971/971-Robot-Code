@@ -1,7 +1,7 @@
 #include "frc971/wpilib/encoder_and_potentiometer.h"
 
-#include "aos/init.h"
 #include "aos/logging/logging.h"
+#include "aos/realtime.h"
 
 namespace frc971 {
 namespace wpilib {

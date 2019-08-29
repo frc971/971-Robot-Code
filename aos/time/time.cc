@@ -8,10 +8,6 @@
 
 #ifdef __linux__
 
-// We only use global_core from here, which is weak, so we don't really have a
-// dependency on it.
-#include "aos/ipc_lib/shared_mem.h"
-
 #include "aos/mutex/mutex.h"
 #include "glog/logging.h"
 
@@ -103,15 +99,6 @@ void IncrementMockTime(monotonic_clock::duration amount) {
   SetMockTime(monotonic_clock::now() + amount);
 }
 
-void OffsetToNow(monotonic_clock::time_point now) {
-  CHECK_NOTNULL(&global_core);
-  CHECK_NOTNULL(global_core);
-  CHECK_NOTNULL(global_core->mem_struct);
-  const auto offset = now - monotonic_clock::now();
-  global_core->mem_struct->time_offset =
-      chrono::duration_cast<chrono::nanoseconds>(offset).count();
-}
-
 #endif  // __linux__
 
 struct timespec to_timespec(
@@ -150,14 +137,8 @@ monotonic_clock::time_point monotonic_clock::now() noexcept {
       << ": clock_gettime(" << static_cast<uintmax_t>(CLOCK_MONOTONIC) << ", "
       << &current_time << ") failed";
 
-  const chrono::nanoseconds offset =
-      (&global_core == nullptr || global_core == nullptr ||
-       global_core->mem_struct == nullptr)
-          ? chrono::nanoseconds(0)
-          : chrono::nanoseconds(global_core->mem_struct->time_offset);
-
   return time_point(::std::chrono::seconds(current_time.tv_sec) +
-                    ::std::chrono::nanoseconds(current_time.tv_nsec)) + offset;
+                    ::std::chrono::nanoseconds(current_time.tv_nsec));
 
 #else  // __linux__
 

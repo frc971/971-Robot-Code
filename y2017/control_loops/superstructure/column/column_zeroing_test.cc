@@ -3,10 +3,13 @@
 #include <random>
 
 #include "aos/die.h"
+#include "aos/flatbuffers.h"
+#include "aos/json_to_flatbuffer.h"
 #include "aos/testing/test_shm.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "frc971/zeroing/zeroing.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 #include "y2017/constants.h"
 #include "y2017/control_loops/superstructure/column/column_zeroing.h"
@@ -49,14 +52,28 @@ class ZeroingTest : public ::testing::Test {
   }
 
   void MoveTo(double indexer, double turret) {
-    ColumnPosition column_position;
+    flatbuffers::FlatBufferBuilder fbb;
     indexer_sensor_.MoveTo(indexer);
     turret_sensor_.MoveTo(turret - indexer);
 
-    indexer_sensor_.GetSensorValues(&column_position.indexer);
-    turret_sensor_.GetSensorValues(&column_position.turret);
+    HallEffectAndPosition::Builder indexer_builder(fbb);
+    flatbuffers::Offset<HallEffectAndPosition> indexer_offset =
+        indexer_sensor_.GetSensorValues(&indexer_builder);
 
-    column_zeroing_estimator_.UpdateEstimate(column_position);
+    HallEffectAndPosition::Builder turret_builder(fbb);
+    flatbuffers::Offset<HallEffectAndPosition> turret_offset =
+        turret_sensor_.GetSensorValues(&turret_builder);
+
+    ColumnPosition::Builder column_position_builder(fbb);
+    column_position_builder.add_indexer(indexer_offset);
+    column_position_builder.add_turret(turret_offset);
+    fbb.Finish(column_position_builder.Finish());
+
+
+    aos::FlatbufferDetachedBuffer<ColumnPosition> column_position(fbb.Release());
+    LOG(INFO) << "Position: " << aos::FlatbufferToJson(column_position);
+
+    column_zeroing_estimator_.UpdateEstimate(column_position.message());
   }
 };
 

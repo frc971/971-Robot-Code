@@ -1,12 +1,13 @@
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
-load("//aos/build:queues.bzl", "queue_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary", "gtk_dependent_cc_library")
 
-queue_library(
-    name = "vision_queue",
+flatbuffer_cc_library(
+    name = "vision_fbs",
     srcs = [
-        "vision.q",
+        "vision.fbs",
     ],
+    gen_reflections = 1,
     visibility = ["//visibility:public"],
 )
 
@@ -130,15 +131,15 @@ cc_binary(
     deps = [
         ":stereo_geometry",
         ":vision_data",
-        ":vision_queue",
+        ":vision_fbs",
         "//aos:init",
-        "//aos/events:shm-event-loop",
+        "//aos/events:shm_event_loop",
         "//aos/logging",
-        "//aos/logging:queue_logging",
         "//aos/mutex",
         "//aos/time",
         "//aos/vision/events:udp",
-        "//frc971/control_loops/drivetrain:drivetrain_queue",
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//y2016:constants",
     ],
 )

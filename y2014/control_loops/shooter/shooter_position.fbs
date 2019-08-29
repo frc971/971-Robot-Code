@@ -1,0 +1,21 @@
+include "frc971/control_loops/control_loops.fbs";
+
+namespace y2014.control_loops.shooter;
+
+// Back is when the springs are all the way stretched.
+table Position {
+  // In meters, out is positive.
+  position:double;
+
+  // If the latch piston is fired and this hall effect has been triggered, the
+  // plunger is all the way back and latched.
+  plunger:bool;
+  // Gets triggered when the pusher is all the way back.
+  pusher_distal:frc971.PosedgeOnlyCountedHallEffectStruct;
+  // Triggers just before pusher_distal.
+  pusher_proximal:frc971.PosedgeOnlyCountedHallEffectStruct;
+  // Triggers when the latch engages.
+  latch:bool;
+}
+
+root_type Position;

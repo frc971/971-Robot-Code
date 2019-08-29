@@ -1,5 +1,3 @@
-load("//aos/build:queues.bzl", "queue_library")
-
 genrule(
     name = "genrule_drivetrain",
     outs = [

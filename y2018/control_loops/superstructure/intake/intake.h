@@ -3,12 +3,13 @@
 
 #include "aos/commonmath.h"
 #include "aos/controls/control_loop.h"
-#include "frc971/control_loops/control_loops.q.h"
 #include "frc971/zeroing/zeroing.h"
 #include "y2018/constants.h"
 #include "y2018/control_loops/superstructure/intake/intake_delayed_plant.h"
 #include "y2018/control_loops/superstructure/intake/intake_plant.h"
-#include "y2018/control_loops/superstructure/superstructure.q.h"
+#include "y2018/control_loops/superstructure/superstructure_output_generated.h"
+#include "y2018/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2018/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2018 {
 namespace control_loops {
@@ -23,13 +24,14 @@ class IntakeController {
   void set_position(double spring_angle, double output_position);
 
   // Populates the status structure.
-  void SetStatus(control_loops::IntakeSideStatus *status,
+  void SetStatus(superstructure::IntakeSideStatus::Builder *status,
                  const double *unsafe_goal);
 
   // Returns the control loop calculated voltage.
   double voltage() const;
 
   double output_position() const { return loop_->X_hat(0); }
+  double motor_position() const { return loop_->X_hat(2); }
 
   // Executes the control loop for a cycle.
   void Update(bool disabled, const double *unsafe_goal);
@@ -40,12 +42,6 @@ class IntakeController {
   // Sets the goal angle from unsafe_goal.
   double goal_angle(const double *unsafe_goal);
 
-  // The control loop.
-  ::std::unique_ptr<
-      StateFeedbackLoop<5, 1, 2, double, StateFeedbackPlant<5, 1, 2>,
-                        StateFeedbackObserver<5, 1, 2>>>
-      loop_;
-
   constexpr static double kDt =
       ::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency);
 
@@ -53,12 +49,22 @@ class IntakeController {
   // possible otherwise zero.
   void UpdateOffset(double offset);
 
+  const ::frc971::constants::Range intake_range() const {
+    return intake_range_;
+  }
+
+ private:
+  // The control loop.
+  ::std::unique_ptr<
+      StateFeedbackLoop<5, 1, 2, double, StateFeedbackPlant<5, 1, 2>,
+                        StateFeedbackObserver<5, 1, 2>>>
+      loop_;
+
   const ::frc971::constants::Range intake_range_;
 
   // Stores the current zeroing estimator offset.
   double offset_ = 0.0;
 
- private:
   bool reset_ = true;
 
   // The current sensor measurement.
@@ -75,10 +81,11 @@ class IntakeSide {
   // The operating voltage.
   static constexpr double kOperatingVoltage() { return 12.0; }
 
-  void Iterate(const double *unsafe_goal,
-               const control_loops::IntakeElasticSensors *position,
-               control_loops::IntakeVoltage *output,
-               control_loops::IntakeSideStatus *status);
+  flatbuffers::Offset<superstructure::IntakeSideStatus> Iterate(
+      const double *unsafe_goal,
+      const superstructure::IntakeElasticSensors *position,
+      superstructure::IntakeVoltageT *output,
+      flatbuffers::FlatBufferBuilder *fbb);
 
   void Reset();
 
@@ -90,6 +97,9 @@ class IntakeSide {
   };
 
   State state() const { return state_; }
+
+  bool estopped() const { return state_ == State::ESTOP; }
+  bool zeroed() const { return zeroing_estimator_.zeroed(); }
 
   bool clear_of_box() const { return controller_.output_position() < -0.1; }
 

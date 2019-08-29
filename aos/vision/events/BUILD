@@ -52,6 +52,7 @@ cc_library(
     deps = [
         "//aos:macros",
         "//aos/scoped:scoped_fd",
+        "@com_github_google_glog//:glog",
     ],
 )
 

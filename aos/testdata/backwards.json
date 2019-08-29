@@ -1,0 +1,13 @@
+{
+  "channels": [
+    {
+      "name": ".aos.robot_state",
+      "type": "aos.RobotState",
+      "max_size": 5
+    },
+    {
+      "name": ".aos.joystick_state",
+      "type": "aos.JoystickState"
+    }
+  ]
+}

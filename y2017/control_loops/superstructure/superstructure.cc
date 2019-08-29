@@ -1,14 +1,13 @@
 #include "y2017/control_loops/superstructure/superstructure.h"
 
-#include "aos/controls/control_loops.q.h"
 #include "aos/logging/logging.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2017/constants.h"
 #include "y2017/control_loops/superstructure/column/column.h"
 #include "y2017/control_loops/superstructure/hood/hood.h"
 #include "y2017/control_loops/superstructure/intake/intake.h"
 #include "y2017/control_loops/superstructure/shooter/shooter.h"
-#include "y2017/vision/vision.q.h"
+#include "y2017/vision/vision_generated.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -24,19 +23,18 @@ typedef ::y2017::constants::Values::ShotParams ShotParams;
 
 Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
-    : aos::controls::ControlLoop<control_loops::SuperstructureQueue>(event_loop,
-                                                                     name),
+    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
+                                                                 name),
       vision_status_fetcher_(
-          event_loop->MakeFetcher<::y2017::vision::VisionStatus>(
-              ".y2017.vision.vision_status")),
+          event_loop->MakeFetcher<::y2017::vision::VisionStatus>("/vision")),
       drivetrain_status_fetcher_(
-          event_loop
-              ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Status>(
-                  ".frc971.control_loops.drivetrain_queue.status")),
+          event_loop->MakeFetcher<::frc971::control_loops::drivetrain::Status>(
+              "/drivetrain")),
       column_(event_loop) {
   shot_interpolation_table_ =
       ::frc971::shooter_interpolation::InterpolationTable<ShotParams>({
-          // { distance_to_target, { shot_angle, shot_power, indexer_velocity }},
+          // { distance_to_target, { shot_angle, shot_power, indexer_velocity
+          // }},
           {1.21, {0.29, 301.0, -1.0 * M_PI}},   // table entry
           {1.55, {0.305, 316.0, -1.1 * M_PI}},  // table entry
           {1.82, {0.33, 325.0, -1.3 * M_PI}},   // table entry
@@ -51,10 +49,11 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
 }
 
 void Superstructure::RunIteration(
-    const control_loops::SuperstructureQueue::Goal *unsafe_goal,
-    const control_loops::SuperstructureQueue::Position *position,
-    control_loops::SuperstructureQueue::Output *output,
-    control_loops::SuperstructureQueue::Status *status) {
+    const Goal *unsafe_goal,
+    const Position *position,
+    aos::Sender<Output>::Builder *output,
+    aos::Sender<Status>::Builder *status) {
+  OutputT output_struct;
   const ::aos::monotonic_clock::time_point monotonic_now =
       event_loop()->monotonic_now();
   if (WasReset()) {
@@ -71,41 +70,43 @@ void Superstructure::RunIteration(
   }
 
   // Create a copy of the goals so that we can modify them.
-  HoodGoal hood_goal;
-  ShooterGoal shooter_goal;
-  IndexerGoal indexer_goal;
+  double hood_goal_angle = 0.0;
+  ShooterGoalT shooter_goal;
+  IndexerGoalT indexer_goal;
   bool in_range = true;
+  double vision_distance = 0.0;
   if (unsafe_goal != nullptr) {
-    hood_goal = unsafe_goal->hood;
-    shooter_goal = unsafe_goal->shooter;
-    indexer_goal = unsafe_goal->indexer;
+    hood_goal_angle = unsafe_goal->hood()->angle();
+    shooter_goal.angular_velocity = unsafe_goal->shooter()->angular_velocity();
+    indexer_goal.angular_velocity = unsafe_goal->indexer()->angular_velocity();
+    indexer_goal.voltage_rollers = unsafe_goal->indexer()->voltage_rollers();
 
-    if (!unsafe_goal->use_vision_for_shots) {
+    if (!unsafe_goal->use_vision_for_shots()) {
       distance_average_.Reset();
     }
 
     distance_average_.Tick(monotonic_now, vision_status);
-    status->vision_distance = distance_average_.Get();
+    vision_distance = distance_average_.Get();
 
     // If we are moving too fast, disable shooting and clear the accumulator.
     double robot_velocity = 0.0;
     drivetrain_status_fetcher_.Fetch();
     if (drivetrain_status_fetcher_.get()) {
-      robot_velocity = drivetrain_status_fetcher_->robot_speed;
+      robot_velocity = drivetrain_status_fetcher_->robot_speed();
     }
 
     if (::std::abs(robot_velocity) > 0.2) {
-      if (unsafe_goal->use_vision_for_shots) {
+      if (unsafe_goal->use_vision_for_shots()) {
         AOS_LOG(INFO, "Moving too fast, resetting\n");
       }
       distance_average_.Reset();
     }
     if (distance_average_.Valid()) {
-      if (unsafe_goal->use_vision_for_shots) {
+      if (unsafe_goal->use_vision_for_shots()) {
         ShotParams shot_params;
         if (shot_interpolation_table_.GetInRange(
                 distance_average_.Get(), &shot_params)) {
-          hood_goal.angle = shot_params.angle;
+          hood_goal_angle = shot_params.angle;
           shooter_goal.angular_velocity = shot_params.power;
           if (indexer_goal.angular_velocity != 0.0) {
             indexer_goal.angular_velocity = shot_params.indexer_velocity;
@@ -116,25 +117,30 @@ void Superstructure::RunIteration(
       }
       AOS_LOG(
           DEBUG, "VisionDistance %f, hood %f shooter %f, indexer %f * M_PI\n",
-          status->vision_distance, hood_goal.angle,
+          vision_distance, hood_goal_angle,
           shooter_goal.angular_velocity, indexer_goal.angular_velocity / M_PI);
     } else {
-      AOS_LOG(DEBUG, "VisionNotValid %f\n", status->vision_distance);
-      if (unsafe_goal->use_vision_for_shots) {
+      AOS_LOG(DEBUG, "VisionNotValid %f\n", vision_distance);
+      if (unsafe_goal->use_vision_for_shots()) {
         in_range = false;
         indexer_goal.angular_velocity = 0.0;
       }
     }
   }
 
-  hood_.Iterate(monotonic_now, unsafe_goal != nullptr ? &hood_goal : nullptr,
-                &(position->hood),
-                output != nullptr ? &(output->voltage_hood) : nullptr,
-                &(status->hood));
-  shooter_.Iterate(unsafe_goal != nullptr ? &shooter_goal : nullptr,
-                   &(position->theta_shooter), position->sent_time,
-                   output != nullptr ? &(output->voltage_shooter) : nullptr,
-                   &(status->shooter));
+  flatbuffers::Offset<frc971::control_loops::IndexProfiledJointStatus>
+      hood_offset = hood_.Iterate(
+          monotonic_now, unsafe_goal != nullptr ? &hood_goal_angle : nullptr,
+          unsafe_goal != nullptr ? unsafe_goal->hood()->profile_params()
+                                 : nullptr,
+          position->hood(),
+          output != nullptr ? &(output_struct.voltage_hood) : nullptr,
+          status->fbb());
+  flatbuffers::Offset<ShooterStatus> shooter_offset = shooter_.Iterate(
+      unsafe_goal != nullptr ? &shooter_goal : nullptr,
+      position->theta_shooter(), position_context().monotonic_sent_time,
+      output != nullptr ? &(output_struct.voltage_shooter) : nullptr,
+      status->fbb());
 
   // Implement collision avoidance by passing down a freeze or range restricting
   // signal to the column and intake objects.
@@ -145,8 +151,8 @@ void Superstructure::RunIteration(
       // The turret is in a position (or wants to be in a position) where we
       // need the intake out.  Push it out.
       const bool column_goal_not_safe =
-          unsafe_goal->turret.angle > column::Column::kTurretMax ||
-          unsafe_goal->turret.angle < column::Column::kTurretMin;
+          unsafe_goal->turret()->angle() > column::Column::kTurretMax ||
+          unsafe_goal->turret()->angle() < column::Column::kTurretMin;
       const bool column_position_not_safe =
           column_.turret_position() > column::Column::kTurretMax ||
           column_.turret_position() < column::Column::kTurretMin;
@@ -178,55 +184,87 @@ void Superstructure::RunIteration(
     AOS_LOG(ERROR, "Collisions ignored\n");
   }
 
-  intake_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->intake) : nullptr,
-                  &(position->intake),
-                  output != nullptr ? &(output->voltage_intake) : nullptr,
-                  &(status->intake));
+  flatbuffers::Offset<
+      ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>
+      intake_offset = intake_.Iterate(
+          unsafe_goal != nullptr ? unsafe_goal->intake() : nullptr,
+          position->intake(),
+          output != nullptr ? &(output_struct.voltage_intake) : nullptr,
+          status->fbb());
 
-  column_.Iterate(monotonic_now,
-                  unsafe_goal != nullptr ? &indexer_goal : nullptr,
-                  unsafe_goal != nullptr ? &(unsafe_goal->turret) : nullptr,
-                  &(position->column), vision_status,
-                  output != nullptr ? &(output->voltage_indexer) : nullptr,
-                  output != nullptr ? &(output->voltage_turret) : nullptr,
-                  &(status->indexer), &(status->turret), &intake_);
+  std::pair<flatbuffers::Offset<IndexerStatus>,
+            flatbuffers::Offset<TurretProfiledSubsystemStatus>>
+      indexer_and_turret_offsets = column_.Iterate(
+          monotonic_now, unsafe_goal != nullptr ? &indexer_goal : nullptr,
+          unsafe_goal != nullptr ? unsafe_goal->turret() : nullptr,
+          position->column(), vision_status,
+          output != nullptr ? &(output_struct.voltage_indexer) : nullptr,
+          output != nullptr ? &(output_struct.voltage_turret) : nullptr,
+          status->fbb(), &intake_);
 
-  status->estopped =
-      status->intake.estopped | status->hood.estopped | status->turret.estopped;
+  const frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus
+      *temp_intake_status = GetTemporaryPointer(*status->fbb(), intake_offset);
+  const frc971::control_loops::IndexProfiledJointStatus *temp_hood_status =
+      GetTemporaryPointer(*status->fbb(), hood_offset);
+  const TurretProfiledSubsystemStatus *temp_turret_status =
+      GetTemporaryPointer(*status->fbb(), indexer_and_turret_offsets.second);
 
-  status->zeroed =
-      status->intake.zeroed && status->hood.zeroed && status->turret.zeroed;
+  const bool estopped = temp_intake_status->estopped() ||
+                        temp_hood_status->estopped() ||
+                        temp_turret_status->estopped();
+  const bool zeroed = temp_intake_status->zeroed() &&
+                      temp_hood_status->zeroed() &&
+                      temp_turret_status->zeroed();
+  const bool turret_vision_tracking = temp_turret_status->vision_tracking();
+
+  Status::Builder status_builder = status->MakeBuilder<Status>();
+  status_builder.add_intake(intake_offset);
+  status_builder.add_hood(hood_offset);
+  status_builder.add_shooter(shooter_offset);
+  status_builder.add_turret(indexer_and_turret_offsets.second);
+  status_builder.add_indexer(indexer_and_turret_offsets.first);
+
+  status_builder.add_estopped(estopped);
+  status_builder.add_zeroed(zeroed);
+
+  status_builder.add_vision_distance(vision_distance);
 
   if (output && unsafe_goal) {
-    output->gear_servo =
-        ::std::min(1.0, ::std::max(0.0, unsafe_goal->intake.gear_servo));
+    output_struct.gear_servo =
+        ::std::min(1.0, ::std::max(0.0, unsafe_goal->intake()->gear_servo()));
 
-    output->voltage_intake_rollers =
+    output_struct.voltage_intake_rollers =
         ::std::max(-kMaxIntakeRollerVoltage,
-                   ::std::min(unsafe_goal->intake.voltage_rollers,
+                   ::std::min(unsafe_goal->intake()->voltage_rollers(),
                               kMaxIntakeRollerVoltage));
-    output->voltage_indexer_rollers =
+    output_struct.voltage_indexer_rollers =
         ::std::max(-kMaxIndexerRollerVoltage,
-                   ::std::min(unsafe_goal->indexer.voltage_rollers,
+                   ::std::min(unsafe_goal->indexer()->voltage_rollers(),
                               kMaxIndexerRollerVoltage));
 
     // Set the lights on or off
-    output->lights_on = unsafe_goal->lights_on;
+    output_struct.lights_on = unsafe_goal->lights_on();
 
-    if (status->estopped) {
-      output->red_light_on = true;
-      output->green_light_on = false;
-      output->blue_light_on = false;
-    } else if (!status->zeroed) {
-      output->red_light_on = false;
-      output->green_light_on = false;
-      output->blue_light_on = true;
-    } else if (status->turret.vision_tracking && in_range) {
-      output->red_light_on = false;
-      output->green_light_on = true;
-      output->blue_light_on = false;
+    if (estopped) {
+      output_struct.red_light_on = true;
+      output_struct.green_light_on = false;
+      output_struct.blue_light_on = false;
+    } else if (!zeroed) {
+      output_struct.red_light_on = false;
+      output_struct.green_light_on = false;
+      output_struct.blue_light_on = true;
+    } else if (turret_vision_tracking && in_range) {
+      output_struct.red_light_on = false;
+      output_struct.green_light_on = true;
+      output_struct.blue_light_on = false;
     }
   }
+
+  if (output) {
+    output->Send(Output::Pack(*output->fbb(), &output_struct));
+  }
+
+  status->Send(status_builder.Finish());
 }
 
 }  // namespace superstructure

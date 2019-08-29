@@ -2,10 +2,10 @@
 #define Y2017_CONTROL_LOOPS_SUPERSTRUCTURE_COLUMN_H_
 
 #include "frc971/constants.h"
-#include "frc971/control_loops/control_loops.q.h"
 #include "frc971/zeroing/zeroing.h"
 #include "y2017/constants.h"
-#include "y2017/control_loops/superstructure/superstructure.q.h"
+#include "y2017/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2017/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -41,7 +41,8 @@ class ColumnZeroingEstimator {
   double turret_offset() const { return turret_offset_; }
 
   // Returns information about our current state.
-  State GetEstimatorState() const;
+  flatbuffers::Offset<State> GetEstimatorState(
+      flatbuffers::FlatBufferBuilder *fbb) const;
 
  private:
   // We are ensuring that two subsystems are zeroed, so here they are!

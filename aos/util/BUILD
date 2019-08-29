@@ -65,7 +65,7 @@ cc_library(
     name = "math",
     hdrs = ["math.h"],
     deps = [
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -111,7 +111,6 @@ cc_library(
         "phased_loop.h",
     ],
     deps = [
-        "//aos/logging",
         "//aos/time",
         "@com_github_google_glog//:glog",
     ],
@@ -156,7 +155,7 @@ cc_library(
     ],
     deps = [
         "//aos:macros",
-        "//aos/logging",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -174,7 +173,7 @@ cc_library(
     deps = [
         "//aos/logging",
         "//aos/time",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -296,8 +295,8 @@ cc_library(
         "file.h",
     ],
     deps = [
-        "//aos/logging",
         "//aos/scoped:scoped_fd",
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -311,7 +310,6 @@ cc_test(
     deps = [
         ":file",
         "//aos/testing:googletest",
-        "//aos/testing:test_logging",
     ],
 )
 

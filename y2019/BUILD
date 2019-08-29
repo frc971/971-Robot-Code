@@ -1,6 +1,7 @@
 load("//frc971:downloader.bzl", "robot_downloader")
-load("//aos/build:queues.bzl", "queue_library")
+load("//aos:config.bzl", "aos_config")
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 robot_downloader(
     dirs = [
@@ -56,25 +57,24 @@ cc_binary(
         "//aos:make_unique",
         "//aos:math",
         "//aos/controls:control_loop",
-        "//aos/events:shm-event-loop",
+        "//aos/events:shm_event_loop",
         "//aos/logging",
-        "//aos/logging:queue_logging",
-        "//aos/robot_state",
+        "//aos/robot_state:robot_state_fbs",
         "//aos/stl_mutex",
         "//aos/time",
         "//aos/util:log_interval",
         "//aos/util:phased_loop",
         "//aos/util:wrapping_counter",
-        "//frc971/autonomous:auto_queue",
-        "//frc971/control_loops:queues",
-        "//frc971/control_loops/drivetrain:drivetrain_queue",
+        "//frc971/autonomous:auto_fbs",
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_position_fbs",
         "//frc971/wpilib:ADIS16448",
         "//frc971/wpilib:buffered_pcm",
         "//frc971/wpilib:drivetrain_writer",
         "//frc971/wpilib:encoder_and_potentiometer",
         "//frc971/wpilib:interrupt_edge_counting",
         "//frc971/wpilib:joystick_sender",
-        "//frc971/wpilib:logging_queue",
+        "//frc971/wpilib:logging_fbs",
         "//frc971/wpilib:loop_output_handler",
         "//frc971/wpilib:pdp_fetcher",
         "//frc971/wpilib:sensor_reader",
@@ -82,8 +82,9 @@ cc_binary(
         "//frc971/wpilib:wpilib_robot_base",
         "//third_party:phoenix",
         "//third_party:wpilib",
-        "//y2019/control_loops/drivetrain:camera_queue",
-        "//y2019/control_loops/superstructure:superstructure_queue",
+        "//y2019/control_loops/drivetrain:camera_fbs",
+        "//y2019/control_loops/superstructure:superstructure_output_fbs",
+        "//y2019/control_loops/superstructure:superstructure_position_fbs",
         "//y2019/jevois:spi",
     ],
 )
@@ -132,23 +133,45 @@ cc_binary(
         "//aos/time",
         "//aos/util:log_interval",
         "//aos/vision/events:udp",
-        "//frc971/autonomous:auto_queue",
+        "//frc971/autonomous:auto_fbs",
         "//frc971/autonomous:base_autonomous_actor",
-        "//frc971/control_loops/drivetrain:drivetrain_queue",
-        "//frc971/control_loops/drivetrain:localizer_queue",
+        "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/control_loops/drivetrain:localizer_fbs",
         "//y2019/control_loops/drivetrain:drivetrain_base",
-        "//y2019/control_loops/drivetrain:target_selector_queue",
-        "//y2019/control_loops/superstructure:superstructure_queue",
+        "//y2019/control_loops/drivetrain:target_selector_fbs",
+        "//y2019/control_loops/superstructure:superstructure_goal_fbs",
+        "//y2019/control_loops/superstructure:superstructure_position_fbs",
+        "//y2019/control_loops/superstructure:superstructure_status_fbs",
         "@com_google_protobuf//:protobuf",
     ],
 )
 
-queue_library(
+flatbuffer_cc_library(
     name = "status_light",
     srcs = [
-        "status_light.q",
+        "status_light.fbs",
+    ],
+    gen_reflections = 1,
+    visibility = ["//visibility:public"],
+)
+
+aos_config(
+    name = "config",
+    src = "y2019.json",
+    flatbuffers = [
+        ":status_light",
+        "//y2019/control_loops/drivetrain:camera_fbs",
+        "//y2019/control_loops/drivetrain:target_selector_fbs",
+        "//y2019/control_loops/superstructure:superstructure_goal_fbs",
+        "//y2019/control_loops/superstructure:superstructure_output_fbs",
+        "//y2019/control_loops/superstructure:superstructure_position_fbs",
+        "//y2019/control_loops/superstructure:superstructure_status_fbs",
     ],
     visibility = ["//visibility:public"],
+    deps = [
+        "//aos/robot_state:config",
+        "//frc971/control_loops/drivetrain:config",
+    ],
 )
 
 cc_proto_library(

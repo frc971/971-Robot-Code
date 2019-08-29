@@ -3,7 +3,6 @@
 #include <chrono>
 
 #include "Eigen/Dense"
-#include "aos/logging/matrix_logging.h"
 #include "frc971/control_loops/c2d.h"
 #include "frc971/control_loops/dlqr.h"
 #include "frc971/control_loops/drivetrain/distance_spline.h"
@@ -327,9 +326,7 @@ void Trajectory::AB(const ::Eigen::Matrix<double, 5, 1> &state,
   ::Eigen::Matrix<double, 2, 5> K = ::Eigen::Matrix<double, 2, 5>::Zero();
 
   int info = ::frc971::controls::dlqr<5, 2>(A, B, Q, R, &K, &S);
-  if (info == 0) {
-    AOS_LOG_MATRIX(INFO, "K", K);
-  } else {
+  if (info != 0) {
     AOS_LOG(ERROR, "Failed to solve %d, controllability: %d\n", info,
             controls::Controllability(A, B));
     // TODO(austin): Can we be more clever here?  Use the last one?  We should

@@ -1,0 +1,65 @@
+include "frc971/control_loops/control_loops.fbs";
+
+namespace frc971.control_loops.drivetrain;
+
+enum ControllerType : byte {
+  POLYDRIVE,
+  MOTION_PROFILE,
+  SPLINE_FOLLOWER,
+  LINE_FOLLOWER,
+}
+
+table SplineGoal {
+  // index of the spline. Zero indicates the spline should not be computed.
+  spline_idx:int;
+
+  // Acutal spline.
+  spline:frc971.MultiSpline;
+
+  // Whether to follow the spline driving forwards or backwards.
+  drive_spline_backwards:bool;
+}
+
+table Goal {
+  // Position of the steering wheel (positive = turning left when going
+  // forwards).
+  wheel:float;
+  wheel_velocity:float;
+  wheel_torque:float;
+
+  // Position of the throttle (positive forwards).
+  throttle:float;
+  throttle_velocity:float;
+  throttle_torque:float;
+
+  // True to shift into high, false to shift into low.
+  highgear:bool;
+
+  // True to activate quickturn.
+  quickturn:bool;
+
+  // Type of controller in charge of the drivetrain.
+  controller_type:ControllerType;
+
+  // Position goals for each drivetrain side (in meters) when the
+  // closed-loop controller is active.
+  left_goal:double;
+  right_goal:double;
+
+  max_ss_voltage:float;
+
+  // Motion profile parameters.
+  // The control loop will profile if these are all non-zero.
+  linear:ProfileParameters;
+  angular:ProfileParameters;
+
+  // Parameters for a spline to follow. This just contains info on a spline to
+  // compute. Each time this is sent, spline drivetrain will compute a new
+  // spline.
+  spline:SplineGoal;
+
+  // Which spline to follow.
+  spline_handle:int;
+}
+
+root_type Goal;

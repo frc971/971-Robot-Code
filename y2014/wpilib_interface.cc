@@ -18,18 +18,18 @@
 #include "frc971/wpilib/wpilib_robot_base.h"
 #undef ERROR
 
-#include "aos/events/shm-event-loop.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
-#include "aos/logging/queue_logging.h"
 #include "aos/make_unique.h"
-#include "aos/robot_state/robot_state.q.h"
+#include "aos/robot_state/robot_state_generated.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/shifter_hall_effect.h"
 #include "frc971/wpilib/buffered_pcm.h"
 #include "frc971/wpilib/buffered_solenoid.h"
@@ -40,21 +40,19 @@
 #include "frc971/wpilib/gyro_sender.h"
 #include "frc971/wpilib/interrupt_edge_counting.h"
 #include "frc971/wpilib/joystick_sender.h"
-#include "frc971/wpilib/logging.q.h"
+#include "frc971/wpilib/logging_generated.h"
 #include "frc971/wpilib/loop_output_handler.h"
 #include "frc971/wpilib/pdp_fetcher.h"
 #include "frc971/wpilib/sensor_reader.h"
 #include "y2014/constants.h"
-#include "y2014/control_loops/claw/claw.q.h"
-#include "y2014/control_loops/shooter/shooter.q.h"
-#include "y2014/queues/auto_mode.q.h"
+#include "y2014/control_loops/claw/claw_output_generated.h"
+#include "y2014/control_loops/claw/claw_position_generated.h"
+#include "y2014/control_loops/shooter/shooter_output_generated.h"
+#include "y2014/control_loops/shooter/shooter_position_generated.h"
+#include "y2014/queues/auto_mode_generated.h"
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
-using ::y2014::control_loops::ClawQueue;
-using ::y2014::control_loops::ShooterQueue;
+namespace claw = ::y2014::control_loops::claw;
+namespace shooter = ::y2014::control_loops::shooter;
 using aos::make_unique;
 
 namespace y2014 {
@@ -118,16 +116,15 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
   SensorReader(::aos::EventLoop *event_loop)
       : ::frc971::wpilib::SensorReader(event_loop),
-        auto_mode_sender_(event_loop->MakeSender<::y2014::sensors::AutoMode>(
-            ".y2014.sensors.auto_mode")),
-        shooter_position_sender_(event_loop->MakeSender<ShooterQueue::Position>(
-            ".y2014.control_loops.shooter_queue.position")),
-        claw_position_sender_(event_loop->MakeSender<ClawQueue::Position>(
-            ".y2014.control_loops.claw_queue.position")),
+        auto_mode_sender_(
+            event_loop->MakeSender<::y2014::sensors::AutoMode>("/aos")),
+        shooter_position_sender_(
+            event_loop->MakeSender<shooter::Position>("/shooter")),
+        claw_position_sender_(event_loop->MakeSender<claw::Position>("/claw")),
         drivetrain_position_sender_(
-            event_loop->MakeSender<
-                ::frc971::control_loops::DrivetrainQueue::Position>(
-                ".frc971.control_loops.drivetrain_queue.position")) {
+            event_loop
+                ->MakeSender<::frc971::control_loops::drivetrain::Position>(
+                    "/drivetrain")) {
     // Set it to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateMediumEncoderFilterHz(kMaximumEncoderPulsesPerSecond);
@@ -249,59 +246,87 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     const auto &values = constants::GetValues();
 
     {
-      auto drivetrain_message = drivetrain_position_sender_.MakeMessage();
-      drivetrain_message->right_encoder =
-          drivetrain_translate(drivetrain_right_encoder_->GetRaw());
-      drivetrain_message->left_encoder =
-          -drivetrain_translate(drivetrain_left_encoder_->GetRaw());
-      drivetrain_message->left_speed =
-          drivetrain_velocity_translate(drivetrain_left_encoder_->GetPeriod());
-      drivetrain_message->right_speed =
-          drivetrain_velocity_translate(drivetrain_right_encoder_->GetPeriod());
+      auto builder = drivetrain_position_sender_.MakeBuilder();
+      frc971::control_loops::drivetrain::Position::Builder position_builder =
+          builder.MakeBuilder<frc971::control_loops::drivetrain::Position>();
+      position_builder.add_right_encoder(
+          drivetrain_translate(drivetrain_right_encoder_->GetRaw()));
+      position_builder.add_left_encoder(
+          -drivetrain_translate(drivetrain_left_encoder_->GetRaw()));
+      position_builder.add_left_speed(
+          drivetrain_velocity_translate(drivetrain_left_encoder_->GetPeriod()));
+      position_builder.add_right_speed(drivetrain_velocity_translate(
+          drivetrain_right_encoder_->GetPeriod()));
 
-      drivetrain_message->low_left_hall = low_left_drive_hall_->GetVoltage();
-      drivetrain_message->high_left_hall = high_left_drive_hall_->GetVoltage();
-      drivetrain_message->left_shifter_position =
-          hall_translate(values.left_drive, drivetrain_message->low_left_hall,
-                         drivetrain_message->high_left_hall);
+      const double low_left_hall = low_left_drive_hall_->GetVoltage();
+      const double high_left_hall = high_left_drive_hall_->GetVoltage();
+      position_builder.add_low_left_hall(low_left_hall);
+      position_builder.add_high_left_hall(high_left_hall);
+      position_builder.add_left_shifter_position(
+          hall_translate(values.left_drive, low_left_hall, high_left_hall));
 
-      drivetrain_message->low_right_hall = low_right_drive_hall_->GetVoltage();
-      drivetrain_message->high_right_hall =
-          high_right_drive_hall_->GetVoltage();
-      drivetrain_message->right_shifter_position =
-          hall_translate(values.right_drive, drivetrain_message->low_right_hall,
-                         drivetrain_message->high_right_hall);
+      const double low_right_hall = low_right_drive_hall_->GetVoltage();
+      const double high_right_hall = high_right_drive_hall_->GetVoltage();
+      position_builder.add_low_right_hall(low_right_hall);
+      position_builder.add_high_right_hall(high_right_hall);
+      position_builder.add_right_shifter_position(
+          hall_translate(values.right_drive, low_right_hall, high_right_hall));
 
-      drivetrain_message.Send();
+      builder.Send(position_builder.Finish());
     }
 
     {
-      auto auto_mode_message = auto_mode_sender_.MakeMessage();
-      auto_mode_message->voltage = auto_selector_analog_->GetVoltage();
-      auto_mode_message.Send();
+      auto builder = auto_mode_sender_.MakeBuilder();
+      y2014::sensors::AutoMode::Builder auto_builder =
+          builder.MakeBuilder<y2014::sensors::AutoMode>();
+      auto_builder.add_voltage(auto_selector_analog_->GetVoltage());
+      builder.Send(auto_builder.Finish());
     }
   }
 
   void RunDmaIteration() {
     {
-      auto shooter_message = shooter_position_sender_.MakeMessage();
-      shooter_message->position = shooter_translate(shooter_encoder_->GetRaw());
-      shooter_message->plunger = !shooter_plunger_reader_->value();
-      shooter_message->latch = !shooter_latch_reader_->value();
+      auto builder = shooter_position_sender_.MakeBuilder();
+      ::frc971::PosedgeOnlyCountedHallEffectStructT pusher_proximal;
       CopyShooterPosedgeCounts(shooter_proximal_counter_.get(),
-                               &shooter_message->pusher_proximal);
-      CopyShooterPosedgeCounts(shooter_distal_counter_.get(),
-                               &shooter_message->pusher_distal);
+                               &pusher_proximal);
+      flatbuffers::Offset<::frc971::PosedgeOnlyCountedHallEffectStruct>
+          pusher_proximal_offset =
+              ::frc971::PosedgeOnlyCountedHallEffectStruct::Pack(
+                  *builder.fbb(), &pusher_proximal);
 
-      shooter_message.Send();
+      ::frc971::PosedgeOnlyCountedHallEffectStructT pusher_distal;
+      CopyShooterPosedgeCounts(shooter_distal_counter_.get(), &pusher_distal);
+      flatbuffers::Offset<::frc971::PosedgeOnlyCountedHallEffectStruct>
+          pusher_distal_offset =
+              ::frc971::PosedgeOnlyCountedHallEffectStruct::Pack(
+                  *builder.fbb(), &pusher_distal);
+
+      control_loops::shooter::Position::Builder position_builder =
+          builder.MakeBuilder<control_loops::shooter::Position>();
+      position_builder.add_position(
+          shooter_translate(shooter_encoder_->GetRaw()));
+      position_builder.add_plunger(!shooter_plunger_reader_->value());
+      position_builder.add_latch(!shooter_latch_reader_->value());
+      position_builder.add_pusher_distal(pusher_distal_offset);
+      position_builder.add_pusher_proximal(pusher_proximal_offset);
+
+      builder.Send(position_builder.Finish());
     }
 
     {
-      auto claw_message = claw_position_sender_.MakeMessage();
-      top_reader_.RunIteration(&claw_message->top);
-      bottom_reader_.RunIteration(&claw_message->bottom);
+      auto builder = claw_position_sender_.MakeBuilder();
+      flatbuffers::Offset<control_loops::claw::HalfClawPosition> top_offset =
+          top_reader_.ReadPosition(builder.fbb());
+      flatbuffers::Offset<control_loops::claw::HalfClawPosition> bottom_offset =
+          bottom_reader_.ReadPosition(builder.fbb());
 
-      claw_message.Send();
+      control_loops::claw::Position::Builder position_builder =
+          builder.MakeBuilder<control_loops::claw::Position>();
+
+      position_builder.add_top(top_offset);
+      position_builder.add_bottom(bottom_offset);
+      builder.Send(position_builder.Finish());
     }
   }
 
@@ -347,22 +372,42 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
     void Quit() { synchronizer_.Quit(); }
 
-    void RunIteration(control_loops::HalfClawPosition *half_claw_position) {
+    flatbuffers::Offset<control_loops::claw::HalfClawPosition> ReadPosition(
+        flatbuffers::FlatBufferBuilder *fbb) {
       const double multiplier = reversed_ ? -1.0 : 1.0;
 
       synchronizer_.RunIteration();
 
-      CopyPosition(front_counter_.get(), &half_claw_position->front);
-      CopyPosition(calibration_counter_.get(),
-                   &half_claw_position->calibration);
-      CopyPosition(back_counter_.get(), &half_claw_position->back);
-      half_claw_position->position =
-          multiplier * claw_translate(synchronized_encoder_->get());
+
+      ::frc971::HallEffectStructT front;
+      CopyPosition(front_counter_.get(), &front);
+      flatbuffers::Offset<::frc971::HallEffectStruct> front_offset =
+          ::frc971::HallEffectStruct::Pack(*fbb, &front);
+
+      ::frc971::HallEffectStructT calibration;
+      CopyPosition(calibration_counter_.get(), &calibration);
+      flatbuffers::Offset<::frc971::HallEffectStruct> calibration_offset =
+          ::frc971::HallEffectStruct::Pack(*fbb, &calibration);
+
+      ::frc971::HallEffectStructT back;
+      CopyPosition(back_counter_.get(), &back);
+      flatbuffers::Offset<::frc971::HallEffectStruct> back_offset =
+          ::frc971::HallEffectStruct::Pack(*fbb, &back);
+
+      control_loops::claw::HalfClawPosition::Builder half_claw_position_builder(
+          *fbb);
+
+      half_claw_position_builder.add_front(front_offset);
+      half_claw_position_builder.add_calibration(calibration_offset);
+      half_claw_position_builder.add_back(back_offset);
+      half_claw_position_builder.add_position(
+          multiplier * claw_translate(synchronized_encoder_->get()));
+      return half_claw_position_builder.Finish();
     }
 
    private:
     void CopyPosition(const ::frc971::wpilib::EdgeCounter *counter,
-                      ::frc971::HallEffectStruct *out) {
+                      ::frc971::HallEffectStructT *out) {
       const double multiplier = reversed_ ? -1.0 : 1.0;
 
       out->current = !counter->polled_value();
@@ -392,7 +437,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   void CopyShooterPosedgeCounts(
       const ::frc971::wpilib::DMAEdgeCounter *counter,
-      ::frc971::PosedgeOnlyCountedHallEffectStruct *output) {
+      ::frc971::PosedgeOnlyCountedHallEffectStructT *output) {
     output->current = !counter->polled_value();
     // These are inverted because the hall effects give logical false when
     // there's a magnet in front of them.
@@ -403,9 +448,9 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
   ::aos::Sender<::y2014::sensors::AutoMode> auto_mode_sender_;
-  ::aos::Sender<ShooterQueue::Position> shooter_position_sender_;
-  ::aos::Sender<ClawQueue::Position> claw_position_sender_;
-  ::aos::Sender<::frc971::control_loops::DrivetrainQueue::Position>
+  ::aos::Sender<shooter::Position> shooter_position_sender_;
+  ::aos::Sender<claw::Position> claw_position_sender_;
+  ::aos::Sender<::frc971::control_loops::drivetrain::Position>
       drivetrain_position_sender_;
 
   ::std::unique_ptr<::frc::AnalogInput> auto_selector_analog_;
@@ -433,12 +478,13 @@ class SolenoidWriter {
   SolenoidWriter(::aos::EventLoop *event_loop,
                  const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
       : pcm_(pcm),
-        shooter_(event_loop->MakeFetcher<ShooterQueue::Output>(
-            ".y2014.control_loops.shooter_queue.output")),
+        shooter_(event_loop->MakeFetcher<shooter::Output>("/shooter")),
         drivetrain_(
             event_loop
-                ->MakeFetcher<::frc971::control_loops::DrivetrainQueue::Output>(
-                    ".frc971.control_loops.drivetrain_queue.output")) {
+                ->MakeFetcher<::frc971::control_loops::drivetrain::Output>(
+                    "/drivetrain")),
+        pneumatics_to_log_sender_(
+            event_loop->MakeSender<::frc971::wpilib::PneumaticsToLog>("/aos")) {
     event_loop->set_name("Solenoids");
     event_loop->SetRuntimeRealtimePriority(27);
 
@@ -484,26 +530,27 @@ class SolenoidWriter {
     {
       shooter_.Fetch();
       if (shooter_.get()) {
-        AOS_LOG_STRUCT(DEBUG, "solenoids", *shooter_);
-        shooter_latch_->Set(!shooter_->latch_piston);
-        shooter_brake_->Set(!shooter_->brake_piston);
+        shooter_latch_->Set(!shooter_->latch_piston());
+        shooter_brake_->Set(!shooter_->brake_piston());
       }
     }
 
     {
       drivetrain_.Fetch();
       if (drivetrain_.get()) {
-        AOS_LOG_STRUCT(DEBUG, "solenoids", *drivetrain_);
-        drivetrain_left_->Set(!drivetrain_->left_high);
-        drivetrain_right_->Set(!drivetrain_->right_high);
+        drivetrain_left_->Set(!drivetrain_->left_high());
+        drivetrain_right_->Set(!drivetrain_->right_high());
       }
     }
 
     {
-      ::frc971::wpilib::PneumaticsToLog to_log;
+      auto builder = pneumatics_to_log_sender_.MakeBuilder();
+
+      ::frc971::wpilib::PneumaticsToLog::Builder to_log_builder =
+          builder.MakeBuilder<frc971::wpilib::PneumaticsToLog>();
       {
         const bool compressor_on = !pressure_switch_->Get();
-        to_log.compressor_on = compressor_on;
+        to_log_builder.add_compressor_on(compressor_on);
         if (compressor_on) {
           compressor_relay_->Set(::frc::Relay::kForward);
         } else {
@@ -512,8 +559,8 @@ class SolenoidWriter {
       }
 
       pcm_->Flush();
-      to_log.read_solenoids = pcm_->GetAll();
-      AOS_LOG_STRUCT(DEBUG, "pneumatics info", to_log);
+      to_log_builder.add_read_solenoids(pcm_->GetAll());
+      builder.Send(to_log_builder.Finish());
     }
   }
 
@@ -528,15 +575,17 @@ class SolenoidWriter {
   ::std::unique_ptr<::frc::DigitalInput> pressure_switch_;
   ::std::unique_ptr<::frc::Relay> compressor_relay_;
 
-  ::aos::Fetcher<ShooterQueue::Output> shooter_;
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
+  ::aos::Fetcher<shooter::Output> shooter_;
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Output> drivetrain_;
+
+  aos::Sender<::frc971::wpilib::PneumaticsToLog> pneumatics_to_log_sender_;
 };
 
 class ShooterWriter
-    : public ::frc971::wpilib::LoopOutputHandler<ShooterQueue::Output> {
+    : public ::frc971::wpilib::LoopOutputHandler<shooter::Output> {
  public:
   ShooterWriter(::aos::EventLoop *event_loop)
-      : ::frc971::wpilib::LoopOutputHandler<ShooterQueue::Output>(
+      : ::frc971::wpilib::LoopOutputHandler<shooter::Output>(
             event_loop, ".y2014.control_loops.shooter_queue.output") {}
 
   void set_shooter_talon(::std::unique_ptr<::frc::Talon> t) {
@@ -544,9 +593,8 @@ class ShooterWriter
   }
 
  private:
-  virtual void Write(const ShooterQueue::Output &output) override {
-    AOS_LOG_STRUCT(DEBUG, "will output", output);
-    shooter_talon_->SetSpeed(output.voltage / 12.0);
+  virtual void Write(const shooter::Output &output) override {
+    shooter_talon_->SetSpeed(output.voltage() / 12.0);
   }
 
   virtual void Stop() override {
@@ -557,11 +605,10 @@ class ShooterWriter
   ::std::unique_ptr<::frc::Talon> shooter_talon_;
 };
 
-class ClawWriter
-    : public ::frc971::wpilib::LoopOutputHandler<ClawQueue::Output> {
+class ClawWriter : public ::frc971::wpilib::LoopOutputHandler<claw::Output> {
  public:
   ClawWriter(::aos::EventLoop *event_loop)
-      : ::frc971::wpilib::LoopOutputHandler<ClawQueue::Output>(
+      : ::frc971::wpilib::LoopOutputHandler<claw::Output>(
             event_loop, ".y2014.control_loops.claw_queue.output") {}
 
   void set_top_claw_talon(::std::unique_ptr<::frc::Talon> t) {
@@ -589,14 +636,13 @@ class ClawWriter
   }
 
  private:
-  virtual void Write(const ClawQueue::Output &output) override {
-    AOS_LOG_STRUCT(DEBUG, "will output", output);
-    intake1_talon_->SetSpeed(output.intake_voltage / 12.0);
-    intake2_talon_->SetSpeed(output.intake_voltage / 12.0);
-    bottom_claw_talon_->SetSpeed(-output.bottom_claw_voltage / 12.0);
-    top_claw_talon_->SetSpeed(output.top_claw_voltage / 12.0);
-    left_tusk_talon_->SetSpeed(output.tusk_voltage / 12.0);
-    right_tusk_talon_->SetSpeed(-output.tusk_voltage / 12.0);
+  virtual void Write(const claw::Output &output) override {
+    intake1_talon_->SetSpeed(output.intake_voltage() / 12.0);
+    intake2_talon_->SetSpeed(output.intake_voltage() / 12.0);
+    bottom_claw_talon_->SetSpeed(-output.bottom_claw_voltage() / 12.0);
+    top_claw_talon_->SetSpeed(output.top_claw_voltage() / 12.0);
+    left_tusk_talon_->SetSpeed(output.tusk_voltage() / 12.0);
+    right_tusk_talon_->SetSpeed(-output.tusk_voltage() / 12.0);
   }
 
   virtual void Stop() override {
@@ -625,19 +671,22 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
   }
 
   void Run() override {
+    aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+        aos::configuration::ReadConfig("config.json");
+
     // Thread 1.
-    ::aos::ShmEventLoop joystick_sender_event_loop;
+    ::aos::ShmEventLoop joystick_sender_event_loop(&config.message());
     ::frc971::wpilib::JoystickSender joystick_sender(
         &joystick_sender_event_loop);
     AddLoop(&joystick_sender_event_loop);
 
     // Thread 2.
-    ::aos::ShmEventLoop pdp_fetcher_event_loop;
+    ::aos::ShmEventLoop pdp_fetcher_event_loop(&config.message());
     ::frc971::wpilib::PDPFetcher pdp_fetcher(&pdp_fetcher_event_loop);
     AddLoop(&pdp_fetcher_event_loop);
 
     // Thread 3.
-    ::aos::ShmEventLoop sensor_reader_event_loop;
+    ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
     SensorReader sensor_reader(&sensor_reader_event_loop);
 
     // Create this first to make sure it ends up in one of the lower-numbered
@@ -680,12 +729,12 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     AddLoop(&sensor_reader_event_loop);
 
     // Thread 4.
-    ::aos::ShmEventLoop gyro_event_loop;
+    ::aos::ShmEventLoop gyro_event_loop(&config.message());
     ::frc971::wpilib::GyroSender gyro_sender(&gyro_event_loop);
     AddLoop(&gyro_event_loop);
 
     // Thread 5.
-    ::aos::ShmEventLoop output_event_loop;
+    ::aos::ShmEventLoop output_event_loop(&config.message());
     ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&output_event_loop);
     drivetrain_writer.set_left_controller0(make_unique<::frc::Talon>(5), true);
     drivetrain_writer.set_right_controller0(make_unique<::frc::Talon>(2),
@@ -705,7 +754,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     AddLoop(&output_event_loop);
 
     // Thread 6.
-    ::aos::ShmEventLoop solenoid_writer_event_loop;
+    ::aos::ShmEventLoop solenoid_writer_event_loop(&config.message());
     ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
         new ::frc971::wpilib::BufferedPcm());
     SolenoidWriter solenoid_writer(&solenoid_writer_event_loop, pcm);

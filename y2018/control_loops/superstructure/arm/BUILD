@@ -12,7 +12,7 @@ cc_library(
         "//aos/logging",
         "//frc971/control_loops:dlqr",
         "//frc971/control_loops:jacobian",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -27,7 +27,7 @@ cc_test(
         ":ekf",
         ":trajectory",
         "//aos/testing:googletest",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -42,8 +42,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops:runge_kutta",
-        "//third_party/eigen",
         "@com_github_gflags_gflags//:gflags",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -77,9 +77,9 @@ cc_binary(
         ":ekf",
         ":generated_graph",
         ":trajectory",
-        "//third_party/eigen",
         "//third_party/matplotlib-cpp",
         "@com_github_gflags_gflags//:gflags",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -95,7 +95,7 @@ cc_library(
     deps = [
         ":dynamics",
         "//frc971/control_loops:jacobian",
-        "//third_party/eigen",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -129,10 +129,10 @@ cc_library(
         ":generated_graph",
         ":graph",
         ":trajectory",
-        "//aos/logging:queue_logging",
         "//frc971/zeroing",
         "//y2018:constants",
-        "//y2018/control_loops/superstructure:superstructure_queue",
+        "//y2018/control_loops/superstructure:superstructure_position_fbs",
+        "//y2018/control_loops/superstructure:superstructure_status_fbs",
     ],
 )
 

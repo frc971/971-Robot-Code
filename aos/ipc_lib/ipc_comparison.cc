@@ -28,6 +28,7 @@
 #include "aos/logging/implementations.h"
 #include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"
+#include "aos/realtime.h"
 #include "aos/time/time.h"
 
 DEFINE_string(method, "", "Which IPC method to use");

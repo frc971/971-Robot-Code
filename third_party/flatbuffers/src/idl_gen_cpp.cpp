@@ -196,9 +196,19 @@ class CppGenerator : public BaseGenerator {
       auto noext = flatbuffers::StripExtension(it->second);
       auto basename = flatbuffers::StripPath(noext);
 
-      code_ += "#include \"" + parser_.opts.include_prefix +
-               (parser_.opts.keep_include_path ? noext : basename) +
-               "_generated.h\"";
+      // TODO(austin): Clean this up.
+      // The reflection_generated.h header is not in the reflection folder like
+      // it's include path and namespace suggests.  Detect this special case and
+      // rewrite it.
+      std::string include =
+          parser_.opts.include_prefix +
+          (parser_.opts.keep_include_path ? noext : basename) + "_generated.h";
+
+      if (include == "reflection/reflection_generated.h") {
+        include = "flatbuffers/reflection_generated.h";
+      }
+
+      code_ += "#include \"" + include + "\"";
       num_includes++;
     }
     if (num_includes) code_ += "";
@@ -251,12 +261,14 @@ class CppGenerator : public BaseGenerator {
 
     // Generate forward declarations for all structs/tables, since they may
     // have circular references.
+    // LOCAL_MOD: Add builders to forward declares
     for (auto it = parser_.structs_.vec.begin();
          it != parser_.structs_.vec.end(); ++it) {
       const auto &struct_def = **it;
       if (!struct_def.generated) {
         SetNameSpace(struct_def.defined_namespace);
         code_ += "struct " + Name(struct_def) + ";";
+        code_ += "struct " + Name(struct_def) + "Builder;";
         if (parser_.opts.generate_object_based_api) {
           auto nativeName =
               NativeName(Name(struct_def), &struct_def, parser_.opts);
@@ -1803,6 +1815,8 @@ class CppGenerator : public BaseGenerator {
     if (parser_.opts.generate_object_based_api) {
       code_ += "  typedef {{NATIVE_NAME}} NativeTableType;";
     }
+    // LOCAL_MOD: Add builder typedef.
+    code_ += "  typedef {{STRUCT_NAME}}Builder Builder;";
     if (parser_.opts.mini_reflect != IDLOptions::kNone) {
       code_ +=
           "  static const flatbuffers::TypeTable *MiniReflectTypeTable() {";
@@ -2065,6 +2079,7 @@ class CppGenerator : public BaseGenerator {
 
     // Generate a builder struct:
     code_ += "struct {{STRUCT_NAME}}Builder {";
+    code_ += "  typedef {{STRUCT_NAME}} Table;";
     code_ += "  flatbuffers::FlatBufferBuilder &fbb_;";
     code_ += "  flatbuffers::uoffset_t start_;";
 

@@ -1,11 +1,11 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//aos/build:queues.bzl", "queue_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
-queue_library(
-    name = "logging_queue",
+flatbuffer_cc_library(
+    name = "logging_fbs",
     srcs = [
-        "logging.q",
+        "logging.fbs",
     ],
 )
 
@@ -107,10 +107,9 @@ cc_library(
     deps = [
         ":gyro_interface",
         "//aos:init",
-        "//aos/events:event-loop",
+        "//aos/events:event_loop",
         "//aos/logging",
-        "//aos/logging:queue_logging",
-        "//aos/robot_state",
+        "//aos/robot_state:robot_state_fbs",
         "//aos/time",
         "//aos/util:phased_loop",
         "//frc971/queues:gyro",
@@ -118,10 +117,10 @@ cc_library(
     ],
 )
 
-queue_library(
-    name = "loop_output_handler_test_queue",
+flatbuffer_cc_library(
+    name = "loop_output_handler_test_fbs",
     srcs = [
-        "loop_output_handler_test.q",
+        "loop_output_handler_test.fbs",
     ],
 )
 
@@ -135,8 +134,8 @@ cc_library(
     ],
     deps = [
         "//aos:init",
-        "//aos/events:event-loop",
-        "//aos/robot_state",
+        "//aos/events:event_loop",
+        "//aos/robot_state:robot_state_fbs",
         "//aos/scoped:scoped_fd",
         "//aos/time",
         "//aos/util:log_interval",
@@ -150,9 +149,8 @@ cc_test(
     ],
     deps = [
         ":loop_output_handler",
-        ":loop_output_handler_test_queue",
+        ":loop_output_handler_test_fbs",
         "//aos/events:simulated_event_loop",
-        "//aos/logging:queue_logging",
         "//aos/testing:googletest",
         "//aos/testing:test_logging",
     ],
@@ -169,10 +167,10 @@ cc_library(
     restricted_to = ["//tools:roborio"],
     deps = [
         "//aos:init",
-        "//aos/events:shm-event-loop",
-        "//aos/logging:queue_logging",
+        "//aos/events:shm_event_loop",
+        "//aos/input:driver_station_data",
         "//aos/network:team_number",
-        "//aos/robot_state",
+        "//aos/robot_state:joystick_state_fbs",
         "//third_party:wpilib",
     ],
 )
@@ -187,16 +185,16 @@ cc_library(
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
-        "//aos/logging:queue_logging",
-        "//aos/robot_state",
+        "//aos/events:event_loop",
+        "//aos/robot_state:robot_state_fbs",
         "//third_party:wpilib",
     ],
 )
 
-queue_library(
+flatbuffer_cc_library(
     name = "pdp_values",
     srcs = [
-        "pdp_values.q",
+        "pdp_values.fbs",
     ],
 )
 
@@ -212,8 +210,7 @@ cc_library(
     deps = [
         ":pdp_values",
         "//aos:init",
-        "//aos/events:event-loop",
-        "//aos/logging:queue_logging",
+        "//aos/events:event_loop",
         "//aos/util:phased_loop",
         "//third_party:wpilib",
     ],
@@ -230,11 +227,12 @@ cc_library(
     ],
 )
 
-queue_library(
-    name = "imu_queue",
+flatbuffer_cc_library(
+    name = "imu_fbs",
     srcs = [
-        "imu.q",
+        "imu.fbs",
     ],
+    gen_reflections = 1,
 )
 
 cc_library(
@@ -247,13 +245,12 @@ cc_library(
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
-        ":imu_queue",
+        ":imu_fbs",
         ":spi_rx_clearer",
         "//aos:init",
-        "//aos/events:event-loop",
+        "//aos/events:event_loop",
         "//aos/logging",
-        "//aos/logging:queue_logging",
-        "//aos/robot_state",
+        "//aos/robot_state:robot_state_fbs",
         "//aos/time",
         "//frc971/zeroing:averager",
         "//third_party:wpilib",
@@ -302,11 +299,11 @@ cc_library(
         ":encoder_and_potentiometer",
         ":wpilib_interface",
         "//aos:init",
-        "//aos/events:event-loop",
+        "//aos/events:event_loop",
         "//aos/stl_mutex",
         "//aos/time",
         "//aos/util:phased_loop",
-        "//frc971/control_loops:queues",
+        "//frc971/control_loops:control_loops_fbs",
         "//third_party:wpilib",
     ],
 )
@@ -324,8 +321,7 @@ cc_library(
         ":loop_output_handler",
         "//aos:math",
         "//aos/logging",
-        "//aos/logging:queue_logging",
-        "//frc971/control_loops/drivetrain:drivetrain_queue",
+        "//frc971/control_loops/drivetrain:drivetrain_output_fbs",
         "//third_party:wpilib",
     ],
 )

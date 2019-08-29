@@ -9,7 +9,7 @@ cc_library(
         "aos_strsignal.h",
     ],
     deps = [
-        "//aos/logging",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -20,7 +20,6 @@ cc_test(
     ],
     deps = [
         ":aos_strsignal",
-        "//aos/logging",
         "//aos/testing:googletest",
     ],
 )

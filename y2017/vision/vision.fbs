@@ -1,0 +1,16 @@
+namespace y2017.vision;
+
+// Published on ".y2017.vision.vision_status"
+table VisionStatus {
+  image_valid:bool;
+
+  // Distance to the target in meters.
+  distance:double;
+  // The angle in radians of the bottom of the target.
+  angle:double;
+
+  // Capture time of the angle using the clock behind monotonic_clock::now().
+  target_time:long;
+}
+
+root_type VisionStatus;

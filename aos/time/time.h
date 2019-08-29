@@ -82,14 +82,6 @@ void IncrementMockTime(monotonic_clock::duration amount);
 // Disables mocking time.
 void DisableMockTime();
 
-// Sets the global offset for all times so monotonic_clock::now() will return
-// now.
-// There is no synchronization here, so this is only safe when only a single
-// task is running.
-// This is only allowed when the shared memory core infrastructure has been
-// initialized in this process.
-void OffsetToNow(const monotonic_clock::time_point now);
-
 // Construct a time representing the period of hertz.
 constexpr ::std::chrono::nanoseconds FromRate(int hertz) {
   return ::std::chrono::duration_cast<::std::chrono::nanoseconds>(

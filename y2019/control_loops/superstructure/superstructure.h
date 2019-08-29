@@ -2,26 +2,27 @@
 #define Y2019_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_
 
 #include "aos/controls/control_loop.h"
-#include "aos/events/event-loop.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "aos/events/event_loop.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 #include "y2019/constants.h"
 #include "y2019/control_loops/superstructure/collision_avoidance.h"
-#include "y2019/control_loops/superstructure/superstructure.q.h"
+#include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_output_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2019/control_loops/superstructure/vacuum.h"
-#include "y2019/status_light.q.h"
+#include "y2019/status_light_generated.h"
 
 namespace y2019 {
 namespace control_loops {
 namespace superstructure {
 
 class Superstructure
-    : public ::aos::controls::ControlLoop<SuperstructureQueue> {
+    : public ::aos::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
-  explicit Superstructure(
-      ::aos::EventLoop *event_loop,
-      const ::std::string &name =
-          ".y2019.control_loops.superstructure.superstructure_queue");
+  explicit Superstructure(::aos::EventLoop *event_loop,
+                          const ::std::string &name = "/superstructure");
 
   using PotAndAbsoluteEncoderSubsystem =
       ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
@@ -39,16 +40,15 @@ class Superstructure
   const Vacuum &vacuum() const { return vacuum_; }
 
  protected:
-  virtual void RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
-                            const SuperstructureQueue::Position *position,
-                            SuperstructureQueue::Output *output,
-                            SuperstructureQueue::Status *status) override;
+  virtual void RunIteration(const Goal *unsafe_goal, const Position *position,
+                            aos::Sender<Output>::Builder *output,
+                            aos::Sender<Status>::Builder *status) override;
 
  private:
   void SendColors(float red, float green, float blue);
 
   ::aos::Sender<::y2019::StatusLight> status_light_sender_;
-  ::aos::Fetcher<::frc971::control_loops::DrivetrainQueue::Status>
+  ::aos::Fetcher<::frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
 
   PotAndAbsoluteEncoderSubsystem elevator_;

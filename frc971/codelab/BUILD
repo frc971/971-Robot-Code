@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//aos/build:queues.bzl", "queue_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 cc_binary(
     name = "basic_test",
@@ -8,10 +8,9 @@ cc_binary(
     srcs = ["basic_test.cc"],
     deps = [
         ":basic",
-        ":basic_queue",
-        "//aos:queues",
+        ":basic_fbs",
         "//aos/controls:control_loop_test",
-        "//aos/events:shm-event-loop",
+        "//aos/events:shm_event_loop",
         "//aos/testing:googletest",
         "//frc971/control_loops:state_feedback_loop",
         "//frc971/control_loops:team_number_test_environment",
@@ -23,18 +22,14 @@ cc_library(
     srcs = ["basic.cc"],
     hdrs = ["basic.h"],
     deps = [
-        ":basic_queue",
+        ":basic_fbs",
         "//aos/controls:control_loop",
     ],
 )
 
-queue_library(
-    name = "basic_queue",
+flatbuffer_cc_library(
+    name = "basic_fbs",
     srcs = [
-        "basic.q",
-    ],
-    deps = [
-        "//aos/controls:control_loop_queues",
-        "//frc971/control_loops:queues",
+        "basic.fbs",
     ],
 )
