@@ -15,12 +15,15 @@ emcc_binary(
 
 emcc_binary(
     name = "webgl2.html",
-    srcs = ["webgl2_draw_packed_triangle.c"],
+    srcs = ["webgl2_benchmark.cc"],
+    html_shell = "minimal_shell.html",
     # Enable WEBGL2 (-s is used by the emscripten
     # compiler to specify sundry options).
     linkopts = [
         "-s",
         "USE_WEBGL2=1",
+        "-s",
+        "TOTAL_MEMORY=" + repr(256 * 1024 * 1024),
     ],
 )
 
