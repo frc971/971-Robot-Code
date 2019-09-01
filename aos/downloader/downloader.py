@@ -9,74 +9,86 @@ import subprocess
 import re
 import os
 
+
 def install(ssh_target, pkg):
-  """Installs a package from NI on the ssh target."""
-  print('Installing', pkg)
-  PKG_URL = 'http://download.ni.com/ni-linux-rt/feeds/2015/arm/ipk/cortexa9-vfpv3/' + pkg
-  subprocess.check_call(['wget', PKG_URL, '-O', pkg])
-  try:
-    subprocess.check_call(['scp', pkg, ssh_target + ':/tmp/' + pkg])
-    subprocess.check_call(['ssh', ssh_target, 'opkg', 'install', '/tmp/' + pkg])
-    subprocess.check_call(['ssh', ssh_target, 'rm', '/tmp/' + pkg])
-  finally:
-    subprocess.check_call(['rm', pkg])
+    """Installs a package from NI on the ssh target."""
+    print("Installing", pkg)
+    PKG_URL = "http://download.ni.com/ni-linux-rt/feeds/2015/arm/ipk/cortexa9-vfpv3/" + pkg
+    subprocess.check_call(["wget", PKG_URL, "-O", pkg])
+    try:
+        subprocess.check_call([
+            "external/ssh/usr/bin/scp", "-S", "external/ssh/usr/bin/ssh", pkg,
+            ssh_target + ":/tmp/" + pkg
+        ])
+        subprocess.check_call([
+            "external/ssh/usr/bin/ssh", ssh_target, "opkg", "install",
+            "/tmp/" + pkg
+        ])
+        subprocess.check_call(
+            ["external/ssh/usr/bin/ssh", ssh_target, "rm", "/tmp/" + pkg])
+    finally:
+        subprocess.check_call(["rm", pkg])
 
 
 def main(argv):
-  args = argv[argv.index('--') + 1:]
+    args = argv[argv.index("--") + 1:]
 
-  relative_dir = ''
-  recursive = False
+    relative_dir = ""
+    recursive = False
 
-  if '--dirs' in argv:
-    dirs_index = argv.index('--dirs')
-    srcs = argv[1:dirs_index]
-    relative_dir = argv[dirs_index + 1]
-    recursive = True
-  else:
-    srcs = argv[1:argv.index('--')]
-
-  ROBORIO_TARGET_DIR = '/home/admin/robot_code'
-  ROBORIO_USER = 'admin'
-
-  target_dir = ROBORIO_TARGET_DIR
-  user = ROBORIO_USER
-  destination = args[-1]
-
-  result = re.match('(?:([^:@]+)@)?([^:@]+)(?::([^:@]+))?', destination)
-  if not result:
-    print('Not sure how to parse destination "%s"!' % destination,
-          file=sys.stderr)
-    return 1
-  if result.group(1):
-    user = result.group(1)
-  hostname = result.group(2)
-  if result.group(3):
-    target_dir = result.group(3)
-
-  ssh_target = '%s@%s' % (user, hostname)
-
-  rsync_cmd = (['rsync', '-c', '-v', '-z', '--copy-links'] + srcs +
-               ['%s:%s/%s' % (ssh_target, target_dir, relative_dir)])
-  try:
-    subprocess.check_call(rsync_cmd)
-  except subprocess.CalledProcessError as e:
-    if e.returncode == 127:
-      print('Unconfigured roboRIO, installing rsync.')
-      install(ssh_target, 'libattr1_2.4.47-r0.36_cortexa9-vfpv3.ipk')
-      install(ssh_target, 'libacl1_2.2.52-r0.36_cortexa9-vfpv3.ipk')
-      install(ssh_target, 'rsync_3.1.0-r0.7_cortexa9-vfpv3.ipk')
-      subprocess.check_call(rsync_cmd)
+    if "--dirs" in argv:
+        dirs_index = argv.index("--dirs")
+        srcs = argv[1:dirs_index]
+        relative_dir = argv[dirs_index + 1]
+        recursive = True
     else:
-      raise e
+        srcs = argv[1:argv.index("--")]
 
-  if not recursive:
-    subprocess.check_call(
-        ('ssh', ssh_target, '&&'.join([
-            'chmod u+s %s/starter_exe' % target_dir,
-            'echo \'Done moving new executables into place\'',
-            'bash -c \'sync && sync && sync\'',
-          ])))
+    ROBORIO_TARGET_DIR = "/home/admin/robot_code"
+    ROBORIO_USER = "admin"
 
-if __name__ == '__main__':
-  main(sys.argv)
+    target_dir = ROBORIO_TARGET_DIR
+    user = ROBORIO_USER
+    destination = args[-1]
+
+    result = re.match("(?:([^:@]+)@)?([^:@]+)(?::([^:@]+))?", destination)
+    if not result:
+        print(
+            "Not sure how to parse destination \"%s\"!" % destination,
+            file=sys.stderr)
+        return 1
+    if result.group(1):
+        user = result.group(1)
+    hostname = result.group(2)
+    if result.group(3):
+        target_dir = result.group(3)
+
+    ssh_target = "%s@%s" % (user, hostname)
+
+    rsync_cmd = ([
+        "external/rsync/usr/bin/rsync", "-e", "external/ssh/usr/bin/ssh", "-c",
+        "-v", "-z", "--copy-links"
+    ] + srcs + ["%s:%s/%s" % (ssh_target, target_dir, relative_dir)])
+    try:
+        subprocess.check_call(rsync_cmd)
+    except subprocess.CalledProcessError as e:
+        if e.returncode == 127:
+            print("Unconfigured roboRIO, installing rsync.")
+            install(ssh_target, "libattr1_2.4.47-r0.36_cortexa9-vfpv3.ipk")
+            install(ssh_target, "libacl1_2.2.52-r0.36_cortexa9-vfpv3.ipk")
+            install(ssh_target, "rsync_3.1.0-r0.7_cortexa9-vfpv3.ipk")
+            subprocess.check_call(rsync_cmd)
+        else:
+            raise e
+
+    if not recursive:
+        subprocess.check_call(
+            ("external/ssh/usr/bin/ssh", ssh_target, "&&".join([
+                "chmod u+s %s/starter_exe" % target_dir,
+                "echo \'Done moving new executables into place\'",
+                "bash -c \'sync && sync && sync\'",
+            ])))
+
+
+if __name__ == "__main__":
+    main(sys.argv)

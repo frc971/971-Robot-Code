@@ -15,6 +15,14 @@ load(
     patch_debs = "files",
 )
 load(
+    "//debian:rsync.bzl",
+    rsync_debs = "files",
+)
+load(
+    "//debian:ssh.bzl",
+    ssh_debs = "files",
+)
+load(
     "//debian:pandoc.bzl",
     pandoc_debs = "files",
 )
@@ -51,6 +59,10 @@ load("//debian:packages.bzl", "generate_repositories_for_debs")
 generate_repositories_for_debs(python_debs)
 
 generate_repositories_for_debs(clang_debs)
+
+generate_repositories_for_debs(rsync_debs)
+
+generate_repositories_for_debs(ssh_debs)
 
 generate_repositories_for_debs(patch_debs)
 
@@ -219,6 +231,20 @@ http_archive(
     build_file = "@//debian:patch.BUILD",
     sha256 = "b5ce139648a2e04f5585948ddad2fdae24dd4ee7976ac5a22d6ae7bd5674631e",
     url = "http://www.frc971.org/Build-Dependencies/patch.tar.gz",
+)
+
+http_archive(
+    name = "rsync",
+    build_file = "@//debian:rsync.BUILD",
+    sha256 = "53be65a9214aaa6d1b9176f135184fb4a78ccefd58f95ce0da37e6a392dfeb60",
+    url = "http://www.frc971.org/Build-Dependencies/rsync.tar.gz",
+)
+
+http_archive(
+    name = "ssh",
+    build_file = "@//debian:ssh.BUILD",
+    sha256 = "43c760bc5c32d5a8c24837d1b4c356424a157f59ff8a08654651856ae90b16d2",
+    url = "http://www.frc971.org/Build-Dependencies/ssh.tar.gz",
 )
 
 http_archive(

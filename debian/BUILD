@@ -13,6 +13,14 @@ load(
     patch_debs = "files",
 )
 load(
+    ":rsync.bzl",
+    rsync_debs = "files",
+)
+load(
+    ":ssh.bzl",
+    ssh_debs = "files",
+)
+load(
     ":pandoc.bzl",
     pandoc_debs = "files",
 )
@@ -239,6 +247,16 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "patch",
     files = patch_debs,
+)
+
+generate_deb_tarball(
+    name = "rsync",
+    files = rsync_debs,
+)
+
+generate_deb_tarball(
+    name = "ssh",
+    files = ssh_debs,
 )
 
 generate_deb_tarball(
