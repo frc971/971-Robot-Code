@@ -1,6 +1,50 @@
-# Sourced from https://github.com/ribrdb/rules_emscripten/blob/master/toolchain/defs.bzl
-# TODO(james): Specialize this more for our purposes--e.g.,
-# we probably will only actually use one set of the possible options.
+def _emcc_expand_files_impl(ctx):
+    tarfile = ctx.file.tarfile
+    html_shell = ctx.file.html_shell
+    basename = ctx.attr.name
+    html_out = ctx.actions.declare_file(basename + ".html")
+    tar_outs = [
+        ctx.actions.declare_file(basename + "." + extension)
+        for extension in ["js", "wasm"]
+    ]
+    if html_shell:
+        ctx.actions.expand_template(
+            output=html_out,
+            template=html_shell,
+            substitutions={
+                "{{{ SCRIPT }}}":
+                "<script async type=\"text/javascript\" src=\"" + basename +
+                ".js\"></script>",
+            })
+    else:
+        tar_outs.append(html_out)
+
+    ctx.actions.run_shell(
+        outputs=tar_outs,
+        inputs=[tarfile],
+        command="tar xf " + tarfile.path + " -C \"" + html_out.dirname + "\"")
+
+    return [DefaultInfo(files=depset(tar_outs + [html_out]))]
+
+
+emcc_expand_files = rule(
+    attrs={
+        "html_shell": attr.label(
+            mandatory=False,
+            allow_single_file=True,
+        ),
+        "tarfile": attr.label(
+            mandatory=True,
+            allow_single_file=True,
+        ),
+    },
+    doc="""
+    Handles the intermediate processing to extra files from a tarball
+    for emcc_binary. See emcc_binary for more detail.""",
+    implementation=_emcc_expand_files_impl,
+)
+
+
 def emcc_binary(name, srcs=[], linkopts=[], html_shell=None, **kwargs):
     """Produces a deployable set of WebAssembly files.
 
@@ -19,18 +63,16 @@ def emcc_binary(name, srcs=[], linkopts=[], html_shell=None, **kwargs):
     can't use the builtin flag with the script in its current form, because
     that would require making an html file an input to a cc_library rule,
     which bazel gets obnoxious about.
-    TODO(james): Rewrite this as a rule so that we can do some of this more
-    cleanly.
 
     This macro also defines a rule with a name equal to the basename of
     the name argument (e.g., if name = "foo.html", basename = "foo"). This rule
-    is a filegroup containing all the output files of this rule.
+    is the rule that actually outputs the required files.
 
     Internally, this rule works by:
     1) Generating a tarball that contains the .js and .wasm files, using
        a cc_binary that calls the emscripten compiler.
     2) Extracting said tarball.
-    3) Generating the output html from the html shell template.
+    3) [if necessary] Generating the output html from the html shell template.
     """
     includehtml = False
     linkopts = list(linkopts)
@@ -53,27 +95,11 @@ def emcc_binary(name, srcs=[], linkopts=[], html_shell=None, **kwargs):
         name=tarfile,
         srcs=srcs,
         linkopts=linkopts,
-        restricted_to = ["//tools:web"],
+        restricted_to=["//tools:web"],
         **kwargs)
-    native.genrule(
-        name="emcc_extract_" + tarfile,
-        srcs=[tarfile],
-        outs=outputs,
-        output_to_bindir=1,
-        testonly=kwargs.get('testonly'),
-        restricted_to = ["//tools:web"],
-        cmd="""tar xf $< -C "$(@D)"/$$(dirname "%s")""" % [outputs[0]])
-    if html_shell:
-         native.genrule(
-             name = "generate_shell_" + name,
-             srcs = [html_shell],
-             outs = [basename + ".html"],
-             restricted_to = ["//tools:web"],
-             cmd = "sed 's/{{{ SCRIPT }}}/<script async type=\"text\/javascript\" src=\"" + basename + ".js\"><\/script>/' $< > $@",
-         )
-         outputs.append(basename + ".html")
-    native.filegroup(
-        name = basename,
-        srcs = outputs,
-        restricted_to = ["//tools:web"]
+    emcc_expand_files(
+        name=basename,
+        html_shell=html_shell,
+        tarfile=tarfile,
+        restricted_to=["//tools:web"],
     )
