@@ -148,3 +148,16 @@ cc_binary(
         "@com_github_gflags_gflags//:gflags",
     ],
 )
+
+cc_library(
+    name = "signalfd",
+    srcs = [
+        "signalfd.cc",
+    ],
+    hdrs = [
+        "signalfd.h",
+    ],
+    deps = [
+        "//aos/logging",
+    ],
+)
