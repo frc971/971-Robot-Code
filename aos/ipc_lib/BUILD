@@ -164,6 +164,7 @@ cc_library(
 
 cc_library(
     name = "index",
+    srcs = ["index.cc"],
     hdrs = ["index.h"],
 )
 
@@ -173,6 +174,72 @@ cc_test(
     deps = [
         ":index",
         "//aos/testing:googletest",
+        "//aos/testing:test_logging",
+    ],
+)
+
+cc_library(
+    name = "lockless_queue",
+    srcs = [
+        "lockless_queue.cc",
+        "lockless_queue_memory.h",
+    ],
+    hdrs = ["lockless_queue.h"],
+    deps = [
+        ":aos_sync",
+        ":index",
+        "//aos:init",
+        "//aos/logging",
+        "//aos/time",
+        "//aos/util:compiler_memory_barrier",
+    ],
+)
+
+cc_library(
+    name = "queue_racer",
+    testonly = True,
+    srcs = [
+        "queue_racer.cc",
+    ],
+    hdrs = [
+        "queue_racer.h",
+    ],
+    deps = [
+        ":lockless_queue",
+        "//aos:event",
+        "//third_party/googletest:gtest",
+    ],
+)
+
+cc_test(
+    name = "lockless_queue_test",
+    timeout = "eternal",
+    srcs = ["lockless_queue_test.cc"],
+    deps = [
+        ":lockless_queue",
+        ":queue_racer",
+        ":signalfd",
+        "//aos:event",
+        "//aos/events:epoll",
+        "//aos/libc:aos_strsignal",
+        "//aos/testing:googletest",
+        "//aos/testing:prevent_exit",
+        "//aos/testing:test_logging",
+    ],
+)
+
+cc_test(
+    name = "lockless_queue_death_test",
+    srcs = ["lockless_queue_death_test.cc"],
+    deps = [
+        ":lockless_queue",
+        ":queue_racer",
+        ":signalfd",
+        "//aos:event",
+        "//aos/events:epoll",
+        "//aos/libc:aos_strsignal",
+        "//aos/testing:googletest",
+        "//aos/testing:prevent_exit",
         "//aos/testing:test_logging",
     ],
 )

@@ -3,6 +3,7 @@
 
 #include <sys/types.h>
 #include <atomic>
+#include <string>
 
 namespace aos {
 namespace ipc_lib {
@@ -104,6 +105,11 @@ class QueueIndex {
   // Returns the raw index.  This should be used very sparingly.
   uint32_t index() const { return index_; }
 
+  QueueIndex Clear() const { return QueueIndex(0, count_); }
+
+  // Returns a string representing the index.
+  ::std::string DebugString() const;
+
  private:
   QueueIndex(uint32_t index, uint32_t count) : index_(index), count_(count) {}
 
@@ -183,6 +189,9 @@ class Index {
 
   bool operator==(const Index other) const { return other.index_ == index_; }
 
+  // Returns a string representing the index.
+  ::std::string DebugString() const;
+
  private:
   Index(uint32_t index)
       : index_(index) {}
@@ -213,6 +222,7 @@ class AtomicIndex {
   void RelaxedInvalidate() { RelaxedStore(Index::Invalid()); }
 
   // Full bidirectional barriers here.
+  void Invalidate() { Store(Index::Invalid()); }
   void Store(Index index) { index_.store(index.index_); }
   Index Load() { return Index(index_.load()); }
 

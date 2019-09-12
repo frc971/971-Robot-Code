@@ -2,6 +2,7 @@ cc_library(
     name = "epoll",
     srcs = ["epoll.cc"],
     hdrs = ["epoll.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//aos/logging",
         "//aos/time",
