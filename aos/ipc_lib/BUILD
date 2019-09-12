@@ -161,3 +161,18 @@ cc_library(
         "//aos/logging",
     ],
 )
+
+cc_library(
+    name = "index",
+    hdrs = ["index.h"],
+)
+
+cc_test(
+    name = "index_test",
+    srcs = ["index_test.cc"],
+    deps = [
+        ":index",
+        "//aos/testing:googletest",
+        "//aos/testing:test_logging",
+    ],
+)
