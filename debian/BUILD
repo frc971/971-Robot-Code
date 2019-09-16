@@ -115,7 +115,7 @@ py_binary(
     srcs = [
         "download_packages.py",
     ],
-    default_python_version = "PY3",
+    python_version = "PY3",
     main = "download_packages.py",
     srcs_version = "PY2AND3",
 )

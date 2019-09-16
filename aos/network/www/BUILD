@@ -1,4 +1,4 @@
-load("@build_bazel_rules_typescript//:defs.bzl", "ts_library")
+load("@npm_bazel_typescript//:defs.bzl", "ts_library")
 load("@build_bazel_rules_nodejs//:defs.bzl", "rollup_bundle", "nodejs_binary")
 load("//aos:config.bzl", "aos_config")
 
@@ -40,10 +40,11 @@ ts_library(
 
 rollup_bundle(
     name = "main_bundle",
-    entry_point = "aos/network/www/main",
+    enable_code_splitting = False,
+    entry_point = "main.ts",
     visibility = ["//aos:__subpackages__"],
     deps = [
-        "main",
+        ":main",
     ],
 )
 
@@ -101,12 +102,16 @@ ts_library(
         ":plotter",
         ":proxy",
         ":reflection_ts",
+        "//aos:configuration_ts_fbs",
+        "//aos/network:connect_ts_fbs",
+        "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )
 
 rollup_bundle(
     name = "graph_main_bundle",
-    entry_point = "aos/network/www/graph_main",
+    enable_code_splitting = False,
+    entry_point = "graph_main.ts",
     deps = [
         ":graph_main",
     ],
@@ -126,7 +131,8 @@ aos_config(
 
 rollup_bundle(
     name = "reflection_test_bundle",
-    entry_point = "aos/network/www/reflection_test_main",
+    enable_code_splitting = False,
+    entry_point = "reflection_test_main.ts",
     deps = [
         ":reflection_test_main",
     ],
@@ -136,11 +142,10 @@ sh_binary(
     name = "web_proxy_demo",
     srcs = ["web_proxy_demo.sh"],
     data = [
-        ":flatbuffers",
         ":graph.html",
-        ":graph_main_bundle",
+        ":graph_main_bundle.min.js",
         ":reflection_test.html",
-        ":reflection_test_bundle",
+        ":reflection_test_bundle.min.js",
         ":test_config",
         "//aos/network:web_proxy_main",
         "//y2020:config",

@@ -30,7 +30,7 @@ py_binary(
         "//tools/cpp:toolchain",
         "@amd64_debian_sysroot//:sysroot_files",
     ],
-    default_python_version = "PY3",
+    python_version = "PY3",
     main = "fast_gaussian_runner.py",
     restricted_to = [
         "//tools:k8",
@@ -234,7 +234,7 @@ flatbuffer_cc_library(
 py_binary(
     name = "demo_sift_training",
     srcs = ["demo_sift_training.py"],
-    default_python_version = "PY3",
+    python_version = "PY3",
     srcs_version = "PY2AND3",
     deps = [
         ":sift_fbs_python",

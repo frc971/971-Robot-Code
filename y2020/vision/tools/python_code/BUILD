@@ -15,7 +15,7 @@ py_binary(
     data = glob(["calib_files/*.json"]) + glob([
         "test_images/*.png",
     ]),
-    default_python_version = "PY3",
+    python_version = "PY3",
     srcs_version = "PY2AND3",
     deps = [
         "//external:python-glog",
@@ -63,7 +63,7 @@ py_binary(
     data = glob(["calib_files/*.json"]) + glob([
         "test_images/*.png",
     ]),
-    default_python_version = "PY3",
+    python_version = "PY3",
     main = "load_sift_training.py",
     srcs_version = "PY2AND3",
     deps = [

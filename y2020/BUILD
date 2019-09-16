@@ -240,8 +240,8 @@ sh_binary(
     data = [
         ":config",
         "//aos/network:web_proxy_main",
-        "//y2020/www:camera_main_bundle",
-        "//y2020/www:field_main_bundle",
+        "//y2020/www:camera_main_bundle.min.js",
+        "//y2020/www:field_main_bundle.min.js",
         "//y2020/www:files",
     ],
 )

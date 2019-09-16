@@ -169,7 +169,7 @@ py_binary(
         "graph_edit.py",
         "graph_generate.py",
     ],
-    default_python_version = "PY3",
+    python_version = "PY3",
     legacy_create_init = False,
     restricted_to = ["//tools:k8"],
     srcs_version = "PY3",
@@ -187,7 +187,7 @@ py_binary(
         "graph_codegen.py",
         "graph_generate.py",
     ],
-    default_python_version = "PY2",
+    python_version = "PY2",
     legacy_create_init = False,
     srcs_version = "PY2",
     deps = [

@@ -76,7 +76,7 @@ py_test(
 py_test(
     name = "python3_opencv",
     srcs = ["python_opencv.py"],
-    default_python_version = "PY3",
+    python_version = "PY3",
     main = "python_opencv.py",
     srcs_version = "PY2AND3",
     deps = ["@opencv_contrib_nonfree_amd64//:python_opencv"],

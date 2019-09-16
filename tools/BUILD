@@ -5,12 +5,16 @@ exports_files(["test_sharding_compliant"])
 # Don't use these directly! Use //tools/build_rules/*.bzl instead.
 config_setting(
     name = "compiler_clang",
-    values = {"compiler": "clang"},
+    flag_values = {
+        "@bazel_tools//tools/cpp:compiler": "clang",
+    }
 )
 
 config_setting(
     name = "compiler_gcc",
-    values = {"compiler": "gcc"},
+    flag_values = {
+        "@bazel_tools//tools/cpp:compiler": "gcc",
+    }
 )
 
 config_setting(

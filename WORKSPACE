@@ -604,15 +604,11 @@ http_archive(
     url = "https://www.frc971.org/Build-Dependencies/webrtc-30376-4c4735b-linux-rio.tar.gz",
 )
 
-# Fetch our Bazel dependencies that aren't distributed on npm
-load("@build_bazel_rules_typescript//:package.bzl", "rules_typescript_dependencies")
-
-rules_typescript_dependencies()
-
-# Setup TypeScript toolchain
-load("@build_bazel_rules_typescript//:defs.bzl", "ts_setup_workspace")
-
-ts_setup_workspace()
+http_archive(
+    name = "build_bazel_rules_nodejs",
+    sha256 = "0d9660cf0894f1fe1e9840818553e0080fbce0851169812d77a70bdb9981c946",
+    urls = ["https://www.frc971.org/Build-Dependencies/rules_nodejs-0.37.0.tar.gz"],
+)
 
 # Setup the NodeJS toolchain
 load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories", "yarn_install")
@@ -620,11 +616,25 @@ load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories", "yarn_install"
 node_repositories()
 
 # Setup Bazel managed npm dependencies with the `yarn_install` rule.
+#
+# To run yarn by hand, use:
+#  bazel run @nodejs_linux_amd64//:bin/yarn -- list
+# I'm sure there is a better path, but that works...
 yarn_install(
     name = "npm",
     package_json = "//:package.json",
+    symlink_node_modules = False,
     yarn_lock = "//:yarn.lock",
 )
+
+# Install all Bazel dependencies needed for npm packages that supply Bazel rules
+load("@npm//:install_bazel_dependencies.bzl", "install_bazel_dependencies")
+
+install_bazel_dependencies()
+
+load("@npm_bazel_typescript//:index.bzl", "ts_setup_workspace")
+
+ts_setup_workspace()
 
 # Flatbuffers
 local_repository(

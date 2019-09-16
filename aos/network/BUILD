@@ -381,8 +381,7 @@ cc_binary(
     ],
     data = [
         "//aos/network/www:files",
-        "//aos/network/www:flatbuffers",
-        "//aos/network/www:main_bundle",
+        "//aos/network/www:main_bundle.min.js",
         "@com_github_google_flatbuffers//:flatjs",
     ],
     deps = [
