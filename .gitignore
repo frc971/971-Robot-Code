@@ -1,0 +1,6 @@
+example1
+example2
+*.d
+.objs
+x*
+test/build
