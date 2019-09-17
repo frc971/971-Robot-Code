@@ -223,3 +223,68 @@ cc_library(
         "@com_github_google_glog//:glog",
     ],
 )
+
+cc_library(
+    name = "latency_lib",
+    srcs = ["latency_lib.cc"],
+    hdrs = ["latency_lib.h"],
+    deps = [
+        "//aos:realtime",
+        "//aos/logging",
+        "//aos/time",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_binary(
+    name = "signal_stress",
+    srcs = [
+        "signal_stress.cc",
+    ],
+    deps = [
+        ":latency_lib",
+        "//aos:init",
+        "//aos/events:epoll",
+        "@com_github_gflags_gflags//:gflags",
+    ],
+)
+
+cc_binary(
+    name = "futex_latency",
+    srcs = [
+        "futex_latency.cc",
+    ],
+    deps = [
+        ":latency_lib",
+        "//aos:condition",
+        "//aos:init",
+        "//aos/mutex",
+        "@com_github_gflags_gflags//:gflags",
+    ],
+)
+
+cc_binary(
+    name = "named_pipe_latency",
+    srcs = [
+        "named_pipe_latency.cc",
+    ],
+    deps = [
+        ":latency_lib",
+        "//aos:init",
+        "//aos/events:epoll",
+        "@com_github_gflags_gflags//:gflags",
+    ],
+)
+
+cc_binary(
+    name = "eventfd_latency",
+    srcs = [
+        "eventfd_latency.cc",
+    ],
+    deps = [
+        ":latency_lib",
+        "//aos:init",
+        "//aos/events:epoll",
+        "@com_github_gflags_gflags//:gflags",
+    ],
+)
