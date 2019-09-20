@@ -74,7 +74,7 @@ unsigned long _hex_str_to_ul(const uint8_t* bytes, size_t len) {
   for (size_t i = 0; i != len; ++i) {
     uint8_t b = bytes[i];
     int digit = (b > '0'-1 && b < 'f'+1) ? kHexValueTable[b-'0'] : -1;
-    if (b == -1 || // bad digit
+    if (b == 0xff || // bad digit
         (value > cutoff) || // overflow
         ((value == cutoff) && (digit > cutoff_digit)) ) {
       return ULONG_MAX;
@@ -172,9 +172,10 @@ bool jsont_data_equals(jsont_ctx_t* ctx, const uint8_t* bytes, size_t length) {
       (memcmp((const void*)ctx->value_buf.data,
         (const void*)bytes, length) == 0);
   } else {
-    return (ctx->input_buf_value_end - ctx->input_buf_value_start == length) &&
-      (memcmp((const void*)ctx->input_buf_value_start,
-        (const void*)bytes, length) == 0);
+    return (ctx->input_buf_value_end - ctx->input_buf_value_start ==
+            (ssize_t)length) &&
+           (memcmp((const void *)ctx->input_buf_value_start,
+                   (const void *)bytes, length) == 0);
   }
 }
 

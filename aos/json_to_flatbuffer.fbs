@@ -1,0 +1,73 @@
+namespace aos.testing;
+
+table Location {
+  name:string;
+  type:string;
+  frequency:int;
+  max_size:int;
+}
+
+table Map {
+  match:Location;
+  rename:Location;
+}
+
+table Application {
+  name:string;
+  maps:[Map];
+}
+
+table Configuration {
+  locations:[Location] (id: 0);
+  maps:[Map] (id: 1);
+  applications:[Application] (id: 2);
+  imports:[string] (id: 3);
+
+  // 8 bit: byte ubyte bool
+  // 16 bit: short ushort
+  // 32 bit: int uint float
+  // 64 bit: long ulong double
+
+  // Simple values.
+  foo_byte:byte (id: 4);
+  foo_ubyte:ubyte (id: 5);
+  foo_bool:bool (id: 6);
+
+  foo_short:short (id: 7);
+  foo_ushort:ushort (id: 8);
+
+  foo_int:int (id: 9);
+  foo_uint:uint (id: 10);
+
+  foo_long:long (id: 11);
+  foo_ulong:ulong (id: 12);
+
+  foo_float:float (id: 13);
+  foo_double:double (id: 14);
+
+  foo_string:string (id: 15);
+
+  // Test vectors now.
+  vector_foo_byte:[byte] (id: 16);
+  vector_foo_ubyte:[ubyte] (id: 17);
+  vector_foo_bool:[bool] (id: 18);
+
+  vector_foo_short:[short] (id: 19);
+  vector_foo_ushort:[ushort] (id: 20);
+
+  vector_foo_int:[int] (id: 21);
+  vector_foo_uint:[uint] (id: 22);
+
+  vector_foo_long:[long] (id: 23);
+  vector_foo_ulong:[ulong] (id: 24);
+
+  vector_foo_float:[float] (id: 25);
+  vector_foo_double:[double] (id: 26);
+
+  vector_foo_string:[string] (id: 27);
+
+  // And a simple nested application.
+  single_application:Application (id: 28);
+}
+
+root_type Configuration;
