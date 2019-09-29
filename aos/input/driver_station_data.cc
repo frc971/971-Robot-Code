@@ -19,7 +19,7 @@ bool GetButton(const ButtonLocation location,
       location.joystick() > static_cast<int>(values.joysticks.size())) {
     return false;
   }
-  if (location.number() < 0 || location.number() >= 16) {
+  if (location.number() <= 0 || location.number() > 16) {
     return false;
   }
   return values.joysticks[location.joystick() - 1].buttons &
