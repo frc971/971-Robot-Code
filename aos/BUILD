@@ -1,4 +1,5 @@
 load("//tools:environments.bzl", "mcu_cpus")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("//aos/build:queues.bzl", "queue_library")
 
 filegroup(
@@ -408,4 +409,31 @@ cc_library(
         "make_unique.h",
     ],
     visibility = ["//visibility:public"],
+)
+
+flatbuffer_cc_library(
+    name = "json_to_flatbuffer_flatbuffer",
+    srcs = ["json_to_flatbuffer.fbs"],
+)
+
+cc_library(
+    name = "json_to_flatbuffer",
+    srcs = ["json_to_flatbuffer.cc"],
+    hdrs = ["json_to_flatbuffer.h"],
+    deps = [
+        "//aos/logging",
+        "@com_github_google_flatbuffers//:flatbuffers",
+    ],
+)
+
+cc_test(
+    name = "json_to_flatbuffer_test",
+    srcs = [
+        "json_to_flatbuffer_test.cc",
+    ],
+    deps = [
+        ":json_to_flatbuffer",
+        ":json_to_flatbuffer_flatbuffer",
+        "//aos/testing:googletest",
+    ],
 )
