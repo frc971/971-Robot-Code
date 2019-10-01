@@ -417,10 +417,20 @@ flatbuffer_cc_library(
 )
 
 cc_library(
+    name = "flatbuffer_utils",
+    srcs = ["flatbuffer_utils.cc"],
+    hdrs = ["flatbuffer_utils.h"],
+    deps = [
+        "@com_github_google_flatbuffers//:flatbuffers",
+    ],
+)
+
+cc_library(
     name = "json_to_flatbuffer",
     srcs = ["json_to_flatbuffer.cc"],
     hdrs = ["json_to_flatbuffer.h"],
     deps = [
+        ":flatbuffer_utils",
         "//aos/logging",
         "@com_github_google_flatbuffers//:flatbuffers",
     ],
