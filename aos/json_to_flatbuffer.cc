@@ -926,7 +926,12 @@ Tokenizer::TokenType Tokenizer::Next() {
 
       ConsumeWhitespace();
 
-      state_ = State::kExpectField;
+      if (Consume("}")) {
+        ConsumeWhitespace();
+        state_ = State::kExpectObjectEnd;
+      } else {
+        state_ = State::kExpectField;
+      }
       return TokenType::kStartObject;
 
     case State::kExpectField: {
@@ -1092,7 +1097,7 @@ bool Tokenizer::FieldAsInt(long long *value) {
   const char *pos = field_value().c_str();
   errno = 0;
   *value = strtoll(field_value().c_str(), const_cast<char **>(&pos), 10);
-  if (pos == field_value().c_str() || errno != 0) {
+  if (pos != field_value().c_str() + field_value().size() || errno != 0) {
     return false;
   }
   return true;
@@ -1103,7 +1108,7 @@ bool Tokenizer::FieldAsDouble(double *value) {
   errno = 0;
   *value = strtod(field_value().c_str(), const_cast<char **>(&pos));
 
-  if (pos == field_value().c_str() || errno != 0) {
+  if (pos != field_value().c_str() + field_value().size() || errno != 0) {
     return false;
   }
   return true;

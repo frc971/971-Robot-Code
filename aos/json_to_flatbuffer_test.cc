@@ -61,6 +61,12 @@ TEST_F(JsonToFlatbufferTest, Basic) {
   EXPECT_TRUE(JsonAndBack("{ \"foo_string\": \"baz\" }"));
 }
 
+// Tests that we can handle decimal points.
+TEST_F(JsonToFlatbufferTest, DecimalPoint) {
+  EXPECT_TRUE(JsonAndBack("{ \"foo_float\": 5.1 }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_double\": 5.1 }"));
+}
+
 // Test what happens if you pass a field name that we don't know.
 TEST_F(JsonToFlatbufferTest, InvalidFieldName) {
   EXPECT_FALSE(JsonAndBack("{ \"foo\": 5 }"));
@@ -131,6 +137,11 @@ TEST_F(JsonToFlatbufferTest, NestedStruct) {
   EXPECT_TRUE(
       JsonAndBack("{ \"applications\": [ { \"name\": \"woot\" }, { \"name\": "
                   "\"wow\" } ] }"));
+}
+
+// Test that we can parse an empty message.
+TEST_F(JsonToFlatbufferTest, EmptyMessage) {
+  EXPECT_TRUE(JsonAndBack("{  }"));
 }
 
 // TODO(austin): Missmatched values.
