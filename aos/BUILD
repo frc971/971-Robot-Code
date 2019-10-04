@@ -458,3 +458,27 @@ cc_test(
         "//aos/testing:googletest",
     ],
 )
+
+cc_library(
+    name = "flatbuffer_merge",
+    srcs = ["flatbuffer_merge.cc"],
+    hdrs = ["flatbuffer_merge.h"],
+    copts = ["-Wno-cast-align"],
+    deps = [
+        ":flatbuffer_utils",
+        "@com_github_google_flatbuffers//:flatbuffers",
+    ],
+)
+
+cc_test(
+    name = "flatbuffer_merge_test",
+    srcs = [
+        "flatbuffer_merge_test.cc",
+    ],
+    deps = [
+        ":flatbuffer_merge",
+        ":json_to_flatbuffer",
+        ":json_to_flatbuffer_flatbuffer",
+        "//aos/testing:googletest",
+    ],
+)

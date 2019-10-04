@@ -67,6 +67,7 @@ TEST_F(JsonToFlatbufferTest, DecimalPoint) {
   EXPECT_TRUE(JsonAndBack("{ \"foo_double\": 5.1 }"));
 }
 
+
 // Test what happens if you pass a field name that we don't know.
 TEST_F(JsonToFlatbufferTest, InvalidFieldName) {
   EXPECT_FALSE(JsonAndBack("{ \"foo\": 5 }"));
@@ -89,13 +90,12 @@ TEST_F(JsonToFlatbufferTest, InvalidSyntax) {
 
   EXPECT_FALSE(JsonAndBack("{ \"foo_int\": 5, }", "{ \"foo_int\": 5 }"));
 
-  EXPECT_FALSE(JsonAndBack(
-      "{ \"applications\":\n[\n{\n\"name\": \"woot\"\n},\n{\n\"name\": "
-      "\"wow\"\n} ,\n]\n}"));
-
   EXPECT_FALSE(
-      JsonAndBack("{ \"applications\": [ { \"name\": \"woot\" }, { \"name\": "
-                  "\"wow\" } ] , }"));
+      JsonAndBack("{ \"apps\":\n[\n{\n\"name\": \"woot\"\n},\n{\n\"name\": "
+                  "\"wow\"\n} ,\n]\n}"));
+
+  EXPECT_FALSE(JsonAndBack(
+      "{ \"apps\": [ { \"name\": \"woot\" }, { \"name\": \"wow\" } ] , }"));
 
   EXPECT_FALSE(
       JsonAndBack("{ \"vector_foo_string\": [ \"bar\", \"baz\" ] , }"));
@@ -134,17 +134,21 @@ TEST_F(JsonToFlatbufferTest, NestedStruct) {
   EXPECT_TRUE(
       JsonAndBack("{ \"single_application\": { \"name\": \"woot\" } }"));
 
-  EXPECT_TRUE(
-      JsonAndBack("{ \"applications\": [ { \"name\": \"woot\" }, { \"name\": "
-                  "\"wow\" } ] }"));
+  EXPECT_TRUE(JsonAndBack(
+      "{ \"apps\": [ { \"name\": \"woot\" }, { \"name\": \"wow\" } ] }"));
 }
 
 // Test that we can parse an empty message.
 TEST_F(JsonToFlatbufferTest, EmptyMessage) {
+  // Empty message works.
   EXPECT_TRUE(JsonAndBack("{  }"));
 }
 
+
 // TODO(austin): Missmatched values.
+// TODO(austin): enums
+//
+// TODO(austin): unions?
 
 }  // namespace testing
 }  // namespace aos

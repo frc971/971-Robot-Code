@@ -14,13 +14,14 @@ table Map {
 
 table Application {
   name:string;
+  priority:int;
   maps:[Map];
 }
 
 table Configuration {
   locations:[Location] (id: 0);
   maps:[Map] (id: 1);
-  applications:[Application] (id: 2);
+  apps:[Application] (id: 2);
   imports:[string] (id: 3);
 
   // 8 bit: byte ubyte bool
@@ -68,6 +69,11 @@ table Configuration {
 
   // And a simple nested application.
   single_application:Application (id: 28);
+
+  // TODO(austin): enum
+
+  // And nest this object to get some crazy coverage.
+  nested_config:Configuration (id: 29);
 }
 
 root_type Configuration;
