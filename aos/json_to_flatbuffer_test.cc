@@ -144,6 +144,14 @@ TEST_F(JsonToFlatbufferTest, EmptyMessage) {
   EXPECT_TRUE(JsonAndBack("{  }"));
 }
 
+// Tests that multiple arrays get properly handled.
+TEST_F(JsonToFlatbufferTest, MultipleArrays) {
+  EXPECT_TRUE(
+      JsonAndBack("{ \"vector_foo_float\": [ 9, 7, 1 ], \"vector_foo_double\": "
+                  "[ 9, 7, 1 ] }",
+                  "{ \"vector_foo_float\": [ 9.0, 7.0, 1.0 ], "
+                  "\"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }"));
+}
 
 // TODO(austin): Missmatched values.
 // TODO(austin): enums

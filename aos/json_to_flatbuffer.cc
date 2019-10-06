@@ -333,14 +333,6 @@ bool JsonParser::DoParse(const flatbuffers::TypeTable *typetable,
           if (!AddElement(field_index, double_value)) return false;
         }
       } break;
-      // TODO(austin): Need to detect int vs float.
-      /*
-      asdf
-      {
-        const int field_index = stack_.back().field_index;
-
-      } break;
-      */
       case Tokenizer::TokenType::kStringValue:  // string value
       {
         const int field_index = stack_.back().field_index;
@@ -606,6 +598,7 @@ bool JsonParser::FinishVector(int field_index) {
   stack_.back().elements.emplace_back(
       field_index, flatbuffers::Offset<flatbuffers::String>(
                        fbb_.EndVector(vector_elements_.size())));
+  vector_elements_.clear();
   return true;
 }
 
