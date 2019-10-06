@@ -144,6 +144,12 @@ TEST_F(JsonToFlatbufferTest, EmptyMessage) {
   EXPECT_TRUE(JsonAndBack("{  }"));
 }
 
+// Tests that comments get stripped.
+TEST_F(JsonToFlatbufferTest, Comments) {
+  EXPECT_TRUE(JsonAndBack("{ /* foo */ \"vector_foo_double\": [ 9, 7, 1 ] }",
+                          "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }"));
+}
+
 // Tests that multiple arrays get properly handled.
 TEST_F(JsonToFlatbufferTest, MultipleArrays) {
   EXPECT_TRUE(
