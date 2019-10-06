@@ -433,6 +433,7 @@ cc_library(
         ":flatbuffer_utils",
         "//aos/logging",
         "@com_github_google_flatbuffers//:flatbuffers",
+        "@com_google_absl//absl/strings",
     ],
 )
 

@@ -3,6 +3,7 @@
 #include <cstddef>
 #include "stdio.h"
 
+#include "absl/strings/string_view.h"
 #include "aos/flatbuffer_utils.h"
 #include "aos/logging/logging.h"
 #include "flatbuffers/flatbuffers.h"
@@ -122,7 +123,7 @@ class JsonParser {
 
   // Parses the json into a flatbuffer.  Returns either an empty vector on
   // error, or a vector with the flatbuffer data in it.
-  ::std::vector<uint8_t> Parse(const char *data,
+  ::std::vector<uint8_t> Parse(const absl::string_view data,
                                const flatbuffers::TypeTable *typetable) {
     flatbuffers::uoffset_t end = 0;
     bool result = DoParse(typetable, data, &end);
@@ -148,8 +149,8 @@ class JsonParser {
 
   // Parses the flatbuffer.  This is a second method so we can do easier
   // cleanup at the top level.  Returns true on success.
-  bool DoParse(const flatbuffers::TypeTable *typetable, const char *data,
-               flatbuffers::uoffset_t *table_end);
+  bool DoParse(const flatbuffers::TypeTable *typetable,
+               const absl::string_view data, flatbuffers::uoffset_t *table_end);
 
   // Adds *_value for the provided field.  If we are in a vector, queues the
   // data up in vector_elements_.  Returns true on success.
@@ -200,7 +201,8 @@ class JsonParser {
 };
 
 bool JsonParser::DoParse(const flatbuffers::TypeTable *typetable,
-                         const char *data, flatbuffers::uoffset_t *table_end) {
+                         const absl::string_view data,
+                         flatbuffers::uoffset_t *table_end) {
   ::std::vector<const flatbuffers::TypeTable *> stack;
 
   Tokenizer t(data);
@@ -713,7 +715,7 @@ bool JsonParser::PushElement(
 }  // namespace
 
 ::std::vector<uint8_t> JsonToFlatbuffer(
-    const char *data, const flatbuffers::TypeTable *typetable) {
+    const absl::string_view data, const flatbuffers::TypeTable *typetable) {
   JsonParser p;
   return p.Parse(data, typetable);
 }
@@ -729,14 +731,14 @@ bool JsonParser::PushElement(
 
 void Tokenizer::ConsumeWhitespace() {
   while (true) {
-    if (*data_ == '\0') {
+    if (AtEnd()) {
       return;
     }
     // Skip any whitespace.
-    if (*data_ == ' ' || *data_ == '\r' || *data_ == '\t') {
-      ++data_;
-    } else if (*data_ == '\n') {
-      ++data_;
+    if (Char() == ' ' || Char() == '\r' || Char() == '\t') {
+      ConsumeChar();
+    } else if (Char() == '\n') {
+      ConsumeChar();
       ++linenumber_;
     } else {
       // There is no fail.  Once we are out of whitespace (including 0 of it),
@@ -747,7 +749,7 @@ void Tokenizer::ConsumeWhitespace() {
 }
 
 bool Tokenizer::Consume(const char *token) {
-  const char *original = data_;
+  const absl::string_view original = data_;
   while (true) {
     // Finishing the token is success.
     if (*token == '\0') {
@@ -755,81 +757,82 @@ bool Tokenizer::Consume(const char *token) {
     }
 
     // But finishing the data first is failure.
-    if (*data_ == '\0') {
+    if (AtEnd()) {
       data_ = original;
       return false;
     }
 
     // Missmatch is failure.
-    if (*token != *data_) {
+    if (*token != Char()) {
       data_ = original;
       return false;
     }
 
-    ++data_;
+    ConsumeChar();
     ++token;
   }
 }
 
 bool Tokenizer::ConsumeString(::std::string *s) {
   // Under no conditions is it acceptible to run out of data while parsing a
-  // string.  Any '\0' checks should confirm that.
-  const char *original = data_;
-  if (*data_ == '\0') {
+  // string.  Any AtEnd checks should confirm that.
+  const absl::string_view original = data_;
+  if (AtEnd()) {
     return false;
   }
 
   // Expect the leading "
-  if (*data_ != '"') {
+  if (Char() != '"') {
     return false;
   }
 
-  ++data_;
-  const char *last_parsed_data = data_;
+  ConsumeChar();
+  absl::string_view last_parsed_data = data_;
   *s = ::std::string();
 
   while (true) {
-    if (*data_ == '\0') {
+    if (AtEnd()) {
       data_ = original;
       return false;
     }
 
     // If we get an end or an escape, do something special.
-    if (*data_ == '"' || *data_ == '\\') {
+    if (Char() == '"' || Char() == '\\') {
       // Save what we found up until now, not including this character.
-      *s += ::std::string(last_parsed_data, data_);
+      *s += ::std::string(
+          last_parsed_data.substr(0, last_parsed_data.size() - data_.size()));
 
       // Update the pointer.
       last_parsed_data = data_;
 
       // " is the end, declare victory.
-      if (*data_ == '"') {
-        ++data_;
+      if (Char() == '"') {
+        ConsumeChar();
         return true;
       } else {
-        ++data_;
+        ConsumeChar();
         // Now consume valid escape characters and add their representation onto
         // the output string.
-        if (*data_ == '\0') {
+        if (AtEnd()) {
           data_ = original;
           return false;
-        } else if (*data_ == '"') {
+        } else if (Char() == '"') {
           *s += "\"";
-        } else if (*data_ == '\\') {
+        } else if (Char() == '\\') {
           *s += "\\";
-        } else if (*data_ == '/') {
+        } else if (Char() == '/') {
           *s += "/";
-        } else if (*data_ == 'b') {
+        } else if (Char() == 'b') {
           *s += "\b";
-        } else if (*data_ == 'f') {
+        } else if (Char() == 'f') {
           *s += "\f";
-        } else if (*data_ == 'n') {
+        } else if (Char() == 'n') {
           *s += "\n";
-        } else if (*data_ == 'r') {
+        } else if (Char() == 'r') {
           *s += "\r";
-        } else if (*data_ == 't') {
+        } else if (Char() == 't') {
           *s += "\t";
-        } else if (*data_ == 'u') {
+        } else if (Char() == 'u') {
           // TODO(austin): Unicode should be valid, but I really don't care to
           // do this now...
           fprintf(stderr, "Unexpected unicode on line %d\n", linenumber_);
@@ -838,18 +841,18 @@ bool Tokenizer::ConsumeString(::std::string *s) {
         }
       }
       // And skip the escaped character.
-      last_parsed_data = data_ + 1;
+      last_parsed_data = data_.substr(1);
     }
 
-    ++data_;
+    ConsumeChar();
   }
 }
 
 bool Tokenizer::ConsumeNumber(::std::string *s) {
   // Under no conditions is it acceptible to run out of data while parsing a
-  // number.  Any '\0' checks should confirm that.
+  // number.  Any AtEnd() checks should confirm that.
   *s = ::std::string();
-  const char *original = data_;
+  const absl::string_view original = data_;
 
   // Consume the leading - unconditionally.
   Consume("-");
@@ -857,67 +860,67 @@ bool Tokenizer::ConsumeNumber(::std::string *s) {
   // Then, we either get a 0, or we get a nonzero.  Only nonzero can be followed
   // by a second number.
   if (!Consume("0")) {
-    if (*data_ == '\0') {
+    if (AtEnd()) {
       return false;
-    } else if (*data_ >= '1' && *data_ <= '9') {
+    } else if (Char() >= '1' && Char() <= '9') {
       // This wasn't a zero, but was a valid digit.  Consume it.
-      ++data_;
+      ConsumeChar();
     } else {
       return false;
     }
 
     // Now consume any number of any digits.
     while (true) {
-      if (*data_ == '\0') {
+      if (AtEnd()) {
         data_ = original;
         return false;
       }
-      if (*data_ < '0' || *data_ > '9') {
+      if (Char() < '0' || Char() > '9') {
         break;
       }
-      ++data_;
+      ConsumeChar();
     }
   }
 
   // We could now have a decimal.
-  if (*data_ == '.') {
-    ++data_;
+  if (Char() == '.') {
+    ConsumeChar();
     while (true) {
-      if (*data_ == '\0') {
+      if (AtEnd()) {
         data_ = original;
         return false;
       }
       // And any number of digits.
-      if (*data_ < '0' || *data_ > '9') {
+      if (Char() < '0' || Char() > '9') {
         break;
       }
-      ++data_;
+      ConsumeChar();
     }
   }
 
   // And now an exponent.
-  if (*data_ == 'e' || *data_ == 'E') {
-    ++data_;
-    if (*data_ == '\0') {
+  if (Char() == 'e' || Char() == 'E') {
+    ConsumeChar();
+    if (AtEnd()) {
       data_ = original;
       return false;
     }
 
     // Which could have a +-
-    if (*data_ == '+' || *data_ == '-') {
-      ++data_;
+    if (Char() == '+' || Char() == '-') {
+      ConsumeChar();
     }
     int count = 0;
     while (true) {
-      if (*data_ == '\0') {
+      if (AtEnd()) {
         data_ = original;
         return false;
       }
       // And digits.
-      if (*data_ < '0' || *data_ > '9') {
+      if (Char() < '0' || Char() > '9') {
         break;
       }
-      ++data_;
+      ConsumeChar();
       ++count;
     }
     // But, it is an error to have an exponent and nothing following it.
@@ -927,7 +930,7 @@ bool Tokenizer::ConsumeNumber(::std::string *s) {
     }
   }
 
-  *s = ::std::string(original, data_);
+  *s = ::std::string(original.substr(0, original.size() - data_.size()));
   return true;
 }
 
