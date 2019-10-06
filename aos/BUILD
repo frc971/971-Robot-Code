@@ -426,11 +426,21 @@ cc_library(
 )
 
 cc_library(
+    name = "json_tokenizer",
+    srcs = ["json_tokenizer.cc"],
+    hdrs = ["json_tokenizer.h"],
+    deps = [
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
     name = "json_to_flatbuffer",
     srcs = ["json_to_flatbuffer.cc"],
     hdrs = ["json_to_flatbuffer.h"],
     deps = [
         ":flatbuffer_utils",
+        ":json_tokenizer",
         "//aos/logging",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_google_absl//absl/strings",
