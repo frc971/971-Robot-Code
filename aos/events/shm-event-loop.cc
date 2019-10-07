@@ -27,8 +27,7 @@ class ShmFetcher : public RawFetcher {
     // time.  Also grab the oldest message but don't expose it to the user yet.
     static constexpr Options<RawQueue> kOptions =
         RawQueue::kFromEnd | RawQueue::kNonBlock;
-    msg_ = static_cast<const FetchValue *>(
-        queue_->ReadMessageIndex(kOptions, &index_));
+    msg_ = queue_->ReadMessageIndex(kOptions, &index_);
   }
   ~ShmFetcher() {
     if (msg_) {
@@ -37,8 +36,7 @@ class ShmFetcher : public RawFetcher {
   }
 
   bool FetchNext() override {
-    const FetchValue *msg = static_cast<const FetchValue *>(
-        queue_->ReadMessageIndex(RawQueue::kNonBlock, &index_));
+    const void *msg = queue_->ReadMessageIndex(RawQueue::kNonBlock, &index_);
     // Only update the internal pointer if we got a new message.
     if (msg != nullptr) {
       queue_->FreeMessage(msg_);
@@ -51,8 +49,7 @@ class ShmFetcher : public RawFetcher {
   bool Fetch() override {
     static constexpr Options<RawQueue> kOptions =
         RawQueue::kFromEnd | RawQueue::kNonBlock;
-    const FetchValue *msg = static_cast<const FetchValue *>(
-        queue_->ReadMessageIndex(kOptions, &index_));
+    const void *msg = queue_->ReadMessageIndex(kOptions, &index_);
     // Only update the internal pointer if we got a new message.
     if (msg != nullptr && msg != msg_) {
       queue_->FreeMessage(msg_);
@@ -77,7 +74,7 @@ class ShmFetcher : public RawFetcher {
  private:
   int index_ = 0;
   RawQueue *queue_;
-  const FetchValue *msg_ = nullptr;
+  const void *msg_ = nullptr;
 };
 
 class ShmSender : public RawSender {
