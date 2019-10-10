@@ -19,7 +19,6 @@ namespace aos {
 // It is the job of the typed version to cast this to the appropriate type.
 class RawFetcher {
  public:
-  class FetchValue;
   RawFetcher() {}
   virtual ~RawFetcher() {}
 
@@ -29,17 +28,15 @@ class RawFetcher {
   // Non-blocking fetch of the latest message:
   virtual bool Fetch() = 0;
 
-  const FetchValue *most_recent() { return most_recent_; }
+  const void *most_recent() { return most_recent_; }
 
  protected:
   RawFetcher(const RawFetcher &) = delete;
   RawFetcher &operator=(const RawFetcher &) = delete;
-  void set_most_recent(const FetchValue *most_recent) {
-    most_recent_ = most_recent;
-  }
+  void set_most_recent(const void *most_recent) { most_recent_ = most_recent; }
 
  private:
-  const FetchValue *most_recent_ = nullptr;
+  const void *most_recent_ = nullptr;
 };
 
 // Raw version of sender. Sending a message is a 3 part process. Fetch an opaque

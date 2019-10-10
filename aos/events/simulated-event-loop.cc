@@ -53,7 +53,7 @@ class SimulatedFetcher : public RawFetcher {
 
     msg_ = msgs_.front();
     msgs_.pop_front();
-    set_most_recent(reinterpret_cast<FetchValue *>(msg_.get()));
+    set_most_recent(msg_.get());
     return true;
   }
 
@@ -61,7 +61,7 @@ class SimulatedFetcher : public RawFetcher {
     if (msgs_.size() == 0) {
       if (!msg_ && queue_->latest_message()) {
         msg_ = queue_->latest_message();
-        set_most_recent(reinterpret_cast<FetchValue *>(msg_.get()));
+        set_most_recent(msg_.get());
         return true;
       } else {
         return false;
@@ -72,7 +72,7 @@ class SimulatedFetcher : public RawFetcher {
     // latest message from before we started.
     msg_ = msgs_.back();
     msgs_.clear();
-    set_most_recent(reinterpret_cast<FetchValue *>(msg_.get()));
+    set_most_recent(msg_.get());
     return true;
   }
 
