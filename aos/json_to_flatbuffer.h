@@ -4,13 +4,14 @@
 #include <cstddef>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "flatbuffers/flatbuffers.h"
 
 namespace aos {
 
 // Parses the flatbuffer into the vector, or returns an empty vector.
 ::std::vector<uint8_t> JsonToFlatbuffer(
-    const char *data, const flatbuffers::TypeTable *typetable);
+    const absl::string_view data, const flatbuffers::TypeTable *typetable);
 
 // Converts a flatbuffer into a Json string.
 //
@@ -22,7 +23,7 @@ namespace aos {
 // This class implements the state machine at json.org
 class Tokenizer {
  public:
-  Tokenizer(const char *data) : data_(data) {}
+  Tokenizer(const absl::string_view data) : data_(data) {}
 
   enum class TokenType {
     kEnd,
@@ -54,11 +55,17 @@ class Tokenizer {
   bool FieldAsDouble(double *value);
 
   // Returns true if we are at the end of the input.
-  bool AtEnd() { return *data_ == '\0'; }
+  bool AtEnd() { return data_.size() == 0; }
 
-  const char *data_left() const { return data_; }
+  const absl::string_view data_left() const { return data_; }
 
  private:
+  // Consumes a single character.
+  void ConsumeChar() { data_ = data_.substr(1); }
+
+  // Returns the current character.
+  char Char() const { return data_[0]; }
+
   // Consumes a string out of data_.  Populates s with the string.  Returns true
   // if a valid string was found, and false otherwise.
   // data_ is updated only on success.
@@ -89,7 +96,7 @@ class Tokenizer {
   State state_ = State::kExpectObjectStart;
 
   // Data pointer.
-  const char *data_;
+  absl::string_view data_;
   // Current line number used for printing debug.
   int linenumber_ = 0;
 
