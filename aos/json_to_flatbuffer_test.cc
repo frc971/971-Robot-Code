@@ -16,15 +16,14 @@ class JsonToFlatbufferTest : public ::testing::Test {
 
   bool JsonAndBack(const ::std::string in, const ::std::string out) {
     printf("Testing: %s\n", in.c_str());
-    const ::std::vector<uint8_t> fb =
+    const flatbuffers::DetachedBuffer fb =
         JsonToFlatbuffer(in.data(), ConfigurationTypeTable());
 
     if (fb.size() == 0) {
       return false;
     }
 
-    const ::std::string back =
-        FlatbufferToJson(fb.data(), ConfigurationTypeTable());
+    const ::std::string back = FlatbufferToJson(fb, ConfigurationTypeTable());
 
     printf("Back to string: %s\n", back.c_str());
 

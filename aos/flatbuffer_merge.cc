@@ -15,19 +15,13 @@ struct OffsetAndFieldOffset {
   OffsetAndFieldOffset(flatbuffers::voffset_t new_field_offset,
                        flatbuffers::Offset<flatbuffers::String> new_element)
       : field_offset(new_field_offset), element(new_element) {}
+  OffsetAndFieldOffset(flatbuffers::voffset_t new_field_offset,
+                       flatbuffers::Offset<flatbuffers::Table> new_element)
+      : field_offset(new_field_offset), element(new_element.o) {}
 
   flatbuffers::voffset_t field_offset;
   flatbuffers::Offset<flatbuffers::String> element;
 };
-
-// Merges 2 flat buffers with the provided type table into the builder.  Returns
-// the offset to the flatbuffers.
-// One or both of t1 and t2 must be non-null.  If one is null, this method
-// coppies instead of merging.
-flatbuffers::uoffset_t MergeFlatBuffers(const flatbuffers::TypeTable *typetable,
-                                        const flatbuffers::Table *t1,
-                                        const flatbuffers::Table *t2,
-                                        flatbuffers::FlatBufferBuilder *fbb);
 
 // Merges a single element to a builder for the provided field.
 // One or both of t1 and t2 must be non-null.  If one is null, this method
@@ -291,11 +285,10 @@ void AddVectorOfObjects(flatbuffers::FlatBufferBuilder *fbb,
       for (auto i = vec2->rbegin(); i != vec2->rend(); ++i) {
         const flatbuffers::Table *t = *i;
 
-        flatbuffers::uoffset_t end =
+        flatbuffers::Offset<flatbuffers::Table> end =
             MergeFlatBuffers(sub_typetable, t, nullptr, fbb);
 
-        object_elements.emplace_back(
-            flatbuffers::Offset<flatbuffers::Table>(end));
+        object_elements.emplace_back(end);
       }
     }
     if (t1_has) {
@@ -305,11 +298,10 @@ void AddVectorOfObjects(flatbuffers::FlatBufferBuilder *fbb,
       for (auto i = vec1->rbegin(); i != vec1->rend(); ++i) {
         const flatbuffers::Table *t = *i;
 
-        flatbuffers::uoffset_t end =
+        flatbuffers::Offset<flatbuffers::Table> end =
             MergeFlatBuffers(sub_typetable, t, nullptr, fbb);
 
-        object_elements.emplace_back(
-            flatbuffers::Offset<flatbuffers::Table>(end));
+        object_elements.emplace_back(end);
       }
     }
 
@@ -329,10 +321,11 @@ void AddVectorOfObjects(flatbuffers::FlatBufferBuilder *fbb,
   }
 }
 
-flatbuffers::uoffset_t MergeFlatBuffers(const flatbuffers::TypeTable *typetable,
-                                        const flatbuffers::Table *t1,
-                                        const flatbuffers::Table *t2,
-                                        flatbuffers::FlatBufferBuilder *fbb) {
+}  // namespace
+
+flatbuffers::Offset<flatbuffers::Table> MergeFlatBuffers(
+    const flatbuffers::TypeTable *typetable, const flatbuffers::Table *t1,
+    const flatbuffers::Table *t2, flatbuffers::FlatBufferBuilder *fbb) {
   ::std::vector<OffsetAndFieldOffset> elements;
 
   // We need to do this in 2 passes
@@ -503,15 +496,9 @@ flatbuffers::uoffset_t MergeFlatBuffers(const flatbuffers::TypeTable *typetable,
   return fbb->EndTable(start);
 }
 
-}  // namespace
-
-::std::vector<uint8_t> MergeFlatBuffers(const flatbuffers::TypeTable *typetable,
-                                        const uint8_t *data1,
-                                        const uint8_t *data2) {
-  // Build up a builder.
-  flatbuffers::FlatBufferBuilder fbb;
-  fbb.ForceDefaults(1);
-
+flatbuffers::Offset<flatbuffers::Table> MergeFlatBuffers(
+    const flatbuffers::TypeTable *typetable, const uint8_t *data1,
+    const uint8_t *data2, flatbuffers::FlatBufferBuilder *fbb) {
   // Grab the 2 tables.
   const flatbuffers::Table *t1 =
       data1 != nullptr ? flatbuffers::GetRoot<flatbuffers::Table>(data1)
@@ -522,14 +509,21 @@ flatbuffers::uoffset_t MergeFlatBuffers(const flatbuffers::TypeTable *typetable,
 
   // And then do the actual build.  This doesn't contain finish so we can nest
   // them nicely.
-  flatbuffers::uoffset_t end = MergeFlatBuffers(typetable, t1, t2, &fbb);
+  return flatbuffers::Offset<flatbuffers::Table>(
+      MergeFlatBuffers(typetable, t1, t2, fbb));
+}
+
+flatbuffers::DetachedBuffer MergeFlatBuffers(
+    const flatbuffers::TypeTable *typetable, const uint8_t *data1,
+    const uint8_t *data2) {
+  // Build up a builder.
+  flatbuffers::FlatBufferBuilder fbb;
+  fbb.ForceDefaults(1);
 
   // Finish up the buffer and return it.
-  fbb.Finish(flatbuffers::Offset<flatbuffers::Table>(end));
+  fbb.Finish(MergeFlatBuffers(typetable, data1, data2, &fbb));
 
-  const uint8_t *buf = fbb.GetBufferPointer();
-  const int size = fbb.GetSize();
-  return ::std::vector<uint8_t>(buf, buf + size);
+  return fbb.Release();
 }
 
 }  // namespace aos

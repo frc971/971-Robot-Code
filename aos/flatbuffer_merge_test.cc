@@ -17,25 +17,25 @@ class FlatbufferMerge : public ::testing::Test {
                  const ::std::string out) {
     printf("Merging: %s\n", in1.c_str());
     printf("Merging: %s\n", in2.c_str());
-    const ::std::vector<uint8_t> fb1 = JsonToFlatbuffer(
+    const flatbuffers::DetachedBuffer fb1 = JsonToFlatbuffer(
         static_cast<const char *>(in1.c_str()), ConfigurationTypeTable());
 
     const ::std::string in1_nested = "{ \"nested_config\": " + in1 + " }";
-    const ::std::vector<uint8_t> fb1_nested = JsonToFlatbuffer(
-        static_cast<const char *>(in1_nested.c_str()),
-        ConfigurationTypeTable());
+    const flatbuffers::DetachedBuffer fb1_nested =
+        JsonToFlatbuffer(static_cast<const char *>(in1_nested.c_str()),
+                         ConfigurationTypeTable());
 
-    const ::std::vector<uint8_t> fb2 = JsonToFlatbuffer(
+    const flatbuffers::DetachedBuffer fb2 = JsonToFlatbuffer(
         static_cast<const char *>(in2.c_str()), ConfigurationTypeTable());
 
     const ::std::string in2_nested = "{ \"nested_config\": " + in2 + " }";
-    const ::std::vector<uint8_t> fb2_nested =
+    const flatbuffers::DetachedBuffer fb2_nested =
         JsonToFlatbuffer(static_cast<const char *>(in2_nested.c_str()),
                          ConfigurationTypeTable());
 
     const ::std::string out_nested = "{ \"nested_config\": " + out + " }";
 
-    const ::std::vector<uint8_t> empty =
+    const flatbuffers::DetachedBuffer empty =
         JsonToFlatbuffer("{ }", ConfigurationTypeTable());
 
     ASSERT_NE(fb1.size(), 0u);
@@ -54,70 +54,66 @@ class FlatbufferMerge : public ::testing::Test {
 
     {
       // in1 merged with "" => in1.
-      ::std::vector<uint8_t> fb_merged =
+      flatbuffers::DetachedBuffer fb_merged =
           MergeFlatBuffers<Configuration>(fb1.data(), empty.data());
       ASSERT_NE(fb_merged.size(), 0u);
 
-      EXPECT_EQ(in1,
-                FlatbufferToJson(fb_merged.data(), ConfigurationTypeTable()));
+      EXPECT_EQ(in1, FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
     }
 
     {
       // in2 merged with "" => in2.
-      ::std::vector<uint8_t> fb_merged =
+      flatbuffers::DetachedBuffer fb_merged =
           MergeFlatBuffers<Configuration>(fb2.data(), empty.data());
       ASSERT_NE(fb_merged.size(), 0u);
 
-      EXPECT_EQ(in2,
-                FlatbufferToJson(fb_merged.data(), ConfigurationTypeTable()));
+      EXPECT_EQ(in2, FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
     }
 
     {
       // "" merged with in1 => in1.
-      ::std::vector<uint8_t> fb_merged =
+      flatbuffers::DetachedBuffer fb_merged =
           MergeFlatBuffers<Configuration>(empty.data(), fb1.data());
       ASSERT_NE(fb_merged.size(), 0u);
 
-      EXPECT_EQ(in1,
-                FlatbufferToJson(fb_merged.data(), ConfigurationTypeTable()));
+      EXPECT_EQ(in1, FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
     }
 
     {
       // "" merged with in2 => in2.
-      ::std::vector<uint8_t> fb_merged =
+      flatbuffers::DetachedBuffer fb_merged =
           MergeFlatBuffers<Configuration>(empty.data(), fb2.data());
       ASSERT_NE(fb_merged.size(), 0u);
 
-      EXPECT_EQ(in2,
-                FlatbufferToJson(fb_merged.data(), ConfigurationTypeTable()));
+      EXPECT_EQ(in2, FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
     }
 
     {
       // nullptr merged with in1 => in1.
-      ::std::vector<uint8_t> fb_merged =
+      flatbuffers::DetachedBuffer fb_merged =
           MergeFlatBuffers<Configuration>(nullptr, fb1.data());
       ASSERT_NE(fb_merged.size(), 0u);
 
-      EXPECT_EQ(in1, FlatbufferToJson(fb_merged.data(), ConfigurationTypeTable()));
+      EXPECT_EQ(in1, FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
     }
 
     {
       // in1 merged with nullptr => in1.
-      ::std::vector<uint8_t> fb_merged =
+      flatbuffers::DetachedBuffer fb_merged =
           MergeFlatBuffers<Configuration>(fb1.data(), nullptr);
       ASSERT_NE(fb_merged.size(), 0u);
 
-      EXPECT_EQ(in1, FlatbufferToJson(fb_merged.data(), ConfigurationTypeTable()));
+      EXPECT_EQ(in1, FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
     }
 
     {
       // in1 merged with in2 => out.
-      ::std::vector<uint8_t> fb_merged =
+      flatbuffers::DetachedBuffer fb_merged =
           MergeFlatBuffers<Configuration>(fb1.data(), fb2.data());
       ASSERT_NE(fb_merged.size(), 0u);
 
       const ::std::string merged_output =
-          FlatbufferToJson(fb_merged.data(), ConfigurationTypeTable());
+          FlatbufferToJson(fb_merged, ConfigurationTypeTable());
       EXPECT_EQ(out, merged_output);
 
       printf("Merged to: %s\n", merged_output.c_str());
@@ -128,72 +124,72 @@ class FlatbufferMerge : public ::testing::Test {
 
     {
       // in1_nested merged with "" => in1.
-      ::std::vector<uint8_t> fb_merged =
+      flatbuffers::DetachedBuffer fb_merged =
           MergeFlatBuffers<Configuration>(fb1_nested.data(), empty.data());
       ASSERT_NE(fb_merged.size(), 0u);
 
       EXPECT_EQ(in1_nested,
-                FlatbufferToJson(fb_merged.data(), ConfigurationTypeTable()));
+                FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
     }
 
     {
       // in2_nested merged with "" => in2_nested.
-      ::std::vector<uint8_t> fb_merged =
+      flatbuffers::DetachedBuffer fb_merged =
           MergeFlatBuffers<Configuration>(fb2_nested.data(), empty.data());
       ASSERT_NE(fb_merged.size(), 0u);
 
       EXPECT_EQ(in2_nested,
-                FlatbufferToJson(fb_merged.data(), ConfigurationTypeTable()));
+                FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
     }
 
     {
       // "" merged with in1_nested => in1_nested.
-      ::std::vector<uint8_t> fb_merged =
+      flatbuffers::DetachedBuffer fb_merged =
           MergeFlatBuffers<Configuration>(empty.data(), fb1_nested.data());
       ASSERT_NE(fb_merged.size(), 0u);
 
       EXPECT_EQ(in1_nested,
-                FlatbufferToJson(fb_merged.data(), ConfigurationTypeTable()));
+                FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
     }
 
     {
       // "" merged with in2_nested => in2_nested.
-      ::std::vector<uint8_t> fb_merged =
+      flatbuffers::DetachedBuffer fb_merged =
           MergeFlatBuffers<Configuration>(empty.data(), fb2_nested.data());
       ASSERT_NE(fb_merged.size(), 0u);
 
       EXPECT_EQ(in2_nested,
-                FlatbufferToJson(fb_merged.data(), ConfigurationTypeTable()));
+                FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
     }
 
     {
       // nullptr merged with in1_nested => in1_nested.
-      ::std::vector<uint8_t> fb_merged =
+      flatbuffers::DetachedBuffer fb_merged =
           MergeFlatBuffers<Configuration>(nullptr, fb1_nested.data());
       ASSERT_NE(fb_merged.size(), 0u);
 
       EXPECT_EQ(in1_nested,
-                FlatbufferToJson(fb_merged.data(), ConfigurationTypeTable()));
+                FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
     }
 
     {
       // nullptr merged with in1_nested => in1_nested.
-      ::std::vector<uint8_t> fb_merged =
+      flatbuffers::DetachedBuffer fb_merged =
           MergeFlatBuffers<Configuration>(fb1_nested.data(), nullptr);
       ASSERT_NE(fb_merged.size(), 0u);
 
       EXPECT_EQ(in1_nested,
-                FlatbufferToJson(fb_merged.data(), ConfigurationTypeTable()));
+                FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
     }
 
     {
       // in1_nested merged with in2_nested => out_nested.
-      ::std::vector<uint8_t> fb_merged =
-          MergeFlatBuffers<Configuration>(fb1_nested.data(), fb2_nested.data());
+      flatbuffers::DetachedBuffer fb_merged =
+          MergeFlatBuffers<Configuration>(fb1_nested, fb2_nested);
       ASSERT_NE(fb_merged.size(), 0u);
 
       EXPECT_EQ(out_nested,
-                FlatbufferToJson(fb_merged.data(), ConfigurationTypeTable()));
+                FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
     }
   }
 };
@@ -279,9 +275,10 @@ TEST_F(FlatbufferMerge, Array) {
             "{ \"vector_foo_float\": [ -3.0, 1.3, 3.0, 2.0 ] }",
             "{ \"vector_foo_float\": [ 9.0, 7.0, 1.0, -3.0, 1.3, 3.0, 2.0 ] }");
 
-  JsonMerge("{ \"vector_foo_string\": [ \"9\", \"7\", \"1 \" ] }",
-            "{ \"vector_foo_string\": [ \"31\", \"32\" ] }",
-            "{ \"vector_foo_string\": [ \"9\", \"7\", \"1 \", \"31\", \"32\" ] }");
+  JsonMerge(
+      "{ \"vector_foo_string\": [ \"9\", \"7\", \"1 \" ] }",
+      "{ \"vector_foo_string\": [ \"31\", \"32\" ] }",
+      "{ \"vector_foo_string\": [ \"9\", \"7\", \"1 \", \"31\", \"32\" ] }");
 }
 
 // Test nested messages, and arrays of nested messages.
