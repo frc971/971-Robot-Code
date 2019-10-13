@@ -1,0 +1,34 @@
+{
+  "locations": [
+    {
+      "name": "/foo",
+      "type": ".aos.bar",
+      "max_size": 5
+    },
+    {
+      "name": "/foo2",
+      "type": ".aos.bar"
+    }
+  ],
+  "applications": [
+    {
+      "name": "app1"
+    },
+    {
+      "name": "app2"
+    }
+  ],
+  "maps": [
+    {
+      "match": {
+        "name": "/batman"
+      },
+      "rename": {
+        "name": "/foo"
+      }
+    }
+  ],
+  "imports": [
+    "config2.json"
+  ]
+}

@@ -2,6 +2,7 @@
 #include <getopt.h>
 
 #include "gflags/gflags.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 
 DEFINE_bool(print_logs, false,
@@ -21,6 +22,8 @@ void ForcePrintLogsDuringTests() __attribute__((weak));
 
 GTEST_API_ int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
+  FLAGS_logtostderr = true;
+  google::InitGoogleLogging(argv[0]);
   ::gflags::ParseCommandLineFlags(&argc, &argv, false);
 
   if (FLAGS_print_logs) {

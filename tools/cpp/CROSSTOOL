@@ -648,6 +648,7 @@ toolchain {
         flag: "-Wformat=2"
         flag: "-Werror"
         flag: "-Wunused-local-typedefs"
+        flag: "-Wno-cast-align"
         flag: "-fno-omit-frame-pointer"
         flag: "-D__has_feature(x)=0"
         flag: "-pipe"

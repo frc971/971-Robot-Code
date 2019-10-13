@@ -297,6 +297,7 @@ cc_library(
     deps = [
         "//aos/logging",
         "//aos/scoped:scoped_fd",
+        "@com_google_absl//absl/strings",
     ],
 )
 

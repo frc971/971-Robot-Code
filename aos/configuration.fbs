@@ -1,0 +1,61 @@
+namespace aos;
+
+// Table representing a location.  Locations are where data is published and
+// subscribed from.  The tuple of name, type is the identifying information.
+table Location {
+  // Name of the location.
+  name:string;
+  // Type name of the flatbuffer.
+  type:string;
+  // Max frequency in messages/sec of the data published on this location.
+  frequency:int = 100;
+  // Max size of the data being published.  (This will be automatically
+  // computed in the future.)
+  max_size:int = 1000;
+}
+
+// Table to support renaming location names.
+table Map {
+  // Location to match with.  If the name in here matches, the name is replaced
+  // with the name in rename.
+  match:Location;
+  // The location to merge in.
+  rename:Location;
+}
+
+// Application specific information.
+table Application {
+  // Name of the application.
+  name:string;
+  // List of maps to apply for this specific application.  Application specific
+  // maps are applied in reverse order, and before the global maps.
+  // For example
+  //   "maps": [ { "match": { "name": "/foo" }, "rename": { "name": "/bar" } } ]
+  // will make it so any locations named "/foo" actually go to "/bar" for just
+  // this application.  This is super handy for running an application twice
+  // publishing to different locations, or for injecting a little application
+  // to modify messages live for testing.
+  //
+  //   "maps": [
+  //     { "match": { "name": "/foo" }, "rename": { "name": "/bar" } },
+  //     { "match": { "name": "/foo" }, "rename": { "name": "/baz" } }
+  //   ]
+  //
+  // will map "/foo" to "/baz", even if there is a global list of maps.
+  maps:[Map];
+}
+
+// Overall configuration datastructure for the pubsub.
+table Configuration {
+  // List of locations.
+  locations:[Location] (id: 0);
+  // List of global maps.  These are applied in reverse order.
+  maps:[Map] (id: 1);
+  // List of applications.
+  applications:[Application] (id: 2);
+  // List of imports.  Imports are loaded first, and then this configuration
+  // is merged into them.
+  imports:[string] (id: 3);
+}
+
+root_type Configuration;

@@ -376,6 +376,11 @@ cc_library(
     ],
 )
 
+flatbuffer_cc_library(
+    name = "configuration_flatbuffer",
+    srcs = ["configuration.fbs"],
+)
+
 cc_library(
     name = "configuration",
     srcs = [
@@ -386,9 +391,17 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        ":configuration_flatbuffer",
+        ":flatbuffer_merge",
+        ":flatbuffers",
+        ":json_to_flatbuffer",
         "//aos:once",
         "//aos:unique_malloc_ptr",
         "//aos/logging",
+        "//aos/util:file",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -493,5 +506,24 @@ cc_library(
     ],
     deps = [
         "@com_github_google_flatbuffers//:flatbuffers",
+    ],
+)
+
+cc_test(
+    name = "configuration_test",
+    srcs = [
+        "configuration_test.cc",
+    ],
+    data = [
+        "testdata/config1.json",
+        "testdata/config1_bad.json",
+        "testdata/config2.json",
+        "testdata/config3.json",
+        "testdata/expected.json",
+    ],
+    deps = [
+        ":configuration",
+        "//aos/testing:googletest",
+        "//aos/testing:test_logging",
     ],
 )

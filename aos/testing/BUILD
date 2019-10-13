@@ -8,6 +8,7 @@ cc_library(
     deps = [
         "//third_party/googletest:gtest",
         "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
     ],
 )
 

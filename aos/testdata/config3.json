@@ -1,0 +1,23 @@
+{
+  "locations": [
+    {
+      "name": "/foo3",
+      "type": ".aos.bar"
+    }
+  ],
+  "applications": [
+    {
+      "name": "app2",
+      "maps": [
+        {
+          "match": {
+            "name": "/baz"
+          },
+          "rename": {
+            "name": "/foo"
+          }
+        }
+      ]
+    }
+  ]
+}
