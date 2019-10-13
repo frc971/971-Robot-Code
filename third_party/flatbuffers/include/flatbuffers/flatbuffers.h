@@ -2341,6 +2341,9 @@ class Table {
   const uint8_t *GetVTable() const {
     return data_ - ReadScalar<soffset_t>(data_);
   }
+  uint8_t *GetMutableVTable() {
+    return data_ - ReadScalar<soffset_t>(data_);
+  }
 
   // This gets the field offset for any of the functions below it, or 0
   // if the field was not present.
@@ -2380,6 +2383,18 @@ class Table {
     if (!field_offset) return IsTheSameAs(val, def);
     WriteScalar(data_ + field_offset, val);
     return true;
+  }
+
+  void ClearField(voffset_t field) {
+    // The vtable offset is always at the start.
+    auto vtable = GetMutableVTable();
+    // The first element is the size of the vtable (fields + type id + itself).
+    auto vtsize = ReadScalar<voffset_t>(vtable);
+    // If the field we're accessing is outside the vtable, we're reading older
+    // data, so it's the same as if the offset was 0 (not present).
+    if (field < vtsize) {
+      WriteScalar<voffset_t>(reinterpret_cast<uint8_t *>(vtable + field), 0);
+    }
   }
 
   bool SetPointer(voffset_t field, const uint8_t *val) {
