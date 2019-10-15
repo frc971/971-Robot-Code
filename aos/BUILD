@@ -395,7 +395,7 @@ cc_library(
         ":flatbuffer_merge",
         ":flatbuffers",
         ":json_to_flatbuffer",
-        "//aos:once",
+        "@com_google_absl//absl/base",
         "//aos:unique_malloc_ptr",
         "//aos/logging",
         "//aos/util:file",
