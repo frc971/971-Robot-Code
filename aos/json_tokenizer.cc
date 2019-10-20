@@ -13,6 +13,13 @@ void Tokenizer::ConsumeWhitespace() {
     } else if (Char() == '\n') {
       ConsumeChar();
       ++linenumber_;
+    } else if (Consume("/*")) {
+      while (!Consume("*/")) {
+        if (Char() == '\n') {
+          ++linenumber_;
+        }
+        ConsumeChar();
+      }
     } else {
       // There is no fail.  Once we are out of whitespace (including 0 of it),
       // declare success.

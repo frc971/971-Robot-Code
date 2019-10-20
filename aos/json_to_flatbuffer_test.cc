@@ -16,15 +16,14 @@ class JsonToFlatbufferTest : public ::testing::Test {
 
   bool JsonAndBack(const ::std::string in, const ::std::string out) {
     printf("Testing: %s\n", in.c_str());
-    const ::std::vector<uint8_t> fb =
+    const flatbuffers::DetachedBuffer fb =
         JsonToFlatbuffer(in.data(), ConfigurationTypeTable());
 
     if (fb.size() == 0) {
       return false;
     }
 
-    const ::std::string back =
-        FlatbufferToJson(fb.data(), ConfigurationTypeTable());
+    const ::std::string back = FlatbufferToJson(fb, ConfigurationTypeTable());
 
     printf("Back to string: %s\n", back.c_str());
 
@@ -67,6 +66,7 @@ TEST_F(JsonToFlatbufferTest, DecimalPoint) {
   EXPECT_TRUE(JsonAndBack("{ \"foo_double\": 5.1 }"));
 }
 
+
 // Test what happens if you pass a field name that we don't know.
 TEST_F(JsonToFlatbufferTest, InvalidFieldName) {
   EXPECT_FALSE(JsonAndBack("{ \"foo\": 5 }"));
@@ -89,13 +89,12 @@ TEST_F(JsonToFlatbufferTest, InvalidSyntax) {
 
   EXPECT_FALSE(JsonAndBack("{ \"foo_int\": 5, }", "{ \"foo_int\": 5 }"));
 
-  EXPECT_FALSE(JsonAndBack(
-      "{ \"applications\":\n[\n{\n\"name\": \"woot\"\n},\n{\n\"name\": "
-      "\"wow\"\n} ,\n]\n}"));
-
   EXPECT_FALSE(
-      JsonAndBack("{ \"applications\": [ { \"name\": \"woot\" }, { \"name\": "
-                  "\"wow\" } ] , }"));
+      JsonAndBack("{ \"apps\":\n[\n{\n\"name\": \"woot\"\n},\n{\n\"name\": "
+                  "\"wow\"\n} ,\n]\n}"));
+
+  EXPECT_FALSE(JsonAndBack(
+      "{ \"apps\": [ { \"name\": \"woot\" }, { \"name\": \"wow\" } ] , }"));
 
   EXPECT_FALSE(
       JsonAndBack("{ \"vector_foo_string\": [ \"bar\", \"baz\" ] , }"));
@@ -134,17 +133,35 @@ TEST_F(JsonToFlatbufferTest, NestedStruct) {
   EXPECT_TRUE(
       JsonAndBack("{ \"single_application\": { \"name\": \"woot\" } }"));
 
-  EXPECT_TRUE(
-      JsonAndBack("{ \"applications\": [ { \"name\": \"woot\" }, { \"name\": "
-                  "\"wow\" } ] }"));
+  EXPECT_TRUE(JsonAndBack(
+      "{ \"apps\": [ { \"name\": \"woot\" }, { \"name\": \"wow\" } ] }"));
 }
 
 // Test that we can parse an empty message.
 TEST_F(JsonToFlatbufferTest, EmptyMessage) {
+  // Empty message works.
   EXPECT_TRUE(JsonAndBack("{  }"));
 }
 
+// Tests that comments get stripped.
+TEST_F(JsonToFlatbufferTest, Comments) {
+  EXPECT_TRUE(JsonAndBack("{ /* foo */ \"vector_foo_double\": [ 9, 7, 1 ] }",
+                          "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }"));
+}
+
+// Tests that multiple arrays get properly handled.
+TEST_F(JsonToFlatbufferTest, MultipleArrays) {
+  EXPECT_TRUE(
+      JsonAndBack("{ \"vector_foo_float\": [ 9, 7, 1 ], \"vector_foo_double\": "
+                  "[ 9, 7, 1 ] }",
+                  "{ \"vector_foo_float\": [ 9.0, 7.0, 1.0 ], "
+                  "\"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }"));
+}
+
 // TODO(austin): Missmatched values.
+// TODO(austin): enums
+//
+// TODO(austin): unions?
 
 }  // namespace testing
 }  // namespace aos

@@ -5,10 +5,10 @@
 
 #include "absl/strings/string_view.h"
 #include "aos/flatbuffer_utils.h"
-#include "aos/logging/logging.h"
 #include "aos/json_tokenizer.h"
 #include "flatbuffers/flatbuffers.h"
 #include "flatbuffers/minireflect.h"
+#include "glog/logging.h"
 
 // TODO(austin): Can we just do an Offset<void> ?  It doesn't matter, so maybe
 // just say that.
@@ -124,8 +124,8 @@ class JsonParser {
 
   // Parses the json into a flatbuffer.  Returns either an empty vector on
   // error, or a vector with the flatbuffer data in it.
-  ::std::vector<uint8_t> Parse(const absl::string_view data,
-                               const flatbuffers::TypeTable *typetable) {
+  flatbuffers::DetachedBuffer Parse(const absl::string_view data,
+                                    const flatbuffers::TypeTable *typetable) {
     flatbuffers::uoffset_t end = 0;
     bool result = DoParse(typetable, data, &end);
 
@@ -134,12 +134,10 @@ class JsonParser {
       auto o = flatbuffers::Offset<flatbuffers::Table>(end);
       fbb_.Finish(o);
 
-      const uint8_t *buf = fbb_.GetBufferPointer();
-      const int size = fbb_.GetSize();
-      return ::std::vector<uint8_t>(buf, buf + size);
+      return fbb_.Release();
     } else {
       // Otherwise return an empty vector.
-      return ::std::vector<uint8_t>();
+      return flatbuffers::DetachedBuffer();
     }
   }
 
@@ -333,14 +331,6 @@ bool JsonParser::DoParse(const flatbuffers::TypeTable *typetable,
           if (!AddElement(field_index, double_value)) return false;
         }
       } break;
-      // TODO(austin): Need to detect int vs float.
-      /*
-      asdf
-      {
-        const int field_index = stack_.back().field_index;
-
-      } break;
-      */
       case Tokenizer::TokenType::kStringValue:  // string value
       {
         const int field_index = stack_.back().field_index;
@@ -606,6 +596,7 @@ bool JsonParser::FinishVector(int field_index) {
   stack_.back().elements.emplace_back(
       field_index, flatbuffers::Offset<flatbuffers::String>(
                        fbb_.EndVector(vector_elements_.size())));
+  vector_elements_.clear();
   return true;
 }
 
@@ -715,18 +706,37 @@ bool JsonParser::PushElement(
 
 }  // namespace
 
-::std::vector<uint8_t> JsonToFlatbuffer(
+flatbuffers::DetachedBuffer JsonToFlatbuffer(
     const absl::string_view data, const flatbuffers::TypeTable *typetable) {
   JsonParser p;
   return p.Parse(data, typetable);
 }
 
-::std::string FlatbufferToJson(const uint8_t *buffer,
-                               const ::flatbuffers::TypeTable *typetable,
-                               bool multi_line) {
+::std::string BufferFlatbufferToJson(const uint8_t *buffer,
+                                     const ::flatbuffers::TypeTable *typetable,
+                                     bool multi_line) {
+  // It is pretty common to get passed in a nullptr when a test fails.  Rather
+  // than CHECK, return a more user friendly result.
+  if (buffer == nullptr) {
+    return "null";
+  }
+  return TableFlatbufferToJson(reinterpret_cast<const flatbuffers::Table *>(
+                                   flatbuffers::GetRoot<uint8_t>(buffer)),
+                               typetable, multi_line);
+}
+
+::std::string TableFlatbufferToJson(const flatbuffers::Table *t,
+                                    const ::flatbuffers::TypeTable *typetable,
+                                    bool multi_line) {
+  // It is pretty common to get passed in a nullptr when a test fails.  Rather
+  // than CHECK, return a more user friendly result.
+  if (t == nullptr) {
+    return "null";
+  }
   ::flatbuffers::ToStringVisitor tostring_visitor(
       multi_line ? "\n" : " ", true, multi_line ? " " : "", multi_line);
-  IterateFlatBuffer(buffer, typetable, &tostring_visitor);
+  flatbuffers::IterateObject(reinterpret_cast<const uint8_t *>(t), typetable,
+                             &tostring_visitor);
   return tostring_visitor.s;
 }
 

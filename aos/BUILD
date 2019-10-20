@@ -440,9 +440,11 @@ cc_library(
     hdrs = ["json_to_flatbuffer.h"],
     deps = [
         ":flatbuffer_utils",
+        ":flatbuffers",
         ":json_tokenizer",
         "//aos/logging",
         "@com_github_google_flatbuffers//:flatbuffers",
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -456,5 +458,40 @@ cc_test(
         ":json_to_flatbuffer",
         ":json_to_flatbuffer_flatbuffer",
         "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
+    name = "flatbuffer_merge",
+    srcs = ["flatbuffer_merge.cc"],
+    hdrs = ["flatbuffer_merge.h"],
+    copts = ["-Wno-cast-align"],
+    deps = [
+        ":flatbuffer_utils",
+        ":flatbuffers",
+        "@com_github_google_flatbuffers//:flatbuffers",
+    ],
+)
+
+cc_test(
+    name = "flatbuffer_merge_test",
+    srcs = [
+        "flatbuffer_merge_test.cc",
+    ],
+    deps = [
+        ":flatbuffer_merge",
+        ":json_to_flatbuffer",
+        ":json_to_flatbuffer_flatbuffer",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
+    name = "flatbuffers",
+    hdrs = [
+        "flatbuffers.h",
+    ],
+    deps = [
+        "@com_github_google_flatbuffers//:flatbuffers",
     ],
 )

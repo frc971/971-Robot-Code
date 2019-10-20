@@ -1912,10 +1912,10 @@ class CppGenerator : public BaseGenerator {
       }
 
       if (parser_.opts.mutable_buffer) {
+        code_.SetValue("OFFSET_NAME", offset_str);
         if (is_scalar) {
           const auto type = GenTypeWire(field.value.type, "", false);
           code_.SetValue("SET_FN", "SetField<" + type + ">");
-          code_.SetValue("OFFSET_NAME", offset_str);
           code_.SetValue("FIELD_TYPE", GenTypeBasic(field.value.type, true));
           code_.SetValue("FIELD_VALUE",
                          GenUnderlyingCast(field, false, "_" + Name(field)));
@@ -1941,6 +1941,14 @@ class CppGenerator : public BaseGenerator {
           code_ += "    return {{FIELD_VALUE}};";
           code_ += "  }";
         }
+
+        code_ += "  void clear_{{FIELD_NAME}}() {";
+        code_ += "    ClearField({{OFFSET_NAME}});";
+        code_ += "  }";
+
+        code_ += "  bool has_{{FIELD_NAME}}() const {";
+        code_ += "    return CheckField({{OFFSET_NAME}});";
+        code_ += "  }";
       }
 
       auto nested = field.attributes.Lookup("nested_flatbuffer");
