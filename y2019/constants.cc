@@ -32,15 +32,9 @@ const uint16_t kCompTeamNumber = 971;
 const uint16_t kPracticeTeamNumber = 9971;
 const uint16_t kCodingRobotTeamNumber = 7971;
 
-constexpr double FeetToMeters(double ft) {
-  return 0.3048 * ft;
-}
-constexpr double InchToMeters(double in) {
-  return 0.0254 * in;
-}
-constexpr double DegToRad(double deg) {
-  return deg * M_PI / 180.0;
-}
+constexpr double FeetToMeters(double ft) { return 0.3048 * ft; }
+constexpr double InchToMeters(double in) { return 0.0254 * in; }
+constexpr double DegToRad(double deg) { return deg * M_PI / 180.0; }
 
 // Populates camera Pose information from the calibrated vision constants.
 void FillCameraPoses(
@@ -195,16 +189,20 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       break;
 
     case kPracticeTeamNumber:
-      elevator_params->zeroing_constants.measured_absolute_position = 0.131806;
-      elevator->potentiometer_offset = -0.022320 + 0.020567 - 0.022355 - 0.006497 + 0.019690 + 0.009151 - 0.007513 + 0.007311;
+      elevator_params->zeroing_constants.measured_absolute_position = 0.131568;
+      elevator->potentiometer_offset = -0.022320 + 0.020567 - 0.022355 -
+                                       0.006497 + 0.019690 + 0.009151 -
+                                       0.007513 + 0.007311;
 
-      intake->zeroing_constants.measured_absolute_position = 1.928755;
+      intake->zeroing_constants.measured_absolute_position =
+          1.928755 + 0.205352;
 
-      wrist_params->zeroing_constants.measured_absolute_position = 0.192576;
+      wrist_params->zeroing_constants.measured_absolute_position = 0.180039;
       wrist->potentiometer_offset = -4.200894 - 0.187134;
 
-      stilts_params->zeroing_constants.measured_absolute_position = 0.050550;
-      stilts->potentiometer_offset = -0.093820 + 0.0124 - 0.008334 + 0.004507 - 0.007973 + -0.001221;
+      stilts_params->zeroing_constants.measured_absolute_position = 0.050556;
+      stilts->potentiometer_offset =
+          -0.093820 + 0.0124 - 0.008334 + 0.004507 - 0.007973 + -0.001221;
 
       FillCameraPoses(vision::PracticeBotTeensyId(), &r->cameras);
       break;
@@ -282,8 +280,7 @@ Field::Field() {
   //  spot).
   constexpr double kCenterFieldX = FeetToMeters(27.0) + InchToMeters(1.125);
 
-  constexpr double kFarSideCargoBayX =
-      kCenterFieldX - InchToMeters(20.875);
+  constexpr double kFarSideCargoBayX = kCenterFieldX - InchToMeters(20.875);
   constexpr double kMidSideCargoBayX = kFarSideCargoBayX - InchToMeters(21.75);
   constexpr double kNearSideCargoBayX = kMidSideCargoBayX - InchToMeters(21.75);
   constexpr double kSideCargoBayY = InchToMeters(24 + 3 + 0.875);
