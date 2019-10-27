@@ -501,11 +501,16 @@ cc_test(
 
 cc_library(
     name = "flatbuffers",
+    srcs = [
+        "flatbuffers.cc",
+    ],
     hdrs = [
         "flatbuffers.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "@com_github_google_flatbuffers//:flatbuffers",
+        "@com_github_google_glog//:glog",
     ],
 )
 

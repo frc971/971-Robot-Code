@@ -1,5 +1,5 @@
 {
-  "locations": [
+  "channels": [
     {
       "name": "/foo",
       "type": ".aos.bar",

@@ -20,15 +20,15 @@
 
 namespace aos {
 
-// Define the compare and equal operators for Location and Application so we can
+// Define the compare and equal operators for Channel and Application so we can
 // insert them in the btree below.
 //
 // These are not in headers because they are only comparing part of the
 // flatbuffer, and it seems weird to expose that as *the* compare operator.  And
 // I can't put them in an anonymous namespace because they wouldn't be found
 // that way by the btree.
-bool operator<(const Flatbuffer<Location> &lhs,
-               const Flatbuffer<Location> &rhs) {
+bool operator<(const FlatbufferDetachedBuffer<Channel> &lhs,
+               const FlatbufferDetachedBuffer<Channel> &rhs) {
   int name_compare = lhs.message().name()->string_view().compare(
       rhs.message().name()->string_view());
   if (name_compare == 0) {
@@ -41,22 +41,22 @@ bool operator<(const Flatbuffer<Location> &lhs,
   }
 }
 
-bool operator==(const Flatbuffer<Location> &lhs,
-                const Flatbuffer<Location> &rhs) {
+bool operator==(const FlatbufferDetachedBuffer<Channel> &lhs,
+                const FlatbufferDetachedBuffer<Channel> &rhs) {
   return lhs.message().name()->string_view() ==
              rhs.message().name()->string_view() &&
          lhs.message().type()->string_view() ==
              rhs.message().type()->string_view();
 }
 
-bool operator==(const Flatbuffer<Application> &lhs,
-                const Flatbuffer<Application> &rhs) {
+bool operator==(const FlatbufferDetachedBuffer<Application> &lhs,
+                const FlatbufferDetachedBuffer<Application> &rhs) {
   return lhs.message().name()->string_view() ==
          rhs.message().name()->string_view();
 }
 
-bool operator<(const Flatbuffer<Application> &lhs,
-               const Flatbuffer<Application> &rhs) {
+bool operator<(const FlatbufferDetachedBuffer<Application> &lhs,
+               const FlatbufferDetachedBuffer<Application> &rhs) {
   return lhs.message().name()->string_view() <
          rhs.message().name()->string_view();
 }
@@ -154,15 +154,15 @@ absl::string_view ExtractFolder(const absl::string_view filename) {
              : filename.substr(0, last_slash_pos + 1);
 }
 
-Flatbuffer<Configuration> ReadConfig(
+FlatbufferDetachedBuffer<Configuration> ReadConfig(
     const absl::string_view path, absl::btree_set<std::string> *visited_paths) {
-  Flatbuffer<Configuration> config(JsonToFlatbuffer(
+  FlatbufferDetachedBuffer<Configuration> config(JsonToFlatbuffer(
       util::ReadFileToStringOrDie(path), ConfigurationTypeTable()));
   // Depth first.  Take the following example:
   //
   // config1.json:
   // {
-  //   "locations": [
+  //   "channels": [
   //     {
   //       "name": "/foo",
   //       "type": ".aos.bar",
@@ -176,7 +176,7 @@ Flatbuffer<Configuration> ReadConfig(
   //
   // config2.json:
   // {
-  //   "locations": [
+  //   "channels": [
   //     {
   //       "name": "/foo",
   //       "type": ".aos.bar",
@@ -201,8 +201,8 @@ Flatbuffer<Configuration> ReadConfig(
     config.mutable_message()->clear_imports();
 
     // Start with an empty configuration to merge into.
-    Flatbuffer<Configuration> merged_config =
-        Flatbuffer<Configuration>::Empty();
+    FlatbufferDetachedBuffer<Configuration> merged_config =
+        FlatbufferDetachedBuffer<Configuration>::Empty();
 
     const ::std::string folder(ExtractFolder(path));
 
@@ -225,33 +225,33 @@ Flatbuffer<Configuration> ReadConfig(
 }
 
 // Remove duplicate entries, and handle overrides.
-Flatbuffer<Configuration> MergeConfiguration(
+FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
     const Flatbuffer<Configuration> &config) {
-  // Store all the locations in a sorted set.  This lets us track locations we
+  // Store all the channels in a sorted set.  This lets us track channels we
   // have seen before and merge the updates in.
-  absl::btree_set<Flatbuffer<Location>> locations;
+  absl::btree_set<FlatbufferDetachedBuffer<Channel>> channels;
 
-  if (config.message().has_locations()) {
-    for (const Location *l : *config.message().locations()) {
+  if (config.message().has_channels()) {
+    for (const Channel *c : *config.message().channels()) {
       // Ignore malformed entries.
-      if (!l->has_name()) {
+      if (!c->has_name()) {
         continue;
       }
-      if (!l->has_type()) {
+      if (!c->has_type()) {
         continue;
       }
 
-      // Attempt to insert the location.
-      auto result = locations.insert(CopyFlatBuffer(l));
+      // Attempt to insert the channel.
+      auto result = channels.insert(CopyFlatBuffer(c));
       if (!result.second) {
         // Already there, so merge the new table into the original.
-        *result.first = MergeFlatBuffers(*result.first, CopyFlatBuffer(l));
+        *result.first = MergeFlatBuffers(*result.first, CopyFlatBuffer(c));
       }
     }
   }
 
   // Now repeat this for the application list.
-  absl::btree_set<Flatbuffer<Application>> applications;
+  absl::btree_set<FlatbufferDetachedBuffer<Application>> applications;
   if (config.message().has_applications()) {
     for (const Application *a : *config.message().applications()) {
       if (!a->has_name()) {
@@ -269,16 +269,16 @@ Flatbuffer<Configuration> MergeConfiguration(
   fbb.ForceDefaults(1);
 
   // Start by building the vectors.  They need to come before the final table.
-  // Locations
-  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Location>>>
-      locations_offset;
+  // Channels
+  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Channel>>>
+      channels_offset;
   {
-    ::std::vector<flatbuffers::Offset<Location>> location_offsets;
-    for (const Flatbuffer<Location> &l : locations) {
-      location_offsets.emplace_back(
-          CopyFlatBuffer<Location>(&l.message(), &fbb));
+    ::std::vector<flatbuffers::Offset<Channel>> channel_offsets;
+    for (const FlatbufferDetachedBuffer<Channel> &c : channels) {
+      channel_offsets.emplace_back(
+          CopyFlatBuffer<Channel>(&c.message(), &fbb));
     }
-    locations_offset = fbb.CreateVector(location_offsets);
+    channels_offset = fbb.CreateVector(channel_offsets);
   }
 
   // Applications
@@ -286,7 +286,7 @@ Flatbuffer<Configuration> MergeConfiguration(
       applications_offset;
   {
     ::std::vector<flatbuffers::Offset<Application>> applications_offsets;
-    for (const Flatbuffer<Application> &a : applications) {
+    for (const FlatbufferDetachedBuffer<Application> &a : applications) {
       applications_offsets.emplace_back(
           CopyFlatBuffer<Application>(&a.message(), &fbb));
     }
@@ -308,7 +308,7 @@ Flatbuffer<Configuration> MergeConfiguration(
 
   // And then build a Configuration with them all.
   ConfigurationBuilder configuration_builder(fbb);
-  configuration_builder.add_locations(locations_offset);
+  configuration_builder.add_channels(channels_offset);
   if (config.message().has_maps()) {
     configuration_builder.add_maps(maps_offset);
   }
@@ -318,12 +318,12 @@ Flatbuffer<Configuration> MergeConfiguration(
   return fbb.Release();
 }
 
-// Compares (l < p) a location, and a name, type tuple.
-bool CompareLocations(const Location *l,
-                      ::std::pair<absl::string_view, absl::string_view> p) {
-  int name_compare = l->name()->string_view().compare(p.first);
+// Compares (c < p) a channel, and a name, type tuple.
+bool CompareChannels(const Channel *c,
+                     ::std::pair<absl::string_view, absl::string_view> p) {
+  int name_compare = c->name()->string_view().compare(p.first);
   if (name_compare == 0) {
-    return l->type()->string_view() < p.second;
+    return c->type()->string_view() < p.second;
   } else if (name_compare < 0) {
     return true;
   } else {
@@ -331,19 +331,19 @@ bool CompareLocations(const Location *l,
   }
 };
 
-// Compares for equality (l == p) a location, and a name, type tuple.
-bool EqualsLocations(const Location *l,
+// Compares for equality (c == p) a channel, and a name, type tuple.
+bool EqualsChannels(const Channel *c,
                      ::std::pair<absl::string_view, absl::string_view> p) {
-  return l->name()->string_view() == p.first &&
-         l->type()->string_view() == p.second;
+  return c->name()->string_view() == p.first &&
+         c->type()->string_view() == p.second;
 }
 
-// Compares (l < p) an application, and a name;
+// Compares (c < p) an application, and a name;
 bool CompareApplications(const Application *a, absl::string_view name) {
   return a->name()->string_view() < name;
 };
 
-// Compares for equality (l == p) an application, and a name;
+// Compares for equality (c == p) an application, and a name;
 bool EqualsApplications(const Application *a, absl::string_view name) {
   return a->name()->string_view() == name;
 }
@@ -352,7 +352,7 @@ bool EqualsApplications(const Application *a, absl::string_view name) {
 void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
                 absl::string_view *name) {
   // For the same reason we merge configs in reverse order, we want to process
-  // maps in reverse order.  That lets the outer config overwrite locations from
+  // maps in reverse order.  That lets the outer config overwrite channels from
   // the inner configs.
   for (auto i = maps->rbegin(); i != maps->rend(); ++i) {
     if (i->has_match() && i->match()->has_name() && i->has_rename() &&
@@ -381,26 +381,26 @@ const in_addr &GetOwnIPAddress() {
   return *once.Get();
 }
 
-Flatbuffer<Configuration> ReadConfig(const absl::string_view path) {
+FlatbufferDetachedBuffer<Configuration> ReadConfig(
+    const absl::string_view path) {
   // We only want to read a file once.  So track the visited files in a set.
   absl::btree_set<std::string> visited_paths;
   return MergeConfiguration(ReadConfig(path, &visited_paths));
 }
 
-const Location *GetLocation(const Flatbuffer<Configuration> &config,
-                            absl::string_view name, absl::string_view type,
-                            absl::string_view application_name) {
+const Channel *GetChannel(const Configuration *config, absl::string_view name,
+                          absl::string_view type,
+                          absl::string_view application_name) {
   VLOG(1) << "Looking up { \"name\": \"" << name << "\", \"type\": \"" << type
           << "\" }";
 
   // First handle application specific maps.  Only do this if we have a matching
   // application name, and it has maps.
-  if (config.message().has_applications()) {
-    auto application_iterator =
-        std::lower_bound(config.message().applications()->cbegin(),
-                         config.message().applications()->cend(),
-                         application_name, CompareApplications);
-    if (application_iterator != config.message().applications()->cend() &&
+  if (config->has_applications()) {
+    auto application_iterator = std::lower_bound(
+        config->applications()->cbegin(), config->applications()->cend(),
+        application_name, CompareApplications);
+    if (application_iterator != config->applications()->cend() &&
         EqualsApplications(*application_iterator, application_name)) {
       if (application_iterator->has_maps()) {
         HandleMaps(application_iterator->maps(), &name);
@@ -409,21 +409,21 @@ const Location *GetLocation(const Flatbuffer<Configuration> &config,
   }
 
   // Now do global maps.
-  if (config.message().has_maps()) {
-    HandleMaps(config.message().maps(), &name);
+  if (config->has_maps()) {
+    HandleMaps(config->maps(), &name);
   }
 
-  // Then look for the location.
-  auto location_iterator =
-      std::lower_bound(config.message().locations()->cbegin(),
-                       config.message().locations()->cend(),
-                       std::make_pair(name, type), CompareLocations);
+  // Then look for the channel.
+  auto channel_iterator =
+      std::lower_bound(config->channels()->cbegin(),
+                       config->channels()->cend(),
+                       std::make_pair(name, type), CompareChannels);
 
   // Make sure we actually found it, and it matches.
-  if (location_iterator != config.message().locations()->cend() &&
-      EqualsLocations(*location_iterator, std::make_pair(name, type))) {
-    VLOG(1) << "Found: " << FlatbufferToJson(*location_iterator);
-    return *location_iterator;
+  if (channel_iterator != config->channels()->cend() &&
+      EqualsChannels(*channel_iterator, std::make_pair(name, type))) {
+    VLOG(1) << "Found: " << FlatbufferToJson(*channel_iterator);
+    return *channel_iterator;
   } else {
     VLOG(1) << "No match for { \"name\": \"" << name << "\", \"type\": \""
             << type << "\" }";

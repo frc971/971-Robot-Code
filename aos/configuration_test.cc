@@ -23,7 +23,8 @@ const char *kExpectedLocation =
 
 // Tests that we can read and merge a configuration.
 TEST_F(ConfigurationTest, ConfigMerge) {
-  Flatbuffer<Configuration> config = ReadConfig("aos/testdata/config1.json");
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig("aos/testdata/config1.json");
   printf("Read: %s\n", FlatbufferToJson(config, true).c_str());
 
   EXPECT_EQ(
@@ -36,7 +37,7 @@ TEST_F(ConfigurationTest, ConfigMerge) {
 TEST_F(ConfigurationDeathTest, DuplicateFile) {
   EXPECT_DEATH(
       {
-        Flatbuffer<Configuration> config =
+        FlatbufferDetachedBuffer<Configuration> config =
             ReadConfig("aos/testdata/config1_bad.json");
       },
       "aos/testdata/config1_bad.json");
@@ -44,30 +45,31 @@ TEST_F(ConfigurationDeathTest, DuplicateFile) {
 
 // Tests that we can lookup a location, complete with maps, from a merged
 // config.
-TEST_F(ConfigurationTest, GetLocation) {
-  Flatbuffer<Configuration> config = ReadConfig("aos/testdata/config1.json");
+TEST_F(ConfigurationTest, GetChannel) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig("aos/testdata/config1.json");
 
   // Test a basic lookup first.
-  EXPECT_EQ(FlatbufferToJson(GetLocation(config, "/foo", ".aos.bar", "app1")),
+  EXPECT_EQ(FlatbufferToJson(GetChannel(config, "/foo", ".aos.bar", "app1")),
             kExpectedLocation);
 
   // Test that an invalid name results in nullptr back.
-  EXPECT_EQ(GetLocation(config, "/invalid_name", ".aos.bar", "app1"), nullptr);
+  EXPECT_EQ(GetChannel(config, "/invalid_name", ".aos.bar", "app1"), nullptr);
 
   // Tests that a root map/rename works. And that they get processed from the
   // bottom up.
   EXPECT_EQ(
-      FlatbufferToJson(GetLocation(config, "/batman", ".aos.bar", "app1")),
+      FlatbufferToJson(GetChannel(config, "/batman", ".aos.bar", "app1")),
       kExpectedLocation);
 
   // And then test that an application specific map/rename works.
-  EXPECT_EQ(FlatbufferToJson(GetLocation(config, "/bar", ".aos.bar", "app1")),
+  EXPECT_EQ(FlatbufferToJson(GetChannel(config, "/bar", ".aos.bar", "app1")),
             kExpectedLocation);
-  EXPECT_EQ(FlatbufferToJson(GetLocation(config, "/baz", ".aos.bar", "app2")),
+  EXPECT_EQ(FlatbufferToJson(GetChannel(config, "/baz", ".aos.bar", "app2")),
             kExpectedLocation);
 
   // And then test that an invalid application name gets properly ignored.
-  EXPECT_EQ(FlatbufferToJson(GetLocation(config, "/foo", ".aos.bar", "app3")),
+  EXPECT_EQ(FlatbufferToJson(GetChannel(config, "/foo", ".aos.bar", "app3")),
             kExpectedLocation);
 }
 

@@ -43,15 +43,18 @@ inline flatbuffers::DetachedBuffer MergeFlatBuffers(
 }
 
 template <class T>
-inline aos::Flatbuffer<T> MergeFlatBuffers(const aos::Flatbuffer<T> &fb1,
-                                           const aos::Flatbuffer<T> &fb2) {
-  return aos::Flatbuffer<T>(
-      MergeFlatBuffers(T::MiniReflectTypeTable(), fb1.data(), fb2.data()));
+inline aos::FlatbufferDetachedBuffer<T> MergeFlatBuffers(
+    const aos::Flatbuffer<T> &fb1, const aos::Flatbuffer<T> &fb2) {
+const uint8_t *data1 = fb1.data();
+const uint8_t *data2 = fb2.data();
+  return aos::FlatbufferDetachedBuffer<T>(
+      MergeFlatBuffers(T::MiniReflectTypeTable(), data1, data2));
 }
 
 template <class T>
-inline aos::Flatbuffer<T> MergeFlatBuffers(const T *fb1, const T *fb2) {
-  return aos::Flatbuffer<T>(MergeFlatBuffers(
+inline aos::FlatbufferDetachedBuffer<T> MergeFlatBuffers(const T *fb1,
+                                                         const T *fb2) {
+  return aos::FlatbufferDetachedBuffer<T>(MergeFlatBuffers(
       T::MiniReflectTypeTable(), reinterpret_cast<const uint8_t *>(fb1),
       reinterpret_cast<const uint8_t *>(fb2)));
 }
@@ -64,11 +67,11 @@ inline flatbuffers::Offset<T> CopyFlatBuffer(
 }
 
 template <class T>
-inline Flatbuffer<T> CopyFlatBuffer(const T *t) {
+inline FlatbufferDetachedBuffer<T> CopyFlatBuffer(const T *t) {
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(1);
   fbb.Finish(CopyFlatBuffer<T>(t, &fbb));
-  return Flatbuffer<T>(fbb.Release());
+  return FlatbufferDetachedBuffer<T>(fbb.Release());
 }
 
 }  // namespace aos

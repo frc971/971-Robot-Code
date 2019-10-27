@@ -1,26 +1,26 @@
 namespace aos;
 
-// Table representing a location.  Locations are where data is published and
+// Table representing a channel.  Channels are where data is published and
 // subscribed from.  The tuple of name, type is the identifying information.
-table Location {
-  // Name of the location.
+table Channel {
+  // Name of the channel.
   name:string;
   // Type name of the flatbuffer.
   type:string;
-  // Max frequency in messages/sec of the data published on this location.
+  // Max frequency in messages/sec of the data published on this channel.
   frequency:int = 100;
   // Max size of the data being published.  (This will be automatically
   // computed in the future.)
   max_size:int = 1000;
 }
 
-// Table to support renaming location names.
+// Table to support renaming channel names.
 table Map {
-  // Location to match with.  If the name in here matches, the name is replaced
+  // Channel to match with.  If the name in here matches, the name is replaced
   // with the name in rename.
-  match:Location;
-  // The location to merge in.
-  rename:Location;
+  match:Channel;
+  // The channel to merge in.
+  rename:Channel;
 }
 
 // Application specific information.
@@ -31,9 +31,9 @@ table Application {
   // maps are applied in reverse order, and before the global maps.
   // For example
   //   "maps": [ { "match": { "name": "/foo" }, "rename": { "name": "/bar" } } ]
-  // will make it so any locations named "/foo" actually go to "/bar" for just
+  // will make it so any channels named "/foo" actually go to "/bar" for just
   // this application.  This is super handy for running an application twice
-  // publishing to different locations, or for injecting a little application
+  // publishing to different channels, or for injecting a little application
   // to modify messages live for testing.
   //
   //   "maps": [
@@ -47,8 +47,8 @@ table Application {
 
 // Overall configuration datastructure for the pubsub.
 table Configuration {
-  // List of locations.
-  locations:[Location] (id: 0);
+  // List of channels.
+  channels:[Channel] (id: 0);
   // List of global maps.  These are applied in reverse order.
   maps:[Map] (id: 1);
   // List of applications.

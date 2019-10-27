@@ -18,16 +18,24 @@ namespace configuration {
 
 // Reads a json configuration.  This includes all imports and merges.  Note:
 // duplicate imports will result in a CHECK.
-Flatbuffer<Configuration> ReadConfig(const absl::string_view path);
+FlatbufferDetachedBuffer<Configuration> ReadConfig(
+    const absl::string_view path);
 
-// Returns the resolved location for a name, type, and application name.
+// Returns the resolved location for a name, type, and application name. Returns
+// nullptr if none is found.
 //
 // If the application name is empty, it is ignored.  Maps are processed in
 // reverse order, and application specific first.
-const Location *GetLocation(const Flatbuffer<Configuration> &config,
-                            const absl::string_view name,
-                            const absl::string_view type,
-                            const absl::string_view application_name);
+const Channel *GetChannel(const Configuration *config,
+                          const absl::string_view name,
+                          const absl::string_view type,
+                          const absl::string_view application_name);
+inline const Channel *GetChannel(const Flatbuffer<Configuration> &config,
+                          const absl::string_view name,
+                          const absl::string_view type,
+                          const absl::string_view application_name) {
+  return GetChannel(&config.message(), name, type, application_name);
+}
 
 // Returns "our" IP address.
 const in_addr &GetOwnIPAddress();
