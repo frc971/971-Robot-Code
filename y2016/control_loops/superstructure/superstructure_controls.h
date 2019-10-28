@@ -41,9 +41,9 @@ class ArmControlLoop
 
     const double bemf_voltage = X_hat(1, 0) / kV_shoulder;
     bool use_accelerating_controller = true;
-    LOG(DEBUG, "Accelerating at %f, decel %f, bemf %f\n",
-        accelerating_controller(0, 0), accelerating_controller(1, 0),
-        bemf_voltage);
+    AOS_LOG(DEBUG, "Accelerating at %f, decel %f, bemf %f\n",
+            accelerating_controller(0, 0), accelerating_controller(1, 0),
+            bemf_voltage);
     if (IsAccelerating(bemf_voltage, accelerating_controller(0, 0))) {
       use_accelerating_controller = true;
     } else {
@@ -71,7 +71,7 @@ class ArmControlLoop
       const double coupled_amount = (controller().Kff().block<1, 2>(1, 2) *
                                      plant().B().block<2, 1>(2, 0))(0, 0) *
                                     overage_amount;
-      LOG(DEBUG, "Removing coupled amount %f\n", coupled_amount);
+      AOS_LOG(DEBUG, "Removing coupled amount %f\n", coupled_amount);
       mutable_U(1, 0) += coupled_amount;
     }
     if (U(0, 0) < min_voltage(0)) {
@@ -80,7 +80,7 @@ class ArmControlLoop
       const double coupled_amount = (controller().Kff().block<1, 2>(1, 2) *
                                      plant().B().block<2, 1>(2, 0))(0, 0) *
                                     under_amount;
-      LOG(DEBUG, "Removing coupled amount %f\n", coupled_amount);
+      AOS_LOG(DEBUG, "Removing coupled amount %f\n", coupled_amount);
       mutable_U(1, 0) += coupled_amount;
     }
 

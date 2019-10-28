@@ -42,8 +42,8 @@ bool VisionAlignActor::RunAction(
   while (true) {
     const int iterations = phased_loop.SleepUntilNext();
     if (iterations != 1) {
-      LOG(WARNING, "vision align actor skipped %d iterations\n",
-          iterations - 1);
+      AOS_LOG(WARNING, "vision align actor skipped %d iterations\n",
+              iterations - 1);
     }
 
     if (ShouldCancel()) {
@@ -77,11 +77,11 @@ bool VisionAlignActor::RunAction(
     drivetrain_message->right_goal = right_current - side_distance_change;
 
     if (!drivetrain_message.Send()) {
-      LOG(WARNING, "sending drivetrain goal failed\n");
+      AOS_LOG(WARNING, "sending drivetrain goal failed\n");
     }
   }
 
-  LOG(INFO, "Done moving\n");
+  AOS_LOG(INFO, "Done moving\n");
   return true;
 }
 

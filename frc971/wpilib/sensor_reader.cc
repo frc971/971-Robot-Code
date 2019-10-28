@@ -102,9 +102,9 @@ void SensorReader::DoStart() {
   period_ =
       pwm_trigger_ ? chrono::microseconds(5050) : chrono::microseconds(5000);
   if (pwm_trigger_) {
-    LOG(INFO, "Using PWM trigger and a 5.05 ms period\n");
+    AOS_LOG(INFO, "Using PWM trigger and a 5.05 ms period\n");
   } else {
-    LOG(INFO, "Defaulting to open loop pwm synchronization\n");
+    AOS_LOG(INFO, "Defaulting to open loop pwm synchronization\n");
   }
 
   // Now that we are configured, actually fill in the defaults.
@@ -117,7 +117,7 @@ void SensorReader::DoStart() {
 
 void SensorReader::Loop(const int iterations) {
   if (iterations != 1) {
-    LOG(WARNING, "SensorReader skipped %d iterations\n", iterations - 1);
+    AOS_LOG(WARNING, "SensorReader skipped %d iterations\n", iterations - 1);
   }
 
   const monotonic_clock::time_point monotonic_now =
@@ -126,7 +126,7 @@ void SensorReader::Loop(const int iterations) {
   {
     auto new_state = robot_state_sender_.MakeMessage();
     ::frc971::wpilib::PopulateRobotState(new_state.get(), my_pid_);
-    LOG_STRUCT(DEBUG, "robot_state", *new_state);
+    AOS_LOG_STRUCT(DEBUG, "robot_state", *new_state);
     new_state.Send();
   }
   RunIteration();
@@ -136,8 +136,8 @@ void SensorReader::Loop(const int iterations) {
   }
 
   if (pwm_trigger_) {
-    LOG(DEBUG, "PWM wakeup delta: %lld\n",
-        (monotonic_now - last_monotonic_now_).count());
+    AOS_LOG(DEBUG, "PWM wakeup delta: %lld\n",
+            (monotonic_now - last_monotonic_now_).count());
     last_monotonic_now_ = monotonic_now;
 
     monotonic_clock::time_point last_tick_timepoint = GetPWMStartTime();

@@ -31,7 +31,7 @@ class ActorBase {
       : event_loop_(event_loop),
         status_sender_(event_loop->MakeSender<StatusType>(name + ".status")),
         goal_fetcher_(event_loop->MakeFetcher<GoalType>(name + ".goal")) {
-    LOG(INFO, "Constructing action %s\n", name.c_str());
+    AOS_LOG(INFO, "Constructing action %s\n", name.c_str());
     event_loop->MakeWatcher(name + ".goal",
                             [this](const GoalType &goal) { HandleGoal(goal); });
 
@@ -43,7 +43,7 @@ class ActorBase {
       status_message->last_running = 0;
       status_message->success = !abort_;
       if (!status_message.Send()) {
-        LOG(ERROR, "Failed to send the status.\n");
+        AOS_LOG(ERROR, "Failed to send the status.\n");
       }
     });
   }
@@ -118,7 +118,7 @@ class ActorBase {
 
 template <class T>
 void ActorBase<T>::HandleGoal(const GoalType &goal) {
-  LOG_STRUCT(DEBUG, "action goal", goal);
+  AOS_LOG_STRUCT(DEBUG, "action goal", goal);
   switch (state_) {
     case State::WAITING_FOR_ACTION:
       if (goal.run) {
@@ -129,7 +129,7 @@ void ActorBase<T>::HandleGoal(const GoalType &goal) {
         status_message->last_running = 0;
         status_message->success = !abort_;
         if (!status_message.Send()) {
-          LOG(ERROR, "Failed to send the status.\n");
+          AOS_LOG(ERROR, "Failed to send the status.\n");
         }
         break;
       }
@@ -137,20 +137,20 @@ void ActorBase<T>::HandleGoal(const GoalType &goal) {
       ++running_count_;
       const uint32_t running_id = goal.run;
       current_id_ = running_id;
-      LOG(INFO, "Starting action %" PRIx32 "\n", running_id);
+      AOS_LOG(INFO, "Starting action %" PRIx32 "\n", running_id);
       {
         auto status_message = status_sender_.MakeMessage();
         status_message->running = running_id;
         status_message->last_running = 0;
         status_message->success = !abort_;
         if (!status_message.Send()) {
-          LOG(ERROR, "Failed to send the status.\n");
+          AOS_LOG(ERROR, "Failed to send the status.\n");
         }
       }
 
-      LOG_STRUCT(INFO, "goal", goal);
+      AOS_LOG_STRUCT(INFO, "goal", goal);
       abort_ = !RunAction(goal.params);
-      LOG(INFO, "Done with action %" PRIx32 "\n", running_id);
+      AOS_LOG(INFO, "Done with action %" PRIx32 "\n", running_id);
       current_id_ = 0u;
 
       {
@@ -160,19 +160,19 @@ void ActorBase<T>::HandleGoal(const GoalType &goal) {
         status_message->success = !abort_;
 
         if (!status_message.Send()) {
-          LOG(ERROR, "Failed to send the status.\n");
+          AOS_LOG(ERROR, "Failed to send the status.\n");
         } else {
-          LOG(INFO, "Sending Done status %" PRIx32 "\n", running_id);
+          AOS_LOG(INFO, "Sending Done status %" PRIx32 "\n", running_id);
         }
       }
 
       state_ = State::WAITING_FOR_STOPPED;
-      LOG(INFO, "Waiting for the action (%" PRIx32 ") to be stopped.\n",
-          running_id);
+      AOS_LOG(INFO, "Waiting for the action (%" PRIx32 ") to be stopped.\n",
+              running_id);
     } break;
     case State::WAITING_FOR_STOPPED:
       if (goal.run == 0) {
-        LOG(INFO, "Action stopped.\n");
+        AOS_LOG(INFO, "Action stopped.\n");
         state_ = State::WAITING_FOR_ACTION;
       }
       break;
@@ -194,7 +194,7 @@ bool ActorBase<T>::WaitUntil(::std::function<bool(void)> done_condition,
     }
     if (end_time != ::aos::monotonic_clock::min_time &&
         ::aos::monotonic_clock::now() >= end_time) {
-      LOG(DEBUG, "WaitUntil timed out\n");
+      AOS_LOG(DEBUG, "WaitUntil timed out\n");
       return false;
     }
     phased_loop.SleepUntilNext();
@@ -211,11 +211,11 @@ bool ActorBase<T>::WaitUntil(::std::function<bool(void)> done_condition,
 template <class T>
 bool ActorBase<T>::ShouldCancel() {
   if (goal_fetcher_.Fetch()) {
-    LOG_STRUCT(DEBUG, "goal queue", *goal_fetcher_);
+    AOS_LOG_STRUCT(DEBUG, "goal queue", *goal_fetcher_);
   }
   bool ans = !goal_fetcher_->run || goal_fetcher_->run != current_id_;
   if (ans) {
-    LOG(INFO, "Time to stop action\n");
+    AOS_LOG(INFO, "Time to stop action\n");
   }
   return ans;
 }

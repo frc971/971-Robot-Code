@@ -148,7 +148,7 @@ class SimulatedQueue {
                           EventScheduler *scheduler)
       : type_(type), name_(name), scheduler_(scheduler){};
 
-  ~SimulatedQueue() { CHECK_EQ(0u, fetchers_.size()); }
+  ~SimulatedQueue() { AOS_CHECK_EQ(0u, fetchers_.size()); }
 
   // Makes a connected raw sender which calls Send below.
   ::std::unique_ptr<RawSender> MakeRawSender(EventLoop *event_loop);

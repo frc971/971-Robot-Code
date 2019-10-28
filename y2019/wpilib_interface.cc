@@ -297,7 +297,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
           auto_mode_message->mode |= 1 << i;
         }
       }
-      LOG_STRUCT(DEBUG, "auto mode", *auto_mode_message);
+      AOS_LOG_STRUCT(DEBUG, "auto mode", *auto_mode_message);
       auto_mode_message.Send();
     }
   }
@@ -384,7 +384,7 @@ class CameraReader {
     const auto unpacked = SpiUnpackToRoborio(
         gsl::make_span(to_receive).last(spi_transfer_size()));
     if (!unpacked) {
-      LOG(INFO, "Decoding SPI data failed\n");
+      AOS_LOG(INFO, "Decoding SPI data failed\n");
       return;
     }
 
@@ -405,7 +405,7 @@ class CameraReader {
         to_send->targets[i].skew = received.targets[i].skew;
       }
       to_send->camera = received.camera_index;
-      LOG_STRUCT(DEBUG, "camera_frames", *to_send);
+      AOS_LOG_STRUCT(DEBUG, "camera_frames", *to_send);
       to_send.Send();
     }
 
@@ -416,7 +416,7 @@ class CameraReader {
   }
 
   void DoTransaction(gsl::span<char> to_send, gsl::span<char> to_receive) {
-    CHECK_EQ(to_send.size(), to_receive.size());
+    AOS_CHECK_EQ(to_send.size(), to_receive.size());
     const auto result = spi_->Transaction(
         reinterpret_cast<uint8_t *>(to_send.data()),
         reinterpret_cast<uint8_t *>(to_receive.data()), to_send.size());
@@ -424,10 +424,10 @@ class CameraReader {
       return;
     }
     if (result == -1) {
-      LOG(INFO, "SPI::Transaction of %zd bytes failed\n", to_send.size());
+      AOS_LOG(INFO, "SPI::Transaction of %zd bytes failed\n", to_send.size());
       return;
     }
-    LOG(FATAL, "SPI::Transaction returned something weird\n");
+    AOS_LOG(FATAL, "SPI::Transaction returned something weird\n");
   }
 
   void SetDummySPI(frc::SPI::Port port) {
@@ -489,7 +489,7 @@ class SuperstructureWriter
 
  private:
   void Write(const SuperstructureQueue::Output &output) override {
-    LOG_STRUCT(DEBUG, "will output", output);
+    AOS_LOG_STRUCT(DEBUG, "will output", output);
     elevator_victor_->SetSpeed(::aos::Clip(output.elevator_voltage,
                                            -kMaxBringupPower,
                                            kMaxBringupPower) /
@@ -522,7 +522,7 @@ class SuperstructureWriter
   }
 
   void Stop() override {
-    LOG(WARNING, "Superstructure output too old.\n");
+    AOS_LOG(WARNING, "Superstructure output too old.\n");
 
     elevator_victor_->SetDisabled();
     intake_victor_->SetDisabled();
@@ -574,13 +574,13 @@ class SolenoidWriter {
 
   void Loop(const int iterations) {
     if (iterations != 1) {
-      LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
+      AOS_LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
     }
 
     {
       superstructure_fetcher_.Fetch();
       if (superstructure_fetcher_.get()) {
-        LOG_STRUCT(DEBUG, "solenoids", *superstructure_fetcher_);
+        AOS_LOG_STRUCT(DEBUG, "solenoids", *superstructure_fetcher_);
 
         big_suction_cup0_->Set(!superstructure_fetcher_->intake_suction_bottom);
         big_suction_cup1_->Set(!superstructure_fetcher_->intake_suction_bottom);
@@ -600,7 +600,7 @@ class SolenoidWriter {
 
       pcm_.Flush();
       to_log.read_solenoids = pcm_.GetAll();
-      LOG_STRUCT(DEBUG, "pneumatics info", to_log);
+      AOS_LOG_STRUCT(DEBUG, "pneumatics info", to_log);
     }
 
     status_light_fetcher_.Fetch();
@@ -623,10 +623,10 @@ class SolenoidWriter {
         light_flash_ = 0;
       }
 
-      LOG_STRUCT(DEBUG, "color", color);
+      AOS_LOG_STRUCT(DEBUG, "color", color);
       SetColor(color);
     } else {
-      LOG_STRUCT(DEBUG, "color", *status_light_fetcher_.get());
+      AOS_LOG_STRUCT(DEBUG, "color", *status_light_fetcher_.get());
       SetColor(*status_light_fetcher_.get());
     }
   }

@@ -111,7 +111,7 @@ void AutonomousActor::MoveSuperstructure(
   new_superstructure_goal->unfold_climber = false;
 
   if (!new_superstructure_goal.Send()) {
-    LOG(ERROR, "Sending superstructure goal failed.\n");
+    AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
   }
 }
 
@@ -124,7 +124,7 @@ void AutonomousActor::OpenShooter() {
   shooter_goal->push_to_shooter = false;
   shooter_goal->force_lights_on = false;
   if (!shooter_goal.Send()) {
-    LOG(ERROR, "Sending shooter goal failed.\n");
+    AOS_LOG(ERROR, "Sending shooter goal failed.\n");
   }
 }
 
@@ -138,7 +138,7 @@ void AutonomousActor::CloseShooter() {
   shooter_goal->force_lights_on = false;
 
   if (!shooter_goal.Send()) {
-    LOG(ERROR, "Sending shooter goal failed.\n");
+    AOS_LOG(ERROR, "Sending shooter goal failed.\n");
   }
 }
 
@@ -156,7 +156,7 @@ void AutonomousActor::SetShooterSpeed(double speed) {
   shooter_goal->force_lights_on = force_lights_on;
 
   if (!shooter_goal.Send()) {
-    LOG(ERROR, "Sending shooter goal failed.\n");
+    AOS_LOG(ERROR, "Sending shooter goal failed.\n");
   }
 }
 
@@ -179,7 +179,7 @@ void AutonomousActor::Shoot() {
   shooter_goal->force_lights_on = force_lights_on;
 
   if (!shooter_goal.Send()) {
-    LOG(ERROR, "Sending shooter goal failed.\n");
+    AOS_LOG(ERROR, "Sending shooter goal failed.\n");
   }
 
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
@@ -270,7 +270,7 @@ void AutonomousActor::WaitForAlignedWithVision(
       }
       if (ready_to_fire > 15) {
         break;
-        LOG(INFO, "Vision align success!\n");
+        AOS_LOG(INFO, "Vision align success!\n");
       }
     }
     phased_loop.SleepUntilNext();
@@ -278,7 +278,7 @@ void AutonomousActor::WaitForAlignedWithVision(
 
   vision_action_->Cancel();
   WaitUntilDoneOrCanceled(::std::move(vision_action_));
-  LOG(INFO, "Done waiting for vision\n");
+  AOS_LOG(INFO, "Done waiting for vision\n");
 }
 
 bool AutonomousActor::IntakeDone() {
@@ -289,7 +289,7 @@ bool AutonomousActor::IntakeDone() {
 
   if (superstructure_status_fetcher_->state < 12 ||
       superstructure_status_fetcher_->state == 16) {
-    LOG(ERROR, "Superstructure no longer running, aborting action\n");
+    AOS_LOG(ERROR, "Superstructure no longer running, aborting action\n");
     return true;
   }
 
@@ -297,12 +297,12 @@ bool AutonomousActor::IntakeDone() {
                  superstructure_goal_.intake) < kProfileError &&
       ::std::abs(superstructure_status_fetcher_->intake
                      .goal_angular_velocity) < kProfileError) {
-    LOG(DEBUG, "Profile done.\n");
+    AOS_LOG(DEBUG, "Profile done.\n");
     if (::std::abs(superstructure_status_fetcher_->intake.angle -
                    superstructure_goal_.intake) < kEpsilon &&
         ::std::abs(superstructure_status_fetcher_->intake
                        .angular_velocity) < kEpsilon) {
-      LOG(INFO, "Near goal, done.\n");
+      AOS_LOG(INFO, "Near goal, done.\n");
       return true;
     }
   }
@@ -312,7 +312,7 @@ bool AutonomousActor::IntakeDone() {
 bool AutonomousActor::SuperstructureProfileDone() {
   if (superstructure_status_fetcher_->state < 12 ||
       superstructure_status_fetcher_->state == 16) {
-    LOG(ERROR, "Superstructure no longer running, aborting action\n");
+    AOS_LOG(ERROR, "Superstructure no longer running, aborting action\n");
     return true;
   }
 
@@ -339,7 +339,7 @@ bool AutonomousActor::SuperstructureDone() {
 
   constexpr double kEpsilon = 0.03;
   if (SuperstructureProfileDone()) {
-    LOG(DEBUG, "Profile done.\n");
+    AOS_LOG(DEBUG, "Profile done.\n");
     if (::std::abs(superstructure_status_fetcher_->intake.angle -
                    superstructure_goal_.intake) < (kEpsilon + 0.1) &&
         ::std::abs(superstructure_status_fetcher_->shoulder.angle -
@@ -352,7 +352,7 @@ bool AutonomousActor::SuperstructureDone() {
                        .angular_velocity) < (kEpsilon + 0.10) &&
         ::std::abs(superstructure_status_fetcher_->wrist
                        .angular_velocity) < (kEpsilon + 0.05)) {
-      LOG(INFO, "Near goal, done.\n");
+      AOS_LOG(INFO, "Near goal, done.\n");
       return true;
     }
   }
@@ -384,43 +384,43 @@ void AutonomousActor::WaitForSuperstructureLow() {
 }
 
 void AutonomousActor::BackLongShotLowBarTwoBall() {
-  LOG(INFO, "Expanding for back long shot\n");
+  AOS_LOG(INFO, "Expanding for back long shot\n");
   MoveSuperstructure(0.00, M_PI / 2.0 - 0.2, -0.55, {7.0, 40.0}, {4.0, 6.0},
                      {10.0, 25.0}, false, 0.0);
 }
 
 void AutonomousActor::BackLongShotTwoBall() {
-  LOG(INFO, "Expanding for back long shot\n");
+  AOS_LOG(INFO, "Expanding for back long shot\n");
   MoveSuperstructure(0.00, M_PI / 2.0 - 0.2, -0.55, {7.0, 40.0}, {4.0, 6.0},
                      {10.0, 25.0}, false, 0.0);
 }
 
 void AutonomousActor::BackLongShotTwoBallFinish() {
-  LOG(INFO, "Expanding for back long shot\n");
+  AOS_LOG(INFO, "Expanding for back long shot\n");
   MoveSuperstructure(0.00, M_PI / 2.0 - 0.2, -0.625 + 0.03, {7.0, 40.0},
                      {4.0, 6.0}, {10.0, 25.0}, false, 0.0);
 }
 
 void AutonomousActor::BackLongShot() {
-  LOG(INFO, "Expanding for back long shot\n");
+  AOS_LOG(INFO, "Expanding for back long shot\n");
   MoveSuperstructure(0.80, M_PI / 2.0 - 0.2, -0.62, {7.0, 40.0}, {4.0, 6.0},
                      {10.0, 25.0}, false, 0.0);
 }
 
 void AutonomousActor::BackMiddleShot() {
-  LOG(INFO, "Expanding for back middle shot\n");
+  AOS_LOG(INFO, "Expanding for back middle shot\n");
   MoveSuperstructure(-0.05, M_PI / 2.0 - 0.2, -0.665, {7.0, 40.0}, {4.0, 10.0},
                      {10.0, 25.0}, false, 0.0);
 }
 
 void AutonomousActor::FrontLongShot() {
-  LOG(INFO, "Expanding for front long shot\n");
+  AOS_LOG(INFO, "Expanding for front long shot\n");
   MoveSuperstructure(0.80, M_PI / 2.0 + 0.1, M_PI + 0.41 + 0.02, {7.0, 40.0},
                      {4.0, 6.0}, {10.0, 25.0}, false, 0.0);
 }
 
 void AutonomousActor::FrontMiddleShot() {
-  LOG(INFO, "Expanding for front middle shot\n");
+  AOS_LOG(INFO, "Expanding for front middle shot\n");
   MoveSuperstructure(-0.05, M_PI / 2.0 + 0.1, M_PI + 0.44, {7.0, 40.0},
                      {4.0, 10.0}, {10.0, 25.0}, true, 0.0);
 }
@@ -433,37 +433,37 @@ void AutonomousActor::TuckArm(bool low_bar, bool traverse_down) {
 void AutonomousActor::DoFullShot() {
   if (ShouldCancel()) return;
   // Make sure that the base is aligned with the base.
-  LOG(INFO, "Waiting for the superstructure\n");
+  AOS_LOG(INFO, "Waiting for the superstructure\n");
   WaitForSuperstructure();
 
   this_thread::sleep_for(chrono::milliseconds(500));
 
   if (ShouldCancel()) return;
-  LOG(INFO, "Triggering the vision actor\n");
+  AOS_LOG(INFO, "Triggering the vision actor\n");
   AlignWithVisionGoal();
 
   // Wait for the drive base to be aligned with the target and make sure that
   // the shooter is up to speed.
-  LOG(INFO, "Waiting for vision to be aligned\n");
+  AOS_LOG(INFO, "Waiting for vision to be aligned\n");
   WaitForAlignedWithVision(chrono::milliseconds(2000));
   if (ShouldCancel()) return;
-  LOG(INFO, "Waiting for shooter to be up to speed\n");
+  AOS_LOG(INFO, "Waiting for shooter to be up to speed\n");
   WaitForShooterSpeed();
   if (ShouldCancel()) return;
 
   this_thread::sleep_for(chrono::milliseconds(300));
-  LOG(INFO, "Shoot!\n");
+  AOS_LOG(INFO, "Shoot!\n");
   Shoot();
 
   // Turn off the shooter and fold up the superstructure.
   if (ShouldCancel()) return;
-  LOG(INFO, "Stopping shooter\n");
+  AOS_LOG(INFO, "Stopping shooter\n");
   SetShooterSpeed(0.0);
-  LOG(INFO, "Folding superstructure back down\n");
+  AOS_LOG(INFO, "Folding superstructure back down\n");
   TuckArm(false, false);
 
   // Wait for everything to be folded up.
-  LOG(INFO, "Waiting for superstructure to be folded back down\n");
+  AOS_LOG(INFO, "Waiting for superstructure to be folded back down\n");
   WaitForSuperstructureLow();
 }
 
@@ -505,7 +505,7 @@ void AutonomousActor::TippyDrive(double goal_distance, double tip_distance,
     const double distance_to_go = (left_error + right_error) / 2.0;
     const double distance_compensation =
         goal_distance - tip_distance - distance_to_go;
-    LOG(INFO, "Going %f further at the bump\n", distance_compensation);
+    AOS_LOG(INFO, "Going %f further at the bump\n", distance_compensation);
     StartDrive(distance_compensation, 0.0, kMoatDrive, kSlowTurn);
   }
 }
@@ -577,11 +577,11 @@ void AutonomousActor::TwoBallAuto() {
   MoveSuperstructure(0.10, -0.010, 0.0, {8.0, 60.0}, {4.0, 10.0}, {10.0, 25.0},
                      false, 12.0);
   if (ShouldCancel()) return;
-  LOG(INFO, "Waiting for the intake to come down.\n");
+  AOS_LOG(INFO, "Waiting for the intake to come down.\n");
 
   WaitForIntake();
-  LOG(INFO, "Intake done at %f seconds, starting to drive\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "Intake done at %f seconds, starting to drive\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   if (ShouldCancel()) return;
   const double kDriveDistance = 5.05;
   StartDrive(-kDriveDistance, 0.0, kTwoBallLowDrive, kSlowTurn);
@@ -595,13 +595,14 @@ void AutonomousActor::TwoBallAuto() {
   if (ball_detector_fetcher_.get()) {
     const bool ball_detected = ball_detector_fetcher_->voltage > 2.5;
     first_ball_there = ball_detected;
-    LOG(INFO, "Saw the ball: %d at %f\n", first_ball_there,
-        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+    AOS_LOG(INFO, "Saw the ball: %d at %f\n", first_ball_there,
+            ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   }
   MoveSuperstructure(0.10, -0.010, 0.0, {8.0, 40.0}, {4.0, 10.0}, {10.0, 25.0},
                      false, 0.0);
-  LOG(INFO, "Shutting off rollers at %f seconds, starting to straighten out\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO,
+          "Shutting off rollers at %f seconds, starting to straighten out\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   StartDrive(0.0, -0.4, kTwoBallLowDrive, kSwerveTurn);
   MoveSuperstructure(-0.05, -0.010, 0.0, {8.0, 40.0}, {4.0, 10.0}, {10.0, 25.0},
                      false, 0.0);
@@ -610,7 +611,7 @@ void AutonomousActor::TwoBallAuto() {
 
   // We are now under the low bar.  Start lifting.
   BackLongShotLowBarTwoBall();
-  LOG(INFO, "Spinning up the shooter wheels\n");
+  AOS_LOG(INFO, "Spinning up the shooter wheels\n");
   SetShooterSpeed(640.0);
   StartDrive(0.0, 0.0, kTwoBallFastDrive, kSwerveTurn);
 
@@ -620,8 +621,8 @@ void AutonomousActor::TwoBallAuto() {
   BackLongShotTwoBall();
 
   if (!WaitForDriveDone()) return;
-  LOG(INFO, "First shot done driving at %f seconds\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "First shot done driving at %f seconds\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   WaitForSuperstructureProfile();
 
@@ -636,19 +637,19 @@ void AutonomousActor::TwoBallAuto() {
   BackLongShotTwoBallFinish();
   WaitForSuperstructureProfile();
   if (ShouldCancel()) return;
-  LOG(INFO, "Shoot!\n");
+  AOS_LOG(INFO, "Shoot!\n");
   if (first_ball_there) {
     Shoot();
   } else {
-    LOG(INFO, "Nah, not shooting\n");
+    AOS_LOG(INFO, "Nah, not shooting\n");
   }
 
-  LOG(INFO, "First shot at %f seconds\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "First shot at %f seconds\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   if (ShouldCancel()) return;
 
   SetShooterSpeed(0.0);
-  LOG(INFO, "Folding superstructure back down\n");
+  AOS_LOG(INFO, "Folding superstructure back down\n");
   TuckArm(true, true);
 
   // Undo vision move.
@@ -663,8 +664,8 @@ void AutonomousActor::TwoBallAuto() {
   StartDrive(0, 0, kTwoBallReturnSlow, kSwerveTurn);
 
   if (!WaitForDriveNear(0.06, kDoNotTurnCare)) return;
-  LOG(INFO, "At Low Bar %f\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "At Low Bar %f\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   OpenShooter();
   constexpr double kSecondBallAfterBarDrive = 2.10;
@@ -681,8 +682,8 @@ void AutonomousActor::TwoBallAuto() {
   MoveSuperstructure(0.10, -0.010, 0.0, {8.0, 60.0}, {4.0, 10.0}, {10.0, 25.0},
                      false, 12.0);
 
-  LOG(INFO, "Done backing up %f\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "Done backing up %f\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   constexpr double kDriveBackDistance = 5.15 - 0.4;
   StartDrive(-kDriveBackDistance, 0.0, kTwoBallLowDrive, kFinishTurn);
@@ -690,8 +691,8 @@ void AutonomousActor::TwoBallAuto() {
   if (!WaitForDriveNear(kDriveBackDistance - 0.75, kDoNotTurnCare)) return;
 
   StartDrive(0.0, -kBallSmallWallTurn, kTwoBallLowDrive, kFinishTurn);
-  LOG(INFO, "Straightening up at %f\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "Straightening up at %f\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   CloseIfBall();
   if (!WaitForDriveNear(kDriveBackDistance - 2.3, kDoNotTurnCare)) return;
@@ -701,15 +702,15 @@ void AutonomousActor::TwoBallAuto() {
     const bool ball_detected = ball_detector_fetcher_->voltage > 2.5;
     if (!ball_detected) {
       if (!WaitForDriveDone()) return;
-      LOG(INFO, "Aborting, no ball %f\n",
-          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+      AOS_LOG(INFO, "Aborting, no ball %f\n",
+              ::aos::time::DurationInSeconds(monotonic_now() - start_time));
       return;
     }
   }
   CloseShooter();
 
   BackLongShotLowBarTwoBall();
-  LOG(INFO, "Spinning up the shooter wheels\n");
+  AOS_LOG(INFO, "Spinning up the shooter wheels\n");
   SetShooterSpeed(640.0);
   StartDrive(0.0, 0.0, kTwoBallFastDrive, kSwerveTurn);
 
@@ -718,8 +719,8 @@ void AutonomousActor::TwoBallAuto() {
   BackLongShotTwoBall();
 
   if (!WaitForDriveDone()) return;
-  LOG(INFO, "Second shot done driving at %f seconds\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "Second shot done driving at %f seconds\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   WaitForSuperstructure();
   AlignWithVisionGoal();
   if (ShouldCancel()) return;
@@ -729,32 +730,32 @@ void AutonomousActor::TwoBallAuto() {
 
   // 2.2 with 0.4 of vision.
   // 1.8 without any vision.
-  LOG(INFO, "Going to vision align at %f\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "Going to vision align at %f\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   WaitForAlignedWithVision(
       (start_time + chrono::milliseconds(13500) + kVisionExtra * 2) -
       monotonic_now());
   BackLongShotTwoBallFinish();
   WaitForSuperstructureProfile();
   if (ShouldCancel()) return;
-  LOG(INFO, "Shoot at %f\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "Shoot at %f\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   Shoot();
 
-  LOG(INFO, "Second shot at %f seconds\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "Second shot at %f seconds\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   if (ShouldCancel()) return;
 
   SetShooterSpeed(0.0);
-  LOG(INFO, "Folding superstructure back down\n");
+  AOS_LOG(INFO, "Folding superstructure back down\n");
   TuckArm(true, false);
-  LOG(INFO, "Shot %f\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "Shot %f\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   WaitForSuperstructureLow();
 
-  LOG(INFO, "Done %f\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "Done %f\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 }
 
 void AutonomousActor::StealAndMoveOverBy(double distance) {
@@ -762,7 +763,7 @@ void AutonomousActor::StealAndMoveOverBy(double distance) {
   MoveSuperstructure(0.10, -0.010, 0.0, {8.0, 60.0}, {4.0, 10.0}, {10.0, 25.0},
                      true, 12.0);
   if (ShouldCancel()) return;
-  LOG(INFO, "Waiting for the intake to come down.\n");
+  AOS_LOG(INFO, "Waiting for the intake to come down.\n");
 
   WaitForIntake();
   if (ShouldCancel()) return;
@@ -780,7 +781,8 @@ void AutonomousActor::StealAndMoveOverBy(double distance) {
 bool AutonomousActor::RunAction(
     const ::frc971::autonomous::AutonomousActionParams &params) {
   monotonic_clock::time_point start_time = monotonic_now();
-  LOG(INFO, "Starting autonomous action with mode %" PRId32 "\n", params.mode);
+  AOS_LOG(INFO, "Starting autonomous action with mode %" PRId32 "\n",
+          params.mode);
 
   InitializeEncoders();
   ResetDrivetrain();
@@ -790,11 +792,11 @@ bool AutonomousActor::RunAction(
       LowBarDrive();
       if (!WaitForDriveDone()) return true;
       // Get the superstructure to unfold and get ready for shooting.
-      LOG(INFO, "Unfolding superstructure\n");
+      AOS_LOG(INFO, "Unfolding superstructure\n");
       FrontLongShot();
 
       // Spin up the shooter wheels.
-      LOG(INFO, "Spinning up the shooter wheels\n");
+      AOS_LOG(INFO, "Spinning up the shooter wheels\n");
       SetShooterSpeed(640.0);
 
       break;
@@ -802,11 +804,11 @@ bool AutonomousActor::RunAction(
       TwoFromMiddleDrive();
       if (!WaitForDriveDone()) return true;
       // Get the superstructure to unfold and get ready for shooting.
-      LOG(INFO, "Unfolding superstructure\n");
+      AOS_LOG(INFO, "Unfolding superstructure\n");
       FrontMiddleShot();
 
       // Spin up the shooter wheels.
-      LOG(INFO, "Spinning up the shooter wheels\n");
+      AOS_LOG(INFO, "Spinning up the shooter wheels\n");
       SetShooterSpeed(600.0);
 
       break;
@@ -814,11 +816,11 @@ bool AutonomousActor::RunAction(
       OneFromMiddleDrive(true);
       if (!WaitForDriveDone()) return true;
       // Get the superstructure to unfold and get ready for shooting.
-      LOG(INFO, "Unfolding superstructure\n");
+      AOS_LOG(INFO, "Unfolding superstructure\n");
       FrontMiddleShot();
 
       // Spin up the shooter wheels.
-      LOG(INFO, "Spinning up the shooter wheels\n");
+      AOS_LOG(INFO, "Spinning up the shooter wheels\n");
       SetShooterSpeed(600.0);
 
       break;
@@ -826,11 +828,11 @@ bool AutonomousActor::RunAction(
       MiddleDrive();
       if (!WaitForDriveDone()) return true;
       // Get the superstructure to unfold and get ready for shooting.
-      LOG(INFO, "Unfolding superstructure\n");
+      AOS_LOG(INFO, "Unfolding superstructure\n");
       FrontMiddleShot();
 
       // Spin up the shooter wheels.
-      LOG(INFO, "Spinning up the shooter wheels\n");
+      AOS_LOG(INFO, "Spinning up the shooter wheels\n");
       SetShooterSpeed(600.0);
 
       break;
@@ -838,11 +840,11 @@ bool AutonomousActor::RunAction(
       OneFromMiddleDrive(false);
       if (!WaitForDriveDone()) return true;
       // Get the superstructure to unfold and get ready for shooting.
-      LOG(INFO, "Unfolding superstructure\n");
+      AOS_LOG(INFO, "Unfolding superstructure\n");
       FrontMiddleShot();
 
       // Spin up the shooter wheels.
-      LOG(INFO, "Spinning up the shooter wheels\n");
+      AOS_LOG(INFO, "Spinning up the shooter wheels\n");
       SetShooterSpeed(600.0);
 
       break;
@@ -858,11 +860,11 @@ bool AutonomousActor::RunAction(
       TwoFromMiddleDrive();
       if (!WaitForDriveDone()) return true;
       // Get the superstructure to unfold and get ready for shooting.
-      LOG(INFO, "Unfolding superstructure\n");
+      AOS_LOG(INFO, "Unfolding superstructure\n");
       FrontMiddleShot();
 
       // Spin up the shooter wheels.
-      LOG(INFO, "Spinning up the shooter wheels\n");
+      AOS_LOG(INFO, "Spinning up the shooter wheels\n");
       SetShooterSpeed(600.0);
 
       break;
@@ -873,11 +875,11 @@ bool AutonomousActor::RunAction(
       OneFromMiddleDrive(true);
       if (!WaitForDriveDone()) return true;
       // Get the superstructure to unfold and get ready for shooting.
-      LOG(INFO, "Unfolding superstructure\n");
+      AOS_LOG(INFO, "Unfolding superstructure\n");
       FrontMiddleShot();
 
       // Spin up the shooter wheels.
-      LOG(INFO, "Spinning up the shooter wheels\n");
+      AOS_LOG(INFO, "Spinning up the shooter wheels\n");
       SetShooterSpeed(600.0);
 
       break;
@@ -888,11 +890,11 @@ bool AutonomousActor::RunAction(
       MiddleDrive();
       if (!WaitForDriveDone()) return true;
       // Get the superstructure to unfold and get ready for shooting.
-      LOG(INFO, "Unfolding superstructure\n");
+      AOS_LOG(INFO, "Unfolding superstructure\n");
       FrontMiddleShot();
 
       // Spin up the shooter wheels.
-      LOG(INFO, "Spinning up the shooter wheels\n");
+      AOS_LOG(INFO, "Spinning up the shooter wheels\n");
       SetShooterSpeed(600.0);
 
     } break;
@@ -903,16 +905,16 @@ bool AutonomousActor::RunAction(
       OneFromMiddleDrive(false);
       if (!WaitForDriveDone()) return true;
       // Get the superstructure to unfold and get ready for shooting.
-      LOG(INFO, "Unfolding superstructure\n");
+      AOS_LOG(INFO, "Unfolding superstructure\n");
       FrontMiddleShot();
 
       // Spin up the shooter wheels.
-      LOG(INFO, "Spinning up the shooter wheels\n");
+      AOS_LOG(INFO, "Spinning up the shooter wheels\n");
       SetShooterSpeed(600.0);
 
     } break;
     default:
-      LOG(ERROR, "Invalid auto mode %d\n", params.mode);
+      AOS_LOG(ERROR, "Invalid auto mode %d\n", params.mode);
       return true;
   }
 
@@ -921,7 +923,7 @@ bool AutonomousActor::RunAction(
   StartDrive(0.5, 0.0, kMoatDrive, kFastTurn);
   if (!WaitForDriveDone()) return true;
 
-  LOG(INFO, "Done %f\n",
+  AOS_LOG(INFO, "Done %f\n",
       ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
@@ -931,7 +933,7 @@ bool AutonomousActor::RunAction(
   while (!ShouldCancel()) {
     phased_loop.SleepUntilNext();
   }
-  LOG(DEBUG, "Done running\n");
+  AOS_LOG(DEBUG, "Done running\n");
 
   return true;
 }

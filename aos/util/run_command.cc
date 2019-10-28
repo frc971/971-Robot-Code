@@ -21,14 +21,14 @@ class BlockSIGCHLD {
     sigemptyset(&to_block);
     sigaddset(&to_block, SIGCHLD);
     if (sigprocmask(SIG_BLOCK, &to_block, &original_blocked_) == -1) {
-      PLOG(FATAL, "sigprocmask(SIG_BLOCK, %p, %p) failed",
-           &to_block, &original_blocked_);
+      AOS_PLOG(FATAL, "sigprocmask(SIG_BLOCK, %p, %p) failed", &to_block,
+               &original_blocked_);
     }
   }
   ~BlockSIGCHLD() {
     if (sigprocmask(SIG_SETMASK, &original_blocked_, nullptr) == -1) {
-      PLOG(FATAL, "sigprocmask(SIG_SETMASK, %p, nullptr) failed",
-           &original_blocked_);
+      AOS_PLOG(FATAL, "sigprocmask(SIG_SETMASK, %p, nullptr) failed",
+               &original_blocked_);
     }
   }
 

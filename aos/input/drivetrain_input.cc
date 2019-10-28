@@ -100,7 +100,7 @@ void DrivetrainInputReader::HandleDrivetrain(
   new_drivetrain_goal->linear.max_acceleration = 20.0;
 
   if (!new_drivetrain_goal.Send()) {
-    LOG(WARNING, "sending stick values failed\n");
+    AOS_LOG(WARNING, "sending stick values failed\n");
   }
 
   last_is_control_loop_driving_ = is_control_loop_driving;

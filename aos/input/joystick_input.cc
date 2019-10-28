@@ -24,37 +24,37 @@ void JoystickInput::HandleData(const ::aos::JoystickState &joystick_state) {
       for (int button = 1; button <= ButtonLocation::kButtons; ++button) {
         ButtonLocation location(joystick, button);
         if (data_.PosEdge(location)) {
-          LOG(INFO, "PosEdge(%d, %d)\n", joystick, button);
+          AOS_LOG(INFO, "PosEdge(%d, %d)\n", joystick, button);
         }
         if (data_.NegEdge(location)) {
-          LOG(INFO, "NegEdge(%d, %d)\n", joystick, button);
+          AOS_LOG(INFO, "NegEdge(%d, %d)\n", joystick, button);
         }
       }
       if (data_.GetPOV(joystick) != data_.GetOldPOV(joystick)) {
-        LOG(INFO, "POV %d %d->%d\n", joystick, data_.GetOldPOV(joystick),
-            data_.GetPOV(joystick));
+        AOS_LOG(INFO, "POV %d %d->%d\n", joystick, data_.GetOldPOV(joystick),
+                data_.GetPOV(joystick));
       }
     }
   }
   {
     using driver_station::ControlBit;
     if (data_.PosEdge(ControlBit::kFmsAttached)) {
-      LOG(INFO, "PosEdge(kFmsAttached)\n");
+      AOS_LOG(INFO, "PosEdge(kFmsAttached)\n");
     }
     if (data_.NegEdge(ControlBit::kFmsAttached)) {
-      LOG(INFO, "NegEdge(kFmsAttached)\n");
+      AOS_LOG(INFO, "NegEdge(kFmsAttached)\n");
     }
     if (data_.PosEdge(ControlBit::kAutonomous)) {
-      LOG(INFO, "PosEdge(kAutonomous)\n");
+      AOS_LOG(INFO, "PosEdge(kAutonomous)\n");
     }
     if (data_.NegEdge(ControlBit::kAutonomous)) {
-      LOG(INFO, "NegEdge(kAutonomous)\n");
+      AOS_LOG(INFO, "NegEdge(kAutonomous)\n");
     }
     if (data_.PosEdge(ControlBit::kEnabled)) {
-      LOG(INFO, "PosEdge(kEnabled)\n");
+      AOS_LOG(INFO, "PosEdge(kEnabled)\n");
     }
     if (data_.NegEdge(ControlBit::kEnabled)) {
-      LOG(INFO, "NegEdge(kEnabled)\n");
+      AOS_LOG(INFO, "NegEdge(kEnabled)\n");
     }
   }
 

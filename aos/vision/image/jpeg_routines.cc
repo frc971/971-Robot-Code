@@ -66,7 +66,7 @@ void decompress_add_huff_table(j_decompress_ptr cinfo, JHUFF_TBL **htblptr,
   int nsymbols = 0;
   for (int len = 1; len <= 16; len++) nsymbols += bits[len];
   if (nsymbols < 1 || nsymbols > 256) {
-    LOG(FATAL, "%s:%d: Error, bad huffman table", __FILE__, __LINE__);
+    AOS_LOG(FATAL, "%s:%d: Error, bad huffman table", __FILE__, __LINE__);
   }
 
   memcpy((*htblptr)->huffval, val, nsymbols * sizeof(uint8_t));

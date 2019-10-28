@@ -18,7 +18,7 @@ SignalFd::SignalFd(::std::initializer_list<int> signals) {
   }
   // Then build a signalfd.  Make it nonblocking so it works well with an epoll
   // loop, and have it close on exec.
-  PCHECK(fd_ = signalfd(-1, &mask_, SFD_NONBLOCK | SFD_CLOEXEC));
+  AOS_PCHECK(fd_ = signalfd(-1, &mask_, SFD_NONBLOCK | SFD_CLOEXEC));
   // Now that we have a consumer of the signal, block the signals so the
   // signalfd gets them.
   pthread_sigmask(SIG_BLOCK, &mask_, nullptr);
@@ -27,7 +27,7 @@ SignalFd::SignalFd(::std::initializer_list<int> signals) {
 SignalFd::~SignalFd() {
   // Unwind the constructor.  Unblock the signals and close the fd.
   pthread_sigmask(SIG_UNBLOCK, &mask_, nullptr);
-  PCHECK(close(fd_));
+  AOS_PCHECK(close(fd_));
 }
 
 signalfd_siginfo SignalFd::Read() {

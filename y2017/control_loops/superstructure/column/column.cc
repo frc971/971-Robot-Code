@@ -71,10 +71,10 @@ void ColumnProfiledSubsystem::UpdateOffset(double indexer_offset,
   const double indexer_doffset = indexer_offset - offset_(0, 0);
   const double turret_doffset = turret_offset - offset_(1, 0);
 
-  LOG(INFO, "Adjusting indexer offset from %f to %f\n", offset_(0, 0),
-      indexer_offset);
-  LOG(INFO, "Adjusting turret offset from %f to %f\n", offset_(1, 0),
-      turret_offset);
+  AOS_LOG(INFO, "Adjusting indexer offset from %f to %f\n", offset_(0, 0),
+          indexer_offset);
+  AOS_LOG(INFO, "Adjusting turret offset from %f to %f\n", offset_(1, 0),
+          turret_offset);
 
   loop_->mutable_X_hat()(0, 0) += indexer_doffset;
   loop_->mutable_X_hat()(2, 0) += turret_doffset + indexer_doffset;
@@ -99,7 +99,7 @@ void ColumnProfiledSubsystem::Correct(const ColumnPosition &new_position) {
   estimators_[0].UpdateEstimate(new_position);
 
   if (estimators_[0].error()) {
-    LOG(ERROR, "zeroing error\n");
+    AOS_LOG(ERROR, "zeroing error\n");
     return;
   }
 
@@ -162,13 +162,13 @@ void ColumnProfiledSubsystem::CapGoal(const char *name,
   // Limit the goal to min/max allowable positions.
   if (zeroed()) {
     if ((*goal)(2, 0) > range_.upper) {
-      LOG(WARNING, "Goal %s above limit, %f > %f\n", name, (*goal)(2, 0),
-          range_.upper);
+      AOS_LOG(WARNING, "Goal %s above limit, %f > %f\n", name, (*goal)(2, 0),
+              range_.upper);
       (*goal)(2, 0) = range_.upper;
     }
     if ((*goal)(2, 0) < range_.lower) {
-      LOG(WARNING, "Goal %s below limit, %f < %f\n", name, (*goal)(2, 0),
-          range_.lower);
+      AOS_LOG(WARNING, "Goal %s below limit, %f < %f\n", name, (*goal)(2, 0),
+              range_.lower);
       (*goal)(2, 0) = range_.lower;
     }
   } else {
@@ -181,13 +181,13 @@ void ColumnProfiledSubsystem::CapGoal(const char *name,
     // Upper - lower hard may be a bit generous, but we are moving slow.
 
     if ((*goal)(2, 0) > kMaxRange) {
-      LOG(WARNING, "Goal %s above limit, %f > %f\n", name, (*goal)(2, 0),
-          kMaxRange);
+      AOS_LOG(WARNING, "Goal %s above limit, %f > %f\n", name, (*goal)(2, 0),
+              kMaxRange);
       (*goal)(2, 0) = kMaxRange;
     }
     if ((*goal)(2, 0) < -kMaxRange) {
-      LOG(WARNING, "Goal %s below limit, %f < %f\n", name, (*goal)(2, 0),
-          -kMaxRange);
+      AOS_LOG(WARNING, "Goal %s below limit, %f < %f\n", name, (*goal)(2, 0),
+              -kMaxRange);
       (*goal)(2, 0) = -kMaxRange;
     }
   }
@@ -241,7 +241,7 @@ void ColumnProfiledSubsystem::Update(bool disable) {
     loop_->mutable_X_hat(4, 0) = 0.0;
     loop_->mutable_X_hat(5, 0) = 0.0;
 
-    LOG(INFO, "Resetting\n");
+    AOS_LOG(INFO, "Resetting\n");
     stuck_indexer_detector_->mutable_X_hat() = loop_->X_hat();
     should_reset_ = false;
     saturated_ = false;
@@ -294,9 +294,9 @@ bool ColumnProfiledSubsystem::CheckHardLimits() {
 
   if (turret_position() > range_.upper_hard ||
       turret_position() < range_.lower_hard) {
-    LOG(ERROR,
-        "ColumnProfiledSubsystem at %f out of bounds [%f, %f], ESTOPing\n",
-        turret_position(), range_.lower_hard, range_.upper_hard);
+    AOS_LOG(ERROR,
+            "ColumnProfiledSubsystem at %f out of bounds [%f, %f], ESTOPing\n",
+            turret_position(), range_.lower_hard, range_.upper_hard);
     return true;
   }
 
@@ -465,7 +465,8 @@ void Column::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
                      profiled_subsystem_.goal(2, 0) -
                          kStuckZeroingTrackingError ||
                  profiled_subsystem_.saturated()) {
-        LOG(INFO,
+        AOS_LOG(
+            INFO,
             "Turret stuck going positive, switching directions.  At %f, goal "
             "%f\n",
             profiled_subsystem_.turret_position(),
@@ -499,7 +500,8 @@ void Column::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
                          kStuckZeroingTrackingError ||
                  profiled_subsystem_.saturated()) {
         // The turret got too far behind.  Declare it stuck and reverse.
-        LOG(INFO,
+        AOS_LOG(
+            INFO,
             "Turret stuck going negative, switching directions.  At %f, goal "
             "%f\n",
             profiled_subsystem_.turret_position(),
@@ -530,7 +532,8 @@ void Column::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
 
         if (unsafe_turret_goal->track) {
           if (vision_time_adjuster_.valid()) {
-            LOG(INFO, "Vision aligning to %f\n", vision_time_adjuster_.goal());
+            AOS_LOG(INFO, "Vision aligning to %f\n",
+                    vision_time_adjuster_.goal());
             profiled_subsystem_.set_turret_unprofiled_goal(
                 vision_time_adjuster_.goal() + vision_error_);
           }
@@ -552,7 +555,7 @@ void Column::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
     } break;
 
     case State::ESTOP:
-      LOG(ERROR, "Estop\n");
+      AOS_LOG(ERROR, "Estop\n");
       disable = true;
       break;
   }
@@ -574,8 +577,8 @@ void Column::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
         indexer_state_ = IndexerState::REVERSING;
         last_transition_time_ = monotonic_now;
         profiled_subsystem_.PartialIndexerReset();
-        LOG(INFO, "Partial indexer reset while going forwards\n");
-        LOG(INFO, "Indexer RUNNING -> REVERSING\n");
+        AOS_LOG(INFO, "Partial indexer reset while going forwards\n");
+        AOS_LOG(INFO, "Indexer RUNNING -> REVERSING\n");
       }
       break;
     case IndexerState::REVERSING:
@@ -588,12 +591,12 @@ void Column::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
            monotonic_now > last_transition_time_ + kReverseMinTimeout) ||
           monotonic_now > kReverseTimeout + last_transition_time_) {
         indexer_state_ = IndexerState::RUNNING;
-        LOG(INFO, "Indexer REVERSING -> RUNNING, stuck %d\n",
-            profiled_subsystem_.IsIndexerStuck());
+        AOS_LOG(INFO, "Indexer REVERSING -> RUNNING, stuck %d\n",
+                profiled_subsystem_.IsIndexerStuck());
 
         // Only reset if we got stuck going this way too.
         if (monotonic_now > kReverseTimeout + last_transition_time_) {
-          LOG(INFO, "Partial indexer reset while reversing\n");
+          AOS_LOG(INFO, "Partial indexer reset while reversing\n");
           profiled_subsystem_.PartialIndexerReset();
         }
         last_transition_time_ = monotonic_now;

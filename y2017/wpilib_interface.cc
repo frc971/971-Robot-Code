@@ -260,7 +260,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
           auto_mode_message->mode |= 1 << i;
         }
       }
-      LOG_STRUCT(DEBUG, "auto mode", *auto_mode_message);
+      AOS_LOG_STRUCT(DEBUG, "auto mode", *auto_mode_message);
       auto_mode_message.Send();
     }
   }
@@ -315,13 +315,13 @@ class SolenoidWriter {
 
   void Loop(const int iterations) {
     if (iterations != 1) {
-      LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
+      AOS_LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
     }
 
     {
       superstructure_output_fetcher_.Fetch();
       if (superstructure_output_fetcher_.get()) {
-        LOG_STRUCT(DEBUG, "solenoids", *superstructure_output_fetcher_);
+        AOS_LOG_STRUCT(DEBUG, "solenoids", *superstructure_output_fetcher_);
         lights_->Set(superstructure_output_fetcher_->lights_on);
         rgb_lights_->Set(superstructure_output_fetcher_->red_light_on |
                          superstructure_output_fetcher_->green_light_on |
@@ -387,7 +387,7 @@ class SuperstructureWriter
 
  private:
   virtual void Write(const SuperstructureQueue::Output &output) override {
-    LOG_STRUCT(DEBUG, "will output", output);
+    AOS_LOG_STRUCT(DEBUG, "will output", output);
     intake_victor_->SetSpeed(::aos::Clip(output.voltage_intake,
                                          -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
@@ -410,7 +410,7 @@ class SuperstructureWriter
   }
 
   virtual void Stop() override {
-    LOG(WARNING, "Superstructure output too old.\n");
+    AOS_LOG(WARNING, "Superstructure output too old.\n");
     intake_victor_->SetDisabled();
     intake_rollers_victor_->SetDisabled();
     indexer_victor_->SetDisabled();

@@ -97,10 +97,10 @@ void Main() {
 
   ::std::vector<double> backward_plan = trajectory.plan();
 
-  LOG(INFO, "Took %fms to plan\n",
-      chrono::duration_cast<chrono::duration<double, ::std::milli>>(end_time -
-                                                                    start_time)
-          .count());
+  AOS_LOG(INFO, "Took %fms to plan\n",
+          chrono::duration_cast<chrono::duration<double, ::std::milli>>(
+              end_time - start_time)
+              .count());
 
   // Now, compute the xva as a function of time.
   ::std::vector<double> length_plan_t;

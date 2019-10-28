@@ -263,7 +263,7 @@ class Subsystem : public ::aos::controls::ControlLoop<QueueGroup> {
   void RunIteration(const GoalType *unsafe_goal, const PositionType *position,
                     OutputType *output, StatusType *status) {
     if (this->WasReset()) {
-      LOG(ERROR, "WPILib reset, restarting\n");
+      AOS_LOG(ERROR, "WPILib reset, restarting\n");
       subsystem_.Reset();
     }
 

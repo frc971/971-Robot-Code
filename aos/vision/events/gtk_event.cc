@@ -27,8 +27,8 @@ void EpollLoop::RunWithGtkMain() {
       for (int i = 0; i < number_events; i++) {
         EpollEvent *event = static_cast<EpollEvent *>(events[i].data.ptr);
         if ((events[i].events & ~(EPOLLIN | EPOLLPRI)) != 0) {
-          LOG(FATAL, "unexpected epoll events set in %x on %d\n",
-              events[i].events, event->fd());
+          AOS_LOG(FATAL, "unexpected epoll events set in %x on %d\n",
+                  events[i].events, event->fd());
         }
         event->ReadEvent();
       }

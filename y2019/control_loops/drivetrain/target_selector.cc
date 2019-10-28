@@ -25,13 +25,13 @@ bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
     ball_mode_ = superstructure_goal_fetcher_->suction.gamepiece_mode == 0;
   }
   if (hint_fetcher_.Fetch()) {
-    LOG_STRUCT(DEBUG, "selector_hint", *hint_fetcher_);
+    AOS_LOG_STRUCT(DEBUG, "selector_hint", *hint_fetcher_);
     // suggested_target is unsigned so we don't check for >= 0.
     if (hint_fetcher_->suggested_target < 4) {
       target_hint_ =
           static_cast<SelectionHint>(hint_fetcher_->suggested_target);
     } else {
-      LOG(ERROR, "Got invalid suggested target.\n");
+      AOS_LOG(ERROR, "Got invalid suggested target.\n");
     }
   }
   *robot_pose_.mutable_pos() << state.x(), state.y(), 0.0;

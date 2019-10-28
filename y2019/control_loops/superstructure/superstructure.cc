@@ -30,7 +30,7 @@ void Superstructure::RunIteration(const SuperstructureQueue::Goal *unsafe_goal,
                                   SuperstructureQueue::Output *output,
                                   SuperstructureQueue::Status *status) {
   if (WasReset()) {
-    LOG(ERROR, "WPILib reset, restarting\n");
+    AOS_LOG(ERROR, "WPILib reset, restarting\n");
     elevator_.Reset();
     wrist_.Reset();
     intake_.Reset();
@@ -155,7 +155,7 @@ void Superstructure::SendColors(float red, float green, float blue) {
   new_status_light->blue = blue;
 
   if (!new_status_light.Send()) {
-    LOG(ERROR, "Failed to send lights.\n");
+    AOS_LOG(ERROR, "Failed to send lights.\n");
   }
 }
 

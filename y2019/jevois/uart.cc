@@ -8,8 +8,8 @@
 #ifdef __linux__
 #include "aos/logging/logging.h"
 #else
-#define CHECK(...)
-#define CHECK_GE(...)
+#define AOS_CHECK(...)
+#define AOS_CHECK_GE(...)
 #endif
 
 namespace frc971 {
@@ -43,11 +43,11 @@ UartToTeensyBuffer UartPackToTeensy(const CameraFrame &message) {
     crc = jevois_crc_update(crc, buffer.data(),
                             buffer.size() - remaining_space.size());
     crc = jevois_crc_finalize(crc);
-    CHECK_GE(static_cast<size_t>(remaining_space.size()), sizeof(crc));
+    AOS_CHECK_GE(static_cast<size_t>(remaining_space.size()), sizeof(crc));
     memcpy(&remaining_space[0], &crc, sizeof(crc));
     remaining_space = remaining_space.subspan(sizeof(crc));
   }
-  CHECK(remaining_space.empty());
+  AOS_CHECK(remaining_space.empty());
   UartToTeensyBuffer result;
   result.set_size(
       CobsEncode<uart_to_teensy_size()>(buffer, result.mutable_backing_array())
@@ -91,10 +91,11 @@ tl::optional<CameraFrame> UartUnpackToTeensy(gsl::span<const char> encoded_buffe
                                        buffer.size() - remaining_input.size());
     calculated_crc = jevois_crc_finalize(calculated_crc);
     uint16_t received_crc;
-    CHECK_GE(static_cast<size_t>(remaining_input.size()), sizeof(received_crc));
+    AOS_CHECK_GE(static_cast<size_t>(remaining_input.size()),
+                 sizeof(received_crc));
     memcpy(&received_crc, &remaining_input[0], sizeof(received_crc));
     remaining_input = remaining_input.subspan(sizeof(received_crc));
-    CHECK(remaining_input.empty());
+    AOS_CHECK(remaining_input.empty());
     if (calculated_crc != received_crc) {
       return tl::nullopt;
     }
@@ -129,11 +130,11 @@ UartToCameraBuffer UartPackToCamera(const CameraCalibration &message) {
     crc = jevois_crc_update(crc, buffer.data(),
                             buffer.size() - remaining_space.size());
     crc = jevois_crc_finalize(crc);
-    CHECK_GE(static_cast<size_t>(remaining_space.size()), sizeof(crc));
+    AOS_CHECK_GE(static_cast<size_t>(remaining_space.size()), sizeof(crc));
     memcpy(&remaining_space[0], &crc, sizeof(crc));
     remaining_space = remaining_space.subspan(sizeof(crc));
   }
-  CHECK(remaining_space.empty());
+  AOS_CHECK(remaining_space.empty());
   UartToCameraBuffer result;
   result.set_size(
       CobsEncode<uart_to_camera_size()>(buffer, result.mutable_backing_array())
@@ -180,10 +181,11 @@ tl::optional<CameraCalibration> UartUnpackToCamera(
                                        buffer.size() - remaining_input.size());
     calculated_crc = jevois_crc_finalize(calculated_crc);
     uint16_t received_crc;
-    CHECK_GE(static_cast<size_t>(remaining_input.size()), sizeof(received_crc));
+    AOS_CHECK_GE(static_cast<size_t>(remaining_input.size()),
+                 sizeof(received_crc));
     memcpy(&received_crc, &remaining_input[0], sizeof(received_crc));
     remaining_input = remaining_input.subspan(sizeof(received_crc));
-    CHECK(remaining_input.empty());
+    AOS_CHECK(remaining_input.empty());
     if (calculated_crc != received_crc) {
       return tl::nullopt;
     }

@@ -234,93 +234,93 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
       if (data.IsPressed(kIntakeOpenPosition)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedIntakeOpenGoal);
       } else if (data.IsPressed(kIntakePosition)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedIntakeGoal);
       } else if (data.IsPressed(kVerticalTuck)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kVerticalTuckGoal);
       } else if (data.IsPressed(kTuck)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedTuckGoal);
       } else if (data.PosEdge(kLongShot)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedLongShotGoal);
       } else if (data.PosEdge(kCloseShot)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedMediumShotGoal);
       } else if (data.PosEdge(kFenderShot)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedShortShotGoal);
       } else if (data.PosEdge(kHumanPlayerShot)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedHumanShotGoal);
       } else if (data.PosEdge(kUserLeft)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kFlipped254PassGoal);
       } else if (data.PosEdge(kUserRight)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedDemoShotGoal);
       } else if (data.PosEdge(kTrussShot)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedTrussShotGoal);
       }
     } else {
       if (data.IsPressed(kIntakeOpenPosition)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kIntakeOpenGoal);
       } else if (data.IsPressed(kIntakePosition)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kIntakeGoal);
       } else if (data.IsPressed(kVerticalTuck)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kVerticalTuckGoal);
       } else if (data.IsPressed(kTuck)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kTuckGoal);
       } else if (data.PosEdge(kLongShot)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kLongShotGoal);
       } else if (data.PosEdge(kCloseShot)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kCloseShotGoal);
       } else if (data.PosEdge(kFenderShot)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kFenderShotGoal);
       } else if (data.PosEdge(kHumanPlayerShot)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kHumanShotGoal);
       } else if (data.PosEdge(kUserLeft)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(k254PassGoal);
       } else if (data.PosEdge(kUserRight)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kDemoShotGoal);
       } else if (data.PosEdge(kTrussShot)) {
         CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+        AOS_LOG(DEBUG, "Canceling\n");
         SetGoal(kTrussShotGoal);
       }
     }
@@ -333,7 +333,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     if (data.IsPressed(kUnload) || data.IsPressed(kReload)) {
       CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+      AOS_LOG(DEBUG, "Canceling\n");
       intake_power_ = 0.0;
       velocity_compensation_ = 0.0;
     }
@@ -356,7 +356,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
         goal_angle +=
             SpeedToAngleOffset(drivetrain_status_fetcher_->robot_speed);
       } else {
-        LOG_INTERVAL(no_drivetrain_status_);
+        AOS_LOG_INTERVAL(no_drivetrain_status_);
       }
 
       if (moving_for_shot_) {
@@ -390,7 +390,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
         goal_message->centering = intaking ? 12.0 : 0.0;
 
         if (!goal_message.Send()) {
-          LOG(WARNING, "sending claw goal failed\n");
+          AOS_LOG(WARNING, "sending claw goal failed\n");
         }
       }
 
@@ -401,7 +401,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
         goal_message->unload_requested = data.IsPressed(kUnload);
         goal_message->load_requested = data.IsPressed(kReload);
         if (!goal_message.Send()) {
-          LOG(WARNING, "sending shooter goal failed\n");
+          AOS_LOG(WARNING, "sending shooter goal failed\n");
         }
       }
     }

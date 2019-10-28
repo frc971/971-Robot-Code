@@ -113,6 +113,7 @@ cc_library(
     deps = [
         "//aos/logging",
         "//aos/time",
+        "@com_github_google_glog//:glog",
     ],
 )
 

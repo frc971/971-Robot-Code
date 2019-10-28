@@ -54,10 +54,10 @@ JoystickSender::JoystickSender(::aos::EventLoop *event_loop)
           if (ds->GetStickPOVCount(i) > 0) {
             new_state->joysticks[i].pov = ds->GetStickPOV(i, 0);
           }
-          LOG_STRUCT(DEBUG, "joystick_state", *new_state);
+          AOS_LOG_STRUCT(DEBUG, "joystick_state", *new_state);
         }
         if (!new_state.Send()) {
-          LOG(WARNING, "sending joystick_state failed\n");
+          AOS_LOG(WARNING, "sending joystick_state failed\n");
         }
       });
     }

@@ -29,7 +29,7 @@ PDPFetcher::~PDPFetcher() {}
 
 void PDPFetcher::Loop(int iterations) {
   if (iterations != 1) {
-    LOG(DEBUG, "PDPFetcher skipped %d iterations\n", iterations - 1);
+    AOS_LOG(DEBUG, "PDPFetcher skipped %d iterations\n", iterations - 1);
   }
   auto message = pdp_values_sender_.MakeMessage();
   message->voltage = pdp_->GetVoltage();
@@ -38,9 +38,9 @@ void PDPFetcher::Loop(int iterations) {
   for (int i = 0; i < 16; ++i) {
     message->currents[i] = pdp_->GetCurrent(i);
   }
-  LOG_STRUCT(DEBUG, "got", *message);
+  AOS_LOG_STRUCT(DEBUG, "got", *message);
   if (!message.Send()) {
-    LOG(WARNING, "sending pdp values failed\n");
+    AOS_LOG(WARNING, "sending pdp values failed\n");
   }
 }
 

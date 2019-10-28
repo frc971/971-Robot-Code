@@ -58,7 +58,7 @@ void Superstructure::RunIteration(
   const ::aos::monotonic_clock::time_point monotonic_now =
       event_loop()->monotonic_now();
   if (WasReset()) {
-    LOG(ERROR, "WPILib reset, restarting\n");
+    AOS_LOG(ERROR, "WPILib reset, restarting\n");
     hood_.Reset();
     intake_.Reset();
     shooter_.Reset();
@@ -96,7 +96,7 @@ void Superstructure::RunIteration(
 
     if (::std::abs(robot_velocity) > 0.2) {
       if (unsafe_goal->use_vision_for_shots) {
-        LOG(INFO, "Moving too fast, resetting\n");
+        AOS_LOG(INFO, "Moving too fast, resetting\n");
       }
       distance_average_.Reset();
     }
@@ -114,11 +114,12 @@ void Superstructure::RunIteration(
           in_range = false;
         }
       }
-      LOG(DEBUG, "VisionDistance %f, hood %f shooter %f, indexer %f * M_PI\n",
+      AOS_LOG(
+          DEBUG, "VisionDistance %f, hood %f shooter %f, indexer %f * M_PI\n",
           status->vision_distance, hood_goal.angle,
           shooter_goal.angular_velocity, indexer_goal.angular_velocity / M_PI);
     } else {
-      LOG(DEBUG, "VisionNotValid %f\n", status->vision_distance);
+      AOS_LOG(DEBUG, "VisionNotValid %f\n", status->vision_distance);
       if (unsafe_goal->use_vision_for_shots) {
         in_range = false;
         indexer_goal.angular_velocity = 0.0;
@@ -174,7 +175,7 @@ void Superstructure::RunIteration(
 
   // Make some noise if someone left this set...
   if (ignore_collisions_) {
-    LOG(ERROR, "Collisions ignored\n");
+    AOS_LOG(ERROR, "Collisions ignored\n");
   }
 
   intake_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->intake) : nullptr,

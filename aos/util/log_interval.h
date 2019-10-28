@@ -66,7 +66,7 @@ class SimpleLogInterval {
                     const ::std::string &message)
       : interval_(interval), level_(level), message_(message) {}
 
-#define LOG_INTERVAL(simple_log) \
+#define AOS_LOG_INTERVAL(simple_log) \
   simple_log.WantToLog(LOG_SOURCENAME ": " STRINGIFY(__LINE__))
   void WantToLog(const char *context) {
     context_ = context;
@@ -75,7 +75,7 @@ class SimpleLogInterval {
 
   void Print() {
     if (interval_.ShouldLog()) {
-      CHECK_NOTNULL(context_);
+      AOS_CHECK_NOTNULL(context_);
       log_do(level_, "%s: %.*s %d times over %f sec\n", context_,
              static_cast<int>(message_.size()), message_.data(),
              interval_.Count(),

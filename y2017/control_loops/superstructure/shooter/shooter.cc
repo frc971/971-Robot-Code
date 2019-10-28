@@ -145,7 +145,7 @@ void Shooter::Iterate(const control_loops::ShooterGoal *goal,
   } else if (!status->ready) {
     min_ = ::std::min(min_, wheel_.dt_velocity());
   } else if (!last_ready_ && status->ready) {
-    LOG(INFO, "Shot min was [%f]\n", min_);
+    AOS_LOG(INFO, "Shot min was [%f]\n", min_);
   }
 
   if (output) {

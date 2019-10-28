@@ -15,7 +15,7 @@ namespace logging {
 
 // Logs the contents of a structure (or Queue message) and a constant string.
 // structure must be an instance of one of the generated queue types.
-#define LOG_STRUCT(level, message, structure)                       \
+#define AOS_LOG_STRUCT(level, message, structure)                   \
   do {                                                              \
     static const ::std::string kAosLoggingMessage(                  \
         LOG_SOURCENAME ": " STRINGIFY(__LINE__) ": " message);      \

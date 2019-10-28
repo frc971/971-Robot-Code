@@ -131,8 +131,8 @@ class FDPingPonger : public StaticPingPonger {
     size_t remaining = sizeof(*data);
     uint8_t *current = &(*data)[0];
     while (remaining > 0) {
-      const ssize_t result = PCHECK(read(fd, current, remaining));
-      CHECK_LE(static_cast<size_t>(result), remaining);
+      const ssize_t result = AOS_PCHECK(read(fd, current, remaining));
+      AOS_CHECK_LE(static_cast<size_t>(result), remaining);
       remaining -= result;
       current += result;
     }
@@ -142,8 +142,8 @@ class FDPingPonger : public StaticPingPonger {
     size_t remaining = sizeof(data);
     const uint8_t *current = &data[0];
     while (remaining > 0) {
-      const ssize_t result = PCHECK(write(fd, current, remaining));
-      CHECK_LE(static_cast<size_t>(result), remaining);
+      const ssize_t result = AOS_PCHECK(write(fd, current, remaining));
+      AOS_CHECK_LE(static_cast<size_t>(result), remaining);
       remaining -= result;
       current += result;
     }
@@ -157,15 +157,15 @@ class FDPingPonger : public StaticPingPonger {
 class PipePingPonger : public FDPingPonger {
  public:
   PipePingPonger() {
-    PCHECK(pipe(to_server));
-    PCHECK(pipe(from_server));
+    AOS_PCHECK(pipe(to_server));
+    AOS_PCHECK(pipe(from_server));
     Init(to_server[0], from_server[1], from_server[0], to_server[1]);
   }
   ~PipePingPonger() {
-    PCHECK(close(to_server[0]));
-    PCHECK(close(to_server[1]));
-    PCHECK(close(from_server[0]));
-    PCHECK(close(from_server[1]));
+    AOS_PCHECK(close(to_server[0]));
+    AOS_PCHECK(close(to_server[1]));
+    AOS_PCHECK(close(from_server[0]));
+    AOS_PCHECK(close(from_server[1]));
   }
 
  private:
@@ -181,10 +181,10 @@ class NamedPipePingPonger : public FDPingPonger {
     Init(server_read_, server_write_, client_read_, client_write_);
   }
   ~NamedPipePingPonger() {
-    PCHECK(close(server_read_));
-    PCHECK(close(client_write_));
-    PCHECK(close(client_read_));
-    PCHECK(close(server_write_));
+    AOS_PCHECK(close(server_read_));
+    AOS_PCHECK(close(client_write_));
+    AOS_PCHECK(close(client_read_));
+    AOS_PCHECK(close(server_write_));
   }
 
  private:
@@ -192,15 +192,15 @@ class NamedPipePingPonger : public FDPingPonger {
     {
       const int ret = unlink(name);
       if (ret == -1 && errno != ENOENT) {
-        PLOG(FATAL, "unlink(%s)", name);
+        AOS_PLOG(FATAL, "unlink(%s)", name);
       }
-      PCHECK(mkfifo(name, S_IWUSR | S_IRUSR));
+      AOS_PCHECK(mkfifo(name, S_IWUSR | S_IRUSR));
       // Have to open it nonblocking because the other end isn't open yet...
-      *read = PCHECK(open(name, O_RDONLY | O_NONBLOCK));
-      *write = PCHECK(open(name, O_WRONLY));
+      *read = AOS_PCHECK(open(name, O_RDONLY | O_NONBLOCK));
+      *write = AOS_PCHECK(open(name, O_WRONLY));
       {
-        const int flags = PCHECK(fcntl(*read, F_GETFL));
-        PCHECK(fcntl(*read, F_SETFL, flags & ~O_NONBLOCK));
+        const int flags = AOS_PCHECK(fcntl(*read, F_GETFL));
+        AOS_PCHECK(fcntl(*read, F_SETFL, flags & ~O_NONBLOCK));
       }
     }
   }
@@ -211,15 +211,15 @@ class NamedPipePingPonger : public FDPingPonger {
 class UnixPingPonger : public FDPingPonger {
  public:
   UnixPingPonger(int type) {
-    PCHECK(socketpair(AF_UNIX, type, 0, to_server));
-    PCHECK(socketpair(AF_UNIX, type, 0, from_server));
+    AOS_PCHECK(socketpair(AF_UNIX, type, 0, to_server));
+    AOS_PCHECK(socketpair(AF_UNIX, type, 0, from_server));
     Init(to_server[0], from_server[1], from_server[0], to_server[1]);
   }
   ~UnixPingPonger() {
-    PCHECK(close(to_server[0]));
-    PCHECK(close(to_server[1]));
-    PCHECK(close(from_server[0]));
-    PCHECK(close(from_server[1]));
+    AOS_PCHECK(close(to_server[0]));
+    AOS_PCHECK(close(to_server[1]));
+    AOS_PCHECK(close(from_server[0]));
+    AOS_PCHECK(close(from_server[1]));
   }
 
  private:
@@ -229,42 +229,44 @@ class UnixPingPonger : public FDPingPonger {
 class TCPPingPonger : public FDPingPonger {
  public:
   TCPPingPonger(bool nodelay) {
-    server_ = PCHECK(socket(AF_INET, SOCK_STREAM, 0));
+    server_ = AOS_PCHECK(socket(AF_INET, SOCK_STREAM, 0));
     if (nodelay) {
       const int yes = 1;
-      PCHECK(setsockopt(server_, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(yes)));
+      AOS_PCHECK(
+          setsockopt(server_, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(yes)));
     }
     {
       sockaddr_in server_address;
       memset(&server_address, 0, sizeof(server_address));
       server_address.sin_family = AF_INET;
       server_address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-      PCHECK(bind(server_, reinterpret_cast<sockaddr *>(&server_address),
-                  sizeof(server_address)));
+      AOS_PCHECK(bind(server_, reinterpret_cast<sockaddr *>(&server_address),
+                      sizeof(server_address)));
     }
-    PCHECK(listen(server_, 1));
+    AOS_PCHECK(listen(server_, 1));
 
-    client_ = PCHECK(socket(AF_INET, SOCK_STREAM, 0));
+    client_ = AOS_PCHECK(socket(AF_INET, SOCK_STREAM, 0));
     if (nodelay) {
       const int yes = 1;
-      PCHECK(setsockopt(client_, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(yes)));
+      AOS_PCHECK(
+          setsockopt(client_, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(yes)));
     }
     {
       sockaddr_in client_address;
       unsigned int length = sizeof(client_address);
-      PCHECK(getsockname(server_, reinterpret_cast<sockaddr *>(&client_address),
-                         &length));
-      PCHECK(connect(client_, reinterpret_cast<sockaddr *>(&client_address),
-                     length));
+      AOS_PCHECK(getsockname(
+          server_, reinterpret_cast<sockaddr *>(&client_address), &length));
+      AOS_PCHECK(connect(client_, reinterpret_cast<sockaddr *>(&client_address),
+                         length));
     }
-    server_connection_ = PCHECK(accept(server_, nullptr, 0));
+    server_connection_ = AOS_PCHECK(accept(server_, nullptr, 0));
 
     Init(server_connection_, server_connection_, client_, client_);
   }
   ~TCPPingPonger() {
-    PCHECK(close(client_));
-    PCHECK(close(server_connection_));
-    PCHECK(close(server_));
+    AOS_PCHECK(close(client_));
+    AOS_PCHECK(close(server_connection_));
+    AOS_PCHECK(close(server_));
   }
 
  private:
@@ -280,32 +282,32 @@ class UDPPingPonger : public FDPingPonger {
     Init(server_read_, server_write_, client_read_, client_write_);
   }
   ~UDPPingPonger() {
-    PCHECK(close(server_read_));
-    PCHECK(close(client_write_));
-    PCHECK(close(client_read_));
-    PCHECK(close(server_write_));
+    AOS_PCHECK(close(server_read_));
+    AOS_PCHECK(close(client_write_));
+    AOS_PCHECK(close(client_read_));
+    AOS_PCHECK(close(server_write_));
   }
 
  private:
   void CreatePair(int *server, int *client) {
-    *server = PCHECK(socket(AF_INET, SOCK_DGRAM, 0));
+    *server = AOS_PCHECK(socket(AF_INET, SOCK_DGRAM, 0));
     {
       sockaddr_in server_address;
       memset(&server_address, 0, sizeof(server_address));
       server_address.sin_family = AF_INET;
       server_address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
       // server_address.sin_port = htons(server_ + 3000);
-      PCHECK(bind(*server, reinterpret_cast<sockaddr *>(&server_address),
-                  sizeof(server_address)));
+      AOS_PCHECK(bind(*server, reinterpret_cast<sockaddr *>(&server_address),
+                      sizeof(server_address)));
     }
-    *client = PCHECK(socket(AF_INET, SOCK_DGRAM, 0));
+    *client = AOS_PCHECK(socket(AF_INET, SOCK_DGRAM, 0));
     {
       sockaddr_in client_address;
       unsigned int length = sizeof(client_address);
-      PCHECK(getsockname(*server, reinterpret_cast<sockaddr *>(&client_address),
-                         &length));
-      PCHECK(connect(*client, reinterpret_cast<sockaddr *>(&client_address),
-                     length));
+      AOS_PCHECK(getsockname(
+          *server, reinterpret_cast<sockaddr *>(&client_address), &length));
+      AOS_PCHECK(connect(*client, reinterpret_cast<sockaddr *>(&client_address),
+                         length));
     }
   }
 
@@ -442,9 +444,9 @@ class AOSMutexPingPonger : public ConditionVariablePingPonger {
     AOSConditionVariable() : condition_(&mutex_) {}
 
    private:
-    void Lock() override { CHECK(!mutex_.Lock()); }
+    void Lock() override { AOS_CHECK(!mutex_.Lock()); }
     void Unlock() override { mutex_.Unlock(); }
-    void Wait() override { CHECK(!condition_.Wait()); }
+    void Wait() override { AOS_CHECK(!condition_.Wait()); }
     void Signal() override { condition_.Broadcast(); }
 
     Mutex mutex_;
@@ -487,40 +489,42 @@ class PthreadMutexPingPonger : public ConditionVariablePingPonger {
     PthreadConditionVariable(bool pshared, bool pi) {
       {
         pthread_condattr_t cond_attr;
-        PRCHECK(pthread_condattr_init(&cond_attr));
+        AOS_PRCHECK(pthread_condattr_init(&cond_attr));
         if (pshared) {
-          PRCHECK(
+          AOS_PRCHECK(
               pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED));
         }
-        PRCHECK(pthread_cond_init(&condition_, &cond_attr));
-        PRCHECK(pthread_condattr_destroy(&cond_attr));
+        AOS_PRCHECK(pthread_cond_init(&condition_, &cond_attr));
+        AOS_PRCHECK(pthread_condattr_destroy(&cond_attr));
       }
 
       {
         pthread_mutexattr_t mutex_attr;
-        PRCHECK(pthread_mutexattr_init(&mutex_attr));
+        AOS_PRCHECK(pthread_mutexattr_init(&mutex_attr));
         if (pshared) {
-          PRCHECK(pthread_mutexattr_setpshared(&mutex_attr,
-                                               PTHREAD_PROCESS_SHARED));
+          AOS_PRCHECK(pthread_mutexattr_setpshared(&mutex_attr,
+                                                   PTHREAD_PROCESS_SHARED));
         }
         if (pi) {
-          PRCHECK(
+          AOS_PRCHECK(
               pthread_mutexattr_setprotocol(&mutex_attr, PTHREAD_PRIO_INHERIT));
         }
-        PRCHECK(pthread_mutex_init(&mutex_, nullptr));
-        PRCHECK(pthread_mutexattr_destroy(&mutex_attr));
+        AOS_PRCHECK(pthread_mutex_init(&mutex_, nullptr));
+        AOS_PRCHECK(pthread_mutexattr_destroy(&mutex_attr));
       }
     }
     ~PthreadConditionVariable() {
-      PRCHECK(pthread_mutex_destroy(&mutex_));
-      PRCHECK(pthread_cond_destroy(&condition_));
+      AOS_PRCHECK(pthread_mutex_destroy(&mutex_));
+      AOS_PRCHECK(pthread_cond_destroy(&condition_));
     }
 
    private:
-    void Lock() override { PRCHECK(pthread_mutex_lock(&mutex_)); }
-    void Unlock() override { PRCHECK(pthread_mutex_unlock(&mutex_)); }
-    void Wait() override { PRCHECK(pthread_cond_wait(&condition_, &mutex_)); }
-    void Signal() override { PRCHECK(pthread_cond_broadcast(&condition_)); }
+    void Lock() override { AOS_PRCHECK(pthread_mutex_lock(&mutex_)); }
+    void Unlock() override { AOS_PRCHECK(pthread_mutex_unlock(&mutex_)); }
+    void Wait() override {
+      AOS_PRCHECK(pthread_cond_wait(&condition_, &mutex_));
+    }
+    void Signal() override { AOS_PRCHECK(pthread_cond_broadcast(&condition_)); }
 
     pthread_cond_t condition_;
     pthread_mutex_t mutex_;
@@ -537,21 +541,21 @@ class EventFDPingPonger : public SemaphorePingPonger {
  private:
   class EventFDSemaphore : public SemaphoreInterface {
    public:
-    EventFDSemaphore() : fd_(PCHECK(eventfd(0, 0))) {}
-    ~EventFDSemaphore() { PCHECK(close(fd_)); }
+    EventFDSemaphore() : fd_(AOS_PCHECK(eventfd(0, 0))) {}
+    ~EventFDSemaphore() { AOS_PCHECK(close(fd_)); }
 
    private:
     void Get() override {
       uint64_t value;
       if (read(fd_, &value, sizeof(value)) != sizeof(value)) {
-        PLOG(FATAL, "reading from eventfd %d failed\n", fd_);
+        AOS_PLOG(FATAL, "reading from eventfd %d failed\n", fd_);
       }
-      CHECK_EQ(1u, value);
+      AOS_CHECK_EQ(1u, value);
     }
     void Put() override {
       uint64_t value = 1;
       if (write(fd_, &value, sizeof(value)) != sizeof(value)) {
-        PLOG(FATAL, "writing to eventfd %d failed\n", fd_);
+        AOS_PLOG(FATAL, "writing to eventfd %d failed\n", fd_);
       }
     }
 
@@ -569,7 +573,7 @@ class SysvSemaphorePingPonger : public SemaphorePingPonger {
  private:
   class SysvSemaphore : public SemaphoreInterface {
    public:
-    SysvSemaphore() : sem_id_(PCHECK(semget(IPC_PRIVATE, 1, 0600))) {}
+    SysvSemaphore() : sem_id_(AOS_PCHECK(semget(IPC_PRIVATE, 1, 0600))) {}
 
    private:
     void Get() override {
@@ -577,14 +581,14 @@ class SysvSemaphorePingPonger : public SemaphorePingPonger {
       op.sem_num = 0;
       op.sem_op = -1;
       op.sem_flg = 0;
-      PCHECK(semop(sem_id_, &op, 1));
+      AOS_PCHECK(semop(sem_id_, &op, 1));
     }
     void Put() override {
       struct sembuf op;
       op.sem_num = 0;
       op.sem_op = 1;
       op.sem_flg = 0;
-      PCHECK(semop(sem_id_, &op, 1));
+      AOS_PCHECK(semop(sem_id_, &op, 1));
     }
 
     const int sem_id_;
@@ -605,8 +609,8 @@ class PosixSemaphorePingPonger : public SemaphorePingPonger {
     PosixSemaphore(sem_t *sem) : sem_(sem) {}
 
    private:
-    void Get() override { PCHECK(sem_wait(sem_)); }
-    void Put() override { PCHECK(sem_post(sem_)); }
+    void Get() override { AOS_PCHECK(sem_wait(sem_)); }
+    void Put() override { AOS_PCHECK(sem_post(sem_)); }
 
     sem_t *const sem_;
   };
@@ -615,18 +619,18 @@ class PosixSemaphorePingPonger : public SemaphorePingPonger {
 class SysvQueuePingPonger : public StaticPingPonger {
  public:
   SysvQueuePingPonger()
-      : ping_(PCHECK(msgget(IPC_PRIVATE, 0600))),
-        pong_(PCHECK(msgget(IPC_PRIVATE, 0600))) {}
+      : ping_(AOS_PCHECK(msgget(IPC_PRIVATE, 0600))),
+        pong_(AOS_PCHECK(msgget(IPC_PRIVATE, 0600))) {}
 
   const Data *Ping() override {
     {
       Message to_send;
       memcpy(&to_send.data, PingData(), sizeof(Data));
-      PCHECK(msgsnd(ping_, &to_send, sizeof(Data), 0));
+      AOS_PCHECK(msgsnd(ping_, &to_send, sizeof(Data), 0));
     }
     {
       Message received;
-      PCHECK(msgrcv(pong_, &received, sizeof(Data), 1, 0));
+      AOS_PCHECK(msgrcv(pong_, &received, sizeof(Data), 1, 0));
       memcpy(&pong_received_, &received.data, sizeof(Data));
     }
     return &pong_received_;
@@ -635,7 +639,7 @@ class SysvQueuePingPonger : public StaticPingPonger {
   const Data *Wait() override {
     {
       Message received;
-      PCHECK(msgrcv(ping_, &received, sizeof(Data), 1, 0));
+      AOS_PCHECK(msgrcv(ping_, &received, sizeof(Data), 1, 0));
       memcpy(&ping_received_, &received.data, sizeof(Data));
     }
     return &ping_received_;
@@ -644,7 +648,7 @@ class SysvQueuePingPonger : public StaticPingPonger {
   virtual void Pong() override {
     Message to_send;
     memcpy(&to_send.data, PongData(), sizeof(Data));
-    PCHECK(msgsnd(pong_, &to_send, sizeof(Data), 0));
+    AOS_PCHECK(msgsnd(pong_, &to_send, sizeof(Data), 0));
   }
 
  private:
@@ -662,35 +666,37 @@ class PosixQueuePingPonger : public StaticPingPonger {
  public:
   PosixQueuePingPonger() : ping_(Open("/ping")), pong_(Open("/pong")) {}
   ~PosixQueuePingPonger() {
-    PCHECK(mq_close(ping_));
-    PCHECK(mq_close(pong_));
+    AOS_PCHECK(mq_close(ping_));
+    AOS_PCHECK(mq_close(pong_));
   }
 
   const Data *Ping() override {
-    PCHECK(mq_send(ping_, static_cast<char *>(static_cast<void *>(PingData())),
-                   sizeof(Data), 1));
-    PCHECK(mq_receive(pong_,
-                      static_cast<char *>(static_cast<void *>(&pong_received_)),
-                      sizeof(Data), nullptr));
+    AOS_PCHECK(mq_send(ping_,
+                       static_cast<char *>(static_cast<void *>(PingData())),
+                       sizeof(Data), 1));
+    AOS_PCHECK(mq_receive(
+        pong_, static_cast<char *>(static_cast<void *>(&pong_received_)),
+        sizeof(Data), nullptr));
     return &pong_received_;
   }
 
   const Data *Wait() override {
-    PCHECK(mq_receive(ping_,
-                      static_cast<char *>(static_cast<void *>(&ping_received_)),
-                      sizeof(Data), nullptr));
+    AOS_PCHECK(mq_receive(
+        ping_, static_cast<char *>(static_cast<void *>(&ping_received_)),
+        sizeof(Data), nullptr));
     return &ping_received_;
   }
 
   virtual void Pong() override {
-    PCHECK(mq_send(pong_, static_cast<char *>(static_cast<void *>(PongData())),
-                   sizeof(Data), 1));
+    AOS_PCHECK(mq_send(pong_,
+                       static_cast<char *>(static_cast<void *>(PongData())),
+                       sizeof(Data), 1));
   }
 
  private:
   mqd_t Open(const char *name) {
     if (mq_unlink(name) == -1 && errno != ENOENT) {
-      PLOG(FATAL, "mq_unlink(%s) failed", name);
+      AOS_PLOG(FATAL, "mq_unlink(%s) failed", name);
     }
     struct mq_attr attr;
     attr.mq_flags = 0;
@@ -699,7 +705,7 @@ class PosixQueuePingPonger : public StaticPingPonger {
     attr.mq_curmsgs = 0;
     const mqd_t r = mq_open(name, O_CREAT | O_RDWR | O_EXCL, 0600, &attr);
     if (r == reinterpret_cast<mqd_t>(-1)) {
-      PLOG(FATAL, "mq_open(%s, O_CREAT | O_RDWR | O_EXCL) failed", name);
+      AOS_PLOG(FATAL, "mq_open(%s, O_CREAT | O_RDWR | O_EXCL) failed", name);
     }
     return r;
   }
@@ -712,12 +718,12 @@ class PosixUnnamedSemaphorePingPonger : public PosixSemaphorePingPonger {
  public:
   PosixUnnamedSemaphorePingPonger(int pshared)
       : PosixSemaphorePingPonger(&ping_sem_, &pong_sem_) {
-    PCHECK(sem_init(&ping_sem_, pshared, 0));
-    PCHECK(sem_init(&pong_sem_, pshared, 0));
+    AOS_PCHECK(sem_init(&ping_sem_, pshared, 0));
+    AOS_PCHECK(sem_init(&pong_sem_, pshared, 0));
   }
   ~PosixUnnamedSemaphorePingPonger() {
-    PCHECK(sem_destroy(&ping_sem_));
-    PCHECK(sem_destroy(&pong_sem_));
+    AOS_PCHECK(sem_destroy(&ping_sem_));
+    AOS_PCHECK(sem_destroy(&pong_sem_));
   }
 
  private:
@@ -730,18 +736,18 @@ class PosixNamedSemaphorePingPonger : public PosixSemaphorePingPonger {
       : PosixSemaphorePingPonger(ping_sem_ = Open("/ping"),
                                  pong_sem_ = Open("/pong")) {}
   ~PosixNamedSemaphorePingPonger() {
-    PCHECK(sem_close(ping_sem_));
-    PCHECK(sem_close(pong_sem_));
+    AOS_PCHECK(sem_close(ping_sem_));
+    AOS_PCHECK(sem_close(pong_sem_));
   }
 
  private:
   sem_t *Open(const char *name) {
     if (sem_unlink(name) == -1 && errno != ENOENT) {
-      PLOG(FATAL, "shm_unlink(%s) failed", name);
+      AOS_PLOG(FATAL, "shm_unlink(%s) failed", name);
     }
     sem_t *const r = sem_open(name, O_CREAT | O_RDWR | O_EXCL, 0600, 0);
     if (r == SEM_FAILED) {
-      PLOG(FATAL, "sem_open(%s, O_CREAT | O_RDWR | O_EXCL) failed", name);
+      AOS_PLOG(FATAL, "sem_open(%s, O_CREAT | O_RDWR | O_EXCL) failed", name);
     }
     return r;
   }
@@ -756,14 +762,14 @@ class AOSQueuePingPonger : public PingPongerInterface {
         pong_queue_(RawQueue::Fetch("pong", sizeof(Data), 0, 1)) {}
 
   Data *PingData() override {
-    CHECK_EQ(nullptr, ping_to_send_);
+    AOS_CHECK_EQ(nullptr, ping_to_send_);
     ping_to_send_ = static_cast<Data *>(ping_queue_->GetMessage());
     return ping_to_send_;
   }
 
   const Data *Ping() override {
-    CHECK_NE(nullptr, ping_to_send_);
-    CHECK(ping_queue_->WriteMessage(ping_to_send_, RawQueue::kBlock));
+    AOS_CHECK_NE(nullptr, ping_to_send_);
+    AOS_CHECK(ping_queue_->WriteMessage(ping_to_send_, RawQueue::kBlock));
     ping_to_send_ = nullptr;
     pong_queue_->FreeMessage(pong_received_);
     pong_received_ =
@@ -779,14 +785,14 @@ class AOSQueuePingPonger : public PingPongerInterface {
   }
 
   Data *PongData() override {
-    CHECK_EQ(nullptr, pong_to_send_);
+    AOS_CHECK_EQ(nullptr, pong_to_send_);
     pong_to_send_ = static_cast<Data *>(pong_queue_->GetMessage());
     return pong_to_send_;
   }
 
   void Pong() override {
-    CHECK_NE(nullptr, pong_to_send_);
-    CHECK(pong_queue_->WriteMessage(pong_to_send_, RawQueue::kBlock));
+    AOS_CHECK_NE(nullptr, pong_to_send_);
+    AOS_CHECK(pong_queue_->WriteMessage(pong_to_send_, RawQueue::kBlock));
     pong_to_send_ = nullptr;
   }
 
@@ -887,7 +893,7 @@ int Main(int /*argc*/, char **argv) {
     memset(*to_send, i % 123, sizeof(*to_send));
     const PingPongerInterface::Data *received = ping_ponger->Ping();
     for (size_t ii = 0; ii < sizeof(*received); ++ii) {
-      CHECK_EQ(((i % 123) + 1) % 255, (*received)[ii]);
+      AOS_CHECK_EQ(((i % 123) + 1) % 255, (*received)[ii]);
     }
   }
 
@@ -903,14 +909,14 @@ int Main(int /*argc*/, char **argv) {
   ping_ponger->Ping();
   server.join();
 
-  LOG(INFO, "Took %f seconds to send %" PRId32 " messages\n",
-      ::aos::time::DurationInSeconds(end - start), FLAGS_messages);
+  AOS_LOG(INFO, "Took %f seconds to send %" PRId32 " messages\n",
+          ::aos::time::DurationInSeconds(end - start), FLAGS_messages);
   const chrono::nanoseconds per_message = (end - start) / FLAGS_messages;
   if (per_message >= chrono::seconds(1)) {
-    LOG(INFO, "More than 1 second per message ?!?\n");
+    AOS_LOG(INFO, "More than 1 second per message ?!?\n");
   } else {
-    LOG(INFO, "That is %" PRId32 " nanoseconds per message\n",
-        static_cast<int>(per_message.count()));
+    AOS_LOG(INFO, "That is %" PRId32 " nanoseconds per message\n",
+            static_cast<int>(per_message.count()));
   }
 
   return 0;

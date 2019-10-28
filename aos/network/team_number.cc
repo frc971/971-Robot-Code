@@ -47,7 +47,7 @@ uint16_t override_team;
 ::std::string GetHostname() {
   char buf[256];
   buf[sizeof(buf) - 1] = '\0';
-  PCHECK(gethostname(buf, sizeof(buf) - 1));
+  AOS_PCHECK(gethostname(buf, sizeof(buf) - 1));
   return buf;
 }
 
@@ -59,16 +59,16 @@ uint16_t *DoGetTeamNumber() {
   const char *override_number = getenv("AOS_TEAM_NUMBER");
   if (override_number != nullptr) {
     if (!::aos::util::StringToNumber(override_number, &r)) {
-      LOG(FATAL, "error parsing AOS_TEAM_NUMBER '%s'\n", override_number);
+      AOS_LOG(FATAL, "error parsing AOS_TEAM_NUMBER '%s'\n", override_number);
     }
-    LOG(WARNING, "team number overridden by AOS_TEAM_NUMBER to %" PRIu16 "\n",
-        r);
+    AOS_LOG(WARNING,
+            "team number overridden by AOS_TEAM_NUMBER to %" PRIu16 "\n", r);
   } else {
     int error = internal::ParseTeamNumber(GetHostname(), &r);
     if (error) {
-      LOG(FATAL, "Invalid hostname %s\n", GetHostname().c_str());
+      AOS_LOG(FATAL, "Invalid hostname %s\n", GetHostname().c_str());
     }
-    LOG(INFO, "team number is %" PRIu16 "\n", r);
+    AOS_LOG(INFO, "team number is %" PRIu16 "\n", r);
   }
   return &r;
 }

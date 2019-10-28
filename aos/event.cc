@@ -16,8 +16,8 @@ void Event::Wait() {
   while (__atomic_load_n(&impl_, __ATOMIC_SEQ_CST) == 0) {
     const int ret = futex_wait(&impl_);
     if (ret != 0) {
-      CHECK_EQ(-1, ret);
-      PLOG(FATAL, "futex_wait(%p) failed", &impl_);
+      AOS_CHECK_EQ(-1, ret);
+      AOS_PLOG(FATAL, "futex_wait(%p) failed", &impl_);
     }
   }
 }
@@ -37,8 +37,8 @@ bool Event::WaitTimeout(monotonic_clock::duration timeout) {
     const int ret = futex_wait_timeout(&impl_, &timeout_timespec);
     if (ret != 0) {
       if (ret == 2) return false;
-      CHECK_EQ(-1, ret);
-      PLOG(FATAL, "futex_wait(%p) failed", &impl_);
+      AOS_CHECK_EQ(-1, ret);
+      AOS_PLOG(FATAL, "futex_wait(%p) failed", &impl_);
     }
   }
 }
@@ -47,7 +47,7 @@ bool Event::WaitTimeout(monotonic_clock::duration timeout) {
 // to condition variable-based implementations.
 void Event::Set() {
   if (futex_set(&impl_) == -1) {
-    PLOG(FATAL, "futex_set(%p) failed", &impl_);
+    AOS_PLOG(FATAL, "futex_set(%p) failed", &impl_);
   }
 }
 

@@ -28,26 +28,26 @@ void ControlLoop<T>::IteratePosition(const PositionType &position) {
   no_sensor_state_.Print();
   motors_off_log_.Print();
 
-  LOG_STRUCT(DEBUG, "position", position);
+  AOS_LOG_STRUCT(DEBUG, "position", position);
 
   // Fetch the latest control loop goal. If there is no new
   // goal, we will just reuse the old one.
   goal_fetcher_.Fetch();
   const GoalType *goal = goal_fetcher_.get();
   if (goal) {
-    LOG_STRUCT(DEBUG, "goal", *goal);
+    AOS_LOG_STRUCT(DEBUG, "goal", *goal);
   } else {
-    LOG_INTERVAL(no_goal_);
+    AOS_LOG_INTERVAL(no_goal_);
   }
 
   const bool new_robot_state = robot_state_fetcher_.Fetch();
   if (!robot_state_fetcher_.get()) {
-    LOG_INTERVAL(no_sensor_state_);
+    AOS_LOG_INTERVAL(no_sensor_state_);
     return;
   }
   if (sensor_reader_pid_ != robot_state_fetcher_->reader_pid) {
-    LOG(INFO, "new sensor reader PID %" PRId32 ", old was %" PRId32 "\n",
-        robot_state_fetcher_->reader_pid, sensor_reader_pid_);
+    AOS_LOG(INFO, "new sensor reader PID %" PRId32 ", old was %" PRId32 "\n",
+            robot_state_fetcher_->reader_pid, sensor_reader_pid_);
     reset_ = true;
     sensor_reader_pid_ = robot_state_fetcher_->reader_pid;
   }
@@ -70,7 +70,7 @@ void ControlLoop<T>::IteratePosition(const PositionType &position) {
   joystick_state_fetcher_.Fetch();
   if (motors_off) {
     if (joystick_state_fetcher_.get() && joystick_state_fetcher_->enabled) {
-      LOG_INTERVAL(motors_off_log_);
+      AOS_LOG_INTERVAL(motors_off_log_);
     }
     outputs_enabled = false;
   }
@@ -87,7 +87,7 @@ void ControlLoop<T>::IteratePosition(const PositionType &position) {
     RunIteration(goal, &position, output.get(), status.get());
 
     output->SetTimeToNow();
-    LOG_STRUCT(DEBUG, "output", *output);
+    AOS_LOG_STRUCT(DEBUG, "output", *output);
     output.Send();
   } else {
     // The outputs are disabled, so pass nullptr in for the output.
@@ -96,7 +96,7 @@ void ControlLoop<T>::IteratePosition(const PositionType &position) {
   }
 
   status->SetTimeToNow();
-  LOG_STRUCT(DEBUG, "status", *status);
+  AOS_LOG_STRUCT(DEBUG, "status", *status);
   status.Send();
 }
 

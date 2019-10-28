@@ -113,7 +113,7 @@ class Reader : public ::aos::input::JoystickInput {
     drivetrain_message->quickturn = data.IsPressed(kQuickTurn);
 
     if (!drivetrain_message.Send()) {
-      LOG(WARNING, "sending stick values failed\n");
+      AOS_LOG(WARNING, "sending stick values failed\n");
     }
   }
 
@@ -125,7 +125,7 @@ class Reader : public ::aos::input::JoystickInput {
     accessories_message->sticks[0] = data.GetAxis(kAdjustClawGoal);
     accessories_message->sticks[1] = data.GetAxis(kAdjustClawSeparation);
     if (!accessories_message.Send()) {
-      LOG(WARNING, "sending accessories goal failed\n");
+      AOS_LOG(WARNING, "sending accessories goal failed\n");
     }
   }
 

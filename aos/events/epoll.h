@@ -8,7 +8,6 @@
 #include <atomic>
 #include <vector>
 
-#include "aos/logging/logging.h"
 #include "aos/time/time.h"
 
 namespace aos {
@@ -18,7 +17,7 @@ namespace internal {
 class TimerFd {
  public:
   TimerFd();
-  ~TimerFd() { PCHECK(close(fd_) == 0); }
+  ~TimerFd();
 
   TimerFd(const TimerFd &) = delete;
   TimerFd &operator=(const TimerFd &) = delete;

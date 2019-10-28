@@ -192,6 +192,7 @@ cc_library(
         "//aos/logging",
         "//aos/time",
         "//aos/util:compiler_memory_barrier",
+        "@com_github_google_glog//:glog",
     ],
 )
 

@@ -7,7 +7,7 @@ namespace aos {
 void ScopedFD::Close() {
   if (fd_ != -1) {
     if (close(fd_) == -1) {
-      PLOG(WARNING, "close(%d) failed", fd_);
+      AOS_PLOG(WARNING, "close(%d) failed", fd_);
     }
   }
 }

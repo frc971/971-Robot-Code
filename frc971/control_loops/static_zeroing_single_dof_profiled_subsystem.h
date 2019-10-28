@@ -185,11 +185,11 @@ void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator,
 
         double safe_goal = goal->unsafe_goal;
         if (safe_goal < min_position_) {
-          LOG(DEBUG, "Limiting to %f from %f\n", min_position_, safe_goal);
+          AOS_LOG(DEBUG, "Limiting to %f from %f\n", min_position_, safe_goal);
           safe_goal = min_position_;
         }
         if (safe_goal > max_position_) {
-          LOG(DEBUG, "Limiting to %f from %f\n", max_position_, safe_goal);
+          AOS_LOG(DEBUG, "Limiting to %f from %f\n", max_position_, safe_goal);
           safe_goal = max_position_;
         }
         profiled_subsystem_.set_unprofiled_goal(safe_goal);
@@ -197,7 +197,7 @@ void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator,
     } break;
 
     case State::ESTOP:
-      LOG(ERROR, "Estop\n");
+      AOS_LOG(ERROR, "Estop\n");
       disabled = true;
       break;
   }

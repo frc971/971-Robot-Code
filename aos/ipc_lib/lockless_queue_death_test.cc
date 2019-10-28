@@ -15,10 +15,10 @@
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/lockless_queue_memory.h"
 #include "aos/libc/aos_strsignal.h"
-#include "aos/logging/logging.h"
 #include "aos/testing/prevent_exit.h"
 #include "aos/testing/test_logging.h"
 #include "gflags/gflags.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 
 namespace aos {
@@ -148,12 +148,11 @@ bool IsInLocklessQueueMemory(void *address) {
 // Calls mprotect(2) for the entire shared memory region with the given prot.
 void ShmProtectOrDie(int prot) {
   GlobalState *my_global_state = global_state.load(::std::memory_order_relaxed);
-  if (mprotect(my_global_state->lockless_queue_memory,
-               my_global_state->lockless_queue_memory_size, prot) == -1) {
-    PLOG(FATAL, "mprotect(%p, %zu, %x) failed",
-         my_global_state->lockless_queue_memory,
-         my_global_state->lockless_queue_memory_size, prot);
-  }
+  PCHECK(mprotect(my_global_state->lockless_queue_memory,
+                  my_global_state->lockless_queue_memory_size, prot) != -1)
+      << ": mprotect(" << my_global_state->lockless_queue_memory << ", "
+      << my_global_state->lockless_queue_memory_size << ", 0x" << std::hex
+      << prot << ") failed";
 }
 
 // Checks a write into the queue and conditionally dies.  Tracks the write.
@@ -277,13 +276,13 @@ void InstallHandler(int signal, void (*handler)(int, siginfo_t *, void *),
     SigactionType real_sigaction =
         reinterpret_cast<SigactionType>(dlsym(RTLD_NEXT, "sigaction"));
     if (sigaction == real_sigaction) {
-      LOG(WARNING, "failed to work around tsan signal handling weirdness\n");
+      LOG(WARNING) << "failed to work around tsan signal handling weirdness";
     }
-    PCHECK(real_sigaction(signal, &action, old_action));
+    PCHECK(real_sigaction(signal, &action, old_action) == 0);
     return;
   }
 #endif
-  PCHECK(sigaction(signal, &action, old_action));
+  PCHECK(sigaction(signal, &action, old_action) == 0);
 }
 
 #endif  // ifndef __ARM_EABI__
@@ -318,9 +317,7 @@ bool RunFunctionDieAt(::std::function<void(void *)> prepare,
   if (!prepare_in_child) prepare(my_global_state->lockless_queue_memory);
 
   const pid_t pid = fork();
-  if (pid == -1) {
-    PLOG(FATAL, "fork() failed\n");
-  }
+  PCHECK(pid != -1) << ": fork() failed";
   if (pid == 0) {
     // Run the test.
     ::aos::testing::PreventExit();
@@ -350,12 +347,13 @@ bool RunFunctionDieAt(::std::function<void(void *)> prepare,
       pid_t waited_on = waitpid(pid, &status, 0);
       if (waited_on == -1) {
         if (errno == EINTR) continue;
-        PLOG(FATAL, "waitpid(%jd, %p, 0) failed\n", static_cast<intmax_t>(pid),
-             &status);
+        PCHECK(false) << ": waitpid(" << static_cast<intmax_t>(pid) << ", "
+                      << &status << ", 0) failed";
       }
       if (waited_on != pid) {
-        LOG(FATAL, "waitpid got child %jd instead of %jd\n",
-            static_cast<intmax_t>(waited_on), static_cast<intmax_t>(pid));
+        PCHECK(false) << ": waitpid got child "
+                      << static_cast<intmax_t>(waited_on) << " instead of "
+                      << static_cast<intmax_t>(pid);
       }
       if (WIFEXITED(status)) {
         if (WEXITSTATUS(status) == 0) return true;

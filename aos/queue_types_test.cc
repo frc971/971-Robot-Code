@@ -167,7 +167,7 @@ TEST_F(PrintFieldTest, OtherSizes) {
   input_bytes = sizeof(kData) + kExtraInputBytes;
   to_network(&kData, input);
   output_bytes = kString.size() + 1;
-  CHECK_LE(output_bytes, sizeof(output));
+  ASSERT_LE(output_bytes, sizeof(output));
   ASSERT_TRUE(PrintField(output, &output_bytes, input, &input_bytes,
                          Structure::GetType()->fields[2]->type));
   EXPECT_EQ(kExtraInputBytes, input_bytes);
@@ -211,7 +211,7 @@ static const ::std::string kTestMessageWithArraysString =
     "struct_int:973, struct_float:3.140000}]}";
 
 TEST_F(PrintMessageTest, Basic) {
-  CHECK_GE(sizeof(input), kTestMessage1.Size());
+  ASSERT_GE(sizeof(input), kTestMessage1.Size());
   input_bytes = kTestMessage1.Serialize(input);
   output_bytes = sizeof(output);
   ASSERT_TRUE(PrintMessage(output, &output_bytes, input, &input_bytes,
@@ -221,7 +221,7 @@ TEST_F(PrintMessageTest, Basic) {
 }
 
 TEST_F(PrintMessageTest, OutputTooSmall) {
-  CHECK_GE(sizeof(input), kTestMessage1.Size());
+  ASSERT_GE(sizeof(input), kTestMessage1.Size());
   input_bytes = kTestMessage1.Serialize(input);
   output_bytes = kTestMessage1String.size();
   EXPECT_FALSE(PrintMessage(output, &output_bytes, input, &input_bytes,
@@ -236,7 +236,7 @@ TEST_F(PrintMessageTest, InputTooSmall) {
 }
 
 TEST_F(PrintMessageTest, Structure) {
-  CHECK_GE(sizeof(input), kTestStructure1.Size());
+  ASSERT_GE(sizeof(input), kTestStructure1.Size());
   input_bytes = kTestStructure1.Serialize(input);
   output_bytes = sizeof(output);
   ASSERT_TRUE(PrintMessage(output, &output_bytes, input, &input_bytes,
@@ -260,7 +260,7 @@ TEST_F(PrintMessageTest, Matrix) {
 }
 
 TEST_F(PrintMessageTest, Array) {
-  CHECK_GE(sizeof(input), kTestMessageWithArrays.Size());
+  ASSERT_GE(sizeof(input), kTestMessageWithArrays.Size());
   input_bytes = kTestMessageWithArrays.Serialize(input);
   output_bytes = sizeof(output);
   ASSERT_TRUE(PrintMessage(output, &output_bytes, input, &input_bytes,

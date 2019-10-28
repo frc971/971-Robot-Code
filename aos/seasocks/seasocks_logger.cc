@@ -26,7 +26,7 @@ void SeasocksLogger::log(::seasocks::Logger::Level level, const char *message) {
       aos_level = DEBUG;
       break;
   }
-  LOG(aos_level, "Seasocks: %s\n", message);
+  AOS_LOG(aos_level, "Seasocks: %s\n", message);
 }
 
 }  // namespace seasocks

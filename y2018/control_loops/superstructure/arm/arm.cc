@@ -36,8 +36,8 @@ Arm::Arm()
       points_(PointList()) {
   int i = 0;
   for (const auto &trajectory : trajectories_) {
-    LOG(INFO, "trajectory length for edge node %d: %f\n", i,
-        trajectory.trajectory.path().length());
+    AOS_LOG(INFO, "trajectory length for edge node %d: %f\n", i,
+            trajectory.trajectory.path().length());
     ++i;
   }
 }
@@ -113,7 +113,7 @@ void Arm::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
   switch (state_) {
     case State::UNINITIALIZED:
       // Wait in the uninitialized state until the intake is initialized.
-      LOG(DEBUG, "Uninitialized, waiting for intake\n");
+      AOS_LOG(DEBUG, "Uninitialized, waiting for intake\n");
       state_ = State::ZEROING;
       proximal_zeroing_estimator_.Reset();
       distal_zeroing_estimator_.Reset();
@@ -188,7 +188,7 @@ void Arm::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
       // TODO(austin): Pick some sane limits.
       if (proximal_zeroing_estimator_.error() ||
           distal_zeroing_estimator_.error()) {
-        LOG(ERROR, "Zeroing error ESTOP\n");
+        AOS_LOG(ERROR, "Zeroing error ESTOP\n");
         state_ = State::ESTOP;
       } else if (outputs_disabled && brownout_count_ > kMaxBrownoutCount) {
         state_ = State::DISABLED;
@@ -213,7 +213,7 @@ void Arm::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
       break;
 
     case State::ESTOP:
-      LOG(ERROR, "Estop\n");
+      AOS_LOG(ERROR, "Estop\n");
       break;
   }
 
@@ -338,9 +338,9 @@ void Arm::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
 
   if (state_ == State::RUNNING && unsafe_goal != nullptr) {
     if (current_node_ != filtered_goal) {
-      LOG(INFO, "Goal is different\n");
+      AOS_LOG(INFO, "Goal is different\n");
       if (filtered_goal >= search_graph_.num_vertexes()) {
-        LOG(ERROR, "goal node out of range ESTOP\n");
+        AOS_LOG(ERROR, "goal node out of range ESTOP\n");
         state_ = State::ESTOP;
       } else if (follower_.path_distance_to_go() > 1e-3) {
         // Still on the old path segment.  Can't change yet.
@@ -360,9 +360,9 @@ void Arm::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
         // Ok, now we know which edge we are on.  Figure out the path and
         // trajectory.
         const SearchGraph::Edge &next_edge = search_graph_.edges()[min_edge];
-        LOG(INFO, "Switching from node %d to %d along edge %d\n",
-            static_cast<int>(current_node_), static_cast<int>(next_edge.end),
-            static_cast<int>(min_edge));
+        AOS_LOG(INFO, "Switching from node %d to %d along edge %d\n",
+                static_cast<int>(current_node_),
+                static_cast<int>(next_edge.end), static_cast<int>(min_edge));
         vmax_ = trajectories_[min_edge].vmax;
         follower_.SwitchTrajectory(&trajectories_[min_edge].trajectory);
         current_node_ = next_edge.end;
@@ -376,7 +376,7 @@ void Arm::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
           : (state_ == State::GOTO_PATH ? kGotoPathVMax() : kPathlessVMax());
   follower_.Update(arm_ekf_.X_hat(), disable, kDt(), vmax_,
                    max_operating_voltage);
-  LOG(INFO, "Max voltage: %f\n", max_operating_voltage);
+  AOS_LOG(INFO, "Max voltage: %f\n", max_operating_voltage);
   status->goal_theta0 = follower_.theta(0);
   status->goal_theta1 = follower_.theta(1);
   status->goal_omega0 = follower_.omega(0);

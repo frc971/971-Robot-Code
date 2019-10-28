@@ -22,10 +22,10 @@ namespace {
 int MakeSocketNonBlocking(int sfd) {
   int flags;
 
-  PCHECK(flags = fcntl(sfd, F_GETFL, 0));
+  AOS_PCHECK(flags = fcntl(sfd, F_GETFL, 0));
 
   flags |= O_NONBLOCK;
-  PCHECK(fcntl(sfd, F_SETFL, flags));
+  AOS_PCHECK(fcntl(sfd, F_SETFL, flags));
 
   return 0;
 }
@@ -35,7 +35,7 @@ int OpenClient(const std::string &hostname, int portno) {
   struct sockaddr_in serveraddr;
   struct hostent *server;
   /* socket: create the socket */
-  PCHECK(sockfd = socket(AF_INET, SOCK_STREAM, 0));
+  AOS_PCHECK(sockfd = socket(AF_INET, SOCK_STREAM, 0));
 
   /* gethostbyname: get the server's DNS entry */
   server = gethostbyname(hostname.c_str());
@@ -52,9 +52,9 @@ int OpenClient(const std::string &hostname, int portno) {
   serveraddr.sin_port = htons(portno);
 
   /* connect: create a connection with the server */
-  PCHECK(connect(sockfd, (const struct sockaddr *)&serveraddr,
-                 sizeof(serveraddr)));
-  PCHECK(MakeSocketNonBlocking(sockfd));
+  AOS_PCHECK(connect(sockfd, (const struct sockaddr *)&serveraddr,
+                     sizeof(serveraddr)));
+  AOS_PCHECK(MakeSocketNonBlocking(sockfd));
 
   return sockfd;
 }

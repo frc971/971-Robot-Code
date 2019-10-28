@@ -147,7 +147,7 @@ class StateFeedbackHybridPlant {
     for (int i = 0; i < kNumInputs; ++i) {
       if (U(i, 0) > U_max(i, 0) + static_cast<Scalar>(0.00001) ||
           U(i, 0) < U_min(i, 0) - static_cast<Scalar>(0.00001)) {
-        LOG(FATAL, "U out of range\n");
+        AOS_LOG(FATAL, "U out of range\n");
       }
     }
   }

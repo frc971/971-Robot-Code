@@ -21,15 +21,15 @@ namespace chrono = ::std::chrono;
 
 // The root LogImplementation. It only logs to stderr/stdout.
 // Some of the things specified in the LogImplementation documentation doesn't
-// apply here (mostly the parts about being able to use LOG) because this is the
-// root one.
+// apply here (mostly the parts about being able to use AOS_LOG) because this is
+// the root one.
 class RootLogImplementation : public SimpleLogImplementation {
  public:
   void have_other_implementation() { only_implementation_ = false; }
 
  private:
   void set_next(LogImplementation *) override {
-    LOG(FATAL, "can't have a next logger from here\n");
+    AOS_LOG(FATAL, "can't have a next logger from here\n");
   }
 
   __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
@@ -68,8 +68,7 @@ void *DoInit() {
 
   if (pthread_atfork(NULL /*prepare*/, NULL /*parent*/,
                      NewContext /*child*/) != 0) {
-    LOG(FATAL, "pthread_atfork(NULL, NULL, %p) failed\n",
-        NewContext);
+    AOS_LOG(FATAL, "pthread_atfork(NULL, NULL, %p) failed\n", NewContext);
   }
 
   return NULL;
@@ -116,7 +115,8 @@ void FillInMessageStructure(bool add_to_type_cache, log_level level,
   FillInMessageBase(level, monotonic_now, message);
 
   if (message_string.size() + size > sizeof(message->structure.serialized)) {
-    LOG(FATAL,
+    AOS_LOG(
+        FATAL,
         "serialized struct %s (size %zd + %zd > %zd) and message %s too big\n",
         type->name.c_str(), message_string.size(), size,
         sizeof(message->structure.serialized), message_string.c_str());
@@ -135,7 +135,7 @@ void FillInMessageMatrix(log_level level,
                          const ::std::string &message_string, uint32_t type_id,
                          int rows, int cols, const void *data,
                          LogMessage *message) {
-  CHECK(MessageType::IsPrimitive(type_id));
+  AOS_CHECK(MessageType::IsPrimitive(type_id));
   message->matrix.type = type_id;
 
   const auto element_size = MessageType::Sizeof(type_id);
@@ -145,9 +145,10 @@ void FillInMessageMatrix(log_level level,
   message->message_length = rows * cols * element_size;
   if (message_string.size() + message->message_length >
       sizeof(message->matrix.data)) {
-    LOG(FATAL, "%dx%d matrix of type %" PRIu32
-               " (size %u) and message %s is too big\n",
-        rows, cols, type_id, element_size, message_string.c_str());
+    AOS_LOG(FATAL,
+            "%dx%d matrix of type %" PRIu32
+            " (size %u) and message %s is too big\n",
+            rows, cols, type_id, element_size, message_string.c_str());
   }
   message->matrix.string_length = message_string.size();
   memcpy(message->matrix.data, message_string.data(),
@@ -187,15 +188,17 @@ void PrintMessage(FILE *output, const LogMessage &message) {
               buffer, &output_length,
               message.structure.serialized + message.structure.string_length,
               &input_length, type_cache::Get(message.structure.type_id))) {
-        LOG(FATAL,
+        AOS_LOG(
+            FATAL,
             "printing message (%.*s) of type %s into %zu-byte buffer failed\n",
             static_cast<int>(message.message_length), message.message,
             type_cache::Get(message.structure.type_id).name.c_str(),
             sizeof(buffer));
       }
       if (input_length > 0) {
-        LOG(WARNING, "%zu extra bytes on message of type %s\n", input_length,
-            type_cache::Get(message.structure.type_id).name.c_str());
+        AOS_LOG(WARNING, "%zu extra bytes on message of type %s\n",
+                input_length,
+                type_cache::Get(message.structure.type_id).name.c_str());
       }
       fprintf(output, AOS_LOGGING_BASE_FORMAT "%.*s: %.*s\n", BASE_ARGS,
               static_cast<int>(message.structure.string_length),
@@ -208,17 +211,17 @@ void PrintMessage(FILE *output, const LogMessage &message) {
       if (message.message_length !=
           static_cast<size_t>(message.matrix.rows * message.matrix.cols *
                               MessageType::Sizeof(message.matrix.type))) {
-        LOG(FATAL, "expected %d bytes of matrix data but have %zu\n",
-            message.matrix.rows * message.matrix.cols *
-                MessageType::Sizeof(message.matrix.type),
-            message.message_length);
+        AOS_LOG(FATAL, "expected %d bytes of matrix data but have %zu\n",
+                message.matrix.rows * message.matrix.cols *
+                    MessageType::Sizeof(message.matrix.type),
+                message.message_length);
       }
       if (!PrintMatrix(buffer, &output_length,
                        message.matrix.data + message.matrix.string_length,
                        message.matrix.type, message.matrix.rows,
                        message.matrix.cols)) {
-        LOG(FATAL, "printing %dx%d matrix of type %" PRIu32 " failed\n",
-            message.matrix.rows, message.matrix.cols, message.matrix.type);
+        AOS_LOG(FATAL, "printing %dx%d matrix of type %" PRIu32 " failed\n",
+                message.matrix.rows, message.matrix.cols, message.matrix.type);
       }
       fprintf(output, AOS_LOGGING_BASE_FORMAT "%.*s: %.*s\n", BASE_ARGS,
               static_cast<int>(message.matrix.string_length),
@@ -236,16 +239,17 @@ void SimpleLogImplementation::LogStruct(
     const MessageType *type, const ::std::function<size_t(char *)> &serialize) {
   char serialized[1024];
   if (size > sizeof(serialized)) {
-    LOG(FATAL, "structure of type %s too big to serialize\n",
-        type->name.c_str());
+    AOS_LOG(FATAL, "structure of type %s too big to serialize\n",
+            type->name.c_str());
   }
   size_t used = serialize(serialized);
   char printed[1024];
   size_t printed_bytes = sizeof(printed);
   if (!PrintMessage(printed, &printed_bytes, serialized, &used, *type)) {
-    LOG(FATAL, "PrintMessage(%p, %p(=%zd), %p, %p(=%zd), %p(name=%s)) failed\n",
-        printed, &printed_bytes, printed_bytes, serialized, &used, used, type,
-        type->name.c_str());
+    AOS_LOG(FATAL,
+            "PrintMessage(%p, %p(=%zd), %p, %p(=%zd), %p(name=%s)) failed\n",
+            printed, &printed_bytes, printed_bytes, serialized, &used, used,
+            type, type->name.c_str());
   }
   DoLogVariadic(level, "%.*s: %.*s\n", static_cast<int>(message.size()),
                 message.data(),
@@ -258,16 +262,17 @@ void SimpleLogImplementation::LogMatrix(
   char serialized[1024];
   if (static_cast<size_t>(rows * cols * MessageType::Sizeof(type_id)) >
       sizeof(serialized)) {
-    LOG(FATAL, "matrix of size %u too big to serialize\n",
-        rows * cols * MessageType::Sizeof(type_id));
+    AOS_LOG(FATAL, "matrix of size %u too big to serialize\n",
+            rows * cols * MessageType::Sizeof(type_id));
   }
   SerializeMatrix(type_id, serialized, data, rows, cols);
   char printed[1024];
   size_t printed_bytes = sizeof(printed);
   if (!PrintMatrix(printed, &printed_bytes, serialized, type_id, rows, cols)) {
-    LOG(FATAL, "PrintMatrix(%p, %p(=%zd), %p, %" PRIu32 ", %d, %d) failed\n",
-        printed, &printed_bytes, printed_bytes, serialized, type_id, rows,
-        cols);
+    AOS_LOG(FATAL,
+            "PrintMatrix(%p, %p(=%zd), %p, %" PRIu32 ", %d, %d) failed\n",
+            printed, &printed_bytes, printed_bytes, serialized, type_id, rows,
+            cols);
   }
   DoLogVariadic(level, "%.*s: %.*s\n", static_cast<int>(message.size()),
                 message.data(),
@@ -311,8 +316,10 @@ void AddImplementation(LogImplementation *implementation) {
   internal::Context *context = internal::Context::Get();
 
   if (implementation->next() != NULL) {
-    LOG(FATAL, "%p already has a next implementation, but it's not"
-        " being used yet\n", implementation);
+    AOS_LOG(FATAL,
+            "%p already has a next implementation, but it's not"
+            " being used yet\n",
+            implementation);
   }
 
   LogImplementation *old = context->implementation;
@@ -348,7 +355,7 @@ constexpr chrono::milliseconds kDropBackoff = chrono::milliseconds(100);
 LogMessage *GetMessageOrDie() {
   LogMessage *message = static_cast<LogMessage *>(queue->GetMessage());
   if (message == NULL) {
-    LOG(FATAL, "%p->GetMessage() failed\n", queue);
+    AOS_LOG(FATAL, "%p->GetMessage() failed\n", queue);
   } else {
     return message;
   }

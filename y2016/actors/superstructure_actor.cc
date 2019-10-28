@@ -26,7 +26,7 @@ SuperstructureActor::SuperstructureActor(::aos::EventLoop *event_loop)
 
 bool SuperstructureActor::RunAction(
     const actors::SuperstructureActionParams &params) {
-  LOG(INFO, "Starting superstructure action\n");
+  AOS_LOG(INFO, "Starting superstructure action\n");
 
   MoveSuperstructure(params.partial_angle, params.shooter_angle, false);
   WaitForSuperstructure();
@@ -68,7 +68,7 @@ void SuperstructureActor::MoveSuperstructure(double shoulder, double shooter,
   new_superstructure_goal->unfold_climber = unfold_climber;
 
   if (!new_superstructure_goal.Send()) {
-    LOG(ERROR, "Sending superstructure move failed.\n");
+    AOS_LOG(ERROR, "Sending superstructure move failed.\n");
   }
 }
 
@@ -93,13 +93,13 @@ bool SuperstructureActor::SuperstructureDone() {
   // estopped.
   if (superstructure_status_fetcher_->state < 12 ||
       superstructure_status_fetcher_->state == 16) {
-    LOG(ERROR, "Superstructure no longer running, aborting action\n");
+    AOS_LOG(ERROR, "Superstructure no longer running, aborting action\n");
     return true;
   }
 
   if (SuperstructureProfileDone()) {
-    LOG(DEBUG, "Profile done.\n");
-      return true;
+    AOS_LOG(DEBUG, "Profile done.\n");
+    return true;
   }
   return false;
 }

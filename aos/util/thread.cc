@@ -11,24 +11,24 @@ namespace util {
 Thread::Thread() : started_(false), joined_(false), should_terminate_(false) {}
 
 Thread::~Thread() {
-  CHECK(!(started_ && !joined_));
+  AOS_CHECK(!(started_ && !joined_));
 }
 
 void Thread::Start() {
-  CHECK(!started_);
+  AOS_CHECK(!started_);
   started_ = true;
-  CHECK(pthread_create(&thread_, NULL, &Thread::StaticRun, this) == 0);
+  AOS_CHECK(pthread_create(&thread_, NULL, &Thread::StaticRun, this) == 0);
 }
 
 void Thread::Join() {
-  CHECK(!joined_ && started_);
+  AOS_CHECK(!joined_ && started_);
   joined_ = true;
   should_terminate_.store(true);
-  CHECK(pthread_join(thread_, NULL) == 0);
+  AOS_CHECK(pthread_join(thread_, NULL) == 0);
 }
 
 bool Thread::TryJoin() {
-  CHECK(!joined_ && started_);
+  AOS_CHECK(!joined_ && started_);
 #ifdef AOS_SANITIZER_thread
   // ThreadSanitizer misses the tryjoin and then complains about leaking the
   // thread. Instead, we'll just check if the thread is still around and then
@@ -39,7 +39,7 @@ bool Thread::TryJoin() {
   if (kill_ret == 0) return false;
   // If it died, we'll get ESRCH. Otherwise, something went wrong.
   if (kill_ret != ESRCH) {
-    PELOG(FATAL, kill_ret, "pthread_kill(thread_, 0) failed");
+    AOS_PELOG(FATAL, kill_ret, "pthread_kill(thread_, 0) failed");
   }
   Join();
   return true;
@@ -51,20 +51,20 @@ bool Thread::TryJoin() {
   } else if (ret == EBUSY) {
     return false;
   } else {
-    PELOG(FATAL, ret, "pthread_tryjoin_np(thread_, nullptr) failed");
+    AOS_PELOG(FATAL, ret, "pthread_tryjoin_np(thread_, nullptr) failed");
   }
 #endif
 }
 
 void Thread::RequestStop() {
-  CHECK(!joined_ && started_);
+  AOS_CHECK(!joined_ && started_);
   should_terminate_.store(true);
 }
 
 void Thread::WaitUntilDone() {
-  CHECK(!joined_ && started_);
+  AOS_CHECK(!joined_ && started_);
   joined_ = true;
-  CHECK(pthread_join(thread_, NULL) == 0);
+  AOS_CHECK(pthread_join(thread_, NULL) == 0);
 }
 
 void *Thread::StaticRun(void *self) {

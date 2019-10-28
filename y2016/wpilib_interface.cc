@@ -307,7 +307,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     {
       auto ball_detector_message = ball_detector_sender_.MakeMessage();
       ball_detector_message->voltage = ball_detector_->GetVoltage();
-      LOG_STRUCT(DEBUG, "ball detector", *ball_detector_message);
+      AOS_LOG_STRUCT(DEBUG, "ball detector", *ball_detector_message);
       ball_detector_message.Send();
     }
 
@@ -319,7 +319,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
           auto_mode_message->mode |= 1 << i;
         }
       }
-      LOG_STRUCT(DEBUG, "auto mode", *auto_mode_message);
+      AOS_LOG_STRUCT(DEBUG, "auto mode", *auto_mode_message);
       auto_mode_message.Send();
     }
   }
@@ -414,13 +414,13 @@ class SolenoidWriter {
  private:
   void Loop(const int iterations) {
     if (iterations != 1) {
-      LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
+      AOS_LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
     }
 
     {
       drivetrain_.Fetch();
       if (drivetrain_.get()) {
-        LOG_STRUCT(DEBUG, "solenoids", *drivetrain_);
+        AOS_LOG_STRUCT(DEBUG, "solenoids", *drivetrain_);
         drivetrain_shifter_->Set(
             !(drivetrain_->left_high || drivetrain_->right_high));
       }
@@ -429,7 +429,7 @@ class SolenoidWriter {
     {
       shooter_.Fetch();
       if (shooter_.get()) {
-        LOG_STRUCT(DEBUG, "solenoids", *shooter_);
+        AOS_LOG_STRUCT(DEBUG, "solenoids", *shooter_);
         shooter_clamp_->Set(shooter_->clamp_open);
         shooter_pusher_->Set(shooter_->push_to_shooter);
         lights_->Set(shooter_->lights_on);
@@ -452,7 +452,7 @@ class SolenoidWriter {
     {
       superstructure_.Fetch();
       if (superstructure_.get()) {
-        LOG_STRUCT(DEBUG, "solenoids", *superstructure_);
+        AOS_LOG_STRUCT(DEBUG, "solenoids", *superstructure_);
 
         climber_trigger_->Set(superstructure_->unfold_climber);
 
@@ -467,7 +467,7 @@ class SolenoidWriter {
 
       pcm_->Flush();
       to_log.read_solenoids = pcm_->GetAll();
-      LOG_STRUCT(DEBUG, "pneumatics info", to_log);
+      AOS_LOG_STRUCT(DEBUG, "pneumatics info", to_log);
     }
   }
 
@@ -501,14 +501,14 @@ class ShooterWriter : public LoopOutputHandler<ShooterQueue::Output> {
 
  private:
   void Write(const ShooterQueue::Output &output) override {
-    LOG_STRUCT(DEBUG, "will output", output);
+    AOS_LOG_STRUCT(DEBUG, "will output", output);
 
     shooter_left_talon_->SetSpeed(output.voltage_left / 12.0);
     shooter_right_talon_->SetSpeed(-output.voltage_right / 12.0);
   }
 
   void Stop() override {
-    LOG(WARNING, "Shooter output too old.\n");
+    AOS_LOG(WARNING, "Shooter output too old.\n");
     shooter_left_talon_->SetDisabled();
     shooter_right_talon_->SetDisabled();
   }
@@ -551,7 +551,7 @@ class SuperstructureWriter
  private:
   virtual void Write(const ::y2016::control_loops::SuperstructureQueue::Output
                          &output) override {
-    LOG_STRUCT(DEBUG, "will output", output);
+    AOS_LOG_STRUCT(DEBUG, "will output", output);
     intake_talon_->SetSpeed(::aos::Clip(output.voltage_intake,
                                         -kMaxBringupPower, kMaxBringupPower) /
                             12.0);
@@ -567,7 +567,7 @@ class SuperstructureWriter
   }
 
   virtual void Stop() override {
-    LOG(WARNING, "Superstructure output too old.\n");
+    AOS_LOG(WARNING, "Superstructure output too old.\n");
     intake_talon_->SetDisabled();
     shoulder_talon_->SetDisabled();
     wrist_talon_->SetDisabled();

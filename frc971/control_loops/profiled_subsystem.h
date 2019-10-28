@@ -234,7 +234,7 @@ SingleDOFProfiledSubsystem<ZeroingEstimator>::SingleDOFProfiledSubsystem(
 template <class ZeroingEstimator>
 void SingleDOFProfiledSubsystem<ZeroingEstimator>::UpdateOffset(double offset) {
   const double doffset = offset - offset_(0, 0);
-  LOG(INFO, "Adjusting offset from %f to %f\n", offset_(0, 0), offset);
+  AOS_LOG(INFO, "Adjusting offset from %f to %f\n", offset_(0, 0), offset);
 
   this->loop_->mutable_X_hat()(0, 0) += doffset;
   this->Y_(0, 0) += doffset;
@@ -282,7 +282,7 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::Correct(
   this->estimators_[0].UpdateEstimate(new_position);
 
   if (this->estimators_[0].error()) {
-    LOG(ERROR, "zeroing error\n");
+    AOS_LOG(ERROR, "zeroing error\n");
     return;
   }
 
@@ -309,12 +309,12 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::CapGoal(
     const char *name, Eigen::Matrix<double, 3, 1> *goal) {
   // Limit the goal to min/max allowable positions.
   if ((*goal)(0, 0) > range_.upper) {
-    LOG(WARNING, "Goal %s above limit, %f > %f\n", name, (*goal)(0, 0),
-        range_.upper);
+    AOS_LOG(WARNING, "Goal %s above limit, %f > %f\n", name, (*goal)(0, 0),
+            range_.upper);
     (*goal)(0, 0) = range_.upper;
   }
   if ((*goal)(0, 0) < range_.lower) {
-    LOG(WARNING, "Goal %s below limit, %f < %f\n", name, (*goal)(0, 0),
+    AOS_LOG(WARNING, "Goal %s below limit, %f < %f\n", name, (*goal)(0, 0),
         range_.lower);
     (*goal)(0, 0) = range_.lower;
   }
@@ -373,7 +373,8 @@ bool SingleDOFProfiledSubsystem<ZeroingEstimator>::CheckHardLimits() {
   // Returns whether hard limits have been exceeded.
 
   if (position() > range_.upper_hard || position() < range_.lower_hard) {
-    LOG(ERROR,
+    AOS_LOG(
+        ERROR,
         "SingleDOFProfiledSubsystem at %f out of bounds [%f, %f], ESTOPing\n",
         position(), range_.lower_hard, range_.upper_hard);
     return true;

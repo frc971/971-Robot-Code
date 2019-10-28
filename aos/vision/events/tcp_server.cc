@@ -23,10 +23,10 @@ namespace {
 int MakeSocketNonBlocking(int sfd) {
   int flags;
 
-  PCHECK(flags = fcntl(sfd, F_GETFL, 0));
+  AOS_PCHECK(flags = fcntl(sfd, F_GETFL, 0));
 
   flags |= O_NONBLOCK;
-  PCHECK(fcntl(sfd, F_SETFL, flags));
+  AOS_PCHECK(fcntl(sfd, F_SETFL, flags));
 
   return 0;
 }
@@ -41,7 +41,7 @@ int TCPServerBase::SocketBindListenOnPort(int portno) {
   /*
    * socket: create the parent socket
    */
-  PCHECK(parentfd = socket(AF_INET, SOCK_STREAM, 0));
+  AOS_PCHECK(parentfd = socket(AF_INET, SOCK_STREAM, 0));
 
   /* setsockopt: Handy debugging trick that lets
    * us rerun the server immediately after we kill it;
@@ -49,8 +49,8 @@ int TCPServerBase::SocketBindListenOnPort(int portno) {
    * Eliminates "ERROR on binding: Address already in use" error.
    */
   optval = 1;
-  PCHECK(setsockopt(parentfd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval,
-                    sizeof(int)));
+  AOS_PCHECK(setsockopt(parentfd, SOL_SOCKET, SO_REUSEADDR,
+                        (const void *)&optval, sizeof(int)));
 
   /*
    * build the server's Internet address
@@ -69,11 +69,12 @@ int TCPServerBase::SocketBindListenOnPort(int portno) {
   /*
    * bind: associate the parent socket with a port
    */
-  PCHECK(bind(parentfd, (struct sockaddr *)&serveraddr, sizeof(serveraddr)));
+  AOS_PCHECK(
+      bind(parentfd, (struct sockaddr *)&serveraddr, sizeof(serveraddr)));
 
-  PCHECK(listen(parentfd, SOMAXCONN));
+  AOS_PCHECK(listen(parentfd, SOMAXCONN));
 
-  LOG(INFO, "connected to port: %d on fd: %d\n", portno, parentfd);
+  AOS_LOG(INFO, "connected to port: %d on fd: %d\n", portno, parentfd);
   return parentfd;
 }
 
@@ -94,14 +95,14 @@ void TCPServerBase::ReadEvent() {
          connections. */
       return;
     } else {
-      PLOG(WARNING, "accept");
+      AOS_PLOG(WARNING, "accept");
       return;
     }
   }
 
   /* Make the incoming socket non-blocking and add it to the
      list of fds to monitor. */
-  PCHECK(MakeSocketNonBlocking(infd));
+  AOS_PCHECK(MakeSocketNonBlocking(infd));
 
   loop()->Add(Construct(infd));
 }

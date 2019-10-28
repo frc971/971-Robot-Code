@@ -24,8 +24,8 @@ LogFileAccessor::LogFileAccessor(int fd, bool writable)
     : fd_(fd), writable_(writable), offset_(0), current_(0), position_(0) {
   // Check to make sure that mmap will allow mmaping in chunks of kPageSize.
   if (SystemPageSize() > kPageSize || (kPageSize % SystemPageSize()) != 0) {
-    LOG(FATAL, "system page size (%lu) not factor of kPageSize (%zd).\n",
-        SystemPageSize(), kPageSize);
+    AOS_LOG(FATAL, "system page size (%lu) not factor of kPageSize (%zd).\n",
+            SystemPageSize(), kPageSize);
   }
 
   MapNextPage();
@@ -36,14 +36,14 @@ void LogFileAccessor::Sync() const {
 }
 
 void LogFileAccessor::SkipToLastSeekablePage() {
-  CHECK(definitely_use_mmap());
+  AOS_CHECK(definitely_use_mmap());
 
   struct stat info;
   if (fstat(fd_, &info) == -1) {
-    PLOG(FATAL, "fstat(%d, %p) failed", fd_, &info);
+    AOS_PLOG(FATAL, "fstat(%d, %p) failed", fd_, &info);
   }
 
-  CHECK((info.st_size % kPageSize) == 0);
+  AOS_CHECK((info.st_size % kPageSize) == 0);
   const auto last_readable_page_number = (info.st_size / kPageSize) - 1;
   const auto last_seekable_page_number =
       last_readable_page_number / kSeekPages * kSeekPages;
@@ -66,7 +66,7 @@ bool LogFileAccessor::IsLastPage() {
 
   struct stat info;
   if (fstat(fd_, &info) == -1) {
-    PLOG(FATAL, "fstat(%d, %p) failed", fd_, &info);
+    AOS_PLOG(FATAL, "fstat(%d, %p) failed", fd_, &info);
   }
   bool r = offset_ == static_cast<off_t>(info.st_size - kPageSize);
   is_last_page_ = r ? Maybe::kYes : Maybe::kNo;
@@ -76,7 +76,7 @@ bool LogFileAccessor::IsLastPage() {
 void LogFileAccessor::MapNextPage() {
   if (writable_) {
     if (ftruncate(fd_, offset_ + kPageSize) == -1) {
-      PLOG(FATAL, "ftruncate(%d, %zd) failed", fd_, kPageSize);
+      AOS_PLOG(FATAL, "ftruncate(%d, %zd) failed", fd_, kPageSize);
     }
   }
 
@@ -85,49 +85,51 @@ void LogFileAccessor::MapNextPage() {
     while (todo > 0) {
       ssize_t result = read(fd_, current_ + (kPageSize - todo), todo);
       if (result == -1) {
-        PLOG(FATAL, "read(%d, %p, %zu) failed", fd_,
-             current_ + (kPageSize - todo), todo);
+        AOS_PLOG(FATAL, "read(%d, %p, %zu) failed", fd_,
+                 current_ + (kPageSize - todo), todo);
       } else if (result == 0) {
         memset(current_, 0, todo);
         result = todo;
       }
       todo -= result;
     }
-    CHECK_EQ(0, todo);
+    AOS_CHECK_EQ(0, todo);
   } else {
     current_ = static_cast<char *>(
         mmap(NULL, kPageSize, PROT_READ | (writable_ ? PROT_WRITE : 0),
              MAP_SHARED, fd_, offset_));
     if (current_ == MAP_FAILED) {
       if (!writable_ && use_read_ == Maybe::kUnknown && errno == ENODEV) {
-        LOG(INFO, "Falling back to reading the file using read(2).\n");
+        AOS_LOG(INFO, "Falling back to reading the file using read(2).\n");
         use_read_ = Maybe::kYes;
         current_ = new char[kPageSize];
         MapNextPage();
         return;
       } else {
-        PLOG(FATAL,
-             "mmap(NULL, %zd, PROT_READ [ | PROT_WRITE], MAP_SHARED, %d, %jd)"
-             " failed",
-             kPageSize, fd_, static_cast<intmax_t>(offset_));
+        AOS_PLOG(
+            FATAL,
+            "mmap(NULL, %zd, PROT_READ [ | PROT_WRITE], MAP_SHARED, %d, %jd)"
+            " failed",
+            kPageSize, fd_, static_cast<intmax_t>(offset_));
       }
     } else {
       use_read_ = Maybe::kNo;
     }
     if (madvise(current_, kPageSize, MADV_SEQUENTIAL | MADV_WILLNEED) == -1) {
-      PLOG(WARNING, "madvise(%p, %zd, MADV_SEQUENTIAL | MADV_WILLNEED) failed",
-           current_, kPageSize);
+      AOS_PLOG(WARNING,
+               "madvise(%p, %zd, MADV_SEQUENTIAL | MADV_WILLNEED) failed",
+               current_, kPageSize);
     }
   }
   offset_ += kPageSize;
 }
 
 void LogFileAccessor::Unmap(void *location) {
-  CHECK_NE(Maybe::kUnknown, use_read_);
+  AOS_CHECK_NE(Maybe::kUnknown, use_read_);
 
   if (use_read_ == Maybe::kNo) {
     if (munmap(location, kPageSize) == -1) {
-      PLOG(FATAL, "munmap(%p, %zd) failed", location, kPageSize);
+      AOS_PLOG(FATAL, "munmap(%p, %zd) failed", location, kPageSize);
     }
   }
   is_last_page_ = Maybe::kUnknown;
@@ -140,7 +142,7 @@ const LogFileMessageHeader *LogFileReader::ReadNextMessage(bool wait) {
     r = static_cast<LogFileMessageHeader *>(
         static_cast<void *>(&current()[position()]));
     if (wait) {
-      CHECK(definitely_use_mmap());
+      AOS_CHECK(definitely_use_mmap());
       if (futex_wait(&r->marker) != 0) continue;
     }
     if (r->marker == 2) {
@@ -158,7 +160,7 @@ const LogFileMessageHeader *LogFileReader::ReadNextMessage(bool wait) {
   if (position() >= kPageSize) {
     // It's a lot better to blow up here rather than getting SIGBUS errors the
     // next time we try to read...
-    LOG(FATAL, "corrupt log file running over page size\n");
+    AOS_LOG(FATAL, "corrupt log file running over page size\n");
   }
   return r;
 }
@@ -189,31 +191,31 @@ void LogFileReader::CheckCurrentPageReadable() {
     action.sa_flags = SA_RESETHAND | SA_SIGINFO;
     struct sigaction previous_bus, previous_segv;
     if (sigaction(SIGBUS, &action, &previous_bus) == -1) {
-      PLOG(FATAL, "sigaction(SIGBUS(=%d), %p, %p) failed",
-           SIGBUS, &action, &previous_bus);
+      AOS_PLOG(FATAL, "sigaction(SIGBUS(=%d), %p, %p) failed", SIGBUS, &action,
+               &previous_bus);
     }
     if (sigaction(SIGSEGV, &action, &previous_segv) == -1) {
-      PLOG(FATAL, "sigaction(SIGSEGV(=%d), %p, %p) failed",
-           SIGSEGV, &action, &previous_segv);
+      AOS_PLOG(FATAL, "sigaction(SIGSEGV(=%d), %p, %p) failed", SIGSEGV,
+               &action, &previous_segv);
     }
 
     char __attribute__((unused)) c = current()[0];
 
     if (sigaction(SIGBUS, &previous_bus, NULL) == -1) {
-      PLOG(FATAL, "sigaction(SIGBUS(=%d), %p, NULL) failed",
-           SIGBUS, &previous_bus);
+      AOS_PLOG(FATAL, "sigaction(SIGBUS(=%d), %p, NULL) failed", SIGBUS,
+               &previous_bus);
     }
     if (sigaction(SIGSEGV, &previous_segv, NULL) == -1) {
-      PLOG(FATAL, "sigaction(SIGSEGV(=%d), %p, NULL) failed",
-           SIGSEGV, &previous_segv);
+      AOS_PLOG(FATAL, "sigaction(SIGSEGV(=%d), %p, NULL) failed", SIGSEGV,
+               &previous_segv);
     }
   } else {
     if (fault_address == current()) {
-      LOG(FATAL, "could not read 1 byte at offset 0x%jx into log file\n",
-          static_cast<uintmax_t>(offset()));
+      AOS_LOG(FATAL, "could not read 1 byte at offset 0x%jx into log file\n",
+              static_cast<uintmax_t>(offset()));
     } else {
-      LOG(FATAL, "faulted at %p, not %p like we were (maybe) supposed to\n",
-          fault_address, current());
+      AOS_LOG(FATAL, "faulted at %p, not %p like we were (maybe) supposed to\n",
+              fault_address, current());
     }
   }
 }
@@ -234,7 +236,7 @@ bool LogFileWriter::ShouldClearSeekableData(off_t *cookie,
     ++next_message_page;
   }
   const off_t current_seekable_page = next_message_page / kSeekPages;
-  CHECK_LE(*cookie, current_seekable_page);
+  AOS_CHECK_LE(*cookie, current_seekable_page);
   const bool r = *cookie != current_seekable_page;
   *cookie = current_seekable_page;
   return r;
@@ -252,8 +254,8 @@ void LogFileWriter::ForceNewPage() {
   if (futex_set_value(
           static_cast<aos_futex *>(static_cast<void *>(&temp[position()])),
           2) == -1) {
-    PLOG(WARNING, "readers will hang because futex_set_value(%p, 2) failed",
-         &temp[position()]);
+    AOS_PLOG(WARNING, "readers will hang because futex_set_value(%p, 2) failed",
+             &temp[position()]);
   }
   Unmap(temp);
 }

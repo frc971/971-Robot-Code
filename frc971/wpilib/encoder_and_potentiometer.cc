@@ -21,10 +21,10 @@ bool DMAEncoder::DoUpdateFromSample(const DMASample &sample) {
 }
 
 void InterruptEncoderAndPotentiometer::Start() {
-  CHECK_NE(nullptr, encoder_);
-  CHECK_NE(nullptr, index_);
-  CHECK_NE(nullptr, potentiometer_);
-  CHECK_NE(0, priority_);
+  AOS_CHECK_NE(nullptr, encoder_);
+  AOS_CHECK_NE(nullptr, index_);
+  AOS_CHECK_NE(nullptr, potentiometer_);
+  AOS_CHECK_NE(0, priority_);
   thread_ = ::std::thread(::std::ref(*this));
 }
 

@@ -183,16 +183,16 @@ TEST_F(PhasedLoopTest, OffsetFromIntervalAndTimeTest) {
 TEST_F(PhasedLoopDeathTest, InvalidValues) {
   EXPECT_DEATH(
       PhasedLoop(milliseconds(1), monotonic_clock::epoch(), milliseconds(2)),
-      ".*offset<interval.*");
+      ".*offset < interval.*");
   EXPECT_DEATH(
       PhasedLoop(milliseconds(1), monotonic_clock::epoch(), milliseconds(1)),
-      ".*offset<interval.*");
+      ".*offset < interval.*");
   EXPECT_DEATH(
       PhasedLoop(milliseconds(1), monotonic_clock::epoch(), milliseconds(-1)),
-      ".*offset>=monotonic_clock::duration\\(0\\).*");
+      ".*offset >= monotonic_clock::duration\\(0\\).*");
   EXPECT_DEATH(
       PhasedLoop(milliseconds(0), monotonic_clock::epoch(), milliseconds(0)),
-      ".*interval>monotonic_clock::duration\\(0\\).*");
+      ".*interval > monotonic_clock::duration\\(0\\).*");
 }
 
 }  // namespace testing

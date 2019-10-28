@@ -30,9 +30,9 @@ int Main() {
       auto new_vision_status = vision_status_sender_.MakeMessage();
       new_vision_status->high_frame_count = status.high_frame_count();
       new_vision_status->low_frame_count = status.low_frame_count();
-      LOG_STRUCT(DEBUG, "vision", *new_vision_status);
+      AOS_LOG_STRUCT(DEBUG, "vision", *new_vision_status);
       if (!new_vision_status.Send()) {
-        LOG(ERROR, "Failed to send vision information\n");
+        AOS_LOG(ERROR, "Failed to send vision information\n");
       }
     }
   }

@@ -308,18 +308,18 @@ class SuperstructureSimulation {
             ? superstructure::intake::Intake::kOperatingVoltage
             : superstructure::intake::Intake::kZeroingVoltage;
 
-    CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_hood),
-             voltage_check_hood);
+    AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_hood),
+                 voltage_check_hood);
 
-    CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_intake),
-             voltage_check_intake);
+    AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_intake),
+                 voltage_check_intake);
 
     EXPECT_LE(::std::abs(superstructure_output_fetcher_->voltage_indexer),
               voltage_check_indexer)
         << ": check voltage " << voltage_check_indexer;
 
-    CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_turret),
-             voltage_check_turret);
+    AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_turret),
+                 voltage_check_turret);
 
     ::Eigen::Matrix<double, 1, 1> hood_U;
     hood_U << superstructure_output_fetcher_->voltage_hood +
@@ -375,15 +375,15 @@ class SuperstructureSimulation {
     // The hood is special.  We don't want to fault when we hit the hard stop.
     // We want to freeze the hood at the hard stop.
     if (angle_hood > constants::Values::kHoodRange.upper_hard) {
-      LOG(INFO, "At the hood upper hard stop of %f\n",
-          constants::Values::kHoodRange.upper_hard);
+      AOS_LOG(INFO, "At the hood upper hard stop of %f\n",
+              constants::Values::kHoodRange.upper_hard);
       angle_hood = constants::Values::kHoodRange.upper_hard;
       hood_plant_->mutable_X(0, 0) = angle_hood;
       hood_plant_->mutable_X(1, 0) = 0.0;
       hood_plant_->UpdateY(hood_U);
     } else if (angle_hood < constants::Values::kHoodRange.lower_hard) {
-      LOG(INFO, "At the hood lower hard stop of %f\n",
-          constants::Values::kHoodRange.lower_hard);
+      AOS_LOG(INFO, "At the hood lower hard stop of %f\n",
+              constants::Values::kHoodRange.lower_hard);
       angle_hood = constants::Values::kHoodRange.lower_hard;
       hood_plant_->mutable_X(0, 0) = angle_hood;
       hood_plant_->mutable_X(1, 0) = 0.0;
@@ -397,16 +397,16 @@ class SuperstructureSimulation {
     // The expected zeroing procedure involves yanking on the wires for the
     // turret in some cases.  So, implement the hard stop like the hood.
     if (angle_turret > constants::Values::kTurretRange.upper_hard) {
-      LOG(INFO, "At the turret upper hard stop of %f\n",
-          constants::Values::kTurretRange.upper_hard);
+      AOS_LOG(INFO, "At the turret upper hard stop of %f\n",
+              constants::Values::kTurretRange.upper_hard);
       angle_turret = constants::Values::kTurretRange.upper_hard;
       column_plant_->mutable_X(2, 0) = angle_turret;
       column_plant_->mutable_X(3, 0) = 0.0;
 
       column_plant_->UpdateY(column_U);
     } else if (angle_turret < constants::Values::kTurretRange.lower_hard) {
-      LOG(INFO, "At the turret lower hard stop of %f\n",
-          constants::Values::kTurretRange.lower_hard);
+      AOS_LOG(INFO, "At the turret lower hard stop of %f\n",
+              constants::Values::kTurretRange.lower_hard);
       angle_turret = constants::Values::kTurretRange.lower_hard;
       column_plant_->mutable_X(2, 0) = angle_turret;
       column_plant_->mutable_X(3, 0) = 0.0;
@@ -1190,9 +1190,9 @@ TEST_F(SuperstructureTest, ReallyStuckIndexerTest) {
               chrono::milliseconds(1050));
   EXPECT_TRUE(unstuck_detection_time - unstuck_start_time >
               chrono::milliseconds(400));
-  LOG(INFO, "Unstuck time is %" PRId64 "ms",
-      static_cast<int64_t>(
-          (unstuck_detection_time - unstuck_start_time).count() / 1000000));
+  AOS_LOG(INFO, "Unstuck time is %" PRId64 "ms",
+          static_cast<int64_t>(
+              (unstuck_detection_time - unstuck_start_time).count() / 1000000));
 
   // Now, make sure it transitions to stuck again after a delay.
   const auto restuck_start_time = monotonic_now();

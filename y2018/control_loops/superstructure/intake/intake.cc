@@ -107,7 +107,7 @@ void IntakeSide::Iterate(const double *unsafe_goal,
   switch (state_) {
     case State::UNINITIALIZED:
       // Wait in the uninitialized state until the intake is initialized.
-      LOG(DEBUG, "Uninitialized, waiting for intake\n");
+      AOS_LOG(DEBUG, "Uninitialized, waiting for intake\n");
       zeroing_estimator_.Reset();
       controller_.Reset();
       state_ = State::ZEROING;
@@ -116,7 +116,7 @@ void IntakeSide::Iterate(const double *unsafe_goal,
     case State::ZEROING:
       // Zero by not moving.
       if (zeroing_estimator_.zeroed()) {
-        LOG(INFO, "Now zeroed\n");
+        AOS_LOG(INFO, "Now zeroed\n");
         controller_.UpdateOffset(zeroing_estimator_.offset());
         state_ = State::RUNNING;
       }
@@ -124,23 +124,23 @@ void IntakeSide::Iterate(const double *unsafe_goal,
 
     case State::RUNNING:
       if (!(zeroing_estimator_.zeroed())) {
-        LOG(ERROR, "Zeroing estimator is no longer zeroed\n");
+        AOS_LOG(ERROR, "Zeroing estimator is no longer zeroed\n");
         state_ = State::UNINITIALIZED;
       }
       if (zeroing_estimator_.error()) {
-        LOG(ERROR, "Zeroing estimator error\n");
+        AOS_LOG(ERROR, "Zeroing estimator error\n");
         state_ = State::UNINITIALIZED;
       }
       // ESTOP if we hit the hard limits.
       if ((status->motor_position) > controller_.intake_range_.upper ||
           (status->motor_position) < controller_.intake_range_.lower) {
-        LOG(ERROR, "Hit hard limits\n");
+        AOS_LOG(ERROR, "Hit hard limits\n");
         state_ = State::ESTOP;
       }
       break;
 
     case State::ESTOP:
-      LOG(ERROR, "Estop\n");
+      AOS_LOG(ERROR, "Estop\n");
       break;
   }
 

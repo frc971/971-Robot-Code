@@ -49,7 +49,8 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
 bool AutonomousActor::RunAction(
     const ::frc971::autonomous::AutonomousActionParams &params) {
   const monotonic_clock::time_point start_time = monotonic_now();
-  LOG(INFO, "Starting autonomous action with mode %" PRId32 "\n", params.mode);
+  AOS_LOG(INFO, "Starting autonomous action with mode %" PRId32 "\n",
+          params.mode);
   Reset();
 
   switch (params.mode) {
@@ -129,12 +130,12 @@ bool AutonomousActor::RunAction(
       StartDrive(kLongPegDrive, -kDriveDirection * M_PI / 4, kGearDrive,
                  kFirstGearStartTurn);
       if (!WaitForDriveNear(100.0, M_PI / 8.0)) return true;
-      LOG(INFO, "Turn Middle: %f left to go\n", DriveDistanceLeft());
+      AOS_LOG(INFO, "Turn Middle: %f left to go\n", DriveDistanceLeft());
 
       StartDrive(0.0, 0.0, kGearDrive, kFirstGearTurn);
 
       if (!WaitForTurnProfileDone()) return true;
-      LOG(INFO, "Turn profile ended: %f left to go\n", DriveDistanceLeft());
+      AOS_LOG(INFO, "Turn profile ended: %f left to go\n", DriveDistanceLeft());
 
       set_hood_goal(0.43);
       set_shooter_velocity(364.0);
@@ -179,8 +180,8 @@ bool AutonomousActor::RunAction(
       set_gear_servo(0.4);
 
       SendSuperstructureGoal();
-      LOG(INFO, "Starting drive back %f\n",
-          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+      AOS_LOG(INFO, "Starting drive back %f\n",
+              ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
       StartDrive(-2.75, kDriveDirection * 1.24, kSlowDrive,
                  kFirstGearStartTurn);
@@ -202,8 +203,8 @@ bool AutonomousActor::RunAction(
       if (!WaitForDriveNear(0.2, 0.2)) return true;
       StartDrive(0.0, -kDriveDirection * 0.15, kSlowDrive, kSmashTurn);
 
-      LOG(INFO, "Starting second shot %f\n",
-          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+      AOS_LOG(INFO, "Starting second shot %f\n",
+              ::aos::time::DurationInSeconds(monotonic_now() - start_time));
       set_indexer_angular_velocity(-2.15 * M_PI);
       SendSuperstructureGoal();
       if (!WaitForDriveNear(0.2, 0.1)) return true;
@@ -236,11 +237,11 @@ bool AutonomousActor::RunAction(
       StartDrive(-3.42, kDriveDirection * (M_PI / 10 - 0.057), kSlowDrive,
                  kFirstTurn);
       if (!WaitForDriveNear(3.30, 0.0)) return true;
-      LOG(INFO, "Turn ended: %f left to go\n", DriveDistanceLeft());
+      AOS_LOG(INFO, "Turn ended: %f left to go\n", DriveDistanceLeft());
       // We can go to 2.50 before we hit the previous profile.
 
       if (!WaitForDriveNear(2.48, 0.0)) return true;
-      LOG(INFO, "%f left to go\n", DriveDistanceLeft());
+      AOS_LOG(INFO, "%f left to go\n", DriveDistanceLeft());
 
       set_intake_goal(0.23);
       set_turret_goal(0.0);
@@ -279,8 +280,8 @@ bool AutonomousActor::RunAction(
       set_indexer_angular_velocity(-2.1 * M_PI);
       SendSuperstructureGoal();
 
-      LOG(INFO, "Started shooting at %f\n",
-          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+      AOS_LOG(INFO, "Started shooting at %f\n",
+              ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
       this_thread::sleep_for(start_time + chrono::seconds(9) - monotonic_now());
       if (ShouldCancel()) return true;
@@ -300,8 +301,8 @@ bool AutonomousActor::RunAction(
     } break;
   }
 
-  LOG(INFO, "Done %f\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "Done %f\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
                                       event_loop()->monotonic_now(),
@@ -310,7 +311,7 @@ bool AutonomousActor::RunAction(
   while (!ShouldCancel()) {
     phased_loop.SleepUntilNext();
   }
-  LOG(DEBUG, "Done running\n");
+  AOS_LOG(DEBUG, "Done running\n");
 
   return true;
 }

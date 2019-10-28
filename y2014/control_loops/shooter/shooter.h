@@ -79,8 +79,8 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   }
 
   void SetGoalPosition(double desired_position, double desired_velocity) {
-    LOG(DEBUG, "Goal position: %f Goal velocity: %f\n", desired_position,
-        desired_velocity);
+    AOS_LOG(DEBUG, "Goal position: %f Goal velocity: %f\n", desired_position,
+            desired_velocity);
 
     mutable_R() << desired_position - kPositionOffset, desired_velocity,
         (-plant().A(1, 0) / plant().A(1, 2) *

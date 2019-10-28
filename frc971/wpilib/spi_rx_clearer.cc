@@ -11,18 +11,18 @@ namespace frc971 {
 namespace wpilib {
 
 SpiRxClearer::SpiRxClearer() {
-  const int fd = PCHECK(open("/dev/mem", O_RDWR));
+  const int fd = AOS_PCHECK(open("/dev/mem", O_RDWR));
   void *const mmap_result = mmap(nullptr, kMappingSize, PROT_READ | PROT_WRITE,
                                  MAP_SHARED, fd, spi_peripheral_base_);
   if (mmap_result == MAP_FAILED) {
-    PLOG(FATAL, "mmap the SPI peripheral from /dev/mem failed\n");
+    AOS_PLOG(FATAL, "mmap the SPI peripheral from /dev/mem failed\n");
   }
-  PCHECK(close(fd));
+  AOS_PCHECK(close(fd));
   mapping_ = static_cast<volatile uint32_t *>(mmap_result);
 }
 
 SpiRxClearer::~SpiRxClearer() {
-  PCHECK(munmap(const_cast<uint32_t *>(mapping_), kMappingSize));
+  AOS_PCHECK(munmap(const_cast<uint32_t *>(mapping_), kMappingSize));
 }
 
 void SpiRxClearer::ClearRxFifo() {
@@ -34,9 +34,9 @@ void SpiRxClearer::ClearRxFifo() {
       return;
     }
     // Read the next byte.
-    LOG(DEBUG, "Read from RX FIFO: %" PRIx32 "\n", ReadRegister(0x20));
+    AOS_LOG(DEBUG, "Read from RX FIFO: %" PRIx32 "\n", ReadRegister(0x20));
   }
-  LOG(FATAL, "Failed to clear the RX FIFO\n");
+  AOS_LOG(FATAL, "Failed to clear the RX FIFO\n");
 }
 
 }  // namespace wpilib

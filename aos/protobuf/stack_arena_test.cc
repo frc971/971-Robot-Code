@@ -22,7 +22,7 @@ TEST_F(StackProtoArenaTest, Basic) {
 
   TestStruct* msg =
       google::protobuf::Arena::Create<TestStruct>(stack_arena.arena());
-  CHECK_NOTNULL(msg);
+  AOS_CHECK_NOTNULL(msg);
 }
 
 }  // namespace

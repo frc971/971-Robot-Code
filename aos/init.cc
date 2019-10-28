@@ -78,9 +78,9 @@ void LockAllMemory() {
   }
 
   // Don't give freed memory back to the OS.
-  CHECK_EQ(1, mallopt(M_TRIM_THRESHOLD, -1));
+  AOS_CHECK_EQ(1, mallopt(M_TRIM_THRESHOLD, -1));
   // Don't use mmap for large malloc chunks.
-  CHECK_EQ(1, mallopt(M_MMAP_MAX, 0));
+  AOS_CHECK_EQ(1, mallopt(M_MMAP_MAX, 0));
 
   if (&FLAGS_tcmalloc_release_rate) {
     // Tell tcmalloc not to return memory.
@@ -103,14 +103,14 @@ void InitNRT(bool for_realtime) {
   InitStart();
   aos_core_create_shared_mem(false, for_realtime && ShouldBeRealtime());
   logging::RegisterQueueImplementation();
-  LOG(INFO, "%s initialized non-realtime\n", program_invocation_short_name);
+  AOS_LOG(INFO, "%s initialized non-realtime\n", program_invocation_short_name);
 }
 
 void InitCreate() {
   InitStart();
   aos_core_create_shared_mem(true, false);
   logging::RegisterQueueImplementation();
-  LOG(INFO, "%s created shm\n", program_invocation_short_name);
+  AOS_LOG(INFO, "%s created shm\n", program_invocation_short_name);
 }
 
 void Init(int relative_priority) {
@@ -148,7 +148,7 @@ void GoRT(int relative_priority) {
     printf("no realtime for %s. see stderr\n", program_invocation_short_name);
   }
 
-  LOG(INFO, "%s initialized realtime\n", program_invocation_short_name);
+  AOS_LOG(INFO, "%s initialized realtime\n", program_invocation_short_name);
 }
 
 void Cleanup() {
@@ -167,7 +167,7 @@ void SetCurrentThreadRealtimePriority(int priority) {
   struct sched_param param;
   param.sched_priority = priority;
   if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
-    PLOG(FATAL, "sched_setscheduler(0, SCHED_FIFO, %d) failed\n", priority);
+    AOS_PLOG(FATAL, "sched_setscheduler(0, SCHED_FIFO, %d) failed\n", priority);
   }
 }
 
@@ -175,7 +175,7 @@ void UnsetCurrentThreadRealtimePriority() {
   struct sched_param param;
   param.sched_priority = 0;
   if (sched_setscheduler(0, SCHED_OTHER, &param) == -1) {
-    PLOG(FATAL, "sched_setscheduler(0, SCHED_OTHER, 0) failed\n");
+    AOS_PLOG(FATAL, "sched_setscheduler(0, SCHED_OTHER, 0) failed\n");
   }
 }
 
@@ -183,15 +183,15 @@ void PinCurrentThreadToCPU(int number) {
   cpu_set_t cpuset;
   CPU_ZERO(&cpuset);
   CPU_SET(number, &cpuset);
-  PRCHECK(pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset));
+  AOS_PRCHECK(pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset));
 }
 
 void SetCurrentThreadName(const ::std::string &name) {
   if (name.size() > 16) {
-    LOG(FATAL, "thread name '%s' too long\n", name.c_str());
+    AOS_LOG(FATAL, "thread name '%s' too long\n", name.c_str());
   }
-  LOG(INFO, "this thread is changing to '%s'\n", name.c_str());
-  PCHECK(prctl(PR_SET_NAME, name.c_str()));
+  AOS_LOG(INFO, "this thread is changing to '%s'\n", name.c_str());
+  AOS_PCHECK(prctl(PR_SET_NAME, name.c_str()));
   logging::internal::ReloadThreadName();
 }
 

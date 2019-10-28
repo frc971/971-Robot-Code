@@ -162,7 +162,7 @@ void DrivetrainLoop::RunIteration(
     }
 
     if (accel_squared > 1.03 || accel_squared < 0.97) {
-      LOG(DEBUG, "New IMU value, rejecting reading\n");
+      AOS_LOG(DEBUG, "New IMU value, rejecting reading\n");
     } else {
       // -y is our gyro.
       // z accel is down
@@ -172,10 +172,10 @@ void DrivetrainLoop::RunIteration(
       down_estimator_.Correct(Y);
     }
 
-    LOG(DEBUG,
-        "New IMU value, rate is %f, angle %f, fused %f, bias "
-        "%f\n",
-        rate, angle, down_estimator_.X_hat(0), down_estimator_.X_hat(1));
+    AOS_LOG(DEBUG,
+            "New IMU value, rate is %f, angle %f, fused %f, bias "
+            "%f\n",
+            rate, angle, down_estimator_.X_hat(0), down_estimator_.X_hat(1));
     down_U_(0, 0) = rate;
   }
   down_estimator_.UpdateObserver(down_U_, ::aos::controls::kLoopFrequency);
@@ -185,48 +185,48 @@ void DrivetrainLoop::RunIteration(
   switch (dt_config_.gyro_type) {
     case GyroType::IMU_X_GYRO:
       if (is_latest_imu_values) {
-        LOG_STRUCT(DEBUG, "using", *imu_values_fetcher_.get());
+        AOS_LOG_STRUCT(DEBUG, "using", *imu_values_fetcher_.get());
         last_gyro_rate_ = imu_values_fetcher_->gyro_x;
         last_gyro_time_ = monotonic_now;
       }
       break;
     case GyroType::IMU_Y_GYRO:
       if (is_latest_imu_values) {
-        LOG_STRUCT(DEBUG, "using", *imu_values_fetcher_.get());
+        AOS_LOG_STRUCT(DEBUG, "using", *imu_values_fetcher_.get());
         last_gyro_rate_ = imu_values_fetcher_->gyro_y;
         last_gyro_time_ = monotonic_now;
       }
       break;
     case GyroType::IMU_Z_GYRO:
       if (is_latest_imu_values) {
-        LOG_STRUCT(DEBUG, "using", *imu_values_fetcher_.get());
+        AOS_LOG_STRUCT(DEBUG, "using", *imu_values_fetcher_.get());
         last_gyro_rate_ = imu_values_fetcher_->gyro_z;
         last_gyro_time_ = monotonic_now;
       }
       break;
     case GyroType::FLIPPED_IMU_Z_GYRO:
       if (is_latest_imu_values) {
-        LOG_STRUCT(DEBUG, "using", *imu_values_fetcher_.get());
+        AOS_LOG_STRUCT(DEBUG, "using", *imu_values_fetcher_.get());
         last_gyro_rate_ = -imu_values_fetcher_->gyro_z;
         last_gyro_time_ = monotonic_now;
       }
       break;
     case GyroType::SPARTAN_GYRO:
       if (gyro_reading_fetcher_.Fetch()) {
-        LOG_STRUCT(DEBUG, "using", *gyro_reading_fetcher_.get());
+        AOS_LOG_STRUCT(DEBUG, "using", *gyro_reading_fetcher_.get());
         last_gyro_rate_ = gyro_reading_fetcher_->velocity;
         last_gyro_time_ = monotonic_now;
       }
       break;
     case GyroType::FLIPPED_SPARTAN_GYRO:
       if (gyro_reading_fetcher_.Fetch()) {
-        LOG_STRUCT(DEBUG, "using", *gyro_reading_fetcher_.get());
+        AOS_LOG_STRUCT(DEBUG, "using", *gyro_reading_fetcher_.get());
         last_gyro_rate_ = -gyro_reading_fetcher_->velocity;
         last_gyro_time_ = monotonic_now;
       }
       break;
     default:
-      LOG(FATAL, "invalid gyro configured");
+      AOS_LOG(FATAL, "invalid gyro configured");
       break;
   }
 
@@ -244,7 +244,7 @@ void DrivetrainLoop::RunIteration(
     // TODO(james): Use a watcher (instead of a fetcher) once we support it in
     // simulation.
     if (localizer_control_fetcher_.Fetch()) {
-      LOG_STRUCT(DEBUG, "localizer_control", *localizer_control_fetcher_);
+      AOS_LOG_STRUCT(DEBUG, "localizer_control", *localizer_control_fetcher_);
       localizer_->ResetPosition(
           monotonic_now, localizer_control_fetcher_->x,
           localizer_control_fetcher_->y, localizer_control_fetcher_->theta,

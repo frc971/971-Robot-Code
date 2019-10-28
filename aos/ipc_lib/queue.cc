@@ -172,7 +172,7 @@ void *RawQueue::GetMessage() {
   MessageHeader *header = __atomic_load_n(&free_messages_, __ATOMIC_RELAXED);
   do {
     if (__builtin_expect(header == nullptr, 0)) {
-      LOG(FATAL, "overused pool of queue %p (%s)\n", this, name_);
+      AOS_LOG(FATAL, "overused pool of queue %p (%s)\n", this, name_);
     }
   } while (__builtin_expect(
       !__atomic_compare_exchange_n(&free_messages_, &header, header->next, true,
@@ -196,8 +196,8 @@ RawQueue::RawQueue(const char *name, size_t length, int hash, int queue_length)
                 "need to revalidate size/alignent assumptions");
 
   if (queue_length < 1) {
-    LOG(FATAL, "queue length %d of %s needs to be at least 1\n", queue_length,
-        name);
+    AOS_LOG(FATAL, "queue length %d of %s needs to be at least 1\n",
+            queue_length, name);
   }
 
   const size_t name_size = strlen(name) + 1;
@@ -249,8 +249,8 @@ RawQueue *RawQueue::Fetch(const char *name, size_t length, int hash,
     printf("fetching queue %s\n", name);
   }
   if (mutex_lock(&global_core->mem_struct->queues.lock) != 0) {
-    LOG(FATAL, "mutex_lock(%p) failed\n",
-        &global_core->mem_struct->queues.lock);
+    AOS_LOG(FATAL, "mutex_lock(%p) failed\n",
+            &global_core->mem_struct->queues.lock);
   }
   RawQueue *current =
       static_cast<RawQueue *>(global_core->mem_struct->queues.pointer);
@@ -309,7 +309,7 @@ bool RawQueue::DoWriteMessage(void *msg, Options<RawQueue> options) {
 
   {
     IPCMutexLocker locker(&data_lock_);
-    CHECK(!locker.owner_died());
+    AOS_CHECK(!locker.owner_died());
 
     int new_end;
     while (true) {
@@ -334,7 +334,7 @@ bool RawQueue::DoWriteMessage(void *msg, Options<RawQueue> options) {
         if (kWriteDebug) {
           printf("queue: going to wait for writable_ of %p\n", this);
         }
-        CHECK(!writable_.Wait());
+        AOS_CHECK(!writable_.Wait());
       }
     }
     data_[data_end_] = msg;
@@ -390,7 +390,7 @@ bool RawQueue::ReadCommonStart(Options<RawQueue> options, int *index,
         if (wait_result == Condition::WaitResult::kOk) {
           break;
         }
-        CHECK(wait_result != Condition::WaitResult::kOwnerDied);
+        AOS_CHECK(wait_result != Condition::WaitResult::kOwnerDied);
         if (wait_result == Condition::WaitResult::kTimeout) {
           return false;
         }
@@ -427,7 +427,7 @@ const void *RawQueue::DoReadMessage(Options<RawQueue> options) {
   void *msg = NULL;
 
   IPCMutexLocker locker(&data_lock_);
-  CHECK(!locker.owner_died());
+  AOS_CHECK(!locker.owner_died());
 
   if (!ReadCommonStart(options, nullptr, chrono::nanoseconds(0))) {
     if (kReadDebug) {
@@ -490,7 +490,7 @@ const void *RawQueue::DoReadMessageIndex(Options<RawQueue> options, int *index,
   void *msg = NULL;
 
   IPCMutexLocker locker(&data_lock_);
-  CHECK(!locker.owner_died());
+  AOS_CHECK(!locker.owner_died());
 
   if (!ReadCommonStart(options, index, timeout)) {
     if (kReadDebug) {

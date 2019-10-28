@@ -395,13 +395,13 @@ class SolenoidWriter {
     int32_t status = 0;
     HAL_CompressorHandle compressor_ = HAL_InitializeCompressor(0, &status);
     if (status != 0) {
-      LOG(ERROR, "Compressor status is nonzero, %d\n",
-          static_cast<int>(status));
+      AOS_LOG(ERROR, "Compressor status is nonzero, %d\n",
+              static_cast<int>(status));
     }
     HAL_SetCompressorClosedLoopControl(compressor_, true, &status);
     if (status != 0) {
-      LOG(ERROR, "Compressor status is nonzero, %d\n",
-          static_cast<int>(status));
+      AOS_LOG(ERROR, "Compressor status is nonzero, %d\n",
+              static_cast<int>(status));
     }
 
     event_loop_->AddPhasedLoop([this](int iterations) { Loop(iterations); },
@@ -443,13 +443,13 @@ class SolenoidWriter {
 
   void Loop(const int iterations) {
     if (iterations != 1) {
-      LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
+      AOS_LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
     }
 
     {
       drivetrain_fetcher_.Fetch();
       if (drivetrain_fetcher_.get()) {
-        LOG_STRUCT(DEBUG, "solenoids", *drivetrain_fetcher_);
+        AOS_LOG_STRUCT(DEBUG, "solenoids", *drivetrain_fetcher_);
         left_drivetrain_shifter_->Set(!drivetrain_fetcher_->left_high);
         right_drivetrain_shifter_->Set(!drivetrain_fetcher_->right_high);
       }
@@ -458,7 +458,7 @@ class SolenoidWriter {
     {
       superstructure_fetcher_.Fetch();
       if (superstructure_fetcher_.get()) {
-        LOG_STRUCT(DEBUG, "solenoids", *superstructure_fetcher_);
+        AOS_LOG_STRUCT(DEBUG, "solenoids", *superstructure_fetcher_);
 
         claw_->Set(!superstructure_fetcher_->claw_grabbed);
         arm_brakes_->Set(superstructure_fetcher_->release_arm_brake);
@@ -472,7 +472,7 @@ class SolenoidWriter {
 
       pcm_->Flush();
       to_log.read_solenoids = pcm_->GetAll();
-      LOG_STRUCT(DEBUG, "pneumatics info", to_log);
+      AOS_LOG_STRUCT(DEBUG, "pneumatics info", to_log);
     }
 
     monotonic_clock::time_point monotonic_now = event_loop_->monotonic_now();
@@ -502,10 +502,10 @@ class SolenoidWriter {
         light_flash_ = 0;
       }
 
-      LOG_STRUCT(DEBUG, "color", color);
+      AOS_LOG_STRUCT(DEBUG, "color", color);
       SetColor(color);
     } else {
-      LOG_STRUCT(DEBUG, "color", *status_light_fetcher_);
+      AOS_LOG_STRUCT(DEBUG, "color", *status_light_fetcher_);
       SetColor(*status_light_fetcher_);
     }
   }
@@ -601,7 +601,7 @@ class SuperstructureWriter
 
  private:
   virtual void Write(const SuperstructureQueue::Output &output) override {
-    LOG_STRUCT(DEBUG, "will output", output);
+    AOS_LOG_STRUCT(DEBUG, "will output", output);
 
     left_intake_elastic_victor_->SetSpeed(
         ::aos::Clip(-output.left_intake.voltage_elastic, -kMaxBringupPower,
@@ -637,7 +637,7 @@ class SuperstructureWriter
   }
 
   virtual void Stop() override {
-    LOG(WARNING, "Superstructure output too old.\n");
+    AOS_LOG(WARNING, "Superstructure output too old.\n");
 
     left_intake_rollers_victor_->SetDisabled();
     right_intake_rollers_victor_->SetDisabled();

@@ -492,7 +492,6 @@ void TrajectoryFollower::Update(const ::Eigen::Matrix<double, 6, 1> &X,
       U_ff_.setZero();
       U_.setZero();
       U_unsaturated_.setZero();
-      LOG(INFO, "Disabled\n");
     } else {
       const ::Eigen::Matrix<double, 6, 1> R =
           trajectory_->R(theta_, ::Eigen::Matrix<double, 2, 1>::Zero());

@@ -21,7 +21,7 @@ size_t ExecuteFormat(char *output, size_t output_size, const char *format,
   const int ret = vsnprintf(output, size, format, ap);
   typedef ::std::common_type<typeof(ret), typeof(size)>::type RetType;
   if (ret < 0) {
-    PLOG(FATAL, "vsnprintf(%p, %zd, %s, args) failed",
+    AOS_PLOG(FATAL, "vsnprintf(%p, %zd, %s, args) failed",
          output, size, format);
   } else if (static_cast<RetType>(ret) >= static_cast<RetType>(size)) {
     // Overwrite the '\0' at the end of the existing data and
@@ -84,8 +84,9 @@ void VCork(int line, const char *function, const char *format, va_list ap) {
     context->cork_data.function = function;
   } else {
     if (strcmp(context->cork_data.function, function) != 0) {
-      LOG(FATAL, "started corking data in function %s but then moved to %s\n",
-          context->cork_data.function, function);
+      AOS_LOG(FATAL,
+              "started corking data in function %s but then moved to %s\n",
+              context->cork_data.function, function);
     }
   }
 

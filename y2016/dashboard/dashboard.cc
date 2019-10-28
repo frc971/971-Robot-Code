@@ -152,7 +152,7 @@ void DataCollector::RunIteration() {
 
 void DataCollector::AddPoint(const ::std::string &name, double value) {
   // Mutex should be locked when this method is called to synchronize packets.
-  CHECK(mutex_.OwnedBySelf());
+  AOS_CHECK(mutex_.OwnedBySelf());
 
   size_t index = GetIndex(sample_id_);
 
@@ -254,8 +254,8 @@ SocketHandler::SocketHandler(::aos::EventLoop *event_loop)
 
 void SocketHandler::onConnect(seasocks::WebSocket *connection) {
   connections_.insert(connection);
-  LOG(INFO, "Connected: %s : %s\n", connection->getRequestUri().c_str(),
-      seasocks::formatAddress(connection->getRemoteAddress()).c_str());
+  AOS_LOG(INFO, "Connected: %s : %s\n", connection->getRequestUri().c_str(),
+          seasocks::formatAddress(connection->getRemoteAddress()).c_str());
 }
 
 void SocketHandler::onData(seasocks::WebSocket *connection, const char *data) {
@@ -267,8 +267,8 @@ void SocketHandler::onData(seasocks::WebSocket *connection, const char *data) {
 
 void SocketHandler::onDisconnect(seasocks::WebSocket *connection) {
   connections_.erase(connection);
-  LOG(INFO, "Disconnected: %s : %s\n", connection->getRequestUri().c_str(),
-      seasocks::formatAddress(connection->getRemoteAddress()).c_str());
+  AOS_LOG(INFO, "Disconnected: %s : %s\n", connection->getRequestUri().c_str(),
+          seasocks::formatAddress(connection->getRemoteAddress()).c_str());
 }
 
 void SocketHandler::Quit() {

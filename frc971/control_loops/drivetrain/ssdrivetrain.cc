@@ -60,7 +60,7 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
 
   const Eigen::Matrix<double, 7, 1> error = kf_->R() - kf_->X_hat();
 
-  LOG_MATRIX(DEBUG, "U_uncapped", *U);
+  AOS_LOG_MATRIX(DEBUG, "U_uncapped", *U);
 
   Eigen::Matrix<double, 2, 2> position_K;
   position_K << kf_->controller().K(0, 0), kf_->controller().K(0, 2),
@@ -75,8 +75,7 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
   const auto drive_error = T_inverse_ * position_error;
   Eigen::Matrix<double, 2, 1> velocity_error;
   velocity_error << error(1, 0), error(3, 0);
-  LOG_MATRIX(DEBUG, "error", error);
-
+  AOS_LOG_MATRIX(DEBUG, "error", error);
 
   Eigen::Matrix<double, 2, 1> U_integral;
   U_integral << kf_->X_hat(4, 0), kf_->X_hat(5, 0);
@@ -139,7 +138,7 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
 
   if (!output_was_capped_) {
     if ((*U - kf_->U_uncapped()).norm() > 0.0001) {
-      LOG(FATAL, "U unnecessarily capped\n");
+      AOS_LOG(FATAL, "U unnecessarily capped\n");
     }
   }
 }
@@ -228,7 +227,7 @@ void DrivetrainMotorsSS::Update(bool enable_control_loop) {
       // coordinates.  Convert back...
       linear_profile_.MoveCurrentState(dt_config_.LeftRightToLinear(kf_->R()));
 
-      LOG(DEBUG, "Saturated while moving\n");
+      AOS_LOG(DEBUG, "Saturated while moving\n");
 
       Eigen::Matrix<double, 2, 1> absolute_angular =
           dt_config_.LeftRightToAngular(kf_->R());

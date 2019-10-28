@@ -39,7 +39,7 @@ void Intake::Iterate(
   switch (state_) {
     case State::UNINITIALIZED:
       // Wait in the uninitialized state until the intake is initialized.
-      LOG(DEBUG, "Uninitialized, waiting for intake\n");
+      AOS_LOG(DEBUG, "Uninitialized, waiting for intake\n");
       if (profiled_subsystem_.initialized()) {
         state_ = State::DISABLED_INITIALIZED;
       }
@@ -101,8 +101,8 @@ void Intake::Iterate(
 
       // Force the intake to be at least at min_position_ out.
       if (profiled_subsystem_.unprofiled_goal(0, 0) < min_position_) {
-        LOG(DEBUG, "Limiting intake to %f from %f\n", min_position_,
-            profiled_subsystem_.unprofiled_goal(0, 0));
+        AOS_LOG(DEBUG, "Limiting intake to %f from %f\n", min_position_,
+                profiled_subsystem_.unprofiled_goal(0, 0));
         profiled_subsystem_.set_unprofiled_goal(min_position_);
       }
 
@@ -114,7 +114,7 @@ void Intake::Iterate(
     } break;
 
     case State::ESTOP:
-      LOG(ERROR, "Estop\n");
+      AOS_LOG(ERROR, "Estop\n");
       disable = true;
       break;
   }

@@ -31,7 +31,7 @@ void SplineDrivetrain::ComputeTrajectory() {
   ::aos::MutexLocker locker(&mutex_);
   while (run_) {
     while (goal_.spline.spline_idx == future_spline_idx_) {
-      CHECK(!new_goal_.Wait());
+      AOS_CHECK(!new_goal_.Wait());
       if (!run_) {
         return;
       }

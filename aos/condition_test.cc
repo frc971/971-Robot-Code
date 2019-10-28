@@ -150,7 +150,7 @@ class ConditionTestProcess {
     new (shared_) Shared();
   }
   ~ConditionTestProcess() {
-    CHECK_EQ(child_, -1);
+    AOS_CHECK_EQ(child_, -1);
   }
 
   void Start() {
@@ -162,7 +162,7 @@ class ConditionTestProcess {
       Run();
       exit(EXIT_SUCCESS);
     } else {  // in parent
-      CHECK_NE(child_, -1);
+      AOS_CHECK_NE(child_, -1);
 
       ASSERT_EQ(0, futex_wait(&shared_->ready));
 
@@ -189,7 +189,7 @@ class ConditionTestProcess {
         return ::testing::AssertionSuccess() << "already been too long";
       }
     } else {
-      CHECK_EQ(0, futex_wait(&shared_->done_delaying));
+      AOS_CHECK_EQ(0, futex_wait(&shared_->done_delaying));
     }
     ::std::this_thread::sleep_for(chrono::milliseconds(10));
     if (!shared_->finished) {
@@ -250,16 +250,16 @@ class ConditionTestProcess {
   }
 
   void Join() {
-    CHECK_NE(child_, -1);
+    AOS_CHECK_NE(child_, -1);
     int status;
     do {
-      CHECK_EQ(waitpid(child_, &status, 0), child_);
+      AOS_CHECK_EQ(waitpid(child_, &status, 0), child_);
     } while (!(WIFEXITED(status) || WIFSIGNALED(status)));
     child_ = -1;
   }
   void Kill() {
-    CHECK_NE(child_, -1);
-    PCHECK(kill(child_, SIGTERM));
+    AOS_CHECK_NE(child_, -1);
+    AOS_PCHECK(kill(child_, SIGTERM));
     Join();
   }
 

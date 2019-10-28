@@ -10,8 +10,8 @@ Calibration FindCalibrationForRobotOrDie(
       return calibration.calibration();
     }
   }
-  LOG(FATAL, "no calibration for %s found in %s\n", robot_name.c_str(),
-      calibration_file.ShortDebugString().c_str());
+  AOS_LOG(FATAL, "no calibration for %s found in %s\n", robot_name.c_str(),
+          calibration_file.ShortDebugString().c_str());
 }
 
 }  // namespace vision

@@ -44,7 +44,7 @@ BaseAutonomousActor::BaseAutonomousActor(
                   ".frc971.control_loops.drivetrain_queue.goal")) {}
 
 void BaseAutonomousActor::ResetDrivetrain() {
-  LOG(INFO, "resetting the drivetrain\n");
+  AOS_LOG(INFO, "resetting the drivetrain\n");
   max_drivetrain_voltage_ = 12.0;
   goal_spline_handle_ = 0;
 
@@ -72,7 +72,7 @@ void BaseAutonomousActor::InitializeEncoders() {
 void BaseAutonomousActor::StartDrive(double distance, double angle,
                                      ProfileParameters linear,
                                      ProfileParameters angular) {
-  LOG(INFO, "Driving distance %f, angle %f\n", distance, angle);
+  AOS_LOG(INFO, "Driving distance %f, angle %f\n", distance, angle);
   {
     const double dangle = angle * dt_config_.robot_radius;
     initial_drivetrain_.left += distance - dangle;
@@ -90,7 +90,7 @@ void BaseAutonomousActor::StartDrive(double distance, double angle,
   drivetrain_message->linear = linear;
   drivetrain_message->angular = angular;
 
-  LOG_STRUCT(DEBUG, "dtg", *drivetrain_message);
+  AOS_LOG_STRUCT(DEBUG, "dtg", *drivetrain_message);
 
   drivetrain_message.Send();
 }
@@ -98,7 +98,7 @@ void BaseAutonomousActor::StartDrive(double distance, double angle,
 void BaseAutonomousActor::WaitUntilDoneOrCanceled(
     ::std::unique_ptr<aos::common::actions::Action> action) {
   if (!action) {
-    LOG(ERROR, "No action, not waiting\n");
+    AOS_LOG(ERROR, "No action, not waiting\n");
     return;
   }
 
@@ -149,7 +149,7 @@ bool BaseAutonomousActor::IsDriveDone() {
             kVelocityTolerance &&
         ::std::abs(drivetrain_status_fetcher_->estimated_right_velocity) <
             kVelocityTolerance) {
-      LOG(INFO, "Finished drive\n");
+      AOS_LOG(INFO, "Finished drive\n");
       return true;
     }
   }
@@ -275,17 +275,17 @@ bool BaseAutonomousActor::WaitForDriveNear(double distance, double angle) {
       drive_has_been_close |= drive_close;
       turn_has_been_close |= turn_close;
       if (drive_has_been_close && !turn_has_been_close && !printed_first) {
-        LOG(INFO, "Drive finished first\n");
+        AOS_LOG(INFO, "Drive finished first\n");
         printed_first = true;
       } else if (!drive_has_been_close && turn_has_been_close &&
                  !printed_first) {
-        LOG(INFO, "Turn finished first\n");
+        AOS_LOG(INFO, "Turn finished first\n");
         printed_first = true;
       }
 
       if (drive_close && turn_close) {
-        LOG(INFO, "Closer than %f < %f distance, %f < %f angle\n",
-            distance_to_go, distance, angle_to_go, angle);
+        AOS_LOG(INFO, "Closer than %f < %f distance, %f < %f angle\n",
+                distance_to_go, distance, angle_to_go, angle);
         return true;
       }
     }
@@ -316,7 +316,7 @@ bool BaseAutonomousActor::WaitForDriveProfileNear(double tolerance) {
 
     if (drivetrain_status_fetcher_.get()) {
       if (::std::abs(linear_error(0)) < tolerance) {
-        LOG(INFO, "Finished drive\n");
+        AOS_LOG(INFO, "Finished drive\n");
         return true;
       }
     }
@@ -352,7 +352,7 @@ bool BaseAutonomousActor::WaitForTurnProfileNear(double tolerance) {
 
     if (drivetrain_status_fetcher_.get()) {
       if (::std::abs(angular_error(0)) < tolerance) {
-        LOG(INFO, "Finished turn\n");
+        AOS_LOG(INFO, "Finished turn\n");
         return true;
       }
     }
@@ -423,7 +423,7 @@ void BaseAutonomousActor::LineFollowAtVelocity(double velocity, int hint) {
 
 BaseAutonomousActor::SplineHandle BaseAutonomousActor::PlanSpline(
     const ::frc971::MultiSpline &spline, SplineDirection direction) {
-  LOG(INFO, "Planning spline\n");
+  AOS_LOG(INFO, "Planning spline\n");
 
   int32_t spline_handle = (++spline_handle_) | ((getpid() & 0xFFFF) << 15);
 
@@ -445,7 +445,7 @@ BaseAutonomousActor::SplineHandle BaseAutonomousActor::PlanSpline(
   drivetrain_message->spline.drive_spline_backwards =
       direction == SplineDirection::kBackward;
 
-  LOG_STRUCT(DEBUG, "dtg", *drivetrain_message);
+  AOS_LOG_STRUCT(DEBUG, "dtg", *drivetrain_message);
 
   drivetrain_message.Send();
 
@@ -454,8 +454,8 @@ BaseAutonomousActor::SplineHandle BaseAutonomousActor::PlanSpline(
 
 bool BaseAutonomousActor::SplineHandle::IsPlanned() {
   base_autonomous_actor_->drivetrain_status_fetcher_.Fetch();
-  LOG_STRUCT(DEBUG, "dts",
-             *(base_autonomous_actor_->drivetrain_status_fetcher_.get()));
+  AOS_LOG_STRUCT(DEBUG, "dts",
+                 *(base_autonomous_actor_->drivetrain_status_fetcher_.get()));
   if (base_autonomous_actor_->drivetrain_status_fetcher_.get() &&
       ((base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging
                 .planning_spline_idx == spline_handle_ &&
@@ -489,20 +489,20 @@ void BaseAutonomousActor::SplineHandle::Start() {
       base_autonomous_actor_->drivetrain_goal_sender_.MakeMessage();
   drivetrain_message->controller_type = 2;
 
-  LOG(INFO, "Starting spline\n");
+  AOS_LOG(INFO, "Starting spline\n");
 
   drivetrain_message->spline_handle = spline_handle_;
   base_autonomous_actor_->goal_spline_handle_ = spline_handle_;
 
-  LOG_STRUCT(DEBUG, "dtg", *drivetrain_message);
+  AOS_LOG_STRUCT(DEBUG, "dtg", *drivetrain_message);
 
   drivetrain_message.Send();
 }
 
 bool BaseAutonomousActor::SplineHandle::IsDone() {
   base_autonomous_actor_->drivetrain_status_fetcher_.Fetch();
-  LOG_STRUCT(INFO, "dts",
-             *(base_autonomous_actor_->drivetrain_status_fetcher_.get()));
+  AOS_LOG_STRUCT(INFO, "dts",
+                 *(base_autonomous_actor_->drivetrain_status_fetcher_.get()));
 
   // We check that the spline we are waiting on is neither currently planning
   // nor executing (we check is_executed because it is possible to receive

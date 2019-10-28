@@ -46,19 +46,19 @@ WebsocketHandler::WebsocketHandler() {}
 
 void WebsocketHandler::onConnect(seasocks::WebSocket *connection) {
   connections_.insert(connection);
-  LOG(INFO, "Connected: %s : %s\n", connection->getRequestUri().c_str(),
-      seasocks::formatAddress(connection->getRemoteAddress()).c_str());
+  AOS_LOG(INFO, "Connected: %s : %s\n", connection->getRequestUri().c_str(),
+          seasocks::formatAddress(connection->getRemoteAddress()).c_str());
 }
 
 void WebsocketHandler::onData(seasocks::WebSocket * /*connection*/,
                               const char *data) {
-  LOG(INFO, "Got data: %s\n", data);
+  AOS_LOG(INFO, "Got data: %s\n", data);
 }
 
 void WebsocketHandler::onDisconnect(seasocks::WebSocket *connection) {
   connections_.erase(connection);
-  LOG(INFO, "Disconnected: %s : %s\n", connection->getRequestUri().c_str(),
-      seasocks::formatAddress(connection->getRemoteAddress()).c_str());
+  AOS_LOG(INFO, "Disconnected: %s : %s\n", connection->getRequestUri().c_str(),
+          seasocks::formatAddress(connection->getRemoteAddress()).c_str());
 }
 
 void WebsocketHandler::SendData(const std::string &data) {

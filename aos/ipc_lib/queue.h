@@ -90,10 +90,10 @@ class RawQueue {
     static constexpr Options<RawQueue> kWriteFailureOptions =
         kNonBlock | kBlock | kOverride;
     if (!options.NoOthersSet(kWriteFailureOptions)) {
-      LOG(FATAL, "illegal write options in %x\n", options.printable());
+      AOS_LOG(FATAL, "illegal write options in %x\n", options.printable());
     }
     if (!options.ExactlyOneSet(kWriteFailureOptions)) {
-      LOG(FATAL, "invalid write options %x\n", options.printable());
+      AOS_LOG(FATAL, "invalid write options %x\n", options.printable());
     }
     return DoWriteMessage(msg, options);
   }
@@ -123,7 +123,7 @@ class RawQueue {
     CheckReadOptions(options);
     static constexpr Options<RawQueue> kFromEndAndPeek = kFromEnd | kPeek;
     if (options.AllSet(kFromEndAndPeek)) {
-      LOG(FATAL, "ReadMessageIndex(kFromEnd | kPeek) is not allowed\n");
+      AOS_LOG(FATAL, "ReadMessageIndex(kFromEnd | kPeek) is not allowed\n");
     }
     return DoReadMessageIndex(options, index, timeout);
   }
@@ -161,11 +161,11 @@ class RawQueue {
     static constexpr Options<RawQueue> kValidOptions =
         kPeek | kFromEnd | kNonBlock | kBlock;
     if (!options.NoOthersSet(kValidOptions)) {
-      LOG(FATAL, "illegal read options in %x\n", options.printable());
+      AOS_LOG(FATAL, "illegal read options in %x\n", options.printable());
     }
     static constexpr Options<RawQueue> kBlockChoices = kNonBlock | kBlock;
     if (!options.ExactlyOneSet(kBlockChoices)) {
-      LOG(FATAL, "invalid read options %x\n", options.printable());
+      AOS_LOG(FATAL, "invalid read options %x\n", options.printable());
     }
   }
 

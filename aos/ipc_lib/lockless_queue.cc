@@ -13,6 +13,7 @@
 #include "aos/ipc_lib/lockless_queue_memory.h"
 #include "aos/logging/logging.h"
 #include "aos/util/compiler_memory_barrier.h"
+#include "glog/logging.h"
 
 namespace aos {
 namespace ipc_lib {
@@ -490,7 +491,7 @@ LocklessQueue::Sender::Sender(LocklessQueueMemory *memory) : memory_(memory) {
   }
 
   if (sender_index_ == -1) {
-    LOG(FATAL, "Too many senders\n");
+    LOG(FATAL) << "Too many senders";
   }
 
   ::aos::ipc_lib::Sender *s = memory_->GetSender(sender_index_);

@@ -478,13 +478,13 @@ class SolenoidWriter {
 
   void Loop(const int iterations) {
     if (iterations != 1) {
-      LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
+      AOS_LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
     }
 
     {
       shooter_.Fetch();
       if (shooter_.get()) {
-        LOG_STRUCT(DEBUG, "solenoids", *shooter_);
+        AOS_LOG_STRUCT(DEBUG, "solenoids", *shooter_);
         shooter_latch_->Set(!shooter_->latch_piston);
         shooter_brake_->Set(!shooter_->brake_piston);
       }
@@ -493,7 +493,7 @@ class SolenoidWriter {
     {
       drivetrain_.Fetch();
       if (drivetrain_.get()) {
-        LOG_STRUCT(DEBUG, "solenoids", *drivetrain_);
+        AOS_LOG_STRUCT(DEBUG, "solenoids", *drivetrain_);
         drivetrain_left_->Set(!drivetrain_->left_high);
         drivetrain_right_->Set(!drivetrain_->right_high);
       }
@@ -513,7 +513,7 @@ class SolenoidWriter {
 
       pcm_->Flush();
       to_log.read_solenoids = pcm_->GetAll();
-      LOG_STRUCT(DEBUG, "pneumatics info", to_log);
+      AOS_LOG_STRUCT(DEBUG, "pneumatics info", to_log);
     }
   }
 
@@ -545,12 +545,12 @@ class ShooterWriter
 
  private:
   virtual void Write(const ShooterQueue::Output &output) override {
-    LOG_STRUCT(DEBUG, "will output", output);
+    AOS_LOG_STRUCT(DEBUG, "will output", output);
     shooter_talon_->SetSpeed(output.voltage / 12.0);
   }
 
   virtual void Stop() override {
-    LOG(WARNING, "shooter output too old\n");
+    AOS_LOG(WARNING, "shooter output too old\n");
     shooter_talon_->SetDisabled();
   }
 
@@ -590,7 +590,7 @@ class ClawWriter
 
  private:
   virtual void Write(const ClawQueue::Output &output) override {
-    LOG_STRUCT(DEBUG, "will output", output);
+    AOS_LOG_STRUCT(DEBUG, "will output", output);
     intake1_talon_->SetSpeed(output.intake_voltage / 12.0);
     intake2_talon_->SetSpeed(output.intake_voltage / 12.0);
     bottom_claw_talon_->SetSpeed(-output.bottom_claw_voltage / 12.0);
@@ -600,7 +600,7 @@ class ClawWriter
   }
 
   virtual void Stop() override {
-    LOG(WARNING, "claw output too old\n");
+    AOS_LOG(WARNING, "claw output too old\n");
     intake1_talon_->SetDisabled();
     intake2_talon_->SetDisabled();
     bottom_claw_talon_->SetDisabled();

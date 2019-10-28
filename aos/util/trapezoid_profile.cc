@@ -108,7 +108,7 @@ void TrapezoidProfile::CalculateTimes(double distance_to_target,
     acceleration_time_ = (top_velocity - output_(1)) / acceleration_;
   }
 
-  CHECK_GT(top_velocity, -maximum_velocity_);
+  AOS_CHECK_GT(top_velocity, -maximum_velocity_);
 
   if (output_(1) > maximum_velocity_) {
     constant_time_ = 0;

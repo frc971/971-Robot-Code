@@ -92,7 +92,7 @@ class UdpClient : public ::aos::events::EpollEvent {
   }
 
   size_t Recv(void *data, int size) {
-    return PCHECK(recv(fd(), static_cast<char *>(data), size, 0));
+    return AOS_PCHECK(recv(fd(), static_cast<char *>(data), size, 0));
   }
 };
 
@@ -197,7 +197,7 @@ class MjpegDataSocket : public aos::events::SocketConnection {
       fprintf(stderr, "wrong sized buffer\n");
       exit(-1);
     }
-    LOG(INFO, "Frame size in bytes: data.size() = %zu\n", data.size());
+    AOS_LOG(INFO, "Frame size in bytes: data.size() = %zu\n", data.size());
     output_buffer_.push_back(aos::vision::DataRef(data_header_tmp_, n_written));
     output_buffer_.push_back(data);
     output_buffer_.push_back("\r\n\r\n");
@@ -322,11 +322,11 @@ int main(int argc, char **argv) {
   params1.set_exposure(FLAGS_camera1_exposure);
 
   ::y2019::VisionStatus vision_status;
-  LOG(INFO,
-      "The UDP socket should be on port 5001 to 10.9.71.2 for "
-      "the competition robot.\n");
-  LOG(INFO, "Starting UDP socket on port 5001 to %s\n",
-      FLAGS_roborio_ip.c_str());
+  AOS_LOG(INFO,
+          "The UDP socket should be on port 5001 to 10.9.71.2 for "
+          "the competition robot.\n");
+  AOS_LOG(INFO, "Starting UDP socket on port 5001 to %s\n",
+          FLAGS_roborio_ip.c_str());
   ::aos::events::ProtoTXUdpSocket<::y2019::VisionStatus> status_socket(
       FLAGS_roborio_ip.c_str(), 5001);
 
@@ -335,7 +335,7 @@ int main(int argc, char **argv) {
       params0, "/dev/video0", &tcp_server_, !FLAGS_log.empty(),
       [&camera0, &status_socket, &vision_status]() {
         vision_status.set_low_frame_count(vision_status.low_frame_count() + 1);
-        LOG(INFO, "Got a frame cam0\n");
+        AOS_LOG(INFO, "Got a frame cam0\n");
         if (camera0->active()) {
           status_socket.Send(vision_status);
         }
@@ -346,7 +346,7 @@ int main(int argc, char **argv) {
         [&camera1, &status_socket, &vision_status]() {
           vision_status.set_high_frame_count(vision_status.high_frame_count() +
                                              1);
-          LOG(INFO, "Got a frame cam1\n");
+          AOS_LOG(INFO, "Got a frame cam1\n");
           if (camera1->active()) {
             status_socket.Send(vision_status);
           }
@@ -366,7 +366,8 @@ int main(int argc, char **argv) {
           cam0_active = true;
           camera0->set_active(true);
         }
-        LOG(INFO, "Got control packet, cam%d active\n", cam0_active ? 0 : 1);
+        AOS_LOG(INFO, "Got control packet, cam%d active\n",
+                cam0_active ? 0 : 1);
       });
 
   // Default to camera0

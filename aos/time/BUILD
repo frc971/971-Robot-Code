@@ -12,9 +12,9 @@ cc_library(
     deps = [
         "//aos:macros",
         "//aos/ipc_lib:shared_mem",
-        "//aos/logging",
         "//aos/mutex",
         "//aos/type_traits",
+        "@com_github_google_glog//:glog",
     ],
 )
 

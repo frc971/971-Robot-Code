@@ -64,7 +64,7 @@ class LinkedList {
       }
       pointer = &(*pointer)->next;
     }
-    LOG(FATAL, "%p is not in the list\n", t);
+    AOS_LOG(FATAL, "%p is not in the list\n", t);
   }
 
   // Calls function for each element of the list.

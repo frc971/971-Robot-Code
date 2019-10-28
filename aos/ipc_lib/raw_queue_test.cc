@@ -99,23 +99,25 @@ class RawQueueTest : public ::testing::Test {
             printf("process %jd was already dead\n",
                    static_cast<intmax_t>(pid_));
           } else {
-            PLOG(FATAL, "kill(SIGKILL, %jd) failed",
-                 static_cast<intmax_t>(pid_));
+            AOS_PLOG(FATAL, "kill(SIGKILL, %jd) failed",
+                     static_cast<intmax_t>(pid_));
           }
         }
       }
       const pid_t ret = wait(NULL);
       if (ret == -1) {
-        LOG(WARNING, "wait(NULL) failed."
-            " child %jd might still be alive\n",
-            static_cast<intmax_t>(pid_));
+        AOS_LOG(WARNING,
+                "wait(NULL) failed."
+                " child %jd might still be alive\n",
+                static_cast<intmax_t>(pid_));
       } else if (ret == 0) {
-        LOG(WARNING, "child %jd wasn't waitable. it might still be alive\n",
-            static_cast<intmax_t>(pid_));
+        AOS_LOG(WARNING, "child %jd wasn't waitable. it might still be alive\n",
+                static_cast<intmax_t>(pid_));
       } else if (ret != pid_) {
-        LOG(WARNING, "child %d is now confirmed dead"
-            ", but child %jd might still be alive\n",
-            ret, static_cast<intmax_t>(pid_));
+        AOS_LOG(WARNING,
+                "child %d is now confirmed dead"
+                ", but child %jd might still be alive\n",
+                ret, static_cast<intmax_t>(pid_));
       }
     }
 
@@ -188,16 +190,16 @@ class RawQueueTest : public ::testing::Test {
     switch (pid) {
       case 0:  // child
         if (kForkSleep != chrono::milliseconds(0)) {
-          LOG(INFO, "pid %jd sleeping for %" PRId64 "ns\n",
-              static_cast<intmax_t>(getpid()), kForkSleep.count());
+          AOS_LOG(INFO, "pid %jd sleeping for %" PRId64 "ns\n",
+                  static_cast<intmax_t>(getpid()), kForkSleep.count());
           this_thread::sleep_for(kForkSleep);
         }
         ::aos::testing::PreventExit();
         function(arg);
-        CHECK_NE(-1, futex_set(done));
+        AOS_CHECK_NE(-1, futex_set(done));
         exit(EXIT_SUCCESS);
       case -1:  // parent failure
-        PLOG(ERROR, "fork() failed");
+        AOS_PLOG(ERROR, "fork() failed");
         return std::unique_ptr<ForkedProcess>();
       default:  // parent
         return std::unique_ptr<ForkedProcess>(new ForkedProcess(pid, done));
@@ -237,7 +239,7 @@ class RawQueueTest : public ::testing::Test {
     static_cast<char *>(fatal_failure)[0] = '\0';
     children_[id] = ForkExecute(Hangs_, to_call).release();
     if (!children_[id]) return AssertionFailure() << "ForkExecute failed";
-    CHECK_EQ(0, futex_wait(&to_call->started));
+    AOS_CHECK_EQ(0, futex_wait(&to_call->started));
     to_calls_[id] = reinterpret_cast<FunctionToCall<void> *>(to_call);
     return AssertionSuccess();
   }

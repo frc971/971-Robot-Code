@@ -63,17 +63,17 @@ class LoggingTest : public ::testing::Test {
     }
     internal::Context *context = internal::Context::Get();
     if (log_implementation->message().source != context->source) {
-      LOG(FATAL, "got a message from %" PRIu32 ", but we're %" PRIu32 "\n",
-          static_cast<uint32_t>(log_implementation->message().source),
-          static_cast<uint32_t>(context->source));
+      AOS_LOG(FATAL, "got a message from %" PRIu32 ", but we're %" PRIu32 "\n",
+              static_cast<uint32_t>(log_implementation->message().source),
+              static_cast<uint32_t>(context->source));
     }
     if (log_implementation->message().name_length != context->name_size ||
         memcmp(log_implementation->message().name, context->name,
                context->name_size) !=
             0) {
-      LOG(FATAL, "got a message from %.*s, but we're %s\n",
-          static_cast<int>(log_implementation->message().name_length),
-          log_implementation->message().name, context->name);
+      AOS_LOG(FATAL, "got a message from %.*s, but we're %s\n",
+              static_cast<int>(log_implementation->message().name_length),
+              log_implementation->message().name, context->name);
     }
     if (strstr(log_implementation->message().message, message.c_str())
         == NULL) {
@@ -110,26 +110,26 @@ typedef LoggingTest LoggingDeathTest;
 // correctly.
 TEST_F(LoggingTest, Basic) {
   EXPECT_FALSE(WasAnythingLogged());
-  LOG(INFO, "test log 1\n");
+  AOS_LOG(INFO, "test log 1\n");
   EXPECT_TRUE(WasLogged(INFO, "test log 1\n"));
-  LOG(INFO, "test log 1.5\n");
+  AOS_LOG(INFO, "test log 1.5\n");
   // there's a subtle typo on purpose...
   EXPECT_FALSE(WasLogged(INFO, "test log 15\n"));
-  LOG(ERROR, "test log 2=%d\n", 55);
+  AOS_LOG(ERROR, "test log 2=%d\n", 55);
   EXPECT_TRUE(WasLogged(ERROR, "test log 2=55\n"));
-  LOG(ERROR, "test log 3\n");
+  AOS_LOG(ERROR, "test log 3\n");
   EXPECT_FALSE(WasLogged(WARNING, "test log 3\n"));
-  LOG(WARNING, "test log 4\n");
+  AOS_LOG(WARNING, "test log 4\n");
   EXPECT_TRUE(WasAnythingLogged());
 }
 TEST_F(LoggingTest, Cork) {
   static const int begin_line = __LINE__;
-  LOG_CORK("first part ");
-  LOG_CORK("second part (=%d) ", 19);
+  AOS_LOG_CORK("first part ");
+  AOS_LOG_CORK("second part (=%d) ", 19);
   EXPECT_FALSE(WasAnythingLogged());
-  LOG_CORK("third part ");
+  AOS_LOG_CORK("third part ");
   static const int end_line = __LINE__;
-  LOG_UNCORK(WARNING, "last part %d\n", 5);
+  AOS_LOG_UNCORK(WARNING, "last part %d\n", 5);
   std::stringstream expected;
   expected << "implementations_test.cc: ";
   expected << (begin_line + 1);
@@ -142,27 +142,24 @@ TEST_F(LoggingTest, Cork) {
 }
 
 TEST_F(LoggingDeathTest, Fatal) {
-  ASSERT_EXIT(LOG(FATAL, "this should crash it\n"),
-              ::testing::KilledBySignal(SIGABRT),
-              "this should crash it");
+  ASSERT_EXIT(AOS_LOG(FATAL, "this should crash it\n"),
+              ::testing::KilledBySignal(SIGABRT), "this should crash it");
 }
 
 TEST_F(LoggingDeathTest, PCHECK) {
-  EXPECT_DEATH(PCHECK(fprintf(stdin, "nope")),
+  EXPECT_DEATH(AOS_PCHECK(fprintf(stdin, "nope")),
                ".*fprintf\\(stdin, \"nope\"\\).*failed.*");
 }
 
-TEST_F(LoggingTest, PCHECK) {
-  EXPECT_EQ(7, PCHECK(printf("abc123\n")));
-}
+TEST_F(LoggingTest, PCHECK) { EXPECT_EQ(7, AOS_PCHECK(printf("abc123\n"))); }
 
 TEST_F(LoggingTest, PrintfDirectives) {
-  LOG(INFO, "test log %%1 %%d\n");
+  AOS_LOG(INFO, "test log %%1 %%d\n");
   EXPECT_TRUE(WasLogged(INFO, "test log %1 %d\n"));
-  LOG_DYNAMIC(WARNING, "test log %%2 %%f\n");
+  AOS_LOG_DYNAMIC(WARNING, "test log %%2 %%f\n");
   EXPECT_TRUE(WasLogged(WARNING, "test log %2 %f\n"));
-  LOG_CORK("log 3 part %%1 %%d ");
-  LOG_UNCORK(DEBUG, "log 3 part %%2 %%f\n");
+  AOS_LOG_CORK("log 3 part %%1 %%d ");
+  AOS_LOG_UNCORK(DEBUG, "log 3 part %%2 %%f\n");
   EXPECT_TRUE(WasLogged(DEBUG, "log 3 part %1 %d log 3 part %2 %f\n"));
 }
 
@@ -173,7 +170,7 @@ TEST_F(LoggingTest, Timing) {
 
   monotonic_clock::time_point start = monotonic_clock::now();
   for (long i = 0; i < kTimingCycles; ++i) {
-    LOG(INFO, "a\n");
+    AOS_LOG(INFO, "a\n");
   }
   monotonic_clock::time_point end = monotonic_clock::now();
   auto diff = end - start;
@@ -183,7 +180,7 @@ TEST_F(LoggingTest, Timing) {
 
   start = monotonic_clock::now();
   for (long i = 0; i < kTimingCycles; ++i) {
-    LOG(INFO, "something longer than just \"a\" to log to test timing\n");
+    AOS_LOG(INFO, "something longer than just \"a\" to log to test timing\n");
   }
   end = monotonic_clock::now();
   diff = end - start;

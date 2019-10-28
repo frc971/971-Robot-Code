@@ -31,7 +31,7 @@ class stl_mutex {
         owner_died_ = true;
         break;
       default:
-        LOG(FATAL, "mutex_grab(%p) failed with %d\n", &native_handle_, ret);
+        AOS_LOG(FATAL, "mutex_grab(%p) failed with %d\n", &native_handle_, ret);
     }
   }
 
@@ -46,12 +46,13 @@ class stl_mutex {
       case 4:
         return false;
       default:
-        LOG(FATAL, "mutex_trylock(%p) failed with %d\n", &native_handle_, ret);
+        AOS_LOG(FATAL, "mutex_trylock(%p) failed with %d\n", &native_handle_,
+                ret);
     }
   }
 
   void unlock() {
-    CHECK(!owner_died_);
+    AOS_CHECK(!owner_died_);
     mutex_unlock(&native_handle_);
   }
 
@@ -83,20 +84,20 @@ class stl_recursive_mutex {
 
   void lock() {
     if (mutex_islocked(mutex_.native_handle())) {
-      CHECK(!owner_died());
+      AOS_CHECK(!owner_died());
       ++recursive_locks_;
     } else {
       mutex_.lock();
       if (mutex_.owner_died()) {
         recursive_locks_ = 0;
       } else {
-        CHECK_EQ(0, recursive_locks_);
+        AOS_CHECK_EQ(0, recursive_locks_);
       }
     }
   }
   bool try_lock() {
     if (mutex_islocked(mutex_.native_handle())) {
-      CHECK(!owner_died());
+      AOS_CHECK(!owner_died());
       ++recursive_locks_;
       return true;
     } else {
@@ -104,7 +105,7 @@ class stl_recursive_mutex {
         if (mutex_.owner_died()) {
           recursive_locks_ = 0;
         } else {
-          CHECK_EQ(0, recursive_locks_);
+          AOS_CHECK_EQ(0, recursive_locks_);
         }
         return true;
       } else {

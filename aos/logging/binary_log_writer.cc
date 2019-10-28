@@ -42,8 +42,8 @@ void CheckTypeWritten(uint32_t type_id, LogFileWriter *writer,
   char buffer[1024];
   ssize_t size = type.Serialize(buffer, sizeof(buffer));
   if (size == -1) {
-    LOG(WARNING, "%zu-byte buffer is too small to serialize type %s\n",
-        sizeof(buffer), type.name.c_str());
+    AOS_LOG(WARNING, "%zu-byte buffer is too small to serialize type %s\n",
+            sizeof(buffer), type.name.c_str());
     return;
   }
   LogFileMessageHeader *const output =
@@ -78,7 +78,7 @@ void AllocateLogName(char **filename, const char *directory) {
       if (errno == 0) {
         break;
       } else {
-        PLOG(FATAL, "readdir(%p) failed", d);
+        AOS_PLOG(FATAL, "readdir(%p) failed", d);
       }
     } else {
       if (sscanf(dir->d_name, "aos_log-%d", &index) == 1) {
@@ -97,15 +97,16 @@ void AllocateLogName(char **filename, const char *directory) {
     previous[len] = '\0';
   } else {
     previous[0] = '\0';
-    LOG(INFO, "Could not find aos_log-current\n");
+    AOS_LOG(INFO, "Could not find aos_log-current\n");
     printf("Could not find aos_log-current\n");
   }
   if (asprintf(filename, "%s/aos_log-%03d", directory, fileindex) == -1) {
     PDie("couldn't create final name");
   }
-  LOG(INFO, "Created log file (aos_log-%d) in directory (%s). Previous file "
-            "was (%s).\n",
-      fileindex, directory, previous);
+  AOS_LOG(INFO,
+          "Created log file (aos_log-%d) in directory (%s). Previous file "
+          "was (%s).\n",
+          fileindex, directory, previous);
   printf("Created log file (aos_log-%d) in directory (%s). Previous file was "
          "(%s).\n",
          fileindex, directory, previous);
@@ -138,7 +139,7 @@ bool FindDevice(char *device, size_t device_size) {
   char test_device[10];
   for (char i = 'a'; i < 'z'; ++i) {
     snprintf(test_device, sizeof(test_device), "/dev/sd%c", i);
-    LOG(INFO, "Trying to access %s\n", test_device);
+    AOS_LOG(INFO, "Trying to access %s\n", test_device);
     if (access(test_device, F_OK) != -1) {
       snprintf(device, device_size, "sd%c", i);
       return true;
@@ -157,13 +158,13 @@ int BinaryLogReaderMain() {
   {
     char dev_name[8];
     while (!FindDevice(dev_name, sizeof(dev_name))) {
-      LOG(INFO, "Waiting for a device\n");
+      AOS_LOG(INFO, "Waiting for a device\n");
       printf("Waiting for a device\n");
       sleep(5);
     }
     snprintf(folder, sizeof(folder), "/media/%s1", dev_name);
     while (!FoundThumbDrive(folder)) {
-      LOG(INFO, "Waiting for %s\n", folder);
+      AOS_LOG(INFO, "Waiting for %s\n", folder);
       printf("Waiting for %s\n", folder);
       sleep(1);
     }
@@ -175,21 +176,21 @@ int BinaryLogReaderMain() {
   const char *folder = configuration::GetLoggingDirectory();
   if (access(folder, R_OK | W_OK) == -1) {
 #endif
-    LOG(FATAL, "folder '%s' does not exist. please create it\n", folder);
+    AOS_LOG(FATAL, "folder '%s' does not exist. please create it\n", folder);
   }
-  LOG(INFO, "logging to folder '%s'\n", folder);
+  AOS_LOG(INFO, "logging to folder '%s'\n", folder);
 
   char *tmp;
   AllocateLogName(&tmp, folder);
   char *tmp2;
   if (asprintf(&tmp2, "%s/aos_log-current", folder) == -1) {
-    PLOG(WARNING, "couldn't create current symlink name");
+    AOS_PLOG(WARNING, "couldn't create current symlink name");
   } else {
     if (unlink(tmp2) == -1 && (errno != EROFS && errno != ENOENT)) {
-      LOG(WARNING, "unlink('%s') failed", tmp2);
+      AOS_LOG(WARNING, "unlink('%s') failed", tmp2);
     }
     if (symlink(tmp, tmp2) == -1) {
-      PLOG(WARNING, "symlink('%s', '%s') failed", tmp, tmp2);
+      AOS_PLOG(WARNING, "symlink('%s', '%s') failed", tmp, tmp2);
     }
     free(tmp2);
   }
@@ -197,7 +198,7 @@ int BinaryLogReaderMain() {
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
   free(tmp);
   if (fd == -1) {
-    PLOG(FATAL, "opening file '%s' failed", tmp);
+    AOS_PLOG(FATAL, "opening file '%s' failed", tmp);
   }
   LogFileWriter writer(fd);
 
@@ -234,7 +235,7 @@ int BinaryLogReaderMain() {
       output_length +=
           sizeof(msg->matrix.type) + sizeof(uint32_t) + sizeof(uint16_t) +
           sizeof(uint16_t) + msg->matrix.string_length;
-      CHECK(MessageType::IsPrimitive(msg->matrix.type));
+      AOS_CHECK(MessageType::IsPrimitive(msg->matrix.type));
     }
     LogFileMessageHeader *const output = writer.GetWritePosition(output_length);
     char *output_strings = reinterpret_cast<char *>(output) + sizeof(*output);
@@ -289,8 +290,8 @@ int BinaryLogReaderMain() {
         memcpy(position, &cols, sizeof(cols));
         position += sizeof(cols);
         output->message_size += sizeof(rows) + sizeof(cols);
-        CHECK_EQ(msg->message_length,
-                 MessageType::Sizeof(msg->matrix.type) * rows * cols);
+        AOS_CHECK_EQ(msg->message_length,
+                     MessageType::Sizeof(msg->matrix.type) * rows * cols);
 
         memcpy(position, msg->matrix.data, msg->message_length + length);
         output->message_size += length;
@@ -301,8 +302,8 @@ int BinaryLogReaderMain() {
 
     if (output->message_size - msg->message_length !=
         output_length - raw_output_length) {
-      LOG(FATAL, "%zu != %zu\n", output->message_size - msg->message_length,
-          output_length - raw_output_length);
+      AOS_LOG(FATAL, "%zu != %zu\n", output->message_size - msg->message_length,
+              output_length - raw_output_length);
     }
 
     futex_set(&output->marker);

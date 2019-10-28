@@ -8,8 +8,8 @@ const char *aos_strsignal(int signal) {
   static thread_local char buffer[512];
 
   if (signal >= SIGRTMIN && signal <= SIGRTMAX) {
-    CHECK(snprintf(buffer, sizeof(buffer), "Real-time signal %d",
-                   signal - SIGRTMIN) > 0);
+    AOS_CHECK(snprintf(buffer, sizeof(buffer), "Real-time signal %d",
+                       signal - SIGRTMIN) > 0);
     return buffer;
   }
 
@@ -17,6 +17,6 @@ const char *aos_strsignal(int signal) {
     return sys_siglist[signal];
   }
 
-  CHECK(snprintf(buffer, sizeof(buffer), "Unknown signal %d", signal) > 0);
+  AOS_CHECK(snprintf(buffer, sizeof(buffer), "Unknown signal %d", signal) > 0);
   return buffer;
 }

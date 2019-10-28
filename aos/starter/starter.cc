@@ -73,7 +73,7 @@ class EventDeleter {
   void operator()(event *evt) {
     if (evt == NULL) return;
     if (event_del(evt) != 0) {
-      LOG(WARNING, "event_del(%p) failed\n", evt);
+      AOS_LOG(WARNING, "event_del(%p) failed\n", evt);
     }
   }
 };
@@ -115,11 +115,11 @@ class FileWatch {
   // After calling this method, this object won't really be doing much of
   // anything besides possibly running its callback or something.
   void RemoveWatch() {
-    CHECK_NE(watch_, -1);
-    CHECK_EQ(watch_to_remove_, -1);
+    AOS_CHECK_NE(watch_, -1);
+    AOS_CHECK_EQ(watch_to_remove_, -1);
 
     if (inotify_rm_watch(notify_fd, watch_) == -1) {
-      PLOG(WARNING, "inotify_rm_watch(%d, %d) failed", notify_fd, watch_);
+      AOS_PLOG(WARNING, "inotify_rm_watch(%d, %d) failed", notify_fd, watch_);
     }
     watch_to_remove_ = watch_;
     watch_ = -1;
@@ -140,16 +140,16 @@ class FileWatch {
   void RemoveWatchFromMap() {
     int watch = watch_to_remove_;
     if (watch == -1) {
-      CHECK_NE(watch_, -1);
+      AOS_CHECK_NE(watch_, -1);
       watch = watch_;
     }
     if (watchers[watch] != this) {
-      LOG(WARNING, "watcher for %s (%p) didn't find itself in the map\n",
-          filename_.c_str(), this);
+      AOS_LOG(WARNING, "watcher for %s (%p) didn't find itself in the map\n",
+              filename_.c_str(), this);
     } else {
       watchers.erase(watch);
     }
-    LOG(DEBUG, "removed watch ID %d\n", watch);
+    AOS_LOG(DEBUG, "removed watch ID %d\n", watch);
     if (watch_to_remove_ == -1) {
       watch_ = -1;
     } else {
@@ -158,19 +158,20 @@ class FileWatch {
   }
 
   void CreateWatch() {
-    CHECK_EQ(watch_, -1);
+    AOS_CHECK_EQ(watch_, -1);
     watch_ = inotify_add_watch(notify_fd, filename_.c_str(),
                                create_ ? IN_CREATE : (IN_ATTRIB |
                                                      IN_MODIFY |
                                                      IN_DELETE_SELF |
                                                      IN_MOVE_SELF));
     if (watch_ == -1) {
-      PLOG(FATAL, "inotify_add_watch(%d, %s,"
-                  " %s ? IN_CREATE : (IN_ATTRIB | IN_MODIFY)) failed",
-           notify_fd, filename_.c_str(), create_ ? "true" : "false");
+      AOS_PLOG(FATAL,
+               "inotify_add_watch(%d, %s,"
+               " %s ? IN_CREATE : (IN_ATTRIB | IN_MODIFY)) failed",
+               notify_fd, filename_.c_str(), create_ ? "true" : "false");
     }
     watchers[watch_] = this;
-    LOG(DEBUG, "watch for %s is %d\n", filename_.c_str(), watch_);
+    AOS_LOG(DEBUG, "watch for %s is %d\n", filename_.c_str(), watch_);
   }
 
   // This gets set up as the callback for EV_READ on the inotify file
@@ -179,7 +180,7 @@ class FileWatch {
     unsigned int to_read;
     // Use FIONREAD to figure out how many bytes there are to read.
     if (ioctl(notify_fd, FIONREAD, &to_read) < 0) {
-      PLOG(FATAL, "FIONREAD(%d, %p) failed", notify_fd, &to_read);
+      AOS_PLOG(FATAL, "FIONREAD(%d, %p) failed", notify_fd, &to_read);
     }
     inotify_event *notifyevt = static_cast<inotify_event *>(malloc(to_read));
     const char *end = reinterpret_cast<char *>(notifyevt) + to_read;
@@ -187,11 +188,11 @@ class FileWatch {
 
     ssize_t ret = read(notify_fd, notifyevt, to_read);
     if (ret < 0) {
-      PLOG(FATAL, "read(%d, %p, %u) failed", notify_fd, notifyevt, to_read);
+      AOS_PLOG(FATAL, "read(%d, %p, %u) failed", notify_fd, notifyevt, to_read);
     }
     if (static_cast<size_t>(ret) != to_read) {
-      LOG(ERROR, "read(%d, %p, %u) returned %zd instead of %u\n",
-          notify_fd, notifyevt, to_read, ret, to_read);
+      AOS_LOG(ERROR, "read(%d, %p, %u) returned %zd instead of %u\n", notify_fd,
+              notifyevt, to_read, ret, to_read);
       return;
     }
 
@@ -199,9 +200,9 @@ class FileWatch {
     // multiple events at once.
     while (reinterpret_cast<char *>(notifyevt) < end) {
       if (watchers.count(notifyevt->wd) != 1) {
-        LOG(WARNING, "couldn't find whose watch ID %d is\n", notifyevt->wd);
+        AOS_LOG(WARNING, "couldn't find whose watch ID %d is\n", notifyevt->wd);
       } else {
-        LOG(DEBUG, "mask=%" PRIu32 "\n", notifyevt->mask);
+        AOS_LOG(DEBUG, "mask=%" PRIu32 "\n", notifyevt->mask);
         // If the watch was removed.
         if (notifyevt->mask & IN_IGNORED) {
           watchers[notifyevt->wd]->WatchDeleted();
@@ -221,15 +222,15 @@ class FileWatch {
   // INotifyReadable calls this method whenever the watch for our file gets
   // removed somehow.
   void WatchDeleted() {
-    LOG(DEBUG, "watch for %s deleted\n", filename_.c_str());
+    AOS_LOG(DEBUG, "watch for %s deleted\n", filename_.c_str());
     RemoveWatchFromMap();
     CreateWatch();
   }
 
   // INotifyReadable calls this method whenever the watch for our file triggers.
   void FileNotified(const char *filename) {
-    CHECK_NE(watch_, -1);
-    LOG(DEBUG, "got a notification for %s\n", filename_.c_str());
+    AOS_CHECK_NE(watch_, -1);
+    AOS_LOG(DEBUG, "got a notification for %s\n", filename_.c_str());
 
     if (!check_filename_.empty()) {
       if (filename == NULL) {
@@ -280,7 +281,7 @@ std::string RunCommand(std::string command) {
   errno = 0;
   FILE *pipe = popen(command.c_str(), "r");
   if (pipe == NULL) {
-    PLOG(FATAL, "popen(\"%s\", \"r\") failed", command.c_str());
+    AOS_PLOG(FATAL, "popen(\"%s\", \"r\") failed", command.c_str());
   }
 
   // result_size is how many bytes result is currently allocated to.
@@ -292,7 +293,7 @@ std::string RunCommand(std::string command) {
       result_size *= 2;
       void *new_result = realloc(result.get(), result_size);
       if (new_result == NULL) {
-        PLOG(FATAL, "realloc(%p, %zd) failed", result.get(), result_size);
+        AOS_PLOG(FATAL, "realloc(%p, %zd) failed", result.get(), result_size);
       } else {
         result.release();
         result = unique_c_ptr<char>(static_cast<char *>(new_result));
@@ -304,8 +305,8 @@ std::string RunCommand(std::string command) {
     // because of an error.
     if (ret < result_size - read) {
       if (ferror(pipe)) {
-        PLOG(FATAL, "couldn't finish reading output of \"%s\"\n",
-             command.c_str());
+        AOS_PLOG(FATAL, "couldn't finish reading output of \"%s\"\n",
+                 command.c_str());
       }
     }
     read += ret;
@@ -314,7 +315,8 @@ std::string RunCommand(std::string command) {
     }
 
     if (feof(pipe)) {
-      LOG(FATAL, "`%s` failed. didn't print a whole line\n", command.c_str());
+      AOS_LOG(FATAL, "`%s` failed. didn't print a whole line\n",
+              command.c_str());
     }
   }
 
@@ -323,11 +325,11 @@ std::string RunCommand(std::string command) {
 
   int child_status = pclose(pipe);
   if (child_status == -1) {
-    PLOG(FATAL, "pclose(%p) failed", pipe);
+    AOS_PLOG(FATAL, "pclose(%p) failed", pipe);
   }
 
   if (child_status != 0) {
-    LOG(FATAL, "`%s` failed. return %d\n", command.c_str(), child_status);
+    AOS_LOG(FATAL, "`%s` failed. return %d\n", command.c_str(), child_status);
   }
 
   return std::string(result.get());
@@ -347,8 +349,8 @@ void Timeout(monotonic_clock::duration time,
     time_timeval.tv_usec = usec.count();
   }
   if (evtimer_add(timeout.release(), &time_timeval) != 0) {
-    LOG(FATAL, "evtimer_add(%p, %p) failed\n", timeout.release(),
-        &time_timeval);
+    AOS_LOG(FATAL, "evtimer_add(%p, %p) failed\n", timeout.release(),
+            &time_timeval);
   }
 }
 
@@ -399,7 +401,7 @@ class Child {
       monotonic_clock::time_point oldest = restarts_.front();
       restarts_.pop();
       if (monotonic_clock::now() <= kMaxRestartsTime + oldest) {
-        LOG(WARNING, "process %s getting restarted too often\n", name());
+        AOS_LOG(WARNING, "process %s getting restarted too often\n", name());
         Timeout(kResumeWait, StaticStart, this);
         return;
       }
@@ -439,7 +441,7 @@ class Child {
   }
 
   void FileModified() {
-    LOG(DEBUG, "file for %s modified\n", name());
+    AOS_LOG(DEBUG, "file for %s modified\n", name());
     struct timeval restart_time_timeval;
     {
       ::std::chrono::seconds sec =
@@ -453,14 +455,14 @@ class Child {
     }
     // This will reset the timeout again if it hasn't run yet.
     if (evtimer_add(restart_timeout.get(), &restart_time_timeval) != 0) {
-      LOG(FATAL, "evtimer_add(%p, %p) failed\n", restart_timeout.get(),
-          &restart_time_timeval);
+      AOS_LOG(FATAL, "evtimer_add(%p, %p) failed\n", restart_timeout.get(),
+              &restart_time_timeval);
     }
     waiting_to_restart.insert(this);
   }
 
   static void StaticDoRestart(int, short, void *) {
-    LOG(DEBUG, "restarting everything that needs it\n");
+    AOS_LOG(DEBUG, "restarting everything that needs it\n");
     if (waiting_to_restart.find(core.get()) != waiting_to_restart.end()) {
       core->DoRestart();
       waiting_to_restart.erase(core.get());
@@ -477,12 +479,12 @@ class Child {
     if (stat_at_start_valid_) {
       struct stat current_stat;
       if (stat(original_binary_.c_str(), &current_stat) == -1) {
-        PLOG(FATAL, "stat(%s, %p) failed",
-             original_binary_.c_str(), &current_stat);
+        AOS_PLOG(FATAL, "stat(%s, %p) failed", original_binary_.c_str(),
+                 &current_stat);
       }
       if (current_stat.st_mtime == stat_at_start_.st_mtime) {
-        LOG(DEBUG, "ignoring trigger for %s because mtime didn't change\n",
-            name());
+        AOS_LOG(DEBUG, "ignoring trigger for %s because mtime didn't change\n",
+                name());
         return;
       }
     }
@@ -492,16 +494,16 @@ class Child {
       exit(0);
     }
     if (pid_ != -1) {
-      LOG(DEBUG, "sending SIGTERM to child %d to restart it\n", pid_);
+      AOS_LOG(DEBUG, "sending SIGTERM to child %d to restart it\n", pid_);
       if (kill(pid_, SIGTERM) == -1) {
-        PLOG(WARNING, "kill(%d, SIGTERM) failed", pid_);
+        AOS_PLOG(WARNING, "kill(%d, SIGTERM) failed", pid_);
       }
       CheckDiedStatus *status = new CheckDiedStatus();
       status->self = this;
       status->old_pid = pid_;
       Timeout(kProcessDieTime, StaticCheckDied, status);
     } else {
-      LOG(WARNING, "%s restart attempted but not running\n", name());
+      AOS_LOG(WARNING, "%s restart attempted but not running\n", name());
     }
   }
 
@@ -514,9 +516,9 @@ class Child {
   // Checks to see if the child using the PID old_pid is still running.
   void CheckDied(pid_t old_pid) {
     if (pid_ == old_pid) {
-      LOG(WARNING, "child %d refused to die\n", old_pid);
+      AOS_LOG(WARNING, "child %d refused to die\n", old_pid);
       if (kill(old_pid, SIGKILL) == -1) {
-        PLOG(WARNING, "kill(%d, SIGKILL) failed", old_pid);
+        AOS_PLOG(WARNING, "kill(%d, SIGKILL) failed", old_pid);
       }
     }
   }
@@ -528,10 +530,10 @@ class Child {
   // Actually starts the child.
   void Start() {
     if (pid_ != -1) {
-      LOG(WARNING, "calling Start() but already have child %d running\n",
-          pid_);
+      AOS_LOG(WARNING, "calling Start() but already have child %d running\n",
+              pid_);
       if (kill(pid_, SIGKILL) == -1) {
-        PLOG(WARNING, "kill(%d, SIGKILL) failed", pid_);
+        AOS_PLOG(WARNING, "kill(%d, SIGKILL) failed", pid_);
         return;
       }
       pid_ = -1;
@@ -540,16 +542,16 @@ class Child {
     // Remove the name that we run from (ie from a previous execution) and then
     // hard link the real filename to it.
     if (unlink(binary_.c_str()) != 0 && errno != ENOENT) {
-      PLOG(FATAL, "removing %s failed", binary_.c_str());
+      AOS_PLOG(FATAL, "removing %s failed", binary_.c_str());
     }
     if (link(original_binary_.c_str(), binary_.c_str()) != 0) {
-      PLOG(FATAL, "link('%s', '%s') failed",
-           original_binary_.c_str(), binary_.c_str());
+      AOS_PLOG(FATAL, "link('%s', '%s') failed", original_binary_.c_str(),
+               binary_.c_str());
     }
 
     if (stat(original_binary_.c_str(), &stat_at_start_) == -1) {
-      PLOG(FATAL, "stat(%s, %p) failed",
-           original_binary_.c_str(), &stat_at_start_);
+      AOS_PLOG(FATAL, "stat(%s, %p) failed", original_binary_.c_str(),
+               &stat_at_start_);
     }
     stat_at_start_valid_ = true;
 
@@ -563,13 +565,13 @@ class Child {
       // The const_cast is safe because no code that might care if it gets
       // modified can run afterwards.
       execv(binary_.c_str(), const_cast<char **>(argv));
-      PLOG(FATAL, "execv(%s, %p) failed", binary_.c_str(), argv);
+      AOS_PLOG(FATAL, "execv(%s, %p) failed", binary_.c_str(), argv);
       _exit(EXIT_FAILURE);
     }
     if (pid_ == -1) {
-      PLOG(FATAL, "forking to run \"%s\" failed", binary_.c_str());
+      AOS_PLOG(FATAL, "forking to run \"%s\" failed", binary_.c_str());
     }
-    LOG(DEBUG, "started \"%s\" successfully\n", binary_.c_str());
+    AOS_LOG(DEBUG, "started \"%s\" successfully\n", binary_.c_str());
   }
 
   // A history of the times that this process has been restarted.
@@ -672,7 +674,7 @@ void SigCHLDReceived(int /*fd*/, short /*events*/, void *) {
     siginfo_t infop;
     infop.si_pid = 0;
     if (waitid(P_ALL, 0, &infop, WEXITED | WSTOPPED | WNOHANG) != 0) {
-      PLOG(WARNING, "waitid failed");
+      AOS_PLOG(WARNING, "waitid failed");
       continue;
     }
     // If there are no more child process deaths to process.
@@ -686,38 +688,41 @@ void SigCHLDReceived(int /*fd*/, short /*events*/, void *) {
     if (child) {
       switch (infop.si_code) {
         case CLD_EXITED:
-          LOG(WARNING, "child %d (%s) exited with status %d\n",
-              pid, child->name(), status);
+          AOS_LOG(WARNING, "child %d (%s) exited with status %d\n", pid,
+                  child->name(), status);
           break;
         case CLD_DUMPED:
-          LOG(INFO, "child %d actually dumped core. "
-              "falling through to killed by signal case\n", pid);
+          AOS_LOG(INFO,
+                  "child %d actually dumped core. "
+                  "falling through to killed by signal case\n",
+                  pid);
         case CLD_KILLED:
           // If somebody (possibly us) sent it SIGTERM that means that they just
           // want it to stop, so it stopping isn't a WARNING.
-          LOG((status == SIGTERM) ? DEBUG : WARNING,
-              "child %d (%s) was killed by signal %d (%s)\n",
-              pid, child->name(), status, aos_strsignal(status));
+          AOS_LOG((status == SIGTERM) ? DEBUG : WARNING,
+                  "child %d (%s) was killed by signal %d (%s)\n", pid,
+                  child->name(), status, aos_strsignal(status));
           break;
         case CLD_STOPPED:
-          LOG(WARNING, "child %d (%s) was stopped by signal %d "
-              "(giving it a SIGCONT(%d))\n",
-              pid, child->name(), status, SIGCONT);
+          AOS_LOG(WARNING,
+                  "child %d (%s) was stopped by signal %d "
+                  "(giving it a SIGCONT(%d))\n",
+                  pid, child->name(), status, SIGCONT);
           kill(pid, SIGCONT);
           continue;
         default:
-          LOG(WARNING, "something happened to child %d (%s) (killing it)\n",
-              pid, child->name());
+          AOS_LOG(WARNING, "something happened to child %d (%s) (killing it)\n",
+                  pid, child->name());
           kill(pid, SIGKILL);
           continue;
       }
     } else {
-      LOG(WARNING, "couldn't find a Child for pid %d\n", pid);
+      AOS_LOG(WARNING, "couldn't find a Child for pid %d\n", pid);
       return;
     }
 
     if (child == core) {
-      LOG(FATAL, "core died\n");
+      AOS_LOG(FATAL, "core died\n");
     }
     child->ProcessDied();
   }
@@ -736,12 +741,12 @@ void Main() {
   // fail due to lack of permissions if we do not manually set the UID to admin.
 #ifdef AOS_ARCHITECTURE_arm_frc
   if (setuid(0) != 0) {
-    PLOG(FATAL, "setuid(0) failed");
+    AOS_PLOG(FATAL, "setuid(0) failed");
   }
 #endif
 
   if (setpgid(0 /*self*/, 0 /*make PGID the same as PID*/) != 0) {
-    PLOG(FATAL, "setpgid(0, 0) failed");
+    AOS_PLOG(FATAL, "setpgid(0, 0) failed");
   }
 
   // Make sure that we kill all children when we exit.
@@ -765,7 +770,7 @@ void Main() {
   // will never use, and the roboRIO doesn't have enough RAM to handle it.
   // This is in here instead of starter.sh because starter.sh doesn't run with
   // permissions on a roboRIO.
-  CHECK(system("echo 0 > /proc/sys/vm/overcommit_memory") == 0);
+  AOS_CHECK(system("echo 0 > /proc/sys/vm/overcommit_memory") == 0);
 #endif
   
   libevent_base = EventBaseUniquePtr(event_base_new());
@@ -776,10 +781,10 @@ void Main() {
   const int result =
       ::aos::util::RunCommand(("touch '" + core_touch_file + "'").c_str());
   if (result == -1) {
-    PLOG(FATAL, "running `touch '%s'` failed\n", core_touch_file.c_str());
+    AOS_PLOG(FATAL, "running `touch '%s'` failed\n", core_touch_file.c_str());
   } else if (!WIFEXITED(result) || WEXITSTATUS(result) != 0) {
-    LOG(FATAL, "`touch '%s'` gave result %x\n", core_touch_file.c_str(),
-        result);
+    AOS_LOG(FATAL, "`touch '%s'` gave result %x\n", core_touch_file.c_str(),
+            result);
   }
   FileWatch core_touch_file_watch(core_touch_file, Run, NULL);
   core = unique_ptr<Child>(
@@ -787,19 +792,19 @@ void Main() {
 
   FILE *pid_file = fopen("/tmp/starter.pid", "w");
   if (pid_file == NULL) {
-    PLOG(FATAL, "fopen(\"/tmp/starter.pid\", \"w\") failed");
+    AOS_PLOG(FATAL, "fopen(\"/tmp/starter.pid\", \"w\") failed");
   } else {
     if (fprintf(pid_file, "%d", core->pid()) == -1) {
-      PLOG(WARNING, "fprintf(%p, \"%%d\", %d) failed",
-           pid_file, core->pid());
+      AOS_PLOG(WARNING, "fprintf(%p, \"%%d\", %d) failed", pid_file,
+               core->pid());
     }
     fclose(pid_file);
   }
 
-  LOG(INFO, "waiting for %s to appear\n", core_touch_file.c_str());
+  AOS_LOG(INFO, "waiting for %s to appear\n", core_touch_file.c_str());
 
   event_base_dispatch(libevent_base.get());
-  LOG(FATAL, "event_base_dispatch(%p) returned\n", libevent_base.get());
+  AOS_LOG(FATAL, "event_base_dispatch(%p) returned\n", libevent_base.get());
 }
 
 // This is the callback for when core creates the file indicating that it has
@@ -820,7 +825,7 @@ void Run(void *watch) {
       break;
     }
     if (list_file.rdstate() != 0) {
-      LOG(FATAL, "reading input file %s failed\n", child_list_file);
+      AOS_LOG(FATAL, "reading input file %s failed\n", child_list_file);
     }
     children.push_back(unique_ptr<Child>(new Child(child_name)));
   }

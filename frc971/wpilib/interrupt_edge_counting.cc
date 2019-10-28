@@ -55,8 +55,8 @@ void EdgeCounter::operator()() {
       }
       current_value_ = hall_value;
     } else {
-      LOG(WARNING, "Detected spurious edge on %d.  Dropping it.\n",
-          input_->GetChannel());
+      AOS_LOG(WARNING, "Detected spurious edge on %d.  Dropping it.\n",
+              input_->GetChannel());
     }
   }
 }
@@ -93,7 +93,7 @@ bool InterruptSynchronizer::TryFinishingIteration() {
   ::std::unique_lock<::aos::stl_mutex> mutex_guard(mutex_);
   for (auto &c : handlers_) {
     if (c->interrupt_count_changed()) {
-      LOG(WARNING, "got an interrupt while sampling. retrying\n");
+      AOS_LOG(WARNING, "got an interrupt while sampling. retrying\n");
       return false;
     }
   }

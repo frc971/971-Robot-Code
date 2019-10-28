@@ -5,7 +5,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
-#include "aos/logging/queue_logging.h"
+#include "glog/logging.h"
 
 namespace aos {
 namespace testing {
@@ -564,7 +564,7 @@ TEST_P(AbstractEventLoopTest, PhasedLoopTest) {
       [&times, &loop1, this](int count) {
         EXPECT_EQ(count, 1);
         times.push_back(loop1->monotonic_now());
-        LOG(INFO, "%zu\n", times.size());
+        LOG(INFO) << times.size();
         if (times.size() == kCount) {
           this->Exit();
         }

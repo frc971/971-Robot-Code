@@ -35,7 +35,7 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
           ".y2019.control_loops.superstructure.superstructure_queue.status")) {}
 
 bool AutonomousActor::WaitForDriveXGreater(double x) {
-  LOG(INFO, "Waiting until x > %f\n", x);
+  AOS_LOG(INFO, "Waiting until x > %f\n", x);
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
                                       event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
@@ -47,14 +47,14 @@ bool AutonomousActor::WaitForDriveXGreater(double x) {
     phased_loop.SleepUntilNext();
     drivetrain_status_fetcher_.Fetch();
     if (drivetrain_status_fetcher_->x > x) {
-      LOG(INFO, "X at %f\n", drivetrain_status_fetcher_->x);
+      AOS_LOG(INFO, "X at %f\n", drivetrain_status_fetcher_->x);
       return true;
     }
   }
 }
 
 bool AutonomousActor::WaitForDriveYCloseToZero(double y) {
-  LOG(INFO, "Waiting until |y| < %f\n", y);
+  AOS_LOG(INFO, "Waiting until |y| < %f\n", y);
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
                                       event_loop()->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
@@ -66,7 +66,7 @@ bool AutonomousActor::WaitForDriveYCloseToZero(double y) {
     phased_loop.SleepUntilNext();
     drivetrain_status_fetcher_.Fetch();
     if (::std::abs(drivetrain_status_fetcher_->y) < y) {
-      LOG(INFO, "Y at %f\n", drivetrain_status_fetcher_->y);
+      AOS_LOG(INFO, "Y at %f\n", drivetrain_status_fetcher_->y);
       return true;
     }
   }
@@ -97,18 +97,20 @@ void AutonomousActor::Reset(bool is_left) {
     localizer_resetter->theta = M_PI;
     localizer_resetter->theta_uncertainty = 0.00001;
     if (!localizer_resetter.Send()) {
-      LOG(ERROR, "Failed to reset localizer.\n");
+      AOS_LOG(ERROR, "Failed to reset localizer.\n");
     }
   }
 
   // Wait for the drivetrain to run so it has time to reset the heading.
   // Otherwise our drivetrain reset will do a 180 right at the start.
   WaitUntil([this]() { return drivetrain_status_fetcher_.Fetch(); });
-  LOG(INFO, "Heading is %f\n", drivetrain_status_fetcher_->estimated_heading);
+  AOS_LOG(INFO, "Heading is %f\n",
+          drivetrain_status_fetcher_->estimated_heading);
   InitializeEncoders();
   ResetDrivetrain();
   WaitUntil([this]() { return drivetrain_status_fetcher_.Fetch(); });
-  LOG(INFO, "Heading is %f\n", drivetrain_status_fetcher_->estimated_heading);
+  AOS_LOG(INFO, "Heading is %f\n",
+          drivetrain_status_fetcher_->estimated_heading);
 
   ResetDrivetrain();
   InitializeEncoders();
@@ -134,8 +136,8 @@ bool AutonomousActor::RunAction(
   const bool is_left = params.mode == 0;
 
   {
-    LOG(INFO, "Starting autonomous action with mode %" PRId32 " %s\n",
-        params.mode, is_left ? "left" : "right");
+    AOS_LOG(INFO, "Starting autonomous action with mode %" PRId32 " %s\n",
+            params.mode, is_left ? "left" : "right");
   }
 
   const double turn_scalar = is_left ? 1.0 : -1.0;
@@ -157,12 +159,12 @@ bool AutonomousActor::RunAction(
 
     // if planned start the spline and plan the next
     if (!spline1.WaitForPlan()) return true;
-    LOG(INFO, "Planned\n");
+    AOS_LOG(INFO, "Planned\n");
     spline1.Start();
 
     // If suction, move the superstructure to score
     if (!WaitForGamePiece()) return true;
-    LOG(INFO, "Has game piece\n");
+    AOS_LOG(INFO, "Has game piece\n");
     if (!spline1.WaitForSplineDistanceRemaining(3.5)) return true;
     set_elevator_wrist_goal(kPanelBackwardMiddlePos);
     SendSuperstructureGoal();
@@ -186,7 +188,7 @@ bool AutonomousActor::RunAction(
 
     if (!WaitForMilliseconds(::std::chrono::milliseconds(150))) return true;
     if (!spline2.WaitForPlan()) return true;
-    LOG(INFO, "Planned\n");
+    AOS_LOG(INFO, "Planned\n");
     // Drive back to hp and set the superstructure accordingly
     spline2.Start();
     if (!WaitForMilliseconds(::std::chrono::milliseconds(500))) return true;
@@ -207,7 +209,7 @@ bool AutonomousActor::RunAction(
     if (!WaitForDriveXGreater(0.50)) return true;
     if (!spline3.WaitForPlan()) return true;
     spline3.Start();
-    LOG(INFO, "Has game piece\n");
+    AOS_LOG(INFO, "Has game piece\n");
     if (!WaitForMilliseconds(::std::chrono::milliseconds(1000))) return true;
     set_elevator_wrist_goal(kPanelBackwardMiddlePos);
     SendSuperstructureGoal();
@@ -235,12 +237,12 @@ bool AutonomousActor::RunAction(
 
     // if planned start the spline and plan the next
     if (!spline1.WaitForPlan()) return true;
-    LOG(INFO, "Planned\n");
+    AOS_LOG(INFO, "Planned\n");
     spline1.Start();
 
     // If suction, move the superstructure to score
     if (!WaitForGamePiece()) return true;
-    LOG(INFO, "Has game piece\n");
+    AOS_LOG(INFO, "Has game piece\n");
     // unstick the hatch panel
     if (!WaitForMilliseconds(::std::chrono::milliseconds(500))) return true;
     set_elevator_goal(0.5);
@@ -257,8 +259,8 @@ bool AutonomousActor::RunAction(
 
     set_suction_goal(false, 1);
     SendSuperstructureGoal();
-    LOG(INFO, "Dropping disc 1 %f\n",
-        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+    AOS_LOG(INFO, "Dropping disc 1 %f\n",
+            ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
     if (!WaitForDriveYCloseToZero(1.13)) return true;
     if (!WaitForMilliseconds(::std::chrono::milliseconds(300))) return true;
@@ -269,7 +271,7 @@ bool AutonomousActor::RunAction(
                    SplineDirection::kForward);
     if (!WaitForMilliseconds(::std::chrono::milliseconds(400))) return true;
     if (!spline2.WaitForPlan()) return true;
-    LOG(INFO, "Planned\n");
+    AOS_LOG(INFO, "Planned\n");
     // Drive back to hp and set the superstructure accordingly
     spline2.Start();
     if (!WaitForMilliseconds(::std::chrono::milliseconds(200))) return true;
@@ -283,8 +285,8 @@ bool AutonomousActor::RunAction(
     LineFollowAtVelocity(1.5);
     // As soon as we pick up Panel 2 go score on the rocket
     if (!WaitForGamePiece()) return true;
-    LOG(INFO, "Got gamepiece %f\n",
-        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+    AOS_LOG(INFO, "Got gamepiece %f\n",
+            ::aos::time::DurationInSeconds(monotonic_now() - start_time));
     LineFollowAtVelocity(-4.0);
     SplineHandle spline3 =
         PlanSpline(AutonomousSplines::HPToThirdCargoShipBay(is_left),
@@ -300,19 +302,19 @@ bool AutonomousActor::RunAction(
     if (!spline3.WaitForSplineDistanceRemaining(0.7)) return true;
     // Line follow in to the second disc.
     LineFollowAtVelocity(-0.7, 3);
-    LOG(INFO, "Drawing in disc 2 %f\n",
-        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+    AOS_LOG(INFO, "Drawing in disc 2 %f\n",
+            ::aos::time::DurationInSeconds(monotonic_now() - start_time));
     if (!WaitForDriveYCloseToZero(1.2)) return true;
 
     set_suction_goal(false, 1);
     SendSuperstructureGoal();
-    LOG(INFO, "Dropping disc 2 %f\n",
-        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+    AOS_LOG(INFO, "Dropping disc 2 %f\n",
+            ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
     if (!WaitForDriveYCloseToZero(1.13)) return true;
     if (!WaitForMilliseconds(::std::chrono::milliseconds(200))) return true;
-    LOG(INFO, "Backing up %f\n",
-        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+    AOS_LOG(INFO, "Backing up %f\n",
+            ::aos::time::DurationInSeconds(monotonic_now() - start_time));
     LineFollowAtVelocity(0.9, 3);
     if (!WaitForMilliseconds(::std::chrono::milliseconds(400))) return true;
   } else {
@@ -324,37 +326,37 @@ bool AutonomousActor::RunAction(
     SendSuperstructureGoal();
 
     if (!WaitForGamePiece()) return true;
-    LOG(INFO, "Has game piece\n");
+    AOS_LOG(INFO, "Has game piece\n");
 
     StartDrive(-4.0, 0.0, kJumpDrive, kTurn);
     if (!WaitForDriveNear(3.3, 10.0)) return true;
-    LOG(INFO, "Lifting\n");
+    AOS_LOG(INFO, "Lifting\n");
     set_elevator_goal(0.30);
     SendSuperstructureGoal();
 
     if (!WaitForDriveNear(2.8, 10.0)) return true;
-    LOG(INFO, "Off the platform\n");
+    AOS_LOG(INFO, "Off the platform\n");
 
     StartDrive(0.0, 1.00 * turn_scalar, kDrive, kTurn);
-    LOG(INFO, "Turn started\n");
+    AOS_LOG(INFO, "Turn started\n");
     if (!WaitForSuperstructureDone()) return true;
-    LOG(INFO, "Superstructure done\n");
+    AOS_LOG(INFO, "Superstructure done\n");
 
     if (!WaitForDriveNear(0.7, 10.0)) return true;
     StartDrive(0.0, -0.35 * turn_scalar, kDrive, kTurn);
 
-    LOG(INFO, "Elevator up\n");
+    AOS_LOG(INFO, "Elevator up\n");
     set_elevator_goal(0.78);
     SendSuperstructureGoal();
 
     if (!WaitForDriveDone()) return true;
-    LOG(INFO, "Done driving\n");
+    AOS_LOG(INFO, "Done driving\n");
 
     if (!WaitForSuperstructureDone()) return true;
   }
 
-  LOG(INFO, "Done %f\n",
-        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "Done %f\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   return true;
 }

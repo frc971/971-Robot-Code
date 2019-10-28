@@ -47,7 +47,7 @@ double ShootActor::SpeedToAngleOffset(double speed) {
 bool ShootActor::IntakeOff() {
   claw_goal_fetcher_.Fetch();
   if (!claw_goal_fetcher_.get()) {
-    LOG(WARNING, "no claw goal\n");
+    AOS_LOG(WARNING, "no claw goal\n");
     // If it doesn't have a goal, then the intake isn't on so we don't have to
     // turn it off.
     return true;
@@ -60,7 +60,7 @@ bool ShootActor::IntakeOff() {
     goal_message->centering = 0.0;
 
     if (!goal_message.Send()) {
-      LOG(WARNING, "sending claw goal failed\n");
+      AOS_LOG(WARNING, "sending claw goal failed\n");
       return false;
     }
   }
@@ -82,16 +82,16 @@ bool ShootActor::RunAction(const double&) {
   goal_message->unload_requested = false;
   goal_message->load_requested = false;
   if (!goal_message.Send()) {
-    LOG(WARNING, "sending shooter goal failed\n");
+    AOS_LOG(WARNING, "sending shooter goal failed\n");
     return false;
   }
 
-  LOG(INFO, "finished\n");
+  AOS_LOG(INFO, "finished\n");
   return true;
 }
 
 void ShootActor::InnerRunAction() {
-  LOG(INFO, "Shooting at the current angle and power.\n");
+  AOS_LOG(INFO, "Shooting at the current angle and power.\n");
 
   // wait for claw to be ready
   if (WaitUntil(::std::bind(&ShootActor::DoneSetupShot, this))) {
@@ -114,7 +114,7 @@ void ShootActor::InnerRunAction() {
     goal_message->unload_requested = false;
     goal_message->load_requested = false;
     if (!goal_message.Send()) {
-      LOG(WARNING, "sending shooter goal failed\n");
+      AOS_LOG(WARNING, "sending shooter goal failed\n");
       return;
     }
   }
@@ -134,25 +134,26 @@ bool ShootActor::ClawIsReady() {
                          claw_goal_fetcher_->bottom_angle) < 0.10) &&
              (::std::abs(claw_status_fetcher_->separation -
                          claw_goal_fetcher_->separation_angle) < 0.4);
-  LOG(DEBUG, "Claw is %sready zeroed %d bottom_velocity %f bottom %f sep %f\n",
-      ans ? "" : "not ", claw_status_fetcher_->zeroed,
-      ::std::abs(claw_status_fetcher_->bottom_velocity),
-      ::std::abs(claw_status_fetcher_->bottom -
-                 claw_goal_fetcher_->bottom_angle),
-      ::std::abs(claw_status_fetcher_->separation -
-                 claw_goal_fetcher_->separation_angle));
+  AOS_LOG(DEBUG,
+          "Claw is %sready zeroed %d bottom_velocity %f bottom %f sep %f\n",
+          ans ? "" : "not ", claw_status_fetcher_->zeroed,
+          ::std::abs(claw_status_fetcher_->bottom_velocity),
+          ::std::abs(claw_status_fetcher_->bottom -
+                     claw_goal_fetcher_->bottom_angle),
+          ::std::abs(claw_status_fetcher_->separation -
+                     claw_goal_fetcher_->separation_angle));
   return ans;
 }
 
 bool ShootActor::ShooterIsReady() {
   shooter_goal_fetcher_.Fetch();
 
-  LOG(DEBUG, "Power error is %f - %f -> %f, ready %d\n",
-      shooter_status_fetcher_->hard_stop_power,
-      shooter_goal_fetcher_->shot_power,
-      ::std::abs(shooter_status_fetcher_->hard_stop_power -
-                 shooter_goal_fetcher_->shot_power),
-      shooter_status_fetcher_->ready);
+  AOS_LOG(DEBUG, "Power error is %f - %f -> %f, ready %d\n",
+          shooter_status_fetcher_->hard_stop_power,
+          shooter_goal_fetcher_->shot_power,
+          ::std::abs(shooter_status_fetcher_->hard_stop_power -
+                     shooter_goal_fetcher_->shot_power),
+          shooter_status_fetcher_->ready);
   return (::std::abs(shooter_status_fetcher_->hard_stop_power -
                      shooter_goal_fetcher_->shot_power) < 1.0) &&
          shooter_status_fetcher_->ready;
@@ -164,7 +165,7 @@ bool ShootActor::DoneSetupShot() {
   // Make sure that both the shooter and claw have reached the necessary
   // states.
   if (ShooterIsReady() && ClawIsReady()) {
-    LOG(INFO, "Claw and Shooter ready for shooting.\n");
+    AOS_LOG(INFO, "Claw and Shooter ready for shooting.\n");
     return true;
   }
 
@@ -174,7 +175,7 @@ bool ShootActor::DoneSetupShot() {
 bool ShootActor::DonePreShotOpen() {
   claw_status_fetcher_.Fetch();
   if (claw_status_fetcher_->separation > kClawShootingSeparation) {
-    LOG(INFO, "Opened up enough to shoot.\n");
+    AOS_LOG(INFO, "Opened up enough to shoot.\n");
     return true;
   }
   return false;
@@ -184,7 +185,7 @@ bool ShootActor::DoneShot() {
   shooter_status_fetcher_.Fetch();
   if (shooter_status_fetcher_.get() &&
       shooter_status_fetcher_->shots > previous_shots_) {
-    LOG(INFO, "Shot succeeded!\n");
+    AOS_LOG(INFO, "Shot succeeded!\n");
     return true;
   }
   return false;

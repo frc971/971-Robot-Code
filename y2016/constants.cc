@@ -142,13 +142,13 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       };
       break;
     default:
-      LOG(FATAL, "unknown team #%" PRIu16 "\n", team);
+      AOS_LOG(FATAL, "unknown team #%" PRIu16 "\n", team);
   }
 }
 
 const Values *DoGetValues() {
   uint16_t team = ::aos::network::GetTeamNumber();
-  LOG(INFO, "creating a Constants for team %" PRIu16 "\n", team);
+  AOS_LOG(INFO, "creating a Constants for team %" PRIu16 "\n", team);
   return DoGetValuesForTeam(team);
 }
 

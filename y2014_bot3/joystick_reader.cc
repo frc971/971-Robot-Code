@@ -85,7 +85,7 @@ class Reader : public ::aos::input::JoystickInput {
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       action_queue_.CancelAllActions();
-      LOG(DEBUG, "Canceling\n");
+      AOS_LOG(DEBUG, "Canceling\n");
     }
 
     // Rollers.
@@ -103,20 +103,20 @@ class Reader : public ::aos::input::JoystickInput {
       rollers_goal->human_player = true;
     }
     if (!rollers_goal.Send()) {
-      LOG(WARNING, "Sending rollers values failed.\n");
+      AOS_LOG(WARNING, "Sending rollers values failed.\n");
     }
   }
 
  private:
   void StartAuto() {
-    LOG(INFO, "Starting auto mode.\n");
+    AOS_LOG(INFO, "Starting auto mode.\n");
     ::frc971::autonomous::AutonomousActionParams params;
     params.mode = 0;
     action_queue_.EnqueueAction(autonomous_action_factory_.Make(params));
   }
 
   void StopAuto() {
-    LOG(INFO, "Stopping auto mode\n");
+    AOS_LOG(INFO, "Stopping auto mode\n");
     action_queue_.CancelAllActions();
   }
 

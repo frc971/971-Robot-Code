@@ -25,7 +25,7 @@ bool ADIS16448::DoTransaction(uint8_t to_send[size], uint8_t to_receive[size]) {
   rx_clearer_.ClearRxFifo();
   switch (spi_->Transaction(to_send, to_receive, size)) {
     case -1:
-      LOG(INFO, "SPI::Transaction of %zd bytes failed\n", size);
+      AOS_LOG(INFO, "SPI::Transaction of %zd bytes failed\n", size);
       return false;
     case size:
       if (dummy_spi_) {
@@ -34,7 +34,7 @@ bool ADIS16448::DoTransaction(uint8_t to_send[size], uint8_t to_receive[size]) {
       }
       return true;
     default:
-      LOG(FATAL, "SPI::Transaction returned something weird\n");
+      AOS_LOG(FATAL, "SPI::Transaction returned something weird\n");
   }
 }
 
@@ -142,7 +142,7 @@ ADIS16448::ADIS16448(::aos::EventLoop *event_loop, frc::SPI::Port port,
 
   // NI's SPI driver defaults to SCHED_OTHER.  Find it's PID with ps, and change
   // it to a RT priority of 33.
-  PCHECK(
+  AOS_PCHECK(
       system("ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
              "33") == 0);
 
@@ -180,7 +180,7 @@ void ADIS16448::InitializeUntilSuccessful() {
       ::std::this_thread::sleep_for(::std::chrono::milliseconds(50));
     }
   }
-  LOG(INFO, "IMU initialized successfully\n");
+  AOS_LOG(INFO, "IMU initialized successfully\n");
 }
 
 void ADIS16448::DoRun() {
@@ -201,7 +201,7 @@ void ADIS16448::DoRun() {
       const frc::InterruptableSensorBase::WaitResult result =
           dio1_->WaitForInterrupt(0.1, !got_an_interrupt);
       if (result == frc::InterruptableSensorBase::kTimeout) {
-        LOG(WARNING, "IMU read timed out\n");
+        AOS_LOG(WARNING, "IMU read timed out\n");
         InitializeUntilSuccessful();
         continue;
       }
@@ -221,7 +221,7 @@ void ADIS16448::DoRun() {
     // scenario.
     if (!dio1_->Get() || dio1_->WaitForInterrupt(0, false) !=
                              frc::InterruptableSensorBase::kTimeout) {
-      LOG(ERROR, "IMU read took too long\n");
+      AOS_LOG(ERROR, "IMU read took too long\n");
       continue;
     }
 
@@ -230,8 +230,9 @@ void ADIS16448::DoRun() {
       uint16_t received_crc =
           to_receive[13 * 2 + 1] | (to_receive[13 * 2] << 8);
       if (received_crc != calculated_crc) {
-        LOG(WARNING, "received CRC %" PRIx16 " but calculated %" PRIx16 "\n",
-            received_crc, calculated_crc);
+        AOS_LOG(WARNING,
+                "received CRC %" PRIx16 " but calculated %" PRIx16 "\n",
+                received_crc, calculated_crc);
         InitializeUntilSuccessful();
         continue;
       }
@@ -274,9 +275,9 @@ void ADIS16448::DoRun() {
           gyro_x_zeroed_offset_ = -average_gyro_x.GetAverage();
           gyro_y_zeroed_offset_ = -average_gyro_y.GetAverage();
           gyro_z_zeroed_offset_ = -average_gyro_z.GetAverage();
-          LOG(INFO, "total gyro zero offset X:%f, Y:%f, Z:%f\n",
-              gyro_x_zeroed_offset_, gyro_y_zeroed_offset_,
-              gyro_z_zeroed_offset_);
+          AOS_LOG(INFO, "total gyro zero offset X:%f, Y:%f, Z:%f\n",
+                  gyro_x_zeroed_offset_, gyro_y_zeroed_offset_,
+                  gyro_z_zeroed_offset_);
           gyros_are_zeroed_ = true;
         }
       }
@@ -306,9 +307,9 @@ void ADIS16448::DoRun() {
     message->temperature =
         ConvertValue(&to_receive[24], kTemperatureLsbDegree) + kTemperatureZero;
 
-    LOG_STRUCT(DEBUG, "sending", *message);
+    AOS_LOG_STRUCT(DEBUG, "sending", *message);
     if (!message.Send()) {
-      LOG(WARNING, "sending queue message failed\n");
+      AOS_LOG(WARNING, "sending queue message failed\n");
     }
 
     spi_idle_callback_();
@@ -355,51 +356,51 @@ bool ADIS16448::WriteRegister(uint8_t address, uint16_t value) {
 bool ADIS16448::CheckDiagStatValue(uint16_t value) const {
   bool r = true;
   if (value & (1 << 2)) {
-    LOG(WARNING, "IMU gave flash update failure\n");
+    AOS_LOG(WARNING, "IMU gave flash update failure\n");
   }
   if (value & (1 << 3)) {
-    LOG(WARNING, "IMU gave SPI communication failure\n");
+    AOS_LOG(WARNING, "IMU gave SPI communication failure\n");
   }
   if (value & (1 << 4)) {
-    LOG(WARNING, "IMU gave sensor overrange\n");
+    AOS_LOG(WARNING, "IMU gave sensor overrange\n");
   }
   if (value & (1 << 5)) {
-    LOG(WARNING, "IMU gave self-test failure\n");
+    AOS_LOG(WARNING, "IMU gave self-test failure\n");
     r = false;
     if (value & (1 << 10)) {
-      LOG(WARNING, "IMU gave X-axis gyro self-test failure\n");
+      AOS_LOG(WARNING, "IMU gave X-axis gyro self-test failure\n");
     }
     if (value & (1 << 11)) {
-      LOG(WARNING, "IMU gave Y-axis gyro self-test failure\n");
+      AOS_LOG(WARNING, "IMU gave Y-axis gyro self-test failure\n");
     }
     if (value & (1 << 12)) {
-      LOG(WARNING, "IMU gave Z-axis gyro self-test failure\n");
+      AOS_LOG(WARNING, "IMU gave Z-axis gyro self-test failure\n");
     }
     if (value & (1 << 13)) {
-      LOG(WARNING, "IMU gave X-axis accelerometer self-test failure\n");
+      AOS_LOG(WARNING, "IMU gave X-axis accelerometer self-test failure\n");
     }
     if (value & (1 << 14)) {
-      LOG(WARNING, "IMU gave Y-axis accelerometer self-test failure\n");
+      AOS_LOG(WARNING, "IMU gave Y-axis accelerometer self-test failure\n");
     }
     if (value & (1 << 15)) {
-      LOG(WARNING, "IMU gave Z-axis accelerometer self-test failure, %x\n",
-          value);
+      AOS_LOG(WARNING, "IMU gave Z-axis accelerometer self-test failure, %x\n",
+              value);
     }
     if (value & (1 << 0)) {
-      LOG(WARNING, "IMU gave magnetometer functional test failure\n");
+      AOS_LOG(WARNING, "IMU gave magnetometer functional test failure\n");
     }
     if (value & (1 << 1)) {
-      LOG(WARNING, "IMU gave barometer functional test failure\n");
+      AOS_LOG(WARNING, "IMU gave barometer functional test failure\n");
     }
   }
   if (value & (1 << 6)) {
-    LOG(WARNING, "IMU gave flash test checksum failure\n");
+    AOS_LOG(WARNING, "IMU gave flash test checksum failure\n");
   }
   if (value & (1 << 8)) {
-    LOG(WARNING, "IMU says alarm 1 is active\n");
+    AOS_LOG(WARNING, "IMU says alarm 1 is active\n");
   }
   if (value & (1 << 9)) {
-    LOG(WARNING, "IMU says alarm 2 is active\n");
+    AOS_LOG(WARNING, "IMU says alarm 2 is active\n");
   }
   return r;
 }
@@ -409,7 +410,7 @@ bool ADIS16448::Initialize() {
   uint16_t product_id;
   if (!ReadRegister(kLotId1Address, &product_id)) return false;
   if (product_id != 0x4040) {
-    LOG(ERROR, "product ID is %" PRIx16 " instead of 0x4040\n", product_id);
+    AOS_LOG(ERROR, "product ID is %" PRIx16 " instead of 0x4040\n", product_id);
     return false;
   }
 
@@ -417,8 +418,8 @@ bool ADIS16448::Initialize() {
   if (!ReadRegister(kLotId2Address, &lot_id1)) return false;
   if (!ReadRegister(kSerialNumberAddress, &lot_id2)) return false;
   if (!ReadRegister(0, &serial_number)) return false;
-  LOG(INFO, "have IMU %" PRIx16 "%" PRIx16 ": %" PRIx16 "\n", lot_id1, lot_id2,
-      serial_number);
+  AOS_LOG(INFO, "have IMU %" PRIx16 "%" PRIx16 ": %" PRIx16 "\n", lot_id1,
+          lot_id2, serial_number);
 
   // Divide the sampling by 2^2 = 4 to get 819.2 / 4 = 204.8 Hz.
   if (!WriteRegister(kSmplPrdAddress, (2 << 8) | 1)) return false;

@@ -179,7 +179,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
   }
 
   void AutoEnded() override {
-    LOG(INFO, "Auto ended, assuming disc and have piece\n");
+    AOS_LOG(INFO, "Auto ended, assuming disc and have piece\n");
     grab_piece_ = true;
     switch_ball_ = false;
   }
@@ -191,7 +191,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     superstructure_status_fetcher_.Fetch();
     if (!superstructure_status_fetcher_.get() ||
         !superstructure_position_fetcher_.get()) {
-      LOG(ERROR, "Got no superstructure status or position packet.\n");
+      AOS_LOG(ERROR, "Got no superstructure status or position packet.\n");
       return;
     }
 
@@ -223,7 +223,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
         }
       }
       if (!target_hint.Send()) {
-        LOG(ERROR, "Failed to send target selector hint.\n");
+        AOS_LOG(ERROR, "Failed to send target selector hint.\n");
       }
     }
 
@@ -235,7 +235,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       localizer_resetter->keep_current_theta = true;
 
       if (!localizer_resetter.Send()) {
-        LOG(ERROR, "Failed to reset localizer.\n");
+        AOS_LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
 
@@ -247,7 +247,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       localizer_resetter->keep_current_theta = true;
 
       if (!localizer_resetter.Send()) {
-        LOG(ERROR, "Failed to reset localizer.\n");
+        AOS_LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
 
@@ -259,7 +259,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       localizer_resetter->theta = 0.0;
 
       if (!localizer_resetter.Send()) {
-        LOG(ERROR, "Failed to reset localizer.\n");
+        AOS_LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
 
@@ -271,7 +271,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       localizer_resetter->theta = M_PI;
 
       if (!localizer_resetter.Send()) {
-        LOG(ERROR, "Failed to reset localizer.\n");
+        AOS_LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
 
@@ -283,7 +283,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       localizer_resetter->theta = 0.0;
 
       if (!localizer_resetter.Send()) {
-        LOG(ERROR, "Failed to reset localizer.\n");
+        AOS_LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
 
@@ -295,7 +295,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       localizer_resetter->theta = M_PI;
 
       if (!localizer_resetter.Send()) {
-        LOG(ERROR, "Failed to reset localizer.\n");
+        AOS_LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
 
@@ -313,7 +313,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       last_release_button_press_ = monotonic_now;
     }
 
-    LOG(INFO, "has_piece: %d\n", superstructure_status_fetcher_->has_piece);
+    AOS_LOG(INFO, "has_piece: %d\n", superstructure_status_fetcher_->has_piece);
     if (data.IsPressed(kSuctionBall)) {
       grab_piece_ = true;
     } else if (data.IsPressed(kSuctionHatch)) {
@@ -323,7 +323,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
                data.IsPressed(kReleaseButtonBoard) ||
                !superstructure_status_fetcher_->has_piece) {
       grab_piece_ = false;
-      LOG(INFO, "releasing due to other thing\n");
+      AOS_LOG(INFO, "releasing due to other thing\n");
     }
 
     if (data.IsPressed(kRocketBackwardUnpressed)) {
@@ -477,7 +477,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
          data.IsPressed(kRelease)) ||
         data.IsPressed(kReleaseButtonBoard)) {
       grab_piece_ = false;
-      LOG(INFO, "Releasing due to button\n");
+      AOS_LOG(INFO, "Releasing due to button\n");
     }
 
     if (switch_ball_) {
@@ -494,9 +494,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
         elevator_wrist_pos_.elevator;
     new_superstructure_goal->wrist.unsafe_goal = elevator_wrist_pos_.wrist;
 
-    LOG_STRUCT(DEBUG, "sending goal", *new_superstructure_goal);
+    AOS_LOG_STRUCT(DEBUG, "sending goal", *new_superstructure_goal);
     if (!new_superstructure_goal.Send()) {
-      LOG(ERROR, "Sending superstructure goal failed.\n");
+      AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
     }
 
     if (monotonic_now >
@@ -508,7 +508,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     {
       auto camera_log_message = camera_log_sender_.MakeMessage();
       camera_log_message->log = data.IsPressed(kCameraLog);
-      LOG_STRUCT(DEBUG, "camera_log", *camera_log_message);
+      AOS_LOG_STRUCT(DEBUG, "camera_log", *camera_log_message);
       camera_log_message.Send();
     }
   }

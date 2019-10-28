@@ -163,14 +163,14 @@ class SolenoidWriter {
 
   void Loop(const int iterations) {
     if (iterations != 1) {
-      LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
+      AOS_LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
     }
 
     // Drivetrain
     {
       drivetrain_.Fetch();
       if (drivetrain_.get()) {
-        LOG_STRUCT(DEBUG, "solenoids", *drivetrain_);
+        AOS_LOG_STRUCT(DEBUG, "solenoids", *drivetrain_);
         drivetrain_left_->Set(drivetrain_->left_high);
         drivetrain_right_->Set(drivetrain_->right_high);
       }
@@ -180,7 +180,7 @@ class SolenoidWriter {
     {
       rollers_.Fetch();
       if (rollers_.get()) {
-        LOG_STRUCT(DEBUG, "solenoids", *rollers_);
+        AOS_LOG_STRUCT(DEBUG, "solenoids", *rollers_);
         rollers_front_->Set(rollers_->front_extended);
         rollers_back_->Set(rollers_->back_extended);
       }
@@ -202,7 +202,7 @@ class SolenoidWriter {
 
       pcm_->Flush();
       to_log.read_solenoids = pcm_->GetAll();
-      LOG_STRUCT(DEBUG, "pneumatics info", to_log);
+      AOS_LOG_STRUCT(DEBUG, "pneumatics info", to_log);
     }
   }
 
@@ -247,7 +247,7 @@ class RollersWriter : public LoopOutputHandler<
  private:
   virtual void Write(const ::y2014_bot3::control_loops::RollersQueue::Output
                          &output) override {
-    LOG_STRUCT(DEBUG, "will output", output);
+    AOS_LOG_STRUCT(DEBUG, "will output", output);
     rollers_front_left_intake_talon_->SetSpeed(output.front_intake_voltage /
                                                12.0);
     rollers_front_right_intake_talon_->SetSpeed(
@@ -260,7 +260,7 @@ class RollersWriter : public LoopOutputHandler<
   }
 
   virtual void Stop() override {
-    LOG(WARNING, "Intake output too old\n");
+    AOS_LOG(WARNING, "Intake output too old\n");
     rollers_front_left_intake_talon_->SetDisabled();
     rollers_front_right_intake_talon_->SetDisabled();
     rollers_back_left_intake_talon_->SetDisabled();

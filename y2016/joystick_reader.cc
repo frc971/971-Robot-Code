@@ -126,10 +126,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
         actors::VisionAlignActionParams params;
         EnqueueAction(vision_align_action_factory_.Make(params));
         vision_action_running_ = true;
-        LOG(INFO, "Starting vision align\n");
+        AOS_LOG(INFO, "Starting vision align\n");
       } else {
         if (!vision_valid_) {
-          LOG(INFO, "Vision align but not valid\n");
+          AOS_LOG(INFO, "Vision align but not valid\n");
         }
       }
     }
@@ -147,7 +147,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       // If we are not enabled, reset the waiting for zero bit.
-      LOG(DEBUG, "Waiting for zero.\n");
+      AOS_LOG(DEBUG, "Waiting for zero.\n");
       waiting_for_zero_ = true;
     }
 
@@ -158,18 +158,18 @@ class Reader : public ::aos::input::ActionJoystickInput {
     bool force_lights_on = false;
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       CancelAllActions();
-      LOG(DEBUG, "Canceling\n");
+      AOS_LOG(DEBUG, "Canceling\n");
     }
 
     superstructure_status_fetcher_.Fetch();
     if (!superstructure_status_fetcher_.get()) {
-      LOG(ERROR, "Got no superstructure status packet.\n");
+      AOS_LOG(ERROR, "Got no superstructure status packet.\n");
     }
 
     if (superstructure_status_fetcher_.get() &&
         superstructure_status_fetcher_->zeroed) {
       if (waiting_for_zero_) {
-        LOG(DEBUG, "Zeroed! Starting teleop mode.\n");
+        AOS_LOG(DEBUG, "Zeroed! Starting teleop mode.\n");
         waiting_for_zero_ = false;
       }
     } else {
@@ -379,10 +379,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
         new_superstructure_goal->force_intake = true;
 
         if (!new_superstructure_goal.Send()) {
-          LOG(ERROR, "Sending superstructure goal failed.\n");
+          AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
         } else {
-          LOG(DEBUG, "sending goals: intake: %f, shoulder: %f, wrist: %f\n",
-              intake_goal_, shoulder_goal_, wrist_goal_);
+          AOS_LOG(DEBUG, "sending goals: intake: %f, shoulder: %f, wrist: %f\n",
+                  intake_goal_, shoulder_goal_, wrist_goal_);
         }
       }
 
@@ -394,7 +394,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       shooter_message->shooting_forwards = wrist_goal_ > 0;
 
       if (!shooter_message.Send()) {
-        LOG(ERROR, "Sending shooter goal failed.\n");
+        AOS_LOG(ERROR, "Sending shooter goal failed.\n");
       }
     }
   }

@@ -40,13 +40,13 @@ void IndexPulseProfiledSubsystem::CapGoal(const char *name,
     // enough to find them (and the index pulse which might be right next to
     // one).
     if ((*goal)(0, 0) > kMaxRange) {
-      LOG(WARNING, "Goal %s above limit, %f > %f\n", name, (*goal)(0, 0),
-          kMaxRange);
+      AOS_LOG(WARNING, "Goal %s above limit, %f > %f\n", name, (*goal)(0, 0),
+              kMaxRange);
       (*goal)(0, 0) = kMaxRange;
     }
     if ((*goal)(0, 0) < -kMaxRange) {
-      LOG(WARNING, "Goal %s below limit, %f < %f\n", name, (*goal)(0, 0),
-          kMaxRange);
+      AOS_LOG(WARNING, "Goal %s below limit, %f < %f\n", name, (*goal)(0, 0),
+              kMaxRange);
       (*goal)(0, 0) = -kMaxRange;
     }
   }
@@ -71,7 +71,7 @@ void Hood::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
   switch (state_) {
     case State::UNINITIALIZED:
       // Wait in the uninitialized state until the hood is initialized.
-      LOG(DEBUG, "Uninitialized, waiting for hood\n");
+      AOS_LOG(DEBUG, "Uninitialized, waiting for hood\n");
       if (profiled_subsystem_.initialized()) {
         state_ = State::DISABLED_INITIALIZED;
       }
@@ -163,7 +163,7 @@ void Hood::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
     } break;
 
     case State::ESTOP:
-      LOG(ERROR, "Estop\n");
+      AOS_LOG(ERROR, "Estop\n");
       disable = true;
       break;
   }

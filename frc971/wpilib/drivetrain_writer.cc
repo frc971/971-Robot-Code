@@ -12,7 +12,7 @@ namespace wpilib {
 
 void DrivetrainWriter::Write(
     const ::frc971::control_loops::DrivetrainQueue::Output &output) {
-  LOG_STRUCT(DEBUG, "will output", output);
+  AOS_LOG_STRUCT(DEBUG, "will output", output);
   left_controller0_->SetSpeed(SafeSpeed(reversed_left0_, output.left_voltage));
   right_controller0_->SetSpeed(
       SafeSpeed(reversed_right0_, output.right_voltage));
@@ -28,7 +28,7 @@ void DrivetrainWriter::Write(
 }
 
 void DrivetrainWriter::Stop() {
-  LOG(WARNING, "drivetrain output too old\n");
+  AOS_LOG(WARNING, "drivetrain output too old\n");
   left_controller0_->SetDisabled();
   right_controller0_->SetDisabled();
 

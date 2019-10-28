@@ -32,7 +32,7 @@ GyroSender::GyroSender(::aos::EventLoop *event_loop)
       gyro_reading_sender_(
           event_loop_->MakeSender<::frc971::sensors::GyroReading>(
               ".frc971.sensors.gyro_reading")) {
-  PCHECK(
+  AOS_PCHECK(
       system("ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
              "33") == 0);
   event_loop_->set_name("Gyro");
@@ -53,12 +53,12 @@ void GyroSender::Loop(const int iterations) {
       if (last_initialize_time_ + chrono::milliseconds(50) < monotonic_now) {
         if (gyro_.InitializeGyro()) {
           state_ = State::RUNNING;
-          LOG(INFO, "gyro initialized successfully\n");
+          AOS_LOG(INFO, "gyro initialized successfully\n");
 
           {
             auto message = uid_sender_.MakeMessage();
             message->uid = gyro_.ReadPartID();
-            LOG_STRUCT(INFO, "gyro ID", *message);
+            AOS_LOG_STRUCT(INFO, "gyro ID", *message);
             message.Send();
           }
         }
@@ -68,42 +68,42 @@ void GyroSender::Loop(const int iterations) {
     case State::RUNNING: {
       const uint32_t result = gyro_.GetReading();
       if (result == 0) {
-        LOG(WARNING, "normal gyro read failed\n");
+        AOS_LOG(WARNING, "normal gyro read failed\n");
         return;
       }
       switch (gyro_.ExtractStatus(result)) {
         case 0:
-          LOG(WARNING, "gyro says data is bad\n");
+          AOS_LOG(WARNING, "gyro says data is bad\n");
           return;
         case 1:
           break;
         default:
-          LOG(WARNING, "gyro gave weird status 0x%" PRIx8 "\n",
-              gyro_.ExtractStatus(result));
+          AOS_LOG(WARNING, "gyro gave weird status 0x%" PRIx8 "\n",
+                  gyro_.ExtractStatus(result));
           return;
       }
       if (gyro_.ExtractErrors(result) != 0) {
         const uint8_t errors = gyro_.ExtractErrors(result);
         if (errors & (1 << 6)) {
-          LOG(WARNING, "gyro gave PLL error\n");
+          AOS_LOG(WARNING, "gyro gave PLL error\n");
         }
         if (errors & (1 << 5)) {
-          LOG(WARNING, "gyro gave quadrature error\n");
+          AOS_LOG(WARNING, "gyro gave quadrature error\n");
         }
         if (errors & (1 << 4)) {
-          LOG(WARNING, "gyro gave non-volatile memory error\n");
+          AOS_LOG(WARNING, "gyro gave non-volatile memory error\n");
         }
         if (errors & (1 << 3)) {
-          LOG(WARNING, "gyro gave volatile memory error\n");
+          AOS_LOG(WARNING, "gyro gave volatile memory error\n");
         }
         if (errors & (1 << 2)) {
-          LOG(WARNING, "gyro gave power error\n");
+          AOS_LOG(WARNING, "gyro gave power error\n");
         }
         if (errors & (1 << 1)) {
-          LOG(WARNING, "gyro gave continuous self-test error\n");
+          AOS_LOG(WARNING, "gyro gave continuous self-test error\n");
         }
         if (errors & 1) {
-          LOG(WARNING, "gyro gave unexpected self-test mode\n");
+          AOS_LOG(WARNING, "gyro gave unexpected self-test mode\n");
         }
         return;
       }
@@ -120,7 +120,7 @@ void GyroSender::Loop(const int iterations) {
         angle_ += (new_angle + zero_offset_) * iterations;
         message->angle = angle_;
         message->velocity = angle_rate + zero_offset_ * kReadingRate;
-        LOG_STRUCT(DEBUG, "sending", *message);
+        AOS_LOG_STRUCT(DEBUG, "sending", *message);
         message.Send();
       } else {
         // TODO(brian): Don't break without 6 seconds of standing still before
@@ -130,7 +130,7 @@ void GyroSender::Loop(const int iterations) {
         {
           message->angle = new_angle;
           message->velocity = angle_rate;
-          LOG_STRUCT(DEBUG, "collected while zeroing", *message);
+          AOS_LOG_STRUCT(DEBUG, "collected while zeroing", *message);
           message->angle = 0.0;
           message->velocity = 0.0;
           message.Send();
@@ -141,7 +141,7 @@ void GyroSender::Loop(const int iterations) {
         if (joystick_state_fetcher_.get() && joystick_state_fetcher_->enabled &&
             zeroing_data_.full()) {
           zero_offset_ = -zeroing_data_.GetAverage();
-          LOG(INFO, "total zero offset %f\n", zero_offset_);
+          AOS_LOG(INFO, "total zero offset %f\n", zero_offset_);
           zeroed_ = true;
         }
       }

@@ -26,45 +26,47 @@ GyroInterface::GyroInterface() : gyro_(new frc::SPI(frc::SPI::kOnboardCS0)) {
 bool GyroInterface::InitializeGyro() {
   uint32_t result;
   if (!DoTransaction(0x20000003, &result)) {
-    LOG(WARNING, "failed to start a self-check\n");
+    AOS_LOG(WARNING, "failed to start a self-check\n");
     return false;
   }
   if (result != 1) {
     // We might have hit a parity error or something and are now retrying, so
     // this isn't a very big deal.
-    LOG(INFO, "gyro unexpected initial response 0x%" PRIx32 "\n", result);
+    AOS_LOG(INFO, "gyro unexpected initial response 0x%" PRIx32 "\n", result);
   }
 
   // Wait for it to assert the fault conditions before reading them.
   ::std::this_thread::sleep_for(::std::chrono::milliseconds(50));
 
   if (!DoTransaction(0x20000000, &result)) {
-    LOG(WARNING, "failed to clear latched non-fault data\n");
+    AOS_LOG(WARNING, "failed to clear latched non-fault data\n");
     return false;
   }
-  LOG(DEBUG, "gyro dummy response is 0x%" PRIx32 "\n", result);
+  AOS_LOG(DEBUG, "gyro dummy response is 0x%" PRIx32 "\n", result);
 
   if (!DoTransaction(0x20000000, &result)) {
-    LOG(WARNING, "failed to read self-test data\n");
+    AOS_LOG(WARNING, "failed to read self-test data\n");
     return false;
   }
   if (ExtractStatus(result) != 2) {
-    LOG(WARNING, "gyro first value 0x%" PRIx32 " not self-test data\n", result);
+    AOS_LOG(WARNING, "gyro first value 0x%" PRIx32 " not self-test data\n",
+            result);
     return false;
   }
   if (ExtractErrors(result) != 0x7F) {
-    LOG(WARNING, "gyro first value 0x%" PRIx32 " does not have all errors\n",
-        result);
+    AOS_LOG(WARNING,
+            "gyro first value 0x%" PRIx32 " does not have all errors\n",
+            result);
     return false;
   }
 
   if (!DoTransaction(0x20000000, &result)) {
-    LOG(WARNING, "failed to clear latched self-test data\n");
+    AOS_LOG(WARNING, "failed to clear latched self-test data\n");
     return false;
   }
   if (ExtractStatus(result) != 2) {
-    LOG(WARNING, "gyro second value 0x%" PRIx32 " not self-test data\n",
-        result);
+    AOS_LOG(WARNING, "gyro second value 0x%" PRIx32 " not self-test data\n",
+            result);
     return false;
   }
 
@@ -88,21 +90,21 @@ bool GyroInterface::DoTransaction(uint32_t to_write, uint32_t *result) {
 
   switch (gyro_->Transaction(to_send, to_receive, kBytes)) {
     case -1:
-      LOG(INFO, "SPI::Transaction failed\n");
+      AOS_LOG(INFO, "SPI::Transaction failed\n");
       return false;
     case kBytes:
       break;
     default:
-      LOG(FATAL, "SPI::Transaction returned something weird\n");
+      AOS_LOG(FATAL, "SPI::Transaction returned something weird\n");
   }
 
   memcpy(result, to_receive, kBytes);
   if (__builtin_parity(*result & 0xFFFF) != 1) {
-    LOG(INFO, "high byte parity failure\n");
+    AOS_LOG(INFO, "high byte parity failure\n");
     return false;
   }
   if (__builtin_parity(*result) != 1) {
-    LOG(INFO, "whole value parity failure\n");
+    AOS_LOG(INFO, "whole value parity failure\n");
     return false;
   }
 
@@ -115,13 +117,14 @@ uint16_t GyroInterface::DoRead(uint8_t address) {
   uint32_t response;
   while (true) {
     if (!DoTransaction(command, &response)) {
-      LOG(WARNING, "reading 0x%" PRIx8 " failed\n", address);
+      AOS_LOG(WARNING, "reading 0x%" PRIx8 " failed\n", address);
       continue;
     }
     if ((response & 0xEFE00000) != 0x4E000000) {
-      LOG(WARNING, "gyro read from 0x%" PRIx8
-                   " gave unexpected response 0x%" PRIx32 "\n",
-          address, response);
+      AOS_LOG(WARNING,
+              "gyro read from 0x%" PRIx8 " gave unexpected response 0x%" PRIx32
+              "\n",
+              address, response);
       continue;
     }
     return (response >> 5) & 0xFFFF;

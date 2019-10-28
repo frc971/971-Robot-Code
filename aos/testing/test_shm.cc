@@ -22,7 +22,7 @@ TestSharedMemory::TestSharedMemory() {
   // "shared" memory.
   void *memory = mmap(NULL, kCoreSize, PROT_READ | PROT_WRITE,
                       MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-  CHECK_NE(memory, MAP_FAILED);
+  AOS_CHECK_NE(memory, MAP_FAILED);
 
   aos_core_use_address_as_shared_mem(memory, kCoreSize);
 
@@ -30,7 +30,7 @@ TestSharedMemory::TestSharedMemory() {
 }
 
 TestSharedMemory::~TestSharedMemory() {
-  PCHECK(munmap(global_core->mem_struct, kCoreSize));
+  AOS_PCHECK(munmap(global_core->mem_struct, kCoreSize));
   global_core = NULL;
 }
 

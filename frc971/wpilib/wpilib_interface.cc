@@ -23,7 +23,7 @@ void PopulateRobotState(::aos::RobotState *robot_state, int32_t my_pid) {
   robot_state->voltage_battery = HAL_GetVinVoltage(&status);
 
   if (status != 0) {
-    LOG(FATAL, "Failed to get robot state: %d\n", status);
+    AOS_LOG(FATAL, "Failed to get robot state: %d\n", status);
   }
 }
 

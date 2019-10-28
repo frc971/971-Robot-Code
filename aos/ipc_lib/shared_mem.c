@@ -61,7 +61,7 @@ void aos_core_create_shared_mem(int create, int lock) {
       if (shm == -1 && errno == EEXIST) {
         printf("shared_mem: going to shm_unlink(%s)\n", global_core->shm_name);
         if (shm_unlink(global_core->shm_name) == -1) {
-          PLOG(WARNING, "shm_unlink(%s) failed", global_core->shm_name);
+          AOS_PLOG(WARNING, "shm_unlink(%s) failed", global_core->shm_name);
           break;
         }
       } else {
@@ -73,12 +73,12 @@ void aos_core_create_shared_mem(int create, int lock) {
     global_core->owner = 0;
   }
   if (shm == -1) {
-    PLOG(FATAL, "shm_open(%s, O_RDWR [| O_CREAT | O_EXCL, 0|0666) failed",
-         global_core->shm_name);
+    AOS_PLOG(FATAL, "shm_open(%s, O_RDWR [| O_CREAT | O_EXCL, 0|0666) failed",
+             global_core->shm_name);
   }
   if (global_core->owner) {
     if (ftruncate(shm, SIZEOFSHMSEG) == -1) {
-      PLOG(FATAL, "fruncate(%d, 0x%zx) failed", shm, (size_t)SIZEOFSHMSEG);
+      AOS_PLOG(FATAL, "fruncate(%d, 0x%zx) failed", shm, (size_t)SIZEOFSHMSEG);
     }
   }
   int flags = MAP_SHARED | MAP_FIXED;
@@ -86,8 +86,8 @@ void aos_core_create_shared_mem(int create, int lock) {
   void *shm_address = mmap((void *)SHM_START, SIZEOFSHMSEG,
                            PROT_READ | PROT_WRITE, flags, shm, 0);
   if (shm_address == MAP_FAILED) {
-    PLOG(FATAL, "shared_mem: mmap(%p, 0x%zx, stuff, %x, %d, 0) failed",
-         (void *)SHM_START, (size_t)SIZEOFSHMSEG, flags, shm);
+    AOS_PLOG(FATAL, "shared_mem: mmap(%p, 0x%zx, stuff, %x, %d, 0) failed",
+             (void *)SHM_START, (size_t)SIZEOFSHMSEG, flags, shm);
   }
   if (create) {
     printf("shared_mem: creating %s, shm at: %p\n", global_core->shm_name,
@@ -96,14 +96,14 @@ void aos_core_create_shared_mem(int create, int lock) {
     printf("shared_mem: not creating, shm at: %p\n", shm_address);
   }
   if (close(shm) == -1) {
-    PLOG(WARNING, "close(%d(=shm) failed", shm);
+    AOS_PLOG(WARNING, "close(%d(=shm) failed", shm);
   }
   if (shm_address != (void *)SHM_START) {
-    LOG(FATAL, "shm isn't at hard-coded %p. at %p instead\n",
-        (void *)SHM_START, shm_address);
+    AOS_LOG(FATAL, "shm isn't at hard-coded %p. at %p instead\n",
+            (void *)SHM_START, shm_address);
   }
   aos_core_use_address_as_shared_mem(shm_address, SIZEOFSHMSEG);
-  LOG(INFO, "shared_mem: end of create_shared_mem owner=%d\n",
+  AOS_LOG(INFO, "shared_mem: end of create_shared_mem owner=%d\n",
           global_core->owner);
 }
 
@@ -118,7 +118,7 @@ void aos_core_use_address_as_shared_mem(void *address, size_t size) {
     futex_set(&global_core->mem_struct->creation_condition);
   } else {
     if (futex_wait(&global_core->mem_struct->creation_condition) != 0) {
-      LOG(FATAL, "waiting on creation_condition failed\n");
+      AOS_LOG(FATAL, "waiting on creation_condition failed\n");
     }
   }
 }
@@ -126,12 +126,13 @@ void aos_core_use_address_as_shared_mem(void *address, size_t size) {
 void aos_core_free_shared_mem() {
   void *shm_address = global_core->shared_mem;
   if (munmap((void *)SHM_START, SIZEOFSHMSEG) == -1) {
-    PLOG(FATAL, "munmap(%p, 0x%zx) failed", shm_address,
-         (size_t)SIZEOFSHMSEG);
+    AOS_PLOG(FATAL, "munmap(%p, 0x%zx) failed", shm_address,
+             (size_t)SIZEOFSHMSEG);
   }
   if (global_core->owner) {
     if (shm_unlink(global_core->shm_name)) {
-      PLOG(FATAL, "shared_mem: shm_unlink(%s) failed", global_core->shm_name);
+      AOS_PLOG(FATAL, "shared_mem: shm_unlink(%s) failed",
+               global_core->shm_name);
     }
   }
 }

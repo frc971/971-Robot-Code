@@ -191,9 +191,9 @@ HPolytope<number_of_dimensions>::CalculateVertices(
   if (error != dd_NoError || polyhedra == NULL) {
     dd_WriteErrorMessages(stderr, error);
     dd_FreeMatrix(matrix);
-    LOG_MATRIX(ERROR, "bad H", H);
-    LOG_MATRIX(ERROR, "bad k_", k);
-    LOG(FATAL, "dd_DDMatrix2Poly failed\n");
+    AOS_LOG_MATRIX(ERROR, "bad H", H);
+    AOS_LOG_MATRIX(ERROR, "bad k_", k);
+    AOS_LOG(FATAL, "dd_DDMatrix2Poly failed\n");
   }
 
   dd_MatrixPtr vertex_matrix = dd_CopyGenerators(polyhedra);
@@ -209,7 +209,7 @@ HPolytope<number_of_dimensions>::CalculateVertices(
   }
 
   // Rays are unsupported right now.  This may change in the future.
-  CHECK_EQ(0, num_rays);
+  AOS_CHECK_EQ(0, num_rays);
 
   Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic> vertices(
       number_of_dimensions, num_vertices);

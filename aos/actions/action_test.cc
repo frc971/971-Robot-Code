@@ -75,7 +75,7 @@ class TestActorShouldCancel
 
   bool RunAction(const uint32_t &) override {
     while (!ShouldCancel()) {
-      LOG(FATAL, "NOT CANCELED!!\n");
+      AOS_LOG(FATAL, "NOT CANCELED!!\n");
     }
     return true;
   }

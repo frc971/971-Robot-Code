@@ -55,7 +55,7 @@ class WorkStack {
   template <class... A>
   void AddWork(A &&... a) {
     if (stack_index_ >= number_works) {
-      LOG(FATAL, "too many works\n");
+      AOS_LOG(FATAL, "too many works\n");
     }
     stack_.at(stack_index_).Create(::std::forward<A>(a)...);
     aos_compiler_memory_barrier();

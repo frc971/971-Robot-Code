@@ -116,7 +116,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     superstructure_status_fetcher_.Fetch();
     if (!superstructure_status_fetcher_.get() ||
         !superstructure_position_fetcher_.get()) {
-      LOG(ERROR, "Got no superstructure status packet.\n");
+      AOS_LOG(ERROR, "Got no superstructure status packet.\n");
       return;
     }
 
@@ -307,7 +307,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     if (data.IsPressed(kWinch)) {
-      LOG(INFO, "Winching\n");
+      AOS_LOG(INFO, "Winching\n");
       new_superstructure_goal->voltage_winch = 12.0;
     } else {
       new_superstructure_goal->voltage_winch = 0.0;
@@ -333,9 +333,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     new_superstructure_goal->grab_box = grab_box;
 
-    LOG_STRUCT(DEBUG, "sending goal", *new_superstructure_goal);
+    AOS_LOG_STRUCT(DEBUG, "sending goal", *new_superstructure_goal);
     if (!new_superstructure_goal.Send()) {
-      LOG(ERROR, "Sending superstructure goal failed.\n");
+      AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
     }
 
     video_tx_->Send(vision_control_);

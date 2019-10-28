@@ -25,7 +25,7 @@ void ColumnZeroingEstimator::Reset() {
 
 void ColumnZeroingEstimator::TriggerError() {
   if (!error_) {
-    LOG(ERROR, "Manually triggered zeroing error.\n");
+    AOS_LOG(ERROR, "Manually triggered zeroing error.\n");
     error_ = true;
   }
 }

@@ -175,11 +175,12 @@ bool CollisionAvoidance::collided_with_given_angles(double shoulder_angle,
       shoulder_angle <=
           CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference &&
       intake_angle > CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference) {
-    LOG(DEBUG, "Collided: Intake %f > %f, and shoulder %f < %f < %f.\n",
-        intake_angle, CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference,
-        CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing,
-        shoulder_angle,
-        CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference);
+    AOS_LOG(DEBUG, "Collided: Intake %f > %f, and shoulder %f < %f < %f.\n",
+            intake_angle,
+            CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference,
+            CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing,
+            shoulder_angle,
+            CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference);
     return true;
   }
 
@@ -191,7 +192,8 @@ bool CollisionAvoidance::collided_with_given_angles(double shoulder_angle,
       intake_angle > Superstructure::kIntakeLowerClear &&
       (wrist_angle > CollisionAvoidance::kMaxWristAngleForMovingByIntake ||
        wrist_angle < CollisionAvoidance::kMinWristAngleForMovingByIntake)) {
-    LOG(DEBUG,
+    AOS_LOG(
+        DEBUG,
         "Collided: Intake %f < %f < %f, shoulder %f < %f < %f, and %f < %f < "
         "%f.\n",
         Superstructure::kIntakeLowerClear, intake_angle,
@@ -209,10 +211,10 @@ bool CollisionAvoidance::collided_with_given_angles(double shoulder_angle,
   if (shoulder_angle <
           CollisionAvoidance::kMinShoulderAngleForHorizontalShooter &&
       ::std::abs(wrist_angle) > kMaxWristAngleForSafeArmStowing) {
-    LOG(DEBUG, "Collided: Shoulder %f < %f and wrist |%f| > %f.\n",
-        shoulder_angle,
-        CollisionAvoidance::kMinShoulderAngleForHorizontalShooter, wrist_angle,
-        kMaxWristAngleForSafeArmStowing);
+    AOS_LOG(DEBUG, "Collided: Shoulder %f < %f and wrist |%f| > %f.\n",
+            shoulder_angle,
+            CollisionAvoidance::kMinShoulderAngleForHorizontalShooter,
+            wrist_angle, kMaxWristAngleForSafeArmStowing);
     return true;
   }
 
@@ -293,7 +295,7 @@ void Superstructure::RunIteration(
     control_loops::SuperstructureQueue::Status *status) {
   const State state_before_switch = state_;
   if (WasReset()) {
-    LOG(ERROR, "WPILib reset, restarting\n");
+    AOS_LOG(ERROR, "WPILib reset, restarting\n");
     arm_.Reset();
     intake_.Reset();
     state_ = UNINITIALIZED;
@@ -323,7 +325,7 @@ void Superstructure::RunIteration(
     case UNINITIALIZED:
       // Wait in the uninitialized state until both the arm and intake are
       // initialized.
-      LOG(DEBUG, "Uninitialized, waiting for intake and arm\n");
+      AOS_LOG(DEBUG, "Uninitialized, waiting for intake and arm\n");
       if (arm_.initialized() && intake_.initialized()) {
         state_ = DISABLED_INITIALIZED;
       }
@@ -414,10 +416,10 @@ void Superstructure::RunIteration(
         if (arm_.zeroed() && intake_.zeroed()) {
           state_ = RUNNING;
         } else if (IsArmNear(kLooseTolerance)) {
-          LOG(ERROR,
-              "Failed to zero while executing the HIGH_ARM_ZERO sequence. "
-              "Arm: %d Intake %d\n",
-              arm_.zeroed(), intake_.zeroed());
+          AOS_LOG(ERROR,
+                  "Failed to zero while executing the HIGH_ARM_ZERO sequence. "
+                  "Arm: %d Intake %d\n",
+                  arm_.zeroed(), intake_.zeroed());
           state_ = ESTOP;
         }
       }
@@ -515,10 +517,10 @@ void Superstructure::RunIteration(
           if (arm_.zeroed() && intake_.zeroed()) {
             state_ = RUNNING;
           } else {
-            LOG(ERROR,
-                "Failed to zero while executing the LOW_ARM_ZERO sequence. "
-                "Arm: %d Intake %d\n",
-                arm_.zeroed(), intake_.zeroed());
+            AOS_LOG(ERROR,
+                    "Failed to zero while executing the LOW_ARM_ZERO sequence. "
+                    "Arm: %d Intake %d\n",
+                    arm_.zeroed(), intake_.zeroed());
             state_ = ESTOP;
           }
         }
@@ -627,7 +629,7 @@ void Superstructure::RunIteration(
     } break;
 
     case ESTOP:
-      LOG(ERROR, "Estop\n");
+      AOS_LOG(ERROR, "Estop\n");
       disable = true;
       break;
   }

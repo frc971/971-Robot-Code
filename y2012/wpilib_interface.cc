@@ -149,13 +149,13 @@ class SolenoidWriter {
 
   void Loop(const int iterations) {
     if (iterations != 1) {
-      LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
+      AOS_LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
     }
 
     {
       accessories_fetcher_.Fetch();
       if (accessories_fetcher_.get()) {
-        LOG_STRUCT(DEBUG, "solenoids", *accessories_fetcher_);
+        AOS_LOG_STRUCT(DEBUG, "solenoids", *accessories_fetcher_);
         s1_->Set(accessories_fetcher_->solenoids[0]);
         s2_->Set(accessories_fetcher_->solenoids[1]);
         s3_->Set(accessories_fetcher_->solenoids[2]);
@@ -165,7 +165,7 @@ class SolenoidWriter {
     {
       drivetrain_fetcher_.Fetch();
       if (drivetrain_fetcher_.get()) {
-        LOG_STRUCT(DEBUG, "solenoids", *drivetrain_fetcher_);
+        AOS_LOG_STRUCT(DEBUG, "solenoids", *drivetrain_fetcher_);
         const bool high =
             drivetrain_fetcher_->left_high || drivetrain_fetcher_->right_high;
         drivetrain_high_->Set(high);
@@ -177,7 +177,7 @@ class SolenoidWriter {
       ::frc971::wpilib::PneumaticsToLog to_log;
       pcm_->Flush();
       to_log.read_solenoids = pcm_->GetAll();
-      LOG_STRUCT(DEBUG, "pneumatics info", to_log);
+      AOS_LOG_STRUCT(DEBUG, "pneumatics info", to_log);
     }
   }
 
@@ -213,11 +213,11 @@ class AccessoriesWriter
   virtual void Write(const AccessoriesQueue::Message &output) override {
     talon1_->SetSpeed(output.sticks[0]);
     talon2_->SetSpeed(output.sticks[1]);
-    LOG_STRUCT(DEBUG, "will output", output);
+    AOS_LOG_STRUCT(DEBUG, "will output", output);
   }
 
   virtual void Stop() override {
-    LOG(WARNING, "shooter output too old\n");
+    AOS_LOG(WARNING, "shooter output too old\n");
     talon1_->SetDisabled();
     talon2_->SetDisabled();
   }

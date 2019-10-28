@@ -6,25 +6,25 @@ namespace actions {
 
 void ActionQueue::EnqueueAction(::std::unique_ptr<Action> action) {
   if (current_action_) {
-    LOG(INFO, "Queueing action, canceling prior\n");
+    AOS_LOG(INFO, "Queueing action, canceling prior\n");
     current_action_->Cancel();
     next_action_ = ::std::move(action);
   } else {
-    LOG(INFO, "Queueing action\n");
+    AOS_LOG(INFO, "Queueing action\n");
     current_action_ = ::std::move(action);
     current_action_->Start();
   }
 }
 
 void ActionQueue::CancelCurrentAction() {
-  LOG(INFO, "Canceling current action\n");
+  AOS_LOG(INFO, "Canceling current action\n");
   if (current_action_) {
     current_action_->Cancel();
   }
 }
 
 void ActionQueue::CancelAllActions() {
-  LOG(DEBUG, "Cancelling all actions\n");
+  AOS_LOG(DEBUG, "Cancelling all actions\n");
   if (current_action_) {
     current_action_->Cancel();
   }
@@ -34,10 +34,10 @@ void ActionQueue::CancelAllActions() {
 void ActionQueue::Tick() {
   if (current_action_) {
     if (!current_action_->Running()) {
-      LOG(INFO, "Action is done.\n");
+      AOS_LOG(INFO, "Action is done.\n");
       current_action_ = ::std::move(next_action_);
       if (current_action_) {
-        LOG(INFO, "Running next action\n");
+        AOS_LOG(INFO, "Running next action\n");
         current_action_->Start();
       }
     }

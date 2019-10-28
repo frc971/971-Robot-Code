@@ -12,8 +12,8 @@
 // dependency on it.
 #include "aos/ipc_lib/shared_mem.h"
 
-#include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"
+#include "glog/logging.h"
 
 #else  // __linux__
 
@@ -45,10 +45,9 @@ void sleep_until(const ::aos::monotonic_clock::time_point &end_time) {
   do {
     returnval = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME,
                                 &end_time_timespec, nullptr);
-    if (returnval != EINTR && returnval != 0) {
-      PLOG(FATAL, "clock_nanosleep(%jd, TIMER_ABSTIME, %p, nullptr) failed",
-           static_cast<uintmax_t>(CLOCK_MONOTONIC), &end_time_timespec);
-    }
+    PCHECK(returnval == 0 || returnval == EINTR)
+        << ": clock_nanosleep(" << static_cast<uintmax_t>(CLOCK_MONOTONIC)
+        << ", TIMER_ABSTIME, " << &end_time_timespec << ", nullptr) failed";
   } while (returnval != 0);
 }
 
@@ -93,9 +92,8 @@ void DisableMockTime() {
 
 void SetMockTime(monotonic_clock::time_point now) {
   MutexLocker time_mutex_locker(&time_mutex);
-  if (__builtin_expect(!mock_time_enabled, 0)) {
-    LOG(FATAL, "Tried to set mock time and mock time is not enabled\n");
-  }
+  CHECK(mock_time_enabled)
+      << ": Tried to set mock time and mock time is not enabled";
   current_mock_time = now;
 }
 
@@ -148,10 +146,10 @@ monotonic_clock::time_point monotonic_clock::now() noexcept {
   }
 
   struct timespec current_time;
-  if (clock_gettime(CLOCK_MONOTONIC, &current_time) != 0) {
-    PLOG(FATAL, "clock_gettime(%jd, %p) failed",
-         static_cast<uintmax_t>(CLOCK_MONOTONIC), &current_time);
-  }
+  PCHECK(clock_gettime(CLOCK_MONOTONIC, &current_time) == 0)
+      << ": clock_gettime(" << static_cast<uintmax_t>(CLOCK_MONOTONIC) << ", "
+      << &current_time << ") failed";
+
   const chrono::nanoseconds offset =
       (&global_core == nullptr || global_core == nullptr ||
        global_core->mem_struct == nullptr)
@@ -191,10 +189,9 @@ monotonic_clock::time_point monotonic_clock::now() noexcept {
 #ifdef __linux__
 realtime_clock::time_point realtime_clock::now() noexcept {
   struct timespec current_time;
-  if (clock_gettime(CLOCK_REALTIME, &current_time) != 0) {
-    PLOG(FATAL, "clock_gettime(%jd, %p) failed",
-         static_cast<uintmax_t>(CLOCK_REALTIME), &current_time);
-  }
+  PCHECK(clock_gettime(CLOCK_REALTIME, &current_time) == 0)
+      << "clock_gettime(" << static_cast<uintmax_t>(CLOCK_REALTIME) << ", "
+      << &current_time << ") failed";
 
   return time_point(::std::chrono::seconds(current_time.tv_sec) +
                     ::std::chrono::nanoseconds(current_time.tv_nsec));

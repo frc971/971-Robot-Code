@@ -87,7 +87,7 @@ class UdpClient : public ::aos::events::EpollEvent {
   }
 
   size_t Recv(void *data, int size) {
-    return PCHECK(recv(fd(), static_cast<char *>(data), size, 0));
+    return AOS_PCHECK(recv(fd(), static_cast<char *>(data), size, 0));
   }
 };
 
@@ -312,7 +312,7 @@ int main(int argc, char ** argv) {
       params0, "/dev/video0", &tcp_server_, true,
       [&camera0, &camera1, &status_socket, &vision_status]() {
         vision_status.set_low_frame_count(vision_status.low_frame_count() + 1);
-        LOG(INFO, "Got a frame cam0\n");
+        AOS_LOG(INFO, "Got a frame cam0\n");
         if (camera0->active()) {
           status_socket.Send(vision_status);
         }
@@ -325,7 +325,7 @@ int main(int argc, char ** argv) {
         [&camera0, &camera1, &status_socket, &vision_status]() {
           vision_status.set_high_frame_count(vision_status.high_frame_count() +
                                              1);
-          LOG(INFO, "Got a frame cam1\n");
+          AOS_LOG(INFO, "Got a frame cam1\n");
           if (camera1->active()) {
             status_socket.Send(vision_status);
           }
@@ -343,7 +343,8 @@ int main(int argc, char ** argv) {
           cam0_active = true;
           camera0->set_active(true);
         }
-        LOG(INFO, "Got control packet, cam%d active\n", cam0_active ? 0 : 1);
+        AOS_LOG(INFO, "Got control packet, cam%d active\n",
+                cam0_active ? 0 : 1);
       });
 
   // Default to camera0

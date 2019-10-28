@@ -188,7 +188,7 @@ bool PrintMessage(char *output, size_t *output_bytes, const void *input,
     output += output_bytes_before - *output_bytes;
     input = static_cast<const char *>(input) + type.super_size;
     first = false;
-    CHECK(start_input_bytes == (*input_bytes + 8));
+    AOS_CHECK(start_input_bytes == (*input_bytes + 8));
   } else {
     *input_bytes -= type.super_size;
     input = static_cast<const char *>(input) + type.super_size;
@@ -247,7 +247,7 @@ bool PrintMessage(char *output, size_t *output_bytes, const void *input,
 
 bool PrintMatrix(char *output, size_t *output_bytes, const void *input,
                  uint32_t type_id, int rows, int cols) {
-  CHECK(MessageType::IsPrimitive(type_id));
+  AOS_CHECK(MessageType::IsPrimitive(type_id));
   const size_t element_size = MessageType::Sizeof(type_id);
 
   if (*output_bytes < 1) return false;
@@ -288,7 +288,7 @@ bool PrintMatrix(char *output, size_t *output_bytes, const void *input,
                       &input_bytes, type_id)) {
         return false;
       }
-      CHECK_EQ(0u, input_bytes);
+      AOS_CHECK_EQ(0u, input_bytes);
       // Update the output pointer.
       output += output_bytes_before - *output_bytes;
     }
@@ -309,7 +309,7 @@ void SerializeMatrix(int type_id, void *output_void, const void *input_void,
   char *const output = static_cast<char *>(output_void);
   const char *const input = static_cast<const char *>(input_void);
 
-  CHECK(MessageType::IsPrimitive(type_id));
+  AOS_CHECK(MessageType::IsPrimitive(type_id));
   const size_t element_size = MessageType::Sizeof(type_id);
 
   for (int i = 0; i < rows * cols; ++i) {
@@ -327,7 +327,7 @@ void SerializeMatrix(int type_id, void *output_void, const void *input_void,
         to_network<8>(&input[i * element_size], &output[i * element_size]);
         break;
       default:
-        LOG(FATAL, "illegal primitive type size %zu\n", element_size);
+        AOS_LOG(FATAL, "illegal primitive type size %zu\n", element_size);
     }
   }
 }
@@ -392,15 +392,15 @@ const MessageType &Get(uint32_t type_id) {
       c = c->next;
     }
   } else {
-    LOG(INFO, "FYI: no shm. going to LOG(FATAL) now\n");
+    AOS_LOG(INFO, "FYI: no shm. going to LOG(FATAL) now\n");
   }
 
-  LOG(FATAL, "MessageType for id 0x%" PRIx32 " not found\n", type_id);
+  AOS_LOG(FATAL, "MessageType for id 0x%" PRIx32 " not found\n", type_id);
 }
 
 void AddShm(uint32_t type_id) {
   if (!aos_core_is_init()) {
-    LOG(FATAL, "can't AddShm(%" PRIu32 ") without shm!\n", type_id);
+    AOS_LOG(FATAL, "can't AddShm(%" PRIu32 ") without shm!\n", type_id);
   }
 
   const MessageType::Field **fields;
@@ -414,7 +414,7 @@ void AddShm(uint32_t type_id) {
     number_fields = cached.type.number_fields;
 
     if (mutex_lock(&global_core->mem_struct->queue_types.lock) != 0) {
-      LOG(FATAL, "locking queue_types lock failed\n");
+      AOS_LOG(FATAL, "locking queue_types lock failed\n");
     }
     volatile ShmType *current = static_cast<volatile ShmType *>(
         global_core->mem_struct->queue_types.pointer);
@@ -432,8 +432,8 @@ void AddShm(uint32_t type_id) {
     char buffer[1024];
     ssize_t size = cached.type.Serialize(buffer, sizeof(buffer));
     if (size == -1) {
-      LOG(FATAL, "type %s is too big to fit into %zd bytes\n",
-          cached.type.name.c_str(), sizeof(buffer));
+      AOS_LOG(FATAL, "type %s is too big to fit into %zd bytes\n",
+              cached.type.name.c_str(), sizeof(buffer));
     }
 
     volatile ShmType *shm =

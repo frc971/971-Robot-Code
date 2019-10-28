@@ -55,17 +55,17 @@ int find_pid_max() {
   int r;
   FILE *pid_max_file = fopen("/proc/sys/kernel/pid_max", "r");
   if (pid_max_file == nullptr) {
-    PLOG(FATAL, "fopen(\"/proc/sys/kernel/pid_max\")");
+    AOS_PLOG(FATAL, "fopen(\"/proc/sys/kernel/pid_max\")");
   }
-  CHECK_EQ(1, fscanf(pid_max_file, "%d", &r));
-  PCHECK(fclose(pid_max_file));
+  AOS_CHECK_EQ(1, fscanf(pid_max_file, "%d", &r));
+  AOS_PCHECK(fclose(pid_max_file));
   return r;
 }
 
 cpu_set_t find_all_cpus() {
   long nproc = sysconf(_SC_NPROCESSORS_CONF);
   if (nproc == -1) {
-    PLOG(FATAL, "sysconf(_SC_NPROCESSORS_CONF)");
+    AOS_PLOG(FATAL, "sysconf(_SC_NPROCESSORS_CONF)");
   }
   cpu_set_t r;
   CPU_ZERO(&r);
@@ -83,7 +83,7 @@ cpu_set_t find_cpu_mask(int process, bool *not_there) {
     return cpu_set_t();
   }
   if (result != 0) {
-    PLOG(FATAL, "sched_getaffinity(%d, %zu, %p)", process, sizeof(r), &r);
+    AOS_PLOG(FATAL, "sched_getaffinity(%d, %zu, %p)", process, sizeof(r), &r);
   }
   return r;
 }
@@ -96,7 +96,7 @@ sched_param find_sched_param(int process, bool *not_there) {
     return sched_param();
   }
   if (result != 0) {
-    PLOG(FATAL, "sched_getparam(%d)", process);
+    AOS_PLOG(FATAL, "sched_getparam(%d)", process);
   }
   return r;
 }
@@ -108,7 +108,7 @@ int find_scheduler(int process, bool *not_there) {
     return 0;
   }
   if (scheduler == -1) {
-    PLOG(FATAL, "sched_getscheduler(%d)", process);
+    AOS_PLOG(FATAL, "sched_getscheduler(%d)", process);
   }
   return scheduler;
 }
@@ -126,8 +126,8 @@ int find_scheduler(int process, bool *not_there) {
       return "";
     }
     if (exe_size == -1) {
-      PLOG(FATAL, "readlink(%s, %p, %zu)", exe_filename.c_str(), exe_buffer,
-           sizeof(exe_buffer));
+      AOS_PLOG(FATAL, "readlink(%s, %p, %zu)", exe_filename.c_str(), exe_buffer,
+               sizeof(exe_buffer));
     }
     return ::std::string(exe_buffer, exe_size);
   }
@@ -141,7 +141,7 @@ int find_nice_value(int process, bool *not_there) {
     return 0;
   }
   if (errno != 0) {
-    PLOG(FATAL, "getpriority(PRIO_PROCESS, %d)", process);
+    AOS_PLOG(FATAL, "getpriority(PRIO_PROCESS, %d)", process);
   }
   return nice_value;
 }
@@ -154,7 +154,7 @@ void read_stat(int process, int *ppid, int *sid, bool *not_there) {
     return;
   }
   if (stat == nullptr) {
-    PLOG(FATAL, "fopen(%s, \"r\")", stat_filename.c_str());
+    AOS_PLOG(FATAL, "fopen(%s, \"r\")", stat_filename.c_str());
   }
 
   char buffer[2048];
@@ -164,7 +164,7 @@ void read_stat(int process, int *ppid, int *sid, bool *not_there) {
         *not_there = true;
         return;
       }
-      PLOG(FATAL, "fgets(%p, %zu, %p)", buffer, sizeof(buffer), stat);
+      AOS_PLOG(FATAL, "fgets(%p, %zu, %p)", buffer, sizeof(buffer), stat);
     }
   }
 
@@ -197,12 +197,12 @@ void read_stat(int process, int *ppid, int *sid, bool *not_there) {
       field_start = i + 1;
     }
   }
-  PCHECK(fclose(stat));
+  AOS_PCHECK(fclose(stat));
 
   if (field < 4) {
-    LOG(FATAL, "couldn't get fields from /proc/%d/stat\n", process);
+    AOS_LOG(FATAL, "couldn't get fields from /proc/%d/stat\n", process);
   }
-  CHECK_EQ(pid, process);
+  AOS_CHECK_EQ(pid, process);
 }
 
 void read_status(int process, int ppid, int *pgrp, ::std::string *name,
@@ -215,7 +215,7 @@ void read_status(int process, int ppid, int *pgrp, ::std::string *name,
     return;
   }
   if (status == nullptr) {
-    PLOG(FATAL, "fopen(%s, \"r\")", status_filename.c_str());
+    AOS_PLOG(FATAL, "fopen(%s, \"r\")", status_filename.c_str());
   }
 
   int pid = 0, status_ppid = 0;
@@ -223,7 +223,7 @@ void read_status(int process, int ppid, int *pgrp, ::std::string *name,
     char buffer[1024];
     if (fgets(buffer, sizeof(buffer), status) == nullptr) {
       if (ferror(status)) {
-        PLOG(FATAL, "fgets(%p, %zu, %p)", buffer, sizeof(buffer), status);
+        AOS_PLOG(FATAL, "fgets(%p, %zu, %p)", buffer, sizeof(buffer), status);
       } else {
         break;
       }
@@ -239,9 +239,9 @@ void read_status(int process, int ppid, int *pgrp, ::std::string *name,
       *pgrp = ::std::stoi(strip_string_prefix(5, line));
     }
   }
-  PCHECK(fclose(status));
-  CHECK_EQ(pid, process);
-  CHECK_EQ(status_ppid, ppid);
+  AOS_PCHECK(fclose(status));
+  AOS_CHECK_EQ(pid, process);
+  AOS_CHECK_EQ(status_ppid, ppid);
 }
 
 }  // namespace

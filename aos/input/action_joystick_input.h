@@ -96,7 +96,7 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
   virtual uint32_t GetAutonomousMode() {
     autonomous_mode_fetcher_.Fetch();
     if (autonomous_mode_fetcher_.get() == nullptr) {
-      LOG(WARNING, "no auto mode values\n");
+      AOS_LOG(WARNING, "no auto mode values\n");
       return 0;
     }
     return autonomous_mode_fetcher_->mode;

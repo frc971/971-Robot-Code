@@ -14,7 +14,7 @@ constexpr int kChunkSize = 8;
 // it operates in kChunkSize-pixel chunks.
 RangeImage FastYuyvYThreshold(ImageFormat fmt, const char *data,
                               uint8_t value) {
-  CHECK_EQ(0, fmt.w % kChunkSize);
+  AOS_CHECK_EQ(0, fmt.w % kChunkSize);
   std::vector<std::vector<ImageRange>> result;
   result.reserve(fmt.h);
 
@@ -107,7 +107,7 @@ void FastYuyvYPooledThresholder::RunThread(int i) {
     }
 
     ImageFormat shard_format = input_format_;
-    CHECK_EQ(shard_format.h % kThreads, 0);
+    AOS_CHECK_EQ(shard_format.h % kThreads, 0);
     shard_format.h /= kThreads;
 
     outputs_[i] = FastYuyvYThreshold(

@@ -94,7 +94,7 @@ void ClawLimitedLoop::CapU() {
   double max_voltage = is_zeroing_ ? kZeroingVoltage : kMaxVoltage;
 
   if (::std::abs(u_bottom) > max_voltage || ::std::abs(u_top) > max_voltage) {
-    LOG_MATRIX(DEBUG, "U at start", U());
+    AOS_LOG_MATRIX(DEBUG, "U at start", U());
     // H * U <= k
     // U = UPos + UVel
     // H * (UPos + UVel) <= k
@@ -116,7 +116,7 @@ void ClawLimitedLoop::CapU() {
     position_error << error(0, 0), error(1, 0);
     Eigen::Matrix<double, 2, 1> velocity_error;
     velocity_error << error(2, 0), error(3, 0);
-    LOG_MATRIX(DEBUG, "error", error);
+    AOS_LOG_MATRIX(DEBUG, "error", error);
 
     const auto &poly = is_zeroing_ ? U_Poly_zeroing_ : U_Poly_;
     const Eigen::Matrix<double, 4, 2> pos_poly_H = poly.H() * position_K;
@@ -183,28 +183,28 @@ void ClawLimitedLoop::CapU() {
       }
     }
 
-    LOG_MATRIX(DEBUG, "adjusted_pos_error", adjusted_pos_error);
+    AOS_LOG_MATRIX(DEBUG, "adjusted_pos_error", adjusted_pos_error);
     mutable_U() = velocity_K * velocity_error + position_K * adjusted_pos_error;
-    LOG_MATRIX(DEBUG, "U is now", U());
+    AOS_LOG_MATRIX(DEBUG, "U is now", U());
 
     {
       const auto values = constants::GetValues().claw;
       if (top_known_) {
         if (X_hat(0, 0) + X_hat(1, 0) > values.upper_claw.upper_limit && U(1, 0) > 0) {
-          LOG(WARNING, "upper claw too high and moving up\n");
+          AOS_LOG(WARNING, "upper claw too high and moving up\n");
           mutable_U(1, 0) = 0;
         } else if (X_hat(0, 0) + X_hat(1, 0) < values.upper_claw.lower_limit &&
                    U(1, 0) < 0) {
-          LOG(WARNING, "upper claw too low and moving down\n");
+          AOS_LOG(WARNING, "upper claw too low and moving down\n");
           mutable_U(1, 0) = 0;
         }
       }
       if (bottom_known_) {
         if (X_hat(0, 0) > values.lower_claw.upper_limit && U(0, 0) > 0) {
-          LOG(WARNING, "lower claw too high and moving up\n");
+          AOS_LOG(WARNING, "lower claw too high and moving up\n");
           mutable_U(0, 0) = 0;
         } else if (X_hat(0, 0) < values.lower_claw.lower_limit && U(0, 0) < 0) {
-          LOG(WARNING, "lower claw too low and moving down\n");
+          AOS_LOG(WARNING, "lower claw too low and moving down\n");
           mutable_U(0, 0) = 0;
         }
       }
@@ -318,7 +318,7 @@ bool TopZeroedStateFeedbackLoop::SetCalibrationOnEdge(
   double edge_encoder;
   double edge_angle;
   if (GetPositionOfEdge(claw_values, &edge_encoder, &edge_angle)) {
-    LOG(INFO, "Calibration edge edge should be %f.\n", edge_angle);
+    AOS_LOG(INFO, "Calibration edge edge should be %f.\n", edge_angle);
     SetCalibration(edge_encoder, edge_angle);
     set_zeroing_state(zeroing_state);
     return true;
@@ -333,9 +333,9 @@ void TopZeroedStateFeedbackLoop::HandleCalibrationError(
   if (GetPositionOfEdge(claw_values, &edge_encoder, &edge_angle)) {
     const double calibration_error =
         ComputeCalibrationChange(edge_encoder, edge_angle);
-    LOG(INFO, "Top calibration error is %f\n", calibration_error);
+    AOS_LOG(INFO, "Top calibration error is %f\n", calibration_error);
     if (::std::abs(calibration_error) > kRezeroThreshold) {
-      LOG(WARNING, "rezeroing top\n");
+      AOS_LOG(WARNING, "rezeroing top\n");
       SetCalibration(edge_encoder, edge_angle);
       set_zeroing_state(ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
     }
@@ -350,9 +350,9 @@ void BottomZeroedStateFeedbackLoop::HandleCalibrationError(
   if (GetPositionOfEdge(claw_values, &edge_encoder, &edge_angle)) {
     const double calibration_error =
         ComputeCalibrationChange(edge_encoder, edge_angle);
-    LOG(INFO, "Bottom calibration error is %f\n", calibration_error);
+    AOS_LOG(INFO, "Bottom calibration error is %f\n", calibration_error);
     if (::std::abs(calibration_error) > kRezeroThreshold) {
-      LOG(WARNING, "rezeroing bottom\n");
+      AOS_LOG(WARNING, "rezeroing bottom\n");
       SetCalibration(edge_encoder, edge_angle);
       set_zeroing_state(ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
     }
@@ -365,7 +365,7 @@ bool BottomZeroedStateFeedbackLoop::SetCalibrationOnEdge(
   double edge_encoder;
   double edge_angle;
   if (GetPositionOfEdge(claw_values, &edge_encoder, &edge_angle)) {
-    LOG(INFO, "Calibration edge.\n");
+    AOS_LOG(INFO, "Calibration edge.\n");
     SetCalibration(edge_encoder, edge_angle);
     set_zeroing_state(zeroing_state);
     return true;
@@ -437,20 +437,22 @@ bool ZeroedStateFeedbackLoop::DoGetPositionOfEdge(
 
   if (SawFilteredPosedge(this_sensor, sensorA, sensorB)) {
     if (min_hall_effect_off_angle_ == max_hall_effect_off_angle_) {
-      LOG(WARNING, "%s: Uncertain which side, rejecting posedge\n", name_);
+      AOS_LOG(WARNING, "%s: Uncertain which side, rejecting posedge\n", name_);
     } else {
       const double average_last_encoder =
           (min_hall_effect_off_angle_ + max_hall_effect_off_angle_) / 2.0;
       if (this_sensor.posedge_value() < average_last_encoder) {
         *edge_angle = angles.upper_decreasing_angle;
-        LOG(INFO, "%s Posedge upper of %s -> %f posedge: %f avg_encoder: %f\n",
-            name_, hall_effect_name, *edge_angle, this_sensor.posedge_value(),
-            average_last_encoder);
+        AOS_LOG(INFO,
+                "%s Posedge upper of %s -> %f posedge: %f avg_encoder: %f\n",
+                name_, hall_effect_name, *edge_angle,
+                this_sensor.posedge_value(), average_last_encoder);
       } else {
         *edge_angle = angles.lower_angle;
-        LOG(INFO, "%s Posedge lower of %s -> %f posedge: %f avg_encoder: %f\n",
-            name_, hall_effect_name, *edge_angle, this_sensor.posedge_value(),
-            average_last_encoder);
+        AOS_LOG(INFO,
+                "%s Posedge lower of %s -> %f posedge: %f avg_encoder: %f\n",
+                name_, hall_effect_name, *edge_angle,
+                this_sensor.posedge_value(), average_last_encoder);
       }
       *edge_encoder = this_sensor.posedge_value();
       found_edge = true;
@@ -459,20 +461,22 @@ bool ZeroedStateFeedbackLoop::DoGetPositionOfEdge(
 
   if (SawFilteredNegedge(this_sensor, sensorA, sensorB)) {
     if (min_hall_effect_on_angle_ == max_hall_effect_on_angle_) {
-      LOG(WARNING, "%s: Uncertain which side, rejecting negedge\n", name_);
+      AOS_LOG(WARNING, "%s: Uncertain which side, rejecting negedge\n", name_);
     } else {
       const double average_last_encoder =
           (min_hall_effect_on_angle_ + max_hall_effect_on_angle_) / 2.0;
       if (this_sensor.negedge_value() > average_last_encoder) {
         *edge_angle = angles.upper_angle;
-        LOG(INFO, "%s Negedge upper of %s -> %f negedge: %f avg_encoder: %f\n",
-            name_, hall_effect_name, *edge_angle, this_sensor.negedge_value(),
-            average_last_encoder);
+        AOS_LOG(INFO,
+                "%s Negedge upper of %s -> %f negedge: %f avg_encoder: %f\n",
+                name_, hall_effect_name, *edge_angle,
+                this_sensor.negedge_value(), average_last_encoder);
       } else {
         *edge_angle = angles.lower_decreasing_angle;
-        LOG(INFO, "%s Negedge lower of %s -> %f negedge: %f avg_encoder: %f\n",
-            name_, hall_effect_name, *edge_angle, this_sensor.negedge_value(),
-            average_last_encoder);
+        AOS_LOG(INFO,
+                "%s Negedge lower of %s -> %f negedge: %f avg_encoder: %f\n",
+                name_, hall_effect_name, *edge_angle,
+                this_sensor.negedge_value(), average_last_encoder);
       }
       *edge_encoder = this_sensor.negedge_value();
       found_edge = true;
@@ -546,12 +550,12 @@ void ClawMotor::ChangeBottomOffset(double doffset) {
 
 void ClawLimitedLoop::ChangeTopOffset(double doffset) {
   mutable_X_hat()(1, 0) += doffset;
-  LOG(INFO, "Changing top offset by %f\n", doffset);
+  AOS_LOG(INFO, "Changing top offset by %f\n", doffset);
 }
 void ClawLimitedLoop::ChangeBottomOffset(double doffset) {
   mutable_X_hat()(0, 0) += doffset;
   mutable_X_hat()(1, 0) -= doffset;
-  LOG(INFO, "Changing bottom offset by %f\n", doffset);
+  AOS_LOG(INFO, "Changing bottom offset by %f\n", doffset);
 }
 
 void LimitClawGoal(double *bottom_goal, double *top_goal,
@@ -559,45 +563,45 @@ void LimitClawGoal(double *bottom_goal, double *top_goal,
   // first update position based on angle limit
   const double separation = *top_goal - *bottom_goal;
   if (separation > values.claw.soft_max_separation) {
-    LOG_STRUCT(DEBUG, "before", ClawPositionToLog(*top_goal, *bottom_goal));
+    AOS_LOG_STRUCT(DEBUG, "before", ClawPositionToLog(*top_goal, *bottom_goal));
     const double dsep = (separation - values.claw.soft_max_separation) / 2.0;
     *bottom_goal += dsep;
     *top_goal -= dsep;
-    LOG_STRUCT(DEBUG, "after", ClawPositionToLog(*top_goal, *bottom_goal));
+    AOS_LOG_STRUCT(DEBUG, "after", ClawPositionToLog(*top_goal, *bottom_goal));
   }
   if (separation < values.claw.soft_min_separation) {
-    LOG_STRUCT(DEBUG, "before", ClawPositionToLog(*top_goal, *bottom_goal));
+    AOS_LOG_STRUCT(DEBUG, "before", ClawPositionToLog(*top_goal, *bottom_goal));
     const double dsep = (separation - values.claw.soft_min_separation) / 2.0;
     *bottom_goal += dsep;
     *top_goal -= dsep;
-    LOG_STRUCT(DEBUG, "after", ClawPositionToLog(*top_goal, *bottom_goal));
+    AOS_LOG_STRUCT(DEBUG, "after", ClawPositionToLog(*top_goal, *bottom_goal));
   }
 
   // now move both goals in unison
   if (*bottom_goal < values.claw.lower_claw.lower_limit) {
-    LOG_STRUCT(DEBUG, "before", ClawPositionToLog(*top_goal, *bottom_goal));
+    AOS_LOG_STRUCT(DEBUG, "before", ClawPositionToLog(*top_goal, *bottom_goal));
     *top_goal += values.claw.lower_claw.lower_limit - *bottom_goal;
     *bottom_goal = values.claw.lower_claw.lower_limit;
-    LOG_STRUCT(DEBUG, "after", ClawPositionToLog(*top_goal, *bottom_goal));
+    AOS_LOG_STRUCT(DEBUG, "after", ClawPositionToLog(*top_goal, *bottom_goal));
   }
   if (*bottom_goal > values.claw.lower_claw.upper_limit) {
-    LOG_STRUCT(DEBUG, "before", ClawPositionToLog(*top_goal, *bottom_goal));
+    AOS_LOG_STRUCT(DEBUG, "before", ClawPositionToLog(*top_goal, *bottom_goal));
     *top_goal -= *bottom_goal - values.claw.lower_claw.upper_limit;
     *bottom_goal = values.claw.lower_claw.upper_limit;
-    LOG_STRUCT(DEBUG, "after", ClawPositionToLog(*top_goal, *bottom_goal));
+    AOS_LOG_STRUCT(DEBUG, "after", ClawPositionToLog(*top_goal, *bottom_goal));
   }
 
   if (*top_goal < values.claw.upper_claw.lower_limit) {
-    LOG_STRUCT(DEBUG, "before", ClawPositionToLog(*top_goal, *bottom_goal));
+    AOS_LOG_STRUCT(DEBUG, "before", ClawPositionToLog(*top_goal, *bottom_goal));
     *bottom_goal += values.claw.upper_claw.lower_limit - *top_goal;
     *top_goal = values.claw.upper_claw.lower_limit;
-    LOG_STRUCT(DEBUG, "after", ClawPositionToLog(*top_goal, *bottom_goal));
+    AOS_LOG_STRUCT(DEBUG, "after", ClawPositionToLog(*top_goal, *bottom_goal));
   }
   if (*top_goal > values.claw.upper_claw.upper_limit) {
-    LOG_STRUCT(DEBUG, "before", ClawPositionToLog(*top_goal, *bottom_goal));
+    AOS_LOG_STRUCT(DEBUG, "before", ClawPositionToLog(*top_goal, *bottom_goal));
     *bottom_goal -= *top_goal - values.claw.upper_claw.upper_limit;
     *top_goal = values.claw.upper_claw.upper_limit;
-    LOG_STRUCT(DEBUG, "after", ClawPositionToLog(*top_goal, *bottom_goal));
+    AOS_LOG_STRUCT(DEBUG, "after", ClawPositionToLog(*top_goal, *bottom_goal));
   }
 }
 
@@ -667,9 +671,9 @@ void ClawMotor::RunIteration(
       initial_separation_ =
           top_claw_.absolute_position() - bottom_claw_.absolute_position();
     }
-    LOG_STRUCT(DEBUG, "absolute position",
-               ClawPositionToLog(top_claw_.absolute_position(),
-                                 bottom_claw_.absolute_position()));
+    AOS_LOG_STRUCT(DEBUG, "absolute position",
+                   ClawPositionToLog(top_claw_.absolute_position(),
+                                     bottom_claw_.absolute_position()));
   }
 
   bool autonomous, enabled;
@@ -717,7 +721,7 @@ void ClawMotor::RunIteration(
     }
     if (bottom_claw_.zeroing_state() != ZeroedStateFeedbackLoop::CALIBRATED) {
       // always get the bottom claw to calibrated first
-      LOG(DEBUG, "Calibrating the bottom of the claw\n");
+      AOS_LOG(DEBUG, "Calibrating the bottom of the claw\n");
       if (!doing_calibration_fine_tune_) {
         if (::std::abs(bottom_absolute_position() -
                        values.claw.start_fine_tune_pos) <
@@ -726,12 +730,12 @@ void ClawMotor::RunIteration(
           bottom_claw_goal_ += values.claw.claw_zeroing_speed * kDt;
           top_claw_velocity_ = bottom_claw_velocity_ =
               values.claw.claw_zeroing_speed;
-          LOG(DEBUG, "Ready to fine tune the bottom\n");
+          AOS_LOG(DEBUG, "Ready to fine tune the bottom\n");
           mode_ = FINE_TUNE_BOTTOM;
         } else {
           // send bottom to zeroing start
           bottom_claw_goal_ = values.claw.start_fine_tune_pos;
-          LOG(DEBUG, "Going to the start position for the bottom\n");
+          AOS_LOG(DEBUG, "Going to the start position for the bottom\n");
           mode_ = PREP_FINE_TUNE_BOTTOM;
         }
       } else {
@@ -746,7 +750,7 @@ void ClawMotor::RunIteration(
           doing_calibration_fine_tune_ = false;
           bottom_claw_goal_ = values.claw.start_fine_tune_pos;
           top_claw_velocity_ = bottom_claw_velocity_ = 0.0;
-          LOG(DEBUG, "Found a limit, starting over.\n");
+          AOS_LOG(DEBUG, "Found a limit, starting over.\n");
           mode_ = PREP_FINE_TUNE_BOTTOM;
         }
 
@@ -760,14 +764,15 @@ void ClawMotor::RunIteration(
           bottom_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::CALIBRATED);
           // calibrated so we are done fine tuning bottom
           doing_calibration_fine_tune_ = false;
-          LOG(DEBUG, "Calibrated the bottom correctly!\n");
+          AOS_LOG(DEBUG, "Calibrated the bottom correctly!\n");
         } else if (bottom_claw_.calibration().last_value()) {
-          LOG(DEBUG, "Aborting bottom fine tune because sensor triggered\n");
+          AOS_LOG(DEBUG,
+                  "Aborting bottom fine tune because sensor triggered\n");
           doing_calibration_fine_tune_ = false;
           bottom_claw_.set_zeroing_state(
               ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
         } else {
-          LOG(DEBUG, "Fine tuning\n");
+          AOS_LOG(DEBUG, "Fine tuning\n");
         }
       }
       // now set the top claw to track
@@ -783,12 +788,12 @@ void ClawMotor::RunIteration(
           top_claw_goal_ += values.claw.claw_zeroing_speed * kDt;
           top_claw_velocity_ = bottom_claw_velocity_ =
               values.claw.claw_zeroing_speed;
-          LOG(DEBUG, "Ready to fine tune the top\n");
+          AOS_LOG(DEBUG, "Ready to fine tune the top\n");
           mode_ = FINE_TUNE_TOP;
         } else {
           // send top to zeroing start
           top_claw_goal_ = values.claw.start_fine_tune_pos;
-          LOG(DEBUG, "Going to the start position for the top\n");
+          AOS_LOG(DEBUG, "Going to the start position for the top\n");
           mode_ = PREP_FINE_TUNE_TOP;
         }
       } else {
@@ -802,7 +807,7 @@ void ClawMotor::RunIteration(
           doing_calibration_fine_tune_ = false;
           top_claw_goal_ = values.claw.start_fine_tune_pos;
           top_claw_velocity_ = bottom_claw_velocity_ = 0.0;
-          LOG(DEBUG, "Found a limit, starting over.\n");
+          AOS_LOG(DEBUG, "Found a limit, starting over.\n");
           mode_ = PREP_FINE_TUNE_TOP;
         }
 
@@ -816,9 +821,9 @@ void ClawMotor::RunIteration(
           top_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::CALIBRATED);
           // calibrated so we are done fine tuning top
           doing_calibration_fine_tune_ = false;
-          LOG(DEBUG, "Calibrated the top correctly!\n");
+          AOS_LOG(DEBUG, "Calibrated the top correctly!\n");
         } else if (top_claw_.calibration().last_value()) {
-          LOG(DEBUG, "Aborting top fine tune because sensor triggered\n");
+          AOS_LOG(DEBUG, "Aborting top fine tune because sensor triggered\n");
           doing_calibration_fine_tune_ = false;
           top_claw_.set_zeroing_state(
               ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
@@ -852,7 +857,7 @@ void ClawMotor::RunIteration(
         bottom_claw_goal_ += values.claw.claw_zeroing_off_speed * kDt;
         top_claw_velocity_ = bottom_claw_velocity_ =
             values.claw.claw_zeroing_off_speed;
-        LOG(DEBUG, "Bottom is known.\n");
+        AOS_LOG(DEBUG, "Bottom is known.\n");
       }
     } else {
       // We don't know where either claw is.  Slowly start moving down to find
@@ -862,7 +867,7 @@ void ClawMotor::RunIteration(
         bottom_claw_goal_ -= values.claw.claw_zeroing_off_speed * kDt;
         top_claw_velocity_ = bottom_claw_velocity_ =
             -values.claw.claw_zeroing_off_speed;
-        LOG(DEBUG, "Both are unknown.\n");
+        AOS_LOG(DEBUG, "Both are unknown.\n");
       }
     }
 
@@ -902,7 +907,7 @@ void ClawMotor::RunIteration(
   if (has_top_claw_goal_ && has_bottom_claw_goal_) {
     claw_.mutable_R() << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_,
         bottom_claw_velocity_, top_claw_velocity_ - bottom_claw_velocity_;
-    LOG_MATRIX(DEBUG, "actual goal", claw_.R());
+    AOS_LOG_MATRIX(DEBUG, "actual goal", claw_.R());
 
     // Only cap power when one of the halves of the claw is moving slowly and
     // could wind up.
@@ -937,12 +942,13 @@ void ClawMotor::RunIteration(
             claw_.R(3, 0);
         claw_.mutable_U() = claw_.controller().K() * (R - claw_.X_hat());
         capped_goal_ = true;
-        LOG(DEBUG, "Moving the goal by %f to prevent windup."
-            " Uncapped is %f, max is %f, difference is %f\n",
-            dx,
-            claw_.uncapped_average_voltage(), values.claw.max_zeroing_voltage,
-            (claw_.uncapped_average_voltage() -
-             values.claw.max_zeroing_voltage));
+        AOS_LOG(DEBUG,
+                "Moving the goal by %f to prevent windup."
+                " Uncapped is %f, max is %f, difference is %f\n",
+                dx, claw_.uncapped_average_voltage(),
+                values.claw.max_zeroing_voltage,
+                (claw_.uncapped_average_voltage() -
+                 values.claw.max_zeroing_voltage));
       } else if (claw_.uncapped_average_voltage() <
                  -values.claw.max_zeroing_voltage) {
         double dx_bot =
@@ -959,7 +965,7 @@ void ClawMotor::RunIteration(
             claw_.R(3, 0);
         claw_.mutable_U() = claw_.controller().K() * (R - claw_.X_hat());
         capped_goal_ = true;
-        LOG(DEBUG, "Moving the goal by %f to prevent windup\n", dx);
+        AOS_LOG(DEBUG, "Moving the goal by %f to prevent windup\n", dx);
       }
     } break;
   }

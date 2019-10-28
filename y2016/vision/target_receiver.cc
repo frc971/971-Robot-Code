@@ -304,8 +304,8 @@ void Main() {
           ".y2016.vision.vision_status");
 
   StereoGeometry stereo(constants::GetValues().vision_name);
-  LOG(INFO, "calibration: %s\n",
-      stereo.calibration().ShortDebugString().c_str());
+  AOS_LOG(INFO, "calibration: %s\n",
+          stereo.calibration().ShortDebugString().c_str());
 
   DrivetrainOffsetCalculator drivetrain_offset(&event_loop);
 
@@ -328,7 +328,7 @@ void Main() {
         right.Received(target, now);
       }
     } else {
-      LOG(ERROR, "oh noes: parse error\n");
+      AOS_LOG(ERROR, "oh noes: parse error\n");
       continue;
     }
 
@@ -404,20 +404,22 @@ void Main() {
       }
 
       if (drivetrain_offset.CompleteVisionStatus(new_vision_status.get())) {
-        LOG_STRUCT(DEBUG, "vision", *new_vision_status);
+        AOS_LOG_STRUCT(DEBUG, "vision", *new_vision_status);
         if (!new_vision_status.Send()) {
-          LOG(ERROR, "Failed to send vision information\n");
+          AOS_LOG(ERROR, "Failed to send vision information\n");
         }
       } else {
-        LOG_STRUCT(WARNING, "vision without drivetrain", *new_vision_status);
+        AOS_LOG_STRUCT(WARNING, "vision without drivetrain",
+                       *new_vision_status);
       }
     }
 
     if (target.camera_index() == 0) {
-      LOG(DEBUG, "left_target: %s\n", left.target().ShortDebugString().c_str());
+      AOS_LOG(DEBUG, "left_target: %s\n",
+              left.target().ShortDebugString().c_str());
     } else {
-      LOG(DEBUG, "right_target: %s\n",
-          right.target().ShortDebugString().c_str());
+      AOS_LOG(DEBUG, "right_target: %s\n",
+              right.target().ShortDebugString().c_str());
     }
   }
 }

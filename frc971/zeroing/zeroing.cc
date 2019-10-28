@@ -30,7 +30,7 @@ void PotAndIndexPulseZeroingEstimator::Reset() {
 
 void PotAndIndexPulseZeroingEstimator::TriggerError() {
   if (!error_) {
-    LOG(ERROR, "Manually triggered zeroing error.\n");
+    AOS_LOG(ERROR, "Manually triggered zeroing error.\n");
     error_ = true;
   }
 }
@@ -98,7 +98,7 @@ void PotAndIndexPulseZeroingEstimator::UpdateEstimate(
     // Save the first starting position.
     if (!zeroed_) {
       first_start_pos_ = offset_;
-      LOG(INFO, "latching start position %f\n", first_start_pos_);
+      AOS_LOG(INFO, "latching start position %f\n", first_start_pos_);
     }
 
     // Now that we have an accurate starting position we can consider ourselves
@@ -109,7 +109,8 @@ void PotAndIndexPulseZeroingEstimator::UpdateEstimate(
     if (::std::abs(first_start_pos_ - offset_) >
         constants_.allowable_encoder_error * constants_.index_difference) {
       if (!error_) {
-        LOG(ERROR,
+        AOS_LOG(
+            ERROR,
             "Encoder ticks out of range since last index pulse. first start "
             "position: %f recent starting position: %f, allowable error: %f\n",
             first_start_pos_, offset_,
@@ -156,7 +157,7 @@ void HallEffectAndPositionZeroingEstimator::Reset() {
 
 void HallEffectAndPositionZeroingEstimator::TriggerError() {
   if (!error_) {
-    LOG(ERROR, "Manually triggered zeroing error.\n");
+    AOS_LOG(ERROR, "Manually triggered zeroing error.\n");
     error_ = true;
   }
 }
@@ -224,7 +225,7 @@ void HallEffectAndPositionZeroingEstimator::UpdateEstimate(
     // Save the first starting position.
     if (!zeroed_) {
       first_start_pos_ = offset_;
-      LOG(INFO, "latching start position %f\n", first_start_pos_);
+      AOS_LOG(INFO, "latching start position %f\n", first_start_pos_);
     }
 
     // Now that we have an accurate starting position we can consider ourselves
@@ -292,12 +293,12 @@ void PotAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
   // code below. NaN values are given when the Absolute Encoder is disconnected.
   if (::std::isnan(info.absolute_encoder)) {
     if (zeroed_) {
-      LOG(ERROR, "NAN on absolute encoder\n");
+      AOS_LOG(ERROR, "NAN on absolute encoder\n");
       error_ = true;
     } else {
       ++nan_samples_;
-      LOG(ERROR, "NAN on absolute encoder while zeroing %d\n",
-          static_cast<int>(nan_samples_));
+      AOS_LOG(ERROR, "NAN on absolute encoder while zeroing %d\n",
+              static_cast<int>(nan_samples_));
       if (nan_samples_ >= constants_.average_filter_size) {
         error_ = true;
         zeroed_ = true;
@@ -401,11 +402,13 @@ void PotAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
       if (::std::abs(first_offset_ - offset_) >
           constants_.allowable_encoder_error *
               constants_.one_revolution_distance) {
-        LOG(ERROR,
+        AOS_LOG(
+            ERROR,
             "Offset moved too far. Initial: %f, current %f, allowable change: "
             "%f\n",
-            first_offset_, offset_, constants_.allowable_encoder_error *
-                                        constants_.one_revolution_distance);
+            first_offset_, offset_,
+            constants_.allowable_encoder_error *
+                constants_.one_revolution_distance);
         error_ = true;
       }
 
@@ -471,8 +474,9 @@ void PulseIndexZeroingEstimator::UpdateEstimate(const IndexPosition &info) {
   const int index_pulse_count = IndexPulseCount();
   if (index_pulse_count > constants_.index_pulse_count) {
     if (!error_) {
-      LOG(ERROR, "Got more index pulses than expected. Got %d expected %d.\n",
-          index_pulse_count, constants_.index_pulse_count);
+      AOS_LOG(ERROR,
+              "Got more index pulses than expected. Got %d expected %d.\n",
+              index_pulse_count, constants_.index_pulse_count);
       error_ = true;
     }
   }
@@ -502,15 +506,15 @@ void PulseIndexZeroingEstimator::UpdateEstimate(const IndexPosition &info) {
     // This lets us check if the index pulse is within an acceptable error
     // margin of where we expected it to be.
     if (::std::abs(error) > constants_.allowable_encoder_error) {
-      LOG(ERROR,
-          "Encoder ticks out of range since last index pulse. known index "
-          "pulse: %f, expected index pulse: %f, actual index pulse: %f, "
-          "allowable error: %f\n",
-          constants_.measured_index_position,
-          round(relative_distance) * constants_.index_difference +
+      AOS_LOG(ERROR,
+              "Encoder ticks out of range since last index pulse. known index "
+              "pulse: %f, expected index pulse: %f, actual index pulse: %f, "
+              "allowable error: %f\n",
               constants_.measured_index_position,
-          info.latched_encoder + offset_,
-          constants_.allowable_encoder_error * constants_.index_difference);
+              round(relative_distance) * constants_.index_difference +
+                  constants_.measured_index_position,
+              info.latched_encoder + offset_,
+              constants_.allowable_encoder_error * constants_.index_difference);
       error_ = true;
     }
   }
@@ -568,12 +572,12 @@ void AbsoluteEncoderZeroingEstimator::UpdateEstimate(
   // code below. NaN values are given when the Absolute Encoder is disconnected.
   if (::std::isnan(info.absolute_encoder)) {
     if (zeroed_) {
-      LOG(ERROR, "NAN on absolute encoder\n");
+      AOS_LOG(ERROR, "NAN on absolute encoder\n");
       error_ = true;
     } else {
       ++nan_samples_;
-      LOG(ERROR, "NAN on absolute encoder while zeroing %d\n",
-          static_cast<int>(nan_samples_));
+      AOS_LOG(ERROR, "NAN on absolute encoder while zeroing %d\n",
+              static_cast<int>(nan_samples_));
       if (nan_samples_ >= constants_.average_filter_size) {
         error_ = true;
         zeroed_ = true;
@@ -669,11 +673,13 @@ void AbsoluteEncoderZeroingEstimator::UpdateEstimate(
       if (::std::abs(first_offset_ - offset_) >
           constants_.allowable_encoder_error *
               constants_.one_revolution_distance) {
-        LOG(ERROR,
+        AOS_LOG(
+            ERROR,
             "Offset moved too far. Initial: %f, current %f, allowable change: "
             "%f\n",
-            first_offset_, offset_, constants_.allowable_encoder_error *
-                                        constants_.one_revolution_distance);
+            first_offset_, offset_,
+            constants_.allowable_encoder_error *
+                constants_.one_revolution_distance);
         error_ = true;
       }
 

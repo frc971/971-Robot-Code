@@ -58,7 +58,7 @@ void AutonomousActor::PositionClawVertically(double intake_power,
   goal_message->centering = centering_power;
 
   if (!goal_message.Send()) {
-    LOG(WARNING, "sending claw goal failed\n");
+    AOS_LOG(WARNING, "sending claw goal failed\n");
   }
 }
 
@@ -69,7 +69,7 @@ void AutonomousActor::PositionClawBackIntake() {
   goal_message->intake = 12.0;
   goal_message->centering = 12.0;
   if (!goal_message.Send()) {
-    LOG(WARNING, "sending claw goal failed\n");
+    AOS_LOG(WARNING, "sending claw goal failed\n");
   }
 }
 
@@ -82,7 +82,7 @@ void AutonomousActor::PositionClawUpClosed() {
   goal_message->intake = 4.0;
   goal_message->centering = 1.0;
   if (!goal_message.Send()) {
-    LOG(WARNING, "sending claw goal failed\n");
+    AOS_LOG(WARNING, "sending claw goal failed\n");
   }
 }
 
@@ -93,19 +93,19 @@ void AutonomousActor::PositionClawForShot() {
   goal_message->intake = 4.0;
   goal_message->centering = 1.0;
   if (!goal_message.Send()) {
-    LOG(WARNING, "sending claw goal failed\n");
+    AOS_LOG(WARNING, "sending claw goal failed\n");
   }
 }
 
 void AutonomousActor::SetShotPower(double power) {
-  LOG(INFO, "Setting shot power to %f\n", power);
+  AOS_LOG(INFO, "Setting shot power to %f\n", power);
   auto goal_message = shooter_goal_sender_.MakeMessage();
   goal_message->shot_power = power;
   goal_message->shot_requested = false;
   goal_message->unload_requested = false;
   goal_message->load_requested = false;
   if (!goal_message.Send()) {
-    LOG(WARNING, "sending shooter goal failed\n");
+    AOS_LOG(WARNING, "sending shooter goal failed\n");
   }
 }
 
@@ -161,10 +161,10 @@ class HotGoalDecoder {
     hot_goal_fetcher_->Fetch();
     if (hot_goal_fetcher_->get()) {
       start_counts_ = *hot_goal_fetcher_->get();
-      LOG_STRUCT(INFO, "counts reset to", start_counts_);
+      AOS_LOG_STRUCT(INFO, "counts reset to", start_counts_);
       start_counts_valid_ = true;
     } else {
-      LOG(WARNING, "no hot goal message. ignoring\n");
+      AOS_LOG(WARNING, "no hot goal message. ignoring\n");
       start_counts_valid_ = false;
     }
   }
@@ -172,7 +172,7 @@ class HotGoalDecoder {
   void Update() {
     hot_goal_fetcher_->Fetch();
     if (hot_goal_fetcher_->get())
-      LOG_STRUCT(INFO, "new counts", *hot_goal_fetcher_->get());
+      AOS_LOG_STRUCT(INFO, "new counts", *hot_goal_fetcher_->get());
   }
 
   bool left_triggered() const {
@@ -250,12 +250,12 @@ bool AutonomousActor::RunAction(
   static const double kTurnAngle = 0.3;
 
   const monotonic_clock::time_point start_time = monotonic_now();
-  LOG(INFO, "Handling auto mode\n");
+  AOS_LOG(INFO, "Handling auto mode\n");
 
   AutoVersion auto_version;
   auto_mode_fetcher_.Fetch();
   if (!auto_mode_fetcher_.get()) {
-    LOG(WARNING, "not sure which auto mode to use\n");
+    AOS_LOG(WARNING, "not sure which auto mode to use\n");
     auto_version = AutoVersion::kStraight;
   } else {
     static const double kSelectorMin = 0.2, kSelectorMax = 4.4;
@@ -269,7 +269,8 @@ bool AutonomousActor::RunAction(
       auto_version = AutoVersion::kDoubleHot;
     }
   }
-  LOG(INFO, "running auto %" PRIu8 "\n", static_cast<uint8_t>(auto_version));
+  AOS_LOG(INFO, "running auto %" PRIu8 "\n",
+          static_cast<uint8_t>(auto_version));
 
   const ProfileParameters &drive_params =
       (auto_version == AutoVersion::kStraight) ? kFastDrive : kSlowDrive;
@@ -284,37 +285,37 @@ bool AutonomousActor::RunAction(
   Reset();
 
   // Turn the claw on, keep it straight up until the ball has been grabbed.
-  LOG(INFO, "Claw going up at %f\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "Claw going up at %f\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   PositionClawVertically(12.0, 4.0);
   SetShotPower(115.0);
 
   // Wait for the ball to enter the claw.
   this_thread::sleep_for(chrono::milliseconds(250));
   if (ShouldCancel()) return true;
-  LOG(INFO, "Readying claw for shot at %f\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "Readying claw for shot at %f\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   if (ShouldCancel()) return true;
   // Drive to the goal.
   StartDrive(-kShootDistance, 0.0, drive_params, kFastTurn);
   this_thread::sleep_for(chrono::milliseconds(750));
   PositionClawForShot();
-  LOG(INFO, "Waiting until drivetrain is finished\n");
+  AOS_LOG(INFO, "Waiting until drivetrain is finished\n");
   WaitForDriveProfileDone();
   if (ShouldCancel()) return true;
 
   hot_goal_decoder.Update();
   if (hot_goal_decoder.is_left()) {
-    LOG(INFO, "first shot left\n");
+    AOS_LOG(INFO, "first shot left\n");
     first_shot_left = true;
     second_shot_left_default = false;
   } else if (hot_goal_decoder.is_right()) {
-    LOG(INFO, "first shot right\n");
+    AOS_LOG(INFO, "first shot right\n");
     first_shot_left = false;
     second_shot_left_default = true;
   } else {
-    LOG(INFO, "first shot defaulting left\n");
+    AOS_LOG(INFO, "first shot defaulting left\n");
     first_shot_left = true;
     second_shot_left_default = true;
   }
@@ -337,8 +338,8 @@ bool AutonomousActor::RunAction(
   }
 
   // Shoot.
-  LOG(INFO, "Shooting at %f\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "Shooting at %f\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   Shoot();
   this_thread::sleep_for(chrono::milliseconds(50));
 
@@ -349,8 +350,8 @@ bool AutonomousActor::RunAction(
     WaitForDriveProfileDone();
     if (ShouldCancel()) return true;
   } else if (auto_version == AutoVersion::kSingleHot) {
-    LOG(INFO, "auto done at %f\n",
-        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+    AOS_LOG(INFO, "auto done at %f\n",
+            ::aos::time::DurationInSeconds(monotonic_now() - start_time));
     PositionClawVertically(0.0, 0.0);
     return true;
   }
@@ -358,22 +359,22 @@ bool AutonomousActor::RunAction(
   {
     if (ShouldCancel()) return true;
     // Intake the new ball.
-    LOG(INFO, "Claw ready for intake at %f\n",
-        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+    AOS_LOG(INFO, "Claw ready for intake at %f\n",
+            ::aos::time::DurationInSeconds(monotonic_now() - start_time));
     PositionClawBackIntake();
     StartDrive(kShootDistance + kPickupDistance, 0.0, drive_params, kFastTurn);
-    LOG(INFO, "Waiting until drivetrain is finished\n");
+    AOS_LOG(INFO, "Waiting until drivetrain is finished\n");
     WaitForDriveProfileDone();
     if (ShouldCancel()) return true;
-    LOG(INFO, "Wait for the claw at %f\n",
-        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+    AOS_LOG(INFO, "Wait for the claw at %f\n",
+            ::aos::time::DurationInSeconds(monotonic_now() - start_time));
     if (!WaitUntilClawDone()) return true;
   }
 
   // Drive back.
   {
-    LOG(INFO, "Driving back at %f\n",
-        ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+    AOS_LOG(INFO, "Driving back at %f\n",
+            ::aos::time::DurationInSeconds(monotonic_now() - start_time));
     StartDrive(-(kShootDistance + kPickupDistance), 0.0, drive_params,
                kFastTurn);
     this_thread::sleep_for(chrono::milliseconds(300));
@@ -382,7 +383,7 @@ bool AutonomousActor::RunAction(
     PositionClawUpClosed();
     if (!WaitUntilClawDone()) return true;
     PositionClawForShot();
-    LOG(INFO, "Waiting until drivetrain is finished\n");
+    AOS_LOG(INFO, "Waiting until drivetrain is finished\n");
     WaitForDriveProfileDone();
     if (ShouldCancel()) return true;
     if (!WaitUntilClawDone()) return true;
@@ -390,14 +391,14 @@ bool AutonomousActor::RunAction(
 
   hot_goal_decoder.Update();
   if (hot_goal_decoder.is_left()) {
-    LOG(INFO, "second shot left\n");
+    AOS_LOG(INFO, "second shot left\n");
     second_shot_left = true;
   } else if (hot_goal_decoder.is_right()) {
-    LOG(INFO, "second shot right\n");
+    AOS_LOG(INFO, "second shot right\n");
     second_shot_left = false;
   } else {
-    LOG(INFO, "second shot defaulting %s\n",
-        second_shot_left_default ? "left" : "right");
+    AOS_LOG(INFO, "second shot defaulting %s\n",
+            second_shot_left_default ? "left" : "right");
     second_shot_left = second_shot_left_default;
   }
   if (auto_version == AutoVersion::kDoubleHot) {
@@ -410,8 +411,8 @@ bool AutonomousActor::RunAction(
     this_thread::sleep_for(chrono::milliseconds(400));
   }
 
-  LOG(INFO, "Shooting at %f\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "Shooting at %f\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
   // Shoot
   Shoot();
   if (ShouldCancel()) return true;

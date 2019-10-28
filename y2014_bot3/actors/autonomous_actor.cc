@@ -31,14 +31,15 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
 bool AutonomousActor::RunAction(
     const ::frc971::autonomous::AutonomousActionParams &params) {
   const monotonic_clock::time_point start_time = monotonic_now();
-  LOG(INFO, "Starting autonomous action with mode %" PRId32 "\n", params.mode);
+  AOS_LOG(INFO, "Starting autonomous action with mode %" PRId32 "\n",
+          params.mode);
   Reset();
 
   StartDrive(1.0, 0.0, kDrive, kTurn);
   if (!WaitForDriveDone()) return true;
 
-  LOG(INFO, "Done %f\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+  AOS_LOG(INFO, "Done %f\n",
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
                                       monotonic_now(),
@@ -46,7 +47,7 @@ bool AutonomousActor::RunAction(
   while (!ShouldCancel()) {
     phased_loop.SleepUntilNext();
   }
-  LOG(DEBUG, "Done running\n");
+  AOS_LOG(DEBUG, "Done running\n");
 
   return true;
 }

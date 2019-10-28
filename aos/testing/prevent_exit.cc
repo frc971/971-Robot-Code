@@ -16,7 +16,7 @@ void TerminateExitHandler() {
 }  // namespace
 
 void PreventExit() {
-  CHECK_EQ(atexit(TerminateExitHandler), 0);
+  AOS_CHECK_EQ(atexit(TerminateExitHandler), 0);
 }
 
 }  // namespace testing

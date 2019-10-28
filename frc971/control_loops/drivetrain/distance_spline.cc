@@ -23,16 +23,18 @@ namespace drivetrain {
       const ::Eigen::Matrix<double, 2, 1> start1 = spline1.Point(0.0);
 
       if (!end0.isApprox(start1, 1e-6)) {
-        LOG(ERROR, "Splines %d and %d don't line up.  [%f, %f] != [%f, %f]\n",
-            static_cast<int>(i - 1), static_cast<int>(i), end0(0, 0),
-            end0(1, 0), start1(0, 0), start1(1, 0));
+        AOS_LOG(ERROR,
+                "Splines %d and %d don't line up.  [%f, %f] != [%f, %f]\n",
+                static_cast<int>(i - 1), static_cast<int>(i), end0(0, 0),
+                end0(1, 0), start1(0, 0), start1(1, 0));
       }
 
       const ::Eigen::Matrix<double, 2, 1> dend0 = spline0.DPoint(1.0);
       const ::Eigen::Matrix<double, 2, 1> dstart1 = spline1.DPoint(0.0);
 
       if (!dend0.isApprox(dstart1, 1e-6)) {
-        LOG(ERROR,
+        AOS_LOG(
+            ERROR,
             "Splines %d and %d don't line up in the first derivitive.  [%f, "
             "%f] != [%f, %f]\n",
             static_cast<int>(i - 1), static_cast<int>(i), dend0(0, 0),
@@ -43,7 +45,8 @@ namespace drivetrain {
       const ::Eigen::Matrix<double, 2, 1> ddstart1 = spline1.DDPoint(0.0);
 
       if (!ddend0.isApprox(ddstart1, 1e-6)) {
-        LOG(ERROR,
+        AOS_LOG(
+            ERROR,
             "Splines %d and %d don't line up in the second derivitive.  [%f, "
             "%f] != [%f, %f]\n",
             static_cast<int>(i - 1), static_cast<int>(i), ddend0(0, 0),

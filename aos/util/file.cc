@@ -14,15 +14,15 @@ namespace util {
   ::std::string r;
   ScopedFD fd(open(::std::string(filename).c_str(), O_RDONLY));
   if (fd.get() == -1) {
-    PLOG(FATAL, "opening %*s", static_cast<int>(filename.size()),
-         filename.data());
+    AOS_PLOG(FATAL, "opening %*s", static_cast<int>(filename.size()),
+             filename.data());
   }
   while (true) {
     char buffer[1024];
     const ssize_t result = read(fd.get(), buffer, sizeof(buffer));
     if (result < 0) {
-      PLOG(FATAL, "reading from %*s", static_cast<int>(filename.size()),
-           filename.data());
+      AOS_PLOG(FATAL, "reading from %*s", static_cast<int>(filename.size()),
+               filename.data());
     } else if (result == 0) {
       break;
     }

@@ -125,7 +125,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     }
 
     if (!new_superstructure_goal.Send()) {
-      LOG(ERROR, "Sending superstructure goal failed.\n");
+      AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
     }
   }
 };

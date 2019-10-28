@@ -157,7 +157,7 @@ class HybridEkf {
     // Because the check below for have_zeroed_encoders_ will add an
     // Observation, do a check here to ensure that initialization has been
     // performed and so there is at least one observation.
-    CHECK(!observations_.empty());
+    AOS_CHECK(!observations_.empty());
     if (!have_zeroed_encoders_) {
       // This logic handles ensuring that on the first encoder reading, we
       // update the internal state for the encoders to match the reading.
@@ -310,7 +310,7 @@ class HybridEkf {
       PredictImpl(obs->U, dt, state, P);
     }
     if (!(obs->h && obs->dhdx)) {
-      CHECK(obs->make_h);
+      AOS_CHECK(obs->make_h);
       obs->make_h(*state, *P, &obs->h, &obs->dhdx);
     }
     CorrectImpl(obs->R, obs->z, obs->h(*state, obs->U), obs->dhdx(*state),
@@ -351,18 +351,19 @@ void HybridEkf<Scalar>::Correct(
         dhdx,
     const Eigen::Matrix<Scalar, kNOutputs, kNOutputs> &R,
     aos::monotonic_clock::time_point t) {
-  CHECK(!observations_.empty());
+  AOS_CHECK(!observations_.empty());
   if (!observations_.full() && t < observations_.begin()->t) {
-    LOG(ERROR,
-        "Dropped an observation that was received before we "
-        "initialized.\n");
+    AOS_LOG(ERROR,
+            "Dropped an observation that was received before we "
+            "initialized.\n");
     return;
   }
   auto cur_it =
       observations_.PushFromBottom({t, t, State::Zero(), StateSquare::Zero(),
                                     Input::Zero(), z, make_h, h, dhdx, R});
   if (cur_it == observations_.end()) {
-    LOG(DEBUG,
+    AOS_LOG(
+        DEBUG,
         "Camera dropped off of end with time of %fs; earliest observation in "
         "queue has time of %fs.\n",
         ::aos::time::DurationInSeconds(t.time_since_epoch()),
@@ -395,7 +396,7 @@ void HybridEkf<Scalar>::Correct(
     --prev_it;
     cur_it->prev_t = prev_it->t;
     // TODO(james): Figure out a saner way of handling this.
-    CHECK(U != nullptr);
+    AOS_CHECK(U != nullptr);
     cur_it->U = *U;
   } else {
     cur_it->X_hat = next_it->X_hat;
@@ -411,7 +412,7 @@ void HybridEkf<Scalar>::Correct(
     // We use X_hat_ and P_ to store the intermediate states, and then
     // once we reach the end they will all be up-to-date.
     ProcessObservation(&*cur_it, cur_it->t - cur_it->prev_t, &X_hat_, &P_);
-    CHECK(X_hat_.allFinite());
+    AOS_CHECK(X_hat_.allFinite());
     if (next_it != observations_.end()) {
       next_it->X_hat = X_hat_;
       next_it->P = P_;

@@ -61,7 +61,7 @@ class ShooterSimulation {
   constexpr static double kPositionOffset = kMaxExtension;
 
   void Reinitialize(double initial_position) {
-    LOG(INFO, "Reinitializing to {pos: %f}\n", initial_position);
+    AOS_LOG(INFO, "Reinitializing to {pos: %f}\n", initial_position);
     StateFeedbackPlant<2, 1, 1> *plant = shooter_plant_.get();
     initial_position_ = initial_position;
     plant->mutable_X(0, 0) = initial_position_ - kPositionOffset;
@@ -93,9 +93,9 @@ class ShooterSimulation {
       ::y2014::control_loops::ShooterQueue::Position *position) {
     const constants::Values &values = constants::GetValues();
 
-   	position->position = GetPosition();
+    position->position = GetPosition();
 
-    LOG(DEBUG, "Physical shooter at {%f}\n", GetAbsolutePosition());
+    AOS_LOG(DEBUG, "Physical shooter at {%f}\n", GetAbsolutePosition());
 
     // Signal that the hall effect sensor has been triggered if it is within
     // the correct range.
@@ -132,12 +132,14 @@ class ShooterSimulation {
     if (sensor->current && !last_sensor.current) {
       ++sensor->posedge_count;
       if (last_position.position + initial_position_ < limits.lower_angle) {
-        LOG(DEBUG, "Posedge value on lower edge of sensor, count is now %d\n",
-            sensor->posedge_count);
+        AOS_LOG(DEBUG,
+                "Posedge value on lower edge of sensor, count is now %d\n",
+                sensor->posedge_count);
         sensor->posedge_value = limits.lower_angle - initial_position_;
       } else {
-        LOG(DEBUG, "Posedge value on upper edge of sensor, count is now %d\n",
-            sensor->posedge_count);
+        AOS_LOG(DEBUG,
+                "Posedge value on upper edge of sensor, count is now %d\n",
+                sensor->posedge_count);
         sensor->posedge_value = limits.upper_angle - initial_position_;
       }
     }
@@ -229,11 +231,11 @@ class ShooterSimulation {
       U << last_voltage_;
       shooter_plant_->Update(U);
     }
-    LOG(DEBUG, "Plant index is %d\n", shooter_plant_->index());
+    AOS_LOG(DEBUG, "Plant index is %d\n", shooter_plant_->index());
 
     // Handle latch hall effect
     if (!latch_piston_state_ && latch_delay_count_ > 0) {
-      LOG(DEBUG, "latching simulation: %dp\n", latch_delay_count_);
+      AOS_LOG(DEBUG, "latching simulation: %dp\n", latch_delay_count_);
       if (latch_delay_count_ == 1) {
         latch_piston_state_ = true;
         EXPECT_GE(constants::GetValues().shooter.latch_max_safe_position,
@@ -242,7 +244,7 @@ class ShooterSimulation {
       }
       latch_delay_count_--;
     } else if (latch_piston_state_ && latch_delay_count_ < 0) {
-      LOG(DEBUG, "latching simulation: %dn\n", latch_delay_count_);
+      AOS_LOG(DEBUG, "latching simulation: %dn\n", latch_delay_count_);
       if (latch_delay_count_ == -1) {
         latch_piston_state_ = false;
         if (GetAbsolutePosition() > 0.002) {
@@ -616,7 +618,7 @@ TEST_F(ShooterTest, UnloadWindupNegative) {
          shooter_motor_.state() != ShooterMotor::STATE_READY_UNLOAD) {
     RunFor(dt());
     if (shooter_motor_.state() == ShooterMotor::STATE_UNLOAD_MOVE) {
-      LOG(DEBUG, "State is UnloadMove\n");
+      AOS_LOG(DEBUG, "State is UnloadMove\n");
       --kicked_delay;
       if (kicked_delay == 0) {
         shooter_motor_.shooter_.mutable_R(0, 0) -= 100;
@@ -659,7 +661,7 @@ TEST_F(ShooterTest, UnloadWindupPositive) {
          shooter_motor_.state() != ShooterMotor::STATE_READY_UNLOAD) {
     RunFor(dt());
     if (shooter_motor_.state() == ShooterMotor::STATE_UNLOAD_MOVE) {
-      LOG(DEBUG, "State is UnloadMove\n");
+      AOS_LOG(DEBUG, "State is UnloadMove\n");
       --kicked_delay;
       if (kicked_delay == 0) {
         shooter_motor_.shooter_.mutable_R(0, 0) += 0.1;

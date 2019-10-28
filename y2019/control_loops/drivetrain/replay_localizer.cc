@@ -139,7 +139,7 @@ class LocalizerReplayer {
     replayer_.AddHandler<frc971::control_loops::drivetrain::LocalizerControl>(
         drivetrain, "localizer_control",
         [this](const frc971::control_loops::drivetrain::LocalizerControl &msg) {
-          LOG_STRUCT(DEBUG, "localizer_control", msg);
+          AOS_LOG_STRUCT(DEBUG, "localizer_control", msg);
           localizer_.ResetPosition(msg.sent_time, msg.x, msg.y, msg.theta,
                                    msg.theta_uncertainty,
                                    !msg.keep_current_theta);
@@ -186,7 +186,7 @@ class LocalizerReplayer {
       fd = open(filename, O_RDONLY);
     }
     if (fd == -1) {
-      PLOG(FATAL, "couldn't open file '%s' for reading", filename);
+      AOS_PLOG(FATAL, "couldn't open file '%s' for reading", filename);
     }
 
     replayer_.OpenFile(fd);
@@ -204,7 +204,7 @@ class LocalizerReplayer {
     }
     replayer_.CloseCurrentFile();
 
-    PCHECK(close(fd));
+    AOS_PCHECK(close(fd));
 
     Plot();
   }

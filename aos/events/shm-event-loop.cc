@@ -128,7 +128,7 @@ class WatcherThreadState {
       // Try joining.  If we fail, we weren't asleep on the condition in the
       // queue.  So hit it again and again until that's true.
       struct timespec end_time;
-      PCHECK(clock_gettime(CLOCK_REALTIME, &end_time) == 0);
+      AOS_PCHECK(clock_gettime(CLOCK_REALTIME, &end_time) == 0);
       while (true) {
         void *retval = nullptr;
         end_time.tv_nsec += 100000000;
@@ -138,7 +138,7 @@ class WatcherThreadState {
         }
         int ret = pthread_timedjoin_np(pthread_, &retval, &end_time);
         if (ret == ETIMEDOUT) continue;
-        PCHECK(ret == 0);
+        AOS_PCHECK(ret == 0);
         break;
       }
     }
@@ -146,11 +146,11 @@ class WatcherThreadState {
 
   // Starts the thread and waits until it is running.
   void Start() {
-    PCHECK(pthread_create(&pthread_, nullptr, &StaticRun, this) == 0);
+    AOS_PCHECK(pthread_create(&pthread_, nullptr, &StaticRun, this) == 0);
     IPCRecursiveMutexLocker locker(&thread_started_mutex_);
     if (locker.owner_died()) ::aos::Die("Owner died");
     while (!running_) {
-      CHECK(!thread_started_condition_.Wait());
+      AOS_CHECK(!thread_started_condition_.Wait());
     }
   }
 

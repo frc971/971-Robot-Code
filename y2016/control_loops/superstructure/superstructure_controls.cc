@@ -55,7 +55,8 @@ Arm::Arm()
 
 void Arm::UpdateWristOffset(double offset) {
   const double doffset = offset - offset_(1, 0);
-  LOG(INFO, "Adjusting Wrist offset from %f to %f\n", offset_(1, 0), offset);
+  AOS_LOG(INFO, "Adjusting Wrist offset from %f to %f\n", offset_(1, 0),
+          offset);
 
   loop_->mutable_X_hat()(2, 0) += doffset;
   Y_(1, 0) += doffset;
@@ -72,7 +73,8 @@ void Arm::UpdateWristOffset(double offset) {
 
 void Arm::UpdateShoulderOffset(double offset) {
   const double doffset = offset - offset_(0, 0);
-  LOG(INFO, "Adjusting Shoulder offset from %f to %f\n", offset_(0, 0), offset);
+  AOS_LOG(INFO, "Adjusting Shoulder offset from %f to %f\n", offset_(0, 0),
+          offset);
 
   loop_->mutable_X_hat()(0, 0) += doffset;
   loop_->mutable_X_hat()(2, 0) += doffset;
@@ -101,11 +103,11 @@ void Arm::Correct(PotAndIndexPosition position_shoulder,
 
   // Handle zeroing errors
   if (estimators_[kShoulderIndex].error()) {
-    LOG(ERROR, "zeroing error with shoulder_estimator\n");
+    AOS_LOG(ERROR, "zeroing error with shoulder_estimator\n");
     return;
   }
   if (estimators_[kWristIndex].error()) {
-    LOG(ERROR, "zeroing error with wrist_estimator\n");
+    AOS_LOG(ERROR, "zeroing error with wrist_estimator\n");
     return;
   }
 
@@ -138,26 +140,26 @@ void Arm::CapGoal(const char *name, Eigen::Matrix<double, 6, 1> *goal) {
   // Limit the goals to min/max allowable angles.
 
   if ((*goal)(0, 0) > constants::Values::kShoulderRange.upper) {
-    LOG(WARNING, "Shoulder goal %s above limit, %f > %f\n", name, (*goal)(0, 0),
-        constants::Values::kShoulderRange.upper);
+    AOS_LOG(WARNING, "Shoulder goal %s above limit, %f > %f\n", name,
+            (*goal)(0, 0), constants::Values::kShoulderRange.upper);
     (*goal)(0, 0) = constants::Values::kShoulderRange.upper;
   }
   if ((*goal)(0, 0) < constants::Values::kShoulderRange.lower) {
-    LOG(WARNING, "Shoulder goal %s below limit, %f < %f\n", name, (*goal)(0, 0),
-        constants::Values::kShoulderRange.lower);
+    AOS_LOG(WARNING, "Shoulder goal %s below limit, %f < %f\n", name,
+            (*goal)(0, 0), constants::Values::kShoulderRange.lower);
     (*goal)(0, 0) = constants::Values::kShoulderRange.lower;
   }
 
   const double wrist_goal_angle_ungrounded = (*goal)(2, 0) - (*goal)(0, 0);
 
   if (wrist_goal_angle_ungrounded > constants::Values::kWristRange.upper) {
-    LOG(WARNING, "Wrist goal %s above limit, %f > %f\n", name,
-        wrist_goal_angle_ungrounded, constants::Values::kWristRange.upper);
+    AOS_LOG(WARNING, "Wrist goal %s above limit, %f > %f\n", name,
+            wrist_goal_angle_ungrounded, constants::Values::kWristRange.upper);
     (*goal)(2, 0) = constants::Values::kWristRange.upper + (*goal)(0, 0);
   }
   if (wrist_goal_angle_ungrounded < constants::Values::kWristRange.lower) {
-    LOG(WARNING, "Wrist goal %s below limit, %f < %f\n", name,
-        wrist_goal_angle_ungrounded, constants::Values::kWristRange.lower);
+    AOS_LOG(WARNING, "Wrist goal %s below limit, %f < %f\n", name,
+            wrist_goal_angle_ungrounded, constants::Values::kWristRange.lower);
     (*goal)(2, 0) = constants::Values::kWristRange.lower + (*goal)(0, 0);
   }
 }
@@ -195,9 +197,9 @@ void Arm::AdjustProfile(double max_angular_velocity_shoulder,
 bool Arm::CheckHardLimits() {
   if (shoulder_angle() > constants::Values::kShoulderRange.upper_hard ||
       shoulder_angle() < constants::Values::kShoulderRange.lower_hard) {
-    LOG(ERROR, "Shoulder at %f out of bounds [%f, %f], ESTOPing\n",
-        shoulder_angle(), constants::Values::kShoulderRange.lower_hard,
-        constants::Values::kShoulderRange.upper_hard);
+    AOS_LOG(ERROR, "Shoulder at %f out of bounds [%f, %f], ESTOPing\n",
+            shoulder_angle(), constants::Values::kShoulderRange.lower_hard,
+            constants::Values::kShoulderRange.upper_hard);
     return true;
   }
 
@@ -205,10 +207,10 @@ bool Arm::CheckHardLimits() {
           constants::Values::kWristRange.upper_hard ||
       wrist_angle() - shoulder_angle() <
           constants::Values::kWristRange.lower_hard) {
-    LOG(ERROR, "Wrist at %f out of bounds [%f, %f], ESTOPing\n",
-        wrist_angle() - shoulder_angle(),
-        constants::Values::kWristRange.lower_hard,
-        constants::Values::kWristRange.upper_hard);
+    AOS_LOG(ERROR, "Wrist at %f out of bounds [%f, %f], ESTOPing\n",
+            wrist_angle() - shoulder_angle(),
+            constants::Values::kWristRange.lower_hard,
+            constants::Values::kWristRange.upper_hard);
     return true;
   }
 
@@ -239,15 +241,15 @@ void Arm::Update(bool disable) {
 
   // Shoulder saturated
   if (!disable && loop_->U(0, 0) != loop_->U_uncapped(0, 0)) {
-    LOG(DEBUG, "Moving shoulder state.  U: %f, %f\n", loop_->U(0, 0),
-        loop_->U_uncapped(0, 0));
+    AOS_LOG(DEBUG, "Moving shoulder state.  U: %f, %f\n", loop_->U(0, 0),
+            loop_->U_uncapped(0, 0));
     shoulder_profile_.MoveCurrentState(loop_->R().block<2, 1>(0, 0));
   }
 
   // Wrist saturated
   if (!disable && loop_->U(1, 0) != loop_->U_uncapped(1, 0)) {
-    LOG(DEBUG, "Moving shooter state.  U: %f, %f\n", loop_->U(1, 0),
-        loop_->U_uncapped(1, 0));
+    AOS_LOG(DEBUG, "Moving shooter state.  U: %f, %f\n", loop_->U(1, 0),
+            loop_->U_uncapped(1, 0));
     wrist_profile_.MoveCurrentState(loop_->R().block<2, 1>(2, 0));
   }
 }

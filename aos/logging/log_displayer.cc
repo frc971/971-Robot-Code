@@ -75,28 +75,28 @@ void PrintHelpAndExit() {
       "possible arguments for the -n option cannot be shown. log_displayer\n"
       "looks for start_list.txt in the current working directory and in\n"
       "%s.\n\n", ::aos::configuration::GetRootDirectory());
-      PLOG(FATAL, "Unable to open start_list.txt");
+      AOS_PLOG(FATAL, "Unable to open start_list.txt");
     }
   }
 
   // Get file size.
   if (fseek(start_list, 0, SEEK_END)) {
-    PLOG(FATAL, "fseek() failed while reading start_list.txt");
+    AOS_PLOG(FATAL, "fseek() failed while reading start_list.txt");
   }
   int size = ftell(start_list);
   if (size < 0) {
-    PLOG(FATAL, "ftell() failed while reading start_list.txt");
+    AOS_PLOG(FATAL, "ftell() failed while reading start_list.txt");
   }
   rewind(start_list);
 
   ::std::unique_ptr<char[]> contents(new char[size + 1]);
   if (contents == NULL) {
-    LOG(FATAL, "malloc() failed while reading start_list.txt.\n");
+    AOS_LOG(FATAL, "malloc() failed while reading start_list.txt.\n");
   }
   size_t bytes_read = fread(contents.get(), 1, size, start_list);
   if (bytes_read < static_cast<size_t>(size)) {
-    LOG(FATAL, "Read %zu bytes from start_list.txt, expected %d.\n",
-        bytes_read, size);
+    AOS_LOG(FATAL, "Read %zu bytes from start_list.txt, expected %d.\n",
+            bytes_read, size);
   }
 
   // printf doesn't like strings without the \0.
@@ -104,7 +104,7 @@ void PrintHelpAndExit() {
   fprintf(stderr, "\nPossible arguments for the -n option:\n%s", contents.get());
 
   if (fclose(start_list)) {
-    LOG(FATAL, "fclose() failed.\n");
+    AOS_LOG(FATAL, "fclose() failed.\n");
   }
 
   exit(EXIT_SUCCESS);
@@ -249,7 +249,7 @@ int main(int argc, char **argv) {
       ::aos::logging::log_str(filter_level), filename);
 
   if (fd == -1) {
-    PLOG(FATAL, "couldn't open file '%s' for reading", filename);
+    AOS_PLOG(FATAL, "couldn't open file '%s' for reading", filename);
   }
   ::aos::logging::linux_code::LogFileReader reader(fd);
 
@@ -272,16 +272,17 @@ int main(int argc, char **argv) {
       ::aos::MessageType *type = ::aos::MessageType::Deserialize(
           reinterpret_cast<const char *>(msg + 1), &bytes);
       if (type == nullptr) {
-        LOG(INFO, "Trying old version of type decoding.\n");
+        AOS_LOG(INFO, "Trying old version of type decoding.\n");
         bytes = msg->message_size;
         type = ::aos::MessageType::Deserialize(
             reinterpret_cast<const char *>(msg + 1), &bytes, false);
       }
 
       if (type == nullptr) {
-        LOG(WARNING, "Error deserializing MessageType of size %" PRIx32
-                     " starting at %zx.\n",
-            msg->message_size, reader.file_offset(msg + 1));
+        AOS_LOG(WARNING,
+                "Error deserializing MessageType of size %" PRIx32
+                " starting at %zx.\n",
+                msg->message_size, reader.file_offset(msg + 1));
       } else {
         ::aos::type_cache::Add(*type);
       }
@@ -357,14 +358,15 @@ int main(int argc, char **argv) {
             (sizeof(type_id) + sizeof(uint32_t) + string_length);
         if (!PrintMessage(buffer, &output_length, position + string_length,
                           &input_length, ::aos::type_cache::Get(type_id))) {
-          LOG(FATAL, "printing message (%.*s) of type %s into %zu-byte buffer "
-                     "failed\n",
-              static_cast<int>(string_length), position,
-              ::aos::type_cache::Get(type_id).name.c_str(), sizeof(buffer));
+          AOS_LOG(FATAL,
+                  "printing message (%.*s) of type %s into %zu-byte buffer "
+                  "failed\n",
+                  static_cast<int>(string_length), position,
+                  ::aos::type_cache::Get(type_id).name.c_str(), sizeof(buffer));
         }
         if (input_length > 0) {
-          LOG(WARNING, "%zu extra bytes on message of type %s\n",
-              input_length, ::aos::type_cache::Get(type_id).name.c_str());
+          AOS_LOG(WARNING, "%zu extra bytes on message of type %s\n",
+                  input_length, ::aos::type_cache::Get(type_id).name.c_str());
         }
         fprintf(stdout, AOS_LOGGING_BASE_FORMAT "%.*s: %.*s\n", BASE_ARGS,
                 static_cast<int>(string_length), position,
@@ -390,20 +392,21 @@ int main(int argc, char **argv) {
             msg->message_size -
             (sizeof(type) + sizeof(uint32_t) + sizeof(uint16_t) +
              sizeof(uint16_t) + string_length);
-        CHECK_EQ(matrix_bytes, ::aos::MessageType::Sizeof(type) * rows * cols);
+        AOS_CHECK_EQ(matrix_bytes,
+                     ::aos::MessageType::Sizeof(type) * rows * cols);
         char buffer[4096];
         size_t output_length = sizeof(buffer);
         if (!::aos::PrintMatrix(buffer, &output_length,
                                 position + string_length, type, rows, cols)) {
-          LOG(FATAL, "printing %dx%d matrix of type %" PRIu32 " failed\n", rows,
-              cols, type);
+          AOS_LOG(FATAL, "printing %dx%d matrix of type %" PRIu32 " failed\n",
+                  rows, cols, type);
         }
         fprintf(stdout, AOS_LOGGING_BASE_FORMAT "%.*s: %.*s\n", BASE_ARGS,
                 static_cast<int>(string_length), position,
                 static_cast<int>(sizeof(buffer) - output_length), buffer);
       } break;
       case LogFileMessageHeader::MessageType::kStructType:
-        LOG(FATAL, "shouldn't get here\n");
+        AOS_LOG(FATAL, "shouldn't get here\n");
         break;
     }
 #undef BASE_ARGS

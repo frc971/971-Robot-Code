@@ -59,8 +59,8 @@ class ClawMotorSimulation {
 
   void Reinitialize(double initial_top_position,
                     double initial_bottom_position) {
-    LOG(INFO, "Reinitializing to {top: %f, bottom: %f}\n", initial_top_position,
-        initial_bottom_position);
+    AOS_LOG(INFO, "Reinitializing to {top: %f, bottom: %f}\n",
+            initial_top_position, initial_bottom_position);
     claw_plant_->mutable_X(0, 0) = initial_bottom_position;
     claw_plant_->mutable_X(1, 0) = initial_top_position - initial_bottom_position;
     claw_plant_->mutable_X(2, 0) = 0.0;
@@ -120,8 +120,8 @@ class ClawMotorSimulation {
 
     double pos[2] = {GetAbsolutePosition(TOP_CLAW),
                      GetAbsolutePosition(BOTTOM_CLAW)};
-    LOG(DEBUG, "Physical claws are at {top: %f, bottom: %f}\n", pos[TOP_CLAW],
-        pos[BOTTOM_CLAW]);
+    AOS_LOG(DEBUG, "Physical claws are at {top: %f, bottom: %f}\n",
+            pos[TOP_CLAW], pos[BOTTOM_CLAW]);
 
     const constants::Values& values = constants::GetValues();
 
@@ -143,12 +143,12 @@ class ClawMotorSimulation {
       ++position->posedge_count;
 
       if (last_angle < pair.lower_angle) {
-        LOG(DEBUG, "%s: Positive lower edge on %s hall effect\n", claw_name,
-            hall_effect_name);
+        AOS_LOG(DEBUG, "%s: Positive lower edge on %s hall effect\n", claw_name,
+                hall_effect_name);
         position->posedge_value = pair.lower_angle - initial_position;
       } else {
-        LOG(DEBUG, "%s: Positive upper edge on %s hall effect\n", claw_name,
-            hall_effect_name);
+        AOS_LOG(DEBUG, "%s: Positive upper edge on %s hall effect\n", claw_name,
+                hall_effect_name);
         position->posedge_value = pair.upper_angle - initial_position;
       }
     }
@@ -156,12 +156,12 @@ class ClawMotorSimulation {
       ++position->negedge_count;
 
       if (angle < pair.lower_angle) {
-        LOG(DEBUG, "%s: Negative lower edge on %s hall effect\n", claw_name,
-            hall_effect_name);
+        AOS_LOG(DEBUG, "%s: Negative lower edge on %s hall effect\n", claw_name,
+                hall_effect_name);
         position->negedge_value = pair.lower_angle - initial_position;
       } else {
-        LOG(DEBUG, "%s: Negative upper edge on %s hall effect\n", claw_name,
-            hall_effect_name);
+        AOS_LOG(DEBUG, "%s: Negative upper edge on %s hall effect\n", claw_name,
+                hall_effect_name);
         position->negedge_value = pair.upper_angle - initial_position;
       }
     }

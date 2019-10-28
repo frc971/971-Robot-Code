@@ -98,7 +98,7 @@ class ControlLoopTestTemplated : public TestBaseClass {
       new_state->autonomous = false;
       new_state->team_id = team_id_;
 
-      LOG_STRUCT(INFO, "joystick_state", *new_state);
+      AOS_LOG_STRUCT(INFO, "joystick_state", *new_state);
       new_state.Send();
 
       last_ds_time_ = monotonic_now();
@@ -123,7 +123,7 @@ class ControlLoopTestTemplated : public TestBaseClass {
     new_state->voltage_roborio_in = battery_voltage_;
     new_state->voltage_battery = battery_voltage_;
 
-    LOG_STRUCT(INFO, "robot_state", *new_state);
+    AOS_LOG_STRUCT(INFO, "robot_state", *new_state);
     new_state.Send();
   }
 

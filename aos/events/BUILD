@@ -4,8 +4,8 @@ cc_library(
     hdrs = ["epoll.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//aos/logging",
         "//aos/time",
+        "@com_github_google_glog//:glog",
     ],
 )
 

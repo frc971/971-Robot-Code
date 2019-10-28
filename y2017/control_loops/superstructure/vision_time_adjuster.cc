@@ -140,9 +140,9 @@ void VisionTimeAdjuster::Tick(monotonic_clock::time_point monotonic_now,
         &drivetrain_angle);
 
     if (column_angle_is_valid && drivetrain_angle_is_valid) {
-      LOG(INFO, "Accepting Vision angle of %f, age %f\n",
-          most_recent_vision_angle_,
-          ::aos::time::DurationInSeconds(monotonic_now - last_target_time));
+      AOS_LOG(INFO, "Accepting Vision angle of %f, age %f\n",
+              most_recent_vision_angle_,
+              ::aos::time::DurationInSeconds(monotonic_now - last_target_time));
       most_recent_vision_reading_ = vision_status->angle;
       most_recent_vision_angle_ =
           vision_status->angle + column_angle + drivetrain_angle;
@@ -151,8 +151,8 @@ void VisionTimeAdjuster::Tick(monotonic_clock::time_point monotonic_now,
   }
 
   goal_ = most_recent_vision_angle_ - most_recent_drivetrain_angle_;
-  LOG(DEBUG, "Vision angle %f drivetrain %f\n", most_recent_vision_angle_,
-      most_recent_drivetrain_angle_);
+  AOS_LOG(DEBUG, "Vision angle %f drivetrain %f\n", most_recent_vision_angle_,
+          most_recent_drivetrain_angle_);
 
   // Now, update the vision valid flag to tell us if we have a valid vision
   // angle within the last seven seconds.

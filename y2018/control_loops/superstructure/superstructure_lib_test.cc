@@ -89,7 +89,7 @@ class IntakeSideSimulation {
     const double voltage_check =
         superstructure::intake::IntakeSide::kOperatingVoltage();
 
-    CHECK_LE(::std::abs(intake_voltage.voltage_elastic), voltage_check);
+    AOS_CHECK_LE(::std::abs(intake_voltage.voltage_elastic), voltage_check);
 
     ::Eigen::Matrix<double, 1, 1> U;
     U << intake_voltage.voltage_elastic + plant_.voltage_offset();
@@ -155,8 +155,8 @@ class ArmSimulation {
     constexpr double voltage_check =
         superstructure::arm::Arm::kOperatingVoltage();
 
-    CHECK_LE(::std::abs(U(0)), voltage_check);
-    CHECK_LE(::std::abs(U(1)), voltage_check);
+    AOS_CHECK_LE(::std::abs(U(0)), voltage_check);
+    AOS_CHECK_LE(::std::abs(U(1)), voltage_check);
 
     if (release_arm_brake) {
       X_ = arm::Dynamics::UnboundedDiscreteDynamics(X_, U, 0.00505);
@@ -240,7 +240,7 @@ class SuperstructureSimulation {
     left_intake_.GetSensorValues(&position->left_intake);
     right_intake_.GetSensorValues(&position->right_intake);
     arm_.GetSensorValues(&position->arm);
-    LOG_STRUCT(INFO, "sim position", *position);
+    AOS_LOG_STRUCT(INFO, "sim position", *position);
     position.Send();
   }
 

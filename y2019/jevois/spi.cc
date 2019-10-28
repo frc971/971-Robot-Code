@@ -5,8 +5,8 @@
 #ifdef __linux__
 #include "aos/logging/logging.h"
 #else
-#define CHECK(...)
-#define CHECK_GE(...)
+#define AOS_CHECK(...)
+#define AOS_CHECK_GE(...)
 #endif
 
 // SPI transfer format (6x 8 bit frames):
@@ -175,11 +175,11 @@ SpiTransfer SpiPackToRoborio(const TeensyToRoborio &message) {
     crc = jevois_crc_update(crc, transfer.data(),
                             transfer.size() - remaining_space.size());
     crc = jevois_crc_finalize(crc);
-    CHECK_GE(static_cast<size_t>(remaining_space.size()), sizeof(crc));
+    AOS_CHECK_GE(static_cast<size_t>(remaining_space.size()), sizeof(crc));
     memcpy(&remaining_space[0], &crc, sizeof(crc));
     remaining_space = remaining_space.subspan(sizeof(crc));
   }
-  CHECK(remaining_space.empty());
+  AOS_CHECK(remaining_space.empty());
   return transfer;
 }
 
@@ -226,10 +226,11 @@ tl::optional<TeensyToRoborio> SpiUnpackToRoborio(
                           transfer.size() - remaining_input.size());
     calculated_crc = jevois_crc_finalize(calculated_crc);
     uint16_t received_crc;
-    CHECK_GE(static_cast<size_t>(remaining_input.size()), sizeof(received_crc));
+    AOS_CHECK_GE(static_cast<size_t>(remaining_input.size()),
+                 sizeof(received_crc));
     memcpy(&received_crc, &remaining_input[0], sizeof(received_crc));
     remaining_input = remaining_input.subspan(sizeof(received_crc));
-    CHECK(remaining_input.empty());
+    AOS_CHECK(remaining_input.empty());
     if (calculated_crc != received_crc) {
       return tl::nullopt;
     }
@@ -259,7 +260,7 @@ SpiTransfer SpiPackToTeensy(const RoborioToTeensy &message) {
     crc = jevois_crc_update(crc, transfer.data(),
                             transfer.size() - remaining_space.size());
     crc = jevois_crc_finalize(crc);
-    CHECK_GE(static_cast<size_t>(remaining_space.size()), sizeof(crc));
+    AOS_CHECK_GE(static_cast<size_t>(remaining_space.size()), sizeof(crc));
     memcpy(&remaining_space[0], &crc, sizeof(crc));
     remaining_space = remaining_space.subspan(sizeof(crc));
   }
@@ -292,7 +293,8 @@ tl::optional<RoborioToTeensy> SpiUnpackToTeensy(
                           transfer.size() - remaining_input.size());
     calculated_crc = jevois_crc_finalize(calculated_crc);
     uint16_t received_crc;
-    CHECK_GE(static_cast<size_t>(remaining_input.size()), sizeof(received_crc));
+    AOS_CHECK_GE(static_cast<size_t>(remaining_input.size()),
+                 sizeof(received_crc));
     memcpy(&received_crc, &remaining_input[0], sizeof(received_crc));
     remaining_input = remaining_input.subspan(sizeof(received_crc));
     if (calculated_crc != received_crc) {

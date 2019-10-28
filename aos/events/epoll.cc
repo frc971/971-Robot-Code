@@ -7,8 +7,8 @@
 #include <atomic>
 #include <vector>
 
-#include "aos/logging/logging.h"
 #include "aos/time/time.h"
+#include "glog/logging.h"
 
 namespace aos {
 namespace internal {
@@ -18,6 +18,8 @@ TimerFd::TimerFd()
   PCHECK(fd_ != -1);
   Disable();
 }
+
+TimerFd::~TimerFd() { PCHECK(close(fd_) == 0); }
 
 void TimerFd::SetTime(monotonic_clock::time_point start,
                       monotonic_clock::duration interval) {
@@ -56,7 +58,8 @@ EPoll::~EPoll() {
   DeleteFd(quit_epoll_fd_);
   close(quit_signal_fd_);
   close(quit_epoll_fd_);
-  CHECK_EQ(fns_.size(), 0u);
+  CHECK_EQ(fns_.size(), 0u)
+      << ": Not all file descriptors were unregistered before shutting down.";
   close(epoll_fd_);
 }
 
@@ -96,14 +99,15 @@ void EPoll::OnReadable(int fd, ::std::function<void()> function) {
   struct epoll_event event;
   event.events = EPOLLIN | EPOLLPRI;
   event.data.ptr = event_data.get();
-  PCHECK(epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, fd, &event) != 0);
+  PCHECK(epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, fd, &event) == 0)
+      << ": Failed to add fd " << fd;
   fns_.push_back(::std::move(event_data));
 }
 
 // Removes fd from the event loop.
 void EPoll::DeleteFd(int fd) {
   auto element = fns_.begin();
-  PCHECK(epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, fd, nullptr) != 0);
+  PCHECK(epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, fd, nullptr) == 0);
   while (fns_.end() != element) {
     if (element->get()->fd == fd) {
       fns_.erase(element);
@@ -111,7 +115,7 @@ void EPoll::DeleteFd(int fd) {
     }
     ++element;
   }
-  LOG(FATAL, "fd %d not found\n", fd);
+  LOG(FATAL) << "fd " << fd << " not found";
 }
 
 }  // namespace internal

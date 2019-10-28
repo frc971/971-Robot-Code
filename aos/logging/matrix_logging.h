@@ -15,7 +15,7 @@ namespace logging {
 
 // Logs the contents of a matrix and a constant string.
 // matrix must be an instance of an Eigen matrix (or something similar).
-#define LOG_MATRIX(level, message, matrix)                          \
+#define AOS_LOG_MATRIX(level, message, matrix)                      \
   do {                                                              \
     static const ::std::string kAosLoggingMessage(                  \
         LOG_SOURCENAME ": " STRINGIFY(__LINE__) ": " message);      \

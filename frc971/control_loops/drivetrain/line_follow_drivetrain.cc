@@ -75,8 +75,8 @@ void AB(const DrivetrainConfig<double> &dt_config,
   if (info != 0) {
     // We allow a FATAL error here since this should only be called during
     // initialization.
-    LOG(FATAL, "Failed to solve %d, controllability: %d\n", info,
-        controls::Controllability(A, B));
+    AOS_LOG(FATAL, "Failed to solve %d, controllability: %d\n", info,
+            controls::Controllability(A, B));
   }
   return K;
 }

@@ -46,8 +46,8 @@ class InterruptHandler {
   // Starts the thread running.
   // set_priority and set_mutex must be called first.
   void Start() {
-    CHECK_NE(nullptr, mutex_);
-    CHECK_NE(0, priority_);
+    AOS_CHECK_NE(nullptr, mutex_);
+    AOS_CHECK_NE(0, priority_);
     thread_ = ::std::thread(::std::ref(*this));
   }
 

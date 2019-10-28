@@ -31,7 +31,7 @@ void ActionJoystickInput::RunIteration(
     }
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       action_queue_.CancelAllActions();
-      LOG(DEBUG, "Canceling\n");
+      AOS_LOG(DEBUG, "Canceling\n");
     }
     drivetrain_input_reader_->HandleDrivetrain(data);
     HandleTeleop(data);
@@ -48,14 +48,14 @@ void ActionJoystickInput::RunIteration(
 }
 
 void ActionJoystickInput::StartAuto() {
-  LOG(INFO, "Starting auto mode\n");
+  AOS_LOG(INFO, "Starting auto mode\n");
   action_queue_.EnqueueAction(
       autonomous_action_factory_.Make(GetAutonomousMode()));
   auto_action_running_ = true;
 }
 
 void ActionJoystickInput::StopAuto() {
-  LOG(INFO, "Stopping auto mode\n");
+  AOS_LOG(INFO, "Stopping auto mode\n");
   action_queue_.CancelAllActions();
   auto_action_running_ = false;
   AutoEnded();

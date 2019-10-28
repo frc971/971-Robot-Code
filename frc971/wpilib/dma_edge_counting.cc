@@ -57,7 +57,7 @@ void DMASynchronizer::CheckDMA() {
       case DMA::STATUS_TIMEOUT:
         return;
       case DMA::STATUS_ERROR:
-        LOG(WARNING, "DMA read failed\n");
+        AOS_LOG(WARNING, "DMA read failed\n");
         break;
     }
   }

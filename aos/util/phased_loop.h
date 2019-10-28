@@ -3,8 +3,6 @@
 
 #include "aos/time/time.h"
 
-#include "aos/logging/logging.h"
-
 namespace aos {
 namespace time {
 
@@ -20,35 +18,16 @@ class PhasedLoop {
   PhasedLoop(
       const monotonic_clock::duration interval,
       const monotonic_clock::time_point monotonic_now,
-      const monotonic_clock::duration offset = monotonic_clock::duration(0))
-      : interval_(interval), offset_(offset), last_time_(offset) {
-    CHECK_GE(offset, monotonic_clock::duration(0));
-    CHECK_GT(interval, monotonic_clock::duration(0));
-    CHECK_LT(offset, interval);
-    Reset(monotonic_now);
-  }
+      const monotonic_clock::duration offset = monotonic_clock::duration(0));
 
   // Updates the offset and interval.
   void set_interval_and_offset(const monotonic_clock::duration interval,
-                               const monotonic_clock::duration offset) {
-    interval_ = interval;
-    offset_ = offset;
-    CHECK_GE(offset_, monotonic_clock::duration(0));
-    CHECK_GT(interval_, monotonic_clock::duration(0));
-    CHECK_LT(offset_, interval_);
-  }
+                               const monotonic_clock::duration offset);
 
   // Computes the offset given an interval and a time that we should trigger.
   static monotonic_clock::duration OffsetFromIntervalAndTime(
       const monotonic_clock::duration interval,
-      const monotonic_clock::time_point monotonic_trigger) {
-    CHECK_GT(interval, monotonic_clock::duration(0));
-    return monotonic_trigger.time_since_epoch() -
-           (monotonic_trigger.time_since_epoch() / interval) * interval +
-           ((monotonic_trigger.time_since_epoch() >= monotonic_clock::zero())
-                ? monotonic_clock::zero()
-                : interval);
-  }
+      const monotonic_clock::time_point monotonic_trigger);
 
   // Resets the count of skipped iterations.
   // Iterate(monotonic_now) will return 1 and set sleep_time() to something

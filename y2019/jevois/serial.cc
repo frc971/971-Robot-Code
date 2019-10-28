@@ -14,11 +14,12 @@ namespace jevois {
 int open_via_terminos(const char *tty_name) {
   int itsDev = ::open(tty_name, O_RDWR | O_NOCTTY | O_NONBLOCK);
   if (itsDev == -1) {
-    LOG(FATAL, "problem opening: %s\n", tty_name);
+    AOS_LOG(FATAL, "problem opening: %s\n", tty_name);
   }
 
   termios options = {};
-  if (tcgetattr(itsDev, &options) == -1) LOG(FATAL, "Failed to get options");
+  if (tcgetattr(itsDev, &options) == -1)
+    AOS_LOG(FATAL, "Failed to get options");
 
   // get raw input from the port
   options.c_cflag |= (CLOCAL     // ignore modem control lines
@@ -70,7 +71,7 @@ int open_via_terminos(const char *tty_name) {
   // options.c_cflag |= CRTSCTS;
 
   if (tcsetattr(itsDev, TCSANOW, &options) == -1)
-    LOG(FATAL, "Failed to set port options");
+    AOS_LOG(FATAL, "Failed to set port options");
   return itsDev;
 }
 

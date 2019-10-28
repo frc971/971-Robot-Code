@@ -95,7 +95,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     new_superstructure_goal->trajectory_override = false;
 
     if (!new_superstructure_goal.Send()) {
-      LOG(ERROR, "Sending superstructure goal failed.\n");
+      AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
     }
   }
 
@@ -151,9 +151,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
                 arm_goal_position_ &&
             superstructure_status_fetcher_->arm.path_distance_to_go <
                 arm_threshold) {
-          LOG(INFO, "Arm finished first: %f, drivetrain %f distance\n",
-              superstructure_status_fetcher_->arm.path_distance_to_go,
-              ::std::abs(distance_to_go));
+          AOS_LOG(INFO, "Arm finished first: %f, drivetrain %f distance\n",
+                  superstructure_status_fetcher_->arm.path_distance_to_go,
+                  ::std::abs(distance_to_go));
           return true;
         }
 
@@ -161,10 +161,10 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
         if (::std::abs(profile_distance_to_go) <
                 drive_threshold + kProfileTolerance &&
             ::std::abs(distance_to_go) < drive_threshold + kPositionTolerance) {
-          LOG(INFO,
-              "Drivetrain finished first: arm %f, drivetrain %f distance\n",
-              superstructure_status_fetcher_->arm.path_distance_to_go,
-              ::std::abs(distance_to_go));
+          AOS_LOG(INFO,
+                  "Drivetrain finished first: arm %f, drivetrain %f distance\n",
+                  superstructure_status_fetcher_->arm.path_distance_to_go,
+                  ::std::abs(distance_to_go));
           return true;
         }
       }

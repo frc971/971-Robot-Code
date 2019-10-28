@@ -8,7 +8,7 @@ namespace vision {
 void ImageStreamEvent::ProcessHelper(
     DataRef data, aos::monotonic_clock::time_point timestamp) {
   if (data.size() < 300) {
-    LOG(INFO, "got bad img of size(%d)\n", static_cast<int>(data.size()));
+    AOS_LOG(INFO, "got bad img of size(%d)\n", static_cast<int>(data.size()));
     return;
   }
   ProcessImage(data, timestamp);

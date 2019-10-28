@@ -22,9 +22,9 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
     return ::std::move(loop);
   }
 
-  void Run() override { CHECK_NOTNULL(primary_event_loop_)->Run(); }
+  void Run() override { AOS_CHECK_NOTNULL(primary_event_loop_)->Run(); }
 
-  void Exit() override { CHECK_NOTNULL(primary_event_loop_)->Exit(); }
+  void Exit() override { AOS_CHECK_NOTNULL(primary_event_loop_)->Exit(); }
 
   void SleepFor(::std::chrono::nanoseconds duration) override {
     ::std::this_thread::sleep_for(duration);
@@ -61,9 +61,9 @@ struct TestMessage : public ::aos::Message {
 bool IsRealtime() {
   int scheduler;
   if ((scheduler = sched_getscheduler(0)) == -1) {
-    PLOG(FATAL, "sched_getscheduler(0) failed\n");
+    AOS_PLOG(FATAL, "sched_getscheduler(0) failed\n");
   }
-  LOG(INFO, "scheduler is %d\n", scheduler);
+  AOS_LOG(INFO, "scheduler is %d\n", scheduler);
   return scheduler == SCHED_FIFO || scheduler == SCHED_RR;
 }
 

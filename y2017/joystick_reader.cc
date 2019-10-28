@@ -72,7 +72,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     superstructure_status_fetcher_.Fetch();
     if (!superstructure_status_fetcher_.get()) {
-      LOG(ERROR, "Got no superstructure status packet.\n");
+      AOS_LOG(ERROR, "Got no superstructure status packet.\n");
       return;
     }
 
@@ -243,9 +243,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
       new_superstructure_goal->indexer.angular_velocity = 0.0;
     }
 
-    LOG_STRUCT(DEBUG, "sending goal", *new_superstructure_goal);
+    AOS_LOG_STRUCT(DEBUG, "sending goal", *new_superstructure_goal);
     if (!new_superstructure_goal.Send()) {
-      LOG(ERROR, "Sending superstructure goal failed.\n");
+      AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
     }
   }
 

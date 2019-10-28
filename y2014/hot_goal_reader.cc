@@ -28,10 +28,10 @@ int main() {
     if (my_socket == -1) {
       my_socket = socket(AF_INET, SOCK_STREAM, 0);
       if (my_socket == -1) {
-        PLOG(WARNING, "socket(AF_INET, SOCK_STREAM, 0) failed");
+        AOS_PLOG(WARNING, "socket(AF_INET, SOCK_STREAM, 0) failed");
         continue;
       } else {
-        LOG(INFO, "opened socket (is %d)\n", my_socket);
+        AOS_LOG(INFO, "opened socket (is %d)\n", my_socket);
         sockaddr_in address, *sockaddr_pointer;
         memset(&address, 0, sizeof(address));
         address.sin_family = AF_INET;
@@ -40,15 +40,15 @@ int main() {
         sockaddr_pointer = &address;
         memcpy(&address_pointer, &sockaddr_pointer, sizeof(void *));
         if (bind(my_socket, address_pointer, sizeof(address)) == -1) {
-          PLOG(WARNING, "bind(%d, %p, %zu) failed",
-               my_socket, &address, sizeof(address));
+          AOS_PLOG(WARNING, "bind(%d, %p, %zu) failed", my_socket, &address,
+                   sizeof(address));
           close(my_socket);
           my_socket = -1;
           continue;
         }
 
         if (listen(my_socket, 1) == -1) {
-          PLOG(WARNING, "listen(%d, 1) failed", my_socket);
+          AOS_PLOG(WARNING, "listen(%d, 1) failed", my_socket);
           close(my_socket);
           my_socket = -1;
           continue;
@@ -58,10 +58,10 @@ int main() {
 
     int connection = accept4(my_socket, nullptr, nullptr, SOCK_NONBLOCK);
     if (connection == -1) {
-      PLOG(WARNING, "accept(%d, nullptr, nullptr) failed", my_socket);
+      AOS_PLOG(WARNING, "accept(%d, nullptr, nullptr) failed", my_socket);
       continue;
     }
-    LOG(INFO, "accepted (is %d)\n", connection);
+    AOS_LOG(INFO, "accepted (is %d)\n", connection);
 
     while (connection != -1) {
       fd_set fds;
@@ -76,8 +76,8 @@ int main() {
           uint8_t data;
           ssize_t read_bytes = read(connection, &data, sizeof(data));
           if (read_bytes != sizeof(data)) {
-            LOG(WARNING, "read %zd bytes instead of %zd\n", read_bytes,
-                sizeof(data));
+            AOS_LOG(WARNING, "read %zd bytes instead of %zd\n", read_bytes,
+                    sizeof(data));
             break;
           }
           if (data & 0x01) ++right_count;
@@ -85,21 +85,20 @@ int main() {
           auto message = hot_goal_sender.MakeMessage();
           message->left_count = left_count;
           message->right_count = right_count;
-          LOG_STRUCT(DEBUG, "sending", *message);
+          AOS_LOG_STRUCT(DEBUG, "sending", *message);
           message.Send();
         } break;
         case 0:
-          LOG(WARNING, "read on %d timed out\n", connection);
+          AOS_LOG(WARNING, "read on %d timed out\n", connection);
           close(connection);
           connection = -1;
           break;
         default:
-          PLOG(FATAL,
-               "select(%d, %p, nullptr, nullptr, %p) failed",
-               connection + 1, &fds, &timeout_timeval);
+          AOS_PLOG(FATAL, "select(%d, %p, nullptr, nullptr, %p) failed",
+                   connection + 1, &fds, &timeout_timeval);
       }
     }
   }
 
-  LOG(FATAL, "finished???\n");
+  AOS_LOG(FATAL, "finished???\n");
 }

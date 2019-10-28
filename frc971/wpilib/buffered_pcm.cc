@@ -16,7 +16,7 @@ BufferedPcm::BufferedPcm(int module) : module_(module) {
     solenoid_handles_[i] =
         HAL_InitializeSolenoidPort(HAL_GetPortWithModule(module_, i), &status);
     if (status != 0) {
-      LOG(FATAL, "Status was %d\n", status);
+      AOS_LOG(FATAL, "Status was %d\n", status);
     }
   }
 }
@@ -38,18 +38,18 @@ int32_t BufferedPcm::GetAll() {
   int32_t status = 0;
   int32_t result = HAL_GetAllSolenoids(module_, &status);
   if (status != 0) {
-    LOG(ERROR, "Failed to flush, %d\n", status);
+    AOS_LOG(ERROR, "Failed to flush, %d\n", status);
     return 0;
   }
   return result;
 }
 
 void BufferedPcm::Flush() {
-  LOG(DEBUG, "sending solenoids 0x%" PRIx8 "\n", values_);
+  AOS_LOG(DEBUG, "sending solenoids 0x%" PRIx8 "\n", values_);
   int32_t status = 0;
   HAL_SetAllSolenoids(module_, static_cast<int>(values_), &status);
   if (status != 0) {
-    LOG(ERROR, "Failed to flush, %d\n", status);
+    AOS_LOG(ERROR, "Failed to flush, %d\n", status);
   }
 }
 

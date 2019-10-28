@@ -49,14 +49,14 @@ class TestLoopOutputHandler
 
  protected:
   void Write(const LoopOutputHandlerTestOutput &output) override {
-    LOG_STRUCT(DEBUG, "output", output);
+    AOS_LOG_STRUCT(DEBUG, "output", output);
     ++count_;
     last_time_ = event_loop()->monotonic_now();
   }
 
   void Stop() override {
     stop_time_ = event_loop()->monotonic_now();
-    LOG(DEBUG, "Stopping\n");
+    AOS_LOG(DEBUG, "Stopping\n");
   }
 
  private:
@@ -92,7 +92,7 @@ TEST_F(LoopOutputHandlerTest, WatchdogTest) {
 
           ++count;
         }
-        LOG(INFO, "Ping\n");
+        AOS_LOG(INFO, "Ping\n");
       });
 
   // Kick off the ping timer handler.

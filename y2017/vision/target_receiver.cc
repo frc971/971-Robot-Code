@@ -56,9 +56,9 @@ int Main() {
           &new_vision_status->distance, &new_vision_status->angle);
     }
 
-    LOG_STRUCT(DEBUG, "vision", *new_vision_status);
+    AOS_LOG_STRUCT(DEBUG, "vision", *new_vision_status);
     if (!new_vision_status.Send()) {
-      LOG(ERROR, "Failed to send vision information\n");
+      AOS_LOG(ERROR, "Failed to send vision information\n");
     }
   }
 }

@@ -64,10 +64,10 @@ void EventLoopLocalizer::Update(
     ::aos::monotonic_clock::time_point now, double left_encoder,
     double right_encoder, double gyro_rate,
     double /*longitudinal_accelerometer*/) {
-  CHECK(U.allFinite());
-  CHECK(::std::isfinite(left_encoder));
-  CHECK(::std::isfinite(right_encoder));
-  CHECK(::std::isfinite(gyro_rate));
+  AOS_CHECK(U.allFinite());
+  AOS_CHECK(::std::isfinite(left_encoder));
+  AOS_CHECK(::std::isfinite(right_encoder));
+  AOS_CHECK(::std::isfinite(gyro_rate));
   localizer_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate, U,
                                    now);
   while (frame_fetcher_.FetchNext()) {
@@ -81,11 +81,11 @@ void EventLoopLocalizer::HandleFrame(const CameraFrame &frame) {
   // Note: num_targets and camera are unsigned integers and so don't need to be
   // checked for < 0.
   if (frame.num_targets > kMaxTargetsPerFrame) {
-    LOG(ERROR, "Got bad num_targets %d\n", frame.num_targets);
+    AOS_LOG(ERROR, "Got bad num_targets %d\n", frame.num_targets);
     return;
   }
   if (frame.camera > cameras_.size()) {
-    LOG(ERROR, "Got bad camera number %d\n", frame.camera);
+    AOS_LOG(ERROR, "Got bad camera number %d\n", frame.camera);
     return;
   }
   for (int ii = 0; ii < frame.num_targets; ++ii) {

@@ -86,8 +86,8 @@ double Trajectory::ForwardAcceleration(const double x, const double v) {
   // If we would end up with an imaginary number, cap us at 0 acceleration.
   // TODO(austin): Investigate when this happens, why, and fix it.
   if (squared < 0.0) {
-    LOG(ERROR, "Imaginary %f, maxa: %f, fa(%f, %f) -> 0.0\n", squared, maxa, x,
-        v);
+    AOS_LOG(ERROR, "Imaginary %f, maxa: %f, fa(%f, %f) -> 0.0\n", squared, maxa,
+            x, v);
     return 0.0;
   }
   const double longitudal_acceleration =
@@ -148,8 +148,8 @@ double Trajectory::BackwardAcceleration(double x, double v) {
   // If we would end up with an imaginary number, cap us at 0 acceleration.
   // TODO(austin): Investigate when this happens, why, and fix it.
   if (squared < 0.0) {
-    LOG(ERROR, "Imaginary %f, mina: %f, fa(%f, %f) -> 0.0\n", squared, mina, x,
-        v);
+    AOS_LOG(ERROR, "Imaginary %f, mina: %f, fa(%f, %f) -> 0.0\n", squared, mina,
+            x, v);
     return 0.0;
   }
   const double longitudal_acceleration =
@@ -221,7 +221,8 @@ void Trajectory::BackwardPass() {
       acceleration = BackwardAcceleration(distance, velocity);
       break;
     default:
-      LOG(FATAL, "Unknown segment type %d\n",
+      AOS_LOG(
+          FATAL, "Unknown segment type %d\n",
           static_cast<int>(plan_segment_type_[DistanceToSegment(distance)]));
       break;
   }
@@ -229,7 +230,7 @@ void Trajectory::BackwardPass() {
   if (vcurvature < velocity) {
     velocity = vcurvature;
     acceleration = 0.0;
-    LOG(ERROR, "Curvature won\n");
+    AOS_LOG(ERROR, "Curvature won\n");
   }
   return (::Eigen::Matrix<double, 3, 1>() << distance, velocity, acceleration)
       .finished();
@@ -327,23 +328,23 @@ void Trajectory::AB(const ::Eigen::Matrix<double, 5, 1> &state,
 
   int info = ::frc971::controls::dlqr<5, 2>(A, B, Q, R, &K, &S);
   if (info == 0) {
-    LOG_MATRIX(INFO, "K", K);
+    AOS_LOG_MATRIX(INFO, "K", K);
   } else {
-    LOG(ERROR, "Failed to solve %d, controllability: %d\n", info,
-        controls::Controllability(A, B));
+    AOS_LOG(ERROR, "Failed to solve %d, controllability: %d\n", info,
+            controls::Controllability(A, B));
     // TODO(austin): Can we be more clever here?  Use the last one?  We should
     // collect more info about when this breaks down from logs.
     K = ::Eigen::Matrix<double, 2, 5>::Zero();
   }
   ::Eigen::EigenSolver<::Eigen::Matrix<double, 5, 5>> eigensolver(A - B * K);
   const auto eigenvalues = eigensolver.eigenvalues();
-  LOG(DEBUG,
-      "Eigenvalues: (%f + %fj), (%f + %fj), (%f + %fj), (%f + %fj), (%f + "
-      "%fj)\n",
-      eigenvalues(0).real(), eigenvalues(0).imag(), eigenvalues(1).real(),
-      eigenvalues(1).imag(), eigenvalues(2).real(), eigenvalues(2).imag(),
-      eigenvalues(3).real(), eigenvalues(3).imag(), eigenvalues(4).real(),
-      eigenvalues(4).imag());
+  AOS_LOG(DEBUG,
+          "Eigenvalues: (%f + %fj), (%f + %fj), (%f + %fj), (%f + %fj), (%f + "
+          "%fj)\n",
+          eigenvalues(0).real(), eigenvalues(0).imag(), eigenvalues(1).real(),
+          eigenvalues(1).imag(), eigenvalues(2).real(), eigenvalues(2).imag(),
+          eigenvalues(3).real(), eigenvalues(3).imag(), eigenvalues(4).real(),
+          eigenvalues(4).imag());
   return K;
 }
 
@@ -397,8 +398,8 @@ void Trajectory::LimitVelocity(double starting_distance, double ending_distance,
 
   const double min_length = length() / static_cast<double>(plan_.size() - 1);
   if (starting_distance > ending_distance) {
-    LOG(FATAL, "End before start: %f > %f\n", starting_distance,
-        ending_distance);
+    AOS_LOG(FATAL, "End before start: %f > %f\n", starting_distance,
+            ending_distance);
   }
   starting_distance = ::std::min(length(), ::std::max(0.0, starting_distance));
   ending_distance = ::std::min(length(), ::std::max(0.0, ending_distance));

@@ -57,11 +57,13 @@ class LogReplayer {
   void AddHandler(const ::std::string &process_name,
                   const ::std::string &log_message,
                   ::std::function<void(const T &message)> handler) {
-    CHECK(handlers_.emplace(
-        ::std::piecewise_construct,
-        ::std::forward_as_tuple(process_name, log_message),
-        ::std::forward_as_tuple(::std::unique_ptr<StructHandlerInterface>(
-            new TypedStructHandler<T>(handler)))).second);
+    AOS_CHECK(handlers_
+                  .emplace(::std::piecewise_construct,
+                           ::std::forward_as_tuple(process_name, log_message),
+                           ::std::forward_as_tuple(
+                               ::std::unique_ptr<StructHandlerInterface>(
+                                   new TypedStructHandler<T>(handler))))
+                  .second);
   }
 
   // Adds a handler which takes messages and places them directly on a queue.
@@ -98,10 +100,11 @@ class LogReplayer {
     void HandleStruct(::aos::monotonic_clock::time_point log_time,
                       uint32_t type_id, const void *data,
                       size_t data_size) override {
-      CHECK_EQ(type_id, T::GetType()->id);
+      AOS_CHECK_EQ(type_id, T::GetType()->id);
       T message;
-      CHECK_EQ(data_size, T::Size());
-      CHECK_EQ(data_size, message.Deserialize(static_cast<const char *>(data)));
+      AOS_CHECK_EQ(data_size, T::Size());
+      AOS_CHECK_EQ(data_size,
+                   message.Deserialize(static_cast<const char *>(data)));
       message.sent_time = log_time;
       handler_(message);
     }
@@ -119,11 +122,11 @@ class LogReplayer {
                                  T::kQueueLength)) {}
 
     void operator()(const T &message) {
-      LOG_STRUCT(DEBUG, "re-sending", message);
+      AOS_LOG_STRUCT(DEBUG, "re-sending", message);
       void *raw_message = queue_->GetMessage();
-      CHECK_NOTNULL(raw_message);
+      AOS_CHECK_NOTNULL(raw_message);
       memcpy(raw_message, &message, sizeof(message));
-      CHECK(queue_->WriteMessage(raw_message, RawQueue::kOverride));
+      AOS_CHECK(queue_->WriteMessage(raw_message, RawQueue::kOverride));
     }
 
    private:

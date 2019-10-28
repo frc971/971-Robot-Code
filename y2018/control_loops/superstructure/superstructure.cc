@@ -48,7 +48,7 @@ void Superstructure::RunIteration(
   const monotonic_clock::time_point monotonic_now =
       event_loop()->monotonic_now();
   if (WasReset()) {
-    LOG(ERROR, "WPILib reset, restarting\n");
+    AOS_LOG(ERROR, "WPILib reset, restarting\n");
     intake_left_.Reset();
     intake_right_.Reset();
     arm_.Reset();
@@ -299,7 +299,7 @@ void Superstructure::SendColors(float red, float green, float blue) {
   new_status_light->blue = blue;
 
   if (!new_status_light.Send()) {
-    LOG(ERROR, "Failed to send lights.\n");
+    AOS_LOG(ERROR, "Failed to send lights.\n");
   }
 }
 

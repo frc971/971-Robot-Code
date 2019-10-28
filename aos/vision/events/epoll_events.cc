@@ -14,29 +14,29 @@ namespace events {
 
 void EpollEvent::DirectEvent(uint32_t events) {
   if ((events & ~(EPOLLIN | EPOLLPRI | EPOLLERR)) != 0) {
-    LOG(FATAL, "unexpected epoll events set in %x on %d\n", events, fd());
+    AOS_LOG(FATAL, "unexpected epoll events set in %x on %d\n", events, fd());
   }
   ReadEvent();
 }
 
 void EpollEvent::SetEvents(uint32_t events) {
   events_ |= events;
-  CHECK(!loop_);
+  AOS_CHECK(!loop_);
 }
 
-EpollLoop::EpollLoop() : epoll_fd_(PCHECK(epoll_create1(0))) {}
+EpollLoop::EpollLoop() : epoll_fd_(AOS_PCHECK(epoll_create1(0))) {}
 
 void EpollLoop::Add(EpollEvent *event) {
   event->loop_ = this;
   struct epoll_event temp_event;
   temp_event.data.ptr = static_cast<void *>(event);
   temp_event.events = event->events();
-  PCHECK(epoll_ctl(epoll_fd(), EPOLL_CTL_ADD, event->fd(), &temp_event));
+  AOS_PCHECK(epoll_ctl(epoll_fd(), EPOLL_CTL_ADD, event->fd(), &temp_event));
 }
 
 void EpollLoop::Delete(EpollEvent *event) {
   event->loop_ = nullptr;
-  PCHECK(epoll_ctl(epoll_fd(), EPOLL_CTL_DEL, event->fd(), NULL));
+  AOS_PCHECK(epoll_ctl(epoll_fd(), EPOLL_CTL_DEL, event->fd(), NULL));
 }
 
 void EpollLoop::Run() {
@@ -45,7 +45,7 @@ void EpollLoop::Run() {
     static constexpr size_t kNumberOfEvents = 64;
     epoll_event events[kNumberOfEvents];
     const int number_events =
-        PCHECK(epoll_wait(epoll_fd(), events, kNumberOfEvents, timeout));
+        AOS_PCHECK(epoll_wait(epoll_fd(), events, kNumberOfEvents, timeout));
 
     for (int i = 0; i < number_events; i++) {
       static_cast<EpollEvent *>(events[i].data.ptr)->DirectEvent(events[i].events);
