@@ -13,10 +13,10 @@
 #include "aos/configuration_generated.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/json_to_flatbuffer.h"
-#include "aos/once.h"
 #include "aos/unique_malloc_ptr.h"
 #include "aos/util/file.h"
 #include "glog/logging.h"
+#include "absl/base/call_once.h"
 
 namespace aos {
 
@@ -67,14 +67,14 @@ namespace {
 // TODO(brians): This shouldn't be necesary for running tests.  Provide a way to
 // set the IP address when running tests from the test.
 const char *const kLinuxNetInterface = "eth0";
-const in_addr *DoGetOwnIPAddress() {
+
+void DoGetOwnIPAddress(in_addr *retu) {
   static const char *kOverrideVariable = "FRC971_IP_OVERRIDE";
   const char *override_ip = getenv(kOverrideVariable);
   if (override_ip != NULL) {
     LOG(INFO) << "Override IP is " << override_ip;
-    static in_addr r;
-    if (inet_aton(override_ip, &r) != 0) {
-      return &r;
+    if (inet_aton(override_ip, retu) != 0) {
+      return;
     } else {
       LOG(WARNING) << "error parsing " << kOverrideVariable << " value '"
                    << override_ip << "'";
@@ -95,54 +95,52 @@ const in_addr *DoGetOwnIPAddress() {
     // ifa_addr tends to be nullptr on CAN interfaces.
     if (addrs->ifa_addr != nullptr && addrs->ifa_addr->sa_family == AF_INET) {
       if (strcmp(kLinuxNetInterface, addrs->ifa_name) == 0) {
-        static const in_addr r =
-            reinterpret_cast<sockaddr_in *>(__builtin_assume_aligned(
+        *retu = reinterpret_cast<sockaddr_in *>(__builtin_assume_aligned(
                 addrs->ifa_addr, alignof(sockaddr_in)))->sin_addr;
-        return &r;
+        return;
       }
     }
   }
   LOG(FATAL) << "couldn't find an AF_INET interface named \""
              << kLinuxNetInterface << "\"";
-  return nullptr;
 }
 
-const char *DoGetRootDirectory() {
+void DoGetRootDirectory(char** retu) {
   ssize_t size = 0;
-  char *r = NULL;
+  *retu = NULL;
   while (true) {
-    if (r != NULL) delete r;
     size += 256;
-    r = new char[size];
+    if (*retu != nullptr) delete *retu;
+    *retu = new char[size];
 
-    ssize_t ret = readlink("/proc/self/exe", r, size);
+    ssize_t ret = readlink("/proc/self/exe", *retu, size);
     if (ret < 0) {
       if (ret != -1) {
         LOG(WARNING) << "it returned " << ret << ", not -1";
       }
-      PLOG(FATAL) << "readlink(\"/proc/self/exe\", " << r << ", " << size
+
+      PLOG(FATAL) << "readlink(\"/proc/self/exe\", " << *retu << ", " << size
                   << ") failed";
     }
     if (ret < size) {
-      void *last_slash = memrchr(r, '/', ret);
+      void *last_slash = memrchr(*retu, '/', ret);
       if (last_slash == NULL) {
-        r[ret] = '\0';
-        LOG(FATAL) << "couldn't find a '/' in \"" << r << "\"";
+        *retu[ret] = '\0';
+        LOG(FATAL) << "couldn't find a '/' in \"" << *retu << "\"";
       }
       *static_cast<char *>(last_slash) = '\0';
-      LOG(INFO) << "got a root dir of \"" << r << "\"";
-      return r;
+      LOG(INFO) << "got a root dir of \"" << *retu << "\"";
+      return;
     }
   }
 }
 
-const char *DoGetLoggingDirectory() {
+void DoGetLoggingDirectory(char** retu) {
   static const char kSuffix[] = "/../../tmp/robot_logs";
   const char *root = GetRootDirectory();
-  char *r = new char[strlen(root) + sizeof(kSuffix)];
-  strcpy(r, root);
-  strcat(r, kSuffix);
-  return r;
+  *retu = new char[strlen(root) + sizeof(kSuffix)];
+  strcpy(*retu, root);
+  strcat(*retu, kSuffix);
 }
 
 // Extracts the folder part of a path.  Returns ./ if there is no path.
@@ -367,18 +365,24 @@ void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
 }  // namespace
 
 const char *GetRootDirectory() {
-  static aos::Once<const char> once(DoGetRootDirectory);
-  return once.Get();
+  static  char* root_dir;// return value
+  static absl::once_flag once_;
+  absl::call_once(once_, DoGetRootDirectory, &root_dir);
+  return root_dir;
 }
 
 const char *GetLoggingDirectory() {
-  static aos::Once<const char> once(DoGetLoggingDirectory);
-  return once.Get();
+  static char* retu;// return value
+  static absl::once_flag once_;
+  absl::call_once(once_, DoGetLoggingDirectory, &retu);
+  return retu;
 }
 
 const in_addr &GetOwnIPAddress() {
-  static aos::Once<const in_addr> once(DoGetOwnIPAddress);
-  return *once.Get();
+  static in_addr retu;// return value
+  static absl::once_flag once_;
+  absl::call_once(once_, DoGetOwnIPAddress, &retu);
+  return retu;
 }
 
 FlatbufferDetachedBuffer<Configuration> ReadConfig(
