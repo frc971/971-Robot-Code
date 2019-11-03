@@ -29,7 +29,8 @@ class SignalFd {
  private:
   int fd_ = -1;
 
-  sigset_t mask_;
+  // The signals we blocked in the constructor.
+  sigset_t blocked_mask_;
 };
 
 }  // namespace ipc_lib
