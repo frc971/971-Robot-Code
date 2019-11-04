@@ -13,6 +13,7 @@ cc_library(
         "//aos:once",
         "//aos/logging",
         "//aos/mutex",
+        "@com_google_absl//absl/base",
         "//aos/network:team_number",
         "//frc971:constants",
         "//frc971/shooter_interpolation:interpolation",
