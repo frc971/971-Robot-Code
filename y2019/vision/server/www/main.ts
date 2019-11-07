@@ -16,7 +16,7 @@ class Visualiser {
   private targetX = 0;
   private targetY = 0;
   private targetTheta = 0;
-  private cameraFrames : Frame[];
+  private cameraFrames : Frame[] = [];
 
   private wrist: number = -1;
   private elevator: number = -1;
@@ -42,12 +42,13 @@ class Visualiser {
 
     const server = location.host;
     this.initWebSocket(server);
-    window.requestAnimationFrame(() => this.draw(ctx));
+    if (!!ctx) {
+      window.requestAnimationFrame(() => this.draw(ctx));
+    }
   }
 
   initWebSocket(server: string): void {
     const socket = new WebSocket(`ws://${server}/ws`);
-    this.cameraFrames = [];
 
     socket.addEventListener('message', (event) => {
       const j = JSON.parse(event.data);
