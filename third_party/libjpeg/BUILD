@@ -65,6 +65,7 @@ cc_library(
         "-Wno-switch-enum",
         "-Wno-format-nonliteral",
         "-Wno-unused-parameter",
+        "-Wno-implicit-fallthrough",
     ] + select({
         "//tools:cpu_roborio": [
             # This is sketchy under the standard, but it's a known issue with

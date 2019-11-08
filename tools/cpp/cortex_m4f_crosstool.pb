@@ -84,7 +84,7 @@ toolchain {
       action: "c++-header-preprocessing"
       action: "c++-module-compile"
       flag_group {
-        flag: "--std=gnu++1y"
+        flag: "--std=gnu++1z"
         flag: "-fno-exceptions"
         flag: "-fno-rtti"
       }

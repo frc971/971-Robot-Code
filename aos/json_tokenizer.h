@@ -2,9 +2,8 @@
 #define AOS_JSON_TOKENIZER_H_
 
 #include <string>
+#include <string_view>
 #include <vector>
-
-#include "absl/strings/string_view.h"
 
 namespace aos {
 
@@ -14,7 +13,7 @@ namespace aos {
 // whitespace.
 class Tokenizer {
  public:
-  Tokenizer(const absl::string_view data) : data_(data) {}
+  Tokenizer(const std::string_view data) : data_(data) {}
 
   enum class TokenType {
     kEnd,
@@ -48,7 +47,7 @@ class Tokenizer {
   // Returns true if we are at the end of the input.
   bool AtEnd() { return data_.size() == 0; }
 
-  const absl::string_view data_left() const { return data_; }
+  const std::string_view data_left() const { return data_; }
 
  private:
   // Consumes a single character.
@@ -87,7 +86,7 @@ class Tokenizer {
   State state_ = State::kExpectObjectStart;
 
   // Data pointer.
-  absl::string_view data_;
+  std::string_view data_;
   // Current line number used for printing debug.
   int linenumber_ = 0;
 

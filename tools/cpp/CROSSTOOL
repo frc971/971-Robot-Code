@@ -105,59 +105,65 @@ toolchain {
   abi_libc_version: "local"
   tool_path {
     name: "ar"
-    path: "clang_3p6/x86_64-linux-gnu-ar"
+    path: "clang_6p0/x86_64-linux-gnu-ar"
   }
   tool_path {
     name: "compat-ld"
-    path: "clang_3p6/x86_64-linux-gnu-ld"
+    path: "clang_6p0/x86_64-linux-gnu-ld"
   }
   tool_path {
     name: "cpp"
-    path: "clang_3p6/x86_64-linux-gnu-cpp"
+    path: "clang_6p0/x86_64-linux-gnu-cpp"
   }
   tool_path {
     name: "dwp"
-    path: "clang_3p6/x86_64-linux-gnu-dwp"
+    path: "clang_6p0/x86_64-linux-gnu-dwp"
   }
   tool_path {
     name: "gcc"
-    path: "clang_3p6/x86_64-linux-gnu-clang-3.6"
+    path: "clang_6p0/x86_64-linux-gnu-clang-6.0"
   }
   tool_path {
     name: "gcov"
-    path: "clang_3p6/x86_64-linux-gnu-gcov"
+    path: "clang_6p0/x86_64-linux-gnu-gcov"
   }
   tool_path {
     name: "ld"
-    path: "clang_3p6/x86_64-linux-gnu-ld"
+    path: "clang_6p0/x86_64-linux-gnu-ld"
   }
   tool_path {
     name: "nm"
-    path: "clang_3p6/x86_64-linux-gnu-nm"
+    path: "clang_6p0/x86_64-linux-gnu-nm"
   }
   tool_path {
     name: "objcopy"
-    path: "clang_3p6/x86_64-linux-gnu-objcopy"
+    path: "clang_6p0/x86_64-linux-gnu-objcopy"
   }
   tool_path {
     name: "objdump"
-    path: "clang_3p6/x86_64-linux-gnu-objdump"
+    path: "clang_6p0/x86_64-linux-gnu-objdump"
   }
   tool_path {
     name: "strip"
-    path: "clang_3p6/x86_64-linux-gnu-strip"
+    path: "clang_6p0/x86_64-linux-gnu-strip"
   }
   supports_gold_linker: false
   supports_thin_archives: false
   needsPic: true
-  compiler_flag: "--sysroot=external/clang_3p6_repo/"
+  compiler_flag: "--sysroot=external/clang_6p0_repo/"
   compiler_flag: "-nostdinc"
   compiler_flag: "-isystem"
-  compiler_flag: "external/clang_3p6_repo/usr/include"
+  compiler_flag: "external/clang_6p0_repo/usr/include/x86_64-linux-gnu"
   compiler_flag: "-isystem"
-  compiler_flag: "external/clang_3p6_repo/usr/include/x86_64-linux-gnu"
+  compiler_flag: "external/clang_6p0_repo/usr/lib/llvm-6.0/lib/clang/6.0.0/include"
   compiler_flag: "-isystem"
-  compiler_flag: "external/clang_3p6_repo/usr/lib/llvm-3.6/lib/clang/3.6.2/include"
+  compiler_flag: "external/clang_6p0_repo/usr/include/c++/7.4.0"
+  compiler_flag: "-isystem"
+  compiler_flag: "external/clang_6p0_repo/usr/include/x86_64-linux-gnu/c++/7.4.0"
+  compiler_flag: "-isystem"
+  compiler_flag: "external/clang_6p0_repo/usr/include/c++/7.4.0/backward"
+  compiler_flag: "-isystem"
+  compiler_flag: "external/clang_6p0_repo/usr/include"
   compiler_flag: "-D__STDC_FORMAT_MACROS"
   compiler_flag: "-D__STDC_CONSTANT_MACROS"
   compiler_flag: "-D__STDC_LIMIT_MACROS"
@@ -185,22 +191,18 @@ toolchain {
   compiler_flag: "-pipe"
   compiler_flag: "-ggdb3"
   cxx_flag: "-isystem"
-  cxx_flag: "external/clang_3p6_repo/usr/include/c++/4.9"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/clang_3p6_repo/usr/include/x86_64-linux-gnu/c++/4.9"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/clang_3p6_repo/usr/include/c++/4.9/backward"
+  cxx_flag: "external/clang_6p0_repo/usr/include"
   linker_flag: "-nodefaultlibs"
-  linker_flag: "--sysroot=external/clang_3p6_repo/"
+  linker_flag: "--sysroot=external/clang_6p0_repo/"
   linker_flag: "-lstdc++"
   linker_flag: "-lc"
   linker_flag: "-lgcc"
   linker_flag: "-lgcc_s"
-  linker_flag: "-Bexternal/clang_3p6_repo/usr/bin/"
-  linker_flag: "-Ltools/cpp/clang_3p6/clang_more_libs"
-  linker_flag: "-Lexternal/clang_3p6/lib/x86_64-linux-gnu"
-  linker_flag: "-Lexternal/clang_3p6/usr/lib/x86_64-linux-gnu"
-  linker_flag: "-Lexternal/clang_3p6/usr/lib/gcc/x86_64-linux-gnu"
+  linker_flag: "-Bexternal/clang_6p0_repo/usr/bin/"
+  linker_flag: "-Ltools/cpp/clang_6p0/clang_more_libs"
+  linker_flag: "-Lexternal/clang_6p0_repo/lib/x86_64-linux-gnu"
+  linker_flag: "-Lexternal/clang_6p0_repo/usr/lib/x86_64-linux-gnu"
+  linker_flag: "-Lexternal/clang_6p0_repo/usr/lib/gcc/x86_64-linux-gnu"
   linker_flag: "-no-canonical-prefixes"
   linker_flag: "-fuse-ld=gold"
   linker_flag: "-Wl,-z,relro,-z,now"
@@ -222,20 +224,21 @@ toolchain {
   linking_mode_flags {
     mode: DYNAMIC
   }
-  cxx_builtin_include_directory: "%package(@clang_3p6_repo//usr)%/include/c++/4.9"
-  cxx_builtin_include_directory: "%package(@clang_3p6_repo//usr)%/include/x86_64-linux-gnu/c++/4.9"
-  cxx_builtin_include_directory: "%package(@clang_3p6_repo//usr)%/include/c++/4.9/backward"
-  cxx_builtin_include_directory: "%package(@clang_3p6_repo//usr)%/local/include"
-  cxx_builtin_include_directory: "%package(@clang_3p6_repo//usr)%/lib/llvm-3.6/lib/clang/3.6.2/include"
-  cxx_builtin_include_directory: "%package(@clang_3p6_repo//usr)%/include/x86_64-linux-gnu"
-  cxx_builtin_include_directory: "%package(@clang_3p6_repo//usr)%/include"
-  cxx_builtin_include_directory: "%package(@clang_3p6_repo//usr)%/lib/clang/3.6.2/include"
+  cxx_builtin_include_directory: "%package(@clang_6p0_repo//usr)%/include/c++/7.4.0"
+  cxx_builtin_include_directory: "%package(@clang_6p0_repo//usr)%/include/x86_64-linux-gnu/c++/7.4.0"
+  cxx_builtin_include_directory: "%package(@clang_6p0_repo//usr)%/include/c++/7.4.0/backward"
+  cxx_builtin_include_directory: "%package(@clang_6p0_repo//usr)%/local/include"
+  cxx_builtin_include_directory: "%package(@clang_6p0_repo//usr)%/lib/llvm-6.0/lib/clang/6.0.0/include"
+  cxx_builtin_include_directory: "%package(@clang_6p0_repo//usr)%/include/x86_64-linux-gnu"
   builtin_sysroot: ""
   unfiltered_cxx_flag: "-no-canonical-prefixes"
   unfiltered_cxx_flag: "-Wno-builtin-macro-redefined"
   unfiltered_cxx_flag: "-D__DATE__=\"redacted\""
   unfiltered_cxx_flag: "-D__TIMESTAMP__=\"redacted\""
   unfiltered_cxx_flag: "-D__TIME__=\"redacted\""
+  unfiltered_cxx_flag: "-Wno-varargs"
+  unfiltered_cxx_flag: "-Wno-null-pointer-arithmetic"
+  unfiltered_cxx_flag: "-Wno-mismatched-new-delete"
   supports_normalizing_ar: false
   supports_start_end_lib: false
   supports_interface_shared_objects: false
@@ -305,7 +308,7 @@ toolchain {
       action: "c++-header-preprocessing"
       action: "c++-module-compile"
       flag_group {
-        flag: "-std=gnu++1y"
+        flag: "-std=gnu++1z"
       }
     }
     flag_set {
@@ -553,10 +556,10 @@ toolchain {
   linking_mode_flags {
     mode: DYNAMIC
   }
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//arm-frc2019-linux-gnueabi/usr/lib/gcc/arm-frc2019-linux-gnueabi/6.3.0/include)%"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//arm-frc2019-linux-gnueabi/usr/lib/gcc/arm-frc2019-linux-gnueabi/6.3.0/include-fixed)%"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//arm-frc2019-linux-gnueabi/usr/include/c++/6.3.0/arm-frc2019-linux-gnueabi)%"
-  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//arm-frc2019-linux-gnueabi/usr/include/c++/6.3.0/backward)%"
+  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/lib/gcc/arm-frc2020-linux-gnueabi/7.3.0/include)%"
+  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/lib/gcc/arm-frc2020-linux-gnueabi/7.3.0/include-fixed)%"
+  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/include/c++/7.3.0/arm-frc2020-linux-gnueabi)%"
+  cxx_builtin_include_directory: "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/include/c++/7.3.0/backward)%"
   builtin_sysroot: ""
   unfiltered_cxx_flag: "-no-canonical-prefixes"
   unfiltered_cxx_flag: "-Wno-builtin-macro-redefined"
@@ -581,12 +584,12 @@ toolchain {
       action: "lto-backend"
       action: "clif-match"
       flag_group {
-        flag: "--sysroot=external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi"
+        flag: "--sysroot=external/arm_frc_linux_gnueabi_repo/arm-frc2020-linux-gnueabi"
         flag: "-nostdinc"
         flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi/usr/lib/gcc/arm-frc2019-linux-gnueabi/6.3.0/include"
+        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2020-linux-gnueabi/usr/lib/gcc/arm-frc2020-linux-gnueabi/7.3.0/include"
         flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi/usr/lib/gcc/arm-frc2019-linux-gnueabi/6.3.0/include-fixed"
+        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2020-linux-gnueabi/usr/lib/gcc/arm-frc2020-linux-gnueabi/7.3.0/include-fixed"
       }
     }
     flag_set {
@@ -606,11 +609,11 @@ toolchain {
       action: "c++-module-codegen"
       flag_group {
         flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi/usr/include/c++/6.3.0"
+        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2020-linux-gnueabi/usr/include/c++/7.3.0"
         flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi/usr/include/c++/6.3.0/arm-frc2019-linux-gnueabi"
+        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2020-linux-gnueabi/usr/include/c++/7.3.0/arm-frc2020-linux-gnueabi"
         flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi/usr/include/c++/6.3.0/backward"
+        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2020-linux-gnueabi/usr/include/c++/7.3.0/backward"
       }
     }
     flag_set {
@@ -625,7 +628,7 @@ toolchain {
       action: "clif-match"
       flag_group {
         flag: "-isystem"
-        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2019-linux-gnueabi/usr/include"
+        flag: "external/arm_frc_linux_gnueabi_repo/arm-frc2020-linux-gnueabi/usr/include"
         flag: "-mfpu=neon"
         flag: "-D__STDC_FORMAT_MACROS"
         flag: "-D__STDC_CONSTANT_MACROS"
@@ -837,7 +840,7 @@ toolchain {
       action: "c++-header-preprocessing"
       action: "c++-module-compile"
       flag_group {
-        flag: "-std=gnu++1y"
+        flag: "-std=gnu++1z"
         flag: "-fno-sized-deallocation"
       }
     }
@@ -874,7 +877,7 @@ toolchain {
   target_cpu: "armhf-debian"
   target_libc: "glibc_2.19"
   compiler: "clang"
-  abi_version: "clang_3.6"
+  abi_version: "clang_6.0"
   abi_libc_version: "glibc_2.19"
   tool_path {
     name: "ar"
@@ -925,18 +928,26 @@ toolchain {
   needsPic: true
   compiler_flag: "-target"
   compiler_flag: "armv7a-arm-linux-gnueabif"
-  compiler_flag: "--sysroot=external/linaro_linux_gcc_4_9_repo/arm-linux-gnueabihf/libc"
+  compiler_flag: "--sysroot=external/linaro_linux_gcc_repo/arm-linux-gnueabihf/libc"
   compiler_flag: "-mfloat-abi=hard"
   compiler_flag: "-mfpu=vfpv3-d16"
   compiler_flag: "-nostdinc"
   compiler_flag: "-isystem"
-  compiler_flag: "/usr/lib/clang/3.6/include"
+  compiler_flag: "/usr/lib/clang/6.0/include"
   compiler_flag: "-isystem"
-  compiler_flag: "external/linaro_linux_gcc_4_9_repo/lib/gcc/arm-linux-gnueabihf/4.9.3/include"
+  compiler_flag: "external/linaro_linux_gcc_repo/lib/gcc/arm-linux-gnueabihf/7.4.1/include"
   compiler_flag: "-isystem"
-  compiler_flag: "external/linaro_linux_gcc_4_9_repo/arm-linux-gnueabihf/libc/usr/include"
+  compiler_flag: "external/linaro_linux_gcc_repo/lib/gcc/arm-linux-gnueabihf/7.4.1/include-fixed"
   compiler_flag: "-isystem"
-  compiler_flag: "external/linaro_linux_gcc_4_9_repo/lib/gcc/arm-linux-gnueabihf/4.9.3/include-fixed"
+  compiler_flag: "external/linaro_linux_gcc_repo/arm-linux-gnueabihf/include/c++/7.4.1/arm-linux-gnueabihf"
+  compiler_flag: "-isystem"
+  compiler_flag: "external/linaro_linux_gcc_repo/arm-linux-gnueabihf/include/c++/7.4.1"
+  compiler_flag: "-isystem"
+  compiler_flag: "external/linaro_linux_gcc_repo/include/c++/7.4.1/arm-linux-gnueabihf"
+  compiler_flag: "-isystem"
+  compiler_flag: "external/linaro_linux_gcc_repo/include/c++/7.4.1"
+  compiler_flag: "-isystem"
+  compiler_flag: "external/linaro_linux_gcc_repo/arm-linux-gnueabihf/libc/usr/include"
   compiler_flag: "-D__STDC_FORMAT_MACROS"
   compiler_flag: "-D__STDC_CONSTANT_MACROS"
   compiler_flag: "-D__STDC_LIMIT_MACROS"
@@ -961,23 +972,17 @@ toolchain {
   compiler_flag: "-fno-omit-frame-pointer"
   compiler_flag: "-pipe"
   compiler_flag: "-ggdb3"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/linaro_linux_gcc_4_9_repo/arm-linux-gnueabihf/include/c++/4.9.3/arm-linux-gnueabihf"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/linaro_linux_gcc_4_9_repo/arm-linux-gnueabihf/include/c++/4.9.3"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/linaro_linux_gcc_4_9_repo/include/c++/4.9.3/arm-linux-gnueabihf"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/linaro_linux_gcc_4_9_repo/include/c++/4.9.3"
   linker_flag: "-target"
   linker_flag: "armv7a-arm-linux-gnueabif"
-  linker_flag: "--sysroot=external/linaro_linux_gcc_4_9_repo/arm-linux-gnueabihf/libc"
+  linker_flag: "--sysroot=external/linaro_linux_gcc_repo/arm-linux-gnueabihf/libc"
   linker_flag: "-lstdc++"
   linker_flag: "-Ltools/cpp/linaro_linux_gcc/clang_more_libs"
-  linker_flag: "-Lexternal/linaro_linux_gcc_4_9_repo/arm-linux-gnueabihf/lib"
-  linker_flag: "-Lexternal/linaro_linux_gcc_4_9_repo/arm-linux-gnueabihf/libc/lib"
-  linker_flag: "-Lexternal/linaro_linux_gcc_4_9_repo/arm-linux-gnueabihf/libc/usr/lib"
-  linker_flag: "-Bexternal/linaro_linux_gcc_4_9_repo/arm-linux-gnueabihf/bin"
+  linker_flag: "-Lexternal/linaro_linux_gcc_repo/arm-linux-gnueabihf/lib"
+  linker_flag: "-Lexternal/linaro_linux_gcc_repo/arm-linux-gnueabihf/libc/lib"
+  linker_flag: "-Lexternal/linaro_linux_gcc_repo/arm-linux-gnueabihf/libc/usr/lib"
+  linker_flag: "-Lexternal/linaro_linux_gcc_repo/lib/gcc/arm-linux-gnueabihf/7.4.1"
+  linker_flag: "-Bexternal/linaro_linux_gcc_repo/lib/gcc/arm-linux-gnueabihf/7.4.1"
+  linker_flag: "-Bexternal/linaro_linux_gcc_repo/arm-linux-gnueabihf/bin"
   linker_flag: "-Wl,--dynamic-linker=/lib/ld-linux-armhf.so.3"
   linker_flag: "-no-canonical-prefixes"
   linker_flag: "-Wl,-z,relro,-z,now"
@@ -998,20 +1003,23 @@ toolchain {
   linking_mode_flags {
     mode: DYNAMIC
   }
-  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4_9_repo//include)%"
-  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4_9_repo//arm-linux-gnueabihf/libc/usr/include)%"
-  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4_9_repo//arm-linux-gnueabihf/libc/usr/lib/include)%"
-  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4_9_repo//arm-linux-gnueabihf/libc/lib/gcc/arm-linux-gnueabihf/4.9.3/include-fixed)%"
-  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4_9_repo//include)%/c++/4.9.3"
-  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4_9_repo//arm-linux-gnueabihf/libc/lib/gcc/arm-linux-gnueabihf/4.9.3/include)%"
-  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4_9_repo//arm-linux-gnueabihf/libc/lib/gcc/arm-linux-gnueabihf/4.9.3/include-fixed)%"
-  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4_9_repo//lib/gcc/arm-linux-gnueabihf/4.9.3/include)%"
-  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4_9_repo//lib/gcc/arm-linux-gnueabihf/4.9.3/include-fixed)%"
-  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4_9_repo//arm-linux-gnueabihf/include)%/c++/4.9.3"
-  cxx_builtin_include_directory: "/usr/lib/clang/3.6/include"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_repo//include)%"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_repo//arm-linux-gnueabihf/libc/usr/include)%"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_repo//arm-linux-gnueabihf/libc/usr/lib/include)%"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_repo//arm-linux-gnueabihf/libc/lib/gcc/arm-linux-gnueabihf/7.4.1/include-fixed)%"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_repo//include)%/c++/7.4.1"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_repo//arm-linux-gnueabihf/libc/lib/gcc/arm-linux-gnueabihf/7.4.1/include)%"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_repo//arm-linux-gnueabihf/libc/lib/gcc/arm-linux-gnueabihf/7.4.1/include-fixed)%"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_repo//lib/gcc/arm-linux-gnueabihf/7.4.1/include)%"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_repo//lib/gcc/arm-linux-gnueabihf/7.4.1/include-fixed)%"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_repo//arm-linux-gnueabihf/include)%/c++/7.4.1"
+  cxx_builtin_include_directory: "/usr/lib/clang/6.0/include"
   builtin_sysroot: ""
   unfiltered_cxx_flag: "-no-canonical-prefixes"
   unfiltered_cxx_flag: "-Wno-builtin-macro-redefined"
+  unfiltered_cxx_flag: "-Wno-mismatched-new-delete"
+  unfiltered_cxx_flag: "-Wno-null-pointer-arithmetic"
+  unfiltered_cxx_flag: "-Wno-varargs"
   unfiltered_cxx_flag: "-D__DATE__=\"redacted\""
   unfiltered_cxx_flag: "-D__TIMESTAMP__=\"redacted\""
   unfiltered_cxx_flag: "-D__TIME__=\"redacted\""
@@ -1084,7 +1092,7 @@ toolchain {
       action: "c++-header-preprocessing"
       action: "c++-module-compile"
       flag_group {
-        flag: "-std=gnu++1y"
+        flag: "-std=gnu++1z"
       }
     }
     flag_set {
@@ -1283,7 +1291,7 @@ toolchain {
       action: "c++-header-preprocessing"
       action: "c++-module-compile"
       flag_group {
-        flag: "--std=gnu++1y"
+        flag: "--std=gnu++1z"
         flag: "-fno-exceptions"
         flag: "-fno-rtti"
       }
@@ -1486,7 +1494,7 @@ toolchain {
       action: "c++-header-preprocessing"
       action: "c++-module-compile"
       flag_group {
-        flag: "--std=gnu++1y"
+        flag: "--std=gnu++1z"
         flag: "-fno-exceptions"
         flag: "-fno-rtti"
       }

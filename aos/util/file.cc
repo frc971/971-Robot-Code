@@ -3,14 +3,15 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "absl/strings/string_view.h"
+#include <string_view>
+
 #include "aos/scoped/scoped_fd.h"
 #include "glog/logging.h"
 
 namespace aos {
 namespace util {
 
-::std::string ReadFileToStringOrDie(const absl::string_view filename) {
+::std::string ReadFileToStringOrDie(const std::string_view filename) {
   ::std::string r;
   ScopedFD fd(open(::std::string(filename).c_str(), O_RDONLY));
   PCHECK(fd.get() != -1) << ": opening " << filename;
@@ -26,8 +27,8 @@ namespace util {
   return r;
 }
 
-void WriteStringToFileOrDie(const absl::string_view filename,
-                            const absl::string_view contents) {
+void WriteStringToFileOrDie(const std::string_view filename,
+                            const std::string_view contents) {
   ::std::string r;
   ScopedFD fd(open(::std::string(filename).c_str(),
                    O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU));

@@ -2,8 +2,8 @@
 #define AOS_FLATBUFFERS_H_
 
 #include <array>
+#include <string_view>
 
-#include "absl/strings/string_view.h"
 #include "flatbuffers/flatbuffers.h"
 
 namespace aos {
@@ -127,7 +127,7 @@ template <typename T>
 class FlatbufferString : public Flatbuffer<T> {
  public:
   // Builds a flatbuffer using the contents of the string.
-  FlatbufferString(const absl::string_view data) : data_(data) {}
+  FlatbufferString(const std::string_view data) : data_(data) {}
   // Builds a Flatbuffer by copying the data from the other flatbuffer.
   FlatbufferString(const Flatbuffer<T> &other) {
     data_ = std::string(other.data(), other.size());
@@ -161,7 +161,7 @@ class FlatbufferString : public Flatbuffer<T> {
 // From a usage point of view, pointers to the data are very different than
 // pointers to the tables.
 template <typename T>
-class FlatbufferDetachedBuffer : public Flatbuffer<T> {
+class FlatbufferDetachedBuffer final : public Flatbuffer<T> {
  public:
   // Builds a Flatbuffer by taking ownership of the buffer.
   FlatbufferDetachedBuffer(flatbuffers::DetachedBuffer &&buffer)

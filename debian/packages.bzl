@@ -7,7 +7,7 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 #    packages you care about and exclude the ones you don't care about.
 #    Invoke "bazel build" on the "download_packages" target you just created.
 #    Save the "_files" dictionary it prints into a .bzl file in the //debian
-#    folder.
+#    folder. You will need to have the apt-rdepends package installed.
 # 2. The "download_packages" steps prints the location of the deb packages
 #    after it prints the "_files" dictionary. Take the deb packages from there
 #    and upload them to http://www.frc971.org/Build-Dependencies/.
@@ -63,7 +63,7 @@ def _convert_deb_to_target(deb):
   target = target.replace('+', 'x')
   return "deb_%s_repo" % target
 
-def generate_repositories_for_debs(files):
+def generate_repositories_for_debs(files, base_url = 'http://www.frc971.org/Build-Dependencies'):
   """A WORKSPACE helper to add all the deb packages in the dictionary as a repo.
 
   The files dictionary must be one generated with the "download_packages"
@@ -74,7 +74,7 @@ def generate_repositories_for_debs(files):
     if name not in native.existing_rules():
       http_file(
           name = name,
-          urls = ['http://www.frc971.org/Build-Dependencies/%s' % f],
+          urls = [base_url + '/' + f],
           sha256 = files[f],
           downloaded_file_path = f,
       )

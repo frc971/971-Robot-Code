@@ -126,8 +126,10 @@ void LineFollowDrivetrain::SetGoal(
         freeze_delay = chrono::milliseconds(2000);
       }
     }
+    freeze_target_ = true;
+  } else {
+    freeze_target_ = now <= freeze_delay + last_enable_;
   }
-  freeze_target_ = now <= freeze_delay + last_enable_;
   // Set an adjustment that lets the driver tweak the offset for where we place
   // the target left/right.
   side_adjust_ = -goal->wheel() * 0.1;

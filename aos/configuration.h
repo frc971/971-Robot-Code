@@ -6,7 +6,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "absl/strings/string_view.h"
+#include <string_view>
+
 #include "aos/configuration_generated.h"
 #include "aos/flatbuffers.h"
 
@@ -19,7 +20,7 @@ namespace configuration {
 // Reads a json configuration.  This includes all imports and merges.  Note:
 // duplicate imports will result in a CHECK.
 FlatbufferDetachedBuffer<Configuration> ReadConfig(
-    const absl::string_view path);
+    const std::string_view path);
 
 // Sorts and merges entries in a config.
 FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
@@ -36,14 +37,15 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
 //
 // If the application name is empty, it is ignored.  Maps are processed in
 // reverse order, and application specific first.
-const Channel *GetChannel(const Configuration *config,
-                          const absl::string_view name,
-                          const absl::string_view type,
-                          const absl::string_view application_name);
-inline const Channel *GetChannel(const Flatbuffer<Configuration> &config,
-                          const absl::string_view name,
-                          const absl::string_view type,
-                          const absl::string_view application_name) {
+const Channel *GetChannel(
+    const Configuration *config, const std::string_view name,
+    const std::string_view type,
+    const std::string_view application_name);
+inline const Channel *GetChannel(
+    const Flatbuffer<Configuration> &config,
+    const std::string_view name,
+    const std::string_view type,
+    const std::string_view application_name) {
   return GetChannel(&config.message(), name, type, application_name);
 }
 

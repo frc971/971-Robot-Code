@@ -93,7 +93,7 @@ TEST(UartToTeensyTest, CorruptData) {
   }
   {
     UartToTeensyBuffer buffer = UartPackToTeensy(input_message);
-    buffer[0] = 255;
+    buffer[0] = -1;
     EXPECT_FALSE(UartUnpackToTeensy(buffer));
   }
 }
@@ -118,7 +118,7 @@ TEST(UartToCameraTest, CorruptData) {
   }
   {
     UartToCameraBuffer buffer = UartPackToCamera(input_message);
-    buffer[0] = 255;
+    buffer[0] = -1;
     EXPECT_FALSE(UartUnpackToCamera(buffer));
   }
 }

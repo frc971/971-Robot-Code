@@ -1,6 +1,8 @@
 #include <inttypes.h>
 #include <stdio.h>
 
+#include <optional>
+
 #include "aos/time/time.h"
 #include "motors/core/kinetis.h"
 #include "motors/core/time.h"
@@ -115,18 +117,18 @@ class SpiQueue {
   SpiQueue(const SpiQueue &) = delete;
   SpiQueue &operator=(const SpiQueue &) = delete;
 
-  tl::optional<gsl::span<const char, spi_transfer_size()>> Tick() {
+  std::optional<gsl::span<const char, spi_transfer_size()>> Tick() {
     {
       DisableInterrupts disable_interrupts;
       if (waiting_for_enable_ || waiting_for_disable_) {
-        return tl::nullopt;
+        return std::nullopt;
       }
     }
     const auto now = aos::monotonic_clock::now();
     if (TransferTimedOut(now)) {
       printf("SPI timeout with %d left\n", static_cast<int>(to_receive_.size()));
       WaitForNextTransfer();
-      return tl::nullopt;
+      return std::nullopt;
     }
     {
       DisableInterrupts disable_interrupts;
@@ -138,7 +140,7 @@ class SpiQueue {
     if (DeassertHappened(now)) {
       printf("CS deasserted with %d left\n", static_cast<int>(to_receive_.size()));
       WaitForNextTransfer();
-      return tl::nullopt;
+      return std::nullopt;
     }
     bool all_done;
     {
@@ -160,7 +162,7 @@ class SpiQueue {
       WaitForNextTransfer();
       return received_transfer_;
     }
-    return tl::nullopt;
+    return std::nullopt;
   }
 
   void HandleInterrupt() {

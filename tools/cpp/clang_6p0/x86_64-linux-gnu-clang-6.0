@@ -1,0 +1,11 @@
+#!/bin/bash --norc
+
+LD_LIBRARY_PATH="${BAZEL_OUTPUT_ROOT}external/clang_6p0_repo/usr/lib/x86_64-linux-gnu"
+# TODO(Brian): Figure out why it segfaults with this enabled, and re-enable it.
+#LD_LIBRARY_PATH+=":${BAZEL_OUTPUT_ROOT}external/clang_6p0_repo/lib/x86_64-linux-gnu"
+LD_LIBRARY_PATH+=":${BAZEL_OUTPUT_ROOT}external/clang_6p0_repo/usr/lib"
+export LD_LIBRARY_PATH
+
+exec \
+  ${BAZEL_OUTPUT_ROOT}external/clang_6p0_repo/usr/bin/clang-6.0 \
+  "$@"

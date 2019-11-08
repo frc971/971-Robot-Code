@@ -84,10 +84,10 @@ http_archive(
 )
 
 http_archive(
-    name = "clang_3p6_repo",
-    build_file = "@//tools/cpp/clang_3p6:clang_3p6.BUILD",
-    sha256 = "5ee9e04c55c2c99d0c0f83722102a49e98f485fc274f73111b33a7ac4e34e03e",
-    url = "http://www.frc971.org/Build-Dependencies/clang_3p6.tar.gz",
+    name = "clang_6p0_repo",
+    build_file = "@//tools/cpp/clang_6p0:clang_6p0.BUILD",
+    sha256 = "7c5dc0f124fbd26e440797a851466e7f852da27d9f1562c74059b5a34c294cc9",
+    url = "http://frc971.org/Build-Dependencies/clang_6p0.tar.gz",
 )
 
 local_repository(
@@ -127,20 +127,21 @@ new_git_repository(
 http_archive(
     name = "arm_frc_linux_gnueabi_repo",
     build_file = "@//tools/cpp/arm-frc-linux-gnueabi:arm-frc-linux-gnueabi.BUILD",
-    sha256 = "d627c5e437db99780a938392499ef71aecbfb0e9b3fffd53bde7e402a6af4f32",
-    strip_prefix = "frc2019/roborio/",
-    url = "http://www.frc971.org/Build-Dependencies/FRC-2019-Linux-Toolchain-6.3.0-v2019-3.tar.gz",
+    sha256 = "043a5b047c2af9cf80d146d8327b588264c98a01e0f3f41e3564dd2bbbc95c0e",
+    strip_prefix = "frc2020/roborio/",
+    url = "http://frc971.org/Build-Dependencies/FRC-2020-Linux-Toolchain-7.3.0.tar.gz",
 )
 
 # Recompressed version of the one downloaded from Linaro at
-# <https://releases.linaro.org/15.05/components/toolchain/binaries/arm-linux-gnueabihf/gcc-linaro-4.9-2015.05-x86_64_arm-linux-gnueabihf.tar.xz>,
+# <https://releases.linaro.org/components/toolchain/binaries/7.4-2019.02/arm-linux-gnueabihf/gcc-linaro-7.4.1-2019.02-x86_64_arm-linux-gnueabihf.tar.xz>
 # with workarounds for <https://github.com/bazelbuild/bazel/issues/574> and the
 # top-level folder stripped off.
 http_archive(
-    name = "linaro_linux_gcc_4_9_repo",
-    build_file = "@//:compilers/linaro_linux_gcc_4.9.BUILD",
-    sha256 = "25e97bcb0af4fd7cd626d5bb1b303c7d2cb13acf2474e335e3d431d1a53fbb52",
-    url = "http://www.frc971.org/Build-Dependencies/gcc-linaro-4.9-2015.05-x86_64_arm-linux-gnueabihf.tar.gz",
+    name = "linaro_linux_gcc_repo",
+    build_file = "@//:compilers/linaro_linux_gcc.BUILD",
+    sha256 = "3c951cf1941d0fa06d64cc0d5e88612b209d8123b273fa26c16d70bd7bc6b163",
+    strip_prefix = "gcc-linaro-7.4.1-2019.02-x86_64_arm-linux-gnueabihf",
+    url = "http://frc971.org/Build-Dependencies/gcc-linaro-7.4.1-2019.02-x86_64_arm-linux-gnueabihf.tar.xz",
 )
 
 new_git_repository(
@@ -175,12 +176,13 @@ bind(
 
 # Generated with:
 # git fetch https://github.com/wpilibsuite/ni-libraries master
-# git archive --output=allwpilib_ni-libraries_4785480.tar.gz --format=tar.gz 4785480
+# git archive --output=allwpilib_ni-libraries_89316203.tar.gz --format=tar.gz 89316203
 http_archive(
     name = "allwpilib_ni_libraries_2019",
     build_file = "@//debian:ni-libraries-2019.BUILD",
-    sha256 = "2cdcde3391f36877b7533e15d0f36baf696b27c1107b77192a8200e26f13278c",
-    url = "http://www.frc971.org/Build-Dependencies/allwpilib_ni-libraries_4785480.tar.gz",
+    sha256 = "09232c6207168dbeafb815f8249940ad3aa46b9176b58e760c5a5233cb15c381",
+    strip_prefix = "ni-libraries-893162037bb36c6171e14be15c6cef9be0053c4a",
+    url = "http://frc971.org/Build-Dependencies/allwpilib_ni-libraries_89316203.zip",
 )
 
 # Downloaded from:

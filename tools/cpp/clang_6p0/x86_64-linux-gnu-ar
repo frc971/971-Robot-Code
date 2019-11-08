@@ -1,0 +1,9 @@
+#!/bin/bash --norc
+
+LD_LIBRARY_PATH="${BAZEL_OUTPUT_ROOT}external/clang_6p0_repo/usr/lib/x86_64-linux-gnu"
+LD_LIBRARY_PATH+=":${BAZEL_OUTPUT_ROOT}external/clang_6p0_repo/usr/lib"
+export LD_LIBRARY_PATH
+
+exec -a ar \
+  ${BAZEL_OUTPUT_ROOT}external/clang_6p0_repo/usr/bin/ar \
+  "$@"

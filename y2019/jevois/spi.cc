@@ -183,7 +183,7 @@ SpiTransfer SpiPackToRoborio(const TeensyToRoborio &message) {
   return transfer;
 }
 
-tl::optional<TeensyToRoborio> SpiUnpackToRoborio(
+std::optional<TeensyToRoborio> SpiUnpackToRoborio(
     gsl::span<const char, spi_transfer_size()> transfer) {
   TeensyToRoborio message;
   gsl::span<const char> remaining_input = transfer;
@@ -232,7 +232,7 @@ tl::optional<TeensyToRoborio> SpiUnpackToRoborio(
     remaining_input = remaining_input.subspan(sizeof(received_crc));
     AOS_CHECK(remaining_input.empty());
     if (calculated_crc != received_crc) {
-      return tl::nullopt;
+      return std::nullopt;
     }
   }
   return message;
@@ -267,7 +267,7 @@ SpiTransfer SpiPackToTeensy(const RoborioToTeensy &message) {
   return transfer;
 }
 
-tl::optional<RoborioToTeensy> SpiUnpackToTeensy(
+std::optional<RoborioToTeensy> SpiUnpackToTeensy(
     gsl::span<const char, spi_transfer_size()> transfer) {
   RoborioToTeensy message;
   gsl::span<const char> remaining_input = transfer;
@@ -298,7 +298,7 @@ tl::optional<RoborioToTeensy> SpiUnpackToTeensy(
     memcpy(&received_crc, &remaining_input[0], sizeof(received_crc));
     remaining_input = remaining_input.subspan(sizeof(received_crc));
     if (calculated_crc != received_crc) {
-      return tl::nullopt;
+      return std::nullopt;
     }
   }
   return message;

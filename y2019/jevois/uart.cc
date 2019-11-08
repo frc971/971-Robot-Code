@@ -55,12 +55,13 @@ UartToTeensyBuffer UartPackToTeensy(const CameraFrame &message) {
   return result;
 }
 
-tl::optional<CameraFrame> UartUnpackToTeensy(gsl::span<const char> encoded_buffer) {
+std::optional<CameraFrame> UartUnpackToTeensy(
+    gsl::span<const char> encoded_buffer) {
   std::array<char, uart_to_teensy_size()> buffer;
   if (static_cast<size_t>(
           CobsDecode<uart_to_teensy_size()>(encoded_buffer, &buffer).size()) !=
       buffer.size()) {
-    return tl::nullopt;
+    return std::nullopt;
   }
 
   CameraFrame message;
@@ -97,7 +98,7 @@ tl::optional<CameraFrame> UartUnpackToTeensy(gsl::span<const char> encoded_buffe
     remaining_input = remaining_input.subspan(sizeof(received_crc));
     AOS_CHECK(remaining_input.empty());
     if (calculated_crc != received_crc) {
-      return tl::nullopt;
+      return std::nullopt;
     }
   }
   return message;
@@ -142,13 +143,13 @@ UartToCameraBuffer UartPackToCamera(const CameraCalibration &message) {
   return result;
 }
 
-tl::optional<CameraCalibration> UartUnpackToCamera(
+std::optional<CameraCalibration> UartUnpackToCamera(
     gsl::span<const char> encoded_buffer) {
   std::array<char, uart_to_camera_size()> buffer;
   if (static_cast<size_t>(
           CobsDecode<uart_to_camera_size()>(encoded_buffer, &buffer).size()) !=
       buffer.size()) {
-    return tl::nullopt;
+    return std::nullopt;
   }
 
   CameraCalibration message;
@@ -187,7 +188,7 @@ tl::optional<CameraCalibration> UartUnpackToCamera(
     remaining_input = remaining_input.subspan(sizeof(received_crc));
     AOS_CHECK(remaining_input.empty());
     if (calculated_crc != received_crc) {
-      return tl::nullopt;
+      return std::nullopt;
     }
   }
   return message;

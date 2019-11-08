@@ -6,7 +6,7 @@
 #include <array>
 
 #include "third_party/GSL/include/gsl/gsl"
-#include "third_party/optional/tl/optional.hpp"
+#include <optional>
 #include "y2019/jevois/structures.h"
 
 // This file manages serializing and deserializing the various structures for
@@ -27,10 +27,10 @@ static_assert(spi_transfer_size() == 41, "hand math is wrong");
 using SpiTransfer = std::array<char, spi_transfer_size()>;
 
 SpiTransfer SpiPackToRoborio(const TeensyToRoborio &message);
-tl::optional<TeensyToRoborio> SpiUnpackToRoborio(
+std::optional<TeensyToRoborio> SpiUnpackToRoborio(
     gsl::span<const char, spi_transfer_size()> transfer);
 SpiTransfer SpiPackToTeensy(const RoborioToTeensy &message);
-tl::optional<RoborioToTeensy> SpiUnpackToTeensy(
+std::optional<RoborioToTeensy> SpiUnpackToTeensy(
     gsl::span<const char, spi_transfer_size()> transfer);
 
 }  // namespace jevois

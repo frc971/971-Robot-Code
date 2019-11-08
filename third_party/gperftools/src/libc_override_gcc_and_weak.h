@@ -54,11 +54,11 @@
 
 #define ALIAS(tc_fn)   __attribute__ ((alias (#tc_fn)))
 
-void* operator new(size_t size) throw (std::bad_alloc)
+void* operator new(size_t size) _GLIBCXX_THROW (std::bad_alloc)
     ALIAS(tc_new);
 void operator delete(void* p) __THROW
     ALIAS(tc_delete);
-void* operator new[](size_t size) throw (std::bad_alloc)
+void* operator new[](size_t size) _GLIBCXX_THROW (std::bad_alloc)
     ALIAS(tc_newarray);
 void operator delete[](void* p) __THROW
     ALIAS(tc_deletearray);

@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-prefix = "arm-frc2019-linux-gnueabi"
+prefix = "arm-frc2020-linux-gnueabi"
 
 filegroup(
     name = "gcc",
@@ -65,9 +65,9 @@ filegroup(
         "usr/lib/**",
         "lib/**",
         "bin/**",
-        "**"
+        "**",
     ]] + [
-        "libexec/gcc/" + prefix + "/6.3.0/**",
+        "libexec/gcc/" + prefix + "/7.3.0/**",
         "bin/**",
     ]),
 )

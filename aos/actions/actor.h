@@ -132,6 +132,7 @@ void ActorBase<T>::HandleGoal(const GoalType &goal) {
         }
         break;
       }
+      [[fallthrough]];
     case State::RUNNING_ACTION: {
       ++running_count_;
       const uint32_t running_id = goal.run();

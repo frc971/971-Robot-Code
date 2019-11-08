@@ -144,7 +144,7 @@ class SimulatedSender : public RawSender {
     return Send(size);
   }
 
-  const absl::string_view name() const override {
+  const std::string_view name() const override {
     return simulated_channel_->name();
   }
 
@@ -368,10 +368,10 @@ class SimulatedEventLoop : public EventLoop {
     scheduler_->Schedule(scheduler_->monotonic_now(), on_run);
   }
 
-  void set_name(const absl::string_view name) override {
+  void set_name(const std::string_view name) override {
     name_ = std::string(name);
   }
-  const absl::string_view name() const override { return name_; }
+  const std::string_view name() const override { return name_; }
 
   SimulatedChannel *GetSimulatedChannel(const Channel *channel);
 

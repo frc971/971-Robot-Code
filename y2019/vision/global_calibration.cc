@@ -198,7 +198,7 @@ void main(int argc, char **argv) {
         const ::aos::vision::Vector<2> target_point = target_value[j];
 
         // Now build up the residual block.
-        auto ftor = [template_point, target_point, i](
+        auto ftor = [template_point, target_point](
             const double *const intrinsics, const double *const extrinsics,
             double *residual) {
           const IntrinsicParams intrinsic_params =

@@ -26,7 +26,7 @@ class ControlLoopTestTemplated : public TestBaseClass {
  public:
   // Builds a control loop test with the provided configuration.  Note: this
   // merges and sorts the config to reduce user errors.
-  ControlLoopTestTemplated(absl::string_view configuration,
+  ControlLoopTestTemplated(std::string_view configuration,
                            ::std::chrono::nanoseconds dt = kTimeTick)
       : ControlLoopTestTemplated(
             configuration::MergeConfiguration(

@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
       case 'N':
         filter_exact_name = optarg;
         filter_name = nullptr;
-        filter_length = strlen(filter_name);
+        filter_length = strlen(filter_exact_name);
         break;
       case 'l':
         filter_level = ::aos::logging::str_log(optarg);

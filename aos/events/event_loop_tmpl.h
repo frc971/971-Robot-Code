@@ -27,7 +27,7 @@ typename Sender<T>::Builder Sender<T>::MakeBuilder() {
 }
 
 template <typename Watch>
-void EventLoop::MakeWatcher(const absl::string_view channel_name, Watch &&w) {
+void EventLoop::MakeWatcher(const std::string_view channel_name, Watch &&w) {
   using T = typename watch_message_type_trait<Watch>::message_type;
   const Channel *channel = configuration::GetChannel(
       configuration_, channel_name, T::GetFullyQualifiedName(), name());

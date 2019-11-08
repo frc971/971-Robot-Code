@@ -25,27 +25,27 @@ extern "C" {
   void deleteSpline(NSpline<6> *spline) { delete spline; }
 
   void SplinePoint(NSpline<6> *spline, double alpha, double *res) {
-    double *val = spline->Point(alpha).data();
-    res[0] = val[0];
-    res[1] = val[1];
+    const Eigen::Vector2d xy = spline->Point(alpha);
+    res[0] = xy.x();
+    res[1] = xy.y();
   }
 
   void SplineDPoint(NSpline<6> *spline, double alpha, double *res) {
-    double *val = spline->DPoint(alpha).data();
-    res[0] = val[0];
-    res[1] = val[1];
+    const Eigen::Vector2d dxy = spline->DPoint(alpha);
+    res[0] = dxy.x();
+    res[1] = dxy.y();
   }
 
   void SplineDDPoint(NSpline<6> *spline, double alpha, double *res) {
-    double *val = spline->DDPoint(alpha).data();
-    res[0] = val[0];
-    res[1] = val[1];
+    const Eigen::Vector2d ddxy = spline->DDPoint(alpha);
+    res[0] = ddxy.x();
+    res[1] = ddxy.y();
   }
 
   void SplineDDDPoint(NSpline<6> *spline, double alpha, double *res) {
-    double *val = spline->DDDPoint(alpha).data();
-    res[0] = val[0];
-    res[1] = val[1];
+    const Eigen::Vector2d dddxy = spline->DDDPoint(alpha);
+    res[0] = dddxy.x();
+    res[1] = dddxy.y();
   }
 
   double SplineTheta(NSpline<6> *spline, double alpha) {
@@ -81,22 +81,22 @@ extern "C" {
   void deleteDistanceSpline(DistanceSpline *spline) { delete spline; }
 
   void DistanceSplineXY(DistanceSpline *spline, double distance, double *res) {
-    double *val = spline->XY(distance).data();
-    res[0] = val[0];
-    res[1] = val[1];
+    const Eigen::Vector2d xy = spline->XY(distance);
+    res[0] = xy.x();
+    res[1] = xy.y();
   }
 
   void DistanceSplineDXY(DistanceSpline *spline, double distance, double *res) {
-    double *val = spline->DXY(distance).data();
-    res[0] = val[0];
-    res[1] = val[1];
+    const Eigen::Vector2d dxy = spline->DXY(distance);
+    res[0] = dxy.x();
+    res[1] = dxy.y();
   }
 
   void DistanceSplineDDXY(DistanceSpline *spline, double distance,
                           double *res) {
-    double *val = spline->DDXY(distance).data();
-    res[0] = val[0];
-    res[1] = val[1];
+    const Eigen::Vector2d ddxy = spline->DDXY(distance);
+    res[0] = ddxy.x();
+    res[1] = ddxy.y();
   }
 
   double DistanceSplineTheta(DistanceSpline *spline, double distance) {
@@ -150,9 +150,9 @@ extern "C" {
   void TrajectoryPlan(Trajectory *t) { t->Plan(); }
 
   void TrajectoryVoltage(Trajectory *t, double distance, double* res) {
-    double *val = t->FFVoltage(distance).data();
-    res[0] = val[0];
-    res[1] = val[1];
+    const Eigen::Vector2d ff_voltage = t->FFVoltage(distance);
+    res[0] = ff_voltage.x();
+    res[1] = ff_voltage.y();
   }
 
   double TrajectoryLength(Trajectory *t) { return t->length(); }

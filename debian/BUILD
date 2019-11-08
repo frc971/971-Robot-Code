@@ -111,15 +111,16 @@ download_packages(
 download_packages(
     name = "download_clang_deps",
     excludes = [
-        "libblas.so.3",
+        "lib32stdc++6",
+        "libstdc++6",
     ],
     force_includes = [
         "libc6",
         "libc6-dev",
     ],
     packages = [
-        "clang-3.6",
-        "clang-format-3.6",
+        "clang-6.0",
+        "clang-format-6.0",
         "gcc",
         "gfortran",
     ],
@@ -226,7 +227,7 @@ generate_deb_tarball(
 )
 
 generate_deb_tarball(
-    name = "clang_3p6",
+    name = "clang_6p0",
     files = clang_debs,
 )
 

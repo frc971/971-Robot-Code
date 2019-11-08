@@ -437,6 +437,7 @@ Column::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
       state_ = State::ZEROING_UNINITIALIZED;
 
       // Fall through so we can start the zeroing process immediately.
+      [[fallthrough]];
 
     case State::ZEROING_UNINITIALIZED:
       // Set up the profile to be the zeroing profile.

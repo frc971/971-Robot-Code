@@ -54,56 +54,56 @@ filegroup(
 )
 
 filegroup(
-    name = "clang_3p6_all_files",
+    name = "clang_6p0_all_files",
     srcs = [
         ":flags_compiler_inputs",
-        "//tools/cpp/clang_3p6:as",
-        "//tools/cpp/clang_3p6:tool-wrappers",
-        "@clang_3p6_repo//:compiler_pieces",
+        "//tools/cpp/clang_6p0:as",
+        "//tools/cpp/clang_6p0:tool-wrappers",
+        "@clang_6p0_repo//:compiler_pieces",
     ],
 )
 
 filegroup(
-    name = "clang_3p6_linker_files",
+    name = "clang_6p0_linker_files",
     srcs = [
-        "//tools/cpp/clang_3p6:ar",
-        "//tools/cpp/clang_3p6:clang",
-        "//tools/cpp/clang_3p6:clang-symlinks",
-        "//tools/cpp/clang_3p6:ld",
-        "@clang_3p6_repo//:compiler_pieces",
+        "//tools/cpp/clang_6p0:ar",
+        "//tools/cpp/clang_6p0:clang",
+        "//tools/cpp/clang_6p0:clang-symlinks",
+        "//tools/cpp/clang_6p0:ld",
+        "@clang_6p0_repo//:compiler_pieces",
     ],
 )
 
 filegroup(
-    name = "clang_3p6_strip_files",
+    name = "clang_6p0_strip_files",
     srcs = [
-        "//tools/cpp/clang_3p6:strip",
-        "@clang_3p6_repo//:compiler_pieces",
+        "//tools/cpp/clang_6p0:strip",
+        "@clang_6p0_repo//:compiler_pieces",
     ],
 )
 
 filegroup(
-    name = "clang_3p6_compiler_files",
+    name = "clang_6p0_compiler_files",
     srcs = [
         "flags_compiler_inputs",
-        "//tools/cpp/clang_3p6:clang",
-        "//tools/cpp/clang_3p6:ld",
-        "@clang_3p6_repo//:compiler_components",
-        "@clang_3p6_repo//:compiler_pieces",
+        "//tools/cpp/clang_6p0:clang",
+        "//tools/cpp/clang_6p0:ld",
+        "@clang_6p0_repo//:compiler_components",
+        "@clang_6p0_repo//:compiler_pieces",
     ],
 )
 
 cc_toolchain(
     name = "cc-compiler-k8",
-    all_files = ":clang_3p6_all_files",
-    compiler_files = ":clang_3p6_compiler_files",
+    all_files = ":clang_6p0_all_files",
+    compiler_files = ":clang_6p0_compiler_files",
     cpu = "k8",
     dwp_files = ":empty",
     dynamic_runtime_libs = [":empty"],
-    linker_files = ":clang_3p6_linker_files",
-    objcopy_files = "//tools/cpp/clang_3p6:objcopy",
+    linker_files = ":clang_6p0_linker_files",
+    objcopy_files = "//tools/cpp/clang_6p0:objcopy",
     static_runtime_libs = [":empty"],
-    strip_files = ":clang_3p6_strip_files",
+    strip_files = ":clang_6p0_strip_files",
     supports_param_files = 1,
     toolchain_identifier = "k8_linux",
 )
@@ -165,36 +165,36 @@ cc_toolchain(
 filegroup(
     name = "linaro-gcc-files",
     srcs = [
-        ":clang_3p6_all_files",
+        ":clang_6p0_all_files",
         "//tools/cpp/linaro_linux_gcc:clang-symlinks",
         "//tools/cpp/linaro_linux_gcc:tool-wrappers",
-        "@linaro_linux_gcc_4_9_repo//:compiler_pieces",
+        "@linaro_linux_gcc_repo//:compiler_pieces",
     ],
 )
 
 filegroup(
     name = "linaro_linux_linker_files",
     srcs = [
-        ":clang_3p6_linker_files",
+        ":clang_6p0_linker_files",
         "//tools/cpp/linaro_linux_gcc:ar",
         "//tools/cpp/linaro_linux_gcc:clang",
         "//tools/cpp/linaro_linux_gcc:clang-ld",
         "//tools/cpp/linaro_linux_gcc:clang-symlinks",
         "//tools/cpp/linaro_linux_gcc:gcc",
         "//tools/cpp/linaro_linux_gcc:ld",
-        "@linaro_linux_gcc_4_9_repo//:compiler_pieces",
+        "@linaro_linux_gcc_repo//:compiler_pieces",
     ],
 )
 
 filegroup(
     name = "linaro_linux_compiler_files",
     srcs = [
-        ":clang_3p6_compiler_files",
+        ":clang_6p0_compiler_files",
         "//tools/cpp/linaro_linux_gcc:as",
         "//tools/cpp/linaro_linux_gcc:clang",
         "//tools/cpp/linaro_linux_gcc:gcc",
         "//tools/cpp/linaro_linux_gcc:ld",
-        "@linaro_linux_gcc_4_9_repo//:compiler_pieces",
+        "@linaro_linux_gcc_repo//:compiler_pieces",
     ],
 )
 
@@ -202,7 +202,7 @@ filegroup(
     name = "linaro_linux_strip_files",
     srcs = [
         "//tools/cpp/linaro_linux_gcc:strip",
-        "@linaro_linux_gcc_4_9_repo//:compiler_pieces",
+        "@linaro_linux_gcc_repo//:compiler_pieces",
     ],
 )
 

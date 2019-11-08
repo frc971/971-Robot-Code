@@ -47,6 +47,7 @@ cc_test(
     copts = [
         "-Wno-unused-parameter",
         "-Wno-unused-function",
+        "-Wno-unused-private-field",
     ],
     deps = ["//third_party/googletest:gtest"],
 )

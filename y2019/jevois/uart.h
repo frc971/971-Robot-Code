@@ -3,7 +3,7 @@
 
 #include "aos/containers/sized_array.h"
 #include "third_party/GSL/include/gsl/gsl"
-#include "third_party/optional/tl/optional.hpp"
+#include <optional>
 #include "y2019/jevois/cobs.h"
 #include "y2019/jevois/structures.h"
 
@@ -30,10 +30,10 @@ using UartToCameraBuffer =
     aos::SizedArray<char, CobsMaxEncodedSize(uart_to_camera_size())>;
 
 UartToTeensyBuffer UartPackToTeensy(const CameraFrame &message);
-tl::optional<CameraFrame> UartUnpackToTeensy(gsl::span<const char> buffer);
+std::optional<CameraFrame> UartUnpackToTeensy(gsl::span<const char> buffer);
 
 UartToCameraBuffer UartPackToCamera(const CameraCalibration &message);
-tl::optional<CameraCalibration> UartUnpackToCamera(
+std::optional<CameraCalibration> UartUnpackToCamera(
     gsl::span<const char> buffer);
 
 }  // namespace jevois

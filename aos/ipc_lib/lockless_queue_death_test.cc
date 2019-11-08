@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <wait.h>
 #include <chrono>
+#include <functional>
 #include <memory>
 #include <thread>
 

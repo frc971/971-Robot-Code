@@ -3,8 +3,8 @@
 
 #include <cstddef>
 #include <string>
+#include <string_view>
 
-#include "absl/strings/string_view.h"
 #include "aos/flatbuffers.h"
 #include "flatbuffers/flatbuffers.h"
 
@@ -12,7 +12,8 @@ namespace aos {
 
 // Parses the flatbuffer into the vector, or returns an empty vector.
 flatbuffers::DetachedBuffer JsonToFlatbuffer(
-    const absl::string_view data, const flatbuffers::TypeTable *typetable);
+    const std::string_view data,
+    const flatbuffers::TypeTable *typetable);
 
 // Converts a flatbuffer into a Json string.
 // multi_line controls if the Json is written out on multiple lines or one.

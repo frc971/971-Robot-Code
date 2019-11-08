@@ -1,13 +1,14 @@
 cc_library(
     name = "ni-libraries",
     srcs = [
-        "src/lib/chipobject/libNiFpga.so.18.0.0",
-        "src/lib/chipobject/libNiFpgaLv.so.18.0.0",
-        "src/lib/chipobject/libNiRioSrv.so.18.0.0",
-        "src/lib/chipobject/libRoboRIO_FRC_ChipObject.so.19.0.0",
-        "src/lib/chipobject/libniriodevenum.so.18.0.0",
-        "src/lib/chipobject/libniriosession.so.18.0.0",
-        "src/lib/netcomm/libFRC_NetworkCommunication.so.19.0.0",
+        "src/lib/chipobject/libNiFpga.so.19.0.0",
+        "src/lib/runtime/libNiFpgaLv.so.19.0.0",
+        "src/lib/runtime/libNiRioSrv.so.19.0.0",
+        "src/lib/chipobject/libRoboRIO_FRC_ChipObject.so.20.0.0",
+        "src/lib/runtime/libniriodevenum.so.19.0.0",
+        "src/lib/runtime/libniriosession.so.18.0.0",
+        "src/lib/runtime/libnirio_emb_can.so.16.0.0",
+        "src/lib/netcomm/libFRC_NetworkCommunication.so.20.0.0",
     ],
     hdrs = glob(["src/include/**"]),
     includes = [

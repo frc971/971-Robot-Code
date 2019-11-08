@@ -252,8 +252,12 @@ class LockerThread : public util::Thread {
 
  private:
   virtual void Run() override {
-    if (lock_) ASSERT_FALSE(mutex_->Lock());
-    if (unlock_) mutex_->Unlock();
+    if (lock_) {
+      ASSERT_FALSE(mutex_->Lock());
+    }
+    if (unlock_) {
+      mutex_->Unlock();
+    }
   }
 
   Mutex *const mutex_;

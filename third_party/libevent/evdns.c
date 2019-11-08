@@ -2247,6 +2247,10 @@ evdns_request_transmit(struct request *req) {
 		retcode = 1;
 		/* fall through: we'll set a timeout, which will time out,
 		 * and make us retransmit the request anyway. */
+#ifdef __cplusplus
+    [[fallthrough]];
+#endif  // __cplusplus
+    /* FALLTHRU */
 	default:
 		/* all ok */
 		log(EVDNS_LOG_DEBUG,

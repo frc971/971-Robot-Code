@@ -37,7 +37,7 @@ class LoopOutputHandler {
     // TODO(austin): Set name.
     timer_handler_ = event_loop_->AddTimer([this]() { Stop(); });
 
-    event_loop_->OnRun([this, timeout]() {
+    event_loop_->OnRun([this]() {
       timer_handler_->Setup(event_loop_->monotonic_now() + timeout_);
     });
   }

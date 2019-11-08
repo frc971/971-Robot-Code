@@ -101,12 +101,12 @@ class MMapedQueue {
   }
 
  private:
-  void MkdirP(absl::string_view path) {
+  void MkdirP(std::string_view path) {
     struct stat st;
     auto last_slash_pos = path.find_last_of("/");
 
-    std::string folder(last_slash_pos == absl::string_view::npos
-                           ? absl::string_view("")
+    std::string folder(last_slash_pos == std::string_view::npos
+                           ? std::string_view("")
                            : path.substr(0, last_slash_pos));
     if (stat(folder.c_str(), &st) == -1) {
       PCHECK(errno == ENOENT);
@@ -126,10 +126,10 @@ class MMapedQueue {
 };
 
 // Returns the portion of the path after the last /.
-absl::string_view Filename(absl::string_view path) {
+std::string_view Filename(std::string_view path) {
   auto last_slash_pos = path.find_last_of("/");
 
-  return last_slash_pos == absl::string_view::npos
+  return last_slash_pos == std::string_view::npos
              ? path
              : path.substr(last_slash_pos + 1, path.size());
 }
@@ -297,7 +297,7 @@ class ShmSender : public RawSender {
     return true;
   }
 
-  const absl::string_view name() const override { return name_; }
+  const std::string_view name() const override { return name_; }
 
  private:
   const ShmEventLoop *shm_event_loop_;

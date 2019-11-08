@@ -98,6 +98,7 @@ cc_test(
         "//conditions:default": [
             "-DGTEST_USE_OWN_TR1_TUPLE=1",
             "-Wno-empty-body",
+            "-Wno-dangling-else",
         ],
     }),
     includes = [
@@ -121,7 +122,10 @@ cc_test(
     name = "googletest-death-test-test",
     size = "medium",
     srcs = ["googletest-death-test-test.cc"],
-    copts = ["-Wno-empty-body"],
+    copts = [
+        "-Wno-empty-body",
+        "-Wno-dangling-else",
+    ],
     deps = ["//third_party/googletest:gtest_main"],
 )
 
@@ -159,6 +163,9 @@ cc_test(
         "googletest-param-test-test.h",
         "googletest-param-test2-test.cc",
     ],
+    copts = [
+      "-Wno-unused-private-field",
+    ],
     deps = ["//third_party/googletest:gtest"],
 )
 
@@ -167,7 +174,10 @@ cc_test(
     size = "small",
     srcs = ["gtest_unittest.cc"],
     args = ["--heap_check=strict"],
-    copts = ["-Wno-empty-body"],
+    copts = [
+        "-Wno-empty-body",
+        "-Wno-dangling-else",
+    ],
     shard_count = 2,
     deps = ["//third_party/googletest:gtest_main"],
 )

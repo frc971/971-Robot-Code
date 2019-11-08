@@ -59,10 +59,10 @@ class ShmEventLoop : public EventLoop {
 
   void SetRuntimeRealtimePriority(int priority) override;
 
-  void set_name(const absl::string_view name) override {
+  void set_name(const std::string_view name) override {
     name_ = std::string(name);
   }
-  const absl::string_view name() const override { return name_; }
+  const std::string_view name() const override { return name_; }
 
   int priority() const { return priority_; }
 

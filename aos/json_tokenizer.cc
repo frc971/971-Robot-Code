@@ -31,7 +31,7 @@ void Tokenizer::ConsumeWhitespace() {
 }
 
 bool Tokenizer::Consume(const char *token) {
-  const absl::string_view original = data_;
+  const std::string_view original = data_;
   while (true) {
     // Finishing the token is success.
     if (*token == '\0') {
@@ -58,7 +58,7 @@ bool Tokenizer::Consume(const char *token) {
 bool Tokenizer::ConsumeString(::std::string *s) {
   // Under no conditions is it acceptible to run out of data while parsing a
   // string.  Any AtEnd checks should confirm that.
-  const absl::string_view original = data_;
+  const std::string_view original = data_;
   if (AtEnd()) {
     return false;
   }
@@ -69,7 +69,7 @@ bool Tokenizer::ConsumeString(::std::string *s) {
   }
 
   ConsumeChar();
-  absl::string_view last_parsed_data = data_;
+  std::string_view last_parsed_data = data_;
   *s = ::std::string();
 
   while (true) {
@@ -134,7 +134,7 @@ bool Tokenizer::ConsumeNumber(::std::string *s) {
   // Under no conditions is it acceptible to run out of data while parsing a
   // number.  Any AtEnd() checks should confirm that.
   *s = ::std::string();
-  const absl::string_view original = data_;
+  const std::string_view original = data_;
 
   // Consume the leading - unconditionally.
   Consume("-");

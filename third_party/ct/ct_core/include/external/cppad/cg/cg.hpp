@@ -15,6 +15,8 @@
  * Author: Joao Leal
  */
 
+#include <functional>
+
 namespace CppAD {
 namespace cg {
 

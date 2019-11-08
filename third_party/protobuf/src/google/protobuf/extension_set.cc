@@ -138,7 +138,7 @@ static bool CallNoArgValidityFunc(const void* arg, int number) {
   //     http://www.open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#195
   // Also note:  Some compilers do not allow function pointers to be "const".
   //   Which makes sense, I suppose, because it's meaningless.
-  return ((EnumValidityFunc*)arg)(number);
+  return ((EnumValidityFunc*)const_cast<void *>(arg))(number);
 }
 
 void ExtensionSet::RegisterEnumExtension(const MessageLite* containing_type,

@@ -310,7 +310,7 @@ int main(int argc, char ** argv) {
   ::std::unique_ptr<CameraStream> camera1;
   ::std::unique_ptr<CameraStream> camera0(new CameraStream(
       params0, "/dev/video0", &tcp_server_, true,
-      [&camera0, &camera1, &status_socket, &vision_status]() {
+      [&camera0, &status_socket, &vision_status]() {
         vision_status.set_low_frame_count(vision_status.low_frame_count() + 1);
         AOS_LOG(INFO, "Got a frame cam0\n");
         if (camera0->active()) {
@@ -322,7 +322,7 @@ int main(int argc, char ** argv) {
         // params,
         // "/dev/v4l/by-path/platform-tegra-xhci-usb-0:3.1:1.0-video-index0",
         params1, "/dev/video1", &tcp_server_, false,
-        [&camera0, &camera1, &status_socket, &vision_status]() {
+        [&camera1, &status_socket, &vision_status]() {
           vision_status.set_high_frame_count(vision_status.high_frame_count() +
                                              1);
           AOS_LOG(INFO, "Got a frame cam1\n");

@@ -3,7 +3,8 @@
 #include <cstddef>
 #include "stdio.h"
 
-#include "absl/strings/string_view.h"
+#include <string_view>
+
 #include "aos/flatbuffer_utils.h"
 #include "aos/json_tokenizer.h"
 #include "flatbuffers/flatbuffers.h"
@@ -124,7 +125,7 @@ class JsonParser {
 
   // Parses the json into a flatbuffer.  Returns either an empty vector on
   // error, or a vector with the flatbuffer data in it.
-  flatbuffers::DetachedBuffer Parse(const absl::string_view data,
+  flatbuffers::DetachedBuffer Parse(const std::string_view data,
                                     const flatbuffers::TypeTable *typetable) {
     flatbuffers::uoffset_t end = 0;
     bool result = DoParse(typetable, data, &end);
@@ -149,7 +150,8 @@ class JsonParser {
   // Parses the flatbuffer.  This is a second method so we can do easier
   // cleanup at the top level.  Returns true on success.
   bool DoParse(const flatbuffers::TypeTable *typetable,
-               const absl::string_view data, flatbuffers::uoffset_t *table_end);
+               const std::string_view data,
+               flatbuffers::uoffset_t *table_end);
 
   // Adds *_value for the provided field.  If we are in a vector, queues the
   // data up in vector_elements.  Returns true on success.
@@ -200,7 +202,7 @@ class JsonParser {
 };
 
 bool JsonParser::DoParse(const flatbuffers::TypeTable *typetable,
-                         const absl::string_view data,
+                         const std::string_view data,
                          flatbuffers::uoffset_t *table_end) {
   ::std::vector<const flatbuffers::TypeTable *> stack;
 
@@ -765,7 +767,8 @@ bool JsonParser::PushElement(
 }  // namespace
 
 flatbuffers::DetachedBuffer JsonToFlatbuffer(
-    const absl::string_view data, const flatbuffers::TypeTable *typetable) {
+    const std::string_view data,
+    const flatbuffers::TypeTable *typetable) {
   JsonParser p;
   return p.Parse(data, typetable);
 }

@@ -696,6 +696,8 @@ void SigCHLDReceived(int /*fd*/, short /*events*/, void *) {
                   "child %d actually dumped core. "
                   "falling through to killed by signal case\n",
                   pid);
+          [[fallthrough]];
+          /* FALLTHRU */
         case CLD_KILLED:
           // If somebody (possibly us) sent it SIGTERM that means that they just
           // want it to stop, so it stopping isn't a WARNING.
@@ -772,7 +774,7 @@ void Main() {
   // permissions on a roboRIO.
   AOS_CHECK(system("echo 0 > /proc/sys/vm/overcommit_memory") == 0);
 #endif
-  
+
   libevent_base = EventBaseUniquePtr(event_base_new());
 
   std::string core_touch_file = "/tmp/starter.";
@@ -817,7 +819,7 @@ void Run(void *watch) {
   aos::InitNRT();
 
   std::ifstream list_file(child_list_file);
-  
+
   while (true) {
     std::string child_name;
     getline(list_file, child_name);

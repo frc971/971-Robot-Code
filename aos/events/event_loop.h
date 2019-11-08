@@ -3,8 +3,8 @@
 
 #include <atomic>
 #include <string>
+#include <string_view>
 
-#include "absl/strings/string_view.h"
 #include "aos/configuration.h"
 #include "aos/configuration_generated.h"
 #include "aos/flatbuffers.h"
@@ -79,7 +79,7 @@ class RawSender {
   virtual bool Send(const void *data, size_t size) = 0;
 
   // Returns the name of this sender.
-  virtual const absl::string_view name() const = 0;
+  virtual const std::string_view name() const = 0;
 
   const Channel *channel() const { return channel_; }
 
@@ -175,7 +175,7 @@ class Sender {
   Builder MakeBuilder();
 
   // Returns the name of the underlying queue.
-  const absl::string_view name() const { return sender_->name(); }
+  const std::string_view name() const { return sender_->name(); }
 
  private:
   friend class EventLoop;
@@ -231,7 +231,7 @@ class EventLoop {
   // Makes a class that will always fetch the most recent value
   // sent to the provided channel.
   template <typename T>
-  Fetcher<T> MakeFetcher(const absl::string_view channel_name) {
+  Fetcher<T> MakeFetcher(const std::string_view channel_name) {
     const Channel *channel = configuration::GetChannel(
         configuration_, channel_name, T::GetFullyQualifiedName(), name());
     CHECK(channel != nullptr)
@@ -244,7 +244,7 @@ class EventLoop {
   // Makes class that allows constructing and sending messages to
   // the provided channel.
   template <typename T>
-  Sender<T> MakeSender(const absl::string_view channel_name) {
+  Sender<T> MakeSender(const std::string_view channel_name) {
     const Channel *channel = configuration::GetChannel(
         configuration_, channel_name, T::GetFullyQualifiedName(), name());
     CHECK(channel != nullptr)
@@ -262,16 +262,16 @@ class EventLoop {
   // TODO(parker): Need to support ::std::bind.  For now, use lambdas.
   // TODO(austin): Do we need a functor?  Or is a std::function good enough?
   template <typename Watch>
-  void MakeWatcher(const absl::string_view name, Watch &&w);
+  void MakeWatcher(const std::string_view name, Watch &&w);
 
   // The passed in function will be called when the event loop starts.
   // Use this to run code once the thread goes into "real-time-mode",
   virtual void OnRun(::std::function<void()> on_run) = 0;
 
   // Sets the name of the event loop.  This is the application name.
-  virtual void set_name(const absl::string_view name) = 0;
+  virtual void set_name(const std::string_view name) = 0;
   // Gets the name of the event loop.
-  virtual const absl::string_view name() const = 0;
+  virtual const std::string_view name() const = 0;
 
   // Creates a timer that executes callback when the timer expires
   // Returns a TimerHandle for configuration of the timer

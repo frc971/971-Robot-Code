@@ -36,6 +36,10 @@ load("@//tools/build_rules:select.bzl", "cpu_select")
 
 ceres_library(
     name = "ceres",
+    extra_copts = cpu_select({
+        "roborio": ["-Wno-maybe-uninitialized"],
+        "else": [],
+    }),
     restrict_schur_specializations = False,
 )
 

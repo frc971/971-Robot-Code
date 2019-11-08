@@ -7,9 +7,9 @@
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <unistd.h>
+#include <string_view>
 
 #include "absl/container/btree_set.h"
-#include "absl/strings/string_view.h"
 #include "aos/configuration_generated.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/json_to_flatbuffer.h"
@@ -139,16 +139,17 @@ void DoGetLoggingDirectory(char** retu) {
 }
 
 // Extracts the folder part of a path.  Returns ./ if there is no path.
-absl::string_view ExtractFolder(const absl::string_view filename) {
+std::string_view ExtractFolder(
+    const std::string_view filename) {
   auto last_slash_pos = filename.find_last_of("/\\");
 
-  return last_slash_pos == absl::string_view::npos
-             ? absl::string_view("./")
+  return last_slash_pos == std::string_view::npos
+             ? std::string_view("./")
              : filename.substr(0, last_slash_pos + 1);
 }
 
 FlatbufferDetachedBuffer<Configuration> ReadConfig(
-    const absl::string_view path, absl::btree_set<std::string> *visited_paths) {
+    const std::string_view path, absl::btree_set<std::string> *visited_paths) {
   flatbuffers::DetachedBuffer buffer = JsonToFlatbuffer(
       util::ReadFileToStringOrDie(path), ConfigurationTypeTable());
 
@@ -223,7 +224,7 @@ FlatbufferDetachedBuffer<Configuration> ReadConfig(
 
 // Compares (c < p) a channel, and a name, type tuple.
 bool CompareChannels(const Channel *c,
-                     ::std::pair<absl::string_view, absl::string_view> p) {
+                     ::std::pair<std::string_view, std::string_view> p) {
   int name_compare = c->name()->string_view().compare(p.first);
   if (name_compare == 0) {
     return c->type()->string_view() < p.second;
@@ -236,24 +237,24 @@ bool CompareChannels(const Channel *c,
 
 // Compares for equality (c == p) a channel, and a name, type tuple.
 bool EqualsChannels(const Channel *c,
-                     ::std::pair<absl::string_view, absl::string_view> p) {
+                     ::std::pair<std::string_view, std::string_view> p) {
   return c->name()->string_view() == p.first &&
          c->type()->string_view() == p.second;
 }
 
 // Compares (c < p) an application, and a name;
-bool CompareApplications(const Application *a, absl::string_view name) {
+bool CompareApplications(const Application *a, std::string_view name) {
   return a->name()->string_view() < name;
 };
 
 // Compares for equality (c == p) an application, and a name;
-bool EqualsApplications(const Application *a, absl::string_view name) {
+bool EqualsApplications(const Application *a, std::string_view name) {
   return a->name()->string_view() == name;
 }
 
 // Maps name for the provided maps.  Modifies name.
 void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
-                absl::string_view *name) {
+                std::string_view *name) {
   // For the same reason we merge configs in reverse order, we want to process
   // maps in reverse order.  That lets the outer config overwrite channels from
   // the inner configs.
@@ -384,15 +385,15 @@ const in_addr &GetOwnIPAddress() {
 }
 
 FlatbufferDetachedBuffer<Configuration> ReadConfig(
-    const absl::string_view path) {
+    const std::string_view path) {
   // We only want to read a file once.  So track the visited files in a set.
   absl::btree_set<std::string> visited_paths;
   return MergeConfiguration(ReadConfig(path, &visited_paths));
 }
 
-const Channel *GetChannel(const Configuration *config, absl::string_view name,
-                          absl::string_view type,
-                          absl::string_view application_name) {
+const Channel *GetChannel(const Configuration *config, std::string_view name,
+                          std::string_view type,
+                          std::string_view application_name) {
   VLOG(1) << "Looking up { \"name\": \"" << name << "\", \"type\": \"" << type
           << "\" }";
 

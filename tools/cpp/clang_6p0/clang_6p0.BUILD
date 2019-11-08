@@ -3,7 +3,7 @@ package(default_visibility = ["//visibility:public"])
 filegroup(
     name = "clang-format",
     srcs = [
-        "usr/bin/clang-3.6",
+        "usr/bin/clang-6.0",
         ":compiler_pieces",
     ],
 )
@@ -11,7 +11,7 @@ filegroup(
 filegroup(
     name = "clang",
     srcs = [
-        "usr/bin/clang-3.6",
+        "usr/bin/clang-6.0",
     ],
 )
 

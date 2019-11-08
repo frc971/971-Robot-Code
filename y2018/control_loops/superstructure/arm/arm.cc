@@ -138,6 +138,7 @@ flatbuffers::Offset<superstructure::ArmStatus> Arm::Iterate(
       } else {
         break;
       }
+      [[fallthrough]];
 
     case State::DISABLED: {
       follower_.SwitchTrajectory(nullptr);
@@ -167,6 +168,7 @@ flatbuffers::Offset<superstructure::ArmStatus> Arm::Iterate(
         break;
       }
     }
+    [[fallthrough]];
 
     case State::GOTO_PATH:
       if (outputs_disabled) {

@@ -98,7 +98,6 @@ cc_library(
         "//aos/logging",
         "//aos/util:bitpacking",
         "//third_party/GSL",
-        "//third_party/optional",
     ],
 )
 
@@ -116,7 +115,6 @@ cc_library(
         ":structures_mcu",
         "//aos/util:bitpacking",
         "//third_party/GSL",
-        "//third_party/optional",
     ],
 )
 
@@ -137,7 +135,6 @@ cc_library(
         "//aos/logging",
         "//aos/util:bitpacking",
         "//third_party/GSL",
-        "//third_party/optional",
     ],
 )
 
@@ -157,7 +154,6 @@ cc_library(
         "//aos/containers:sized_array",
         "//aos/util:bitpacking",
         "//third_party/GSL",
-        "//third_party/optional",
     ],
 )
 
