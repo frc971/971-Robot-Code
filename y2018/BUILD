@@ -49,7 +49,6 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//aos:once",
         "//aos/logging",
         "//aos/mutex",
         "//aos/network:team_number",
