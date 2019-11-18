@@ -26,7 +26,7 @@ typedef uint32_t aos_futex __attribute__((aligned(sizeof(int))));
 // No initialization is necessary.
 typedef aos_futex aos_condition;
 
-// For use with the mutex_ functions.
+// For use with the mutex_ or death_notification_ functions.
 // futex must be initialized to 0.
 // No initialization is necessary for next and previous.
 // Under ThreadSanitizer, pthread_mutex_init must be initialized to false.
@@ -88,6 +88,25 @@ int mutex_trylock(struct aos_mutex *m) __attribute__((warn_unused_result));
 // checking mutexes as they are destroyed to catch problems with that early and
 // stack-based recursive mutex locking.
 bool mutex_islocked(const aos_mutex *m);
+
+// The death_notification_ functions are designed for one thread to wait for
+// another thread (possibly in a different process) to end. This can mean
+// exiting gracefully or dying at any point. They use a standard aos_mutex, but
+// this mutex may not be used with any of the mutex_ functions.
+
+// Initializes a variable which can be used to wait for this thread to die.
+// This can only be called once after initializing *m.
+void death_notification_init(aos_mutex *m);
+
+// Manually triggers a death notification for this thread.
+// This thread must have previously called death_notification_init(m).
+void death_notification_release(aos_mutex *m);
+
+// Returns whether or not m is held by the current thread.
+// This is mainly useful as a debug assertion.
+inline bool death_notification_is_held(aos_mutex *m) {
+  return mutex_islocked(m);
+}
 #endif
 
 // The futex_ functions are similar to the mutex_ ones but different.
