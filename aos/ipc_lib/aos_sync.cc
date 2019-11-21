@@ -29,7 +29,7 @@
 #include "aos/logging/logging.h"
 #include "aos/macros.h"
 #include "aos/util/compiler_memory_barrier.h"
-#include "aos/once.h"
+#include "absl/base/call_once.h"
 
 using ::aos::linux_code::ipc_lib::FutexAccessorObserver;
 
@@ -377,11 +377,10 @@ void atfork_child() {
   my_tid = 0;
 }
 
-void *InstallAtforkHook() {
+void InstallAtforkHook() {
   if (pthread_atfork(NULL, NULL, atfork_child) != 0) {
     AOS_PLOG(FATAL, "pthread_atfork(NULL, NULL, %p) failed", atfork_child);
   }
-  return nullptr;
 }
 
 // This gets called to set everything up in a new thread by get_tid().
@@ -601,8 +600,8 @@ void initialize_in_new_thread() {
 
   my_tid = do_get_tid();
 
-  static ::aos::Once<void> atfork_hook_installed(InstallAtforkHook);
-  atfork_hook_installed.Get();
+  static absl::once_flag once_;
+  absl::call_once(once_, InstallAtforkHook);
 
   my_robust_list::Init();
 }

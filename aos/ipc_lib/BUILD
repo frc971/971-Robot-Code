@@ -13,7 +13,7 @@ cc_library(
     ],
     deps = [
         "//aos:macros",
-        "//aos:once",
+        "@com_google_absl//absl/base",
         "//aos/logging",
         "//aos/util:compiler_memory_barrier",
     ],
