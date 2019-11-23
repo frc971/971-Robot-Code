@@ -7,13 +7,13 @@
 
 #include "aos/flatbuffers.h"
 #include "flatbuffers/flatbuffers.h"
+#include "flatbuffers/reflection.h"
 
 namespace aos {
 
 // Parses the flatbuffer into the vector, or returns an empty vector.
 flatbuffers::DetachedBuffer JsonToFlatbuffer(
-    const std::string_view data,
-    const flatbuffers::TypeTable *typetable);
+    const std::string_view data, const flatbuffers::TypeTable *typetable);
 
 // Converts a flatbuffer into a Json string.
 // multi_line controls if the Json is written out on multiple lines or one.
@@ -52,6 +52,9 @@ typename std::enable_if<
       reinterpret_cast<const flatbuffers::Table *>(flatbuffer),
       Flatbuffer<T>::MiniReflectTypeTable(), multi_line);
 }
+
+std::string FlatbufferToJson(const reflection::Schema *const schema,
+                             const uint8_t *const data);
 
 }  // namespace aos
 

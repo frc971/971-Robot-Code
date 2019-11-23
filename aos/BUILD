@@ -336,6 +336,7 @@ cc_library(
 flatbuffer_cc_library(
     name = "json_to_flatbuffer_flatbuffer",
     srcs = ["json_to_flatbuffer.fbs"],
+    gen_reflections = 1,
 )
 
 cc_library(
@@ -359,7 +360,10 @@ cc_library(
 
 cc_library(
     name = "json_to_flatbuffer",
-    srcs = ["json_to_flatbuffer.cc"],
+    srcs = [
+        "flatbuffer_introspection.cc",
+        "json_to_flatbuffer.cc",
+    ],
     hdrs = ["json_to_flatbuffer.h"],
     visibility = ["//visibility:public"],
     deps = [
@@ -381,6 +385,23 @@ cc_test(
         ":json_to_flatbuffer",
         ":json_to_flatbuffer_flatbuffer",
         "//aos/testing:googletest",
+    ],
+)
+
+cc_test(
+    name = "flatbuffer_introspection_test",
+    srcs = [
+        "flatbuffer_introspection_test.cc",
+    ],
+    data = [
+        ":json_to_flatbuffer_flatbuffer_reflection_out",
+    ],
+    deps = [
+        ":json_to_flatbuffer",
+        ":json_to_flatbuffer_flatbuffer",
+        "//aos/testing:googletest",
+        "//aos/util:file",
+        "@com_github_google_flatbuffers//:flatbuffers",
     ],
 )
 
@@ -440,6 +461,7 @@ cc_test(
         "testdata/expected.json",
         "//aos/events:config.fb.json",
         "//aos/events:ping.bfbs",
+        "//aos/events:pingpong_config.json",
         "//aos/events:pong.bfbs",
     ],
     deps = [
@@ -459,6 +481,21 @@ cc_binary(
         ":configuration",
         ":init",
         "//aos/util:file",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_binary(
+    name = "log_fbs_shmem",
+    srcs = [
+        "log_fbs_shmem.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":configuration",
+        ":json_to_flatbuffer",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
         "@com_github_google_glog//:glog",
     ],
 )

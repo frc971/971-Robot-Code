@@ -47,6 +47,19 @@ table VectorOfVectorOfString {
   v:[VectorOfStrings];
 }
 
+struct FooStructNested {
+  foo_byte:byte;
+}
+
+struct FooStruct {
+  foo_byte:byte;
+  nested_struct:FooStructNested;
+}
+
+struct StructEnum {
+  foo_enum:BaseType;
+}
+
 table Configuration {
   locations:[Location] (id: 0);
   maps:[Map] (id: 1);
@@ -108,6 +121,10 @@ table Configuration {
   nested_config:Configuration (id: 32);
 
   vov:VectorOfVectorOfString (id: 33);
+
+  foo_struct:FooStruct (id: 34);
+  vector_foo_struct:[FooStruct] (id: 35);
+  foo_struct_enum:StructEnum (id: 36);
 }
 
 root_type Configuration;
