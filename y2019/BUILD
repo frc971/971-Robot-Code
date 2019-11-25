@@ -26,7 +26,7 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//aos:once",
+        "@com_google_absl//absl/base",
         "//aos/logging",
         "//aos/mutex",
         "//aos/network:team_number",
