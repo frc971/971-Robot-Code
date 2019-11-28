@@ -600,8 +600,8 @@ void initialize_in_new_thread() {
 
   my_tid = do_get_tid();
 
-  static absl::once_flag once_;
-  absl::call_once(once_, InstallAtforkHook);
+  static absl::once_flag once;
+  absl::call_once(once, InstallAtforkHook);
 
   my_robust_list::Init();
 }
