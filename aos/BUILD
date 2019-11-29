@@ -442,7 +442,8 @@ cc_test(
         "testdata/config3.json",
         "testdata/expected.json",
         "//aos/events:config.fb.json",
-        "//aos/events:pingpong.bfbs",
+        "//aos/events:ping.bfbs",
+        "//aos/events:pong.bfbs",
     ],
     deps = [
         ":configuration",

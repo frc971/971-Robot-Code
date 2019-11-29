@@ -1,4 +1,5 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos:config.bzl", "aos_config")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -9,8 +10,14 @@ flatbuffer_cc_library(
 )
 
 flatbuffer_cc_library(
-    name = "pingpong_fbs",
-    srcs = ["pingpong.fbs"],
+    name = "ping_fbs",
+    srcs = ["ping.fbs"],
+    gen_reflections = 1,
+)
+
+flatbuffer_cc_library(
+    name = "pong_fbs",
+    srcs = ["pong.fbs"],
     gen_reflections = 1,
 )
 
@@ -41,18 +48,60 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "ping_lib",
+    srcs = [
+        "ping_lib.cc",
+    ],
+    hdrs = [
+        "ping_lib.h",
+    ],
+    deps = [
+        ":event_loop",
+        ":ping_fbs",
+        ":pong_fbs",
+        "//aos:json_to_flatbuffer",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
 cc_binary(
     name = "ping",
     srcs = [
         "ping.cc",
     ],
-    data = ["config.fb.json"],
+    data = ["pingpong_config.json"],
     deps = [
-        ":pingpong_fbs",
+        ":ping_lib",
         ":shm_event_loop",
         "//aos:configuration",
         "//aos:init",
         "//aos:json_to_flatbuffer",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+aos_config(
+    name = "pingpong_config",
+    src = "config.fb.json",
+    flatbuffers = [
+        ":ping_fbs",
+        ":pong_fbs",
+    ],
+)
+
+cc_library(
+    name = "pong_lib",
+    srcs = [
+        "pong_lib.cc",
+    ],
+    hdrs = [
+        "pong_lib.h",
+    ],
+    deps = [
+        ":event_loop",
+        ":ping_fbs",
+        ":pong_fbs",
         "@com_github_google_glog//:glog",
     ],
 )
@@ -62,14 +111,30 @@ cc_binary(
     srcs = [
         "pong.cc",
     ],
-    data = ["config.fb.json"],
+    data = ["pingpong_config.json"],
     deps = [
-        ":pingpong_fbs",
+        ":ping_fbs",
+        ":pong_fbs",
+        ":pong_lib",
         ":shm_event_loop",
         "//aos:configuration",
         "//aos:init",
         "//aos:json_to_flatbuffer",
         "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_test(
+    name = "pingpong_test",
+    srcs = ["pingpong_test.cc"],
+    data = [":pingpong_config.json"],
+    deps = [
+        ":ping_lib",
+        ":pong_lib",
+        ":simulated_event_loop",
+        "//aos:configuration",
+        "//aos:flatbuffers",
+        "//aos/testing:googletest",
     ],
 )
 

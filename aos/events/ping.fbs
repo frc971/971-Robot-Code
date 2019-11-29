@@ -1,0 +1,8 @@
+namespace aos.examples;
+
+table Ping {
+  value:int;
+  send_time:long;
+}
+
+root_type Ping;
