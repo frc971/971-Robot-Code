@@ -155,6 +155,33 @@ class FlatbufferString : public Flatbuffer<T> {
   std::string data_;
 };
 
+// Vector backed flatbuffer.
+template <typename T>
+class FlatbufferVector : public Flatbuffer<T> {
+ public:
+  // Builds a Flatbuffer around a vector.
+  FlatbufferVector(std::vector<uint8_t> &&data) : data_(std::move(data)) {}
+
+  // Builds a Flatbuffer by copying the data from the other flatbuffer.
+  FlatbufferVector(const Flatbuffer<T> &other)
+      : data_(other.data(), other.data() + other.size()) {}
+
+  // Copies the data from the other flatbuffer.
+  FlatbufferVector &operator=(const Flatbuffer<T> &other) {
+    data_ = std::vector<uint8_t>(other.data(), other.data() + other.size());
+    return *this;
+  }
+
+  virtual ~FlatbufferVector() override {}
+
+  const uint8_t *data() const override { return data_.data(); }
+  uint8_t *data() override { return data_.data(); }
+  size_t size() const override { return data_.size(); }
+
+ private:
+  std::vector<uint8_t> data_;
+};
+
 // This object associates the message type with the memory storing the
 // flatbuffer.  This only stores root tables.
 //

@@ -1,0 +1,53 @@
+include "aos/configuration.fbs";
+
+namespace aos.logger;
+
+// A log file is a sequence of size prefixed flatbuffers.
+// The first flatbuffer will be the LogFileHeader, followed by an arbitrary
+// number of MessageHeaders.
+//
+// The log file starts at the time demarcated in the header on the monotonic
+// clock.  There will be any number of messages per channel logged before the
+// start time.  These messages are logged so that fetchers can retrieve the
+// state of the system at the start of the logfile for things like capturing
+// parameters.  In replay, they should be made available to fetchers, but not
+// trigger watchers.
+
+table LogFileHeader {
+  // Time this log file started on the monotonic clock in nanoseconds.
+  monotonic_sent_time:long;
+  // Time this log file started on the realtime clock in nanoseconds.
+  realtime_sent_time:long;
+
+  // Messages are not written in order to disk.  They will be out of order by
+  // at most this duration (in nanoseconds).  If the log reader buffers until
+  // it finds messages this much newer than it's simulation time, it will never
+  // find a message out of order.
+  max_out_of_order_duration:long;
+
+  // The configuration of the channels.
+  configuration:aos.Configuration;
+
+  // TODO(austin): Node!
+}
+
+// Table holding a message.
+table MessageHeader {
+  // Index into the channel datastructure in the log file header.  This
+  // provides the data type.
+  channel_index:uint;
+  // Time this message was sent on the monotonic clock in nanoseconds.
+  monotonic_sent_time:long;
+  // Time this message was sent on the realtime clock in nanoseconds.
+  realtime_sent_time:long;
+  // Index into the ipc queue of this message.  This should start with 0 and
+  // always monotonically increment if no messages were ever lost.  It will
+  // wrap at a multiple of the queue size.
+  queue_index:uint;
+  // TODO(austin): Node.
+
+  // TODO(austin): Format?  Compressed?
+
+  // The nested flatbuffer.
+  data:[ubyte];
+}
