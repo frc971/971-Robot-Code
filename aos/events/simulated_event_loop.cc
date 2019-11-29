@@ -129,7 +129,7 @@ class SimulatedSender : public RawSender {
     return true;
   }
 
-  bool Send(void *msg, size_t size) override {
+  bool Send(const void *msg, size_t size) override {
     CHECK_LE(size, this->size()) << ": Attempting to send too big a message.";
 
     // This is wasteful, but since flatbuffers fill from the back end of the

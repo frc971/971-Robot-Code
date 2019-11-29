@@ -76,7 +76,7 @@ class RawSender {
   virtual bool Send(size_t size) = 0;
 
   // Sends a single block of data by copying it.
-  virtual bool Send(void *data, size_t size) = 0;
+  virtual bool Send(const void *data, size_t size) = 0;
 
   // Returns the name of this sender.
   virtual const absl::string_view name() const = 0;

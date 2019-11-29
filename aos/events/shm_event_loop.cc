@@ -290,8 +290,8 @@ class ShmSender : public RawSender {
     return true;
   }
 
-  bool Send(void *msg, size_t length) override {
-    lockless_queue_sender_.Send(reinterpret_cast<char *>(msg), length);
+  bool Send(const void *msg, size_t length) override {
+    lockless_queue_sender_.Send(reinterpret_cast<const char *>(msg), length);
     lockless_queue_.Wakeup(shm_event_loop_->priority());
     // TODO(austin): Return an error if we send too fast.
     return true;
