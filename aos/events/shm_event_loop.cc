@@ -144,7 +144,8 @@ namespace chrono = ::std::chrono;
 class ShmFetcher : public RawFetcher {
  public:
   explicit ShmFetcher(const Channel *channel)
-      : lockless_queue_memory_(channel),
+      : RawFetcher(channel),
+        lockless_queue_memory_(channel),
         lockless_queue_(lockless_queue_memory_.memory(),
                         lockless_queue_memory_.config()),
         data_storage_(static_cast<AlignedChar *>(aligned_alloc(
@@ -273,7 +274,7 @@ class ShmFetcher : public RawFetcher {
 class ShmSender : public RawSender {
  public:
   explicit ShmSender(const Channel *channel, const ShmEventLoop *shm_event_loop)
-      : RawSender(),
+      : RawSender(channel),
         shm_event_loop_(shm_event_loop),
         name_(channel->name()->str()),
         lockless_queue_memory_(channel),
@@ -449,11 +450,13 @@ class PhasedLoopHandler : public ::aos::PhasedLoopHandler {
 
 ::std::unique_ptr<RawFetcher> ShmEventLoop::MakeRawFetcher(
     const Channel *channel) {
+  ValidateChannel(channel);
   return ::std::unique_ptr<RawFetcher>(new ShmFetcher(channel));
 }
 
 ::std::unique_ptr<RawSender> ShmEventLoop::MakeRawSender(
     const Channel *channel) {
+  ValidateChannel(channel);
   Take(channel);
   return ::std::unique_ptr<RawSender>(new ShmSender(channel, this));
 }
@@ -461,6 +464,7 @@ class PhasedLoopHandler : public ::aos::PhasedLoopHandler {
 void ShmEventLoop::MakeRawWatcher(
     const Channel *channel,
     std::function<void(const Context &context, const void *message)> watcher) {
+  ValidateChannel(channel);
   Take(channel);
 
   ::std::unique_ptr<internal::WatcherState> state(

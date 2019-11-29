@@ -34,7 +34,7 @@ struct Context {
 // fetchers.
 class RawFetcher {
  public:
-  RawFetcher() {}
+  RawFetcher(const Channel *channel) : channel_(channel) {}
   virtual ~RawFetcher() {}
 
   // Non-blocking fetch of the next message in the queue. Returns true if there
@@ -50,19 +50,22 @@ class RawFetcher {
 
   const Context &context() const { return context_; }
 
+  const Channel *channel() const { return channel_; }
+
  protected:
   RawFetcher(const RawFetcher &) = delete;
   RawFetcher &operator=(const RawFetcher &) = delete;
 
   void *data_ = nullptr;
   Context context_;
+  const Channel *channel_;
 };
 
 // Raw version of sender.  Sends a block of data.  This is used for reflection
 // and as a building block to implement typed senders.
 class RawSender {
  public:
-  RawSender() {}
+  RawSender(const Channel *channel) : channel_(channel) {}
   virtual ~RawSender() {}
 
   // Sends a message without copying it.  The users starts by copying up to
@@ -78,9 +81,13 @@ class RawSender {
   // Returns the name of this sender.
   virtual const absl::string_view name() const = 0;
 
+  const Channel *channel() const { return channel_; }
+
  protected:
   RawSender(const RawSender &) = delete;
   RawSender &operator=(const RawSender &) = delete;
+
+  const Channel *channel_;
 };
 
 
@@ -306,11 +313,14 @@ class EventLoop {
   // Returns the configuration that this event loop was built with.
   const Configuration *configuration() const { return configuration_; }
 
+  // Will send new messages from channel (path, type).
+  virtual std::unique_ptr<RawSender> MakeRawSender(const Channel *channel) = 0;
+
  protected:
   void set_is_running(bool value) { is_running_.store(value); }
 
-  // Will send new messages from channel (path, type).
-  virtual std::unique_ptr<RawSender> MakeRawSender(const Channel *channel) = 0;
+  // Validates that channel exists inside configuration_.
+  void ValidateChannel(const Channel *channel);
 
  private:
   ::std::atomic<bool> is_running_{false};

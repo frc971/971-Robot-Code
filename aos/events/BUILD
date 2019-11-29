@@ -34,7 +34,10 @@ cc_library(
 
 cc_library(
     name = "event_loop",
-    srcs = ["event_loop_tmpl.h"],
+    srcs = [
+        "event_loop.cc",
+        "event_loop_tmpl.h",
+    ],
     hdrs = [
         "event_loop.h",
     ],

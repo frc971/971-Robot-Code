@@ -6,8 +6,9 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
-#include "glog/logging.h"
 #include "aos/events/test_message_generated.h"
+#include "aos/flatbuffer_merge.h"
+#include "glog/logging.h"
 
 namespace aos {
 namespace testing {
@@ -533,6 +534,31 @@ TEST_P(AbstractEventLoopTest, TimerDisable) {
   Run();
 
   EXPECT_EQ(iteration_list.size(), 3);
+}
+
+// Verifies that the event loop implementations detect when Channel is not a
+// pointer into confguration()
+TEST_P(AbstractEventLoopDeathTest, InvalidChannel) {
+  auto loop = MakePrimary();
+
+  const Channel *channel = loop->configuration()->channels()->Get(0);
+
+  FlatbufferDetachedBuffer<Channel> channel_copy = CopyFlatBuffer(channel);
+
+  EXPECT_DEATH(
+      { loop->MakeRawSender(&channel_copy.message()); },
+      "Channel pointer not found in configuration\\(\\)->channels\\(\\)");
+
+  EXPECT_DEATH(
+      { loop->MakeRawFetcher(&channel_copy.message()); },
+      "Channel pointer not found in configuration\\(\\)->channels\\(\\)");
+
+  EXPECT_DEATH(
+      {
+        loop->MakeRawWatcher(&channel_copy.message(),
+                             [](const Context, const void *) {});
+      },
+      "Channel pointer not found in configuration\\(\\)->channels\\(\\)");
 }
 
 // Verify that the send time on a message is roughly right.

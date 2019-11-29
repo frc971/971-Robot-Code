@@ -98,7 +98,9 @@ std::shared_ptr<SimulatedMessage> MakeSimulatedMessage(size_t size) {
 class SimulatedSender : public RawSender {
  public:
   SimulatedSender(SimulatedChannel *simulated_channel, EventLoop *event_loop)
-      : simulated_channel_(simulated_channel), event_loop_(event_loop) {}
+      : RawSender(simulated_channel->channel()),
+        simulated_channel_(simulated_channel),
+        event_loop_(event_loop) {}
   ~SimulatedSender() {}
 
   void *data() override {
@@ -156,7 +158,8 @@ class SimulatedSender : public RawSender {
 
 class SimulatedFetcher : public RawFetcher {
  public:
-  explicit SimulatedFetcher(SimulatedChannel *queue) : queue_(queue) {}
+  explicit SimulatedFetcher(SimulatedChannel *queue)
+      : RawFetcher(queue->channel()), queue_(queue) {}
   ~SimulatedFetcher() { queue_->UnregisterFetcher(this); }
 
   bool FetchNext() override {
@@ -393,18 +396,21 @@ class SimulatedEventLoop : public EventLoop {
 void SimulatedEventLoop::MakeRawWatcher(
     const Channel *channel,
     std::function<void(const Context &channel, const void *message)> watcher) {
+  ValidateChannel(channel);
   Take(channel);
   GetSimulatedChannel(channel)->MakeRawWatcher(watcher);
 }
 
 std::unique_ptr<RawSender> SimulatedEventLoop::MakeRawSender(
     const Channel *channel) {
+  ValidateChannel(channel);
   Take(channel);
   return GetSimulatedChannel(channel)->MakeRawSender(this);
 }
 
 std::unique_ptr<RawFetcher> SimulatedEventLoop::MakeRawFetcher(
     const Channel *channel) {
+  ValidateChannel(channel);
   return GetSimulatedChannel(channel)->MakeRawFetcher();
 }
 
