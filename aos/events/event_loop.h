@@ -196,6 +196,14 @@ class TimerHandler {
 
   // Stop future calls to callback().
   virtual void Disable() = 0;
+
+  // Sets and gets the name of the timer.  Set this if you want a descriptive
+  // name in the timing report.
+  void set_name(std::string_view name) { name_ = std::string(name); }
+  const std::string_view name() const { return name_; }
+
+ private:
+  std::string name_;
 };
 
 // Interface for phased loops.  They are built on timers.
@@ -208,6 +216,14 @@ class PhasedLoopHandler {
   virtual void set_interval_and_offset(
       const monotonic_clock::duration interval,
       const monotonic_clock::duration offset) = 0;
+
+  // Sets and gets the name of the timer.  Set this if you want a descriptive
+  // name in the timing report.
+  void set_name(std::string_view name) { name_ = std::string(name); }
+  const std::string_view name() const { return name_; }
+
+ private:
+  std::string name_;
 };
 
 // TODO(austin): Ping pong example apps, and then start doing introspection.
