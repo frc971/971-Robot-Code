@@ -139,6 +139,13 @@ bool Tokenizer::ConsumeNumber(::std::string *s) {
   // Consume the leading - unconditionally.
   Consume("-");
 
+  // See if we find nan.  This isn't standards compliant, but is what
+  // flatbuffers prints out, so we need to parse it.
+  if (Consume("nan")) {
+    *s = ::std::string(original.substr(0, original.size() - data_.size()));
+    return true;
+  }
+
   // Then, we either get a 0, or we get a nonzero.  Only nonzero can be followed
   // by a second number.
   if (!Consume("0")) {
@@ -429,6 +436,14 @@ bool Tokenizer::FieldAsInt(long long *value) {
 bool Tokenizer::FieldAsDouble(double *value) {
   const char *pos = field_value().c_str();
   errno = 0;
+  if (field_value() == "nan") {
+    *value = std::numeric_limits<double>::quiet_NaN();
+    return true;
+  } else if (field_value() == "-nan") {
+    *value = -std::numeric_limits<double>::quiet_NaN();
+    return true;
+  }
+
   *value = strtod(field_value().c_str(), const_cast<char **>(&pos));
 
   if (pos != field_value().c_str() + field_value().size() || errno != 0) {

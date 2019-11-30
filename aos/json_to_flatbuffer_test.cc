@@ -66,6 +66,12 @@ TEST_F(JsonToFlatbufferTest, Basic) {
   EXPECT_TRUE(JsonAndBack("{ \"foo_string\": \"baz\" }"));
 }
 
+// Tests that NaN is handled correctly
+TEST_F(JsonToFlatbufferTest, Nan) {
+  EXPECT_TRUE(JsonAndBack("{ \"foo_float\": nan }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_float\": -nan }"));
+}
+
 // Tests that we can handle decimal points.
 TEST_F(JsonToFlatbufferTest, DecimalPoint) {
   EXPECT_TRUE(JsonAndBack("{ \"foo_float\": 5.1 }"));
