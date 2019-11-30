@@ -13,7 +13,7 @@
 #include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"
 #include "aos/network/team_number.h"
-#include "aos/once.h"
+#include "absl/base/call_once.h"
 
 #include "y2014/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 #include "y2014/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
@@ -182,17 +182,20 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   }
 }
 
-const Values *DoGetValues() {
+void DoGetValues(const Values **result) {
   uint16_t team = ::aos::network::GetTeamNumber();
   AOS_LOG(INFO, "creating a Constants for team %" PRIu16 "\n", team);
-  return DoGetValuesForTeam(team);
+  *result = DoGetValuesForTeam(team);
+  return;
 }
 
 }  // namespace
 
 const Values &GetValues() {
-  static ::aos::Once<const Values> once(DoGetValues);
-  return *once.Get();
+  static absl::once_flag once;
+  static const Values *result;
+  absl::call_once(once, DoGetValues, &result);
+  return *result;
 }
 
 const Values &GetValuesForTeam(uint16_t team_number) {
