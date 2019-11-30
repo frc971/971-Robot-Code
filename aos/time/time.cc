@@ -53,6 +53,16 @@ void sleep_until(const ::aos::monotonic_clock::time_point &end_time) {
 #endif  // __linux__
 
 namespace aos {
+
+void PrintTo(const monotonic_clock::time_point t, std::ostream *os) {
+  auto s = std::chrono::duration_cast<std::chrono::seconds>(t.time_since_epoch());
+  *os << s.count() << "."
+      << std::chrono::duration_cast<std::chrono::nanoseconds>(
+             t.time_since_epoch() - s)
+             .count()
+      << "sec";
+}
+
 namespace time {
 
 struct timespec to_timespec(

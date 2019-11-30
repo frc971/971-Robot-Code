@@ -338,11 +338,11 @@ class EventLoop {
   // Validates that channel exists inside configuration_.
   void ValidateChannel(const Channel *channel);
 
- private:
-  ::std::atomic<bool> is_running_{false};
-
   // Context available for watchers.
   Context context_;
+
+ private:
+  ::std::atomic<bool> is_running_{false};
 
   const Configuration *configuration_;
 };

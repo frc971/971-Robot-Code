@@ -54,6 +54,9 @@ class PhasedLoop {
 
   monotonic_clock::time_point sleep_time() const { return last_time_; }
 
+  monotonic_clock::duration interval() const { return interval_; }
+  monotonic_clock::duration offset() const { return offset_; }
+
  private:
   monotonic_clock::duration interval_, offset_;
 

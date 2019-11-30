@@ -36,8 +36,8 @@ class TimerFd {
     SetTime(::aos::monotonic_clock::epoch(), ::aos::monotonic_clock::zero());
   }
 
-  // Reads the event.  Ignores it.
-  void Read();
+  // Reads the event.  Returns the number of elapsed cycles.
+  uint64_t Read();
 
   // Returns the file descriptor associated with the timerfd.
   int fd() { return fd_; }

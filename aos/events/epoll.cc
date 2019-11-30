@@ -29,11 +29,18 @@ void TimerFd::SetTime(monotonic_clock::time_point start,
   PCHECK(timerfd_settime(fd_, TFD_TIMER_ABSTIME, &new_value, nullptr) == 0);
 }
 
-void TimerFd::Read() {
+uint64_t TimerFd::Read() {
   uint64_t buf;
   ssize_t result = read(fd_, &buf, sizeof(buf));
+  if (result == -1) {
+    if (errno == EAGAIN) {
+      return 0;
+    }
+  }
   PCHECK(result != -1);
   CHECK_EQ(result, static_cast<int>(sizeof(buf)));
+
+  return buf;
 }
 
 EPoll::EPoll() : epoll_fd_(epoll_create1(EPOLL_CLOEXEC)) {

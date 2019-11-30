@@ -474,22 +474,72 @@ TEST_P(AbstractEventLoopTest, MultipleWatcherQuit) {
 
 // Verify that timer intervals and duration function properly.
 TEST_P(AbstractEventLoopTest, TimerIntervalAndDuration) {
-  auto loop = MakePrimary();
-  ::std::vector<::aos::monotonic_clock::time_point> iteration_list;
+  const int kCount = 5;
 
-  auto test_timer = loop->AddTimer([&iteration_list, &loop]() {
-    iteration_list.push_back(loop->monotonic_now());
+  auto loop = MakePrimary();
+  ::std::vector<::aos::monotonic_clock::time_point> times;
+  ::std::vector<::aos::monotonic_clock::time_point> expected_times;
+
+  auto test_timer = loop->AddTimer([this, &times, &expected_times, &loop]() {
+    times.push_back(loop->monotonic_now());
+    expected_times.push_back(loop->context().monotonic_sent_time);
+    if (times.size() == kCount) {
+      this->Exit();
+    }
   });
 
+  monotonic_clock::time_point start_time = loop->monotonic_now();
   // TODO(austin): This should be an error...  Should be done in OnRun only.
-  test_timer->Setup(loop->monotonic_now(), ::std::chrono::milliseconds(20));
-  EndEventLoop(loop.get(), ::std::chrono::milliseconds(150));
-  // Testing that the timer thread waits for the event loop to start before
-  // running
-  ::std::this_thread::sleep_for(std::chrono::milliseconds(2));
+  test_timer->Setup(start_time + chrono::seconds(1), chrono::seconds(1));
+
   Run();
 
-  EXPECT_EQ(iteration_list.size(), 8);
+  // Confirm that we got both the right number of samples, and it's odd.
+  EXPECT_EQ(times.size(), static_cast<size_t>(kCount));
+  EXPECT_EQ(times.size(), expected_times.size());
+  EXPECT_EQ((times.size() % 2), 1);
+
+  // Grab the middle sample.
+  ::aos::monotonic_clock::time_point average_time = times[times.size() / 2];
+
+  // Add up all the delays of all the times.
+  ::aos::monotonic_clock::duration sum = chrono::seconds(0);
+  for (const ::aos::monotonic_clock::time_point time : times) {
+    sum += time - average_time;
+  }
+
+  // Average and add to the middle to find the average time.
+  sum /= times.size();
+  average_time += sum;
+
+  // Compute the offset from the average and the expected average.  It
+  // should be pretty close to 0.
+  const ::aos::monotonic_clock::duration remainder =
+      average_time - start_time - chrono::seconds(times.size() / 2 + 1);
+
+  const chrono::milliseconds kEpsilon(100);
+  EXPECT_LT(remainder, +kEpsilon);
+  EXPECT_GT(remainder, -kEpsilon);
+
+  // Make sure that the average duration is close to 1 second.
+  EXPECT_NEAR(chrono::duration_cast<chrono::duration<double>>(times.back() -
+                                                              times.front())
+                      .count() /
+                  static_cast<double>(times.size() - 1),
+              1.0, 0.1);
+
+  // Confirm that the ideal wakeup times increment correctly.
+  for (size_t i = 1; i < expected_times.size(); ++i) {
+    EXPECT_EQ(expected_times[i], expected_times[i - 1] + chrono::seconds(1));
+  }
+
+  for (size_t i = 0; i < expected_times.size(); ++i) {
+    EXPECT_EQ((expected_times[i] - start_time) % chrono::seconds(1),
+              chrono::seconds(0));
+  }
+
+  EXPECT_LT(expected_times[expected_times.size() / 2], average_time + kEpsilon);
+  EXPECT_GT(expected_times[expected_times.size() / 2], average_time - kEpsilon);
 }
 
 // Verify that we can change a timer's parameters during execution.
@@ -632,13 +682,14 @@ TEST_P(AbstractEventLoopTest, PhasedLoopTest) {
 
   // Collect up a couple of samples.
   ::std::vector<::aos::monotonic_clock::time_point> times;
+  ::std::vector<::aos::monotonic_clock::time_point> expected_times;
 
   // Run kCount iterations.
   loop1->AddPhasedLoop(
-      [&times, &loop1, this](int count) {
+      [&times, &expected_times, &loop1, this](int count) {
         EXPECT_EQ(count, 1);
         times.push_back(loop1->monotonic_now());
-        LOG(INFO) << times.size();
+        expected_times.push_back(loop1->context().monotonic_sent_time);
         if (times.size() == kCount) {
           this->Exit();
         }
@@ -653,26 +704,27 @@ TEST_P(AbstractEventLoopTest, PhasedLoopTest) {
 
   // Confirm that we got both the right number of samples, and it's odd.
   EXPECT_EQ(times.size(), static_cast<size_t>(kCount));
+  EXPECT_EQ(times.size(), expected_times.size());
   EXPECT_EQ((times.size() % 2), 1);
 
   // Grab the middle sample.
-  ::aos::monotonic_clock::time_point middle_time = times[times.size() / 2 + 1];
+  ::aos::monotonic_clock::time_point average_time = times[times.size() / 2];
 
   // Add up all the delays of all the times.
   ::aos::monotonic_clock::duration sum = chrono::seconds(0);
   for (const ::aos::monotonic_clock::time_point time : times) {
-    sum += time - middle_time;
+    sum += time - average_time;
   }
 
   // Average and add to the middle to find the average time.
   sum /= times.size();
-  middle_time += sum;
+  average_time += sum;
 
   // Compute the offset from the start of the second of the average time.  This
   // should be pretty close to the offset.
   const ::aos::monotonic_clock::duration remainder =
-      middle_time.time_since_epoch() -
-      chrono::duration_cast<chrono::seconds>(middle_time.time_since_epoch());
+      average_time.time_since_epoch() -
+      chrono::duration_cast<chrono::seconds>(average_time.time_since_epoch());
 
   const chrono::milliseconds kEpsilon(100);
   EXPECT_LT(remainder, kOffset + kEpsilon);
@@ -684,6 +736,19 @@ TEST_P(AbstractEventLoopTest, PhasedLoopTest) {
                       .count() /
                   static_cast<double>(times.size() - 1),
               1.0, 0.1);
+
+  // Confirm that the ideal wakeup times increment correctly.
+  for (size_t i = 1; i < expected_times.size(); ++i) {
+    EXPECT_EQ(expected_times[i], expected_times[i - 1] + chrono::seconds(1));
+  }
+
+  for (size_t i = 0; i < expected_times.size(); ++i) {
+    EXPECT_EQ(expected_times[i].time_since_epoch() % chrono::seconds(1),
+              kOffset);
+  }
+
+  EXPECT_LT(expected_times[expected_times.size() / 2], average_time + kEpsilon);
+  EXPECT_GT(expected_times[expected_times.size() / 2], average_time - kEpsilon);
 }
 
 }  // namespace testing

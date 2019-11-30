@@ -362,15 +362,22 @@ class WatcherState {
 };
 
 // Adapter class to adapt a timerfd to a TimerHandler.
-// The part of the API which is accessed by the TimerHandler interface needs to
-// be threadsafe.  This means Setup and Disable.
 class TimerHandlerState : public TimerHandler {
  public:
   TimerHandlerState(ShmEventLoop *shm_event_loop, ::std::function<void()> fn)
       : shm_event_loop_(shm_event_loop), fn_(::std::move(fn)) {
     shm_event_loop_->epoll_.OnReadable(timerfd_.fd(), [this]() {
-      timerfd_.Read();
+      const uint64_t elapsed_cycles = timerfd_.Read();
+
+      shm_event_loop_->context_.monotonic_sent_time = base_;
+      shm_event_loop_->context_.realtime_sent_time = realtime_clock::min_time;
+      shm_event_loop_->context_.queue_index = 0;
+      shm_event_loop_->context_.size = 0;
+      shm_event_loop_->context_.data = nullptr;
+
       fn_();
+
+      base_ += repeat_offset_ * elapsed_cycles;
     });
   }
 
@@ -378,8 +385,9 @@ class TimerHandlerState : public TimerHandler {
 
   void Setup(monotonic_clock::time_point base,
              monotonic_clock::duration repeat_offset) override {
-    // SetTime is threadsafe already.
     timerfd_.SetTime(base, repeat_offset);
+    base_ = base;
+    repeat_offset_ = repeat_offset;
   }
 
   void Disable() override {
@@ -392,13 +400,13 @@ class TimerHandlerState : public TimerHandler {
 
   TimerFd timerfd_;
 
-  // Function to be run on the thread
   ::std::function<void()> fn_;
+
+  monotonic_clock::time_point base_;
+  monotonic_clock::duration repeat_offset_;
 };
 
 // Adapter class to the timerfd and PhasedLoop.
-// The part of the API which is accessed by the PhasedLoopHandler interface
-// needs to be threadsafe.  This means set_interval_and_offset
 class PhasedLoopHandler : public ::aos::PhasedLoopHandler {
  public:
   PhasedLoopHandler(ShmEventLoop *shm_event_loop, ::std::function<void(int)> fn,
@@ -409,10 +417,28 @@ class PhasedLoopHandler : public ::aos::PhasedLoopHandler {
         fn_(::std::move(fn)) {
     shm_event_loop_->epoll_.OnReadable(timerfd_.fd(), [this]() {
       timerfd_.Read();
-      // Call the function.  To avoid needing a recursive mutex, drop the lock
-      // before running the function.
-      fn_(cycles_elapsed_);
+      // Update the context to hold the desired wakeup time.
+      shm_event_loop_->context_.monotonic_sent_time = phased_loop_.sleep_time();
+      shm_event_loop_->context_.realtime_sent_time = realtime_clock::min_time;
+      shm_event_loop_->context_.queue_index = 0;
+      shm_event_loop_->context_.size = 0;
+      shm_event_loop_->context_.data = nullptr;
+
+      // Compute how many cycles elapsed and schedule the next wakeup.
       Reschedule();
+
+      // Call the function with the elapsed cycles.
+      fn_(cycles_elapsed_);
+      cycles_elapsed_ = 0;
+
+      const monotonic_clock::time_point monotonic_end_time =
+          monotonic_clock::now();
+
+      // If the handler too too long so we blew by the previous deadline, we
+      // want to just try for the next deadline.  Reschedule.
+      if (monotonic_end_time > phased_loop_.sleep_time()) {
+        Reschedule();
+      }
     });
   }
 
@@ -427,12 +453,16 @@ class PhasedLoopHandler : public ::aos::PhasedLoopHandler {
   void Startup() {
     phased_loop_.Reset(shm_event_loop_->monotonic_now());
     Reschedule();
+    // The first time, we'll double count.  Reschedule here will count cycles
+    // elapsed before now, and then the reschedule before runing the handler
+    // will count the time that elapsed then.  So clear the count here.
+    cycles_elapsed_ = 0;
   }
 
  private:
-  // Reschedules the timer.  Must be called with the mutex held.
+  // Reschedules the timer.
   void Reschedule() {
-    cycles_elapsed_ = phased_loop_.Iterate(shm_event_loop_->monotonic_now());
+    cycles_elapsed_ += phased_loop_.Iterate(shm_event_loop_->monotonic_now());
     timerfd_.SetTime(phased_loop_.sleep_time(), ::aos::monotonic_clock::zero());
   }
 
@@ -441,7 +471,7 @@ class PhasedLoopHandler : public ::aos::PhasedLoopHandler {
   TimerFd timerfd_;
   time::PhasedLoop phased_loop_;
 
-  int cycles_elapsed_ = 1;
+  int cycles_elapsed_ = 0;
 
   // Function to be run
   const ::std::function<void(int)> fn_;

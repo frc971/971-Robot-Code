@@ -156,6 +156,8 @@ class SimulatedSender : public RawSender {
 };
 }  // namespace
 
+class SimulatedEventLoop;
+
 class SimulatedFetcher : public RawFetcher {
  public:
   explicit SimulatedFetcher(SimulatedChannel *queue)
@@ -212,36 +214,18 @@ class SimulatedFetcher : public RawFetcher {
 class SimulatedTimerHandler : public TimerHandler {
  public:
   explicit SimulatedTimerHandler(EventScheduler *scheduler,
+                                 SimulatedEventLoop *simulated_event_loop,
                                  ::std::function<void()> fn)
-      : scheduler_(scheduler), token_(scheduler_->InvalidToken()), fn_(fn) {}
+      : scheduler_(scheduler),
+        token_(scheduler_->InvalidToken()),
+        simulated_event_loop_(simulated_event_loop),
+        fn_(fn) {}
   ~SimulatedTimerHandler() {}
 
   void Setup(monotonic_clock::time_point base,
-             monotonic_clock::duration repeat_offset) override {
-    Disable();
-    const ::aos::monotonic_clock::time_point monotonic_now =
-        scheduler_->monotonic_now();
-    base_ = base;
-    repeat_offset_ = repeat_offset;
-    if (base < monotonic_now) {
-      token_ = scheduler_->Schedule(monotonic_now, [this]() { HandleEvent(); });
-    } else {
-      token_ = scheduler_->Schedule(base, [this]() { HandleEvent(); });
-    }
-  }
+             monotonic_clock::duration repeat_offset) override;
 
-  void HandleEvent() {
-    const ::aos::monotonic_clock::time_point monotonic_now =
-        scheduler_->monotonic_now();
-    if (repeat_offset_ != ::aos::monotonic_clock::zero()) {
-      // Reschedule.
-      while (base_ <= monotonic_now) base_ += repeat_offset_;
-      token_ = scheduler_->Schedule(base_, [this]() { HandleEvent(); });
-    } else {
-      token_ = scheduler_->InvalidToken();
-    }
-    fn_();
-  }
+  void HandleEvent();
 
   void Disable() override {
     if (token_ != scheduler_->InvalidToken()) {
@@ -257,6 +241,8 @@ class SimulatedTimerHandler : public TimerHandler {
  private:
   EventScheduler *scheduler_;
   EventScheduler::Token token_;
+
+  SimulatedEventLoop *simulated_event_loop_;
   // Function to be run on the thread
   ::std::function<void()> fn_;
   monotonic_clock::time_point base_;
@@ -266,10 +252,12 @@ class SimulatedTimerHandler : public TimerHandler {
 class SimulatedPhasedLoopHandler : public PhasedLoopHandler {
  public:
   SimulatedPhasedLoopHandler(EventScheduler *scheduler,
+                             SimulatedEventLoop *simulated_event_loop,
                              ::std::function<void(int)> fn,
                              const monotonic_clock::duration interval,
                              const monotonic_clock::duration offset)
-      : simulated_timer_handler_(scheduler, [this]() { HandleTimerWakeup(); }),
+      : simulated_timer_handler_(scheduler, simulated_event_loop,
+                                 [this]() { HandleTimerWakeup(); }),
         phased_loop_(interval, simulated_timer_handler_.monotonic_now(),
                      offset),
         fn_(fn) {
@@ -351,7 +339,7 @@ class SimulatedEventLoop : public EventLoop {
           watcher) override;
 
   TimerHandler *AddTimer(::std::function<void()> callback) override {
-    timers_.emplace_back(new SimulatedTimerHandler(scheduler_, callback));
+    timers_.emplace_back(new SimulatedTimerHandler(scheduler_, this, callback));
     return timers_.back().get();
   }
 
@@ -359,8 +347,8 @@ class SimulatedEventLoop : public EventLoop {
                                    const monotonic_clock::duration interval,
                                    const monotonic_clock::duration offset =
                                        ::std::chrono::seconds(0)) override {
-    phased_loops_.emplace_back(
-        new SimulatedPhasedLoopHandler(scheduler_, callback, interval, offset));
+    phased_loops_.emplace_back(new SimulatedPhasedLoopHandler(
+        scheduler_, this, callback, interval, offset));
     return phased_loops_.back().get();
   }
 
@@ -382,6 +370,8 @@ class SimulatedEventLoop : public EventLoop {
   }
 
  private:
+  friend class SimulatedTimerHandler;
+
   EventScheduler *scheduler_;
   absl::btree_map<SimpleChannel, std::unique_ptr<SimulatedChannel>> *channels_;
   std::vector<std::pair<EventLoop *, std::function<void(bool)>>>
@@ -470,6 +460,42 @@ void SimulatedChannel::UnregisterFetcher(SimulatedFetcher *fetcher) {
 SimpleChannel::SimpleChannel(const Channel *channel)
     : name(CHECK_NOTNULL(CHECK_NOTNULL(channel)->name())->str()),
       type(CHECK_NOTNULL(CHECK_NOTNULL(channel)->type())->str()) {}
+
+void SimulatedTimerHandler::Setup(monotonic_clock::time_point base,
+                                  monotonic_clock::duration repeat_offset) {
+  Disable();
+  const ::aos::monotonic_clock::time_point monotonic_now =
+      scheduler_->monotonic_now();
+  base_ = base;
+  repeat_offset_ = repeat_offset;
+  if (base < monotonic_now) {
+    token_ = scheduler_->Schedule(monotonic_now, [this]() { HandleEvent(); });
+  } else {
+    token_ = scheduler_->Schedule(base, [this]() { HandleEvent(); });
+  }
+}
+
+void SimulatedTimerHandler::HandleEvent() {
+  const ::aos::monotonic_clock::time_point monotonic_now =
+      scheduler_->monotonic_now();
+  if (repeat_offset_ != ::aos::monotonic_clock::zero()) {
+    // Reschedule.
+    while (base_ <= monotonic_now) base_ += repeat_offset_;
+    token_ = scheduler_->Schedule(base_, [this]() { HandleEvent(); });
+  } else {
+    token_ = scheduler_->InvalidToken();
+  }
+  // The scheduler is perfect, so we will always wake up on time.
+  simulated_event_loop_->context_.monotonic_sent_time =
+      scheduler_->monotonic_now();
+  simulated_event_loop_->context_.realtime_sent_time = realtime_clock::min_time;
+  simulated_event_loop_->context_.queue_index = 0;
+  simulated_event_loop_->context_.size = 0;
+  simulated_event_loop_->context_.data = nullptr;
+
+  fn_();
+}
+
 
 void SimulatedEventLoop::Take(const Channel *channel) {
   CHECK(!is_running()) << ": Cannot add new objects while running.";

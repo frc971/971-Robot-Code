@@ -24,9 +24,10 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
     }
 
     // Clean up anything left there before.
-    unlink((FLAGS_shm_base + "test/aos.TestMessage.v0").c_str());
-    unlink((FLAGS_shm_base + "test1/aos.TestMessage.v0").c_str());
-    unlink((FLAGS_shm_base + "test2/aos.TestMessage.v0").c_str());
+    unlink((FLAGS_shm_base + "/test/aos.TestMessage.v0").c_str());
+    unlink((FLAGS_shm_base + "/test1/aos.TestMessage.v0").c_str());
+    unlink((FLAGS_shm_base + "/test2/aos.TestMessage.v0").c_str());
+    unlink((FLAGS_shm_base + "/test2/aos.TestMessage.v0").c_str());
   }
 
   ::std::unique_ptr<EventLoop> Make() override {
@@ -145,9 +146,9 @@ TEST(ShmEventLoopTest, DelayedPhasedLoop) {
 
         // Confirm that we see the missed count when we sleep.
         if (times.size() == 0) {
-          EXPECT_EQ(count, 1);
+          CHECK_EQ(count, 1);
         } else {
-          EXPECT_EQ(count, 3);
+          CHECK_EQ(count, 3);
         }
 
         times.push_back(loop1->monotonic_now());

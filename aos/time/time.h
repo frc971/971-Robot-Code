@@ -65,6 +65,8 @@ class realtime_clock {
       time_point(duration(::std::numeric_limits<duration::rep>::max()))};
 };
 
+void PrintTo(const monotonic_clock::time_point t, std::ostream *os);
+
 namespace time {
 
 #ifdef __linux__
