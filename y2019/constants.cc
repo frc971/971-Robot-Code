@@ -239,9 +239,9 @@ void DoGetValues(const Values** result) {
 }  // namespace
 
 const Values &GetValues() {
-  static absl::once_flag once_;
+  static absl::once_flag once;
   static const Values* result;
-  absl::call_once(once_, DoGetValues, &result);
+  absl::call_once(once, DoGetValues, &result);
   return *result;
 }
 
