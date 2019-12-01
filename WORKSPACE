@@ -485,7 +485,7 @@ filegroup(
 """,
     sha256 = "a0c2f2c5a897577f40af0fdf68dcf3cf65557ff20c081df26678c066a4fed4b1",
     strip_prefix = "emscripten-llvm-e" + emscripten_version,
-    url = "https://s3.amazonaws.com/mozilla-games/emscripten/packages/llvm/tag/linux_64bit/emscripten-llvm-e" + emscripten_version + ".tar.gz",
+    url = "http://www.frc971.org/Build-Dependencies/emscripten-llvm-e" + emscripten_version + ".tar.gz",
 )
 
 # Fetch our Bazel dependencies that aren't distributed on npm

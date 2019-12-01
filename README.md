@@ -17,19 +17,16 @@ If you just upload a change without adding any reviewers, it might sit around fo
 [git-review](http://manpages.debian.org/cgi-bin/man.cgi?query=git-review) can make the upload process simpler.
 
 ## Building the code
-The currently supported operating system for building the code is amd64 Debian Stretch. It is likely to work on any x86\_64 GNU/Linux system, but that's not at all well-tested.
+The currently supported operating system for building the code is amd64 Debian Buster. It is likely to work on any x86\_64 GNU/Linux system, but that's not at all well-tested.
 
 We use [Bazel](http://bazel.io) to build the code. Bazel has [extensive](https://docs.bazel.build/versions/master/build-ref.html) [docs](https://docs.bazel.build/versions/master/be/overview.html) and does a nice job with fast, correct increment rebuilds.
 
 ### Steps to set up a computer to build the code:
-  0. Set up the required APT repositories:
-     Download
-	 [frc971.list](http://robotics.mvla.net/files/frc971/packages/frc971.list)
-	 and put it in `/etc/apt/sources.list.d/`.
+  0. Install any Bazel verstion.  See [here](https://docs.bazel.build/versions/master/install-ubuntu.html)
   1. Install the required packages:
 ```console
 apt-get update
-apt-get install bazel python ruby
+apt-get install bazel python
 ```
   2. Allow Bazel's sandboxing to work:
      Follow the direction in `doc/frc971.conf`.
@@ -42,7 +39,7 @@ bazel build --cpu=roborio //...
 ```
   * Build the code for a specific robot:
 ```console
-bazel build --cpu=roborio --compilation_mode=opt //y2018/...
+bazel build --cpu=roborio -c opt //y2019/...
 ```
   * Download code to a robot:
 ```console
@@ -63,9 +60,9 @@ ssh admin@roboRIO-971-frc.local
 # 255.255.255.0 if you want to be on both networks.  The student wireless
 # network is on a 10.?.?.? subnet which can cause problems with connecting to
 # the robot.
-bazel run --cpu=roborio --compilation_mode=opt //y2018:download -- admin@roboRIO-971-frc.local
+bazel run --cpu=roborio --compilation_mode=opt //y2018:download_stripped -- admin@roboRIO-971-frc.local
 # If this does not work, try
-bazel run --cpu=roborio --compilation_mode=opt //y2018:download -- admin@10.9.71.2
+bazel run --cpu=roborio --compilation_mode=opt //y2018:download_stripped -- admin@10.9.71.2
 # If this does not work, it probably means that the robot and laptop are on
 # different subnets.  They need to be on the same subnet for the laptop to
 # connect to the robot.  Connecting can be confirmed by using ping.
