@@ -174,8 +174,7 @@ class Sender {
   // Constructs an above builder.
   Builder MakeBuilder();
 
-  // Returns the name of the underlying queue.
-  const std::string_view name() const { return sender_->name(); }
+  const Channel *channel() const { return sender_->channel(); }
 
  private:
   friend class EventLoop;

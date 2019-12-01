@@ -5,9 +5,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <type_traits>
 #include <atomic>
 #include <memory>
+#include <type_traits>
 
 #include "aos/actions/actions_generated.h"
 #include "aos/events/event_loop.h"
@@ -43,15 +43,15 @@ class ActionQueue {
 
   // Retrieves the internal state of the current action for testing.
   // See comments on the private members of TypedAction<T, S> for details.
-  bool GetCurrentActionState(bool* has_started, bool* sent_started,
-                             bool* sent_cancel, bool* interrupted,
-                             uint32_t* run_value, uint32_t* old_run_value);
+  bool GetCurrentActionState(bool *has_started, bool *sent_started,
+                             bool *sent_cancel, bool *interrupted,
+                             uint32_t *run_value, uint32_t *old_run_value);
 
   // Retrieves the internal state of the next action for testing.
   // See comments on the private members of TypedAction<T, S> for details.
-  bool GetNextActionState(bool* has_started, bool* sent_started,
-                          bool* sent_cancel, bool* interrupted,
-                          uint32_t* run_value, uint32_t* old_run_value);
+  bool GetNextActionState(bool *has_started, bool *sent_started,
+                          bool *sent_cancel, bool *interrupted,
+                          uint32_t *run_value, uint32_t *old_run_value);
 
  private:
   ::std::unique_ptr<Action> current_action_;
@@ -76,9 +76,9 @@ class Action {
 
   // Retrieves the internal state of the action for testing.
   // See comments on the private members of TypedAction<T, S> for details.
-  void GetState(bool* has_started, bool* sent_started, bool* sent_cancel,
-                bool* interrupted, uint32_t* run_value,
-                uint32_t* old_run_value) {
+  void GetState(bool *has_started, bool *sent_started, bool *sent_cancel,
+                bool *interrupted, uint32_t *run_value,
+                uint32_t *old_run_value) {
     DoGetState(has_started, sent_started, sent_cancel, interrupted, run_value,
                old_run_value);
   }
@@ -95,9 +95,9 @@ class Action {
   virtual bool DoCheckIteration() = 0;
   // For testing we will need to get the internal state.
   // See comments on the private members of TypedAction<T, S> for details.
-  virtual void DoGetState(bool* has_started, bool* sent_started,
-                          bool* sent_cancel, bool* interrupted,
-                          uint32_t* run_value, uint32_t* old_run_value) = 0;
+  virtual void DoGetState(bool *has_started, bool *sent_started,
+                          bool *sent_cancel, bool *interrupted,
+                          uint32_t *run_value, uint32_t *old_run_value) = 0;
 };
 
 // Templated subclass to hold the type information.
@@ -120,9 +120,10 @@ class TypedAction : public Action {
         run_value_(run_counter_.fetch_add(1, ::std::memory_order_relaxed) |
                    ((getpid() & 0xFFFF) << 16)),
         params_(params) {
-    AOS_LOG(DEBUG, "Action %" PRIx32 " created on queue %.*s\n", run_value_,
-            static_cast<int>(goal_sender_->name().size()),
-            goal_sender_->name().data());
+    AOS_LOG(
+        DEBUG, "Action %" PRIx32 " created on queue %.*s\n", run_value_,
+        static_cast<int>(goal_sender_->channel()->name()->string_view().size()),
+        goal_sender_->channel()->name()->string_view().data());
     // Clear out any old status messages from before now.
     status_fetcher_->Fetch();
     if (status_fetcher_->get()) {
@@ -150,9 +151,9 @@ class TypedAction : public Action {
 
   void DoStart() override;
 
-  void DoGetState(bool* has_started, bool* sent_started, bool* sent_cancel,
-                  bool* interrupted, uint32_t* run_value,
-                  uint32_t* old_run_value) override {
+  void DoGetState(bool *has_started, bool *sent_started, bool *sent_cancel,
+                  bool *interrupted, uint32_t *run_value,
+                  uint32_t *old_run_value) override {
     if (has_started != nullptr) *has_started = has_started_;
     if (sent_started != nullptr) *sent_started = sent_started_;
     if (sent_cancel != nullptr) *sent_cancel = sent_cancel_;
@@ -225,25 +226,33 @@ template <typename T>
 template <typename T>
 void TypedAction<T>::DoCancel() {
   if (!sent_started_) {
-    AOS_LOG(INFO, "Action %" PRIx32 " on queue %.*s was never started\n",
-            run_value_, static_cast<int>(goal_sender_->name().size()),
-            goal_sender_->name().data());
+    AOS_LOG(
+        INFO, "Action %" PRIx32 " on queue %.*s was never started\n",
+        run_value_,
+        static_cast<int>(goal_sender_->channel()->name()->string_view().size()),
+        goal_sender_->channel()->name()->string_view().data());
   } else {
     if (interrupted_) {
       AOS_LOG(INFO,
               "Action %" PRIx32
               " on queue %.*s was interrupted -> not cancelling\n",
-              run_value_, static_cast<int>(goal_sender_->name().size()),
-              goal_sender_->name().data());
+              run_value_,
+              static_cast<int>(
+                  goal_sender_->channel()->name()->string_view().size()),
+              goal_sender_->channel()->name()->string_view().data());
     } else {
       if (sent_cancel_) {
         AOS_LOG(DEBUG, "Action %" PRIx32 " on queue %.*s already cancelled\n",
-                run_value_, static_cast<int>(goal_sender_->name().size()),
-                goal_sender_->name().data());
+                run_value_,
+                static_cast<int>(
+                    goal_sender_->channel()->name()->string_view().size()),
+                goal_sender_->channel()->name()->string_view().data());
       } else {
         AOS_LOG(DEBUG, "Canceling action %" PRIx32 " on queue %.*s\n",
-                run_value_, static_cast<int>(goal_sender_->name().size()),
-                goal_sender_->name().data());
+                run_value_,
+                static_cast<int>(
+                    goal_sender_->channel()->name()->string_view().size()),
+                goal_sender_->channel()->name()->string_view().data());
         {
           auto builder = goal_sender_->MakeBuilder();
           typename GoalType::Builder goal_builder =
@@ -309,8 +318,10 @@ void TypedAction<T>::CheckStarted() {
       // It's currently running our instance.
       has_started_ = true;
       AOS_LOG(DEBUG, "Action %" PRIx32 " on queue %.*s has been started\n",
-              run_value_, static_cast<int>(goal_sender_->name().size()),
-              goal_sender_->name().data());
+              run_value_,
+              static_cast<int>(
+                  goal_sender_->channel()->name()->string_view().size()),
+              goal_sender_->channel()->name()->string_view().data());
     } else if (old_run_value_ != 0 &&
                status_fetcher_->get()->running() == old_run_value_) {
       AOS_LOG(DEBUG, "still running old instance %" PRIx32 "\n",
@@ -319,8 +330,11 @@ void TypedAction<T>::CheckStarted() {
       AOS_LOG(WARNING,
               "Action %" PRIx32 " on queue %.*s interrupted by %" PRIx32
               " before starting\n",
-              run_value_, static_cast<int>(goal_sender_->name().size()),
-              goal_sender_->name().data(), status_fetcher_->get()->running());
+              run_value_,
+              static_cast<int>(
+                  goal_sender_->channel()->name()->string_view().size()),
+              goal_sender_->channel()->name()->string_view().data(),
+              status_fetcher_->get()->running());
       has_started_ = true;
       interrupted_ = true;
     }
@@ -337,8 +351,11 @@ void TypedAction<T>::CheckInterrupted() {
       AOS_LOG(WARNING,
               "Action %" PRIx32 " on queue %.*s interrupted by %" PRIx32
               " after starting\n",
-              run_value_, static_cast<int>(goal_sender_->name().size()),
-              goal_sender_->name().data(), status_fetcher_->get()->running());
+              run_value_,
+              static_cast<int>(
+                  goal_sender_->channel()->name()->string_view().size()),
+              goal_sender_->channel()->name()->string_view().data(),
+              status_fetcher_->get()->running());
     }
   }
 }
@@ -358,8 +375,10 @@ void TypedAction<T>::DoStart() {
     if (!builder.Send(goal_builder.Finish())) {
       AOS_LOG(ERROR,
               "sending goal for action %" PRIx32 " on queue %.*s failed\n",
-              run_value_, static_cast<int>(goal_sender_->name().size()),
-              goal_sender_->name().data());
+              run_value_,
+              static_cast<int>(
+                  goal_sender_->channel()->name()->string_view().size()),
+              goal_sender_->channel()->name()->string_view().data());
       // Don't wait to see a message with it.
       has_started_ = true;
     }
@@ -370,15 +389,19 @@ void TypedAction<T>::DoStart() {
     if (status_fetcher_->get() && status_fetcher_->get()->running() != 0) {
       old_run_value_ = status_fetcher_->get()->running();
       AOS_LOG(INFO, "Action %" PRIx32 " on queue %.*s already running\n",
-              old_run_value_, static_cast<int>(goal_sender_->name().size()),
-              goal_sender_->name().data());
+              old_run_value_,
+              static_cast<int>(
+                  goal_sender_->channel()->name()->string_view().size()),
+              goal_sender_->channel()->name()->string_view().data());
     } else {
       old_run_value_ = 0;
     }
   } else {
-    AOS_LOG(WARNING, "Action %" PRIx32 " on queue %.*s already started\n",
-            run_value_, static_cast<int>(goal_sender_->name().size()),
-            goal_sender_->name().data());
+    AOS_LOG(
+        WARNING, "Action %" PRIx32 " on queue %.*s already started\n",
+        run_value_,
+        static_cast<int>(goal_sender_->channel()->name()->string_view().size()),
+        goal_sender_->channel()->name()->string_view().data());
   }
 }
 
