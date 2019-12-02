@@ -25,6 +25,11 @@ class EventScheduler {
   Token Schedule(monotonic_clock::time_point time,
                  std::function<void()> callback);
 
+  // Schedules a callback when the event scheduler starts.
+  void ScheduleOnRun(std::function<void()> callback) {
+    on_run_.emplace_back(std::move(callback));
+  }
+
   Token InvalidToken() { return events_list_.end(); }
 
   // Deschedule an event by its iterator
@@ -49,6 +54,8 @@ class EventScheduler {
  private:
   // Current execution time.
   monotonic_clock::time_point now_ = monotonic_clock::epoch();
+
+  std::vector<std::function<void()>> on_run_;
 
   // Multimap holding times to run functions.  These are stored in order, and
   // the order is the callback tree.

@@ -23,4 +23,5 @@ aos_config(
         "//aos/robot_state:robot_state_fbs",
     ],
     visibility = ["//visibility:public"],
+    deps = ["//aos/events:config"],
 )

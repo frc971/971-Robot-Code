@@ -48,6 +48,9 @@ aos_config(
         ":test_action_fbs",
         ":test_action2_fbs",
     ],
+    deps = [
+        "//aos/events:config",
+    ],
 )
 
 cc_test(

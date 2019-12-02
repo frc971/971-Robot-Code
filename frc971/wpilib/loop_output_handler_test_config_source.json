@@ -5,5 +5,9 @@
       "name": "/test",
       "type": "frc971.wpilib.LoopOutputHandlerTestOutput"
     }
+  ],
+  "imports":
+  [
+    "../../aos/events/aos.json"
   ]
 }

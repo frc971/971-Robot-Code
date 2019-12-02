@@ -378,6 +378,9 @@ realtime_clock::time_point LogReader::realtime_start_time() {
 void LogReader::Register(EventLoop *event_loop) {
   event_loop_ = event_loop;
 
+  // Otherwise we replay the timing report and try to resend it...
+  event_loop_->SkipTimingReport();
+
   for (size_t i = 0; i < channels_.size(); ++i) {
     CHECK_EQ(configuration()->channels()->Get(i)->name(),
              event_loop_->configuration()->channels()->Get(i)->name());
@@ -392,7 +395,7 @@ void LogReader::Register(EventLoop *event_loop) {
     std::pair<monotonic_clock::time_point, int> oldest_channel_index =
         PopOldestChannel();
     const monotonic_clock::time_point monotonic_now =
-        event_loop_->monotonic_now();
+        event_loop_->context().monotonic_sent_time;
     CHECK(monotonic_now == oldest_channel_index.first)
         << ": Now " << monotonic_now.time_since_epoch().count()
         << " trying to send "

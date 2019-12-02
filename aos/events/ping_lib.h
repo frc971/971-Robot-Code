@@ -25,6 +25,8 @@ class Ping {
   aos::Sender<examples::Ping> sender_;
   // Timer handle which sends the Ping message.
   aos::TimerHandler *timer_handle_;
+  aos::PhasedLoopHandler *phased_loop_handle_;
+  aos::Fetcher<examples::Pong> pong_fetcher_;
   // Number of pings sent.
   int count_ = 0;
 };

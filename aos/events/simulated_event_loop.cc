@@ -30,11 +30,47 @@ struct SimulatedMessage {
 };
 
 class SimulatedFetcher;
+class SimulatedChannel;
+
+class ShmWatcher : public WatcherState {
+ public:
+  ShmWatcher(
+      EventLoop *event_loop, const Channel *channel,
+      std::function<void(const Context &context, const void *message)> fn)
+      : WatcherState(event_loop, channel, std::move(fn)),
+        event_loop_(event_loop) {}
+
+  ~ShmWatcher() override;
+
+  void Call(const Context &context) {
+    const monotonic_clock::time_point monotonic_now =
+        event_loop_->monotonic_now();
+    DoCallCallback([monotonic_now]() { return monotonic_now; }, context);
+  }
+
+  void Startup(EventLoop * /*event_loop*/) override {}
+
+  void Schedule(EventScheduler *scheduler,
+                std::shared_ptr<SimulatedMessage> message) {
+    // TODO(austin): Track the token once we schedule in the future.
+    // TODO(austin): Schedule wakeup in the future so we don't have 0 latency.
+    scheduler->Schedule(scheduler->monotonic_now(),
+                        [this, message]() { Call(message->context); });
+  }
+
+  void SetSimulatedChannel(SimulatedChannel *channel) {
+    simulated_channel_ = channel;
+  }
+
+ private:
+  EventLoop *event_loop_;
+  SimulatedChannel *simulated_channel_ = nullptr;
+};
 
 class SimulatedChannel {
  public:
   explicit SimulatedChannel(const Channel *channel, EventScheduler *scheduler)
-      : channel_(CopyFlatBuffer(channel)),
+      : channel_(channel),
         scheduler_(scheduler),
         next_queue_index_(ipc_lib::QueueIndex::Zero(channel->max_size())) {}
 
@@ -44,12 +80,14 @@ class SimulatedChannel {
   ::std::unique_ptr<RawSender> MakeRawSender(EventLoop *event_loop);
 
   // Makes a connected raw fetcher.
-  ::std::unique_ptr<RawFetcher> MakeRawFetcher();
+  ::std::unique_ptr<RawFetcher> MakeRawFetcher(EventLoop *event_loop);
 
   // Registers a watcher for the queue.
-  void MakeRawWatcher(
-      ::std::function<void(const Context &context, const void *message)>
-          watcher);
+  void MakeRawWatcher(ShmWatcher *watcher);
+
+  void RemoveWatcher(ShmWatcher *watcher) {
+    watchers_.erase(std::find(watchers_.begin(), watchers_.end(), watcher));
+  }
 
   // Sends the message to all the connected receivers and fetchers.
   void Send(std::shared_ptr<SimulatedMessage> message);
@@ -59,21 +97,23 @@ class SimulatedChannel {
 
   std::shared_ptr<SimulatedMessage> latest_message() { return latest_message_; }
 
-  size_t max_size() const { return channel_.message().max_size(); }
+  size_t max_size() const { return channel()->max_size(); }
 
   const std::string_view name() const {
-    return channel_.message().name()->string_view();
+    return channel()->name()->string_view();
   }
 
-  const Channel *channel() const { return &channel_.message(); }
+  const Channel *channel() const { return channel_; }
+
+  ::aos::monotonic_clock::time_point monotonic_now() const {
+    return scheduler_->monotonic_now();
+  }
 
  private:
-  const FlatbufferDetachedBuffer<Channel> channel_;
+  const Channel *channel_;
 
   // List of all watchers.
-  ::std::vector<
-      std::function<void(const Context &context, const void *message)>>
-      watchers_;
+  ::std::vector<ShmWatcher *> watchers_;
 
   // List of all fetchers.
   ::std::vector<SimulatedFetcher *> fetchers_;
@@ -82,6 +122,8 @@ class SimulatedChannel {
 
   ipc_lib::QueueIndex next_queue_index_;
 };
+
+ShmWatcher::~ShmWatcher() { simulated_channel_->RemoveWatcher(this); }
 
 namespace {
 
@@ -99,7 +141,7 @@ std::shared_ptr<SimulatedMessage> MakeSimulatedMessage(size_t size) {
 class SimulatedSender : public RawSender {
  public:
   SimulatedSender(SimulatedChannel *simulated_channel, EventLoop *event_loop)
-      : RawSender(simulated_channel->channel()),
+      : RawSender(event_loop, simulated_channel->channel()),
         simulated_channel_(simulated_channel),
         event_loop_(event_loop) {}
   ~SimulatedSender() {}
@@ -113,7 +155,7 @@ class SimulatedSender : public RawSender {
 
   size_t size() override { return simulated_channel_->max_size(); }
 
-  bool Send(size_t length) override {
+  bool DoSend(size_t length) override {
     CHECK_LE(length, size()) << ": Attempting to send too big a message.";
     message_->context.monotonic_sent_time = event_loop_->monotonic_now();
     message_->context.realtime_sent_time = event_loop_->realtime_now();
@@ -130,7 +172,7 @@ class SimulatedSender : public RawSender {
     return true;
   }
 
-  bool Send(const void *msg, size_t size) override {
+  bool DoSend(const void *msg, size_t size) override {
     CHECK_LE(size, this->size()) << ": Attempting to send too big a message.";
 
     // This is wasteful, but since flatbuffers fill from the back end of the
@@ -145,10 +187,6 @@ class SimulatedSender : public RawSender {
     return Send(size);
   }
 
-  const std::string_view name() const override {
-    return simulated_channel_->name();
-  }
-
  private:
   SimulatedChannel *simulated_channel_;
   EventLoop *event_loop_;
@@ -161,25 +199,27 @@ class SimulatedEventLoop;
 
 class SimulatedFetcher : public RawFetcher {
  public:
-  explicit SimulatedFetcher(SimulatedChannel *queue)
-      : RawFetcher(queue->channel()), queue_(queue) {}
+  explicit SimulatedFetcher(EventLoop *event_loop, SimulatedChannel *queue)
+      : RawFetcher(event_loop, queue->channel()), queue_(queue) {}
   ~SimulatedFetcher() { queue_->UnregisterFetcher(this); }
 
-  bool FetchNext() override {
-    if (msgs_.size() == 0) return false;
+  std::pair<bool, monotonic_clock::time_point> DoFetchNext() override {
+    if (msgs_.size() == 0) {
+      return std::make_pair(false, monotonic_clock::min_time);
+    }
 
     SetMsg(msgs_.front());
     msgs_.pop_front();
-    return true;
+    return std::make_pair(true, queue_->monotonic_now());
   }
 
-  bool Fetch() override {
+  std::pair<bool, monotonic_clock::time_point> DoFetch() override {
     if (msgs_.size() == 0) {
       if (!msg_ && queue_->latest_message()) {
         SetMsg(queue_->latest_message());
-        return true;
+        return std::make_pair(true, queue_->monotonic_now());
       } else {
-        return false;
+        return std::make_pair(false, monotonic_clock::min_time);
       }
     }
 
@@ -187,7 +227,7 @@ class SimulatedFetcher : public RawFetcher {
     // latest message from before we started.
     SetMsg(msgs_.back());
     msgs_.clear();
-    return true;
+    return std::make_pair(true, queue_->monotonic_now());
   }
 
  private:
@@ -196,7 +236,6 @@ class SimulatedFetcher : public RawFetcher {
   // Updates the state inside RawFetcher to point to the data in msg_.
   void SetMsg(std::shared_ptr<SimulatedMessage> msg) {
     msg_ = msg;
-    data_ = msg_->context.data;
     context_ = msg_->context;
   }
 
@@ -216,11 +255,7 @@ class SimulatedTimerHandler : public TimerHandler {
  public:
   explicit SimulatedTimerHandler(EventScheduler *scheduler,
                                  SimulatedEventLoop *simulated_event_loop,
-                                 ::std::function<void()> fn)
-      : scheduler_(scheduler),
-        token_(scheduler_->InvalidToken()),
-        simulated_event_loop_(simulated_event_loop),
-        fn_(fn) {}
+                                 ::std::function<void()> fn);
   ~SimulatedTimerHandler() {}
 
   void Setup(monotonic_clock::time_point base,
@@ -243,9 +278,6 @@ class SimulatedTimerHandler : public TimerHandler {
   EventScheduler *scheduler_;
   EventScheduler::Token token_;
 
-  SimulatedEventLoop *simulated_event_loop_;
-  // Function to be run on the thread
-  ::std::function<void()> fn_;
   monotonic_clock::time_point base_;
   monotonic_clock::duration repeat_offset_;
 };
@@ -256,44 +288,25 @@ class SimulatedPhasedLoopHandler : public PhasedLoopHandler {
                              SimulatedEventLoop *simulated_event_loop,
                              ::std::function<void(int)> fn,
                              const monotonic_clock::duration interval,
-                             const monotonic_clock::duration offset)
-      : simulated_timer_handler_(scheduler, simulated_event_loop,
-                                 [this]() { HandleTimerWakeup(); }),
-        phased_loop_(interval, simulated_timer_handler_.monotonic_now(),
-                     offset),
-        fn_(fn) {
-    // TODO(austin): This assumes time doesn't change between when the
-    // constructor is called and when we start running.  It's probably a safe
-    // assumption.
-    Reschedule();
+                             const monotonic_clock::duration offset);
+  ~SimulatedPhasedLoopHandler() {
+    if (token_ != scheduler_->InvalidToken()) {
+      scheduler_->Deschedule(token_);
+      token_ = scheduler_->InvalidToken();
+    }
   }
 
-  void HandleTimerWakeup() {
-    fn_(cycles_elapsed_);
-    Reschedule();
-  }
+  void HandleTimerWakeup();
 
-  void set_interval_and_offset(
-      const monotonic_clock::duration interval,
-      const monotonic_clock::duration offset) override {
-    phased_loop_.set_interval_and_offset(interval, offset);
-  }
-
-  void Reschedule() {
-    cycles_elapsed_ =
-        phased_loop_.Iterate(simulated_timer_handler_.monotonic_now());
-    simulated_timer_handler_.Setup(phased_loop_.sleep_time(),
-                                   ::aos::monotonic_clock::zero());
+  void Schedule(monotonic_clock::time_point sleep_time) override {
+    token_ = scheduler_->Schedule(sleep_time, [this]() { HandleTimerWakeup(); });
   }
 
  private:
-  SimulatedTimerHandler simulated_timer_handler_;
+  SimulatedEventLoop *simulated_event_loop_;
 
-  time::PhasedLoop phased_loop_;
-
-  int cycles_elapsed_ = 1;
-
-  ::std::function<void(int)> fn_;
+  EventScheduler *scheduler_;
+  EventScheduler::Token token_;
 };
 
 class SimulatedEventLoop : public EventLoop {
@@ -304,15 +317,31 @@ class SimulatedEventLoop : public EventLoop {
           *channels,
       const Configuration *configuration,
       std::vector<std::pair<EventLoop *, std::function<void(bool)>>>
-          *raw_event_loops)
-      : EventLoop(configuration),
+          *raw_event_loops,
+      pid_t tid)
+      : EventLoop(CHECK_NOTNULL(configuration)),
         scheduler_(scheduler),
         channels_(channels),
-        raw_event_loops_(raw_event_loops) {
-    raw_event_loops_->push_back(
-        std::make_pair(this, [this](bool value) { set_is_running(value); }));
+        raw_event_loops_(raw_event_loops),
+        tid_(tid) {
+    raw_event_loops_->push_back(std::make_pair(this, [this](bool value) {
+      if (!has_setup_) {
+        Setup();
+        has_setup_ = true;
+      }
+      set_is_running(value);
+    }));
   }
   ~SimulatedEventLoop() override {
+    // Trigger any remaining senders or fetchers to be cleared before destroying
+    // the event loop so the book keeping matches.
+    timing_report_sender_.reset();
+
+    // Force everything with a registered fd with epoll to be destroyed now.
+    timers_.clear();
+    phased_loops_.clear();
+    watchers_.clear();
+
     for (auto it = raw_event_loops_->begin(); it != raw_event_loops_->end();
          ++it) {
       if (it->first == this) {
@@ -340,21 +369,22 @@ class SimulatedEventLoop : public EventLoop {
           watcher) override;
 
   TimerHandler *AddTimer(::std::function<void()> callback) override {
-    timers_.emplace_back(new SimulatedTimerHandler(scheduler_, this, callback));
-    return timers_.back().get();
+    CHECK(!is_running());
+    return NewTimer(::std::unique_ptr<TimerHandler>(
+        new SimulatedTimerHandler(scheduler_, this, callback)));
   }
 
   PhasedLoopHandler *AddPhasedLoop(::std::function<void(int)> callback,
                                    const monotonic_clock::duration interval,
                                    const monotonic_clock::duration offset =
                                        ::std::chrono::seconds(0)) override {
-    phased_loops_.emplace_back(new SimulatedPhasedLoopHandler(
-        scheduler_, this, callback, interval, offset));
-    return phased_loops_.back().get();
+    return NewPhasedLoop(
+        ::std::unique_ptr<PhasedLoopHandler>(new SimulatedPhasedLoopHandler(
+            scheduler_, this, callback, interval, offset)));
   }
 
   void OnRun(::std::function<void()> on_run) override {
-    scheduler_->Schedule(scheduler_->monotonic_now(), on_run);
+    scheduler_->ScheduleOnRun(on_run);
   }
 
   void set_name(const std::string_view name) override {
@@ -366,43 +396,58 @@ class SimulatedEventLoop : public EventLoop {
 
   void Take(const Channel *channel);
 
-  void SetRuntimeRealtimePriority(int /*priority*/) override {
+  void SetRuntimeRealtimePriority(int priority) override {
     CHECK(!is_running()) << ": Cannot set realtime priority while running.";
+    priority_ = priority;
   }
+
+  int priority() const override { return priority_; }
+
+  void Setup() { MaybeScheduleTimingReports(); }
 
  private:
   friend class SimulatedTimerHandler;
+
+  pid_t GetTid() override { return tid_; }
 
   EventScheduler *scheduler_;
   absl::btree_map<SimpleChannel, std::unique_ptr<SimulatedChannel>> *channels_;
   std::vector<std::pair<EventLoop *, std::function<void(bool)>>>
       *raw_event_loops_;
   absl::btree_set<SimpleChannel> taken_;
-  ::std::vector<std::unique_ptr<TimerHandler>> timers_;
-  ::std::vector<std::unique_ptr<PhasedLoopHandler>> phased_loops_;
 
   ::std::string name_;
+
+  int priority_ = 0;
+
+  bool has_setup_ = false;
+
+  const pid_t tid_;
 };
 
 void SimulatedEventLoop::MakeRawWatcher(
     const Channel *channel,
     std::function<void(const Context &channel, const void *message)> watcher) {
-  ValidateChannel(channel);
+  ChannelIndex(channel);
   Take(channel);
-  GetSimulatedChannel(channel)->MakeRawWatcher(watcher);
+  std::unique_ptr<ShmWatcher> shm_watcher(
+      new ShmWatcher(this, channel, std::move(watcher)));
+
+  GetSimulatedChannel(channel)->MakeRawWatcher(shm_watcher.get());
+  NewWatcher(std::move(shm_watcher));
 }
 
 std::unique_ptr<RawSender> SimulatedEventLoop::MakeRawSender(
     const Channel *channel) {
-  ValidateChannel(channel);
+  ChannelIndex(channel);
   Take(channel);
   return GetSimulatedChannel(channel)->MakeRawSender(this);
 }
 
 std::unique_ptr<RawFetcher> SimulatedEventLoop::MakeRawFetcher(
     const Channel *channel) {
-  ValidateChannel(channel);
-  return GetSimulatedChannel(channel)->MakeRawFetcher();
+  ChannelIndex(channel);
+  return GetSimulatedChannel(channel)->MakeRawFetcher(this);
 }
 
 SimulatedChannel *SimulatedEventLoop::GetSimulatedChannel(
@@ -418,10 +463,9 @@ SimulatedChannel *SimulatedEventLoop::GetSimulatedChannel(
   return it->second.get();
 }
 
-void SimulatedChannel::MakeRawWatcher(
-    ::std::function<void(const Context &context, const void *message)>
-        watcher) {
-  watchers_.push_back(watcher);
+void SimulatedChannel::MakeRawWatcher(ShmWatcher *watcher) {
+  watcher->SetSimulatedChannel(this);
+  watchers_.emplace_back(watcher);
 }
 
 ::std::unique_ptr<RawSender> SimulatedChannel::MakeRawSender(
@@ -429,8 +473,10 @@ void SimulatedChannel::MakeRawWatcher(
   return ::std::unique_ptr<RawSender>(new SimulatedSender(this, event_loop));
 }
 
-::std::unique_ptr<RawFetcher> SimulatedChannel::MakeRawFetcher() {
-  ::std::unique_ptr<SimulatedFetcher> fetcher(new SimulatedFetcher(this));
+::std::unique_ptr<RawFetcher> SimulatedChannel::MakeRawFetcher(
+    EventLoop *event_loop) {
+  ::std::unique_ptr<SimulatedFetcher> fetcher(
+      new SimulatedFetcher(event_loop, this));
   fetchers_.push_back(fetcher.get());
   return ::std::move(fetcher);
 }
@@ -443,10 +489,8 @@ void SimulatedChannel::Send(std::shared_ptr<SimulatedMessage> message) {
 
   latest_message_ = message;
   if (scheduler_->is_running()) {
-    for (auto &watcher : watchers_) {
-      scheduler_->Schedule(scheduler_->monotonic_now(), [watcher, message]() {
-        watcher(message->context, message->context.data);
-      });
+    for (ShmWatcher *watcher : watchers_) {
+      watcher->Schedule(scheduler_, message);
     }
   }
   for (auto &fetcher : fetchers_) {
@@ -461,6 +505,13 @@ void SimulatedChannel::UnregisterFetcher(SimulatedFetcher *fetcher) {
 SimpleChannel::SimpleChannel(const Channel *channel)
     : name(CHECK_NOTNULL(CHECK_NOTNULL(channel)->name())->str()),
       type(CHECK_NOTNULL(CHECK_NOTNULL(channel)->type())->str()) {}
+
+SimulatedTimerHandler::SimulatedTimerHandler(
+    EventScheduler *scheduler, SimulatedEventLoop *simulated_event_loop,
+    ::std::function<void()> fn)
+    : TimerHandler(simulated_event_loop, std::move(fn)),
+      scheduler_(scheduler),
+      token_(scheduler_->InvalidToken()) {}
 
 void SimulatedTimerHandler::Setup(monotonic_clock::time_point base,
                                   monotonic_clock::duration repeat_offset) {
@@ -486,17 +537,26 @@ void SimulatedTimerHandler::HandleEvent() {
   } else {
     token_ = scheduler_->InvalidToken();
   }
-  // The scheduler is perfect, so we will always wake up on time.
-  simulated_event_loop_->context_.monotonic_sent_time =
-      scheduler_->monotonic_now();
-  simulated_event_loop_->context_.realtime_sent_time = realtime_clock::min_time;
-  simulated_event_loop_->context_.queue_index = 0;
-  simulated_event_loop_->context_.size = 0;
-  simulated_event_loop_->context_.data = nullptr;
 
-  fn_();
+  Call([monotonic_now]() { return monotonic_now; }, monotonic_now);
 }
 
+SimulatedPhasedLoopHandler::SimulatedPhasedLoopHandler(
+    EventScheduler *scheduler, SimulatedEventLoop *simulated_event_loop,
+    ::std::function<void(int)> fn, const monotonic_clock::duration interval,
+    const monotonic_clock::duration offset)
+    : PhasedLoopHandler(simulated_event_loop, std::move(fn), interval, offset),
+      simulated_event_loop_(simulated_event_loop),
+      scheduler_(scheduler),
+      token_(scheduler_->InvalidToken()) {}
+
+void SimulatedPhasedLoopHandler::HandleTimerWakeup() {
+  monotonic_clock::time_point monotonic_now =
+      simulated_event_loop_->monotonic_now();
+  Call(
+      [monotonic_now]() { return monotonic_now; },
+      [this](monotonic_clock::time_point sleep_time) { Schedule(sleep_time); });
+}
 
 void SimulatedEventLoop::Take(const Channel *channel) {
   CHECK(!is_running()) << ": Cannot add new objects while running.";
@@ -508,13 +568,15 @@ void SimulatedEventLoop::Take(const Channel *channel) {
 
 SimulatedEventLoopFactory::SimulatedEventLoopFactory(
     const Configuration *configuration)
-    : configuration_(configuration) {}
+    : configuration_(CHECK_NOTNULL(configuration)) {}
 SimulatedEventLoopFactory::~SimulatedEventLoopFactory() {}
 
 ::std::unique_ptr<EventLoop> SimulatedEventLoopFactory::MakeEventLoop(
     std::string_view name) {
+  pid_t tid = tid_;
+  ++tid_;
   ::std::unique_ptr<EventLoop> result(new SimulatedEventLoop(
-      &scheduler_, &channels_, configuration_, &raw_event_loops_));
+      &scheduler_, &channels_, configuration_, &raw_event_loops_, tid));
   result->set_name(name);
   return result;
 }
@@ -525,11 +587,9 @@ void SimulatedEventLoopFactory::RunFor(monotonic_clock::duration duration) {
     event_loop.second(true);
   }
   scheduler_.RunFor(duration);
-  if (!scheduler_.is_running()) {
-    for (const std::pair<EventLoop *, std::function<void(bool)>> &event_loop :
-         raw_event_loops_) {
-      event_loop.second(false);
-    }
+  for (const std::pair<EventLoop *, std::function<void(bool)>> &event_loop :
+       raw_event_loops_) {
+    event_loop.second(false);
   }
 }
 
@@ -539,11 +599,9 @@ void SimulatedEventLoopFactory::Run() {
     event_loop.second(true);
   }
   scheduler_.Run();
-  if (!scheduler_.is_running()) {
-    for (const std::pair<EventLoop *, std::function<void(bool)>> &event_loop :
-         raw_event_loops_) {
-      event_loop.second(false);
-    }
+  for (const std::pair<EventLoop *, std::function<void(bool)>> &event_loop :
+       raw_event_loops_) {
+    event_loop.second(false);
   }
 }
 

@@ -132,6 +132,9 @@ aos_config(
     flatbuffers = [
         ":loop_output_handler_test_fbs",
     ],
+    deps = [
+        "//aos/events:config",
+    ],
 )
 
 cc_library(

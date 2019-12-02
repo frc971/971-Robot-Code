@@ -1,13 +1,11 @@
 #ifndef AOS_EVENTS_SHM_EVENT_LOOP_H_
 #define AOS_EVENTS_SHM_EVENT_LOOP_H_
 
-#include <unordered_set>
 #include <vector>
 
 #include "aos/events/epoll.h"
 #include "aos/events/event_loop.h"
-#include "aos/ipc_lib/signalfd.h"
-#include "aos/mutex/mutex.h"
+#include "aos/events/event_loop_generated.h"
 
 namespace aos {
 namespace internal {
@@ -15,19 +13,28 @@ namespace internal {
 class WatcherState;
 class TimerHandlerState;
 class PhasedLoopHandler;
+class ShmSender;
+class ShmFetcher;
 
 }  // namespace internal
 
 // Specialization of EventLoop that is built from queues running out of shared
-// memory. See more details at aos/queue.h
+// memory.
 //
-// This object must be interacted with from one thread, but the Senders and
-// Fetchers may be used from multiple threads afterwords (as long as their
+// TODO(austin): Timing reports break multiple threads.  Need to add back in a
+// mutex.
+// This object must be interacted with from one thread, but the Senders
+// and Fetchers may be used from multiple threads afterwords (as long as their
 // destructors are called back in one thread again)
 class ShmEventLoop : public EventLoop {
  public:
   ShmEventLoop(const Configuration *configuration);
   ~ShmEventLoop() override;
+
+  // Runs the event loop until Exit is called, or ^C is caught.
+  void Run();
+  // Exits the event loop.  Async safe.
+  void Exit();
 
   aos::monotonic_clock::time_point monotonic_now() override {
     return aos::monotonic_clock::now();
@@ -52,28 +59,32 @@ class ShmEventLoop : public EventLoop {
           std::chrono::seconds(0)) override;
 
   void OnRun(std::function<void()> on_run) override;
-  void Run();
-  void Exit();
-
-  // TODO(austin): Add a function to register control-C call.
 
   void SetRuntimeRealtimePriority(int priority) override;
 
   void set_name(const std::string_view name) override {
     name_ = std::string(name);
+    UpdateTimingReport();
   }
   const std::string_view name() const override { return name_; }
 
-  int priority() const { return priority_; }
+  int priority() const override { return priority_; }
 
  private:
   friend class internal::WatcherState;
   friend class internal::TimerHandlerState;
   friend class internal::PhasedLoopHandler;
+  friend class internal::ShmSender;
+  friend class internal::ShmFetcher;
+
+  void HandleWatcherSignal();
 
   // Tracks that we can't have multiple watchers or a sender and a watcher (or
   // multiple senders) on a single queue (path).
   void Take(const Channel *channel);
+
+  // Returns the TID of the event loop.
+  pid_t GetTid() override;
 
   std::vector<std::function<void()>> on_run_;
   int priority_ = 0;
@@ -81,10 +92,6 @@ class ShmEventLoop : public EventLoop {
   std::vector<std::string> taken_;
 
   internal::EPoll epoll_;
-
-  std::vector<std::unique_ptr<internal::TimerHandlerState>> timers_;
-  std::vector<std::unique_ptr<internal::PhasedLoopHandler>> phased_loops_;
-  std::vector<std::unique_ptr<internal::WatcherState>> watchers_;
 };
 
 }  // namespace aos

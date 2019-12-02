@@ -30,6 +30,7 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
     unlink((FLAGS_shm_base + "/test1/aos.TestMessage.v0").c_str());
     unlink((FLAGS_shm_base + "/test2/aos.TestMessage.v0").c_str());
     unlink((FLAGS_shm_base + "/test2/aos.TestMessage.v0").c_str());
+    unlink((FLAGS_shm_base + "/aos/aos.timing.Report.v0").c_str());
   }
 
   ::std::unique_ptr<EventLoop> Make(std::string_view name) override {
@@ -170,6 +171,8 @@ TEST(ShmEventLoopTest, DelayedPhasedLoop) {
 
   EXPECT_EQ(times.size(), 2u);
 }
+
+// TODO(austin): Test that missing a deadline with a timer recovers as expected.
 
 }  // namespace testing
 }  // namespace aos

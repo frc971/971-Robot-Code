@@ -1,0 +1,9 @@
+{
+  "channels": [
+    {
+      "name": "/aos",
+      "type": "aos.timing.Report",
+      "frequency": 50
+    }
+  ]
+}

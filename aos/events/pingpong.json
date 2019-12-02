@@ -8,5 +8,8 @@
       "name": "/test",
       "type": "aos.examples.Pong"
     }
+  ],
+  "imports": [
+    "aos.json"
   ]
 }

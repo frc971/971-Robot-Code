@@ -80,6 +80,8 @@ class SimulatedEventLoopFactory {
   // List of event loops to manage running and not running for.
   std::vector<std::pair<EventLoop *, std::function<void(bool)>>>
       raw_event_loops_;
+
+  pid_t tid_ = 0;
 };
 
 }  // namespace aos

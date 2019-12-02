@@ -11,5 +11,8 @@
       "type": "aos.RobotState",
       "frequency": 200
     }
+  ],
+  "imports": [
+    "../events/aos.json"
   ]
 }

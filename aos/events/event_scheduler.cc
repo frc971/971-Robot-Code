@@ -20,6 +20,10 @@ void EventScheduler::RunFor(monotonic_clock::duration duration) {
   const ::aos::monotonic_clock::time_point end_time =
       monotonic_now() + duration;
   is_running_ = true;
+  for (std::function<void()> &on_run : on_run_) {
+    on_run();
+  }
+  on_run_.clear();
   while (!events_list_.empty() && is_running_) {
     auto iter = events_list_.begin();
     ::aos::monotonic_clock::time_point next_time = iter->first;
@@ -36,6 +40,10 @@ void EventScheduler::RunFor(monotonic_clock::duration duration) {
 
 void EventScheduler::Run() {
   is_running_ = true;
+  for (std::function<void()> &on_run : on_run_) {
+    on_run();
+  }
+  on_run_.clear();
   while (!events_list_.empty() && is_running_) {
     auto iter = events_list_.begin();
     now_ = iter->first;

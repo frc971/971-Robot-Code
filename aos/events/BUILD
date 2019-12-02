@@ -52,10 +52,13 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        ":event_loop_fbs",
+        ":timing_statistics",
         "//aos:configuration",
         "//aos:configuration_fbs",
         "//aos:flatbuffers",
         "//aos/time",
+        "//aos/util:phased_loop",
         "@com_github_google_flatbuffers//:flatbuffers",
     ],
 )
@@ -94,12 +97,21 @@ cc_binary(
 )
 
 aos_config(
+    name = "config",
+    src = "aos.json",
+    flatbuffers = [
+        ":event_loop_fbs",
+    ],
+)
+
+aos_config(
     name = "pingpong_config",
-    src = "config.fb.json",
+    src = "pingpong.json",
     flatbuffers = [
         ":ping_fbs",
         ":pong_fbs",
     ],
+    deps = [":config"],
 )
 
 cc_library(
@@ -180,7 +192,9 @@ cc_library(
     deps = [
         ":epoll",
         ":event_loop",
+        ":event_loop_fbs",
         ":test_message_fbs",
+        ":timing_statistics",
         "//aos:realtime",
         "//aos/ipc_lib:lockless_queue",
         "//aos/ipc_lib:signalfd",

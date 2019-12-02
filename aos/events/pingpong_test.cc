@@ -13,8 +13,8 @@ namespace chrono = std::chrono;
 class PingPongTest : public ::testing::Test {
  public:
   PingPongTest()
-      : config_(aos::configuration::ReadConfig(
-            "aos/events/pingpong_config.json")),
+      : config_(
+            aos::configuration::ReadConfig("aos/events/pingpong_config.json")),
         event_loop_factory_(&config_.message()),
         ping_event_loop_(event_loop_factory_.MakeEventLoop("ping")),
         ping_(ping_event_loop_.get()),

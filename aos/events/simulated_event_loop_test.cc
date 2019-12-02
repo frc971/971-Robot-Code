@@ -73,7 +73,10 @@ TEST(EventSchedulerTest, DescheduleEvent) {
 // Test that running for a time period with no handlers causes time to progress
 // correctly.
 TEST(SimulatedEventLoopTest, RunForNoHandlers) {
-  SimulatedEventLoopFactory simulated_event_loop_factory(nullptr);
+  SimulatedEventLoopTestFactory factory;
+
+  SimulatedEventLoopFactory simulated_event_loop_factory(
+      factory.configuration());
   ::std::unique_ptr<EventLoop> event_loop =
       simulated_event_loop_factory.MakeEventLoop("loop");
 
@@ -88,7 +91,10 @@ TEST(SimulatedEventLoopTest, RunForNoHandlers) {
 // Test that running for a time with a periodic handler causes time to end
 // correctly.
 TEST(SimulatedEventLoopTest, RunForTimerHandler) {
-  SimulatedEventLoopFactory simulated_event_loop_factory(nullptr);
+  SimulatedEventLoopTestFactory factory;
+
+  SimulatedEventLoopFactory simulated_event_loop_factory(
+      factory.configuration());
   ::std::unique_ptr<EventLoop> event_loop =
       simulated_event_loop_factory.MakeEventLoop("loop");
 

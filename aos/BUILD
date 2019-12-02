@@ -459,8 +459,6 @@ cc_test(
         "testdata/config2.json",
         "testdata/config3.json",
         "testdata/expected.json",
-        "//aos/events:config.fb.json",
-        "//aos/events:ping.bfbs",
         "//aos/events:pingpong_config.json",
         "//aos/events:pong.bfbs",
     ],

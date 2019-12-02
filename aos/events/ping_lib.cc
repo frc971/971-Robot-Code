@@ -7,6 +7,7 @@
 #include "glog/logging.h"
 
 DEFINE_int32(sleep_ms, 10, "Time to sleep between pings");
+DEFINE_bool(phased_loop, false, "If true, use a phased loop");
 
 namespace aos {
 
@@ -14,15 +15,25 @@ namespace chrono = std::chrono;
 
 Ping::Ping(EventLoop *event_loop)
     : event_loop_(event_loop),
-      sender_(event_loop_->MakeSender<examples::Ping>("/test")) {
-  timer_handle_ = event_loop_->AddTimer([this]() { SendPing(); });
+      sender_(event_loop_->MakeSender<examples::Ping>("/test")),
+      pong_fetcher_(event_loop_->MakeFetcher<examples::Pong>("/test")) {
+  if (FLAGS_phased_loop) {
+    phased_loop_handle_ = event_loop_->AddPhasedLoop(
+        [this](int) { SendPing(); }, chrono::milliseconds(FLAGS_sleep_ms));
+    phased_loop_handle_->set_name("ping");
+  } else {
+    timer_handle_ = event_loop_->AddTimer([this]() { SendPing(); });
+    timer_handle_->set_name("ping");
+  }
 
   event_loop_->MakeWatcher(
       "/test", [this](const examples::Pong &pong) { HandlePong(pong); });
 
   event_loop_->OnRun([this]() {
-    timer_handle_->Setup(event_loop_->monotonic_now(),
-                         chrono::milliseconds(FLAGS_sleep_ms));
+    if (!FLAGS_phased_loop) {
+      timer_handle_->Setup(event_loop_->monotonic_now(),
+                           chrono::milliseconds(FLAGS_sleep_ms));
+    }
   });
 
   event_loop_->SetRuntimeRealtimePriority(5);
@@ -40,6 +51,7 @@ void Ping::SendPing() {
 }
 
 void Ping::HandlePong(const examples::Pong &pong) {
+  pong_fetcher_.Fetch();
   const aos::monotonic_clock::time_point monotonic_send_time(
       chrono::nanoseconds(pong.initial_send_time()));
   const aos::monotonic_clock::time_point monotonic_now =

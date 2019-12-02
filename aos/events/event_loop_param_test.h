@@ -18,6 +18,10 @@ class EventLoopTestFactory {
       : flatbuffer_(JsonToFlatbuffer("{\n"
                                      "  \"channels\": [ \n"
                                      "    {\n"
+                                     "      \"name\": \"/aos\",\n"
+                                     "      \"type\": \"aos.timing.Report\"\n"
+                                     "    },\n"
+                                     "    {\n"
                                      "      \"name\": \"/test\",\n"
                                      "      \"type\": \"aos.TestMessage\"\n"
                                      "    },\n"
@@ -88,6 +92,7 @@ class AbstractEventLoopTestBase
     auto end_timer = loop->AddTimer([this]() { this->Exit(); });
     end_timer->Setup(loop->monotonic_now() +
                      ::std::chrono::milliseconds(duration));
+    end_timer->set_name("end");
   }
 
   // You can implement all the usual fixture class members here.

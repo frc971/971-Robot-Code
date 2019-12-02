@@ -16,5 +16,8 @@
       "name": "/test_action2",
       "type": "aos.common.actions.Status"
     }
+  ],
+  "imports": [
+    "../events/aos.json"
   ]
 }

@@ -7,13 +7,22 @@
 
 #include "aos/configuration.h"
 #include "aos/configuration_generated.h"
+#include "aos/events/event_loop_generated.h"
+#include "aos/events/timing_statistics.h"
 #include "aos/flatbuffers.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/time/time.h"
+#include "aos/util/phased_loop.h"
 #include "flatbuffers/flatbuffers.h"
 #include "glog/logging.h"
 
+DECLARE_bool(timing_reports);
+DECLARE_int32(timing_report_ms);
+
 namespace aos {
+
+class EventLoop;
+class WatcherState;
 
 // Struct available on Watchers and Fetchers with context about the current
 // message.
@@ -34,62 +43,76 @@ struct Context {
 // fetchers.
 class RawFetcher {
  public:
-  RawFetcher(const Channel *channel) : channel_(channel) {}
-  virtual ~RawFetcher() {}
-
-  // Non-blocking fetch of the next message in the queue. Returns true if there
-  // was a new message and we got it.
-  virtual bool FetchNext() = 0;
-
-  // Non-blocking fetch of the latest message:
-  virtual bool Fetch() = 0;
-
-  // Returns a pointer to data in the most recent message, or nullptr if there
-  // is no message.
-  const void *most_recent_data() const { return data_; }
-
-  const Context &context() const { return context_; }
-
-  const Channel *channel() const { return channel_; }
-
- protected:
+  RawFetcher(EventLoop *event_loop, const Channel *channel);
   RawFetcher(const RawFetcher &) = delete;
   RawFetcher &operator=(const RawFetcher &) = delete;
+  virtual ~RawFetcher();
 
-  void *data_ = nullptr;
+  // Fetches the next message in the queue without blocking. Returns true if
+  // there was a new message and we got it.
+  bool FetchNext();
+
+  // Fetches the latest message without blocking.
+  bool Fetch();
+
+  // Returns the channel this fetcher uses.
+  const Channel *channel() const { return channel_; }
+  // Returns the context for the current message.
+  const Context &context() const { return context_; }
+
+ protected:
+  EventLoop *event_loop() { return event_loop_; }
+
   Context context_;
+
+ private:
+  friend class EventLoop;
+  // Implementation
+  virtual std::pair<bool, monotonic_clock::time_point> DoFetchNext() = 0;
+  virtual std::pair<bool, monotonic_clock::time_point> DoFetch() = 0;
+
+  EventLoop *event_loop_;
   const Channel *channel_;
+
+  internal::RawFetcherTiming timing_;
 };
 
 // Raw version of sender.  Sends a block of data.  This is used for reflection
 // and as a building block to implement typed senders.
 class RawSender {
  public:
-  RawSender(const Channel *channel) : channel_(channel) {}
-  virtual ~RawSender() {}
+  RawSender(EventLoop *event_loop, const Channel *channel);
+  RawSender(const RawSender &) = delete;
+  RawSender &operator=(const RawSender &) = delete;
+
+  virtual ~RawSender();
 
   // Sends a message without copying it.  The users starts by copying up to
   // size() bytes into the data backed by data().  They then call Send to send.
   // Returns true on a successful send.
   virtual void *data() = 0;
   virtual size_t size() = 0;
-  virtual bool Send(size_t size) = 0;
+  bool Send(size_t size);
 
   // Sends a single block of data by copying it.
-  virtual bool Send(const void *data, size_t size) = 0;
-
-  // Returns the name of this sender.
-  virtual const std::string_view name() const = 0;
+  bool Send(const void *data, size_t size);
 
   const Channel *channel() const { return channel_; }
 
  protected:
-  RawSender(const RawSender &) = delete;
-  RawSender &operator=(const RawSender &) = delete;
+  EventLoop *event_loop() { return event_loop_; }
 
+ private:
+  friend class EventLoop;
+
+  virtual bool DoSend(const void *data, size_t size) = 0;
+  virtual bool DoSend(size_t size) = 0;
+
+  EventLoop *event_loop_;
   const Channel *channel_;
-};
 
+  internal::RawSenderTiming timing_;
+};
 
 // Fetches the newest message from a channel.
 // This provides a polling based interface for channels.
@@ -110,9 +133,9 @@ class Fetcher {
   // Returns a pointer to the contained flatbuffer, or nullptr if there is no
   // available message.
   const T *get() const {
-    return fetcher_->most_recent_data() != nullptr
-               ? flatbuffers::GetRoot<T>(reinterpret_cast<const char *>(
-                     fetcher_->most_recent_data()))
+    return fetcher_->context().data != nullptr
+               ? flatbuffers::GetRoot<T>(
+                     reinterpret_cast<const char *>(fetcher_->context().data))
                : nullptr;
   }
 
@@ -174,6 +197,7 @@ class Sender {
   // Constructs an above builder.
   Builder MakeBuilder();
 
+  // Returns the name of the underlying queue.
   const Channel *channel() const { return sender_->channel(); }
 
  private:
@@ -185,7 +209,7 @@ class Sender {
 // Interface for timers
 class TimerHandler {
  public:
-  virtual ~TimerHandler() {}
+  virtual ~TimerHandler();
 
   // Timer should sleep until base, base + offset, base + offset * 2, ...
   // If repeat_offset isn't set, the timer only expires once.
@@ -201,39 +225,76 @@ class TimerHandler {
   void set_name(std::string_view name) { name_ = std::string(name); }
   const std::string_view name() const { return name_; }
 
+ protected:
+  TimerHandler(EventLoop *event_loop, std::function<void()> fn);
+
+  void Call(std::function<monotonic_clock::time_point()> get_time,
+            monotonic_clock::time_point event_time);
+
  private:
+  friend class EventLoop;
+
+  EventLoop *event_loop_;
+  // The function to call when Call is called.
+  std::function<void()> fn_;
   std::string name_;
+
+  internal::TimerTiming timing_;
 };
 
 // Interface for phased loops.  They are built on timers.
 class PhasedLoopHandler {
  public:
-  virtual ~PhasedLoopHandler() {}
+  virtual ~PhasedLoopHandler();
 
   // Sets the interval and offset.  Any changes to interval and offset only take
   // effect when the handler finishes running.
-  virtual void set_interval_and_offset(
-      const monotonic_clock::duration interval,
-      const monotonic_clock::duration offset) = 0;
+  void set_interval_and_offset(const monotonic_clock::duration interval,
+                               const monotonic_clock::duration offset) {
+    phased_loop_.set_interval_and_offset(interval, offset);
+  }
 
   // Sets and gets the name of the timer.  Set this if you want a descriptive
   // name in the timing report.
   void set_name(std::string_view name) { name_ = std::string(name); }
   const std::string_view name() const { return name_; }
 
+ protected:
+  void Call(std::function<monotonic_clock::time_point()> get_time,
+            std::function<void(monotonic_clock::time_point)> schedule);
+
+  PhasedLoopHandler(EventLoop *event_loop, std::function<void(int)> fn,
+                    const monotonic_clock::duration interval,
+                    const monotonic_clock::duration offset);
+
  private:
+  friend class EventLoop;
+
+  void Reschedule(std::function<void(monotonic_clock::time_point)> schedule,
+                  monotonic_clock::time_point monotonic_now) {
+    cycles_elapsed_ += phased_loop_.Iterate(monotonic_now);
+    schedule(phased_loop_.sleep_time());
+  }
+
+  virtual void Schedule(monotonic_clock::time_point sleep_time) = 0;
+
+  EventLoop *event_loop_;
+  std::function<void(int)> fn_;
   std::string name_;
+  time::PhasedLoop phased_loop_;
+
+  int cycles_elapsed_ = 0;
+
+  internal::TimerTiming timing_;
 };
 
-// TODO(austin): Ping pong example apps, and then start doing introspection.
-// TODO(austin): Timing reporter.  Publish statistics on latencies of
-// handlers.
 class EventLoop {
  public:
   EventLoop(const Configuration *configuration)
-      : configuration_(configuration) {}
+      : timing_report_(flatbuffers::DetachedBuffer()),
+        configuration_(configuration) {}
 
-  virtual ~EventLoop() {}
+  virtual ~EventLoop();
 
   // Current time.
   virtual monotonic_clock::time_point monotonic_now() = 0;
@@ -308,6 +369,7 @@ class EventLoop {
   // Sets the scheduler priority to run the event loop at.  This may not be
   // called after we go into "real-time-mode".
   virtual void SetRuntimeRealtimePriority(int priority) = 0;
+  virtual int priority() const = 0;
 
   // Fetches new messages from the provided channel (path, type).  Note: this
   // channel must be a member of the exact configuration object this was built
@@ -331,19 +393,57 @@ class EventLoop {
   // Will send new messages from channel (path, type).
   virtual std::unique_ptr<RawSender> MakeRawSender(const Channel *channel) = 0;
 
+  // Prevents the event loop from sending a timing report.
+  void SkipTimingReport() { skip_timing_report_ = true; }
+
  protected:
   void set_is_running(bool value) { is_running_.store(value); }
 
-  // Validates that channel exists inside configuration_.
-  void ValidateChannel(const Channel *channel);
+  // Validates that channel exists inside configuration_ and finds its index.
+  int ChannelIndex(const Channel *channel);
 
   // Context available for watchers.
   Context context_;
 
+  friend class RawSender;
+  friend class TimerHandler;
+  friend class RawFetcher;
+  friend class PhasedLoopHandler;
+  friend class WatcherState;
+
+  // Methods used to implement timing reports.
+  void NewSender(RawSender *sender);
+  void DeleteSender(RawSender *sender);
+  TimerHandler *NewTimer(std::unique_ptr<TimerHandler> timer);
+  PhasedLoopHandler *NewPhasedLoop(
+      std::unique_ptr<PhasedLoopHandler> phased_loop);
+  void NewFetcher(RawFetcher *fetcher);
+  void DeleteFetcher(RawFetcher *fetcher);
+  WatcherState *NewWatcher(std::unique_ptr<WatcherState> watcher);
+
+  std::vector<RawSender *> senders_;
+  std::vector<std::unique_ptr<TimerHandler>> timers_;
+  std::vector<std::unique_ptr<PhasedLoopHandler>> phased_loops_;
+  std::vector<RawFetcher *> fetchers_;
+  std::vector<std::unique_ptr<WatcherState>> watchers_;
+
+  void SendTimingReport();
+  void UpdateTimingReport();
+  void MaybeScheduleTimingReports();
+
+  std::unique_ptr<RawSender> timing_report_sender_;
+
  private:
+  virtual pid_t GetTid() = 0;
+
+  FlatbufferDetachedBuffer<timing::Report> timing_report_;
+
   ::std::atomic<bool> is_running_{false};
 
   const Configuration *configuration_;
+
+  // If true, don't send out timing reports.
+  bool skip_timing_report_ = false;
 };
 
 }  // namespace aos
