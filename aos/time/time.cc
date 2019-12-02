@@ -55,52 +55,6 @@ void sleep_until(const ::aos::monotonic_clock::time_point &end_time) {
 namespace aos {
 namespace time {
 
-#ifdef __linux__
-
-// State required to enable and use mock time.
-namespace {
-// True if mock time is enabled.
-// This does not need to be checked with the mutex held because setting time to
-// be enabled or disabled is atomic, and all future operations are atomic
-// anyways.  If there is a race condition setting or clearing whether time is
-// enabled or not, it will still be a race condition if current_mock_time is
-// also set atomically with enabled.
-::std::atomic<bool> mock_time_enabled{false};
-// Mutex to make time reads and writes thread safe.
-Mutex time_mutex;
-// Current time when time is mocked.
-monotonic_clock::time_point current_mock_time = monotonic_clock::epoch();
-
-}  // namespace
-
-void EnableMockTime(monotonic_clock::time_point now) {
-  MutexLocker time_mutex_locker(&time_mutex);
-  mock_time_enabled = true;
-  current_mock_time = now;
-}
-
-void UpdateMockTime() { SetMockTime(monotonic_clock::now()); }
-
-void DisableMockTime() {
-  MutexLocker time_mutex_locker(&time_mutex);
-  mock_time_enabled = false;
-}
-
-void SetMockTime(monotonic_clock::time_point now) {
-  MutexLocker time_mutex_locker(&time_mutex);
-  CHECK(mock_time_enabled)
-      << ": Tried to set mock time and mock time is not enabled";
-  current_mock_time = now;
-}
-
-void IncrementMockTime(monotonic_clock::duration amount) {
-  static ::aos::Mutex mutex;
-  ::aos::MutexLocker sync(&mutex);
-  SetMockTime(monotonic_clock::now() + amount);
-}
-
-#endif  // __linux__
-
 struct timespec to_timespec(
     const ::aos::monotonic_clock::duration duration) {
   struct timespec time_timespec;
@@ -126,12 +80,6 @@ constexpr realtime_clock::time_point realtime_clock::max_time;
 
 monotonic_clock::time_point monotonic_clock::now() noexcept {
 #ifdef __linux__
-
-  if (time::mock_time_enabled.load(::std::memory_order_relaxed)) {
-    MutexLocker time_mutex_locker(&time::time_mutex);
-    return time::current_mock_time;
-  }
-
   struct timespec current_time;
   PCHECK(clock_gettime(CLOCK_MONOTONIC, &current_time) == 0)
       << ": clock_gettime(" << static_cast<uintmax_t>(CLOCK_MONOTONIC) << ", "

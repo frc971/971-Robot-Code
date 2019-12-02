@@ -69,19 +69,6 @@ namespace time {
 
 #ifdef __linux__
 
-// Enables returning the mock time value for Now instead of checking the system
-// clock.
-void EnableMockTime(monotonic_clock::time_point now);
-// Calls SetMockTime with the current actual time.
-void UpdateMockTime();
-// Sets now when time is being mocked.
-void SetMockTime(monotonic_clock::time_point now);
-// Convenience function to just increment the mock time by a certain amount in
-// a thread safe way.
-void IncrementMockTime(monotonic_clock::duration amount);
-// Disables mocking time.
-void DisableMockTime();
-
 // Construct a time representing the period of hertz.
 constexpr ::std::chrono::nanoseconds FromRate(int hertz) {
   return ::std::chrono::duration_cast<::std::chrono::nanoseconds>(
@@ -98,17 +85,6 @@ constexpr Scalar TypedDurationInSeconds(monotonic_clock::duration dt) {
 constexpr double DurationInSeconds(monotonic_clock::duration dt) {
   return TypedDurationInSeconds<double>(dt);
 }
-
-// RAII class that freezes monotonic_clock::now() (to avoid making large numbers
-// of syscalls to find the real time).
-class TimeFreezer {
- public:
-  TimeFreezer() { EnableMockTime(monotonic_clock::now()); }
-  ~TimeFreezer() { DisableMockTime(); }
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(TimeFreezer);
-};
 
 #endif  // __linux__
 
