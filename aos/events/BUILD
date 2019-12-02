@@ -10,6 +10,15 @@ flatbuffer_cc_library(
 )
 
 flatbuffer_cc_library(
+    name = "event_loop_fbs",
+    srcs = ["event_loop.fbs"],
+    gen_reflections = 1,
+    includes = [
+        "//aos:configuration_fbs_includes",
+    ],
+)
+
+flatbuffer_cc_library(
     name = "ping_fbs",
     srcs = ["ping.fbs"],
     gen_reflections = 1,
@@ -135,6 +144,28 @@ cc_test(
         ":ping_lib",
         ":pong_lib",
         ":simulated_event_loop",
+        "//aos:configuration",
+        "//aos:flatbuffers",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
+    name = "timing_statistics",
+    srcs = ["timing_statistics.cc"],
+    hdrs = ["timing_statistics.h"],
+    deps = [
+        ":event_loop_fbs",
+        "//aos:configuration",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_test(
+    name = "timing_statistics_test",
+    srcs = ["timing_statistics_test.cc"],
+    deps = [
+        ":timing_statistics",
         "//aos:configuration",
         "//aos:flatbuffers",
         "//aos/testing:googletest",

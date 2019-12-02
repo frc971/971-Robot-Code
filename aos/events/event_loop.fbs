@@ -1,0 +1,88 @@
+include "aos/configuration.fbs";
+
+namespace aos.timing;
+
+// Holds statistics for a time or size sample.
+table Statistic {
+  average:float = nan;
+  min:float = nan;
+  max:float = nan;
+  standard_deviation:float = nan;
+}
+
+table Sender {
+  // Index into the channel config for this event loop.
+  channel_index:int = -1;
+
+  // Number of messages published.
+  count:uint;
+  // Statistics on the size of messages published.
+  size:Statistic;
+
+  // Channel for this sender.  Not filled out by default.
+  channel:Channel;
+}
+
+table Watcher {
+  // Index into the channel config for this event loop.
+  channel_index:int = -1;
+
+  // Number of messages received since the last report.
+  count:uint;
+
+  // Latency measurement from when the event was generated (send time), and when
+  // the handler was started.
+  wakeup_latency:Statistic;
+  // Statistics on the execution time of the handler.
+  handler_time:Statistic;
+
+  // Channel for this watcher.  Not filled out by default.
+  channel:Channel;
+}
+
+table Fetcher {
+  // Index into the channel config for this event loop.
+  channel_index:int = -1;
+
+  // Number of messages fetched since the last time this was published.
+  count:uint;
+  // Latency measurement from when the event was generated (send time), and when
+  // the message was fetched.
+  latency:Statistic;
+
+  // Channel for this fetcher.  Not filled out by default.
+  channel:Channel;
+}
+
+table Timer {
+  name:string;
+
+  // Number of wakeups since the last report.
+  count:uint;
+
+  // Latency measurement from when the event was generated (send time), and when
+  // the handler was started.
+  wakeup_latency:Statistic;
+  // Statistics on the execution time of the handler.
+  handler_time:Statistic;
+
+  // Maximum number of cycles missed.
+}
+
+table Report {
+  // Name of the event loop which is publishing this report.
+  name:string;
+  // Identifier for the event loop.  This should change every time a process
+  // gets restarted.
+  pid:int;
+
+  // List of statistics for each watcher, sender, fetcher, timer, and
+  // phased loop.
+  watchers:[Watcher];
+  senders:[Sender];
+  fetchers:[Fetcher];
+  timers:[Timer];
+  phased_loops:[Timer];
+}
+
+root_type Report;
