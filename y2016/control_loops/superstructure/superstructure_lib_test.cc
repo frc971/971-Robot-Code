@@ -356,16 +356,16 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
       : ::aos::testing::ControlLoopTest(
             aos::configuration::ReadConfig("y2016/config.json"),
             chrono::microseconds(5000)),
-        test_event_loop_(MakeEventLoop()),
+        test_event_loop_(MakeEventLoop("test")),
         superstructure_goal_fetcher_(
             test_event_loop_->MakeFetcher<Goal>("/superstructure")),
         superstructure_goal_sender_(
             test_event_loop_->MakeSender<Goal>("/superstructure")),
         superstructure_status_fetcher_(
             test_event_loop_->MakeFetcher<Status>("/superstructure")),
-        superstructure_event_loop_(MakeEventLoop()),
+        superstructure_event_loop_(MakeEventLoop("superstructure")),
         superstructure_(superstructure_event_loop_.get()),
-        superstructure_plant_event_loop_(MakeEventLoop()),
+        superstructure_plant_event_loop_(MakeEventLoop("plant")),
         superstructure_plant_(superstructure_plant_event_loop_.get(), dt()) {}
 
   void VerifyNearGoal() {

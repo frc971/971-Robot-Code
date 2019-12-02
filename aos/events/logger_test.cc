@@ -19,9 +19,9 @@ class LoggerTest : public ::testing::Test {
       : config_(
             aos::configuration::ReadConfig("aos/events/pingpong_config.json")),
         event_loop_factory_(&config_.message()),
-        ping_event_loop_(event_loop_factory_.MakeEventLoop()),
+        ping_event_loop_(event_loop_factory_.MakeEventLoop("ping")),
         ping_(ping_event_loop_.get()),
-        pong_event_loop_(event_loop_factory_.MakeEventLoop()),
+        pong_event_loop_(event_loop_factory_.MakeEventLoop("pong")),
         pong_(pong_event_loop_.get()) {}
 
   // Config and factory.
@@ -50,7 +50,7 @@ TEST_F(LoggerTest, Starts) {
   {
     DetachedBufferWriter writer(logfile);
     std::unique_ptr<EventLoop> logger_event_loop =
-        event_loop_factory_.MakeEventLoop();
+        event_loop_factory_.MakeEventLoop("logger");
 
     event_loop_factory_.RunFor(chrono::milliseconds(95));
 
@@ -69,7 +69,7 @@ TEST_F(LoggerTest, Starts) {
   // knows about the factory.
   SimulatedEventLoopFactory log_reader_factory(reader.configuration());
   std::unique_ptr<EventLoop> reader_event_loop =
-      log_reader_factory.MakeEventLoop();
+      log_reader_factory.MakeEventLoop("log_reader");
 
   reader.Register(reader_event_loop.get());
 
@@ -80,7 +80,7 @@ TEST_F(LoggerTest, Starts) {
                                     log_reader.realtime_start_time());
                                     */
   std::unique_ptr<EventLoop> test_event_loop =
-      log_reader_factory.MakeEventLoop();
+      log_reader_factory.MakeEventLoop("log_reader");
 
   int ping_count = 10;
   int pong_count = 10;

@@ -47,22 +47,20 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
       : ::aos::testing::ControlLoopTest(
             aos::configuration::ReadConfig("y2019/config.json"),
             GetTest2019DrivetrainConfig().dt),
-        test_event_loop_(MakeEventLoop()),
+        test_event_loop_(MakeEventLoop("test")),
         drivetrain_goal_sender_(
             test_event_loop_->MakeSender<Goal>("/drivetrain")),
         drivetrain_goal_fetcher_(
             test_event_loop_->MakeFetcher<Goal>("/drivetrain")),
         localizer_control_sender_(
             test_event_loop_->MakeSender<LocalizerControl>("/drivetrain")),
-
-        drivetrain_event_loop_(MakeEventLoop()),
+        drivetrain_event_loop_(MakeEventLoop("drivetrain")),
         dt_config_(GetTest2019DrivetrainConfig()),
         camera_sender_(
             test_event_loop_->MakeSender<CameraFrame>("/drivetrain")),
         localizer_(drivetrain_event_loop_.get(), dt_config_),
         drivetrain_(dt_config_, drivetrain_event_loop_.get(), &localizer_),
-
-        drivetrain_plant_event_loop_(MakeEventLoop()),
+        drivetrain_plant_event_loop_(MakeEventLoop("plant")),
         drivetrain_plant_(drivetrain_plant_event_loop_.get(), dt_config_),
         cameras_(MakeCameras(&robot_pose_)),
         last_frame_(monotonic_now()) {

@@ -36,7 +36,7 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
             aos::configuration::ReadConfig(
                 "frc971/control_loops/drivetrain/config.json"),
             GetTestDrivetrainConfig().dt),
-        test_event_loop_(MakeEventLoop()),
+        test_event_loop_(MakeEventLoop("test")),
         drivetrain_goal_sender_(
             test_event_loop_->MakeSender<Goal>("/drivetrain")),
         drivetrain_goal_fetcher_(
@@ -47,11 +47,11 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
             test_event_loop_->MakeFetcher<Output>("/drivetrain")),
         localizer_control_sender_(
             test_event_loop_->MakeSender<LocalizerControl>("/drivetrain")),
-        drivetrain_event_loop_(MakeEventLoop()),
+        drivetrain_event_loop_(MakeEventLoop("drivetrain")),
         dt_config_(GetTestDrivetrainConfig()),
         localizer_(drivetrain_event_loop_.get(), dt_config_),
         drivetrain_(dt_config_, drivetrain_event_loop_.get(), &localizer_),
-        drivetrain_plant_event_loop_(MakeEventLoop()),
+        drivetrain_plant_event_loop_(MakeEventLoop("drivetrain_plant")),
         drivetrain_plant_(drivetrain_plant_event_loop_.get(), dt_config_) {
     set_battery_voltage(12.0);
   }

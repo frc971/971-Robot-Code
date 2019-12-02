@@ -36,8 +36,9 @@ class LoopOutputHandlerTest : public ::testing::Test {
                     "}\n",
                     aos::Configuration::MiniReflectTypeTable())))),
         event_loop_factory_(&configuration_.message()),
-        loop_output_hander_event_loop_(event_loop_factory_.MakeEventLoop()),
-        test_event_loop_(event_loop_factory_.MakeEventLoop()) {
+        loop_output_hander_event_loop_(
+            event_loop_factory_.MakeEventLoop("output")),
+        test_event_loop_(event_loop_factory_.MakeEventLoop("test")) {
     ::aos::testing::EnableTestLogging();
   }
 

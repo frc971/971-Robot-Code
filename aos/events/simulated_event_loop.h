@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <map>
 #include <memory>
+#include <string_view>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -53,7 +54,7 @@ class SimulatedEventLoopFactory {
   SimulatedEventLoopFactory(const Configuration *configuration);
   ~SimulatedEventLoopFactory();
 
-  ::std::unique_ptr<EventLoop> MakeEventLoop();
+  ::std::unique_ptr<EventLoop> MakeEventLoop(std::string_view name);
 
   // Starts executing the event loops unconditionally.
   void Run();

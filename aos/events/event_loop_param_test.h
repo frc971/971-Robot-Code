@@ -1,6 +1,7 @@
 #ifndef _AOS_EVENTS_EVENT_LOOP_PARAM_TEST_H_
 #define _AOS_EVENTS_EVENT_LOOP_PARAM_TEST_H_
 
+#include <string_view>
 #include <vector>
 
 #include "aos/events/event_loop.h"
@@ -35,10 +36,10 @@ class EventLoopTestFactory {
   virtual ~EventLoopTestFactory() {}
 
   // Makes a connected event loop.
-  virtual std::unique_ptr<EventLoop> Make() = 0;
+  virtual std::unique_ptr<EventLoop> Make(std::string_view name) = 0;
   // Makes a primary event loop.  This is the one the tests will try to use for
   // anything blocking.
-  virtual std::unique_ptr<EventLoop> MakePrimary() = 0;
+  virtual std::unique_ptr<EventLoop> MakePrimary(std::string_view name) = 0;
 
   // Runs the loops until they quit.
   virtual void Run() = 0;
@@ -60,8 +61,19 @@ class AbstractEventLoopTestBase
  public:
   AbstractEventLoopTestBase() { factory_.reset(GetParam()()); }
 
-  ::std::unique_ptr<EventLoop> Make() { return factory_->Make(); }
-  ::std::unique_ptr<EventLoop> MakePrimary() { return factory_->MakePrimary(); }
+  ::std::unique_ptr<EventLoop> Make(std::string_view name = "") {
+    std::string name_copy(name);
+    if (name == "") {
+      name_copy = "loop";
+      name_copy += std::to_string(event_loop_count_);
+    }
+    ++event_loop_count_;
+    return factory_->Make(name_copy);
+  }
+  ::std::unique_ptr<EventLoop> MakePrimary(std::string_view name = "primary") {
+    ++event_loop_count_;
+    return factory_->MakePrimary(name);
+  }
 
   void Run() { return factory_->Run(); }
 
@@ -83,6 +95,8 @@ class AbstractEventLoopTestBase
   // TestWithParam<T>.
  private:
   ::std::unique_ptr<EventLoopTestFactory> factory_;
+
+  int event_loop_count_ = 0;
 };
 
 typedef AbstractEventLoopTestBase AbstractEventLoopDeathTest;

@@ -20,7 +20,7 @@ class VisionTimeAdjusterTest : public ::testing::Test {
       : ::testing::Test(),
         configuration_(aos::configuration::ReadConfig("y2017/config.json")),
         event_loop_factory_(&configuration_.message()),
-        simulation_event_loop_(event_loop_factory_.MakeEventLoop()),
+        simulation_event_loop_(event_loop_factory_.MakeEventLoop("drivetrain")),
         drivetrain_status_sender_(
             simulation_event_loop_
                 ->MakeSender<::frc971::control_loops::drivetrain::Status>(
@@ -28,7 +28,8 @@ class VisionTimeAdjusterTest : public ::testing::Test {
         vision_status_sender_(
             simulation_event_loop_->MakeSender<::y2017::vision::VisionStatus>(
                 "/vision")),
-        vision_time_adjuster_event_loop_(event_loop_factory_.MakeEventLoop()),
+        vision_time_adjuster_event_loop_(
+            event_loop_factory_.MakeEventLoop("vision_time_adjuster")),
         vision_status_fetcher_(
             vision_time_adjuster_event_loop_
                 ->MakeFetcher<::y2017::vision::VisionStatus>("/vision")),

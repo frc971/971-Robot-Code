@@ -292,12 +292,12 @@ class ClawTest : public ::aos::testing::ControlLoopTest {
       : ::aos::testing::ControlLoopTest(
             aos::configuration::ReadConfig("y2014/config.json"),
             chrono::microseconds(5000)),
-        test_event_loop_(MakeEventLoop()),
+        test_event_loop_(MakeEventLoop("test")),
         claw_goal_sender_(test_event_loop_->MakeSender<Goal>("/claw")),
         claw_goal_fetcher_(test_event_loop_->MakeFetcher<Goal>("/claw")),
-        claw_event_loop_(MakeEventLoop()),
+        claw_event_loop_(MakeEventLoop("claw")),
         claw_motor_(claw_event_loop_.get()),
-        claw_plant_event_loop_(MakeEventLoop()),
+        claw_plant_event_loop_(MakeEventLoop("plant")),
         claw_motor_plant_(claw_plant_event_loop_.get(), dt(), 0.4, 0.2),
         min_separation_(constants::GetValues().claw.claw_min_separation) {}
 

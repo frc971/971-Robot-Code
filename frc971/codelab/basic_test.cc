@@ -111,13 +111,13 @@ class BasicControlLoopTest : public ::aos::testing::ControlLoopTest {
             "  ]\n"
             "}\n",
             chrono::microseconds(5050)),
-        test_event_loop_(MakeEventLoop()),
+        test_event_loop_(MakeEventLoop("test")),
         goal_sender_(test_event_loop_->MakeSender<Goal>("/codelab")),
 
-        basic_event_loop_(MakeEventLoop()),
+        basic_event_loop_(MakeEventLoop("basic")),
         basic_(basic_event_loop_.get(), "/codelab"),
 
-        basic_simulation_event_loop_(MakeEventLoop()),
+        basic_simulation_event_loop_(MakeEventLoop("simulation")),
         basic_simulation_(basic_simulation_event_loop_.get(), dt()) {
     set_team_id(control_loops::testing::kTeamNumber);
   }

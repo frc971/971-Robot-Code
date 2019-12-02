@@ -1,5 +1,7 @@
 #include "aos/events/simulated_event_loop.h"
 
+#include <string_view>
+
 #include "aos/events/event_loop_param_test.h"
 #include "gtest/gtest.h"
 
@@ -12,11 +14,11 @@ class SimulatedEventLoopTestFactory : public EventLoopTestFactory {
  public:
   SimulatedEventLoopTestFactory() : event_loop_factory_(configuration()) {}
 
-  ::std::unique_ptr<EventLoop> Make() override {
-    return event_loop_factory_.MakeEventLoop();
+  ::std::unique_ptr<EventLoop> Make(std::string_view name) override {
+    return event_loop_factory_.MakeEventLoop(name);
   }
-  ::std::unique_ptr<EventLoop> MakePrimary() override {
-    return event_loop_factory_.MakeEventLoop();
+  ::std::unique_ptr<EventLoop> MakePrimary(std::string_view name) override {
+    return event_loop_factory_.MakeEventLoop(name);
   }
 
   void Run() override { event_loop_factory_.Run(); }
@@ -73,7 +75,7 @@ TEST(EventSchedulerTest, DescheduleEvent) {
 TEST(SimulatedEventLoopTest, RunForNoHandlers) {
   SimulatedEventLoopFactory simulated_event_loop_factory(nullptr);
   ::std::unique_ptr<EventLoop> event_loop =
-      simulated_event_loop_factory.MakeEventLoop();
+      simulated_event_loop_factory.MakeEventLoop("loop");
 
   simulated_event_loop_factory.RunFor(chrono::seconds(1));
 
@@ -88,7 +90,7 @@ TEST(SimulatedEventLoopTest, RunForNoHandlers) {
 TEST(SimulatedEventLoopTest, RunForTimerHandler) {
   SimulatedEventLoopFactory simulated_event_loop_factory(nullptr);
   ::std::unique_ptr<EventLoop> event_loop =
-      simulated_event_loop_factory.MakeEventLoop();
+      simulated_event_loop_factory.MakeEventLoop("loop");
 
   int counter = 0;
   auto timer = event_loop->AddTimer([&counter]() { ++counter; });

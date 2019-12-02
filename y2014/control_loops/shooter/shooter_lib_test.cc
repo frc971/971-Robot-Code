@@ -334,12 +334,12 @@ class ShooterTestTemplated
             aos::configuration::ReadConfig("y2014/config.json"),
             // TODO(austin): I think this runs at 5 ms in real life.
             chrono::microseconds(5000)),
-        test_event_loop_(this->MakeEventLoop()),
+        test_event_loop_(this->MakeEventLoop("test")),
         shooter_goal_fetcher_(test_event_loop_->MakeFetcher<Goal>("/shooter")),
         shooter_goal_sender_(test_event_loop_->MakeSender<Goal>("/shooter")),
-        shooter_event_loop_(this->MakeEventLoop()),
+        shooter_event_loop_(this->MakeEventLoop("shooter")),
         shooter_motor_(shooter_event_loop_.get()),
-        shooter_plant_event_loop_(this->MakeEventLoop()),
+        shooter_plant_event_loop_(this->MakeEventLoop("plant")),
         shooter_motor_plant_(shooter_plant_event_loop_.get(), this->dt(), 0.2) {
   }
 

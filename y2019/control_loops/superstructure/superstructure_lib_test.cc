@@ -405,7 +405,7 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
       : ::aos::testing::ControlLoopTest(
             aos::configuration::ReadConfig("y2019/config.json"),
             chrono::microseconds(5050)),
-        test_event_loop_(MakeEventLoop()),
+        test_event_loop_(MakeEventLoop("test")),
         superstructure_goal_fetcher_(
             test_event_loop_->MakeFetcher<Goal>("/superstructure")),
         superstructure_goal_sender_(
@@ -416,9 +416,9 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
             test_event_loop_->MakeFetcher<Output>("/superstructure")),
         superstructure_position_fetcher_(
             test_event_loop_->MakeFetcher<Position>("/superstructure")),
-        superstructure_event_loop_(MakeEventLoop()),
+        superstructure_event_loop_(MakeEventLoop("superstructure")),
         superstructure_(superstructure_event_loop_.get()),
-        superstructure_plant_event_loop_(MakeEventLoop()),
+        superstructure_plant_event_loop_(MakeEventLoop("plant")),
         superstructure_plant_(superstructure_plant_event_loop_.get(), dt()) {
     set_team_id(::frc971::control_loops::testing::kTeamNumber);
   }

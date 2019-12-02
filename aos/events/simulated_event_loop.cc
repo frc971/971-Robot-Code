@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <deque>
+#include <string_view>
 
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
@@ -60,7 +61,7 @@ class SimulatedChannel {
 
   size_t max_size() const { return channel_.message().max_size(); }
 
-  const absl::string_view name() const {
+  const std::string_view name() const {
     return channel_.message().name()->string_view();
   }
 
@@ -510,9 +511,12 @@ SimulatedEventLoopFactory::SimulatedEventLoopFactory(
     : configuration_(configuration) {}
 SimulatedEventLoopFactory::~SimulatedEventLoopFactory() {}
 
-::std::unique_ptr<EventLoop> SimulatedEventLoopFactory::MakeEventLoop() {
-  return ::std::unique_ptr<EventLoop>(new SimulatedEventLoop(
+::std::unique_ptr<EventLoop> SimulatedEventLoopFactory::MakeEventLoop(
+    std::string_view name) {
+  ::std::unique_ptr<EventLoop> result(new SimulatedEventLoop(
       &scheduler_, &channels_, configuration_, &raw_event_loops_));
+  result->set_name(name);
+  return result;
 }
 
 void SimulatedEventLoopFactory::RunFor(monotonic_clock::duration duration) {

@@ -122,16 +122,16 @@ class ShooterTest : public ::aos::testing::ControlLoopTest {
       : ::aos::testing::ControlLoopTest(
             aos::configuration::ReadConfig("y2016/config.json"),
             chrono::microseconds(5000)),
-        test_event_loop_(MakeEventLoop()),
+        test_event_loop_(MakeEventLoop("test")),
         shooter_goal_fetcher_(test_event_loop_->MakeFetcher<Goal>("/shooter")),
         shooter_goal_sender_(test_event_loop_->MakeSender<Goal>("/shooter")),
         shooter_status_fetcher_(
             test_event_loop_->MakeFetcher<Status>("/shooter")),
         shooter_output_fetcher_(
             test_event_loop_->MakeFetcher<Output>("/shooter")),
-        shooter_event_loop_(MakeEventLoop()),
+        shooter_event_loop_(MakeEventLoop("shooter")),
         shooter_(shooter_event_loop_.get()),
-        shooter_plant_event_loop_(MakeEventLoop()),
+        shooter_plant_event_loop_(MakeEventLoop("plant")),
         shooter_plant_(shooter_plant_event_loop_.get(), dt()) {
     set_team_id(kTeamNumber);
   }

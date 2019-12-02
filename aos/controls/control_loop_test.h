@@ -2,6 +2,7 @@
 #define AOS_CONTROLS_CONTROL_LOOP_TEST_H_
 
 #include <chrono>
+#include <string_view>
 
 #include "gtest/gtest.h"
 
@@ -40,7 +41,7 @@ class ControlLoopTestTemplated : public TestBaseClass {
       : configuration_(std::move(configuration)),
         event_loop_factory_(&configuration_.message()),
         dt_(dt),
-        robot_status_event_loop_(MakeEventLoop()) {
+        robot_status_event_loop_(MakeEventLoop("robot_status")) {
     testing::EnableTestLogging();
     robot_state_sender_ =
         robot_status_event_loop_->MakeSender<::aos::RobotState>("/aos");
@@ -88,8 +89,8 @@ class ControlLoopTestTemplated : public TestBaseClass {
     battery_voltage_ = battery_voltage;
   }
 
-  ::std::unique_ptr<::aos::EventLoop> MakeEventLoop() {
-    return event_loop_factory_.MakeEventLoop();
+  ::std::unique_ptr<::aos::EventLoop> MakeEventLoop(std::string_view name) {
+    return event_loop_factory_.MakeEventLoop(name);
   }
 
   void RunFor(monotonic_clock::duration duration) {

@@ -1,5 +1,7 @@
 #include "aos/events/shm_event_loop.h"
 
+#include <string_view>
+
 #include "aos/events/event_loop_param_test.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
@@ -30,15 +32,18 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
     unlink((FLAGS_shm_base + "/test2/aos.TestMessage.v0").c_str());
   }
 
-  ::std::unique_ptr<EventLoop> Make() override {
-    return ::std::unique_ptr<EventLoop>(new ShmEventLoop(configuration()));
+  ::std::unique_ptr<EventLoop> Make(std::string_view name) override {
+    ::std::unique_ptr<EventLoop> loop(new ShmEventLoop(configuration()));
+    loop->set_name(name);
+    return loop;
   }
 
-  ::std::unique_ptr<EventLoop> MakePrimary() override {
+  ::std::unique_ptr<EventLoop> MakePrimary(std::string_view name) override {
     ::std::unique_ptr<ShmEventLoop> loop =
         ::std::unique_ptr<ShmEventLoop>(new ShmEventLoop(configuration()));
     primary_event_loop_ = loop.get();
-    return ::std::move(loop);
+    loop->set_name(name);
+    return std::move(loop);
   }
 
   void Run() override { CHECK_NOTNULL(primary_event_loop_)->Run(); }
@@ -77,8 +82,8 @@ bool IsRealtime() {
 // involved and it's easy to miss one.
 TEST(ShmEventLoopTest, AllHandlersAreRealtime) {
   ShmEventLoopTestFactory factory;
-  auto loop = factory.MakePrimary();
-  auto loop2 = factory.Make();
+  auto loop = factory.MakePrimary("primary");
+  auto loop2 = factory.Make("loop2");
 
   loop->SetRuntimeRealtimePriority(1);
 
@@ -121,7 +126,7 @@ TEST(ShmEventLoopTest, AllHandlersAreRealtime) {
 // running at the right offset.
 TEST(ShmEventLoopTest, DelayedPhasedLoop) {
   ShmEventLoopTestFactory factory;
-  auto loop1 = factory.MakePrimary();
+  auto loop1 = factory.MakePrimary("primary");
 
   ::std::vector<::aos::monotonic_clock::time_point> times;
 

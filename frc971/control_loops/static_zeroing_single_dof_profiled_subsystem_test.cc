@@ -374,15 +374,15 @@ class IntakeSystemTest : public ::aos::testing::ControlLoopTest {
             "  ]\n"
             "}\n",
             chrono::microseconds(5050)),
-        test_event_loop_(MakeEventLoop()),
+        test_event_loop_(MakeEventLoop("test")),
         subsystem_goal_sender_(test_event_loop_->MakeSender<GoalType>("/loop")),
         subsystem_goal_fetcher_(
             test_event_loop_->MakeFetcher<GoalType>("/loop")),
         subsystem_status_fetcher_(
             test_event_loop_->MakeFetcher<StatusType>("/loop")),
-        subsystem_event_loop_(MakeEventLoop()),
+        subsystem_event_loop_(MakeEventLoop("subsystem")),
         subsystem_(subsystem_event_loop_.get(), "/loop"),
-        subsystem_plant_event_loop_(MakeEventLoop()),
+        subsystem_plant_event_loop_(MakeEventLoop("plant")),
         subsystem_plant_(subsystem_plant_event_loop_.get(), dt()) {}
 
   void VerifyNearGoal() {

@@ -102,9 +102,9 @@ class ActionTest : public ::testing::Test {
       : configuration_(
             configuration::ReadConfig("aos/actions/action_test_config.json")),
         event_loop_factory_(&configuration_.message()),
-        actor1_event_loop_(event_loop_factory_.MakeEventLoop()),
-        actor2_event_loop_(event_loop_factory_.MakeEventLoop()),
-        test_event_loop_(event_loop_factory_.MakeEventLoop()) {
+        actor1_event_loop_(event_loop_factory_.MakeEventLoop("actor1")),
+        actor2_event_loop_(event_loop_factory_.MakeEventLoop("actor2")),
+        test_event_loop_(event_loop_factory_.MakeEventLoop("test")) {
     ::aos::testing::EnableTestLogging();
   }
 
@@ -132,7 +132,7 @@ TEST_F(ActionTest, DoesNothing) {
 // cancel message.
 TEST_F(ActionTest, StartWithOldGoal) {
   ::std::unique_ptr<::aos::EventLoop> test2_event_loop =
-      event_loop_factory_.MakeEventLoop();
+      event_loop_factory_.MakeEventLoop("test2");
   ::aos::Sender<TestActionGoal> goal_sender =
       test2_event_loop->MakeSender<TestActionGoal>("/test_action");
   ::aos::Fetcher<Status> status_fetcher =

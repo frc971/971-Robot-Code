@@ -16,9 +16,9 @@ class PingPongTest : public ::testing::Test {
       : config_(aos::configuration::ReadConfig(
             "aos/events/pingpong_config.json")),
         event_loop_factory_(&config_.message()),
-        ping_event_loop_(event_loop_factory_.MakeEventLoop()),
+        ping_event_loop_(event_loop_factory_.MakeEventLoop("ping")),
         ping_(ping_event_loop_.get()),
-        pong_event_loop_(event_loop_factory_.MakeEventLoop()),
+        pong_event_loop_(event_loop_factory_.MakeEventLoop("pong")),
         pong_(pong_event_loop_.get()) {}
 
   // Config and factory.
@@ -50,7 +50,7 @@ TEST_F(PingPongTest, Starts) {
 // Tests that the number of pong messages matches the number of ping messages.
 TEST_F(PingPongTest, AlwaysReplies) {
   std::unique_ptr<EventLoop> test_event_loop =
-      event_loop_factory_.MakeEventLoop();
+      event_loop_factory_.MakeEventLoop("test");
 
   int ping_count = 0;
   int pong_count = 0;
