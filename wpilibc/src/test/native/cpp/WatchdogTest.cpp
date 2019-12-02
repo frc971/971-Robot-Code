@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018 FIRST. All Rights Reserved.                             */
+/* Copyright (c) 2018-2019 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -17,10 +17,14 @@
 
 using namespace frc;
 
+#ifdef __APPLE__
+TEST(WatchdogTest, DISABLED_EnableDisable) {
+#else
 TEST(WatchdogTest, EnableDisable) {
+#endif
   uint32_t watchdogCounter = 0;
 
-  Watchdog watchdog(0.4, [&] { watchdogCounter++; });
+  Watchdog watchdog(0.4_s, [&] { watchdogCounter++; });
 
   wpi::outs() << "Run 1\n";
   watchdog.Enable();
@@ -48,10 +52,14 @@ TEST(WatchdogTest, EnableDisable) {
       << "Watchdog either didn't trigger or triggered more than once";
 }
 
+#ifdef __APPLE__
+TEST(WatchdogTest, DISABLED_Reset) {
+#else
 TEST(WatchdogTest, Reset) {
+#endif
   uint32_t watchdogCounter = 0;
 
-  Watchdog watchdog(0.4, [&] { watchdogCounter++; });
+  Watchdog watchdog(0.4_s, [&] { watchdogCounter++; });
 
   watchdog.Enable();
   std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -62,14 +70,18 @@ TEST(WatchdogTest, Reset) {
   EXPECT_EQ(0u, watchdogCounter) << "Watchdog triggered early";
 }
 
+#ifdef __APPLE__
+TEST(WatchdogTest, DISABLED_SetTimeout) {
+#else
 TEST(WatchdogTest, SetTimeout) {
+#endif
   uint32_t watchdogCounter = 0;
 
-  Watchdog watchdog(1.0, [&] { watchdogCounter++; });
+  Watchdog watchdog(1.0_s, [&] { watchdogCounter++; });
 
   watchdog.Enable();
   std::this_thread::sleep_for(std::chrono::milliseconds(200));
-  watchdog.SetTimeout(0.2);
+  watchdog.SetTimeout(0.2_s);
 
   EXPECT_EQ(0.2, watchdog.GetTimeout());
   EXPECT_EQ(0u, watchdogCounter) << "Watchdog triggered early";
@@ -81,8 +93,12 @@ TEST(WatchdogTest, SetTimeout) {
       << "Watchdog either didn't trigger or triggered more than once";
 }
 
+#ifdef __APPLE__
+TEST(WatchdogTest, DISABLED_IsExpired) {
+#else
 TEST(WatchdogTest, IsExpired) {
-  Watchdog watchdog(0.2, [] {});
+#endif
+  Watchdog watchdog(0.2_s, [] {});
   EXPECT_FALSE(watchdog.IsExpired());
   watchdog.Enable();
 
@@ -97,10 +113,14 @@ TEST(WatchdogTest, IsExpired) {
   EXPECT_FALSE(watchdog.IsExpired());
 }
 
+#ifdef __APPLE__
+TEST(WatchdogTest, DISABLED_Epochs) {
+#else
 TEST(WatchdogTest, Epochs) {
+#endif
   uint32_t watchdogCounter = 0;
 
-  Watchdog watchdog(0.4, [&] { watchdogCounter++; });
+  Watchdog watchdog(0.4_s, [&] { watchdogCounter++; });
 
   wpi::outs() << "Run 1\n";
   watchdog.Enable();
@@ -133,8 +153,8 @@ TEST(WatchdogTest, MultiWatchdog) {
   uint32_t watchdogCounter1 = 0;
   uint32_t watchdogCounter2 = 0;
 
-  Watchdog watchdog1(0.2, [&] { watchdogCounter1++; });
-  Watchdog watchdog2(0.6, [&] { watchdogCounter2++; });
+  Watchdog watchdog1(0.2_s, [&] { watchdogCounter1++; });
+  Watchdog watchdog2(0.6_s, [&] { watchdogCounter2++; });
 
   watchdog2.Enable();
   std::this_thread::sleep_for(std::chrono::milliseconds(200));

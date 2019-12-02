@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2016-2018 FIRST. All Rights Reserved.                        */
+/* Copyright (c) 2016-2019 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -25,9 +25,9 @@
 #include <algorithm>
 
 #include <wpi/FileSystem.h>
+#include <wpi/MemAlloc.h>
 #include <wpi/Path.h>
 #include <wpi/SmallString.h>
-#include <wpi/memory.h>
 #include <wpi/raw_ostream.h>
 #include <wpi/timestamp.h>
 
@@ -108,6 +108,11 @@ static bool IsPercentageProperty(wpi::StringRef name) {
 static constexpr const int quirkLifeCamHd3000[] = {
     5, 10, 20, 39, 78, 156, 312, 625, 1250, 2500, 5000, 10000, 20000};
 
+static constexpr char const* quirkPS3EyePropExAuto = "auto_exposure";
+static constexpr char const* quirkPS3EyePropExValue = "exposure";
+static constexpr const int quirkPS3EyePropExAutoOn = 0;
+static constexpr const int quirkPS3EyePropExAutoOff = 1;
+
 int UsbCameraImpl::RawToPercentage(const UsbCameraProperty& rawProp,
                                    int rawValue) {
   // LifeCam exposure setting quirk
@@ -138,10 +143,36 @@ int UsbCameraImpl::PercentageToRaw(const UsbCameraProperty& rawProp,
          (rawProp.maximum - rawProp.minimum) * (percentValue / 100.0);
 }
 
-static bool GetDescriptionSysV4L(wpi::StringRef path, std::string* desc) {
-  wpi::SmallString<64> ifpath{"/sys/class/video4linux/"};
-  ifpath += path.substr(5);
-  ifpath += "/device/interface";
+static bool GetVendorProduct(int dev, int* vendor, int* product) {
+  wpi::SmallString<64> ifpath;
+  {
+    wpi::raw_svector_ostream oss{ifpath};
+    oss << "/sys/class/video4linux/video" << dev << "/device/modalias";
+  }
+
+  int fd = open(ifpath.c_str(), O_RDONLY);
+  if (fd < 0) return false;
+
+  char readBuf[128];
+  ssize_t n = read(fd, readBuf, sizeof(readBuf));
+  close(fd);
+
+  if (n <= 0) return false;
+  wpi::StringRef readStr{readBuf};
+  if (readStr.substr(readStr.find('v')).substr(1, 4).getAsInteger(16, *vendor))
+    return false;
+  if (readStr.substr(readStr.find('p')).substr(1, 4).getAsInteger(16, *product))
+    return false;
+
+  return true;
+}
+
+static bool GetDescriptionSysV4L(int dev, std::string* desc) {
+  wpi::SmallString<64> ifpath;
+  {
+    wpi::raw_svector_ostream oss{ifpath};
+    oss << "/sys/class/video4linux/video" << dev << "/device/interface";
+  }
 
   int fd = open(ifpath.c_str(), O_RDONLY);
   if (fd < 0) return false;
@@ -187,23 +218,35 @@ static bool GetDescriptionIoctl(const char* cpath, std::string* desc) {
   return true;
 }
 
-static std::string GetDescriptionImpl(const char* cpath) {
+static int GetDeviceNum(const char* cpath) {
   wpi::StringRef path{cpath};
-  char pathBuf[128];
-  std::string rv;
+  std::string pathBuf;
 
-  // If trying to get by id or path, follow symlink
-  if (path.startswith("/dev/v4l/by-id/")) {
-    ssize_t n = readlink(cpath, pathBuf, sizeof(pathBuf));
-    if (n > 0) path = wpi::StringRef(pathBuf, n);
-  } else if (path.startswith("/dev/v4l/by-path/")) {
-    ssize_t n = readlink(cpath, pathBuf, sizeof(pathBuf));
-    if (n > 0) path = wpi::StringRef(pathBuf, n);
+  // it might be a symlink; if so, find the symlink target (e.g. /dev/videoN),
+  // add that to the list and make it the keypath
+  if (wpi::sys::fs::is_symlink_file(cpath)) {
+    char* target = ::realpath(cpath, nullptr);
+    if (target) {
+      pathBuf = target;
+      path = pathBuf;
+      std::free(target);
+    }
   }
 
-  if (path.startswith("/dev/video")) {
+  path = wpi::sys::path::filename(path);
+  if (!path.startswith("video")) return -1;
+  int dev = -1;
+  if (path.substr(5).getAsInteger(10, dev)) return -1;
+  return dev;
+}
+
+static std::string GetDescriptionImpl(const char* cpath) {
+  std::string rv;
+
+  int dev = GetDeviceNum(cpath);
+  if (dev >= 0) {
     // Sometimes the /sys tree gives a better name.
-    if (GetDescriptionSysV4L(path, &rv)) return rv;
+    if (GetDescriptionSysV4L(dev, &rv)) return rv;
   }
 
   // Otherwise use an ioctl to query the caps and get the card name
@@ -447,8 +490,7 @@ void UsbCameraImpl::DeviceDisconnect() {
   if (fd < 0) return;  // already disconnected
 
   // Unmap buffers
-  for (int i = 0; i < kNumBuffers; ++i)
-    m_buffers[i] = std::move(UsbCameraBuffer{});
+  for (int i = 0; i < kNumBuffers; ++i) m_buffers[i] = UsbCameraBuffer{};
 
   // Close device
   close(fd);
@@ -492,7 +534,7 @@ void UsbCameraImpl::DeviceConnect() {
 
     // Restore settings
     SDEBUG3("restoring settings");
-    std::unique_lock<wpi::mutex> lock2(m_mutex);
+    std::unique_lock lock2(m_mutex);
     for (size_t i = 0; i < m_propertyData.size(); ++i) {
       const auto prop =
           static_cast<const UsbCameraProperty*>(m_propertyData[i].get());
@@ -534,11 +576,11 @@ void UsbCameraImpl::DeviceConnect() {
     SDEBUG4("buf " << i << " length=" << buf.length
                    << " offset=" << buf.m.offset);
 
-    m_buffers[i] = std::move(UsbCameraBuffer(fd, buf.length, buf.m.offset));
+    m_buffers[i] = UsbCameraBuffer(fd, buf.length, buf.m.offset);
     if (!m_buffers[i].m_data) {
       SWARNING("could not map buffer " << i);
       // release other buffers
-      for (int j = 0; j < i; ++j) m_buffers[j] = std::move(UsbCameraBuffer{});
+      for (int j = 0; j < i; ++j) m_buffers[j] = UsbCameraBuffer{};
       close(fd);
       m_fd = -1;
       return;
@@ -737,7 +779,7 @@ CS_StatusValue UsbCameraImpl::DeviceProcessCommand(
 }
 
 void UsbCameraImpl::DeviceProcessCommands() {
-  std::unique_lock<wpi::mutex> lock(m_mutex);
+  std::unique_lock lock(m_mutex);
   if (m_commands.empty()) return;
   while (!m_commands.empty()) {
     auto msg = std::move(m_commands.back());
@@ -816,7 +858,7 @@ void UsbCameraImpl::DeviceCacheMode() {
   vfmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   if (DoIoctl(fd, VIDIOC_G_FMT, &vfmt) != 0) {
     SERROR("could not read current video mode");
-    std::lock_guard<wpi::mutex> lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
     m_mode = VideoMode{VideoMode::kMJPEG, 320, 240, 30};
     return;
   }
@@ -882,7 +924,7 @@ void UsbCameraImpl::DeviceCacheMode() {
 
   // Save to global mode
   {
-    std::lock_guard<wpi::mutex> lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
     m_mode.pixelFormat = pixelFormat;
     m_mode.width = width;
     m_mode.height = height;
@@ -908,11 +950,11 @@ void UsbCameraImpl::DeviceCacheProperty(
   std::unique_ptr<UsbCameraProperty> perProp;
   if (IsPercentageProperty(rawProp->name)) {
     perProp =
-        wpi::make_unique<UsbCameraProperty>(rawProp->name, 0, *rawProp, 0, 0);
+        std::make_unique<UsbCameraProperty>(rawProp->name, 0, *rawProp, 0, 0);
     rawProp->name = "raw_" + perProp->name;
   }
 
-  std::unique_lock<wpi::mutex> lock(m_mutex);
+  std::unique_lock lock(m_mutex);
   int* rawIndex = &m_properties[rawProp->name];
   bool newRaw = *rawIndex == 0;
   UsbCameraProperty* oldRawProp =
@@ -1071,7 +1113,7 @@ void UsbCameraImpl::DeviceCacheVideoModes() {
   }
 
   {
-    std::lock_guard<wpi::mutex> lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
     m_videoModes.swap(modes);
   }
   m_notifier.NotifySource(*this, CS_SOURCE_VIDEOMODES_UPDATED);
@@ -1086,14 +1128,14 @@ CS_StatusValue UsbCameraImpl::SendAndWait(Message&& msg) const {
 
   // Add the message to the command queue
   {
-    std::lock_guard<wpi::mutex> lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
     m_commands.emplace_back(std::move(msg));
   }
 
   // Signal the camera thread
   if (eventfd_write(fd, 1) < 0) return CS_SOURCE_IS_DISCONNECTED;
 
-  std::unique_lock<wpi::mutex> lock(m_mutex);
+  std::unique_lock lock(m_mutex);
   while (m_active) {
     // Did we get a response to *our* request?
     auto it =
@@ -1121,7 +1163,7 @@ void UsbCameraImpl::Send(Message&& msg) const {
 
   // Add the message to the command queue
   {
-    std::lock_guard<wpi::mutex> lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
     m_commands.emplace_back(std::move(msg));
   }
 
@@ -1131,7 +1173,7 @@ void UsbCameraImpl::Send(Message&& msg) const {
 
 std::unique_ptr<PropertyImpl> UsbCameraImpl::CreateEmptyProperty(
     const wpi::Twine& name) const {
-  return wpi::make_unique<UsbCameraProperty>(name);
+  return std::make_unique<UsbCameraProperty>(name);
 }
 
 bool UsbCameraImpl::CacheProperties(CS_Status* status) const {
@@ -1150,6 +1192,14 @@ void UsbCameraImpl::SetQuirks() {
   wpi::StringRef desc = GetDescription(descbuf);
   m_lifecam_exposure =
       desc.endswith("LifeCam HD-3000") || desc.endswith("LifeCam Cinema (TM)");
+
+  int deviceNum = GetDeviceNum(m_path.c_str());
+  if (deviceNum >= 0) {
+    int vendorId, productId;
+    if (GetVendorProduct(deviceNum, &vendorId, &productId)) {
+      m_ps3eyecam_exposure = vendorId == 0x2000 && productId == 0x0145;
+    }
+  }
 }
 
 void UsbCameraImpl::SetProperty(int property, int value, CS_Status* status) {
@@ -1195,21 +1245,41 @@ void UsbCameraImpl::SetWhiteBalanceManual(int value, CS_Status* status) {
 
 void UsbCameraImpl::SetExposureAuto(CS_Status* status) {
   // auto; this is an enum value
-  SetProperty(GetPropertyIndex(kPropExAuto), 3, status);
+  if (m_ps3eyecam_exposure) {
+    SetProperty(GetPropertyIndex(quirkPS3EyePropExAuto),
+                quirkPS3EyePropExAutoOn, status);
+
+  } else {
+    SetProperty(GetPropertyIndex(kPropExAuto), 3, status);
+  }
 }
 
 void UsbCameraImpl::SetExposureHoldCurrent(CS_Status* status) {
-  SetProperty(GetPropertyIndex(kPropExAuto), 1, status);  // manual
+  if (m_ps3eyecam_exposure) {
+    SetProperty(GetPropertyIndex(quirkPS3EyePropExAuto),
+                quirkPS3EyePropExAutoOff, status);  // manual
+  } else {
+    SetProperty(GetPropertyIndex(kPropExAuto), 1, status);  // manual
+  }
 }
 
 void UsbCameraImpl::SetExposureManual(int value, CS_Status* status) {
-  SetProperty(GetPropertyIndex(kPropExAuto), 1, status);  // manual
+  if (m_ps3eyecam_exposure) {
+    SetProperty(GetPropertyIndex(quirkPS3EyePropExAuto),
+                quirkPS3EyePropExAutoOff, status);  // manual
+  } else {
+    SetProperty(GetPropertyIndex(kPropExAuto), 1, status);  // manual
+  }
   if (value > 100) {
     value = 100;
   } else if (value < 0) {
     value = 0;
   }
-  SetProperty(GetPropertyIndex(kPropExValue), value, status);
+  if (m_ps3eyecam_exposure) {
+    SetProperty(GetPropertyIndex(quirkPS3EyePropExValue), value, status);
+  } else {
+    SetProperty(GetPropertyIndex(kPropExValue), value, status);
+  }
 }
 
 bool UsbCameraImpl::SetVideoMode(const VideoMode& mode, CS_Status* status) {
@@ -1292,23 +1362,14 @@ UsbCameraInfo GetUsbCameraInfo(CS_Source source, CS_Status* status) {
   std::string keypath = static_cast<UsbCameraImpl&>(*data->source).GetPath();
   info.path = keypath;
 
-  // it might be a symlink; if so, find the symlink target (e.g. /dev/videoN),
-  // add that to the list and make it the keypath
-  if (wpi::sys::fs::is_symlink_file(keypath)) {
-    char* target = ::realpath(keypath.c_str(), nullptr);
-    if (target) {
-      keypath.assign(target);
-      info.otherPaths.emplace_back(keypath);
-      std::free(target);
-    }
-  }
-
   // device number
-  wpi::StringRef fname = wpi::sys::path::filename(keypath);
-  if (fname.startswith("video")) fname.substr(5).getAsInteger(10, info.dev);
+  info.dev = GetDeviceNum(keypath.c_str());
 
   // description
   info.name = GetDescriptionImpl(keypath.c_str());
+
+  // vendor/product id
+  GetVendorProduct(info.dev, &info.vendorId, &info.productId);
 
   // look through /dev/v4l/by-id and /dev/v4l/by-path for symlinks to the
   // keypath
@@ -1359,6 +1420,8 @@ std::vector<UsbCameraInfo> EnumerateUsbCameras(CS_Status* status) {
 
       info.name = GetDescriptionImpl(path.c_str());
       if (info.name.empty()) continue;
+
+      GetVendorProduct(dev, &info.vendorId, &info.productId);
 
       if (dev >= retval.size()) retval.resize(info.dev + 1);
       retval[info.dev] = std::move(info);

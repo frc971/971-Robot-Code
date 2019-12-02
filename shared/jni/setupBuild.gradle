@@ -16,8 +16,10 @@ ext {
 apply from: "${rootDir}/shared/java/javacommon.gradle"
 
 dependencies {
-    compile project(':wpiutil')
-    devCompile project(':wpiutil')
+    if (!project.hasProperty('noWpiutil')) {
+        compile project(':wpiutil')
+        devCompile project(':wpiutil')
+    }
 }
 
 project(':').libraryBuild.dependsOn build
@@ -69,7 +71,9 @@ model {
                     it.buildable = false
                     return
                 }
-                lib project: ':wpiutil', library: 'wpiutil', linkage: 'shared'
+                if (!project.hasProperty('noWpiutil')) {
+                    lib project: ':wpiutil', library: 'wpiutil', linkage: 'shared'
+                }
                 if (project.hasProperty('splitSetup')) {
                     splitSetup(it)
                 }
@@ -93,8 +97,10 @@ model {
                     }
                 }
             }
-            binaries.all {
-                lib project: ':wpiutil', library: 'wpiutil', linkage: 'shared'
+            if (!project.hasProperty('noWpiutil')) {
+                binaries.all {
+                    lib project: ':wpiutil', library: 'wpiutil', linkage: 'shared'
+                }
             }
             appendDebugPathToBinaries(binaries)
         }
@@ -104,10 +110,12 @@ model {
             } else {
                 baseName = nativeName + 'jni'
             }
+
             enableCheckTask true
             javaCompileTasks << compileJava
-            jniCrossCompileOptions << JniCrossCompileOptions('athena')
-            jniCrossCompileOptions << JniCrossCompileOptions('raspbian')
+            jniCrossCompileOptions << JniCrossCompileOptions(nativeUtils.wpi.platforms.roborio)
+            jniCrossCompileOptions << JniCrossCompileOptions(nativeUtils.wpi.platforms.raspbian)
+            jniCrossCompileOptions << JniCrossCompileOptions(nativeUtils.wpi.platforms.aarch64bionic)
             sources {
                 cpp {
                     source {
@@ -130,7 +138,9 @@ model {
                     return
                 }
                 lib library: "${nativeName}", linkage: 'shared'
-                lib project: ':wpiutil', library: 'wpiutil', linkage: 'shared'
+                if (!project.hasProperty('noWpiutil')) {
+                    lib project: ':wpiutil', library: 'wpiutil', linkage: 'shared'
+                }
                 if (project.hasProperty('jniSplitSetup')) {
                     jniSplitSetup(it)
                 }
@@ -142,10 +152,12 @@ model {
             } else {
                 baseName = nativeName + 'jni'
             }
+
             enableCheckTask true
             javaCompileTasks << compileJava
-            jniCrossCompileOptions << JniCrossCompileOptions('athena')
-            jniCrossCompileOptions << JniCrossCompileOptions('raspbian')
+            jniCrossCompileOptions << JniCrossCompileOptions(nativeUtils.wpi.platforms.roborio)
+            jniCrossCompileOptions << JniCrossCompileOptions(nativeUtils.wpi.platforms.raspbian)
+            jniCrossCompileOptions << JniCrossCompileOptions(nativeUtils.wpi.platforms.aarch64bionic)
             sources {
                 cpp {
                     source {
@@ -166,7 +178,9 @@ model {
                     it.buildable = false
                     return
                 }
-                lib project: ':wpiutil', library: 'wpiutil', linkage: 'static'
+                if (!project.hasProperty('noWpiutil')) {
+                    lib project: ':wpiutil', library: 'wpiutil', linkage: 'static'
+                }
                 if (project.hasProperty('jniSplitSetup')) {
                     jniSplitSetup(it)
                 }
@@ -194,7 +208,9 @@ model {
             binaries.all {
                 lib library: nativeName, linkage: 'shared'
                 lib library: "${nativeName}JNIShared", linkage: 'shared'
-                lib project: ':wpiutil', library: 'wpiutil', linkage: 'shared'
+                if (!project.hasProperty('noWpiutil')) {
+                    lib project: ':wpiutil', library: 'wpiutil', linkage: 'shared'
+                }
             }
         }
     }
@@ -224,11 +240,9 @@ model {
     }
     binaries {
         withType(GoogleTestTestSuiteBinarySpec) {
-            if (!project.hasProperty('onlyAthena') && !project.hasProperty('onlyRaspbian')) {
-                lib library: nativeName, linkage: 'shared'
+            lib library: nativeName, linkage: 'shared'
+            if (!project.hasProperty('noWpiutil')) {
                 lib project: ':wpiutil', library: 'wpiutil', linkage: 'shared'
-            } else {
-                it.buildable = false
             }
         }
     }
@@ -243,7 +257,7 @@ model {
                 if (it in NativeExecutableSpec && it.name == "${nativeName}Dev") {
                     it.binaries.each {
                         if (!found) {
-                            def arch = it.targetPlatform.architecture.name
+                            def arch = it.targetPlatform.name
                             if (arch == systemArch) {
                                 dependsOn it.tasks.install
                                 commandLine it.tasks.install.runScriptFile.get().asFile.toString()

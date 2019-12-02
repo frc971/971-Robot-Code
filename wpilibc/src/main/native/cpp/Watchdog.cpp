@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018 FIRST. All Rights Reserved.                             */
+/* Copyright (c) 2018-2019 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -32,7 +32,7 @@ class Watchdog::Thread : public wpi::SafeThread {
 };
 
 void Watchdog::Thread::Main() {
-  std::unique_lock<wpi::mutex> lock(m_mutex);
+  std::unique_lock lock(m_mutex);
 
   while (m_active) {
     if (m_watchdogs.size() > 0) {
@@ -54,7 +54,7 @@ void Watchdog::Thread::Main() {
           if (!watchdog->m_suppressTimeoutMessage) {
             wpi::outs() << "Watchdog not fed within "
                         << wpi::format("%.6f",
-                                       watchdog->m_timeout.count() / 1.0e6)
+                                       watchdog->m_timeout.count() / 1.0e9)
                         << "s\n";
           }
         }
@@ -78,9 +78,10 @@ void Watchdog::Thread::Main() {
 }
 
 Watchdog::Watchdog(double timeout, std::function<void()> callback)
-    : m_timeout(static_cast<int64_t>(timeout * 1.0e6)),
-      m_callback(callback),
-      m_owner(&GetThreadOwner()) {}
+    : Watchdog(units::second_t{timeout}, callback) {}
+
+Watchdog::Watchdog(units::second_t timeout, std::function<void()> callback)
+    : m_timeout(timeout), m_callback(callback), m_owner(&GetThreadOwner()) {}
 
 Watchdog::~Watchdog() { Disable(); }
 
@@ -89,6 +90,13 @@ double Watchdog::GetTime() const {
 }
 
 void Watchdog::SetTimeout(double timeout) {
+  SetTimeout(units::second_t{timeout});
+}
+
+void Watchdog::SetTimeout(units::second_t timeout) {
+  using std::chrono::duration_cast;
+  using std::chrono::microseconds;
+
   m_startTime = hal::fpga_clock::now();
   m_epochs.clear();
 
@@ -96,11 +104,11 @@ void Watchdog::SetTimeout(double timeout) {
   auto thr = m_owner->GetThread();
   if (!thr) return;
 
-  m_timeout = std::chrono::microseconds(static_cast<int64_t>(timeout * 1.0e6));
+  m_timeout = timeout;
   m_isExpired = false;
 
   thr->m_watchdogs.remove(this);
-  m_expirationTime = m_startTime + m_timeout;
+  m_expirationTime = m_startTime + duration_cast<microseconds>(m_timeout);
   thr->m_watchdogs.emplace(this);
   thr->m_cond.notify_all();
 }
@@ -109,7 +117,7 @@ double Watchdog::GetTimeout() const {
   // Locks mutex
   auto thr = m_owner->GetThread();
 
-  return m_timeout.count() / 1.0e6;
+  return m_timeout.count() / 1.0e9;
 }
 
 bool Watchdog::IsExpired() const {
@@ -140,6 +148,9 @@ void Watchdog::PrintEpochs() {
 void Watchdog::Reset() { Enable(); }
 
 void Watchdog::Enable() {
+  using std::chrono::duration_cast;
+  using std::chrono::microseconds;
+
   m_startTime = hal::fpga_clock::now();
   m_epochs.clear();
 
@@ -150,7 +161,7 @@ void Watchdog::Enable() {
   m_isExpired = false;
 
   thr->m_watchdogs.remove(this);
-  m_expirationTime = m_startTime + m_timeout;
+  m_expirationTime = m_startTime + duration_cast<microseconds>(m_timeout);
   thr->m_watchdogs.emplace(this);
   thr->m_cond.notify_all();
 }

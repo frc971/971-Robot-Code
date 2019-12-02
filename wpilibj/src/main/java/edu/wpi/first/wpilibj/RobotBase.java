@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2008-2018 FIRST. All Rights Reserved.                        */
+/* Copyright (c) 2008-2019 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -38,7 +38,7 @@ public abstract class RobotBase implements AutoCloseable {
    * The ID of the main Java thread.
    */
   // This is usually 1, but it is best to make sure
-  public static final long MAIN_THREAD_ID = Thread.currentThread().getId();
+  private static long m_threadId = -1;
 
   private static void setupCameraServerShared() {
     CameraServerShared shared = new CameraServerShared() {
@@ -65,7 +65,12 @@ public abstract class RobotBase implements AutoCloseable {
 
       @Override
       public Long getRobotMainThreadId() {
-        return MAIN_THREAD_ID;
+        return RobotBase.getMainThreadId();
+      }
+
+      @Override
+      public boolean isRoboRIO() {
+        return RobotBase.isReal();
       }
     };
 
@@ -85,6 +90,7 @@ public abstract class RobotBase implements AutoCloseable {
    */
   protected RobotBase() {
     NetworkTableInstance inst = NetworkTableInstance.getDefault();
+    m_threadId = Thread.currentThread().getId();
     setupCameraServerShared();
     inst.setNetworkIdentity("Robot");
     inst.startServer("/home/lvuser/networktables.ini");
@@ -95,8 +101,8 @@ public abstract class RobotBase implements AutoCloseable {
     Shuffleboard.disableActuatorWidgets();
   }
 
-  @Deprecated
-  public void free() {
+  public static long getMainThreadId() {
+    return m_threadId;
   }
 
   @Override
@@ -199,21 +205,11 @@ public abstract class RobotBase implements AutoCloseable {
   }
 
   /**
-   * Starting point for the applications.
+   * Run the robot main loop.
    */
   @SuppressWarnings({"PMD.AvoidInstantiatingObjectsInLoops", "PMD.AvoidCatchingThrowable",
                      "PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
-  public static <T extends RobotBase> void startRobot(Supplier<T> robotSupplier) {
-    if (!HAL.initialize(500, 0)) {
-      throw new IllegalStateException("Failed to initialize. Terminating");
-    }
-
-    // Call a CameraServer JNI function to force OpenCV native library loading
-    // Needed because all the OpenCV JNI functions don't have built in loading
-    CameraServerJNI.enumerateSinks();
-
-    HAL.report(tResourceType.kResourceType_Language, tInstances.kLanguage_Java);
-
+  private static <T extends RobotBase> void runRobot(Supplier<T> robotSupplier) {
     System.out.println("********** Robot program starting **********");
 
     T robot;
@@ -233,7 +229,6 @@ public abstract class RobotBase implements AutoCloseable {
           + throwable.toString(), elements);
       DriverStation.reportWarning("Robots should not quit, but yours did!", false);
       DriverStation.reportError("Could not instantiate robot " + robotName + "!", false);
-      System.exit(1);
       return;
     }
 
@@ -280,6 +275,34 @@ public abstract class RobotBase implements AutoCloseable {
         DriverStation.reportError("Unexpected return from startCompetition() method.", false);
       }
     }
+  }
+
+  /**
+   * Starting point for the applications.
+   */
+  public static <T extends RobotBase> void startRobot(Supplier<T> robotSupplier) {
+    if (!HAL.initialize(500, 0)) {
+      throw new IllegalStateException("Failed to initialize. Terminating");
+    }
+
+    // Call a CameraServer JNI function to force OpenCV native library loading
+    // Needed because all the OpenCV JNI functions don't have built in loading
+    CameraServerJNI.enumerateSinks();
+
+    HAL.report(tResourceType.kResourceType_Language, tInstances.kLanguage_Java);
+
+    if (HAL.hasMain()) {
+      Thread thread = new Thread(() -> {
+        runRobot(robotSupplier);
+        HAL.exitMain();
+      }, "robot main");
+      thread.setDaemon(true);
+      thread.start();
+      HAL.runMain();
+    } else {
+      runRobot(robotSupplier);
+    }
+
     System.exit(1);
   }
 }
