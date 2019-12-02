@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2008-2018 FIRST. All Rights Reserved.                        */
+/* Copyright (c) 2008-2019 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -9,6 +9,7 @@
 
 #include <thread>
 
+#include <hal/Main.h>
 #include <wpi/raw_ostream.h>
 
 #include "frc/Base.h"
@@ -19,14 +20,37 @@ class DriverStation;
 
 int RunHALInitialization();
 
+namespace impl {
+
+template <class Robot>
+void RunRobot() {
+  static Robot robot;
+  robot.StartCompetition();
+}
+
+}  // namespace impl
+
 template <class Robot>
 int StartRobot() {
   int halInit = RunHALInitialization();
   if (halInit != 0) {
     return halInit;
   }
-  static Robot robot;
-  robot.StartCompetition();
+  if (HAL_HasMain()) {
+    std::thread([] {
+      try {
+        impl::RunRobot<Robot>();
+      } catch (...) {
+        HAL_ExitMain();
+        throw;
+      }
+      HAL_ExitMain();
+    })
+        .detach();
+    HAL_RunMain();
+  } else {
+    impl::RunRobot<Robot>();
+  }
 
   return 0;
 }
@@ -131,8 +155,8 @@ class RobotBase {
 
   // m_ds isn't moved in these because DriverStation is a singleton; every
   // instance of RobotBase has a reference to the same object.
-  RobotBase(RobotBase&&);
-  RobotBase& operator=(RobotBase&&);
+  RobotBase(RobotBase&&) noexcept;
+  RobotBase& operator=(RobotBase&&) noexcept;
 
   DriverStation& m_ds;
 

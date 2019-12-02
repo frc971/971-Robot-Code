@@ -12,8 +12,8 @@ ext {
 
 apply from: "${rootDir}/shared/config.gradle"
 
-if (!project.hasProperty('onlyAthena')) {
-
+if (!project.hasProperty('onlylinuxathena')) {
+    ext.skiplinuxathena = true
     ext {
         sharedCvConfigs = [lowfi_simTest: []]
         staticCvConfigs = [:]
@@ -40,19 +40,20 @@ if (!project.hasProperty('onlyAthena')) {
 
     apply from: "${rootDir}/shared/nilibraries.gradle"
 
-    model {
-        exportsConfigs {
-            lowfi_sim(ExportsConfig) {
-                x86ExcludeSymbols = ['_CT??_R0?AV_System_error', '_CT??_R0?AVexception', '_CT??_R0?AVfailure',
-                                     '_CT??_R0?AVbad_cast',
-                                     '_CT??_R0?AVruntime_error', '_CT??_R0?AVsystem_error', '_CTA5?AVfailure',
-                                     '_TI5?AVfailure']
-                x64ExcludeSymbols = ['_CT??_R0?AV_System_error', '_CT??_R0?AVexception', '_CT??_R0?AVfailure',
-                                     '_CT??_R0?AVbad_cast',
-                                     '_CT??_R0?AVruntime_error', '_CT??_R0?AVsystem_error', '_CTA5?AVfailure',
-                                     '_TI5?AVfailure']
-            }
+    nativeUtils.exportsConfigs {
+        lowfi_sim {
+            x86ExcludeSymbols = ['_CT??_R0?AV_System_error', '_CT??_R0?AVexception', '_CT??_R0?AVfailure',
+                                '_CT??_R0?AVruntime_error', '_CT??_R0?AVsystem_error', '_CTA5?AVfailure',
+                                '_TI5?AVfailure', '_CT??_R0?AVout_of_range', '_CTA3?AVout_of_range',
+                                '_TI3?AVout_of_range', '_CT??_R0?AVbad_cast']
+            x64ExcludeSymbols = ['_CT??_R0?AV_System_error', '_CT??_R0?AVexception', '_CT??_R0?AVfailure',
+                                '_CT??_R0?AVruntime_error', '_CT??_R0?AVsystem_error', '_CTA5?AVfailure',
+                                '_TI5?AVfailure', '_CT??_R0?AVout_of_range', '_CTA3?AVout_of_range',
+                                '_TI3?AVout_of_range', '_CT??_R0?AVbad_cast']
         }
+    }
+
+    model {
         components {
             "${nativeName}Base"(NativeLibrarySpec) {
                 sources {
@@ -71,13 +72,12 @@ if (!project.hasProperty('onlyAthena')) {
                         it.buildable = false
                         return
                     }
-                    if (it.targetPlatform.architecture.name == 'athena') {
+                    if (it.targetPlatform.name == nativeUtils.wpi.platforms.roborio) {
                         it.buildable = false
                         return
                     }
                     project(':hal').addHalDependency(it, 'shared')
                     lib project: ':wpiutil', library: 'wpiutil', linkage: 'shared'
-                    lib project: ':simulation:halsim_adx_gyro_accelerometer', library: 'halsim_adx_gyro_accelerometer', linkage: 'shared'
                 }
             }
             "${nativeName}"(NativeLibrarySpec) {
@@ -93,13 +93,12 @@ if (!project.hasProperty('onlyAthena')) {
                     }
                 }
                 binaries.all {
-                    if (it.targetPlatform.architecture.name == 'athena') {
+                    if (it.targetPlatform.name == nativeUtils.wpi.platforms.roborio) {
                         it.buildable = false
                         return
                     }
                     project(':hal').addHalDependency(it, 'shared')
                     lib project: ':wpiutil', library: 'wpiutil', linkage: 'shared'
-                    lib project: ':simulation:halsim_adx_gyro_accelerometer', library: 'halsim_adx_gyro_accelerometer', linkage: 'shared'
                 }
             }
             // By default, a development executable will be generated. This is to help the case of
@@ -119,13 +118,12 @@ if (!project.hasProperty('onlyAthena')) {
                     }
                 }
                 binaries.all {
-                    if (it.targetPlatform.architecture.name == 'athena') {
+                    if (it.targetPlatform.name == nativeUtils.wpi.platforms.roborio) {
                         it.buildable = false
                         return
                     }
                     project(':hal').addHalDependency(it, 'shared')
                     lib project: ':wpiutil', library: 'wpiutil', linkage: 'shared'
-                    lib project: ':simulation:halsim_adx_gyro_accelerometer', library: 'halsim_adx_gyro_accelerometer', linkage: 'shared'
                     lib library: nativeName, linkage: 'shared'
                 }
             }
@@ -138,7 +136,6 @@ if (!project.hasProperty('onlyAthena')) {
                 lib project: ':wpiutil', library: 'wpiutil', linkage: 'shared'
                 lib project: ':cameraserver', library: 'cameraserver', linkage: 'shared'
                 lib project: ':wpilibc', library: 'wpilibc', linkage: 'shared'
-                lib project: ':simulation:halsim_adx_gyro_accelerometer', library: 'halsim_adx_gyro_accelerometer', linkage: 'shared'
                 lib library: nativeName, linkage: 'shared'
             }
         }
@@ -150,7 +147,7 @@ if (!project.hasProperty('onlyAthena')) {
 model {
 
     testSuites {
-        if (!project.hasProperty('onlyAthena') && !project.hasProperty('onlyRaspbian')) {
+        if (!project.hasProperty('onlylinuxathena') && !project.hasProperty('onlylinuxraspbian') && !project.hasProperty('onlylinuxaarch64bionic')) {
             "${nativeName}Test"(GoogleTestTestSuiteSpec) {
                 for(NativeComponentSpec c : $.components) {
                     if (c.name == nativeName) {

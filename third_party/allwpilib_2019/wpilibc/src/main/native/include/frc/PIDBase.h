@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2008-2018 FIRST. All Rights Reserved.                        */
+/* Copyright (c) 2008-2019 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -14,14 +14,17 @@
 #include <wpi/mutex.h>
 
 #include "frc/Base.h"
+#include "frc/LinearFilter.h"
 #include "frc/PIDInterface.h"
 #include "frc/PIDOutput.h"
 #include "frc/PIDSource.h"
 #include "frc/Timer.h"
-#include "frc/filters/LinearDigitalFilter.h"
-#include "frc/smartdashboard/SendableBase.h"
+#include "frc/smartdashboard/Sendable.h"
+#include "frc/smartdashboard/SendableHelper.h"
 
 namespace frc {
+
+class SendableBuilder;
 
 /**
  * Class implements a PID Control Loop.
@@ -33,7 +36,10 @@ namespace frc {
  * in the integral and derivative calculations. Therefore, the sample rate
  * affects the controller's behavior for a given set of PID constants.
  */
-class PIDBase : public SendableBase, public PIDInterface, public PIDOutput {
+class PIDBase : public PIDInterface,
+                public PIDOutput,
+                public Sendable,
+                public SendableHelper<PIDBase> {
  public:
   /**
    * Allocate a PID object with the given constants for P, I, D.
@@ -44,6 +50,7 @@ class PIDBase : public SendableBase, public PIDInterface, public PIDOutput {
    * @param source The PIDSource object that is used to get values
    * @param output The PIDOutput object that is set to the output value
    */
+  WPI_DEPRECATED("All APIs which use this have been deprecated.")
   PIDBase(double p, double i, double d, PIDSource& source, PIDOutput& output);
 
   /**
@@ -55,13 +62,11 @@ class PIDBase : public SendableBase, public PIDInterface, public PIDOutput {
    * @param source The PIDSource object that is used to get values
    * @param output The PIDOutput object that is set to the output value
    */
+  WPI_DEPRECATED("All APIs which use this have been deprecated.")
   PIDBase(double p, double i, double d, double f, PIDSource& source,
           PIDOutput& output);
 
-  ~PIDBase() override = default;
-
-  PIDBase(PIDBase&&) = default;
-  PIDBase& operator=(PIDBase&&) = default;
+  virtual ~PIDBase() = default;
 
   /**
    * Return the current PID result.
@@ -215,7 +220,7 @@ class PIDBase : public SendableBase, public PIDInterface, public PIDOutput {
    *
    * @return the average error
    */
-  WPI_DEPRECATED("Use a LinearDigitalFilter as the input and GetError().")
+  WPI_DEPRECATED("Use a LinearFilter as the input and GetError().")
   virtual double GetAvgError() const;
 
   /**
@@ -397,8 +402,7 @@ class PIDBase : public SendableBase, public PIDInterface, public PIDOutput {
   double m_error = 0;
   double m_result = 0;
 
-  std::shared_ptr<PIDSource> m_origSource;
-  LinearDigitalFilter m_filter{nullptr, {}, {}};
+  LinearFilter m_filter{{}, {}};
 };
 
 }  // namespace frc

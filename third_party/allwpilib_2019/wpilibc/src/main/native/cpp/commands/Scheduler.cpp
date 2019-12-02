@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2011-2018 FIRST. All Rights Reserved.                        */
+/* Copyright (c) 2011-2019 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -21,6 +21,7 @@
 #include "frc/commands/Command.h"
 #include "frc/commands/Subsystem.h"
 #include "frc/smartdashboard/SendableBuilder.h"
+#include "frc/smartdashboard/SendableRegistry.h"
 
 using namespace frc;
 
@@ -51,7 +52,7 @@ Scheduler* Scheduler::GetInstance() {
 }
 
 void Scheduler::AddCommand(Command* command) {
-  std::lock_guard<wpi::mutex> lock(m_impl->additionsMutex);
+  std::scoped_lock lock(m_impl->additionsMutex);
   if (std::find(m_impl->additions.begin(), m_impl->additions.end(), command) !=
       m_impl->additions.end())
     return;
@@ -59,7 +60,7 @@ void Scheduler::AddCommand(Command* command) {
 }
 
 void Scheduler::AddButton(ButtonScheduler* button) {
-  std::lock_guard<wpi::mutex> lock(m_impl->buttonsMutex);
+  std::scoped_lock lock(m_impl->buttonsMutex);
   m_impl->buttons.emplace_back(button);
 }
 
@@ -76,7 +77,7 @@ void Scheduler::Run() {
   {
     if (!m_impl->enabled) return;
 
-    std::lock_guard<wpi::mutex> lock(m_impl->buttonsMutex);
+    std::scoped_lock lock(m_impl->buttonsMutex);
     for (auto& button : m_impl->buttons) {
       button->Execute();
     }
@@ -103,7 +104,7 @@ void Scheduler::Run() {
 
   // Add the new things
   {
-    std::lock_guard<wpi::mutex> lock(m_impl->additionsMutex);
+    std::scoped_lock lock(m_impl->additionsMutex);
     for (auto& addition : m_impl->additions) {
       // Check to make sure no adding during adding
       if (m_impl->adding) {
@@ -182,8 +183,9 @@ void Scheduler::InitSendable(SendableBuilder& builder) {
     if (m_impl->runningCommandsChanged) {
       m_impl->commandsBuf.resize(0);
       m_impl->idsBuf.resize(0);
+      auto& registry = SendableRegistry::GetInstance();
       for (const auto& command : m_impl->commands) {
-        m_impl->commandsBuf.emplace_back(command->GetName());
+        m_impl->commandsBuf.emplace_back(registry.GetName(command));
         m_impl->idsBuf.emplace_back(command->GetID());
       }
       nt::NetworkTableEntry(namesEntry).SetStringArray(m_impl->commandsBuf);
@@ -195,7 +197,7 @@ void Scheduler::InitSendable(SendableBuilder& builder) {
 Scheduler::Scheduler() : m_impl(new Impl) {
   HAL_Report(HALUsageReporting::kResourceType_Command,
              HALUsageReporting::kCommand_Scheduler);
-  SetName("Scheduler");
+  SendableRegistry::GetInstance().AddLW(this, "Scheduler");
 }
 
 Scheduler::~Scheduler() {}

@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2008-2018 FIRST. All Rights Reserved.                        */
+/* Copyright (c) 2008-2019 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -12,10 +12,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 import edu.wpi.first.hal.HAL;
 import edu.wpi.first.hal.util.BoundaryException;
-import edu.wpi.first.wpilibj.filters.LinearDigitalFilter;
 import edu.wpi.first.wpilibj.smartdashboard.SendableBuilder;
+import edu.wpi.first.wpilibj.smartdashboard.SendableRegistry;
 
-import static java.util.Objects.requireNonNull;
+import static edu.wpi.first.wpilibj.util.ErrorMessages.requireNonNullParam;
 
 /**
  * Class implements a PID Control Loop.
@@ -26,9 +26,12 @@ import static java.util.Objects.requireNonNull;
  * <p>This feedback controller runs in discrete time, so time deltas are not used in the integral
  * and derivative calculations. Therefore, the sample rate affects the controller's behavior for a
  * given set of PID constants.
+ *
+ * @deprecated All APIs which use this have been deprecated.
  */
+@Deprecated(since = "2020", forRemoval = true)
 @SuppressWarnings("PMD.TooManyFields")
-public class PIDBase extends SendableBase implements PIDInterface, PIDOutput {
+public class PIDBase implements PIDInterface, PIDOutput, Sendable, AutoCloseable {
   public static final double kDefaultPeriod = 0.05;
   private static int instances;
 
@@ -84,8 +87,7 @@ public class PIDBase extends SendableBase implements PIDInterface, PIDOutput {
   private double m_error;
   private double m_result;
 
-  private PIDSource m_origSource;
-  private LinearDigitalFilter m_filter;
+  private LinearFilter m_filter;
 
   protected ReentrantLock m_thisMutex = new ReentrantLock();
 
@@ -156,9 +158,8 @@ public class PIDBase extends SendableBase implements PIDInterface, PIDOutput {
   @SuppressWarnings("ParameterName")
   public PIDBase(double Kp, double Ki, double Kd, double Kf, PIDSource source,
                  PIDOutput output) {
-    super(false);
-    requireNonNull(source, "Null PIDSource was given");
-    requireNonNull(output, "Null PIDOutput was given");
+    requireNonNullParam(source, "PIDSource", "PIDBase");
+    requireNonNullParam(output, "output", "PIDBase");
 
     m_setpointTimer = new Timer();
     m_setpointTimer.start();
@@ -168,19 +169,15 @@ public class PIDBase extends SendableBase implements PIDInterface, PIDOutput {
     m_D = Kd;
     m_F = Kf;
 
-    // Save original source
-    m_origSource = source;
-
-    // Create LinearDigitalFilter with original source as its source argument
-    m_filter = LinearDigitalFilter.movingAverage(m_origSource, 1);
-    m_pidInput = m_filter;
+    m_pidInput = source;
+    m_filter = LinearFilter.movingAverage(1);
 
     m_pidOutput = output;
 
     instances++;
     HAL.report(tResourceType.kResourceType_PIDController, instances);
     m_tolerance = new NullTolerance();
-    setName("PIDController", instances);
+    SendableRegistry.add(this, "PIDController", instances);
   }
 
   /**
@@ -197,13 +194,18 @@ public class PIDBase extends SendableBase implements PIDInterface, PIDOutput {
     this(Kp, Ki, Kd, 0.0, source, output);
   }
 
+  @Override
+  public void close() {
+    SendableRegistry.remove(this);
+  }
+
   /**
    * Read the input, calculate the output accordingly, and write to the output. This should only be
    * called by the PIDTask and is created during initialization.
    */
   @SuppressWarnings({"LocalVariableName", "PMD.ExcessiveMethodLength", "PMD.NPathComplexity"})
   protected void calculate() {
-    if (m_origSource == null || m_pidOutput == null) {
+    if (m_pidInput == null || m_pidOutput == null) {
       return;
     }
 
@@ -235,7 +237,7 @@ public class PIDBase extends SendableBase implements PIDInterface, PIDOutput {
 
       m_thisMutex.lock();
       try {
-        input = m_pidInput.pidGet();
+        input = m_filter.calculate(m_pidInput.pidGet());
 
         pidSourceType = m_pidInput.getPIDSourceType();
         P = m_P;
@@ -638,7 +640,7 @@ public class PIDBase extends SendableBase implements PIDInterface, PIDOutput {
   public double getError() {
     m_thisMutex.lock();
     try {
-      return getContinuousError(getSetpoint() - m_pidInput.pidGet());
+      return getContinuousError(getSetpoint() - m_filter.calculate(m_pidInput.pidGet()));
     } finally {
       m_thisMutex.unlock();
     }
@@ -731,15 +733,14 @@ public class PIDBase extends SendableBase implements PIDInterface, PIDOutput {
    * erroneous measurements when the mechanism is on target. However, the mechanism will not
    * register as on target for at least the specified bufLength cycles.
    *
-   * @deprecated      Use a LinearDigitalFilter as the input.
+   * @deprecated      Use a LinearFilter as the input.
    * @param bufLength Number of previous cycles to average.
    */
   @Deprecated
   public void setToleranceBuffer(int bufLength) {
     m_thisMutex.lock();
     try {
-      m_filter = LinearDigitalFilter.movingAverage(m_origSource, bufLength);
-      m_pidInput = m_filter;
+      m_filter = LinearFilter.movingAverage(bufLength);
     } finally {
       m_thisMutex.unlock();
     }

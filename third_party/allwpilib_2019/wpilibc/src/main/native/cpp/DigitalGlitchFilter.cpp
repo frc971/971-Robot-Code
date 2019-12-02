@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2015-2018 FIRST. All Rights Reserved.                        */
+/* Copyright (c) 2015-2019 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -20,6 +20,7 @@
 #include "frc/SensorUtil.h"
 #include "frc/Utility.h"
 #include "frc/WPIErrors.h"
+#include "frc/smartdashboard/SendableRegistry.h"
 
 using namespace frc;
 
@@ -28,7 +29,7 @@ std::array<bool, 3> DigitalGlitchFilter::m_filterAllocated = {
 wpi::mutex DigitalGlitchFilter::m_mutex;
 
 DigitalGlitchFilter::DigitalGlitchFilter() {
-  std::lock_guard<wpi::mutex> lock(m_mutex);
+  std::scoped_lock lock(m_mutex);
   auto index =
       std::find(m_filterAllocated.begin(), m_filterAllocated.end(), false);
   wpi_assert(index != m_filterAllocated.end());
@@ -38,24 +39,25 @@ DigitalGlitchFilter::DigitalGlitchFilter() {
 
   HAL_Report(HALUsageReporting::kResourceType_DigitalGlitchFilter,
              m_channelIndex);
-  SetName("DigitalGlitchFilter", m_channelIndex);
+  SendableRegistry::GetInstance().AddLW(this, "DigitalGlitchFilter",
+                                        m_channelIndex);
 }
 
 DigitalGlitchFilter::~DigitalGlitchFilter() {
   if (m_channelIndex >= 0) {
-    std::lock_guard<wpi::mutex> lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
     m_filterAllocated[m_channelIndex] = false;
   }
 }
 
 DigitalGlitchFilter::DigitalGlitchFilter(DigitalGlitchFilter&& rhs)
-    : ErrorBase(std::move(rhs)), SendableBase(std::move(rhs)) {
+    : ErrorBase(std::move(rhs)), SendableHelper(std::move(rhs)) {
   std::swap(m_channelIndex, rhs.m_channelIndex);
 }
 
 DigitalGlitchFilter& DigitalGlitchFilter::operator=(DigitalGlitchFilter&& rhs) {
   ErrorBase::operator=(std::move(rhs));
-  SendableBase::operator=(std::move(rhs));
+  SendableHelper::operator=(std::move(rhs));
 
   std::swap(m_channelIndex, rhs.m_channelIndex);
 

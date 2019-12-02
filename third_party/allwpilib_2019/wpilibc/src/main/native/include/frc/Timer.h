@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2008-2018 FIRST. All Rights Reserved.                        */
+/* Copyright (c) 2008-2019 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -7,14 +7,14 @@
 
 #pragma once
 
+#include <units/units.h>
 #include <wpi/deprecated.h>
 #include <wpi/mutex.h>
 
 #include "frc/Base.h"
+#include "frc2/Timer.h"
 
 namespace frc {
-
-using TimerInterruptHandler = void (*)(void* param);
 
 /**
  * Pause the task for a specified time.
@@ -27,16 +27,6 @@ using TimerInterruptHandler = void (*)(void* param);
  * @param seconds Length of time to pause, in seconds.
  */
 void Wait(double seconds);
-
-/**
- * Return the FPGA system clock time in seconds.
- *
- * This is deprecated and just forwards to Timer::GetFPGATimestamp().
- *
- * @return Robot running time in seconds.
- */
-WPI_DEPRECATED("Use Timer::GetFPGATimestamp() instead.")
-double GetClock();
 
 /**
  * @brief  Gives real-time clock system time with nanosecond resolution
@@ -66,8 +56,10 @@ class Timer {
 
   virtual ~Timer() = default;
 
-  Timer(Timer&&) = default;
-  Timer& operator=(Timer&&) = default;
+  Timer(const Timer& rhs) = default;
+  Timer& operator=(const Timer& rhs) = default;
+  Timer(Timer&& rhs) = default;
+  Timer& operator=(Timer&& rhs) = default;
 
   /**
    * Get the current time from the timer. If the clock is running it is derived
@@ -144,10 +136,7 @@ class Timer {
   static const double kRolloverTime;
 
  private:
-  double m_startTime = 0.0;
-  double m_accumulatedTime = 0.0;
-  bool m_running = false;
-  mutable wpi::mutex m_mutex;
+  frc2::Timer m_timer;
 };
 
 }  // namespace frc

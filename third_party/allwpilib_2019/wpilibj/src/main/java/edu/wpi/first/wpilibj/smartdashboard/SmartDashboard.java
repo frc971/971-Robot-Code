@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2008-2018 FIRST. All Rights Reserved.                        */
+/* Copyright (c) 2008-2019 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -17,7 +17,6 @@ import edu.wpi.first.hal.HAL;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.wpilibj.NamedSendable;
 import edu.wpi.first.wpilibj.Sendable;
 
 /**
@@ -28,28 +27,24 @@ import edu.wpi.first.wpilibj.Sendable;
  * laptop. Users can put values into and get values from the SmartDashboard.
  */
 @SuppressWarnings({"PMD.GodClass", "PMD.TooManyMethods"})
-public class SmartDashboard {
+public final class SmartDashboard {
   /**
    * The {@link NetworkTable} used by {@link SmartDashboard}.
    */
   private static final NetworkTable table =
       NetworkTableInstance.getDefault().getTable("SmartDashboard");
 
-  private static class Data {
-    Data(Sendable sendable) {
-      m_sendable = sendable;
-    }
-
-    final Sendable m_sendable;
-    final SendableBuilderImpl m_builder = new SendableBuilderImpl();
-  }
-
   /**
    * A table linking tables in the SmartDashboard to the {@link Sendable} objects they
    * came from.
    */
   @SuppressWarnings("PMD.UseConcurrentHashMap")
-  private static final Map<String, Data> tablesToData = new HashMap<>();
+  private static final Map<String, Sendable> tablesToData = new HashMap<>();
+
+  /**
+   * The executor for listener tasks; calls listener tasks synchronously from main thread.
+   */
+  private static final ListenerExecutor listenerExecutor = new ListenerExecutor();
 
   static {
     HAL.report(tResourceType.kResourceType_SmartDashboard, 0);
@@ -67,25 +62,19 @@ public class SmartDashboard {
    * @param data the value
    * @throws IllegalArgumentException If key is null
    */
+  @SuppressWarnings("PMD.CompareObjectsWithEquals")
   public static synchronized void putData(String key, Sendable data) {
-    Data sddata = tablesToData.get(key);
-    if (sddata == null || sddata.m_sendable != data) {
-      if (sddata != null) {
-        sddata.m_builder.stopListeners();
-      }
-      sddata = new Data(data);
-      tablesToData.put(key, sddata);
+    Sendable sddata = tablesToData.get(key);
+    if (sddata == null || sddata != data) {
+      tablesToData.put(key, data);
       NetworkTable dataTable = table.getSubTable(key);
-      sddata.m_builder.setTable(dataTable);
-      data.initSendable(sddata.m_builder);
-      sddata.m_builder.updateTable();
-      sddata.m_builder.startListeners();
+      SendableRegistry.publish(data, dataTable);
       dataTable.getEntry(".name").setString(key);
     }
   }
 
   /**
-   * Maps the specified key (where the key is the name of the {@link NamedSendable}
+   * Maps the specified key (where the key is the name of the {@link Sendable}
    * to the specified value in this table. The value can be retrieved by
    * calling the get method with a key that is equal to the original key.
    *
@@ -93,7 +82,10 @@ public class SmartDashboard {
    * @throws IllegalArgumentException If key is null
    */
   public static void putData(Sendable value) {
-    putData(value.getName(), value);
+    String name = SendableRegistry.getName(value);
+    if (!name.isEmpty()) {
+      putData(name, value);
+    }
   }
 
   /**
@@ -104,11 +96,11 @@ public class SmartDashboard {
    * @throws IllegalArgumentException  if the key is null
    */
   public static synchronized Sendable getData(String key) {
-    Data data = tablesToData.get(key);
+    Sendable data = tablesToData.get(key);
     if (data == null) {
       throw new IllegalArgumentException("SmartDashboard data does not exist: " + key);
     } else {
-      return data.m_sendable;
+      return data;
     }
   }
 
@@ -523,11 +515,23 @@ public class SmartDashboard {
   }
 
   /**
+   * Posts a task from a listener to the ListenerExecutor, so that it can be run synchronously
+   * from the main loop on the next call to {@link SmartDashboard#updateValues()}.
+   *
+   * @param task The task to run synchronously from the main thread.
+   */
+  public static void postListenerTask(Runnable task) {
+    listenerExecutor.execute(task);
+  }
+
+  /**
    * Puts all sendable data to the dashboard.
    */
   public static synchronized void updateValues() {
-    for (Data data : tablesToData.values()) {
-      data.m_builder.updateTable();
+    for (Sendable data : tablesToData.values()) {
+      SendableRegistry.update(data);
     }
+    // Execute posted listener tasks
+    listenerExecutor.runListenerTasks();
   }
 }
