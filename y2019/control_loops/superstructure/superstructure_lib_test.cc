@@ -445,7 +445,11 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
       superstructure_status_fetcher_.Fetch();
       // 2 Seconds
       ASSERT_LE(i, 2 * 1.0 / .00505);
-    } while (!superstructure_status_fetcher_.get()->zeroed());
+
+      // Since there is a delay when sending running, make sure we have a status
+      // before checking it.
+    } while (superstructure_status_fetcher_.get() == nullptr ||
+             !superstructure_status_fetcher_.get()->zeroed());
   }
 
   ::std::unique_ptr<::aos::EventLoop> test_event_loop_;

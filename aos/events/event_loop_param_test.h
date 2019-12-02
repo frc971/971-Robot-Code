@@ -90,8 +90,7 @@ class AbstractEventLoopTestBase
   // Ends the given event loop at the given time from now.
   void EndEventLoop(EventLoop *loop, ::std::chrono::milliseconds duration) {
     auto end_timer = loop->AddTimer([this]() { this->Exit(); });
-    end_timer->Setup(loop->monotonic_now() +
-                     ::std::chrono::milliseconds(duration));
+    end_timer->Setup(loop->monotonic_now() + duration);
     end_timer->set_name("end");
   }
 

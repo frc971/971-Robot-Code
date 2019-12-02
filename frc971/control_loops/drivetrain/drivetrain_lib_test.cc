@@ -53,6 +53,8 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
         drivetrain_(dt_config_, drivetrain_event_loop_.get(), &localizer_),
         drivetrain_plant_event_loop_(MakeEventLoop("drivetrain_plant")),
         drivetrain_plant_(drivetrain_plant_event_loop_.get(), dt_config_) {
+    // Too many tests care...
+    set_send_delay(chrono::nanoseconds(0));
     set_battery_voltage(12.0);
   }
   virtual ~DrivetrainTest() {}

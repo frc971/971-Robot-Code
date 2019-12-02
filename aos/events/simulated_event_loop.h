@@ -65,6 +65,9 @@ class SimulatedEventLoopFactory {
   // loop handler.
   void Exit() { scheduler_.Exit(); }
 
+  // Sets the simulated send delay for the factory.
+  void set_send_delay(std::chrono::nanoseconds send_delay);
+
   monotonic_clock::time_point monotonic_now() const {
     return scheduler_.monotonic_now();
   }
@@ -80,6 +83,8 @@ class SimulatedEventLoopFactory {
   // List of event loops to manage running and not running for.
   std::vector<std::pair<EventLoop *, std::function<void(bool)>>>
       raw_event_loops_;
+
+  std::chrono::nanoseconds send_delay_ = std::chrono::microseconds(50);
 
   pid_t tid_ = 0;
 };

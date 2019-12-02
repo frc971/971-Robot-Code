@@ -93,6 +93,10 @@ class ControlLoopTestTemplated : public TestBaseClass {
     return event_loop_factory_.MakeEventLoop(name);
   }
 
+  void set_send_delay(std::chrono::nanoseconds send_delay) {
+    event_loop_factory_.set_send_delay(send_delay);
+  }
+
   void RunFor(monotonic_clock::duration duration) {
     event_loop_factory_.RunFor(duration);
   }
