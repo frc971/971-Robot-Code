@@ -198,6 +198,7 @@ cc_library(
         "//aos:realtime",
         "//aos/ipc_lib:lockless_queue",
         "//aos/ipc_lib:signalfd",
+        "//aos/stl_mutex",
         "//aos/util:phased_loop",
     ],
 )

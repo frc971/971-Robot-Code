@@ -123,16 +123,17 @@ void aos_core_use_address_as_shared_mem(void *address, size_t size) {
 }
 
 void aos_core_free_shared_mem() {
-  void *shm_address = global_core->shared_mem;
-  PCHECK(munmap((void *)SHM_START, SIZEOFSHMSEG) != -1)
-      << ": munmap(" << shm_address << ", 0x" << std::hex
-      << (size_t)SIZEOFSHMSEG << ") failed";
-  if (global_core->owner) {
-    PCHECK(shm_unlink(global_core->shm_name) == 0)
-        << ": shared_mem: shm_unlink(" << global_core->shm_name << ") failed";
+  if (global_core != nullptr) {
+    void *shm_address = global_core->shared_mem;
+    PCHECK(munmap((void *)SHM_START, SIZEOFSHMSEG) != -1)
+        << ": munmap(" << shm_address << ", 0x" << std::hex
+        << (size_t)SIZEOFSHMSEG << ") failed";
+    if (global_core->owner) {
+      PCHECK(shm_unlink(global_core->shm_name) == 0)
+          << ": shared_mem: shm_unlink(" << global_core->shm_name << ") failed";
+    }
+    global_core = nullptr;
   }
 }
 
-int aos_core_is_init(void) {
-  return global_core != NULL;
-}
+int aos_core_is_init(void) { return global_core != NULL; }

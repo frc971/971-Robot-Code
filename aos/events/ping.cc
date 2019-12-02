@@ -7,19 +7,17 @@
 #include "glog/logging.h"
 
 int main(int argc, char **argv) {
-  FLAGS_logtostderr = true;
-  google::InitGoogleLogging(argv[0]);
-  ::gflags::ParseCommandLineFlags(&argc, &argv, true);
+  aos::InitGoogle(&argc, &argv);
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig("aos/events/pingpong_config.json");
 
-  ::aos::ShmEventLoop event_loop(&config.message());
+  aos::ShmEventLoop event_loop(&config.message());
 
   aos::Ping ping(&event_loop);
 
   event_loop.Run();
 
-  ::aos::Cleanup();
+  aos::Cleanup();
   return 0;
 }
