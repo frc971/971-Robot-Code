@@ -1,14 +1,5 @@
 namespace aos.common.actions;
 
-table UInt {
-  val:uint;
-}
-
-table TestActionGoal {
-  run:uint;
-  params:UInt;
-}
-
 table MyParams {
   param1:double;
   param2:int;
@@ -19,4 +10,4 @@ table TestAction2Goal {
   params:MyParams;
 }
 
-root_type TestActionGoal;
+root_type TestAction2Goal;

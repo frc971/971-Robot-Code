@@ -22,3 +22,5 @@ table Goal {
   // goal type to change param to a useful structure.
   params:DoubleParam;
 }
+
+root_type Status;
