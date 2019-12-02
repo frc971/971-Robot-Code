@@ -4,3 +4,5 @@ namespace frc971.wpilib;
 table LoopOutputHandlerTestOutput {
   voltage:double;
 }
+
+root_type LoopOutputHandlerTestOutput;

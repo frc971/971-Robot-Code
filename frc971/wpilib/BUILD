@@ -1,6 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos:config.bzl", "aos_config")
 
 flatbuffer_cc_library(
     name = "logging_fbs",
@@ -122,6 +123,15 @@ flatbuffer_cc_library(
     srcs = [
         "loop_output_handler_test.fbs",
     ],
+    gen_reflections = 1,
+)
+
+aos_config(
+    name = "loop_output_handler_test_config",
+    src = "loop_output_handler_test_config_source.json",
+    flatbuffers = [
+        ":loop_output_handler_test_fbs",
+    ],
 )
 
 cc_library(
@@ -146,6 +156,9 @@ cc_test(
     name = "loop_output_handler_test",
     srcs = [
         "loop_output_handler_test.cc",
+    ],
+    data = [
+        "loop_output_handler_test_config.json",
     ],
     deps = [
         ":loop_output_handler",

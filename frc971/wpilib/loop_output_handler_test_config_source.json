@@ -1,0 +1,9 @@
+{
+  "channels":
+  [
+    {
+      "name": "/test",
+      "type": "frc971.wpilib.LoopOutputHandlerTestOutput"
+    }
+  ]
+}

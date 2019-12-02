@@ -21,20 +21,8 @@ using ::aos::monotonic_clock;
 class LoopOutputHandlerTest : public ::testing::Test {
  public:
   LoopOutputHandlerTest()
-      : ::testing::Test(),
-        configuration_(aos::configuration::MergeConfiguration(
-            aos::FlatbufferDetachedBuffer<aos::Configuration>(
-                aos::JsonToFlatbuffer(
-                    "{\n"
-                    "  \"channels\": [ \n"
-                    "    {\n"
-                    "      \"name\": \"/test\",\n"
-                    "      \"type\": "
-                    "\"frc971.wpilib.LoopOutputHandlerTestOutput\"\n"
-                    "    }\n"
-                    "  ]\n"
-                    "}\n",
-                    aos::Configuration::MiniReflectTypeTable())))),
+      : configuration_(aos::configuration::ReadConfig(
+            "frc971/wpilib/loop_output_handler_test_config.json")),
         event_loop_factory_(&configuration_.message()),
         loop_output_hander_event_loop_(
             event_loop_factory_.MakeEventLoop("output")),
