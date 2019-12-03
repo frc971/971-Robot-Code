@@ -10,7 +10,7 @@
 #include "aos/logging/printf_formats.h"
 #include "aos/time/time.h"
 #include "aos/ipc_lib/queue.h"
-#include "aos/once.h"
+#include "absl/base/call_once.h"
 
 namespace aos {
 namespace logging {
@@ -67,15 +67,13 @@ void NewContext() {
   internal::Context::Delete();
 }
 
-void *DoInit() {
+void DoInit() {
   SetGlobalImplementation(root_implementation = new RootLogImplementation());
 
   if (pthread_atfork(NULL /*prepare*/, NULL /*parent*/,
                      NewContext /*child*/) != 0) {
     AOS_LOG(FATAL, "pthread_atfork(NULL, NULL, %p) failed\n", NewContext);
   }
-
-  return NULL;
 }
 
 }  // namespace
@@ -163,8 +161,8 @@ void AddImplementation(LogImplementation *implementation) {
 }
 
 void Init() {
-  static Once<void> once(DoInit);
-  once.Get();
+  static absl::once_flag once;
+  absl::call_once(once, DoInit);
 }
 
 void Load() {
