@@ -36,7 +36,7 @@
 #include "aos/unique_malloc_ptr.h"
 #include "aos/util/run_command.h"
 #include "aos/init.h"
-#include "aos/once.h"
+#include "absl/base/call_once.h"
 
 // This is the main piece of code that starts all of the rest of the code and
 // restarts it when the binaries are modified.
@@ -101,10 +101,11 @@ class FileWatch {
         create_(create),
         check_filename_(check_filename),
         watch_(-1) {
-    init_once.Get();
+    absl::call_once(once_, Init);
 
     CreateWatch();
   }
+
   // Cleans up everything.
   ~FileWatch() {
     if (watch_ != -1) {
@@ -126,15 +127,13 @@ class FileWatch {
   }
 
  private:
-  // Performs the static initialization. Called by init_once from the
-  // constructor.
-  static void *Init() {
+  // Performs the static initialization. Called by from the constructor
+  static void Init() {
     notify_fd = inotify_init1(IN_CLOEXEC);
     EventUniquePtr notify_event(event_new(libevent_base.get(), notify_fd,
                                           EV_READ | EV_PERSIST,
                                           FileWatch::INotifyReadable, NULL));
     event_add(notify_event.release(), NULL);
-    return NULL;
   }
 
   void RemoveWatchFromMap() {
@@ -244,9 +243,7 @@ class FileWatch {
     callback_((value_ == NULL) ? this : value_);
   }
 
-  // To make sure that Init gets called exactly once.
-  static ::aos::Once<void> init_once;
-
+  static absl::once_flag once_;
   const std::string filename_;
   const std::function<void(void *)> callback_;
   void *const value_;
@@ -269,9 +266,9 @@ class FileWatch {
 
   DISALLOW_COPY_AND_ASSIGN(FileWatch);
 };
-::aos::Once<void> FileWatch::init_once(FileWatch::Init);
 std::map<int, FileWatch *> FileWatch::watchers;
 int FileWatch::notify_fd;
+absl::once_flag FileWatch::once_;
 
 // Runs the given command and returns its first line of output (not including
 // the \n). LOG(FATAL)s if the command has an exit status other than 0 or does
