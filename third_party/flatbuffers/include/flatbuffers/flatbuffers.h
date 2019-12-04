@@ -1022,7 +1022,7 @@ class FlatBufferBuilder {
         nested(false),
         finished(false),
         minalign_(1),
-        force_defaults_(false),
+        force_defaults_(true),
         dedup_vtables_(true),
         string_pool(nullptr) {
     EndianCheck();
@@ -1041,7 +1041,7 @@ class FlatBufferBuilder {
       nested(false),
       finished(false),
       minalign_(1),
-      force_defaults_(false),
+      force_defaults_(true),
       dedup_vtables_(true),
       string_pool(nullptr) {
     EndianCheck();
