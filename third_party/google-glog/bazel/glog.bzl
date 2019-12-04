@@ -68,6 +68,7 @@ def glog_library(namespace='google', with_gflags=1, **kwargs):
             '-DHAVE_STRING_H',
             # Enable dumping stacktrace upon sigaction.
             '-DHAVE_SIGACTION',
+            '-DHAVE_EXECINFO_H',
             # For logging.cc.
             '-DHAVE_PREAD',
             '-DHAVE___ATTRIBUTE__',

@@ -40,6 +40,7 @@ namespace {
 void InitStart() {
   ::aos::logging::Init();
   WriteCoreDumps();
+  google::InstallFailureSignalHandler();
 }
 
 const char *const kNoRealtimeEnvironmentVariable = "AOS_NO_REALTIME";
