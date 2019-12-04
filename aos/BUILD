@@ -234,9 +234,6 @@ cc_library(
     hdrs = [
         "complex_thread_local.h",
     ],
-    linkopts = [
-        "-lpthread",
-    ],
     visibility = ["//visibility:public"],
     deps = [
         "//aos:die",
@@ -308,10 +305,10 @@ cc_library(
         ":flatbuffer_merge",
         ":flatbuffers",
         ":json_to_flatbuffer",
-        "@com_google_absl//absl/base",
         "//aos:unique_malloc_ptr",
         "//aos/util:file",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/base",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/strings",
     ],

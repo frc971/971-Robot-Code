@@ -14,7 +14,6 @@ cc_library(
     name = "ahal",
     srcs = glob(["*.cc"]) + [":wpilib_version"],
     hdrs = glob(["*.h"]),
-    linkopts = ["-lpthread"],
     restricted_to = ["//tools:roborio"],
     visibility = ["//third_party:__pkg__"],
     deps = [

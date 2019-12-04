@@ -24,7 +24,7 @@ cc_library(
     ],
     linkopts = select({
         ":windows": ["-DEFAULTLIB:shlwapi.lib"],
-        "//conditions:default": ["-pthread"],
+        "//conditions:default": [],
     }),
     strip_include_prefix = "include",
     visibility = ["//visibility:public"],
