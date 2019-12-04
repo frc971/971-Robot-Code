@@ -10,7 +10,7 @@
 #include "aos/logging/logging.h"
 #include "aos/util/string_to_num.h"
 #include "aos/configuration.h"
-#include "aos/once.h"
+#include "absl/base/call_once.h"
 
 namespace aos {
 namespace network {
@@ -51,33 +51,35 @@ uint16_t override_team;
   return buf;
 }
 
-uint16_t *DoGetTeamNumber() {
-  if (override_team != 0) return &override_team;
-
-  static uint16_t r;
+void DoGetTeamNumber(uint16_t *result) {
+  if (override_team != 0) {
+      *result = override_team;
+      return;
+  }
 
   const char *override_number = getenv("AOS_TEAM_NUMBER");
   if (override_number != nullptr) {
-    if (!::aos::util::StringToNumber(override_number, &r)) {
+    if (!::aos::util::StringToNumber(override_number, result)) {
       AOS_LOG(FATAL, "error parsing AOS_TEAM_NUMBER '%s'\n", override_number);
     }
     AOS_LOG(WARNING,
-            "team number overridden by AOS_TEAM_NUMBER to %" PRIu16 "\n", r);
+            "team number overridden by AOS_TEAM_NUMBER to %" PRIu16 "\n", *result);
   } else {
-    int error = internal::ParseTeamNumber(GetHostname(), &r);
+    int error = internal::ParseTeamNumber(GetHostname(), result);
     if (error) {
       AOS_LOG(FATAL, "Invalid hostname %s\n", GetHostname().c_str());
     }
-    AOS_LOG(INFO, "team number is %" PRIu16 "\n", r);
+    AOS_LOG(INFO, "team number is %" PRIu16 "\n", *result);
   }
-  return &r;
 }
 
 }  // namespace
 
 uint16_t GetTeamNumber() {
-  static Once<uint16_t> once(DoGetTeamNumber);
-  return *once.Get();
+  static absl::once_flag once;
+  static uint16_t result;
+  absl::call_once(once, DoGetTeamNumber, &result);
+  return result;
 }
 
 void OverrideTeamNumber(uint16_t team) { override_team = team; }
