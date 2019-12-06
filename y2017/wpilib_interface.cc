@@ -34,6 +34,7 @@
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
 #include "frc971/autonomous/auto_generated.h"
+#include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"

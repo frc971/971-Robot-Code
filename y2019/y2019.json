@@ -32,9 +32,13 @@
       "frequency": 200
     },
     {
-      "name": "/drivetrain",
+      "name": "/camera",
       "type": "y2019.control_loops.drivetrain.CameraFrame",
       "frequency": 200
+    },
+    {
+      "name": "/camera",
+      "type": "y2019.CameraLog"
     }
   ],
   "applications": [
@@ -44,6 +48,8 @@
   ],
   "imports": [
     "../aos/robot_state/robot_state_config.json",
-    "../frc971/control_loops/drivetrain/drivetrain_config.json"
+    "../frc971/control_loops/drivetrain/drivetrain_config.json",
+    "../frc971/autonomous/autonomous_config.json",
+    "../frc971/wpilib/wpilib_config.json"
   ]
 }

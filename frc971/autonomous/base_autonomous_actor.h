@@ -25,7 +25,7 @@ class BaseAutonomousActor : public ::aos::common::actions::ActorBase<Goal> {
       const control_loops::drivetrain::DrivetrainConfig<double> &dt_config);
 
   static Factory MakeFactory(::aos::EventLoop *event_loop) {
-    return Factory(event_loop, ".frc971.autonomous.autonomous_action");
+    return Factory(event_loop, "/autonomous");
   }
 
  protected:

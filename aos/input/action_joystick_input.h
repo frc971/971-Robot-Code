@@ -5,6 +5,7 @@
 #include "aos/input/drivetrain_input.h"
 #include "aos/input/joystick_input.h"
 #include "frc971/autonomous/auto_generated.h"
+#include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
 
 namespace aos {
@@ -40,7 +41,7 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
             ::frc971::autonomous::BaseAutonomousActor::MakeFactory(event_loop)),
         autonomous_mode_fetcher_(
             event_loop->MakeFetcher<::frc971::autonomous::AutonomousMode>(
-                ".frc971.autonomous.auto_mode")) {}
+                "/autonomous")) {}
 
   virtual ~ActionJoystickInput() {}
 

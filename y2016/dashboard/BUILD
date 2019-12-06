@@ -34,7 +34,7 @@ cc_binary(
         "//aos/seasocks:seasocks_logger",
         "//aos/time",
         "//aos/util:phased_loop",
-        "//frc971/autonomous:auto_fbs",
+        "//frc971/autonomous:auto_mode_fbs",
         "//frc971/control_loops:control_loops_fbs",
         "//third_party/seasocks",
         "//y2016/control_loops/superstructure:superstructure_status_fbs",

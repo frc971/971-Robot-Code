@@ -19,8 +19,7 @@ class JoystickInput {
   explicit JoystickInput(::aos::EventLoop *event_loop)
       : event_loop_(event_loop) {
     event_loop_->MakeWatcher(
-        ".aos.joystick_state",
-        [this](const ::aos::JoystickState &joystick_state) {
+        "/aos", [this](const ::aos::JoystickState &joystick_state) {
           this->HandleData(&joystick_state);
         });
     event_loop->SetRuntimeRealtimePriority(29);

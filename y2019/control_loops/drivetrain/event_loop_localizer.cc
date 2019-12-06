@@ -45,7 +45,7 @@ EventLoopLocalizer::EventLoopLocalizer(
     localizer_.ResetInitialState(monotonic_now, localizer_.X_hat(),
                                  localizer_.P());
   });
-  frame_fetcher_ = event_loop_->MakeFetcher<CameraFrame>("/drivetrain");
+  frame_fetcher_ = event_loop_->MakeFetcher<CameraFrame>("/camera");
 }
 
 void EventLoopLocalizer::Reset(::aos::monotonic_clock::time_point now,

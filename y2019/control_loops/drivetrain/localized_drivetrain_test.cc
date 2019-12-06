@@ -57,7 +57,7 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
         drivetrain_event_loop_(MakeEventLoop("drivetrain")),
         dt_config_(GetTest2019DrivetrainConfig()),
         camera_sender_(
-            test_event_loop_->MakeSender<CameraFrame>("/drivetrain")),
+            test_event_loop_->MakeSender<CameraFrame>("/camera")),
         localizer_(drivetrain_event_loop_.get(), dt_config_),
         drivetrain_(dt_config_, drivetrain_event_loop_.get(), &localizer_),
         drivetrain_plant_event_loop_(MakeEventLoop("plant")),

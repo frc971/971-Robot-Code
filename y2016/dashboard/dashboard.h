@@ -17,7 +17,7 @@
 #include "aos/events/event_loop.h"
 #include "aos/mutex/mutex.h"
 #include "aos/time/time.h"
-#include "frc971/autonomous/auto_generated.h"
+#include "frc971/autonomous/auto_mode_generated.h"
 #include "y2016/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2016/queues/ball_detector_generated.h"
 #include "y2016/vision/vision_generated.h"

@@ -32,7 +32,7 @@
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
 #include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
-#include "frc971/autonomous/auto_generated.h"
+#include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/wpilib/ADIS16448.h"
 #include "frc971/wpilib/buffered_pcm.h"
@@ -46,6 +46,7 @@
 #include "frc971/wpilib/pdp_fetcher.h"
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
+#include "y2019/camera_log_generated.h"
 #include "y2019/constants.h"
 #include "y2019/control_loops/drivetrain/camera_generated.h"
 #include "y2019/control_loops/superstructure/superstructure_output_generated.h"
@@ -134,7 +135,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       : ::frc971::wpilib::SensorReader(event_loop),
         auto_mode_sender_(
             event_loop->MakeSender<::frc971::autonomous::AutonomousMode>(
-                "/aos")),
+                "/autonomous")),
         superstructure_position_sender_(
             event_loop->MakeSender<superstructure::Position>(
                 "/superstructure")),
@@ -354,9 +355,9 @@ class CameraReader {
       : camera_frame_sender_(
             event_loop
                 ->MakeSender<::y2019::control_loops::drivetrain::CameraFrame>(
-                    ".y2019.control_loops.drivetrain.camera_frames")),
+                    "/camera")),
         camera_log_fetcher_(
-            event_loop->MakeFetcher<::y2019::CameraLog>(".y2019.camera_log")) {}
+            event_loop->MakeFetcher<::y2019::CameraLog>("/camera")) {}
 
   CameraReader(const CameraReader &) = delete;
   CameraReader &operator=(const CameraReader &) = delete;

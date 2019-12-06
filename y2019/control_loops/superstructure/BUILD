@@ -65,7 +65,7 @@ cc_library(
         "//aos/events:event_loop",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//y2019:constants",
-        "//y2019:status_light",
+        "//y2019:status_light_fbs",
     ],
 )
 
@@ -91,7 +91,7 @@ cc_test(
         "//frc971/control_loops:position_sensor_sim",
         "//frc971/control_loops:team_number_test_environment",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
-        "//y2019:status_light",
+        "//y2019:status_light_fbs",
         "//y2019/control_loops/superstructure/intake:intake_plants",
     ],
 )

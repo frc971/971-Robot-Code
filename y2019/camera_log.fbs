@@ -1,0 +1,7 @@
+namespace y2019;
+
+table CameraLog {
+  log:bool;
+}
+
+root_type CameraLog;

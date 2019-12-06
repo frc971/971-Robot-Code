@@ -5,3 +5,5 @@ table PneumaticsToLog {
   compressor_on:bool;
   read_solenoids:ubyte;
 }
+
+root_type PneumaticsToLog;

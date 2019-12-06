@@ -2,6 +2,7 @@
 
 #include "aos/input/driver_station_data.h"
 #include "frc971/autonomous/auto_generated.h"
+#include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
 
 using ::aos::input::driver_station::ControlBit;

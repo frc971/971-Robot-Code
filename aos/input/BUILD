@@ -61,6 +61,7 @@ cc_library(
         "//aos/input:joystick_input",
         "//aos/logging",
         "//frc971/autonomous:auto_fbs",
+        "//frc971/autonomous:auto_mode_fbs",
         "//frc971/autonomous:base_autonomous_actor",
     ],
 )

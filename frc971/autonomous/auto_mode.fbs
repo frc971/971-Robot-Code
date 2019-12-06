@@ -1,0 +1,8 @@
+namespace frc971.autonomous;
+
+table AutonomousMode {
+  // Mode read from the mode setting sensors.
+  mode:int;
+}
+
+root_type AutonomousMode;

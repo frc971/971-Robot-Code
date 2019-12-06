@@ -158,12 +158,11 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
   ::aos::RingBuffer<DrivetrainPosition, 200> drivetrain_log;
 
   event_loop.MakeWatcher(
-      "/drivetrain",
-      [websocket_handler, server, &latest_frames, &last_target_time,
-       &drivetrain_status_fetcher, &superstructure_status_fetcher,
-       &last_send_time, &drivetrain_log,
-       &debug_data](const ::y2019::control_loops::drivetrain::CameraFrame
-                        &camera_frames) {
+      "/camera", [websocket_handler, server, &latest_frames, &last_target_time,
+                  &drivetrain_status_fetcher, &superstructure_status_fetcher,
+                  &last_send_time, &drivetrain_log, &debug_data](
+                     const ::y2019::control_loops::drivetrain::CameraFrame
+                         &camera_frames) {
         while (drivetrain_status_fetcher.FetchNext()) {
           DrivetrainPosition drivetrain_position{
               drivetrain_status_fetcher.context().monotonic_sent_time,

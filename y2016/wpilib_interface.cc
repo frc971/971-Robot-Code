@@ -29,7 +29,7 @@
 #include "aos/util/log_interval.h"
 #include "aos/util/wrapping_counter.h"
 #include "frc971/autonomous/auto_generated.h"
-//#include "frc971/control_loops/control_loops.q.h"
+#include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/wpilib/ADIS16448.h"

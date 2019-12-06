@@ -8,6 +8,7 @@ flatbuffer_cc_library(
     srcs = [
         "logging.fbs",
     ],
+    gen_reflections = 1,
 )
 
 cc_library(
@@ -127,6 +128,15 @@ flatbuffer_cc_library(
 )
 
 aos_config(
+    name = "config",
+    src = "wpilib_config.json",
+    flatbuffers = [
+        ":pdp_values_fbs",
+        ":logging_fbs",
+    ],
+)
+
+aos_config(
     name = "loop_output_handler_test_config",
     src = "loop_output_handler_test_config_source.json",
     flatbuffers = [
@@ -208,10 +218,11 @@ cc_library(
 )
 
 flatbuffer_cc_library(
-    name = "pdp_values",
+    name = "pdp_values_fbs",
     srcs = [
         "pdp_values.fbs",
     ],
+    gen_reflections = 1,
 )
 
 cc_library(
@@ -224,7 +235,7 @@ cc_library(
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
-        ":pdp_values",
+        ":pdp_values_fbs",
         "//aos:init",
         "//aos/events:event_loop",
         "//aos/util:phased_loop",

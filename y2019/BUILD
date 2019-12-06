@@ -4,6 +4,9 @@ load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 robot_downloader(
+    data = [
+        ":config.json",
+    ],
     dirs = [
         "//y2019/vision/server:www_files",
     ],
@@ -27,7 +30,6 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "@com_google_absl//absl/base",
         "//aos/logging",
         "//aos/mutex",
         "//aos/network:team_number",
@@ -41,6 +43,7 @@ cc_library(
         "//y2019/control_loops/superstructure/stilts:stilts_plants",
         "//y2019/control_loops/superstructure/wrist:wrist_plants",
         "//y2019/vision:constants",
+        "@com_google_absl//absl/base",
     ],
 )
 
@@ -51,8 +54,9 @@ cc_binary(
     ],
     restricted_to = ["//tools:roborio"],
     deps = [
+        ":camera_log_fbs",
         ":constants",
-        ":status_light",
+        ":status_light_fbs",
         "//aos:init",
         "//aos:make_unique",
         "//aos:math",
@@ -65,7 +69,7 @@ cc_binary(
         "//aos/util:log_interval",
         "//aos/util:phased_loop",
         "//aos/util:wrapping_counter",
-        "//frc971/autonomous:auto_fbs",
+        "//frc971/autonomous:auto_mode_fbs",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_position_fbs",
         "//frc971/wpilib:ADIS16448",
@@ -120,7 +124,7 @@ cc_binary(
         ":joystick_reader.cc",
     ],
     deps = [
-        ":status_light",
+        ":camera_log_fbs",
         ":vision_proto",
         "//aos:init",
         "//aos/actions:action_lib",
@@ -147,7 +151,16 @@ cc_binary(
 )
 
 flatbuffer_cc_library(
-    name = "status_light",
+    name = "camera_log_fbs",
+    srcs = [
+        "camera_log.fbs",
+    ],
+    gen_reflections = 1,
+    visibility = ["//visibility:public"],
+)
+
+flatbuffer_cc_library(
+    name = "status_light_fbs",
     srcs = [
         "status_light.fbs",
     ],
@@ -159,18 +172,21 @@ aos_config(
     name = "config",
     src = "y2019.json",
     flatbuffers = [
-        ":status_light",
+        ":status_light_fbs",
         "//y2019/control_loops/drivetrain:camera_fbs",
         "//y2019/control_loops/drivetrain:target_selector_fbs",
         "//y2019/control_loops/superstructure:superstructure_goal_fbs",
         "//y2019/control_loops/superstructure:superstructure_output_fbs",
         "//y2019/control_loops/superstructure:superstructure_position_fbs",
         "//y2019/control_loops/superstructure:superstructure_status_fbs",
+        ":camera_log_fbs",
     ],
     visibility = ["//visibility:public"],
     deps = [
         "//aos/robot_state:config",
+        "//frc971/autonomous:config",
         "//frc971/control_loops/drivetrain:config",
+        "//frc971/wpilib:config",
     ],
 )
 

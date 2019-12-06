@@ -18,12 +18,12 @@
 #include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 
+#include "y2019/camera_log_generated.h"
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
 #include "y2019/control_loops/drivetrain/target_selector_generated.h"
 #include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2019/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2019/control_loops/superstructure/superstructure_status_generated.h"
-#include "y2019/status_light_generated.h"
 #include "y2019/vision.pb.h"
 
 using aos::events::ProtoTXUdpSocket;

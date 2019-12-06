@@ -1,7 +1,7 @@
 load("//frc971/downloader:downloader.bzl", "aos_downloader")
 load("//tools/build_rules:label.bzl", "expand_label")
 
-def robot_downloader(start_binaries, binaries = [], dirs = None, default_target = None):
+def robot_downloader(start_binaries, binaries = [], data = [], dirs = None, default_target = None):
     """Sets up the standard robot download targets.
 
     Attrs:
@@ -17,7 +17,7 @@ def robot_downloader(start_binaries, binaries = [], dirs = None, default_target 
         ] + start_binaries,
         srcs = [
             "//aos:prime_binaries",
-        ] + binaries,
+        ] + binaries + data,
         dirs = dirs,
         default_target = default_target,
         restricted_to = ["//tools:roborio"],
@@ -30,7 +30,7 @@ def robot_downloader(start_binaries, binaries = [], dirs = None, default_target 
         ] + [expand_label(binary) + ".stripped" for binary in start_binaries],
         srcs = [
             "//aos:prime_binaries_stripped",
-        ] + [expand_label(binary) + ".stripped" for binary in binaries],
+        ] + [expand_label(binary) + ".stripped" for binary in binaries] + data,
         dirs = dirs,
         default_target = default_target,
         restricted_to = ["//tools:roborio"],

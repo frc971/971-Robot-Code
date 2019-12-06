@@ -7,9 +7,4 @@ table StatusLight {
   blue:float;
 }
 
-table CameraLog {
-  log:bool;
-}
-
-root_type CameraLog;
 root_type StatusLight;

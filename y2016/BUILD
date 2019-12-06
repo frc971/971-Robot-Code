@@ -11,7 +11,6 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "@com_google_absl//absl/base",
         "//aos/logging",
         "//aos/mutex",
         "//aos/network:team_number",
@@ -19,6 +18,7 @@ cc_library(
         "//frc971:shifter_hall_effect",
         "//frc971/control_loops:state_feedback_loop",
         "//y2016/control_loops/drivetrain:polydrivetrain_plants",
+        "@com_google_absl//absl/base",
     ],
 )
 
@@ -110,6 +110,7 @@ cc_binary(
         "//aos/util:phased_loop",
         "//aos/util:wrapping_counter",
         "//frc971/autonomous:auto_fbs",
+        "//frc971/autonomous:auto_mode_fbs",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_output_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_position_fbs",
