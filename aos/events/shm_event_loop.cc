@@ -42,9 +42,8 @@ class MMapedQueue {
   MMapedQueue(const Channel *channel) {
     std::string path = ShmPath(channel);
 
-    // TODO(austin): Pull these out into the config if there is a need.
-    config_.num_watchers = 10;
-    config_.num_senders = 10;
+    config_.num_watchers = channel->num_watchers();
+    config_.num_senders = channel->num_senders();
     config_.queue_size = 2 * channel->frequency();
     config_.message_data_size = channel->max_size();
 

@@ -15,6 +15,11 @@ table Channel {
   // computed in the future.)
   max_size:int = 1000;
 
+  // Sets the maximum number of senders on a channel.
+  num_senders:int = 10;
+  // Sets the maximum number of watchers on a channel.
+  num_watchers:int = 10;
+
   // The schema for the data sent on this channel.
   schema:reflection.Schema;
 }

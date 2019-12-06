@@ -3,7 +3,8 @@
     {
       "name": "/aos",
       "type": "aos.timing.Report",
-      "frequency": 50
+      "frequency": 50,
+      "num_senders": 20
     }
   ]
 }
