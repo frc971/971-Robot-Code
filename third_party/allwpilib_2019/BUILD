@@ -80,7 +80,6 @@ cc_library(
     ],
     defines = ["WPILIB2019=1"],
     includes = _hal_header_dirs,
-    linkopts = ["-lpthread"],
     restricted_to = ["//tools:roborio"],
     visibility = ["//third_party:__pkg__"],
     deps = [

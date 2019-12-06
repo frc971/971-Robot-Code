@@ -109,10 +109,7 @@ cc_library(
         "pool_urbg.h",
     ],
     copts = ABSL_DEFAULT_COPTS,
-    linkopts = select({
-        "//absl:windows": [],
-        "//conditions:default": ["-pthread"],
-    }) + ABSL_DEFAULT_LINKOPTS,
+    linkopts = ABSL_DEFAULT_LINKOPTS,
     deps = [
         ":randen",
         ":seed_material",

@@ -132,10 +132,7 @@ cc_library(
         "internal/low_level_alloc.h",
     ],
     copts = ABSL_DEFAULT_COPTS,
-    linkopts = select({
-        "//absl:windows": [],
-        "//conditions:default": ["-pthread"],
-    }) + ABSL_DEFAULT_LINKOPTS,
+    linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
         "//absl:__subpackages__",
     ],
@@ -192,7 +189,7 @@ cc_library(
     copts = ABSL_DEFAULT_COPTS,
     linkopts = select({
         "//absl:windows": [],
-        "//conditions:default": ["-pthread"],
+        "//conditions:default": [],
     }) + ABSL_DEFAULT_LINKOPTS,
     deps = [
         ":atomic_hook",

@@ -144,11 +144,7 @@ class FlatbufferString : public Flatbuffer<T> {
   const uint8_t *data() const override {
     return reinterpret_cast<const uint8_t *>(data_.data());
   }
-  uint8_t *data() override {
-    // TODO(james): when we get c++17, can we drop the second cast?
-    return const_cast<uint8_t *>(
-        reinterpret_cast<const uint8_t *>(data_.data()));
-  }
+  uint8_t *data() override { return reinterpret_cast<uint8_t *>(data_.data()); }
   size_t size() const override { return data_.size(); }
 
  private:

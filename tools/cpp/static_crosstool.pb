@@ -218,20 +218,6 @@ toolchain {
         flag: "-std=gnu++1z"
       }
     }
-    flag_set {
-      action: "preprocess-assemble"
-      action: "assemble"
-      action: "c++-link"
-      action: "c++-compile"
-      action: "c++-header-parsing"
-      action: "c++-header-preprocessing"
-      action: "c++-module-compile"
-      action: "c-compile"
-      flag_group {
-        # We always want to compile with -pthread semantics.
-        flag: "-pthread"
-      }
-    }
   }
 
   # Anticipated future default.

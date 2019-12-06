@@ -87,10 +87,7 @@ cc_library(
         "notification.h",
     ],
     copts = ABSL_DEFAULT_COPTS,
-    linkopts = select({
-        "//absl:windows": [],
-        "//conditions:default": ["-pthread"],
-    }) + ABSL_DEFAULT_LINKOPTS,
+    linkopts = ABSL_DEFAULT_LINKOPTS,
     deps = [
         ":graphcycles_internal",
         ":kernel_timeout_internal",
