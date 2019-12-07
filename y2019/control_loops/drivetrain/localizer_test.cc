@@ -141,6 +141,9 @@ class ParameterizedLocalizerTest
   }
 
   void SetUp() {
+    // Turn on -v 1
+    FLAGS_v = std::max(FLAGS_v, 1);
+
     flatbuffers::DetachedBuffer goal_buffer;
     {
       flatbuffers::FlatBufferBuilder fbb;
@@ -185,10 +188,13 @@ class ParameterizedLocalizerTest
     aos::FlatbufferDetachedBuffer<frc971::control_loops::drivetrain::Goal> goal(
         std::move(goal_buffer));
 
-    spline_drivetrain_.SetGoal(&goal.message());
-
     // Let the spline drivetrain compute the spline.
     while (true) {
+      // We need to keep sending the goal.  There are conditions when the
+      // trajectory lock isn't grabbed the first time, and we want to keep
+      // banging on it to keep trying.  Otherwise we deadlock.
+      spline_drivetrain_.SetGoal(&goal.message());
+
       ::std::this_thread::sleep_for(::std::chrono::milliseconds(5));
 
       flatbuffers::FlatBufferBuilder fbb;
