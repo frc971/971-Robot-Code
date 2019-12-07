@@ -24,12 +24,15 @@ namespace aos {
 class EventLoop;
 class WatcherState;
 
-// Struct available on Watchers and Fetchers with context about the current
-// message.
+// Struct available on Watchers, Fetchers, Timers, and PhasedLoops with context
+// about the current message.
 struct Context {
-  // Time that the message was sent.
+  // Time that the message was sent, or the timer was triggered.
   monotonic_clock::time_point monotonic_sent_time;
+  // Realtime the message was sent.  This is set to min_time for Timers and
+  // PhasedLoops.
   realtime_clock::time_point realtime_sent_time;
+  // The rest are only valid for Watchers and Fetchers.
   // Index in the queue.
   uint32_t queue_index;
   // Size of the data sent.
@@ -383,8 +386,7 @@ class EventLoop {
       std::function<void(const Context &context, const void *message)>
           watcher) = 0;
 
-  // Returns the context for the current message.
-  // TODO(austin): Fill out whatever is useful for timers.
+  // Returns the context for the current callback.
   const Context &context() const { return context_; }
 
   // Returns the configuration that this event loop was built with.
@@ -402,7 +404,7 @@ class EventLoop {
   // Validates that channel exists inside configuration_ and finds its index.
   int ChannelIndex(const Channel *channel);
 
-  // Context available for watchers.
+  // Context available for watchers, timers, and phased loops.
   Context context_;
 
   friend class RawSender;
