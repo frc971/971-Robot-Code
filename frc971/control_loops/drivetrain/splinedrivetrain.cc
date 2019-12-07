@@ -170,6 +170,8 @@ void SplineDrivetrain::SetGoal(
       has_started_execution_ = false;
     }
     mutex_.Unlock();
+  } else {
+    VLOG(1) << "Failed to acquire trajectory lock.";
   }
 }
 
