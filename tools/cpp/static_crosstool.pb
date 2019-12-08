@@ -945,8 +945,6 @@ toolchain {
 
   compiler_flag: "-nostdinc"
   compiler_flag: "-isystem"
-  compiler_flag: "/usr/lib/clang/6.0/include"
-  compiler_flag: "-isystem"
   compiler_flag: "external/linaro_linux_gcc_repo/lib/gcc/arm-linux-gnueabihf/7.4.1/include"
   compiler_flag: "-isystem"
   compiler_flag: "external/linaro_linux_gcc_repo/lib/gcc/arm-linux-gnueabihf/7.4.1/include-fixed"
@@ -971,7 +969,6 @@ toolchain {
   cxx_builtin_include_directory: "%package(@linaro_linux_gcc_repo//lib/gcc/arm-linux-gnueabihf/7.4.1/include)%"
   cxx_builtin_include_directory: "%package(@linaro_linux_gcc_repo//lib/gcc/arm-linux-gnueabihf/7.4.1/include-fixed)%"
   cxx_builtin_include_directory: "%package(@linaro_linux_gcc_repo//arm-linux-gnueabihf/include)%/c++/7.4.1"
-  cxx_builtin_include_directory: '/usr/lib/clang/6.0/include'
 
   linker_flag: "-target"
   linker_flag: "armv7a-arm-linux-gnueabif"
