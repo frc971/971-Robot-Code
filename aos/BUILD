@@ -15,6 +15,7 @@ filegroup(
 filegroup(
     name = "prime_start_binaries",
     srcs = [
+        "//aos/events/logging:logger_main",
         "//aos/logging:binary_log_writer",
     ],
     visibility = ["//visibility:public"],
@@ -35,6 +36,7 @@ filegroup(
 filegroup(
     name = "prime_start_binaries_stripped",
     srcs = [
+        "//aos/events/logging:logger_main.stripped",
         "//aos/logging:binary_log_writer.stripped",
     ],
     visibility = ["//visibility:public"],

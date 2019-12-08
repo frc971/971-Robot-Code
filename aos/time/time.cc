@@ -5,6 +5,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <ctime>
 
 #ifdef __linux__
 
@@ -54,13 +55,16 @@ void sleep_until(const ::aos::monotonic_clock::time_point &end_time) {
 
 namespace aos {
 
-void PrintTo(const monotonic_clock::time_point t, std::ostream *os) {
-  auto s = std::chrono::duration_cast<std::chrono::seconds>(t.time_since_epoch());
-  *os << s.count() << "."
-      << std::chrono::duration_cast<std::chrono::nanoseconds>(
-             t.time_since_epoch() - s)
-             .count()
-      << "sec";
+std::ostream &operator<<(std::ostream &stream,
+                         const aos::monotonic_clock::time_point &now) {
+  auto seconds =
+      std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch());
+  stream << seconds.count() << "."
+         << std::chrono::duration_cast<std::chrono::nanoseconds>(
+                now.time_since_epoch() - seconds)
+                .count()
+         << "sec";
+  return stream;
 }
 
 namespace time {

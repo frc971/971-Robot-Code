@@ -7,7 +7,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "aos/events/event_loop.h"
-#include "aos/events/logger_generated.h"
+#include "aos/events/logging/logger_generated.h"
 #include "aos/time/time.h"
 #include "flatbuffers/flatbuffers.h"
 

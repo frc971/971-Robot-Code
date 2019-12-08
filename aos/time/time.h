@@ -65,10 +65,10 @@ class realtime_clock {
       time_point(duration(::std::numeric_limits<duration::rep>::max()))};
 };
 
-void PrintTo(const monotonic_clock::time_point t, std::ostream *os);
+std::ostream &operator<<(std::ostream &stream,
+                         const aos::monotonic_clock::time_point &now);
 
 namespace time {
-
 #ifdef __linux__
 
 // Construct a time representing the period of hertz.

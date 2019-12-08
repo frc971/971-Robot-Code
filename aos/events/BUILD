@@ -238,7 +238,6 @@ cc_test(
 
 cc_library(
     name = "simulated_event_loop",
-    testonly = True,
     srcs = [
         "event_scheduler.cc",
         "simulated_event_loop.cc",
@@ -253,42 +252,5 @@ cc_library(
         "//aos/ipc_lib:index",
         "//aos/util:phased_loop",
         "@com_google_absl//absl/container:btree",
-    ],
-)
-
-flatbuffer_cc_library(
-    name = "logger_fbs",
-    srcs = ["logger.fbs"],
-    gen_reflections = 1,
-    includes = [
-        "//aos:configuration_fbs_includes",
-    ],
-)
-
-cc_library(
-    name = "logger",
-    srcs = ["logger.cc"],
-    hdrs = ["logger.h"],
-    deps = [
-        ":event_loop",
-        ":logger_fbs",
-        "//aos:flatbuffer_merge",
-        "//aos/time",
-        "@com_github_google_flatbuffers//:flatbuffers",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_test(
-    name = "logger_test",
-    srcs = ["logger_test.cc"],
-    data = ["pingpong_config.json"],
-    deps = [
-        ":logger",
-        ":ping_lib",
-        ":pong_lib",
-        ":simulated_event_loop",
-        "//aos/testing:googletest",
     ],
 )

@@ -1,4 +1,4 @@
-#include "aos/events/logger.h"
+#include "aos/events/logging/logger.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -9,7 +9,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "aos/events/event_loop.h"
-#include "aos/events/logger_generated.h"
+#include "aos/events/logging/logger_generated.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/time/time.h"
 #include "flatbuffers/flatbuffers.h"
