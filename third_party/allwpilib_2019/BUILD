@@ -85,6 +85,6 @@ cc_library(
     deps = [
         "//aos/logging",
         "//third_party/allwpilib_2019/wpiutil",
-        "@allwpilib_ni_libraries_2019//:ni-libraries",
+        "@allwpilib_ni_libraries//:ni-libraries",
     ],
 )

@@ -176,13 +176,12 @@ bind(
 
 # Generated with:
 # git fetch https://github.com/wpilibsuite/ni-libraries master
-# git archive --output=allwpilib_ni-libraries_89316203.tar.gz --format=tar.gz 89316203
+# git archive --output=allwpilib_ni-libraries_3293db0251.tar.gz --format=tar.gz 3293db0251
 http_archive(
-    name = "allwpilib_ni_libraries_2019",
-    build_file = "@//debian:ni-libraries-2019.BUILD",
-    sha256 = "09232c6207168dbeafb815f8249940ad3aa46b9176b58e760c5a5233cb15c381",
-    strip_prefix = "ni-libraries-893162037bb36c6171e14be15c6cef9be0053c4a",
-    url = "http://frc971.org/Build-Dependencies/allwpilib_ni-libraries_89316203.zip",
+    name = "allwpilib_ni_libraries",
+    build_file = "@//debian:ni-libraries.BUILD",
+    sha256 = "f9cdc52294a8963cf0b41d51fdbb8b190062c98ccd4e6953f8b3f77a641915fe",
+    url = "http://frc971.org/Build-Dependencies/allwpilib_ni-libraries_3293db0251.tar.gz",
 )
 
 # Downloaded from:
