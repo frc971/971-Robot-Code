@@ -17,12 +17,12 @@ genrule(
 cc_library(
     name = "wrist_plants",
     srcs = [
-        "wrist_plant.cc",
         "integral_wrist_plant.cc",
+        "wrist_plant.cc",
     ],
     hdrs = [
-        "wrist_plant.h",
         "integral_wrist_plant.h",
+        "wrist_plant.h",
     ],
     visibility = ["//visibility:public"],
     deps = [

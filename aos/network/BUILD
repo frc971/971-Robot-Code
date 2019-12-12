@@ -9,10 +9,10 @@ cc_library(
         "team_number.h",
     ],
     deps = [
-        "@com_google_absl//absl/base",
+        "//aos:configuration",
         "//aos/logging",
         "//aos/util:string_to_num",
-        "//aos:configuration",
+        "@com_google_absl//absl/base",
     ],
 )
 

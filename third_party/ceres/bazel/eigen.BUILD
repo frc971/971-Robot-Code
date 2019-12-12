@@ -31,9 +31,9 @@
 # TODO(keir): Replace this with a better version, like from TensorFlow.
 # See https://github.com/ceres-solver/ceres-solver/issues/337.
 cc_library(
-    name = 'eigen',
+    name = "eigen",
     srcs = [],
-    includes = ['.'],
-    hdrs = glob(['Eigen/**']),
-    visibility = ['//visibility:public'],
+    hdrs = glob(["Eigen/**"]),
+    includes = ["."],
+    visibility = ["//visibility:public"],
 )

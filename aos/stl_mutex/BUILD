@@ -6,8 +6,8 @@ cc_library(
         "stl_mutex.h",
     ],
     deps = [
-        "//aos/logging",
         "//aos/ipc_lib:aos_sync",
+        "//aos/logging",
     ],
 )
 
@@ -17,10 +17,10 @@ cc_test(
         "stl_mutex_test.cc",
     ],
     deps = [
-        "//aos:die",
         ":stl_mutex",
-        "//aos/util:thread",
+        "//aos:die",
         "//aos/testing:googletest",
         "//aos/testing:test_logging",
+        "//aos/util:thread",
     ],
 )

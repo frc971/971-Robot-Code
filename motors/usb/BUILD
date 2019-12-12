@@ -1,137 +1,136 @@
 load("//tools:environments.bzl", "mcu_cpus")
 
 cc_library(
-  name = 'legacy',
-  visibility = ['//visibility:public'],
-  hdrs = [
-    'usb_desc.h',
-    'usb_serial.h',
-    'usb_dev.h',
-  ],
-  srcs = [
-    'usb_mem.h',
-    'usb_names.h',
-
-    'usb_desc.c',
-    'usb_serial.c',
-    'usb_dev.c',
-    'usb_mem.c',
-  ],
-  defines = [
-    'USB_SERIAL=1',
-  ],
-  deps = [
-    '//motors/core',
-  ],
-  restricted_to = mcu_cpus,
+    name = "legacy",
+    srcs = [
+        "usb_desc.c",
+        "usb_dev.c",
+        "usb_mem.c",
+        "usb_mem.h",
+        "usb_names.h",
+        "usb_serial.c",
+    ],
+    hdrs = [
+        "usb_desc.h",
+        "usb_dev.h",
+        "usb_serial.h",
+    ],
+    defines = [
+        "USB_SERIAL=1",
+    ],
+    restricted_to = mcu_cpus,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//motors/core",
+    ],
 )
 
 cc_library(
-  name = 'usb',
-  visibility = ['//visibility:public'],
-  hdrs = [
-    'usb.h',
-  ],
-  srcs = [
-    'usb.cc',
-  ],
-  deps = [
-    ':constants',
-    '//aos:macros',
-    '//motors/core',
-    '//motors:util',
-  ],
-  restricted_to = mcu_cpus,
+    name = "usb",
+    srcs = [
+        "usb.cc",
+    ],
+    hdrs = [
+        "usb.h",
+    ],
+    restricted_to = mcu_cpus,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":constants",
+        "//aos:macros",
+        "//motors:util",
+        "//motors/core",
+    ],
 )
 
 cc_library(
-  name = 'cdc',
-  visibility = ['//visibility:public'],
-  hdrs = [
-    'cdc.h',
-  ],
-  srcs = [
-    'cdc.cc',
-  ],
-  deps = [
-    ':usb',
-    ':queue',
-    '//motors/core',
-    '//motors:util',
-  ],
-  restricted_to = mcu_cpus,
+    name = "cdc",
+    srcs = [
+        "cdc.cc",
+    ],
+    hdrs = [
+        "cdc.h",
+    ],
+    restricted_to = mcu_cpus,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":queue",
+        ":usb",
+        "//motors:util",
+        "//motors/core",
+    ],
 )
 
 cc_library(
-  name = 'interrupt_out',
-  visibility = ['//visibility:public'],
-  hdrs = [
-    'interrupt_out.h',
-  ],
-  srcs = [
-    'interrupt_out.cc',
-  ],
-  deps = [
-    ':usb',
-    '//motors/core',
-    '//motors:util',
-  ],
-  restricted_to = mcu_cpus,
+    name = "interrupt_out",
+    srcs = [
+        "interrupt_out.cc",
+    ],
+    hdrs = [
+        "interrupt_out.h",
+    ],
+    restricted_to = mcu_cpus,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":usb",
+        "//motors:util",
+        "//motors/core",
+    ],
 )
 
 cc_library(
-  name = 'queue',
-  hdrs = [
-    'queue.h',
-  ],
-  srcs = [
-    'queue.cc',
-  ],
-  compatible_with = mcu_cpus,
+    name = "queue",
+    srcs = [
+        "queue.cc",
+    ],
+    hdrs = [
+        "queue.h",
+    ],
+    compatible_with = mcu_cpus,
 )
 
 cc_test(
-  name = 'queue_test',
-  srcs = [
-    'queue_test.cc',
-  ],
-  deps = [
-    ':queue',
-    '//aos/testing:googletest',
-  ],
+    name = "queue_test",
+    srcs = [
+        "queue_test.cc",
+    ],
+    deps = [
+        ":queue",
+        "//aos/testing:googletest",
+    ],
 )
 
 cc_library(
-  name = 'constants',
-  hdrs = [
-    'constants.h',
-  ],
-  compatible_with = mcu_cpus,
+    name = "constants",
+    hdrs = [
+        "constants.h",
+    ],
+    compatible_with = mcu_cpus,
 )
 
 cc_test(
-  name = 'constants_test',
-  srcs = [
-    'constants_test.cc',
-  ],
-  deps = [
-    ':constants',
-    '//aos/testing:googletest',
-  ],
+    name = "constants_test",
+    srcs = [
+        "constants_test.cc",
+    ],
+    deps = [
+        ":constants",
+        "//aos/testing:googletest",
+    ],
 )
 
 cc_library(
-  name = 'hid',
-  visibility = ['//visibility:public'],
-  hdrs = [
-    'hid.h',
-  ],
-  srcs = [
-    'hid.cc',
-  ],
-  deps = [
-    ':usb',
-    '//motors:util',
-  ],
-  restricted_to = mcu_cpus,
+    name = "hid",
+    srcs = [
+        "hid.cc",
+    ],
+    hdrs = [
+        "hid.h",
+    ],
+    restricted_to = mcu_cpus,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":usb",
+        "//motors:util",
+    ],
 )

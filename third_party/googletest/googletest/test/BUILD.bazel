@@ -157,7 +157,7 @@ cc_test(
         "googletest-param-test2-test.cc",
     ],
     copts = [
-      "-Wno-unused-private-field",
+        "-Wno-unused-private-field",
     ],
     deps = ["//third_party/googletest:gtest"],
 )

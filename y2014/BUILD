@@ -11,13 +11,13 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "@com_google_absl//absl/base",
         "//aos/logging",
         "//aos/mutex",
         "//aos/network:team_number",
         "//frc971:shifter_hall_effect",
         "//frc971/control_loops:state_feedback_loop",
         "//y2014/control_loops/drivetrain:polydrivetrain_plants",
+        "@com_google_absl//absl/base",
     ],
 )
 

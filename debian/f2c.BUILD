@@ -1,5 +1,5 @@
 filegroup(
-  name = 'f2c',
-  visibility = ['//visibility:public'],
-  srcs = ['usr/bin/f2c'],
+    name = "f2c",
+    srcs = ["usr/bin/f2c"],
+    visibility = ["//visibility:public"],
 )

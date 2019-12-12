@@ -3,13 +3,13 @@ licenses(["notice"])
 cc_library(
     name = "matplotlib-cpp",
     hdrs = [
-        "matplotlibcpp.h"
+        "matplotlibcpp.h",
     ],
+    restricted_to = ["//tools:k8"],
+    visibility = ["//visibility:public"],
     deps = [
         "@python_repo//:python2.7_lib",
     ],
-    visibility = ["//visibility:public"],
-    restricted_to = ["//tools:k8"],
 )
 
 cc_binary(
@@ -17,10 +17,10 @@ cc_binary(
     srcs = [
         "examples/basic.cpp",
     ],
+    restricted_to = ["//tools:k8"],
     deps = [
         "matplotlib-cpp",
     ],
-    restricted_to = ["//tools:k8"],
 )
 
 cc_binary(
@@ -28,8 +28,8 @@ cc_binary(
     srcs = [
         "examples/animation.cpp",
     ],
+    restricted_to = ["//tools:k8"],
     deps = [
         "matplotlib-cpp",
     ],
-    restricted_to = ["//tools:k8"],
 )

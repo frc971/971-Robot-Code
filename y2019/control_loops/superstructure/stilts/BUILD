@@ -17,12 +17,12 @@ genrule(
 cc_library(
     name = "stilts_plants",
     srcs = [
-        "stilts_plant.cc",
         "integral_stilts_plant.cc",
+        "stilts_plant.cc",
     ],
     hdrs = [
-        "stilts_plant.h",
         "integral_stilts_plant.h",
+        "stilts_plant.h",
     ],
     visibility = ["//visibility:public"],
     deps = [

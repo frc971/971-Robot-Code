@@ -1,7 +1,7 @@
 py_library(
-  name = 'six',
-  visibility = ['//visibility:public'],
-  srcs = [
-    'six.py',
-  ],
+    name = "six",
+    srcs = [
+        "six.py",
+    ],
+    visibility = ["//visibility:public"],
 )

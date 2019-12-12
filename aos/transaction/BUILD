@@ -19,8 +19,7 @@ cc_test(
     deps = [
         ":transaction",
         "//aos/logging",
-        "//aos/util:death_test_log_implementation",
         "//aos/testing:googletest",
+        "//aos/util:death_test_log_implementation",
     ],
 )
-

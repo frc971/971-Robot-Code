@@ -1,10 +1,10 @@
 licenses(["notice"])
 
-load("//tools/build_rules:select.bzl", "cpu_select", "compiler_select")
+load("//tools/build_rules:select.bzl", "compiler_select", "cpu_select")
 load("//tools/build_rules:empty_main.bzl", "empty_main_if_asan")
 
 common_copts = [
-#Stuff from their Makefile.
+    #Stuff from their Makefile.
     "-Wno-cast-align",
     "-Wno-sign-compare",
     "-fno-builtin-malloc",
@@ -20,7 +20,7 @@ common_copts = [
     "-fno-omit-frame-pointer",
     "-DNDEBUG",
 
-#Stuff to make it work for us.
+    #Stuff to make it work for us.
     "-Ithird_party/gperftools/src/",
     "-Ithird_party/empty_config_h",
     "-Wno-unused-parameter",
@@ -32,7 +32,7 @@ common_copts = [
     "-Wno-error=cast-align",
     "-Wno-error=cast-qual",
 
-#Stuff pulled out of config.h.
+    #Stuff pulled out of config.h.
     "-DHAVE_BUILTIN_EXPECT=1",
     "-DHAVE_DECL_CFREE=1",
     "-DHAVE_DECL_MEMALIGN=1",
@@ -136,6 +136,7 @@ cc_library(
         "src/third_party/valgrind.h",
     ],
     copts = common_copts,
+    includes = ["src"],
     linkopts = [
         "-lrt",
         "-lpthread",
@@ -145,7 +146,6 @@ cc_library(
     deps = [
         "//third_party/empty_config_h",
     ],
-    includes = ["src"],
     alwayslink = True,
 )
 
@@ -210,8 +210,8 @@ cc_test(
     ]),
     copts = common_copts + [
         "-fno-builtin",
-#Add this back in when we upgrade clang.
-#'-Wno-mismatched-new-delete',
+        #Add this back in when we upgrade clang.
+        #'-Wno-mismatched-new-delete',
     ],
     deps = [
         ":tcmalloc",
