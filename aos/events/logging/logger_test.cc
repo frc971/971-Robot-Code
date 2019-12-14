@@ -144,7 +144,7 @@ class MultinodeLoggerTest : public ::testing::Test {
  public:
   MultinodeLoggerTest()
       : config_(aos::configuration::ReadConfig(
-            "aos/events/multinode_pingpong_config.json")),
+            "aos/events/logging/multinode_pingpong_config.json")),
         event_loop_factory_(&config_.message(), "pi1"),
         ping_event_loop_(event_loop_factory_.MakeEventLoop("ping")),
         ping_(ping_event_loop_.get()) {}

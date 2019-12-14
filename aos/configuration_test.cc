@@ -7,6 +7,7 @@
 #include "flatbuffers/reflection.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
+#include "gmock/gmock.h"
 
 namespace aos {
 namespace configuration {
@@ -567,6 +568,37 @@ TEST_F(ConfigurationTest, ConnectionDeliveryTimeIsLoggedOnNode) {
       &logged_on_both_channel.message(), &baz_node.message(),
       &baz_node.message()));
 }
+
+// Tests that we can deduce source nodes from a multinode config.
+TEST_F(ConfigurationTest, SourceNodeNames) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig("aos/testdata/config1_multinode.json");
+
+  // This is a bit simplistic in that it doesn't test deduplication, but it does
+  // exercise a lot of the logic.
+  EXPECT_THAT(
+      SourceNodeNames(&config.message(), config.message().nodes()->Get(0)),
+      ::testing::ElementsAreArray({"pi2"}));
+  EXPECT_THAT(
+      SourceNodeNames(&config.message(), config.message().nodes()->Get(1)),
+      ::testing::ElementsAreArray({"pi1"}));
+}
+
+// Tests that we can deduce destination nodes from a multinode config.
+TEST_F(ConfigurationTest, DestinationNodeNames) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig("aos/testdata/config1_multinode.json");
+
+  // This is a bit simplistic in that it doesn't test deduplication, but it does
+  // exercise a lot of the logic.
+  EXPECT_THAT(
+      DestinationNodeNames(&config.message(), config.message().nodes()->Get(0)),
+      ::testing::ElementsAreArray({"pi2"}));
+  EXPECT_THAT(
+      DestinationNodeNames(&config.message(), config.message().nodes()->Get(1)),
+      ::testing::ElementsAreArray({"pi1"}));
+}
+
 }  // namespace testing
 }  // namespace configuration
 }  // namespace aos

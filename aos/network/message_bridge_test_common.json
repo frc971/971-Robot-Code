@@ -1,0 +1,113 @@
+{
+  "channels": [
+    {
+      "name": "/aos/pi1",
+      "type": "aos.message_bridge.ServerStatistics",
+      "source_node": "pi1",
+      "frequency": 2
+    },
+    {
+      "name": "/aos/pi2",
+      "type": "aos.message_bridge.ServerStatistics",
+      "source_node": "pi2",
+      "frequency": 2
+    },
+    {
+      "name": "/aos/pi1",
+      "type": "aos.message_bridge.ClientStatistics",
+      "source_node": "pi1",
+      "frequency": 2
+    },
+    {
+      "name": "/aos/pi2",
+      "type": "aos.message_bridge.ClientStatistics",
+      "source_node": "pi2",
+      "frequency": 2
+    },
+    {
+      "name": "/aos/pi1",
+      "type": "aos.timing.Report",
+      "source_node": "pi1",
+      "frequency": 50,
+      "num_senders": 20,
+      "max_size": 2048
+    },
+    {
+      "name": "/aos/pi2",
+      "type": "aos.timing.Report",
+      "source_node": "pi2",
+      "frequency": 50,
+      "num_senders": 20,
+      "max_size": 2048
+    },
+    {
+      "name": "/test",
+      "type": "aos.examples.Ping",
+      "source_node": "pi1",
+      "destination_nodes": [
+        {
+          "name": "pi2",
+          "priority": 1,
+          "timestamp_logger": "REMOTE_LOGGER",
+          "timestamp_logger_node": "pi1"
+        }
+      ]
+    },
+    {
+      "name": "/test2",
+      "type": "aos.examples.Ping",
+      "source_node": "pi2"
+    },
+    {
+      "name": "/test",
+      "type": "aos.examples.Pong",
+      "source_node": "pi2",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_node": "pi1",
+      "destination_nodes": [
+        {
+          "name": "pi1",
+          "priority": 1,
+          "timestamp_logger": "REMOTE_LOGGER",
+          "timestamp_logger_node": "pi1"
+        }
+      ]
+    }
+  ],
+  "applications": [
+    {
+      "name": "pi2_message_bridge_client",
+      "maps": [
+        {
+          "match": {
+            "name": "/test",
+            "type": "aos.examples.Ping"
+          },
+          "rename": {
+            "name": "/test2"
+          }
+        }
+      ]
+    }
+  ],
+  "maps": [
+    {
+      "match": {
+        "name": "/aos",
+        "source_node": "pi1"
+      },
+      "rename": {
+        "name": "/aos/pi1"
+      }
+    },
+    {
+      "match": {
+        "name": "/aos",
+        "source_node": "pi2"
+      },
+      "rename": {
+        "name": "/aos/pi2"
+      }
+    }
+  ]
+}

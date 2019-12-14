@@ -2,6 +2,54 @@
   "channels": [
     {
       "name": "/aos/pi1",
+      "type": "aos.message_bridge.ServerStatistics",
+      "source_node": "pi1",
+      "frequency": 2
+    },
+    {
+      "name": "/aos/pi2",
+      "type": "aos.message_bridge.ServerStatistics",
+      "source_node": "pi2",
+      "frequency": 2
+    },
+    {
+      "name": "/aos/pi3",
+      "type": "aos.message_bridge.ServerStatistics",
+      "source_node": "pi3",
+      "frequency": 2
+    },
+    {
+      "name": "/aos/roborio",
+      "type": "aos.message_bridge.ServerStatistics",
+      "source_node": "roborio",
+      "frequency": 2
+    },
+    {
+      "name": "/aos/pi1",
+      "type": "aos.message_bridge.ClientStatistics",
+      "source_node": "pi1",
+      "frequency": 2
+    },
+    {
+      "name": "/aos/pi2",
+      "type": "aos.message_bridge.ClientStatistics",
+      "source_node": "pi2",
+      "frequency": 2
+    },
+    {
+      "name": "/aos/pi3",
+      "type": "aos.message_bridge.ClientStatistics",
+      "source_node": "pi3",
+      "frequency": 2
+    },
+    {
+      "name": "/aos/roborio",
+      "type": "aos.message_bridge.ClientStatistics",
+      "source_node": "roborio",
+      "frequency": 2
+    },
+    {
+      "name": "/aos/pi1",
       "type": "aos.timing.Report",
       "source_node": "pi1",
       "frequency": 50,
@@ -25,6 +73,14 @@
       "max_size": 2048
     },
     {
+      "name": "/aos/roborio",
+      "type": "aos.timing.Report",
+      "source_node": "roborio",
+      "frequency": 50,
+      "num_senders": 20,
+      "max_size": 2048
+    },
+    {
       "name": "/test",
       "type": "aos.examples.Ping",
       "source_node": "pi1",
@@ -32,8 +88,8 @@
         {
           "name": "pi2",
           "priority": 1,
-          "timestamp_logger": "REMOTE_LOGGER",
-          "timestamp_logger_node": "pi1"
+          "timestamp_logger": "LOCAL_LOGGER",
+          "time_to_live": 5000000
         }
       ]
     },
@@ -41,14 +97,12 @@
       "name": "/test",
       "type": "aos.examples.Pong",
       "source_node": "pi2",
-      "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "logger_node": "pi1",
       "destination_nodes": [
         {
           "name": "pi1",
           "priority": 1,
-          "timestamp_logger": "REMOTE_LOGGER",
-          "timestamp_logger_node": "pi1"
+          "timestamp_logger": "LOCAL_LOGGER",
+          "time_to_live": 5000000
         }
       ]
     },
@@ -60,8 +114,8 @@
         {
           "name": "pi3",
           "priority": 1,
-          "timestamp_logger": "REMOTE_LOGGER",
-          "timestamp_logger_node": "pi1"
+          "timestamp_logger": "LOCAL_LOGGER",
+          "time_to_live": 5000000
         }
       ]
     },
@@ -69,14 +123,12 @@
       "name": "/test2",
       "type": "aos.examples.Pong",
       "source_node": "pi3",
-      "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "logger_node": "pi1",
       "destination_nodes": [
         {
           "name": "pi1",
           "priority": 1,
-          "timestamp_logger": "REMOTE_LOGGER",
-          "timestamp_logger_node": "pi1"
+          "timestamp_logger": "LOCAL_LOGGER",
+          "time_to_live": 5000000
         }
       ]
     }
@@ -111,6 +163,96 @@
       "rename": {
         "name": "/aos/pi3"
       }
+    },
+    {
+      "match": {
+        "name": "/aos",
+        "type": "aos.timing.Report",
+        "source_node": "roborio"
+      },
+      "rename": {
+        "name": "/aos/roborio"
+      }
+    },
+    {
+      "match": {
+        "name": "/aos",
+        "type": "aos.message_bridge.ServerStatistics",
+        "source_node": "pi1"
+      },
+      "rename": {
+        "name": "/aos/pi1"
+      }
+    },
+    {
+      "match": {
+        "name": "/aos",
+        "type": "aos.message_bridge.ServerStatistics",
+        "source_node": "pi2"
+      },
+      "rename": {
+        "name": "/aos/pi2"
+      }
+    },
+    {
+      "match": {
+        "name": "/aos",
+        "type": "aos.message_bridge.ServerStatistics",
+        "source_node": "pi3"
+      },
+      "rename": {
+        "name": "/aos/pi3"
+      }
+    },
+    {
+      "match": {
+        "name": "/aos",
+        "type": "aos.message_bridge.ServerStatistics",
+        "source_node": "roborio"
+      },
+      "rename": {
+        "name": "/aos/roborio"
+      }
+    },
+    {
+      "match": {
+        "name": "/aos",
+        "type": "aos.message_bridge.ClientStatistics",
+        "source_node": "pi1"
+      },
+      "rename": {
+        "name": "/aos/pi1"
+      }
+    },
+    {
+      "match": {
+        "name": "/aos",
+        "type": "aos.message_bridge.ClientStatistics",
+        "source_node": "pi2"
+      },
+      "rename": {
+        "name": "/aos/pi2"
+      }
+    },
+    {
+      "match": {
+        "name": "/aos",
+        "type": "aos.message_bridge.ClientStatistics",
+        "source_node": "pi3"
+      },
+      "rename": {
+        "name": "/aos/pi3"
+      }
+    },
+    {
+      "match": {
+        "name": "/aos",
+        "type": "aos.message_bridge.ClientStatistics",
+        "source_node": "roborio"
+      },
+      "rename": {
+        "name": "/aos/roborio"
+      }
     }
   ],
   "nodes": [
@@ -127,6 +269,11 @@
     {
       "name": "pi3",
       "hostname": "raspberrypi3",
+      "port": 9971
+    },
+    {
+      "name": "roborio",
+      "hostname": "roboRIO-6971-FRC",
       "port": 9971
     }
   ],
@@ -153,6 +300,32 @@
           },
           "rename": {
             "name": "/test2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ping3",
+      "maps": [
+        {
+          "match": {
+            "name": "/test"
+          },
+          "rename": {
+            "name": "/test3"
+          }
+        }
+      ]
+    },
+    {
+      "name": "pong3",
+      "maps": [
+        {
+          "match": {
+            "name": "/test"
+          },
+          "rename": {
+            "name": "/test3"
           }
         }
       ]

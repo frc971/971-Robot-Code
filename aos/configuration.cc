@@ -7,6 +7,8 @@
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <unistd.h>
+
+#include <set>
 #include <string_view>
 
 #include "absl/container/btree_set.h"
@@ -728,6 +730,58 @@ bool ConnectionDeliveryTimeIsLoggedOnNode(const Connection *connection,
 
   LOG(FATAL) << "Unknown logger config "
              << static_cast<int>(connection->timestamp_logger());
+}
+
+std::vector<std::string_view> SourceNodeNames(const Configuration *config,
+                                              const Node *my_node) {
+  std::set<std::string_view> result_set;
+
+  for (const Channel *channel : *config->channels()) {
+    if (channel->has_destination_nodes()) {
+      for (const Connection *connection : *channel->destination_nodes()) {
+        if (connection->name()->string_view() ==
+            my_node->name()->string_view()) {
+          result_set.insert(channel->source_node()->string_view());
+        }
+      }
+    }
+  }
+
+  std::vector<std::string_view> result;
+  for (const std::string_view source : result_set) {
+    VLOG(1) << "Found a source node of " << source;
+    result.emplace_back(source);
+  }
+  return result;
+}
+
+std::vector<std::string_view> DestinationNodeNames(const Configuration *config,
+                                                   const Node *my_node) {
+  std::vector<std::string_view> result;
+
+  for (const Channel *channel : *config->channels()) {
+    if (channel->has_source_node() && channel->source_node()->string_view() ==
+                                          my_node->name()->string_view()) {
+      if (!channel->has_destination_nodes()) continue;
+
+      if (channel->source_node()->string_view() !=
+          my_node->name()->string_view()) {
+        continue;
+      }
+
+      for (const Connection *connection : *channel->destination_nodes()) {
+        if (std::find(result.begin(), result.end(),
+                      connection->name()->string_view()) == result.end()) {
+          result.emplace_back(connection->name()->string_view());
+        }
+      }
+    }
+  }
+
+  for (const std::string_view destination : result) {
+    VLOG(1) << "Found a destination node of " << destination;
+  }
+  return result;
 }
 
 }  // namespace configuration

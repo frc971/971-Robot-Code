@@ -80,6 +80,14 @@ bool ConnectionDeliveryTimeIsLoggedOnNode(const Connection *connection,
 // Prints a channel to json, but without the schema.
 std::string CleanedChannelToString(const Channel *channel);
 
+// Returns the node names that this node should be forwarding to.
+std::vector<std::string_view> DestinationNodeNames(const Configuration *config,
+                                                   const Node *my_node);
+
+// Returns the node names that this node should be receiving messages from.
+std::vector<std::string_view> SourceNodeNames(const Configuration *config,
+                                              const Node *my_node);
+
 // TODO(austin): GetSchema<T>(const Flatbuffer<Configuration> &config);
 
 }  // namespace configuration

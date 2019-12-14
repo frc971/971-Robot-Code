@@ -121,6 +121,8 @@ aos_config(
     flatbuffers = [
         ":ping_fbs",
         ":pong_fbs",
+        "//aos/network:message_bridge_client_fbs",
+        "//aos/network:message_bridge_server_fbs",
     ],
     deps = [":config"],
 )

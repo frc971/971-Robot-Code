@@ -1,0 +1,17 @@
+{
+  "imports": [
+    "message_bridge_test_common.json"
+  ],
+  "nodes": [
+    {
+      "name": "pi1",
+      "hostname": "localhost",
+      "port": 9971
+    },
+    {
+      "name": "pi2",
+      "hostname": "raspberrypi2",
+      "port": 9971
+    }
+  ]
+}

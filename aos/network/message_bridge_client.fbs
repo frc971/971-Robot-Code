@@ -1,0 +1,24 @@
+include "aos/network/message_bridge_server.fbs";
+
+namespace aos.message_bridge;
+
+// Statistics from a single client connection to a server.
+table ClientConnection {
+  // The node that we are connected to.
+  node:Node;
+
+  // Health of this connection.  Connected or not?
+  state:State;
+
+  // Number of packets received on all channels.
+  received_packets:uint;
+
+  // TODO(austin): Per channel counts?
+}
+
+// Statistics for all clients.
+table ClientStatistics {
+  connections:[ClientConnection];
+}
+
+root_type ClientStatistics;
