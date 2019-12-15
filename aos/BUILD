@@ -28,6 +28,7 @@ filegroup(
         "//aos:core",
         "//aos/logging:log_streamer.stripped",
         "//aos/logging:log_displayer.stripped",
+        "//aos:log_fbs_shmem.stripped",
         "//aos/starter",
     ],
     visibility = ["//visibility:public"],
