@@ -180,8 +180,11 @@ void Logger::DoLogData() {
           }
         }
 
-        if (!f.written && f.fetcher->context().monotonic_sent_time <
-                              last_synchronized_time_) {
+        CHECK(!f.written);
+
+        // TODO(james): Write tests to exercise this logic.
+        if (f.fetcher->context().monotonic_sent_time <
+            last_synchronized_time_) {
           // Write!
           flatbuffers::FlatBufferBuilder fbb(f.fetcher->context().size +
                                              max_header_size_);
@@ -217,6 +220,8 @@ void Logger::DoLogData() {
           writer_->QueueSizedFlatbuffer(&fbb);
 
           f.written = true;
+        } else {
+          break;
         }
       }
 

@@ -4,7 +4,8 @@
       "name": "/aos",
       "type": "aos.timing.Report",
       "frequency": 50,
-      "num_senders": 20
+      "num_senders": 20,
+      "max_size": 2048
     }
   ]
 }
