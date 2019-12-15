@@ -7,15 +7,14 @@
 
 #pragma once
 
-#include <units/units.h>
-
 #include <frc/AnalogGyro.h>
 #include <frc/Encoder.h>
-#include <frc/Spark.h>
+#include <frc/PWMVictorSPX.h>
 #include <frc/SpeedControllerGroup.h>
 #include <frc/controller/PIDController.h>
 #include <frc/kinematics/DifferentialDriveKinematics.h>
 #include <frc/kinematics/DifferentialDriveOdometry.h>
+#include <units/units.h>
 #include <wpi/math>
 
 /**
@@ -32,6 +31,9 @@ class Drivetrain {
                                       kEncoderResolution);
     m_rightEncoder.SetDistancePerPulse(2 * wpi::math::pi * kWheelRadius /
                                        kEncoderResolution);
+
+    m_leftEncoder.Reset();
+    m_rightEncoder.Reset();
   }
 
   /**
@@ -47,7 +49,6 @@ class Drivetrain {
   static constexpr units::radians_per_second_t kMaxAngularSpeed{
       wpi::math::pi};  // 1/2 rotation per second
 
-  frc::DifferentialDriveWheelSpeeds GetSpeeds() const;
   void SetSpeeds(const frc::DifferentialDriveWheelSpeeds& speeds);
   void Drive(units::meters_per_second_t xSpeed,
              units::radians_per_second_t rot);
@@ -58,16 +59,16 @@ class Drivetrain {
   static constexpr double kWheelRadius = 0.0508;  // meters
   static constexpr int kEncoderResolution = 4096;
 
-  frc::Spark m_leftMaster{1};
-  frc::Spark m_leftFollower{2};
-  frc::Spark m_rightMaster{3};
-  frc::Spark m_rightFollower{4};
+  frc::PWMVictorSPX m_leftMaster{1};
+  frc::PWMVictorSPX m_leftFollower{2};
+  frc::PWMVictorSPX m_rightMaster{3};
+  frc::PWMVictorSPX m_rightFollower{4};
 
   frc::SpeedControllerGroup m_leftGroup{m_leftMaster, m_leftFollower};
   frc::SpeedControllerGroup m_rightGroup{m_rightMaster, m_rightFollower};
 
   frc::Encoder m_leftEncoder{0, 1};
-  frc::Encoder m_rightEncoder{0, 1};
+  frc::Encoder m_rightEncoder{2, 3};
 
   frc2::PIDController m_leftPIDController{1.0, 0.0, 0.0};
   frc2::PIDController m_rightPIDController{1.0, 0.0, 0.0};
@@ -75,5 +76,5 @@ class Drivetrain {
   frc::AnalogGyro m_gyro{0};
 
   frc::DifferentialDriveKinematics m_kinematics{kTrackWidth};
-  frc::DifferentialDriveOdometry m_odometry{m_kinematics};
+  frc::DifferentialDriveOdometry m_odometry{GetAngle()};
 };

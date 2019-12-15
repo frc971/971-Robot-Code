@@ -44,21 +44,6 @@ ext {
 
 apply from: "${rootDir}/shared/opencv.gradle"
 
-ext {
-    chipObjectComponents = ['commands']
-    netCommComponents = ['commands']
-    examplesMap.each { key, value ->
-        chipObjectComponents << key.toString()
-        netCommComponents << key.toString()
-    }
-    templatesMap.each { key, value ->
-        chipObjectComponents << key.toString()
-        netCommComponents << key.toString()
-    }
-}
-
-apply from: "${rootDir}/shared/nilibraries.gradle"
-
 model {
     components {
         commands(NativeLibrarySpec) {
@@ -67,6 +52,8 @@ model {
                     binary.buildable = false
                     return
                 }
+                lib project: ':wpilibOldCommands', library: 'wpilibOldCommands', linkage: 'shared'
+                lib project: ':wpilibNewCommands', library: 'wpilibNewCommands', linkage: 'shared'
                 lib project: ':wpilibc', library: 'wpilibc', linkage: 'shared'
                 lib project: ':ntcore', library: 'ntcore', linkage: 'shared'
                 lib project: ':cscore', library: 'cscore', linkage: 'shared'
@@ -92,6 +79,8 @@ model {
             "${key}"(NativeExecutableSpec) {
                 targetBuildTypes 'debug'
                 binaries.all { binary ->
+                    lib project: ':wpilibOldCommands', library: 'wpilibOldCommands', linkage: 'shared'
+                    lib project: ':wpilibNewCommands', library: 'wpilibNewCommands', linkage: 'shared'
                     lib project: ':wpilibc', library: 'wpilibc', linkage: 'shared'
                     lib project: ':ntcore', library: 'ntcore', linkage: 'shared'
                     lib project: ':cscore', library: 'cscore', linkage: 'shared'
@@ -102,6 +91,9 @@ model {
                         lib project: ':simulation:halsim_lowfi', library: 'halsim_lowfi', linkage: 'shared'
                         lib project: ':simulation:halsim_print', library: 'halsim_print', linkage: 'shared'
                         lib project: ':simulation:halsim_ds_nt', library: 'halsim_ds_nt', linkage: 'shared'
+                    }
+                    if (binary.targetPlatform.name == nativeUtils.wpi.platforms.roborio) {
+                        nativeUtils.useRequiredLibrary(binary, 'netcomm_shared', 'chipobject_shared', 'visa_shared', 'ni_runtime_shared')
                     }
                 }
                 sources {
@@ -134,6 +126,8 @@ model {
             "${key}"(NativeExecutableSpec) {
                 targetBuildTypes 'debug'
                 binaries.all { binary ->
+                    lib project: ':wpilibOldCommands', library: 'wpilibOldCommands', linkage: 'shared'
+                    lib project: ':wpilibNewCommands', library: 'wpilibNewCommands', linkage: 'shared'
                     lib project: ':wpilibc', library: 'wpilibc', linkage: 'shared'
                     lib project: ':ntcore', library: 'ntcore', linkage: 'shared'
                     lib project: ':cscore', library: 'cscore', linkage: 'shared'
@@ -151,6 +145,9 @@ model {
                         lib project: ':simulation:halsim_lowfi', library: 'halsim_lowfi', linkage: 'shared'
                         lib project: ':simulation:halsim_print', library: 'halsim_print', linkage: 'shared'
                         lib project: ':simulation:halsim_ds_nt', library: 'halsim_ds_nt', linkage: 'shared'
+                    }
+                    if (binary.targetPlatform.name == nativeUtils.wpi.platforms.roborio) {
+                        nativeUtils.useRequiredLibrary(binary, 'netcomm_shared', 'chipobject_shared', 'visa_shared', 'ni_runtime_shared')
                     }
                 }
                 sources {
@@ -234,4 +231,7 @@ ext {
     commandFile = new File("$projectDir/src/main/cpp/commands/commands.json")
 }
 
+ext {
+    isCppCommands = true
+}
 apply from: "${rootDir}/shared/examplecheck.gradle"

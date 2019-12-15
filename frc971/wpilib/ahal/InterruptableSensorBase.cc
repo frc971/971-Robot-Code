@@ -13,42 +13,6 @@
 
 using namespace frc;
 
-namespace {
-
-// Converts a freestanding lower half to a 64 bit FPGA timestamp
-//
-// Note: This is making the assumption that the timestamp being converted is
-// always in the past.  If you call this with a future timestamp, it probably
-// will make it in the past.  If you wait over 70 minutes between capturing the
-// bottom 32 bits of the timestamp and expanding it, you will be off by
-// multiples of 1<<32 microseconds.
-//
-// @return The current time in microseconds according to the FPGA (since FPGA
-// reset) as a 64 bit number.
-uint64_t HAL_ExpandFPGATime(uint32_t unexpanded_lower, int32_t* status) {
-  // Capture the current FPGA time.  This will give us the upper half of the
-  // clock.
-  uint64_t fpga_time = HAL_GetFPGATime(status);
-  if (*status != 0) return 0;
-
-  // Now, we need to detect the case where the lower bits rolled over after we
-  // sampled.  In that case, the upper bits will be 1 bigger than they should
-  // be.
-
-  // Break it into lower and upper portions.
-  uint32_t lower = fpga_time & ((uint64_t)0xffffffff);
-  uint64_t upper = (fpga_time >> 32) & 0xffffffff;
-
-  // The time was sampled *before* the current time, so roll it back.
-  if (lower < unexpanded_lower) {
-    --upper;
-  }
-
-  return (upper << 32) + static_cast<uint64_t>(unexpanded_lower);
-}
-
-}  // namespace
-
 InterruptableSensorBase::InterruptableSensorBase() {}
 
 void InterruptableSensorBase::RequestInterrupts() {

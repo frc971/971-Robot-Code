@@ -11,6 +11,10 @@
 #include "Translation2d.h"
 #include "Twist2d.h"
 
+namespace wpi {
+class json;
+}  // namespace wpi
+
 namespace frc {
 
 /**
@@ -146,8 +150,8 @@ class Pose2d {
    *
    * @param twist The change in pose in the robot's coordinate frame since the
    * previous pose update. For example, if a non-holonomic robot moves forward
-   * 0.01 meters and changes angle by .5 degrees since the previous pose update,
-   * the twist would be Twist2d{0.01, 0.0, toRadians(0.5)}
+   * 0.01 meters and changes angle by 0.5 degrees since the previous pose
+   * update, the twist would be Twist2d{0.01, 0.0, toRadians(0.5)}
    *
    * @return The new pose of the robot.
    */
@@ -167,4 +171,9 @@ class Pose2d {
   Translation2d m_translation;
   Rotation2d m_rotation;
 };
+
+void to_json(wpi::json& json, const Pose2d& pose);
+
+void from_json(const wpi::json& json, Pose2d& pose);
+
 }  // namespace frc

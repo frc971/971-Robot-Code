@@ -7,7 +7,7 @@
 
 #include "frc/ADXL362.h"
 
-#include <hal/HAL.h>
+#include <hal/FRCUsageReporting.h>
 
 #include "frc/DriverStation.h"
 #include "frc/smartdashboard/SendableBuilder.h"
@@ -72,7 +72,7 @@ ADXL362::ADXL362(SPI::Port port, Range range)
   commands[2] = kPowerCtl_Measure | kPowerCtl_UltraLowNoise;
   m_spi.Write(commands, 3);
 
-  HAL_Report(HALUsageReporting::kResourceType_ADXL362, port);
+  HAL_Report(HALUsageReporting::kResourceType_ADXL362, port + 1);
 
   SendableRegistry::GetInstance().AddLW(this, "ADXL362", port);
 }

@@ -7,6 +7,9 @@
 
 #pragma once
 
+#include <units/units.h>
+#include <wpi/math>
+
 /**
  * The Constants header provides a convenient place for teams to hold robot-wide
  * numerical or bool constants.  This should not be used for any other purpose.
@@ -17,42 +20,45 @@
  */
 
 namespace DriveConstants {
-const int kLeftMotor1Port = 0;
-const int kLeftMotor2Port = 1;
-const int kRightMotor1Port = 2;
-const int kRightMotor2Port = 3;
+constexpr int kLeftMotor1Port = 0;
+constexpr int kLeftMotor2Port = 1;
+constexpr int kRightMotor1Port = 2;
+constexpr int kRightMotor2Port = 3;
 
-const int kLeftEncoderPorts[]{0, 1};
-const int kRightEncoderPorts[]{2, 3};
-const bool kLeftEncoderReversed = false;
-const bool kRightEncoderReversed = true;
+constexpr int kLeftEncoderPorts[]{0, 1};
+constexpr int kRightEncoderPorts[]{2, 3};
+constexpr bool kLeftEncoderReversed = false;
+constexpr bool kRightEncoderReversed = true;
 
-const int kEncoderCPR = 1024;
-const double kWheelDiameterInches = 6;
-const double kEncoderDistancePerPulse =
+constexpr int kEncoderCPR = 1024;
+constexpr double kWheelDiameterInches = 6;
+constexpr double kEncoderDistancePerPulse =
     // Assumes the encoders are directly mounted on the wheel shafts
-    (kWheelDiameterInches * 3.142) / static_cast<double>(kEncoderCPR);
+    (kWheelDiameterInches * wpi::math::pi) / static_cast<double>(kEncoderCPR);
 
-const bool kGyroReversed = true;
+constexpr bool kGyroReversed = true;
 
-const double kStabilizationP = 1;
-const double kStabilizationI = .5;
-const double kStabilizationD = 0;
+constexpr double kStabilizationP = 1;
+constexpr double kStabilizationI = 0.5;
+constexpr double kStabilizationD = 0;
 
-const double kTurnP = 1;
-const double kTurnI = 0;
-const double kTurnD = 0;
+constexpr double kTurnP = 1;
+constexpr double kTurnI = 0;
+constexpr double kTurnD = 0;
 
-const double kTurnToleranceDeg = 5;
-const double kTurnRateToleranceDegPerS = 10;  // degrees per second
+constexpr auto kTurnTolerance = 5_deg;
+constexpr auto kTurnRateTolerance = 10_deg_per_s;
+
+constexpr auto kMaxTurnRate = 100_deg_per_s;
+constexpr auto kMaxTurnAcceleration = 300_deg_per_s / 1_s;
 }  // namespace DriveConstants
 
 namespace AutoConstants {
-const double kAutoDriveDistanceInches = 60;
-const double kAutoBackupDistanceInches = 20;
-const double kAutoDriveSpeed = .5;
+constexpr double kAutoDriveDistanceInches = 60;
+constexpr double kAutoBackupDistanceInches = 20;
+constexpr double kAutoDriveSpeed = 0.5;
 }  // namespace AutoConstants
 
 namespace OIConstants {
-const int kDriverControllerPort = 1;
+constexpr int kDriverControllerPort = 1;
 }  // namespace OIConstants

@@ -8,7 +8,10 @@
 #pragma once
 
 #include <units/units.h>
-#include <wpi/math>
+
+namespace wpi {
+class json;
+}  // namespace wpi
 
 namespace frc {
 
@@ -175,4 +178,9 @@ class Rotation2d {
   double m_cos = 1;
   double m_sin = 0;
 };
+
+void to_json(wpi::json& json, const Rotation2d& rotation);
+
+void from_json(const wpi::json& json, Rotation2d& rotation);
+
 }  // namespace frc

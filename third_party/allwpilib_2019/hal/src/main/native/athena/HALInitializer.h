@@ -19,6 +19,7 @@ static inline void CheckInit() {
 }
 
 extern void InitializeAccelerometer();
+extern void InitializeAddressableLED();
 extern void InitializeAnalogAccumulator();
 extern void InitializeAnalogInput();
 extern void InitializeAnalogInternal();
@@ -31,6 +32,8 @@ extern void InitializeConstants();
 extern void InitializeCounter();
 extern void InitializeDigitalInternal();
 extern void InitializeDIO();
+extern void InitializeDMA();
+extern void InitializeDutyCycle();
 extern void InitializeEncoder();
 extern void InitializeFPGAEncoder();
 extern void InitializeFRCDriverStation();

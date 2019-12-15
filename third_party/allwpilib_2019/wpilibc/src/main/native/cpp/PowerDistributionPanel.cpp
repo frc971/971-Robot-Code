@@ -7,7 +7,7 @@
 
 #include "frc/PowerDistributionPanel.h"
 
-#include <hal/HAL.h>
+#include <hal/FRCUsageReporting.h>
 #include <hal/PDP.h>
 #include <hal/Ports.h>
 #include <wpi/SmallString.h>
@@ -29,12 +29,11 @@ PowerDistributionPanel::PowerDistributionPanel(int module) {
   int32_t status = 0;
   m_handle = HAL_InitializePDP(module, &status);
   if (status != 0) {
-    wpi_setErrorWithContextRange(status, 0, HAL_GetNumPDPModules(), module,
-                                 HAL_GetErrorMessage(status));
+    wpi_setHALErrorWithRange(status, 0, HAL_GetNumPDPModules(), module);
     return;
   }
 
-  HAL_Report(HALUsageReporting::kResourceType_PDP, module);
+  HAL_Report(HALUsageReporting::kResourceType_PDP, module + 1);
   SendableRegistry::GetInstance().AddLW(this, "PowerDistributionPanel", module);
 }
 

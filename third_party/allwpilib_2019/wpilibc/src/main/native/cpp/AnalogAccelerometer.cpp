@@ -7,7 +7,7 @@
 
 #include "frc/AnalogAccelerometer.h"
 
-#include <hal/HAL.h>
+#include <hal/FRCUsageReporting.h>
 
 #include "frc/WPIErrors.h"
 #include "frc/smartdashboard/SendableBuilder.h"
@@ -58,7 +58,7 @@ void AnalogAccelerometer::InitSendable(SendableBuilder& builder) {
 
 void AnalogAccelerometer::InitAccelerometer() {
   HAL_Report(HALUsageReporting::kResourceType_Accelerometer,
-             m_analogInput->GetChannel());
+             m_analogInput->GetChannel() + 1);
 
   SendableRegistry::GetInstance().AddLW(this, "Accelerometer",
                                         m_analogInput->GetChannel());

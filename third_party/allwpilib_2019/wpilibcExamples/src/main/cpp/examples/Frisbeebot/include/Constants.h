@@ -8,6 +8,7 @@
 #pragma once
 
 #include <units/units.h>
+#include <wpi/math>
 
 /**
  * The Constants header provides a convenient place for teams to hold robot-wide
@@ -19,50 +20,50 @@
  */
 
 namespace DriveConstants {
-const int kLeftMotor1Port = 0;
-const int kLeftMotor2Port = 1;
-const int kRightMotor1Port = 2;
-const int kRightMotor2Port = 3;
+constexpr int kLeftMotor1Port = 0;
+constexpr int kLeftMotor2Port = 1;
+constexpr int kRightMotor1Port = 2;
+constexpr int kRightMotor2Port = 3;
 
-const int kLeftEncoderPorts[]{0, 1};
-const int kRightEncoderPorts[]{2, 3};
-const bool kLeftEncoderReversed = false;
-const bool kRightEncoderReversed = true;
+constexpr int kLeftEncoderPorts[]{0, 1};
+constexpr int kRightEncoderPorts[]{2, 3};
+constexpr bool kLeftEncoderReversed = false;
+constexpr bool kRightEncoderReversed = true;
 
-const int kEncoderCPR = 1024;
-const double kWheelDiameterInches = 6;
-const double kEncoderDistancePerPulse =
+constexpr int kEncoderCPR = 1024;
+constexpr double kWheelDiameterInches = 6;
+constexpr double kEncoderDistancePerPulse =
     // Assumes the encoders are directly mounted on the wheel shafts
-    (kWheelDiameterInches * 3.142) / static_cast<double>(kEncoderCPR);
+    (kWheelDiameterInches * wpi::math::pi) / static_cast<double>(kEncoderCPR);
 }  // namespace DriveConstants
 
 namespace ShooterConstants {
-const int kEncoderPorts[]{4, 5};
-const bool kEncoderReversed = false;
-const int kEncoderCPR = 1024;
-const double kEncoderDistancePerPulse =
+constexpr int kEncoderPorts[]{4, 5};
+constexpr bool kEncoderReversed = false;
+constexpr int kEncoderCPR = 1024;
+constexpr double kEncoderDistancePerPulse =
     // Distance units will be rotations
-    1. / static_cast<double>(kEncoderCPR);
+    1.0 / static_cast<double>(kEncoderCPR);
 
-const int kShooterMotorPort = 4;
-const int kFeederMotorPort = 5;
+constexpr int kShooterMotorPort = 4;
+constexpr int kFeederMotorPort = 5;
 
-const double kShooterFreeRPS = 5300;
-const double kShooterTargetRPS = 4000;
-const double kShooterToleranceRPS = 50;
+constexpr auto kShooterFreeRPS = 5300_tr / 1_s;
+constexpr auto kShooterTargetRPS = 4000_tr / 1_s;
+constexpr auto kShooterToleranceRPS = 50_tr / 1_s;
 
-const double kP = 1;
-const double kI = 0;
-const double kD = 0;
+constexpr double kP = 1;
+constexpr double kI = 0;
+constexpr double kD = 0;
 
 // On a real robot the feedforward constants should be empirically determined;
 // these are reasonable guesses.
-const double kSFractional = .05;
-const double kVFractional =
-    // Should have value 1 at free speed...
-    1. / kShooterFreeRPS;
+constexpr auto kS = 0.05_V;
+constexpr auto kV =
+    // Should have value 12V at free speed...
+    12_V / kShooterFreeRPS;
 
-const double kFeederSpeed = .5;
+constexpr double kFeederSpeed = 0.5;
 }  // namespace ShooterConstants
 
 namespace AutoConstants {
@@ -71,5 +72,5 @@ constexpr auto kAutoShootTimeSeconds = 7_s;
 }  // namespace AutoConstants
 
 namespace OIConstants {
-const int kDriverControllerPort = 1;
+constexpr int kDriverControllerPort = 1;
 }  // namespace OIConstants
