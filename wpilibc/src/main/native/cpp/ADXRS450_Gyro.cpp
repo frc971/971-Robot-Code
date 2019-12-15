@@ -7,7 +7,7 @@
 
 #include "frc/ADXRS450_Gyro.h"
 
-#include <hal/HAL.h>
+#include <hal/FRCUsageReporting.h>
 
 #include "frc/DriverStation.h"
 #include "frc/Timer.h"
@@ -57,7 +57,7 @@ ADXRS450_Gyro::ADXRS450_Gyro(SPI::Port port)
     Calibrate();
   }
 
-  HAL_Report(HALUsageReporting::kResourceType_ADXRS450, port);
+  HAL_Report(HALUsageReporting::kResourceType_ADXRS450, port + 1);
 
   SendableRegistry::GetInstance().AddLW(this, "ADXRS450_Gyro", port);
 }

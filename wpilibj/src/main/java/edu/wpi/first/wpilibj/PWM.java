@@ -46,7 +46,9 @@ public class PWM extends MotorSafety implements Sendable, AutoCloseable {
   }
 
   private final int m_channel;
-  private int m_handle;
+
+  // Package private to use from AddressableLED
+  int m_handle;
 
   /**
    * Allocate a PWM given a channel.
@@ -63,7 +65,7 @@ public class PWM extends MotorSafety implements Sendable, AutoCloseable {
 
     PWMJNI.setPWMEliminateDeadband(m_handle, false);
 
-    HAL.report(tResourceType.kResourceType_PWM, channel);
+    HAL.report(tResourceType.kResourceType_PWM, channel + 1);
     SendableRegistry.addLW(this, "PWM", channel);
 
     setSafetyEnabled(false);

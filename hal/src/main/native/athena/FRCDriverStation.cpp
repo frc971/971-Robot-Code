@@ -124,7 +124,7 @@ static int32_t HAL_GetMatchInfoInternal(HAL_MatchInfo* info) {
 
 static wpi::mutex* newDSDataAvailableMutex;
 static wpi::condition_variable* newDSDataAvailableCond;
-static int newDSDataAvailableCounter{0};
+static std::atomic_int newDSDataAvailableCounter{0};
 
 namespace hal {
 namespace init {
@@ -338,14 +338,46 @@ void HAL_ObserveUserProgramTest(void) {
   FRC_NetworkCommunication_observeUserProgramTest();
 }
 
-HAL_Bool HAL_IsNewControlData(void) {
+static int& GetThreadLocalLastCount() {
   // There is a rollover error condition here. At Packet# = n * (uintmax), this
   // will return false when instead it should return true. However, this at a
   // 20ms rate occurs once every 2.7 years of DS connected runtime, so not
   // worth the cycles to check.
   thread_local int lastCount{-1};
-  std::lock_guard lock{*newDSDataAvailableMutex};
-  int currentCount = newDSDataAvailableCounter;
+  return lastCount;
+}
+
+void HAL_WaitForCachedControlData(void) {
+  HAL_WaitForCachedControlDataTimeout(0);
+}
+
+HAL_Bool HAL_WaitForCachedControlDataTimeout(double timeout) {
+  int& lastCount = GetThreadLocalLastCount();
+  int currentCount = newDSDataAvailableCounter.load();
+  if (lastCount != currentCount) {
+    lastCount = currentCount;
+    return true;
+  }
+  auto timeoutTime =
+      std::chrono::steady_clock::now() + std::chrono::duration<double>(timeout);
+
+  std::unique_lock lock{*newDSDataAvailableMutex};
+  while (newDSDataAvailableCounter.load() == currentCount) {
+    if (timeout > 0) {
+      auto timedOut = newDSDataAvailableCond->wait_until(lock, timeoutTime);
+      if (timedOut == std::cv_status::timeout) {
+        return false;
+      }
+    } else {
+      newDSDataAvailableCond->wait(lock);
+    }
+  }
+  return true;
+}
+
+HAL_Bool HAL_IsNewControlData(void) {
+  int& lastCount = GetThreadLocalLastCount();
+  int currentCount = newDSDataAvailableCounter.load();
   if (lastCount == currentCount) return false;
   lastCount = currentCount;
   return true;
@@ -365,9 +397,9 @@ HAL_Bool HAL_WaitForDSDataTimeout(double timeout) {
   auto timeoutTime =
       std::chrono::steady_clock::now() + std::chrono::duration<double>(timeout);
 
+  int currentCount = newDSDataAvailableCounter.load();
   std::unique_lock lock{*newDSDataAvailableMutex};
-  int currentCount = newDSDataAvailableCounter;
-  while (newDSDataAvailableCounter == currentCount) {
+  while (newDSDataAvailableCounter.load() == currentCount) {
     if (timeout > 0) {
       auto timedOut = newDSDataAvailableCond->wait_until(lock, timeoutTime);
       if (timedOut == std::cv_status::timeout) {
@@ -388,7 +420,7 @@ static void newDataOccur(uint32_t refNum) {
   // to signal our threads
   if (refNum != refNumber) return;
   // Notify all threads
-  newDSDataAvailableCounter++;
+  newDSDataAvailableCounter.fetch_add(1);
   newDSDataAvailableCond->notify_all();
 }
 

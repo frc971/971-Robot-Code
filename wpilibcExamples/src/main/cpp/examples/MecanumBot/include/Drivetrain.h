@@ -9,7 +9,7 @@
 
 #include <frc/AnalogGyro.h>
 #include <frc/Encoder.h>
-#include <frc/Spark.h>
+#include <frc/PWMVictorSPX.h>
 #include <frc/controller/PIDController.h>
 #include <frc/geometry/Translation2d.h>
 #include <frc/kinematics/MecanumDriveKinematics.h>
@@ -45,15 +45,15 @@ class Drivetrain {
       wpi::math::pi};  // 1/2 rotation per second
 
  private:
-  frc::Spark m_frontLeftMotor{1};
-  frc::Spark m_frontRightMotor{2};
-  frc::Spark m_backLeftMotor{3};
-  frc::Spark m_backRightMotor{4};
+  frc::PWMVictorSPX m_frontLeftMotor{1};
+  frc::PWMVictorSPX m_frontRightMotor{2};
+  frc::PWMVictorSPX m_backLeftMotor{3};
+  frc::PWMVictorSPX m_backRightMotor{4};
 
   frc::Encoder m_frontLeftEncoder{0, 1};
-  frc::Encoder m_frontRightEncoder{0, 1};
-  frc::Encoder m_backLeftEncoder{0, 1};
-  frc::Encoder m_backRightEncoder{0, 1};
+  frc::Encoder m_frontRightEncoder{2, 3};
+  frc::Encoder m_backLeftEncoder{4, 5};
+  frc::Encoder m_backRightEncoder{6, 7};
 
   frc::Translation2d m_frontLeftLocation{0.381_m, 0.381_m};
   frc::Translation2d m_frontRightLocation{0.381_m, -0.381_m};
@@ -71,5 +71,5 @@ class Drivetrain {
       m_frontLeftLocation, m_frontRightLocation, m_backLeftLocation,
       m_backRightLocation};
 
-  frc::MecanumDriveOdometry m_odometry{m_kinematics};
+  frc::MecanumDriveOdometry m_odometry{m_kinematics, GetAngle()};
 };

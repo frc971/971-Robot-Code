@@ -9,14 +9,14 @@
 
 #include <cstdio>
 
-#include <hal/HAL.h>
+#include <hal/DriverStation.h>
+#include <hal/FRCUsageReporting.h>
 #include <wpi/Format.h>
 #include <wpi/SmallString.h>
 #include <wpi/raw_ostream.h>
 
 #include "frc/DriverStation.h"
 #include "frc/Timer.h"
-#include "frc/commands/Scheduler.h"
 #include "frc/livewindow/LiveWindow.h"
 #include "frc/shuffleboard/Shuffleboard.h"
 #include "frc/smartdashboard/SmartDashboard.h"
@@ -131,7 +131,6 @@ void IterativeRobotBase::LoopFunc() {
       TeleopInit();
       m_watchdog.AddEpoch("TeleopInit()");
       m_lastMode = Mode::kTeleop;
-      Scheduler::GetInstance()->SetEnabled(true);
     }
 
     HAL_ObserveUserProgramTeleop();
