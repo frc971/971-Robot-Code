@@ -35,6 +35,8 @@ using frc971::CreateProfileParameters;
 using frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal;
 using frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
 using frc971::control_loops::drivetrain::LocalizerControl;
+using y2019::control_loops::superstructure::SuctionGoal;
+using y2019::control_loops::superstructure::CreateSuctionGoal;
 
 namespace chrono = ::std::chrono;
 
@@ -229,6 +231,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
               CreateProfileParameters(*main_superstructure_goal_builder.fbb(),
                                       0.0, 0.0));
 
+      flatbuffers::Offset<SuctionGoal> suction_offset =
+          CreateSuctionGoal(*main_superstructure_goal_builder.fbb(), false, 0);
+
       superstructure::Goal::Builder superstructure_goal_builder =
           main_superstructure_goal_builder.MakeBuilder<superstructure::Goal>();
 
@@ -236,13 +241,14 @@ class Reader : public ::aos::input::ActionJoystickInput {
       superstructure_goal_builder.add_intake(intake_offset);
       superstructure_goal_builder.add_wrist(wrist_offset);
       superstructure_goal_builder.add_stilts(stilts_offset);
+      superstructure_goal_builder.add_suction(suction_offset);
       superstructure_goal_builder.add_roller_voltage(0.0);
 
       superstructure_goal_offset = superstructure_goal_builder.Finish();
     }
-    superstructure::Goal *mutable_superstructure_goal =
+    superstructure::Goal *mutable_superstructure_goal = CHECK_NOTNULL(
         GetMutableTemporaryPointer(*main_superstructure_goal_builder.fbb(),
-                                   superstructure_goal_offset);
+                                   superstructure_goal_offset));
 
     {
       auto builder = target_selector_hint_sender_.MakeBuilder();
@@ -573,15 +579,17 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     if (switch_ball_) {
-      mutable_superstructure_goal->mutable_suction()->mutate_gamepiece_mode(0);
+      CHECK_NOTNULL(mutable_superstructure_goal->mutable_suction())
+          ->mutate_gamepiece_mode(0);
     } else {
-      mutable_superstructure_goal->mutable_suction()->mutate_gamepiece_mode(1);
+      CHECK_NOTNULL(mutable_superstructure_goal->mutable_suction())
+          ->mutate_gamepiece_mode(1);
     }
 
     vision_control_.set_flip_image(elevator_wrist_pos_.wrist < 0);
 
-    mutable_superstructure_goal->mutable_suction()->mutate_grab_piece(
-        grab_piece_);
+    CHECK_NOTNULL(mutable_superstructure_goal->mutable_suction())
+        ->mutate_grab_piece(grab_piece_);
 
     mutable_superstructure_goal->mutable_elevator()->mutate_unsafe_goal(
         elevator_wrist_pos_.elevator);
