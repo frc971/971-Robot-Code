@@ -1,13 +1,10 @@
 #include "aos/configuration.h"
 #include "aos/events/logging/logger.h"
 #include "aos/events/shm_event_loop.h"
+#include "aos/logging/log_namer.h"
 #include "aos/init.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
-
-// TODO(james): Write code for managing logfile names.
-DEFINE_string(logfile, "/media/sda1/logfile.bfbs",
-              "Name of the logfile to write to.");
 
 DEFINE_string(config, "config.json", "Config file to use.");
 
@@ -25,7 +22,7 @@ int main(int argc, char *argv[]) {
 
   aos::ShmEventLoop event_loop(&config.message());
 
-  aos::logger::DetachedBufferWriter writer(FLAGS_logfile);
+  aos::logger::DetachedBufferWriter writer(aos::logging::GetLogName("fbs_log"));
   aos::logger::Logger logger(&writer, &event_loop);
 
   event_loop.Run();

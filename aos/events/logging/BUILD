@@ -52,6 +52,7 @@ cc_binary(
         "//aos:configuration",
         "//aos:init",
         "//aos/events:shm_event_loop",
+        "//aos/logging:log_namer",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
     ],

@@ -20,6 +20,18 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "log_namer",
+    srcs = ["log_namer.cc"],
+    hdrs = ["log_namer.h"],
+    copts = ["-Wno-format-nonliteral"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:configuration",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
 cc_binary(
     name = "binary_log_writer",
     srcs = [
@@ -29,6 +41,7 @@ cc_binary(
     deps = [
         ":binary_log_file",
         ":implementations",
+        ":log_namer",
         ":logging",
         "//aos:configuration",
         "//aos:die",
