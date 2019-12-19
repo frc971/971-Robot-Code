@@ -11,6 +11,7 @@
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/flatbuffer_merge.h"
+#include "aos/network/team_number.h"
 #include "aos/time/time.h"
 #include "flatbuffers/flatbuffers.h"
 
@@ -114,7 +115,12 @@ Logger::Logger(DetachedBufferWriter *writer, EventLoop *event_loop,
       flatbuffers::Offset<aos::Configuration> configuration_offset =
           CopyFlatBuffer(event_loop_->configuration(), &fbb);
 
+      flatbuffers::Offset<flatbuffers::String> string_offset =
+          fbb.CreateString(network::GetHostname());
+
       aos::logger::LogFileHeader::Builder log_file_header_builder(fbb);
+
+      log_file_header_builder.add_name(string_offset);
 
       log_file_header_builder.add_configuration(configuration_offset);
       // The worst case theoretical out of order is the polling period times 2.

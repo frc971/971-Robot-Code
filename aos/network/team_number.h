@@ -13,6 +13,9 @@ namespace network {
 // repeatedly.
 uint16_t GetTeamNumber();
 
+// Returns the current hostname.
+::std::string GetHostname();
+
 // Overrides the team number returned from GetTeamNumber(). Must be called
 // before GetTeamNumber() is ever called.
 // Overriding to team 0 won't work.
