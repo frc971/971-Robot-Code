@@ -10,6 +10,8 @@
 #include <memory>
 #include <string>
 
+#include <hal/Types.h>
+
 #include "frc971/wpilib/ahal/SensorBase.h"
 
 namespace frc {
@@ -33,7 +35,7 @@ class PowerDistributionPanel {
   void ClearStickyFaults();
 
  private:
-  int m_module;
+  hal::Handle<HAL_PDPHandle> m_handle;
 };
 
 }  // namespace frc
