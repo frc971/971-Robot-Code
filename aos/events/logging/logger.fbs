@@ -28,6 +28,9 @@ table LogFileHeader {
   // The configuration of the channels.
   configuration:aos.Configuration;
 
+  // Name of the device which this log file is for.
+  name:string;
+
   // TODO(austin): Node!
 }
 

@@ -17,6 +17,7 @@ cc_library(
         ":logger_fbs",
         "//aos:flatbuffer_merge",
         "//aos/events:event_loop",
+        "//aos/network:team_number",
         "//aos/time",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_google_absl//absl/container:inlined_vector",

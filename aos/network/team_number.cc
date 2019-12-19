@@ -44,13 +44,6 @@ namespace {
 
 uint16_t override_team;
 
-::std::string GetHostname() {
-  char buf[256];
-  buf[sizeof(buf) - 1] = '\0';
-  AOS_PCHECK(gethostname(buf, sizeof(buf) - 1));
-  return buf;
-}
-
 void DoGetTeamNumber(uint16_t *result) {
   if (override_team != 0) {
       *result = override_team;
@@ -74,6 +67,13 @@ void DoGetTeamNumber(uint16_t *result) {
 }
 
 }  // namespace
+
+::std::string GetHostname() {
+  char buf[256];
+  buf[sizeof(buf) - 1] = '\0';
+  AOS_PCHECK(gethostname(buf, sizeof(buf) - 1));
+  return buf;
+}
 
 uint16_t GetTeamNumber() {
   static absl::once_flag once;
