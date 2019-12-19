@@ -2,33 +2,37 @@
 #define AOS_IPC_LIB_LOCKLESS_QUEUE_MEMORY_H_
 
 #include <sys/types.h>
-#include <atomic>
+#include <cstddef>
 
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/index.h"
+#include "aos/ipc_lib/lockless_queue.h"
 #include "aos/time/time.h"
 
 namespace aos {
 namespace ipc_lib {
 
 struct LocklessQueueMemory {
+  // This is held during initialization. Cleanup after dead processes happens
+  // during this initialization process.
+  //
   // A lot of things get easier if the only lockless writes are when messages
   // are published.  Do note, the datastructures protected by this lock need to
   // be consistent at all times because a reader (or writer) may read them
   // regardless of if the lock is held or not.
-  //
-  // Any non-constant time operations need to be done at queue startup time,
-  // including cleanup.  Cleanup is done when the next queue is opened.
   aos_mutex queue_setup_lock;
-  ::std::atomic<bool> initialized;
+  // Tracks that one process has completed initialization once.
+  // Only accessed under queue_setup_lock.
+  bool initialized;
 
   LocklessQueueConfiguration config;
 
-  // Size of the watchers list.
+  // Size of the watcher list.
   size_t num_watchers() const { return config.num_watchers; }
   // Size of the sender list.
   size_t num_senders() const { return config.num_senders; }
 
+  // Number of messages logically in the queue at a time.
   // List of pointers into the messages list.
   size_t queue_size() const { return config.queue_size; }
 
