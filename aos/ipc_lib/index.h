@@ -138,8 +138,12 @@ struct AtomicQueueIndex {
   }
 
   // Full bidirectional barriers here.
-  QueueIndex Load(uint32_t count) { return QueueIndex(index_.load(), count); }
-  inline void Store(QueueIndex value) { index_.store(value.index_); }
+  QueueIndex Load(uint32_t count) {
+    return QueueIndex(index_.load(::std::memory_order_acquire), count);
+  }
+  inline void Store(QueueIndex value) {
+    index_.store(value.index_, ::std::memory_order_release);
+  }
 
   // Invalidates the element unconditionally.
   inline void Invalidate() { Store(QueueIndex::Invalid()); }
@@ -147,7 +151,8 @@ struct AtomicQueueIndex {
   // Swaps expected for index atomically.  Returns true on success, false
   // otherwise.
   inline bool CompareAndExchangeStrong(QueueIndex expected, QueueIndex index) {
-    return index_.compare_exchange_strong(expected.index_, index.index_);
+    return index_.compare_exchange_strong(expected.index_, index.index_,
+                                          ::std::memory_order_acq_rel);
   }
 
  private:
@@ -221,16 +226,18 @@ class AtomicIndex {
   // Invalidates the index atomically, but without any ordering constraints.
   void RelaxedInvalidate() { RelaxedStore(Index::Invalid()); }
 
-  // Full bidirectional barriers here.
+  // Full barriers here.
   void Invalidate() { Store(Index::Invalid()); }
-  void Store(Index index) { index_.store(index.index_); }
-  Index Load() { return Index(index_.load()); }
-
+  void Store(Index index) {
+    index_.store(index.index_, ::std::memory_order_release);
+  }
+  Index Load() { return Index(index_.load(::std::memory_order_acquire)); }
 
   // Swaps expected for index atomically.  Returns true on success, false
   // otherwise.
   inline bool CompareAndExchangeStrong(Index expected, Index index) {
-    return index_.compare_exchange_strong(expected.index_, index.index_);
+    return index_.compare_exchange_strong(expected.index_, index.index_,
+                                          ::std::memory_order_acq_rel);
   }
 
  private:
