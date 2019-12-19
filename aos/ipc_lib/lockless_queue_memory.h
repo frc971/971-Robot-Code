@@ -55,58 +55,59 @@ struct LocklessQueueMemory {
   // Watcher watchers[config.num_watchers];
   // Sender senders[config.num_senders];
 
+  static constexpr size_t kDataAlignment = alignof(std::max_align_t);
+
   // Aligned pointer to where the data starts.
-  // Use a 64 bit type to require 64 bit alignment of the data inside.
-  uint64_t data[];
+  // Make sure it's of a type which can safely alias with the actual datatype,
+  // and is aligned enough for any of the structs we will access this memory as.
+  alignas(kDataAlignment) char data[];
 
   // Memory size functions for all 4 lists.
   size_t SizeOfQueue() { return SizeOfQueue(config); }
   static size_t SizeOfQueue(LocklessQueueConfiguration config) {
-    return sizeof(AtomicIndex) * config.queue_size;
+    return AlignmentRoundUp(sizeof(AtomicIndex) * config.queue_size);
   }
 
   size_t SizeOfMessages() { return SizeOfMessages(config); }
   static size_t SizeOfMessages(LocklessQueueConfiguration config) {
-    return config.message_size() * config.num_messages();
+    return AlignmentRoundUp(config.message_size() * config.num_messages());
   }
 
   size_t SizeOfWatchers() { return SizeOfWatchers(config); }
   static size_t SizeOfWatchers(LocklessQueueConfiguration config) {
-    return sizeof(Watcher) * config.num_watchers;
+    return AlignmentRoundUp(sizeof(Watcher) * config.num_watchers);
   }
 
   size_t SizeOfSenders() { return SizeOfSenders(config); }
   static size_t SizeOfSenders(LocklessQueueConfiguration config) {
-    return sizeof(Sender) * config.num_senders;
+    return AlignmentRoundUp(sizeof(Sender) * config.num_senders);
   }
 
   // Getters for each of the 4 lists.
   Sender *GetSender(size_t sender_index) {
-    return reinterpret_cast<Sender *>(
-        reinterpret_cast<uintptr_t>(&data[0]) + SizeOfQueue() +
-        SizeOfMessages() + SizeOfWatchers() + sender_index * sizeof(Sender));
+    return reinterpret_cast<Sender *>(&data[0] + SizeOfQueue() +
+                                      SizeOfMessages() + SizeOfWatchers() +
+                                      sender_index * sizeof(Sender));
   }
 
   Watcher *GetWatcher(size_t watcher_index) {
-    return reinterpret_cast<Watcher *>(reinterpret_cast<uintptr_t>(&data[0]) +
-                                       SizeOfQueue() + SizeOfMessages() +
+    return reinterpret_cast<Watcher *>(&data[0] + SizeOfQueue() +
+                                       SizeOfMessages() +
                                        watcher_index * sizeof(Watcher));
   }
 
   AtomicIndex *GetQueue(uint32_t index) {
-    return reinterpret_cast<AtomicIndex *>(
-        reinterpret_cast<uintptr_t>(&data[0]) + sizeof(AtomicIndex) * index);
+    return reinterpret_cast<AtomicIndex *>(&data[0] +
+                                           sizeof(AtomicIndex) * index);
   }
 
   // There are num_senders + queue_size messages.  The free list is really the
   // sender list, since those are messages available to be filled in and sent.
   // This removes the need to find lost messages when a sender dies.
   Message *GetMessage(Index index) {
-    return reinterpret_cast<Message *>(reinterpret_cast<uintptr_t>(&data[0]) +
-                                       SizeOfQueue() +
+    return reinterpret_cast<Message *>(&data[0] + SizeOfQueue() +
                                        index.message_index() * message_size());
   }
-
 
   // Helpers to fetch messages from the queue.
   Index LoadIndex(QueueIndex index) {
@@ -114,6 +115,10 @@ struct LocklessQueueMemory {
   }
   Message *GetMessage(QueueIndex index) {
     return GetMessage(LoadIndex(index));
+  }
+
+  static constexpr size_t AlignmentRoundUp(size_t in) {
+    return (in + kDataAlignment - 1) / kDataAlignment * kDataAlignment;
   }
 };
 
