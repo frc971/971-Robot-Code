@@ -5,7 +5,7 @@
 // Using this function makes it clearer what you're doing and easier to be
 // portable.
 static inline void aos_compiler_memory_barrier(void) {
-  __asm__ __volatile__("" ::: "memory");
+  __asm__ __volatile__("" ::: "memory", "cc");
 }
 
 #endif  // AOS_UTIL_COMPILER_MEMORY_BARRIER_H_

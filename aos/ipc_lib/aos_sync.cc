@@ -851,6 +851,44 @@ bool mutex_islocked(const aos_mutex *m) {
   return (value & FUTEX_TID_MASK) == tid;
 }
 
+void death_notification_init(aos_mutex *m) {
+  const uint32_t tid = get_tid();
+  if (kPrintOperations) {
+    printf("%" PRId32 ": %p death_notification start\n", tid, m);
+  }
+  my_robust_list::Adder adder(m);
+  {
+    RunObservers run_observers(m, true);
+    CHECK(compare_and_swap(&m->futex, 0, tid));
+  }
+  adder.Add();
+}
+
+void death_notification_release(aos_mutex *m) {
+  RunObservers run_observers(m, true);
+
+#ifndef NDEBUG
+  // Verify it's "locked", like it should be.
+  {
+    const uint32_t tid = get_tid();
+    if (kPrintOperations) {
+      printf("%" PRId32 ": %p death_notification release\n", tid, m);
+    }
+    const uint32_t value = __atomic_load_n(&m->futex, __ATOMIC_SEQ_CST);
+    assert((value & ~FUTEX_WAITERS) == tid);
+  }
+#endif
+
+  my_robust_list::Remover remover(m);
+  ANNOTATE_HAPPENS_BEFORE(m);
+  const int ret = sys_futex_unlock_pi(&m->futex);
+  if (ret != 0) {
+    my_robust_list::robust_head.pending_next = 0;
+    errno = -ret;
+    PLOG(FATAL)  << "FUTEX_UNLOCK_PI(" << &m->futex << ") failed";
+  }
+}
+
 int condition_wait(aos_condition *c, aos_mutex *m, struct timespec *end_time) {
   RunObservers run_observers(c, false);
   const uint32_t tid = get_tid();

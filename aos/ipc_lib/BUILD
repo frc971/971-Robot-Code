@@ -164,6 +164,19 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "signalfd_test",
+    srcs = [
+        "signalfd_test.cc",
+    ],
+    deps = [
+        ":signalfd",
+        "//aos/testing:googletest",
+        "//aos/testing:test_logging",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
 cc_library(
     name = "index",
     srcs = ["index.cc"],

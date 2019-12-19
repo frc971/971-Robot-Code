@@ -4,7 +4,6 @@
 #include <signal.h>
 #include <sys/signalfd.h>
 #include <sys/types.h>
-#include <atomic>
 #include <vector>
 
 #include "aos/ipc_lib/aos_sync.h"
@@ -20,15 +19,16 @@ struct Watcher {
   // then this watcher is invalid.  The futex variable will then hold the tid of
   // the watcher, or FUTEX_OWNER_DIED if the task died.
   //
-  // Note: this is modified with a lock held, but is always able to be read.
+  // Note: this is only modified with the queue_setup_lock lock held, but may
+  // always be read.
   // Any state modification should happen before the lock is acquired.
   aos_mutex tid;
 
   // PID of the watcher.
-  pid_t pid;
+  std::atomic<pid_t> pid;
 
   // RT priority of the watcher.
-  int priority;
+  std::atomic<int> priority;
 };
 
 // Structure to hold the state required to send messages.
@@ -37,7 +37,8 @@ struct Sender {
   // this sender is invalid.  The futex variable will then hold the tid of the
   // sender, or FUTEX_OWNER_DIED if the task died.
   //
-  // Note: this is modified with a lock held, but is always able to be read.
+  // Note: this is only modified with the queue_setup_lock lock held, but may
+  // always be read.
   aos_mutex tid;
 
   // Index of the message we will be filling out.
@@ -59,7 +60,7 @@ struct Message {
     // Note: a value of 0xffffffff always means that the contents aren't valid.
     AtomicQueueIndex queue_index;
 
-    // Timestamp of the message.  Needs to be atomically incrementing in the
+    // Timestamp of the message.  Needs to be monotonically incrementing in the
     // queue, which means that time needs to be re-sampled every time a write
     // fails.
     ::aos::monotonic_clock::time_point monotonic_sent_time;
