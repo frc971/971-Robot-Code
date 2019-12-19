@@ -60,11 +60,12 @@ if [[ ! -d "${VERSION_DIR}" ]]; then
     # Now, download into the ~/.cache folder
     if [ ! -e "${HOME}/.cache/bazel/${INSTALLER_NAME}" ];
     then
+      NOISINESS=--silent
       if [ -t 0 ] ; then
-        wget "${DOWNLOAD_URL}" -O "${INSTALLER_NAME}" --no-verbose --show-progress
-      else
-        wget "${DOWNLOAD_URL}" -O "${INSTALLER_NAME}" --no-verbose --quiet
+        echo on terminal
+        NOISINESS=
       fi
+      curl --output "${INSTALLER_NAME}" "${DOWNLOAD_URL}" ${NOISINESS}
       mv "${INSTALLER_NAME}" "${HOME}/.cache/bazel/${INSTALLER_NAME}"
     fi
     rm -rf "${DOWNLOAD_TEMP_DIR}"
