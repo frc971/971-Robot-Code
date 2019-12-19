@@ -613,14 +613,14 @@ toolchain {
         flag: "-Wpointer-arith"
         flag: "-Wstrict-aliasing"
         flag: "-Wcast-qual"
-        flag: "-Wcast-align"
         flag: "-Wwrite-strings"
         flag: "-Wtype-limits"
         flag: "-Wsign-compare"
         flag: "-Wformat=2"
         flag: "-Werror"
         flag: "-Wunused-local-typedefs"
-        flag: "-Wno-cast-align"
+        # We don't use libraries compiled with the broken version.
+        flag: "-Wno-psabi"
 
         # Keep stack frames for debugging, even in opt mode.
         flag: "-fno-omit-frame-pointer"
