@@ -18,9 +18,11 @@ cc_library(
     restricted_to = ["//tools:roborio"],
     visibility = ["//visibility:public"],
     deps = [
-        "@ctre_phoenix_api_cpp_athena_2019//:api-cpp",
-        "@ctre_phoenix_api_cpp_headers_2019//:api-cpp",
-        "@ctre_phoenix_cci_athena_2019//:cci",
-        "@ctre_phoenix_cci_headers_2019//:cci",
+        "@ctre_phoenix_api_cpp_athena//:api-cpp",
+        "@ctre_phoenix_api_cpp_headers//:api-cpp",
+        "@ctre_phoenix_cci_athena//:cci",
+        "@ctre_phoenix_cci_headers//:cci",
+        "@ctre_phoenix_diagnostics_athena//:diagnostics",
+        "@ctre_phoenix_diagnostics_headers//:diagnostics",
     ],
 )

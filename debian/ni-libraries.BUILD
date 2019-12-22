@@ -16,6 +16,7 @@ cc_library(
     includes = [
         "src/include",
     ],
+    linkopts = ["-ldl"],
     linkstatic = True,
     restricted_to = ["@//tools:roborio"],
     visibility = ["//visibility:public"],

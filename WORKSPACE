@@ -365,9 +365,9 @@ local_repository(
     path = "third_party/ceres",
 )
 
-# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/api-cpp/5.14.1/.
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/frcbeta/phoenix/api-cpp/5.17.1/.
 http_archive(
-    name = "ctre_phoenix_api_cpp_headers_2019",
+    name = "ctre_phoenix_api_cpp_headers",
     build_file_content = """
 cc_library(
     name = 'api-cpp',
@@ -375,15 +375,15 @@ cc_library(
     hdrs = glob(['ctre/phoenix/**/*.h']),
 )
 """,
-    sha256 = "f11f83ea6854229a1c4381d5e6a3917be6a062eb266ad14e4c4c9067ec3cd446",
+    sha256 = "b75761d13e367ece7a114237fc68670ed3b2f39daa4d4ff2a67f9e254d2ed39b",
     urls = [
-        "http://www.frc971.org/Build-Dependencies/api-cpp-5.14.1-headers.zip",
+        "http://www.frc971.org/Build-Dependencies/api-cpp-5.17.1-headers.zip",
     ],
 )
 
-# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/api-cpp/5.14.1/.
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/frcbeta/phoenix/api-cpp/5.17.1/.
 http_archive(
-    name = "ctre_phoenix_api_cpp_athena_2019",
+    name = "ctre_phoenix_api_cpp_athena",
     build_file_content = """
 cc_library(
     name = 'api-cpp',
@@ -391,19 +391,52 @@ cc_library(
     srcs = ['linux/athena/static/libCTRE_Phoenix.a'],
     restricted_to = ['@//tools:roborio'],
     deps = [
-    '@ctre_phoenix_core_headers_2019//:core',
+      '@ctre_phoenix_core_headers//:core',
     ],
 )
 """,
-    sha256 = "0a976b86e887a75f0565fd7069db25e06ff0b76d2eebc294f23d81636b165381",
+    sha256 = "5678a1c6bf2af859bc5783040908b571dd1da63c6b1b5196610aa0cfa35ff9c3",
     urls = [
-        "http://www.frc971.org/Build-Dependencies/api-cpp-5.14.1-linuxathenastatic.zip",
+        "http://www.frc971.org/Build-Dependencies/api-cpp-5.17.1-linuxathenastatic.zip",
     ],
 )
 
-# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/cci/5.14.1/.
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/frcbeta/phoenix/diagnostics/5.17.1/.
 http_archive(
-    name = "ctre_phoenix_cci_headers_2019",
+    name = "ctre_phoenix_diagnostics_headers",
+    build_file_content = """
+cc_library(
+    name = 'diagnostics',
+    visibility = ['//visibility:public'],
+    hdrs = glob(['ctre/phoenix/**/*.h']),
+)
+""",
+    sha256 = "c922f635df06ad7b2d8b2b3e72ce166a2238a9b28b7040a2963ed15fb61ec102",
+    urls = [
+        "http://www.frc971.org/Build-Dependencies/diagnostics-5.17.1-headers.zip",
+    ],
+)
+
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/frcbeta/phoenix/diagnostics/5.17.1/.
+http_archive(
+    name = "ctre_phoenix_diagnostics_athena",
+    build_file_content = """
+cc_library(
+    name = 'diagnostics',
+    visibility = ['//visibility:public'],
+    srcs = ['linux/athena/static/libCTRE_PhoenixDiagnostics.a'],
+    restricted_to = ['@//tools:roborio'],
+)
+""",
+    sha256 = "d59c3dd4d841d769ba509b0ce993355745eb6ca1c86a660b476bf5d9c2532a9e",
+    urls = [
+        "http://www.frc971.org/Build-Dependencies/diagnostics-5.17.1-linuxathenastatic.zip",
+    ],
+)
+
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/frcbeta/phoenix/cci/5.17.1/.
+http_archive(
+    name = "ctre_phoenix_cci_headers",
     build_file_content = """
 cc_library(
     name = 'cci',
@@ -411,15 +444,15 @@ cc_library(
     hdrs = glob(['ctre/phoenix/**/*.h']),
 )
 """,
-    sha256 = "0ce3d1cc916d9ebfcd19a5622736193cbac4f799205df155480943895ac78e45",
+    sha256 = "d43f6db7aa5165123e222568bdae794a182622d5a71181def355c7c08733dc7f",
     urls = [
-        "http://www.frc971.org/Build-Dependencies/cci-5.14.1-headers.zip",
+        "http://www.frc971.org/Build-Dependencies/cci-5.17.1-headers.zip",
     ],
 )
 
-# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/cci/5.14.1/.
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/frcbeta/phoenix/cci/5.17.1/.
 http_archive(
-    name = "ctre_phoenix_cci_athena_2019",
+    name = "ctre_phoenix_cci_athena",
     build_file_content = """
 cc_library(
     name = 'cci',
@@ -428,15 +461,15 @@ cc_library(
     restricted_to = ['@//tools:roborio'],
 )
 """,
-    sha256 = "00b7e4abb1190924e9b31761951494264beebf4eefb64901000034dafaf2e8bc",
+    sha256 = "8dcf5a2b55747f8dc23556d61f1f6a7d5419e7c3336de97afa30dc89e07c6861",
     urls = [
-        "http://www.frc971.org/Build-Dependencies/cci-5.14.1-linuxathenastatic.zip",
+        "http://www.frc971.org/Build-Dependencies/cci-5.17.1-linuxathenastatic.zip",
     ],
 )
 
-# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/core/5.14.1/.
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/frcbeta/phoenix/core/5.17.1/.
 http_archive(
-    name = "ctre_phoenix_core_headers_2019",
+    name = "ctre_phoenix_core_headers",
     build_file_content = """
 cc_library(
     name = 'core',
@@ -444,9 +477,9 @@ cc_library(
     hdrs = glob(['ctre/phoenix/**/*.h']),
 )
 """,
-    sha256 = "b74bf1bd5428cd6d7f7c3cf293b5bf8c009126eb2271d68ed070756427de5f7a",
+    sha256 = "552589ce2aebea1c6112babe3dd7476611eab1d8a0e48f777bd5c421f76857df",
     urls = [
-        "http://www.frc971.org/Build-Dependencies/core-5.14.1-headers.zip",
+        "http://www.frc971.org/Build-Dependencies/core-5.17.1-headers.zip",
     ],
 )
 
