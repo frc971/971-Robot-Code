@@ -33,7 +33,8 @@ class DriverStation;
   }
 #else
 #define START_ROBOT_CLASS(_ClassName_)                                       \
-  int main() {                                                               \
+  int main(int argc, char *argv[]) {                                         \
+    ::aos::InitGoogle(&argc, &argv);                                         \
     if (!HAL_Initialize(500, 0)) {                                           \
       std::cerr << "FATAL ERROR: HAL could not be initialized" << std::endl; \
       return -1;                                                             \
