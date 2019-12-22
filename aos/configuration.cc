@@ -9,14 +9,21 @@
 #include <unistd.h>
 #include <string_view>
 
+#include "absl/base/call_once.h"
 #include "absl/container/btree_set.h"
 #include "aos/configuration_generated.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/json_to_flatbuffer.h"
+#include "aos/network/team_number.h"
 #include "aos/unique_malloc_ptr.h"
 #include "aos/util/file.h"
+#include "gflags/gflags.h"
 #include "glog/logging.h"
-#include "absl/base/call_once.h"
+
+DEFINE_string(
+    override_hostname, "",
+    "If set, this forces the hostname of this node to be the provided "
+    "hostname.");
 
 namespace aos {
 
@@ -56,49 +63,20 @@ bool operator<(const FlatbufferDetachedBuffer<Application> &lhs,
          rhs.message().name()->string_view();
 }
 
+bool operator==(const FlatbufferDetachedBuffer<Node> &lhs,
+                const FlatbufferDetachedBuffer<Node> &rhs) {
+  return lhs.message().name()->string_view() ==
+         rhs.message().name()->string_view();
+}
+
+bool operator<(const FlatbufferDetachedBuffer<Node> &lhs,
+               const FlatbufferDetachedBuffer<Node> &rhs) {
+  return lhs.message().name()->string_view() <
+         rhs.message().name()->string_view();
+}
+
 namespace configuration {
 namespace {
-
-// TODO(brians): This shouldn't be necesary for running tests.  Provide a way to
-// set the IP address when running tests from the test.
-const char *const kLinuxNetInterface = "eth0";
-
-void DoGetOwnIPAddress(in_addr *retu) {
-  static const char *kOverrideVariable = "FRC971_IP_OVERRIDE";
-  const char *override_ip = getenv(kOverrideVariable);
-  if (override_ip != NULL) {
-    LOG(INFO) << "Override IP is " << override_ip;
-    if (inet_aton(override_ip, retu) != 0) {
-      return;
-    } else {
-      LOG(WARNING) << "error parsing " << kOverrideVariable << " value '"
-                   << override_ip << "'";
-    }
-  } else {
-    LOG(INFO) << "Couldn't get environmental variable.";
-  }
-
-  ifaddrs *addrs;
-  if (getifaddrs(&addrs) != 0) {
-    PLOG(FATAL) << "getifaddrs(" << &addrs << ") failed";
-  }
-  // Smart pointers don't work very well for iterating through a linked list,
-  // but it does do a very nice job of making sure that addrs gets freed.
-  unique_c_ptr<ifaddrs, freeifaddrs> addrs_deleter(addrs);
-
-  for (; addrs != nullptr; addrs = addrs->ifa_next) {
-    // ifa_addr tends to be nullptr on CAN interfaces.
-    if (addrs->ifa_addr != nullptr && addrs->ifa_addr->sa_family == AF_INET) {
-      if (strcmp(kLinuxNetInterface, addrs->ifa_name) == 0) {
-        *retu = reinterpret_cast<sockaddr_in *>(__builtin_assume_aligned(
-                addrs->ifa_addr, alignof(sockaddr_in)))->sin_addr;
-        return;
-      }
-    }
-  }
-  LOG(FATAL) << "couldn't find an AF_INET interface named \""
-             << kLinuxNetInterface << "\"";
-}
 
 void DoGetRootDirectory(char** retu) {
   ssize_t size = 0;
@@ -310,6 +288,21 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
     }
   }
 
+  // Now repeat this for the node list.
+  absl::btree_set<FlatbufferDetachedBuffer<Node>> nodes;
+  if (config.message().has_nodes()) {
+    for (const Node *n : *config.message().nodes()) {
+      if (!n->has_name()) {
+        continue;
+      }
+
+      auto result = nodes.insert(CopyFlatBuffer(n));
+      if (!result.second) {
+        *result.first = MergeFlatBuffers(*result.first, CopyFlatBuffer(n));
+      }
+    }
+  }
+
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(1);
 
@@ -351,36 +344,76 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
     }
   }
 
+  // Nodes
+  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Node>>>
+      nodes_offset;
+  {
+    ::std::vector<flatbuffers::Offset<Node>> node_offsets;
+    for (const FlatbufferDetachedBuffer<Node> &n : nodes) {
+      node_offsets.emplace_back(CopyFlatBuffer<Node>(&n.message(), &fbb));
+    }
+    nodes_offset = fbb.CreateVector(node_offsets);
+  }
+
   // And then build a Configuration with them all.
   ConfigurationBuilder configuration_builder(fbb);
   configuration_builder.add_channels(channels_offset);
   if (config.message().has_maps()) {
     configuration_builder.add_maps(maps_offset);
   }
-  configuration_builder.add_applications(applications_offset);
+  if (config.message().has_applications()) {
+    configuration_builder.add_applications(applications_offset);
+  }
+  if (config.message().has_nodes()) {
+    configuration_builder.add_nodes(nodes_offset);
+  }
 
   fbb.Finish(configuration_builder.Finish());
-  return fbb.Release();
+
+  // Now, validate that if there is a node list, every channel has a source
+  // node.
+  FlatbufferDetachedBuffer<Configuration> result(fbb.Release());
+
+  // Check that if there is a node list, all the source nodes are filled out and
+  // valid, and all the destination nodes are valid (and not the source).  This
+  // is a basic consistency check.
+  if (result.message().has_nodes()) {
+    for (const Channel *c : *config.message().channels()) {
+      CHECK(c->has_source_node()) << ": Channel " << FlatbufferToJson(c)
+                                  << " is missing \"source_node\"";
+      CHECK(GetNode(&result.message(), c->source_node()->string_view()) !=
+            nullptr)
+          << ": Channel " << FlatbufferToJson(c)
+          << " has an unknown \"source_node\"";
+
+      if (c->has_destination_nodes()) {
+        for (const flatbuffers::String *n : *c->destination_nodes()) {
+          CHECK(GetNode(&result.message(), n->string_view()) != nullptr)
+              << ": Channel " << FlatbufferToJson(c)
+              << " has an unknown \"destination_nodes\" " << n->string_view();
+
+          CHECK_NE(n->string_view(), c->source_node()->string_view())
+              << ": Channel " << FlatbufferToJson(c)
+              << " is forwarding data to itself";
+        }
+      }
+    }
+  }
+
+  return result;
 }
 
 const char *GetRootDirectory() {
-  static  char* root_dir;// return value
+  static char *root_dir;  // return value
   static absl::once_flag once_;
   absl::call_once(once_, DoGetRootDirectory, &root_dir);
   return root_dir;
 }
 
 const char *GetLoggingDirectory() {
-  static char* retu;// return value
+  static char *retu;  // return value
   static absl::once_flag once_;
   absl::call_once(once_, DoGetLoggingDirectory, &retu);
-  return retu;
-}
-
-const in_addr &GetOwnIPAddress() {
-  static in_addr retu;// return value
-  static absl::once_flag once_;
-  absl::call_once(once_, DoGetOwnIPAddress, &retu);
   return retu;
 }
 
@@ -416,7 +449,7 @@ const Channel *GetChannel(const Configuration *config, std::string_view name,
     HandleMaps(config->maps(), &name);
   }
 
-  VLOG(1) << "Acutally looking up { \"name\": \"" << name << "\", \"type\": \""
+  VLOG(1) << "Actually looking up { \"name\": \"" << name << "\", \"type\": \""
           << type << "\" }";
 
   // Then look for the channel.
@@ -512,7 +545,19 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
     }
   }
 
-  // Now insert eerything else in unmodified.
+  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Node>>>
+      nodes_offset;
+  {
+    ::std::vector<flatbuffers::Offset<Node>> node_offsets;
+    if (config.message().has_nodes()) {
+      for (const Node *n : *config.message().nodes()) {
+        node_offsets.emplace_back(CopyFlatBuffer<Node>(n, &fbb));
+      }
+      nodes_offset = fbb.CreateVector(node_offsets);
+    }
+  }
+
+  // Now insert everything else in unmodified.
   ConfigurationBuilder configuration_builder(fbb);
   if (config.message().has_channels()) {
     configuration_builder.add_channels(channels_offset);
@@ -523,9 +568,65 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   if (config.message().has_applications()) {
     configuration_builder.add_applications(applications_offset);
   }
+  if (config.message().has_nodes()) {
+    configuration_builder.add_nodes(nodes_offset);
+  }
 
   fbb.Finish(configuration_builder.Finish());
   return fbb.Release();
+}
+
+const Node *GetNodeFromHostname(const Configuration *config,
+                                std::string_view hostname) {
+  for (const Node *node : *config->nodes()) {
+    if (node->hostname()->string_view() == hostname) {
+      return node;
+    }
+  }
+  return nullptr;
+}
+const Node *GetMyNode(const Configuration *config) {
+  const std::string hostname = (FLAGS_override_hostname.size() > 0)
+                                   ? FLAGS_override_hostname
+                                   : network::GetHostname();
+  const Node *node = GetNodeFromHostname(config, hostname);
+  if (node != nullptr) return node;
+
+  LOG(FATAL) << "Unknown node for host: " << hostname
+             << ".  Consider using --override_hostname if hostname detection "
+                "is wrong.";
+  return nullptr;
+}
+
+const Node *GetNode(const Configuration *config, std::string_view name) {
+  for (const Node *node : *config->nodes()) {
+    if (node->name()->string_view() == name) {
+      return node;
+    }
+  }
+  return nullptr;
+}
+
+bool ChannelIsSendableOnNode(const Channel *channel, const Node *node) {
+  return (channel->source_node()->string_view() == node->name()->string_view());
+}
+
+bool ChannelIsReadableOnNode(const Channel *channel, const Node *node) {
+  if (channel->source_node()->string_view() == node->name()->string_view()) {
+    return true;
+  }
+
+  if (!channel->has_destination_nodes()) {
+    return false;
+  }
+
+  for (const flatbuffers::String *s : *channel->destination_nodes()) {
+    if (s->string_view() == node->name()->string_view()) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 }  // namespace configuration

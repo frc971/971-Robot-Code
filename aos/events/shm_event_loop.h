@@ -67,6 +67,7 @@ class ShmEventLoop : public EventLoop {
     UpdateTimingReport();
   }
   const std::string_view name() const override { return name_; }
+  const Node *node() const override { return node_; }
 
   int priority() const override { return priority_; }
 
@@ -89,6 +90,7 @@ class ShmEventLoop : public EventLoop {
   std::vector<std::function<void()>> on_run_;
   int priority_ = 0;
   std::string name_;
+  const Node *const node_;
   std::vector<std::string> taken_;
 
   internal::EPoll epoll_;

@@ -131,7 +131,7 @@ static_assert(kMaxMediumEncoderPulsesPerSecond <= 400000,
 // Class to send position messages with sensor readings to our loops.
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
-  SensorReader(::aos::EventLoop *event_loop)
+  SensorReader(::aos::ShmEventLoop *event_loop)
       : ::frc971::wpilib::SensorReader(event_loop),
         auto_mode_sender_(
             event_loop->MakeSender<::frc971::autonomous::AutonomousMode>(

@@ -22,6 +22,14 @@ table Channel {
 
   // The schema for the data sent on this channel.
   schema:reflection.Schema;
+
+  // The source node name for the data sent on this channel.
+  // If nodes is populated below, this needs to also be populated.
+  source_node:string;
+
+  // The destination node names for data sent on this channel.
+  // This only needs to be populated if this message is getting forwarded.
+  destination_nodes:[string];
 }
 
 // Table to support renaming channel names.
@@ -53,6 +61,22 @@ table Application {
   //
   // will map "/foo" to "/baz", even if there is a global list of maps.
   maps:[Map];
+
+  // The node that this application will be started on.
+  // TODO(austin): Teach starter how to use this for starting applications.
+  node:string;
+}
+
+// Per node data and connection information.
+table Node {
+  // Short name for the node.  This provides a short hand to make it easy to
+  // setup forwarding rules as part of the channel setup.
+  name:string;
+
+  // Hostname used to identify and connect to the node.
+  hostname:string;
+  // Port to serve forwarded data from.
+  port:ushort = 9971;
 }
 
 // Overall configuration datastructure for the pubsub.
@@ -61,6 +85,11 @@ table Configuration {
   channels:[Channel] (id: 0);
   // List of global maps.  These are applied in reverse order.
   maps:[Map] (id: 1);
+
+  // If present, this is the list of nodes in the system.  If this is not
+  // present, AOS will be running in a single node configuration.
+  nodes:[Node] (id: 4);
+
   // List of applications.
   applications:[Application] (id: 2);
   // List of imports.  Imports are loaded first, and then this configuration

@@ -126,6 +126,8 @@ class MMapedQueue {
   void *data_;
 };
 
+namespace {
+
 // Returns the portion of the path after the last /.
 std::string_view Filename(std::string_view path) {
   auto last_slash_pos = path.find_last_of("/");
@@ -135,14 +137,22 @@ std::string_view Filename(std::string_view path) {
              : path.substr(last_slash_pos + 1, path.size());
 }
 
-ShmEventLoop::ShmEventLoop(const Configuration *configuration)
-    : EventLoop(configuration), name_(Filename(program_invocation_name)) {}
+const Node *MaybeMyNode(const Configuration *configuration) {
+  if (!configuration->has_nodes()) {
+    return nullptr;
+  }
 
-namespace {
+  return configuration::GetMyNode(configuration);
+}
 
 namespace chrono = ::std::chrono;
 
 }  // namespace
+
+ShmEventLoop::ShmEventLoop(const Configuration *configuration)
+    : EventLoop(configuration),
+      name_(Filename(program_invocation_name)),
+      node_(MaybeMyNode(configuration)) {}
 
 namespace internal {
 
@@ -508,6 +518,16 @@ class PhasedLoopHandler final : public ::aos::PhasedLoopHandler {
 
 ::std::unique_ptr<RawFetcher> ShmEventLoop::MakeRawFetcher(
     const Channel *channel) {
+
+  if (node() != nullptr) {
+    if (!configuration::ChannelIsReadableOnNode(channel, node())) {
+      LOG(FATAL) << "Channel { \"name\": \"" << channel->name()->string_view()
+                 << "\", \"type\": \"" << channel->type()->string_view()
+                 << "\" } is not able to be fetched on this node.  Check your "
+                    "configuration.";
+    }
+  }
+
   return ::std::unique_ptr<RawFetcher>(new internal::ShmFetcher(this, channel));
 }
 
@@ -522,6 +542,15 @@ void ShmEventLoop::MakeRawWatcher(
     const Channel *channel,
     std::function<void(const Context &context, const void *message)> watcher) {
   Take(channel);
+
+  if (node() != nullptr) {
+    if (!configuration::ChannelIsReadableOnNode(channel, node())) {
+      LOG(FATAL) << "Channel { \"name\": \"" << channel->name()->string_view()
+                 << "\", \"type\": \"" << channel->type()->string_view()
+                 << "\" } is not able to be watched on this node.  Check your "
+                    "configuration.";
+    }
+  }
 
   NewWatcher(::std::unique_ptr<WatcherState>(
       new internal::WatcherState(this, channel, std::move(watcher))));

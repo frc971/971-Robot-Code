@@ -117,7 +117,7 @@ uint16_t CalculateCrc(const uint8_t *data, size_t data_length) {
 
 }  // namespace
 
-ADIS16448::ADIS16448(::aos::EventLoop *event_loop, frc::SPI::Port port,
+ADIS16448::ADIS16448(::aos::ShmEventLoop *event_loop, frc::SPI::Port port,
                      frc::DigitalInput *dio1)
     : event_loop_(event_loop),
       robot_state_fetcher_(event_loop_->MakeFetcher<::aos::RobotState>("/aos")),
@@ -144,7 +144,7 @@ ADIS16448::ADIS16448(::aos::EventLoop *event_loop, frc::SPI::Port port,
       system("ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
              "33") == 0);
 
-  event_loop_->set_name("IMU");
+  event_loop->set_name("IMU");
   event_loop_->SetRuntimeRealtimePriority(33);
 
   event_loop_->OnRun([this]() { DoRun(); });

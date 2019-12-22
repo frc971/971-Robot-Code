@@ -114,7 +114,7 @@ static const double kMaximumEncoderPulsesPerSecond =
 
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
-  SensorReader(::aos::EventLoop *event_loop)
+  SensorReader(::aos::ShmEventLoop *event_loop)
       : ::frc971::wpilib::SensorReader(event_loop),
         auto_mode_sender_(
             event_loop->MakeSender<::y2014::sensors::AutoMode>("/aos")),
@@ -475,7 +475,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
 class SolenoidWriter {
  public:
-  SolenoidWriter(::aos::EventLoop *event_loop,
+  SolenoidWriter(::aos::ShmEventLoop *event_loop,
                  const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
       : pcm_(pcm),
         shooter_(event_loop->MakeFetcher<shooter::Output>("/shooter")),

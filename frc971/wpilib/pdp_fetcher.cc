@@ -3,6 +3,7 @@
 #include <chrono>
 
 #include "aos/events/event_loop.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/logging/logging.h"
 #include "frc971/wpilib/ahal/PowerDistributionPanel.h"
 #include "frc971/wpilib/pdp_values_generated.h"
@@ -12,11 +13,11 @@ namespace wpilib {
 
 namespace chrono = ::std::chrono;
 
-PDPFetcher::PDPFetcher(::aos::EventLoop *event_loop)
+PDPFetcher::PDPFetcher(::aos::ShmEventLoop *event_loop)
     : event_loop_(event_loop),
       pdp_values_sender_(event_loop_->MakeSender<::frc971::PDPValues>("/aos")),
       pdp_(new frc::PowerDistributionPanel()) {
-  event_loop_->set_name("PDPFetcher");
+  event_loop->set_name("PDPFetcher");
 
   // SCHED_OTHER on purpose.
   event_loop_->AddPhasedLoop([this](int iterations) { Loop(iterations); },

@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "aos/events/event_loop.h"
+#include "aos/events/shm_event_loop.h"
 #include "frc971/wpilib/pdp_values_generated.h"
 
 namespace frc {
@@ -17,7 +18,7 @@ namespace wpilib {
 // Handles fetching values from the PDP.
 class PDPFetcher {
  public:
-  PDPFetcher(::aos::EventLoop *event_loop);
+  PDPFetcher(::aos::ShmEventLoop *event_loop);
 
   ~PDPFetcher();
 

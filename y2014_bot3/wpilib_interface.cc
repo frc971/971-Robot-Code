@@ -75,7 +75,7 @@ double drivetrain_velocity_translate(double in) {
 // Reads in our inputs. (sensors, voltages, etc.)
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
-  SensorReader(::aos::EventLoop *event_loop)
+  SensorReader(::aos::ShmEventLoop *event_loop)
       : ::frc971::wpilib::SensorReader(event_loop),
         rollers_position_sender_(
             event_loop
@@ -123,7 +123,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 // Writes out our pneumatic outputs.
 class SolenoidWriter {
  public:
-  SolenoidWriter(::aos::EventLoop *event_loop,
+  SolenoidWriter(::aos::ShmEventLoop *event_loop,
                  const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
       : pcm_(pcm),
         drivetrain_(

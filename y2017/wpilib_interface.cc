@@ -126,7 +126,7 @@ static_assert(kMaxSlowEncoderPulsesPerSecond < kMaxMediumEncoderPulsesPerSecond,
 // Class to send position messages with sensor readings to our loops.
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
-  SensorReader(::aos::EventLoop *event_loop)
+  SensorReader(::aos::ShmEventLoop *event_loop)
       : ::frc971::wpilib::SensorReader(event_loop),
         auto_mode_sender_(
             event_loop->MakeSender<::frc971::autonomous::AutonomousMode>(
@@ -323,7 +323,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
 class SolenoidWriter {
  public:
-  SolenoidWriter(::aos::EventLoop *event_loop)
+  SolenoidWriter(::aos::ShmEventLoop *event_loop)
       : superstructure_output_fetcher_(
             event_loop->MakeFetcher<superstructure::Output>(
                 "/superstructure")) {

@@ -15,10 +15,9 @@
 namespace frc971 {
 namespace wpilib {
 
-SensorReader::SensorReader(::aos::EventLoop *event_loop)
+SensorReader::SensorReader(::aos::ShmEventLoop *event_loop)
     : event_loop_(event_loop),
-      robot_state_sender_(
-          event_loop_->MakeSender<::aos::RobotState>("/aos")),
+      robot_state_sender_(event_loop_->MakeSender<::aos::RobotState>("/aos")),
       my_pid_(getpid()) {
   // Set some defaults.  We don't tend to exceed these, so old robots should
   // just work with them.

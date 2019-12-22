@@ -215,7 +215,7 @@ bool JsonParser::DoParse(const flatbuffers::TypeTable *typetable,
     switch (token) {
       case Tokenizer::TokenType::kEnd:
         if (stack_.size() != 0) {
-          printf("Failed to unwind stack all the way\n");
+          fprintf(stderr, "Failed to unwind stack all the way\n");
           return false;
         } else {
           return true;
@@ -235,8 +235,8 @@ bool JsonParser::DoParse(const flatbuffers::TypeTable *typetable,
               stack_.back().typetable->type_codes[field_index];
 
           if (type_code.base_type != flatbuffers::ET_SEQUENCE) {
-            printf("Field '%s' is not a sequence\n",
-                   stack_.back().field_name.c_str());
+            fprintf(stderr, "Field '%s' is not a sequence\n",
+                    stack_.back().field_name.c_str());
             return false;
           }
 
@@ -249,7 +249,7 @@ bool JsonParser::DoParse(const flatbuffers::TypeTable *typetable,
       case Tokenizer::TokenType::kEndObject:  // }
         if (stack_.size() == 0) {
           // Somehow we popped more than we pushed.  Error.
-          printf("Empty stack\n");
+          fprintf(stderr, "Empty stack\n");
           return false;
         } else {
           // End of a nested struct!  Add it.
@@ -346,7 +346,8 @@ bool JsonParser::DoParse(const flatbuffers::TypeTable *typetable,
             stack_.back().typetable, stack_.back().field_name.c_str());
 
         if (stack_.back().field_index == -1) {
-          printf("Invalid field name '%s'\n", stack_.back().field_name.c_str());
+          fprintf(stderr, "Invalid field name '%s'\n",
+                  stack_.back().field_name.c_str());
           return false;
         }
       } break;
@@ -360,7 +361,7 @@ bool JsonParser::AddElement(int field_index, int64_t int_value) {
       stack_.back().typetable->type_codes[field_index];
 
   if (type_code.is_vector != in_vector()) {
-    printf("Type and json disagree on if we are in a vector or not\n");
+    fprintf(stderr, "Type and json disagree on if we are in a vector or not\n");
     return false;
   }
 
@@ -377,7 +378,7 @@ bool JsonParser::AddElement(int field_index, double double_value) {
       stack_.back().typetable->type_codes[field_index];
 
   if (type_code.is_vector != in_vector()) {
-    printf("Type and json disagree on if we are in a vector or not\n");
+    fprintf(stderr, "Type and json disagree on if we are in a vector or not\n");
     return false;
   }
 
@@ -394,7 +395,7 @@ bool JsonParser::AddElement(int field_index, const ::std::string &data) {
       stack_.back().typetable->type_codes[field_index];
 
   if (type_code.is_vector != in_vector()) {
-    printf("Type and json disagree on if we are in a vector or not\n");
+    fprintf(stderr, "Type and json disagree on if we are in a vector or not\n");
     return false;
   }
 
@@ -430,8 +431,8 @@ bool JsonParser::AddElement(int field_index, const ::std::string &data) {
         }
 
         if (!found) {
-          printf("Enum value '%s' not found for field '%s'\n", data.c_str(),
-                 type_table->names[field_index]);
+          fprintf(stderr, "Enum value '%s' not found for field '%s'\n",
+                  data.c_str(), type_table->names[field_index]);
           return false;
         }
 
@@ -464,8 +465,8 @@ bool AddSingleElement(const flatbuffers::TypeTable *typetable,
                       ::std::vector<bool> *fields_in_use,
                       flatbuffers::FlatBufferBuilder *fbb) {
   if ((*fields_in_use)[field_element.field_index]) {
-    printf("Duplicate field: '%s'\n",
-           typetable->names[field_element.field_index]);
+    fprintf(stderr, "Duplicate field: '%s'\n",
+            typetable->names[field_element.field_index]);
     return false;
   }
 
@@ -533,9 +534,9 @@ bool AddSingleElement(const flatbuffers::TypeTable *typetable, int field_index,
     case flatbuffers::ET_STRING:
     case flatbuffers::ET_UTYPE:
     case flatbuffers::ET_SEQUENCE:
-      printf("Mismatched type for field '%s'. Got: integer, expected %s\n",
-             typetable->names[field_index],
-             ElementaryTypeName(elementary_type));
+      fprintf(
+          stderr, "Mismatched type for field '%s'. Got: integer, expected %s\n",
+          typetable->names[field_index], ElementaryTypeName(elementary_type));
       return false;
   };
   return false;
@@ -564,9 +565,9 @@ bool AddSingleElement(const flatbuffers::TypeTable *typetable, int field_index,
     case flatbuffers::ET_ULONG:
     case flatbuffers::ET_STRING:
     case flatbuffers::ET_SEQUENCE:
-      printf("Mismatched type for field '%s'. Got: double, expected %s\n",
-             typetable->names[field_index],
-             ElementaryTypeName(elementary_type));
+      fprintf(
+          stderr, "Mismatched type for field '%s'. Got: double, expected %s\n",
+          typetable->names[field_index], ElementaryTypeName(elementary_type));
       return false;
     case flatbuffers::ET_FLOAT:
       fbb->AddElement<float>(field_offset, double_value, 0);
@@ -606,9 +607,9 @@ bool AddSingleElement(const flatbuffers::TypeTable *typetable, int field_index,
     case flatbuffers::ET_BOOL:
     case flatbuffers::ET_FLOAT:
     case flatbuffers::ET_DOUBLE:
-      printf("Mismatched type for field '%s'. Got: string, expected %s\n",
-             typetable->names[field_index],
-             ElementaryTypeName(elementary_type));
+      fprintf(
+          stderr, "Mismatched type for field '%s'. Got: string, expected %s\n",
+          typetable->names[field_index], ElementaryTypeName(elementary_type));
       CHECK_EQ(type_code.sequence_ref, -1)
           << ": Field name " << typetable->names[field_index]
           << " Got string expected " << ElementaryTypeName(elementary_type);
@@ -699,9 +700,10 @@ bool JsonParser::PushElement(flatbuffers::ElementaryType elementary_type,
     case flatbuffers::ET_STRING:
     case flatbuffers::ET_UTYPE:
     case flatbuffers::ET_SEQUENCE:
-      printf("Mismatched type for field '%s'. Got: integer, expected %s\n",
-             stack_.back().field_name.c_str(),
-             ElementaryTypeName(elementary_type));
+      fprintf(stderr,
+              "Mismatched type for field '%s'. Got: integer, expected %s\n",
+              stack_.back().field_name.c_str(),
+              ElementaryTypeName(elementary_type));
       return false;
   };
   return false;
@@ -722,9 +724,10 @@ bool JsonParser::PushElement(flatbuffers::ElementaryType elementary_type,
     case flatbuffers::ET_ULONG:
     case flatbuffers::ET_STRING:
     case flatbuffers::ET_SEQUENCE:
-      printf("Mismatched type for field '%s'. Got: double, expected %s\n",
-             stack_.back().field_name.c_str(),
-             ElementaryTypeName(elementary_type));
+      fprintf(stderr,
+              "Mismatched type for field '%s'. Got: double, expected %s\n",
+              stack_.back().field_name.c_str(),
+              ElementaryTypeName(elementary_type));
       return false;
     case flatbuffers::ET_FLOAT:
       fbb_.PushElement<float>(double_value);
@@ -752,9 +755,10 @@ bool JsonParser::PushElement(
     case flatbuffers::ET_ULONG:
     case flatbuffers::ET_FLOAT:
     case flatbuffers::ET_DOUBLE:
-      printf("Mismatched type for field '%s'. Got: sequence, expected %s\n",
-             stack_.back().field_name.c_str(),
-             ElementaryTypeName(elementary_type));
+      fprintf(stderr,
+              "Mismatched type for field '%s'. Got: sequence, expected %s\n",
+              stack_.back().field_name.c_str(),
+              ElementaryTypeName(elementary_type));
       return false;
     case flatbuffers::ET_STRING:
     case flatbuffers::ET_SEQUENCE:

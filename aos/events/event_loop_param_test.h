@@ -54,10 +54,53 @@ class EventLoopTestFactory {
   // Advances time by sleeping.  Can't be called from inside a loop.
   virtual void SleepFor(::std::chrono::nanoseconds duration) = 0;
 
+  void EnableNodes(std::string_view my_node) {
+    std::string json = std::string(R"config({
+  "channels": [
+    {
+      "name": "/aos",
+      "type": "aos.timing.Report",
+      "source_node": "me"
+    },
+    {
+      "name": "/test",
+      "type": "aos.TestMessage",
+      "source_node": "me"
+    },
+    {
+      "name": "/test1",
+      "type": "aos.TestMessage",
+      "source_node": "me"
+    },
+    {
+      "name": "/test2",
+      "type": "aos.TestMessage",
+      "source_node": "me"
+    }
+  ],
+  "nodes": [
+    {
+      "name": ")config") +
+                       std::string(my_node) + R"config(",
+      "hostname": "myhostname"
+    }
+  ]
+})config";
+
+    flatbuffer_ = FlatbufferDetachedBuffer<Configuration>(
+        JsonToFlatbuffer(json, Configuration::MiniReflectTypeTable()));
+
+    my_node_ = my_node;
+  }
+
+  std::string_view my_node() const { return my_node_; }
+
   const Configuration *configuration() { return &flatbuffer_.message(); }
 
  private:
   FlatbufferDetachedBuffer<Configuration> flatbuffer_;
+
+  std::string my_node_;
 };
 
 class AbstractEventLoopTestBase
@@ -79,6 +122,8 @@ class AbstractEventLoopTestBase
     return factory_->MakePrimary(name);
   }
 
+  void EnableNodes(std::string_view my_node) { factory_->EnableNodes(my_node); }
+
   void Run() { return factory_->Run(); }
 
   void Exit() { return factory_->Exit(); }
@@ -86,6 +131,10 @@ class AbstractEventLoopTestBase
   void SleepFor(::std::chrono::nanoseconds duration) {
     return factory_->SleepFor(duration);
   }
+
+  const Configuration *configuration() { return factory_->configuration(); }
+
+  std::string_view my_node() const { return factory_->my_node(); }
 
   // Ends the given event loop at the given time from now.
   void EndEventLoop(EventLoop *loop, ::std::chrono::milliseconds duration) {

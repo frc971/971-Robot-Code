@@ -142,7 +142,7 @@ static_assert(kMaxMediumEncoderPulsesPerSecond <= 400000,
 // Class to send position messages with sensor readings to our loops.
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
-  SensorReader(::aos::EventLoop *event_loop)
+  SensorReader(::aos::ShmEventLoop *event_loop)
       : ::frc971::wpilib::SensorReader(event_loop),
         superstructure_position_sender_(
             event_loop->MakeSender<superstructure::Position>(
@@ -429,7 +429,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
 class SolenoidWriter {
  public:
-  SolenoidWriter(::aos::EventLoop *event_loop,
+  SolenoidWriter(::aos::ShmEventLoop *event_loop,
                  ::frc971::wpilib::BufferedPcm *pcm)
       : event_loop_(event_loop),
         drivetrain_fetcher_(
@@ -445,7 +445,7 @@ class SolenoidWriter {
         pneumatics_to_log_sender_(
             event_loop->MakeSender<::frc971::wpilib::PneumaticsToLog>("/aos")),
         pcm_(pcm) {
-    event_loop_->set_name("Solenoids");
+    event_loop->set_name("Solenoids");
     event_loop_->SetRuntimeRealtimePriority(27);
 
     int32_t status = 0;

@@ -146,7 +146,7 @@ constexpr double kMaxSuperstructureEncoderPulsesPerSecond =
 // Class to send position messages with sensor readings to our loops.
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
-  SensorReader(::aos::EventLoop *event_loop)
+  SensorReader(::aos::ShmEventLoop *event_loop)
       : ::frc971::wpilib::SensorReader(event_loop),
         ball_detector_sender_(
             event_loop->MakeSender<::y2016::sensors::BallDetector>(
@@ -372,7 +372,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
 class SolenoidWriter {
  public:
-  SolenoidWriter(::aos::EventLoop *event_loop,
+  SolenoidWriter(::aos::ShmEventLoop *event_loop,
                  ::frc971::wpilib::BufferedPcm *pcm)
       : pcm_(pcm),
         pneumatics_to_log_sender_(

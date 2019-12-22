@@ -5,6 +5,7 @@
 #include <chrono>
 
 #include "aos/events/event_loop.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/robot_state/robot_state_generated.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
@@ -24,7 +25,7 @@ namespace wpilib {
 
 class SensorReader {
  public:
-  SensorReader(::aos::EventLoop *event_loop);
+  SensorReader(::aos::ShmEventLoop *event_loop);
   virtual ~SensorReader() {}
 
   // Updates the fast and medium encoder filter frequencies.
