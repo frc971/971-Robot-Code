@@ -46,8 +46,7 @@ void QueueRacer::RunIteration(bool race_reads, int write_wrap_count) {
   // Event used to start all the threads processing at once.
   Event run;
 
-  ::std::atomic<bool> poll_index;
-  poll_index = true;
+  ::std::atomic<bool> poll_index{true};
 
   // List of threads.
   ::std::vector<ThreadState> threads(num_threads_);
@@ -87,10 +86,11 @@ void QueueRacer::RunIteration(bool race_reads, int write_wrap_count) {
       const uint64_t started_writes = started_writes_.load();
 
       const uint32_t latest_queue_index_uint32_t =
-          queue.LatestQueueIndex().index();
+          latest_queue_index_queue_index.index();
       uint64_t latest_queue_index = latest_queue_index_uint32_t;
 
-      if (latest_queue_index_queue_index != LocklessQueue::empty_queue_index()) {
+      if (latest_queue_index_queue_index !=
+          LocklessQueue::empty_queue_index()) {
         // If we got smaller, we wrapped.
         if (latest_queue_index_uint32_t < last_queue_index) {
           ++wrap_count;
@@ -112,10 +112,12 @@ void QueueRacer::RunIteration(bool race_reads, int write_wrap_count) {
         EXPECT_EQ(finished_writes, 0);
       } else {
         if (finished_writes == 0) {
-          // Plausible to be at the beginning.
+          // Plausible to be at the beginning, in which case we don't have
+          // anything to check.
           if (latest_queue_index_queue_index !=
               LocklessQueue::empty_queue_index()) {
-            // Otherwise, we have started.  The queue is always allowed to
+            // Otherwise, we have started.  The queue can't have any more
+            // entries than this.
             EXPECT_GE(started_writes, latest_queue_index + 1);
           }
         } else {
@@ -150,7 +152,9 @@ void QueueRacer::RunIteration(bool race_reads, int write_wrap_count) {
           run.Wait();
 
           // Gogogo!
-          for (uint64_t i = 0; i < num_messages_ * static_cast<uint64_t>(1 + write_wrap_count); ++i) {
+          for (uint64_t i = 0;
+               i < num_messages_ * static_cast<uint64_t>(1 + write_wrap_count);
+               ++i) {
             char data[sizeof(ThreadPlusCount)];
             ThreadPlusCount tpc;
             tpc.thread = thread_index;
