@@ -95,7 +95,7 @@ bool mutex_islocked(const aos_mutex *m);
 // this mutex may not be used with any of the mutex_ functions.
 
 // Initializes a variable which can be used to wait for this thread to die.
-// This can only be called once after initializing *m.
+// This can only be called once after initializing *m to 0.
 void death_notification_init(aos_mutex *m);
 
 // Manually triggers a death notification for this thread.

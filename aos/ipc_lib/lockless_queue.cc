@@ -356,10 +356,14 @@ bool LocklessQueue::RegisterWakeup(int priority) {
   for (int i = 0; i < num_watchers; ++i) {
     // If we see a slot the kernel has marked as dead, everything we do reusing
     // it needs to happen-after whatever that process did before dying.
-    const uint32_t tid =
-        __atomic_load_n(&(memory_->GetWatcher(i)->tid.futex), __ATOMIC_ACQUIRE);
+    auto *const futex = &(memory_->GetWatcher(i)->tid.futex);
+    const uint32_t tid = __atomic_load_n(futex, __ATOMIC_ACQUIRE);
     if (tid == 0 || (tid & FUTEX_OWNER_DIED)) {
       watcher_index_ = i;
+      // Relaxed is OK here because we're the only task going to touch it
+      // between here and the write in death_notification_init below (other
+      // recovery is blocked by us holding the setup lock).
+      __atomic_store_n(futex, 0, __ATOMIC_RELAXED);
       break;
     }
   }
