@@ -595,8 +595,10 @@ TEST(LocklessQueueTest, Death) {
             break;
           }
 
-          EXPECT_GT(read_data[6], last_data) << ": Got " << read_data;
-          last_data = read_data[6];
+          EXPECT_GT(read_data[queue.message_data_size() - length + 6],
+                    last_data)
+              << ": Got " << read_data;
+          last_data = read_data[queue.message_data_size() - length + 6];
 
           ++i;
         }

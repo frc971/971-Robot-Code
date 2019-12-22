@@ -1099,5 +1099,51 @@ TEST_P(AbstractEventLoopTest, FetcherTimingReport) {
   EXPECT_EQ(primary_report.message().fetchers()->Get(1)->count(), 10);
 }
 
+// Tests that a raw watcher and raw fetcher can receive messages from a raw
+// sender without messing up offsets.
+TEST_P(AbstractEventLoopTest, RawBasic) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+  auto loop3 = Make();
+
+  const std::string kData("971 is the best");
+
+  std::unique_ptr<aos::RawSender> sender =
+      loop1->MakeRawSender(loop1->configuration()->channels()->Get(1));
+
+  std::unique_ptr<aos::RawFetcher> fetcher =
+      loop3->MakeRawFetcher(loop3->configuration()->channels()->Get(1));
+
+  loop2->OnRun(
+      [&]() { EXPECT_TRUE(sender->Send(kData.data(), kData.size())); });
+
+  bool happened = false;
+  loop2->MakeRawWatcher(
+      loop2->configuration()->channels()->Get(1),
+      [this, &kData, &fetcher, &happened](const Context &context,
+                                          const void *message) {
+        happened = true;
+        EXPECT_EQ(std::string_view(kData),
+                  std::string_view(reinterpret_cast<const char *>(message),
+                                   context.size));
+        EXPECT_EQ(std::string_view(kData),
+                  std::string_view(reinterpret_cast<const char *>(context.data),
+                                   context.size));
+
+        ASSERT_TRUE(fetcher->Fetch());
+
+        EXPECT_EQ(std::string_view(kData),
+                  std::string_view(
+                      reinterpret_cast<const char *>(fetcher->context().data),
+                      fetcher->context().size));
+
+        this->Exit();
+      });
+
+  EXPECT_FALSE(happened);
+  Run();
+  EXPECT_TRUE(happened);
+}
+
 }  // namespace testing
 }  // namespace aos

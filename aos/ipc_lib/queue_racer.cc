@@ -278,7 +278,8 @@ void QueueRacer::CheckReads(bool race_reads, int write_wrap_count,
 
     ThreadPlusCount tpc;
     ASSERT_EQ(length, sizeof(ThreadPlusCount));
-    memcpy(&tpc, read_data, sizeof(ThreadPlusCount));
+    memcpy(&tpc, read_data + queue.message_data_size() - length,
+           sizeof(ThreadPlusCount));
 
     if (will_wrap) {
       // The queue won't chang out from under us, so we should get some amount
