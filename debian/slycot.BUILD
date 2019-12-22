@@ -141,6 +141,7 @@ f2c_library(
         "clang": [
         ],
         "gcc": [
+            "-Wno-unused-but-set-variable",
             "-Wno-discarded-qualifiers",
         ],
     }),
