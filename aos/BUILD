@@ -4,6 +4,7 @@ load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 filegroup(
     name = "prime_binaries",
     srcs = [
+        "//aos:aos_dump",
         "//aos:core",
         "//aos/logging:log_displayer",
         "//aos/logging:log_streamer",
@@ -28,7 +29,7 @@ filegroup(
         "//aos:core",
         "//aos/logging:log_streamer.stripped",
         "//aos/logging:log_displayer.stripped",
-        "//aos:log_fbs_shmem.stripped",
+        "//aos:aos_dump.stripped",
         "//aos/starter",
     ],
     visibility = ["//visibility:public"],
@@ -487,9 +488,9 @@ cc_binary(
 )
 
 cc_binary(
-    name = "log_fbs_shmem",
+    name = "aos_dump",
     srcs = [
-        "log_fbs_shmem.cc",
+        "aos_dump.cc",
     ],
     visibility = ["//visibility:public"],
     deps = [
