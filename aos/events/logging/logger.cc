@@ -1,6 +1,7 @@
 #include "aos/events/logging/logger.h"
 
 #include <fcntl.h>
+#include <limits.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/uio.h>
@@ -44,7 +45,10 @@ void DetachedBufferWriter::QueueSizedFlatbuffer(
   queued_size_ += buffer.size();
   queue_.emplace_back(std::move(buffer));
 
-  if (queued_size_ > static_cast<size_t>(FLAGS_flush_size)) {
+  // Flush if we are at the max number of iovs per writev, or have written
+  // enough data.  Otherwise writev will fail with an invalid argument.
+  if (queued_size_ > static_cast<size_t>(FLAGS_flush_size) ||
+      queue_.size() == IOV_MAX) {
     Flush();
   }
 }
