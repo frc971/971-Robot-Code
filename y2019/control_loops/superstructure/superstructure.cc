@@ -25,7 +25,9 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       elevator_(constants::GetValues().elevator.subsystem_params),
       wrist_(constants::GetValues().wrist.subsystem_params),
       intake_(constants::GetValues().intake),
-      stilts_(constants::GetValues().stilts.subsystem_params) {}
+      stilts_(constants::GetValues().stilts.subsystem_params) {
+  event_loop->SetRuntimeRealtimePriority(30);
+}
 
 void Superstructure::RunIteration(const Goal *unsafe_goal,
                                   const Position *position,

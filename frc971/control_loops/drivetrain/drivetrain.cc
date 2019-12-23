@@ -54,6 +54,7 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
       right_high_requested_(dt_config_.default_high_gear) {
   ::aos::controls::HPolytope<0>::Init();
   down_U_.setZero();
+  event_loop->SetRuntimeRealtimePriority(30);
 }
 
 int DrivetrainLoop::ControllerIndexFromGears() {
