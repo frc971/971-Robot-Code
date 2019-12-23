@@ -106,6 +106,47 @@ TEST_F(LoggerTest, Starts) {
   reader.Deregister();
 }
 
+// Tests that a large number of messages per second doesn't overwhelm writev.
+TEST_F(LoggerTest, ManyMessages) {
+  const ::std::string tmpdir(getenv("TEST_TMPDIR"));
+  const ::std::string logfile = tmpdir + "/logfile.bfbs";
+  // Remove the log file.
+  unlink(logfile.c_str());
+
+  LOG(INFO) << "Logging data to " << logfile;
+
+  {
+    DetachedBufferWriter writer(logfile);
+    std::unique_ptr<EventLoop> logger_event_loop =
+        event_loop_factory_.MakeEventLoop("logger");
+
+    std::unique_ptr<EventLoop> ping_spammer_event_loop =
+        event_loop_factory_.MakeEventLoop("ping_spammer");
+    aos::Sender<examples::Ping> ping_sender =
+        ping_spammer_event_loop->MakeSender<examples::Ping>("/test");
+
+    aos::TimerHandler *timer_handler =
+        ping_spammer_event_loop->AddTimer([&ping_sender]() {
+          aos::Sender<examples::Ping>::Builder builder =
+              ping_sender.MakeBuilder();
+          examples::Ping::Builder ping_builder =
+              builder.MakeBuilder<examples::Ping>();
+          CHECK(builder.Send(ping_builder.Finish()));
+        });
+
+    // 100 ms / 0.05 ms -> 2000 messages.  Should be enough to crash it.
+    ping_spammer_event_loop->OnRun([&ping_spammer_event_loop, timer_handler]() {
+      timer_handler->Setup(ping_spammer_event_loop->monotonic_now(),
+                           chrono::microseconds(50));
+    });
+
+    Logger logger(&writer, logger_event_loop.get(),
+                  std::chrono::milliseconds(100));
+
+    event_loop_factory_.RunFor(chrono::milliseconds(1000));
+  }
+}
+
 }  // namespace testing
 }  // namespace logger
 }  // namespace aos
