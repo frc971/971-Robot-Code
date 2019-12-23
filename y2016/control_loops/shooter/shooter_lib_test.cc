@@ -178,7 +178,7 @@ TEST_F(ShooterTest, DoesNothing) {
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
-  RunFor(dt());
+  RunFor(dt() * 3 / 2);
 
   VerifyNearGoal();
 

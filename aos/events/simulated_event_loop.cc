@@ -29,41 +29,38 @@ struct SimulatedMessage {
   OveralignedChar actual_data[];
 };
 
+class SimulatedEventLoop;
 class SimulatedFetcher;
 class SimulatedChannel;
 
-class ShmWatcher : public WatcherState {
+class SimulatedWatcher : public WatcherState {
  public:
-  ShmWatcher(
-      EventLoop *event_loop, const Channel *channel,
-      std::function<void(const Context &context, const void *message)> fn)
-      : WatcherState(event_loop, channel, std::move(fn)),
-        event_loop_(event_loop) {}
+  SimulatedWatcher(
+      SimulatedEventLoop *simulated_event_loop, EventScheduler *scheduler,
+      const Channel *channel,
+      std::function<void(const Context &context, const void *message)> fn);
 
-  ~ShmWatcher() override;
-
-  void Call(const Context &context) {
-    const monotonic_clock::time_point monotonic_now =
-        event_loop_->monotonic_now();
-    DoCallCallback([monotonic_now]() { return monotonic_now; }, context);
-  }
+  ~SimulatedWatcher() override;
 
   void Startup(EventLoop * /*event_loop*/) override {}
 
-  void Schedule(EventScheduler *scheduler,
-                std::shared_ptr<SimulatedMessage> message) {
-    // TODO(austin): Track the token once we schedule in the future.
-    // TODO(austin): Schedule wakeup in the future so we don't have 0 latency.
-    scheduler->Schedule(scheduler->monotonic_now(),
-                        [this, message]() { Call(message->context); });
-  }
+  void Schedule(std::shared_ptr<SimulatedMessage> message);
+
+  void HandleEvent();
 
   void SetSimulatedChannel(SimulatedChannel *channel) {
     simulated_channel_ = channel;
   }
 
  private:
-  EventLoop *event_loop_;
+  void DoSchedule(monotonic_clock::time_point event_time);
+
+  ::std::deque<std::shared_ptr<SimulatedMessage>> msgs_;
+
+  SimulatedEventLoop *simulated_event_loop_;
+  EventHandler<SimulatedWatcher> event_;
+  EventScheduler *scheduler_;
+  EventScheduler::Token token_;
   SimulatedChannel *simulated_channel_ = nullptr;
 };
 
@@ -83,9 +80,9 @@ class SimulatedChannel {
   ::std::unique_ptr<RawFetcher> MakeRawFetcher(EventLoop *event_loop);
 
   // Registers a watcher for the queue.
-  void MakeRawWatcher(ShmWatcher *watcher);
+  void MakeRawWatcher(SimulatedWatcher *watcher);
 
-  void RemoveWatcher(ShmWatcher *watcher) {
+  void RemoveWatcher(SimulatedWatcher *watcher) {
     watchers_.erase(std::find(watchers_.begin(), watchers_.end(), watcher));
   }
 
@@ -113,7 +110,7 @@ class SimulatedChannel {
   const Channel *channel_;
 
   // List of all watchers.
-  ::std::vector<ShmWatcher *> watchers_;
+  ::std::vector<SimulatedWatcher *> watchers_;
 
   // List of all fetchers.
   ::std::vector<SimulatedFetcher *> fetchers_;
@@ -122,8 +119,6 @@ class SimulatedChannel {
 
   ipc_lib::QueueIndex next_queue_index_;
 };
-
-ShmWatcher::~ShmWatcher() { simulated_channel_->RemoveWatcher(this); }
 
 namespace {
 
@@ -195,8 +190,6 @@ class SimulatedSender : public RawSender {
 };
 }  // namespace
 
-class SimulatedEventLoop;
-
 class SimulatedFetcher : public RawFetcher {
  public:
   explicit SimulatedFetcher(EventLoop *event_loop, SimulatedChannel *queue)
@@ -215,6 +208,8 @@ class SimulatedFetcher : public RawFetcher {
 
   std::pair<bool, monotonic_clock::time_point> DoFetch() override {
     if (msgs_.size() == 0) {
+      // TODO(austin): Can we just do this logic unconditionally?  It is a lot
+      // simpler.  And call clear, obviously.
       if (!msg_ && queue_->latest_message()) {
         SetMsg(queue_->latest_message());
         return std::make_pair(true, queue_->monotonic_now());
@@ -256,25 +251,22 @@ class SimulatedTimerHandler : public TimerHandler {
   explicit SimulatedTimerHandler(EventScheduler *scheduler,
                                  SimulatedEventLoop *simulated_event_loop,
                                  ::std::function<void()> fn);
-  ~SimulatedTimerHandler() {}
+  ~SimulatedTimerHandler() { Disable(); }
 
   void Setup(monotonic_clock::time_point base,
              monotonic_clock::duration repeat_offset) override;
 
   void HandleEvent();
 
-  void Disable() override {
-    if (token_ != scheduler_->InvalidToken()) {
-      scheduler_->Deschedule(token_);
-      token_ = scheduler_->InvalidToken();
-    }
-  }
+  void Disable() override;
 
   ::aos::monotonic_clock::time_point monotonic_now() const {
     return scheduler_->monotonic_now();
   }
 
  private:
+  SimulatedEventLoop *simulated_event_loop_;
+  EventHandler<SimulatedTimerHandler> event_;
   EventScheduler *scheduler_;
   EventScheduler::Token token_;
 
@@ -289,21 +281,15 @@ class SimulatedPhasedLoopHandler : public PhasedLoopHandler {
                              ::std::function<void(int)> fn,
                              const monotonic_clock::duration interval,
                              const monotonic_clock::duration offset);
-  ~SimulatedPhasedLoopHandler() {
-    if (token_ != scheduler_->InvalidToken()) {
-      scheduler_->Deschedule(token_);
-      token_ = scheduler_->InvalidToken();
-    }
-  }
+  ~SimulatedPhasedLoopHandler();
 
-  void HandleTimerWakeup();
+  void HandleEvent();
 
-  void Schedule(monotonic_clock::time_point sleep_time) override {
-    token_ = scheduler_->Schedule(sleep_time, [this]() { HandleTimerWakeup(); });
-  }
+  void Schedule(monotonic_clock::time_point sleep_time) override;
 
  private:
   SimulatedEventLoop *simulated_event_loop_;
+  EventHandler<SimulatedPhasedLoopHandler> event_;
 
   EventScheduler *scheduler_;
   EventScheduler::Token token_;
@@ -349,6 +335,11 @@ class SimulatedEventLoop : public EventLoop {
         break;
       }
     }
+  }
+
+  std::chrono::nanoseconds send_delay() const { return send_delay_; }
+  void set_send_delay(std::chrono::nanoseconds send_delay) {
+    send_delay_ = send_delay;
   }
 
   ::aos::monotonic_clock::time_point monotonic_now() override {
@@ -407,6 +398,19 @@ class SimulatedEventLoop : public EventLoop {
 
  private:
   friend class SimulatedTimerHandler;
+  friend class SimulatedPhasedLoopHandler;
+  friend class SimulatedWatcher;
+
+  void HandleEvent() {
+    while (true) {
+      if (EventCount() == 0 || PeekEvent()->event_time() > monotonic_now()) {
+        break;
+      }
+
+      EventLoopEvent *event = PopEvent();
+      event->HandleEvent();
+    }
+  }
 
   pid_t GetTid() override { return tid_; }
 
@@ -422,16 +426,28 @@ class SimulatedEventLoop : public EventLoop {
 
   bool has_setup_ = false;
 
+  std::chrono::nanoseconds send_delay_;
+
   const pid_t tid_;
 };
+
+void SimulatedEventLoopFactory::set_send_delay(
+    std::chrono::nanoseconds send_delay) {
+  send_delay_ = send_delay;
+  for (std::pair<EventLoop *, std::function<void(bool)>> &loop :
+       raw_event_loops_) {
+    reinterpret_cast<SimulatedEventLoop *>(loop.first)
+        ->set_send_delay(send_delay_);
+  }
+}
 
 void SimulatedEventLoop::MakeRawWatcher(
     const Channel *channel,
     std::function<void(const Context &channel, const void *message)> watcher) {
   ChannelIndex(channel);
   Take(channel);
-  std::unique_ptr<ShmWatcher> shm_watcher(
-      new ShmWatcher(this, channel, std::move(watcher)));
+  std::unique_ptr<SimulatedWatcher> shm_watcher(
+      new SimulatedWatcher(this, scheduler_, channel, std::move(watcher)));
 
   GetSimulatedChannel(channel)->MakeRawWatcher(shm_watcher.get());
   NewWatcher(std::move(shm_watcher));
@@ -463,7 +479,65 @@ SimulatedChannel *SimulatedEventLoop::GetSimulatedChannel(
   return it->second.get();
 }
 
-void SimulatedChannel::MakeRawWatcher(ShmWatcher *watcher) {
+SimulatedWatcher::SimulatedWatcher(
+    SimulatedEventLoop *simulated_event_loop, EventScheduler *scheduler,
+    const Channel *channel,
+    std::function<void(const Context &context, const void *message)> fn)
+    : WatcherState(simulated_event_loop, channel, std::move(fn)),
+      simulated_event_loop_(simulated_event_loop),
+      event_(this),
+      scheduler_(scheduler),
+      token_(scheduler_->InvalidToken()) {}
+
+SimulatedWatcher::~SimulatedWatcher() {
+  simulated_event_loop_->RemoveEvent(&event_);
+  if (token_ != scheduler_->InvalidToken()) {
+    scheduler_->Deschedule(token_);
+  }
+  simulated_channel_->RemoveWatcher(this);
+}
+
+void SimulatedWatcher::Schedule(std::shared_ptr<SimulatedMessage> message) {
+  monotonic_clock::time_point event_time = scheduler_->monotonic_now();
+
+  // Messages are queued in order.  If we are the first, add ourselves.
+  // Otherwise, don't.
+  if (msgs_.size() == 0) {
+    event_.set_event_time(message->context.monotonic_sent_time);
+    simulated_event_loop_->AddEvent(&event_);
+
+    DoSchedule(event_time);
+  }
+
+  msgs_.emplace_back(message);
+}
+
+void SimulatedWatcher::HandleEvent() {
+  CHECK_NE(msgs_.size(), 0u) << ": No events to handle.";
+
+  const monotonic_clock::time_point monotonic_now =
+      simulated_event_loop_->monotonic_now();
+  DoCallCallback([monotonic_now]() { return monotonic_now; },
+                 msgs_.front()->context);
+
+  msgs_.pop_front();
+  if (msgs_.size() != 0) {
+    event_.set_event_time(msgs_.front()->context.monotonic_sent_time);
+    simulated_event_loop_->AddEvent(&event_);
+
+    DoSchedule(event_.event_time());
+  } else {
+    token_ = scheduler_->InvalidToken();
+  }
+}
+
+void SimulatedWatcher::DoSchedule(monotonic_clock::time_point event_time) {
+  token_ =
+      scheduler_->Schedule(event_time + simulated_event_loop_->send_delay(),
+                           [this]() { simulated_event_loop_->HandleEvent(); });
+}
+
+void SimulatedChannel::MakeRawWatcher(SimulatedWatcher *watcher) {
   watcher->SetSimulatedChannel(this);
   watchers_.emplace_back(watcher);
 }
@@ -489,8 +563,8 @@ void SimulatedChannel::Send(std::shared_ptr<SimulatedMessage> message) {
 
   latest_message_ = message;
   if (scheduler_->is_running()) {
-    for (ShmWatcher *watcher : watchers_) {
-      watcher->Schedule(scheduler_, message);
+    for (SimulatedWatcher *watcher : watchers_) {
+      watcher->Schedule(message);
     }
   }
   for (auto &fetcher : fetchers_) {
@@ -510,6 +584,8 @@ SimulatedTimerHandler::SimulatedTimerHandler(
     EventScheduler *scheduler, SimulatedEventLoop *simulated_event_loop,
     ::std::function<void()> fn)
     : TimerHandler(simulated_event_loop, std::move(fn)),
+      simulated_event_loop_(simulated_event_loop),
+      event_(this),
       scheduler_(scheduler),
       token_(scheduler_->InvalidToken()) {}
 
@@ -521,10 +597,14 @@ void SimulatedTimerHandler::Setup(monotonic_clock::time_point base,
   base_ = base;
   repeat_offset_ = repeat_offset;
   if (base < monotonic_now) {
-    token_ = scheduler_->Schedule(monotonic_now, [this]() { HandleEvent(); });
+    token_ = scheduler_->Schedule(
+        monotonic_now, [this]() { simulated_event_loop_->HandleEvent(); });
   } else {
-    token_ = scheduler_->Schedule(base, [this]() { HandleEvent(); });
+    token_ = scheduler_->Schedule(
+        base, [this]() { simulated_event_loop_->HandleEvent(); });
   }
+  event_.set_event_time(base_);
+  simulated_event_loop_->AddEvent(&event_);
 }
 
 void SimulatedTimerHandler::HandleEvent() {
@@ -533,12 +613,23 @@ void SimulatedTimerHandler::HandleEvent() {
   if (repeat_offset_ != ::aos::monotonic_clock::zero()) {
     // Reschedule.
     while (base_ <= monotonic_now) base_ += repeat_offset_;
-    token_ = scheduler_->Schedule(base_, [this]() { HandleEvent(); });
+    token_ = scheduler_->Schedule(
+        base_, [this]() { simulated_event_loop_->HandleEvent(); });
+    event_.set_event_time(base_);
+    simulated_event_loop_->AddEvent(&event_);
   } else {
     token_ = scheduler_->InvalidToken();
   }
 
   Call([monotonic_now]() { return monotonic_now; }, monotonic_now);
+}
+
+void SimulatedTimerHandler::Disable() {
+  simulated_event_loop_->RemoveEvent(&event_);
+  if (token_ != scheduler_->InvalidToken()) {
+    scheduler_->Deschedule(token_);
+    token_ = scheduler_->InvalidToken();
+  }
 }
 
 SimulatedPhasedLoopHandler::SimulatedPhasedLoopHandler(
@@ -547,15 +638,32 @@ SimulatedPhasedLoopHandler::SimulatedPhasedLoopHandler(
     const monotonic_clock::duration offset)
     : PhasedLoopHandler(simulated_event_loop, std::move(fn), interval, offset),
       simulated_event_loop_(simulated_event_loop),
+      event_(this),
       scheduler_(scheduler),
       token_(scheduler_->InvalidToken()) {}
 
-void SimulatedPhasedLoopHandler::HandleTimerWakeup() {
+SimulatedPhasedLoopHandler::~SimulatedPhasedLoopHandler() {
+  if (token_ != scheduler_->InvalidToken()) {
+    scheduler_->Deschedule(token_);
+    token_ = scheduler_->InvalidToken();
+  }
+  simulated_event_loop_->RemoveEvent(&event_);
+}
+
+void SimulatedPhasedLoopHandler::HandleEvent() {
   monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
   Call(
       [monotonic_now]() { return monotonic_now; },
       [this](monotonic_clock::time_point sleep_time) { Schedule(sleep_time); });
+}
+
+void SimulatedPhasedLoopHandler::Schedule(
+    monotonic_clock::time_point sleep_time) {
+  token_ = scheduler_->Schedule(
+      sleep_time, [this]() { simulated_event_loop_->HandleEvent(); });
+  event_.set_event_time(sleep_time);
+  simulated_event_loop_->AddEvent(&event_);
 }
 
 void SimulatedEventLoop::Take(const Channel *channel) {
@@ -575,10 +683,11 @@ SimulatedEventLoopFactory::~SimulatedEventLoopFactory() {}
     std::string_view name) {
   pid_t tid = tid_;
   ++tid_;
-  ::std::unique_ptr<EventLoop> result(new SimulatedEventLoop(
+  ::std::unique_ptr<SimulatedEventLoop> result(new SimulatedEventLoop(
       &scheduler_, &channels_, configuration_, &raw_event_loops_, tid));
   result->set_name(name);
-  return result;
+  result->set_send_delay(send_delay_);
+  return std::move(result);
 }
 
 void SimulatedEventLoopFactory::RunFor(monotonic_clock::duration duration) {

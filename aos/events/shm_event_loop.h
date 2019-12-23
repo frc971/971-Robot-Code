@@ -77,7 +77,7 @@ class ShmEventLoop : public EventLoop {
   friend class internal::ShmSender;
   friend class internal::ShmFetcher;
 
-  void HandleWatcherSignal();
+  void HandleEvent();
 
   // Tracks that we can't have multiple watchers or a sender and a watcher (or
   // multiple senders) on a single queue (path).
@@ -93,6 +93,7 @@ class ShmEventLoop : public EventLoop {
 
   internal::EPoll epoll_;
 };
+
 
 }  // namespace aos
 

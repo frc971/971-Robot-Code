@@ -65,6 +65,7 @@ PhasedLoopHandler::~PhasedLoopHandler() {}
 
 EventLoop::~EventLoop() {
   CHECK_EQ(senders_.size(), 0u) << ": Not all senders destroyed";
+  CHECK_EQ(events_.size(), 0u) << ": Not all events unregistered";
 }
 
 int EventLoop::ChannelIndex(const Channel *channel) {
@@ -375,6 +376,39 @@ void EventLoop::MaybeScheduleTimingReports() {
 
     UpdateTimingReport();
   }
+}
+
+void EventLoop::ReserveEvents() {
+  events_.reserve(timers_.size() + phased_loops_.size() + watchers_.size());
+}
+
+namespace {
+bool CompareEvents(const EventLoopEvent *first, const EventLoopEvent *second) {
+  return first->event_time() > second->event_time();
+}
+}  // namespace
+
+void EventLoop::AddEvent(EventLoopEvent *event) {
+  DCHECK(std::find(events_.begin(), events_.end(), event) == events_.end());
+  events_.push_back(event);
+  std::push_heap(events_.begin(), events_.end(), CompareEvents);
+}
+
+void EventLoop::RemoveEvent(EventLoopEvent *event) {
+  auto e = std::find(events_.begin(), events_.end(), event);
+  if (e != events_.end()) {
+    events_.erase(e);
+    std::make_heap(events_.begin(), events_.end(), CompareEvents);
+    event->Invalidate();
+  }
+}
+
+EventLoopEvent *EventLoop::PopEvent() {
+  EventLoopEvent *result = events_.front();
+  std::pop_heap(events_.begin(), events_.end(), CompareEvents);
+  events_.pop_back();
+  result->Invalidate();
+  return result;
 }
 
 void WatcherState::set_timing_report(timing::Watcher *watcher) {

@@ -549,7 +549,10 @@ void *LocklessQueue::Sender::Data() {
 
 void LocklessQueue::Sender::Send(const char *data, size_t length) {
   CHECK_LE(length, size());
-  memcpy(Data(), data, length);
+  // Flatbuffers write from the back of the buffer to the front.  If we are
+  // going to write an explicit chunk of memory into the buffer, we need to
+  // adhere to this convention and place it at the end.
+  memcpy((reinterpret_cast<char *>(Data()) + size() - length), data, length);
   Send(length);
 }
 

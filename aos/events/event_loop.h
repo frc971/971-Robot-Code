@@ -7,6 +7,7 @@
 
 #include "aos/configuration.h"
 #include "aos/configuration_generated.h"
+#include "aos/events/event_loop_event.h"
 #include "aos/events/event_loop_generated.h"
 #include "aos/events/timing_statistics.h"
 #include "aos/flatbuffers.h"
@@ -424,9 +425,10 @@ class EventLoop {
   WatcherState *NewWatcher(std::unique_ptr<WatcherState> watcher);
 
   std::vector<RawSender *> senders_;
+  std::vector<RawFetcher *> fetchers_;
+
   std::vector<std::unique_ptr<TimerHandler>> timers_;
   std::vector<std::unique_ptr<PhasedLoopHandler>> phased_loops_;
-  std::vector<RawFetcher *> fetchers_;
   std::vector<std::unique_ptr<WatcherState>> watchers_;
 
   void SendTimingReport();
@@ -434,6 +436,19 @@ class EventLoop {
   void MaybeScheduleTimingReports();
 
   std::unique_ptr<RawSender> timing_report_sender_;
+
+  // Tracks which event sources (timers and watchers) have data, and which
+  // don't.  Added events may not change their event_time().
+  // TODO(austin): Test case 1: timer triggers at t1, handler takes until after
+  // t2 to run, t2 should then be picked up without a context switch.
+  void AddEvent(EventLoopEvent *event);
+  void RemoveEvent(EventLoopEvent *event);
+  size_t EventCount() const { return events_.size(); }
+  EventLoopEvent *PopEvent();
+  EventLoopEvent *PeekEvent() { return events_.front(); }
+  void ReserveEvents();
+
+  std::vector<EventLoopEvent *> events_;
 
  private:
   virtual pid_t GetTid() = 0;
