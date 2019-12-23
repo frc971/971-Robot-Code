@@ -312,8 +312,9 @@ class EventLoop {
   // sent to the provided channel.
   template <typename T>
   Fetcher<T> MakeFetcher(const std::string_view channel_name) {
-    const Channel *channel = configuration::GetChannel(
-        configuration_, channel_name, T::GetFullyQualifiedName(), name());
+    const Channel *channel =
+        configuration::GetChannel(configuration_, channel_name,
+                                  T::GetFullyQualifiedName(), name(), node());
     CHECK(channel != nullptr)
         << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
         << T::GetFullyQualifiedName() << "\" } not found in config.";
@@ -335,8 +336,9 @@ class EventLoop {
   // the provided channel.
   template <typename T>
   Sender<T> MakeSender(const std::string_view channel_name) {
-    const Channel *channel = configuration::GetChannel(
-        configuration_, channel_name, T::GetFullyQualifiedName(), name());
+    const Channel *channel =
+        configuration::GetChannel(configuration_, channel_name,
+                                  T::GetFullyQualifiedName(), name(), node());
     CHECK(channel != nullptr)
         << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
         << T::GetFullyQualifiedName() << "\" } not found in config.";

@@ -36,6 +36,7 @@ table Channel {
 table Map {
   // Channel to match with.  If the name in here matches, the name is replaced
   // with the name in rename.
+  // Node specific matches are also supported.
   match:Channel;
   // The channel to merge in.
   rename:Channel;

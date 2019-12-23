@@ -355,7 +355,19 @@ void EventLoop::MaybeScheduleTimingReports() {
     // Make a raw sender for the report.
     const Channel *channel = configuration::GetChannel(
         configuration(), "/aos", timing::Report::GetFullyQualifiedName(),
-        name());
+        name(), node());
+
+    // Since we are using a RawSender, validity isn't checked.  So check it
+    // ourselves.
+    if (node() != nullptr) {
+      if (!configuration::ChannelIsSendableOnNode(channel, node())) {
+        LOG(FATAL) << "Channel { \"name\": \"/aos"
+                   << channel->name()->string_view() << "\", \"type\": \""
+                   << channel->type()->string_view()
+                   << "\" } is not able to be sent on this node.  Check your "
+                      "configuration.";
+      }
+    }
     CHECK(channel != nullptr) << ": Channel { \"name\": \"/aos\", \"type\": \""
                               << timing::Report::GetFullyQualifiedName()
                               << "\" } not found in config.";
