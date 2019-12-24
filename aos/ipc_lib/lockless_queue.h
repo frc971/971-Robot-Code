@@ -83,7 +83,7 @@ struct LocklessQueueConfiguration {
   // Size in bytes of the data stored in each Message.
   size_t message_data_size;
 
-  size_t message_size() const { return message_data_size + sizeof(Message); }
+  size_t message_size() const;
 
   size_t num_messages() const { return num_senders + queue_size; }
 };

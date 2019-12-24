@@ -239,6 +239,12 @@ int rt_tgsigqueueinfo(pid_t tgid, pid_t tid, int sig, siginfo_t *si) {
 
 }  // namespace
 
+size_t LocklessQueueConfiguration::message_size() const {
+  // Round up the message size so following data is aligned appropriately.
+  return LocklessQueueMemory::AlignmentRoundUp(message_data_size) +
+         sizeof(Message);
+}
+
 size_t LocklessQueueMemorySize(LocklessQueueConfiguration config) {
   // Round up the message size so following data is aligned appropriately.
   config.message_data_size =
@@ -278,8 +284,7 @@ LocklessQueueMemory *InitializeLocklessQueueMemory(
     memory->config.num_watchers = config.num_watchers;
     memory->config.num_senders = config.num_senders;
     memory->config.queue_size = config.queue_size;
-    memory->config.message_data_size =
-        LocklessQueueMemory::AlignmentRoundUp(config.message_data_size);
+    memory->config.message_data_size = config.message_data_size;
 
     const size_t num_messages = memory->num_messages();
     // There need to be at most MaxMessages() messages allocated.
