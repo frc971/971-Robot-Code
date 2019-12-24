@@ -231,3 +231,9 @@ flatbuffer_cc_library(
         "--cpp-ptr-type flatbuffers::unique_ptr",
     ],
 )
+
+py_library(
+    name = "flatpy",
+    srcs = glob(["python/flatbuffers/*.py"]),
+    imports = ["python/"],
+)

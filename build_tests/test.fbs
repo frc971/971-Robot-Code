@@ -1,0 +1,12 @@
+namespace aos.examples;
+
+table Foo {
+  value:int;
+}
+
+table Bar {
+  value:int;
+}
+
+root_type Foo;
+root_type Bar;

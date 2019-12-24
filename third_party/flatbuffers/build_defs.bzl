@@ -243,3 +243,52 @@ def flatbuffer_cc_library(
         visibility = srcs_filegroup_visibility if srcs_filegroup_visibility != None else visibility,
         compatible_with = compatible_with,
     )
+
+def flatbuffer_python_library(
+        name,
+        srcs,
+        namespace,
+        tables,
+        compatible_with = None,
+        includes = [],
+        include_paths = DEFAULT_INCLUDE_PATHS,
+        flatc_args = DEFAULT_FLATC_ARGS,
+        visibility = None,
+        srcs_filegroup_visibility = None):
+    """Generates a py_library rule for a given flatbuffer definition.
+
+    Args:
+      name: Name of the generated py_library rule.
+      srcs: Source .fbs file(s).
+      namespace: Namespace of the specified flatbuffer schema. Until
+        we make the rules sophisticated enough to figure out what
+        python files will be generated from a given schema, the user
+        has to manually specify this.
+      tables: List of table names--currently, we don't do anything to
+        automatically figure out how to handle the fact that a separate
+        python file will be generated for every table definition, and that
+        we can't know what files will be output until after the file has
+        been parsed. As such, we just force the user to manually specify
+        things.
+    """
+    python_files = ["%s/%s.py" % (namespace.replace('.', '/'), table) for table in tables]
+
+    srcs_lib = "%s_srcs" % (name)
+    flatbuffer_library_public(
+        name = srcs_lib,
+        srcs = srcs,
+        outs = python_files,
+        language_flag = "--python",
+        includes = includes,
+        include_paths = include_paths,
+        flatc_args = flatc_args,
+        compatible_with = compatible_with,
+    )
+    native.py_library(
+        name = name,
+        srcs = python_files,
+        visibility = visibility,
+        compatible_with = compatible_with,
+        imports = ["."],
+        deps = ["@com_github_google_flatbuffers//:flatpy"],
+    )
