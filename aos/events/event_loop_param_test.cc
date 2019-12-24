@@ -1145,5 +1145,100 @@ TEST_P(AbstractEventLoopTest, RawBasic) {
   EXPECT_TRUE(happened);
 }
 
+// Tests that not setting up nodes results in no node.
+TEST_P(AbstractEventLoopTest, NoNode) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+
+  EXPECT_EQ(loop1->node(), nullptr);
+  EXPECT_EQ(loop2->node(), nullptr);
+}
+
+// Tests that setting up nodes results in node being set.
+TEST_P(AbstractEventLoopTest, Node) {
+  EnableNodes("me");
+
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+
+  EXPECT_NE(loop1->node(), nullptr);
+  EXPECT_NE(loop2->node(), nullptr);
+}
+
+// Tests that watchers work with a node setup.
+TEST_P(AbstractEventLoopTest, NodeWatcher) {
+  EnableNodes("me");
+
+  auto loop1 = Make();
+  auto loop2 = Make();
+  loop1->MakeWatcher("/test", [](const TestMessage &) {});
+  loop2->MakeRawWatcher(configuration()->channels()->Get(1),
+                        [](const Context &, const void *) {});
+}
+
+// Tests that fetcher work with a node setup.
+TEST_P(AbstractEventLoopTest, NodeFetcher) {
+  EnableNodes("me");
+  auto loop1 = Make();
+
+  auto fetcher = loop1->MakeFetcher<TestMessage>("/test");
+  auto raw_fetcher = loop1->MakeRawFetcher(configuration()->channels()->Get(1));
+}
+
+// Tests that sender work with a node setup.
+TEST_P(AbstractEventLoopTest, NodeSender) {
+  EnableNodes("me");
+  auto loop1 = Make();
+
+  aos::Sender<TestMessage> sender = loop1->MakeSender<TestMessage>("/test");
+}
+
+// Tests that watchers fail when created on the wrong node.
+TEST_P(AbstractEventLoopDeathTest, NodeWatcher) {
+  EnableNodes("them");
+
+  auto loop1 = Make();
+  auto loop2 = Make();
+  EXPECT_DEATH({ loop1->MakeWatcher("/test", [](const TestMessage &) {}); },
+               "node");
+  EXPECT_DEATH(
+      {
+        loop2->MakeRawWatcher(configuration()->channels()->Get(1),
+                              [](const Context &, const void *) {});
+      },
+      "node");
+}
+
+// Tests that fetchers fail when created on the wrong node.
+TEST_P(AbstractEventLoopDeathTest, NodeFetcher) {
+  EnableNodes("them");
+  auto loop1 = Make();
+
+  EXPECT_DEATH({ auto fetcher = loop1->MakeFetcher<TestMessage>("/test"); },
+               "node");
+  EXPECT_DEATH(
+      {
+        auto raw_fetcher =
+            loop1->MakeRawFetcher(configuration()->channels()->Get(1));
+      },
+      "node");
+}
+
+// Tests that senders fail when created on the wrong node.
+TEST_P(AbstractEventLoopDeathTest, NodeSender) {
+  EnableNodes("them");
+  auto loop1 = Make();
+
+  EXPECT_DEATH(
+      {
+        aos::Sender<TestMessage> sender =
+            loop1->MakeSender<TestMessage>("/test");
+      },
+      "node");
+
+  // Note: Creating raw senders is always supported.  Right now, this lets us
+  // use them to create message_gateway.
+}
+
 }  // namespace testing
 }  // namespace aos

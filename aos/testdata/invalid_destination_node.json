@@ -1,0 +1,23 @@
+{
+  "channels": [
+    {
+      "name": "/foo",
+      "type": ".aos.bar",
+      "source_node": "roborio",
+      "destination_nodes": [
+        "dest",
+        "trojan_horse"
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "roborio",
+      "hostname": "roboRIO-971.local"
+    },
+    {
+      "name": "dest",
+      "hostname": "dest-971.local"
+    }
+  ]
+}

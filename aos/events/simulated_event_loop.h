@@ -52,6 +52,8 @@ class SimulatedEventLoopFactory {
   // This configuration must remain in scope for the lifetime of the factory and
   // all sub-objects.
   SimulatedEventLoopFactory(const Configuration *configuration);
+  SimulatedEventLoopFactory(const Configuration *configuration,
+                            std::string_view node_name);
   ~SimulatedEventLoopFactory();
 
   ::std::unique_ptr<EventLoop> MakeEventLoop(std::string_view name);
@@ -68,6 +70,10 @@ class SimulatedEventLoopFactory {
   // Sets the simulated send delay for the factory.
   void set_send_delay(std::chrono::nanoseconds send_delay);
 
+  // Returns the node that this factory is running as, or nullptr if this is a
+  // single node setup.
+  const Node *node() const { return node_; }
+
   monotonic_clock::time_point monotonic_now() const {
     return scheduler_.monotonic_now();
   }
@@ -76,7 +82,7 @@ class SimulatedEventLoopFactory {
   }
 
  private:
-  const Configuration *configuration_;
+  const Configuration *const configuration_;
   EventScheduler scheduler_;
   // Map from name, type to queue.
   absl::btree_map<SimpleChannel, std::unique_ptr<SimulatedChannel>> channels_;
@@ -85,6 +91,8 @@ class SimulatedEventLoopFactory {
       raw_event_loops_;
 
   std::chrono::nanoseconds send_delay_ = std::chrono::microseconds(50);
+
+  const Node *const node_;
 
   pid_t tid_ = 0;
 };

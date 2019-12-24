@@ -67,7 +67,7 @@ double drivetrain_velocity_translate(double in) {
 
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
-  SensorReader(::aos::EventLoop *event_loop)
+  SensorReader(::aos::ShmEventLoop *event_loop)
       : ::frc971::wpilib::SensorReader(event_loop),
         accessories_position_sender_(
             event_loop->MakeSender<::aos::control_loops::Position>(
@@ -110,7 +110,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
 class SolenoidWriter {
  public:
-  SolenoidWriter(::aos::EventLoop *event_loop,
+  SolenoidWriter(::aos::ShmEventLoop *event_loop,
                  const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
       : event_loop_(event_loop),
         pcm_(pcm),
@@ -124,7 +124,7 @@ class SolenoidWriter {
                     "/accessories")),
         pneumatics_to_log_sender_(
             event_loop->MakeSender<::frc971::wpilib::PneumaticsToLog>("/aos")) {
-    event_loop_->set_name("Solenoids");
+    event_loop->set_name("Solenoids");
     event_loop_->SetRuntimeRealtimePriority(27);
 
     event_loop_->AddPhasedLoop([this](int iterations) { Loop(iterations); },

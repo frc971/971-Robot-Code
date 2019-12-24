@@ -318,6 +318,16 @@ class EventLoop {
         << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
         << T::GetFullyQualifiedName() << "\" } not found in config.";
 
+    if (node() != nullptr) {
+      if (!configuration::ChannelIsReadableOnNode(channel, node())) {
+        LOG(FATAL)
+            << "Channel { \"name\": \"" << channel_name << "\", \"type\": \""
+            << T::GetFullyQualifiedName()
+            << "\" } is not able to be fetched on this node.  Check your "
+               "configuration.";
+      }
+    }
+
     return Fetcher<T>(MakeRawFetcher(channel));
   }
 
@@ -330,6 +340,15 @@ class EventLoop {
     CHECK(channel != nullptr)
         << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
         << T::GetFullyQualifiedName() << "\" } not found in config.";
+
+    if (node() != nullptr) {
+      if (!configuration::ChannelIsSendableOnNode(channel, node())) {
+        LOG(FATAL) << "Channel { \"name\": \"" << channel_name
+                   << "\", \"type\": \"" << T::GetFullyQualifiedName()
+                   << "\" } is not able to be sent on this node.  Check your "
+                      "configuration.";
+      }
+    }
 
     return Sender<T>(MakeRawSender(channel));
   }
@@ -348,10 +367,12 @@ class EventLoop {
   // Use this to run code once the thread goes into "real-time-mode",
   virtual void OnRun(::std::function<void()> on_run) = 0;
 
-  // Sets the name of the event loop.  This is the application name.
-  virtual void set_name(const std::string_view name) = 0;
-  // Gets the name of the event loop.
+  // Gets the name of the event loop.  This is the application name.
   virtual const std::string_view name() const = 0;
+
+  // Returns the node that this event loop is running on.  Returns nullptr if we
+  // are running in single-node mode.
+  virtual const Node *node() const = 0;
 
   // Creates a timer that executes callback when the timer expires
   // Returns a TimerHandle for configuration of the timer
@@ -365,7 +386,7 @@ class EventLoop {
       const monotonic_clock::duration interval,
       const monotonic_clock::duration offset = ::std::chrono::seconds(0)) = 0;
 
-  // TODO(austin): OnExit
+  // TODO(austin): OnExit for cleanup.
 
   // Threadsafe.
   bool is_running() const { return is_running_.load(); }
@@ -375,17 +396,23 @@ class EventLoop {
   virtual void SetRuntimeRealtimePriority(int priority) = 0;
   virtual int priority() const = 0;
 
-  // Fetches new messages from the provided channel (path, type).  Note: this
-  // channel must be a member of the exact configuration object this was built
-  // with.
+  // Fetches new messages from the provided channel (path, type).
+  //
+  // Note: this channel must be a member of the exact configuration object this
+  // was built with.
   virtual std::unique_ptr<RawFetcher> MakeRawFetcher(
       const Channel *channel) = 0;
 
-  // Will watch channel (name, type) for new messages
+  // Watches channel (name, type) for new messages.
   virtual void MakeRawWatcher(
       const Channel *channel,
       std::function<void(const Context &context, const void *message)>
           watcher) = 0;
+
+  // Creates a raw sender for the provided channel.  This is used for reflection
+  // based sending.
+  // Note: this ignores any node constraints.  Ignore at your own peril.
+  virtual std::unique_ptr<RawSender> MakeRawSender(const Channel *channel) = 0;
 
   // Returns the context for the current callback.
   const Context &context() const { return context_; }
@@ -393,13 +420,13 @@ class EventLoop {
   // Returns the configuration that this event loop was built with.
   const Configuration *configuration() const { return configuration_; }
 
-  // Will send new messages from channel (path, type).
-  virtual std::unique_ptr<RawSender> MakeRawSender(const Channel *channel) = 0;
-
   // Prevents the event loop from sending a timing report.
   void SkipTimingReport() { skip_timing_report_ = true; }
 
  protected:
+  // Sets the name of the event loop.  This is the application name.
+  virtual void set_name(const std::string_view name) = 0;
+
   void set_is_running(bool value) { is_running_.store(value); }
 
   // Validates that channel exists inside configuration_ and finds its index.

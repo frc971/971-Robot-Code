@@ -1,0 +1,15 @@
+{
+  "channels": [
+    {
+      "name": "/foo",
+      "type": ".aos.bar",
+      "source_node": "whome?"
+    }
+  ],
+  "nodes": [
+    {
+      "name": "roborio",
+      "hostname": "roboRIO-971.local"
+    }
+  ]
+}

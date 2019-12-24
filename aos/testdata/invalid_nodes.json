@@ -1,0 +1,15 @@
+{
+  "channels": [
+    {
+      "name": "/foo",
+      "type": ".aos.bar",
+      "max_size": 5
+    }
+  ],
+  "nodes": [
+    {
+      "name": "roborio",
+      "hostname": "roboRIO-971.local"
+    }
+  ]
+}

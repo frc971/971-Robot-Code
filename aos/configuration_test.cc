@@ -35,6 +35,19 @@ TEST_F(ConfigurationTest, ConfigMerge) {
       FlatbufferToJson(config, true));
 }
 
+// Tests that we can read and merge a multinode configuration.
+TEST_F(ConfigurationTest, ConfigMergeMultinode) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig("aos/testdata/config1_multinode.json");
+  LOG(INFO) << "Read: " << FlatbufferToJson(config, true);
+
+  EXPECT_EQ(
+      std::string(absl::StripSuffix(
+          util::ReadFileToStringOrDie("aos/testdata/expected_multinode.json"),
+          "\n")),
+      FlatbufferToJson(config, true));
+}
+
 // Tests that we sort the entries in a config so we can look entries up.
 TEST_F(ConfigurationTest, UnsortedConfig) {
   FlatbufferDetachedBuffer<Configuration> config =
@@ -87,6 +100,116 @@ TEST_F(ConfigurationTest, GetChannel) {
   EXPECT_EQ(FlatbufferToJson(GetChannel(config, "/foo", ".aos.bar", "app3")),
             kExpectedLocation);
 }
+
+// Tests that we reject a configuration which has a nodes list, but has channels
+// withoout source_node filled out.
+TEST_F(ConfigurationDeathTest, InvalidSourceNode) {
+  EXPECT_DEATH(
+      {
+        FlatbufferDetachedBuffer<Configuration> config =
+            ReadConfig("aos/testdata/invalid_nodes.json");
+      },
+      "source_node");
+
+  EXPECT_DEATH(
+      {
+        FlatbufferDetachedBuffer<Configuration> config =
+            ReadConfig("aos/testdata/invalid_source_node.json");
+      },
+      "source_node");
+
+  EXPECT_DEATH(
+      {
+        FlatbufferDetachedBuffer<Configuration> config =
+            ReadConfig("aos/testdata/invalid_destination_node.json");
+      },
+      "destination_nodes");
+
+  EXPECT_DEATH(
+      {
+        FlatbufferDetachedBuffer<Configuration> config =
+            ReadConfig("aos/testdata/self_forward.json");
+      },
+      "forwarding data to itself");
+}
+
+// Tests that our node writeable helpers work as intended.
+TEST_F(ConfigurationTest, ChannelIsSendableOnNode) {
+  FlatbufferDetachedBuffer<Channel> good_channel(JsonToFlatbuffer(
+R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "foo"
+})channel",
+      Channel::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Channel> bad_channel(JsonToFlatbuffer(
+R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "bar"
+})channel",
+      Channel::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Node> node(JsonToFlatbuffer(
+R"node({
+  "name": "foo"
+})node",
+      Node::MiniReflectTypeTable()));
+
+  EXPECT_TRUE(
+      ChannelIsSendableOnNode(&good_channel.message(), &node.message()));
+  EXPECT_FALSE(
+      ChannelIsSendableOnNode(&bad_channel.message(), &node.message()));
+}
+
+// Tests that our node readable and writeable helpers work as intended.
+TEST_F(ConfigurationTest, ChannelIsReadableOnNode) {
+  FlatbufferDetachedBuffer<Channel> good_channel(JsonToFlatbuffer(
+R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "bar",
+  "destination_nodes": [
+    "baz",
+    "foo",
+  ]
+})channel",
+      Channel::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Channel> bad_channel1(JsonToFlatbuffer(
+R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "bar"
+})channel",
+      Channel::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Channel> bad_channel2(JsonToFlatbuffer(
+R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "bar",
+  "destination_nodes": [
+    "baz"
+  ]
+})channel",
+      Channel::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Node> node(JsonToFlatbuffer(
+R"node({
+  "name": "foo"
+})node",
+      Node::MiniReflectTypeTable()));
+
+  EXPECT_TRUE(
+      ChannelIsReadableOnNode(&good_channel.message(), &node.message()));
+  EXPECT_FALSE(
+      ChannelIsReadableOnNode(&bad_channel1.message(), &node.message()));
+  EXPECT_FALSE(
+      ChannelIsReadableOnNode(&bad_channel2.message(), &node.message()));
+}
+
 
 }  // namespace testing
 }  // namespace configuration

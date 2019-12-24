@@ -304,11 +304,12 @@ class SimulatedEventLoop : public EventLoop {
       const Configuration *configuration,
       std::vector<std::pair<EventLoop *, std::function<void(bool)>>>
           *raw_event_loops,
-      pid_t tid)
+      const Node *node, pid_t tid)
       : EventLoop(CHECK_NOTNULL(configuration)),
         scheduler_(scheduler),
         channels_(channels),
         raw_event_loops_(raw_event_loops),
+        node_(node),
         tid_(tid) {
     raw_event_loops_->push_back(std::make_pair(this, [this](bool value) {
       if (!has_setup_) {
@@ -378,6 +379,8 @@ class SimulatedEventLoop : public EventLoop {
     scheduler_->ScheduleOnRun(on_run);
   }
 
+  const Node *node() const override { return node_; }
+
   void set_name(const std::string_view name) override {
     name_ = std::string(name);
   }
@@ -428,6 +431,7 @@ class SimulatedEventLoop : public EventLoop {
 
   std::chrono::nanoseconds send_delay_;
 
+  const Node *const node_;
   const pid_t tid_;
 };
 
@@ -446,6 +450,16 @@ void SimulatedEventLoop::MakeRawWatcher(
     std::function<void(const Context &channel, const void *message)> watcher) {
   ChannelIndex(channel);
   Take(channel);
+
+  if (node() != nullptr) {
+    if (!configuration::ChannelIsReadableOnNode(channel, node())) {
+      LOG(FATAL) << "Channel { \"name\": \"" << channel->name()->string_view()
+                 << "\", \"type\": \"" << channel->type()->string_view()
+                 << "\" } is not able to be watched on this node.  Check your "
+                    "configuration.";
+    }
+  }
+
   std::unique_ptr<SimulatedWatcher> shm_watcher(
       new SimulatedWatcher(this, scheduler_, channel, std::move(watcher)));
 
@@ -463,6 +477,16 @@ std::unique_ptr<RawSender> SimulatedEventLoop::MakeRawSender(
 std::unique_ptr<RawFetcher> SimulatedEventLoop::MakeRawFetcher(
     const Channel *channel) {
   ChannelIndex(channel);
+
+  if (node() != nullptr) {
+    if (!configuration::ChannelIsReadableOnNode(channel, node())) {
+      LOG(FATAL) << "Channel { \"name\": \"" << channel->name()->string_view()
+                 << "\", \"type\": \"" << channel->type()->string_view()
+                 << "\" } is not able to be fetched on this node.  Check your "
+                    "configuration.";
+    }
+  }
+
   return GetSimulatedChannel(channel)->MakeRawFetcher(this);
 }
 
@@ -676,7 +700,22 @@ void SimulatedEventLoop::Take(const Channel *channel) {
 
 SimulatedEventLoopFactory::SimulatedEventLoopFactory(
     const Configuration *configuration)
-    : configuration_(CHECK_NOTNULL(configuration)) {}
+    : configuration_(CHECK_NOTNULL(configuration)), node_(nullptr) {
+  CHECK(!configuration_->has_nodes())
+      << ": Got a configuration with multiple nodes and no node was selected.";
+}
+
+SimulatedEventLoopFactory::SimulatedEventLoopFactory(
+    const Configuration *configuration, std::string_view node_name)
+    : configuration_(CHECK_NOTNULL(configuration)),
+      node_(configuration::GetNode(configuration, node_name)) {
+  CHECK(configuration_->has_nodes())
+      << ": Got a configuration with no nodes and node \"" << node_name
+      << "\" was selected.";
+  CHECK(node_ != nullptr) << ": Can't find node \"" << node_name
+                          << "\" in the configuration.";
+}
+
 SimulatedEventLoopFactory::~SimulatedEventLoopFactory() {}
 
 ::std::unique_ptr<EventLoop> SimulatedEventLoopFactory::MakeEventLoop(
@@ -684,7 +723,7 @@ SimulatedEventLoopFactory::~SimulatedEventLoopFactory() {}
   pid_t tid = tid_;
   ++tid_;
   ::std::unique_ptr<SimulatedEventLoop> result(new SimulatedEventLoop(
-      &scheduler_, &channels_, configuration_, &raw_event_loops_, tid));
+      &scheduler_, &channels_, configuration_, &raw_event_loops_, node_, tid));
   result->set_name(name);
   result->set_send_delay(send_delay_);
   return std::move(result);

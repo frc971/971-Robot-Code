@@ -1,0 +1,42 @@
+{
+  "channels": [
+    {
+      "name": "/foo",
+      "type": ".aos.bar",
+      "max_size": 5,
+      "source_node": "pi2"
+    },
+    {
+      "name": "/foo2",
+      "type": ".aos.bar",
+      "source_node": "pi1"
+    }
+  ],
+  "applications": [
+    {
+      "name": "app1"
+    },
+    {
+      "name": "app2"
+    }
+  ],
+  "maps": [
+    {
+      "match": {
+        "name": "/batman"
+      },
+      "rename": {
+        "name": "/foo"
+      }
+    }
+  ],
+  "nodes": [
+   {
+     "name": "pi2",
+     "hostname": "raspberrypi2"
+   }
+  ],
+  "imports": [
+    "config2_multinode.json"
+  ]
+}

@@ -7,7 +7,7 @@
 
 #include <chrono>
 
-#include "aos/events/event_loop.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/robot_state/robot_state_generated.h"
@@ -22,7 +22,7 @@ namespace wpilib {
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
 
-GyroSender::GyroSender(::aos::EventLoop *event_loop)
+GyroSender::GyroSender(::aos::ShmEventLoop *event_loop)
     : event_loop_(event_loop),
       joystick_state_fetcher_(
           event_loop_->MakeFetcher<aos::RobotState>("/aos")),
@@ -33,7 +33,7 @@ GyroSender::GyroSender(::aos::EventLoop *event_loop)
   AOS_PCHECK(
       system("ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
              "33") == 0);
-  event_loop_->set_name("Gyro");
+  event_loop->set_name("Gyro");
   event_loop_->SetRuntimeRealtimePriority(33);
 
   // TODO(austin): This should be synchronized with SensorReader...  Pull out

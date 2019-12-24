@@ -13,28 +13,40 @@ namespace chrono = ::std::chrono;
 
 class SimulatedEventLoopTestFactory : public EventLoopTestFactory {
  public:
-  SimulatedEventLoopTestFactory() : event_loop_factory_(configuration()) {}
-
   ::std::unique_ptr<EventLoop> Make(std::string_view name) override {
-    return event_loop_factory_.MakeEventLoop(name);
+    MaybeMake();
+    return event_loop_factory_->MakeEventLoop(name);
   }
   ::std::unique_ptr<EventLoop> MakePrimary(std::string_view name) override {
-    return event_loop_factory_.MakeEventLoop(name);
+    MaybeMake();
+    return event_loop_factory_->MakeEventLoop(name);
   }
 
-  void Run() override { event_loop_factory_.Run(); }
-  void Exit() override { event_loop_factory_.Exit(); }
+  void Run() override { event_loop_factory_->Run(); }
+  void Exit() override { event_loop_factory_->Exit(); }
 
   // TODO(austin): Implement this.  It's used currently for a phased loop test.
   // I'm not sure how much that matters.
   void SleepFor(::std::chrono::nanoseconds /*duration*/) override {}
 
   void set_send_delay(std::chrono::nanoseconds send_delay) {
-    event_loop_factory_.set_send_delay(send_delay);
+    MaybeMake();
+    event_loop_factory_->set_send_delay(send_delay);
   }
 
  private:
-   SimulatedEventLoopFactory event_loop_factory_;
+  void MaybeMake() {
+    if (!event_loop_factory_) {
+      if (configuration()->has_nodes()) {
+        event_loop_factory_ = std::make_unique<SimulatedEventLoopFactory>(
+            configuration(), my_node());
+      } else {
+        event_loop_factory_ =
+            std::make_unique<SimulatedEventLoopFactory>(configuration());
+      }
+    }
+  }
+  std::unique_ptr<SimulatedEventLoopFactory> event_loop_factory_;
 };
 
 INSTANTIATE_TEST_CASE_P(SimulatedEventLoopDeathTest, AbstractEventLoopDeathTest,

@@ -7,10 +7,9 @@
 
 #include <string>
 
+#include "absl/base/call_once.h"
 #include "aos/logging/logging.h"
 #include "aos/util/string_to_num.h"
-#include "aos/configuration.h"
-#include "absl/base/call_once.h"
 
 namespace aos {
 namespace network {

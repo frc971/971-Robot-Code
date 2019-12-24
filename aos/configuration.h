@@ -49,10 +49,22 @@ inline const Channel *GetChannel(
   return GetChannel(&config.message(), name, type, application_name);
 }
 
-// TODO(austin): GetSchema<T>(const Flatbuffer<Configuration> &config);
+// Returns the Node out of the config with the matching name, or nullptr if it
+// can't be found.
+const Node *GetNode(const Configuration *config, std::string_view name);
+// Returns the Node out of the configuration which matches our hostname.
+// CHECKs if it can't be found.
+const Node *GetMyNode(const Configuration *config);
+const Node *GetNodeFromHostname(const Configuration *config,
+                                std::string_view name);
 
-// Returns "our" IP address.
-const in_addr &GetOwnIPAddress();
+// Returns true if the provided channel is sendable on the provided node.
+bool ChannelIsSendableOnNode(const Channel *channel, const Node *node);
+// Returns true if the provided channel is able to be watched or fetched on the
+// provided node.
+bool ChannelIsReadableOnNode(const Channel *channel, const Node *node);
+
+// TODO(austin): GetSchema<T>(const Flatbuffer<Configuration> &config);
 
 // Returns the "root directory" for this run. Under linux, this is the
 // directory where the executable is located (from /proc/self/exe)

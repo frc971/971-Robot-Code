@@ -9,6 +9,7 @@
 #include "aos/events/test_message_generated.h"
 
 DECLARE_string(shm_base);
+DECLARE_string(override_hostname);
 
 namespace aos {
 namespace testing {
@@ -33,13 +34,21 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
     unlink((FLAGS_shm_base + "/aos/aos.timing.Report.v0").c_str());
   }
 
+  ~ShmEventLoopTestFactory() { FLAGS_override_hostname = ""; }
+
   ::std::unique_ptr<EventLoop> Make(std::string_view name) override {
-    ::std::unique_ptr<EventLoop> loop(new ShmEventLoop(configuration()));
+    if (configuration()->has_nodes()) {
+      FLAGS_override_hostname = "myhostname";
+    }
+    ::std::unique_ptr<ShmEventLoop> loop(new ShmEventLoop(configuration()));
     loop->set_name(name);
-    return loop;
+    return std::move(loop);
   }
 
   ::std::unique_ptr<EventLoop> MakePrimary(std::string_view name) override {
+    if (configuration()->has_nodes()) {
+      FLAGS_override_hostname = "myhostname";
+    }
     ::std::unique_ptr<ShmEventLoop> loop =
         ::std::unique_ptr<ShmEventLoop>(new ShmEventLoop(configuration()));
     primary_event_loop_ = loop.get();

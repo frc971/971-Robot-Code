@@ -1,0 +1,67 @@
+{
+ "channels": [
+  {
+   "name": "/foo",
+   "type": ".aos.bar",
+   "max_size": 5,
+   "source_node": "pi2"
+  },
+  {
+   "name": "/foo2",
+   "type": ".aos.bar",
+   "source_node": "pi1"
+  },
+  {
+   "name": "/foo3",
+   "type": ".aos.bar",
+   "max_size": 9,
+   "source_node": "pi1"
+  }
+ ],
+ "maps": [
+  {
+   "match": {
+    "name": "/batman"
+   },
+   "rename": {
+    "name": "/bar"
+   }
+  },
+  {
+   "match": {
+    "name": "/batman"
+   },
+   "rename": {
+    "name": "/foo"
+   }
+  }
+ ],
+ "applications": [
+  {
+   "name": "app1",
+   "maps": [
+    {
+     "match": {
+      "name": "/bar"
+     },
+     "rename": {
+      "name": "/foo"
+     }
+    }
+   ]
+  },
+  {
+   "name": "app2"
+  }
+ ],
+ "nodes": [
+  {
+   "name": "pi1",
+   "hostname": "raspberrypi1"
+  },
+  {
+   "name": "pi2",
+   "hostname": "raspberrypi2"
+  }
+ ]
+}
