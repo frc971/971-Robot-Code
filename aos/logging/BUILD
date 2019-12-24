@@ -143,10 +143,10 @@ cc_library(
         ":sizes",
         "//aos:die",
         "//aos:macros",
-        "@com_google_absl//absl/base",
         "//aos/ipc_lib:queue",
         "//aos/mutex",
         "//aos/time",
         "//aos/type_traits",
+        "@com_google_absl//absl/base",
     ],
 )

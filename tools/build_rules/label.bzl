@@ -2,4 +2,4 @@
 # Starlark provides them itself
 
 def expand_label(label):
-  return '%s' % label if ':' in label else '%s:%s' % (label, label.split('/')[-1])
+    return "%s" % label if ":" in label else "%s:%s" % (label, label.split("/")[-1])

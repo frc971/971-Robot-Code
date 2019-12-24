@@ -9,43 +9,42 @@ def _emcc_expand_files_impl(ctx):
     ]
     if html_shell:
         ctx.actions.expand_template(
-            output=html_out,
-            template=html_shell,
-            substitutions={
-                "{{{ SCRIPT }}}":
-                "<script async type=\"text/javascript\" src=\"" + basename +
-                ".js\"></script>",
-            })
+            output = html_out,
+            template = html_shell,
+            substitutions = {
+                "{{{ SCRIPT }}}": "<script async type=\"text/javascript\" src=\"" + basename +
+                                  ".js\"></script>",
+            },
+        )
     else:
         tar_outs.append(html_out)
 
     ctx.actions.run_shell(
-        outputs=tar_outs,
-        inputs=[tarfile],
-        command="tar xf " + tarfile.path + " -C \"" + html_out.dirname + "\"")
+        outputs = tar_outs,
+        inputs = [tarfile],
+        command = "tar xf " + tarfile.path + " -C \"" + html_out.dirname + "\"",
+    )
 
-    return [DefaultInfo(files=depset(tar_outs + [html_out]))]
-
+    return [DefaultInfo(files = depset(tar_outs + [html_out]))]
 
 emcc_expand_files = rule(
-    attrs={
+    attrs = {
         "html_shell": attr.label(
-            mandatory=False,
-            allow_single_file=True,
+            mandatory = False,
+            allow_single_file = True,
         ),
         "tarfile": attr.label(
-            mandatory=True,
-            allow_single_file=True,
+            mandatory = True,
+            allow_single_file = True,
         ),
     },
-    doc="""
+    doc = """
     Handles the intermediate processing to extra files from a tarball
     for emcc_binary. See emcc_binary for more detail.""",
-    implementation=_emcc_expand_files_impl,
+    implementation = _emcc_expand_files_impl,
 )
 
-
-def emcc_binary(name, srcs=[], linkopts=[], html_shell=None, **kwargs):
+def emcc_binary(name, srcs = [], linkopts = [], html_shell = None, **kwargs):
     """Produces a deployable set of WebAssembly files.
 
     Depending on the settings, the exact format of the output varies.
@@ -92,14 +91,15 @@ def emcc_binary(name, srcs=[], linkopts=[], html_shell=None, **kwargs):
     if html_shell:
         tarfile = basename + ".js.tar"
     native.cc_binary(
-        name=tarfile,
-        srcs=srcs,
-        linkopts=linkopts,
-        restricted_to=["//tools:web"],
-        **kwargs)
+        name = tarfile,
+        srcs = srcs,
+        linkopts = linkopts,
+        restricted_to = ["//tools:web"],
+        **kwargs
+    )
     emcc_expand_files(
-        name=basename,
-        html_shell=html_shell,
-        tarfile=tarfile,
-        restricted_to=["//tools:web"],
+        name = basename,
+        html_shell = html_shell,
+        tarfile = tarfile,
+        restricted_to = ["//tools:web"],
     )
