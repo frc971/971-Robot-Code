@@ -7,6 +7,7 @@ flatbuffer_cc_library(
     includes = [
         "//aos:configuration_fbs_includes",
     ],
+    visibility = ["//visibility:public"],
 )
 
 cc_library(
