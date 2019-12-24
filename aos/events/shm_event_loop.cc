@@ -103,19 +103,20 @@ class MMapedQueue {
 
  private:
   void MkdirP(std::string_view path) {
-    struct stat st;
     auto last_slash_pos = path.find_last_of("/");
 
     std::string folder(last_slash_pos == std::string_view::npos
                            ? std::string_view("")
                            : path.substr(0, last_slash_pos));
-    if (stat(folder.c_str(), &st) == -1) {
-      PCHECK(errno == ENOENT);
-      CHECK_NE(folder, "") << ": Base path doesn't exist";
-      MkdirP(folder);
-      VLOG(1) << "Creating " << folder;
-      PCHECK(mkdir(folder.c_str(), FLAGS_permissions) == 0);
+    if (folder.empty()) return;
+    MkdirP(folder);
+    VLOG(1) << "Creating " << folder;
+    const int result = mkdir(folder.c_str(), FLAGS_permissions);
+    if (result == -1 && errno == EEXIST) {
+      VLOG(1) << "Already exists";
+      return;
     }
+    PCHECK(result == 0) << ": Error creating " << folder;
   }
 
   ipc_lib::LocklessQueueConfiguration config_;
