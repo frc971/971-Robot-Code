@@ -3,9 +3,9 @@
 #include <inttypes.h>
 #include <string.h>
 
-#include <atomic>
 #include <chrono>
 #include <ctime>
+#include <iomanip>
 
 #ifdef __linux__
 
@@ -57,14 +57,28 @@ namespace aos {
 
 std::ostream &operator<<(std::ostream &stream,
                          const aos::monotonic_clock::time_point &now) {
-  auto seconds =
-      std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch());
-  stream << seconds.count() << "."
-         << std::chrono::duration_cast<std::chrono::nanoseconds>(
-                now.time_since_epoch() - seconds)
-                .count()
-         << "sec";
-  return stream;
+      if (now < monotonic_clock::epoch()) {
+        std::chrono::seconds seconds =
+            std::chrono::duration_cast<std::chrono::seconds>(
+                now.time_since_epoch());
+
+        stream << "-" << -seconds.count() << "." << std::setfill('0')
+               << std::setw(9)
+               << std::chrono::duration_cast<std::chrono::nanoseconds>(
+                      seconds - now.time_since_epoch())
+                      .count()
+               << "sec";
+      } else {
+        std::chrono::seconds seconds =
+            std::chrono::duration_cast<std::chrono::seconds>(
+                now.time_since_epoch());
+        stream << seconds.count() << "." << std::setfill('0') << std::setw(9)
+               << std::chrono::duration_cast<std::chrono::nanoseconds>(
+                      now.time_since_epoch() - seconds)
+                      .count()
+               << "sec";
+      }
+      return stream;
 }
 
 namespace time {
