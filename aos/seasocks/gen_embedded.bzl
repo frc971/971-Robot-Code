@@ -1,16 +1,16 @@
 def _gen_embedded_impl(ctx):
-  ctx.action(
-    inputs = ctx.files.srcs,
-    outputs = [ ctx.outputs.source ],
-    executable = ctx.executable._gen_embedded,
-    arguments = [ ctx.outputs.source.path ] + [f.path for f in ctx.files.srcs],
-    progress_message = 'Generating %s' % ctx.outputs.source.short_path,
-    mnemonic = 'GenEmbedded',
-  )
+    ctx.action(
+        inputs = ctx.files.srcs,
+        outputs = [ctx.outputs.source],
+        executable = ctx.executable._gen_embedded,
+        arguments = [ctx.outputs.source.path] + [f.path for f in ctx.files.srcs],
+        progress_message = "Generating %s" % ctx.outputs.source.short_path,
+        mnemonic = "GenEmbedded",
+    )
 
-  return struct(
-    files = depset([ ctx.outputs.source ]),
-  )
+    return struct(
+        files = depset([ctx.outputs.source]),
+    )
 
 _do_gen_embedded = rule(
     attrs = {
@@ -42,19 +42,19 @@ Attrs:
 """
 
 def gen_embedded(name, srcs, visibility = None):
-  _do_gen_embedded(
-    name = name + '__do_gen',
-    visibility = ['//visibility:private'],
-    srcs = srcs,
-  )
-  native.cc_library(
-    name = name,
-    visibility = visibility,
-    linkstatic = True,
-    srcs = [
-      ':%s__do_gen' % name,
-    ],
-    deps = [
-      '@//third_party/seasocks',
-    ],
-  )
+    _do_gen_embedded(
+        name = name + "__do_gen",
+        visibility = ["//visibility:private"],
+        srcs = srcs,
+    )
+    native.cc_library(
+        name = name,
+        visibility = visibility,
+        linkstatic = True,
+        srcs = [
+            ":%s__do_gen" % name,
+        ],
+        deps = [
+            "@//third_party/seasocks",
+        ],
+    )

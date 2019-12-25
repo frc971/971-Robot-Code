@@ -3,10 +3,10 @@ package(default_visibility = ["//visibility:public"])
 py_binary(
     name = "plot_action",
     srcs = [
-        "plotter.py",
-        "plot_action.py",
-        "logreader.py",
         "logentry.py",
+        "logreader.py",
+        "plot_action.py",
+        "plotter.py",
     ],
     legacy_create_init = False,
     restricted_to = ["//tools:k8"],
