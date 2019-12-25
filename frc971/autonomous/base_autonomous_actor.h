@@ -85,7 +85,7 @@ class BaseAutonomousActor : public ::aos::common::actions::ActorBase<Goal> {
   void LineFollowAtVelocity(
       double velocity,
       y2019::control_loops::drivetrain::SelectionHint hint =
-          y2019::control_loops::drivetrain::SelectionHint_NONE);
+          y2019::control_loops::drivetrain::SelectionHint::NONE);
 
   // Waits until the robot is pitched up above the specified angle, or the move
   // finishes.  Returns true on success, and false if it cancels.

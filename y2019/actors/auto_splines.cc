@@ -33,7 +33,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HABToFarRocket(
     frc971::Constraint::Builder longitudinal_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     longitudinal_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_LONGITUDINAL_ACCELERATION);
+        frc971::ConstraintType::LONGITUDINAL_ACCELERATION);
     longitudinal_constraint_builder.add_value(2.0);
     longitudinal_constraint_offset = longitudinal_constraint_builder.Finish();
   }
@@ -42,7 +42,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HABToFarRocket(
     frc971::Constraint::Builder lateral_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     lateral_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_LATERAL_ACCELERATION);
+        frc971::ConstraintType::LATERAL_ACCELERATION);
     lateral_constraint_builder.add_value(2.0);
     lateral_constraint_offset = lateral_constraint_builder.Finish();
   }
@@ -51,7 +51,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HABToFarRocket(
     frc971::Constraint::Builder voltage_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     voltage_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VOLTAGE);
+        frc971::ConstraintType::VOLTAGE);
     voltage_constraint_builder.add_value(11.0);
     voltage_constraint_offset = voltage_constraint_builder.Finish();
   }
@@ -60,7 +60,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HABToFarRocket(
     frc971::Constraint::Builder velocity_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     velocity_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VELOCITY);
+        frc971::ConstraintType::VELOCITY);
     velocity_constraint_builder.add_value(4.0);
     velocity_constraint_builder.add_start_distance(0.0);
     velocity_constraint_builder.add_end_distance(10.0);
@@ -108,7 +108,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FarRocketToHP(
     frc971::Constraint::Builder longitudinal_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     longitudinal_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_LONGITUDINAL_ACCELERATION);
+        frc971::ConstraintType::LONGITUDINAL_ACCELERATION);
     longitudinal_constraint_builder.add_value(3.0);
     longitudinal_constraint_offset = longitudinal_constraint_builder.Finish();
   }
@@ -117,7 +117,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FarRocketToHP(
     frc971::Constraint::Builder lateral_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     lateral_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_LATERAL_ACCELERATION);
+        frc971::ConstraintType::LATERAL_ACCELERATION);
     lateral_constraint_builder.add_value(2.0);
     lateral_constraint_offset = lateral_constraint_builder.Finish();
   }
@@ -126,7 +126,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FarRocketToHP(
     frc971::Constraint::Builder voltage_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     voltage_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VOLTAGE);
+        frc971::ConstraintType::VOLTAGE);
     voltage_constraint_builder.add_value(11.0);
     voltage_constraint_offset = voltage_constraint_builder.Finish();
   }
@@ -135,7 +135,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FarRocketToHP(
     frc971::Constraint::Builder velocity_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     velocity_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VELOCITY);
+        frc971::ConstraintType::VELOCITY);
     velocity_constraint_builder.add_value(4.5);
     velocity_constraint_builder.add_start_distance(0.0);
     velocity_constraint_builder.add_end_distance(10.0);
@@ -181,7 +181,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HPToFarRocket(
     frc971::Constraint::Builder longitudinal_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     longitudinal_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_LONGITUDINAL_ACCELERATION);
+        frc971::ConstraintType::LONGITUDINAL_ACCELERATION);
     longitudinal_constraint_builder.add_value(3.0);
     longitudinal_constraint_offset = longitudinal_constraint_builder.Finish();
   }
@@ -190,7 +190,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HPToFarRocket(
     frc971::Constraint::Builder lateral_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     lateral_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_LATERAL_ACCELERATION);
+        frc971::ConstraintType::LATERAL_ACCELERATION);
     lateral_constraint_builder.add_value(3.0);
     lateral_constraint_offset = lateral_constraint_builder.Finish();
   }
@@ -199,7 +199,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HPToFarRocket(
     frc971::Constraint::Builder voltage_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     voltage_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VOLTAGE);
+        frc971::ConstraintType::VOLTAGE);
     voltage_constraint_builder.add_value(11.0);
     voltage_constraint_offset = voltage_constraint_builder.Finish();
   }
@@ -208,7 +208,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HPToFarRocket(
     frc971::Constraint::Builder velocity_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     velocity_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VELOCITY);
+        frc971::ConstraintType::VELOCITY);
     velocity_constraint_builder.add_value(4.0);
     velocity_constraint_builder.add_start_distance(7.0);
     velocity_constraint_builder.add_end_distance(15.0);
@@ -280,7 +280,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HABToSecondCargoShip
     frc971::Constraint::Builder longitudinal_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     longitudinal_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_LONGITUDINAL_ACCELERATION);
+        frc971::ConstraintType::LONGITUDINAL_ACCELERATION);
     longitudinal_constraint_builder.add_value(2.0);
     longitudinal_constraint_offset = longitudinal_constraint_builder.Finish();
   }
@@ -289,7 +289,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HABToSecondCargoShip
     frc971::Constraint::Builder voltage_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     voltage_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VOLTAGE);
+        frc971::ConstraintType::VOLTAGE);
     voltage_constraint_builder.add_value(10.0);
     voltage_constraint_offset = voltage_constraint_builder.Finish();
   }
@@ -298,7 +298,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HABToSecondCargoShip
     frc971::Constraint::Builder velocity_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     velocity_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VELOCITY);
+        frc971::ConstraintType::VELOCITY);
     velocity_constraint_builder.add_value(1.6);
     velocity_constraint_builder.add_start_distance(4.0);
     velocity_constraint_builder.add_end_distance(10.0);
@@ -345,7 +345,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::SecondCargoShipBayTo
     frc971::Constraint::Builder voltage_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     voltage_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VOLTAGE);
+        frc971::ConstraintType::VOLTAGE);
     voltage_constraint_builder.add_value(11.0);
     voltage_constraint_offset = voltage_constraint_builder.Finish();
   }
@@ -354,7 +354,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::SecondCargoShipBayTo
     frc971::Constraint::Builder velocity_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     velocity_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VELOCITY);
+        frc971::ConstraintType::VELOCITY);
     velocity_constraint_builder.add_value(4.0);
     velocity_constraint_builder.add_start_distance(0.0);
     velocity_constraint_builder.add_end_distance(10.0);
@@ -401,7 +401,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HPToThirdCargoShipBa
     frc971::Constraint::Builder voltage_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     voltage_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VOLTAGE);
+        frc971::ConstraintType::VOLTAGE);
     voltage_constraint_builder.add_value(10.0);
     voltage_constraint_offset = voltage_constraint_builder.Finish();
   }
@@ -410,7 +410,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HPToThirdCargoShipBa
     frc971::Constraint::Builder velocity_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     velocity_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VELOCITY);
+        frc971::ConstraintType::VELOCITY);
     velocity_constraint_builder.add_value(3.5);
     velocity_constraint_builder.add_start_distance(0.0);
     velocity_constraint_builder.add_end_distance(10.0);
@@ -421,7 +421,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HPToThirdCargoShipBa
     frc971::Constraint::Builder velocity_constraint2_builder =
         builder->MakeBuilder<frc971::Constraint>();
     velocity_constraint2_builder.add_constraint_type(
-        frc971::ConstraintType_VELOCITY);
+        frc971::ConstraintType::VELOCITY);
     velocity_constraint2_builder.add_value(2.0);
     velocity_constraint2_builder.add_start_distance(6.0);
     velocity_constraint2_builder.add_end_distance(10.0);
@@ -465,7 +465,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::ThirdCargoShipBayToN
     frc971::Constraint::Builder velocity_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     velocity_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VELOCITY);
+        frc971::ConstraintType::VELOCITY);
     velocity_constraint_builder.add_value(0.5);
     velocity_constraint_builder.add_start_distance(0.0);
     velocity_constraint_builder.add_end_distance(10.0);
@@ -511,7 +511,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HabToFarRocketTest(
     frc971::Constraint::Builder longitudinal_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     longitudinal_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_LONGITUDINAL_ACCELERATION);
+        frc971::ConstraintType::LONGITUDINAL_ACCELERATION);
     longitudinal_constraint_builder.add_value(2.0);
     longitudinal_constraint_offset = longitudinal_constraint_builder.Finish();
   }
@@ -520,7 +520,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HabToFarRocketTest(
     frc971::Constraint::Builder lateral_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     lateral_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_LATERAL_ACCELERATION);
+        frc971::ConstraintType::LATERAL_ACCELERATION);
     lateral_constraint_builder.add_value(2.0);
     lateral_constraint_offset = lateral_constraint_builder.Finish();
   }
@@ -529,7 +529,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HabToFarRocketTest(
     frc971::Constraint::Builder voltage_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     voltage_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VOLTAGE);
+        frc971::ConstraintType::VOLTAGE);
     voltage_constraint_builder.add_value(11.0);
     voltage_constraint_offset = voltage_constraint_builder.Finish();
   }
@@ -538,7 +538,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HabToFarRocketTest(
     frc971::Constraint::Builder velocity_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     velocity_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VELOCITY);
+        frc971::ConstraintType::VELOCITY);
     velocity_constraint_builder.add_value(1.7);
     velocity_constraint_builder.add_start_distance(0.0);
     velocity_constraint_builder.add_end_distance(0.8);
@@ -584,7 +584,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FarRocketToHPTest(
     frc971::Constraint::Builder longitudinal_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     longitudinal_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_LONGITUDINAL_ACCELERATION);
+        frc971::ConstraintType::LONGITUDINAL_ACCELERATION);
     longitudinal_constraint_builder.add_value(1.5);
     longitudinal_constraint_offset = longitudinal_constraint_builder.Finish();
   }
@@ -593,7 +593,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FarRocketToHPTest(
     frc971::Constraint::Builder lateral_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     lateral_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_LATERAL_ACCELERATION);
+        frc971::ConstraintType::LATERAL_ACCELERATION);
     lateral_constraint_builder.add_value(1.0);
     lateral_constraint_offset = lateral_constraint_builder.Finish();
   }
@@ -602,7 +602,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FarRocketToHPTest(
     frc971::Constraint::Builder voltage_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     voltage_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VOLTAGE);
+        frc971::ConstraintType::VOLTAGE);
     voltage_constraint_builder.add_value(11.0);
     voltage_constraint_offset = voltage_constraint_builder.Finish();
   }
@@ -611,7 +611,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FarRocketToHPTest(
     frc971::Constraint::Builder velocity_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     velocity_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VELOCITY);
+        frc971::ConstraintType::VELOCITY);
     velocity_constraint_builder.add_value(0.5);
     velocity_constraint_builder.add_start_distance(9.5);
     velocity_constraint_builder.add_end_distance(10.0);
@@ -652,7 +652,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HPToNearRocketTest(
     frc971::Constraint::Builder longitudinal_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     longitudinal_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_LONGITUDINAL_ACCELERATION);
+        frc971::ConstraintType::LONGITUDINAL_ACCELERATION);
     longitudinal_constraint_builder.add_value(1.0);
     longitudinal_constraint_offset = longitudinal_constraint_builder.Finish();
   }
@@ -661,7 +661,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HPToNearRocketTest(
     frc971::Constraint::Builder lateral_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     lateral_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_LATERAL_ACCELERATION);
+        frc971::ConstraintType::LATERAL_ACCELERATION);
     lateral_constraint_builder.add_value(1.0);
     lateral_constraint_offset = lateral_constraint_builder.Finish();
   }
@@ -670,7 +670,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HPToNearRocketTest(
     frc971::Constraint::Builder voltage_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     voltage_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VOLTAGE);
+        frc971::ConstraintType::VOLTAGE);
     voltage_constraint_builder.add_value(11.0);
     voltage_constraint_offset = voltage_constraint_builder.Finish();
   }
@@ -679,7 +679,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HPToNearRocketTest(
     frc971::Constraint::Builder velocity_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     velocity_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VELOCITY);
+        frc971::ConstraintType::VELOCITY);
     velocity_constraint_builder.add_value(0.5);
     velocity_constraint_builder.add_start_distance(2.7);
     velocity_constraint_builder.add_end_distance(10.0);
@@ -719,7 +719,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
     frc971::Constraint::Builder longitudinal_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     longitudinal_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_LONGITUDINAL_ACCELERATION);
+        frc971::ConstraintType::LONGITUDINAL_ACCELERATION);
     longitudinal_constraint_builder.add_value(1.0);
     longitudinal_constraint_offset = longitudinal_constraint_builder.Finish();
   }
@@ -728,7 +728,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
     frc971::Constraint::Builder lateral_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     lateral_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_LATERAL_ACCELERATION);
+        frc971::ConstraintType::LATERAL_ACCELERATION);
     lateral_constraint_builder.add_value(1.0);
     lateral_constraint_offset = lateral_constraint_builder.Finish();
   }
@@ -737,7 +737,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
     frc971::Constraint::Builder voltage_constraint_builder =
         builder->MakeBuilder<frc971::Constraint>();
     voltage_constraint_builder.add_constraint_type(
-        frc971::ConstraintType_VOLTAGE);
+        frc971::ConstraintType::VOLTAGE);
     voltage_constraint_builder.add_value(6.0);
     voltage_constraint_offset = voltage_constraint_builder.Finish();
   }

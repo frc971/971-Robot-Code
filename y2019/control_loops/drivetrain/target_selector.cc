@@ -28,9 +28,8 @@ bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
   if (hint_fetcher_.Fetch()) {
     VLOG(1) << "selector_hint: " << aos::FlatbufferToJson(hint_fetcher_.get());
     // suggested_target is unsigned so we don't check for >= 0.
-    if (hint_fetcher_->suggested_target() < 4) {
-      target_hint_ =
-          static_cast<SelectionHint>(hint_fetcher_->suggested_target());
+    if (hint_fetcher_->suggested_target() < drivetrain::SelectionHint::MAX) {
+      target_hint_ = hint_fetcher_->suggested_target();
     } else {
       AOS_LOG(ERROR, "Got invalid suggested target.\n");
     }
@@ -64,30 +63,30 @@ bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
       continue;
     }
     switch (target_hint_) {
-      case SelectionHint::kNearShip:
+      case drivetrain::SelectionHint::NEAR_SHIP:
         if (view.target->target_type() !=
             Target::TargetType::kNearSideCargoBay) {
           continue;
         }
         break;
-      case SelectionHint::kMidShip:
+      case drivetrain::SelectionHint::MID_SHIP:
         if (view.target->target_type() !=
             Target::TargetType::kMidSideCargoBay) {
           continue;
         }
         break;
-      case SelectionHint::kFarShip:
+      case drivetrain::SelectionHint::FAR_SHIP:
         if (view.target->target_type() !=
             Target::TargetType::kFarSideCargoBay) {
           continue;
         }
         break;
-      case SelectionHint::kFarRocket:
+      case drivetrain::SelectionHint::FAR_ROCKET:
         if (view.target->target_type() != Target::TargetType::kFarRocket) {
           continue;
         }
         break;
-      case SelectionHint::kNone:
+      case drivetrain::SelectionHint::NONE:
       default:
         break;
     }

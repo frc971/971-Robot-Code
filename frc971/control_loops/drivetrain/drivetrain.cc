@@ -257,7 +257,7 @@ void DrivetrainLoop::RunIteration(
 
   dt_openloop_.SetPosition(position, left_gear_, right_gear_);
 
-  ControllerType controller_type = ControllerType_POLYDRIVE;
+  ControllerType controller_type = ControllerType::POLYDRIVE;
   if (goal) {
     controller_type = goal->controller_type();
 
@@ -271,7 +271,7 @@ void DrivetrainLoop::RunIteration(
   dt_openloop_.Update(robot_state().voltage_battery());
 
   dt_closedloop_.Update(output != nullptr &&
-                        controller_type == ControllerType_MOTION_PROFILE);
+                        controller_type == ControllerType::MOTION_PROFILE);
 
   const Eigen::Matrix<double, 5, 1> trajectory_state =
       (Eigen::Matrix<double, 5, 1>() << localizer_->x(), localizer_->y(),
@@ -280,7 +280,7 @@ void DrivetrainLoop::RunIteration(
           .finished();
 
   dt_spline_.Update(
-      output != nullptr && controller_type == ControllerType_SPLINE_FOLLOWER,
+      output != nullptr && controller_type == ControllerType::SPLINE_FOLLOWER,
       trajectory_state);
 
   dt_line_follow_.Update(monotonic_now, trajectory_state);
@@ -288,16 +288,16 @@ void DrivetrainLoop::RunIteration(
   OutputT output_struct;
 
   switch (controller_type) {
-    case ControllerType_POLYDRIVE:
+    case ControllerType::POLYDRIVE:
       dt_openloop_.SetOutput(output != nullptr ? &output_struct : nullptr);
       break;
-    case ControllerType_MOTION_PROFILE:
+    case ControllerType::MOTION_PROFILE:
       dt_closedloop_.SetOutput(output != nullptr ? &output_struct : nullptr);
       break;
-    case ControllerType_SPLINE_FOLLOWER:
+    case ControllerType::SPLINE_FOLLOWER:
       dt_spline_.SetOutput(output != nullptr ? &output_struct : nullptr);
       break;
-    case ControllerType_LINE_FOLLOWER:
+    case ControllerType::LINE_FOLLOWER:
       if (!dt_line_follow_.SetOutput(output != nullptr ? &output_struct
                                                        : nullptr)) {
         // If the line follow drivetrain was unable to execute (generally due to

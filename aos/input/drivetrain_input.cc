@@ -108,9 +108,9 @@ void DrivetrainInputReader::HandleDrivetrain(
   goal_builder.add_quickturn(data.IsPressed(quick_turn_));
   goal_builder.add_controller_type(
       is_line_following
-          ? drivetrain::ControllerType_LINE_FOLLOWER
-          : (is_control_loop_driving ? drivetrain::ControllerType_MOTION_PROFILE
-                                     : drivetrain::ControllerType_POLYDRIVE));
+          ? drivetrain::ControllerType::LINE_FOLLOWER
+          : (is_control_loop_driving ? drivetrain::ControllerType::MOTION_PROFILE
+                                     : drivetrain::ControllerType::POLYDRIVE));
   goal_builder.add_left_goal(current_left_goal);
   goal_builder.add_right_goal(current_right_goal);
   goal_builder.add_linear(linear_offset);

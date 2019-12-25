@@ -198,14 +198,14 @@ bool AutonomousActor::RunAction(
 
     if (!spline1.WaitForSplineDistanceRemaining(0.2)) return true;
     LineFollowAtVelocity(1.3,
-                         control_loops::drivetrain::SelectionHint_FAR_ROCKET);
+                         control_loops::drivetrain::SelectionHint::FAR_ROCKET);
     if (!WaitForMilliseconds(::std::chrono::milliseconds(1200))) return true;
 
     set_suction_goal(false, 1);
     SendSuperstructureGoal();
     if (!WaitForMilliseconds(::std::chrono::milliseconds(200))) return true;
     LineFollowAtVelocity(-1.0,
-                         control_loops::drivetrain::SelectionHint_FAR_ROCKET);
+                         control_loops::drivetrain::SelectionHint::FAR_ROCKET);
     SplineHandle spline2 =
         PlanSpline(BindIsLeft(AutonomousSplines::FarRocketToHP, is_left),
                    SplineDirection::kBackward);
@@ -240,7 +240,7 @@ bool AutonomousActor::RunAction(
     SendSuperstructureGoal();
     if (!WaitForDriveXGreater(7.1)) return true;
     LineFollowAtVelocity(-1.5,
-                         control_loops::drivetrain::SelectionHint_FAR_ROCKET);
+                         control_loops::drivetrain::SelectionHint::FAR_ROCKET);
     if (!WaitForMilliseconds(::std::chrono::milliseconds(1000))) return true;
     set_elevator_wrist_goal(kPanelBackwardUpperPos);
     SendSuperstructureGoal();
@@ -249,7 +249,7 @@ bool AutonomousActor::RunAction(
     SendSuperstructureGoal();
     if (!WaitForMilliseconds(::std::chrono::milliseconds(400))) return true;
     LineFollowAtVelocity(1.0,
-                         control_loops::drivetrain::SelectionHint_FAR_ROCKET);
+                         control_loops::drivetrain::SelectionHint::FAR_ROCKET);
     SendSuperstructureGoal();
     if (!WaitForMilliseconds(::std::chrono::milliseconds(200))) return true;
   } else if (mode == Mode::kCargoship) {
@@ -282,7 +282,7 @@ bool AutonomousActor::RunAction(
     if (!spline1.WaitForSplineDistanceRemaining(0.8)) return true;
     // Line follow in to the first disc.
     LineFollowAtVelocity(-0.9,
-                         control_loops::drivetrain::SelectionHint_MID_SHIP);
+                         control_loops::drivetrain::SelectionHint::MID_SHIP);
     if (!WaitForDriveYCloseToZero(1.2)) return true;
 
     set_suction_goal(false, 1);
@@ -294,7 +294,7 @@ bool AutonomousActor::RunAction(
     if (!WaitForMilliseconds(::std::chrono::milliseconds(300))) return true;
 
     LineFollowAtVelocity(0.9,
-                         control_loops::drivetrain::SelectionHint_MID_SHIP);
+                         control_loops::drivetrain::SelectionHint::MID_SHIP);
     SplineHandle spline2 = PlanSpline(
         BindIsLeft(AutonomousSplines::SecondCargoShipBayToHP, is_left),
         SplineDirection::kForward);
@@ -331,7 +331,7 @@ bool AutonomousActor::RunAction(
     if (!spline3.WaitForSplineDistanceRemaining(0.7)) return true;
     // Line follow in to the second disc.
     LineFollowAtVelocity(-0.7,
-                         control_loops::drivetrain::SelectionHint_FAR_SHIP);
+                         control_loops::drivetrain::SelectionHint::FAR_SHIP);
     AOS_LOG(INFO, "Drawing in disc 2 %f\n",
             ::aos::time::DurationInSeconds(monotonic_now() - start_time));
     if (!WaitForDriveYCloseToZero(1.2)) return true;
@@ -346,7 +346,7 @@ bool AutonomousActor::RunAction(
     AOS_LOG(INFO, "Backing up %f\n",
             ::aos::time::DurationInSeconds(monotonic_now() - start_time));
     LineFollowAtVelocity(0.9,
-                         control_loops::drivetrain::SelectionHint_FAR_SHIP);
+                         control_loops::drivetrain::SelectionHint::FAR_SHIP);
     if (!WaitForMilliseconds(::std::chrono::milliseconds(400))) return true;
   } else {
     // Grab the disk, wait until we have vacuum, then jump

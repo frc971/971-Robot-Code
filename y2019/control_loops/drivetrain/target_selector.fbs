@@ -1,7 +1,7 @@
 namespace y2019.control_loops.drivetrain;
 
 // These should match the SelectionHint enum in target_selector.h.
-enum SelectionHint : byte {
+enum SelectionHint : ubyte {
   // No selection, we should just default to whatever.
   NONE,
   // Near, middle, and far targets.

@@ -42,7 +42,7 @@ void SplineDrivetrain::ComputeTrajectory() {
     past_distance_spline_.reset();
     past_trajectory_.reset();
 
-    plan_state_ = PlanningState_BUILDING_TRAJECTORY;
+    plan_state_ = PlanningState::BUILDING_TRAJECTORY;
     future_spline_idx_ = goal_.spline_idx;
     planning_spline_idx_ = future_spline_idx_;
     const MultiSpline &multispline = goal_.spline;
@@ -70,28 +70,28 @@ void SplineDrivetrain::ComputeTrajectory() {
     for (size_t i = 0; i < multispline.constraints.size(); ++i) {
       const ::frc971::ConstraintT &constraint = multispline.constraints[i];
       switch (constraint.constraint_type) {
-        case frc971::ConstraintType_CONSTRAINT_TYPE_UNDEFINED:
+        case frc971::ConstraintType::CONSTRAINT_TYPE_UNDEFINED:
           break;
-        case frc971::ConstraintType_LONGITUDINAL_ACCELERATION:
+        case frc971::ConstraintType::LONGITUDINAL_ACCELERATION:
           future_trajectory_->set_longitudinal_acceleration(constraint.value);
           break;
-        case frc971::ConstraintType_LATERAL_ACCELERATION:
+        case frc971::ConstraintType::LATERAL_ACCELERATION:
           future_trajectory_->set_lateral_acceleration(constraint.value);
           break;
-        case frc971::ConstraintType_VOLTAGE:
+        case frc971::ConstraintType::VOLTAGE:
           future_trajectory_->set_voltage_limit(constraint.value);
           break;
-        case frc971::ConstraintType_VELOCITY:
+        case frc971::ConstraintType::VELOCITY:
           future_trajectory_->LimitVelocity(constraint.start_distance,
                                             constraint.end_distance,
                                             constraint.value);
           break;
       }
     }
-    plan_state_ = PlanningState_PLANNING_TRAJECTORY;
+    plan_state_ = PlanningState::PLANNING_TRAJECTORY;
 
     future_trajectory_->Plan();
-    plan_state_ = PlanningState_PLANNED;
+    plan_state_ = PlanningState::PLANNED;
   }
 }
 
@@ -137,7 +137,7 @@ void SplineDrivetrain::SetGoal(
               &goal_.spline.constraints[i]);
         } else {
           goal_.spline.constraints[i].constraint_type =
-              ConstraintType_CONSTRAINT_TYPE_UNDEFINED;
+              ConstraintType::CONSTRAINT_TYPE_UNDEFINED;
         }
       }
 

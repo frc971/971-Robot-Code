@@ -95,7 +95,7 @@ class SplineDrivetrain {
   bool enable_ = false;
   bool output_was_capped_ = false;
 
-  std::atomic<PlanningState> plan_state_ = {PlanningState_NO_PLAN};
+  std::atomic<PlanningState> plan_state_ = {PlanningState::NO_PLAN};
 
   ::std::thread worker_thread_;
   // mutex_ is held by the worker thread while it is doing work or by the main

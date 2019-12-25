@@ -258,28 +258,28 @@ class Reader : public ::aos::input::ActionJoystickInput {
                   .MakeBuilder<control_loops::drivetrain::TargetSelectorHint>();
       if (data.IsPressed(kNearCargoHint)) {
         target_selector_hint_builder.add_suggested_target(
-            control_loops::drivetrain::SelectionHint_NEAR_SHIP);
+            control_loops::drivetrain::SelectionHint::NEAR_SHIP);
       } else if (data.IsPressed(kMidCargoHint)) {
         target_selector_hint_builder.add_suggested_target(
-            control_loops::drivetrain::SelectionHint_MID_SHIP);
+            control_loops::drivetrain::SelectionHint::MID_SHIP);
       } else if (data.IsPressed(kFarCargoHint)) {
         target_selector_hint_builder.add_suggested_target(
-            control_loops::drivetrain::SelectionHint_FAR_SHIP);
+            control_loops::drivetrain::SelectionHint::FAR_SHIP);
       } else {
         const double cargo_joy_y = data.GetAxis(kCargoSelectorY);
         const double cargo_joy_x = data.GetAxis(kCargoSelectorX);
         if (cargo_joy_y > 0.5) {
           target_selector_hint_builder.add_suggested_target(
-            control_loops::drivetrain::SelectionHint_NEAR_SHIP);
+            control_loops::drivetrain::SelectionHint::NEAR_SHIP);
         } else if (cargo_joy_y < -0.5) {
           target_selector_hint_builder.add_suggested_target(
-              control_loops::drivetrain::SelectionHint_FAR_SHIP);
+              control_loops::drivetrain::SelectionHint::FAR_SHIP);
         } else if (::std::abs(cargo_joy_x) > 0.5) {
           target_selector_hint_builder.add_suggested_target(
-            control_loops::drivetrain::SelectionHint_MID_SHIP);
+            control_loops::drivetrain::SelectionHint::MID_SHIP);
         } else {
           target_selector_hint_builder.add_suggested_target(
-            control_loops::drivetrain::SelectionHint_NONE);
+            control_loops::drivetrain::SelectionHint::NONE);
         }
       }
       if (!builder.Send(target_selector_hint_builder.Finish())) {

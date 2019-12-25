@@ -29,16 +29,6 @@ class TargetSelector
   typedef TypedCamera<y2019::constants::Field::kNumTargets,
                       /*num_obstacles=*/0, double> FakeCamera;
 
-  enum class SelectionHint {
-    // No hint
-    kNone = 0,
-    // Cargo ship bays
-    kNearShip = 1,
-    kMidShip = 2,
-    kFarShip = 3,
-    kFarRocket = 4,
-  };
-
   TargetSelector(::aos::EventLoop *event_loop);
 
   bool UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
@@ -72,7 +62,7 @@ class TargetSelector
 
   // Whether we are currently in ball mode.
   bool ball_mode_ = false;
-  SelectionHint target_hint_ = SelectionHint::kNone;
+  drivetrain::SelectionHint target_hint_ = drivetrain::SelectionHint::NONE;
 };
 
 }  // namespace control_loops

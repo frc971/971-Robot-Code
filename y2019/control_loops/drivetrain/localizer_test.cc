@@ -178,7 +178,7 @@ class ParameterizedLocalizerTest
 
       goal_builder.add_spline(spline_offset);
       goal_builder.add_controller_type(
-          frc971::control_loops::drivetrain::ControllerType_SPLINE_FOLLOWER);
+          frc971::control_loops::drivetrain::ControllerType::SPLINE_FOLLOWER);
       goal_builder.add_spline_handle(1);
 
       fbb.Finish(goal_builder.Finish());
@@ -211,7 +211,7 @@ class ParameterizedLocalizerTest
           status(fbb.Release());
 
       if (status.message().trajectory_logging()->planning_state() ==
-          ::frc971::control_loops::drivetrain::PlanningState_PLANNED) {
+          ::frc971::control_loops::drivetrain::PlanningState::PLANNED) {
         break;
       }
     }
