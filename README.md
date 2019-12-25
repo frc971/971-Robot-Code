@@ -22,7 +22,7 @@ The currently supported operating system for building the code is amd64 Debian B
 We use [Bazel](http://bazel.io) to build the code. Bazel has [extensive](https://docs.bazel.build/versions/master/build-ref.html) [docs](https://docs.bazel.build/versions/master/be/overview.html) and does a nice job with fast, correct increment rebuilds.
 
 ### Steps to set up a computer to build the code:
-  0. Install any Bazel verstion.  See [here](https://docs.bazel.build/versions/master/install-ubuntu.html)
+  0. Install any Bazel version.  See [here](https://docs.bazel.build/versions/master/install-ubuntu.html)
   1. Install the required packages:
 ```console
 apt-get update
