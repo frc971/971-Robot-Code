@@ -138,7 +138,7 @@ void Superstructure::RunIteration(
           status->fbb());
   flatbuffers::Offset<ShooterStatus> shooter_offset = shooter_.Iterate(
       unsafe_goal != nullptr ? &shooter_goal : nullptr,
-      position->theta_shooter(), position_context().monotonic_sent_time,
+      position->theta_shooter(), position_context().monotonic_event_time,
       output != nullptr ? &(output_struct.voltage_shooter) : nullptr,
       status->fbb());
 

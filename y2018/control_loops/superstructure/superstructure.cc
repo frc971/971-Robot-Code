@@ -289,7 +289,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     SendColors(0.5, 0.0, 0.0);
   } else if (!vision_status_fetcher_.get() ||
              monotonic_now >
-                 vision_status_fetcher_.context().monotonic_sent_time +
+                 vision_status_fetcher_.context().monotonic_event_time +
                      chrono::seconds(1)) {
     SendColors(0.5, 0.5, 0.0);
   } else if (rotation_state_ == RotationState::ROTATING_LEFT ||

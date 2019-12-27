@@ -86,8 +86,9 @@ class SimulatedChannel {
     watchers_.erase(std::find(watchers_.begin(), watchers_.end(), watcher));
   }
 
-  // Sends the message to all the connected receivers and fetchers.
-  void Send(std::shared_ptr<SimulatedMessage> message);
+  // Sends the message to all the connected receivers and fetchers.  Returns the
+  // sent queue index.
+  uint32_t Send(std::shared_ptr<SimulatedMessage> message);
 
   // Unregisters a fetcher.
   void UnregisterFetcher(SimulatedFetcher *fetcher);
@@ -150,15 +151,23 @@ class SimulatedSender : public RawSender {
 
   size_t size() override { return simulated_channel_->max_size(); }
 
-  bool DoSend(size_t length) override {
+  bool DoSend(size_t length,
+              aos::monotonic_clock::time_point monotonic_remote_time,
+              aos::realtime_clock::time_point realtime_remote_time,
+              uint32_t remote_queue_index) override {
     CHECK_LE(length, size()) << ": Attempting to send too big a message.";
-    message_->context.monotonic_sent_time = event_loop_->monotonic_now();
-    message_->context.realtime_sent_time = event_loop_->realtime_now();
+    message_->context.monotonic_event_time = event_loop_->monotonic_now();
+    message_->context.monotonic_remote_time = monotonic_remote_time;
+    message_->context.remote_queue_index = remote_queue_index;
+    message_->context.realtime_event_time = event_loop_->realtime_now();
+    message_->context.realtime_remote_time = realtime_remote_time;
     CHECK_LE(length, message_->context.size);
     message_->context.size = length;
 
     // TODO(austin): Track sending too fast.
-    simulated_channel_->Send(message_);
+    sent_queue_index_ = simulated_channel_->Send(message_);
+    monotonic_sent_time_ = event_loop_->monotonic_now();
+    realtime_sent_time_ = event_loop_->realtime_now();
 
     // Drop the reference to the message so that we allocate a new message for
     // next time.  Otherwise we will continue to reuse the same memory for all
@@ -167,7 +176,10 @@ class SimulatedSender : public RawSender {
     return true;
   }
 
-  bool DoSend(const void *msg, size_t size) override {
+  bool DoSend(const void *msg, size_t size,
+              aos::monotonic_clock::time_point monotonic_remote_time,
+              aos::realtime_clock::time_point realtime_remote_time,
+              uint32_t remote_queue_index) override {
     CHECK_LE(size, this->size()) << ": Attempting to send too big a message.";
 
     // This is wasteful, but since flatbuffers fill from the back end of the
@@ -179,7 +191,8 @@ class SimulatedSender : public RawSender {
     // data segment.
     memcpy(message_->data() + simulated_channel_->max_size() - size, msg, size);
 
-    return Send(size);
+    return Send(size, monotonic_remote_time, realtime_remote_time,
+                remote_queue_index);
   }
 
  private:
@@ -232,6 +245,15 @@ class SimulatedFetcher : public RawFetcher {
   void SetMsg(std::shared_ptr<SimulatedMessage> msg) {
     msg_ = msg;
     context_ = msg_->context;
+    if (context_.remote_queue_index == 0xffffffffu) {
+      context_.remote_queue_index = context_.queue_index;
+    }
+    if (context_.monotonic_remote_time == aos::monotonic_clock::min_time) {
+      context_.monotonic_remote_time = context_.monotonic_event_time;
+    }
+    if (context_.realtime_remote_time == aos::realtime_clock::min_time) {
+      context_.realtime_remote_time = context_.realtime_event_time;
+    }
   }
 
   // Internal method for Simulation to add a message to the buffer.
@@ -527,7 +549,7 @@ void SimulatedWatcher::Schedule(std::shared_ptr<SimulatedMessage> message) {
   // Messages are queued in order.  If we are the first, add ourselves.
   // Otherwise, don't.
   if (msgs_.size() == 0) {
-    event_.set_event_time(message->context.monotonic_sent_time);
+    event_.set_event_time(message->context.monotonic_event_time);
     simulated_event_loop_->AddEvent(&event_);
 
     DoSchedule(event_time);
@@ -541,12 +563,23 @@ void SimulatedWatcher::HandleEvent() {
 
   const monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
-  DoCallCallback([monotonic_now]() { return monotonic_now; },
-                 msgs_.front()->context);
+  Context context = msgs_.front()->context;
+
+  if (context.remote_queue_index == 0xffffffffu) {
+    context.remote_queue_index = context.queue_index;
+  }
+  if (context.monotonic_remote_time == aos::monotonic_clock::min_time) {
+    context.monotonic_remote_time = context.monotonic_event_time;
+  }
+  if (context.realtime_remote_time == aos::realtime_clock::min_time) {
+    context.realtime_remote_time = context.realtime_event_time;
+  }
+
+  DoCallCallback([monotonic_now]() { return monotonic_now; }, context);
 
   msgs_.pop_front();
   if (msgs_.size() != 0) {
-    event_.set_event_time(msgs_.front()->context.monotonic_sent_time);
+    event_.set_event_time(msgs_.front()->context.monotonic_event_time);
     simulated_event_loop_->AddEvent(&event_);
 
     DoSchedule(event_.event_time());
@@ -579,8 +612,9 @@ void SimulatedChannel::MakeRawWatcher(SimulatedWatcher *watcher) {
   return ::std::move(fetcher);
 }
 
-void SimulatedChannel::Send(std::shared_ptr<SimulatedMessage> message) {
-  message->context.queue_index = next_queue_index_.index();
+uint32_t SimulatedChannel::Send(std::shared_ptr<SimulatedMessage> message) {
+  const uint32_t queue_index = next_queue_index_.index();
+  message->context.queue_index = queue_index;
   message->context.data =
       message->data() + channel()->max_size() - message->context.size;
   next_queue_index_ = next_queue_index_.Increment();
@@ -594,6 +628,8 @@ void SimulatedChannel::Send(std::shared_ptr<SimulatedMessage> message) {
   for (auto &fetcher : fetchers_) {
     fetcher->Enqueue(message);
   }
+
+  return queue_index;
 }
 
 void SimulatedChannel::UnregisterFetcher(SimulatedFetcher *fetcher) {

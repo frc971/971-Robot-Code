@@ -23,8 +23,10 @@ RawFetcher::RawFetcher(EventLoop *event_loop, const Channel *channel)
     : event_loop_(event_loop),
       channel_(channel),
       timing_(event_loop_->ChannelIndex(channel)) {
-  context_.monotonic_sent_time = monotonic_clock::min_time;
-  context_.realtime_sent_time = realtime_clock::min_time;
+  context_.monotonic_event_time = monotonic_clock::min_time;
+  context_.monotonic_remote_time = monotonic_clock::min_time;
+  context_.realtime_event_time = realtime_clock::min_time;
+  context_.realtime_remote_time = realtime_clock::min_time;
   context_.queue_index = 0xffffffff;
   context_.size = 0;
   context_.data = nullptr;

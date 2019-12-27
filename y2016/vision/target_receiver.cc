@@ -205,7 +205,7 @@ class DrivetrainOffsetCalculator {
   bool CompleteVisionStatus(::y2016::vision::VisionStatusT *status) {
     while (drivetrain_status_fetcher_.FetchNext()) {
       data_[data_index_].time =
-          drivetrain_status_fetcher_.context().monotonic_sent_time;
+          drivetrain_status_fetcher_.context().monotonic_event_time;
       data_[data_index_].left =
           drivetrain_status_fetcher_->estimated_left_position();
       data_[data_index_].right =

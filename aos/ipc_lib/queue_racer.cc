@@ -251,6 +251,9 @@ void QueueRacer::CheckReads(bool race_reads, int write_wrap_count,
        i < (1 + write_wrap_count) * num_messages_ * num_threads_; ++i) {
     ::aos::monotonic_clock::time_point monotonic_sent_time;
     ::aos::realtime_clock::time_point realtime_sent_time;
+    ::aos::monotonic_clock::time_point monotonic_remote_time;
+    ::aos::realtime_clock::time_point realtime_remote_time;
+    uint32_t remote_queue_index;
     size_t length;
     char read_data[1024];
 
@@ -259,7 +262,8 @@ void QueueRacer::CheckReads(bool race_reads, int write_wrap_count,
                                        0xffffffffu, queue.QueueSize()));
     LocklessQueue::ReadResult read_result =
         queue.Read(wrapped_i, &monotonic_sent_time, &realtime_sent_time,
-                   &length, &(read_data[0]));
+                   &monotonic_remote_time, &realtime_remote_time,
+                   &remote_queue_index, &length, &(read_data[0]));
 
     if (race_reads) {
       if (read_result == LocklessQueue::ReadResult::NOTHING_NEW) {
@@ -279,6 +283,9 @@ void QueueRacer::CheckReads(bool race_reads, int write_wrap_count,
     // And, confirm that time never went backwards.
     ASSERT_GT(monotonic_sent_time, last_monotonic_sent_time);
     last_monotonic_sent_time = monotonic_sent_time;
+
+    EXPECT_EQ(monotonic_remote_time, aos::monotonic_clock::min_time);
+    EXPECT_EQ(realtime_remote_time, aos::realtime_clock::min_time);
 
     ThreadPlusCount tpc;
     ASSERT_EQ(length, sizeof(ThreadPlusCount));

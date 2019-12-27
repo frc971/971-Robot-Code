@@ -58,7 +58,7 @@ void ControlLoop<GoalType, PositionType, StatusType,
       // If the driver's station reports being disabled, we're probably not
       // actually going to send motor values regardless of what the FPGA
       // reports.
-      last_pwm_sent_ = robot_state_fetcher_.context().monotonic_sent_time;
+      last_pwm_sent_ = robot_state_fetcher_.context().monotonic_event_time;
     }
   }
 

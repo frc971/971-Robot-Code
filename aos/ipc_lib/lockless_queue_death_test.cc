@@ -584,12 +584,16 @@ TEST(LocklessQueueTest, Death) {
         while (true) {
           ::aos::monotonic_clock::time_point monotonic_sent_time;
           ::aos::realtime_clock::time_point realtime_sent_time;
+          ::aos::monotonic_clock::time_point monotonic_remote_time;
+          ::aos::realtime_clock::time_point realtime_remote_time;
+          uint32_t remote_queue_index;
           char read_data[1024];
           size_t length;
 
           LocklessQueue::ReadResult read_result =
-              queue.Read(i, &monotonic_sent_time, &realtime_sent_time, &length,
-                         &(read_data[0]));
+              queue.Read(i, &monotonic_sent_time, &realtime_sent_time,
+                         &monotonic_remote_time, &realtime_remote_time,
+                         &remote_queue_index, &length, &(read_data[0]));
 
           if (read_result != LocklessQueue::ReadResult::GOOD) {
             break;

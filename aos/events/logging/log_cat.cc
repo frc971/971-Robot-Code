@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
             // replaying it.
             std::cout << channel->name()->c_str() << ' '
                       << channel->type()->c_str() << " at "
-                      << context.monotonic_sent_time << ": "
+                      << context.monotonic_event_time << ": "
                       << aos::FlatbufferToJson(
                              channel->schema(),
                              static_cast<const uint8_t *>(message))

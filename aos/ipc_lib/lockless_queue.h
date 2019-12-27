@@ -65,6 +65,13 @@ struct Message {
     // fails.
     ::aos::monotonic_clock::time_point monotonic_sent_time;
     ::aos::realtime_clock::time_point realtime_sent_time;
+    // Timestamps of the message from the remote node.  These are transparently
+    // passed through.
+    ::aos::monotonic_clock::time_point monotonic_remote_time;
+    ::aos::realtime_clock::time_point realtime_remote_time;
+
+    // Queue index from the remote node.
+    uint32_t remote_queue_index;
 
     size_t length;
   } header;
@@ -146,7 +153,9 @@ class LocklessQueue {
   ReadResult Read(uint32_t queue_index,
                   ::aos::monotonic_clock::time_point *monotonic_sent_time,
                   ::aos::realtime_clock::time_point *realtime_sent_time,
-                  size_t *length, char *data);
+                  ::aos::monotonic_clock::time_point *monotonic_remote_time,
+                  ::aos::realtime_clock::time_point *realtime_remote_time,
+                  uint32_t *remote_queue_index, size_t *length, char *data);
 
   // Returns the index to the latest queue message.  Returns empty_queue_index()
   // if there are no messages in the queue.  Do note that this index wraps if
@@ -195,10 +204,26 @@ class LocklessQueue {
     // Note: calls to Data() are expensive enough that you should cache it.
     size_t size();
     void *Data();
-    void Send(size_t length);
+    void Send(size_t length,
+              aos::monotonic_clock::time_point monotonic_remote_time =
+                  aos::monotonic_clock::min_time,
+              aos::realtime_clock::time_point realtime_remote_time =
+                  aos::realtime_clock::min_time,
+              uint32_t remote_queue_index = 0xffffffff,
+              aos::monotonic_clock::time_point *monotonic_sent_time = nullptr,
+              aos::realtime_clock::time_point *realtime_sent_time = nullptr,
+              uint32_t *queue_index = nullptr);
 
     // Sends up to length data.  Does not wakeup the target.
-    void Send(const char *data, size_t length);
+    void Send(const char *data, size_t length,
+              aos::monotonic_clock::time_point monotonic_remote_time =
+                  aos::monotonic_clock::min_time,
+              aos::realtime_clock::time_point realtime_remote_time =
+                  aos::realtime_clock::min_time,
+              uint32_t remote_queue_index = 0xffffffff,
+              aos::monotonic_clock::time_point *monotonic_sent_time = nullptr,
+              aos::realtime_clock::time_point *realtime_sent_time = nullptr,
+              uint32_t *queue_index = nullptr);
 
    private:
     friend class LocklessQueue;

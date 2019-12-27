@@ -260,6 +260,9 @@ TEST_F(LocklessQueueTest, Send) {
     // Read a result from 5 in the past.
     ::aos::monotonic_clock::time_point monotonic_sent_time;
     ::aos::realtime_clock::time_point realtime_sent_time;
+    ::aos::monotonic_clock::time_point monotonic_remote_time;
+    ::aos::realtime_clock::time_point realtime_remote_time;
+    uint32_t remote_queue_index;
     char read_data[1024];
     size_t length;
 
@@ -271,7 +274,8 @@ TEST_F(LocklessQueueTest, Send) {
     }
     LocklessQueue::ReadResult read_result =
         queue.Read(index.index(), &monotonic_sent_time, &realtime_sent_time,
-                   &length, &(read_data[0]));
+                   &monotonic_remote_time, &realtime_remote_time,
+                   &remote_queue_index, &length, &(read_data[0]));
 
     // This should either return GOOD, or TOO_OLD if it is before the start of
     // the queue.
