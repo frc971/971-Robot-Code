@@ -14,10 +14,12 @@ cc_library(
     name = "logger",
     srcs = ["logger.cc"],
     hdrs = ["logger.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":logger_fbs",
         "//aos:flatbuffer_merge",
         "//aos/events:event_loop",
+        "//aos/events:simulated_event_loop",
         "//aos/network:team_number",
         "//aos/time",
         "@com_github_google_flatbuffers//:flatbuffers",

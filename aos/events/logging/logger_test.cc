@@ -63,22 +63,11 @@ TEST_F(LoggerTest, Starts) {
 
   LOG(INFO) << "Config " << FlatbufferToJson(reader.configuration());
 
-  // TODO(austin): Figure out what the API needs to look like.  How do we replay
-  // the data that was fetched before it all starts?  How do we set the starting
-  // time from the log file?  Probably need to let the reader do more if it
-  // knows about the factory.
   SimulatedEventLoopFactory log_reader_factory(reader.configuration());
-  std::unique_ptr<EventLoop> reader_event_loop =
-      log_reader_factory.MakeEventLoop("log_reader");
 
-  reader.Register(reader_event_loop.get());
+  // This sends out the fetched messages and advances time to the start of the log file.
+  reader.Register(&log_reader_factory);
 
-  // Capture monotonic start time in OnRun and offset from there?  Let the user
-  // configure the factory if they want time to match?
-  /*
-  log_reader_factory.InitializeTime(log_reader.monotonic_start_time(),
-                                    log_reader.realtime_start_time());
-                                    */
   std::unique_ptr<EventLoop> test_event_loop =
       log_reader_factory.MakeEventLoop("log_reader");
 

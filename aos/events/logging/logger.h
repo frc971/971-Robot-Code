@@ -8,6 +8,7 @@
 #include "absl/types/span.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/logger_generated.h"
+#include "aos/events/simulated_event_loop.h"
 #include "aos/time/time.h"
 #include "flatbuffers/flatbuffers.h"
 
@@ -96,6 +97,9 @@ class LogReader {
   // Registers the timer and senders used to resend the messages from the log
   // file.
   void Register(EventLoop *event_loop);
+  // Registers everything, but also updates the real time time in sync.  Runs
+  // until the log file starts.
+  void Register(SimulatedEventLoopFactory *factory);
   // Unregisters the senders.
   void Deregister();
 
@@ -186,7 +190,9 @@ class LogReader {
   // File descriptor for the log file.
   int fd_ = -1;
 
-  EventLoop *event_loop_;
+  SimulatedEventLoopFactory *event_loop_factory_ = nullptr;
+  std::unique_ptr<EventLoop> event_loop_unique_ptr_;
+  EventLoop *event_loop_ = nullptr;
   TimerHandler *timer_handler_;
 
   // Vector to read into.  This uses an allocator which doesn't zero initialize

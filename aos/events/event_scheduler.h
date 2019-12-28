@@ -45,15 +45,23 @@ class EventScheduler {
   bool is_running() const { return is_running_; }
 
   monotonic_clock::time_point monotonic_now() const { return now_; }
+
   realtime_clock::time_point realtime_now() const {
-    // TODO(austin): Make this all configurable...
-    return realtime_clock::epoch() + now_.time_since_epoch() +
-           std::chrono::seconds(1000000);
+    return realtime_clock::time_point(monotonic_now().time_since_epoch() +
+                                      realtime_offset_);
+  }
+
+  // Sets realtime clock to realtime_now for a given monotonic clock.
+  void SetRealtimeOffset(monotonic_clock::time_point monotonic_now,
+                         realtime_clock::time_point realtime_now) {
+    realtime_offset_ =
+        realtime_now.time_since_epoch() - monotonic_now.time_since_epoch();
   }
 
  private:
   // Current execution time.
   monotonic_clock::time_point now_ = monotonic_clock::epoch();
+  std::chrono::nanoseconds realtime_offset_ = std::chrono::seconds(0);
 
   std::vector<std::function<void()>> on_run_;
 

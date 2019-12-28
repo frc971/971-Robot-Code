@@ -29,12 +29,7 @@ int main(int argc, char **argv) {
 
   aos::logger::LogReader reader(FLAGS_logfile);
   aos::SimulatedEventLoopFactory log_reader_factory(reader.configuration());
-  std::unique_ptr<aos::EventLoop> reader_event_loop =
-      log_reader_factory.MakeEventLoop("log_reader");
-  reader.Register(reader_event_loop.get());
-  // We don't run timing reports when trying to print out logged data, because
-  // otherwise we would end up printing out the timing reports themselves...
-  reader_event_loop->SkipTimingReport();
+  reader.Register(&log_reader_factory);
 
   std::unique_ptr<aos::EventLoop> printer_event_loop =
       log_reader_factory.MakeEventLoop("printer");
@@ -58,11 +53,10 @@ int main(int argc, char **argv) {
             // unnecessary cruft from glog and to allow the user to readily
             // redirect just the logged output independent of any debugging
             // information on stderr.
-            // TODO(james): Also print out realtime time once we support
-            // replaying it.
-            std::cout << channel->name()->c_str() << ' '
-                      << channel->type()->c_str() << " at "
-                      << context.monotonic_event_time << ": "
+            std::cout << context.realtime_event_time << " ("
+                      << context.monotonic_event_time << ") "
+                      << channel->name()->c_str() << ' '
+                      << channel->type()->c_str() << ": "
                       << aos::FlatbufferToJson(
                              channel->schema(),
                              static_cast<const uint8_t *>(message))

@@ -81,6 +81,12 @@ class SimulatedEventLoopFactory {
     return scheduler_.realtime_now();
   }
 
+  // Sets realtime clock to realtime_now for a given monotonic clock.
+  void SetRealtimeOffset(monotonic_clock::time_point monotonic_now,
+                         realtime_clock::time_point realtime_now) {
+    scheduler_.SetRealtimeOffset(monotonic_now, realtime_now);
+  }
+
  private:
   const Configuration *const configuration_;
   EventScheduler scheduler_;

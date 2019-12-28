@@ -390,6 +390,19 @@ realtime_clock::time_point LogReader::realtime_start_time() {
           ->realtime_start_time()));
 }
 
+void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
+  event_loop_unique_ptr_ = event_loop_factory->MakeEventLoop("log_reader");
+  event_loop_factory_ = event_loop_factory;
+  // We don't run timing reports when trying to print out logged data, because
+  // otherwise we would end up printing out the timing reports themselves...
+  // This is only really relevant when we are replaying into a simulation.
+  event_loop_unique_ptr_->SkipTimingReport();
+
+  Register(event_loop_unique_ptr_.get());
+  event_loop_factory_->RunFor(monotonic_start_time() -
+                              event_loop_factory_->monotonic_now());
+}
+
 void LogReader::Register(EventLoop *event_loop) {
   event_loop_ = event_loop;
 
@@ -422,7 +435,17 @@ void LogReader::Register(EventLoop *event_loop) {
     FlatbufferVector<MessageHeader> front = std::move(channel.front());
 
     CHECK(front.message().data() != nullptr);
+
     if (oldest_channel_index.first > monotonic_start_time()) {
+      // If we have access to the factory, use it to fix the realtime time.
+      if (event_loop_factory_ != nullptr) {
+        event_loop_factory_->SetRealtimeOffset(
+            monotonic_clock::time_point(
+                chrono::nanoseconds(front.message().monotonic_sent_time())),
+            realtime_clock::time_point(
+                chrono::nanoseconds(front.message().realtime_sent_time())));
+      }
+
       channel.raw_sender->Send(front.message().data()->Data(),
                                front.message().data()->size());
     } else {
@@ -463,6 +486,10 @@ void LogReader::Deregister() {
   for (size_t i = 0; i < channels_.size(); ++i) {
     channels_[i].raw_sender.reset();
   }
+
+  event_loop_factory_ = nullptr;
+  event_loop_unique_ptr_.reset();
+  event_loop_ = nullptr;
 }
 
 void LogReader::EmplaceDataBack(FlatbufferVector<MessageHeader> &&new_data) {
