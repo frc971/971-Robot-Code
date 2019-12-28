@@ -130,8 +130,8 @@ extern "C" {
 
   void deleteTrajectory(Trajectory *t) { delete t; }
 
-  void TrajectorySetLongitudalAcceleration(Trajectory *t, double accel) {
-    t->set_longitudal_acceleration(accel);
+  void TrajectorySetLongitudinalAcceleration(Trajectory *t, double accel) {
+    t->set_longitudinal_acceleration(accel);
   }
 
   void TrajectorySetLateralAcceleration(Trajectory *t, double accel) {

@@ -588,7 +588,7 @@ INSTANTIATE_TEST_CASE_P(
                 .finished(),
             /*noisify=*/true,
             /*disturb=*/false,
-            /*estimate_tolerance=*/0.2,
+            /*estimate_tolerance=*/0.4,
             /*goal_tolerance=*/0.4,
         }),
         // Repeats perfect scenario, but add initial estimator error.
@@ -633,7 +633,7 @@ INSTANTIATE_TEST_CASE_P(
                 .finished(),
             /*noisify=*/false,
             /*disturb=*/true,
-            /*estimate_tolerance=*/2.5e-2,
+            /*estimate_tolerance=*/3e-2,
             /*goal_tolerance=*/0.15,
         }),
         // Add noise and some initial error in addition:

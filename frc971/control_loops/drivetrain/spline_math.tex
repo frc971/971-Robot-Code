@@ -1,0 +1,567 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\DeclareMathOperator{\sgn}{sgn}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{commath}
+\usepackage[margin=0.5in]{geometry}
+\title{Spline Math}
+\author{James Kuszmaul}
+\begin{document}
+
+\maketitle
+
+\section{Introductions}
+
+This document describes some of the math going on in computing constraints on
+the maximum velocities in \texttt{trajectory.*}. Some of the thoughts are
+somewhat disorganized and represent a stream-of-consciousness more than actually
+useful documentation.
+
+For a given path, we will have:
+
+\begin{tabular}{r|l}
+Name & Description \\ \hline
+$v_l$, $v_r$ & Left and right wheel velocities \\
+$\theta$ & Robot heading/yaw at a position along the path \\
+$r$ & Robot radius (assuming center of mass in center of robot) \\
+$u_l$, $u_r$ & Left and right wheel voltages \\
+$V_{max}$ & Maximum allowable voltage (typically 12V) \\
+$v_{max}$ & User-specified maximum velocity \\
+$u$ & $\begin{bmatrix} u_l \\ u_r \end{bmatrix}$ \\
+$A$, $B$ & LTI, matrices such that $\begin{bmatrix} \dot{v}_l \\ \dot{v}_r
+\end{bmatrix} = A \begin{bmatrix} v_l \\ v_r \end{bmatrix} + B u$ \\
+$s$ & Distance along the path \\
+\end{tabular}
+
+We are interested in discovering the fastest way to traverse the path in
+question, given constraints on:
+\begin{itemize}
+\item Friction limits of the wheels (assumed to static and time/velocity
+      invariant).
+\item Voltage limits on the motors.
+\item Maximum velocity.
+\end{itemize}
+
+The voltage constraints are essentially provided by the linear dynamics shown
+above:
+
+\begin{align}
+\begin{bmatrix} \dot{v}_l \\ \dot{v}_r \end{bmatrix} &=
+   A \begin{bmatrix} v_l \\ v_r \end{bmatrix} + B u
+\end{align}
+
+Also, at any given point we must maintain velocities/accelerations that actually
+allow us to follow the path (as opposed to optimizing $v_l$/$v_r$ separately...).
+
+Using the velocities of the individual wheels as a starting point, and
+introducing dummy variables for the velocity/acceleration of the center of the
+robot (corresponding to time derivatives of $s$):
+
+\begin{align*}
+v_c &= \frac{v_l  r_r + v_r  r_l}{r_r + r_l} \\
+\begin{bmatrix} v_l \\ v_r \end{bmatrix} &=
+    \begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+\end{bmatrix} v_c \\
+\begin{bmatrix} \dot{v}_l \\ \dot{v}_r \end{bmatrix} &=
+  \begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+  \end{bmatrix} \dot{v}_c +   \begin{bmatrix} - r_l \frac{d^2\theta}{ds^2} v_c
+  \\  r_r \frac{d^2\theta}{ds^2} v_c \end{bmatrix} v_c \\
+\begin{bmatrix} \dot{v}_l \\ \dot{v}_r \end{bmatrix} &=
+  \begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+  \end{bmatrix} \dot{v}_c +   \begin{bmatrix} -r_l \\ r_r \end{bmatrix} \frac{d^2\theta}{ds^2} v_c^2 \\
+\end{align*}
+
+And finally, we need to know the lateral accelerations of the two wheels as
+part of determining whether we would be breaking friction. Note that, because of
+the general assumptions we are making about the setup of the robot, the lateral
+acceleration on the two wheels will be identical (if they were not identical,
+that would imply the robot was tearing itself apart side-to-side).
+
+\begin{align*}
+a_{lat} &= \frac{d\theta}{ds} v_c^2 \\
+\end{align*}
+
+Finally, we need to be combine the lateral/longitudinal accelerations of each
+wheel to determine whether the wheel would break friction. While technically
+there is only one expression for this, as a practical matter we have a bit of
+leeway in defining exactly what the relationship should be (e.g., if we want
+separate max longitudinal/lateral accelerations, we can create an ellipse; we
+could also just create a raw rectangle and decouple the two, although that would
+probably be a particularly poor approximation of the actual dynamics). For now
+we will say that our friction is limited by some nonnegative convex function
+$g(a_{lat}, a_{lng}) \le 1$ for any given wheel.
+
+Summarizing our equations and constraints, we have:
+
+\begin{align*}
+v_c &= \frac{v_l r_r + v_r r_l}{r_r + r_l} \\
+a_{lat} &= \frac{d\theta}{ds} v_c^2 \\
+g(a_{lat}, \dot{v}_l) &\le 1 \\
+g(a_{lat}, \dot{v}_r) &\le 1 \\
+\abs{u_l} &\le V_{max} \\
+\abs{u_r} &\le V_{max} \\
+\begin{bmatrix} v_l \\ v_r \end{bmatrix} &= \begin{bmatrix} 1 - r_l
+    \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+\end{bmatrix} v_c \\
+\begin{bmatrix} \dot{v}_l \\ \dot{v}_r \end{bmatrix} &=
+   A \begin{bmatrix} v_l \\ v_r \end{bmatrix} + B \begin{bmatrix} u_l \\ u_r
+   \end{bmatrix} \\
+\begin{bmatrix} \dot{v}_l \\ \dot{v}_r \end{bmatrix} &=
+  \begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+  \end{bmatrix} \dot{v}_c +   \begin{bmatrix} -r_l \\ r_r \end{bmatrix} \frac{d^2\theta}{ds^2} v_c^2 \\
+\end{align*}
+
+With $v_l$, $v_r$, $u_l$, and $u_r$ free at all $s$ except the start and end, at
+which the velocities must
+be zero (technically, we could make do with allowing non-zero velocities, but
+then we could end up in situations that would be impossible to solve--because
+the splines have differentiable curvature, any of the splines we use will always
+have some valid velocity profile, but depending on the curvature, that velocity
+may be arbitrarily small).
+
+We can provide an upper limit on the goal velocity at any given point with the
+min of the specified max velocity and the lateral-acceleration limited velocity.
+This also gives an initial pass of the longitudinal accelerations that would be
+required to follow this profile.
+
+\begin{align*}
+v_{lat} &= \min (v_{max}, \sqrt{\frac{a_{lat,max}}{\frac{d\theta}{ds}}}) \\
+\dot{v}_{lat} &= \begin{cases} 0 & v_{lat} = v_{max} \\
+-\frac12 \sqrt{\frac{a_{lat,max}}{\frac{d\theta}{ds}^3}} \frac{d^2\theta}{ds^2}
+v_{lat} & v_{lat} \ne v_{max} \\
+\end{cases} \\
+&= \begin{cases} 0 & v_{lat} = v_{max} \\
+-\frac12 \frac{a_{lat,max}}{\frac{d\theta}{ds}^2} \frac{d^2\theta}{ds^2}
+ & v_{lat} \ne v_{max} \\
+\end{cases} \\
+\end{align*}
+
+If we start to consider accounting also for longitudinal accelerations, we can
+start with:
+
+\begin{align}
+\begin{bmatrix} \dot{v}_l \\ \dot{v}_r \end{bmatrix} &=
+  \begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+  \end{bmatrix} \dot{v}_c +   \begin{bmatrix} -r_l \\ r_r \end{bmatrix} \frac{d^2\theta}{ds^2} v_c^2 \\
+(r_r + r_l)
+\left[ \begin{bmatrix} \dot{v}_l \\ \dot{v}_r \end{bmatrix} &=
+  \begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+  \end{bmatrix} \frac{\dot{v}_l r_r + \dot{v}_r r_l}{r_r + r_l} +   \begin{bmatrix} -r_l \\ r_r \end{bmatrix} \frac{d^2\theta}{ds^2} v_c^2
+  \right] \\
+\begin{bmatrix}
+r_l + r_l r_r \frac{d\theta}{ds} & -r_l + r_lr_l \frac{d\theta}{ds} \\
+-r_r - r_r r_r \frac{d\theta}{ds} & r_r - r_r r_l \frac{d\theta}{ds} \\
+\end{bmatrix}
+\begin{bmatrix} \dot{v}_l \\ \dot{v}_r \end{bmatrix} &=
+  \begin{bmatrix} -r_l \\ r_r \end{bmatrix} (r_l + r_r) \frac{d^2\theta}{ds^2} v_c^2 \\
+\begin{bmatrix}
+1 + r_r \frac{d\theta}{ds} & -1 + r_l \frac{d\theta}{ds} \\
+-1 - r_r \frac{d\theta}{ds} & 1 - r_l \frac{d\theta}{ds} \\
+\end{bmatrix}
+\begin{bmatrix} \dot{v}_l \\ \dot{v}_r \end{bmatrix} &=
+  \begin{bmatrix} -1 \\ 1 \end{bmatrix} (r_l + r_r) \frac{d^2\theta}{ds^2} v_c^2 \\
+\begin{bmatrix}
+1 + r_r \frac{d\theta}{ds} & -1 + r_l \frac{d\theta}{ds} \\
+1 + r_r \frac{d\theta}{ds} & -1 + r_l \frac{d\theta}{ds} \\
+\end{bmatrix}
+\begin{bmatrix} \dot{v}_l \\ \dot{v}_r \end{bmatrix} &=
+   -(r_l + r_r) \frac{d^2\theta}{ds^2} v_c^2 \\
+(1 + r_r \frac{d\theta}{ds}) \dot{v}_l + (-1 + r_l \frac{d\theta}{ds}) \dot{v}_r &=
+   -(r_l + r_r) \frac{d^2\theta}{ds^2} v_c^2 \\
+%(1 + r \frac{d\theta}{ds}) \dot{v}_l + (-1 + r \frac{d\theta}{ds}) (2\dot{v}_c -
+%\dot{v}_l) &=
+%   -2 r \frac{d^2\theta}{ds^2} v_c^2 \\
+%2 \dot{v}_l + 2(-1 + r \frac{d\theta}{ds}) \dot{v}_c
+% &= -2 r \frac{d^2\theta}{ds^2} v_c^2 \\
+%\dot{v}_l &= (1 - r \frac{d\theta}{ds}) \dot{v}_c - 2 r \frac{d^2\theta}{ds^2} v_c^2 \\
+%\dot{v}_r &= (1 + r \frac{d\theta}{ds}) \dot{v}_c + 2 r \frac{d^2\theta}{ds^2} v_c^2 \\
+\begin{bmatrix}
+1 & 0 \\
+0 & 1 \\
+-1 & 0 \\
+0 & -1 \\
+\end{bmatrix}
+\begin{bmatrix} \dot{v}_l \\ \dot{v}_r \end{bmatrix} &\le g'(v_c, s) \\
+\begin{bmatrix}
+1 & 0 \\
+0 & 1 \\
+-1 & 0 \\
+0 & -1 \\
+\end{bmatrix} \left(
+\begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+\end{bmatrix} \dot{v}_c +   \begin{bmatrix} -r_l \\ r_r \end{bmatrix} \frac{d^2\theta}{ds^2} v_c^2
+\right) &\le g'(v_c, s)
+\end{align}
+
+Note how we have a linear relationship between $\dot{v}_l$ and $\dot{v}_r$,
+where the slope of the line between the two is constant at any given point on
+the path, but the y-intercept and the max/min bounds get tighter with speed.
+Furthermore, the velocity along the path ($v_c$) is a linear function of the
+wheel velocities $v_l$ and $v_r$. Thus, we can state, at any given point on the
+path, a lower velocity along the path will not decrease our acceleration
+bounds (if we are travelling in a straight line, then our speed does not affect
+the straight-line acceleration limits).
+
+We also can introduce the voltage constraints:
+
+\begin{align}
+\begin{bmatrix} \dot{v}_l \\ \dot{v}_r \end{bmatrix} &=
+   A \begin{bmatrix} v_l \\ v_r \end{bmatrix} + B \begin{bmatrix} u_l \\ u_r
+   \end{bmatrix} \\
+\begin{bmatrix} \dot{v}_l \\ \dot{v}_r \end{bmatrix} &=
+   A \begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+     \end{bmatrix} v_c + B \begin{bmatrix} u_l \\ u_r \end{bmatrix} \\
+\begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+  \end{bmatrix} \dot{v}_c +   \begin{bmatrix} -r_l \\ r_r \end{bmatrix} \frac{d^2\theta}{ds^2} v_c^2
+  &= A \begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+     \end{bmatrix} v_c + B \begin{bmatrix} u_l \\ u_r \end{bmatrix} \\
+\end{align}
+
+With these constraints, we can no longer guarantee that the set of feasible
+velocities at any given point along the path is contiguous. However, we can
+guarantee that at any given point there will be at most 2 contiguous sets of
+valid velocities---in the case where there are two separate sets of allowable
+velocities, then one corresponds to the lower velocities which start at zero and
+go up until we can no longer use our finite available voltage to track the path.
+The second zone can occur at higher velocities where we are going so fast that
+the deceleration from the Back-EMF of the motor is enough to slow us down, but
+not so fast that we would lose friction.
+
+This divergence does technically create a bit of a challenge--if it were to,
+e.g., split into arbitrarily many possible paths than that would complicate the
+optimization problem substantially. However, because:
+\begin{enumerate}
+\item We only split into two branches at once; and
+\item we should only have a limited number of branchings for a given N-spline
+\footnote{I'll leave this as an exercise to the reader/my future self. However,
+logically, a spline with a given number of points can only have so many features
+and so should be able to have a very finite number of branchings.}.
+\end{enumerate}
+
+It should not actually be an issue to exhaustively attempt to plan for all
+possible branchings, knowing that the path of ``always follow the slower
+branch'' will always provide a feasible path, and choose whatever feasible plan
+is fastest.
+
+Once we choose which branch to take, it is a relatively simple matter of
+exercising the existing method. Essentially, taking the set of feasible
+velocities/accelerations as a starting point we do a forwards and backwards pass
+(order is unimportant)) where we start at our initial/terminal velocity, and
+accelerate forwards/decelerate backwards as hard as possible for each pass. If
+attempting to accelerate as hard as possible on the forwards pass (or,
+conversely, decelerate on the backwards) results in us violating the feasible
+velocity bounds, we can simply set the velocity at that point for that pass to
+the highest feasible velocity. We can guarantee that the pass in the opposite
+direction will \emph{not} get stuck at that same point because if that would
+suggest we had different physics going backwards than forwards, which is not the
+case\footnote{I'm too lazy to spell this logic out more carefully, and I don't
+think it is wrong. That is not guaranteed, however.}.
+
+\section{Specialization for Friction Circle}
+
+As our particular friction circle, we will attempt to use a straight
+ellipse\footnote{Note that this has numerical stability issues due to the
+infinite slope near zero}.
+With a $a_{lat,max}$ and $a_{lng,max}$ for the maximum lateral and longitudinal
+accelerations, i.e.:
+
+\begin{align*}
+g(a_{lat}, a_{lng}) &= \left(\frac{a_{lat}}{a_{lat,max}}\right)^2
+                       + \left(\frac{a_{lng}}{a_{lng,max}}\right)^2 \\
+\end{align*}
+
+We care about turning this into a function of the path geometry and the current
+velocity that returns the max longitudinal acceleration and lets us calculate
+the friction-limited maximum acceleration, $v_{c,fmax}$. In order to do so, we
+note that, in order to be at the edge of a feasible velocity, we observe that,
+at any given $v_c$, we will have two pairs of constraints on the center-of-mass
+longitudinal acceleration that both must be met,
+corresponding to the fact that the each wheel creates an upper/lower bound
+on the valid accelerations of the center-of-mass of the robot, but at high
+$\frac{d^2\theta}{ds^2}v_c^2$, the constraints from each wheel may not overlap.
+Thus, we care about the $v_c$ such that the pairs of constraints \emph{just
+barely} overlap. This will happen when one constraint from the right wheel and
+one from the left are just on the edge of being violated; furthermore, of the
+four possible left/right pairings (+/- of left/right), only two pairs correspond
+to being on the edge of overlapping (the other two pairs correspond to, e.g.,
+having the upper acceleration limit in the same spot, as occurs when driving
+straight; in such a situation, there are plenty of valid accelerations, we just
+happen to start slipping both wheels at the same time). Which pair to look at is
+determined by the signs on $\dot{v}_c$--if they are the same (as would occur
+when going nearly straight), then we care about when the opposite limits
+overlap (e.g., upper limit on the left, lower on the right).
+
+\begin{align*}
+\dot{v}_l, \dot{v}_r &\le a_{lng, max} \sqrt{1 - \left(\frac{a_{lat}}{a_{lat,max}}\right)^2} \\
+\dot{v}_l, \dot{v}_r &\le a_{lng, max} \sqrt{1 - \left(\frac{\frac{d\theta}{ds}v_c^2}{a_{lat,max}}\right)^2} \\
+  \begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds} \\
+ -1 + r_l \frac{d\theta}{ds} \\ -1 - r_r \frac{d\theta}{ds}
+  \end{bmatrix} \dot{v}_c  &\le  \begin{bmatrix} r_l \\ -r_r \\ -r_l \\ r_r \end{bmatrix} \frac{d^2\theta}{ds^2} v_c^2
+ + a_{lng, max} \sqrt{1 - \left(\frac{\frac{d\theta}{ds}v_c^2}{a_{lat,max}}\right)^2} \\
+0 &= \pm \{r_l,r_r\} \frac{d^2\theta}{ds^2} v_{c,fmax}^2 +  a_{lng, max} \sqrt{1 -
+  \left(\frac{\frac{d\theta}{ds}v_{c,fmax}^2}{a_{lat,max}}\right)^2} \\
+\left(\frac{d^2\theta}{ds^2} \frac{\{r_l,r_r\}v_{c,fmax}^2}{a_{lng, max}}\right)^2 &=
+  1 - \left(\frac{\frac{d\theta}{ds}v_{c,fmax}^2}{a_{lat,max}}\right)^2 \\
+v_{c,fmax} &= \min_{r \in \{r_l, r_r\}}
+\left(\left(\frac{d^2\theta}{ds^2} \frac{r}{a_{lng, max}}\right)^2 +
+   \left(\frac{\frac{d\theta}{ds}}{a_{lat,max}}\right)^2\right)^{-\frac14} \\
+\begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+\end{bmatrix} \dot{v}_c +   \begin{bmatrix} -r_l \\ r_r \end{bmatrix} \frac{d^2\theta}{ds^2} v_c^2
+&= \begin{bmatrix}\pm 1 \\ \pm 1\end{bmatrix}
+   a_{lng, max} \sqrt{1 - \left(\frac{\frac{d\theta}{ds}v_c^2}{a_{lat,max}}\right)^2} \\
+K_2 \dot{v}_c + K_1 v_c^2
+&= \begin{bmatrix}\pm 1 \\ \pm 1\end{bmatrix}
+   a_{lng, max} \sqrt{1 - \left(\frac{\frac{d\theta}{ds}v_c^2}{a_{lat,max}}\right)^2} \\
+K_2' K_2 \dot{v}_c + K_2' K_1 v_c^2
+&= K_2' \begin{bmatrix}\pm 1 \\ \pm 1\end{bmatrix}
+   a_{lng, max} \sqrt{1 - \left(\frac{\frac{d\theta}{ds}v_c^2}{a_{lat,max}}\right)^2} \\
+K_2' K_1 v_c^2
+&= K_2' \begin{bmatrix}\pm 1 \\ \pm 1\end{bmatrix}
+   a_{lng, max} \sqrt{1 - \left(\frac{\frac{d\theta}{ds}v_c^2}{a_{lat,max}}\right)^2} \\
+\left(\frac{K_2' K_1 v_c^2}{K_2' \begin{bmatrix} 1 \\ \pm 1\end{bmatrix}a_{lng,max}}\right)^2
+&= 1 - \left(\frac{\frac{d\theta}{ds}v_c^2}{a_{lat,max}}\right)^2 \\
+v_c &= \min \left(
+\left(\frac{K_2'K_1}{K_2' \begin{bmatrix} 1 \\ \pm 1\end{bmatrix}a_{lng, max}}\right)^2 +
+   \left(\frac{\frac{d\theta}{ds}}{a_{lat,max}}\right)^2
+  \right)^{-\frac14}
+\end{align*}
+
+Where the $\pm 1$ term will have opposite signs of the two coefficients of
+$K_2$ have the same sign, and will have the same sign of the coefficients of
+$K_2$ have opposite signs.
+
+$K_2'$ refers to a transformed version of $K_2$ such that $K_2'K_2 = 0$ (see
+below for exact definition).
+
+\section{Calculating Feasible Voltage Velocities}
+
+Given:
+
+\begin{align*}
+\begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+  \end{bmatrix} \dot{v}_c +   \begin{bmatrix} -r_l \\ r_r \end{bmatrix} \frac{d^2\theta}{ds^2} v_c^2
+  &= A \begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+     \end{bmatrix} v_c + B \begin{bmatrix} u_l \\ u_r \end{bmatrix} \\
+\abs{u} &\le V_{max} \\
+\norm{B^{-1} \left(\begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+  \end{bmatrix} \dot{v}_c +   \begin{bmatrix} -r_l \\ r_r \end{bmatrix} \frac{d^2\theta}{ds^2} v_c^2
+  - A \begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+     \end{bmatrix} v_c\right) }_\infty \le V_{max} \\
+\end{align}
+
+This is a linear program for fixed $v_c$. We wish to determine the limits of
+$v_c$ for which the linear program will have a solution.
+
+In order to analyze this linear program in $\dot{v}_c$, it is useful to know the
+signs of the coefficients of $\dot{v}_c$, which in this case are
+$B^{-1} \begin{bmatrix}1 - r_l\frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}\end{bmatrix}$
+
+If either coefficient is zero, then for any given
+$v_c$, then the linear program
+becomes trivial, as the term with $\dot{v}_c$ will drop out of one of the rows
+and so the other row will be guaranteed to be valid for some $\dot{v}_c$ while
+the row with the dropped $\dot{v}_c$ will either be valid or not. If $B$ were
+the identity matrix, then this would
+correspond to situations where one wheel is stationary and the
+acceleration of that wheel is not affected by the overall acceleration along the
+path. Determining the limits of allowable velocities is then an issue of
+calculating the point at which the stationary wheel goes from being controllable
+to not, for a given overall velocity.
+
+Otherwise, the edge of feasibility will occur
+when the pair of constraints (where one pair is for the left voltage, one for
+the right) cross and so we will have each voltage as $\pm V_{max}$; if
+the signs of the coefficients differ, then we will have
+$u_l = u_r$. Otherwise, $u_l = -u_r$.
+
+For $u_l = u_r$, attempting to maximize $v_c$:
+\begin{align*}
+B^{-1} \left(\begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+  \end{bmatrix} \dot{v}_c +   \begin{bmatrix} -r_l \\ r_r \end{bmatrix} \frac{d^2\theta}{ds^2} v_c^2
+  - A \begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+     \end{bmatrix} v_c\right) &= \pm \begin{bmatrix} V_{max} \\ V_{max} \end{bmatrix} \\
+\begin{pmatrix} 1 + r_r\frac{d\theta}{ds} \\ r_l\frac{d\theta}{ds} - 1
+  \end{pmatrix}\left(
+\begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+  \end{bmatrix} \dot{v}_c +   \begin{bmatrix} -r_l \\ r_r \end{bmatrix} \frac{d^2\theta}{ds^2} v_c^2
+  - A \begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+     \end{bmatrix} v_c &= \pm B \begin{bmatrix} V_{max} \\ V_{max} \end{bmatrix}
+     \right) \\
+(r_l \frac{d\theta}{ds} - 1) (1 + r_r \frac{d\theta}{ds}) \dot{v}_c +
+  \begin{bmatrix} -r_l - r_lr_r\frac{d\theta}{ds} \\ -r_r +
+  r_lr_r\frac{d\theta}{ds} \end{bmatrix} \frac{d^2\theta}{ds^2} v_c^2
+  - \begin{bmatrix} 1 + r_r \frac{d\theta}{ds} & 0 \\ 0 & r_l \frac{d\theta}{ds} - 1
+  \end{bmatrix} A \begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+     \end{bmatrix} v_c &=
+   \begin{bmatrix} 1 + r_r \frac{d\theta}{ds} & 0 \\ 0 & r_l \frac{d\theta}{ds} - 1
+   \end{bmatrix} B
+     \begin{bmatrix} \pm V_{max} \\ \pm V_{max} \end{bmatrix}
+\end{align*}
+
+\begin{align*}
+ -(r_l + r_r) \frac{d^2\theta}{ds^2} v_c^2
+ - ((1 + r_r\frac{d\theta}{ds})(A_{11}(1 - r_l\frac{d\theta}{ds}) + A_{12}(1 + r_r\frac{d\theta}{ds}))
+  + (r_l\frac{d\theta}{ds} - 1)(A_{12}(1 - r_l\frac{d\theta}{ds}) + A_{11}(1 + r_r\frac{d\theta}{ds}))
+     ) v_c &= \\
+   \pm V_{max}\frac{d\theta}{ds}(B_{12}r_l + B_{11}r_l + B_{11}r_r + B_{12}r_r) \\
+ (r_l + r_r) \frac{d^2\theta}{ds^2} v_c^2 +
+ \frac{d\theta}{ds}( A_{11} (-r_l - r_r) + A_{12}(r_r + r_l) +
+  r_r(A_{11}(1 - r_l\frac{d\theta}{ds}) + A_{12}(1 + r_r\frac{d\theta}{ds}))  +
+  r_l(A_{12}(1 - r_l\frac{d\theta}{ds}) + A_{11}(1 + r_r\frac{d\theta}{ds}))
+     ) v_c &= \\
+ (r_l + r_r) \frac{d^2\theta}{ds^2} v_c^2 +
+ \frac{d\theta}{ds}( (r_l + r_r) (A_{12} - A_{11}) +
+ A_{11}(r_l + r_r) + A_{12}(r_l + r_r) +
+ A_{12}\frac{d\theta}{ds}(r_r^2 - r_l^2)) v_c &= \\
+ (r_l + r_r) \left( \frac{d^2\theta}{ds^2} v_c^2 +
+ \frac{d\theta}{ds}A_{12}\left(2 +
+ \frac{d\theta}{ds}(r_r - r_l)\right) v_c\right) &= \\
+     \pm V_{max}(r_l + r_r)\frac{d\theta}{ds}(B_{11} + B_{12}) \\
+ \frac{d^2\theta}{ds^2} v_c^2 +
+ \frac{d\theta}{ds}A_{12}\left(2 + \frac{d\theta}{ds}(r_r - r_l)\right) v_c =
+     \pm V_{max}\frac{d\theta}{ds}(B_{11} + B_{12}) \\
+\end{align*}
+
+Note that when I eliminate parts of $A$ and $B$ I am taking advantage of the
+fact that different rows of $A$ and $B$ are just reordered version of one
+another (i.e., each is of the format $\begin{bmatrix} a & b \\ b & a
+\end{bmatrix}$).
+
+In the final equation, we then execute the quadratic formula for $v_c$.
+Note that if you write
+the quadratic formula out there will be up to 4 real solutions (the two
+solutions to the quadratic formula by the two $\pm V_{max}$ results); because
+of the placement of the $\pm V_{max}$, then
+0, 1, or 3 of the solutions will be greater than zero \footnote{The basic format of
+the quadratic formula
+in this case will be $b \pm \sqrt{b^2 \pm k}$ or some equivalent, and
+$0 < \abs{k} \le b^2$ ($\abs{k} \le b^$ is necessary to have 4 real solutions;
+and $k = 0$ only if
+$b$ also is zero, or if $V_{max} = 0$, which are not particularly
+relevant corner cases). If $b$ is positive,
+then 3 will be positive ($b +$ anything is positive, and since
+$\sqrt{b^2 - k} \le b$, $b - \sqrt{b^2 - k} \ge 0$, while $b - \sqrt{b^2 + k}
+\le 0$). A similar argument holds for negative $b$. If $b = 0$, then if there
+are four real solutions, all four are zero. If there are not four real
+solutions, then $\abs{k} > b^2$ and we have two real solutions. In this case,
+because $\sqrt{b^2 + k} > b$, we will have one positive and one negative
+solution.}. The zero positive solution case is not particularly interesting, as
+it only applies at zero curvature (which cannot apply here, as we already stated
+that $\abs{r\frac{d\theta}{ds}} > 1$ (or, if we have zero $V_{max}$). The one
+or three provide us our cutoffs for where there may be a gap in allowable
+accelerations.
+
+For situations where the coefficients have the same sign, attempting to maximize $v_c$:
+
+\begin{align*}
+(r_l \frac{d\theta}{ds} - 1) (1 + r_r \frac{d\theta}{ds}) \dot{v}_c +
+  \begin{bmatrix} -r_l - r_lr_r\frac{d\theta}{ds} \\ -r_r +
+  r_lr_r\frac{d\theta}{ds} \end{bmatrix} \frac{d^2\theta}{ds^2} v_c^2
+  - \begin{bmatrix} 1 + r_r \frac{d\theta}{ds} & 0 \\ 0 & r_l \frac{d\theta}{ds} - 1
+  \end{bmatrix} A \begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+     \end{bmatrix} v_c &=
+   \begin{bmatrix} 1 + r_r \frac{d\theta}{ds} & 0 \\ 0 & r_l \frac{d\theta}{ds} - 1
+   \end{bmatrix} B
+     \begin{bmatrix} \pm V_{max} \\ \mp V_{max} \end{bmatrix}
+\end{align*}
+
+\begin{align*}
+ (r_l + r_r) \left( \frac{d^2\theta}{ds^2} v_c^2 +
+ \frac{d\theta}{ds}A_{12}\left(2 +
+ \frac{d\theta}{ds}(r_r - r_l)\right) v_c\right) &=
+   \pm V_{max}(B_{11} - B_{12})(2 + \frac{d\theta}{ds}(r_r - r_l)) \\
+ \frac{d^2\theta}{ds^2} v_c^2 +
+ \frac{d\theta}{ds}A_{12}\left(2 +
+ \frac{d\theta}{ds}(r_r - r_l)\right) v_c &=
+   \pm V_{max}\frac{(B_{11} - B_{12})(2 + \frac{d\theta}{ds}(r_r - r_l))}{r_r + r_l}\\
+\end{align*}
+
+Where the same basic rules apply to the quadratic formula solutions.
+
+Considering situations where one of the rows in the equations disappear,
+we end up with the $\dot{v}_c$ term disappearing and
+we must solve the following equation for whichever row of $B^{-1}$ $B^{-1}_N$
+causes the $\dot{v}_c$ term to disappear:
+\begin{align*}
+B^{-1} &= \frac{1}{B_{11}^2 - B_{12}^2}\begin{bmatrix} B_{11} & -B_{12} \\
+                                   -B_{12} & B_{11} \end{bmatrix} \\
+B^{-1}_N\left(
+  \begin{bmatrix} -r_l \\ r_r \end{bmatrix} \frac{d^2\theta}{ds^2} v_c^2
+  - A \begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\
+                      1 + r_r \frac{d\theta}{ds} \end{bmatrix} v_c \right)
+                      &= \pm V_{max} \\
+\end{align*}
+
+
+Trying to be more general:
+\begin{align*}
+B^{-1} \left(\begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+  \end{bmatrix} \dot{v}_c +   \begin{bmatrix} -r_l \\ r_r \end{bmatrix} \frac{d^2\theta}{ds^2} v_c^2
+  - A \begin{bmatrix} 1 - r_l \frac{d\theta}{ds} \\ 1 + r_r \frac{d\theta}{ds}
+     \end{bmatrix} v_c\right) &= \pm \begin{bmatrix} V_{max} \\ V_{max} \end{bmatrix} \\
+B^{-1} \left(K_2 \dot{v}_c +   K_1 v_c^2 - A K_2 v_c\right) &=
+   \pm \begin{bmatrix} V_{max} \\ V_{max} \end{bmatrix} \\
+K_2' &= K_2^T  \begin{bmatrix} 0 & 1 \\ -1 & 0 \end{bmatrix} \\
+K_2' \left(K_2 \dot{v}_c +   K_1 v_c^2 - A K_2 v_c\right) &=
+   K_2' B \begin{bmatrix} \pm 1 \\ \pm 1 \end{bmatrix} V_{max} \\
+K_2' \left(K_2 \dot{v}_c +   K_1 v_c^2 - A K_2 v_c\right) &=
+   K_2' B \begin{bmatrix} \pm 1 \\ \pm 1 \end{bmatrix} V_{max} \\
+K_2' \left(K_1 v_c^2 - A K_2 v_c\right) &=
+   K_2' B \begin{bmatrix} \pm 1 \\ \pm 1 \end{bmatrix} V_{max} \\
+ \end{align*}
+
+The quadratic formula coefficients:
+\begin{align*}
+a v_c^2 + b v_c + c &= 0 \\
+a &= K_2'K_1 \\
+b &= -K_2'AK_2 \\
+c &= -K_2' B \begin{bmatrix} \pm 1 \\ \pm 1 \end{bmatrix} V_{max} \\
+b^2 - 4 ac &= (K_2'AK_2)^2 + 4K_2'K_1 K_2'B \begin{bmatrix} \pm 1 \\ \pm 1 \end{bmatrix} V_{max} \\
+\end{align*}
+
+%Interestingly, the solutions for both basically devolve to:
+%\begin{align*}
+% \frac{d^2\theta}{ds^2} v_c^2 + 2 \frac{d\theta}{ds} A_{12} v_c
+%  = \pm V_{max}\max(\abs{\frac{d\theta}{ds}}, 1)(B_{11} + B_{12}) \\
+%\end{align*}
+%
+%While not overly interesting, the moments when we will have a split in
+%feasibility will be at:
+%
+%\begin{align*}
+%0 < \abs{4V_{max}\max(\abs{\frac{d\theta}{ds}}, 1)(B_{11} +
+%B_{12})\frac{d^2\theta}{ds^2}} &\le \abs{2\frac{d\theta}{ds} A_{12}} \\
+%\abs{\frac{d\theta}{ds}} &\le 1 : \\
+%0 < \abs{2V_{max}(B_{11} + B_{12})\frac{d^2\theta}{ds^2}} &\le
+%\abs{\frac{d\theta}{ds} A_{12}} \\
+%\abs{\frac{d\theta}{ds}} &> 1 : \\
+%0 < \abs{2V_{max}(B_{11} + B_{12})\frac{d^2\theta}{ds^2}} &\le \abs{A_{12}} \\
+%\end{align*}
+%
+%Note that, in general, $A_{12}$ will be relatively small when compared to
+%$2V_{max}(B_{11} + B_{12})$.
+
+%\begin{align*}
+%B_{12} = B_{21} &, B_{11} = B_{22} \\
+%2 r \frac{d^2\theta}{ds^2} v_c^2 &= \pm 2V_{max}r\frac{d\theta}{ds} (B_{12} - B_{11}) \\
+%v_c &= \sqrt{\pm\frac{V_{max}\frac{d\theta}{ds}}{\frac{d^2\theta}{ds^2}} (B_{12} - B_{11})} \\
+%\end{align*}
+%
+%\begin{align*}
+%\begin{bmatrix} 1 - r^2 \frac{d\theta}{ds}^2 \\ 1 - r^2 \frac{d\theta}{ds}^2
+%  \end{bmatrix} \dot{v}_c +   \begin{bmatrix} -1 - r\frac{d\theta}{ds} \\ 1 -
+%  r\frac{d\theta}{ds} \end{bmatrix} r \frac{d^2\theta}{ds^2} v_c^2
+%  - A \begin{bmatrix} 1 - r^2 \frac{d\theta}{ds}^2 \\ 1 - r^2 \frac{d\theta}{ds}^2
+%     \end{bmatrix} v_c &=  B
+%     \begin{bmatrix} \mp V_{max} (1 + r\frac{d\theta}{ds}) \\ \pm V_{max} (1 -
+%     r\frac{d\theta}{ds}) \end{bmatrix} \\
+% 2 r \frac{d^2\theta}{ds^2} v_c^2
+%      &= \pm V_{max}(B_{21} - B_{22} - B_{11} + B_{12}) \\
+% r \frac{d^2\theta}{ds^2} v_c^2
+%      &= \pm V_{max}(B_{12} - B_{11}) \\
+%v_c &= \sqrt{\pm \frac{V_{max}}{r\frac{d^2\theta}{ds^2}} (B_{12} - B_{11})} \\
+%\end{align*}
+
+\end{document}

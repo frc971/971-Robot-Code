@@ -43,9 +43,9 @@ class Trajectory {
   Trajectory(const DistanceSpline *spline,
              const DrivetrainConfig<double> &config, double vmax = 10.0,
              int num_distance = 0);
-  // Sets the plan longitudal acceleration limit
-  void set_longitudal_acceleration(double longitudal_acceleration) {
-    longitudal_acceleration_ = longitudal_acceleration;
+  // Sets the plan longitudinal acceleration limit
+  void set_longitudinal_acceleration(double longitudinal_acceleration) {
+    longitudinal_acceleration_ = longitudinal_acceleration;
   }
   // Sets the plan lateral acceleration limit
   void set_lateral_acceleration(double lateral_acceleration) {
@@ -56,10 +56,42 @@ class Trajectory {
     voltage_limit_ = voltage_limit;
   }
 
-  // Returns the velocity limit for a defined distance.
-  double LateralVelocityCurvature(double distance) const {
-    return ::std::sqrt(lateral_acceleration_ / spline_->DDXY(distance).norm());
-  }
+  // Returns the friction-constrained velocity limit at a given distance along
+  // the path. At the returned velocity, one or both wheels will be on the edge
+  // of slipping.
+  // There are some very disorganized thoughts on the math here and in some of
+  // the other functions in spline_math.tex.
+  double LateralVelocityCurvature(double distance) const;
+
+  // Returns the range of allowable longitudinal accelerations for the center of
+  // the robot at a particular distance (x) along the path and velocity (v).
+  // min_accel and max_accel correspodn to the min/max accelerations that can be
+  // achieved without breaking friction limits on one or both wheels.
+  // If max_accel < min_accel, that implies that v is too high for there to be
+  // any valid acceleration. FrictionLngAccelLimits(x,
+  // LateralVelocityCurvature(x), &min_accel, &max_accel) should result in
+  // min_accel == max_accel.
+  void FrictionLngAccelLimits(double x, double v, double *min_accel,
+                              double *max_accel) const;
+
+  enum class VoltageLimit {
+    kConservative,
+    kAggressive,
+  };
+
+  // Calculates the maximum voltage at which we *can* track the path. In some
+  // cases there will be two ranges of feasible velocities for traversing the
+  // path--in such a situation, from zero to velocity A we will be able to track
+  // the path, from velocity A to B we can't, from B to C we can and above C we
+  // can't. If limit_type = kConservative, we return A; if limit_type =
+  // kAggressive, we return C. We currently just use the kConservative limit
+  // because that way we can guarantee that all velocities between zero and A
+  // are allowable and don't have to handle a more complicated planning problem.
+  // constraint_voltages will be populated by the only wheel voltages that are
+  // valid at the returned limit.
+  double VoltageVelocityLimit(
+      double distance, VoltageLimit limit_type,
+      Eigen::Matrix<double, 2, 1> *constraint_voltages = nullptr) const;
 
   // Limits the velocity in the specified segment to the max velocity.
   void LimitVelocity(double starting_distance, double ending_distance,
@@ -67,25 +99,28 @@ class Trajectory {
 
   // Runs the lateral acceleration (curvature) pass on the plan.
   void LateralAccelPass();
-
-  // Returns the forward acceleration for a distance along the spline taking
-  // into account the lateral acceleration, longitudinal acceleration, and
-  // voltage limits.
-  double ForwardAcceleration(const double x, const double v);
+  void VoltageFeasibilityPass(VoltageLimit limit_type);
 
   // Runs the forwards pass, setting the starting velocity to 0 m/s
   void ForwardPass();
 
-  // Returns the backwards acceleration for a distance along the spline taking
-  // into account the lateral acceleration, longitudinal acceleration, and
-  // voltage limits.
-  double BackwardAcceleration(double x, double v);
+  // Returns the forwards/backwards acceleration for a distance along the spline
+  // taking into account the lateral acceleration, longitudinal acceleration,
+  // and voltage limits.
+  double BestAcceleration(double x, double v, bool backwards);
+  double BackwardAcceleration(double x, double v) {
+    return BestAcceleration(x, v, true);
+  }
+  double ForwardAcceleration(double x, double v) {
+    return BestAcceleration(x, v, false);
+  }
 
   // Runs the forwards pass, setting the ending velocity to 0 m/s
   void BackwardPass();
 
   // Runs all the planning passes.
   void Plan() {
+    VoltageFeasibilityPass(VoltageLimit::kConservative);
     LateralAccelPass();
     ForwardPass();
     BackwardPass();
@@ -167,11 +202,27 @@ class Trajectory {
     VELOCITY_LIMITED,
     CURVATURE_LIMITED,
     ACCELERATION_LIMITED,
-    DECELERATION_LIMITED
+    DECELERATION_LIMITED,
+    VOLTAGE_LIMITED,
   };
 
   const ::std::vector<SegmentType> &plan_segment_type() const {
     return plan_segment_type_;
+  }
+
+  // Returns K1 and K2.
+  // K2 * d^x/dt^2 + K1 (dx/dt)^2 = A * K2 * dx/dt + B * U
+  const ::Eigen::Matrix<double, 2, 1> K1(double current_ddtheta) const {
+    return (::Eigen::Matrix<double, 2, 1>()
+                << -robot_radius_l_ * current_ddtheta,
+            robot_radius_r_ * current_ddtheta).finished();
+  }
+
+  const ::Eigen::Matrix<double, 2, 1> K2(double current_dtheta) const {
+    return (::Eigen::Matrix<double, 2, 1>()
+                << 1.0 - robot_radius_l_ * current_dtheta,
+            1.0 + robot_radius_r_ * current_dtheta)
+        .finished();
   }
 
  private:
@@ -182,22 +233,6 @@ class Trajectory {
         ::std::min(plan_segment_type_.size() - 1,
                    static_cast<size_t>(::std::floor(distance / length() *
                                                     (plan_.size() - 1)))));
-  }
-
-  // Returns K1 and K2.
-  // K2 * d^x/dt^2 + K1 (dx/dt)^2 = A * K2 * dx/dt + B * U
-  const ::Eigen::Matrix<double, 2, 1> K1(double current_ddtheta) const {
-    return (::Eigen::Matrix<double, 2, 1>()
-                << -robot_radius_l_ * current_ddtheta,
-            robot_radius_r_ * current_ddtheta)
-        .finished();
-  }
-
-  const ::Eigen::Matrix<double, 2, 1> K2(double current_dtheta) const {
-    return (::Eigen::Matrix<double, 2, 1>()
-                << 1.0 - robot_radius_l_ * current_dtheta,
-            1.0 + robot_radius_r_ * current_dtheta)
-        .finished();
   }
 
   // Computes K3, K4, and K5 for the provided distance.
@@ -229,11 +264,11 @@ class Trajectory {
                         HybridKalman<2, 2, 2>>>
       velocity_drivetrain_;
 
-  // Left and right robot radiuses.
+  // Robot radiuses.
   const double robot_radius_l_;
   const double robot_radius_r_;
   // Acceleration limits.
-  double longitudal_acceleration_;
+  double longitudinal_acceleration_;
   double lateral_acceleration_;
   // Transformation matrix from left, right to linear, angular
   const ::Eigen::Matrix<double, 2, 2> Tlr_to_la_;

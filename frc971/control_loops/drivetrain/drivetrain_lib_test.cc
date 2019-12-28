@@ -82,8 +82,8 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
     const double expected_y =
         CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->y();
     const ::Eigen::Vector2d actual = drivetrain_plant_.GetPosition();
-    EXPECT_NEAR(actual(0), expected_x, 2e-2);
-    EXPECT_NEAR(actual(1), expected_y, 2e-2);
+    EXPECT_NEAR(actual(0), expected_x, 3e-2);
+    EXPECT_NEAR(actual(1), expected_y, 3e-2);
   }
 
   void WaitForTrajectoryPlan() {
