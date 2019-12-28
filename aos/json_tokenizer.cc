@@ -249,6 +249,10 @@ Tokenizer::TokenType Tokenizer::Next() {
       if (!ConsumeString(&s)) {
         fprintf(stderr, "Error on line %d, expected string for field name.\n",
                 linenumber_);
+        if (Consume("}")) {
+          fprintf(stderr,
+                  "Got '}' instead.  Did you add an extra trailing ','?\n");
+        }
         return TokenType::kError;
       }
       field_name_ = ::std::move(s);
