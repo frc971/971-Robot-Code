@@ -45,19 +45,19 @@ class realtime_clock {
   typedef ::std::chrono::nanoseconds::rep rep;
   typedef ::std::chrono::nanoseconds::period period;
   typedef ::std::chrono::nanoseconds duration;
-  typedef ::std::chrono::time_point<monotonic_clock> time_point;
+  typedef ::std::chrono::time_point<realtime_clock> time_point;
 
 #ifdef __linux__
-  static monotonic_clock::time_point now() noexcept;
+  static realtime_clock::time_point now() noexcept;
 #endif  // __linux__
   static constexpr bool is_steady = false;
 
   // Returns the epoch (0).
-  static constexpr monotonic_clock::time_point epoch() {
+  static constexpr realtime_clock::time_point epoch() {
     return time_point(zero());
   }
 
-  static constexpr monotonic_clock::duration zero() { return duration(0); }
+  static constexpr realtime_clock::duration zero() { return duration(0); }
 
   static constexpr time_point min_time{
       time_point(duration(::std::numeric_limits<duration::rep>::min()))};
@@ -67,6 +67,8 @@ class realtime_clock {
 
 std::ostream &operator<<(std::ostream &stream,
                          const aos::monotonic_clock::time_point &now);
+std::ostream &operator<<(std::ostream &stream,
+                         const aos::realtime_clock::time_point &now);
 
 namespace time {
 #ifdef __linux__

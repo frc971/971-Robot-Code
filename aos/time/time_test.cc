@@ -114,6 +114,70 @@ TEST(TimeTest, OperatorStreamMinTime) {
   EXPECT_EQ(s.str(), "-9223372036.854775808sec");
 }
 
+// Test that << works with the epoch on the realtime clock.
+TEST(TimeTest, OperatorStreamRealtimeEpoch) {
+  const realtime_clock::time_point t = realtime_clock::epoch();
+
+  std::stringstream s;
+  s << t;
+
+  EXPECT_EQ(s.str(), "1970-01-01_00-00-00.000000000");
+}
+
+// Test that << works with positive time on the realtime clock.
+TEST(TimeTest, OperatorStreamRealtimePositive) {
+  const realtime_clock::time_point t =
+      realtime_clock::epoch() + std::chrono::hours(5 * 24) +
+      std::chrono::seconds(11) + std::chrono::milliseconds(5);
+
+  std::stringstream s;
+  s << t;
+
+  EXPECT_EQ(s.str(), "1970-01-06_00-00-11.005000000");
+}
+
+// Test that << works with negative time on the realtime clock.
+TEST(TimeTest, OperatorStreamRealtimeNegative) {
+  {
+    const realtime_clock::time_point t =
+        realtime_clock::epoch() - std::chrono::nanoseconds(1);
+
+    std::stringstream s;
+    s << t;
+
+    EXPECT_EQ(s.str(), "1969-12-31_23-59-59.999999999");
+  }
+  {
+    const realtime_clock::time_point t =
+        realtime_clock::epoch() - std::chrono::nanoseconds(999999999);
+
+    std::stringstream s;
+    s << t;
+
+    EXPECT_EQ(s.str(), "1969-12-31_23-59-59.000000001");
+  }
+  {
+    const realtime_clock::time_point t = realtime_clock::epoch() -
+                                         std::chrono::seconds(1) -
+                                         std::chrono::nanoseconds(999999999);
+
+    std::stringstream s;
+    s << t;
+
+    EXPECT_EQ(s.str(), "1969-12-31_23-59-58.000000001");
+  }
+  {
+    const realtime_clock::time_point t =
+        realtime_clock::epoch() - std::chrono::hours(5 * 24) +
+        std::chrono::seconds(11) - std::chrono::milliseconds(5);
+
+    std::stringstream s;
+    s << t;
+
+    EXPECT_EQ(s.str(), "1969-12-27_00-00-10.995000000");
+  }
+}
+
 }  // namespace testing
 }  // namespace time
 }  // namespace aos

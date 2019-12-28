@@ -9,7 +9,6 @@
 
 #ifdef __linux__
 
-#include "aos/mutex/mutex.h"
 #include "glog/logging.h"
 
 #else  // __linux__
@@ -57,34 +56,52 @@ namespace aos {
 
 std::ostream &operator<<(std::ostream &stream,
                          const aos::monotonic_clock::time_point &now) {
-      if (now < monotonic_clock::epoch()) {
-        std::chrono::seconds seconds =
-            std::chrono::duration_cast<std::chrono::seconds>(
+  if (now < monotonic_clock::epoch()) {
+    std::chrono::seconds seconds =
+        std::chrono::duration_cast<std::chrono::seconds>(
+            now.time_since_epoch());
+
+    stream << "-" << -seconds.count() << "." << std::setfill('0')
+           << std::setw(9)
+           << std::chrono::duration_cast<std::chrono::nanoseconds>(
+                  seconds - now.time_since_epoch())
+                  .count()
+           << "sec";
+  } else {
+    std::chrono::seconds seconds =
+        std::chrono::duration_cast<std::chrono::seconds>(
+            now.time_since_epoch());
+    stream << seconds.count() << "." << std::setfill('0') << std::setw(9)
+           << std::chrono::duration_cast<std::chrono::nanoseconds>(
+                  now.time_since_epoch() - seconds)
+                  .count()
+           << "sec";
+  }
+  return stream;
+}
+
+std::ostream &operator<<(std::ostream &stream,
+                         const aos::realtime_clock::time_point &now) {
+  std::tm tm;
+  std::chrono::seconds seconds =
+      now < realtime_clock::epoch()
+          ? std::chrono::duration_cast<std::chrono::seconds>(
+                now.time_since_epoch() - std::chrono::nanoseconds(999999999))
+          : std::chrono::duration_cast<std::chrono::seconds>(
                 now.time_since_epoch());
 
-        stream << "-" << -seconds.count() << "." << std::setfill('0')
-               << std::setw(9)
-               << std::chrono::duration_cast<std::chrono::nanoseconds>(
-                      seconds - now.time_since_epoch())
-                      .count()
-               << "sec";
-      } else {
-        std::chrono::seconds seconds =
-            std::chrono::duration_cast<std::chrono::seconds>(
-                now.time_since_epoch());
-        stream << seconds.count() << "." << std::setfill('0') << std::setw(9)
-               << std::chrono::duration_cast<std::chrono::nanoseconds>(
-                      now.time_since_epoch() - seconds)
-                      .count()
-               << "sec";
-      }
-      return stream;
+  std::time_t seconds_t = seconds.count();
+  stream << std::put_time(localtime_r(&seconds_t, &tm), "%Y-%m-%d_%H-%M-%S.")
+         << std::setfill('0') << std::setw(9)
+         << std::chrono::duration_cast<std::chrono::nanoseconds>(
+                now.time_since_epoch() - seconds)
+                .count();
+  return stream;
 }
 
 namespace time {
 
-struct timespec to_timespec(
-    const ::aos::monotonic_clock::duration duration) {
+struct timespec to_timespec(const ::aos::monotonic_clock::duration duration) {
   struct timespec time_timespec;
   ::std::chrono::seconds sec =
       ::std::chrono::duration_cast<::std::chrono::seconds>(duration);
@@ -95,8 +112,7 @@ struct timespec to_timespec(
   return time_timespec;
 }
 
-struct timespec to_timespec(
-    const ::aos::monotonic_clock::time_point time) {
+struct timespec to_timespec(const ::aos::monotonic_clock::time_point time) {
   return to_timespec(time.time_since_epoch());
 }
 }  // namespace time
