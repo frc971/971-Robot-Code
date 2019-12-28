@@ -249,6 +249,9 @@ class Sender {
   // Constructs an above builder.
   Builder MakeBuilder();
 
+  // Sends a prebuilt flatbuffer.
+  bool Send(const Flatbuffer<T> &flatbuffer);
+
   // Returns the name of the underlying queue.
   const Channel *channel() const { return sender_->channel(); }
 

@@ -239,6 +239,11 @@ class WatcherState {
   timing::Watcher *watcher_ = nullptr;
 };
 
+template <typename T>
+bool Sender<T>::Send(const Flatbuffer<T> &flatbuffer) {
+  return sender_->Send(flatbuffer.data(), flatbuffer.size());
+}
+
 }  // namespace aos
 
 #endif  // AOS_EVENTS_EVENT_LOOP_TMPL_H
