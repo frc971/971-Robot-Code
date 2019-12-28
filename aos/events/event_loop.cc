@@ -361,14 +361,12 @@ void EventLoop::MaybeScheduleTimingReports() {
 
     // Since we are using a RawSender, validity isn't checked.  So check it
     // ourselves.
-    if (node() != nullptr) {
-      if (!configuration::ChannelIsSendableOnNode(channel, node())) {
-        LOG(FATAL) << "Channel { \"name\": \"/aos"
-                   << channel->name()->string_view() << "\", \"type\": \""
-                   << channel->type()->string_view()
-                   << "\" } is not able to be sent on this node.  Check your "
-                      "configuration.";
-      }
+    if (!configuration::ChannelIsSendableOnNode(channel, node())) {
+      LOG(FATAL) << "Channel { \"name\": \"/aos"
+                 << channel->name()->string_view() << "\", \"type\": \""
+                 << channel->type()->string_view()
+                 << "\" } is not able to be sent on this node.  Check your "
+                    "configuration.";
     }
     CHECK(channel != nullptr) << ": Channel { \"name\": \"/aos\", \"type\": \""
                               << timing::Report::GetFullyQualifiedName()

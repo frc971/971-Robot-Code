@@ -370,14 +370,11 @@ class EventLoop {
         << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
         << T::GetFullyQualifiedName() << "\" } not found in config.";
 
-    if (node() != nullptr) {
-      if (!configuration::ChannelIsReadableOnNode(channel, node())) {
-        LOG(FATAL)
-            << "Channel { \"name\": \"" << channel_name << "\", \"type\": \""
-            << T::GetFullyQualifiedName()
-            << "\" } is not able to be fetched on this node.  Check your "
-               "configuration.";
-      }
+    if (!configuration::ChannelIsReadableOnNode(channel, node())) {
+      LOG(FATAL) << "Channel { \"name\": \"" << channel_name
+                 << "\", \"type\": \"" << T::GetFullyQualifiedName()
+                 << "\" } is not able to be fetched on this node.  Check your "
+                    "configuration.";
     }
 
     return Fetcher<T>(MakeRawFetcher(channel));
@@ -394,13 +391,11 @@ class EventLoop {
         << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
         << T::GetFullyQualifiedName() << "\" } not found in config.";
 
-    if (node() != nullptr) {
-      if (!configuration::ChannelIsSendableOnNode(channel, node())) {
-        LOG(FATAL) << "Channel { \"name\": \"" << channel_name
-                   << "\", \"type\": \"" << T::GetFullyQualifiedName()
-                   << "\" } is not able to be sent on this node.  Check your "
-                      "configuration.";
-      }
+    if (!configuration::ChannelIsSendableOnNode(channel, node())) {
+      LOG(FATAL) << "Channel { \"name\": \"" << channel_name
+                 << "\", \"type\": \"" << T::GetFullyQualifiedName()
+                 << "\" } is not able to be sent on this node.  Check your "
+                    "configuration.";
     }
 
     return Sender<T>(MakeRawSender(channel));

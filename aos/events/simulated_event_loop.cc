@@ -473,13 +473,11 @@ void SimulatedEventLoop::MakeRawWatcher(
   ChannelIndex(channel);
   Take(channel);
 
-  if (node() != nullptr) {
-    if (!configuration::ChannelIsReadableOnNode(channel, node())) {
-      LOG(FATAL) << "Channel { \"name\": \"" << channel->name()->string_view()
-                 << "\", \"type\": \"" << channel->type()->string_view()
-                 << "\" } is not able to be watched on this node.  Check your "
-                    "configuration.";
-    }
+  if (!configuration::ChannelIsReadableOnNode(channel, node())) {
+    LOG(FATAL) << "Channel { \"name\": \"" << channel->name()->string_view()
+               << "\", \"type\": \"" << channel->type()->string_view()
+               << "\" } is not able to be watched on this node.  Check your "
+                  "configuration.";
   }
 
   std::unique_ptr<SimulatedWatcher> shm_watcher(
@@ -500,13 +498,11 @@ std::unique_ptr<RawFetcher> SimulatedEventLoop::MakeRawFetcher(
     const Channel *channel) {
   ChannelIndex(channel);
 
-  if (node() != nullptr) {
-    if (!configuration::ChannelIsReadableOnNode(channel, node())) {
-      LOG(FATAL) << "Channel { \"name\": \"" << channel->name()->string_view()
-                 << "\", \"type\": \"" << channel->type()->string_view()
-                 << "\" } is not able to be fetched on this node.  Check your "
-                    "configuration.";
-    }
+  if (!configuration::ChannelIsReadableOnNode(channel, node())) {
+    LOG(FATAL) << "Channel { \"name\": \"" << channel->name()->string_view()
+               << "\", \"type\": \"" << channel->type()->string_view()
+               << "\" } is not able to be fetched on this node.  Check your "
+                  "configuration.";
   }
 
   return GetSimulatedChannel(channel)->MakeRawFetcher(this);

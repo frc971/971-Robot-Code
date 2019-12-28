@@ -550,14 +550,11 @@ class PhasedLoopHandler final : public ::aos::PhasedLoopHandler {
 
 ::std::unique_ptr<RawFetcher> ShmEventLoop::MakeRawFetcher(
     const Channel *channel) {
-
-  if (node() != nullptr) {
-    if (!configuration::ChannelIsReadableOnNode(channel, node())) {
-      LOG(FATAL) << "Channel { \"name\": \"" << channel->name()->string_view()
-                 << "\", \"type\": \"" << channel->type()->string_view()
-                 << "\" } is not able to be fetched on this node.  Check your "
-                    "configuration.";
-    }
+  if (!configuration::ChannelIsReadableOnNode(channel, node())) {
+    LOG(FATAL) << "Channel { \"name\": \"" << channel->name()->string_view()
+               << "\", \"type\": \"" << channel->type()->string_view()
+               << "\" } is not able to be fetched on this node.  Check your "
+                  "configuration.";
   }
 
   return ::std::unique_ptr<RawFetcher>(new internal::ShmFetcher(this, channel));
@@ -575,13 +572,11 @@ void ShmEventLoop::MakeRawWatcher(
     std::function<void(const Context &context, const void *message)> watcher) {
   Take(channel);
 
-  if (node() != nullptr) {
-    if (!configuration::ChannelIsReadableOnNode(channel, node())) {
-      LOG(FATAL) << "Channel { \"name\": \"" << channel->name()->string_view()
-                 << "\", \"type\": \"" << channel->type()->string_view()
-                 << "\" } is not able to be watched on this node.  Check your "
-                    "configuration.";
-    }
+  if (!configuration::ChannelIsReadableOnNode(channel, node())) {
+    LOG(FATAL) << "Channel { \"name\": \"" << channel->name()->string_view()
+               << "\", \"type\": \"" << channel->type()->string_view()
+               << "\" } is not able to be watched on this node.  Check your "
+                  "configuration.";
   }
 
   NewWatcher(::std::unique_ptr<WatcherState>(
