@@ -59,6 +59,36 @@ const char *kExampleUsages = "To view logs from the shooter:\n"
     "To view the statuses of the shooter hall effects in realtime:\n"
     "\t`log_displayer -f -n shooter -l DEBUG | grep .Position`\n";
 
+std::string GetRootDirectory() {
+  ssize_t size = 0;
+  std::unique_ptr<char[]> retu;
+  while (true) {
+    size += 256;
+    retu.reset(new char[size]);
+
+    ssize_t ret = readlink("/proc/self/exe", retu.get(), size);
+    if (ret < 0) {
+      if (ret != -1) {
+        LOG(WARNING) << "it returned " << ret << ", not -1";
+      }
+
+      PLOG(FATAL) << "readlink(\"/proc/self/exe\", " << retu.get() << ", " << size
+                  << ") failed";
+    }
+    if (ret < size) {
+      void *last_slash = memrchr(retu.get(), '/', ret);
+      if (last_slash == NULL) {
+        retu.get()[ret] = '\0';
+        LOG(FATAL) << "couldn't find a '/' in \"" << retu.get() << "\"";
+      }
+      *static_cast<char *>(last_slash) = '\0';
+      LOG(INFO) << "got a root dir of \"" << retu.get() << "\"";
+      return std::string(retu.get());
+    }
+  }
+}
+
+
 void PrintHelpAndExit() {
   fprintf(stderr, "Usage: %s %s", program_invocation_name, kArgsHelp);
   fprintf(stderr, "\nExample usages:\n\n%s", kExampleUsages);
@@ -66,14 +96,15 @@ void PrintHelpAndExit() {
   // Get the possible executables from start_list.txt.
   FILE *start_list = fopen("start_list.txt", "r");
   if (!start_list) {
-    ::std::string path(::aos::configuration::GetRootDirectory());
+    ::std::string path(GetRootDirectory());
     path += "/start_list.txt";
     start_list = fopen(path.c_str(), "r");
     if (!start_list) {
-      printf("\nCannot open start_list.txt. This means that the\n"
-      "possible arguments for the -n option cannot be shown. log_displayer\n"
-      "looks for start_list.txt in the current working directory and in\n"
-      "%s.\n\n", ::aos::configuration::GetRootDirectory());
+      printf(
+          "\nCannot open start_list.txt. This means that the\npossible "
+          "arguments for the -n option cannot be shown. log_displayer\nlooks "
+          "for start_list.txt in the current working directory and in\n%s.\n\n",
+          path.c_str());
       AOS_PLOG(FATAL, "Unable to open start_list.txt");
     }
   }

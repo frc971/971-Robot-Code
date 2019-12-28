@@ -313,7 +313,6 @@ cc_library(
         "//aos/network:team_number",
         "//aos/util:file",
         "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/base",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/strings",
     ],

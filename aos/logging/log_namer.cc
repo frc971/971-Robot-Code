@@ -16,6 +16,15 @@
 #include "aos/configuration.h"
 #include "glog/logging.h"
 
+DEFINE_string(logging_folder,
+#ifdef AOS_ARCHITECTURE_arm_frc
+              "",
+#else
+              "./logs",
+#endif
+              "The folder to log to.  If empty, search for the /media/sd*1/ "
+              "folder and place logs there.");
+
 namespace aos {
 namespace logging {
 namespace {
@@ -66,7 +75,6 @@ void AllocateLogName(char **filename, const char *directory,
             << previous << ").";
 }
 
-#ifdef AOS_ARCHITECTURE_arm_frc
 bool FoundThumbDrive(const char *path) {
   FILE *mnt_fp = setmntent("/etc/mtab", "r");
   if (mnt_fp == nullptr) {
@@ -101,31 +109,35 @@ bool FindDevice(char *device, size_t device_size) {
   }
   return false;
 }
-#endif
+
 }  // namespace
 
 std::string GetLogName(const char *basename) {
-#ifdef AOS_ARCHITECTURE_arm_frc
-  char folder[128];
-  {
-    char dev_name[8];
-    while (!FindDevice(dev_name, sizeof(dev_name))) {
-      LOG(INFO) <<  "Waiting for a device";
-      sleep(5);
+  if (FLAGS_logging_folder.empty()) {
+    char folder[128];
+    {
+      char dev_name[8];
+      while (!FindDevice(dev_name, sizeof(dev_name))) {
+        LOG(INFO) << "Waiting for a device";
+        sleep(5);
+      }
+      snprintf(folder, sizeof(folder), "/media/%s1", dev_name);
+      while (!FoundThumbDrive(folder)) {
+        LOG(INFO) << "Waiting for" << folder;
+        sleep(1);
+      }
+      snprintf(folder, sizeof(folder), "/media/%s1/", dev_name);
     }
-    snprintf(folder, sizeof(folder), "/media/%s1", dev_name);
-    while (!FoundThumbDrive(folder)) {
-      LOG(INFO) << "Waiting for" << folder;
-      sleep(1);
-    }
-    snprintf(folder, sizeof(folder), "/media/%s1/", dev_name);
-  }
 
-  if (access(folder, F_OK) == -1) {
-#else
-  const char *folder = configuration::GetLoggingDirectory();
+    if (access(folder, F_OK) == -1) {
+      LOG(FATAL) << "folder '" << folder
+                 << "' does not exist. please create it.";
+    }
+
+    FLAGS_logging_folder = folder;
+  }
+  const char *folder = FLAGS_logging_folder.c_str();
   if (access(folder, R_OK | W_OK) == -1) {
-#endif
     LOG(FATAL) << "folder '" << folder << "' does not exist. please create it.";
   }
   LOG(INFO) << "logging to folder '" << folder << "'";

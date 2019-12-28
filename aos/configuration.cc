@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include <string_view>
 
-#include "absl/base/call_once.h"
 #include "absl/container/btree_set.h"
 #include "aos/configuration_generated.h"
 #include "aos/flatbuffer_merge.h"
@@ -77,44 +76,6 @@ bool operator<(const FlatbufferDetachedBuffer<Node> &lhs,
 
 namespace configuration {
 namespace {
-
-void DoGetRootDirectory(char** retu) {
-  ssize_t size = 0;
-  *retu = NULL;
-  while (true) {
-    size += 256;
-    if (*retu != nullptr) delete *retu;
-    *retu = new char[size];
-
-    ssize_t ret = readlink("/proc/self/exe", *retu, size);
-    if (ret < 0) {
-      if (ret != -1) {
-        LOG(WARNING) << "it returned " << ret << ", not -1";
-      }
-
-      PLOG(FATAL) << "readlink(\"/proc/self/exe\", " << *retu << ", " << size
-                  << ") failed";
-    }
-    if (ret < size) {
-      void *last_slash = memrchr(*retu, '/', ret);
-      if (last_slash == NULL) {
-        *retu[ret] = '\0';
-        LOG(FATAL) << "couldn't find a '/' in \"" << *retu << "\"";
-      }
-      *static_cast<char *>(last_slash) = '\0';
-      LOG(INFO) << "got a root dir of \"" << *retu << "\"";
-      return;
-    }
-  }
-}
-
-void DoGetLoggingDirectory(char** retu) {
-  static const char kSuffix[] = "/../../tmp/robot_logs";
-  const char *root = GetRootDirectory();
-  *retu = new char[strlen(root) + sizeof(kSuffix)];
-  strcpy(*retu, root);
-  strcat(*retu, kSuffix);
-}
 
 // Extracts the folder part of a path.  Returns ./ if there is no path.
 std::string_view ExtractFolder(
@@ -423,20 +384,6 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   }
 
   return result;
-}
-
-const char *GetRootDirectory() {
-  static char *root_dir;  // return value
-  static absl::once_flag once_;
-  absl::call_once(once_, DoGetRootDirectory, &root_dir);
-  return root_dir;
-}
-
-const char *GetLoggingDirectory() {
-  static char *retu;  // return value
-  static absl::once_flag once_;
-  absl::call_once(once_, DoGetLoggingDirectory, &retu);
-  return retu;
 }
 
 FlatbufferDetachedBuffer<Configuration> ReadConfig(

@@ -70,16 +70,6 @@ std::string CleanedChannelToString(const Channel *channel);
 
 // TODO(austin): GetSchema<T>(const Flatbuffer<Configuration> &config);
 
-// Returns the "root directory" for this run. Under linux, this is the
-// directory where the executable is located (from /proc/self/exe)
-// The return value will always be to a static string, so no freeing is
-// necessary.
-const char *GetRootDirectory();
-// Returns the directory where logs get written. Relative to GetRootDirectory().
-// The return value will always be to a static string, so no freeing is
-// necessary.
-const char *GetLoggingDirectory();
-
 }  // namespace configuration
 
 // Compare and equality operators for Channel.  Note: these only check the name
