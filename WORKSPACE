@@ -79,8 +79,8 @@ generate_repositories_for_debs(python_gtk_debs)
 http_archive(
     name = "python_repo",
     build_file = "@//debian:python.BUILD",
-    sha256 = "4ff939f90cffd8c72f9992d7420481e361b6016b0ce5c6fa701be0691d4e20fa",
-    url = "http://www.frc971.org/Build-Dependencies/python-2.tar.gz",
+    sha256 = "cc48d18417f015238b7efb083f4ff64a80f0baf347fbaf94d5437c14f7a3d84c",
+    url = "http://www.frc971.org/Build-Dependencies/python-4.tar.gz",
 )
 
 http_archive(
@@ -280,8 +280,8 @@ http_archive(
 http_archive(
     name = "matplotlib",
     build_file = "@//debian:matplotlib.BUILD",
-    sha256 = "dc8e04123a93180bf89727bf6b5a5a0f6d210b6c1c5eaec148f7f8183abbce24",
-    url = "http://www.frc971.org/Build-Dependencies/matplotlib-2.tar.gz",
+    sha256 = "fa1ff9f3bb7fddba6d0b904af5ffdca97c6233a950840273c25145b8cad80483",
+    url = "http://www.frc971.org/Build-Dependencies/matplotlib-3.tar.gz",
 )
 
 http_archive(

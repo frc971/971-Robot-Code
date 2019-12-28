@@ -16,16 +16,20 @@ for path in os.environ.get('PYTHONPATH').split(':'):
         pass
 
 # Define required output types.
+libSpline.NewSpline.restype = ct.c_void_p
 libSpline.SplineTheta.restype = ct.c_double
 libSpline.SplineDTheta.restype = ct.c_double
 libSpline.SplineDDTheta.restype = ct.c_double
+libSpline.NewDistanceSpline.restype = ct.c_void_p
 libSpline.DistanceSplineTheta.restype = ct.c_double
 libSpline.DistanceSplineDTheta.restype = ct.c_double
 libSpline.DistanceSplineDThetaDt.restype = ct.c_double
 libSpline.DistanceSplineDDTheta.restype = ct.c_double
 libSpline.DistanceSplineLength.restype = ct.c_double
+libSpline.NewTrajectory.restype = ct.c_void_p
 libSpline.TrajectoryLength.restype = ct.c_double
-libSpline.TrajectoryDistance.resType = ct.c_double
+libSpline.TrajectoryDistance.restype = ct.c_double
+libSpline.TrajectoryGetPlanXVAPtr.restype = ct.c_void_p
 
 # Required for trajectory
 libSpline.SetUpLogging()
@@ -40,9 +44,9 @@ class Spline:
     def __init__(self, points):
         assert points.shape == (2, 6)
         self.__points = points
-        self.__spline = libSpline.NewSpline(
+        self.__spline = ct.c_void_p(libSpline.NewSpline(
             np.ctypeslib.as_ctypes(self.__points[0]),
-            np.ctypeslib.as_ctypes(self.__points[1]))
+            np.ctypeslib.as_ctypes(self.__points[1])))
 
     def __del__(self):
         libSpline.deleteSpline(self.__spline)
@@ -51,9 +55,9 @@ class Spline:
         self.__points[0, index] = x
         self.__points[1, index] = y
         libSpline.deleteSpline(self.__spline)
-        self.__spline = libSpline.newSpline(
+        self.__spline = ct.c_void_p(libSpline.newSpline(
             np.ctypeslib.as_ctypes(self.__points[0]),
-            np.ctypeslib.as_ctypes(self.__points[1]))
+            np.ctypeslib.as_ctypes(self.__points[1])))
 
     def Point(self, alpha):
         result = np.zeros(2)
@@ -106,12 +110,12 @@ class DistanceSpline:
         self.__spline = None
         spline_ptrs = []
         for spline in splines:
-            spline_ptrs.append(spline.GetSplinePtr())
+            spline_ptrs.append(spline.GetSplinePtr().value)
         spline_ptrs = np.array(spline_ptrs)
 
         spline_array = np.ctypeslib.as_ctypes(spline_ptrs)
-        self.__spline = libSpline.NewDistanceSpline(
-            ct.byref(spline_array), len(splines))
+        self.__spline = ct.c_void_p(libSpline.NewDistanceSpline(
+            ct.byref(spline_array), len(splines)))
 
     def __del__(self):
         libSpline.deleteDistanceSpline(self.__spline)
@@ -162,8 +166,8 @@ class Trajectory:
     """A wrapper around trajectory.h/cc through libspline.cc."""
 
     def __init__(self, distance_spline, vmax=10, num_distance=0):
-        self.__trajectory = libSpline.NewTrajectory(
-            distance_spline.GetSplinePtr(), ct.c_double(vmax), num_distance)
+        self.__trajectory = ct.c_void_p(libSpline.NewTrajectory(
+            distance_spline.GetSplinePtr(), ct.c_double(vmax), num_distance))
 
     def __del__(self):
         libSpline.deleteTrajectory(self.__trajectory)
@@ -239,7 +243,7 @@ class Trajectory:
         long it takes to run the path.
         This is slow so don't call more than once with the same data.
         """
-        XVAPtr = libSpline.TrajectoryGetPlanXVAPtr(self.__trajectory, int(dt*1e9))
+        XVAPtr = ct.c_void_p(libSpline.TrajectoryGetPlanXVAPtr(self.__trajectory, int(dt*1e9)))
         XVALength = libSpline.TrajectoryGetVectorLength(XVAPtr)
         X = np.zeros(XVALength)
         V = np.zeros(XVALength)
