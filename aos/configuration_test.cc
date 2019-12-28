@@ -200,7 +200,7 @@ TEST_F(ConfigurationDeathTest, InvalidSourceNode) {
 // Tests that our node writeable helpers work as intended.
 TEST_F(ConfigurationTest, ChannelIsSendableOnNode) {
   FlatbufferDetachedBuffer<Channel> good_channel(JsonToFlatbuffer(
-R"channel({
+      R"channel({
   "name": "/test",
   "type": "aos.examples.Ping",
   "source_node": "foo"
@@ -208,7 +208,7 @@ R"channel({
       Channel::MiniReflectTypeTable()));
 
   FlatbufferDetachedBuffer<Channel> bad_channel(JsonToFlatbuffer(
-R"channel({
+      R"channel({
   "name": "/test",
   "type": "aos.examples.Ping",
   "source_node": "bar"
@@ -216,7 +216,7 @@ R"channel({
       Channel::MiniReflectTypeTable()));
 
   FlatbufferDetachedBuffer<Node> node(JsonToFlatbuffer(
-R"node({
+      R"node({
   "name": "foo"
 })node",
       Node::MiniReflectTypeTable()));
@@ -230,19 +230,23 @@ R"node({
 // Tests that our node readable and writeable helpers work as intended.
 TEST_F(ConfigurationTest, ChannelIsReadableOnNode) {
   FlatbufferDetachedBuffer<Channel> good_channel(JsonToFlatbuffer(
-R"channel({
+      R"channel({
   "name": "/test",
   "type": "aos.examples.Ping",
   "source_node": "bar",
   "destination_nodes": [
-    "baz",
-    "foo",
+    {
+      "name": "baz"
+    },
+    {
+      "name": "foo"
+    }
   ]
 })channel",
       Channel::MiniReflectTypeTable()));
 
   FlatbufferDetachedBuffer<Channel> bad_channel1(JsonToFlatbuffer(
-R"channel({
+      R"channel({
   "name": "/test",
   "type": "aos.examples.Ping",
   "source_node": "bar"
@@ -250,18 +254,20 @@ R"channel({
       Channel::MiniReflectTypeTable()));
 
   FlatbufferDetachedBuffer<Channel> bad_channel2(JsonToFlatbuffer(
-R"channel({
+      R"channel({
   "name": "/test",
   "type": "aos.examples.Ping",
   "source_node": "bar",
   "destination_nodes": [
-    "baz"
+    {
+      "name": "baz"
+    }
   ]
 })channel",
       Channel::MiniReflectTypeTable()));
 
   FlatbufferDetachedBuffer<Node> node(JsonToFlatbuffer(
-R"node({
+      R"node({
   "name": "foo"
 })node",
       Node::MiniReflectTypeTable()));
@@ -274,7 +280,293 @@ R"node({
       ChannelIsReadableOnNode(&bad_channel2.message(), &node.message()));
 }
 
+// Tests that our node message is logged helpers work as intended.
+TEST_F(ConfigurationTest, ChannelMessageIsLoggedOnNode) {
+  FlatbufferDetachedBuffer<Channel> logged_on_self_channel(JsonToFlatbuffer(
+      R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "bar",
+  "destination_nodes": [
+    {
+      "name": "baz"
+    }
+  ]
+})channel",
+      Channel::MiniReflectTypeTable()));
 
+  FlatbufferDetachedBuffer<Channel> not_logged_channel(JsonToFlatbuffer(
+      R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "bar",
+  "logger": "NOT_LOGGED",
+  "destination_nodes": [
+    {
+      "name": "baz",
+      "timestamp_logger": "LOCAL_LOGGER"
+    }
+  ]
+})channel",
+      Channel::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Channel> logged_on_remote_channel(JsonToFlatbuffer(
+      R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "bar",
+  "logger": "REMOTE_LOGGER",
+  "logger_node": "baz",
+  "destination_nodes": [
+    {
+      "name": "baz"
+    }
+  ]
+})channel",
+      Channel::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Channel> logged_on_separate_logger_node_channel(
+      JsonToFlatbuffer(
+          R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "bar",
+  "logger": "REMOTE_LOGGER",
+  "logger_node": "foo",
+  "destination_nodes": [
+    {
+      "name": "baz"
+    }
+  ]
+})channel",
+          Channel::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Channel> logged_on_both_channel (
+      JsonToFlatbuffer(
+          R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "bar",
+  "logger": "LOCAL_AND_REMOTE_LOGGER",
+  "logger_node": "baz",
+  "destination_nodes": [
+    {
+      "name": "baz"
+    }
+  ]
+})channel",
+          Channel::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Node> foo_node(JsonToFlatbuffer(
+      R"node({
+  "name": "foo"
+})node",
+      Node::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Node> bar_node(JsonToFlatbuffer(
+      R"node({
+  "name": "bar"
+})node",
+      Node::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Node> baz_node(JsonToFlatbuffer(
+      R"node({
+  "name": "baz"
+})node",
+      Node::MiniReflectTypeTable()));
+
+  // Local logger.
+  EXPECT_FALSE(ChannelMessageIsLoggedOnNode(&logged_on_self_channel.message(),
+                                            &foo_node.message()));
+  EXPECT_TRUE(ChannelMessageIsLoggedOnNode(&logged_on_self_channel.message(),
+                                           &bar_node.message()));
+  EXPECT_FALSE(ChannelMessageIsLoggedOnNode(&logged_on_self_channel.message(),
+                                            &baz_node.message()));
+
+  // No logger.
+  EXPECT_FALSE(ChannelMessageIsLoggedOnNode(&not_logged_channel.message(),
+                                            &foo_node.message()));
+  EXPECT_FALSE(ChannelMessageIsLoggedOnNode(&not_logged_channel.message(),
+                                           &bar_node.message()));
+  EXPECT_FALSE(ChannelMessageIsLoggedOnNode(&not_logged_channel.message(),
+                                            &baz_node.message()));
+
+  // Remote logger.
+  EXPECT_FALSE(ChannelMessageIsLoggedOnNode(&logged_on_remote_channel.message(),
+                                            &foo_node.message()));
+  EXPECT_FALSE(ChannelMessageIsLoggedOnNode(&logged_on_remote_channel.message(),
+                                            &bar_node.message()));
+  EXPECT_TRUE(ChannelMessageIsLoggedOnNode(&logged_on_remote_channel.message(),
+                                           &baz_node.message()));
+
+  // Separate logger.
+  EXPECT_TRUE(ChannelMessageIsLoggedOnNode(
+      &logged_on_separate_logger_node_channel.message(), &foo_node.message()));
+  EXPECT_FALSE(ChannelMessageIsLoggedOnNode(
+      &logged_on_separate_logger_node_channel.message(), &bar_node.message()));
+  EXPECT_FALSE(ChannelMessageIsLoggedOnNode(
+      &logged_on_separate_logger_node_channel.message(), &baz_node.message()));
+
+  // Logged in multiple places.
+  EXPECT_FALSE(ChannelMessageIsLoggedOnNode(&logged_on_both_channel.message(),
+                                            &foo_node.message()));
+  EXPECT_TRUE(ChannelMessageIsLoggedOnNode(&logged_on_both_channel.message(),
+                                           &bar_node.message()));
+  EXPECT_TRUE(ChannelMessageIsLoggedOnNode(&logged_on_both_channel.message(),
+                                           &baz_node.message()));
+}
+
+// Tests that our forwarding timestamps are logged helpers work as intended.
+TEST_F(ConfigurationTest, ConnectionDeliveryTimeIsLoggedOnNode) {
+  FlatbufferDetachedBuffer<Channel> logged_on_self_channel(JsonToFlatbuffer(
+      R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "bar",
+  "logger": "REMOTE_LOGGER",
+  "logger_node": "baz",
+  "destination_nodes": [
+    {
+      "name": "baz"
+    }
+  ]
+})channel",
+      Channel::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Channel> not_logged_channel(JsonToFlatbuffer(
+      R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "bar",
+  "logger": "NOT_LOGGED",
+  "destination_nodes": [
+    {
+      "name": "baz",
+      "timestamp_logger": "NOT_LOGGED"
+    }
+  ]
+})channel",
+      Channel::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Channel> logged_on_remote_channel(JsonToFlatbuffer(
+      R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "bar",
+  "destination_nodes": [
+    {
+      "name": "baz",
+      "timestamp_logger": "REMOTE_LOGGER",
+      "timestamp_logger_node": "bar"
+    }
+  ]
+})channel",
+      Channel::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Channel> logged_on_separate_logger_node_channel(
+      JsonToFlatbuffer(
+          R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "bar",
+  "logger": "REMOTE_LOGGER",
+  "logger_node": "foo",
+  "destination_nodes": [
+    {
+      "name": "baz",
+      "timestamp_logger": "REMOTE_LOGGER",
+      "timestamp_logger_node": "foo"
+    }
+  ]
+})channel",
+          Channel::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Channel> logged_on_both_channel (
+      JsonToFlatbuffer(
+          R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "bar",
+  "destination_nodes": [
+    {
+      "name": "baz",
+      "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+      "timestamp_logger_node": "bar"
+    }
+  ]
+})channel",
+          Channel::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Node> foo_node(JsonToFlatbuffer(
+      R"node({
+  "name": "foo"
+})node",
+      Node::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Node> bar_node(JsonToFlatbuffer(
+      R"node({
+  "name": "bar"
+})node",
+      Node::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Node> baz_node(JsonToFlatbuffer(
+      R"node({
+  "name": "baz"
+})node",
+      Node::MiniReflectTypeTable()));
+
+  // Local logger.
+  EXPECT_FALSE(ConnectionDeliveryTimeIsLoggedOnNode(
+      &logged_on_self_channel.message(), &baz_node.message(),
+      &foo_node.message()));
+  EXPECT_FALSE(ConnectionDeliveryTimeIsLoggedOnNode(
+      &logged_on_self_channel.message(), &baz_node.message(),
+      &bar_node.message()));
+  EXPECT_TRUE(ConnectionDeliveryTimeIsLoggedOnNode(
+      &logged_on_self_channel.message(), &baz_node.message(),
+      &baz_node.message()));
+
+  // No logger means.
+  EXPECT_FALSE(ConnectionDeliveryTimeIsLoggedOnNode(
+      &not_logged_channel.message(), &baz_node.message(), &foo_node.message()));
+  EXPECT_FALSE(ConnectionDeliveryTimeIsLoggedOnNode(
+      &not_logged_channel.message(), &baz_node.message(), &bar_node.message()));
+  EXPECT_FALSE(ConnectionDeliveryTimeIsLoggedOnNode(
+      &not_logged_channel.message(), &baz_node.message(), &baz_node.message()));
+
+  // Remote logger.
+  EXPECT_FALSE(ConnectionDeliveryTimeIsLoggedOnNode(
+      &logged_on_remote_channel.message(), &baz_node.message(),
+      &foo_node.message()));
+  EXPECT_TRUE(ConnectionDeliveryTimeIsLoggedOnNode(
+      &logged_on_remote_channel.message(), &baz_node.message(),
+      &bar_node.message()));
+  EXPECT_FALSE(ConnectionDeliveryTimeIsLoggedOnNode(
+      &logged_on_remote_channel.message(), &baz_node.message(),
+      &baz_node.message()));
+
+  // Separate logger.
+  EXPECT_TRUE(ConnectionDeliveryTimeIsLoggedOnNode(
+      &logged_on_separate_logger_node_channel.message(), &baz_node.message(),
+      &foo_node.message()));
+  EXPECT_FALSE(ConnectionDeliveryTimeIsLoggedOnNode(
+      &logged_on_separate_logger_node_channel.message(), &baz_node.message(),
+      &bar_node.message()));
+  EXPECT_FALSE(ConnectionDeliveryTimeIsLoggedOnNode(
+      &logged_on_separate_logger_node_channel.message(), &baz_node.message(),
+      &baz_node.message()));
+
+  // Logged on both the node and a remote node.
+  EXPECT_FALSE(ConnectionDeliveryTimeIsLoggedOnNode(
+      &logged_on_both_channel.message(), &baz_node.message(),
+      &foo_node.message()));
+  EXPECT_TRUE(ConnectionDeliveryTimeIsLoggedOnNode(
+      &logged_on_both_channel.message(), &baz_node.message(),
+      &bar_node.message()));
+  EXPECT_TRUE(ConnectionDeliveryTimeIsLoggedOnNode(
+      &logged_on_both_channel.message(), &baz_node.message(),
+      &baz_node.message()));
+}
 }  // namespace testing
 }  // namespace configuration
 }  // namespace aos

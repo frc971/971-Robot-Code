@@ -370,12 +370,34 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
           << " has an unknown \"source_node\"";
 
       if (c->has_destination_nodes()) {
-        for (const flatbuffers::String *n : *c->destination_nodes()) {
-          CHECK(GetNode(&result.message(), n->string_view()) != nullptr)
+        for (const Connection *connection : *c->destination_nodes()) {
+          CHECK(connection->has_name());
+          CHECK(GetNode(&result.message(), connection->name()->string_view()) !=
+                nullptr)
               << ": Channel " << FlatbufferToJson(c)
-              << " has an unknown \"destination_nodes\" " << n->string_view();
+              << " has an unknown \"destination_nodes\" "
+              << connection->name()->string_view();
 
-          CHECK_NE(n->string_view(), c->source_node()->string_view())
+          switch (connection->timestamp_logger()) {
+            case LoggerConfig::LOCAL_LOGGER:
+            case LoggerConfig::NOT_LOGGED:
+              CHECK(!connection->has_timestamp_logger_node());
+              break;
+            case LoggerConfig::REMOTE_LOGGER:
+            case LoggerConfig::LOCAL_AND_REMOTE_LOGGER:
+              CHECK(connection->has_timestamp_logger_node());
+              CHECK(
+                  GetNode(&result.message(),
+                          connection->timestamp_logger_node()->string_view()) !=
+                  nullptr)
+                  << ": Channel " << FlatbufferToJson(c)
+                  << " has an unknown \"timestamp_logger_node\""
+                  << connection->name()->string_view();
+              break;
+          }
+
+          CHECK_NE(connection->name()->string_view(),
+                   c->source_node()->string_view())
               << ": Channel " << FlatbufferToJson(c)
               << " is forwarding data to itself";
         }
@@ -609,13 +631,100 @@ bool ChannelIsReadableOnNode(const Channel *channel, const Node *node) {
     return false;
   }
 
-  for (const flatbuffers::String *s : *channel->destination_nodes()) {
-    if (s->string_view() == node->name()->string_view()) {
+  for (const Connection *connection : *channel->destination_nodes()) {
+    CHECK(connection->has_name());
+    if (connection->name()->string_view() == node->name()->string_view()) {
       return true;
     }
   }
 
   return false;
+}
+
+bool ChannelMessageIsLoggedOnNode(const Channel *channel, const Node *node) {
+  switch(channel->logger()) {
+    case LoggerConfig::LOCAL_LOGGER:
+      if (node == nullptr) {
+        // Single node world.  If there is a local logger, then we want to use
+        // it.
+        return true;
+      }
+      return channel->source_node()->string_view() ==
+             node->name()->string_view();
+    case LoggerConfig::REMOTE_LOGGER:
+      CHECK(channel->has_logger_node());
+
+      return channel->logger_node()->string_view() ==
+             CHECK_NOTNULL(node)->name()->string_view();
+    case LoggerConfig::LOCAL_AND_REMOTE_LOGGER:
+      CHECK(channel->has_logger_node());
+
+      if (channel->source_node()->string_view() ==
+          CHECK_NOTNULL(node)->name()->string_view()) {
+        return true;
+      }
+      if (channel->logger_node()->string_view() == node->name()->string_view()) {
+        return true;
+      }
+
+      return false;
+    case LoggerConfig::NOT_LOGGED:
+      return false;
+  }
+
+  LOG(FATAL) << "Unknown logger config " << static_cast<int>(channel->logger());
+}
+
+const Connection *ConnectionToNode(const Channel *channel, const Node *node) {
+  if (!channel->has_destination_nodes()) {
+    return nullptr;
+  }
+  for (const Connection *connection : *channel->destination_nodes()) {
+    if (connection->name()->string_view() == node->name()->string_view()) {
+      return connection;
+    }
+  }
+  return nullptr;
+}
+
+bool ConnectionDeliveryTimeIsLoggedOnNode(const Channel *channel,
+                                          const Node *node,
+                                          const Node *logger_node) {
+  const Connection *connection = ConnectionToNode(channel, node);
+  if (connection == nullptr) {
+    return false;
+  }
+  return ConnectionDeliveryTimeIsLoggedOnNode(connection, logger_node);
+}
+
+bool ConnectionDeliveryTimeIsLoggedOnNode(const Connection *connection,
+                                          const Node *node) {
+  switch (connection->timestamp_logger()) {
+    case LoggerConfig::LOCAL_AND_REMOTE_LOGGER:
+      CHECK(connection->has_timestamp_logger_node());
+      if (connection->name()->string_view() == node->name()->string_view()) {
+        return true;
+      }
+
+      if (connection->timestamp_logger_node()->string_view() ==
+          node->name()->string_view()) {
+        return true;
+      }
+
+      return false;
+    case LoggerConfig::LOCAL_LOGGER:
+      return connection->name()->string_view() == node->name()->string_view();
+    case LoggerConfig::REMOTE_LOGGER:
+      CHECK(connection->has_timestamp_logger_node());
+
+      return connection->timestamp_logger_node()->string_view() ==
+             node->name()->string_view();
+    case LoggerConfig::NOT_LOGGED:
+      return false;
+  }
+
+  LOG(FATAL) << "Unknown logger config "
+             << static_cast<int>(connection->timestamp_logger());
 }
 
 }  // namespace configuration

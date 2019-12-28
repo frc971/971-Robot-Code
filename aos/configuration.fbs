@@ -2,6 +2,46 @@ include "reflection/reflection.fbs";
 
 namespace aos;
 
+enum LoggerConfig : ubyte {
+  // This data should be logged on this node.
+  LOCAL_LOGGER,
+  // This data should be logged on a remote node.
+  REMOTE_LOGGER,
+  // This data should not be logged.
+  NOT_LOGGED,
+  // This data should be logged both on this node and on the remote node.
+  // This is useful where you want to log a message on both the sender and
+  // receiver to create self-contained log files.
+  LOCAL_AND_REMOTE_LOGGER
+}
+
+table Connection {
+  // Node name to forward to.
+  name:string;
+
+  // How the delivery timestamps for this connection should be logged.  Do we
+  // log them with the local logger (i.e. the logger running on the node that
+  // this message is delivered to)?  Do we log them on another node (a central
+  // logging node)?  Do we log them in both places redundantly?
+  timestamp_logger:LoggerConfig = LOCAL_LOGGER;
+
+  // If the corresponding delivery timestamps for this channel are logged
+  // remotely, which node should be responsible for logging the data.  Note:
+  // for now, this can only be the source node.  Empty implies the node this
+  // connection is connecting to (i.e. name).
+  timestamp_logger_node:string;
+
+  // Priority to forward data with.
+  priority:ushort = 100;
+
+  // Time to live in nanoseconds before the message is dropped.
+  // A value of 0 means no timeout, i.e. reliable.  When a client connects, the
+  // latest message from this channel will be sent regardless.
+  // TODO(austin): We can retry more than just the last message on reconnect
+  //   if we want.  This is an unlikely scenario though.
+  time_to_live:uint = 0;
+}
+
 // Table representing a channel.  Channels are where data is published and
 // subscribed from.  The tuple of name, type is the identifying information.
 table Channel {
@@ -11,8 +51,8 @@ table Channel {
   type:string;
   // Max frequency in messages/sec of the data published on this channel.
   frequency:int = 100;
-  // Max size of the data being published.  (This will be automatically
-  // computed in the future.)
+  // Max size of the data being published.  (This will hopefully be
+  // automatically computed in the future.)
   max_size:int = 1000;
 
   // Sets the maximum number of senders on a channel.
@@ -27,9 +67,17 @@ table Channel {
   // If nodes is populated below, this needs to also be populated.
   source_node:string;
 
-  // The destination node names for data sent on this channel.
+  // The destination nodes for data sent on this channel.
   // This only needs to be populated if this message is getting forwarded.
-  destination_nodes:[string];
+  destination_nodes:[Connection];
+
+  // What service is responsible for logging this channel:
+  logger:LoggerConfig = LOCAL_LOGGER;
+  // If the channel is logged remotely, which node should be responsible for
+  // logging the data.  Note: this requires that the data is forwarded to the
+  // node responsible for logging it.  Empty implies the node this connection
+  // is connecting to (i.e. name).
+  logger_node:string;
 }
 
 // Table to support renaming channel names.

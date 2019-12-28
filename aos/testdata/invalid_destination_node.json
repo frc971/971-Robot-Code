@@ -5,8 +5,12 @@
       "type": ".aos.bar",
       "source_node": "roborio",
       "destination_nodes": [
-        "dest",
-        "trojan_horse"
+        {
+          "name": "dest"
+        },
+        {
+          "name": "trojan_horse"
+        }
       ]
     }
   ],

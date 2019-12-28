@@ -65,6 +65,18 @@ bool ChannelIsSendableOnNode(const Channel *channel, const Node *node);
 // provided node.
 bool ChannelIsReadableOnNode(const Channel *channel, const Node *node);
 
+// Returns true if the message is supposed to be logged on this node.
+bool ChannelMessageIsLoggedOnNode(const Channel *channel, const Node *node);
+
+const Connection *ConnectionToNode(const Channel *channel, const Node *node);
+// Returns true if the delivery timestamps are supposed to be logged on this
+// node.
+bool ConnectionDeliveryTimeIsLoggedOnNode(const Channel *channel,
+                                          const Node *node,
+                                          const Node *logger_node);
+bool ConnectionDeliveryTimeIsLoggedOnNode(const Connection *connection,
+                                          const Node *node);
+
 // Prints a channel to json, but without the schema.
 std::string CleanedChannelToString(const Channel *channel);
 
