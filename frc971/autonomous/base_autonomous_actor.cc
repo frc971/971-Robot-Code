@@ -47,7 +47,7 @@ void BaseAutonomousActor::ResetDrivetrain() {
 
   drivetrain::Goal::Builder goal_builder =
       builder.MakeBuilder<drivetrain::Goal>();
-  goal_builder.add_controller_type(drivetrain::ControllerType_POLYDRIVE);
+  goal_builder.add_controller_type(drivetrain::ControllerType::POLYDRIVE);
   goal_builder.add_highgear(true);
   goal_builder.add_wheel(0.0);
   goal_builder.add_throttle(0.0);
@@ -85,7 +85,7 @@ void BaseAutonomousActor::StartDrive(double distance, double angle,
   drivetrain::Goal::Builder goal_builder =
       builder.MakeBuilder<drivetrain::Goal>();
 
-  goal_builder.add_controller_type(drivetrain::ControllerType_MOTION_PROFILE);
+  goal_builder.add_controller_type(drivetrain::ControllerType::MOTION_PROFILE);
   goal_builder.add_highgear(true);
   goal_builder.add_wheel(0.0);
   goal_builder.add_throttle(0.0);
@@ -420,7 +420,7 @@ void BaseAutonomousActor::LineFollowAtVelocity(
     drivetrain::Goal::Builder goal_builder =
         builder.MakeBuilder<drivetrain::Goal>();
     goal_builder.add_controller_type(
-        drivetrain::ControllerType_SPLINE_FOLLOWER);
+        drivetrain::ControllerType::SPLINE_FOLLOWER);
     // TODO(james): Currently the 4.0 is copied from the
     // line_follow_drivetrain.cc, but it is somewhat year-specific, so we should
     // factor it out in some way.
@@ -469,7 +469,7 @@ BaseAutonomousActor::SplineHandle BaseAutonomousActor::PlanSpline(
       builder.MakeBuilder<drivetrain::Goal>();
 
   drivetrain::ControllerType controller_type =
-      drivetrain::ControllerType_SPLINE_FOLLOWER;
+      drivetrain::ControllerType::SPLINE_FOLLOWER;
   if (drivetrain_goal_fetcher_.get()) {
     controller_type = drivetrain_goal_fetcher_->controller_type();
     goal_builder.add_throttle(drivetrain_goal_fetcher_->throttle());
@@ -493,7 +493,7 @@ bool BaseAutonomousActor::SplineHandle::IsPlanned() {
       ((base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging()
                 ->planning_spline_idx() == spline_handle_ &&
         base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging()
-                ->planning_state() == 3) ||
+                ->planning_state() == drivetrain::PlanningState::PLANNED) ||
        base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging()
                ->current_spline_idx() == spline_handle_)) {
     return true;
@@ -521,7 +521,7 @@ void BaseAutonomousActor::SplineHandle::Start() {
   auto builder = base_autonomous_actor_->drivetrain_goal_sender_.MakeBuilder();
   drivetrain::Goal::Builder goal_builder =
       builder.MakeBuilder<drivetrain::Goal>();
-  goal_builder.add_controller_type(drivetrain::ControllerType_SPLINE_FOLLOWER);
+  goal_builder.add_controller_type(drivetrain::ControllerType::SPLINE_FOLLOWER);
 
   AOS_LOG(INFO, "Starting spline\n");
 

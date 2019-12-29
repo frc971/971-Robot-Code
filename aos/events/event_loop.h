@@ -28,14 +28,25 @@ class WatcherState;
 // Struct available on Watchers, Fetchers, Timers, and PhasedLoops with context
 // about the current message.
 struct Context {
-  // Time that the message was sent, or the timer was triggered.
-  monotonic_clock::time_point monotonic_sent_time;
-  // Realtime the message was sent.  This is set to min_time for Timers and
-  // PhasedLoops.
-  realtime_clock::time_point realtime_sent_time;
+  // Time that the message was sent on this node, or the timer was triggered.
+  monotonic_clock::time_point monotonic_event_time;
+  // Realtime the message was sent on this node.  This is set to min_time for
+  // Timers and PhasedLoops.
+  realtime_clock::time_point realtime_event_time;
+
+  // For a single-node configuration, these two are identical to *_event_time.
+  // In a multinode configuration, these are the times that the message was
+  // sent on the original node.
+  monotonic_clock::time_point monotonic_remote_time;
+  realtime_clock::time_point realtime_remote_time;
+
   // The rest are only valid for Watchers and Fetchers.
   // Index in the queue.
   uint32_t queue_index;
+  // Index into the remote queue.  Useful to determine if data was lost.  In a
+  // single-node configuration, this will match queue_index.
+  uint32_t remote_queue_index;
+
   // Size of the data sent.
   size_t size;
   // Pointer to the data.
@@ -94,23 +105,60 @@ class RawSender {
   // Sends a message without copying it.  The users starts by copying up to
   // size() bytes into the data backed by data().  They then call Send to send.
   // Returns true on a successful send.
+  // If provided, monotonic_remote_time, realtime_remote_time, and
+  // remote_queue_index are attached to the message and are available in the
+  // context on the read side.  If they are not populated, the read side will
+  // get the sent times instead.
   virtual void *data() = 0;
   virtual size_t size() = 0;
-  bool Send(size_t size);
+  bool Send(size_t size,
+            aos::monotonic_clock::time_point monotonic_remote_time =
+                aos::monotonic_clock::min_time,
+            aos::realtime_clock::time_point realtime_remote_time =
+                aos::realtime_clock::min_time,
+            uint32_t remote_queue_index = 0xffffffffu);
 
   // Sends a single block of data by copying it.
-  bool Send(const void *data, size_t size);
+  // The remote arguments have the same meaning as in Send above.
+  bool Send(const void *data, size_t size,
+            aos::monotonic_clock::time_point monotonic_remote_time =
+                aos::monotonic_clock::min_time,
+            aos::realtime_clock::time_point realtime_remote_time =
+                aos::realtime_clock::min_time,
+            uint32_t remote_queue_index = 0xffffffffu);
 
   const Channel *channel() const { return channel_; }
+
+  // Returns the time_points that the last message was sent at.
+  aos::monotonic_clock::time_point monotonic_sent_time() const {
+    return monotonic_sent_time_;
+  }
+  aos::realtime_clock::time_point realtime_sent_time() const {
+    return realtime_sent_time_;
+  }
+  // Returns the queue index that this was sent with.
+  uint32_t sent_queue_index() const { return sent_queue_index_; }
 
  protected:
   EventLoop *event_loop() { return event_loop_; }
 
+  aos::monotonic_clock::time_point monotonic_sent_time_ =
+      aos::monotonic_clock::min_time;
+  aos::realtime_clock::time_point realtime_sent_time_ =
+      aos::realtime_clock::min_time;
+  uint32_t sent_queue_index_ = 0xffffffff;
+
  private:
   friend class EventLoop;
 
-  virtual bool DoSend(const void *data, size_t size) = 0;
-  virtual bool DoSend(size_t size) = 0;
+  virtual bool DoSend(const void *data, size_t size,
+                      aos::monotonic_clock::time_point monotonic_remote_time,
+                      aos::realtime_clock::time_point realtime_remote_time,
+                      uint32_t remote_queue_index) = 0;
+  virtual bool DoSend(size_t size,
+                      aos::monotonic_clock::time_point monotonic_remote_time,
+                      aos::realtime_clock::time_point realtime_remote_time,
+                      uint32_t remote_queue_index) = 0;
 
   EventLoop *event_loop_;
   const Channel *channel_;
@@ -200,6 +248,9 @@ class Sender {
 
   // Constructs an above builder.
   Builder MakeBuilder();
+
+  // Sends a prebuilt flatbuffer.
+  bool Send(const Flatbuffer<T> &flatbuffer);
 
   // Returns the name of the underlying queue.
   const Channel *channel() const { return sender_->channel(); }

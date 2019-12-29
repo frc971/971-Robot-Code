@@ -552,16 +552,30 @@ void *LocklessQueue::Sender::Data() {
   return &message->data[0];
 }
 
-void LocklessQueue::Sender::Send(const char *data, size_t length) {
+void LocklessQueue::Sender::Send(
+    const char *data, size_t length,
+    aos::monotonic_clock::time_point monotonic_remote_time,
+    aos::realtime_clock::time_point realtime_remote_time,
+    uint32_t remote_queue_index,
+    aos::monotonic_clock::time_point *monotonic_sent_time,
+    aos::realtime_clock::time_point *realtime_sent_time,
+    uint32_t *queue_index) {
   CHECK_LE(length, size());
   // Flatbuffers write from the back of the buffer to the front.  If we are
   // going to write an explicit chunk of memory into the buffer, we need to
   // adhere to this convention and place it at the end.
   memcpy((reinterpret_cast<char *>(Data()) + size() - length), data, length);
-  Send(length);
+  Send(length, monotonic_remote_time, realtime_remote_time, remote_queue_index,
+       monotonic_sent_time, realtime_sent_time, queue_index);
 }
 
-void LocklessQueue::Sender::Send(size_t length) {
+void LocklessQueue::Sender::Send(
+    size_t length, aos::monotonic_clock::time_point monotonic_remote_time,
+    aos::realtime_clock::time_point realtime_remote_time,
+    uint32_t remote_queue_index,
+    aos::monotonic_clock::time_point *monotonic_sent_time,
+    aos::realtime_clock::time_point *realtime_sent_time,
+    uint32_t *queue_index) {
   const size_t queue_size = memory_->queue_size();
   CHECK_LE(length, size());
 
@@ -572,6 +586,11 @@ void LocklessQueue::Sender::Send(size_t length) {
   Message *const message = memory_->GetMessage(scratch_index);
 
   message->header.length = length;
+  // Pass these through.  Any alternative behavior can be implemented out a
+  // layer.
+  message->header.remote_queue_index = remote_queue_index;
+  message->header.monotonic_remote_time = monotonic_remote_time;
+  message->header.realtime_remote_time = realtime_remote_time;
 
   while (true) {
     const QueueIndex actual_next_queue_index =
@@ -625,6 +644,15 @@ void LocklessQueue::Sender::Send(size_t length) {
 
     message->header.monotonic_sent_time = ::aos::monotonic_clock::now();
     message->header.realtime_sent_time = ::aos::realtime_clock::now();
+    if (monotonic_sent_time != nullptr) {
+      *monotonic_sent_time = message->header.monotonic_sent_time;
+    }
+    if (realtime_sent_time != nullptr) {
+      *realtime_sent_time = message->header.realtime_sent_time;
+    }
+    if (queue_index != nullptr) {
+      *queue_index = next_queue_index.index();
+    }
 
     // Before we are fully done filling out the message, update the Sender state
     // with the new index to write.  This re-uses the barrier for the
@@ -676,8 +704,10 @@ void LocklessQueue::Sender::Send(size_t length) {
 LocklessQueue::ReadResult LocklessQueue::Read(
     uint32_t uint32_queue_index,
     ::aos::monotonic_clock::time_point *monotonic_sent_time,
-    ::aos::realtime_clock::time_point *realtime_sent_time, size_t *length,
-    char *data) {
+    ::aos::realtime_clock::time_point *realtime_sent_time,
+    ::aos::monotonic_clock::time_point *monotonic_remote_time,
+    ::aos::realtime_clock::time_point *realtime_remote_time,
+    uint32_t *remote_queue_index, size_t *length, char *data) {
   const size_t queue_size = memory_->queue_size();
 
   // Build up the QueueIndex.
@@ -751,6 +781,13 @@ LocklessQueue::ReadResult LocklessQueue::Read(
   // make length be from either end.
   *monotonic_sent_time = m->header.monotonic_sent_time;
   *realtime_sent_time = m->header.realtime_sent_time;
+  if (m->header.remote_queue_index == 0xffffffffu) {
+    *remote_queue_index = queue_index.index();
+  } else {
+    *remote_queue_index = m->header.remote_queue_index;
+  }
+  *monotonic_remote_time = m->header.monotonic_remote_time;
+  *realtime_remote_time = m->header.realtime_remote_time;
   memcpy(data, &m->data[0], message_data_size());
   *length = m->header.length;
 

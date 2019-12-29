@@ -118,7 +118,7 @@ INSTANTIATE_TEST_CASE_P(
         // targets:
         TestParams{(State() << 0.0, 0.0, 0.0, 1.0, 1.0).finished(),
                    /*ball_mode=*/false,
-                   drivetrain::SelectionHint_NONE,
+                   drivetrain::SelectionHint::NONE,
                    1.0,
                    false,
                    {},
@@ -127,43 +127,43 @@ INSTANTIATE_TEST_CASE_P(
         // anything.
         TestParams{(State() << 4.0, 2.0, M_PI, 0.05, 0.05).finished(),
                    /*ball_mode=*/false,
-                   drivetrain::SelectionHint_NONE,
+                   drivetrain::SelectionHint::NONE,
                    0.05,
                    false,
                    {},
                    /*expected_radius=*/0.0},
         TestParams{(State() << 4.0, 2.0, M_PI, -0.05, -0.05).finished(),
                    /*ball_mode=*/false,
-                   drivetrain::SelectionHint_NONE,
+                   drivetrain::SelectionHint::NONE,
                    -0.05,
                    false,
                    {},
                    /*expected_radius=*/0.0},
         TestParams{(State() << 4.0, 2.0, M_PI, 0.5, 0.5).finished(),
-                   /*ball_mode=*/false, drivetrain::SelectionHint_NONE, 1.0,
+                   /*ball_mode=*/false, drivetrain::SelectionHint::NONE, 1.0,
                    true, HPSlotLeft(), /*expected_radius=*/0.0},
         // Put ourselves between the rocket and cargo ship; we should see the
         // hatches driving one direction and the near cargo ship port the other.
         // We also command a speed opposite the current direction of motion and
         // confirm that that behaves as expected.
         TestParams{(State() << 6.0, 2.0, -M_PI_2, -0.5, -0.5).finished(),
-                   /*ball_mode=*/false, drivetrain::SelectionHint_NONE, 1.0,
+                   /*ball_mode=*/false, drivetrain::SelectionHint::NONE, 1.0,
                    true, CargoNearLeft(), /*expected_radius=*/HatchRadius()},
         TestParams{(State() << 6.0, 2.0, M_PI_2, 0.5, 0.5).finished(),
-                   /*ball_mode=*/false, drivetrain::SelectionHint_NONE, -1.0,
+                   /*ball_mode=*/false, drivetrain::SelectionHint::NONE, -1.0,
                    true, CargoNearLeft(), /*expected_radius=*/HatchRadius()},
         TestParams{(State() << 6.0, 2.0, -M_PI_2, 0.5, 0.5).finished(),
-                   /*ball_mode=*/false, drivetrain::SelectionHint_NONE, -1.0,
+                   /*ball_mode=*/false, drivetrain::SelectionHint::NONE, -1.0,
                    true, RocketHatchFarLeft(),
                    /*expected_radius=*/HatchRadius()},
         TestParams{(State() << 6.0, 2.0, M_PI_2, -0.5, -0.5).finished(),
-                   /*ball_mode=*/false, drivetrain::SelectionHint_NONE, 1.0,
+                   /*ball_mode=*/false, drivetrain::SelectionHint::NONE, 1.0,
                    true, RocketHatchFarLeft(),
                    /*expected_radius=*/HatchRadius()},
         // And we shouldn't see anything spinning in place:
         TestParams{(State() << 6.0, 2.0, M_PI_2, -0.5, 0.5).finished(),
                    /*ball_mode=*/false,
-                   drivetrain::SelectionHint_NONE,
+                   drivetrain::SelectionHint::NONE,
                    0.0,
                    false,
                    {},
@@ -171,7 +171,7 @@ INSTANTIATE_TEST_CASE_P(
         // Drive backwards off the field--we should not see anything.
         TestParams{(State() << -0.1, 0.0, 0.0, -0.5, -0.5).finished(),
                    /*ball_mode=*/false,
-                   drivetrain::SelectionHint_NONE,
+                   drivetrain::SelectionHint::NONE,
                    -1.0,
                    false,
                    {},
@@ -179,12 +179,12 @@ INSTANTIATE_TEST_CASE_P(
         // In ball mode, we should be able to see the portal, and get zero
         // radius.
         TestParams{(State() << 6.0, 2.0, M_PI_2, 0.5, 0.5).finished(),
-                   /*ball_mode=*/true, drivetrain::SelectionHint_NONE, 1.0,
+                   /*ball_mode=*/true, drivetrain::SelectionHint::NONE, 1.0,
                    true, RocketPortal(),
                    /*expected_radius=*/0.0},
         // Reversing direction should get cargo ship with zero radius.
         TestParams{(State() << 6.0, 2.0, M_PI_2, 0.5, 0.5).finished(),
-                   /*ball_mode=*/true, drivetrain::SelectionHint_NONE, -1.0,
+                   /*ball_mode=*/true, drivetrain::SelectionHint::NONE, -1.0,
                    true, CargoNearLeft(),
                    /*expected_radius=*/0.0}));
 

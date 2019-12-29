@@ -59,8 +59,10 @@ TEST_P(AbstractEventLoopTest, FetchWithoutRun) {
   EXPECT_FALSE(fetcher.Fetch());
   EXPECT_EQ(fetcher.get(), nullptr);
 
-  EXPECT_EQ(fetcher.context().monotonic_sent_time, monotonic_clock::min_time);
-  EXPECT_EQ(fetcher.context().realtime_sent_time, realtime_clock::min_time);
+  EXPECT_EQ(fetcher.context().monotonic_event_time, monotonic_clock::min_time);
+  EXPECT_EQ(fetcher.context().monotonic_remote_time, monotonic_clock::min_time);
+  EXPECT_EQ(fetcher.context().realtime_event_time, realtime_clock::min_time);
+  EXPECT_EQ(fetcher.context().realtime_remote_time, realtime_clock::min_time);
   EXPECT_EQ(fetcher.context().queue_index, 0xffffffffu);
   EXPECT_EQ(fetcher.context().size, 0u);
   EXPECT_EQ(fetcher.context().data, nullptr);
@@ -76,14 +78,17 @@ TEST_P(AbstractEventLoopTest, FetchWithoutRun) {
 
   const chrono::milliseconds kEpsilon(100);
 
-  EXPECT_GE(fetcher.context().monotonic_sent_time,
-            loop2->monotonic_now() - kEpsilon);
-  EXPECT_LE(fetcher.context().monotonic_sent_time,
-            loop2->monotonic_now() + kEpsilon);
-  EXPECT_GE(fetcher.context().realtime_sent_time,
-            loop2->realtime_now() - kEpsilon);
-  EXPECT_LE(fetcher.context().realtime_sent_time,
-            loop2->realtime_now() + kEpsilon);
+  const aos::monotonic_clock::time_point monotonic_now = loop2->monotonic_now();
+  const aos::realtime_clock::time_point realtime_now = loop2->realtime_now();
+  EXPECT_EQ(fetcher.context().monotonic_event_time,
+            fetcher.context().monotonic_remote_time);
+  EXPECT_EQ(fetcher.context().realtime_event_time,
+            fetcher.context().realtime_remote_time);
+
+  EXPECT_GE(fetcher.context().monotonic_event_time, monotonic_now - kEpsilon);
+  EXPECT_LE(fetcher.context().monotonic_event_time, monotonic_now + kEpsilon);
+  EXPECT_GE(fetcher.context().realtime_event_time, realtime_now - kEpsilon);
+  EXPECT_LE(fetcher.context().realtime_event_time, realtime_now + kEpsilon);
   EXPECT_EQ(fetcher.context().queue_index, 0x0u);
   EXPECT_EQ(fetcher.context().size, 20u);
   EXPECT_NE(fetcher.context().data, nullptr);
@@ -512,12 +517,14 @@ TEST_P(AbstractEventLoopTest, TimerIntervalAndDuration) {
 
   auto test_timer = loop->AddTimer([this, &times, &expected_times, &loop]() {
     times.push_back(loop->monotonic_now());
-    EXPECT_EQ(loop->context().realtime_sent_time, realtime_clock::min_time);
+    EXPECT_EQ(loop->context().monotonic_remote_time, monotonic_clock::min_time);
+    EXPECT_EQ(loop->context().realtime_event_time, realtime_clock::min_time);
+    EXPECT_EQ(loop->context().realtime_remote_time, realtime_clock::min_time);
     EXPECT_EQ(loop->context().queue_index, 0xffffffffu);
     EXPECT_EQ(loop->context().size, 0u);
     EXPECT_EQ(loop->context().data, nullptr);
 
-    expected_times.push_back(loop->context().monotonic_sent_time);
+    expected_times.push_back(loop->context().monotonic_event_time);
     if (times.size() == kCount) {
       this->Exit();
     }
@@ -684,7 +691,7 @@ TEST_P(AbstractEventLoopDeathTest, InvalidChannel) {
 TEST_P(AbstractEventLoopTest, MessageSendTime) {
   auto loop1 = MakePrimary();
   auto loop2 = Make();
-  auto sender = loop1->MakeSender<TestMessage>("/test");
+  auto sender = loop2->MakeSender<TestMessage>("/test");
   auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
 
   auto test_timer = loop1->AddTimer([&sender]() {
@@ -694,12 +701,32 @@ TEST_P(AbstractEventLoopTest, MessageSendTime) {
     ASSERT_TRUE(msg.Send(builder.Finish()));
   });
 
-  loop2->MakeWatcher("/test", [&loop2](const TestMessage &msg) {
-    // Confirm that the data pointer makes sense from a watcher.
-    EXPECT_GT(&msg, loop2->context().data);
+  bool triggered = false;
+  loop1->MakeWatcher("/test", [&triggered, &loop1](const TestMessage &msg) {
+    // Confirm that the data pointer makes sense from a watcher, and all the
+    // timestamps look right.
+    EXPECT_GT(&msg, loop1->context().data);
+    EXPECT_EQ(loop1->context().monotonic_remote_time,
+              loop1->context().monotonic_event_time);
+    EXPECT_EQ(loop1->context().realtime_remote_time,
+              loop1->context().realtime_event_time);
+
+    const aos::monotonic_clock::time_point monotonic_now =
+        loop1->monotonic_now();
+    const aos::realtime_clock::time_point realtime_now =
+        loop1->realtime_now();
+
+    EXPECT_LE(loop1->context().monotonic_event_time, monotonic_now);
+    EXPECT_LE(loop1->context().realtime_event_time, realtime_now);
+    EXPECT_GE(loop1->context().monotonic_event_time + chrono::milliseconds(500),
+              monotonic_now);
+    EXPECT_GE(loop1->context().realtime_event_time + chrono::milliseconds(500),
+              realtime_now);
+
     EXPECT_LT(&msg, reinterpret_cast<void *>(
-                        reinterpret_cast<char *>(loop2->context().data) +
-                        loop2->context().size));
+                        reinterpret_cast<char *>(loop1->context().data) +
+                        loop1->context().size));
+    triggered = true;
   });
 
   test_timer->Setup(loop1->monotonic_now() + ::std::chrono::seconds(1));
@@ -707,18 +734,25 @@ TEST_P(AbstractEventLoopTest, MessageSendTime) {
   EndEventLoop(loop1.get(), ::std::chrono::seconds(2));
   Run();
 
+  EXPECT_TRUE(triggered);
+
   EXPECT_TRUE(fetcher.Fetch());
 
   monotonic_clock::duration monotonic_time_offset =
-      fetcher.context().monotonic_sent_time -
+      fetcher.context().monotonic_event_time -
       (loop1->monotonic_now() - ::std::chrono::seconds(1));
   realtime_clock::duration realtime_time_offset =
-      fetcher.context().realtime_sent_time -
+      fetcher.context().realtime_event_time -
       (loop1->realtime_now() - ::std::chrono::seconds(1));
+
+  EXPECT_EQ(fetcher.context().realtime_event_time,
+            fetcher.context().realtime_remote_time);
+  EXPECT_EQ(fetcher.context().monotonic_event_time,
+            fetcher.context().monotonic_remote_time);
 
   EXPECT_TRUE(monotonic_time_offset > ::std::chrono::milliseconds(-500))
       << ": Got "
-      << fetcher.context().monotonic_sent_time.time_since_epoch().count()
+      << fetcher.context().monotonic_event_time.time_since_epoch().count()
       << " expected " << loop1->monotonic_now().time_since_epoch().count();
   // Confirm that the data pointer makes sense.
   EXPECT_GT(fetcher.get(), fetcher.context().data);
@@ -728,16 +762,16 @@ TEST_P(AbstractEventLoopTest, MessageSendTime) {
                 fetcher.context().size));
   EXPECT_TRUE(monotonic_time_offset < ::std::chrono::milliseconds(500))
       << ": Got "
-      << fetcher.context().monotonic_sent_time.time_since_epoch().count()
+      << fetcher.context().monotonic_event_time.time_since_epoch().count()
       << " expected " << loop1->monotonic_now().time_since_epoch().count();
 
   EXPECT_TRUE(realtime_time_offset > ::std::chrono::milliseconds(-500))
       << ": Got "
-      << fetcher.context().realtime_sent_time.time_since_epoch().count()
+      << fetcher.context().realtime_event_time.time_since_epoch().count()
       << " expected " << loop1->realtime_now().time_since_epoch().count();
   EXPECT_TRUE(realtime_time_offset < ::std::chrono::milliseconds(500))
       << ": Got "
-      << fetcher.context().realtime_sent_time.time_since_epoch().count()
+      << fetcher.context().realtime_event_time.time_since_epoch().count()
       << " expected " << loop1->realtime_now().time_since_epoch().count();
 }
 
@@ -768,9 +802,13 @@ TEST_P(AbstractEventLoopTest, PhasedLoopTest) {
           [&times, &expected_times, &loop1, this](int count) {
             EXPECT_EQ(count, 1);
             times.push_back(loop1->monotonic_now());
-            expected_times.push_back(loop1->context().monotonic_sent_time);
+            expected_times.push_back(loop1->context().monotonic_event_time);
 
-            EXPECT_EQ(loop1->context().realtime_sent_time,
+            EXPECT_EQ(loop1->context().monotonic_remote_time,
+                      monotonic_clock::min_time);
+            EXPECT_EQ(loop1->context().realtime_event_time,
+                      realtime_clock::min_time);
+            EXPECT_EQ(loop1->context().realtime_remote_time,
                       realtime_clock::min_time);
             EXPECT_EQ(loop1->context().queue_index, 0xffffffffu);
             EXPECT_EQ(loop1->context().size, 0u);
@@ -1143,6 +1181,89 @@ TEST_P(AbstractEventLoopTest, RawBasic) {
   EXPECT_FALSE(happened);
   Run();
   EXPECT_TRUE(happened);
+}
+
+// Tests that a raw watcher and raw fetcher can receive messages from a raw
+// sender with remote times filled out.
+TEST_P(AbstractEventLoopTest, RawRemoteTimes) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+  auto loop3 = Make();
+
+  const std::string kData("971 is the best");
+
+  const aos::monotonic_clock::time_point monotonic_remote_time =
+      aos::monotonic_clock::time_point(chrono::seconds(1501));
+  const aos::realtime_clock::time_point realtime_remote_time =
+      aos::realtime_clock::time_point(chrono::seconds(3132));
+
+  std::unique_ptr<aos::RawSender> sender =
+      loop1->MakeRawSender(loop1->configuration()->channels()->Get(1));
+
+  std::unique_ptr<aos::RawFetcher> fetcher =
+      loop3->MakeRawFetcher(loop3->configuration()->channels()->Get(1));
+
+  loop2->OnRun([&]() {
+    EXPECT_TRUE(sender->Send(kData.data(), kData.size(), monotonic_remote_time,
+                             realtime_remote_time));
+  });
+
+  bool happened = false;
+  loop2->MakeRawWatcher(
+      loop2->configuration()->channels()->Get(1),
+      [this, monotonic_remote_time, realtime_remote_time, &fetcher, &happened](
+          const Context &context, const void * /*message*/) {
+        happened = true;
+        EXPECT_EQ(monotonic_remote_time, context.monotonic_remote_time);
+        EXPECT_EQ(realtime_remote_time, context.realtime_remote_time);
+
+        ASSERT_TRUE(fetcher->Fetch());
+        EXPECT_EQ(monotonic_remote_time,
+                  fetcher->context().monotonic_remote_time);
+        EXPECT_EQ(realtime_remote_time,
+                  fetcher->context().realtime_remote_time);
+
+        this->Exit();
+      });
+
+  EXPECT_FALSE(happened);
+  Run();
+  EXPECT_TRUE(happened);
+}
+
+// Tests that a raw sender fills out sent data.
+TEST_P(AbstractEventLoopTest, RawSenderSentData) {
+  auto loop1 = MakePrimary();
+
+  const std::string kData("971 is the best");
+
+  std::unique_ptr<aos::RawSender> sender =
+      loop1->MakeRawSender(loop1->configuration()->channels()->Get(1));
+
+  const aos::monotonic_clock::time_point monotonic_now =
+      loop1->monotonic_now();
+  const aos::realtime_clock::time_point realtime_now =
+      loop1->realtime_now();
+
+  EXPECT_TRUE(sender->Send(kData.data(), kData.size()));
+
+  EXPECT_GE(sender->monotonic_sent_time(), monotonic_now);
+  EXPECT_LE(sender->monotonic_sent_time(),
+            monotonic_now + chrono::milliseconds(100));
+  EXPECT_GE(sender->realtime_sent_time(), realtime_now);
+  EXPECT_LE(sender->realtime_sent_time(),
+            realtime_now + chrono::milliseconds(100));
+  EXPECT_EQ(sender->sent_queue_index(), 0u);
+
+  EXPECT_TRUE(sender->Send(kData.data(), kData.size()));
+
+  EXPECT_GE(sender->monotonic_sent_time(), monotonic_now);
+  EXPECT_LE(sender->monotonic_sent_time(),
+            monotonic_now + chrono::milliseconds(100));
+  EXPECT_GE(sender->realtime_sent_time(), realtime_now);
+  EXPECT_LE(sender->realtime_sent_time(),
+            realtime_now + chrono::milliseconds(100));
+  EXPECT_EQ(sender->sent_queue_index(), 1u);
 }
 
 // Tests that not setting up nodes results in no node.

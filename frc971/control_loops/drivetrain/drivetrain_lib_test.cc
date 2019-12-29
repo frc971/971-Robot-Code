@@ -93,8 +93,7 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
       RunFor(dt());
       EXPECT_TRUE(drivetrain_status_fetcher_.Fetch());
     } while (CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())
-                 ->planning_state() !=
-             (int8_t)SplineDrivetrain::PlanState::kPlannedTrajectory);
+                 ->planning_state() != PlanningState::PLANNED);
   }
 
   void WaitForTrajectoryExecution() {
@@ -132,7 +131,7 @@ TEST_F(DrivetrainTest, ConvergesCorrectly) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_MOTION_PROFILE);
+    goal_builder.add_controller_type(ControllerType::MOTION_PROFILE);
     goal_builder.add_left_goal(-1.0);
     goal_builder.add_right_goal(1.0);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
@@ -148,7 +147,7 @@ TEST_F(DrivetrainTest, ConvergesWithVoltageError) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_MOTION_PROFILE);
+    goal_builder.add_controller_type(ControllerType::MOTION_PROFILE);
     goal_builder.add_left_goal(-1.0);
     goal_builder.add_right_goal(1.0);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
@@ -164,7 +163,7 @@ TEST_F(DrivetrainTest, SurvivesDisabling) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_MOTION_PROFILE);
+    goal_builder.add_controller_type(ControllerType::MOTION_PROFILE);
     goal_builder.add_left_goal(-1.0);
     goal_builder.add_right_goal(1.0);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
@@ -194,7 +193,7 @@ TEST_F(DrivetrainTest, DriveStraightForward) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_MOTION_PROFILE);
+    goal_builder.add_controller_type(ControllerType::MOTION_PROFILE);
     goal_builder.add_left_goal(4.0);
     goal_builder.add_right_goal(4.0);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
@@ -218,7 +217,7 @@ TEST_F(DrivetrainTest, DriveAlmostStraightForward) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_MOTION_PROFILE);
+    goal_builder.add_controller_type(ControllerType::MOTION_PROFILE);
     goal_builder.add_left_goal(4.0);
     goal_builder.add_right_goal(3.9);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
@@ -277,7 +276,7 @@ TEST_F(DrivetrainTest, ProfileStraightForward) {
         angular_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_MOTION_PROFILE);
+    goal_builder.add_controller_type(ControllerType::MOTION_PROFILE);
     goal_builder.add_left_goal(4.0);
     goal_builder.add_right_goal(4.0);
     goal_builder.add_linear(linear_offset);
@@ -318,7 +317,7 @@ TEST_F(DrivetrainTest, ProfileTurn) {
         angular_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_MOTION_PROFILE);
+    goal_builder.add_controller_type(ControllerType::MOTION_PROFILE);
     goal_builder.add_left_goal(-1.0);
     goal_builder.add_right_goal(1.0);
     goal_builder.add_linear(linear_offset);
@@ -359,7 +358,7 @@ TEST_F(DrivetrainTest, SaturatedTurnDrive) {
         angular_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_MOTION_PROFILE);
+    goal_builder.add_controller_type(ControllerType::MOTION_PROFILE);
     goal_builder.add_left_goal(5.0);
     goal_builder.add_right_goal(4.0);
     goal_builder.add_linear(linear_offset);
@@ -381,7 +380,7 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_POLYDRIVE);
+    goal_builder.add_controller_type(ControllerType::POLYDRIVE);
     goal_builder.add_wheel(0.0);
     goal_builder.add_throttle(1.0);
     goal_builder.add_highgear(true);
@@ -394,7 +393,7 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_POLYDRIVE);
+    goal_builder.add_controller_type(ControllerType::POLYDRIVE);
     goal_builder.add_wheel(0.0);
     goal_builder.add_throttle(-0.3);
     goal_builder.add_highgear(true);
@@ -407,7 +406,7 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_POLYDRIVE);
+    goal_builder.add_controller_type(ControllerType::POLYDRIVE);
     goal_builder.add_wheel(0.0);
     goal_builder.add_throttle(0.0);
     goal_builder.add_highgear(true);
@@ -434,7 +433,7 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
         angular_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_MOTION_PROFILE);
+    goal_builder.add_controller_type(ControllerType::MOTION_PROFILE);
     goal_builder.add_left_goal(5.0);
     goal_builder.add_right_goal(4.0);
     goal_builder.add_linear(linear_offset);
@@ -483,7 +482,7 @@ TEST_F(DrivetrainTest, SplineSimple) {
         spline_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline(spline_goal_offset);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -493,7 +492,7 @@ TEST_F(DrivetrainTest, SplineSimple) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -532,7 +531,7 @@ TEST_F(DrivetrainTest, SplineSimpleBackwards) {
         spline_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline(spline_goal_offset);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -541,7 +540,7 @@ TEST_F(DrivetrainTest, SplineSimpleBackwards) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -597,7 +596,7 @@ TEST_F(DrivetrainTest, SplineSingleGoal) {
         spline_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline(spline_goal_offset);
     goal_builder.add_spline_handle(1);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
@@ -637,7 +636,7 @@ TEST_F(DrivetrainTest, SplineStop) {
         spline_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline(spline_goal_offset);
     goal_builder.add_spline_handle(1);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
@@ -655,7 +654,7 @@ TEST_F(DrivetrainTest, SplineStop) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(0);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -700,7 +699,7 @@ TEST_F(DrivetrainTest, SplineRestart) {
         spline_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline(spline_goal_offset);
     goal_builder.add_spline_handle(1);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
@@ -718,7 +717,7 @@ TEST_F(DrivetrainTest, SplineRestart) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(0);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -728,7 +727,7 @@ TEST_F(DrivetrainTest, SplineRestart) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -773,7 +772,7 @@ TEST_F(DrivetrainTest, SplineOffset) {
         spline_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline(spline_goal_offset);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -782,7 +781,7 @@ TEST_F(DrivetrainTest, SplineOffset) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -822,7 +821,7 @@ TEST_F(DrivetrainTest, SplineSideOffset) {
         spline_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline(spline_goal_offset);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -831,7 +830,7 @@ TEST_F(DrivetrainTest, SplineSideOffset) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -872,7 +871,7 @@ TEST_F(DrivetrainTest, MultiSpline) {
         spline_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline(spline_goal_offset);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -881,7 +880,7 @@ TEST_F(DrivetrainTest, MultiSpline) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -920,7 +919,7 @@ TEST_F(DrivetrainTest, SequentialSplines) {
         spline_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline(spline_goal_offset);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -929,7 +928,7 @@ TEST_F(DrivetrainTest, SequentialSplines) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -966,7 +965,7 @@ TEST_F(DrivetrainTest, SequentialSplines) {
         spline_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline(spline_goal_offset);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -976,7 +975,7 @@ TEST_F(DrivetrainTest, SequentialSplines) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(2);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -1014,7 +1013,7 @@ TEST_F(DrivetrainTest, SplineStopFirst) {
         spline_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
     goal_builder.add_spline(spline_goal_offset);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
@@ -1027,7 +1026,7 @@ TEST_F(DrivetrainTest, SplineStopFirst) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(0);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -1060,7 +1059,7 @@ TEST_F(DrivetrainTest, SplineStopFirst) {
         spline_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline(spline_goal_offset);
     goal_builder.add_spline_handle(2);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
@@ -1101,7 +1100,7 @@ TEST_F(DrivetrainTest, CancelSplineBeforeExecuting) {
         spline_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline(spline_goal_offset);
     goal_builder.add_spline_handle(0);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
@@ -1137,7 +1136,7 @@ TEST_F(DrivetrainTest, CancelSplineBeforeExecuting) {
         spline_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline(spline_goal_offset);
     goal_builder.add_spline_handle(0);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
@@ -1148,7 +1147,7 @@ TEST_F(DrivetrainTest, CancelSplineBeforeExecuting) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(2);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -1187,7 +1186,7 @@ TEST_F(DrivetrainTest, ParallelSplines) {
         spline_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline(spline_goal_offset);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -1220,7 +1219,7 @@ TEST_F(DrivetrainTest, ParallelSplines) {
         spline_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline(spline_goal_offset);
     goal_builder.add_spline_handle(1);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
@@ -1231,7 +1230,7 @@ TEST_F(DrivetrainTest, ParallelSplines) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(2);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -1269,7 +1268,7 @@ TEST_F(DrivetrainTest, OnlyPlanSpline) {
         spline_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline(spline_goal_offset);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -1280,7 +1279,7 @@ TEST_F(DrivetrainTest, OnlyPlanSpline) {
     drivetrain_status_fetcher_.Fetch();
     EXPECT_EQ(CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())
                   ->planning_state(),
-              3);
+              PlanningState::PLANNED);
     ::std::this_thread::sleep_for(::std::chrono::milliseconds(2));
   }
   VerifyNearSplineGoal();
@@ -1315,7 +1314,7 @@ TEST_F(DrivetrainTest, SplineExecuteAfterPlan) {
         spline_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline(spline_goal_offset);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -1326,7 +1325,7 @@ TEST_F(DrivetrainTest, SplineExecuteAfterPlan) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_SPLINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -1344,7 +1343,7 @@ TEST_F(DrivetrainTest, BasicLineFollow) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_LINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::LINE_FOLLOWER);
     goal_builder.add_throttle(0.5);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -1381,7 +1380,7 @@ TEST_F(DrivetrainTest, LineFollowDefersToOpenLoop) {
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_controller_type(ControllerType_LINE_FOLLOWER);
+    goal_builder.add_controller_type(ControllerType::LINE_FOLLOWER);
     goal_builder.add_throttle(0.5);
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }

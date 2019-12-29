@@ -55,8 +55,8 @@ class LineFollowDrivetrainTest : public ::testing::Test {
     Goal::Builder goal_builder(fbb);
     goal_builder.add_throttle(driver_model_(state_));
     goal_builder.add_controller_type(freeze_target_
-                                         ? ControllerType_LINE_FOLLOWER
-                                         : ControllerType_POLYDRIVE);
+                                         ? ControllerType::LINE_FOLLOWER
+                                         : ControllerType::POLYDRIVE);
     fbb.Finish(goal_builder.Finish());
 
     aos::FlatbufferDetachedBuffer<Goal> goal(fbb.Release());

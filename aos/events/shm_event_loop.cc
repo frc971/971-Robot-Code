@@ -35,7 +35,7 @@ std::string ShmFolder(const Channel *channel) {
 }
 std::string ShmPath(const Channel *channel) {
   CHECK(channel->has_type());
-  return ShmFolder(channel) + channel->type()->str() + ".v0";
+  return ShmFolder(channel) + channel->type()->str() + ".v1";
 }
 
 class MMapedQueue {
@@ -193,11 +193,21 @@ class SimpleShmFetcher {
     // TODO(austin): Get behind and make sure it dies both here and with
     // Fetch.
     ipc_lib::LocklessQueue::ReadResult read_result = lockless_queue_.Read(
-        actual_queue_index_.index(), &context_.monotonic_sent_time,
-        &context_.realtime_sent_time, &context_.size,
-        reinterpret_cast<char *>(data_storage_.get()));
+        actual_queue_index_.index(), &context_.monotonic_event_time,
+        &context_.realtime_event_time, &context_.monotonic_remote_time,
+        &context_.realtime_remote_time, &context_.remote_queue_index,
+        &context_.size, reinterpret_cast<char *>(data_storage_.get()));
     if (read_result == ipc_lib::LocklessQueue::ReadResult::GOOD) {
       context_.queue_index = actual_queue_index_.index();
+      if (context_.remote_queue_index == 0xffffffffu) {
+        context_.remote_queue_index = context_.queue_index;
+      }
+      if (context_.monotonic_remote_time == aos::monotonic_clock::min_time) {
+        context_.monotonic_remote_time = context_.monotonic_event_time;
+      }
+      if (context_.realtime_remote_time == aos::realtime_clock::min_time) {
+        context_.realtime_remote_time = context_.realtime_event_time;
+      }
       context_.data = reinterpret_cast<char *>(data_storage_.get()) +
                       lockless_queue_.message_data_size() - context_.size;
       actual_queue_index_ = actual_queue_index_.Increment();
@@ -231,12 +241,22 @@ class SimpleShmFetcher {
       return false;
     }
 
-    ipc_lib::LocklessQueue::ReadResult read_result =
-        lockless_queue_.Read(queue_index.index(), &context_.monotonic_sent_time,
-                             &context_.realtime_sent_time, &context_.size,
-                             reinterpret_cast<char *>(data_storage_.get()));
+    ipc_lib::LocklessQueue::ReadResult read_result = lockless_queue_.Read(
+        queue_index.index(), &context_.monotonic_event_time,
+        &context_.realtime_event_time, &context_.monotonic_remote_time,
+        &context_.realtime_remote_time, &context_.remote_queue_index,
+        &context_.size, reinterpret_cast<char *>(data_storage_.get()));
     if (read_result == ipc_lib::LocklessQueue::ReadResult::GOOD) {
       context_.queue_index = queue_index.index();
+      if (context_.remote_queue_index == 0xffffffffu) {
+        context_.remote_queue_index = context_.queue_index;
+      }
+      if (context_.monotonic_remote_time == aos::monotonic_clock::min_time) {
+        context_.monotonic_remote_time = context_.monotonic_event_time;
+      }
+      if (context_.realtime_remote_time == aos::realtime_clock::min_time) {
+        context_.realtime_remote_time = context_.realtime_event_time;
+      }
       context_.data = reinterpret_cast<char *>(data_storage_.get()) +
                       lockless_queue_.message_data_size() - context_.size;
       actual_queue_index_ = queue_index.Increment();
@@ -326,14 +346,25 @@ class ShmSender : public RawSender {
 
   void *data() override { return lockless_queue_sender_.Data(); }
   size_t size() override { return lockless_queue_sender_.size(); }
-  bool DoSend(size_t length) override {
-    lockless_queue_sender_.Send(length);
+  bool DoSend(size_t length,
+              aos::monotonic_clock::time_point monotonic_remote_time,
+              aos::realtime_clock::time_point realtime_remote_time,
+              uint32_t remote_queue_index) override {
+    lockless_queue_sender_.Send(
+        length, monotonic_remote_time, realtime_remote_time, remote_queue_index,
+        &monotonic_sent_time_, &realtime_sent_time_, &sent_queue_index_);
     lockless_queue_.Wakeup(event_loop()->priority());
     return true;
   }
 
-  bool DoSend(const void *msg, size_t length) override {
-    lockless_queue_sender_.Send(reinterpret_cast<const char *>(msg), length);
+  bool DoSend(const void *msg, size_t length,
+              aos::monotonic_clock::time_point monotonic_remote_time,
+              aos::realtime_clock::time_point realtime_remote_time,
+              uint32_t remote_queue_index) override {
+    lockless_queue_sender_.Send(reinterpret_cast<const char *>(msg), length,
+                                monotonic_remote_time, realtime_remote_time,
+                                remote_queue_index, &monotonic_sent_time_,
+                                &realtime_sent_time_, &sent_queue_index_);
     lockless_queue_.Wakeup(event_loop()->priority());
     // TODO(austin): Return an error if we send too fast.
     return true;
@@ -370,7 +401,7 @@ class WatcherState : public aos::WatcherState {
 
       if (has_new_data_) {
         event_.set_event_time(
-            simple_shm_fetcher_.context().monotonic_sent_time);
+            simple_shm_fetcher_.context().monotonic_event_time);
         event_loop_->AddEvent(&event_);
       }
     }

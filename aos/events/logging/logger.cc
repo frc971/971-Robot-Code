@@ -164,9 +164,9 @@ flatbuffers::Offset<MessageHeader> PackMessage(
   MessageHeader::Builder message_header_builder(*fbb);
   message_header_builder.add_channel_index(channel_index);
   message_header_builder.add_monotonic_sent_time(
-      context.monotonic_sent_time.time_since_epoch().count());
+      context.monotonic_event_time.time_since_epoch().count());
   message_header_builder.add_realtime_sent_time(
-      context.realtime_sent_time.time_since_epoch().count());
+      context.realtime_event_time.time_since_epoch().count());
 
   message_header_builder.add_queue_index(context.queue_index);
 
@@ -212,7 +212,7 @@ void Logger::DoLogData() {
         CHECK(!f.written);
 
         // TODO(james): Write tests to exercise this logic.
-        if (f.fetcher->context().monotonic_sent_time <
+        if (f.fetcher->context().monotonic_event_time <
             last_synchronized_time_) {
           // Write!
           flatbuffers::FlatBufferBuilder fbb(f.fetcher->context().size +
@@ -410,7 +410,7 @@ void LogReader::Register(EventLoop *event_loop) {
     std::pair<monotonic_clock::time_point, int> oldest_channel_index =
         PopOldestChannel();
     const monotonic_clock::time_point monotonic_now =
-        event_loop_->context().monotonic_sent_time;
+        event_loop_->context().monotonic_event_time;
     CHECK(monotonic_now == oldest_channel_index.first)
         << ": Now " << monotonic_now.time_since_epoch().count()
         << " trying to send "

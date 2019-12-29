@@ -537,7 +537,7 @@ class SolenoidWriter {
     // Flash the red light slowly.
     StatusLightT color;
     if (!status_light_fetcher_.get() ||
-        monotonic_now > status_light_fetcher_.context().monotonic_sent_time +
+        monotonic_now > status_light_fetcher_.context().monotonic_event_time +
                             chrono::milliseconds(100)) {
       color.red = 0.0;
       color.green = 0.0;
@@ -549,7 +549,7 @@ class SolenoidWriter {
         color.red = 0.5;
       } else if (!vision_status_fetcher_.get() ||
                  monotonic_now >
-                     vision_status_fetcher_.context().monotonic_sent_time +
+                     vision_status_fetcher_.context().monotonic_event_time +
                          chrono::seconds(1)) {
         color.red = 0.5;
         color.green = 0.5;

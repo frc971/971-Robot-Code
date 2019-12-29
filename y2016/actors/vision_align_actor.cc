@@ -74,7 +74,7 @@ bool VisionAlignActor::RunAction(
     goal_builder.add_highgear(false);
     goal_builder.add_quickturn(false);
     goal_builder.add_controller_type(
-        frc971::control_loops::drivetrain::ControllerType_MOTION_PROFILE);
+        frc971::control_loops::drivetrain::ControllerType::MOTION_PROFILE);
     goal_builder.add_left_goal(left_current + side_distance_change);
     goal_builder.add_right_goal(right_current - side_distance_change);
 

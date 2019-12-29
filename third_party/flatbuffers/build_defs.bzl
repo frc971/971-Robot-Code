@@ -22,6 +22,7 @@ DEFAULT_FLATC_ARGS = [
     "--reflect-names",
     "--cpp-ptr-type flatbuffers::unique_ptr",
     "--force-empty",
+    "--scoped-enums",
     "--gen-name-strings",
 ]
 

@@ -115,7 +115,7 @@ void LineFollowDrivetrain::SetGoal(
   // Freeze the target once the driver presses the button; if we haven't yet
   // confirmed a target when the driver presses the button, we will not do
   // anything and report not ready until we have a target.
-  if (goal->controller_type() == drivetrain::ControllerType_LINE_FOLLOWER) {
+  if (goal->controller_type() == drivetrain::ControllerType::LINE_FOLLOWER) {
     last_enable_ = now;
     // If we already acquired a target, we want to keep track if it.
     if (have_target_) {

@@ -212,7 +212,7 @@ TEST_F(LocalizedDrivetrainTest, NoCameraUpdate) {
 
     Goal::Builder drivetrain_builder = builder.MakeBuilder<Goal>();
     drivetrain_builder.add_controller_type(
-        frc971::control_loops::drivetrain::ControllerType_MOTION_PROFILE);
+        frc971::control_loops::drivetrain::ControllerType::MOTION_PROFILE);
     drivetrain_builder.add_left_goal(-1.0);
     drivetrain_builder.add_right_goal(1.0);
 
@@ -233,7 +233,7 @@ TEST_F(LocalizedDrivetrainTest, BadCameraUpdate) {
 
     Goal::Builder drivetrain_builder = builder.MakeBuilder<Goal>();
     drivetrain_builder.add_controller_type(
-        frc971::control_loops::drivetrain::ControllerType_MOTION_PROFILE);
+        frc971::control_loops::drivetrain::ControllerType::MOTION_PROFILE);
     drivetrain_builder.add_left_goal(-1.0);
     drivetrain_builder.add_right_goal(1.0);
 
@@ -253,7 +253,7 @@ TEST_F(LocalizedDrivetrainTest, PerfectCameraUpdate) {
 
     Goal::Builder drivetrain_builder = builder.MakeBuilder<Goal>();
     drivetrain_builder.add_controller_type(
-        frc971::control_loops::drivetrain::ControllerType_MOTION_PROFILE);
+        frc971::control_loops::drivetrain::ControllerType::MOTION_PROFILE);
     drivetrain_builder.add_left_goal(-1.0);
     drivetrain_builder.add_right_goal(1.0);
 
@@ -275,7 +275,7 @@ TEST_F(LocalizedDrivetrainTest, NoCameraWithDisturbanceFails) {
 
     Goal::Builder drivetrain_builder = builder.MakeBuilder<Goal>();
     drivetrain_builder.add_controller_type(
-        frc971::control_loops::drivetrain::ControllerType_MOTION_PROFILE);
+        frc971::control_loops::drivetrain::ControllerType::MOTION_PROFILE);
     drivetrain_builder.add_left_goal(-1.0);
     drivetrain_builder.add_right_goal(1.0);
 
@@ -304,7 +304,7 @@ TEST_F(LocalizedDrivetrainTest, ResetLocalizer) {
 
     Goal::Builder drivetrain_builder = builder.MakeBuilder<Goal>();
     drivetrain_builder.add_controller_type(
-        frc971::control_loops::drivetrain::ControllerType_MOTION_PROFILE);
+        frc971::control_loops::drivetrain::ControllerType::MOTION_PROFILE);
     drivetrain_builder.add_left_goal(-1.0);
     drivetrain_builder.add_right_goal(1.0);
 
@@ -340,7 +340,7 @@ TEST_F(LocalizedDrivetrainTest, CameraUpdate) {
 
     Goal::Builder drivetrain_builder = builder.MakeBuilder<Goal>();
     drivetrain_builder.add_controller_type(
-        frc971::control_loops::drivetrain::ControllerType_MOTION_PROFILE);
+        frc971::control_loops::drivetrain::ControllerType::MOTION_PROFILE);
     drivetrain_builder.add_left_goal(-1.0);
     drivetrain_builder.add_right_goal(1.0);
 
@@ -368,7 +368,7 @@ TEST_F(LocalizedDrivetrainTest, LineFollowToHPSlot) {
 
     Goal::Builder drivetrain_builder = builder.MakeBuilder<Goal>();
     drivetrain_builder.add_controller_type(
-        frc971::control_loops::drivetrain::ControllerType_LINE_FOLLOWER);
+        frc971::control_loops::drivetrain::ControllerType::LINE_FOLLOWER);
     drivetrain_builder.add_throttle(0.5);
 
     EXPECT_TRUE(builder.Send(drivetrain_builder.Finish()));

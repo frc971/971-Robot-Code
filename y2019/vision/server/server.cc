@@ -165,7 +165,7 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
                          &camera_frames) {
         while (drivetrain_status_fetcher.FetchNext()) {
           DrivetrainPosition drivetrain_position{
-              drivetrain_status_fetcher.context().monotonic_sent_time,
+              drivetrain_status_fetcher.context().monotonic_event_time,
               drivetrain_status_fetcher->x(), drivetrain_status_fetcher->y(),
               drivetrain_status_fetcher->theta()};
 

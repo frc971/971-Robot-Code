@@ -145,7 +145,7 @@ TEST_F(FlatbufferIntrospectionTest, EnumTest) {
   flatbuffers::FlatBufferBuilder builder;
 
   ConfigurationBuilder config_builder(builder);
-  config_builder.add_foo_enum(BaseType_UShort);
+  config_builder.add_foo_enum(BaseType::UShort);
 
   builder.Finish(config_builder.Finish());
 
@@ -271,11 +271,12 @@ TEST_F(FlatbufferIntrospectionTest, VectorStructTest) {
 TEST_F(FlatbufferIntrospectionTest, VectorEnumTest) {
   flatbuffers::FlatBufferBuilder builder;
 
-  auto enums = builder.CreateVector<int8_t>(
-      {BaseType_UShort, BaseType_Obj, BaseType_UInt});
+  auto enums = builder.CreateVector<BaseType>(
+      {BaseType::UShort, BaseType::Obj, BaseType::UInt});
 
   ConfigurationBuilder config_builder(builder);
-  config_builder.add_vector_foo_enum(enums);
+  config_builder.add_vector_foo_enum(
+      flatbuffers::Offset<flatbuffers::Vector<int8_t>>(enums.o));
 
   builder.Finish(config_builder.Finish());
 
@@ -287,7 +288,7 @@ TEST_F(FlatbufferIntrospectionTest, VectorEnumTest) {
 TEST_F(FlatbufferIntrospectionTest, StructEnumTest) {
   flatbuffers::FlatBufferBuilder builder;
 
-  StructEnum foo_struct(BaseType_UShort);
+  StructEnum foo_struct(BaseType::UShort);
 
   ConfigurationBuilder config_builder(builder);
   config_builder.add_foo_struct_enum(&foo_struct);

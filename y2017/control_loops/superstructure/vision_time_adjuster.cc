@@ -116,7 +116,7 @@ void VisionTimeAdjuster::Tick(monotonic_clock::time_point monotonic_now,
   if (drivetrain_status_fetcher_.Fetch()) {
     const auto &position = drivetrain_status_fetcher_.get();
     DrivetrainAngle new_position{
-        .time = drivetrain_status_fetcher_.context().monotonic_sent_time,
+        .time = drivetrain_status_fetcher_.context().monotonic_event_time,
         .left = position->estimated_left_position(),
         .right = position->estimated_right_position()};
     drivetrain_data_.Push(new_position);

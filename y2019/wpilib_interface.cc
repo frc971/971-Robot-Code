@@ -661,7 +661,7 @@ class SolenoidWriter {
     // Flash the red light slowly.
     StatusLightT color;
     if (!status_light_fetcher_.get() ||
-        status_light_fetcher_.context().monotonic_sent_time +
+        status_light_fetcher_.context().monotonic_event_time +
                 chrono::milliseconds(100) <
             event_loop_->monotonic_now()) {
       color.red = 0.0;
