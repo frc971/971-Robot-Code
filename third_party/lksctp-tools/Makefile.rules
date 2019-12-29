@@ -1,0 +1,21 @@
+# -*-makefile-*-
+#
+# Generate pre-parsed C code.
+%.i: %.c
+	$(COMPILE) -E -c $^ -o $@
+
+.PRECIOUS: %.i
+%.ci: %.i
+	-grep -v -e "^#" -e "^ *$$" $^ | indent > $@
+	mv -f $@ $^
+
+
+## FIXME: Your stuff here
+
+edit = @sed \
+	-e "s|\@bindir\@|$(bindir)|" \
+	-e "s|\@libdir\@|$(libdir)|" \
+	-e "s|\@PACKAGE\@|$(PACKAGE)|" \
+	-e "s|\@LIBWITHSCTP_CURRENT\@|$(LIBWITHSCTP_CURRENT)|" \
+	-e "s|\@LIBWITHSCTP_REVISION\@|$(LIBWITHSCTP_REVISION)|" \
+	-e "s|\@LIBWITHSCTP_AGE\@|$(LIBWITHSCTP_AGE)|"

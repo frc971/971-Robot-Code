@@ -1,0 +1,74 @@
+.\" (C) Copyright Sridhar Samudrala IBM Corp. 2004, 2005.
+.\"
+.\" Permission is granted to distribute possibly modified copies
+.\" of this manual provided the header is included verbatim,
+.\" and in case of nontrivial modification author and date
+.\" of the modification is added to the header.
+.\"
+.TH SCTP_PEELOFF 3 2005-10-25 "Linux 2.6" "Linux Programmer's Manual"
+.SH NAME
+sctp_peeloff \- Branch off an association into a separate socket. 
+.SH SYNOPSIS
+.nf
+.B #include <sys/types.h>
+.B #include <sys/socket.h>
+.B #include <netinet/sctp.h>
+.sp
+.BI "int sctp_peeloff(int " sd ", sctp_assoc_t " assoc_id );
+.BI "int sctp_peeloff_flags(int " sd ", sctp_assoc_t " assoc_id ", unsigned " flags );
+.fi
+.SH DESCRIPTION
+.B sctp_peeloff
+branches off an existing association
+.I assoc_id
+on a one-to-many style socket
+.I sd
+into a separate socket. The new socket is a one-to-one style socket.
+.PP
+This is particularly desirable when, for instance, the application wishes to
+have a number of sporadic message senders/receivers remain under the original
+one-to-many style socket, but branch off those assocations carrying high volume
+data traffic into their own separate socket descriptors.
+
+.B sctp_peeloff_flags
+is a variant of sctp_peeloff, in which flags describing the behavior of
+the newly peeled off socket can be specified.  Currently the supported flags
+are:
+.TP
+.B SOCK_NONBLOCK
+Specifies that the new socket should not block on io operations.
+.TP
+.B SOCK_CLOEXEC
+Specifies that the new socket should be closed when the owning process calls
+exec.
+.SH "RETURN VALUE"
+On success, the new socket descriptor representing the branched-off asociation is returned.
+On error, \-1 is returned, and
+.I errno
+is set appropriately.
+.SH ERRORS
+.TP
+.B EBADF
+.I sd
+is not a valid descriptor.
+.TP
+.B EINVAL
+The assoc id passed is invalid or if the socket is a one-to-one style socket.
+.TP
+.B ENOTSOCK
+Argument is a descriptor for a file, not a socket.
+.SH NOTES
+.TP
+sctp_peeloff_flags is a linux specific variant of sctp_peeloff.  While it will compile on other systems, its use will result in an error return.  Portable code should use sctp_peeloff.
+.SH "SEE ALSO"
+.BR sctp (7)
+.BR sctp_bindx (3),
+.BR sctp_connectx (3),
+.BR sctp_sendmsg (3),
+.BR sctp_sendv (3),
+.BR sctp_send (3),
+.BR sctp_recvmsg (3),
+.BR sctp_recvv (3),
+.BR sctp_getpaddrs (3),
+.BR sctp_getladdrs (3),
+.BR sctp_opt_info (3),
