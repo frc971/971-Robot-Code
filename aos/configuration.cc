@@ -232,17 +232,39 @@ bool EqualsApplications(const Application *a, std::string_view name) {
 
 // Maps name for the provided maps.  Modifies name.
 void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
-                std::string_view *name) {
+                std::string_view *name, std::string_view type,
+                const Node *node) {
   // For the same reason we merge configs in reverse order, we want to process
   // maps in reverse order.  That lets the outer config overwrite channels from
   // the inner configs.
   for (auto i = maps->rbegin(); i != maps->rend(); ++i) {
-    if (i->has_match() && i->match()->has_name() && i->has_rename() &&
-        i->rename()->has_name() && i->match()->name()->string_view() == *name) {
-      VLOG(1) << "Renamed \"" << *name << "\" to \""
-              << i->rename()->name()->string_view() << "\"";
-      *name = i->rename()->name()->string_view();
+    if (!i->has_match() || !i->match()->has_name()) {
+      continue;
     }
+    if (!i->has_rename() || !i->rename()->has_name()) {
+      continue;
+    }
+
+    // Handle normal maps (now that we know that match and rename are filled
+    // out).
+    if (i->match()->name()->string_view() != *name) {
+      continue;
+    }
+
+    // Handle type specific maps.
+    if (i->match()->has_type() && i->match()->type()->string_view() != type) {
+      continue;
+    }
+
+    if (node != nullptr && i->match()->has_source_node() &&
+        i->match()->source_node()->string_view() !=
+            node->name()->string_view()) {
+      continue;
+    }
+
+    VLOG(1) << "Renamed \"" << *name << "\" to \""
+            << i->rename()->name()->string_view() << "\"";
+    *name = i->rename()->name()->string_view();
   }
 }
 
@@ -426,7 +448,8 @@ FlatbufferDetachedBuffer<Configuration> ReadConfig(
 
 const Channel *GetChannel(const Configuration *config, std::string_view name,
                           std::string_view type,
-                          std::string_view application_name) {
+                          std::string_view application_name, const Node *node) {
+  const std::string_view original_name = name;
   VLOG(1) << "Looking up { \"name\": \"" << name << "\", \"type\": \"" << type
           << "\" }";
 
@@ -439,18 +462,20 @@ const Channel *GetChannel(const Configuration *config, std::string_view name,
     if (application_iterator != config->applications()->cend() &&
         EqualsApplications(*application_iterator, application_name)) {
       if (application_iterator->has_maps()) {
-        HandleMaps(application_iterator->maps(), &name);
+        HandleMaps(application_iterator->maps(), &name, type, node);
       }
     }
   }
 
   // Now do global maps.
   if (config->has_maps()) {
-    HandleMaps(config->maps(), &name);
+    HandleMaps(config->maps(), &name, type, node);
   }
 
-  VLOG(1) << "Actually looking up { \"name\": \"" << name << "\", \"type\": \""
-          << type << "\" }";
+  if (original_name != name) {
+    VLOG(1) << "Remapped to { \"name\": \"" << name << "\", \"type\": \""
+            << type << "\" }";
+  }
 
   // Then look for the channel.
   auto channel_iterator =
@@ -461,13 +486,23 @@ const Channel *GetChannel(const Configuration *config, std::string_view name,
   // Make sure we actually found it, and it matches.
   if (channel_iterator != config->channels()->cend() &&
       EqualsChannels(*channel_iterator, std::make_pair(name, type))) {
-    VLOG(1) << "Found: " << FlatbufferToJson(*channel_iterator);
+    if (VLOG_IS_ON(2)) {
+      VLOG(2) << "Found: " << FlatbufferToJson(*channel_iterator);
+    } else if (VLOG_IS_ON(1)) {
+      VLOG(1) << "Found: " << CleanedChannelToString(*channel_iterator);
+    }
     return *channel_iterator;
   } else {
     VLOG(1) << "No match for { \"name\": \"" << name << "\", \"type\": \""
             << type << "\" }";
     return nullptr;
   }
+}
+
+std::string CleanedChannelToString(const Channel *channel) {
+  FlatbufferDetachedBuffer<Channel> cleaned_channel = CopyFlatBuffer(channel);
+  cleaned_channel.mutable_message()->clear_schema();
+  return FlatbufferToJson(cleaned_channel);
 }
 
 FlatbufferDetachedBuffer<Configuration> MergeConfiguration(

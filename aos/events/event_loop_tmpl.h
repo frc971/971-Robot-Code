@@ -30,7 +30,7 @@ template <typename Watch>
 void EventLoop::MakeWatcher(const std::string_view channel_name, Watch &&w) {
   using T = typename watch_message_type_trait<Watch>::message_type;
   const Channel *channel = configuration::GetChannel(
-      configuration_, channel_name, T::GetFullyQualifiedName(), name());
+      configuration_, channel_name, T::GetFullyQualifiedName(), name(), node());
 
   CHECK(channel != nullptr)
       << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""

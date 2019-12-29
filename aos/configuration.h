@@ -37,16 +37,17 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
 //
 // If the application name is empty, it is ignored.  Maps are processed in
 // reverse order, and application specific first.
-const Channel *GetChannel(
-    const Configuration *config, const std::string_view name,
-    const std::string_view type,
-    const std::string_view application_name);
-inline const Channel *GetChannel(
-    const Flatbuffer<Configuration> &config,
-    const std::string_view name,
-    const std::string_view type,
-    const std::string_view application_name) {
-  return GetChannel(&config.message(), name, type, application_name);
+const Channel *GetChannel(const Configuration *config,
+                          const std::string_view name,
+                          const std::string_view type,
+                          const std::string_view application_name,
+                          const Node *node);
+inline const Channel *GetChannel(const Flatbuffer<Configuration> &config,
+                                 const std::string_view name,
+                                 const std::string_view type,
+                                 const std::string_view application_name,
+                                 const Node *node) {
+  return GetChannel(&config.message(), name, type, application_name, node);
 }
 
 // Returns the Node out of the config with the matching name, or nullptr if it
@@ -63,6 +64,9 @@ bool ChannelIsSendableOnNode(const Channel *channel, const Node *node);
 // Returns true if the provided channel is able to be watched or fetched on the
 // provided node.
 bool ChannelIsReadableOnNode(const Channel *channel, const Node *node);
+
+// Prints a channel to json, but without the schema.
+std::string CleanedChannelToString(const Channel *channel);
 
 // TODO(austin): GetSchema<T>(const Flatbuffer<Configuration> &config);
 

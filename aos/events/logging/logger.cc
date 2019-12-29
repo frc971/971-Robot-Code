@@ -155,6 +155,25 @@ Logger::Logger(DetachedBufferWriter *writer, EventLoop *event_loop,
   });
 }
 
+flatbuffers::Offset<MessageHeader> PackMessage(
+    flatbuffers::FlatBufferBuilder *fbb, const Context &context,
+    int channel_index) {
+  flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data_offset =
+      fbb->CreateVector(static_cast<uint8_t *>(context.data), context.size);
+
+  MessageHeader::Builder message_header_builder(*fbb);
+  message_header_builder.add_channel_index(channel_index);
+  message_header_builder.add_monotonic_sent_time(
+      context.monotonic_sent_time.time_since_epoch().count());
+  message_header_builder.add_realtime_sent_time(
+      context.realtime_sent_time.time_since_epoch().count());
+
+  message_header_builder.add_queue_index(context.queue_index);
+
+  message_header_builder.add_data(data_offset);
+  return message_header_builder.Finish();
+}
+
 void Logger::DoLogData() {
   // We want to guarentee that messages aren't out of order by more than
   // max_out_of_order_duration.  To do this, we need sync points.  Every write
@@ -200,31 +219,12 @@ void Logger::DoLogData() {
                                              max_header_size_);
           fbb.ForceDefaults(1);
 
-          flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data_offset =
-              fbb.CreateVector(
-                  static_cast<uint8_t *>(f.fetcher->context().data),
-                  f.fetcher->context().size);
+          fbb.FinishSizePrefixed(
+              PackMessage(&fbb, f.fetcher->context(), channel_index));
 
           VLOG(1) << "Writing data for channel "
                   << FlatbufferToJson(f.fetcher->channel());
 
-          MessageHeader::Builder message_header_builder(fbb);
-          message_header_builder.add_channel_index(channel_index);
-          message_header_builder.add_monotonic_sent_time(
-              f.fetcher->context()
-                  .monotonic_sent_time.time_since_epoch()
-                  .count());
-          message_header_builder.add_realtime_sent_time(
-              f.fetcher->context()
-                  .realtime_sent_time.time_since_epoch()
-                  .count());
-
-          message_header_builder.add_queue_index(
-              f.fetcher->context().queue_index);
-
-          message_header_builder.add_data(data_offset);
-
-          fbb.FinishSizePrefixed(message_header_builder.Finish());
           max_header_size_ = std::max(
               max_header_size_, fbb.GetSize() - f.fetcher->context().size);
           writer_->QueueSizedFlatbuffer(&fbb);
