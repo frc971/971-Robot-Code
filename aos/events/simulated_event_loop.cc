@@ -748,6 +748,22 @@ SimulatedEventLoopFactory::SimulatedEventLoopFactory(
                           << "\" in the configuration.";
 }
 
+SimulatedEventLoopFactory::SimulatedEventLoopFactory(
+    const Configuration *configuration, const Node *node)
+    : configuration_(CHECK_NOTNULL(configuration)), node_(node) {
+  CHECK(configuration_->has_nodes())
+      << ": Got a configuration with no nodes and node \""
+      << node->name()->string_view() << "\" was selected.";
+  bool found = false;
+  for (const Node *node : *configuration_->nodes()) {
+    if (node == node_) {
+      found = true;
+      break;
+    }
+  }
+  CHECK(found) << ": node must be a pointer in the configuration.";
+}
+
 SimulatedEventLoopFactory::~SimulatedEventLoopFactory() {}
 
 ::std::unique_ptr<EventLoop> SimulatedEventLoopFactory::MakeEventLoop(

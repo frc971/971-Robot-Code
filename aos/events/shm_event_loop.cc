@@ -155,7 +155,11 @@ namespace chrono = ::std::chrono;
 ShmEventLoop::ShmEventLoop(const Configuration *configuration)
     : EventLoop(configuration),
       name_(Filename(program_invocation_name)),
-      node_(MaybeMyNode(configuration)) {}
+      node_(MaybeMyNode(configuration)) {
+  if (configuration->has_nodes()) {
+    CHECK(node_ != nullptr) << ": Couldn't find node in config.";
+  }
+}
 
 namespace internal {
 

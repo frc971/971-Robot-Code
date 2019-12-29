@@ -31,7 +31,8 @@ table LogFileHeader {
   // Name of the device which this log file is for.
   name:string;
 
-  // TODO(austin): Node!
+  // The current node, if known and running in a multi-node configuration.
+  node:Node;
 }
 
 // Table holding a message.
@@ -39,18 +40,28 @@ table MessageHeader {
   // Index into the channel datastructure in the log file header.  This
   // provides the data type.
   channel_index:uint;
-  // Time this message was sent on the monotonic clock in nanoseconds.
+  // Time this message was sent on the monotonic clock in nanoseconds on this
+  // node.
   monotonic_sent_time:long;
-  // Time this message was sent on the realtime clock in nanoseconds.
+  // Time this message was sent on the realtime clock in nanoseconds on this
+  // node.
   realtime_sent_time:long;
   // Index into the ipc queue of this message.  This should start with 0 and
   // always monotonically increment if no messages were ever lost.  It will
   // wrap at a multiple of the queue size.
   queue_index:uint;
-  // TODO(austin): Node.
 
   // TODO(austin): Format?  Compressed?
 
   // The nested flatbuffer.
   data:[ubyte];
+
+  // Time this message was sent on the monotonic clock of the remote node in
+  // nanoseconds.
+  monotonic_remote_time:long = -9223372036854775808;
+  // Time this message was sent on the realtime clock of the remote node in
+  // nanoseconds.
+  realtime_remote_time:long = -9223372036854775808;
+  // Queue index of this message on the remote node.
+  remote_queue_index:uint = 4294967295;
 }
