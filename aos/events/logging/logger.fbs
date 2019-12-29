@@ -15,9 +15,9 @@ namespace aos.logger;
 
 table LogFileHeader {
   // Time this log file started on the monotonic clock in nanoseconds.
-  monotonic_sent_time:long;
+  monotonic_start_time:long;
   // Time this log file started on the realtime clock in nanoseconds.
-  realtime_sent_time:long;
+  realtime_start_time:long;
 
   // Messages are not written in order to disk.  They will be out of order by
   // at most this duration (in nanoseconds).  If the log reader buffers until

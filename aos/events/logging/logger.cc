@@ -137,11 +137,11 @@ Logger::Logger(DetachedBufferWriter *writer, EventLoop *event_loop,
                                                                polling_period)
               .count());
 
-      log_file_header_builder.add_monotonic_sent_time(
+      log_file_header_builder.add_monotonic_start_time(
           std::chrono::duration_cast<std::chrono::nanoseconds>(
               monotonic_now.time_since_epoch())
               .count());
-      log_file_header_builder.add_realtime_sent_time(
+      log_file_header_builder.add_realtime_start_time(
           std::chrono::duration_cast<std::chrono::nanoseconds>(
               realtime_now.time_since_epoch())
               .count());
@@ -381,13 +381,13 @@ const Configuration *LogReader::configuration() {
 monotonic_clock::time_point LogReader::monotonic_start_time() {
   return monotonic_clock::time_point(std::chrono::nanoseconds(
       flatbuffers::GetSizePrefixedRoot<LogFileHeader>(configuration_.data())
-          ->monotonic_sent_time()));
+          ->monotonic_start_time()));
 }
 
 realtime_clock::time_point LogReader::realtime_start_time() {
   return realtime_clock::time_point(std::chrono::nanoseconds(
       flatbuffers::GetSizePrefixedRoot<LogFileHeader>(configuration_.data())
-          ->realtime_sent_time()));
+          ->realtime_start_time()));
 }
 
 void LogReader::Register(EventLoop *event_loop) {
