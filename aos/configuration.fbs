@@ -96,6 +96,11 @@ table Configuration {
   // List of imports.  Imports are loaded first, and then this configuration
   // is merged into them.
   imports:[string] (id: 3);
+
+  // Length of the channels in nanoseconds.  Every channel will have enough
+  // data allocated so that if data is published at the configured frequency,
+  // this many seconds of messages will be available for fetchers.
+  channel_storage_duration:long = 2000000000 (id: 5);
 }
 
 root_type Configuration;

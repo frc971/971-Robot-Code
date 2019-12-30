@@ -40,12 +40,14 @@ std::string ShmPath(const Channel *channel) {
 
 class MMapedQueue {
  public:
-  MMapedQueue(const Channel *channel) {
+  MMapedQueue(const Channel *channel,
+              const std::chrono::seconds channel_storage_duration) {
     std::string path = ShmPath(channel);
 
     config_.num_watchers = channel->num_watchers();
     config_.num_senders = channel->num_senders();
-    config_.queue_size = 2 * channel->frequency();
+    config_.queue_size =
+        channel_storage_duration.count() * channel->frequency();
     config_.message_data_size = channel->max_size();
 
     size_ = ipc_lib::LocklessQueueMemorySize(config_);
@@ -159,9 +161,12 @@ namespace internal {
 
 class SimpleShmFetcher {
  public:
-  explicit SimpleShmFetcher(const Channel *channel)
+  explicit SimpleShmFetcher(EventLoop *event_loop, const Channel *channel)
       : channel_(channel),
-        lockless_queue_memory_(channel),
+        lockless_queue_memory_(
+            channel,
+            chrono::duration_cast<chrono::seconds>(chrono::nanoseconds(
+                event_loop->configuration()->channel_storage_duration()))),
         lockless_queue_(lockless_queue_memory_.memory(),
                         lockless_queue_memory_.config()),
         data_storage_(static_cast<AlignedChar *>(aligned_alloc(
@@ -314,7 +319,8 @@ class SimpleShmFetcher {
 class ShmFetcher : public RawFetcher {
  public:
   explicit ShmFetcher(EventLoop *event_loop, const Channel *channel)
-      : RawFetcher(event_loop, channel), simple_shm_fetcher_(channel) {}
+      : RawFetcher(event_loop, channel),
+        simple_shm_fetcher_(event_loop, channel) {}
 
   ~ShmFetcher() { context_.data = nullptr; }
 
@@ -342,7 +348,10 @@ class ShmSender : public RawSender {
  public:
   explicit ShmSender(EventLoop *event_loop, const Channel *channel)
       : RawSender(event_loop, channel),
-        lockless_queue_memory_(channel),
+        lockless_queue_memory_(
+            channel,
+            chrono::duration_cast<chrono::seconds>(chrono::nanoseconds(
+                event_loop->configuration()->channel_storage_duration()))),
         lockless_queue_(lockless_queue_memory_.memory(),
                         lockless_queue_memory_.config()),
         lockless_queue_sender_(lockless_queue_.MakeSender()) {}
@@ -390,7 +399,7 @@ class WatcherState : public aos::WatcherState {
       : aos::WatcherState(event_loop, channel, std::move(fn)),
         event_loop_(event_loop),
         event_(this),
-        simple_shm_fetcher_(channel) {}
+        simple_shm_fetcher_(event_loop, channel) {}
 
   ~WatcherState() override { event_loop_->RemoveEvent(&event_); }
 
