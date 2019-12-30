@@ -18,7 +18,7 @@
 #define AOS_SHM_NAME "/aos_shared_mem"
 // Size of the shared mem segment.
 // This must fit in the tmpfs for /dev/shm/
-#define SIZEOFSHMSEG (4096 * 0x3000)
+#define SIZEOFSHMSEG (4096 * 0x800)
 
 void init_shared_mem_core(aos_shm_core *shm_core) {
   memset(&shm_core->time_offset, 0 , sizeof(shm_core->time_offset));

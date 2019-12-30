@@ -250,7 +250,7 @@ class LinuxQueueLogImplementation : public LogImplementation {
 }  // namespace
 
 RawQueue *GetLoggingQueue() {
-  return RawQueue::Fetch("LoggingQueue", sizeof(LogMessage), 1323, 40000);
+  return RawQueue::Fetch("LoggingQueue", sizeof(LogMessage), 1323, 10000);
 }
 
 void RegisterQueueImplementation() {
