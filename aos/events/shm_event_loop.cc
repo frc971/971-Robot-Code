@@ -28,6 +28,10 @@ DEFINE_uint32(permissions, 0770,
 
 namespace aos {
 
+void SetShmBase(const std::string_view base) {
+  FLAGS_shm_base = std::string(base) + "/dev/shm/aos";
+}
+
 std::string ShmFolder(const Channel *channel) {
   CHECK(channel->has_name());
   CHECK_EQ(channel->name()->string_view()[0], '/');
