@@ -160,7 +160,8 @@ namespace internal {
 class SimpleShmFetcher {
  public:
   explicit SimpleShmFetcher(const Channel *channel)
-      : lockless_queue_memory_(channel),
+      : channel_(channel),
+        lockless_queue_memory_(channel),
         lockless_queue_(lockless_queue_memory_.memory(),
                         lockless_queue_memory_.config()),
         data_storage_(static_cast<AlignedChar *>(aligned_alloc(
@@ -218,12 +219,13 @@ class SimpleShmFetcher {
     // being written to, which means you are pretty far behind.
     CHECK(read_result != ipc_lib::LocklessQueue::ReadResult::OVERWROTE)
         << ": Got behind while reading and the last message was modified "
-           "out "
-           "from under us while we were reading it.  Don't get so far "
-           "behind.";
+           "out from under us while we were reading it.  Don't get so far "
+           "behind.  "
+        << configuration::CleanedChannelToString(channel_);
 
     CHECK(read_result != ipc_lib::LocklessQueue::ReadResult::TOO_OLD)
-        << ": The next message is no longer available.";
+        << ": The next message is no longer available.  "
+        << configuration::CleanedChannelToString(channel_);
     return read_result == ipc_lib::LocklessQueue::ReadResult::GOOD;
   }
 
@@ -267,18 +269,20 @@ class SimpleShmFetcher {
     // being written to, which means you are pretty far behind.
     CHECK(read_result != ipc_lib::LocklessQueue::ReadResult::OVERWROTE)
         << ": Got behind while reading and the last message was modified "
-           "out "
-           "from under us while we were reading it.  Don't get so far "
-           "behind.";
+           "out from under us while we were reading it.  Don't get so far "
+           "behind."
+        << configuration::CleanedChannelToString(channel_);
 
     CHECK(read_result != ipc_lib::LocklessQueue::ReadResult::NOTHING_NEW)
-        << ": Queue index went backwards.  This should never happen.";
+        << ": Queue index went backwards.  This should never happen.  "
+        << configuration::CleanedChannelToString(channel_);
 
     // We fell behind between when we read the index and read the value.
     // This isn't worth recovering from since this means we went to sleep
     // for a long time in the middle of this function.
     CHECK(read_result != ipc_lib::LocklessQueue::ReadResult::TOO_OLD)
-        << ": The next message is no longer available.";
+        << ": The next message is no longer available.  "
+        << configuration::CleanedChannelToString(channel_);
     return read_result == ipc_lib::LocklessQueue::ReadResult::GOOD;
   }
 
@@ -291,6 +295,7 @@ class SimpleShmFetcher {
   void UnregisterWakeup() { lockless_queue_.UnregisterWakeup(); }
 
  private:
+  const Channel *const channel_;
   MMapedQueue lockless_queue_memory_;
   ipc_lib::LocklessQueue lockless_queue_;
 
