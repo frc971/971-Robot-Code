@@ -70,6 +70,8 @@ TEST_F(LoggerTest, Starts) {
   // log file.
   reader.Register(&log_reader_factory);
 
+  EXPECT_EQ(log_reader_factory.node(), nullptr);
+
   std::unique_ptr<EventLoop> test_event_loop =
       log_reader_factory.MakeEventLoop("log_reader");
 
@@ -207,6 +209,8 @@ TEST_F(MultinodeLoggerTest, MultiNode) {
   }
 
   LogReader reader(logfile);
+  ASSERT_NE(reader.node(), nullptr);
+  EXPECT_EQ(reader.node()->name()->string_view(), "pi1");
 
   // TODO(austin): Also replay as pi2 or pi3 and make sure we see the pong
   // messages.  This won't work today yet until the log reading code gets
