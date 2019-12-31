@@ -12,8 +12,14 @@ flatbuffer_cc_library(
 
 cc_library(
     name = "logger",
-    srcs = ["logger.cc"],
-    hdrs = ["logger.h"],
+    srcs = [
+        "logfile_utils.cc",
+        "logger.cc",
+    ],
+    hdrs = [
+        "logfile_utils.h",
+        "logger.h",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":logger_fbs",

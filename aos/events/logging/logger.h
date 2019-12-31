@@ -7,6 +7,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "aos/events/event_loop.h"
+#include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/time/time.h"
@@ -14,49 +15,6 @@
 
 namespace aos {
 namespace logger {
-
-// This class manages efficiently writing a sequence of detached buffers to a
-// file.  It queues them up and batches the write operation.
-class DetachedBufferWriter {
- public:
-  DetachedBufferWriter(absl::string_view filename);
-  ~DetachedBufferWriter();
-
-  // TODO(austin): Snappy compress the log file if it ends with .snappy!
-
-  // Queues up a finished FlatBufferBuilder to be written.  Steals the detached
-  // buffer from it.
-  void QueueSizedFlatbuffer(flatbuffers::FlatBufferBuilder *fbb);
-  // Queues up a detached buffer directly.
-  void QueueSizedFlatbuffer(flatbuffers::DetachedBuffer &&buffer);
-
-  // Triggers data to be provided to the kernel and written.
-  void Flush();
-
- private:
-  int fd_ = -1;
-
-  // Size of all the data in the queue.
-  size_t queued_size_ = 0;
-
-  // List of buffers to flush.
-  std::vector<flatbuffers::DetachedBuffer> queue_;
-  // List of iovecs to use with writev.  This is a member variable to avoid
-  // churn.
-  std::vector<struct iovec> iovec_;
-};
-
-enum class LogType : uint8_t {
-  // The message originated on this node and should be logged here.
-  kLogMessage,
-  // The message originated on another node, but only the delivery times are
-  // logged here.
-  kLogDeliveryTimeOnly,
-  // The message originated on another node. Log it and the delivery times
-  // together.  The message_gateway is responsible for logging any messages
-  // which didn't get delivered.
-  kLogMessageAndDeliveryTime
-};
 
 // Logs all channels available in the event loop to disk every 100 ms.
 // Start by logging one message per channel to capture any state and
@@ -97,11 +55,6 @@ class Logger {
   // reserved in the builder to avoid reallocating.
   size_t max_header_size_ = 0;
 };
-
-// Packes a message pointed to by the context into a MessageHeader.
-flatbuffers::Offset<MessageHeader> PackMessage(
-    flatbuffers::FlatBufferBuilder *fbb, const Context &context,
-    int channel_index, LogType log_type);
 
 // Replays all the channels in the logfile to the event loop.
 class LogReader {
