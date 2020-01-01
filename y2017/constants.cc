@@ -13,7 +13,6 @@
 #include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"
 #include "aos/network/team_number.h"
-#include "aos/once.h"
 #include "absl/base/call_once.h"
 
 #include "y2017/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
