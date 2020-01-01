@@ -69,3 +69,13 @@ py_binary(
         "@matplotlib_repo//:matplotlib3",
     ],
 )
+
+py_test(
+    name = "plot_test",
+    srcs = ["plot_test.py"],
+    data = [
+        "@sample_logfile//file",
+    ],
+    restricted_to = ["//tools:k8"],
+    deps = [":plot"],
+)
