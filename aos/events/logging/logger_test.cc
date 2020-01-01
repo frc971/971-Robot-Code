@@ -62,6 +62,7 @@ TEST_F(LoggerTest, Starts) {
   LogReader reader(logfile);
 
   LOG(INFO) << "Config " << FlatbufferToJson(reader.configuration());
+  EXPECT_EQ(reader.node(), nullptr);
 
   SimulatedEventLoopFactory log_reader_factory(reader.configuration());
 

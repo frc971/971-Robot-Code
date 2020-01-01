@@ -164,15 +164,20 @@ Logger::Logger(DetachedBufferWriter *writer, EventLoop *event_loop,
       flatbuffers::Offset<flatbuffers::String> string_offset =
           fbb.CreateString(network::GetHostname());
 
-      flatbuffers::Offset<Node> node_offset =
-          CopyFlatBuffer(event_loop_->node(), &fbb);
+      flatbuffers::Offset<Node> node_offset;
+      if (event_loop_->node() != nullptr) {
+        node_offset = CopyFlatBuffer(event_loop_->node(), &fbb);
+      }
       LOG(INFO) << "Logging node as " << FlatbufferToJson(event_loop_->node());
 
       aos::logger::LogFileHeader::Builder log_file_header_builder(fbb);
 
       log_file_header_builder.add_name(string_offset);
 
-      log_file_header_builder.add_node(node_offset);
+      // Only add the node if we are running in a multinode configuration.
+      if (event_loop_->node() != nullptr) {
+        log_file_header_builder.add_node(node_offset);
+      }
 
       log_file_header_builder.add_configuration(configuration_offset);
       // The worst case theoretical out of order is the polling period times 2.
@@ -448,12 +453,24 @@ const Configuration *LogReader::configuration() const {
 }
 
 const Node *LogReader::node() const {
-  return configuration::GetNode(
-      configuration(),
-      flatbuffers::GetSizePrefixedRoot<LogFileHeader>(configuration_.data())
-          ->node()
-          ->name()
-          ->string_view());
+  if (configuration()->has_nodes()) {
+    CHECK(flatbuffers::GetSizePrefixedRoot<LogFileHeader>(configuration_.data())
+              ->has_node());
+    CHECK(flatbuffers::GetSizePrefixedRoot<LogFileHeader>(configuration_.data())
+              ->node()
+              ->has_name());
+    return configuration::GetNode(
+        configuration(),
+        flatbuffers::GetSizePrefixedRoot<LogFileHeader>(configuration_.data())
+            ->node()
+            ->name()
+            ->string_view());
+  } else {
+    CHECK(
+        !flatbuffers::GetSizePrefixedRoot<LogFileHeader>(configuration_.data())
+             ->has_node());
+    return nullptr;
+  }
 }
 
 monotonic_clock::time_point LogReader::monotonic_start_time() {

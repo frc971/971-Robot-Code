@@ -603,7 +603,10 @@ const Node *GetMyNode(const Configuration *config) {
 }
 
 const Node *GetNode(const Configuration *config, std::string_view name) {
+  CHECK(config->has_nodes())
+      << ": Asking for a node from a single node configuration.";
   for (const Node *node : *config->nodes()) {
+    CHECK(node->has_name()) << ": Malformed node " << FlatbufferToJson(node);
     if (node->name()->string_view() == name) {
       return node;
     }
