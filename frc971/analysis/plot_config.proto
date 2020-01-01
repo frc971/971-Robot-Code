@@ -1,0 +1,45 @@
+syntax = "proto2";
+
+package frc971.analysis;
+
+// Specification fo a Channel to pull from the logfile. The name and type will
+// be the full name/type of the channel to pull from the logfile. The alias is a
+// shorter, easier to type, name that the rest of the logfile will use to refer
+// to the channel.
+message Channel {
+  optional string name = 1;
+  optional string type = 2;
+  optional string alias = 3;
+}
+
+// A specification for a single signal within a Channel.
+message Signal {
+  // Alias for the channel to pull the signal from--this should match an alias
+  // specified in one of the Channels.
+  optional string channel = 1;
+  // Specification of the field to plot. Currently, this only supports simple
+  // submessages, using dots. To access, e.g., the "bar" member of the "foo"
+  // submessage, field would be "foo.bar". This does not currently support
+  // working with repeated fields.
+  optional string field = 2;
+}
+
+// Message representing a single pyplot Axes, with specifications for exactly
+// which signals to show in the supplied subplot.
+message Axes {
+  repeated Signal signal = 1;
+  optional string ylabel = 2;
+}
+
+// Message representing a single pyplot figure.
+message Figure {
+  repeated Axes axes = 1;
+}
+
+// This configuration specifies what to plot when reading from a logfile.
+message PlotConfig {
+  // List of channels and their aliases to use in the plot.
+  repeated Channel channel = 1;
+  // Figures to plot.
+  repeated Figure figure = 2;
+}
