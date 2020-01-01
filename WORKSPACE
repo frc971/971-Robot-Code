@@ -549,3 +549,10 @@ local_repository(
     name = "com_github_google_flatbuffers",
     path = "third_party/flatbuffers",
 )
+
+http_file(
+    name = "sample_logfile",
+    downloaded_file_path = "log.fbs",
+    sha256 = "91c98edee0c90a19992792c711dde4a6743af2d6d7e45b5079ec228fdf51ff11",
+    urls = ["http://www.frc971.org/Build-Dependencies/small_sample_logfile.fbs"],
+)
