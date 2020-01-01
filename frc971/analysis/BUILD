@@ -12,7 +12,7 @@ py_binary(
     restricted_to = ["//tools:k8"],
     deps = [
         ":python_init",
-        "@matplotlib",
+        "@matplotlib_repo//:matplotlib2.7",
     ],
 )
 
