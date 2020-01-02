@@ -8,6 +8,7 @@
 #include "gflags/gflags.h"
 
 DEFINE_string(config, "./config.json", "File path of aos configuration");
+
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
@@ -43,13 +44,28 @@ int main(int argc, char **argv) {
     if (channel->name()->c_str() == channel_name &&
         channel->type()->str().find(message_type) != std::string::npos) {
       event_loop.MakeRawWatcher(
-          channel,
-          [channel](const aos::Context /* &context*/, const void *message) {
-            LOG(INFO) << '(' << channel->type()->c_str() << ") "
-                      << aos::FlatbufferToJson(
-                             channel->schema(),
-                             static_cast<const uint8_t *>(message))
-                      << '\n';
+          channel, [channel](const aos::Context &context, const void *message) {
+            // Print the flatbuffer out to stdout, both to remove the
+            // unnecessary cruft from glog and to allow the user to readily
+            // redirect just the logged output independent of any debugging
+            // information on stderr.
+            if (context.monotonic_remote_time != context.monotonic_event_time) {
+              std::cout << context.realtime_remote_time << " ("
+                        << context.monotonic_remote_time << ") delivered "
+                        << context.realtime_event_time << " ("
+                        << context.monotonic_event_time << "): "
+                        << aos::FlatbufferToJson(
+                               channel->schema(),
+                               static_cast<const uint8_t *>(message))
+                        << '\n';
+            } else {
+              std::cout << context.realtime_event_time << " ("
+                        << context.monotonic_event_time << "): "
+                        << aos::FlatbufferToJson(
+                               channel->schema(),
+                               static_cast<const uint8_t *>(message))
+                        << '\n';
+            }
           });
       found_channels++;
     }

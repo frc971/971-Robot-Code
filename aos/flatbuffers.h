@@ -162,6 +162,9 @@ class FlatbufferVector : public Flatbuffer<T> {
   FlatbufferVector(const Flatbuffer<T> &other)
       : data_(other.data(), other.data() + other.size()) {}
 
+  // Move constructor.
+  FlatbufferVector(Flatbuffer<T> &&other) : data_(std::move(other.data())) {}
+
   // Copies the data from the other flatbuffer.
   FlatbufferVector &operator=(const Flatbuffer<T> &other) {
     data_ = std::vector<uint8_t>(other.data(), other.data() + other.size());

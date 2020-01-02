@@ -739,13 +739,25 @@ SimulatedEventLoopFactory::SimulatedEventLoopFactory(
 
 SimulatedEventLoopFactory::SimulatedEventLoopFactory(
     const Configuration *configuration, std::string_view node_name)
-    : configuration_(CHECK_NOTNULL(configuration)),
-      node_(configuration::GetNode(configuration, node_name)) {
-  CHECK(configuration_->has_nodes())
-      << ": Got a configuration with no nodes and node \"" << node_name
-      << "\" was selected.";
-  CHECK(node_ != nullptr) << ": Can't find node \"" << node_name
-                          << "\" in the configuration.";
+    : SimulatedEventLoopFactory(
+          configuration, configuration::GetNode(configuration, node_name)) {}
+
+SimulatedEventLoopFactory::SimulatedEventLoopFactory(
+    const Configuration *configuration, const Node *node)
+    : configuration_(CHECK_NOTNULL(configuration)), node_(node) {
+  if (node != nullptr) {
+    CHECK(configuration_->has_nodes())
+        << ": Got a configuration with no nodes and node \""
+        << node->name()->string_view() << "\" was selected.";
+    bool found = false;
+    for (const Node *node : *configuration_->nodes()) {
+      if (node == node_) {
+        found = true;
+        break;
+      }
+    }
+    CHECK(found) << ": node must be a pointer in the configuration.";
+  }
 }
 
 SimulatedEventLoopFactory::~SimulatedEventLoopFactory() {}

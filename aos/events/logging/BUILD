@@ -65,7 +65,10 @@ cc_binary(
 cc_test(
     name = "logger_test",
     srcs = ["logger_test.cc"],
-    data = ["//aos/events:pingpong_config.json"],
+    data = [
+        "//aos/events:multinode_pingpong_config.json",
+        "//aos/events:pingpong_config.json",
+    ],
     deps = [
         ":logger",
         "//aos/events:ping_lib",

@@ -54,6 +54,8 @@ class SimulatedEventLoopFactory {
   SimulatedEventLoopFactory(const Configuration *configuration);
   SimulatedEventLoopFactory(const Configuration *configuration,
                             std::string_view node_name);
+  SimulatedEventLoopFactory(const Configuration *configuration,
+                            const Node *node);
   ~SimulatedEventLoopFactory();
 
   ::std::unique_ptr<EventLoop> MakeEventLoop(std::string_view name);

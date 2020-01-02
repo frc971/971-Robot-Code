@@ -28,7 +28,8 @@ int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
   aos::logger::LogReader reader(FLAGS_logfile);
-  aos::SimulatedEventLoopFactory log_reader_factory(reader.configuration());
+  aos::SimulatedEventLoopFactory log_reader_factory(reader.configuration(),
+                                                    reader.node());
   reader.Register(&log_reader_factory);
 
   std::unique_ptr<aos::EventLoop> printer_event_loop =
@@ -44,6 +45,10 @@ int main(int argc, char **argv) {
     const flatbuffers::string_view type = channel->type()->string_view();
     if (name.find(FLAGS_name) != std::string::npos &&
         type.find(FLAGS_type) != std::string::npos) {
+      if (!aos::configuration::ChannelIsReadableOnNode(
+              channel, printer_event_loop->node())) {
+        continue;
+      }
       LOG(INFO) << "Listening on " << name << " " << type;
 
       CHECK_NOTNULL(channel->schema());
@@ -53,14 +58,27 @@ int main(int argc, char **argv) {
             // unnecessary cruft from glog and to allow the user to readily
             // redirect just the logged output independent of any debugging
             // information on stderr.
-            std::cout << context.realtime_event_time << " ("
-                      << context.monotonic_event_time << ") "
-                      << channel->name()->c_str() << ' '
-                      << channel->type()->c_str() << ": "
-                      << aos::FlatbufferToJson(
-                             channel->schema(),
-                             static_cast<const uint8_t *>(message))
-                      << '\n';
+            if (context.monotonic_remote_time != context.monotonic_event_time) {
+              std::cout << context.realtime_remote_time << " ("
+                        << context.monotonic_remote_time << ") delivered "
+                        << context.realtime_event_time << " ("
+                        << context.monotonic_event_time << ") "
+                        << channel->name()->c_str() << ' '
+                        << channel->type()->c_str() << ": "
+                        << aos::FlatbufferToJson(
+                               channel->schema(),
+                               static_cast<const uint8_t *>(message))
+                        << '\n';
+            } else {
+              std::cout << context.realtime_event_time << " ("
+                        << context.monotonic_event_time << ") "
+                        << channel->name()->c_str() << ' '
+                        << channel->type()->c_str() << ": "
+                        << aos::FlatbufferToJson(
+                               channel->schema(),
+                               static_cast<const uint8_t *>(message))
+                        << '\n';
+            }
           });
       found_channel = true;
     }

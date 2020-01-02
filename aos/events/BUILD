@@ -115,6 +115,16 @@ aos_config(
     deps = [":config"],
 )
 
+aos_config(
+    name = "multinode_pingpong_config",
+    src = "multinode_pingpong.json",
+    flatbuffers = [
+        ":ping_fbs",
+        ":pong_fbs",
+    ],
+    deps = [":config"],
+)
+
 cc_library(
     name = "pong_lib",
     srcs = [
