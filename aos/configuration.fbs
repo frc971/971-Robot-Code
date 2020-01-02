@@ -147,7 +147,7 @@ table Configuration {
 
   // Length of the channels in nanoseconds.  Every channel will have enough
   // data allocated so that if data is published at the configured frequency,
-  // this many seconds of messages will be available for fetchers.
+  // at least this many nanoseconds of messages will be available for fetchers.
   channel_storage_duration:long = 2000000000 (id: 5);
 }
 
