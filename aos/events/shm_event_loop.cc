@@ -173,7 +173,7 @@ class SimpleShmFetcher {
       : channel_(channel),
         lockless_queue_memory_(
             channel,
-            chrono::duration_cast<chrono::seconds>(chrono::nanoseconds(
+            chrono::ceil<chrono::seconds>(chrono::nanoseconds(
                 event_loop->configuration()->channel_storage_duration()))),
         lockless_queue_(lockless_queue_memory_.memory(),
                         lockless_queue_memory_.config()),
@@ -358,7 +358,7 @@ class ShmSender : public RawSender {
       : RawSender(event_loop, channel),
         lockless_queue_memory_(
             channel,
-            chrono::duration_cast<chrono::seconds>(chrono::nanoseconds(
+            chrono::ceil<chrono::seconds>(chrono::nanoseconds(
                 event_loop->configuration()->channel_storage_duration()))),
         lockless_queue_(lockless_queue_memory_.memory(),
                         lockless_queue_memory_.config()),
