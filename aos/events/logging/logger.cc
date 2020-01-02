@@ -269,6 +269,10 @@ LogReader::LogReader(absl::string_view filename)
   QueueMessages();
 }
 
+LogReader::~LogReader() {
+  CHECK(!event_loop_unique_ptr_) << "Did you remember to call Deregister?";
+}
+
 bool LogReader::ReadBlock() {
   if (end_of_file_) {
     return false;

@@ -1,16 +1,20 @@
 package(default_visibility = ["@//debian:__pkg__"])
 
 cc_library(
-    name = "python3.4_lib",
-    hdrs = glob(["usr/include/python3.4m/**/*.h"]),
+    name = "python3.5_lib",
+    srcs = [
+        "usr/lib/x86_64-linux-gnu/libpython3.5m.so",
+    ],
+    hdrs = glob(["usr/include/**/*.h"]),
     includes = [
-        "usr/include/python3.4m/",
+        "usr/include/",
+        "usr/include/python3.5m/",
     ],
     visibility = ["//visibility:public"],
 )
 
 cc_library(
-    name = "python3.4_f2py",
+    name = "python3.5_f2py",
     srcs = [
         "usr/lib/python3/dist-packages/numpy/f2py/src/fortranobject.c",
     ],
@@ -26,7 +30,7 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        ":python3.4_lib",
+        ":python3.5_lib",
     ],
 )
 

@@ -93,6 +93,7 @@ class Logger {
 class LogReader {
  public:
   LogReader(absl::string_view filename);
+  ~LogReader();
 
   // Registers the timer and senders used to resend the messages from the log
   // file.
