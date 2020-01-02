@@ -20,7 +20,7 @@ cc_library(
     ) + ["unsupported/Eigen/MatrixFunctions"] + glob([
         "unsupported/Eigen/src/MatrixFunctions/*.h",
     ]),
-    compatible_with = mcu_cpus,
+    compatible_with = mcu_cpus + ["@//tools:web"],
     includes = ["."],
     visibility = ["//visibility:public"],
 )

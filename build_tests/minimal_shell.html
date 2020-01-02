@@ -56,7 +56,21 @@
     </div>
     <!--The width and height values in the canvas specify the pixel width/height for the WebGL canvas.
         The actual on-screen size is controlled by the stylesheet.-->
-    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" width=3000 height=2000></canvas>
+    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" width=1200 height=600></canvas>
+
+    <div>
+      General help information:<br>
+      <ul>
+        <li>Double-click to reset zoom.</li>
+        <li>Left-click to print mouse position (within plot) to console.</li>
+        <li>Ctrl-Z to undo zoom actions.</li>
+        <li>Right-click and drag to pan.</li>
+        <li>Left-click and drag zooms to the dragged area. If you press Escape while dragging, it will cancel the zoom.</li>
+        <li>Scroll up/down will zoom in and out.</li>
+        <li>Holding down "x" and "y" will restrict any
+            movement to the x and y axes respectively.</li>
+      </ul>
+    </div>
 
     <script type='text/javascript'>
       var statusElement = document.getElementById('status');

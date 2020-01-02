@@ -26,6 +26,24 @@ emcc_binary(
     ],
 )
 
+emcc_binary(
+    name = "plotter.html",
+    srcs = ["webgl2_plot_test.cc"],
+    html_shell = "minimal_shell.html",
+    linkopts = [
+        "-s",
+        "USE_WEBGL2=1",
+        "-s",
+        "FULL_ES3=1",
+        "-s",
+        "TOTAL_MEMORY=" + repr(256 * 1024 * 1024),
+    ],
+    deps = [
+        "//frc971/analysis/plotting:webgl2_animator",
+        "//frc971/analysis/plotting:webgl2_plotter",
+    ],
+)
+
 cc_test(
     name = "gflags_build_test",
     size = "small",
