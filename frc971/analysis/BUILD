@@ -1,5 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
+load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
+
 py_binary(
     name = "plot_action",
     srcs = [
@@ -12,7 +14,7 @@ py_binary(
     restricted_to = ["//tools:k8"],
     deps = [
         ":python_init",
-        "@matplotlib",
+        "@matplotlib_repo//:matplotlib2.7",
     ],
 )
 
@@ -47,4 +49,33 @@ py_test(
     ],
     restricted_to = ["//tools:k8"],
     deps = ["//aos:configuration_fbs_python"],
+)
+
+py_proto_library(
+    name = "plot_config_proto",
+    srcs = ["plot_config.proto"],
+)
+
+py_binary(
+    name = "plot",
+    srcs = ["plot.py"],
+    data = [
+        ":py_log_reader.so",
+    ] + glob(["plot_configs/**"]),
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":plot_config_proto",
+        ":python_init",
+        "@matplotlib_repo//:matplotlib3",
+    ],
+)
+
+py_test(
+    name = "plot_test",
+    srcs = ["plot_test.py"],
+    data = [
+        "@sample_logfile//file",
+    ],
+    restricted_to = ["//tools:k8"],
+    deps = [":plot"],
 )

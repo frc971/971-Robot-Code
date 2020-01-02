@@ -13,7 +13,7 @@ py_binary(
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:controls",
-        "@matplotlib",
+        "@matplotlib_repo//:matplotlib2.7",
     ],
 )
 

@@ -55,7 +55,7 @@ filegroup(
     srcs = [
         "matplotlib_init.patch",
     ],
-    visibility = ["@matplotlib//:__pkg__"],
+    visibility = ["@matplotlib_repo//:__pkg__"],
 )
 
 filegroup(
@@ -182,6 +182,7 @@ download_packages(
         "python-matplotlib",
         "python-tk",
         "python3-matplotlib",
+        "python3-tk",
     ],
 )
 

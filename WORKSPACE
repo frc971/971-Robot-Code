@@ -277,11 +277,14 @@ http_archive(
     url = "http://www.frc971.org/Build-Dependencies/mingw_compiler.tar.gz",
 )
 
+# Note that we should generally keep the matplotlib repo in a folder not
+# named matplotlib, because otherwise the repository itself tends to end up
+# on the PYTHONPATH, rather than the matplotlib folder within this repo.
 http_archive(
-    name = "matplotlib",
+    name = "matplotlib_repo",
     build_file = "@//debian:matplotlib.BUILD",
-    sha256 = "fa1ff9f3bb7fddba6d0b904af5ffdca97c6233a950840273c25145b8cad80483",
-    url = "http://www.frc971.org/Build-Dependencies/matplotlib-3.tar.gz",
+    sha256 = "24f8b75754e465299ddf92bd895ab111d54945a45b0f410d7cfa16b15b162e2f",
+    url = "http://www.frc971.org/Build-Dependencies/matplotlib-4.tar.gz",
 )
 
 http_archive(

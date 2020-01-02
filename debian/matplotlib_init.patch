@@ -18,7 +18,7 @@
 +os.environ['MATPLOTLIBDATA'] = \
 +        os.path.join( \
 +            _matplotlib_base,
-+            "usr", "share", "matplotlib", "mpl-data")
++            "..", "usr", "share", "matplotlib", "mpl-data")
 +# Avoid reading /etc/matplotlib in all cases. Matplotlib is pretty happy to
 +# escape the sandbox by using absolute paths.
 +os.environ['MATPLOTLIBRC'] = os.environ['MATPLOTLIBDATA']
@@ -29,7 +29,7 @@
 +
 +# Tell Tcl where to find the sandboxed version. Otherwise, it will try using
 +# one from the host system, even if that's an incompatible version.
-+os.environ['TCL_LIBRARY'] = os.path.join(_matplotlib_base, 'usr', 'share',
++os.environ['TCL_LIBRARY'] = os.path.join(_matplotlib_base, '..', 'usr', 'share',
 +                                         'tcltk', 'tcl8.6')
 +
  try:
