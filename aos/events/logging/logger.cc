@@ -7,7 +7,6 @@
 #include <sys/uio.h>
 #include <vector>
 
-#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/logger_generated.h"
@@ -220,172 +219,27 @@ void Logger::DoLogData() {
   writer_->Flush();
 }
 
-LogReader::LogReader(absl::string_view filename)
-    : fd_(open(std::string(filename).c_str(), O_RDONLY | O_CLOEXEC)) {
-  PCHECK(fd_ != -1) << ": Failed to open " << filename;
-
-  // Make sure we have enough to read the size.
-  absl::Span<const uint8_t> config_data = ReadMessage();
-
-  // Make sure something was read.
-  CHECK(config_data != absl::Span<const uint8_t>());
-
-  // And copy the config so we have it forever.
-  configuration_ = std::vector<uint8_t>(config_data.begin(), config_data.end());
-
-  max_out_of_order_duration_ = std::chrono::nanoseconds(
-      flatbuffers::GetSizePrefixedRoot<LogFileHeader>(configuration_.data())
-          ->max_out_of_order_duration());
-
+LogReader::LogReader(std::string_view filename)
+    : sorted_message_reader_(filename) {
   channels_.resize(configuration()->channels()->size());
-
-  QueueMessages();
 }
 
 LogReader::~LogReader() {
-  CHECK(!event_loop_unique_ptr_) << "Did you remember to call Deregister?";
-}
-
-bool LogReader::ReadBlock() {
-  if (end_of_file_) {
-    return false;
-  }
-
-  // Appends 256k.  This is enough that the read call is efficient.  We don't
-  // want to spend too much time reading small chunks because the syscalls for
-  // that will be expensive.
-  constexpr size_t kReadSize = 256 * 1024;
-
-  // Strip off any unused data at the front.
-  if (consumed_data_ != 0) {
-    data_.erase(data_.begin(), data_.begin() + consumed_data_);
-    consumed_data_ = 0;
-  }
-
-  const size_t starting_size = data_.size();
-
-  // This should automatically grow the backing store.  It won't shrink if we
-  // get a small chunk later.  This reduces allocations when we want to append
-  // more data.
-  data_.resize(data_.size() + kReadSize);
-
-  ssize_t count = read(fd_, &data_[starting_size], kReadSize);
-  data_.resize(starting_size + std::max(count, static_cast<ssize_t>(0)));
-  if (count == 0) {
-    end_of_file_ = true;
-    return false;
-  }
-  PCHECK(count > 0);
-
-  return true;
-}
-
-bool LogReader::MessageAvailable() {
-  // Are we big enough to read the size?
-  if (data_.size() - consumed_data_ < sizeof(flatbuffers::uoffset_t)) {
-    return false;
-  }
-
-  // Then, are we big enough to read the full message?
-  const size_t data_size =
-      flatbuffers::GetPrefixedSize(data_.data() + consumed_data_) +
-      sizeof(flatbuffers::uoffset_t);
-  if (data_.size() < consumed_data_ + data_size) {
-    return false;
-  }
-
-  return true;
-}
-
-absl::Span<const uint8_t> LogReader::ReadMessage() {
-  // Make sure we have enough for the size.
-  if (data_.size() - consumed_data_ < sizeof(flatbuffers::uoffset_t)) {
-    if (!ReadBlock()) {
-      return absl::Span<const uint8_t>();
-    }
-  }
-
-  // Now make sure we have enough for the message.
-  const size_t data_size =
-      flatbuffers::GetPrefixedSize(data_.data() + consumed_data_) +
-      sizeof(flatbuffers::uoffset_t);
-  while (data_.size() < consumed_data_ + data_size) {
-    if (!ReadBlock()) {
-      return absl::Span<const uint8_t>();
-    }
-  }
-
-  // And return it, consuming the data.
-  const uint8_t *data_ptr = data_.data() + consumed_data_;
-
-  consumed_data_ += data_size;
-
-  return absl::Span<const uint8_t>(data_ptr, data_size);
-}
-
-void LogReader::QueueMessages() {
-  while (true) {
-    // Don't queue if we have enough data already.
-    // When a log file starts, there should be a message from each channel.
-    // Those messages might be very old. Make sure to read a chunk past the
-    // starting time.
-    if (channel_heap_.size() > 0 &&
-        newest_timestamp_ >
-            std::max(oldest_message().first, monotonic_start_time()) +
-                max_out_of_order_duration_) {
-      break;
-    }
-
-    absl::Span<const uint8_t> msg_data = ReadMessage();
-    if (msg_data == absl::Span<const uint8_t>()) {
-      break;
-    }
-
-    FlatbufferVector<MessageHeader> msg(std::vector<uint8_t>(
-        msg_data.begin() + sizeof(flatbuffers::uoffset_t), msg_data.end()));
-
-    EmplaceDataBack(std::move(msg));
-  }
-
-  queue_data_time_ = newest_timestamp_ - max_out_of_order_duration_;
+  CHECK(!event_loop_unique_ptr_) << ": Did you remember to call Deregister?";
 }
 
 const Configuration *LogReader::configuration() const {
-  return flatbuffers::GetSizePrefixedRoot<LogFileHeader>(configuration_.data())
-      ->configuration();
+  return sorted_message_reader_.configuration();
 }
 
-const Node *LogReader::node() const {
-  if (configuration()->has_nodes()) {
-    CHECK(flatbuffers::GetSizePrefixedRoot<LogFileHeader>(configuration_.data())
-              ->has_node());
-    CHECK(flatbuffers::GetSizePrefixedRoot<LogFileHeader>(configuration_.data())
-              ->node()
-              ->has_name());
-    return configuration::GetNode(
-        configuration(),
-        flatbuffers::GetSizePrefixedRoot<LogFileHeader>(configuration_.data())
-            ->node()
-            ->name()
-            ->string_view());
-  } else {
-    CHECK(
-        !flatbuffers::GetSizePrefixedRoot<LogFileHeader>(configuration_.data())
-             ->has_node());
-    return nullptr;
-  }
-}
+const Node *LogReader::node() const { return sorted_message_reader_.node(); }
 
 monotonic_clock::time_point LogReader::monotonic_start_time() {
-  return monotonic_clock::time_point(std::chrono::nanoseconds(
-      flatbuffers::GetSizePrefixedRoot<LogFileHeader>(configuration_.data())
-          ->monotonic_start_time()));
+  return sorted_message_reader_.monotonic_start_time();
 }
 
 realtime_clock::time_point LogReader::realtime_start_time() {
-  return realtime_clock::time_point(std::chrono::nanoseconds(
-      flatbuffers::GetSizePrefixedRoot<LogFileHeader>(configuration_.data())
-          ->realtime_start_time()));
+  return sorted_message_reader_.realtime_start_time();
 }
 
 void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
@@ -413,140 +267,80 @@ void LogReader::Register(EventLoop *event_loop) {
     CHECK_EQ(configuration()->channels()->Get(i)->type(),
              event_loop_->configuration()->channels()->Get(i)->type());
 
-    channels_[i].raw_sender = event_loop_->MakeRawSender(
+    channels_[i] = event_loop_->MakeRawSender(
         event_loop_->configuration()->channels()->Get(i));
   }
 
   timer_handler_ = event_loop_->AddTimer([this]() {
-    std::pair<monotonic_clock::time_point, int> oldest_channel_index =
-        PopOldestChannel();
+    monotonic_clock::time_point channel_timestamp;
+    int channel_index;
+    FlatbufferVector<MessageHeader> channel_data =
+        FlatbufferVector<MessageHeader>::Empty();
+
+    std::tie(channel_timestamp, channel_index, channel_data) =
+        sorted_message_reader_.PopOldestChannel();
+
     const monotonic_clock::time_point monotonic_now =
         event_loop_->context().monotonic_event_time;
-    CHECK(monotonic_now == oldest_channel_index.first)
+    CHECK(monotonic_now == channel_timestamp)
         << ": Now " << monotonic_now.time_since_epoch().count()
-        << " trying to send "
-        << oldest_channel_index.first.time_since_epoch().count();
+        << " trying to send " << channel_timestamp.time_since_epoch().count();
 
-    struct LogReader::ChannelData &channel =
-        channels_[oldest_channel_index.second];
-
-    FlatbufferVector<MessageHeader> front = std::move(channel.front());
-
-    if (oldest_channel_index.first > monotonic_start_time() ||
+    if (channel_timestamp > monotonic_start_time() ||
         event_loop_factory_ != nullptr) {
       if (!FLAGS_skip_missing_forwarding_entries ||
-          front.message().data() != nullptr) {
-        CHECK(front.message().data() != nullptr)
-            << ": Got a message without data.  Forwarding entry which was not "
+          channel_data.message().data() != nullptr) {
+        CHECK(channel_data.message().data() != nullptr)
+            << ": Got a message without data.  Forwarding entry which was "
+               "not "
                "matched?  Use --skip_missing_forwarding_entries to ignore "
                "this.";
 
         // If we have access to the factory, use it to fix the realtime time.
         if (event_loop_factory_ != nullptr) {
           event_loop_factory_->SetRealtimeOffset(
-              monotonic_clock::time_point(
-                  chrono::nanoseconds(front.message().monotonic_sent_time())),
-              realtime_clock::time_point(
-                  chrono::nanoseconds(front.message().realtime_sent_time())));
+              monotonic_clock::time_point(chrono::nanoseconds(
+                  channel_data.message().monotonic_sent_time())),
+              realtime_clock::time_point(chrono::nanoseconds(
+                  channel_data.message().realtime_sent_time())));
         }
 
-        channel.raw_sender->Send(
-            front.message().data()->Data(), front.message().data()->size(),
-            monotonic_clock::time_point(
-                chrono::nanoseconds(front.message().monotonic_remote_time())),
-            realtime_clock::time_point(
-                chrono::nanoseconds(front.message().realtime_remote_time())),
-            front.message().remote_queue_index());
+        channels_[channel_index]->Send(
+            channel_data.message().data()->Data(),
+            channel_data.message().data()->size(),
+            monotonic_clock::time_point(chrono::nanoseconds(
+                channel_data.message().monotonic_remote_time())),
+            realtime_clock::time_point(chrono::nanoseconds(
+                channel_data.message().realtime_remote_time())),
+            channel_data.message().remote_queue_index());
       }
     } else {
       LOG(WARNING) << "Not sending data from before the start of the log file. "
-                   << oldest_channel_index.first.time_since_epoch().count()
-                   << " start "
+                   << channel_timestamp.time_since_epoch().count() << " start "
                    << monotonic_start_time().time_since_epoch().count() << " "
-                   << FlatbufferToJson(front);
-    }
-    channel.data.pop_front();
-
-    // Re-push it and update the oldest timestamp.
-    if (channel.data.size() != 0) {
-      const monotonic_clock::time_point timestamp = monotonic_clock::time_point(
-          chrono::nanoseconds(channel.front().message().monotonic_sent_time()));
-      PushChannelHeap(timestamp, oldest_channel_index.second);
-      channel.oldest_timestamp = timestamp;
-    } else {
-      channel.oldest_timestamp = monotonic_clock::min_time;
+                   << FlatbufferToJson(channel_data);
     }
 
-    if (monotonic_now > queue_data_time_) {
-      QueueMessages();
-    }
-
-    if (channel_heap_.size() != 0) {
-      timer_handler_->Setup(oldest_message().first);
+    if (sorted_message_reader_.active_channel_count() > 0u) {
+      timer_handler_->Setup(sorted_message_reader_.oldest_message().first);
     }
   });
 
-  if (channel_heap_.size() > 0u) {
-    event_loop_->OnRun(
-        [this]() { timer_handler_->Setup(oldest_message().first); });
+  if (sorted_message_reader_.active_channel_count() > 0u) {
+    event_loop_->OnRun([this]() {
+      timer_handler_->Setup(sorted_message_reader_.oldest_message().first);
+    });
   }
 }
 
 void LogReader::Deregister() {
   for (size_t i = 0; i < channels_.size(); ++i) {
-    channels_[i].raw_sender.reset();
+    channels_[i].reset();
   }
 
   event_loop_factory_ = nullptr;
   event_loop_unique_ptr_.reset();
   event_loop_ = nullptr;
-}
-
-void LogReader::EmplaceDataBack(FlatbufferVector<MessageHeader> &&new_data) {
-  const monotonic_clock::time_point timestamp = monotonic_clock::time_point(
-      chrono::nanoseconds(new_data.message().monotonic_sent_time()));
-  const size_t channel_index = new_data.message().channel_index();
-  CHECK_LT(channel_index, channels_.size());
-  newest_timestamp_ = std::max(newest_timestamp_, timestamp);
-  if (channels_[channel_index].data.size() == 0) {
-    channels_[channel_index].oldest_timestamp = timestamp;
-    PushChannelHeap(timestamp, channel_index);
-  }
-  channels_[channel_index].data.emplace_back(std::move(new_data));
-}
-
-namespace {
-
-bool ChannelHeapCompare(
-    const std::pair<monotonic_clock::time_point, int> first,
-    const std::pair<monotonic_clock::time_point, int> second) {
-  if (first.first > second.first) {
-    return true;
-  } else if (first.first == second.first) {
-    return first.second > second.second;
-  } else {
-    return false;
-  }
-}
-
-}  // namespace
-
-void LogReader::PushChannelHeap(monotonic_clock::time_point timestamp,
-                                int channel_index) {
-  channel_heap_.push_back(std::make_pair(timestamp, channel_index));
-
-  // The default sort puts the newest message first.  Use a custom comparator to
-  // put the oldest message first.
-  std::push_heap(channel_heap_.begin(), channel_heap_.end(),
-                 ChannelHeapCompare);
-}
-
-std::pair<monotonic_clock::time_point, int> LogReader::PopOldestChannel() {
-  std::pair<monotonic_clock::time_point, int> result = channel_heap_.front();
-  std::pop_heap(channel_heap_.begin(), channel_heap_.end(),
-                &ChannelHeapCompare);
-  channel_heap_.pop_back();
-  return result;
 }
 
 }  // namespace logger

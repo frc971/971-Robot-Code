@@ -171,6 +171,11 @@ class FlatbufferVector : public Flatbuffer<T> {
     return *this;
   }
 
+  // Constructs an empty flatbuffer of type T.
+  static FlatbufferVector<T> Empty() {
+    return FlatbufferVector<T>(std::vector<uint8_t>{});
+  }
+
   virtual ~FlatbufferVector() override {}
 
   const uint8_t *data() const override { return data_.data(); }
