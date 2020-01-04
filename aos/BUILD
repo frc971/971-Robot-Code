@@ -302,6 +302,7 @@ flatbuffer_python_library(
     tables = [
         "Configuration",
         "Channel",
+        "Connection",
         "Map",
         "Node",
     ],

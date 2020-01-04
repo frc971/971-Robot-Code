@@ -43,7 +43,6 @@ struct ChannelData {
 // All the objects that we need for managing reading a logfile.
 struct LogReaderTools {
   std::unique_ptr<aos::logger::LogReader> reader;
-  std::unique_ptr<aos::SimulatedEventLoopFactory> event_loop_factory;
   // Event loop to use for subscribing to buses.
   std::unique_ptr<aos::EventLoop> event_loop;
   std::vector<ChannelData> channel_data;
@@ -58,9 +57,6 @@ struct LogReaderType {
 
 void LogReader_dealloc(LogReaderType *self) {
   LogReaderTools *tools = self->tools;
-  if (!tools->processed) {
-    tools->reader->Deregister();
-  }
   delete tools;
   Py_TYPE(self)->tp_free((PyObject *)self);
 }
@@ -89,11 +85,10 @@ int LogReader_init(LogReaderType *self, PyObject *args, PyObject *kwds) {
 
   LogReaderTools *tools = CHECK_NOTNULL(self->tools);
   tools->reader = std::make_unique<aos::logger::LogReader>(log_file_name);
-  tools->event_loop_factory = std::make_unique<aos::SimulatedEventLoopFactory>(
-      tools->reader->configuration());
-  tools->reader->Register(tools->event_loop_factory.get());
+  tools->reader->Register();
 
-  tools->event_loop = tools->event_loop_factory->MakeEventLoop("data_fetcher");
+  tools->event_loop =
+      tools->reader->event_loop_factory()->MakeEventLoop("data_fetcher");
   tools->event_loop->SkipTimingReport();
 
   return 0;
@@ -199,8 +194,7 @@ static PyObject *LogReader_process(LogReaderType *self,
 
   tools->processed = true;
 
-  tools->event_loop_factory->Run();
-  tools->reader->Deregister();
+  tools->reader->event_loop_factory()->Run();
 
   Py_RETURN_NONE;
 }

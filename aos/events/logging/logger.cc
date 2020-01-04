@@ -225,7 +225,7 @@ LogReader::LogReader(std::string_view filename)
 }
 
 LogReader::~LogReader() {
-  CHECK(!event_loop_unique_ptr_) << ": Did you remember to call Deregister?";
+  Deregister();
 }
 
 const Configuration *LogReader::configuration() const {
@@ -242,9 +242,15 @@ realtime_clock::time_point LogReader::realtime_start_time() {
   return sorted_message_reader_.realtime_start_time();
 }
 
+void LogReader::Register() {
+  event_loop_factory_unique_ptr_ =
+      std::make_unique<SimulatedEventLoopFactory>(configuration(), node());
+  Register(event_loop_factory_unique_ptr_.get());
+}
+
 void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
-  event_loop_unique_ptr_ = event_loop_factory->MakeEventLoop("log_reader");
   event_loop_factory_ = event_loop_factory;
+  event_loop_unique_ptr_ = event_loop_factory_->MakeEventLoop("log_reader");
   // We don't run timing reports when trying to print out logged data, because
   // otherwise we would end up printing out the timing reports themselves...
   // This is only really relevant when we are replaying into a simulation.
@@ -334,13 +340,16 @@ void LogReader::Register(EventLoop *event_loop) {
 }
 
 void LogReader::Deregister() {
+  // Make sure that things get destroyed in the correct order, rather than
+  // relying on getting the order correct in the class definition.
   for (size_t i = 0; i < channels_.size(); ++i) {
     channels_[i].reset();
   }
 
-  event_loop_factory_ = nullptr;
   event_loop_unique_ptr_.reset();
   event_loop_ = nullptr;
+  event_loop_factory_unique_ptr_.reset();
+  event_loop_factory_ = nullptr;
 }
 
 }  // namespace logger
