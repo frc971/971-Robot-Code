@@ -467,6 +467,10 @@ void SimulatedEventLoopFactory::set_send_delay(
   }
 }
 
+std::chrono::nanoseconds SimulatedEventLoopFactory::send_delay() const {
+  return send_delay_;
+}
+
 void SimulatedEventLoop::MakeRawWatcher(
     const Channel *channel,
     std::function<void(const Context &channel, const void *message)> watcher) {

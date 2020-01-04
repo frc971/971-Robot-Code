@@ -307,6 +307,10 @@ void LogReader::Register(EventLoop *event_loop) {
   }
 
   timer_handler_ = event_loop_->AddTimer([this]() {
+    if (sorted_message_reader_.active_channel_count() == 0u) {
+      event_loop_factory_->Exit();
+      return;
+    }
     monotonic_clock::time_point channel_timestamp;
     int channel_index;
     FlatbufferVector<MessageHeader> channel_data =
@@ -358,6 +362,11 @@ void LogReader::Register(EventLoop *event_loop) {
 
     if (sorted_message_reader_.active_channel_count() > 0u) {
       timer_handler_->Setup(sorted_message_reader_.oldest_message().first);
+    } else {
+      // Set a timer up immediately after now to die. If we don't do this, then
+      // the senders waiting on the message we just read will never get called.
+      timer_handler_->Setup(monotonic_now + event_loop_factory_->send_delay() +
+                            std::chrono::nanoseconds(1));
     }
   });
 
