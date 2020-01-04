@@ -55,7 +55,10 @@ class PolyDrivetrain {
 
   void SetOutput(::frc971::control_loops::drivetrain::OutputT *output);
 
-  flatbuffers::Offset<CIMLogging> PopulateStatus(
+  flatbuffers::Offset<PolyDriveLogging> PopulateStatus(
+      flatbuffers::FlatBufferBuilder *fbb);
+
+  flatbuffers::Offset<CIMLogging> PopulateShiftingStatus(
       flatbuffers::FlatBufferBuilder *fbb);
 
   // Computes the next state of a shifter given the current state and the
@@ -101,6 +104,9 @@ class PolyDrivetrain {
   Scalar right_motor_speed_ = 0.0;
   Scalar current_left_velocity_ = 0.0;
   Scalar current_right_velocity_ = 0.0;
+
+  // Feedforward voltage, for logging.
+  Eigen::Matrix<Scalar, 2, 1> ff_volts_{0.0, 0.0};
 };
 
 template <typename Scalar>
@@ -353,15 +359,16 @@ void PolyDrivetrain<Scalar>::Update(Scalar voltage_battery) {
           CoerceGoal<Scalar>(R_poly_hv, equality_k, equality_w, loop_->R());
     }
 
-    const Eigen::Matrix<Scalar, 2, 1> FF_volts = FF * loop_->R();
+    ff_volts_ = FF * loop_->R();
     const Eigen::Matrix<Scalar, 2, 1> U_ideal =
-        loop_->controller().K() * (loop_->R() - loop_->X_hat()) + FF_volts;
+        loop_->controller().K() * (loop_->R() - loop_->X_hat()) + ff_volts_;
 
     for (int i = 0; i < 2; i++) {
       loop_->mutable_U()[i] = ::aos::Clip(U_ideal[i], -12, 12);
     }
 
     if (dt_config_.loop_type == LoopType::OPEN_LOOP) {
+      ff_volts_.setZero();
       loop_->mutable_X_hat() =
           loop_->plant().A() * loop_->X_hat() + loop_->plant().B() * loop_->U();
     }
@@ -405,6 +412,7 @@ void PolyDrivetrain<Scalar>::Update(Scalar voltage_battery) {
     loop_->mutable_U(1, 0) = ::aos::Clip(
         (R_right / dt_config_.v)(0, 0) + (IsInGear(right_gear_) ? 0 : wiggle),
         -kTwelve, kTwelve);
+    ff_volts_ = loop_->U();
 #ifdef __linux__
     loop_->mutable_U() *= kTwelve / voltage_battery;
 #else
@@ -425,7 +433,21 @@ void PolyDrivetrain<Scalar>::SetOutput(
 }
 
 template <typename Scalar>
-flatbuffers::Offset<CIMLogging> PolyDrivetrain<Scalar>::PopulateStatus(
+flatbuffers::Offset<PolyDriveLogging>
+PolyDrivetrain<Scalar>::PopulateStatus(
+    flatbuffers::FlatBufferBuilder *fbb) {
+  PolyDriveLogging::Builder builder(*fbb);
+
+  builder.add_goal_left_velocity(goal_left_velocity_);
+  builder.add_goal_right_velocity(goal_right_velocity_);
+  builder.add_ff_left_voltage(ff_volts_(0, 0));
+  builder.add_ff_right_voltage(ff_volts_(1, 0));
+
+  return builder.Finish();
+}
+
+template <typename Scalar>
+flatbuffers::Offset<CIMLogging> PolyDrivetrain<Scalar>::PopulateShiftingStatus(
     flatbuffers::FlatBufferBuilder *fbb) {
   CIMLogging::Builder builder(*fbb);
 

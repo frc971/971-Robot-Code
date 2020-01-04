@@ -322,6 +322,9 @@ void DrivetrainLoop::RunIteration(
         dt_config_.AngularLinearToLeftRight(linear, angular);
 
     const flatbuffers::Offset<CIMLogging> cim_logging_offset =
+        dt_openloop_.PopulateShiftingStatus(status->fbb());
+
+    const flatbuffers::Offset<PolyDriveLogging> poly_drive_logging_offset =
         dt_openloop_.PopulateStatus(status->fbb());
 
     flatbuffers::Offset<LineFollowLogging> line_follow_logging_offset =
@@ -359,6 +362,7 @@ void DrivetrainLoop::RunIteration(
 
     builder.add_ground_angle(down_estimator_.X_hat(0) + dt_config_.down_offset);
     builder.add_cim_logging(cim_logging_offset);
+    builder.add_poly_drive_logging(poly_drive_logging_offset);
     builder.add_gear_logging(gear_logging_offset);
     builder.add_line_follow_logging(line_follow_logging_offset);
     builder.add_trajectory_logging(trajectory_logging_offset);

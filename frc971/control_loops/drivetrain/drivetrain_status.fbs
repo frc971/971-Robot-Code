@@ -33,6 +33,17 @@ table CIMLogging {
   right_velocity:double;
 }
 
+// Logging information for the polydrivetrain implementation.
+table PolyDriveLogging {
+  // Calculated velocity goals for the left/right sides of the drivetrain, in
+  // m/s.
+  goal_left_velocity:float;
+  goal_right_velocity:float;
+  // Feedforward components of the left/right voltages.
+  ff_left_voltage:float;
+  ff_right_voltage:float;
+}
+
 enum PlanningState : byte {
   NO_PLAN,
   BUILDING_TRAJECTORY,
@@ -133,8 +144,12 @@ table Status {
   // Information about shifting logic and curent gear, for logging purposes
   gear_logging:GearLogging;
   cim_logging:CIMLogging;
+
   trajectory_logging:TrajectoryLogging;
+
   line_follow_logging:LineFollowLogging;
+
+  poly_drive_logging:PolyDriveLogging;
 }
 
 root_type Status;
