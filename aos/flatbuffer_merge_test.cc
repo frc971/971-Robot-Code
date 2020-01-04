@@ -13,6 +13,15 @@ class FlatbufferMerge : public ::testing::Test {
  public:
   FlatbufferMerge() {}
 
+  void ExpectMergedOutput(const flatbuffers::DetachedBuffer &fb_merged,
+                          std::string_view expected_output) {
+    ASSERT_NE(fb_merged.size(), 0u);
+
+    const ::std::string merged_output =
+        FlatbufferToJson(fb_merged, ConfigurationTypeTable());
+    EXPECT_EQ(expected_output, merged_output);
+  }
+
   void JsonMerge(const ::std::string in1, const ::std::string in2,
                  const ::std::string out) {
     printf("Merging: %s\n", in1.c_str());
@@ -110,14 +119,39 @@ class FlatbufferMerge : public ::testing::Test {
       // in1 merged with in2 => out.
       flatbuffers::DetachedBuffer fb_merged =
           MergeFlatBuffers<Configuration>(fb1.data(), fb2.data());
-      ASSERT_NE(fb_merged.size(), 0u);
 
-      const ::std::string merged_output =
-          FlatbufferToJson(fb_merged, ConfigurationTypeTable());
-      EXPECT_EQ(out, merged_output);
-
-      printf("Merged to: %s\n", merged_output.c_str());
+      ExpectMergedOutput(fb_merged, out);
     }
+
+    // Test all the different merge methods:
+    ExpectMergedOutput(
+        MergeFlatBuffers(ConfigurationTypeTable(), fb1.data(), fb2.data()),
+        out);
+    {
+      flatbuffers::FlatBufferBuilder fbb;
+      fbb.ForceDefaults(1);
+      fbb.Finish(MergeFlatBuffers(
+          ConfigurationTypeTable(),
+          flatbuffers::GetRoot<flatbuffers::Table>(fb1.data()),
+          flatbuffers::GetRoot<flatbuffers::Table>(fb2.data()), &fbb));
+      ExpectMergedOutput(fbb.Release(), out);
+    }
+    {
+      flatbuffers::FlatBufferBuilder fbb;
+      fbb.ForceDefaults(1);
+      fbb.Finish(MergeFlatBuffers<Configuration>(
+          flatbuffers::GetRoot<flatbuffers::Table>(fb1.data()),
+          flatbuffers::GetRoot<flatbuffers::Table>(fb2.data()), &fbb));
+      ExpectMergedOutput(fbb.Release(), out);
+    }
+    ExpectMergedOutput(MergeFlatBuffers<Configuration>(fb1.data(), fb2.data()),
+                       out);
+    ExpectMergedOutput(MergeFlatBuffers<Configuration>(fb1, fb2), out);
+    ExpectMergedOutput(MergeFlatBuffers<Configuration>(
+                           flatbuffers::GetRoot<Configuration>(fb1.data()),
+                           flatbuffers::GetRoot<Configuration>(fb2.data()))
+                           .buffer(),
+                       out);
 
     // Now, to make things extra exciting, nest a config inside a config.  And
     // run all the tests.  This will exercise some fun nested merges and copies.
@@ -196,6 +230,8 @@ class FlatbufferMerge : public ::testing::Test {
 
 // Test the easy ones.  Test every type, single, no nesting.
 TEST_F(FlatbufferMerge, Basic) {
+  JsonMerge("{  }", "{  }", "{  }");
+
   JsonMerge("{ \"foo_bool\": true }", "{ \"foo_bool\": false }",
             "{ \"foo_bool\": false }");
 

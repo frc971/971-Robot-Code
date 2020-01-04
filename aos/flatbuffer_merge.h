@@ -54,9 +54,12 @@ const uint8_t *data2 = fb2.data();
 template <class T>
 inline aos::FlatbufferDetachedBuffer<T> MergeFlatBuffers(const T *fb1,
                                                          const T *fb2) {
-  return aos::FlatbufferDetachedBuffer<T>(MergeFlatBuffers(
-      T::MiniReflectTypeTable(), reinterpret_cast<const uint8_t *>(fb1),
-      reinterpret_cast<const uint8_t *>(fb2)));
+  flatbuffers::FlatBufferBuilder fbb;
+  fbb.ForceDefaults(1);
+  fbb.Finish(MergeFlatBuffers<T>(
+      reinterpret_cast<const flatbuffers::Table *>(fb1),
+      reinterpret_cast<const flatbuffers::Table *>(fb2), &fbb));
+  return aos::FlatbufferDetachedBuffer<T>(fbb.Release());
 }
 
 template <class T>
