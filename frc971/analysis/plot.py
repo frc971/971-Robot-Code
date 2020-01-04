@@ -58,19 +58,23 @@ class Plotter:
             value = float(value)
             signal_data.append(value)
         label_name = signal.channel + "." + signal.field
-        axes.plot(monotonic_time, signal_data, label=label_name)
+        axes.plot(monotonic_time, signal_data, marker='o', label=label_name)
 
     def plot(self):
+        shared_axis = None
         for figure_config in self.config.figure:
             fig = plt.figure()
             num_subplots = len(figure_config.axes)
             for ii in range(num_subplots):
-                axes = fig.add_subplot(num_subplots, 1, ii + 1)
+                axes = fig.add_subplot(num_subplots, 1, ii + 1, sharex=shared_axis)
+                shared_axis = shared_axis or axes
                 axes_config = figure_config.axes[ii]
                 for signal in axes_config.signal:
                     self.plot_signal(axes, signal)
-                axes.legend()
+                # Make the legend transparent so we can see behind it.
+                legend = axes.legend(framealpha=0.5)
                 axes.set_xlabel("Monotonic Time (sec)")
+                axes.grid(True)
                 if axes_config.HasField("ylabel"):
                     axes.set_ylabel(axes_config.ylabel)
 
