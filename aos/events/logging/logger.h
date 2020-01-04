@@ -59,7 +59,12 @@ class Logger {
 // Replays all the channels in the logfile to the event loop.
 class LogReader {
  public:
-  LogReader(std::string_view filename);
+  // If you want to supply a new configuration that will be used for replay
+  // (e.g., to change message rates, or to populate an updated schema), then
+  // pass it in here. It must provide all the channels that the original logged
+  // config did.
+  LogReader(std::string_view filename,
+            const Configuration *replay_configuration = nullptr);
   ~LogReader();
 
   // Registers everything, but also updates the real time time in sync.  Runs
@@ -81,6 +86,8 @@ class LogReader {
   void Deregister();
 
   // Returns the configuration from the log file.
+  const Configuration *logged_configuration() const;
+  // Returns the configuration being used for replay.
   const Configuration *configuration() const;
 
   // Returns the node that this log file was created on.
@@ -89,6 +96,18 @@ class LogReader {
   // Returns the starting timestamp for the log file.
   monotonic_clock::time_point monotonic_start_time();
   realtime_clock::time_point realtime_start_time();
+
+  // Causes the logger to publish the provided channel on a different name so
+  // that replayed applications can publish on the proper channel name without
+  // interference. This operates on raw channel names, without any node or
+  // application specific mappings.
+  void RemapLoggedChannel(std::string_view name, std::string_view type,
+                          std::string_view add_prefix = "/original");
+  template <typename T>
+  void RemapLoggedChannel(std::string_view name,
+                          std::string_view add_prefix = "/original") {
+    RemapLoggedChannel(name, T::GetFullyQualifiedName(), add_prefix);
+  }
 
   SimulatedEventLoopFactory *event_loop_factory() {
     return event_loop_factory_;
@@ -102,6 +121,9 @@ class LogReader {
  private:
   // Queues at least max_out_of_order_duration_ messages into channels_.
   void QueueMessages();
+  // Handle constructing a configuration with all the additional remapped
+  // channels from calls to RemapLoggedChannel.
+  void MakeRemappedConfig();
 
   // Log chunk reader.
   SortedMessageReader sorted_message_reader_;
@@ -117,6 +139,14 @@ class LogReader {
 
   std::unique_ptr<SimulatedEventLoopFactory> event_loop_factory_unique_ptr_;
   SimulatedEventLoopFactory *event_loop_factory_ = nullptr;
+
+  // Map of channel indices to new name. The channel index will be an index into
+  // logged_configuration(), and the string key will be the name of the channel
+  // to send on instead of the logged channel name.
+  std::map<size_t, std::string> remapped_channels_;
+
+  const Configuration *remapped_configuration_ = nullptr;
+  const Configuration *replay_configuration_ = nullptr;
 };
 
 }  // namespace logger

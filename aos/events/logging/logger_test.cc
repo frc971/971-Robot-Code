@@ -59,10 +59,12 @@ TEST_F(LoggerTest, Starts) {
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
   }
 
-  LogReader reader(logfile);
+  // Even though it doesn't make any difference here, exercise the logic for
+  // passing in a separate config.
+  LogReader reader(logfile, &config_.message());
 
-  LOG(INFO) << "Config " << FlatbufferToJson(reader.configuration());
-  EXPECT_EQ(reader.node(), nullptr);
+  // Confirm that we can remap logged channels to point to new buses.
+  reader.RemapLoggedChannel<aos::examples::Ping>("/test", "/original");
 
   // This sends out the fetched messages and advances time to the start of the
   // log file.
@@ -78,8 +80,8 @@ TEST_F(LoggerTest, Starts) {
   int ping_count = 10;
   int pong_count = 10;
 
-  // Confirm that the ping value matches.
-  test_event_loop->MakeWatcher("/test",
+  // Confirm that the ping value matches in the remapped channel location.
+  test_event_loop->MakeWatcher("/original/test",
                                [&ping_count](const examples::Ping &ping) {
                                  EXPECT_EQ(ping.value(), ping_count + 1);
                                  ++ping_count;
