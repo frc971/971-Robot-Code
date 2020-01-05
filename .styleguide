@@ -1,0 +1,33 @@
+cppHeaderFileInclude {
+  \.h$
+  \.hpp$
+  \.inc$
+}
+
+cppSrcFileInclude {
+  \.cpp$
+}
+
+generatedFileExclude {
+  FRCNetComm\.java$
+  simulation/gz_msgs/src/include/simulation/gz_msgs/msgs\.h$
+}
+
+repoRootNameOverride {
+  wpilib
+}
+
+includeOtherLibs {
+  ^cameraserver/
+  ^cscore
+  ^hal/
+  ^imgui
+  ^mockdata/
+  ^networktables/
+  ^ntcore
+  ^opencv2/
+  ^support/
+  ^units/
+  ^vision/
+  ^wpi/
+}

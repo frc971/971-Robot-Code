@@ -1,0 +1,20 @@
+
+apply plugin: 'checkstyle'
+
+checkstyle {
+    toolVersion = "8.12"
+    configDirectory = file("${project.rootDir}/styleguide")
+    config = resources.text.fromFile(new File(configDirectory.get().getAsFile(), "checkstyle.xml"))
+}
+
+if (!project.hasProperty('skipPMD')) {
+    apply plugin: 'pmd'
+
+    pmd {
+        toolVersion = '6.7.0'
+        consoleOutput = true
+        reportsDir = file("$project.buildDir/reports/pmd")
+        ruleSetFiles = files(new File(rootDir, "styleguide/pmd-ruleset.xml"))
+        ruleSets = []
+    }
+}
