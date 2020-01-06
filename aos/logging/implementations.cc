@@ -23,30 +23,18 @@ namespace chrono = ::std::chrono;
 // apply here (mostly the parts about being able to use AOS_LOG) because this is
 // the root one.
 class RootLogImplementation : public LogImplementation {
- public:
-  void have_other_implementation() { only_implementation_ = false; }
-
  protected:
   virtual ::aos::monotonic_clock::time_point monotonic_now() const {
     return ::aos::monotonic_clock::now();
   }
 
  private:
-  void set_next(LogImplementation *) override {
-    AOS_LOG(FATAL, "can't have a next logger from here\n");
-  }
-
   __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0))) void DoLog(
       log_level level, const char *format, va_list ap) override {
     LogMessage message;
     internal::FillInMessage(level, monotonic_now(), format, ap, &message);
     internal::PrintMessage(stderr, message);
-    if (!only_implementation_) {
-      fputs("root logger got used, see stderr for message\n", stdout);
-    }
   }
-
-  bool only_implementation_ = true;
 };
 
 RootLogImplementation *root_implementation = nullptr;
@@ -140,22 +128,26 @@ void StreamLogImplementation::HandleMessage(const LogMessage &message) {
   internal::PrintMessage(stream_, message);
 }
 
-void AddImplementation(LogImplementation *implementation) {
+void SetImplementation(LogImplementation *implementation, bool update_global) {
   internal::Context *context = internal::Context::Get();
 
-  if (implementation->next() != NULL) {
-    AOS_LOG(FATAL,
-            "%p already has a next implementation, but it's not"
-            " being used yet\n",
-            implementation);
+  if (implementation == nullptr) {
+    AOS_LOG(FATAL, "SetImplementation got invalid implementation");
   }
 
-  LogImplementation *old = context->implementation;
-  if (old != NULL) {
-    implementation->set_next(old);
+  context->implementation = implementation;
+  if (update_global) {
+    SetGlobalImplementation(implementation);
   }
-  SetGlobalImplementation(implementation);
-  root_implementation->have_other_implementation();
+}
+
+LogImplementation *SwapImplementation(LogImplementation *implementation) {
+  internal::Context *context = internal::Context::Get();
+
+  LogImplementation *old = context->implementation;
+  context->implementation = implementation;
+
+  return old;
 }
 
 void Init() {
@@ -267,13 +259,14 @@ void RegisterQueueImplementation() {
     Die("logging: couldn't fetch queue\n");
   }
 
-  AddImplementation(new LinuxQueueLogImplementation());
+  SetImplementation(new LinuxQueueLogImplementation());
 }
 
 void RegisterCallbackImplementation(
-    const ::std::function<void(const LogMessage &)> &callback) {
+    const ::std::function<void(const LogMessage &)> &callback,
+    bool update_global = true) {
   Init();
-  AddImplementation(new CallbackLogImplementation(callback));
+  SetImplementation(new CallbackLogImplementation(callback), update_global);
 }
 
 }  // namespace logging

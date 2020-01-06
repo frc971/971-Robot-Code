@@ -24,7 +24,7 @@ void main(int argc, char **argv) {
   using namespace frc971::jevois;
   // gflags::ParseCommandLineFlags(&argc, &argv, false);
   ::aos::logging::Init();
-  ::aos::logging::AddImplementation(
+  ::aos::logging::SetImplementation(
       new ::aos::logging::StreamLogImplementation(stderr));
 
   int flags = fcntl(0, F_GETFL, 0);

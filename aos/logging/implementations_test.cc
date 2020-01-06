@@ -1,17 +1,17 @@
+#include "aos/logging/implementations.h"
+
 #include <inttypes.h>
 
 #include <chrono>
 #include <string>
 
+#include "aos/logging/printf_formats.h"
+#include "aos/time/time.h"
 #include "gtest/gtest.h"
 
-#include "aos/logging/implementations.h"
-#include "aos/time/time.h"
-#include "aos/logging/printf_formats.h"
-
+using ::testing::AssertionFailure;
 using ::testing::AssertionResult;
 using ::testing::AssertionSuccess;
-using ::testing::AssertionFailure;
 
 namespace aos {
 namespace logging {
@@ -51,8 +51,8 @@ class LoggingTest : public ::testing::Test {
  protected:
   AssertionResult WasAnythingLogged() {
     if (log_implementation->used()) {
-      return AssertionSuccess() << "read message '" <<
-          log_implementation->message().message << "'";
+      return AssertionSuccess() << "read message '"
+                                << log_implementation->message().message << "'";
     }
     return AssertionFailure();
   }
@@ -61,9 +61,9 @@ class LoggingTest : public ::testing::Test {
       return AssertionFailure() << "nothing was logged";
     }
     if (log_implementation->message().level != level) {
-      return AssertionFailure() << "a message with level " <<
-          log_str(log_implementation->message().level) <<
-          " was logged instead of " << log_str(level);
+      return AssertionFailure() << "a message with level "
+                                << log_str(log_implementation->message().level)
+                                << " was logged instead of " << log_str(level);
     }
     internal::Context *context = internal::Context::Get();
     if (log_implementation->message().source != context->source) {
@@ -73,17 +73,16 @@ class LoggingTest : public ::testing::Test {
     }
     if (log_implementation->message().name_length != context->name_size ||
         memcmp(log_implementation->message().name, context->name,
-               context->name_size) !=
-            0) {
+               context->name_size) != 0) {
       AOS_LOG(FATAL, "got a message from %.*s, but we're %s\n",
               static_cast<int>(log_implementation->message().name_length),
               log_implementation->message().name, context->name);
     }
-    if (strstr(log_implementation->message().message, message.c_str())
-        == NULL) {
-      return AssertionFailure() << "got a message of '" <<
-          log_implementation->message().message <<
-          "' but expected it to contain '" << message << "'";
+    if (strstr(log_implementation->message().message, message.c_str()) ==
+        NULL) {
+      return AssertionFailure()
+             << "got a message of '" << log_implementation->message().message
+             << "' but expected it to contain '" << message << "'";
     }
 
     return AssertionSuccess() << log_implementation->message().message;
@@ -96,14 +95,12 @@ class LoggingTest : public ::testing::Test {
       first = false;
 
       Init();
-      AddImplementation(log_implementation = new TestLogImplementation());
+      SetImplementation(log_implementation = new TestLogImplementation());
     }
 
     log_implementation->reset_used();
   }
-  void TearDown() override {
-    Cleanup();
-  }
+  void TearDown() override { Cleanup(); }
 
   static TestLogImplementation *log_implementation;
 };
@@ -169,7 +166,7 @@ TEST_F(LoggingTest, PrintfDirectives) {
 
 TEST_F(LoggingTest, Timing) {
   // For writing only.
-  //static const long kTimingCycles = 5000000;
+  // static const long kTimingCycles = 5000000;
   static const long kTimingCycles = 5000;
 
   monotonic_clock::time_point start = monotonic_clock::now();

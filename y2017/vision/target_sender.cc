@@ -220,7 +220,7 @@ int main(int, char **) {
   using namespace y2017::vision;
 
   ::aos::logging::Init();
-  ::aos::logging::AddImplementation(
+  ::aos::logging::SetImplementation(
       new ::aos::logging::StreamLogImplementation(stdout));
   VisionConfig cfg;
   if (ReadConfiguration("ConfigFile.pb.ascii", &cfg)) {

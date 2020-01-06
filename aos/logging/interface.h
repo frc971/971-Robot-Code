@@ -3,8 +3,8 @@
 
 #include <stdarg.h>
 
-#include <string>
 #include <functional>
+#include <string>
 
 #include "aos/logging/logging.h"
 #include "aos/macros.h"
@@ -38,24 +38,19 @@ void VUnCork(int line, const char *function, log_level level, const char *file,
 // overriden methods may end up logging through a given implementation's DoLog.
 class LogImplementation {
  public:
-  LogImplementation() : next_(NULL) {}
+  LogImplementation() {}
 
-  // The one that this one's implementation logs to.
-  // NULL means that there is no next one.
-  LogImplementation *next() { return next_; }
-  // Virtual in case a subclass wants to perform checks. There will be a valid
-  // logger other than this one available while this is called.
-  virtual void set_next(LogImplementation *next) { next_ = next; }
+  virtual ~LogImplementation() {}
 
   virtual bool fill_type_cache() { return true; }
 
  protected:
   // Actually logs the given message. Implementations should somehow create a
   // LogMessage and then call internal::FillInMessage.
-  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
-  virtual void DoLog(log_level level, const char *format, va_list ap) = 0;
-  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 4)))
-  void DoLogVariadic(log_level level, const char *format, ...) {
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0))) virtual void DoLog(
+      log_level level, const char *format, va_list ap) = 0;
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 4))) void DoLogVariadic(
+      log_level level, const char *format, ...) {
     va_list ap;
     va_start(ap, format);
     DoLog(level, format, ap);
@@ -66,12 +61,10 @@ class LogImplementation {
   // These functions call similar methods on the "current" LogImplementation or
   // Die if they can't find one.
   // levels is how many LogImplementations to not use off the stack.
-  static void DoVLog(log_level, const char *format, va_list ap, int levels)
+  static void DoVLog(log_level, const char *format, va_list ap)
       __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 2, 0)));
 
   friend void VLog(log_level, const char *, va_list);
-
-  LogImplementation *next_;
 };
 
 namespace internal {

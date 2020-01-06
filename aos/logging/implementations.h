@@ -132,7 +132,12 @@ class StreamLogImplementation : public HandleMessageLogImplementation {
 // when needed or by calling Load()).
 // The logging system takes ownership of implementation. It will delete it if
 // necessary, so it must be created with new.
-void AddImplementation(LogImplementation *implementation);
+void SetImplementation(LogImplementation *implementation,
+                       bool update_global = true);
+
+// Updates the log implementation for the current thread, returning the current
+// implementation.
+LogImplementation *SwapImplementation(LogImplementation *implementation);
 
 // Must be called at least once per process/load before anything else is
 // called. This function is safe to call multiple times from multiple
@@ -152,7 +157,7 @@ void Cleanup();
 // The caller takes ownership.
 RawQueue *GetLoggingQueue();
 
-// Calls AddImplementation to register the standard linux logging implementation
+// Calls SetImplementation to register the standard linux logging implementation
 // which sends the messages through a queue. This implementation relies on
 // another process(es) to read the log messages that it puts into the queue.
 // This function is usually called by aos::Init*.

@@ -72,7 +72,7 @@ TEST_F(MutexDeathTest, RepeatUnlock) {
   test_mutex_.Unlock();
   EXPECT_DEATH(
       {
-        logging::AddImplementation(new util::DeathTestLogImplementation());
+        logging::SetImplementation(new util::DeathTestLogImplementation());
         test_mutex_.Unlock();
       },
       ".*multiple unlock.*");
@@ -83,7 +83,7 @@ TEST_F(MutexDeathTest, NeverLock) {
   logging::Init();
   EXPECT_DEATH(
       {
-        logging::AddImplementation(new util::DeathTestLogImplementation());
+        logging::SetImplementation(new util::DeathTestLogImplementation());
         test_mutex_.Unlock();
       },
       ".*multiple unlock.*");
@@ -93,7 +93,7 @@ TEST_F(MutexDeathTest, NeverLock) {
 TEST_F(MutexDeathTest, RepeatLock) {
   EXPECT_DEATH(
       {
-        logging::AddImplementation(new util::DeathTestLogImplementation());
+        logging::SetImplementation(new util::DeathTestLogImplementation());
         ASSERT_FALSE(test_mutex_.Lock());
         ASSERT_FALSE(test_mutex_.Lock());
       },
@@ -297,7 +297,7 @@ TEST_F(MutexLockerDeathTest, OwnerDied) {
   });
   EXPECT_DEATH(
       {
-        logging::AddImplementation(new util::DeathTestLogImplementation());
+        logging::SetImplementation(new util::DeathTestLogImplementation());
         MutexLocker locker(mutex);
       },
       ".*previous owner of mutex [^ ]+ died.*");

@@ -994,52 +994,52 @@ TEST_F(RawQueueDeathTest, OptionsValidation) {
 
   EXPECT_DEATH(
       {
-        logging::AddImplementation(new util::DeathTestLogImplementation());
+        logging::SetImplementation(new util::DeathTestLogImplementation());
         queue->WriteMessage(nullptr, RawQueue::kPeek);
       },
       ".*illegal write option.*");
   EXPECT_DEATH(
       {
-        logging::AddImplementation(new util::DeathTestLogImplementation());
+        logging::SetImplementation(new util::DeathTestLogImplementation());
         queue->WriteMessage(nullptr, RawQueue::kFromEnd);
       },
       ".*illegal write option.*");
   EXPECT_DEATH(
       {
-        logging::AddImplementation(new util::DeathTestLogImplementation());
+        logging::SetImplementation(new util::DeathTestLogImplementation());
         queue->WriteMessage(nullptr, RawQueue::kPeek | RawQueue::kFromEnd);
       },
       ".*illegal write option.*");
   EXPECT_DEATH(
       {
-        logging::AddImplementation(new util::DeathTestLogImplementation());
+        logging::SetImplementation(new util::DeathTestLogImplementation());
         queue->WriteMessage(nullptr, RawQueue::kNonBlock | RawQueue::kBlock);
       },
       ".*invalid write option.*");
 
   EXPECT_DEATH(
       {
-        logging::AddImplementation(new util::DeathTestLogImplementation());
+        logging::SetImplementation(new util::DeathTestLogImplementation());
         queue->ReadMessageIndex(
             RawQueue::kBlock | RawQueue::kFromEnd | RawQueue::kPeek, nullptr);
       },
       ".*ReadMessageIndex.*is not allowed.*");
   EXPECT_DEATH(
       {
-        logging::AddImplementation(new util::DeathTestLogImplementation());
+        logging::SetImplementation(new util::DeathTestLogImplementation());
         queue->ReadMessageIndex(RawQueue::kOverride, nullptr);
       },
       ".*illegal read option.*");
   EXPECT_DEATH(
       {
-        logging::AddImplementation(new util::DeathTestLogImplementation());
+        logging::SetImplementation(new util::DeathTestLogImplementation());
         queue->ReadMessageIndex(RawQueue::kOverride | RawQueue::kBlock,
                                 nullptr);
       },
       ".*illegal read option.*");
   EXPECT_DEATH(
       {
-        logging::AddImplementation(new util::DeathTestLogImplementation());
+        logging::SetImplementation(new util::DeathTestLogImplementation());
         queue->ReadMessage(RawQueue::kNonBlock | RawQueue::kBlock);
       },
       ".*invalid read option.*");

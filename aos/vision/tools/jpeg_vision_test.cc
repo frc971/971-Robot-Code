@@ -112,7 +112,7 @@ class ChannelImageStream : public ImageStreamEvent {
 
 int main(int argc, char *argv[]) {
   ::aos::logging::Init();
-  ::aos::logging::AddImplementation(
+  ::aos::logging::SetImplementation(
       new ::aos::logging::StreamLogImplementation(stdout));
   aos::events::EpollLoop loop;
   gtk_init(&argc, &argv);

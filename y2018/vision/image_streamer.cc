@@ -289,7 +289,7 @@ class CameraStream : public ::aos::vision::ImageStreamEvent {
 int main(int argc, char ** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, false);
   ::aos::logging::Init();
-  ::aos::logging::AddImplementation(
+  ::aos::logging::SetImplementation(
       new ::aos::logging::StreamLogImplementation(stderr));
 
   TCPServer<MjpegDataSocket> tcp_server_(80);
