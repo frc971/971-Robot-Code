@@ -28,12 +28,10 @@ int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
   aos::logger::LogReader reader(FLAGS_logfile);
-  aos::SimulatedEventLoopFactory log_reader_factory(reader.configuration(),
-                                                    reader.node());
-  reader.Register(&log_reader_factory);
+  reader.Register();
 
   std::unique_ptr<aos::EventLoop> printer_event_loop =
-      log_reader_factory.MakeEventLoop("printer");
+      reader.event_loop_factory()->MakeEventLoop("printer");
   printer_event_loop->SkipTimingReport();
 
   bool found_channel = false;
@@ -88,9 +86,7 @@ int main(int argc, char **argv) {
     LOG(FATAL) << "Could not find any channels";
   }
 
-  log_reader_factory.Run();
-
-  reader.Deregister();
+  reader.event_loop_factory()->Run();
 
   aos::Cleanup();
   return 0;

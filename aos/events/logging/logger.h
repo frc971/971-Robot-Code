@@ -62,16 +62,23 @@ class LogReader {
   LogReader(std::string_view filename);
   ~LogReader();
 
+  // Registers everything, but also updates the real time time in sync.  Runs
+  // until the log file starts.
+  // Note that if you use any call other than the Register() call with no
+  // arguments, the user is responsible for making sure that the config of the
+  // supplied event loop (factory) provides any necessary remapped configs.
+  void Register();
+  // Does the same as Register(), except it uses a pre-provided event loop
+  // factory.
+  void Register(SimulatedEventLoopFactory *event_loop_factory);
   // Registers the timer and senders used to resend the messages from the log
   // file.
   void Register(EventLoop *event_loop);
-  // Registers everything, but also updates the real time time in sync.  Runs
-  // until the log file starts.
-  void Register(SimulatedEventLoopFactory *factory);
-  // Unregisters the senders.
+  // Unregisters the senders. You only need to call this if you separately
+  // supplied an event loop or event loop factory and the lifetimes are such
+  // that they need to be explicitly destroyed before the LogReader destructor
+  // gets called.
   void Deregister();
-
-  // TODO(austin): Remap channels?
 
   // Returns the configuration from the log file.
   const Configuration *configuration() const;
@@ -82,6 +89,10 @@ class LogReader {
   // Returns the starting timestamp for the log file.
   monotonic_clock::time_point monotonic_start_time();
   realtime_clock::time_point realtime_start_time();
+
+  SimulatedEventLoopFactory *event_loop_factory() {
+    return event_loop_factory_;
+  }
 
   // TODO(austin): Add the ability to re-publish the fetched messages.  Add 2
   // options, one which publishes them *now*, and another which publishes them
@@ -95,12 +106,17 @@ class LogReader {
   // Log chunk reader.
   SortedMessageReader sorted_message_reader_;
 
+  std::unique_ptr<FlatbufferDetachedBuffer<Configuration>>
+      remapped_configuration_buffer_;
+
   std::vector<std::unique_ptr<RawSender>> channels_;
 
-  SimulatedEventLoopFactory *event_loop_factory_ = nullptr;
   std::unique_ptr<EventLoop> event_loop_unique_ptr_;
   EventLoop *event_loop_ = nullptr;
   TimerHandler *timer_handler_;
+
+  std::unique_ptr<SimulatedEventLoopFactory> event_loop_factory_unique_ptr_;
+  SimulatedEventLoopFactory *event_loop_factory_ = nullptr;
 };
 
 }  // namespace logger
