@@ -1,0 +1,13 @@
+include "aos/configuration.fbs";
+
+namespace aos.message_bridge;
+
+// This is the message sent to initiate a connection to a message_bridge.
+// It communicates the channels that need to be forwarded back.
+table Connect {
+  // The node making the request.
+  node:aos.Node;
+
+  // The channels that we want transfered to this client.
+  channels_to_transfer:[Channel];
+}

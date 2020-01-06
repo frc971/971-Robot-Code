@@ -21,10 +21,26 @@
 #include "aos/util/phased_loop.h"
 #include "glog/logging.h"
 
+namespace {
+
+// Returns the portion of the path after the last /.  This very much assumes
+// that the application name is null terminated.
+const char *Filename(const char *path) {
+  const std::string_view path_string_view = path;
+  auto last_slash_pos = path_string_view.find_last_of("/");
+
+  return last_slash_pos == std::string_view::npos ? path
+                                                  : path + last_slash_pos + 1;
+}
+
+}  // namespace
+
 DEFINE_string(shm_base, "/dev/shm/aos",
               "Directory to place queue backing mmaped files in.");
 DEFINE_uint32(permissions, 0770,
               "Permissions to make shared memory files and folders.");
+DEFINE_string(application_name, Filename(program_invocation_name),
+              "The application name");
 
 namespace aos {
 
@@ -135,15 +151,6 @@ class MMapedQueue {
 
 namespace {
 
-// Returns the portion of the path after the last /.
-std::string_view Filename(std::string_view path) {
-  auto last_slash_pos = path.find_last_of("/");
-
-  return last_slash_pos == std::string_view::npos
-             ? path
-             : path.substr(last_slash_pos + 1, path.size());
-}
-
 const Node *MaybeMyNode(const Configuration *configuration) {
   if (!configuration->has_nodes()) {
     return nullptr;
@@ -158,7 +165,7 @@ namespace chrono = ::std::chrono;
 
 ShmEventLoop::ShmEventLoop(const Configuration *configuration)
     : EventLoop(configuration),
-      name_(Filename(program_invocation_name)),
+      name_(FLAGS_application_name),
       node_(MaybeMyNode(configuration)) {
   if (configuration->has_nodes()) {
     CHECK(node_ != nullptr) << ": Couldn't find node in config.";
@@ -802,15 +809,16 @@ void ShmEventLoop::Run() {
   }
 
   SignalHandler::global()->Unregister(this);
+
+  // Trigger any remaining senders or fetchers to be cleared before destroying
+  // the event loop so the book keeping matches.  Do this in the thread that
+  // created the timing reporter.
+  timing_report_sender_.reset();
 }
 
 void ShmEventLoop::Exit() { epoll_.Quit(); }
 
 ShmEventLoop::~ShmEventLoop() {
-  // Trigger any remaining senders or fetchers to be cleared before destroying
-  // the event loop so the book keeping matches.
-  timing_report_sender_.reset();
-
   // Force everything with a registered fd with epoll to be destroyed now.
   timers_.clear();
   phased_loops_.clear();

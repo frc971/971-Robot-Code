@@ -4,12 +4,22 @@
    "name": "/foo",
    "type": ".aos.bar",
    "max_size": 5,
-   "source_node": "pi2"
+   "source_node": "pi2",
+   "destination_nodes": [
+    {
+     "name": "pi1"
+    }
+   ]
   },
   {
    "name": "/foo2",
    "type": ".aos.bar",
-   "source_node": "pi1"
+   "source_node": "pi1",
+   "destination_nodes": [
+    {
+     "name": "pi2"
+    }
+   ]
   },
   {
    "name": "/foo3",

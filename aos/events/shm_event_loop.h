@@ -71,6 +71,8 @@ class ShmEventLoop : public EventLoop {
 
   int priority() const override { return priority_; }
 
+  internal::EPoll *epoll() { return &epoll_; }
+
  private:
   friend class internal::WatcherState;
   friend class internal::TimerHandlerState;

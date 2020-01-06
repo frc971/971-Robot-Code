@@ -1,0 +1,33 @@
+include "aos/configuration.fbs";
+
+namespace aos.message_bridge;
+
+// State of the connection.
+enum State: ubyte {
+  CONNECTED,
+  DISCONNECTED,
+}
+
+// Statistics from a single connection to a client from this server.
+table ServerConnection {
+  // The node that we are connected to.
+  node:Node;
+
+  // Health of this connection.  Connected or not?
+  state:State;
+
+  // Number of packets that have been dropped (if known).
+  dropped_packets:uint;
+
+  // Number of packets received on all channels.
+  sent_packets:uint;
+
+  // TODO(austin): Per channel counts?
+}
+
+// Statistics for all connections to all the clients.
+table ServerStatistics {
+  connections:[ServerConnection];
+}
+
+root_type ServerStatistics;

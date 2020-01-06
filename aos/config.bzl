@@ -2,7 +2,7 @@ load("//tools/build_rules:label.bzl", "expand_label")
 
 AosConfigInfo = provider(fields = ["transitive_flatbuffers", "transitive_src"])
 
-def aos_config(name, src, flatbuffers, deps = [], visibility = None):
+def aos_config(name, src, flatbuffers = [], deps = [], visibility = None):
     _aos_config(
         name = name,
         src = src,

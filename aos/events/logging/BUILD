@@ -1,4 +1,5 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos:config.bzl", "aos_config")
 
 flatbuffer_cc_library(
     name = "logger_fbs",
@@ -84,11 +85,21 @@ cc_binary(
     ],
 )
 
+aos_config(
+    name = "multinode_pingpong_config",
+    src = "multinode_pingpong.json",
+    flatbuffers = [
+        "//aos/events:ping_fbs",
+        "//aos/events:pong_fbs",
+    ],
+    deps = ["//aos/events:config"],
+)
+
 cc_test(
     name = "logger_test",
     srcs = ["logger_test.cc"],
     data = [
-        "//aos/events:multinode_pingpong_config.json",
+        ":multinode_pingpong_config.json",
         "//aos/events:pingpong_config.json",
     ],
     deps = [

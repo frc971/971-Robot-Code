@@ -63,7 +63,10 @@ filegroup(
         "libexec/**",
         "lib/gcc/arm-linux-gnueabihf/**",
         "include/**",
-    ]),
+    ], exclude=["arm-linux-gnueabihf/libc/usr/include/linux/sctp.h"]) +
+    [
+        "@org_frc971//third_party/linux:sctp",
+    ],
 )
 
 filegroup(
