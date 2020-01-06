@@ -249,11 +249,12 @@ http_archive(
     url = "http://www.frc971.org/Build-Dependencies/rsync.tar.gz",
 )
 
+# //debian:ssh
 http_archive(
     name = "ssh",
     build_file = "@//debian:ssh.BUILD",
-    sha256 = "43c760bc5c32d5a8c24837d1b4c356424a157f59ff8a08654651856ae90b16d2",
-    url = "http://www.frc971.org/Build-Dependencies/ssh.tar.gz",
+    sha256 = "470fdc1252a2133a9d3c3da778e892a5b88f04f402cb04d8eb1cff7853242034",
+    url = "http://www.frc971.org/Build-Dependencies/ssh_v3.tar.gz",
 )
 
 http_archive(

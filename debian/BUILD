@@ -243,7 +243,7 @@ generate_deb_tarball(
 )
 
 generate_deb_tarball(
-    name = "ssh",
+    name = "ssh_v3",
     files = ssh_debs,
 )
 
@@ -281,3 +281,7 @@ generate_deb_tarball(
     name = "python_gtk",
     files = python_gtk_debs,
 )
+
+exports_files([
+    "ssh_wrapper.sh",
+])
