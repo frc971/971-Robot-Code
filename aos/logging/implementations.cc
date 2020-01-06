@@ -1,16 +1,16 @@
 #include "aos/logging/implementations.h"
 
-#include <stdarg.h>
 #include <inttypes.h>
+#include <stdarg.h>
 
 #include <algorithm>
 #include <chrono>
 
+#include "absl/base/call_once.h"
 #include "aos/die.h"
+#include "aos/ipc_lib/queue.h"
 #include "aos/logging/printf_formats.h"
 #include "aos/time/time.h"
-#include "aos/ipc_lib/queue.h"
-#include "absl/base/call_once.h"
 
 namespace aos {
 namespace logging {
@@ -36,8 +36,8 @@ class RootLogImplementation : public LogImplementation {
     AOS_LOG(FATAL, "can't have a next logger from here\n");
   }
 
-  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
-  void DoLog(log_level level, const char *format, va_list ap) override {
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0))) void DoLog(
+      log_level level, const char *format, va_list ap) override {
     LogMessage message;
     internal::FillInMessage(level, monotonic_now(), format, ap, &message);
     internal::PrintMessage(stderr, message);
@@ -63,15 +63,13 @@ void SetGlobalImplementation(LogImplementation *implementation) {
   internal::global_top_implementation.store(implementation);
 }
 
-void NewContext() {
-  internal::Context::Delete();
-}
+void NewContext() { internal::Context::Delete(); }
 
 void DoInit() {
   SetGlobalImplementation(root_implementation = new RootLogImplementation());
 
-  if (pthread_atfork(NULL /*prepare*/, NULL /*parent*/,
-                     NewContext /*child*/) != 0) {
+  if (pthread_atfork(NULL /*prepare*/, NULL /*parent*/, NewContext /*child*/) !=
+      0) {
     AOS_LOG(FATAL, "pthread_atfork(NULL, NULL, %p) failed\n", NewContext);
   }
 }
@@ -165,13 +163,9 @@ void Init() {
   absl::call_once(once, DoInit);
 }
 
-void Load() {
-  internal::Context::Get();
-}
+void Load() { internal::Context::Get(); }
 
-void Cleanup() {
-  internal::Context::Delete();
-}
+void Cleanup() { internal::Context::Delete(); }
 
 namespace {
 
@@ -239,12 +233,24 @@ class LinuxQueueLogImplementation : public LogImplementation {
     return ::aos::monotonic_clock::now();
   }
 
-  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
-  void DoLog(log_level level, const char *format, va_list ap) override {
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0))) void DoLog(
+      log_level level, const char *format, va_list ap) override {
     LogMessage *message = GetMessageOrDie();
     internal::FillInMessage(level, monotonic_now(), format, ap, message);
     Write(message);
   }
+};
+
+class CallbackLogImplementation : public HandleMessageLogImplementation {
+ public:
+  CallbackLogImplementation(
+      const ::std::function<void(const LogMessage &)> &callback)
+      : callback_(callback) {}
+
+ private:
+  void HandleMessage(const LogMessage &message) override { callback_(message); }
+
+  ::std::function<void(const LogMessage &)> callback_;
 };
 
 }  // namespace
@@ -262,6 +268,12 @@ void RegisterQueueImplementation() {
   }
 
   AddImplementation(new LinuxQueueLogImplementation());
+}
+
+void RegisterCallbackImplementation(
+    const ::std::function<void(const LogMessage &)> &callback) {
+  Init();
+  AddImplementation(new CallbackLogImplementation(callback));
 }
 
 }  // namespace logging
