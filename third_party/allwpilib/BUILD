@@ -84,7 +84,7 @@ cc_library(
     visibility = ["//third_party:__pkg__"],
     deps = [
         "//aos/logging",
-        "//third_party/allwpilib_2019/wpiutil",
+        "//third_party/allwpilib/wpiutil",
         "@allwpilib_ni_libraries//:ni-libraries",
     ],
 )

@@ -10,7 +10,7 @@ cc_library(
     name = "wpilib_hal",
     restricted_to = ["//tools:roborio"],
     visibility = ["//visibility:public"],
-    deps = ["//third_party/allwpilib_2019:hal"],
+    deps = ["//third_party/allwpilib:hal"],
 )
 
 cc_library(
