@@ -633,10 +633,6 @@ void SimulatedChannel::UnregisterFetcher(SimulatedFetcher *fetcher) {
   fetchers_.erase(::std::find(fetchers_.begin(), fetchers_.end(), fetcher));
 }
 
-SimpleChannel::SimpleChannel(const Channel *channel)
-    : name(CHECK_NOTNULL(CHECK_NOTNULL(channel)->name())->str()),
-      type(CHECK_NOTNULL(CHECK_NOTNULL(channel)->type())->str()) {}
-
 SimulatedTimerHandler::SimulatedTimerHandler(
     EventScheduler *scheduler, SimulatedEventLoop *simulated_event_loop,
     ::std::function<void()> fn)

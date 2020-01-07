@@ -250,6 +250,18 @@ cc_test(
 )
 
 cc_library(
+    name = "simple_channel",
+    srcs = ["simple_channel.cc"],
+    hdrs = ["simple_channel.h"],
+    deps = [
+        "//aos:configuration_fbs",
+        "@com_github_google_flatbuffers//:flatbuffers",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
     name = "simulated_event_loop",
     srcs = [
         "event_scheduler.cc",
@@ -262,6 +274,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":event_loop",
+        ":simple_channel",
         "//aos/ipc_lib:index",
         "//aos/util:phased_loop",
         "@com_google_absl//absl/container:btree",

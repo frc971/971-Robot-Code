@@ -12,6 +12,7 @@
 #include "absl/container/btree_map.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/event_scheduler.h"
+#include "aos/events/simple_channel.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/flatbuffers.h"
 #include "aos/ipc_lib/index.h"
@@ -21,30 +22,6 @@ namespace aos {
 
 // Class for simulated fetchers.
 class SimulatedChannel;
-
-struct SimpleChannel {
-  SimpleChannel(const Channel *channel);
-  std::string name;
-  std::string type;
-
-  std::string DebugString() const {
-    return std::string("{ ") + name + ", " + type + "}";
-  }
-
-  bool operator==(const SimpleChannel &other) const {
-    return name == other.name && type == other.type;
-  }
-  bool operator<(const SimpleChannel &other) const {
-    int name_compare = other.name.compare(name);
-    if (name_compare == 0) {
-      return other.type < type;
-    } else if (name_compare < 0) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-};
 
 class SimulatedEventLoopFactory {
  public:
