@@ -10,9 +10,4 @@ table GyroReading {
   velocity:double;
 }
 
-// Published on "/drivetrain"
-table Uid {
-  uid:uint;
-}
-
 root_type GyroReading;

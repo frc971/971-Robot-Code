@@ -53,13 +53,13 @@ DataCollector::DataCollector(::aos::EventLoop *event_loop)
     : event_loop_(event_loop),
       vision_status_fetcher_(
           event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
-              "/superstructure")),
+              "/vision")),
       ball_detector_fetcher_(
           event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
               "/superstructure")),
       autonomous_mode_fetcher_(
           event_loop->MakeFetcher<::frc971::autonomous::AutonomousMode>(
-              "/aos")),
+              "/autonomous")),
       superstructure_status_fetcher_(
           event_loop
               ->MakeFetcher<::y2016::control_loops::superstructure::Status>(

@@ -45,10 +45,45 @@
       "name": "/superstructure",
       "type": "y2016.sensors.BallDetector",
       "frequency": 200
+    },
+    {
+      "name": "/vision",
+      "type": "y2016.vision.VisionStatus",
+      "frequency": 200
+    },
+    {
+      "name": "/superstructure_action",
+      "type": "aos.common.actions.Status"
+    },
+    {
+      "name": "/vision_align_action",
+      "type": "aos.common.actions.Status"
+    },
+    {
+      "name": "/autonomous",
+      "type": "aos.common.actions.Status"
+    },
+    {
+      "name": "/autonomous",
+      "type": "frc971.autonomous.Goal"
+    },
+    {
+      "name": "/drivetrain",
+      "type": "y2019.control_loops.drivetrain.TargetSelectorHint"
+    },
+    {
+      "name": "/vision_align_action",
+      "type": "y2016.actors.vision_align_action.Goal"
+    },
+    {
+      "name": "/superstructure_action",
+      "type": "y2016.actors.superstructure_action.Goal"
     }
   ],
   "imports": [
     "../aos/robot_state/robot_state_config.json",
-    "../frc971/control_loops/drivetrain/drivetrain_config.json"
+    "../frc971/control_loops/drivetrain/drivetrain_config.json",
+    "../frc971/autonomous/autonomous_config.json",
+    "../frc971/wpilib/wpilib_config.json"
   ]
 }

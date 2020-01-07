@@ -24,7 +24,7 @@ VisionAlignActor::VisionAlignActor(::aos::EventLoop *event_loop)
           event_loop, "/vision_align_action"),
       vision_status_fetcher_(
           event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
-              "/superstructure")),
+              "/vision")),
       drivetrain_goal_sender_(
           event_loop->MakeSender<::frc971::control_loops::drivetrain::Goal>(
               "/drivetrain")) {}

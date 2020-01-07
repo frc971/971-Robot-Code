@@ -13,6 +13,11 @@
     },
     {
       "name": "/drivetrain",
+      "type": "frc971.sensors.Uid",
+      "frequency": 200
+    },
+    {
+      "name": "/drivetrain",
       "type": "frc971.control_loops.drivetrain.Goal",
       "frequency": 200
     },

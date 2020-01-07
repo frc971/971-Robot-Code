@@ -38,7 +38,7 @@ cc_binary(
         "//frc971/autonomous:auto_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_goal_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
-        "//frc971/queues:gyro",
+        "//frc971/queues:gyro_fbs",
         "//y2016/actors:autonomous_action_lib",
         "//y2016/actors:superstructure_action_lib",
         "//y2016/actors:vision_align_action_lib",
@@ -51,6 +51,9 @@ cc_binary(
 )
 
 robot_downloader(
+    data = [
+        ":config.json",
+    ],
     dirs = [
         "//y2016/dashboard:www_files",
     ],
@@ -81,12 +84,17 @@ aos_config(
         "//y2016/control_loops/superstructure:superstructure_position_fbs",
         "//y2016/control_loops/superstructure:superstructure_status_fbs",
         "//y2016/queues:ball_detector_fbs",
-        "//y2017/vision:vision_fbs",
+        "//y2016/vision:vision_fbs",
+        "//y2019/control_loops/drivetrain:target_selector_fbs",
+        "//y2016/actors:vision_align_action_fbs",
+        "//y2016/actors:superstructure_action_fbs",
     ],
     visibility = ["//visibility:public"],
     deps = [
         "//aos/robot_state:config",
+        "//frc971/autonomous:config",
         "//frc971/control_loops/drivetrain:config",
+        "//frc971/wpilib:config",
     ],
 )
 

@@ -36,7 +36,7 @@ cc_binary(
         "//aos/util:log_interval",
         "//frc971/autonomous:auto_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
-        "//frc971/queues:gyro",
+        "//frc971/queues:gyro_fbs",
         "//y2014/actors:shoot_action_lib",
         "//y2014/control_loops/claw:claw_goal_fbs",
         "//y2014/control_loops/claw:claw_status_fbs",

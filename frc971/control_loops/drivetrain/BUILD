@@ -106,7 +106,8 @@ aos_config(
         ":drivetrain_status_fbs",
         ":drivetrain_position_fbs",
         ":localizer_fbs",
-        "//frc971/queues:gyro",
+        "//frc971/queues:gyro_fbs",
+        "//frc971/queues:gyro_uid_fbs",
         "//frc971/wpilib:imu_fbs",
     ],
     visibility = ["//visibility:public"],
@@ -382,7 +383,7 @@ cc_library(
         "//aos/controls:control_loop",
         "//aos/util:log_interval",
         "//frc971/control_loops:runge_kutta",
-        "//frc971/queues:gyro",
+        "//frc971/queues:gyro_fbs",
         "//frc971/wpilib:imu_fbs",
     ],
 )
@@ -403,7 +404,7 @@ cc_library(
         "//aos/testing:googletest",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:state_feedback_loop",
-        "//frc971/queues:gyro",
+        "//frc971/queues:gyro_fbs",
         "//y2016:constants",
         "//y2016/control_loops/drivetrain:polydrivetrain_plants",
     ],
@@ -434,7 +435,7 @@ cc_test(
         ":drivetrain_test_lib",
         "//aos/controls:control_loop_test",
         "//aos/testing:googletest",
-        "//frc971/queues:gyro",
+        "//frc971/queues:gyro_fbs",
     ] + cpu_select({
         "amd64": [
             "//third_party/matplotlib-cpp",

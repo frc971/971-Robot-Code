@@ -305,7 +305,7 @@ void Main() {
   ::aos::ShmEventLoop event_loop(&config.message());
 
   ::aos::Sender<::y2016::vision::VisionStatus> vision_status_sender =
-      event_loop.MakeSender<::y2016::vision::VisionStatus>("/superstructure");
+      event_loop.MakeSender<::y2016::vision::VisionStatus>("/vision");
 
   StereoGeometry stereo(constants::GetValues().vision_name);
   AOS_LOG(INFO, "calibration: %s\n",
