@@ -71,6 +71,7 @@ class SimulatedEventLoopFactory {
 
   // Sets the simulated send delay for the factory.
   void set_send_delay(std::chrono::nanoseconds send_delay);
+  std::chrono::nanoseconds send_delay() const;
 
   // Returns the node that this factory is running as, or nullptr if this is a
   // single node setup.

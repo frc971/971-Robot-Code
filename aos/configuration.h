@@ -49,6 +49,16 @@ inline const Channel *GetChannel(const Flatbuffer<Configuration> &config,
                                  const Node *node) {
   return GetChannel(&config.message(), name, type, application_name, node);
 }
+// Convenience wrapper for getting a channel from a specified config if you
+// already have the name/type in a Channel object--this is useful if you Channel
+// object you have does not point to memory within config.
+inline const Channel *GetChannel(const Configuration *config,
+                                 const Channel *channel,
+                                 const std::string_view application_name,
+                                 const Node *node) {
+  return GetChannel(config, channel->name()->string_view(),
+                    channel->type()->string_view(), application_name, node);
+}
 
 // Returns the Node out of the config with the matching name, or nullptr if it
 // can't be found.
