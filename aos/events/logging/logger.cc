@@ -279,7 +279,7 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
 
   Register(event_loop_unique_ptr_.get());
   event_loop_factory_->RunFor(monotonic_start_time() -
-                              event_loop_factory_->monotonic_now());
+                              event_loop_->monotonic_now());
 }
 
 void LogReader::Register(EventLoop *event_loop) {

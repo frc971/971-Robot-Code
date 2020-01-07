@@ -82,7 +82,7 @@ class VisionTimeAdjusterTest : public ::testing::Test {
 
   void SendMessages() {
     SendDrivetrainPosition();
-    if (event_loop_factory_.monotonic_now().time_since_epoch() %
+    if (simulation_event_loop_->monotonic_now().time_since_epoch() %
             kVisionTick ==
         kVisionDelay) {
       SendVisionTarget();

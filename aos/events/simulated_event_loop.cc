@@ -216,7 +216,7 @@ class SimulatedFetcher : public RawFetcher {
 
     SetMsg(msgs_.front());
     msgs_.pop_front();
-    return std::make_pair(true, queue_->monotonic_now());
+    return std::make_pair(true, event_loop()->monotonic_now());
   }
 
   std::pair<bool, monotonic_clock::time_point> DoFetch() override {
@@ -225,7 +225,7 @@ class SimulatedFetcher : public RawFetcher {
       // simpler.  And call clear, obviously.
       if (!msg_ && queue_->latest_message()) {
         SetMsg(queue_->latest_message());
-        return std::make_pair(true, queue_->monotonic_now());
+        return std::make_pair(true, event_loop()->monotonic_now());
       } else {
         return std::make_pair(false, monotonic_clock::min_time);
       }
@@ -235,7 +235,7 @@ class SimulatedFetcher : public RawFetcher {
     // latest message from before we started.
     SetMsg(msgs_.back());
     msgs_.clear();
-    return std::make_pair(true, queue_->monotonic_now());
+    return std::make_pair(true, event_loop()->monotonic_now());
   }
 
  private:
@@ -281,10 +281,6 @@ class SimulatedTimerHandler : public TimerHandler {
   void HandleEvent();
 
   void Disable() override;
-
-  ::aos::monotonic_clock::time_point monotonic_now() const {
-    return scheduler_->monotonic_now();
-  }
 
  private:
   SimulatedEventLoop *simulated_event_loop_;
@@ -544,7 +540,8 @@ SimulatedWatcher::~SimulatedWatcher() {
 }
 
 void SimulatedWatcher::Schedule(std::shared_ptr<SimulatedMessage> message) {
-  monotonic_clock::time_point event_time = scheduler_->monotonic_now();
+  monotonic_clock::time_point event_time =
+      simulated_event_loop_->monotonic_now();
 
   // Messages are queued in order.  If we are the first, add ourselves.
   // Otherwise, don't.
@@ -653,7 +650,7 @@ void SimulatedTimerHandler::Setup(monotonic_clock::time_point base,
                                   monotonic_clock::duration repeat_offset) {
   Disable();
   const ::aos::monotonic_clock::time_point monotonic_now =
-      scheduler_->monotonic_now();
+      simulated_event_loop_->monotonic_now();
   base_ = base;
   repeat_offset_ = repeat_offset;
   if (base < monotonic_now) {
@@ -669,7 +666,7 @@ void SimulatedTimerHandler::Setup(monotonic_clock::time_point base,
 
 void SimulatedTimerHandler::HandleEvent() {
   const ::aos::monotonic_clock::time_point monotonic_now =
-      scheduler_->monotonic_now();
+      simulated_event_loop_->monotonic_now();
   if (repeat_offset_ != ::aos::monotonic_clock::zero()) {
     // Reschedule.
     while (base_ <= monotonic_now) base_ += repeat_offset_;

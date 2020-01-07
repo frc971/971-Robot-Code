@@ -102,7 +102,7 @@ class ControlLoopTestTemplated : public TestBaseClass {
   }
 
   ::aos::monotonic_clock::time_point monotonic_now() {
-    return event_loop_factory_.monotonic_now();
+    return robot_status_event_loop_->monotonic_now();
   }
 
   ::std::chrono::nanoseconds dt() const { return dt_; }
