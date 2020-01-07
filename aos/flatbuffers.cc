@@ -6,7 +6,8 @@ namespace aos {
 
 uint8_t *FixedAllocatorBase::allocate(size_t) {
   if (is_allocated_) {
-    LOG(FATAL) << "Tried to allocate already allocated flatbuffer";
+    LOG(FATAL) << "Can't allocate more memory with a fixed size allocator.  "
+                  "Increase the memory reserved.";
   }
 
   is_allocated_ = true;
@@ -15,7 +16,8 @@ uint8_t *FixedAllocatorBase::allocate(size_t) {
 
 uint8_t *FixedAllocatorBase::reallocate_downward(uint8_t *, size_t, size_t,
                                                  size_t, size_t) {
-  LOG(FATAL) << "Tried to reallocate a flatbuffer";
+  LOG(FATAL) << "Can't allocate more memory with a fixed size allocator.  "
+                "Increase the memory reserved.";
   return nullptr;
 }
 
