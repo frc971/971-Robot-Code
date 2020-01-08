@@ -90,17 +90,17 @@ class EventLoopTestFactory {
     flatbuffer_ = FlatbufferDetachedBuffer<Configuration>(
         JsonToFlatbuffer(json, Configuration::MiniReflectTypeTable()));
 
-    my_node_ = my_node;
+    my_node_ = configuration::GetNode(&flatbuffer_.message(), my_node);
   }
 
-  std::string_view my_node() const { return my_node_; }
+  const Node *my_node() const { return my_node_; }
 
   const Configuration *configuration() { return &flatbuffer_.message(); }
 
  private:
   FlatbufferDetachedBuffer<Configuration> flatbuffer_;
 
-  std::string my_node_;
+  const Node *my_node_ = nullptr;
 };
 
 class AbstractEventLoopTestBase
@@ -134,7 +134,7 @@ class AbstractEventLoopTestBase
 
   const Configuration *configuration() { return factory_->configuration(); }
 
-  std::string_view my_node() const { return factory_->my_node(); }
+  const Node *my_node() const { return factory_->my_node(); }
 
   // Ends the given event loop at the given time from now.
   void EndEventLoop(EventLoop *loop, ::std::chrono::milliseconds duration) {

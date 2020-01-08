@@ -591,6 +591,7 @@ const Node *GetNodeFromHostname(const Configuration *config,
   }
   return nullptr;
 }
+
 const Node *GetMyNode(const Configuration *config) {
   const std::string hostname = (FLAGS_override_hostname.size() > 0)
                                    ? FLAGS_override_hostname
@@ -615,6 +616,8 @@ const Node *GetNode(const Configuration *config, std::string_view name) {
   }
   return nullptr;
 }
+
+bool MultiNode(const Configuration *config) { return config->has_nodes(); }
 
 bool ChannelIsSendableOnNode(const Channel *channel, const Node *node) {
   if (node == nullptr) {

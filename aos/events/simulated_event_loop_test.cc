@@ -15,11 +15,11 @@ class SimulatedEventLoopTestFactory : public EventLoopTestFactory {
  public:
   ::std::unique_ptr<EventLoop> Make(std::string_view name) override {
     MaybeMake();
-    return event_loop_factory_->MakeEventLoop(name);
+    return event_loop_factory_->MakeEventLoop(name, my_node());
   }
   ::std::unique_ptr<EventLoop> MakePrimary(std::string_view name) override {
     MaybeMake();
-    return event_loop_factory_->MakeEventLoop(name);
+    return event_loop_factory_->MakeEventLoop(name, my_node());
   }
 
   void Run() override { event_loop_factory_->Run(); }
@@ -38,8 +38,8 @@ class SimulatedEventLoopTestFactory : public EventLoopTestFactory {
   void MaybeMake() {
     if (!event_loop_factory_) {
       if (configuration()->has_nodes()) {
-        event_loop_factory_ = std::make_unique<SimulatedEventLoopFactory>(
-            configuration(), my_node());
+        event_loop_factory_ =
+            std::make_unique<SimulatedEventLoopFactory>(configuration());
       } else {
         event_loop_factory_ =
             std::make_unique<SimulatedEventLoopFactory>(configuration());
@@ -64,12 +64,13 @@ TEST(EventSchedulerTest, ScheduleEvent) {
   int counter = 0;
   EventScheduler scheduler;
 
-  scheduler.Schedule(::aos::monotonic_clock::now(),
-                      [&counter]() { counter += 1; });
+  scheduler.Schedule(distributed_clock::epoch() + chrono::seconds(1),
+                     [&counter]() { counter += 1; });
   scheduler.Run();
   EXPECT_EQ(counter, 1);
-  auto token = scheduler.Schedule(::aos::monotonic_clock::now(),
-                                   [&counter]() { counter += 1; });
+  auto token =
+      scheduler.Schedule(distributed_clock::epoch() + chrono::seconds(2),
+                         [&counter]() { counter += 1; });
   scheduler.Deschedule(token);
   scheduler.Run();
   EXPECT_EQ(counter, 1);
@@ -80,8 +81,9 @@ TEST(EventSchedulerTest, DescheduleEvent) {
   int counter = 0;
   EventScheduler scheduler;
 
-  auto token = scheduler.Schedule(::aos::monotonic_clock::now(),
-                                   [&counter]() { counter += 1; });
+  auto token =
+      scheduler.Schedule(distributed_clock::epoch() + chrono::seconds(1),
+                         [&counter]() { counter += 1; });
   scheduler.Deschedule(token);
   scheduler.Run();
   EXPECT_EQ(counter, 0);
@@ -99,8 +101,6 @@ TEST(SimulatedEventLoopTest, RunForNoHandlers) {
 
   simulated_event_loop_factory.RunFor(chrono::seconds(1));
 
-  EXPECT_EQ(::aos::monotonic_clock::epoch() + chrono::seconds(1),
-            simulated_event_loop_factory.monotonic_now());
   EXPECT_EQ(::aos::monotonic_clock::epoch() + chrono::seconds(1),
             event_loop->monotonic_now());
 }
@@ -124,8 +124,6 @@ TEST(SimulatedEventLoopTest, RunForTimerHandler) {
 
   simulated_event_loop_factory.RunFor(chrono::seconds(1));
 
-  EXPECT_EQ(::aos::monotonic_clock::epoch() + chrono::seconds(1),
-            simulated_event_loop_factory.monotonic_now());
   EXPECT_EQ(::aos::monotonic_clock::epoch() + chrono::seconds(1),
             event_loop->monotonic_now());
   EXPECT_EQ(counter, 10);

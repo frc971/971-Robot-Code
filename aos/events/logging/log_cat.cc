@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
   reader.Register();
 
   std::unique_ptr<aos::EventLoop> printer_event_loop =
-      reader.event_loop_factory()->MakeEventLoop("printer");
+      reader.event_loop_factory()->MakeEventLoop("printer", reader.node());
   printer_event_loop->SkipTimingReport();
 
   bool found_channel = false;
@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
                         << aos::FlatbufferToJson(
                                channel->schema(),
                                static_cast<const uint8_t *>(message))
-                        << '\n';
+                        << std::endl;
             } else {
               std::cout << context.realtime_event_time << " ("
                         << context.monotonic_event_time << ") "
@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
                         << aos::FlatbufferToJson(
                                channel->schema(),
                                static_cast<const uint8_t *>(message))
-                        << '\n';
+                        << std::endl;
             }
           });
       found_channel = true;
