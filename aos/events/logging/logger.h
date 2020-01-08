@@ -67,18 +67,20 @@ class LogReader {
             const Configuration *replay_configuration = nullptr);
   ~LogReader();
 
-  // Registers everything, but also updates the real time time in sync.  Runs
-  // until the log file starts.
-  // Note that if you use any call other than the Register() call with no
-  // arguments, the user is responsible for making sure that the config of the
-  // supplied event loop (factory) provides any necessary remapped configs.
-  void Register();
-  // Does the same as Register(), except it uses a pre-provided event loop
-  // factory.
+  // Registers all the callbacks to send the log file data out on an event loop
+  // created in event_loop_factory.  This also updates time to be at the start
+  // of the log file by running until the log file starts.
+  // Note: the configuration used in the factory should be configuration()
+  // below, but can be anything as long as the locations needed to send
+  // everything are available.
   void Register(SimulatedEventLoopFactory *event_loop_factory);
-  // Registers the timer and senders used to resend the messages from the log
-  // file.
+  // Creates an SimulatedEventLoopFactory accessible via event_loop_factory(),
+  // and then calls Register.
+  void Register();
+  // Registers callbacks for all the events after the log file starts.  This is
+  // only useful when replaying live.
   void Register(EventLoop *event_loop);
+
   // Unregisters the senders. You only need to call this if you separately
   // supplied an event loop or event loop factory and the lifetimes are such
   // that they need to be explicitly destroyed before the LogReader destructor
@@ -90,7 +92,12 @@ class LogReader {
   // Returns the configuration being used for replay.
   const Configuration *configuration() const;
 
-  // Returns the node that this log file was created on.
+  const LogFileHeader *log_file_header() const {
+    return sorted_message_reader_.log_file_header();
+  }
+
+  // Returns the node that this log file was created on.  This is a pointer to a
+  // node in the nodes() list inside configuration().
   const Node *node() const;
 
   // Returns the starting timestamp for the log file.

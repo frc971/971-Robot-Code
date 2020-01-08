@@ -224,6 +224,7 @@ LogReader::LogReader(std::string_view filename,
     : sorted_message_reader_(filename),
       replay_configuration_(replay_configuration) {
   channels_.resize(logged_configuration()->channels()->size());
+  MakeRemappedConfig();
 }
 
 LogReader::~LogReader() {
@@ -235,9 +236,6 @@ const Configuration *LogReader::logged_configuration() const {
 }
 
 const Configuration *LogReader::configuration() const {
-  CHECK(remapped_configuration_ != nullptr)
-      << ": Need to call Register() before the remapped config will be "
-         "generated.";
   return remapped_configuration_;
 }
 
@@ -263,7 +261,6 @@ realtime_clock::time_point LogReader::realtime_start_time() {
 }
 
 void LogReader::Register() {
-  MakeRemappedConfig();
   event_loop_factory_unique_ptr_ =
       std::make_unique<SimulatedEventLoopFactory>(configuration(), node());
   Register(event_loop_factory_unique_ptr_.get());
@@ -300,10 +297,18 @@ void LogReader::Register(EventLoop *event_loop) {
               << configuration::CleanedChannelToString(original_channel);
       channel_name = remapped_channels_[i];
     }
+
     VLOG(1) << "Going to remap channel " << channel_name << " " << channel_type;
-    channels_[i] = event_loop_->MakeRawSender(CHECK_NOTNULL(
-        configuration::GetChannel(event_loop_->configuration(), channel_name,
-                                  channel_type, "", nullptr)));
+    const Channel *channel = configuration::GetChannel(
+        event_loop_->configuration(), channel_name, channel_type,
+        event_loop_->name(), event_loop_->node());
+
+    CHECK(channel != nullptr)
+        << ": Unable to send {\"name\": \"" << channel_name
+        << "\", \"type\": \"" << channel_type
+        << "\"} because it is not in the provided configuration.";
+
+    channels_[i] = event_loop_->MakeRawSender(channel);
   }
 
   timer_handler_ = event_loop_->AddTimer([this]() {
@@ -392,8 +397,6 @@ void LogReader::Deregister() {
 
 void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
                                    std::string_view add_prefix) {
-  CHECK(remapped_configuration_ == nullptr)
-      << "Must call RemapLoggedChannel before calling Register().";
   for (size_t ii = 0; ii < logged_configuration()->channels()->size(); ++ii) {
     const Channel *const channel = logged_configuration()->channels()->Get(ii);
     if (channel->name()->str() == name &&
@@ -405,6 +408,7 @@ void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
       VLOG(1) << "Remapping channel "
               << configuration::CleanedChannelToString(channel)
               << " to have name " << remapped_channels_[ii];
+      MakeRemappedConfig();
       return;
     }
   }

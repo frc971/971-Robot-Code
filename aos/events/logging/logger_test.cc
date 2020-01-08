@@ -72,8 +72,6 @@ TEST_F(LoggerTest, Starts) {
 
   EXPECT_EQ(reader.node(), nullptr);
 
-  EXPECT_EQ(reader.event_loop_factory()->node(), nullptr);
-
   std::unique_ptr<EventLoop> test_event_loop =
       reader.event_loop_factory()->MakeEventLoop("log_reader");
 
@@ -213,10 +211,12 @@ TEST_F(MultinodeLoggerTest, MultiNode) {
   // TODO(austin): Also replay as pi2 or pi3 and make sure we see the pong
   // messages.  This won't work today yet until the log reading code gets
   // significantly better.
+  SimulatedEventLoopFactory log_reader_factory(reader.logged_configuration(), reader.node());
+  log_reader_factory.set_send_delay(chrono::microseconds(0));
 
   // This sends out the fetched messages and advances time to the start of the
   // log file.
-  reader.Register();
+  reader.Register(&log_reader_factory);
 
   ASSERT_NE(reader.node(), nullptr);
   EXPECT_EQ(reader.node()->name()->string_view(), "pi1");
@@ -224,7 +224,7 @@ TEST_F(MultinodeLoggerTest, MultiNode) {
   reader.event_loop_factory()->set_send_delay(chrono::microseconds(0));
 
   std::unique_ptr<EventLoop> test_event_loop =
-      reader.event_loop_factory()->MakeEventLoop("test");
+      log_reader_factory.MakeEventLoop("test");
 
   int ping_count = 10;
   int pong_count = 10;
@@ -252,9 +252,11 @@ TEST_F(MultinodeLoggerTest, MultiNode) {
         EXPECT_EQ(ping_count, pong_count);
       });
 
-  reader.event_loop_factory()->RunFor(std::chrono::seconds(100));
+  log_reader_factory.RunFor(std::chrono::seconds(100));
   EXPECT_EQ(ping_count, 2010);
   EXPECT_EQ(pong_count, 2010);
+
+  reader.Deregister();
 }
 
 }  // namespace testing
