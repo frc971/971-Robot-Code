@@ -25,7 +25,13 @@ class Logger {
          std::chrono::milliseconds polling_period =
              std::chrono::milliseconds(100));
 
+  // Rotates the log file with the new writer.  This writes out the header
+  // again, but keeps going as if nothing else happened.
+  void Rotate(DetachedBufferWriter *writer);
+
  private:
+  void WriteHeader();
+
   void DoLogData();
 
   EventLoop *event_loop_;
@@ -51,6 +57,9 @@ class Logger {
   // Last time that data was written for all channels to disk.
   monotonic_clock::time_point last_synchronized_time_;
 
+  monotonic_clock::time_point monotonic_start_time_;
+  realtime_clock::time_point realtime_start_time_;
+
   // Max size that the header has consumed.  This much extra data will be
   // reserved in the builder to avoid reallocating.
   size_t max_header_size_ = 0;
@@ -64,6 +73,8 @@ class LogReader {
   // pass it in here. It must provide all the channels that the original logged
   // config did.
   LogReader(std::string_view filename,
+            const Configuration *replay_configuration = nullptr);
+  LogReader(const std::vector<std::string> &filename,
             const Configuration *replay_configuration = nullptr);
   ~LogReader();
 

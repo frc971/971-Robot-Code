@@ -5,6 +5,7 @@
 
 #include <deque>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -198,11 +199,11 @@ class MessageReader {
 // sorted list of pointers to those.
 class SortedMessageReader {
  public:
-  SortedMessageReader(std::string_view filename);
+  SortedMessageReader(const std::vector<std::string> &filenames);
 
   // Returns the header from the log file.
   const LogFileHeader *log_file_header() const {
-    return message_reader_.log_file_header();
+    return &log_file_header_.message();
   }
 
   // Returns a pointer to the channel with the oldest message in it, and the
@@ -250,6 +251,9 @@ class SortedMessageReader {
   PopOldestChannel();
 
  private:
+  // Moves to the next log file in the list.
+  bool NextLogFile();
+
   // Adds more messages to the sorted list.
   void QueueMessages();
 
@@ -279,7 +283,11 @@ class SortedMessageReader {
     }
   };
 
-  MessageReader message_reader_;
+  std::vector<std::string> filenames_;
+  size_t next_filename_index_ = 0;
+
+  FlatbufferDetachedBuffer<LogFileHeader> log_file_header_;
+  std::unique_ptr<MessageReader> message_reader_;
 
   // TODO(austin): Multithreaded read at some point.  Gotta go faster!
   // Especially if we start compressing.

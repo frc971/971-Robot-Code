@@ -91,71 +91,82 @@ Logger::Logger(DetachedBufferWriter *writer, EventLoop *event_loop,
     // starts here.  It needs to be after everything is fetched so that the
     // fetchers are all pointed at the most recent message before the start
     // time.
-    const monotonic_clock::time_point monotonic_now =
-        event_loop_->monotonic_now();
-    const realtime_clock::time_point realtime_now = event_loop_->realtime_now();
-    last_synchronized_time_ = monotonic_now;
+    monotonic_start_time_ = event_loop_->monotonic_now();
+    realtime_start_time_ = event_loop_->realtime_now();
+    last_synchronized_time_ = monotonic_start_time_;
 
-    {
-      // Now write the header with this timestamp in it.
-      flatbuffers::FlatBufferBuilder fbb;
-      fbb.ForceDefaults(1);
+    LOG(INFO) << "Logging node as " << FlatbufferToJson(event_loop_->node());
 
-      flatbuffers::Offset<aos::Configuration> configuration_offset =
-          CopyFlatBuffer(event_loop_->configuration(), &fbb);
-
-      flatbuffers::Offset<flatbuffers::String> string_offset =
-          fbb.CreateString(network::GetHostname());
-
-      flatbuffers::Offset<Node> node_offset;
-      if (event_loop_->node() != nullptr) {
-        node_offset = CopyFlatBuffer(event_loop_->node(), &fbb);
-      }
-      LOG(INFO) << "Logging node as " << FlatbufferToJson(event_loop_->node());
-
-      aos::logger::LogFileHeader::Builder log_file_header_builder(fbb);
-
-      log_file_header_builder.add_name(string_offset);
-
-      // Only add the node if we are running in a multinode configuration.
-      if (event_loop_->node() != nullptr) {
-        log_file_header_builder.add_node(node_offset);
-      }
-
-      log_file_header_builder.add_configuration(configuration_offset);
-      // The worst case theoretical out of order is the polling period times 2.
-      // One message could get logged right after the boundary, but be for right
-      // before the next boundary.  And the reverse could happen for another
-      // message.  Report back 3x to be extra safe, and because the cost isn't
-      // huge on the read side.
-      log_file_header_builder.add_max_out_of_order_duration(
-          std::chrono::duration_cast<std::chrono::nanoseconds>(3 *
-                                                               polling_period)
-              .count());
-
-      log_file_header_builder.add_monotonic_start_time(
-          std::chrono::duration_cast<std::chrono::nanoseconds>(
-              monotonic_now.time_since_epoch())
-              .count());
-      log_file_header_builder.add_realtime_start_time(
-          std::chrono::duration_cast<std::chrono::nanoseconds>(
-              realtime_now.time_since_epoch())
-              .count());
-
-      fbb.FinishSizePrefixed(log_file_header_builder.Finish());
-      writer_->QueueSizedFlatbuffer(&fbb);
-    }
+    WriteHeader();
 
     timer_handler_->Setup(event_loop_->monotonic_now() + polling_period,
                           polling_period);
   });
 }
 
+void Logger::WriteHeader() {
+  // Now write the header with this timestamp in it.
+  flatbuffers::FlatBufferBuilder fbb;
+  fbb.ForceDefaults(1);
+
+  flatbuffers::Offset<aos::Configuration> configuration_offset =
+      CopyFlatBuffer(event_loop_->configuration(), &fbb);
+
+  flatbuffers::Offset<flatbuffers::String> string_offset =
+      fbb.CreateString(network::GetHostname());
+
+  flatbuffers::Offset<Node> node_offset;
+  if (event_loop_->node() != nullptr) {
+    node_offset = CopyFlatBuffer(event_loop_->node(), &fbb);
+  }
+
+  aos::logger::LogFileHeader::Builder log_file_header_builder(fbb);
+
+  log_file_header_builder.add_name(string_offset);
+
+  // Only add the node if we are running in a multinode configuration.
+  if (event_loop_->node() != nullptr) {
+    log_file_header_builder.add_node(node_offset);
+  }
+
+  log_file_header_builder.add_configuration(configuration_offset);
+  // The worst case theoretical out of order is the polling period times 2.
+  // One message could get logged right after the boundary, but be for right
+  // before the next boundary.  And the reverse could happen for another
+  // message.  Report back 3x to be extra safe, and because the cost isn't
+  // huge on the read side.
+  log_file_header_builder.add_max_out_of_order_duration(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(3 * polling_period_)
+          .count());
+
+  log_file_header_builder.add_monotonic_start_time(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(
+          monotonic_start_time_.time_since_epoch())
+          .count());
+  log_file_header_builder.add_realtime_start_time(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(
+          realtime_start_time_.time_since_epoch())
+          .count());
+
+  fbb.FinishSizePrefixed(log_file_header_builder.Finish());
+  writer_->QueueSizedFlatbuffer(&fbb);
+}
+
+void Logger::Rotate(DetachedBufferWriter *writer) {
+  // Force data up until now to be written.
+  DoLogData();
+
+  // Swap the writer out, and re-write the header.
+  writer_ = writer;
+  WriteHeader();
+}
+
 void Logger::DoLogData() {
   // We want to guarentee that messages aren't out of order by more than
   // max_out_of_order_duration.  To do this, we need sync points.  Every write
   // cycle should be a sync point.
-  const monotonic_clock::time_point monotonic_now = monotonic_clock::now();
+  const monotonic_clock::time_point monotonic_now =
+      event_loop_->monotonic_now();
 
   do {
     // Move the sync point up by at most polling_period.  This forces one sync
@@ -221,15 +232,18 @@ void Logger::DoLogData() {
 
 LogReader::LogReader(std::string_view filename,
                      const Configuration *replay_configuration)
-    : sorted_message_reader_(filename),
+    : LogReader(std::vector<std::string>{std::string(filename)},
+                replay_configuration) {}
+
+LogReader::LogReader(const std::vector<std::string> &filenames,
+                     const Configuration *replay_configuration)
+    : sorted_message_reader_(filenames),
       replay_configuration_(replay_configuration) {
   channels_.resize(logged_configuration()->channels()->size());
   MakeRemappedConfig();
 }
 
-LogReader::~LogReader() {
-  Deregister();
-}
+LogReader::~LogReader() { Deregister(); }
 
 const Configuration *LogReader::logged_configuration() const {
   return sorted_message_reader_.configuration();
@@ -477,8 +491,8 @@ void LogReader::MakeRemappedConfig() {
         &new_config_fbb));
   }
   // Create the Configuration containing the new channels that we want to add.
-  const auto
-      new_name_vector_offsets = new_config_fbb.CreateVector(channel_offsets);
+  const auto new_name_vector_offsets =
+      new_config_fbb.CreateVector(channel_offsets);
   ConfigurationBuilder new_config_builder(new_config_fbb);
   new_config_builder.add_channels(new_name_vector_offsets);
   new_config_fbb.Finish(new_config_builder.Finish());

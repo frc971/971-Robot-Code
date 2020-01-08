@@ -97,6 +97,71 @@ TEST_F(LoggerTest, Starts) {
   EXPECT_EQ(ping_count, 2010);
 }
 
+// Tests that we can read and write rotated log files.
+TEST_F(LoggerTest, RotatedLogFile) {
+  const ::std::string tmpdir(getenv("TEST_TMPDIR"));
+  const ::std::string logfile0 = tmpdir + "/logfile0.bfbs";
+  const ::std::string logfile1 = tmpdir + "/logfile1.bfbs";
+  // Remove it.
+  unlink(logfile0.c_str());
+  unlink(logfile1.c_str());
+
+  LOG(INFO) << "Logging data to " << logfile0 << " and " << logfile1;
+
+  {
+    DetachedBufferWriter writer0(logfile0);
+    DetachedBufferWriter writer1(logfile1);
+    std::unique_ptr<EventLoop> logger_event_loop =
+        event_loop_factory_.MakeEventLoop("logger");
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    Logger logger(&writer0, logger_event_loop.get(),
+                  std::chrono::milliseconds(100));
+    event_loop_factory_.RunFor(chrono::milliseconds(10000));
+    logger.Rotate(&writer1);
+    event_loop_factory_.RunFor(chrono::milliseconds(10000));
+  }
+
+  // Even though it doesn't make any difference here, exercise the logic for
+  // passing in a separate config.
+  LogReader reader(std::vector<std::string>{logfile0, logfile1},
+                   &config_.message());
+
+  // Confirm that we can remap logged channels to point to new buses.
+  reader.RemapLoggedChannel<aos::examples::Ping>("/test", "/original");
+
+  // This sends out the fetched messages and advances time to the start of the
+  // log file.
+  reader.Register();
+
+  EXPECT_EQ(reader.node(), nullptr);
+
+  std::unique_ptr<EventLoop> test_event_loop =
+      reader.event_loop_factory()->MakeEventLoop("log_reader");
+
+  int ping_count = 10;
+  int pong_count = 10;
+
+  // Confirm that the ping value matches in the remapped channel location.
+  test_event_loop->MakeWatcher("/original/test",
+                               [&ping_count](const examples::Ping &ping) {
+                                 EXPECT_EQ(ping.value(), ping_count + 1);
+                                 ++ping_count;
+                               });
+  // Confirm that the ping and pong counts both match, and the value also
+  // matches.
+  test_event_loop->MakeWatcher(
+      "/test", [&pong_count, &ping_count](const examples::Pong &pong) {
+        EXPECT_EQ(pong.value(), pong_count + 1);
+        ++pong_count;
+        EXPECT_EQ(ping_count, pong_count);
+      });
+
+  reader.event_loop_factory()->RunFor(std::chrono::seconds(100));
+  EXPECT_EQ(ping_count, 2010);
+}
+
 // Tests that a large number of messages per second doesn't overwhelm writev.
 TEST_F(LoggerTest, ManyMessages) {
   const ::std::string tmpdir(getenv("TEST_TMPDIR"));
