@@ -1,3 +1,4 @@
 files = {
-    "openssh-client_6.7p1-5+deb8u8_amd64.deb": "50bf902cc680fd1442556325e47d892f24621d7f0c4baf826f298d737a1e8030",
+    "openssh-client_7.9p1-10+deb10u1_amd64.deb": "1c30bcaf37dafe198783cf691096fe557e8eacbc9435631f51af62b3f705ee12",
+    "libssl1.1_1.1.1d-0+deb10u2_amd64.deb": "31c15130e0e4b2c907ef7cd92e50be23320a22c0c3b54e130b5258fe6bd8df2d",
 }

@@ -10,22 +10,22 @@ import re
 import os
 
 
-def install(ssh_target, pkg):
+def install(ssh_target, pkg, ssh_path, scp_path):
     """Installs a package from NI on the ssh target."""
     print("Installing", pkg)
     PKG_URL = "http://download.ni.com/ni-linux-rt/feeds/2015/arm/ipk/cortexa9-vfpv3/" + pkg
     subprocess.check_call(["wget", PKG_URL, "-O", pkg])
     try:
         subprocess.check_call([
-            "external/ssh/usr/bin/scp", "-S", "external/ssh/usr/bin/ssh", pkg,
+            scp_path, "-S", ssh_path, pkg,
             ssh_target + ":/tmp/" + pkg
         ])
         subprocess.check_call([
-            "external/ssh/usr/bin/ssh", ssh_target, "opkg", "install",
+            ssh_path, ssh_target, "opkg", "install",
             "/tmp/" + pkg
         ])
         subprocess.check_call(
-            ["external/ssh/usr/bin/ssh", ssh_target, "rm", "/tmp/" + pkg])
+            [ssh_path, ssh_target, "rm", "/tmp/" + pkg])
     finally:
         subprocess.check_call(["rm", pkg])
 
@@ -65,25 +65,31 @@ def main(argv):
 
     ssh_target = "%s@%s" % (user, hostname)
 
+    ssh_path = "external/ssh/ssh"
+    scp_path = "external/ssh/scp"
+
     rsync_cmd = ([
-        "external/rsync/usr/bin/rsync", "-e", "external/ssh/usr/bin/ssh", "-c",
+        "external/rsync/usr/bin/rsync", "-e", ssh_path, "-c",
         "-v", "-z", "--copy-links"
     ] + srcs + ["%s:%s/%s" % (ssh_target, target_dir, relative_dir)])
     try:
         subprocess.check_call(rsync_cmd)
     except subprocess.CalledProcessError as e:
-        if e.returncode == 127:
+        if e.returncode == 127 or e.returncode == 12:
             print("Unconfigured roboRIO, installing rsync.")
-            install(ssh_target, "libattr1_2.4.47-r0.36_cortexa9-vfpv3.ipk")
-            install(ssh_target, "libacl1_2.2.52-r0.36_cortexa9-vfpv3.ipk")
-            install(ssh_target, "rsync_3.1.0-r0.7_cortexa9-vfpv3.ipk")
+            install(ssh_target, "libattr1_2.4.47-r0.36_cortexa9-vfpv3.ipk",
+                    ssh_path, scp_path)
+            install(ssh_target, "libacl1_2.2.52-r0.36_cortexa9-vfpv3.ipk",
+                    ssh_path, scp_path)
+            install(ssh_target, "rsync_3.1.0-r0.7_cortexa9-vfpv3.ipk",
+                    ssh_path, scp_path)
             subprocess.check_call(rsync_cmd)
         else:
             raise e
 
     if not recursive:
         subprocess.check_call(
-            ("external/ssh/usr/bin/ssh", ssh_target, "&&".join([
+            (ssh_path, ssh_target, "&&".join([
                 "chmod u+s %s/starter_exe" % target_dir,
                 "echo \'Done moving new executables into place\'",
                 "bash -c \'sync && sync && sync\'",
