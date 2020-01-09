@@ -13,7 +13,7 @@
 
 #include "aos/events/shm_event_loop.h"
 #include "aos/logging/logging.h"
-#include "aos/robot_state/robot_state_generated.h"
+#include "frc971/wpilib/fpga_time_conversion.h"
 #include "frc971/wpilib/imu_generated.h"
 #include "frc971/wpilib/spi_rx_clearer.h"
 
@@ -49,13 +49,8 @@ class ADIS16448 {
     spi_idle_callback_ = std::move(spi_idle_callback);
   }
 
-  double gyro_x_zeroed_offset() const { return gyro_x_zeroed_offset_; }
-  double gyro_y_zeroed_offset() const { return gyro_y_zeroed_offset_; }
-  double gyro_z_zeroed_offset() const { return gyro_z_zeroed_offset_; }
-
  private:
-  // Initializes the sensor and then loops until Quit() is called taking
-  // readings.
+  // Initializes the sensor and then takes readings until Quit() is called.
   void DoRun();
 
   // Try to initialize repeatedly as long as we're supposed to be running.
@@ -90,7 +85,6 @@ class ADIS16448 {
   bool Initialize();
 
   ::aos::EventLoop *event_loop_;
-  ::aos::Fetcher<::aos::RobotState> robot_state_fetcher_;
   ::aos::Sender<::frc971::IMUValues> imu_values_sender_;
 
   // TODO(Brian): This object has no business owning these ones.
@@ -101,13 +95,9 @@ class ADIS16448 {
 
   std::function<void()> spi_idle_callback_ = []() {};
 
-  // The averaged values of the gyro over 6 seconds after power up.
-  bool gyros_are_zeroed_ = false;
-  double gyro_x_zeroed_offset_ = 0.0;
-  double gyro_y_zeroed_offset_ = 0.0;
-  double gyro_z_zeroed_offset_ = 0.0;
-
   SpiRxClearer rx_clearer_;
+
+  FpgaTimeConverter time_converter_;
 };
 
 }  // namespace wpilib

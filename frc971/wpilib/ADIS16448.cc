@@ -8,10 +8,8 @@
 #include <chrono>
 
 #include "aos/init.h"
-#include "aos/robot_state/robot_state_generated.h"
 #include "aos/time/time.h"
 #include "frc971/wpilib/imu_generated.h"
-#include "frc971/zeroing/averager.h"
 
 namespace frc971 {
 namespace wpilib {
@@ -120,7 +118,6 @@ uint16_t CalculateCrc(const uint8_t *data, size_t data_length) {
 ADIS16448::ADIS16448(::aos::ShmEventLoop *event_loop, frc::SPI::Port port,
                      frc::DigitalInput *dio1)
     : event_loop_(event_loop),
-      robot_state_fetcher_(event_loop_->MakeFetcher<::aos::RobotState>("/aos")),
       imu_values_sender_(
           event_loop_->MakeSender<::frc971::IMUValues>("/drivetrain")),
       spi_(new frc::SPI(port)),
@@ -184,13 +181,6 @@ void ADIS16448::InitializeUntilSuccessful() {
 void ADIS16448::DoRun() {
   InitializeUntilSuccessful();
 
-  // Rounded to approximate the 204.8 Hz.
-  constexpr size_t kImuSendRate = 205;
-
-  zeroing::Averager<double, 6 * kImuSendRate> average_gyro_x;
-  zeroing::Averager<double, 6 * kImuSendRate> average_gyro_y;
-  zeroing::Averager<double, 6 * kImuSendRate> average_gyro_z;
-
   bool got_an_interrupt = false;
   while (event_loop_->is_running()) {
     {
@@ -205,7 +195,6 @@ void ADIS16448::DoRun() {
       }
     }
     got_an_interrupt = true;
-    const monotonic_clock::time_point read_time = monotonic_clock::now();
 
     uint8_t to_send[2 * 14], to_receive[2 * 14];
     memset(&to_send[0], 0, sizeof(to_send));
@@ -249,11 +238,11 @@ void ADIS16448::DoRun() {
 
     IMUValues::Builder imu_builder = builder.MakeBuilder<IMUValues>();
 
-    imu_builder.add_fpga_timestamp(::aos::time::DurationInSeconds(
-        dio1_->ReadRisingTimestamp().time_since_epoch()));
+    const auto fpga_time = dio1_->ReadRisingTimestamp();
+    imu_builder.add_fpga_timestamp(
+        ::aos::time::DurationInSeconds(fpga_time.time_since_epoch()));
     imu_builder.add_monotonic_timestamp_ns(
-        chrono::duration_cast<chrono::nanoseconds>(read_time.time_since_epoch())
-            .count());
+        time_converter_.FpgaToMonotonic(fpga_time).time_since_epoch().count());
 
     float gyro_x =
         ConvertValue(&to_receive[4], kGyroLsbDegreeSecond * M_PI / 180.0);
@@ -261,32 +250,6 @@ void ADIS16448::DoRun() {
         ConvertValue(&to_receive[6], kGyroLsbDegreeSecond * M_PI / 180.0);
     float gyro_z =
         ConvertValue(&to_receive[8], kGyroLsbDegreeSecond * M_PI / 180.0);
-
-    // The first few seconds of samples are averaged and subtracted from
-    // subsequent samples for zeroing purposes.
-    if (!gyros_are_zeroed_) {
-      average_gyro_x.AddData(gyro_x);
-      average_gyro_y.AddData(gyro_y);
-      average_gyro_z.AddData(gyro_z);
-
-      if (average_gyro_x.full() && average_gyro_y.full() &&
-          average_gyro_z.full()) {
-        robot_state_fetcher_.Fetch();
-        if (robot_state_fetcher_.get() &&
-            robot_state_fetcher_->outputs_enabled()) {
-          gyro_x_zeroed_offset_ = -average_gyro_x.GetAverage();
-          gyro_y_zeroed_offset_ = -average_gyro_y.GetAverage();
-          gyro_z_zeroed_offset_ = -average_gyro_z.GetAverage();
-          AOS_LOG(INFO, "total gyro zero offset X:%f, Y:%f, Z:%f\n",
-                  gyro_x_zeroed_offset_, gyro_y_zeroed_offset_,
-                  gyro_z_zeroed_offset_);
-          gyros_are_zeroed_ = true;
-        }
-      }
-    }
-    gyro_x += gyro_x_zeroed_offset_;
-    gyro_y += gyro_y_zeroed_offset_;
-    gyro_z += gyro_z_zeroed_offset_;
 
     imu_builder.add_gyro_x(gyro_x);
     imu_builder.add_gyro_y(gyro_y);

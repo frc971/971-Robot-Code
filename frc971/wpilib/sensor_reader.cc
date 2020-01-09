@@ -9,6 +9,7 @@
 #include "frc971/wpilib/ahal/DigitalInput.h"
 #include "frc971/wpilib/ahal/DriverStation.h"
 #include "frc971/wpilib/ahal/Utility.h"
+#include "frc971/wpilib/fpga_time_conversion.h"
 #include "frc971/wpilib/wpilib_interface.h"
 #include "hal/PWM.h"
 
@@ -60,35 +61,20 @@ void SensorReader::set_drivetrain_right_encoder(
 
 monotonic_clock::time_point SensorReader::GetPWMStartTime() {
   int32_t status = 0;
-  const hal::fpga_clock::time_point new_fpga_time = hal::fpga_clock::time_point(
-      hal::fpga_clock::duration(HAL_GetPWMCycleStartTime(&status)));
+  const auto new_fpga_time =
+      hal::fpga_clock::duration(HAL_GetPWMCycleStartTime(&status));
 
-  aos_compiler_memory_barrier();
-  const hal::fpga_clock::time_point fpga_time_before = hal::fpga_clock::now();
-  aos_compiler_memory_barrier();
-  const monotonic_clock::time_point monotonic_now = monotonic_clock::now();
-  aos_compiler_memory_barrier();
-  const hal::fpga_clock::time_point fpga_time_after = hal::fpga_clock::now();
-  aos_compiler_memory_barrier();
-
-  const chrono::nanoseconds fpga_sample_length =
-      fpga_time_after - fpga_time_before;
-  const chrono::nanoseconds fpga_offset =
-      hal::fpga_clock::time_point((fpga_time_after.time_since_epoch() +
-                                   fpga_time_before.time_since_epoch()) /
-                                  2) -
-      new_fpga_time;
-
-  // Make sure that there wasn't a context switch while we were sampling the
-  // clocks.  If there was, we are better off rejecting the sample than using
-  // it.
-  if (ds_->IsSysActive() && fpga_sample_length <= chrono::microseconds(20) &&
-      fpga_sample_length >= chrono::microseconds(0)) {
-    // Compute when the edge was.
-    return monotonic_now - fpga_offset;
-  } else {
+  if (!ds_->IsSysActive()) {
     return monotonic_clock::min_time;
   }
+
+  const auto fpga_offset = CalculateFpgaOffset();
+  // If we failed to sample the offset, just ignore this reading.
+  if (!fpga_offset) {
+    return monotonic_clock::min_time;
+  }
+
+  return monotonic_clock::epoch() + (new_fpga_time + *fpga_offset);
 }
 
 void SensorReader::DoStart() {
