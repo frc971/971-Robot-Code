@@ -232,7 +232,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos:die",
-        "//aos:once",
+        "@com_google_absl//absl/base",
     ],
 )
 
