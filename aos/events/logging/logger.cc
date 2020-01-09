@@ -384,8 +384,11 @@ void LogReader::Register(EventLoop *event_loop) {
     } else {
       // Set a timer up immediately after now to die. If we don't do this, then
       // the senders waiting on the message we just read will never get called.
-      timer_handler_->Setup(monotonic_now + event_loop_factory_->send_delay() +
-                            std::chrono::nanoseconds(1));
+      if (event_loop_factory_ != nullptr) {
+        timer_handler_->Setup(monotonic_now +
+                              event_loop_factory_->send_delay() +
+                              std::chrono::nanoseconds(1));
+      }
     }
   });
 
