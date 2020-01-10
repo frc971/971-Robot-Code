@@ -64,7 +64,7 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
           actors::VisionAlignActor::MakeFactory(event_loop)),
       vision_status_fetcher_(
           event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
-              "/superstructure")),
+              "/vision")),
       ball_detector_fetcher_(
           event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
               "/superstructure")),

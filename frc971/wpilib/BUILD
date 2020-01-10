@@ -115,7 +115,8 @@ cc_library(
         "//aos/robot_state:robot_state_fbs",
         "//aos/time",
         "//aos/util:phased_loop",
-        "//frc971/queues:gyro",
+        "//frc971/queues:gyro_fbs",
+        "//frc971/queues:gyro_uid_fbs",
         "//frc971/zeroing:averager",
     ],
 )

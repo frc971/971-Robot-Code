@@ -14,6 +14,7 @@
 #include "aos/time/time.h"
 
 #include "frc971/queues/gyro_generated.h"
+#include "frc971/queues/gyro_uid_generated.h"
 #include "frc971/zeroing/averager.h"
 
 namespace frc971 {

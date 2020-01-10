@@ -153,7 +153,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                 "/superstructure")),
         auto_mode_sender_(
             event_loop->MakeSender<::frc971::autonomous::AutonomousMode>(
-                "/aos")),
+                "/autonomous")),
         shooter_position_sender_(
             event_loop->MakeSender<shooter::Position>("/shooter")),
         superstructure_position_sender_(

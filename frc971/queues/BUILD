@@ -3,9 +3,17 @@ package(default_visibility = ["//visibility:public"])
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 flatbuffer_cc_library(
-    name = "gyro",
+    name = "gyro_fbs",
     srcs = [
         "gyro.fbs",
+    ],
+    gen_reflections = 1,
+)
+
+flatbuffer_cc_library(
+    name = "gyro_uid_fbs",
+    srcs = [
+        "gyro_uid.fbs",
     ],
     gen_reflections = 1,
 )
