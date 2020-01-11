@@ -53,7 +53,13 @@ class Plotter:
             monotonic_time.append(entry[0] * 1e-9)
             value = entry[2]
             for name in field_path:
-                value = value[name]
+                # If the value wasn't populated in a given message, fill in
+                # NaN rather than crashing.
+                if name in value:
+                  value = value[name]
+                else:
+                  value = float("nan")
+                  break
             # Catch NaNs and convert them to floats.
             value = float(value)
             signal_data.append(value)

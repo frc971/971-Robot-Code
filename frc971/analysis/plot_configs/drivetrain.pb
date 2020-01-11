@@ -103,11 +103,19 @@ figure {
     }
     signal {
       channel: "Status"
+      field: "trajectory_logging.left_velocity"
+    }
+    signal {
+      channel: "Status"
       field: "poly_drive_logging.goal_left_velocity"
     }
     signal {
       channel: "Status"
       field: "estimated_left_velocity"
+    }
+    signal {
+      channel: "Status"
+      field: "trajectory_logging.right_velocity"
     }
     signal {
       channel: "Status"
