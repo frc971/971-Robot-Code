@@ -93,7 +93,7 @@ TEST_F(WorkStackDeathTest, TooManyWorks) {
   logging::Init();
   EXPECT_DEATH(
       {
-        logging::AddImplementation(new util::DeathTestLogImplementation());
+        logging::SetImplementation(new util::DeathTestLogImplementation());
         for (int i = 0; i < 1000; ++i) {
           CreateWork(i);
         }

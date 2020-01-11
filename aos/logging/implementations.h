@@ -1,17 +1,17 @@
 #ifndef AOS_LOGGING_IMPLEMENTATIONS_H_
 #define AOS_LOGGING_IMPLEMENTATIONS_H_
 
+#include <limits.h>
+#include <stdarg.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <stdint.h>
-#include <limits.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdarg.h>
 
-#include <string>
-#include <functional>
 #include <atomic>
+#include <functional>
+#include <string>
 
 #include "aos/logging/context.h"
 #include "aos/logging/interface.h"
@@ -42,9 +42,7 @@ namespace logging {
 
 // Contains all of the information about a given logging call.
 struct LogMessage {
-  enum class Type : uint8_t {
-    kString
-  };
+  enum class Type : uint8_t { kString };
 
   int32_t seconds, nseconds;
   // message_length is just the length of the actual data (which member depends
@@ -71,8 +69,7 @@ struct LogMessage {
       int rows, cols;
       size_t string_length;
       // The message string and then the serialized matrix.
-      char
-          data[LOG_MESSAGE_LEN - sizeof(type) - sizeof(rows) - sizeof(cols)];
+      char data[LOG_MESSAGE_LEN - sizeof(type) - sizeof(rows) - sizeof(cols)];
     } matrix;
   };
 };
@@ -87,14 +84,16 @@ static inline bool log_gt_important(log_level left, log_level right) {
 
 // Returns a string representing level or "unknown".
 static inline const char *log_str(log_level level) {
-#define DECL_LEVEL(name, value) if (level == name) return #name;
+#define DECL_LEVEL(name, value) \
+  if (level == name) return #name;
   DECL_LEVELS;
 #undef DECL_LEVEL
   return "unknown";
 }
 // Returns the log level represented by str or LOG_UNKNOWN.
 static inline log_level str_log(const char *str) {
-#define DECL_LEVEL(name, value) if (!strcmp(str, #name)) return name;
+#define DECL_LEVEL(name, value) \
+  if (!strcmp(str, #name)) return name;
   DECL_LEVELS;
 #undef DECL_LEVEL
   return LOG_UNKNOWN;
@@ -109,8 +108,8 @@ class HandleMessageLogImplementation : public LogImplementation {
   }
 
  private:
-  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
-  void DoLog(log_level level, const char *format, va_list ap) override;
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0))) void DoLog(
+      log_level level, const char *format, va_list ap) override;
 
   virtual void HandleMessage(const LogMessage &message) = 0;
 };
@@ -133,7 +132,12 @@ class StreamLogImplementation : public HandleMessageLogImplementation {
 // when needed or by calling Load()).
 // The logging system takes ownership of implementation. It will delete it if
 // necessary, so it must be created with new.
-void AddImplementation(LogImplementation *implementation);
+void SetImplementation(LogImplementation *implementation,
+                       bool update_global = true);
+
+// Updates the log implementation for the current thread, returning the current
+// implementation.
+LogImplementation *SwapImplementation(LogImplementation *implementation);
 
 // Must be called at least once per process/load before anything else is
 // called. This function is safe to call multiple times from multiple
@@ -153,11 +157,14 @@ void Cleanup();
 // The caller takes ownership.
 RawQueue *GetLoggingQueue();
 
-// Calls AddImplementation to register the standard linux logging implementation
+// Calls SetImplementation to register the standard linux logging implementation
 // which sends the messages through a queue. This implementation relies on
 // another process(es) to read the log messages that it puts into the queue.
 // This function is usually called by aos::Init*.
 void RegisterQueueImplementation();
+
+void RegisterCallbackImplementation(
+    const ::std::function<void(const LogMessage &)> &callback);
 
 // This is where all of the code that is only used by actual LogImplementations
 // goes.

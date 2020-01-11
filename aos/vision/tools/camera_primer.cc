@@ -27,7 +27,7 @@ class ImageStream : public aos::vision::ImageStreamEvent {
 // target_sender
 int main(int argc, char **argv) {
   ::aos::logging::Init();
-  ::aos::logging::AddImplementation(
+  ::aos::logging::SetImplementation(
       new ::aos::logging::StreamLogImplementation(stdout));
 
   aos::vision::CameraParams params;

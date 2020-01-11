@@ -248,7 +248,7 @@ void read_status(int process, int ppid, int *pgrp, ::std::string *name,
 
 int main() {
   ::aos::logging::Init();
-  ::aos::logging::AddImplementation(
+  ::aos::logging::SetImplementation(
       new ::aos::logging::StreamLogImplementation(stdout));
 
   const int pid_max = find_pid_max();

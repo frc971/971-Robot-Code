@@ -151,7 +151,7 @@ parameter. A single command line argument help will print this message.
 void DebugFrameworkMain(int argc, char **argv, FilterHarness *filter,
                         CameraParams camera_params) {
   ::aos::logging::Init();
-  ::aos::logging::AddImplementation(
+  ::aos::logging::SetImplementation(
       new ::aos::logging::StreamLogImplementation(stdout));
 
   gtk_init(&argc, &argv);

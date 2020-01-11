@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
   int32_t source_pid = -1;
 
   ::aos::logging::Init();
-  ::aos::logging::AddImplementation(
+  ::aos::logging::SetImplementation(
       new ::aos::logging::StreamLogImplementation(stdout));
 
   while (true) {

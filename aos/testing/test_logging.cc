@@ -143,7 +143,7 @@ class MyTestEventListener : public ::testing::EmptyTestEventListener {
 
 void *DoEnableTestLogging() {
   logging::Init();
-  logging::AddImplementation(TestLogImplementation::GetInstance());
+  logging::SetImplementation(TestLogImplementation::GetInstance());
 
   ::testing::UnitTest::GetInstance()->listeners().Append(
       new MyTestEventListener());

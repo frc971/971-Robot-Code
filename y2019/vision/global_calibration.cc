@@ -103,7 +103,7 @@ void main(int argc, char **argv) {
   };
 
   ::aos::logging::Init();
-  ::aos::logging::AddImplementation(
+  ::aos::logging::SetImplementation(
       new ::aos::logging::StreamLogImplementation(stderr));
 
   TargetFinder target_finder;
