@@ -79,7 +79,6 @@ int main(int argc, char **argv) {
     if (channel->name()->string_view().find(FLAGS_name) != std::string::npos) {
       // Add a record to the stats vector.
       channel_stats.push_back({channel});
-      it++;
       // Lambda to read messages and parse for information
       stats_event_loop->MakeRawWatcher(
           channel,
@@ -99,6 +98,7 @@ int main(int argc, char **argv) {
             // update the overall logfile statistics
             logfile_stats.logfile_length += context.size;
           });
+      it++;
       // TODO (Stephan): Frequency of messages per second
       // - Sliding window
       // - Max / Deviation
