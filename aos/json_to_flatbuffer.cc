@@ -120,25 +120,21 @@ flatbuffers::uoffset_t WriteTable(const flatbuffers::TypeTable *typetable,
 // each message.  Same goes for vectors.
 class JsonParser {
  public:
-  JsonParser() { fbb_.ForceDefaults(1); }
+  JsonParser(flatbuffers::FlatBufferBuilder *fbb) : fbb_(fbb) {}
   ~JsonParser() {}
 
   // Parses the json into a flatbuffer.  Returns either an empty vector on
   // error, or a vector with the flatbuffer data in it.
-  flatbuffers::DetachedBuffer Parse(const std::string_view data,
-                                    const flatbuffers::TypeTable *typetable) {
+  flatbuffers::Offset<flatbuffers::Table> Parse(
+      const std::string_view data, const flatbuffers::TypeTable *typetable) {
     flatbuffers::uoffset_t end = 0;
     bool result = DoParse(typetable, data, &end);
 
     if (result) {
       // On success, finish the table and build the vector.
-      auto o = flatbuffers::Offset<flatbuffers::Table>(end);
-      fbb_.Finish(o);
-
-      return fbb_.Release();
+      return flatbuffers::Offset<flatbuffers::Table>(end);
     } else {
-      // Otherwise return an empty vector.
-      return flatbuffers::DetachedBuffer();
+      return flatbuffers::Offset<flatbuffers::Table>(0);
     }
   }
 
@@ -170,7 +166,7 @@ class JsonParser {
   bool PushElement(flatbuffers::ElementaryType elementary_type,
                    flatbuffers::Offset<flatbuffers::String> offset_value);
 
-  flatbuffers::FlatBufferBuilder fbb_;
+  flatbuffers::FlatBufferBuilder *fbb_;
 
   // This holds the state information that is needed as you recurse into
   // nested structures.
@@ -254,7 +250,7 @@ bool JsonParser::DoParse(const flatbuffers::TypeTable *typetable,
         } else {
           // End of a nested struct!  Add it.
           const flatbuffers::uoffset_t end = WriteTable(
-              stack_.back().typetable, stack_.back().elements, &fbb_);
+              stack_.back().typetable, stack_.back().elements, fbb_);
 
           // We now want to talk about the parent structure.  Pop the child.
           stack_.pop_back();
@@ -453,9 +449,9 @@ bool JsonParser::AddElement(int field_index, const ::std::string &data) {
   }
 
   if (in_vector()) {
-    stack_.back().vector_elements.emplace_back(fbb_.CreateString(data));
+    stack_.back().vector_elements.emplace_back(fbb_->CreateString(data));
   } else {
-    stack_.back().elements.emplace_back(field_index, fbb_.CreateString(data));
+    stack_.back().elements.emplace_back(field_index, fbb_->CreateString(data));
   }
   return true;
 }
@@ -631,7 +627,7 @@ bool JsonParser::FinishVector(int field_index) {
       static_cast<flatbuffers::ElementaryType>(type_code.base_type);
 
   // Vectors have a start (unfortunately which needs to know the size)
-  fbb_.StartVector(
+  fbb_->StartVector(
       stack_.back().vector_elements.size(),
       flatbuffers::InlineSize(elementary_type, stack_.back().typetable));
 
@@ -656,7 +652,7 @@ bool JsonParser::FinishVector(int field_index) {
   // Then an End which is placed into the buffer the same as any other offset.
   stack_.back().elements.emplace_back(
       field_index, flatbuffers::Offset<flatbuffers::String>(
-                       fbb_.EndVector(stack_.back().vector_elements.size())));
+                       fbb_->EndVector(stack_.back().vector_elements.size())));
   stack_.back().vector_elements.clear();
   return true;
 }
@@ -665,37 +661,37 @@ bool JsonParser::PushElement(flatbuffers::ElementaryType elementary_type,
                              int64_t int_value) {
   switch (elementary_type) {
     case flatbuffers::ET_BOOL:
-      fbb_.PushElement<bool>(int_value);
+      fbb_->PushElement<bool>(int_value);
       return true;
     case flatbuffers::ET_CHAR:
-      fbb_.PushElement<int8_t>(int_value);
+      fbb_->PushElement<int8_t>(int_value);
       return true;
     case flatbuffers::ET_UCHAR:
-      fbb_.PushElement<uint8_t>(int_value);
+      fbb_->PushElement<uint8_t>(int_value);
       return true;
     case flatbuffers::ET_SHORT:
-      fbb_.PushElement<int16_t>(int_value);
+      fbb_->PushElement<int16_t>(int_value);
       return true;
     case flatbuffers::ET_USHORT:
-      fbb_.PushElement<uint16_t>(int_value);
+      fbb_->PushElement<uint16_t>(int_value);
       return true;
     case flatbuffers::ET_INT:
-      fbb_.PushElement<int32_t>(int_value);
+      fbb_->PushElement<int32_t>(int_value);
       return true;
     case flatbuffers::ET_UINT:
-      fbb_.PushElement<uint32_t>(int_value);
+      fbb_->PushElement<uint32_t>(int_value);
       return true;
     case flatbuffers::ET_LONG:
-      fbb_.PushElement<int64_t>(int_value);
+      fbb_->PushElement<int64_t>(int_value);
       return true;
     case flatbuffers::ET_ULONG:
-      fbb_.PushElement<uint64_t>(int_value);
+      fbb_->PushElement<uint64_t>(int_value);
       return true;
     case flatbuffers::ET_FLOAT:
-      fbb_.PushElement<float>(int_value);
+      fbb_->PushElement<float>(int_value);
       return true;
     case flatbuffers::ET_DOUBLE:
-      fbb_.PushElement<double>(int_value);
+      fbb_->PushElement<double>(int_value);
       return true;
     case flatbuffers::ET_STRING:
     case flatbuffers::ET_UTYPE:
@@ -730,10 +726,10 @@ bool JsonParser::PushElement(flatbuffers::ElementaryType elementary_type,
               ElementaryTypeName(elementary_type));
       return false;
     case flatbuffers::ET_FLOAT:
-      fbb_.PushElement<float>(double_value);
+      fbb_->PushElement<float>(double_value);
       return true;
     case flatbuffers::ET_DOUBLE:
-      fbb_.PushElement<double>(double_value);
+      fbb_->PushElement<double>(double_value);
       return true;
   }
   return false;
@@ -762,7 +758,7 @@ bool JsonParser::PushElement(
       return false;
     case flatbuffers::ET_STRING:
     case flatbuffers::ET_SEQUENCE:
-      fbb_.PushElement(offset_value);
+      fbb_->PushElement(offset_value);
       return true;
   }
   return false;
@@ -770,11 +766,29 @@ bool JsonParser::PushElement(
 
 }  // namespace
 
+flatbuffers::Offset<flatbuffers::Table> JsonToFlatbuffer(
+    const std::string_view data, const flatbuffers::TypeTable *typetable,
+    flatbuffers::FlatBufferBuilder *fbb) {
+  JsonParser p(fbb);
+  return p.Parse(data, typetable);
+}
+
 flatbuffers::DetachedBuffer JsonToFlatbuffer(
     const std::string_view data,
     const flatbuffers::TypeTable *typetable) {
-  JsonParser p;
-  return p.Parse(data, typetable);
+  flatbuffers::FlatBufferBuilder fbb;
+  fbb.ForceDefaults(1);
+
+  const flatbuffers::Offset<flatbuffers::Table> result =
+      JsonToFlatbuffer(data, typetable, &fbb);
+  if (result.o != 0) {
+    fbb.Finish(result);
+
+    return fbb.Release();
+  } else {
+    // Otherwise return an empty vector.
+    return flatbuffers::DetachedBuffer();
+  }
 }
 
 ::std::string BufferFlatbufferToJson(const uint8_t *buffer,
