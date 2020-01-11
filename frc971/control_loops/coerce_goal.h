@@ -50,7 +50,7 @@ Eigen::Matrix<Scalar, 2, 1> DoCoerceGoal(
     if (projectedh(i, 0) > 0) {
       max_boundary =
           ::std::min(max_boundary, projectedk(i, 0) / projectedh(i, 0));
-    } else {
+    } else if (projectedh(i, 0) != 0) {
       min_boundary =
           ::std::max(min_boundary, projectedk(i, 0) / projectedh(i, 0));
     }
