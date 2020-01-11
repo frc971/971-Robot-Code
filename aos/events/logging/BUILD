@@ -53,6 +53,22 @@ cc_binary(
 )
 
 cc_binary(
+    name = "log_edit",
+    srcs = [
+        "log_edit.cc",
+    ],
+    deps = [
+        ":logger",
+        "//aos:configuration",
+        "//aos:init",
+        "//aos:json_to_flatbuffer",
+        "//aos/util:file",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_binary(
     name = "log_stats",
     srcs = [
         "log_stats.cc",

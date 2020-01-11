@@ -44,6 +44,8 @@ class DetachedBufferWriter {
   void QueueSizedFlatbuffer(flatbuffers::FlatBufferBuilder *fbb);
   // Queues up a detached buffer directly.
   void QueueSizedFlatbuffer(flatbuffers::DetachedBuffer &&buffer);
+  // Writes a Span.  This is not terribly optimized right now.
+  void WriteSizedFlatbuffer(absl::Span<const uint8_t> span);
 
   // Triggers data to be provided to the kernel and written.
   void Flush();

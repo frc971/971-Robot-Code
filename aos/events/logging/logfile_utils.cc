@@ -39,6 +39,26 @@ void DetachedBufferWriter::QueueSizedFlatbuffer(
   QueueSizedFlatbuffer(fbb->Release());
 }
 
+void DetachedBufferWriter::WriteSizedFlatbuffer(
+    absl::Span<const uint8_t> span) {
+  // Cheat aggressively...  Write out the queued up data, and then write this
+  // data once without buffering.  It is hard to make a DetachedBuffer out of
+  // this data, and we don't want to worry about lifetimes.
+  Flush();
+  iovec_.clear();
+  iovec_.reserve(1);
+
+  struct iovec n;
+  n.iov_base = const_cast<uint8_t *>(span.data());
+  n.iov_len = span.size();
+  iovec_.emplace_back(n);
+
+  const ssize_t written = writev(fd_, iovec_.data(), iovec_.size());
+
+  PCHECK(written == static_cast<ssize_t>(n.iov_len))
+      << ": Wrote " << written << " expected " << n.iov_len;
+}
+
 void DetachedBufferWriter::QueueSizedFlatbuffer(
     flatbuffers::DetachedBuffer &&buffer) {
   queued_size_ += buffer.size();
