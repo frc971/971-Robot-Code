@@ -142,6 +142,22 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "coerce_goal_test",
+    srcs = [
+        "coerce_goal_test.cc",
+    ],
+    linkopts = [
+        "-lm",
+    ],
+    deps = [
+        ":coerce_goal",
+        "//aos/controls:polytope",
+        "//aos/testing:googletest",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
 # TODO(austin): Select isn't working right.  We should be able to remove
 # logging conditionally with select and have CPU constraints work correctly.
 cc_library(
