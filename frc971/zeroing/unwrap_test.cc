@@ -1,10 +1,8 @@
+#include "frc971/zeroing/wrap.h"
 #include "gtest/gtest.h"
-#include "y2018/control_loops/superstructure/intake/sensor_unwrap.h"
 
-namespace y2018 {
-namespace control_loops {
-namespace superstructure {
-namespace intake {
+namespace frc971 {
+namespace zeroing {
 namespace testing {
 
 TEST(SensorTest, UnwrapOnce) {
@@ -65,7 +63,5 @@ TEST(SensorTest, UnwrapInit) {
 }
 
 }  // namespace testing
-}  // namespace intake
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2018
+}  // namespace zeroing
+}  // namespace frc971

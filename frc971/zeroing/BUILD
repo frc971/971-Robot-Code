@@ -73,3 +73,14 @@ cc_test(
         "//aos/testing:googletest",
     ],
 )
+
+cc_test(
+    name = "unwrap_test",
+    srcs = [
+        "unwrap_test.cc",
+    ],
+    deps = [
+        ":wrap",
+        "//aos/testing:googletest",
+    ],
+)
