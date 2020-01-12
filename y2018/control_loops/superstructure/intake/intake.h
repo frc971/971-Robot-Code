@@ -5,11 +5,11 @@
 
 #include "aos/commonmath.h"
 #include "aos/controls/control_loop.h"
+#include "frc971/zeroing/wrap.h"
 #include "frc971/zeroing/zeroing.h"
 #include "y2018/constants.h"
 #include "y2018/control_loops/superstructure/intake/intake_delayed_plant.h"
 #include "y2018/control_loops/superstructure/intake/intake_plant.h"
-#include "y2018/control_loops/superstructure/intake/sensor_unwrap.h"
 #include "y2018/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2018/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2018/control_loops/superstructure/superstructure_status_generated.h"
@@ -121,7 +121,8 @@ class IntakeSide {
     return ::y2018::constants::Values::kIntakeSpringRatio() * (2 * M_PI);
   }
 
-  UnwrapSensor spring_unwrap_{spring_offset_, spring_range()};
+  ::frc971::zeroing::UnwrapSensor spring_unwrap_{spring_offset_,
+                                                 spring_range()};
 
   State state_ = State::UNINITIALIZED;
 
