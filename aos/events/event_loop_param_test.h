@@ -55,7 +55,7 @@ class EventLoopTestFactory {
   virtual void SleepFor(::std::chrono::nanoseconds duration) = 0;
 
   void EnableNodes(std::string_view my_node) {
-    std::string json = std::string(R"config({
+    std::string json = R"config({
   "channels": [
     {
       "name": "/aos",
@@ -80,9 +80,12 @@ class EventLoopTestFactory {
   ],
   "nodes": [
     {
-      "name": ")config") +
-                       std::string(my_node) + R"config(",
+      "name": "me",
       "hostname": "myhostname"
+    },
+    {
+      "name": "them",
+      "hostname": "themhostname"
     }
   ]
 })config";

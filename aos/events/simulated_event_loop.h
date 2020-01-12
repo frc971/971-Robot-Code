@@ -24,6 +24,9 @@ namespace aos {
 class SimulatedChannel;
 
 class NodeEventLoopFactory;
+namespace message_bridge {
+class SimulatedMessageBridge;
+}
 
 // There are 2 concepts needed to support multi-node simulations.
 //  1) The node.  This is implemented with NodeEventLoopFactory.
@@ -110,6 +113,8 @@ class SimulatedEventLoopFactory {
   std::vector<std::unique_ptr<NodeEventLoopFactory>> node_factories_;
 
   std::vector<const Node *> nodes_;
+
+  std::unique_ptr<message_bridge::SimulatedMessageBridge> bridge_;
 };
 
 // This class holds all the state required to be a single node.
@@ -131,6 +136,14 @@ class NodeEventLoopFactory {
   // Returns the current time on both clocks.
   inline monotonic_clock::time_point monotonic_now() const;
   inline realtime_clock::time_point realtime_now() const;
+
+  // Returns the simulated network delay for messages forwarded between nodes.
+  std::chrono::nanoseconds network_delay() const {
+    return factory_->network_delay();
+  }
+  // Returns the simulated send delay for all messages sent within a single
+  // node.
+  std::chrono::nanoseconds send_delay() const { return factory_->send_delay(); }
 
   // Converts a time to the distributed clock for scheduling and cross-node time
   // measurement.

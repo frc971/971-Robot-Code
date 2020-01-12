@@ -5,6 +5,7 @@
 #include <string_view>
 
 #include "absl/container/btree_map.h"
+#include "aos/events/simulated_network_bridge.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/util/phased_loop.h"
 
@@ -743,6 +744,10 @@ SimulatedEventLoopFactory::SimulatedEventLoopFactory(
   for (const Node *node : nodes_) {
     node_factories_.emplace_back(
         new NodeEventLoopFactory(&scheduler_, this, node, &raw_event_loops_));
+  }
+
+  if (configuration::MultiNode(configuration)) {
+    bridge_ = std::make_unique<message_bridge::SimulatedMessageBridge>(this);
   }
 }
 

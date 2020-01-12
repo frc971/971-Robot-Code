@@ -38,7 +38,8 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
 
   ::std::unique_ptr<EventLoop> Make(std::string_view name) override {
     if (configuration()->has_nodes()) {
-      FLAGS_override_hostname = "myhostname";
+      FLAGS_override_hostname =
+          std::string(my_node()->hostname()->string_view());
     }
     ::std::unique_ptr<ShmEventLoop> loop(new ShmEventLoop(configuration()));
     loop->set_name(name);
@@ -47,7 +48,8 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
 
   ::std::unique_ptr<EventLoop> MakePrimary(std::string_view name) override {
     if (configuration()->has_nodes()) {
-      FLAGS_override_hostname = "myhostname";
+      FLAGS_override_hostname =
+          std::string(my_node()->hostname()->string_view());
     }
     ::std::unique_ptr<ShmEventLoop> loop =
         ::std::unique_ptr<ShmEventLoop>(new ShmEventLoop(configuration()));
