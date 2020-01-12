@@ -32,6 +32,7 @@ aos::FlatbufferDetachedBuffer<aos::message_bridge::Connect> MakeConnectMessage(
   CHECK(config->has_nodes()) << ": Config must have nodes to transfer.";
 
   flatbuffers::FlatBufferBuilder fbb;
+  fbb.ForceDefaults(1);
 
   flatbuffers::Offset<Node> node_offset = CopyFlatBuffer<Node>(my_node, &fbb);
   const std::string_view node_name = my_node->name()->string_view();
@@ -106,6 +107,7 @@ std::vector<bool> StreamReplyWithTimestamp(const Configuration *config,
 aos::FlatbufferDetachedBuffer<aos::logger::MessageHeader>
 MakeMessageHeaderReply() {
   flatbuffers::FlatBufferBuilder fbb;
+  fbb.ForceDefaults(1);
   logger::MessageHeader::Builder message_header_builder(fbb);
   message_header_builder.add_channel_index(0);
   message_header_builder.add_monotonic_sent_time(0);
@@ -121,6 +123,7 @@ FlatbufferDetachedBuffer<ClientStatistics> MakeClientStatistics(
     const std::vector<std::string_view> &source_node_names,
     const Configuration *configuration) {
   flatbuffers::FlatBufferBuilder fbb;
+  fbb.ForceDefaults(1);
 
   std::vector<flatbuffers::Offset<ClientConnection>> connection_offsets;
   for (const std::string_view node_name : source_node_names) {
