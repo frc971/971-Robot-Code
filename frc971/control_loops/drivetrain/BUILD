@@ -642,3 +642,31 @@ cc_test(
         "arm": [],
     }),
 )
+
+cc_library(
+    name = "improved_down_estimator",
+    srcs = [
+        "improved_down_estimator.cc",
+    ],
+    hdrs = [
+        "improved_down_estimator.h",
+    ],
+    deps = [
+        "//frc971/control_loops:runge_kutta",
+        "@com_github_google_glog//:glog",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_test(
+    name = "improved_down_estimator_test",
+    srcs = [
+        "improved_down_estimator_test.cc",
+    ],
+    deps = [
+        "//aos/testing:googletest",
+        "//aos/testing:random_seed",
+        "//frc971/control_loops/drivetrain:improved_down_estimator",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
