@@ -35,14 +35,34 @@ Eigen::Matrix<Scalar, 2, 1> DoCoerceGoal(
     if (is_inside) *is_inside = true;
     return R;
   }
+  const Scalar norm_K = K.norm();
   Eigen::Matrix<Scalar, 2, 1> parallel_vector;
   Eigen::Matrix<Scalar, 2, 1> perpendicular_vector;
-  perpendicular_vector = K.transpose().normalized();
+  // Calculate a vector that is perpendicular to the line defined by K * x = w.
+  perpendicular_vector = K.transpose() / norm_K;
+  // Calculate a vector that is parallel to the line defined by K * x = w.
   parallel_vector << perpendicular_vector(1, 0), -perpendicular_vector(0, 0);
 
-  Eigen::Matrix<Scalar, 4, 1> projectedh = region.static_H() * parallel_vector;
-  Eigen::Matrix<Scalar, 4, 1> projectedk =
-      region.static_k() - region.static_H() * perpendicular_vector * w;
+  // Calculate the location along the K x = w line where each boundary of the
+  // polytope would intersect.
+  // I.e., we want to calculate the distance along the K x = w line, as
+  // represented by
+  // parallel_vector * dist + perpendicular_vector * w / norm(K),
+  // such that it intersects with H_i * x = k_i.
+  // This gives us H_i * (parallel * dist + perp * w / norm(K)) = k_i.
+  // dist = (k_i - H_i * perp * w / norm(K)) / (H_i * parallel)
+  // projectedh is the numerator, projectedk is the denominator.
+  // The case where H_i * parallel is zero indicates a scenario where the given
+  // boundary of the polytope is parallel to the line, and so there is no
+  // meaningful value of dist to return.
+  // Note that the sign of projectedh will also indicate whether the distance is
+  // an upper or lower bound. If since valid points satisfy H_i * x < k_i, then
+  // if H_i * parallel is less than zero, then dist will be a lower bound and
+  // if it is greater than zero, then dist will be an upper bound.
+  const Eigen::Matrix<Scalar, 4, 1> projectedh =
+      region.static_H() * parallel_vector;
+  const Eigen::Matrix<Scalar, 4, 1> projectedk =
+      region.static_k() - region.static_H() * perpendicular_vector * w / norm_K;
 
   Scalar min_boundary = ::std::numeric_limits<Scalar>::lowest();
   Scalar max_boundary = ::std::numeric_limits<Scalar>::max();
@@ -60,11 +80,16 @@ Eigen::Matrix<Scalar, 2, 1> DoCoerceGoal(
   vertices << max_boundary, min_boundary;
 
   if (max_boundary > min_boundary) {
+    // The line goes through the region (if the line just intersects a single
+    // vertex, then we fall through to the next clause), but R is not
+    // inside the region. The returned point will be one of the two points where
+    // the line intersects the edge of the region.
     Scalar min_distance_sqr = 0;
     Eigen::Matrix<Scalar, 2, 1> closest_point;
     for (int i = 0; i < vertices.innerSize(); i++) {
       Eigen::Matrix<Scalar, 2, 1> point;
-      point = parallel_vector * vertices(0, i) + perpendicular_vector * w;
+      point =
+          parallel_vector * vertices(0, i) + perpendicular_vector * w / norm_K;
       const Scalar length = (R - point).squaredNorm();
       if (i == 0 || length < min_distance_sqr) {
         closest_point = point;
@@ -74,6 +99,8 @@ Eigen::Matrix<Scalar, 2, 1> DoCoerceGoal(
     if (is_inside) *is_inside = true;
     return closest_point;
   } else {
+    // The line does not pass through the region; identify the vertex closest to
+    // the line.
     Eigen::Matrix<Scalar, 2, 4> region_vertices = region.StaticVertices();
 #ifdef __linux__
     CHECK_GT(reinterpret_cast<ssize_t>(region_vertices.outerSize()), 0);
@@ -83,8 +110,11 @@ Eigen::Matrix<Scalar, 2, 1> DoCoerceGoal(
     Scalar min_distance = INFINITY;
     int closest_i = 0;
     for (int i = 0; i < region_vertices.outerSize(); i++) {
+      // Calculate the distance of the vertex from the line. The closest vertex
+      // will be the one to return.
       const Scalar length = ::std::abs(
-          (perpendicular_vector.transpose() * (region_vertices.col(i)))(0, 0));
+          (perpendicular_vector.transpose() * (region_vertices.col(i)))(0, 0) -
+          w);
       if (i == 0 || length < min_distance) {
         closest_i = i;
         min_distance = length;

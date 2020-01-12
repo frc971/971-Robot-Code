@@ -109,13 +109,15 @@ class HVPolytope : public Polytope<number_of_dimensions, Scalar> {
 
 
 #ifdef __linux__
+
 template <int number_of_dimensions>
 class HPolytope : public Polytope<number_of_dimensions> {
  public:
   // Constructs a polytope given the H and k matrices.
-  HPolytope(Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic,
-                                           number_of_dimensions>> H,
-            Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, 1>> k)
+  HPolytope(
+      Eigen::Ref<
+          const Eigen::Matrix<double, Eigen::Dynamic, number_of_dimensions>> H,
+      Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, 1>> k)
       : H_(H), k_(k), vertices_(CalculateVertices(H, k)) {}
 
   // This is an initialization function shared across all instantiations of this
@@ -133,6 +135,8 @@ class HPolytope : public Polytope<number_of_dimensions> {
     return k_;
   }
 
+  // NOTE: If you are getting bizarre errors that you are tracing back to the
+  // vertex matrix being funky, please check that you correctly called Init().
   Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic> Vertices()
       const override {
     return vertices_;
