@@ -90,6 +90,7 @@ int LogReader_init(LogReaderType *self, PyObject *args, PyObject *kwds) {
   tools->event_loop =
       tools->reader->event_loop_factory()->MakeEventLoop("data_fetcher");
   tools->event_loop->SkipTimingReport();
+  tools->event_loop->SkipAosLog();
 
   return 0;
 }

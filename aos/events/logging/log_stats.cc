@@ -67,6 +67,7 @@ int main(int argc, char **argv) {
   std::unique_ptr<aos::EventLoop> stats_event_loop =
       log_reader_factory.MakeEventLoop("logstats", reader.node());
   stats_event_loop->SkipTimingReport();
+  stats_event_loop->SkipAosLog();
 
   // Read channel info and store in vector
   bool found_channel = false;

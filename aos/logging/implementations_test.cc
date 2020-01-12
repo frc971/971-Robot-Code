@@ -244,6 +244,19 @@ TEST(LoggingPrintFormatTest, Base) {
   EXPECT_EQ(kExpected1, ::std::string(buffer));
 }
 
+TEST(ScopedLogRestorerTest, RestoreTest) {
+  LogImplementation *curr_impl = GetImplementation();
+
+  {
+    ScopedLogRestorer log_restorer;
+
+    logging::RegisterCallbackImplementation([] (const LogMessage&) {});
+    ASSERT_NE(curr_impl, GetImplementation());
+  }
+
+  ASSERT_EQ(curr_impl, GetImplementation());
+}
+
 }  // namespace testing
 }  // namespace logging
 }  // namespace aos

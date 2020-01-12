@@ -2,13 +2,11 @@
 
 #include <chrono>
 
-#include "glog/logging.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
-
 #include "aos/events/test_message_generated.h"
 #include "aos/flatbuffer_merge.h"
 #include "glog/logging.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {
@@ -409,21 +407,19 @@ TEST_P(AbstractEventLoopTest, FetchAndFetchNextTogether) {
   EXPECT_THAT(values, ::testing::ElementsAreArray({201, 202, 204}));
 }
 
-
 // Tests that FetchNext behaves correctly when we get two messages in the queue
 // but don't consume the first until after the second has been sent.
 TEST_P(AbstractEventLoopTest, FetchNextTest) {
-
   auto send_loop = Make();
   auto fetch_loop = Make();
   auto sender = send_loop->MakeSender<TestMessage>("/test");
   Fetcher<TestMessage> fetcher = fetch_loop->MakeFetcher<TestMessage>("/test");
 
   {
-      aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
-      TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
-      builder.add_value(100);
-      ASSERT_TRUE(msg.Send(builder.Finish()));
+    aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
+    TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
+    builder.add_value(100);
+    ASSERT_TRUE(msg.Send(builder.Finish()));
   }
 
   {
@@ -642,7 +638,7 @@ TEST_P(AbstractEventLoopTest, TimerIntervalAndDuration) {
   EXPECT_EQ(report.message().name()->string_view(), "primary");
 
   ASSERT_NE(report.message().senders(), nullptr);
-  EXPECT_EQ(report.message().senders()->size(), 1);
+  EXPECT_EQ(report.message().senders()->size(), 2);
 
   ASSERT_NE(report.message().timers(), nullptr);
   EXPECT_EQ(report.message().timers()->size(), 2);
@@ -690,13 +686,10 @@ TEST_P(AbstractEventLoopTest, TimerDisable) {
     iteration_list.push_back(loop->monotonic_now());
   });
 
-  auto ender_timer = loop->AddTimer([&test_timer]() {
-    test_timer->Disable();
-  });
+  auto ender_timer = loop->AddTimer([&test_timer]() { test_timer->Disable(); });
 
   test_timer->Setup(loop->monotonic_now(), ::std::chrono::milliseconds(20));
-  ender_timer->Setup(loop->monotonic_now() +
-                        ::std::chrono::milliseconds(45));
+  ender_timer->Setup(loop->monotonic_now() + ::std::chrono::milliseconds(45));
   EndEventLoop(loop.get(), ::std::chrono::milliseconds(150));
   Run();
 
@@ -708,7 +701,8 @@ TEST_P(AbstractEventLoopTest, TimerDisable) {
 TEST_P(AbstractEventLoopDeathTest, InvalidChannel) {
   auto loop = MakePrimary();
 
-  const Channel *channel = loop->configuration()->channels()->Get(1);
+  const Channel *channel = configuration::GetChannel(
+      loop->configuration(), "/test", "aos.TestMessage", "", nullptr);
 
   FlatbufferDetachedBuffer<Channel> channel_copy = CopyFlatBuffer(channel);
 
@@ -754,8 +748,7 @@ TEST_P(AbstractEventLoopTest, MessageSendTime) {
 
     const aos::monotonic_clock::time_point monotonic_now =
         loop1->monotonic_now();
-    const aos::realtime_clock::time_point realtime_now =
-        loop1->realtime_now();
+    const aos::realtime_clock::time_point realtime_now = loop1->realtime_now();
 
     EXPECT_LE(loop1->context().monotonic_event_time, monotonic_now);
     EXPECT_LE(loop1->context().realtime_event_time, realtime_now);
@@ -932,7 +925,7 @@ TEST_P(AbstractEventLoopTest, PhasedLoopTest) {
   EXPECT_EQ(report.message().name()->string_view(), "primary");
 
   ASSERT_NE(report.message().senders(), nullptr);
-  EXPECT_EQ(report.message().senders()->size(), 1);
+  EXPECT_EQ(report.message().senders()->size(), 2);
 
   ASSERT_NE(report.message().timers(), nullptr);
   EXPECT_EQ(report.message().timers()->size(), 1);
@@ -996,7 +989,7 @@ TEST_P(AbstractEventLoopTest, SenderTimingReport) {
   EXPECT_EQ(primary_report.message().name()->string_view(), "primary");
 
   ASSERT_NE(primary_report.message().senders(), nullptr);
-  EXPECT_EQ(primary_report.message().senders()->size(), 2);
+  EXPECT_EQ(primary_report.message().senders()->size(), 3);
 
   // Confirm that the sender looks sane.
   EXPECT_EQ(
@@ -1148,7 +1141,7 @@ TEST_P(AbstractEventLoopTest, FetcherTimingReport) {
   EXPECT_EQ(primary_report.message().name()->string_view(), "primary");
 
   ASSERT_NE(primary_report.message().senders(), nullptr);
-  EXPECT_EQ(primary_report.message().senders()->size(), 1);
+  EXPECT_EQ(primary_report.message().senders()->size(), 2);
 
   ASSERT_NE(primary_report.message().timers(), nullptr);
   EXPECT_EQ(primary_report.message().timers()->size(), 4);
@@ -1164,10 +1157,8 @@ TEST_P(AbstractEventLoopTest, FetcherTimingReport) {
   EXPECT_EQ(primary_report.message().fetchers()->Get(0)->count(), 1);
   EXPECT_GE(primary_report.message().fetchers()->Get(0)->latency()->average(),
             0.1);
-  EXPECT_GE(primary_report.message().fetchers()->Get(0)->latency()->min(),
-            0.1);
-  EXPECT_GE(primary_report.message().fetchers()->Get(0)->latency()->max(),
-            0.1);
+  EXPECT_GE(primary_report.message().fetchers()->Get(0)->latency()->min(), 0.1);
+  EXPECT_GE(primary_report.message().fetchers()->Get(0)->latency()->max(), 0.1);
   EXPECT_EQ(primary_report.message()
                 .fetchers()
                 ->Get(0)
@@ -1188,17 +1179,20 @@ TEST_P(AbstractEventLoopTest, RawBasic) {
   const std::string kData("971 is the best");
 
   std::unique_ptr<aos::RawSender> sender =
-      loop1->MakeRawSender(loop1->configuration()->channels()->Get(1));
+      loop1->MakeRawSender(configuration::GetChannel(
+          loop1->configuration(), "/test", "aos.TestMessage", "", nullptr));
 
   std::unique_ptr<aos::RawFetcher> fetcher =
-      loop3->MakeRawFetcher(loop3->configuration()->channels()->Get(1));
+      loop3->MakeRawFetcher(configuration::GetChannel(
+          loop3->configuration(), "/test", "aos.TestMessage", "", nullptr));
 
   loop2->OnRun(
       [&]() { EXPECT_TRUE(sender->Send(kData.data(), kData.size())); });
 
   bool happened = false;
   loop2->MakeRawWatcher(
-      loop2->configuration()->channels()->Get(1),
+      configuration::GetChannel(loop2->configuration(), "/test",
+                                "aos.TestMessage", "", nullptr),
       [this, &kData, &fetcher, &happened](const Context &context,
                                           const void *message) {
         happened = true;
@@ -1239,10 +1233,12 @@ TEST_P(AbstractEventLoopTest, RawRemoteTimes) {
       aos::realtime_clock::time_point(chrono::seconds(3132));
 
   std::unique_ptr<aos::RawSender> sender =
-      loop1->MakeRawSender(loop1->configuration()->channels()->Get(1));
+      loop1->MakeRawSender(configuration::GetChannel(
+          loop1->configuration(), "/test", "aos.TestMessage", "", nullptr));
 
   std::unique_ptr<aos::RawFetcher> fetcher =
-      loop3->MakeRawFetcher(loop3->configuration()->channels()->Get(1));
+      loop3->MakeRawFetcher(configuration::GetChannel(
+          loop3->configuration(), "/test", "aos.TestMessage", "", nullptr));
 
   loop2->OnRun([&]() {
     EXPECT_TRUE(sender->Send(kData.data(), kData.size(), monotonic_remote_time,
@@ -1251,7 +1247,8 @@ TEST_P(AbstractEventLoopTest, RawRemoteTimes) {
 
   bool happened = false;
   loop2->MakeRawWatcher(
-      loop2->configuration()->channels()->Get(1),
+      configuration::GetChannel(loop2->configuration(), "/test",
+                                "aos.TestMessage", "", nullptr),
       [this, monotonic_remote_time, realtime_remote_time, &fetcher, &happened](
           const Context &context, const void * /*message*/) {
         happened = true;
@@ -1279,12 +1276,11 @@ TEST_P(AbstractEventLoopTest, RawSenderSentData) {
   const std::string kData("971 is the best");
 
   std::unique_ptr<aos::RawSender> sender =
-      loop1->MakeRawSender(loop1->configuration()->channels()->Get(1));
+      loop1->MakeRawSender(configuration::GetChannel(
+          loop1->configuration(), "/test", "aos.TestMessage", "", nullptr));
 
-  const aos::monotonic_clock::time_point monotonic_now =
-      loop1->monotonic_now();
-  const aos::realtime_clock::time_point realtime_now =
-      loop1->realtime_now();
+  const aos::monotonic_clock::time_point monotonic_now = loop1->monotonic_now();
+  const aos::realtime_clock::time_point realtime_now = loop1->realtime_now();
 
   EXPECT_TRUE(sender->Send(kData.data(), kData.size()));
 
@@ -1334,8 +1330,10 @@ TEST_P(AbstractEventLoopTest, NodeWatcher) {
   auto loop1 = Make();
   auto loop2 = Make();
   loop1->MakeWatcher("/test", [](const TestMessage &) {});
-  loop2->MakeRawWatcher(configuration()->channels()->Get(1),
-                        [](const Context &, const void *) {});
+  loop2->MakeRawWatcher(
+      configuration::GetChannel(configuration(), "/test", "aos.TestMessage", "",
+                                nullptr),
+      [](const Context &, const void *) {});
 }
 
 // Tests that fetcher work with a node setup.
@@ -1344,7 +1342,8 @@ TEST_P(AbstractEventLoopTest, NodeFetcher) {
   auto loop1 = Make();
 
   auto fetcher = loop1->MakeFetcher<TestMessage>("/test");
-  auto raw_fetcher = loop1->MakeRawFetcher(configuration()->channels()->Get(1));
+  auto raw_fetcher = loop1->MakeRawFetcher(configuration::GetChannel(
+      configuration(), "/test", "aos.TestMessage", "", nullptr));
 }
 
 // Tests that sender work with a node setup.
@@ -1365,8 +1364,10 @@ TEST_P(AbstractEventLoopDeathTest, NodeWatcher) {
                "node");
   EXPECT_DEATH(
       {
-        loop2->MakeRawWatcher(configuration()->channels()->Get(1),
-                              [](const Context &, const void *) {});
+        loop2->MakeRawWatcher(
+            configuration::GetChannel(configuration(), "/test",
+                                      "aos.TestMessage", "", nullptr),
+            [](const Context &, const void *) {});
       },
       "node");
 }
@@ -1380,8 +1381,8 @@ TEST_P(AbstractEventLoopDeathTest, NodeFetcher) {
                "node");
   EXPECT_DEATH(
       {
-        auto raw_fetcher =
-            loop1->MakeRawFetcher(configuration()->channels()->Get(1));
+        auto raw_fetcher = loop1->MakeRawFetcher(configuration::GetChannel(
+            configuration(), "/test", "aos.TestMessage", "", nullptr));
       },
       "node");
 }

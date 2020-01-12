@@ -8,6 +8,7 @@
 #include "aos/events/simulated_network_bridge.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/util/phased_loop.h"
+#include "aos/events/aos_logging.h"
 
 namespace aos {
 
@@ -419,7 +420,14 @@ class SimulatedEventLoop : public EventLoop {
 
   int priority() const override { return priority_; }
 
-  void Setup() { MaybeScheduleTimingReports(); }
+  void Setup() {
+    MaybeScheduleTimingReports();
+    if (!skip_logger_) {
+      logging::ScopedLogRestorer prev_logger;
+      log_sender_.Initialize(MakeSender<logging::LogMessageFbs>("/aos"));
+      log_impl_ = logging::GetImplementation();
+    }
+  }
 
  private:
   friend class SimulatedTimerHandler;
@@ -455,6 +463,9 @@ class SimulatedEventLoop : public EventLoop {
 
   const Node *const node_;
   const pid_t tid_;
+
+  AosLogToFbs log_sender_;
+  logging::LogImplementation *log_impl_ = nullptr;
 };
 
 void SimulatedEventLoopFactory::set_send_delay(
@@ -553,6 +564,10 @@ void SimulatedWatcher::HandleEvent() {
 
   const monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
+  logging::ScopedLogRestorer prev_logger;
+  if (simulated_event_loop_->log_impl_ != nullptr) {
+    logging::SetImplementation(simulated_event_loop_->log_impl_);
+  }
   Context context = msgs_.front()->context;
 
   if (context.remote_queue_index == 0xffffffffu) {
@@ -660,6 +675,10 @@ void SimulatedTimerHandler::Setup(monotonic_clock::time_point base,
 void SimulatedTimerHandler::HandleEvent() {
   const ::aos::monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
+  logging::ScopedLogRestorer prev_logger;
+  if (simulated_event_loop_->log_impl_ != nullptr) {
+    logging::SetImplementation(simulated_event_loop_->log_impl_);
+  }
   if (repeat_offset_ != ::aos::monotonic_clock::zero()) {
     // Reschedule.
     while (base_ <= monotonic_now) base_ += repeat_offset_;
@@ -706,6 +725,10 @@ SimulatedPhasedLoopHandler::~SimulatedPhasedLoopHandler() {
 void SimulatedPhasedLoopHandler::HandleEvent() {
   monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
+  logging::ScopedLogRestorer prev_logger;
+  if (simulated_event_loop_->log_impl_ != nullptr) {
+    logging::SetImplementation(simulated_event_loop_->log_impl_);
+  }
   Call(
       [monotonic_now]() { return monotonic_now; },
       [this](monotonic_clock::time_point sleep_time) { Schedule(sleep_time); });

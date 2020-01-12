@@ -4,6 +4,7 @@
 #include <deque>
 
 #include "aos/events/event_loop.h"
+#include "aos/logging/implementations.h"
 
 namespace aos {
 
@@ -19,6 +20,7 @@ void EventScheduler::Deschedule(EventScheduler::Token token) {
 void EventScheduler::RunFor(distributed_clock::duration duration) {
   const distributed_clock::time_point end_time =
       distributed_now() + duration;
+  logging::ScopedLogRestorer prev_logger;
   is_running_ = true;
   for (std::function<void()> &on_run : on_run_) {
     on_run();
@@ -39,6 +41,7 @@ void EventScheduler::RunFor(distributed_clock::duration duration) {
 }
 
 void EventScheduler::Run() {
+  logging::ScopedLogRestorer prev_logger;
   is_running_ = true;
   for (std::function<void()> &on_run : on_run_) {
     on_run();

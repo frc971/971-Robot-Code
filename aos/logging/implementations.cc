@@ -131,10 +131,6 @@ void StreamLogImplementation::HandleMessage(const LogMessage &message) {
 void SetImplementation(LogImplementation *implementation, bool update_global) {
   internal::Context *context = internal::Context::Get();
 
-  if (implementation == nullptr) {
-    AOS_LOG(FATAL, "SetImplementation got invalid implementation");
-  }
-
   context->implementation = implementation;
   if (update_global) {
     SetGlobalImplementation(implementation);
@@ -148,6 +144,10 @@ LogImplementation *SwapImplementation(LogImplementation *implementation) {
   context->implementation = implementation;
 
   return old;
+}
+
+LogImplementation *GetImplementation() {
+  return internal::Context::Get()->implementation;
 }
 
 void Init() {
@@ -264,7 +264,7 @@ void RegisterQueueImplementation() {
 
 void RegisterCallbackImplementation(
     const ::std::function<void(const LogMessage &)> &callback,
-    bool update_global = true) {
+    bool update_global) {
   Init();
   SetImplementation(new CallbackLogImplementation(callback), update_global);
 }

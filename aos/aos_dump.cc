@@ -27,6 +27,7 @@ int main(int argc, char **argv) {
   const aos::Configuration *config_msg = &config.message();
   ::aos::ShmEventLoop event_loop(config_msg);
   event_loop.SkipTimingReport();
+  event_loop.SkipAosLog();
 
   if (argc == 1) {
     std::cout << "Channels:\n";

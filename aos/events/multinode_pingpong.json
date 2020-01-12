@@ -2,6 +2,38 @@
   "channels": [
     {
       "name": "/aos/pi1",
+      "type": "aos.logging.LogMessageFbs",
+      "source_node": "pi1",
+      "frequency": 200,
+      "num_senders": 20,
+      "max_size": 2048
+    },
+    {
+      "name": "/aos/pi2",
+      "type": "aos.logging.LogMessageFbs",
+      "source_node": "pi2",
+      "frequency": 200,
+      "num_senders": 20,
+      "max_size": 2048
+    },
+    {
+      "name": "/aos/pi3",
+      "type": "aos.logging.LogMessageFbs",
+      "source_node": "pi3",
+      "frequency": 200,
+      "num_senders": 20,
+      "max_size": 2048
+    },
+    {
+      "name": "/aos/roborio",
+      "type": "aos.logging.LogMessageFbs",
+      "source_node": "roborio",
+      "frequency": 200,
+      "num_senders": 20,
+      "max_size": 2048
+    },
+    {
+      "name": "/aos/pi1",
       "type": "aos.message_bridge.ServerStatistics",
       "source_node": "pi1",
       "frequency": 2
@@ -134,6 +166,46 @@
     }
   ],
   "maps": [
+    {
+      "match": {
+        "name": "/aos",
+        "type": "aos.logging.LogMessageFbs",
+        "source_node": "pi1"
+      },
+      "rename": {
+        "name": "/aos/pi1"
+      }
+    },
+    {
+      "match": {
+        "name": "/aos",
+        "type": "aos.logging.LogMessageFbs",
+        "source_node": "pi2"
+      },
+      "rename": {
+        "name": "/aos/pi2"
+      }
+    },
+    {
+      "match": {
+        "name": "/aos",
+        "type": "aos.logging.LogMessageFbs",
+        "source_node": "pi3"
+      },
+      "rename": {
+        "name": "/aos/pi3"
+      }
+    },
+    {
+      "match": {
+        "name": "/aos",
+        "type": "aos.logging.LogMessageFbs",
+        "source_node": "roborio"
+      },
+      "rename": {
+        "name": "/aos/roborio"
+      }
+    },
     {
       "match": {
         "name": "/aos",

@@ -1,5 +1,21 @@
 {
   "channels": [
+    {
+      "name": "/aos/pi1",
+      "type": "aos.logging.LogMessageFbs",
+      "source_node": "pi1",
+      "frequency": 200,
+      "num_senders": 20,
+      "max_size": 2048
+    },
+    {
+      "name": "/aos/pi2",
+      "type": "aos.logging.LogMessageFbs",
+      "source_node": "pi2",
+      "frequency": 200,
+      "num_senders": 20,
+      "max_size": 2048
+    },
     /* Logged on pi1 locally */
     {
       "name": "/aos/pi1",
@@ -57,6 +73,26 @@
     }
   ],
   "maps": [
+   {
+      "match": {
+        "name": "/aos",
+        "type": "aos.logging.LogMessageFbs",
+        "source_node": "pi1"
+      },
+      "rename": {
+        "name": "/aos/pi1"
+      }
+    },
+    {
+      "match": {
+        "name": "/aos",
+        "type": "aos.logging.LogMessageFbs",
+        "source_node": "pi2"
+      },
+      "rename": {
+        "name": "/aos/pi2"
+      }
+    },
     {
       "match": {
         "name": "/aos",

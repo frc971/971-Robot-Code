@@ -1,0 +1,27 @@
+namespace aos.logging;
+
+// Log level, corresponding to levels in logging.h
+enum Level : byte {
+  ERROR = -1,
+  DEBUG = 0,
+  INFO = 1,
+  WARNING = 2,
+  FATAL = 4,
+  LOG_UNKNOWN = 5
+}
+
+table LogMessageFbs {
+  // Text of the log message, includng file name and line
+  message:string (id: 0);
+
+  // Severity of the log message
+  level:Level (id: 1);
+
+  // Pid of the process creating the log message
+  source:int (id:2);
+
+  // Application name
+  name:string (id:3);
+}
+
+root_type LogMessageFbs;

@@ -69,6 +69,7 @@ cc_library(
         "//aos:configuration_fbs",
         "//aos:flatbuffers",
         "//aos/ipc_lib:data_alignment",
+        "//aos/logging:implementations",
         "//aos/time",
         "//aos/util:phased_loop",
         "@com_github_google_flatbuffers//:flatbuffers",
@@ -114,6 +115,7 @@ aos_config(
     src = "aos.json",
     flatbuffers = [
         ":event_loop_fbs",
+        "//aos/logging:log_message_fbs",
     ],
 )
 
@@ -215,6 +217,7 @@ cc_library(
     hdrs = ["shm_event_loop.h"],
     visibility = ["//visibility:public"],
     deps = [
+        ":aos_logging",
         ":epoll",
         ":event_loop",
         ":event_loop_fbs",
@@ -291,10 +294,27 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        ":aos_logging",
         ":event_loop",
         ":simple_channel",
         "//aos/ipc_lib:index",
         "//aos/util:phased_loop",
         "@com_google_absl//absl/container:btree",
+    ],
+)
+
+cc_library(
+    name = "aos_logging",
+    srcs = [
+        "aos_logging.cc",
+    ],
+    hdrs = [
+        "aos_logging.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":event_loop",
+        "//aos/logging:implementations",
+        "//aos/logging:log_message_fbs",
     ],
 )

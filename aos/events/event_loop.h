@@ -288,6 +288,10 @@ class Sender {
   // Returns the name of the underlying queue.
   const Channel *channel() const { return sender_->channel(); }
 
+  operator bool() {
+    return sender_ ? true : false;
+  }
+
  private:
   friend class EventLoop;
   Sender(std::unique_ptr<RawSender> sender) : sender_(std::move(sender)) {}
@@ -378,9 +382,7 @@ class PhasedLoopHandler {
 
 class EventLoop {
  public:
-  EventLoop(const Configuration *configuration)
-      : timing_report_(flatbuffers::DetachedBuffer()),
-        configuration_(configuration) {}
+  EventLoop(const Configuration *configuration);
 
   virtual ~EventLoop();
 
@@ -504,6 +506,9 @@ class EventLoop {
   // Prevents the event loop from sending a timing report.
   void SkipTimingReport() { skip_timing_report_ = true; }
 
+  // Prevents AOS_LOG being sent to message on /aos
+  void SkipAosLog() { skip_logger_ = true; }
+
  protected:
   // Sets the name of the event loop.  This is the application name.
   virtual void set_name(const std::string_view name) = 0;
@@ -572,6 +577,9 @@ class EventLoop {
   void ReserveEvents();
 
   std::vector<EventLoopEvent *> events_;
+
+  // If true, don't send AOS_LOG to /aos
+  bool skip_logger_ = false;
 
  private:
   virtual pid_t GetTid() = 0;

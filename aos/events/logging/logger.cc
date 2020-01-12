@@ -299,8 +299,12 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
 void LogReader::Register(EventLoop *event_loop) {
   event_loop_ = event_loop;
 
+  // We don't run timing reports when trying to print out logged data, because
+  // otherwise we would end up printing out the timing reports themselves...
+  // This is only really relevant when we are replaying into a simulation.
   // Otherwise we replay the timing report and try to resend it...
   event_loop_->SkipTimingReport();
+  event_loop_->SkipAosLog();
 
   for (size_t i = 0; i < channels_.size(); ++i) {
     const Channel *const original_channel =
