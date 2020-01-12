@@ -1,13 +1,5 @@
 package(default_visibility = ["//tools/cpp:__pkg__"])
 
-cc_library(
-    name = "libpthread",
-    srcs = [
-        "clang_more_libs/libpthread.so",
-    ],
-    visibility = ["//visibility:public"],
-)
-
 filegroup(
     name = "gcc",
     srcs = [
