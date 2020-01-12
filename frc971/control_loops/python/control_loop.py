@@ -661,3 +661,27 @@ class MN3510(object):
         self.Kt = 1.0 / self.Kv
         # Stall Torque in N m
         self.stall_torque = self.Kt * self.stall_current
+
+
+class Falcon(object):
+    """Class representing the VexPro Falcon 500 motor.
+
+    All numbers based on data from
+    https://www.vexrobotics.com/vexpro/falcon-500."""
+
+    def __init__(self):
+        # Stall Torque in N m
+        self.stall_torque = 4.69
+        # Stall Current in Amps
+        self.stall_current = 257.0
+        # Free Speed in rad / sec
+        self.free_speed = 6380.0 / 60.0 * 2.0 * numpy.pi
+        # Free Current in Amps
+        self.free_current = 1.5
+        # Resistance of the motor, divided by 2 to account for the 2 motors
+        self.resistance = 12.0 / self.stall_current
+        # Motor velocity constant
+        self.Kv = (self.free_speed /
+                   (12.0 - self.resistance * self.free_current))
+        # Torque constant
+        self.Kt = self.stall_torque / self.stall_current
