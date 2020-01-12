@@ -136,7 +136,7 @@ void GyroSender::Loop(const int iterations) {
         if (joystick_state_fetcher_.get() &&
             joystick_state_fetcher_->outputs_enabled() &&
             zeroing_data_.full()) {
-          zero_offset_ = -zeroing_data_.GetAverage();
+          zero_offset_ = -zeroing_data_.GetAverage()(0, 0);
           AOS_LOG(INFO, "total zero offset %f\n", zero_offset_);
           zeroed_ = true;
         }
