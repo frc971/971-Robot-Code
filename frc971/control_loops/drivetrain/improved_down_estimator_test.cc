@@ -12,6 +12,19 @@ namespace frc971 {
 namespace control_loops {
 namespace testing {
 
+namespace {
+// Check if two quaternions are logically equal, to within some reasonable
+// tolerance. This is needed because a single rotation can be represented by two
+// quaternions.
+bool QuaternionEqual(const Eigen::Quaterniond &a, const Eigen::Quaterniond &b,
+                     double tolerance) {
+  // If a == b, then a.inverse() * b will be the identity. The identity
+  // quaternion is the only time where the vector portion of the quaternion is
+  // zero.
+  return (a.inverse() * b).vec().norm() <= tolerance;
+}
+}  // namespace
+
 // Do a known transformation to see if quaternion integration is working
 // correctly.
 TEST(RungeKuttaTest, QuaternionIntegral) {
@@ -31,7 +44,7 @@ TEST(RungeKuttaTest, QuaternionIntegral) {
   VLOG(1) << "ux is " << ux;
   VLOG(1) << "qux is " << qux;
 
-  // Start by rotating around the X world vector for pi/2
+  // Start by rotating around the X body vector for pi/2
   Eigen::Quaternion<double> integral1(
       RungeKutta(std::bind(&drivetrain::DrivetrainUkf::QuaternionDerivative, ux,
                            std::placeholders::_1),
@@ -39,7 +52,7 @@ TEST(RungeKuttaTest, QuaternionIntegral) {
 
   VLOG(1) << "integral1 * uz => " << integral1 * uz;
 
-  // Then rotate around the Y world vector for pi/2
+  // Then rotate around the Y body vector for pi/2
   Eigen::Quaternion<double> integral2(
       RungeKutta(std::bind(&drivetrain::DrivetrainUkf::QuaternionDerivative, uy,
                            std::placeholders::_1),
@@ -47,12 +60,14 @@ TEST(RungeKuttaTest, QuaternionIntegral) {
 
   VLOG(1) << "integral2 * uz => " << integral2 * uz;
 
-  // Then rotate around the X world vector for -pi/2
+  // Then rotate around the X body vector for -pi/2
   Eigen::Quaternion<double> integral3(
       RungeKutta(std::bind(&drivetrain::DrivetrainUkf::QuaternionDerivative,
                            -ux, std::placeholders::_1),
                  integral2.normalized().coeffs(), 0.5 * M_PI));
 
+  integral1.normalize();
+  integral2.normalize();
   integral3.normalize();
 
   VLOG(1) << "Integral is w: " << integral1.w() << " vec: " << integral1.vec()
@@ -62,15 +77,87 @@ TEST(RungeKuttaTest, QuaternionIntegral) {
           << " norm " << integral3.norm();
 
   VLOG(1) << "ux => " << integral3 * ux;
+  EXPECT_NEAR(0.0, (ux - integral1 * ux).norm(), 5e-2);
+  EXPECT_NEAR(0.0, (uz - integral1 * uy).norm(), 5e-2);
+  EXPECT_NEAR(0.0, (-uy - integral1 * uz).norm(), 5e-2);
+
+  EXPECT_NEAR(0.0, (uy - integral2 * ux).norm(), 5e-2);
+  EXPECT_NEAR(0.0, (uz - integral2 * uy).norm(), 5e-2);
+  EXPECT_NEAR(0.0, (ux - integral2 * uz).norm(), 5e-2);
+
   EXPECT_NEAR(0.0, (uy - integral3 * ux).norm(), 5e-2);
+  EXPECT_NEAR(0.0, (-ux - integral3 * uy).norm(), 5e-2);
+  EXPECT_NEAR(0.0, (uz - integral3 * uz).norm(), 5e-2);
 }
 
-TEST(RungeKuttaTest, Ukf) {
+TEST(RungeKuttaTest, UkfConstantRotation) {
   drivetrain::DrivetrainUkf dtukf;
-  Eigen::Vector3d ux = Eigen::Vector3d::UnitX();
+  const Eigen::Vector3d ux = Eigen::Vector3d::UnitX();
+  EXPECT_EQ(0.0,
+            (Eigen::Vector3d(0.0, 0.0, 1.0) - dtukf.H(dtukf.X_hat().coeffs()))
+                .norm());
   Eigen::Matrix<double, 3, 1> measurement;
   measurement.setZero();
-  dtukf.Predict(ux, measurement);
+  for (int ii = 0; ii < 200; ++ii) {
+    dtukf.Predict(ux * M_PI_2, measurement, 0.005);
+  }
+  const Eigen::Quaterniond expected(Eigen::AngleAxis<double>(M_PI_2, ux));
+  EXPECT_TRUE(QuaternionEqual(expected, dtukf.X_hat(), 0.01))
+      << "Expected: " << expected.coeffs()
+      << " Got: " << dtukf.X_hat().coeffs();
+  EXPECT_NEAR(0.0,
+            (Eigen::Vector3d(0.0, 1.0, 0.0) - dtukf.H(dtukf.X_hat().coeffs()))
+                .norm(), 1e-10);
+}
+
+// Tests that if the gyro indicates no movement but that the accelerometer shows
+// that we are slightly rotated, that we eventually adjust our estimate to be
+// correct.
+TEST(RungeKuttaTest, UkfAccelCorrectsBias) {
+  drivetrain::DrivetrainUkf dtukf;
+  const Eigen::Vector3d ux = Eigen::Vector3d::UnitX();
+  Eigen::Matrix<double, 3, 1> measurement;
+  // Supply the accelerometer with a slightly off reading to ensure that we
+  // don't require exactly 1g to work.
+  measurement << 0.01, 0.99, 0.0;
+  EXPECT_TRUE(
+      QuaternionEqual(Eigen::Quaterniond::Identity(), dtukf.X_hat(), 0.0))
+      << "X_hat: " << dtukf.X_hat().coeffs();
+  EXPECT_EQ(0.0,
+            (Eigen::Vector3d(0.0, 0.0, 1.0) - dtukf.H(dtukf.X_hat().coeffs()))
+                .norm());
+  for (int ii = 0; ii < 200; ++ii) {
+    dtukf.Predict({0.0, 0.0, 0.0}, measurement, 0.005);
+  }
+  const Eigen::Quaterniond expected(Eigen::AngleAxis<double>(M_PI_2, ux));
+  EXPECT_TRUE(QuaternionEqual(expected, dtukf.X_hat(), 0.01))
+      << "Expected: " << expected.coeffs()
+      << " Got: " << dtukf.X_hat().coeffs();
+}
+
+// Tests that if the accelerometer is reading values with a magnitude that isn't ~1g,
+// that we are slightly rotated, that we eventually adjust our estimate to be
+// correct.
+TEST(RungeKuttaTest, UkfIgnoreBadAccel) {
+  drivetrain::DrivetrainUkf dtukf;
+  const Eigen::Vector3d uz = Eigen::Vector3d::UnitZ();
+  Eigen::Matrix<double, 3, 1> measurement;
+  // Set up a scenario where, if we naively took the accelerometer readings, we
+  // would think that we were rotated. But the gyro readings indicate that we
+  // are only rotating about the Z (yaw) axis.
+  measurement << 0.3, 1.0, 0.0;
+  for (int ii = 0; ii < 200; ++ii) {
+    dtukf.Predict({0.0, 0.0, 1.0}, measurement, 0.005);
+  }
+  const Eigen::Quaterniond expected(Eigen::AngleAxis<double>(1.0, uz));
+  EXPECT_TRUE(QuaternionEqual(expected, dtukf.X_hat(), 1e-1))
+      << "Expected: " << expected.coeffs()
+      << " Got: " << dtukf.X_hat().coeffs();
+  EXPECT_NEAR(
+      0.0,
+      (Eigen::Vector3d(0.0, 0.0, 1.0) - dtukf.H(dtukf.X_hat().coeffs())).norm(),
+      1e-10)
+      << dtukf.H(dtukf.X_hat().coeffs());
 }
 
 // Tests that small perturbations around a couple quaternions averaged out

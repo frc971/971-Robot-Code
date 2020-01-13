@@ -139,16 +139,17 @@ Eigen::Matrix<double, 3, 1> ToRotationVectorFromQuaternion(
 // States are X_hat_bar (position estimate) and P (Covariance)
 
 void QuaternionUkf::Predict(const Eigen::Matrix<double, 3, 1> &U,
-                            const Eigen::Matrix<double, 3, 1> &measurement) {
+                            const Eigen::Matrix<double, 3, 1> &measurement,
+                            const double dt) {
   // Compute the sigma points.
   // Our system is pretty linear. The traditional way of dealing with process
   // noise is to augment your state vector with the mean of the process noise,
   // and augment your covariance matrix with the covariance of your process
-  // noise. Sigma points are then computed. These points are then propegated
+  // noise. Sigma points are then computed. These points are then propagated
   // through the model. This ends up effectively meaning that perturbations
-  // from the unaugmented state with covariance P are propegated through the
+  // from the unaugmented state with covariance P are propagated through the
   // model, and points which are at the mean but with perturbations to simulated
-  // process noise are propegated through the system. The covariance is then
+  // process noise are propagated through the system. The covariance is then
   // calculated from this set of points, and works out to have a covariance of
   // essentially P + Q.
   //
@@ -163,12 +164,12 @@ void QuaternionUkf::Predict(const Eigen::Matrix<double, 3, 1> &U,
   const Eigen::Matrix<double, 4, 3 * 2 + 1> X =
       GenerateSigmaPoints(X_hat_, P_ + Q_);
 
-  // Now, compute Y, the sigma points which have been propegated forwards by the
+  // Now, compute Y, the sigma points which have been propagated forwards by the
   // model.
   Eigen::Matrix<double, 4, 3 * 2 + 1> Y;
   for (int i = 0; i < Y.cols(); ++i) {
     // Y = Transformed sigma points
-    Y.col(i) = A(X.col(i), U);
+    Y.col(i) = A(X.col(i), U, dt);
   }
 
   // We now have the sigma points after the model update.
@@ -182,14 +183,17 @@ void QuaternionUkf::Predict(const Eigen::Matrix<double, 3, 1> &U,
 
   // If the only obvious acceleration is that due to gravity, then accept the
   // measurement.
-  constexpr double kUseAccelThreshold = 0.1;
-  if (std::abs(measurement.squaredNorm() - 1.0) < kUseAccelThreshold) {
+  // TODO(james): Calibrate this on a real robot. This may require some sort of
+  // calibration routine.
+  constexpr double kUseAccelThreshold = 0.02;
+  if (std::abs(measurement.squaredNorm() - 1.0) > kUseAccelThreshold) {
     P_ = P_prior;
     return;
   }
 
   // TODO(austin): Maybe re-calculate the sigma points here before transforming
-  // them?  Otherwise we can't cleanly decouple the model and measurement updates.
+  // them?  Otherwise we can't cleanly decouple the model and measurement
+  // updates.
 
   // Apply the measurement transform to all the sigma points to get a
   // representation of the distribution of the measurement.

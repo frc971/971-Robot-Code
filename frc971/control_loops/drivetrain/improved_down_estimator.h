@@ -94,6 +94,14 @@ class QuaternionUkf {
   // position flat on the ground with a heading of zero (which, in our normal
   // field coordinates, means pointed straight away from our driver's station
   // wall).
+  // The X axis is pointed straight out from the driver's station, the Z axis
+  // straight up and the Y axis straight to the left (i.e., a right-handed
+  // coordinate system).
+  // The quaternion itself represents the transformation from the body frame to
+  // global frame. E.g., for the gravity vector, the acceleration due to gravity
+  // in the global frame is equal to X_hat_ * gravity_in_robot_frame. Note that
+  // this convention does seem to be the inverse of that used in the paper
+  // referenced on Quaternion UKFs.
   constexpr static int kNumStates = 4;
   // Inputs to the system--we use the (x, y, z)  gyro measurements as the inputs
   // to the system.
@@ -119,20 +127,25 @@ class QuaternionUkf {
   }
 
   // Handles updating the state of the UKF, given the gyro and accelerometer
-  // measurements.
+  // measurements. Given the design of the filter, U is the x/y/z gyro
+  // measurements and measurement is the accelerometer x/y/z measurements.
+  // dt is the length of the current timestep.
+  // U specifically corresponds with the U in the paper, which corresponds with
+  // the input to the system used by the filter.
   void Predict(const Eigen::Matrix<double, kNumInputs, 1> &U,
-               const Eigen::Matrix<double, 3, 1> &measurement);
+               const Eigen::Matrix<double, kNumMeasurements, 1> &measurement,
+               const double dt);
 
   // Returns the updated state for X after one time step, given the current
   // state and gyro measurements.
-  virtual Eigen::Matrix<double, 4, 1> A(
-      const Eigen::Matrix<double, 4, 1> &X,
-      const Eigen::Matrix<double, kNumInputs, 1> &U) const = 0;
+  virtual Eigen::Matrix<double, kNumStates, 1> A(
+      const Eigen::Matrix<double, kNumStates, 1> &X,
+      const Eigen::Matrix<double, kNumInputs, 1> &U, const double dt) const = 0;
 
   // Returns the current expected accelerometer measurements given the current
   // state.
-  virtual Eigen::Matrix<double, 3, 1> H(
-      const Eigen::Matrix<double, 4, 1> &X) const = 0;
+  virtual Eigen::Matrix<double, kNumMeasurements, 1> H(
+      const Eigen::Matrix<double, kNumStates, 1> &X) const = 0;
 
   // Returns the current estimate of the robot's orientation. Note that this
   // filter does not have anything other than the gyro with which to estimate
@@ -140,7 +153,7 @@ class QuaternionUkf {
   // filters.
   const Eigen::Quaternion<double> &X_hat() const { return X_hat_; }
 
-  Eigen::Matrix<double, 3, 1> Z_hat() const { return Z_hat_; };
+  Eigen::Matrix<double, kNumMeasurements, 1> Z_hat() const { return Z_hat_; };
 
  private:
   // Measurement Noise (Uncertainty)
@@ -155,13 +168,11 @@ class QuaternionUkf {
   Eigen::Quaternion<double> X_hat_;
 
   // Current expected accelerometer measurement.
-  Eigen::Matrix<double, 3, 1> Z_hat_;
+  Eigen::Matrix<double, kNumMeasurements, 1> Z_hat_;
 };
 
 class DrivetrainUkf : public QuaternionUkf {
  public:
-  constexpr static double kDt = 0.00505;
-
   // UKF for http://kodlab.seas.upenn.edu/uploads/Arun/UKFpaper.pdf
   // Reference in case the link is dead:
   // Kraft, Edgar. "A quaternion-based unscented Kalman filter for orientation
@@ -195,19 +206,24 @@ class DrivetrainUkf : public QuaternionUkf {
   // Moves the robot by the provided rotation vector (U).
   Eigen::Matrix<double, kNumStates, 1> A(
       const Eigen::Matrix<double, kNumStates, 1> &X,
-      const Eigen::Matrix<double, kNumInputs, 1> &U) const override {
+      const Eigen::Matrix<double, kNumInputs, 1> &U,
+      const double dt) const override {
     return RungeKutta(
-        std::bind(&QuaternionDerivative, U, std::placeholders::_1), X, kDt);
+        std::bind(&QuaternionDerivative, U, std::placeholders::_1), X, dt);
   }
 
   // Returns the expected accelerometer measurement (which is just going to be
   // 1g downwards).
   Eigen::Matrix<double, kNumMeasurements, 1> H(
       const Eigen::Matrix<double, kNumStates, 1> &X) const override {
-    // TODO(austin): Figure out how to compute what the sensors *should* read.
+    // Assume that we expect to see a reading of (0, 0, 1) when flat on the
+    // ground.
+    // TODO(james): Figure out a calibration routine for managing the fact that
+    // the accelerometer will not be perfectly oriented within the robot (or
+    // determine that calibration routines would be unnecessary).
     Eigen::Quaternion<double> Xquat(X);
     Eigen::Matrix<double, 3, 1> gprime =
-        Xquat * Eigen::Matrix<double, 3, 1>(0.0, 0.0, -1.0);
+        Xquat.conjugate() * Eigen::Matrix<double, 3, 1>(0.0, 0.0, 1.0);
     return gprime;
   }
 };
