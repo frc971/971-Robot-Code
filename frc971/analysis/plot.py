@@ -11,6 +11,7 @@ from frc971.analysis.py_log_reader import LogReader
 from frc971.analysis.plot_config_pb2 import PlotConfig, Signal
 from google.protobuf import text_format
 
+import numpy as np
 import matplotlib
 from matplotlib import pyplot as plt
 
@@ -42,6 +43,39 @@ class Plotter:
                 parsed_json = json.loads(valid_json)
                 self.data[channel.alias].append((message[0], message[1],
                                                  parsed_json))
+        self.calculate_signals()
+
+    def calculate_imu_signals(self):
+        if 'IMU' in self.data:
+            entries = []
+            for entry in self.data['IMU']:
+                accel_x = 'accelerometer_x'
+                accel_y = 'accelerometer_y'
+                accel_z = 'accelerometer_z'
+                msg = entry[2]
+                new_msg = {}
+                if accel_x in msg and accel_y in msg and accel_x in msg:
+                    total_acceleration = np.sqrt(
+                        msg[accel_x]**2 + msg[accel_y]**2 + msg[accel_z]**2)
+                    new_msg['total_acceleration'] = total_acceleration
+                entries.append((entry[0], entry[1], new_msg))
+            if 'CalcIMU' in self.data:
+                raise RuntimeError('CalcIMU is already a member of data.')
+            self.data['CalcIMU'] = entries
+
+    def calculate_signals(self):
+        """Calculate any derived signals for plotting.
+
+        See calculate_imu_signals for an example, but the basic idea is that
+        for any data that is read in from the logfile, we may want to calculate
+        some derived signals--possibly as simple as doing unit conversions,
+        or more complicated version where we do some filtering or the such.
+        The way this will work is that the calculate_* functions will, if the
+        raw data is available, calculate the derived signals and place them into
+        fake "messages" with an alias of "Calc*". E.g., we currently calculate
+        an overall magnitude for the accelerometer readings, which is helpful
+        to understanding how some internal filters work."""
+        self.calculate_imu_signals()
 
     def plot_signal(self, axes: matplotlib.axes.Axes, signal: Signal):
         if not signal.channel in self.data:
@@ -56,10 +90,10 @@ class Plotter:
                 # If the value wasn't populated in a given message, fill in
                 # NaN rather than crashing.
                 if name in value:
-                  value = value[name]
+                    value = value[name]
                 else:
-                  value = float("nan")
-                  break
+                    value = float("nan")
+                    break
             # Catch NaNs and convert them to floats.
             value = float(value)
             signal_data.append(value)
@@ -72,7 +106,8 @@ class Plotter:
             fig = plt.figure()
             num_subplots = len(figure_config.axes)
             for ii in range(num_subplots):
-                axes = fig.add_subplot(num_subplots, 1, ii + 1, sharex=shared_axis)
+                axes = fig.add_subplot(
+                    num_subplots, 1, ii + 1, sharex=shared_axis)
                 shared_axis = shared_axis or axes
                 axes_config = figure_config.axes[ii]
                 for signal in axes_config.signal:

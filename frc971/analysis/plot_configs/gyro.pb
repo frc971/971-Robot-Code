@@ -22,6 +22,10 @@ figure {
   }
   axes {
     signal {
+      channel: "CalcIMU"
+      field: "total_acceleration"
+    }
+    signal {
       channel: "IMU"
       field: "accelerometer_x"
     }
