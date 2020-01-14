@@ -50,6 +50,10 @@ load(
     "//debian:python_gtk.bzl",
     python_gtk_debs = "files",
 )
+load(
+    "//debian:opencv_armhf.bzl",
+    opencv_armhf_debs = "files",
+)
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
 generate_repositories_for_debs(python_debs)
@@ -75,6 +79,8 @@ generate_repositories_for_debs(matplotlib_debs)
 generate_repositories_for_debs(arm_frc_gnueabi_deps_debs)
 
 generate_repositories_for_debs(python_gtk_debs)
+
+generate_repositories_for_debs(opencv_armhf_debs)
 
 http_archive(
     name = "python_repo",
@@ -559,4 +565,12 @@ http_file(
     downloaded_file_path = "log.fbs",
     sha256 = "91c98edee0c90a19992792c711dde4a6743af2d6d7e45b5079ec228fdf51ff11",
     urls = ["http://www.frc971.org/Build-Dependencies/small_sample_logfile.fbs"],
+)
+
+# OpenCV armhf (for raspberry pi)
+http_archive(
+    name = "opencv_armhf",
+    build_file = "@//debian:opencv.BUILD",
+    sha256 = "1dd496ad0947ed6ce5d89cbefcfa55ea15ccb5bf70fa6ad7701c62cf2fcdd657",
+    url = "http://www.frc971.org/Build-Dependencies/opencv_armhf_v3.tar.gz",
 )
