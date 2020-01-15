@@ -48,6 +48,10 @@ load(
     ":python_gtk.bzl",
     python_gtk_debs = "files",
 )
+load(
+    ":opencv_armhf.bzl",
+    opencv_armhf_debs = "files",
+)
 load("//debian:packages.bzl", "download_packages", "generate_deb_tarball")
 
 filegroup(
@@ -280,6 +284,13 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "python_gtk",
     files = python_gtk_debs,
+)
+
+# This list was generated with download_packages.py on armhf and then
+# hand-tweaked to get everything it needs.
+generate_deb_tarball(
+    name = "opencv_armhf_v3",
+    files = opencv_armhf_debs,
 )
 
 exports_files([
