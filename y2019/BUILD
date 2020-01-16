@@ -52,6 +52,8 @@ cc_binary(
     srcs = [
         "wpilib_interface.cc",
     ],
+    # This library uses some deprecated parts of the SPI API.
+    copts = ["-Wno-deprecated-declarations"],
     restricted_to = ["//tools:roborio"],
     deps = [
         ":camera_log_fbs",

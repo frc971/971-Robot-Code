@@ -89,6 +89,8 @@ cc_library(
     hdrs = [
         "gyro_interface.h",
     ],
+    # This library uses some deprecated parts of the SPI API.
+    copts = ["-Wno-deprecated-declarations"],
     restricted_to = ["//tools:roborio"],
     deps = [
         "//aos/logging",
@@ -266,6 +268,26 @@ flatbuffer_cc_library(
 )
 
 cc_library(
+    name = "ADIS16470",
+    srcs = [
+        "ADIS16470.cc",
+    ],
+    hdrs = [
+        "ADIS16470.h",
+    ],
+    restricted_to = ["//tools:roborio"],
+    deps = [
+        ":fpga_time_conversion",
+        ":imu_fbs",
+        "//aos/events:event_loop",
+        "//aos/time",
+        "//third_party:wpilib",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "ADIS16448",
     srcs = [
         "ADIS16448.cc",
@@ -273,15 +295,17 @@ cc_library(
     hdrs = [
         "ADIS16448.h",
     ],
+    # This library uses some deprecated parts of the SPI API.
+    copts = ["-Wno-deprecated-declarations"],
     restricted_to = ["//tools:roborio"],
     deps = [
+        ":fpga_time_conversion",
         ":imu_fbs",
         ":spi_rx_clearer",
         "//aos:init",
         "//aos/events:event_loop",
         "//aos/events:shm_event_loop",
         "//aos/logging",
-        "//aos/robot_state:robot_state_fbs",
         "//aos/time",
         "//frc971/zeroing:averager",
         "//third_party:wpilib",
@@ -328,6 +352,7 @@ cc_library(
         ":dma",
         ":dma_edge_counting",
         ":encoder_and_potentiometer",
+        ":fpga_time_conversion",
         ":wpilib_interface",
         "//aos:init",
         "//aos/events:event_loop",
@@ -355,5 +380,22 @@ cc_library(
         "//aos/logging",
         "//frc971/control_loops/drivetrain:drivetrain_output_fbs",
         "//third_party:wpilib",
+    ],
+)
+
+cc_library(
+    name = "fpga_time_conversion",
+    srcs = [
+        "fpga_time_conversion.cc",
+    ],
+    hdrs = [
+        "fpga_time_conversion.h",
+    ],
+    restricted_to = ["//tools:roborio"],
+    deps = [
+        "//aos/time",
+        "//aos/util:compiler_memory_barrier",
+        "//third_party:wpilib",
+        "@com_github_google_glog//:glog",
     ],
 )

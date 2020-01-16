@@ -1,90 +1,93 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2008-2017. All Rights Reserved.                        */
+/* Copyright (c) 2008-2019 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
-#include "hal/SPI.h"
 #include "frc971/wpilib/ahal/SPI.h"
 
 #include <cstring>
+#include <utility>
 
-#include "hal/HAL.h"
-#include "wpi/SmallVector.h"
+#include <hal/SPI.h>
+#include <wpi/SmallVector.h>
+#include <wpi/mutex.h>
 
-using namespace frc;
+#include "frc971/wpilib/ahal/DigitalSource.h"
+#include "frc971/wpilib/ahal/WPIErrors.h"
 
-#define HAL_FATAL_WITH_STATUS(status)
+namespace frc {
 
-SPI::SPI(Port SPIport) {
-#ifdef WPILIB2017
-  m_port = SPIport;
-#else
-  m_port = static_cast<HAL_SPIPort>(SPIport);
-#endif
+SPI::SPI(Port port) : m_port(static_cast<HAL_SPIPort>(port)) {
   int32_t status = 0;
   HAL_InitializeSPI(m_port, &status);
-  HAL_FATAL_WITH_STATUS(status);
-
-  static int instances = 0;
-  instances++;
-  HAL_Report(HALUsageReporting::kResourceType_SPI, instances);
+  wpi_setHALError(status);
 }
 
 SPI::~SPI() { HAL_CloseSPI(m_port); }
 
-void SPI::SetClockRate(double hz) { HAL_SetSPISpeed(m_port, hz); }
+void SPI::SetClockRate(int hz) { HAL_SetSPISpeed(m_port, hz); }
 
 void SPI::SetMSBFirst() {
   m_msbFirst = true;
-  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clk_idle_high);
+  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clockIdleHigh);
 }
 
 void SPI::SetLSBFirst() {
   m_msbFirst = false;
-  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clk_idle_high);
+  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clockIdleHigh);
+}
+
+void SPI::SetSampleDataOnLeadingEdge() {
+  m_sampleOnTrailing = false;
+  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clockIdleHigh);
+}
+
+void SPI::SetSampleDataOnTrailingEdge() {
+  m_sampleOnTrailing = true;
+  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clockIdleHigh);
 }
 
 void SPI::SetSampleDataOnFalling() {
   m_sampleOnTrailing = true;
-  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clk_idle_high);
+  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clockIdleHigh);
 }
 
 void SPI::SetSampleDataOnRising() {
   m_sampleOnTrailing = false;
-  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clk_idle_high);
+  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clockIdleHigh);
 }
 
 void SPI::SetClockActiveLow() {
-  m_clk_idle_high = true;
-  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clk_idle_high);
+  m_clockIdleHigh = true;
+  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clockIdleHigh);
 }
 
 void SPI::SetClockActiveHigh() {
-  m_clk_idle_high = false;
-  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clk_idle_high);
+  m_clockIdleHigh = false;
+  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clockIdleHigh);
 }
 
 void SPI::SetChipSelectActiveHigh() {
   int32_t status = 0;
   HAL_SetSPIChipSelectActiveHigh(m_port, &status);
-  HAL_FATAL_WITH_STATUS(status);
+  wpi_setHALError(status);
 }
 
 void SPI::SetChipSelectActiveLow() {
   int32_t status = 0;
   HAL_SetSPIChipSelectActiveLow(m_port, &status);
-  HAL_FATAL_WITH_STATUS(status);
+  wpi_setHALError(status);
 }
 
-int SPI::Write(uint8_t *data, int size) {
+int SPI::Write(uint8_t* data, int size) {
   int retVal = 0;
   retVal = HAL_WriteSPI(m_port, data, size);
   return retVal;
 }
 
-int SPI::Read(bool initiate, uint8_t *dataReceived, int size) {
+int SPI::Read(bool initiate, uint8_t* dataReceived, int size) {
   int retVal = 0;
   if (initiate) {
     wpi::SmallVector<uint8_t, 32> dataToSend;
@@ -96,8 +99,79 @@ int SPI::Read(bool initiate, uint8_t *dataReceived, int size) {
   return retVal;
 }
 
-int SPI::Transaction(uint8_t *dataToSend, uint8_t *dataReceived, int size) {
+int SPI::Transaction(uint8_t* dataToSend, uint8_t* dataReceived, int size) {
   int retVal = 0;
   retVal = HAL_TransactionSPI(m_port, dataToSend, dataReceived, size);
   return retVal;
 }
+
+void SPI::InitAuto(int bufferSize) {
+  int32_t status = 0;
+  HAL_InitSPIAuto(m_port, bufferSize, &status);
+  wpi_setHALError(status);
+}
+
+void SPI::FreeAuto() {
+  int32_t status = 0;
+  HAL_FreeSPIAuto(m_port, &status);
+  wpi_setHALError(status);
+}
+
+void SPI::SetAutoTransmitData(wpi::ArrayRef<uint8_t> dataToSend, int zeroSize) {
+  int32_t status = 0;
+  HAL_SetSPIAutoTransmitData(m_port, dataToSend.data(), dataToSend.size(),
+                             zeroSize, &status);
+  wpi_setHALError(status);
+}
+
+void SPI::StartAutoRate(double period) {
+  int32_t status = 0;
+  HAL_StartSPIAutoRate(m_port, period, &status);
+  wpi_setHALError(status);
+}
+
+void SPI::StartAutoTrigger(DigitalSource& source, bool rising, bool falling) {
+  int32_t status = 0;
+  HAL_StartSPIAutoTrigger(
+      m_port, source.GetPortHandleForRouting(),
+      (HAL_AnalogTriggerType)source.GetAnalogTriggerTypeForRouting(), rising,
+      falling, &status);
+  wpi_setHALError(status);
+}
+
+void SPI::StopAuto() {
+  int32_t status = 0;
+  HAL_StopSPIAuto(m_port, &status);
+  wpi_setHALError(status);
+}
+
+void SPI::ForceAutoRead() {
+  int32_t status = 0;
+  HAL_ForceSPIAutoRead(m_port, &status);
+  wpi_setHALError(status);
+}
+
+int SPI::ReadAutoReceivedData(uint32_t *buffer, int numToRead, double timeout) {
+  int32_t status = 0;
+  int32_t val = HAL_ReadSPIAutoReceivedData(m_port, buffer, numToRead,
+                                            timeout, &status);
+  wpi_setHALError(status);
+  return val;
+}
+
+int SPI::GetAutoDroppedCount() {
+  int32_t status = 0;
+  int32_t val = HAL_GetSPIAutoDroppedCount(m_port, &status);
+  wpi_setHALError(status);
+  return val;
+}
+
+void SPI::ConfigureAutoStall(HAL_SPIPort /*port*/, int csToSclkTicks,
+                             int stallTicks, int pow2BytesPerRead) {
+  int32_t status = 0;
+  HAL_ConfigureSPIAutoStall(m_port, csToSclkTicks, stallTicks, pow2BytesPerRead,
+                            &status);
+  wpi_setHALError(status);
+}
+
+}  // namespace frc

@@ -166,10 +166,10 @@ class SPI : public ErrorBase {
   /**
    * Set the data to be transmitted by the engine.
    *
-   * Up to 16 bytes are configurable, and may be followed by up to 127 zero
+   * Up to 23 bytes are configurable, and may be followed by up to 127 zero
    * bytes.
    *
-   * @param dataToSend data to send (maximum 16 bytes)
+   * @param dataToSend data to send (maximum 23 bytes)
    * @param zeroSize number of zeros to send after the data
    */
   void SetAutoTransmitData(wpi::ArrayRef<uint8_t> dataToSend, int zeroSize);

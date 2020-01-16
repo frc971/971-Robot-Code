@@ -1,7 +1,55 @@
 namespace frc971;
 
+// The values in the DIAG_STAT register for the ADIS16470.
+table ADIS16470DiagStat {
+  // True indicates that the internal data sampling clock (fSM, see Figure 15
+  // and Figure 16) does not synchronize with the external clock, which only
+  // applies when using scale sync mode (Register MSC_CTRL, Bits[4:2] = 010, see
+  // Table 101). When this occurs, adjust the frequency of the clock signal on
+  // the SYNC pin to operate within the appropriate range.
+  clock_error:bool;
+
+  // True indicates a failure in the flash memory test (Register GLOB_CMD, Bit
+  // 4, see Table 109), which involves a comparison between a cyclic redundancy
+  // check (CRC) computation of the present flash memory and a CRC computation
+  // from the same memory locations at the time of initial programming (during
+  // production process). If this occurs, repeat the same test.  If this error
+  // persists, replace the ADIS16470 device.
+  memory_failure:bool;
+
+  // True indicates failure of at least one sensor, at the conclusion of the
+  // self test (Register GLOB_CMD, Bit 2, see Table 109). If this occurs, repeat
+  // the same test.  If this error persists, replace the ADIS16470. Motion,
+  // during the execution of this test, can cause a false failure.
+  sensor_failure:bool;
+
+  // True indicates that the voltage across VDD and GND is <2.8 V, which causes
+  // data processing to stop. When VDD ≥ 2.8 V for 250 ms, the ADIS16470
+  // reinitializes itself and starts producing data again.
+  standby_mode:bool;
+
+  // True indicates that the total number of SCLK cycles is not equal to an
+  // integer multiple of 16. When this occurs, repeat the previous communication
+  // sequence. Persistence in this error may indicate a weakness in the SPI
+  // service that the ADIS16470 is receiving from the system it is supporting.
+  spi_communication_error:bool;
+
+  // True indicates that the most recent flash memory update (Register GLOB_CMD,
+  // Bit 3, see Table 109) failed. If this occurs, ensure that VDD ≥ 3 V and
+  // repeat the update attempt. If this error persists, replace the ADIS16470.
+  flash_memory_update_error:bool;
+
+  // True indicates that one of the data paths have experienced an overrun
+  // condition. If this occurs, initiate a reset, using the RST pin (see Table
+  // 5, Pin F3) or Register GLOB_CMD, Bit 7 (see Table 109). See the Serial Port
+  // Operation section for more details on conditions that may cause this bit to
+  // be set to 1.
+  data_path_overrun:bool;
+}
+
 // Values returned from an IMU.
-// Published on ".frc971.imu_values"
+// All of these are raw from the hardware, without any form of zeroing or
+// temperature compensation applied.
 table IMUValues {
   // Gyro readings in radians/second.
   // Positive is clockwise looking at the connector.
@@ -35,8 +83,22 @@ table IMUValues {
 
   // FPGA timestamp when the values were captured.
   fpga_timestamp:double;
-  // CLOCK_MONOTONIC time in nanoseconds when the values were captured.
+  // CLOCK_MONOTONIC time in nanoseconds when the values were captured,
+  // converted from fpga_timestamp.
   monotonic_timestamp_ns:long;
+
+  // For an ADIS16470, the DIAG_STAT value immediately after reset.
+  start_diag_stat:ADIS16470DiagStat;
+  // For an ADIS16470, the DIAG_STAT value after the initial sensor self test we
+  // trigger is finished.
+  self_test_diag_stat:ADIS16470DiagStat;
+  // For an ADIS16470, the DIAG_STAT value associated with the previous set of
+  // readings. This will never change during normal operation, so being 1 cycle
+  // state is OK.
+  previous_reading_diag_stat:ADIS16470DiagStat;
+
+  // The value read from the PROD_ID register.
+  product_id:uint16;
 }
 
 root_type IMUValues;
