@@ -54,6 +54,10 @@ load(
     "//debian:opencv_armhf.bzl",
     opencv_armhf_debs = "files",
 )
+load(
+    "//debian:opencv_amd64.bzl",
+    opencv_amd64_debs = "files",
+)
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
 generate_repositories_for_debs(python_debs)
@@ -81,6 +85,8 @@ generate_repositories_for_debs(arm_frc_gnueabi_deps_debs)
 generate_repositories_for_debs(python_gtk_debs)
 
 generate_repositories_for_debs(opencv_armhf_debs)
+
+generate_repositories_for_debs(opencv_amd64_debs)
 
 http_archive(
     name = "python_repo",
@@ -584,4 +590,11 @@ http_archive(
     build_file = "@//debian:opencv.BUILD",
     sha256 = "1dd496ad0947ed6ce5d89cbefcfa55ea15ccb5bf70fa6ad7701c62cf2fcdd657",
     url = "http://www.frc971.org/Build-Dependencies/opencv_armhf_v3.tar.gz",
+)
+
+http_archive(
+    name = "opencv_k8",
+    build_file = "@//debian:opencv.BUILD",
+    sha256 = "4b438c5bb123b2ed95db959fcfdefc833e8e5eee5778c0fbecbb62a94df0079e",
+    url = "http://www.frc971.org/Build-Dependencies/opencv_amd64.tar.gz",
 )

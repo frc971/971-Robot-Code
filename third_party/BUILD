@@ -26,3 +26,17 @@ cc_library(
         "@ctre_phoenix_diagnostics_headers//:diagnostics",
     ],
 )
+
+cc_library(
+    name = "opencv",
+    restricted_to = [
+        "//tools:k8",
+        "//tools:armhf-debian",
+    ],
+    visibility = ["//visibility:public"],
+    deps = select({
+        "//tools:cpu_k8": ["@opencv_k8//:opencv"],
+        "//tools:cpu_armhf": ["@opencv_armhf//:opencv"],
+        "//conditions:default": [],
+    }),
+)
