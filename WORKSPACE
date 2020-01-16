@@ -156,9 +156,21 @@ http_archive(
 # This copy command to make clang happy: `cp usr/lib/arm-linux-gnueabihf/*.o usr/lib`
 http_archive(
     name = "armhf_debian_rootfs",
-    build_file = "@//:compilers/armhf_debian_rootfs.BUILD",
+    build_file = "@//:compilers/debian_rootfs.BUILD",
     sha256 = "8c827bdb79615046ee3e13e85664e5d01286ca1721f7169341667a634e599eb6",
     url = "http://frc971.org/Build-Dependencies/2019-09-26-raspbian-buster-lite_rootfs.tar.bz2",
+)
+
+# Created with:
+#   `debootstrap buster buster_sysroot`
+# and then chrooting in and running:
+#   apt install libc6-dev libstdc++-7-dev
+# and then tarring up the result
+http_archive(
+    name = "amd64_debian_sysroot",
+    build_file = "@//:compilers/debian_rootfs.BUILD",
+    sha256 = "fb0a4f0b35b4c99fcfc83902d2d2eaac7062024b2ff2f998e68736aac92c8e59",
+    url = "http://frc971.org/Build-Dependencies/2019-01-14-debian-buster_rootfs.tar.bz2",
 )
 
 new_git_repository(

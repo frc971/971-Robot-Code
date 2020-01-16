@@ -88,13 +88,15 @@ cc_library(
 filegroup(
     name = "compiler_pieces",
     srcs = glob(
-        [
+        include = [
             "**",
         ],
         exclude = [
             "usr/share/**",
         ],
-    ),
+    ) + [
+        "@amd64_debian_sysroot//:sysroot_files",
+    ],
 )
 
 filegroup(
