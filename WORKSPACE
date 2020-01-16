@@ -150,6 +150,17 @@ http_archive(
     url = "http://frc971.org/Build-Dependencies/gcc-linaro-7.4.1-2019.02-x86_64_arm-linux-gnueabihf.tar.xz",
 )
 
+# The main partition from https://downloads.raspberrypi.org/raspbian_lite/images/raspbian_lite-2019-09-30/2019-09-26-raspbian-buster-lite.zip.
+# The following folders are removed to make bazel happy with it:
+#   usr/share/ca-certificates
+# This copy command to make clang happy: `cp usr/lib/arm-linux-gnueabihf/*.o usr/lib`
+http_archive(
+    name = "armhf_debian_rootfs",
+    build_file = "@//:compilers/armhf_debian_rootfs.BUILD",
+    sha256 = "8c827bdb79615046ee3e13e85664e5d01286ca1721f7169341667a634e599eb6",
+    url = "http://frc971.org/Build-Dependencies/2019-09-26-raspbian-buster-lite_rootfs.tar.bz2",
+)
+
 new_git_repository(
     name = "python_gflags_repo",
     build_file = "@//debian:gflags.BUILD",

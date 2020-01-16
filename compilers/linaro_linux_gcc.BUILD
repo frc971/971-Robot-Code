@@ -58,14 +58,15 @@ filegroup(
 
 filegroup(
     name = "compiler_pieces",
-    srcs = glob([
-        "arm-linux-gnueabihf/**",
-        "libexec/**",
-        "lib/gcc/arm-linux-gnueabihf/**",
-        "include/**",
-    ], exclude=["arm-linux-gnueabihf/libc/usr/include/linux/sctp.h"]) +
-    [
-        "@org_frc971//third_party/linux:sctp",
+    srcs = glob(
+        include = [
+            "arm-linux-gnueabihf/**",
+            "libexec/**",
+            "lib/gcc/arm-linux-gnueabihf/**",
+            "include/**",
+        ],
+    ) + [
+        "@armhf_debian_rootfs//:sysroot_files",
     ],
 )
 
