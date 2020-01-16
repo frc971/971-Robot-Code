@@ -7,6 +7,10 @@ cc_library(
     hdrs = [
         "averager.h",
     ],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
 )
 
 cc_test(
@@ -17,6 +21,36 @@ cc_test(
     deps = [
         ":averager",
         "//aos/testing:googletest",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_library(
+    name = "imu_zeroer",
+    srcs = [
+        "imu_zeroer.cc",
+    ],
+    hdrs = [
+        "imu_zeroer.h",
+    ],
+    deps = [
+        ":averager",
+        "//frc971/wpilib:imu_fbs",
+        "@com_github_google_glog//:glog",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_test(
+    name = "imu_zeroer_test",
+    srcs = [
+        "imu_zeroer_test.cc",
+    ],
+    deps = [
+        ":imu_zeroer",
+        "//aos:flatbuffers",
+        "//aos/testing:googletest",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
