@@ -40,3 +40,49 @@ cc_library(
         "//conditions:default": [],
     }),
 )
+
+cc_library(
+    name = "halide",
+    restricted_to = [
+        "//tools:k8",
+        "//tools:armhf-debian",
+    ],
+    visibility = ["//visibility:public"],
+    deps = select({
+        "//tools:cpu_k8": ["@halide_k8//:halide"],
+        "//tools:cpu_armhf": ["@halide_armhf//:halide"],
+        "//conditions:default": [],
+    }),
+)
+
+cc_library(
+    name = "halide_gengen",
+    restricted_to = [
+        "//tools:k8",
+        "//tools:armhf-debian",
+    ],
+    visibility = ["//visibility:public"],
+    # It's the same file in either version, but we'll pick the native version
+    # to minimize the chances of needing to download the other version unnecessarily.
+    deps = select({
+        "//tools:cpu_k8": ["@halide_k8//:gengen"],
+        "//tools:cpu_armhf": ["@halide_armhf//:gengen"],
+        "//conditions:default": [],
+    }),
+)
+
+cc_library(
+    name = "halide_runtime",
+    restricted_to = [
+        "//tools:k8",
+        "//tools:armhf-debian",
+    ],
+    visibility = ["//visibility:public"],
+    # It's the same file in either version, but we'll pick the native version
+    # to minimize the chances of needing to download the other version unnecessarily.
+    deps = select({
+        "//tools:cpu_k8": ["@halide_k8//:runtime"],
+        "//tools:cpu_armhf": ["@halide_armhf//:runtime"],
+        "//conditions:default": [],
+    }),
+)
