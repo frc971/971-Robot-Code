@@ -107,46 +107,43 @@ toolchain {
   tool_path { name: "strip" path: "clang_6p0/x86_64-linux-gnu-strip" }
   linking_mode_flags { mode: DYNAMIC }
 
-  compiler_flag: "--sysroot=external/clang_6p0_repo/"
+  compiler_flag: "--sysroot=external/amd64_debian_sysroot"
   compiler_flag: "-nostdinc"
   compiler_flag: "-isystem"
-  compiler_flag: "external/clang_6p0_repo/usr/include/x86_64-linux-gnu",
+  compiler_flag: "external/amd64_debian_sysroot/usr/include/c++/7"
   compiler_flag: "-isystem"
-  compiler_flag: "external/clang_6p0_repo/usr/lib/llvm-6.0/lib/clang/6.0.0/include",
+  compiler_flag: "external/amd64_debian_sysroot/usr/include/x86_64-linux-gnu/c++/7"
+  compiler_flag: "-isystem"
+  compiler_flag: "external/amd64_debian_sysroot/usr/include/c++/8/backward"
+  compiler_flag: "-isystem"
+  compiler_flag: "external/amd64_debian_sysroot/usr/lib/gcc/x86_64-linux-gnu/8/include"
+  # We don't have anything in /usr/local/include, so don't include it here where
+  # would normally go on the default search path.
+  compiler_flag: "-isystem"
+  compiler_flag: "external/clang_6p0_repo/usr/lib/llvm-6.0/lib/clang/6.0.0/include"
+  compiler_flag: "-isystem"
+  compiler_flag: "external/amd64_debian_sysroot/usr/include/x86_64-linux-gnu"
+  compiler_flag: "-isystem"
+  compiler_flag: "external/amd64_debian_sysroot/usr/include"
 
-  compiler_flag: "-isystem"
-  compiler_flag: "external/clang_6p0_repo/usr/include/c++/7.4.0"
-  compiler_flag: "-isystem"
-  compiler_flag: "external/clang_6p0_repo/usr/include/x86_64-linux-gnu/c++/7.4.0"
-  compiler_flag: "-isystem"
-  compiler_flag: "external/clang_6p0_repo/usr/include/c++/7.4.0/backward"
-  compiler_flag: "-isystem"
-  compiler_flag: "external/clang_6p0_repo/usr/include"
-
-  # TODO(bazel-team): In theory, the path here ought to exactly match the path
-  # used by gcc. That works because bazel currently doesn't track files at
-  # absolute locations and has no remote execution, yet. However, this will need
-  # to be fixed, maybe with auto-detection?
-  cxx_builtin_include_directory: "%package(@clang_6p0_repo//usr)%/include/c++/7.4.0"
-  cxx_builtin_include_directory: "%package(@clang_6p0_repo//usr)%/include/x86_64-linux-gnu/c++/7.4.0"
-  cxx_builtin_include_directory: "%package(@clang_6p0_repo//usr)%/include/c++/7.4.0/backward"
-  cxx_builtin_include_directory: "%package(@clang_6p0_repo//usr)%/local/include"
   cxx_builtin_include_directory: "%package(@clang_6p0_repo//usr)%/lib/llvm-6.0/lib/clang/6.0.0/include"
-  cxx_builtin_include_directory: "%package(@clang_6p0_repo//usr)%/include/x86_64-linux-gnu"
-  cxx_flag: "-isystem"
-  cxx_flag: "external/clang_6p0_repo/usr/include"
+  cxx_builtin_include_directory: "%package(@amd64_debian_sysroot//usr)%/include"
+  cxx_builtin_include_directory: "%package(@amd64_debian_sysroot//usr)%/lib/gcc/x86_64-linux-gnu/7/include"
+  cxx_builtin_include_directory: "%package(@amd64_debian_sysroot//usr)%/lib/gcc/x86_64-linux-gnu/7/include-fixed"
 
   linker_flag: "-nodefaultlibs"
-  linker_flag: "--sysroot=external/clang_6p0_repo/"
+  linker_flag: "--sysroot=external/amd64_debian_sysroot"
   linker_flag: "-lstdc++"
   linker_flag: "-lc"
   linker_flag: "-lgcc"
   linker_flag: "-lgcc_s"
   linker_flag: "-Bexternal/clang_6p0_repo/usr/bin/"
   linker_flag: "-Ltools/cpp/clang_6p0/clang_more_libs"
-  linker_flag: "-Lexternal/clang_6p0_repo/lib/x86_64-linux-gnu"
-  linker_flag: "-Lexternal/clang_6p0_repo/usr/lib/x86_64-linux-gnu"
-  linker_flag: "-Lexternal/clang_6p0_repo/usr/lib/gcc/x86_64-linux-gnu"
+  linker_flag: "-Lexternal/amd64_debian_sysroot/usr/lib/gcc/x86_64-linux-gnu/7/"
+  linker_flag: "-Lexternal/amd64_debian_sysroot/usr/lib/x86_64-linux-gnu/"
+  linker_flag: "-Lexternal/amd64_debian_sysroot/usr/lib/"
+  linker_flag: "-Lexternal/amd64_debian_sysroot/lib/x86_64-linux-gnu/"
+  linker_flag: "-Lexternal/amd64_debian_sysroot/lib/"
 
   feature {
     name: "opt"
