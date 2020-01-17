@@ -11,9 +11,27 @@
 
 namespace aos {
 
-// Parses the flatbuffer into the vector, or returns an empty vector.
+// Parses the flatbuffer into the buffer, or returns an empty buffer.
 flatbuffers::DetachedBuffer JsonToFlatbuffer(
     const std::string_view data, const flatbuffers::TypeTable *typetable);
+
+// Parses the flatbuffer into the builder, and returns the offset.
+flatbuffers::Offset<flatbuffers::Table> JsonToFlatbuffer(
+    const std::string_view data, const flatbuffers::TypeTable *typetable,
+    flatbuffers::FlatBufferBuilder *fbb);
+
+// Typed versions of the above methods.
+template <typename T>
+inline flatbuffers::DetachedBuffer JsonToFlatbuffer(
+    const std::string_view data) {
+  return JsonToFlatbuffer(data, T::MiniReflectTypeTable());
+}
+template <typename T>
+inline flatbuffers::Offset<T> JsonToFlatbuffer(
+    const std::string_view data, flatbuffers::FlatBufferBuilder *fbb) {
+  return flatbuffers::Offset<T>(
+      JsonToFlatbuffer(data, T::MiniReflectTypeTable(), fbb).o);
+}
 
 // Converts a flatbuffer into a Json string.
 // multi_line controls if the Json is written out on multiple lines or one.
