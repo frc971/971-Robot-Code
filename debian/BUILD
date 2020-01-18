@@ -216,6 +216,9 @@ download_packages(
         "libz-dev",
         "python3-dev",
         "python3",
+        "libblas.so.3",
+        "liblapack.so.3",
+        "libstdc++-dev",
     ],
     packages = [
         "libgtk-3-dev",
