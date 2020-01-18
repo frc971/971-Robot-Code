@@ -34,7 +34,7 @@
 #include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
-#include "frc971/wpilib/ADIS16448.h"
+#include "frc971/wpilib/ADIS16470.h"
 #include "frc971/wpilib/buffered_pcm.h"
 #include "frc971/wpilib/buffered_solenoid.h"
 #include "frc971/wpilib/dma.h"
@@ -130,7 +130,11 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     autonomous_modes_.at(i) = ::std::move(sensor);
   }
 
+  void set_imu(frc971::wpilib::ADIS16470 *imu) { imu_ = imu; }
+
   void RunIteration() override {
+    CHECK_NOTNULL(imu_)->DoReads();
+
     {
       auto builder = drivetrain_position_sender_.MakeBuilder();
       frc971::control_loops::drivetrain::Position::Builder drivetrain_builder =
@@ -181,6 +185,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       drivetrain_position_sender_;
 
   ::std::array<::std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
+
+  frc971::wpilib::ADIS16470 *imu_ = nullptr;
 };
 
 class SuperstructureWriter
@@ -223,6 +229,13 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     SensorReader sensor_reader(&sensor_reader_event_loop);
     sensor_reader.set_drivetrain_left_encoder(make_encoder(0));
     sensor_reader.set_drivetrain_right_encoder(make_encoder(1));
+
+    auto imu_trigger = make_unique<frc::DigitalInput>(0);
+    auto imu_reset = make_unique<frc::DigitalOutput>(1);
+    auto spi = make_unique<frc::SPI>(frc::SPI::Port::kOnboardCS2);
+    frc971::wpilib::ADIS16470 imu(&sensor_reader_event_loop, spi.get(),
+                                  imu_trigger.get(), imu_reset.get());
+    sensor_reader.set_imu(&imu);
 
     AddLoop(&sensor_reader_event_loop);
 

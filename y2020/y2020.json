@@ -17,6 +17,10 @@
       "frequency": 200
     },
     {
+      "name": "/drivetrain",
+      "type": "y2019.control_loops.drivetrain.TargetSelectorHint"
+    },
+    {
       "name": "/superstructure",
       "type": "y2020.control_loops.superstructure.Position",
       "frequency": 200
