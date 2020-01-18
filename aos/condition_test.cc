@@ -19,7 +19,6 @@
 #include "aos/macros.h"
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/die.h"
-#include "aos/util/thread.h"
 #include "aos/testing/prevent_exit.h"
 
 namespace aos {
@@ -58,20 +57,18 @@ TEST_F(SimpleConditionTest, Basic) {
   ::std::atomic_bool child_finished(false);
   Condition child_ready(&mutex_);
   ASSERT_FALSE(mutex_.Lock());
-  util::FunctionThread child([this, &child_finished, &child_ready](
-      util::FunctionThread *) {
+  std::thread child([this, &child_finished, &child_ready] {
     ASSERT_FALSE(mutex_.Lock());
     child_ready.Broadcast();
     ASSERT_FALSE(condition_.Wait());
     child_finished.store(true);
     mutex_.Unlock();
   });
-  child.Start();
   ASSERT_FALSE(child_ready.Wait());
   EXPECT_FALSE(child_finished.load());
   condition_.Signal();
   mutex_.Unlock();
-  child.Join();
+  child.join();
   EXPECT_TRUE(child_finished.load());
 }
 

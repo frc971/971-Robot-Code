@@ -159,7 +159,6 @@ cc_test(
         "//aos/testing:prevent_exit",
         "//aos/testing:test_shm",
         "//aos/time",
-        "//aos/util:thread",
     ],
 )
 
@@ -254,7 +253,6 @@ cc_test(
         ":complex_thread_local",
         "//aos/logging",
         "//aos/testing:googletest",
-        "//aos/util:thread",
     ],
 )
 

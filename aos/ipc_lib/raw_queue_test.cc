@@ -8,6 +8,7 @@
 #include <ostream>
 #include <memory>
 #include <map>
+#include <thread>
 
 #include "gtest/gtest.h"
 
@@ -17,7 +18,6 @@
 #include "aos/time/time.h"
 #include "aos/logging/logging.h"
 #include "aos/die.h"
-#include "aos/util/thread.h"
 #include "aos/util/options.h"
 #include "aos/util/death_test_log_implementation.h"
 #include "aos/testing/prevent_exit.h"
@@ -976,16 +976,14 @@ TEST_F(RawQueueTest, MultiThreadedFree) {
   ASSERT_NE(nullptr, message1);
   ASSERT_NE(nullptr, message2);
   EXPECT_EQ(free_before, queue->FreeMessages());
-  util::FunctionThread t1([message1, queue](util::Thread *) {
+  std::thread t1([message1, queue] {
     queue->FreeMessage(message1);
   });
-  util::FunctionThread t2([message2, queue](util::Thread *) {
+  std::thread t2([message2, queue] {
     queue->FreeMessage(message2);
   });
-  t1.Start();
-  t2.Start();
-  t1.WaitUntilDone();
-  t2.WaitUntilDone();
+  t1.join();
+  t2.join();
   EXPECT_EQ(free_before, queue->FreeMessages());
 }
 

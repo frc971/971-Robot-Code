@@ -1,10 +1,9 @@
 #include "aos/complex_thread_local.h"
 
 #include <atomic>
+#include <thread>
 
 #include "gtest/gtest.h"
-
-#include "aos/util/thread.h"
 
 namespace aos {
 namespace testing {
@@ -65,7 +64,7 @@ TEST_F(ComplexThreadLocalTest, Basic) {
 
 TEST_F(ComplexThreadLocalTest, AnotherThread) {
   EXPECT_FALSE(local.created());
-  util::FunctionThread::RunInOtherThread([this]() {
+  std::thread t1([this]() {
     EXPECT_FALSE(local.created());
     local.Create(971);
     EXPECT_TRUE(local.created());
@@ -73,21 +72,21 @@ TEST_F(ComplexThreadLocalTest, AnotherThread) {
     EXPECT_EQ(1, TraceableObject::constructions);
     EXPECT_EQ(0, TraceableObject::destructions);
   });
+  t1.join();
   EXPECT_EQ(1, TraceableObject::constructions);
   EXPECT_EQ(1, TraceableObject::destructions);
   EXPECT_FALSE(local.created());
 }
 
 TEST_F(ComplexThreadLocalTest, TwoThreads) {
-  util::FunctionThread thread([this](util::FunctionThread *) {
+  std::thread thread([this]() {
     local.Create(971);
     EXPECT_EQ(971, local->data);
     EXPECT_EQ(0, TraceableObject::destructions);
   });
-  thread.Start();
   local.Create(973);
   EXPECT_EQ(973, local->data);
-  thread.Join();
+  thread.join();
   EXPECT_TRUE(local.created());
   EXPECT_EQ(2, TraceableObject::constructions);
   EXPECT_EQ(1, TraceableObject::destructions);

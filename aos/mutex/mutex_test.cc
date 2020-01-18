@@ -16,7 +16,6 @@
 #include "aos/testing/test_shm.h"
 #include "aos/time/time.h"
 #include "aos/util/death_test_log_implementation.h"
-#include "aos/util/thread.h"
 
 namespace aos {
 namespace testing {
@@ -108,9 +107,10 @@ TEST_F(MutexTest, OwnerDiedDeathLock) {
       static_cast<Mutex *>(shm_malloc_aligned(sizeof(Mutex), alignof(Mutex)));
   new (mutex) Mutex();
 
-  util::FunctionThread::RunInOtherThread([&]() {
+  std::thread thread([&]() {
     ASSERT_FALSE(mutex->Lock());
   });
+  thread.join();
   EXPECT_TRUE(mutex->Lock());
 
   mutex->Unlock();
@@ -124,9 +124,10 @@ TEST_F(MutexTest, OwnerDiedDeathTryLock) {
       static_cast<Mutex *>(shm_malloc_aligned(sizeof(Mutex), alignof(Mutex)));
   new (mutex) Mutex();
 
-  util::FunctionThread::RunInOtherThread([&]() {
+  std::thread thread([&]() {
     ASSERT_FALSE(mutex->Lock());
   });
+  thread.join();
   EXPECT_EQ(Mutex::State::kOwnerDied, mutex->TryLock());
 
   mutex->Unlock();
@@ -145,11 +146,12 @@ TEST_F(MutexTest, DontCorruptRobustList) {
   // in the original failure.
   Mutex mutex2;
 
-  util::FunctionThread::RunInOtherThread([&]() {
+  std::thread thread([&]() {
     ASSERT_FALSE(mutex1.Lock());
     ASSERT_FALSE(mutex2.Lock());
     mutex1.Unlock();
   });
+  thread.join();
 
   EXPECT_EQ(Mutex::State::kLocked, mutex1.TryLock());
   EXPECT_EQ(Mutex::State::kOwnerDied, mutex2.TryLock());
@@ -158,49 +160,21 @@ TEST_F(MutexTest, DontCorruptRobustList) {
   mutex2.Unlock();
 }
 
-namespace {
-
-class AdderThread : public ::aos::util::Thread {
- public:
-  AdderThread(int *counter, Mutex *mutex,
-              monotonic_clock::duration sleep_before_time,
-              monotonic_clock::duration sleep_after_time)
-      : counter_(counter),
-        mutex_(mutex),
-        sleep_before_time_(sleep_before_time),
-        sleep_after_time_(sleep_after_time) {}
-
- private:
-  virtual void Run() override {
-    this_thread::sleep_for(sleep_before_time_);
-    MutexLocker locker(mutex_);
-    ++(*counter_);
-    this_thread::sleep_for(sleep_after_time_);
-  }
-
-  int *const counter_;
-  Mutex *const mutex_;
-  const monotonic_clock::duration sleep_before_time_, sleep_after_time_;
-};
-
-}  // namespace
-
 // Verifies that ThreadSanitizer understands that a contended mutex establishes
 // a happens-before relationship.
 TEST_F(MutexTest, ThreadSanitizerContended) {
   int counter = 0;
-  AdderThread threads[2]{
-      {&counter, &test_mutex_, chrono::milliseconds(200),
-       chrono::milliseconds(0)},
-      {&counter, &test_mutex_, chrono::milliseconds(0),
-       chrono::milliseconds(0)},
-  };
-  for (auto &c : threads) {
-    c.Start();
-  }
-  for (auto &c : threads) {
-    c.WaitUntilDone();
-  }
+  std::thread thread1([this, &counter]() {
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    MutexLocker locker(&test_mutex_);
+    ++counter;
+  });
+  std::thread thread2([this, &counter]() {
+    MutexLocker locker(&test_mutex_);
+    ++counter;
+  });
+  thread1.join();
+  thread2.join();
   EXPECT_EQ(2, counter);
 }
 
@@ -229,50 +203,29 @@ TEST_F(MutexTest, ThreadSanitizerMutexLocker) {
 // establishes a happens-before relationship.
 TEST_F(MutexTest, ThreadSanitizerUncontended) {
   int counter = 0;
-  AdderThread threads[2]{
-      {&counter, &test_mutex_, chrono::milliseconds(0),
-       chrono::milliseconds(0)},
-      {&counter, &test_mutex_, chrono::milliseconds(200),
-       chrono::milliseconds(0)}, };
-  for (auto &c : threads) {
-    c.Start();
-  }
-  for (auto &c : threads) {
-    c.WaitUntilDone();
-  }
+  std::thread thread1([this, &counter]() {
+    MutexLocker locker(&test_mutex_);
+    ++counter;
+  });
+  std::thread thread2([this, &counter]() {
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    MutexLocker locker(&test_mutex_);
+    ++counter;
+  });
+  thread1.join();
+  thread2.join();
   EXPECT_EQ(2, counter);
 }
 
-namespace {
-
-class LockerThread : public util::Thread {
- public:
-  LockerThread(Mutex *mutex, bool lock, bool unlock)
-      : mutex_(mutex), lock_(lock), unlock_(unlock) {}
-
- private:
-  virtual void Run() override {
-    if (lock_) {
-      ASSERT_FALSE(mutex_->Lock());
-    }
-    if (unlock_) {
-      mutex_->Unlock();
-    }
-  }
-
-  Mutex *const mutex_;
-  const bool lock_, unlock_;
-};
-
-}  // namespace
-
 // Makes sure that we don't SIGSEGV or something with multiple threads.
 TEST_F(MutexTest, MultiThreadedLock) {
-  LockerThread t(&test_mutex_, true, true);
-  t.Start();
+  std::thread thread([this] {
+    ASSERT_FALSE(test_mutex_.Lock());
+    test_mutex_.Unlock();
+  });
   ASSERT_FALSE(test_mutex_.Lock());
   test_mutex_.Unlock();
-  t.Join();
+  thread.join();
 }
 
 TEST_F(MutexLockerTest, Basic) {
@@ -292,9 +245,10 @@ TEST_F(MutexLockerDeathTest, OwnerDied) {
       static_cast<Mutex *>(shm_malloc_aligned(sizeof(Mutex), alignof(Mutex)));
   new (mutex) Mutex();
 
-  util::FunctionThread::RunInOtherThread([&]() {
+  std::thread thread([&]() {
     ASSERT_FALSE(mutex->Lock());
   });
+  thread.join();
   EXPECT_DEATH(
       {
         logging::SetImplementation(new util::DeathTestLogImplementation());
@@ -359,9 +313,10 @@ TEST_F(IPCMutexLockerTest, OwnerDied) {
       static_cast<Mutex *>(shm_malloc_aligned(sizeof(Mutex), alignof(Mutex)));
   new (mutex) Mutex();
 
-  util::FunctionThread::RunInOtherThread([&]() {
+  std::thread thread([&]() {
     ASSERT_FALSE(mutex->Lock());
   });
+  thread.join();
   {
     aos::IPCMutexLocker locker(mutex);
     EXPECT_EQ(Mutex::State::kLockFailed, mutex->TryLock());

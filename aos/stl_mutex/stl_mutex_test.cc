@@ -3,7 +3,6 @@
 #include "gtest/gtest.h"
 
 #include "aos/testing/test_logging.h"
-#include "aos/util/thread.h"
 #include "aos/die.h"
 
 namespace aos {

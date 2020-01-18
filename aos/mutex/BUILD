@@ -27,7 +27,6 @@ cc_test(
         "//aos/testing:test_shm",
         "//aos/time",
         "//aos/util:death_test_log_implementation",
-        "//aos/util:thread",
         "@com_github_google_glog//:glog",
     ],
 )

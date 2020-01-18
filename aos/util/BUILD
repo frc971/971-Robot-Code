@@ -55,7 +55,6 @@ cc_test(
     ],
     deps = [
         ":run_command",
-        ":thread",
         "//aos/logging",
         "//aos/testing:googletest",
     ],
@@ -142,20 +141,6 @@ cc_test(
     deps = [
         ":string_to_num",
         "//aos/testing:googletest",
-    ],
-)
-
-cc_library(
-    name = "thread",
-    srcs = [
-        "thread.cc",
-    ],
-    hdrs = [
-        "thread.h",
-    ],
-    deps = [
-        "//aos:macros",
-        "@com_github_google_glog//:glog",
     ],
 )
 

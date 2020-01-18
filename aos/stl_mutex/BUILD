@@ -21,6 +21,5 @@ cc_test(
         "//aos:die",
         "//aos/testing:googletest",
         "//aos/testing:test_logging",
-        "//aos/util:thread",
     ],
 )

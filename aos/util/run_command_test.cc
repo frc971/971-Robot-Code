@@ -1,8 +1,6 @@
 #include "aos/util/run_command.h"
-
 #include "gtest/gtest.h"
-
-#include "aos/util/thread.h"
+#include <thread>
 
 namespace aos {
 namespace util {
@@ -38,16 +36,14 @@ TEST(RunCommandTest, KilledBySignal) {
 
 TEST(RunCommandTest, MultipleThreads) {
   int result1, result2;
-  util::FunctionThread t1([&result1](util::Thread *) {
+  std::thread t1([&result1]() {
     result1 = RunCommand("true");
   });
-  util::FunctionThread t2([&result2](util::Thread *) {
+  std::thread t2([&result2]() {
     result2 = RunCommand("true");
   });
-  t1.Start();
-  t2.Start();
-  t1.WaitUntilDone();
-  t2.WaitUntilDone();
+  t1.join();
+  t2.join();
   ASSERT_NE(-1, result1);
   ASSERT_NE(-1, result2);
   ASSERT_TRUE(WIFEXITED(result1));
