@@ -99,7 +99,7 @@ TEST(RungeKuttaTest, UkfConstantRotation) {
   Eigen::Matrix<double, 3, 1> measurement;
   measurement.setZero();
   for (int ii = 0; ii < 200; ++ii) {
-    dtukf.Predict(ux * M_PI_2, measurement, 0.005);
+    dtukf.Predict(ux * M_PI_2, measurement, std::chrono::milliseconds(5));
   }
   const Eigen::Quaterniond expected(Eigen::AngleAxis<double>(M_PI_2, ux));
   EXPECT_TRUE(QuaternionEqual(expected, dtukf.X_hat(), 0.01))
@@ -109,6 +109,48 @@ TEST(RungeKuttaTest, UkfConstantRotation) {
             (Eigen::Vector3d(0.0, 1.0, 0.0) - dtukf.H(dtukf.X_hat().coeffs()))
                 .norm(), 1e-10);
 }
+
+// Tests that the euler angles in the status message are correct.
+TEST(RungeKuttaTest, UkfEulerStatus) {
+  drivetrain::DrivetrainUkf dtukf;
+  const Eigen::Vector3d ux = Eigen::Vector3d::UnitX();
+  const Eigen::Vector3d uy = Eigen::Vector3d::UnitY();
+  const Eigen::Vector3d uz = Eigen::Vector3d::UnitZ();
+  // First, rotate 3 radians in the yaw axis, then 0.5 radians in the pitch
+  // axis, and then 0.1 radians about the roll axis.
+  constexpr double kYaw = 3.0;
+  constexpr double kPitch = 0.5;
+  constexpr double kRoll = 0.1;
+  Eigen::Matrix<double, 3, 1> measurement;
+  measurement.setZero();
+  for (int ii = 0; ii < 200; ++ii) {
+    dtukf.Predict(uz * kYaw, measurement, std::chrono::milliseconds(5));
+  }
+  for (int ii = 0; ii < 200; ++ii) {
+    dtukf.Predict(uy * kPitch, measurement, std::chrono::milliseconds(5));
+  }
+  for (int ii = 0; ii < 200; ++ii) {
+    dtukf.Predict(ux * kRoll, measurement, std::chrono::milliseconds(5));
+  }
+  const Eigen::Quaterniond expected(Eigen::AngleAxis<double>(kYaw, uz) *
+                                    Eigen::AngleAxis<double>(kPitch, uy) *
+                                    Eigen::AngleAxis<double>(kRoll, ux));
+  flatbuffers::FlatBufferBuilder fbb;
+  fbb.ForceDefaults(1);
+  fbb.Finish(dtukf.PopulateStatus(&fbb));
+
+  aos::FlatbufferDetachedBuffer<drivetrain::DownEstimatorState> state(
+      fbb.Release());
+  EXPECT_EQ(kPitch, state.message().longitudinal_pitch());
+  EXPECT_EQ(kYaw, state.message().yaw());
+  // The longitudinal pitch is not actually the same number as the roll, so we
+  // don't check it here.
+
+  EXPECT_TRUE(QuaternionEqual(expected, dtukf.X_hat(), 0.01))
+      << "Expected: " << expected.coeffs()
+      << " Got: " << dtukf.X_hat().coeffs();
+}
+
 
 // Tests that if the gyro indicates no movement but that the accelerometer shows
 // that we are slightly rotated, that we eventually adjust our estimate to be
@@ -127,7 +169,7 @@ TEST(RungeKuttaTest, UkfAccelCorrectsBias) {
             (Eigen::Vector3d(0.0, 0.0, 1.0) - dtukf.H(dtukf.X_hat().coeffs()))
                 .norm());
   for (int ii = 0; ii < 200; ++ii) {
-    dtukf.Predict({0.0, 0.0, 0.0}, measurement, 0.005);
+    dtukf.Predict({0.0, 0.0, 0.0}, measurement, std::chrono::milliseconds(5));
   }
   const Eigen::Quaterniond expected(Eigen::AngleAxis<double>(M_PI_2, ux));
   EXPECT_TRUE(QuaternionEqual(expected, dtukf.X_hat(), 0.01))
@@ -147,7 +189,7 @@ TEST(RungeKuttaTest, UkfIgnoreBadAccel) {
   // are only rotating about the Z (yaw) axis.
   measurement << 0.3, 1.0, 0.0;
   for (int ii = 0; ii < 200; ++ii) {
-    dtukf.Predict({0.0, 0.0, 1.0}, measurement, 0.005);
+    dtukf.Predict({0.0, 0.0, 1.0}, measurement, std::chrono::milliseconds(5));
   }
   const Eigen::Quaterniond expected(Eigen::AngleAxis<double>(1.0, uz));
   EXPECT_TRUE(QuaternionEqual(expected, dtukf.X_hat(), 1e-1))

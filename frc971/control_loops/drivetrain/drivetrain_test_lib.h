@@ -9,7 +9,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-#include "frc971/queues/gyro_generated.h"
+#include "frc971/wpilib/imu_generated.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -89,7 +89,7 @@ class DrivetrainSimulation {
       drivetrain_output_fetcher_;
   ::aos::Fetcher<::frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
-  ::aos::Sender<::frc971::sensors::GyroReading> gyro_reading_sender_;
+  ::aos::Sender<::frc971::IMUValues> imu_sender_;
 
   DrivetrainConfig<double> dt_config_;
 
@@ -105,6 +105,9 @@ class DrivetrainSimulation {
   double last_right_position_;
 
   Eigen::Matrix<double, 2, 1> last_U_;
+
+  // Last robot acceleration, in m/s/s.
+  Eigen::Vector3d last_acceleration_;
 
   bool left_gear_high_ = false;
   bool right_gear_high_ = false;

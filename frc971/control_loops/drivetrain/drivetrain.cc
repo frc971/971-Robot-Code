@@ -47,13 +47,11 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
       dt_closedloop_(dt_config_, &kf_, localizer_),
       dt_spline_(dt_config_),
       dt_line_follow_(dt_config_, localizer->target_selector()),
-      down_estimator_(MakeDownEstimatorLoop()),
       left_gear_(dt_config_.default_high_gear ? Gear::HIGH : Gear::LOW),
       right_gear_(dt_config_.default_high_gear ? Gear::HIGH : Gear::LOW),
       left_high_requested_(dt_config_.default_high_gear),
       right_high_requested_(dt_config_.default_high_gear) {
   ::aos::controls::HPolytope<0>::Init();
-  down_U_.setZero();
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
@@ -98,7 +96,6 @@ void DrivetrainLoop::RunIteration(
 
   if (!has_been_enabled_ && output) {
     has_been_enabled_ = true;
-    down_estimator_.mutable_X_hat(1, 0) = 0.0;
   }
 
   // TODO(austin): Put gear detection logic here.
@@ -142,17 +139,22 @@ void DrivetrainLoop::RunIteration(
     gear_logging_offset = gear_logging_builder.Finish();
   }
 
-  const bool is_latest_imu_values = imu_values_fetcher_.Fetch();
-  if (is_latest_imu_values) {
-    const double rate = -imu_values_fetcher_->gyro_y();
-    const double accel_squared =
-        ::std::pow(imu_values_fetcher_->accelerometer_x(), 2.0) +
-        ::std::pow(imu_values_fetcher_->accelerometer_y(), 2.0) +
-        ::std::pow(imu_values_fetcher_->accelerometer_z(), 2.0);
-    const double angle = ::std::atan2(imu_values_fetcher_->accelerometer_x(),
-                                      imu_values_fetcher_->accelerometer_z()) +
-                         0.008;
+  while (imu_values_fetcher_.FetchNext()) {
+    imu_zeroer_.ProcessMeasurement(*imu_values_fetcher_);
+    last_gyro_time_ = monotonic_now;
+    aos::monotonic_clock::time_point reading_time(std::chrono::nanoseconds(
+        imu_values_fetcher_->monotonic_timestamp_ns()));
+    if (last_imu_update_ == aos::monotonic_clock::min_time) {
+      last_imu_update_ = reading_time;
+    }
+    down_estimator_.Predict(imu_zeroer_.ZeroedGyro(), imu_zeroer_.ZeroedAccel(),
+                            reading_time - last_imu_update_);
+    last_imu_update_ = reading_time;
+  }
 
+  bool got_imu_reading = false;
+  if (imu_values_fetcher_.get() != nullptr) {
+    got_imu_reading = true;
     switch (dt_config_.imu_type) {
       case IMUType::IMU_X:
         last_accel_ = -imu_values_fetcher_->accelerometer_x();
@@ -164,51 +166,29 @@ void DrivetrainLoop::RunIteration(
         last_accel_ = -imu_values_fetcher_->accelerometer_y();
         break;
     }
-
-    if (accel_squared > 1.03 || accel_squared < 0.97) {
-      AOS_LOG(DEBUG, "New IMU value, rejecting reading\n");
-    } else {
-      // -y is our gyro.
-      // z accel is down
-      // x accel is the front of the robot pointed down.
-      Eigen::Matrix<double, 1, 1> Y;
-      Y(0, 0) = angle;
-      down_estimator_.Correct(Y);
-    }
-
-    AOS_LOG(DEBUG,
-            "New IMU value, rate is %f, angle %f, fused %f, bias "
-            "%f\n",
-            rate, angle, down_estimator_.X_hat(0), down_estimator_.X_hat(1));
-    down_U_(0, 0) = rate;
   }
-  down_estimator_.UpdateObserver(down_U_, ::aos::controls::kLoopFrequency);
 
   // TODO(austin): Signal the current gear to both loops.
 
   switch (dt_config_.gyro_type) {
     case GyroType::IMU_X_GYRO:
-      if (is_latest_imu_values) {
-        last_gyro_rate_ = imu_values_fetcher_->gyro_x();
-        last_gyro_time_ = monotonic_now;
+      if (got_imu_reading) {
+        last_gyro_rate_ = imu_zeroer_.ZeroedGyro().x();
       }
       break;
     case GyroType::IMU_Y_GYRO:
-      if (is_latest_imu_values) {
-        last_gyro_rate_ = imu_values_fetcher_->gyro_y();
-        last_gyro_time_ = monotonic_now;
+      if (got_imu_reading) {
+        last_gyro_rate_ = imu_zeroer_.ZeroedGyro().y();
       }
       break;
     case GyroType::IMU_Z_GYRO:
-      if (is_latest_imu_values) {
-        last_gyro_rate_ = imu_values_fetcher_->gyro_z();
-        last_gyro_time_ = monotonic_now;
+      if (got_imu_reading) {
+        last_gyro_rate_ = imu_zeroer_.ZeroedGyro().z();
       }
       break;
     case GyroType::FLIPPED_IMU_Z_GYRO:
-      if (is_latest_imu_values) {
-        last_gyro_rate_ = -imu_values_fetcher_->gyro_z();
-        last_gyro_time_ = monotonic_now;
+      if (got_imu_reading) {
+        last_gyro_rate_ = -imu_zeroer_.ZeroedGyro().z();
       }
       break;
     case GyroType::SPARTAN_GYRO:
@@ -327,6 +307,9 @@ void DrivetrainLoop::RunIteration(
     const flatbuffers::Offset<PolyDriveLogging> poly_drive_logging_offset =
         dt_openloop_.PopulateStatus(status->fbb());
 
+    const flatbuffers::Offset<DownEstimatorState> down_estimator_state_offset =
+        down_estimator_.PopulateStatus(status->fbb());
+
     flatbuffers::Offset<LineFollowLogging> line_follow_logging_offset =
         dt_line_follow_.PopulateStatus(status);
     flatbuffers::Offset<TrajectoryLogging> trajectory_logging_offset =
@@ -360,12 +343,12 @@ void DrivetrainLoop::RunIteration(
     builder.add_y(localizer_->y());
     builder.add_theta(::aos::math::NormalizeAngle(localizer_->theta()));
 
-    builder.add_ground_angle(down_estimator_.X_hat(0) + dt_config_.down_offset);
     builder.add_cim_logging(cim_logging_offset);
     builder.add_poly_drive_logging(poly_drive_logging_offset);
     builder.add_gear_logging(gear_logging_offset);
     builder.add_line_follow_logging(line_follow_logging_offset);
     builder.add_trajectory_logging(trajectory_logging_offset);
+    builder.add_down_estimator(down_estimator_state_offset);
     status->Send(builder.Finish());
   }
 

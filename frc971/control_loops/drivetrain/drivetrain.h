@@ -13,6 +13,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/drivetrain/gear.h"
+#include "frc971/control_loops/drivetrain/improved_down_estimator.h"
 #include "frc971/control_loops/drivetrain/line_follow_drivetrain.h"
 #include "frc971/control_loops/drivetrain/localizer.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
@@ -21,6 +22,7 @@
 #include "frc971/control_loops/drivetrain/ssdrivetrain.h"
 #include "frc971/queues/gyro_generated.h"
 #include "frc971/wpilib/imu_generated.h"
+#include "frc971/zeroing/imu_zeroer.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -57,6 +59,11 @@ class DrivetrainLoop
   ::aos::Fetcher<LocalizerControl> localizer_control_fetcher_;
   ::aos::Fetcher<::frc971::IMUValues> imu_values_fetcher_;
   ::aos::Fetcher<::frc971::sensors::GyroReading> gyro_reading_fetcher_;
+
+  zeroing::ImuZeroer imu_zeroer_;
+  DrivetrainUkf down_estimator_;
+  aos::monotonic_clock::time_point last_imu_update_ =
+      aos::monotonic_clock::min_time;
   LocalizerInterface *localizer_;
 
   StateFeedbackLoop<7, 2, 4> kf_;
@@ -66,9 +73,6 @@ class DrivetrainLoop
   LineFollowDrivetrain dt_line_follow_;
   ::aos::monotonic_clock::time_point last_gyro_time_ =
       ::aos::monotonic_clock::min_time;
-
-  StateFeedbackLoop<2, 1, 1> down_estimator_;
-  Eigen::Matrix<double, 1, 1> down_U_;
 
   // Current gears for each drive side.
   Gear left_gear_;

@@ -140,7 +140,7 @@ Eigen::Matrix<double, 3, 1> ToRotationVectorFromQuaternion(
 
 void QuaternionUkf::Predict(const Eigen::Matrix<double, 3, 1> &U,
                             const Eigen::Matrix<double, 3, 1> &measurement,
-                            const double dt) {
+                            const aos::monotonic_clock::duration dt) {
   // Compute the sigma points.
   // Our system is pretty linear. The traditional way of dealing with process
   // noise is to augment your state vector with the mean of the process noise,
@@ -284,6 +284,36 @@ Eigen::Matrix<double, 4, 3 * 2 + 1> GenerateSigmaPoints(
   }
   X.col(6) = mean.coeffs();
   return X;
+}
+
+flatbuffers::Offset<DownEstimatorState> DrivetrainUkf::PopulateStatus(
+    flatbuffers::FlatBufferBuilder *fbb) const {
+  DownEstimatorState::Builder builder(*fbb);
+  builder.add_quaternion_x(X_hat().x());
+  builder.add_quaternion_y(X_hat().y());
+  builder.add_quaternion_z(X_hat().z());
+  builder.add_quaternion_w(X_hat().w());
+
+  {
+    // Note that this algorithm is not very numerically stable near pitches of
+    // +/- pi / 2.
+    const Eigen::Vector3d robot_x_in_global_frame =
+        X_hat() * Eigen::Vector3d::UnitX();
+    builder.add_yaw(
+        std::atan2(robot_x_in_global_frame.y(), robot_x_in_global_frame.x()));
+    const double xy_norm = robot_x_in_global_frame.block<2, 1>(0, 0).norm();
+    builder.add_longitudinal_pitch(
+        std::atan2(-robot_x_in_global_frame.z(), xy_norm));
+  }
+  {
+    const Eigen::Vector3d robot_y_in_global_frame =
+        X_hat() * Eigen::Vector3d::UnitY();
+    const double xy_norm = robot_y_in_global_frame.block<2, 1>(0, 0).norm();
+    builder.add_lateral_pitch(
+        std::atan2(robot_y_in_global_frame.z(), xy_norm));
+  }
+
+  return builder.Finish();
 }
 
 }  // namespace drivetrain

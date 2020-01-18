@@ -4,6 +4,9 @@
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
 
+#include "aos/events/event_loop.h"
+#include "aos/time/time.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/runge_kutta.h"
 #include "glog/logging.h"
 
@@ -134,13 +137,14 @@ class QuaternionUkf {
   // the input to the system used by the filter.
   void Predict(const Eigen::Matrix<double, kNumInputs, 1> &U,
                const Eigen::Matrix<double, kNumMeasurements, 1> &measurement,
-               const double dt);
+               const aos::monotonic_clock::duration dt);
 
   // Returns the updated state for X after one time step, given the current
   // state and gyro measurements.
   virtual Eigen::Matrix<double, kNumStates, 1> A(
       const Eigen::Matrix<double, kNumStates, 1> &X,
-      const Eigen::Matrix<double, kNumInputs, 1> &U, const double dt) const = 0;
+      const Eigen::Matrix<double, kNumInputs, 1> &U,
+      const aos::monotonic_clock::duration dt) const = 0;
 
   // Returns the current expected accelerometer measurements given the current
   // state.
@@ -207,9 +211,10 @@ class DrivetrainUkf : public QuaternionUkf {
   Eigen::Matrix<double, kNumStates, 1> A(
       const Eigen::Matrix<double, kNumStates, 1> &X,
       const Eigen::Matrix<double, kNumInputs, 1> &U,
-      const double dt) const override {
+      const aos::monotonic_clock::duration dt) const override {
     return RungeKutta(
-        std::bind(&QuaternionDerivative, U, std::placeholders::_1), X, dt);
+        std::bind(&QuaternionDerivative, U, std::placeholders::_1), X,
+        aos::time::DurationInSeconds(dt));
   }
 
   // Returns the expected accelerometer measurement (which is just going to be
@@ -226,6 +231,9 @@ class DrivetrainUkf : public QuaternionUkf {
         Xquat.conjugate() * Eigen::Matrix<double, 3, 1>(0.0, 0.0, 1.0);
     return gprime;
   }
+
+  flatbuffers::Offset<DownEstimatorState> PopulateStatus(
+      flatbuffers::FlatBufferBuilder *fbb) const;
 };
 
 }  // namespace drivetrain
