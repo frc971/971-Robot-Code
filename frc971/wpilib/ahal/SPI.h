@@ -242,7 +242,7 @@ class SPI final {
    * @param stallTicks the number of ticks to stall for
    * @param pow2BytesPerRead the number of bytes to read before stalling
    */
-  void ConfigureAutoStall(HAL_SPIPort port, int csToSclkTicks, int stallTicks,
+  void ConfigureAutoStall(int csToSclkTicks, int stallTicks,
                           int pow2BytesPerRead);
 
  protected:

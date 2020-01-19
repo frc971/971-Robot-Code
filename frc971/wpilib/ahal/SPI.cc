@@ -166,8 +166,8 @@ int SPI::GetAutoDroppedCount() {
   return val;
 }
 
-void SPI::ConfigureAutoStall(HAL_SPIPort /*port*/, int csToSclkTicks,
-                             int stallTicks, int pow2BytesPerRead) {
+void SPI::ConfigureAutoStall(int csToSclkTicks, int stallTicks,
+                             int pow2BytesPerRead) {
   int32_t status = 0;
   HAL_ConfigureSPIAutoStall(m_port, csToSclkTicks, stallTicks, pow2BytesPerRead,
                             &status);

@@ -301,7 +301,6 @@ void ADIS16470::DoInitializeStep() {
             // to scale with SPICLK frequency. Empirically, this value comes out
             // to 16.7us.
             spi_->ConfigureAutoStall(
-                HAL_SPI_kOnboardCS0,
                 0 /* the minimum CS delay is enough for this IMU */, 670,
                 1 /* toggle CS every 2 8-bit bytes */);
 
