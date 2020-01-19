@@ -196,6 +196,9 @@ ADIS16470::ADIS16470(aos::EventLoop *event_loop, frc::SPI *spi,
   PCHECK(
       system("ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
              "33") == 0);
+  PCHECK(
+      system("ps -ef | grep '\\[spi1\\]' | awk '{print $1}' | xargs chrt -f -p "
+             "33") == 0);
 
   event_loop_->OnRun([this]() { BeginInitialization(); });
 }

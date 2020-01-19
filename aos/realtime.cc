@@ -116,10 +116,11 @@ void UnsetCurrentThreadRealtimePriority() {
       << ": sched_setscheduler(0, SCHED_OTHER, 0) failed";
 }
 
-void SetCurrentThreadName(const ::std::string &name) {
+void SetCurrentThreadName(const std::string_view name) {
   CHECK_LE(name.size(), 16u) << ": thread name '" << name << "' too long";
   VLOG(1) << "This thread is changing to '" << name << "'";
-  PCHECK(prctl(PR_SET_NAME, name.c_str()) == 0);
+  std::string string_name(name);
+  PCHECK(prctl(PR_SET_NAME, string_name.c_str()) == 0);
   if (&logging::internal::ReloadThreadName != nullptr) {
     logging::internal::ReloadThreadName();
   }
