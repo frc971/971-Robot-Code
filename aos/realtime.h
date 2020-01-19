@@ -28,6 +28,8 @@ void WriteCoreDumps();
 
 void LockAllMemory();
 
+void ExpandStackSize();
+
 }  // namespace aos
 
 #endif  // AOS_REALTIME_H_
