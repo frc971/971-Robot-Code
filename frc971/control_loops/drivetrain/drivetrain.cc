@@ -53,6 +53,11 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
       right_high_requested_(dt_config_.default_high_gear) {
   ::aos::controls::HPolytope<0>::Init();
   event_loop->SetRuntimeRealtimePriority(30);
+  event_loop->OnRun([this]() {
+    // On the first fetch, make sure that we are caught all the way up to the
+    // present.
+    imu_values_fetcher_.Fetch();
+  });
 }
 
 int DrivetrainLoop::ControllerIndexFromGears() {

@@ -10,10 +10,12 @@ namespace frc971::zeroing {
 // able to do so.
 class ImuZeroer {
  public:
-  // Average 5 seconds of data (assuming 2kHz sampling rate).
+  // Average 0.5 seconds of data (assuming 2kHz sampling rate).
   // TODO(james): Make the gyro zero in a constant amount of time, rather than a
   // constant number of samples...
-  static constexpr size_t kSamplesToAverage = 10000.0;
+  // TODO(james): Run average and GetRange calculations over every sample on
+  // every timestep, to provide consistent timing.
+  static constexpr size_t kSamplesToAverage = 1000.0;
 
   ImuZeroer();
   bool Zeroed() const;

@@ -89,16 +89,16 @@ TEST(ImuZeroerTest, ZeroOnLowNoiseData) {
   ASSERT_TRUE(zeroer.Zeroed());
   ASSERT_FALSE(zeroer.Faulted());
   // Gyro should be zeroed to {1, 2, 3}.
-  ASSERT_NEAR(1.0, zeroer.GyroOffset().x(), 1e-10);
-  ASSERT_NEAR(2.0, zeroer.GyroOffset().y(), 1e-10);
-  ASSERT_NEAR(3.0, zeroer.GyroOffset().z(), 1e-10);
+  ASSERT_NEAR(1.0, zeroer.GyroOffset().x(), 1e-8);
+  ASSERT_NEAR(2.0, zeroer.GyroOffset().y(), 1e-8);
+  ASSERT_NEAR(3.0, zeroer.GyroOffset().z(), 1e-8);
   // If we get another measurement offset by {1, 1, 1} we should read the result
   // as {1, 1, 1}.
   zeroer.ProcessMeasurement(MakeMeasurement({2, 3, 4}, {0, 0, 0}).message());
   ASSERT_FALSE(zeroer.Faulted());
-  ASSERT_NEAR(1.0, zeroer.ZeroedGyro().x(), 1e-10);
-  ASSERT_NEAR(1.0, zeroer.ZeroedGyro().y(), 1e-10);
-  ASSERT_NEAR(1.0, zeroer.ZeroedGyro().z(), 1e-10);
+  ASSERT_NEAR(1.0, zeroer.ZeroedGyro().x(), 1e-8);
+  ASSERT_NEAR(1.0, zeroer.ZeroedGyro().y(), 1e-8);
+  ASSERT_NEAR(1.0, zeroer.ZeroedGyro().z(), 1e-8);
   ASSERT_EQ(0.0, zeroer.ZeroedAccel().x());
   ASSERT_EQ(0.0, zeroer.ZeroedAccel().y());
   ASSERT_EQ(0.0, zeroer.ZeroedAccel().z());
