@@ -237,3 +237,8 @@ py_library(
     srcs = glob(["python/flatbuffers/*.py"]),
     imports = ["python/"],
 )
+
+filegroup(
+    name = "flatjs",
+    srcs = ["js/flatbuffers.js"],
+)

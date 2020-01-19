@@ -4,6 +4,7 @@
 """
 Rules for building C++ flatbuffers with Bazel.
 """
+load("@build_bazel_rules_typescript//:defs.bzl", "ts_library")
 
 flatc_path = "@com_github_google_flatbuffers//:flatc"
 
@@ -24,6 +25,14 @@ DEFAULT_FLATC_ARGS = [
     "--force-empty",
     "--scoped-enums",
     "--gen-name-strings",
+]
+
+DEFAULT_FLATC_TS_ARGS = [
+    "--gen-all",
+    "--no-fb-import",
+    "--no-ts-reexport",
+    "--reflect-names",
+    "--reflect-types",
 ]
 
 def flatbuffer_library_public(
@@ -292,4 +301,41 @@ def flatbuffer_python_library(
         compatible_with = compatible_with,
         imports = ["."],
         deps = ["@com_github_google_flatbuffers//:flatpy"],
+    )
+
+def flatbuffer_ts_library(
+        name,
+        srcs,
+        compatible_with = None,
+        includes = [],
+        include_paths = DEFAULT_INCLUDE_PATHS,
+        flatc_args = DEFAULT_FLATC_TS_ARGS,
+        visibility = None,
+        srcs_filegroup_visibility = None):
+    """Generates a ts_library rule for a given flatbuffer definition.
+
+    Args:
+      name: Name of the generated ts_library rule.
+      srcs: Source .fbs file(s).
+    """
+    srcs_lib = "%s_srcs" % (name)
+    outs = ["%s_generated.ts" % (s.replace(".fbs", "").split("/")[-1]) for s in srcs]
+    flatbuffer_library_public(
+        name = srcs_lib,
+        srcs = srcs,
+        outs = outs,
+        language_flag = "--ts",
+        includes = includes,
+        include_paths = include_paths,
+        flatc_args = flatc_args,
+        compatible_with = compatible_with,
+    )
+    ts_library(
+        name = name,
+        srcs = outs,
+        visibility = visibility,
+        compatible_with = compatible_with,
+        deps = [
+            "@npm//@types",
+        ],
     )
