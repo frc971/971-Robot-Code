@@ -4,7 +4,7 @@
     {
       "name": "/drivetrain",
       "type": "frc971.IMUValues",
-      "frequency": 200
+      "frequency": 2000
     },
     {
       "name": "/drivetrain",

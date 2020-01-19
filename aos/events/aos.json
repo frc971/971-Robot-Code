@@ -1,4 +1,5 @@
 {
+  "channel_storage_duration": 5000000000,
   "channels": [
     {
       "name": "/aos",

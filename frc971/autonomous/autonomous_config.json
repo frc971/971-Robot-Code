@@ -11,7 +11,8 @@
     },
     {
       "name": "/autonomous",
-      "type": "frc971.autonomous.AutonomousMode"
+      "type": "frc971.autonomous.AutonomousMode",
+      "frequency": 200
     }
   ]
 }
