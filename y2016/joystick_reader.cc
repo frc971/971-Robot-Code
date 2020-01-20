@@ -74,7 +74,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
             ::aos::input::DrivetrainInputReader::InputType::kSteeringWheel, {}),
         vision_status_fetcher_(
             event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
-                "/superstructure")),
+                "/vision")),
         ball_detector_fetcher_(
             event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
                 "/superstructure")),
