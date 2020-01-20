@@ -52,6 +52,10 @@ load(
     ":opencv_armhf.bzl",
     opencv_armhf_debs = "files",
 )
+load(
+    ":opencv_amd64.bzl",
+    opencv_amd64_debs = "files",
+)
 load("//debian:packages.bzl", "download_packages", "generate_deb_tarball")
 
 filegroup(
@@ -294,6 +298,12 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "opencv_armhf_v3",
     files = opencv_armhf_debs,
+)
+
+# This was hand-written based on opencv_armhf.bzl.
+generate_deb_tarball(
+    name = "opencv_amd64",
+    files = opencv_amd64_debs,
 )
 
 exports_files([
