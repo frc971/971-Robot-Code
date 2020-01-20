@@ -111,6 +111,9 @@
 #include <stdarg.h>
 #include <opencv2/core/hal/hal.hpp>
 #include <opencv2/imgproc.hpp>
+#include "glog/logging.h"
+
+#include "y2020/vision/sift/fast_gaussian.h"
 
 using namespace cv;
 
@@ -158,7 +161,7 @@ static const float SIFT_DESCR_MAG_THR = 0.2f;
 // factor used to convert floating-point descriptor to unsigned char
 static const float SIFT_INT_DESCR_FCTR = 512.f;
 
-#define DoG_TYPE_SHORT 0
+#define DoG_TYPE_SHORT 1
 #if DoG_TYPE_SHORT
 // intermediate type used for DoG pyramids
 typedef short sift_wt;
@@ -177,37 +180,7 @@ static inline void unpackOctave(const KeyPoint &kpt, int &octave, int &layer,
   scale = octave >= 0 ? 1.f / (1 << octave) : (float)(1 << -octave);
 }
 
-static Mat createInitialImage(const Mat &img, bool doubleImageSize,
-                              float sigma) {
-  Mat gray, gray_fpt;
-  if (img.channels() == 3 || img.channels() == 4) {
-    cvtColor(img, gray, COLOR_BGR2GRAY);
-    gray.convertTo(gray_fpt, DataType<sift_wt>::type, SIFT_FIXPT_SCALE, 0);
-  } else
-    img.convertTo(gray_fpt, DataType<sift_wt>::type, SIFT_FIXPT_SCALE, 0);
-
-  float sig_diff;
-
-  if (doubleImageSize) {
-    sig_diff = sqrtf(
-        std::max(sigma * sigma - SIFT_INIT_SIGMA * SIFT_INIT_SIGMA * 4, 0.01f));
-    Mat dbl;
-#if DoG_TYPE_SHORT
-    resize(gray_fpt, dbl, Size(gray_fpt.cols * 2, gray_fpt.rows * 2), 0, 0,
-           INTER_LINEAR_EXACT);
-#else
-    resize(gray_fpt, dbl, Size(gray_fpt.cols * 2, gray_fpt.rows * 2), 0, 0,
-           INTER_LINEAR);
-#endif
-    GaussianBlur(dbl, dbl, Size(), sig_diff, sig_diff);
-    return dbl;
-  } else {
-    sig_diff = sqrtf(
-        std::max(sigma * sigma - SIFT_INIT_SIGMA * SIFT_INIT_SIGMA, 0.01f));
-    GaussianBlur(gray_fpt, gray_fpt, Size(), sig_diff, sig_diff);
-    return gray_fpt;
-  }
-}
+constexpr bool kLogTiming = false;
 
 }  // namespace
 
@@ -229,14 +202,19 @@ void SIFT971_Impl::buildGaussianPyramid(const Mat &base, std::vector<Mat> &pyr,
   for (int o = 0; o < nOctaves; o++) {
     for (int i = 0; i < nOctaveLayers + 3; i++) {
       Mat &dst = pyr[o * (nOctaveLayers + 3) + i];
-      if (o == 0 && i == 0) dst = base;
-      // base of new octave is halved image from end of previous octave
-      else if (i == 0) {
+      if (o == 0 && i == 0) {
+        dst = base;
+      } else if (i == 0) {
+        // base of new octave is halved image from end of previous octave
         const Mat &src = pyr[(o - 1) * (nOctaveLayers + 3) + nOctaveLayers];
         resize(src, dst, Size(src.cols / 2, src.rows / 2), 0, 0, INTER_NEAREST);
       } else {
         const Mat &src = pyr[o * (nOctaveLayers + 3) + i - 1];
-        GaussianBlur(src, dst, Size(), sig[i], sig[i]);
+        if (use_fast_gaussian_pyramid_) {
+          FastGaussian(src, &dst, sig[i]);
+        } else {
+          GaussianBlur(src, dst, Size(), sig[i], sig[i]);
+        }
       }
     }
   }
@@ -247,8 +225,12 @@ namespace {
 class buildDoGPyramidComputer : public ParallelLoopBody {
  public:
   buildDoGPyramidComputer(int _nOctaveLayers, const std::vector<Mat> &_gpyr,
-                          std::vector<Mat> &_dogpyr)
-      : nOctaveLayers(_nOctaveLayers), gpyr(_gpyr), dogpyr(_dogpyr) {}
+                          std::vector<Mat> &_dogpyr,
+                          bool use_fast_subtract_dogpyr)
+      : nOctaveLayers(_nOctaveLayers),
+        gpyr(_gpyr),
+        dogpyr(_dogpyr),
+        use_fast_subtract_dogpyr_(use_fast_subtract_dogpyr) {}
 
   void operator()(const cv::Range &range) const override {
     const int begin = range.start;
@@ -260,15 +242,21 @@ class buildDoGPyramidComputer : public ParallelLoopBody {
 
       const Mat &src1 = gpyr[o * (nOctaveLayers + 3) + i];
       const Mat &src2 = gpyr[o * (nOctaveLayers + 3) + i + 1];
+      CHECK_EQ(a, o * (nOctaveLayers + 2) + i);
       Mat &dst = dogpyr[o * (nOctaveLayers + 2) + i];
-      subtract(src2, src1, dst, noArray(), DataType<sift_wt>::type);
+      if (use_fast_subtract_dogpyr_) {
+        FastSubtract(src2, src1, &dst);
+      } else {
+        subtract(src2, src1, dst, noArray(), DataType<sift_wt>::type);
+      }
     }
   }
 
  private:
-  int nOctaveLayers;
+  const int nOctaveLayers;
   const std::vector<Mat> &gpyr;
   std::vector<Mat> &dogpyr;
+  const bool use_fast_subtract_dogpyr_;
 };
 
 }  // namespace
@@ -278,8 +266,97 @@ void SIFT971_Impl::buildDoGPyramid(const std::vector<Mat> &gpyr,
   int nOctaves = (int)gpyr.size() / (nOctaveLayers + 3);
   dogpyr.resize(nOctaves * (nOctaveLayers + 2));
 
+#if 0
   parallel_for_(Range(0, nOctaves * (nOctaveLayers + 2)),
-                buildDoGPyramidComputer(nOctaveLayers, gpyr, dogpyr));
+                buildDoGPyramidComputer(nOctaveLayers, gpyr, dogpyr, use_fast_subtract_dogpyr_));
+#else
+  buildDoGPyramidComputer(
+      nOctaveLayers, gpyr, dogpyr,
+      use_fast_subtract_dogpyr_)(Range(0, nOctaves * (nOctaveLayers + 2)));
+#endif
+}
+
+// base is the image to start with.
+// gpyr is the pyramid of gaussian blurs. This is both an output and a place
+// where we store intermediates.
+// dogpyr is the pyramid of gaussian differences which we fill out.
+// number_octaves is the number of octaves to calculate.
+void SIFT971_Impl::buildGaussianAndDifferencePyramid(
+    const cv::Mat &base, std::vector<cv::Mat> &gpyr,
+    std::vector<cv::Mat> &dogpyr, int number_octaves) const {
+  const int layers_per_octave = nOctaveLayers;
+  // We use the base (possibly after downscaling) as the first "blurred" image.
+  // Then we calculate 2 more than the number of octaves.
+  // TODO(Brian): Why are there 2 extra?
+  const int gpyr_layers_per_octave = layers_per_octave + 3;
+  // There is 1 less difference than the number of blurs.
+  const int dogpyr_layers_per_octave = gpyr_layers_per_octave - 1;
+  gpyr.resize(number_octaves * gpyr_layers_per_octave);
+  dogpyr.resize(number_octaves * dogpyr_layers_per_octave);
+
+  std::vector<double> sig(gpyr_layers_per_octave);
+  // precompute Gaussian sigmas using the following formula:
+  //  \sigma_{total}^2 = \sigma_{i}^2 + \sigma_{i-1}^2
+  sig[0] = sigma;
+  double k = std::pow(2., 1. / layers_per_octave);
+  for (int i = 1; i < gpyr_layers_per_octave; i++) {
+    double sig_prev = std::pow<double>(k, i - 1) * sigma;
+    double sig_total = sig_prev * k;
+    sig[i] = std::sqrt(sig_total * sig_total - sig_prev * sig_prev);
+  }
+
+  for (int octave = 0; octave < number_octaves; octave++) {
+    // At the beginning of each octave, calculate the new base image.
+    {
+      Mat &dst = gpyr[octave * gpyr_layers_per_octave];
+      if (octave == 0) {
+        // For the first octave, it's just the base image.
+        dst = base;
+      } else {
+        // For the other octaves, it's a halved version of the end of the
+        // previous octave.
+        const Mat &src = gpyr[(octave - 1) * gpyr_layers_per_octave +
+                              gpyr_layers_per_octave - 1];
+        resize(src, dst, Size(src.cols / 2, src.rows / 2), 0, 0, INTER_NEAREST);
+      }
+    }
+    // We start with layer==1 because the "first layer" is just the base image
+    // (or a downscaled version of it).
+    for (int layer = 1; layer < gpyr_layers_per_octave; layer++) {
+      // The index where the current layer starts.
+      const int layer_index = octave * gpyr_layers_per_octave + layer;
+      if (use_fast_pyramid_difference_) {
+        const Mat &input = gpyr[layer_index - 1];
+        Mat &blurred = gpyr[layer_index];
+        Mat &difference =
+            dogpyr[octave * dogpyr_layers_per_octave + (layer - 1)];
+        FastGaussianAndSubtract(input, &blurred, &difference, sig[layer]);
+      } else {
+        // First, calculate the new gaussian blur.
+        {
+          const Mat &src = gpyr[layer_index - 1];
+          Mat &dst = gpyr[layer_index];
+          if (use_fast_gaussian_pyramid_) {
+            FastGaussian(src, &dst, sig[layer]);
+          } else {
+            GaussianBlur(src, dst, Size(), sig[layer], sig[layer]);
+          }
+        }
+
+        // Then, calculate the difference from the previous one.
+        {
+          const Mat &src1 = gpyr[layer_index - 1];
+          const Mat &src2 = gpyr[layer_index];
+          Mat &dst = dogpyr[octave * dogpyr_layers_per_octave + (layer - 1)];
+          if (use_fast_subtract_dogpyr_) {
+            FastSubtract(src2, src1, &dst);
+          } else {
+            subtract(src2, src1, dst, noArray(), DataType<sift_wt>::type);
+          }
+        }
+      }
+    }
+  }
 }
 
 namespace {
@@ -1073,7 +1150,7 @@ void SIFT971_Impl::detectAndCompute(InputArray _image, InputArray _mask,
                                     std::vector<KeyPoint> &keypoints,
                                     OutputArray _descriptors,
                                     bool useProvidedKeypoints) {
-  int firstOctave = -1, actualNOctaves = 0, actualNLayers = 0;
+  int firstOctave = 0, actualNOctaves = 0, actualNLayers = 0;
   Mat image = _image.getMat(), mask = _mask.getMat();
 
   if (image.empty() || image.depth() != CV_8U)
@@ -1084,6 +1161,7 @@ void SIFT971_Impl::detectAndCompute(InputArray _image, InputArray _mask,
     CV_Error(Error::StsBadArg, "mask has incorrect type (!=CV_8UC1)");
 
   if (useProvidedKeypoints) {
+    LOG_IF(INFO, kLogTiming);
     firstOctave = 0;
     int maxOctave = INT_MIN;
     for (size_t i = 0; i < keypoints.size(); i++) {
@@ -1100,35 +1178,39 @@ void SIFT971_Impl::detectAndCompute(InputArray _image, InputArray _mask,
     actualNOctaves = maxOctave - firstOctave + 1;
   }
 
-  Mat base = createInitialImage(image, firstOctave < 0, (float)sigma);
+  LOG_IF(INFO, kLogTiming);
+  Mat base = createInitialImage(image, firstOctave < 0);
+  LOG_IF(INFO, kLogTiming);
   std::vector<Mat> gpyr;
-  int nOctaves =
-      actualNOctaves > 0
-          ? actualNOctaves
-          : cvRound(std::log((double)std::min(base.cols, base.rows)) /
-                        std::log(2.) -
-                    2) -
-                firstOctave;
-
-  // double t, tf = getTickFrequency();
-  // t = (double)getTickCount();
-  buildGaussianPyramid(base, gpyr, nOctaves);
-
-  // t = (double)getTickCount() - t;
-  // printf("pyramid construction time: %g\n", t*1000./tf);
+  int nOctaves;
+  if (actualNOctaves > 0) {
+    nOctaves = actualNOctaves;
+  } else {
+    nOctaves = cvRound(std::log((double)std::min(base.cols, base.rows)) /
+                           std::log(2.) -
+                       2) -
+               firstOctave;
+  }
 
   if (!useProvidedKeypoints) {
     std::vector<Mat> dogpyr;
-    buildDoGPyramid(gpyr, dogpyr);
-    // t = (double)getTickCount();
+    if (use_fused_pyramid_difference_) {
+      buildGaussianAndDifferencePyramid(base, gpyr, dogpyr, nOctaves);
+      LOG_IF(INFO, kLogTiming);
+    } else {
+      buildGaussianPyramid(base, gpyr, nOctaves);
+      LOG_IF(INFO, kLogTiming);
+
+      buildDoGPyramid(gpyr, dogpyr);
+      LOG_IF(INFO, kLogTiming);
+    }
+
     findScaleSpaceExtrema(gpyr, dogpyr, keypoints);
     // TODO(Brian): I think it can go faster by knowing they're sorted?
     // KeyPointsFilter::removeDuplicatedSorted( keypoints );
     KeyPointsFilter::removeDuplicated(keypoints);
 
     if (nfeatures > 0) KeyPointsFilter::retainBest(keypoints, nfeatures);
-    // t = (double)getTickCount() - t;
-    // printf("keypoint detection time: %g\n", t*1000./tf);
 
     if (firstOctave < 0)
       for (size_t i = 0; i < keypoints.size(); i++) {
@@ -1140,20 +1222,54 @@ void SIFT971_Impl::detectAndCompute(InputArray _image, InputArray _mask,
       }
 
     if (!mask.empty()) KeyPointsFilter::runByPixelsMask(keypoints, mask);
+    LOG_IF(INFO, kLogTiming);
   } else {
+    buildGaussianPyramid(base, gpyr, nOctaves);
+    LOG_IF(INFO, kLogTiming);
     // filter keypoints by mask
     // KeyPointsFilter::runByPixelsMask( keypoints, mask );
   }
 
   if (_descriptors.needed()) {
-    // t = (double)getTickCount();
     int dsize = descriptorSize();
     _descriptors.create((int)keypoints.size(), dsize, CV_32F);
     Mat descriptors = _descriptors.getMat();
 
     calcDescriptors(gpyr, keypoints, descriptors, nOctaveLayers, firstOctave);
-    // t = (double)getTickCount() - t;
-    // printf("descriptor extraction time: %g\n", t*1000./tf);
+    LOG_IF(INFO, kLogTiming);
+  }
+}
+
+Mat SIFT971_Impl::createInitialImage(const Mat &img,
+                                     bool doubleImageSize) const {
+  Mat gray, gray_fpt;
+  if (img.channels() == 3 || img.channels() == 4) {
+    cvtColor(img, gray, COLOR_BGR2GRAY);
+    gray.convertTo(gray_fpt, DataType<sift_wt>::type, SIFT_FIXPT_SCALE, 0);
+  } else {
+    img.convertTo(gray_fpt, DataType<sift_wt>::type, SIFT_FIXPT_SCALE, 0);
+  }
+
+  float sig_diff;
+
+  Mat maybe_doubled;
+  if (doubleImageSize) {
+    sig_diff = std::sqrt(
+        std::max(sigma * sigma - SIFT_INIT_SIGMA * SIFT_INIT_SIGMA * 4, 0.01));
+    resize(gray_fpt, maybe_doubled, Size(gray_fpt.cols * 2, gray_fpt.rows * 2),
+           0, 0, INTER_LINEAR);
+  } else {
+    sig_diff = std::sqrt(
+        std::max(sigma * sigma - SIFT_INIT_SIGMA * SIFT_INIT_SIGMA, 0.01));
+    maybe_doubled = gray_fpt;
+  }
+  if (use_fast_guassian_initial_) {
+    Mat temp;
+    FastGaussian(maybe_doubled, &temp, sig_diff);
+    return temp;
+  } else {
+    GaussianBlur(maybe_doubled, maybe_doubled, Size(), sig_diff, sig_diff);
+    return maybe_doubled;
   }
 }
 
