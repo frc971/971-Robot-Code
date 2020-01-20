@@ -27,8 +27,6 @@ using frc971::control_loops::drivetrain::LocalizerControl;
 namespace {
 DrivetrainConfig<double> GetTest2019DrivetrainConfig() {
   DrivetrainConfig<double> config = GetDrivetrainConfig();
-  config.gyro_type =
-      ::frc971::control_loops::drivetrain::GyroType::SPARTAN_GYRO;
   return config;
 }
 };  // namespace
@@ -220,7 +218,7 @@ TEST_F(LocalizedDrivetrainTest, NoCameraUpdate) {
   }
   RunFor(chrono::seconds(3));
   VerifyNearGoal();
-  VerifyEstimatorAccurate(1e-10);
+  VerifyEstimatorAccurate(1e-7);
 }
 
 // Bad camera updates (NaNs) should have no effect.
@@ -241,7 +239,7 @@ TEST_F(LocalizedDrivetrainTest, BadCameraUpdate) {
   }
   RunFor(chrono::seconds(3));
   VerifyNearGoal();
-  VerifyEstimatorAccurate(1e-10);
+  VerifyEstimatorAccurate(1e-7);
 }
 
 // Tests that camera udpates with a perfect models results in no errors.

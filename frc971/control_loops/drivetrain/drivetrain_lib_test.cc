@@ -59,7 +59,7 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
   }
   virtual ~DrivetrainTest() {}
 
-  void TearDown() { drivetrain_plant_.MaybePlot(); }
+  void TearDown() override { drivetrain_plant_.MaybePlot(); }
 
   void VerifyNearGoal() {
     drivetrain_goal_fetcher_.Fetch();
@@ -104,6 +104,31 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
                   ->is_executed());
   }
 
+  void VerifyDownEstimator() {
+    EXPECT_TRUE(drivetrain_status_fetcher_.Fetch());
+    // TODO(james): Handle Euler angle singularities...
+    const double down_estimator_yaw =
+        CHECK_NOTNULL(drivetrain_status_fetcher_->down_estimator())->yaw();
+    const double localizer_yaw =
+        drivetrain_status_fetcher_->theta();
+    EXPECT_LT(
+        std::abs(aos::math::DiffAngle(down_estimator_yaw, localizer_yaw)),
+        1e-5);
+    const double true_yaw = (drivetrain_plant_.GetRightPosition() -
+                             drivetrain_plant_.GetLeftPosition()) /
+                            (dt_config_.robot_radius * 2.0);
+    EXPECT_LT(std::abs(aos::math::DiffAngle(down_estimator_yaw, true_yaw)),
+              1e-4);
+    // We don't currently simulate any pitch or roll, so we shouldn't be
+    // reporting any.
+    EXPECT_NEAR(
+        0, drivetrain_status_fetcher_->down_estimator()->longitudinal_pitch(),
+        1e-10);
+    EXPECT_NEAR(0,
+                drivetrain_status_fetcher_->down_estimator()->lateral_pitch(),
+                1e-10);
+  }
+
   ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
   ::aos::Sender<::frc971::control_loops::drivetrain::Goal>
       drivetrain_goal_sender_;
@@ -127,6 +152,8 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
 
 // Tests that the drivetrain converges on a goal.
 TEST_F(DrivetrainTest, ConvergesCorrectly) {
+  // Run for enough time to let the gyro zero.
+  RunFor(std::chrono::seconds(100));
   SetEnabled(true);
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
@@ -138,6 +165,7 @@ TEST_F(DrivetrainTest, ConvergesCorrectly) {
   }
   RunFor(chrono::seconds(2));
   VerifyNearGoal();
+  VerifyDownEstimator();
 }
 
 // Tests that the drivetrain converges on a goal when under the effect of a

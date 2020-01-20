@@ -99,6 +99,27 @@ table LineFollowLogging {
   rel_theta:float;
 }
 
+table DownEstimatorState {
+  quaternion_x:double;
+  quaternion_y:double;
+  quaternion_z:double;
+  quaternion_w:double;
+
+  // Side-to-side and forwards/backwards pitch numbers. Note that we do this
+  // instead of standard roll/pitch/yaw euler angles because it was a pain to
+  // try and numerically stable roll/pitch/yaw numbers, and Eigen's interface
+  // doesn't resolve the redundancies quite how we'd like.
+  // Lateral pitch is the side-to-side pitch of the robot; longitudinal pitch is
+  // the forwards to backwards pitch of the robot; longitudinal_pitch
+  // corresponds with the traditional usage of "pitch".
+  // All angles in radians.
+  lateral_pitch:float;
+  longitudinal_pitch:float;
+  // Current yaw angle (heading) of the robot, as estimated solely by the down
+  // estimator.
+  yaw:float;
+}
+
 table Status {
   // Estimated speed of the center of the robot in m/s (positive forwards).
   robot_speed:double;
@@ -138,7 +159,8 @@ table Status {
   // True if the output voltage was capped last cycle.
   output_was_capped:bool;
 
-  // The angle of the robot relative to the ground.
+  // The pitch of the robot relative to the ground--only includes
+  // forwards/backwards rotation.
   ground_angle:double;
 
   // Information about shifting logic and curent gear, for logging purposes
@@ -150,6 +172,8 @@ table Status {
   line_follow_logging:LineFollowLogging;
 
   poly_drive_logging:PolyDriveLogging;
+
+  down_estimator:DownEstimatorState;
 }
 
 root_type Status;

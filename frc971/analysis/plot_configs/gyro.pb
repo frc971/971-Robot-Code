@@ -6,36 +6,78 @@ channel {
 
 figure {
   axes {
-    signal {
-      channel: "IMU"
-      field: "gyro_x"
+    line {
+      y_signal {
+        channel: "IMU"
+        field: "gyro_x"
+      }
+      x_signal {
+        channel: "CalcIMU"
+        field: "monotonic_timestamp_sec"
+      }
     }
-    signal {
-      channel: "IMU"
-      field: "gyro_y"
+    line {
+      y_signal {
+        channel: "IMU"
+        field: "gyro_y"
+      }
+      x_signal {
+        channel: "CalcIMU"
+        field: "monotonic_timestamp_sec"
+      }
     }
-    signal {
-      channel: "IMU"
-      field: "gyro_z"
+    line {
+      y_signal {
+        channel: "IMU"
+        field: "gyro_z"
+      }
+      x_signal {
+        channel: "CalcIMU"
+        field: "monotonic_timestamp_sec"
+      }
     }
     ylabel: "rad / sec"
   }
   axes {
-    signal {
-      channel: "CalcIMU"
-      field: "total_acceleration"
+    line {
+      y_signal {
+        channel: "CalcIMU"
+        field: "total_acceleration"
+      }
+      x_signal {
+        channel: "CalcIMU"
+        field: "monotonic_timestamp_sec"
+      }
     }
-    signal {
-      channel: "IMU"
-      field: "accelerometer_x"
+    line {
+      y_signal {
+        channel: "IMU"
+        field: "accelerometer_x"
+      }
+      x_signal {
+        channel: "CalcIMU"
+        field: "monotonic_timestamp_sec"
+      }
     }
-    signal {
-      channel: "IMU"
-      field: "accelerometer_y"
+    line {
+      y_signal {
+        channel: "IMU"
+        field: "accelerometer_y"
+      }
+      x_signal {
+        channel: "CalcIMU"
+        field: "monotonic_timestamp_sec"
+      }
     }
-    signal {
-      channel: "IMU"
-      field: "accelerometer_z"
+    line {
+      y_signal {
+        channel: "IMU"
+        field: "accelerometer_z"
+      }
+      x_signal {
+        channel: "CalcIMU"
+        field: "monotonic_timestamp_sec"
+      }
     }
     ylabel: "g"
   }

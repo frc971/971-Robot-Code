@@ -374,6 +374,7 @@ cc_library(
         ":drivetrain_position_fbs",
         ":drivetrain_status_fbs",
         ":gear",
+        ":improved_down_estimator",
         ":line_follow_drivetrain",
         ":localizer",
         ":localizer_fbs",
@@ -385,6 +386,7 @@ cc_library(
         "//frc971/control_loops:runge_kutta",
         "//frc971/queues:gyro_fbs",
         "//frc971/wpilib:imu_fbs",
+        "//frc971/zeroing:imu_zeroer",
     ],
 )
 
@@ -405,6 +407,7 @@ cc_library(
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:state_feedback_loop",
         "//frc971/queues:gyro_fbs",
+        "//frc971/wpilib:imu_fbs",
         "//y2016:constants",
         "//y2016/control_loops/drivetrain:polydrivetrain_plants",
     ],
@@ -436,6 +439,7 @@ cc_test(
         "//aos/controls:control_loop_test",
         "//aos/testing:googletest",
         "//frc971/queues:gyro_fbs",
+        "//frc971/wpilib:imu_fbs",
     ] + cpu_select({
         "amd64": [
             "//third_party/matplotlib-cpp",
@@ -652,7 +656,11 @@ cc_library(
         "improved_down_estimator.h",
     ],
     deps = [
+        ":drivetrain_status_fbs",
+        "//aos/events:event_loop",
+        "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:runge_kutta",
+        "@//aos/time",
         "@com_github_google_glog//:glog",
         "@org_tuxfamily_eigen//:eigen",
     ],

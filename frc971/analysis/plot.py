@@ -8,7 +8,7 @@ from pathlib import Path
 import sys
 
 from frc971.analysis.py_log_reader import LogReader
-from frc971.analysis.plot_config_pb2 import PlotConfig, Signal
+from frc971.analysis.plot_config_pb2 import PlotConfig, Signal, Line
 from google.protobuf import text_format
 
 import numpy as np
@@ -58,6 +58,10 @@ class Plotter:
                     total_acceleration = np.sqrt(
                         msg[accel_x]**2 + msg[accel_y]**2 + msg[accel_z]**2)
                     new_msg['total_acceleration'] = total_acceleration
+                timestamp = 'monotonic_timestamp_ns'
+                if timestamp in msg:
+                    timestamp_sec = msg[timestamp] * 1e-9
+                    new_msg['monotonic_timestamp_sec'] = timestamp_sec
                 entries.append((entry[0], entry[1], new_msg))
             if 'CalcIMU' in self.data:
                 raise RuntimeError('CalcIMU is already a member of data.')
@@ -77,28 +81,57 @@ class Plotter:
         to understanding how some internal filters work."""
         self.calculate_imu_signals()
 
-    def plot_signal(self, axes: matplotlib.axes.Axes, signal: Signal):
-        if not signal.channel in self.data:
-            raise ValueError("No channel alias " + signal.channel)
-        field_path = signal.field.split('.')
-        monotonic_time = []
-        signal_data = []
-        for entry in self.data[signal.channel]:
-            monotonic_time.append(entry[0] * 1e-9)
-            value = entry[2]
-            for name in field_path:
-                # If the value wasn't populated in a given message, fill in
-                # NaN rather than crashing.
-                if name in value:
-                    value = value[name]
-                else:
-                    value = float("nan")
-                    break
-            # Catch NaNs and convert them to floats.
-            value = float(value)
-            signal_data.append(value)
-        label_name = signal.channel + "." + signal.field
-        axes.plot(monotonic_time, signal_data, marker='o', label=label_name)
+    def extract_field(self, message: dict, field: str):
+        """Extracts a field with the given name from the message.
+
+        message will be a dictionary with field names as the keys and then
+        values, lists, or more dictionaries as the values. field is the full
+        path to the field to extract, with periods separating sub-messages."""
+        field_path = field.split('.')
+        value = message
+        for name in field_path:
+            # If the value wasn't populated in a given message, fill in
+            # NaN rather than crashing.
+            if name in value:
+                value = value[name]
+            else:
+                return None
+        # Catch NaNs and convert them to floats.
+        return float(value)
+
+    def plot_line(self, axes: matplotlib.axes.Axes, line: Line):
+        if not line.HasField('y_signal'):
+            raise ValueError("No y_channel specified for line.")
+        y_signal = line.y_signal
+        if not y_signal.channel in self.data:
+            raise ValueError("No channel alias " + y_signal.channel)
+        x_signal = line.x_signal if line.HasField('x_signal') else None
+        if x_signal is not None and not x_signal.channel in self.data:
+            raise ValueError("No channel alias " + x_signal.channel)
+        y_messages = self.data[y_signal.channel]
+        x_messages = self.data[
+            x_signal.channel] if x_signal is not None else None
+        if x_messages is not None and len(x_messages) != len(y_messages):
+            raise ValueError(
+                "X and Y signal lengths don't match. X channel is " +
+                x_signal.channel + " Y channel is " + y_signal.channel)
+        x_data = []
+        y_data = []
+        for ii in range(len(y_messages)):
+            y_entry = y_messages[ii]
+            if x_signal is None:
+                x_data.append(y_entry[0] * 1e-9)
+            else:
+                x_entry = x_messages[ii]
+                x_data.append(self.extract_field(x_entry[2], x_signal.field))
+            y_data.append(self.extract_field(y_entry[2], y_signal.field))
+            if x_data[-1] is None and y_data[-1] is not None:
+                raise ValueError(
+                    "Only one of the x and y signals is present. X " +
+                    x_signal.channel + "." + x_signal.field + " Y " +
+                    y_signal.channel + "." + y_signal.field)
+        label_name = y_signal.channel + "." + y_signal.field
+        axes.plot(x_data, y_data, marker='o', label=label_name)
 
     def plot(self):
         shared_axis = None
@@ -110,8 +143,8 @@ class Plotter:
                     num_subplots, 1, ii + 1, sharex=shared_axis)
                 shared_axis = shared_axis or axes
                 axes_config = figure_config.axes[ii]
-                for signal in axes_config.signal:
-                    self.plot_signal(axes, signal)
+                for line in axes_config.line:
+                    self.plot_line(axes, line)
                 # Make the legend transparent so we can see behind it.
                 legend = axes.legend(framealpha=0.5)
                 axes.set_xlabel("Monotonic Time (sec)")
