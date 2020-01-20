@@ -24,10 +24,26 @@ message Signal {
   optional string field = 2;
 }
 
+// A single line to plot.
+message Line {
+  // The signal to plot on the y-axis.
+  optional Signal y_signal = 1;
+  // If set, we will use this signal for the x-axis of the plot. By default, we
+  // will use the monotonic sent time of the message. This is helpful for both
+  // plotting against non-time based signals (e.g., plotting x/y robot position)
+  // as well as plotting against times other than the message sent time (e.g.,
+  // for the IMU where the sample capture time is separate from the actual
+  // sent time.
+  // Note that the x and y signals should have exactly the same number of
+  // entries--otherwise, we need to write logic to handle resampling one signal
+  // to a different rate.
+  optional Signal x_signal = 2;
+}
+
 // Message representing a single pyplot Axes, with specifications for exactly
 // which signals to show in the supplied subplot.
 message Axes {
-  repeated Signal signal = 1;
+  repeated Line line = 1;
   optional string ylabel = 2;
 }
 
