@@ -33,15 +33,31 @@ void ReloadThreadName() __attribute__((weak));
 
 namespace {
 
-void SetSoftRLimit(int resource, rlim64_t soft, bool set_for_root) {
+enum class SetLimitForRoot {
+  kYes,
+  kNo
+};
+
+enum class AllowSoftLimitDecrease {
+  kYes,
+  kNo
+};
+
+void SetSoftRLimit(
+    int resource, rlim64_t soft, SetLimitForRoot set_for_root,
+    AllowSoftLimitDecrease allow_decrease = AllowSoftLimitDecrease::kYes) {
   bool am_root = getuid() == 0;
-  if (set_for_root || !am_root) {
+  if (set_for_root == SetLimitForRoot::kYes || !am_root) {
     struct rlimit64 rlim;
     PCHECK(getrlimit64(resource, &rlim) == 0)
         << ": " << program_invocation_short_name << "-init: getrlimit64("
         << resource << ") failed";
 
-    rlim.rlim_cur = soft;
+    if (allow_decrease == AllowSoftLimitDecrease::kYes) {
+      rlim.rlim_cur = soft;
+    } else {
+      rlim.rlim_cur = std::max(rlim.rlim_cur, soft);
+    }
     rlim.rlim_max = ::std::max(rlim.rlim_max, soft);
 
     PCHECK(setrlimit64(resource, &rlim) == 0)
@@ -55,7 +71,7 @@ void SetSoftRLimit(int resource, rlim64_t soft, bool set_for_root) {
 
 void LockAllMemory() {
   // Allow locking as much as we want into RAM.
-  SetSoftRLimit(RLIMIT_MEMLOCK, RLIM_INFINITY, false);
+  SetSoftRLimit(RLIMIT_MEMLOCK, RLIM_INFINITY, SetLimitForRoot::kNo);
 
   WriteCoreDumps();
   PCHECK(mlockall(MCL_CURRENT | MCL_FUTURE) == 0)
@@ -87,10 +103,10 @@ void InitRT() {
   LockAllMemory();
 
   // Only let rt processes run for 3 seconds straight.
-  SetSoftRLimit(RLIMIT_RTTIME, 3000000, true);
+  SetSoftRLimit(RLIMIT_RTTIME, 3000000, SetLimitForRoot::kYes);
 
   // Allow rt processes up to priority 40.
-  SetSoftRLimit(RLIMIT_RTPRIO, 40, false);
+  SetSoftRLimit(RLIMIT_RTPRIO, 40, SetLimitForRoot::kNo);
 }
 
 void UnsetCurrentThreadRealtimePriority() {
@@ -100,10 +116,11 @@ void UnsetCurrentThreadRealtimePriority() {
       << ": sched_setscheduler(0, SCHED_OTHER, 0) failed";
 }
 
-void SetCurrentThreadName(const ::std::string &name) {
+void SetCurrentThreadName(const std::string_view name) {
   CHECK_LE(name.size(), 16u) << ": thread name '" << name << "' too long";
   VLOG(1) << "This thread is changing to '" << name << "'";
-  PCHECK(prctl(PR_SET_NAME, name.c_str()) == 0);
+  std::string string_name(name);
+  PCHECK(prctl(PR_SET_NAME, string_name.c_str()) == 0);
   if (&logging::internal::ReloadThreadName != nullptr) {
     logging::internal::ReloadThreadName();
   }
@@ -111,7 +128,7 @@ void SetCurrentThreadName(const ::std::string &name) {
 
 void SetCurrentThreadRealtimePriority(int priority) {
   // Make sure we will only be allowed to run for 3 seconds straight.
-  SetSoftRLimit(RLIMIT_RTTIME, 3000000, true);
+  SetSoftRLimit(RLIMIT_RTTIME, 3000000, SetLimitForRoot::kYes);
 
   struct sched_param param;
   param.sched_priority = priority;
@@ -121,7 +138,12 @@ void SetCurrentThreadRealtimePriority(int priority) {
 
 void WriteCoreDumps() {
   // Do create core files of unlimited size.
-  SetSoftRLimit(RLIMIT_CORE, RLIM_INFINITY, true);
+  SetSoftRLimit(RLIMIT_CORE, RLIM_INFINITY, SetLimitForRoot::kYes);
+}
+
+void ExpandStackSize() {
+  SetSoftRLimit(RLIMIT_STACK, 1000000, SetLimitForRoot::kYes,
+                AllowSoftLimitDecrease::kNo);
 }
 
 }  // namespace aos

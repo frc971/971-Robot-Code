@@ -62,6 +62,7 @@ void InitNRT(bool for_realtime) {
   InitStart();
   aos_core_create_shared_mem(false, for_realtime && ShouldBeRealtime());
   logging::RegisterQueueImplementation();
+  ExpandStackSize();
   AOS_LOG(INFO, "%s initialized non-realtime\n", program_invocation_short_name);
 }
 

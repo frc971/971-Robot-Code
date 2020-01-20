@@ -766,6 +766,7 @@ void ShmEventLoop::Run() {
 
   ReserveEvents();
 
+  aos::SetCurrentThreadName(name_.substr(0, 16));
   // Now, all the callbacks are setup.  Lock everything into memory and go RT.
   if (priority_ != 0) {
     ::aos::InitRT();
@@ -845,6 +846,11 @@ void ShmEventLoop::SetRuntimeRealtimePriority(int priority) {
     LOG(FATAL) << "Cannot set realtime priority while running.";
   }
   priority_ = priority;
+}
+
+void ShmEventLoop::set_name(const std::string_view name) {
+  name_ = std::string(name);
+  UpdateTimingReport();
 }
 
 pid_t ShmEventLoop::GetTid() { return syscall(SYS_gettid); }

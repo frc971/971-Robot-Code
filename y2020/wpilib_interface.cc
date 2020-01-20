@@ -10,7 +10,6 @@
 #include <mutex>
 #include <thread>
 
-#include "ctre/phoenix/CANifier.h"
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Counter.h"
 #include "frc971/wpilib/ahal/DigitalGlitchFilter.h"
@@ -31,7 +30,6 @@
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
-#include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/wpilib/ADIS16470.h"
@@ -241,6 +239,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     // Thread 4.
     ::aos::ShmEventLoop output_event_loop(&config.message());
+    output_event_loop.set_name("output_writer");
     ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&output_event_loop);
     drivetrain_writer.set_left_controller0(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)), true);

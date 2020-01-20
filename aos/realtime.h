@@ -1,7 +1,7 @@
 #ifndef AOS_REALTIME_H_
 #define AOS_REALTIME_H_
 
-#include <string>
+#include <string_view>
 
 namespace aos {
 
@@ -16,7 +16,7 @@ void UnsetCurrentThreadRealtimePriority();
 // Sets the name of the current thread.
 // This will displayed by `top -H`, dump_rtprio, and show up in logs.
 // name can have a maximum of 16 characters.
-void SetCurrentThreadName(const ::std::string &name);
+void SetCurrentThreadName(const std::string_view name);
 
 // Sets the current thread's realtime priority.
 void SetCurrentThreadRealtimePriority(int priority);
@@ -27,6 +27,8 @@ void SetCurrentThreadRealtimePriority(int priority);
 void WriteCoreDumps();
 
 void LockAllMemory();
+
+void ExpandStackSize();
 
 }  // namespace aos
 
