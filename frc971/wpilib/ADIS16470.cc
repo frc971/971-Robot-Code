@@ -159,7 +159,7 @@ static constexpr size_t kAutospiDataSize = sizeof(kAutospiPacket) + 1 /* timesta
 constexpr double kGyroLsbRadianSecond =
     1.0 / 10.0 * (2.0 * M_PI / 360.0) /* degrees -> radians */;
 // G/LSB for the accelerometers (for the full 32-bit value).
-constexpr double kAccelerometerLsbG = 1.0 / 54'428'800.0;
+constexpr double kAccelerometerLsbG = 1.0 / 52'428'800.0;
 // C/LSB for the temperature.
 constexpr double kTemperatureLsbDegree = 0.1;
 
