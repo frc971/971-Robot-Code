@@ -610,3 +610,23 @@ http_archive(
     sha256 = "4b438c5bb123b2ed95db959fcfdefc833e8e5eee5778c0fbecbb62a94df0079e",
     url = "http://www.frc971.org/Build-Dependencies/opencv_amd64.tar.gz",
 )
+
+# Downloaded from:
+# https://github.com/halide/Halide/releases/download/release_2019_08_27/halide-linux-64-gcc53-800-65c26cba6a3eca2d08a0bccf113ca28746012cc3.tgz
+# which is "Halide 2019/08/27" at https://github.com/halide/Halide/releases.
+http_archive(
+    name = "halide_k8",
+    build_file = "@//debian:halide.BUILD",
+    strip_prefix = "halide/",
+    url = "http://www.frc971.org/Build-Dependencies/halide-linux-64-gcc53-800-65c26cba6a3eca2d08a0bccf113ca28746012cc3.tgz",
+)
+
+# Downloaded from:
+# https://github.com/halide/Halide/releases/download/release_2019_08_27/halide-arm32-linux-32-trunk-65c26cba6a3eca2d08a0bccf113ca28746012cc3.tgz
+# which is "Halide 2019/08/27" at https://github.com/halide/Halide/releases.
+http_archive(
+    name = "halide_armhf",
+    build_file = "@//debian:halide.BUILD",
+    strip_prefix = "halide/",
+    url = "http://www.frc971.org/Build-Dependencies/halide-arm32-linux-32-trunk-65c26cba6a3eca2d08a0bccf113ca28746012cc3.tgz",
+)
