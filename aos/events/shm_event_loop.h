@@ -79,10 +79,6 @@ class ShmEventLoop : public EventLoop {
 
   void HandleEvent();
 
-  // Tracks that we can't have multiple watchers or a sender and a watcher (or
-  // multiple senders) on a single queue (path).
-  void Take(const Channel *channel);
-
   // Returns the TID of the event loop.
   pid_t GetTid() override;
 
@@ -90,7 +86,6 @@ class ShmEventLoop : public EventLoop {
   int priority_ = 0;
   std::string name_;
   const Node *const node_;
-  std::vector<std::string> taken_;
 
   internal::EPoll epoll_;
 };

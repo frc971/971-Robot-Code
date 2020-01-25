@@ -61,6 +61,7 @@ cc_library(
         "//aos/time",
         "//aos/util:phased_loop",
         "@com_github_google_flatbuffers//:flatbuffers",
+        "@com_google_absl//absl/container:btree",
     ],
 )
 

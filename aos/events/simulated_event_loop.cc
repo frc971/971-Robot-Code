@@ -5,7 +5,6 @@
 #include <string_view>
 
 #include "absl/container/btree_map.h"
-#include "absl/container/btree_set.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/util/phased_loop.h"
 
@@ -16,7 +15,7 @@ namespace aos {
 struct SimulatedMessage {
   // Struct to let us force data to be well aligned.
   struct OveralignedChar {
-    char data alignas(32);
+    char data alignas(64);
   };
 
   // Context for the data.
@@ -406,8 +405,6 @@ class SimulatedEventLoop : public EventLoop {
 
   SimulatedChannel *GetSimulatedChannel(const Channel *channel);
 
-  void Take(const Channel *channel);
-
   void SetRuntimeRealtimePriority(int priority) override {
     CHECK(!is_running()) << ": Cannot set realtime priority while running.";
     priority_ = priority;
@@ -439,7 +436,6 @@ class SimulatedEventLoop : public EventLoop {
   absl::btree_map<SimpleChannel, std::unique_ptr<SimulatedChannel>> *channels_;
   std::vector<std::pair<EventLoop *, std::function<void(bool)>>>
       *raw_event_loops_;
-  absl::btree_set<SimpleChannel> taken_;
 
   ::std::string name_;
 
@@ -470,15 +466,7 @@ std::chrono::nanoseconds SimulatedEventLoopFactory::send_delay() const {
 void SimulatedEventLoop::MakeRawWatcher(
     const Channel *channel,
     std::function<void(const Context &channel, const void *message)> watcher) {
-  ChannelIndex(channel);
-  Take(channel);
-
-  if (!configuration::ChannelIsReadableOnNode(channel, node())) {
-    LOG(FATAL) << "Channel { \"name\": \"" << channel->name()->string_view()
-               << "\", \"type\": \"" << channel->type()->string_view()
-               << "\" } is not able to be watched on this node.  Check your "
-                  "configuration.";
-  }
+  TakeWatcher(channel);
 
   std::unique_ptr<SimulatedWatcher> shm_watcher(
       new SimulatedWatcher(this, scheduler_, channel, std::move(watcher)));
@@ -489,8 +477,8 @@ void SimulatedEventLoop::MakeRawWatcher(
 
 std::unique_ptr<RawSender> SimulatedEventLoop::MakeRawSender(
     const Channel *channel) {
-  ChannelIndex(channel);
-  Take(channel);
+  TakeSender(channel);
+
   return GetSimulatedChannel(channel)->MakeRawSender(this);
 }
 
@@ -717,14 +705,6 @@ void SimulatedPhasedLoopHandler::Schedule(
       sleep_time, [this]() { simulated_event_loop_->HandleEvent(); });
   event_.set_event_time(sleep_time);
   simulated_event_loop_->AddEvent(&event_);
-}
-
-void SimulatedEventLoop::Take(const Channel *channel) {
-  CHECK(!is_running()) << ": Cannot add new objects while running.";
-
-  auto result = taken_.insert(SimpleChannel(channel));
-  CHECK(result.second) << ": " << FlatbufferToJson(channel)
-                       << " is already being used.";
 }
 
 SimulatedEventLoopFactory::SimulatedEventLoopFactory(
