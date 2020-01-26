@@ -1,0 +1,23 @@
+namespace frc971.vision;
+
+// Contains the image data from one frame of a camera.
+//
+// The following image options are hard-coded. If you add images in a different
+// format, make fields for them which default to these values and remove this
+// comment:
+//   * Format: YUYV (V4L2_PIX_FMT_YUYV, which puts 2 pixels in every 4 bytes,
+//             with the order Y0,U,Y1,V)
+//   * Order: row major (index 0 is upper left, index 1 is to its right)
+table CameraImage {
+  // The number of rows in the image.
+  rows:int;
+  // The number of columns in the image.
+  cols:int;
+  // The image data.
+  data:[byte];
+  // Timestamp when the frame was captured.
+  monotonic_timestamp_ns:long;
+  realtime_timestamp_ns:long;
+}
+
+root_type CameraImage;
