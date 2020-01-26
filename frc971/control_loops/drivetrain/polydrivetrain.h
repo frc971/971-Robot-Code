@@ -1,9 +1,8 @@
 #ifndef FRC971_CONTROL_LOOPS_DRIVETRAIN_POLYDRIVETRAIN_H_
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_POLYDRIVETRAIN_H_
 
-#include "aos/controls/polytope.h"
-
 #include "aos/commonmath.h"
+#include "aos/controls/polytope.h"
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/drivetrain/gear.h"
 #ifdef __linux__
@@ -20,8 +19,8 @@
 #include "frc971/control_loops/drivetrain/drivetrain_position_float_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_float_generated.h"
 #endif  // __linux__
-#include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/state_feedback_loop.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -47,9 +46,10 @@ class PolyDrivetrain {
       const ::frc971::control_loops::drivetrain::Position *position,
       Gear left_gear, Gear right_gear);
 
-  Scalar FilterVelocity(Scalar throttle) const;
+  Scalar FilterVelocity(Scalar throttle,
+                        const Eigen::Matrix<Scalar, 2, 2> &FF) const;
 
-  Scalar MaxVelocity();
+  Scalar MaxVelocity(const Eigen::Matrix<Scalar, 2, 2> &FF);
 
   void Update(Scalar voltage_battery);
 
@@ -249,11 +249,8 @@ void PolyDrivetrain<Scalar>::SetPosition(
 }
 
 template <typename Scalar>
-Scalar PolyDrivetrain<Scalar>::FilterVelocity(Scalar throttle) const {
-  const Eigen::Matrix<Scalar, 2, 2> FF =
-      loop_->plant().B().inverse() *
-      (Eigen::Matrix<Scalar, 2, 2>::Identity() - loop_->plant().A());
-
+Scalar PolyDrivetrain<Scalar>::FilterVelocity(
+    Scalar throttle, const Eigen::Matrix<Scalar, 2, 2> &FF) const {
   constexpr int kHighGearController = 3;
   const Eigen::Matrix<Scalar, 2, 2> FF_high =
       loop_->plant().coefficients(kHighGearController).B.inverse() *
@@ -266,20 +263,17 @@ Scalar PolyDrivetrain<Scalar>::FilterVelocity(Scalar throttle) const {
   const Scalar min_K_sum = loop_->controller().K().col(min_FF_sum_index).sum();
   const Scalar high_min_FF_sum = FF_high.col(0).sum();
 
-  const Scalar adjusted_ff_voltage =
-      ::aos::Clip(throttle * kTwelve * min_FF_sum / high_min_FF_sum, -kTwelve, kTwelve);
-  return (adjusted_ff_voltage +
-          ttrust_ * min_K_sum * (loop_->X_hat(0, 0) + loop_->X_hat(1, 0)) *
-              kHalf) /
+  const Scalar adjusted_ff_voltage = ::aos::Clip(
+      throttle * kTwelve * min_FF_sum / high_min_FF_sum, -kTwelve, kTwelve);
+  return (adjusted_ff_voltage + ttrust_ * min_K_sum *
+                                    (loop_->X_hat(0, 0) + loop_->X_hat(1, 0)) *
+                                    kHalf) /
          (ttrust_ * min_K_sum + min_FF_sum);
 }
 
 template <typename Scalar>
-Scalar PolyDrivetrain<Scalar>::MaxVelocity() {
-  const Eigen::Matrix<Scalar, 2, 2> FF =
-      loop_->plant().B().inverse() *
-      (Eigen::Matrix<Scalar, 2, 2>::Identity() - loop_->plant().A());
-
+Scalar PolyDrivetrain<Scalar>::MaxVelocity(
+    const Eigen::Matrix<Scalar, 2, 2> &FF) {
   constexpr int kHighGearController = 3;
   const Eigen::Matrix<Scalar, 2, 2> FF_high =
       loop_->plant().coefficients(kHighGearController).B.inverse() *
@@ -320,12 +314,12 @@ void PolyDrivetrain<Scalar>::Update(Scalar voltage_battery) {
     // This math assumes that the left and right power and velocity are
     // equals,
     // and that the plant is the same on the left and right.
-    const Scalar fvel = FilterVelocity(throttle_);
+    const Scalar fvel = FilterVelocity(throttle_, FF);
 
     const Scalar sign_svel = wheel_ * ((fvel > kZero) ? kOne : -kOne);
     Scalar steering_velocity;
     if (quickturn_) {
-      steering_velocity = wheel_ * MaxVelocity();
+      steering_velocity = wheel_ * MaxVelocity(FF);
     } else {
       steering_velocity = ::std::abs(fvel) * wheel_;
     }
@@ -373,7 +367,8 @@ void PolyDrivetrain<Scalar>::Update(Scalar voltage_battery) {
           loop_->plant().A() * loop_->X_hat() + loop_->plant().B() * loop_->U();
     }
 
-    // Housekeeping: set the shifting logging values to zero, because we're not shifting
+    // Housekeeping: set the shifting logging values to zero, because we're not
+    // shifting
     left_motor_speed_ = kZero;
     right_motor_speed_ = kZero;
     current_left_velocity_ = kZero;
@@ -433,8 +428,7 @@ void PolyDrivetrain<Scalar>::SetOutput(
 }
 
 template <typename Scalar>
-flatbuffers::Offset<PolyDriveLogging>
-PolyDrivetrain<Scalar>::PopulateStatus(
+flatbuffers::Offset<PolyDriveLogging> PolyDrivetrain<Scalar>::PopulateStatus(
     flatbuffers::FlatBufferBuilder *fbb) {
   PolyDriveLogging::Builder builder(*fbb);
 
