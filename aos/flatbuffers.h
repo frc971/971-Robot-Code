@@ -5,6 +5,7 @@
 #include <string_view>
 
 #include "absl/types/span.h"
+#include "aos/macros.h"
 #include "flatbuffers/flatbuffers.h"
 #include "glog/logging.h"
 
@@ -30,12 +31,14 @@ class FixedAllocatorBase : public flatbuffers::Allocator {
   void Reset() { is_allocated_ = false; }
   bool is_allocated() const { return is_allocated_; }
 
+  bool allocated() { return is_allocated_; }
+
  private:
   bool is_allocated_ = false;
 };
 
 // This class is a fixed memory allocator which holds the data for a flatbuffer
-// in an array.
+// in a vector.
 class FixedAllocator : public FixedAllocatorBase {
  public:
   FixedAllocator(size_t size) : buffer_(size, 0) {}
@@ -55,7 +58,7 @@ class FixedAllocator : public FixedAllocatorBase {
 class PreallocatedAllocator : public FixedAllocatorBase {
  public:
   PreallocatedAllocator(void *data, size_t size) : data_(data), size_(size) {}
-  PreallocatedAllocator(const PreallocatedAllocator&) = delete;
+  PreallocatedAllocator(const PreallocatedAllocator &) = delete;
   PreallocatedAllocator(PreallocatedAllocator &&other)
       : data_(other.data_), size_(other.size_) {
     CHECK(!is_allocated());
@@ -227,6 +230,50 @@ class FlatbufferDetachedBuffer final : public Flatbuffer<T> {
 
  private:
   flatbuffers::DetachedBuffer buffer_;
+};
+
+// Array backed flatbuffer which manages building of the flatbuffer.
+template <typename T, size_t Size>
+class FlatbufferFixedAllocatorArray final : public Flatbuffer<T> {
+ public:
+  FlatbufferFixedAllocatorArray() : buffer_(), allocator_(&buffer_[0], Size) {
+    builder_ = flatbuffers::FlatBufferBuilder(Size, &allocator_);
+  }
+
+  flatbuffers::FlatBufferBuilder *Builder() {
+    if (allocator_.allocated()) {
+      LOG(FATAL) << "Array backed flatbuffer can only be built once";
+    }
+    return &builder_;
+  }
+
+  void Finish(flatbuffers::Offset<T> root) {
+    if (!allocator_.allocated()) {
+      LOG(FATAL) << "Cannot finish if never building";
+    }
+    builder_.Finish(root);
+    data_ = builder_.GetBufferPointer();
+    size_ = builder_.GetSize();
+  }
+
+  const uint8_t *data() const override {
+    CHECK_NOTNULL(data_);
+    return data_;
+  }
+  uint8_t *data() override {
+    CHECK_NOTNULL(data_);
+    return data_;
+  }
+  size_t size() const override { return size_; }
+
+ private:
+  std::array<uint8_t, Size> buffer_;
+  PreallocatedAllocator allocator_;
+  flatbuffers::FlatBufferBuilder builder_;
+  uint8_t *data_ = nullptr;
+  size_t size_ = 0;
+
+  DISALLOW_COPY_AND_ASSIGN(FlatbufferFixedAllocatorArray);
 };
 
 // This object associates the message type with the memory storing the
