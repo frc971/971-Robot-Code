@@ -238,7 +238,7 @@ def build_matplotlib(version, tkinter_py_version = None, copy_shared_files = Tru
       ],
       data = _data_files + _builtin_so_copied + _system_so_copied + [
           ":usr/share/matplotlib/mpl-data/matplotlibrc",
-      ],
+      ] + native.glob(["etc/**"]),
       imports = ["usr/lib/python" + version + "/dist-packages", version, "."],
       restricted_to = ["@//tools:k8"],
       visibility = ["//visibility:public"],

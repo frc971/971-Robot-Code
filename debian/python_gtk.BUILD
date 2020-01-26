@@ -63,6 +63,8 @@ _src_files = glob(
 
 _data_files = glob([
     "usr/lib/x86_64-linux-gnu/girepository-1.0/**/*",
+    "usr/share/font*/**",
+    "etc/**",
 ])
 
 _src_copied = ["/".join(f.split("/")[4:]) for f in _src_files]

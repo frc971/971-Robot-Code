@@ -8,17 +8,17 @@
  import six
  import sys
  import distutils.version
-@@ -110,6 +111,26 @@
+@@ -110,6 +111,31 @@
  __version__ = str('1.4.2')
  __version__numpy__ = str('1.6')  # minimum required numpy version
  
-+_matplotlib_base = os.path.dirname(os.path.dirname(__file__))
++_matplotlib_base = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..")
 +
 +# Hack to point matplotlib at its data.
 +os.environ['MATPLOTLIBDATA'] = \
 +        os.path.join( \
 +            _matplotlib_base,
-+            "..", "usr", "share", "matplotlib", "mpl-data")
++            "usr", "share", "matplotlib", "mpl-data")
 +# Avoid reading /etc/matplotlib in all cases. Matplotlib is pretty happy to
 +# escape the sandbox by using absolute paths.
 +os.environ['MATPLOTLIBRC'] = os.environ['MATPLOTLIBDATA']
@@ -29,8 +29,13 @@
 +
 +# Tell Tcl where to find the sandboxed version. Otherwise, it will try using
 +# one from the host system, even if that's an incompatible version.
-+os.environ['TCL_LIBRARY'] = os.path.join(_matplotlib_base, '..', 'usr', 'share',
++os.environ['TCL_LIBRARY'] = os.path.join(_matplotlib_base, 'usr', 'share',
 +                                         'tcltk', 'tcl8.6')
++
++# Tell fontconfig where to find matplotlib's sandboxed font files.
++os.environ["FONTCONFIG_PATH"] = os.path.join(_matplotlib_base, "etc/fonts/")
++os.environ["FONTCONFIG_FILE"] = os.path.join(_matplotlib_base, "etc/fonts/fonts.conf")
++os.environ["FONTCONFIG_SYSROOT"] = _matplotlib_base
 +
  try:
      import dateutil

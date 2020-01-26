@@ -1,6 +1,6 @@
 --- a/__init__.py	1969-12-31 16:00:00.000000000 -0800
 +++ b/__init__.py	2018-10-17 21:45:04.908201161 -0700
-@@ -29,6 +29,11 @@ import os
+@@ -29,6 +29,16 @@ import os
  import importlib
  import types
  
@@ -8,6 +8,11 @@
 +os.environ['GI_TYPELIB_PATH'] = os.path.join(_base, 'usr', 'lib',
 +                                             'x86_64-linux-gnu',
 +                                             'girepository-1.0')
++
++# Tell fontconfig where to find the sandboxed font files.
++os.environ["FONTCONFIG_PATH"] = os.path.join(_base, "etc/fonts/")
++os.environ["FONTCONFIG_FILE"] = os.path.join(_base, "etc/fonts/fonts.conf")
++os.environ["FONTCONFIG_SYSROOT"] = _base
 +
  _static_binding_error = ('When using gi.repository you must not import static '
                           'modules like "gobject". Please change all occurrences '
