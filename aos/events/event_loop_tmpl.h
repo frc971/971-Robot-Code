@@ -36,13 +36,6 @@ void EventLoop::MakeWatcher(const std::string_view channel_name, Watch &&w) {
       << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
       << T::GetFullyQualifiedName() << "\" } not found in config.";
 
-  if (!configuration::ChannelIsReadableOnNode(channel, node())) {
-    LOG(FATAL) << "Channel { \"name\": \"" << channel_name << "\", \"type\": \""
-               << T::GetFullyQualifiedName()
-               << "\" } is not able to be watched on this node.  Check your "
-                  "configuration.";
-  }
-
   return MakeRawWatcher(
       channel, [this, w](const Context &context, const void *message) {
         context_ = context;

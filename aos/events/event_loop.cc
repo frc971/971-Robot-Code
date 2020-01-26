@@ -127,6 +127,35 @@ WatcherState *EventLoop::NewWatcher(std::unique_ptr<WatcherState> watcher) {
   return watchers_.back().get();
 }
 
+void EventLoop::TakeWatcher(const Channel *channel) {
+  CHECK(!is_running()) << ": Cannot add new objects while running.";
+  ChannelIndex(channel);
+
+  CHECK(taken_senders_.find(channel) == taken_senders_.end())
+      << ": " << FlatbufferToJson(channel) << " is already being used.";
+
+  auto result = taken_watchers_.insert(channel);
+  CHECK(result.second) << ": " << FlatbufferToJson(channel)
+                       << " is already being used.";
+
+  if (!configuration::ChannelIsReadableOnNode(channel, node())) {
+    LOG(FATAL) << ": " << FlatbufferToJson(channel)
+               << " is not able to be watched on this node.  Check your "
+                  "configuration.";
+  }
+}
+
+void EventLoop::TakeSender(const Channel *channel) {
+  CHECK(!is_running()) << ": Cannot add new objects while running.";
+  ChannelIndex(channel);
+
+  CHECK(taken_watchers_.find(channel) == taken_watchers_.end())
+      << ": Channel " << FlatbufferToJson(channel) << " is already being used.";
+
+  // We don't care if this is a duplicate.
+  taken_senders_.insert(channel);
+}
+
 void EventLoop::SendTimingReport() {
   // We need to do a fancy dance here to get all the accounting to work right.
   // We want to copy the memory here, but then send after resetting. Otherwise

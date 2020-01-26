@@ -14,6 +14,8 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
+
+#include "absl/container/btree_set.h"
 #include "flatbuffers/flatbuffers.h"
 #include "glog/logging.h"
 
@@ -499,6 +501,11 @@ class EventLoop {
   void DeleteFetcher(RawFetcher *fetcher);
   WatcherState *NewWatcher(std::unique_ptr<WatcherState> watcher);
 
+  // Tracks that we have a (single) watcher on the given channel.
+  void TakeWatcher(const Channel *channel);
+  // Tracks that we have at least one sender on the given channel.
+  void TakeSender(const Channel *channel);
+
   std::vector<RawSender *> senders_;
   std::vector<RawFetcher *> fetchers_;
 
@@ -536,6 +543,8 @@ class EventLoop {
 
   // If true, don't send out timing reports.
   bool skip_timing_report_ = false;
+
+  absl::btree_set<const Channel *> taken_watchers_, taken_senders_;
 };
 
 }  // namespace aos

@@ -45,6 +45,47 @@ TEST_P(AbstractEventLoopTest, Basic) {
   EXPECT_TRUE(happened);
 }
 
+// Tests that watcher can receive messages from two senders.
+// Also tests that OnRun() works.
+TEST_P(AbstractEventLoopTest, BasicTwoSenders) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+
+  aos::Sender<TestMessage> sender1 = loop1->MakeSender<TestMessage>("/test");
+  aos::Sender<TestMessage> sender2 = loop1->MakeSender<TestMessage>("/test");
+
+  bool happened = false;
+
+  loop2->OnRun([&]() {
+    happened = true;
+
+    {
+      aos::Sender<TestMessage>::Builder msg = sender1.MakeBuilder();
+      TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
+      builder.add_value(200);
+      ASSERT_TRUE(msg.Send(builder.Finish()));
+    }
+    {
+      aos::Sender<TestMessage>::Builder msg = sender2.MakeBuilder();
+      TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
+      builder.add_value(200);
+      ASSERT_TRUE(msg.Send(builder.Finish()));
+    }
+  });
+
+  int messages_received = 0;
+  loop2->MakeWatcher("/test", [&](const TestMessage &message) {
+    EXPECT_EQ(message.value(), 200);
+    this->Exit();
+    ++messages_received;
+  });
+
+  EXPECT_FALSE(happened);
+  Run();
+  EXPECT_TRUE(happened);
+  EXPECT_EQ(messages_received, 2);
+}
+
 // Tests that a fetcher can fetch from a sender.
 // Also tests that OnRun() works.
 TEST_P(AbstractEventLoopTest, FetchWithoutRun) {
