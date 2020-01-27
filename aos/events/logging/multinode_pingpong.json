@@ -33,9 +33,7 @@
       "num_senders": 20,
       "max_size": 2048
     },
-    /* Forwarded to pi2.
-     * Doesn't matter where timestamps are logged for the test.
-     */
+    /* Forwarded to pi2 */
     {
       "name": "/test",
       "type": "aos.examples.Ping",
@@ -44,7 +42,7 @@
         {
           "name": "pi2",
           "priority": 1,
-          "timestamp_logger": "REMOTE_LOGGER",
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_node": "pi1",
           "time_to_live": 5000000
         }

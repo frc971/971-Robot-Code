@@ -755,15 +755,8 @@ NodeEventLoopFactory::NodeEventLoopFactory(
 
 SimulatedEventLoopFactory::SimulatedEventLoopFactory(
     const Configuration *configuration)
-    : configuration_(CHECK_NOTNULL(configuration)) {
-  if (configuration::MultiNode(configuration_)) {
-    for (const Node *node : *configuration->nodes()) {
-      nodes_.emplace_back(node);
-    }
-  } else {
-    nodes_.emplace_back(nullptr);
-  }
-
+    : configuration_(CHECK_NOTNULL(configuration)),
+      nodes_(configuration::GetNodes(configuration_)) {
   for (const Node *node : nodes_) {
     node_factories_.emplace_back(
         new NodeEventLoopFactory(&scheduler_, this, node, &raw_event_loops_));
@@ -836,6 +829,10 @@ void SimulatedEventLoopFactory::Run() {
        raw_event_loops_) {
     event_loop.second(false);
   }
+}
+
+void SimulatedEventLoopFactory::DisableForwarding(const Channel *channel) {
+  bridge_->DisableForwarding(channel);
 }
 
 }  // namespace aos

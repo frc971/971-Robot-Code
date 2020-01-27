@@ -28,6 +28,8 @@ class RawMessageDelayer {
     Schedule();
   }
 
+  const Channel *channel() const { return fetcher_->channel(); }
+
   // Kicks us to re-fetch and schedule the timer.
   void Schedule() {
     if (fetcher_->context().data == nullptr || sent_) {
@@ -160,6 +162,23 @@ SimulatedMessageBridge::SimulatedMessageBridge(
 }
 
 SimulatedMessageBridge::~SimulatedMessageBridge() {}
+
+void SimulatedMessageBridge::DisableForwarding(const Channel *channel) {
+  for (std::unique_ptr<std::vector<std::unique_ptr<RawMessageDelayer>>>
+           &delayers : delayers_list_) {
+    if (delayers->size() > 0) {
+      if ((*delayers)[0]->channel() == channel) {
+        for (std::unique_ptr<RawMessageDelayer> &delayer : *delayers) {
+          CHECK(delayer->channel() == channel);
+        }
+
+        // If we clear the delayers list, nothing will be scheduled.  Which is a
+        // success!
+        delayers->clear();
+      }
+    }
+  }
+}
 
 }  // namespace message_bridge
 }  // namespace aos

@@ -5,6 +5,7 @@
 #include "aos/events/pong_lib.h"
 #include "aos/events/simulated_event_loop.h"
 #include "glog/logging.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 namespace aos {
@@ -70,7 +71,7 @@ TEST_F(LoggerTest, Starts) {
   // log file.
   reader.Register();
 
-  EXPECT_EQ(reader.node(), nullptr);
+  EXPECT_THAT(reader.Nodes(), ::testing::ElementsAre(nullptr));
 
   std::unique_ptr<EventLoop> test_event_loop =
       reader.event_loop_factory()->MakeEventLoop("log_reader");
@@ -135,7 +136,7 @@ TEST_F(LoggerTest, RotatedLogFile) {
   // log file.
   reader.Register();
 
-  EXPECT_EQ(reader.node(), nullptr);
+  EXPECT_THAT(reader.Nodes(), ::testing::ElementsAre(nullptr));
 
   std::unique_ptr<EventLoop> test_event_loop =
       reader.event_loop_factory()->MakeEventLoop("log_reader");
@@ -212,7 +213,11 @@ class MultinodeLoggerTest : public ::testing::Test {
         ping_event_loop_(event_loop_factory_.MakeEventLoop(
             "ping", configuration::GetNode(event_loop_factory_.configuration(),
                                            "pi1"))),
-        ping_(ping_event_loop_.get()) {}
+        ping_(ping_event_loop_.get()),
+        pong_event_loop_(event_loop_factory_.MakeEventLoop(
+            "pong", configuration::GetNode(event_loop_factory_.configuration(),
+                                           "pi2"))),
+        pong_(pong_event_loop_.get()) {}
 
   // Config and factory.
   aos::FlatbufferDetachedBuffer<aos::Configuration> config_;
@@ -221,65 +226,154 @@ class MultinodeLoggerTest : public ::testing::Test {
   // Event loop and app for Ping
   std::unique_ptr<EventLoop> ping_event_loop_;
   Ping ping_;
+
+  // Event loop and app for Pong
+  std::unique_ptr<EventLoop> pong_event_loop_;
+  Pong pong_;
 };
 
-// Tests that we can startup at all in a multinode configuration.
-TEST_F(MultinodeLoggerTest, MultiNode) {
-  constexpr chrono::seconds kTimeOffset = chrono::seconds(10000);
-  constexpr uint32_t kQueueIndexOffset = 1024;
-  const ::std::string tmpdir(getenv("TEST_TMPDIR"));
-  const ::std::string logfile = tmpdir + "/multi_logfile.bfbs";
-  // Remove it.
-  unlink(logfile.c_str());
+// Counts the number of messages on a channel (returns channel, count) for every
+// message matching matcher()
+std::vector<std::pair<int, int>> CountChannelsMatching(
+    std::string_view filename,
+    std::function<bool(const MessageHeader *)> matcher) {
+  MessageReader message_reader(filename);
+  std::vector<int> counts(
+      message_reader.log_file_header()->configuration()->channels()->size(), 0);
 
-  LOG(INFO) << "Logging data to " << logfile;
+  while (true) {
+    std::optional<FlatbufferVector<MessageHeader>> msg =
+        message_reader.ReadMessage();
+    if (!msg) {
+      break;
+    }
+
+    if (matcher(&msg.value().message())) {
+      counts[msg.value().message().channel_index()]++;
+    }
+  }
+
+  std::vector<std::pair<int, int>> result;
+  int channel = 0;
+  for (size_t i = 0; i < counts.size(); ++i) {
+    if (counts[i] != 0) {
+      result.push_back(std::make_pair(channel, counts[i]));
+    }
+    ++channel;
+  }
+
+  return result;
+}
+
+// Counts the number of messages (channel, count) for all data messages.
+std::vector<std::pair<int, int>> CountChannelsData(std::string_view filename) {
+  return CountChannelsMatching(filename, [](const MessageHeader *msg) {
+    if (msg->has_data()) {
+      CHECK(!msg->has_monotonic_remote_time());
+      CHECK(!msg->has_realtime_remote_time());
+      CHECK(!msg->has_remote_queue_index());
+      return true;
+    }
+    return false;
+  });
+}
+
+// Counts the number of messages (channel, count) for all timestamp messages.
+std::vector<std::pair<int, int>> CountChannelsTimestamp(
+    std::string_view filename) {
+  return CountChannelsMatching(filename, [](const MessageHeader *msg) {
+    if (!msg->has_data()) {
+      CHECK(msg->has_monotonic_remote_time());
+      CHECK(msg->has_realtime_remote_time());
+      CHECK(msg->has_remote_queue_index());
+      return true;
+    }
+    return false;
+  });
+}
+
+// Tests that we can write and read multi-node log files correctly.
+TEST_F(MultinodeLoggerTest, MultiNode) {
+  const ::std::string tmpdir(getenv("TEST_TMPDIR"));
+  const ::std::string logfile_base = tmpdir + "/multi_logfile";
+  const ::std::string logfile1 = logfile_base + "_pi1_data.bfbs";
+  const ::std::string logfile2 =
+      logfile_base + "_pi2_data/test/aos.examples.Pong.bfbs";
+  const ::std::string logfile3 = logfile_base + "_pi2_data.bfbs";
+
+  // Remove them.
+  unlink(logfile1.c_str());
+  unlink(logfile2.c_str());
+  unlink(logfile3.c_str());
+
+  LOG(INFO) << "Logging data to " << logfile1 << ", " << logfile2 << " and "
+            << logfile3;
 
   {
     const Node *pi1 =
         configuration::GetNode(event_loop_factory_.configuration(), "pi1");
-    std::unique_ptr<EventLoop> pong_event_loop =
-        event_loop_factory_.MakeEventLoop("pong", pi1);
+    const Node *pi2 =
+        configuration::GetNode(event_loop_factory_.configuration(), "pi2");
 
-    std::unique_ptr<aos::RawSender> pong_sender(
-        pong_event_loop->MakeRawSender(aos::configuration::GetChannel(
-            pong_event_loop->configuration(), "/test", "aos.examples.Pong",
-            pong_event_loop->name(), pong_event_loop->node())));
-
-    // Ok, let's fake a remote node.  We use the fancy raw sender Send
-    // method that message_gateway will use to do that.
-    int pong_count = 0;
-    pong_event_loop->MakeWatcher(
-        "/test", [&pong_event_loop, &pong_count, &pong_sender,
-                  kTimeOffset](const examples::Ping &ping) {
-          flatbuffers::FlatBufferBuilder fbb;
-          examples::Pong::Builder pong_builder(fbb);
-          pong_builder.add_value(ping.value());
-          pong_builder.add_initial_send_time(ping.send_time());
-          fbb.Finish(pong_builder.Finish());
-
-          pong_sender->Send(fbb.GetBufferPointer(), fbb.GetSize(),
-                            pong_event_loop->monotonic_now() + kTimeOffset,
-                            pong_event_loop->realtime_now() + kTimeOffset,
-                            kQueueIndexOffset + pong_count);
-          ++pong_count;
-        });
-
-    DetachedBufferWriter writer(logfile);
-    std::unique_ptr<EventLoop> logger_event_loop =
+    std::unique_ptr<EventLoop> pi1_logger_event_loop =
         event_loop_factory_.MakeEventLoop("logger", pi1);
+    std::unique_ptr<LogNamer> pi1_log_namer =
+        std::make_unique<MultiNodeLogNamer>(
+            logfile_base, pi1_logger_event_loop->configuration(),
+            pi1_logger_event_loop->node());
+
+    std::unique_ptr<EventLoop> pi2_logger_event_loop =
+        event_loop_factory_.MakeEventLoop("logger", pi2);
+    std::unique_ptr<LogNamer> pi2_log_namer =
+        std::make_unique<MultiNodeLogNamer>(
+            logfile_base, pi2_logger_event_loop->configuration(),
+            pi2_logger_event_loop->node());
 
     event_loop_factory_.RunFor(chrono::milliseconds(95));
 
-    Logger logger(&writer, logger_event_loop.get(),
-                  std::chrono::milliseconds(100));
+    Logger pi1_logger(std::move(pi1_log_namer), pi1_logger_event_loop.get(),
+                      std::chrono::milliseconds(100));
+    Logger pi2_logger(std::move(pi2_log_namer), pi2_logger_event_loop.get(),
+                      std::chrono::milliseconds(100));
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
   }
 
-  LogReader reader(logfile);
+  {
+    // Confirm that the headers are all for the correct nodes.
+    FlatbufferVector<LogFileHeader> logheader1 = ReadHeader(logfile1);
+    EXPECT_EQ(logheader1.message().node()->name()->string_view(), "pi1");
+    FlatbufferVector<LogFileHeader> logheader2 = ReadHeader(logfile2);
+    EXPECT_EQ(logheader2.message().node()->name()->string_view(), "pi2");
+    FlatbufferVector<LogFileHeader> logheader3 = ReadHeader(logfile3);
+    EXPECT_EQ(logheader3.message().node()->name()->string_view(), "pi2");
 
-  // TODO(austin): Also replay as pi2 or pi3 and make sure we see the pong
-  // messages.  This won't work today yet until the log reading code gets
-  // significantly better.
+    // Timing reports, pings
+    EXPECT_THAT(CountChannelsData(logfile1),
+                ::testing::ElementsAre(::testing::Pair(1, 60),
+                                       ::testing::Pair(4, 2001)));
+    // Timestamps for pong
+    EXPECT_THAT(CountChannelsTimestamp(logfile1),
+                ::testing::ElementsAre(::testing::Pair(5, 2001)));
+
+    // Pong data.
+    EXPECT_THAT(CountChannelsData(logfile2),
+                ::testing::ElementsAre(::testing::Pair(5, 2001)));
+    // No timestamps
+    EXPECT_THAT(CountChannelsTimestamp(logfile2), ::testing::ElementsAre());
+
+    // Timing reports and pongs.
+    EXPECT_THAT(CountChannelsData(logfile3),
+                ::testing::ElementsAre(::testing::Pair(3, 60),
+                                       ::testing::Pair(5, 2001)));
+    // And ping timestamps.
+    EXPECT_THAT(CountChannelsTimestamp(logfile3),
+                ::testing::ElementsAre(::testing::Pair(4, 2001)));
+  }
+
+  LogReader reader({std::vector<std::string>{logfile1},
+                    std::vector<std::string>{logfile2},
+                    std::vector<std::string>{logfile3}});
+
   SimulatedEventLoopFactory log_reader_factory(reader.logged_configuration());
   log_reader_factory.set_send_delay(chrono::microseconds(0));
 
@@ -289,47 +383,137 @@ TEST_F(MultinodeLoggerTest, MultiNode) {
 
   const Node *pi1 =
       configuration::GetNode(log_reader_factory.configuration(), "pi1");
+  const Node *pi2 =
+      configuration::GetNode(log_reader_factory.configuration(), "pi2");
 
-  ASSERT_NE(reader.node(), nullptr);
-  EXPECT_EQ(reader.node()->name()->string_view(), "pi1");
+  EXPECT_THAT(reader.Nodes(), ::testing::ElementsAre(pi1, pi2));
 
   reader.event_loop_factory()->set_send_delay(chrono::microseconds(0));
 
-  std::unique_ptr<EventLoop> test_event_loop =
+  std::unique_ptr<EventLoop> pi1_event_loop =
       log_reader_factory.MakeEventLoop("test", pi1);
+  std::unique_ptr<EventLoop> pi2_event_loop =
+      log_reader_factory.MakeEventLoop("test", pi2);
 
-  int ping_count = 10;
-  int pong_count = 10;
+  int pi1_ping_count = 10;
+  int pi2_ping_count = 10;
+  int pi1_pong_count = 10;
+  int pi2_pong_count = 10;
 
   // Confirm that the ping value matches.
-  test_event_loop->MakeWatcher("/test",
-                               [&ping_count](const examples::Ping &ping) {
-                                 EXPECT_EQ(ping.value(), ping_count + 1);
-                                 ++ping_count;
-                               });
-  // Confirm that the ping and pong counts both match, and the value also
-  // matches.
-  test_event_loop->MakeWatcher(
-      "/test", [&test_event_loop, &ping_count, &pong_count,
-                kTimeOffset](const examples::Pong &pong) {
-        EXPECT_EQ(test_event_loop->context().remote_queue_index,
-                  pong_count + kQueueIndexOffset);
-        EXPECT_EQ(test_event_loop->context().monotonic_remote_time,
-                  test_event_loop->monotonic_now() + kTimeOffset);
-        EXPECT_EQ(test_event_loop->context().realtime_remote_time,
-                  test_event_loop->realtime_now() + kTimeOffset);
+  pi1_event_loop->MakeWatcher(
+      "/test", [&pi1_ping_count, &pi1_event_loop](const examples::Ping &ping) {
+        VLOG(1) << "Pi1 ping " << FlatbufferToJson(&ping)
+                << pi1_event_loop->context().monotonic_remote_time << " -> "
+                << pi1_event_loop->context().monotonic_event_time;
+        EXPECT_EQ(ping.value(), pi1_ping_count + 1);
+        EXPECT_EQ(pi1_event_loop->context().monotonic_remote_time,
+                  pi1_ping_count * chrono::milliseconds(10) +
+                      monotonic_clock::epoch());
+        EXPECT_EQ(pi1_event_loop->context().realtime_remote_time,
+                  pi1_ping_count * chrono::milliseconds(10) +
+                      realtime_clock::epoch());
+        EXPECT_EQ(pi1_event_loop->context().monotonic_remote_time,
+                  pi1_event_loop->context().monotonic_event_time);
+        EXPECT_EQ(pi1_event_loop->context().realtime_remote_time,
+                  pi1_event_loop->context().realtime_event_time);
 
-        EXPECT_EQ(pong.value(), pong_count + 1);
-        ++pong_count;
-        EXPECT_EQ(ping_count, pong_count);
+        ++pi1_ping_count;
+      });
+  pi2_event_loop->MakeWatcher(
+      "/test", [&pi2_ping_count, &pi2_event_loop](const examples::Ping &ping) {
+        VLOG(1) << "Pi2 ping " << FlatbufferToJson(&ping)
+                << pi2_event_loop->context().monotonic_remote_time << " -> "
+                << pi2_event_loop->context().monotonic_event_time;
+        EXPECT_EQ(ping.value(), pi2_ping_count + 1);
+
+        EXPECT_EQ(pi2_event_loop->context().monotonic_remote_time,
+                  pi2_ping_count * chrono::milliseconds(10) +
+                      monotonic_clock::epoch());
+        EXPECT_EQ(pi2_event_loop->context().realtime_remote_time,
+                  pi2_ping_count * chrono::milliseconds(10) +
+                      realtime_clock::epoch());
+        EXPECT_EQ(pi2_event_loop->context().monotonic_remote_time +
+                      chrono::microseconds(150),
+                  pi2_event_loop->context().monotonic_event_time);
+        EXPECT_EQ(pi2_event_loop->context().realtime_remote_time +
+                      chrono::microseconds(150),
+                  pi2_event_loop->context().realtime_event_time);
+        ++pi2_ping_count;
       });
 
-  log_reader_factory.RunFor(std::chrono::seconds(100));
-  EXPECT_EQ(ping_count, 2010);
-  EXPECT_EQ(pong_count, 2010);
+  constexpr ssize_t kQueueIndexOffset = 0;
+  // Confirm that the ping and pong counts both match, and the value also
+  // matches.
+  pi1_event_loop->MakeWatcher(
+      "/test", [&pi1_event_loop, &pi1_ping_count,
+                &pi1_pong_count](const examples::Pong &pong) {
+        VLOG(1) << "Pi1 pong " << FlatbufferToJson(&pong) << " at "
+                << pi1_event_loop->context().monotonic_remote_time << " -> "
+                << pi1_event_loop->context().monotonic_event_time;
+
+        EXPECT_EQ(pi1_event_loop->context().remote_queue_index,
+                  pi1_pong_count + kQueueIndexOffset);
+        EXPECT_EQ(pi1_event_loop->context().monotonic_remote_time,
+                  chrono::microseconds(200) +
+                      pi1_pong_count * chrono::milliseconds(10) +
+                      monotonic_clock::epoch());
+        EXPECT_EQ(pi1_event_loop->context().realtime_remote_time,
+                  chrono::microseconds(200) +
+                      pi1_pong_count * chrono::milliseconds(10) +
+                      realtime_clock::epoch());
+
+        EXPECT_EQ(pi1_event_loop->context().monotonic_remote_time +
+                      chrono::microseconds(150),
+                  pi1_event_loop->context().monotonic_event_time);
+        EXPECT_EQ(pi1_event_loop->context().realtime_remote_time +
+                      chrono::microseconds(150),
+                  pi1_event_loop->context().realtime_event_time);
+
+        EXPECT_EQ(pong.value(), pi1_pong_count + 1);
+        ++pi1_pong_count;
+        EXPECT_EQ(pi1_ping_count, pi1_pong_count);
+      });
+  pi2_event_loop->MakeWatcher(
+      "/test", [&pi2_event_loop, &pi2_ping_count,
+                &pi2_pong_count](const examples::Pong &pong) {
+        VLOG(1) << "Pi2 pong " << FlatbufferToJson(&pong) << " at "
+                << pi2_event_loop->context().monotonic_remote_time << " -> "
+                << pi2_event_loop->context().monotonic_event_time;
+
+        EXPECT_EQ(pi2_event_loop->context().remote_queue_index,
+                  pi2_pong_count + kQueueIndexOffset - 9);
+
+        EXPECT_EQ(pi2_event_loop->context().monotonic_remote_time,
+                  chrono::microseconds(200) +
+                      pi2_pong_count * chrono::milliseconds(10) +
+                      monotonic_clock::epoch());
+        EXPECT_EQ(pi2_event_loop->context().realtime_remote_time,
+                  chrono::microseconds(200) +
+                      pi2_pong_count * chrono::milliseconds(10) +
+                      realtime_clock::epoch());
+
+        EXPECT_EQ(pi2_event_loop->context().monotonic_remote_time,
+                  pi2_event_loop->context().monotonic_event_time);
+        EXPECT_EQ(pi2_event_loop->context().realtime_remote_time,
+                  pi2_event_loop->context().realtime_event_time);
+
+        EXPECT_EQ(pong.value(), pi2_pong_count + 1);
+        ++pi2_pong_count;
+        EXPECT_EQ(pi2_ping_count, pi2_pong_count);
+      });
+
+  log_reader_factory.Run();
+  EXPECT_EQ(pi1_ping_count, 2010);
+  EXPECT_EQ(pi2_ping_count, 2010);
+  EXPECT_EQ(pi1_pong_count, 2010);
+  EXPECT_EQ(pi2_pong_count, 2010);
 
   reader.Deregister();
 }
+
+// TODO(austin): We can write a test which recreates a logfile and confirms that
+// we get it back.  That is the ultimate test.
 
 }  // namespace testing
 }  // namespace logger

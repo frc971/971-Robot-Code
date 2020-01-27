@@ -19,11 +19,14 @@ class SimulatedMessageBridge {
       SimulatedEventLoopFactory *simulated_event_loop_factory);
   ~SimulatedMessageBridge();
 
+  // Disables forwarding for this channel.  This should be used very rarely only
+  // for things like the logger.
+  void DisableForwarding(const Channel *channel);
+
  private:
   // Map of nodes to event loops.  This is a member variable so that the
   // lifetime of the event loops matches the lifetime of the bridge.
   std::map<const Node *, std::unique_ptr<aos::EventLoop>> event_loop_map_;
-
 
   // List of delayers used to resend the messages.
   using DelayersVector = std::vector<std::unique_ptr<RawMessageDelayer>>;

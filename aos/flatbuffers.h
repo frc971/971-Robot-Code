@@ -4,6 +4,7 @@
 #include <array>
 #include <string_view>
 
+#include "absl/types/span.h"
 #include "flatbuffers/flatbuffers.h"
 #include "glog/logging.h"
 
@@ -106,6 +107,11 @@ class Flatbuffer {
   virtual const uint8_t *data() const = 0;
   virtual uint8_t *data() = 0;
   virtual size_t size() const = 0;
+
+  absl::Span<uint8_t> span() { return absl::Span<uint8_t>(data(), size()); }
+  absl::Span<const uint8_t> span() const {
+    return absl::Span<const uint8_t>(data(), size());
+  }
 };
 
 // String backed flatbuffer.

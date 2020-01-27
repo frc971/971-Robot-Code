@@ -98,6 +98,10 @@ class SimulatedEventLoopFactory {
   // Returns the configuration used for everything.
   const Configuration *configuration() const { return configuration_; }
 
+  // Disables forwarding for this channel.  This should be used very rarely only
+  // for things like the logger.
+  void DisableForwarding(const Channel *channel);
+
  private:
   const Configuration *const configuration_;
   EventScheduler scheduler_;
