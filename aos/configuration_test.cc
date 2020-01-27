@@ -39,6 +39,16 @@ TEST_F(ConfigurationTest, ConfigMerge) {
       FlatbufferToJson(config, true));
 }
 
+// Tests that we can get back a ChannelIndex.
+TEST_F(ConfigurationTest, ChannelIndex) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig("aos/testdata/config1.json");
+
+  EXPECT_EQ(
+      ChannelIndex(&config.message(), config.message().channels()->Get(1u)),
+      1u);
+}
+
 // Tests that we can read and merge a multinode configuration.
 TEST_F(ConfigurationTest, ConfigMergeMultinode) {
   FlatbufferDetachedBuffer<Configuration> config =
@@ -597,6 +607,63 @@ TEST_F(ConfigurationTest, DestinationNodeNames) {
   EXPECT_THAT(
       DestinationNodeNames(&config.message(), config.message().nodes()->Get(1)),
       ::testing::ElementsAreArray({"pi1"}));
+}
+
+// Tests that we can pull out all the nodes.
+TEST_F(ConfigurationTest, GetNodes) {
+  {
+    FlatbufferDetachedBuffer<Configuration> config =
+        ReadConfig("aos/testdata/good_multinode.json");
+    const Node *pi1 = GetNode(&config.message(), "pi1");
+    const Node *pi2 = GetNode(&config.message(), "pi2");
+
+    EXPECT_THAT(GetNodes(&config.message()), ::testing::ElementsAre(pi1, pi2));
+  }
+
+  {
+    FlatbufferDetachedBuffer<Configuration> config =
+        ReadConfig("aos/testdata/config1.json");
+    EXPECT_THAT(GetNodes(&config.message()), ::testing::ElementsAre(nullptr));
+  }
+}
+
+// Tests that we can extract a node index from a config.
+TEST_F(ConfigurationTest, GetNodeIndex) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig("aos/testdata/good_multinode.json");
+  const Node *pi1 = GetNode(&config.message(), "pi1");
+  const Node *pi2 = GetNode(&config.message(), "pi2");
+
+  EXPECT_EQ(GetNodeIndex(&config.message(), pi1), 0);
+  EXPECT_EQ(GetNodeIndex(&config.message(), pi2), 1);
+}
+
+// Tests that GetNodeOrDie handles both single and multi-node worlds and returns
+// valid nodes.
+TEST_F(ConfigurationDeathTest, GetNodeOrDie) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig("aos/testdata/good_multinode.json");
+  FlatbufferDetachedBuffer<Configuration> config2 =
+      ReadConfig("aos/testdata/good_multinode.json");
+  {
+    // Simple case, nullptr -> nullptr
+    FlatbufferDetachedBuffer<Configuration> single_node_config =
+        ReadConfig("aos/testdata/config1.json");
+    EXPECT_EQ(nullptr, GetNodeOrDie(&single_node_config.message(), nullptr));
+
+    // Confirm that we die when a node is passed in.
+    EXPECT_DEATH(
+        {
+          GetNodeOrDie(&single_node_config.message(),
+                       config.message().nodes()->Get(0));
+        },
+        "Provided a node in a single node world.");
+  }
+
+  const Node *pi1 = GetNode(&config.message(), "pi1");
+  // Now try a lookup using a node from a different instance of the config.
+  EXPECT_EQ(pi1,
+            GetNodeOrDie(&config.message(), config2.message().nodes()->Get(0)));
 }
 
 }  // namespace testing

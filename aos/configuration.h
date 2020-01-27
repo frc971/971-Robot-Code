@@ -60,14 +60,28 @@ inline const Channel *GetChannel(const Configuration *config,
                     channel->type()->string_view(), application_name, node);
 }
 
+// Returns the channel index (or dies) of channel in the provided config.
+size_t ChannelIndex(const Configuration *config, const Channel *channel);
+
 // Returns the Node out of the config with the matching name, or nullptr if it
 // can't be found.
 const Node *GetNode(const Configuration *config, std::string_view name);
+const Node *GetNode(const Configuration *config, const Node *node);
+// Returns a matching node, or nullptr if the provided node is nullptr and we
+// are in a single node world.
+const Node *GetNodeOrDie(const Configuration *config, const Node *node);
 // Returns the Node out of the configuration which matches our hostname.
 // CHECKs if it can't be found.
 const Node *GetMyNode(const Configuration *config);
 const Node *GetNodeFromHostname(const Configuration *config,
                                 std::string_view name);
+
+// Returns a vector of the nodes in the config.  (nullptr is considered the node
+// in a single node world.)
+std::vector<const Node *> GetNodes(const Configuration *config);
+
+// Returns the node index for a node.  Note: node needs to exist inside config.
+int GetNodeIndex(const Configuration *config, const Node *node);
 
 // Returns true if we are running in a multinode configuration.
 bool MultiNode(const Configuration *config);

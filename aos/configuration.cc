@@ -470,6 +470,18 @@ const Channel *GetChannel(const Configuration *config, std::string_view name,
   }
 }
 
+size_t ChannelIndex(const Configuration *configuration,
+                    const Channel *channel) {
+  CHECK(configuration->channels() != nullptr) << ": No channels";
+
+  auto c = std::find(configuration->channels()->begin(),
+                     configuration->channels()->end(), channel);
+  CHECK(c != configuration->channels()->end())
+      << ": Channel pointer not found in configuration()->channels()";
+
+  return std::distance(configuration->channels()->begin(), c);
+}
+
 std::string CleanedChannelToString(const Channel *channel) {
   FlatbufferDetachedBuffer<Channel> cleaned_channel = CopyFlatBuffer(channel);
   cleaned_channel.mutable_message()->clear_schema();
@@ -605,6 +617,17 @@ const Node *GetMyNode(const Configuration *config) {
   return nullptr;
 }
 
+const Node *GetNode(const Configuration *config, const Node *node) {
+  if (!MultiNode(config)) {
+    CHECK(node == nullptr) << ": Provided a node in a single node world.";
+    return nullptr;
+  } else {
+    CHECK(node != nullptr);
+    CHECK(node->has_name());
+    return GetNode(config, node->name()->string_view());
+  }
+}
+
 const Node *GetNode(const Configuration *config, std::string_view name) {
   CHECK(config->has_nodes())
       << ": Asking for a node from a single node configuration.";
@@ -615,6 +638,44 @@ const Node *GetNode(const Configuration *config, std::string_view name) {
     }
   }
   return nullptr;
+}
+
+const Node *GetNodeOrDie(const Configuration *config, const Node *node) {
+  if (!MultiNode(config)) {
+    CHECK(node == nullptr) << ": Provided a node in a single node world.";
+    return nullptr;
+  } else {
+    const Node *config_node = GetNode(config, node);
+    if (config_node == nullptr) {
+      LOG(FATAL) << "Couldn't find node matching " << FlatbufferToJson(node);
+    }
+    return config_node;
+  }
+}
+
+int GetNodeIndex(const Configuration *config, const Node *node) {
+  CHECK(config->has_nodes())
+      << ": Asking for a node from a single node configuration.";
+  int node_index = 0;
+  for (const Node *iterated_node : *config->nodes()) {
+    if (iterated_node == node) {
+      return node_index;
+    }
+    ++node_index;
+  }
+  LOG(FATAL) << "Node not found in the configuration.";
+}
+
+std::vector<const Node *> GetNodes(const Configuration *config) {
+  std::vector<const Node *> nodes;
+  if (configuration::MultiNode(config)) {
+    for (const Node *node : *config->nodes()) {
+      nodes.emplace_back(node);
+    }
+  } else {
+    nodes.emplace_back(nullptr);
+  }
+  return nodes;
 }
 
 bool MultiNode(const Configuration *config) { return config->has_nodes(); }

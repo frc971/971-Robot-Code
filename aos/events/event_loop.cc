@@ -71,14 +71,7 @@ EventLoop::~EventLoop() {
 }
 
 int EventLoop::ChannelIndex(const Channel *channel) {
-  CHECK(configuration_->channels() != nullptr) << ": No channels";
-
-  auto c = std::find(configuration_->channels()->begin(),
-                     configuration_->channels()->end(), channel);
-  CHECK(c != configuration_->channels()->end())
-      << ": Channel pointer not found in configuration()->channels()";
-
-  return std::distance(configuration()->channels()->begin(), c);
+  return configuration::ChannelIndex(configuration_, channel);
 }
 
 void EventLoop::NewSender(RawSender *sender) {
