@@ -15,6 +15,8 @@ namespace util {
 void WriteStringToFileOrDie(const std::string_view filename,
                             const std::string_view contents);
 
+void MkdirP(std::string_view path, mode_t mode);
+
 }  // namespace util
 }  // namespace aos
 

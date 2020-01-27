@@ -1,6 +1,8 @@
 #include "aos/util/file.h"
 
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include <string_view>
@@ -44,6 +46,24 @@ void WriteStringToFileOrDie(const std::string_view filename,
 
     size_written += result;
   }
+}
+
+void MkdirP(std::string_view path, mode_t mode) {
+  auto last_slash_pos = path.find_last_of("/");
+
+  std::string folder(last_slash_pos == std::string_view::npos
+                         ? std::string_view("")
+                         : path.substr(0, last_slash_pos));
+  if (folder.empty()) return;
+  MkdirP(folder, mode);
+  const int result = mkdir(folder.c_str(), mode);
+  if (result == -1 && errno == EEXIST) {
+    VLOG(2) << folder << " already exists";
+    return;
+  } else {
+    VLOG(1) << "Created " << folder;
+  }
+  PCHECK(result == 0) << ": Error creating " << folder;
 }
 
 }  // namespace util

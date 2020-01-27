@@ -18,6 +18,7 @@
 #include "aos/ipc_lib/signalfd.h"
 #include "aos/realtime.h"
 #include "aos/stl_mutex/stl_mutex.h"
+#include "aos/util/file.h"
 #include "aos/util/phased_loop.h"
 #include "glog/logging.h"
 
@@ -72,7 +73,7 @@ class MMapedQueue {
 
     size_ = ipc_lib::LocklessQueueMemorySize(config_);
 
-    MkdirP(path);
+    util::MkdirP(path, FLAGS_permissions);
 
     // There are 2 cases.  Either the file already exists, or it does not
     // already exist and we need to create it.  Start by trying to create it. If
@@ -124,23 +125,6 @@ class MMapedQueue {
   const ipc_lib::LocklessQueueConfiguration &config() const { return config_; }
 
  private:
-  void MkdirP(std::string_view path) {
-    auto last_slash_pos = path.find_last_of("/");
-
-    std::string folder(last_slash_pos == std::string_view::npos
-                           ? std::string_view("")
-                           : path.substr(0, last_slash_pos));
-    if (folder.empty()) return;
-    MkdirP(folder);
-    VLOG(1) << "Creating " << folder;
-    const int result = mkdir(folder.c_str(), FLAGS_permissions);
-    if (result == -1 && errno == EEXIST) {
-      VLOG(1) << "Already exists";
-      return;
-    }
-    PCHECK(result == 0) << ": Error creating " << folder;
-  }
-
   ipc_lib::LocklessQueueConfiguration config_;
 
   int fd_;
