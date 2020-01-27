@@ -77,6 +77,18 @@ inline FlatbufferDetachedBuffer<T> CopyFlatBuffer(const T *t) {
   return FlatbufferDetachedBuffer<T>(fbb.Release());
 }
 
+// Compares 2 flatbuffers.  Returns true if they match, false otherwise.
+bool CompareFlatBuffer(const flatbuffers::TypeTable *typetable,
+                       const flatbuffers::Table *t1,
+                       const flatbuffers::Table *t2);
+
+template <class T>
+inline bool CompareFlatBuffer(const T *t1, const T *t2) {
+  return CompareFlatBuffer(T::MiniReflectTypeTable(),
+                           reinterpret_cast<const flatbuffers::Table *>(t1),
+                           reinterpret_cast<const flatbuffers::Table *>(t2));
+}
+
 }  // namespace aos
 
 #endif  // AOS_FLATBUFFER_MERGE_H_

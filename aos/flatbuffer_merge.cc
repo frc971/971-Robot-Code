@@ -526,4 +526,27 @@ flatbuffers::DetachedBuffer MergeFlatBuffers(
   return fbb.Release();
 }
 
+bool CompareFlatBuffer(const flatbuffers::TypeTable *typetable,
+                       const flatbuffers::Table *t1,
+                       const flatbuffers::Table *t2) {
+  // Copying flatbuffers is deterministic for the same typetable.  So, copy both
+  // to guarantee that they are sorted the same, then check that the memory
+  // matches.
+  //
+  // There has to be a better way to do this, but the efficiency hit of this
+  // implementation is fine for the usages that we have now.  We are better off
+  // abstracting this into a library call where we can fix it later easily.
+  flatbuffers::FlatBufferBuilder fbb1;
+  fbb1.ForceDefaults(1);
+  fbb1.Finish(MergeFlatBuffers(typetable, t1, nullptr, &fbb1));
+  flatbuffers::FlatBufferBuilder fbb2;
+  fbb2.ForceDefaults(1);
+  fbb2.Finish(MergeFlatBuffers(typetable, t2, nullptr, &fbb2));
+
+  if (fbb1.GetSize() != fbb2.GetSize()) return false;
+
+  return memcmp(fbb1.GetBufferPointer(), fbb2.GetBufferPointer(),
+                fbb1.GetSize()) == 0;
+}
+
 }  // namespace aos

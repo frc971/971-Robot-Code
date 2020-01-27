@@ -20,6 +20,13 @@ class FlatbufferMerge : public ::testing::Test {
     const ::std::string merged_output =
         FlatbufferToJson(fb_merged, ConfigurationTypeTable());
     EXPECT_EQ(expected_output, merged_output);
+
+    aos::FlatbufferDetachedBuffer<Configuration> expected_message(
+        JsonToFlatbuffer(std::string(expected_output).c_str(),
+                         ConfigurationTypeTable()));
+    EXPECT_TRUE(
+        CompareFlatBuffer(flatbuffers::GetRoot<Configuration>(fb_merged.data()),
+                          &expected_message.message()));
   }
 
   void JsonMerge(const ::std::string in1, const ::std::string in2,
@@ -333,6 +340,18 @@ TEST_F(FlatbufferMerge, NestedStruct) {
             "{ \"apps\": [ { \"name\": \"woo2\" }, { \"name\": \"wo3\" } ] }",
             "{ \"apps\": [ { \"name\": \"woot\" }, { \"name\": \"wow\" }, { "
             "\"name\": \"woo2\" }, { \"name\": \"wo3\" } ] }");
+}
+
+// Tests a compare of 2 basic (different) messages.
+TEST_F(FlatbufferMerge, CompareDifferent) {
+  aos::FlatbufferDetachedBuffer<Configuration> message1(JsonToFlatbuffer(
+      "{ \"single_application\": { \"name\": \"wow\", \"priority\": 7 } }",
+      ConfigurationTypeTable()));
+  aos::FlatbufferDetachedBuffer<Configuration> message2(JsonToFlatbuffer(
+      "{ \"single_application\": { \"name\": \"wow\", \"priority\": 8 } }",
+      ConfigurationTypeTable()));
+
+  EXPECT_FALSE(CompareFlatBuffer(&message1.message(), &message2.message()));
 }
 
 // TODO(austin): enums
