@@ -14,19 +14,17 @@ namespace aos {
 // Container for both a message, and the context for it for simulation.  This
 // makes tracking the timestamps associated with the data easy.
 struct SimulatedMessage {
-  // Struct to let us force data to be well aligned.
-  struct OveralignedChar {
-    char data alignas(64);
-  };
-
   // Context for the data.
   Context context;
 
   // The data.
-  char *data() { return reinterpret_cast<char *>(&actual_data[0]); }
+  char *data(size_t buffer_size) {
+    return RoundChannelData(&actual_data[0], buffer_size);
+  }
 
-  // Then the data.
-  OveralignedChar actual_data[];
+  // Then the data, including padding on the end so we can align the buffer we
+  // actually return from data().
+  char actual_data[];
 };
 
 class SimulatedEventLoop;
@@ -125,9 +123,9 @@ namespace {
 // This is a shared_ptr so we don't have to implement refcounting or copying.
 std::shared_ptr<SimulatedMessage> MakeSimulatedMessage(size_t size) {
   SimulatedMessage *message = reinterpret_cast<SimulatedMessage *>(
-      malloc(sizeof(SimulatedMessage) + size));
+      malloc(sizeof(SimulatedMessage) + size + kChannelDataAlignment - 1));
   message->context.size = size;
-  message->context.data = message->data();
+  message->context.data = message->data(size);
 
   return std::shared_ptr<SimulatedMessage>(message, free);
 }
@@ -144,7 +142,7 @@ class SimulatedSender : public RawSender {
     if (!message_) {
       message_ = MakeSimulatedMessage(simulated_channel_->max_size());
     }
-    return message_->data();
+    return message_->data(simulated_channel_->max_size());
   }
 
   size_t size() override { return simulated_channel_->max_size(); }
@@ -187,7 +185,9 @@ class SimulatedSender : public RawSender {
     // Now fill in the message.  size is already populated above, and
     // queue_index will be populated in simulated_channel_.  Put this at the
     // back of the data segment.
-    memcpy(message_->data() + simulated_channel_->max_size() - size, msg, size);
+    memcpy(message_->data(simulated_channel_->max_size()) +
+               simulated_channel_->max_size() - size,
+           msg, size);
 
     return DoSend(size, monotonic_remote_time, realtime_remote_time,
                   remote_queue_index);
@@ -606,8 +606,8 @@ void SimulatedChannel::MakeRawWatcher(SimulatedWatcher *watcher) {
 uint32_t SimulatedChannel::Send(std::shared_ptr<SimulatedMessage> message) {
   const uint32_t queue_index = next_queue_index_.index();
   message->context.queue_index = queue_index;
-  message->context.data =
-      message->data() + channel()->max_size() - message->context.size;
+  message->context.data = message->data(channel()->max_size()) +
+                          channel()->max_size() - message->context.size;
   next_queue_index_ = next_queue_index_.Increment();
 
   latest_message_ = message;

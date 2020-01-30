@@ -23,7 +23,7 @@ struct watch_message_type_trait<ReturnType (ClassType::*)(A1) const> {
 
 template <typename T>
 typename Sender<T>::Builder Sender<T>::MakeBuilder() {
-  return Builder(sender_.get(), sender_->data(), sender_->size());
+  return Builder(sender_.get(), sender_->fbb_allocator());
 }
 
 template <typename Watch>
@@ -193,6 +193,7 @@ class WatcherState {
   // context.
   void DoCallCallback(std::function<monotonic_clock::time_point()> get_time,
                       Context context) {
+    CheckChannelDataAlignment(context.data, context.size);
     const monotonic_clock::time_point monotonic_start_time = get_time();
     {
       const float start_latency =

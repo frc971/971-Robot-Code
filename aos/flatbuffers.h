@@ -12,6 +12,8 @@ namespace aos {
 // This class is a base class for all sizes of array backed allocators.
 class FixedAllocatorBase : public flatbuffers::Allocator {
  public:
+  ~FixedAllocatorBase() override { CHECK(!is_allocated_); }
+
   // TODO(austin): Read the contract for these.
   uint8_t *allocate(size_t) override;
 
@@ -25,6 +27,7 @@ class FixedAllocatorBase : public flatbuffers::Allocator {
   virtual size_t size() const = 0;
 
   void Reset() { is_allocated_ = false; }
+  bool is_allocated() const { return is_allocated_; }
 
  private:
   bool is_allocated_ = false;
@@ -51,14 +54,32 @@ class FixedAllocator : public FixedAllocatorBase {
 class PreallocatedAllocator : public FixedAllocatorBase {
  public:
   PreallocatedAllocator(void *data, size_t size) : data_(data), size_(size) {}
-  uint8_t *data() override { return reinterpret_cast<uint8_t *>(data_); }
-  const uint8_t *data() const override {
-    return reinterpret_cast<const uint8_t *>(data_);
+  PreallocatedAllocator(const PreallocatedAllocator&) = delete;
+  PreallocatedAllocator(PreallocatedAllocator &&other)
+      : data_(other.data_), size_(other.size_) {
+    CHECK(!is_allocated());
+    CHECK(!other.is_allocated());
   }
-  size_t size() const override { return size_; }
+
+  PreallocatedAllocator &operator=(const PreallocatedAllocator &) = delete;
+  PreallocatedAllocator &operator=(PreallocatedAllocator &&other) {
+    CHECK(!is_allocated());
+    CHECK(!other.is_allocated());
+    data_ = other.data_;
+    size_ = other.size_;
+    return *this;
+  }
+
+  uint8_t *data() final {
+    return reinterpret_cast<uint8_t *>(CHECK_NOTNULL(data_));
+  }
+  const uint8_t *data() const final {
+    return reinterpret_cast<const uint8_t *>(CHECK_NOTNULL(data_));
+  }
+  size_t size() const final { return size_; }
 
  private:
-  void* data_;
+  void *data_;
   size_t size_;
 };
 
