@@ -6,10 +6,9 @@
 #include <cstdint>
 #include <vector>
 
-#include "frc971/control_loops/control_loops_generated.h"
-#include "frc971/constants.h"
-
 #include "flatbuffers/flatbuffers.h"
+#include "frc971/constants.h"
+#include "frc971/control_loops/control_loops_generated.h"
 
 // TODO(pschrader): Flag an error if encoder index pulse is not n revolutions
 // away from the last one (i.e. got extra counts from noise, etc..)
@@ -29,7 +28,7 @@ class ZeroingEstimator {
   using Position = TPosition;
   using ZeroingConstants = TZeroingConstants;
   using State = TState;
-  virtual ~ZeroingEstimator(){}
+  virtual ~ZeroingEstimator() {}
 
   // Returns true if the logic considers the corresponding mechanism to be
   // zeroed.
@@ -61,9 +60,10 @@ class ZeroingEstimator {
 
 // Estimates the position with an incremental encoder with an index pulse and a
 // potentiometer.
-class PotAndIndexPulseZeroingEstimator : public ZeroingEstimator<PotAndIndexPosition,
-    constants::PotAndIndexPulseZeroingConstants,
-    EstimatorState> {
+class PotAndIndexPulseZeroingEstimator
+    : public ZeroingEstimator<PotAndIndexPosition,
+                              constants::PotAndIndexPulseZeroingConstants,
+                              EstimatorState> {
  public:
   explicit PotAndIndexPulseZeroingEstimator(
       const constants::PotAndIndexPulseZeroingConstants &constants);
@@ -148,10 +148,11 @@ class PotAndIndexPulseZeroingEstimator : public ZeroingEstimator<PotAndIndexPosi
 // Estimates the position with an incremental encoder and a hall effect sensor.
 class HallEffectAndPositionZeroingEstimator
     : public ZeroingEstimator<HallEffectAndPosition,
-    constants::HallEffectZeroingConstants,
-    HallEffectAndPositionEstimatorState> {
+                              constants::HallEffectZeroingConstants,
+                              HallEffectAndPositionEstimatorState> {
  public:
-  explicit HallEffectAndPositionZeroingEstimator(const ZeroingConstants &constants);
+  explicit HallEffectAndPositionZeroingEstimator(
+      const ZeroingConstants &constants);
 
   // Update the internal logic with the next sensor values.
   void UpdateEstimate(const Position &info) override;
@@ -372,9 +373,10 @@ class PotAndAbsoluteEncoderZeroingEstimator
 
 // Zeros by seeing all the index pulses in the range of motion of the mechanism
 // and using that to figure out which index pulse is which.
-class PulseIndexZeroingEstimator : public ZeroingEstimator<IndexPosition,
-    constants::EncoderPlusIndexZeroingConstants,
-    IndexEstimatorState> {
+class PulseIndexZeroingEstimator
+    : public ZeroingEstimator<IndexPosition,
+                              constants::EncoderPlusIndexZeroingConstants,
+                              IndexEstimatorState> {
  public:
   explicit PulseIndexZeroingEstimator(const ZeroingConstants &constants)
       : constants_(constants) {
@@ -514,6 +516,47 @@ class AbsoluteEncoderZeroingEstimator
 
   // The filtered position.
   double position_ = 0.0;
+};
+
+class RelativeEncoderZeroingEstimator
+    : public ZeroingEstimator<RelativePosition, void,
+                              RelativeEncoderEstimatorState> {
+ public:
+  explicit RelativeEncoderZeroingEstimator() {}
+
+  // Update position with new position from encoder
+  void UpdateEstimate(const RelativePosition &position) override {
+    position_ = position.encoder();
+  }
+
+  // We alre always zeroed
+  bool zeroed() const override { return true; }
+
+  // Starting position of the joint
+  double offset() const override { return 0; }
+
+  // Has an error occured? Note: Only triggered by TriggerError()
+  bool error() const override { return error_; }
+
+  // Offset is always ready, since we are always zeroed.
+  bool offset_ready() const override { return true; }
+
+  void TriggerError() override { error_ = true; }
+
+  void Reset() override { error_ = false; }
+
+  flatbuffers::Offset<State> GetEstimatorState(
+      flatbuffers::FlatBufferBuilder *fbb) const override {
+    State::Builder builder(*fbb);
+    builder.add_error(error_);
+    builder.add_position(position_);
+    return builder.Finish();
+  }
+
+ private:
+  // Position from encoder relative to start
+  double position_ = 0;
+  bool error_ = false;
 };
 
 }  // namespace zeroing

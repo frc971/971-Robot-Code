@@ -91,6 +91,10 @@ void PositionSensorSimulator::InitializeHallEffectAndPosition(
   negedge_value_ = start_position;
 }
 
+void PositionSensorSimulator::InitializeRelativeEncoder() {
+  current_position_ = 0.0;
+}
+
 void PositionSensorSimulator::MoveTo(double new_position) {
   {
     const int lower_start_segment = lower_index_edge_.current_index_segment();
@@ -217,6 +221,15 @@ PositionSensorSimulator::GetSensorValues<HallEffectAndPositionBuilder>(
   builder->add_negedge_value(negedge_value_ - start_position_);
   return builder->Finish();
 }
+
+template <>
+flatbuffers::Offset<RelativePosition>
+PositionSensorSimulator::GetSensorValues<RelativePositionBuilder>(
+    RelativePositionBuilder *builder) {
+  builder->add_encoder(current_position_);
+  return builder->Finish();
+}
+
 
 }  // namespace control_loops
 }  // namespace frc971
