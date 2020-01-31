@@ -1,3 +1,5 @@
+load("@//tools/build_rules:select.bzl", "cpu_select")
+
 cc_library(
     name = "wpilib",
     linkstatic = True,
@@ -86,3 +88,15 @@ cc_library(
         "//conditions:default": [],
     }),
 )
+
+cc_library(
+    name = "webrtc",
+    visibility = ["//visibility:public"],
+    deps = cpu_select({
+        "amd64": ["@webrtc_x64//:webrtc"],
+        "armhf": ["@webrtc_arm//:webrtc"],
+        "cortex-m": ["@webrtc_arm//:webrtc"],
+        "roborio": ["@webrtc_rio//:webrtc"],
+    }),
+)
+
