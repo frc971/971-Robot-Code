@@ -14,7 +14,7 @@ table CameraImage {
   // The number of columns in the image.
   cols:int;
   // The image data.
-  data:[byte];
+  data:[ubyte];
   // Timestamp when the frame was captured.
   monotonic_timestamp_ns:long;
   realtime_timestamp_ns:long;

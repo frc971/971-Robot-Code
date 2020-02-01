@@ -240,12 +240,33 @@ cc_test(
 flatbuffer_cc_library(
     name = "web_proxy_fbs",
     srcs = ["web_proxy.fbs"],
+    includes = [
+        ":connect_fbs_includes",
+        "//aos:configuration_fbs_includes",
+    ],
     gen_reflections = True,
 )
 
 flatbuffer_ts_library(
     name = "web_proxy_ts_fbs",
     srcs = ["web_proxy.fbs"],
+    includes = [
+        ":connect_fbs_includes",
+        "//aos:configuration_fbs_includes",
+    ],
+)
+
+cc_library(
+    name = "web_proxy_utils",
+    hdrs = ["web_proxy_utils.h"],
+    srcs = ["web_proxy_utils.cc"],
+    deps = [
+        ":connect_fbs",
+        ":web_proxy_fbs",
+        "//aos:configuration_fbs",
+        "//aos/events:event_loop",
+        "@com_github_google_flatbuffers//:flatbuffers",
+    ],
 )
 
 cc_library(
@@ -257,7 +278,10 @@ cc_library(
         "-Wno-unused-parameter",
     ],
     deps = [
+        ":connect_fbs",
         ":web_proxy_fbs",
+        ":web_proxy_utils",
+        "//aos/events:shm_event_loop",
         "//aos/seasocks:seasocks_logger",
         "//third_party/seasocks",
         "//third_party:webrtc",
@@ -277,8 +301,9 @@ cc_binary(
     name = "web_proxy_main",
     srcs = ["web_proxy_main.cc"],
     deps = [
-        ":web_proxy",
         ":gen_embedded",
+        ":web_proxy",
+        "//aos/events:shm_event_loop",
         "//aos:init",
         "//aos/seasocks:seasocks_logger",
         "//third_party/seasocks",
@@ -290,8 +315,9 @@ cc_binary(
     ],
     data = [
         "//aos/network/www:files",
-        "//aos/network/www:proxy_bundle",
+        "//aos/network/www:main_bundle",
         "//aos/network/www:flatbuffers",
-        "@com_github_google_flatbuffers//:flatjs"
+        "@com_github_google_flatbuffers//:flatjs",
+        "//aos/events:pingpong_config.json",
     ],
 )

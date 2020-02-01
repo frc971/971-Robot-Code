@@ -1,3 +1,9 @@
+// Typescript namespaces are weird when coming from multiple files. We generate
+// all transitive dependencies into the same file in typescript so we can
+// include all 'aos' flatbuffers we care about here.
+include "aos/configuration.fbs";
+include "aos/network/connect.fbs";
+
 namespace aos.web_proxy;
 
 // SDP is Session Description Protocol. We only handle OFFER (starting a
@@ -28,4 +34,27 @@ union Payload {WebSocketSdp, WebSocketIce}
 // We only send a single type of message on the websocket to simplify parsing.
 table WebSocketMessage {
   payload:Payload;
+}
+
+// WebRTC has size limits on the messages sent on datachannels. This message
+// ensures that parts are recieved in the correct order. If there is any
+// mismatch, all the existing work should be dropped and restart when reasonable
+// data starts again.
+table MessageHeader {
+  // Index of the channel in config
+  channel_index:uint;
+
+  // How many packets will be required for the message being sent.
+  packet_count:uint;
+  // What index into the the total packets for the multipart message, this
+  // header is parts of.
+  packet_index:uint;
+
+  // Total number of bytes in the message
+  length:uint;
+
+  // Index into the sequence of messages. This will not always increase.
+  queue_index:uint;
+
+  data:[ubyte];
 }

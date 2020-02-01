@@ -1,4 +1,4 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
 
 flatbuffer_cc_library(
@@ -35,4 +35,10 @@ cc_binary(
         "//aos:init",
         "//aos/events:shm_event_loop",
     ],
+)
+
+flatbuffer_ts_library(
+    name = "vision_ts_fbs",
+    srcs = ["vision.fbs"],
+    visibility = ["//y2020:__subpackages__"],
 )
