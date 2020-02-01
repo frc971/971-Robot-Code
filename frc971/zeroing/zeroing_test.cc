@@ -1,14 +1,14 @@
+#include "frc971/zeroing/zeroing.h"
+
 #include <unistd.h>
 
 #include <memory>
-
 #include <random>
 
-#include "gtest/gtest.h"
-#include "frc971/control_loops/control_loops_generated.h"
-#include "frc971/zeroing/zeroing.h"
 #include "aos/die.h"
+#include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/position_sensor_sim.h"
+#include "gtest/gtest.h"
 
 namespace frc971 {
 namespace zeroing {
@@ -70,6 +70,14 @@ class ZeroingTest : public ::testing::Test {
     FBB fbb;
     estimator->UpdateEstimate(
         *simulator->FillSensorValues<HallEffectAndPosition>(&fbb));
+  }
+
+  void MoveTo(PositionSensorSimulator *simulator,
+              RelativeEncoderZeroingEstimator *estimator, double new_position) {
+    simulator->MoveTo(new_position);
+    FBB fbb;
+    estimator->UpdateEstimate(
+        *simulator->FillSensorValues<RelativePosition>(&fbb));
   }
 
   template <typename T>
@@ -787,6 +795,22 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithNaN) {
 
   estimator.UpdateEstimate(*sensor_values);
   ASSERT_TRUE(estimator.error());
+}
+
+TEST_F(ZeroingTest, TestRelativeEncoderZeroingWithoutMovement) {
+  PositionSensorSimulator sim(1.0);
+  RelativeEncoderZeroingEstimator estimator;
+
+  sim.InitializeRelativeEncoder();
+
+  ASSERT_TRUE(estimator.zeroed());
+  ASSERT_TRUE(estimator.offset_ready());
+  EXPECT_DOUBLE_EQ(estimator.offset(), 0.0);
+  EXPECT_DOUBLE_EQ(GetEstimatorPosition(&estimator), 0.0);
+
+  MoveTo(&sim, &estimator, 0.1);
+
+  EXPECT_DOUBLE_EQ(GetEstimatorPosition(&estimator), 0.1);
 }
 
 }  // namespace zeroing

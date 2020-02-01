@@ -61,6 +61,14 @@ table AbsolutePosition {
   absolute_encoder:double;
 }
 
+// Represents all of the data for a single encoder.
+// The relative encoder values are relative to where the encoder was at some
+// arbitrary point in time.
+table RelativePosition {
+  // Current position read from the encoder.
+  encoder:double;
+}
+
 // The internal state of a zeroing estimator.
 table EstimatorState {
   // If true, there has been a fatal error for the estimator.
@@ -103,6 +111,14 @@ table AbsoluteEncoderEstimatorState {
   // The estimated absolute position of the encoder.  This is filtered, so it
   // can be easily used when zeroing.
   absolute_position:double;
+}
+
+table RelativeEncoderEstimatorState {
+  // If true, there has been a fatal error for the estimator.
+  error:bool;
+
+  // The estimated position of the joint.
+  position:double;
 }
 
 // The internal state of a zeroing estimator.

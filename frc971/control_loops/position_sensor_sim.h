@@ -1,10 +1,8 @@
 #ifndef FRC971_CONTROL_LOOPS_POSITION_SENSOR_SIM_H_
 #define FRC971_CONTROL_LOOPS_POSITION_SENSOR_SIM_H_
 
-#include "flatbuffers/flatbuffers.h"
-
 #include "aos/testing/random_seed.h"
-
+#include "flatbuffers/flatbuffers.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/gaussian_noise.h"
 
@@ -49,6 +47,11 @@ class PositionSensorSimulator {
   void InitializeHallEffectAndPosition(double start_position,
                                        double known_index_lower,
                                        double known_index_upper);
+
+  // Initializes a sensor simulation with a single relative enoder, providing
+  // position information relative to a starting position of 0. For use with
+  // RelativePosition sensor values.
+  void InitializeRelativeEncoder();
 
   // Simulate the structure moving to a new position. The new value is measured
   // relative to absolute zero. This will update the simulated sensors with new
