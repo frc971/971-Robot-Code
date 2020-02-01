@@ -71,6 +71,7 @@ EPoll::~EPoll() {
 }
 
 void EPoll::Run() {
+  run_ = true;
   while (true) {
     // Pull a single event out.  Infinite timeout if we are supposed to be
     // running, and 0 length timeout otherwise.  This lets us flush the event
@@ -90,9 +91,16 @@ void EPoll::Run() {
         return;
       }
     }
-    EventData *event_data = static_cast<struct EventData *>(event.data.ptr);
-    if (event.events & (EPOLLIN | EPOLLPRI)) {
+    EventData *const event_data = static_cast<struct EventData *>(event.data.ptr);
+    if (event.events & kInEvents) {
+      CHECK(event_data->in_fn)
+          << ": No handler registered for input events on " << event_data->fd;
       event_data->in_fn();
+    }
+    if (event.events & kOutEvents) {
+      CHECK(event_data->out_fn)
+          << ": No handler registered for output events on " << event_data->fd;
+      event_data->out_fn();
     }
   }
 }
@@ -100,29 +108,86 @@ void EPoll::Run() {
 void EPoll::Quit() { PCHECK(write(quit_signal_fd_, "q", 1) == 1); }
 
 void EPoll::OnReadable(int fd, ::std::function<void()> function) {
-  ::std::unique_ptr<EventData> event_data(
-      new EventData{fd, ::std::move(function)});
+  EventData *event_data = GetEventData(fd);
+  if (event_data == nullptr) {
+    fns_.emplace_back(std::make_unique<EventData>(fd));
+    event_data = fns_.back().get();
+  } else {
+    CHECK(!event_data->in_fn) << ": Duplicate in functions for " << fd;
+  }
+  event_data->in_fn = ::std::move(function);
+  DoEpollCtl(event_data, event_data->events | kInEvents);
+}
 
-  struct epoll_event event;
-  event.events = EPOLLIN | EPOLLPRI;
-  event.data.ptr = event_data.get();
-  PCHECK(epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, fd, &event) == 0)
-      << ": Failed to add fd " << fd;
-  fns_.push_back(::std::move(event_data));
+void EPoll::OnWriteable(int fd, ::std::function<void()> function) {
+  EventData *event_data = GetEventData(fd);
+  if (event_data == nullptr) {
+    fns_.emplace_back(std::make_unique<EventData>(fd));
+    event_data = fns_.back().get();
+  } else {
+    CHECK(!event_data->out_fn) << ": Duplicate out functions for " << fd;
+  }
+  event_data->out_fn = ::std::move(function);
+  DoEpollCtl(event_data, event_data->events | kOutEvents);
 }
 
 // Removes fd from the event loop.
 void EPoll::DeleteFd(int fd) {
   auto element = fns_.begin();
-  PCHECK(epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, fd, nullptr) == 0);
   while (fns_.end() != element) {
     if (element->get()->fd == fd) {
       fns_.erase(element);
+      PCHECK(epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, fd, nullptr) == 0);
       return;
     }
     ++element;
   }
   LOG(FATAL) << "fd " << fd << " not found";
+}
+
+void EPoll::EnableEvents(int fd, uint32_t events) {
+  EventData *const event_data = CHECK_NOTNULL(GetEventData(fd));
+  DoEpollCtl(event_data, event_data->events | events);
+}
+
+void EPoll::DisableEvents(int fd, uint32_t events) {
+  EventData *const event_data = CHECK_NOTNULL(GetEventData(fd));
+  DoEpollCtl(event_data, event_data->events & ~events);
+}
+
+EPoll::EventData *EPoll::GetEventData(int fd) {
+  const auto iterator = std::find_if(
+      fns_.begin(), fns_.end(),
+      [fd](const std::unique_ptr<EventData> &data) { return data->fd == fd; });
+  if (iterator == fns_.end()) {
+    return nullptr;
+  }
+  return iterator->get();
+}
+
+void EPoll::DoEpollCtl(EventData *event_data, const uint32_t new_events) {
+  const uint32_t old_events = event_data->events;
+  event_data->events = new_events;
+  if (new_events == 0) {
+    if (old_events == 0) {
+      // Not added, and doesn't need to be. Nothing to do here.
+      return;
+    }
+    // It was added, but should now be removed.
+    PCHECK(epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, event_data->fd, nullptr) == 0);
+    return;
+  }
+
+  int operation = EPOLL_CTL_MOD;
+  if (old_events == 0) {
+    // If it wasn't added before, then this is the first time it's being added.
+    operation = EPOLL_CTL_ADD;
+  }
+  struct epoll_event event;
+  event.events = event_data->events;
+  event.data.ptr = event_data;
+  PCHECK(epoll_ctl(epoll_fd_, operation, event_data->fd, &event) == 0)
+      << ": Failed to " << operation << " epoll fd: " << event_data->fd;
 }
 
 }  // namespace internal
