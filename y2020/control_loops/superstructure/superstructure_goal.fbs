@@ -3,7 +3,8 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 namespace y2020.control_loops.superstructure;
 
 table Goal {
-
+  // Zero is at the horizontal, positive towards the front (meters on the lead screw).
+  hood:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
 }
 
 root_type Goal;
