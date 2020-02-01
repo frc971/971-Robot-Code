@@ -11,6 +11,7 @@
 #include "aos/events/event_loop_generated.h"
 #include "aos/events/timing_statistics.h"
 #include "aos/flatbuffers.h"
+#include "aos/ipc_lib/data_alignment.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
@@ -141,6 +142,13 @@ class RawSender {
   // Returns the queue index that this was sent with.
   uint32_t sent_queue_index() const { return sent_queue_index_; }
 
+  // Returns the associated flatbuffers-style allocator. This must be
+  // deallocated before the message is sent.
+  PreallocatedAllocator *fbb_allocator() {
+    fbb_allocator_ = PreallocatedAllocator(data(), size());
+    return &fbb_allocator_;
+  }
+
  protected:
   EventLoop *event_loop() { return event_loop_; }
 
@@ -166,6 +174,8 @@ class RawSender {
   const Channel *channel_;
 
   internal::RawSenderTiming timing_;
+
+  PreallocatedAllocator fbb_allocator_{nullptr, 0};
 };
 
 // Fetches the newest message from a channel.
@@ -177,12 +187,26 @@ class Fetcher {
 
   // Fetches the next message. Returns true if it fetched a new message.  This
   // method will only return messages sent after the Fetcher was created.
-  bool FetchNext() { return fetcher_->FetchNext(); }
+  bool FetchNext() {
+    const bool result = fetcher_->FetchNext();
+    if (result) {
+      CheckChannelDataAlignment(fetcher_->context().data,
+                                fetcher_->context().size);
+    }
+    return result;
+  }
 
   // Fetches the most recent message. Returns true if it fetched a new message.
   // This will return the latest message regardless of if it was sent before or
   // after the fetcher was created.
-  bool Fetch() { return fetcher_->Fetch(); }
+  bool Fetch() {
+    const bool result = fetcher_->Fetch();
+    if (result) {
+      CheckChannelDataAlignment(fetcher_->context().data,
+                                fetcher_->context().size);
+    }
+    return result;
+  }
 
   // Returns a pointer to the contained flatbuffer, or nullptr if there is no
   // available message.
@@ -222,10 +246,17 @@ class Sender {
   // builder.Send(t_builder.Finish());
   class Builder {
    public:
-    Builder(RawSender *sender, void *data, size_t size)
-        : alloc_(data, size), fbb_(size, &alloc_), sender_(sender) {
+    Builder(RawSender *sender, PreallocatedAllocator *allocator)
+        : fbb_(allocator->size(), allocator), sender_(sender) {
+      CheckChannelDataAlignment(allocator->data(), allocator->size());
       fbb_.ForceDefaults(1);
     }
+    Builder() {}
+    Builder(const Builder &) = delete;
+    Builder(Builder &&) = default;
+
+    Builder &operator=(const Builder &) = delete;
+    Builder &operator=(Builder &&) = default;
 
     flatbuffers::FlatBufferBuilder *fbb() { return &fbb_; }
 
@@ -243,7 +274,6 @@ class Sender {
     void CheckSent() { fbb_.Finished(); }
 
    private:
-    PreallocatedAllocator alloc_;
     flatbuffers::FlatBufferBuilder fbb_;
     RawSender *sender_;
   };

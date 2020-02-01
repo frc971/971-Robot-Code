@@ -204,6 +204,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":aos_sync",
+        ":data_alignment",
         ":index",
         "//aos:realtime",
         "//aos/time",
@@ -257,5 +258,16 @@ cc_test(
         "//aos/testing:googletest",
         "//aos/testing:prevent_exit",
         "//aos/testing:test_logging",
+    ],
+)
+
+cc_library(
+    name = "data_alignment",
+    hdrs = [
+        "data_alignment.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_google_glog//:glog",
     ],
 )

@@ -89,18 +89,24 @@ struct LocklessQueueMemory {
 
   // Getters for each of the 4 lists.
   Sender *GetSender(size_t sender_index) {
+    static_assert(alignof(Sender) <= kDataAlignment,
+                  "kDataAlignment is too small");
     return reinterpret_cast<Sender *>(&data[0] + SizeOfQueue() +
                                       SizeOfMessages() + SizeOfWatchers() +
                                       sender_index * sizeof(Sender));
   }
 
   Watcher *GetWatcher(size_t watcher_index) {
+    static_assert(alignof(Watcher) <= kDataAlignment,
+                  "kDataAlignment is too small");
     return reinterpret_cast<Watcher *>(&data[0] + SizeOfQueue() +
                                        SizeOfMessages() +
                                        watcher_index * sizeof(Watcher));
   }
 
   AtomicIndex *GetQueue(uint32_t index) {
+    static_assert(alignof(AtomicIndex) <= kDataAlignment,
+                  "kDataAlignment is too small");
     return reinterpret_cast<AtomicIndex *>(&data[0] +
                                            sizeof(AtomicIndex) * index);
   }
@@ -109,6 +115,8 @@ struct LocklessQueueMemory {
   // sender list, since those are messages available to be filled in and sent.
   // This removes the need to find lost messages when a sender dies.
   Message *GetMessage(Index index) {
+    static_assert(alignof(Message) <= kDataAlignment,
+                  "kDataAlignment is too small");
     return reinterpret_cast<Message *>(&data[0] + SizeOfQueue() +
                                        index.message_index() * message_size());
   }

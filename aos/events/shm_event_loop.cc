@@ -168,8 +168,8 @@ class SimpleShmFetcher {
                 event_loop->configuration()->channel_storage_duration()))),
         lockless_queue_(lockless_queue_memory_.memory(),
                         lockless_queue_memory_.config()),
-        data_storage_(static_cast<AlignedChar *>(aligned_alloc(
-                          alignof(AlignedChar), channel->max_size())),
+        data_storage_(static_cast<char *>(malloc(channel->max_size() +
+                                                 kChannelDataAlignment - 1)),
                       &free) {
     context_.data = nullptr;
     // Point the queue index at the next index to read starting now.  This
@@ -201,7 +201,7 @@ class SimpleShmFetcher {
         actual_queue_index_.index(), &context_.monotonic_event_time,
         &context_.realtime_event_time, &context_.monotonic_remote_time,
         &context_.realtime_remote_time, &context_.remote_queue_index,
-        &context_.size, reinterpret_cast<char *>(data_storage_.get()));
+        &context_.size, data_storage_start());
     if (read_result == ipc_lib::LocklessQueue::ReadResult::GOOD) {
       context_.queue_index = actual_queue_index_.index();
       if (context_.remote_queue_index == 0xffffffffu) {
@@ -213,7 +213,7 @@ class SimpleShmFetcher {
       if (context_.realtime_remote_time == aos::realtime_clock::min_time) {
         context_.realtime_remote_time = context_.realtime_event_time;
       }
-      context_.data = reinterpret_cast<char *>(data_storage_.get()) +
+      context_.data = data_storage_start() +
                       lockless_queue_.message_data_size() - context_.size;
       actual_queue_index_ = actual_queue_index_.Increment();
     }
@@ -251,7 +251,7 @@ class SimpleShmFetcher {
         queue_index.index(), &context_.monotonic_event_time,
         &context_.realtime_event_time, &context_.monotonic_remote_time,
         &context_.realtime_remote_time, &context_.remote_queue_index,
-        &context_.size, reinterpret_cast<char *>(data_storage_.get()));
+        &context_.size, data_storage_start());
     if (read_result == ipc_lib::LocklessQueue::ReadResult::GOOD) {
       context_.queue_index = queue_index.index();
       if (context_.remote_queue_index == 0xffffffffu) {
@@ -263,7 +263,7 @@ class SimpleShmFetcher {
       if (context_.realtime_remote_time == aos::realtime_clock::min_time) {
         context_.realtime_remote_time = context_.realtime_event_time;
       }
-      context_.data = reinterpret_cast<char *>(data_storage_.get()) +
+      context_.data = data_storage_start() +
                       lockless_queue_.message_data_size() - context_.size;
       actual_queue_index_ = queue_index.Increment();
     }
@@ -299,6 +299,10 @@ class SimpleShmFetcher {
   void UnregisterWakeup() { lockless_queue_.UnregisterWakeup(); }
 
  private:
+  char *data_storage_start() {
+    return RoundChannelData(data_storage_.get(), channel_->max_size());
+  }
+
   const Channel *const channel_;
   MMapedQueue lockless_queue_memory_;
   ipc_lib::LocklessQueue lockless_queue_;
@@ -306,14 +310,7 @@ class SimpleShmFetcher {
   ipc_lib::QueueIndex actual_queue_index_ =
       ipc_lib::LocklessQueue::empty_queue_index();
 
-  struct AlignedChar {
-    // Cortex-A72 (Raspberry Pi 4) and Cortex-A53 (Xavier AGX) both have 64 byte
-    // cache lines.
-    // V4L2 requires 64 byte alignment for USERPTR.
-    alignas(64) char data;
-  };
-
-  std::unique_ptr<AlignedChar, decltype(&free)> data_storage_;
+  std::unique_ptr<char, decltype(&free)> data_storage_;
 
   Context context_;
 };

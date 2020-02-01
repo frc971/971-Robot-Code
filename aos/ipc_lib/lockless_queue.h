@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "aos/ipc_lib/aos_sync.h"
+#include "aos/ipc_lib/data_alignment.h"
 #include "aos/ipc_lib/index.h"
 #include "aos/time/time.h"
 
@@ -76,7 +77,19 @@ struct Message {
     size_t length;
   } header;
 
-  char data[];
+  char *data(size_t message_size) { return RoundedData(message_size); }
+  const char *data(size_t message_size) const {
+    return RoundedData(message_size);
+  }
+
+ private:
+  // This returns a non-const pointer into a const object. Be very careful about
+  // const correctness in publicly accessible APIs using it.
+  char *RoundedData(size_t message_size) const {
+    return RoundChannelData(const_cast<char *>(&data_pointer[0]), message_size);
+  }
+
+  char data_pointer[];
 };
 
 struct LocklessQueueConfiguration {

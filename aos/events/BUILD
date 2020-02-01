@@ -58,6 +58,7 @@ cc_library(
         "//aos:configuration",
         "//aos:configuration_fbs",
         "//aos:flatbuffers",
+        "//aos/ipc_lib:data_alignment",
         "//aos/time",
         "//aos/util:phased_loop",
         "@com_github_google_flatbuffers//:flatbuffers",

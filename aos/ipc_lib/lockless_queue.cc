@@ -241,7 +241,8 @@ int rt_tgsigqueueinfo(pid_t tgid, pid_t tid, int sig, siginfo_t *si) {
 
 size_t LocklessQueueConfiguration::message_size() const {
   // Round up the message size so following data is aligned appropriately.
-  return LocklessQueueMemory::AlignmentRoundUp(message_data_size) +
+  return LocklessQueueMemory::AlignmentRoundUp(message_data_size +
+                                               (kChannelDataAlignment - 1)) +
          sizeof(Message);
 }
 
@@ -549,7 +550,7 @@ void *LocklessQueue::Sender::Data() {
   Message *message = memory_->GetMessage(scratch_index);
   message->header.queue_index.Invalidate();
 
-  return &message->data[0];
+  return message->data(memory_->message_data_size());
 }
 
 void LocklessQueue::Sender::Send(
@@ -788,7 +789,7 @@ LocklessQueue::ReadResult LocklessQueue::Read(
   }
   *monotonic_remote_time = m->header.monotonic_remote_time;
   *realtime_remote_time = m->header.realtime_remote_time;
-  memcpy(data, &m->data[0], message_data_size());
+  memcpy(data, m->data(memory_->message_data_size()), message_data_size());
   *length = m->header.length;
 
   // And finally, confirm that the message *still* points to the queue index we
@@ -891,8 +892,9 @@ void PrintLocklessQueueMemory(LocklessQueueMemory *memory) {
     ::std::cout << "      }" << ::std::endl;
     ::std::cout << "      data: {";
 
+    const char *const m_data = m->data(memory->message_data_size());
     for (size_t j = 0; j < m->header.length; ++j) {
-      char data = m->data[j];
+      char data = m_data[j];
       if (j != 0) {
         ::std::cout << " ";
       }
