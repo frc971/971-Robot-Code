@@ -35,6 +35,7 @@ cc_library(
         "//y2020/control_loops/drivetrain:polydrivetrain_plants",
         "//y2020/control_loops/superstructure/hood:hood_plants",
         "//y2020/control_loops/superstructure/intake:intake_plants",
+        "//y2020/control_loops/superstructure/turret:turret_plants",
         "@com_google_absl//absl/base",
     ],
 )
@@ -134,8 +135,8 @@ sh_binary(
     data = [
         ":config.json",
         "//aos/network:web_proxy_main",
-        "//y2020/www:main_bundle",
         "//y2020/www:files",
         "//y2020/www:flatbuffers",
+        "//y2020/www:main_bundle",
     ],
 )
