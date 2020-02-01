@@ -55,14 +55,14 @@ def download_packages(name, packages, excludes = [], force_includes = []):
     )
 
 def _convert_deb_to_target(deb):
-  """Converts a debian package filename to a valid bazel target name."""
-  target = deb
-  target = target.replace('-', '_')
-  target = target.replace('.', '_')
-  target = target.replace(':', '_')
-  target = target.replace('+', 'x')
-  target = target.replace('~', '_')
-  return "deb_%s_repo" % target
+    """Converts a debian package filename to a valid bazel target name."""
+    target = deb
+    target = target.replace("-", "_")
+    target = target.replace(".", "_")
+    target = target.replace(":", "_")
+    target = target.replace("+", "x")
+    target = target.replace("~", "_")
+    return "deb_%s_repo" % target
 
 def generate_repositories_for_debs(files, base_url = "http://www.frc971.org/Build-Dependencies"):
     """A WORKSPACE helper to add all the deb packages in the dictionary as a repo.
