@@ -63,25 +63,57 @@ class EPoll {
   void Quit();
 
   // Registers a function to be called if the fd becomes readable.
-  // There should only be 1 function registered for each fd.
+  // Only one function may be registered for readability on each fd.
   void OnReadable(int fd, ::std::function<void()> function);
+
+  // Registers a function to be called if the fd becomes writeable.
+  // Only one function may be registered for writability on each fd.
+  void OnWriteable(int fd, ::std::function<void()> function);
 
   // Removes fd from the event loop.
   // All Fds must be cleaned up before this class is destroyed.
   void DeleteFd(int fd);
 
+  // Enables calling the existing function registered for fd when it becomes
+  // writeable.
+  void EnableWriteable(int fd) { EnableEvents(fd, kOutEvents); }
+
+  // Disables calling the existing function registered for fd when it becomes
+  // writeable.
+  void DisableWriteable(int fd) { DisableEvents(fd, kOutEvents); }
+
  private:
+  // Structure whose pointer should be returned by epoll.  Makes looking up the
+  // function fast and easy.
+  struct EventData {
+    EventData(int fd_in) : fd(fd_in) {}
+    // We use pointers to these objects as persistent identifiers, so they can't
+    // be moved.
+    EventData(const EventData &) = delete;
+    EventData &operator=(const EventData &) = delete;
+
+    const int fd;
+    uint32_t events = 0;
+    ::std::function<void()> in_fn, out_fn;
+  };
+
+  void EnableEvents(int fd, uint32_t events);
+  void DisableEvents(int fd, uint32_t events);
+
+  EventData *GetEventData(int fd);
+
+  void DoEpollCtl(EventData *event_data, uint32_t new_events);
+
+  // TODO(Brian): Figure out a nicer way to handle EPOLLPRI than lumping it in
+  // with input.
+  static constexpr uint32_t kInEvents = EPOLLIN | EPOLLPRI;
+  static constexpr uint32_t kOutEvents = EPOLLOUT;
+
   ::std::atomic<bool> run_{true};
 
   // Main epoll fd.
   int epoll_fd_;
 
-  // Structure whose pointer should be returned by epoll.  Makes looking up the
-  // function fast and easy.
-  struct EventData {
-    int fd;
-    ::std::function<void()> in_fn;
-  };
   ::std::vector<::std::unique_ptr<EventData>> fns_;
 
   // Pipe pair for handling quit.

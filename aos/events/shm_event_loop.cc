@@ -124,6 +124,10 @@ class MMapedQueue {
 
   const ipc_lib::LocklessQueueConfiguration &config() const { return config_; }
 
+  absl::Span<char> GetSharedMemory() const {
+    return absl::Span<char>(static_cast<char *>(data_), size_);
+  }
+
  private:
   ipc_lib::LocklessQueueConfiguration config_;
 
@@ -298,6 +302,10 @@ class SimpleShmFetcher {
 
   void UnregisterWakeup() { lockless_queue_.UnregisterWakeup(); }
 
+  absl::Span<char> GetSharedMemory() const {
+    return lockless_queue_memory_.GetSharedMemory();
+  }
+
  private:
   char *data_storage_start() {
     return RoundChannelData(data_storage_.get(), channel_->max_size());
@@ -383,6 +391,10 @@ class ShmSender : public RawSender {
     return true;
   }
 
+  absl::Span<char> GetSharedMemory() const {
+    return lockless_queue_memory_.GetSharedMemory();
+  }
+
  private:
   MMapedQueue lockless_queue_memory_;
   ipc_lib::LocklessQueue lockless_queue_;
@@ -436,6 +448,10 @@ class WatcherState : public aos::WatcherState {
   }
 
   void UnregisterWakeup() { return simple_shm_fetcher_.UnregisterWakeup(); }
+
+  absl::Span<char> GetSharedMemory() const {
+    return simple_shm_fetcher_.GetSharedMemory();
+  }
 
  private:
   bool has_new_data_ = false;
@@ -689,7 +705,8 @@ class SignalHandler {
     ScopedSignalMask mask({SIGINT, SIGHUP, SIGTERM});
     std::unique_lock<stl_mutex> locker(mutex_);
 
-    event_loops_.erase(std::find(event_loops_.begin(), event_loops_.end(), event_loop));
+    event_loops_.erase(
+        std::find(event_loops_.begin(), event_loops_.end(), event_loop));
 
     if (event_loops_.size() == 0u) {
       // The last caller restores the original signal handlers.
@@ -815,6 +832,17 @@ void ShmEventLoop::SetRuntimeRealtimePriority(int priority) {
 void ShmEventLoop::set_name(const std::string_view name) {
   name_ = std::string(name);
   UpdateTimingReport();
+}
+
+absl::Span<char> ShmEventLoop::GetWatcherSharedMemory(const Channel *channel) {
+  internal::WatcherState *const watcher_state =
+      static_cast<internal::WatcherState *>(GetWatcherState(channel));
+  return watcher_state->GetSharedMemory();
+}
+
+absl::Span<char> ShmEventLoop::GetShmSenderSharedMemory(
+    const aos::RawSender *sender) const {
+  return static_cast<const internal::ShmSender *>(sender)->GetSharedMemory();
 }
 
 pid_t ShmEventLoop::GetTid() { return syscall(SYS_gettid); }

@@ -41,6 +41,16 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "epoll_test",
+    srcs = ["epoll_test.cc"],
+    deps = [
+        ":epoll",
+        "//aos/testing:googletest",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
 cc_library(
     name = "event_loop",
     srcs = [
@@ -215,6 +225,7 @@ cc_library(
         "//aos/ipc_lib:signalfd",
         "//aos/stl_mutex",
         "//aos/util:phased_loop",
+        "@com_google_absl//absl/base",
     ],
 )
 
