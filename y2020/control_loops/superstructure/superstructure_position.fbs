@@ -8,6 +8,9 @@ table Position {
 
   // Position of the intake. 0 when four-bar is vertical, positive extended.
   intake_joint:frc971.AbsolutePosition;
+
+  // See goal for definition of 0
+  turret:frc971.PotAndAbsolutePosition;
 }
 
 root_type Position;

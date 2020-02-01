@@ -9,8 +9,14 @@ table Goal {
   //0 = Linkage on sprocket is pointing straight up
   //Positive = forward
   intake:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
+
   //Positive is rollers intaking to Washing Machine.
   roller_voltage:float;
+
+  // 0 = facing the front of the robot. Positive rotates counterclockwise.
+  // TODO(Kai): Define which wrap of the shooter is 0 if it can rotate past
+  // forward more than once.
+  turret:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
 }
 
 root_type Goal;
