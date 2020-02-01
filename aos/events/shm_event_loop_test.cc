@@ -181,6 +181,34 @@ TEST(ShmEventLoopTest, DelayedPhasedLoop) {
   EXPECT_EQ(times.size(), 2u);
 }
 
+// Test GetWatcherSharedMemory in a few basic scenarios.
+TEST(ShmEventLoopDeathTest, GetWatcherSharedMemory) {
+  ShmEventLoopTestFactory factory;
+  auto generic_loop1 = factory.MakePrimary("primary");
+  ShmEventLoop *const loop1 = static_cast<ShmEventLoop *>(generic_loop1.get());
+  const auto channel = configuration::GetChannel(
+      loop1->configuration(), "/test", TestMessage::GetFullyQualifiedName(),
+      loop1->name(), loop1->node());
+
+  // First verify it handles an invalid channel reasonably.
+  EXPECT_DEATH(loop1->GetWatcherSharedMemory(channel),
+               "No watcher found for channel");
+
+  // Then, actually create a watcher, and verify it returns something sane.
+  loop1->MakeWatcher("/test", [](const TestMessage &) {});
+  EXPECT_FALSE(loop1->GetWatcherSharedMemory(channel).empty());
+}
+
+TEST(ShmEventLoopTest, GetSenderSharedMemory) {
+  ShmEventLoopTestFactory factory;
+  auto generic_loop1 = factory.MakePrimary("primary");
+  ShmEventLoop *const loop1 = static_cast<ShmEventLoop *>(generic_loop1.get());
+
+  // check that GetSenderSharedMemory returns non-null/non-empty memory span
+  auto sender = loop1->MakeSender<TestMessage>("/test");
+  EXPECT_FALSE(loop1->GetSenderSharedMemory(&sender).empty());
+}
+
 // TODO(austin): Test that missing a deadline with a timer recovers as expected.
 
 }  // namespace testing

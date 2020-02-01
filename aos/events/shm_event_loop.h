@@ -3,6 +3,8 @@
 
 #include <vector>
 
+#include "absl/types/span.h"
+
 #include "aos/events/epoll.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/event_loop_generated.h"
@@ -68,7 +70,19 @@ class ShmEventLoop : public EventLoop {
 
   int priority() const override { return priority_; }
 
+  // Returns the epoll loop used to run the event loop.
   internal::EPoll *epoll() { return &epoll_; }
+
+  // Returns the local mapping of the shared memory used by the watcher on the
+  // specified channel. A watcher must be created on this channel before calling
+  // this.
+  absl::Span<char> GetWatcherSharedMemory(const Channel *channel);
+
+  // Returns the local mapping of the shared memory used by the provided Sender
+  template <typename T>
+  absl::Span<char> GetSenderSharedMemory(aos::Sender<T> *sender) const {
+    return GetShmSenderSharedMemory(GetRawSender(sender));
+  }
 
  private:
   friend class internal::WatcherState;
@@ -82,6 +96,9 @@ class ShmEventLoop : public EventLoop {
   // Returns the TID of the event loop.
   pid_t GetTid() override;
 
+  // Private method to access the shared memory mapping of a ShmSender
+  absl::Span<char> GetShmSenderSharedMemory(const aos::RawSender *sender) const;
+
   std::vector<std::function<void()>> on_run_;
   int priority_ = 0;
   std::string name_;
@@ -89,7 +106,6 @@ class ShmEventLoop : public EventLoop {
 
   internal::EPoll epoll_;
 };
-
 
 }  // namespace aos
 

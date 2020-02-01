@@ -81,6 +81,16 @@ int EventLoop::ChannelIndex(const Channel *channel) {
   return std::distance(configuration()->channels()->begin(), c);
 }
 
+WatcherState *EventLoop::GetWatcherState(const Channel *channel) {
+  const int channel_index = ChannelIndex(channel);
+  for (const std::unique_ptr<WatcherState> &watcher : watchers_) {
+    if (watcher->channel_index() == channel_index) {
+      return watcher.get();
+    }
+  }
+  LOG(FATAL) << "No watcher found for channel";
+}
+
 void EventLoop::NewSender(RawSender *sender) {
   senders_.emplace_back(sender);
   UpdateTimingReport();

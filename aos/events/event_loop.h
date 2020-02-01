@@ -1,4 +1,5 @@
 #ifndef AOS_EVENTS_EVENT_LOOP_H_
+
 #define AOS_EVENTS_EVENT_LOOP_H_
 
 #include <atomic>
@@ -481,6 +482,16 @@ class EventLoop {
 
   // Validates that channel exists inside configuration_ and finds its index.
   int ChannelIndex(const Channel *channel);
+
+  // Returns the state for the watcher on the corresponding channel. This
+  // watcher must exist before calling this.
+  WatcherState *GetWatcherState(const Channel *channel);
+
+  // Returns a Sender's protected RawSender
+  template <typename T>
+  static RawSender *GetRawSender(aos::Sender<T> *sender) {
+    return sender->sender_.get();
+  }
 
   // Context available for watchers, timers, and phased loops.
   Context context_;
