@@ -68,6 +68,7 @@ cc_binary(
         "@com_github_google_glog//:glog",
     ],
 )
+
 cc_binary(
     name = "logger_main",
     srcs = [
