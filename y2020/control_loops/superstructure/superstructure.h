@@ -19,12 +19,21 @@ class Superstructure
   explicit Superstructure(::aos::EventLoop *event_loop,
                           const ::std::string &name = "/superstructure");
 
+  using AbsoluteEncoderSubsystem =
+      ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
+          ::frc971::zeroing::AbsoluteEncoderZeroingEstimator,
+          ::frc971::control_loops::AbsoluteEncoderProfiledJointStatus>;
+
+  const AbsoluteEncoderSubsystem &hood() const { return hood_; }
+
  protected:
   virtual void RunIteration(const Goal *unsafe_goal, const Position *position,
                             aos::Sender<Output>::Builder *output,
                             aos::Sender<Status>::Builder *status) override;
 
  private:
+  AbsoluteEncoderSubsystem hood_;
+
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 
