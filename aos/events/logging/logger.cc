@@ -276,13 +276,16 @@ realtime_clock::time_point LogReader::realtime_start_time() {
 
 void LogReader::Register() {
   event_loop_factory_unique_ptr_ =
-      std::make_unique<SimulatedEventLoopFactory>(configuration(), node());
+      std::make_unique<SimulatedEventLoopFactory>(configuration());
   Register(event_loop_factory_unique_ptr_.get());
 }
 
 void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
   event_loop_factory_ = event_loop_factory;
-  event_loop_unique_ptr_ = event_loop_factory_->MakeEventLoop("log_reader");
+  node_event_loop_factory_ =
+      event_loop_factory_->GetNodeEventLoopFactory(node());
+  event_loop_unique_ptr_ =
+      event_loop_factory->MakeEventLoop("log_reader", node());
   // We don't run timing reports when trying to print out logged data, because
   // otherwise we would end up printing out the timing reports themselves...
   // This is only really relevant when we are replaying into a simulation.
@@ -355,8 +358,8 @@ void LogReader::Register(EventLoop *event_loop) {
                "this.";
 
         // If we have access to the factory, use it to fix the realtime time.
-        if (event_loop_factory_ != nullptr) {
-          event_loop_factory_->SetRealtimeOffset(
+        if (node_event_loop_factory_ != nullptr) {
+          node_event_loop_factory_->SetRealtimeOffset(
               monotonic_clock::time_point(chrono::nanoseconds(
                   channel_data.message().monotonic_sent_time())),
               realtime_clock::time_point(chrono::nanoseconds(
@@ -410,6 +413,7 @@ void LogReader::Deregister() {
   event_loop_ = nullptr;
   event_loop_factory_unique_ptr_.reset();
   event_loop_factory_ = nullptr;
+  node_event_loop_factory_ = nullptr;
 }
 
 void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
@@ -434,6 +438,9 @@ void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
 }
 
 void LogReader::MakeRemappedConfig() {
+  CHECK(!event_loop_)
+      << ": Can't change the mapping after the events are scheduled.";
+
   // If no remapping occurred and we are using the original config, then there
   // is nothing interesting to do here.
   if (remapped_channels_.empty() && replay_configuration_ == nullptr) {

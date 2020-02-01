@@ -14,15 +14,43 @@
 
 namespace aos {
 
+// This clock is the basis for distributed time.  It is used to synchronize time
+// between multiple nodes.  This is a new type so conversions to and from the
+// monotonic and realtime clocks aren't implicit.
+class distributed_clock {
+ public:
+  typedef ::std::chrono::nanoseconds::rep rep;
+  typedef ::std::chrono::nanoseconds::period period;
+  typedef ::std::chrono::nanoseconds duration;
+  typedef ::std::chrono::time_point<distributed_clock> time_point;
+
+  // This clock is the base clock for the simulation and everything is synced to
+  // it.  It never jumps.
+  static constexpr bool is_steady = true;
+
+  // Returns the epoch (0).
+  static constexpr time_point epoch() { return time_point(zero()); }
+
+  static constexpr duration zero() { return duration(0); }
+
+  static constexpr time_point min_time{
+      time_point(duration(::std::numeric_limits<duration::rep>::min()))};
+  static constexpr time_point max_time{
+      time_point(duration(::std::numeric_limits<duration::rep>::max()))};
+};
+
+std::ostream &operator<<(std::ostream &stream,
+                         const aos::distributed_clock::time_point &now);
+
 class EventScheduler {
  public:
   using ChannelType =
-      std::multimap<monotonic_clock::time_point, std::function<void()>>;
+      std::multimap<distributed_clock::time_point, std::function<void()>>;
   using Token = ChannelType::iterator;
 
   // Schedule an event with a callback function
   // Returns an iterator to the event
-  Token Schedule(monotonic_clock::time_point time,
+  Token Schedule(distributed_clock::time_point time,
                  std::function<void()> callback);
 
   // Schedules a callback when the event scheduler starts.
@@ -38,30 +66,17 @@ class EventScheduler {
   // Runs until exited.
   void Run();
   // Runs for a duration.
-  void RunFor(monotonic_clock::duration duration);
+  void RunFor(distributed_clock::duration duration);
 
   void Exit() { is_running_ = false; }
 
   bool is_running() const { return is_running_; }
 
-  monotonic_clock::time_point monotonic_now() const { return now_; }
-
-  realtime_clock::time_point realtime_now() const {
-    return realtime_clock::time_point(monotonic_now().time_since_epoch() +
-                                      realtime_offset_);
-  }
-
-  // Sets realtime clock to realtime_now for a given monotonic clock.
-  void SetRealtimeOffset(monotonic_clock::time_point monotonic_now,
-                         realtime_clock::time_point realtime_now) {
-    realtime_offset_ =
-        realtime_now.time_since_epoch() - monotonic_now.time_since_epoch();
-  }
+  distributed_clock::time_point distributed_now() const { return now_; }
 
  private:
   // Current execution time.
-  monotonic_clock::time_point now_ = monotonic_clock::epoch();
-  std::chrono::nanoseconds realtime_offset_ = std::chrono::seconds(0);
+  distributed_clock::time_point now_ = distributed_clock::epoch();
 
   std::vector<std::function<void()>> on_run_;
 

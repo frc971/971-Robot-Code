@@ -69,6 +69,9 @@ const Node *GetMyNode(const Configuration *config);
 const Node *GetNodeFromHostname(const Configuration *config,
                                 std::string_view name);
 
+// Returns true if we are running in a multinode configuration.
+bool MultiNode(const Configuration *config);
+
 // Returns true if the provided channel is sendable on the provided node.
 bool ChannelIsSendableOnNode(const Channel *channel, const Node *node);
 // Returns true if the provided channel is able to be watched or fetched on the

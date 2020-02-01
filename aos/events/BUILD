@@ -243,8 +243,11 @@ cc_library(
 cc_test(
     name = "simulated_event_loop_test",
     srcs = ["simulated_event_loop_test.cc"],
+    data = ["multinode_pingpong_config.json"],
     deps = [
         ":event_loop_param_test",
+        ":ping_lib",
+        ":pong_lib",
         ":simulated_event_loop",
         "//aos/testing:googletest",
     ],
@@ -267,10 +270,12 @@ cc_library(
     srcs = [
         "event_scheduler.cc",
         "simulated_event_loop.cc",
+        "simulated_network_bridge.cc",
     ],
     hdrs = [
         "event_scheduler.h",
         "simulated_event_loop.h",
+        "simulated_network_bridge.h",
     ],
     visibility = ["//visibility:public"],
     deps = [

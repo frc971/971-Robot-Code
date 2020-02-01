@@ -152,6 +152,7 @@ class LogReader {
   std::vector<std::unique_ptr<RawSender>> channels_;
 
   std::unique_ptr<EventLoop> event_loop_unique_ptr_;
+  NodeEventLoopFactory *node_event_loop_factory_ = nullptr;
   EventLoop *event_loop_ = nullptr;
   TimerHandler *timer_handler_;
 

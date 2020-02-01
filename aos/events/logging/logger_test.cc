@@ -208,8 +208,10 @@ class MultinodeLoggerTest : public ::testing::Test {
   MultinodeLoggerTest()
       : config_(aos::configuration::ReadConfig(
             "aos/events/logging/multinode_pingpong_config.json")),
-        event_loop_factory_(&config_.message(), "pi1"),
-        ping_event_loop_(event_loop_factory_.MakeEventLoop("ping")),
+        event_loop_factory_(&config_.message()),
+        ping_event_loop_(event_loop_factory_.MakeEventLoop(
+            "ping", configuration::GetNode(event_loop_factory_.configuration(),
+                                           "pi1"))),
         ping_(ping_event_loop_.get()) {}
 
   // Config and factory.
@@ -233,8 +235,10 @@ TEST_F(MultinodeLoggerTest, MultiNode) {
   LOG(INFO) << "Logging data to " << logfile;
 
   {
+    const Node *pi1 =
+        configuration::GetNode(event_loop_factory_.configuration(), "pi1");
     std::unique_ptr<EventLoop> pong_event_loop =
-        event_loop_factory_.MakeEventLoop("pong");
+        event_loop_factory_.MakeEventLoop("pong", pi1);
 
     std::unique_ptr<aos::RawSender> pong_sender(
         pong_event_loop->MakeRawSender(aos::configuration::GetChannel(
@@ -262,7 +266,7 @@ TEST_F(MultinodeLoggerTest, MultiNode) {
 
     DetachedBufferWriter writer(logfile);
     std::unique_ptr<EventLoop> logger_event_loop =
-        event_loop_factory_.MakeEventLoop("logger");
+        event_loop_factory_.MakeEventLoop("logger", pi1);
 
     event_loop_factory_.RunFor(chrono::milliseconds(95));
 
@@ -276,12 +280,15 @@ TEST_F(MultinodeLoggerTest, MultiNode) {
   // TODO(austin): Also replay as pi2 or pi3 and make sure we see the pong
   // messages.  This won't work today yet until the log reading code gets
   // significantly better.
-  SimulatedEventLoopFactory log_reader_factory(reader.logged_configuration(), reader.node());
+  SimulatedEventLoopFactory log_reader_factory(reader.logged_configuration());
   log_reader_factory.set_send_delay(chrono::microseconds(0));
 
   // This sends out the fetched messages and advances time to the start of the
   // log file.
   reader.Register(&log_reader_factory);
+
+  const Node *pi1 =
+      configuration::GetNode(log_reader_factory.configuration(), "pi1");
 
   ASSERT_NE(reader.node(), nullptr);
   EXPECT_EQ(reader.node()->name()->string_view(), "pi1");
@@ -289,7 +296,7 @@ TEST_F(MultinodeLoggerTest, MultiNode) {
   reader.event_loop_factory()->set_send_delay(chrono::microseconds(0));
 
   std::unique_ptr<EventLoop> test_event_loop =
-      log_reader_factory.MakeEventLoop("test");
+      log_reader_factory.MakeEventLoop("test", pi1);
 
   int ping_count = 10;
   int pong_count = 10;

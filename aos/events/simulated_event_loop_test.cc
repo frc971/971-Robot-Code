@@ -3,6 +3,8 @@
 #include <string_view>
 
 #include "aos/events/event_loop_param_test.h"
+#include "aos/events/ping_lib.h"
+#include "aos/events/pong_lib.h"
 #include "aos/events/test_message_generated.h"
 #include "gtest/gtest.h"
 
@@ -15,11 +17,11 @@ class SimulatedEventLoopTestFactory : public EventLoopTestFactory {
  public:
   ::std::unique_ptr<EventLoop> Make(std::string_view name) override {
     MaybeMake();
-    return event_loop_factory_->MakeEventLoop(name);
+    return event_loop_factory_->MakeEventLoop(name, my_node());
   }
   ::std::unique_ptr<EventLoop> MakePrimary(std::string_view name) override {
     MaybeMake();
-    return event_loop_factory_->MakeEventLoop(name);
+    return event_loop_factory_->MakeEventLoop(name, my_node());
   }
 
   void Run() override { event_loop_factory_->Run(); }
@@ -38,8 +40,8 @@ class SimulatedEventLoopTestFactory : public EventLoopTestFactory {
   void MaybeMake() {
     if (!event_loop_factory_) {
       if (configuration()->has_nodes()) {
-        event_loop_factory_ = std::make_unique<SimulatedEventLoopFactory>(
-            configuration(), my_node());
+        event_loop_factory_ =
+            std::make_unique<SimulatedEventLoopFactory>(configuration());
       } else {
         event_loop_factory_ =
             std::make_unique<SimulatedEventLoopFactory>(configuration());
@@ -64,12 +66,13 @@ TEST(EventSchedulerTest, ScheduleEvent) {
   int counter = 0;
   EventScheduler scheduler;
 
-  scheduler.Schedule(::aos::monotonic_clock::now(),
-                      [&counter]() { counter += 1; });
+  scheduler.Schedule(distributed_clock::epoch() + chrono::seconds(1),
+                     [&counter]() { counter += 1; });
   scheduler.Run();
   EXPECT_EQ(counter, 1);
-  auto token = scheduler.Schedule(::aos::monotonic_clock::now(),
-                                   [&counter]() { counter += 1; });
+  auto token =
+      scheduler.Schedule(distributed_clock::epoch() + chrono::seconds(2),
+                         [&counter]() { counter += 1; });
   scheduler.Deschedule(token);
   scheduler.Run();
   EXPECT_EQ(counter, 1);
@@ -80,8 +83,9 @@ TEST(EventSchedulerTest, DescheduleEvent) {
   int counter = 0;
   EventScheduler scheduler;
 
-  auto token = scheduler.Schedule(::aos::monotonic_clock::now(),
-                                   [&counter]() { counter += 1; });
+  auto token =
+      scheduler.Schedule(distributed_clock::epoch() + chrono::seconds(1),
+                         [&counter]() { counter += 1; });
   scheduler.Deschedule(token);
   scheduler.Run();
   EXPECT_EQ(counter, 0);
@@ -99,8 +103,6 @@ TEST(SimulatedEventLoopTest, RunForNoHandlers) {
 
   simulated_event_loop_factory.RunFor(chrono::seconds(1));
 
-  EXPECT_EQ(::aos::monotonic_clock::epoch() + chrono::seconds(1),
-            simulated_event_loop_factory.monotonic_now());
   EXPECT_EQ(::aos::monotonic_clock::epoch() + chrono::seconds(1),
             event_loop->monotonic_now());
 }
@@ -124,8 +126,6 @@ TEST(SimulatedEventLoopTest, RunForTimerHandler) {
 
   simulated_event_loop_factory.RunFor(chrono::seconds(1));
 
-  EXPECT_EQ(::aos::monotonic_clock::epoch() + chrono::seconds(1),
-            simulated_event_loop_factory.monotonic_now());
   EXPECT_EQ(::aos::monotonic_clock::epoch() + chrono::seconds(1),
             event_loop->monotonic_now());
   EXPECT_EQ(counter, 10);
@@ -230,6 +230,46 @@ TEST(SimulatedEventLoopTest, WatcherTimingReport) {
                 ->handler_time()
                 ->standard_deviation(),
             0.0);
+}
+
+// Tests that ping and pong work when on 2 different nodes.
+TEST(SimulatedEventLoopTest, MultinodePingPong) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(
+          "aos/events/multinode_pingpong_config.json");
+  const Node *pi1 = configuration::GetNode(&config.message(), "pi1");
+  const Node *pi2 = configuration::GetNode(&config.message(), "pi2");
+
+  SimulatedEventLoopFactory simulated_event_loop_factory(&config.message());
+
+  std::unique_ptr<EventLoop> ping_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("ping", pi1);
+  Ping ping(ping_event_loop.get());
+
+  std::unique_ptr<EventLoop> pong_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("pong", pi2);
+  Pong pong(pong_event_loop.get());
+
+  std::unique_ptr<EventLoop> pi2_pong_counter_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("pi2_pong_counter", pi2);
+
+  int pi2_pong_count = 0;
+  pi2_pong_counter_event_loop->MakeWatcher(
+      "/test",
+      [&pi2_pong_count](const examples::Pong & /*pong*/) { ++pi2_pong_count; });
+
+  std::unique_ptr<EventLoop> pi1_pong_counter_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("pi1_pong_counter", pi1);
+  int pi1_pong_count = 0;
+  pi1_pong_counter_event_loop->MakeWatcher(
+      "/test",
+      [&pi1_pong_count](const examples::Pong & /*pong*/) { ++pi1_pong_count; });
+
+  simulated_event_loop_factory.RunFor(chrono::seconds(10) +
+                                      chrono::milliseconds(5));
+
+  EXPECT_EQ(pi1_pong_count, 1001);
+  EXPECT_EQ(pi2_pong_count, 1001);
 }
 
 }  // namespace testing

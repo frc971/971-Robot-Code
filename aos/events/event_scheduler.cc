@@ -8,7 +8,7 @@
 namespace aos {
 
 EventScheduler::Token EventScheduler::Schedule(
-    ::aos::monotonic_clock::time_point time, ::std::function<void()> callback) {
+    distributed_clock::time_point time, ::std::function<void()> callback) {
   return events_list_.emplace(time, callback);
 }
 
@@ -16,9 +16,9 @@ void EventScheduler::Deschedule(EventScheduler::Token token) {
   events_list_.erase(token);
 }
 
-void EventScheduler::RunFor(monotonic_clock::duration duration) {
-  const ::aos::monotonic_clock::time_point end_time =
-      monotonic_now() + duration;
+void EventScheduler::RunFor(distributed_clock::duration duration) {
+  const distributed_clock::time_point end_time =
+      distributed_now() + duration;
   is_running_ = true;
   for (std::function<void()> &on_run : on_run_) {
     on_run();
@@ -26,7 +26,7 @@ void EventScheduler::RunFor(monotonic_clock::duration duration) {
   on_run_.clear();
   while (!events_list_.empty() && is_running_) {
     auto iter = events_list_.begin();
-    ::aos::monotonic_clock::time_point next_time = iter->first;
+    distributed_clock::time_point next_time = iter->first;
     if (next_time > end_time) {
       break;
     }
@@ -51,6 +51,13 @@ void EventScheduler::Run() {
     events_list_.erase(iter);
     callback();
   }
+}
+
+std::ostream &operator<<(std::ostream &stream,
+                         const aos::distributed_clock::time_point &now) {
+  // Print it the same way we print a monotonic time.  Literally.
+  stream << monotonic_clock::time_point(now.time_since_epoch());
+  return stream;
 }
 
 }  // namespace aos

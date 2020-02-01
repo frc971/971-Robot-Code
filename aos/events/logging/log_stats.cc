@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
 
   // Make an eventloop for retrieving stats
   std::unique_ptr<aos::EventLoop> stats_event_loop =
-      log_reader_factory.MakeEventLoop("logstats");
+      log_reader_factory.MakeEventLoop("logstats", reader.node());
   stats_event_loop->SkipTimingReport();
 
   // Read channel info and store in vector
