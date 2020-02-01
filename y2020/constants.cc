@@ -13,6 +13,8 @@
 #include "aos/mutex/mutex.h"
 #include "aos/network/team_number.h"
 
+#include "y2020/control_loops/superstructure/hood/integral_hood_plant.h"
+
 namespace y2020 {
 namespace constants {
 
@@ -26,6 +28,25 @@ const uint16_t kCodingRobotTeamNumber = 7971;
 
 const Values *DoGetValuesForTeam(uint16_t team) {
   Values *const r = new Values();
+  ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+      ::frc971::zeroing::AbsoluteEncoderZeroingEstimator> *const hood =
+      &r->hood;
+
+  // Hood constants.
+  hood->zeroing_voltage = 3.0;
+  hood->operating_voltage = 12.0;
+  hood->zeroing_profile_params = {0.5, 3.0};
+  hood->default_profile_params = {6.0, 30.0};
+  hood->range = Values::kHoodRange();
+  hood->make_integral_loop =
+      control_loops::superstructure::hood::MakeIntegralHoodLoop;
+  hood->zeroing_constants.average_filter_size = Values::kZeroingSampleSize;
+  hood->zeroing_constants.one_revolution_distance =
+      M_PI * 2.0 * constants::Values::kHoodEncoderRatio();
+  hood->zeroing_constants.zeroing_threshold = 0.0005;
+  hood->zeroing_constants.moving_buffer_size = 20;
+  hood->zeroing_constants.allowable_encoder_error = 0.9;
+  hood->zeroing_constants.middle_position = Values::kHoodRange().middle();
 
   switch (team) {
     // A set of constants for tests.
@@ -33,12 +54,15 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       break;
 
     case kCompTeamNumber:
+      hood->zeroing_constants.measured_absolute_position = 0.0;
       break;
 
     case kPracticeTeamNumber:
+      hood->zeroing_constants.measured_absolute_position = 0.0;
       break;
 
     case kCodingRobotTeamNumber:
+      hood->zeroing_constants.measured_absolute_position = 0.0;
       break;
 
     default:
