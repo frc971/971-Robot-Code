@@ -27,8 +27,7 @@ int Main(int argc, char **argv) {
       &configuration::MergeConfiguration(config, schemas).message(), true);
 
   // TODO(austin): Figure out how to squash the schemas onto 1 line so it is
-  // easier to read?  Or figure out how to split them into a second file which
-  // gets included.
+  // easier to read?
   VLOG(1) << "Flattened config is " << merged_config;
   util::WriteStringToFileOrDie(argv[1], merged_config);
   return 0;
