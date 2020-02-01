@@ -1,7 +1,8 @@
 namespace y2020.control_loops.superstructure;
 
 table Output {
-
+  // Votage sent to the hood. Positive moves up.
+  hood_voltage:double;
 }
 
 root_type Output;

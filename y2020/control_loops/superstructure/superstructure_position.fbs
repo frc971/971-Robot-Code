@@ -4,6 +4,8 @@ namespace y2020.control_loops.superstructure;
 
 table Position {
 
+  // Zero is at the horizontal, positive towards the front (meters on the lead screw).
+  hood:frc971.AbsolutePosition;
 }
 
 root_type Position;
