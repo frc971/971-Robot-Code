@@ -13,7 +13,7 @@ table ShooterPosition {
 }
 
 table Position {
-  // Zero is at the horizontal, positive towards the front (meters on the lead screw).
+  // Zero is at the horizontal, positive towards the front (radians).
   hood:frc971.AbsolutePosition;
 
   // Position of the intake. 0 when four-bar is vertical, positive extended.
