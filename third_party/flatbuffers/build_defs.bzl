@@ -254,7 +254,7 @@ def flatbuffer_cc_library(
         compatible_with = compatible_with,
     )
 
-def flatbuffer_python_library(
+def flatbuffer_py_library(
         name,
         srcs,
         namespace,
