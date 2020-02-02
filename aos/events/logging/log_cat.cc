@@ -33,6 +33,7 @@ int main(int argc, char **argv) {
   std::unique_ptr<aos::EventLoop> printer_event_loop =
       reader.event_loop_factory()->MakeEventLoop("printer", reader.node());
   printer_event_loop->SkipTimingReport();
+  printer_event_loop->SkipAosLog();
 
   bool found_channel = false;
   const flatbuffers::Vector<flatbuffers::Offset<aos::Channel>> *channels =

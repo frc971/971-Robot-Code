@@ -5,12 +5,14 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <unistd.h>
+
 #include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <iterator>
 #include <stdexcept>
 
+#include "aos/events/aos_logging.h"
 #include "aos/events/epoll.h"
 #include "aos/events/event_loop_generated.h"
 #include "aos/events/timing_statistics.h"
@@ -760,37 +762,44 @@ void ShmEventLoop::Run() {
 
   ReserveEvents();
 
-  aos::SetCurrentThreadName(name_.substr(0, 16));
-  // Now, all the callbacks are setup.  Lock everything into memory and go RT.
-  if (priority_ != 0) {
-    ::aos::InitRT();
+  {
+    AosLogToFbs aos_logger;
+    if (!skip_logger_) {
+      aos_logger.Initialize(MakeSender<logging::LogMessageFbs>("/aos"));
+    }
 
-    LOG(INFO) << "Setting priority to " << priority_;
-    ::aos::SetCurrentThreadRealtimePriority(priority_);
+    aos::SetCurrentThreadName(name_.substr(0, 16));
+    // Now, all the callbacks are setup.  Lock everything into memory and go RT.
+    if (priority_ != 0) {
+      ::aos::InitRT();
+
+      LOG(INFO) << "Setting priority to " << priority_;
+      ::aos::SetCurrentThreadRealtimePriority(priority_);
+    }
+
+    set_is_running(true);
+
+    // Now that we are realtime (but before the OnRun handlers run), snap the
+    // queue index.
+    for (::std::unique_ptr<WatcherState> &watcher : watchers_) {
+      watcher->Startup(this);
+    }
+
+    // Now that we are RT, run all the OnRun handlers.
+    for (const auto &run : on_run_) {
+      run();
+    }
+
+    // And start our main event loop which runs all the timers and handles Quit.
+    epoll_.Run();
+
+    // Once epoll exits, there is no useful nonrt work left to do.
+    set_is_running(false);
+
+    // Nothing time or synchronization critical needs to happen after this
+    // point. Drop RT priority.
+    ::aos::UnsetCurrentThreadRealtimePriority();
   }
-
-  set_is_running(true);
-
-  // Now that we are realtime (but before the OnRun handlers run), snap the
-  // queue index.
-  for (::std::unique_ptr<WatcherState> &watcher : watchers_) {
-    watcher->Startup(this);
-  }
-
-  // Now that we are RT, run all the OnRun handlers.
-  for (const auto &run : on_run_) {
-    run();
-  }
-
-  // And start our main event loop which runs all the timers and handles Quit.
-  epoll_.Run();
-
-  // Once epoll exits, there is no useful nonrt work left to do.
-  set_is_running(false);
-
-  // Nothing time or synchronization critical needs to happen after this point.
-  // Drop RT priority.
-  ::aos::UnsetCurrentThreadRealtimePriority();
 
   for (::std::unique_ptr<WatcherState> &base_watcher : watchers_) {
     internal::WatcherState *watcher =

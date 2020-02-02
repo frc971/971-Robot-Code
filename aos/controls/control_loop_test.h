@@ -4,8 +4,6 @@
 #include <chrono>
 #include <string_view>
 
-#include "gtest/gtest.h"
-
 #include "aos/events/simulated_event_loop.h"
 #include "aos/flatbuffers.h"
 #include "aos/json_to_flatbuffer.h"
@@ -13,6 +11,7 @@
 #include "aos/robot_state/robot_state_generated.h"
 #include "aos/testing/test_logging.h"
 #include "aos/time/time.h"
+#include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {
@@ -80,9 +79,7 @@ class ControlLoopTestTemplated : public TestBaseClass {
 
   // Simulate a reset of the process reading sensors, which tells loops that all
   // index counts etc will be reset.
-  void SimulateSensorReset() {
-    ++reader_pid_;
-  }
+  void SimulateSensorReset() { ++reader_pid_; }
 
   // Sets the battery voltage in robot_state.
   void set_battery_voltage(double battery_voltage) {
@@ -186,7 +183,8 @@ constexpr ::std::chrono::microseconds
     ControlLoopTestTemplated<TestBaseClass>::kTimeTick;
 
 template <typename TestBaseClass>
-constexpr ::std::chrono::milliseconds ControlLoopTestTemplated<TestBaseClass>::kDSPacketTime;
+constexpr ::std::chrono::milliseconds
+    ControlLoopTestTemplated<TestBaseClass>::kDSPacketTime;
 
 }  // namespace testing
 }  // namespace aos

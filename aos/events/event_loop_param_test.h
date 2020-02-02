@@ -19,6 +19,10 @@ class EventLoopTestFactory {
                                      "  \"channels\": [ \n"
                                      "    {\n"
                                      "      \"name\": \"/aos\",\n"
+                                     "      \"type\": \"aos.logging.LogMessageFbs\"\n"
+                                     "    },\n"
+                                     "    {\n"
+                                     "      \"name\": \"/aos\",\n"
                                      "      \"type\": \"aos.timing.Report\"\n"
                                      "    },\n"
                                      "    {\n"
@@ -58,6 +62,16 @@ class EventLoopTestFactory {
     std::string json = R"config({
   "channels": [
     {
+      "name": "/aos/me",
+      "type": "aos.logging.LogMessageFbs",
+      "source_node": "me"
+    },
+    {
+      "name": "/aos/them",
+      "type": "aos.logging.LogMessageFbs",
+      "source_node": "them"
+    },
+    {
       "name": "/aos",
       "type": "aos.timing.Report",
       "source_node": "me"
@@ -86,6 +100,28 @@ class EventLoopTestFactory {
     {
       "name": "them",
       "hostname": "themhostname"
+    }
+  ],
+  "maps": [
+    {
+      "match": {
+        "name": "/aos",
+        "type": "aos.logging.LogMessageFbs",
+        "source_node": "me"
+      },
+      "rename": {
+        "name": "/aos/me"
+      }
+    },
+    {
+      "match": {
+        "name": "/aos",
+        "type": "aos.logging.LogMessageFbs",
+        "source_node": "them"
+      },
+      "rename": {
+        "name": "/aos/them"
+      }
     }
   ]
 })config";

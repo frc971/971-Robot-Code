@@ -32,6 +32,7 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
     unlink((FLAGS_shm_base + "/test2/aos.TestMessage.v1").c_str());
     unlink((FLAGS_shm_base + "/test2/aos.TestMessage.v1").c_str());
     unlink((FLAGS_shm_base + "/aos/aos.timing.Report.v1").c_str());
+    unlink((FLAGS_shm_base + "/aos/aos.logging.LogMessageFbs.v1").c_str());
   }
 
   ~ShmEventLoopTestFactory() { FLAGS_override_hostname = ""; }

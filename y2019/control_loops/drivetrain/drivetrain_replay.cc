@@ -41,6 +41,7 @@ int main(int argc, char **argv) {
   std::unique_ptr<aos::EventLoop> log_writer_event_loop =
       reader.event_loop_factory()->MakeEventLoop("log_writer");
   log_writer_event_loop->SkipTimingReport();
+  log_writer_event_loop->SkipAosLog();
   CHECK(nullptr == log_writer_event_loop->node());
   aos::logger::Logger writer(&file_writer, log_writer_event_loop.get());
 

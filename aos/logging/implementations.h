@@ -132,12 +132,15 @@ class StreamLogImplementation : public HandleMessageLogImplementation {
 // when needed or by calling Load()).
 // The logging system takes ownership of implementation. It will delete it if
 // necessary, so it must be created with new.
+// TODO: Log implementations are never deleted. Need means to safely deregister.
 void SetImplementation(LogImplementation *implementation,
                        bool update_global = true);
 
 // Updates the log implementation for the current thread, returning the current
 // implementation.
 LogImplementation *SwapImplementation(LogImplementation *implementation);
+
+LogImplementation *GetImplementation();
 
 // Must be called at least once per process/load before anything else is
 // called. This function is safe to call multiple times from multiple
@@ -164,7 +167,18 @@ RawQueue *GetLoggingQueue();
 void RegisterQueueImplementation();
 
 void RegisterCallbackImplementation(
-    const ::std::function<void(const LogMessage &)> &callback);
+    const ::std::function<void(const LogMessage &)> &callback,
+    bool update_global = true);
+
+class ScopedLogRestorer {
+ public:
+  ScopedLogRestorer() { prev_impl_ = GetImplementation(); }
+
+  ~ScopedLogRestorer() { SetImplementation(prev_impl_); }
+
+ private:
+  LogImplementation *prev_impl_;
+};
 
 // This is where all of the code that is only used by actual LogImplementations
 // goes.

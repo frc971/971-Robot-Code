@@ -2,6 +2,7 @@
 
 #include "aos/configuration.h"
 #include "aos/configuration_generated.h"
+#include "aos/logging/implementations.h"
 #include "glog/logging.h"
 
 DEFINE_bool(timing_reports, true, "Publish timing reports.");
@@ -64,6 +65,12 @@ PhasedLoopHandler::PhasedLoopHandler(EventLoop *event_loop,
 }
 
 PhasedLoopHandler::~PhasedLoopHandler() {}
+
+EventLoop::EventLoop(const Configuration *configuration)
+    : timing_report_(flatbuffers::DetachedBuffer()),
+      configuration_(configuration) {
+  logging::Init();
+}
 
 EventLoop::~EventLoop() {
   CHECK_EQ(senders_.size(), 0u) << ": Not all senders destroyed";

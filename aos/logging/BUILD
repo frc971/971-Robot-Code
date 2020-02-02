@@ -1,3 +1,5 @@
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+
 # The primary client logging interface.
 cc_library(
     name = "logging",
@@ -149,4 +151,11 @@ cc_library(
         "//aos/type_traits",
         "@com_google_absl//absl/base",
     ],
+)
+
+flatbuffer_cc_library(
+    name = "log_message_fbs",
+    srcs = ["log_message.fbs"],
+    visibility = ["//visibility:public"],
+    gen_reflections = 1,
 )

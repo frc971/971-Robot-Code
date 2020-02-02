@@ -1,12 +1,11 @@
 #include "y2017/control_loops/superstructure/vision_time_adjuster.h"
 
-#include "gtest/gtest.h"
-
 #include "aos/configuration.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/testing/test_logging.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
+#include "gtest/gtest.h"
 #include "y2017/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2017/vision/vision_generated.h"
 
@@ -20,7 +19,8 @@ class VisionTimeAdjusterTest : public ::testing::Test {
       : ::testing::Test(),
         configuration_(aos::configuration::ReadConfig("y2017/config.json")),
         event_loop_factory_(&configuration_.message()),
-        simulation_event_loop_(event_loop_factory_.MakeEventLoop("drivetrain")),
+        simulation_event_loop_(
+            event_loop_factory_.MakeEventLoop("drivetrain")),
         drivetrain_status_sender_(
             simulation_event_loop_
                 ->MakeSender<::frc971::control_loops::drivetrain::Status>(

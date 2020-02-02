@@ -39,7 +39,8 @@ class TargetSelectorParamTest : public ::testing::TestWithParam<TestParams> {
   TargetSelectorParamTest()
       : configuration_(aos::configuration::ReadConfig("y2019/config.json")),
         event_loop_factory_(&configuration_.message()),
-        event_loop_(this->event_loop_factory_.MakeEventLoop("drivetrain")),
+        event_loop_(
+            this->event_loop_factory_.MakeEventLoop("drivetrain")),
         test_event_loop_(this->event_loop_factory_.MakeEventLoop("test")),
         target_selector_hint_sender_(
             test_event_loop_->MakeSender<
