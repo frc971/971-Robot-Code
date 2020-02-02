@@ -196,12 +196,14 @@ local_repository(
     path = "third_party/gflags",
 )
 
+# Downloaded from:
+# https://pypi.python.org/packages/source/g/glog/glog-0.1.tar.gz
 http_archive(
     name = "python_glog_repo",
     build_file = "@//debian:glog.BUILD",
     sha256 = "953fd80122c48023d1148e6d1bda2763fcab59c8a81682bb298238a5935547b0",
     strip_prefix = "glog-0.1",
-    url = "https://pypi.python.org/packages/source/g/glog/glog-0.1.tar.gz",
+    url = "http://frc971.org/Build-Dependencies/glog-0.1.tar.gz",
 )
 
 bind(
