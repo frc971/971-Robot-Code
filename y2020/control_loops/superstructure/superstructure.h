@@ -8,6 +8,7 @@
 #include "y2020/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2020/control_loops/superstructure/climber.h"
 
 namespace y2020 {
 namespace control_loops {
@@ -42,6 +43,7 @@ class Superstructure
   AbsoluteEncoderSubsystem intake_joint_;
   PotAndAbsoluteEncoderSubsystem turret_;
 
+  Climber climber_;
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 

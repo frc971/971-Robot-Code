@@ -239,7 +239,11 @@ class SuperstructureSimulation {
     EXPECT_LE(-peak_turret_acceleration_, turret_acceleration);
     EXPECT_GE(peak_turret_velocity_, turret_velocity());
     EXPECT_LE(-peak_turret_velocity_, turret_velocity());
+
+    climber_voltage_ = superstructure_output_fetcher_->climber_voltage();
   }
+
+  float climber_voltage() const { return climber_voltage_; }
 
   void set_peak_hood_acceleration(double value) {
     peak_hood_acceleration_ = value;
@@ -285,6 +289,8 @@ class SuperstructureSimulation {
   double peak_hood_velocity_ = 1e10;
   double peak_intake_velocity_ = 1e10;
   double peak_turret_velocity_ = 1e10;
+
+  float climber_voltage_ = 0.0f;
 };
 
 class SuperstructureTest : public ::aos::testing::ControlLoopTest {
@@ -315,14 +321,21 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
     superstructure_goal_fetcher_.Fetch();
     superstructure_status_fetcher_.Fetch();
 
-    EXPECT_NEAR(superstructure_goal_fetcher_->hood()->unsafe_goal(),
-                superstructure_status_fetcher_->hood()->position(), 0.001);
+    // Only check the goal if there is one.
+    if (superstructure_goal_fetcher_->has_hood()) {
+      EXPECT_NEAR(superstructure_goal_fetcher_->hood()->unsafe_goal(),
+                  superstructure_status_fetcher_->hood()->position(), 0.001);
+    }
 
-    EXPECT_NEAR(superstructure_goal_fetcher_->intake()->unsafe_goal(),
-                superstructure_status_fetcher_->intake()->position(), 0.001);
+    if (superstructure_goal_fetcher_->has_intake()) {
+      EXPECT_NEAR(superstructure_goal_fetcher_->intake()->unsafe_goal(),
+                  superstructure_status_fetcher_->intake()->position(), 0.001);
+    }
 
-    EXPECT_NEAR(superstructure_goal_fetcher_->turret()->unsafe_goal(),
-                superstructure_status_fetcher_->turret()->position(), 0.001);
+    if (superstructure_goal_fetcher_->has_turret()) {
+      EXPECT_NEAR(superstructure_goal_fetcher_->turret()->unsafe_goal(),
+                  superstructure_status_fetcher_->turret()->position(), 0.001);
+    }
   }
 
   void CheckIfZeroed() {
@@ -532,6 +545,47 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
 TEST_F(SuperstructureTest, DisableTest) {
   RunFor(chrono::seconds(2));
   CheckIfZeroed();
+}
+
+// Tests that the climber passes through per the design.
+TEST_F(SuperstructureTest, Climber) {
+  SetEnabled(true);
+  // Set a reasonable goal.
+
+  superstructure_plant_.InitializeHoodPosition(0.7);
+  superstructure_plant_.InitializeIntakePosition(0.7);
+
+  WaitUntilZeroed();
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_climber_voltage(-10.0);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+  }
+
+  // Give it time to stabilize.
+  RunFor(chrono::seconds(1));
+
+  // Can't go backwards.
+  EXPECT_EQ(superstructure_plant_.climber_voltage(), 0.0);
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_climber_voltage(10.0);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+  }
+  RunFor(chrono::seconds(1));
+  // But forwards works.
+  EXPECT_EQ(superstructure_plant_.climber_voltage(), 10.0);
+
+  VerifyNearGoal();
 }
 
 }  // namespace testing

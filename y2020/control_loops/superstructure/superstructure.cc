@@ -52,6 +52,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           output != nullptr ? &(output_struct.turret_voltage) : nullptr,
           status->fbb());
 
+  climber_.Iterate(unsafe_goal, output != nullptr ? &(output_struct) : nullptr);
+
   bool zeroed;
   bool estopped;
 

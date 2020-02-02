@@ -55,6 +55,7 @@ cc_library(
         "superstructure.h",
     ],
     deps = [
+        ":climber",
         ":superstructure_goal_fbs",
         ":superstructure_output_fbs",
         ":superstructure_position_fbs",
@@ -101,5 +102,22 @@ cc_test(
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//y2020/control_loops/superstructure/hood:hood_plants",
         "//y2020/control_loops/superstructure/intake:intake_plants",
+    ],
+)
+
+cc_library(
+    name = "climber",
+    srcs = [
+        "climber.cc",
+    ],
+    hdrs = [
+        "climber.h",
+    ],
+    deps = [
+        ":superstructure_goal_fbs",
+        ":superstructure_output_fbs",
+        "//aos/controls:control_loop",
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops:profiled_subsystem_fbs",
     ],
 )
