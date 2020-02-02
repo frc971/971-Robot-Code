@@ -248,7 +248,9 @@ class Sender {
   class Builder {
    public:
     Builder(RawSender *sender, PreallocatedAllocator *allocator)
-        : fbb_(allocator->size(), allocator), sender_(sender) {
+        : fbb_(allocator->size(), allocator),
+          allocator_(allocator),
+          sender_(sender) {
       CheckChannelDataAlignment(allocator->data(), allocator->size());
       fbb_.ForceDefaults(1);
     }
@@ -268,18 +270,30 @@ class Sender {
 
     bool Send(flatbuffers::Offset<T> offset) {
       fbb_.Finish(offset);
-      return sender_->Send(fbb_.GetSize());
+      const bool result = sender_->Send(fbb_.GetSize());
+      // Ensure fbb_ knows it shouldn't access the memory any more.
+      fbb_ = flatbuffers::FlatBufferBuilder();
+      return result;
     }
 
     // CHECKs that this message was sent.
-    void CheckSent() { fbb_.Finished(); }
+    void CheckSent() {
+      CHECK(!allocator_->is_allocated()) << ": Message was not sent yet";
+    }
 
    private:
     flatbuffers::FlatBufferBuilder fbb_;
+    PreallocatedAllocator *allocator_;
     RawSender *sender_;
   };
 
   // Constructs an above builder.
+  //
+  // Only a single one of these may be "alive" for this object at any point in
+  // time. After calling Send on the result, it is no longer "alive". This means
+  // that you must manually reset a variable holding the return value (by
+  // assigning a default-constructed Builder to it) before calling this method
+  // again to overwrite the value in the variable.
   Builder MakeBuilder();
 
   // Sends a prebuilt flatbuffer.

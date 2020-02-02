@@ -1839,6 +1839,33 @@ class FlatBufferBuilder {
     return CreateVectorOfSortedTables(data(*v), v->size());
   }
 
+  /// @brief Specialized version of `StartVector` for non-copying use cases
+  /// where the size isn't known beforehand.
+  /// Write the data any time later to the returned buffer pointer `buf`.
+  /// Make sure to call `EndIndeterminateVector` later with the final size.
+  /// @param[in] max_len The maximum number of elements to store in the
+  /// `vector`.
+  /// @param[in] elemsize The size of each element in the `vector`.
+  //  @param[in] alignment The minimal alignment for the start of the data.
+  /// @param[out] buf A pointer to a `uint8_t` pointer that can be
+  /// written to at a later time to serialize the data into a `vector`
+  /// in the buffer.
+  void StartIndeterminateVector(size_t max_len, size_t elemsize,
+                                size_t alignment, uint8_t **buf) {
+    NotNested();
+    nested = true;
+    PreAlign(max_len * elemsize, alignment);
+    buf_.ensure_space(max_len * elemsize);
+    auto vec_start = GetSize() + max_len * elemsize;
+    *buf = buf_.data_at(vec_start);
+  }
+
+  uoffset_t EndIndeterminateVector(size_t len, size_t elemsize) {
+    buf_.make_space(len * elemsize);
+    auto vec_end = EndVector(len);
+    return vec_end;
+  }
+
   /// @brief Specialized version of `CreateVector` for non-copying use cases.
   /// Write the data any time later to the returned buffer pointer `buf`.
   /// @param[in] len The number of elements to store in the `vector`.

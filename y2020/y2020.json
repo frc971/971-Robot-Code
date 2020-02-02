@@ -24,11 +24,21 @@
       "name": "/superstructure",
       "type": "y2020.control_loops.superstructure.Position",
       "frequency": 200
+    },
+    {
+      "name": "/camera",
+      "type": "frc971.vision.CameraImage",
+      "frequency": 25,
+      "max_size": 620000,
+      "num_senders": 18
     }
   ],
   "applications": [
     {
       "name": "drivetrain"
+    },
+    {
+      "name": "camera_reader"
     }
   ],
   "imports": [
