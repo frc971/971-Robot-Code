@@ -5,6 +5,12 @@ namespace y2020.control_loops.superstructure;
 table Goal {
   // Zero is at the horizontal, positive towards the front (meters on the lead screw).
   hood:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
+
+  //0 = Linkage on sprocket is pointing straight up
+  //Positive = forward
+  intake:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
+  //Positive is rollers intaking to Washing Machine.
+  roller_voltage:float;
 }
 
 root_type Goal;
