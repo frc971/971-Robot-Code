@@ -653,3 +653,13 @@ http_archive(
     strip_prefix = "halide/",
     url = "http://www.frc971.org/Build-Dependencies/halide-arm32-linux-32-trunk-65c26cba6a3eca2d08a0bccf113ca28746012cc3.tgz",
 )
+
+# Downloaded from:
+# https://files.pythonhosted.org/packages/05/23/7f9a896da9e7ce4170377a7a14bb804b460761f9dd66734e6ad8f001a76c/opencv_contrib_python_nonfree-4.1.1.1-cp35-cp35m-manylinux1_x86_64.whl
+http_archive(
+    name = "opencv_contrib_nonfree_amd64",
+    build_file = "@//debian:opencv_python.BUILD",
+    sha256 = "c10e7712ee1f19bf382c64fc29b5d24fa0b5bfd901eab69cef83604713e6a89e",
+    type = "zip",
+    url = "http://www.frc971.org/Build-Dependencies/opencv_contrib_python_nonfree-4.1.1.1-cp35-cp35m-manylinux1_x86_64.whl",
+)
