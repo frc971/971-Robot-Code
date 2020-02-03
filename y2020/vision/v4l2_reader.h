@@ -88,6 +88,8 @@ class V4L2Reader {
 
   int Ioctl(unsigned long number, void *arg);
 
+  void StreamOff();
+
   // The mmaped V4L2 buffers.
   std::array<Buffer, kNumberBuffers> buffers_;
 
