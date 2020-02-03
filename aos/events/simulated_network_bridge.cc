@@ -109,10 +109,14 @@ SimulatedMessageBridge::SimulatedMessageBridge(
 
   // Pre-build up event loops for every node.  They are pretty cheap anyways.
   for (const Node *node : simulated_event_loop_factory->nodes()) {
-    CHECK(event_loop_map_
-              .insert({node, simulated_event_loop_factory->MakeEventLoop(
-                                 "message_bridge", node)})
-              .second);
+    auto it = event_loop_map_.insert(
+        {node,
+         simulated_event_loop_factory->MakeEventLoop("message_bridge", node)});
+
+    CHECK(it.second);
+
+    it.first->second->SkipTimingReport();
+    it.first->second->SkipAosLog();
   }
 
   for (const Channel *channel :

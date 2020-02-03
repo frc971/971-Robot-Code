@@ -395,6 +395,11 @@ class LogReader {
 
   const Configuration *remapped_configuration_ = nullptr;
   const Configuration *replay_configuration_ = nullptr;
+
+  // If true, the replay timer will ignore any missing data.  This is used
+  // during startup when we are bootstrapping everything and trying to get to
+  // the start of all the log files.
+  bool ignore_missing_data_ = false;
 };
 
 }  // namespace logger

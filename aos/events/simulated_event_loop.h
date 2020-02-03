@@ -154,6 +154,14 @@ class NodeEventLoopFactory {
   inline distributed_clock::time_point ToDistributedClock(
       monotonic_clock::time_point time) const;
 
+  // Note: use this very very carefully.  It can cause massive problems.  This
+  // needs to go away as we properly handle time drifting between nodes.
+  void SetMonotonicNow(monotonic_clock::time_point monotonic_now) {
+    monotonic_clock::duration offset = (monotonic_now - this->monotonic_now());
+    monotonic_offset_ += offset;
+    realtime_offset_ -= offset;
+  }
+
  private:
   friend class SimulatedEventLoopFactory;
   NodeEventLoopFactory(
