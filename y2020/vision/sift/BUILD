@@ -1,4 +1,5 @@
 load(":fast_gaussian.bzl", "fast_gaussian")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library")
 
 cc_binary(
     name = "fast_gaussian_generator",
@@ -168,4 +169,38 @@ cc_binary(
         "//y2020/vision/sift:sift971",
         "@com_github_google_glog//:glog",
     ],
+)
+
+flatbuffer_py_library(
+    name = "sift_fbs_python",
+    srcs = [
+        "sift.fbs",
+        "sift_training.fbs",
+    ],
+    namespace = "frc971.vision.sift",
+    tables = [
+        "Feature",
+        "Match",
+        "ImageMatch",
+        "TransformationMatrix",
+        "CameraPose",
+        "ImageMatchResult",
+        "TrainingImage",
+        "TrainingData",
+    ],
+)
+
+flatbuffer_cc_library(
+    name = "sift_fbs",
+    srcs = ["sift.fbs"],
+    gen_reflections = True,
+    visibility = ["//visibility:public"],
+)
+
+flatbuffer_cc_library(
+    name = "sift_training_fbs",
+    srcs = ["sift_training.fbs"],
+    gen_reflections = True,
+    includes = [":sift_fbs_includes"],
+    visibility = ["//visibility:public"],
 )

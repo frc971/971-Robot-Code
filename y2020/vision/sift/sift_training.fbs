@@ -1,0 +1,23 @@
+include "y2020/vision/sift/sift.fbs";
+
+namespace frc971.vision.sift;
+
+// Represents a single image we train against.
+table TrainingImage {
+  features:[Feature];
+
+  // Field coordinates of the target, represented as a transformation matrix
+  // from the target to the field. See CameraPose in :sift_fbs for details of
+  // the conventions of this.
+  field_to_target:TransformationMatrix;
+
+  // Coordinates of the target in the training image.
+  camera_to_target:TransformationMatrix;
+}
+
+// Represents the information used to match incoming images against.
+table TrainingData {
+  images:[TrainingImage];
+}
+
+root_type TrainingData;
