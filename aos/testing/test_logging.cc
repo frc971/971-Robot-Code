@@ -8,7 +8,7 @@
 
 #include "aos/logging/implementations.h"
 #include "aos/mutex/mutex.h"
-#include "aos/once.h"
+#include "absl/base/call_once.h"
 
 using ::aos::logging::LogMessage;
 
@@ -39,8 +39,9 @@ class TestLogImplementation : public logging::HandleMessageLogImplementation {
   // This class has to be a singleton so that everybody can get access to the
   // same instance to read out the messages etc.
   static TestLogImplementation *GetInstance() {
-    static Once<TestLogImplementation> once(CreateInstance);
-    return once.Get();
+    static absl::once_flag once;
+    absl::call_once(once, CreateInstance);
+    return instance;
   }
 
   // Clears out all of the messages already recorded.
@@ -72,6 +73,7 @@ class TestLogImplementation : public logging::HandleMessageLogImplementation {
   void PrintMessagesAsTheyComeIn() { print_as_messages_come_in_ = true; }
 
  private:
+  static TestLogImplementation *instance;
   TestLogImplementation() {}
   ~TestLogImplementation() {
     if (output_file_ != stdout) {
@@ -79,8 +81,8 @@ class TestLogImplementation : public logging::HandleMessageLogImplementation {
     }
   }
 
-  static TestLogImplementation *CreateInstance() {
-    return new TestLogImplementation();
+    static void CreateInstance() {
+      instance = new TestLogImplementation();
   }
 
   virtual void HandleMessage(const LogMessage &message) override {
@@ -103,6 +105,8 @@ class TestLogImplementation : public logging::HandleMessageLogImplementation {
   static thread_local bool mock_time_;
   static thread_local ::aos::monotonic_clock::time_point monotonic_now_;
 };
+
+TestLogImplementation *TestLogImplementation::instance;
 
 thread_local bool TestLogImplementation::mock_time_ = false;
 thread_local ::aos::monotonic_clock::time_point
@@ -151,12 +155,12 @@ void *DoEnableTestLogging() {
   return nullptr;
 }
 
-Once<void> enable_test_logging_once(DoEnableTestLogging);
+static absl::once_flag enable_test_logging_once;
 
 }  // namespace
 
 void EnableTestLogging() {
-  enable_test_logging_once.Get();
+  absl::call_once(enable_test_logging_once, DoEnableTestLogging);
 }
 
 void SetLogFileName(const char* filename) {
