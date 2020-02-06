@@ -11,6 +11,7 @@
 #include "aos/configuration.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/flatbuffer_merge.h"
+#include "aos/util/file.h"
 #include "flatbuffers/flatbuffers.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
@@ -24,9 +25,12 @@ namespace logger {
 namespace chrono = std::chrono;
 
 DetachedBufferWriter::DetachedBufferWriter(std::string_view filename)
-    : fd_(open(std::string(filename).c_str(),
-               O_RDWR | O_CLOEXEC | O_CREAT | O_EXCL, 0774)) {
-  PCHECK(fd_ != -1) << ": Failed to open " << filename;
+    : filename_(filename) {
+  util::MkdirP(filename, 0777);
+  fd_ = open(std::string(filename).c_str(),
+             O_RDWR | O_CLOEXEC | O_CREAT | O_EXCL, 0774);
+  VLOG(1) << "Opened " << filename << " for writing";
+  PCHECK(fd_ != -1) << ": Failed to open " << filename << " for writing";
 }
 
 DetachedBufferWriter::~DetachedBufferWriter() {
@@ -105,6 +109,7 @@ flatbuffers::Offset<MessageHeader> PackMessage(
   switch (log_type) {
     case LogType::kLogMessage:
     case LogType::kLogMessageAndDeliveryTime:
+    case LogType::kLogRemoteMessage:
       data_offset =
           fbb->CreateVector(static_cast<uint8_t *>(context.data), context.size);
       break;
@@ -115,14 +120,30 @@ flatbuffers::Offset<MessageHeader> PackMessage(
 
   MessageHeader::Builder message_header_builder(*fbb);
   message_header_builder.add_channel_index(channel_index);
-  message_header_builder.add_queue_index(context.queue_index);
-  message_header_builder.add_monotonic_sent_time(
-      context.monotonic_event_time.time_since_epoch().count());
-  message_header_builder.add_realtime_sent_time(
-      context.realtime_event_time.time_since_epoch().count());
+
+  switch (log_type) {
+    case LogType::kLogRemoteMessage:
+      message_header_builder.add_queue_index(context.remote_queue_index);
+      message_header_builder.add_monotonic_sent_time(
+          context.monotonic_remote_time.time_since_epoch().count());
+      message_header_builder.add_realtime_sent_time(
+          context.realtime_remote_time.time_since_epoch().count());
+      break;
+
+    case LogType::kLogMessage:
+    case LogType::kLogMessageAndDeliveryTime:
+    case LogType::kLogDeliveryTimeOnly:
+      message_header_builder.add_queue_index(context.queue_index);
+      message_header_builder.add_monotonic_sent_time(
+          context.monotonic_event_time.time_since_epoch().count());
+      message_header_builder.add_realtime_sent_time(
+          context.realtime_event_time.time_since_epoch().count());
+      break;
+  }
 
   switch (log_type) {
     case LogType::kLogMessage:
+    case LogType::kLogRemoteMessage:
       message_header_builder.add_data(data_offset);
       break;
 
@@ -143,7 +164,8 @@ flatbuffers::Offset<MessageHeader> PackMessage(
 }
 
 SpanReader::SpanReader(std::string_view filename)
-    : fd_(open(std::string(filename).c_str(), O_RDONLY | O_CLOEXEC)) {
+    : filename_(filename),
+      fd_(open(std::string(filename).c_str(), O_RDONLY | O_CLOEXEC)) {
   PCHECK(fd_ != -1) << ": Failed to open " << filename;
 }
 
@@ -224,6 +246,20 @@ bool SpanReader::ReadBlock() {
   return true;
 }
 
+FlatbufferVector<LogFileHeader> ReadHeader(std::string_view filename) {
+  SpanReader span_reader(filename);
+  // Make sure we have enough to read the size.
+  absl::Span<const uint8_t> config_data = span_reader.ReadMessage();
+
+  // Make sure something was read.
+  CHECK(config_data != absl::Span<const uint8_t>());
+
+  // And copy the config so we have it forever.
+  std::vector<uint8_t> data(
+      config_data.begin() + sizeof(flatbuffers::uoffset_t), config_data.end());
+  return FlatbufferVector<LogFileHeader>(std::move(data));
+}
+
 MessageReader::MessageReader(std::string_view filename)
     : span_reader_(filename) {
   // Make sure we have enough to read the size.
@@ -235,9 +271,11 @@ MessageReader::MessageReader(std::string_view filename)
   // And copy the config so we have it forever.
   configuration_ = std::vector<uint8_t>(config_data.begin(), config_data.end());
 
-  max_out_of_order_duration_ = std::chrono::nanoseconds(
-      flatbuffers::GetSizePrefixedRoot<LogFileHeader>(configuration_.data())
-          ->max_out_of_order_duration());
+  max_out_of_order_duration_ =
+      std::chrono::nanoseconds(log_file_header()->max_out_of_order_duration());
+
+  VLOG(1) << "Opened " << filename << " as node "
+          << FlatbufferToJson(log_file_header()->node());
 }
 
 std::optional<FlatbufferVector<MessageHeader>> MessageReader::ReadMessage() {
@@ -253,23 +291,56 @@ std::optional<FlatbufferVector<MessageHeader>> MessageReader::ReadMessage() {
       chrono::nanoseconds(result.message().monotonic_sent_time()));
 
   newest_timestamp_ = std::max(newest_timestamp_, timestamp);
-  return result;
+  VLOG(1) << "Read from " << filename() << " data " << FlatbufferToJson(result);
+  return std::move(result);
 }
 
-SortedMessageReader::SortedMessageReader(
+SplitMessageReader::SplitMessageReader(
     const std::vector<std::string> &filenames)
     : filenames_(filenames),
       log_file_header_(FlatbufferDetachedBuffer<LogFileHeader>::Empty()) {
   CHECK(NextLogFile()) << ": filenames is empty.  Need files to read.";
 
+  // Grab any log file header.  They should all match (and we will check as we
+  // open more of them).
   log_file_header_ = CopyFlatBuffer(message_reader_->log_file_header());
 
+  // Setup per channel state.
   channels_.resize(configuration()->channels()->size());
+  for (ChannelData &channel_data : channels_) {
+    channel_data.data.split_reader = this;
+    // Build up the timestamp list.
+    if (configuration::MultiNode(configuration())) {
+      channel_data.timestamps.resize(configuration()->nodes()->size());
+      for (MessageHeaderQueue &queue : channel_data.timestamps) {
+        queue.timestamps = true;
+        queue.split_reader = this;
+      }
+    }
+  }
 
-  QueueMessages();
+  // Build up channels_to_write_ as an optimization to make it fast to figure
+  // out which datastructure to place any new data from a channel on.
+  for (const Channel *channel : *configuration()->channels()) {
+    // This is the main case.  We will only see data on this node.
+    if (configuration::ChannelIsSendableOnNode(channel, node())) {
+      channels_to_write_.emplace_back(
+          &channels_[channels_to_write_.size()].data);
+    } else
+        // If we can't send, but can receive, we should be able to see
+        // timestamps here.
+        if (configuration::ChannelIsReadableOnNode(channel, node())) {
+      channels_to_write_.emplace_back(
+          &(channels_[channels_to_write_.size()]
+                .timestamps[configuration::GetNodeIndex(configuration(),
+                                                        node())]));
+    } else {
+      channels_to_write_.emplace_back(nullptr);
+    }
+  }
 }
 
-bool SortedMessageReader::NextLogFile() {
+bool SplitMessageReader::NextLogFile() {
   if (next_filename_index_ == filenames_.size()) {
     return false;
   }
@@ -279,13 +350,8 @@ bool SortedMessageReader::NextLogFile() {
   // We can't support the config diverging between two log file headers.  See if
   // they are the same.
   if (next_filename_index_ != 0) {
-    // Since we copied before, we need to copy again to guarantee that things
-    // didn't get re-ordered.
-    const FlatbufferDetachedBuffer<LogFileHeader> new_log_file_header =
-        CopyFlatBuffer(message_reader_->log_file_header());
-    CHECK_EQ(new_log_file_header.size(), log_file_header_.size());
-    CHECK(memcmp(new_log_file_header.data(), log_file_header_.data(),
-                 log_file_header_.size()) == 0)
+    CHECK(CompareFlatBuffer(&log_file_header_.message(),
+                            message_reader_->log_file_header()))
         << ": Header is different between log file chunks "
         << filenames_[next_filename_index_] << " and "
         << filenames_[next_filename_index_ - 1] << ", this is not supported.";
@@ -295,21 +361,244 @@ bool SortedMessageReader::NextLogFile() {
   return true;
 }
 
-void SortedMessageReader::EmplaceDataBack(
-    FlatbufferVector<MessageHeader> &&new_data) {
-  const monotonic_clock::time_point timestamp = monotonic_clock::time_point(
-      chrono::nanoseconds(new_data.message().monotonic_sent_time()));
-  const size_t channel_index = new_data.message().channel_index();
-  CHECK_LT(channel_index, channels_.size());
+bool SplitMessageReader::QueueMessages(
+    monotonic_clock::time_point last_dequeued_time) {
+  // TODO(austin): Once we are happy that everything works, read a 256kb chunk
+  // to reduce the need to re-heap down below.
 
-  if (channels_[channel_index].data.size() == 0) {
-    channels_[channel_index].oldest_timestamp = timestamp;
-    PushChannelHeap(timestamp, channel_index);
+  // Special case no more data.  Otherwise we blow up on the CHECK statement
+  // confirming that we have enough data queued.
+  if (at_end_) {
+    return false;
   }
-  channels_[channel_index].data.emplace_back(std::move(new_data));
+
+  // If this isn't the first time around, confirm that we had enough data queued
+  // to follow the contract.
+  if (time_to_queue_ != monotonic_clock::min_time) {
+    CHECK_LE(last_dequeued_time,
+             newest_timestamp() - max_out_of_order_duration())
+        << " node " << FlatbufferToJson(node()) << " on " << this;
+
+    // Bail if there is enough data already queued.
+    if (last_dequeued_time < time_to_queue_) {
+      VLOG(1) << "All up to date on " << this << ", dequeued "
+              << last_dequeued_time << " queue time " << time_to_queue_;
+      return true;
+    }
+  } else {
+    // Startup takes a special dance.  We want to queue up until the start time,
+    // but we then want to find the next message to read.  The conservative
+    // answer is to immediately trigger a second requeue to get things moving.
+    time_to_queue_ = monotonic_start_time();
+    QueueMessages(time_to_queue_);
+  }
+
+  // If we are asked to queue, queue for at least max_out_of_order_duration past
+  // the last known time in the log file (ie the newest timestep read).  As long
+  // as we requeue exactly when time_to_queue_ is dequeued and go no further, we
+  // are safe.  And since we pop in order, that works.
+  //
+  // Special case the start of the log file.  There should be at most 1 message
+  // from each channel at the start of the log file.  So always force the start
+  // of the log file to just be read.
+  time_to_queue_ = std::max(time_to_queue_, newest_timestamp());
+  VLOG(1) << "Queueing, going until " << time_to_queue_ << " " << filename();
+
+  bool was_emplaced = false;
+  while (true) {
+    // Stop if we have enough.
+    if (newest_timestamp() >
+            time_to_queue_ + max_out_of_order_duration() &&
+        was_emplaced) {
+      VLOG(1) << "Done queueing on " << this << ", queued to "
+              << newest_timestamp() << " with requeue time " << time_to_queue_;
+      return true;
+    }
+
+    if (std::optional<FlatbufferVector<MessageHeader>> msg =
+            message_reader_->ReadMessage()) {
+      const MessageHeader &header = msg.value().message();
+
+      const monotonic_clock::time_point timestamp = monotonic_clock::time_point(
+          chrono::nanoseconds(header.monotonic_sent_time()));
+
+      VLOG(1) << "Queued " << this << " " << filename()
+              << " ttq: " << time_to_queue_ << " now "
+              << newest_timestamp() << " start time "
+              << monotonic_start_time() << " " << FlatbufferToJson(&header);
+
+      const int channel_index = header.channel_index();
+      was_emplaced = channels_to_write_[channel_index]->emplace_back(
+          std::move(msg.value()));
+      if (was_emplaced) {
+        newest_timestamp_ = std::max(newest_timestamp_, timestamp);
+      }
+    } else {
+      if (!NextLogFile()) {
+        VLOG(1) << "End of log file.";
+        at_end_ = true;
+        return false;
+      }
+    }
+  }
+}
+
+void SplitMessageReader::SetTimestampMerger(TimestampMerger *timestamp_merger,
+                                            int channel_index,
+                                            const Node *target_node) {
+  const Node *reinterpreted_target_node =
+      configuration::GetNodeOrDie(configuration(), target_node);
+  const Channel *const channel =
+      configuration()->channels()->Get(channel_index);
+
+  VLOG(1) << "  Configuring merger " << this << " for channel " << channel_index
+          << " "
+          << configuration::CleanedChannelToString(
+                 configuration()->channels()->Get(channel_index));
+
+  MessageHeaderQueue *message_header_queue = nullptr;
+
+  // Figure out if this log file is from our point of view, or the other node's
+  // point of view.
+  if (node() == reinterpreted_target_node) {
+    VLOG(1) << "    Replaying as logged node " << filename();
+
+    if (configuration::ChannelIsSendableOnNode(channel, node())) {
+      VLOG(1) << "      Data on node";
+      message_header_queue = &(channels_[channel_index].data);
+    } else if (configuration::ChannelIsReadableOnNode(channel, node())) {
+      VLOG(1) << "      Timestamps on node";
+      message_header_queue =
+          &(channels_[channel_index].timestamps[configuration::GetNodeIndex(
+              configuration(), node())]);
+    } else {
+      VLOG(1) << "     Dropping";
+    }
+  } else {
+    VLOG(1) << "    Replaying as other node " << filename();
+    // We are replaying from another node's point of view.  The only interesting
+    // data is data that is sent from our node and received on theirs.
+    if (configuration::ChannelIsReadableOnNode(channel,
+                                               reinterpreted_target_node) &&
+        configuration::ChannelIsSendableOnNode(channel, node())) {
+      VLOG(1) << "      Readable on target node";
+      // Data from another node.
+      message_header_queue = &(channels_[channel_index].data);
+    } else {
+      VLOG(1) << "      Dropping";
+      // This is either not sendable on the other node, or is a timestamp and
+      // therefore not interesting.
+    }
+  }
+
+  // If we found one, write it down.  This will be nullptr when there is nothing
+  // relevant on this channel on this node for the target node.  In that case,
+  // we want to drop the message instead of queueing it.
+  if (message_header_queue != nullptr) {
+    message_header_queue->timestamp_merger = timestamp_merger;
+  }
+}
+
+std::tuple<monotonic_clock::time_point, uint32_t,
+           FlatbufferVector<MessageHeader>>
+SplitMessageReader::PopOldest(int channel_index) {
+  CHECK_GT(channels_[channel_index].data.size(), 0u);
+  const std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
+      timestamp = channels_[channel_index].data.front_timestamp();
+  FlatbufferVector<MessageHeader> front =
+      std::move(channels_[channel_index].data.front());
+  channels_[channel_index].data.pop_front();
+
+  VLOG(1) << "Popped " << this << " " << std::get<0>(timestamp);
+
+  QueueMessages(std::get<0>(timestamp));
+
+  return std::make_tuple(std::get<0>(timestamp), std::get<1>(timestamp),
+                         std::move(front));
+}
+
+std::tuple<monotonic_clock::time_point, uint32_t,
+           FlatbufferVector<MessageHeader>>
+SplitMessageReader::PopOldest(int channel, int node_index) {
+  CHECK_GT(channels_[channel].timestamps[node_index].size(), 0u);
+  const std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
+      timestamp = channels_[channel].timestamps[node_index].front_timestamp();
+  FlatbufferVector<MessageHeader> front =
+      std::move(channels_[channel].timestamps[node_index].front());
+  channels_[channel].timestamps[node_index].pop_front();
+
+  VLOG(1) << "Popped " << this << " " << std::get<0>(timestamp);
+
+  QueueMessages(std::get<0>(timestamp));
+
+  return std::make_tuple(std::get<0>(timestamp), std::get<1>(timestamp),
+                         std::move(front));
+}
+
+bool SplitMessageReader::MessageHeaderQueue::emplace_back(
+    FlatbufferVector<MessageHeader> &&msg) {
+  CHECK(split_reader != nullptr);
+
+  // If there is no timestamp merger for this queue, nobody is listening.  Drop
+  // the message.  This happens when a log file from another node is replayed,
+  // and the timestamp mergers down stream just don't care.
+  if (timestamp_merger == nullptr) {
+    return false;
+  }
+
+  CHECK(timestamps != msg.message().has_data())
+      << ": Got timestamps and data mixed up on a node. "
+      << FlatbufferToJson(msg);
+
+  data_.emplace_back(std::move(msg));
+
+  if (data_.size() == 1u) {
+    // Yup, new data.  Notify.
+    if (timestamps) {
+      timestamp_merger->UpdateTimestamp(split_reader, front_timestamp());
+    } else {
+      timestamp_merger->Update(split_reader, front_timestamp());
+    }
+  }
+
+  return true;
+}
+
+void SplitMessageReader::MessageHeaderQueue::pop_front() {
+  data_.pop_front();
+  if (data_.size() != 0u) {
+    // Yup, new data.
+    if (timestamps) {
+      timestamp_merger->UpdateTimestamp(split_reader, front_timestamp());
+    } else {
+      timestamp_merger->Update(split_reader, front_timestamp());
+    }
+  }
 }
 
 namespace {
+
+bool SplitMessageReaderHeapCompare(
+    const std::tuple<monotonic_clock::time_point, uint32_t,
+                     SplitMessageReader *>
+        first,
+    const std::tuple<monotonic_clock::time_point, uint32_t,
+                     SplitMessageReader *>
+        second) {
+  if (std::get<0>(first) > std::get<0>(second)) {
+    return true;
+  } else if (std::get<0>(first) == std::get<0>(second)) {
+    if (std::get<1>(first) > std::get<1>(second)) {
+      return true;
+    } else if (std::get<1>(first) == std::get<1>(second)) {
+      return std::get<2>(first) > std::get<2>(second);
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+}
 
 bool ChannelHeapCompare(
     const std::pair<monotonic_clock::time_point, int> first,
@@ -325,8 +614,403 @@ bool ChannelHeapCompare(
 
 }  // namespace
 
-void SortedMessageReader::PushChannelHeap(monotonic_clock::time_point timestamp,
-                                          int channel_index) {
+TimestampMerger::TimestampMerger(
+    const Configuration *configuration,
+    std::vector<SplitMessageReader *> split_message_readers, int channel_index,
+    const Node *target_node, ChannelMerger *channel_merger)
+    : configuration_(configuration),
+      split_message_readers_(std::move(split_message_readers)),
+      channel_index_(channel_index),
+      node_index_(configuration::MultiNode(configuration)
+                      ? configuration::GetNodeIndex(configuration, target_node)
+                      : -1),
+      channel_merger_(channel_merger) {
+  // Tell the readers we care so they know who to notify.
+  VLOG(1) << "Configuring channel " << channel_index << " target node "
+          << FlatbufferToJson(target_node);
+  for (SplitMessageReader *reader : split_message_readers_) {
+    reader->SetTimestampMerger(this, channel_index, target_node);
+  }
+
+  // And then determine if we need to track timestamps.
+  const Channel *channel = configuration->channels()->Get(channel_index);
+  if (!configuration::ChannelIsSendableOnNode(channel, target_node) &&
+      configuration::ChannelIsReadableOnNode(channel, target_node)) {
+    has_timestamps_ = true;
+  }
+}
+
+void TimestampMerger::PushMessageHeap(
+    std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
+        timestamp,
+    SplitMessageReader *split_message_reader) {
+  DCHECK(std::find_if(message_heap_.begin(), message_heap_.end(),
+                      [split_message_reader](
+                          const std::tuple<monotonic_clock::time_point,
+                                           uint32_t, SplitMessageReader *>
+                              x) {
+                        return std::get<2>(x) == split_message_reader;
+                      }) == message_heap_.end())
+      << ": Pushing message when it is already in the heap.";
+
+  message_heap_.push_back(std::make_tuple(
+      std::get<0>(timestamp), std::get<1>(timestamp), split_message_reader));
+
+  std::push_heap(message_heap_.begin(), message_heap_.end(),
+                 &SplitMessageReaderHeapCompare);
+
+  // If we are just a data merger, don't wait for timestamps.
+  if (!has_timestamps_) {
+    channel_merger_->Update(std::get<0>(timestamp), channel_index_);
+    pushed_ = true;
+  }
+}
+
+std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
+TimestampMerger::oldest_message() const {
+  CHECK_GT(message_heap_.size(), 0u);
+  std::tuple<monotonic_clock::time_point, uint32_t, SplitMessageReader *>
+      oldest_message_reader = message_heap_.front();
+  return std::get<2>(oldest_message_reader)->oldest_message(channel_index_);
+}
+
+std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
+TimestampMerger::oldest_timestamp() const {
+  CHECK_GT(timestamp_heap_.size(), 0u);
+  std::tuple<monotonic_clock::time_point, uint32_t, SplitMessageReader *>
+      oldest_message_reader = timestamp_heap_.front();
+  return std::get<2>(oldest_message_reader)
+      ->oldest_message(channel_index_, node_index_);
+}
+
+void TimestampMerger::PushTimestampHeap(
+    std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
+        timestamp,
+    SplitMessageReader *split_message_reader) {
+  DCHECK(std::find_if(timestamp_heap_.begin(), timestamp_heap_.end(),
+                      [split_message_reader](
+                          const std::tuple<monotonic_clock::time_point,
+                                           uint32_t, SplitMessageReader *>
+                              x) {
+                        return std::get<2>(x) == split_message_reader;
+                      }) == timestamp_heap_.end())
+      << ": Pushing timestamp when it is already in the heap.";
+
+  timestamp_heap_.push_back(std::make_tuple(
+      std::get<0>(timestamp), std::get<1>(timestamp), split_message_reader));
+
+  std::push_heap(timestamp_heap_.begin(), timestamp_heap_.end(),
+                 SplitMessageReaderHeapCompare);
+
+  // If we are a timestamp merger, don't wait for data.  Missing data will be
+  // caught at read time.
+  if (has_timestamps_) {
+    channel_merger_->Update(std::get<0>(timestamp), channel_index_);
+    pushed_ = true;
+  }
+}
+
+std::tuple<monotonic_clock::time_point, uint32_t,
+           FlatbufferVector<MessageHeader>>
+TimestampMerger::PopMessageHeap() {
+  // Pop the oldest message reader pointer off the heap.
+  CHECK_GT(message_heap_.size(), 0u);
+  std::tuple<monotonic_clock::time_point, uint32_t, SplitMessageReader *>
+      oldest_message_reader = message_heap_.front();
+
+  std::pop_heap(message_heap_.begin(), message_heap_.end(),
+                &SplitMessageReaderHeapCompare);
+  message_heap_.pop_back();
+
+  // Pop the oldest message.  This re-pushes any messages from the reader to the
+  // message heap.
+  std::tuple<monotonic_clock::time_point, uint32_t,
+             FlatbufferVector<MessageHeader>>
+      oldest_message =
+          std::get<2>(oldest_message_reader)->PopOldest(channel_index_);
+
+  // Confirm that the time and queue_index we have recorded matches.
+  CHECK_EQ(std::get<0>(oldest_message), std::get<0>(oldest_message_reader));
+  CHECK_EQ(std::get<1>(oldest_message), std::get<1>(oldest_message_reader));
+
+  // Now, keep reading until we have found all duplicates.
+  while (message_heap_.size() > 0u) {
+    // See if it is a duplicate.
+    std::tuple<monotonic_clock::time_point, uint32_t, SplitMessageReader *>
+        next_oldest_message_reader = message_heap_.front();
+
+    std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
+        next_oldest_message_time = std::get<2>(next_oldest_message_reader)
+                                       ->oldest_message(channel_index_);
+
+    if (std::get<0>(next_oldest_message_time) == std::get<0>(oldest_message) &&
+        std::get<1>(next_oldest_message_time) == std::get<1>(oldest_message)) {
+      // Pop the message reader pointer.
+      std::pop_heap(message_heap_.begin(), message_heap_.end(),
+                    &SplitMessageReaderHeapCompare);
+      message_heap_.pop_back();
+
+      // Pop the next oldest message.  This re-pushes any messages from the
+      // reader.
+      std::tuple<monotonic_clock::time_point, uint32_t,
+                 FlatbufferVector<MessageHeader>>
+          next_oldest_message = std::get<2>(next_oldest_message_reader)
+                                    ->PopOldest(channel_index_);
+
+      // And make sure the message matches in it's entirety.
+      CHECK(std::get<2>(oldest_message).span() ==
+            std::get<2>(next_oldest_message).span())
+          << ": Data at the same timestamp doesn't match.";
+    } else {
+      break;
+    }
+  }
+
+  return oldest_message;
+}
+
+std::tuple<monotonic_clock::time_point, uint32_t,
+           FlatbufferVector<MessageHeader>>
+TimestampMerger::PopTimestampHeap() {
+  // Pop the oldest message reader pointer off the heap.
+  CHECK_GT(timestamp_heap_.size(), 0u);
+
+  std::tuple<monotonic_clock::time_point, uint32_t, SplitMessageReader *>
+      oldest_timestamp_reader = timestamp_heap_.front();
+
+  std::pop_heap(timestamp_heap_.begin(), timestamp_heap_.end(),
+                &SplitMessageReaderHeapCompare);
+  timestamp_heap_.pop_back();
+
+  CHECK(node_index_ != -1) << ": Timestamps in a single node environment";
+
+  // Pop the oldest message.  This re-pushes any timestamps from the reader to
+  // the timestamp heap.
+  std::tuple<monotonic_clock::time_point, uint32_t,
+             FlatbufferVector<MessageHeader>>
+      oldest_timestamp = std::get<2>(oldest_timestamp_reader)
+                             ->PopOldest(channel_index_, node_index_);
+
+  // Confirm that the time we have recorded matches.
+  CHECK_EQ(std::get<0>(oldest_timestamp), std::get<0>(oldest_timestamp_reader));
+  CHECK_EQ(std::get<1>(oldest_timestamp), std::get<1>(oldest_timestamp_reader));
+
+  // TODO(austin): What if we get duplicate timestamps?
+
+  return oldest_timestamp;
+}
+
+std::tuple<TimestampMerger::DeliveryTimestamp, FlatbufferVector<MessageHeader>>
+TimestampMerger::PopOldest() {
+  if (has_timestamps_) {
+    CHECK_GT(message_heap_.size(), 0u)
+        << ": Missing data from source node, no data available to match "
+           "timestamp on "
+        << configuration::CleanedChannelToString(
+               configuration_->channels()->Get(channel_index_));
+
+    std::tuple<monotonic_clock::time_point, uint32_t,
+               FlatbufferVector<MessageHeader>>
+        oldest_timestamp = PopTimestampHeap();
+
+    TimestampMerger::DeliveryTimestamp timestamp;
+    timestamp.monotonic_event_time =
+        monotonic_clock::time_point(chrono::nanoseconds(
+            std::get<2>(oldest_timestamp).message().monotonic_sent_time()));
+    timestamp.realtime_event_time =
+        realtime_clock::time_point(chrono::nanoseconds(
+            std::get<2>(oldest_timestamp).message().realtime_sent_time()));
+
+    // Consistency check.
+    CHECK_EQ(timestamp.monotonic_event_time, std::get<0>(oldest_timestamp));
+    CHECK_EQ(std::get<2>(oldest_timestamp).message().queue_index(),
+             std::get<1>(oldest_timestamp));
+
+    monotonic_clock::time_point remote_timestamp_monotonic_time(
+        chrono::nanoseconds(
+            std::get<2>(oldest_timestamp).message().monotonic_remote_time()));
+
+    while (true) {
+      {
+        // Ok, now try grabbing data until we find one which matches.
+        std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
+            oldest_message_ref = oldest_message();
+
+        // Time at which the message was sent (this message is written from the
+        // sending node's perspective.
+        monotonic_clock::time_point remote_monotonic_time(chrono::nanoseconds(
+            std::get<2>(oldest_message_ref)->monotonic_sent_time()));
+
+        if (remote_monotonic_time < remote_timestamp_monotonic_time) {
+          LOG(INFO) << "Undelivered message, skipping.  Remote time is "
+                    << remote_monotonic_time << " timestamp is "
+                    << remote_timestamp_monotonic_time << " on channel "
+                    << channel_index_;
+          PopMessageHeap();
+          continue;
+        } else if (remote_monotonic_time > remote_timestamp_monotonic_time) {
+          LOG(INFO) << "Data not found.  Remote time should be "
+                    << remote_timestamp_monotonic_time << " on channel "
+                    << channel_index_;
+          return std::make_tuple(timestamp,
+                                 std::move(std::get<2>(oldest_timestamp)));
+        }
+
+        timestamp.monotonic_remote_time = remote_monotonic_time;
+      }
+
+      std::tuple<monotonic_clock::time_point, uint32_t,
+                 FlatbufferVector<MessageHeader>>
+          oldest_message = PopMessageHeap();
+
+      timestamp.realtime_remote_time =
+          realtime_clock::time_point(chrono::nanoseconds(
+              std::get<2>(oldest_message).message().realtime_sent_time()));
+      timestamp.remote_queue_index =
+          std::get<2>(oldest_message).message().queue_index();
+
+      CHECK_EQ(timestamp.monotonic_remote_time,
+               remote_timestamp_monotonic_time);
+
+      CHECK_EQ(timestamp.remote_queue_index,
+               std::get<2>(oldest_timestamp).message().remote_queue_index())
+          << ": " << FlatbufferToJson(&std::get<2>(oldest_timestamp).message())
+          << " data "
+          << FlatbufferToJson(&std::get<2>(oldest_message).message());
+
+      return std::make_tuple(timestamp, std::get<2>(oldest_message));
+    }
+  } else {
+    std::tuple<monotonic_clock::time_point, uint32_t,
+               FlatbufferVector<MessageHeader>>
+        oldest_message = PopMessageHeap();
+
+    TimestampMerger::DeliveryTimestamp timestamp;
+    timestamp.monotonic_event_time =
+        monotonic_clock::time_point(chrono::nanoseconds(
+            std::get<2>(oldest_message).message().monotonic_sent_time()));
+    timestamp.realtime_event_time =
+        realtime_clock::time_point(chrono::nanoseconds(
+            std::get<2>(oldest_message).message().realtime_sent_time()));
+    timestamp.remote_queue_index = 0xffffffff;
+
+    CHECK_EQ(std::get<0>(oldest_message), timestamp.monotonic_event_time);
+    CHECK_EQ(std::get<1>(oldest_message),
+             std::get<2>(oldest_message).message().queue_index());
+
+    return std::make_tuple(timestamp, std::get<2>(oldest_message));
+  }
+}
+
+namespace {
+std::vector<std::unique_ptr<SplitMessageReader>> MakeSplitMessageReaders(
+    const std::vector<std::vector<std::string>> &filenames) {
+  CHECK_GT(filenames.size(), 0u);
+  // Build up all the SplitMessageReaders.
+  std::vector<std::unique_ptr<SplitMessageReader>> result;
+  for (const std::vector<std::string> &filenames : filenames) {
+    result.emplace_back(std::make_unique<SplitMessageReader>(filenames));
+  }
+  return result;
+}
+}  // namespace
+
+ChannelMerger::ChannelMerger(
+    const std::vector<std::vector<std::string>> &filenames)
+    : split_message_readers_(MakeSplitMessageReaders(filenames)),
+      log_file_header_(
+          CopyFlatBuffer(split_message_readers_[0]->log_file_header())) {
+  // Now, confirm that the configuration matches for each and pick a start time.
+  // Also return the list of possible nodes.
+  for (const std::unique_ptr<SplitMessageReader> &reader :
+       split_message_readers_) {
+    CHECK(CompareFlatBuffer(log_file_header_.message().configuration(),
+                            reader->log_file_header()->configuration()))
+        << ": Replaying log files with different configurations isn't "
+           "supported";
+  }
+
+  nodes_ = configuration::GetNodes(configuration());
+}
+
+bool ChannelMerger::SetNode(const Node *target_node) {
+  std::vector<SplitMessageReader *> split_message_readers;
+  for (const std::unique_ptr<SplitMessageReader> &reader :
+       split_message_readers_) {
+    split_message_readers.emplace_back(reader.get());
+  }
+
+  // Go find a log_file_header for this node.
+  {
+    bool found_node = false;
+
+    for (const std::unique_ptr<SplitMessageReader> &reader :
+         split_message_readers_) {
+      if (CompareFlatBuffer(reader->node(), target_node)) {
+        if (!found_node) {
+          found_node = true;
+          log_file_header_ = CopyFlatBuffer(reader->log_file_header());
+          VLOG(1) << "Found log file " << reader->filename() << " with node "
+                  << FlatbufferToJson(reader->node()) << " start_time "
+                  << monotonic_start_time();
+        } else {
+          // And then make sure all the other files have matching headers.
+          CHECK(CompareFlatBuffer(log_file_header(), reader->log_file_header()))
+              << ": " << FlatbufferToJson(log_file_header()) << " reader "
+              << FlatbufferToJson(reader->log_file_header());
+        }
+      }
+    }
+
+    if (!found_node) {
+      LOG(WARNING) << "Failed to find log file for node "
+                   << FlatbufferToJson(target_node);
+      return false;
+    }
+  }
+
+  // Build up all the timestamp mergers.  This connects up all the
+  // SplitMessageReaders.
+  timestamp_mergers_.reserve(configuration()->channels()->size());
+  for (size_t channel_index = 0;
+       channel_index < configuration()->channels()->size(); ++channel_index) {
+    timestamp_mergers_.emplace_back(
+        configuration(), split_message_readers, channel_index,
+        configuration::GetNode(configuration(), target_node), this);
+  }
+
+  // And prime everything.
+  for (std::unique_ptr<SplitMessageReader> &split_message_reader :
+       split_message_readers_) {
+    split_message_reader->QueueMessages(
+        split_message_reader->monotonic_start_time());
+  }
+
+  node_ = configuration::GetNodeOrDie(configuration(), target_node);
+  return true;
+}
+
+monotonic_clock::time_point ChannelMerger::OldestMessage() const {
+  if (channel_heap_.size() == 0u) {
+    return monotonic_clock::max_time;
+  }
+  return channel_heap_.front().first;
+}
+
+void ChannelMerger::PushChannelHeap(monotonic_clock::time_point timestamp,
+                                    int channel_index) {
+  // Pop and recreate the heap if it has already been pushed.  And since we are
+  // pushing again, we don't need to clear pushed.
+  if (timestamp_mergers_[channel_index].pushed()) {
+    channel_heap_.erase(std::find_if(
+        channel_heap_.begin(), channel_heap_.end(),
+        [channel_index](const std::pair<monotonic_clock::time_point, int> x) {
+          return x.second == channel_index;
+        }));
+    std::make_heap(channel_heap_.begin(), channel_heap_.end(),
+                   ChannelHeapCompare);
+  }
+
   channel_heap_.push_back(std::make_pair(timestamp, channel_index));
 
   // The default sort puts the newest message first.  Use a custom comparator to
@@ -335,60 +1019,152 @@ void SortedMessageReader::PushChannelHeap(monotonic_clock::time_point timestamp,
                  ChannelHeapCompare);
 }
 
-void SortedMessageReader::QueueMessages() {
-  while (true) {
-    // Don't queue if we have enough data already.
-    // When a log file starts, there should be a message from each channel.
-    // Those messages might be very old. Make sure to read a chunk past the
-    // starting time.
-    if (channel_heap_.size() > 0 &&
-        message_reader_->newest_timestamp() >
-            std::max(oldest_message().first, monotonic_start_time()) +
-                message_reader_->max_out_of_order_duration()) {
-      break;
-    }
-
-    if (std::optional<FlatbufferVector<MessageHeader>> msg =
-            message_reader_->ReadMessage()) {
-      EmplaceDataBack(std::move(msg.value()));
-    } else {
-      if (!NextLogFile()) {
-        break;
-      }
-    }
-  }
-}
-
-std::tuple<monotonic_clock::time_point, int, FlatbufferVector<MessageHeader>>
-SortedMessageReader::PopOldestChannel() {
+std::tuple<TimestampMerger::DeliveryTimestamp, int,
+           FlatbufferVector<MessageHeader>>
+ChannelMerger::PopOldest() {
+  CHECK(channel_heap_.size() > 0);
   std::pair<monotonic_clock::time_point, int> oldest_channel_data =
       channel_heap_.front();
+  int channel_index = oldest_channel_data.second;
   std::pop_heap(channel_heap_.begin(), channel_heap_.end(),
                 &ChannelHeapCompare);
   channel_heap_.pop_back();
+  timestamp_mergers_[channel_index].set_pushed(false);
 
-  struct ChannelData &channel = channels_[oldest_channel_data.second];
+  TimestampMerger *merger = &timestamp_mergers_[channel_index];
 
-  FlatbufferVector<MessageHeader> front = std::move(channel.front());
+  // Merger handles any queueing needed from here.
+  std::tuple<TimestampMerger::DeliveryTimestamp,
+             FlatbufferVector<MessageHeader>>
+      message = merger->PopOldest();
 
-  channel.data.pop_front();
+  return std::make_tuple(std::get<0>(message), channel_index,
+                         std::move(std::get<1>(message)));
+}
 
-  // Re-push it and update the oldest timestamp.
-  if (channel.data.size() != 0) {
-    const monotonic_clock::time_point timestamp = monotonic_clock::time_point(
-        chrono::nanoseconds(channel.front().message().monotonic_sent_time()));
-    PushChannelHeap(timestamp, oldest_channel_data.second);
-    channel.oldest_timestamp = timestamp;
-  } else {
-    channel.oldest_timestamp = monotonic_clock::min_time;
+std::string SplitMessageReader::MessageHeaderQueue::DebugString() const {
+  std::stringstream ss;
+  for (size_t i = 0; i < data_.size(); ++i) {
+    if (timestamps) {
+      ss << "        msg: ";
+    } else {
+      ss << "        timestamp: ";
+    }
+    ss << monotonic_clock::time_point(std::chrono::nanoseconds(
+              data_[i].message().monotonic_sent_time()))
+       << " ("
+       << realtime_clock::time_point(
+              std::chrono::nanoseconds(data_[i].message().realtime_sent_time()))
+       << ") " << data_[i].message().queue_index();
+    if (timestamps) {
+      ss << "  <- remote "
+         << monotonic_clock::time_point(std::chrono::nanoseconds(
+                data_[i].message().monotonic_remote_time()))
+         << " ("
+         << realtime_clock::time_point(std::chrono::nanoseconds(
+                data_[i].message().realtime_remote_time()))
+         << ")";
+    }
+    ss << "\n";
   }
 
-  if (oldest_channel_data.first > message_reader_->queue_data_time()) {
-    QueueMessages();
+  return ss.str();
+}
+
+std::string SplitMessageReader::DebugString(int channel) const {
+  std::stringstream ss;
+  ss << "[\n";
+  ss << channels_[channel].data.DebugString();
+  ss << "      ]";
+  return ss.str();
+}
+
+std::string SplitMessageReader::DebugString(int channel, int node_index) const {
+  std::stringstream ss;
+  ss << "[\n";
+  ss << channels_[channel].timestamps[node_index].DebugString();
+  ss << "      ]";
+  return ss.str();
+}
+
+std::string TimestampMerger::DebugString() const {
+  std::stringstream ss;
+
+  if (timestamp_heap_.size() > 0) {
+    ss << "    timestamp_heap {\n";
+    std::vector<
+        std::tuple<monotonic_clock::time_point, uint32_t, SplitMessageReader *>>
+        timestamp_heap = timestamp_heap_;
+    while (timestamp_heap.size() > 0u) {
+      std::tuple<monotonic_clock::time_point, uint32_t, SplitMessageReader *>
+          oldest_timestamp_reader = timestamp_heap.front();
+
+      ss << "      " << std::get<2>(oldest_timestamp_reader) << " "
+         << std::get<0>(oldest_timestamp_reader) << " queue_index ("
+         << std::get<1>(oldest_timestamp_reader) << ") ttq "
+         << std::get<2>(oldest_timestamp_reader)->time_to_queue() << " "
+         << std::get<2>(oldest_timestamp_reader)->filename() << " -> "
+         << std::get<2>(oldest_timestamp_reader)
+                ->DebugString(channel_index_, node_index_)
+         << "\n";
+
+      std::pop_heap(timestamp_heap.begin(), timestamp_heap.end(),
+                    &SplitMessageReaderHeapCompare);
+      timestamp_heap.pop_back();
+    }
+    ss << "    }\n";
   }
 
-  return std::make_tuple(oldest_channel_data.first, oldest_channel_data.second,
-                         std::move(front));
+  ss << "    message_heap {\n";
+  {
+    std::vector<
+        std::tuple<monotonic_clock::time_point, uint32_t, SplitMessageReader *>>
+        message_heap = message_heap_;
+    while (message_heap.size() > 0u) {
+      std::tuple<monotonic_clock::time_point, uint32_t, SplitMessageReader *>
+          oldest_message_reader = message_heap.front();
+
+      ss << "      " << std::get<2>(oldest_message_reader) << " "
+         << std::get<0>(oldest_message_reader) << " queue_index ("
+         << std::get<1>(oldest_message_reader) << ") ttq "
+         << std::get<2>(oldest_message_reader)->time_to_queue() << " "
+         << std::get<2>(oldest_message_reader)->filename() << " -> "
+         << std::get<2>(oldest_message_reader)->DebugString(channel_index_)
+         << "\n";
+
+      std::pop_heap(message_heap.begin(), message_heap.end(),
+                    &SplitMessageReaderHeapCompare);
+      message_heap.pop_back();
+    }
+  }
+  ss << "    }";
+
+  return ss.str();
+}
+
+std::string ChannelMerger::DebugString() const {
+  std::stringstream ss;
+  ss << "start_time " << realtime_start_time() << " " << monotonic_start_time()
+     << "\n";
+  ss << "channel_heap {\n";
+  std::vector<std::pair<monotonic_clock::time_point, int>> channel_heap =
+      channel_heap_;
+  while (channel_heap.size() > 0u) {
+    std::tuple<monotonic_clock::time_point, int> channel = channel_heap.front();
+    ss << "  " << std::get<0>(channel) << " (" << std::get<1>(channel) << ") "
+       << configuration::CleanedChannelToString(
+              configuration()->channels()->Get(std::get<1>(channel)))
+       << "\n";
+
+    ss << timestamp_mergers_[std::get<1>(channel)].DebugString() << "\n";
+
+    std::pop_heap(channel_heap.begin(), channel_heap.end(),
+                  &ChannelHeapCompare);
+    channel_heap.pop_back();
+  }
+  ss << "}";
+
+  return ss.str();
 }
 
 }  // namespace logger

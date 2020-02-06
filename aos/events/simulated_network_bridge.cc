@@ -28,6 +28,8 @@ class RawMessageDelayer {
     Schedule();
   }
 
+  const Channel *channel() const { return fetcher_->channel(); }
+
   // Kicks us to re-fetch and schedule the timer.
   void Schedule() {
     if (fetcher_->context().data == nullptr || sent_) {
@@ -107,10 +109,14 @@ SimulatedMessageBridge::SimulatedMessageBridge(
 
   // Pre-build up event loops for every node.  They are pretty cheap anyways.
   for (const Node *node : simulated_event_loop_factory->nodes()) {
-    CHECK(event_loop_map_
-              .insert({node, simulated_event_loop_factory->MakeEventLoop(
-                                 "message_bridge", node)})
-              .second);
+    auto it = event_loop_map_.insert(
+        {node,
+         simulated_event_loop_factory->MakeEventLoop("message_bridge", node)});
+
+    CHECK(it.second);
+
+    it.first->second->SkipTimingReport();
+    it.first->second->SkipAosLog();
   }
 
   for (const Channel *channel :
@@ -160,6 +166,23 @@ SimulatedMessageBridge::SimulatedMessageBridge(
 }
 
 SimulatedMessageBridge::~SimulatedMessageBridge() {}
+
+void SimulatedMessageBridge::DisableForwarding(const Channel *channel) {
+  for (std::unique_ptr<std::vector<std::unique_ptr<RawMessageDelayer>>>
+           &delayers : delayers_list_) {
+    if (delayers->size() > 0) {
+      if ((*delayers)[0]->channel() == channel) {
+        for (std::unique_ptr<RawMessageDelayer> &delayer : *delayers) {
+          CHECK(delayer->channel() == channel);
+        }
+
+        // If we clear the delayers list, nothing will be scheduled.  Which is a
+        // success!
+        delayers->clear();
+      }
+    }
+  }
+}
 
 }  // namespace message_bridge
 }  // namespace aos

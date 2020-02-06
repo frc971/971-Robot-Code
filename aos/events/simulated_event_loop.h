@@ -98,6 +98,10 @@ class SimulatedEventLoopFactory {
   // Returns the configuration used for everything.
   const Configuration *configuration() const { return configuration_; }
 
+  // Disables forwarding for this channel.  This should be used very rarely only
+  // for things like the logger.
+  void DisableForwarding(const Channel *channel);
+
  private:
   const Configuration *const configuration_;
   EventScheduler scheduler_;
@@ -149,6 +153,14 @@ class NodeEventLoopFactory {
   // measurement.
   inline distributed_clock::time_point ToDistributedClock(
       monotonic_clock::time_point time) const;
+
+  // Note: use this very very carefully.  It can cause massive problems.  This
+  // needs to go away as we properly handle time drifting between nodes.
+  void SetMonotonicNow(monotonic_clock::time_point monotonic_now) {
+    monotonic_clock::duration offset = (monotonic_now - this->monotonic_now());
+    monotonic_offset_ += offset;
+    realtime_offset_ -= offset;
+  }
 
  private:
   friend class SimulatedEventLoopFactory;

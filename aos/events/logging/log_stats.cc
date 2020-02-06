@@ -14,6 +14,8 @@ DEFINE_string(
     name, "",
     "Name to match for printing out channels. Empty means no name filter.");
 
+DEFINE_string(node, "", "Node to print stats out for.");
+
 // define struct to hold all information
 struct ChannelStats {
   // pointer to the channel for which stats are collected
@@ -63,9 +65,23 @@ int main(int argc, char **argv) {
   aos::SimulatedEventLoopFactory log_reader_factory(reader.configuration());
   reader.Register(&log_reader_factory);
 
+  const aos::Node *node = nullptr;
+
+  if (aos::configuration::MultiNode(reader.configuration())) {
+    if (FLAGS_node.empty()) {
+      LOG(INFO) << "Need a --node specified.  The log file has:";
+      for (const aos::Node *node : reader.Nodes()) {
+        LOG(INFO) << "  " << node->name()->string_view();
+      }
+      return 1;
+    } else {
+      node = aos::configuration::GetNode(reader.configuration(), FLAGS_node);
+    }
+  }
+
   // Make an eventloop for retrieving stats
   std::unique_ptr<aos::EventLoop> stats_event_loop =
-      log_reader_factory.MakeEventLoop("logstats", reader.node());
+      log_reader_factory.MakeEventLoop("logstats", node);
   stats_event_loop->SkipTimingReport();
   stats_event_loop->SkipAosLog();
 
