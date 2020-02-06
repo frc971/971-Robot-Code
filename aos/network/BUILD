@@ -1,4 +1,5 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/seasocks:gen_embedded.bzl", "gen_embedded")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
 
 package(default_visibility = ["//visibility:public"])
@@ -233,5 +234,64 @@ cc_test(
         "//aos/events:pong_fbs",
         "//aos/events:shm_event_loop",
         "//aos/testing:googletest",
+    ],
+)
+
+flatbuffer_cc_library(
+    name = "web_proxy_fbs",
+    srcs = ["web_proxy.fbs"],
+    gen_reflections = True,
+)
+
+flatbuffer_ts_library(
+    name = "web_proxy_ts_fbs",
+    srcs = ["web_proxy.fbs"],
+)
+
+cc_library(
+    name = "web_proxy",
+    hdrs = ["web_proxy.h"],
+    srcs = ["web_proxy.cc"],
+    copts = [
+        "-DWEBRTC_POSIX",
+        "-Wno-unused-parameter",
+    ],
+    deps = [
+        ":web_proxy_fbs",
+        "//aos/seasocks:seasocks_logger",
+        "//third_party/seasocks",
+        "//third_party:webrtc",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+gen_embedded(
+    name = "gen_embedded",
+    srcs = glob(
+        include = ["www_defaults/**/*"],
+        exclude = ["www/**/*"],
+    ),
+)
+
+cc_binary(
+    name = "web_proxy_main",
+    srcs = ["web_proxy_main.cc"],
+    deps = [
+        ":web_proxy",
+        ":gen_embedded",
+        "//aos:init",
+        "//aos/seasocks:seasocks_logger",
+        "//third_party/seasocks",
+        "@com_github_google_flatbuffers//:flatbuffers"
+    ],
+    copts = [
+        "-DWEBRTC_POSIX",
+        "-Wno-unused-parameter",
+    ],
+    data = [
+        "//aos/network/www:files",
+        "//aos/network/www:proxy_bundle",
+        "//aos/network/www:flatbuffers",
+        "@com_github_google_flatbuffers//:flatjs"
     ],
 )
