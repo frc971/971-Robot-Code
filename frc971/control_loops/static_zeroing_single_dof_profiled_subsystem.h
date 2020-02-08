@@ -137,6 +137,8 @@ StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus>::
     Iterate(const StaticZeroingSingleDOFProfiledSubsystemGoal *goal,
             const typename ZeroingEstimator::Position *position, double *output,
             flatbuffers::FlatBufferBuilder *status_fbb) {
+  CHECK_NOTNULL(position);
+  CHECK_NOTNULL(status_fbb);
   bool disabled = output == nullptr;
   profiled_subsystem_.Correct(*position);
 

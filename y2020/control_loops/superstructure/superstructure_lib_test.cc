@@ -31,6 +31,8 @@ using ::frc971::control_loops::
 using ::frc971::control_loops::PositionSensorSimulator;
 using ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
 typedef Superstructure::AbsoluteEncoderSubsystem AbsoluteEncoderSubsystem;
+typedef Superstructure::PotAndAbsoluteEncoderSubsystem
+    PotAndAbsoluteEncoderSubsystem;
 
 // Class which simulates the superstructure and sends out queue messages with
 // the position.
@@ -51,9 +53,14 @@ class SuperstructureSimulation {
                           .hood.zeroing_constants.one_revolution_distance),
         intake_plant_(new CappedTestPlant(intake::MakeIntakePlant())),
         intake_encoder_(constants::GetValues()
-                            .intake.zeroing_constants.one_revolution_distance) {
+                            .intake.zeroing_constants.one_revolution_distance),
+        turret_plant_(new CappedTestPlant(turret::MakeTurretPlant())),
+        turret_encoder_(constants::GetValues()
+                            .turret.subsystem_params.zeroing_constants
+                            .one_revolution_distance) {
     InitializeHoodPosition(constants::Values::kHoodRange().upper);
     InitializeIntakePosition(constants::Values::kIntakeRange().upper);
+    InitializeTurretPosition(constants::Values::kTurretRange().middle());
 
     phased_loop_handle_ = event_loop_->AddPhasedLoop(
         [this](int) {
@@ -87,6 +94,16 @@ class SuperstructureSimulation {
             .intake.zeroing_constants.measured_absolute_position);
   }
 
+  void InitializeTurretPosition(double start_pos) {
+    turret_plant_->mutable_X(0, 0) = start_pos;
+    turret_plant_->mutable_X(1, 0) = 0.0;
+
+    turret_encoder_.Initialize(start_pos, kNoiseScalar, 0.0,
+                               constants::GetValues()
+                                   .turret.subsystem_params.zeroing_constants
+                                   .measured_absolute_position);
+  }
+
   // Sends a queue message with the position of the superstructure.
   void SendPositionMessage() {
     ::aos::Sender<Position>::Builder builder =
@@ -102,10 +119,16 @@ class SuperstructureSimulation {
     flatbuffers::Offset<frc971::AbsolutePosition> intake_offset =
         intake_encoder_.GetSensorValues(&intake_builder);
 
+    frc971::PotAndAbsolutePosition::Builder turret_builder =
+        builder.MakeBuilder<frc971::PotAndAbsolutePosition>();
+    flatbuffers::Offset<frc971::PotAndAbsolutePosition> turret_offset =
+        turret_encoder_.GetSensorValues(&turret_builder);
+
     Position::Builder position_builder = builder.MakeBuilder<Position>();
 
     position_builder.add_hood(hood_offset);
     position_builder.add_intake_joint(intake_offset);
+    position_builder.add_turret(turret_offset);
 
     builder.Send(position_builder.Finish());
   }
@@ -116,10 +139,14 @@ class SuperstructureSimulation {
   double intake_position() const { return intake_plant_->X(0, 0); }
   double intake_velocity() const { return intake_plant_->X(1, 0); }
 
+  double turret_position() const { return turret_plant_->X(0, 0); }
+  double turret_velocity() const { return turret_plant_->X(1, 0); }
+
   // Simulates the superstructure for a single timestep.
   void Simulate() {
     const double last_hood_velocity = hood_velocity();
     const double last_intake_velocity = intake_velocity();
+    const double last_turret_velocity = turret_velocity();
 
     EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
     EXPECT_TRUE(superstructure_status_fetcher_.Fetch());
@@ -144,6 +171,16 @@ class SuperstructureSimulation {
     EXPECT_NEAR(superstructure_output_fetcher_->intake_joint_voltage(), 0.0,
                 voltage_check_intake);
 
+    const double voltage_check_turret =
+        (static_cast<PotAndAbsoluteEncoderSubsystem::State>(
+             superstructure_status_fetcher_->turret()->state()) ==
+         PotAndAbsoluteEncoderSubsystem::State::RUNNING)
+            ? constants::GetValues().turret.subsystem_params.operating_voltage
+            : constants::GetValues().turret.subsystem_params.zeroing_voltage;
+
+    EXPECT_NEAR(superstructure_output_fetcher_->turret_voltage(), 0.0,
+                voltage_check_turret);
+
     ::Eigen::Matrix<double, 1, 1> hood_U;
     hood_U << superstructure_output_fetcher_->hood_voltage() +
                   hood_plant_->voltage_offset();
@@ -152,20 +189,30 @@ class SuperstructureSimulation {
     intake_U << superstructure_output_fetcher_->intake_joint_voltage() +
                     intake_plant_->voltage_offset();
 
+    ::Eigen::Matrix<double, 1, 1> turret_U;
+    turret_U << superstructure_output_fetcher_->turret_voltage() +
+                    turret_plant_->voltage_offset();
+
     hood_plant_->Update(hood_U);
     intake_plant_->Update(intake_U);
+    turret_plant_->Update(turret_U);
 
     const double position_hood = hood_plant_->Y(0, 0);
     const double position_intake = intake_plant_->Y(0, 0);
+    const double position_turret = turret_plant_->Y(0, 0);
 
     hood_encoder_.MoveTo(position_hood);
     intake_encoder_.MoveTo(position_intake);
+    turret_encoder_.MoveTo(position_turret);
 
     EXPECT_GE(position_hood, constants::Values::kHoodRange().lower_hard);
     EXPECT_LE(position_hood, constants::Values::kHoodRange().upper_hard);
 
     EXPECT_GE(position_intake, constants::Values::kIntakeRange().lower_hard);
     EXPECT_LE(position_intake, constants::Values::kIntakeRange().upper_hard);
+
+    EXPECT_GE(position_turret, constants::Values::kTurretRange().lower_hard);
+    EXPECT_LE(position_turret, constants::Values::kTurretRange().upper_hard);
 
     const double loop_time = ::aos::time::DurationInSeconds(dt_);
 
@@ -174,6 +221,9 @@ class SuperstructureSimulation {
 
     const double intake_acceleration =
         (intake_velocity() - last_intake_velocity) / loop_time;
+
+    const double turret_acceleration =
+        (turret_velocity() - last_turret_velocity) / loop_time;
 
     EXPECT_GE(peak_hood_acceleration_, hood_acceleration);
     EXPECT_LE(-peak_hood_acceleration_, hood_acceleration);
@@ -184,6 +234,11 @@ class SuperstructureSimulation {
     EXPECT_LE(-peak_intake_acceleration_, intake_acceleration);
     EXPECT_GE(peak_intake_velocity_, intake_velocity());
     EXPECT_LE(-peak_intake_velocity_, intake_velocity());
+
+    EXPECT_GE(peak_turret_acceleration_, turret_acceleration);
+    EXPECT_LE(-peak_turret_acceleration_, turret_acceleration);
+    EXPECT_GE(peak_turret_velocity_, turret_velocity());
+    EXPECT_LE(-peak_turret_velocity_, turret_velocity());
   }
 
   void set_peak_hood_acceleration(double value) {
@@ -195,6 +250,11 @@ class SuperstructureSimulation {
     peak_intake_acceleration_ = value;
   }
   void set_peak_intake_velocity(double value) { peak_intake_velocity_ = value; }
+
+  void set_peak_turret_acceleration(double value) {
+    peak_turret_acceleration_ = value;
+  }
+  void set_peak_turret_velocity(double value) { peak_turret_velocity_ = value; }
 
  private:
   ::aos::EventLoop *event_loop_;
@@ -213,13 +273,18 @@ class SuperstructureSimulation {
   ::std::unique_ptr<CappedTestPlant> intake_plant_;
   PositionSensorSimulator intake_encoder_;
 
+  ::std::unique_ptr<CappedTestPlant> turret_plant_;
+  PositionSensorSimulator turret_encoder_;
+
   // The acceleration limits to check for while moving.
   double peak_hood_acceleration_ = 1e10;
   double peak_intake_acceleration_ = 1e10;
+  double peak_turret_acceleration_ = 1e10;
 
   // The velocity limits to check for while moving.
   double peak_hood_velocity_ = 1e10;
   double peak_intake_velocity_ = 1e10;
+  double peak_turret_velocity_ = 1e10;
 };
 
 class SuperstructureTest : public ::aos::testing::ControlLoopTest {
@@ -255,6 +320,9 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
 
     EXPECT_NEAR(superstructure_goal_fetcher_->intake()->unsafe_goal(),
                 superstructure_status_fetcher_->intake()->position(), 0.001);
+
+    EXPECT_NEAR(superstructure_goal_fetcher_->turret()->unsafe_goal(),
+                superstructure_status_fetcher_->turret()->position(), 0.001);
   }
 
   void CheckIfZeroed() {
@@ -314,10 +382,15 @@ TEST_F(SuperstructureTest, DoesNothing) {
         intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
             *builder.fbb(), constants::Values::kIntakeRange().middle());
 
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kTurretRange().middle() + 1.0);
+
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_hood(hood_offset);
     goal_builder.add_intake(intake_offset);
+    goal_builder.add_turret(turret_offset);
 
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -349,10 +422,15 @@ TEST_F(SuperstructureTest, ReachesGoal) {
             *builder.fbb(), 0.2,
             CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
 
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kTurretRange().middle() + 1.0);
+
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_hood(hood_offset);
     goal_builder.add_intake(intake_offset);
+    goal_builder.add_turret(turret_offset);
 
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -379,10 +457,15 @@ TEST_F(SuperstructureTest, SaturationTest) {
         intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
             *builder.fbb(), constants::Values::kIntakeRange().upper);
 
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kTurretRange().middle() + 1.0);
+
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_hood(hood_offset);
     goal_builder.add_intake(intake_offset);
+    goal_builder.add_turret(turret_offset);
 
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -404,10 +487,15 @@ TEST_F(SuperstructureTest, SaturationTest) {
             *builder.fbb(), constants::Values::kIntakeRange().lower,
             CreateProfileParameters(*builder.fbb(), 20.0, 0.1));
 
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kTurretRange().middle() + 1.0);
+
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_hood(hood_offset);
     goal_builder.add_intake(intake_offset);
+    goal_builder.add_turret(turret_offset);
 
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -416,6 +504,9 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
   superstructure_plant_.set_peak_intake_velocity(23.0);
   superstructure_plant_.set_peak_intake_acceleration(0.2);
+
+  superstructure_plant_.set_peak_turret_velocity(23.0);
+  superstructure_plant_.set_peak_turret_acceleration(0.2);
 
   // Intake needs over 8 seconds to reach the goal
   RunFor(chrono::seconds(9));
@@ -432,6 +523,9 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
 
   EXPECT_EQ(AbsoluteEncoderSubsystem::State::RUNNING,
             superstructure_.intake_joint().state());
+
+  EXPECT_EQ(PotAndAbsoluteEncoderSubsystem::State::RUNNING,
+            superstructure_.turret().state());
 }
 
 // Tests that running disabled works

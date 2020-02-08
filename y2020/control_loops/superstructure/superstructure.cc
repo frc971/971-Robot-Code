@@ -14,7 +14,8 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
     : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
                                                                  name),
       hood_(constants::GetValues().hood),
-      intake_joint_(constants::GetValues().intake) {
+      intake_joint_(constants::GetValues().intake),
+      turret_(constants::GetValues().turret.subsystem_params) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
@@ -26,6 +27,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
     hood_.Reset();
     intake_joint_.Reset();
+    turret_.Reset();
   }
 
   OutputT output_struct;
@@ -43,18 +45,30 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           output != nullptr ? &(output_struct.intake_joint_voltage) : nullptr,
           status->fbb());
 
+  flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
+      turret_status_offset = turret_.Iterate(
+          unsafe_goal != nullptr ? unsafe_goal->turret() : nullptr,
+          position->turret(),
+          output != nullptr ? &(output_struct.turret_voltage) : nullptr,
+          status->fbb());
+
   bool zeroed;
   bool estopped;
 
   {
-    AbsoluteEncoderProfiledJointStatus *hood_status =
+    const AbsoluteEncoderProfiledJointStatus *const hood_status =
         GetMutableTemporaryPointer(*status->fbb(), hood_status_offset);
 
-    AbsoluteEncoderProfiledJointStatus *intake_status =
+    const AbsoluteEncoderProfiledJointStatus *const intake_status =
         GetMutableTemporaryPointer(*status->fbb(), intake_status_offset);
 
-    zeroed = hood_status->zeroed() && intake_status->zeroed();
-    estopped = hood_status->estopped() || intake_status->estopped();
+    const PotAndAbsoluteEncoderProfiledJointStatus *const turret_status =
+        GetMutableTemporaryPointer(*status->fbb(), turret_status_offset);
+
+    zeroed = hood_status->zeroed() && intake_status->zeroed() &&
+             turret_status->zeroed();
+    estopped = hood_status->estopped() || intake_status->estopped() ||
+               turret_status->estopped();
   }
 
   Status::Builder status_builder = status->MakeBuilder<Status>();
@@ -64,6 +78,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   status_builder.add_hood(hood_status_offset);
   status_builder.add_intake(intake_status_offset);
+  status_builder.add_turret(turret_status_offset);
 
   status->Send(status_builder.Finish());
 

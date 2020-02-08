@@ -19,6 +19,10 @@ class Superstructure
   explicit Superstructure(::aos::EventLoop *event_loop,
                           const ::std::string &name = "/superstructure");
 
+  using PotAndAbsoluteEncoderSubsystem =
+      ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
+          ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator,
+          ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>;
   using AbsoluteEncoderSubsystem =
       ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
           ::frc971::zeroing::AbsoluteEncoderZeroingEstimator,
@@ -26,6 +30,7 @@ class Superstructure
 
   const AbsoluteEncoderSubsystem &hood() const { return hood_; }
   const AbsoluteEncoderSubsystem &intake_joint() const { return intake_joint_; }
+  const PotAndAbsoluteEncoderSubsystem &turret() const { return turret_; }
 
  protected:
   virtual void RunIteration(const Goal *unsafe_goal, const Position *position,
@@ -35,6 +40,7 @@ class Superstructure
  private:
   AbsoluteEncoderSubsystem hood_;
   AbsoluteEncoderSubsystem intake_joint_;
+  PotAndAbsoluteEncoderSubsystem turret_;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
