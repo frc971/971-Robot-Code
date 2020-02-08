@@ -438,7 +438,8 @@ class EventLoop {
                                   T::GetFullyQualifiedName(), name(), node());
     CHECK(channel != nullptr)
         << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
-        << T::GetFullyQualifiedName() << "\" } not found in config.";
+        << T::GetFullyQualifiedName() << "\" } not found in config for "
+        << name() << ".";
 
     if (!configuration::ChannelIsSendableOnNode(channel, node())) {
       LOG(FATAL) << "Channel { \"name\": \"" << channel_name
