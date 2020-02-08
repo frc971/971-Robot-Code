@@ -38,6 +38,7 @@ cc_library(
     name = "python2.7_lib",
     srcs = [
         "usr/lib/x86_64-linux-gnu/libpython2.7.so",
+        "usr/lib/x86_64-linux-gnu/libpython2.7.so.1.0",
     ],
     hdrs = glob([
         "usr/include/**/*.h",
