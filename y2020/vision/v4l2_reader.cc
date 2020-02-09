@@ -15,10 +15,7 @@ V4L2Reader::V4L2Reader(aos::EventLoop *event_loop,
   PCHECK(fd_.get() != -1);
 
   // First, clean up after anybody else who left the device streaming.
-  {
-    int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    PCHECK(Ioctl(VIDIOC_STREAMOFF, &type) == 0);
-  }
+  StreamOff();
 
   {
     struct v4l2_format format;
@@ -128,6 +125,20 @@ void V4L2Reader::EnqueueBuffer(int buffer_number) {
       reinterpret_cast<uintptr_t>(buffers_[buffer_number].data_pointer);
   buffer.length = ImageSize();
   PCHECK(Ioctl(VIDIOC_QBUF, &buffer) == 0);
+}
+
+void V4L2Reader::StreamOff() {
+  int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  const int result = Ioctl(VIDIOC_STREAMOFF, &type);
+  if (result == 0) {
+    return;
+  }
+  // Some devices (like Alex's webcam) return this if streaming isn't currently
+  // on, unlike what the documentations says should happen.
+  if (errno == EBUSY) {
+    return;
+  }
+  PLOG(FATAL) << "VIDIOC_STREAMOFF failed";
 }
 
 }  // namespace vision
