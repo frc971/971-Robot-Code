@@ -97,6 +97,22 @@ py_binary(
     ],
 )
 
+py_binary(
+    name = "control_panel",
+    srcs = [
+        "control_panel.py",
+    ],
+    legacy_create_init = False,
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":python_init",
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:angular_system",
+        "//frc971/control_loops/python:controls",
+    ],
+)
+
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
