@@ -28,6 +28,9 @@ table Output {
 
   // Voltage sent to the flywheel. Positive is shooting.
   flywheel_voltage:double;
+
+  // Voltage sent to the motor driving the control panel. Positive is counterclockwise from above.
+  control_panel_voltage:double;
 }
 
 root_type Output;
