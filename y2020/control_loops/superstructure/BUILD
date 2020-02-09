@@ -100,5 +100,6 @@ cc_test(
         "//frc971/control_loops:team_number_test_environment",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//y2020/control_loops/superstructure/hood:hood_plants",
+        "//y2020/control_loops/superstructure/intake:intake_plants",
     ],
 )
