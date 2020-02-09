@@ -2,8 +2,18 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2020.control_loops.superstructure;
 
+table ShooterGoal {
+  // Angular velocity in rad/s of the slowest (lowest) wheel in the kicker.
+  // Positive is shooting the ball.
+  velocity_kicker:double;
+
+  // Angular velocity in rad/s of the flywheel. Positive is shooting.
+  velocity_flywheel:double;
+}
+
 table Goal {
   // Zero is at the horizontal, positive towards the front (meters on the lead screw).
+  // Only applies if hood_tracking = false.
   hood:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
 
   //0 = Linkage on sprocket is pointing straight up
@@ -17,6 +27,22 @@ table Goal {
   // TODO(Kai): Define which wrap of the shooter is 0 if it can rotate past
   // forward more than once.
   turret:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
+
+  // Only applies if shooter_tracking = false.
+  shooter:ShooterGoal;
+
+  // Whether the robot should be shooting balls. Waits until hood, turret, and
+  // shooter are at goal (as determined by auto-tracking or override).
+  shooting:bool;
+
+  // Whether the hood should adjust its position automatically.
+  hood_tracking:bool;
+
+  // Whether the turret should follow the target automatically.
+  turret_tracking:bool;
+
+  // Whether the kicker and flywheel should choose a velocity automatically.
+  shooter_tracking:bool;
 }
 
 root_type Goal;
