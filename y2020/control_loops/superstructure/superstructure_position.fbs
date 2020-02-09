@@ -3,9 +3,11 @@ include "frc971/control_loops/control_loops.fbs";
 namespace y2020.control_loops.superstructure;
 
 table Position {
-
   // Zero is at the horizontal, positive towards the front (meters on the lead screw).
   hood:frc971.AbsolutePosition;
+
+  // Position of the intake. 0 when four-bar is vertical, positive extended.
+  intake_joint:frc971.AbsolutePosition;
 }
 
 root_type Position;

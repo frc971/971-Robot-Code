@@ -12,6 +12,7 @@ table Status {
 
   //Subsystem status.
   hood:frc971.control_loops.AbsoluteEncoderProfiledJointStatus;
+  intake:frc971.control_loops.AbsoluteEncoderProfiledJointStatus;
 }
 
 root_type Status;
