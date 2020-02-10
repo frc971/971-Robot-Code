@@ -15,9 +15,8 @@ table CameraImage {
   cols:int;
   // The image data.
   data:[ubyte];
-  // Timestamp when the frame was captured.
+  // Timestamp when the frame was captured. This is the end-of-frame timestamp.
   monotonic_timestamp_ns:long;
-  realtime_timestamp_ns:long;
 }
 
 root_type CameraImage;

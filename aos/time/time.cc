@@ -115,6 +115,12 @@ struct timespec to_timespec(const ::aos::monotonic_clock::duration duration) {
 struct timespec to_timespec(const ::aos::monotonic_clock::time_point time) {
   return to_timespec(time.time_since_epoch());
 }
+
+::aos::monotonic_clock::time_point from_timeval(struct timeval t) {
+  return monotonic_clock::epoch() + std::chrono::seconds(t.tv_sec) +
+         std::chrono::microseconds(t.tv_usec);
+}
+
 }  // namespace time
 
 constexpr monotonic_clock::time_point monotonic_clock::min_time;

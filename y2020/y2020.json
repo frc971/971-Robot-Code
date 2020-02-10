@@ -31,6 +31,12 @@
       "frequency": 25,
       "max_size": 620000,
       "num_senders": 18
+    },
+    {
+      "name": "/camera",
+      "type": "frc971.vision.sift.ImageMatchResult",
+      "frequency": 25,
+      "max_size": 300000
     }
   ],
   "applications": [

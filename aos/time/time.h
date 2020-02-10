@@ -99,6 +99,9 @@ struct timespec to_timespec(::aos::monotonic_clock::duration duration);
 // epoch.
 struct timespec to_timespec(::aos::monotonic_clock::time_point time);
 
+// Converts a timeval object to a monotonic_clock::time_point.
+::aos::monotonic_clock::time_point from_timeval(struct timeval t);
+
 namespace time_internal {
 
 template <class T>

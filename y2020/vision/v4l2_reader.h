@@ -25,10 +25,10 @@ class V4L2Reader {
 
   // Reads the latest image.
   //
-  // Returns an empty span if no image was available since this object was
-  // created. The data referenced in the return value is valid until this method
-  // is called again.
-  absl::Span<const char> ReadLatestImage();
+  // Returns false if no image was available since the last image was read.
+  // Call LatestImage() to get a reference to the data, which will be valid
+  // until this method is called again.
+  bool ReadLatestImage();
 
   // Sends the latest image.
   //
@@ -37,43 +37,49 @@ class V4L2Reader {
   // ReadLatestImage() will no longer be valid.
   void SendLatestImage();
 
+  const CameraImage &LatestImage() {
+    Buffer *const buffer = &buffers_[saved_buffer_.index];
+    return *flatbuffers::GetTemporaryPointer(*buffer->builder.fbb(),
+                                             buffer->message_offset);
+  }
+
  private:
   static constexpr int kNumberBuffers = 16;
 
   struct Buffer {
-    void InitializeMessage(size_t max_image_size) {
-      builder = aos::Sender<CameraImage>::Builder();
-      builder = sender.MakeBuilder();
-      // The kernel has an undocumented requirement that the buffer is aligned
-      // to 64 bytes. If you give it a nonaligned pointer, it will return EINVAL
-      // and only print something in dmesg with the relevant dynamic debug
-      // prints turned on.
-      builder.fbb()->StartIndeterminateVector(max_image_size, 1, 64,
-                                              &data_pointer);
-      CHECK_EQ(reinterpret_cast<uintptr_t>(data_pointer) % 64, 0u)
-          << ": Flatbuffers failed to align things as requested";
-    }
+    void InitializeMessage(size_t max_image_size);
 
-    void Send(int rows, int cols, size_t image_size) {
-      const auto data_offset =
-          builder.fbb()->EndIndeterminateVector(image_size, 1);
-      auto image_builder = builder.MakeBuilder<CameraImage>();
-      image_builder.add_data(data_offset);
-      image_builder.add_rows(rows);
-      image_builder.add_cols(cols);
-      builder.Send(image_builder.Finish());
-      data_pointer = nullptr;
+    void PrepareMessage(int rows, int cols, size_t image_size,
+                        aos::monotonic_clock::time_point monotonic_eof);
+
+    void Send() {
+      builder.Send(message_offset);
+      message_offset = flatbuffers::Offset<CameraImage>();
     }
 
     absl::Span<const char> DataSpan(size_t image_size) {
-      return absl::Span<const char>(reinterpret_cast<char *>(data_pointer),
-                                    image_size);
+      return absl::Span<const char>(
+          reinterpret_cast<char *>(CHECK_NOTNULL(data_pointer)), image_size);
     }
 
     aos::Sender<CameraImage> sender;
     aos::Sender<CameraImage>::Builder builder;
+    flatbuffers::Offset<CameraImage> message_offset;
 
     uint8_t *data_pointer = nullptr;
+  };
+
+  struct BufferInfo {
+    int index = -1;
+    aos::monotonic_clock::time_point monotonic_eof =
+        aos::monotonic_clock::min_time;
+
+    explicit operator bool() const { return index != -1; }
+
+    void Clear() {
+      index = -1;
+      monotonic_eof = aos::monotonic_clock::min_time;
+    }
   };
 
   // TODO(Brian): This concept won't exist once we start using variable-size
@@ -81,8 +87,8 @@ class V4L2Reader {
   size_t ImageSize() const { return rows_ * cols_ * 2 /* bytes per pixel */; }
 
   // Attempts to dequeue a buffer (nonblocking). Returns the index of the new
-  // buffer, or -1 if there wasn't a frame to dequeue.
-  int DequeueBuffer();
+  // buffer, or BufferInfo() if there wasn't a frame to dequeue.
+  BufferInfo DequeueBuffer();
 
   void EnqueueBuffer(int buffer);
 
@@ -95,7 +101,7 @@ class V4L2Reader {
 
   // If this is non-negative, it's the buffer number we're currently holding
   // onto.
-  int saved_buffer_ = -1;
+  BufferInfo saved_buffer_;
 
   const int rows_ = 480;
   const int cols_ = 640;

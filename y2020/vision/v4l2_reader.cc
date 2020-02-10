@@ -56,63 +56,94 @@ V4L2Reader::V4L2Reader(aos::EventLoop *event_loop,
   }
 }
 
-absl::Span<const char> V4L2Reader::ReadLatestImage() {
+bool V4L2Reader::ReadLatestImage() {
   // First, enqueue any old buffer we already have. This is the one which may
   // have been sent.
-  if (saved_buffer_ != -1) {
-    EnqueueBuffer(saved_buffer_);
-    saved_buffer_ = -1;
+  if (saved_buffer_) {
+    EnqueueBuffer(saved_buffer_.index);
+    saved_buffer_.Clear();
   }
   while (true) {
-    const int previous_buffer = saved_buffer_;
+    const BufferInfo previous_buffer = saved_buffer_;
     saved_buffer_ = DequeueBuffer();
-    if (saved_buffer_ != -1) {
+    if (saved_buffer_) {
       // We got a new buffer. Return the previous one (if relevant) and keep
       // going.
-      if (previous_buffer != -1) {
-        EnqueueBuffer(previous_buffer);
+      if (previous_buffer) {
+        EnqueueBuffer(previous_buffer.index);
       }
       continue;
     }
-    if (previous_buffer == -1) {
+    if (!previous_buffer) {
       // There were no images to read. Return an indication of that.
-      return absl::Span<const char>();
+      return false;
     }
     // We didn't get a new one, but we already got one in a previous
     // iteration, which means we found an image so return it.
     saved_buffer_ = previous_buffer;
-    return buffers_[saved_buffer_].DataSpan(ImageSize());
+    buffers_[saved_buffer_.index].PrepareMessage(rows_, cols_, ImageSize(),
+                                                 saved_buffer_.monotonic_eof);
+    return true;
   }
 }
 
-void V4L2Reader::SendLatestImage() {
-  buffers_[saved_buffer_].Send(rows_, cols_, ImageSize());
+void V4L2Reader::SendLatestImage() { buffers_[saved_buffer_.index].Send(); }
+
+void V4L2Reader::Buffer::InitializeMessage(size_t max_image_size) {
+  message_offset = flatbuffers::Offset<CameraImage>();
+  builder = aos::Sender<CameraImage>::Builder();
+  builder = sender.MakeBuilder();
+  // The kernel has an undocumented requirement that the buffer is aligned
+  // to 64 bytes. If you give it a nonaligned pointer, it will return EINVAL
+  // and only print something in dmesg with the relevant dynamic debug
+  // prints turned on.
+  builder.fbb()->StartIndeterminateVector(max_image_size, 1, 64, &data_pointer);
+  CHECK_EQ(reinterpret_cast<uintptr_t>(data_pointer) % 64, 0u)
+      << ": Flatbuffers failed to align things as requested";
+}
+
+void V4L2Reader::Buffer::PrepareMessage(
+    int rows, int cols, size_t image_size,
+    aos::monotonic_clock::time_point monotonic_eof) {
+  CHECK(data_pointer != nullptr);
+  data_pointer = nullptr;
+
+  const auto data_offset = builder.fbb()->EndIndeterminateVector(image_size, 1);
+  auto image_builder = builder.MakeBuilder<CameraImage>();
+  image_builder.add_data(data_offset);
+  image_builder.add_rows(rows);
+  image_builder.add_cols(cols);
+  image_builder.add_monotonic_timestamp_ns(
+      std::chrono::nanoseconds(monotonic_eof.time_since_epoch()).count());
+  message_offset = image_builder.Finish();
 }
 
 int V4L2Reader::Ioctl(unsigned long number, void *arg) {
   return ioctl(fd_.get(), number, arg);
 }
 
-int V4L2Reader::DequeueBuffer() {
+V4L2Reader::BufferInfo V4L2Reader::DequeueBuffer() {
   struct v4l2_buffer buffer;
   memset(&buffer, 0, sizeof(buffer));
   buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   buffer.memory = V4L2_MEMORY_USERPTR;
   const int result = Ioctl(VIDIOC_DQBUF, &buffer);
   if (result == -1 && errno == EAGAIN) {
-    return -1;
+    return BufferInfo();
   }
   PCHECK(result == 0) << ": VIDIOC_DQBUF failed";
   CHECK_LT(buffer.index, buffers_.size());
-  LOG(INFO) << "dequeued " << buffer.index;
   CHECK_EQ(reinterpret_cast<uintptr_t>(buffers_[buffer.index].data_pointer),
            buffer.m.userptr);
   CHECK_EQ(ImageSize(), buffer.length);
-  return buffer.index;
+  CHECK(buffer.flags & V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC);
+  CHECK_EQ(buffer.flags & V4L2_BUF_FLAG_TSTAMP_SRC_MASK,
+           static_cast<uint32_t>(V4L2_BUF_FLAG_TSTAMP_SRC_EOF));
+  return {static_cast<int>(buffer.index),
+          aos::time::from_timeval(buffer.timestamp)};
 }
 
 void V4L2Reader::EnqueueBuffer(int buffer_number) {
-  LOG(INFO) << "enqueueing " << buffer_number;
   CHECK_GE(buffer_number, 0);
   CHECK_LT(buffer_number, static_cast<int>(buffers_.size()));
   buffers_[buffer_number].InitializeMessage(ImageSize());

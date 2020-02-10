@@ -30,10 +30,20 @@ cc_binary(
     srcs = [
         "camera_reader.cc",
     ],
+    restricted_to = [
+        "//tools:k8",
+        "//tools:armhf-debian",
+    ],
     deps = [
         ":v4l2_reader",
+        ":vision_fbs",
         "//aos:init",
         "//aos/events:shm_event_loop",
+        "//third_party:opencv",
+        "//y2020/vision/sift:demo_sift",
+        "//y2020/vision/sift:sift971",
+        "//y2020/vision/sift:sift_fbs",
+        "//y2020/vision/sift:sift_training_fbs",
     ],
 )
 

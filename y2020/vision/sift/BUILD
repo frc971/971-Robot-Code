@@ -220,3 +220,40 @@ flatbuffer_cc_library(
     includes = [":sift_fbs_includes"],
     visibility = ["//visibility:public"],
 )
+
+py_binary(
+    name = "demo_sift_training",
+    srcs = ["demo_sift_training.py"],
+    default_python_version = "PY3",
+    srcs_version = "PY2AND3",
+    deps = [
+        ":sift_fbs_python",
+        "@opencv_contrib_nonfree_amd64//:python_opencv",
+    ],
+)
+
+genrule(
+    name = "run_demo_sift_training",
+    srcs = [
+        "images/demo/FRC-Image4-cleaned.png",
+    ],
+    outs = [
+        "demo_sift.h",
+    ],
+    cmd = " ".join([
+        "$(location :demo_sift_training)",
+        "$(location images/demo/FRC-Image4-cleaned.png)",
+        "$(location demo_sift.h)",
+    ]),
+    tools = [
+        ":demo_sift_training",
+    ],
+)
+
+cc_library(
+    name = "demo_sift",
+    hdrs = [
+        "demo_sift.h",
+    ],
+    visibility = ["//visibility:public"],
+)

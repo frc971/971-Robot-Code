@@ -110,6 +110,7 @@ aos_config(
         "//y2019/control_loops/drivetrain:target_selector_fbs",
         "//y2020/control_loops/superstructure:superstructure_status_fbs",
         "//y2020/vision:vision_fbs",
+        "//y2020/vision/sift:sift_fbs",
     ],
     visibility = ["//visibility:public"],
     deps = [

@@ -49,6 +49,21 @@ TEST(TimeTest, TimePointToTimespec) {
   EXPECT_EQ(neg_time.tv_nsec, 0);
 }
 
+// Tests from_timeval.
+TEST(TimeTest, TimevalToTimePoint) {
+  struct timeval pos_time;
+  pos_time.tv_sec = 1432423;
+  pos_time.tv_usec = 0;
+  EXPECT_EQ(::aos::monotonic_clock::epoch() + chrono::seconds(1432423),
+            from_timeval(pos_time));
+
+  struct timeval neg_time;
+  neg_time.tv_sec = -1432423;
+  neg_time.tv_usec = 0;
+  EXPECT_EQ(::aos::monotonic_clock::epoch() - chrono::seconds(1432423),
+            from_timeval(neg_time));
+}
+
 // Test that << works with numbers with leading 0's.
 TEST(TimeTest, OperatorStream) {
   const monotonic_clock::time_point t = monotonic_clock::epoch() +

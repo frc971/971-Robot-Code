@@ -82,6 +82,9 @@ table ImageMatchResult {
 
   // The features for this image.
   features:[Feature];
+
+  // Timestamp when the frame was captured.
+  image_monotonic_timestamp_ns:long;
 }
 
 root_type ImageMatchResult;
