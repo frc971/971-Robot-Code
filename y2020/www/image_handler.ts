@@ -2,21 +2,26 @@ import {CameraImage} from 'y2020/vision/vision_generated';
 
 export class ImageHandler {
   private canvas = document.createElement('canvas');
+  private imageBuffer: Uint8ClampedArray|null = null;
+  private imageTimestamp: flatbuffers.Long|null = null;
+  private result: fr971.vision.ImageMatchResult|null = null;
+  private resultTimestamp: flatbuffers.Long|null = null;
 
   constructor() {
     document.body.appendChild(this.canvas);
   }
 
-  handleImage(data: Uint8Array) {
+  handleImage(data: Uint8Array): void {
     const fbBuffer = new flatbuffers.ByteBuffer(data);
     const image = CameraImage.getRootAsCameraImage(fbBuffer);
+    this.imageTimestamp = image.monotonicTimestampNs();
 
     const width = image.cols();
     const height = image.rows();
     if (width === 0 || height === 0) {
       return;
     }
-    const imageBuffer = new Uint8ClampedArray(width * height * 4); // RGBA
+    this.imageBuffer = new Uint8ClampedArray(width * height * 4); // RGBA
 
     // Read four bytes (YUYV) from the data and transform into two pixels of
     // RGBA for canvas
@@ -46,16 +51,47 @@ export class ImageHandler {
       }
     }
 
+    draw();
+  }
+
+  handleImageMetadata(data: Uint8Array): void {
+    const fbBuffer = new flatbuffers.ByteBuffer(data);
+    this.result = frc971.vision.ImageMatchResult.getRootAsImageMatchResult(fbBuffer);
+    this.resultTimestamp = result.imageMonotonicTimestampNs();
+    draw();
+  }
+
+  draw(): void {
+    if (imageTimestamp.low !== resultTimestamp.low ||
+        imageTimestamp.high !== resultTimestamp.high) {
+      return;
+    }
     const ctx = this.canvas.getContext('2d');
 
     this.canvas.width = width;
     this.canvas.height = height;
     const idata = ctx.createImageData(width, height);
-    idata.data.set(imageBuffer);
+    idata.data.set(this.imageBuffer);
     ctx.putImageData(idata, 0, 0);
+    ctx.beginPath();
+    for (const feature of this.result.getFeatures()) {
+      // Based on OpenCV drawKeypoint.
+      ctx.arc(feature.x, feature.y, feature.size, 0, 2 * Math.PI);
+      ctx.moveTo(feature.x, feature.y);
+      // TODO(alex): check that angle is correct (0?, direction?)
+      const angle = feature.angle * Math.PI / 180;
+      ctx.lineTo(
+          feature.x + feature.radius * cos(angle),
+          feature.y + feature.radius * sin(angle));
+    }
+    ctx.stroke();
   }
 
-  getId() {
+  getId(): string {
     return CameraImage.getFullyQualifiedName();
+  }
+
+  getResultId(): string {
+    return frc971.vision.ImageMatchResult.getFullyQualifiedName();
   }
 }
