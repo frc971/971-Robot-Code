@@ -108,6 +108,11 @@ class ActionTest : public ::testing::Test {
     ::aos::testing::EnableTestLogging();
   }
 
+  void RunAt(monotonic_clock::time_point exec_time, std::function<void()> fn) {
+    TimerHandler *timer = test_event_loop_->AddTimer(fn);
+    test_event_loop_->OnRun([timer, exec_time]() { timer->Setup(exec_time); });
+  }
+
   FlatbufferDetachedBuffer<Configuration> configuration_;
 
   // Bring up and down Core.
@@ -158,32 +163,35 @@ TEST_F(ActionTest, StartWithOldGoal) {
 
   ASSERT_FALSE(status_fetcher.Fetch());
 
-  event_loop_factory_.RunFor(chrono::seconds(1));
+  RunAt(monotonic_clock::time_point(chrono::seconds(1)), [&]() {
+    ASSERT_TRUE(status_fetcher.Fetch());
+    EXPECT_EQ(0u, status_fetcher->running());
+    EXPECT_EQ(0u, status_fetcher->last_running());
 
-  ASSERT_TRUE(status_fetcher.Fetch());
-  EXPECT_EQ(0u, status_fetcher->running());
-  EXPECT_EQ(0u, status_fetcher->last_running());
+    {
+      UIntT uint;
+      uint.val = 0;
+      action_queue.EnqueueAction(nop_actor_factory.Make(uint));
+    }
 
-  {
-    UIntT uint;
-    uint.val = 0;
-    action_queue.EnqueueAction(nop_actor_factory.Make(uint));
-  }
+    // We started an action and it should be running.
+    EXPECT_TRUE(action_queue.Running());
 
-  // We started an action and it should be running.
-  EXPECT_TRUE(action_queue.Running());
+    action_queue.CancelAllActions();
+    action_queue.Tick();
 
-  action_queue.CancelAllActions();
-  action_queue.Tick();
-
-  EXPECT_TRUE(action_queue.Running());
+    EXPECT_TRUE(action_queue.Running());
+  });
 
   // Run the action so it can signal completion.
-  event_loop_factory_.RunFor(chrono::seconds(1));
-  action_queue.Tick();
+  RunAt(monotonic_clock::time_point(chrono::seconds(2)), [&]() {
+    action_queue.Tick();
 
-  // Make sure it stopped.
-  EXPECT_FALSE(action_queue.Running());
+    // Make sure it stopped.
+    EXPECT_FALSE(action_queue.Running());
+  });
+
+  event_loop_factory_.RunFor(chrono::seconds(3));
 }
 
 // Tests that an action starts and stops.
@@ -196,29 +204,33 @@ TEST_F(ActionTest, ActionQueueWasRunning) {
   ActionQueue action_queue;
 
   // Tick an empty queue and make sure it was not running.
-  event_loop_factory_.RunFor(chrono::seconds(1));
-  action_queue.Tick();
-  EXPECT_FALSE(action_queue.Running());
+  RunAt(monotonic_clock::time_point(chrono::seconds(1)), [&]() {
+    action_queue.Tick();
+    EXPECT_FALSE(action_queue.Running());
 
-  {
-    UIntT uint;
-    uint.val = 0;
-    action_queue.EnqueueAction(nop_actor_factory.Make(uint));
-  }
+    {
+      UIntT uint;
+      uint.val = 0;
+      action_queue.EnqueueAction(nop_actor_factory.Make(uint));
+    }
 
-  // We started an action and it should be running.
-  EXPECT_TRUE(action_queue.Running());
+    // We started an action and it should be running.
+    EXPECT_TRUE(action_queue.Running());
 
-  // Tick it and make sure it is still running.
-  action_queue.Tick();
-  EXPECT_TRUE(action_queue.Running());
+    // Tick it and make sure it is still running.
+    action_queue.Tick();
+    EXPECT_TRUE(action_queue.Running());
+  });
 
   // Run the action so it can signal completion.
-  event_loop_factory_.RunFor(chrono::seconds(1));
-  action_queue.Tick();
+  RunAt(monotonic_clock::time_point(chrono::seconds(2)), [&]() {
+    action_queue.Tick();
 
-  // Make sure it stopped.
-  EXPECT_FALSE(action_queue.Running());
+    // Make sure it stopped.
+    EXPECT_FALSE(action_queue.Running());
+  });
+
+  event_loop_factory_.RunFor(chrono::seconds(3));
 }
 
 // Tests that we can cancel two actions and have them both stop.
@@ -231,52 +243,55 @@ TEST_F(ActionTest, ActionQueueCancelAll) {
   ActionQueue action_queue;
 
   // Let the actor and action queue start up and confirm nothing is running.
-  event_loop_factory_.RunFor(chrono::seconds(1));
-  action_queue.Tick();
+  RunAt(monotonic_clock::time_point(chrono::seconds(1)), [&]() {
+    action_queue.Tick();
 
-  EXPECT_FALSE(action_queue.Running());
+    EXPECT_FALSE(action_queue.Running());
 
-  // Enqueue two actions to test both cancel. We can have an action and a next
-  // action so we want to test that.
-  {
-    UIntT uint;
-    uint.val = 0;
-    action_queue.EnqueueAction(nop_actor_factory.Make(uint));
-    action_queue.EnqueueAction(nop_actor_factory.Make(uint));
-  }
+    // Enqueue two actions to test both cancel. We can have an action and a next
+    // action so we want to test that.
+    {
+      UIntT uint;
+      uint.val = 0;
+      action_queue.EnqueueAction(nop_actor_factory.Make(uint));
+      action_queue.EnqueueAction(nop_actor_factory.Make(uint));
+    }
 
-  action_queue.Tick();
+    action_queue.Tick();
 
-  // Check that current and next exist.
-  EXPECT_TRUE(action_queue.GetCurrentActionState(nullptr, nullptr, nullptr,
+    // Check that current and next exist.
+    EXPECT_TRUE(action_queue.GetCurrentActionState(nullptr, nullptr, nullptr,
+                                                   nullptr, nullptr, nullptr));
+    EXPECT_TRUE(action_queue.GetNextActionState(nullptr, nullptr, nullptr,
+                                                nullptr, nullptr, nullptr));
+
+    action_queue.CancelAllActions();
+    action_queue.Tick();
+
+    // It should still be running as the actor could not have signaled.
+    EXPECT_TRUE(action_queue.Running());
+
+    bool sent_started, sent_cancel, interrupted;
+    EXPECT_TRUE(action_queue.GetCurrentActionState(
+        nullptr, &sent_started, &sent_cancel, &interrupted, nullptr, nullptr));
+    EXPECT_TRUE(sent_started);
+    EXPECT_TRUE(sent_cancel);
+    EXPECT_FALSE(interrupted);
+
+    EXPECT_FALSE(action_queue.GetNextActionState(nullptr, nullptr, nullptr,
                                                  nullptr, nullptr, nullptr));
-  EXPECT_TRUE(action_queue.GetNextActionState(nullptr, nullptr, nullptr,
-                                              nullptr, nullptr, nullptr));
-
-  action_queue.CancelAllActions();
-  action_queue.Tick();
-
-  // It should still be running as the actor could not have signaled.
-  EXPECT_TRUE(action_queue.Running());
-
-  bool sent_started, sent_cancel, interrupted;
-  EXPECT_TRUE(action_queue.GetCurrentActionState(
-      nullptr, &sent_started, &sent_cancel, &interrupted, nullptr, nullptr));
-  EXPECT_TRUE(sent_started);
-  EXPECT_TRUE(sent_cancel);
-  EXPECT_FALSE(interrupted);
-
-  EXPECT_FALSE(action_queue.GetNextActionState(nullptr, nullptr, nullptr,
-                                               nullptr, nullptr, nullptr));
+  });
 
   // Run the action so it can signal completion.
-  event_loop_factory_.RunFor(chrono::seconds(1));
+  RunAt(monotonic_clock::time_point(chrono::seconds(2)), [&]() {
+    action_queue.Tick();
 
-  action_queue.Tick();
+    // Make sure it stopped.
+    EXPECT_FALSE(action_queue.Running());
+    EXPECT_EQ(1, nop_act.running_count());
+  });
 
-  // Make sure it stopped.
-  EXPECT_FALSE(action_queue.Running());
-  EXPECT_EQ(1, nop_act.running_count());
+  event_loop_factory_.RunFor(chrono::seconds(3));
 }
 
 // Tests that an action that would block forever stops when canceled.
@@ -289,30 +304,34 @@ TEST_F(ActionTest, ActionQueueCancelOne) {
   ActionQueue action_queue;
 
   // Let the actor and action queue start up.
-  event_loop_factory_.RunFor(chrono::seconds(1));
-  action_queue.Tick();
+  RunAt(monotonic_clock::time_point(chrono::seconds(1)), [&]() {
+    action_queue.Tick();
 
-  // Enqueue blocking action.
-  {
-    UIntT uint;
-    uint.val = 0;
-    action_queue.EnqueueAction(cancel_action_factory.Make(uint));
-  }
+    // Enqueue blocking action.
+    {
+      UIntT uint;
+      uint.val = 0;
+      action_queue.EnqueueAction(cancel_action_factory.Make(uint));
+    }
 
-  action_queue.Tick();
-  EXPECT_TRUE(action_queue.Running());
+    action_queue.Tick();
+    EXPECT_TRUE(action_queue.Running());
 
-  // Tell action to cancel.
-  action_queue.CancelCurrentAction();
-  action_queue.Tick();
+    // Tell action to cancel.
+    action_queue.CancelCurrentAction();
+    action_queue.Tick();
+  });
 
   // This will block forever on failure.
   // TODO(ben): prolly a bad way to fail
-  event_loop_factory_.RunFor(chrono::seconds(1));
-  action_queue.Tick();
+  RunAt(monotonic_clock::time_point(chrono::seconds(2)), [&]() {
+    action_queue.Tick();
 
-  // It should still be running as the actor could not have signalled.
-  EXPECT_FALSE(action_queue.Running());
+    // It should still be running as the actor could not have signalled.
+    EXPECT_FALSE(action_queue.Running());
+  });
+
+  event_loop_factory_.RunFor(chrono::seconds(3));
 }
 
 // Tests that 2 actions in a row causes the second one to cancel the first one.
@@ -323,78 +342,84 @@ TEST_F(ActionTest, ActionQueueTwoActions) {
       TestActorNOP::MakeFactory(test_event_loop_.get());
 
   ActionQueue action_queue;
-  // Tick an empty queue and make sure it was not running.
-  event_loop_factory_.RunFor(chrono::seconds(1));
-  action_queue.Tick();
-  EXPECT_FALSE(action_queue.Running());
-
-  // Enqueue action to be canceled.
-  {
-    UIntT uint;
-    uint.val = 0;
-    action_queue.EnqueueAction(nop_actor_factory.Make(uint));
-  }
-  action_queue.Tick();
-
-  // Should still be running as the actor could not have signalled.
-  EXPECT_TRUE(action_queue.Running());
 
   // id for the first time run.
   uint32_t nop_actor_id = 0;
   // Check the internal state and write down id for later use.
   bool sent_started, sent_cancel, interrupted;
-  EXPECT_TRUE(action_queue.GetCurrentActionState(nullptr, &sent_started,
-                                                 &sent_cancel, &interrupted,
-                                                 &nop_actor_id, nullptr));
-  EXPECT_TRUE(sent_started);
-  EXPECT_FALSE(sent_cancel);
-  EXPECT_FALSE(interrupted);
-  ASSERT_NE(0u, nop_actor_id);
-
-  // Add the next action which should ensure the first stopped.
-  {
-    UIntT uint;
-    uint.val = 0;
-    action_queue.EnqueueAction(nop_actor_factory.Make(uint));
-  }
-
   // id for the second run.
   uint32_t nop_actor2_id = 0;
-  // Check the internal state and write down id for later use.
-  EXPECT_TRUE(action_queue.GetNextActionState(nullptr, &sent_started,
-                                              &sent_cancel, &interrupted,
-                                              &nop_actor2_id, nullptr));
-  EXPECT_NE(nop_actor_id, nop_actor2_id);
-  EXPECT_FALSE(sent_started);
-  EXPECT_FALSE(sent_cancel);
-  EXPECT_FALSE(interrupted);
-  ASSERT_NE(0u, nop_actor2_id);
 
-  action_queue.Tick();
+  // Tick an empty queue and make sure it was not running.
+  RunAt(monotonic_clock::time_point(chrono::seconds(1)), [&]() {
+    action_queue.Tick();
+    EXPECT_FALSE(action_queue.Running());
+
+    // Enqueue action to be canceled.
+    {
+      UIntT uint;
+      uint.val = 0;
+      action_queue.EnqueueAction(nop_actor_factory.Make(uint));
+    }
+    action_queue.Tick();
+
+    // Should still be running as the actor could not have signalled.
+    EXPECT_TRUE(action_queue.Running());
+
+    EXPECT_TRUE(action_queue.GetCurrentActionState(nullptr, &sent_started,
+                                                   &sent_cancel, &interrupted,
+                                                   &nop_actor_id, nullptr));
+    EXPECT_TRUE(sent_started);
+    EXPECT_FALSE(sent_cancel);
+    EXPECT_FALSE(interrupted);
+    ASSERT_NE(0u, nop_actor_id);
+
+    // Add the next action which should ensure the first stopped.
+    {
+      UIntT uint;
+      uint.val = 0;
+      action_queue.EnqueueAction(nop_actor_factory.Make(uint));
+    }
+
+    // Check the internal state and write down id for later use.
+    EXPECT_TRUE(action_queue.GetNextActionState(nullptr, &sent_started,
+                                                &sent_cancel, &interrupted,
+                                                &nop_actor2_id, nullptr));
+    EXPECT_NE(nop_actor_id, nop_actor2_id);
+    EXPECT_FALSE(sent_started);
+    EXPECT_FALSE(sent_cancel);
+    EXPECT_FALSE(interrupted);
+    ASSERT_NE(0u, nop_actor2_id);
+
+    action_queue.Tick();
+  });
 
   // Run the action so it can signal completion.
-  event_loop_factory_.RunFor(chrono::seconds(1));
+  RunAt(monotonic_clock::time_point(chrono::seconds(2)), [&]() {
+    action_queue.Tick();
 
-  action_queue.Tick();
+    // Check the new action is the right one.
+    uint32_t test_id = 0;
+    EXPECT_TRUE(action_queue.GetCurrentActionState(
+        nullptr, &sent_started, &sent_cancel, &interrupted, &test_id, nullptr));
+    EXPECT_TRUE(sent_started);
+    EXPECT_FALSE(sent_cancel);
+    EXPECT_FALSE(interrupted);
+    EXPECT_EQ(nop_actor2_id, test_id);
 
-  // Check the new action is the right one.
-  uint32_t test_id = 0;
-  EXPECT_TRUE(action_queue.GetCurrentActionState(
-      nullptr, &sent_started, &sent_cancel, &interrupted, &test_id, nullptr));
-  EXPECT_TRUE(sent_started);
-  EXPECT_FALSE(sent_cancel);
-  EXPECT_FALSE(interrupted);
-  EXPECT_EQ(nop_actor2_id, test_id);
-
-  // Make sure it is still going.
-  EXPECT_TRUE(action_queue.Running());
+    // Make sure it is still going.
+    EXPECT_TRUE(action_queue.Running());
+  });
 
   // Now let everything finish.
-  event_loop_factory_.RunFor(chrono::seconds(1));
-  action_queue.Tick();
+  RunAt(monotonic_clock::time_point(chrono::seconds(3)), [&]() {
+    action_queue.Tick();
 
-  // Make sure it stopped.
-  EXPECT_FALSE(action_queue.Running());
+    // Make sure it stopped.
+    EXPECT_FALSE(action_queue.Running());
+  });
+
+  event_loop_factory_.RunFor(chrono::seconds(4));
 }
 
 // Tests that we do get an index with our goal
@@ -403,51 +428,53 @@ TEST_F(ActionTest, ActionIndex) {
 
   TestActorIndex::Factory test_actor_index_factory =
       TestActorIndex::MakeFactory(test_event_loop_.get());
+  ::aos::Fetcher<actions::TestActionGoal> goal_fetcher_ =
+      test_event_loop_->MakeFetcher<actions::TestActionGoal>("/test_action");
 
   ActionQueue action_queue;
   // Tick an empty queue and make sure it was not running.  Also tick the
   // factory to allow it to send out the initial cancel message.
-  event_loop_factory_.RunFor(chrono::seconds(1));
-  action_queue.Tick();
+  RunAt(monotonic_clock::time_point(chrono::seconds(1)), [&]() {
+    action_queue.Tick();
 
-  EXPECT_FALSE(action_queue.Running());
+    EXPECT_FALSE(action_queue.Running());
 
-  // Enqueue action to post index.
-  {
-    UIntT uint;
-    uint.val = 5;
-    action_queue.EnqueueAction(test_actor_index_factory.Make(uint));
-  }
-  ::aos::Fetcher<actions::TestActionGoal> goal_fetcher_ =
-      test_event_loop_->MakeFetcher<actions::TestActionGoal>(
-          "/test_action");
+    // Enqueue action to post index.
+    {
+      UIntT uint;
+      uint.val = 5;
+      action_queue.EnqueueAction(test_actor_index_factory.Make(uint));
+    }
 
-  ASSERT_TRUE(goal_fetcher_.Fetch());
-  EXPECT_EQ(5u, goal_fetcher_->params()->val());
-  EXPECT_EQ(0u, idx_actor.index);
+    ASSERT_TRUE(goal_fetcher_.Fetch());
+    EXPECT_EQ(5u, goal_fetcher_->params()->val());
+    EXPECT_EQ(0u, idx_actor.index);
 
-  action_queue.Tick();
+    action_queue.Tick();
+  });
 
   // Run the next action so it can accomplish signal completion.
-  event_loop_factory_.RunFor(chrono::seconds(1));
+  RunAt(monotonic_clock::time_point(chrono::seconds(2)), [&]() {
+    action_queue.Tick();
+    EXPECT_EQ(5u, idx_actor.index);
 
-  action_queue.Tick();
-  EXPECT_EQ(5u, idx_actor.index);
-
-  // Enqueue action to post index.
-  {
-    UIntT uint;
-    uint.val = 3;
-    action_queue.EnqueueAction(test_actor_index_factory.Make(uint));
-  }
-  ASSERT_TRUE(goal_fetcher_.Fetch());
-  EXPECT_EQ(3u, goal_fetcher_->params()->val());
+    // Enqueue action to post index.
+    {
+      UIntT uint;
+      uint.val = 3;
+      action_queue.EnqueueAction(test_actor_index_factory.Make(uint));
+    }
+    ASSERT_TRUE(goal_fetcher_.Fetch());
+    EXPECT_EQ(3u, goal_fetcher_->params()->val());
+  });
 
   // Run the next action so it can accomplish signal completion.
-  event_loop_factory_.RunFor(chrono::seconds(1));
+  RunAt(monotonic_clock::time_point(chrono::seconds(3)), [&]() {
+    action_queue.Tick();
+    EXPECT_EQ(3u, idx_actor.index);
+  });
 
-  action_queue.Tick();
-  EXPECT_EQ(3u, idx_actor.index);
+  event_loop_factory_.RunFor(chrono::seconds(3));
 }
 
 // Tests that an action with a structure params works.
@@ -458,32 +485,37 @@ TEST_F(ActionTest, StructParamType) {
       TestActor2Nop::MakeFactory(test_event_loop_.get());
 
   ActionQueue action_queue;
-  // Tick an empty queue and make sure it was not running.
-  action_queue.Tick();
-  EXPECT_FALSE(action_queue.Running());
 
-  actions::MyParamsT p;
-  p.param1 = 5.0;
-  p.param2 = 7;
+  RunAt(monotonic_clock::time_point(chrono::seconds(0)), [&]() {
+    // Tick an empty queue and make sure it was not running.
+    action_queue.Tick();
+    EXPECT_FALSE(action_queue.Running());
 
-  action_queue.EnqueueAction(test_action_2_nop_factory.Make(p));
+    actions::MyParamsT p;
+    p.param1 = 5.0;
+    p.param2 = 7;
 
-  // We started an action and it should be running.
-  EXPECT_TRUE(action_queue.Running());
+    action_queue.EnqueueAction(test_action_2_nop_factory.Make(p));
 
-  // Tick it and make sure it is still running.
-  action_queue.Tick();
-  EXPECT_TRUE(action_queue.Running());
+    // We started an action and it should be running.
+    EXPECT_TRUE(action_queue.Running());
+
+    // Tick it and make sure it is still running.
+    action_queue.Tick();
+    EXPECT_TRUE(action_queue.Running());
+  });
 
   // Run the action so it can signal completion.
   // The actor takes no time, but running for a second is the best way to get it
   // to go.
-  event_loop_factory_.RunFor(chrono::seconds(1));
+  RunAt(monotonic_clock::time_point(chrono::seconds(1)), [&]() {
+    action_queue.Tick();
 
-  action_queue.Tick();
+    // Make sure it stopped.
+    EXPECT_FALSE(action_queue.Running());
+  });
 
-  // Make sure it stopped.
-  EXPECT_FALSE(action_queue.Running());
+  event_loop_factory_.RunFor(chrono::seconds(2));
 }
 
 }  // namespace testing
