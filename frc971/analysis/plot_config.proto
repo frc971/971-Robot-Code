@@ -45,6 +45,9 @@ message Line {
 message Axes {
   repeated Line line = 1;
   optional string ylabel = 2;
+  optional string xlabel = 3 [default = "Monotonic Time (sec)"];
+  // Whether to share an x-axis with all the other axes.
+  optional bool share_x_axis = 4 [default = true];
 }
 
 // Message representing a single pyplot figure.
