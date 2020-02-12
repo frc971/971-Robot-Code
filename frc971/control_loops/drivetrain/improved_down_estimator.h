@@ -112,21 +112,30 @@ class QuaternionUkf {
   // Measurements to use for correcting the estimated system state. These
   // correspond to (x, y, z) measurements from the accelerometer.
   constexpr static int kNumMeasurements = 3;
-  QuaternionUkf() {
-    // TODO(james): Tune the process/measurement noises.
+  QuaternionUkf(const Eigen::Matrix<double, 3, 3> &imu_transform =
+                    Eigen::Matrix<double, 3, 3>::Identity())
+      : imu_transform_(imu_transform) {
+    // The various noise matrices are tuned to provide values that seem
+    // reasonable given our current setup (using the ADIS16470 for
+    // measurements).
     R_.setIdentity();
-    R_ /= 100.0;
+    R_ /= std::pow(1000.0, 2);
 
     Q_.setIdentity();
-    Q_ /= 10000.0;
+    Q_ /= std::pow(2000.0 * 500.0, 2);
 
     // Assume that the robot starts flat on the ground pointed straight forward.
     X_hat_ = Eigen::Quaternion<double>(1.0, 0.0, 0.0, 0.0);
 
-    // TODO(james): Determine an appropriate starting noise estimate. Probably
-    // not too critical.
     P_.setIdentity();
     P_ /= 1000.0;
+
+    pos_vel_.setZero();
+    for (auto &last_accel : last_accels_) {
+      last_accel.setZero();
+    }
+
+    last_yaw_rates_.fill(0);
   }
 
   // Handles updating the state of the UKF, given the gyro and accelerometer
@@ -135,6 +144,8 @@ class QuaternionUkf {
   // dt is the length of the current timestep.
   // U specifically corresponds with the U in the paper, which corresponds with
   // the input to the system used by the filter.
+  // Accelerometer measurements should be in g's, and gyro measurements in
+  // radians / sec.
   void Predict(const Eigen::Matrix<double, kNumInputs, 1> &U,
                const Eigen::Matrix<double, kNumMeasurements, 1> &measurement,
                const aos::monotonic_clock::duration dt);
@@ -159,7 +170,57 @@ class QuaternionUkf {
 
   Eigen::Matrix<double, kNumMeasurements, 1> Z_hat() const { return Z_hat_; };
 
+  Eigen::Matrix<double, 6, 1> pos_vel() const { return pos_vel_; }
+  double yaw() const { return yaw_; }
+  double avg_recent_yaw_rates() const {
+    double avg = 0.0;
+    for (const auto &yaw_rate : last_yaw_rates_) {
+      avg += yaw_rate;
+    };
+    avg /= last_yaw_rates_.size();
+    return avg;
+  }
+  Eigen::Matrix<double, 3, 1> avg_recent_accel() const {
+    Eigen::Vector3d avg;
+    avg.setZero();
+    for (const auto &accel : last_accels_) {
+      avg += accel;
+    };
+    avg /= last_accels_.size();
+    return avg;
+  }
+
+  double gravity_magnitude() const { return gravity_magnitude_; }
+  int consecutive_still() const { return consecutive_still_; }
+
+  // Causes the down estimator to assume that gravity is exactly one g and that
+  // the accelerometer readings have no meaningful noise. This is used for
+  // dealing with tests where the IMU readings are actually nearly perfect.
+  void assume_perfect_gravity() { assume_perfect_gravity_ = true; }
+
+ protected:
+  // Updates the position/velocity integration.
+  void UpdatePosition(aos::monotonic_clock::duration dt,
+                      const Eigen::Vector3d &accel);
+
+  aos::monotonic_clock::time_point last_pos_vel_update_ =
+      aos::monotonic_clock::min_time;
+
  private:
+  // Length of buffer to maintain for averaging recent acceleration/gyro values.
+  static constexpr size_t kBufferSize = 10;
+
+  // Does all the heavy lifting from the Predict() call.
+  void DoPredict(const Eigen::Vector3d &accel, const Eigen::Vector3d &gyro,
+                 const aos::monotonic_clock::duration dt);
+  // Runs some cleanup that needs to happen at the end of any iteration.
+  void IterationCleanup(const Eigen::Vector3d &accel,
+                        const Eigen::Vector3d &gyro);
+
+  // Takes in the current pos_vel_ vector as well as an acceleration in the
+  // world-frame and returns the derivative. All numbers in m, m/s, or m/s/s.
+  Eigen::Matrix<double, 6, 1> PosVelDerivative(
+      const Eigen::Matrix<double, 6, 1> &pos_vel, const Eigen::Vector3d &accel);
   // Measurement Noise (Uncertainty)
   Eigen::Matrix<double, kNumInputs, kNumInputs> R_;
   // Model noise. Note that both this and P are 3 x 3 matrices, despite the
@@ -173,8 +234,46 @@ class QuaternionUkf {
 
   // Current expected accelerometer measurement.
   Eigen::Matrix<double, kNumMeasurements, 1> Z_hat_;
+
+  // Current position and velocity vector in format:
+  // {pos_x, pos_y, pos_z, vel_x, vel_y, vel_z}, in meters and meters / sec.
+  // This is just used for cosmetic purposes, as it only accounts for IMU
+  // measurements and so is prone to drift.
+  Eigen::Matrix<double, 6, 1> pos_vel_;
+  // Current yaw estimate, obtained purely by integrating the gyro measurements.
+  double yaw_ = 0;
+  // Circular buffer in which to store the most recent acceleration
+  // measurements. These accelerations are transformed into the robot's yaw
+  // frame and have gravity removed (i.e., the users of last_accels_ should not
+  // have to worry about pitch/roll or the gravitational component of the
+  // acceleration).
+  // As such, x is the robot's longitudinal acceleration, y is the lateral
+  // acceleration, and z is the up/down acceleration. All are in m/s/s.
+  int buffer_index_ = 0;
+  std::array<Eigen::Matrix<double, 3, 1>, kBufferSize> last_accels_;
+  // Array of the most recent yaw rates, in rad/sec.
+  std::array<double, kBufferSize> last_yaw_rates_;
+
+  // Number of consecutive iterations in which we think that the robot has been
+  // in a zero-acceleration state. We only accept accelerometer corrections to
+  // the down estimator when we've been static for a sufficiently long time.
+  int consecutive_still_ = 0;
+  // This variable tracks the current estimated acceleration due to gravity, in
+  // g's. This helps to compensate for both local variations in gravity as well
+  // as for calibration errors on individual accelerometer axes.
+  double gravity_magnitude_ = 1.0;
+
+  // The transformation from the IMU's frame to the robot frame.
+  Eigen::Matrix<double, 3, 3> imu_transform_;
+
+  bool assume_perfect_gravity_ = false;
 };
 
+// TODO(james): The lines between DrivetrainUkf and QuaternionUkf have blurred
+// to the point where there is minimal distinction. Either remove the
+// unnecessary abstraction or figure out what we actually care about abstracting
+// (e.g., we do eventually need to add some ability to provide a custom
+// accelerometer calibration).
 class DrivetrainUkf : public QuaternionUkf {
  public:
   // UKF for http://kodlab.seas.upenn.edu/uploads/Arun/UKFpaper.pdf
@@ -228,12 +327,16 @@ class DrivetrainUkf : public QuaternionUkf {
     // determine that calibration routines would be unnecessary).
     Eigen::Quaternion<double> Xquat(X);
     Eigen::Matrix<double, 3, 1> gprime =
-        Xquat.conjugate() * Eigen::Matrix<double, 3, 1>(0.0, 0.0, 1.0);
+        Xquat.conjugate() * Eigen::Matrix<double, 3, 1>(0.0, 0.0, 1.0) *
+        1.0;
     return gprime;
   }
 
+  void UpdateIntegratedPositions(aos::monotonic_clock::time_point now);
+
   flatbuffers::Offset<DownEstimatorState> PopulateStatus(
-      flatbuffers::FlatBufferBuilder *fbb) const;
+      flatbuffers::FlatBufferBuilder *fbb,
+      aos::monotonic_clock::time_point now);
 };
 
 }  // namespace drivetrain

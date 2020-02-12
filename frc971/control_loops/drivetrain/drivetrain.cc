@@ -58,6 +58,9 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
     // present.
     imu_values_fetcher_.Fetch();
   });
+  if (dt_config.is_simulated) {
+    down_estimator_.assume_perfect_gravity();
+  }
 }
 
 int DrivetrainLoop::ControllerIndexFromGears() {
@@ -316,7 +319,10 @@ void DrivetrainLoop::RunIteration(
         dt_openloop_.PopulateStatus(status->fbb());
 
     const flatbuffers::Offset<DownEstimatorState> down_estimator_state_offset =
-        down_estimator_.PopulateStatus(status->fbb());
+        down_estimator_.PopulateStatus(status->fbb(), monotonic_now);
+
+    const flatbuffers::Offset<ImuZeroerState> zeroer_offset =
+        imu_zeroer_.PopulateStatus(status->fbb());
 
     flatbuffers::Offset<LineFollowLogging> line_follow_logging_offset =
         dt_line_follow_.PopulateStatus(status);
@@ -357,6 +363,7 @@ void DrivetrainLoop::RunIteration(
     builder.add_line_follow_logging(line_follow_logging_offset);
     builder.add_trajectory_logging(trajectory_logging_offset);
     builder.add_down_estimator(down_estimator_state_offset);
+    builder.add_zeroing(zeroer_offset);
     status->Send(builder.Finish());
   }
 

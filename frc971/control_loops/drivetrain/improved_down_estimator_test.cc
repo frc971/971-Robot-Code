@@ -27,7 +27,7 @@ bool QuaternionEqual(const Eigen::Quaterniond &a, const Eigen::Quaterniond &b,
 
 // Do a known transformation to see if quaternion integration is working
 // correctly.
-TEST(RungeKuttaTest, QuaternionIntegral) {
+TEST(DownEstimatorTest, QuaternionIntegral) {
   Eigen::Vector3d ux = Eigen::Vector3d::UnitX();
   Eigen::Vector3d uy = Eigen::Vector3d::UnitY();
   Eigen::Vector3d uz = Eigen::Vector3d::UnitZ();
@@ -90,7 +90,7 @@ TEST(RungeKuttaTest, QuaternionIntegral) {
   EXPECT_NEAR(0.0, (uz - integral3 * uz).norm(), 5e-2);
 }
 
-TEST(RungeKuttaTest, UkfConstantRotation) {
+TEST(DownEstimatorTest, UkfConstantRotation) {
   drivetrain::DrivetrainUkf dtukf;
   const Eigen::Vector3d ux = Eigen::Vector3d::UnitX();
   EXPECT_EQ(0.0,
@@ -111,42 +111,53 @@ TEST(RungeKuttaTest, UkfConstantRotation) {
 }
 
 // Tests that the euler angles in the status message are correct.
-TEST(RungeKuttaTest, UkfEulerStatus) {
+TEST(DownEstimatorTest, UkfEulerStatus) {
   drivetrain::DrivetrainUkf dtukf;
   const Eigen::Vector3d ux = Eigen::Vector3d::UnitX();
   const Eigen::Vector3d uy = Eigen::Vector3d::UnitY();
   const Eigen::Vector3d uz = Eigen::Vector3d::UnitZ();
   // First, rotate 3 radians in the yaw axis, then 0.5 radians in the pitch
   // axis, and then 0.1 radians about the roll axis.
+  // The down estimator should ignore any of the pitch movement.
   constexpr double kYaw = 3.0;
   constexpr double kPitch = 0.5;
   constexpr double kRoll = 0.1;
   Eigen::Matrix<double, 3, 1> measurement;
   measurement.setZero();
+  aos::monotonic_clock::time_point now = aos::monotonic_clock::epoch();
+  const std::chrono::milliseconds dt(5);
+  // Run a bunch of one-second rotations at the appropriate rate to cause the
+  // total pitch/roll/yaw to be kPitch/kRoll/kYaw.
   for (int ii = 0; ii < 200; ++ii) {
-    dtukf.Predict(uz * kYaw, measurement, std::chrono::milliseconds(5));
+    dtukf.UpdateIntegratedPositions(now);
+    now += dt;
+    dtukf.Predict(uz * kYaw, measurement, dt);
   }
   for (int ii = 0; ii < 200; ++ii) {
-    dtukf.Predict(uy * kPitch, measurement, std::chrono::milliseconds(5));
+    dtukf.UpdateIntegratedPositions(now);
+    now += dt;
+    dtukf.Predict(uy * kPitch, measurement, dt);
   }
+  EXPECT_FLOAT_EQ(kYaw, dtukf.yaw());
   for (int ii = 0; ii < 200; ++ii) {
-    dtukf.Predict(ux * kRoll, measurement, std::chrono::milliseconds(5));
+    dtukf.UpdateIntegratedPositions(now);
+    now += dt;
+    dtukf.Predict(ux * kRoll, measurement, dt);
   }
-  const Eigen::Quaterniond expected(Eigen::AngleAxis<double>(kYaw, uz) *
-                                    Eigen::AngleAxis<double>(kPitch, uy) *
+  EXPECT_FLOAT_EQ(kYaw, dtukf.yaw());
+  const Eigen::Quaterniond expected(Eigen::AngleAxis<double>(kPitch, uy) *
                                     Eigen::AngleAxis<double>(kRoll, ux));
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
-  fbb.Finish(dtukf.PopulateStatus(&fbb));
+  fbb.Finish(dtukf.PopulateStatus(&fbb, now));
 
   aos::FlatbufferDetachedBuffer<drivetrain::DownEstimatorState> state(
       fbb.Release());
   EXPECT_EQ(kPitch, state.message().longitudinal_pitch());
-  EXPECT_EQ(kYaw, state.message().yaw());
   // The longitudinal pitch is not actually the same number as the roll, so we
   // don't check it here.
 
-  EXPECT_TRUE(QuaternionEqual(expected, dtukf.X_hat(), 0.01))
+  EXPECT_TRUE(QuaternionEqual(expected, dtukf.X_hat(), 0.0001))
       << "Expected: " << expected.coeffs()
       << " Got: " << dtukf.X_hat().coeffs();
 }
@@ -155,7 +166,7 @@ TEST(RungeKuttaTest, UkfEulerStatus) {
 // Tests that if the gyro indicates no movement but that the accelerometer shows
 // that we are slightly rotated, that we eventually adjust our estimate to be
 // correct.
-TEST(RungeKuttaTest, UkfAccelCorrectsBias) {
+TEST(DownEstimatorTest, UkfAccelCorrectsBias) {
   drivetrain::DrivetrainUkf dtukf;
   const Eigen::Vector3d ux = Eigen::Vector3d::UnitX();
   Eigen::Matrix<double, 3, 1> measurement;
@@ -180,31 +191,33 @@ TEST(RungeKuttaTest, UkfAccelCorrectsBias) {
 // Tests that if the accelerometer is reading values with a magnitude that isn't ~1g,
 // that we are slightly rotated, that we eventually adjust our estimate to be
 // correct.
-TEST(RungeKuttaTest, UkfIgnoreBadAccel) {
+TEST(DownEstimatorTest, UkfIgnoreBadAccel) {
   drivetrain::DrivetrainUkf dtukf;
-  const Eigen::Vector3d uz = Eigen::Vector3d::UnitZ();
+  const Eigen::Vector3d uy = Eigen::Vector3d::UnitY();
   Eigen::Matrix<double, 3, 1> measurement;
   // Set up a scenario where, if we naively took the accelerometer readings, we
   // would think that we were rotated. But the gyro readings indicate that we
-  // are only rotating about the Z (yaw) axis.
+  // are only rotating about the Y (pitch) axis.
   measurement << 0.3, 1.0, 0.0;
   for (int ii = 0; ii < 200; ++ii) {
-    dtukf.Predict({0.0, 0.0, 1.0}, measurement, std::chrono::milliseconds(5));
+    dtukf.Predict({0.0, M_PI_2, 0.0}, measurement,
+                  std::chrono::milliseconds(5));
   }
-  const Eigen::Quaterniond expected(Eigen::AngleAxis<double>(1.0, uz));
+  const Eigen::Quaterniond expected(Eigen::AngleAxis<double>(M_PI_2, uy));
   EXPECT_TRUE(QuaternionEqual(expected, dtukf.X_hat(), 1e-1))
       << "Expected: " << expected.coeffs()
       << " Got: " << dtukf.X_hat().coeffs();
   EXPECT_NEAR(
       0.0,
-      (Eigen::Vector3d(0.0, 0.0, 1.0) - dtukf.H(dtukf.X_hat().coeffs())).norm(),
+      (Eigen::Vector3d(-1.0, 0.0, 0.0) - dtukf.H(dtukf.X_hat().coeffs()))
+          .norm(),
       1e-10)
       << dtukf.H(dtukf.X_hat().coeffs());
 }
 
 // Tests that small perturbations around a couple quaternions averaged out
 // return the original quaternion.
-TEST(RungeKuttaTest, QuaternionMean) {
+TEST(DownEstimatorTest, QuaternionMean) {
   Eigen::Matrix<double, 4, 7> vectors;
   vectors.col(0) << 0, 0, 0, 1;
   for (int i = 0; i < 3; ++i) {
@@ -229,7 +242,7 @@ TEST(RungeKuttaTest, QuaternionMean) {
 
 // Tests that computing sigma points, and then computing the mean and covariance
 // returns the original answer.
-TEST(RungeKuttaTest, SigmaPoints) {
+TEST(DownEstimatorTest, SigmaPoints) {
   const Eigen::Quaternion<double> mean(
       Eigen::AngleAxis<double>(M_PI / 2.0, Eigen::Vector3d::UnitX()));
 
@@ -260,7 +273,7 @@ TEST(RungeKuttaTest, SigmaPoints) {
 
 // Tests that computing sigma points with a large covariance that will precisely
 // wrap, that we do clip the perturbations.
-TEST(RungeKuttaTest, ClippedSigmaPoints) {
+TEST(DownEstimatorTest, ClippedSigmaPoints) {
   const Eigen::Quaternion<double> mean(
       Eigen::AngleAxis<double>(M_PI / 2.0, Eigen::Vector3d::UnitX()));
 
@@ -291,7 +304,7 @@ TEST(RungeKuttaTest, ClippedSigmaPoints) {
 }
 
 // Tests that ToRotationVectorFromQuaternion works for a 0 rotation.
-TEST(RungeKuttaTest, ToRotationVectorFromQuaternionAtZero) {
+TEST(DownEstimatorTest, ToRotationVectorFromQuaternionAtZero) {
   Eigen::Matrix<double, 3, 1> vector =
       drivetrain::ToRotationVectorFromQuaternion(
           Eigen::Quaternion<double>(
@@ -302,7 +315,7 @@ TEST(RungeKuttaTest, ToRotationVectorFromQuaternionAtZero) {
 }
 
 // Tests that ToRotationVectorFromQuaternion works for a real rotation.
-TEST(RungeKuttaTest, ToRotationVectorFromQuaternion) {
+TEST(DownEstimatorTest, ToRotationVectorFromQuaternion) {
   Eigen::Matrix<double, 3, 1> vector =
       drivetrain::ToRotationVectorFromQuaternion(
           Eigen::Quaternion<double>(
@@ -315,7 +328,7 @@ TEST(RungeKuttaTest, ToRotationVectorFromQuaternion) {
 
 // Tests that ToRotationVectorFromQuaternion works for a solution with negative
 // coefficients.
-TEST(RungeKuttaTest, ToRotationVectorFromQuaternionNegative) {
+TEST(DownEstimatorTest, ToRotationVectorFromQuaternionNegative) {
   Eigen::Matrix<double, 3, 1> vector =
       drivetrain::ToRotationVectorFromQuaternion(
           Eigen::Quaternion<double>(
@@ -330,7 +343,7 @@ TEST(RungeKuttaTest, ToRotationVectorFromQuaternionNegative) {
 }
 
 // Tests that ToQuaternionFromRotationVector works for a 0 rotation.
-TEST(RungeKuttaTest, ToQuaternionFromRotationVectorAtZero) {
+TEST(DownEstimatorTest, ToQuaternionFromRotationVectorAtZero) {
   Eigen::Matrix<double, 4, 1> quaternion =
       drivetrain::ToQuaternionFromRotationVector(Eigen::Vector3d::Zero());
 
@@ -342,7 +355,7 @@ TEST(RungeKuttaTest, ToQuaternionFromRotationVectorAtZero) {
 }
 
 // Tests that ToQuaternionFromRotationVector works for a real rotation.
-TEST(RungeKuttaTest, ToQuaternionFromRotationVector) {
+TEST(DownEstimatorTest, ToQuaternionFromRotationVector) {
   Eigen::Matrix<double, 4, 1> quaternion =
       drivetrain::ToQuaternionFromRotationVector(Eigen::Vector3d::UnitX() *
                                                  M_PI * 0.5);
@@ -358,7 +371,7 @@ TEST(RungeKuttaTest, ToQuaternionFromRotationVector) {
 
 // Tests that ToQuaternionFromRotationVector correctly clips a rotation vector
 // that is too large in magnitude.
-TEST(RungeKuttaTest, ToQuaternionFromLargeRotationVector) {
+TEST(DownEstimatorTest, ToQuaternionFromLargeRotationVector) {
   const double kMaxAngle = 2.0;
   const Eigen::Vector3d rotation_vector =
       Eigen::Vector3d::UnitX() * kMaxAngle * 2.0;
@@ -372,7 +385,7 @@ TEST(RungeKuttaTest, ToQuaternionFromLargeRotationVector) {
 
 // Tests that ToQuaternionFromRotationVector and ToRotationVectorFromQuaternion
 // works for random rotations.
-TEST(RungeKuttaTest, RandomQuaternions) {
+TEST(DownEstimatorTest, RandomQuaternions) {
   std::mt19937 generator(aos::testing::RandomSeed());
   std::uniform_real_distribution<double> random_scalar(-1.0, 1.0);
 

@@ -72,6 +72,8 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
 
     // Run for enough time to allow the gyro/imu zeroing code to run.
     RunFor(std::chrono::seconds(10));
+    drivetrain_status_fetcher_.Fetch();
+    EXPECT_TRUE(CHECK_NOTNULL(drivetrain_status_fetcher_->zeroing())->zeroed());
   }
   virtual ~DrivetrainTest() {}
 

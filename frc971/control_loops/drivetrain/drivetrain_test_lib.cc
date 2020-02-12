@@ -75,7 +75,10 @@ const DrivetrainConfig<double> &GetTestDrivetrainConfig() {
 
       0.25,
       1.00,
-      1.00};
+      1.00,
+      false,
+      Eigen::Matrix3d::Identity(),
+      /*is_simulated=*/true};
 
   return kDrivetrainConfig;
 };

@@ -53,6 +53,9 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
       1.2 /* quickturn_wheel_multiplier */,
       1.2 /* wheel_multiplier */,
       true /*pistol_grip_shift_enables_line_follow*/,
+      (Eigen::Matrix<double, 3, 3>() << 0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+       1.0)
+          .finished() /*imu_transform*/,
   };
 
   return kDrivetrainConfig;

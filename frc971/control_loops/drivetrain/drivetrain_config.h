@@ -96,6 +96,16 @@ struct DrivetrainConfig {
   // Whether the shift button on the pistol grip enables line following mode.
   bool pistol_grip_shift_enables_line_follow = false;
 
+  // Rotation matrix from the IMU's coordinate frame to the robot's coordinate
+  // frame.
+  // I.e., imu_transform * imu_readings will give the imu readings in the
+  // robot frame.
+  Eigen::Matrix<double, 3, 3> imu_transform =
+      Eigen::Matrix<double, 3, 3>::Identity();
+
+  // True if we are running a simulated drivetrain.
+  bool is_simulated = false;
+
   // Converts the robot state to a linear distance position, velocity.
   static Eigen::Matrix<Scalar, 2, 1> LeftRightToLinear(
       const Eigen::Matrix<Scalar, 7, 1> &left_right) {
