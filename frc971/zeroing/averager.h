@@ -19,6 +19,11 @@ template <typename Scalar, size_t num_samples, int rows_per_sample = 1>
 class Averager {
  public:
   typedef Eigen::Matrix<Scalar, rows_per_sample, 1> Vector;
+  Averager() {
+    for (Vector &datum : data_) {
+      datum.setZero();
+    }
+  }
   // Adds one data point to the set of data points to be averaged.
   // If more than "num_samples" samples are added, they will start overwriting
   // the oldest ones.

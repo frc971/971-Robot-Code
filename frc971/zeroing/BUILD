@@ -35,6 +35,8 @@ cc_library(
     ],
     deps = [
         ":averager",
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//frc971/wpilib:imu_fbs",
         "@com_github_google_glog//:glog",
         "@org_tuxfamily_eigen//:eigen",

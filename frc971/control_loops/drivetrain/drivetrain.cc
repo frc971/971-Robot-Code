@@ -147,6 +147,9 @@ void DrivetrainLoop::RunIteration(
   while (imu_values_fetcher_.FetchNext()) {
     imu_zeroer_.ProcessMeasurement(*imu_values_fetcher_);
     last_gyro_time_ = monotonic_now;
+    if (!imu_zeroer_.Zeroed()) {
+      continue;
+    }
     aos::monotonic_clock::time_point reading_time(std::chrono::nanoseconds(
         imu_values_fetcher_->monotonic_timestamp_ns()));
     if (last_imu_update_ == aos::monotonic_clock::min_time) {
