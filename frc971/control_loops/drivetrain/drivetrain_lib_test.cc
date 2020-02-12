@@ -82,9 +82,9 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
   void VerifyNearGoal() {
     drivetrain_goal_fetcher_.Fetch();
     EXPECT_NEAR(drivetrain_goal_fetcher_->left_goal(),
-                drivetrain_plant_.GetLeftPosition(), 1e-3);
+                drivetrain_plant_.GetLeftPosition(), 1e-2);
     EXPECT_NEAR(drivetrain_goal_fetcher_->right_goal(),
-                drivetrain_plant_.GetRightPosition(), 1e-3);
+                drivetrain_plant_.GetRightPosition(), 1e-2);
   }
 
   void VerifyNearPosition(double x, double y) {
@@ -100,8 +100,8 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
     const double expected_y =
         CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->y();
     const ::Eigen::Vector2d actual = drivetrain_plant_.GetPosition();
-    EXPECT_NEAR(actual(0), expected_x, 3e-2);
-    EXPECT_NEAR(actual(1), expected_y, 3e-2);
+    EXPECT_NEAR(actual(0), expected_x, 4e-2);
+    EXPECT_NEAR(actual(1), expected_y, 4e-2);
   }
 
   void WaitForTrajectoryPlan() {
@@ -131,7 +131,7 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
         drivetrain_status_fetcher_->theta();
     EXPECT_LT(
         std::abs(aos::math::DiffAngle(down_estimator_yaw, localizer_yaw)),
-        1e-5);
+        1e-2);
     const double true_yaw = (drivetrain_plant_.GetRightPosition() -
                              drivetrain_plant_.GetLeftPosition()) /
                             (dt_config_.robot_radius * 2.0);
