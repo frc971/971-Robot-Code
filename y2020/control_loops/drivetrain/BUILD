@@ -81,3 +81,20 @@ cc_binary(
         "//frc971/control_loops/drivetrain:drivetrain_lib",
     ],
 )
+
+cc_binary(
+    name = "drivetrain_replay",
+    srcs = ["drivetrain_replay.cc"],
+    data = ["//y2020:config.json"],
+    deps = [
+        ":drivetrain_base",
+        "//aos:configuration",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:logger",
+        "//frc971/control_loops/drivetrain:drivetrain_lib",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+    ],
+)
