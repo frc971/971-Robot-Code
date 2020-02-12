@@ -1,0 +1,6 @@
+{
+  "imports": [
+    "drivetrain_config.json",
+    "drivetrain_simulation_channels.json"
+  ]
+}

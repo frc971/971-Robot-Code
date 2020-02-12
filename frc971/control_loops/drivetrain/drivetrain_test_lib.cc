@@ -95,14 +95,16 @@ DrivetrainSimulation::DrivetrainSimulation(
           event_loop_
               ->MakeSender<::frc971::control_loops::drivetrain::Position>(
                   "/drivetrain")),
+      drivetrain_truth_sender_(
+          event_loop_->MakeSender<::frc971::control_loops::drivetrain::Status>(
+              "/drivetrain/truth")),
       drivetrain_output_fetcher_(
           event_loop_->MakeFetcher<::frc971::control_loops::drivetrain::Output>(
               "/drivetrain")),
       drivetrain_status_fetcher_(
           event_loop_->MakeFetcher<::frc971::control_loops::drivetrain::Status>(
               "/drivetrain")),
-      imu_sender_(
-          event_loop->MakeSender<::frc971::IMUValues>("/drivetrain")),
+      imu_sender_(event_loop->MakeSender<::frc971::IMUValues>("/drivetrain")),
       dt_config_(dt_config),
       drivetrain_plant_(MakePlantFromConfig(dt_config_)),
       velocity_drivetrain_(
@@ -136,8 +138,12 @@ DrivetrainSimulation::DrivetrainSimulation(
         }
         first_ = false;
         SendPositionMessage();
+        SendTruthMessage();
       },
       dt_config_.dt);
+
+  event_loop_->AddPhasedLoop([this](int) { SendImuMessage(); },
+                             std::chrono::microseconds(500));
 }
 
 void DrivetrainSimulation::Reinitialize() {
@@ -148,6 +154,16 @@ void DrivetrainSimulation::Reinitialize() {
   drivetrain_plant_.mutable_Y() = drivetrain_plant_.C() * drivetrain_plant_.X();
   last_left_position_ = drivetrain_plant_.Y(0, 0);
   last_right_position_ = drivetrain_plant_.Y(1, 0);
+}
+
+void DrivetrainSimulation::SendTruthMessage() {
+  auto builder = drivetrain_truth_sender_.MakeBuilder();
+  auto status_builder =
+      builder.MakeBuilder<frc971::control_loops::drivetrain::Status>();
+  status_builder.add_x(state_.x());
+  status_builder.add_y(state_.y());
+  status_builder.add_theta(state_(2));
+  builder.Send(status_builder.Finish());
 }
 
 void DrivetrainSimulation::SendPositionMessage() {
@@ -165,27 +181,27 @@ void DrivetrainSimulation::SendPositionMessage() {
     position_builder.add_right_shifter_position(right_gear_high_ ? 1.0 : 0.0);
     builder.Send(position_builder.Finish());
   }
+}
 
-  {
-    auto builder = imu_sender_.MakeBuilder();
-    frc971::IMUValues::Builder imu_builder =
-        builder.MakeBuilder<frc971::IMUValues>();
-    imu_builder.add_gyro_x(0.0);
-    imu_builder.add_gyro_y(0.0);
-    imu_builder.add_gyro_z(
-        (drivetrain_plant_.X(3, 0) - drivetrain_plant_.X(1, 0)) /
-        (dt_config_.robot_radius * 2.0));
-    // Acceleration due to gravity, in m/s/s.
-    constexpr double kG = 9.807;
-    imu_builder.add_accelerometer_x(last_acceleration_.x() / kG);
-    imu_builder.add_accelerometer_y(0.0);
-    imu_builder.add_accelerometer_z(1.0);
-    imu_builder.add_monotonic_timestamp_ns(
-        std::chrono::duration_cast<std::chrono::nanoseconds>(
-            event_loop_->monotonic_now().time_since_epoch())
-            .count());
-    builder.Send(imu_builder.Finish());
-  }
+void DrivetrainSimulation::SendImuMessage() {
+  auto builder = imu_sender_.MakeBuilder();
+  frc971::IMUValues::Builder imu_builder =
+      builder.MakeBuilder<frc971::IMUValues>();
+  imu_builder.add_gyro_x(0.0);
+  imu_builder.add_gyro_y(0.0);
+  imu_builder.add_gyro_z(
+      (drivetrain_plant_.X(3, 0) - drivetrain_plant_.X(1, 0)) /
+      (dt_config_.robot_radius * 2.0));
+  // Acceleration due to gravity, in m/s/s.
+  constexpr double kG = 9.807;
+  imu_builder.add_accelerometer_x(last_acceleration_.x() / kG);
+  imu_builder.add_accelerometer_y(last_acceleration_.y() / kG);
+  imu_builder.add_accelerometer_z(1.0);
+  imu_builder.add_monotonic_timestamp_ns(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(
+          event_loop_->monotonic_now().time_since_epoch())
+          .count());
+  builder.Send(imu_builder.Finish());
 }
 
 // Simulates the drivetrain moving for one timestep.
@@ -230,12 +246,23 @@ void DrivetrainSimulation::Simulate() {
         return ContinuousDynamics(velocity_drivetrain_->plant(),
                                   dt_config_.Tlr_to_la(), X, U);
       };
+  const Eigen::Matrix<double, 5, 1> last_state = state_;
   state_ = RungeKuttaU(dynamics, state_, U, dt_float);
-  const Eigen::Matrix<double, 5, 1> Xdot = dynamics(state_, U);
-  // TODO(james): Account for centripetal accelerations.
+  // Calculate Xdot from the actual state change rather than getting Xdot at the
+  // current state_.
+  // TODO(james): This seemed to help make the simulation perform better, but
+  // I'm not sure that it is actually helping. Regardless, we should be
+  // calculating Xdot at all the intermediate states at the 2 kHz that
+  // the IMU sends at, rather than doing a sample-and-hold like we do now.
+  const Eigen::Matrix<double, 5, 1> Xdot = (state_ - last_state) / dt_float;
+
+  const double yaw_rate = Xdot(2);
+  const double longitudinal_velocity =
+      (state_(4) + state_(3)) / 2.0;
+  const double centripetal_accel = yaw_rate * longitudinal_velocity;
   // TODO(james): Allow inputting arbitrary calibrations, e.g., for testing
   // situations where the IMU is not perfectly flat in the CG of the robot.
-  last_acceleration_ << (Xdot(3, 0) + Xdot(4, 0)) / 2.0, 0.0, 0.0;
+  last_acceleration_ << (Xdot(3, 0) + Xdot(4, 0)) / 2.0, centripetal_accel, 0.0;
 }
 
 void DrivetrainSimulation::MaybePlot() {

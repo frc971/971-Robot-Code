@@ -6,6 +6,7 @@
 #include "aos/controls/control_loop_test.h"
 #include "aos/controls/polytope.h"
 #include "aos/events/event_loop.h"
+#include "aos/events/logging/logger.h"
 #include "aos/time/time.h"
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"
@@ -21,6 +22,9 @@
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "frc971/queues/gyro_generated.h"
 
+DEFINE_string(output_file, "",
+              "If set, logs all channels to the provided logfile.");
+
 namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
@@ -34,7 +38,7 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
   DrivetrainTest()
       : ::aos::testing::ControlLoopTest(
             aos::configuration::ReadConfig(
-                "frc971/control_loops/drivetrain/config.json"),
+                "frc971/control_loops/drivetrain/simulation_config.json"),
             GetTestDrivetrainConfig().dt),
         test_event_loop_(MakeEventLoop("test")),
         drivetrain_goal_sender_(
@@ -56,6 +60,18 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
     // Too many tests care...
     set_send_delay(chrono::nanoseconds(0));
     set_battery_voltage(12.0);
+
+    if (!FLAGS_output_file.empty()) {
+      unlink(FLAGS_output_file.c_str());
+      log_buffer_writer_ = std::make_unique<aos::logger::DetachedBufferWriter>(
+          FLAGS_output_file);
+      logger_event_loop_ = MakeEventLoop("logger");
+      logger_ = std::make_unique<aos::logger::Logger>(log_buffer_writer_.get(),
+                                                      logger_event_loop_.get());
+    }
+
+    // Run for enough time to allow the gyro/imu zeroing code to run.
+    RunFor(std::chrono::seconds(10));
   }
   virtual ~DrivetrainTest() {}
 
@@ -148,12 +164,14 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
 
   ::std::unique_ptr<::aos::EventLoop> drivetrain_plant_event_loop_;
   DrivetrainSimulation drivetrain_plant_;
+
+  std::unique_ptr<aos::EventLoop> logger_event_loop_;
+  std::unique_ptr<aos::logger::DetachedBufferWriter> log_buffer_writer_;
+  std::unique_ptr<aos::logger::Logger> logger_;
 };
 
 // Tests that the drivetrain converges on a goal.
 TEST_F(DrivetrainTest, ConvergesCorrectly) {
-  // Run for enough time to let the gyro zero.
-  RunFor(std::chrono::seconds(100));
   SetEnabled(true);
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
@@ -312,7 +330,8 @@ TEST_F(DrivetrainTest, ProfileStraightForward) {
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
-  while (monotonic_now() < monotonic_clock::time_point(chrono::seconds(6))) {
+  const auto start_time = monotonic_now();
+  while (monotonic_now() < start_time + chrono::seconds(6)) {
     RunFor(dt());
     ASSERT_TRUE(drivetrain_output_fetcher_.Fetch());
     EXPECT_NEAR(drivetrain_output_fetcher_->left_voltage(),
@@ -353,7 +372,8 @@ TEST_F(DrivetrainTest, ProfileTurn) {
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
-  while (monotonic_now() < monotonic_clock::time_point(chrono::seconds(6))) {
+  const auto start_time = monotonic_now();
+  while (monotonic_now() < start_time + chrono::seconds(6)) {
     RunFor(dt());
     ASSERT_TRUE(drivetrain_output_fetcher_.Fetch());
     EXPECT_NEAR(drivetrain_output_fetcher_->left_voltage(),
@@ -394,7 +414,8 @@ TEST_F(DrivetrainTest, SaturatedTurnDrive) {
     EXPECT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
-  while (monotonic_now() < monotonic_clock::time_point(chrono::seconds(3))) {
+  const auto start_time = monotonic_now();
+  while (monotonic_now() < start_time + chrono::seconds(3)) {
     RunFor(dt());
     ASSERT_TRUE(drivetrain_output_fetcher_.Fetch());
   }
