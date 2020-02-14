@@ -6,13 +6,13 @@
 #include <stdint.h>
 
 #include "frc971/constants.h"
+#include "frc971/control_loops/drivetrain/camera.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 #include "y2019/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2019/control_loops/superstructure/elevator/elevator_plant.h"
 #include "y2019/control_loops/superstructure/intake/intake_plant.h"
 #include "y2019/control_loops/superstructure/stilts/stilts_plant.h"
 #include "y2019/control_loops/superstructure/wrist/wrist_plant.h"
-#include "y2019/control_loops/drivetrain/camera.h"
 #include "frc971/control_loops/pose.h"
 
 namespace y2019 {
@@ -32,7 +32,7 @@ namespace constants {
 class Field {
  public:
   typedef ::frc971::control_loops::TypedPose<double> Pose;
-  typedef ::y2019::control_loops::TypedTarget<double> Target;
+  typedef ::frc971::control_loops::TypedTarget<double> Target;
   typedef ::frc971::control_loops::TypedLineSegment<double> Obstacle;
 
   static constexpr size_t kNumTargets = 32;
@@ -201,8 +201,9 @@ struct Values {
 
   static constexpr size_t kNumCameras = 5;
   ::std::array<CameraCalibration, kNumCameras> cameras;
-  control_loops::TypedCamera<Field::kNumTargets, Field::kNumObstacles,
-                             double>::NoiseParameters camera_noise_parameters;
+  frc971::control_loops::TypedCamera<Field::kNumTargets, Field::kNumObstacles,
+                                     double>::NoiseParameters
+      camera_noise_parameters;
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and

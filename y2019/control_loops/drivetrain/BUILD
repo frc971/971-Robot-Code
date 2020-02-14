@@ -100,30 +100,11 @@ flatbuffer_cc_library(
 )
 
 cc_library(
-    name = "camera",
-    srcs = ["camera.h"],
-    visibility = ["//y2019:__pkg__"],
-    deps = [
-        "//aos/containers:sized_array",
-        "//frc971/control_loops:pose",
-    ],
-)
-
-cc_test(
-    name = "camera_test",
-    srcs = ["camera_test.cc"],
-    deps = [
-        ":camera",
-        "//aos/testing:googletest",
-    ],
-)
-
-cc_library(
     name = "localizer",
     hdrs = ["localizer.h"],
     deps = [
-        ":camera",
         "//frc971/control_loops:pose",
+        "//frc971/control_loops/drivetrain:camera",
         "//frc971/control_loops/drivetrain:hybrid_ekf",
     ],
 )
@@ -133,9 +114,9 @@ cc_library(
     srcs = ["target_selector.cc"],
     hdrs = ["target_selector.h"],
     deps = [
-        ":camera",
         ":target_selector_fbs",
         "//frc971/control_loops:pose",
+        "//frc971/control_loops/drivetrain:camera",
         "//frc971/control_loops/drivetrain:localizer",
         "//y2019:constants",
         "//y2019/control_loops/superstructure:superstructure_goal_fbs",

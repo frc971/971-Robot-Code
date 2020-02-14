@@ -678,3 +678,22 @@ cc_test(
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
+
+cc_library(
+    name = "camera",
+    srcs = ["camera.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos/containers:sized_array",
+        "//frc971/control_loops:pose",
+    ],
+)
+
+cc_test(
+    name = "camera_test",
+    srcs = ["camera_test.cc"],
+    deps = [
+        ":camera",
+        "//aos/testing:googletest",
+    ],
+)

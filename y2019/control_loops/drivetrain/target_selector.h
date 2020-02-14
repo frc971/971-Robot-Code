@@ -4,7 +4,7 @@
 #include "frc971/control_loops/pose.h"
 #include "frc971/control_loops/drivetrain/localizer.h"
 #include "y2019/constants.h"
-#include "y2019/control_loops/drivetrain/camera.h"
+#include "frc971/control_loops/drivetrain/camera.h"
 #include "y2019/control_loops/drivetrain/target_selector_generated.h"
 #include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
 
@@ -24,10 +24,12 @@ class TargetSelector
     : public ::frc971::control_loops::drivetrain::TargetSelectorInterface {
  public:
   typedef ::frc971::control_loops::TypedPose<double> Pose;
+  typedef frc971::control_loops::Target Target;
   // For the virtual camera that we use to identify targets, ignore all
   // obstacles and just assume that we have perfect field of view.
-  typedef TypedCamera<y2019::constants::Field::kNumTargets,
-                      /*num_obstacles=*/0, double> FakeCamera;
+  typedef frc971::control_loops::TypedCamera<
+      y2019::constants::Field::kNumTargets,
+      /*num_obstacles=*/0, double> FakeCamera;
 
   TargetSelector(::aos::EventLoop *event_loop);
 

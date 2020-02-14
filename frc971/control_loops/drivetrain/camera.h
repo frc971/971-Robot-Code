@@ -6,7 +6,7 @@
 #include "aos/containers/sized_array.h"
 #include "frc971/control_loops/pose.h"
 
-namespace y2019 {
+namespace frc971 {
 namespace control_loops {
 
 // Represents a target on the field. Currently just consists of a pose and a
@@ -369,6 +369,6 @@ void TypedCamera<num_targets, num_obstacles, Scalar>::AddTargetIfVisible(
 }
 
 }  // namespace control_loops
-}  // namespace y2019
+}  // namespace frc971
 
 #endif  // Y2019_CONTROL_LOOPS_DRIVETRAIN_CAMERA_H_

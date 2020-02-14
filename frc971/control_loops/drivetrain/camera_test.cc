@@ -1,8 +1,8 @@
-#include "y2019/control_loops/drivetrain/camera.h"
+#include "frc971/control_loops/drivetrain/camera.h"
 
 #include "gtest/gtest.h"
 
-namespace y2019 {
+namespace frc971 {
 namespace control_loops {
 namespace testing {
 
@@ -210,4 +210,4 @@ INSTANTIATE_TEST_CASE_P(
 
 }  // namespace testing
 }  // namespace control_loops
-}  // namespace y2019
+}  // namespace frc971

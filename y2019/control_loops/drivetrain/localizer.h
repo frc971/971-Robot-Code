@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "frc971/control_loops/pose.h"
-#include "y2019/control_loops/drivetrain/camera.h"
+#include "frc971/control_loops/drivetrain/camera.h"
 #include "frc971/control_loops/drivetrain/hybrid_ekf.h"
 
 namespace y2019 {
@@ -16,9 +16,11 @@ template <int num_cameras, int num_targets, int num_obstacles,
 class TypedLocalizer
     : public ::frc971::control_loops::drivetrain::HybridEkf<Scalar> {
  public:
-  typedef TypedCamera<num_targets, num_obstacles, Scalar> Camera;
+  typedef frc971::control_loops::TypedCamera<num_targets, num_obstacles, Scalar>
+      Camera;
   typedef typename Camera::TargetView TargetView;
   typedef typename Camera::Pose Pose;
+  typedef typename frc971::control_loops::Target Target;
   typedef ::frc971::control_loops::drivetrain::HybridEkf<Scalar> HybridEkf;
   typedef typename HybridEkf::State State;
   typedef typename HybridEkf::StateSquare StateSquare;

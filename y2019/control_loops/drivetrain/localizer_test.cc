@@ -30,6 +30,7 @@ typedef TypedLocalizer<kNumCameras, Field::kNumTargets, Field::kNumObstacles,
                        kNumTargetsPerFrame, double>
     TestLocalizer;
 typedef typename TestLocalizer::Camera TestCamera;
+typedef typename TestLocalizer::Target Target;
 typedef typename TestCamera::Pose Pose;
 typedef typename TestCamera::LineSegment Obstacle;
 
