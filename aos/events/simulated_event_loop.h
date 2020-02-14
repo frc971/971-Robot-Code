@@ -78,7 +78,7 @@ class SimulatedEventLoopFactory {
 
   // Stops executing all event loops.  Meant to be called from within an event
   // loop handler.
-  void Exit() { scheduler_.Exit(); }
+  void Exit() { scheduler_scheduler_.Exit(); }
 
   const std::vector<const Node *> &nodes() const { return nodes_; }
 
@@ -92,7 +92,7 @@ class SimulatedEventLoopFactory {
 
   // Returns the clock used to synchronize the nodes.
   distributed_clock::time_point distributed_now() const {
-    return scheduler_.distributed_now();
+    return scheduler_scheduler_.distributed_now();
   }
 
   // Returns the configuration used for everything.
@@ -104,7 +104,7 @@ class SimulatedEventLoopFactory {
 
  private:
   const Configuration *const configuration_;
-  EventScheduler scheduler_;
+  EventSchedulerScheduler scheduler_scheduler_;
   // List of event loops to manage running and not running for.
   // The function is a callback used to set and clear the running bool on each
   // event loop.
@@ -149,28 +149,28 @@ class NodeEventLoopFactory {
   // node.
   std::chrono::nanoseconds send_delay() const { return factory_->send_delay(); }
 
+  // TODO(austin): Private for the following?
+
   // Converts a time to the distributed clock for scheduling and cross-node time
   // measurement.
   inline distributed_clock::time_point ToDistributedClock(
       monotonic_clock::time_point time) const;
 
-  // Note: use this very very carefully.  It can cause massive problems.  This
-  // needs to go away as we properly handle time drifting between nodes.
-  void SetMonotonicNow(monotonic_clock::time_point monotonic_now) {
-    monotonic_clock::duration offset = (monotonic_now - this->monotonic_now());
-    monotonic_offset_ += offset;
-    realtime_offset_ -= offset;
+  // Sets the offset between the monotonic clock and the central distributed
+  // clock.  distributed_clock = monotonic_clock + offset.
+  void SetDistributedOffset(std::chrono::nanoseconds monotonic_offset) {
+    scheduler_.SetDistributedOffset(monotonic_offset);
   }
 
  private:
   friend class SimulatedEventLoopFactory;
   NodeEventLoopFactory(
-      EventScheduler *scheduler, SimulatedEventLoopFactory *factory,
-      const Node *node,
+      EventSchedulerScheduler *scheduler_scheduler,
+      SimulatedEventLoopFactory *factory, const Node *node,
       std::vector<std::pair<EventLoop *, std::function<void(bool)>>>
           *raw_event_loops);
 
-  EventScheduler *const scheduler_;
+  EventScheduler scheduler_;
   SimulatedEventLoopFactory *const factory_;
 
   const Node *const node_;
@@ -178,7 +178,6 @@ class NodeEventLoopFactory {
   std::vector<std::pair<EventLoop *, std::function<void(bool)>>>
       *const raw_event_loops_;
 
-  std::chrono::nanoseconds monotonic_offset_ = std::chrono::seconds(0);
   std::chrono::nanoseconds realtime_offset_ = std::chrono::seconds(0);
 
   // Map from name, type to queue.
@@ -189,8 +188,8 @@ class NodeEventLoopFactory {
 };
 
 inline monotonic_clock::time_point NodeEventLoopFactory::monotonic_now() const {
-  return monotonic_clock::time_point(
-      factory_->distributed_now().time_since_epoch() + monotonic_offset_);
+  // TODO(austin): Confirm that time never goes backwards?
+  return scheduler_.FromDistributedClock(factory_->distributed_now());
 }
 
 inline realtime_clock::time_point NodeEventLoopFactory::realtime_now() const {
@@ -200,8 +199,7 @@ inline realtime_clock::time_point NodeEventLoopFactory::realtime_now() const {
 
 inline distributed_clock::time_point NodeEventLoopFactory::ToDistributedClock(
     monotonic_clock::time_point time) const {
-  return distributed_clock::time_point(time.time_since_epoch() -
-                                       monotonic_offset_);
+  return scheduler_.ToDistributedClock(time);
 }
 
 }  // namespace aos

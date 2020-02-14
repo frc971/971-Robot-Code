@@ -80,7 +80,8 @@ const Node *GetNodeFromHostname(const Configuration *config,
 // in a single node world.)
 std::vector<const Node *> GetNodes(const Configuration *config);
 
-// Returns the node index for a node.  Note: node needs to exist inside config.
+// Returns the node index for a node.  Note: will be faster if node is a pointer
+// to a node in config, but is not required.
 int GetNodeIndex(const Configuration *config, const Node *node);
 
 // Returns true if we are running in a multinode configuration.

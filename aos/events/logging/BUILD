@@ -16,6 +16,7 @@ cc_library(
     srcs = [
         "logfile_utils.cc",
         "logger.cc",
+        "logger_math.cc",
     ],
     hdrs = [
         "logfile_utils.h",
@@ -28,10 +29,12 @@ cc_library(
         "//aos/events:event_loop",
         "//aos/events:simulated_event_loop",
         "//aos/network:team_number",
+        "//aos/network:timestamp_filter",
         "//aos/time",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/strings",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 

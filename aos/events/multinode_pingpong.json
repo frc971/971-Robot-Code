@@ -25,14 +25,6 @@
       "max_size": 2048
     },
     {
-      "name": "/aos/roborio",
-      "type": "aos.logging.LogMessageFbs",
-      "source_node": "roborio",
-      "frequency": 200,
-      "num_senders": 20,
-      "max_size": 2048
-    },
-    {
       "name": "/aos/pi1",
       "type": "aos.message_bridge.ServerStatistics",
       "source_node": "pi1",
@@ -51,12 +43,6 @@
       "frequency": 2
     },
     {
-      "name": "/aos/roborio",
-      "type": "aos.message_bridge.ServerStatistics",
-      "source_node": "roborio",
-      "frequency": 2
-    },
-    {
       "name": "/aos/pi1",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "pi1",
@@ -72,12 +58,6 @@
       "name": "/aos/pi3",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "pi3",
-      "frequency": 2
-    },
-    {
-      "name": "/aos/roborio",
-      "type": "aos.message_bridge.ClientStatistics",
-      "source_node": "roborio",
       "frequency": 2
     },
     {
@@ -100,14 +80,6 @@
       "name": "/aos/pi3",
       "type": "aos.timing.Report",
       "source_node": "pi3",
-      "frequency": 50,
-      "num_senders": 20,
-      "max_size": 2048
-    },
-    {
-      "name": "/aos/roborio",
-      "type": "aos.timing.Report",
-      "source_node": "roborio",
       "frequency": 50,
       "num_senders": 20,
       "max_size": 2048
@@ -199,16 +171,6 @@
     {
       "match": {
         "name": "/aos",
-        "type": "aos.logging.LogMessageFbs",
-        "source_node": "roborio"
-      },
-      "rename": {
-        "name": "/aos/roborio"
-      }
-    },
-    {
-      "match": {
-        "name": "/aos",
         "type": "aos.timing.Report",
         "source_node": "pi1"
       },
@@ -234,16 +196,6 @@
       },
       "rename": {
         "name": "/aos/pi3"
-      }
-    },
-    {
-      "match": {
-        "name": "/aos",
-        "type": "aos.timing.Report",
-        "source_node": "roborio"
-      },
-      "rename": {
-        "name": "/aos/roborio"
       }
     },
     {
@@ -279,16 +231,6 @@
     {
       "match": {
         "name": "/aos",
-        "type": "aos.message_bridge.ServerStatistics",
-        "source_node": "roborio"
-      },
-      "rename": {
-        "name": "/aos/roborio"
-      }
-    },
-    {
-      "match": {
-        "name": "/aos",
         "type": "aos.message_bridge.ClientStatistics",
         "source_node": "pi1"
       },
@@ -314,16 +256,6 @@
       },
       "rename": {
         "name": "/aos/pi3"
-      }
-    },
-    {
-      "match": {
-        "name": "/aos",
-        "type": "aos.message_bridge.ClientStatistics",
-        "source_node": "roborio"
-      },
-      "rename": {
-        "name": "/aos/roborio"
       }
     }
   ],
@@ -341,11 +273,6 @@
     {
       "name": "pi3",
       "hostname": "raspberrypi3",
-      "port": 9971
-    },
-    {
-      "name": "roborio",
-      "hostname": "roboRIO-6971-FRC",
       "port": 9971
     }
   ],
