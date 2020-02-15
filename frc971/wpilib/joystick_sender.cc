@@ -67,6 +67,18 @@ JoystickSender::JoystickSender(::aos::ShmEventLoop *event_loop)
             joysticks_offset = builder.fbb()->CreateVector(joysticks.begin(),
                                                            joysticks.size());
 
+        flatbuffers::Offset<flatbuffers::String> game_data_offset;
+        if (status == 0) {
+          static_assert(sizeof(match_info.gameSpecificMessage) == 64,
+                        "Check that the match info game specific message size "
+                        "hasn't changed and is still sane.");
+          CHECK_LE(match_info.gameSpecificMessageSize,
+                   sizeof(match_info.gameSpecificMessage));
+          game_data_offset = builder.fbb()->CreateString(
+              reinterpret_cast<const char *>(match_info.gameSpecificMessage),
+              match_info.gameSpecificMessageSize);
+        }
+
         aos::JoystickState::Builder joystick_state_builder =
             builder.MakeBuilder<aos::JoystickState>();
 
@@ -79,12 +91,24 @@ JoystickSender::JoystickSender(::aos::ShmEventLoop *event_loop)
           joystick_state_builder.add_scale_left(
               match_info.gameSpecificMessage[1] == 'L' ||
               match_info.gameSpecificMessage[1] == 'l');
+          joystick_state_builder.add_game_data(game_data_offset);
         }
 
         joystick_state_builder.add_test_mode(ds->IsTestMode());
         joystick_state_builder.add_fms_attached(ds->IsFmsAttached());
         joystick_state_builder.add_enabled(ds->IsEnabled());
         joystick_state_builder.add_autonomous(ds->IsAutonomous());
+        switch (ds->GetAlliance()) {
+          case frc::DriverStation::kRed:
+            joystick_state_builder.add_alliance(aos::Alliance::kRed);
+            break;
+          case frc::DriverStation::kBlue:
+            joystick_state_builder.add_alliance(aos::Alliance::kBlue);
+            break;
+          case frc::DriverStation::kInvalid:
+            joystick_state_builder.add_alliance(aos::Alliance::kInvalid);
+            break;
+        }
         joystick_state_builder.add_team_id(team_id_);
 
         if (!builder.Send(joystick_state_builder.Finish())) {
