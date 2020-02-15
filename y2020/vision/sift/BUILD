@@ -152,6 +152,22 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "fast_gaussian_test",
+    srcs = [
+        "fast_gaussian_test.cc",
+    ],
+    restricted_to = [
+        "//tools:k8",
+        "//tools:armhf-debian",
+    ],
+    deps = [
+        ":fast_gaussian",
+        "//aos/testing:googletest",
+        "//third_party:opencv",
+    ],
+)
+
 cc_binary(
     name = "testing_sift",
     srcs = [
