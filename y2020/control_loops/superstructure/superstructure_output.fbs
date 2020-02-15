@@ -9,6 +9,10 @@ table Output {
 
   // Voltage sent to rollers on intake. Positive rolls inward.
   intake_roller_voltage:double;
+
+  //Voltage sent to the motors.
+  //Positive rotates counterclockwise from a birds eye view.
+  turret_voltage:double;
 }
 
 root_type Output;
