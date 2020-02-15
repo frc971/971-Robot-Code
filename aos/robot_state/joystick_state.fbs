@@ -12,6 +12,8 @@ table Joystick {
   pov:int;
 }
 
+enum Alliance : byte { kRed, kBlue, kInvalid }
+
 // This message is checked by all control loops to make sure that the
 // joystick code hasn't died.  It is published on "/aos"
 table JoystickState {
@@ -36,6 +38,12 @@ table JoystickState {
   // useful for testing. The only difference in behavior should be motors not
   // actually turning on.
   fake:bool;
+
+  // Color of our current alliance.
+  alliance:Alliance;
+
+  // String corresponding to the game data string
+  game_data:string;
 }
 
 root_type JoystickState;
