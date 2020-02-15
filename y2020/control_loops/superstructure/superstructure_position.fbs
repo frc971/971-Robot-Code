@@ -2,6 +2,16 @@ include "frc971/control_loops/control_loops.fbs";
 
 namespace y2020.control_loops.superstructure;
 
+table ShooterPosition {
+  // Flywheel angle in radians, positive is shooting.
+  theta_flywheel:double;
+
+  // Kicker angle in radians of the slowest (lowest) wheel, positive is
+  // accelerating the ball toward the shooter.
+  theta_kicker_left:double;
+  theta_kicker_right:double;
+}
+
 table Position {
   // Zero is at the horizontal, positive towards the front (meters on the lead screw).
   hood:frc971.AbsolutePosition;
@@ -11,6 +21,9 @@ table Position {
 
   // See goal for definition of 0
   turret:frc971.PotAndAbsolutePosition;
+
+  // Position of the kicker and flywheel
+  shooter:ShooterPosition;
 }
 
 root_type Position;

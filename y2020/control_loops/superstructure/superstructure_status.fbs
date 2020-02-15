@@ -3,6 +3,29 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2020.control_loops.superstructure;
 
+table ShooterSegmentStatus {
+  // The current average velocity in radians/second over the last kHistoryLength
+  // in shooter.h
+  avg_angular_velocity:double;
+
+  // The current instantaneous filtered velocity in radians/second.
+  angular_velocity:double;
+
+  // The target speed selected by the lookup table or from manual override
+  // Can be compared to velocity to determine if ready.
+  angular_velocity_goal:double;
+}
+
+table ShooterStatus {
+  // The final wheel shooting the ball
+  flywheel:ShooterSegmentStatus;
+
+  // The subsystem to accelerate the ball before the flywheel
+  // Velocity is the slowest (lowest) wheel
+  kicker_left:ShooterSegmentStatus;
+  kicker_right:ShooterSegmentStatus;
+}
+
 table Status {
   // All subsystems know their location.
   zeroed:bool;
@@ -14,6 +37,9 @@ table Status {
   hood:frc971.control_loops.AbsoluteEncoderProfiledJointStatus;
   intake:frc971.control_loops.AbsoluteEncoderProfiledJointStatus;
   turret:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus;
+
+  // Shooter subsystem status.
+  shooter:ShooterStatus;
 }
 
 root_type Status;
