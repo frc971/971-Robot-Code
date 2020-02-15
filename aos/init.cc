@@ -58,25 +58,18 @@ void InitGoogle(int *argc, char ***argv) {
   google::InstallFailureSignalHandler();
 }
 
-void InitNRT(bool for_realtime) {
+void InitNRT() {
   InitStart();
-  aos_core_create_shared_mem(false, for_realtime && ShouldBeRealtime());
-  logging::RegisterQueueImplementation();
   ExpandStackSize();
-  AOS_LOG(INFO, "%s initialized non-realtime\n", program_invocation_short_name);
 }
 
 void InitCreate() {
   InitStart();
-  aos_core_create_shared_mem(true, false);
-  logging::RegisterQueueImplementation();
   AOS_LOG(INFO, "%s created shm\n", program_invocation_short_name);
 }
 
 void Init(int relative_priority) {
   InitStart();
-  aos_core_create_shared_mem(false, ShouldBeRealtime());
-  logging::RegisterQueueImplementation();
   GoRT(relative_priority);
 }
 

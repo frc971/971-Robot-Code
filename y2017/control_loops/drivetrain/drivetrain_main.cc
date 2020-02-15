@@ -7,7 +7,7 @@
 using ::frc971::control_loops::drivetrain::DrivetrainLoop;
 
 int main() {
-  ::aos::InitNRT(true);
+  ::aos::InitNRT();
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig("config.json");
