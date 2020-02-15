@@ -5,6 +5,8 @@
 
 namespace aos {
 
+// TODO(james): Clean up/unify the various init functions.
+
 // Initializes glog and gflags.
 void InitGoogle(int *argc, char ***argv);
 
@@ -13,8 +15,7 @@ void InitGoogle(int *argc, char ***argv);
 // them again after fork(2)ing.
 
 // Does the non-realtime parts of the initialization process.
-// If for_realtime is true, this sets up to call GoRT later.
-void InitNRT(bool for_realtime = false);
+void InitNRT();
 // Initializes everything, including the realtime stuff.
 // relative_priority adjusts the priority of this process relative to all of the
 // other ones (positive for higher priority).
@@ -26,7 +27,7 @@ void InitCreate();
 // exit gracefully).
 void Cleanup();
 
-// Performs the realtime parts of initialization after InitNRT(true) has been called.
+// Performs the realtime parts of initialization after InitNRT() has been called.
 void GoRT(int relative_priority = 0);
 
 // Pins the current thread to CPU #number.

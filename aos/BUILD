@@ -6,8 +6,6 @@ filegroup(
     srcs = [
         "//aos:aos_dump",
         "//aos:core",
-        "//aos/logging:log_displayer",
-        "//aos/logging:log_streamer",
         "//aos/starter",
     ],
     visibility = ["//visibility:public"],
@@ -17,7 +15,6 @@ filegroup(
     name = "prime_start_binaries",
     srcs = [
         "//aos/events/logging:logger_main",
-        "//aos/logging:binary_log_writer",
     ],
     visibility = ["//visibility:public"],
 )
@@ -27,8 +24,6 @@ filegroup(
     srcs = [
         # starter is hard coded to look for a non-stripped core...
         "//aos:core",
-        "//aos/logging:log_streamer.stripped",
-        "//aos/logging:log_displayer.stripped",
         "//aos:aos_dump.stripped",
         "//aos/starter",
     ],
@@ -39,7 +34,6 @@ filegroup(
     name = "prime_start_binaries_stripped",
     srcs = [
         "//aos/events/logging:logger_main.stripped",
-        "//aos/logging:binary_log_writer.stripped",
     ],
     visibility = ["//visibility:public"],
 )
@@ -457,11 +451,11 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "//aos:macros",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
-        "//aos:macros",
     ],
 )
 

@@ -461,7 +461,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
 }  // namespace y2016
 
 int main() {
-  ::aos::InitNRT(true);
+  ::aos::InitNRT();
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig("config.json");

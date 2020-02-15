@@ -47,7 +47,7 @@ class AccessoriesLoop : public ::aos::controls::ControlLoop<
 }  // namespace y2012
 
 int main() {
-  ::aos::InitNRT(true);
+  ::aos::InitNRT();
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig("config.json");

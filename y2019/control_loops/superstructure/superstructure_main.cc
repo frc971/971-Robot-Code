@@ -4,7 +4,7 @@
 #include "aos/init.h"
 
 int main(int /*argc*/, char * /*argv*/ []) {
-  ::aos::InitNRT(true);
+  ::aos::InitNRT();
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig("config.json");
