@@ -1,0 +1,87 @@
+namespace frc971.vision.sift;
+
+// Represents a single feature extracted from an image.
+table Feature {
+  // Contains the descriptor data.
+  //
+  // TODO(Brian): These are scaled to be convertible to chars. Should we do
+  // that to minimize storage space? Or maybe int16?
+  //
+  // The size of this depends on the parameters. It is width*width*hist_bins.
+  // Currently we have width=4 and hist_bins=8, which results in a size of
+  // 4*4*8=128.
+  descriptor:[float];
+
+  // Location of the keypoint.
+  x:float;
+  y:float;
+
+  // Size of the keypoint neighborhood.
+  size:float;
+
+  // Angle of the keypoint.
+  // This is in [0,360) clockwise.
+  angle:float;
+
+  // How good of a keypoint this is.
+  response:float;
+
+  // Which octave this keypoint is from.
+  octave:int;
+}
+
+// Represents a single match between a training image and a query image.
+table Match {
+  // The index of the feature for the query image.
+  query_feature:int;
+  // The index of the feature for the training image.
+  train_feature:int;
+}
+
+// Represents all the matches between a single training image and a query
+// image.
+table ImageMatch {
+  matches:[Match];
+  // The index of the training image within all the training images.
+  train_image:int;
+}
+
+table TransformationMatrix {
+  // The matrix data. This is a row-major 3x4 matrix.
+  data:[double];
+}
+
+// Contains the information the EKF wants from an image.
+//
+// This is represented as a transformation to a target in field coordinates.
+table CameraPose {
+  // Transformation matrix from the target to the camera's origin.
+  camera_to_target:TransformationMatrix;
+
+  // Field coordinates of the target, represented as a transformation matrix
+  // from the target to the field.
+  // (0, 0, 0) is the center of the field, on the level of most of the field
+  // (not the region under the truss). Positive X is towards the red alliance's
+  // PLAYER STATION. Positive Z is up. The coordinate system is right-handed.
+  //
+  // Note that the red PLAYER STATION is where the red drive teams are. This is
+  // often where the blue robots are shooting towards.
+  //
+  // The value here will be selected from a small, static set of targets we
+  // train images on.
+  field_to_target:TransformationMatrix;
+}
+
+table ImageMatchResult {
+  // The matches from this image to each of the training images which matched.
+  image_matches:[ImageMatch];
+  // The transformations for this image for each of the training images which
+  // matched.
+  // TODO(Brian): Include some kind of covariance information for these.
+  camera_poses:[CameraPose];
+
+  // The features for this image.
+  features:[Feature];
+}
+
+root_type ImageMatchResult;

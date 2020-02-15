@@ -41,6 +41,10 @@ class SIFT971_Impl : public cv::Feature2D {
                             int nOctaves) const;
   void buildDoGPyramid(const std::vector<cv::Mat> &pyr,
                        std::vector<cv::Mat> &dogpyr) const;
+  void buildGaussianAndDifferencePyramid(const cv::Mat &base,
+                                         std::vector<cv::Mat> &pyr,
+                                         std::vector<cv::Mat> &dogpyr,
+                                         int nOctaves) const;
   void findScaleSpaceExtrema(const std::vector<cv::Mat> &gauss_pyr,
                              const std::vector<cv::Mat> &dog_pyr,
                              std::vector<cv::KeyPoint> &keypoints) const;
@@ -51,6 +55,15 @@ class SIFT971_Impl : public cv::Feature2D {
   CV_PROP_RW double contrastThreshold;
   CV_PROP_RW double edgeThreshold;
   CV_PROP_RW double sigma;
+
+ private:
+  cv::Mat createInitialImage(const cv::Mat &img, bool doubleImageSize) const;
+
+  bool use_fast_gaussian_pyramid_ = true;
+  bool use_fast_subtract_dogpyr_ = true;
+  bool use_fast_guassian_initial_ = true;
+  bool use_fused_pyramid_difference_ = true;
+  bool use_fast_pyramid_difference_ = true;
 };
 
 }  // namespace vision

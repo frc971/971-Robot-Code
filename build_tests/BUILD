@@ -1,6 +1,6 @@
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 load("//tools/cpp/emscripten:defs.bzl", "emcc_binary")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_python_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_py_library")
 
 emcc_binary(
     name = "helloworld.html",
@@ -99,7 +99,7 @@ cc_test(
     ],
 )
 
-flatbuffer_python_library(
+flatbuffer_py_library(
     name = "test_python_fbs",
     srcs = ["test.fbs"],
     namespace = "aos.examples",
