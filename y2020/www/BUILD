@@ -16,6 +16,18 @@ ts_library(
     ],
 )
 
+ts_library(
+    name = "field_main",
+    srcs = [
+        "field_main.ts",
+        "field_handler.ts",
+        "constants.ts",
+    ],
+    deps = [
+        "//aos/network/www:proxy",
+    ],
+)
+
 rollup_bundle(
     name = "main_bundle",
     entry_point = "y2020/www/main",
@@ -23,6 +35,15 @@ rollup_bundle(
     deps = [
         "main",
     ],
+)
+
+rollup_bundle(
+    name = "field_main_bundle",
+    entry_point = "y2020/www/field_main",
+    deps = [
+        "field_main",
+    ],
+    visibility = ["//y2020:__subpackages__"],
 )
 
 filegroup(

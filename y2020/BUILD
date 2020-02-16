@@ -166,6 +166,7 @@ sh_binary(
     srcs = ["web_proxy.sh"],
     data = [
         ":config.json",
+        "//y2020/www:field_main_bundle",
         "//aos/network:web_proxy_main",
         "//y2020/www:files",
         "//y2020/www:flatbuffers",

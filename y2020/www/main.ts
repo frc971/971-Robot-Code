@@ -1,6 +1,7 @@
 import {Connection} from 'aos/network/www/proxy';
 
 import {ImageHandler} from './image_handler';
+import {FieldHandler} from './field_handler';
 
 const conn = new Connection();
 

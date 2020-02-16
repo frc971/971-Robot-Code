@@ -3,16 +3,26 @@ import {Connect} from 'aos/network/connect_generated';
 
 export class ConfigHandler {
   private readonly root_div = document.getElementById('config');
+  private readonly tree_div;
 
   constructor(
       private readonly config: Configuration,
-      private readonly dataChannel: RTCDataChannel) {}
+      private readonly dataChannel: RTCDataChannel) {
+    const show_button = document.createElement('button');
+    show_button.addEventListener('click', () => this.toggleConfig());
+    const show_text = document.createTextNode('Show/Hide Config');
+    show_button.appendChild(show_text);
+    this.tree_div = document.createElement('div');
+    this.tree_div.hidden = true;
+    this.root_div.appendChild(show_button);
+    this.root_div.appendChild(this.tree_div);
+  }
 
   printConfig() {
     for (const i = 0; i < this.config.channelsLength(); i++) {
       const channel_div = document.createElement('div');
       channel_div.classList.add('channel');
-      this.root_div.appendChild(channel_div);
+      this.tree_div.appendChild(channel_div);
 
       const input_el = document.createElement('input');
       input_el.setAttribute('data-index', i);
@@ -63,5 +73,9 @@ export class ConfigHandler {
     const array = builder.asUint8Array();
     console.log('connect', array);
     this.dataChannel.send(array.buffer.slice(array.byteOffset));
+  }
+
+  toggleConfig() {
+    this.tree_div.hidden = !this.tree_div.hidden;
   }
 }
