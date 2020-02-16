@@ -36,6 +36,7 @@ cc_library(
         "//y2020/control_loops/superstructure/hood:hood_plants",
         "//y2020/control_loops/superstructure/intake:intake_plants",
         "//y2020/control_loops/superstructure/turret:turret_plants",
+	"//y2020/control_loops/superstructure/control_panel:control_panel_plants",
         "@com_google_absl//absl/base",
     ],
 )

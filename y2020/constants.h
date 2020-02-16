@@ -10,6 +10,7 @@
 #include "frc971/control_loops/pose.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 #include "y2020/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2020/control_loops/superstructure/control_panel/control_panel_plant.h"
 #include "y2020/control_loops/superstructure/hood/hood_plant.h"
 #include "y2020/control_loops/superstructure/intake/intake_plant.h"
 #include "y2020/control_loops/superstructure/turret/turret_plant.h"
@@ -119,6 +120,23 @@ struct Values {
   };
 
   PotAndAbsEncoderConstants turret;
+
+  // Control Panel
+
+  // Mag encoder
+  static constexpr double kControlPanelEncoderCountsPerRevolution() {
+    return 4096.0;
+  }
+
+  // Ratio is encoder to output
+  static constexpr double kControlPanelEncoderRatio() { return (56.0 / 28.0); }
+
+  static constexpr double kMaxControlPanelEncoderPulsesPerSecond() {
+    return control_loops::superstructure::control_panel::kFreeSpeed *
+           control_loops::superstructure::control_panel::kOutputRatio /
+           kControlPanelEncoderRatio() / (2.0 * M_PI) *
+           kControlPanelEncoderCountsPerRevolution();
+  }
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and

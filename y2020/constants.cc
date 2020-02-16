@@ -12,6 +12,7 @@
 #include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"
 #include "aos/network/team_number.h"
+#include "y2020/control_loops/superstructure/control_panel/integral_control_panel_plant.h"
 #include "y2020/control_loops/superstructure/hood/integral_hood_plant.h"
 #include "y2020/control_loops/superstructure/intake/integral_intake_plant.h"
 #include "y2020/control_loops/superstructure/turret/integral_turret_plant.h"
@@ -74,7 +75,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>
       *const turret_params = &turret->subsystem_params;
 
-  //Turret Constants
+  // Turret Constants
   turret_params->zeroing_voltage = 4.0;
   turret_params->operating_voltage = 12.0;
   // TODO(austin): Tune these.
@@ -149,8 +150,8 @@ const Values &GetValuesForTeam(uint16_t team_number) {
   static ::aos::Mutex mutex;
   ::aos::MutexLocker locker(&mutex);
 
-  // IMPORTANT: This declaration has to stay after the mutex is locked to avoid
-  // race conditions.
+  // IMPORTANT: This declaration has to stay after the mutex is locked to
+  // avoid race conditions.
   static ::std::map<uint16_t, const Values *> values;
 
   if (values.count(team_number) == 0) {
