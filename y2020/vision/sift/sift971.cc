@@ -294,48 +294,62 @@ void SIFT971_Impl::buildGaussianAndDifferencePyramid(
   gpyr.resize(number_octaves * gpyr_layers_per_octave);
   dogpyr.resize(number_octaves * dogpyr_layers_per_octave);
 
-  std::vector<double> sig(gpyr_layers_per_octave);
-  // precompute Gaussian sigmas using the following formula:
-  //  \sigma_{total}^2 = \sigma_{i}^2 + \sigma_{i-1}^2
-  sig[0] = sigma;
+  // Precompute Gaussian sigmas using the following formula:
+  //   \sigma_{total}^2 = \sigma_{i}^2 + \sigma_{i-1}^2
+  // We need one for each of the layers in the pyramid we blur, which skips the
+  // first one because it's just the base image without any blurring.
+  std::vector<double> sig(gpyr_layers_per_octave - 1);
   double k = std::pow(2., 1. / layers_per_octave);
-  for (int i = 1; i < gpyr_layers_per_octave; i++) {
-    double sig_prev = std::pow<double>(k, i - 1) * sigma;
+  for (int i = 0; i < gpyr_layers_per_octave - 1; i++) {
+    double sig_prev = std::pow<double>(k, i) * sigma;
     double sig_total = sig_prev * k;
     sig[i] = std::sqrt(sig_total * sig_total - sig_prev * sig_prev);
   }
 
   for (int octave = 0; octave < number_octaves; octave++) {
+    const int octave_gpyr_index = octave * gpyr_layers_per_octave;
+    const int octave_dogpyr_index = octave * dogpyr_layers_per_octave;
+
     // At the beginning of each octave, calculate the new base image.
     {
-      Mat &dst = gpyr[octave * gpyr_layers_per_octave];
+      Mat &dst = gpyr[octave_gpyr_index];
       if (octave == 0) {
         // For the first octave, it's just the base image.
         dst = base;
       } else {
-        // For the other octaves, it's a halved version of the end of the
-        // previous octave.
-        const Mat &src = gpyr[(octave - 1) * gpyr_layers_per_octave +
-                              gpyr_layers_per_octave - 1];
+        // For the other octaves, OpenCV's code claims that it's a halved
+        // version of the end of the previous octave.
+        // TODO(Brian): But this isn't really the end of the previous octave?
+        // But if you use the end, it finds way fewer features? Maybe this is
+        // just a arbitrarily-ish-somewhat-blurred thing from the previous
+        // octave??
+        const int gpyr_index = octave_gpyr_index - 3;
+        // Verify that the indexing in the original OpenCV code gives the same
+        // result. It's unclear which one makes more logical sense.
+        CHECK_EQ((octave - 1) * gpyr_layers_per_octave + layers_per_octave,
+                 gpyr_index);
+        const Mat &src = gpyr[gpyr_index];
         resize(src, dst, Size(src.cols / 2, src.rows / 2), 0, 0, INTER_NEAREST);
       }
     }
-    // We start with layer==1 because the "first layer" is just the base image
-    // (or a downscaled version of it).
-    for (int layer = 1; layer < gpyr_layers_per_octave; layer++) {
+
+    // Then, go through all the layers and calculate the appropriate
+    // differences.
+    for (int layer = 0; layer < dogpyr_layers_per_octave; layer++) {
       // The index where the current layer starts.
-      const int layer_index = octave * gpyr_layers_per_octave + layer;
+      const int layer_gpyr_index = octave_gpyr_index + layer;
+      const int layer_dogpyr_index = octave_dogpyr_index + layer;
+
       if (use_fast_pyramid_difference_) {
-        const Mat &input = gpyr[layer_index - 1];
-        Mat &blurred = gpyr[layer_index];
-        Mat &difference =
-            dogpyr[octave * dogpyr_layers_per_octave + (layer - 1)];
+        const Mat &input = gpyr[layer_gpyr_index];
+        Mat &blurred = gpyr[layer_gpyr_index + 1];
+        Mat &difference = dogpyr[layer_dogpyr_index];
         FastGaussianAndSubtract(input, &blurred, &difference, sig[layer]);
       } else {
         // First, calculate the new gaussian blur.
         {
-          const Mat &src = gpyr[layer_index - 1];
-          Mat &dst = gpyr[layer_index];
+          const Mat &src = gpyr[layer_gpyr_index];
+          Mat &dst = gpyr[layer_gpyr_index + 1];
           if (use_fast_gaussian_pyramid_) {
             FastGaussian(src, &dst, sig[layer]);
           } else {
@@ -345,9 +359,9 @@ void SIFT971_Impl::buildGaussianAndDifferencePyramid(
 
         // Then, calculate the difference from the previous one.
         {
-          const Mat &src1 = gpyr[layer_index - 1];
-          const Mat &src2 = gpyr[layer_index];
-          Mat &dst = dogpyr[octave * dogpyr_layers_per_octave + (layer - 1)];
+          const Mat &src1 = gpyr[layer_gpyr_index];
+          const Mat &src2 = gpyr[layer_gpyr_index + 1];
+          Mat &dst = dogpyr[layer_dogpyr_index];
           if (use_fast_subtract_dogpyr_) {
             FastSubtract(src2, src1, &dst);
           } else {
