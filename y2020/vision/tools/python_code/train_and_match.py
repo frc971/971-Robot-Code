@@ -3,8 +3,6 @@ import math
 import numpy as np
 import time
 
-import field_display
-
 ### DEFINITIONS
 MIN_MATCH_COUNT = 10  # 10 is min; more gives better matches
 FEATURE_EXTRACTOR_NAME = 'SIFT'
@@ -281,7 +279,8 @@ def show_results(training_images, train_keypoint_lists, query_images,
 #        keypoint_list: List of opencv keypoints
 def show_keypoints(image, keypoint_list):
     ret_img = image.copy()
-    ret_img = cv2.drawKeypoints(ret_img, keypoint_list, ret_img)
+    ret_img = cv2.drawKeypoints(ret_img, keypoint_list, ret_img,
+                               flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     cv2.imshow("Keypoints", ret_img)
     cv2.waitKey(0)
     return ret_img
