@@ -83,6 +83,53 @@ TEST(PoseTest, BaseTest) {
   EXPECT_NEAR(rel1.abs_theta(), abs.rel_theta(), kEps);
 }
 
+// Tests that we can go between transformation matrices and Pose objects.
+TEST(PoseTest, TransformationMatrixTest) {
+  // First, sanity check the basic case.
+  Pose pose({0, 0, 0}, 0);
+  typedef Eigen::Matrix<double, 4, 4> TransformationMatrix;
+  ASSERT_EQ(TransformationMatrix::Identity(), pose.AsTransformationMatrix());
+  Pose reproduced_pose(pose.AsTransformationMatrix());
+  ASSERT_EQ(reproduced_pose.rel_pos(), pose.rel_pos());
+  ASSERT_EQ(reproduced_pose.rel_theta(), pose.rel_theta());
+  // Check a basic case of rotation + translation.
+  *pose.mutable_pos() << 1, 2, 3;
+  pose.set_theta(M_PI_2);
+  TransformationMatrix expected;
+  expected << 0, -1, 0, 1, 1, 0, 0, 2, 0, 0, 1, 3, 0, 0, 0, 1;
+  TransformationMatrix pose_transformation =
+      pose.AsTransformationMatrix();
+  ASSERT_LT((expected - pose_transformation).norm(), 1e-15)
+      << "expected:\n"
+      << expected << "\nBut got:\n"
+      << pose_transformation;
+  ASSERT_EQ(Eigen::Vector4d(1, 2, 3, 1),
+            pose_transformation * Eigen::Vector4d(0, 0, 0, 1));
+  ASSERT_LT((Eigen::Vector4d(0, 3, 3, 1) -
+             pose_transformation * Eigen::Vector4d(1, 1, 0, 1))
+                .norm(),
+            1e-15)
+      << "got " << pose_transformation * Eigen::Vector4d(1, 1, 0, 1);
+
+  // Also, confirm that setting a new base does not affect the pose.
+  Pose faux_base({1, 1, 1}, 1);
+  pose.set_base(&faux_base);
+
+  ASSERT_EQ(pose_transformation, pose.AsTransformationMatrix());
+
+  reproduced_pose = Pose(pose_transformation);
+  ASSERT_EQ(reproduced_pose.rel_pos(), pose.rel_pos());
+  ASSERT_EQ(reproduced_pose.rel_theta(), pose.rel_theta());
+  // And check that if we introduce a pitch to the transformation matrix that it
+  // does not impact the resulting Pose (which only has a yaw component).
+  pose_transformation.block<3, 3>(0, 0) =
+      Eigen::AngleAxis<double>(0.5, Eigen::Vector3d::UnitX()) *
+      pose_transformation.block<3, 3>(0, 0);
+  reproduced_pose = Pose(pose_transformation);
+  ASSERT_EQ(reproduced_pose.rel_pos(), pose.rel_pos());
+  ASSERT_EQ(reproduced_pose.rel_theta(), pose.rel_theta());
+}
+
 // Tests that basic accessors for LineSegment behave as expected.
 TEST(LineSegmentTest, BasicAccessorTest) {
   LineSegment l;

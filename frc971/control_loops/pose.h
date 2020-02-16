@@ -9,6 +9,20 @@
 namespace frc971 {
 namespace control_loops {
 
+// Constructs a homogeneous transformation matrix for rotating about the Z axis.
+template <typename Scalar>
+Eigen::Matrix<Scalar, 4, 4> TransformationMatrixForYaw(Scalar yaw) {
+  Eigen::Matrix<Scalar, 4, 4> matrix;
+  matrix.setIdentity();
+  const Scalar stheta = std::sin(yaw);
+  const Scalar ctheta = std::cos(yaw);
+  matrix(0, 0) = ctheta;
+  matrix(1, 1) = ctheta;
+  matrix(0, 1) = -stheta;
+  matrix(1, 0) = stheta;
+  return matrix;
+}
+
 // Provides a representation of a transformation on the field.
 // Currently, this is heavily geared towards things that occur in a 2-D plane.
 // The Z-axis is rarely used (but still relevant; e.g., in 2019 some of the
@@ -41,7 +55,7 @@ class TypedPose {
   // The type that contains the translational (x, y, z) component of the Pose.
   typedef Eigen::Matrix<Scalar, 3, 1> Pos;
 
-  // Provide a default constructor that crease a pose at the origin.
+  // Provide a default constructor that creates a pose at the origin.
   TypedPose() : TypedPose({0.0, 0.0, 0.0}, 0.0) {}
 
   // Construct a Pose in the absolute frame with a particular position and yaw.
@@ -53,6 +67,15 @@ class TypedPose {
   // the object being constructed.
   TypedPose(const TypedPose<Scalar> *base, const Pos &rel_pos, Scalar rel_theta)
       : base_(base), pos_(rel_pos), theta_(rel_theta) {}
+
+  // Constructs a Pose from a homogeneous transformation matrix. Ignores the
+  // pitch/roll components of the rotation. Ignores the bottom row.
+  TypedPose(const Eigen::Matrix<Scalar, 4, 4> &H) {
+    pos_ = H.template block<3, 1>(0, 3);
+    const Eigen::Vector3d rotated_x =
+        H.template block<3, 3>(0, 0) * Eigen::Vector3d::UnitX();
+    theta_ = std::atan2(rotated_x.y(), rotated_x.x());
+  }
 
   // Calculate the current global position of this Pose.
   Pos abs_pos() const {
@@ -93,6 +116,15 @@ class TypedPose {
     return abs_pos().template topRows<2>();
   }
 
+  // Returns a transformation matrix representing this pose--note that this
+  // explicitly does not include the base position, so this is equivalent to a
+  // translation and rotation by rel_pos and rel_theta.
+  Eigen::Matrix<Scalar, 4, 4> AsTransformationMatrix() const {
+    Eigen::Matrix<Scalar, 4, 4> matrix = TransformationMatrixForYaw(theta_);
+    matrix.template block<3, 1>(0, 3) = pos_;
+    return matrix;
+  }
+
   // Provide a copy of this that is set to have the same
   // current absolute Pose as this, but have a different base.
   // This can be used, e.g., to compute a Pose for a vision target that is
@@ -103,6 +135,14 @@ class TypedPose {
   // Note that the lifetime of new_base should be greater than the lifetime of
   // the returned object (unless new_base == nullptr).
   TypedPose Rebase(const TypedPose<Scalar> *new_base) const;
+
+  // Convert this pose to the heading/distance/skew numbers that we
+  // traditionally use for EKF corrections.
+  Eigen::Matrix<Scalar, 3, 1> ToHeadingDistanceSkew() const {
+    const Scalar target_heading = heading();
+    return {target_heading, xy_norm(),
+            aos::math::NormalizeAngle(rel_theta() - target_heading)};
+  }
 
  private:
   // A rotation-matrix like representation of the rotation for a given angle.
