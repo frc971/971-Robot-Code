@@ -29,7 +29,8 @@
     {
       "name": "/drivetrain",
       "type": "frc971.control_loops.drivetrain.Status",
-      "frequency": 200
+      "frequency": 200,
+      "max_size": 2000
     },
     {
       "name": "/drivetrain",

@@ -99,6 +99,34 @@ table LineFollowLogging {
   rel_theta:float;
 }
 
+// Current states of the EKF. See hybrid_ekf.h for detailed comments.
+table LocalizerState {
+  // X/Y field position, in meters.
+  x:float;
+  y:float;
+  // Current heading, in radians.
+  theta:float;
+  // Current estimate of the left encoder position, in meters.
+  left_encoder:float;
+  // Velocity of the left side of the robot.
+  left_velocity:float;
+  // Current estimate of the right encoder position, in meters.
+  right_encoder:float;
+  // Velocity of the right side of the robot.
+  right_velocity:float;
+  // Current "voltage error" terms, in V.
+  left_voltage_error:float;
+  right_voltage_error:float;
+  // Estimate of the offset between the encoder readings and true rotation of
+  // the robot, in rad/sec.
+  angular_error:float;
+  // Current difference between the estimated longitudinal velocity of the robot
+  // and that experienced by the wheels, in m/s.
+  longitudinal_velocity_offset:float;
+  // Lateral velocity of the robot, in m/s.
+  lateral_velocity:float;
+}
+
 table DownEstimatorState {
   quaternion_x:double;
   quaternion_y:double;
@@ -115,9 +143,54 @@ table DownEstimatorState {
   // All angles in radians.
   lateral_pitch:float;
   longitudinal_pitch:float;
-  // Current yaw angle (heading) of the robot, as estimated solely by the down
-  // estimator.
+  // Current yaw angle (heading) of the robot, as estimated solely by
+  // integrating the Z-axis of the gyro (in rad).
   yaw:float;
+
+  // Current position of the robot, as determined solely from the
+  // IMU/down-estimator, in meters.
+  position_x:float;
+  position_y:float;
+  position_z:float;
+
+  // Current velocity of the robot, as determined solely from the
+  // IMU/down-estimator, in meters / sec.
+  velocity_x:float;
+  velocity_y:float;
+  velocity_z:float;
+
+  // Current acceleration of the robot, with pitch/roll (but not yaw)
+  // compensated out, in meters / sec / sec.
+  accel_x:float;
+  accel_y:float;
+  accel_z:float;
+
+  // Current acceleration that we expect to see from the accelerometer, assuming
+  // no acceleration other than that due to gravity, in g's.
+  expected_accel_x:float;
+  expected_accel_y:float;
+  expected_accel_z:float;
+
+  // Current estimate of the overall acceleration due to gravity, in g's. Should
+  // generally be within ~0.003 g's of 1.0.
+  gravity_magnitude:float;
+
+  consecutive_still:int;
+}
+
+table ImuZeroerState {
+  // True if we have successfully zeroed the IMU.
+  zeroed:bool;
+  // True if the zeroing code has observed some inconsistency in the IMU.
+  faulted:bool;
+  // Number of continuous zeroing measurements that we have accumulated for use
+  // in the zeroing.
+  number_of_zeroes:int;
+
+  // Current zeroing values beind used for each gyro axis, in rad / sec.
+  gyro_x_average:float;
+  gyro_y_average:float;
+  gyro_z_average:float;
 }
 
 table Status {
@@ -174,6 +247,10 @@ table Status {
   poly_drive_logging:PolyDriveLogging;
 
   down_estimator:DownEstimatorState;
+
+  localizer:LocalizerState;
+
+  zeroing:ImuZeroerState;
 }
 
 root_type Status;
