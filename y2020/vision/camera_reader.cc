@@ -57,6 +57,21 @@ class CameraReader {
                const std::vector<cv::KeyPoint> &keypoints,
                const cv::Mat &descriptors);
 
+  // Returns the 3D location for the specified training feature.
+  cv::Point3f Training3dPoint(int training_image_index, int feature_index) {
+    const sift::KeypointFieldLocation *const location =
+        training_data_->images()
+            ->Get(training_image_index)
+            ->features()
+            ->Get(feature_index)
+            ->field_location();
+    return cv::Point3f(location->x(), location->y(), location->z());
+  }
+
+  int number_training_images() const {
+    return training_data_->images()->size();
+  }
+
   aos::EventLoop *const event_loop_;
   const sift::TrainingData *const training_data_;
   V4L2Reader *const reader_;
@@ -144,29 +159,27 @@ CameraReader::PackImageMatches(
     const std::vector<std::vector<cv::DMatch>> &matches) {
   // First, we need to pull out all the matches for each image. Might as well
   // build up the Match tables at the same time.
-  std::vector<std::vector<flatbuffers::Offset<sift::Match>>> per_image_matches;
+  std::vector<std::vector<sift::Match>> per_image_matches(
+      number_training_images());
   for (const std::vector<cv::DMatch> &image_matches : matches) {
     for (const cv::DMatch &image_match : image_matches) {
-      sift::Match::Builder match_builder(*fbb);
-      match_builder.add_query_feature(image_match.queryIdx);
-      match_builder.add_train_feature(image_match.trainIdx);
-      if (per_image_matches.size() <= static_cast<size_t>(image_match.imgIdx)) {
-        per_image_matches.resize(image_match.imgIdx + 1);
-      }
-      per_image_matches[image_match.imgIdx].emplace_back(
-          match_builder.Finish());
+      CHECK_LT(image_match.imgIdx, number_training_images());
+      per_image_matches[image_match.imgIdx].emplace_back();
+      sift::Match *const match = &per_image_matches[image_match.imgIdx].back();
+      match->mutate_query_feature(image_match.queryIdx);
+      match->mutate_train_feature(image_match.trainIdx);
+      match->mutate_distance(image_match.distance);
     }
   }
 
   // Then, we need to build up each ImageMatch table.
   std::vector<flatbuffers::Offset<sift::ImageMatch>> image_match_tables;
   for (size_t i = 0; i < per_image_matches.size(); ++i) {
-    const std::vector<flatbuffers::Offset<sift::Match>> &this_image_matches =
-        per_image_matches[i];
+    const std::vector<sift::Match> &this_image_matches = per_image_matches[i];
     if (this_image_matches.empty()) {
       continue;
     }
-    const auto vector_offset = fbb->CreateVector(this_image_matches);
+    const auto vector_offset = fbb->CreateVectorOfStructs(this_image_matches);
     sift::ImageMatch::Builder image_builder(*fbb);
     image_builder.add_train_image(i);
     image_builder.add_matches(vector_offset);

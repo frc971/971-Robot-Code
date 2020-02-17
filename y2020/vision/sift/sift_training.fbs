@@ -18,6 +18,9 @@ table TrainingImage {
 // Represents the information used to match incoming images against.
 table TrainingData {
   images:[TrainingImage];
+
+  // Calibration information for all the cameras we know about.
+  camera_calibrations:[CameraCalibration];
 }
 
 root_type TrainingData;
