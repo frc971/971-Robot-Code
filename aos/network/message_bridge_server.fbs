@@ -22,6 +22,11 @@ table ServerConnection {
   // Number of packets received on all channels.
   sent_packets:uint;
 
+  // This is the measured monotonic offset for the connected node in
+  // nanoseconds.  Add this to our monotonic time to get their
+  // monotonic time.
+  monotonic_offset:int64;
+
   // TODO(austin): Per channel counts?
 }
 

@@ -1,0 +1,15 @@
+include "aos/configuration.fbs";
+
+namespace aos.message_bridge;
+
+table ClientOffset {
+  node:Node;
+
+  monotonic_offset:int64;
+}
+
+table Timestamp {
+  offsets:[ClientOffset];
+}
+
+root_type Timestamp;

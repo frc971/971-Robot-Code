@@ -8,8 +8,10 @@
 #include "aos/events/logging/logger_generated.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/network/connect_generated.h"
+#include "aos/network/message_bridge_client_generated.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/sctp_server.h"
+#include "aos/network/timestamp_generated.h"
 #include "glog/logging.h"
 
 namespace aos {
@@ -105,9 +107,12 @@ class MessageBridgeServer {
   // received.
   void HandleData(const Message *message);
 
+  // Handle timestamps and statistics.
+  void Tick();
+
   // Sends out the statistics that are continually updated by the
   // ChannelState's.
-  void SendStatistics() { sender_.Send(statistics_); }
+  void SendStatistics();
 
   // Event loop to schedule everything on.
   aos::ShmEventLoop *event_loop_;
@@ -116,8 +121,32 @@ class MessageBridgeServer {
   aos::Sender<ServerStatistics> sender_;
   aos::TimerHandler *statistics_timer_;
   FlatbufferDetachedBuffer<ServerStatistics> statistics_;
+  std::vector<flatbuffers::Offset<ServerConnection>> server_connection_offsets_;
+
+  // Sender for the timestamps that we are forwarding over the network.
+  aos::Sender<Timestamp> timestamp_sender_;
+  // ChannelState to send timestamps over the network with.
+  ChannelState *timestamp_state_ = nullptr;
+
+  // Fetcher to grab the measured offsets in the client.
+  aos::Fetcher<ClientStatistics> client_statistics_fetcher_;
+  // All of these are indexed by the other node index.
+  // Fetcher to grab timestamps and therefore offsets from the other nodes.
+  std::vector<aos::Fetcher<Timestamp>> timestamp_fetchers_;
+  // Bidirectional filters for each connection.
+  std::vector<ClippedAverageFilter> filters_;
+  // ServerConnection to fill out the offsets for from each node.
+  std::vector<ServerConnection *> server_connection_;
 
   SctpServer server_;
+
+  static constexpr std::chrono::nanoseconds kStatisticsPeriod =
+      std::chrono::seconds(1);
+  static constexpr std::chrono::nanoseconds kPingPeriod =
+      std::chrono::milliseconds(100);
+
+  aos::monotonic_clock::time_point last_statistics_send_time_ =
+      aos::monotonic_clock::min_time;
 
   // List of channels.  The entries that aren't sent from this node are left
   // null.

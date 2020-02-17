@@ -141,6 +141,7 @@ aos_config(
         ":ping_fbs",
         ":pong_fbs",
         "//aos/network:message_bridge_client_fbs",
+        "//aos/network:timestamp_fbs",
         "//aos/network:message_bridge_server_fbs",
     ],
     deps = [":config"],

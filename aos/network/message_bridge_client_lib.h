@@ -7,6 +7,7 @@
 #include "aos/events/logging/logger_generated.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/network/connect_generated.h"
+#include "aos/network/timestamp_filter.h"
 #include "aos/network/message_bridge_client_generated.h"
 #include "aos/network/sctp_client.h"
 #include "aos/network/sctp_lib.h"
@@ -76,6 +77,9 @@ class SctpClientConnection {
   // id of the server once known.  This is only valid if connection_ says
   // connected.
   sctp_assoc_t remote_assoc_id_ = 0;
+
+  // Filter for the timestamp offset for this connection.
+  TimestampFilter filter_;
 };
 
 // This encapsulates the state required to talk to *all* the servers from this
@@ -89,7 +93,7 @@ class MessageBridgeClient {
  private:
   // Sends out the statistics that are continually updated by the
   // SctpClientConnections.
-  void SendStatistics() { sender_.Send(statistics_); }
+  void SendStatistics();
 
   // Event loop to schedule everything on.
   aos::ShmEventLoop *event_loop_;
@@ -102,6 +106,9 @@ class MessageBridgeClient {
 
   // Data to publish.
   FlatbufferDetachedBuffer<ClientStatistics> statistics_;
+  // Reserved memory for the client connection offsets to reduce heap
+  // allocations.
+  std::vector<flatbuffers::Offset<ClientConnection>> client_connection_offsets_;
 
   // Channels to send data over.
   std::vector<std::unique_ptr<aos::RawSender>> channels_;

@@ -33,6 +33,7 @@ FlatbufferDetachedBuffer<ServerStatistics> MakeServerStatistics(
     connection_builder.add_state(State::DISCONNECTED);
     connection_builder.add_dropped_packets(0);
     connection_builder.add_sent_packets(0);
+    connection_builder.add_monotonic_offset(0);
     connection_offsets.emplace_back(connection_builder.Finish());
   }
   flatbuffers::Offset<
@@ -211,11 +212,52 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
           configuration::DestinationNodeNames(event_loop->configuration(),
                                               event_loop->node()),
           event_loop->configuration())),
+      timestamp_sender_(event_loop_->MakeSender<Timestamp>("/aos")),
+      client_statistics_fetcher_(
+          event_loop_->MakeFetcher<ClientStatistics>("/aos")),
       server_("::", event_loop->node()->port()) {
   CHECK(event_loop_->node() != nullptr) << ": No nodes configured.";
 
-  // TODO(austin): Time sync.  sctp gives us filtered round trip time, not
-  // target time.
+  server_connection_offsets_.reserve(
+      statistics_.message().connections()->size());
+
+  int32_t max_size = 0;
+  timestamp_fetchers_.resize(event_loop->configuration()->nodes()->size());
+  filters_.resize(event_loop->configuration()->nodes()->size());
+  server_connection_.resize(event_loop->configuration()->nodes()->size());
+
+  // Seed up all the per-node connection state.
+  for (std::string_view destination_node_name :
+       configuration::DestinationNodeNames(event_loop->configuration(),
+                                           event_loop->node())) {
+    // Find the largest connection message so we can size our buffers big enough
+    // to receive a connection message.
+    max_size = std::max(
+        max_size,
+        static_cast<int32_t>(MakeConnectMessage(event_loop->configuration(),
+                                                event_loop->node(),
+                                                destination_node_name)
+                                 .size()));
+    const Node *destination_node = configuration::GetNode(
+        event_loop->configuration(), destination_node_name);
+
+    const int node_index = configuration::GetNodeIndex(
+        event_loop->configuration(), destination_node);
+
+    // Now find the timestamp channel forwarded from the other node.
+    const Channel *const other_timestamp_channel =
+        configuration::GetChannel(event_loop_->configuration(), "/aos",
+                                  Timestamp::GetFullyQualifiedName(),
+                                  event_loop_->name(), destination_node);
+
+    timestamp_fetchers_[node_index] = event_loop_->MakeFetcher<Timestamp>(
+        other_timestamp_channel->name()->string_view());
+
+    // And then find the server connection that we should be populating
+    // statistics into.
+    server_connection_[node_index] = FindServerConnection(
+        statistics_.mutable_message(), destination_node->name()->string_view());
+  }
 
   // TODO(austin): Logging synchronization.
   //
@@ -228,11 +270,16 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
   LOG(INFO) << "Hostname: " << event_loop_->node()->hostname()->string_view();
 
   int channel_index = 0;
+  const Channel *const timestamp_channel = configuration::GetChannel(
+      event_loop_->configuration(), "/aos", Timestamp::GetFullyQualifiedName(),
+      event_loop_->name(), event_loop_->node());
+
   for (const Channel *channel : *event_loop_->configuration()->channels()) {
     CHECK(channel->has_source_node());
-    if (channel->source_node()->string_view() ==
-            event_loop_->node()->name()->string_view() &&
+
+    if (configuration::ChannelIsSendableOnNode(channel, event_loop_->node()) &&
         channel->has_destination_nodes()) {
+      max_size = std::max(channel->max_size(), max_size);
       std::unique_ptr<ChannelState> state(
           new ChannelState{channel, channel_index});
 
@@ -246,13 +293,20 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
             configuration::ChannelMessageIsLoggedOnNode(channel, other_node));
       }
 
-      // Call SendData for every message.
-      ChannelState *state_ptr = state.get();
-      event_loop_->MakeRawWatcher(
-          channel,
-          [this, state_ptr](const Context &context, const void * /*message*/) {
-            state_ptr->SendData(&server_, context);
-          });
+      // Don't subscribe to timestamps on the timestamp channel.  Those get
+      // handled specially.
+      if (channel != timestamp_channel) {
+        // Call SendData for every message.
+        ChannelState *state_ptr = state.get();
+        event_loop_->MakeRawWatcher(
+            channel, [this, state_ptr](const Context &context,
+                                       const void * /*message*/) {
+              state_ptr->SendData(&server_, context);
+            });
+      } else {
+        CHECK(timestamp_state_ == nullptr);
+        timestamp_state_ = state.get();
+      }
       channels_.emplace_back(std::move(state));
     } else {
       channels_.emplace_back(nullptr);
@@ -260,10 +314,13 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
     ++channel_index;
   }
 
-  statistics_timer_ = event_loop_->AddTimer([this]() { SendStatistics(); });
+  // Buffer up the max size a bit so everything fits nicely.
+  server_.SetMaxSize(max_size + 100);
+
+  statistics_timer_ = event_loop_->AddTimer([this]() { Tick(); });
   event_loop_->OnRun([this]() {
-    statistics_timer_->Setup(event_loop_->monotonic_now() + chrono::seconds(1),
-                             chrono::seconds(1));
+    statistics_timer_->Setup(event_loop_->monotonic_now() + kPingPeriod,
+                             kPingPeriod);
   });
 }
 
@@ -363,6 +420,174 @@ void MessageBridgeServer::HandleData(const Message *message) {
   if (VLOG_IS_ON(1)) {
     message->LogRcvInfo();
   }
+}
+
+void MessageBridgeServer::SendStatistics() {
+  aos::Sender<ServerStatistics>::Builder builder = sender_.MakeBuilder();
+
+  server_connection_offsets_.clear();
+
+  // Copy the statistics over, but only add monotonic_offset if it is valid.
+  for (const ServerConnection *connection :
+       *statistics_.message().connections()) {
+    flatbuffers::Offset<flatbuffers::String> node_name_offset =
+        builder.fbb()->CreateString(connection->node()->name()->string_view());
+    Node::Builder node_builder = builder.MakeBuilder<Node>();
+    node_builder.add_name(node_name_offset);
+    flatbuffers::Offset<Node> node_offset = node_builder.Finish();
+
+    ServerConnection::Builder server_connection_builder =
+        builder.MakeBuilder<ServerConnection>();
+    server_connection_builder.add_node(node_offset);
+    server_connection_builder.add_state(connection->state());
+    server_connection_builder.add_dropped_packets(
+        connection->dropped_packets());
+    server_connection_builder.add_sent_packets(connection->sent_packets());
+
+    // TODO(austin): If it gets stale, drop it too.
+    if (connection->monotonic_offset() != 0) {
+      server_connection_builder.add_monotonic_offset(
+          connection->monotonic_offset());
+    }
+
+    server_connection_offsets_.emplace_back(server_connection_builder.Finish());
+  }
+
+  flatbuffers::Offset<
+      flatbuffers::Vector<flatbuffers::Offset<ServerConnection>>>
+      server_connections_offset =
+          builder.fbb()->CreateVector(server_connection_offsets_);
+
+  ServerStatistics::Builder server_statistics_builder =
+      builder.MakeBuilder<ServerStatistics>();
+  server_statistics_builder.add_connections(server_connections_offset);
+  builder.Send(server_statistics_builder.Finish());
+}
+
+void MessageBridgeServer::Tick() {
+  // Send statistics every kStatisticsPeriod. Use the context so we don't get
+  // caught up with the wakeup delay and jitter.
+  if (event_loop_->context().monotonic_event_time >=
+      last_statistics_send_time_ + kStatisticsPeriod) {
+    SendStatistics();
+    last_statistics_send_time_ = event_loop_->context().monotonic_event_time;
+  }
+
+  // The message_bridge_client application measures and filters the offsets from
+  // all messages it receives.  It then sends this on in the ClientStatistics
+  // message.  Collect that up and forward it back over the Timestamp message so
+  // we have guarenteed traffic on the other node for timestamping.  This also
+  // moves the offsets back across the network so both directions can be
+  // observed.
+  client_statistics_fetcher_.Fetch();
+
+  // Build up the timestamp message.  Do it here so that we don't have invalid
+  // data in it.
+  FlatbufferFixedAllocatorArray<Timestamp, 1000> timestamp_copy;
+  flatbuffers::FlatBufferBuilder *fbb = timestamp_copy.Builder();
+
+  if (client_statistics_fetcher_.get()) {
+    // Build up the list of client offsets.
+    std::vector<flatbuffers::Offset<ClientOffset>> client_offsets;
+
+    // Iterate through the connections this node has made.
+    for (const ClientConnection *connection :
+         *client_statistics_fetcher_->connections()) {
+      // Filter out the ones which aren't connected.
+      if (connection->state() != State::CONNECTED) continue;
+      // And the ones without monotonic offsets.
+      if (!connection->has_monotonic_offset()) continue;
+
+      const int node_index = configuration::GetNodeIndex(
+          event_loop_->configuration(),
+          connection->node()->name()->string_view());
+
+      timestamp_fetchers_[node_index].Fetch();
+
+      // Find the offset computed on their node for this client connection
+      // using their timestamp message.
+      bool has_their_offset = false;
+      std::chrono::nanoseconds their_offset = std::chrono::nanoseconds(0);
+      if (timestamp_fetchers_[node_index].get() != nullptr) {
+        for (const ClientOffset *client_offset :
+             *timestamp_fetchers_[node_index]->offsets()) {
+          if (client_offset->node()->name()->string_view() ==
+              event_loop_->node()->name()->string_view()) {
+            if (client_offset->has_monotonic_offset()) {
+              their_offset =
+                  std::chrono::nanoseconds(client_offset->monotonic_offset());
+              has_their_offset = true;
+            }
+            break;
+          }
+        }
+      }
+
+      if (has_their_offset) {
+        // Update the filters.
+        if (filters_[node_index].MissingSamples()) {
+          // Update the offset the first time.  This should be representative.
+          filters_[node_index].set_base_offset(
+              std::chrono::nanoseconds(connection->monotonic_offset()));
+        }
+        // The message_bridge_clients are the ones running the first filter.  So
+        // set the values from that and let the averaging filter run from there.
+        filters_[node_index].FwdSet(
+            timestamp_fetchers_[node_index].context().monotonic_remote_time,
+            std::chrono::nanoseconds(connection->monotonic_offset()));
+        filters_[node_index].RevSet(
+            client_statistics_fetcher_.context().monotonic_event_time,
+            their_offset);
+
+        // Publish!
+        server_connection_[node_index]->mutate_monotonic_offset(
+            -filters_[node_index].offset().count());
+      }
+
+      // Now fill out the Timestamp message with the offset from the client.
+      flatbuffers::Offset<flatbuffers::String> node_name_offset =
+          fbb->CreateString(connection->node()->name()->string_view());
+
+      Node::Builder node_builder(*fbb);
+      node_builder.add_name(node_name_offset);
+      flatbuffers::Offset<Node> node_offset = node_builder.Finish();
+
+      ClientOffset::Builder client_offset_builder(*fbb);
+      client_offset_builder.add_node(node_offset);
+      client_offset_builder.add_monotonic_offset(
+          connection->monotonic_offset());
+      client_offsets.emplace_back(client_offset_builder.Finish());
+    }
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<ClientOffset>>>
+        offsets_offset = fbb->CreateVector(client_offsets);
+
+    Timestamp::Builder builder(*fbb);
+    builder.add_offsets(offsets_offset);
+    timestamp_copy.Finish(builder.Finish());
+  } else {
+    // Publish an empty timestamp if we have nothing.
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<ClientOffset>>>
+        offsets_offset =
+            fbb->CreateVector(std::vector<flatbuffers::Offset<ClientOffset>>{});
+    Timestamp::Builder builder(*fbb);
+    builder.add_offsets(offsets_offset);
+    timestamp_copy.Finish(builder.Finish());
+  }
+
+  // Send it out over shm, and using that timestamp, then send it out over sctp.
+  // This avoid some context switches.
+  timestamp_sender_.Send(timestamp_copy);
+
+  Context context;
+  context.monotonic_event_time = timestamp_sender_.monotonic_sent_time();
+  context.realtime_event_time = timestamp_sender_.realtime_sent_time();
+  context.queue_index = timestamp_sender_.sent_queue_index();
+  context.size = timestamp_copy.size();
+  context.data = timestamp_copy.data();
+
+  // Since we are building up the timestamp to send here, we need to trigger the
+  // SendData call ourselves.
+  timestamp_state_->SendData(&server_, context);
 }
 
 }  // namespace message_bridge

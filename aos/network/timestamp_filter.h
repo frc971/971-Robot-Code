@@ -24,6 +24,18 @@ namespace message_bridge {
 // much about precision when solving for the global offset.
 class TimestampFilter {
  public:
+  // Forces the offset and time to the provided sample without filtering.  Used
+  // for syncing with a remote filter calculation.
+  void Set(aos::monotonic_clock::time_point monotonic_now,
+           std::chrono::nanoseconds sample_ns) {
+    const double sample =
+        std::chrono::duration_cast<std::chrono::duration<double>>(sample_ns -
+                                                                  base_offset_)
+            .count();
+    offset_ = sample;
+    last_time_ = monotonic_now;
+  }
+
   // Updates with a new sample.  monotonic_now is the timestamp of the sample on
   // the destination node, and sample_ns is destination_time - source_time.
   void Sample(aos::monotonic_clock::time_point monotonic_now,
@@ -132,6 +144,13 @@ struct ClippedAverageFilter {
     }
   }
 
+  // Sets the forward sample without filtering.  See FwdSample for more details.
+  void FwdSet(aos::monotonic_clock::time_point monotonic_now,
+              std::chrono::nanoseconds sample_ns) {
+    fwd_.Set(monotonic_now, sample_ns);
+    Update(monotonic_now, &last_fwd_time_);
+  }
+
   // Adds a forward sample.  sample_ns = destination - source;  Forward samples
   // are from A -> B.
   void FwdSample(aos::monotonic_clock::time_point monotonic_now,
@@ -154,6 +173,13 @@ struct ClippedAverageFilter {
           std::chrono::duration_cast<std::chrono::duration<double>>(offset())
               .count());
     }
+  }
+
+  // Sets the forward sample without filtering.  See FwdSample for more details.
+  void RevSet(aos::monotonic_clock::time_point monotonic_now,
+              std::chrono::nanoseconds sample_ns) {
+    rev_.Set(monotonic_now, sample_ns);
+    Update(monotonic_now, &last_rev_time_);
   }
 
   // Adds a reverse sample.  sample_ns = destination - source;  Reverse samples
@@ -214,6 +240,11 @@ struct ClippedAverageFilter {
     last_rev_time_ = aos::monotonic_clock::min_time;
   }
 
+  bool MissingSamples() {
+    return (last_fwd_time_ == aos::monotonic_clock::min_time) ||
+           (last_rev_time_ == aos::monotonic_clock::min_time);
+  }
+
  private:
   // Updates the offset estimate given the current time, and a pointer to the
   // variable holding the last time.
@@ -226,7 +257,6 @@ struct ClippedAverageFilter {
     const double hard_max = fwd_.offset();
     const double hard_min = -rev_.offset();
     const double average = (hard_max + hard_min) / 2.0;
-    LOG(INFO) << "max " << hard_max << " min " << hard_min;
     // We don't want to clip the offset to the hard min/max.  We really want to
     // keep it within a band around the middle.  ratio of 0.5 means stay within
     // +- 0.25 of the middle of the hard min and max.

@@ -13,6 +13,11 @@ table ClientConnection {
   // Number of packets received on all channels.
   received_packets:uint;
 
+  // This is the measured monotonic offset for just the server -> client
+  // direction measured in nanoseconds.  Subtract this from our monotonic time
+  // to get their monotonic time.
+  monotonic_offset:int64;
+
   // TODO(austin): Per channel counts?
 }
 

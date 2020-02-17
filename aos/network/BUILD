@@ -14,6 +14,15 @@ flatbuffer_cc_library(
 )
 
 flatbuffer_cc_library(
+    name = "timestamp_fbs",
+    srcs = ["timestamp.fbs"],
+    gen_reflections = 1,
+    includes = [
+        "//aos:configuration_fbs_includes",
+    ],
+)
+
+flatbuffer_cc_library(
     name = "message_bridge_client_fbs",
     srcs = ["message_bridge_client.fbs"],
     gen_reflections = 1,
@@ -96,8 +105,18 @@ cc_library(
 
 cc_library(
     name = "message_bridge_protocol",
+    srcs = [
+        "message_bridge_protocol.cc",
+    ],
     hdrs = [
         "message_bridge_protocol.h",
+    ],
+    deps = [
+        ":connect_fbs",
+        "//aos:configuration",
+        "//aos:flatbuffer_merge",
+        "//aos:flatbuffers",
+        "@com_github_google_flatbuffers//:flatbuffers",
     ],
 )
 
@@ -114,10 +133,12 @@ cc_library(
     ],
     deps = [
         ":connect_fbs",
+        ":message_bridge_client_fbs",
         ":message_bridge_protocol",
         ":message_bridge_server_fbs",
         ":sctp_lib",
         ":sctp_server",
+        ":timestamp_fbs",
         "//aos:unique_malloc_ptr",
         "//aos/events:shm_event_loop",
         "//aos/events/logging:logger",
@@ -172,6 +193,7 @@ cc_library(
         ":message_bridge_protocol",
         ":message_bridge_server_fbs",
         ":sctp_client",
+        ":timestamp_fbs",
         "//aos/events:shm_event_loop",
         "//aos/events/logging:logger",
     ],
@@ -201,6 +223,7 @@ aos_config(
         "//aos/events:pong_fbs",
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
+        "//aos/network:timestamp_fbs",
     ],
     deps = ["//aos/events:config"],
 )
@@ -240,11 +263,11 @@ cc_test(
 flatbuffer_cc_library(
     name = "web_proxy_fbs",
     srcs = ["web_proxy.fbs"],
+    gen_reflections = True,
     includes = [
         ":connect_fbs_includes",
         "//aos:configuration_fbs_includes",
     ],
-    gen_reflections = True,
 )
 
 flatbuffer_ts_library(
@@ -258,8 +281,8 @@ flatbuffer_ts_library(
 
 cc_library(
     name = "web_proxy_utils",
-    hdrs = ["web_proxy_utils.h"],
     srcs = ["web_proxy_utils.cc"],
+    hdrs = ["web_proxy_utils.h"],
     deps = [
         ":connect_fbs",
         ":web_proxy_fbs",
@@ -300,25 +323,25 @@ gen_embedded(
 cc_binary(
     name = "web_proxy_main",
     srcs = ["web_proxy_main.cc"],
-    deps = [
-        ":gen_embedded",
-        ":web_proxy",
-        "//aos/events:shm_event_loop",
-        "//aos:init",
-        "//aos/seasocks:seasocks_logger",
-        "//third_party/seasocks",
-        "@com_github_google_flatbuffers//:flatbuffers"
-    ],
     copts = [
         "-DWEBRTC_POSIX",
         "-Wno-unused-parameter",
     ],
     data = [
-        "//aos/network/www:files",
-        "//aos/network/www:main_bundle",
-        "//aos/network/www:flatbuffers",
-        "@com_github_google_flatbuffers//:flatjs",
         "//aos/events:pingpong_config.json",
+        "//aos/network/www:files",
+        "//aos/network/www:flatbuffers",
+        "//aos/network/www:main_bundle",
+        "@com_github_google_flatbuffers//:flatjs",
+    ],
+    deps = [
+        ":gen_embedded",
+        ":web_proxy",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//aos/seasocks:seasocks_logger",
+        "//third_party/seasocks",
+        "@com_github_google_flatbuffers//:flatbuffers",
     ],
 )
 

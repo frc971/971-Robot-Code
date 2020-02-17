@@ -175,9 +175,9 @@ aos::unique_c_ptr<Message> ReadSctpMessage(int fd, int max_size) {
   memset(&inmessage, 0, sizeof(struct msghdr));
 
   aos::unique_c_ptr<Message> result(
-      reinterpret_cast<Message *>(malloc(sizeof(Message) + max_size)));
+      reinterpret_cast<Message *>(malloc(sizeof(Message) + max_size + 1)));
 
-  iov.iov_len = max_size;
+  iov.iov_len = max_size + 1;
   iov.iov_base = result->mutable_data();
 
   inmessage.msg_iov = &iov;
@@ -193,6 +193,7 @@ aos::unique_c_ptr<Message> ReadSctpMessage(int fd, int max_size) {
   PCHECK((size = recvmsg(fd, &inmessage, 0)) > 0);
 
   result->size = size;
+  CHECK_LE(size, max_size) << ": Message overflowed buffer.";
 
   if ((MSG_NOTIFICATION & inmessage.msg_flags)) {
     result->message_type = Message::kNotification;
