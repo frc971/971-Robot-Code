@@ -76,7 +76,7 @@ sigmas = [
     # all the redundant versions for other sizes, and maybe stop doing the one
     # we don't actually use.
     [
-        "1.2489997148513794",
+        "1.2489995956420898",
         "1p24",
         "11",
     ],
@@ -90,23 +90,23 @@ sigmas = [
 sizes = [
     [
         1280,
-        720,
+        960,
     ],
     [
         640,
-        360,
+        480,
     ],
     [
         320,
-        180,
+        240,
     ],
     [
         160,
-        90,
+        120,
     ],
     [
         80,
-        45,
+        60,
     ],
 ]
 
