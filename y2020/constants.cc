@@ -12,6 +12,7 @@
 #include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"
 #include "aos/network/team_number.h"
+#include "y2020/control_loops/superstructure/intake/integral_intake_plant.h"
 
 #include "y2020/control_loops/superstructure/hood/integral_hood_plant.h"
 
@@ -48,6 +49,26 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   hood->zeroing_constants.allowable_encoder_error = 0.9;
   hood->zeroing_constants.middle_position = Values::kHoodRange().middle();
 
+  ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+      ::frc971::zeroing::AbsoluteEncoderZeroingEstimator> *const intake =
+      &r->intake;
+
+  // Intake constants.
+  intake->zeroing_voltage = 3.0;
+  intake->operating_voltage = 12.0;
+  intake->zeroing_profile_params = {0.5, 3.0};
+  intake->default_profile_params = {6.0, 30.0};
+  intake->range = Values::kIntakeRange();
+  intake->make_integral_loop =
+      control_loops::superstructure::intake::MakeIntegralIntakeLoop;
+  intake->zeroing_constants.average_filter_size = Values::kZeroingSampleSize;
+  intake->zeroing_constants.one_revolution_distance =
+      M_PI * 2.0 * constants::Values::kIntakeEncoderRatio();
+  intake->zeroing_constants.zeroing_threshold = 0.0005;
+  intake->zeroing_constants.moving_buffer_size = 20;
+  intake->zeroing_constants.allowable_encoder_error = 0.9;
+  intake->zeroing_constants.middle_position = Values::kIntakeRange().middle();
+
   switch (team) {
     // A set of constants for tests.
     case 1:
@@ -55,14 +76,17 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
     case kCompTeamNumber:
       hood->zeroing_constants.measured_absolute_position = 0.0;
+      intake->zeroing_constants.measured_absolute_position = 0.0;
       break;
 
     case kPracticeTeamNumber:
       hood->zeroing_constants.measured_absolute_position = 0.0;
+      intake->zeroing_constants.measured_absolute_position = 0.0;
       break;
 
     case kCodingRobotTeamNumber:
       hood->zeroing_constants.measured_absolute_position = 0.0;
+      intake->zeroing_constants.measured_absolute_position = 0.0;
       break;
 
     default:
