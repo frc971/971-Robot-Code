@@ -4,12 +4,12 @@ namespace y2020.control_loops.superstructure;
 
 table ShooterPosition {
   // Flywheel angle in radians, positive is shooting.
-  theta_flywheel:double;
+  theta_finisher:double;
 
   // Kicker angle in radians of the slowest (lowest) wheel, positive is
   // accelerating the ball toward the shooter.
-  theta_kicker_left:double;
-  theta_kicker_right:double;
+  theta_accelerator_left:double;
+  theta_accelerator_right:double;
 }
 
 table Position {

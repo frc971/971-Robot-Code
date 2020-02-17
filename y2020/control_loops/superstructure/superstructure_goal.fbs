@@ -5,10 +5,10 @@ namespace y2020.control_loops.superstructure;
 table ShooterGoal {
   // Angular velocity in rad/s of the slowest (lowest) wheel in the kicker.
   // Positive is shooting the ball.
-  velocity_kicker:double;
+  velocity_accelerator:double;
 
   // Angular velocity in rad/s of the flywheel. Positive is shooting.
-  velocity_flywheel:double;
+  velocity_finisher:double;
 }
 
 table Goal {
