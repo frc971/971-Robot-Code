@@ -83,6 +83,7 @@ std::vector<const Node *> GetNodes(const Configuration *config);
 // Returns the node index for a node.  Note: will be faster if node is a pointer
 // to a node in config, but is not required.
 int GetNodeIndex(const Configuration *config, const Node *node);
+int GetNodeIndex(const Configuration *config, std::string_view name);
 
 // Returns true if we are running in a multinode configuration.
 bool MultiNode(const Configuration *config);

@@ -631,11 +631,22 @@ TEST_F(ConfigurationTest, GetNodes) {
 TEST_F(ConfigurationTest, GetNodeIndex) {
   FlatbufferDetachedBuffer<Configuration> config =
       ReadConfig("aos/testdata/good_multinode.json");
+  FlatbufferDetachedBuffer<Configuration> config2 =
+      ReadConfig("aos/testdata/good_multinode.json");
   const Node *pi1 = GetNode(&config.message(), "pi1");
   const Node *pi2 = GetNode(&config.message(), "pi2");
 
+  // Try the normal case.
   EXPECT_EQ(GetNodeIndex(&config.message(), pi1), 0);
   EXPECT_EQ(GetNodeIndex(&config.message(), pi2), 1);
+
+  // Now try if we have node pointers from a different message.
+  EXPECT_EQ(GetNodeIndex(&config2.message(), pi1), 0);
+  EXPECT_EQ(GetNodeIndex(&config2.message(), pi2), 1);
+
+  // And now try string names.
+  EXPECT_EQ(GetNodeIndex(&config2.message(), pi1->name()->string_view()), 0);
+  EXPECT_EQ(GetNodeIndex(&config2.message(), pi2->name()->string_view()), 1);
 }
 
 // Tests that GetNodeOrDie handles both single and multi-node worlds and returns
