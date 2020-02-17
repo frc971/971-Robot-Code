@@ -212,6 +212,10 @@ void Connection::OnMessage(const webrtc::DataBuffer &buffer) {
   const message_bridge::Connect *message =
       flatbuffers::GetRoot<message_bridge::Connect>(buffer.data.data());
   for (auto &subscriber : subscribers_) {
+    // Make sure the subscriber is for a channel on this node.
+    if (subscriber.get() == nullptr) {
+      continue;
+    }
     bool found_match = false;
     for (auto channel : *message->channels_to_transfer()) {
       if (subscriber->Compare(channel)) {
