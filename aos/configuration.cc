@@ -682,7 +682,7 @@ int GetNodeIndex(const Configuration *config, const Node *node) {
   CHECK(result != nullptr);
 
   {
-    int node_index = GetNodeIndexFromConfig(config, node);
+    int node_index = GetNodeIndexFromConfig(config, result);
     if (node_index != -1) {
       return node_index;
     }
@@ -690,6 +690,23 @@ int GetNodeIndex(const Configuration *config, const Node *node) {
 
   LOG(FATAL) << "Node " << FlatbufferToJson(node)
              << " not found in the configuration.";
+}
+
+int GetNodeIndex(const Configuration *config, std::string_view name) {
+  if (!MultiNode(config)) {
+    return 0;
+  }
+
+  {
+    int node_index = 0;
+    for (const Node *iterated_node : *config->nodes()) {
+      if (iterated_node->name()->string_view() == name) {
+        return node_index;
+      }
+      ++node_index;
+    }
+  }
+  LOG(FATAL) << "Node " << name << " not found in the configuration.";
 }
 
 std::vector<const Node *> GetNodes(const Configuration *config) {
