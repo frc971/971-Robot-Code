@@ -289,7 +289,7 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   }
 
   flatbuffers::FlatBufferBuilder fbb;
-  fbb.ForceDefaults(1);
+  fbb.ForceDefaults(true);
 
   // Start by building the vectors.  They need to come before the final table.
   // Channels
@@ -492,7 +492,7 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
     const Flatbuffer<Configuration> &config,
     const std::vector<aos::FlatbufferString<reflection::Schema>> &schemas) {
   flatbuffers::FlatBufferBuilder fbb;
-  fbb.ForceDefaults(1);
+  fbb.ForceDefaults(true);
 
   flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Channel>>>
       channels_offset;
@@ -500,7 +500,7 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
     std::vector<flatbuffers::Offset<Channel>> channel_offsets;
     for (const Channel *c : *config.message().channels()) {
       flatbuffers::FlatBufferBuilder channel_fbb;
-      channel_fbb.ForceDefaults(1);
+      channel_fbb.ForceDefaults(true);
 
       // Search for a schema with a matching type.
       const aos::FlatbufferString<reflection::Schema> *found_schema = nullptr;

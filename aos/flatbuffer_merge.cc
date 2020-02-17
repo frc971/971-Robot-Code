@@ -518,7 +518,7 @@ flatbuffers::DetachedBuffer MergeFlatBuffers(
     const uint8_t *data2) {
   // Build up a builder.
   flatbuffers::FlatBufferBuilder fbb;
-  fbb.ForceDefaults(1);
+  fbb.ForceDefaults(true);
 
   // Finish up the buffer and return it.
   fbb.Finish(MergeFlatBuffers(typetable, data1, data2, &fbb));
@@ -537,10 +537,10 @@ bool CompareFlatBuffer(const flatbuffers::TypeTable *typetable,
   // implementation is fine for the usages that we have now.  We are better off
   // abstracting this into a library call where we can fix it later easily.
   flatbuffers::FlatBufferBuilder fbb1;
-  fbb1.ForceDefaults(1);
+  fbb1.ForceDefaults(true);
   fbb1.Finish(MergeFlatBuffers(typetable, t1, nullptr, &fbb1));
   flatbuffers::FlatBufferBuilder fbb2;
-  fbb2.ForceDefaults(1);
+  fbb2.ForceDefaults(true);
   fbb2.Finish(MergeFlatBuffers(typetable, t2, nullptr, &fbb2));
 
   if (fbb1.GetSize() != fbb2.GetSize()) return false;

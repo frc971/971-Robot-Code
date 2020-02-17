@@ -216,7 +216,7 @@ class FlatbufferDetachedBuffer final : public Flatbuffer<T> {
   // Constructs an empty flatbuffer of type T.
   static FlatbufferDetachedBuffer<T> Empty() {
     flatbuffers::FlatBufferBuilder fbb;
-    fbb.ForceDefaults(1);
+    fbb.ForceDefaults(true);
     const auto end = fbb.EndTable(fbb.StartTable());
     fbb.Finish(flatbuffers::Offset<flatbuffers::Table>(end));
     return FlatbufferDetachedBuffer<T>(fbb.Release());
@@ -238,6 +238,7 @@ class FlatbufferFixedAllocatorArray final : public Flatbuffer<T> {
  public:
   FlatbufferFixedAllocatorArray() : buffer_(), allocator_(&buffer_[0], Size) {
     builder_ = flatbuffers::FlatBufferBuilder(Size, &allocator_);
+    builder_.ForceDefaults(true);
   }
 
   flatbuffers::FlatBufferBuilder *Builder() {

@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
       const ::std::string header_json =
           aos::util::ReadFileToStringOrDie(FLAGS_header);
       flatbuffers::FlatBufferBuilder fbb;
-      fbb.ForceDefaults(1);
+      fbb.ForceDefaults(true);
       flatbuffers::Offset<aos::logger::LogFileHeader> header =
           aos::JsonToFlatbuffer<aos::logger::LogFileHeader>(header_json, &fbb);
 

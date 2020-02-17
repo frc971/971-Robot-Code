@@ -124,7 +124,7 @@ void Logger::WriteHeader() {
 void Logger::WriteHeader(const Node *node) {
   // Now write the header with this timestamp in it.
   flatbuffers::FlatBufferBuilder fbb;
-  fbb.ForceDefaults(1);
+  fbb.ForceDefaults(true);
 
   flatbuffers::Offset<aos::Configuration> configuration_offset =
       CopyFlatBuffer(event_loop_->configuration(), &fbb);
@@ -230,7 +230,7 @@ void Logger::DoLogData() {
             // Write!
             flatbuffers::FlatBufferBuilder fbb(f.fetcher->context().size +
                                                max_header_size_);
-            fbb.ForceDefaults(1);
+            fbb.ForceDefaults(true);
 
             fbb.FinishSizePrefixed(PackMessage(&fbb, f.fetcher->context(),
                                                f.channel_index, f.log_type));
@@ -252,7 +252,7 @@ void Logger::DoLogData() {
           if (f.timestamp_writer != nullptr) {
             // And now handle timestamps.
             flatbuffers::FlatBufferBuilder fbb;
-            fbb.ForceDefaults(1);
+            fbb.ForceDefaults(true);
 
             fbb.FinishSizePrefixed(PackMessage(&fbb, f.fetcher->context(),
                                                f.channel_index,
@@ -898,13 +898,13 @@ void LogReader::MakeRemappedConfig() {
   // This is the builder that we use for the config containing all the new
   // channels.
   flatbuffers::FlatBufferBuilder new_config_fbb;
-  new_config_fbb.ForceDefaults(1);
+  new_config_fbb.ForceDefaults(true);
   std::vector<flatbuffers::Offset<Channel>> channel_offsets;
   for (auto &pair : remapped_channels_) {
     // This is the builder that we use for creating the Channel with just the
     // new name.
     flatbuffers::FlatBufferBuilder new_name_fbb;
-    new_name_fbb.ForceDefaults(1);
+    new_name_fbb.ForceDefaults(true);
     const flatbuffers::Offset<flatbuffers::String> name_offset =
         new_name_fbb.CreateString(pair.second);
     ChannelBuilder new_name_builder(new_name_fbb);

@@ -136,7 +136,7 @@ class FlatbufferMerge : public ::testing::Test {
         out);
     {
       flatbuffers::FlatBufferBuilder fbb;
-      fbb.ForceDefaults(1);
+      fbb.ForceDefaults(true);
       fbb.Finish(MergeFlatBuffers(
           ConfigurationTypeTable(),
           flatbuffers::GetRoot<flatbuffers::Table>(fb1.data()),
@@ -145,7 +145,7 @@ class FlatbufferMerge : public ::testing::Test {
     }
     {
       flatbuffers::FlatBufferBuilder fbb;
-      fbb.ForceDefaults(1);
+      fbb.ForceDefaults(true);
       fbb.Finish(MergeFlatBuffers<Configuration>(
           flatbuffers::GetRoot<flatbuffers::Table>(fb1.data()),
           flatbuffers::GetRoot<flatbuffers::Table>(fb2.data()), &fbb));

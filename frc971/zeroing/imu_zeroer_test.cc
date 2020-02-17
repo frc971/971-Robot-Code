@@ -7,7 +7,7 @@ namespace frc971::zeroing {
 aos::FlatbufferDetachedBuffer<IMUValues> MakeMeasurement(
     const Eigen::Vector3d &gyro, const Eigen::Vector3d &accel) {
   flatbuffers::FlatBufferBuilder fbb;
-  fbb.ForceDefaults(1);
+  fbb.ForceDefaults(true);
   IMUValuesBuilder builder(fbb);
   builder.add_gyro_x(gyro.x());
   builder.add_gyro_y(gyro.y());

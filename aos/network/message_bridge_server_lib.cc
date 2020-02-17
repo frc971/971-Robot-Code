@@ -22,6 +22,7 @@ FlatbufferDetachedBuffer<ServerStatistics> MakeServerStatistics(
     const std::vector<std::string_view> &source_node_names,
     const Configuration *configuration) {
   flatbuffers::FlatBufferBuilder fbb;
+  fbb.ForceDefaults(true);
 
   std::vector<flatbuffers::Offset<ServerConnection>> connection_offsets;
   for (const std::string_view node_name : source_node_names) {
@@ -78,6 +79,7 @@ void ChannelState::SendData(SctpServer *server, const Context &context) {
   // TODO(austin): I don't like allocating this buffer when we are just freeing
   // it at the end of the function.
   flatbuffers::FlatBufferBuilder fbb(channel_->max_size() + 100);
+  fbb.ForceDefaults(true);
   VLOG(1) << "Found " << peers_.size() << " peers on channel "
           << channel_->name()->string_view() << " size " << context.size;
 
