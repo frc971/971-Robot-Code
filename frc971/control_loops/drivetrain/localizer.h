@@ -36,6 +36,8 @@ class TargetSelectorInterface {
 
 // Defines an interface for classes that provide field-global localization.
 class LocalizerInterface {
+  typedef HybridEkf<double> Ekf;
+  typedef typename Ekf::StateIdx StateIdx;
  public:
   // Perform a single step of the filter, using the information that is
   // available on every drivetrain iteration.
@@ -71,21 +73,29 @@ class LocalizerInterface {
     builder.add_lateral_velocity(lateral_velocity());
     return builder.Finish();
   }
+  virtual Ekf::State Xhat() const = 0;
   // There are several subtly different norms floating around for state
   // matrices. In order to avoid that mess, we just provide direct accessors for
   // the values that most people care about.
-  virtual double x() const = 0;
-  virtual double y() const = 0;
-  virtual double theta() const = 0;
-  virtual double left_velocity() const = 0;
-  virtual double right_velocity() const = 0;
-  virtual double left_encoder() const = 0;
-  virtual double right_encoder() const = 0;
-  virtual double left_voltage_error() const = 0;
-  virtual double right_voltage_error() const = 0;
-  virtual double angular_error() const = 0;
-  virtual double longitudinal_velocity_offset() const = 0;
-  virtual double lateral_velocity() const = 0;
+  double x() const { return Xhat()(StateIdx::kX); }
+  double y() const { return Xhat()(StateIdx::kY); }
+  double theta() const { return Xhat()(StateIdx::kTheta); }
+  double left_velocity() const { return Xhat()(StateIdx::kLeftVelocity); }
+  double right_velocity() const { return Xhat()(StateIdx::kRightVelocity); }
+  double left_encoder() const { return Xhat()(StateIdx::kLeftEncoder); }
+  double right_encoder() const { return Xhat()(StateIdx::kRightEncoder); }
+  double left_voltage_error() const {
+    return Xhat()(StateIdx::kLeftVoltageError);
+  }
+  double right_voltage_error() const {
+    return Xhat()(StateIdx::kRightVoltageError);
+  }
+  double angular_error() const { return Xhat()(StateIdx::kAngularError); }
+  double longitudinal_velocity_offset() const {
+    return Xhat()(StateIdx::kLongitudinalVelocityOffset);
+  }
+  double lateral_velocity() const { return Xhat()(StateIdx::kLateralVelocity); }
+
   virtual TargetSelectorInterface *target_selector() = 0;
 };
 
@@ -146,38 +156,9 @@ class DeadReckonEkf : public LocalizerInterface {
                             right_encoder, 0, 0, 0, 0, 0, 0)
                                .finished(),
                            ekf_.P());
-  };
+  }
 
-  double x() const override { return ekf_.X_hat(StateIdx::kX); }
-  double y() const override { return ekf_.X_hat(StateIdx::kY); }
-  double theta() const override { return ekf_.X_hat(StateIdx::kTheta); }
-  double left_encoder() const override {
-    return ekf_.X_hat(StateIdx::kLeftEncoder);
-  }
-  double right_encoder() const override {
-    return ekf_.X_hat(StateIdx::kRightEncoder);
-  }
-  double left_velocity() const override {
-    return ekf_.X_hat(StateIdx::kLeftVelocity);
-  }
-  double right_velocity() const override {
-    return ekf_.X_hat(StateIdx::kRightVelocity);
-  }
-  double left_voltage_error() const override {
-    return ekf_.X_hat(StateIdx::kLeftVoltageError);
-  }
-  double right_voltage_error() const override {
-    return ekf_.X_hat(StateIdx::kRightVoltageError);
-  }
-  double angular_error() const override {
-    return ekf_.X_hat(StateIdx::kAngularError);
-  }
-  double longitudinal_velocity_offset() const override {
-    return ekf_.X_hat(StateIdx::kLongitudinalVelocityOffset);
-  }
-  double lateral_velocity() const override {
-    return ekf_.X_hat(StateIdx::kLateralVelocity);
-  }
+  Ekf::State Xhat() const override { return ekf_.X_hat(); }
 
   TrivialTargetSelector *target_selector() override {
     return &target_selector_;

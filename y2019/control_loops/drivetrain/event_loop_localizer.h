@@ -62,39 +62,7 @@ class EventLoopLocalizer
               double right_encoder, double gyro_rate,
               const Eigen::Vector3d &accel) override;
 
-  double x() const override {
-    return localizer_.X_hat(StateIdx::kX); }
-  double y() const override {
-    return localizer_.X_hat(StateIdx::kY); }
-  double theta() const override {
-    return localizer_.X_hat(StateIdx::kTheta); }
-  double left_encoder() const override {
-    return localizer_.X_hat(StateIdx::kLeftEncoder);
-  }
-  double right_encoder() const override {
-    return localizer_.X_hat(StateIdx::kRightEncoder);
-  }
-  double left_velocity() const override {
-    return localizer_.X_hat(StateIdx::kLeftVelocity);
-  }
-  double right_velocity() const override {
-    return localizer_.X_hat(StateIdx::kRightVelocity);
-  }
-  double left_voltage_error() const override {
-    return localizer_.X_hat(StateIdx::kLeftVoltageError);
-  }
-  double right_voltage_error() const override {
-    return localizer_.X_hat(StateIdx::kRightVoltageError);
-  }
-  double angular_error() const override {
-    return localizer_.X_hat(StateIdx::kAngularError);
-  }
-  double longitudinal_velocity_offset() const override {
-    return localizer_.X_hat(StateIdx::kLongitudinalVelocityOffset);
-  }
-  double lateral_velocity() const override {
-    return localizer_.X_hat(StateIdx::kLateralVelocity);
-  }
+  Localizer::State Xhat() const override { return localizer_.X_hat(); }
 
   TargetSelector *target_selector() override {
     return &target_selector_;
