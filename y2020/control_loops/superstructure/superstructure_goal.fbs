@@ -16,6 +16,10 @@ table Goal {
   // Only applies if hood_tracking = false.
   hood:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
 
+  // Positive = counterclockwise from above; rotates Wheel of Fortune clockwise
+  // Zero is relative to start.
+  control_panel:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
+
   //0 = Linkage on sprocket is pointing straight up
   //Positive = forward
   intake:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;

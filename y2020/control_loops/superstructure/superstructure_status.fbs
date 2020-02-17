@@ -30,7 +30,7 @@ table Status {
   // All subsystems know their location.
   zeroed:bool;
 
-  // If true, we have aborted. This is the or of all subsystem estops.
+  // If true, we have aborted. This is if one or all subsystem estops.
   estopped:bool;
 
   //Subsystem status.
@@ -40,6 +40,9 @@ table Status {
 
   // Shooter subsystem status.
   shooter:ShooterStatus;
+
+  // Status of the control_panel
+  control_panel:frc971.control_loops.RelativeEncoderProfiledJointStatus;
 }
 
 root_type Status;

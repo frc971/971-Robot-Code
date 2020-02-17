@@ -24,6 +24,9 @@ table Position {
 
   // Position of the kicker and flywheel
   shooter:ShooterPosition;
+
+   // Position of the control panel, relative to start, positive counterclockwise from above.
+  control_panel:frc971.RelativePosition;
 }
 
 root_type Position;
