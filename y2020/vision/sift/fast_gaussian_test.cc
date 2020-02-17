@@ -47,7 +47,7 @@ TEST_F(FastGaussianTest, GaussianSizeS8) {
 
 // Verifies that FastGaussian and cv::GaussianBlur give the same result.
 TEST_F(FastGaussianTest, FastGaussian) {
-  const auto image = RandomImage(360, 640, CV_16SC1);
+  const auto image = RandomImage(480, 640, CV_16SC1);
   cv::Mat slow, fast, fast_direct;
   static constexpr double kSigma = 1.9465878414647133;
   static constexpr int kSize = 13;
