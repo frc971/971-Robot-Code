@@ -142,14 +142,15 @@ void EventLoop::TakeWatcher(const Channel *channel) {
   ChannelIndex(channel);
 
   CHECK(taken_senders_.find(channel) == taken_senders_.end())
-      << ": " << FlatbufferToJson(channel) << " is already being used.";
+      << ": " << configuration::CleanedChannelToString(channel)
+      << " is already being used.";
 
   auto result = taken_watchers_.insert(channel);
-  CHECK(result.second) << ": " << FlatbufferToJson(channel)
+  CHECK(result.second) << ": " << configuration::CleanedChannelToString(channel)
                        << " is already being used.";
 
   if (!configuration::ChannelIsReadableOnNode(channel, node())) {
-    LOG(FATAL) << ": " << FlatbufferToJson(channel)
+    LOG(FATAL) << ": " << configuration::CleanedChannelToString(channel)
                << " is not able to be watched on this node.  Check your "
                   "configuration.";
   }
@@ -160,7 +161,8 @@ void EventLoop::TakeSender(const Channel *channel) {
   ChannelIndex(channel);
 
   CHECK(taken_watchers_.find(channel) == taken_watchers_.end())
-      << ": Channel " << FlatbufferToJson(channel) << " is already being used.";
+      << ": Channel " << configuration::CleanedChannelToString(channel)
+      << " is already being used.";
 
   // We don't care if this is a duplicate.
   taken_senders_.insert(channel);
