@@ -1,5 +1,12 @@
 namespace frc971.vision.sift;
 
+// Represents the location of a keypoint in field coordinates.
+struct KeypointFieldLocation {
+  x:float;
+  y:float;
+  z:float;
+}
+
 // Represents a single feature extracted from an image.
 table Feature {
   // Contains the descriptor data.
@@ -28,14 +35,20 @@ table Feature {
 
   // Which octave this keypoint is from.
   octave:int;
+
+  // Where this feature's keypoint is on the field. This will only be filled out
+  // for training features, not ones extracted from query images.
+  field_location:KeypointFieldLocation;
 }
 
 // Represents a single match between a training image and a query image.
-table Match {
+struct Match {
   // The index of the feature for the query image.
   query_feature:int;
   // The index of the feature for the training image.
   train_feature:int;
+  // How "good" the match is.
+  distance:float;
 }
 
 // Represents all the matches between a single training image and a query
@@ -51,11 +64,49 @@ table TransformationMatrix {
   data:[double];
 }
 
-// Contains the information the EKF wants from an image.
+// Calibration information for a given camera on a given robot.
+table CameraCalibration {
+  // The name of the camera node which this calibration data applies to.
+  node_name:string;
+  // The team number of the robot which this calibration data applies to.
+  team_number:int;
+
+  // Intrinsics for the camera.
+  //
+  // This is the standard OpenCV intrinsics matrix in row major order (3x3).
+  intrinsics:[float];
+
+  // Fixed extrinsics for the camera. This transforms from camera coordinates to
+  // robot coordinates. For example: multiplying (0, 0, 0, 1) by this results in
+  // the position of the camera aperature in robot coordinates.
+  fixed_extrinsics:TransformationMatrix;
+
+  // Extrinsics for a camera on a turret. This will only be filled out for
+  // applicable cameras. For turret-mounted cameras, fixed_extrinsics defines
+  // a position for the center of rotation of the turret, and this field defines
+  // a position for the camera on the turret.
+  //
+  // The combination of the two transformations is underdefined, so nothing can
+  // distinguish between the two parts of the final extrinsics for a given
+  // turret position.
+  //
+  // To get the final extrinsics for a camera using this transformation,
+  // multiply (in order):
+  //   fixed_extrinsics
+  //   rotation around the Z axis by the turret angle
+  //   turret_extrinsics
+  turret_extrinsics:TransformationMatrix;
+}
+
+// Contains the information the EKF wants from an image matched against a single
+// training image.
 //
 // This is represented as a transformation to a target in field coordinates.
 table CameraPose {
   // Transformation matrix from the target to the camera's origin.
+  // (0, 0, 0) is the aperture of the camera (we pretend it's an ideal pinhole
+  // camera). Positive Z is out of the camera. Positive X and Y are right
+  // handed, but which way they face depends on the camera extrinsics.
   camera_to_target:TransformationMatrix;
 
   // Field coordinates of the target, represented as a transformation matrix
@@ -74,6 +125,7 @@ table CameraPose {
 
 table ImageMatchResult {
   // The matches from this image to each of the training images which matched.
+  // Each member is against the same captured image.
   image_matches:[ImageMatch];
   // The transformations for this image for each of the training images which
   // matched.
@@ -85,6 +137,9 @@ table ImageMatchResult {
 
   // Timestamp when the frame was captured.
   image_monotonic_timestamp_ns:long;
+
+  // Information about the camera which took this image.
+  camera_calibration:CameraCalibration;
 }
 
 root_type ImageMatchResult;
