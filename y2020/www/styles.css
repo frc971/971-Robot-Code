@@ -1,0 +1,5 @@
+.channel {
+  display: flex;
+  border-bottom: 1px solid;
+  font-size: 24px;
+}

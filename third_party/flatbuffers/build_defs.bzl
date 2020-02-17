@@ -33,6 +33,7 @@ DEFAULT_FLATC_TS_ARGS = [
     "--no-ts-reexport",
     "--reflect-names",
     "--reflect-types",
+    "--gen-name-strings",
 ]
 
 def flatbuffer_library_public(

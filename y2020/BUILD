@@ -125,3 +125,15 @@ py_library(
     srcs = ["__init__.py"],
     visibility = ["//visibility:public"],
 )
+
+sh_binary(
+    name = "web_proxy",
+    srcs = ["web_proxy.sh"],
+    data = [
+        ":config.json",
+        "//aos/network:web_proxy_main",
+        "//y2020/www:main_bundle",
+        "//y2020/www:files",
+        "//y2020/www:flatbuffers",
+    ],
+)

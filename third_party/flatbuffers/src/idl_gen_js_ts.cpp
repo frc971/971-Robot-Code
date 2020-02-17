@@ -768,6 +768,14 @@ class JsTsGenerator : public BaseGenerator {
       code += "');\n};\n\n";
     }
 
+    // Generate the name method
+    if (parser_.opts.generate_name_strings) {
+      code +=
+        "static getFullyQualifiedName(): string {\n"
+        "  return '" + object_namespace + "." + struct_def.name + "';\n"
+        "}\n";
+    }
+
     // Emit field accessors
     for (auto it = struct_def.fields.vec.begin();
          it != struct_def.fields.vec.end(); ++it) {

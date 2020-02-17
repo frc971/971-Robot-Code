@@ -5,27 +5,42 @@ filegroup(
     name = "files",
     srcs = glob([
         "**/*.html",
+        "**/*.css",
     ]),
     visibility=["//visibility:public"],
 )
 
 ts_library(
     name = "proxy",
-    srcs = glob([
-        "*.ts",
-    ]),
+    srcs = [
+        "config_handler.ts",
+        "proxy.ts",
+    ],
     deps = [
         "//aos/network:web_proxy_ts_fbs",
+    ],
+    visibility=["//visibility:public"],
+)
+
+ts_library(
+    name = "main",
+    srcs = [
+        "main.ts",
+        "ping_handler.ts",
+    ],
+    deps = [
+        ":proxy",
+        "//aos/events:ping_ts_fbs",
     ],
 )
 
 rollup_bundle(
-    name = "proxy_bundle",
+    name = "main_bundle",
     entry_point = "aos/network/www/main",
     deps = [
-        "proxy",
+        "main",
     ],
-    visibility=["//visibility:public"],
+    visibility=["//aos:__subpackages__"],
 )
 
 genrule(
@@ -37,5 +52,5 @@ genrule(
         "flatbuffers.js",
     ],
     cmd = "cp $(location @com_github_google_flatbuffers//:flatjs) $@",
-    visibility=["//visibility:public"],
+    visibility=["//aos:__subpackages__"],
 )
