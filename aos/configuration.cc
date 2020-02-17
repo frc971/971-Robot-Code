@@ -653,9 +653,8 @@ const Node *GetNodeOrDie(const Configuration *config, const Node *node) {
   }
 }
 
-int GetNodeIndex(const Configuration *config, const Node *node) {
-  CHECK(config->has_nodes())
-      << ": Asking for a node from a single node configuration.";
+namespace {
+int GetNodeIndexFromConfig(const Configuration *config, const Node *node) {
   int node_index = 0;
   for (const Node *iterated_node : *config->nodes()) {
     if (iterated_node == node) {
@@ -663,12 +662,39 @@ int GetNodeIndex(const Configuration *config, const Node *node) {
     }
     ++node_index;
   }
-  LOG(FATAL) << "Node not found in the configuration.";
+  return -1;
+}
+}  // namespace
+
+int GetNodeIndex(const Configuration *config, const Node *node) {
+  if (!MultiNode(config)) {
+    return 0;
+  }
+
+  {
+    int node_index = GetNodeIndexFromConfig(config, node);
+    if (node_index != -1) {
+      return node_index;
+    }
+  }
+
+  const Node *result = GetNode(config, node);
+  CHECK(result != nullptr);
+
+  {
+    int node_index = GetNodeIndexFromConfig(config, node);
+    if (node_index != -1) {
+      return node_index;
+    }
+  }
+
+  LOG(FATAL) << "Node " << FlatbufferToJson(node)
+             << " not found in the configuration.";
 }
 
 std::vector<const Node *> GetNodes(const Configuration *config) {
   std::vector<const Node *> nodes;
-  if (configuration::MultiNode(config)) {
+  if (MultiNode(config)) {
     for (const Node *node : *config->nodes()) {
       nodes.emplace_back(node);
     }

@@ -302,6 +302,10 @@ class SplitMessageReader {
   std::string DebugString(int channel) const;
   std::string DebugString(int channel, int node_index) const;
 
+  // Returns true if all the messages have been queued from the last log file in
+  // the list of log files chunks.
+  bool at_end() const { return at_end_; }
+
  private:
   // TODO(austin): Need to copy or refcount the message instead of running
   // multiple copies of the reader.  Or maybe have a "as_node" index and hide it
@@ -441,6 +445,9 @@ class TimestampMerger {
   // The caller can determine what the appropriate action is to recover.
   std::tuple<DeliveryTimestamp, FlatbufferVector<MessageHeader>> PopOldest();
 
+  // Returns the oldest forwarding timestamp.
+  DeliveryTimestamp OldestTimestamp() const;
+
   // Tracks if the channel merger has pushed this onto it's heap or not.
   bool pushed() { return pushed_; }
   // Sets if this has been pushed to the channel merger heap.  Should only be
@@ -449,6 +456,13 @@ class TimestampMerger {
 
   // Returns a debug string with the heaps printed out.
   std::string DebugString() const;
+
+  // Returns true if we have timestamps.
+  bool has_timestamps() const { return has_timestamps_; }
+
+  // Records that one of the log files ran out of data.  This should only be
+  // called by a SplitMessageReader.
+  void NoticeAtEnd();
 
  private:
   // Pushes messages and timestamps to the corresponding heaps.
@@ -536,6 +550,12 @@ class ChannelMerger {
              FlatbufferVector<MessageHeader>>
   PopOldest();
 
+  // Returns the oldest timestamp in the timestamp heap.
+  TimestampMerger::DeliveryTimestamp OldestTimestamp() const;
+  // Returns the oldest timestamp in the timestamp heap for a specific channel.
+  TimestampMerger::DeliveryTimestamp OldestTimestampForChannel(
+      int channel) const;
+
   // Returns the config for this set of log files.
   const Configuration *configuration() const {
     return log_file_header()->configuration();
@@ -568,6 +588,15 @@ class ChannelMerger {
   // debugging what went wrong.
   std::string DebugString() const;
 
+  // Returns true if one of the log files has finished reading everything.  When
+  // log file chunks are involved, this means that the last chunk in a log file
+  // has been read.  It is acceptable to be missing data at this point in time.
+  bool at_end() const { return at_end_; }
+
+  // Marks that one of the log files is at the end.  This should only be called
+  // by timestamp mergers.
+  void NoticeAtEnd() { at_end_ = true; }
+
  private:
   // Pushes the timestamp for new data on the provided channel.
   void PushChannelHeap(monotonic_clock::time_point timestamp,
@@ -584,9 +613,14 @@ class ChannelMerger {
 
   // A heap of the channel readers and timestamps for the oldest data in each.
   std::vector<std::pair<monotonic_clock::time_point, int>> channel_heap_;
+  // A heap of just the timestamp channel readers and timestamps for the oldest
+  // data in each.
+  std::vector<std::pair<monotonic_clock::time_point, int>> timestamp_heap_;
 
   // Configured node.
   const Node *node_;
+
+  bool at_end_ = false;
 
   // Cached copy of the list of nodes.
   std::vector<const Node *> nodes_;

@@ -271,8 +271,8 @@ cc_library(
 
 cc_library(
     name = "web_proxy",
-    hdrs = ["web_proxy.h"],
     srcs = ["web_proxy.cc"],
+    hdrs = ["web_proxy.h"],
     copts = [
         "-DWEBRTC_POSIX",
         "-Wno-unused-parameter",
@@ -283,8 +283,8 @@ cc_library(
         ":web_proxy_utils",
         "//aos/events:shm_event_loop",
         "//aos/seasocks:seasocks_logger",
-        "//third_party/seasocks",
         "//third_party:webrtc",
+        "//third_party/seasocks",
         "@com_github_google_glog//:glog",
     ],
 )
@@ -319,5 +319,24 @@ cc_binary(
         "//aos/network/www:flatbuffers",
         "@com_github_google_flatbuffers//:flatjs",
         "//aos/events:pingpong_config.json",
+    ],
+)
+
+cc_library(
+    name = "timestamp_filter",
+    hdrs = ["timestamp_filter.h"],
+    deps = [
+        "//aos/time",
+    ],
+)
+
+cc_test(
+    name = "timestamp_filter_test",
+    srcs = [
+        "timestamp_filter_test.cc",
+    ],
+    deps = [
+        ":timestamp_filter",
+        "//aos/testing:googletest",
     ],
 )

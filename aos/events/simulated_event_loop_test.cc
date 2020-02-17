@@ -64,30 +64,33 @@ INSTANTIATE_TEST_CASE_P(SimulatedEventLoopTest, AbstractEventLoopTest,
 // Test that creating an event and running the scheduler runs the event.
 TEST(EventSchedulerTest, ScheduleEvent) {
   int counter = 0;
+  EventSchedulerScheduler scheduler_scheduler;
   EventScheduler scheduler;
+  scheduler_scheduler.AddEventScheduler(&scheduler);
 
-  scheduler.Schedule(distributed_clock::epoch() + chrono::seconds(1),
+  scheduler.Schedule(monotonic_clock::epoch() + chrono::seconds(1),
                      [&counter]() { counter += 1; });
-  scheduler.Run();
+  scheduler_scheduler.Run();
   EXPECT_EQ(counter, 1);
   auto token =
-      scheduler.Schedule(distributed_clock::epoch() + chrono::seconds(2),
+      scheduler.Schedule(monotonic_clock::epoch() + chrono::seconds(2),
                          [&counter]() { counter += 1; });
   scheduler.Deschedule(token);
-  scheduler.Run();
+  scheduler_scheduler.Run();
   EXPECT_EQ(counter, 1);
 }
 
 // Test that descheduling an already scheduled event doesn't run the event.
 TEST(EventSchedulerTest, DescheduleEvent) {
   int counter = 0;
+  EventSchedulerScheduler scheduler_scheduler;
   EventScheduler scheduler;
+  scheduler_scheduler.AddEventScheduler(&scheduler);
 
-  auto token =
-      scheduler.Schedule(distributed_clock::epoch() + chrono::seconds(1),
-                         [&counter]() { counter += 1; });
+  auto token = scheduler.Schedule(monotonic_clock::epoch() + chrono::seconds(1),
+                                  [&counter]() { counter += 1; });
   scheduler.Deschedule(token);
-  scheduler.Run();
+  scheduler_scheduler.Run();
   EXPECT_EQ(counter, 0);
 }
 

@@ -36,7 +36,6 @@ class SimulatedWatcher : public WatcherState {
  public:
   SimulatedWatcher(
       SimulatedEventLoop *simulated_event_loop, EventScheduler *scheduler,
-      NodeEventLoopFactory *node_event_loop_factory,
       const Channel *channel,
       std::function<void(const Context &context, const void *message)> fn);
 
@@ -60,7 +59,6 @@ class SimulatedWatcher : public WatcherState {
   SimulatedEventLoop *simulated_event_loop_;
   EventHandler<SimulatedWatcher> event_;
   EventScheduler *scheduler_;
-  NodeEventLoopFactory *node_event_loop_factory_;
   EventScheduler::Token token_;
   SimulatedChannel *simulated_channel_ = nullptr;
 };
@@ -272,7 +270,6 @@ class SimulatedFetcher : public RawFetcher {
 class SimulatedTimerHandler : public TimerHandler {
  public:
   explicit SimulatedTimerHandler(EventScheduler *scheduler,
-                                 NodeEventLoopFactory *node_event_loop_factory,
                                  SimulatedEventLoop *simulated_event_loop,
                                  ::std::function<void()> fn);
   ~SimulatedTimerHandler() { Disable(); }
@@ -288,7 +285,6 @@ class SimulatedTimerHandler : public TimerHandler {
   SimulatedEventLoop *simulated_event_loop_;
   EventHandler<SimulatedTimerHandler> event_;
   EventScheduler *scheduler_;
-  NodeEventLoopFactory *node_event_loop_factory_;
   EventScheduler::Token token_;
 
   monotonic_clock::time_point base_;
@@ -298,7 +294,6 @@ class SimulatedTimerHandler : public TimerHandler {
 class SimulatedPhasedLoopHandler : public PhasedLoopHandler {
  public:
   SimulatedPhasedLoopHandler(EventScheduler *scheduler,
-                             NodeEventLoopFactory *node_event_loop_factory,
                              SimulatedEventLoop *simulated_event_loop,
                              ::std::function<void(int)> fn,
                              const monotonic_clock::duration interval,
@@ -314,7 +309,6 @@ class SimulatedPhasedLoopHandler : public PhasedLoopHandler {
   EventHandler<SimulatedPhasedLoopHandler> event_;
 
   EventScheduler *scheduler_;
-  NodeEventLoopFactory *node_event_loop_factory_;
   EventScheduler::Token token_;
 };
 
@@ -387,17 +381,17 @@ class SimulatedEventLoop : public EventLoop {
 
   TimerHandler *AddTimer(::std::function<void()> callback) override {
     CHECK(!is_running());
-    return NewTimer(::std::unique_ptr<TimerHandler>(new SimulatedTimerHandler(
-        scheduler_, node_event_loop_factory_, this, callback)));
+    return NewTimer(::std::unique_ptr<TimerHandler>(
+        new SimulatedTimerHandler(scheduler_, this, callback)));
   }
 
   PhasedLoopHandler *AddPhasedLoop(::std::function<void(int)> callback,
                                    const monotonic_clock::duration interval,
                                    const monotonic_clock::duration offset =
                                        ::std::chrono::seconds(0)) override {
-    return NewPhasedLoop(::std::unique_ptr<PhasedLoopHandler>(
-        new SimulatedPhasedLoopHandler(scheduler_, node_event_loop_factory_,
-                                       this, callback, interval, offset)));
+    return NewPhasedLoop(
+        ::std::unique_ptr<PhasedLoopHandler>(new SimulatedPhasedLoopHandler(
+            scheduler_, this, callback, interval, offset)));
   }
 
   void OnRun(::std::function<void()> on_run) override {
@@ -483,8 +477,8 @@ void SimulatedEventLoop::MakeRawWatcher(
     std::function<void(const Context &channel, const void *message)> watcher) {
   TakeWatcher(channel);
 
-  std::unique_ptr<SimulatedWatcher> shm_watcher(new SimulatedWatcher(
-      this, scheduler_, node_event_loop_factory_, channel, std::move(watcher)));
+  std::unique_ptr<SimulatedWatcher> shm_watcher(
+      new SimulatedWatcher(this, scheduler_, channel, std::move(watcher)));
 
   GetSimulatedChannel(channel)->MakeRawWatcher(shm_watcher.get());
   NewWatcher(std::move(shm_watcher));
@@ -526,13 +520,12 @@ SimulatedChannel *SimulatedEventLoop::GetSimulatedChannel(
 
 SimulatedWatcher::SimulatedWatcher(
     SimulatedEventLoop *simulated_event_loop, EventScheduler *scheduler,
-    NodeEventLoopFactory *node_event_loop_factory, const Channel *channel,
+    const Channel *channel,
     std::function<void(const Context &context, const void *message)> fn)
     : WatcherState(simulated_event_loop, channel, std::move(fn)),
       simulated_event_loop_(simulated_event_loop),
       event_(this),
       scheduler_(scheduler),
-      node_event_loop_factory_(node_event_loop_factory),
       token_(scheduler_->InvalidToken()) {}
 
 SimulatedWatcher::~SimulatedWatcher() {
@@ -594,10 +587,9 @@ void SimulatedWatcher::HandleEvent() {
 }
 
 void SimulatedWatcher::DoSchedule(monotonic_clock::time_point event_time) {
-  token_ = scheduler_->Schedule(
-      node_event_loop_factory_->ToDistributedClock(
-          event_time + simulated_event_loop_->send_delay()),
-      [this]() { simulated_event_loop_->HandleEvent(); });
+  token_ =
+      scheduler_->Schedule(event_time + simulated_event_loop_->send_delay(),
+                           [this]() { simulated_event_loop_->HandleEvent(); });
 }
 
 void SimulatedChannel::MakeRawWatcher(SimulatedWatcher *watcher) {
@@ -643,13 +635,12 @@ void SimulatedChannel::UnregisterFetcher(SimulatedFetcher *fetcher) {
 }
 
 SimulatedTimerHandler::SimulatedTimerHandler(
-    EventScheduler *scheduler, NodeEventLoopFactory *node_event_loop_factory,
-    SimulatedEventLoop *simulated_event_loop, ::std::function<void()> fn)
+    EventScheduler *scheduler, SimulatedEventLoop *simulated_event_loop,
+    ::std::function<void()> fn)
     : TimerHandler(simulated_event_loop, std::move(fn)),
       simulated_event_loop_(simulated_event_loop),
       event_(this),
       scheduler_(scheduler),
-      node_event_loop_factory_(node_event_loop_factory),
       token_(scheduler_->InvalidToken()) {}
 
 void SimulatedTimerHandler::Setup(monotonic_clock::time_point base,
@@ -661,12 +652,10 @@ void SimulatedTimerHandler::Setup(monotonic_clock::time_point base,
   repeat_offset_ = repeat_offset;
   if (base < monotonic_now) {
     token_ = scheduler_->Schedule(
-        node_event_loop_factory_->ToDistributedClock(monotonic_now),
-        [this]() { simulated_event_loop_->HandleEvent(); });
+        monotonic_now, [this]() { simulated_event_loop_->HandleEvent(); });
   } else {
     token_ = scheduler_->Schedule(
-        node_event_loop_factory_->ToDistributedClock(base),
-        [this]() { simulated_event_loop_->HandleEvent(); });
+        base, [this]() { simulated_event_loop_->HandleEvent(); });
   }
   event_.set_event_time(base_);
   simulated_event_loop_->AddEvent(&event_);
@@ -683,8 +672,7 @@ void SimulatedTimerHandler::HandleEvent() {
     // Reschedule.
     while (base_ <= monotonic_now) base_ += repeat_offset_;
     token_ = scheduler_->Schedule(
-        node_event_loop_factory_->ToDistributedClock(base_),
-        [this]() { simulated_event_loop_->HandleEvent(); });
+        base_, [this]() { simulated_event_loop_->HandleEvent(); });
     event_.set_event_time(base_);
     simulated_event_loop_->AddEvent(&event_);
   } else {
@@ -703,15 +691,13 @@ void SimulatedTimerHandler::Disable() {
 }
 
 SimulatedPhasedLoopHandler::SimulatedPhasedLoopHandler(
-    EventScheduler *scheduler, NodeEventLoopFactory *node_event_loop_factory,
-    SimulatedEventLoop *simulated_event_loop, ::std::function<void(int)> fn,
-    const monotonic_clock::duration interval,
+    EventScheduler *scheduler, SimulatedEventLoop *simulated_event_loop,
+    ::std::function<void(int)> fn, const monotonic_clock::duration interval,
     const monotonic_clock::duration offset)
     : PhasedLoopHandler(simulated_event_loop, std::move(fn), interval, offset),
       simulated_event_loop_(simulated_event_loop),
       event_(this),
       scheduler_(scheduler),
-      node_event_loop_factory_(node_event_loop_factory),
       token_(scheduler_->InvalidToken()) {}
 
 SimulatedPhasedLoopHandler::~SimulatedPhasedLoopHandler() {
@@ -737,29 +723,27 @@ void SimulatedPhasedLoopHandler::HandleEvent() {
 void SimulatedPhasedLoopHandler::Schedule(
     monotonic_clock::time_point sleep_time) {
   token_ = scheduler_->Schedule(
-      node_event_loop_factory_->ToDistributedClock(sleep_time),
-      [this]() { simulated_event_loop_->HandleEvent(); });
+      sleep_time, [this]() { simulated_event_loop_->HandleEvent(); });
   event_.set_event_time(sleep_time);
   simulated_event_loop_->AddEvent(&event_);
 }
 
 NodeEventLoopFactory::NodeEventLoopFactory(
-    EventScheduler *scheduler, SimulatedEventLoopFactory *factory,
-    const Node *node,
+    EventSchedulerScheduler *scheduler_scheduler,
+    SimulatedEventLoopFactory *factory, const Node *node,
     std::vector<std::pair<EventLoop *, std::function<void(bool)>>>
         *raw_event_loops)
-    : scheduler_(scheduler),
-      factory_(factory),
-      node_(node),
-      raw_event_loops_(raw_event_loops) {}
+    : factory_(factory), node_(node), raw_event_loops_(raw_event_loops) {
+  scheduler_scheduler->AddEventScheduler(&scheduler_);
+}
 
 SimulatedEventLoopFactory::SimulatedEventLoopFactory(
     const Configuration *configuration)
     : configuration_(CHECK_NOTNULL(configuration)),
       nodes_(configuration::GetNodes(configuration_)) {
   for (const Node *node : nodes_) {
-    node_factories_.emplace_back(
-        new NodeEventLoopFactory(&scheduler_, this, node, &raw_event_loops_));
+    node_factories_.emplace_back(new NodeEventLoopFactory(
+        &scheduler_scheduler_, this, node, &raw_event_loops_));
   }
 
   if (configuration::MultiNode(configuration)) {
@@ -797,11 +781,14 @@ NodeEventLoopFactory *SimulatedEventLoopFactory::GetNodeEventLoopFactory(
 
 ::std::unique_ptr<EventLoop> NodeEventLoopFactory::MakeEventLoop(
     std::string_view name) {
+  CHECK(!scheduler_.is_running())
+      << ": Can't create an event loop while running";
+
   pid_t tid = tid_;
   ++tid_;
   ::std::unique_ptr<SimulatedEventLoop> result(new SimulatedEventLoop(
-      scheduler_, this, &channels_, factory_->configuration(), raw_event_loops_,
-      node_, tid));
+      &scheduler_, this, &channels_, factory_->configuration(),
+      raw_event_loops_, node_, tid));
   result->set_name(name);
   result->set_send_delay(factory_->send_delay());
   return std::move(result);
@@ -812,7 +799,7 @@ void SimulatedEventLoopFactory::RunFor(monotonic_clock::duration duration) {
        raw_event_loops_) {
     event_loop.second(true);
   }
-  scheduler_.RunFor(duration);
+  scheduler_scheduler_.RunFor(duration);
   for (const std::pair<EventLoop *, std::function<void(bool)>> &event_loop :
        raw_event_loops_) {
     event_loop.second(false);
@@ -824,7 +811,7 @@ void SimulatedEventLoopFactory::Run() {
        raw_event_loops_) {
     event_loop.second(true);
   }
-  scheduler_.Run();
+  scheduler_scheduler_.Run();
   for (const std::pair<EventLoop *, std::function<void(bool)>> &event_loop :
        raw_event_loops_) {
     event_loop.second(false);
