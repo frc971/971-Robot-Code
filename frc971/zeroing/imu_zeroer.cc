@@ -4,22 +4,30 @@ namespace frc971::zeroing {
 
 ImuZeroer::ImuZeroer() {
   gyro_average_.setZero();
+  accel_average_.setZero();
   last_gyro_sample_.setZero();
   last_accel_sample_.setZero();
 }
 
-bool ImuZeroer::Zeroed() const { return zeroed_ || Faulted(); }
+bool ImuZeroer::Zeroed() const {
+  return num_zeroes_ > kRequiredZeroPoints || Faulted();
+}
 
 bool ImuZeroer::Faulted() const { return faulted_; }
 
 Eigen::Vector3d ImuZeroer::ZeroedGyro() const {
   return last_gyro_sample_ - gyro_average_;
 }
-Eigen::Vector3d ImuZeroer::ZeroedAccel() const { return last_accel_sample_; }
+Eigen::Vector3d ImuZeroer::ZeroedAccel() const {
+  return last_accel_sample_ - accel_average_;
+}
 Eigen::Vector3d ImuZeroer::GyroOffset() const { return gyro_average_; }
 
 bool ImuZeroer::GyroZeroReady() const {
-  return gyro_averager_.full() && gyro_averager_.GetRange() < kGyroMaxVariation;
+  return gyro_averager_.full() &&
+         gyro_averager_.GetRange() < kGyroMaxVariation &&
+         (last_gyro_sample_.lpNorm<Eigen::Infinity>() <
+          kGyroMaxZeroingMagnitude);
 }
 
 bool ImuZeroer::AccelZeroReady() const {
@@ -34,19 +42,45 @@ void ImuZeroer::ProcessMeasurement(const IMUValues &values) {
                            values.accelerometer_z();
   accel_averager_.AddData(last_accel_sample_);
   if (GyroZeroReady() && AccelZeroReady()) {
-    if (!zeroed_) {
-      zeroed_ = true;
-      gyro_average_ = gyro_averager_.GetAverage();
-    } else {
-      // If we got a new zero and it is substantially different from the
-      // original zero, fault.
-      if ((gyro_averager_.GetAverage() - gyro_average_).norm() >
-          kGyroFaultVariation) {
-        faulted_ = true;
+    ++good_iters_;
+    if (good_iters_ > kSamplesToAverage / 4) {
+      const Eigen::Vector3d current_gyro_average = gyro_averager_.GetAverage();
+      constexpr double kAverageUpdateWeight = 0.05;
+      if (num_zeroes_ > 0) {
+        gyro_average_ +=
+            (current_gyro_average - gyro_average_) * kAverageUpdateWeight;
+      } else {
+        gyro_average_ = current_gyro_average;
       }
+      if (num_zeroes_ > 0) {
+        // If we got a new zero and it is substantially different from the
+        // original zero, fault.
+        if ((current_gyro_average - gyro_average_).norm() >
+            kGyroFaultVariation) {
+          faulted_ = true;
+        }
+      }
+      ++num_zeroes_;
+      gyro_averager_.Reset();
     }
-    gyro_averager_.Reset();
+  } else {
+    good_iters_ = 0;
   }
+}
+
+flatbuffers::Offset<control_loops::drivetrain::ImuZeroerState>
+ImuZeroer::PopulateStatus(flatbuffers::FlatBufferBuilder *fbb) const {
+  control_loops::drivetrain::ImuZeroerState::Builder builder(*fbb);
+
+  builder.add_zeroed(Zeroed());
+  builder.add_faulted(Faulted());
+  builder.add_number_of_zeroes(num_zeroes_);
+
+  builder.add_gyro_x_average(GyroOffset().x());
+  builder.add_gyro_y_average(GyroOffset().y());
+  builder.add_gyro_z_average(GyroOffset().z());
+
+  return builder.Finish();
 }
 
 }  // namespace frc971::zeroing
