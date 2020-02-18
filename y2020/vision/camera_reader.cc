@@ -1,8 +1,11 @@
+#include <opencv2/calib3d.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/imgproc.hpp>
 
 #include "aos/events/shm_event_loop.h"
+#include "aos/flatbuffer_merge.h"
 #include "aos/init.h"
+#include "aos/network/team_number.h"
 
 #include "y2020/vision/sift/demo_sift.h"
 #include "y2020/vision/sift/sift971.h"
@@ -22,6 +25,7 @@ class CameraReader {
                cv::FlannBasedMatcher *matcher)
       : event_loop_(event_loop),
         training_data_(training_data),
+        camera_calibration_(FindCameraCalibration()),
         reader_(reader),
         matcher_(matcher),
         image_sender_(event_loop->MakeSender<CameraImage>("/camera")),
@@ -41,6 +45,8 @@ class CameraReader {
   }
 
  private:
+  const sift::CameraCalibration *FindCameraCalibration() const;
+
   // Copies the information from training_data_ into matcher_.
   void CopyTrainingFeatures();
   // Processes an image (including sending the results).
@@ -58,7 +64,8 @@ class CameraReader {
                const cv::Mat &descriptors);
 
   // Returns the 3D location for the specified training feature.
-  cv::Point3f Training3dPoint(int training_image_index, int feature_index) {
+  cv::Point3f Training3dPoint(int training_image_index,
+                              int feature_index) const {
     const sift::KeypointFieldLocation *const location =
         training_data_->images()
             ->Get(training_image_index)
@@ -68,12 +75,27 @@ class CameraReader {
     return cv::Point3f(location->x(), location->y(), location->z());
   }
 
+  const sift::TransformationMatrix *FieldToTarget(int training_image_index) {
+    return training_data_->images()
+        ->Get(training_image_index)
+        ->field_to_target();
+  }
+
   int number_training_images() const {
     return training_data_->images()->size();
   }
 
+  cv::Mat CameraIntrinsics() const {
+    const cv::Mat result(3, 3, CV_32F,
+                         const_cast<void *>(static_cast<const void *>(
+                             camera_calibration_->intrinsics()->data())));
+    CHECK_EQ(result.total(), camera_calibration_->intrinsics()->size());
+    return result;
+  }
+
   aos::EventLoop *const event_loop_;
   const sift::TrainingData *const training_data_;
+  const sift::CameraCalibration *const camera_calibration_;
   V4L2Reader *const reader_;
   cv::FlannBasedMatcher *const matcher_;
   aos::Sender<CameraImage> image_sender_;
@@ -86,11 +108,33 @@ class CameraReader {
       new frc971::vision::SIFT971_Impl()};
 };
 
+const sift::CameraCalibration *CameraReader::FindCameraCalibration() const {
+  const std::string_view node_name = event_loop_->node()->name()->string_view();
+  const int team_number = aos::network::GetTeamNumber();
+  for (const sift::CameraCalibration *candidate :
+       *training_data_->camera_calibrations()) {
+    if (candidate->node_name()->string_view() != node_name) {
+      continue;
+    }
+    if (candidate->team_number() != team_number) {
+      continue;
+    }
+    return candidate;
+  }
+  LOG(FATAL) << ": Failed to find camera calibration for " << node_name
+             << " on " << team_number;
+}
+
 void CameraReader::CopyTrainingFeatures() {
   for (const sift::TrainingImage *training_image : *training_data_->images()) {
     cv::Mat features(training_image->features()->size(), 128, CV_32F);
     for (size_t i = 0; i <  training_image->features()->size(); ++i) {
       const sift::Feature *feature_table = training_image->features()->Get(i);
+
+      // We don't need this information right now, but make sure it's here to
+      // avoid crashes that only occur when specific features are matched.
+      CHECK(feature_table->has_field_location());
+
       const flatbuffers::Vector<float> *const descriptor =
           feature_table->descriptor();
       CHECK_EQ(descriptor->size(), 128u) << ": Unsupported feature size";
@@ -103,6 +147,12 @@ void CameraReader::CopyTrainingFeatures() {
 }
 
 void CameraReader::ProcessImage(const CameraImage &image) {
+  // Be ready to pack the results up and send them out. We can pack things into
+  // this memory as we go to allow reusing temporaries better.
+  auto builder = result_sender_.MakeBuilder();
+  const auto camera_calibration_offset =
+      aos::CopyFlatBuffer(camera_calibration_, builder.fbb());
+
   // First, we need to extract the brightness information. This can't really be
   // fused into the beginning of the SIFT algorithm because the algorithm needs
   // to look at the base image directly. It also only takes 2ms on our images.
@@ -120,24 +170,89 @@ void CameraReader::ProcessImage(const CameraImage &image) {
   std::vector<cv::KeyPoint> keypoints;
   cv::Mat descriptors;
   sift_->detectAndCompute(image_mat, cv::noArray(), keypoints, descriptors);
+  const auto features_offset =
+      PackFeatures(builder.fbb(), keypoints, descriptors);
 
   // Then, match those features against our training data.
   std::vector<std::vector<cv::DMatch>> matches;
   matcher_->knnMatch(/* queryDescriptors */ descriptors, matches, /* k */ 2);
-
-  // Now, pack the results up and send them out.
-  auto builder = result_sender_.MakeBuilder();
-
   const auto image_matches_offset = PackImageMatches(builder.fbb(), matches);
-  // TODO(Brian): PackCameraPoses (and put it in the result)
-  const auto features_offset =
-      PackFeatures(builder.fbb(), keypoints, descriptors);
+
+  struct PerImageMatches {
+    std::vector<const std::vector<cv::DMatch> *> matches;
+    std::vector<cv::Point3f> training_points_3d;
+    std::vector<cv::Point2f> query_points;
+  };
+  std::vector<PerImageMatches> per_image_matches(number_training_images());
+
+  // Pull out the good matches which we want for each image.
+  // Discard the bad matches per Lowe's ratio test.
+  // (Lowe originally proposed 0.7 ratio, but 0.75 was later proposed as a
+  // better option.  We'll go with the more conservative (fewer, better matches)
+  // for now).
+  for (const std::vector<cv::DMatch> &match : matches) {
+    CHECK_EQ(2u, match.size());
+    CHECK_LE(match[0].distance, match[1].distance);
+    CHECK_LT(match[0].imgIdx, number_training_images());
+    CHECK_LT(match[1].imgIdx, number_training_images());
+    CHECK_EQ(match[0].queryIdx, match[1].queryIdx);
+    if (!(match[0].distance < 0.7 * match[1].distance)) {
+      continue;
+    }
+
+    const int training_image = match[0].imgIdx;
+    CHECK_LT(training_image, static_cast<int>(per_image_matches.size()));
+    PerImageMatches *const per_image = &per_image_matches[training_image];
+    per_image->matches.push_back(&match);
+    per_image->training_points_3d.push_back(
+        Training3dPoint(training_image, match[0].trainIdx));
+
+    const cv::KeyPoint &keypoint = keypoints[match[0].queryIdx];
+    per_image->query_points.push_back(keypoint.pt);
+  }
+
+  // The minimum number of matches in a training image for us to use it.
+  static constexpr int kMinimumMatchCount = 10;
+
+  std::vector<flatbuffers::Offset<sift::CameraPose>> camera_poses;
+  for (size_t i = 0; i < per_image_matches.size(); ++i) {
+    const PerImageMatches &per_image = per_image_matches[i];
+    if (per_image.matches.size() < kMinimumMatchCount) {
+      continue;
+    }
+
+    cv::Mat R_camera_target, T_camera_target;
+    cv::solvePnPRansac(per_image.training_points_3d, per_image.query_points,
+                       CameraIntrinsics(), cv::noArray(), R_camera_target,
+                       T_camera_target);
+
+    sift::CameraPose::Builder pose_builder(*builder.fbb());
+    {
+    CHECK_EQ(cv::Size(3, 3), R_camera_target.size());
+    CHECK_EQ(cv::Size(3, 1), T_camera_target.size());
+    cv::Mat camera_target = cv::Mat::zeros(4, 4, CV_32F);
+    R_camera_target.copyTo(camera_target(cv::Range(0, 3), cv::Range(0, 3)));
+    T_camera_target.copyTo(camera_target(cv::Range(3, 4), cv::Range(0, 3)));
+    camera_target.at<float>(3, 3) = 1;
+    CHECK(camera_target.isContinuous());
+    const auto data_offset = builder.fbb()->CreateVector<float>(
+        reinterpret_cast<float *>(camera_target.data), camera_target.total());
+    pose_builder.add_camera_to_target(
+        sift::CreateTransformationMatrix(*builder.fbb(), data_offset));
+    }
+    pose_builder.add_field_to_target(
+        aos::CopyFlatBuffer(FieldToTarget(i), builder.fbb()));
+    camera_poses.emplace_back(pose_builder.Finish());
+  }
+  const auto camera_poses_offset = builder.fbb()->CreateVector(camera_poses);
 
   sift::ImageMatchResult::Builder result_builder(*builder.fbb());
   result_builder.add_image_matches(image_matches_offset);
+  result_builder.add_camera_poses(camera_poses_offset);
   result_builder.add_features(features_offset);
   result_builder.add_image_monotonic_timestamp_ns(
       image.monotonic_timestamp_ns());
+  result_builder.add_camera_calibration(camera_calibration_offset);
   builder.Send(result_builder.Finish());
 }
 
