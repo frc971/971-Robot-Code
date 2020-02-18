@@ -677,6 +677,46 @@ TEST_F(ConfigurationDeathTest, GetNodeOrDie) {
             GetNodeOrDie(&config.message(), config2.message().nodes()->Get(0)));
 }
 
+TEST_F(ConfigurationTest, GetNodeFromHostname) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig("aos/testdata/good_multinode.json");
+  EXPECT_EQ("pi1",
+            CHECK_NOTNULL(GetNodeFromHostname(&config.message(), "raspberrypi"))
+                ->name()
+                ->string_view());
+  EXPECT_EQ("pi2", CHECK_NOTNULL(
+                       GetNodeFromHostname(&config.message(), "raspberrypi2"))
+                       ->name()
+                       ->string_view());
+  EXPECT_EQ(nullptr, GetNodeFromHostname(&config.message(), "raspberrypi3"));
+  EXPECT_EQ(nullptr, GetNodeFromHostname(&config.message(), "localhost"));
+  EXPECT_EQ(nullptr, GetNodeFromHostname(&config.message(), "3"));
+}
+
+TEST_F(ConfigurationTest, GetNodeFromHostnames) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig("aos/testdata/good_multinode_hostnames.json");
+  EXPECT_EQ("pi1",
+            CHECK_NOTNULL(GetNodeFromHostname(&config.message(), "raspberrypi"))
+                ->name()
+                ->string_view());
+  EXPECT_EQ("pi2", CHECK_NOTNULL(
+                       GetNodeFromHostname(&config.message(), "raspberrypi2"))
+                       ->name()
+                       ->string_view());
+  EXPECT_EQ("pi2", CHECK_NOTNULL(
+                       GetNodeFromHostname(&config.message(), "raspberrypi3"))
+                       ->name()
+                       ->string_view());
+  EXPECT_EQ("pi2", CHECK_NOTNULL(
+                       GetNodeFromHostname(&config.message(), "other"))
+                       ->name()
+                       ->string_view());
+  EXPECT_EQ(nullptr, GetNodeFromHostname(&config.message(), "raspberrypi4"));
+  EXPECT_EQ(nullptr, GetNodeFromHostname(&config.message(), "localhost"));
+  EXPECT_EQ(nullptr, GetNodeFromHostname(&config.message(), "3"));
+}
+
 }  // namespace testing
 }  // namespace configuration
 }  // namespace aos
