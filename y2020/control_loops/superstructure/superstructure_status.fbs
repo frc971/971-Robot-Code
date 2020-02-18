@@ -3,7 +3,7 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2020.control_loops.superstructure;
 
-table ShooterSegmentStatus {
+table FlywheelControllerStatus {
   // The current average velocity in radians/second over the last kHistoryLength
   // in shooter.h
   avg_angular_velocity:double;
@@ -18,12 +18,12 @@ table ShooterSegmentStatus {
 
 table ShooterStatus {
   // The final wheel shooting the ball
-  flywheel:ShooterSegmentStatus;
+  finisher:FlywheelControllerStatus;
 
-  // The subsystem to accelerate the ball before the flywheel
+  // The subsystem to accelerate the ball before the finisher
   // Velocity is the slowest (lowest) wheel
-  kicker_left:ShooterSegmentStatus;
-  kicker_right:ShooterSegmentStatus;
+  accelerator_left:FlywheelControllerStatus;
+  accelerator_right:FlywheelControllerStatus;
 }
 
 table Status {

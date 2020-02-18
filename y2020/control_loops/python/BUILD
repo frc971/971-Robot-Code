@@ -114,6 +114,48 @@ py_binary(
 )
 
 py_library(
+    name = "flywheel",
+    srcs = [
+        "flywheel.py",
+    ],
+    restricted_to = ["//tools:k8"],
+    deps = [
+        "//frc971/control_loops/python:controls",
+        "@matplotlib_repo//:matplotlib2.7",
+    ],
+)
+
+py_binary(
+    name = "accelerator",
+    srcs = [
+        "accelerator.py",
+    ],
+    legacy_create_init = False,
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":python_init",
+        ":flywheel",
+        "//external:python-gflags",
+        "//external:python-glog",
+    ],
+)
+
+py_binary(
+    name = "finisher",
+    srcs = [
+        "finisher.py",
+    ],
+    legacy_create_init = False,
+    restricted_to = ["//tools:k8"],
+    deps = [
+        ":python_init",
+        ":flywheel",
+        "//external:python-gflags",
+        "//external:python-glog",
+    ],
+)
+
+py_library(
     name = "python_init",
     srcs = ["__init__.py"],
     visibility = ["//visibility:public"],
