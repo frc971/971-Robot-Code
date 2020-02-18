@@ -35,6 +35,29 @@ std::optional<uint16_t> ParseRoborioTeamNumber(const std::string &hostname) {
   return std::nullopt;
 }
 
+std::optional<uint16_t> ParsePiTeamNumber(const std::string &hostname) {
+  if (hostname.substr(0, 3) != "pi-") {
+    return std::nullopt;
+  }
+  size_t first_separator = hostname.find('-');
+  if (first_separator == hostname.npos ||
+      first_separator >= hostname.size() - 2) {
+    return std::nullopt;
+  }
+  ++first_separator;
+  const size_t second_separator = hostname.find('-', first_separator);
+  if (second_separator == hostname.npos) {
+    return std::nullopt;
+  }
+  const std::string number_string =
+      hostname.substr(first_separator, second_separator - first_separator);
+  int number;
+  if (!util::StringToNumber(number_string, &number)) {
+    return std::nullopt;
+  }
+  return number;
+}
+
 }  // namespace team_number_internal
 
 namespace {
@@ -62,6 +85,13 @@ uint16_t DoGetTeamNumber() {
     const auto result = team_number_internal::ParseRoborioTeamNumber(hostname);
     if (result) {
       LOG(INFO) << "roboRIO hostname team number is: " << *result;
+      return *result;
+    }
+  }
+  {
+    const auto result = team_number_internal::ParsePiTeamNumber(hostname);
+    if (result) {
+      LOG(INFO) << "Pi hostname team number is: " << *result;
       return *result;
     }
   }

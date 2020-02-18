@@ -28,6 +28,8 @@ namespace team_number_internal {
 
 std::optional<uint16_t> ParseRoborioTeamNumber(const std::string &hostname);
 
+std::optional<uint16_t> ParsePiTeamNumber(const std::string &hostname);
+
 }  // namespace team_number_internal
 }  // namespace network
 }  // namespace aos
