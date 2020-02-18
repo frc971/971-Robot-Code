@@ -76,6 +76,7 @@ cc_binary(
         "//frc971/wpilib:sensor_reader",
         "//frc971/wpilib:wpilib_interface",
         "//frc971/wpilib:wpilib_robot_base",
+        "//third_party:phoenix",
         "//third_party:wpilib",
         "//y2020/control_loops/superstructure:superstructure_output_fbs",
         "//y2020/control_loops/superstructure:superstructure_position_fbs",
