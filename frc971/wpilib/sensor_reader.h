@@ -166,6 +166,18 @@ class SensorReader {
     position->index_pulses = encoder.index_posedge_count();
   }
 
+  // Copies a relative encoder.
+  void CopyPosition(const ::frc::Encoder &encoder,
+                    ::frc971::RelativePositionT *position,
+                    double encoder_counts_per_revolution, double encoder_ratio,
+                    bool reverse) {
+    const double multiplier = reverse ? -1.0 : 1.0;
+    position->encoder =
+        multiplier * encoder_translate(encoder.GetRaw(),
+                                       encoder_counts_per_revolution,
+                                       encoder_ratio);
+  }
+
   double encoder_translate(int32_t value, double counts_per_revolution,
                            double ratio) {
     return static_cast<double>(value) / counts_per_revolution * ratio *
