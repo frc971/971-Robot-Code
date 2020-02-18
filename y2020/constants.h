@@ -12,6 +12,7 @@
 #include "y2020/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2020/control_loops/superstructure/hood/hood_plant.h"
 #include "y2020/control_loops/superstructure/intake/intake_plant.h"
+#include "y2020/control_loops/superstructure/turret/turret_plant.h"
 
 namespace y2020 {
 namespace constants {
@@ -53,6 +54,10 @@ struct Values {
     };
   }
 
+  ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+      ::frc971::zeroing::AbsoluteEncoderZeroingEstimator>
+      hood;
+
   // Intake
   static constexpr double kIntakeEncoderCountsPerRevolution() { return 4096.0; }
 
@@ -77,10 +82,43 @@ struct Values {
 
   ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
       ::frc971::zeroing::AbsoluteEncoderZeroingEstimator>
-      hood;
-  ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
-      ::frc971::zeroing::AbsoluteEncoderZeroingEstimator>
       intake;
+
+  // Turret
+  static constexpr double kTurretEncoderCountsPerRevolution() { return 4096.0; }
+
+  static constexpr double kTurretEncoderRatio() {
+    return 1.0;  // TODO (Kai): Get Gear Ratios when ready
+  }
+
+  static constexpr double kMaxTurretEncoderPulsesPerSecond() {
+    return control_loops::superstructure::turret::kFreeSpeed *
+           control_loops::superstructure::turret::kOutputRatio /
+           kTurretEncoderRatio() / (2.0 * M_PI) *
+           kTurretEncoderCountsPerRevolution();
+  }
+
+  // TODO(austin): Figure out the actual constant here.
+  static constexpr double kTurretPotRatio() { return 1.0; }
+
+  static constexpr ::frc971::constants::Range kTurretRange() {
+    return ::frc971::constants::Range{
+        // TODO (Kai): Placeholders right now.
+        -3.2,   // Back Hard
+        3.2,    // Front Hard
+        -3.14,  // Back Soft
+        3.14    // Front Soft
+    };
+  }
+
+  struct PotAndAbsEncoderConstants {
+    ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+        ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>
+        subsystem_params;
+    double potentiometer_offset;
+  };
+
+  PotAndAbsEncoderConstants turret;
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and
