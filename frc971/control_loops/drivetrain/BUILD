@@ -187,6 +187,7 @@ cc_library(
         ":drivetrain_config",
         ":drivetrain_status_fbs",
         ":hybrid_ekf",
+        "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:pose",
     ],
 )

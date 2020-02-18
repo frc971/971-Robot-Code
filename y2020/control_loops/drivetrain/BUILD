@@ -1,4 +1,5 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:select.bzl", "compiler_select", "cpu_select")
 
 genrule(
@@ -53,6 +54,21 @@ cc_library(
 )
 
 cc_library(
+    name = "localizer",
+    srcs = ["localizer.cc"],
+    hdrs = ["localizer.h"],
+    deps = [
+        "//aos/containers:ring_buffer",
+        "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/control_loops/drivetrain:hybrid_ekf",
+        "//frc971/control_loops/drivetrain:localizer",
+        "//y2020:constants",
+        "//y2020/control_loops/superstructure:superstructure_status_fbs",
+        "//y2020/vision/sift:sift_fbs",
+    ],
+)
+
+cc_library(
     name = "drivetrain_base",
     srcs = [
         "drivetrain_base.cc",
@@ -79,6 +95,33 @@ cc_binary(
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//frc971/control_loops/drivetrain:drivetrain_lib",
+    ],
+)
+
+aos_config(
+    name = "simulation_config",
+    src = "drivetrain_simulation_config.json",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//frc971/control_loops/drivetrain:simulation_channels",
+        "//y2020:config",
+    ],
+)
+
+cc_test(
+    name = "localizer_test",
+    srcs = ["localizer_test.cc"],
+    data = [":simulation_config.json"],
+    deps = [
+        ":drivetrain_base",
+        ":localizer",
+        "//aos/controls:control_loop_test",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:logger",
+        "//aos/network:team_number",
+        "//frc971/control_loops:team_number_test_environment",
+        "//frc971/control_loops/drivetrain:drivetrain_lib",
+        "//frc971/control_loops/drivetrain:drivetrain_test_lib",
     ],
 )
 

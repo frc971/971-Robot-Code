@@ -30,7 +30,6 @@ cc_library(
         "//aos/mutex",
         "//aos/network:team_number",
         "//frc971:constants",
-        "//frc971/control_loops:pose",
         "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
         "//y2020/control_loops/drivetrain:polydrivetrain_plants",
         "//y2020/control_loops/superstructure/accelerator:accelerator_plants",

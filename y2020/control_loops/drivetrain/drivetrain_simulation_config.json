@@ -1,0 +1,6 @@
+{
+  "imports": [
+    "../../y2020.json",
+    "../../../frc971/control_loops/drivetrain/drivetrain_simulation_channels.json"
+  ]
+}

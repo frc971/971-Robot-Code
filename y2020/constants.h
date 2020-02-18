@@ -7,7 +7,6 @@
 #include <array>
 
 #include "frc971/constants.h"
-#include "frc971/control_loops/pose.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 #include "y2020/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2020/control_loops/superstructure/accelerator/accelerator_plant.h"

@@ -660,13 +660,17 @@ void HybridEkf<Scalar>::InitializeMatrices() {
   Q_continuous_(kAngularError, kAngularError) = std::pow(2.0, 2.0);
   // This noise value largely governs whether we will trust the encoders or
   // accelerometer more for estimating the robot position.
+  // Note that this also affects how we interpret camera measurements,
+  // particularly when using a heading/distance/skew measurement--if the
+  // noise on these numbers is particularly high, then we can end up with weird
+  // dynamics where a camera update both shifts our X/Y position and adjusts our
+  // velocity estimates substantially, causing the camera updates to create
+  // "momentum" and if we don't trust the encoders enough, then we have no way of
+  // determining that the velocity updates are bogus. This also interacts with
+  // kVelocityOffsetTimeConstant.
   Q_continuous_(kLongitudinalVelocityOffset, kLongitudinalVelocityOffset) =
       std::pow(1.1, 2.0);
   Q_continuous_(kLateralVelocity, kLateralVelocity) = std::pow(0.1, 2.0);
-
-  P_.setZero();
-  P_.diagonal() << 0.01, 0.01, 0.01, 0.02, 0.01, 0.02, 0.01, 1, 1, 0.03, 0.01,
-      0.01;
 
   H_encoders_and_gyro_.setZero();
   // Encoders are stored directly in the state matrix, so are a minor
