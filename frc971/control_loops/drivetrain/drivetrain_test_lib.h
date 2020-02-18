@@ -76,6 +76,10 @@ class DrivetrainSimulation {
  private:
   // Sends out the position queue messages.
   void SendPositionMessage();
+  // Sends out the IMU messages.
+  void SendImuMessage();
+  // Sends out the "truth" status message.
+  void SendTruthMessage();
 
   // Simulates the drivetrain moving for one timestep.
   void Simulate();
@@ -85,6 +89,8 @@ class DrivetrainSimulation {
 
   ::aos::Sender<::frc971::control_loops::drivetrain::Position>
       drivetrain_position_sender_;
+  ::aos::Sender<::frc971::control_loops::drivetrain::Status>
+      drivetrain_truth_sender_;
   ::aos::Fetcher<::frc971::control_loops::drivetrain::Output>
       drivetrain_output_fetcher_;
   ::aos::Fetcher<::frc971::control_loops::drivetrain::Status>
@@ -107,7 +113,7 @@ class DrivetrainSimulation {
   Eigen::Matrix<double, 2, 1> last_U_;
 
   // Last robot acceleration, in m/s/s.
-  Eigen::Vector3d last_acceleration_;
+  Eigen::Vector3d last_acceleration_{0, 0, 1};
 
   bool left_gear_high_ = false;
   bool right_gear_high_ = false;

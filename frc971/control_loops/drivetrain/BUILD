@@ -98,6 +98,25 @@ flatbuffer_cc_library(
 )
 
 aos_config(
+    name = "simulation_channels",
+    src = "drivetrain_simulation_channels.json",
+    flatbuffers = [
+        ":drivetrain_status_fbs",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+aos_config(
+    name = "simulation_config",
+    src = "drivetrain_simulation_config.json",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":config",
+        ":simulation_channels",
+    ],
+)
+
+aos_config(
     name = "config",
     src = "drivetrain_config.json",
     flatbuffers = [
@@ -395,6 +414,13 @@ cc_library(
     testonly = True,
     srcs = ["drivetrain_test_lib.cc"],
     hdrs = ["drivetrain_test_lib.h"],
+    defines =
+        cpu_select({
+            "amd64": [
+                "SUPPORT_PLOT=1",
+            ],
+            "arm": [],
+        }),
     deps = [
         ":drivetrain_config",
         ":drivetrain_goal_fbs",
@@ -410,7 +436,12 @@ cc_library(
         "//frc971/wpilib:imu_fbs",
         "//y2016:constants",
         "//y2016/control_loops/drivetrain:polydrivetrain_plants",
-    ],
+    ] + cpu_select({
+        "amd64": [
+            "//third_party/matplotlib-cpp",
+        ],
+        "arm": [],
+    }),
 )
 
 cc_test(
@@ -418,7 +449,7 @@ cc_test(
     srcs = [
         "drivetrain_lib_test.cc",
     ],
-    data = ["config.json"],
+    data = ["simulation_config.json"],
     defines =
         cpu_select({
             "amd64": [
@@ -437,6 +468,7 @@ cc_test(
         ":drivetrain_output_fbs",
         ":drivetrain_test_lib",
         "//aos/controls:control_loop_test",
+        "//aos/events/logging:logger",
         "//aos/testing:googletest",
         "//frc971/queues:gyro_fbs",
         "//frc971/wpilib:imu_fbs",

@@ -1,4 +1,5 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:select.bzl", "compiler_select", "cpu_select")
 
 genrule(
@@ -159,7 +160,7 @@ cc_test(
             "arm": [],
         }),
     linkstatic = True,
-    shard_count = 5,
+    shard_count = 8,
     deps = [
         ":localizer",
         ":drivetrain_base",
@@ -178,10 +179,20 @@ cc_test(
     }),
 )
 
+aos_config(
+    name = "simulation_config",
+    src = "drivetrain_simulation_config.json",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//frc971/control_loops/drivetrain:simulation_channels",
+        "//y2019:config",
+    ],
+)
+
 cc_test(
     name = "localized_drivetrain_test",
     srcs = ["localized_drivetrain_test.cc"],
-    data = ["//y2019:config.json"],
+    data = [":simulation_config.json"],
     deps = [
         ":camera_fbs",
         ":drivetrain_base",
