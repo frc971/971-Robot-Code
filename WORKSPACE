@@ -406,7 +406,7 @@ local_repository(
     path = "third_party/ceres",
 )
 
-# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/frcbeta/phoenix/api-cpp/5.17.1/.
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/api-cpp/5.18.1/.
 http_archive(
     name = "ctre_phoenix_api_cpp_headers",
     build_file_content = """
@@ -416,13 +416,13 @@ cc_library(
     hdrs = glob(['ctre/phoenix/**/*.h']),
 )
 """,
-    sha256 = "b75761d13e367ece7a114237fc68670ed3b2f39daa4d4ff2a67f9e254d2ed39b",
+    sha256 = "230ff927e36b2f75e746da0f0bf9852e5a049bb3e95c4617138ef0618b2e80d9",
     urls = [
-        "http://www.frc971.org/Build-Dependencies/api-cpp-5.17.1-headers.zip",
+        "http://www.frc971.org/Build-Dependencies/api-cpp-5.18.1-headers.zip",
     ],
 )
 
-# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/frcbeta/phoenix/api-cpp/5.17.1/.
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/api-cpp/5.18.1/.
 http_archive(
     name = "ctre_phoenix_api_cpp_athena",
     build_file_content = """
@@ -433,16 +433,17 @@ cc_library(
     restricted_to = ['@//tools:roborio'],
     deps = [
       '@ctre_phoenix_core_headers//:core',
+      '@ctre_phoenix_core_athena//:core',
     ],
 )
 """,
-    sha256 = "5678a1c6bf2af859bc5783040908b571dd1da63c6b1b5196610aa0cfa35ff9c3",
+    sha256 = "a4de1930e1e946e1c72c13ee272dae38c12c4b7b85b44477dbb67312724d96b1",
     urls = [
-        "http://www.frc971.org/Build-Dependencies/api-cpp-5.17.1-linuxathenastatic.zip",
+        "http://www.frc971.org/Build-Dependencies/api-cpp-5.18.1-linuxathenastatic.zip",
     ],
 )
 
-# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/frcbeta/phoenix/diagnostics/5.17.1/.
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/diagnostics/5.18.1/.
 http_archive(
     name = "ctre_phoenix_diagnostics_headers",
     build_file_content = """
@@ -452,13 +453,13 @@ cc_library(
     hdrs = glob(['ctre/phoenix/**/*.h']),
 )
 """,
-    sha256 = "c922f635df06ad7b2d8b2b3e72ce166a2238a9b28b7040a2963ed15fb61ec102",
+    sha256 = "a94bff6c241de8dc2396a1cece9e2822fe4a7e4980aedaaea682c3e8c5de008c",
     urls = [
-        "http://www.frc971.org/Build-Dependencies/diagnostics-5.17.1-headers.zip",
+        "http://www.frc971.org/Build-Dependencies/diagnostics-5.18.1-headers.zip",
     ],
 )
 
-# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/frcbeta/phoenix/diagnostics/5.17.1/.
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/diagnostics/5.18.1/.
 http_archive(
     name = "ctre_phoenix_diagnostics_athena",
     build_file_content = """
@@ -467,15 +468,19 @@ cc_library(
     visibility = ['//visibility:public'],
     srcs = ['linux/athena/static/libCTRE_PhoenixDiagnostics.a'],
     restricted_to = ['@//tools:roborio'],
+    deps = [
+      '@ctre_phoenix_core_headers//:core',
+      '@ctre_phoenix_core_athena//:core',
+    ],
 )
 """,
-    sha256 = "d59c3dd4d841d769ba509b0ce993355745eb6ca1c86a660b476bf5d9c2532a9e",
+    sha256 = "638a4a4d7400942baa040619ea6cde2bdef0e7721300a9427424a577ce0f56db",
     urls = [
-        "http://www.frc971.org/Build-Dependencies/diagnostics-5.17.1-linuxathenastatic.zip",
+        "http://www.frc971.org/Build-Dependencies/diagnostics-5.18.1-linuxathenastatic.zip",
     ],
 )
 
-# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/frcbeta/phoenix/cci/5.17.1/.
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/cci/5.18.1/.
 http_archive(
     name = "ctre_phoenix_cci_headers",
     build_file_content = """
@@ -485,13 +490,13 @@ cc_library(
     hdrs = glob(['ctre/phoenix/**/*.h']),
 )
 """,
-    sha256 = "d43f6db7aa5165123e222568bdae794a182622d5a71181def355c7c08733dc7f",
+    sha256 = "31e4d8f7fd9612ba687661e19aabc3d89dc076f66756d4696aa7799f31bbc72f",
     urls = [
-        "http://www.frc971.org/Build-Dependencies/cci-5.17.1-headers.zip",
+        "http://www.frc971.org/Build-Dependencies/cci-5.18.1-headers.zip",
     ],
 )
 
-# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/frcbeta/phoenix/cci/5.17.1/.
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/cci/5.18.1/.
 http_archive(
     name = "ctre_phoenix_cci_athena",
     build_file_content = """
@@ -502,13 +507,13 @@ cc_library(
     restricted_to = ['@//tools:roborio'],
 )
 """,
-    sha256 = "8dcf5a2b55747f8dc23556d61f1f6a7d5419e7c3336de97afa30dc89e07c6861",
+    sha256 = "e5d9b58072002dbd2daa8cc8d42e047e5c90d26bd5a2b1d63dc1b89112ac3837",
     urls = [
-        "http://www.frc971.org/Build-Dependencies/cci-5.17.1-linuxathenastatic.zip",
+        "http://www.frc971.org/Build-Dependencies/cci-5.18.1-linuxathenastatic.zip",
     ],
 )
 
-# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/frcbeta/phoenix/core/5.17.1/.
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/core/5.18.1/.
 http_archive(
     name = "ctre_phoenix_core_headers",
     build_file_content = """
@@ -518,9 +523,26 @@ cc_library(
     hdrs = glob(['ctre/phoenix/**/*.h']),
 )
 """,
-    sha256 = "552589ce2aebea1c6112babe3dd7476611eab1d8a0e48f777bd5c421f76857df",
+    sha256 = "af2db0f9c3693cbb74216882ee140e4d6b722a416f2d384062378a8ae37f65ee",
     urls = [
-        "http://www.frc971.org/Build-Dependencies/core-5.17.1-headers.zip",
+        "http://www.frc971.org/Build-Dependencies/core-5.18.1-headers.zip",
+    ],
+)
+
+# Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/core/5.18.1/.
+http_archive(
+    name = "ctre_phoenix_core_athena",
+    build_file_content = """
+cc_library(
+    name = 'core',
+    visibility = ['//visibility:public'],
+    srcs = ['linux/athena/static/libCTRE_PhoenixCore.a'],
+    restricted_to = ['@//tools:roborio'],
+)
+""",
+    sha256 = "cd827bc68c0f4ef2fe6c363a7f9f5a08f7d944b574c65a2c7fb823686501f43f",
+    urls = [
+        "http://www.frc971.org/Build-Dependencies/core-5.18.1-linuxathenastatic.zip",
     ],
 )
 
