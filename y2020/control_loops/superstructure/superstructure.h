@@ -25,6 +25,7 @@ class Superstructure
           ::frc971::control_loops::AbsoluteEncoderProfiledJointStatus>;
 
   const AbsoluteEncoderSubsystem &hood() const { return hood_; }
+  const AbsoluteEncoderSubsystem &intake_joint() const { return intake_joint_; }
 
  protected:
   virtual void RunIteration(const Goal *unsafe_goal, const Position *position,
@@ -33,6 +34,7 @@ class Superstructure
 
  private:
   AbsoluteEncoderSubsystem hood_;
+  AbsoluteEncoderSubsystem intake_joint_;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };

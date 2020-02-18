@@ -10,6 +10,7 @@
 #include "gtest/gtest.h"
 #include "y2020/constants.h"
 #include "y2020/control_loops/superstructure/hood/hood_plant.h"
+#include "y2020/control_loops/superstructure/intake/intake_plant.h"
 #include "y2020/control_loops/superstructure/superstructure.h"
 
 namespace y2020 {
@@ -47,8 +48,12 @@ class SuperstructureSimulation {
 
         hood_plant_(new CappedTestPlant(hood::MakeHoodPlant())),
         hood_encoder_(constants::GetValues()
-                          .hood.zeroing_constants.one_revolution_distance) {
+                          .hood.zeroing_constants.one_revolution_distance),
+        intake_plant_(new CappedTestPlant(intake::MakeIntakePlant())),
+        intake_encoder_(constants::GetValues()
+                            .intake.zeroing_constants.one_revolution_distance) {
     InitializeHoodPosition(constants::Values::kHoodRange().upper);
+    InitializeIntakePosition(constants::Values::kIntakeRange().upper);
 
     phased_loop_handle_ = event_loop_->AddPhasedLoop(
         [this](int) {
@@ -72,6 +77,16 @@ class SuperstructureSimulation {
             .hood.zeroing_constants.measured_absolute_position);
   }
 
+  void InitializeIntakePosition(double start_pos) {
+    intake_plant_->mutable_X(0, 0) = start_pos;
+    intake_plant_->mutable_X(1, 0) = 0.0;
+
+    intake_encoder_.Initialize(
+        start_pos, kNoiseScalar, 0.0,
+        constants::GetValues()
+            .intake.zeroing_constants.measured_absolute_position);
+  }
+
   // Sends a queue message with the position of the superstructure.
   void SendPositionMessage() {
     ::aos::Sender<Position>::Builder builder =
@@ -82,9 +97,15 @@ class SuperstructureSimulation {
     flatbuffers::Offset<frc971::AbsolutePosition> hood_offset =
         hood_encoder_.GetSensorValues(&hood_builder);
 
+    frc971::AbsolutePosition::Builder intake_builder =
+        builder.MakeBuilder<frc971::AbsolutePosition>();
+    flatbuffers::Offset<frc971::AbsolutePosition> intake_offset =
+        intake_encoder_.GetSensorValues(&intake_builder);
+
     Position::Builder position_builder = builder.MakeBuilder<Position>();
 
     position_builder.add_hood(hood_offset);
+    position_builder.add_intake_joint(intake_offset);
 
     builder.Send(position_builder.Finish());
   }
@@ -92,9 +113,13 @@ class SuperstructureSimulation {
   double hood_position() const { return hood_plant_->X(0, 0); }
   double hood_velocity() const { return hood_plant_->X(1, 0); }
 
+  double intake_position() const { return intake_plant_->X(0, 0); }
+  double intake_velocity() const { return intake_plant_->X(1, 0); }
+
   // Simulates the superstructure for a single timestep.
   void Simulate() {
     const double last_hood_velocity = hood_velocity();
+    const double last_intake_velocity = intake_velocity();
 
     EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
     EXPECT_TRUE(superstructure_status_fetcher_.Fetch());
@@ -109,34 +134,67 @@ class SuperstructureSimulation {
     EXPECT_NEAR(superstructure_output_fetcher_->hood_voltage(), 0.0,
                 voltage_check_hood);
 
+    const double voltage_check_intake =
+        (static_cast<AbsoluteEncoderSubsystem::State>(
+             superstructure_status_fetcher_->intake()->state()) ==
+         AbsoluteEncoderSubsystem::State::RUNNING)
+            ? constants::GetValues().intake.operating_voltage
+            : constants::GetValues().intake.zeroing_voltage;
+
+    EXPECT_NEAR(superstructure_output_fetcher_->intake_joint_voltage(), 0.0,
+                voltage_check_intake);
+
     ::Eigen::Matrix<double, 1, 1> hood_U;
     hood_U << superstructure_output_fetcher_->hood_voltage() +
                   hood_plant_->voltage_offset();
 
+    ::Eigen::Matrix<double, 1, 1> intake_U;
+    intake_U << superstructure_output_fetcher_->intake_joint_voltage() +
+                    intake_plant_->voltage_offset();
+
     hood_plant_->Update(hood_U);
+    intake_plant_->Update(intake_U);
 
     const double position_hood = hood_plant_->Y(0, 0);
+    const double position_intake = intake_plant_->Y(0, 0);
 
     hood_encoder_.MoveTo(position_hood);
+    intake_encoder_.MoveTo(position_intake);
 
     EXPECT_GE(position_hood, constants::Values::kHoodRange().lower_hard);
     EXPECT_LE(position_hood, constants::Values::kHoodRange().upper_hard);
+
+    EXPECT_GE(position_intake, constants::Values::kIntakeRange().lower_hard);
+    EXPECT_LE(position_intake, constants::Values::kIntakeRange().upper_hard);
 
     const double loop_time = ::aos::time::DurationInSeconds(dt_);
 
     const double hood_acceleration =
         (hood_velocity() - last_hood_velocity) / loop_time;
 
+    const double intake_acceleration =
+        (intake_velocity() - last_intake_velocity) / loop_time;
+
     EXPECT_GE(peak_hood_acceleration_, hood_acceleration);
     EXPECT_LE(-peak_hood_acceleration_, hood_acceleration);
     EXPECT_GE(peak_hood_velocity_, hood_velocity());
     EXPECT_LE(-peak_hood_velocity_, hood_velocity());
+
+    EXPECT_GE(peak_intake_acceleration_, intake_acceleration);
+    EXPECT_LE(-peak_intake_acceleration_, intake_acceleration);
+    EXPECT_GE(peak_intake_velocity_, intake_velocity());
+    EXPECT_LE(-peak_intake_velocity_, intake_velocity());
   }
 
   void set_peak_hood_acceleration(double value) {
     peak_hood_acceleration_ = value;
   }
   void set_peak_hood_velocity(double value) { peak_hood_velocity_ = value; }
+
+  void set_peak_intake_acceleration(double value) {
+    peak_intake_acceleration_ = value;
+  }
+  void set_peak_intake_velocity(double value) { peak_intake_velocity_ = value; }
 
  private:
   ::aos::EventLoop *event_loop_;
@@ -152,11 +210,16 @@ class SuperstructureSimulation {
   ::std::unique_ptr<CappedTestPlant> hood_plant_;
   PositionSensorSimulator hood_encoder_;
 
+  ::std::unique_ptr<CappedTestPlant> intake_plant_;
+  PositionSensorSimulator intake_encoder_;
+
   // The acceleration limits to check for while moving.
   double peak_hood_acceleration_ = 1e10;
+  double peak_intake_acceleration_ = 1e10;
 
   // The velocity limits to check for while moving.
   double peak_hood_velocity_ = 1e10;
+  double peak_intake_velocity_ = 1e10;
 };
 
 class SuperstructureTest : public ::aos::testing::ControlLoopTest {
@@ -189,11 +252,14 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
 
     EXPECT_NEAR(superstructure_goal_fetcher_->hood()->unsafe_goal(),
                 superstructure_status_fetcher_->hood()->position(), 0.001);
+
+    EXPECT_NEAR(superstructure_goal_fetcher_->intake()->unsafe_goal(),
+                superstructure_status_fetcher_->intake()->position(), 0.001);
   }
 
   void CheckIfZeroed() {
-      superstructure_status_fetcher_.Fetch();
-      ASSERT_TRUE(superstructure_status_fetcher_.get()->zeroed());
+    superstructure_status_fetcher_.Fetch();
+    ASSERT_TRUE(superstructure_status_fetcher_.get()->zeroed());
   }
 
   void WaitUntilZeroed() {
@@ -230,7 +296,10 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
 // Tests that the superstructure does nothing when the goal is to remain still.
 TEST_F(SuperstructureTest, DoesNothing) {
   SetEnabled(true);
-  superstructure_plant_.InitializeHoodPosition(0.77);
+  superstructure_plant_.InitializeHoodPosition(
+      constants::Values::kHoodRange().middle());
+  superstructure_plant_.InitializeIntakePosition(
+      constants::Values::kIntakeRange().middle());
 
   WaitUntilZeroed();
 
@@ -239,11 +308,16 @@ TEST_F(SuperstructureTest, DoesNothing) {
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         hood_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), 0.77);
+            *builder.fbb(), constants::Values::kHoodRange().middle());
+
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kIntakeRange().middle());
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_hood(hood_offset);
+    goal_builder.add_intake(intake_offset);
 
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -259,6 +333,7 @@ TEST_F(SuperstructureTest, ReachesGoal) {
   // Set a reasonable goal.
 
   superstructure_plant_.InitializeHoodPosition(0.7);
+  superstructure_plant_.InitializeIntakePosition(0.7);
 
   WaitUntilZeroed();
   {
@@ -269,9 +344,15 @@ TEST_F(SuperstructureTest, ReachesGoal) {
             *builder.fbb(), 0.2,
             CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
 
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 0.2,
+            CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
+
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_hood(hood_offset);
+    goal_builder.add_intake(intake_offset);
 
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -283,8 +364,6 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 }
 // Makes sure that the voltage on a motor is properly pulled back after
 // saturation such that we don't get weird or bad (e.g. oscillating) behaviour.
-//
-// We are going to disable collision detection to make this easier to implement.
 TEST_F(SuperstructureTest, SaturationTest) {
   SetEnabled(true);
   // Zero it before we move.
@@ -296,9 +375,14 @@ TEST_F(SuperstructureTest, SaturationTest) {
         hood_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
             *builder.fbb(), constants::Values::kHoodRange().upper);
 
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kIntakeRange().upper);
+
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_hood(hood_offset);
+    goal_builder.add_intake(intake_offset);
 
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -315,16 +399,26 @@ TEST_F(SuperstructureTest, SaturationTest) {
             *builder.fbb(), constants::Values::kHoodRange().lower,
             CreateProfileParameters(*builder.fbb(), 20.0, 0.1));
 
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kIntakeRange().lower,
+            CreateProfileParameters(*builder.fbb(), 20.0, 0.1));
+
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_hood(hood_offset);
+    goal_builder.add_intake(intake_offset);
 
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   superstructure_plant_.set_peak_hood_velocity(23.0);
   superstructure_plant_.set_peak_hood_acceleration(0.2);
 
-  RunFor(chrono::seconds(8));
+  superstructure_plant_.set_peak_intake_velocity(23.0);
+  superstructure_plant_.set_peak_intake_acceleration(0.2);
+
+  // Intake needs over 8 seconds to reach the goal
+  RunFor(chrono::seconds(9));
   VerifyNearGoal();
 }
 
@@ -335,6 +429,9 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
   RunFor(chrono::seconds(2));
   EXPECT_EQ(AbsoluteEncoderSubsystem::State::RUNNING,
             superstructure_.hood().state());
+
+  EXPECT_EQ(AbsoluteEncoderSubsystem::State::RUNNING,
+            superstructure_.intake_joint().state());
 }
 
 // Tests that running disabled works

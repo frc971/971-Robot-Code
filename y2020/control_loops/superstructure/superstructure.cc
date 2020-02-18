@@ -13,7 +13,8 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
     : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
                                                                  name),
-      hood_(constants::GetValues().hood) {
+      hood_(constants::GetValues().hood),
+      intake_joint_(constants::GetValues().intake) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
@@ -24,6 +25,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   if (WasReset()) {
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
     hood_.Reset();
+    intake_joint_.Reset();
   }
 
   OutputT output_struct;
@@ -34,16 +36,25 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
                     output != nullptr ? &(output_struct.hood_voltage) : nullptr,
                     status->fbb());
 
+  flatbuffers::Offset<AbsoluteEncoderProfiledJointStatus> intake_status_offset =
+      intake_joint_.Iterate(
+          unsafe_goal != nullptr ? unsafe_goal->intake() : nullptr,
+          position->intake_joint(),
+          output != nullptr ? &(output_struct.intake_joint_voltage) : nullptr,
+          status->fbb());
+
   bool zeroed;
   bool estopped;
 
-  const AbsoluteEncoderProfiledJointStatus *hood_status =
-      GetMutableTemporaryPointer(*status->fbb(), hood_status_offset);
-  zeroed = hood_status->zeroed();
-  estopped = hood_status->estopped();
+  {
+    AbsoluteEncoderProfiledJointStatus *hood_status =
+        GetMutableTemporaryPointer(*status->fbb(), hood_status_offset);
 
-  if (output != nullptr) {
-    output->Send(Output::Pack(*output->fbb(), &output_struct));
+    AbsoluteEncoderProfiledJointStatus *intake_status =
+        GetMutableTemporaryPointer(*status->fbb(), intake_status_offset);
+
+    zeroed = hood_status->zeroed() && intake_status->zeroed();
+    estopped = hood_status->estopped() || intake_status->estopped();
   }
 
   Status::Builder status_builder = status->MakeBuilder<Status>();
@@ -52,8 +63,18 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_estopped(estopped);
 
   status_builder.add_hood(hood_status_offset);
+  status_builder.add_intake(intake_status_offset);
 
   status->Send(status_builder.Finish());
+
+  if (output != nullptr) {
+    if (unsafe_goal) {
+      output_struct.intake_roller_voltage = unsafe_goal->roller_voltage();
+    } else {
+      output_struct.intake_roller_voltage = 0.0;
+    }
+    output->Send(Output::Pack(*output->fbb(), &output_struct));
+  }
 }
 
 }  // namespace superstructure
