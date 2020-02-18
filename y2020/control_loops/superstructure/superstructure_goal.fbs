@@ -20,8 +20,8 @@ table Goal {
   // Zero is relative to start.
   control_panel:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
 
-  //0 = Linkage on sprocket is pointing straight up
-  //Positive = forward
+  // 0 = Linkage on sprocket is pointing straight up
+  // Positive = forward
   intake:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
 
   //Positive is rollers intaking to Washing Machine.
@@ -47,6 +47,9 @@ table Goal {
 
   // Whether the kicker and flywheel should choose a velocity automatically.
   shooter_tracking:bool;
+
+  // Positive is deploying climber and to climb; cannot run in reverse
+  climber_winch_voltage:double;
 }
 
 root_type Goal;
