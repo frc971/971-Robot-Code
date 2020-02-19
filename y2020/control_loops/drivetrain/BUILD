@@ -125,6 +125,27 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "drivetrain_replay_test",
+    srcs = ["drivetrain_replay_test.cc"],
+    data = [
+        "//y2020:config.json",
+        "@drivetrain_replay//file:spinning_wheels_while_still.bfbs",
+    ],
+    deps = [
+        ":drivetrain_base",
+        "//aos:configuration",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:logger",
+        "//aos/testing:googletest",
+        "//frc971/control_loops/drivetrain:drivetrain_lib",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
 cc_binary(
     name = "drivetrain_replay",
     srcs = ["drivetrain_replay.cc"],

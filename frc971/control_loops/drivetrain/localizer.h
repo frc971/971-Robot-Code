@@ -40,6 +40,8 @@ class LocalizerInterface {
   typedef HybridEkf<double> Ekf;
   typedef typename Ekf::StateIdx StateIdx;
 
+  virtual ~LocalizerInterface() {}
+
   // Perform a single step of the filter, using the information that is
   // available on every drivetrain iteration.
   // The user should pass in the U that the real system experienced from the
@@ -135,6 +137,8 @@ class DeadReckonEkf : public LocalizerInterface {
     });
     target_selector_.set_has_target(false);
   }
+
+  virtual ~DeadReckonEkf() {}
 
   void Update(const ::Eigen::Matrix<double, 2, 1> &U,
               ::aos::monotonic_clock::time_point now, double left_encoder,

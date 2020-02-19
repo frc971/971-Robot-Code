@@ -641,6 +641,13 @@ http_file(
     urls = ["http://www.frc971.org/Build-Dependencies/small_sample_logfile.fbs"],
 )
 
+http_file(
+    name = "drivetrain_replay",
+    downloaded_file_path = "spinning_wheels_while_still.bfbs",
+    sha256 = "3fa56d9af0852798bdd00ea5cc02f8261ad2a389a12a054ba619f9f7c43ab6fd",
+    urls = ["http://www.frc971.org/Build-Dependencies/spinning_wheels_while_still.bfbs"],
+)
+
 # OpenCV armhf (for raspberry pi)
 http_archive(
     name = "opencv_armhf",

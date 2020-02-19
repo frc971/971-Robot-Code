@@ -38,6 +38,8 @@ class DrivetrainLoop
                           LocalizerInterface *localizer,
                           const ::std::string &name = "/drivetrain");
 
+  virtual ~DrivetrainLoop() {}
+
   int ControllerIndexFromGears();
 
  protected:
