@@ -85,6 +85,9 @@ struct Values {
       ::frc971::zeroing::AbsoluteEncoderZeroingEstimator>
       intake;
 
+  static constexpr double kIntakeRollerSupplyCurrentLimit() { return 30.0; }
+  static constexpr double kIntakeRollerStatorCurrentLimit() { return 40.0; }
+
   // Turret
   static constexpr double kTurretEncoderCountsPerRevolution() { return 4096.0; }
 
@@ -137,6 +140,21 @@ struct Values {
            kControlPanelEncoderRatio() / (2.0 * M_PI) *
            kControlPanelEncoderCountsPerRevolution();
   }
+
+  // Shooter
+  // TODO: Get actual constants.
+  static constexpr double kFinisherEncoderCountsPerRevolution() {
+    return 4096.0;
+  }
+  static constexpr double kFinisherEncoderRatio() { return 1.0; }
+
+  static constexpr double kAcceleratorEncoderCountsPerRevolution() {
+    return 4096.0;
+  }
+  static constexpr double kAcceleratorEncoderRatio() { return 1.0; }
+
+  // Climber
+  static constexpr double kClimberSupplyCurrentLimit() { return 60.0; }
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and

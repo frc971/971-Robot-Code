@@ -29,9 +29,6 @@ table Output {
   // Voltage sent to the flywheel. Positive is shooting.
   finisher_voltage:double;
 
-  // Voltage sent to the motor driving the control panel. Positive is counterclockwise from above.
-  control_panel_voltage:double;
-
   // Positive is deploying climber and to climb; cannot run in reverse
   climber_voltage:double;
 }
