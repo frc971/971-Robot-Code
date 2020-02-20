@@ -55,7 +55,7 @@ template <class T>
 inline aos::FlatbufferDetachedBuffer<T> MergeFlatBuffers(const T *fb1,
                                                          const T *fb2) {
   flatbuffers::FlatBufferBuilder fbb;
-  fbb.ForceDefaults(1);
+  fbb.ForceDefaults(true);
   fbb.Finish(MergeFlatBuffers<T>(
       reinterpret_cast<const flatbuffers::Table *>(fb1),
       reinterpret_cast<const flatbuffers::Table *>(fb2), &fbb));
@@ -72,7 +72,7 @@ inline flatbuffers::Offset<T> CopyFlatBuffer(
 template <class T>
 inline FlatbufferDetachedBuffer<T> CopyFlatBuffer(const T *t) {
   flatbuffers::FlatBufferBuilder fbb;
-  fbb.ForceDefaults(1);
+  fbb.ForceDefaults(true);
   fbb.Finish(CopyFlatBuffer<T>(t, &fbb));
   return FlatbufferDetachedBuffer<T>(fbb.Release());
 }

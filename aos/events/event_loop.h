@@ -252,7 +252,7 @@ class Sender {
           allocator_(allocator),
           sender_(sender) {
       CheckChannelDataAlignment(allocator->data(), allocator->size());
-      fbb_.ForceDefaults(1);
+      fbb_.ForceDefaults(true);
     }
     Builder() {}
     Builder(const Builder &) = delete;

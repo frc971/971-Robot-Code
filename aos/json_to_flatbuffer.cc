@@ -777,7 +777,7 @@ flatbuffers::DetachedBuffer JsonToFlatbuffer(
     const std::string_view data,
     const flatbuffers::TypeTable *typetable) {
   flatbuffers::FlatBufferBuilder fbb;
-  fbb.ForceDefaults(1);
+  fbb.ForceDefaults(true);
 
   const flatbuffers::Offset<flatbuffers::Table> result =
       JsonToFlatbuffer(data, typetable, &fbb);

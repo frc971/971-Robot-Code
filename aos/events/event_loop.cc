@@ -209,7 +209,7 @@ void EventLoop::UpdateTimingReport() {
 
   // Now, build up a report with everything pre-filled out.
   flatbuffers::FlatBufferBuilder fbb;
-  fbb.ForceDefaults(1);
+  fbb.ForceDefaults(true);
 
   // Pre-fill in the defaults for timers.
   std::vector<flatbuffers::Offset<timing::Timer>> timer_offsets;

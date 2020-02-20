@@ -51,7 +51,7 @@ class LineFollowDrivetrainTest : public ::testing::Test {
 
   void Iterate() {
     flatbuffers::FlatBufferBuilder fbb;
-    fbb.ForceDefaults(1);
+    fbb.ForceDefaults(true);
     Goal::Builder goal_builder(fbb);
     goal_builder.add_throttle(driver_model_(state_));
     goal_builder.add_controller_type(freeze_target_
@@ -105,7 +105,7 @@ class LineFollowDrivetrainTest : public ::testing::Test {
 
   double GoalTheta(double x, double y, double v, double throttle) {
     flatbuffers::FlatBufferBuilder fbb;
-    fbb.ForceDefaults(1);
+    fbb.ForceDefaults(true);
     Goal::Builder goal_builder(fbb);
     goal_builder.add_throttle(throttle);
     fbb.Finish(goal_builder.Finish());

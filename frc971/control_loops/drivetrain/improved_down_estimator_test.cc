@@ -136,7 +136,7 @@ TEST(RungeKuttaTest, UkfEulerStatus) {
                                     Eigen::AngleAxis<double>(kPitch, uy) *
                                     Eigen::AngleAxis<double>(kRoll, ux));
   flatbuffers::FlatBufferBuilder fbb;
-  fbb.ForceDefaults(1);
+  fbb.ForceDefaults(true);
   fbb.Finish(dtukf.PopulateStatus(&fbb));
 
   aos::FlatbufferDetachedBuffer<drivetrain::DownEstimatorState> state(

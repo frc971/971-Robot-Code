@@ -31,7 +31,7 @@ Test List:
 
 FlatbufferDetachedBuffer<Goal> MakeZeroGoal() {
   flatbuffers::FlatBufferBuilder fbb;
-  fbb.ForceDefaults(1);
+  fbb.ForceDefaults(true);
 
   flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal> wrist_offset;
   {
@@ -71,7 +71,7 @@ FlatbufferDetachedBuffer<Goal> MakeZeroGoal() {
 
 FlatbufferDetachedBuffer<Status> MakeZeroStatus() {
   flatbuffers::FlatBufferBuilder fbb;
-  fbb.ForceDefaults(1);
+  fbb.ForceDefaults(true);
 
   flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus> wrist_offset;
   {
