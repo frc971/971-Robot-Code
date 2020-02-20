@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#include <optional>
 #include <string>
 
 namespace aos {
@@ -23,9 +24,11 @@ uint16_t GetTeamNumber();
 // Guaranteed to be safe to call during static initialization time.
 void OverrideTeamNumber(uint16_t team);
 
-namespace internal {
-int ParseTeamNumber(const std::string &hostname, uint16_t *teamnumber);
-}  // namespace internal
+namespace team_number_internal {
+
+std::optional<uint16_t> ParseRoborioTeamNumber(const std::string &hostname);
+
+}  // namespace team_number_internal
 }  // namespace network
 }  // namespace aos
 

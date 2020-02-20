@@ -41,9 +41,8 @@ cc_library(
         "team_number.h",
     ],
     deps = [
-        "//aos/logging",
         "//aos/util:string_to_num",
-        "@com_google_absl//absl/base",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -240,11 +239,11 @@ cc_test(
 flatbuffer_cc_library(
     name = "web_proxy_fbs",
     srcs = ["web_proxy.fbs"],
+    gen_reflections = True,
     includes = [
         ":connect_fbs_includes",
         "//aos:configuration_fbs_includes",
     ],
-    gen_reflections = True,
 )
 
 flatbuffer_ts_library(
@@ -258,8 +257,8 @@ flatbuffer_ts_library(
 
 cc_library(
     name = "web_proxy_utils",
-    hdrs = ["web_proxy_utils.h"],
     srcs = ["web_proxy_utils.cc"],
+    hdrs = ["web_proxy_utils.h"],
     deps = [
         ":connect_fbs",
         ":web_proxy_fbs",
@@ -300,25 +299,25 @@ gen_embedded(
 cc_binary(
     name = "web_proxy_main",
     srcs = ["web_proxy_main.cc"],
-    deps = [
-        ":gen_embedded",
-        ":web_proxy",
-        "//aos/events:shm_event_loop",
-        "//aos:init",
-        "//aos/seasocks:seasocks_logger",
-        "//third_party/seasocks",
-        "@com_github_google_flatbuffers//:flatbuffers"
-    ],
     copts = [
         "-DWEBRTC_POSIX",
         "-Wno-unused-parameter",
     ],
     data = [
-        "//aos/network/www:files",
-        "//aos/network/www:main_bundle",
-        "//aos/network/www:flatbuffers",
-        "@com_github_google_flatbuffers//:flatjs",
         "//aos/events:pingpong_config.json",
+        "//aos/network/www:files",
+        "//aos/network/www:flatbuffers",
+        "//aos/network/www:main_bundle",
+        "@com_github_google_flatbuffers//:flatjs",
+    ],
+    deps = [
+        ":gen_embedded",
+        ":web_proxy",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//aos/seasocks:seasocks_logger",
+        "//third_party/seasocks",
+        "@com_github_google_flatbuffers//:flatbuffers",
     ],
 )
 
