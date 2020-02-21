@@ -435,8 +435,10 @@ TEST_F(SuperstructureTest, ReachesGoal) {
   SetEnabled(true);
   // Set a reasonable goal.
 
-  superstructure_plant_.InitializeHoodPosition(0.7);
-  superstructure_plant_.InitializeIntakePosition(0.7);
+  superstructure_plant_.InitializeHoodPosition(
+      constants::Values::kHoodRange().middle());
+  superstructure_plant_.InitializeIntakePosition(
+      constants::Values::kIntakeRange().middle());
 
   WaitUntilZeroed();
   {
@@ -444,12 +446,12 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         hood_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), 0.2,
+            *builder.fbb(), constants::Values::kHoodRange().upper,
             CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), 0.2,
+            *builder.fbb(), constants::Values::kIntakeRange().upper,
             CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
@@ -568,9 +570,6 @@ TEST_F(SuperstructureTest, DisableTest) {
 TEST_F(SuperstructureTest, Climber) {
   SetEnabled(true);
   // Set a reasonable goal.
-
-  superstructure_plant_.InitializeHoodPosition(0.7);
-  superstructure_plant_.InitializeIntakePosition(0.7);
 
   WaitUntilZeroed();
   {

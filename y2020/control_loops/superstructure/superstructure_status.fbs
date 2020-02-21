@@ -21,7 +21,7 @@ table ShooterStatus {
   finisher:FlywheelControllerStatus;
 
   // The subsystem to accelerate the ball before the finisher
-  // Velocity is the slowest (lowest) wheel
+  // Velocity is the fastest (top) wheel
   accelerator_left:FlywheelControllerStatus;
   accelerator_right:FlywheelControllerStatus;
 }
@@ -33,7 +33,7 @@ table Status {
   // If true, we have aborted. This is if one or all subsystem estops.
   estopped:bool;
 
-  //Subsystem status.
+  // Subsystem status.
   hood:frc971.control_loops.AbsoluteEncoderProfiledJointStatus;
   intake:frc971.control_loops.AbsoluteEncoderProfiledJointStatus;
   turret:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus;

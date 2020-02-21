@@ -273,10 +273,10 @@ def WriteFlywheel(params, plant_files, controller_files, namespace):
     loop_writer = control_loop.ControlLoopWriter(
         name, flywheels, namespaces=namespace)
     loop_writer.AddConstant(
-        control_loop.Constant('kOutputRatio' + params.name, '%f',
+        control_loop.Constant('kOutputRatio', '%f',
                               flywheels[0].G))
     loop_writer.AddConstant(
-        control_loop.Constant('kFreeSpeed' + params.name, '%f',
+        control_loop.Constant('kFreeSpeed', '%f',
                               flywheels[0].motor.free_speed))
     loop_writer.Write(plant_files[0], plant_files[1])
 
