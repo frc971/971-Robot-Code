@@ -94,6 +94,7 @@ cc_test(
         ":superstructure_status_fbs",
         "//aos:math",
         "//aos/controls:control_loop_test",
+        "//aos/events/logging:logger",
         "//aos/testing:googletest",
         "//aos/time",
         "//frc971/control_loops:capped_test_plant",
