@@ -306,6 +306,16 @@ class Sender {
     return sender_ ? true : false;
   }
 
+  // Returns the time_points that the last message was sent at.
+  aos::monotonic_clock::time_point monotonic_sent_time() const {
+    return sender_->monotonic_sent_time();
+  }
+  aos::realtime_clock::time_point realtime_sent_time() const {
+    return sender_->realtime_sent_time();
+  }
+  // Returns the queue index that this was sent with.
+  uint32_t sent_queue_index() const { return sender_->sent_queue_index(); }
+
  private:
   friend class EventLoop;
   Sender(std::unique_ptr<RawSender> sender) : sender_(std::move(sender)) {}

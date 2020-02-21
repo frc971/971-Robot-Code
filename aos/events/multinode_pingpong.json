@@ -26,6 +26,56 @@
     },
     {
       "name": "/aos/pi1",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "pi1",
+      "frequency": 10,
+      "num_senders": 2,
+      "max_size": 200,
+      "destination_nodes": [
+        {
+          "name": "pi2",
+          "priority": 1,
+          "time_to_live": 5000000
+        },
+        {
+          "name": "pi3",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/aos/pi2",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "pi2",
+      "frequency": 10,
+      "num_senders": 2,
+      "max_size": 200,
+      "destination_nodes": [
+        {
+          "name": "pi1",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/aos/pi3",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "pi3",
+      "frequency": 10,
+      "num_senders": 2,
+      "max_size": 200,
+      "destination_nodes": [
+        {
+          "name": "pi1",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/aos/pi1",
       "type": "aos.message_bridge.ServerStatistics",
       "source_node": "pi1",
       "frequency": 2
@@ -141,7 +191,6 @@
     {
       "match": {
         "name": "/aos",
-        "type": "aos.logging.LogMessageFbs",
         "source_node": "pi1"
       },
       "rename": {
@@ -151,7 +200,6 @@
     {
       "match": {
         "name": "/aos",
-        "type": "aos.logging.LogMessageFbs",
         "source_node": "pi2"
       },
       "rename": {
@@ -161,97 +209,6 @@
     {
       "match": {
         "name": "/aos",
-        "type": "aos.logging.LogMessageFbs",
-        "source_node": "pi3"
-      },
-      "rename": {
-        "name": "/aos/pi3"
-      }
-    },
-    {
-      "match": {
-        "name": "/aos",
-        "type": "aos.timing.Report",
-        "source_node": "pi1"
-      },
-      "rename": {
-        "name": "/aos/pi1"
-      }
-    },
-    {
-      "match": {
-        "name": "/aos",
-        "type": "aos.timing.Report",
-        "source_node": "pi2"
-      },
-      "rename": {
-        "name": "/aos/pi2"
-      }
-    },
-    {
-      "match": {
-        "name": "/aos",
-        "type": "aos.timing.Report",
-        "source_node": "pi3"
-      },
-      "rename": {
-        "name": "/aos/pi3"
-      }
-    },
-    {
-      "match": {
-        "name": "/aos",
-        "type": "aos.message_bridge.ServerStatistics",
-        "source_node": "pi1"
-      },
-      "rename": {
-        "name": "/aos/pi1"
-      }
-    },
-    {
-      "match": {
-        "name": "/aos",
-        "type": "aos.message_bridge.ServerStatistics",
-        "source_node": "pi2"
-      },
-      "rename": {
-        "name": "/aos/pi2"
-      }
-    },
-    {
-      "match": {
-        "name": "/aos",
-        "type": "aos.message_bridge.ServerStatistics",
-        "source_node": "pi3"
-      },
-      "rename": {
-        "name": "/aos/pi3"
-      }
-    },
-    {
-      "match": {
-        "name": "/aos",
-        "type": "aos.message_bridge.ClientStatistics",
-        "source_node": "pi1"
-      },
-      "rename": {
-        "name": "/aos/pi1"
-      }
-    },
-    {
-      "match": {
-        "name": "/aos",
-        "type": "aos.message_bridge.ClientStatistics",
-        "source_node": "pi2"
-      },
-      "rename": {
-        "name": "/aos/pi2"
-      }
-    },
-    {
-      "match": {
-        "name": "/aos",
-        "type": "aos.message_bridge.ClientStatistics",
         "source_node": "pi3"
       },
       "rename": {

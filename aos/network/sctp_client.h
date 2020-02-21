@@ -43,6 +43,8 @@ class SctpClient {
 
   void LogSctpStatus(sctp_assoc_t assoc_id);
 
+  void set_max_size(size_t max_size) { max_size_ = max_size; }
+
  private:
   struct sockaddr_storage sockaddr_remote_;
   struct sockaddr_storage sockaddr_local_;

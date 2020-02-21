@@ -14,6 +14,15 @@ flatbuffer_cc_library(
 )
 
 flatbuffer_cc_library(
+    name = "timestamp_fbs",
+    srcs = ["timestamp.fbs"],
+    gen_reflections = 1,
+    includes = [
+        "//aos:configuration_fbs_includes",
+    ],
+)
+
+flatbuffer_cc_library(
     name = "message_bridge_client_fbs",
     srcs = ["message_bridge_client.fbs"],
     gen_reflections = 1,
@@ -95,8 +104,18 @@ cc_library(
 
 cc_library(
     name = "message_bridge_protocol",
+    srcs = [
+        "message_bridge_protocol.cc",
+    ],
     hdrs = [
         "message_bridge_protocol.h",
+    ],
+    deps = [
+        ":connect_fbs",
+        "//aos:configuration",
+        "//aos:flatbuffer_merge",
+        "//aos:flatbuffers",
+        "@com_github_google_flatbuffers//:flatbuffers",
     ],
 )
 
@@ -113,10 +132,12 @@ cc_library(
     ],
     deps = [
         ":connect_fbs",
+        ":message_bridge_client_fbs",
         ":message_bridge_protocol",
         ":message_bridge_server_fbs",
         ":sctp_lib",
         ":sctp_server",
+        ":timestamp_fbs",
         "//aos:unique_malloc_ptr",
         "//aos/events:shm_event_loop",
         "//aos/events/logging:logger",
@@ -171,6 +192,7 @@ cc_library(
         ":message_bridge_protocol",
         ":message_bridge_server_fbs",
         ":sctp_client",
+        ":timestamp_fbs",
         "//aos/events:shm_event_loop",
         "//aos/events/logging:logger",
     ],
@@ -200,6 +222,7 @@ aos_config(
         "//aos/events:pong_fbs",
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
+        "//aos/network:timestamp_fbs",
     ],
     deps = ["//aos/events:config"],
 )

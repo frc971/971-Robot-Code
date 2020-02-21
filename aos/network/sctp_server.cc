@@ -63,8 +63,7 @@ SctpServer::SctpServer(std::string_view local_host, int local_port)
 
   PCHECK(listen(fd_, 100) == 0);
 
-  PCHECK(setsockopt(fd_, SOL_SOCKET, SO_RCVBUF, &max_size_,
-                    sizeof(max_size_)) == 0);
+  SetMaxSize(1000);
 }
 
 aos::unique_c_ptr<Message> SctpServer::Read() {

@@ -1,6 +1,11 @@
 #ifndef AOS_NETWORK_MESSAGE_BRIDGE_PROTOCOL_H_
 #define AOS_NETWORK_MESSAGE_BRIDGE_PROTOCOL_H_
 
+#include <string_view>
+
+#include "aos/configuration.h"
+#include "aos/network/connect_generated.h"
+
 namespace aos {
 namespace message_bridge {
 
@@ -24,6 +29,11 @@ constexpr size_t kControlStreams() { return 2; }
 constexpr size_t kConnectStream() { return 0; }
 // The stream on which timestamp replies are sent.
 constexpr size_t kTimestampStream() { return 1; }
+
+// Builds up a subscription request for my_node to remote_name.
+aos::FlatbufferDetachedBuffer<aos::message_bridge::Connect> MakeConnectMessage(
+    const Configuration *config, const Node *my_node,
+    std::string_view remote_name);
 
 }  // namespace message_bridge
 }  // namespace aos

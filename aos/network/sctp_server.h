@@ -46,11 +46,19 @@ class SctpServer {
   void SetStreamPriority(sctp_assoc_t assoc_id, int stream_id,
                          uint16_t priority);
 
+  void SetMaxSize(size_t max_size) {
+    max_size_ = max_size;
+    // Have the kernel give us a factor of 10 more.  This lets us have more than
+    // one full sized packet in flight.
+    max_size = max_size * 10;
+    PCHECK(setsockopt(fd_, SOL_SOCKET, SO_RCVBUF, &max_size,
+                      sizeof(max_size)) == 0);
+  }
+
  private:
   struct sockaddr_storage sockaddr_local_;
   int fd_;
 
-  // TODO(austin): Configure this.
   size_t max_size_ = 1000;
 
   int ppid_ = 1;
