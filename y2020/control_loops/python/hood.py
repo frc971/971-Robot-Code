@@ -33,11 +33,11 @@ kHood = angular_system.AngularSystemParams(
     motor=control_loop.BAG(),
     G=radians_per_turn,
     J=0.08389,
-    q_pos=0.20,
-    q_vel=5.0,
+    q_pos=0.55,
+    q_vel=14.0,
     kalman_q_pos=0.12,
     kalman_q_vel=2.0,
-    kalman_q_voltage=4.0,
+    kalman_q_voltage=2.5,
     kalman_r_position=0.05)
 
 

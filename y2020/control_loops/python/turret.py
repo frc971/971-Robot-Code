@@ -23,14 +23,19 @@ kTurret = angular_system.AngularSystemParams(
     motor=control_loop.Vex775Pro(),
     G=(6.0 / 60.0) * (26.0 / 150.0),
     J=0.11,
-    q_pos=0.20,
-    q_vel=5.0,
+    q_pos=0.40,
+    q_vel=7.0,
     kalman_q_pos=0.12,
     kalman_q_vel=2.0,
-    kalman_q_voltage=4.0,
+    kalman_q_voltage=3.0,
     kalman_r_position=0.05)
 
 def main(argv):
+    if FLAGS.plot:
+        R = numpy.matrix([[numpy.pi], [0.0]])
+        angular_system.PlotKick(kTurret, R)
+        angular_system.PlotMotion(kTurret, R)
+
     # Write the generated constants out to a file.
     if len(argv) != 5:
         glog.fatal(

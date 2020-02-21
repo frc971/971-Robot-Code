@@ -31,14 +31,14 @@ kAccelerator = flywheel.FlywheelParams(
     J=J,
     q_pos=0.08,
     q_vel=4.00,
-    q_voltage=0.3,
+    q_voltage=0.4,
     r_pos=0.05,
-    controller_poles=[.87])
+    controller_poles=[.80])
 
 
 def main(argv):
     if FLAGS.plot:
-        R = numpy.matrix([[0.0], [100.0], [0.0]])
+        R = numpy.matrix([[0.0], [500.0], [0.0]])
         flywheel.PlotSpinup(kAccelerator, goal=R, iterations=200)
         return 0
 
