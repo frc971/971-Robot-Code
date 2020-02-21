@@ -13,7 +13,8 @@ namespace shooter {
 
 FlywheelController::FlywheelController(StateFeedbackLoop<3, 1, 1> &&loop)
     : loop_(new StateFeedbackLoop<3, 1, 1>(std::move(loop))) {
-  history_.fill(0);
+  history_.fill(std::pair<double, ::aos::monotonic_clock::time_point>(
+      0, ::aos::monotonic_clock::epoch()));
   Y_.setZero();
 }
 
@@ -22,12 +23,16 @@ void FlywheelController::set_goal(double angular_velocity_goal) {
   last_goal_ = angular_velocity_goal;
 }
 
-void FlywheelController::set_position(double current_position) {
+void FlywheelController::set_position(
+    double current_position,
+    const aos::monotonic_clock::time_point position_timestamp) {
   // Update position in the model.
   Y_ << current_position;
 
   // Add the position to the history.
-  history_[history_position_] = current_position;
+  history_[history_position_] =
+      std::pair<double, ::aos::monotonic_clock::time_point>(current_position,
+                                                            position_timestamp);
   history_position_ = (history_position_ + 1) % kHistoryLength;
 }
 
@@ -50,15 +55,20 @@ flatbuffers::Offset<FlywheelControllerStatus> FlywheelController::SetStatus(
   const int oldest_history_position =
       ((history_position_ == 0) ? kHistoryLength : history_position_) - 1;
 
+  const double total_loop_time = ::aos::time::DurationInSeconds(
+      std::get<1>(history_[history_position_]) -
+      std::get<1>(history_[oldest_history_position]));
+
+  const double distance_traveled =
+      std::get<0>(history_[history_position_]) -
+      std::get<0>(history_[oldest_history_position]);
+
   // Compute the distance moved over that time period.
-  const double avg_angular_velocity =
-      (history_[oldest_history_position] - history_[history_position_]) /
-      (::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency) *
-       static_cast<double>(kHistoryLength - 1));
+  avg_angular_velocity_ = (distance_traveled) / (total_loop_time);
 
   FlywheelControllerStatusBuilder builder(*fbb);
 
-  builder.add_avg_angular_velocity(avg_angular_velocity);
+  builder.add_avg_angular_velocity(avg_angular_velocity_);
   builder.add_angular_velocity(loop_->X_hat(1, 0));
   builder.add_angular_velocity_goal(last_goal_);
   return builder.Finish();

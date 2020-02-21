@@ -21,10 +21,16 @@ class Shooter {
 
   flatbuffers::Offset<ShooterStatus> RunIteration(
       const ShooterGoal *goal, const ShooterPosition *position,
-      flatbuffers::FlatBufferBuilder *fbb, OutputT *output);
+      flatbuffers::FlatBufferBuilder *fbb, OutputT *output,
+      const aos::monotonic_clock::time_point position_timestamp);
+
+  bool ready() { return ready_; }
 
  private:
   FlywheelController finisher_, accelerator_left_, accelerator_right_;
+
+  bool UpToSpeed(const ShooterGoal *goal);
+  bool ready_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(Shooter);
 };
