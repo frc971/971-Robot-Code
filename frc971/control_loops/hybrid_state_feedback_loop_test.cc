@@ -127,7 +127,7 @@ TEST(StateFeedbackLoopTest, UnequalSizes) {
       Eigen::Matrix<double, 7, 2>::Identity(),
       Eigen::Matrix<double, 7, 4>::Identity(),
       Eigen::Matrix<double, 4, 1>::Constant(1),
-      Eigen::Matrix<double, 4, 1>::Constant(-1));
+      Eigen::Matrix<double, 4, 1>::Constant(-1), std::chrono::milliseconds(5));
 
   // Build a plant.
   ::std::vector<::std::unique_ptr<StateFeedbackPlantCoefficients<2, 4, 7>>>
