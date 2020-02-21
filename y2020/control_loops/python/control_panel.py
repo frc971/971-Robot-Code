@@ -17,12 +17,11 @@ try:
 except gflags.DuplicateFlagError:
     pass
 
-#TODO(sabina): update moment
 kControlPanel = angular_system.AngularSystemParams(
     name='ControlPanel',
     motor=control_loop.BAG(),
-    G=(1.0),
-    J=0.3,
+    G=1.0,
+    J=0.000009,
     q_pos=0.20,
     q_vel=5.0,
     kalman_q_pos=0.12,

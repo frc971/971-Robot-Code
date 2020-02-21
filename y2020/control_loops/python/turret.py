@@ -21,10 +21,8 @@ except gflags.DuplicateFlagError:
 kTurret = angular_system.AngularSystemParams(
     name='Turret',
     motor=control_loop.Vex775Pro(),
-    #TODO: Update Gear Ratios when they are ready
-    G=(6.0 / 60.0) * (20.0 / 100.0) * (24.0 / 84.0),
-    #TODO: Get number from Bryan (moment of inertia)
-    J=0.30,
+    G=(6.0 / 60.0) * (26.0 / 150.0),
+    J=0.11,
     q_pos=0.20,
     q_vel=5.0,
     kalman_q_pos=0.12,

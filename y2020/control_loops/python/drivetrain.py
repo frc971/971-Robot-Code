@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from frc971.control_loops.python import drivetrain
+from frc971.control_loops.python import control_loop
 import sys
 
 import gflags
@@ -11,11 +12,13 @@ FLAGS = gflags.FLAGS
 gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 
 kDrivetrain = drivetrain.DrivetrainParams(
-    J=1.5,
-    mass=38.5,
-    robot_radius=0.45 / 2.0,
-    wheel_radius=4.0 * 0.0254 / 2.0,
-    G=9.0 / 52.0,
+    J=6.0,
+    mass=58.0,
+    # TODO(austin): Measure radius a bit better.
+    robot_radius=0.7 / 2.0,
+    wheel_radius=6.0 * 0.0254 / 2.0,
+    motor_type=control_loop.Falcon(),
+    G=(8.0 / 70.0) * (17.0 / 24.0),
     q_pos=0.14,
     q_vel=1.30,
     efficiency=0.80,

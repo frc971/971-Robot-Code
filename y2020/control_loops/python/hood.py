@@ -17,18 +17,22 @@ try:
 except gflags.DuplicateFlagError:
     pass
 
-'''
-Hood is an angular subsystem due to the mounting of the encoder on the hood joint.
-We are currently electing to ignore potential non-linearity.
-'''
 
-#TODO: update constants
+# Hood is an angular subsystem due to the mounting of the encoder on the hood
+# joint.  We are currently electing to ignore potential non-linearity.
+
+range_of_travel_radians = (37.0 * numpy.pi / 180.0)
+# 0.083 inches/turn
+# 6.38 inches of travel
+turns_of_leadscrew_per_range_of_travel = 6.38 / 0.083
+
+radians_per_turn = range_of_travel_radians / turns_of_leadscrew_per_range_of_travel
+
 kHood = angular_system.AngularSystemParams(
     name='Hood',
     motor=control_loop.BAG(),
-    # meters / rad (used the displacement of the lead screw and the angle)
-    G=(0.1601 / 0.6457),
-    J=0.3,
+    G=radians_per_turn,
+    J=0.08389,
     q_pos=0.20,
     q_vel=5.0,
     kalman_q_pos=0.12,
@@ -39,7 +43,7 @@ kHood = angular_system.AngularSystemParams(
 
 def main(argv):
     if FLAGS.plot:
-        R = numpy.matrix([[numpy.pi / 2.0], [0.0]])
+        R = numpy.matrix([[numpy.pi / 4.0], [0.0]])
         angular_system.PlotKick(kHood, R)
         angular_system.PlotMotion(kHood, R)
 

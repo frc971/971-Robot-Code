@@ -17,12 +17,11 @@ try:
 except gflags.DuplicateFlagError:
     pass
 
-#TODO: update constants
 kIntake = angular_system.AngularSystemParams(
     name='Intake',
     motor=control_loop.BAG(),
-    G=(1.0 / 1.0),
-    J=0.3,
+    G=(12.0 / 24.0) * (1.0 / 7.0) * (1.0 / 7.0) * (16.0 / 32.0),
+    J=3.0 * 0.139 * 0.139,
     q_pos=0.20,
     q_vel=5.0,
     kalman_q_pos=0.12,
