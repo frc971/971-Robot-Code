@@ -164,9 +164,13 @@ class SingleDOFProfiledSubsystem
 
   // Forces the current goal to the provided goal, bypassing the profiler.
   void ForceGoal(double goal);
+  // Sets whether to use the trapezoidal profiler or whether to just bypass it
+  // and pass the unprofiled goal through directly.
+  void set_enable_profile(bool enable) { enable_profile_ = enable; }
   // Sets the unprofiled goal.  The profiler will generate a profile to go to
   // this goal.
-  void set_unprofiled_goal(double unprofiled_goal);
+  void set_unprofiled_goal(double unprofiled_goal,
+                           double unprofiled_goal_velocity = 0.0);
   // Limits our profiles to a max velocity and acceleration for proper motion.
   void AdjustProfile(const ::frc971::ProfileParameters *profile_parameters);
   void AdjustProfile(double max_angular_velocity,
@@ -196,6 +200,7 @@ class SingleDOFProfiledSubsystem
   void UpdateOffset(double offset);
 
   aos::util::TrapezoidProfile profile_;
+  bool enable_profile_ = true;
 
   // Current measurement.
   Eigen::Matrix<double, 1, 1> Y_;
@@ -338,9 +343,9 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::ForceGoal(double goal) {
 
 template <class ZeroingEstimator>
 void SingleDOFProfiledSubsystem<ZeroingEstimator>::set_unprofiled_goal(
-    double unprofiled_goal) {
+    double unprofiled_goal, double unprofiled_goal_velocity) {
   this->unprofiled_goal_(0, 0) = unprofiled_goal;
-  this->unprofiled_goal_(1, 0) = 0.0;
+  this->unprofiled_goal_(1, 0) = unprofiled_goal_velocity;
   this->unprofiled_goal_(2, 0) = 0.0;
   CapGoal("unprofiled R", &this->unprofiled_goal_);
 }
@@ -357,12 +362,21 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::Update(bool disable) {
   }
 
   if (!disable) {
-    ::Eigen::Matrix<double, 2, 1> goal_state = profile_.Update(
-        this->unprofiled_goal_(0, 0), this->unprofiled_goal_(1, 0));
+    if (enable_profile_) {
+      ::Eigen::Matrix<double, 2, 1> goal_state = profile_.Update(
+          this->unprofiled_goal_(0, 0), this->unprofiled_goal_(1, 0));
 
-    this->loop_->mutable_next_R(0, 0) = goal_state(0, 0);
-    this->loop_->mutable_next_R(1, 0) = goal_state(1, 0);
-    this->loop_->mutable_next_R(2, 0) = 0.0;
+      this->loop_->mutable_next_R(0, 0) = goal_state(0, 0);
+      this->loop_->mutable_next_R(1, 0) = goal_state(1, 0);
+      this->loop_->mutable_next_R(2, 0) = 0.0;
+    } else {
+      this->loop_->mutable_R() = this->unprofiled_goal_;
+      this->loop_->mutable_next_R() = this->unprofiled_goal_;
+      this->loop_->mutable_next_R(0, 0) +=
+          this->unprofiled_goal_(1) *
+          aos::time::DurationInSeconds(this->loop_->plant().coefficients().dt);
+      CapGoal("R", &this->loop_->mutable_R());
+    }
     CapGoal("next R", &this->loop_->mutable_next_R());
   }
 

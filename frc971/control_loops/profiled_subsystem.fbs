@@ -237,4 +237,11 @@ table StaticZeroingSingleDOFProfiledSubsystemGoal {
   unsafe_goal:double;
 
   profile_params:frc971.ProfileParameters;
+
+  // Sets the goal velocity of the subsystem.
+  goal_velocity:double;
+
+  // If set to true, then we will ignore the profiling on this joint and pass
+  // the goal + goal velocity directly to the control loop.
+  ignore_profile:bool;
 }
