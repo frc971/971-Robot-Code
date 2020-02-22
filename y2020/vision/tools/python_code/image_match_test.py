@@ -100,7 +100,7 @@ log_file = open("pose.out", 'w')
 
 looping = True
 # Grab images until 'q' is pressed (or just once for canned images)
-while (looping):
+while looping:
     if (query_image_index is -1):
         # Capture frame-by-frame
         ret, frame = cap.read()
@@ -305,3 +305,4 @@ if (query_image_index is -1):
     cap.release()
 
 cv2.destroyAllWindows()
+

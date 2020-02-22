@@ -1,10 +1,6 @@
 import cv2
 import math
-from matplotlib import pyplot as plt
 import numpy as np
-#import tkinter
-# pip install pillow
-#import PIL.Image, PIL.ImageTk
 import time
 
 import field_display
@@ -289,3 +285,4 @@ def show_keypoints(image, keypoint_list):
     cv2.imshow("Keypoints", ret_img)
     cv2.waitKey(0)
     return ret_img
+
