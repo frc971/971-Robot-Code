@@ -1,5 +1,5 @@
 load(":fast_gaussian.bzl", "fast_gaussian")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library", "flatbuffer_ts_library")
 
 cc_binary(
     name = "fast_gaussian_generator",
@@ -211,6 +211,12 @@ flatbuffer_cc_library(
     srcs = ["sift.fbs"],
     gen_reflections = True,
     visibility = ["//visibility:public"],
+)
+
+flatbuffer_ts_library(
+    name = "sift_ts_fbs",
+    srcs = ["sift.fbs"],
+    visibility = ["//y2020:__subpackages__"],
 )
 
 flatbuffer_cc_library(

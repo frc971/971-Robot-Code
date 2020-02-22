@@ -1,10 +1,11 @@
-import {aos} from 'aos/network/web_proxy_generated';
+import {Configuration, Channel} from 'aos/configuration_generated';
+import {Connect} from 'aos/network/connect_generated';
 
 export class ConfigHandler {
   private readonly root_div = document.getElementById('config');
 
   constructor(
-      private readonly config: aos.Configuration,
+      private readonly config: Configuration,
       private readonly dataChannel: RTCDataChannel) {}
 
   printConfig() {
@@ -46,19 +47,19 @@ export class ConfigHandler {
       const channel = this.config.channels(index);
       const namefb = builder.createString(channel.name());
       const typefb = builder.createString(channel.type());
-      aos.Channel.startChannel(builder);
-      aos.Channel.addName(builder, namefb);
-      aos.Channel.addType(builder, typefb);
-      const channelfb = aos.Channel.endChannel(builder);
+      Channel.startChannel(builder);
+      Channel.addName(builder, namefb);
+      Channel.addType(builder, typefb);
+      const channelfb = Channel.endChannel(builder);
       channels.push(channelfb);
     }
 
     const channelsfb =
-        aos.message_bridge.Connect.createChannelsToTransferVector(
+        Connect.createChannelsToTransferVector(
             builder, channels);
-    aos.message_bridge.Connect.startConnect(builder);
-    aos.message_bridge.Connect.addChannelsToTransfer(builder, channelsfb);
-    const connect = aos.message_bridge.Connect.endConnect(builder);
+    Connect.startConnect(builder);
+    Connect.addChannelsToTransfer(builder, channelsfb);
+    const connect = Connect.endConnect(builder);
     builder.finish(connect);
     const array = builder.asUint8Array();
     console.log('connect', array);

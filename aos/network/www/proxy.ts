@@ -1,5 +1,5 @@
-import {aos} from 'aos/network/web_proxy_generated';
 import {ConfigHandler} from './config_handler';
+import {Configuration} from 'aos/configuration_generated';
 
 // There is one handler for each DataChannel, it maintains the state of
 // multi-part messages and delegates to a callback when the message is fully
@@ -16,7 +16,7 @@ export class Handler {
   handleMessage(e: MessageEvent): void {
     const fbBuffer = new flatbuffers.ByteBuffer(new Uint8Array(e.data));
     const messageHeader =
-        aos.web_proxy.MessageHeader.getRootAsMessageHeader(fbBuffer);
+        WebProxy.MessageHeader.getRootAsMessageHeader(fbBuffer);
     // Short circuit if only one packet
     if (messageHeader.packetCount === 1) {
       this.handlerFunc(messageHeader.dataArray());
@@ -44,8 +44,8 @@ export class Connection {
   private rtcPeerConnection: RTCPeerConnection|null = null;
   private dataChannel: DataChannel|null = null;
   private webSocketUrl: string;
-  private configHandler: ConfigHandler|null =
-      null private config: aos.Configuration|null = null;
+  private configHandler: ConfigHandler|null = null;
+  private config: Configuration|null = null;
   private readonly handlerFuncs = new Map<string, (data: Uint8Array) => void>();
   private readonly handlers = new Set<Handler>();
 
@@ -98,10 +98,10 @@ export class Connection {
     const candidateString = builder.createString(candidate.candidate);
     const sdpMidString = builder.createString(candidate.sdpMid);
 
-    const iceFb = aos.web_proxy.WebSocketIce.createWebSocketIce(
+    const iceFb = WebProxy.WebSocketIce.createWebSocketIce(
         builder, candidateString, sdpMidString, candidate.sdpMLineIndex);
-    const messageFb = aos.web_proxy.WebSocketMessage.createWebSocketMessage(
-        builder, aos.web_proxy.Payload.WebSocketIce, iceFb);
+    const messageFb = WebProxy.WebSocketMessage.createWebSocketMessage(
+        builder, WebProxy.Payload.WebSocketIce, iceFb);
     builder.finish(messageFb);
     const array = builder.asUint8Array();
     this.webSocketConnection.send(array.buffer.slice(array.byteOffset));
@@ -113,10 +113,10 @@ export class Connection {
     const builder = new flatbuffers.Builder(512);
     const offerString = builder.createString(description.sdp);
 
-    const webSocketSdp = aos.web_proxy.WebSocketSdp.createWebSocketSdp(
-        builder, aos.web_proxy.SdpType.OFFER, offerString);
-    const message = aos.web_proxy.WebSocketMessage.createWebSocketMessage(
-        builder, aos.web_proxy.Payload.WebSocketSdp, webSocketSdp);
+    const webSocketSdp = WebProxy.WebSocketSdp.createWebSocketSdp(
+        builder, WebProxy.SdpType.OFFER, offerString);
+    const message = WebProxy.WebSocketMessage.createWebSocketMessage(
+        builder, WebProxy.Payload.WebSocketSdp, webSocketSdp);
     builder.finish(message);
     const array = builder.asUint8Array();
     this.webSocketConnection.send(array.buffer.slice(array.byteOffset));
@@ -145,19 +145,19 @@ export class Connection {
     const buffer = new Uint8Array(e.data)
     const fbBuffer = new flatbuffers.ByteBuffer(buffer);
     const message =
-        aos.web_proxy.WebSocketMessage.getRootAsWebSocketMessage(fbBuffer);
+        WebProxy.WebSocketMessage.getRootAsWebSocketMessage(fbBuffer);
     switch (message.payloadType()) {
-      case aos.web_proxy.Payload.WebSocketSdp:
-        const sdpFb = message.payload(new aos.web_proxy.WebSocketSdp());
-        if (sdpFb.type() !== aos.web_proxy.SdpType.ANSWER) {
+      case WebProxy.Payload.WebSocketSdp:
+        const sdpFb = message.payload(new WebProxy.WebSocketSdp());
+        if (sdpFb.type() !== WebProxy.SdpType.ANSWER) {
           console.log('got something other than an answer back');
           break;
         }
         this.rtcPeerConnection.setRemoteDescription(new RTCSessionDescription(
             {'type': 'answer', 'sdp': sdpFb.payload()}));
         break;
-      case aos.web_proxy.Payload.WebSocketIce:
-        const iceFb = message.payload(new aos.web_proxy.WebSocketIce());
+      case WebProxy.Payload.WebSocketIce:
+        const iceFb = message.payload(new WebProxy.WebSocketIce());
         const candidate = {} as RTCIceCandidateInit;
         candidate.candidate = iceFb.candidate();
         candidate.sdpMid = iceFb.sdpMid();

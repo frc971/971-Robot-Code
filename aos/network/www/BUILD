@@ -18,6 +18,8 @@ ts_library(
     ],
     deps = [
         "//aos/network:web_proxy_ts_fbs",
+        "//aos/network:connect_ts_fbs",
+        "//aos:configuration_ts_fbs",
     ],
     visibility=["//visibility:public"],
 )

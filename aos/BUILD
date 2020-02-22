@@ -1,5 +1,5 @@
 load("//tools:environments.bzl", "mcu_cpus")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library", "flatbuffer_ts_library")
 
 filegroup(
     name = "prime_binaries",
@@ -283,6 +283,12 @@ cc_library(
 
 flatbuffer_cc_library(
     name = "configuration_fbs",
+    srcs = ["configuration.fbs"],
+    visibility = ["//visibility:public"],
+)
+
+flatbuffer_ts_library(
+    name = "configuration_ts_fbs",
     srcs = ["configuration.fbs"],
     visibility = ["//visibility:public"],
 )

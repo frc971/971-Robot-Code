@@ -13,6 +13,14 @@ flatbuffer_cc_library(
     ],
 )
 
+flatbuffer_ts_library(
+    name = "connect_ts_fbs",
+    srcs = ["connect.fbs"],
+    includes = [
+        "//aos:configuration_fbs_includes",
+    ],
+)
+
 flatbuffer_cc_library(
     name = "timestamp_fbs",
     srcs = ["timestamp.fbs"],

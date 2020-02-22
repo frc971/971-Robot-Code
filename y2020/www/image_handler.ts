@@ -1,4 +1,4 @@
-import {frc971} from 'y2020/vision/vision_generated';
+import {CameraImage} from 'y2020/vision/vision_generated';
 
 export class ImageHandler {
   private canvas = document.createElement('canvas');
@@ -9,7 +9,7 @@ export class ImageHandler {
 
   handleImage(data: Uint8Array) {
     const fbBuffer = new flatbuffers.ByteBuffer(data);
-    const image = frc971.vision.CameraImage.getRootAsCameraImage(fbBuffer);
+    const image = CameraImage.getRootAsCameraImage(fbBuffer);
 
     const width = image.cols();
     const height = image.rows();
@@ -56,6 +56,6 @@ export class ImageHandler {
   }
 
   getId() {
-    return frc971.vision.CameraImage.getFullyQualifiedName();
+    return CameraImage.getFullyQualifiedName();
   }
 }
