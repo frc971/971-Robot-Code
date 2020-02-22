@@ -348,16 +348,14 @@ void Timeout(monotonic_clock::duration time,
     time_timeval.tv_usec = usec.count();
   }
   if (evtimer_add(timeout.release(), &time_timeval) != 0) {
-    AOS_LOG(FATAL, "evtimer_add(%p, %p) failed\n", timeout.release(),
-            &time_timeval);
+    LOG(FATAL) << "evtimer_add(" << timeout.release() << ", " << &time_timeval
+               << ") failed";
   }
 }
 
 class Child;
-// This is where all of the Child instances except core live.
+// This is where all of the Child instances live.
 std::vector<unique_ptr<Child>> children;
-// A global place to hold on to which child is core.
-unique_ptr<Child> core;
 
 // Represents a child process. It will take care of restarting itself etc.
 class Child {
@@ -462,10 +460,6 @@ class Child {
 
   static void StaticDoRestart(int, short, void *) {
     LOG(INFO) << "restarting everything that needs it";
-    if (waiting_to_restart.find(core.get()) != waiting_to_restart.end()) {
-      core->DoRestart();
-      waiting_to_restart.erase(core.get());
-    }
     for (auto c : waiting_to_restart) {
       c->DoRestart();
     }
@@ -488,10 +482,6 @@ class Child {
       }
     }
 
-    if (this == core.get()) {
-      fprintf(stderr, "Restarting core -> exiting now.\n");
-      exit(0);
-    }
     if (pid_ != -1) {
       LOG(INFO) << "sending SIGTERM to child " << pid_ << " to restart it";
       if (kill(pid_, SIGTERM) == -1) {
@@ -657,10 +647,6 @@ const unique_ptr<Child> &FindChild(pid_t pid) {
     }
   }
 
-  if (pid == core->pid()) {
-    return core;
-  }
-
   static const unique_ptr<Child> kNothing;
   return kNothing;
 }
@@ -721,9 +707,6 @@ void SigCHLDReceived(int /*fd*/, short /*events*/, void *) {
       return;
     }
 
-    if (child == core) {
-      AOS_LOG(FATAL, "core died\n");
-    }
     child->ProcessDied();
   }
 }
@@ -732,7 +715,7 @@ void SigCHLDReceived(int /*fd*/, short /*events*/, void *) {
 // start from main to Run.
 const char *child_list_file;
 
-void Run(void *watch);
+void Run();
 void Main() {
   logging::Init();
 
@@ -775,33 +758,7 @@ void Main() {
 
   libevent_base = EventBaseUniquePtr(event_base_new());
 
-  std::string core_touch_file = "/tmp/starter.";
-  core_touch_file += std::to_string(static_cast<intmax_t>(getpid()));
-  core_touch_file += ".core_touch_file";
-  const int result =
-      ::aos::util::RunCommand(("touch '" + core_touch_file + "'").c_str());
-  if (result == -1) {
-    AOS_PLOG(FATAL, "running `touch '%s'` failed\n", core_touch_file.c_str());
-  } else if (!WIFEXITED(result) || WEXITSTATUS(result) != 0) {
-    AOS_LOG(FATAL, "`touch '%s'` gave result %x\n", core_touch_file.c_str(),
-            result);
-  }
-  FileWatch core_touch_file_watch(core_touch_file, Run, NULL);
-  core = unique_ptr<Child>(
-      new Child("core " + core_touch_file));
-
-  FILE *pid_file = fopen("/tmp/starter.pid", "w");
-  if (pid_file == NULL) {
-    AOS_PLOG(FATAL, "fopen(\"/tmp/starter.pid\", \"w\") failed");
-  } else {
-    if (fprintf(pid_file, "%d", core->pid()) == -1) {
-      AOS_PLOG(WARNING, "fprintf(%p, \"%%d\", %d) failed", pid_file,
-               core->pid());
-    }
-    fclose(pid_file);
-  }
-
-  AOS_LOG(INFO, "waiting for %s to appear\n", core_touch_file.c_str());
+  Run();
 
   event_base_dispatch(libevent_base.get());
   LOG(FATAL) << "event_base_dispatch(" << libevent_base.get() << ") returned";
@@ -809,10 +766,7 @@ void Main() {
 
 // This is the callback for when core creates the file indicating that it has
 // started.
-void Run(void *watch) {
-  // Make it so it doesn't keep on seeing random changes in /tmp.
-  static_cast<FileWatch *>(watch)->RemoveWatch();
-
+void Run() {
   // It's safe now because core is up.
   aos::InitNRT();
 

@@ -5,7 +5,6 @@ filegroup(
     name = "prime_binaries",
     srcs = [
         "//aos:aos_dump",
-        "//aos:core",
         "//aos/starter",
     ],
     visibility = ["//visibility:public"],
@@ -23,7 +22,6 @@ filegroup(
     name = "prime_binaries_stripped",
     srcs = [
         # starter is hard coded to look for a non-stripped core...
-        "//aos:core",
         "//aos:aos_dump.stripped",
         "//aos/starter",
     ],
