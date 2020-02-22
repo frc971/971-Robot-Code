@@ -685,3 +685,7 @@ class Falcon(object):
                    (12.0 - self.resistance * self.free_current))
         # Torque constant
         self.Kt = self.stall_torque / self.stall_current
+        # Motor inertia in kg m^2
+        # Diameter of 1.9", weight of: 100 grams
+        # TODO(austin): Get a number from Scott Westbrook for the mass
+        self.motor_inertia = 0.1 * ((0.95 * 0.0254) ** 2.0)

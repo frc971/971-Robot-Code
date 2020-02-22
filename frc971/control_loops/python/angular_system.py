@@ -22,6 +22,13 @@ class AngularSystemParams(object):
                  kalman_q_voltage,
                  kalman_r_position,
                  dt=0.00505):
+        """Constructs an AngularSystemParams object.
+
+        Args:
+          motor: Motor object with the motor constants.
+          G: float, Gear ratio.  Less than 1 means output moves slower than the
+              input.
+        """
         self.name = name
         self.motor = motor
         self.G = G

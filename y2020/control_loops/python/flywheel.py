@@ -214,7 +214,7 @@ def PlotSpinup(params, goal, iterations=200):
             offset.append(observer_flywheel.X_hat[2, 0])
 
         applied_U = U.copy()
-        if i > 30:
+        if i > 100:
             applied_U += 2
         flywheel.Update(applied_U)
 
