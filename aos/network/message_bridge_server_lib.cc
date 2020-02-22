@@ -227,17 +227,24 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
   server_connection_.resize(event_loop->configuration()->nodes()->size());
 
   // Seed up all the per-node connection state.
+  // We are making the assumption here that every connection is bidirectional
+  // (data is being sent both ways).  This is pretty safe because we are
+  // forwarding timestamps between nodes.
   for (std::string_view destination_node_name :
        configuration::DestinationNodeNames(event_loop->configuration(),
                                            event_loop->node())) {
     // Find the largest connection message so we can size our buffers big enough
-    // to receive a connection message.
-    max_size = std::max(
-        max_size,
-        static_cast<int32_t>(MakeConnectMessage(event_loop->configuration(),
-                                                event_loop->node(),
-                                                destination_node_name)
-                                 .size()));
+    // to receive a connection message.  The connect message comes from the
+    // client to the server, so swap the node arguments.
+    const int32_t connect_size = static_cast<int32_t>(
+        MakeConnectMessage(event_loop->configuration(),
+                           configuration::GetNode(event_loop->configuration(),
+                                                  destination_node_name),
+                           event_loop->node()->name()->string_view())
+            .size());
+    VLOG(1) << "Connection to " << destination_node_name << " has size "
+            << connect_size;
+    max_size = std::max(max_size, connect_size);
     const Node *destination_node = configuration::GetNode(
         event_loop->configuration(), destination_node_name);
 
@@ -315,6 +322,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
   }
 
   // Buffer up the max size a bit so everything fits nicely.
+  LOG(INFO) << "Max message size for all clients is " << max_size;
   server_.SetMaxSize(max_size + 100);
 
   statistics_timer_ = event_loop_->AddTimer([this]() { Tick(); });
