@@ -362,7 +362,7 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   // Check that if there is a node list, all the source nodes are filled out and
   // valid, and all the destination nodes are valid (and not the source).  This
   // is a basic consistency check.
-  if (result.message().has_nodes()) {
+  if (result.message().has_nodes() && config.message().has_channels()) {
     for (const Channel *c : *config.message().channels()) {
       CHECK(c->has_source_node()) << ": Channel " << FlatbufferToJson(c)
                                   << " is missing \"source_node\"";
@@ -597,8 +597,15 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
 const Node *GetNodeFromHostname(const Configuration *config,
                                 std::string_view hostname) {
   for (const Node *node : *config->nodes()) {
-    if (node->hostname()->string_view() == hostname) {
+    if (node->has_hostname() && node->hostname()->string_view() == hostname) {
       return node;
+    }
+    if (node->has_hostnames()) {
+      for (const auto &candidate : *node->hostnames()) {
+        if (candidate->string_view() == hostname) {
+          return node;
+        }
+      }
     }
   }
   return nullptr;

@@ -1,0 +1,18 @@
+{
+  "nodes": [
+    {
+      "name": "pi1",
+      "hostnames": [
+        "raspberrypi"
+      ]
+    },
+    {
+      "name": "pi2",
+      "hostnames": [
+        "raspberrypi2",
+        "raspberrypi3",
+        "other"
+      ]
+    }
+  ]
+}

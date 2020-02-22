@@ -475,6 +475,7 @@ cc_test(
         "testdata/expected.json",
         "testdata/expected_multinode.json",
         "testdata/good_multinode.json",
+        "testdata/good_multinode_hostnames.json",
         "testdata/invalid_destination_node.json",
         "testdata/invalid_nodes.json",
         "testdata/invalid_source_node.json",

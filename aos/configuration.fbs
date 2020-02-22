@@ -126,6 +126,12 @@ table Node {
   hostname:string;
   // Port to serve forwarded data from.
   port:ushort = 9971;
+
+  // An alternative to hostname which allows specifying multiple hostnames,
+  // any of which will match this node.
+  //
+  // Don't specify a hostname in multiple nodes in the same configuration.
+  hostnames:[string];
 }
 
 // Overall configuration datastructure for the pubsub.
