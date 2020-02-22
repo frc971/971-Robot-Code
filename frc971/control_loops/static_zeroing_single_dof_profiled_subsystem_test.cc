@@ -288,6 +288,12 @@ class Subsystem
       const auto params_builder_offset = params_builder.Finish();
       StaticZeroingSingleDOFProfiledSubsystemGoalBuilder goal_builder(fbb);
       goal_builder.add_unsafe_goal(unsafe_goal->unsafe_goal());
+      if (unsafe_goal->has_goal_velocity()) {
+        goal_builder.add_goal_velocity(unsafe_goal->goal_velocity());
+      }
+      if (unsafe_goal->has_ignore_profile()) {
+        goal_builder.add_ignore_profile(unsafe_goal->ignore_profile());
+      }
       goal_builder.add_profile_params(params_builder_offset);
       fbb.Finish(goal_builder.Finish());
     } else {
@@ -461,6 +467,65 @@ TYPED_TEST_P(IntakeSystemTest, ReachesGoal) {
   this->RunFor(chrono::seconds(8));
 
   this->VerifyNearGoal();
+}
+
+// Tests that the subsystem loop can reach a goal when the profile is disabled.
+TYPED_TEST_P(IntakeSystemTest, FunctionsWhenProfileDisabled) {
+  this->SetEnabled(true);
+  {
+    auto message = this->subsystem_goal_sender_.MakeBuilder();
+    auto profile_builder =
+        message.template MakeBuilder<frc971::ProfileParameters>();
+    // By setting NaN for the profile, we would cause the entire system to fail
+    // or blow up if it is not ignoring the profile correctly.
+    profile_builder.add_max_velocity(std::numeric_limits<double>::quiet_NaN());
+    profile_builder.add_max_acceleration(
+        std::numeric_limits<double>::quiet_NaN());
+    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
+        *message.fbb(), 0.10, profile_builder.Finish(), 0.0, true)));
+  }
+
+  // Give it a lot of time to get there.
+  this->RunFor(chrono::seconds(8));
+
+  this->VerifyNearGoal();
+}
+
+// Tests that the subsystem loop can maintain a velocity when using the
+// goal_velocity setting.
+TYPED_TEST_P(IntakeSystemTest, MaintainConstantVelocityWithoutProfile) {
+  this->SetEnabled(true);
+
+  const double kStartingGoal = -0.10;
+  const double kVelocity = 0.05;
+  this->test_event_loop_->AddPhasedLoop(
+      [this, kStartingGoal, kVelocity](int) {
+        auto message = this->subsystem_goal_sender_.MakeBuilder();
+        auto profile_builder =
+            message.template MakeBuilder<frc971::ProfileParameters>();
+        profile_builder.add_max_velocity(0);
+        profile_builder.add_max_acceleration(0);
+        EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
+            *message.fbb(), kStartingGoal +
+                                aos::time::DurationInSeconds(
+                                    this->monotonic_now().time_since_epoch()) *
+                                    kVelocity,
+            profile_builder.Finish(), kVelocity, true)));
+      },
+      this->dt());
+
+  const double kRunTimeSec = 4;
+  // Give time for the system to settle down--it should've been running at a
+  // constant velocity the whole time, once it converged.
+  this->RunFor(chrono::seconds(static_cast<int>(kRunTimeSec)));
+
+  EXPECT_TRUE(this->subsystem_status_fetcher_.Fetch());
+
+  EXPECT_NEAR(kStartingGoal + kVelocity * kRunTimeSec,
+              this->subsystem_status_fetcher_->position(), 0.001);
+  EXPECT_NEAR(kStartingGoal + kVelocity * kRunTimeSec,
+              this->subsystem_plant_.subsystem_position(), 0.001);
+  EXPECT_NEAR(kVelocity, this->subsystem_status_fetcher_->velocity(), 0.001);
 }
 
 // Makes sure that the voltage on a motor is properly pulled back after
@@ -755,6 +820,8 @@ TYPED_TEST_P(IntakeSystemTest, ZeroingErrorTest) {
 }
 
 REGISTER_TYPED_TEST_CASE_P(IntakeSystemTest, DoesNothing, ReachesGoal,
+                           FunctionsWhenProfileDisabled,
+                           MaintainConstantVelocityWithoutProfile,
                            SaturationTest, RespectsRange, ZeroTest, ZeroNoGoal,
                            LowerHardstopStartup, UpperHardstopStartup,
                            ResetTest, DisabledGoalTest, DisabledZeroTest,

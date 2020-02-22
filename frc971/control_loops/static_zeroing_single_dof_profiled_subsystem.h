@@ -203,7 +203,11 @@ StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus>::
           AOS_LOG(DEBUG, "Limiting to %f from %f\n", max_position_, safe_goal);
           safe_goal = max_position_;
         }
-        profiled_subsystem_.set_unprofiled_goal(safe_goal);
+        if (goal->has_ignore_profile()) {
+          profiled_subsystem_.set_enable_profile(!goal->ignore_profile());
+        }
+        profiled_subsystem_.set_unprofiled_goal(safe_goal,
+                                                goal->goal_velocity());
       }
     } break;
 

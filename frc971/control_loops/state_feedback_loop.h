@@ -39,7 +39,8 @@ struct StateFeedbackPlantCoefficients final {
         C(other.C),
         D(other.D),
         U_min(other.U_min),
-        U_max(other.U_max) {}
+        U_max(other.U_max),
+        dt(other.dt) {}
 
   StateFeedbackPlantCoefficients(
       const Eigen::Matrix<Scalar, number_of_states, number_of_states> &A,
@@ -47,8 +48,9 @@ struct StateFeedbackPlantCoefficients final {
       const Eigen::Matrix<Scalar, number_of_outputs, number_of_states> &C,
       const Eigen::Matrix<Scalar, number_of_outputs, number_of_inputs> &D,
       const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_max,
-      const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_min)
-      : A(A), B(B), C(C), D(D), U_min(U_min), U_max(U_max) {}
+      const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_min,
+      const std::chrono::nanoseconds dt)
+      : A(A), B(B), C(C), D(D), U_min(U_min), U_max(U_max), dt(dt) {}
 
   const Eigen::Matrix<Scalar, number_of_states, number_of_states> A;
   const Eigen::Matrix<Scalar, number_of_states, number_of_inputs> B;
@@ -56,6 +58,7 @@ struct StateFeedbackPlantCoefficients final {
   const Eigen::Matrix<Scalar, number_of_outputs, number_of_inputs> D;
   const Eigen::Matrix<Scalar, number_of_inputs, 1> U_min;
   const Eigen::Matrix<Scalar, number_of_inputs, 1> U_max;
+  const std::chrono::nanoseconds dt;
 };
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs,

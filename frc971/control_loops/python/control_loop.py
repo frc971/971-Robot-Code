@@ -183,6 +183,7 @@ class ControlLoopWriter(object):
             fd.write('#include \"%s/%s\"\n' % (os.path.join(*self._namespaces),
                                                header_file_name))
             fd.write('\n')
+            fd.write('#include <chrono>\n')
             fd.write('#include <vector>\n')
             fd.write('\n')
             fd.write(
@@ -389,8 +390,10 @@ class ControlLoop(object):
             ans.append(self._DumpMatrix('A', self.A, scalar_type))
             ans.append(self._DumpMatrix('B', self.B, scalar_type))
             ans.append(
+                '  const std::chrono::nanoseconds dt(%d);\n' % (self.dt * 1e9))
+            ans.append(
                 '  return %s'
-                '(A, B, C, D, U_max, U_min);\n' % (plant_coefficient_type))
+                '(A, B, C, D, U_max, U_min, dt);\n' % (plant_coefficient_type))
         elif plant_coefficient_type.startswith('StateFeedbackHybridPlant'):
             ans.append(
                 self._DumpMatrix('A_continuous', self.A_continuous,
