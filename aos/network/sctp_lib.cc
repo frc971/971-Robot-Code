@@ -30,8 +30,8 @@ struct sockaddr_storage ResolveSocket(std::string_view host, int port) {
   struct sockaddr_in *t_addr = (struct sockaddr_in *)&result;
   struct sockaddr_in6 *t_addr6 = (struct sockaddr_in6 *)&result;
 
-  PCHECK(getaddrinfo(std::string(host).c_str(), 0, NULL, &addrinfo_result) ==
-         0);
+  PCHECK(getaddrinfo(std::string(host).c_str(), 0, NULL, &addrinfo_result) == 0)
+      << ": Failed to look up " << host;
 
   switch (addrinfo_result->ai_family) {
     case AF_INET:
