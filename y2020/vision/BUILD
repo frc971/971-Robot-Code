@@ -37,8 +37,10 @@ cc_binary(
     deps = [
         ":v4l2_reader",
         ":vision_fbs",
+        "//aos:flatbuffer_merge",
         "//aos:init",
         "//aos/events:shm_event_loop",
+        "//aos/network:team_number",
         "//third_party:opencv",
         "//y2020/vision/sift:demo_sift",
         "//y2020/vision/sift:sift971",

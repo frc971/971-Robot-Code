@@ -60,8 +60,9 @@ table ImageMatch {
 }
 
 table TransformationMatrix {
-  // The matrix data. This is a row-major 3x4 matrix.
-  data:[double];
+  // The matrix data. This is a row-major 4x4 matrix.
+  // In other words, the bottom row is (0, 0, 0, 1).
+  data:[float];
 }
 
 // Calibration information for a given camera on a given robot.
