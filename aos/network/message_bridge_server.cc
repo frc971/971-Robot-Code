@@ -4,7 +4,7 @@
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
-DEFINE_string(config, "multinode_pingpong_config.json", "Path to the config.");
+DEFINE_string(config, "config.json", "Path to the config.");
 
 namespace aos {
 namespace message_bridge {
