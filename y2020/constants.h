@@ -21,6 +21,8 @@ namespace y2020 {
 namespace constants {
 
 struct Values {
+  static const uint16_t kCodingRobotTeamNumber = 7971;
+
   static const int kZeroingSampleSize = 200;
 
   static constexpr double kDrivetrainCyclesPerRevolution() { return 512.0; }
