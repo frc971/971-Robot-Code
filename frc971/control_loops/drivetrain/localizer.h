@@ -3,6 +3,7 @@
 
 #include "aos/events/event_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/drivetrain/hybrid_ekf.h"
 #include "frc971/control_loops/pose.h"
 
@@ -35,6 +36,8 @@ class TargetSelectorInterface {
 
 // Defines an interface for classes that provide field-global localization.
 class LocalizerInterface {
+  typedef HybridEkf<double> Ekf;
+  typedef typename Ekf::StateIdx StateIdx;
  public:
   // Perform a single step of the filter, using the information that is
   // available on every drivetrain iteration.
@@ -48,23 +51,51 @@ class LocalizerInterface {
   virtual void Update(const ::Eigen::Matrix<double, 2, 1> &U,
                       ::aos::monotonic_clock::time_point now,
                       double left_encoder, double right_encoder,
-                      double gyro_rate, double longitudinal_accelerometer) = 0;
+                      double gyro_rate, const Eigen::Vector3d &accel) = 0;
   // Reset the absolute position of the estimator.
   virtual void ResetPosition(::aos::monotonic_clock::time_point t, double x,
                              double y, double theta, double theta_uncertainty,
                              bool reset_theta) = 0;
+  flatbuffers::Offset<LocalizerState> PopulateStatus(
+      flatbuffers::FlatBufferBuilder *fbb) {
+    LocalizerState::Builder builder(*fbb);
+    builder.add_x(x());
+    builder.add_y(y());
+    builder.add_theta(theta());
+    builder.add_left_velocity(left_velocity());
+    builder.add_right_velocity(right_velocity());
+    builder.add_left_encoder(left_encoder());
+    builder.add_right_encoder(right_encoder());
+    builder.add_left_voltage_error(left_voltage_error());
+    builder.add_right_voltage_error(right_voltage_error());
+    builder.add_angular_error(angular_error());
+    builder.add_longitudinal_velocity_offset(longitudinal_velocity_offset());
+    builder.add_lateral_velocity(lateral_velocity());
+    return builder.Finish();
+  }
+  virtual Ekf::State Xhat() const = 0;
   // There are several subtly different norms floating around for state
-  // matrices. In order to avoid that mess, we jus tprovide direct accessors for
+  // matrices. In order to avoid that mess, we just provide direct accessors for
   // the values that most people care about.
-  virtual double x() const = 0;
-  virtual double y() const = 0;
-  virtual double theta() const = 0;
-  virtual double left_velocity() const = 0;
-  virtual double right_velocity() const = 0;
-  virtual double left_encoder() const = 0;
-  virtual double right_encoder() const = 0;
-  virtual double left_voltage_error() const = 0;
-  virtual double right_voltage_error() const = 0;
+  double x() const { return Xhat()(StateIdx::kX); }
+  double y() const { return Xhat()(StateIdx::kY); }
+  double theta() const { return Xhat()(StateIdx::kTheta); }
+  double left_velocity() const { return Xhat()(StateIdx::kLeftVelocity); }
+  double right_velocity() const { return Xhat()(StateIdx::kRightVelocity); }
+  double left_encoder() const { return Xhat()(StateIdx::kLeftEncoder); }
+  double right_encoder() const { return Xhat()(StateIdx::kRightEncoder); }
+  double left_voltage_error() const {
+    return Xhat()(StateIdx::kLeftVoltageError);
+  }
+  double right_voltage_error() const {
+    return Xhat()(StateIdx::kRightVoltageError);
+  }
+  double angular_error() const { return Xhat()(StateIdx::kAngularError); }
+  double longitudinal_velocity_offset() const {
+    return Xhat()(StateIdx::kLongitudinalVelocityOffset);
+  }
+  double lateral_velocity() const { return Xhat()(StateIdx::kLateralVelocity); }
+
   virtual TargetSelectorInterface *target_selector() = 0;
 };
 
@@ -110,8 +141,9 @@ class DeadReckonEkf : public LocalizerInterface {
   void Update(const ::Eigen::Matrix<double, 2, 1> &U,
               ::aos::monotonic_clock::time_point now, double left_encoder,
               double right_encoder, double gyro_rate,
-              double /*longitudinal_accelerometer*/) override {
-    ekf_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate, U, now);
+              const Eigen::Vector3d &accel) override {
+    ekf_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate, U, accel,
+                               now);
   }
 
   void ResetPosition(::aos::monotonic_clock::time_point t, double x, double y,
@@ -119,33 +151,14 @@ class DeadReckonEkf : public LocalizerInterface {
                      bool /*reset_theta*/) override {
     const double left_encoder = ekf_.X_hat(StateIdx::kLeftEncoder);
     const double right_encoder = ekf_.X_hat(StateIdx::kRightEncoder);
-    ekf_.ResetInitialState(t, (Ekf::State() << x, y, theta, left_encoder, 0,
-                               right_encoder, 0, 0, 0,
-                               0).finished(),
+    ekf_.ResetInitialState(t,
+                           (Ekf::State() << x, y, theta, left_encoder, 0,
+                            right_encoder, 0, 0, 0, 0, 0, 0)
+                               .finished(),
                            ekf_.P());
-  };
+  }
 
-  double x() const override { return ekf_.X_hat(StateIdx::kX); }
-  double y() const override { return ekf_.X_hat(StateIdx::kY); }
-  double theta() const override { return ekf_.X_hat(StateIdx::kTheta); }
-  double left_encoder() const override {
-    return ekf_.X_hat(StateIdx::kLeftEncoder);
-  }
-  double right_encoder() const override {
-    return ekf_.X_hat(StateIdx::kRightEncoder);
-  }
-  double left_velocity() const override {
-    return ekf_.X_hat(StateIdx::kLeftVelocity);
-  }
-  double right_velocity() const override {
-    return ekf_.X_hat(StateIdx::kRightVelocity);
-  }
-  double left_voltage_error() const override {
-    return ekf_.X_hat(StateIdx::kLeftVoltageError);
-  }
-  double right_voltage_error() const override {
-    return ekf_.X_hat(StateIdx::kRightVoltageError);
-  }
+  Ekf::State Xhat() const override { return ekf_.X_hat(); }
 
   TrivialTargetSelector *target_selector() override {
     return &target_selector_;

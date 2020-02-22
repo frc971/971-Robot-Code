@@ -243,7 +243,9 @@ void DrivetrainLoop::RunIteration(
     }
     localizer_->Update({last_last_left_voltage_, last_last_right_voltage_},
                        monotonic_now, position->left_encoder(),
-                       position->right_encoder(), last_gyro_rate_, last_accel_);
+                       position->right_encoder(),
+                       down_estimator_.avg_recent_yaw_rates(),
+                       down_estimator_.avg_recent_accel());
   }
 
   dt_openloop_.SetPosition(position, left_gear_, right_gear_);
@@ -321,6 +323,9 @@ void DrivetrainLoop::RunIteration(
     const flatbuffers::Offset<DownEstimatorState> down_estimator_state_offset =
         down_estimator_.PopulateStatus(status->fbb(), monotonic_now);
 
+    const flatbuffers::Offset<LocalizerState> localizer_offset =
+        localizer_->PopulateStatus(status->fbb());
+
     const flatbuffers::Offset<ImuZeroerState> zeroer_offset =
         imu_zeroer_.PopulateStatus(status->fbb());
 
@@ -363,6 +368,7 @@ void DrivetrainLoop::RunIteration(
     builder.add_line_follow_logging(line_follow_logging_offset);
     builder.add_trajectory_logging(trajectory_logging_offset);
     builder.add_down_estimator(down_estimator_state_offset);
+    builder.add_localizer(localizer_offset);
     builder.add_zeroing(zeroer_offset);
     status->Send(builder.Finish());
   }

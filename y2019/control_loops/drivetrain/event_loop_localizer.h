@@ -60,32 +60,9 @@ class EventLoopLocalizer
   void Update(const ::Eigen::Matrix<double, 2, 1> &U,
               ::aos::monotonic_clock::time_point now, double left_encoder,
               double right_encoder, double gyro_rate,
-              double /*longitudinal_accelerometer*/) override;
+              const Eigen::Vector3d &accel) override;
 
-  double x() const override {
-    return localizer_.X_hat(StateIdx::kX); }
-  double y() const override {
-    return localizer_.X_hat(StateIdx::kY); }
-  double theta() const override {
-    return localizer_.X_hat(StateIdx::kTheta); }
-  double left_encoder() const override {
-    return localizer_.X_hat(StateIdx::kLeftEncoder);
-  }
-  double right_encoder() const override {
-    return localizer_.X_hat(StateIdx::kRightEncoder);
-  }
-  double left_velocity() const override {
-    return localizer_.X_hat(StateIdx::kLeftVelocity);
-  }
-  double right_velocity() const override {
-    return localizer_.X_hat(StateIdx::kRightVelocity);
-  }
-  double left_voltage_error() const override {
-    return localizer_.X_hat(StateIdx::kLeftVoltageError);
-  }
-  double right_voltage_error() const override {
-    return localizer_.X_hat(StateIdx::kRightVoltageError);
-  }
+  Localizer::State Xhat() const override { return localizer_.X_hat(); }
 
   TargetSelector *target_selector() override {
     return &target_selector_;

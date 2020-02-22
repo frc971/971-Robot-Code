@@ -152,6 +152,7 @@ cc_library(
     hdrs = ["hybrid_ekf.h"],
     deps = [
         ":drivetrain_config",
+        "//aos:math",
         "//aos/containers:priority_queue",
         "//aos/util:math",
         "//frc971/control_loops:c2d",
@@ -184,6 +185,7 @@ cc_library(
     hdrs = ["localizer.h"],
     deps = [
         ":drivetrain_config",
+        ":drivetrain_status_fbs",
         ":hybrid_ekf",
         "//frc971/control_loops:pose",
     ],

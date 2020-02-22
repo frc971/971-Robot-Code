@@ -111,8 +111,7 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
     const Eigen::Matrix<double, 5, 1> true_state = drivetrain_plant_.state();
     EXPECT_NEAR(localizer_.x(), true_state(0, 0), eps);
     EXPECT_NEAR(localizer_.y(), true_state(1, 0), eps);
-    // TODO(james): Uncomment this.
-    //EXPECT_NEAR(localizer_.theta(), true_state(2, 0), 2.0 * eps);
+    EXPECT_NEAR(localizer_.theta(), true_state(2, 0), eps);
     EXPECT_NEAR(localizer_.left_velocity(), true_state(3, 0), eps);
     EXPECT_NEAR(localizer_.right_velocity(), true_state(4, 0), eps);
   }
@@ -290,8 +289,7 @@ TEST_F(LocalizedDrivetrainTest, NoCameraWithDisturbanceFails) {
   // Everything but X-value should be correct:
   EXPECT_NEAR(true_state.x(), localizer_.x() + 0.05, 1e-5);
   EXPECT_NEAR(true_state.y(), localizer_.y(), 1e-5);
-  // TODO(james): Uncomment this.
-  //EXPECT_NEAR(true_state(2, 0), localizer_.theta(), 1e-3);
+  EXPECT_NEAR(true_state(2, 0), localizer_.theta(), 1e-3);
   EXPECT_NEAR(true_state(3, 0), localizer_.left_velocity(), 1e-4);
   EXPECT_NEAR(true_state(4, 0), localizer_.right_velocity(), 1e-4);
 }
@@ -383,10 +381,9 @@ TEST_F(LocalizedDrivetrainTest, LineFollowToHPSlot) {
   VerifyEstimatorAccurate(0.2);
   // Due to the fact that we aren't modulating the throttle, we don't try to hit
   // the target exactly. Instead, just run slightly past the target:
-  // TODO(james): Uncomment this.
-  //EXPECT_LT(
-  //    ::std::abs(::aos::math::DiffAngle(M_PI, drivetrain_plant_.state()(2, 0))),
-  //    0.5);
+  EXPECT_LT(
+      ::std::abs(::aos::math::DiffAngle(M_PI, drivetrain_plant_.state()(2, 0))),
+      0.5);
   EXPECT_GT(HPSlotLeft().abs_pos().x(), drivetrain_plant_.state().x());
   EXPECT_NEAR(HPSlotLeft().abs_pos().y(), drivetrain_plant_.state().y(), 0.2);
 }

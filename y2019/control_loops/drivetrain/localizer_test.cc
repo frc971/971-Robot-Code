@@ -142,9 +142,6 @@ class ParameterizedLocalizerTest
   }
 
   void SetUp() {
-    // Turn on -v 1
-    FLAGS_v = std::max(FLAGS_v, 1);
-
     flatbuffers::DetachedBuffer goal_buffer;
     {
       flatbuffers::FlatBufferBuilder fbb;
@@ -315,8 +312,12 @@ class ParameterizedLocalizerTest
   }
   // The differential equation for the dynamics of the system.
   TestLocalizer::State DiffEq(const TestLocalizer::State &X,
-                              const TestLocalizer::Input &U) {
-    return localizer_.DiffEq(X, U);
+                              const Eigen::Vector2d &voltage) {
+    TestLocalizer::Input U;
+    U.setZero();
+    U(0) = voltage(0);
+    U(1) = voltage(1);
+    return localizer_.DiffEq(X, U, true);
   }
 
   Field field_;
@@ -433,7 +434,7 @@ TEST_P(ParameterizedLocalizerTest, SplineTest) {
     output.left_voltage = 0;
     output.right_voltage = 0;
     spline_drivetrain_.SetOutput(&output);
-    TestLocalizer::Input U(output.left_voltage, output.right_voltage);
+    Eigen::Vector2d U(output.left_voltage, output.right_voltage);
 
     const ::Eigen::Matrix<double, 5, 1> goal_state =
         spline_drivetrain_.CurrentGoalState();
@@ -454,7 +455,7 @@ TEST_P(ParameterizedLocalizerTest, SplineTest) {
     U(1, 0) = ::std::max(::std::min(U(1, 0), 12.0), -12.0);
 
     state = ::frc971::control_loops::RungeKuttaU(
-        [this](const ::Eigen::Matrix<double, 10, 1> &X,
+        [this](const ::Eigen::Matrix<double, 12, 1> &X,
                const ::Eigen::Matrix<double, 2, 1> &U) { return DiffEq(X, U); },
         state, U, ::aos::time::DurationInSeconds(dt_config_.dt));
 
@@ -462,6 +463,8 @@ TEST_P(ParameterizedLocalizerTest, SplineTest) {
     // interest here are that we (a) stop adding disturbances at the very end of
     // the trajectory, to allow us to actually converge to the goal, and (b)
     // scale disturbances by the corruent velocity.
+    // TODO(james): Figure out how to persist good accelerometer values through
+    // the disturbances.
     if (GetParam().disturb && i % 75 == 0) {
       // Scale the disturbance so that when we have near-zero velocity we don't
       // have much disturbance.
@@ -470,7 +473,8 @@ TEST_P(ParameterizedLocalizerTest, SplineTest) {
                            ::std::pow(state(StateIdx::kRightVelocity, 0), 2)) /
                    3.0);
       TestLocalizer::State disturbance;
-      disturbance << 0.02, 0.02, 0.001, 0.03, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0;
+      disturbance << 0.02, 0.02, 0.001, 0.03, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0,
+          0.0, 0.0;
       disturbance *= disturbance_scale;
       state += disturbance;
     }
@@ -482,13 +486,18 @@ TEST_P(ParameterizedLocalizerTest, SplineTest) {
     const double left_enc = state(StateIdx::kLeftEncoder, 0);
     const double right_enc = state(StateIdx::kRightEncoder, 0);
 
-    const double gyro = (state(StateIdx::kRightVelocity, 0) -
-                         state(StateIdx::kLeftVelocity, 0)) /
+    const double gyro = (state(StateIdx::kRightVelocity) -
+                         state(StateIdx::kLeftVelocity)) /
                         dt_config_.robot_radius / 2.0;
+    const TestLocalizer::State xdot = DiffEq(state, U);
+    const Eigen::Vector3d accel(
+        localizer_.CalcLongitudinalVelocity(xdot) -
+            gyro * state(StateIdx::kLateralVelocity),
+        gyro * localizer_.CalcLongitudinalVelocity(state), 1.0);
 
     localizer_.UpdateEncodersAndGyro(left_enc + Normal(encoder_noise_),
                                      right_enc + Normal(encoder_noise_),
-                                     gyro + Normal(gyro_noise_), U, t);
+                                     gyro + Normal(gyro_noise_), U, accel, t);
 
     for (size_t cam_idx = 0; cam_idx < camera_queues.size(); ++cam_idx) {
       auto &camera_queue = camera_queues[cam_idx];
@@ -551,14 +560,14 @@ INSTANTIATE_TEST_CASE_P(
             /*control_pts_x=*/{{0.0, 3.0, 3.0, 0.0, 1.0, 1.0}},
             /*control_pts_y=*/{{-5.0, -5.0, 2.0, 2.0, 2.0, 3.0}},
             (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+             0.0, 0.0, 0.0, 0.0)
                 .finished(),
             (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+             0.0, 0.0, 0.0, 0.0)
                 .finished(),
             /*noisify=*/false,
             /*disturb=*/false,
-            /*estimate_tolerance=*/1e-5,
+            /*estimate_tolerance=*/1e-2,
             /*goal_tolerance=*/2e-2,
         }),
         // Checks "perfect" estimation, but start off the spline and check
@@ -567,14 +576,14 @@ INSTANTIATE_TEST_CASE_P(
             /*control_pts_x=*/{{0.0, 3.0, 3.0, 0.0, 1.0, 1.0}},
             /*control_pts_y=*/{{-5.0, -5.0, 2.0, 2.0, 2.0, 3.0}},
             (TestLocalizer::State() << 0.0, -4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+             0.0, 0.0, 0.0, 0.0)
                 .finished(),
             (TestLocalizer::State() << 0.0, -4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+             0.0, 0.0, 0.0, 0.0)
                 .finished(),
             /*noisify=*/false,
             /*disturb=*/false,
-            /*estimate_tolerance=*/1e-5,
+            /*estimate_tolerance=*/1e-2,
             /*goal_tolerance=*/2e-2,
         }),
         // Repeats perfect scenario, but add sensor noise.
@@ -582,10 +591,10 @@ INSTANTIATE_TEST_CASE_P(
             /*control_pts_x=*/{{0.0, 3.0, 3.0, 0.0, 1.0, 1.0}},
             /*control_pts_y=*/{{-5.0, -5.0, 2.0, 2.0, 2.0, 3.0}},
             (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+             0.0, 0.0, 0.0, 0.0)
                 .finished(),
             (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+             0.0, 0.0, 0.0, 0.0)
                 .finished(),
             /*noisify=*/true,
             /*disturb=*/false,
@@ -597,14 +606,14 @@ INSTANTIATE_TEST_CASE_P(
             /*control_pts_x=*/{{0.0, 3.0, 3.0, 0.0, 1.0, 1.0}},
             /*control_pts_y=*/{{-5.0, -5.0, 2.0, 2.0, 2.0, 3.0}},
             (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+             0.0, 0.0, 0.0, 0.0)
                 .finished(),
             (TestLocalizer::State() << 0.1, -5.1, -0.01, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0, 0.0)
+             0.0, 0.0, 0.0, 0.0, 0.0)
                 .finished(),
             /*noisify=*/false,
             /*disturb=*/false,
-            /*estimate_tolerance=*/1e-4,
+            /*estimate_tolerance=*/1e-2,
             /*goal_tolerance=*/2e-2,
         }),
         // Repeats perfect scenario, but add voltage + angular errors:
@@ -612,14 +621,14 @@ INSTANTIATE_TEST_CASE_P(
             /*control_pts_x=*/{{0.0, 3.0, 3.0, 0.0, 1.0, 1.0}},
             /*control_pts_y=*/{{-5.0, -5.0, 2.0, 2.0, 2.0, 3.0}},
             (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-             0.5, 0.02)
+             0.5, 0.02, 0.0, 0.0)
                 .finished(),
             (TestLocalizer::State() << 0.1, -5.1, -0.01, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0, 0.0)
+             0.0, 0.0, 0.0, 0.0, 0.0)
                 .finished(),
             /*noisify=*/false,
             /*disturb=*/false,
-            /*estimate_tolerance=*/1e-4,
+            /*estimate_tolerance=*/1e-2,
             /*goal_tolerance=*/2e-2,
         }),
         // Add disturbances while we are driving:
@@ -627,14 +636,14 @@ INSTANTIATE_TEST_CASE_P(
             /*control_pts_x=*/{{0.0, 3.0, 3.0, 0.0, 1.0, 1.0}},
             /*control_pts_y=*/{{-5.0, -5.0, 2.0, 2.0, 2.0, 3.0}},
             (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+             0.0, 0.0, 0.0, 0.0)
                 .finished(),
             (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+             0.0, 0.0, 0.0, 0.0)
                 .finished(),
             /*noisify=*/false,
             /*disturb=*/true,
-            /*estimate_tolerance=*/3e-2,
+            /*estimate_tolerance=*/4e-2,
             /*goal_tolerance=*/0.15,
         }),
         // Add noise and some initial error in addition:
@@ -642,15 +651,15 @@ INSTANTIATE_TEST_CASE_P(
             /*control_pts_x=*/{{0.0, 3.0, 3.0, 0.0, 1.0, 1.0}},
             /*control_pts_y=*/{{-5.0, -5.0, 2.0, 2.0, 2.0, 3.0}},
             (TestLocalizer::State() << 0.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+             0.0, 0.0, 0.0, 0.0)
                 .finished(),
             (TestLocalizer::State() << 0.1, -5.1, 0.03, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+             0.0, 0.0, 0.0, 0.0)
                 .finished(),
             /*noisify=*/true,
             /*disturb=*/true,
-            /*estimate_tolerance=*/0.2,
-            /*goal_tolerance=*/0.5,
+            /*estimate_tolerance=*/0.5,
+            /*goal_tolerance=*/1.0,
         }),
         // Try another spline, just in case the one I was using is special for
         // some reason; this path will also go straight up to a target, to
@@ -659,10 +668,10 @@ INSTANTIATE_TEST_CASE_P(
             /*control_pts_x=*/{{0.5, 3.5, 4.0, 8.0, 11.0, 10.2}},
             /*control_pts_y=*/{{1.0, 1.0, -3.0, -2.0, -3.5, -3.65}},
             (TestLocalizer::State() << 0.6, 1.01, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+             0.0, 0.0, 0.0, 0.0)
                 .finished(),
             (TestLocalizer::State() << 0.5, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0)
+             0.0, 0.0, 0.0, 0.0)
                 .finished(),
             /*noisify=*/true,
             /*disturb=*/false,

@@ -58,17 +58,17 @@ void EventLoopLocalizer::Reset(::aos::monotonic_clock::time_point now,
   localizer_.ResetInitialState(now, state, newP);
 }
 
-void EventLoopLocalizer::Update(
-    const ::Eigen::Matrix<double, 2, 1> &U,
-    ::aos::monotonic_clock::time_point now, double left_encoder,
-    double right_encoder, double gyro_rate,
-    double /*longitudinal_accelerometer*/) {
+void EventLoopLocalizer::Update(const ::Eigen::Matrix<double, 2, 1> &U,
+                                ::aos::monotonic_clock::time_point now,
+                                double left_encoder, double right_encoder,
+                                double gyro_rate,
+                                const Eigen::Vector3d &accel) {
   AOS_CHECK(U.allFinite());
   AOS_CHECK(::std::isfinite(left_encoder));
   AOS_CHECK(::std::isfinite(right_encoder));
   AOS_CHECK(::std::isfinite(gyro_rate));
   localizer_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate, U,
-                                   now);
+                                   accel, now);
   while (frame_fetcher_.FetchNext()) {
     HandleFrame(frame_fetcher_.get());
   }
