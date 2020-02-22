@@ -702,8 +702,8 @@ TEST_F(SuperstructureTest, SpinUp) {
     ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
 
     // Start up the accelerator and make sure both run.
-    shooter_builder.add_velocity_accelerator(20.0);
-    shooter_builder.add_velocity_finisher(20.0);
+    shooter_builder.add_velocity_accelerator(200.0);
+    shooter_builder.add_velocity_finisher(200.0);
 
     flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
 
@@ -726,12 +726,12 @@ TEST_F(SuperstructureTest, SpinUp) {
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         hood_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), 0.7,
+            *builder.fbb(), constants::Values::kHoodRange().upper,
             CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), 0.7,
+            *builder.fbb(), constants::Values::kIntakeRange().upper,
             CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
 
     flatbuffers::Offset<ShooterGoal> shooter_offset =
