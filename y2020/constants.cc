@@ -92,6 +92,11 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   turret_params->zeroing_constants.moving_buffer_size = 20;
   turret_params->zeroing_constants.allowable_encoder_error = 0.9;
 
+  CHECK_LE(hood->range.range(),
+           hood->zeroing_constants.one_revolution_distance);
+  CHECK_LE(intake->range.range(),
+           intake->zeroing_constants.one_revolution_distance);
+
   switch (team) {
     // A set of constants for tests.
     case 1:

@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "aos/controls/control_loop_test.h"
+#include "aos/events/logging/logger.h"
 #include "frc971/control_loops/capped_test_plant.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
@@ -12,6 +13,9 @@
 #include "y2020/control_loops/superstructure/hood/hood_plant.h"
 #include "y2020/control_loops/superstructure/intake/intake_plant.h"
 #include "y2020/control_loops/superstructure/superstructure.h"
+
+DEFINE_string(output_file, "",
+              "If set, logs all channels to the provided logfile.");
 
 namespace y2020 {
 namespace control_loops {
@@ -315,6 +319,15 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
         superstructure_plant_event_loop_(MakeEventLoop("plant")),
         superstructure_plant_(superstructure_plant_event_loop_.get(), dt()) {
     set_team_id(::frc971::control_loops::testing::kTeamNumber);
+
+    if (!FLAGS_output_file.empty()) {
+      unlink(FLAGS_output_file.c_str());
+      log_buffer_writer_ = std::make_unique<aos::logger::DetachedBufferWriter>(
+          FLAGS_output_file);
+      logger_event_loop_ = MakeEventLoop("logger");
+      logger_ = std::make_unique<aos::logger::Logger>(log_buffer_writer_.get(),
+                                                      logger_event_loop_.get());
+    }
   }
 
   void VerifyNearGoal() {
@@ -372,6 +385,10 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
 
   ::std::unique_ptr<::aos::EventLoop> superstructure_plant_event_loop_;
   SuperstructureSimulation superstructure_plant_;
+
+  std::unique_ptr<aos::EventLoop> logger_event_loop_;
+  std::unique_ptr<aos::logger::DetachedBufferWriter> log_buffer_writer_;
+  std::unique_ptr<aos::logger::Logger> logger_;
 };
 
 // Tests that the superstructure does nothing when the goal is to remain still.
@@ -418,8 +435,10 @@ TEST_F(SuperstructureTest, ReachesGoal) {
   SetEnabled(true);
   // Set a reasonable goal.
 
-  superstructure_plant_.InitializeHoodPosition(0.7);
-  superstructure_plant_.InitializeIntakePosition(0.7);
+  superstructure_plant_.InitializeHoodPosition(
+      constants::Values::kHoodRange().middle());
+  superstructure_plant_.InitializeIntakePosition(
+      constants::Values::kIntakeRange().middle());
 
   WaitUntilZeroed();
   {
@@ -427,12 +446,12 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         hood_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), 0.2,
+            *builder.fbb(), constants::Values::kHoodRange().upper,
             CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), 0.2,
+            *builder.fbb(), constants::Values::kIntakeRange().upper,
             CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
@@ -551,9 +570,6 @@ TEST_F(SuperstructureTest, DisableTest) {
 TEST_F(SuperstructureTest, Climber) {
   SetEnabled(true);
   // Set a reasonable goal.
-
-  superstructure_plant_.InitializeHoodPosition(0.7);
-  superstructure_plant_.InitializeIntakePosition(0.7);
 
   WaitUntilZeroed();
   {

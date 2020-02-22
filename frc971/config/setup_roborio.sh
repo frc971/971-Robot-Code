@@ -34,6 +34,15 @@ else
   ssh "admin@${ROBOT_HOSTNAME}" ln -s /media/sda1/aos_log-current robot_code/aos_log-current
 fi
 
+if [[ "$(ssh admin@${ROBOT_HOSTNAME} uname -r)" != "4.14.87-rt49-cg-7.0.0f0-xilinx-zynq-189" ]]; then
+  echo "Target roboRIO has the wrong kernel"
+  exit 1
+fi
+
+ssh "admin@${ROBOT_HOSTNAME}" mkdir "/lib/modules/4.14.87-rt49-cg-7.0.0f0-xilinx-zynq-189/kernel/net/sctp/"
+scp frc971/config/sctp.ko "admin@${ROBOT_HOSTNAME}:/lib/modules/4.14.87-rt49-cg-7.0.0f0-xilinx-zynq-189/kernel/net/sctp/sctp.ko"
+ssh "admin@${ROBOT_HOSTNAME}" depmod
+
 # This fails if the code isn't running.
 ssh "admin@${ROBOT_HOSTNAME}" 'PATH="${PATH}":/usr/local/natinst/bin/ /usr/local/frc/bin/frcKillRobot.sh -r -t' || true
 

@@ -66,18 +66,6 @@ constexpr double kMaxBringupPower = 12.0;
 // DMA stuff and then removing the * 2.0 in *_translate.
 // The low bit is direction.
 
-// TODO(brian): Use ::std::max instead once we have C++14 so that can be
-// constexpr.
-template <typename T>
-constexpr T max(T a, T b) {
-  return (a > b) ? a : b;
-}
-
-template <typename T, typename... Rest>
-constexpr T max(T a, T b, T c, Rest... rest) {
-  return max(max(a, b), c, rest...);
-}
-
 double drivetrain_translate(int32_t in) {
   return ((static_cast<double>(in) /
            Values::kDrivetrainEncoderCountsPerRevolution()) *
@@ -98,15 +86,19 @@ double turret_pot_translate(double voltage) {
          (10.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
 }
 
-// TODO(Ravago): check with constants which are fast.
 constexpr double kMaxFastEncoderPulsesPerSecond =
-    Values::kMaxDrivetrainEncoderPulsesPerSecond();
-static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
+    std::max({Values::kMaxControlPanelEncoderPulsesPerSecond(),
+              Values::kMaxFinisherEncoderPulsesPerSecond(),
+              Values::kMaxAcceleratorEncoderPulsesPerSecond()});
+static_assert(kMaxFastEncoderPulsesPerSecond <= 1000000.0,
               "fast encoders are too fast");
 constexpr double kMaxMediumEncoderPulsesPerSecond =
-    kMaxFastEncoderPulsesPerSecond;
+    std::max({Values::kMaxDrivetrainEncoderPulsesPerSecond(),
+              Values::kMaxHoodEncoderPulsesPerSecond(),
+              Values::kMaxIntakeEncoderPulsesPerSecond(),
+              Values::kMaxTurretEncoderPulsesPerSecond()});
 
-static_assert(kMaxMediumEncoderPulsesPerSecond <= 400000,
+static_assert(kMaxMediumEncoderPulsesPerSecond <= 400000.0,
               "medium encoders are too fast");
 
 }  // namespace
@@ -193,12 +185,13 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   // Control Panel
 
   void set_control_panel_encoder(::std::unique_ptr<frc::Encoder> encoder) {
-    medium_encoder_filter_.Add(encoder.get());
+    fast_encoder_filter_.Add(encoder.get());
     control_panel_encoder_ = ::std::move(encoder);
   }
 
   // Auto mode switches.
   void set_autonomous_mode(int i, ::std::unique_ptr<frc::DigitalInput> sensor) {
+    medium_encoder_filter_.Add(sensor.get());
     autonomous_modes_.at(i) = ::std::move(sensor);
   }
 

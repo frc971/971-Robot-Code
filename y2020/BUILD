@@ -33,10 +33,12 @@ cc_library(
         "//frc971/control_loops:pose",
         "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
         "//y2020/control_loops/drivetrain:polydrivetrain_plants",
+        "//y2020/control_loops/superstructure/accelerator:accelerator_plants",
+        "//y2020/control_loops/superstructure/control_panel:control_panel_plants",
+        "//y2020/control_loops/superstructure/finisher:finisher_plants",
         "//y2020/control_loops/superstructure/hood:hood_plants",
         "//y2020/control_loops/superstructure/intake:intake_plants",
         "//y2020/control_loops/superstructure/turret:turret_plants",
-	"//y2020/control_loops/superstructure/control_panel:control_panel_plants",
         "@com_google_absl//absl/base",
     ],
 )

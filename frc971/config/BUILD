@@ -8,6 +8,7 @@ sh_binary(
     srcs = ["setup_roborio.sh"],
     data = [
         ":rio_robotCommand",
+        ":sctp.ko",
         "@arm_frc_linux_gnueabi_repo//:compiler_pieces",
     ],
     visibility = ["//visibility:public"],
