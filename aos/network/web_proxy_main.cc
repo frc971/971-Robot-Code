@@ -15,13 +15,18 @@ void RunDataThread(
     std::vector<std::unique_ptr<aos::web_proxy::Subscriber>> *subscribers,
     const aos::FlatbufferDetachedBuffer<aos::Configuration> &config) {
   aos::ShmEventLoop event_loop(&config.message());
+  const aos::Node *self = aos::configuration::GetMyNode(&config.message());
 
   // TODO(alex): skip fetchers on the wrong node.
   for (uint i = 0; i < config.message().channels()->size(); ++i) {
     auto channel = config.message().channels()->Get(i);
-    auto fetcher = event_loop.MakeRawFetcher(channel);
-    subscribers->emplace_back(
-        std::make_unique<aos::web_proxy::Subscriber>(std::move(fetcher), i));
+    if (!aos::configuration::ChannelIsReadableOnNode(channel, self)) {
+      subscribers->emplace_back(nullptr);
+    } else {
+      auto fetcher = event_loop.MakeRawFetcher(channel);
+      subscribers->emplace_back(
+          std::make_unique<aos::web_proxy::Subscriber>(std::move(fetcher), i));
+    }
   }
 
   flatbuffers::FlatBufferBuilder fbb(1024);
