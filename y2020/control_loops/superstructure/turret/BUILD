@@ -30,3 +30,27 @@ cc_library(
         "//frc971/control_loops:state_feedback_loop",
     ],
 )
+
+cc_library(
+    name = "aiming",
+    srcs = ["aiming.cc"],
+    hdrs = ["aiming.h"],
+    deps = [
+        "//aos:flatbuffers",
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops:pose",
+        "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+        "//y2020/control_loops/drivetrain:drivetrain_base",
+        "//y2020/control_loops/superstructure:superstructure_status_fbs",
+    ],
+)
+
+cc_test(
+    name = "aiming_test",
+    srcs = ["aiming_test.cc"],
+    deps = [
+        ":aiming",
+        "//aos/testing:googletest",
+    ],
+)

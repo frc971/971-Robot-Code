@@ -36,6 +36,7 @@ using ::frc971::control_loops::
     CreateStaticZeroingSingleDOFProfiledSubsystemGoal;
 using ::frc971::control_loops::PositionSensorSimulator;
 using ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
+typedef ::frc971::control_loops::drivetrain::Status DrivetrainStatus;
 typedef Superstructure::AbsoluteEncoderSubsystem AbsoluteEncoderSubsystem;
 typedef Superstructure::PotAndAbsoluteEncoderSubsystem
     PotAndAbsoluteEncoderSubsystem;
@@ -72,7 +73,6 @@ class SuperstructureSimulation {
             event_loop_->MakeFetcher<Status>("/superstructure")),
         superstructure_output_fetcher_(
             event_loop_->MakeFetcher<Output>("/superstructure")),
-
         hood_plant_(new CappedTestPlant(hood::MakeHoodPlant())),
         hood_encoder_(constants::GetValues()
                           .hood.zeroing_constants.one_revolution_distance),
@@ -386,6 +386,8 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
             test_event_loop_->MakeFetcher<Output>("/superstructure")),
         superstructure_position_fetcher_(
             test_event_loop_->MakeFetcher<Position>("/superstructure")),
+        drivetrain_status_sender_(
+            test_event_loop_->MakeSender<DrivetrainStatus>("/drivetrain")),
         superstructure_event_loop_(MakeEventLoop("superstructure", roborio_)),
         superstructure_(superstructure_event_loop_.get()),
         superstructure_plant_event_loop_(MakeEventLoop("plant", roborio_)),
@@ -494,6 +496,7 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
   ::aos::Fetcher<Status> superstructure_status_fetcher_;
   ::aos::Fetcher<Output> superstructure_output_fetcher_;
   ::aos::Fetcher<Position> superstructure_position_fetcher_;
+  ::aos::Sender<DrivetrainStatus> drivetrain_status_sender_;
 
   // Create a control loop and simulation.
   ::std::unique_ptr<::aos::EventLoop> superstructure_event_loop_;
@@ -812,6 +815,55 @@ TEST_F(SuperstructureTest, Climber) {
   EXPECT_EQ(superstructure_plant_.climber_voltage(), 10.0);
 
   VerifyNearGoal();
+}
+
+// Tests that the turret switches to auto-aiming when we set turret_tracking to
+// true.
+TEST_F(SuperstructureTest, TurretAutoAim) {
+  SetEnabled(true);
+  // Set a reasonable goal.
+
+  WaitUntilZeroed();
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_turret_tracking(true);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+  }
+  {
+    auto builder = drivetrain_status_sender_.MakeBuilder();
+
+    frc971::control_loops::drivetrain::LocalizerState::Builder
+        localizer_builder = builder.MakeBuilder<
+            frc971::control_loops::drivetrain::LocalizerState>();
+    localizer_builder.add_left_velocity(0.0);
+    localizer_builder.add_right_velocity(0.0);
+    const auto localizer_offset = localizer_builder.Finish();
+
+    DrivetrainStatus::Builder status_builder =
+        builder.MakeBuilder<DrivetrainStatus>();
+
+    status_builder.add_x(0.0);
+    status_builder.add_y(1.0);
+    status_builder.add_theta(0.0);
+    status_builder.add_localizer(localizer_offset);
+
+    ASSERT_TRUE(builder.Send(status_builder.Finish()));
+  }
+
+  // Give it time to stabilize.
+  RunFor(chrono::seconds(1));
+
+  superstructure_status_fetcher_.Fetch();
+  EXPECT_FLOAT_EQ(-M_PI_2,
+                  superstructure_status_fetcher_->turret()->position());
+  EXPECT_FLOAT_EQ(-M_PI_2,
+                  superstructure_status_fetcher_->aimer()->turret_position());
+  EXPECT_FLOAT_EQ(0,
+                  superstructure_status_fetcher_->aimer()->turret_velocity());
 }
 
 }  // namespace testing

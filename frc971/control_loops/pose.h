@@ -134,7 +134,7 @@ class TypedPose {
   // If new_base == nullptr, provides a Pose referenced to the global frame.
   // Note that the lifetime of new_base should be greater than the lifetime of
   // the returned object (unless new_base == nullptr).
-  TypedPose Rebase(const TypedPose<Scalar> *new_base) const;
+  [[nodiscard]] TypedPose Rebase(const TypedPose<Scalar> *new_base) const;
 
   // Convert this pose to the heading/distance/skew numbers that we
   // traditionally use for EKF corrections.
