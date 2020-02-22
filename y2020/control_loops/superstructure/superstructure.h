@@ -4,6 +4,7 @@
 #include "aos/controls/control_loop.h"
 #include "aos/events/event_loop.h"
 #include "y2020/constants.h"
+#include "y2020/control_loops/superstructure/shooter/shooter.h"
 #include "y2020/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_position_generated.h"
@@ -32,6 +33,7 @@ class Superstructure
   const AbsoluteEncoderSubsystem &hood() const { return hood_; }
   const AbsoluteEncoderSubsystem &intake_joint() const { return intake_joint_; }
   const PotAndAbsoluteEncoderSubsystem &turret() const { return turret_; }
+  const shooter::Shooter &shooter() const { return shooter_; }
 
  protected:
   virtual void RunIteration(const Goal *unsafe_goal, const Position *position,
@@ -42,6 +44,7 @@ class Superstructure
   AbsoluteEncoderSubsystem hood_;
   AbsoluteEncoderSubsystem intake_joint_;
   PotAndAbsoluteEncoderSubsystem turret_;
+  shooter::Shooter shooter_;
 
   Climber climber_;
   DISALLOW_COPY_AND_ASSIGN(Superstructure);

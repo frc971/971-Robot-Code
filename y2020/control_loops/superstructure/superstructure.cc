@@ -15,7 +15,8 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                                                  name),
       hood_(constants::GetValues().hood),
       intake_joint_(constants::GetValues().intake),
-      turret_(constants::GetValues().turret.subsystem_params) {
+      turret_(constants::GetValues().turret.subsystem_params),
+      shooter_() {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
@@ -29,6 +30,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     intake_joint_.Reset();
     turret_.Reset();
   }
+
+  const aos::monotonic_clock::time_point position_timestamp =
+      event_loop()->context().monotonic_event_time;
 
   OutputT output_struct;
 
@@ -51,6 +55,12 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           position->turret(),
           output != nullptr ? &(output_struct.turret_voltage) : nullptr,
           status->fbb());
+
+  flatbuffers::Offset<ShooterStatus> shooter_status_offset =
+      shooter_.RunIteration(
+          unsafe_goal != nullptr ? unsafe_goal->shooter() : nullptr,
+          position->shooter(), status->fbb(),
+          output != nullptr ? &(output_struct) : nullptr, position_timestamp);
 
   climber_.Iterate(unsafe_goal, output != nullptr ? &(output_struct) : nullptr);
 
@@ -81,6 +91,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_hood(hood_status_offset);
   status_builder.add_intake(intake_status_offset);
   status_builder.add_turret(turret_status_offset);
+  status_builder.add_shooter(shooter_status_offset);
 
   status->Send(status_builder.Finish());
 

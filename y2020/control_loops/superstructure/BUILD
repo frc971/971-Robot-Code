@@ -63,6 +63,7 @@ cc_library(
         "//aos/controls:control_loop",
         "//aos/events:event_loop",
         "//y2020:constants",
+        "//y2020/control_loops/superstructure/shooter",
     ],
 )
 
@@ -103,6 +104,7 @@ cc_test(
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//y2020/control_loops/superstructure/hood:hood_plants",
         "//y2020/control_loops/superstructure/intake:intake_plants",
+        "//y2020/control_loops/superstructure/shooter:shooter_plants",
     ],
 )
 

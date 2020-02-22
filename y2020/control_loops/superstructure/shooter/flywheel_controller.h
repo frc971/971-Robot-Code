@@ -23,7 +23,8 @@ class FlywheelController {
   // Sets the velocity goal in radians/sec
   void set_goal(double angular_velocity_goal);
   // Sets the current encoder position in radians
-  void set_position(double current_position);
+  void set_position(double current_position,
+                    const aos::monotonic_clock::time_point position_timestamp);
 
   // Populates the status structure.
   flatbuffers::Offset<FlywheelControllerStatus> SetStatus(
@@ -38,6 +39,8 @@ class FlywheelController {
   // Executes the control loop for a cycle.
   void Update(bool disabled);
 
+  double avg_angular_velocity() { return avg_angular_velocity_; }
+
  private:
   // The current sensor measurement.
   Eigen::Matrix<double, 1, 1> Y_;
@@ -46,8 +49,14 @@ class FlywheelController {
 
   // History array for calculating a filtered angular velocity.
   static constexpr int kHistoryLength = 10;
-  ::std::array<double, kHistoryLength> history_;
+  ::std::array<std::pair<double, ::aos::monotonic_clock::time_point>,
+               kHistoryLength>
+      history_;
   ptrdiff_t history_position_ = 0;
+
+  // Average velocity logging.
+  double avg_angular_velocity_;
+
   double last_goal_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(FlywheelController);

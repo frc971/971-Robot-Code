@@ -10,6 +10,8 @@
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
 #include "y2020/constants.h"
+#include "y2020/control_loops/superstructure/accelerator/accelerator_plant.h"
+#include "y2020/control_loops/superstructure/finisher/finisher_plant.h"
 #include "y2020/control_loops/superstructure/hood/hood_plant.h"
 #include "y2020/control_loops/superstructure/intake/intake_plant.h"
 #include "y2020/control_loops/superstructure/superstructure.h"
@@ -38,6 +40,25 @@ typedef Superstructure::AbsoluteEncoderSubsystem AbsoluteEncoderSubsystem;
 typedef Superstructure::PotAndAbsoluteEncoderSubsystem
     PotAndAbsoluteEncoderSubsystem;
 
+class FlywheelPlant : public StateFeedbackPlant<2, 1, 1> {
+ public:
+  explicit FlywheelPlant(StateFeedbackPlant<2, 1, 1> &&other)
+      : StateFeedbackPlant<2, 1, 1>(::std::move(other)) {}
+
+  void CheckU(const Eigen::Matrix<double, 1, 1> &U) override {
+    EXPECT_LE(U(0, 0), U_max(0, 0) + 0.00001 + voltage_offset_);
+    EXPECT_GE(U(0, 0), U_min(0, 0) - 0.00001 + voltage_offset_);
+  }
+
+  double voltage_offset() const { return voltage_offset_; }
+  void set_voltage_offset(double voltage_offset) {
+    voltage_offset_ = voltage_offset;
+  }
+
+ private:
+  double voltage_offset_ = 0.0;
+};
+
 // Class which simulates the superstructure and sends out queue messages with
 // the position.
 class SuperstructureSimulation {
@@ -61,7 +82,12 @@ class SuperstructureSimulation {
         turret_plant_(new CappedTestPlant(turret::MakeTurretPlant())),
         turret_encoder_(constants::GetValues()
                             .turret.subsystem_params.zeroing_constants
-                            .one_revolution_distance) {
+                            .one_revolution_distance),
+        accelerator_left_plant_(
+            new FlywheelPlant(accelerator::MakeAcceleratorPlant())),
+        accelerator_right_plant_(
+            new FlywheelPlant(accelerator::MakeAcceleratorPlant())),
+        finisher_plant_(new FlywheelPlant(finisher::MakeFinisherPlant())) {
     InitializeHoodPosition(constants::Values::kHoodRange().upper);
     InitializeIntakePosition(constants::Values::kIntakeRange().upper);
     InitializeTurretPosition(constants::Values::kTurretRange().middle());
@@ -108,6 +134,14 @@ class SuperstructureSimulation {
                                    .measured_absolute_position);
   }
 
+  flatbuffers::Offset<ShooterPosition> shooter_pos_offset(
+      ShooterPositionBuilder *builder) {
+    builder->add_theta_finisher(finisher_plant_->Y(0, 0));
+    builder->add_theta_accelerator_left(accelerator_left_plant_->Y(0, 0));
+    builder->add_theta_accelerator_right(accelerator_right_plant_->Y(0, 0));
+    return builder->Finish();
+  }
+
   // Sends a queue message with the position of the superstructure.
   void SendPositionMessage() {
     ::aos::Sender<Position>::Builder builder =
@@ -128,11 +162,17 @@ class SuperstructureSimulation {
     flatbuffers::Offset<frc971::PotAndAbsolutePosition> turret_offset =
         turret_encoder_.GetSensorValues(&turret_builder);
 
+    ShooterPosition::Builder shooter_builder =
+        builder.MakeBuilder<ShooterPosition>();
+    flatbuffers::Offset<ShooterPosition> shooter_offset =
+        shooter_pos_offset(&shooter_builder);
+
     Position::Builder position_builder = builder.MakeBuilder<Position>();
 
     position_builder.add_hood(hood_offset);
     position_builder.add_intake_joint(intake_offset);
     position_builder.add_turret(turret_offset);
+    position_builder.add_shooter(shooter_offset);
 
     builder.Send(position_builder.Finish());
   }
@@ -145,6 +185,16 @@ class SuperstructureSimulation {
 
   double turret_position() const { return turret_plant_->X(0, 0); }
   double turret_velocity() const { return turret_plant_->X(1, 0); }
+
+  double accelerator_left_velocity() const {
+    return accelerator_left_plant_->X(1, 0);
+  }
+
+  double accelerator_right_velocity() const {
+    return accelerator_right_plant_->X(1, 0);
+  }
+
+  double finisher_velocity() const { return finisher_plant_->X(1, 0); }
 
   // Simulates the superstructure for a single timestep.
   void Simulate() {
@@ -197,9 +247,26 @@ class SuperstructureSimulation {
     turret_U << superstructure_output_fetcher_->turret_voltage() +
                     turret_plant_->voltage_offset();
 
+    ::Eigen::Matrix<double, 1, 1> accelerator_left_U;
+    accelerator_left_U
+        << superstructure_output_fetcher_->accelerator_left_voltage() +
+               accelerator_left_plant_->voltage_offset();
+
+    ::Eigen::Matrix<double, 1, 1> accelerator_right_U;
+    accelerator_right_U
+        << superstructure_output_fetcher_->accelerator_right_voltage() +
+               accelerator_right_plant_->voltage_offset();
+
+    ::Eigen::Matrix<double, 1, 1> finisher_U;
+    finisher_U << superstructure_output_fetcher_->finisher_voltage() +
+                      finisher_plant_->voltage_offset();
+
     hood_plant_->Update(hood_U);
     intake_plant_->Update(intake_U);
     turret_plant_->Update(turret_U);
+    accelerator_left_plant_->Update(accelerator_left_U);
+    accelerator_right_plant_->Update(accelerator_right_U);
+    finisher_plant_->Update(finisher_U);
 
     const double position_hood = hood_plant_->Y(0, 0);
     const double position_intake = intake_plant_->Y(0, 0);
@@ -284,6 +351,10 @@ class SuperstructureSimulation {
   ::std::unique_ptr<CappedTestPlant> turret_plant_;
   PositionSensorSimulator turret_encoder_;
 
+  ::std::unique_ptr<FlywheelPlant> accelerator_left_plant_;
+  ::std::unique_ptr<FlywheelPlant> accelerator_right_plant_;
+  ::std::unique_ptr<FlywheelPlant> finisher_plant_;
+
   // The acceleration limits to check for while moving.
   double peak_hood_acceleration_ = 1e10;
   double peak_intake_acceleration_ = 1e10;
@@ -349,6 +420,48 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
       EXPECT_NEAR(superstructure_goal_fetcher_->turret()->unsafe_goal(),
                   superstructure_status_fetcher_->turret()->position(), 0.001);
     }
+
+    if (superstructure_goal_fetcher_->has_shooter()) {
+      EXPECT_NEAR(
+          superstructure_goal_fetcher_->shooter()->velocity_accelerator(),
+          superstructure_status_fetcher_->shooter()
+              ->accelerator_left()
+              ->angular_velocity(),
+          0.001);
+
+      EXPECT_NEAR(
+          superstructure_goal_fetcher_->shooter()->velocity_accelerator(),
+          superstructure_status_fetcher_->shooter()
+              ->accelerator_right()
+              ->angular_velocity(),
+          0.001);
+
+      EXPECT_NEAR(superstructure_goal_fetcher_->shooter()->velocity_finisher(),
+                  superstructure_status_fetcher_->shooter()
+                      ->finisher()
+                      ->angular_velocity(),
+                  0.001);
+
+      EXPECT_NEAR(
+          superstructure_goal_fetcher_->shooter()->velocity_accelerator(),
+          superstructure_status_fetcher_->shooter()
+              ->accelerator_left()
+              ->avg_angular_velocity(),
+          0.001);
+
+      EXPECT_NEAR(
+          superstructure_goal_fetcher_->shooter()->velocity_accelerator(),
+          superstructure_status_fetcher_->shooter()
+              ->accelerator_right()
+              ->avg_angular_velocity(),
+          0.001);
+
+      EXPECT_NEAR(superstructure_goal_fetcher_->shooter()->velocity_finisher(),
+                  superstructure_status_fetcher_->shooter()
+                      ->finisher()
+                      ->avg_angular_velocity(),
+                  0.001);
+    }
   }
 
   void CheckIfZeroed() {
@@ -365,8 +478,8 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
       // 2 Seconds
       ASSERT_LE(i, 2.0 / ::aos::time::DurationInSeconds(dt()));
 
-      // Since there is a delay when sending running, make sure we have a status
-      // before checking it.
+      // Since there is a delay when sending running, make sure we have a
+      // status before checking it.
     } while (superstructure_status_fetcher_.get() == nullptr ||
              !superstructure_status_fetcher_.get()->zeroed());
   }
@@ -391,7 +504,8 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
   std::unique_ptr<aos::logger::Logger> logger_;
 };
 
-// Tests that the superstructure does nothing when the goal is to remain still.
+// Tests that the superstructure does nothing when the goal is to remain
+// still.
 TEST_F(SuperstructureTest, DoesNothing) {
   SetEnabled(true);
   superstructure_plant_.InitializeHoodPosition(
@@ -416,11 +530,15 @@ TEST_F(SuperstructureTest, DoesNothing) {
         turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
             *builder.fbb(), constants::Values::kTurretRange().middle() + 1.0);
 
+    flatbuffers::Offset<ShooterGoal> shooter_offset =
+        CreateShooterGoal(*builder.fbb(), 0.0, 0.0);
+
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_hood(hood_offset);
     goal_builder.add_intake(intake_offset);
     goal_builder.add_turret(turret_offset);
+    goal_builder.add_shooter(shooter_offset);
 
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -458,11 +576,15 @@ TEST_F(SuperstructureTest, ReachesGoal) {
         turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
             *builder.fbb(), constants::Values::kTurretRange().middle() + 1.0);
 
+    flatbuffers::Offset<ShooterGoal> shooter_offset =
+        CreateShooterGoal(*builder.fbb(), 300.0, 300.0);
+
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_hood(hood_offset);
     goal_builder.add_intake(intake_offset);
     goal_builder.add_turret(turret_offset);
+    goal_builder.add_shooter(shooter_offset);
 
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -472,8 +594,10 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 
   VerifyNearGoal();
 }
+
 // Makes sure that the voltage on a motor is properly pulled back after
-// saturation such that we don't get weird or bad (e.g. oscillating) behaviour.
+// saturation such that we don't get weird or bad (e.g. oscillating)
+// behaviour.
 TEST_F(SuperstructureTest, SaturationTest) {
   SetEnabled(true);
   // Zero it before we move.
@@ -493,11 +617,15 @@ TEST_F(SuperstructureTest, SaturationTest) {
         turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
             *builder.fbb(), constants::Values::kTurretRange().middle() + 1.0);
 
+    flatbuffers::Offset<ShooterGoal> shooter_offset =
+        CreateShooterGoal(*builder.fbb(), 0.0, 0.0);
+
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_hood(hood_offset);
     goal_builder.add_intake(intake_offset);
     goal_builder.add_turret(turret_offset);
+    goal_builder.add_shooter(shooter_offset);
 
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -523,11 +651,15 @@ TEST_F(SuperstructureTest, SaturationTest) {
         turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
             *builder.fbb(), constants::Values::kTurretRange().middle() + 1.0);
 
+    flatbuffers::Offset<ShooterGoal> shooter_offset =
+        CreateShooterGoal(*builder.fbb(), 0.0, 0.0);
+
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_hood(hood_offset);
     goal_builder.add_intake(intake_offset);
     goal_builder.add_turret(turret_offset);
+    goal_builder.add_shooter(shooter_offset);
 
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
@@ -542,6 +674,81 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
   // Intake needs over 8 seconds to reach the goal
   RunFor(chrono::seconds(9));
+  VerifyNearGoal();
+}
+
+// Tests the shooter can spin up correctly.
+TEST_F(SuperstructureTest, SpinUp) {
+  SetEnabled(true);
+  superstructure_plant_.InitializeHoodPosition(
+      constants::Values::kHoodRange().upper);
+  superstructure_plant_.InitializeIntakePosition(
+      constants::Values::kIntakeRange().upper);
+
+  WaitUntilZeroed();
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        hood_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kHoodRange().upper,
+            CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
+
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kIntakeRange().upper,
+            CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
+
+    ShooterGoal::Builder shooter_builder = builder.MakeBuilder<ShooterGoal>();
+
+    // Start up the accelerator and make sure both run.
+    shooter_builder.add_velocity_accelerator(20.0);
+    shooter_builder.add_velocity_finisher(20.0);
+
+    flatbuffers::Offset<ShooterGoal> shooter_offset = shooter_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_shooter(shooter_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+  }
+
+  // Give it a lot of time to get there.
+  RunFor(chrono::seconds(8));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        hood_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 0.7,
+            CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
+
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), 0.7,
+            CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
+
+    flatbuffers::Offset<ShooterGoal> shooter_offset =
+        CreateShooterGoal(*builder.fbb(), 0.0, 0.0);
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_intake(intake_offset);
+    goal_builder.add_shooter(shooter_offset);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+  }
+
+  // Give it a lot of time to get there.
+  RunFor(chrono::seconds(9));
+
   VerifyNearGoal();
 }
 
