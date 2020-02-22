@@ -28,6 +28,7 @@ py_binary(
         # TODO(Brian): Replace this with something more fine-grained from the
         # configuration fragment or something.
         "//tools/cpp:toolchain",
+        "@amd64_debian_sysroot//:sysroot_files",
     ],
     default_python_version = "PY3",
     main = "fast_gaussian_runner.py",
@@ -195,10 +196,12 @@ flatbuffer_py_library(
     ],
     namespace = "frc971.vision.sift",
     tables = [
+        "KeypointFieldLocation",
         "Feature",
         "Match",
         "ImageMatch",
         "TransformationMatrix",
+        "CameraCalibration",
         "CameraPose",
         "ImageMatchResult",
         "TrainingImage",

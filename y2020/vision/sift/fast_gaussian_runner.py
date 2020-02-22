@@ -22,12 +22,13 @@ def main(params):
 
   commands = []
 
+  amd64_debian_sysroot = r.Rlocation('amd64_debian_sysroot/usr/lib/x86_64-linux-gnu/libc.so.6').rsplit('/', 4)[0]
   env = os.environ.copy()
   env['LD_LIBRARY_PATH'] = ':'.join([
-      'debian_amd64_sysroot/lib/x86_64-linux-gnu',
-      'debian_amd64_sysroot/lib',
-      'debian_amd64_sysroot/usr/lib/x86_64-linux-gnu',
-      'debian_amd64_sysroot/usr/lib',
+      amd64_debian_sysroot + '/lib/x86_64-linux-gnu',
+      amd64_debian_sysroot + '/lib',
+      amd64_debian_sysroot + '/usr/lib/x86_64-linux-gnu',
+      amd64_debian_sysroot + '/usr/lib',
   ])
 
   all_header = [

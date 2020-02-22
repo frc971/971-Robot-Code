@@ -1,100 +1,216 @@
 #!/usr/bin/python3
 
 import cv2
+import numpy as np
 import sys
 import flatbuffers
-import target_definition
 
-import frc971.vision.sift.TrainingImage as TrainingImage
-import frc971.vision.sift.TrainingData as TrainingData
+import frc971.vision.sift.CameraCalibration as CameraCalibration
 import frc971.vision.sift.Feature as Feature
+import frc971.vision.sift.KeypointFieldLocation as KeypointFieldLocation
+import frc971.vision.sift.TrainingData as TrainingData
+import frc971.vision.sift.TrainingImage as TrainingImage
+import frc971.vision.sift.TransformationMatrix as TransformationMatrix
+
+
+# Takes a 3x3 rotation matrix and 3x1 translation vector, and outputs 12
+# element list, suitable for outputing to flatbuffer
+def rot_and_trans_to_list(R, T):
+    output_list = []
+    for row in range(3):
+        for col in range(3):
+            output_list.append(R[row][col])
+        output_list.append(T[row])
+
+    output_list = output_list + [0., 0., 0., 1.]
+    return output_list
+
 
 def main():
 
-  output_path = sys.argv[1]
-  print("Writing file to ", output_path)
+    target_data_list = None
+    camera_calib_list = None
 
-  target_data_list = target_definition.compute_target_definition()
+    output_path = sys.argv[1]
 
-  fbb = flatbuffers.Builder(0)
+    if (len(sys.argv) > 2):
+        if sys.argv[2] == "test":
+            print("Loading test data")
+            import camera_definition_test
+            import target_definition_test
+            target_data_list = target_definition_test.compute_target_definition(
+            )
+            camera_calib_list = camera_definition_test.camera_list
+        else:
+            print("Unhandled arguments: '%s'" % sys.argv[2])
+            quit()
+    else:
+        print("Loading target configuration data")
+        import camera_definition
+        import target_definition
+        target_data_list = target_definition.compute_target_definition()
+        camera_calib_list = camera_definition.camera_list
 
-  images_vector = []
+    print("Writing file to ", output_path)
 
-  for target_data in target_data_list:
+    fbb = flatbuffers.Builder(0)
 
-    features_vector = []
+    images_vector = []
 
-    for keypoint, keypoint_3d, descriptor in zip(target_data.keypoint_list,
-                                                 target_data.keypoint_list_3d,
-                                                 target_data.descriptor_list):
+    # Iterate overall the training targets
+    for target_data in target_data_list:
 
-      Feature.FeatureStartDescriptorVector(fbb, len(descriptor))
-      for n in reversed(descriptor):
-        fbb.PrependFloat32(n)
-      descriptor_vector = fbb.EndVector(len(descriptor))
+        features_vector = []
 
-      Feature.FeatureStart(fbb)
+        # Iterate over all the keypoints
+        for keypoint, keypoint_3d, descriptor in zip(
+                target_data.keypoint_list, target_data.keypoint_list_3d,
+                target_data.descriptor_list):
 
-      Feature.FeatureAddDescriptor(fbb, descriptor_vector)
-      Feature.FeatureAddX(fbb, keypoint.pt[0])
-      Feature.FeatureAddY(fbb, keypoint.pt[1])
-      Feature.FeatureAddSize(fbb, keypoint.size)
-      Feature.FeatureAddAngle(fbb, keypoint.angle)
-      Feature.FeatureAddResponse(fbb, keypoint.response)
-      Feature.FeatureAddOctave(fbb, keypoint.octave)
+            # Build the Descriptor vector
+            Feature.FeatureStartDescriptorVector(fbb, len(descriptor))
+            for n in reversed(descriptor):
+                fbb.PrependFloat32(n)
+            descriptor_vector = fbb.EndVector(len(descriptor))
 
-      features_vector.append(Feature.FeatureEnd(fbb))
+            # Add all the components to the each Feature
+            Feature.FeatureStart(fbb)
+            Feature.FeatureAddDescriptor(fbb, descriptor_vector)
+            Feature.FeatureAddX(fbb, keypoint.pt[0])
+            Feature.FeatureAddY(fbb, keypoint.pt[1])
+            Feature.FeatureAddSize(fbb, keypoint.size)
+            Feature.FeatureAddAngle(fbb, keypoint.angle)
+            Feature.FeatureAddResponse(fbb, keypoint.response)
+            Feature.FeatureAddOctave(fbb, keypoint.octave)
 
-      ## TODO: Write 3d vector here
+            keypoint_3d_location = KeypointFieldLocation.CreateKeypointFieldLocation(
+                fbb, keypoint_3d[0][0], keypoint_3d[0][1], keypoint_3d[0][2])
 
-    TrainingImage.TrainingImageStartFeaturesVector(fbb, len(features_vector))
-    for feature in reversed(features_vector):
-      fbb.PrependUOffsetTRelative(feature)
-    features_vector_table = fbb.EndVector(len(features_vector))
+            Feature.FeatureAddFieldLocation(fbb, keypoint_3d_location)
 
-    TrainingImage.TrainingImageStart(fbb)
-    TrainingImage.TrainingImageAddFeatures(fbb, features_vector_table)
-    # TODO(Brian): Fill out the transformation matrices.
-    images_vector.append(TrainingImage.TrainingImageEnd(fbb))
+            features_vector.append(Feature.FeatureEnd(fbb))
 
-  TrainingData.TrainingDataStartImagesVector(fbb, len(images_vector))
-  for training_image in reversed(images_vector):
-    fbb.PrependUOffsetTRelative(training_image)
-  images_vector_table = fbb.EndVector(len(images_vector))
+        # Create the field_to_target TransformationMatrix
+        field_to_target_list = rot_and_trans_to_list(
+            target_data.target_rotation, target_data.target_position)
+        TransformationMatrix.TransformationMatrixStartDataVector(
+            fbb, len(field_to_target_list))
+        for n in reversed(field_to_target_list):
+            fbb.PrependFloat32(n)
+        field_to_target_offset = fbb.EndVector(len(field_to_target_list))
 
-  TrainingData.TrainingDataStart(fbb)
-  TrainingData.TrainingDataAddImages(fbb, images_vector_table)
-  fbb.Finish(TrainingData.TrainingDataEnd(fbb))
+        TransformationMatrix.TransformationMatrixStart(fbb)
+        TransformationMatrix.TransformationMatrixAddData(
+            fbb, field_to_target_offset)
+        transformation_mat_offset = TransformationMatrix.TransformationMatrixEnd(
+            fbb)
 
-  bfbs = fbb.Output()
+        # Create the TrainingImage feature vector
+        TrainingImage.TrainingImageStartFeaturesVector(fbb,
+                                                       len(features_vector))
+        for feature in reversed(features_vector):
+            fbb.PrependUOffsetTRelative(feature)
+        features_vector_offset = fbb.EndVector(len(features_vector))
 
-  output_prefix = [
-      b'#ifndef Y2020_VISION_TOOLS_PYTHON_CODE_TRAINING_DATA_H_',
-      b'#define Y2020_VISION_TOOLS_PYTHON_CODE_TRAINING_DATA_H_',
-      b'#include <string_view>',
-      b'namespace frc971 {',
-      b'namespace vision {',
-      b'inline std::string_view SiftTrainingData() {',
-  ]
-  output_suffix = [
-      b'  return std::string_view(kData, sizeof(kData));',
-      b'}',
-      b'}  // namespace vision',
-      b'}  // namespace frc971',
-      b'#endif  // Y2020_VISION_TOOLS_PYTHON_CODE_TRAINING_DATA_H_',
-  ]
+        # Create the TrainingImage
+        TrainingImage.TrainingImageStart(fbb)
+        TrainingImage.TrainingImageAddFeatures(fbb, features_vector_offset)
+        TrainingImage.TrainingImageAddFieldToTarget(fbb,
+                                                    transformation_mat_offset)
 
-  with open(output_path, 'wb') as output:
-    for line in output_prefix:
-      output.write(line)
-      output.write(b'\n')
-    output.write(b'alignas(64) static constexpr char kData[] = "')
-    for byte in fbb.Output():
-      output.write(b'\\x' + (b'%x' % byte).zfill(2))
-    output.write(b'";\n')
-    for line in output_suffix:
-      output.write(line)
-      output.write(b'\n')
+        images_vector.append(TrainingImage.TrainingImageEnd(fbb))
+
+    # Create and add Training Data of all targets
+    TrainingData.TrainingDataStartImagesVector(fbb, len(images_vector))
+    for training_image in reversed(images_vector):
+        fbb.PrependUOffsetTRelative(training_image)
+    images_vector_table = fbb.EndVector(len(images_vector))
+
+    # Create camera calibration data
+    camera_calibration_vector = []
+    for camera_calib in camera_calib_list:
+        fixed_extrinsics_list = rot_and_trans_to_list(
+            camera_calib.camera_ext.R, camera_calib.camera_ext.T)
+        TransformationMatrix.TransformationMatrixStartDataVector(
+            fbb, len(fixed_extrinsics_list))
+        for n in reversed(fixed_extrinsics_list):
+            fbb.PrependFloat32(n)
+        fixed_extrinsics_data_offset = fbb.EndVector(
+            len(fixed_extrinsics_list))
+
+        TransformationMatrix.TransformationMatrixStart(fbb)
+        TransformationMatrix.TransformationMatrixAddData(
+            fbb, fixed_extrinsics_data_offset)
+        fixed_extrinsics_vector = TransformationMatrix.TransformationMatrixEnd(
+            fbb)
+
+        # TODO: Need to add in distortion coefficients here
+        # For now, just send camera paramter matrix (fx, fy, cx, cy)
+        camera_int_list = camera_calib.camera_int.camera_matrix.ravel().tolist(
+        )
+        CameraCalibration.CameraCalibrationStartIntrinsicsVector(
+            fbb, len(camera_int_list))
+        for n in reversed(camera_int_list):
+            fbb.PrependFloat32(n)
+        intrinsics_vector = fbb.EndVector(len(camera_int_list))
+
+        node_name_offset = fbb.CreateString(camera_calib.node_name)
+        CameraCalibration.CameraCalibrationStart(fbb)
+        CameraCalibration.CameraCalibrationAddNodeName(fbb, node_name_offset)
+        CameraCalibration.CameraCalibrationAddTeamNumber(
+            fbb, camera_calib.team_number)
+        CameraCalibration.CameraCalibrationAddIntrinsics(
+            fbb, intrinsics_vector)
+        CameraCalibration.CameraCalibrationAddFixedExtrinsics(
+            fbb, fixed_extrinsics_vector)
+        camera_calibration_vector.append(
+            CameraCalibration.CameraCalibrationEnd(fbb))
+
+    TrainingData.TrainingDataStartCameraCalibrationsVector(
+        fbb, len(camera_calibration_vector))
+    for camera_calibration in reversed(camera_calibration_vector):
+        fbb.PrependUOffsetTRelative(camera_calibration)
+    camera_calibration_vector_table = fbb.EndVector(
+        len(camera_calibration_vector))
+
+    # Fill out TrainingData
+    TrainingData.TrainingDataStart(fbb)
+    TrainingData.TrainingDataAddImages(fbb, images_vector_table)
+    TrainingData.TrainingDataAddCameraCalibrations(
+        fbb, camera_calibration_vector_table)
+    fbb.Finish(TrainingData.TrainingDataEnd(fbb))
+
+    bfbs = fbb.Output()
+
+    output_prefix = [
+        b'#ifndef Y2020_VISION_TOOLS_PYTHON_CODE_TRAINING_DATA_H_',
+        b'#define Y2020_VISION_TOOLS_PYTHON_CODE_TRAINING_DATA_H_',
+        b'#include <string_view>',
+        b'namespace frc971 {',
+        b'namespace vision {',
+        b'inline std::string_view SiftTrainingData() {',
+    ]
+    output_suffix = [
+        b'  return std::string_view(kData, sizeof(kData));',
+        b'}',
+        b'}  // namespace vision',
+        b'}  // namespace frc971',
+        b'#endif  // Y2020_VISION_TOOLS_PYTHON_CODE_TRAINING_DATA_H_',
+    ]
+
+    # Write out the header file
+    with open(output_path, 'wb') as output:
+        for line in output_prefix:
+            output.write(line)
+            output.write(b'\n')
+        output.write(b'alignas(64) static constexpr char kData[] = "')
+        for byte in fbb.Output():
+            output.write(b'\\x' + (b'%x' % byte).zfill(2))
+        output.write(b'";\n')
+        for line in output_suffix:
+            output.write(line)
+            output.write(b'\n')
+
 
 if __name__ == '__main__':
-  main()
+    main()

@@ -23,6 +23,7 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
     ],
+    visibility = ["//y2020:__subpackages__"],
 )
 
 cc_binary(
@@ -47,6 +48,7 @@ cc_binary(
         "//y2020/vision/sift:sift_fbs",
         "//y2020/vision/sift:sift_training_fbs",
     ],
+    visibility = ["//y2020:__subpackages__"],
 )
 
 flatbuffer_ts_library(

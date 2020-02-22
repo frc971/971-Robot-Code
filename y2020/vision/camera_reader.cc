@@ -128,7 +128,7 @@ const sift::CameraCalibration *CameraReader::FindCameraCalibration() const {
 void CameraReader::CopyTrainingFeatures() {
   for (const sift::TrainingImage *training_image : *training_data_->images()) {
     cv::Mat features(training_image->features()->size(), 128, CV_32F);
-    for (size_t i = 0; i <  training_image->features()->size(); ++i) {
+    for (size_t i = 0; i < training_image->features()->size(); ++i) {
       const sift::Feature *feature_table = training_image->features()->Get(i);
 
       // We don't need this information right now, but make sure it's here to
@@ -157,8 +157,7 @@ void CameraReader::ProcessImage(const CameraImage &image) {
   // fused into the beginning of the SIFT algorithm because the algorithm needs
   // to look at the base image directly. It also only takes 2ms on our images.
   // This is converting from YUYV to a grayscale image.
-  cv::Mat image_mat(
-      image.rows(), image.cols(), CV_8U);
+  cv::Mat image_mat(image.rows(), image.cols(), CV_8U);
   CHECK(image_mat.isContinuous());
   const int number_pixels = image.rows() * image.cols();
   for (int i = 0; i < number_pixels; ++i) {
@@ -228,17 +227,17 @@ void CameraReader::ProcessImage(const CameraImage &image) {
 
     sift::CameraPose::Builder pose_builder(*builder.fbb());
     {
-    CHECK_EQ(cv::Size(3, 3), R_camera_target.size());
-    CHECK_EQ(cv::Size(3, 1), T_camera_target.size());
-    cv::Mat camera_target = cv::Mat::zeros(4, 4, CV_32F);
-    R_camera_target.copyTo(camera_target(cv::Range(0, 3), cv::Range(0, 3)));
-    T_camera_target.copyTo(camera_target(cv::Range(3, 4), cv::Range(0, 3)));
-    camera_target.at<float>(3, 3) = 1;
-    CHECK(camera_target.isContinuous());
-    const auto data_offset = builder.fbb()->CreateVector<float>(
-        reinterpret_cast<float *>(camera_target.data), camera_target.total());
-    pose_builder.add_camera_to_target(
-        sift::CreateTransformationMatrix(*builder.fbb(), data_offset));
+      CHECK_EQ(cv::Size(3, 3), R_camera_target.size());
+      CHECK_EQ(cv::Size(3, 1), T_camera_target.size());
+      cv::Mat camera_target = cv::Mat::zeros(4, 4, CV_32F);
+      R_camera_target.copyTo(camera_target(cv::Range(0, 3), cv::Range(0, 3)));
+      T_camera_target.copyTo(camera_target(cv::Range(3, 4), cv::Range(0, 3)));
+      camera_target.at<float>(3, 3) = 1;
+      CHECK(camera_target.isContinuous());
+      const auto data_offset = builder.fbb()->CreateVector<float>(
+          reinterpret_cast<float *>(camera_target.data), camera_target.total());
+      pose_builder.add_camera_to_target(
+          sift::CreateTransformationMatrix(*builder.fbb(), data_offset));
     }
     pose_builder.add_field_to_target(
         aos::CopyFlatBuffer(FieldToTarget(i), builder.fbb()));
@@ -355,7 +354,8 @@ void CameraReaderMain() {
 
   aos::ShmEventLoop event_loop(&config.message());
   V4L2Reader v4l2_reader(&event_loop, "/dev/video0");
-  CameraReader camera_reader(&event_loop, training_data, &v4l2_reader, &matcher);
+  CameraReader camera_reader(&event_loop, training_data, &v4l2_reader,
+                             &matcher);
 
   event_loop.Run();
 }
@@ -363,7 +363,6 @@ void CameraReaderMain() {
 }  // namespace
 }  // namespace vision
 }  // namespace frc971
-
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);

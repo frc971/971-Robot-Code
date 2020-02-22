@@ -8,7 +8,6 @@ class CameraIntrinsics:
         self.camera_matrix = []
         self.distortion_coeffs = []
 
-    pass
 
 class CameraExtrinsics:
     def __init__(self):
@@ -55,9 +54,11 @@ web_cam_params.camera_ext = web_cam_ext
 
 camera_list = []
 
-for team_number in (971, 8971, 9971):
-    for node_name in ("pi-0", "pi-1", "pi-2", "pi-3", "pi-4"):
+for team_number in (971, 8971, 9971): 
+    for (i, node_name) in enumerate(("pi-1", "pi-2", "pi-3", "pi-4", "pi-5")):
         camera_base = copy.deepcopy(web_cam_params)
         camera_base.node_name = node_name
         camera_base.team_number = team_number
+        camera_base.camera_ext.T = np.asarray(np.float32([i+1, i+1, i+1]))
         camera_list.append(camera_base)
+
