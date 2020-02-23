@@ -49,10 +49,10 @@ struct Values {
 
   static constexpr ::frc971::constants::Range kHoodRange() {
     return ::frc971::constants::Range{
-        -0.01,  // Back Hard
-        0.65,   // Front Hard
-        0.0,    // Back Soft
-        0.64    // Front Soft
+        0.00,  // Back Hard
+        0.64,   // Front Hard
+        0.01,    // Back Soft
+        0.63    // Front Soft
     };
   }
 
@@ -71,15 +71,16 @@ struct Values {
            kIntakeEncoderRatio() * kIntakeEncoderCountsPerRevolution();
   }
 
-  // TODO(sabina): update range
   static constexpr ::frc971::constants::Range kIntakeRange() {
     return ::frc971::constants::Range{
-        -1,     // Back Hard
-        1,      // Front Hard
-        -0.95,  // Back Soft
-        0.95    // Front Soft
+        -1.05,  // Back Hard
+        1.44,   // Front Hard
+        -0.89,  // Back Soft
+        1.26    // Front Soft
     };
   }
+
+  static constexpr double kIntakeZero() { return -57 * M_PI / 180.0; }
 
   ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
       ::frc971::zeroing::AbsoluteEncoderZeroingEstimator>
@@ -92,7 +93,7 @@ struct Values {
   static constexpr double kTurretEncoderCountsPerRevolution() { return 4096.0; }
 
   static constexpr double kTurretEncoderRatio() {
-    return (26.0 / 150.0) * (130.0 / 40.0);
+    return (26.0 / 150.0) * (130.0 / 26.0);
   }
 
   static constexpr double kMaxTurretEncoderPulsesPerSecond() {
@@ -105,11 +106,10 @@ struct Values {
 
   static constexpr ::frc971::constants::Range kTurretRange() {
     return ::frc971::constants::Range{
-        // TODO (Kai): Placeholders right now.
-        -3.2,   // Back Hard
-        3.2,    // Front Hard
-        -3.14,  // Back Soft
-        3.14    // Front Soft
+        -4.6,   // Back Hard
+        4.85,   // Front Hard
+        -4.3,   // Back Soft
+        4.7123  // Front Soft
     };
   }
 
@@ -142,7 +142,7 @@ struct Values {
 
   // Shooter
   static constexpr double kFinisherEncoderCountsPerRevolution() {
-    return 4096.0;
+    return 2048.0;
   }
   static constexpr double kFinisherEncoderRatio() { return 30.0 / 40.0; }
 
@@ -154,7 +154,7 @@ struct Values {
 
 
   static constexpr double kAcceleratorEncoderCountsPerRevolution() {
-    return 4096.0;
+    return 2048.0;
   }
   static constexpr double kAcceleratorEncoderRatio() {
     return (1.2 * 1.2 * 1.2) * (30.0 / 40.0);

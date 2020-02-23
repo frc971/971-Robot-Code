@@ -126,7 +126,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
   // Hood
-
   void set_hood_encoder(::std::unique_ptr<frc::Encoder> encoder) {
     medium_encoder_filter_.Add(encoder.get());
     hood_encoder_.set_encoder(::std::move(encoder));
@@ -228,7 +227,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       frc971::AbsolutePositionT hood;
       CopyPosition(hood_encoder_, &hood,
                    Values::kHoodEncoderCountsPerRevolution(),
-                   Values::kHoodEncoderRatio(), false);
+                   Values::kHoodEncoderRatio(), true);
       flatbuffers::Offset<frc971::AbsolutePosition> hood_offset =
           frc971::AbsolutePosition::Pack(*builder.fbb(), &hood);
 
@@ -244,7 +243,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       frc971::PotAndAbsolutePositionT turret;
       CopyPosition(turret_encoder_, &turret,
                    Values::kTurretEncoderCountsPerRevolution(),
-                   Values::kTurretEncoderRatio(), turret_pot_translate, false,
+                   Values::kTurretEncoderRatio(), turret_pot_translate, true,
                    values.turret.potentiometer_offset);
       flatbuffers::Offset<frc971::PotAndAbsolutePosition> turret_offset =
           frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &turret);
@@ -484,23 +483,25 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     SensorReader sensor_reader(&sensor_reader_event_loop);
     sensor_reader.set_drivetrain_left_encoder(make_encoder(0));
     sensor_reader.set_drivetrain_right_encoder(make_encoder(1));
-
     // TODO: pin numbers
-    sensor_reader.set_hood_encoder(make_encoder(2));
-    sensor_reader.set_hood_absolute_pwm(make_unique<frc::DigitalInput>(2));
+    sensor_reader.set_hood_encoder(
+        make_unique<frc::Encoder>(22, 23, false, frc::Encoder::k4X));
 
-    sensor_reader.set_intake_encoder(make_encoder(3));
-    sensor_reader.set_intake_absolute_pwm(make_unique<frc::DigitalInput>(3));
+    sensor_reader.set_hood_absolute_pwm(make_unique<frc::DigitalInput>(24));
 
-    sensor_reader.set_turret_encoder(make_encoder(4));
-    sensor_reader.set_turret_absolute_pwm(make_unique<frc::DigitalInput>(4));
-    sensor_reader.set_turret_potentiometer(make_unique<frc::AnalogInput>(4));
+    sensor_reader.set_intake_encoder(make_encoder(5));
+    sensor_reader.set_intake_absolute_pwm(make_unique<frc::DigitalInput>(1));
 
-    sensor_reader.set_flywheel_encoder(make_encoder(5));
-    sensor_reader.set_left_kicker_encoder(make_encoder(6));
-    sensor_reader.set_right_kicker_encoder(make_encoder(7));
+    sensor_reader.set_turret_encoder(make_encoder(2));
+    sensor_reader.set_turret_absolute_pwm(make_unique<frc::DigitalInput>(0));
+    sensor_reader.set_turret_potentiometer(make_unique<frc::AnalogInput>(0));
 
-    sensor_reader.set_control_panel_encoder(make_encoder(8, frc::Encoder::k2X));
+    sensor_reader.set_finisher_encoder(
+        make_unique<frc::Encoder>(3, 2, false, frc::Encoder::k4X));
+    sensor_reader.set_left_accelerator_encoder(make_encoder(4));
+    sensor_reader.set_right_accelerator_encoder(make_encoder(3));
+
+    sensor_reader.set_control_panel_encoder(make_encoder(8, frc::Encoder::k1X));
 
     // Note: If ADIS16470 is plugged in directly to the roboRIO SPI port without
     // the Spartan Board, then trigger is on 26, reset 27, and chip select is
@@ -514,14 +515,13 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
       imu_reset = make_unique<frc::DigitalOutput>(27);
       spi_port = frc::SPI::Port::kOnboardCS0;
     } else {
-      imu_trigger = make_unique<frc::DigitalInput>(0);
-      imu_reset = make_unique<frc::DigitalOutput>(1);
+      imu_trigger = make_unique<frc::DigitalInput>(9);
+      imu_reset = make_unique<frc::DigitalOutput>(8);
     }
     auto spi = make_unique<frc::SPI>(spi_port);
     frc971::wpilib::ADIS16470 imu(&sensor_reader_event_loop, spi.get(),
                                   imu_trigger.get(), imu_reset.get());
     sensor_reader.set_imu(&imu);
-
     AddLoop(&sensor_reader_event_loop);
 
     // Thread 4.

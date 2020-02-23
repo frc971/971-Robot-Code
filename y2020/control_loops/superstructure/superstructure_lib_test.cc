@@ -672,8 +672,8 @@ TEST_F(SuperstructureTest, SaturationTest) {
   superstructure_plant_.set_peak_turret_velocity(23.0);
   superstructure_plant_.set_peak_turret_acceleration(0.2);
 
-  // Intake needs over 8 seconds to reach the goal
-  RunFor(chrono::seconds(9));
+  // Intake needs over 9 seconds to reach the goal
+  RunFor(chrono::seconds(10));
   VerifyNearGoal();
 }
 
