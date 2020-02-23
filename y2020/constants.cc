@@ -26,7 +26,6 @@ namespace {
 
 const uint16_t kCompTeamNumber = 971;
 const uint16_t kPracticeTeamNumber = 9971;
-const uint16_t kCodingRobotTeamNumber = 7971;
 
 const Values *DoGetValuesForTeam(uint16_t team) {
   Values *const r = new Values();
@@ -120,7 +119,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       turret_params->zeroing_constants.measured_absolute_position = 0.0;
       break;
 
-    case kCodingRobotTeamNumber:
+    case Values::kCodingRobotTeamNumber:
       hood->zeroing_constants.measured_absolute_position = 0.0;
 
       intake->zeroing_constants.measured_absolute_position = 0.0;

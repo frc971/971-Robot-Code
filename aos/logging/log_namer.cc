@@ -101,7 +101,7 @@ bool FindDevice(char *device, size_t device_size) {
   char test_device[10];
   for (char i = 'a'; i < 'z'; ++i) {
     snprintf(test_device, sizeof(test_device), "/dev/sd%c", i);
-    LOG(INFO) << "Trying to access" << test_device;
+    VLOG(1) << "Trying to access" << test_device;
     if (access(test_device, F_OK) != -1) {
       snprintf(device, device_size, "sd%c", i);
       return true;

@@ -3,7 +3,7 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 
-DEFINE_string(config, "multinode_pingpong_config.json", "Path to the config.");
+DEFINE_string(config, "config.json", "Path to the config.");
 
 namespace aos {
 namespace message_bridge {

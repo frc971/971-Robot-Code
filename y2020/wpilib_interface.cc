@@ -25,6 +25,7 @@
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/make_unique.h"
+#include "aos/network/team_number.h"
 #include "aos/realtime.h"
 #include "aos/robot_state/robot_state_generated.h"
 #include "aos/time/time.h"
@@ -504,9 +505,19 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     // Note: If ADIS16470 is plugged in directly to the roboRIO SPI port without
     // the Spartan Board, then trigger is on 26, reset 27, and chip select is
     // CS0.
-    auto imu_trigger = make_unique<frc::DigitalInput>(0);
-    auto imu_reset = make_unique<frc::DigitalOutput>(1);
-    auto spi = make_unique<frc::SPI>(frc::SPI::Port::kOnboardCS2);
+    frc::SPI::Port spi_port = frc::SPI::Port::kOnboardCS2;
+    std::unique_ptr<frc::DigitalInput> imu_trigger;
+    std::unique_ptr<frc::DigitalOutput> imu_reset;
+    if (::aos::network::GetTeamNumber() ==
+        constants::Values::kCodingRobotTeamNumber) {
+      imu_trigger = make_unique<frc::DigitalInput>(26);
+      imu_reset = make_unique<frc::DigitalOutput>(27);
+      spi_port = frc::SPI::Port::kOnboardCS0;
+    } else {
+      imu_trigger = make_unique<frc::DigitalInput>(0);
+      imu_reset = make_unique<frc::DigitalOutput>(1);
+    }
+    auto spi = make_unique<frc::SPI>(spi_port);
     frc971::wpilib::ADIS16470 imu(&sensor_reader_event_loop, spi.get(),
                                   imu_trigger.get(), imu_reset.get());
     sensor_reader.set_imu(&imu);
