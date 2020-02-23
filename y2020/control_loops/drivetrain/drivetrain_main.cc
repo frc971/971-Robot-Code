@@ -2,6 +2,7 @@
 #include "aos/init.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
+#include "y2020/control_loops/drivetrain/localizer.h"
 
 using ::frc971::control_loops::drivetrain::DrivetrainLoop;
 
@@ -12,7 +13,7 @@ int main() {
       aos::configuration::ReadConfig("config.json");
 
   ::aos::ShmEventLoop event_loop(&config.message());
-  ::frc971::control_loops::drivetrain::DeadReckonEkf localizer(
+  ::y2020::control_loops::drivetrain::Localizer localizer(
       &event_loop, ::y2020::control_loops::drivetrain::GetDrivetrainConfig());
   DrivetrainLoop drivetrain(
       ::y2020::control_loops::drivetrain::GetDrivetrainConfig(), &event_loop,
