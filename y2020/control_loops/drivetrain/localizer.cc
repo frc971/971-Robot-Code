@@ -111,9 +111,9 @@ void Localizer::HandleImageMatch(
       FlatbufferToTransformationMatrix(
           *result.camera_calibration()->fixed_extrinsics());
   // Calculate the pose of the camera relative to the robot origin.
-  Eigen::Matrix<double, 4, 4> H_camera_robot = fixed_extrinsics;
+  Eigen::Matrix<double, 4, 4> H_robot_camera = fixed_extrinsics;
   if (is_turret) {
-    H_camera_robot = H_camera_robot *
+    H_robot_camera = H_robot_camera *
                      frc971::control_loops::TransformationMatrixForYaw(
                          turret_data.position) *
                      FlatbufferToTransformationMatrix(
@@ -130,14 +130,14 @@ void Localizer::HandleImageMatch(
         !vision_result->has_field_to_target()) {
       continue;
     }
-    const Eigen::Matrix<double, 4, 4> H_target_camera =
+    const Eigen::Matrix<double, 4, 4> H_camera_target =
         FlatbufferToTransformationMatrix(*vision_result->camera_to_target());
-    const Eigen::Matrix<double, 4, 4> H_target_field =
+    const Eigen::Matrix<double, 4, 4> H_field_target =
         FlatbufferToTransformationMatrix(*vision_result->field_to_target());
     // Back out the robot position that is implied by the current camera
     // reading.
-    const Pose measured_pose(H_target_field *
-                             (H_camera_robot * H_target_camera).inverse());
+    const Pose measured_pose(H_field_target *
+                             (H_robot_camera * H_camera_target).inverse());
     const Eigen::Matrix<double, 3, 1> Z(measured_pose.rel_pos().x(),
                                         measured_pose.rel_pos().y(),
                                         measured_pose.rel_theta());

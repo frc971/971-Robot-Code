@@ -228,26 +228,27 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
         drivetrain_plant_.state()(2, 0));
     std::unique_ptr<ImageMatchResultT> frame(new ImageMatchResultT());
 
-    for (const auto &H_target_field : TargetLocations()) {
+    for (const auto &H_field_target : TargetLocations()) {
       std::unique_ptr<CameraPoseT> camera_target(new CameraPoseT());
 
       camera_target->field_to_target.reset(new TransformationMatrixT());
-      camera_target->field_to_target->data = MatrixToVector(H_target_field);
+      camera_target->field_to_target->data = MatrixToVector(H_field_target);
 
-      Eigen::Matrix<double, 4, 4> H_camera_turret =
+      Eigen::Matrix<double, 4, 4> H_turret_camera =
           Eigen::Matrix<double, 4, 4>::Identity();
       if (is_turreted_) {
-        H_camera_turret = frc971::control_loops::TransformationMatrixForYaw(
+        H_turret_camera = frc971::control_loops::TransformationMatrixForYaw(
                               turret_position_) *
                           CameraTurretTransformation();
       }
 
       // TODO(james): Use non-zero turret angles.
       camera_target->camera_to_target.reset(new TransformationMatrixT());
-      camera_target->camera_to_target->data = MatrixToVector(
-          (robot_pose.AsTransformationMatrix() * TurretRobotTransformation() *
-           H_camera_turret).inverse() *
-          H_target_field);
+      camera_target->camera_to_target->data =
+          MatrixToVector((robot_pose.AsTransformationMatrix() *
+                          TurretRobotTransformation() * H_turret_camera)
+                             .inverse() *
+                         H_field_target);
 
       frame->camera_poses.emplace_back(std::move(camera_target));
     }
@@ -260,17 +261,17 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
     {
       frame->camera_calibration->fixed_extrinsics.reset(
           new TransformationMatrixT());
-      TransformationMatrixT *H_turret_robot =
+      TransformationMatrixT *H_robot_turret =
           frame->camera_calibration->fixed_extrinsics.get();
-      H_turret_robot->data = MatrixToVector(TurretRobotTransformation());
+      H_robot_turret->data = MatrixToVector(TurretRobotTransformation());
     }
 
     if (is_turreted_) {
       frame->camera_calibration->turret_extrinsics.reset(
           new TransformationMatrixT());
-      TransformationMatrixT *H_camera_turret =
+      TransformationMatrixT *H_turret_camera =
           frame->camera_calibration->turret_extrinsics.get();
-      H_camera_turret->data = MatrixToVector(CameraTurretTransformation());
+      H_turret_camera->data = MatrixToVector(CameraTurretTransformation());
     }
 
     camera_delay_queue_.emplace(monotonic_now(), std::move(frame));
