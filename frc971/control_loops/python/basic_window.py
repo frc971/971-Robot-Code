@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
@@ -5,9 +6,9 @@ from gi.repository import GLib
 from gi.repository import Gdk
 from gi.repository import GdkX11
 import cairo
+from constants import *
 
 identity = cairo.Matrix()
-
 
 # Override the matrix of a cairo context.
 class OverrideMatrix(object):
@@ -34,7 +35,6 @@ def set_color(cr, color):
 def quit_main_loop(*args):
     mainloop.quit()
 
-
 def RunApp():
     try:
         mainloop.run()
@@ -49,11 +49,10 @@ class BaseWindow(Gtk.DrawingArea):
     # Draw in response to an expose-event
     def __init__(self):
         super(BaseWindow, self).__init__()
-        #self.window.connect("destroy", quit_main_loop)
 
-        self.set_size_request(640, 600)
+        self.set_size_request(2*SCREEN_SIZE, SCREEN_SIZE)
         self.center = (0, 0)
-        self.shape = (640, 400)
+        self.shape = (2*SCREEN_SIZE, SCREEN_SIZE)
         self.needs_redraw = False
 
     def get_current_scale(self):
@@ -81,3 +80,4 @@ class BaseWindow(Gtk.DrawingArea):
     # Handle the expose-event by drawing
     def handle_draw(self, cr):
         pass
+

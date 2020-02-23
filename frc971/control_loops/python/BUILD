@@ -164,18 +164,25 @@ py_library(
 )
 
 py_binary(
-    name = "path_edit",
+    name = "spline_graph",
     srcs = [
-        "basic_window.py",
         "color.py",
+        "spline_drawing.py",
+        "spline_writer.py",
         "path_edit.py",
+        "points.py",
+        "graph.py",
+        "spline_graph.py",
     ],
+    legacy_create_init = False,
     restricted_to = ["//tools:k8"],
     visibility = ["//visibility:public"],
     deps = [
         ":libspline",
         ":python_init",
         "@python_gtk",
+        "@matplotlib_repo//:matplotlib2.7",
+        ":basic_window",
     ],
 )
 
