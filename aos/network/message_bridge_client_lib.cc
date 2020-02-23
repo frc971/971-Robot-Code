@@ -146,6 +146,8 @@ SctpClientConnection::SctpClientConnection(
           << ": " << FlatbufferToJson(connect_message_);
 
   connect_timer_ = event_loop_->AddTimer([this]() { SendConnect(); });
+  connect_timer_->set_name(std::string("connect_") +
+                           remote_node_->name()->str());
   event_loop_->OnRun(
       [this]() { connect_timer_->Setup(event_loop_->monotonic_now()); });
 
@@ -347,6 +349,7 @@ MessageBridgeClient::MessageBridgeClient(aos::ShmEventLoop *event_loop)
 
   // And kick it all off.
   statistics_timer_ = event_loop_->AddTimer([this]() { SendStatistics(); });
+  statistics_timer_->set_name("statistics");
   event_loop_->OnRun([this]() {
     statistics_timer_->Setup(
         event_loop_->monotonic_now() + chrono::milliseconds(100),
