@@ -32,7 +32,7 @@ GyroSender::GyroSender(::aos::ShmEventLoop *event_loop)
           event_loop_->MakeSender<frc971::sensors::GyroReading>(
               "/drivetrain")) {
   AOS_PCHECK(
-      system("ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
+      system("busybox ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
              "33") == 0);
   event_loop->set_name("Gyro");
   event_loop_->SetRuntimeRealtimePriority(33);

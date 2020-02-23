@@ -138,7 +138,7 @@ ADIS16448::ADIS16448(::aos::ShmEventLoop *event_loop, frc::SPI::Port port,
   // NI's SPI driver defaults to SCHED_OTHER.  Find it's PID with ps, and change
   // it to a RT priority of 33.
   AOS_PCHECK(
-      system("ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
+      system("busybox ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
              "33") == 0);
 
   event_loop->set_name("IMU");
