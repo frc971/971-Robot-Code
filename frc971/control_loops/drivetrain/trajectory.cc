@@ -91,14 +91,21 @@ double Trajectory::BestAcceleration(double x, double v, bool backwards) {
     best_accel = ::std::min(best_accel, max_friction_accel);
   }
 
-  if (max_friction_accel < min_friction_accel - 0.1 ||
-      best_accel < min_voltage_accel || best_accel > max_voltage_accel) {
-    AOS_LOG(WARNING,
-        "Viable friction limits and viable voltage limits do not overlap (x: "
-        "%f, v: %f, backwards: %d) best_accel = %f, min voltage %f, max "
-        "voltage %f min friction %f max friction %f.\n",
-        x, v, backwards, best_accel, min_voltage_accel, max_voltage_accel,
-        min_friction_accel, max_friction_accel);
+  // Ideally, the max would never be less than the min, but due to the way that
+  // the runge kutta solver works, it sometimes ticks over the edge.
+  if (max_friction_accel < min_friction_accel) {
+    VLOG(1) << "At x " << x << " v " << v << " min fric acc "
+            << min_friction_accel << " max fric accel " << max_friction_accel;
+  }
+  if (best_accel < min_voltage_accel || best_accel > max_voltage_accel) {
+    LOG(WARNING) << "Viable friction limits and viable voltage limits do not "
+                    "overlap (x: " << x << ", v: " << v
+                 << ", backwards: " << backwards
+                 << ") best_accel = " << best_accel << ", min voltage "
+                 << min_voltage_accel << ", max voltage " << max_voltage_accel
+                 << " min friction " << min_friction_accel << " max friction "
+                 << max_friction_accel << ".";
+
     // Don't actually do anything--this will just result in attempting to drive
     // higher voltages thatn we have available. In practice, that'll probably
     // work out fine.
@@ -161,10 +168,8 @@ void Trajectory::FrictionLngAccelLimits(double x, double v, double *min_accel,
   const double max_wheel_lng_accel_squared =
       1.0 - ::std::pow(lateral_acceleration / lateral_acceleration_, 2.0);
   if (max_wheel_lng_accel_squared < 0.0) {
-    AOS_LOG(DEBUG,
-        "Something (probably Runge-Kutta) queried invalid velocity %f at "
-        "distance %f\n",
-        v, x);
+    VLOG(1) << "Something (probably Runge-Kutta) queried invalid velocity " << v
+            << " at distance " << x;
     // If we encounter this, it means that the Runge-Kutta has attempted to
     // sample points a bit past the edge of the friction boundary. If so, we
     // gradually ramp the min/max accels to be more and more incorrect (note
