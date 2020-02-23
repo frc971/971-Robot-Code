@@ -41,6 +41,7 @@ cc_library(
         "//frc971/control_loops:pose",
         "//frc971/control_loops:profiled_subsystem_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+        "//y2020:constants",
         "//y2020/control_loops/drivetrain:drivetrain_base",
         "//y2020/control_loops/superstructure:superstructure_status_fbs",
     ],

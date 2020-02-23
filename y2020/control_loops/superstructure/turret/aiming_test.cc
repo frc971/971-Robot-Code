@@ -2,6 +2,7 @@
 
 #include "frc971/control_loops/pose.h"
 #include "gtest/gtest.h"
+#include "y2020/constants.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
 namespace y2020 {
@@ -44,9 +45,10 @@ class AimerTest : public ::testing::Test {
   }
 
   const Goal *Update(const StatusData &data,
-                     aos::Alliance alliance = aos::Alliance::kBlue) {
+                     aos::Alliance alliance = aos::Alliance::kBlue,
+                     Aimer::Mode mode = Aimer::Mode::kAvoidEdges) {
     const auto buffer = MakeStatus(data);
-    aimer_.Update(&buffer.message(), alliance);
+    aimer_.Update(&buffer.message(), alliance, mode);
     const Goal *goal = aimer_.TurretGoal();
     EXPECT_TRUE(goal->ignore_profile());
     return goal;
@@ -77,7 +79,7 @@ TEST_F(AimerTest, StandingStill) {
                  .theta = -1.0,
                  .linear = 0.0,
                  .angular = 0.0});
-  EXPECT_EQ(-M_PI + 1.0, goal->unsafe_goal());
+  EXPECT_EQ(-M_PI + 1.0, aos::math::NormalizeAngle(goal->unsafe_goal()));
   EXPECT_EQ(0.0, goal->goal_velocity());
   // Test that we handle the case that where we are right on top of the target.
   goal = Update({.x = target.abs_pos().x() + 0.0,
@@ -136,6 +138,60 @@ TEST_F(AimerTest, InnerPort) {
                              .angular = 0.0},
                             aos::Alliance::kRed);
   EXPECT_EQ(M_PI, goal->unsafe_goal());
+  EXPECT_EQ(0.0, goal->goal_velocity());
+}
+
+// Confirms that when we move the turret heading so that it would be entirely
+// out of the normal range of motion that we send a valid (in-range) goal.
+TEST_F(AimerTest, WrapWhenOutOfRange) {
+  // Start ourselves needing a turret angle of M_PI.
+  const Pose target = OuterPortPose(aos::Alliance::kBlue);
+  StatusData status{.x = target.abs_pos().x() + 1.0,
+                    .y = target.abs_pos().y() + 0.0,
+                    .theta = 0.0,
+                    .linear = 0.0,
+                    .angular = 0.0};
+  const Goal *goal = Update(status);
+  EXPECT_EQ(M_PI, goal->unsafe_goal());
+  EXPECT_EQ(0.0, goal->goal_velocity());
+  // Move the robot a small amount--we should go past pi and not wrap yet.
+  status.theta = -0.1;
+  goal = Update(status);
+  EXPECT_FLOAT_EQ(M_PI + 0.1, goal->unsafe_goal());
+  EXPECT_EQ(0.0, goal->goal_velocity());
+  // Move the robot so that, if we had no hard-stops, we would go past it.
+  status.theta = -2.0;
+  goal = Update(status);
+  EXPECT_FLOAT_EQ(-M_PI + 2.0, goal->unsafe_goal());
+  EXPECT_EQ(0.0, goal->goal_velocity());
+}
+
+// Confirms that the avoid edges turret mode doesn't let us get all the way to
+// the turret hard-stops but that the avoid wrapping mode does.
+TEST_F(AimerTest, WrappingModes) {
+  // Start ourselves needing a turret angle of M_PI.
+  const Pose target = OuterPortPose(aos::Alliance::kBlue);
+  StatusData status{.x = target.abs_pos().x() + 1.0,
+                    .y = target.abs_pos().y() + 0.0,
+                    .theta = 0.0,
+                    .linear = 0.0,
+                    .angular = 0.0};
+  const Goal *goal =
+      Update(status, aos::Alliance::kBlue, Aimer::Mode::kAvoidWrapping);
+  EXPECT_EQ(M_PI, goal->unsafe_goal());
+  EXPECT_EQ(0.0, goal->goal_velocity());
+  constexpr double kUpperLimit = constants::Values::kTurretRange().upper;
+  // Move the robot to the upper limit with AvoidWrapping set--we should be at
+  // the upper limit and not wrapped.
+  status.theta = goal->unsafe_goal() - kUpperLimit;
+  goal = Update(status, aos::Alliance::kBlue, Aimer::Mode::kAvoidWrapping);
+  EXPECT_FLOAT_EQ(kUpperLimit, goal->unsafe_goal());
+  EXPECT_EQ(0.0, goal->goal_velocity());
+  // Enter kAvoidEdges mode--we should wrap around.
+  goal = Update(status, aos::Alliance::kBlue, Aimer::Mode::kAvoidEdges);
+  // confirm that this test is actually testing something...
+  ASSERT_NE(aos::math::NormalizeAngle(kUpperLimit), kUpperLimit);
+  EXPECT_FLOAT_EQ(aos::math::NormalizeAngle(kUpperLimit), goal->unsafe_goal());
   EXPECT_EQ(0.0, goal->goal_velocity());
 }
 

@@ -1,5 +1,6 @@
 #include "y2020/control_loops/superstructure/turret/aiming.h"
 
+#include "y2020/constants.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
 namespace y2020 {
@@ -29,10 +30,21 @@ constexpr double kEdgeOfFieldToPort = 2.404;
 // The amount (in meters) that the inner port is set back from the outer port.
 constexpr double kInnerPortBackset = 0.743;
 
+
 // Minimum distance that we must be from the inner port in order to attempt the
 // shot--this is to account for the fact that if we are too close to the target,
 // then we won't have a clear shot on the inner port.
 constexpr double kMinimumInnerPortShotDistance = 4.0;
+
+// Amount of buffer, in radians, to leave to help avoid wrapping. I.e., any time
+// that we are in kAvoidEdges mode, we will keep ourselves at least
+// kAntiWrapBuffer radians away from the hardstops.
+constexpr double kAntiWrapBuffer = 0.2;
+
+constexpr double kTurretRange = constants::Values::kTurretRange().range();
+static_assert((kTurretRange - 2.0 * kAntiWrapBuffer) > 2.0 * M_PI,
+              "kAntiWrap buffer should be small enough that we still have 360 "
+              "degrees of range.");
 
 Pose ReverseSideOfField(Pose target) {
   *target.mutable_pos() *= -1;
@@ -74,10 +86,7 @@ Pose OuterPortPose(aos::Alliance alliance) {
 
 Aimer::Aimer() : goal_(MakePrefilledGoal()) {}
 
-void Aimer::Update(const Status *status, aos::Alliance alliance) {
-  // This doesn't do anything intelligent with wrapping--it just produces a
-  // result in the range (-pi, pi] rather than taking advantage of the turret's
-  // full range.
+void Aimer::Update(const Status *status, aos::Alliance alliance, Mode mode) {
   const Pose robot_pose({status->x(), status->y(), 0}, status->theta());
   const Pose inner_port = InnerPortPose(alliance);
   const Pose outer_port = OuterPortPose(alliance);
@@ -119,7 +128,24 @@ void Aimer::Update(const Status *status, aos::Alliance alliance) {
   // dheading / dt = (rel_x * rel_y' - rel_y * rel_x') / (rel_x^2 + rel_y^2) - dtheta / dt
   const double dheading_dt = atan_diff - linear_angular(1);
 
-  goal_.mutable_message()->mutate_unsafe_goal(heading_to_goal);
+  double range = kTurretRange;
+  if (mode == Mode::kAvoidEdges) {
+    range -= 2.0 * kAntiWrapBuffer;
+  }
+  // Calculate a goal turret heading such that it is within +/- pi of the
+  // current position (i.e., a goal that would minimize the amount the turret
+  // would have to travel).
+  // We then check if this goal would bring us out of range of the valid angles,
+  // and if it would, we reset to be within +/- pi of zero.
+  double turret_heading = goal_.message().unsafe_goal() +
+                          aos::math::NormalizeAngle(
+                              heading_to_goal - goal_.message().unsafe_goal());
+  if (std::abs(turret_heading - constants::Values::kTurretRange().middle()) >
+      range / 2.0) {
+    turret_heading = aos::math::NormalizeAngle(turret_heading);
+  }
+
+  goal_.mutable_message()->mutate_unsafe_goal(turret_heading);
   goal_.mutable_message()->mutate_goal_velocity(dheading_dt);
 }
 
