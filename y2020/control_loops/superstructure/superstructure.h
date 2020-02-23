@@ -3,6 +3,7 @@
 
 #include "aos/controls/control_loop.h"
 #include "aos/events/event_loop.h"
+#include "aos/robot_state/joystick_state_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2020/constants.h"
 #include "y2020/control_loops/superstructure/shooter/shooter.h"
@@ -51,6 +52,7 @@ class Superstructure
 
   aos::Fetcher<frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
+  aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
 
   Climber climber_;
   DISALLOW_COPY_AND_ASSIGN(Superstructure);

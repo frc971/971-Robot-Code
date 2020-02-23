@@ -31,6 +31,8 @@ table AimerStatus {
   turret_position:double;
   // The current goal velocity for the turret, in radians / sec.
   turret_velocity:double;
+  // Whether we are currently aiming for the inner port.
+  aiming_for_inner_port:bool;
 }
 
 table Status {

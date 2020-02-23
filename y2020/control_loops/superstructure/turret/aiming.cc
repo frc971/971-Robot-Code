@@ -1,6 +1,5 @@
 #include "y2020/control_loops/superstructure/turret/aiming.h"
 
-#include "frc971/control_loops/pose.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
 namespace y2020 {
@@ -11,6 +10,36 @@ namespace turret {
 using frc971::control_loops::Pose;
 
 namespace {
+// The overall length and width of the field, in meters.
+constexpr double kFieldLength = 15.983;
+constexpr double kFieldWidth = 8.212;
+// Height of the center of the port(s) above the ground, in meters.
+constexpr double kPortHeight = 2.494;
+
+// Maximum shot angle at which we will attempt to make the shot into the inner
+// port, in radians. Zero would imply that we could only shoot if we were
+// exactly perpendicular to the target. Larger numbers allow us to aim at the
+// inner port more aggressively, at the risk of being more likely to miss the
+// outer port entirely.
+constexpr double kMaxInnerPortAngle = 20.0 * M_PI / 180.0;
+
+// Distance (in meters) from the edge of the field to the port.
+constexpr double kEdgeOfFieldToPort = 2.404;
+
+// The amount (in meters) that the inner port is set back from the outer port.
+constexpr double kInnerPortBackset = 0.743;
+
+// Minimum distance that we must be from the inner port in order to attempt the
+// shot--this is to account for the fact that if we are too close to the target,
+// then we won't have a clear shot on the inner port.
+constexpr double kMinimumInnerPortShotDistance = 4.0;
+
+Pose ReverseSideOfField(Pose target) {
+  *target.mutable_pos() *= -1;
+  target.set_theta(aos::math::NormalizeAngle(target.rel_theta() + M_PI));
+  return target;
+}
+
 flatbuffers::DetachedBuffer MakePrefilledGoal() {
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
@@ -23,20 +52,46 @@ flatbuffers::DetachedBuffer MakePrefilledGoal() {
 }
 }  // namespace
 
+Pose InnerPortPose(aos::Alliance alliance) {
+  const Pose target({kFieldLength / 2 + kInnerPortBackset,
+                     -kFieldWidth / 2.0 + kEdgeOfFieldToPort, kPortHeight},
+                    0.0);
+  if (alliance == aos::Alliance::kRed) {
+    return ReverseSideOfField(target);
+  }
+  return target;
+}
+
+Pose OuterPortPose(aos::Alliance alliance) {
+  Pose target(
+      {kFieldLength / 2, -kFieldWidth / 2.0 + kEdgeOfFieldToPort, kPortHeight},
+      0.0);
+  if (alliance == aos::Alliance::kRed) {
+    return ReverseSideOfField(target);
+  }
+  return target;
+}
+
 Aimer::Aimer() : goal_(MakePrefilledGoal()) {}
 
-void Aimer::Update(const Status *status) {
-  // For now, just do enough to keep the turret pointed straight towards (0, 0).
-  // Don't worry about properly handling shooting on the fly--just try to keep
-  // the turret pointed straight towards one target.
-  // This also doesn't do anything intelligent with wrapping--it just produces a
+void Aimer::Update(const Status *status, aos::Alliance alliance) {
+  // This doesn't do anything intelligent with wrapping--it just produces a
   // result in the range (-pi, pi] rather than taking advantage of the turret's
   // full range.
-  Pose goal({0, 0, 0}, 0);
   const Pose robot_pose({status->x(), status->y(), 0}, status->theta());
-  goal = goal.Rebase(&robot_pose);
+  const Pose inner_port = InnerPortPose(alliance);
+  const Pose outer_port = OuterPortPose(alliance);
+  const Pose robot_pose_from_inner_port = robot_pose.Rebase(&inner_port);
+  const double inner_port_angle = robot_pose_from_inner_port.heading();
+  const double inner_port_distance = robot_pose_from_inner_port.xy_norm();
+  aiming_for_inner_port_ =
+      (std::abs(inner_port_angle) < kMaxInnerPortAngle) &&
+      (inner_port_distance > kMinimumInnerPortShotDistance);
+  const Pose goal =
+      (aiming_for_inner_port_ ? inner_port : outer_port).Rebase(&robot_pose);
   const double heading_to_goal = goal.heading();
   CHECK(status->has_localizer());
+  distance_ = goal.xy_norm();
   // TODO(james): This code should probably just be in the localizer and have
   // xdot/ydot get populated in the status message directly... that way we don't
   // keep duplicating this math.
@@ -73,6 +128,7 @@ flatbuffers::Offset<AimerStatus> Aimer::PopulateStatus(
   AimerStatus::Builder builder(*fbb);
   builder.add_turret_position(goal_.message().unsafe_goal());
   builder.add_turret_velocity(goal_.message().goal_velocity());
+  builder.add_aiming_for_inner_port(aiming_for_inner_port_);
   return builder.Finish();
 }
 

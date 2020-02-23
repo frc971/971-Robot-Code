@@ -18,7 +18,9 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       turret_(constants::GetValues().turret.subsystem_params),
       drivetrain_status_fetcher_(
           event_loop->MakeFetcher<frc971::control_loops::drivetrain::Status>(
-              "/drivetrain")) {
+              "/drivetrain")),
+      joystick_state_fetcher_(
+          event_loop->MakeFetcher<aos::JoystickState>("/aos")) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
@@ -37,7 +39,11 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       event_loop()->context().monotonic_event_time;
 
   if (drivetrain_status_fetcher_.Fetch()) {
-    aimer_.Update(drivetrain_status_fetcher_.get());
+    aos::Alliance alliance = aos::Alliance::kInvalid;
+    if (joystick_state_fetcher_.Fetch()) {
+      alliance = joystick_state_fetcher_->alliance();
+    }
+    aimer_.Update(drivetrain_status_fetcher_.get(), alliance);
   }
 
   const flatbuffers::Offset<AimerStatus> aimer_status_offset =

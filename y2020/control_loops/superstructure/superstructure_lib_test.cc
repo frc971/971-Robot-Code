@@ -388,6 +388,8 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
             test_event_loop_->MakeFetcher<Position>("/superstructure")),
         drivetrain_status_sender_(
             test_event_loop_->MakeSender<DrivetrainStatus>("/drivetrain")),
+        joystick_state_sender_(
+            test_event_loop_->MakeSender<aos::JoystickState>("/aos")),
         superstructure_event_loop_(MakeEventLoop("superstructure", roborio_)),
         superstructure_(superstructure_event_loop_.get()),
         superstructure_plant_event_loop_(MakeEventLoop("plant", roborio_)),
@@ -497,6 +499,7 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
   ::aos::Fetcher<Output> superstructure_output_fetcher_;
   ::aos::Fetcher<Position> superstructure_position_fetcher_;
   ::aos::Sender<DrivetrainStatus> drivetrain_status_sender_;
+  ::aos::Sender<aos::JoystickState> joystick_state_sender_;
 
   // Create a control loop and simulation.
   ::std::unique_ptr<::aos::EventLoop> superstructure_event_loop_;
@@ -817,13 +820,30 @@ TEST_F(SuperstructureTest, Climber) {
   VerifyNearGoal();
 }
 
+class SuperstructureAllianceTest
+    : public SuperstructureTest,
+      public ::testing::WithParamInterface<aos::Alliance> {};
+
 // Tests that the turret switches to auto-aiming when we set turret_tracking to
 // true.
-TEST_F(SuperstructureTest, TurretAutoAim) {
+TEST_P(SuperstructureAllianceTest, TurretAutoAim) {
   SetEnabled(true);
   // Set a reasonable goal.
+  const frc971::control_loops::Pose target = turret::OuterPortPose(GetParam());
 
   WaitUntilZeroed();
+
+  constexpr double kShotAngle = 1.0;
+  {
+    auto builder = joystick_state_sender_.MakeBuilder();
+
+    aos::JoystickState::Builder joystick_builder =
+        builder.MakeBuilder<aos::JoystickState>();
+
+    joystick_builder.add_alliance(GetParam());
+
+    ASSERT_TRUE(builder.Send(joystick_builder.Finish()));
+  }
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
@@ -833,6 +853,7 @@ TEST_F(SuperstructureTest, TurretAutoAim) {
 
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
+
   {
     auto builder = drivetrain_status_sender_.MakeBuilder();
 
@@ -846,8 +867,9 @@ TEST_F(SuperstructureTest, TurretAutoAim) {
     DrivetrainStatus::Builder status_builder =
         builder.MakeBuilder<DrivetrainStatus>();
 
-    status_builder.add_x(0.0);
-    status_builder.add_y(1.0);
+    // Set the robot up at kShotAngle off from the target, 1m away.
+    status_builder.add_x(target.abs_pos().x() + std::cos(kShotAngle));
+    status_builder.add_y(target.abs_pos().y() + std::sin(kShotAngle));
     status_builder.add_theta(0.0);
     status_builder.add_localizer(localizer_offset);
 
@@ -858,13 +880,18 @@ TEST_F(SuperstructureTest, TurretAutoAim) {
   RunFor(chrono::seconds(1));
 
   superstructure_status_fetcher_.Fetch();
-  EXPECT_FLOAT_EQ(-M_PI_2,
+  EXPECT_FLOAT_EQ(kShotAngle - M_PI,
                   superstructure_status_fetcher_->turret()->position());
-  EXPECT_FLOAT_EQ(-M_PI_2,
+  EXPECT_FLOAT_EQ(kShotAngle - M_PI,
                   superstructure_status_fetcher_->aimer()->turret_position());
   EXPECT_FLOAT_EQ(0,
                   superstructure_status_fetcher_->aimer()->turret_velocity());
 }
+
+INSTANTIATE_TEST_CASE_P(ShootAnyAlliance, SuperstructureAllianceTest,
+                        ::testing::Values(aos::Alliance::kRed,
+                                          aos::Alliance::kBlue,
+                                          aos::Alliance::kInvalid));
 
 }  // namespace testing
 }  // namespace superstructure
