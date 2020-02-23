@@ -101,7 +101,9 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
             aos::configuration::ReadConfig(
                 "y2020/control_loops/drivetrain/simulation_config.json"),
             GetTest2020DrivetrainConfig().dt),
-        test_event_loop_(MakeEventLoop("test")),
+        roborio_(aos::configuration::GetNode(configuration(), "roborio")),
+        pi1_(aos::configuration::GetNode(configuration(), "pi1")),
+        test_event_loop_(MakeEventLoop("test", roborio_)),
         drivetrain_goal_sender_(
             test_event_loop_->MakeSender<Goal>("/drivetrain")),
         drivetrain_goal_fetcher_(
@@ -111,13 +113,14 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
         superstructure_status_sender_(
             test_event_loop_->MakeSender<superstructure::Status>(
                 "/superstructure")),
-        drivetrain_event_loop_(MakeEventLoop("drivetrain")),
+        drivetrain_event_loop_(MakeEventLoop("drivetrain", roborio_)),
         dt_config_(GetTest2020DrivetrainConfig()),
+        pi1_event_loop_(MakeEventLoop("test", pi1_)),
         camera_sender_(
-            test_event_loop_->MakeSender<ImageMatchResult>("/camera")),
+            pi1_event_loop_->MakeSender<ImageMatchResult>("/pi1/camera")),
         localizer_(drivetrain_event_loop_.get(), dt_config_),
         drivetrain_(dt_config_, drivetrain_event_loop_.get(), &localizer_),
-        drivetrain_plant_event_loop_(MakeEventLoop("plant")),
+        drivetrain_plant_event_loop_(MakeEventLoop("plant", roborio_)),
         drivetrain_plant_(drivetrain_plant_event_loop_.get(), dt_config_),
         last_frame_(monotonic_now()) {
     set_team_id(frc971::control_loops::testing::kTeamNumber);
@@ -127,7 +130,7 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
     if (!FLAGS_output_file.empty()) {
       log_buffer_writer_ = std::make_unique<aos::logger::DetachedBufferWriter>(
           FLAGS_output_file);
-      logger_event_loop_ = MakeEventLoop("logger");
+      logger_event_loop_ = MakeEventLoop("logger", roborio_);
       logger_ = std::make_unique<aos::logger::Logger>(log_buffer_writer_.get(),
                                                       logger_event_loop_.get());
     }
@@ -290,6 +293,9 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
     }
   }
 
+  const aos::Node *const roborio_;
+  const aos::Node *const pi1_;
+
   std::unique_ptr<aos::EventLoop> test_event_loop_;
   aos::Sender<Goal> drivetrain_goal_sender_;
   aos::Fetcher<Goal> drivetrain_goal_fetcher_;
@@ -300,6 +306,7 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
   const frc971::control_loops::drivetrain::DrivetrainConfig<double>
       dt_config_;
 
+  std::unique_ptr<aos::EventLoop> pi1_event_loop_;
   aos::Sender<ImageMatchResult> camera_sender_;
 
   Localizer localizer_;

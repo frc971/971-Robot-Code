@@ -32,8 +32,29 @@ class RawMessageDelayer {
 
   // Kicks us to re-fetch and schedule the timer.
   void Schedule() {
-    if (fetcher_->context().data == nullptr || sent_) {
-      sent_ = !fetcher_->FetchNext();
+    // Keep pulling messages out of the fetcher until we find one in the future.
+    while (true) {
+      if (fetcher_->context().data == nullptr || sent_) {
+        sent_ = !fetcher_->FetchNext();
+      }
+      if (sent_) {
+        break;
+      }
+      if (fetcher_->context().monotonic_event_time +
+              send_node_factory_->network_delay() +
+              send_node_factory_->send_delay() >
+          fetch_node_factory_->monotonic_now()) {
+        break;
+      }
+
+      // TODO(austin): Not cool.  We want to actually forward these.  This means
+      // we need a more sophisticated concept of what is running.
+      LOG(WARNING) << "Not forwarding message on "
+                   << configuration::CleanedChannelToString(fetcher_->channel())
+                   << " because we aren't running.  Set at "
+                   << fetcher_->context().monotonic_event_time << " now is "
+                   << fetch_node_factory_->monotonic_now();
+      sent_ = true;
     }
 
     if (fetcher_->context().data == nullptr) {

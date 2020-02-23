@@ -46,8 +46,10 @@ class DrivetrainReplayTest : public ::testing::Test {
                               "frc971.control_loops.drivetrain.Output");
     reader_.Register();
 
+    roborio_ = aos::configuration::GetNode(reader_.configuration(), "roborio");
+
     drivetrain_event_loop_ =
-        reader_.event_loop_factory()->MakeEventLoop("drivetrain");
+        reader_.event_loop_factory()->MakeEventLoop("drivetrain", roborio_);
     drivetrain_event_loop_->SkipTimingReport();
 
     localizer_ =
@@ -59,13 +61,14 @@ class DrivetrainReplayTest : public ::testing::Test {
             localizer_.get());
 
     test_event_loop_ =
-        reader_.event_loop_factory()->MakeEventLoop("drivetrain");
+        reader_.event_loop_factory()->MakeEventLoop("drivetrain", roborio_);
     status_fetcher_ = test_event_loop_->MakeFetcher<
         frc971::control_loops::drivetrain::Status>("/drivetrain");
   }
 
   const aos::FlatbufferDetachedBuffer<aos::Configuration> config_;
   aos::logger::LogReader reader_;
+  const aos::Node *roborio_;
 
   std::unique_ptr<aos::EventLoop> drivetrain_event_loop_;
   std::unique_ptr<frc971::control_loops::drivetrain::DeadReckonEkf> localizer_;

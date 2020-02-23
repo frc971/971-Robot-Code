@@ -42,7 +42,7 @@ Localizer::Localizer(
 
   image_fetchers_.emplace_back(
       event_loop_->MakeFetcher<frc971::vision::sift::ImageMatchResult>(
-          "/camera"));
+          "/pi1/camera"));
 
   target_selector_.set_has_target(false);
 }

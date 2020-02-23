@@ -299,17 +299,29 @@ LogReader::LogReader(const std::vector<std::vector<std::string>> &filenames,
       replay_configuration_(replay_configuration) {
   MakeRemappedConfig();
 
+  if (replay_configuration) {
+    CHECK_EQ(configuration::MultiNode(configuration()),
+             configuration::MultiNode(replay_configuration))
+        << ": Log file and replay config need to both be multi or single node.";
+  }
+
   if (!configuration::MultiNode(configuration())) {
     states_.emplace_back(std::make_unique<State>());
     State *state = states_[0].get();
 
     state->channel_merger = std::make_unique<ChannelMerger>(filenames);
   } else {
+    if (replay_configuration) {
+      CHECK_EQ(configuration()->nodes()->size(),
+               replay_configuration->nodes()->size())
+          << ": Log file and replay config need to have matching nodes lists.";
+    }
     states_.resize(configuration()->nodes()->size());
   }
 }
 
-LogReader::~LogReader() { Deregister();
+LogReader::~LogReader() {
+  Deregister();
   if (offset_fp_ != nullptr) {
     fclose(offset_fp_);
   }
@@ -657,7 +669,7 @@ void LogReader::Register(EventLoop *event_loop) {
   event_loop->SkipTimingReport();
   event_loop->SkipAosLog();
 
-  state->channel_merger->SetNode(event_loop->node());
+  const bool has_data = state->channel_merger->SetNode(event_loop->node());
 
   state->channels.resize(logged_configuration()->channels()->size());
   state->filters.resize(state->channels.size());
@@ -685,9 +697,16 @@ void LogReader::Register(EventLoop *event_loop) {
     }
   }
 
+  // If we didn't find any log files with data in them, we won't ever get a
+  // callback or be live.  So skip the rest of the setup.
+  if (!has_data) {
+    return;
+  }
+
   state->timer_handler = event_loop->AddTimer([this, state]() {
     if (state->channel_merger->OldestMessage() == monotonic_clock::max_time) {
       --live_nodes_;
+      VLOG(1) << "Node down!";
       if (live_nodes_ == 0) {
         event_loop_factory_->Exit();
       }
@@ -860,8 +879,10 @@ void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
 
 void LogReader::MakeRemappedConfig() {
   for (std::unique_ptr<State> &state : states_) {
-    CHECK(!state->event_loop)
-        << ": Can't change the mapping after the events are scheduled.";
+    if (state) {
+      CHECK(!state->event_loop)
+          << ": Can't change the mapping after the events are scheduled.";
+    }
   }
 
   // If no remapping occurred and we are using the original config, then there

@@ -5,6 +5,7 @@
       /* Channel providing the true state of the drivetrain in simulation. */
       "name": "/drivetrain/truth",
       "type": "frc971.control_loops.drivetrain.Status",
+      "source_node": "roborio",
       "frequency": 200,
       "max_size": 2000
     }

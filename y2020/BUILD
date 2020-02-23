@@ -10,9 +10,11 @@ robot_downloader(
     start_binaries = [
         ":joystick_reader",
         ":wpilib_interface",
+        "//aos/network:message_bridge_client",
+        "//aos/network:message_bridge_server",
+        "//y2020/actors:binaries",
         "//y2020/control_loops/drivetrain:drivetrain",
         "//y2020/control_loops/superstructure:superstructure",
-        "//y2020/actors:binaries",
     ],
 )
 
@@ -110,13 +112,16 @@ aos_config(
     name = "config",
     src = "y2020.json",
     flatbuffers = [
+        "//aos/network:message_bridge_client_fbs",
+        "//aos/network:message_bridge_server_fbs",
+        "//aos/network:timestamp_fbs",
+        "//y2019/control_loops/drivetrain:target_selector_fbs",
         "//y2020/control_loops/superstructure:superstructure_goal_fbs",
         "//y2020/control_loops/superstructure:superstructure_output_fbs",
         "//y2020/control_loops/superstructure:superstructure_position_fbs",
-        "//y2019/control_loops/drivetrain:target_selector_fbs",
         "//y2020/control_loops/superstructure:superstructure_status_fbs",
-        "//y2020/vision:vision_fbs",
         "//y2020/vision/sift:sift_fbs",
+        "//y2020/vision:vision_fbs",
     ],
     visibility = ["//visibility:public"],
     deps = [

@@ -1048,6 +1048,12 @@ TimestampMerger::DeliveryTimestamp ChannelMerger::OldestTimestamp() const {
 
 TimestampMerger::DeliveryTimestamp ChannelMerger::OldestTimestampForChannel(
     int channel) const {
+  // If we didn't find any data for this node, we won't have any mergers. Return
+  // an invalid timestamp in that case.
+  if (timestamp_mergers_.size() <= static_cast<size_t>(channel)) {
+    TimestampMerger::DeliveryTimestamp result;
+    return result;
+  }
   return timestamp_mergers_[channel].OldestTimestamp();
 }
 
