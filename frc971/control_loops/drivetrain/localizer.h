@@ -36,9 +36,10 @@ class TargetSelectorInterface {
 
 // Defines an interface for classes that provide field-global localization.
 class LocalizerInterface {
+ public:
   typedef HybridEkf<double> Ekf;
   typedef typename Ekf::StateIdx StateIdx;
- public:
+
   // Perform a single step of the filter, using the information that is
   // available on every drivetrain iteration.
   // The user should pass in the U that the real system experienced from the
@@ -124,9 +125,6 @@ class TrivialTargetSelector : public TargetSelectorInterface {
 // This provides no method for using cameras or the such to get global
 // measurements and just assumes that you can dead-reckon perfectly.
 class DeadReckonEkf : public LocalizerInterface {
-  typedef HybridEkf<double> Ekf;
-  typedef typename Ekf::StateIdx StateIdx;
-
  public:
   DeadReckonEkf(::aos::EventLoop *event_loop,
                 const DrivetrainConfig<double> &dt_config)
