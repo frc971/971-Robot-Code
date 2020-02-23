@@ -229,7 +229,7 @@ SingleDOFProfiledSubsystem<ZeroingEstimator>::SingleDOFProfiledSubsystem(
     double default_acceleration)
     : ProfiledSubsystem<3, 1, ZeroingEstimator>(
           ::std::move(loop), {{ZeroingEstimator(zeroing_constants)}}),
-      profile_(::aos::controls::kLoopFrequency),
+      profile_(this->loop_->plant().coefficients().dt),
       range_(range),
       default_velocity_(default_velocity),
       default_acceleration_(default_acceleration) {
@@ -275,7 +275,7 @@ StatusTypeBuilder SingleDOFProfiledSubsystem<ZeroingEstimator>::BuildStatus(
   builder.add_voltage_error(this->X_hat(2, 0));
   builder.add_calculated_velocity(
       (position() - last_position_) /
-      ::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency));
+      ::aos::time::DurationInSeconds(this->loop_->plant().coefficients().dt));
 
   builder.add_estimator_state(estimator_state);
 
