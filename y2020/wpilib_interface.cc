@@ -166,20 +166,18 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
   // Shooter
-
-  void set_flywheel_encoder(::std::unique_ptr<frc::Encoder> encoder) {
+  void set_finisher_encoder(::std::unique_ptr<frc::Encoder> encoder) {
     fast_encoder_filter_.Add(encoder.get());
-    flywheel_encoder_ = ::std::move(encoder);
+    finisher_encoder_ = ::std::move(encoder);
+  }
+  void set_left_accelerator_encoder(::std::unique_ptr<frc::Encoder> encoder) {
+    fast_encoder_filter_.Add(encoder.get());
+    left_accelerator_encoder_ = ::std::move(encoder);
   }
 
-  void set_left_kicker_encoder(::std::unique_ptr<frc::Encoder> encoder) {
+  void set_right_accelerator_encoder(::std::unique_ptr<frc::Encoder> encoder) {
     fast_encoder_filter_.Add(encoder.get());
-    left_kicker_encoder_ = ::std::move(encoder);
-  }
-
-  void set_right_kicker_encoder(::std::unique_ptr<frc::Encoder> encoder) {
-    fast_encoder_filter_.Add(encoder.get());
-    right_kicker_encoder_ = ::std::move(encoder);
+    right_accelerator_encoder_ = ::std::move(encoder);
   }
 
   // Control Panel
@@ -251,16 +249,16 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       // Shooter
       y2020::control_loops::superstructure::ShooterPositionT shooter;
       shooter.theta_finisher =
-          encoder_translate(flywheel_encoder_->GetRaw(),
+          encoder_translate(finisher_encoder_->GetRaw(),
                             Values::kFinisherEncoderCountsPerRevolution(),
                             Values::kFinisherEncoderRatio());
-      // TODO; check sign
+
       shooter.theta_accelerator_left =
-          encoder_translate(left_kicker_encoder_->GetRaw(),
+          encoder_translate(-left_accelerator_encoder_->GetRaw(),
                             Values::kAcceleratorEncoderCountsPerRevolution(),
                             Values::kAcceleratorEncoderRatio());
       shooter.theta_accelerator_right =
-          encoder_translate(right_kicker_encoder_->GetRaw(),
+          encoder_translate(right_accelerator_encoder_->GetRaw(),
                             Values::kAcceleratorEncoderCountsPerRevolution(),
                             Values::kAcceleratorEncoderRatio());
       flatbuffers::Offset<y2020::control_loops::superstructure::ShooterPosition>
@@ -314,8 +312,9 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   ::frc971::wpilib::AbsoluteEncoder hood_encoder_, intake_joint_encoder_;
 
-  ::std::unique_ptr<::frc::Encoder> flywheel_encoder_, left_kicker_encoder_,
-      right_kicker_encoder_, control_panel_encoder_;
+  ::std::unique_ptr<::frc::Encoder> finisher_encoder_,
+      left_accelerator_encoder_, right_accelerator_encoder_,
+      control_panel_encoder_;
 
   ::std::array<::std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 
@@ -361,16 +360,16 @@ class SuperstructureWriter
     washing_machine_control_panel_victor_ = ::std::move(t);
   }
 
-  void set_kicker_left_falcon(::std::unique_ptr<::frc::TalonFX> t) {
-    kicker_left_falcon_ = ::std::move(t);
+  void set_accelerator_left_falcon(::std::unique_ptr<::frc::TalonFX> t) {
+    accelerator_left_falcon_ = ::std::move(t);
   }
 
-  void set_kicker_right_falcon(::std::unique_ptr<::frc::TalonFX> t) {
-    kicker_right_falcon_ = ::std::move(t);
+  void set_accelerator_right_falcon(::std::unique_ptr<::frc::TalonFX> t) {
+    accelerator_right_falcon_ = ::std::move(t);
   }
 
   void set_flywheel_falcon(::std::unique_ptr<::frc::TalonFX> t) {
-    flywheel_falcon_ = ::std::move(t);
+    finisher_falcon_ = ::std::move(t);
   }
 
   void set_climber_falcon(
@@ -383,54 +382,55 @@ class SuperstructureWriter
 
  private:
   void Write(const superstructure::Output &output) override {
-    hood_victor_->SetSpeed(std::clamp(output.hood_voltage(), -kMaxBringupPower,
-                                       kMaxBringupPower) /
-                           12.0);
+    hood_victor_->SetSpeed(
+        std::clamp(output.hood_voltage(), -kMaxBringupPower, kMaxBringupPower) /
+        12.0);
 
-    intake_joint_victor_->SetSpeed(std::clamp(output.intake_joint_voltage(),
-                                               -kMaxBringupPower,
-                                               kMaxBringupPower) /
+    intake_joint_victor_->SetSpeed(std::clamp(-output.intake_joint_voltage(),
+                                              -kMaxBringupPower,
+                                              kMaxBringupPower) /
                                    12.0);
 
     intake_roller_falcon_->Set(
         ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
-        std::clamp(output.intake_roller_voltage(), -kMaxBringupPower,
-                    kMaxBringupPower) /
+        std::clamp(-output.intake_roller_voltage(), -kMaxBringupPower,
+                   kMaxBringupPower) /
             12.0);
 
-    turret_victor_->SetSpeed(std::clamp(output.turret_voltage(),
-                                         -kMaxBringupPower, kMaxBringupPower) /
+    turret_victor_->SetSpeed(std::clamp(-output.turret_voltage(),
+                                        -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
 
     feeder_falcon_->SetSpeed(std::clamp(output.feeder_voltage(),
-                                         -kMaxBringupPower, kMaxBringupPower) /
+                                        -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
 
     washing_machine_control_panel_victor_->SetSpeed(
-        std::clamp(output.washing_machine_spinner_voltage(), -kMaxBringupPower,
-                    kMaxBringupPower) /
+        std::clamp(-output.washing_machine_spinner_voltage(), -kMaxBringupPower,
+                   kMaxBringupPower) /
         12.0);
 
-    kicker_left_falcon_->SetSpeed(std::clamp(output.accelerator_left_voltage(),
-                                              -kMaxBringupPower,
-                                              kMaxBringupPower) /
-                                  12.0);
+    accelerator_left_falcon_->SetSpeed(
+        std::clamp(-output.accelerator_left_voltage(), -kMaxBringupPower,
+                   kMaxBringupPower) /
+        12.0);
 
-    kicker_right_falcon_->SetSpeed(
+    accelerator_right_falcon_->SetSpeed(
         std::clamp(output.accelerator_right_voltage(), -kMaxBringupPower,
-                    kMaxBringupPower) /
+                   kMaxBringupPower) /
         12.0);
 
-    flywheel_falcon_->SetSpeed(std::clamp(output.finisher_voltage(),
-                                           -kMaxBringupPower,
-                                           kMaxBringupPower) /
+    finisher_falcon_->SetSpeed(std::clamp(output.finisher_voltage(),
+                                          -kMaxBringupPower, kMaxBringupPower) /
                                12.0);
 
-    climber_falcon_->Set(
-        ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
-        std::clamp(output.climber_voltage(), -kMaxBringupPower,
-                    kMaxBringupPower) /
-            12.0);
+    if (climber_falcon_) {
+      climber_falcon_->Set(
+          ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
+          std::clamp(output.climber_voltage(), -kMaxBringupPower,
+                     kMaxBringupPower) /
+              12.0);
+    }
   }
 
   void Stop() override {
@@ -440,16 +440,16 @@ class SuperstructureWriter
     turret_victor_->SetDisabled();
     feeder_falcon_->SetDisabled();
     washing_machine_control_panel_victor_->SetDisabled();
-    kicker_left_falcon_->SetDisabled();
-    kicker_right_falcon_->SetDisabled();
-    flywheel_falcon_->SetDisabled();
+    accelerator_left_falcon_->SetDisabled();
+    accelerator_right_falcon_->SetDisabled();
+    finisher_falcon_->SetDisabled();
   }
 
   ::std::unique_ptr<::frc::VictorSP> hood_victor_, intake_joint_victor_,
       turret_victor_, washing_machine_control_panel_victor_;
 
-  ::std::unique_ptr<::frc::TalonFX> feeder_falcon_, kicker_left_falcon_,
-      kicker_right_falcon_, flywheel_falcon_;
+  ::std::unique_ptr<::frc::TalonFX> feeder_falcon_, accelerator_left_falcon_,
+      accelerator_right_falcon_, finisher_falcon_;
 
   ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
       intake_roller_falcon_, climber_falcon_;
@@ -534,23 +534,23 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)), false);
 
     SuperstructureWriter superstructure_writer(&output_event_loop);
-    // TODO: check ports
-    superstructure_writer.set_hood_victor(make_unique<frc::VictorSP>(2));
+    superstructure_writer.set_hood_victor(make_unique<frc::VictorSP>(8));
     superstructure_writer.set_intake_joint_victor(
-        make_unique<frc::VictorSP>(3));
+        make_unique<frc::VictorSP>(2));
     superstructure_writer.set_intake_roller_falcon(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(4));
-    superstructure_writer.set_turret_victor(make_unique<frc::VictorSP>(5));
+        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(0));
+    superstructure_writer.set_turret_victor(make_unique<frc::VictorSP>(7));
     superstructure_writer.set_feeder_falcon(make_unique<frc::TalonFX>(6));
     superstructure_writer.set_washing_machine_control_panel_victor(
-        make_unique<frc::VictorSP>(7));
-    superstructure_writer.set_kicker_left_falcon(
-        make_unique<::frc::TalonFX>(8));
-    superstructure_writer.set_kicker_right_falcon(
-        make_unique<::frc::TalonFX>(9));
-    superstructure_writer.set_flywheel_falcon(make_unique<::frc::TalonFX>(10));
-    superstructure_writer.set_climber_falcon(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(11));
+        make_unique<frc::VictorSP>(3));
+    superstructure_writer.set_accelerator_left_falcon(
+        make_unique<::frc::TalonFX>(5));
+    superstructure_writer.set_accelerator_right_falcon(
+        make_unique<::frc::TalonFX>(4));
+    superstructure_writer.set_flywheel_falcon(make_unique<::frc::TalonFX>(9));
+    // TODO: check port
+    //superstructure_writer.set_climber_falcon(
+        //make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(11));
 
     AddLoop(&output_event_loop);
 
