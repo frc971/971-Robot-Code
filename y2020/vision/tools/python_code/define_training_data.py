@@ -5,28 +5,32 @@ import math
 import numpy as np
 import time
 
-import field_display
 import train_and_match as tam
 
 # Points for current polygon
 point_list = []
-current_mouse = (0,0)
+current_mouse = (0, 0)
+
 
 def get_mouse_event(event, x, y, flags, param):
     global point_list
     global current_mouse
-    current_mouse = (x,y)
+    current_mouse = (x, y)
     if event == cv2.EVENT_LBUTTONUP:
         #print("Adding point at %d, %d" % (x,y))
-        point_list.append([x,y])
+        point_list.append([x, y])
+    pass
 
-def draw_polygon(image, polygon, color=(255,0,0), close_polygon = False):
+
+def draw_polygon(image, polygon, color=(255, 0, 0), close_polygon=False):
     for point in polygon:
-        image = cv2.circle(image, (point[0], point[1]), 5, (255,0,0), -1)
-    if len(polygon) > 1:
+        image = cv2.circle(image, (point[0], point[1]), 5, (255, 0, 0), -1)
+    if (len(polygon) > 1):
         np_poly = np.array(polygon)
-        image = cv2.polylines(image, [np_poly], close_polygon, color, thickness=3)
+        image = cv2.polylines(
+            image, [np_poly], close_polygon, color, thickness=3)
     return image
+
 
 # Close out polygon, return True if size is 3 or more points
 def finish_polygon(image, polygon):
@@ -36,7 +40,7 @@ def finish_polygon(image, polygon):
         return False
 
     point_list.append(point_list[0])
-    image = draw_polygon(image, point_list, color=(0,0,255))
+    image = draw_polygon(image, point_list, color=(0, 0, 255))
     cv2.imshow("image", image)
     cv2.waitKey(500)
     return True
@@ -99,14 +103,23 @@ def define_points_by_list(image, points):
     cv2.namedWindow("image")
     cv2.setMouseCallback("image", get_mouse_event)
 
-    while len(point_list) < len(points):
+    while (len(point_list) < len(points)):
         i = len(point_list)
         # Draw mouse location and suggested target
         display_image = image.copy()
-        display_image = cv2.circle(display_image, (points[i][0], points[i][1]), 15, (0,255,0), 2)
+        display_image = cv2.circle(display_image, (points[i][0], points[i][1]),
+                                   15, (0, 255, 0), 2)
         cursor_length = 5
-        display_image = cv2.line(display_image, (current_mouse[0]-cursor_length, current_mouse[1]), (current_mouse[0]+cursor_length, current_mouse[1]), (255,0,0), 2, cv2.LINE_AA)
-        display_image = cv2.line(display_image, (current_mouse[0], current_mouse[1]-cursor_length), (current_mouse[0], current_mouse[1]+cursor_length), (255,0,0), 2, cv2.LINE_AA)
+        display_image = cv2.line(
+            display_image,
+            (current_mouse[0] - cursor_length, current_mouse[1]),
+            (current_mouse[0] + cursor_length, current_mouse[1]), (255, 0, 0),
+            2, cv2.LINE_AA)
+        display_image = cv2.line(
+            display_image,
+            (current_mouse[0], current_mouse[1] - cursor_length),
+            (current_mouse[0], current_mouse[1] + cursor_length), (255, 0, 0),
+            2, cv2.LINE_AA)
 
         cv2.imshow("image", display_image)
 
@@ -179,7 +192,7 @@ def compute_reprojection_map(polygon_2d, polygon_3d):
     pts_2d_lstsq = append_ones(pts_2d)
     pts_3d_lstsq = np.asarray(np.float32(polygon_3d)).reshape(-1,3)
 
-    reprojection_map = np.linalg.lstsq(pts_2d_lstsq, pts_3d_lstsq, rcond=None)[0]
+    reprojection_map = np.linalg.lstsq(pts_2d_lstsq, pts_3d_lstsq, rcond=-1)[0]
 
     return reprojection_map
 
@@ -198,19 +211,24 @@ def visualize_reprojections(img, pts_2d, pts_3d, cam_mat, distortion_coeffs):
     # Compute camera location
     # TODO: Warn on bad inliers
     # TODO: Change this to not have to recast to np
-    pts_2d_np = np.asarray(np.float32(pts_2d)).reshape(-1,1,2)
-    pts_3d_np = np.asarray(np.float32(pts_3d)).reshape(-1,1,3)
-    retval, R, T, inliers = cv2.solvePnPRansac(pts_3d_np, pts_2d_np, cam_mat, distortion_coeffs)
-    pts_3d_proj_2d, jac_2d = cv2.projectPoints(pts_3d_np, R, T, cam_mat, distortion_coeffs)
+    pts_2d_np = np.asarray(np.float32(pts_2d)).reshape(-1, 1, 2)
+    pts_3d_np = np.asarray(np.float32(pts_3d)).reshape(-1, 1, 3)
+    retval, R, T, inliers = cv2.solvePnPRansac(pts_3d_np, pts_2d_np, cam_mat,
+                                               distortion_coeffs)
+    pts_3d_proj_2d, jac_2d = cv2.projectPoints(pts_3d_np, R, T, cam_mat,
+                                               distortion_coeffs)
+    if inliers is None:
+        print("WARNING: Didn't get any inliers when reprojecting polygons")
+        return img
     for i in range(len(pts_2d)):
         pt_2d = pts_2d_np[i][0]
         pt_3d_proj = pts_3d_proj_2d[i][0]
-        pt_color =  (0,255,0)
+        pt_color = (0, 255, 0)
         if i not in inliers:
-            pt_color = (0,0,255)
+            pt_color = (0, 0, 255)
 
-        img = cv2.circle(img,(pt_2d[0],pt_2d[1]),3,pt_color,3)
-        img = cv2.circle(img,(pt_3d_proj[0], pt_3d_proj[1]),15,pt_color,3)
+        img = cv2.circle(img, (pt_2d[0], pt_2d[1]), 3, pt_color, 3)
+        img = cv2.circle(img, (pt_3d_proj[0], pt_3d_proj[1]), 15, pt_color, 3)
 
     cv2.imshow("image", img)
     cv2.waitKey(0)

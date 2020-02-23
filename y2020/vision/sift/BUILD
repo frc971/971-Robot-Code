@@ -204,6 +204,7 @@ flatbuffer_py_library(
         "TrainingImage",
         "TrainingData",
     ],
+    visibility = ["//visibility:public"],
 )
 
 flatbuffer_cc_library(

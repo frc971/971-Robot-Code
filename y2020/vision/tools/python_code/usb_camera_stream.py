@@ -14,7 +14,7 @@ while True:
     exp = cap.get(cv2.CAP_PROP_EXPOSURE)
     print("Exposure:", exp)
     # Display the resulting frame
-    cv2.imshow('preview',frame)
+    cv2.imshow('preview', frame)
 
     #Waits for a user input to quit the application
     if cv2.waitKey(1) & 0xFF == ord('q'):
