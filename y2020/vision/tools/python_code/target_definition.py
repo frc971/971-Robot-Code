@@ -89,24 +89,27 @@ def compute_target_definition():
     ideal_target_list = []
     training_target_list = []
 
-    # Some general info about our field and targets
-    # Assume camera centered on target at 1 m above ground and distance of 4.85m
-    field_length = 15.98
+    # Using coordinate system as defined in sift.fbs:
+    # field origin (0, 0, 0) at floor height at center of field
+    # Robot orientation with x-axis pointing towards RED ALLIANCE player station
+    # y-axis to left and z-axis up (right-hand coordinate system)
+    # Thus, the red power port target location will be at (-15.98/2,1.67,0),
+    # with orientation (facing out of the field) of M_PI
+
+    # Field constants
+    field_length = 15.983
     power_port_total_height = 3.10
-    power_port_center_y = 1.67
-    power_port_width = 1.22
-    power_port_bottom_wing_height = 1.88
+    power_port_edge_y = 1.089
+    power_port_width = 1.225
+    power_port_bottom_wing_height = 1.828
     power_port_wing_width = 1.83
-    loading_bay_edge_y = 1.11
-    loading_bay_width = 1.52
-    loading_bay_height = 0.94
+    loading_bay_edge_y = 0.784
+    loading_bay_width = 1.524
+    loading_bay_height = 0.933
+    wing_angle = 20. * math.pi / 180.
 
     # Pick the target center location at halfway between top and bottom of the top panel
-    target_center_height = (
-        power_port_total_height + power_port_bottom_wing_height) / 2.
-
-    # TODO: Still need to figure out what this angle actually is
-    wing_angle = 20. * math.pi / 180.
+    power_port_target_height = (power_port_total_height + power_port_bottom_wing_height) / 2.
 
     ###
     ### Red Power Port
@@ -124,32 +127,31 @@ def compute_target_definition():
 
     # These are "virtual" 3D points based on the expected geometry
     power_port_red_main_panel_polygon_points_3d = [
-        (field_length, -power_port_center_y + power_port_width / 2.,
-         0.), (field_length, -power_port_center_y + power_port_width / 2.,
-               power_port_bottom_wing_height),
-        (field_length,
-         -power_port_center_y + power_port_width / 2. + power_port_wing_width,
+        (-field_length/2., power_port_edge_y, 0.),
+        (-field_length/2., power_port_edge_y,
          power_port_bottom_wing_height),
-        (field_length, -power_port_center_y + power_port_width / 2.,
+        (-field_length/2., power_port_edge_y
+         - power_port_wing_width, power_port_bottom_wing_height),
+        (-field_length/2., power_port_edge_y,
          power_port_total_height),
-        (field_length, -power_port_center_y - power_port_width / 2.,
+        (-field_length/2., power_port_edge_y + power_port_width,
          power_port_total_height),
-        (field_length, -power_port_center_y - power_port_width / 2.,
+        (-field_length/2., power_port_edge_y + power_port_width,
          power_port_bottom_wing_height),
-        (field_length, -power_port_center_y - power_port_width / 2., 0.)
+        (-field_length/2., power_port_edge_y + power_port_width, 0.)
     ]
 
     power_port_red_wing_panel_polygon_points_2d = [(689, 74), (1022, 302),
                                                    (689, 302)]
     # These are "virtual" 3D points based on the expected geometry
     power_port_red_wing_panel_polygon_points_3d = [
-        (field_length, -power_port_center_y - power_port_width / 2.,
+        (-field_length/2., power_port_edge_y + power_port_width,
          power_port_total_height),
-        (field_length - power_port_wing_width * math.sin(wing_angle),
-         -power_port_center_y - power_port_width / 2. -
-         power_port_wing_width * math.cos(wing_angle),
+        (-field_length/2. + power_port_wing_width * math.sin(wing_angle),
+         power_port_edge_y + power_port_width
+         + power_port_wing_width * math.cos(wing_angle),
          power_port_bottom_wing_height),
-        (field_length, -power_port_center_y - power_port_width / 2.,
+        (-field_length/2., power_port_edge_y + power_port_width,
          power_port_bottom_wing_height)
     ]
 
@@ -159,19 +161,16 @@ def compute_target_definition():
     ideal_power_port_red.polygon_list_3d.append(
         power_port_red_main_panel_polygon_points_3d)
 
-    ideal_power_port_red.polygon_list.append(
-        power_port_red_wing_panel_polygon_points_2d)
-    ideal_power_port_red.polygon_list_3d.append(
-        power_port_red_wing_panel_polygon_points_3d)
-
     # Define the pose of the target
     # Location is on the ground, at the center of the target
     # Orientation is with "x" pointing out of the field, and "z" up
     # This way, if robot is facing target directly, the x-axes are aligned
     # and the skew to target is zero
-    ideal_power_port_red.target_rotation = np.identity(3, np.double)
-    ideal_power_port_red.target_position = np.array(
-        [field_length, -power_port_center_y, 0.])
+    ideal_power_port_red.target_rotation = -np.identity(3, np.double)
+    ideal_power_port_red.target_rotation[2][2] = 1.
+    ideal_power_port_red.target_position = np.array([-field_length/2.,
+                                                     power_port_edge_y + power_port_width/2.,
+                                                     power_port_target_height])
 
     # Add the ideal 3D target to our list
     ideal_target_list.append(ideal_power_port_red)
@@ -195,11 +194,10 @@ def compute_target_definition():
 
     # These are "virtual" 3D points based on the expected geometry
     loading_bay_red_polygon_points_3d = [
-        (field_length, loading_bay_edge_y + loading_bay_width, 0.),
-        (field_length, loading_bay_edge_y + loading_bay_width,
-         loading_bay_height), (field_length, loading_bay_edge_y,
-                               loading_bay_height), (field_length,
-                                                     loading_bay_edge_y, 0.)
+        (field_length/2., loading_bay_edge_y + loading_bay_width, 0.),
+        (field_length/2., loading_bay_edge_y + loading_bay_width, loading_bay_height),
+        (field_length/2., loading_bay_edge_y, loading_bay_height),
+        (field_length/2., loading_bay_edge_y, 0.)
     ]
 
     ideal_loading_bay_red.polygon_list.append(
@@ -208,8 +206,9 @@ def compute_target_definition():
         loading_bay_red_polygon_points_3d)
     # Location of target
     ideal_loading_bay_red.target_rotation = np.identity(3, np.double)
-    ideal_loading_bay_red.target_position = np.array(
-        [field_length, -loading_bay_edge_y - loading_bay_width / 2., 0.])
+    ideal_loading_bay_red.target_position = np.array([field_length/2.,
+                                                     loading_bay_edge_y + loading_bay_width/2.,
+                                                      loading_bay_height/2.])
 
     ideal_target_list.append(ideal_loading_bay_red)
     training_target_loading_bay_red = TargetData(
@@ -233,31 +232,31 @@ def compute_target_definition():
 
     # These are "virtual" 3D points based on the expected geometry
     power_port_blue_main_panel_polygon_points_3d = [
-        (0., power_port_center_y - power_port_width / 2.,
-         0.), (0., power_port_center_y - power_port_width / 2.,
-               power_port_bottom_wing_height),
-        (0.,
-         power_port_center_y - power_port_width / 2. - power_port_wing_width,
+        (field_length/2., -power_port_edge_y, 0.),
+        (field_length/2., -power_port_edge_y,
          power_port_bottom_wing_height),
-        (0., power_port_center_y - power_port_width / 2.,
-         power_port_total_height),
-        (0., power_port_center_y + power_port_width / 2.,
-         power_port_total_height),
-        (0., power_port_center_y + power_port_width / 2.,
+        (field_length/2., -power_port_edge_y + power_port_wing_width,
          power_port_bottom_wing_height),
-        (0., power_port_center_y + power_port_width / 2., 0.)
+        (field_length/2., -power_port_edge_y,
+         power_port_total_height),
+        (field_length/2., -power_port_edge_y - power_port_width,
+         power_port_total_height),
+        (field_length/2., -power_port_edge_y - power_port_width,
+         power_port_bottom_wing_height),
+        (field_length/2., -power_port_edge_y - power_port_width, 0.)
     ]
 
     power_port_blue_wing_panel_polygon_points_2d = [(692, 50), (1047, 285),
                                                     (692, 285)]
     # These are "virtual" 3D points based on the expected geometry
     power_port_blue_wing_panel_polygon_points_3d = [
-        (0., power_port_center_y + power_port_width / 2.,
+        (field_length/2., -power_port_edge_y - power_port_width,
          power_port_total_height),
-        (power_port_wing_width * math.sin(wing_angle), power_port_center_y -
-         power_port_width / 2. + power_port_wing_width * math.cos(wing_angle),
+        (field_length/2. - power_port_wing_width * math.sin(wing_angle),
+         -power_port_edge_y - power_port_width -
+         power_port_wing_width * math.cos(wing_angle),
          power_port_bottom_wing_height),
-        (0., power_port_center_y + power_port_width / 2.,
+        (field_length/2., -power_port_edge_y - power_port_width,
          power_port_bottom_wing_height)
     ]
 
@@ -267,16 +266,11 @@ def compute_target_definition():
     ideal_power_port_blue.polygon_list_3d.append(
         power_port_blue_main_panel_polygon_points_3d)
 
-    ideal_power_port_blue.polygon_list.append(
-        power_port_blue_wing_panel_polygon_points_2d)
-    ideal_power_port_blue.polygon_list_3d.append(
-        power_port_blue_wing_panel_polygon_points_3d)
-
     # Location of target.  Rotation is pointing in -x direction
-    ideal_power_port_blue.target_rotation = -np.identity(3, np.double)
-    ideal_power_port_blue.target_rotation[2][2] = 1.
-    ideal_power_port_blue.target_position = np.array(
-        [0., power_port_center_y, 0.])
+    ideal_power_port_blue.target_rotation = np.identity(3, np.double)
+    ideal_power_port_blue.target_position = np.array([field_length/2.,
+                                                     -power_port_edge_y - power_port_width/2.,
+                                                      power_port_target_height])
 
     ideal_target_list.append(ideal_power_port_blue)
     training_target_power_port_blue = TargetData(
@@ -299,18 +293,10 @@ def compute_target_definition():
 
     # These are "virtual" 3D points based on the expected geometry
     loading_bay_blue_polygon_points_3d = [
-        (0., -loading_bay_edge_y - loading_bay_width, 0.),
-        (0., -loading_bay_edge_y - loading_bay_width,
-         loading_bay_height), (0., -loading_bay_edge_y,
-                               loading_bay_height), (0., -loading_bay_edge_y,
-                                                     0.)
-    ]
-    loading_bay_red_polygon_points_3d = [
-        (field_length, loading_bay_edge_y + loading_bay_width, 0.),
-        (field_length, loading_bay_edge_y + loading_bay_width,
-         loading_bay_height), (field_length, loading_bay_edge_y,
-                               loading_bay_height), (field_length,
-                                                     loading_bay_edge_y, 0.)
+        (-field_length/2., -loading_bay_edge_y - loading_bay_width, 0.),
+        (-field_length/2., -loading_bay_edge_y - loading_bay_width, loading_bay_height),
+        (-field_length/2., -loading_bay_edge_y, loading_bay_height),
+        (-field_length/2., -loading_bay_edge_y, 0.)
     ]
 
     ideal_loading_bay_blue.polygon_list.append(
@@ -321,8 +307,9 @@ def compute_target_definition():
     # Location of target
     ideal_loading_bay_blue.target_rotation = -np.identity(3, np.double)
     ideal_loading_bay_blue.target_rotation[2][2] = 1.
-    ideal_loading_bay_blue.target_position = np.array(
-        [0., loading_bay_edge_y + loading_bay_width / 2., 0.])
+    ideal_loading_bay_blue.target_position = np.array([-field_length/2.,
+                                                     -loading_bay_edge_y - loading_bay_width/2.,
+                                                       loading_bay_height/2.])
 
     ideal_target_list.append(ideal_loading_bay_blue)
     training_target_loading_bay_blue = TargetData(

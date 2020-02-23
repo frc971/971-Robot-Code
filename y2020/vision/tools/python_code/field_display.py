@@ -17,17 +17,18 @@ def show_field(img_in=None):
 
 
 # Convert field coordinates (meters) to image coordinates (pixels).
-# Field origin is (x,y) at center of red alliance driver station wall,
-# with x pointing into the field.
+# Field origin is (x,y) at center of the field,
+# with x pointing towards the red alliance driver station
 # The default field image is 1598 x 821 pixels, so 1 cm per pixel on field
 # I.e., Field is 1598 x 821 pixels = 15.98 x 8.21 meters
-# Our origin in image coordinates is at (1598, 410) pixels, facing in the -x image direction
+# Our origin in image coordinates is at (799, 410) pixels, with +x direction
+# to the right
 
 
 def field_coord_to_image_coord(robot_position):
     # Scale by 100 pixel / cm
-    robot_pos_img_coord = np.array([[1598, 410]]).T + np.int32(
-        100.0 * np.array([[-robot_position[0][0], robot_position[1][0]]]).T)
+    robot_pos_img_coord = np.array([[799, 410]]).T + np.int32(
+        100.0 * np.array([[robot_position[0][0], -robot_position[1][0]]]).T)
     return robot_pos_img_coord
 
 
