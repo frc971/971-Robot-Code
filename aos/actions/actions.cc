@@ -17,15 +17,15 @@ void ActionQueue::EnqueueAction(::std::unique_ptr<Action> action) {
 }
 
 void ActionQueue::CancelCurrentAction() {
-  AOS_LOG(INFO, "Canceling current action\n");
   if (current_action_) {
+    AOS_LOG(INFO, "Canceling current action\n");
     current_action_->Cancel();
   }
 }
 
 void ActionQueue::CancelAllActions() {
-  AOS_LOG(DEBUG, "Cancelling all actions\n");
   if (current_action_) {
+    AOS_LOG(DEBUG, "Canceled all actions\n");
     current_action_->Cancel();
   }
   next_action_.reset();

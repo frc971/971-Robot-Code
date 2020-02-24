@@ -32,7 +32,6 @@ void ActionJoystickInput::RunIteration(
     }
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       action_queue_.CancelAllActions();
-      AOS_LOG(DEBUG, "Canceling\n");
     }
     drivetrain_input_reader_->HandleDrivetrain(data);
     HandleTeleop(data);
