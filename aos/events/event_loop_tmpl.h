@@ -100,7 +100,7 @@ inline bool RawSender::Send(
   return false;
 }
 
-inline void TimerHandler::Call(
+inline monotonic_clock::time_point TimerHandler::Call(
     std::function<monotonic_clock::time_point()> get_time,
     monotonic_clock::time_point event_time) {
   CHECK_NOTNULL(timing_.timer);
@@ -131,6 +131,7 @@ inline void TimerHandler::Call(
           monotonic_end_time - monotonic_start_time)
           .count();
   timing_.handler_time.Add(handler_latency);
+  return monotonic_start_time;
 }
 
 inline void PhasedLoopHandler::Call(

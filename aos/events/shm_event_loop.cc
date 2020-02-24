@@ -470,8 +470,14 @@ class TimerHandlerState final : public TimerHandler {
       : TimerHandler(shm_event_loop, std::move(fn)),
         shm_event_loop_(shm_event_loop),
         event_(this) {
-    shm_event_loop_->epoll_.OnReadable(
-        timerfd_.fd(), [this]() { shm_event_loop_->HandleEvent(); });
+    shm_event_loop_->epoll_.OnReadable(timerfd_.fd(), [this]() {
+      // The timer may fire spurriously.  HandleEvent on the event loop will
+      // call the callback if it is needed.  It may also have called it when
+      // processing some other event, and the kernel decided to deliver this
+      // wakeup anyways.
+      timerfd_.Read();
+      shm_event_loop_->HandleEvent();
+    });
   }
 
   ~TimerHandlerState() {
@@ -480,22 +486,29 @@ class TimerHandlerState final : public TimerHandler {
   }
 
   void HandleEvent() {
-    uint64_t elapsed_cycles = timerfd_.Read();
-    if (elapsed_cycles == 0u) {
-      // We got called before the timer interrupt could happen, but because we
-      // are checking the time, we got called on time.  Push the timer out by 1
-      // cycle.
-      elapsed_cycles = 1u;
-      timerfd_.SetTime(base_ + repeat_offset_, repeat_offset_);
+    CHECK(!event_.valid());
+    const auto monotonic_now = Call(monotonic_clock::now, base_);
+    if (event_.valid()) {
+      // If someone called Setup inside Call, rescheduling is already taken care
+      // of.  Bail.
+      return;
     }
 
-    Call(monotonic_clock::now, base_);
+    if (repeat_offset_ == chrono::seconds(0)) {
+      timerfd_.Disable();
+    } else {
+      // Compute how many cycles have elapsed and schedule the next iteration
+      // for the next iteration in the future.
+      const int elapsed_cycles =
+          std::max<int>(0, (monotonic_now - base_ + repeat_offset_ -
+                            std::chrono::nanoseconds(1)) /
+                               repeat_offset_);
+      base_ += repeat_offset_ * elapsed_cycles;
 
-    base_ += repeat_offset_ * elapsed_cycles;
-
-    if (repeat_offset_ != chrono::seconds(0)) {
+      // Update the heap and schedule the timerfd wakeup.
       event_.set_event_time(base_);
       shm_event_loop_->AddEvent(&event_);
+      timerfd_.SetTime(base_, chrono::seconds(0));
     }
   }
 
