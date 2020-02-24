@@ -55,8 +55,7 @@ export class ConfigHandler {
     }
 
     const channelsfb =
-        Connect.createChannelsToTransferVector(
-            builder, channels);
+        Connect.createChannelsToTransferVector(builder, channels);
     Connect.startConnect(builder);
     Connect.addChannelsToTransfer(builder, channelsfb);
     const connect = Connect.endConnect(builder);

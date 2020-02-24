@@ -9,3 +9,5 @@ conn.connect();
 const iHandler = new ImageHandler();
 
 conn.addHandler(iHandler.getId(), (data) => iHandler.handleImage(data));
+conn.addHandler(
+    iHandler.getResultId(), (data) => iHandler.handleImageMetadata(data));
