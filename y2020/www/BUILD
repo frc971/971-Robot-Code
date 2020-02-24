@@ -10,6 +10,7 @@ ts_library(
     deps = [
         "//aos/network/www:proxy",
         "//y2020/vision:vision_ts_fbs",
+        "//y2020/vision/sift:sift_ts_fbs",
     ],
     visibility = ["//y2020:__subpackages__"],
 )

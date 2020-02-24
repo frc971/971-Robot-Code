@@ -153,10 +153,9 @@ class JsTsGenerator : public BaseGenerator {
           imported_files.emplace(file.first);
         }
 
-        code += "export namespace " + file.second.target_namespace + " { \n";
+        //code += "export namespace " + file.second.target_namespace + " { \n";
         code += "export import " + file.second.symbol + " = ";
-        code += GenFileNamespacePrefix(file.first) + "." +
-                file.second.source_namespace + "." + file.second.symbol +
+        code += file.second.symbol +
                 "; }\n";
       }
     }
@@ -334,7 +333,7 @@ class JsTsGenerator : public BaseGenerator {
     std::string ns = GetNameSpace(enum_def);
     std::string enum_def_name = enum_def.name + (reverse ? "Name" : "");
     if (lang_.language == IDLOptions::kTs) {
-      if (!ns.empty()) { code += "export namespace " + ns + "{\n"; }
+      //if (!ns.empty()) { code += "export namespace " + ns + "{\n"; }
       code += "export enum " + enum_def.name + "{\n";
     } else {
       if (enum_def.defined_namespace->components.empty()) {
@@ -348,7 +347,7 @@ class JsTsGenerator : public BaseGenerator {
           exports += "this." + enum_def_name + " = " + enum_def_name + ";\n";
         }
       }
-      code += WrapInNameSpace(enum_def) + (reverse ? "Name" : "") + " = {\n";
+      code += enum_def.name + (reverse ? "Name" : "") + " = {\n";
     }
     for (auto it = enum_def.Vals().begin(); it != enum_def.Vals().end(); ++it) {
       auto &ev = **it;
@@ -416,7 +415,7 @@ class JsTsGenerator : public BaseGenerator {
         if (type.base_type == BASE_TYPE_BOOL) { getter = "!!" + getter; }
         if (type.enum_def) {
           getter = "/** " +
-                   GenTypeAnnotation(kType, WrapInNameSpace(*type.enum_def), "",
+                   GenTypeAnnotation(kType, type.enum_def->name, "",
                                      false) +
                    " */ (" + getter + ")";
         }
@@ -433,15 +432,15 @@ class JsTsGenerator : public BaseGenerator {
     if (value.type.enum_def) {
       if (auto val = value.type.enum_def->FindByValue(value.constant)) {
         if (lang_.language == IDLOptions::kTs) {
-          return GenPrefixedTypeName(WrapInNameSpace(*value.type.enum_def),
+          return GenPrefixedTypeName(value.type.enum_def->name,
                                      value.type.enum_def->file) +
                  "." + val->name;
         } else {
-          return WrapInNameSpace(*value.type.enum_def) + "." + val->name;
+          return value.type.enum_def->name + "." + val->name;
         }
       } else {
         return "/** " +
-               GenTypeAnnotation(kType, WrapInNameSpace(*value.type.enum_def),
+               GenTypeAnnotation(kType, value.type.enum_def->name,
                                  "", false) +
                "} */ (" + value.constant + ")";
       }
@@ -473,7 +472,7 @@ class JsTsGenerator : public BaseGenerator {
         if (type.base_type == BASE_TYPE_STRING) {
           name = "string|Uint8Array";
         } else {
-          name = WrapInNameSpace(*type.struct_def);
+          name = type.struct_def->name;
         }
         return (allowNull) ? (name + "|null") : (name);
       }
@@ -485,7 +484,7 @@ class JsTsGenerator : public BaseGenerator {
       case BASE_TYPE_ULONG: return "flatbuffers.Long";
       default:
         if (IsScalar(type.base_type)) {
-          if (type.enum_def) { return WrapInNameSpace(*type.enum_def); }
+          if (type.enum_def) { return type.enum_def->name; }
           return "number";
         }
         return "flatbuffers.Offset";
@@ -675,9 +674,9 @@ class JsTsGenerator : public BaseGenerator {
     if (lang_.language == IDLOptions::kTs) {
       object_name = struct_def.name;
       GenDocComment(struct_def.doc_comment, code_ptr, "@constructor");
-      if (!object_namespace.empty()) {
-        code += "export namespace " + object_namespace + "{\n";
-      }
+      //if (!object_namespace.empty()) {
+      //  code += "export namespace " + object_namespace + "{\n";
+      //}
       code += "export class " + struct_def.name;
       code += " {\n";
       if (lang_.language != IDLOptions::kTs) {
@@ -695,7 +694,7 @@ class JsTsGenerator : public BaseGenerator {
       code += "  bb_pos:number = 0;\n";
     } else {
       bool isStatement = struct_def.defined_namespace->components.empty();
-      object_name = WrapInNameSpace(struct_def);
+      object_name = struct_def.name;
       GenDocComment(struct_def.doc_comment, code_ptr, "@constructor");
       if (isStatement) {
         if (parser_.opts.use_goog_js_export_format) {
@@ -851,7 +850,7 @@ class JsTsGenerator : public BaseGenerator {
       else {
         switch (field.value.type.base_type) {
           case BASE_TYPE_STRUCT: {
-            auto type = WrapInNameSpace(*field.value.type.struct_def);
+            auto type = field.value.type.struct_def->name;
             GenDocComment(
                 field.doc_comment, code_ptr,
                 GenTypeAnnotation(kParam, type + "=", "obj") +
@@ -978,7 +977,7 @@ class JsTsGenerator : public BaseGenerator {
               if (field.value.type.enum_def) {
                 code += "/** " +
                         GenTypeAnnotation(
-                            kType, WrapInNameSpace(*field.value.type.enum_def),
+                            kType, field.value.type.enum_def->name,
                             "", false) +
                         " */ (" + field.value.constant + ")";
               } else {
@@ -1359,9 +1358,9 @@ class JsTsGenerator : public BaseGenerator {
     }
 
     if (lang_.language == IDLOptions::kTs) {
-      if (!object_namespace.empty()) {
-        code += "}\n";
-      }
+      //if (!object_namespace.empty()) {
+      //  code += "}\n";
+      //}
       code += "}\n";
     }
   }
