@@ -93,9 +93,17 @@ class GTK_Widget(BaseWindow):
         return self.all_controls[self.get_index_of_nearest_point()]
 
     def draw_field_elements(self, cr):
-        draw_HAB(cr)
-        draw_rockets(cr)
-        draw_cargo_ship(cr)
+        if FIELD == 2019:
+            draw_HAB(cr)
+            draw_rockets(cr)
+            draw_cargo_ship(cr)
+        elif FIELD == 2020:
+            set_color(cr, palette["BLACK"])
+            markers(cr)
+            draw_shield_generator(cr)
+            draw_trench_run(cr)
+            draw_init_lines(cr)
+            draw_control_panel(cr)
 
     def draw_robot_at_point(self, cr, i, p, spline):
         p1 = [mToPx(spline.Point(i)[0]), mToPx(spline.Point(i)[1])]
@@ -206,16 +214,16 @@ class GTK_Widget(BaseWindow):
                      self.extents_y_max - self.extents_y_min)
         cr.fill()
 
-        #Drawing the switch and scale in the field
         cr.move_to(0, 50)
         cr.show_text('Press "e" to export')
         cr.show_text('Press "i" to import')
 
-        set_color(cr, palette["WHITE"])
-        cr.rectangle(0, -mToPx(8.2296 / 2.0), SCREEN_SIZE, SCREEN_SIZE)
-        cr.fill()
         set_color(cr, palette["BLACK"])
-        cr.rectangle(0, -mToPx(8.2296 / 2.0), SCREEN_SIZE, SCREEN_SIZE)
+        if FIELD == 2020:
+            cr.rectangle(0, mToPx(-7.991475), SCREEN_SIZE, SCREEN_SIZE/2)
+        else:
+            cr.rectangle(0, mToPx(-7.991475), SCREEN_SIZE, SCREEN_SIZE)
+            print(mToPx(-7.991475))
         cr.set_line_join(cairo.LINE_JOIN_ROUND)
         cr.stroke()
         self.draw_field_elements(cr)
