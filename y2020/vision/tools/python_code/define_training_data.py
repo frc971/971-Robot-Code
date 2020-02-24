@@ -1,5 +1,6 @@
 import argparse
 import cv2
+import glog
 import json
 import math
 import numpy as np
@@ -17,7 +18,7 @@ def get_mouse_event(event, x, y, flags, param):
     global current_mouse
     current_mouse = (x, y)
     if event == cv2.EVENT_LBUTTONUP:
-        #print("Adding point at %d, %d" % (x,y))
+        glog.debug("Adding point at %d, %d" % (x,y))
         point_list.append([x, y])
     pass
 
@@ -218,7 +219,7 @@ def visualize_reprojections(img, pts_2d, pts_3d, cam_mat, distortion_coeffs):
     pts_3d_proj_2d, jac_2d = cv2.projectPoints(pts_3d_np, R, T, cam_mat,
                                                distortion_coeffs)
     if inliers is None:
-        print("WARNING: Didn't get any inliers when reprojecting polygons")
+        glog.warn("WARNING: Didn't get any inliers when reprojecting polygons")
         return img
     for i in range(len(pts_2d)):
         pt_2d = pts_2d_np[i][0]
@@ -239,7 +240,7 @@ def sample_define_polygon_usage():
     image = cv2.imread("test_images/train_power_port_red.png")
 
     polygon_list = define_polygon(image)
-    print(polygon_list)
+    glog.debug(polygon_list)
 
 
 def sample_define_points_by_list_usage():
@@ -251,5 +252,5 @@ def sample_define_points_by_list_usage():
                    (689, 679)]
 
     polygon_list = define_points_by_list(image, test_points)
-    print(polygon_list)
+    glog.debug(polygon_list)
 

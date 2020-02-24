@@ -25,6 +25,7 @@ py_binary(
         "//y2020/vision/sift:sift_fbs_python",
         "@bazel_tools//tools/python/runfiles",
         "@opencv_contrib_nonfree_amd64//:python_opencv",
+        "//external:python-glog",
     ],
 )
 
@@ -73,6 +74,7 @@ py_binary(
         "//y2020/vision/sift:sift_fbs_python",
         "@bazel_tools//tools/python/runfiles",
         "@opencv_contrib_nonfree_amd64//:python_opencv",
+        "//external:python-glog",
     ],
 )
 

@@ -1,5 +1,7 @@
 import argparse
 import cv2
+# TODO<Jim>: Add gflags for handling command-line flags
+import glog
 import math
 import numpy as np
 
@@ -7,6 +9,8 @@ import camera_definition
 import define_training_data as dtd
 import train_and_match as tam
 
+# TODO<Jim>: Allow command-line setting of logging level
+glog.setLevel("WARN")
 global VISUALIZE_KEYPOINTS
 global USE_BAZEL
 USE_BAZEL = True
@@ -68,8 +72,8 @@ class TargetData:
             # Filter and project points for each polygon in the list
             filtered_keypoints, _, _, _, keep_list = dtd.filter_keypoints_by_polygons(
                 keypoint_list, None, [self.polygon_list[poly_ind]])
-            print("Filtering kept %d of %d features" % (len(keep_list),
-                                                        len(keypoint_list)))
+            glog.info("Filtering kept %d of %d features" % (len(keep_list),
+                                                            len(keypoint_list)))
             filtered_point_array = np.asarray(
                 [(keypoint.pt[0], keypoint.pt[1])
                  for keypoint in filtered_keypoints]).reshape(-1, 2)
@@ -325,9 +329,7 @@ def compute_target_definition():
     camera_params = camera_definition.web_cam_params
 
     for ideal_target in ideal_target_list:
-        if not USE_BAZEL:
-            print("\nPreparing target for image %s" %
-                  ideal_target.image_filename)
+        glog.info("\nPreparing target for image %s" % ideal_target.image_filename)
         ideal_target.extract_features(feature_extractor)
         ideal_target.filter_keypoints_by_polygons()
         ideal_target.compute_reprojection_maps()
@@ -376,9 +378,7 @@ def compute_target_definition():
     AUTO_PROJECTION = True
 
     if AUTO_PROJECTION:
-        print(
-            "\n\nAuto projection of training keypoints to 3D using ideal images"
-        )
+        glog.info("\n\nAuto projection of training keypoints to 3D using ideal images")
         # Match the captured training image against the "ideal" training image
         # and use those matches to pin down the 3D locations of the keypoints
 
@@ -387,9 +387,7 @@ def compute_target_definition():
             training_target = training_target_list[target_ind]
             ideal_target = ideal_target_list[target_ind]
 
-            if not USE_BAZEL:
-                print("\nPreparing target for image %s" %
-                      training_target.image_filename)
+            glog.info("\nPreparing target for image %s" % training_target.image_filename)
             # Extract keypoints and descriptors for model
             training_target.extract_features(feature_extractor)
 
@@ -414,13 +412,12 @@ def compute_target_definition():
                     ideal_pts_2d, H_inv)
                 training_target.polygon_list.append(transformed_polygon)
 
-            print("Started with %d keypoints" % len(
-                training_target.keypoint_list))
+            glog.info("Started with %d keypoints" % len(training_target.keypoint_list))
 
             training_target.keypoint_list, training_target.descriptor_list, rejected_keypoint_list, rejected_descriptor_list, _ = dtd.filter_keypoints_by_polygons(
                 training_target.keypoint_list, training_target.descriptor_list,
                 training_target.polygon_list)
-            print("After filtering by polygons, had %d keypoints" % len(
+            glog.info("After filtering by polygons, had %d keypoints" % len(
                 training_target.keypoint_list))
             if VISUALIZE_KEYPOINTS:
                 tam.show_keypoints(training_target.image,
@@ -475,27 +472,16 @@ def compute_target_definition():
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
-    ap.add_argument(
-        "-v",
-        "--visualize",
-        help="Whether to visualize the results",
-        default=False,
-        action='store_true')
-    ap.add_argument(
-        "-n",
-        "--no_bazel",
-        help="Don't run using Bazel",
-        default=True,
-        action='store_false')
+    ap.add_argument("--visualize", help="Whether to visualize the results", default=False, action='store_true')
+    ap.add_argument("-n", "--no_bazel", help="Don't run using Bazel", default=True, action='store_false')
+    args = vars(ap.parse_args())
 
-    args = ap.parse_args()
+    VISUALIZE_KEYPOINTS = args["visualize"]
+    if args["visualize"]:
+        glog.info("Visualizing results")
 
-    if args.visualize:
-        print("Visualizing results")
-        VISUALIZE_KEYPOINTS = True
-
-    if not args.no_bazel:
-        print("Running on command line (no Bazel)")
-        USE_BAZEL = False
+    USE_BAZEL = args["no_bazel"]
+    if args["no_bazel"]:
+        glog.info("Running on command line (no Bazel)")
 
     compute_target_definition()

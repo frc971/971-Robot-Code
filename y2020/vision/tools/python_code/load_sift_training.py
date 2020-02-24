@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import cv2
+import glog
 import numpy as np
 import sys
 import flatbuffers
@@ -35,23 +36,23 @@ def main():
 
     if (len(sys.argv) > 2):
         if sys.argv[2] == "test":
-            print("Loading test data")
+            glog.info("Loading test data")
             import camera_definition_test
             import target_definition_test
             target_data_list = target_definition_test.compute_target_definition(
             )
             camera_calib_list = camera_definition_test.camera_list
         else:
-            print("Unhandled arguments: '%s'" % sys.argv[2])
+            glog.error("Unhandled arguments: '%s'" % sys.argv[2])
             quit()
     else:
-        print("Loading target configuration data")
+        glog.info("Loading target configuration data")
         import camera_definition
         import target_definition
         target_data_list = target_definition.compute_target_definition()
         camera_calib_list = camera_definition.camera_list
 
-    print("Writing file to ", output_path)
+    glog.info("Writing file to ", output_path)
 
     fbb = flatbuffers.Builder(0)
 

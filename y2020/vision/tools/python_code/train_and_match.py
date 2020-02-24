@@ -1,4 +1,5 @@
 import cv2
+import glog
 import math
 import numpy as np
 import time
@@ -8,6 +9,7 @@ MIN_MATCH_COUNT = 10  # 10 is min; more gives better matches
 FEATURE_EXTRACTOR_NAME = 'SIFT'
 QUERY_INDEX = 0  # We use a list for both training and query info, but only ever have one query item
 
+glog.setLevel("WARN")
 
 # Calculates rotation matrix to euler angles
 # The result is the same as MATLAB except the order
@@ -38,7 +40,7 @@ def load_images(image_names):
         # Load image (in color; let opencv convert to B&W for features)
         img_data = cv2.imread(im)
         if img_data is None:
-            print("Failed to load image: ", im)
+            glog.error("Failed to load image: ", im)
             exit()
         else:
             image_list.append(img_data)
@@ -143,15 +145,12 @@ def compute_matches(matcher, train_descriptor_lists, query_descriptor_lists):
 
     elif FEATURE_EXTRACTOR_NAME is 'ORB':
         matches = matcher.knnMatch(train_keypoint_lists[0], desc_query, k=2)
-        print(matches)
         good_matches = []
         for m in matches:
             if m:
                 if len(m) == 2:
-                    print(m[0].distance, m[1].distance)
                     if m[0].distance < 0.7 * m[1].distance:
                         good_matches.append(m[0])
-                        print(m[0].distance)
 
         good_matches_list.append(good_matches)
 
@@ -176,14 +175,14 @@ def compute_homographies(train_keypoint_lists, query_keypoint_lists,
     for i in range(len(train_keypoint_lists)):
         good_matches = good_matches_list[i]
         if len(good_matches) < MIN_MATCH_COUNT:
-            print("Not enough matches are for model ", i, ": ",
-                  len(good_matches), " out of needed #: ", MIN_MATCH_COUNT)
+            glog.warn("Not enough matches are for model ", i, ": ",
+                      len(good_matches), " out of needed #: ", MIN_MATCH_COUNT)
             homography_list.append([])
             matches_mask_list.append([])
             continue
 
-        print("Got good number of matches for model %d: %d (needed only %d)" %
-              (i, len(good_matches), MIN_MATCH_COUNT))
+        glog.info("Got good number of matches for model %d: %d (needed only %d)" %
+                  (i, len(good_matches), MIN_MATCH_COUNT))
         # Extract and bundle keypoint locations for computations
         src_pts = np.float32([
             train_keypoint_lists[i][m.trainIdx].pt for m in good_matches
@@ -206,7 +205,7 @@ def compute_homographies(train_keypoint_lists, query_keypoint_lists,
 # Also shows image with query unwarped (to match training image) and target pt
 def show_results(training_images, train_keypoint_lists, query_images,
                  query_keypoint_lists, target_point_list, good_matches_list):
-    print("Showing results for ", len(training_images), " training images")
+    glog.info("Showing results for ", len(training_images), " training images")
 
     homography_list, matches_mask_list = compute_homographies(
         train_keypoint_lists, query_keypoint_lists, good_matches_list)
@@ -214,15 +213,15 @@ def show_results(training_images, train_keypoint_lists, query_images,
         good_matches = good_matches_list[i]
         if len(good_matches) < MIN_MATCH_COUNT:
             continue
-        print("Showing results for model ", i)
+        glog.debug("Showing results for model ", i)
         matches_mask_count = matches_mask_list[i].count(1)
         if matches_mask_count != len(good_matches):
-            print("Homography rejected some matches!  From ",
+            glog.info("Homography rejected some matches!  From ",
                   len(good_matches), ", only ", matches_mask_count,
                   " were used")
 
         if matches_mask_count < MIN_MATCH_COUNT:
-            print(
+            glog.info(
                 "Skipping match because homography rejected matches down to below ",
                 MIN_MATCH_COUNT)
             continue
@@ -260,14 +259,13 @@ def show_results(training_images, train_keypoint_lists, query_images,
         img3 = cv2.drawMatches(query_image, query_keypoint_lists[QUERY_INDEX],
                                training_images[i], train_keypoint_lists[i],
                                good_matches_list[i], None, **draw_params)
-        print("Drawing matches for model ", i,
-              ".  Query on left, Training image on right")
+        glog.debug("Drawing matches for model ", i,
+                   ".  Query on left, Training image on right")
         cv2.imshow('Matches', img3), cv2.waitKey()
 
         # Next, unwarp the query image so it looks like the training view
         H_inv = np.linalg.inv(H)
         query_image_warp = cv2.warpPerspective(query_image, H_inv, (w, h))
-        print("Showing unwarped query image for model ", i)
         cv2.imshow('Unwarped Image', query_image_warp), cv2.waitKey()
 
     # Go ahead and return these, for use elsewhere
