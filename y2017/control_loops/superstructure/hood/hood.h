@@ -21,7 +21,8 @@ class IndexPulseProfiledSubsystem
   IndexPulseProfiledSubsystem();
 
  private:
-  void CapGoal(const char *name, Eigen::Matrix<double, 3, 1> *goal) override;
+  void CapGoal(const char *name, Eigen::Matrix<double, 3, 1> *goal,
+               bool print) override;
 };
 
 class Hood {

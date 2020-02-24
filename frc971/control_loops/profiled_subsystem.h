@@ -170,7 +170,8 @@ class SingleDOFProfiledSubsystem
   // Sets the unprofiled goal.  The profiler will generate a profile to go to
   // this goal.
   void set_unprofiled_goal(double unprofiled_goal,
-                           double unprofiled_goal_velocity = 0.0);
+                           double unprofiled_goal_velocity = 0.0,
+                           bool print = true);
   // Limits our profiles to a max velocity and acceleration for proper motion.
   void AdjustProfile(const ::frc971::ProfileParameters *profile_parameters);
   void AdjustProfile(double max_angular_velocity,
@@ -194,7 +195,8 @@ class SingleDOFProfiledSubsystem
  protected:
   // Limits the provided goal to the soft limits.  Prints "name" when it fails
   // to aid debugging.
-  virtual void CapGoal(const char *name, Eigen::Matrix<double, 3, 1> *goal);
+  virtual void CapGoal(const char *name, Eigen::Matrix<double, 3, 1> *goal,
+                       bool print = true);
 
  private:
   void UpdateOffset(double offset);
@@ -317,23 +319,27 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::Correct(
 
 template <class ZeroingEstimator>
 void SingleDOFProfiledSubsystem<ZeroingEstimator>::CapGoal(
-    const char *name, Eigen::Matrix<double, 3, 1> *goal) {
+    const char *name, Eigen::Matrix<double, 3, 1> *goal, bool print) {
   // Limit the goal to min/max allowable positions.
   if ((*goal)(0, 0) > range_.upper) {
-    AOS_LOG(WARNING, "Goal %s above limit, %f > %f\n", name, (*goal)(0, 0),
-            range_.upper);
+    if (print) {
+      AOS_LOG(WARNING, "Goal %s above limit, %f > %f\n", name, (*goal)(0, 0),
+              range_.upper);
+    }
     (*goal)(0, 0) = range_.upper;
   }
   if ((*goal)(0, 0) < range_.lower) {
-    AOS_LOG(WARNING, "Goal %s below limit, %f < %f\n", name, (*goal)(0, 0),
-        range_.lower);
+    if (print) {
+      AOS_LOG(WARNING, "Goal %s below limit, %f < %f\n", name, (*goal)(0, 0),
+              range_.lower);
+    }
     (*goal)(0, 0) = range_.lower;
   }
 }
 
 template <class ZeroingEstimator>
 void SingleDOFProfiledSubsystem<ZeroingEstimator>::ForceGoal(double goal) {
-  set_unprofiled_goal(goal);
+  set_unprofiled_goal(goal, 0.0, false);
   this->loop_->mutable_R() = this->unprofiled_goal_;
   this->loop_->mutable_next_R() = this->loop_->R();
 
@@ -343,11 +349,11 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::ForceGoal(double goal) {
 
 template <class ZeroingEstimator>
 void SingleDOFProfiledSubsystem<ZeroingEstimator>::set_unprofiled_goal(
-    double unprofiled_goal, double unprofiled_goal_velocity) {
+    double unprofiled_goal, double unprofiled_goal_velocity, bool print) {
   this->unprofiled_goal_(0, 0) = unprofiled_goal;
   this->unprofiled_goal_(1, 0) = unprofiled_goal_velocity;
   this->unprofiled_goal_(2, 0) = 0.0;
-  CapGoal("unprofiled R", &this->unprofiled_goal_);
+  CapGoal("unprofiled R", &this->unprofiled_goal_, print);
 }
 
 template <class ZeroingEstimator>

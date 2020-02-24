@@ -29,7 +29,8 @@ IndexPulseProfiledSubsystem::IndexPulseProfiledSubsystem()
           0.5, 10.0) {}
 
 void IndexPulseProfiledSubsystem::CapGoal(const char *name,
-                                          Eigen::Matrix<double, 3, 1> *goal) {
+                                          Eigen::Matrix<double, 3, 1> *goal,
+                                          bool print) {
   if (zeroed()) {
     ::frc971::control_loops::SingleDOFProfiledSubsystem<
         ::frc971::zeroing::PulseIndexZeroingEstimator>::CapGoal(name, goal);
@@ -40,13 +41,17 @@ void IndexPulseProfiledSubsystem::CapGoal(const char *name,
     // enough to find them (and the index pulse which might be right next to
     // one).
     if ((*goal)(0, 0) > kMaxRange) {
-      AOS_LOG(WARNING, "Goal %s above limit, %f > %f\n", name, (*goal)(0, 0),
-              kMaxRange);
+      if (print) {
+        AOS_LOG(WARNING, "Goal %s above limit, %f > %f\n", name, (*goal)(0, 0),
+                kMaxRange);
+      }
       (*goal)(0, 0) = kMaxRange;
     }
     if ((*goal)(0, 0) < -kMaxRange) {
-      AOS_LOG(WARNING, "Goal %s below limit, %f < %f\n", name, (*goal)(0, 0),
-              kMaxRange);
+      if (print) {
+        AOS_LOG(WARNING, "Goal %s below limit, %f < %f\n", name, (*goal)(0, 0),
+                kMaxRange);
+      }
       (*goal)(0, 0) = -kMaxRange;
     }
   }
