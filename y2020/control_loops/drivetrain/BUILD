@@ -92,6 +92,7 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":drivetrain_base",
+        ":localizer",
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//frc971/control_loops/drivetrain:drivetrain_lib",
@@ -152,6 +153,7 @@ cc_binary(
     data = ["//y2020:config.json"],
     deps = [
         ":drivetrain_base",
+        ":localizer",
         "//aos:configuration",
         "//aos:init",
         "//aos/events:shm_event_loop",

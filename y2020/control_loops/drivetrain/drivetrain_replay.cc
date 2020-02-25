@@ -13,6 +13,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "gflags/gflags.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
+#include "y2020/control_loops/drivetrain/localizer.h"
 
 DEFINE_string(logfile, "/tmp/logfile.bfbs",
               "Name of the logfile to read from.");
@@ -51,7 +52,7 @@ int main(int argc, char **argv) {
       reader.event_loop_factory()->MakeEventLoop("drivetrain");
   drivetrain_event_loop->SkipTimingReport();
 
-  frc971::control_loops::drivetrain::DeadReckonEkf localizer(
+  y2020::control_loops::drivetrain::Localizer localizer(
       drivetrain_event_loop.get(),
       y2020::control_loops::drivetrain::GetDrivetrainConfig());
   frc971::control_loops::drivetrain::DrivetrainLoop drivetrain(
