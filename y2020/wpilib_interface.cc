@@ -501,7 +501,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_left_accelerator_encoder(make_encoder(4));
     sensor_reader.set_right_accelerator_encoder(make_encoder(3));
 
-    sensor_reader.set_control_panel_encoder(make_encoder(8, frc::Encoder::k1X));
+    sensor_reader.set_control_panel_encoder(
+        make_unique<frc::Encoder>(5, 6, false, frc::Encoder::k1X));
 
     // Note: If ADIS16470 is plugged in directly to the roboRIO SPI port without
     // the Spartan Board, then trigger is on 26, reset 27, and chip select is

@@ -33,7 +33,7 @@ kFinisher = flywheel.FlywheelParams(
     q_vel=4.00,
     q_voltage=0.4,
     r_pos=0.05,
-    controller_poles=[.80])
+    controller_poles=[.84])
 
 
 def main(argv):

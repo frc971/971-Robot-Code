@@ -22,10 +22,19 @@ int main(int argc, char *argv[]) {
 
   aos::ShmEventLoop event_loop(&config.message());
 
-  std::unique_ptr<aos::logger::LogNamer> log_namer =
-      std::make_unique<aos::logger::MultiNodeLogNamer>(
-          aos::logging::GetLogName("fbs_log"), event_loop.configuration(),
-          event_loop.node());
+  std::unique_ptr<aos::logger::DetachedBufferWriter> writer;
+  std::unique_ptr<aos::logger::LogNamer> log_namer;
+  if (event_loop.node() == nullptr) {
+    writer = std::make_unique<aos::logger::DetachedBufferWriter>(
+        aos::logging::GetLogName("fbs_log"));
+
+    log_namer = std::make_unique<aos::logger::LocalLogNamer>(writer.get(),
+                                                             event_loop.node());
+  } else {
+    log_namer = std::make_unique<aos::logger::MultiNodeLogNamer>(
+        aos::logging::GetLogName("fbs_log"), event_loop.configuration(),
+        event_loop.node());
+  }
 
   aos::logger::Logger logger(std::move(log_namer), &event_loop,
                              std::chrono::milliseconds(100));
