@@ -40,7 +40,12 @@ class ControlLoopTestTemplated : public TestBaseClass {
       : configuration_(std::move(configuration)),
         event_loop_factory_(&configuration_.message()),
         dt_(dt),
-        robot_status_event_loop_(MakeEventLoop("robot_status")) {
+        robot_status_event_loop_(MakeEventLoop(
+            "robot_status",
+            configuration::MultiNode(event_loop_factory_.configuration())
+                ? configuration::GetNode(event_loop_factory_.configuration(),
+                                         "roborio")
+                : nullptr)) {
     testing::EnableTestLogging();
     robot_state_sender_ =
         robot_status_event_loop_->MakeSender<::aos::RobotState>("/aos");
@@ -86,8 +91,9 @@ class ControlLoopTestTemplated : public TestBaseClass {
     battery_voltage_ = battery_voltage;
   }
 
-  ::std::unique_ptr<::aos::EventLoop> MakeEventLoop(std::string_view name) {
-    return event_loop_factory_.MakeEventLoop(name);
+  ::std::unique_ptr<::aos::EventLoop> MakeEventLoop(
+      std::string_view name, const Node *node = nullptr) {
+    return event_loop_factory_.MakeEventLoop(name, node);
   }
 
   void set_send_delay(std::chrono::nanoseconds send_delay) {
@@ -103,6 +109,10 @@ class ControlLoopTestTemplated : public TestBaseClass {
   }
 
   ::std::chrono::nanoseconds dt() const { return dt_; }
+
+  const Configuration *configuration() const {
+    return &configuration_.message();
+  }
 
  private:
   // Sends out all of the required queue messages.
