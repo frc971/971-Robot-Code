@@ -23,6 +23,7 @@ using aos::input::driver_station::ControlBit;
 using aos::input::driver_station::JoystickAxis;
 using aos::input::driver_station::POVLocation;
 
+using frc971::CreateProfileParameters;
 using frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal;
 using frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
 
@@ -35,9 +36,11 @@ namespace superstructure = y2020::control_loops::superstructure;
 
 // TODO(sabina): fix button locations.
 
-const ButtonLocation kShootFast(4, 1);
+const ButtonLocation kShootFast(3, 16);
+const ButtonLocation kTurret(3, 15);
+const ButtonLocation kHood(3, 3);
 const ButtonLocation kShootSlow(4, 2);
-const ButtonLocation kIntakeExtend(4, 3);
+const ButtonLocation kIntakeExtend(3, 9);
 const ButtonLocation kIntakeIn(4, 4);
 const ButtonLocation kSpit(4, 5);
 
@@ -65,25 +68,31 @@ class Reader : public ::aos::input::ActionJoystickInput {
       return;
     }
 
-    double hood_pos = constants::Values::kHoodRange().upper;
-    double intake_pos = constants::Values::kIntakeRange().lower;
+    double hood_pos = constants::Values::kHoodRange().middle();
+    double intake_pos = -0.89;
     double turret_pos = 0.0;
     float roller_speed = 0.0f;
     double accelerator_speed = 0.0;
     double finisher_speed = 0.0;
 
-    if (data.IsPressed(kShootFast)) {
-      accelerator_speed = 300.0;
-      finisher_speed = 300.0;
+    if (data.IsPressed(kTurret)) {
+      turret_pos = 3.5;
     }
 
-    else if (data.IsPressed(kShootSlow)) {
+    if (data.IsPressed(kHood)) {
+      hood_pos = 0.05;
+    }
+
+    if (data.IsPressed(kShootFast)) {
+      accelerator_speed = 600.0;
+      finisher_speed = 200.0;
+    } else if (data.IsPressed(kShootSlow)) {
       accelerator_speed = 30.0;
       finisher_speed = 30.0;
     }
 
     if (data.IsPressed(kIntakeExtend)) {
-      intake_pos = constants::Values::kIntakeRange().middle();
+      intake_pos = 1.0;
     }
 
     if (data.IsPressed(kIntakeIn)) {
@@ -98,18 +107,22 @@ class Reader : public ::aos::input::ActionJoystickInput {
     {
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
           hood_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-              *builder.fbb(), hood_pos);
+              *builder.fbb(), hood_pos,
+              CreateProfileParameters(*builder.fbb(), 0.5, 1.0));
 
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
           intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-              *builder.fbb(), intake_pos);
+              *builder.fbb(), intake_pos,
+              CreateProfileParameters(*builder.fbb(), 10.0, 30.0));
 
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
           turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-              *builder.fbb(), turret_pos);
+              *builder.fbb(), turret_pos,
+              CreateProfileParameters(*builder.fbb(), 6.0, 20.0));
 
       flatbuffers::Offset<superstructure::ShooterGoal> shooter_offset =
-          superstructure::CreateShooterGoal(*builder.fbb(), accelerator_speed, finisher_speed);
+          superstructure::CreateShooterGoal(*builder.fbb(), accelerator_speed,
+                                            finisher_speed);
 
       superstructure::Goal::Builder superstructure_goal_builder =
           builder.MakeBuilder<superstructure::Goal>();
