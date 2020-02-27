@@ -175,8 +175,7 @@ def compute_homographies(train_keypoint_lists, query_keypoint_lists,
     for i in range(len(train_keypoint_lists)):
         good_matches = good_matches_list[i]
         if len(good_matches) < MIN_MATCH_COUNT:
-            glog.warn("Not enough matches are for model ", i, ": ",
-                      len(good_matches), " out of needed #: ", MIN_MATCH_COUNT)
+            glog.warn("Not enough matches are for model %d: %d out of needed #: %d" % (i, len(good_matches), MIN_MATCH_COUNT))
             homography_list.append([])
             matches_mask_list.append([])
             continue
@@ -234,7 +233,7 @@ def show_results(training_images, train_keypoint_lists, query_images,
         query_box_pts = cv2.perspectiveTransform(train_box_pts, H)
 
         # Figure out where the training target goes on the query img
-        transformed_target = cv2.perspectiveTransform(target_point_list[i], H)
+        transformed_target = cv2.perspectiveTransform(target_point_list[i].reshape(-1,1,2), H)
         # Ballpark the size of the circle so it looks right on image
         radius = int(
             32 * abs(H[0][0] + H[1][1]) / 2)  # Average of scale factors

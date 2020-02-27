@@ -43,6 +43,7 @@ class TargetData:
         self.descriptor_list = []
         self.target_rotation = None
         self.target_position = None
+        self.target_point_2d = None
 
     def extract_features(self, feature_extractor=None):
         if feature_extractor is None:
@@ -176,6 +177,14 @@ def compute_target_definition():
                                                      power_port_edge_y + power_port_width/2.,
                                                      power_port_target_height])
 
+    # Target point on the image -- needs to match training image
+    # These are manually captured by examining the images,
+    # and entering the pixel values from the target center for each image.
+    # These are currently only used for visualization of the target
+    ideal_power_port_red.target_point_2d = np.float32([[570,192]]).reshape(-1,1,2), # train_power_port_red.png
+
+    # np.float32([[305, 97]]).reshape(-1, 1, 2),  #train_power_port_red_webcam.png
+
     # Add the ideal 3D target to our list
     ideal_target_list.append(ideal_power_port_red)
     # And add the training image we'll actually use to the training list
@@ -213,6 +222,7 @@ def compute_target_definition():
     ideal_loading_bay_red.target_position = np.array([field_length/2.,
                                                      loading_bay_edge_y + loading_bay_width/2.,
                                                       loading_bay_height/2.])
+    ideal_loading_bay_red.target_point_2d = np.float32([[366, 236]]).reshape(-1, 1, 2),  # train_loading_bay_red.png
 
     ideal_target_list.append(ideal_loading_bay_red)
     training_target_loading_bay_red = TargetData(
@@ -275,6 +285,7 @@ def compute_target_definition():
     ideal_power_port_blue.target_position = np.array([field_length/2.,
                                                      -power_port_edge_y - power_port_width/2.,
                                                       power_port_target_height])
+    ideal_power_port_blue.target_point_2d = np.float32([[567, 180]]).reshape(-1, 1, 2),  # train_power_port_blue.png
 
     ideal_target_list.append(ideal_power_port_blue)
     training_target_power_port_blue = TargetData(
@@ -314,6 +325,7 @@ def compute_target_definition():
     ideal_loading_bay_blue.target_position = np.array([-field_length/2.,
                                                      -loading_bay_edge_y - loading_bay_width/2.,
                                                        loading_bay_height/2.])
+    ideal_loading_bay_blue.target_point_2d = np.float32([[366, 236]]).reshape(-1, 1, 2),  # train_loading_bay_blue.png
 
     ideal_target_list.append(ideal_loading_bay_blue)
     training_target_loading_bay_blue = TargetData(
@@ -402,15 +414,21 @@ def compute_target_definition():
                 [training_target.keypoint_list], [ideal_target.keypoint_list],
                 matches_list)
 
+            # Compute H_inv, since this maps points in ideal target to
+            # points in the training target
+            H_inv = np.linalg.inv(homography_list[0])
+
             for polygon in ideal_target.polygon_list:
-                ideal_pts_2d = np.asarray(np.float32(polygon)).reshape(
-                    -1, 1, 2)
-                H_inv = np.linalg.inv(homography_list[0])
+                ideal_pts_2d = np.asarray(np.float32(polygon)).reshape(-1, 1, 2)
                 # We use the ideal target's polygons to define the polygons on
                 # the training target
                 transformed_polygon = cv2.perspectiveTransform(
                     ideal_pts_2d, H_inv)
                 training_target.polygon_list.append(transformed_polygon)
+
+            # Also project the target point from the ideal to training image
+            training_target_point_2d = cv2.perspectiveTransform(np.asarray(ideal_target.target_point_2d).reshape(-1,1,2), H_inv)
+            training_target.target_point_2d = training_target_point_2d.reshape(-1,1,2)
 
             glog.info("Started with %d keypoints" % len(training_target.keypoint_list))
 
