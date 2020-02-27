@@ -3,6 +3,7 @@
 
 #include "aos/containers/ring_buffer.h"
 #include "aos/events/event_loop.h"
+#include "aos/network/message_bridge_server_generated.h"
 #include "frc971/control_loops/drivetrain/hybrid_ekf.h"
 #include "frc971/control_loops/drivetrain/localizer.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
@@ -85,6 +86,8 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
 
   std::vector<aos::Fetcher<frc971::vision::sift::ImageMatchResult>>
       image_fetchers_;
+
+  aos::Fetcher<aos::message_bridge::ServerStatistics> clock_offset_fetcher_;
 
   // Buffer of recent turret data--this is used so that when we receive a camera
   // frame from the turret, we can back out what the turret angle was at that

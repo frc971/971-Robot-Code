@@ -22,13 +22,19 @@ Eigen::Matrix<double, 4, 4> FlatbufferToTransformationMatrix(
   }
   return result;
 }
+
 }  // namespace
 
 Localizer::Localizer(
     aos::EventLoop *event_loop,
     const frc971::control_loops::drivetrain::DrivetrainConfig<double>
         &dt_config)
-    : event_loop_(event_loop), dt_config_(dt_config), ekf_(dt_config) {
+    : event_loop_(event_loop),
+      dt_config_(dt_config),
+      ekf_(dt_config),
+      clock_offset_fetcher_(
+          event_loop_->MakeFetcher<aos::message_bridge::ServerStatistics>(
+              "/aos")) {
   // TODO(james): This doesn't really need to be a watcher; we could just use a
   // fetcher for the superstructure status.
   // This probably should be a Fetcher instead of a Watcher, but this
@@ -94,9 +100,21 @@ void Localizer::Update(const ::Eigen::Matrix<double, 2, 1> &U,
 
 void Localizer::HandleImageMatch(
     const frc971::vision::sift::ImageMatchResult &result) {
-  // TODO(james): compensate for capture time across multiple nodes correctly.
+  std::chrono::nanoseconds monotonic_offset(0);
+  clock_offset_fetcher_.Fetch();
+  if (clock_offset_fetcher_.get() != nullptr) {
+    for (const auto connection : *clock_offset_fetcher_->connections()) {
+      if (connection->has_node() && connection->node()->has_name() &&
+          connection->node()->name()->string_view() == "pi1") {
+        monotonic_offset =
+            std::chrono::nanoseconds(connection->monotonic_offset());
+        break;
+      }
+    }
+  }
   aos::monotonic_clock::time_point capture_time(
-      std::chrono::nanoseconds(result.image_monotonic_timestamp_ns()));
+      std::chrono::nanoseconds(result.image_monotonic_timestamp_ns()) -
+      monotonic_offset);
   CHECK(result.has_camera_calibration());
   // Per the ImageMatchResult specification, we can actually determine whether
   // the camera is the turret camera just from the presence of the
