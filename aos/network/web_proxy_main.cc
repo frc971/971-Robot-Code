@@ -15,17 +15,23 @@ void RunDataThread(
     std::vector<std::unique_ptr<aos::web_proxy::Subscriber>> *subscribers,
     const aos::FlatbufferDetachedBuffer<aos::Configuration> &config) {
   aos::ShmEventLoop event_loop(&config.message());
-  const aos::Node *self = aos::configuration::GetMyNode(&config.message());
+  const bool is_multi_node =
+      aos::configuration::MultiNode(event_loop.configuration());
+  const aos::Node *self =
+      is_multi_node ? aos::configuration::GetMyNode(event_loop.configuration())
+                    : nullptr;
+
+  LOG(INFO) << "My node is " << aos::FlatbufferToJson(self);
 
   // TODO(alex): skip fetchers on the wrong node.
   for (uint i = 0; i < config.message().channels()->size(); ++i) {
     auto channel = config.message().channels()->Get(i);
-    if (!aos::configuration::ChannelIsReadableOnNode(channel, self)) {
-      subscribers->emplace_back(nullptr);
-    } else {
+    if (aos::configuration::ChannelIsReadableOnNode(channel, self)) {
       auto fetcher = event_loop.MakeRawFetcher(channel);
       subscribers->emplace_back(
           std::make_unique<aos::web_proxy::Subscriber>(std::move(fetcher), i));
+    } else {
+      subscribers->emplace_back(nullptr);
     }
   }
 
@@ -33,7 +39,9 @@ void RunDataThread(
 
   auto timer = event_loop.AddTimer([&]() {
     for (auto &subscriber : *subscribers) {
-      subscriber->RunIteration();
+      if (subscriber != nullptr) {
+        subscriber->RunIteration();
+      }
     }
   });
 

@@ -1,10 +1,11 @@
 import {CameraImage} from 'y2020/vision/vision_generated';
+import {ImageMatchResult} from 'y2020/vision/sift/sift_generated'
 
 export class ImageHandler {
   private canvas = document.createElement('canvas');
   private imageBuffer: Uint8ClampedArray|null = null;
   private imageTimestamp: flatbuffers.Long|null = null;
-  private result: fr971.vision.ImageMatchResult|null = null;
+  private result: ImageMatchResult|null = null;
   private resultTimestamp: flatbuffers.Long|null = null;
 
   constructor() {
@@ -56,7 +57,7 @@ export class ImageHandler {
 
   handleImageMetadata(data: Uint8Array): void {
     const fbBuffer = new flatbuffers.ByteBuffer(data);
-    this.result = frc971.vision.ImageMatchResult.getRootAsImageMatchResult(fbBuffer);
+    this.result = ImageMatchResult.getRootAsImageMatchResult(fbBuffer);
     this.resultTimestamp = result.imageMonotonicTimestampNs();
     draw();
   }
@@ -92,6 +93,6 @@ export class ImageHandler {
   }
 
   getResultId(): string {
-    return frc971.vision.ImageMatchResult.getFullyQualifiedName();
+    return ImageMatchResult.getFullyQualifiedName();
   }
 }

@@ -1,5 +1,6 @@
 import {ConfigHandler} from './config_handler';
 import {Configuration} from 'aos/configuration_generated';
+import * as WebProxy from 'aos/network/web_proxy_generated';
 
 // There is one handler for each DataChannel, it maintains the state of
 // multi-part messages and delegates to a callback when the message is fully
@@ -73,7 +74,7 @@ export class Connection {
     const fbBuffer = new flatbuffers.ByteBuffer(new Uint8Array(e.data));
     // TODO(alex): handle config updates if/when required
     if (!this.configHandler) {
-      const config = aos.Configuration.getRootAsConfiguration(fbBuffer);
+      const config = Configuration.getRootAsConfiguration(fbBuffer);
       this.config = config;
       this.configHandler = new ConfigHandler(config, this.dataChannel);
       this.configHandler.printConfig();
