@@ -43,7 +43,7 @@ cc_binary(
         "//aos/events:shm_event_loop",
         "//aos/network:team_number",
         "//third_party:opencv",
-        "//y2020/vision/sift:demo_sift",
+        "//y2020/vision/tools/python_code:sift_training_data",
         "//y2020/vision/sift:sift971",
         "//y2020/vision/sift:sift_fbs",
         "//y2020/vision/sift:sift_training_fbs",
