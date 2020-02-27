@@ -128,3 +128,21 @@ the code on May 13, 2018.
 # log messages and changes.
    apt-get install gitg
 ```
+
+### Roborio Kernel Traces
+
+Currently (as of 2020.02.26), top tends to produce misleading statistics. As
+such, you can get more useful information about CPU usage by using kernel
+traces. Sample usage:
+```console
+# Note that you will need to install the trace-cmd package on the roborio.
+# This may be not be a trivial task.
+# Start the trace
+trace-cmd start -e sched_switch -e workqueue
+# Stop the trace
+trace-cmd stop
+# Save the trace to trace.dat
+trace-cmd extract
+```
+You can then scp the `trace.dat` file to your computer and run `kernelshark
+trace.dat` (may require installing the `kernelshark` apt package).

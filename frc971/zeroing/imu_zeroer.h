@@ -22,7 +22,10 @@ class ImuZeroer {
   ImuZeroer();
   bool Zeroed() const;
   bool Faulted() const;
-  void ProcessMeasurement(const IMUValues &values);
+  void InsertMeasurement(const IMUValues &values);
+  // PErforms the heavier-duty processing for managing zeroing.
+  void ProcessMeasurements();
+  void InsertAndProcessMeasurement(const IMUValues &values);
   Eigen::Vector3d GyroOffset() const;
   Eigen::Vector3d ZeroedGyro() const;
   Eigen::Vector3d ZeroedAccel() const;

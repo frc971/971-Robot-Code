@@ -148,7 +148,7 @@ void DrivetrainLoop::RunIteration(
   }
 
   while (imu_values_fetcher_.FetchNext()) {
-    imu_zeroer_.ProcessMeasurement(*imu_values_fetcher_);
+    imu_zeroer_.InsertMeasurement(*imu_values_fetcher_);
     last_gyro_time_ = monotonic_now;
     if (!imu_zeroer_.Zeroed()) {
       continue;
@@ -165,6 +165,7 @@ void DrivetrainLoop::RunIteration(
 
   bool got_imu_reading = false;
   if (imu_values_fetcher_.get() != nullptr) {
+    imu_zeroer_.ProcessMeasurements();
     got_imu_reading = true;
     switch (dt_config_.imu_type) {
       case IMUType::IMU_X:
