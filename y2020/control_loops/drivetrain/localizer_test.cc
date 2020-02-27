@@ -124,7 +124,6 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
         drivetrain_plant_(drivetrain_plant_event_loop_.get(), dt_config_),
         last_frame_(monotonic_now()) {
     set_team_id(frc971::control_loops::testing::kTeamNumber);
-    SetStartingPosition({3.0, 2.0, 0.0});
     set_battery_voltage(12.0);
 
     if (!FLAGS_output_file.empty()) {
@@ -166,6 +165,8 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
           builder.Send(status_builder.Finish());
         },
         chrono::milliseconds(5));
+
+    test_event_loop_->OnRun([this]() { SetStartingPosition({3.0, 2.0, 0.0}); });
 
     // Run for enough time to allow the gyro/imu zeroing code to run.
     RunFor(std::chrono::seconds(10));
