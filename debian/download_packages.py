@@ -29,6 +29,30 @@ def map_virtual_packages(packages):
     if package == b'python3-numpy-abi9':
       yield b'python3-numpy'
       continue
+    if package == b'libjack-0.125':
+      yield b'libjack-jackd2-0'
+      continue
+    if package == b'fonts-freefont':
+      yield b'fonts-freefont-ttf'
+      continue
+    if package == b'gsettings-backend':
+      yield b'dconf-gsettings-backend'
+      continue
+    if package == b'gdal-abi-2-4-0':
+      yield b'libgdal20'
+      continue
+    if package == b'libglu1':
+      yield b'libglu1-mesa'
+      continue
+    if package == b'liblapack.so.3':
+      yield b'liblapack3'
+      continue
+    if package == b'libopencl1':
+      yield b'ocl-icd-libopencl1'
+      continue
+    if package == b'libblas.so.3':
+      yield b'libblas3'
+      continue
     yield package
 
 def download_deps(packages, excludes, force_includes):
@@ -65,8 +89,10 @@ def print_file_list():
   print("}")
 
 _ALWAYS_EXCLUDE = [
+    "dbus-session-bus",
     "debconf",
     "debconf-2.0",
+    "default-dbus-session-bus",
     "dpkg",
     "install-info",
     "libc-dev",
