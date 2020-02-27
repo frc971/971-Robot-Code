@@ -3,6 +3,7 @@
 set -xe
 
 IMAGE="2020-02-13-raspbian-buster-lite.img"
+BOOT_PARTITION="2020-02-13-raspbian-buster-lite.img.boot_partition"
 PARTITION="2020-02-13-raspbian-buster-lite.img.partition"
 HOSTNAME="pi-8971-1"
 
@@ -16,6 +17,26 @@ function user_pi_target() {
 
 
 mkdir -p "${PARTITION}"
+mkdir -p "${BOOT_PARTITION}"
+
+if mount | grep "${BOOT_PARTITION}" >/dev/null ;
+then
+  echo "Already mounted"
+else
+  OFFSET="$(fdisk -lu "${IMAGE}" | grep "${IMAGE}1" | awk '{print 512*$2}')"
+  sudo mount -o loop,offset=${OFFSET} "${IMAGE}" "${BOOT_PARTITION}"
+fi
+
+# Enable the camera on boot.
+if ! grep "start_x=1" "${BOOT_PARTITION}/config.txt"; then
+  echo "start_x=1" | sudo tee -a "${BOOT_PARTITION}/config.txt"
+fi
+if ! grep "gpu_mem=128" "${BOOT_PARTITION}/config.txt"; then
+  echo "gpu_mem=128" | sudo tee -a "${BOOT_PARTITION}/config.txt"
+fi
+
+sudo umount "${BOOT_PARTITION}"
+rmdir "${BOOT_PARTITION}"
 
 if mount | grep "${PARTITION}" >/dev/null ;
 then
