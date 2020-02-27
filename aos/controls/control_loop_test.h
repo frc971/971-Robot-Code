@@ -114,6 +114,10 @@ class ControlLoopTestTemplated : public TestBaseClass {
     return &configuration_.message();
   }
 
+  SimulatedEventLoopFactory *event_loop_factory() {
+    return &event_loop_factory_;
+  }
+
  private:
   // Sends out all of the required queue messages.
   void SendJoystickState() {

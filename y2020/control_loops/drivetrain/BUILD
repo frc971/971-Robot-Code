@@ -59,6 +59,7 @@ cc_library(
     hdrs = ["localizer.h"],
     deps = [
         "//aos/containers:ring_buffer",
+        "//aos/network:message_bridge_server_fbs",
         "//frc971/control_loops:profiled_subsystem_fbs",
         "//frc971/control_loops/drivetrain:hybrid_ekf",
         "//frc971/control_loops/drivetrain:localizer",

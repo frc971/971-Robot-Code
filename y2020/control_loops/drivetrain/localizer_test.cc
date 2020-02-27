@@ -4,6 +4,7 @@
 
 #include "aos/controls/control_loop_test.h"
 #include "aos/events/logging/logger.h"
+#include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/team_number.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
@@ -84,6 +85,8 @@ std::vector<Eigen::Matrix<double, 4, 4>> TargetLocations() {
   locations.push_back(H);
   return locations;
 }
+
+constexpr std::chrono::seconds kPiTimeOffset(10);
 }  // namespace
 
 namespace chrono = std::chrono;
@@ -113,6 +116,9 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
         superstructure_status_sender_(
             test_event_loop_->MakeSender<superstructure::Status>(
                 "/superstructure")),
+        server_statistics_sender_(
+            test_event_loop_->MakeSender<aos::message_bridge::ServerStatistics>(
+                "/aos")),
         drivetrain_event_loop_(MakeEventLoop("drivetrain", roborio_)),
         dt_config_(GetTest2020DrivetrainConfig()),
         pi1_event_loop_(MakeEventLoop("test", pi1_)),
@@ -123,6 +129,9 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
         drivetrain_plant_event_loop_(MakeEventLoop("plant", roborio_)),
         drivetrain_plant_(drivetrain_plant_event_loop_.get(), dt_config_),
         last_frame_(monotonic_now()) {
+    event_loop_factory()->GetNodeEventLoopFactory(pi1_)->SetDistributedOffset(
+        kPiTimeOffset);
+
     set_team_id(frc971::control_loops::testing::kTeamNumber);
     SetStartingPosition({3.0, 2.0, 0.0});
     set_battery_voltage(12.0);
@@ -148,6 +157,29 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
             }
           }
           });
+
+    test_event_loop_->AddPhasedLoop(
+        [this](int) {
+          auto builder = server_statistics_sender_.MakeBuilder();
+          auto name_offset = builder.fbb()->CreateString("pi1");
+          auto node_builder = builder.MakeBuilder<aos::Node>();
+          node_builder.add_name(name_offset);
+          auto node_offset = node_builder.Finish();
+          auto connection_builder =
+              builder.MakeBuilder<aos::message_bridge::ServerConnection>();
+          connection_builder.add_node(node_offset);
+          connection_builder.add_monotonic_offset(
+              chrono::duration_cast<chrono::nanoseconds>(-kPiTimeOffset)
+                  .count());
+          auto connection_offset = connection_builder.Finish();
+          auto connections_offset =
+              builder.fbb()->CreateVector(&connection_offset, 1);
+          auto statistics_builder =
+              builder.MakeBuilder<aos::message_bridge::ServerStatistics>();
+          statistics_builder.add_connections(connections_offset);
+          builder.Send(statistics_builder.Finish());
+        },
+        chrono::milliseconds(500));
 
     test_event_loop_->AddPhasedLoop(
         [this](int) {
@@ -258,7 +290,10 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
 
     frame->image_monotonic_timestamp_ns =
         chrono::duration_cast<chrono::nanoseconds>(
-            monotonic_now().time_since_epoch())
+            event_loop_factory()
+                ->GetNodeEventLoopFactory(pi1_)
+                ->monotonic_now()
+                .time_since_epoch())
             .count();
     frame->camera_calibration.reset(new CameraCalibrationT());
     {
@@ -301,6 +336,7 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
   aos::Fetcher<Goal> drivetrain_goal_fetcher_;
   aos::Sender<LocalizerControl> localizer_control_sender_;
   aos::Sender<superstructure::Status> superstructure_status_sender_;
+  aos::Sender<aos::message_bridge::ServerStatistics> server_statistics_sender_;
 
   std::unique_ptr<aos::EventLoop> drivetrain_event_loop_;
   const frc971::control_loops::drivetrain::DrivetrainConfig<double>
