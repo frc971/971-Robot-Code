@@ -220,10 +220,13 @@ void CameraReader::ProcessImage(const CameraImage &image) {
       continue;
     }
 
-    cv::Mat R_camera_target, T_camera_target;
+    cv::Mat R_camera_target_vec, R_camera_target, T_camera_target;
+    // Compute the pose of the camera (global origin relative to camera)
     cv::solvePnPRansac(per_image.training_points_3d, per_image.query_points,
-                       CameraIntrinsics(), cv::noArray(), R_camera_target,
+                       CameraIntrinsics(), cv::noArray(), R_camera_target_vec,
                        T_camera_target);
+    // Convert Camera from angle-axis (3x1) to homogenous (3x3) representation
+    cv::Rodrigues(R_camera_target_vec, R_camera_target);
 
     sift::CameraPose::Builder pose_builder(*builder.fbb());
     {
