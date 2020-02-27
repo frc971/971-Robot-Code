@@ -353,6 +353,15 @@ void CameraReaderMain() {
   cv::FlannBasedMatcher matcher(index_params, search_params);
 
   aos::ShmEventLoop event_loop(&config.message());
+
+  // First, log the data for future reference.
+  {
+    aos::Sender<sift::TrainingData> training_data_sender =
+        event_loop.MakeSender<sift::TrainingData>("/camera");
+    training_data_sender.Send(
+        aos::FlatbufferString<sift::TrainingData>(training_data_bfbs));
+  }
+
   V4L2Reader v4l2_reader(&event_loop, "/dev/video0");
   CameraReader camera_reader(&event_loop, training_data, &v4l2_reader,
                              &matcher);

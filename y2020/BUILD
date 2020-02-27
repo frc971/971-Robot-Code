@@ -121,6 +121,7 @@ aos_config(
         "//y2020/control_loops/superstructure:superstructure_position_fbs",
         "//y2020/control_loops/superstructure:superstructure_status_fbs",
         "//y2020/vision/sift:sift_fbs",
+        "//y2020/vision/sift:sift_training_fbs",
         "//y2020/vision:vision_fbs",
     ],
     visibility = ["//visibility:public"],
