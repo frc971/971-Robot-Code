@@ -14,13 +14,40 @@ function user_pi_target() {
   USER=root sudo proot -0 -q qemu-arm-static -w / -r "${PARTITION}" sudo -h 127.0.0.1 -u pi "$@"
 }
 
-OFFSET="$(fdisk -lu "${IMAGE}" | grep "${IMAGE}2" | awk '{print 512*$2}')"
+
 mkdir -p "${PARTITION}"
 
 if mount | grep "${PARTITION}" >/dev/null ;
 then
   echo "Already mounted"
 else
+  OFFSET="$(fdisk -lu "${IMAGE}" | grep "${IMAGE}2" | awk '{print 512*$2}')"
+
+  if [[ "$(stat -c %s "${IMAGE}")" == 1849688064 ]]; then
+    echo "Growing image"
+    dd if=/dev/zero bs=1M count=1024 >> "${IMAGE}"
+    START="$(fdisk -lu "${IMAGE}" | grep "${IMAGE}2" | awk '{print $2}')"
+
+    sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | fdisk "${IMAGE}"
+  d # remove old partition
+  2
+  n # new partition
+  p # primary partition
+  2 # partion number 2
+  532480 # start where the old one starts
+    # To the end
+  p # print the in-memory partition table
+  w # Flush
+  q # and we're done
+EOF
+
+    sudo losetup -o "${OFFSET}" -f "${IMAGE}"
+    LOOPBACK="$(sudo losetup --list | grep "${IMAGE}" | awk '{print $1}')"
+    sudo e2fsck -f "${LOOPBACK}"
+    sudo resize2fs "${LOOPBACK}"
+    sudo losetup -d "${LOOPBACK}"
+  fi
+
   echo "Mounting"
   sudo mount -o loop,offset=${OFFSET} "${IMAGE}" "${PARTITION}"
 fi
