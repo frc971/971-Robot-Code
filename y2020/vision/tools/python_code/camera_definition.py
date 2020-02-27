@@ -55,8 +55,8 @@ web_cam_params.camera_ext = web_cam_ext
 
 camera_list = []
 
-for team_number in (971, 8971, 9971):
-    for node_name in ("pi-0", "pi-1", "pi-2", "pi-3", "pi-4"):
+for team_number in (971, 7971, 8971, 9971):
+    for node_name in ("pi0", "pi1", "pi2", "pi3", "pi4"):
         camera_base = copy.deepcopy(web_cam_params)
         camera_base.node_name = node_name
         camera_base.team_number = team_number

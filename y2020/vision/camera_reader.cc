@@ -7,7 +7,7 @@
 #include "aos/init.h"
 #include "aos/network/team_number.h"
 
-#include "y2020/vision/sift/demo_sift.h"
+#include "y2020/vision/tools/python_code/sift_training_data.h"
 #include "y2020/vision/sift/sift971.h"
 #include "y2020/vision/sift/sift_generated.h"
 #include "y2020/vision/sift/sift_training_generated.h"
@@ -338,7 +338,7 @@ void CameraReaderMain() {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig("config.json");
 
-  const auto training_data_bfbs = DemoSiftData();
+  const auto training_data_bfbs = SiftTrainingData();
   const sift::TrainingData *const training_data =
       flatbuffers::GetRoot<sift::TrainingData>(training_data_bfbs.data());
   {
