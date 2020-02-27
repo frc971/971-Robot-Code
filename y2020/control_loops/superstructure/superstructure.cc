@@ -43,11 +43,12 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     if (joystick_state_fetcher_.Fetch()) {
       alliance = joystick_state_fetcher_->alliance();
     }
-    const turret::Aimer::Mode mode =
+    const turret::Aimer::WrapMode mode =
         (unsafe_goal != nullptr && unsafe_goal->shooting())
-            ? turret::Aimer::Mode::kAvoidWrapping
-            : turret::Aimer::Mode::kAvoidEdges;
-    aimer_.Update(drivetrain_status_fetcher_.get(), alliance, mode);
+            ? turret::Aimer::WrapMode::kAvoidWrapping
+            : turret::Aimer::WrapMode::kAvoidEdges;
+    aimer_.Update(drivetrain_status_fetcher_.get(), alliance, mode,
+                  turret::Aimer::ShotMode::kShootOnTheFly);
   }
 
   const flatbuffers::Offset<AimerStatus> aimer_status_offset =

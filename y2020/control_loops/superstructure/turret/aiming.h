@@ -28,7 +28,7 @@ class Aimer {
   typedef frc971::control_loops::drivetrain::Status Status;
   // Mode to run the aimer in, to control how we manage wrapping the turret
   // angle.
-  enum class Mode {
+  enum class WrapMode {
     // Keep the turret as far away from the edges of the range of motion as
     // reasonable, to minimize the odds that we will hit the hardstops once we
     // start shooting.
@@ -38,9 +38,23 @@ class Aimer {
     // shooting.
     kAvoidWrapping,
   };
+
+  // Control modes for managing how we manage shooting on the fly.
+  enum class ShotMode {
+    // Don't do any shooting-on-the-fly compensation--just point straight at the
+    // target. Primarily used in tests.
+    kStatic,
+    // Do do shooting-on-the-fly compensation.
+    kShootOnTheFly,
+  };
+
   Aimer();
-  void Update(const Status *status, aos::Alliance alliance, Mode mode);
+
+  void Update(const Status *status, aos::Alliance alliance, WrapMode wrap_mode,
+              ShotMode shot_mode);
+
   const Goal *TurretGoal() const { return &goal_.message(); }
+
   // Returns the distance to the goal, in meters.
   double DistanceToGoal() const { return distance_; }
 

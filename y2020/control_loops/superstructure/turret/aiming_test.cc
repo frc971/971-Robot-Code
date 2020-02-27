@@ -44,11 +44,12 @@ class AimerTest : public ::testing::Test {
     return fbb.Release();
   }
 
-  const Goal *Update(const StatusData &data,
-                     aos::Alliance alliance = aos::Alliance::kBlue,
-                     Aimer::Mode mode = Aimer::Mode::kAvoidEdges) {
+  const Goal *Update(
+      const StatusData &data, aos::Alliance alliance = aos::Alliance::kBlue,
+      Aimer::WrapMode wrap_mode = Aimer::WrapMode::kAvoidEdges,
+      Aimer::ShotMode shot_mode = Aimer::ShotMode::kShootOnTheFly) {
     const auto buffer = MakeStatus(data);
-    aimer_.Update(&buffer.message(), alliance, mode);
+    aimer_.Update(&buffer.message(), alliance, wrap_mode, shot_mode);
     const Goal *goal = aimer_.TurretGoal();
     EXPECT_TRUE(goal->ignore_profile());
     return goal;
@@ -67,6 +68,7 @@ TEST_F(AimerTest, StandingStill) {
                              .angular = 0.0});
   EXPECT_EQ(M_PI, goal->unsafe_goal());
   EXPECT_EQ(0.0, goal->goal_velocity());
+  EXPECT_EQ(1.0, aimer_.DistanceToGoal());
   goal = Update({.x = target.abs_pos().x() + 1.0,
                  .y = target.abs_pos().y() + 0.0,
                  .theta = 1.0,
@@ -81,6 +83,7 @@ TEST_F(AimerTest, StandingStill) {
                  .angular = 0.0});
   EXPECT_EQ(-M_PI + 1.0, aos::math::NormalizeAngle(goal->unsafe_goal()));
   EXPECT_EQ(0.0, goal->goal_velocity());
+  EXPECT_EQ(1.0, aimer_.DistanceToGoal());
   // Test that we handle the case that where we are right on top of the target.
   goal = Update({.x = target.abs_pos().x() + 0.0,
                  .y = target.abs_pos().y() + 0.0,
@@ -89,6 +92,7 @@ TEST_F(AimerTest, StandingStill) {
                  .angular = 0.0});
   EXPECT_EQ(0.0, goal->unsafe_goal());
   EXPECT_EQ(0.0, goal->goal_velocity());
+  EXPECT_EQ(0.0, aimer_.DistanceToGoal());
 }
 
 TEST_F(AimerTest, SpinningRobot) {
@@ -106,25 +110,68 @@ TEST_F(AimerTest, SpinningRobot) {
 // the turret.
 TEST_F(AimerTest, DrivingAwayFromTarget) {
   const Pose target = OuterPortPose(aos::Alliance::kBlue);
+  // To keep the test simple, disable shooting on the fly so that the
+  // goal distance comes out in an easy to calculate number.
   const Goal *goal = Update({.x = target.abs_pos().x() + 1.0,
                              .y = target.abs_pos().y() + 0.0,
                              .theta = 0.0,
                              .linear = 1.0,
-                             .angular = 0.0});
+                             .angular = 0.0},
+                            aos::Alliance::kBlue, Aimer::WrapMode::kAvoidEdges,
+                            Aimer::ShotMode::kStatic);
   EXPECT_EQ(M_PI, goal->unsafe_goal());
   EXPECT_FLOAT_EQ(0.0, goal->goal_velocity());
+  EXPECT_EQ(1.0, aimer_.DistanceToGoal());
+  // Next, try with shooting-on-the-fly enabled--because we are driving straight
+  // towards the target, only the goal distance should be impacted.
+  goal = Update({.x = target.abs_pos().x() + 1.0,
+                             .y = target.abs_pos().y() + 0.0,
+                             .theta = 0.0,
+                             .linear = 1.0,
+                             .angular = 0.0},
+                            aos::Alliance::kBlue, Aimer::WrapMode::kAvoidEdges,
+                            Aimer::ShotMode::kShootOnTheFly);
+  EXPECT_EQ(M_PI, goal->unsafe_goal());
+  EXPECT_FLOAT_EQ(0.0, goal->goal_velocity());
+  EXPECT_LT(1.0001, aimer_.DistanceToGoal());
+  EXPECT_GT(1.1, aimer_.DistanceToGoal());
 }
 
 // Tests that when we drive perpendicular to the target, we do have to spin.
 TEST_F(AimerTest, DrivingLateralToTarget) {
   const Pose target = OuterPortPose(aos::Alliance::kBlue);
+  // To keep the test simple, disable shooting on the fly so that the
+  // goal_velocity comes out in an easy to calculate number.
   const Goal *goal = Update({.x = target.abs_pos().x() + 0.0,
                              .y = target.abs_pos().y() + 1.0,
                              .theta = 0.0,
                              .linear = 1.0,
-                             .angular = 0.0});
+                             .angular = 0.0},
+                            aos::Alliance::kBlue, Aimer::WrapMode::kAvoidEdges,
+                            Aimer::ShotMode::kStatic);
   EXPECT_EQ(-M_PI_2, goal->unsafe_goal());
   EXPECT_FLOAT_EQ(-1.0, goal->goal_velocity());
+  EXPECT_EQ(1.0, aimer_.DistanceToGoal());
+  // Next, test with shooting-on-the-fly enabled, The goal numbers should all be
+  // slightly offset due to the robot velocity.
+  goal = Update({.x = target.abs_pos().x() + 0.0,
+                 .y = target.abs_pos().y() + 1.0,
+                 .theta = 0.0,
+                 .linear = 1.0,
+                 .angular = 0.0},
+                aos::Alliance::kBlue, Aimer::WrapMode::kAvoidEdges,
+                Aimer::ShotMode::kShootOnTheFly);
+  // Confirm that the turret heading goal is less then -pi / 2, but not by too
+  // much.
+  EXPECT_GT(-M_PI_2 - 0.001, goal->unsafe_goal());
+  EXPECT_LT(-M_PI_2 - 0.1, goal->unsafe_goal());
+  // Similarly, the turret velocity goal should be a bit greater than -1.0,
+  // since the turret is no longer at exactly a right angle.
+  EXPECT_LT(-1.0, goal->goal_velocity());
+  EXPECT_GT(-0.95, goal->goal_velocity());
+  // And the distance to the goal should be a bit greater than 1.0.
+  EXPECT_LT(1.0001, aimer_.DistanceToGoal());
+  EXPECT_GT(1.1, aimer_.DistanceToGoal());
 }
 
 // Confirms that we will indeed shoot at the inner port when we have a good shot
@@ -177,18 +224,18 @@ TEST_F(AimerTest, WrappingModes) {
                     .linear = 0.0,
                     .angular = 0.0};
   const Goal *goal =
-      Update(status, aos::Alliance::kBlue, Aimer::Mode::kAvoidWrapping);
+      Update(status, aos::Alliance::kBlue, Aimer::WrapMode::kAvoidWrapping);
   EXPECT_EQ(M_PI, goal->unsafe_goal());
   EXPECT_EQ(0.0, goal->goal_velocity());
   constexpr double kUpperLimit = constants::Values::kTurretRange().upper;
   // Move the robot to the upper limit with AvoidWrapping set--we should be at
   // the upper limit and not wrapped.
   status.theta = goal->unsafe_goal() - kUpperLimit;
-  goal = Update(status, aos::Alliance::kBlue, Aimer::Mode::kAvoidWrapping);
+  goal = Update(status, aos::Alliance::kBlue, Aimer::WrapMode::kAvoidWrapping);
   EXPECT_FLOAT_EQ(kUpperLimit, goal->unsafe_goal());
   EXPECT_EQ(0.0, goal->goal_velocity());
   // Enter kAvoidEdges mode--we should wrap around.
-  goal = Update(status, aos::Alliance::kBlue, Aimer::Mode::kAvoidEdges);
+  goal = Update(status, aos::Alliance::kBlue, Aimer::WrapMode::kAvoidEdges);
   // confirm that this test is actually testing something...
   ASSERT_NE(aos::math::NormalizeAngle(kUpperLimit), kUpperLimit);
   EXPECT_FLOAT_EQ(aos::math::NormalizeAngle(kUpperLimit), goal->unsafe_goal());
