@@ -330,6 +330,13 @@
       ]
     },
     {
+      "name": "/pi1/camera",
+      "type": "frc971.vision.sift.TrainingData",
+      "source_node": "pi1",
+      "frequency": 2,
+      "max_size": 2000000
+    },
+    {
       "name": "/autonomous",
       "type": "aos.common.actions.Status",
       "source_node": "roborio"
