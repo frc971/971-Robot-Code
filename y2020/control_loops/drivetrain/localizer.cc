@@ -40,6 +40,11 @@ Localizer::Localizer(
                              HandleSuperstructureStatus(status);
                            });
 
+  event_loop->OnRun([this, event_loop]() {
+    ekf_.ResetInitialState(event_loop->monotonic_now(), Ekf::State::Zero(),
+                           ekf_.P());
+  });
+
   image_fetchers_.emplace_back(
       event_loop_->MakeFetcher<frc971::vision::sift::ImageMatchResult>(
           "/pi1/camera"));
