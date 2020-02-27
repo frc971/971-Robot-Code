@@ -40,6 +40,7 @@ const ButtonLocation kShootFast(3, 16);
 const ButtonLocation kTurret(3, 15);
 const ButtonLocation kHood(3, 3);
 const ButtonLocation kShootSlow(4, 2);
+const ButtonLocation kFeed(4, 1);
 const ButtonLocation kIntakeExtend(3, 9);
 const ButtonLocation kIntakeIn(4, 4);
 const ButtonLocation kSpit(4, 5);
@@ -84,8 +85,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     if (data.IsPressed(kShootFast)) {
-      accelerator_speed = 600.0;
-      finisher_speed = 200.0;
+      accelerator_speed = 500.0;
+      finisher_speed = 500.0;
     } else if (data.IsPressed(kShootSlow)) {
       accelerator_speed = 30.0;
       finisher_speed = 30.0;
@@ -93,6 +94,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     if (data.IsPressed(kIntakeExtend)) {
       intake_pos = 1.0;
+    }
+
+    if (data.IsPressed(kFeed)) {
     }
 
     if (data.IsPressed(kIntakeIn)) {
@@ -132,6 +136,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       superstructure_goal_builder.add_turret(turret_offset);
       superstructure_goal_builder.add_roller_voltage(roller_speed);
       superstructure_goal_builder.add_shooter(shooter_offset);
+      superstructure_goal_builder.add_shooting(data.IsPressed(kFeed));
 
       if (!builder.Send(superstructure_goal_builder.Finish())) {
         AOS_LOG(ERROR, "Sending superstructure goal failed.\n");

@@ -97,6 +97,12 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   if (output != nullptr) {
     if (unsafe_goal) {
+        output_struct.washing_machine_spinner_voltage = 6.0;
+      if (unsafe_goal->shooting()) {
+        output_struct.feeder_voltage = 6.0;
+      } else {
+        output_struct.feeder_voltage = 0.0;
+      }
       output_struct.intake_roller_voltage = unsafe_goal->roller_voltage();
     } else {
       output_struct.intake_roller_voltage = 0.0;
