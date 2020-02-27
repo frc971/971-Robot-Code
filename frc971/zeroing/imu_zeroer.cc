@@ -35,15 +35,23 @@ bool ImuZeroer::AccelZeroReady() const {
          accel_averager_.GetRange() < kAccelMaxVariation;
 }
 
-void ImuZeroer::ProcessMeasurement(const IMUValues &values) {
+void ImuZeroer::InsertAndProcessMeasurement(const IMUValues &values) {
+  InsertMeasurement(values);
+  ProcessMeasurements();
+}
+
+void ImuZeroer::InsertMeasurement(const IMUValues &values) {
   last_gyro_sample_ << values.gyro_x(), values.gyro_y(), values.gyro_z();
   gyro_averager_.AddData(last_gyro_sample_);
   last_accel_sample_ << values.accelerometer_x(), values.accelerometer_y(),
                            values.accelerometer_z();
   accel_averager_.AddData(last_accel_sample_);
+}
+
+void ImuZeroer::ProcessMeasurements() {
   if (GyroZeroReady() && AccelZeroReady()) {
     ++good_iters_;
-    if (good_iters_ > kSamplesToAverage / 4) {
+    if (good_iters_ > kSamplesToAverage / 40) {
       const Eigen::Vector3d current_gyro_average = gyro_averager_.GetAverage();
       constexpr double kAverageUpdateWeight = 0.05;
       if (num_zeroes_ > 0) {

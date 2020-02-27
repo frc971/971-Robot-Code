@@ -84,7 +84,7 @@ class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
         });
 
     // Run for enough time to allow the gyro/imu zeroing code to run.
-    RunFor(std::chrono::seconds(10));
+    RunFor(std::chrono::seconds(15));
   }
 
   virtual ~LocalizedDrivetrainTest() {}
