@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
       PCHECK(rename(FLAGS_logfile.c_str(), orig_path.c_str()) == 0);
 
       aos::logger::SpanReader span_reader(orig_path);
-      CHECK(span_reader.ReadMessage().empty());
+      CHECK(!span_reader.ReadMessage().empty()) << ": Empty header, aborting";
 
       aos::logger::DetachedBufferWriter buffer_writer(FLAGS_logfile);
       buffer_writer.QueueSizedFlatbuffer(&fbb);
