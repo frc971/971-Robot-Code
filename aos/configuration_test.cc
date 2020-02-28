@@ -85,6 +85,31 @@ TEST_F(ConfigurationDeathTest, DuplicateFile) {
       "aos/testdata/config1_bad.json");
 }
 
+// Tests that we can modify a config with a json snippet.
+TEST_F(ConfigurationTest, MergeWithConfig) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig("aos/testdata/config1.json");
+  LOG(INFO) << "Read: " << FlatbufferToJson(config, true);
+
+  FlatbufferDetachedBuffer<Configuration> updated_config =
+      MergeWithConfig(&config.message(),
+                      R"channel({
+  "channels": [
+    {
+      "name": "/foo",
+      "type": ".aos.bar",
+      "max_size": 100
+    }
+  ]
+})channel");
+
+  EXPECT_EQ(
+      absl::StripSuffix(util::ReadFileToStringOrDie(
+                            "aos/testdata/expected_merge_with.json"),
+                        "\n"),
+      FlatbufferToJson(updated_config, true));
+}
+
 // Tests that we can lookup a location, complete with maps, from a merged
 // config.
 TEST_F(ConfigurationTest, GetChannel) {

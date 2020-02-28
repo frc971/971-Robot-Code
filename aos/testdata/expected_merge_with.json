@@ -1,0 +1,64 @@
+{
+ "channels": [
+  {
+   "name": "/foo",
+   "type": ".aos.bar",
+   "max_size": 100
+  },
+  {
+   "name": "/foo2",
+   "type": ".aos.bar"
+  },
+  {
+   "name": "/foo3",
+   "type": ".aos.bar",
+   "max_size": 9
+  }
+ ],
+ "maps": [
+  {
+   "match": {
+    "name": "/batman"
+   },
+   "rename": {
+    "name": "/bar"
+   }
+  },
+  {
+   "match": {
+    "name": "/batman"
+   },
+   "rename": {
+    "name": "/foo"
+   }
+  }
+ ],
+ "applications": [
+  {
+   "name": "app1",
+   "maps": [
+    {
+     "match": {
+      "name": "/bar"
+     },
+     "rename": {
+      "name": "/foo"
+     }
+    }
+   ]
+  },
+  {
+   "name": "app2",
+   "maps": [
+    {
+     "match": {
+      "name": "/baz"
+     },
+     "rename": {
+      "name": "/foo"
+     }
+    }
+   ]
+  }
+ ]
+}

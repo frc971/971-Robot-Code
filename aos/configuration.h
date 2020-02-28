@@ -32,6 +32,11 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
     const Flatbuffer<Configuration> &config,
     const std::vector<aos::FlatbufferString<reflection::Schema>> &schemas);
 
+// Merges a configuration json snippet into the provided configuration and
+// returns the modified config.
+FlatbufferDetachedBuffer<Configuration> MergeWithConfig(
+    const Configuration *config, std::string_view json);
+
 // Returns the resolved location for a name, type, and application name. Returns
 // nullptr if none is found.
 //

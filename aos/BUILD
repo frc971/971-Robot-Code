@@ -477,6 +477,7 @@ cc_test(
         "testdata/config2_multinode.json",
         "testdata/config3.json",
         "testdata/expected.json",
+        "testdata/expected_merge_with.json",
         "testdata/expected_multinode.json",
         "testdata/good_multinode.json",
         "testdata/good_multinode_hostnames.json",
