@@ -49,14 +49,14 @@ def main():
   TrainingImage.TrainingImageStart(fbb)
   TrainingImage.TrainingImageAddFeatures(fbb, features_vector_table)
   # TODO(Brian): Fill out the transformation matrices.
-  training_image = TrainingImage.TrainingImageEnd(fbb)
+  training_image_offset = TrainingImage.TrainingImageEnd(fbb)
 
   TrainingData.TrainingDataStartImagesVector(fbb, 1)
-  fbb.PrependUOffsetTRelative(training_image)
-  images = fbb.EndVector(1)
+  fbb.PrependUOffsetTRelative(training_image_offset)
+  images_offset = fbb.EndVector(1)
 
   TrainingData.TrainingDataStart(fbb)
-  TrainingData.TrainingDataAddImages(fbb, images)
+  TrainingData.TrainingDataAddImages(fbb, images_offset)
   fbb.Finish(TrainingData.TrainingDataEnd(fbb))
 
   bfbs = fbb.Output()

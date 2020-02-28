@@ -181,7 +181,7 @@ def compute_target_definition():
     # These are manually captured by examining the images,
     # and entering the pixel values from the target center for each image.
     # These are currently only used for visualization of the target
-    ideal_power_port_red.target_point_2d = np.float32([[570,192]]).reshape(-1,1,2), # train_power_port_red.png
+    ideal_power_port_red.target_point_2d = np.float32([[570,192]]).reshape(-1,1,2)  # train_power_port_red.png
 
     # np.float32([[305, 97]]).reshape(-1, 1, 2),  #train_power_port_red_webcam.png
 
@@ -222,7 +222,7 @@ def compute_target_definition():
     ideal_loading_bay_red.target_position = np.array([field_length/2.,
                                                      loading_bay_edge_y + loading_bay_width/2.,
                                                       loading_bay_height/2.])
-    ideal_loading_bay_red.target_point_2d = np.float32([[366, 236]]).reshape(-1, 1, 2),  # train_loading_bay_red.png
+    ideal_loading_bay_red.target_point_2d = np.float32([[366, 236]]).reshape(-1, 1, 2)  # train_loading_bay_red.png
 
     ideal_target_list.append(ideal_loading_bay_red)
     training_target_loading_bay_red = TargetData(
@@ -285,7 +285,7 @@ def compute_target_definition():
     ideal_power_port_blue.target_position = np.array([field_length/2.,
                                                      -power_port_edge_y - power_port_width/2.,
                                                       power_port_target_height])
-    ideal_power_port_blue.target_point_2d = np.float32([[567, 180]]).reshape(-1, 1, 2),  # train_power_port_blue.png
+    ideal_power_port_blue.target_point_2d = np.float32([[567, 180]]).reshape(-1, 1, 2)  # train_power_port_blue.png
 
     ideal_target_list.append(ideal_power_port_blue)
     training_target_power_port_blue = TargetData(
@@ -325,7 +325,7 @@ def compute_target_definition():
     ideal_loading_bay_blue.target_position = np.array([-field_length/2.,
                                                      -loading_bay_edge_y - loading_bay_width/2.,
                                                        loading_bay_height/2.])
-    ideal_loading_bay_blue.target_point_2d = np.float32([[366, 236]]).reshape(-1, 1, 2),  # train_loading_bay_blue.png
+    ideal_loading_bay_blue.target_point_2d = np.float32([[366, 236]]).reshape(-1, 1, 2)  # train_loading_bay_blue.png
 
     ideal_target_list.append(ideal_loading_bay_blue)
     training_target_loading_bay_blue = TargetData(

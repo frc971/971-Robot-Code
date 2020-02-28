@@ -10,6 +10,10 @@ table TrainingImage {
   // from the target to the field. See CameraPose in :sift_fbs for details of
   // the conventions of this.
   field_to_target:TransformationMatrix;
+
+  // 2D image coordinate representing target location on the training image
+  target_point_x:float;
+  target_point_y:float;
 }
 
 // Represents the information used to match incoming images against.

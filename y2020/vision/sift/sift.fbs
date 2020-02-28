@@ -60,8 +60,8 @@ table ImageMatch {
 }
 
 table TransformationMatrix {
-  // The matrix data. This is a row-major 4x4 matrix.
-  // In other words, the bottom row is (0, 0, 0, 1).
+  // The matrix data for a row-major 4x4 homogeneous transformation matrix.
+  // This implies the bottom row is (0, 0, 0, 1).
   data:[float];
 }
 
@@ -97,6 +97,9 @@ table CameraCalibration {
   //   rotation around the Z axis by the turret angle
   //   turret_extrinsics
   turret_extrinsics:TransformationMatrix;
+
+  // This is the standard OpenCV 5 parameter distortion coefficients
+  dist_coeffs:[float];
 }
 
 // Contains the information the EKF wants from an image matched against a single
@@ -128,6 +131,7 @@ table ImageMatchResult {
   // The matches from this image to each of the training images which matched.
   // Each member is against the same captured image.
   image_matches:[ImageMatch];
+
   // The transformations for this image for each of the training images which
   // matched.
   // TODO(Brian): Include some kind of covariance information for these.
@@ -141,6 +145,10 @@ table ImageMatchResult {
 
   // Information about the camera which took this image.
   camera_calibration:CameraCalibration;
+
+  // 2D image coordinate representing target location on the matched image
+  target_point_x:float;
+  target_point_y:float;
 }
 
 root_type ImageMatchResult;

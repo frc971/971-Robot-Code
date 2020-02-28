@@ -7,10 +7,10 @@
 #include "aos/init.h"
 #include "aos/network/team_number.h"
 
-#include "y2020/vision/tools/python_code/sift_training_data.h"
 #include "y2020/vision/sift/sift971.h"
 #include "y2020/vision/sift/sift_generated.h"
 #include "y2020/vision/sift/sift_training_generated.h"
+#include "y2020/vision/tools/python_code/sift_training_data.h"
 #include "y2020/vision/v4l2_reader.h"
 #include "y2020/vision/vision_generated.h"
 
@@ -31,6 +31,8 @@ class CameraReader {
         image_sender_(event_loop->MakeSender<CameraImage>("/camera")),
         result_sender_(
             event_loop->MakeSender<sift::ImageMatchResult>("/camera")),
+        detailed_result_sender_(
+            event_loop->MakeSender<sift::ImageMatchResult>("/camera/detailed")),
         read_image_timer_(event_loop->AddTimer([this]() {
           ReadImage();
           read_image_timer_->Setup(event_loop_->monotonic_now());
@@ -63,6 +65,14 @@ class CameraReader {
                const std::vector<cv::KeyPoint> &keypoints,
                const cv::Mat &descriptors);
 
+  void SendImageMatchResult(const CameraImage &image,
+                            const std::vector<cv::KeyPoint> &keypoints,
+                            const cv::Mat &descriptors,
+                            const std::vector<std::vector<cv::DMatch>> &matches,
+                            const std::vector<cv::Mat> &camera_target_list,
+                            aos::Sender<sift::ImageMatchResult> *result_sender,
+                            bool send_details);
+
   // Returns the 3D location for the specified training feature.
   cv::Point3f Training3dPoint(int training_image_index,
                               int feature_index) const {
@@ -93,6 +103,14 @@ class CameraReader {
     return result;
   }
 
+  cv::Mat CameraDistCoeffs() const {
+    const cv::Mat result(5, 1, CV_32F,
+                         const_cast<void *>(static_cast<const void *>(
+                             camera_calibration_->dist_coeffs()->data())));
+    CHECK_EQ(result.total(), camera_calibration_->dist_coeffs()->size());
+    return result;
+  }
+
   aos::EventLoop *const event_loop_;
   const sift::TrainingData *const training_data_;
   const sift::CameraCalibration *const camera_calibration_;
@@ -100,6 +118,7 @@ class CameraReader {
   cv::FlannBasedMatcher *const matcher_;
   aos::Sender<CameraImage> image_sender_;
   aos::Sender<sift::ImageMatchResult> result_sender_;
+  aos::Sender<sift::ImageMatchResult> detailed_result_sender_;
   // We schedule this immediately to read an image. Having it on a timer means
   // other things can run on the event loop in between.
   aos::TimerHandler *const read_image_timer_;
@@ -146,13 +165,58 @@ void CameraReader::CopyTrainingFeatures() {
   }
 }
 
-void CameraReader::ProcessImage(const CameraImage &image) {
-  // Be ready to pack the results up and send them out. We can pack things into
-  // this memory as we go to allow reusing temporaries better.
-  auto builder = result_sender_.MakeBuilder();
+void CameraReader::SendImageMatchResult(
+    const CameraImage &image, const std::vector<cv::KeyPoint> &keypoints,
+    const cv::Mat &descriptors,
+    const std::vector<std::vector<cv::DMatch>> &matches,
+    const std::vector<cv::Mat> &camera_target_list,
+    aos::Sender<sift::ImageMatchResult> *result_sender, bool send_details) {
+  auto builder = result_sender->MakeBuilder();
   const auto camera_calibration_offset =
       aos::CopyFlatBuffer(camera_calibration_, builder.fbb());
 
+  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sift::Feature>>>
+      features_offset;
+  if (send_details) {
+    features_offset = PackFeatures(builder.fbb(), keypoints, descriptors);
+  }
+
+  const auto image_matches_offset = PackImageMatches(builder.fbb(), matches);
+
+  std::vector<flatbuffers::Offset<sift::CameraPose>> camera_poses;
+
+  for (size_t i = 0; i < camera_target_list.size(); ++i) {
+    cv::Mat camera_target = camera_target_list[i];
+    CHECK(camera_target.isContinuous());
+    const auto data_offset = builder.fbb()->CreateVector<float>(
+        reinterpret_cast<float *>(camera_target.data), camera_target.total());
+    auto transform_offset =
+        sift::CreateTransformationMatrix(*builder.fbb(), data_offset);
+
+    sift::CameraPose::Builder pose_builder(*builder.fbb());
+    pose_builder.add_camera_to_target(transform_offset);
+    pose_builder.add_field_to_target(
+        aos::CopyFlatBuffer(FieldToTarget(i), builder.fbb()));
+    camera_poses.emplace_back(pose_builder.Finish());
+  }
+  const auto camera_poses_offset = builder.fbb()->CreateVector(camera_poses);
+
+  sift::ImageMatchResult::Builder result_builder(*builder.fbb());
+  result_builder.add_image_matches(image_matches_offset);
+  result_builder.add_camera_poses(camera_poses_offset);
+  if (send_details) {
+    result_builder.add_features(features_offset);
+  }
+  result_builder.add_image_monotonic_timestamp_ns(
+      image.monotonic_timestamp_ns());
+  result_builder.add_camera_calibration(camera_calibration_offset);
+
+  // TODO<Jim>: Need to add target point computed from matches and
+  // mapped by homography
+  builder.Send(result_builder.Finish());
+}
+
+void CameraReader::ProcessImage(const CameraImage &image) {
   // First, we need to extract the brightness information. This can't really be
   // fused into the beginning of the SIFT algorithm because the algorithm needs
   // to look at the base image directly. It also only takes 2ms on our images.
@@ -169,13 +233,10 @@ void CameraReader::ProcessImage(const CameraImage &image) {
   std::vector<cv::KeyPoint> keypoints;
   cv::Mat descriptors;
   sift_->detectAndCompute(image_mat, cv::noArray(), keypoints, descriptors);
-  const auto features_offset =
-      PackFeatures(builder.fbb(), keypoints, descriptors);
 
   // Then, match those features against our training data.
   std::vector<std::vector<cv::DMatch>> matches;
   matcher_->knnMatch(/* queryDescriptors */ descriptors, matches, /* k */ 2);
-  const auto image_matches_offset = PackImageMatches(builder.fbb(), matches);
 
   struct PerImageMatches {
     std::vector<const std::vector<cv::DMatch> *> matches;
@@ -212,8 +273,8 @@ void CameraReader::ProcessImage(const CameraImage &image) {
 
   // The minimum number of matches in a training image for us to use it.
   static constexpr int kMinimumMatchCount = 10;
+  std::vector<cv::Mat> camera_target_list;
 
-  std::vector<flatbuffers::Offset<sift::CameraPose>> camera_poses;
   for (size_t i = 0; i < per_image_matches.size(); ++i) {
     const PerImageMatches &per_image = per_image_matches[i];
     if (per_image.matches.size() < kMinimumMatchCount) {
@@ -223,12 +284,11 @@ void CameraReader::ProcessImage(const CameraImage &image) {
     cv::Mat R_camera_target_vec, R_camera_target, T_camera_target;
     // Compute the pose of the camera (global origin relative to camera)
     cv::solvePnPRansac(per_image.training_points_3d, per_image.query_points,
-                       CameraIntrinsics(), cv::noArray(), R_camera_target_vec,
-                       T_camera_target);
+                       CameraIntrinsics(), CameraDistCoeffs(),
+                       R_camera_target_vec, T_camera_target);
     // Convert Camera from angle-axis (3x1) to homogenous (3x3) representation
     cv::Rodrigues(R_camera_target_vec, R_camera_target);
 
-    sift::CameraPose::Builder pose_builder(*builder.fbb());
     {
       CHECK_EQ(cv::Size(3, 3), R_camera_target.size());
       CHECK_EQ(cv::Size(3, 1), T_camera_target.size());
@@ -237,25 +297,15 @@ void CameraReader::ProcessImage(const CameraImage &image) {
       T_camera_target.copyTo(camera_target(cv::Range(3, 4), cv::Range(0, 3)));
       camera_target.at<float>(3, 3) = 1;
       CHECK(camera_target.isContinuous());
-      const auto data_offset = builder.fbb()->CreateVector<float>(
-          reinterpret_cast<float *>(camera_target.data), camera_target.total());
-      pose_builder.add_camera_to_target(
-          sift::CreateTransformationMatrix(*builder.fbb(), data_offset));
+      camera_target_list.push_back(camera_target);
     }
-    pose_builder.add_field_to_target(
-        aos::CopyFlatBuffer(FieldToTarget(i), builder.fbb()));
-    camera_poses.emplace_back(pose_builder.Finish());
   }
-  const auto camera_poses_offset = builder.fbb()->CreateVector(camera_poses);
-
-  sift::ImageMatchResult::Builder result_builder(*builder.fbb());
-  result_builder.add_image_matches(image_matches_offset);
-  result_builder.add_camera_poses(camera_poses_offset);
-  result_builder.add_features(features_offset);
-  result_builder.add_image_monotonic_timestamp_ns(
-      image.monotonic_timestamp_ns());
-  result_builder.add_camera_calibration(camera_calibration_offset);
-  builder.Send(result_builder.Finish());
+  // Now, send our two messages-- one large, with details for remote
+  // debugging(features), and one smaller
+  SendImageMatchResult(image, keypoints, descriptors, matches,
+                       camera_target_list, &detailed_result_sender_, true);
+  SendImageMatchResult(image, keypoints, descriptors, matches,
+                       camera_target_list, &result_sender_, false);
 }
 
 void CameraReader::ReadImage() {

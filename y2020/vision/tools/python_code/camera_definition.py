@@ -10,6 +10,7 @@ class CameraIntrinsics:
 
     pass
 
+
 class CameraExtrinsics:
     def __init__(self):
         self.R = []
@@ -22,7 +23,6 @@ class CameraParameters:
         self.camera_ext = CameraExtrinsics()
         self.node_name = ""
         self.team_number = -1
-
 
 
 ### CAMERA DEFINITIONS
@@ -40,13 +40,11 @@ cy = 240.
 # Define a web_cam
 web_cam_int = CameraIntrinsics()
 web_cam_int.camera_matrix = np.asarray([[fx, 0, cx], [0, fy, cy], [0, 0, 1]])
-web_cam_int.distortion_coeffs = np.zeros((5,1))
+web_cam_int.distortion_coeffs = np.zeros((5, 1))
 
 web_cam_ext = CameraExtrinsics()
 # Camera rotation from robot x,y,z to opencv (z, -x, -y)
-web_cam_ext.R = np.array([[0., 0., 1.],
-                          [-1, 0,  0],
-                          [0, -1., 0]])
+web_cam_ext.R = np.array([[0., 0., 1.], [-1, 0, 0], [0, -1., 0]])
 web_cam_ext.T = np.array([0., 0., 0.])
 
 web_cam_params = CameraParameters()

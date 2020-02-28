@@ -16,6 +16,7 @@ cc_library(
     hdrs = [
         "v4l2_reader.h",
     ],
+    visibility = ["//y2020:__subpackages__"],
     deps = [
         ":vision_fbs",
         "//aos/events:event_loop",
@@ -23,7 +24,6 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
     ],
-    visibility = ["//y2020:__subpackages__"],
 )
 
 cc_binary(
@@ -35,6 +35,7 @@ cc_binary(
         "//tools:k8",
         "//tools:armhf-debian",
     ],
+    visibility = ["//y2020:__subpackages__"],
     deps = [
         ":v4l2_reader",
         ":vision_fbs",
@@ -43,12 +44,11 @@ cc_binary(
         "//aos/events:shm_event_loop",
         "//aos/network:team_number",
         "//third_party:opencv",
-        "//y2020/vision/tools/python_code:sift_training_data",
         "//y2020/vision/sift:sift971",
         "//y2020/vision/sift:sift_fbs",
         "//y2020/vision/sift:sift_training_fbs",
+        "//y2020/vision/tools/python_code:sift_training_data",
     ],
-    visibility = ["//y2020:__subpackages__"],
 )
 
 flatbuffer_ts_library(

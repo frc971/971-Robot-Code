@@ -22,10 +22,10 @@ py_binary(
     default_python_version = "PY3",
     srcs_version = "PY2AND3",
     deps = [
+        "//external:python-glog",
         "//y2020/vision/sift:sift_fbs_python",
         "@bazel_tools//tools/python/runfiles",
         "@opencv_contrib_nonfree_amd64//:python_opencv",
-        "//external:python-glog",
     ],
 )
 
@@ -54,10 +54,10 @@ cc_library(
 py_binary(
     name = "load_sift_training_test",
     srcs = [
-        "camera_definition.py",
+        "camera_definition_test.py",
         "define_training_data.py",
         "load_sift_training.py",
-        "target_definition.py",
+        "target_definition_test.py",
         "train_and_match.py",
     ],
     args = [
@@ -71,10 +71,10 @@ py_binary(
     main = "load_sift_training.py",
     srcs_version = "PY2AND3",
     deps = [
+        "//external:python-glog",
         "//y2020/vision/sift:sift_fbs_python",
         "@bazel_tools//tools/python/runfiles",
         "@opencv_contrib_nonfree_amd64//:python_opencv",
-        "//external:python-glog",
     ],
 )
 

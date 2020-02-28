@@ -41,6 +41,8 @@ class CameraCalibration {
 class TrainingImage {
  public:
   cv::Mat features_;
+  float target_point_x_;
+  float target_point_y_;
   cv::Mat field_to_target_;
 };
 
@@ -66,7 +68,8 @@ class CameraParamTest {
 
     CopyTrainingFeatures();
     sift_camera_calibration_ = CameraParamTest::FindCameraCalibration();
-    camera_intrinsics_ = CameraIntrinsics();
+    camera_intrinsic_matrix_ = CameraIntrinsicMatrix();
+    camera_dist_coeffs_ = CameraDistCoeffs();
     camera_extrinsics_ = CameraExtrinsics();
   }
 
@@ -86,11 +89,19 @@ class CameraParamTest {
         ->field_to_target();
   }
 
-  cv::Mat CameraIntrinsics() const {
+  cv::Mat CameraIntrinsicMatrix() const {
     const cv::Mat result(3, 3, CV_32F,
                          const_cast<void *>(static_cast<const void *>(
                              sift_camera_calibration_->intrinsics()->data())));
     CHECK_EQ(result.total(), sift_camera_calibration_->intrinsics()->size());
+    return result;
+  }
+
+  cv::Mat CameraDistCoeffs() const {
+    const cv::Mat result(5, 1, CV_32F,
+                         const_cast<void *>(static_cast<const void *>(
+                             sift_camera_calibration_->dist_coeffs()->data())));
+    CHECK_EQ(result.total(), sift_camera_calibration_->dist_coeffs()->size());
     return result;
   }
 
@@ -111,7 +122,8 @@ class CameraParamTest {
 
   // We'll just extract the one that matches our current module
   const sift::CameraCalibration *sift_camera_calibration_;
-  cv::Mat camera_intrinsics_;
+  cv::Mat camera_intrinsic_matrix_;
+  cv::Mat camera_dist_coeffs_;
   cv::Mat camera_extrinsics_;
 
   TrainingData training_data_;
@@ -127,7 +139,7 @@ void CameraParamTest::CopyTrainingFeatures() {
   int train_image_index = 0;
   for (const sift::TrainingImage *training_image :
        *sift_training_data_->images()) {
-    TrainingImage training_image_data;
+    TrainingImage tmp_training_image_data;
     cv::Mat features(training_image->features()->size(), 128, CV_32F);
     for (size_t i = 0; i < training_image->features()->size(); ++i) {
       const sift::Feature *feature_table = training_image->features()->Get(i);
@@ -149,10 +161,14 @@ void CameraParamTest::CopyTrainingFeatures() {
         4, 4, CV_32F,
         const_cast<void *>(
             static_cast<const void *>(field_to_target_->data()->data())));
-    training_image_data.features_ = features;
-    training_image_data.field_to_target_ = field_to_target_mat;
+    tmp_training_image_data.features_ = features;
+    tmp_training_image_data.field_to_target_ = field_to_target_mat;
+    tmp_training_image_data.target_point_x_ =
+        sift_training_data_->images()->Get(train_image_index)->target_point_x();
+    tmp_training_image_data.target_point_y_ =
+        sift_training_data_->images()->Get(train_image_index)->target_point_y();
 
-    training_data_.images_.push_back(training_image_data);
+    training_data_.images_.push_back(tmp_training_image_data);
     train_image_index++;
   }
 }
@@ -224,13 +240,26 @@ TEST(CameraParamTest, TargetDataTest) {
       << camera_params.training_data_.images_[0].field_to_target_ << "\nvs.\n"
       << field_to_targets_0;
 
+  ASSERT_EQ(camera_params.training_data_.images_[0].target_point_x_, 10.);
+  ASSERT_EQ(camera_params.training_data_.images_[0].target_point_y_, 20.);
+
   float intrinsic_mat[9] = {810, 0, 320, 0, 810, 240, 0, 0, 1};
   cv::Mat intrinsic = cv::Mat(3, 3, CV_32F, intrinsic_mat);
-  cv::Mat intrinsic_diff = (intrinsic != camera_params.camera_intrinsics_);
+  cv::Mat intrinsic_diff =
+      (intrinsic != camera_params.camera_intrinsic_matrix_);
   bool intrinsic_eq = (cv::countNonZero(intrinsic_diff) == 0);
   ASSERT_TRUE(intrinsic_eq)
-      << "Mismatch on intrinsics: " << intrinsic << "\nvs.\n"
-      << camera_params.camera_intrinsics_;
+      << "Mismatch on camera intrinsic matrix: " << intrinsic << "\nvs.\n"
+      << camera_params.camera_intrinsic_matrix_;
+
+  float dist_coeff_mat[5] = {0., 0., 0., 0., 0.};
+  cv::Mat dist_coeff = cv::Mat(5, 1, CV_32F, dist_coeff_mat);
+  cv::Mat dist_coeff_diff = (dist_coeff != camera_params.camera_dist_coeffs_);
+  bool dist_coeff_eq = (cv::countNonZero(dist_coeff_diff) == 0);
+  ASSERT_TRUE(dist_coeff_eq)
+      << "Mismatch on camera distortion coefficients: " << dist_coeff
+      << "\nvs.\n"
+      << camera_params.camera_dist_coeffs_;
 
   float i_f = 3.0;
   float extrinsic_mat[16] = {0, 0,  1, i_f, -1, 0, 0, i_f,
@@ -246,4 +275,3 @@ TEST(CameraParamTest, TargetDataTest) {
 }  // namespace
 }  // namespace vision
 }  // namespace frc971
-
