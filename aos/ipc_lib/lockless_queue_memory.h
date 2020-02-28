@@ -50,6 +50,11 @@ struct LocklessQueueMemory {
   // A message is valid iff its internal index matches the index in the queue.
   AtomicQueueIndex next_queue_index;
 
+  // All processes using a queue need to be able to send messages to each other.
+  // We're going to require they have matching UIDs, which is sufficient to do
+  // that.
+  uid_t uid;
+
   // There is then memory allocated after this structure.  That memory is used
   // to store the messages, queue, watchers, and senders.  This is equivalent to
   // writing:

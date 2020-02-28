@@ -58,7 +58,7 @@ std::string ShmFolder(const Channel *channel) {
 }
 std::string ShmPath(const Channel *channel) {
   CHECK(channel->has_type());
-  return ShmFolder(channel) + channel->type()->str() + ".v1";
+  return ShmFolder(channel) + channel->type()->str() + ".v2";
 }
 
 class MMapedQueue {

@@ -306,6 +306,7 @@ LocklessQueueMemory *InitializeLocklessQueueMemory(
     }
 
     memory->next_queue_index.Invalidate();
+    memory->uid = getuid();
 
     for (size_t i = 0; i < memory->num_senders(); ++i) {
       ::aos::ipc_lib::Sender *s = memory->GetSender(i);
@@ -319,6 +320,8 @@ LocklessQueueMemory *InitializeLocklessQueueMemory(
     // Signal everything is done.  This needs to be done last, so if we die, we
     // redo initialization.
     memory->initialized = true;
+  } else {
+    CHECK_EQ(getuid(), memory->uid) << ": UIDs must match for all processes";
   }
 
   return memory;
@@ -870,6 +873,8 @@ void PrintLocklessQueueMemory(LocklessQueueMemory *memory) {
   ::std::cout << "    AtomicQueueIndex next_queue_index = "
               << memory->next_queue_index.Load(queue_size).DebugString()
               << ::std::endl;
+
+  ::std::cout << "    uid_t uid = " << memory->uid << ::std::endl;
 
   ::std::cout << "  }" << ::std::endl;
   ::std::cout << "  AtomicIndex queue[" << queue_size << "] {" << ::std::endl;
