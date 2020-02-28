@@ -13,6 +13,8 @@ namespace aos {
 namespace configuration {
 namespace testing {
 
+const std::string kConfigPrefix = "aos/testdata/";
+
 class ConfigurationTest : public ::testing::Test {
  public:
   ConfigurationTest() { ::aos::testing::EnableTestLogging(); }
@@ -30,19 +32,19 @@ const char *kExpectedMultinodeLocation =
 // Tests that we can read and merge a configuration.
 TEST_F(ConfigurationTest, ConfigMerge) {
   FlatbufferDetachedBuffer<Configuration> config =
-      ReadConfig("aos/testdata/config1.json");
+      ReadConfig(kConfigPrefix + "config1.json");
   LOG(INFO) << "Read: " << FlatbufferToJson(config, true);
 
   EXPECT_EQ(
       absl::StripSuffix(
-          util::ReadFileToStringOrDie("aos/testdata/expected.json"), "\n"),
+          util::ReadFileToStringOrDie(kConfigPrefix + "expected.json"), "\n"),
       FlatbufferToJson(config, true));
 }
 
 // Tests that we can get back a ChannelIndex.
 TEST_F(ConfigurationTest, ChannelIndex) {
   FlatbufferDetachedBuffer<Configuration> config =
-      ReadConfig("aos/testdata/config1.json");
+      ReadConfig(kConfigPrefix + "config1.json");
 
   EXPECT_EQ(
       ChannelIndex(&config.message(), config.message().channels()->Get(1u)),
@@ -52,12 +54,12 @@ TEST_F(ConfigurationTest, ChannelIndex) {
 // Tests that we can read and merge a multinode configuration.
 TEST_F(ConfigurationTest, ConfigMergeMultinode) {
   FlatbufferDetachedBuffer<Configuration> config =
-      ReadConfig("aos/testdata/config1_multinode.json");
+      ReadConfig(kConfigPrefix + "config1_multinode.json");
   LOG(INFO) << "Read: " << FlatbufferToJson(config, true);
 
   EXPECT_EQ(
       std::string(absl::StripSuffix(
-          util::ReadFileToStringOrDie("aos/testdata/expected_multinode.json"),
+          util::ReadFileToStringOrDie(kConfigPrefix + "expected_multinode.json"),
           "\n")),
       FlatbufferToJson(config, true));
 }
@@ -65,7 +67,7 @@ TEST_F(ConfigurationTest, ConfigMergeMultinode) {
 // Tests that we sort the entries in a config so we can look entries up.
 TEST_F(ConfigurationTest, UnsortedConfig) {
   FlatbufferDetachedBuffer<Configuration> config =
-      ReadConfig("aos/testdata/backwards.json");
+      ReadConfig(kConfigPrefix + "backwards.json");
 
   LOG(INFO) << "Read: " << FlatbufferToJson(config, true);
 
@@ -80,15 +82,15 @@ TEST_F(ConfigurationDeathTest, DuplicateFile) {
   EXPECT_DEATH(
       {
         FlatbufferDetachedBuffer<Configuration> config =
-            ReadConfig("aos/testdata/config1_bad.json");
+            ReadConfig(kConfigPrefix + "config1_bad.json");
       },
-      "aos/testdata/config1_bad.json");
+      kConfigPrefix + "config1_bad.json");
 }
 
 // Tests that we can modify a config with a json snippet.
 TEST_F(ConfigurationTest, MergeWithConfig) {
   FlatbufferDetachedBuffer<Configuration> config =
-      ReadConfig("aos/testdata/config1.json");
+      ReadConfig(kConfigPrefix + "config1.json");
   LOG(INFO) << "Read: " << FlatbufferToJson(config, true);
 
   FlatbufferDetachedBuffer<Configuration> updated_config =
@@ -105,7 +107,7 @@ TEST_F(ConfigurationTest, MergeWithConfig) {
 
   EXPECT_EQ(
       absl::StripSuffix(util::ReadFileToStringOrDie(
-                            "aos/testdata/expected_merge_with.json"),
+                            kConfigPrefix + "expected_merge_with.json"),
                         "\n"),
       FlatbufferToJson(updated_config, true));
 }
@@ -114,7 +116,7 @@ TEST_F(ConfigurationTest, MergeWithConfig) {
 // config.
 TEST_F(ConfigurationTest, GetChannel) {
   FlatbufferDetachedBuffer<Configuration> config =
-      ReadConfig("aos/testdata/config1.json");
+      ReadConfig(kConfigPrefix + "config1.json");
 
   // Test a basic lookup first.
   EXPECT_EQ(
@@ -148,7 +150,7 @@ TEST_F(ConfigurationTest, GetChannel) {
 // Tests that we can lookup a location with node specific maps.
 TEST_F(ConfigurationTest, GetChannelMultinode) {
   FlatbufferDetachedBuffer<Configuration> config =
-      ReadConfig("aos/testdata/good_multinode.json");
+      ReadConfig(kConfigPrefix + "good_multinode.json");
   const Node *pi1 = GetNode(&config.message(), "pi1");
   const Node *pi2 = GetNode(&config.message(), "pi2");
 
@@ -184,7 +186,7 @@ TEST_F(ConfigurationTest, GetChannelMultinode) {
 // Tests that we can lookup a location with type specific maps.
 TEST_F(ConfigurationTest, GetChannelTypedMultinode) {
   FlatbufferDetachedBuffer<Configuration> config =
-      ReadConfig("aos/testdata/good_multinode.json");
+      ReadConfig(kConfigPrefix + "good_multinode.json");
   const Node *pi1 = GetNode(&config.message(), "pi1");
 
   // Test a basic lookup first.
@@ -207,28 +209,28 @@ TEST_F(ConfigurationDeathTest, InvalidSourceNode) {
   EXPECT_DEATH(
       {
         FlatbufferDetachedBuffer<Configuration> config =
-            ReadConfig("aos/testdata/invalid_nodes.json");
+            ReadConfig(kConfigPrefix + "invalid_nodes.json");
       },
       "source_node");
 
   EXPECT_DEATH(
       {
         FlatbufferDetachedBuffer<Configuration> config =
-            ReadConfig("aos/testdata/invalid_source_node.json");
+            ReadConfig(kConfigPrefix + "invalid_source_node.json");
       },
       "source_node");
 
   EXPECT_DEATH(
       {
         FlatbufferDetachedBuffer<Configuration> config =
-            ReadConfig("aos/testdata/invalid_destination_node.json");
+            ReadConfig(kConfigPrefix + "invalid_destination_node.json");
       },
       "destination_nodes");
 
   EXPECT_DEATH(
       {
         FlatbufferDetachedBuffer<Configuration> config =
-            ReadConfig("aos/testdata/self_forward.json");
+            ReadConfig(kConfigPrefix + "self_forward.json");
       },
       "forwarding data to itself");
 }
@@ -607,7 +609,7 @@ TEST_F(ConfigurationTest, ConnectionDeliveryTimeIsLoggedOnNode) {
 // Tests that we can deduce source nodes from a multinode config.
 TEST_F(ConfigurationTest, SourceNodeNames) {
   FlatbufferDetachedBuffer<Configuration> config =
-      ReadConfig("aos/testdata/config1_multinode.json");
+      ReadConfig(kConfigPrefix + "config1_multinode.json");
 
   // This is a bit simplistic in that it doesn't test deduplication, but it does
   // exercise a lot of the logic.
@@ -622,7 +624,7 @@ TEST_F(ConfigurationTest, SourceNodeNames) {
 // Tests that we can deduce destination nodes from a multinode config.
 TEST_F(ConfigurationTest, DestinationNodeNames) {
   FlatbufferDetachedBuffer<Configuration> config =
-      ReadConfig("aos/testdata/config1_multinode.json");
+      ReadConfig(kConfigPrefix + "config1_multinode.json");
 
   // This is a bit simplistic in that it doesn't test deduplication, but it does
   // exercise a lot of the logic.
@@ -638,7 +640,7 @@ TEST_F(ConfigurationTest, DestinationNodeNames) {
 TEST_F(ConfigurationTest, GetNodes) {
   {
     FlatbufferDetachedBuffer<Configuration> config =
-        ReadConfig("aos/testdata/good_multinode.json");
+        ReadConfig(kConfigPrefix + "good_multinode.json");
     const Node *pi1 = GetNode(&config.message(), "pi1");
     const Node *pi2 = GetNode(&config.message(), "pi2");
 
@@ -647,7 +649,7 @@ TEST_F(ConfigurationTest, GetNodes) {
 
   {
     FlatbufferDetachedBuffer<Configuration> config =
-        ReadConfig("aos/testdata/config1.json");
+        ReadConfig(kConfigPrefix + "config1.json");
     EXPECT_THAT(GetNodes(&config.message()), ::testing::ElementsAre(nullptr));
   }
 }
@@ -655,9 +657,9 @@ TEST_F(ConfigurationTest, GetNodes) {
 // Tests that we can extract a node index from a config.
 TEST_F(ConfigurationTest, GetNodeIndex) {
   FlatbufferDetachedBuffer<Configuration> config =
-      ReadConfig("aos/testdata/good_multinode.json");
+      ReadConfig(kConfigPrefix + "good_multinode.json");
   FlatbufferDetachedBuffer<Configuration> config2 =
-      ReadConfig("aos/testdata/good_multinode.json");
+      ReadConfig(kConfigPrefix + "good_multinode.json");
   const Node *pi1 = GetNode(&config.message(), "pi1");
   const Node *pi2 = GetNode(&config.message(), "pi2");
 
@@ -678,13 +680,13 @@ TEST_F(ConfigurationTest, GetNodeIndex) {
 // valid nodes.
 TEST_F(ConfigurationDeathTest, GetNodeOrDie) {
   FlatbufferDetachedBuffer<Configuration> config =
-      ReadConfig("aos/testdata/good_multinode.json");
+      ReadConfig(kConfigPrefix + "good_multinode.json");
   FlatbufferDetachedBuffer<Configuration> config2 =
-      ReadConfig("aos/testdata/good_multinode.json");
+      ReadConfig(kConfigPrefix + "good_multinode.json");
   {
     // Simple case, nullptr -> nullptr
     FlatbufferDetachedBuffer<Configuration> single_node_config =
-        ReadConfig("aos/testdata/config1.json");
+        ReadConfig(kConfigPrefix + "config1.json");
     EXPECT_EQ(nullptr, GetNodeOrDie(&single_node_config.message(), nullptr));
 
     // Confirm that we die when a node is passed in.
@@ -704,7 +706,7 @@ TEST_F(ConfigurationDeathTest, GetNodeOrDie) {
 
 TEST_F(ConfigurationTest, GetNodeFromHostname) {
   FlatbufferDetachedBuffer<Configuration> config =
-      ReadConfig("aos/testdata/good_multinode.json");
+      ReadConfig(kConfigPrefix + "good_multinode.json");
   EXPECT_EQ("pi1",
             CHECK_NOTNULL(GetNodeFromHostname(&config.message(), "raspberrypi"))
                 ->name()
@@ -720,7 +722,7 @@ TEST_F(ConfigurationTest, GetNodeFromHostname) {
 
 TEST_F(ConfigurationTest, GetNodeFromHostnames) {
   FlatbufferDetachedBuffer<Configuration> config =
-      ReadConfig("aos/testdata/good_multinode_hostnames.json");
+      ReadConfig(kConfigPrefix + "good_multinode_hostnames.json");
   EXPECT_EQ("pi1",
             CHECK_NOTNULL(GetNodeFromHostname(&config.message(), "raspberrypi"))
                 ->name()
