@@ -282,7 +282,7 @@ def flatbuffer_py_library(
         been parsed. As such, we just force the user to manually specify
         things.
     """
-    python_files = ["%s/%s.py" % (namespace.replace('.', '/'), table) for table in tables]
+    python_files = ["%s/%s.py" % (namespace.replace(".", "/"), table) for table in tables]
 
     srcs_lib = "%s_srcs" % (name)
     flatbuffer_library_public(

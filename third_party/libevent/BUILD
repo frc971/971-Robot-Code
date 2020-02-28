@@ -148,7 +148,7 @@ cc_library(
         "_EVENT_STDC_HEADERS=1",
         "_EVENT_TIME_WITH_SYS_TIME=1",
         "_EVENT_NUMERIC_VERSION=0x02001600",
-        '_EVENT_VERSION=\\"2.0.22-stable\\"',
+        "_EVENT_VERSION=\\\"2.0.22-stable\\\"",
     ] + address_size_select({
         "32": [
             "_EVENT_SIZEOF_LONG_LONG=4",

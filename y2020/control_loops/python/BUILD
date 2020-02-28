@@ -133,8 +133,8 @@ py_binary(
     legacy_create_init = False,
     restricted_to = ["//tools:k8"],
     deps = [
-        ":python_init",
         ":flywheel",
+        ":python_init",
         "//external:python-gflags",
         "//external:python-glog",
     ],
@@ -148,8 +148,8 @@ py_binary(
     legacy_create_init = False,
     restricted_to = ["//tools:k8"],
     deps = [
-        ":python_init",
         ":flywheel",
+        ":python_init",
         "//external:python-gflags",
         "//external:python-glog",
     ],

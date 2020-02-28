@@ -156,6 +156,6 @@ cc_library(
 flatbuffer_cc_library(
     name = "log_message_fbs",
     srcs = ["log_message.fbs"],
-    visibility = ["//visibility:public"],
     gen_reflections = 1,
+    visibility = ["//visibility:public"],
 )

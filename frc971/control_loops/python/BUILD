@@ -167,22 +167,22 @@ py_binary(
     name = "spline_graph",
     srcs = [
         "color.py",
-        "spline_drawing.py",
-        "spline_writer.py",
+        "graph.py",
         "path_edit.py",
         "points.py",
-        "graph.py",
+        "spline_drawing.py",
         "spline_graph.py",
+        "spline_writer.py",
     ],
     legacy_create_init = False,
     restricted_to = ["//tools:k8"],
     visibility = ["//visibility:public"],
     deps = [
+        ":basic_window",
         ":libspline",
         ":python_init",
-        "@python_gtk",
         "@matplotlib_repo//:matplotlib2.7",
-        ":basic_window",
+        "@python_gtk",
     ],
 )
 

@@ -86,7 +86,7 @@ common_copts = [
     "-DPERFTOOLS_DLL_DECL=",
     "-DSTDC_HEADERS=1",
     "-DSTL_NAMESPACE=std",
-    "-DPACKAGE_STRING=\\\"gperftools\ 2.4\\\"",
+    "-DPACKAGE_STRING=\\\"gperftools\\ 2.4\\\"",
     "-DPACKAGE_BUGREPORT=\\\"http://www.frc971.org/contact\\\"",
     "-DPACKAGE_VERSION=\\\"2.4\\\"",
 ] + cpu_select({
@@ -141,7 +141,7 @@ cc_library(
         "-lrt",
         "-lpthread",
     ],
-    nocopts = "-std=gnu\+\+1y",
+    nocopts = "-std=gnu\\+\\+1y",
     visibility = ["//visibility:public"],
     deps = [
         "//third_party/empty_config_h",
