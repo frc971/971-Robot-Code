@@ -54,10 +54,10 @@ cc_library(
 py_binary(
     name = "load_sift_training_test",
     srcs = [
-        "camera_definition.py",
+        "camera_definition_test.py",
         "define_training_data.py",
         "load_sift_training.py",
-        "target_definition.py",
+        "target_definition_test.py",
         "train_and_match.py",
     ],
     args = [

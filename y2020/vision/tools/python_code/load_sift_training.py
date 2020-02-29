@@ -107,22 +107,28 @@ def main():
             fbb)
 
         # Create the TrainingImage feature vector
-        TrainingImage.TrainingImageStartFeaturesVector(fbb,
-                                                       len(features_vector))
+        TrainingImage.TrainingImageStartFeaturesVector(
+            fbb, len(features_vector))
         for feature in reversed(features_vector):
             fbb.PrependUOffsetTRelative(feature)
         features_vector_offset = fbb.EndVector(len(features_vector))
 
-        # Create the TrainingImage
+        # Add the TrainingImage data
         TrainingImage.TrainingImageStart(fbb)
-        TrainingImage.TrainingImageAddFeatures(fbb, features_vector_offset)
-        TrainingImage.TrainingImageAddFieldToTarget(fbb,
-                                                    transformation_mat_offset)
-
-        images_vector.append(TrainingImage.TrainingImageEnd(fbb))
+        TrainingImage.TrainingImageAddFeatures(fbb,
+                                                       features_vector_offset)
+        TrainingImage.TrainingImageAddFieldToTarget(
+            fbb, transformation_mat_offset)
+        TrainingImage.TrainingImageAddTargetPointX(
+            fbb, target_data.target_point_2d[0][0][0])
+        TrainingImage.TrainingImageAddTargetPointY(
+            fbb, target_data.target_point_2d[0][0][1])
+        images_vector.append(
+            TrainingImage.TrainingImageEnd(fbb))
 
     # Create and add Training Data of all targets
-    TrainingData.TrainingDataStartImagesVector(fbb, len(images_vector))
+    TrainingData.TrainingDataStartImagesVector(fbb,
+                                                     len(images_vector))
     for training_image in reversed(images_vector):
         fbb.PrependUOffsetTRelative(training_image)
     images_vector_table = fbb.EndVector(len(images_vector))
@@ -155,6 +161,14 @@ def main():
             fbb.PrependFloat32(n)
         intrinsics_vector = fbb.EndVector(len(camera_int_list))
 
+        dist_coeff_list = camera_calib.camera_int.distortion_coeffs.ravel(
+        ).tolist()
+        CameraCalibration.CameraCalibrationStartDistCoeffsVector(
+            fbb, len(dist_coeff_list))
+        for n in reversed(dist_coeff_list):
+            fbb.PrependFloat32(n)
+        dist_coeff_vector = fbb.EndVector(len(dist_coeff_list))
+
         node_name_offset = fbb.CreateString(camera_calib.node_name)
         CameraCalibration.CameraCalibrationStart(fbb)
         CameraCalibration.CameraCalibrationAddNodeName(fbb, node_name_offset)
@@ -162,6 +176,8 @@ def main():
             fbb, camera_calib.team_number)
         CameraCalibration.CameraCalibrationAddIntrinsics(
             fbb, intrinsics_vector)
+        CameraCalibration.CameraCalibrationAddDistCoeffs(
+            fbb, dist_coeff_vector)
         CameraCalibration.CameraCalibrationAddFixedExtrinsics(
             fbb, fixed_extrinsics_vector)
         camera_calibration_vector.append(
