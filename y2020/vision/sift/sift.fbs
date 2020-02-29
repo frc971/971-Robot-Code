@@ -105,16 +105,21 @@ table CameraCalibration {
 // Contains the information the EKF wants from an image matched against a single
 // training image.
 //
-// This is represented as a transformation to a target in field coordinates.
+// This is represented as a transformation from the camera to the target
+// (camera_to_target) and a transformatoin from the field to the target
+// (field_to_target).
+//
+// We also send the map from the field to the camera, which can be computed
+// with the first two, to make it easier to display.
 table CameraPose {
-  // Transformation matrix from the target to the camera's origin.
+  // Transformation matrix from the camera to the target.
   // (0, 0, 0) is the aperture of the camera (we pretend it's an ideal pinhole
   // camera). Positive Z is out of the camera. Positive X and Y are right
   // handed, but which way they face depends on the camera extrinsics.
   camera_to_target:TransformationMatrix;
 
   // Field coordinates of the target, represented as a transformation matrix
-  // from the target to the field.
+  // from the field to the target.
   // (0, 0, 0) is the center of the field, on the level of most of the field
   // (not the region under the truss). Positive X is towards the red alliance's
   // PLAYER STATION. Positive Z is up. The coordinate system is right-handed.
@@ -125,6 +130,9 @@ table CameraPose {
   // The value here will be selected from a small, static set of targets we
   // train images on.
   field_to_target:TransformationMatrix;
+
+  // The pose of the camera in the field coordinate frame
+  field_to_camera:TransformationMatrix;
 }
 
 table ImageMatchResult {
