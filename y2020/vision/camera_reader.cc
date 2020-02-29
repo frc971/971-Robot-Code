@@ -177,11 +177,13 @@ void CameraReader::SendImageMatchResult(
 
   flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sift::Feature>>>
       features_offset;
+  flatbuffers::Offset<
+      flatbuffers::Vector<flatbuffers::Offset<sift::ImageMatch>>>
+      image_matches_offset;
   if (send_details) {
     features_offset = PackFeatures(builder.fbb(), keypoints, descriptors);
+    image_matches_offset = PackImageMatches(builder.fbb(), matches);
   }
-
-  const auto image_matches_offset = PackImageMatches(builder.fbb(), matches);
 
   std::vector<flatbuffers::Offset<sift::CameraPose>> camera_poses;
 
@@ -190,21 +192,23 @@ void CameraReader::SendImageMatchResult(
     CHECK(camera_target.isContinuous());
     const auto data_offset = builder.fbb()->CreateVector<float>(
         reinterpret_cast<float *>(camera_target.data), camera_target.total());
-    auto transform_offset =
+    const flatbuffers::Offset<sift::TransformationMatrix> transform_offset =
         sift::CreateTransformationMatrix(*builder.fbb(), data_offset);
+    const flatbuffers::Offset<sift::TransformationMatrix>
+        field_to_target_offset =
+            aos::CopyFlatBuffer(FieldToTarget(i), builder.fbb());
 
     sift::CameraPose::Builder pose_builder(*builder.fbb());
     pose_builder.add_camera_to_target(transform_offset);
-    pose_builder.add_field_to_target(
-        aos::CopyFlatBuffer(FieldToTarget(i), builder.fbb()));
+    pose_builder.add_field_to_target(field_to_target_offset);
     camera_poses.emplace_back(pose_builder.Finish());
   }
   const auto camera_poses_offset = builder.fbb()->CreateVector(camera_poses);
 
   sift::ImageMatchResult::Builder result_builder(*builder.fbb());
-  result_builder.add_image_matches(image_matches_offset);
   result_builder.add_camera_poses(camera_poses_offset);
   if (send_details) {
+    result_builder.add_image_matches(image_matches_offset);
     result_builder.add_features(features_offset);
   }
   result_builder.add_image_monotonic_timestamp_ns(
@@ -286,6 +290,7 @@ void CameraReader::ProcessImage(const CameraImage &image) {
     cv::solvePnPRansac(per_image.training_points_3d, per_image.query_points,
                        CameraIntrinsics(), CameraDistCoeffs(),
                        R_camera_target_vec, T_camera_target);
+    T_camera_target = T_camera_target.t();
     // Convert Camera from angle-axis (3x1) to homogenous (3x3) representation
     cv::Rodrigues(R_camera_target_vec, R_camera_target);
 

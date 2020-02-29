@@ -320,7 +320,7 @@
       "type": "frc971.vision.sift.ImageMatchResult",
       "source_node": "pi1",
       "frequency": 25,
-      "max_size": 300000,
+      "max_size": 10000,
       "destination_nodes": [
         {
           "name": "roborio",
@@ -328,6 +328,13 @@
           "time_to_live": 5000000
         }
       ]
+    },
+    {
+      "name": "/pi1/camera/detailed",
+      "type": "frc971.vision.sift.ImageMatchResult",
+      "source_node": "pi1",
+      "frequency": 25,
+      "max_size": 300000
     },
     {
       "name": "/pi1/camera",
@@ -357,6 +364,13 @@
           "time_to_live": 5000000
         }
       ]
+    },
+    {
+      "name": "/pi2/camera/detailed",
+      "type": "frc971.vision.sift.ImageMatchResult",
+      "source_node": "pi2",
+      "frequency": 25,
+      "max_size": 300000
     },
     {
       "name": "/pi2/camera",
@@ -432,6 +446,15 @@
     },
     {
       "match": {
+        "name": "/camera/detailed",
+        "source_node": "pi1"
+      },
+      "rename": {
+        "name": "/pi1/camera/detailed"
+      }
+    },
+    {
+      "match": {
         "name": "/aos",
         "source_node": "pi2"
       },
@@ -446,6 +469,15 @@
       },
       "rename": {
         "name": "/pi2/camera"
+      }
+    },
+    {
+      "match": {
+        "name": "/camera/detailed",
+        "source_node": "pi2"
+      },
+      "rename": {
+        "name": "/pi2/camera/detailed"
       }
     },
     {
