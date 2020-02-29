@@ -189,12 +189,14 @@ void CameraReader::CopyTrainingFeatures() {
       // avoid crashes that only occur when specific features are matched.
       CHECK(feature_table->has_field_location());
 
-      const flatbuffers::Vector<float> *const descriptor =
+      const flatbuffers::Vector<uint8_t> *const descriptor =
           feature_table->descriptor();
       CHECK_EQ(descriptor->size(), 128u) << ": Unsupported feature size";
-      cv::Mat(1, descriptor->size(), CV_32F,
-              const_cast<void *>(static_cast<const void *>(descriptor->data())))
-          .copyTo(features(cv::Range(i, i + 1), cv::Range(0, 128)));
+      const auto in_mat = cv::Mat(
+          1, descriptor->size(), CV_8U,
+          const_cast<void *>(static_cast<const void *>(descriptor->data())));
+      const auto out_mat = features(cv::Range(i, i + 1), cv::Range(0, 128));
+      in_mat.convertTo(out_mat, CV_32F);
     }
     matcher_->add(features);
   }
@@ -552,13 +554,21 @@ CameraReader::PackFeatures(flatbuffers::FlatBufferBuilder *fbb,
                            const cv::Mat &descriptors) {
   const int number_features = keypoints.size();
   CHECK_EQ(descriptors.rows, number_features);
+  CHECK_EQ(descriptors.cols, 128);
   std::vector<flatbuffers::Offset<sift::Feature>> features_vector(
       number_features);
   for (int i = 0; i < number_features; ++i) {
-    const auto submat = descriptors(cv::Range(i, i + 1), cv::Range(0, 128));
+    const auto submat =
+        descriptors(cv::Range(i, i + 1), cv::Range(0, descriptors.cols));
     CHECK(submat.isContinuous());
-    const auto descriptor_offset =
-        fbb->CreateVector(reinterpret_cast<float *>(submat.data), 128);
+    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> descriptor_offset;
+    {
+      uint8_t *data;
+      descriptor_offset = fbb->CreateUninitializedVector(128, &data);
+      submat.convertTo(
+          cv::Mat(1, descriptors.cols, CV_8U, static_cast<void *>(data)),
+          CV_8U);
+    }
     sift::Feature::Builder feature_builder(*fbb);
     feature_builder.add_descriptor(descriptor_offset);
     feature_builder.add_x(keypoints[i].pt.x);
