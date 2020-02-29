@@ -87,8 +87,14 @@ int LogReader_init(LogReaderType *self, PyObject *args, PyObject *kwds) {
   tools->reader = std::make_unique<aos::logger::LogReader>(log_file_name);
   tools->reader->Register();
 
-  tools->event_loop =
-      tools->reader->event_loop_factory()->MakeEventLoop("data_fetcher");
+  if (aos::configuration::MultiNode(tools->reader->configuration())) {
+    tools->event_loop = tools->reader->event_loop_factory()->MakeEventLoop(
+        "data_fetcher",
+        aos::configuration::GetNode(tools->reader->configuration(), "roborio"));
+  } else {
+    tools->event_loop =
+        tools->reader->event_loop_factory()->MakeEventLoop("data_fetcher");
+  }
   tools->event_loop->SkipTimingReport();
   tools->event_loop->SkipAosLog();
 
