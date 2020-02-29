@@ -37,7 +37,7 @@ Trajectory::Trajectory(const DistanceSpline *spline,
                 ? ::std::max(100, static_cast<int>(spline_->length() / 0.0025))
                 : num_distance,
             vmax),
-      plan_segment_type_(plan_.size() - 1, SegmentType::VELOCITY_LIMITED) {}
+      plan_segment_type_(plan_.size(), SegmentType::VELOCITY_LIMITED) {}
 
 void Trajectory::LateralAccelPass() {
   for (size_t i = 0; i < plan_.size(); ++i) {
