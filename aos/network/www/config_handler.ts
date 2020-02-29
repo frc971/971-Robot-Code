@@ -1,13 +1,15 @@
 import {Configuration, Channel} from 'aos/configuration_generated';
 import {Connect} from 'aos/network/connect_generated';
+import {Connection} from './proxy';
 
 export class ConfigHandler {
   private readonly root_div = document.getElementById('config');
   private readonly tree_div;
+  private config: Configuration|null = null
 
-  constructor(
-      private readonly config: Configuration,
-      private readonly dataChannel: RTCDataChannel) {
+  constructor(private readonly connection: Connection) {
+    this.connection.addConfigHandler((config) => this.handleConfig(config));
+
     const show_button = document.createElement('button');
     show_button.addEventListener('click', () => this.toggleConfig());
     const show_text = document.createTextNode('Show/Hide Config');
@@ -16,6 +18,11 @@ export class ConfigHandler {
     this.tree_div.hidden = true;
     this.root_div.appendChild(show_button);
     this.root_div.appendChild(this.tree_div);
+  }
+
+  handleConfig(config: Configuration) {
+    this.config = config;
+    this.printConfig();
   }
 
   printConfig() {
@@ -70,9 +77,7 @@ export class ConfigHandler {
     Connect.addChannelsToTransfer(builder, channelsfb);
     const connect = Connect.endConnect(builder);
     builder.finish(connect);
-    const array = builder.asUint8Array();
-    console.log('connect', array);
-    this.dataChannel.send(array.buffer.slice(array.byteOffset));
+    this.connection.sendConnectMessage(builder);
   }
 
   toggleConfig() {

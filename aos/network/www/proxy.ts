@@ -49,14 +49,21 @@ export class Connection {
   private rtcPeerConnection: RTCPeerConnection|null = null;
   private dataChannel: DataChannel|null = null;
   private webSocketUrl: string;
-  private configHandler: ConfigHandler|null = null;
-  private config: Configuration|null = null;
+
+  private configInternal: Configuration|null = null;
+  // A set of functions that accept the config to handle.
+  private readonly configHandlers = new Set<(config: Configuration) => void>();
+
   private readonly handlerFuncs = new Map<string, (data: Uint8Array) => void>();
   private readonly handlers = new Set<Handler>();
 
   constructor() {
     const server = location.host;
     this.webSocketUrl = `ws://${server}/ws`;
+  }
+
+  addConfigHandler(handler: (config: Configuration) => void): void {
+    this.configHandlers.add(handler);
   }
 
   addHandler(id: string, handler: (data: Uint8Array) => void): void {
@@ -72,17 +79,17 @@ export class Connection {
         'message', (e) => this.onWebSocketMessage(e));
   }
 
+  get config() {
+    return this.config_internal;
+  }
+
   // Handle messages on the DataChannel. Handles the Configuration message as
   // all other messages are sent on specific DataChannels.
   onDataChannelMessage(e: MessageEvent): void {
     const fbBuffer = new flatbuffers.ByteBuffer(new Uint8Array(e.data));
-    // TODO(alex): handle config updates if/when required
-    if (!this.configHandler) {
-      const config = Configuration.getRootAsConfiguration(fbBuffer);
-      this.config = config;
-      this.configHandler = new ConfigHandler(config, this.dataChannel);
-      this.configHandler.printConfig();
-      return;
+    this.configInternal = Configuration.getRootAsConfiguration(fbBuffer);
+    for (handler of this.configHandlers) {
+      handler(this.configInternal);
     }
   }
 
@@ -173,5 +180,14 @@ export class Connection {
         console.log('got an unknown message');
         break;
     }
+  }
+
+  /**
+   * Subscribes to messages.
+   * @param a Finished flatbuffer.Builder containing a Connect message to send.
+   */
+  sendConnectMessage(builder: any) {
+    const array = builder.assUint8Array();
+    this.dataChannel.send(array.buffer.slice(array.byteOffset));
   }
 }
