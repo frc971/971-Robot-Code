@@ -74,6 +74,22 @@ class CameraReader {
                             aos::Sender<sift::ImageMatchResult> *result_sender,
                             bool send_details);
 
+  // Returns the 2D (image) location for the specified training feature.
+  cv::Point2f Training2dPoint(int training_image_index,
+                              int feature_index) const {
+    const float x = training_data_->images()
+                        ->Get(training_image_index)
+                        ->features()
+                        ->Get(feature_index)
+                        ->x();
+    const float y = training_data_->images()
+                        ->Get(training_image_index)
+                        ->features()
+                        ->Get(feature_index)
+                        ->y();
+    return cv::Point2f(x, y);
+  }
+
   // Returns the 3D location for the specified training feature.
   cv::Point3f Training3dPoint(int training_image_index,
                               int feature_index) const {
@@ -258,6 +274,8 @@ void CameraReader::ProcessImage(const CameraImage &image) {
     std::vector<const std::vector<cv::DMatch> *> matches;
     std::vector<cv::Point3f> training_points_3d;
     std::vector<cv::Point2f> query_points;
+    std::vector<cv::Point2f> training_points;
+    cv::Mat homography;
   };
   std::vector<PerImageMatches> per_image_matches(number_training_images());
 
@@ -280,6 +298,8 @@ void CameraReader::ProcessImage(const CameraImage &image) {
     CHECK_LT(training_image, static_cast<int>(per_image_matches.size()));
     PerImageMatches *const per_image = &per_image_matches[training_image];
     per_image->matches.push_back(&match);
+    per_image->training_points.push_back(
+        Training2dPoint(training_image, match[0].trainIdx));
     per_image->training_points_3d.push_back(
         Training3dPoint(training_image, match[0].trainIdx));
 
@@ -292,15 +312,65 @@ void CameraReader::ProcessImage(const CameraImage &image) {
   std::vector<cv::Mat> camera_target_list;
   std::vector<cv::Mat> field_camera_list;
 
+  std::vector<PerImageMatches> per_image_good_matches;
+  std::vector<std::vector<cv::DMatch>> all_good_matches;
+  // Iterate through matches for each training image
   for (size_t i = 0; i < per_image_matches.size(); ++i) {
     const PerImageMatches &per_image = per_image_matches[i];
+
+    VLOG(2) << "Number of matches to start: " << per_image_matches.size()
+            << "\n";
+    // If we don't have enough matches to start, skip this set of matches
     if (per_image.matches.size() < kMinimumMatchCount) {
       continue;
     }
 
-    // Transformations (rotations and translations) for various
-    // coordinate frames.  R_XXXX_vec is the Rodrigues (angle-axis)
-    // representation the 3x3 rotation R_XXXX
+    // Use homography to determine which matches make sense physically
+    cv::Mat mask;
+    cv::Mat homography =
+        cv::findHomography(per_image.training_points, per_image.query_points,
+                           CV_RANSAC, 3.0, mask);
+
+    // If mask doesn't have enough leftover matches, skip these matches
+    if (cv::countNonZero(mask) < kMinimumMatchCount) {
+      continue;
+    }
+
+    VLOG(2) << "Number of matches after homography: " << cv::countNonZero(mask)
+            << "\n";
+    // Fill our match info for each good match
+    // TODO<Jim>: Could probably optimize some of the copies here
+    PerImageMatches per_image_good_match;
+    CHECK_EQ(per_image.training_points.size(),
+             (unsigned long)mask.size().height);
+    for (size_t j = 0; j < per_image.matches.size(); j++) {
+      // Skip if we masked out by homography
+      if (mask.at<uchar>(0, j) != 1) {
+        continue;
+      }
+
+      // Add this to our collection of all matches that passed our criteria
+      all_good_matches.push_back(
+          static_cast<std::vector<cv::DMatch>>(*per_image.matches[j]));
+
+      // Fill out the data for matches per image that made it past
+      // homography check
+      per_image_good_match.matches.push_back(per_image.matches[j]);
+      per_image_good_match.training_points.push_back(
+          per_image.training_points[j]);
+      per_image_good_match.training_points_3d.push_back(
+          per_image.training_points_3d[j]);
+      per_image_good_match.query_points.push_back(per_image.query_points[j]);
+      per_image_good_match.homography = homography;
+    }
+    per_image_good_matches.push_back(per_image_good_match);
+
+    // TODO: Use homography to compute target point on query image
+
+    // Pose transformations (rotations and translations) for various
+    // coordinate frames.  R_X_Y_vec is the Rodrigues (angle-axis)
+    // representation the 3x3 rotation R_X_Y from frame X to frame Y
+
     // Tranform from camera to target frame
     cv::Mat R_camera_target_vec, R_camera_target, T_camera_target;
     // Tranform from camera to field origin (global) reference frame
@@ -310,66 +380,67 @@ void CameraReader::ProcessImage(const CameraImage &image) {
     cv::Mat R_field_camera_vec, R_field_camera, T_field_camera;
 
     // Compute the pose of the camera (global origin relative to camera)
-    cv::solvePnPRansac(per_image.training_points_3d, per_image.query_points,
-                       CameraIntrinsics(), CameraDistCoeffs(),
-                       R_camera_field_vec, T_camera_field);
+    cv::solvePnPRansac(per_image_good_match.training_points_3d,
+                       per_image_good_match.query_points, CameraIntrinsics(),
+                       CameraDistCoeffs(), R_camera_field_vec, T_camera_field);
+    CHECK_EQ(cv::Size(1, 3), T_camera_field.size());
+
+    // Convert to float32's (from float64) to be compatible with the rest
+    R_camera_field_vec.convertTo(R_camera_field_vec, CV_32F);
+    T_camera_field.convertTo(T_camera_field, CV_32F);
 
     // Get matrix version of R_camera_field
     cv::Rodrigues(R_camera_field_vec, R_camera_field);
+    CHECK_EQ(cv::Size(3, 3), R_camera_field.size());
 
     // Compute H_field_camera = H_camera_field^-1
     R_field_camera = R_camera_field.t();
-    T_field_camera = -R_field_camera.dot(T_camera_field);
-    T_field_camera = T_field_camera.t();
+    T_field_camera = -R_field_camera * (T_camera_field);
 
     // Extract the field_target transformation
     const cv::Mat H_field_target(4, 4, CV_32F,
                                  const_cast<void *>(static_cast<const void *>(
-                                     FieldToTarget(i)->data())));
+                                     FieldToTarget(i)->data()->data())));
+
     const cv::Mat R_field_target =
         H_field_target(cv::Range(0, 3), cv::Range(0, 3));
     const cv::Mat T_field_target =
-        H_field_target(cv::Range(3, 4), cv::Range(0, 3));
+        H_field_target(cv::Range(0, 3), cv::Range(3, 4));
 
     // Use it to get the relative pose from camera to target
-    R_camera_target = R_camera_field.dot(R_field_target);
-    T_camera_target = R_camera_field.dot(T_field_target) + T_camera_field;
-
-    // Convert Camera from angle-axis (3x1) to homogenous (3x3) representation
-    // and turn T into 3x1 vector
-    cv::Rodrigues(R_camera_target_vec, R_camera_target);
-    T_camera_target = T_camera_target.t();
+    R_camera_target = R_camera_field * (R_field_target);
+    T_camera_target = R_camera_field * (T_field_target) + T_camera_field;
 
     // Set H_camera_target
     {
       CHECK_EQ(cv::Size(3, 3), R_camera_target.size());
-      CHECK_EQ(cv::Size(3, 1), T_camera_target.size());
-      cv::Mat camera_target = cv::Mat::zeros(4, 4, CV_32F);
-      R_camera_target.copyTo(camera_target(cv::Range(0, 3), cv::Range(0, 3)));
-      T_camera_target.copyTo(camera_target(cv::Range(3, 4), cv::Range(0, 3)));
-      camera_target.at<float>(3, 3) = 1;
-      CHECK(camera_target.isContinuous());
-      camera_target_list.push_back(camera_target.clone());
+      CHECK_EQ(cv::Size(1, 3), T_camera_target.size());
+      cv::Mat H_camera_target = cv::Mat::zeros(4, 4, CV_32F);
+      R_camera_target.copyTo(H_camera_target(cv::Range(0, 3), cv::Range(0, 3)));
+      T_camera_target.copyTo(H_camera_target(cv::Range(0, 3), cv::Range(3, 4)));
+      H_camera_target.at<float>(3, 3) = 1;
+      CHECK(H_camera_target.isContinuous());
+      camera_target_list.push_back(H_camera_target.clone());
     }
 
     // Set H_field_camera
     {
       CHECK_EQ(cv::Size(3, 3), R_field_camera.size());
-      CHECK_EQ(cv::Size(3, 1), T_field_camera.size());
-      cv::Mat field_camera = cv::Mat::zeros(4, 4, CV_32F);
-      R_field_camera.copyTo(field_camera(cv::Range(0, 3), cv::Range(0, 3)));
-      T_field_camera.copyTo(field_camera(cv::Range(3, 4), cv::Range(0, 3)));
-      field_camera.at<float>(3, 3) = 1;
-      CHECK(field_camera.isContinuous());
-      field_camera_list.push_back(field_camera.clone());
+      CHECK_EQ(cv::Size(1, 3), T_field_camera.size());
+      cv::Mat H_field_camera = cv::Mat::zeros(4, 4, CV_32F);
+      R_field_camera.copyTo(H_field_camera(cv::Range(0, 3), cv::Range(0, 3)));
+      T_field_camera.copyTo(H_field_camera(cv::Range(0, 3), cv::Range(3, 4)));
+      H_field_camera.at<float>(3, 3) = 1;
+      CHECK(H_field_camera.isContinuous());
+      field_camera_list.push_back(H_field_camera.clone());
     }
   }
   // Now, send our two messages-- one large, with details for remote
   // debugging(features), and one smaller
-  SendImageMatchResult(image, keypoints, descriptors, matches,
+  SendImageMatchResult(image, keypoints, descriptors, all_good_matches,
                        camera_target_list, field_camera_list,
                        &detailed_result_sender_, true);
-  SendImageMatchResult(image, keypoints, descriptors, matches,
+  SendImageMatchResult(image, keypoints, descriptors, all_good_matches,
                        camera_target_list, field_camera_list, &result_sender_,
                        false);
 }
