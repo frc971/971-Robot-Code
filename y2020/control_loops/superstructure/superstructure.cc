@@ -64,6 +64,17 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   climber_.Iterate(unsafe_goal, output != nullptr ? &(output_struct) : nullptr);
 
+  const PotAndAbsoluteEncoderProfiledJointStatus *const turret_status =
+      GetMutableTemporaryPointer(*status->fbb(), turret_status_offset);
+
+  if (output != nullptr) {
+    // Friction is a pain and putting a really high burden on the integrator.
+    double velocity_sign = turret_status->velocity() * kTurretFrictionGain;
+    output_struct.turret_voltage +=
+        std::clamp(velocity_sign, -kTurretFrictionVoltageLimit,
+                   kTurretFrictionVoltageLimit);
+  }
+
   bool zeroed;
   bool estopped;
 
@@ -73,9 +84,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
     const AbsoluteEncoderProfiledJointStatus *const intake_status =
         GetMutableTemporaryPointer(*status->fbb(), intake_status_offset);
-
-    const PotAndAbsoluteEncoderProfiledJointStatus *const turret_status =
-        GetMutableTemporaryPointer(*status->fbb(), turret_status_offset);
 
     zeroed = hood_status->zeroed() && intake_status->zeroed() &&
              turret_status->zeroed();

@@ -107,10 +107,10 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       intake->zeroing_constants.measured_absolute_position =
           1.42977866919024 - Values::kIntakeZero();
 
-      turret->potentiometer_offset =
-          5.52519370141247 + 0.00853506822980376 + 0.0109413725126625;
+      turret->potentiometer_offset = 5.52519370141247 + 0.00853506822980376 +
+                                     0.0109413725126625 - 0.223719825811759;
       turret_params->zeroing_constants.measured_absolute_position =
-          0.251065633255048;
+          0.547478339799516;
       break;
 
     case kPracticeTeamNumber:

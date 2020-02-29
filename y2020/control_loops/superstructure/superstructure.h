@@ -21,6 +21,11 @@ class Superstructure
   explicit Superstructure(::aos::EventLoop *event_loop,
                           const ::std::string &name = "/superstructure");
 
+  // Terms to control the velocity gain for the friction compensation, and the
+  // voltage cap.
+  static constexpr double kTurretFrictionGain = 10.0;
+  static constexpr double kTurretFrictionVoltageLimit = 1.5;
+
   using PotAndAbsoluteEncoderSubsystem =
       ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
           ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator,
