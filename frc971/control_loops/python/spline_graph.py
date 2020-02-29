@@ -11,11 +11,10 @@ class GridWindow(Gtk.Window):
         def handler(obj, *args):
             cb(*args)
 
-        print("Method_connect ran")
         self.connect(event, handler)
 
     def mouse_move(self, event):
-        #Changes event.x and event.y to be relative to the center.
+        # Changes event.x and event.y to be relative to the center.
         x = event.x - self.drawing_area.window_shape[0] / 2
         y = self.drawing_area.window_shape[1] / 2 - event.y
         scale = self.drawing_area.get_current_scale()
@@ -25,25 +24,22 @@ class GridWindow(Gtk.Window):
         self.queue_draw()
 
     def button_press(self, event):
-        print("button press activated")
-        o_x = event.x
-        o_y = event.y
+        original_x = event.x
+        original_y = event.y
         x = event.x - self.drawing_area.window_shape[0] / 2
         y = self.drawing_area.window_shape[1] / 2 - event.y
         scale = 2 * self.drawing_area.get_current_scale()
         event.x = x / scale + self.drawing_area.center[0]
         event.y = y / scale + self.drawing_area.center[1]
         self.drawing_area.do_button_press(event)
-        event.x = o_x
-        event.y = o_y
+        event.x = original_x
+        event.y = original_y
 
     def key_press(self, event):
-        print("key press activated")
         self.drawing_area.do_key_press(event, self.file_name_box.get_text())
         self.queue_draw()
 
     def configure(self, event):
-        print("configure activated")
         self.drawing_area.window_shape = (event.width, event.height)
 
     # handle submitting a constraint
@@ -88,7 +84,7 @@ class GridWindow(Gtk.Window):
         self.file_name_box = Gtk.Entry()
         self.file_name_box.set_size_request(200, 40)
 
-        self.file_name_box.set_text("File")
+        self.file_name_box.set_text("output_file_name.json")
         self.file_name_box.set_editable(True)
 
         container.put(self.file_name_box, 0, 0)
