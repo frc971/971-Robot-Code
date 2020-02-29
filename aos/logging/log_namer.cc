@@ -144,21 +144,25 @@ std::string GetLogName(const char *basename) {
 
   char *tmp;
   AllocateLogName(&tmp, folder, basename);
+
+  std::string log_base_name = tmp;
+  std::string log_roborio_name = log_base_name + "_roborio_data.bfbs";
+  free(tmp);
+
   char *tmp2;
-  if (asprintf(&tmp2, "%s/%s-current", folder, basename) == -1) {
+  if (asprintf(&tmp2, "%s/%s-current.bfbs", folder, basename) == -1) {
     PLOG(WARNING) << "couldn't create current symlink name";
   } else {
     if (unlink(tmp2) == -1 && (errno != EROFS && errno != ENOENT)) {
       LOG(WARNING) << "unlink('" << tmp2 << "') failed";
     }
-    if (symlink(tmp, tmp2) == -1) {
-      PLOG(WARNING) << "symlink('" << tmp << "', '" << tmp2 << "') failed";
+    if (symlink(log_roborio_name.c_str(), tmp2) == -1) {
+      PLOG(WARNING) << "symlink('" << log_roborio_name.c_str() << "', '" << tmp2
+                    << "') failed";
     }
     free(tmp2);
   }
-  std::string result = tmp;
-  free(tmp);
-  return result;
+  return log_base_name;
 }
 
 }  // namespace logging
