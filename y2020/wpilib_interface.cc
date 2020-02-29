@@ -427,7 +427,7 @@ class SuperstructureWriter
     if (climber_falcon_) {
       climber_falcon_->Set(
           ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
-          std::clamp(output.climber_voltage(), -kMaxBringupPower,
+          std::clamp(-output.climber_voltage(), -kMaxBringupPower,
                      kMaxBringupPower) /
               12.0);
     }
@@ -550,8 +550,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         make_unique<::frc::TalonFX>(4));
     superstructure_writer.set_flywheel_falcon(make_unique<::frc::TalonFX>(9));
     // TODO: check port
-    //superstructure_writer.set_climber_falcon(
-        //make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(11));
+    superstructure_writer.set_climber_falcon(
+        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(1));
 
     AddLoop(&output_event_loop);
 
