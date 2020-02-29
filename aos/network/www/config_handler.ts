@@ -3,13 +3,14 @@ import {Connect} from 'aos/network/connect_generated';
 import {Connection} from './proxy';
 
 export class ConfigHandler {
-  private readonly root_div = document.getElementById('config');
+  private readonly root_div = document.createElement('div');
   private readonly tree_div;
   private config: Configuration|null = null
 
   constructor(private readonly connection: Connection) {
     this.connection.addConfigHandler((config) => this.handleConfig(config));
 
+    document.body.appendChild(this.root_div);
     const show_button = document.createElement('button');
     show_button.addEventListener('click', () => this.toggleConfig());
     const show_text = document.createTextNode('Show/Hide Config');

@@ -25,6 +25,7 @@ ts_library(
     ],
     deps = [
         "//aos/network/www:proxy",
+        "//y2020/vision/sift:sift_ts_fbs",
     ],
 )
 
