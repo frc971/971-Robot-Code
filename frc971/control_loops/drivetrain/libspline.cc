@@ -8,7 +8,7 @@
 #include "frc971/control_loops/drivetrain/distance_spline.h"
 #include "frc971/control_loops/drivetrain/spline.h"
 #include "frc971/control_loops/drivetrain/trajectory.h"
-#include "y2019/control_loops/drivetrain/drivetrain_base.h"
+#include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -124,7 +124,7 @@ extern "C" {
   Trajectory *NewTrajectory(DistanceSpline *spline, double vmax,
                             int num_distance) {
     return new Trajectory(
-        spline, ::y2019::control_loops::drivetrain::GetDrivetrainConfig(), vmax,
+        spline, ::y2020::control_loops::drivetrain::GetDrivetrainConfig(), vmax,
         num_distance);
   }
 
