@@ -115,6 +115,14 @@ void Localizer::HandleImageMatch(
   aos::monotonic_clock::time_point capture_time(
       std::chrono::nanoseconds(result.image_monotonic_timestamp_ns()) -
       monotonic_offset);
+  VLOG(1) << "Got monotonic offset of "
+          << aos::time::DurationInSeconds(monotonic_offset)
+          << " when at time of " << event_loop_->monotonic_now()
+          << " and capture time estimate of " << capture_time;
+  if (capture_time > event_loop_->monotonic_now()) {
+    LOG(WARNING) << "Got camera frame from the future.";
+    return;
+  }
   CHECK(result.has_camera_calibration());
   // Per the ImageMatchResult specification, we can actually determine whether
   // the camera is the turret camera just from the presence of the

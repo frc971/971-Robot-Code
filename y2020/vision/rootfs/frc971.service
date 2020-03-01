@@ -1,0 +1,9 @@
+[Unit]
+Description=Start up 971 robot code
+
+[Service]
+Type=oneshot
+ExecStart=su pi -c /home/pi/robot_code/starter.sh
+
+[Install]
+WantedBy=multi-user.target

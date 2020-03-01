@@ -1,5 +1,6 @@
 load("@build_bazel_rules_typescript//:defs.bzl", "ts_library")
 load("@build_bazel_rules_nodejs//:defs.bzl", "rollup_bundle")
+load("//frc971/downloader:downloader.bzl", "aos_downloader_dir")
 
 ts_library(
     name = "main",
@@ -43,4 +44,15 @@ genrule(
     ],
     cmd = "cp $(location @com_github_google_flatbuffers//:flatjs) $@",
     visibility = ["//y2020:__subpackages__"],
+)
+
+aos_downloader_dir(
+    name = "www_files",
+    srcs = [
+        ":files",
+        ":flatbuffers",
+        ":main_bundle",
+    ],
+    dir = "www",
+    visibility = ["//visibility:public"],
 )

@@ -68,6 +68,7 @@ rm -f /etc/profile.d/sshpwd.sh
 rm -f /etc/profile.d/wifi-check.sh
 
 systemctl enable ssh.service
+systemctl enable frc971.service
 
 # Default us to pi-8971-1
 /root/bin/change_hostname.sh pi-8971-1

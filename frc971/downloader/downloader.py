@@ -4,6 +4,7 @@
 
 from __future__ import print_function
 
+import argparse
 import sys
 import subprocess
 import re
@@ -16,52 +17,65 @@ def install(ssh_target, pkg, ssh_path, scp_path):
     PKG_URL = "http://download.ni.com/ni-linux-rt/feeds/2015/arm/ipk/cortexa9-vfpv3/" + pkg
     subprocess.check_call(["wget", PKG_URL, "-O", pkg])
     try:
-        subprocess.check_call([
-            scp_path, "-S", ssh_path, pkg,
-            ssh_target + ":/tmp/" + pkg
-        ])
-        subprocess.check_call([
-            ssh_path, ssh_target, "opkg", "install",
-            "/tmp/" + pkg
-        ])
         subprocess.check_call(
-            [ssh_path, ssh_target, "rm", "/tmp/" + pkg])
+            [scp_path, "-S", ssh_path, pkg, ssh_target + ":/tmp/" + pkg])
+        subprocess.check_call(
+            [ssh_path, ssh_target, "opkg", "install", "/tmp/" + pkg])
+        subprocess.check_call([ssh_path, ssh_target, "rm", "/tmp/" + pkg])
     finally:
         subprocess.check_call(["rm", pkg])
 
 
 def main(argv):
-    args = argv[argv.index("--") + 1:]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--target",
+                        type=str,
+                        default="roborio-971-frc.local",
+                        help="Target to deploy code to.")
+    parser.add_argument("--type",
+                        type=str,
+                        choices=["roborio", "pi"],
+                        required=True,
+                        help="Target type for deployment")
+    parser.add_argument(
+        "--dir",
+        type=str,
+        help="Directory within robot_code to copy the files to.")
+    parser.add_argument("srcs",
+                        type=str,
+                        nargs='+',
+                        help="List of files to copy over")
+    args = parser.parse_args(argv[1:])
 
     relative_dir = ""
     recursive = False
 
-    if "--dirs" in argv:
-        dirs_index = argv.index("--dirs")
-        srcs = argv[1:dirs_index]
-        relative_dir = argv[dirs_index + 1]
+    srcs = args.srcs
+    if args.dir is not None:
+        relative_dir = args.dir
         recursive = True
-    else:
-        srcs = argv[1:argv.index("--")]
 
-    ROBORIO_TARGET_DIR = "/home/admin/robot_code"
-    ROBORIO_USER = "admin"
-
-    target_dir = ROBORIO_TARGET_DIR
-    user = ROBORIO_USER
-    destination = args[-1]
+    destination = args.target
 
     result = re.match("(?:([^:@]+)@)?([^:@]+)(?::([^:@]+))?", destination)
     if not result:
-        print(
-            "Not sure how to parse destination \"%s\"!" % destination,
-            file=sys.stderr)
+        print("Not sure how to parse destination \"%s\"!" % destination,
+              file=sys.stderr)
         return 1
+    user = None
     if result.group(1):
         user = result.group(1)
     hostname = result.group(2)
+
     if result.group(3):
         target_dir = result.group(3)
+
+    if user is None:
+        if args.type == "pi":
+          user = "pi"
+        elif args.type == "roborio":
+          user = "admin"
+    target_dir = "/home/" + user + "/robot_code"
 
     ssh_target = "%s@%s" % (user, hostname)
 
@@ -69,8 +83,8 @@ def main(argv):
     scp_path = "external/ssh/scp"
 
     rsync_cmd = ([
-        "external/rsync/usr/bin/rsync", "-e", ssh_path, "-c",
-        "-v", "-z", "--copy-links"
+        "external/rsync/usr/bin/rsync", "-e", ssh_path, "-c", "-v", "-z",
+        "--copy-links"
     ] + srcs + ["%s:%s/%s" % (ssh_target, target_dir, relative_dir)])
     try:
         subprocess.check_call(rsync_cmd)
@@ -88,12 +102,11 @@ def main(argv):
             raise e
 
     if not recursive:
-        subprocess.check_call(
-            (ssh_path, ssh_target, "&&".join([
-                "chmod u+s %s/starter_exe" % target_dir,
-                "echo \'Done moving new executables into place\'",
-                "bash -c \'sync && sync && sync\'",
-            ])))
+        subprocess.check_call((ssh_path, ssh_target, "&&".join([
+            "chmod u+s %s/starter_exe" % target_dir,
+            "echo \'Done moving new executables into place\'",
+            "bash -c \'sync && sync && sync\'",
+        ])))
 
 
 if __name__ == "__main__":
