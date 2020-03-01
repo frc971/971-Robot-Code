@@ -56,6 +56,9 @@ class Superstructure
 
   Climber climber_;
 
+  aos::monotonic_clock::time_point shooting_start_time_ =
+      aos::monotonic_clock::min_time;
+
   double time_ = 0.0;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);

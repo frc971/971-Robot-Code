@@ -96,7 +96,13 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     if (data.IsPressed(kIntakeExtend)) {
-      intake_pos = 1.0;
+      intake_pos = 1.2;
+      roller_speed = 9.0f;
+    }
+
+    if (superstructure_status_fetcher_.get() &&
+        superstructure_status_fetcher_->intake()->position() > -0.5) {
+      roller_speed = std::max(roller_speed, 6.0f);
     }
 
     if (data.IsPressed(kFeed)) {
@@ -119,7 +125,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
           hood_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
               *builder.fbb(), hood_pos,
-              CreateProfileParameters(*builder.fbb(), 0.5, 1.0));
+              CreateProfileParameters(*builder.fbb(), 0.7, 3.0));
 
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
           intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
