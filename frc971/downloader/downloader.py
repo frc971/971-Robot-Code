@@ -82,6 +82,8 @@ def main(argv):
     ssh_path = "external/ssh/ssh"
     scp_path = "external/ssh/scp"
 
+    subprocess.check_call([ssh_path, ssh_target, "mkdir", "-p", target_dir])
+
     rsync_cmd = ([
         "external/rsync/usr/bin/rsync", "-e", ssh_path, "-c", "-v", "-z",
         "--copy-links"
