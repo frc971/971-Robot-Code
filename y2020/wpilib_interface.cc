@@ -218,8 +218,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
     {
       auto builder = superstructure_position_sender_.MakeBuilder();
-      superstructure::Position::Builder position_builder =
-          builder.MakeBuilder<superstructure::Position>();
+
       // TODO(alex): check new absolute encoder api.
       // Hood
       frc971::AbsolutePositionT hood;
@@ -246,6 +245,14 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       flatbuffers::Offset<frc971::PotAndAbsolutePosition> turret_offset =
           frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &turret);
 
+      // Control Panel
+      frc971::RelativePositionT control_panel;
+      CopyPosition(*control_panel_encoder_, &control_panel,
+                   Values::kControlPanelEncoderCountsPerRevolution(),
+                   Values::kControlPanelEncoderRatio(), false);
+      flatbuffers::Offset<frc971::RelativePosition> control_panel_offset =
+          frc971::RelativePosition::Pack(*builder.fbb(), &control_panel);
+
       // Shooter
       y2020::control_loops::superstructure::ShooterPositionT shooter;
       shooter.theta_finisher =
@@ -266,14 +273,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
               y2020::control_loops::superstructure::ShooterPosition::Pack(
                   *builder.fbb(), &shooter);
 
-      // Control Panel
-      frc971::RelativePositionT control_panel;
-      CopyPosition(*control_panel_encoder_, &control_panel,
-                   Values::kControlPanelEncoderCountsPerRevolution(),
-                   Values::kControlPanelEncoderRatio(), false);
-      flatbuffers::Offset<frc971::RelativePosition> control_panel_offset =
-          frc971::RelativePosition::Pack(*builder.fbb(), &control_panel);
-
+      superstructure::Position::Builder position_builder =
+          builder.MakeBuilder<superstructure::Position>();
       position_builder.add_hood(hood_offset);
       position_builder.add_intake_joint(intake_joint_offset);
       position_builder.add_turret(turret_offset);
