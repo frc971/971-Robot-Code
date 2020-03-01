@@ -6,6 +6,7 @@
 
 #include "aos/events/event_loop.h"
 #include "aos/time/time.h"
+#include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/runge_kutta.h"
 #include "glog/logging.h"
@@ -276,6 +277,8 @@ class QuaternionUkf {
 // accelerometer calibration).
 class DrivetrainUkf : public QuaternionUkf {
  public:
+  DrivetrainUkf(const DrivetrainConfig<double> &dt_config)
+      : QuaternionUkf(dt_config.imu_transform) {}
   // UKF for http://kodlab.seas.upenn.edu/uploads/Arun/UKFpaper.pdf
   // Reference in case the link is dead:
   // Kraft, Edgar. "A quaternion-based unscented Kalman filter for orientation

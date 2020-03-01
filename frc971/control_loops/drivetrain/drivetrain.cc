@@ -41,6 +41,7 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
       gyro_reading_fetcher_(
           event_loop->MakeFetcher<::frc971::sensors::GyroReading>(
               "/drivetrain")),
+      down_estimator_(dt_config),
       localizer_(localizer),
       kf_(dt_config_.make_kf_drivetrain_loop()),
       dt_openloop_(dt_config_, &kf_),
@@ -176,6 +177,9 @@ void DrivetrainLoop::RunIteration(
         break;
       case IMUType::IMU_Y:
         last_accel_ = -imu_values_fetcher_->accelerometer_y();
+        break;
+      case IMUType::IMU_Z:
+        last_accel_ = imu_values_fetcher_->accelerometer_z();
         break;
     }
   }

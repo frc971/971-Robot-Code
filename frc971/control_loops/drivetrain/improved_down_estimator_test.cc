@@ -4,6 +4,7 @@
 #include <random>
 
 #include "aos/testing/random_seed.h"
+#include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "frc971/control_loops/drivetrain/improved_down_estimator.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
@@ -91,7 +92,8 @@ TEST(DownEstimatorTest, QuaternionIntegral) {
 }
 
 TEST(DownEstimatorTest, UkfConstantRotation) {
-  drivetrain::DrivetrainUkf dtukf;
+  drivetrain::DrivetrainUkf dtukf(
+      drivetrain::testing::GetTestDrivetrainConfig());
   const Eigen::Vector3d ux = Eigen::Vector3d::UnitX();
   EXPECT_EQ(0.0,
             (Eigen::Vector3d(0.0, 0.0, 1.0) - dtukf.H(dtukf.X_hat().coeffs()))
@@ -112,7 +114,8 @@ TEST(DownEstimatorTest, UkfConstantRotation) {
 
 // Tests that the euler angles in the status message are correct.
 TEST(DownEstimatorTest, UkfEulerStatus) {
-  drivetrain::DrivetrainUkf dtukf;
+  drivetrain::DrivetrainUkf dtukf(
+      drivetrain::testing::GetTestDrivetrainConfig());
   const Eigen::Vector3d ux = Eigen::Vector3d::UnitX();
   const Eigen::Vector3d uy = Eigen::Vector3d::UnitY();
   const Eigen::Vector3d uz = Eigen::Vector3d::UnitZ();
@@ -167,7 +170,8 @@ TEST(DownEstimatorTest, UkfEulerStatus) {
 // that we are slightly rotated, that we eventually adjust our estimate to be
 // correct.
 TEST(DownEstimatorTest, UkfAccelCorrectsBias) {
-  drivetrain::DrivetrainUkf dtukf;
+  drivetrain::DrivetrainUkf dtukf(
+      drivetrain::testing::GetTestDrivetrainConfig());
   const Eigen::Vector3d ux = Eigen::Vector3d::UnitX();
   Eigen::Matrix<double, 3, 1> measurement;
   // Supply the accelerometer with a slightly off reading to ensure that we
@@ -192,7 +196,8 @@ TEST(DownEstimatorTest, UkfAccelCorrectsBias) {
 // that we are slightly rotated, that we eventually adjust our estimate to be
 // correct.
 TEST(DownEstimatorTest, UkfIgnoreBadAccel) {
-  drivetrain::DrivetrainUkf dtukf;
+  drivetrain::DrivetrainUkf dtukf(
+      drivetrain::testing::GetTestDrivetrainConfig());
   const Eigen::Vector3d uy = Eigen::Vector3d::UnitY();
   Eigen::Matrix<double, 3, 1> measurement;
   // Set up a scenario where, if we naively took the accelerometer readings, we
