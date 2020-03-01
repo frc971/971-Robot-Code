@@ -193,6 +193,12 @@ void Localizer::HandleImageMatch(
     H(0, StateIdx::kX) = 1;
     H(1, StateIdx::kY) = 1;
     H(2, StateIdx::kTheta) = 1;
+    // If the heading is off by too much, assume that we got a false-positive
+    // and don't use the correction.
+    if (std::abs(aos::math::DiffAngle(theta(), Z(2))) > M_PI_2) {
+      AOS_LOG(WARNING, "Dropped image match due to heading mismatch.\n");
+      return;
+    }
     ekf_.Correct(Z, nullptr, {}, [H, Z](const State &X, const Input &) {
                                    Eigen::Vector3d Zhat = H * X;
                                    // In order to deal with wrapping of the
