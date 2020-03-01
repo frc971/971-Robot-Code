@@ -481,6 +481,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     // Thread 3.
     ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
     SensorReader sensor_reader(&sensor_reader_event_loop);
+    sensor_reader.set_pwm_trigger(true);
     sensor_reader.set_drivetrain_left_encoder(make_encoder(0));
     sensor_reader.set_drivetrain_right_encoder(make_encoder(1));
     // TODO: pin numbers
