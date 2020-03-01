@@ -53,6 +53,8 @@ void Subscriber::RunIteration() {
   }
 
   fetcher_->Fetch();
+  VLOG(2) << "Sending a message with " << GetPacketCount(fetcher_->context())
+          << "packets";
   for (int packet_index = 0; packet_index < GetPacketCount(fetcher_->context());
        ++packet_index) {
     flatbuffers::Offset<MessageHeader> message =
@@ -71,8 +73,10 @@ void Subscriber::RunIteration() {
 }
 
 bool Subscriber::Compare(const Channel *channel) const {
-  return channel->name() == fetcher_->channel()->name() &&
-         channel->type() == fetcher_->channel()->type();
+  return channel->name()->string_view() ==
+             fetcher_->channel()->name()->string_view() &&
+         channel->type()->string_view() ==
+             fetcher_->channel()->type()->string_view();
 }
 
 Connection::Connection(
@@ -156,6 +160,7 @@ void Connection::Send(const ::flatbuffers::DetachedBuffer &buffer) const {
   webrtc::DataBuffer data_buffer(
       rtc::CopyOnWriteBuffer(buffer.data(), buffer.size()),
       true /* binary array */);
+  VLOG(2) << "Sending " << buffer.size() << "bytes to a client";
   data_channel_->Send(data_buffer);
 }
 
@@ -211,9 +216,11 @@ void Connection::OnStateChange() {
 void Connection::OnMessage(const webrtc::DataBuffer &buffer) {
   const message_bridge::Connect *message =
       flatbuffers::GetRoot<message_bridge::Connect>(buffer.data.data());
+  VLOG(2) << "Got a connect message " << aos::FlatbufferToJson(message);
   for (auto &subscriber : subscribers_) {
     // Make sure the subscriber is for a channel on this node.
     if (subscriber.get() == nullptr) {
+      VLOG(2) << ": Null subscriber";
       continue;
     }
     bool found_match = false;

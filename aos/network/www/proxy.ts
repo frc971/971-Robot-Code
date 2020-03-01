@@ -19,13 +19,17 @@ export class Handler {
     const messageHeader =
         WebProxy.MessageHeader.getRootAsMessageHeader(fbBuffer);
     // Short circuit if only one packet
-    if (messageHeader.packetCount === 1) {
+    if (messageHeader.packetCount() === 1) {
       this.handlerFunc(messageHeader.dataArray());
       return;
     }
 
     if (messageHeader.packetIndex() === 0) {
       this.dataBuffer = new Uint8Array(messageHeader.length());
+      this.receivedMessageLength = 0;
+    }
+    if (!messageHeader.dataLength()) {
+      return;
     }
     this.dataBuffer.set(
         messageHeader.dataArray(),
@@ -128,7 +132,7 @@ export class Connection {
   onWebSocketOpen(): void {
     this.rtcPeerConnection = new RTCPeerConnection({});
     this.rtcPeerConnection.addEventListener(
-        'datachannel', (e) => this.onDataCnannel(e));
+        'datachannel', (e) => this.onDataChannel(e));
     this.dataChannel = this.rtcPeerConnection.createDataChannel('signalling');
     this.dataChannel.addEventListener(
         'message', (e) => this.onDataChannelMessage(e));
