@@ -64,24 +64,34 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   climber_.Iterate(unsafe_goal, output != nullptr ? &(output_struct) : nullptr);
 
+  const AbsoluteEncoderProfiledJointStatus *const hood_status =
+      GetMutableTemporaryPointer(*status->fbb(), hood_status_offset);
+
   const PotAndAbsoluteEncoderProfiledJointStatus *const turret_status =
       GetMutableTemporaryPointer(*status->fbb(), turret_status_offset);
 
   if (output != nullptr) {
     // Friction is a pain and putting a really high burden on the integrator.
-    double velocity_sign = turret_status->velocity() * kTurretFrictionGain;
+    const double turret_velocity_sign = turret_status->velocity() * kTurretFrictionGain;
     output_struct.turret_voltage +=
-        std::clamp(velocity_sign, -kTurretFrictionVoltageLimit,
+        std::clamp(turret_velocity_sign, -kTurretFrictionVoltageLimit,
                    kTurretFrictionVoltageLimit);
+
+    // Friction is a pain and putting a really high burden on the integrator.
+    const double hood_velocity_sign = hood_status->velocity() * kHoodFrictionGain;
+    output_struct.hood_voltage +=
+        std::clamp(hood_velocity_sign, -kHoodFrictionVoltageLimit,
+                   kHoodFrictionVoltageLimit);
+
+    // And dither the output.
+    time_ += 0.00505;
+    output_struct.hood_voltage += 1.3 * std::sin(time_ * 2.0 * M_PI * 30.0);
   }
 
   bool zeroed;
   bool estopped;
 
   {
-    const AbsoluteEncoderProfiledJointStatus *const hood_status =
-        GetMutableTemporaryPointer(*status->fbb(), hood_status_offset);
-
     const AbsoluteEncoderProfiledJointStatus *const intake_status =
         GetMutableTemporaryPointer(*status->fbb(), intake_status_offset);
 

@@ -235,14 +235,21 @@ class SuperstructureSimulation {
     EXPECT_NEAR(superstructure_output_fetcher_->turret_voltage(), 0.0,
                 voltage_check_turret);
 
+    // Invert the friction model.
+    const double hood_velocity_sign =
+        hood_plant_->X(1) * Superstructure::kHoodFrictionGain;
     ::Eigen::Matrix<double, 1, 1> hood_U;
     hood_U << superstructure_output_fetcher_->hood_voltage() +
-                  hood_plant_->voltage_offset();
+                  hood_plant_->voltage_offset() -
+                  std::clamp(hood_velocity_sign,
+                             -Superstructure::kHoodFrictionVoltageLimit,
+                             Superstructure::kHoodFrictionVoltageLimit);
 
     ::Eigen::Matrix<double, 1, 1> intake_U;
     intake_U << superstructure_output_fetcher_->intake_joint_voltage() +
                     intake_plant_->voltage_offset();
 
+    // Invert the friction model.
     const double turret_velocity_sign =
         turret_plant_->X(1) * Superstructure::kTurretFrictionGain;
     ::Eigen::Matrix<double, 1, 1> turret_U;
@@ -672,7 +679,8 @@ TEST_F(SuperstructureTest, SaturationTest) {
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   superstructure_plant_.set_peak_hood_velocity(23.0);
-  superstructure_plant_.set_peak_hood_acceleration(0.2);
+  // 30 hz sin wave on the hood causes acceleration to be ignored.
+  superstructure_plant_.set_peak_hood_acceleration(5.5);
 
   superstructure_plant_.set_peak_intake_velocity(23.0);
   superstructure_plant_.set_peak_intake_acceleration(0.2);
