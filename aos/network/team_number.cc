@@ -9,6 +9,8 @@
 
 #include "aos/util/string_to_num.h"
 
+DECLARE_string(override_hostname);
+
 namespace aos {
 namespace network {
 namespace team_number_internal {
@@ -101,10 +103,14 @@ uint16_t DoGetTeamNumber() {
 }  // namespace
 
 ::std::string GetHostname() {
-  char buf[256];
-  buf[sizeof(buf) - 1] = '\0';
-  PCHECK(gethostname(buf, sizeof(buf) - 1) == 0);
-  return buf;
+  if (FLAGS_override_hostname.empty()) {
+    char buf[256];
+    buf[sizeof(buf) - 1] = '\0';
+    PCHECK(gethostname(buf, sizeof(buf) - 1) == 0);
+    return buf;
+  } else {
+    return FLAGS_override_hostname;
+  }
 }
 
 uint16_t GetTeamNumber() {

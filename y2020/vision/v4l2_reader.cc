@@ -6,6 +6,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+DEFINE_bool(ignore_timestamps, false,
+            "Don't require timestamps on images.  Used to allow webcams");
+
 namespace frc971 {
 namespace vision {
 
@@ -137,8 +140,11 @@ V4L2Reader::BufferInfo V4L2Reader::DequeueBuffer() {
            buffer.m.userptr);
   CHECK_EQ(ImageSize(), buffer.length);
   CHECK(buffer.flags & V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC);
-  CHECK_EQ(buffer.flags & V4L2_BUF_FLAG_TSTAMP_SRC_MASK,
-           static_cast<uint32_t>(V4L2_BUF_FLAG_TSTAMP_SRC_EOF));
+  if (!FLAGS_ignore_timestamps) {
+    // Require that we have good timestamp on images
+    CHECK_EQ(buffer.flags & V4L2_BUF_FLAG_TSTAMP_SRC_MASK,
+             static_cast<uint32_t>(V4L2_BUF_FLAG_TSTAMP_SRC_EOF));
+  }
   return {static_cast<int>(buffer.index),
           aos::time::from_timeval(buffer.timestamp)};
 }

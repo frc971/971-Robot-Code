@@ -36,6 +36,9 @@ cc_binary(
         "//tools:armhf-debian",
     ],
     visibility = ["//y2020:__subpackages__"],
+    data = [
+        "//y2020:config.json",
+    ],
     deps = [
         ":v4l2_reader",
         ":vision_fbs",

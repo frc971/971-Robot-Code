@@ -70,6 +70,7 @@ cc_test(
     ],
     deps = [
         ":team_number",
+        "//aos:configuration",
         "//aos/testing:googletest",
     ],
 )

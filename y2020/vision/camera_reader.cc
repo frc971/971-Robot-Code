@@ -14,6 +14,11 @@
 #include "y2020/vision/v4l2_reader.h"
 #include "y2020/vision/vision_generated.h"
 
+// config used to allow running camera_reader independently.  E.g.,
+// bazel run //y2020/vision:camera_reader -- --config y2020/config.json
+//   --override_hostname pi-7971-1  --ignore_timestamps true
+DEFINE_string(config, "config.json", "Path to the config file to use.");
+
 namespace frc971 {
 namespace vision {
 namespace {
@@ -523,7 +528,7 @@ CameraReader::PackFeatures(flatbuffers::FlatBufferBuilder *fbb,
 
 void CameraReaderMain() {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig("config.json");
+      aos::configuration::ReadConfig(FLAGS_config);
 
   const auto training_data_bfbs = SiftTrainingData();
   const sift::TrainingData *const training_data =
