@@ -92,7 +92,6 @@ constexpr std::chrono::seconds kPiTimeOffset(10);
 namespace chrono = std::chrono;
 using frc971::control_loops::drivetrain::testing::DrivetrainSimulation;
 using frc971::control_loops::drivetrain::DrivetrainLoop;
-using frc971::control_loops::drivetrain::testing::GetTestDrivetrainConfig;
 using aos::monotonic_clock;
 
 class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
@@ -416,6 +415,22 @@ TEST_F(LocalizedDrivetrainTest, NoCameraUpdate) {
   RunFor(chrono::seconds(3));
   VerifyNearGoal();
   EXPECT_TRUE(VerifyEstimatorAccurate(5e-4));
+}
+
+// Tests that we can drive in a straight line and have things estimate
+// correctly.
+TEST_F(LocalizedDrivetrainTest, NoCameraUpdateStraightLine) {
+  SetEnabled(true);
+  set_enable_cameras(false);
+  EXPECT_TRUE(VerifyEstimatorAccurate(1e-7));
+
+  SendGoal(1.0, 1.0);
+
+  RunFor(chrono::seconds(1));
+  VerifyNearGoal();
+  // Due to accelerometer drift, the straight-line driving tends to be less
+  // accurate...
+  EXPECT_TRUE(VerifyEstimatorAccurate(0.1));
 }
 
 // Tests that camera updates with a perfect models results in no errors.

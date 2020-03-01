@@ -52,13 +52,19 @@ class DrivetrainReplayTest : public ::testing::Test {
         reader_.event_loop_factory()->MakeEventLoop("drivetrain", roborio_);
     drivetrain_event_loop_->SkipTimingReport();
 
+    frc971::control_loops::drivetrain::DrivetrainConfig<double> config =
+        GetDrivetrainConfig();
+    // Make the modification required to the imu transform to work with the 2016
+    // logs...
+    config.imu_transform << 0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0;
+    config.gyro_type = frc971::control_loops::drivetrain::GyroType::IMU_Z_GYRO;
+
     localizer_ =
         std::make_unique<frc971::control_loops::drivetrain::DeadReckonEkf>(
-            drivetrain_event_loop_.get(), GetDrivetrainConfig());
+            drivetrain_event_loop_.get(), config);
     drivetrain_ =
         std::make_unique<frc971::control_loops::drivetrain::DrivetrainLoop>(
-            GetDrivetrainConfig(), drivetrain_event_loop_.get(),
-            localizer_.get());
+            config, drivetrain_event_loop_.get(), localizer_.get());
 
     test_event_loop_ =
         reader_.event_loop_factory()->MakeEventLoop("drivetrain", roborio_);
@@ -88,7 +94,7 @@ TEST_F(DrivetrainReplayTest, SpinningWheels) {
   ASSERT_TRUE(status_fetcher_->has_x());
   ASSERT_TRUE(status_fetcher_->has_y());
   ASSERT_TRUE(status_fetcher_->has_theta());
-  EXPECT_LT(std::abs(status_fetcher_->x()), 0.1);
+  EXPECT_LT(std::abs(status_fetcher_->x()), 0.25);
   // Because the encoders should not be affecting the y or yaw axes, expect a
   // reasonably precise result (although, since this is a real worl dtest, the
   // robot probably did actually move be some non-zero amount).

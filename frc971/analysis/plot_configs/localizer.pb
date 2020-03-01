@@ -23,6 +23,16 @@ figure {
   axes {
     line {
       y_signal {
+        channel: "DrivetrainStatus"
+        field: "trajectory_logging.y"
+      }
+      x_signal {
+        channel: "DrivetrainStatus"
+        field: "trajectory_logging.x"
+      }
+    }
+    line {
+      y_signal {
         channel: "DrivetrainTruthStatus"
         field: "y"
       }
@@ -31,7 +41,6 @@ figure {
         field: "x"
       }
     }
-    share_x_axis: false
     line {
       y_signal {
         channel: "DrivetrainStatus"

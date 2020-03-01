@@ -691,6 +691,7 @@ cc_library(
         "improved_down_estimator.h",
     ],
     deps = [
+        ":drivetrain_config",
         ":drivetrain_status_fbs",
         "//aos/events:event_loop",
         "//frc971/control_loops:control_loops_fbs",
@@ -707,6 +708,7 @@ cc_test(
         "improved_down_estimator_test.cc",
     ],
     deps = [
+        ":drivetrain_test_lib",
         "//aos/testing:googletest",
         "//aos/testing:random_seed",
         "//frc971/control_loops/drivetrain:improved_down_estimator",

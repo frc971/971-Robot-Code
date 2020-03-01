@@ -190,16 +190,23 @@ void DrivetrainSimulation::SendImuMessage() {
   auto builder = imu_sender_.MakeBuilder();
   frc971::IMUValues::Builder imu_builder =
       builder.MakeBuilder<frc971::IMUValues>();
-  imu_builder.add_gyro_x(0.0);
-  imu_builder.add_gyro_y(0.0);
-  imu_builder.add_gyro_z(
-      (drivetrain_plant_.X(3, 0) - drivetrain_plant_.X(1, 0)) /
-      (dt_config_.robot_radius * 2.0));
+  const Eigen::Vector3d gyro =
+      dt_config_.imu_transform.inverse() *
+      Eigen::Vector3d(0.0, 0.0,
+                      (drivetrain_plant_.X(3, 0) - drivetrain_plant_.X(1, 0)) /
+                          (dt_config_.robot_radius * 2.0));
+  imu_builder.add_gyro_x(gyro.x());
+  imu_builder.add_gyro_y(gyro.y());
+  imu_builder.add_gyro_z(gyro.z());
   // Acceleration due to gravity, in m/s/s.
   constexpr double kG = 9.807;
-  imu_builder.add_accelerometer_x(last_acceleration_.x() / kG);
-  imu_builder.add_accelerometer_y(last_acceleration_.y() / kG);
-  imu_builder.add_accelerometer_z(1.0);
+  const Eigen::Vector3d accel =
+      dt_config_.imu_transform.inverse() *
+      Eigen::Vector3d(last_acceleration_.x() / kG, last_acceleration_.y() / kG,
+                      1.0);
+  imu_builder.add_accelerometer_x(accel.x());
+  imu_builder.add_accelerometer_y(accel.y());
+  imu_builder.add_accelerometer_z(accel.z());
   imu_builder.add_monotonic_timestamp_ns(
       std::chrono::duration_cast<std::chrono::nanoseconds>(
           event_loop_->monotonic_now().time_since_epoch())
