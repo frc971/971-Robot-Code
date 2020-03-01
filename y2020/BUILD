@@ -8,6 +8,7 @@ robot_downloader(
         ":config.json",
     ],
     start_binaries = [
+        "//aos/events/logging:logger_main",
         ":joystick_reader",
         ":wpilib_interface",
         "//aos/network:message_bridge_client",
@@ -16,6 +17,27 @@ robot_downloader(
         "//y2020/control_loops/drivetrain:drivetrain",
         "//y2020/control_loops/superstructure:superstructure",
     ],
+)
+
+robot_downloader(
+    name = "pi_download",
+    data = [
+        ":config.json",
+        "//y2020/www:files",
+        "//y2020/www:flatbuffers",
+        "//y2020/www:main_bundle",
+    ],
+    dirs = [
+        "//y2020/www:www_files",
+    ],
+    restricted_to = ["//tools:armhf-debian"],
+    start_binaries = [
+        "//aos/network:message_bridge_client",
+        "//aos/network:message_bridge_server",
+        "//y2020/vision:camera_reader",
+        "//aos/network:web_proxy_main",
+    ],
+    target_type = "pi",
 )
 
 cc_library(

@@ -1,7 +1,15 @@
 load("//frc971/downloader:downloader.bzl", "aos_downloader")
 load("//tools/build_rules:label.bzl", "expand_label")
 
-def robot_downloader(start_binaries, binaries = [], data = [], dirs = None, default_target = None):
+
+def robot_downloader(start_binaries,
+                     name="download",
+                     binaries=[],
+                     data=[],
+                     dirs=None,
+                     default_target=None,
+                     restricted_to=["//tools:roborio"],
+                     target_type="roborio"):
     """Sets up the standard robot download targets.
 
     Attrs:
@@ -11,27 +19,30 @@ def robot_downloader(start_binaries, binaries = [], data = [], dirs = None, defa
     """
 
     aos_downloader(
-        name = "download",
-        start_srcs = [
+        name=name,
+        start_srcs=([
             "//aos:prime_start_binaries",
-        ] + start_binaries,
-        srcs = [
+        ] if target_type == "roborio" else []) + start_binaries,
+        srcs=[
             "//aos:prime_binaries",
         ] + binaries + data,
-        dirs = dirs,
-        default_target = default_target,
-        restricted_to = ["//tools:roborio"],
+        dirs=dirs,
+        target_type=target_type,
+        default_target=default_target,
+        restricted_to=restricted_to,
     )
 
     aos_downloader(
-        name = "download_stripped",
-        start_srcs = [
+        name=name + "_stripped",
+        start_srcs=([
             "//aos:prime_start_binaries_stripped",
-        ] + [expand_label(binary) + ".stripped" for binary in start_binaries],
-        srcs = [
+        ] if target_type == "roborio" else []) +
+        [expand_label(binary) + ".stripped" for binary in start_binaries],
+        srcs=[
             "//aos:prime_binaries_stripped",
         ] + [expand_label(binary) + ".stripped" for binary in binaries] + data,
-        dirs = dirs,
-        default_target = default_target,
-        restricted_to = ["//tools:roborio"],
+        dirs=dirs,
+        target_type=target_type,
+        default_target=default_target,
+        restricted_to=restricted_to,
     )

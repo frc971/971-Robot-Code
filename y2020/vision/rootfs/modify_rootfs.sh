@@ -76,6 +76,7 @@ fi
 sudo cp target_configure.sh "${PARTITION}/tmp/"
 sudo cp dhcpcd.conf "${PARTITION}/tmp/dhcpcd.conf"
 sudo cp change_hostname.sh "${PARTITION}/tmp/change_hostname.sh"
+sudo cp frc971.service "${PARTITION}/etc/systemd/system/frc971.service"
 
 target /bin/mkdir -p /home/pi/.ssh/
 cat ~/.ssh/id_rsa.pub | target tee /home/pi/.ssh/authorized_keys

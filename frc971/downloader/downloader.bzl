@@ -7,16 +7,16 @@ def _aos_downloader_impl(ctx):
             "#!/bin/bash",
             "set -e",
             'cd "${BASH_SOURCE[0]}.runfiles/%s"' % ctx.workspace_name,
-        ] + ['%s %s --dirs %s -- %s "$@"' % (
+        ] + ['%s --dir %s --target "$@" --type %s %s' % (
             ctx.executable._downloader.short_path,
-            " ".join([src.short_path for src in d.downloader_srcs]),
             d.downloader_dir,
-            ctx.attr.default_target,
+            ctx.attr.target_type,
+            " ".join([src.short_path for src in d.downloader_srcs]),
         ) for d in ctx.attr.dirs] + [
-            'exec %s %s -- %s "$@"' % (
+            'exec %s --target "$@" --type %s %s' % (
                 ctx.executable._downloader.short_path,
+                ctx.attr.target_type,
                 " ".join([src.short_path for src in all_files]),
-                ctx.attr.default_target,
             ),
         ]),
     )
@@ -57,8 +57,6 @@ Attrs:
   srcs: The files to download. They currently all get shoved into one folder.
   dirs: A list of aos_downloader_dirs to download too.
   start_srcs: Like srcs, except they also get put into start_list.txt.
-  default_target: The default host to download to. If not specified, defaults to
-                  roboRIO-971.local.
 """
 
 aos_downloader = rule(
@@ -76,15 +74,15 @@ aos_downloader = rule(
             mandatory = True,
             allow_files = True,
         ),
+        "target_type": attr.string(
+            default = "roborio",
+        ),
         "dirs": attr.label_list(
             mandatory = False,
             providers = [
                 "downloader_dir",
                 "downloader_srcs",
             ],
-        ),
-        "default_target": attr.string(
-            default = "roboRIO-971-frc.local",
         ),
     },
     executable = True,

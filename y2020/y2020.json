@@ -60,7 +60,7 @@
       "name": "/aos/roborio",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "roborio",
-      "frequency": 2,
+      "frequency": 10,
       "num_senders": 2
     },
     {
@@ -114,7 +114,7 @@
       "name": "/aos/pi1",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "pi1",
-      "frequency": 2,
+      "frequency": 10,
       "num_senders": 2
     },
     {
@@ -158,7 +158,7 @@
       "name": "/aos/pi2",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "pi2",
-      "frequency": 2,
+      "frequency": 10,
       "num_senders": 2
     },
     {
@@ -202,7 +202,7 @@
       "name": "/aos/pi3",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "pi3",
-      "frequency": 2,
+      "frequency": 10,
       "num_senders": 2
     },
     {
