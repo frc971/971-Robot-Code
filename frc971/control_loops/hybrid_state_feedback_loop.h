@@ -75,6 +75,9 @@ class StateFeedbackHybridPlant {
     ::std::swap(coefficients_, other.coefficients_);
     X_.swap(other.X_);
     Y_.swap(other.Y_);
+    A_.swap(other.A_);
+    B_.swap(other.B_);
+    DelayedU_.swap(other.DelayedU_);
   }
 
   virtual ~StateFeedbackHybridPlant() {}
@@ -167,8 +170,6 @@ class StateFeedbackHybridPlant {
     DelayedU_ = U;
   }
 
-  Eigen::Matrix<Scalar, number_of_inputs, 1> DelayedU_;
-
   Eigen::Matrix<Scalar, number_of_states, 1> Update(
       const Eigen::Matrix<Scalar, number_of_states, 1> X,
       const Eigen::Matrix<Scalar, number_of_inputs, 1> &U,
@@ -201,6 +202,8 @@ class StateFeedbackHybridPlant {
   ::std::vector<::std::unique_ptr<StateFeedbackHybridPlantCoefficients<
       number_of_states, number_of_inputs, number_of_outputs>>>
       coefficients_;
+
+  Eigen::Matrix<Scalar, number_of_inputs, 1> DelayedU_;
 
   int index_;
 
@@ -243,9 +246,13 @@ class HybridKalman {
           *observers)
       : coefficients_(::std::move(*observers)) {}
 
-  HybridKalman(HybridKalman &&other)
-      : X_hat_(other.X_hat_), index_(other.index_) {
+  HybridKalman(HybridKalman &&other) : index_(other.index_) {
     ::std::swap(coefficients_, other.coefficients_);
+
+    X_hat_.swap(other.X_hat_);
+    P_.swap(other.P_);
+    Q_.swap(other.Q_);
+    R_.swap(other.R_);
   }
 
   // Getters for Q

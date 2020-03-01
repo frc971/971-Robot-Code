@@ -397,11 +397,11 @@ class StateFeedbackLoop {
       : plant_(::std::move(other.plant_)),
         controller_(::std::move(other.controller_)),
         observer_(::std::move(other.observer_)) {
+    ff_U_.swap(other.ff_U_);
     R_.swap(other.R_);
     next_R_.swap(other.next_R_);
     U_.swap(other.U_);
     U_uncapped_.swap(other.U_uncapped_);
-    ff_U_.swap(other.ff_U_);
   }
 
   virtual ~StateFeedbackLoop() {}
