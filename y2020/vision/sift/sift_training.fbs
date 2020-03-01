@@ -14,6 +14,8 @@ table TrainingImage {
   // 2D image coordinate representing target location on the training image
   target_point_x:float;
   target_point_y:float;
+  // Radius of target circle
+  target_point_radius:float;
 }
 
 // Represents the information used to match incoming images against.

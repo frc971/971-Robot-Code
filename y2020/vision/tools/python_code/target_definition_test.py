@@ -26,5 +26,6 @@ def compute_target_definition():
     target_data_test_1.target_rotation = np.identity(3, np.double)
     target_data_test_1.target_position = np.array([0., 1., 2.])
     target_data_test_1.target_point_2d = np.array([10., 20.]).reshape(-1, 1, 2)
+    target_data_test_1.target_radius = 32
     target_data_list.append(target_data_test_1)
     return target_data_list

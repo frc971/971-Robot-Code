@@ -107,28 +107,27 @@ def main():
             fbb)
 
         # Create the TrainingImage feature vector
-        TrainingImage.TrainingImageStartFeaturesVector(
-            fbb, len(features_vector))
+        TrainingImage.TrainingImageStartFeaturesVector(fbb,
+                                                       len(features_vector))
         for feature in reversed(features_vector):
             fbb.PrependUOffsetTRelative(feature)
         features_vector_offset = fbb.EndVector(len(features_vector))
 
         # Add the TrainingImage data
         TrainingImage.TrainingImageStart(fbb)
-        TrainingImage.TrainingImageAddFeatures(fbb,
-                                                       features_vector_offset)
-        TrainingImage.TrainingImageAddFieldToTarget(
-            fbb, transformation_mat_offset)
+        TrainingImage.TrainingImageAddFeatures(fbb, features_vector_offset)
+        TrainingImage.TrainingImageAddFieldToTarget(fbb,
+                                                    transformation_mat_offset)
         TrainingImage.TrainingImageAddTargetPointX(
             fbb, target_data.target_point_2d[0][0][0])
         TrainingImage.TrainingImageAddTargetPointY(
             fbb, target_data.target_point_2d[0][0][1])
-        images_vector.append(
-            TrainingImage.TrainingImageEnd(fbb))
+        TrainingImage.TrainingImageAddTargetPointRadius(
+            fbb, target_data.target_radius)
+        images_vector.append(TrainingImage.TrainingImageEnd(fbb))
 
     # Create and add Training Data of all targets
-    TrainingData.TrainingDataStartImagesVector(fbb,
-                                                     len(images_vector))
+    TrainingData.TrainingDataStartImagesVector(fbb, len(images_vector))
     for training_image in reversed(images_vector):
         fbb.PrependUOffsetTRelative(training_image)
     images_vector_table = fbb.EndVector(len(images_vector))

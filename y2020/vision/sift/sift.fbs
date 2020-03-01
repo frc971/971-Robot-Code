@@ -133,6 +133,12 @@ table CameraPose {
 
   // The pose of the camera in the field coordinate frame
   field_to_camera:TransformationMatrix;
+
+  // 2D image coordinate representing target location on the matched image
+  query_target_point_x:float;
+  query_target_point_y:float;
+  // Perceived radius of target circle
+  query_target_point_radius:float;
 }
 
 table ImageMatchResult {
@@ -153,10 +159,6 @@ table ImageMatchResult {
 
   // Information about the camera which took this image.
   camera_calibration:CameraCalibration;
-
-  // 2D image coordinate representing target location on the matched image
-  target_point_x:float;
-  target_point_y:float;
 }
 
 root_type ImageMatchResult;
