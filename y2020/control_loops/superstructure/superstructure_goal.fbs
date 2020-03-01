@@ -27,9 +27,7 @@ table Goal {
   // Positive is rollers intaking to Washing Machine.
   roller_voltage:float;
 
-  // 0 = facing the front of the robot. Positive rotates counterclockwise.
-  // TODO(Kai): Define which wrap of the shooter is 0 if it can rotate past
-  // forward more than once.
+  // 0 = facing the back of the robot. Positive rotates counterclockwise.
   turret:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
 
   // Only applies if shooter_tracking = false.

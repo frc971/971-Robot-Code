@@ -243,9 +243,14 @@ class SuperstructureSimulation {
     intake_U << superstructure_output_fetcher_->intake_joint_voltage() +
                     intake_plant_->voltage_offset();
 
+    const double turret_velocity_sign =
+        turret_plant_->X(1) * Superstructure::kTurretFrictionGain;
     ::Eigen::Matrix<double, 1, 1> turret_U;
     turret_U << superstructure_output_fetcher_->turret_voltage() +
-                    turret_plant_->voltage_offset();
+                    turret_plant_->voltage_offset() -
+                    std::clamp(turret_velocity_sign,
+                               -Superstructure::kTurretFrictionVoltageLimit,
+                               Superstructure::kTurretFrictionVoltageLimit);
 
     ::Eigen::Matrix<double, 1, 1> accelerator_left_U;
     accelerator_left_U
