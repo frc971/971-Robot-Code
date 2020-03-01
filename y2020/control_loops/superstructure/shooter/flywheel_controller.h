@@ -18,7 +18,9 @@ namespace shooter {
 // Handles the velocity control of each flywheel.
 class FlywheelController {
  public:
-  FlywheelController(StateFeedbackLoop<3, 1, 1> &&loop);
+  FlywheelController(
+      StateFeedbackLoop<3, 1, 1, double, StateFeedbackHybridPlant<3, 1, 1>,
+                        HybridKalman<3, 1, 1>> &&loop);
 
   // Sets the velocity goal in radians/sec
   void set_goal(double angular_velocity_goal);
@@ -45,7 +47,10 @@ class FlywheelController {
   // The current sensor measurement.
   Eigen::Matrix<double, 1, 1> Y_;
   // The control loop.
-  ::std::unique_ptr<StateFeedbackLoop<3, 1, 1>> loop_;
+  ::std::unique_ptr<
+      StateFeedbackLoop<3, 1, 1, double, StateFeedbackHybridPlant<3, 1, 1>,
+                        HybridKalman<3, 1, 1>>>
+      loop_;
 
   // History array for calculating a filtered angular velocity.
   static constexpr int kHistoryLength = 10;
@@ -58,6 +63,8 @@ class FlywheelController {
   double avg_angular_velocity_;
 
   double last_goal_ = 0;
+
+  bool first_ = true;
 
   DISALLOW_COPY_AND_ASSIGN(FlywheelController);
 };

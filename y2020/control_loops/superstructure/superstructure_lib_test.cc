@@ -763,7 +763,7 @@ TEST_F(SuperstructureTest, SpinUp) {
   }
 
   // Give it a lot of time to get there.
-  RunFor(chrono::seconds(9));
+  RunFor(chrono::seconds(15));
 
   VerifyNearGoal();
 }

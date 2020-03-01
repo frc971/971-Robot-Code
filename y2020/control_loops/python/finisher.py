@@ -14,7 +14,7 @@ FLAGS = gflags.FLAGS
 gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 
 # Inertia for a single 4" diameter, 2" wide neopreme wheel.
-J_wheel = 0.000319 * 2.0
+J_wheel = 0.000319 * 2.0 * 6.0
 # Gear ratio to the final wheel.
 # 40 tooth on the flywheel
 # 48 for the falcon.
@@ -29,17 +29,17 @@ kFinisher = flywheel.FlywheelParams(
     motor=control_loop.Falcon(),
     G=G,
     J=J,
-    q_pos=0.08,
-    q_vel=4.00,
-    q_voltage=0.4,
+    q_pos=0.01,
+    q_vel=100.0,
+    q_voltage=6.0,
     r_pos=0.05,
-    controller_poles=[.84])
+    controller_poles=[.92])
 
 
 def main(argv):
     if FLAGS.plot:
         R = numpy.matrix([[0.0], [500.0], [0.0]])
-        flywheel.PlotSpinup(params=kFinisher, goal=R, iterations=200)
+        flywheel.PlotSpinup(params=kFinisher, goal=R, iterations=400)
         return 0
 
     if len(argv) != 5:

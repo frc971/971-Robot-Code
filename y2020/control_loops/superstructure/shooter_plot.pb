@@ -24,19 +24,87 @@ figure {
     line {
       y_signal {
         channel: "Status"
-        field: "hood.position"
+        field: "shooter.accelerator_left.avg_angular_velocity"
+      }
+    }
+    line {
+      y_signal {
+        channel: "Status"
+        field: "shooter.accelerator_right.avg_angular_velocity"
+      }
+    }
+    line {
+      y_signal {
+        channel: "Status"
+        field: "shooter.accelerator_left.angular_velocity"
+      }
+    }
+    line {
+      y_signal {
+        channel: "Status"
+        field: "shooter.accelerator_right.angular_velocity"
       }
     }
     line {
       y_signal {
         channel: "Goal"
-        field: "hood.unsafe_goal"
+        field: "shooter.velocity_accelerator"
       }
     }
     line {
       y_signal {
-        channel: "Position"
-        field: "hood.encoder"
+        channel: "Status"
+        field: "shooter.finisher.avg_angular_velocity"
+      }
+    }
+    line {
+      y_signal {
+        channel: "Status"
+        field: "shooter.finisher.angular_velocity"
+      }
+    }
+    line {
+      y_signal {
+        channel: "Goal"
+        field: "shooter.velocity_finisher"
+      }
+    }
+  }
+  axes {
+    line {
+      y_signal {
+        channel: "Output"
+        field: "accelerator_left_voltage"
+      }
+    }
+    line {
+      y_signal {
+        channel: "Output"
+        field: "accelerator_right_voltage"
+      }
+    }
+    line {
+      y_signal {
+        channel: "Status"
+        field: "shooter.accelerator_left.voltage_error"
+      }
+    }
+    line {
+      y_signal {
+        channel: "Status"
+        field: "shooter.accelerator_right.voltage_error"
+      }
+    }
+    line {
+      y_signal {
+        channel: "Output"
+        field: "finisher_voltage"
+      }
+    }
+    line {
+      y_signal {
+        channel: "Status"
+        field: "shooter.finisher.voltage_error"
       }
     }
     ylabel: "hood position"

@@ -12,7 +12,7 @@ namespace superstructure {
 namespace shooter {
 
 namespace {
-const double kVelocityTolerance = 0.01;
+const double kVelocityTolerance = 20.0;
 }  // namespace
 
 Shooter::Shooter()
@@ -46,16 +46,18 @@ flatbuffers::Offset<ShooterStatus> Shooter::RunIteration(
   accelerator_right_.set_position(position->theta_accelerator_right(),
                                   position_timestamp);
 
-  finisher_.Update(output == nullptr);
-  accelerator_left_.Update(output == nullptr);
-  accelerator_right_.Update(output == nullptr);
-
   // Update goal.
   if (goal) {
     finisher_.set_goal(goal->velocity_finisher());
     accelerator_left_.set_goal(goal->velocity_accelerator());
     accelerator_right_.set_goal(goal->velocity_accelerator());
+  }
 
+  finisher_.Update(output == nullptr);
+  accelerator_left_.Update(output == nullptr);
+  accelerator_right_.Update(output == nullptr);
+
+  if (goal) {
     if (UpToSpeed(goal) && goal->velocity_finisher() > kVelocityTolerance &&
         goal->velocity_accelerator() > kVelocityTolerance) {
       ready_ = true;

@@ -108,6 +108,8 @@ class StateFeedbackPlant {
   }
   Scalar U_max(int i, int j = 0) const { return U_max()(i, j); }
 
+  const std::chrono::nanoseconds dt() const { return coefficients().dt; }
+
   const Eigen::Matrix<Scalar, number_of_states, 1> &X() const { return X_; }
   Scalar X(int i, int j = 0) const { return X()(i, j); }
   const Eigen::Matrix<Scalar, number_of_outputs, 1> &Y() const { return Y_; }
@@ -503,9 +505,7 @@ class StateFeedbackLoop {
     return controller().Kff() * (next_R() - plant().A() * R());
   }
 
-  // stop_motors is whether or not to output all 0s.
-  void Update(bool stop_motors,
-              ::std::chrono::nanoseconds dt = ::std::chrono::milliseconds(5)) {
+  void UpdateController(bool stop_motors) {
     if (stop_motors) {
       U_.setZero();
       U_uncapped_.setZero();
@@ -514,10 +514,15 @@ class StateFeedbackLoop {
       U_ = U_uncapped_ = ControllerOutput();
       CapU();
     }
+    UpdateFFReference();
+  }
+
+  // stop_motors is whether or not to output all 0s.
+  void Update(bool stop_motors,
+              ::std::chrono::nanoseconds dt = ::std::chrono::milliseconds(0)) {
+    UpdateController(stop_motors);
 
     UpdateObserver(U_, dt);
-
-    UpdateFFReference();
   }
 
   // Updates R() after any CapU operations happen on U().

@@ -28,19 +28,21 @@ kAccelerator = flywheel.FlywheelParams(
     name='Accelerator',
     motor=control_loop.Falcon(),
     G=G,
-    J=J,
-    q_pos=0.08,
-    q_vel=4.00,
-    q_voltage=0.4,
+    J=J + 0.0015,
+    q_pos=0.01,
+    q_vel=40.0,
+    q_voltage=2.0,
     r_pos=0.05,
-    controller_poles=[.84])
+    controller_poles=[.86])
 
 
 def main(argv):
     if FLAGS.plot:
         R = numpy.matrix([[0.0], [500.0], [0.0]])
-        flywheel.PlotSpinup(kAccelerator, goal=R, iterations=200)
+        flywheel.PlotSpinup(kAccelerator, goal=R, iterations=400)
         return 0
+
+    glog.debug("J is %f" % J)
 
     if len(argv) != 5:
         glog.fatal('Expected .h file name and .cc file name')
@@ -53,4 +55,5 @@ def main(argv):
 
 if __name__ == '__main__':
     argv = FLAGS(sys.argv)
+    glog.init()
     sys.exit(main(argv))
