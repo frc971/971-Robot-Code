@@ -77,6 +77,10 @@ constexpr double kMinimumInnerPortShotDistance = 4.0;
 // kAntiWrapBuffer radians away from the hardstops.
 constexpr double kAntiWrapBuffer = 0.2;
 
+// If the turret is at zero, then it will be at this angle relative to pointed
+// straight forwards on the robot.
+constexpr double kTurretZeroOffset = M_PI;
+
 constexpr double kTurretRange = constants::Values::kTurretRange().range();
 static_assert((kTurretRange - 2.0 * kAntiWrapBuffer) > 2.0 * M_PI,
               "kAntiWrap buffer should be small enough that we still have 360 "
@@ -220,9 +224,10 @@ void Aimer::Update(const Status *status, aos::Alliance alliance,
   // would have to travel).
   // We then check if this goal would bring us out of range of the valid angles,
   // and if it would, we reset to be within +/- pi of zero.
-  double turret_heading = goal_.message().unsafe_goal() +
-                          aos::math::NormalizeAngle(
-                              heading_to_goal - goal_.message().unsafe_goal());
+  double turret_heading =
+      goal_.message().unsafe_goal() +
+      aos::math::NormalizeAngle(heading_to_goal - kTurretZeroOffset -
+                                goal_.message().unsafe_goal());
   if (std::abs(turret_heading - constants::Values::kTurretRange().middle()) >
       range / 2.0) {
     turret_heading = aos::math::NormalizeAngle(turret_heading);
