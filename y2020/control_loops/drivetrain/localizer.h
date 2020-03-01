@@ -1,6 +1,8 @@
 #ifndef Y2020_CONTROL_LOOPS_DRIVETRAIN_LOCALIZER_H_
 #define Y2020_CONTROL_LOOPS_DRIVETRAIN_LOCALIZER_H_
 
+#include <string_view>
+
 #include "aos/containers/ring_buffer.h"
 #include "aos/events/event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"
@@ -69,8 +71,9 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
     double velocity = 0.0;  // rad/sec
   };
 
-  // Processes new image data and updates the EKF.
-  void HandleImageMatch(const frc971::vision::sift::ImageMatchResult &result);
+  // Processes new image data from the given pi and updates the EKF.
+  void HandleImageMatch(std::string_view pi,
+                        const frc971::vision::sift::ImageMatchResult &result);
 
   // Processes the most recent turret position and stores it in the turret_data_
   // buffer.

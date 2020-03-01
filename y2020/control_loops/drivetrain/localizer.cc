@@ -23,6 +23,9 @@ Eigen::Matrix<double, 4, 4> FlatbufferToTransformationMatrix(
   return result;
 }
 
+// Indices of the pis to use.
+const std::array<std::string, 3> kPisToUse{"pi1", "pi2", "pi3"};
+
 }  // namespace
 
 Localizer::Localizer(
@@ -51,9 +54,11 @@ Localizer::Localizer(
                            ekf_.P());
   });
 
-  image_fetchers_.emplace_back(
-      event_loop_->MakeFetcher<frc971::vision::sift::ImageMatchResult>(
-          "/pi1/camera"));
+  for (const auto &pi : kPisToUse) {
+    image_fetchers_.emplace_back(
+        event_loop_->MakeFetcher<frc971::vision::sift::ImageMatchResult>(
+            "/" + pi + "/camera"));
+  }
 
   target_selector_.set_has_target(false);
 }
@@ -89,9 +94,10 @@ void Localizer::Update(const ::Eigen::Matrix<double, 2, 1> &U,
                        aos::monotonic_clock::time_point now,
                        double left_encoder, double right_encoder,
                        double gyro_rate, const Eigen::Vector3d &accel) {
-  for (auto &image_fetcher : image_fetchers_) {
+  for (size_t ii = 0; ii < kPisToUse.size(); ++ii) {
+    auto &image_fetcher = image_fetchers_[ii];
     while (image_fetcher.FetchNext()) {
-      HandleImageMatch(*image_fetcher);
+      HandleImageMatch(kPisToUse[ii], *image_fetcher);
     }
   }
   ekf_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate, U, accel,
@@ -99,13 +105,13 @@ void Localizer::Update(const ::Eigen::Matrix<double, 2, 1> &U,
 }
 
 void Localizer::HandleImageMatch(
-    const frc971::vision::sift::ImageMatchResult &result) {
+    std::string_view pi, const frc971::vision::sift::ImageMatchResult &result) {
   std::chrono::nanoseconds monotonic_offset(0);
   clock_offset_fetcher_.Fetch();
   if (clock_offset_fetcher_.get() != nullptr) {
     for (const auto connection : *clock_offset_fetcher_->connections()) {
       if (connection->has_node() && connection->node()->has_name() &&
-          connection->node()->name()->string_view() == "pi1") {
+          connection->node()->name()->string_view() == pi) {
         monotonic_offset =
             std::chrono::nanoseconds(connection->monotonic_offset());
         break;

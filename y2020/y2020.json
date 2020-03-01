@@ -380,6 +380,42 @@
       "max_size": 2000000
     },
     {
+      "name": "/pi3/camera",
+      "type": "frc971.vision.CameraImage",
+      "source_node": "pi3",
+      "frequency": 25,
+      "max_size": 620000,
+      "num_senders": 18
+    },
+    {
+      "name": "/pi3/camera",
+      "type": "frc971.vision.sift.ImageMatchResult",
+      "source_node": "pi3",
+      "frequency": 25,
+      "max_size": 10000,
+      "destination_nodes": [
+        {
+          "name": "roborio",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi3/camera/detailed",
+      "type": "frc971.vision.sift.ImageMatchResult",
+      "source_node": "pi3",
+      "frequency": 25,
+      "max_size": 300000
+    },
+    {
+      "name": "/pi3/camera",
+      "type": "frc971.vision.sift.TrainingData",
+      "source_node": "pi3",
+      "frequency": 2,
+      "max_size": 2000000
+    },
+    {
       "name": "/autonomous",
       "type": "aos.common.actions.Status",
       "source_node": "roborio"
@@ -487,6 +523,24 @@
       },
       "rename": {
         "name": "/aos/pi3"
+      }
+    },
+    {
+      "match": {
+        "name": "/camera",
+        "source_node": "pi3"
+      },
+      "rename": {
+        "name": "/pi3/camera"
+      }
+    },
+    {
+      "match": {
+        "name": "/camera/detailed",
+        "source_node": "pi3"
+      },
+      "rename": {
+        "name": "/pi3/camera/detailed"
       }
     },
     {
