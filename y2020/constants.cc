@@ -102,7 +102,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       break;
 
     case kCompTeamNumber:
-      hood->zeroing_constants.measured_absolute_position = 0.432541963515072;
+      hood->zeroing_constants.measured_absolute_position = 0.266691815725476;
 
       intake->zeroing_constants.measured_absolute_position =
           1.42977866919024 - Values::kIntakeZero();

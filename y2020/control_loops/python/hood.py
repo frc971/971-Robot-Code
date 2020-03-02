@@ -31,13 +31,13 @@ radians_per_turn = range_of_travel_radians / turns_of_leadscrew_per_range_of_tra
 kHood = angular_system.AngularSystemParams(
     name='Hood',
     motor=control_loop.BAG(),
-    G=radians_per_turn,
-    J=0.08389,
-    q_pos=0.55,
-    q_vel=14.0,
+    G=radians_per_turn / (2.0 * numpy.pi),
+    J=4.0,
+    q_pos=0.15,
+    q_vel=5.0,
     kalman_q_pos=0.12,
-    kalman_q_vel=2.0,
-    kalman_q_voltage=2.5,
+    kalman_q_vel=10.0,
+    kalman_q_voltage=15.0,
     kalman_r_position=0.05)
 
 

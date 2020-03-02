@@ -26,6 +26,9 @@ class Superstructure
   static constexpr double kTurretFrictionGain = 10.0;
   static constexpr double kTurretFrictionVoltageLimit = 1.5;
 
+  static constexpr double kHoodFrictionGain = 40.0;
+  static constexpr double kHoodFrictionVoltageLimit = 1.5;
+
   using PotAndAbsoluteEncoderSubsystem =
       ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
           ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator,
@@ -52,6 +55,9 @@ class Superstructure
   shooter::Shooter shooter_;
 
   Climber climber_;
+
+  double time_ = 0.0;
+
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 
