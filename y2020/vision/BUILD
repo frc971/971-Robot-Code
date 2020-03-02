@@ -31,14 +31,14 @@ cc_binary(
     srcs = [
         "camera_reader.cc",
     ],
+    data = [
+        "//y2020:config.json",
+    ],
     restricted_to = [
         "//tools:k8",
         "//tools:armhf-debian",
     ],
     visibility = ["//y2020:__subpackages__"],
-    data = [
-        "//y2020:config.json",
-    ],
     deps = [
         ":v4l2_reader",
         ":vision_fbs",

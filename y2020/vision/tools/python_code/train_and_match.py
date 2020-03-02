@@ -11,6 +11,7 @@ QUERY_INDEX = 0  # We use a list for both training and query info, but only ever
 
 glog.setLevel("WARN")
 
+
 # Calculates rotation matrix to euler angles
 # The result is the same as MATLAB except the order
 # of the euler angles ( x and z are swapped ).
@@ -175,13 +176,16 @@ def compute_homographies(train_keypoint_lists, query_keypoint_lists,
     for i in range(len(train_keypoint_lists)):
         good_matches = good_matches_list[i]
         if len(good_matches) < MIN_MATCH_COUNT:
-            glog.warn("Not enough matches are for model %d: %d out of needed #: %d" % (i, len(good_matches), MIN_MATCH_COUNT))
+            glog.warn(
+                "Not enough matches are for model %d: %d out of needed #: %d" %
+                (i, len(good_matches), MIN_MATCH_COUNT))
             homography_list.append([])
             matches_mask_list.append([])
             continue
 
-        glog.info("Got good number of matches for model %d: %d (needed only %d)" %
-                  (i, len(good_matches), MIN_MATCH_COUNT))
+        glog.info(
+            "Got good number of matches for model %d: %d (needed only %d)" %
+            (i, len(good_matches), MIN_MATCH_COUNT))
         # Extract and bundle keypoint locations for computations
         src_pts = np.float32([
             train_keypoint_lists[i][m.trainIdx].pt for m in good_matches
@@ -216,8 +220,8 @@ def show_results(training_images, train_keypoint_lists, query_images,
         matches_mask_count = matches_mask_list[i].count(1)
         if matches_mask_count != len(good_matches):
             glog.info("Homography rejected some matches!  From ",
-                  len(good_matches), ", only ", matches_mask_count,
-                  " were used")
+                      len(good_matches), ", only ", matches_mask_count,
+                      " were used")
 
         if matches_mask_count < MIN_MATCH_COUNT:
             glog.info(
@@ -233,7 +237,8 @@ def show_results(training_images, train_keypoint_lists, query_images,
         query_box_pts = cv2.perspectiveTransform(train_box_pts, H)
 
         # Figure out where the training target goes on the query img
-        transformed_target = cv2.perspectiveTransform(target_point_list[i].reshape(-1,1,2), H)
+        transformed_target = cv2.perspectiveTransform(
+            target_point_list[i].reshape(-1, 1, 2), H)
         # Ballpark the size of the circle so it looks right on image
         radius = int(
             32 * abs(H[0][0] + H[1][1]) / 2)  # Average of scale factors
@@ -276,9 +281,11 @@ def show_results(training_images, train_keypoint_lists, query_images,
 #        keypoint_list: List of opencv keypoints
 def show_keypoints(image, keypoint_list):
     ret_img = image.copy()
-    ret_img = cv2.drawKeypoints(ret_img, keypoint_list, ret_img,
-                               flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    ret_img = cv2.drawKeypoints(
+        ret_img,
+        keypoint_list,
+        ret_img,
+        flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     cv2.imshow("Keypoints", ret_img)
     cv2.waitKey(0)
     return ret_img
-

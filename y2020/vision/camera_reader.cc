@@ -76,6 +76,8 @@ class CameraReader {
                             const std::vector<std::vector<cv::DMatch>> &matches,
                             const std::vector<cv::Mat> &camera_target_list,
                             const std::vector<cv::Mat> &field_camera_list,
+                            const std::vector<cv::Point2f> &target_point_vector,
+                            const std::vector<float> &target_radius_vector,
                             aos::Sender<sift::ImageMatchResult> *result_sender,
                             bool send_details);
 
@@ -111,6 +113,17 @@ class CameraReader {
     return training_data_->images()
         ->Get(training_image_index)
         ->field_to_target();
+  }
+
+  void TargetLocation(int training_image_index, cv::Point2f &target_location,
+                      float &target_radius) {
+    target_location.x =
+        training_data_->images()->Get(training_image_index)->target_point_x();
+    target_location.y =
+        training_data_->images()->Get(training_image_index)->target_point_y();
+    target_radius = training_data_->images()
+                        ->Get(training_image_index)
+                        ->target_point_radius();
   }
 
   int number_training_images() const {
@@ -193,6 +206,8 @@ void CameraReader::SendImageMatchResult(
     const std::vector<std::vector<cv::DMatch>> &matches,
     const std::vector<cv::Mat> &camera_target_list,
     const std::vector<cv::Mat> &field_camera_list,
+    const std::vector<cv::Point2f> &target_point_vector,
+    const std::vector<float> &target_radius_vector,
     aos::Sender<sift::ImageMatchResult> *result_sender, bool send_details) {
   auto builder = result_sender->MakeBuilder();
   const auto camera_calibration_offset =
@@ -234,6 +249,9 @@ void CameraReader::SendImageMatchResult(
     pose_builder.add_camera_to_target(transform_offset);
     pose_builder.add_field_to_camera(fc_transform_offset);
     pose_builder.add_field_to_target(field_to_target_offset);
+    pose_builder.add_query_target_point_x(target_point_vector[i].x);
+    pose_builder.add_query_target_point_y(target_point_vector[i].y);
+    pose_builder.add_query_target_point_radius(target_radius_vector[i]);
     camera_poses.emplace_back(pose_builder.Finish());
   }
   const auto camera_poses_offset = builder.fbb()->CreateVector(camera_poses);
@@ -317,8 +335,12 @@ void CameraReader::ProcessImage(const CameraImage &image) {
   std::vector<cv::Mat> camera_target_list;
   std::vector<cv::Mat> field_camera_list;
 
-  std::vector<PerImageMatches> per_image_good_matches;
+  // Rebuild the matches and store them here
   std::vector<std::vector<cv::DMatch>> all_good_matches;
+  // Build list of target point and radius for each good match
+  std::vector<cv::Point2f> target_point_vector;
+  std::vector<float> target_radius_vector;
+
   // Iterate through matches for each training image
   for (size_t i = 0; i < per_image_matches.size(); ++i) {
     const PerImageMatches &per_image = per_image_matches[i];
@@ -343,8 +365,8 @@ void CameraReader::ProcessImage(const CameraImage &image) {
 
     VLOG(2) << "Number of matches after homography: " << cv::countNonZero(mask)
             << "\n";
-    // Fill our match info for each good match
-    // TODO<Jim>: Could probably optimize some of the copies here
+
+    // Fill our match info for each good match based on homography result
     PerImageMatches per_image_good_match;
     CHECK_EQ(per_image.training_points.size(),
              (unsigned long)mask.size().height);
@@ -359,22 +381,46 @@ void CameraReader::ProcessImage(const CameraImage &image) {
           static_cast<std::vector<cv::DMatch>>(*per_image.matches[j]));
 
       // Fill out the data for matches per image that made it past
-      // homography check
+      // homography check, for later use
       per_image_good_match.matches.push_back(per_image.matches[j]);
       per_image_good_match.training_points.push_back(
           per_image.training_points[j]);
       per_image_good_match.training_points_3d.push_back(
           per_image.training_points_3d[j]);
       per_image_good_match.query_points.push_back(per_image.query_points[j]);
-      per_image_good_match.homography = homography;
     }
-    per_image_good_matches.push_back(per_image_good_match);
 
-    // TODO: Use homography to compute target point on query image
+    // Returns from opencv are doubles (CV_64F), which don't play well
+    // with our floats
+    homography.convertTo(homography, CV_32F);
+    per_image_good_match.homography = homography;
+
+    CHECK_GT(per_image_good_match.matches.size(), 0u);
+
+    // Collect training target location, so we can map it to matched image
+    cv::Point2f target_point;
+    float target_radius;
+    TargetLocation((*(per_image_good_match.matches[0]))[0].imgIdx, target_point,
+                   target_radius);
+
+    // Store target_point in vector for use by perspectiveTransform
+    std::vector<cv::Point2f> src_target_pt;
+    src_target_pt.push_back(target_point);
+    std::vector<cv::Point2f> query_target_pt;
+
+    cv::perspectiveTransform(src_target_pt, query_target_pt, homography);
+
+    float query_target_radius =
+        target_radius *
+        abs(homography.at<float>(0, 0) + homography.at<float>(1, 1)) / 2.;
+
+    CHECK_EQ(query_target_pt.size(), 1u);
+    target_point_vector.push_back(query_target_pt[0]);
+    target_radius_vector.push_back(query_target_radius);
 
     // Pose transformations (rotations and translations) for various
     // coordinate frames.  R_X_Y_vec is the Rodrigues (angle-axis)
-    // representation the 3x3 rotation R_X_Y from frame X to frame Y
+    // representation of the 3x3 rotation R_X_Y from frame X to frame Y
 
     // Tranform from camera to target frame
     cv::Mat R_camera_target_vec, R_camera_target, T_camera_target;
@@ -444,10 +490,12 @@ void CameraReader::ProcessImage(const CameraImage &image) {
   // debugging(features), and one smaller
   SendImageMatchResult(image, keypoints, descriptors, all_good_matches,
                        camera_target_list, field_camera_list,
+                       target_point_vector, target_radius_vector,
                        &detailed_result_sender_, true);
   SendImageMatchResult(image, keypoints, descriptors, all_good_matches,
-                       camera_target_list, field_camera_list, &result_sender_,
-                       false);
+                       camera_target_list, field_camera_list,
+                       target_point_vector, target_radius_vector,
+                       &result_sender_, false);
 }
 
 void CameraReader::ReadImage() {

@@ -18,7 +18,7 @@ def get_mouse_event(event, x, y, flags, param):
     global current_mouse
     current_mouse = (x, y)
     if event == cv2.EVENT_LBUTTONUP:
-        glog.debug("Adding point at %d, %d" % (x,y))
+        glog.debug("Adding point at %d, %d" % (x, y))
         point_list.append([x, y])
     pass
 
@@ -143,20 +143,22 @@ def define_points_by_list(image, points):
 
     return point_list
 
+
 # Determine whether a given point lies within (or on border of) a set of polygons
 # Return true if it does
 def point_in_polygons(point, polygons):
     for poly in polygons:
         np_poly = np.asarray(poly)
         dist = cv2.pointPolygonTest(np_poly, (point[0], point[1]), True)
-        if dist >=0:
+        if dist >= 0:
             return True
 
     return False
 
+
 ## Filter keypoints by polygons
 def filter_keypoints_by_polygons(keypoint_list, descriptor_list, polygons):
-    # TODO: Need to make sure we've got the right numpy array / list 
+    # TODO: Need to make sure we've got the right numpy array / list
     keep_keypoint_list = []
     keep_descriptor_list = []
     reject_keypoint_list = []
@@ -166,7 +168,8 @@ def filter_keypoints_by_polygons(keypoint_list, descriptor_list, polygons):
 
     # For now, pretend keypoints are just points
     for i in range(len(keypoint_list)):
-        if point_in_polygons((keypoint_list[i].pt[0], keypoint_list[i].pt[1]), polygons):
+        if point_in_polygons((keypoint_list[i].pt[0], keypoint_list[i].pt[1]),
+                             polygons):
             keep_list.append(i)
         else:
             reject_list.append(i)
@@ -175,36 +178,41 @@ def filter_keypoints_by_polygons(keypoint_list, descriptor_list, polygons):
     reject_keypoint_list = [keypoint_list[kp_ind] for kp_ind in reject_list]
     # Allow function to be called with no descriptors, and just return empty list
     if descriptor_list is not None:
-        keep_descriptor_list = descriptor_list[keep_list,:]
-        reject_descriptor_list = descriptor_list[reject_list,:]
+        keep_descriptor_list = descriptor_list[keep_list, :]
+        reject_descriptor_list = descriptor_list[reject_list, :]
 
     return keep_keypoint_list, keep_descriptor_list, reject_keypoint_list, reject_descriptor_list, keep_list
 
+
 # Helper function that appends a column of ones to a list (of 2d points)
 def append_ones(point_list):
-    return np.hstack([point_list, np.ones((len(point_list),1))])
+    return np.hstack([point_list, np.ones((len(point_list), 1))])
+
 
 # Given a list of 2d points and thei corresponding 3d locations, compute map
 # between them.
 # pt_3d = (pt_2d, 1) * reprojection_map
 # TODO: We should really look at residuals to see if things are messed up
 def compute_reprojection_map(polygon_2d, polygon_3d):
-    pts_2d = np.asarray(np.float32(polygon_2d)).reshape(-1,2)
+    pts_2d = np.asarray(np.float32(polygon_2d)).reshape(-1, 2)
     pts_2d_lstsq = append_ones(pts_2d)
-    pts_3d_lstsq = np.asarray(np.float32(polygon_3d)).reshape(-1,3)
+    pts_3d_lstsq = np.asarray(np.float32(polygon_3d)).reshape(-1, 3)
 
     reprojection_map = np.linalg.lstsq(pts_2d_lstsq, pts_3d_lstsq, rcond=-1)[0]
 
     return reprojection_map
 
+
 # Given set of keypoints (w/ 2d location), a reprojection map, and a polygon
 # that defines regions for where this is valid
 # Returns a numpy array of 3d locations the same size as the keypoint list
 def compute_3d_points(keypoint_2d_list, reprojection_map):
-    pt_2d_lstsq = append_ones(np.asarray(np.float32(keypoint_2d_list)).reshape(-1,2))
+    pt_2d_lstsq = append_ones(
+        np.asarray(np.float32(keypoint_2d_list)).reshape(-1, 2))
     pt_3d = pt_2d_lstsq.dot(reprojection_map)
 
     return pt_3d
+
 
 # Given 2d and 3d locations, and camera location and projection model,
 # display locations on an image
@@ -246,11 +254,8 @@ def sample_define_polygon_usage():
 def sample_define_points_by_list_usage():
     image = cv2.imread("test_images/train_power_port_red.png")
 
-    test_points = [(451, 679), (451, 304),
-                   (100, 302), (451, 74),
-                   (689, 74), (689, 302),
-                   (689, 679)]
+    test_points = [(451, 679), (451, 304), (100, 302), (451, 74), (689, 74),
+                   (689, 302), (689, 679)]
 
     polygon_list = define_points_by_list(image, test_points)
     glog.debug(polygon_list)
-
