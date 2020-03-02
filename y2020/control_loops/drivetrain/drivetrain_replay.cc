@@ -41,15 +41,19 @@ int main(int argc, char **argv) {
                             "frc971.control_loops.drivetrain.Output");
   reader.Register();
 
+  const aos::Node *node = nullptr;
+  if (aos::configuration::MultiNode(reader.configuration())) {
+    node = aos::configuration::GetNode(reader.configuration(), "roborio");
+  }
+
   aos::logger::DetachedBufferWriter file_writer(FLAGS_output_file);
   std::unique_ptr<aos::EventLoop> log_writer_event_loop =
-      reader.event_loop_factory()->MakeEventLoop("log_writer");
+      reader.event_loop_factory()->MakeEventLoop("log_writer", node);
   log_writer_event_loop->SkipTimingReport();
-  CHECK(nullptr == log_writer_event_loop->node());
   aos::logger::Logger writer(&file_writer, log_writer_event_loop.get());
 
   std::unique_ptr<aos::EventLoop> drivetrain_event_loop =
-      reader.event_loop_factory()->MakeEventLoop("drivetrain");
+      reader.event_loop_factory()->MakeEventLoop("drivetrain", node);
   drivetrain_event_loop->SkipTimingReport();
 
   y2020::control_loops::drivetrain::Localizer localizer(

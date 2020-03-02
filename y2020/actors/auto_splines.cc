@@ -59,16 +59,16 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
               {longitudinal_constraint_offset, lateral_constraint_offset,
                voltage_constraint_offset});
 
-  const float startx = 0.4;
-  const float starty = 3.4;
+  const float startx = 0.0;
+  const float starty = 0.05;
   flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
-      builder->fbb()->CreateVector<float>({0.0f + startx, 0.6f + startx,
-                                           0.6f + startx, 0.4f + startx,
-                                           0.4f + startx, 1.0f + startx});
+      builder->fbb()->CreateVector<float>({0.0f + startx, 0.8f + startx,
+                                           0.8f + startx, 1.2f + startx,
+                                           1.2f + startx, 2.0f + startx});
   flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
       builder->fbb()->CreateVector<float>({starty - 0.0f, starty - 0.0f,
-                                           starty - 0.3f, starty - 0.7f,
-                                           starty - 1.0f, starty - 1.0f});
+                                           starty - 0.1f, starty - 0.2f,
+                                           starty - 0.3f, starty - 0.3f});
 
   frc971::MultiSpline::Builder multispline_builder =
       builder->MakeBuilder<frc971::MultiSpline>();

@@ -6,6 +6,7 @@
 #include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/drivetrain/localizer_generated.h"
 
 namespace y2020 {
 namespace actors {
@@ -19,6 +20,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
  private:
   void Reset();
+
+  ::aos::Sender<::frc971::control_loops::drivetrain::LocalizerControl>
+      localizer_control_sender_;
 };
 
 }  // namespace actors

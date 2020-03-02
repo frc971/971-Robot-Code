@@ -138,7 +138,7 @@ class SplineDrivetrain {
       (::Eigen::DiagonalMatrix<double, 5>().diagonal()
            << 1.0 / ::std::pow(0.12, 2),
        1.0 / ::std::pow(0.12, 2), 1.0 / ::std::pow(0.1, 2),
-       1.0 / ::std::pow(1.5, 2), 1.0 / ::std::pow(1.5, 2))
+       1.0 / ::std::pow(1.0, 2), 1.0 / ::std::pow(1.0, 2))
           .finished()
           .asDiagonal();
   const ::Eigen::DiagonalMatrix<double, 2> R =

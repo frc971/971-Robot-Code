@@ -185,6 +185,18 @@ figure {
     line {
       y_signal {
         channel: "DrivetrainStatus"
+        field: "trajectory_logging.left_velocity"
+      }
+    }
+    line {
+      y_signal {
+        channel: "DrivetrainStatus"
+        field: "trajectory_logging.right_velocity"
+      }
+    }
+    line {
+      y_signal {
+        channel: "DrivetrainStatus"
         field: "localizer.left_velocity"
       }
     }

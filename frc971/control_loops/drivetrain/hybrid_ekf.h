@@ -146,7 +146,7 @@ class HybridEkf {
   static constexpr int kNOutputs = 3;
   // Time constant to use for estimating how the longitudinal/lateral velocity
   // offsets decay, in seconds.
-  static constexpr double kVelocityOffsetTimeConstant = 10.0;
+  static constexpr double kVelocityOffsetTimeConstant = 1.0;
   static constexpr double kLateralVelocityTimeConstant = 1.0;
   // Inputs are [left_volts, right_volts]
   typedef Eigen::Matrix<Scalar, kNInputs, 1> Input;
