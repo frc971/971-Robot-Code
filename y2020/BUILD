@@ -4,6 +4,9 @@ load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 robot_downloader(
+    binaries = [
+        ":setpoint_setter",
+    ],
     data = [
         ":config.json",
     ],
@@ -114,6 +117,7 @@ cc_binary(
         ":joystick_reader.cc",
     ],
     deps = [
+        ":setpoint_fbs",
         "//aos:init",
         "//aos/actions:action_lib",
         "//aos/input:action_joystick_input",
@@ -134,6 +138,7 @@ aos_config(
     name = "config",
     src = "y2020.json",
     flatbuffers = [
+        ":setpoint_fbs",
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
         "//aos/network:timestamp_fbs",
@@ -171,5 +176,25 @@ sh_binary(
         "//y2020/www:files",
         "//y2020/www:flatbuffers",
         "//y2020/www:main_bundle",
+    ],
+)
+
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+
+flatbuffer_cc_library(
+    name = "setpoint_fbs",
+    srcs = [
+        "setpoint.fbs",
+    ],
+    gen_reflections = 1,
+)
+
+cc_binary(
+    name = "setpoint_setter",
+    srcs = ["setpoint_setter.cc"],
+    deps = [
+        ":setpoint_fbs",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
     ],
 )

@@ -13,10 +13,11 @@
 #include "aos/network/team_number.h"
 #include "aos/util/log_interval.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
-#include "y2020/control_loops/drivetrain/drivetrain_base.h"
 #include "y2020/constants.h"
+#include "y2020/control_loops/drivetrain/drivetrain_base.h"
 #include "y2020/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2020/setpoint_generated.h"
 
 using aos::input::driver_station::ButtonLocation;
 using aos::input::driver_station::ControlBit;
@@ -57,8 +58,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
         superstructure_goal_sender_(
             event_loop->MakeSender<superstructure::Goal>("/superstructure")),
         superstructure_status_fetcher_(
-            event_loop->MakeFetcher<superstructure::Status>(
-                "/superstructure")) {}
+            event_loop->MakeFetcher<superstructure::Status>("/superstructure")),
+        setpoint_fetcher_(event_loop->MakeFetcher<y2020::joysticks::Setpoint>(
+            "/superstructure")) {}
 
   void AutoEnded() override {
     AOS_LOG(INFO, "Auto ended, assuming disc and have piece\n");
@@ -70,6 +72,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
       AOS_LOG(ERROR, "Got no superstructure status message.\n");
       return;
     }
+
+    setpoint_fetcher_.Fetch();
 
     double hood_pos = constants::Values::kHoodRange().middle();
     double intake_pos = -0.89;
@@ -84,15 +88,26 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
 
     if (data.IsPressed(kHood)) {
-      hood_pos = 0.05;
+      hood_pos = 0.45;
+    } else {
+      if (setpoint_fetcher_.get()) {
+        hood_pos = setpoint_fetcher_->hood();
+      } else {
+        hood_pos = 0.58;
+      }
     }
 
     if (data.IsPressed(kShootFast)) {
-      accelerator_speed = 500.0;
-      finisher_speed = 500.0;
+      if (setpoint_fetcher_.get()) {
+        accelerator_speed = setpoint_fetcher_->accelerator();
+        finisher_speed = setpoint_fetcher_->finisher();
+      } else {
+        accelerator_speed = 250.0;
+        finisher_speed = 500.0;
+      }
     } else if (data.IsPressed(kShootSlow)) {
-      accelerator_speed = 30.0;
-      finisher_speed = 30.0;
+      accelerator_speed = 180.0;
+      finisher_speed = 375.0;
     }
 
     if (data.IsPressed(kIntakeExtend)) {
@@ -162,6 +177,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
   ::aos::Sender<superstructure::Goal> superstructure_goal_sender_;
 
   ::aos::Fetcher<superstructure::Status> superstructure_status_fetcher_;
+
+  ::aos::Fetcher<y2020::joysticks::Setpoint> setpoint_fetcher_;
 };
 
 }  // namespace joysticks

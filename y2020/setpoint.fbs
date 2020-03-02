@@ -1,0 +1,11 @@
+namespace y2020.joysticks;
+
+table Setpoint {
+  accelerator:double;
+
+  finisher:double;
+
+  hood:double;
+}
+
+root_type Setpoint;
