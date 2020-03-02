@@ -14,6 +14,9 @@ table FlywheelControllerStatus {
   // The target speed selected by the lookup table or from manual override
   // Can be compared to velocity to determine if ready.
   angular_velocity_goal:double;
+
+  // Voltage error.
+  voltage_error:double;
 }
 
 table ShooterStatus {

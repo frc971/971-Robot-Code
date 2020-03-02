@@ -11,8 +11,12 @@ namespace control_loops {
 namespace superstructure {
 namespace shooter {
 
-FlywheelController::FlywheelController(StateFeedbackLoop<3, 1, 1> &&loop)
-    : loop_(new StateFeedbackLoop<3, 1, 1>(std::move(loop))) {
+FlywheelController::FlywheelController(
+    StateFeedbackLoop<3, 1, 1, double, StateFeedbackHybridPlant<3, 1, 1>,
+                      HybridKalman<3, 1, 1>> &&loop)
+    : loop_(new StateFeedbackLoop<3, 1, 1, double,
+                                  StateFeedbackHybridPlant<3, 1, 1>,
+                                  HybridKalman<3, 1, 1>>(std::move(loop))) {
   history_.fill(std::pair<double, ::aos::monotonic_clock::time_point>(
       0, ::aos::monotonic_clock::epoch()));
   Y_.setZero();
@@ -26,6 +30,18 @@ void FlywheelController::set_goal(double angular_velocity_goal) {
 void FlywheelController::set_position(
     double current_position,
     const aos::monotonic_clock::time_point position_timestamp) {
+  // Project time forwards.
+  const int newest_history_position =
+      ((history_position_ == 0) ? kHistoryLength : history_position_) - 1;
+
+  if (!first_) {
+    loop_->UpdateObserver(
+        loop_->U(),
+        position_timestamp - std::get<1>(history_[newest_history_position]));
+  } else {
+    first_ = false;
+  }
+
   // Update position in the model.
   Y_ << current_position;
 
@@ -34,6 +50,8 @@ void FlywheelController::set_position(
       std::pair<double, ::aos::monotonic_clock::time_point>(current_position,
                                                             position_timestamp);
   history_position_ = (history_position_ + 1) % kHistoryLength;
+
+  loop_->Correct(Y_);
 }
 
 double FlywheelController::voltage() const { return loop_->U(0, 0); }
@@ -45,22 +63,22 @@ void FlywheelController::Update(bool disabled) {
     disabled = true;
   }
 
-  loop_->Correct(Y_);
-  loop_->Update(disabled);
+  loop_->UpdateController(disabled);
 }
 
 flatbuffers::Offset<FlywheelControllerStatus> FlywheelController::SetStatus(
     flatbuffers::FlatBufferBuilder *fbb) {
   // Compute the oldest point in the history.
-  const int oldest_history_position =
+  const int oldest_history_position = history_position_;
+  const int newest_history_position =
       ((history_position_ == 0) ? kHistoryLength : history_position_) - 1;
 
   const double total_loop_time = ::aos::time::DurationInSeconds(
-      std::get<1>(history_[history_position_]) -
+      std::get<1>(history_[newest_history_position]) -
       std::get<1>(history_[oldest_history_position]));
 
   const double distance_traveled =
-      std::get<0>(history_[history_position_]) -
+      std::get<0>(history_[newest_history_position]) -
       std::get<0>(history_[oldest_history_position]);
 
   // Compute the distance moved over that time period.
@@ -70,6 +88,7 @@ flatbuffers::Offset<FlywheelControllerStatus> FlywheelController::SetStatus(
 
   builder.add_avg_angular_velocity(avg_angular_velocity_);
   builder.add_angular_velocity(loop_->X_hat(1, 0));
+  builder.add_voltage_error(loop_->X_hat(2, 0));
   builder.add_angular_velocity_goal(last_goal_);
   return builder.Finish();
 }

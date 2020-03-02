@@ -142,7 +142,7 @@ class StateFeedbackHybridPlant {
     A_.setZero();
     B_.setZero();
     DelayedU_.setZero();
-    UpdateAB(::std::chrono::milliseconds(5));
+    UpdateAB(::std::chrono::microseconds(5050));
   }
 
   // Assert that U is within the hardware range.
@@ -158,6 +158,8 @@ class StateFeedbackHybridPlant {
   // Computes the new X and Y given the control input.
   void Update(const Eigen::Matrix<Scalar, number_of_inputs, 1> &U,
               ::std::chrono::nanoseconds dt, Scalar voltage_battery) {
+    CHECK_NE(dt, std::chrono::nanoseconds(0));
+
     // Powers outside of the range are more likely controller bugs than things
     // that the plant should deal with.
     CheckU(U);
@@ -178,7 +180,11 @@ class StateFeedbackHybridPlant {
     // or the unit delay...  Might want to do that if we care about performance
     // again.
     UpdateAB(dt);
-    return A() * X + B() * U;
+    const Eigen::Matrix<Scalar, number_of_states, 1> new_X =
+        A() * X + B() * DelayedU_;
+    DelayedU_ = U;
+
+    return new_X;
   }
 
  protected:

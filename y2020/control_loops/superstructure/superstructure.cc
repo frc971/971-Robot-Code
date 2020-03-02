@@ -42,6 +42,30 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
                     output != nullptr ? &(output_struct.hood_voltage) : nullptr,
                     status->fbb());
 
+  if (unsafe_goal != nullptr) {
+    if (unsafe_goal->shooting() &&
+        shooting_start_time_ == aos::monotonic_clock::min_time) {
+      shooting_start_time_ = position_timestamp;
+    }
+
+    if (unsafe_goal->shooting()) {
+      constexpr std::chrono::milliseconds kPeriod =
+          std::chrono::milliseconds(250);
+      if ((position_timestamp - shooting_start_time_) % (kPeriod * 2) <
+          kPeriod) {
+        intake_joint_.set_min_position(-0.25);
+      } else {
+        intake_joint_.set_min_position(-0.75);
+      }
+    } else {
+      intake_joint_.clear_min_position();
+    }
+
+    if (!unsafe_goal->shooting()) {
+      shooting_start_time_ = aos::monotonic_clock::min_time;
+    }
+  }
+
   flatbuffers::Offset<AbsoluteEncoderProfiledJointStatus> intake_status_offset =
       intake_joint_.Iterate(
           unsafe_goal != nullptr ? unsafe_goal->intake() : nullptr,
@@ -115,13 +139,21 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   if (output != nullptr) {
     if (unsafe_goal) {
-        output_struct.washing_machine_spinner_voltage = 6.0;
+      output_struct.washing_machine_spinner_voltage = 0.0;
       if (unsafe_goal->shooting()) {
-        output_struct.feeder_voltage = 6.0;
+        if (shooter_.ready() &&
+            unsafe_goal->shooter()->velocity_accelerator() > 10.0 &&
+            unsafe_goal->shooter()->velocity_finisher() > 10.0) {
+          output_struct.feeder_voltage = 9.0;
+        } else {
+          output_struct.feeder_voltage = 0.0;
+        }
+        output_struct.washing_machine_spinner_voltage = 5.0;
+        output_struct.intake_roller_voltage = 3.0;
       } else {
         output_struct.feeder_voltage = 0.0;
+        output_struct.intake_roller_voltage = unsafe_goal->roller_voltage();
       }
-      output_struct.intake_roller_voltage = unsafe_goal->roller_voltage();
     } else {
       output_struct.intake_roller_voltage = 0.0;
     }

@@ -47,6 +47,8 @@ def main(argv):
         angular_system.PlotKick(kHood, R)
         angular_system.PlotMotion(kHood, R)
 
+    glog.info("Radians per turn: %f\n", radians_per_turn)
+
     # Write the generated constants out to a file.
     if len(argv) != 5:
         glog.fatal(

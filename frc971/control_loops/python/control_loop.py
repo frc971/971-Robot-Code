@@ -284,9 +284,9 @@ class ControlLoop(object):
 
     def InitializeState(self):
         """Sets X, Y, and X_hat to zero defaults."""
-        self.X = numpy.zeros((self.A.shape[0], 1))
+        self.X = numpy.matrix(numpy.zeros((self.A.shape[0], 1)))
         self.Y = self.C * self.X
-        self.X_hat = numpy.zeros((self.A.shape[0], 1))
+        self.X_hat = numpy.matrix(numpy.zeros((self.A.shape[0], 1)))
 
     def PlaceControllerPoles(self, poles):
         """Places the controller poles.
