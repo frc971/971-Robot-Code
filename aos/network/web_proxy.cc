@@ -67,6 +67,10 @@ void Subscriber::RunIteration() {
         rtc::CopyOnWriteBuffer(buffer.data(), buffer.size()),
         true /* binary array */);
     for (auto conn : channels_) {
+      if (conn->buffered_amount() > 14000000) {
+        VLOG(1) << "skipping a send because buffered amount is too high";
+        continue;
+      }
       conn->Send(data_buffer);
     }
   }
@@ -160,7 +164,7 @@ void Connection::Send(const ::flatbuffers::DetachedBuffer &buffer) const {
   webrtc::DataBuffer data_buffer(
       rtc::CopyOnWriteBuffer(buffer.data(), buffer.size()),
       true /* binary array */);
-  VLOG(2) << "Sending " << buffer.size() << "bytes to a client";
+  VLOG(1) << "Sending " << buffer.size() << "bytes to a client";
   data_channel_->Send(data_buffer);
 }
 
