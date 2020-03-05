@@ -43,6 +43,66 @@ TEST_P(AbstractEventLoopTest, Basic) {
   EXPECT_TRUE(happened);
 }
 
+// Tests that no-arg watcher can receive messages from a sender.
+// Also tests that OnRun() works.
+TEST_P(AbstractEventLoopTest, BasicNoArg) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+
+  aos::Sender<TestMessage> sender = loop1->MakeSender<TestMessage>("/test");
+
+  bool happened = false;
+
+  loop2->OnRun([&]() {
+    happened = true;
+
+    aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
+    TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
+    builder.add_value(200);
+    ASSERT_TRUE(msg.Send(builder.Finish()));
+  });
+
+  aos::Fetcher<TestMessage> fetcher = loop2->MakeFetcher<TestMessage>("/test");
+  loop2->MakeNoArgWatcher<TestMessage>("/test", [&]() {
+    ASSERT_TRUE(fetcher.Fetch());
+    EXPECT_EQ(fetcher->value(), 200);
+    this->Exit();
+  });
+
+  EXPECT_FALSE(happened);
+  Run();
+  EXPECT_TRUE(happened);
+}
+
+// Tests that a watcher can be created with an std::function.
+TEST_P(AbstractEventLoopTest, BasicFunction) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+
+  aos::Sender<TestMessage> sender = loop1->MakeSender<TestMessage>("/test");
+
+  bool happened = false;
+
+  loop2->OnRun([&]() {
+    happened = true;
+
+    aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
+    TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
+    builder.add_value(200);
+    ASSERT_TRUE(msg.Send(builder.Finish()));
+  });
+
+  loop2->MakeWatcher("/test", std::function<void(const TestMessage &)>(
+                                  [&](const TestMessage &message) {
+                                    EXPECT_EQ(message.value(), 200);
+                                    this->Exit();
+                                  }));
+
+  EXPECT_FALSE(happened);
+  Run();
+  EXPECT_TRUE(happened);
+}
+
 // Tests that watcher can receive messages from two senders.
 // Also tests that OnRun() works.
 TEST_P(AbstractEventLoopTest, BasicTwoSenders) {
@@ -463,6 +523,9 @@ TEST_P(AbstractEventLoopDeathTest, InvalidChannelName) {
   EXPECT_DEATH(
       { loop->MakeWatcher("/test/invalid", [&](const TestMessage &) {}); },
       "/test/invalid");
+  EXPECT_DEATH(
+      { loop->MakeNoArgWatcher<TestMessage>("/test/invalid", [&]() {}); },
+      "/test/invalid");
 }
 
 // Verify that registering a watcher twice for "/test" fails.
@@ -471,6 +534,16 @@ TEST_P(AbstractEventLoopDeathTest, TwoWatcher) {
   loop->MakeWatcher("/test", [&](const TestMessage &) {});
   EXPECT_DEATH(loop->MakeWatcher("/test", [&](const TestMessage &) {}),
                "/test");
+  EXPECT_DEATH(loop->MakeNoArgWatcher<TestMessage>("/test", [&]() {}), "/test");
+}
+
+// Verify that registering a no-arg watcher twice for "/test" fails.
+TEST_P(AbstractEventLoopDeathTest, TwoNoArgWatcher) {
+  auto loop = Make();
+  loop->MakeNoArgWatcher<TestMessage>("/test", [&]() {});
+  EXPECT_DEATH(loop->MakeWatcher("/test", [&](const TestMessage &) {}),
+               "/test");
+  EXPECT_DEATH(loop->MakeNoArgWatcher<TestMessage>("/test", [&]() {}), "/test");
 }
 
 // Verify that SetRuntimeRealtimePriority fails while running.
@@ -508,6 +581,16 @@ TEST_P(AbstractEventLoopDeathTest, WatcherInOnRun) {
 
   loop1->OnRun(
       [&]() { loop1->MakeWatcher("/test", [&](const TestMessage &) {}); });
+
+  EXPECT_DEATH(Run(), "running");
+}
+
+// Verify that we can't create a no-arg watcher inside OnRun.
+TEST_P(AbstractEventLoopDeathTest, NoArgWatcherInOnRun) {
+  auto loop1 = MakePrimary();
+
+  loop1->OnRun(
+      [&]() { loop1->MakeNoArgWatcher<TestMessage>("/test", [&]() {}); });
 
   EXPECT_DEATH(Run(), "running");
 }
@@ -722,7 +805,7 @@ TEST_P(AbstractEventLoopDeathTest, InvalidChannel) {
       "Channel pointer not found in configuration\\(\\)->channels\\(\\)");
 }
 
-// Verify that the send time on a message is roughly right.
+// Verify that the send time on a message is roughly right when using a watcher.
 TEST_P(AbstractEventLoopTest, MessageSendTime) {
   auto loop1 = MakePrimary();
   auto loop2 = Make();
@@ -737,7 +820,7 @@ TEST_P(AbstractEventLoopTest, MessageSendTime) {
   });
 
   bool triggered = false;
-  loop1->MakeWatcher("/test", [&triggered, &loop1](const TestMessage &msg) {
+  loop1->MakeWatcher("/test", [&](const TestMessage &msg) {
     // Confirm that the data pointer makes sense from a watcher, and all the
     // timestamps look right.
     EXPECT_GT(&msg, loop1->context().data);
@@ -770,7 +853,92 @@ TEST_P(AbstractEventLoopTest, MessageSendTime) {
 
   EXPECT_TRUE(triggered);
 
-  EXPECT_TRUE(fetcher.Fetch());
+  ASSERT_TRUE(fetcher.Fetch());
+
+  monotonic_clock::duration monotonic_time_offset =
+      fetcher.context().monotonic_event_time -
+      (loop1->monotonic_now() - ::std::chrono::seconds(1));
+  realtime_clock::duration realtime_time_offset =
+      fetcher.context().realtime_event_time -
+      (loop1->realtime_now() - ::std::chrono::seconds(1));
+
+  EXPECT_EQ(fetcher.context().realtime_event_time,
+            fetcher.context().realtime_remote_time);
+  EXPECT_EQ(fetcher.context().monotonic_event_time,
+            fetcher.context().monotonic_remote_time);
+
+  EXPECT_TRUE(monotonic_time_offset > ::std::chrono::milliseconds(-500))
+      << ": Got "
+      << fetcher.context().monotonic_event_time.time_since_epoch().count()
+      << " expected " << loop1->monotonic_now().time_since_epoch().count();
+  // Confirm that the data pointer makes sense.
+  EXPECT_GT(fetcher.get(), fetcher.context().data);
+  EXPECT_LT(fetcher.get(),
+            reinterpret_cast<void *>(
+                reinterpret_cast<char *>(fetcher.context().data) +
+                fetcher.context().size));
+  EXPECT_TRUE(monotonic_time_offset < ::std::chrono::milliseconds(500))
+      << ": Got "
+      << fetcher.context().monotonic_event_time.time_since_epoch().count()
+      << " expected " << loop1->monotonic_now().time_since_epoch().count();
+
+  EXPECT_TRUE(realtime_time_offset > ::std::chrono::milliseconds(-500))
+      << ": Got "
+      << fetcher.context().realtime_event_time.time_since_epoch().count()
+      << " expected " << loop1->realtime_now().time_since_epoch().count();
+  EXPECT_TRUE(realtime_time_offset < ::std::chrono::milliseconds(500))
+      << ": Got "
+      << fetcher.context().realtime_event_time.time_since_epoch().count()
+      << " expected " << loop1->realtime_now().time_since_epoch().count();
+}
+
+// Verify that the send time on a message is roughly right when using a no-arg
+// watcher. To get a message, we need to use a fetcher to actually access the
+// message. This is also the main use case for no-arg fetchers.
+TEST_P(AbstractEventLoopTest, MessageSendTimeNoArg) {
+  auto loop1 = MakePrimary();
+  auto loop2 = Make();
+  auto sender = loop2->MakeSender<TestMessage>("/test");
+  auto fetcher = loop1->MakeFetcher<TestMessage>("/test");
+
+  auto test_timer = loop1->AddTimer([&sender]() {
+    aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
+    TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
+    builder.add_value(200);
+    ASSERT_TRUE(msg.Send(builder.Finish()));
+  });
+
+  bool triggered = false;
+  loop1->MakeNoArgWatcher<TestMessage>("/test", [&]() {
+    // Confirm that we can indeed use a fetcher on this channel from this
+    // context, and it results in a sane data pointer and timestamps.
+    ASSERT_TRUE(fetcher.Fetch());
+
+    EXPECT_EQ(loop1->context().monotonic_remote_time,
+              loop1->context().monotonic_event_time);
+    EXPECT_EQ(loop1->context().realtime_remote_time,
+              loop1->context().realtime_event_time);
+
+    const aos::monotonic_clock::time_point monotonic_now =
+        loop1->monotonic_now();
+    const aos::realtime_clock::time_point realtime_now = loop1->realtime_now();
+
+    EXPECT_LE(loop1->context().monotonic_event_time, monotonic_now);
+    EXPECT_LE(loop1->context().realtime_event_time, realtime_now);
+    EXPECT_GE(loop1->context().monotonic_event_time + chrono::milliseconds(500),
+              monotonic_now);
+    EXPECT_GE(loop1->context().realtime_event_time + chrono::milliseconds(500),
+              realtime_now);
+
+    triggered = true;
+  });
+
+  test_timer->Setup(loop1->monotonic_now() + ::std::chrono::seconds(1));
+
+  EndEventLoop(loop1.get(), ::std::chrono::seconds(2));
+  Run();
+
+  ASSERT_TRUE(triggered);
 
   monotonic_clock::duration monotonic_time_offset =
       fetcher.context().monotonic_event_time -
@@ -1336,6 +1504,19 @@ TEST_P(AbstractEventLoopTest, NodeWatcher) {
       [](const Context &, const void *) {});
 }
 
+// Tests that no-arg watchers work with a node setup.
+TEST_P(AbstractEventLoopTest, NodeNoArgWatcher) {
+  EnableNodes("me");
+
+  auto loop1 = Make();
+  auto loop2 = Make();
+  loop1->MakeWatcher("/test", [](const TestMessage &) {});
+  loop2->MakeRawNoArgWatcher(
+      configuration::GetChannel(configuration(), "/test", "aos.TestMessage", "",
+                                nullptr),
+      [](const Context &) {});
+}
+
 // Tests that fetcher work with a node setup.
 TEST_P(AbstractEventLoopTest, NodeFetcher) {
   EnableNodes("me");
@@ -1368,6 +1549,16 @@ TEST_P(AbstractEventLoopDeathTest, NodeWatcher) {
             configuration::GetChannel(configuration(), "/test",
                                       "aos.TestMessage", "", nullptr),
             [](const Context &, const void *) {});
+      },
+      "node");
+  EXPECT_DEATH({ loop1->MakeNoArgWatcher<TestMessage>("/test", []() {}); },
+               "node");
+  EXPECT_DEATH(
+      {
+        loop2->MakeRawNoArgWatcher(
+            configuration::GetChannel(configuration(), "/test",
+                                      "aos.TestMessage", "", nullptr),
+            [](const Context &) {});
       },
       "node");
 }

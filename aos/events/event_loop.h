@@ -302,9 +302,7 @@ class Sender {
   // Returns the name of the underlying queue.
   const Channel *channel() const { return sender_->channel(); }
 
-  operator bool() {
-    return sender_ ? true : false;
-  }
+  operator bool() { return sender_ ? true : false; }
 
   // Returns the time_points that the last message was sent at.
   aos::monotonic_clock::time_point monotonic_sent_time() const {
@@ -464,13 +462,32 @@ class EventLoop {
 
   // This will watch messages sent to the provided channel.
   //
-  // Watch is a functor that have a call signature like so:
-  // void Event(const MessageType& type);
+  // w must have a non-polymorphic operator() (aka it can only be called with a
+  // single set of arguments; no overloading or templates). It must be callable
+  // with this signature:
+  //   void(const MessageType &);
   //
-  // TODO(parker): Need to support ::std::bind.  For now, use lambdas.
-  // TODO(austin): Do we need a functor?  Or is a std::function good enough?
+  // Lambdas are a common form for w. A std::function will work too.
+  //
+  // Note that bind expressions have polymorphic call operators, so they are not
+  // allowed.
+  //
+  // We template Watch as a whole instead of using std::function<void(const T
+  // &)> to allow deducing MessageType from lambdas and other things which are
+  // implicitly convertible to std::function, but not actually std::function
+  // instantiations. Template deduction guides might allow solving this
+  // differently in newer versions of C++, but those have their own corner
+  // cases.
   template <typename Watch>
-  void MakeWatcher(const std::string_view name, Watch &&w);
+  void MakeWatcher(const std::string_view channel_name, Watch &&w);
+
+  // Like MakeWatcher, but doesn't have access to the message data. This may be
+  // implemented to use less resources than an equivalent MakeWatcher.
+  //
+  // The function will still have access to context().
+  template <typename MessageType>
+  void MakeNoArgWatcher(const std::string_view channel_name,
+                        std::function<void()> w);
 
   // The passed in function will be called when the event loop starts.
   // Use this to run code once the thread goes into "real-time-mode",
@@ -517,6 +534,16 @@ class EventLoop {
       const Channel *channel,
       std::function<void(const Context &context, const void *message)>
           watcher) = 0;
+
+  // Watches channel (name, type) for new messages, without needing to extract
+  // the message contents. Default implementation simply re-uses MakeRawWatcher.
+  virtual void MakeRawNoArgWatcher(
+      const Channel *channel,
+      std::function<void(const Context &context)> watcher) {
+    MakeRawWatcher(channel, [watcher](const Context &context, const void *) {
+      watcher(context);
+    });
+  }
 
   // Creates a raw sender for the provided channel.  This is used for reflection
   // based sending.
