@@ -567,6 +567,7 @@ const ::Eigen::Matrix<double, 5, 1> Trajectory::GoalState(double distance,
     ::std::chrono::nanoseconds dt, ::Eigen::Matrix<double, 2, 1> *state) {
   double dt_float = ::aos::time::DurationInSeconds(dt);
 
+  const double last_distance = (*state)(0);
   // TODO(austin): This feels like something that should be pulled out into
   // a library for re-use.
   *state = RungeKutta(
@@ -575,6 +576,12 @@ const ::Eigen::Matrix<double, 5, 1> Trajectory::GoalState(double distance,
         return (::Eigen::Matrix<double, 2, 1>() << x(1), xva(2)).finished();
       },
       *state, dt_float);
+  // Force the distance to move forwards, to guarantee that we actually finish
+  // the planning.
+  constexpr double kMinDistanceIncrease = 1e-7;
+  if ((*state)(0) < last_distance + kMinDistanceIncrease) {
+    (*state)(0) = last_distance + kMinDistanceIncrease;
+  }
 
   ::Eigen::Matrix<double, 3, 1> result = FFAcceleration((*state)(0));
   (*state)(1) = result(1);
@@ -589,6 +596,13 @@ const ::Eigen::Matrix<double, 5, 1> Trajectory::GoalState(double distance,
   result.back()(1) = 0.0;
 
   while (!is_at_end(state)) {
+    if (state_is_faulted(state)) {
+      LOG(WARNING)
+          << "Found invalid state in generating spline and aborting. This is "
+             "likely due to a spline with extremely high jerk/changes in "
+             "curvature with an insufficiently small step size.";
+      return {};
+    }
     result.emplace_back(GetNextXVA(dt, &state));
   }
   return result;
