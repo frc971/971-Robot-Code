@@ -59,3 +59,24 @@ flatbuffer_ts_library(
     srcs = ["vision.fbs"],
     visibility = ["//y2020:__subpackages__"],
 )
+
+cc_binary(
+    name = "viewer",
+    srcs = [
+        "viewer.cc",
+    ],
+    data = [
+        "//y2020:config.json",
+    ],
+    restricted_to = [
+        "//tools:k8",
+        "//tools:armhf-debian",
+    ],
+    visibility = ["//y2020:__subpackages__"],
+    deps = [
+        ":vision_fbs",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//third_party:opencv",
+    ],
+)
