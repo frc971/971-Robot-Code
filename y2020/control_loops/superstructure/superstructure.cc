@@ -124,6 +124,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     output_struct.turret_voltage +=
         std::clamp(turret_velocity_sign, -kTurretFrictionVoltageLimit,
                    kTurretFrictionVoltageLimit);
+    output_struct.turret_voltage =
+        std::clamp(output_struct.turret_voltage, -turret_.operating_voltage(),
+                   turret_.operating_voltage());
 
     // Friction is a pain and putting a really high burden on the integrator.
     const double hood_velocity_sign = hood_status->velocity() * kHoodFrictionGain;

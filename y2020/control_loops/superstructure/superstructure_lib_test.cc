@@ -893,8 +893,8 @@ TEST_P(SuperstructureAllianceTest, TurretAutoAim) {
   RunFor(chrono::seconds(1));
 
   superstructure_status_fetcher_.Fetch();
-  EXPECT_FLOAT_EQ(kShotAngle,
-                  superstructure_status_fetcher_->turret()->position());
+  EXPECT_NEAR(kShotAngle, superstructure_status_fetcher_->turret()->position(),
+              1e-4);
   EXPECT_FLOAT_EQ(kShotAngle,
                   superstructure_status_fetcher_->aimer()->turret_position());
   EXPECT_FLOAT_EQ(0,
