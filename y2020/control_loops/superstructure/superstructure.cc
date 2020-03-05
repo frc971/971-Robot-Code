@@ -144,7 +144,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         if (shooter_.ready() &&
             unsafe_goal->shooter()->velocity_accelerator() > 10.0 &&
             unsafe_goal->shooter()->velocity_finisher() > 10.0) {
-          output_struct.feeder_voltage = 9.0;
+          output_struct.feeder_voltage = 12.0;
         } else {
           output_struct.feeder_voltage = 0.0;
         }
