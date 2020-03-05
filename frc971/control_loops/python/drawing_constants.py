@@ -3,7 +3,6 @@ from color import Color, palette
 from constants import *
 import numpy as np
 
-
 def set_color(cr, color, a=1):
     if color.a == 1.0:
         cr.set_source_rgba(color.r, color.g, color.b, a)
@@ -37,6 +36,11 @@ def draw_px_x(cr, x, y, length_px1, color=palette["BLACK"]):
     cr.stroke()
     set_color(cr, palette["WHITE"])
 
+def draw_circle(cr,  x, y, radius, color=palette["RED"]):
+    set_color(cr, color)
+    cr.arc(x, y, radius, 0, 2*np.pi)
+    cr.fill()
+    cr.stroke()
 
 def draw_control_points(cr, points, width=10, radius=4, color=palette["BLUE"]):
     for i in range(0, len(points)):
@@ -46,12 +50,131 @@ def draw_control_points(cr, points, width=10, radius=4, color=palette["BLUE"]):
         cr.fill()
         set_color(cr, palette["WHITE"])
 
-
 def display_text(cr, text, widtha, heighta, widthb, heightb):
     cr.scale(widtha, -heighta)
     cr.show_text(text)
     cr.scale(widthb, -heightb)
 
+def markers(cr):
+    SHOW_MARKERS = False
+    if SHOW_MARKERS:
+        # Shield Generator Reference
+        color = palette["BLUE"]
+        yorigin = 0-SCREEN_SIZE/2 # Move origin to bottom left
+        # Top Left
+        draw_circle(cr, mToPx(inToM(206.625)), yorigin + mToPx(inToM(212.097), True), 10, color)
+        # Top Right
+        draw_circle(cr, mToPx(inToM(373.616)), yorigin + mToPx(inToM(281.26), True), 10, color)
+        # Bottom Right
+        draw_circle(cr, mToPx(inToM(422.625)), yorigin + mToPx(inToM(124.67), True), 10, color)
+        # Bottom Left
+        draw_circle(cr, mToPx(inToM(255.634)), yorigin + mToPx(inToM(55.5), True), 10, color)
+
+        # Trench Run Reference
+        color = palette["GREEN"]
+        # Bottom Trench Run
+        # Bottom Right
+        draw_circle(cr, mToPx(inToM(206.625)), yorigin, 10, color)
+        # Top Right
+        draw_circle(cr, mToPx(inToM(206.625)), yorigin + mToPx(inToM(55.5), True), 10, color)
+        # Top Left
+        draw_circle(cr, mToPx(inToM(422.625)), yorigin + mToPx(inToM(55.5), True), 10, color)
+        # Bottom Left
+        draw_circle(cr, mToPx(inToM(422.625)), yorigin, 10, color)
+
+        # Top Trench Run
+        # Top Right
+        draw_circle(cr, mToPx(inToM(206.625)), yorigin + mToPx(inToM(323.25), True), 10, color)
+        # Bottom Right
+        draw_circle(cr, mToPx(inToM(206.625)), yorigin + mToPx(inToM(281.26), True), 10, color)
+        # Top Left
+        draw_circle(cr, mToPx(inToM(422.625)), yorigin + mToPx(inToM(281.26), True), 10, color)
+        # Bottom Left
+        draw_circle(cr, mToPx(inToM(422.625)), yorigin + mToPx(inToM(323.25), True), 10, color)
+        cr.stroke()
+
+def draw_init_lines(cr):
+    yorigin = 0-SCREEN_SIZE/2 # Move origin to bottom left
+    set_color(cr, palette["RED"])
+    cr.move_to(mToPx(inToM(120)), yorigin)
+    cr.line_to(mToPx(inToM(120)), yorigin + mToPx(8.21055, True))
+
+    cr.move_to(mToPx(inToM(505.25)), yorigin)
+    cr.line_to(mToPx(inToM(505.25)), yorigin + mToPx(8.21055, True))
+
+    cr.stroke()
+
+def draw_trench_run(cr):
+    set_color(cr, palette["GREEN"])
+    yorigin = 0-SCREEN_SIZE/2 # Move origin to bottom left
+    cr.move_to(mToPx(inToM(206.625)), yorigin)
+    cr.line_to(mToPx(inToM(206.625)), yorigin + mToPx(inToM(55.5), True))
+
+    cr.move_to(mToPx(inToM(206.625)), yorigin + mToPx(inToM(55.5), True))
+    cr.line_to(mToPx(inToM(422.625)), yorigin + mToPx(inToM(55.5), True))
+
+    cr.move_to(mToPx(inToM(422.625)), yorigin + mToPx(inToM(55.5), True))
+    cr.line_to(mToPx(inToM(422.625)), yorigin)
+
+    cr.move_to(mToPx(inToM(206.625)), yorigin + mToPx(inToM(323.25), True))
+    cr.line_to(mToPx(inToM(206.625)), yorigin + mToPx(inToM(281.26), True))
+
+    cr.move_to(mToPx(inToM(206.625)), yorigin + mToPx(inToM(281.26), True))
+    cr.line_to(mToPx(inToM(422.625)), yorigin + mToPx(inToM(281.26), True))
+
+    cr.move_to(mToPx(inToM(422.625)), yorigin + mToPx(inToM(281.26), True))
+    cr.line_to(mToPx(inToM(422.625)), yorigin + mToPx(inToM(323.25), True))
+
+    cr.stroke()
+
+def draw_shield_generator(cr):
+    set_color(cr, palette["BLUE"])
+    yorigin = 0-SCREEN_SIZE/2 # Move origin to bottom left
+
+    cr.move_to(mToPx(inToM(206.625)), yorigin + mToPx(inToM(212.097), True))
+    cr.line_to(mToPx(inToM(373.616)), yorigin + mToPx(inToM(281.26), True))
+
+    cr.move_to(mToPx(inToM(373.616)), yorigin + mToPx(inToM(281.26), True))
+    cr.line_to(mToPx(inToM(422.625)), yorigin + mToPx(inToM(124.67), True))
+
+    cr.move_to(mToPx(inToM(422.625)), yorigin + mToPx(inToM(124.67), True))
+    cr.line_to(mToPx(inToM(255.634)), yorigin + mToPx(inToM(55.5), True))
+
+    cr.move_to(mToPx(inToM(255.634)), yorigin + mToPx(inToM(55.5), True))
+    cr.line_to(mToPx(inToM(206.625)), yorigin + mToPx(inToM(212.097), True))
+
+    cr.stroke()
+
+def draw_control_panel(cr): # Base plates are not included
+    set_color(cr, palette["LIGHT_GREY"])
+    yorigin = 0-SCREEN_SIZE/2 # Move origin to bottom left
+    # Bottom Control Panel
+    # Top Line
+    cr.move_to(mToPx(inToM(225.624)), yorigin + mToPx(inToM(55.5), True))
+    cr.line_to(mToPx(inToM(285.624)), yorigin + mToPx(inToM(55.5), True))
+
+    # Left Line
+    cr.move_to(mToPx(inToM(225.624)),  yorigin + mToPx(inToM(55.5), True))
+    cr.line_to(mToPx(inToM(225.624)), yorigin)
+
+    # Right Line
+    cr.move_to(mToPx(inToM(285.624)), yorigin + mToPx(inToM(55.5), True))
+    cr.line_to(mToPx(inToM(285.624)), yorigin)
+
+    # Top Control Panel
+    # Bottom Line
+    cr.move_to(mToPx(inToM(403.616)), yorigin + mToPx(inToM(281.26), True))
+    cr.line_to(mToPx(inToM(343.616)), yorigin + mToPx(inToM(281.26), True))
+
+    # Right Line
+    cr.move_to(mToPx(inToM(403.616)), yorigin + mToPx(inToM(281.26), True))
+    cr.line_to(mToPx(inToM(403.616)), yorigin + mToPx(inToM(323.25), True))
+
+    # Left Line
+    cr.move_to(mToPx(inToM(343.616)), yorigin + mToPx(inToM(281.26), True))
+    cr.line_to(mToPx(inToM(343.616)), yorigin + mToPx(inToM(323.25), True))
+
+    cr.stroke()
 
 def draw_HAB(cr):
     # BASE Constants
@@ -306,7 +429,6 @@ def draw_cargo_ship(cr):
     cr.rectangle(X_BASE, Y_BASE - mToPx(1.41605 / 2.0), mToPx(2.43205),
                  mToPx(1.41605))
     cr.stroke()
-
 
 def draw_points(cr, p, size):
     for i in range(0, len(p)):
