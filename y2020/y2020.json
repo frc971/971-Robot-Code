@@ -334,7 +334,7 @@
       "type": "frc971.vision.sift.ImageMatchResult",
       "source_node": "pi1",
       "frequency": 25,
-      "max_size": 300000
+      "max_size": 1000000
     },
     {
       "name": "/pi1/camera",
@@ -370,7 +370,7 @@
       "type": "frc971.vision.sift.ImageMatchResult",
       "source_node": "pi2",
       "frequency": 25,
-      "max_size": 300000
+      "max_size": 1000000
     },
     {
       "name": "/pi2/camera",
@@ -406,7 +406,7 @@
       "type": "frc971.vision.sift.ImageMatchResult",
       "source_node": "pi3",
       "frequency": 25,
-      "max_size": 300000
+      "max_size": 1000000
     },
     {
       "name": "/pi3/camera",
