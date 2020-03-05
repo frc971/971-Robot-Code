@@ -174,9 +174,8 @@ SimulatedMessageBridge::SimulatedMessageBridge(
     }
 
     // And register every delayer to be poked when a new message shows up.
-    source_event_loop->second->MakeRawWatcher(
-        channel,
-        [captured_delayers = delayers.get()](const Context &, const void *) {
+    source_event_loop->second->MakeRawNoArgWatcher(
+        channel, [captured_delayers = delayers.get()](const Context &) {
           for (std::unique_ptr<RawMessageDelayer> &delayer :
                *captured_delayers) {
             delayer->Schedule();

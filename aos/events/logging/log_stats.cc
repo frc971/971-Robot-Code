@@ -105,21 +105,22 @@ int main(int argc, char **argv) {
     // Add a record to the stats vector.
     channel_stats.push_back({channel});
     // Lambda to read messages and parse for information
-    stats_event_loop->MakeRawWatcher(channel, [&logfile_stats, &channel_stats,
-                                               it](const aos::Context &context,
-                                                   const void * /* message */) {
-      channel_stats[it].max_message_size =
-          std::max(channel_stats[it].max_message_size, context.size);
-      channel_stats[it].total_message_size += context.size;
-      channel_stats[it].total_num_messages++;
-      // asume messages are send in sequence per channel
-      channel_stats[it].channel_end_time = context.realtime_event_time;
-      channel_stats[it].first_message_time = std::min(
-          channel_stats[it].first_message_time, context.monotonic_event_time);
-      channel_stats[it].current_message_time = context.monotonic_event_time;
-      // update the overall logfile statistics
-      logfile_stats.logfile_length += context.size;
-    });
+    stats_event_loop->MakeRawNoArgWatcher(
+        channel,
+        [&logfile_stats, &channel_stats, it](const aos::Context &context) {
+          channel_stats[it].max_message_size =
+              std::max(channel_stats[it].max_message_size, context.size);
+          channel_stats[it].total_message_size += context.size;
+          channel_stats[it].total_num_messages++;
+          // asume messages are send in sequence per channel
+          channel_stats[it].channel_end_time = context.realtime_event_time;
+          channel_stats[it].first_message_time =
+              std::min(channel_stats[it].first_message_time,
+                       context.monotonic_event_time);
+          channel_stats[it].current_message_time = context.monotonic_event_time;
+          // update the overall logfile statistics
+          logfile_stats.logfile_length += context.size;
+        });
     it++;
     // TODO (Stephan): Frequency of messages per second
     // - Sliding window
