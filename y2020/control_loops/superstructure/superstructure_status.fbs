@@ -29,6 +29,15 @@ table ShooterStatus {
   accelerator_right:FlywheelControllerStatus;
 }
 
+table AimerStatus {
+  // The current goal angle for the turret auto-tracking, in radians.
+  turret_position:double;
+  // The current goal velocity for the turret, in radians / sec.
+  turret_velocity:double;
+  // Whether we are currently aiming for the inner port.
+  aiming_for_inner_port:bool;
+}
+
 table Status {
   // All subsystems know their location.
   zeroed:bool;
@@ -46,6 +55,9 @@ table Status {
 
   // Status of the control_panel
   control_panel:frc971.control_loops.RelativeEncoderProfiledJointStatus;
+
+  // Status of the vision auto-tracking.
+  aimer:AimerStatus;
 }
 
 root_type Status;

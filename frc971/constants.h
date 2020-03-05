@@ -97,9 +97,9 @@ struct Range {
   double lower;
   double upper;
 
-  double middle() const { return (lower_hard + upper_hard) / 2.0; }
+  constexpr double middle() const { return (lower_hard + upper_hard) / 2.0; }
 
-  double range() const { return upper_hard - lower_hard; }
+  constexpr double range() const { return upper_hard - lower_hard; }
 };
 
 }  // namespace constants

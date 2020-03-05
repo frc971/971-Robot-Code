@@ -42,6 +42,8 @@ Eigen::Matrix<Scalar, 4, 4> TransformationMatrixForYaw(Scalar yaw) {
 // position of (10, -5, 0) and a yaw of pi / 2, that suggests the robot is
 // facing straight to the left from the driver's perspective and is placed 10m
 // from the driver's station wall and 5m to the right of the center of the wall.
+// For 2020, we move the origin to be the center of the field and make positive
+// x always point towards the red alliance driver stations.
 //
 // Furthermore, Poses can be chained such that a Pose can be placed relative to
 // another Pose; the other Pose can dynamically update, thus allowing us to,
@@ -134,7 +136,7 @@ class TypedPose {
   // If new_base == nullptr, provides a Pose referenced to the global frame.
   // Note that the lifetime of new_base should be greater than the lifetime of
   // the returned object (unless new_base == nullptr).
-  TypedPose Rebase(const TypedPose<Scalar> *new_base) const;
+  [[nodiscard]] TypedPose Rebase(const TypedPose<Scalar> *new_base) const;
 
   // Convert this pose to the heading/distance/skew numbers that we
   // traditionally use for EKF corrections.

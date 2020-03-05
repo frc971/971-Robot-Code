@@ -16,7 +16,11 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       hood_(constants::GetValues().hood),
       intake_joint_(constants::GetValues().intake),
       turret_(constants::GetValues().turret.subsystem_params),
-      shooter_() {
+      drivetrain_status_fetcher_(
+          event_loop->MakeFetcher<frc971::control_loops::drivetrain::Status>(
+              "/drivetrain")),
+      joystick_state_fetcher_(
+          event_loop->MakeFetcher<aos::JoystickState>("/aos")) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
@@ -33,6 +37,22 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   const aos::monotonic_clock::time_point position_timestamp =
       event_loop()->context().monotonic_event_time;
+
+  if (drivetrain_status_fetcher_.Fetch()) {
+    aos::Alliance alliance = aos::Alliance::kInvalid;
+    if (joystick_state_fetcher_.Fetch()) {
+      alliance = joystick_state_fetcher_->alliance();
+    }
+    const turret::Aimer::WrapMode mode =
+        (unsafe_goal != nullptr && unsafe_goal->shooting())
+            ? turret::Aimer::WrapMode::kAvoidWrapping
+            : turret::Aimer::WrapMode::kAvoidEdges;
+    aimer_.Update(drivetrain_status_fetcher_.get(), alliance, mode,
+                  turret::Aimer::ShotMode::kShootOnTheFly);
+  }
+
+  const flatbuffers::Offset<AimerStatus> aimer_status_offset =
+      aimer_.PopulateStatus(status->fbb());
 
   OutputT output_struct;
 
@@ -73,10 +93,14 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           output != nullptr ? &(output_struct.intake_joint_voltage) : nullptr,
           status->fbb());
 
+  const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
+      *turret_goal = unsafe_goal != nullptr ? (unsafe_goal->turret_tracking()
+                                                   ? aimer_.TurretGoal()
+                                                   : unsafe_goal->turret())
+                                            : nullptr;
   flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
       turret_status_offset = turret_.Iterate(
-          unsafe_goal != nullptr ? unsafe_goal->turret() : nullptr,
-          position->turret(),
+          turret_goal, position->turret(),
           output != nullptr ? &(output_struct.turret_voltage) : nullptr,
           status->fbb());
 
@@ -134,6 +158,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_intake(intake_status_offset);
   status_builder.add_turret(turret_status_offset);
   status_builder.add_shooter(shooter_status_offset);
+  status_builder.add_aimer(aimer_status_offset);
 
   status->Send(status_builder.Finish());
 

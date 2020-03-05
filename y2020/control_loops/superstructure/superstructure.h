@@ -3,6 +3,8 @@
 
 #include "aos/controls/control_loop.h"
 #include "aos/events/event_loop.h"
+#include "aos/robot_state/joystick_state_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2020/constants.h"
 #include "y2020/control_loops/superstructure/shooter/shooter.h"
 #include "y2020/control_loops/superstructure/superstructure_goal_generated.h"
@@ -10,6 +12,7 @@
 #include "y2020/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2020/control_loops/superstructure/climber.h"
+#include "y2020/control_loops/superstructure/turret/aiming.h"
 
 namespace y2020 {
 namespace control_loops {
@@ -53,6 +56,11 @@ class Superstructure
   AbsoluteEncoderSubsystem intake_joint_;
   PotAndAbsoluteEncoderSubsystem turret_;
   shooter::Shooter shooter_;
+  turret::Aimer aimer_;
+
+  aos::Fetcher<frc971::control_loops::drivetrain::Status>
+      drivetrain_status_fetcher_;
+  aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
 
   Climber climber_;
 
