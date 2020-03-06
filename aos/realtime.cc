@@ -92,10 +92,12 @@ void LockAllMemory() {
   uint8_t data[4096 * 8];
   // Not 0 because linux might optimize that to a 0-filled page.
   memset(data, 1, sizeof(data));
+  __asm__ __volatile__("" :: "m" (data));
 
   static const size_t kHeapPreallocSize = 512 * 1024;
   char *const heap_data = static_cast<char *>(malloc(kHeapPreallocSize));
   memset(heap_data, 1, kHeapPreallocSize);
+  __asm__ __volatile__("" :: "m" (heap_data));
   free(heap_data);
 }
 
