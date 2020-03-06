@@ -161,13 +161,12 @@ def main():
             fbb.PrependFloat32(n)
         intrinsics_vector = fbb.EndVector(len(camera_int_list))
 
-        dist_coeff_list = camera_calib.camera_int.distortion_coeffs.ravel(
-        ).tolist()
+        dist_coeffs_list = camera_calib.camera_int.dist_coeffs.ravel().tolist()
         CameraCalibration.CameraCalibrationStartDistCoeffsVector(
-            fbb, len(dist_coeff_list))
-        for n in reversed(dist_coeff_list):
+            fbb, len(dist_coeffs_list))
+        for n in reversed(dist_coeffs_list):
             fbb.PrependFloat32(n)
-        dist_coeff_vector = fbb.EndVector(len(dist_coeff_list))
+        dist_coeffs_vector = fbb.EndVector(len(dist_coeffs_list))
 
         node_name_offset = fbb.CreateString(camera_calib.node_name)
         CameraCalibration.CameraCalibrationStart(fbb)
@@ -177,7 +176,7 @@ def main():
         CameraCalibration.CameraCalibrationAddIntrinsics(
             fbb, intrinsics_vector)
         CameraCalibration.CameraCalibrationAddDistCoeffs(
-            fbb, dist_coeff_vector)
+            fbb, dist_coeffs_vector)
         CameraCalibration.CameraCalibrationAddFixedExtrinsics(
             fbb, fixed_extrinsics_vector)
         camera_calibration_vector.append(

@@ -254,12 +254,12 @@ TEST(CameraParamTest, TargetDataTest) {
       << "Mismatch on camera intrinsic matrix: " << intrinsic << "\nvs.\n"
       << camera_params.camera_intrinsic_matrix_;
 
-  float dist_coeff_mat[5] = {0., 0., 0., 0., 0.};
-  cv::Mat dist_coeff = cv::Mat(5, 1, CV_32F, dist_coeff_mat);
-  cv::Mat dist_coeff_diff = (dist_coeff != camera_params.camera_dist_coeffs_);
-  bool dist_coeff_eq = (cv::countNonZero(dist_coeff_diff) == 0);
-  ASSERT_TRUE(dist_coeff_eq)
-      << "Mismatch on camera distortion coefficients: " << dist_coeff
+  float dist_coeffs_mat[5] = {0., 0., 0., 0., 0.};
+  cv::Mat dist_coeffs = cv::Mat(5, 1, CV_32F, dist_coeffs_mat);
+  cv::Mat dist_coeffs_diff = (dist_coeffs != camera_params.camera_dist_coeffs_);
+  bool dist_coeffs_eq = (cv::countNonZero(dist_coeffs_diff) == 0);
+  ASSERT_TRUE(dist_coeffs_eq)
+      << "Mismatch on camera distortion coefficients: " << dist_coeffs
       << "\nvs.\n"
       << camera_params.camera_dist_coeffs_;
 

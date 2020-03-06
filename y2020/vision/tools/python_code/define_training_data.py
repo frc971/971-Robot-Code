@@ -216,16 +216,16 @@ def compute_3d_points(keypoint_2d_list, reprojection_map):
 
 # Given 2d and 3d locations, and camera location and projection model,
 # display locations on an image
-def visualize_reprojections(img, pts_2d, pts_3d, cam_mat, distortion_coeffs):
+def visualize_reprojections(img, pts_2d, pts_3d, cam_mat, dist_coeffs):
     # Compute camera location
     # TODO: Warn on bad inliers
     # TODO: Change this to not have to recast to np
     pts_2d_np = np.asarray(np.float32(pts_2d)).reshape(-1, 1, 2)
     pts_3d_np = np.asarray(np.float32(pts_3d)).reshape(-1, 1, 3)
     retval, R, T, inliers = cv2.solvePnPRansac(pts_3d_np, pts_2d_np, cam_mat,
-                                               distortion_coeffs)
+                                               dist_coeffs)
     pts_3d_proj_2d, jac_2d = cv2.projectPoints(pts_3d_np, R, T, cam_mat,
-                                               distortion_coeffs)
+                                               dist_coeffs)
     if inliers is None:
         glog.warn("WARNING: Didn't get any inliers when reprojecting polygons")
         return img

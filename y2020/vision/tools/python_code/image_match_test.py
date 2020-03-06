@@ -173,7 +173,7 @@ while looping:
 
         # Load from camera parameters
         cam_mat = camera_params.camera_int.camera_matrix
-        distortion_coeffs = camera_params.camera_int.distortion_coeffs
+        dist_coeffs = camera_params.camera_int.dist_coeffs
 
         # Create list of matching query point locations
         dst_pts = np.float32([
@@ -184,7 +184,7 @@ while looping:
         # TODO: May want to supply it with estimated guess as starting point
         # Find offset from camera to original location of camera relative to target
         retval, R_ci_w_estj, T_ci_w_estj, inliers = cv2.solvePnPRansac(
-            src_pts_3d_array, dst_pts, cam_mat, distortion_coeffs)
+            src_pts_3d_array, dst_pts, cam_mat, dist_coeffs)
 
         tf = time.monotonic()
         print("Solving Pose took ", tf - ts, " secs")

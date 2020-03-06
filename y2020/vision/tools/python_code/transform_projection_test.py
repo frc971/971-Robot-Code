@@ -8,7 +8,7 @@ import camera_definition
 # Import camera from camera_definition
 camera_params = camera_definition.web_cam_params
 cam_mat = camera_params.camera_int.camera_matrix
-distortion_coeffs = camera_params.camera_int.distortion_coeffs
+dist_coeffs = camera_params.camera_int.dist_coeffs
 
 # Height of camera on robot above ground
 cam_above_ground = 0.5
@@ -48,11 +48,11 @@ T_cam_cam2_gt_inv = -R_cam_cam2_gt_mat_inv.dot(T_cam_cam2_gt)
 
 pts_proj_2d_cam2, jac_2d = cv2.projectPoints(
     pts_3d_target, R_cam_cam2_gt_mat_inv, T_cam_cam2_gt_inv, cam_mat,
-    distortion_coeffs)
+    dist_coeffs)
 
 # Now, solve for the pose using the original 3d points (pts_3d_T_t) and the projections from the new location
 retval, R_cam2_cam_est, T_cam2_cam_est, inliers = cv2.solvePnPRansac(
-    pts_3d_target, pts_proj_2d_cam2, cam_mat, distortion_coeffs)
+    pts_3d_target, pts_proj_2d_cam2, cam_mat, dist_coeffs)
 
 # This is the pose from camera to original target spot.  We need to invert to get back to the pose we want
 R_cam_cam2_est_mat = cv2.Rodrigues(R_cam2_cam_est)[0].T

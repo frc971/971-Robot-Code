@@ -384,7 +384,7 @@ def compute_target_definition():
                     dtd.visualize_reprojections(
                         img_copy, ideal_pts_tmp, ideal_pts_3d_tmp,
                         camera_params.camera_int.camera_matrix,
-                        camera_params.camera_int.distortion_coeffs)
+                        camera_params.camera_int.dist_coeffs)
 
             for polygon in ideal_target.polygon_list:
                 img_copy = ideal_target.image.copy()
@@ -401,7 +401,7 @@ def compute_target_definition():
                     np.asarray(kp_in_poly2d).reshape(-1, 2),
                     np.asarray(kp_in_poly3d).reshape(
                         -1, 3), camera_params.camera_int.camera_matrix,
-                    camera_params.camera_int.distortion_coeffs)
+                    camera_params.camera_int.dist_coeffs)
 
     ###############
     ### Compute 3D points on actual training images
@@ -510,7 +510,7 @@ def compute_target_definition():
                 dtd.visualize_reprojections(
                     img_copy, kp_tmp, training_target.keypoint_list_3d,
                     camera_params.camera_int.camera_matrix,
-                    camera_params.camera_int.distortion_coeffs)
+                    camera_params.camera_int.dist_coeffs)
 
     y2020_target_list = training_target_list
     return y2020_target_list

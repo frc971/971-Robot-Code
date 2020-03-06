@@ -41,7 +41,7 @@ def load_images(image_names):
         # Load image (in color; let opencv convert to B&W for features)
         img_data = cv2.imread(im)
         if img_data is None:
-            glog.error("Failed to load image: ", im)
+            glog.error("Failed to load image: '%s'" % im)
             exit()
         else:
             image_list.append(img_data)
