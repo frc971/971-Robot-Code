@@ -12,13 +12,9 @@ py_binary(
     args = [
         "sift_training_data.h",
     ],
-    data = [
-        ":test_images/train_loading_bay_blue.png",
-        ":test_images/train_loading_bay_red.png",
-        ":test_images/train_power_port_blue.png",
-        ":test_images/train_power_port_red.png",
-        ":test_images/train_power_port_red_webcam.png",
-    ],
+    data = glob(["calib_files/*.txt"]) + glob([
+        "test_images/*.png",
+    ]),
     default_python_version = "PY3",
     srcs_version = "PY2AND3",
     deps = [
@@ -64,9 +60,9 @@ py_binary(
         "sift_training_data_test.h",
         "test",
     ],
-    data = [
-        ":test_images/train_power_port_red.png",
-    ],
+    data = glob(["calib_files/*.txt"]) + glob([
+        "test_images/*.png",
+    ]),
     default_python_version = "PY3",
     main = "load_sift_training.py",
     srcs_version = "PY2AND3",
