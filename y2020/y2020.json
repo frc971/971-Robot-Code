@@ -248,6 +248,12 @@
       "num_senders": 2
     },
     {
+      "name": "/superstructure",
+      "type": "y2020.joysticks.Setpoint",
+      "source_node": "roborio",
+      "num_senders": 2
+    },
+    {
       "name": "/drivetrain",
       "type": "frc971.IMUValues",
       "source_node": "roborio",
