@@ -218,7 +218,9 @@ class WatcherState {
   // context.
   void DoCallCallback(std::function<monotonic_clock::time_point()> get_time,
                       Context context) {
-    CheckChannelDataAlignment(context.data, context.size);
+    if (context.data) {
+      CheckChannelDataAlignment(context.data, context.size);
+    }
     const monotonic_clock::time_point monotonic_start_time = get_time();
     {
       const float start_latency =

@@ -43,6 +43,34 @@ TEST_P(AbstractEventLoopTest, Basic) {
   EXPECT_TRUE(happened);
 }
 
+// Verifies that a no-arg watcher will not have a data pointer.
+TEST_P(AbstractEventLoopTest, NoArgNoData) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+
+  aos::Sender<TestMessage> sender = loop1->MakeSender<TestMessage>("/test");
+
+  bool happened = false;
+
+  loop2->OnRun([&]() {
+    happened = true;
+
+    aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
+    TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
+    ASSERT_TRUE(msg.Send(builder.Finish()));
+  });
+
+  loop2->MakeNoArgWatcher<TestMessage>("/test", [&]() {
+    EXPECT_GT(loop2->context().size, 0u);
+    EXPECT_EQ(nullptr, loop2->context().data);
+    this->Exit();
+  });
+
+  EXPECT_FALSE(happened);
+  Run();
+  EXPECT_TRUE(happened);
+}
+
 // Tests that no-arg watcher can receive messages from a sender.
 // Also tests that OnRun() works.
 TEST_P(AbstractEventLoopTest, BasicNoArg) {

@@ -162,6 +162,8 @@ class LocklessQueue {
   // element newer than QueueSize() from the current message, we consider it
   // behind by a large amount and return TOO_OLD.  If the message is modified
   // out from underneath us as we read it, return OVERWROTE.
+  //
+  // data may be nullptr to indicate the data should not be copied.
   enum class ReadResult { TOO_OLD, GOOD, NOTHING_NEW, OVERWROTE };
   ReadResult Read(uint32_t queue_index,
                   ::aos::monotonic_clock::time_point *monotonic_sent_time,

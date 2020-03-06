@@ -484,7 +484,8 @@ class EventLoop {
   // Like MakeWatcher, but doesn't have access to the message data. This may be
   // implemented to use less resources than an equivalent MakeWatcher.
   //
-  // The function will still have access to context().
+  // The function will still have access to context(), although that will have
+  // its data field set to nullptr.
   template <typename MessageType>
   void MakeNoArgWatcher(const std::string_view channel_name,
                         std::function<void()> w);
@@ -541,7 +542,9 @@ class EventLoop {
       const Channel *channel,
       std::function<void(const Context &context)> watcher) {
     MakeRawWatcher(channel, [watcher](const Context &context, const void *) {
-      watcher(context);
+      Context new_context = context;
+      new_context.data = nullptr;
+      watcher(new_context);
     });
   }
 
