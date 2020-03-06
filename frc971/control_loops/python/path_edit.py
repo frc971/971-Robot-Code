@@ -72,6 +72,8 @@ class GTK_Widget(BaseWindow):
         self.inValue = None
         self.startSet = False
 
+        self.module_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+
     """set extents on images"""
 
     def reinit_extents(self):
@@ -320,35 +322,45 @@ class GTK_Widget(BaseWindow):
             self.spline_edit = self.points.updates_for_mouse_move(
                 self.index_of_edit, self.spline_edit, self.x, self.y, difs)
 
+    def export_json(self, file_name):
+        self.path_to_export = os.path.join(self.module_path,
+                                           "spline_jsons/" + file_name)
+        if file_name[-5:] != ".json":
+            print("Error: Filename doesn't end in .json")
+        else:
+            # Will export to json file
+            self.mode = Mode.kEditing
+            exportList = [l.tolist() for l in self.points.getSplines()]
+            with open(self.path_to_export, mode='w') as points_file:
+                json.dump(exportList, points_file)
+
+    def import_json(self, file_name):
+        self.path_to_export = os.path.join(self.module_path,
+                                           "spline_jsons/" + file_name)
+        if file_name[-5:] != ".json":
+            print("Error: Filename doesn't end in .json")
+        else:
+            # import from json file
+            self.mode = Mode.kEditing
+            self.points.resetPoints()
+            self.points.resetSplines()
+            print("LOADING LOAD FROM " + file_name) # Load takes a few seconds
+            with open(self.path_to_export) as points_file:
+                self.points.setUpSplines(json.load(points_file))
+
+            self.points.update_lib_spline()
+            print("SPLINES LOADED")
+
     def do_key_press(self, event, file_name):
         keyval = Gdk.keyval_to_lower(event.keyval)
-        module_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-        self.path_to_export = os.path.join(module_path,
-                                           "spline_jsons/" + file_name)
         if keyval == Gdk.KEY_q:
             print("Found q key and exiting.")
             quit_main_loop()
-        file_name_end = file_name[-5:]
-        if file_name_end != ".json":
-            print("Error: Filename doesn't end in .json")
-        else:
-            if keyval == Gdk.KEY_e:
-                # Will export to json file
-                self.mode = Mode.kEditing
-                print('out to: ', self.path_to_export)
-                exportList = [l.tolist() for l in self.points.getSplines()]
-                with open(self.path_to_export, mode='w') as points_file:
-                    json.dump(exportList, points_file)
+        if keyval == Gdk.KEY_e:
+            export_json(file_name)
 
-            if keyval == Gdk.KEY_i:
-                # import from json file
-                self.mode = Mode.kEditing
-                self.points.resetPoints()
-                self.points.resetSplines()
-                with open(self.path_to_export) as points_file:
-                    self.points.setUpSplines(json.load(points_file))
-
-                self.points.update_lib_spline()
+        if keyval == Gdk.KEY_i:
+            import_json(file_name)
 
         if keyval == Gdk.KEY_p:
             self.mode = Mode.kPlacing
