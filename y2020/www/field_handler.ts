@@ -204,7 +204,6 @@ export class FieldHandler {
     this.drawField();
     //draw cameras
     if (this.imageMatchResult) {
-      console.log(this.imageMatchResult.cameraPosesLength());
       for (const i = 0; i < this.imageMatchResult.cameraPosesLength(); i++) {
         const pose = this.imageMatchResult.cameraPoses(i);
         const mat = pose.fieldToCamera();
