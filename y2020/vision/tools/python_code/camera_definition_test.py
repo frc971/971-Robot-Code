@@ -6,7 +6,7 @@ import numpy as np
 class CameraIntrinsics:
     def __init__(self):
         self.camera_matrix = []
-        self.distortion_coeffs = []
+        self.dist_coeffs = []
 
 
 class CameraExtrinsics:
@@ -38,7 +38,7 @@ cy = 240.
 # Define a web_cam
 web_cam_int = CameraIntrinsics()
 web_cam_int.camera_matrix = np.asarray([[fx, 0, cx], [0, fy, cy], [0, 0, 1]])
-web_cam_int.distortion_coeffs = np.zeros((5, 1))
+web_cam_int.dist_coeffs = np.zeros((5, 1))
 
 web_cam_ext = CameraExtrinsics()
 # Camera rotation from robot x,y,z to opencv (z, -x, -y)
