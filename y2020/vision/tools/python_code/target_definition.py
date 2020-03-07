@@ -126,7 +126,7 @@ def compute_target_definition():
     ###
 
     # Create the reference "ideal" image
-    ideal_power_port_red = TargetData('test_images/train_power_port_red.png')
+    ideal_power_port_red = TargetData('test_images/ideal_power_port_red.png')
 
     # Start at lower left corner, and work around clockwise
     # These are taken by manually finding the points in gimp for this image
@@ -188,7 +188,7 @@ def compute_target_definition():
     # and entering the pixel values from the target center for each image.
     # These are currently only used for visualization of the target
     ideal_power_port_red.target_point_2d = np.float32([[570, 192]]).reshape(
-        -1, 1, 2)  # train_power_port_red.png
+        -1, 1, 2)  # ideal_power_port_red.png
     # np.float32([[305, 97]]).reshape(-1, 1, 2),  #train_power_port_red_webcam.png
 
     # Add the ideal 3D target to our list
@@ -196,6 +196,7 @@ def compute_target_definition():
     # And add the training image we'll actually use to the training list
     training_target_power_port_red = TargetData(
         'test_images/train_power_port_red_webcam.png')
+    #'test_images/train_power_port_red_pi-7971-3.png')
     training_target_power_port_red.target_rotation = ideal_power_port_red.target_rotation
     training_target_power_port_red.target_position = ideal_power_port_red.target_position
     training_target_power_port_red.target_radius = target_radius_default
@@ -206,7 +207,7 @@ def compute_target_definition():
     ### Red Loading Bay
     ###
 
-    ideal_loading_bay_red = TargetData('test_images/train_loading_bay_red.png')
+    ideal_loading_bay_red = TargetData('test_images/ideal_loading_bay_red.png')
 
     # Start at lower left corner, and work around clockwise
     # These are taken by manually finding the points in gimp for this image
@@ -233,7 +234,7 @@ def compute_target_definition():
         loading_bay_height / 2.
     ])
     ideal_loading_bay_red.target_point_2d = np.float32([[366, 236]]).reshape(
-        -1, 1, 2)  # train_loading_bay_red.png
+        -1, 1, 2)  # ideal_loading_bay_red.png
 
     ideal_target_list.append(ideal_loading_bay_red)
     training_target_loading_bay_red = TargetData(
@@ -247,7 +248,7 @@ def compute_target_definition():
     ### Blue Power Port
     ###
 
-    ideal_power_port_blue = TargetData('test_images/train_power_port_blue.png')
+    ideal_power_port_blue = TargetData('test_images/ideal_power_port_blue.png')
 
     # Start at lower left corner, and work around clockwise
     # These are taken by manually finding the points in gimp for this image
@@ -299,7 +300,7 @@ def compute_target_definition():
         power_port_target_height
     ])
     ideal_power_port_blue.target_point_2d = np.float32([[567, 180]]).reshape(
-        -1, 1, 2)  # train_power_port_blue.png
+        -1, 1, 2)  # ideal_power_port_blue.png
 
     ideal_target_list.append(ideal_power_port_blue)
     training_target_power_port_blue = TargetData(
@@ -314,7 +315,7 @@ def compute_target_definition():
     ###
 
     ideal_loading_bay_blue = TargetData(
-        'test_images/train_loading_bay_blue.png')
+        'test_images/ideal_loading_bay_blue.png')
 
     # Start at lower left corner, and work around clockwise
     # These are taken by manually finding the points in gimp for this image
@@ -343,7 +344,7 @@ def compute_target_definition():
         loading_bay_height / 2.
     ])
     ideal_loading_bay_blue.target_point_2d = np.float32([[366, 236]]).reshape(
-        -1, 1, 2)  # train_loading_bay_blue.png
+        -1, 1, 2)  # ideal_loading_bay_blue.png
 
     ideal_target_list.append(ideal_loading_bay_blue)
     training_target_loading_bay_blue = TargetData(
