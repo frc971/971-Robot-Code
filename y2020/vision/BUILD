@@ -78,6 +78,7 @@ cc_binary(
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//third_party:opencv",
+        "//y2020/vision/sift:sift_fbs",
     ],
 )
 
