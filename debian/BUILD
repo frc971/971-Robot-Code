@@ -56,6 +56,14 @@ load(
     ":opencv_amd64.bzl",
     opencv_amd64_debs = "files",
 )
+load(
+    ":gstreamer_amd64.bzl",
+    gstreamer_amd64_debs = "files",
+)
+load(
+    ":gstreamer_armhf.bzl",
+    gstreamer_armhf_debs = "files",
+)
 load("//debian:packages.bzl", "download_packages", "generate_deb_tarball")
 
 filegroup(
@@ -304,6 +312,16 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "opencv_amd64",
     files = opencv_amd64_debs,
+)
+
+generate_deb_tarball(
+    name = "gstreamer_amd64",
+    files = gstreamer_amd64_debs,
+)
+
+generate_deb_tarball(
+    name = "gstreamer_armhf",
+    files = gstreamer_armhf_debs,
 )
 
 exports_files([

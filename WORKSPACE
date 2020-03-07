@@ -58,6 +58,14 @@ load(
     "//debian:opencv_amd64.bzl",
     opencv_amd64_debs = "files",
 )
+load(
+    "//debian:gstreamer_amd64.bzl",
+    gstreamer_amd64_debs = "files"
+)
+load(
+    "//debian:gstreamer_armhf.bzl",
+    gstreamer_armhf_debs = "files"
+)
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
 generate_repositories_for_debs(python_debs)
@@ -87,6 +95,10 @@ generate_repositories_for_debs(python_gtk_debs)
 generate_repositories_for_debs(opencv_armhf_debs)
 
 generate_repositories_for_debs(opencv_amd64_debs)
+
+generate_repositories_for_debs(gstreamer_amd64_debs)
+
+generate_repositories_for_debs(gstreamer_armhf_debs)
 
 http_archive(
     name = "python_repo",
@@ -691,4 +703,18 @@ http_archive(
     sha256 = "c10e7712ee1f19bf382c64fc29b5d24fa0b5bfd901eab69cef83604713e6a89e",
     type = "zip",
     url = "http://www.frc971.org/Build-Dependencies/opencv_contrib_python_nonfree-4.1.1.1-cp35-cp35m-manylinux1_x86_64.whl",
+)
+
+http_archive(
+    name = "gstreamer_k8",
+    build_file = "@//debian:gstreamer.BUILD",
+    sha256 = "4d74d4a82f7a73dc9fe9463d5fae409b17845eef7cd64ef9c4c4553816c53589",
+    url = "http://www.frc971.org/Build-Dependencies/gstreamer_amd64.tar.gz",
+)
+
+http_archive(
+    name = "gstreamer_armhf",
+    build_file = "@//debian:gstreamer.BUILD",
+    sha256 = "c5ac4c604952c274a50636e244f0d091bd1de302032446f24f0e9e03ae9c76f7",
+    url = "http://www.frc971.org/Build-Dependencies/gstreamer_armhf.tar.gz",
 )

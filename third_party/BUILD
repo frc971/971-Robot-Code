@@ -44,6 +44,20 @@ cc_library(
 )
 
 cc_library(
+    name = "gstreamer",
+    restricted_to = [
+        "//tools:k8",
+        "//tools:armhf-debian",
+    ],
+    visibility = ["//visibility:public"],
+    deps = select({
+        "//tools:cpu_k8": ["@gstreamer_k8//:gstreamer"],
+        "//tools:cpu_armhf": ["@gstreamer_armhf//:gstreamer"],
+        "//conditions:default": [],
+    }),
+)
+
+cc_library(
     name = "halide",
     restricted_to = [
         "//tools:k8",
