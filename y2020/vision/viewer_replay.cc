@@ -11,6 +11,8 @@
 DEFINE_string(config, "y2020/config.json", "Path to the config file to use.");
 DEFINE_string(logfile, "", "Path to the log file to use.");
 DEFINE_string(node, "pi1", "Node name to replay.");
+DEFINE_string(image_save_prefix, "/tmp/img",
+              "Prefix to use for saving images from the logfile.");
 
 namespace frc971 {
 namespace vision {
@@ -31,7 +33,8 @@ void ViewerMain() {
   std::unique_ptr<aos::EventLoop> event_loop =
       reader.event_loop_factory()->MakeEventLoop("player", node);
 
-  event_loop->MakeWatcher("/camera", [](const CameraImage &image) {
+  int image_count = 0;
+  event_loop->MakeWatcher("/camera", [&image_count](const CameraImage &image) {
     cv::Mat image_mat(image.rows(), image.cols(), CV_8U);
     CHECK(image_mat.isContinuous());
     const int number_pixels = image.rows() * image.cols();
@@ -41,6 +44,10 @@ void ViewerMain() {
     }
 
     cv::imshow("Display", image_mat);
+    if (!FLAGS_image_save_prefix.empty()) {
+      cv::imwrite("/tmp/img" + std::to_string(image_count++) + ".png",
+                  image_mat);
+    }
     cv::waitKey(1);
   });
 
