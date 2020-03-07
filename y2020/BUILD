@@ -26,9 +26,6 @@ robot_downloader(
     name = "pi_download",
     data = [
         ":config.json",
-        "//y2020/www:files",
-        "//y2020/www:flatbuffers",
-        "//y2020/www:main_bundle",
     ],
     dirs = [
         "//y2020/www:www_files",
@@ -175,7 +172,7 @@ sh_binary(
         "//aos/network:web_proxy_main",
         "//y2020/www:files",
         "//y2020/www:flatbuffers",
-        "//y2020/www:main_bundle",
+        "//y2020/www:camera_main_bundle",
     ],
 )
 

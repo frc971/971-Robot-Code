@@ -3,10 +3,10 @@ load("@build_bazel_rules_nodejs//:defs.bzl", "rollup_bundle")
 load("//frc971/downloader:downloader.bzl", "aos_downloader_dir")
 
 ts_library(
-    name = "main",
+    name = "camera_main",
     srcs = [
         "image_handler.ts",
-        "main.ts",
+        "camera_main.ts",
     ],
     visibility = ["//y2020:__subpackages__"],
     deps = [
@@ -30,11 +30,11 @@ ts_library(
 )
 
 rollup_bundle(
-    name = "main_bundle",
-    entry_point = "y2020/www/main",
+    name = "camera_main_bundle",
+    entry_point = "y2020/www/camera_main",
     visibility = ["//y2020:__subpackages__"],
     deps = [
-        "main",
+        "camera_main",
     ],
 )
 
@@ -71,9 +71,10 @@ genrule(
 aos_downloader_dir(
     name = "www_files",
     srcs = [
+        ":camera_main_bundle",
+        ":field_main_bundle",
         ":files",
         ":flatbuffers",
-        ":main_bundle",
     ],
     dir = "www",
     visibility = ["//visibility:public"],
