@@ -12,31 +12,16 @@ import train_and_match as tam
 # TODO<Jim>: Allow command-line setting of logging level
 glog.setLevel("WARN")
 global VISUALIZE_KEYPOINTS
-global USE_BAZEL
-USE_BAZEL = True
 VISUALIZE_KEYPOINTS = False
 
 # For now, just have a 32 pixel radius, based on original training image
 target_radius_default = 32.
 
 
-def bazel_name_fix(filename):
-    ret_name = filename
-    if USE_BAZEL:
-        ret_name = 'org_frc971/y2020/vision/tools/python_code/' + filename
-
-    return ret_name
-
-
 class TargetData:
     def __init__(self, filename):
-        self.image_filename = filename
+        self.image_filename = dtd.bazel_name_fix(filename)
         # Load an image (will come in as a 1-element list)
-        if USE_BAZEL:
-            from bazel_tools.tools.python.runfiles import runfiles
-            r = runfiles.Create()
-            self.image_filename = r.Rlocation(
-                bazel_name_fix(self.image_filename))
         self.image = tam.load_images([self.image_filename])[0]
         self.polygon_list = []
         self.polygon_list_3d = []
@@ -90,7 +75,7 @@ class TargetData:
         return point_list_3d
 
 
-def compute_target_definition():
+def load_training_data():
     ############################################################
     # TARGET DEFINITIONS
     ############################################################
@@ -120,6 +105,76 @@ def compute_target_definition():
     # Pick the target center location at halfway between top and bottom of the top panel
     power_port_target_height = (
         power_port_total_height + power_port_bottom_wing_height) / 2.
+
+    ### Cafeteria target definition
+    inch_to_meter = 0.0254
+    c_power_port_total_height = (79.5 + 39.5) * inch_to_meter
+    c_power_port_edge_y = 1.089
+    c_power_port_width = 4.0 * 12 * inch_to_meter
+    c_power_port_bottom_wing_height = 79.5 * inch_to_meter
+    c_power_port_wing_width = 47.5 * inch_to_meter
+    c_power_port_white_marker_z = (79.5 - 19.5) * inch_to_meter
+
+    # Pick the target center location at halfway between top and bottom of the top panel
+    c_power_port_target_height = (
+        power_port_total_height + power_port_bottom_wing_height) / 2.
+
+    ###
+    ### Cafe power port
+    ###
+
+    # Create the reference "ideal" image
+    ideal_power_port_cafe = TargetData(
+        'test_images/train_cafeteria-2020-02-13-16-27-25.png')
+
+    # Start at lower left corner, and work around clockwise
+    # These are taken by manually finding the points in gimp for this image
+    power_port_cafe_main_panel_polygon_points_2d = [(271, 456), (278, 394),
+                                                    (135, 382), (286, 294),
+                                                    (389, 311), (397,
+                                                                 403), (401,
+                                                                        458)]
+
+    # These are "virtual" 3D points based on the expected geometry
+    power_port_cafe_main_panel_polygon_points_3d = [
+        (field_length / 2., -c_power_port_edge_y,
+         c_power_port_white_marker_z), (field_length / 2.,
+                                        -c_power_port_edge_y,
+                                        c_power_port_bottom_wing_height),
+        (field_length / 2., -c_power_port_edge_y + c_power_port_wing_width,
+         c_power_port_bottom_wing_height), (field_length / 2.,
+                                            -c_power_port_edge_y,
+                                            c_power_port_total_height),
+        (field_length / 2., -c_power_port_edge_y - c_power_port_width,
+         c_power_port_total_height),
+        (field_length / 2., -c_power_port_edge_y - c_power_port_width,
+         c_power_port_bottom_wing_height),
+        (field_length / 2., -c_power_port_edge_y - c_power_port_width,
+         c_power_port_white_marker_z)
+    ]
+
+    # Populate the cafe power port
+    ideal_power_port_cafe.polygon_list.append(
+        power_port_cafe_main_panel_polygon_points_2d)
+    ideal_power_port_cafe.polygon_list_3d.append(
+        power_port_cafe_main_panel_polygon_points_3d)
+
+    # Location of target.  Rotation is pointing in -x direction
+    ideal_power_port_cafe.target_rotation = np.identity(3, np.double)
+    ideal_power_port_cafe.target_position = np.array([
+        field_length / 2., -c_power_port_edge_y - c_power_port_width / 2.,
+        c_power_port_target_height
+    ])
+    ideal_power_port_cafe.target_point_2d = np.float32([[340, 350]]).reshape(
+        -1, 1, 2)  # train_cafeteria-2020-02-13-16-27-25.png
+
+    ideal_target_list.append(ideal_power_port_cafe)
+    training_target_power_port_cafe = TargetData(
+        'test_images/train_cafeteria-2020-02-13-16-27-25.png')
+    training_target_power_port_cafe.target_rotation = ideal_power_port_cafe.target_rotation
+    training_target_power_port_cafe.target_position = ideal_power_port_cafe.target_position
+    training_target_power_port_cafe.target_radius = target_radius_default
+    training_target_list.append(training_target_power_port_cafe)
 
     ###
     ### Red Power Port
@@ -302,13 +357,15 @@ def compute_target_definition():
     ideal_power_port_blue.target_point_2d = np.float32([[567, 180]]).reshape(
         -1, 1, 2)  # ideal_power_port_blue.png
 
-    ideal_target_list.append(ideal_power_port_blue)
+    #### TEMPORARILY DISABLING the BLUE POWER PORT target
+    #ideal_target_list.append(ideal_power_port_blue)
     training_target_power_port_blue = TargetData(
         'test_images/train_power_port_blue.png')
     training_target_power_port_blue.target_rotation = ideal_power_port_blue.target_rotation
     training_target_power_port_blue.target_position = ideal_power_port_blue.target_position
     training_target_power_port_blue.target_radius = target_radius_default
-    training_target_list.append(training_target_power_port_blue)
+    #### TEMPORARILY DISABLING the BLUE POWER PORT target
+    #training_target_list.append(training_target_power_port_blue)
 
     ###
     ### Blue Loading Bay
@@ -354,11 +411,17 @@ def compute_target_definition():
     training_target_loading_bay_blue.target_radius = target_radius_default
     training_target_list.append(training_target_loading_bay_blue)
 
+    return ideal_target_list, training_target_list
+
+
+def compute_target_definition():
+    ideal_target_list, training_target_list = load_training_data()
+
     # Create feature extractor
     feature_extractor = tam.load_feature_extractor()
 
     # Use webcam parameters for now
-    camera_params = camera_definition.web_cam_params
+    camera_params = camera_definition.load_camera_definitions()[0]
 
     for ideal_target in ideal_target_list:
         glog.info(
@@ -524,20 +587,10 @@ if __name__ == '__main__':
         help="Whether to visualize the results",
         default=False,
         action='store_true')
-    ap.add_argument(
-        "-n",
-        "--no_bazel",
-        help="Don't run using Bazel",
-        default=True,
-        action='store_false')
     args = vars(ap.parse_args())
 
     VISUALIZE_KEYPOINTS = args["visualize"]
     if args["visualize"]:
         glog.info("Visualizing results")
-
-    USE_BAZEL = args["no_bazel"]
-    if args["no_bazel"]:
-        glog.info("Running on command line (no Bazel)")
 
     compute_target_definition()

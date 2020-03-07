@@ -50,7 +50,7 @@ def main():
         import camera_definition
         import target_definition
         target_data_list = target_definition.compute_target_definition()
-        camera_calib_list = camera_definition.camera_list
+        camera_calib_list = camera_definition.load_camera_definitions()
 
     glog.info("Writing file to ", output_path)
 

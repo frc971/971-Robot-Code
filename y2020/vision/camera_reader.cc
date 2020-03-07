@@ -228,6 +228,9 @@ void CameraReader::SendImageMatchResult(
   std::vector<flatbuffers::Offset<sift::CameraPose>> camera_poses;
 
   CHECK_EQ(camera_target_list.size(), field_camera_list.size());
+  // TODO<Jim>: Need to figure out why these aren't the same size
+  // And why we're only sending one camera pose
+  //CHECK_EQ(camera_target_list.size(), matches.size());
   for (size_t i = 0; i < camera_target_list.size(); ++i) {
     cv::Mat camera_target = camera_target_list[i];
     CHECK(camera_target.isContinuous());
