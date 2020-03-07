@@ -42,10 +42,13 @@ class GridWindow(Gtk.Window):
     def configure(self, event):
         self.drawing_area.window_shape = (event.width, event.height)
 
-    # handle submitting a constraint
-    def on_submit_click(self, widget):
-        self.drawing_area.inConstraint = int(self.constraint_box.get_text())
-        self.drawing_area.inValue = int(self.value_box.get_text())
+    def output_json_clicked(self, button):
+        print("OUTPUT JSON CLICKED")
+        self.drawing_area.export_json(self.file_name_box.get_text())
+
+    def input_json_clicked(self, button):
+        print("INPUT JSON CLICKED")
+        self.drawing_area.import_json(self.file_name_box.get_text())
 
     def __init__(self):
         Gtk.Window.__init__(self)
@@ -88,6 +91,17 @@ class GridWindow(Gtk.Window):
         self.file_name_box.set_editable(True)
 
         container.put(self.file_name_box, 0, 0)
+
+        self.output_json = Gtk.Button.new_with_label("Output")
+        self.output_json.set_size_request(100, 40)
+        self.output_json.connect("clicked", self.output_json_clicked)
+
+        self.input_json = Gtk.Button.new_with_label("Import")
+        self.input_json.set_size_request(100, 40)
+        self.input_json.connect("clicked", self.input_json_clicked)
+
+        container.put(self.output_json, 210, 0)
+        container.put(self.input_json, 320, 0)
 
         self.show_all()
 
