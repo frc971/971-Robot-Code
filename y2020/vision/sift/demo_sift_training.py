@@ -26,7 +26,8 @@ def main():
   for keypoint, descriptor in zip(keypoints, descriptors):
     Feature.FeatureStartDescriptorVector(fbb, len(descriptor))
     for n in reversed(descriptor):
-      fbb.PrependFloat32(n)
+      assert n == round(n)
+      fbb.PrependUint8(int(round(n)))
     descriptor_vector = fbb.EndVector(len(descriptor))
 
     Feature.FeatureStart(fbb)

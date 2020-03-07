@@ -71,7 +71,8 @@ def main():
             # Build the Descriptor vector
             Feature.FeatureStartDescriptorVector(fbb, len(descriptor))
             for n in reversed(descriptor):
-                fbb.PrependFloat32(n)
+                assert n == round(n)
+                fbb.PrependUint8(int(round(n)))
             descriptor_vector = fbb.EndVector(len(descriptor))
 
             # Add all the components to the each Feature

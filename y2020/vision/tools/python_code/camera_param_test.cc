@@ -143,12 +143,14 @@ void CameraParamTest::CopyTrainingFeatures() {
     cv::Mat features(training_image->features()->size(), 128, CV_32F);
     for (size_t i = 0; i < training_image->features()->size(); ++i) {
       const sift::Feature *feature_table = training_image->features()->Get(i);
-      const flatbuffers::Vector<float> *const descriptor =
+      const flatbuffers::Vector<uint8_t> *const descriptor =
           feature_table->descriptor();
       CHECK_EQ(descriptor->size(), 128u) << ": Unsupported feature size";
-      cv::Mat(1, descriptor->size(), CV_32F,
-              const_cast<void *>(static_cast<const void *>(descriptor->data())))
-          .copyTo(features(cv::Range(i, i + 1), cv::Range(0, 128)));
+      const auto in_mat = cv::Mat(
+          1, descriptor->size(), CV_8U,
+          const_cast<void *>(static_cast<const void *>(descriptor->data())));
+      const auto out_mat = features(cv::Range(i, i + 1), cv::Range(0, 128));
+      in_mat.convertTo(out_mat, CV_32F);
 
       cv::Point2f point_2d = Training2dPoint(train_image_index, i);
       point_list_2d_.push_back(point_2d);

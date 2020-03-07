@@ -9,7 +9,8 @@ struct KeypointFieldLocation {
 
 // Represents a single feature extracted from an image.
 table Feature {
-  // Contains the descriptor data.
+  // Contains the descriptor data. OpenCV likes to represent them as floats, but
+  // they're really ubytes.
   //
   // TODO(Brian): These are scaled to be convertible to chars. Should we do
   // that to minimize storage space? Or maybe int16?
@@ -17,7 +18,7 @@ table Feature {
   // The size of this depends on the parameters. It is width*width*hist_bins.
   // Currently we have width=4 and hist_bins=8, which results in a size of
   // 4*4*8=128.
-  descriptor:[float];
+  descriptor:[ubyte];
 
   // Location of the keypoint.
   x:float;
