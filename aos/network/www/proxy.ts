@@ -66,6 +66,11 @@ export class Connection {
     this.configHandlers.add(handler);
   }
 
+  /**
+   * Add a handler for a specific message type. Until we need to handle
+   * different channel names with the same type differently, this is good
+   * enough.
+   */
   addHandler(id: string, handler: (data: Uint8Array) => void): void {
     this.handlerFuncs.set(id, handler);
   }
@@ -183,7 +188,8 @@ export class Connection {
   }
 
   /**
-   * Subscribes to messages.
+   * Subscribes to messages. Only the most recent connect message is in use. Any
+   * channels not specified in the message are implicitely unsubscribed.
    * @param a Finished flatbuffer.Builder containing a Connect message to send.
    */
   sendConnectMessage(builder: any) {

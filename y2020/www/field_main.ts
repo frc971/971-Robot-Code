@@ -6,8 +6,7 @@ const conn = new Connection();
 
 conn.connect();
 
-const fieldHandler = new FieldHandler();
+const fieldHandler = new FieldHandler(conn);
 
-fieldHandler.reset();
-fieldHandler.drawField();
+fieldHandler.draw();
 

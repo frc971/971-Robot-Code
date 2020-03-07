@@ -24,7 +24,6 @@ void RunDataThread(
 
   LOG(INFO) << "My node is " << aos::FlatbufferToJson(self);
 
-  // TODO(alex): skip fetchers on the wrong node.
   for (uint i = 0; i < config.message().channels()->size(); ++i) {
     auto channel = config.message().channels()->Get(i);
     if (aos::configuration::ChannelIsReadableOnNode(channel, self)) {
