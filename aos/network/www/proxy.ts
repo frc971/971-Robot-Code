@@ -79,7 +79,7 @@ export class Connection {
         'message', (e) => this.onWebSocketMessage(e));
   }
 
-  get config() {
+  getConfig() {
     return this.config_internal;
   }
 
@@ -88,7 +88,7 @@ export class Connection {
   onDataChannelMessage(e: MessageEvent): void {
     const fbBuffer = new flatbuffers.ByteBuffer(new Uint8Array(e.data));
     this.configInternal = Configuration.getRootAsConfiguration(fbBuffer);
-    for (handler of this.configHandlers) {
+    for (const handler of Array.from(this.configHandlers)) {
       handler(this.configInternal);
     }
   }
@@ -187,7 +187,7 @@ export class Connection {
    * @param a Finished flatbuffer.Builder containing a Connect message to send.
    */
   sendConnectMessage(builder: any) {
-    const array = builder.assUint8Array();
+    const array = builder.asUint8Array();
     this.dataChannel.send(array.buffer.slice(array.byteOffset));
   }
 }

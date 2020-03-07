@@ -4,6 +4,7 @@ import {ImageMatchResult} from 'y2020/vision/sift/sift_generated'
 export class ImageHandler {
   private canvas = document.createElement('canvas');
   private imageBuffer: Uint8ClampedArray|null = null;
+  private image: CameraImage|null = null;
   private imageTimestamp: flatbuffers.Long|null = null;
   private result: ImageMatchResult|null = null;
   private resultTimestamp: flatbuffers.Long|null = null;
@@ -16,6 +17,7 @@ export class ImageHandler {
   }
 
   handleImage(data: Uint8Array): void {
+    console.log('got an image to process');
     if (this.imageSkipCount != 0) {
       this.imageSkipCount--;
       return;
@@ -24,24 +26,28 @@ export class ImageHandler {
     }
 
     const fbBuffer = new flatbuffers.ByteBuffer(data);
-    const image = CameraImage.getRootAsCameraImage(fbBuffer);
-    this.imageTimestamp = image.monotonicTimestampNs();
+    this.image = CameraImage.getRootAsCameraImage(fbBuffer);
+    this.imageTimestamp = this.image.monotonicTimestampNs();
 
-    this.width = image.cols();
-    this.height = image.rows();
+    this.width = this.image.cols();
+    this.height = this.image.rows();
     if (this.width === 0 || this.height === 0) {
       return;
     }
-    this.imageBuffer = new Uint8ClampedArray(this.width * this.height * 4); // RGBA
 
+    this.draw();
+  }
+
+  convertImage(): void {
+    this.imageBuffer = new Uint8ClampedArray(this.width * this.height * 4); // RGBA
     // Read four bytes (YUYV) from the data and transform into two pixels of
     // RGBA for canvas
     for (const j = 0; j < this.height; j++) {
       for (const i = 0; i < this.width; i += 2) {
-        const y1 = image.data((j * this.width + i) * 2);
-        const u = image.data((j * this.width + i) * 2 + 1);
-        const y2 = image.data((j * this.width + i + 1) * 2);
-        const v = image.data((j * this.width + i + 1) * 2 + 1);
+        const y1 = this.image.data((j * this.width + i) * 2);
+        const u = this.image.data((j * this.width + i) * 2 + 1);
+        const y2 = this.image.data((j * this.width + i + 1) * 2);
+        const v = this.image.data((j * this.width + i + 1) * 2 + 1);
 
         // Based on https://en.wikipedia.org/wiki/YUV#Converting_between_Y%E2%80%B2UV_and_RGB
         const c1 = y1 - 16;
@@ -59,11 +65,10 @@ export class ImageHandler {
         this.imageBuffer[(j * this.width + i) * 4 + 7] = 255;
       }
     }
-
-    this.draw();
   }
 
   handleImageMetadata(data: Uint8Array): void {
+    console.log('got an image match result to process');
     const fbBuffer = new flatbuffers.ByteBuffer(data);
     this.result = ImageMatchResult.getRootAsImageMatchResult(fbBuffer);
     this.resultTimestamp = this.result.imageMonotonicTimestampNs();
@@ -74,8 +79,12 @@ export class ImageHandler {
   if (!this.imageTimestamp || !this.resultTimestamp ||
         this.imageTimestamp.low !== this.resultTimestamp.low ||
         this.imageTimestamp.high !== this.resultTimestamp.high) {
+      console.log('image and result do not match');
+      console.log(this.imageTimestamp.low, this.resultTimestamp.low);
+      console.log(this.imageTimestamp.high, this.resultTimestamp.high);
       return;
     }
+    this.convertImage();
     const ctx = this.canvas.getContext('2d');
 
     this.canvas.width = this.width;
