@@ -80,3 +80,25 @@ cc_binary(
         "//third_party:opencv",
     ],
 )
+
+cc_binary(
+    name = "viewer_replay",
+    srcs = [
+        "viewer_replay.cc",
+    ],
+    data = [
+        "//y2020:config.json",
+    ],
+    restricted_to = [
+        "//tools:k8",
+        "//tools:armhf-debian",
+    ],
+    visibility = ["//y2020:__subpackages__"],
+    deps = [
+        ":vision_fbs",
+        "//aos:init",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:logger",
+        "//third_party:opencv",
+    ],
+)
