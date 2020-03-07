@@ -1,8 +1,10 @@
-import {Configuration, Channel} from 'aos/configuration_generated';
-import {Connection} from 'aos/network/www/proxy';
+import {Channel, Configuration} from 'aos/configuration_generated';
 import {Connect} from 'aos/network/connect_generated';
-import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
+import {Connection} from 'aos/network/www/proxy';
+import {Status as DrivetrainStatus} from 'frc971/control_loops/drivetrain/drivetrain_status_generated';
 import {ImageMatchResult} from 'y2020/vision/sift/sift_generated'
+
+import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
 
 // (0,0) is field center, +X is toward red DS
 const FIELD_SIDE_Y = FIELD_WIDTH / 2;
@@ -45,6 +47,9 @@ const TARGET_ZONE_TIP_X = FIELD_EDGE_X - 30 * IN_TO_M;
 const TARGET_ZONE_WIDTH = 48 * IN_TO_M;
 const LOADING_ZONE_WIDTH = 60 * IN_TO_M;
 
+const ROBOT_WIDTH = 28 * IN_TO_M;
+const ROBOT_LENGTH = 30 * IN_TO_M;
+
 /**
  * All the messages that are required to display camera information on the field.
  * Messages not readable on the server node are ignored.
@@ -70,11 +75,16 @@ const REQUIRED_CHANNELS = [
     name: '/pi5/camera',
     type: 'frc971.vision.sift.ImageMatchResult',
   },
+  {
+    name: '/drivetrain',
+    type: 'frc971.control_loops.drivetrain.Status',
+  },
 ];
 
 export class FieldHandler {
   private canvas = document.createElement('canvas');
-  private imageMatchResult :ImageMatchResult|null = null
+  private imageMatchResult: ImageMatchResult|null = null;
+  private drivetrainStatus: DrivetrianStatus|null = null;
 
   constructor(private readonly connection: Connection) {
     document.body.appendChild(this.canvas);
@@ -85,11 +95,19 @@ export class FieldHandler {
     this.connection.addHandler(ImageMatchResult.getFullyQualifiedName(), (res) => {
       this.handleImageMatchResult(res);
     });
+    this.connection.addHandler(DrivetrainStatus.getFullyQualifiedName(), (data) => {
+      this.handleDrivetrainStatus(data);
+    });
   }
 
   private handleImageMatchResult(data: Uint8Array): void {
     const fbBuffer = new flatbuffers.ByteBuffer(data);
     this.imageMatchResult = ImageMatchResult.getRootAsImageMatchResult(fbBuffer);
+  }
+
+  private handleDrivetrainStatus(data: Uint8Array): void {
+    const fbBuffer = new flatbuffers.ByteBuffer(data);
+    this.drivetrainStatus = DrivetrainStatus.getRootAsStatus(fbBuffer);
   }
 
   private sendConnect(): void {
@@ -199,6 +217,20 @@ export class FieldHandler {
     ctx.restore();
   }
 
+  drawRobot(x: number, y: number, theta: number): void {
+    const ctx = this.canvas.getContext('2d');
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(theta);
+    ctx.rect(-ROBOT_LENGTH / 2, -ROBOT_WIDTH / 2, ROBOT_LENGTH, ROBOT_WIDTH);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(ROBOT_LENGTH / 2, 0);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   draw(): void  {
     this.reset();
     this.drawField();
@@ -209,9 +241,17 @@ export class FieldHandler {
         const mat = pose.fieldToCamera();
         const x = mat.data(3);
         const y = mat.data(7);
-        this.drawCamera(x, y, 0);
-        console.log(x, y);
+        const theta = Math.atan2(
+            -mat.data(8),
+            Math.sqrt(Math.pow(mat.data(9), 2) + Math.pow(mat.data(10), 2)));
+        this.drawCamera(x, y, theta);
       }
+    }
+
+    if (this.drivetrainStatus) {
+      this.drawRobot(
+          this.drivetrainStatus.x(), this.drivetrainStatus.y(),
+          this.drivetrainStatus.theta());
     }
 
     window.requestAnimationFrame(() => this.draw());

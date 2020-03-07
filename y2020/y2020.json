@@ -293,7 +293,24 @@
       "source_node": "roborio",
       "frequency": 200,
       "max_size": 2000,
-      "num_senders": 2
+      "num_senders": 2,
+      "destination_nodes": [
+        {
+          "name": "pi1",
+          "priority": 5,
+          "time_to_live": 5000000
+        },
+        {
+          "name": "pi2",
+          "priority": 5,
+          "time_to_live": 5000000
+        },
+        {
+          "name": "pi3",
+          "priority": 5,
+          "time_to_live": 5000000
+        }
+      ]
     },
     {
       "name": "/drivetrain",

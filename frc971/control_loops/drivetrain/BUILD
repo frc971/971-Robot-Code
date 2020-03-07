@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
 load("//tools:environments.bzl", "mcu_cpus")
 load("//tools/build_rules:select.bzl", "compiler_select", "cpu_select")
@@ -32,6 +32,12 @@ flatbuffer_cc_library(
     srcs = ["drivetrain_status.fbs"],
     compatible_with = mcu_cpus,
     gen_reflections = 1,
+    includes = ["//frc971/control_loops:control_loops_fbs_includes"],
+)
+
+flatbuffer_ts_library(
+    name = "drivetrain_status_ts_fbs",
+    srcs = ["drivetrain_status.fbs"],
     includes = ["//frc971/control_loops:control_loops_fbs_includes"],
 )
 
