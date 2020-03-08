@@ -1,5 +1,4 @@
 #ifndef AOS_EVENTS_EVENT_LOOP_H_
-
 #define AOS_EVENTS_EVENT_LOOP_H_
 
 #include <atomic>
@@ -8,6 +7,7 @@
 
 #include "aos/configuration.h"
 #include "aos/configuration_generated.h"
+#include "aos/events/channel_preallocated_allocator.h"
 #include "aos/events/event_loop_event.h"
 #include "aos/events/event_loop_generated.h"
 #include "aos/events/timing_statistics.h"
@@ -145,8 +145,9 @@ class RawSender {
 
   // Returns the associated flatbuffers-style allocator. This must be
   // deallocated before the message is sent.
-  PreallocatedAllocator *fbb_allocator() {
-    fbb_allocator_ = PreallocatedAllocator(data(), size());
+  ChannelPreallocatedAllocator *fbb_allocator() {
+    fbb_allocator_ = ChannelPreallocatedAllocator(
+        reinterpret_cast<uint8_t *>(data()), size(), channel());
     return &fbb_allocator_;
   }
 
@@ -176,7 +177,7 @@ class RawSender {
 
   internal::RawSenderTiming timing_;
 
-  PreallocatedAllocator fbb_allocator_{nullptr, 0};
+  ChannelPreallocatedAllocator fbb_allocator_{nullptr, 0, nullptr};
 };
 
 // Fetches the newest message from a channel.
@@ -247,7 +248,7 @@ class Sender {
   // builder.Send(t_builder.Finish());
   class Builder {
    public:
-    Builder(RawSender *sender, PreallocatedAllocator *allocator)
+    Builder(RawSender *sender, ChannelPreallocatedAllocator *allocator)
         : fbb_(allocator->size(), allocator),
           allocator_(allocator),
           sender_(sender) {
@@ -283,7 +284,7 @@ class Sender {
 
    private:
     flatbuffers::FlatBufferBuilder fbb_;
-    PreallocatedAllocator *allocator_;
+    ChannelPreallocatedAllocator *allocator_;
     RawSender *sender_;
   };
 
