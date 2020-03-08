@@ -228,9 +228,6 @@ void CameraReader::SendImageMatchResult(
   std::vector<flatbuffers::Offset<sift::CameraPose>> camera_poses;
 
   CHECK_EQ(camera_target_list.size(), field_camera_list.size());
-  // TODO<Jim>: Need to figure out why these aren't the same size
-  // And why we're only sending one camera pose
-  //CHECK_EQ(camera_target_list.size(), matches.size());
   for (size_t i = 0; i < camera_target_list.size(); ++i) {
     cv::Mat camera_target = camera_target_list[i];
     CHECK(camera_target.isContinuous());
@@ -524,14 +521,15 @@ CameraReader::PackImageMatches(
   std::vector<std::vector<sift::Match>> per_image_matches(
       number_training_images());
   for (const std::vector<cv::DMatch> &image_matches : matches) {
-    for (const cv::DMatch &image_match : image_matches) {
-      CHECK_LT(image_match.imgIdx, number_training_images());
-      per_image_matches[image_match.imgIdx].emplace_back();
-      sift::Match *const match = &per_image_matches[image_match.imgIdx].back();
-      match->mutate_query_feature(image_match.queryIdx);
-      match->mutate_train_feature(image_match.trainIdx);
-      match->mutate_distance(image_match.distance);
-    }
+    CHECK_GT(image_matches.size(), 0u);
+    // We're only using the first of the two matches
+    const cv::DMatch &image_match = image_matches[0];
+    CHECK_LT(image_match.imgIdx, number_training_images());
+    per_image_matches[image_match.imgIdx].emplace_back();
+    sift::Match *const match = &per_image_matches[image_match.imgIdx].back();
+    match->mutate_query_feature(image_match.queryIdx);
+    match->mutate_train_feature(image_match.trainIdx);
+    match->mutate_distance(image_match.distance);
   }
 
   // Then, we need to build up each ImageMatch table.
