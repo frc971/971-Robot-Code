@@ -308,6 +308,14 @@ void FailureSignalHandler(int signal_number,
       sleep(1);
     }
   }
+
+  {
+    // Put this back on SCHED_OTHER by default.
+    struct sched_param param;
+    param.sched_priority = 0;
+    sched_setscheduler(0, SCHED_OTHER, &param);
+  }
+
   // This is the first time we enter the signal handler.  We are going to
   // do some interesting stuff from here.
   // TODO(satorux): We might want to set timeout here using alarm(), but
