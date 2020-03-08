@@ -11,12 +11,56 @@ namespace control_loops {
 namespace superstructure {
 namespace shooter {
 
+// Class to current limit battery current for a flywheel controller.
+class CurrentLimitedStateFeedbackController
+    : public StateFeedbackLoop<3, 1, 1, double,
+                               StateFeedbackHybridPlant<3, 1, 1>,
+                               HybridKalman<3, 1, 1>> {
+ public:
+  // Builds a CurrentLimitedStateFeedbackController given the coefficients, bemf
+  // coefficient (units of radians/sec / volt), and motor resistance in ohms.
+  CurrentLimitedStateFeedbackController(
+      StateFeedbackLoop<3, 1, 1, double, StateFeedbackHybridPlant<3, 1, 1>,
+                        HybridKalman<3, 1, 1>> &&other,
+      double bemf, double resistance)
+      : StateFeedbackLoop(std::move(other)),
+        bemf_(bemf),
+        resistance_(resistance) {}
+
+  void CapU() override {
+    const double bemf_voltage = X_hat(1) / bemf_;
+    // Solve the system of equations:
+    //
+    //   motor_current = (u - bemf_voltage) / resistance
+    //   battery_current = ((u - bemf_voltage) / resistance) * u / 12.0
+    //   0.0 = u * u - u * bemf_voltage - max_current * 12.0 * resistance
+    //
+    // And we have a quadratic!
+    const double a = 1;
+    const double b = -bemf_voltage;
+    const double c = -50.0 * 12.0 * resistance_;
+
+    // Root is always positive.
+    const double root = std::sqrt(b * b - 4.0 * a * c);
+    const double upper_limit = (-b + root) / (2.0 * a);
+    const double lower_limit = (-b - root) / (2.0 * a);
+
+    // Limit to the battery voltage and the current limit voltage.
+    mutable_U(0, 0) = std::clamp(U(0, 0), lower_limit, upper_limit);
+    mutable_U(0, 0) = std::clamp(U(0, 0), -12.0, 12.0);
+  }
+
+ private:
+  double bemf_ = 0.0;
+  double resistance_ = 0.0;
+};
+
 FlywheelController::FlywheelController(
     StateFeedbackLoop<3, 1, 1, double, StateFeedbackHybridPlant<3, 1, 1>,
-                      HybridKalman<3, 1, 1>> &&loop)
-    : loop_(new StateFeedbackLoop<3, 1, 1, double,
-                                  StateFeedbackHybridPlant<3, 1, 1>,
-                                  HybridKalman<3, 1, 1>>(std::move(loop))) {
+                      HybridKalman<3, 1, 1>> &&loop,
+    double bemf, double resistance)
+    : loop_(new CurrentLimitedStateFeedbackController(std::move(loop), bemf,
+                                                      resistance)) {
   history_.fill(std::pair<double, ::aos::monotonic_clock::time_point>(
       0, ::aos::monotonic_clock::epoch()));
   Y_.setZero();

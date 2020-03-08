@@ -295,6 +295,18 @@ def WriteFlywheel(params, plant_files, controller_files, namespace):
     loop_writer.AddConstant(
         control_loop.Constant('kFreeSpeed', '%f',
                               flywheels[0].motor.free_speed))
+    loop_writer.AddConstant(
+        control_loop.Constant(
+            'kBemf',
+            '%f',
+            flywheels[0].motor.Kv * flywheels[0].G,
+            comment="// Radians/sec / volt"))
+    loop_writer.AddConstant(
+        control_loop.Constant(
+            'kResistance',
+            '%f',
+            flywheels[0].motor.resistance,
+            comment="// Ohms"))
     loop_writer.Write(plant_files[0], plant_files[1])
 
     integral_loop_writer = control_loop.ControlLoopWriter(

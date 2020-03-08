@@ -43,12 +43,23 @@ typedef Superstructure::PotAndAbsoluteEncoderSubsystem
 
 class FlywheelPlant : public StateFeedbackPlant<2, 1, 1> {
  public:
-  explicit FlywheelPlant(StateFeedbackPlant<2, 1, 1> &&other)
-      : StateFeedbackPlant<2, 1, 1>(::std::move(other)) {}
+  explicit FlywheelPlant(StateFeedbackPlant<2, 1, 1> &&other, double bemf,
+                         double resistance)
+      : StateFeedbackPlant<2, 1, 1>(::std::move(other)),
+        bemf_(bemf),
+        resistance_(resistance) {}
 
   void CheckU(const Eigen::Matrix<double, 1, 1> &U) override {
     EXPECT_LE(U(0, 0), U_max(0, 0) + 0.00001 + voltage_offset_);
     EXPECT_GE(U(0, 0), U_min(0, 0) - 0.00001 + voltage_offset_);
+  }
+
+  double motor_current(const Eigen::Matrix<double, 1, 1> U) const {
+    return (U(0) - X(1) / bemf_) / resistance_;
+  }
+
+  double battery_current(const Eigen::Matrix<double, 1, 1> U) const {
+    return motor_current(U) * U(0) / 12.0;
   }
 
   double voltage_offset() const { return voltage_offset_; }
@@ -58,6 +69,9 @@ class FlywheelPlant : public StateFeedbackPlant<2, 1, 1> {
 
  private:
   double voltage_offset_ = 0.0;
+
+  double bemf_;
+  double resistance_;
 };
 
 // Class which simulates the superstructure and sends out queue messages with
@@ -84,10 +98,14 @@ class SuperstructureSimulation {
                             .turret.subsystem_params.zeroing_constants
                             .one_revolution_distance),
         accelerator_left_plant_(
-            new FlywheelPlant(accelerator::MakeAcceleratorPlant())),
+            new FlywheelPlant(accelerator::MakeAcceleratorPlant(),
+                              accelerator::kBemf, accelerator::kResistance)),
         accelerator_right_plant_(
-            new FlywheelPlant(accelerator::MakeAcceleratorPlant())),
-        finisher_plant_(new FlywheelPlant(finisher::MakeFinisherPlant())) {
+            new FlywheelPlant(accelerator::MakeAcceleratorPlant(),
+                              accelerator::kBemf, accelerator::kResistance)),
+        finisher_plant_(new FlywheelPlant(finisher::MakeFinisherPlant(),
+                                          finisher::kBemf,
+                                          finisher::kResistance)) {
     InitializeHoodPosition(constants::Values::kHoodRange().upper);
     InitializeIntakePosition(constants::Values::kIntakeRange().upper);
     InitializeTurretPosition(constants::Values::kTurretRange().middle());
@@ -264,14 +282,25 @@ class SuperstructureSimulation {
         << superstructure_output_fetcher_->accelerator_left_voltage() +
                accelerator_left_plant_->voltage_offset();
 
+    // Confirm that we aren't drawing too much current.
+    CHECK_NEAR(accelerator_left_plant_->battery_current(accelerator_left_U),
+               0.0, 60.0);
+
     ::Eigen::Matrix<double, 1, 1> accelerator_right_U;
     accelerator_right_U
         << superstructure_output_fetcher_->accelerator_right_voltage() +
                accelerator_right_plant_->voltage_offset();
 
+    // Confirm that we aren't drawing too much current.
+    CHECK_NEAR(accelerator_right_plant_->battery_current(accelerator_right_U),
+               0.0, 60.0);
+
     ::Eigen::Matrix<double, 1, 1> finisher_U;
     finisher_U << superstructure_output_fetcher_->finisher_voltage() +
                       finisher_plant_->voltage_offset();
+
+    // Confirm that we aren't drawing too much current.
+    CHECK_NEAR(finisher_plant_->battery_current(finisher_U), 0.0, 60.0);
 
     hood_plant_->Update(hood_U);
     intake_plant_->Update(intake_U);

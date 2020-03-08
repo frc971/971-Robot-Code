@@ -16,9 +16,12 @@ const double kVelocityTolerance = 20.0;
 }  // namespace
 
 Shooter::Shooter()
-    : finisher_(finisher::MakeIntegralFinisherLoop()),
-      accelerator_left_(accelerator::MakeIntegralAcceleratorLoop()),
-      accelerator_right_(accelerator::MakeIntegralAcceleratorLoop()) {}
+    : finisher_(finisher::MakeIntegralFinisherLoop(), finisher::kBemf,
+                finisher::kResistance),
+      accelerator_left_(accelerator::MakeIntegralAcceleratorLoop(),
+                        accelerator::kBemf, accelerator::kResistance),
+      accelerator_right_(accelerator::MakeIntegralAcceleratorLoop(),
+                         accelerator::kBemf, accelerator::kResistance) {}
 
 bool Shooter::UpToSpeed(const ShooterGoal *goal) {
   return (
