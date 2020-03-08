@@ -53,6 +53,8 @@ const REQUIRED_CHANNELS = [
 
 export class ImageHandler {
   private canvas = document.createElement('canvas');
+  private select = document.createElement('select');
+
   private imageBuffer: Uint8ClampedArray|null = null;
   private image: CameraImage|null = null;
   private imageTimestamp: flatbuffers.Long|null = null;
@@ -60,9 +62,15 @@ export class ImageHandler {
   private resultTimestamp: flatbuffers.Long|null = null;
   private width = 0;
   private height = 0;
+  private selectedIndex = 0;
   private imageSkipCount = 3;
 
   constructor(private readonly connection: Connection) {
+    document.body.appendChild(this.select);
+    const defaultOption = document.createElement('option');
+    defaultOption.innerText = 'Show all features';
+    this.select.appendChild(defaultOption);
+    this.select.addEventListener('change', (ev) => this.handleSelect(ev));
     document.body.appendChild(this.canvas);
 
     this.connection.addConfigHandler(() => {
@@ -95,6 +103,10 @@ export class ImageHandler {
     const connect = Connect.endConnect(builder);
     builder.finish(connect);
     this.connection.sendConnectMessage(builder);
+  }
+
+  handleSelect(ev: Event) {
+    this.selectedIndex = ev.target.selectedIndex;
   }
 
   handleImage(data: Uint8Array): void {
@@ -136,13 +148,19 @@ export class ImageHandler {
         const d = u - 128;
         const e = v - 128;
 
-        this.imageBuffer[(j * this.width + i) * 4 + 0] = (298 * c1 + 409 * e + 128) >> 8;
-        this.imageBuffer[(j * this.width + i) * 4 + 1] = (298 * c1 - 100 * d - 208 * e + 128) >> 8;
-        this.imageBuffer[(j * this.width + i) * 4 + 2] = (298 * c1 + 516 * d + 128) >> 8;
+        this.imageBuffer[(j * this.width + i) * 4 + 0] =
+            (298 * c1 + 409 * e + 128) >> 8;
+        this.imageBuffer[(j * this.width + i) * 4 + 1] =
+            (298 * c1 - 100 * d - 208 * e + 128) >> 8;
+        this.imageBuffer[(j * this.width + i) * 4 + 2] =
+            (298 * c1 + 516 * d + 128) >> 8;
         this.imageBuffer[(j * this.width + i) * 4 + 3] = 255;
-        this.imageBuffer[(j * this.width + i) * 4 + 4] = (298 * c2 + 409 * e + 128) >> 8;
-        this.imageBuffer[(j * this.width + i) * 4 + 5] = (298 * c2 - 100 * d - 208 * e + 128) >> 8;
-        this.imageBuffer[(j * this.width + i) * 4 + 6] = (298 * c2 + 516 * d + 128) >> 8;
+        this.imageBuffer[(j * this.width + i) * 4 + 4] =
+            (298 * c2 + 409 * e + 128) >> 8;
+        this.imageBuffer[(j * this.width + i) * 4 + 5] =
+            (298 * c2 - 100 * d - 208 * e + 128) >> 8;
+        this.imageBuffer[(j * this.width + i) * 4 + 6] =
+            (298 * c2 + 516 * d + 128) >> 8;
         this.imageBuffer[(j * this.width + i) * 4 + 7] = 255;
       }
     }
@@ -157,7 +175,7 @@ export class ImageHandler {
   }
 
   draw(): void {
-  if (!this.imageTimestamp || !this.resultTimestamp ||
+    if (!this.imageTimestamp || !this.resultTimestamp ||
         this.imageTimestamp.low !== this.resultTimestamp.low ||
         this.imageTimestamp.high !== this.resultTimestamp.high) {
       console.log('image and result do not match');
@@ -173,20 +191,60 @@ export class ImageHandler {
     const idata = ctx.createImageData(this.width, this.height);
     idata.data.set(this.imageBuffer);
     ctx.putImageData(idata, 0, 0);
-    for (const i = 0; i < this.result.featuresLength(); i++) {
-      const feature = this.result.features(i);
-      // Based on OpenCV drawKeypoint.
-      ctx.beginPath();
-      ctx.arc(feature.x(), feature.y(), feature.size(), 0, 2 * Math.PI);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(feature.x(), feature.y());
-      const angle = feature.angle() * Math.PI / 180;
-      ctx.lineTo(
-          feature.x() + feature.size() * Math.cos(angle),
-          feature.y() + feature.size() * Math.sin(angle));
-      ctx.stroke();
+    console.log('features: ', this.result.featuresLength();
+    if (this.selectedIndex === 0) {
+      for (const i = 0; i < this.result.featuresLength(); i++) {
+        const feature = this.result.features(i);
+        this.drawFeature(feature);
+      }
+    } else {
+      const imageMatch = this.result.imageMatches(this.selectedIndex - 1);
+      for (const i = 0; i < imageMatch.matchesLength(); i++) {
+        const featureIndex = imageMatch.matches(i).queryFeature();
+        this.drawFeature(this.result.features(featureIndex));
+      }
     }
+
+    // Draw 'center' of target.
+    // TODO(alex) adjust to new location in flatbuffer for these fields
+    //ctx.strokeStyle = 'red';
+    //ctx.beginPath();
+    //ctx.arc(
+    //    this.result.targetPointX(), this.result.targetPointY(), 20, 0,
+    //    2 * Math.PI);
+    //ctx.stroke();
+
+    while (this.select.lastChild) {
+      this.select.removeChild(this.select.lastChild);
+    }
+    const defaultOption = document.createElement('option');
+    defaultOption.innerText = 'Show all features';
+    defaultOption.setAttribute('value', 0);
+    this.select.appendChild(defaultOption);
+    for (const i = 0; i < this.result.imageMatchesLength(); i++) {
+      const imageMatch = this.result.imageMatches(i);
+      const option = document.createElement('option');
+      option.setAttribute('value', i + 1);
+      option.innerText =
+          `Show image ${i} features (${imageMatch.matchesLength()})`;
+      this.select.appendChild(option);
+    }
+    this.select.selectedIndex = this.selectedIndex;
+  }
+
+  // Based on OpenCV drawKeypoint.
+  private drawFeature(feature: Feature) {
+    const ctx = this.canvas.getContext('2d');
+    ctx.beginPath();
+    ctx.arc(feature.x(), feature.y(), feature.size(), 0, 2 * Math.PI);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(feature.x(), feature.y());
+    const angle = feature.angle() * Math.PI / 180;
+    ctx.lineTo(
+        feature.x() + feature.size() * Math.cos(angle),
+        feature.y() + feature.size() * Math.sin(angle));
+    ctx.stroke();
   }
 }
