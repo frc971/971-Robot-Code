@@ -1459,6 +1459,13 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   // someone else can use them (as long as they flush afterwards)
   if (data_->severity_ == GLOG_FATAL && exit_on_dfatal) {
     if (data_->first_fatal_) {
+      {
+        // Put this back on SCHED_OTHER by default.
+        struct sched_param param;
+        param.sched_priority = 0;
+        sched_setscheduler(0, SCHED_OTHER, &param);
+      }
+
       // Store crash information so that it is accessible from within signal
       // handlers that may be invoked later.
       RecordCrashReason(&crash_reason);
