@@ -75,7 +75,6 @@ class GTK_Widget(BaseWindow):
         self.module_path = os.path.dirname(os.path.realpath(sys.argv[0]))
 
     """set extents on images"""
-
     def reinit_extents(self):
         self.extents_x_min = -1.0 * SCREEN_SIZE
         self.extents_x_max = SCREEN_SIZE
@@ -220,12 +219,16 @@ class GTK_Widget(BaseWindow):
         cr.show_text('Press "e" to export')
         cr.show_text('Press "i" to import')
 
+        cr.save()
+        cr.translate(mToPx(WIDTH_OF_FIELD_IN_METERS) / 2.0, 0.0)
         set_color(cr, palette["BLACK"])
         if FIELD == 2020:
-            cr.rectangle(0, mToPx(-7.991475), SCREEN_SIZE, SCREEN_SIZE/2)
+            cr.rectangle(-mToPx(WIDTH_OF_FIELD_IN_METERS) / 2.0,
+                         -mToPx(LENGTH_OF_FIELD_IN_METERS) / 2.0,
+                         mToPx(WIDTH_OF_FIELD_IN_METERS),
+                         mToPx(LENGTH_OF_FIELD_IN_METERS))
         else:
-            cr.rectangle(0, mToPx(-7.991475), SCREEN_SIZE, SCREEN_SIZE)
-            print(mToPx(-7.991475))
+            cr.rectangle(0, -SCREEN_SIZE / 2, SCREEN_SIZE, SCREEN_SIZE)
         cr.set_line_join(cairo.LINE_JOIN_ROUND)
         cr.stroke()
         self.draw_field_elements(cr)
@@ -282,8 +285,9 @@ class GTK_Widget(BaseWindow):
 
         cr.paint_with_alpha(0.2)
 
-        mygraph = Graph(cr, self.points)
         draw_px_cross(cr, self.x, self.y, 10)
+        cr.restore()
+        mygraph = Graph(cr, self.points)
 
     def draw_splines(self, cr):
         holder_spline = []
@@ -312,10 +316,10 @@ class GTK_Widget(BaseWindow):
     def mouse_move(self, event):
         old_x = self.x
         old_y = self.y
-        self.x = event.x
+        self.x = event.x - mToPx(WIDTH_OF_FIELD_IN_METERS / 2.0)
         self.y = event.y
-        dif_x = event.x - old_x
-        dif_y = event.y - old_y
+        dif_x = self.x - old_x
+        dif_y = self.y - old_y
         difs = np.array([pxToM(dif_x), pxToM(dif_y)])
 
         if self.mode == Mode.kEditing:
@@ -344,7 +348,7 @@ class GTK_Widget(BaseWindow):
             self.mode = Mode.kEditing
             self.points.resetPoints()
             self.points.resetSplines()
-            print("LOADING LOAD FROM " + file_name) # Load takes a few seconds
+            print("LOADING LOAD FROM " + file_name)  # Load takes a few seconds
             with open(self.path_to_export) as points_file:
                 self.points.setUpSplines(json.load(points_file))
 
@@ -399,7 +403,8 @@ class GTK_Widget(BaseWindow):
                 # Save the index of the point closest
                 nearest = 1  # Max distance away a the selected point can be in meters
                 index_of_closest = 0
-                for index_splines, points in enumerate(self.points.getSplines()):
+                for index_splines, points in enumerate(
+                        self.points.getSplines()):
                     for index_points, val in enumerate(points):
                         distance = np.sqrt((cur_p[0] - val[0])**2 +
                                            (cur_p[1] - val[1])**2)
@@ -414,6 +419,6 @@ class GTK_Widget(BaseWindow):
 
     def do_button_press(self, event):
         # Be consistent with the scaling in the drawing_area
-        self.x = event.x * 2
+        self.x = event.x * 2 - mToPx(WIDTH_OF_FIELD_IN_METERS / 2.0)
         self.y = event.y * 2
         self.button_press_action()
