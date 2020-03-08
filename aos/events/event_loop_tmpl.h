@@ -6,13 +6,16 @@
 #include "glog/logging.h"
 
 namespace aos {
+namespace event_loop_internal {
 
-// From a watch functor, this will extract the message type of the argument.
-// This is the template forward declaration, and it extracts the call operator
-// as a PTMF to be used by the following specialization.
+// From a watch functor, specializations of this will extract the message type
+// of the template argument. If T is not a valid message type, there will be no
+// matching specialization.
+//
+// This is just the forward declaration, which will be used by one of the
+// following specializations to match valid argument types.
 template <class T>
-struct watch_message_type_trait
-    : watch_message_type_trait<decltype(&T::operator())> {};
+struct watch_message_type_trait;
 
 // From a watch functor, this will extract the message type of the argument.
 // This is the template specialization.
@@ -21,6 +24,8 @@ struct watch_message_type_trait<ReturnType (ClassType::*)(A1) const> {
   using message_type = typename std::decay<A1>::type;
 };
 
+}  // namespace event_loop_internal
+
 template <typename T>
 typename Sender<T>::Builder Sender<T>::MakeBuilder() {
   return Builder(sender_.get(), sender_->fbb_allocator());
@@ -28,19 +33,38 @@ typename Sender<T>::Builder Sender<T>::MakeBuilder() {
 
 template <typename Watch>
 void EventLoop::MakeWatcher(const std::string_view channel_name, Watch &&w) {
-  using T = typename watch_message_type_trait<Watch>::message_type;
+  using MessageType =
+      typename event_loop_internal::watch_message_type_trait<decltype(
+          &Watch::operator())>::message_type;
   const Channel *channel = configuration::GetChannel(
-      configuration_, channel_name, T::GetFullyQualifiedName(), name(), node());
+      configuration_, channel_name, MessageType::GetFullyQualifiedName(),
+      name(), node());
 
   CHECK(channel != nullptr)
       << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
-      << T::GetFullyQualifiedName() << "\" } not found in config.";
+      << MessageType::GetFullyQualifiedName() << "\" } not found in config.";
 
-  return MakeRawWatcher(
-      channel, [this, w](const Context &context, const void *message) {
-        context_ = context;
-        w(*flatbuffers::GetRoot<T>(reinterpret_cast<const char *>(message)));
-      });
+  MakeRawWatcher(channel,
+                 [this, w](const Context &context, const void *message) {
+                   context_ = context;
+                   w(*flatbuffers::GetRoot<MessageType>(
+                       reinterpret_cast<const char *>(message)));
+                 });
+}
+
+template <typename MessageType>
+void EventLoop::MakeNoArgWatcher(const std::string_view channel_name,
+                                 std::function<void()> w) {
+  const Channel *channel = configuration::GetChannel(
+      configuration_, channel_name, MessageType::GetFullyQualifiedName(),
+      name(), node());
+  CHECK(channel != nullptr)
+      << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
+      << MessageType::GetFullyQualifiedName() << "\" } not found in config.";
+  MakeRawNoArgWatcher(channel, [this, w](const Context &context) {
+    context_ = context;
+    w();
+  });
 }
 
 inline bool RawFetcher::FetchNext() {
@@ -194,7 +218,9 @@ class WatcherState {
   // context.
   void DoCallCallback(std::function<monotonic_clock::time_point()> get_time,
                       Context context) {
-    CheckChannelDataAlignment(context.data, context.size);
+    if (context.data) {
+      CheckChannelDataAlignment(context.data, context.size);
+    }
     const monotonic_clock::time_point monotonic_start_time = get_time();
     {
       const float start_latency =

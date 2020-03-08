@@ -792,7 +792,9 @@ LocklessQueue::ReadResult LocklessQueue::Read(
   }
   *monotonic_remote_time = m->header.monotonic_remote_time;
   *realtime_remote_time = m->header.realtime_remote_time;
-  memcpy(data, m->data(memory_->message_data_size()), message_data_size());
+  if (data) {
+    memcpy(data, m->data(memory_->message_data_size()), message_data_size());
+  }
   *length = m->header.length;
 
   // And finally, confirm that the message *still* points to the queue index we

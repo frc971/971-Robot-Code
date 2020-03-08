@@ -52,6 +52,9 @@ class ShmEventLoop : public EventLoop {
       const Channel *channel,
       std::function<void(const Context &context, const void *message)> watcher)
       override;
+  void MakeRawNoArgWatcher(
+      const Channel *channel,
+      std::function<void(const Context &context)> watcher) override;
 
   TimerHandler *AddTimer(std::function<void()> callback) override;
   aos::PhasedLoopHandler *AddPhasedLoop(
