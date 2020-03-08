@@ -24,6 +24,9 @@ robot_downloader(
 
 robot_downloader(
     name = "pi_download",
+    binaries = [
+        "//y2020/vision:viewer",
+    ],
     data = [
         ":config.json",
     ],
