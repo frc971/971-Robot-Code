@@ -81,16 +81,16 @@ class MMapedQueue {
     // already exist and we need to create it.  Start by trying to create it. If
     // that fails, the file has already been created and we can open it
     // normally..  Once the file has been created it wil never be deleted.
-    fd_ = open(path.c_str(), O_RDWR | O_CREAT | O_EXCL,
+    int fd = open(path.c_str(), O_RDWR | O_CREAT | O_EXCL,
                O_CLOEXEC | FLAGS_permissions);
-    if (fd_ == -1 && errno == EEXIST) {
+    if (fd == -1 && errno == EEXIST) {
       VLOG(1) << path << " already created.";
       // File already exists.
-      fd_ = open(path.c_str(), O_RDWR, O_CLOEXEC);
-      PCHECK(fd_ != -1) << ": Failed to open " << path;
+      fd = open(path.c_str(), O_RDWR, O_CLOEXEC);
+      PCHECK(fd != -1) << ": Failed to open " << path;
       while (true) {
         struct stat st;
-        PCHECK(fstat(fd_, &st) == 0);
+        PCHECK(fstat(fd, &st) == 0);
         if (st.st_size != 0) {
           CHECK_EQ(static_cast<size_t>(st.st_size), size_)
               << ": Size of " << path
@@ -105,19 +105,19 @@ class MMapedQueue {
       }
     } else {
       VLOG(1) << "Created " << path;
-      PCHECK(fd_ != -1) << ": Failed to open " << path;
-      PCHECK(ftruncate(fd_, size_) == 0);
+      PCHECK(fd != -1) << ": Failed to open " << path;
+      PCHECK(ftruncate(fd, size_) == 0);
     }
 
-    data_ = mmap(NULL, size_, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0);
+    data_ = mmap(NULL, size_, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     PCHECK(data_ != MAP_FAILED);
+    PCHECK(close(fd) == 0);
 
     ipc_lib::InitializeLocklessQueueMemory(memory(), config_);
   }
 
   ~MMapedQueue() {
     PCHECK(munmap(data_, size_) == 0);
-    PCHECK(close(fd_) == 0);
   }
 
   ipc_lib::LocklessQueueMemory *memory() const {
@@ -132,8 +132,6 @@ class MMapedQueue {
 
  private:
   ipc_lib::LocklessQueueConfiguration config_;
-
-  int fd_;
 
   size_t size_;
   void *data_;
