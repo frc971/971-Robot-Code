@@ -64,6 +64,7 @@ cc_library(
         "event_loop_tmpl.h",
     ],
     hdrs = [
+        "channel_preallocated_allocator.h",
         "event_loop.h",
     ],
     visibility = ["//visibility:public"],
