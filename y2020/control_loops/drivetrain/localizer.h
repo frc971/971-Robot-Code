@@ -73,7 +73,8 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
 
   // Processes new image data from the given pi and updates the EKF.
   void HandleImageMatch(std::string_view pi,
-                        const frc971::vision::sift::ImageMatchResult &result);
+                        const frc971::vision::sift::ImageMatchResult &result,
+                        aos::monotonic_clock::time_point now);
 
   // Processes the most recent turret position and stores it in the turret_data_
   // buffer.

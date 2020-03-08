@@ -94,18 +94,19 @@ void Localizer::Update(const ::Eigen::Matrix<double, 2, 1> &U,
                        aos::monotonic_clock::time_point now,
                        double left_encoder, double right_encoder,
                        double gyro_rate, const Eigen::Vector3d &accel) {
+  ekf_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate, U, accel,
+                             now);
   for (size_t ii = 0; ii < kPisToUse.size(); ++ii) {
     auto &image_fetcher = image_fetchers_[ii];
     while (image_fetcher.FetchNext()) {
-      HandleImageMatch(kPisToUse[ii], *image_fetcher);
+      HandleImageMatch(kPisToUse[ii], *image_fetcher, now);
     }
   }
-  ekf_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate, U, accel,
-                             now);
 }
 
 void Localizer::HandleImageMatch(
-    std::string_view pi, const frc971::vision::sift::ImageMatchResult &result) {
+    std::string_view pi, const frc971::vision::sift::ImageMatchResult &result,
+    aos::monotonic_clock::time_point now) {
   std::chrono::nanoseconds monotonic_offset(0);
   clock_offset_fetcher_.Fetch();
   if (clock_offset_fetcher_.get() != nullptr) {
@@ -123,9 +124,9 @@ void Localizer::HandleImageMatch(
       monotonic_offset);
   VLOG(1) << "Got monotonic offset of "
           << aos::time::DurationInSeconds(monotonic_offset)
-          << " when at time of " << event_loop_->monotonic_now()
-          << " and capture time estimate of " << capture_time;
-  if (capture_time > event_loop_->monotonic_now()) {
+          << " when at time of " << now << " and capture time estimate of "
+          << capture_time;
+  if (capture_time > now) {
     LOG(WARNING) << "Got camera frame from the future.";
     return;
   }
@@ -147,6 +148,7 @@ void Localizer::HandleImageMatch(
   const Eigen::Matrix<double, 4, 4> fixed_extrinsics =
       FlatbufferToTransformationMatrix(
           *result.camera_calibration()->fixed_extrinsics());
+
   // Calculate the pose of the camera relative to the robot origin.
   Eigen::Matrix<double, 4, 4> H_robot_camera = fixed_extrinsics;
   if (is_turret) {
@@ -169,22 +171,56 @@ void Localizer::HandleImageMatch(
     }
     const Eigen::Matrix<double, 4, 4> H_camera_target =
         FlatbufferToTransformationMatrix(*vision_result->camera_to_target());
+
     const Eigen::Matrix<double, 4, 4> H_field_target =
         FlatbufferToTransformationMatrix(*vision_result->field_to_target());
     // Back out the robot position that is implied by the current camera
     // reading.
     const Pose measured_pose(H_field_target *
                              (H_robot_camera * H_camera_target).inverse());
-    const Eigen::Matrix<double, 3, 1> Z(measured_pose.rel_pos().x(),
-                                        measured_pose.rel_pos().y(),
-                                        measured_pose.rel_theta());
+    Eigen::Matrix<double, 3, 1> Z(measured_pose.rel_pos().x(),
+                                  measured_pose.rel_pos().y(),
+                                  measured_pose.rel_theta());
+    // Pose of the target in the robot frame.
+    Pose pose_robot_target(H_robot_camera * H_camera_target);
+    // This code overrides the pose sent directly from the camera code and
+    // effectively distills it down to just a distance + heading estimate, on
+    // the presumption that these signals will tend to be much lower noise and
+    // better-conditioned than other portions of the robot pose.
+    // As such, this code assumes that the current estimate of the robot
+    // heading is correct and then, given the heading from the camera to the
+    // target and the distance from the camera to the target, calculates the
+    // position that the robot would have to be at to make the current camera
+    // heading + distance correct. This X/Y implied robot position is then
+    // used as the measurement in the EKF, rather than the X/Y that is
+    // directly returned from the vision processing. This means that
+    // the cameras will not correct any drift in the robot heading estimate
+    // but will compensate for X/Y position in a way that prioritizes keeping
+    // an accurate distance + heading to the goal.
+    {
+      // TODO(james): This doesn't do time-compensation properly--it uses the
+      // current robot heading to calculate an implied pose, rather than using
+      // the heading from when the picture was taken.
+
+      // Calculate the heading to the robot in the target's coordinate frame.
+      const double implied_heading_from_target = aos::math::NormalizeAngle(
+          pose_robot_target.heading() + M_PI + theta());
+      const double implied_distance = pose_robot_target.xy_norm();
+      const Eigen::Vector4d robot_pose_in_target_frame(
+          implied_distance * std::cos(implied_heading_from_target),
+          implied_distance * std::sin(implied_heading_from_target), 0, 1);
+      const Eigen::Vector4d implied_pose =
+          H_field_target * robot_pose_in_target_frame;
+      Z.x() = implied_pose.x();
+      Z.y() = implied_pose.y();
+    }
     // TODO(james): Figure out how to properly handle calculating the
     // noise. Currently, the values are deliberately tuned so that image updates
     // will not be trusted overly much. In theory, we should probably also be
     // populating some cross-correlation terms.
     // Note that these are the noise standard deviations (they are squared below
     // to get variances).
-    Eigen::Matrix<double, 3, 1> noises(1.0, 1.0, 0.1);
+    Eigen::Matrix<double, 3, 1> noises(2.0, 2.0, 0.2);
     // Augment the noise by the approximate rotational speed of the
     // camera. This should help account for the fact that, while we are
     // spinning, slight timing errors in the camera/turret data will tend to
@@ -198,25 +234,45 @@ void Localizer::HandleImageMatch(
     H.setZero();
     H(0, StateIdx::kX) = 1;
     H(1, StateIdx::kY) = 1;
-    H(2, StateIdx::kTheta) = 1;
+    // This is currently set to zero because we ignore the heading implied by
+    // the camera.
+    H(2, StateIdx::kTheta) = 0;
+    VLOG(1) << "Pose implied by target: " << Z.transpose()
+            << " and current pose " << x() << ", " << y() << ", " << theta()
+            << " Heading/dist/skew implied by target: "
+            << pose_robot_target.ToHeadingDistanceSkew().transpose();
     // If the heading is off by too much, assume that we got a false-positive
     // and don't use the correction.
     if (std::abs(aos::math::DiffAngle(theta(), Z(2))) > M_PI_2) {
       AOS_LOG(WARNING, "Dropped image match due to heading mismatch.\n");
-      return;
+      continue;
     }
-    ekf_.Correct(Z, nullptr, {}, [H, Z](const State &X, const Input &) {
-                                   Eigen::Vector3d Zhat = H * X;
-                                   // In order to deal with wrapping of the
-                                   // angle, calculate an expected angle that is
-                                   // in the range (Z(2) - pi, Z(2) + pi].
-                                   const double angle_error =
-                                       aos::math::NormalizeAngle(
-                                           X(StateIdx::kTheta) - Z(2));
-                                   Zhat(2) = Z(2) + angle_error;
-                                   return Zhat;
-                                 },
-                 [H](const State &) { return H; }, R, capture_time);
+    // Just in case we ever do encounter any, drop measurements if they have
+    // non-finite numbers.
+    if (!Z.allFinite()) {
+      AOS_LOG(WARNING, "Got measurement with infinites or NaNs.\n");
+      continue;
+    }
+    ekf_.Correct(
+        Z, nullptr, {},
+        [H, Z](const State &X, const Input &) {
+          Eigen::Vector3d Zhat = H * X;
+          // In order to deal with wrapping of the angle, calculate an expected
+          // angle that is in the range (Z(2) - pi, Z(2) + pi].
+          const double angle_error =
+              aos::math::NormalizeAngle(X(StateIdx::kTheta) - Z(2));
+          Zhat(2) = Z(2) + angle_error;
+          // If the measurement implies that we are too far from the current
+          // estimate, then ignore it.
+          // Note that I am not entirely sure how much effect this actually has,
+          // because I primarily introduced it to make sure that any grossly
+          // invalid measurements get thrown out.
+          if ((Zhat - Z).squaredNorm() > std::pow(10.0, 2)) {
+            return Z;
+          }
+          return Zhat;
+        },
+        [H](const State &) { return H; }, R, capture_time);
   }
 }
 
