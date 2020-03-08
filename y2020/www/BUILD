@@ -26,6 +26,7 @@ ts_library(
     deps = [
         "//aos/network/www:proxy",
         "//y2020/vision/sift:sift_ts_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_status_ts_fbs",
     ],
 )
 
