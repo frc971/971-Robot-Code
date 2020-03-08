@@ -1,3 +1,4 @@
+#include <map>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -5,6 +6,7 @@
 
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
+#include "y2020/vision/sift/sift_generated.h"
 #include "y2020/vision/vision_generated.h"
 
 DEFINE_string(config, "config.json", "Path to the config file to use.");
@@ -14,23 +16,62 @@ namespace vision {
 namespace {
 
 void ViewerMain() {
+  struct TargetData {
+    float x;
+    float y;
+    float radius;
+  };
+
+  std::map<int64_t, TargetData> target_data_map;
+
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(FLAGS_config);
 
   aos::ShmEventLoop event_loop(&config.message());
 
-  event_loop.MakeWatcher("/camera", [](const CameraImage &image) {
-    cv::Mat image_mat(image.rows(), image.cols(), CV_8U);
-    CHECK(image_mat.isContinuous());
-    const int number_pixels = image.rows() * image.cols();
-    for (int i = 0; i < number_pixels; ++i) {
-      reinterpret_cast<uint8_t *>(image_mat.data)[i] =
-          image.data()->data()[i * 2];
-    }
+  event_loop.MakeWatcher(
+      "/camera", [&target_data_map](const CameraImage &image) {
+        cv::Mat image_mat(image.rows(), image.cols(), CV_8U);
+        CHECK(image_mat.isContinuous());
+        const int number_pixels = image.rows() * image.cols();
+        for (int i = 0; i < number_pixels; ++i) {
+          reinterpret_cast<uint8_t *>(image_mat.data)[i] =
+              image.data()->data()[i * 2];
+        }
 
-    cv::imshow("Display", image_mat);
-    cv::waitKey(1);
-  });
+        int64_t timestamp = image.monotonic_timestamp_ns();
+        auto target_it = target_data_map.find(timestamp);
+        if (target_it != target_data_map.end()) {
+          float x = target_it->second.x;
+          float y = target_it->second.y;
+          float radius = target_it->second.radius;
+          cv::circle(image_mat, cv::Point2f(x, y), radius, 255, 5);
+        } else {
+          LOG(INFO) << "Couldn't find timestamp match for timestamp: "
+                    << timestamp;
+        }
+        cv::imshow("Display", image_mat);
+        int keystroke = cv::waitKey(1);
+        if ((keystroke & 0xFF) == static_cast<int>('q')) {
+          exit(0);
+        }
+      });
+
+  event_loop.MakeWatcher(
+      "/camera", [&target_data_map](const sift::ImageMatchResult &match) {
+        int64_t timestamp = match.image_monotonic_timestamp_ns();
+        if (match.camera_poses() != NULL && match.camera_poses()->size() > 0) {
+          LOG(INFO) << "Got match!\n";
+          TargetData target_data = {
+              match.camera_poses()->Get(0)->query_target_point_x(),
+              match.camera_poses()->Get(0)->query_target_point_y(),
+              match.camera_poses()->Get(0)->query_target_point_radius()};
+          target_data_map[timestamp] = target_data;
+          while (target_data_map.size() > 10u) {
+            target_data_map.erase(target_data_map.begin());
+          }
+        }
+      });
 
   event_loop.Run();
 }
