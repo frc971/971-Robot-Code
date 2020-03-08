@@ -81,7 +81,7 @@ def load_camera_definitions():
 
     dir_name = dtd.bazel_name_fix('calib_files')
     for filename in os.listdir(dir_name):
-        if "cam-calib-int" in filename and filename.endswith(".txt"):
+        if "cam-calib-int" in filename and filename.endswith(".json"):
             # Extract intrinsics from file
             fn_split = filename.split("_")
             hostname_split = fn_split[1].split("-")

@@ -1,7 +1,6 @@
 import cv2
 import cv2.aruco
 import datetime
-import glog
 import json
 from json import JSONEncoder
 import numpy as np
@@ -23,9 +22,10 @@ class NumpyArrayEncoder(json.JSONEncoder):
 
 
 def get_robot_info(hostname):
-    hostname_split = hostname[1].split("-")
+    hostname_split = hostname.split("-")
     if hostname_split[0] != "pi":
-        print("ERROR: expected hostname to start with pi!")
+        print(
+            "ERROR: expected hostname to start with pi!  Got '%s'" % hostname)
         quit()
 
     team_number = int(hostname_split[1])
@@ -33,11 +33,10 @@ def get_robot_info(hostname):
     return node_name, team_number
 
 
-USE_LARGE_BOARD = False
+USE_LARGE_BOARD = True
 
 if USE_LARGE_BOARD:
     dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_5X5_100)
-    # Need to measure what the second size parameter is (markerLength)
     board = cv2.aruco.CharucoBoard_create(12, 9, .06, .045, dictionary)
     img = board.draw((200 * 12, 200 * 9))
 else:
@@ -46,7 +45,7 @@ else:
     img = board.draw((200 * 11, 200 * 8))
 
 #Dump the calibration board to a file
-cv2.imwrite('charuco.png', img)
+#cv2.imwrite('charuco.png', img)
 
 #Start capturing images for calibration
 CAMERA_INDEX = 0  # Capture from /dev/videoX, where X=CAMERA_INDEX
@@ -75,7 +74,7 @@ while (capture_count < MIN_IMAGES):
     if keystroke & 0xFF == ord('q'):
         break
     elif keystroke & 0xFF == ord('c'):
-        glog.info("Asked to capture image")
+        print("Asked to capture image")
         if len(res[0]) == 0 or len(res[1]) == 0:
             # Can't use this image
             continue
@@ -86,7 +85,7 @@ while (capture_count < MIN_IMAGES):
             charuco_detect_image = frame.copy()
             allCorners.append(res2[1])
             allIds.append(res2[2])
-            glog.info("Capturing image #%d" % capture_count)
+            print("Capturing image #%d" % capture_count)
             cv2.aruco.drawDetectedCornersCharuco(charuco_detect_image, res2[1],
                                                  res2[2])
 
@@ -99,14 +98,14 @@ try:
     imsize = gray.shape
     cal = cv2.aruco.calibrateCameraCharuco(allCorners, allIds, board, imsize,
                                            None, None)
-    glog.info("Calibration is:\n", cal)
-    glog.info("Reproduction error:", cal[0])
+    print("Calibration is:\n", cal)
+    print("Reproduction error:", cal[0])
     if (cal[0] > 1.0):
-        glog.error("REPRODUCTION ERROR NOT GOOD")
-    glog.info("Calibration matrix:\n", cal[1])
-    glog.info("Distortion Coefficients:\n", cal[2])
+        print("REPRODUCTION ERROR NOT GOOD")
+    print("Calibration matrix:\n", cal[1])
+    print("Distortion Coefficients:\n", cal[2])
 except:
-    glog.error("Calibration failed")
+    print("Calibration failed")
     cap.release()
     quit()
 
@@ -125,7 +124,7 @@ encodedNumpyData = json.dumps(
     numpyData, cls=NumpyArrayEncoder)  # use dump() to write array into file
 
 # Write out the data
-calib_file = open("cam_calib_%s_%s.txt" % (hostname, date_str), "w")
+calib_file = open("cam_calib_%s_%s.json" % (hostname, date_str), "w")
 calib_file.write(encodedNumpyData)
 calib_file.close()
 
