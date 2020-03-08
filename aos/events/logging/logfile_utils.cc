@@ -8,6 +8,7 @@
 
 #include <vector>
 
+#include "absl/strings/escaping.h"
 #include "aos/configuration.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/flatbuffer_merge.h"
@@ -181,6 +182,15 @@ absl::Span<const uint8_t> SpanReader::ReadMessage() {
   const size_t data_size =
       flatbuffers::GetPrefixedSize(data_.data() + consumed_data_) +
       sizeof(flatbuffers::uoffset_t);
+  if (data_size == sizeof(flatbuffers::uoffset_t)) {
+    LOG(ERROR) << "Size of data is zero.  Log file end is corrupted, skipping.";
+    LOG(ERROR) << "  Rest of log file is "
+               << absl::BytesToHexString(std::string_view(
+                      reinterpret_cast<const char *>(data_.data() +
+                                                     consumed_data_),
+                      data_.size() - consumed_data_));
+    return absl::Span<const uint8_t>();
+  }
   while (data_.size() < consumed_data_ + data_size) {
     if (!ReadBlock()) {
       return absl::Span<const uint8_t>();
