@@ -93,34 +93,38 @@ int main(int argc, char **argv) {
   int it = 0;  // iterate through the channel_stats
   for (flatbuffers::uoffset_t i = 0; i < channels->size(); i++) {
     const aos::Channel *channel = channels->Get(i);
-    if (channel->name()->string_view().find(FLAGS_name) != std::string::npos) {
-      // Add a record to the stats vector.
-      channel_stats.push_back({channel});
-      // Lambda to read messages and parse for information
-      stats_event_loop->MakeRawWatcher(
-          channel,
-          [&logfile_stats, &channel_stats, it](const aos::Context &context,
-                                               const void * /* message */) {
-            channel_stats[it].max_message_size =
-                std::max(channel_stats[it].max_message_size, context.size);
-            channel_stats[it].total_message_size += context.size;
-            channel_stats[it].total_num_messages++;
-            // asume messages are send in sequence per channel
-            channel_stats[it].channel_end_time = context.realtime_event_time;
-            channel_stats[it].first_message_time =
-                std::min(channel_stats[it].first_message_time,
-                         context.monotonic_event_time);
-            channel_stats[it].current_message_time =
-                context.monotonic_event_time;
-            // update the overall logfile statistics
-            logfile_stats.logfile_length += context.size;
-          });
-      it++;
-      // TODO (Stephan): Frequency of messages per second
-      // - Sliding window
-      // - Max / Deviation
-      found_channel = true;
+    if (!aos::configuration::ChannelIsReadableOnNode(
+            channel, stats_event_loop->node())) {
+      continue;
     }
+
+    if (channel->name()->string_view().find(FLAGS_name) == std::string::npos) {
+      continue;
+    }
+
+    // Add a record to the stats vector.
+    channel_stats.push_back({channel});
+    // Lambda to read messages and parse for information
+    stats_event_loop->MakeRawWatcher(channel, [&logfile_stats, &channel_stats,
+                                               it](const aos::Context &context,
+                                                   const void * /* message */) {
+      channel_stats[it].max_message_size =
+          std::max(channel_stats[it].max_message_size, context.size);
+      channel_stats[it].total_message_size += context.size;
+      channel_stats[it].total_num_messages++;
+      // asume messages are send in sequence per channel
+      channel_stats[it].channel_end_time = context.realtime_event_time;
+      channel_stats[it].first_message_time = std::min(
+          channel_stats[it].first_message_time, context.monotonic_event_time);
+      channel_stats[it].current_message_time = context.monotonic_event_time;
+      // update the overall logfile statistics
+      logfile_stats.logfile_length += context.size;
+    });
+    it++;
+    // TODO (Stephan): Frequency of messages per second
+    // - Sliding window
+    // - Max / Deviation
+    found_channel = true;
   }
   if (!found_channel) {
     LOG(FATAL) << "Could not find any channels";
@@ -171,7 +175,7 @@ int main(int argc, char **argv) {
   }
   std::cout << std::setfill('-') << std::setw(80) << "-"
             << "\nLogfile statistics for: " << FLAGS_logfile << "\n"
-            << "Log starts at:\t" << reader.realtime_start_time() << "\n"
+            << "Log starts at:\t" << reader.realtime_start_time(node) << "\n"
             << "Log ends at:\t" << logfile_stats.logfile_end_time << "\n"
             << "Log file size:\t" << logfile_stats.logfile_length << "\n"
             << "Total messages:\t" << logfile_stats.total_log_messages << "\n";
