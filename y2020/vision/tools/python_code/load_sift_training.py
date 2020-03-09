@@ -27,6 +27,19 @@ def rot_and_trans_to_list(R, T):
     return output_list
 
 
+def list_to_transformation_matrix(values, fbb):
+    """Puts a list of values into an FBB TransformationMatrix."""
+
+    TransformationMatrix.TransformationMatrixStartDataVector(fbb, len(values))
+    for n in reversed(values):
+        fbb.PrependFloat32(n)
+    list_offset = fbb.EndVector(len(values))
+
+    TransformationMatrix.TransformationMatrixStart(fbb)
+    TransformationMatrix.TransformationMatrixAddData(fbb, list_offset)
+    return TransformationMatrix.TransformationMatrixEnd(fbb)
+
+
 def main():
 
     target_data_list = None
@@ -138,18 +151,15 @@ def main():
     for camera_calib in camera_calib_list:
         fixed_extrinsics_list = rot_and_trans_to_list(
             camera_calib.camera_ext.R, camera_calib.camera_ext.T)
-        TransformationMatrix.TransformationMatrixStartDataVector(
-            fbb, len(fixed_extrinsics_list))
-        for n in reversed(fixed_extrinsics_list):
-            fbb.PrependFloat32(n)
-        fixed_extrinsics_data_offset = fbb.EndVector(
-            len(fixed_extrinsics_list))
+        fixed_extrinsics_vector = list_to_transformation_matrix(
+            fixed_extrinsics_list, fbb)
 
-        TransformationMatrix.TransformationMatrixStart(fbb)
-        TransformationMatrix.TransformationMatrixAddData(
-            fbb, fixed_extrinsics_data_offset)
-        fixed_extrinsics_vector = TransformationMatrix.TransformationMatrixEnd(
-            fbb)
+        turret_extrinsics_vector = None
+        if camera_calib.turret_ext is not None:
+            turret_extrinsics_list = rot_and_trans_to_list(
+                camera_calib.turret_ext.R, camera_calib.turret_ext.T)
+            turret_extrinsics_vector = list_to_transformation_matrix(
+                turret_extrinsics_list, fbb)
 
         # TODO: Need to add in distortion coefficients here
         # For now, just send camera paramter matrix (fx, fy, cx, cy)
@@ -179,6 +189,9 @@ def main():
             fbb, dist_coeffs_vector)
         CameraCalibration.CameraCalibrationAddFixedExtrinsics(
             fbb, fixed_extrinsics_vector)
+        if turret_extrinsics_vector is not None:
+            CameraCalibration.CameraCalibrationAddTurretExtrinsics(
+                fbb, turret_extrinsics_vector)
         camera_calibration_vector.append(
             CameraCalibration.CameraCalibrationEnd(fbb))
 
