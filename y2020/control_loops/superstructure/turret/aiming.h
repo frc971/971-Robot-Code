@@ -56,7 +56,7 @@ class Aimer {
   const Goal *TurretGoal() const { return &goal_.message(); }
 
   // Returns the distance to the goal, in meters.
-  double DistanceToGoal() const { return distance_; }
+  double DistanceToGoal() const { return shot_distance_; }
 
   flatbuffers::Offset<AimerStatus> PopulateStatus(
       flatbuffers::FlatBufferBuilder *fbb) const;
@@ -64,7 +64,11 @@ class Aimer {
  private:
   aos::FlatbufferDetachedBuffer<Goal> goal_;
   bool aiming_for_inner_port_ = false;
-  double distance_ = 0.0;
+  // Distance of the shot to the virtual target, used for calculating hood
+  // position and shooter speed.
+  double shot_distance_ = 0.0;    // meters
+  // Real-world distance to the target.
+  double target_distance_ = 0.0;  // meters
 };
 
 }  // namespace turret

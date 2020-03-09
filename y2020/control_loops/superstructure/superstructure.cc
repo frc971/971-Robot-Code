@@ -40,7 +40,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   if (drivetrain_status_fetcher_.Fetch()) {
     aos::Alliance alliance = aos::Alliance::kInvalid;
-    if (joystick_state_fetcher_.Fetch()) {
+    joystick_state_fetcher_.Fetch();
+    if (joystick_state_fetcher_.get() != nullptr) {
       alliance = joystick_state_fetcher_->alliance();
     }
     const turret::Aimer::WrapMode mode =
@@ -120,7 +121,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   if (output != nullptr) {
     // Friction is a pain and putting a really high burden on the integrator.
-    const double turret_velocity_sign = turret_status->velocity() * kTurretFrictionGain;
+    const double turret_velocity_sign =
+        turret_status->velocity() * kTurretFrictionGain;
     output_struct.turret_voltage +=
         std::clamp(turret_velocity_sign, -kTurretFrictionVoltageLimit,
                    kTurretFrictionVoltageLimit);

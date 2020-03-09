@@ -178,7 +178,7 @@ TEST_F(AimerTest, DrivingLateralToTarget) {
 // angle on it.
 TEST_F(AimerTest, InnerPort) {
   const Pose target = InnerPortPose(aos::Alliance::kRed);
-  const Goal *goal = Update({.x = target.abs_pos().x() + 1.0,
+  const Goal *goal = Update({.x = target.abs_pos().x() + 10.0,
                              .y = target.abs_pos().y() + 0.0,
                              .theta = 0.0,
                              .linear = 0.0,
@@ -186,6 +186,7 @@ TEST_F(AimerTest, InnerPort) {
                             aos::Alliance::kRed);
   EXPECT_EQ(0.0, goal->unsafe_goal());
   EXPECT_EQ(0.0, goal->goal_velocity());
+  EXPECT_LT(1.0, aimer_.DistanceToGoal());
 }
 
 // Confirms that when we move the turret heading so that it would be entirely

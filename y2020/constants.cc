@@ -76,7 +76,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
   // Turret Constants
   turret_params->zeroing_voltage = 4.0;
-  turret_params->operating_voltage = 12.0;
+  turret_params->operating_voltage = 8.0;
   // TODO(austin): Tune these.
   turret_params->zeroing_profile_params = {0.5, 2.0};
   turret_params->default_profile_params = {15.0, 40.0};

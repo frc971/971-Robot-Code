@@ -36,6 +36,11 @@ table AimerStatus {
   turret_velocity:double;
   // Whether we are currently aiming for the inner port.
   aiming_for_inner_port:bool;
+  // The current distance to the target, in meters.
+  target_distance:double;
+  // The current "shot distance." When shooting on the fly, this may be
+  // different from the static distance to the target.
+  shot_distance:double;
 }
 
 table Status {

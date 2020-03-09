@@ -50,8 +50,10 @@ constexpr double kPortHeight = 2.494;
 // outer port entirely.
 constexpr double kMaxInnerPortAngle = 20.0 * M_PI / 180.0;
 
-// Distance (in meters) from the edge of the field to the port.
-constexpr double kEdgeOfFieldToPort = 2.404;
+// Distance (in meters) from the edge of the field to the port, with some
+// compensation to ensure that our definition of where the target is matches
+// that reported by the cameras.
+constexpr double kEdgeOfFieldToPort = 2.404 + .0034;
 
 // The amount (in meters) that the inner port is set back from the outer port.
 constexpr double kInnerPortBackset = 0.743;
@@ -70,7 +72,7 @@ constexpr double kBallSpeedOverGround = 15.0;  // m/s
 // Minimum distance that we must be from the inner port in order to attempt the
 // shot--this is to account for the fact that if we are too close to the target,
 // then we won't have a clear shot on the inner port.
-constexpr double kMinimumInnerPortShotDistance = 4.0;
+constexpr double kMinimumInnerPortShotDistance = 3.0;
 
 // Amount of buffer, in radians, to leave to help avoid wrapping. I.e., any time
 // that we are in kAvoidEdges mode, we will keep ourselves at least
@@ -123,7 +125,7 @@ Pose IterateVirtualGoal(const Pose &robot_pose,
 Pose InnerPortPose(aos::Alliance alliance) {
   const Pose target({kFieldLength / 2 + kInnerPortBackset,
                      -kFieldWidth / 2.0 + kEdgeOfFieldToPort, kPortHeight},
-                    0.0);
+                    M_PI);
   if (alliance == aos::Alliance::kRed) {
     return ReverseSideOfField(target);
   }
@@ -133,7 +135,7 @@ Pose InnerPortPose(aos::Alliance alliance) {
 Pose OuterPortPose(aos::Alliance alliance) {
   Pose target(
       {kFieldLength / 2, -kFieldWidth / 2.0 + kEdgeOfFieldToPort, kPortHeight},
-      0.0);
+      M_PI);
   if (alliance == aos::Alliance::kRed) {
     return ReverseSideOfField(target);
   }
@@ -164,9 +166,16 @@ void Aimer::Update(const Status *status, aos::Alliance alliance,
 
   const double inner_port_angle = robot_pose_from_inner_port.heading();
   const double inner_port_distance = robot_pose_from_inner_port.xy_norm();
+  // Add a bit of hysteresis so that we don't jump between aiming for the inner
+  // and outer ports.
+  const double max_inner_port_angle =
+      aiming_for_inner_port_ ? 1.2 * kMaxInnerPortAngle : kMaxInnerPortAngle;
+  const double min_inner_port_distance =
+      aiming_for_inner_port_ ? 0.8 * kMinimumInnerPortShotDistance
+                             : kMinimumInnerPortShotDistance;
   aiming_for_inner_port_ =
-      (std::abs(inner_port_angle) < kMaxInnerPortAngle) &&
-      (inner_port_distance > kMinimumInnerPortShotDistance);
+      (std::abs(inner_port_angle) < max_inner_port_angle) &&
+      (inner_port_distance > min_inner_port_distance);
 
   // This code manages compensating the goal turret heading for the robot's
   // current velocity, to allow for shooting on-the-fly.
@@ -177,6 +186,7 @@ void Aimer::Update(const Status *status, aos::Alliance alliance,
   Pose virtual_goal;
   {
     const Pose goal = aiming_for_inner_port_ ? inner_port : outer_port;
+    target_distance_ = goal.Rebase(&robot_pose).xy_norm();
     virtual_goal = goal;
     if (shot_mode == ShotMode::kShootOnTheFly) {
       for (int ii = 0; ii < 3; ++ii) {
@@ -191,7 +201,7 @@ void Aimer::Update(const Status *status, aos::Alliance alliance,
 
   const double heading_to_goal = virtual_goal.heading();
   CHECK(status->has_localizer());
-  distance_ = virtual_goal.xy_norm();
+  shot_distance_ = virtual_goal.xy_norm();
 
   // The following code all works to calculate what the rate of turn of the
   // turret should be. The code only accounts for the rate of turn if we are
@@ -201,6 +211,12 @@ void Aimer::Update(const Status *status, aos::Alliance alliance,
   const double rel_x = virtual_goal.rel_pos().x();
   const double rel_y = virtual_goal.rel_pos().y();
   const double squared_norm = rel_x * rel_x + rel_y * rel_y;
+  // rel_xdot and rel_ydot are the derivatives (with respect to time) of rel_x
+  // and rel_y. Since these are in the robot's coordinate frame, and since we
+  // are ignoring lateral velocity for this exercise, rel_ydot is zero, and
+  // rel_xdot is just the inverse of the robot's velocity.
+  const double rel_xdot = -linear_angular(0);
+  const double rel_ydot = 0.0;
 
   // If squared_norm gets to be too close to zero, just zero out the relevant
   // term to prevent NaNs. Note that this doesn't address the chattering that
@@ -208,11 +224,12 @@ void Aimer::Update(const Status *status, aos::Alliance alliance,
   // Note that x and y terms are swapped relative to what you would normally see
   // in the derivative of atan because xdot and ydot are the derivatives of
   // robot_pos and we are working with the atan of (target_pos - robot_pos).
-  const double atan_diff = (squared_norm < 1e-3)
-                               ? 0.0
-                               : (rel_y * xdot - rel_x * ydot) / squared_norm;
+  const double atan_diff =
+      (squared_norm < 1e-3) ? 0.0 : (rel_x * rel_ydot - rel_y * rel_xdot) /
+                                        squared_norm;
   // heading = atan2(relative_y, relative_x) - robot_theta
-  // dheading / dt = (rel_x * rel_y' - rel_y * rel_x') / (rel_x^2 + rel_y^2) - dtheta / dt
+  // dheading / dt =
+  //     (rel_x * rel_y' - rel_y * rel_x') / (rel_x^2 + rel_y^2) - dtheta / dt
   const double dheading_dt = atan_diff - linear_angular(1);
 
   double range = kTurretRange;
@@ -234,7 +251,8 @@ void Aimer::Update(const Status *status, aos::Alliance alliance,
   }
 
   goal_.mutable_message()->mutate_unsafe_goal(turret_heading);
-  goal_.mutable_message()->mutate_goal_velocity(dheading_dt);
+  goal_.mutable_message()->mutate_goal_velocity(
+      std::clamp(dheading_dt, -2.0, 2.0));
 }
 
 flatbuffers::Offset<AimerStatus> Aimer::PopulateStatus(
@@ -243,6 +261,8 @@ flatbuffers::Offset<AimerStatus> Aimer::PopulateStatus(
   builder.add_turret_position(goal_.message().unsafe_goal());
   builder.add_turret_velocity(goal_.message().goal_velocity());
   builder.add_aiming_for_inner_port(aiming_for_inner_port_);
+  builder.add_target_distance(target_distance_);
+  builder.add_shot_distance(DistanceToGoal());
   return builder.Finish();
 }
 
