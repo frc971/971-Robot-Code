@@ -6,6 +6,7 @@
 #include <cmath>
 
 #include "aos/logging/logging.h"
+#include "aos/util/math.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 #include "y2020/actors/auto_splines.h"
@@ -23,21 +24,36 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
           event_loop, control_loops::drivetrain::GetDrivetrainConfig()),
       localizer_control_sender_(event_loop->MakeSender<
           ::frc971::control_loops::drivetrain::LocalizerControl>(
-          "/drivetrain")) {}
+          "/drivetrain")),
+      joystick_state_fetcher_(
+          event_loop->MakeFetcher<aos::JoystickState>("/aos")) {}
 
 void AutonomousActor::Reset() {
   InitializeEncoders();
   ResetDrivetrain();
 
+  joystick_state_fetcher_.Fetch();
+  CHECK(joystick_state_fetcher_.get() != nullptr)
+      << "Expect at least one JoystickState message before running auto...";
+  alliance_ = joystick_state_fetcher_->alliance();
+  // Set up the starting position for the blue alliance.
+  // Currently just arbitrarily chosen for testing purposes, such that the
+  // robot starts on the side of the field nearest where it would score
+  // (although I do not know if this is actually a legal starting position).
+  Eigen::Vector2d starting_position(3.3, -0.7);
+  double starting_heading = 0.0;
+  if (alliance_ == aos::Alliance::kRed) {
+    starting_position *= -1.0;
+    starting_heading = aos::math::NormalizeAngle(starting_heading + M_PI);
+  }
   {
     auto builder = localizer_control_sender_.MakeBuilder();
 
     LocalizerControl::Builder localizer_control_builder =
         builder.MakeBuilder<LocalizerControl>();
-    // TODO(james): Set starting position based on the alliance.
-    localizer_control_builder.add_x(0.0);
-    localizer_control_builder.add_y(0.0);
-    localizer_control_builder.add_theta(0.0);
+    localizer_control_builder.add_x(starting_position.x());
+    localizer_control_builder.add_y(starting_position.y());
+    localizer_control_builder.add_theta(starting_heading);
     localizer_control_builder.add_theta_uncertainty(0.00001);
     if (!builder.Send(localizer_control_builder.Finish())) {
       AOS_LOG(ERROR, "Failed to reset localizer.\n");
@@ -48,9 +64,14 @@ void AutonomousActor::Reset() {
 bool AutonomousActor::RunAction(
     const ::frc971::autonomous::AutonomousActionParams *params) {
   Reset();
+  if (alliance_ == aos::Alliance::kInvalid) {
+    AOS_LOG(INFO, "Aborting autonomous due to invalid alliance selection.");
+    return false;
+  }
 
-  SplineHandle spline1 =
-      PlanSpline(AutonomousSplines::BasicSSpline, SplineDirection::kForward);
+  SplineHandle spline1 = PlanSpline(std::bind(AutonomousSplines::BasicSSpline,
+                                              std::placeholders::_1, alliance_),
+                                    SplineDirection::kForward);
 
   if (!spline1.WaitForPlan()) return true;
   spline1.Start();

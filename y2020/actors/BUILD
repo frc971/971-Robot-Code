@@ -27,6 +27,8 @@ cc_library(
     deps = [
         "//aos/events:event_loop",
         "//aos/logging",
+        "//aos/robot_state:joystick_state_fbs",
+        "//aos/util:math",
         "//aos/util:phased_loop",
         "//frc971/autonomous:base_autonomous_actor",
         "//frc971/control_loops:control_loops_fbs",
