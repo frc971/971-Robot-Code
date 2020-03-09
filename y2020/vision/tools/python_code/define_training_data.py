@@ -244,6 +244,18 @@ def visualize_reprojections(img, pts_2d, pts_3d, cam_mat, dist_coeffs):
     return img
 
 
+def bazel_name_fix(filename):
+    ret_name = filename
+    try:
+        from bazel_tools.tools.python.runfiles import runfiles
+        r = runfiles.Create()
+        ret_name = r.Rlocation('org_frc971/y2020/vision/tools/python_code/' + filename)
+    except:
+        pass
+
+    return ret_name
+
+
 def sample_define_polygon_usage():
     image = cv2.imread("test_images/train_power_port_red.png")
 

@@ -10,8 +10,9 @@ import camera_definition
 
 ### DEFINITIONS
 target_definition.USE_BAZEL = False
+camera_definition.USE_BAZEL = False
 target_list = target_definition.compute_target_definition()
-camera_list = camera_definition.camera_list
+camera_list = camera_definition.load_camera_definitions()
 
 # For now, just use the first one
 camera_params = camera_list[0]
@@ -29,12 +30,14 @@ query_image_names = [
     'test_images/test_raspi3_sample.jpg',  #7
     'test_images/test_VR_sample1.png',  #8
     'test_images/train_loading_bay_blue.png',  #9
-    'test_images/train_loading_bay_red.png'  #10
+    'test_images/train_loading_bay_red.png',  #10
+    'test_images/pi-7971-3_test_image.png',  #11
+    'sample_images/capture-2020-02-13-16-40-07.png',
 ]
 
 training_image_index = 0
 # TODO: Should add argParser here to select this
-query_image_index = 0  # Use -1 to use camera capture; otherwise index above list
+query_image_index = 12  # Use -1 to use camera capture; otherwise index above list
 
 ##### Let's get to work!
 
@@ -162,8 +165,6 @@ while looping:
         for m in good_matches:
             src_pts_3d.append(target_list[i].keypoint_list_3d[m.trainIdx])
             pt = query_keypoint_lists[0][m.queryIdx].pt
-            print("Color at ", pt, " is ", query_images[0][int(pt[1])][int(
-                pt[0])])
             query_images[0] = cv2.circle(
                 query_images[0], (int(pt[0]), int(pt[1])), 5, (0, 255, 0), 3)
 

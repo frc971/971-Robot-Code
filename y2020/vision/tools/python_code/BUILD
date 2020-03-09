@@ -12,7 +12,7 @@ py_binary(
     args = [
         "sift_training_data.h",
     ],
-    data = glob(["calib_files/*.txt"]) + glob([
+    data = glob(["calib_files/*.json"]) + glob([
         "test_images/*.png",
     ]),
     default_python_version = "PY3",
@@ -60,7 +60,7 @@ py_binary(
         "sift_training_data_test.h",
         "test",
     ],
-    data = glob(["calib_files/*.txt"]) + glob([
+    data = glob(["calib_files/*.json"]) + glob([
         "test_images/*.png",
     ]),
     default_python_version = "PY3",
