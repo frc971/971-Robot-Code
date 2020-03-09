@@ -46,7 +46,7 @@
       "name": "/aos/roborio",
       "type": "aos.logging.LogMessageFbs",
       "source_node": "roborio",
-      "frequency": 200,
+      "frequency": 400,
       "num_senders": 20
     },
     {

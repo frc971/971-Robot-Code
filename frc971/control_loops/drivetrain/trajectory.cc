@@ -538,15 +538,11 @@ void Trajectory::AB(const ::Eigen::Matrix<double, 5, 1> &state,
     // collect more info about when this breaks down from logs.
     K = ::Eigen::Matrix<double, 2, 5>::Zero();
   }
-  ::Eigen::EigenSolver<::Eigen::Matrix<double, 5, 5>> eigensolver(A - B * K);
-  const auto eigenvalues = eigensolver.eigenvalues();
-  AOS_LOG(DEBUG,
-          "Eigenvalues: (%f + %fj), (%f + %fj), (%f + %fj), (%f + %fj), (%f + "
-          "%fj)\n",
-          eigenvalues(0).real(), eigenvalues(0).imag(), eigenvalues(1).real(),
-          eigenvalues(1).imag(), eigenvalues(2).real(), eigenvalues(2).imag(),
-          eigenvalues(3).real(), eigenvalues(3).imag(), eigenvalues(4).real(),
-          eigenvalues(4).imag());
+  if (VLOG_IS_ON(1)) {
+    ::Eigen::EigenSolver<::Eigen::Matrix<double, 5, 5>> eigensolver(A - B * K);
+    const auto eigenvalues = eigensolver.eigenvalues();
+    LOG(INFO) << "Eigenvalues: " << eigenvalues;
+  }
   return K;
 }
 

@@ -118,8 +118,9 @@ void SensorReader::Loop(const int iterations) {
   }
 
   if (pwm_trigger_) {
-    AOS_LOG(DEBUG, "PWM wakeup delta: %lld\n",
-            (monotonic_now - last_monotonic_now_).count());
+    // TODO(austin): Put this in a status message.
+    VLOG(1) << "PWM wakeup delta: "
+            << (monotonic_now - last_monotonic_now_).count();
     last_monotonic_now_ = monotonic_now;
 
     monotonic_clock::time_point last_tick_timepoint = GetPWMStartTime();
