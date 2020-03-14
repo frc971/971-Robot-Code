@@ -20,7 +20,8 @@ class FlywheelController {
  public:
   FlywheelController(
       StateFeedbackLoop<3, 1, 1, double, StateFeedbackHybridPlant<3, 1, 1>,
-                        HybridKalman<3, 1, 1>> &&loop);
+                        HybridKalman<3, 1, 1>> &&loop,
+      double bemf, double resistance);
 
   // Sets the velocity goal in radians/sec
   void set_goal(double angular_velocity_goal);

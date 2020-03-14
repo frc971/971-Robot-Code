@@ -5,20 +5,24 @@ import os
 
 class Constant(object):
 
-    def __init__(self, name, formatt, value):
+    def __init__(self, name, formatt, value, comment=None):
         self.name = name
         self.formatt = formatt
         self.value = value
         self.formatToType = {}
         self.formatToType['%f'] = "double"
         self.formatToType['%d'] = "int"
+        if comment is None:
+            self.comment = ""
+        else:
+            self.comment = comment + "\n"
 
     def Render(self, loop_type):
         typestring = self.formatToType[self.formatt]
         if loop_type == 'float' and typestring == 'double':
             typestring = loop_type
-        return str("\nstatic constexpr %s %s = "+ self.formatt +";\n") % \
-            (typestring, self.name, self.value)
+        return str("\n%sstatic constexpr %s %s = "+ self.formatt +";\n") % \
+            (self.comment, typestring, self.name, self.value)
 
 
 class ControlLoopWriter(object):
