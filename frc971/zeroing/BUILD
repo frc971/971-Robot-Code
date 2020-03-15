@@ -59,9 +59,18 @@ cc_test(
 cc_library(
     name = "zeroing",
     srcs = [
-        "zeroing.cc",
+        "absolute_encoder.cc",
+        "hall_effect_and_position.cc",
+        "pot_and_absolute_encoder.cc",
+        "pot_and_index.cc",
+        "pulse_index.cc",
     ],
     hdrs = [
+        "absolute_encoder.h",
+        "hall_effect_and_position.h",
+        "pot_and_absolute_encoder.h",
+        "pot_and_index.h",
+        "pulse_index.h",
         "zeroing.h",
     ],
     deps = [
@@ -76,11 +85,16 @@ cc_library(
 cc_test(
     name = "zeroing_test",
     srcs = [
-        "zeroing_test.cc",
+        "absolute_encoder_test.cc",
+        "hall_effect_and_position_test.cc",
+        "pot_and_absolute_encoder_test.cc",
+        "pot_and_index_test.cc",
+        "pulse_index_test.cc",
+        "relative_encoder_test.cc",
+        "zeroing_test.h",
     ],
     deps = [
         ":zeroing",
-        "//aos:die",
         "//aos/testing:googletest",
         "//aos/testing:test_shm",
         "//frc971/control_loops:control_loops_fbs",
