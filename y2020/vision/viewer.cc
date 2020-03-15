@@ -6,6 +6,7 @@
 
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
+#include "aos/time/time.h"
 #include "y2020/vision/sift/sift_generated.h"
 #include "y2020/vision/vision_generated.h"
 
@@ -31,28 +32,32 @@ void ViewerMain() {
 
   event_loop.MakeWatcher(
       "/camera", [&target_data_map](const CameraImage &image) {
-        cv::Mat image_mat(image.rows(), image.cols(), CV_8U);
-        CHECK(image_mat.isContinuous());
-        const int number_pixels = image.rows() * image.cols();
-        for (int i = 0; i < number_pixels; ++i) {
-          reinterpret_cast<uint8_t *>(image_mat.data)[i] =
-              image.data()->data()[i * 2];
-        }
+        // Create color image:
+        cv::Mat image_color_mat(cv::Size(image.cols(), image.rows()), CV_8UC2,
+                                (void *)image.data()->data());
+        cv::Mat rgb_image(cv::Size(image.cols(), image.rows()), CV_8UC3);
+        cv::cvtColor(image_color_mat, rgb_image, CV_YUV2BGR_YUYV);
 
-        int64_t timestamp = image.monotonic_timestamp_ns();
+        unsigned long timestamp = image.monotonic_timestamp_ns();
         auto target_it = target_data_map.find(timestamp);
         if (target_it != target_data_map.end()) {
           float x = target_it->second.x;
           float y = target_it->second.y;
           float radius = target_it->second.radius;
-          cv::circle(image_mat, cv::Point2f(x, y), radius, 255, 5);
-        } else {
-          LOG(INFO) << "Couldn't find timestamp match for timestamp: "
-                    << timestamp;
+          cv::circle(rgb_image, cv::Point2f(x, y), radius,
+                     cv::Scalar(0, 255, 0), 5);
         }
-        cv::imshow("Display", image_mat);
+
+        cv::imshow("Display", rgb_image);
         int keystroke = cv::waitKey(1);
-        if ((keystroke & 0xFF) == static_cast<int>('q')) {
+        if ((keystroke & 0xFF) == static_cast<int>('c')) {
+          // Convert again, to get clean image
+          cv::cvtColor(image_color_mat, rgb_image, CV_YUV2BGR_YUYV);
+          std::stringstream name;
+          name << "capture-" << aos::realtime_clock::now() << ".png";
+          cv::imwrite(name.str(), rgb_image);
+          LOG(INFO) << "Saved image file: " << name.str();
+        } else if ((keystroke & 0xFF) == static_cast<int>('q')) {
           exit(0);
         }
       });
