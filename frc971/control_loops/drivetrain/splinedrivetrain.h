@@ -135,6 +135,7 @@ class SplineDrivetrain {
 
   // TODO(alex): pull this out of dt_config.
   const ::Eigen::DiagonalMatrix<double, 5> Q =
+      0.2 *
       (::Eigen::DiagonalMatrix<double, 5>().diagonal()
            << 1.0 / ::std::pow(0.12, 2),
        1.0 / ::std::pow(0.12, 2), 1.0 / ::std::pow(0.1, 2),

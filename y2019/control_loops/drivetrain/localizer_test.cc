@@ -599,7 +599,7 @@ INSTANTIATE_TEST_CASE_P(
             /*noisify=*/true,
             /*disturb=*/false,
             /*estimate_tolerance=*/0.4,
-            /*goal_tolerance=*/0.4,
+            /*goal_tolerance=*/0.8,
         }),
         // Repeats perfect scenario, but add initial estimator error.
         LocalizerTestParams({
@@ -629,7 +629,7 @@ INSTANTIATE_TEST_CASE_P(
             /*noisify=*/false,
             /*disturb=*/false,
             /*estimate_tolerance=*/1e-2,
-            /*goal_tolerance=*/2e-2,
+            /*goal_tolerance=*/3e-2,
         }),
         // Add disturbances while we are driving:
         LocalizerTestParams({
