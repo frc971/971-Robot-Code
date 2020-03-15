@@ -4,8 +4,13 @@
 #include <net/if.h>
 #include <netdb.h>
 #include <netinet/sctp.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <string_view>
+
+#include "aos/util/file.h"
 
 DEFINE_string(interface, "", "ipv6 interface");
 
@@ -193,8 +198,6 @@ aos::unique_c_ptr<Message> ReadSctpMessage(int fd, int max_size) {
   PCHECK((size = recvmsg(fd, &inmessage, 0)) > 0);
 
   result->size = size;
-  CHECK_LE(size, max_size) << ": Message overflowed buffer.";
-
   if ((MSG_NOTIFICATION & inmessage.msg_flags)) {
     result->message_type = Message::kNotification;
   } else {
@@ -214,6 +217,9 @@ aos::unique_c_ptr<Message> ReadSctpMessage(int fd, int max_size) {
     }
   }
 
+  CHECK_LE(size, max_size) << ": Message overflowed buffer on stream "
+                           << result->header.rcvinfo.rcv_sid << ".";
+
   return result;
 }
 
@@ -224,6 +230,30 @@ void Message::LogRcvInfo() const {
             << header.rcvinfo.rcv_flags << std::dec
             << " ppid=" << header.rcvinfo.rcv_ppid
             << " cumtsn=" << header.rcvinfo.rcv_cumtsn << ")";
+}
+
+size_t ReadRMemMax() {
+  struct stat current_stat;
+  if (stat("/proc/sys/net/core/rmem_max", &current_stat) != -1) {
+    return static_cast<size_t>(
+        std::stoi(util::ReadFileToStringOrDie("/proc/sys/net/core/rmem_max")));
+  } else {
+    LOG(WARNING) << "/proc/sys/net/core/rmem_max doesn't exist.  Are you in a "
+                    "container?";
+    return 212992;
+  }
+}
+
+size_t ReadWMemMax() {
+  struct stat current_stat;
+  if (stat("/proc/sys/net/core/wmem_max", &current_stat) != -1) {
+    return static_cast<size_t>(
+        std::stoi(util::ReadFileToStringOrDie("/proc/sys/net/core/wmem_max")));
+  } else {
+    LOG(WARNING) << "/proc/sys/net/core/wmem_max doesn't exist.  Are you in a "
+                    "container?";
+    return 212992;
+  }
 }
 
 }  // namespace message_bridge

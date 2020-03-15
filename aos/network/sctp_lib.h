@@ -72,6 +72,11 @@ void LogSctpStatus(int fd, sctp_assoc_t assoc_id);
 // Read and allocate a message.
 aos::unique_c_ptr<Message> ReadSctpMessage(int fd, int max_size);
 
+// Returns the max network buffer available for reading for a socket.
+size_t ReadRMemMax();
+// Returns the max network buffer available for writing for a socket.
+size_t ReadWMemMax();
+
 }  // namespace message_bridge
 }  // namespace aos
 

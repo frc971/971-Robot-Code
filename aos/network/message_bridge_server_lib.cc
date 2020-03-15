@@ -82,7 +82,8 @@ void ChannelState::SendData(SctpServer *server, const Context &context) {
   flatbuffers::FlatBufferBuilder fbb(channel_->max_size() + 100);
   fbb.ForceDefaults(true);
   VLOG(1) << "Found " << peers_.size() << " peers on channel "
-          << channel_->name()->string_view() << " size " << context.size;
+          << channel_->name()->string_view() << " "
+          << channel_->type()->string_view() << " size " << context.size;
 
   // TODO(austin): Use an iovec to build it up in 3 parts to avoid the copy?
   // Only useful when not logging.
@@ -164,7 +165,12 @@ void ChannelState::HandleDelivery(sctp_assoc_t /*rcv_assoc_id*/,
 void ChannelState::HandleFailure(
     SizePrefixedFlatbufferDetachedBuffer<logger::MessageHeader> &&message) {
   // TODO(austin): Put it in the log queue.
-  LOG(INFO) << "Failed to send " << FlatbufferToJson(message);
+  if (VLOG_IS_ON(2)) {
+    LOG(INFO) << "Failed to send " << FlatbufferToJson(message);
+  } else if (VLOG_IS_ON(1)) {
+    message.mutable_message()->clear_data();
+    LOG(INFO) << "Failed to send " << FlatbufferToJson(message);
+  }
 
   // Note: this may be really out of order when we avoid the queue...  We
   // have the ones we know didn't make it immediately, and the ones which
@@ -375,7 +381,7 @@ void MessageBridgeServer::MessageReceived() {
       } break;
     }
 
-    if (VLOG_IS_ON(1)) {
+    if (VLOG_IS_ON(2)) {
       PrintNotification(message.get());
     }
   } else if (message->message_type == Message::kMessage) {

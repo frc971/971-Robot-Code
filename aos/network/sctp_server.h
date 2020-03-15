@@ -51,7 +51,12 @@ class SctpServer {
     // Have the kernel give us a factor of 10 more.  This lets us have more than
     // one full sized packet in flight.
     max_size = max_size * 10;
+
+    CHECK_GE(ReadRMemMax(), max_size);
+    CHECK_GE(ReadWMemMax(), max_size);
     PCHECK(setsockopt(fd_, SOL_SOCKET, SO_RCVBUF, &max_size,
+                      sizeof(max_size)) == 0);
+    PCHECK(setsockopt(fd_, SOL_SOCKET, SO_SNDBUF, &max_size,
                       sizeof(max_size)) == 0);
   }
 

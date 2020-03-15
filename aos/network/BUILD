@@ -89,6 +89,7 @@ cc_library(
     ],
     deps = [
         "//aos:unique_malloc_ptr",
+        "//aos/util:file",
         "//third_party/lksctp-tools:sctp",
         "@com_github_google_glog//:glog",
     ],

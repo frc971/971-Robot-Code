@@ -75,6 +75,7 @@ fi
 
 sudo cp target_configure.sh "${PARTITION}/tmp/"
 sudo cp dhcpcd.conf "${PARTITION}/tmp/dhcpcd.conf"
+sudo cp sctp.conf "${PARTITION}/etc/sysctl.d/sctp.conf"
 sudo cp change_hostname.sh "${PARTITION}/tmp/change_hostname.sh"
 sudo cp frc971.service "${PARTITION}/etc/systemd/system/frc971.service"
 

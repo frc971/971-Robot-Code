@@ -151,6 +151,23 @@ SctpClientConnection::SctpClientConnection(
   event_loop_->OnRun(
       [this]() { connect_timer_->Setup(event_loop_->monotonic_now()); });
 
+  int max_size = connect_message_.size();
+
+  for (const Channel *channel : *event_loop_->configuration()->channels()) {
+    CHECK(channel->has_source_node());
+
+    if (configuration::ChannelIsSendableOnNode(channel, remote_node_) &&
+        configuration::ChannelIsReadableOnNode(channel, event_loop_->node())) {
+      LOG(INFO) << "Reeiving channel "
+                << configuration::CleanedChannelToString(channel);
+      max_size = std::max(channel->max_size(), max_size);
+    }
+  }
+
+  // Buffer up the max size a bit so everything fits nicely.
+  LOG(INFO) << "Max message size for all servers is " << max_size;
+  client_.SetMaxSize(max_size + 100);
+
   event_loop_->epoll()->OnReadable(client_.fd(),
                                    [this]() { MessageReceived(); });
 }
@@ -226,6 +243,10 @@ void SctpClientConnection::NodeDisconnected() {
 void SctpClientConnection::HandleData(const Message *message) {
   const logger::MessageHeader *message_header =
       flatbuffers::GetSizePrefixedRoot<logger::MessageHeader>(message->data());
+
+  VLOG(1) << "Got a message of size " << message->size;
+  CHECK_EQ(message->size, flatbuffers::GetPrefixedSize(message->data()) +
+                              sizeof(flatbuffers::uoffset_t));
 
   connection_->mutate_received_packets(connection_->received_packets() + 1);
 
