@@ -11,6 +11,7 @@
 #include "y2020/vision/vision_generated.h"
 
 DEFINE_string(config, "config.json", "Path to the config file to use.");
+DEFINE_string(channel, "/camera", "Channel name for the image.");
 
 namespace frc971 {
 namespace vision {
@@ -31,7 +32,7 @@ void ViewerMain() {
   aos::ShmEventLoop event_loop(&config.message());
 
   event_loop.MakeWatcher(
-      "/camera", [&target_data_map](const CameraImage &image) {
+      FLAGS_channel, [&target_data_map](const CameraImage &image) {
         // Create color image:
         cv::Mat image_color_mat(cv::Size(image.cols(), image.rows()), CV_8UC2,
                                 (void *)image.data()->data());
@@ -63,7 +64,7 @@ void ViewerMain() {
       });
 
   event_loop.MakeWatcher(
-      "/camera", [&target_data_map](const sift::ImageMatchResult &match) {
+      FLAGS_channel, [&target_data_map](const sift::ImageMatchResult &match) {
         int64_t timestamp = match.image_monotonic_timestamp_ns();
         if (match.camera_poses() != NULL && match.camera_poses()->size() > 0) {
           LOG(INFO) << "Got match!\n";
