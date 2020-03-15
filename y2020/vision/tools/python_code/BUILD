@@ -67,6 +67,7 @@ py_binary(
     main = "load_sift_training.py",
     srcs_version = "PY2AND3",
     deps = [
+        ":load_sift_training",
         "//external:python-glog",
         "//y2020/vision/sift:sift_fbs_python",
         "@bazel_tools//tools/python/runfiles",

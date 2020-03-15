@@ -2,26 +2,9 @@ import copy
 import math
 import numpy as np
 
-
-class CameraIntrinsics:
-    def __init__(self):
-        self.camera_matrix = []
-        self.dist_coeffs = []
-
-
-class CameraExtrinsics:
-    def __init__(self):
-        self.R = []
-        self.T = []
-
-
-class CameraParameters:
-    def __init__(self):
-        self.camera_int = CameraIntrinsics()
-        self.camera_ext = CameraExtrinsics()
-        self.node_name = ""
-        self.team_number = -1
-
+from y2020.vision.tools.python_code.camera_definition import (CameraIntrinsics,
+                                                              CameraExtrinsics,
+                                                              CameraParameters)
 
 ### CAMERA DEFINITIONS
 
@@ -56,6 +39,6 @@ for team_number in (971, 8971, 9971):
         camera_base = copy.deepcopy(web_cam_params)
         camera_base.node_name = node_name
         camera_base.team_number = team_number
-        camera_base.camera_ext.T = np.asarray(
-            np.float32([i + 1, i + 1, i + 1]))
+        camera_base.camera_ext.T = np.asarray(np.float32([i + 1, i + 1,
+                                                          i + 1]))
         camera_list.append(camera_base)

@@ -9,6 +9,7 @@ import define_training_data as dtd
 
 glog.setLevel("WARN")
 
+
 class CameraIntrinsics:
     def __init__(self):
         self.camera_matrix = []
@@ -27,6 +28,7 @@ class CameraParameters:
     def __init__(self):
         self.camera_int = CameraIntrinsics()
         self.camera_ext = CameraExtrinsics()
+        self.turret_ext = None
         self.node_name = ""
         self.team_number = -1
 
@@ -60,14 +62,22 @@ def load_camera_definitions():
         [[np.cos(camera_pitch), 0.0, -np.sin(camera_pitch)], [0.0, 1.0, 0.0],
          [np.sin(camera_pitch), 0.0,
           np.cos(camera_pitch)]])
-    web_cam_ext.R = np.array(camera_pitch_matrix * np.matrix(
-        [[0., 0., 1.], [-1, 0, 0], [0, -1., 0]]))
-    # Tape measure calibration-- need to pull from CAD or automate this
+    web_cam_ext.R = np.array(
+        camera_pitch_matrix *
+        np.matrix([[0., 0., 1.], [-1, 0, 0], [0, -1., 0]]))
+    #web_cam_ext.T = np.array([0., 0., 0.])
     web_cam_ext.T = np.array([2.0 * 0.0254, -6.0 * 0.0254, 41.0 * 0.0254])
+    fixed_ext = CameraExtrinsics()
+    fixed_ext.R = np.array([[-1.0, 0.0, 0.0], [0.0, -1.0, 0.0],
+                            [0.0, 0.0, 1.0]])
+    fixed_ext.T = np.array([0.0, 0.0, 0.0])
 
     web_cam_params = CameraParameters()
     web_cam_params.camera_int = web_cam_int
-    web_cam_params.camera_ext = web_cam_ext
+    # Fixed extrinsics are for the turret, which is centered on the robot and
+    # pointed straight backwards.
+    web_cam_params.camera_ext = fixed_ext
+    web_cam_params.turret_ext = web_cam_ext
 
     camera_list = []
 
@@ -98,8 +108,8 @@ def load_camera_definitions():
             # Look for match, and replace camera_intrinsics
             for camera_calib in camera_list:
                 if camera_calib.node_name == node_name and camera_calib.team_number == team_number:
-                    glog.info("Found calib for %s, team #%d" % (node_name,
-                                                                team_number))
+                    glog.info("Found calib for %s, team #%d" %
+                              (node_name, team_number))
                     camera_calib.camera_int.camera_matrix = copy.copy(
                         camera_matrix)
                     camera_calib.camera_int.dist_coeffs = copy.copy(
