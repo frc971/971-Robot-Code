@@ -24,6 +24,8 @@ extern double FLAGS_tcmalloc_release_rate __attribute__((weak));
 using FLAG__namespace_do_not_use_directly_use_DECLARE_double_instead::
     FLAGS_tcmalloc_release_rate;
 
+DEFINE_bool(coredump, false, "If true, write core dumps on failure.");
+
 namespace aos {
 namespace logging {
 namespace internal {
@@ -39,7 +41,9 @@ namespace {
 // non-realtime initialization sequences. May be called twice.
 void InitStart() {
   ::aos::logging::Init();
-  WriteCoreDumps();
+  if (FLAGS_coredump) {
+    WriteCoreDumps();
+  }
   google::InstallFailureSignalHandler();
 }
 
