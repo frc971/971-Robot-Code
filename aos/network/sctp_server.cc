@@ -10,6 +10,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <memory>
+#include <thread>
 
 #include "aos/network/sctp_lib.h"
 #include "aos/unique_malloc_ptr.h"
@@ -19,51 +20,60 @@ namespace aos {
 namespace message_bridge {
 
 SctpServer::SctpServer(std::string_view local_host, int local_port)
-    : sockaddr_local_(ResolveSocket(local_host, local_port)),
-      fd_(socket(sockaddr_local_.ss_family, SOCK_SEQPACKET, IPPROTO_SCTP)) {
-  LOG(INFO) << "socket(" << Family(sockaddr_local_)
-            << ", SOCK_SEQPACKET, IPPROTOSCTP) = " << fd_;
-  PCHECK(fd_ != -1);
+    : sockaddr_local_(ResolveSocket(local_host, local_port)) {
+  while (true) {
+    fd_ = socket(sockaddr_local_.ss_family, SOCK_SEQPACKET, IPPROTO_SCTP);
+    LOG(INFO) << "socket(" << Family(sockaddr_local_)
+              << ", SOCK_SEQPACKET, IPPROTOSCTP) = " << fd_;
+    PCHECK(fd_ != -1);
 
-  {
-    struct sctp_event_subscribe subscribe;
-    memset(&subscribe, 0, sizeof(subscribe));
-    subscribe.sctp_data_io_event = 1;
-    subscribe.sctp_association_event = 1;
-    subscribe.sctp_send_failure_event = 1;
-    subscribe.sctp_partial_delivery_event = 1;
+    {
+      struct sctp_event_subscribe subscribe;
+      memset(&subscribe, 0, sizeof(subscribe));
+      subscribe.sctp_data_io_event = 1;
+      subscribe.sctp_association_event = 1;
+      subscribe.sctp_send_failure_event = 1;
+      subscribe.sctp_partial_delivery_event = 1;
 
-    PCHECK(setsockopt(fd_, SOL_SCTP, SCTP_EVENTS, (char *)&subscribe,
-                      sizeof(subscribe)) == 0);
+      PCHECK(setsockopt(fd_, SOL_SCTP, SCTP_EVENTS, (char *)&subscribe,
+                        sizeof(subscribe)) == 0);
+    }
+    {
+      // Enable recvinfo when a packet arrives.
+      int on = 1;
+      PCHECK(setsockopt(fd_, IPPROTO_SCTP, SCTP_RECVRCVINFO, &on,
+                        sizeof(int)) == 0);
+    }
+    {
+      // Allow one packet on the wire to have multiple source packets.
+      int full_interleaving = 2;
+      PCHECK(setsockopt(fd_, IPPROTO_SCTP, SCTP_FRAGMENT_INTERLEAVE,
+                        &full_interleaving, sizeof(full_interleaving)) == 0);
+    }
+    {
+      // Turn off the NAGLE algorithm.
+      int on = 1;
+      PCHECK(setsockopt(fd_, IPPROTO_SCTP, SCTP_NODELAY, &on, sizeof(int)) ==
+             0);
+    }
+
+    // And go!
+    if (bind(fd_, (struct sockaddr *)&sockaddr_local_,
+             sockaddr_local_.ss_family == AF_INET6
+                 ? sizeof(struct sockaddr_in6)
+                 : sizeof(struct sockaddr_in)) != 0) {
+      PLOG(ERROR) << "Failed to bind, retrying";
+      close(fd_);
+      std::this_thread::sleep_for(std::chrono::seconds(5));
+      continue;
+    }
+    LOG(INFO) << "bind(" << fd_ << ", " << Address(sockaddr_local_) << ")";
+
+    PCHECK(listen(fd_, 100) == 0);
+
+    SetMaxSize(1000);
+    break;
   }
-  {
-    // Enable recvinfo when a packet arrives.
-    int on = 1;
-    PCHECK(setsockopt(fd_, IPPROTO_SCTP, SCTP_RECVRCVINFO, &on, sizeof(int)) ==
-           0);
-  }
-  {
-    // Allow one packet on the wire to have multiple source packets.
-    int full_interleaving = 2;
-    PCHECK(setsockopt(fd_, IPPROTO_SCTP, SCTP_FRAGMENT_INTERLEAVE,
-                      &full_interleaving, sizeof(full_interleaving)) == 0);
-  }
-  {
-    // Turn off the NAGLE algorithm.
-    int on = 1;
-    PCHECK(setsockopt(fd_, IPPROTO_SCTP, SCTP_NODELAY, &on, sizeof(int)) == 0);
-  }
-
-  // And go!
-  PCHECK(bind(fd_, (struct sockaddr *)&sockaddr_local_,
-              sockaddr_local_.ss_family == AF_INET6
-                  ? sizeof(struct sockaddr_in6)
-                  : sizeof(struct sockaddr_in)) == 0);
-  LOG(INFO) << "bind(" << fd_ << ", " << Address(sockaddr_local_) << ")";
-
-  PCHECK(listen(fd_, 100) == 0);
-
-  SetMaxSize(1000);
 }
 
 aos::unique_c_ptr<Message> SctpServer::Read() {
