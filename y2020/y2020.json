@@ -7,7 +7,7 @@
         "type": "aos.RobotState"
       },
       "rename": {
-        "name": "/aos/roborio"
+        "name": "/roborio/aos"
       }
     }
   ],
@@ -15,6 +15,8 @@
     "y2020_roborio.json",
     "y2020_pi1.json",
     "y2020_pi2.json",
-    "y2020_pi3.json"
+    "y2020_pi3.json",
+    "y2020_pi4.json",
+    "y2020_laptop.json"
   ]
 }

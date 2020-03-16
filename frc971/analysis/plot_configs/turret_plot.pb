@@ -1,5 +1,5 @@
 channel {
-  name: "/aos/roborio"
+  name: "/roborio/aos"
   type: "aos.JoystickState"
   alias: "JoystickState"
 }

@@ -2,13 +2,13 @@
   "channels":
   [
     {
-      "name": "/aos/roborio",
+      "name": "/roborio/aos",
       "type": "aos.JoystickState",
       "source_node": "roborio",
       "frequency": 75
     },
     {
-      "name": "/aos/roborio",
+      "name": "/roborio/aos",
       "type": "aos.RobotState",
       "source_node": "roborio",
       "frequency": 200,
@@ -30,11 +30,17 @@
           "priority": 2,
           "timestamp_logger": "LOCAL_LOGGER",
           "time_to_live": 10000000
+        },
+        {
+          "name": "pi4",
+          "priority": 2,
+          "timestamp_logger": "LOCAL_LOGGER",
+          "time_to_live": 10000000
         }
       ]
     },
     {
-      "name": "/aos/roborio",
+      "name": "/roborio/aos",
       "type": "aos.timing.Report",
       "source_node": "roborio",
       "frequency": 50,
@@ -42,33 +48,33 @@
       "max_size": 2048
     },
     {
-      "name": "/aos/roborio",
+      "name": "/roborio/aos",
       "type": "aos.logging.LogMessageFbs",
       "source_node": "roborio",
       "frequency": 400,
       "num_senders": 20
     },
     {
-      "name": "/aos/roborio",
+      "name": "/roborio/aos",
       "type": "aos.message_bridge.ServerStatistics",
       "source_node": "roborio",
       "frequency": 2,
       "num_senders": 2
     },
     {
-      "name": "/aos/roborio",
+      "name": "/roborio/aos",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "roborio",
       "frequency": 10,
       "num_senders": 2
     },
     {
-      "name": "/aos/roborio",
+      "name": "/roborio/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "roborio",
       "frequency": 10,
       "num_senders": 2,
-      "max_size": 200,
+      "max_size": 300,
       "destination_nodes": [
         {
           "name": "pi1",
@@ -82,6 +88,11 @@
         },
         {
           "name": "pi3",
+          "priority": 1,
+          "time_to_live": 5000000
+        },
+        {
+          "name": "pi4",
           "priority": 1,
           "time_to_live": 5000000
         }
@@ -215,13 +226,13 @@
       "frequency": 200
     },
     {
-      "name": "/aos/roborio",
+      "name": "/roborio/aos",
       "type": "frc971.PDPValues",
       "source_node": "roborio",
       "frequency": 50
     },
     {
-      "name": "/aos/roborio",
+      "name": "/roborio/aos",
       "type": "frc971.wpilib.PneumaticsToLog",
       "source_node": "roborio",
       "frequency": 50
@@ -238,11 +249,11 @@
   "maps": [
     {
       "match": {
-        "name": "/aos",
+        "name": "/aos*",
         "source_node": "roborio"
       },
       "rename": {
-        "name": "/aos/roborio"
+        "name": "/roborio/aos"
       }
     }
   ],
@@ -266,6 +277,9 @@
     },
     {
       "name": "pi3"
+    },
+    {
+      "name": "pi4"
     }
   ]
 }

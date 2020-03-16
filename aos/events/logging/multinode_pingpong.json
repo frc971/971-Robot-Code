@@ -1,7 +1,7 @@
 {
   "channels": [
     {
-      "name": "/aos/pi1",
+      "name": "/pi1/aos",
       "type": "aos.logging.LogMessageFbs",
       "source_node": "pi1",
       "frequency": 200,
@@ -9,7 +9,7 @@
       "max_size": 2048
     },
     {
-      "name": "/aos/pi2",
+      "name": "/pi2/aos",
       "type": "aos.logging.LogMessageFbs",
       "source_node": "pi2",
       "frequency": 200,
@@ -18,7 +18,7 @@
     },
     /* Logged on pi1 locally */
     {
-      "name": "/aos/pi1",
+      "name": "/pi1/aos",
       "type": "aos.timing.Report",
       "source_node": "pi1",
       "frequency": 50,
@@ -26,7 +26,7 @@
       "max_size": 2048
     },
     {
-      "name": "/aos/pi2",
+      "name": "/pi2/aos",
       "type": "aos.timing.Report",
       "source_node": "pi2",
       "frequency": 50,
@@ -73,42 +73,20 @@
   "maps": [
    {
       "match": {
-        "name": "/aos",
-        "type": "aos.logging.LogMessageFbs",
+        "name": "/aos*",
         "source_node": "pi1"
       },
       "rename": {
-        "name": "/aos/pi1"
+        "name": "/pi1/aos"
       }
     },
     {
       "match": {
-        "name": "/aos",
-        "type": "aos.logging.LogMessageFbs",
+        "name": "/aos*",
         "source_node": "pi2"
       },
       "rename": {
-        "name": "/aos/pi2"
-      }
-    },
-    {
-      "match": {
-        "name": "/aos",
-        "type": "aos.timing.Report",
-        "source_node": "pi1"
-      },
-      "rename": {
-        "name": "/aos/pi1"
-      }
-    },
-    {
-      "match": {
-        "name": "/aos",
-        "type": "aos.timing.Report",
-        "source_node": "pi2"
-      },
-      "rename": {
-        "name": "/aos/pi2"
+        "name": "/pi2/aos"
       }
     }
   ],

@@ -785,7 +785,8 @@ bool ChannelIsSendableOnNode(const Channel *channel, const Node *node) {
   if (node == nullptr) {
     return true;
   }
-  return (channel->source_node()->string_view() == node->name()->string_view());
+  return (CHECK_NOTNULL(channel)->source_node()->string_view() ==
+          node->name()->string_view());
 }
 
 bool ChannelIsReadableOnNode(const Channel *channel, const Node *node) {

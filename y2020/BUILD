@@ -147,9 +147,11 @@ aos_config(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        ":config_laptop",
         ":config_pi1",
         ":config_pi2",
         ":config_pi3",
+        ":config_pi4",
         ":config_roborio",
     ],
 )
@@ -169,6 +171,7 @@ aos_config(
         visibility = ["//visibility:public"],
         deps = [
             "//aos/events:config",
+            "//aos/robot_state:config",
             "//frc971/control_loops/drivetrain:config",
         ],
     )
@@ -176,6 +179,8 @@ aos_config(
         "pi1",
         "pi2",
         "pi3",
+        "pi4",
+        "laptop",
     ]
 ]
 

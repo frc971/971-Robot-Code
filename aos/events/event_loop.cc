@@ -399,6 +399,9 @@ void EventLoop::MaybeScheduleTimingReports() {
     const Channel *channel = configuration::GetChannel(
         configuration(), "/aos", timing::Report::GetFullyQualifiedName(),
         name(), node());
+    CHECK(channel != nullptr) << ": Failed to look up {\"name\": \"/aos\", "
+                                 "\"type\": \"aos.timing.Report\"} on node "
+                              << FlatbufferToJson(node());
 
     // Since we are using a RawSender, validity isn't checked.  So check it
     // ourselves.

@@ -97,7 +97,7 @@ TEST(MessageBridgeTest, PingPong) {
   int ping_count = 0;
   int pi1_server_statistics_count = 0;
   ping_event_loop.MakeWatcher(
-      "/aos/pi1",
+      "/pi1/aos",
       [&ping_count, &pi2_client_event_loop, &ping_sender,
        &pi1_server_statistics_count](const ServerStatistics &stats) {
         LOG(INFO) << FlatbufferToJson(&stats);
@@ -139,7 +139,7 @@ TEST(MessageBridgeTest, PingPong) {
   // Confirm both client and server statistics messages have decent offsets in
   // them.
   int pi2_server_statistics_count = 0;
-  pong_event_loop.MakeWatcher("/aos/pi2", [&pi2_server_statistics_count](
+  pong_event_loop.MakeWatcher("/pi2/aos", [&pi2_server_statistics_count](
                                               const ServerStatistics &stats) {
     LOG(INFO) << FlatbufferToJson(&stats);
     for (const ServerConnection *connection : *stats.connections()) {
@@ -157,7 +157,7 @@ TEST(MessageBridgeTest, PingPong) {
 
   int pi1_client_statistics_count = 0;
   ping_event_loop.MakeWatcher(
-      "/aos/pi1", [&pi1_client_statistics_count](const ClientStatistics &stats) {
+      "/pi1/aos", [&pi1_client_statistics_count](const ClientStatistics &stats) {
         LOG(INFO) << FlatbufferToJson(&stats);
 
         for (const ClientConnection *connection : *stats.connections()) {
@@ -176,7 +176,7 @@ TEST(MessageBridgeTest, PingPong) {
       });
 
   int pi2_client_statistics_count = 0;
-  pong_event_loop.MakeWatcher("/aos/pi2", [&pi2_client_statistics_count](
+  pong_event_loop.MakeWatcher("/pi2/aos", [&pi2_client_statistics_count](
                                               const ClientStatistics &stats) {
     LOG(INFO) << FlatbufferToJson(&stats);
 
@@ -191,11 +191,11 @@ TEST(MessageBridgeTest, PingPong) {
     }
   });
 
-  ping_event_loop.MakeWatcher("/aos/pi1", [](const Timestamp &timestamp) {
+  ping_event_loop.MakeWatcher("/pi1/aos", [](const Timestamp &timestamp) {
     EXPECT_TRUE(timestamp.has_offsets());
     LOG(INFO) << FlatbufferToJson(&timestamp);
   });
-  pong_event_loop.MakeWatcher("/aos/pi2", [](const Timestamp &timestamp) {
+  pong_event_loop.MakeWatcher("/pi2/aos", [](const Timestamp &timestamp) {
     EXPECT_TRUE(timestamp.has_offsets());
     LOG(INFO) << FlatbufferToJson(&timestamp);
   });

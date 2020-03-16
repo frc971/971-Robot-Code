@@ -2,38 +2,38 @@
   "channels":
   [
     {
-      "name": "/pi1/aos",
+      "name": "/pi4/aos",
       "type": "aos.timing.Report",
-      "source_node": "pi1",
+      "source_node": "pi4",
       "frequency": 50,
       "num_senders": 20,
       "max_size": 2048
     },
     {
-      "name": "/pi1/aos",
+      "name": "/pi4/aos",
       "type": "aos.logging.LogMessageFbs",
-      "source_node": "pi1",
+      "source_node": "pi4",
       "frequency": 200,
       "num_senders": 20
     },
     {
-      "name": "/pi1/aos",
+      "name": "/pi4/aos",
       "type": "aos.message_bridge.ServerStatistics",
-      "source_node": "pi1",
+      "source_node": "pi4",
       "frequency": 2,
       "num_senders": 2
     },
     {
-      "name": "/pi1/aos",
+      "name": "/pi4/aos",
       "type": "aos.message_bridge.ClientStatistics",
-      "source_node": "pi1",
+      "source_node": "pi4",
       "frequency": 10,
       "num_senders": 2
     },
     {
-      "name": "/pi1/aos",
+      "name": "/pi4/aos",
       "type": "aos.message_bridge.Timestamp",
-      "source_node": "pi1",
+      "source_node": "pi4",
       "frequency": 10,
       "num_senders": 2,
       "max_size": 200,
@@ -46,17 +46,17 @@
       ]
     },
     {
-      "name": "/pi1/camera",
+      "name": "/pi4/camera",
       "type": "frc971.vision.CameraImage",
-      "source_node": "pi1",
+      "source_node": "pi4",
       "frequency": 25,
       "max_size": 620000,
       "num_senders": 18
     },
     {
-      "name": "/pi1/camera",
+      "name": "/pi4/camera",
       "type": "frc971.vision.sift.ImageMatchResult",
-      "source_node": "pi1",
+      "source_node": "pi4",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": ["roborio"],
       "frequency": 25,
@@ -70,16 +70,16 @@
       ]
     },
     {
-      "name": "/pi1/camera/detailed",
+      "name": "/pi4/camera/detailed",
       "type": "frc971.vision.sift.ImageMatchResult",
-      "source_node": "pi1",
+      "source_node": "pi4",
       "frequency": 25,
       "max_size": 1000000
     },
     {
-      "name": "/pi1/camera",
+      "name": "/pi4/camera",
       "type": "frc971.vision.sift.TrainingData",
-      "source_node": "pi1",
+      "source_node": "pi4",
       "frequency": 2,
       "max_size": 2000000
     }
@@ -88,31 +88,31 @@
     {
       "match": {
         "name": "/aos*",
-        "source_node": "pi1"
+        "source_node": "pi4"
       },
       "rename": {
-        "name": "/pi1/aos"
+        "name": "/pi4/aos"
       }
     },
     {
       "match": {
         "name": "/camera*",
-        "source_node": "pi1"
+        "source_node": "pi4"
       },
       "rename": {
-        "name": "/pi1/camera"
+        "name": "/pi4/camera"
       }
     }
   ],
   "nodes": [
     {
-      "name": "pi1",
-      "hostname": "pi1",
+      "name": "pi4",
+      "hostname": "pi4",
       "hostnames": [
-        "pi-971-1",
-        "pi-7971-1",
-        "pi-8971-1",
-        "pi-9971-1"
+        "pi-971-4",
+        "pi-7971-4",
+        "pi-8971-4",
+        "pi-9971-4"
       ],
       "port": 9971
     },

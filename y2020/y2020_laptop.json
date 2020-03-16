@@ -1,0 +1,298 @@
+{
+  "channels":
+  [
+    {
+      "name": "/roborio/aos",
+      "type": "aos.RobotState",
+      "source_node": "roborio",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["laptop"],
+      "destination_nodes": [
+        {
+          "name": "laptop",
+          "priority": 2,
+          "timestamp_logger": "LOCAL_LOGGER",
+          "time_to_live": 10000000
+        }
+      ]
+    },
+    {
+      "name": "/roborio/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "roborio",
+      "destination_nodes": [
+        {
+          "name": "laptop",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.IMUValuesBatch",
+      "source_node": "roborio",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["laptop"],
+      "destination_nodes": [
+        {
+          "name": "laptop",
+          "priority": 2,
+          "time_to_live": 50000000
+        }
+      ]
+    },
+    {
+      "name": "/pi1/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "pi1",
+      "destination_nodes": [
+        {
+          "name": "laptop",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi2/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "pi2",
+      "destination_nodes": [
+        {
+          "name": "laptop",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi3/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "pi3",
+      "destination_nodes": [
+        {
+          "name": "laptop",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi4/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "pi4",
+      "destination_nodes": [
+        {
+          "name": "laptop",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/laptop/aos",
+      "type": "aos.timing.Report",
+      "source_node": "laptop",
+      "frequency": 50,
+      "num_senders": 20,
+      "max_size": 2048
+    },
+    {
+      "name": "/laptop/aos",
+      "type": "aos.logging.LogMessageFbs",
+      "source_node": "laptop",
+      "frequency": 400,
+      "num_senders": 20
+    },
+    {
+      "name": "/laptop/aos",
+      "type": "aos.message_bridge.ServerStatistics",
+      "source_node": "laptop",
+      "frequency": 2,
+      "num_senders": 2
+    },
+    {
+      "name": "/laptop/aos",
+      "type": "aos.message_bridge.ClientStatistics",
+      "source_node": "laptop",
+      "frequency": 10,
+      "num_senders": 2
+    },
+    {
+      "name": "/laptop/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "laptop",
+      "frequency": 10,
+      "num_senders": 2,
+      "max_size": 300,
+      "destination_nodes": [
+        {
+          "name": "pi1",
+          "priority": 1,
+          "time_to_live": 5000000
+        },
+        {
+          "name": "pi2",
+          "priority": 1,
+          "time_to_live": 5000000
+        },
+        {
+          "name": "pi3",
+          "priority": 1,
+          "time_to_live": 5000000
+        },
+        {
+          "name": "pi4",
+          "priority": 1,
+          "time_to_live": 5000000
+        },
+        {
+          "name": "roborio",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi1/camera",
+      "type": "frc971.vision.CameraImage",
+      "source_node": "pi1",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["laptop"],
+      "destination_nodes": [
+        {
+          "name": "laptop",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi1/camera",
+      "type": "frc971.vision.sift.ImageMatchResult",
+      "source_node": "pi1",
+      "destination_nodes": [
+        {
+          "name": "laptop",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi2/camera",
+      "type": "frc971.vision.CameraImage",
+      "source_node": "pi2",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["laptop"],
+      "destination_nodes": [
+        {
+          "name": "laptop",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi2/camera",
+      "type": "frc971.vision.sift.ImageMatchResult",
+      "source_node": "pi2",
+      "destination_nodes": [
+        {
+          "name": "laptop",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi3/camera",
+      "type": "frc971.vision.CameraImage",
+      "source_node": "pi3",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["laptop"],
+      "destination_nodes": [
+        {
+          "name": "laptop",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi3/camera",
+      "type": "frc971.vision.sift.ImageMatchResult",
+      "source_node": "pi3",
+      "destination_nodes": [
+        {
+          "name": "laptop",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi4/camera",
+      "type": "frc971.vision.CameraImage",
+      "source_node": "pi4",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["laptop"],
+      "destination_nodes": [
+        {
+          "name": "laptop",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi4/camera",
+      "type": "frc971.vision.sift.ImageMatchResult",
+      "source_node": "pi4",
+      "destination_nodes": [
+        {
+          "name": "laptop",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    }
+  ],
+  "maps": [
+    {
+      "match": {
+        "name": "/aos*",
+        "source_node": "laptop"
+      },
+      "rename": {
+        "name": "/laptop/aos"
+      }
+    }
+  ],
+  "nodes": [
+    {
+      "name": "laptop",
+      "hostname": "laptop",
+      "hostnames": [
+        "ASchuh-T480s"
+      ],
+      "port": 9971
+    },
+    {
+      "name": "roborio"
+    },
+    {
+      "name": "pi1"
+    },
+    {
+      "name": "pi2"
+    },
+    {
+      "name": "pi3"
+    },
+    {
+      "name": "pi4"
+    }
+  ]
+}

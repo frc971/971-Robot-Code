@@ -1,7 +1,7 @@
 {
   "channels": [
     {
-      "name": "/aos/pi1",
+      "name": "/pi1/aos",
       "type": "aos.logging.LogMessageFbs",
       "source_node": "pi1",
       "frequency": 200,
@@ -9,7 +9,7 @@
       "max_size": 2048
     },
     {
-      "name": "/aos/pi2",
+      "name": "/pi2/aos",
       "type": "aos.logging.LogMessageFbs",
       "source_node": "pi2",
       "frequency": 200,
@@ -17,7 +17,7 @@
       "max_size": 2048
     },
     {
-      "name": "/aos/pi1",
+      "name": "/pi1/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "pi1",
       "frequency": 10,
@@ -30,7 +30,7 @@
       ]
     },
     {
-      "name": "/aos/pi2",
+      "name": "/pi2/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "pi2",
       "frequency": 10,
@@ -43,45 +43,45 @@
       ]
     },
     {
-      "name": "/aos/pi1_forwarded",
+      "name": "/pi1_forwarded/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "pi2",
       "frequency": 10,
       "max_size": 200
     },
     {
-      "name": "/aos/pi2_forwarded",
+      "name": "/pi2_forwarded/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "pi1",
       "frequency": 10,
       "max_size": 200
     },
     {
-      "name": "/aos/pi1",
+      "name": "/pi1/aos",
       "type": "aos.message_bridge.ServerStatistics",
       "source_node": "pi1",
       "frequency": 2
     },
     {
-      "name": "/aos/pi2",
+      "name": "/pi2/aos",
       "type": "aos.message_bridge.ServerStatistics",
       "source_node": "pi2",
       "frequency": 2
     },
     {
-      "name": "/aos/pi1",
+      "name": "/pi1/aos",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "pi1",
       "frequency": 2
     },
     {
-      "name": "/aos/pi2",
+      "name": "/pi2/aos",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "pi2",
       "frequency": 2
     },
     {
-      "name": "/aos/pi1",
+      "name": "/pi1/aos",
       "type": "aos.timing.Report",
       "source_node": "pi1",
       "frequency": 50,
@@ -89,7 +89,7 @@
       "max_size": 2048
     },
     {
-      "name": "/aos/pi2",
+      "name": "/pi2/aos",
       "type": "aos.timing.Report",
       "source_node": "pi2",
       "frequency": 50,
@@ -137,7 +137,7 @@
         "source_node": "pi1"
       },
       "rename": {
-        "name": "/aos/pi1"
+        "name": "/pi1/aos"
       }
     },
     {
@@ -146,7 +146,7 @@
         "source_node": "pi2"
       },
       "rename": {
-        "name": "/aos/pi2"
+        "name": "/pi2/aos"
       }
     },
     {
@@ -161,20 +161,20 @@
     },
     {
       "match": {
-        "name": "/aos/pi1",
+        "name": "/pi1/aos",
         "source_node": "pi2"
       },
       "rename": {
-        "name": "/aos/pi1_forwarded"
+        "name": "/pi1_forwarded/aos"
       }
     },
     {
       "match": {
-        "name": "/aos/pi2",
+        "name": "/pi2/aos",
         "source_node": "pi1"
       },
       "rename": {
-        "name": "/aos/pi2_forwarded"
+        "name": "/pi2_forwarded/aos"
       }
     }
   ]

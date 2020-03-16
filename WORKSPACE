@@ -656,8 +656,8 @@ http_file(
 http_file(
     name = "drivetrain_replay",
     downloaded_file_path = "spinning_wheels_while_still.bfbs",
-    sha256 = "1daab1f5aca3cfd517fd405a96aecc9e6d7da0fba50db3094e54483f1fbc4553",
-    urls = ["http://www.frc971.org/Build-Dependencies/spinning_wheels_while_still2.bfbs"],
+    sha256 = "d724dbf0acae894b30c9bb62006a2633a7f4c478db48548e76cbec03cbb07f46",
+    urls = ["http://www.frc971.org/Build-Dependencies/spinning_wheels_while_still3.bfbs"],
 )
 
 # OpenCV armhf (for raspberry pi)

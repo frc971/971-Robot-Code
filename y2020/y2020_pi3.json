@@ -2,7 +2,7 @@
   "channels":
   [
     {
-      "name": "/aos/pi3",
+      "name": "/pi3/aos",
       "type": "aos.timing.Report",
       "source_node": "pi3",
       "frequency": 50,
@@ -10,28 +10,28 @@
       "max_size": 2048
     },
     {
-      "name": "/aos/pi3",
+      "name": "/pi3/aos",
       "type": "aos.logging.LogMessageFbs",
       "source_node": "pi3",
       "frequency": 200,
       "num_senders": 20
     },
     {
-      "name": "/aos/pi3",
+      "name": "/pi3/aos",
       "type": "aos.message_bridge.ServerStatistics",
       "source_node": "pi3",
       "frequency": 2,
       "num_senders": 2
     },
     {
-      "name": "/aos/pi3",
+      "name": "/pi3/aos",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "pi3",
       "frequency": 10,
       "num_senders": 2
     },
     {
-      "name": "/aos/pi3",
+      "name": "/pi3/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "pi3",
       "frequency": 10,
@@ -87,29 +87,20 @@
   "maps": [
     {
       "match": {
-        "name": "/aos",
+        "name": "/aos*",
         "source_node": "pi3"
       },
       "rename": {
-        "name": "/aos/pi3"
+        "name": "/pi3/aos"
       }
     },
     {
       "match": {
-        "name": "/camera",
+        "name": "/camera*",
         "source_node": "pi3"
       },
       "rename": {
         "name": "/pi3/camera"
-      }
-    },
-    {
-      "match": {
-        "name": "/camera/detailed",
-        "source_node": "pi3"
-      },
-      "rename": {
-        "name": "/pi3/camera/detailed"
       }
     }
   ],
