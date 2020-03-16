@@ -28,7 +28,12 @@ aos::FlatbufferDetachedBuffer<aos::message_bridge::Connect> MakeConnectMessage(
       for (const Connection *connection : *channel->destination_nodes()) {
         if (connection->name()->string_view() == node_name &&
             channel->source_node()->string_view() == remote_name) {
-          channel_offsets.emplace_back(CopyFlatBuffer<Channel>(channel, &fbb));
+          // Remove the schema to save some space on the wire.
+          aos::FlatbufferDetachedBuffer<Channel> cleaned_channel =
+              CopyFlatBuffer<Channel>(channel);
+          cleaned_channel.mutable_message()->clear_schema();
+          channel_offsets.emplace_back(
+              CopyFlatBuffer<Channel>(&cleaned_channel.message(), &fbb));
         }
       }
     }
