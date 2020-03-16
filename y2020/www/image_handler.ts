@@ -178,9 +178,9 @@ export class ImageHandler {
     if (!this.imageTimestamp || !this.resultTimestamp ||
         this.imageTimestamp.low !== this.resultTimestamp.low ||
         this.imageTimestamp.high !== this.resultTimestamp.high) {
-      console.log('image and result do not match');
-      console.log(this.imageTimestamp.low, this.resultTimestamp.low);
-      console.log(this.imageTimestamp.high, this.resultTimestamp.high);
+    //  console.log('image and result do not match');
+    //  console.log(this.imageTimestamp.low, this.resultTimestamp.low);
+    //  console.log(this.imageTimestamp.high, this.resultTimestamp.high);
       return;
     }
     this.convertImage();
@@ -198,21 +198,22 @@ export class ImageHandler {
         this.drawFeature(feature);
       }
     } else {
+      console.log(this.result.imageMatchesLength(), this.result.cameraPosesLength());
       const imageMatch = this.result.imageMatches(this.selectedIndex - 1);
       for (const i = 0; i < imageMatch.matchesLength(); i++) {
         const featureIndex = imageMatch.matches(i).queryFeature();
         this.drawFeature(this.result.features(featureIndex));
       }
+      // Draw center of target.
+      const cameraPose = this.result.cameraPoses(this.selctedIndex - 1);
+      ctx.strokeStyle = 'red';
+      ctx.beginPath();
+      ctx.arc(
+          cameraPose.queryTargetPointX(), cameraPose.queryTargetPointY(),
+          cameraPose.queryTargetPointRadius(), 0, 2 * Math.PI);
+      console.log(cameraPose.queryTargetPointX(), cameraPose.queryTargetPointY(), cameraPose.queryTargetPointRadius());
+      ctx.stroke();
     }
-
-    // Draw 'center' of target.
-    // TODO(alex) adjust to new location in flatbuffer for these fields
-    //ctx.strokeStyle = 'red';
-    //ctx.beginPath();
-    //ctx.arc(
-    //    this.result.targetPointX(), this.result.targetPointY(), 20, 0,
-    //    2 * Math.PI);
-    //ctx.stroke();
 
     while (this.select.lastChild) {
       this.select.removeChild(this.select.lastChild);
