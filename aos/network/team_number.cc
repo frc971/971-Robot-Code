@@ -120,5 +120,32 @@ uint16_t GetTeamNumber() {
 
 void OverrideTeamNumber(uint16_t team) { override_team = team; }
 
+std::optional<uint16_t> ParsePiNumber(const std::string &hostname) {
+  if (hostname.substr(0, 3) != "pi-") {
+    return std::nullopt;
+  }
+  size_t first_separator = hostname.find('-');
+  if (first_separator == hostname.npos ||
+      first_separator >= hostname.size() - 2) {
+    return std::nullopt;
+  }
+  ++first_separator;
+  const size_t second_separator = hostname.find('-', first_separator);
+  if (second_separator == hostname.npos) {
+    return std::nullopt;
+  }
+  const std::string number_string =
+      hostname.substr(second_separator + 1, hostname.size() - second_separator - 1);
+  if (number_string.size() == 0) {
+    return std::nullopt;
+  }
+
+  int number;
+  if (!util::StringToNumber(number_string, &number)) {
+    return std::nullopt;
+  }
+  return number;
+}
+
 }  // namespace network
 }  // namespace aos

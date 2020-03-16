@@ -6,8 +6,8 @@ namespace aos {
 namespace network {
 namespace testing {
 
-using team_number_internal::ParseRoborioTeamNumber;
 using team_number_internal::ParsePiTeamNumber;
+using team_number_internal::ParseRoborioTeamNumber;
 
 TEST(TeamNumberTest, Parse2015TeamNumber) {
   EXPECT_EQ(971u, *ParseRoborioTeamNumber("roboRIO-971"));
@@ -39,6 +39,14 @@ TEST(TeamNumberTest, ParsePiTeamNumber) {
   EXPECT_FALSE(ParseRoborioTeamNumber("pi-"));
   EXPECT_FALSE(ParseRoborioTeamNumber("pi-971"));
   EXPECT_FALSE(ParseRoborioTeamNumber("pi-971a-1"));
+
+  EXPECT_EQ(1u, *ParsePiNumber("pi-971-1"));
+  EXPECT_EQ(22u, *ParsePiNumber("pi-8971-22"));
+
+  EXPECT_FALSE(ParsePiNumber("pi-8971-"));
+  EXPECT_FALSE(ParsePiNumber("pi"));
+  EXPECT_FALSE(ParsePiNumber("pi-"));
+  EXPECT_FALSE(ParsePiNumber("pi-971"));
 }
 
 }  // namespace testing
