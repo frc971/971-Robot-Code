@@ -97,12 +97,12 @@ void ChannelState::SendData(SctpServer *server, const Context &context) {
   for (Peer &peer : peers_) {
     logged_remotely = logged_remotely || peer.logged_remotely;
 
-    if (peer.sac_assoc_id != 0) {
-      server->Send(std::string_view(
-                       reinterpret_cast<const char *>(fbb.GetBufferPointer()),
-                       fbb.GetSize()),
-                   peer.sac_assoc_id, peer.stream,
-                   peer.connection->time_to_live() / 1000000);
+    if (peer.sac_assoc_id != 0 &&
+        server->Send(std::string_view(
+                         reinterpret_cast<const char *>(fbb.GetBufferPointer()),
+                         fbb.GetSize()),
+                     peer.sac_assoc_id, peer.stream,
+                     peer.connection->time_to_live() / 1000000)) {
       peer.server_connection_statistics->mutate_sent_packets(
           peer.server_connection_statistics->sent_packets() + 1);
       if (peer.logged_remotely) {

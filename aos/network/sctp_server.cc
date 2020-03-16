@@ -80,7 +80,7 @@ aos::unique_c_ptr<Message> SctpServer::Read() {
   return ReadSctpMessage(fd_, max_size_);
 }
 
-void SctpServer::Send(std::string_view data, sctp_assoc_t snd_assoc_id,
+bool SctpServer::Send(std::string_view data, sctp_assoc_t snd_assoc_id,
                       int stream, int timetolive) {
   struct iovec iov;
   iov.iov_base = const_cast<char *>(data.data());
@@ -116,11 +116,14 @@ void SctpServer::Send(std::string_view data, sctp_assoc_t snd_assoc_id,
   // And send.
   const ssize_t size = sendmsg(fd_, &outmsg, MSG_NOSIGNAL | MSG_DONTWAIT);
   if (size == -1) {
-    if (errno != EPIPE) {
-      PCHECK(size == static_cast<ssize_t>(data.size()));
+    if (errno == EPIPE || errno == EAGAIN) {
+      return false;
     }
+    PCHECK(size == static_cast<ssize_t>(data.size()));
+    return false;
   } else {
     CHECK_EQ(static_cast<ssize_t>(data.size()), size);
+    return true;
   }
 }
 

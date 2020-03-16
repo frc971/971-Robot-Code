@@ -31,8 +31,9 @@ class SctpServer {
   // Receives the next packet from the remote.
   aos::unique_c_ptr<Message> Read();
 
-  // Sends a block of data to a client on a stream with a TTL.
-  void Send(std::string_view data, sctp_assoc_t snd_assoc_id, int stream,
+  // Sends a block of data to a client on a stream with a TTL.  Returns true on
+  // success.
+  bool Send(std::string_view data, sctp_assoc_t snd_assoc_id, int stream,
             int timetolive);
 
   int fd() { return fd_; }
