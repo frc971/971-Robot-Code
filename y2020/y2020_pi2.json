@@ -60,7 +60,7 @@
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_node": "roborio",
       "frequency": 25,
-      "max_size": 300000,
+      "max_size": 10000,
       "destination_nodes": [
         {
           "name": "roborio",
