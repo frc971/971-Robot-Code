@@ -26,6 +26,38 @@ Eigen::Matrix<double, 4, 4> FlatbufferToTransformationMatrix(
 // Indices of the pis to use.
 const std::array<std::string, 3> kPisToUse{"pi1", "pi2", "pi3"};
 
+// Calculates the pose implied by the camera target, just based on
+// distance/heading components.
+Eigen::Vector3d CalculateImpliedPose(const Localizer::State &X,
+                                     const Eigen::Matrix4d &H_field_target,
+                                     const Localizer::Pose &pose_robot_target) {
+  // This code overrides the pose sent directly from the camera code and
+  // effectively distills it down to just a distance + heading estimate, on
+  // the presumption that these signals will tend to be much lower noise and
+  // better-conditioned than other portions of the robot pose.
+  // As such, this code assumes that the current estimate of the robot
+  // heading is correct and then, given the heading from the camera to the
+  // target and the distance from the camera to the target, calculates the
+  // position that the robot would have to be at to make the current camera
+  // heading + distance correct. This X/Y implied robot position is then
+  // used as the measurement in the EKF, rather than the X/Y that is
+  // directly returned from the vision processing. This means that
+  // the cameras will not correct any drift in the robot heading estimate
+  // but will compensate for X/Y position in a way that prioritizes keeping
+  // an accurate distance + heading to the goal.
+
+  // Calculate the heading to the robot in the target's coordinate frame.
+  const double implied_heading_from_target = aos::math::NormalizeAngle(
+      pose_robot_target.heading() + M_PI + X(Localizer::StateIdx::kTheta));
+  const double implied_distance = pose_robot_target.xy_norm();
+  const Eigen::Vector4d robot_pose_in_target_frame(
+      implied_distance * std::cos(implied_heading_from_target),
+      implied_distance * std::sin(implied_heading_from_target), 0, 1);
+  const Eigen::Vector4d implied_pose =
+      H_field_target * robot_pose_in_target_frame;
+  return implied_pose.topRows<3>();
+}
+
 }  // namespace
 
 Localizer::Localizer(
@@ -178,42 +210,14 @@ void Localizer::HandleImageMatch(
     // reading.
     const Pose measured_pose(H_field_target *
                              (H_robot_camera * H_camera_target).inverse());
-    Eigen::Matrix<double, 3, 1> Z(measured_pose.rel_pos().x(),
-                                  measured_pose.rel_pos().y(),
-                                  measured_pose.rel_theta());
+    // This "Z" is the robot pose directly implied by the camera results.
+    // Currently, we do not actually use this result directly. However, it is
+    // kept around in case we want to quickly re-enable it.
+    const Eigen::Matrix<double, 3, 1> Z(measured_pose.rel_pos().x(),
+                                        measured_pose.rel_pos().y(),
+                                        measured_pose.rel_theta());
     // Pose of the target in the robot frame.
     Pose pose_robot_target(H_robot_camera * H_camera_target);
-    // This code overrides the pose sent directly from the camera code and
-    // effectively distills it down to just a distance + heading estimate, on
-    // the presumption that these signals will tend to be much lower noise and
-    // better-conditioned than other portions of the robot pose.
-    // As such, this code assumes that the current estimate of the robot
-    // heading is correct and then, given the heading from the camera to the
-    // target and the distance from the camera to the target, calculates the
-    // position that the robot would have to be at to make the current camera
-    // heading + distance correct. This X/Y implied robot position is then
-    // used as the measurement in the EKF, rather than the X/Y that is
-    // directly returned from the vision processing. This means that
-    // the cameras will not correct any drift in the robot heading estimate
-    // but will compensate for X/Y position in a way that prioritizes keeping
-    // an accurate distance + heading to the goal.
-    {
-      // TODO(james): This doesn't do time-compensation properly--it uses the
-      // current robot heading to calculate an implied pose, rather than using
-      // the heading from when the picture was taken.
-
-      // Calculate the heading to the robot in the target's coordinate frame.
-      const double implied_heading_from_target = aos::math::NormalizeAngle(
-          pose_robot_target.heading() + M_PI + theta());
-      const double implied_distance = pose_robot_target.xy_norm();
-      const Eigen::Vector4d robot_pose_in_target_frame(
-          implied_distance * std::cos(implied_heading_from_target),
-          implied_distance * std::sin(implied_heading_from_target), 0, 1);
-      const Eigen::Vector4d implied_pose =
-          H_field_target * robot_pose_in_target_frame;
-      Z.x() = implied_pose.x();
-      Z.y() = implied_pose.y();
-    }
     // TODO(james): Figure out how to properly handle calculating the
     // noise. Currently, the values are deliberately tuned so that image updates
     // will not be trusted overly much. In theory, we should probably also be
@@ -247,28 +251,35 @@ void Localizer::HandleImageMatch(
       AOS_LOG(WARNING, "Dropped image match due to heading mismatch.\n");
       continue;
     }
-    // Just in case we ever do encounter any, drop measurements if they have
-    // non-finite numbers.
-    if (!Z.allFinite()) {
-      AOS_LOG(WARNING, "Got measurement with infinites or NaNs.\n");
-      continue;
-    }
+    // For the correction step, instead of passing in the measurement directly,
+    // we pass in (0, 0, 0) as the measurement and then for the expected
+    // measurement (Zhat) we calculate the error between the implied and actual
+    // poses. This doesn't affect any of the math, it just makes the code a bit
+    // more convenient to write given the Correct() interface we already have.
     ekf_.Correct(
-        Z, nullptr, {},
-        [H, Z](const State &X, const Input &) {
-          Eigen::Vector3d Zhat = H * X;
-          // In order to deal with wrapping of the angle, calculate an expected
-          // angle that is in the range (Z(2) - pi, Z(2) + pi].
-          const double angle_error =
-              aos::math::NormalizeAngle(X(StateIdx::kTheta) - Z(2));
-          Zhat(2) = Z(2) + angle_error;
+        Eigen::Vector3d::Zero(), nullptr, {},
+        [H, H_field_target, pose_robot_target](
+            const State &X, const Input &) -> Eigen::Vector3d {
+          const Eigen::Vector3d Z =
+              CalculateImpliedPose(X, H_field_target, pose_robot_target);
+          // Just in case we ever do encounter any, drop measurements if they
+          // have non-finite numbers.
+          if (!Z.allFinite()) {
+            AOS_LOG(WARNING, "Got measurement with infinites or NaNs.\n");
+            return Eigen::Vector3d::Zero();
+          }
+          Eigen::Vector3d Zhat = H * X - Z;
+          // Rewrap angle difference to put it back in range. Note that this
+          // component of the error is currently ignored (see definition of H
+          // above).
+          Zhat(2) = aos::math::NormalizeAngle(Zhat(2));
           // If the measurement implies that we are too far from the current
           // estimate, then ignore it.
           // Note that I am not entirely sure how much effect this actually has,
           // because I primarily introduced it to make sure that any grossly
           // invalid measurements get thrown out.
-          if ((Zhat - Z).squaredNorm() > std::pow(10.0, 2)) {
-            return Z;
+          if (Zhat.squaredNorm() > std::pow(10.0, 2)) {
+            return Eigen::Vector3d::Zero();
           }
           return Zhat;
         },

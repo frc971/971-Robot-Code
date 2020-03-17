@@ -443,10 +443,7 @@ TEST_F(LocalizedDrivetrainTest, PerfectCameraUpdate) {
 
   RunFor(chrono::seconds(3));
   VerifyNearGoal();
-  // Note: because the current localizer code doesn't do time-compensation
-  // correctly (see comments in localizer.cc), the "perfect" camera updates
-  // aren't actually handled perfectly.
-  EXPECT_TRUE(VerifyEstimatorAccurate(2e-2));
+  EXPECT_TRUE(VerifyEstimatorAccurate(2e-3));
 }
 
 // Tests that camera updates with a constant initial error in the position
