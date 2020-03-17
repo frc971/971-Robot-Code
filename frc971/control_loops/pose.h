@@ -74,8 +74,8 @@ class TypedPose {
   // pitch/roll components of the rotation. Ignores the bottom row.
   TypedPose(const Eigen::Matrix<Scalar, 4, 4> &H) {
     pos_ = H.template block<3, 1>(0, 3);
-    const Eigen::Vector3d rotated_x =
-        H.template block<3, 3>(0, 0) * Eigen::Vector3d::UnitX();
+    const Eigen::Matrix<Scalar, 3, 1> rotated_x =
+        H.template block<3, 3>(0, 0) * Eigen::Matrix<Scalar, 3, 1>::UnitX();
     theta_ = std::atan2(rotated_x.y(), rotated_x.x());
   }
 

@@ -163,7 +163,7 @@ class HybridEkf {
   // Currently, we use the drivetrain config for modelling constants
   // (continuous time A and B matrices) and for the noise matrices for the
   // encoders/gyro.
-  HybridEkf(const DrivetrainConfig<Scalar> &dt_config)
+  HybridEkf(const DrivetrainConfig<double> &dt_config)
       : dt_config_(dt_config),
         velocity_drivetrain_coefficients_(
             dt_config.make_hybrid_drivetrain_velocity_loop()
@@ -458,6 +458,19 @@ class HybridEkf {
     StateSquare A_c = AForState(*state);
     StateSquare A_d;
     StateSquare Q_d;
+    // TODO(james): By far the biggest CPU sink in the localization appears to
+    // be this discretization--it's possible the spline code spikes higher,
+    // but it doesn't create anywhere near the same sustained load. There
+    // are a few potential options for optimizing this code, but none of
+    // them are entirely trivial, e.g. we could:
+    // -Reduce the number of states (this function grows at O(kNStates^3))
+    // -Adjust the discretization function itself (there're a few things we
+    //  can tune there).
+    // -Try to come up with some sort of lookup table or other way of
+    //  pre-calculating A_d and Q_d.
+    // I also have to figure out how much we care about the precision of
+    // some of these values--I don't think we care much, but we probably
+    // do want to maintain some of the structure of the matrices.
     controls::DiscretizeQAFast(Q_continuous_, A_c, dt, &Q_d, &A_d);
 
     *state = RungeKuttaU(
@@ -496,9 +509,9 @@ class HybridEkf {
                 state, P);
   }
 
-  DrivetrainConfig<Scalar> dt_config_;
+  DrivetrainConfig<double> dt_config_;
   State X_hat_;
-  StateFeedbackHybridPlantCoefficients<2, 2, 2, Scalar>
+  StateFeedbackHybridPlantCoefficients<2, 2, 2, double>
       velocity_drivetrain_coefficients_;
   StateSquare A_continuous_;
   StateSquare Q_continuous_;
@@ -637,9 +650,9 @@ void HybridEkf<Scalar>::InitializeMatrices() {
   // too much when we have accelerometer readings available.
   B_continuous_.setZero();
   B_continuous_.template block<1, 2>(kLeftVelocity, kLeftVoltage) =
-      vel_coefs.B_continuous.row(0);
+      vel_coefs.B_continuous.row(0).template cast<Scalar>();
   B_continuous_.template block<1, 2>(kRightVelocity, kLeftVoltage) =
-      vel_coefs.B_continuous.row(1);
+      vel_coefs.B_continuous.row(1).template cast<Scalar>();
   A_continuous_.template block<kNStates, 2>(0, kLeftVoltageError) =
       B_continuous_.template block<kNStates, 2>(0, kLeftVoltage);
 

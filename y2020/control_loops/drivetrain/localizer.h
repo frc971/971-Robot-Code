@@ -27,8 +27,8 @@ namespace drivetrain {
 // effectively, things started to become unstable.
 class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
  public:
-  typedef frc971::control_loops::TypedPose<double> Pose;
-  typedef frc971::control_loops::drivetrain::HybridEkf<double> HybridEkf;
+  typedef frc971::control_loops::TypedPose<float> Pose;
+  typedef frc971::control_loops::drivetrain::HybridEkf<float> HybridEkf;
   typedef typename HybridEkf::State State;
   typedef typename HybridEkf::StateIdx StateIdx;
   typedef typename HybridEkf::StateSquare StateSquare;
@@ -37,7 +37,10 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
   Localizer(aos::EventLoop *event_loop,
             const frc971::control_loops::drivetrain::DrivetrainConfig<double>
                 &dt_config);
-  State Xhat() const override { return ekf_.X_hat(); }
+  frc971::control_loops::drivetrain::HybridEkf<double>::State Xhat()
+      const override {
+    return ekf_.X_hat().cast<double>();
+  }
   frc971::control_loops::drivetrain::TrivialTargetSelector *target_selector()
       override {
     return &target_selector_;
@@ -57,8 +60,10 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
                      bool /*reset_theta*/) override {
     const double left_encoder = ekf_.X_hat(StateIdx::kLeftEncoder);
     const double right_encoder = ekf_.X_hat(StateIdx::kRightEncoder);
-    ekf_.ResetInitialState(t, (Ekf::State() << x, y, theta, left_encoder, 0,
-                               right_encoder, 0, 0, 0, 0, 0, 0).finished(),
+    ekf_.ResetInitialState(t,
+                           (HybridEkf::State() << x, y, theta, left_encoder, 0,
+                            right_encoder, 0, 0, 0, 0, 0, 0)
+                               .finished(),
                            ekf_.P());
   };
 

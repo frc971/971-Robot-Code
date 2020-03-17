@@ -10,10 +10,10 @@ namespace {
 // Converts a flatbuffer TransformationMatrix to an Eigen matrix. Technically,
 // this should be able to do a single memcpy, but the extra verbosity here seems
 // appropriate.
-Eigen::Matrix<double, 4, 4> FlatbufferToTransformationMatrix(
+Eigen::Matrix<float, 4, 4> FlatbufferToTransformationMatrix(
     const frc971::vision::sift::TransformationMatrix &flatbuffer) {
   CHECK_EQ(16u, CHECK_NOTNULL(flatbuffer.data())->size());
-  Eigen::Matrix<double, 4, 4> result;
+  Eigen::Matrix<float, 4, 4> result;
   result.setIdentity();
   for (int row = 0; row < 4; ++row) {
     for (int col = 0; col < 4; ++col) {
@@ -28,8 +28,8 @@ const std::array<std::string, 3> kPisToUse{"pi1", "pi2", "pi3"};
 
 // Calculates the pose implied by the camera target, just based on
 // distance/heading components.
-Eigen::Vector3d CalculateImpliedPose(const Localizer::State &X,
-                                     const Eigen::Matrix4d &H_field_target,
+Eigen::Vector3f CalculateImpliedPose(const Localizer::State &X,
+                                     const Eigen::Matrix4f &H_field_target,
                                      const Localizer::Pose &pose_robot_target) {
   // This code overrides the pose sent directly from the camera code and
   // effectively distills it down to just a distance + heading estimate, on
@@ -47,13 +47,13 @@ Eigen::Vector3d CalculateImpliedPose(const Localizer::State &X,
   // an accurate distance + heading to the goal.
 
   // Calculate the heading to the robot in the target's coordinate frame.
-  const double implied_heading_from_target = aos::math::NormalizeAngle(
+  const float implied_heading_from_target = aos::math::NormalizeAngle(
       pose_robot_target.heading() + M_PI + X(Localizer::StateIdx::kTheta));
-  const double implied_distance = pose_robot_target.xy_norm();
-  const Eigen::Vector4d robot_pose_in_target_frame(
+  const float implied_distance = pose_robot_target.xy_norm();
+  const Eigen::Vector4f robot_pose_in_target_frame(
       implied_distance * std::cos(implied_heading_from_target),
       implied_distance * std::sin(implied_heading_from_target), 0, 1);
-  const Eigen::Vector4d implied_pose =
+  const Eigen::Vector4f implied_pose =
       H_field_target * robot_pose_in_target_frame;
   return implied_pose.topRows<3>();
 }
@@ -82,8 +82,8 @@ Localizer::Localizer(
                            });
 
   event_loop->OnRun([this, event_loop]() {
-    ekf_.ResetInitialState(event_loop->monotonic_now(), Ekf::State::Zero(),
-                           ekf_.P());
+    ekf_.ResetInitialState(event_loop->monotonic_now(),
+                           HybridEkf::State::Zero(), ekf_.P());
   });
 
   for (const auto &pi : kPisToUse) {
@@ -126,8 +126,8 @@ void Localizer::Update(const ::Eigen::Matrix<double, 2, 1> &U,
                        aos::monotonic_clock::time_point now,
                        double left_encoder, double right_encoder,
                        double gyro_rate, const Eigen::Vector3d &accel) {
-  ekf_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate, U, accel,
-                             now);
+  ekf_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate,
+                             U.cast<float>(), accel.cast<float>(), now);
   for (size_t ii = 0; ii < kPisToUse.size(); ++ii) {
     auto &image_fetcher = image_fetchers_[ii];
     while (image_fetcher.FetchNext()) {
@@ -172,20 +172,20 @@ void Localizer::HandleImageMatch(
   // that the odds of screwing up the time compensation are higher.
   // Note that the current number here is chosen pretty arbitrarily--1 rad / sec
   // seems reasonable, but may be unnecessarily low or high.
-  constexpr double kMaxTurretVelocity = 1.0;
+  constexpr float kMaxTurretVelocity = 1.0;
   if (is_turret && std::abs(turret_data.velocity) > kMaxTurretVelocity) {
     return;
   }
   CHECK(result.camera_calibration()->has_fixed_extrinsics());
-  const Eigen::Matrix<double, 4, 4> fixed_extrinsics =
+  const Eigen::Matrix<float, 4, 4> fixed_extrinsics =
       FlatbufferToTransformationMatrix(
           *result.camera_calibration()->fixed_extrinsics());
 
   // Calculate the pose of the camera relative to the robot origin.
-  Eigen::Matrix<double, 4, 4> H_robot_camera = fixed_extrinsics;
+  Eigen::Matrix<float, 4, 4> H_robot_camera = fixed_extrinsics;
   if (is_turret) {
     H_robot_camera = H_robot_camera *
-                     frc971::control_loops::TransformationMatrixForYaw(
+                     frc971::control_loops::TransformationMatrixForYaw<float>(
                          turret_data.position) *
                      FlatbufferToTransformationMatrix(
                          *result.camera_calibration()->turret_extrinsics());
@@ -201,10 +201,10 @@ void Localizer::HandleImageMatch(
         !vision_result->has_field_to_target()) {
       continue;
     }
-    const Eigen::Matrix<double, 4, 4> H_camera_target =
+    const Eigen::Matrix<float, 4, 4> H_camera_target =
         FlatbufferToTransformationMatrix(*vision_result->camera_to_target());
 
-    const Eigen::Matrix<double, 4, 4> H_field_target =
+    const Eigen::Matrix<float, 4, 4> H_field_target =
         FlatbufferToTransformationMatrix(*vision_result->field_to_target());
     // Back out the robot position that is implied by the current camera
     // reading.
@@ -213,9 +213,9 @@ void Localizer::HandleImageMatch(
     // This "Z" is the robot pose directly implied by the camera results.
     // Currently, we do not actually use this result directly. However, it is
     // kept around in case we want to quickly re-enable it.
-    const Eigen::Matrix<double, 3, 1> Z(measured_pose.rel_pos().x(),
-                                        measured_pose.rel_pos().y(),
-                                        measured_pose.rel_theta());
+    const Eigen::Matrix<float, 3, 1> Z(measured_pose.rel_pos().x(),
+                                       measured_pose.rel_pos().y(),
+                                       measured_pose.rel_theta());
     // Pose of the target in the robot frame.
     Pose pose_robot_target(H_robot_camera * H_camera_target);
     // TODO(james): Figure out how to properly handle calculating the
@@ -224,7 +224,7 @@ void Localizer::HandleImageMatch(
     // populating some cross-correlation terms.
     // Note that these are the noise standard deviations (they are squared below
     // to get variances).
-    Eigen::Matrix<double, 3, 1> noises(2.0, 2.0, 0.2);
+    Eigen::Matrix<float, 3, 1> noises(2.0, 2.0, 0.2);
     // Augment the noise by the approximate rotational speed of the
     // camera. This should help account for the fact that, while we are
     // spinning, slight timing errors in the camera/turret data will tend to
@@ -232,9 +232,9 @@ void Localizer::HandleImageMatch(
     noises *= 1.0 + std::abs((right_velocity() - left_velocity()) /
                                  (2.0 * dt_config_.robot_radius) +
                              (is_turret ? turret_data.velocity : 0.0));
-    Eigen::Matrix3d R = Eigen::Matrix3d::Zero();
+    Eigen::Matrix3f R = Eigen::Matrix3f::Zero();
     R.diagonal() = noises.cwiseAbs2();
-    Eigen::Matrix<double, HybridEkf::kNOutputs, HybridEkf::kNStates> H;
+    Eigen::Matrix<float, HybridEkf::kNOutputs, HybridEkf::kNStates> H;
     H.setZero();
     H(0, StateIdx::kX) = 1;
     H(1, StateIdx::kY) = 1;
@@ -247,7 +247,7 @@ void Localizer::HandleImageMatch(
             << pose_robot_target.ToHeadingDistanceSkew().transpose();
     // If the heading is off by too much, assume that we got a false-positive
     // and don't use the correction.
-    if (std::abs(aos::math::DiffAngle(theta(), Z(2))) > M_PI_2) {
+    if (std::abs(aos::math::DiffAngle<float>(theta(), Z(2))) > M_PI_2) {
       AOS_LOG(WARNING, "Dropped image match due to heading mismatch.\n");
       continue;
     }
@@ -257,18 +257,18 @@ void Localizer::HandleImageMatch(
     // poses. This doesn't affect any of the math, it just makes the code a bit
     // more convenient to write given the Correct() interface we already have.
     ekf_.Correct(
-        Eigen::Vector3d::Zero(), nullptr, {},
+        Eigen::Vector3f::Zero(), nullptr, {},
         [H, H_field_target, pose_robot_target](
-            const State &X, const Input &) -> Eigen::Vector3d {
-          const Eigen::Vector3d Z =
+            const State &X, const Input &) -> Eigen::Vector3f {
+          const Eigen::Vector3f Z =
               CalculateImpliedPose(X, H_field_target, pose_robot_target);
           // Just in case we ever do encounter any, drop measurements if they
           // have non-finite numbers.
           if (!Z.allFinite()) {
             AOS_LOG(WARNING, "Got measurement with infinites or NaNs.\n");
-            return Eigen::Vector3d::Zero();
+            return Eigen::Vector3f::Zero();
           }
-          Eigen::Vector3d Zhat = H * X - Z;
+          Eigen::Vector3f Zhat = H * X - Z;
           // Rewrap angle difference to put it back in range. Note that this
           // component of the error is currently ignored (see definition of H
           // above).
@@ -279,7 +279,7 @@ void Localizer::HandleImageMatch(
           // because I primarily introduced it to make sure that any grossly
           // invalid measurements get thrown out.
           if (Zhat.squaredNorm() > std::pow(10.0, 2)) {
-            return Eigen::Vector3d::Zero();
+            return Eigen::Vector3f::Zero();
           }
           return Zhat;
         },

@@ -101,8 +101,8 @@ struct DrivetrainConfig {
   // frame.
   // I.e., imu_transform * imu_readings will give the imu readings in the
   // robot frame.
-  Eigen::Matrix<double, 3, 3> imu_transform =
-      Eigen::Matrix<double, 3, 3>::Identity();
+  Eigen::Matrix<Scalar, 3, 3> imu_transform =
+      Eigen::Matrix<Scalar, 3, 3>::Identity();
 
   // True if we are running a simulated drivetrain.
   bool is_simulated = false;

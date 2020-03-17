@@ -208,9 +208,9 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
   void SetStartingPosition(const Eigen::Matrix<double, 3, 1> &xytheta) {
     *drivetrain_plant_.mutable_state() << xytheta.x(), xytheta.y(),
         xytheta(2, 0), 0.0, 0.0;
-    Eigen::Matrix<double, Localizer::HybridEkf::kNStates, 1> localizer_state;
+    Eigen::Matrix<float, Localizer::HybridEkf::kNStates, 1> localizer_state;
     localizer_state.setZero();
-    localizer_state.block<3, 1>(0, 0) = xytheta;
+    localizer_state.block<3, 1>(0, 0) = xytheta.cast<float>();
     localizer_.Reset(monotonic_now(), localizer_state);
   }
 
