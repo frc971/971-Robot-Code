@@ -23,6 +23,8 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   ::aos::Sender<::frc971::control_loops::drivetrain::LocalizerControl>
       localizer_control_sender_;
+  aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
+  aos::Alliance alliance_ = aos::Alliance::kInvalid;
 };
 
 }  // namespace actors

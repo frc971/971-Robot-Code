@@ -2,6 +2,7 @@
 #define y2020_ACTORS_AUTO_SPLINES_H_
 
 #include "aos/events/event_loop.h"
+#include "aos/robot_state/joystick_state_generated.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
 /*
@@ -17,7 +18,8 @@ namespace actors {
 class AutonomousSplines {
  public:
   static flatbuffers::Offset<frc971::MultiSpline> BasicSSpline(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder);
+      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+      aos::Alliance alliance);
   static flatbuffers::Offset<frc971::MultiSpline> StraightLine(
       aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder);
 };

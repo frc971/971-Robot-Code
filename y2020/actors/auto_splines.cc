@@ -20,7 +20,8 @@ void MaybeFlipSpline(
 }
 
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+    aos::Alliance alliance) {
   flatbuffers::Offset<frc971::Constraint> longitudinal_constraint_offset;
   flatbuffers::Offset<frc971::Constraint> lateral_constraint_offset;
   flatbuffers::Offset<frc971::Constraint> voltage_constraint_offset;
@@ -30,7 +31,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
         builder->MakeBuilder<frc971::Constraint>();
     longitudinal_constraint_builder.add_constraint_type(
         frc971::ConstraintType::LONGITUDINAL_ACCELERATION);
-    longitudinal_constraint_builder.add_value(1.0);
+    longitudinal_constraint_builder.add_value(2.0);
     longitudinal_constraint_offset = longitudinal_constraint_builder.Finish();
   }
 
@@ -39,7 +40,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
         builder->MakeBuilder<frc971::Constraint>();
     lateral_constraint_builder.add_constraint_type(
         frc971::ConstraintType::LATERAL_ACCELERATION);
-    lateral_constraint_builder.add_value(1.0);
+    lateral_constraint_builder.add_value(2.0);
     lateral_constraint_offset = lateral_constraint_builder.Finish();
   }
 
@@ -48,7 +49,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
         builder->MakeBuilder<frc971::Constraint>();
     voltage_constraint_builder.add_constraint_type(
         frc971::ConstraintType::VOLTAGE);
-    voltage_constraint_builder.add_value(6.0);
+    voltage_constraint_builder.add_value(8.0);
     voltage_constraint_offset = voltage_constraint_builder.Finish();
   }
 
@@ -59,16 +60,22 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
               {longitudinal_constraint_offset, lateral_constraint_offset,
                voltage_constraint_offset});
 
-  const float startx = 0.0;
-  const float starty = 0.05;
+  const float startx = 3.3;
+  const float starty = -.7;
+  std::vector<float> x_pos{0.0f + startx, 0.8f + startx, 0.8f + startx,
+                           1.2f + startx, 1.2f + startx, 2.0f + startx};
+  std::vector<float> y_pos{starty - 0.0f, starty - 0.0f, starty - 0.1f,
+                           starty - 0.2f, starty - 0.3f, starty - 0.3f};
+  if (alliance == aos::Alliance::kRed) {
+    for (size_t ii = 0; ii < x_pos.size(); ++ii) {
+      x_pos[ii] *= -1;
+      y_pos[ii] *= -1;
+    }
+  }
   flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
-      builder->fbb()->CreateVector<float>({0.0f + startx, 0.8f + startx,
-                                           0.8f + startx, 1.2f + startx,
-                                           1.2f + startx, 2.0f + startx});
+      builder->fbb()->CreateVector<float>(x_pos);
   flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
-      builder->fbb()->CreateVector<float>({starty - 0.0f, starty - 0.0f,
-                                           starty - 0.1f, starty - 0.2f,
-                                           starty - 0.3f, starty - 0.3f});
+      builder->fbb()->CreateVector<float>(y_pos);
 
   frc971::MultiSpline::Builder multispline_builder =
       builder->MakeBuilder<frc971::MultiSpline>();
