@@ -227,7 +227,11 @@ Tokenizer::TokenType Tokenizer::Next() {
   switch (state_) {
     case State::kExpectObjectStart:
       // We should always start out with a {
-      if (!Consume("{")) return TokenType::kError;
+      if (!Consume("{")) {
+        fprintf(stderr, "Error on line %d, expected { for start.\n",
+                linenumber_);
+        return TokenType::kError;
+      }
 
       // Document that we just started an object.
       object_type_.push_back(ObjectType::kObject);
