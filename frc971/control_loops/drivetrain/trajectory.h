@@ -138,6 +138,13 @@ class Trajectory {
     return state(0) > length() - 1e-4;
   }
 
+  // Returns true if the state is invalid or unreasonable in some way.
+  bool state_is_faulted(::Eigen::Matrix<double, 2, 1> state) const {
+    // Consider things faulted if the current velocity implies we are going
+    // backwards or if any infinities/NaNs have crept in.
+    return state(1) < 0 || !state.allFinite();
+  }
+
   // Returns the length of the path in meters.
   double length() const { return spline_->length(); }
 
