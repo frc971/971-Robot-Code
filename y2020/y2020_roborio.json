@@ -1,0 +1,270 @@
+{
+  "channels":
+  [
+    {
+      "name": "/aos/roborio",
+      "type": "aos.JoystickState",
+      "source_node": "roborio",
+      "frequency": 75
+    },
+    {
+      "name": "/aos/roborio",
+      "type": "aos.RobotState",
+      "source_node": "roborio",
+      "frequency": 200,
+      "destination_nodes": [
+        {
+          "name": "pi1",
+          "priority": 2,
+          "timestamp_logger": "LOCAL_LOGGER",
+          "time_to_live": 10000000
+        },
+        {
+          "name": "pi2",
+          "priority": 2,
+          "timestamp_logger": "LOCAL_LOGGER",
+          "time_to_live": 10000000
+        },
+        {
+          "name": "pi3",
+          "priority": 2,
+          "timestamp_logger": "LOCAL_LOGGER",
+          "time_to_live": 10000000
+        }
+      ]
+    },
+    {
+      "name": "/aos/roborio",
+      "type": "aos.timing.Report",
+      "source_node": "roborio",
+      "frequency": 50,
+      "num_senders": 20,
+      "max_size": 2048
+    },
+    {
+      "name": "/aos/roborio",
+      "type": "aos.logging.LogMessageFbs",
+      "source_node": "roborio",
+      "frequency": 400,
+      "num_senders": 20
+    },
+    {
+      "name": "/aos/roborio",
+      "type": "aos.message_bridge.ServerStatistics",
+      "source_node": "roborio",
+      "frequency": 2,
+      "num_senders": 2
+    },
+    {
+      "name": "/aos/roborio",
+      "type": "aos.message_bridge.ClientStatistics",
+      "source_node": "roborio",
+      "frequency": 10,
+      "num_senders": 2
+    },
+    {
+      "name": "/aos/roborio",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "roborio",
+      "frequency": 10,
+      "num_senders": 2,
+      "max_size": 200,
+      "destination_nodes": [
+        {
+          "name": "pi1",
+          "priority": 1,
+          "time_to_live": 5000000
+        },
+        {
+          "name": "pi2",
+          "priority": 1,
+          "time_to_live": 5000000
+        },
+        {
+          "name": "pi3",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/superstructure",
+      "type": "y2020.control_loops.superstructure.Goal",
+      "source_node": "roborio",
+      "frequency": 200
+    },
+    {
+      "name": "/superstructure",
+      "type": "y2020.control_loops.superstructure.Status",
+      "source_node": "roborio",
+      "frequency": 200,
+      "num_senders": 2
+    },
+    {
+      "name": "/superstructure",
+      "type": "y2020.control_loops.superstructure.Output",
+      "source_node": "roborio",
+      "frequency": 200,
+      "num_senders": 2
+    },
+    {
+      "name": "/superstructure",
+      "type": "y2020.control_loops.superstructure.Position",
+      "source_node": "roborio",
+      "frequency": 200,
+      "num_senders": 2
+    },
+    {
+      "name": "/superstructure",
+      "type": "y2020.joysticks.Setpoint",
+      "source_node": "roborio",
+      "num_senders": 2
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.IMUValues",
+      "source_node": "roborio",
+      "frequency": 2000,
+      "num_senders": 2
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.sensors.GyroReading",
+      "source_node": "roborio",
+      "frequency": 200,
+      "num_senders": 2
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.sensors.Uid",
+      "source_node": "roborio",
+      "frequency": 200,
+      "num_senders": 2
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.Goal",
+      "source_node": "roborio",
+      "frequency": 200
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.Position",
+      "source_node": "roborio",
+      "frequency": 200,
+      "num_senders": 2
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.Status",
+      "source_node": "roborio",
+      "frequency": 200,
+      "max_size": 2000,
+      "num_senders": 2,
+      "destination_nodes": [
+        {
+          "name": "pi1",
+          "priority": 5,
+          "time_to_live": 5000000
+        },
+        {
+          "name": "pi2",
+          "priority": 5,
+          "time_to_live": 5000000
+        },
+        {
+          "name": "pi3",
+          "priority": 5,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.Output",
+      "source_node": "roborio",
+      "frequency": 200,
+      "num_senders": 2
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.LocalizerControl",
+      "source_node": "roborio",
+      "frequency": 200
+    },
+    {
+      "name": "/drivetrain",
+      "type": "y2019.control_loops.drivetrain.TargetSelectorHint",
+      "source_node": "roborio"
+    },
+    {
+      "name": "/autonomous",
+      "type": "aos.common.actions.Status",
+      "source_node": "roborio"
+    },
+    {
+      "name": "/autonomous",
+      "type": "frc971.autonomous.Goal",
+      "source_node": "roborio"
+    },
+    {
+      "name": "/autonomous",
+      "type": "frc971.autonomous.AutonomousMode",
+      "source_node": "roborio",
+      "frequency": 200
+    },
+    {
+      "name": "/aos/roborio",
+      "type": "frc971.PDPValues",
+      "source_node": "roborio",
+      "frequency": 50
+    },
+    {
+      "name": "/aos/roborio",
+      "type": "frc971.wpilib.PneumaticsToLog",
+      "source_node": "roborio",
+      "frequency": 50
+    }
+  ],
+  "applications": [
+    {
+      "name": "drivetrain"
+    },
+    {
+      "name": "camera_reader"
+    }
+  ],
+  "maps": [
+    {
+      "match": {
+        "name": "/aos",
+        "source_node": "roborio"
+      },
+      "rename": {
+        "name": "/aos/roborio"
+      }
+    }
+  ],
+  "nodes": [
+    {
+      "name": "roborio",
+      "hostname": "roborio",
+      "hostnames": [
+        "roboRIO-971-FRC",
+        "roboRIO-7971-FRC",
+        "roboRIO-8971-FRC",
+        "roboRIO-9971-FRC"
+      ],
+      "port": 9971
+    },
+    {
+      "name": "pi1"
+    },
+    {
+      "name": "pi2"
+    },
+    {
+      "name": "pi3"
+    }
+  ]
+}

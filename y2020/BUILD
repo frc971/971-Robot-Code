@@ -138,21 +138,62 @@ aos_config(
     name = "config",
     src = "y2020.json",
     flatbuffers = [
-        ":setpoint_fbs",
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
         "//aos/network:timestamp_fbs",
-        "//y2019/control_loops/drivetrain:target_selector_fbs",
-        "//y2020/control_loops/superstructure:superstructure_goal_fbs",
-        "//y2020/control_loops/superstructure:superstructure_output_fbs",
-        "//y2020/control_loops/superstructure:superstructure_position_fbs",
-        "//y2020/control_loops/superstructure:superstructure_status_fbs",
         "//y2020/vision/sift:sift_fbs",
         "//y2020/vision/sift:sift_training_fbs",
         "//y2020/vision:vision_fbs",
     ],
     visibility = ["//visibility:public"],
     deps = [
+        ":config_pi1",
+        ":config_pi2",
+        ":config_pi3",
+        ":config_roborio",
+    ],
+)
+
+[
+    aos_config(
+        name = "config_" + pi,
+        src = "y2020_" + pi + ".json",
+        flatbuffers = [
+            "//aos/network:message_bridge_client_fbs",
+            "//aos/network:message_bridge_server_fbs",
+            "//aos/network:timestamp_fbs",
+            "//y2020/vision/sift:sift_fbs",
+            "//y2020/vision/sift:sift_training_fbs",
+            "//y2020/vision:vision_fbs",
+        ],
+        visibility = ["//visibility:public"],
+        deps = [
+            "//aos/events:config",
+        ],
+    )
+    for pi in [
+        "pi1",
+        "pi2",
+        "pi3",
+    ]
+]
+
+aos_config(
+    name = "config_roborio",
+    src = "y2020_roborio.json",
+    flatbuffers = [
+        ":setpoint_fbs",
+        "//aos/network:message_bridge_client_fbs",
+        "//aos/network:message_bridge_server_fbs",
+        "//aos/network:timestamp_fbs",
+        "//y2020/control_loops/superstructure:superstructure_goal_fbs",
+        "//y2019/control_loops/drivetrain:target_selector_fbs",
+        "//y2020/control_loops/superstructure:superstructure_output_fbs",
+        "//y2020/control_loops/superstructure:superstructure_position_fbs",
+        "//y2020/control_loops/superstructure:superstructure_status_fbs",
+    ],
+    deps = [
+        "//aos/events:config",
         "//aos/robot_state:config",
         "//frc971/autonomous:config",
         "//frc971/control_loops/drivetrain:config",
@@ -171,11 +212,11 @@ sh_binary(
     srcs = ["web_proxy.sh"],
     data = [
         ":config.json",
-        "//y2020/www:field_main_bundle",
         "//aos/network:web_proxy_main",
+        "//y2020/www:camera_main_bundle",
+        "//y2020/www:field_main_bundle",
         "//y2020/www:files",
         "//y2020/www:flatbuffers",
-        "//y2020/www:camera_main_bundle",
     ],
 )
 
