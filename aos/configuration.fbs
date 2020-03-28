@@ -83,7 +83,9 @@ table Channel {
 // Table to support renaming channel names.
 table Map {
   // Channel to match with.  If the name in here matches, the name is replaced
-  // with the name in rename.
+  // with the name in rename.  If the name ends in *, it will be treated like a
+  // wildcard.  Anything with the same prefix will match, and anything matching
+  // the * will get preserved on rename.  This supports moving subfolders.
   // Node specific matches are also supported.
   match:Channel;
   // The channel to merge in.
