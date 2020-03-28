@@ -9,6 +9,7 @@
 #include "frc971/wpilib/ahal/DigitalSource.h"
 #include "frc971/wpilib/ahal/SPI.h"
 #include "frc971/wpilib/fpga_time_conversion.h"
+#include "frc971/wpilib/imu_batch_generated.h"
 #include "frc971/wpilib/imu_generated.h"
 
 namespace frc971 {
@@ -47,7 +48,8 @@ class ADIS16470 {
   void DoInitializeStep();
 
   // Processes a complete reading in read_data_.
-  void ProcessReading();
+  flatbuffers::Offset<IMUValues> ProcessReading(
+      flatbuffers::FlatBufferBuilder *fbb);
 
   // Converts a 32-bit value at data to a scaled output value where a value of 1
   // corresponds to lsb_per_output.
@@ -74,7 +76,7 @@ class ADIS16470 {
   }
 
   aos::EventLoop *const event_loop_;
-  aos::Sender<::frc971::IMUValues> imu_values_sender_;
+  aos::Sender<::frc971::IMUValuesBatch> imu_values_sender_;
   aos::TimerHandler *const initialize_timer_;
 
   frc::SPI *const spi_;

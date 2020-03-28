@@ -10,6 +10,7 @@
 #if defined(SUPPORT_PLOT)
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
 #endif
+#include "frc971/wpilib/imu_batch_generated.h"
 #include "y2016/constants.h"
 #include "y2016/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2016/control_loops/drivetrain/hybrid_velocity_drivetrain.h"
@@ -107,7 +108,7 @@ DrivetrainSimulation::DrivetrainSimulation(
       drivetrain_status_fetcher_(
           event_loop_->MakeFetcher<::frc971::control_loops::drivetrain::Status>(
               "/drivetrain")),
-      imu_sender_(event_loop->MakeSender<::frc971::IMUValues>("/drivetrain")),
+      imu_sender_(event_loop->MakeSender<::frc971::IMUValuesBatch>("/drivetrain")),
       dt_config_(dt_config),
       drivetrain_plant_(MakePlantFromConfig(dt_config_)),
       velocity_drivetrain_(
@@ -211,7 +212,16 @@ void DrivetrainSimulation::SendImuMessage() {
       std::chrono::duration_cast<std::chrono::nanoseconds>(
           event_loop_->monotonic_now().time_since_epoch())
           .count());
-  builder.Send(imu_builder.Finish());
+  flatbuffers::Offset<frc971::IMUValues> imu_values_offsets =
+      imu_builder.Finish();
+  flatbuffers::Offset<
+      flatbuffers::Vector<flatbuffers::Offset<frc971::IMUValues>>>
+      imu_values_offset = builder.fbb()->CreateVector(&imu_values_offsets, 1);
+
+  frc971::IMUValuesBatch::Builder imu_values_batch_builder =
+      builder.MakeBuilder<frc971::IMUValuesBatch>();
+  imu_values_batch_builder.add_readings(imu_values_offset);
+  builder.Send(imu_values_batch_builder.Finish());
 }
 
 // Simulates the drivetrain moving for one timestep.

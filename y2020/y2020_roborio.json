@@ -122,9 +122,10 @@
     },
     {
       "name": "/drivetrain",
-      "type": "frc971.IMUValues",
+      "type": "frc971.IMUValuesBatch",
       "source_node": "roborio",
-      "frequency": 2000,
+      "frequency": 200,
+      "max_size": 2000,
       "num_senders": 2
     },
     {

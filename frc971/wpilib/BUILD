@@ -267,6 +267,17 @@ flatbuffer_cc_library(
     gen_reflections = 1,
 )
 
+flatbuffer_cc_library(
+    name = "imu_batch_fbs",
+    srcs = [
+        "imu_batch.fbs",
+    ],
+    gen_reflections = 1,
+    includes = [
+        ":imu_fbs_includes",
+    ],
+)
+
 cc_library(
     name = "ADIS16470",
     srcs = [
@@ -278,7 +289,9 @@ cc_library(
     restricted_to = ["//tools:roborio"],
     deps = [
         ":fpga_time_conversion",
+        ":imu_batch_fbs",
         ":imu_fbs",
+        "//aos/containers:sized_array",
         "//aos/events:event_loop",
         "//aos/time",
         "//third_party:wpilib",

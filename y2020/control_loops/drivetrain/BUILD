@@ -110,6 +110,15 @@ aos_config(
     ],
 )
 
+aos_config(
+    name = "replay_config",
+    src = "drivetrain_replay_config.json",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//y2020:config",
+    ],
+)
+
 cc_test(
     name = "localizer_test",
     srcs = ["localizer_test.cc"],
@@ -131,7 +140,7 @@ cc_test(
     name = "drivetrain_replay_test",
     srcs = ["drivetrain_replay_test.cc"],
     data = [
-        "//y2020:config.json",
+        ":replay_config.json",
         "@drivetrain_replay//file:spinning_wheels_while_still.bfbs",
     ],
     deps = [

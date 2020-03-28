@@ -134,6 +134,7 @@ aos_config(
         "//frc971/queues:gyro_fbs",
         "//frc971/queues:gyro_uid_fbs",
         "//frc971/wpilib:imu_fbs",
+        "//frc971/wpilib:imu_batch_fbs",
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -413,6 +414,7 @@ cc_library(
         "//aos/util:log_interval",
         "//frc971/control_loops:runge_kutta",
         "//frc971/queues:gyro_fbs",
+        "//frc971/wpilib:imu_batch_fbs",
         "//frc971/wpilib:imu_fbs",
         "//frc971/zeroing:imu_zeroer",
     ],
@@ -443,6 +445,7 @@ cc_library(
         "//frc971/control_loops:state_feedback_loop",
         "//frc971/queues:gyro_fbs",
         "//frc971/wpilib:imu_fbs",
+        "//frc971/wpilib:imu_batch_fbs",
         "//y2016:constants",
         "//y2016/control_loops/drivetrain:polydrivetrain_plants",
     ] + cpu_select({

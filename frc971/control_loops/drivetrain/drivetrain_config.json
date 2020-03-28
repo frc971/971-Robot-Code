@@ -3,8 +3,9 @@
   [
     {
       "name": "/drivetrain",
-      "type": "frc971.IMUValues",
-      "frequency": 2000
+      "type": "frc971.IMUValuesBatch",
+      "max_size": 2000,
+      "frequency": 200
     },
     {
       "name": "/drivetrain",

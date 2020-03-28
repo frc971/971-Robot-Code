@@ -9,7 +9,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-#include "frc971/wpilib/imu_generated.h"
+#include "frc971/wpilib/imu_batch_generated.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -95,7 +95,7 @@ class DrivetrainSimulation {
       drivetrain_output_fetcher_;
   ::aos::Fetcher<::frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
-  ::aos::Sender<::frc971::IMUValues> imu_sender_;
+  ::aos::Sender<::frc971::IMUValuesBatch> imu_sender_;
 
   DrivetrainConfig<double> dt_config_;
 

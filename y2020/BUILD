@@ -169,6 +169,7 @@ aos_config(
         visibility = ["//visibility:public"],
         deps = [
             "//aos/events:config",
+            "//frc971/control_loops/drivetrain:config",
         ],
     )
     for pi in [
