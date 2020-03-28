@@ -29,7 +29,7 @@ table Connection {
   // remotely, which node should be responsible for logging the data.  Note:
   // for now, this can only be the source node.  Empty implies the node this
   // connection is connecting to (i.e. name).
-  timestamp_logger_node:string;
+  timestamp_logger_nodes:[string];
 
   // Priority to forward data with.
   priority:ushort = 100;
@@ -77,7 +77,7 @@ table Channel {
   // logging the data.  Note: this requires that the data is forwarded to the
   // node responsible for logging it.  Empty implies the node this connection
   // is connecting to (i.e. name).
-  logger_node:string;
+  logger_nodes:[string];
 }
 
 // Table to support renaming channel names.

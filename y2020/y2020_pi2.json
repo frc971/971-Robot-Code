@@ -58,7 +58,7 @@
       "type": "frc971.vision.sift.ImageMatchResult",
       "source_node": "pi2",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "logger_node": "roborio",
+      "logger_nodes": ["roborio"],
       "frequency": 25,
       "max_size": 10000,
       "destination_nodes": [

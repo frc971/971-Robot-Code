@@ -354,7 +354,7 @@ TEST_F(ConfigurationTest, ChannelMessageIsLoggedOnNode) {
   "type": "aos.examples.Ping",
   "source_node": "bar",
   "logger": "REMOTE_LOGGER",
-  "logger_node": "baz",
+  "logger_nodes": ["baz"],
   "destination_nodes": [
     {
       "name": "baz"
@@ -370,7 +370,7 @@ TEST_F(ConfigurationTest, ChannelMessageIsLoggedOnNode) {
   "type": "aos.examples.Ping",
   "source_node": "bar",
   "logger": "REMOTE_LOGGER",
-  "logger_node": "foo",
+  "logger_nodes": ["foo"],
   "destination_nodes": [
     {
       "name": "baz"
@@ -386,7 +386,7 @@ TEST_F(ConfigurationTest, ChannelMessageIsLoggedOnNode) {
   "type": "aos.examples.Ping",
   "source_node": "bar",
   "logger": "LOCAL_AND_REMOTE_LOGGER",
-  "logger_node": "baz",
+  "logger_nodes": ["baz"],
   "destination_nodes": [
     {
       "name": "baz"
@@ -462,7 +462,7 @@ TEST_F(ConfigurationTest, ConnectionDeliveryTimeIsLoggedOnNode) {
   "type": "aos.examples.Ping",
   "source_node": "bar",
   "logger": "REMOTE_LOGGER",
-  "logger_node": "baz",
+  "logger_nodes": ["baz"],
   "destination_nodes": [
     {
       "name": "baz"
@@ -495,7 +495,7 @@ TEST_F(ConfigurationTest, ConnectionDeliveryTimeIsLoggedOnNode) {
     {
       "name": "baz",
       "timestamp_logger": "REMOTE_LOGGER",
-      "timestamp_logger_node": "bar"
+      "timestamp_logger_nodes": ["bar"]
     }
   ]
 })channel",
@@ -508,12 +508,12 @@ TEST_F(ConfigurationTest, ConnectionDeliveryTimeIsLoggedOnNode) {
   "type": "aos.examples.Ping",
   "source_node": "bar",
   "logger": "REMOTE_LOGGER",
-  "logger_node": "foo",
+  "logger_nodes": ["foo"],
   "destination_nodes": [
     {
       "name": "baz",
       "timestamp_logger": "REMOTE_LOGGER",
-      "timestamp_logger_node": "foo"
+      "timestamp_logger_nodes": ["foo"]
     }
   ]
 })channel",
@@ -529,7 +529,7 @@ TEST_F(ConfigurationTest, ConnectionDeliveryTimeIsLoggedOnNode) {
     {
       "name": "baz",
       "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-      "timestamp_logger_node": "bar"
+      "timestamp_logger_nodes": ["bar"]
     }
   ]
 })channel",

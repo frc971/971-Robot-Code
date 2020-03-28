@@ -105,7 +105,7 @@
           "name": "pi2",
           "priority": 1,
           "timestamp_logger": "REMOTE_LOGGER",
-          "timestamp_logger_node": "pi1"
+          "timestamp_logger_nodes": ["pi1"]
         }
       ]
     },
@@ -119,13 +119,13 @@
       "type": "aos.examples.Pong",
       "source_node": "pi2",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "logger_node": "pi1",
+      "logger_nodes": ["pi1"],
       "destination_nodes": [
         {
           "name": "pi1",
           "priority": 1,
           "timestamp_logger": "REMOTE_LOGGER",
-          "timestamp_logger_node": "pi1"
+          "timestamp_logger_nodes": ["pi1"]
         }
       ]
     }

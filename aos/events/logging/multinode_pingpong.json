@@ -43,7 +43,7 @@
           "name": "pi2",
           "priority": 1,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_node": "pi1",
+          "timestamp_logger_nodes": ["pi1"],
           "time_to_live": 5000000
         }
       ]
@@ -59,7 +59,7 @@
       "type": "aos.examples.Pong",
       "source_node": "pi2",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "logger_node": "pi1",
+      "logger_nodes": ["pi1"],
       "destination_nodes": [
         {
           "name": "pi1",

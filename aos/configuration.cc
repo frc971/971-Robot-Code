@@ -383,18 +383,20 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
           switch (connection->timestamp_logger()) {
             case LoggerConfig::LOCAL_LOGGER:
             case LoggerConfig::NOT_LOGGED:
-              CHECK(!connection->has_timestamp_logger_node());
+              CHECK(!connection->has_timestamp_logger_nodes());
               break;
             case LoggerConfig::REMOTE_LOGGER:
             case LoggerConfig::LOCAL_AND_REMOTE_LOGGER:
-              CHECK(connection->has_timestamp_logger_node());
-              CHECK(
-                  GetNode(&result.message(),
-                          connection->timestamp_logger_node()->string_view()) !=
-                  nullptr)
-                  << ": Channel " << FlatbufferToJson(c)
-                  << " has an unknown \"timestamp_logger_node\""
-                  << connection->name()->string_view();
+              CHECK(connection->has_timestamp_logger_nodes());
+              CHECK_GT(connection->timestamp_logger_nodes()->size(), 0u);
+              for (const flatbuffers::String *timestamp_logger_node :
+                   *connection->timestamp_logger_nodes()) {
+                CHECK(GetNode(&result.message(),
+                              timestamp_logger_node->string_view()) != nullptr)
+                    << ": Channel " << FlatbufferToJson(c)
+                    << " has an unknown \"timestamp_logger_node\""
+                    << connection->name()->string_view();
+              }
               break;
           }
 
@@ -778,20 +780,24 @@ bool ChannelMessageIsLoggedOnNode(const Channel *channel, const Node *node) {
       }
       return channel->source_node()->string_view() ==
              node->name()->string_view();
-    case LoggerConfig::REMOTE_LOGGER:
-      CHECK(channel->has_logger_node());
-
-      return channel->logger_node()->string_view() ==
-             CHECK_NOTNULL(node)->name()->string_view();
     case LoggerConfig::LOCAL_AND_REMOTE_LOGGER:
-      CHECK(channel->has_logger_node());
+      CHECK(channel->has_logger_nodes());
+      CHECK_GT(channel->logger_nodes()->size(), 0u);
 
       if (channel->source_node()->string_view() ==
           CHECK_NOTNULL(node)->name()->string_view()) {
         return true;
       }
-      if (channel->logger_node()->string_view() == node->name()->string_view()) {
-        return true;
+
+      [[fallthrough]];
+    case LoggerConfig::REMOTE_LOGGER:
+      CHECK(channel->has_logger_nodes());
+      CHECK_GT(channel->logger_nodes()->size(), 0u);
+      for (const flatbuffers::String *logger_node : *channel->logger_nodes()) {
+        if (logger_node->string_view() ==
+            CHECK_NOTNULL(node)->name()->string_view()) {
+          return true;
+        }
       }
 
       return false;
@@ -828,24 +834,27 @@ bool ConnectionDeliveryTimeIsLoggedOnNode(const Connection *connection,
                                           const Node *node) {
   switch (connection->timestamp_logger()) {
     case LoggerConfig::LOCAL_AND_REMOTE_LOGGER:
-      CHECK(connection->has_timestamp_logger_node());
+      CHECK(connection->has_timestamp_logger_nodes());
+      CHECK_GT(connection->timestamp_logger_nodes()->size(), 0u);
       if (connection->name()->string_view() == node->name()->string_view()) {
         return true;
       }
 
-      if (connection->timestamp_logger_node()->string_view() ==
-          node->name()->string_view()) {
-        return true;
+      [[fallthrough]];
+    case LoggerConfig::REMOTE_LOGGER:
+      CHECK(connection->has_timestamp_logger_nodes());
+      CHECK_GT(connection->timestamp_logger_nodes()->size(), 0u);
+      for (const flatbuffers::String *timestamp_logger_node :
+           *connection->timestamp_logger_nodes()) {
+        if (timestamp_logger_node->string_view() ==
+            node->name()->string_view()) {
+          return true;
+        }
       }
 
       return false;
     case LoggerConfig::LOCAL_LOGGER:
       return connection->name()->string_view() == node->name()->string_view();
-    case LoggerConfig::REMOTE_LOGGER:
-      CHECK(connection->has_timestamp_logger_node());
-
-      return connection->timestamp_logger_node()->string_view() ==
-             node->name()->string_view();
     case LoggerConfig::NOT_LOGGED:
       return false;
   }
