@@ -112,7 +112,7 @@ bool SctpClient::Send(int stream, std::string_view data, int time_to_live) {
   // And send.
   const ssize_t size = sendmsg(fd_, &outmsg, MSG_NOSIGNAL | MSG_DONTWAIT);
   if (size == -1) {
-    if (errno != EPIPE && errno != EAGAIN) {
+    if (errno != EPIPE && errno != EAGAIN && errno != ESHUTDOWN) {
       PCHECK(size == static_cast<ssize_t>(data.size()));
     } else {
       return false;
