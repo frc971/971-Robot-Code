@@ -18,6 +18,8 @@
 // bazel run //y2020/vision:camera_reader -- --config y2020/config.json
 //   --override_hostname pi-7971-1  --ignore_timestamps true
 DEFINE_string(config, "config.json", "Path to the config file to use.");
+DEFINE_bool(skip_sift, false,
+            "If true don't run any feature extraction.  Just forward images.");
 
 namespace frc971 {
 namespace vision {
@@ -38,10 +40,7 @@ class CameraReader {
             event_loop->MakeSender<sift::ImageMatchResult>("/camera")),
         detailed_result_sender_(
             event_loop->MakeSender<sift::ImageMatchResult>("/camera/detailed")),
-        read_image_timer_(event_loop->AddTimer([this]() {
-          ReadImage();
-          read_image_timer_->Setup(event_loop_->monotonic_now());
-        })) {
+        read_image_timer_(event_loop->AddTimer([this]() { ReadImage(); })) {
     CopyTrainingFeatures();
     // Technically we don't need to do this, but doing it now avoids the first
     // match attempt being slow.
@@ -288,12 +287,17 @@ void CameraReader::ProcessImage(const CameraImage &image) {
 
   // Next, grab the features from the image.
   std::vector<cv::KeyPoint> keypoints;
+
   cv::Mat descriptors;
-  sift_->detectAndCompute(image_mat, cv::noArray(), keypoints, descriptors);
+  if (!FLAGS_skip_sift) {
+    sift_->detectAndCompute(image_mat, cv::noArray(), keypoints, descriptors);
+  }
 
   // Then, match those features against our training data.
   std::vector<std::vector<cv::DMatch>> matches;
-  matcher_->knnMatch(/* queryDescriptors */ descriptors, matches, /* k */ 2);
+  if (!FLAGS_skip_sift) {
+    matcher_->knnMatch(/* queryDescriptors */ descriptors, matches, /* k */ 2);
+  }
 
   struct PerImageMatches {
     std::vector<const std::vector<cv::DMatch> *> matches;
@@ -502,14 +506,18 @@ void CameraReader::ProcessImage(const CameraImage &image) {
 
 void CameraReader::ReadImage() {
   if (!reader_->ReadLatestImage()) {
-    LOG(INFO) << "No image, sleeping";
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    if (!FLAGS_skip_sift) {
+      LOG(INFO) << "No image, sleeping";
+    }
+    read_image_timer_->Setup(event_loop_->monotonic_now() +
+                             std::chrono::milliseconds(10));
     return;
   }
 
   ProcessImage(reader_->LatestImage());
 
   reader_->SendLatestImage();
+  read_image_timer_->Setup(event_loop_->monotonic_now());
 }
 
 flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sift::ImageMatch>>>
@@ -555,7 +563,9 @@ CameraReader::PackFeatures(flatbuffers::FlatBufferBuilder *fbb,
                            const cv::Mat &descriptors) {
   const int number_features = keypoints.size();
   CHECK_EQ(descriptors.rows, number_features);
-  CHECK_EQ(descriptors.cols, 128);
+  if (number_features != 0) {
+    CHECK_EQ(descriptors.cols, 128);
+  }
   std::vector<flatbuffers::Offset<sift::Feature>> features_vector(
       number_features);
   for (int i = 0; i < number_features; ++i) {
