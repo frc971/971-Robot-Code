@@ -116,7 +116,7 @@ bool SctpServer::Send(std::string_view data, sctp_assoc_t snd_assoc_id,
   // And send.
   const ssize_t size = sendmsg(fd_, &outmsg, MSG_NOSIGNAL | MSG_DONTWAIT);
   if (size == -1) {
-    if (errno == EPIPE || errno == EAGAIN) {
+    if (errno == EPIPE || errno == EAGAIN || errno == ESHUTDOWN) {
       return false;
     }
     PCHECK(size == static_cast<ssize_t>(data.size()));
