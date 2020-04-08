@@ -205,5 +205,31 @@ TEST_F(JsonToFlatbufferTest, NestedArrays) {
 //
 // TODO(austin): unions?
 
+TEST_F(JsonToFlatbufferTest, TrimmedVector) {
+  std::string json_short = "{ \"vector_foo_int\": [ 0";
+  for (int i = 1; i < 100; ++i) {
+    json_short += ", ";
+    json_short += std::to_string(i);
+  }
+  std::string json_long = json_short;
+  json_short += " ] }";
+  json_long += ", 101 ] }";
+
+  const flatbuffers::DetachedBuffer fb_short =
+      JsonToFlatbuffer(json_short.data(), ConfigurationTypeTable());
+  ASSERT_GT(fb_short.size(), 0);
+  const flatbuffers::DetachedBuffer fb_long =
+      JsonToFlatbuffer(json_long.data(), ConfigurationTypeTable());
+  ASSERT_GT(fb_long.size(), 0);
+
+  const std::string back_json_short =
+      FlatbufferToJson(fb_short, ConfigurationTypeTable(), false, 100);
+  const std::string back_json_long =
+      FlatbufferToJson(fb_long, ConfigurationTypeTable(), false, 100);
+
+  EXPECT_EQ(json_short, back_json_short);
+  EXPECT_EQ("{ \"vector_foo_int\": [ ... 101 elements ... ] }", back_json_long);
+}
+
 }  // namespace testing
 }  // namespace aos

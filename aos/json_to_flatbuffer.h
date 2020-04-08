@@ -39,40 +39,46 @@ inline flatbuffers::Offset<T> JsonToFlatbuffer(
 // TableFlatbufferToJson.
 ::std::string BufferFlatbufferToJson(const uint8_t *buffer,
                                      const flatbuffers::TypeTable *typetable,
-                                     bool multi_line = false);
+                                     bool multi_line = false,
+                                     size_t max_vector_size = SIZE_MAX);
 
 ::std::string TableFlatbufferToJson(const flatbuffers::Table *t,
                                     const ::flatbuffers::TypeTable *typetable,
-                                    bool multi_line);
+                                    bool multi_line, size_t max_vector_size = SIZE_MAX);
 
 // Converts a DetachedBuffer holding a flatbuffer to JSON.
 inline ::std::string FlatbufferToJson(const flatbuffers::DetachedBuffer &buffer,
                                       const flatbuffers::TypeTable *typetable,
-                                      bool multi_line = false) {
-  return BufferFlatbufferToJson(buffer.data(), typetable, multi_line);
+                                      bool multi_line = false,
+                                      size_t max_vector_size = SIZE_MAX) {
+  return BufferFlatbufferToJson(buffer.data(), typetable, multi_line,
+                                max_vector_size);
 }
 
 // Converts a Flatbuffer<T> holding a flatbuffer to JSON.
 template <typename T>
 inline ::std::string FlatbufferToJson(const Flatbuffer<T> &flatbuffer,
-                                      bool multi_line = false) {
-  return BufferFlatbufferToJson(
-      flatbuffer.data(), Flatbuffer<T>::MiniReflectTypeTable(), multi_line);
+                                      bool multi_line = false,
+                                      size_t max_vector_size = SIZE_MAX) {
+  return BufferFlatbufferToJson(flatbuffer.data(),
+                                Flatbuffer<T>::MiniReflectTypeTable(),
+                                multi_line, max_vector_size);
 }
 
 // Converts a flatbuffer::Table to JSON.
 template <typename T>
-typename std::enable_if<
-    std::is_base_of<flatbuffers::Table, T>::value,
-    std::string>::type inline FlatbufferToJson(const T *flatbuffer,
-                                               bool multi_line = false) {
+typename std::enable_if<std::is_base_of<flatbuffers::Table, T>::value,
+                        std::string>::
+    type inline FlatbufferToJson(const T *flatbuffer, bool multi_line = false,
+                                 size_t max_vector_size = SIZE_MAX) {
   return TableFlatbufferToJson(
       reinterpret_cast<const flatbuffers::Table *>(flatbuffer),
-      Flatbuffer<T>::MiniReflectTypeTable(), multi_line);
+      Flatbuffer<T>::MiniReflectTypeTable(), multi_line, max_vector_size);
 }
 
 std::string FlatbufferToJson(const reflection::Schema *const schema,
-                             const uint8_t *const data);
+                             const uint8_t *const data,
+                             size_t max_vector_size = SIZE_MAX);
 
 }  // namespace aos
 

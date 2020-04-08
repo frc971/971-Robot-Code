@@ -314,5 +314,23 @@ TEST_F(FlatbufferIntrospectionTest, StringEscapeTest) {
   EXPECT_EQ(out, "{\"foo_string\": \"\\\"\\\\\\b\\f\\n\\r\\t\"}");
 }
 
+TEST_F(FlatbufferIntrospectionTest, TrimmedVector) {
+  flatbuffers::FlatBufferBuilder builder;
+
+  std::vector<int32_t> contents;
+  for (int i = 0; i < 101; ++i) {
+    contents.push_back(i);
+  }
+  const auto contents_offset = builder.CreateVector(contents);
+
+  ConfigurationBuilder config_builder(builder);
+  config_builder.add_vector_foo_int(contents_offset);
+
+  builder.Finish(config_builder.Finish());
+
+  std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer(), 100);
+  EXPECT_EQ(out, "{\"vector_foo_int\": [ ... 101 elements ... ]}");
+}
+
 }  // namespace testing
 }  // namespace aos

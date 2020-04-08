@@ -8,6 +8,8 @@
 #include "gflags/gflags.h"
 
 DEFINE_string(config, "./config.json", "File path of aos configuration");
+DEFINE_int32(max_vector_size, 100,
+             "If positive, vectors longer than this will not be printed");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
@@ -57,14 +59,16 @@ int main(int argc, char **argv) {
                         << context.monotonic_event_time << "): "
                         << aos::FlatbufferToJson(
                                channel->schema(),
-                               static_cast<const uint8_t *>(message))
+                               static_cast<const uint8_t *>(message),
+                               FLAGS_max_vector_size)
                         << '\n';
             } else {
               std::cout << context.realtime_event_time << " ("
                         << context.monotonic_event_time << "): "
                         << aos::FlatbufferToJson(
                                channel->schema(),
-                               static_cast<const uint8_t *>(message))
+                               static_cast<const uint8_t *>(message),
+                               FLAGS_max_vector_size)
                         << '\n';
             }
           });

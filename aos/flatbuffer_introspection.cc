@@ -1,3 +1,4 @@
+#include <cmath>
 #include <iostream>
 #include <sstream>
 
@@ -46,6 +47,10 @@ void IntToString(int64_t val, reflection::BaseType type,
 
 void FloatToString(double val, reflection::BaseType type,
                    std::stringstream *out) {
+  if (std::isnan(val)) {
+    *out << "null";
+    return;
+  }
   switch (type) {
     case BaseType::Float:
       out->precision(std::numeric_limits<float>::digits10);
@@ -65,7 +70,7 @@ void ObjectToString(
     const reflection::Object *obj,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Object>> *objects,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Enum>> *enums,
-    const ObjT *object, std::stringstream *out);
+    const ObjT *object, size_t max_vector_size, std::stringstream *out);
 
 // Get enum value name
 const char *EnumToString(
@@ -95,6 +100,8 @@ void IntOrEnumToString(
 
       if (value_string != nullptr) {
         *out << '"' << value_string << '"';
+      } else {
+        *out << val;
       }
     }
   } else {
@@ -113,7 +120,7 @@ void FieldToString(
     const ObjT *table, const reflection::Field *field,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Object>> *objects,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Enum>> *enums,
-    std::stringstream *out) {
+    size_t max_vector_size, std::stringstream *out) {
   const reflection::Type *type = field->type();
 
   switch (type->base_type()) {
@@ -176,6 +183,10 @@ void FieldToString(
             flatbuffers::GetFieldAnyV(*table, *field);
         reflection::BaseType elem_type = type->element();
 
+        if (vector->size() > max_vector_size) {
+          *out << "[ ... " << vector->size() << " elements ... ]";
+          break;
+        }
         *out << '[';
         for (flatbuffers::uoffset_t i = 0; i < vector->size(); ++i) {
           if (i != 0) {
@@ -200,11 +211,13 @@ void FieldToString(
                     flatbuffers::GetAnyVectorElemAddressOf<
                         const flatbuffers::Struct>(
                         vector, i, objects->Get(type->index())->bytesize()),
+                        max_vector_size,
                     out);
               } else {
                 ObjectToString(objects->Get(type->index()), objects, enums,
                                flatbuffers::GetAnyVectorElemPointer<
                                    const flatbuffers::Table>(vector, i),
+                                   max_vector_size,
                                out);
               }
             }
@@ -219,10 +232,10 @@ void FieldToString(
       if (type->index() > -1 && type->index() < (int32_t)objects->size()) {
         if (objects->Get(type->index())->is_struct()) {
           ObjectToString(objects->Get(type->index()), objects, enums,
-                         flatbuffers::GetFieldStruct(*table, *field), out);
+                         flatbuffers::GetFieldStruct(*table, *field), max_vector_size, out);
         } else if constexpr (std::is_same<flatbuffers::Table, ObjT>()) {
           ObjectToString(objects->Get(type->index()), objects, enums,
-                         flatbuffers::GetFieldT(*table, *field), out);
+                         flatbuffers::GetFieldT(*table, *field),  max_vector_size,out);
         }
       } else {
         *out << "null";
@@ -240,7 +253,7 @@ void ObjectToString(
     const reflection::Object *obj,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Object>> *objects,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Enum>> *enums,
-    const ObjT *object, std::stringstream *out) {
+    const ObjT *object, size_t max_vector_size, std::stringstream *out) {
   static_assert(std::is_same<flatbuffers::Table, ObjT>() ||
                     std::is_same<flatbuffers::Struct, ObjT>(),
                 "Type must be either flatbuffer table or struct");
@@ -256,7 +269,7 @@ void ObjectToString(
         print_sep = true;
       }
       *out << '"' << field->name()->c_str() << "\": ";
-      FieldToString(object, field, objects, enums, out);
+      FieldToString(object, field, objects, enums, max_vector_size, out);
     }
   }
   *out << '}';
@@ -265,14 +278,15 @@ void ObjectToString(
 }  // namespace
 
 std::string FlatbufferToJson(const reflection::Schema *schema,
-                             const uint8_t *data) {
+                             const uint8_t *data, size_t max_vector_size) {
   const flatbuffers::Table *table = flatbuffers::GetAnyRoot(data);
 
   const reflection::Object *obj = schema->root_table();
 
   std::stringstream out;
 
-  ObjectToString(obj, schema->objects(), schema->enums(), table, &out);
+  ObjectToString(obj, schema->objects(), schema->enums(), table,
+                 max_vector_size, &out);
 
   return out.str();
 }

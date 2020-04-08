@@ -90,7 +90,6 @@ bool AddSingleElement(const flatbuffers::TypeTable *typetable, int field_index,
                       flatbuffers::Offset<flatbuffers::String> offset_element,
                       flatbuffers::FlatBufferBuilder *fbb);
 
-
 // Writes an array of FieldElement (with the definition in the type
 // table) to the builder.  Returns the offset of the table.
 flatbuffers::uoffset_t WriteTable(const flatbuffers::TypeTable *typetable,
@@ -146,8 +145,7 @@ class JsonParser {
   // Parses the flatbuffer.  This is a second method so we can do easier
   // cleanup at the top level.  Returns true on success.
   bool DoParse(const flatbuffers::TypeTable *typetable,
-               const std::string_view data,
-               flatbuffers::uoffset_t *table_end);
+               const std::string_view data, flatbuffers::uoffset_t *table_end);
 
   // Adds *_value for the provided field.  If we are in a vector, queues the
   // data up in vector_elements.  Returns true on success.
@@ -249,8 +247,8 @@ bool JsonParser::DoParse(const flatbuffers::TypeTable *typetable,
           return false;
         } else {
           // End of a nested struct!  Add it.
-          const flatbuffers::uoffset_t end = WriteTable(
-              stack_.back().typetable, stack_.back().elements, fbb_);
+          const flatbuffers::uoffset_t end =
+              WriteTable(stack_.back().typetable, stack_.back().elements, fbb_);
 
           // We now want to talk about the parent structure.  Pop the child.
           stack_.pop_back();
@@ -774,8 +772,7 @@ flatbuffers::Offset<flatbuffers::Table> JsonToFlatbuffer(
 }
 
 flatbuffers::DetachedBuffer JsonToFlatbuffer(
-    const std::string_view data,
-    const flatbuffers::TypeTable *typetable) {
+    const std::string_view data, const flatbuffers::TypeTable *typetable) {
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
 
@@ -793,7 +790,7 @@ flatbuffers::DetachedBuffer JsonToFlatbuffer(
 
 ::std::string BufferFlatbufferToJson(const uint8_t *buffer,
                                      const ::flatbuffers::TypeTable *typetable,
-                                     bool multi_line) {
+                                     bool multi_line, size_t max_vector_size) {
   // It is pretty common to get passed in a nullptr when a test fails.  Rather
   // than CHECK, return a more user friendly result.
   if (buffer == nullptr) {
@@ -801,22 +798,145 @@ flatbuffers::DetachedBuffer JsonToFlatbuffer(
   }
   return TableFlatbufferToJson(reinterpret_cast<const flatbuffers::Table *>(
                                    flatbuffers::GetRoot<uint8_t>(buffer)),
-                               typetable, multi_line);
+                               typetable, multi_line, max_vector_size);
 }
+
+namespace {
+
+// A visitor which manages skipping the contents of vectors that are longer than
+// a specified threshold.
+class TruncatingStringVisitor : public flatbuffers::IterationVisitor {
+ public:
+  TruncatingStringVisitor(size_t max_vector_size, std::string delimiter,
+                          bool quotes, std::string indent, bool vdelimited)
+      : max_vector_size_(max_vector_size),
+        to_string_(delimiter, quotes, indent, vdelimited) {}
+  ~TruncatingStringVisitor() override {}
+
+  void StartSequence() override {
+    if (should_skip()) return;
+    to_string_.StartSequence();
+  }
+  void EndSequence() override {
+    if (should_skip()) return;
+    to_string_.EndSequence();
+  }
+  void Field(size_t field_idx, size_t set_idx, flatbuffers::ElementaryType type,
+             bool is_vector, const flatbuffers::TypeTable *type_table,
+             const char *name, const uint8_t *val) override {
+    if (should_skip()) return;
+    to_string_.Field(field_idx, set_idx, type, is_vector, type_table, name,
+                     val);
+  }
+  void UType(uint8_t value, const char *name) override {
+    if (should_skip()) return;
+    to_string_.UType(value, name);
+  }
+  void Bool(bool value) override {
+    if (should_skip()) return;
+    to_string_.Bool(value);
+  }
+  void Char(int8_t value, const char *name) override {
+    if (should_skip()) return;
+    to_string_.Char(value, name);
+  }
+  void UChar(uint8_t value, const char *name) override {
+    if (should_skip()) return;
+    to_string_.UChar(value, name);
+  }
+  void Short(int16_t value, const char *name) override {
+    if (should_skip()) return;
+    to_string_.Short(value, name);
+  }
+  void UShort(uint16_t value, const char *name) override {
+    if (should_skip()) return;
+    to_string_.UShort(value, name);
+  }
+  void Int(int32_t value, const char *name) override {
+    if (should_skip()) return;
+    to_string_.Int(value, name);
+  }
+  void UInt(uint32_t value, const char *name) override {
+    if (should_skip()) return;
+    to_string_.UInt(value, name);
+  }
+  void Long(int64_t value) override {
+    if (should_skip()) return;
+    to_string_.Long(value);
+  }
+  void ULong(uint64_t value) override {
+    if (should_skip()) return;
+    to_string_.ULong(value);
+  }
+  void Float(float value) override {
+    if (should_skip()) return;
+    to_string_.Float(value);
+  }
+  void Double(double value) override {
+    if (should_skip()) return;
+    to_string_.Double(value);
+  }
+  void String(const flatbuffers::String *value) override {
+    if (should_skip()) return;
+    to_string_.String(value);
+  }
+  void Unknown(const uint8_t *value) override {
+    if (should_skip()) return;
+    to_string_.Unknown(value);
+  }
+  void Element(size_t i, flatbuffers::ElementaryType type,
+               const flatbuffers::TypeTable *type_table,
+               const uint8_t *val) override {
+    if (should_skip()) return;
+    to_string_.Element(i, type, type_table, val);
+  }
+
+  virtual void StartVector(size_t size) override {
+    if (should_skip()) {
+      ++skip_levels_;
+      return;
+    }
+    if (size > max_vector_size_) {
+      ++skip_levels_;
+      to_string_.s += "[ ... " + std::to_string(size) + " elements ... ]";
+      return;
+    }
+    to_string_.StartVector(size);
+  }
+  virtual void EndVector() override {
+    if (should_skip()) {
+      --skip_levels_;
+      return;
+    }
+    to_string_.EndVector();
+  }
+
+  std::string &string() { return to_string_.s; }
+
+ private:
+  bool should_skip() const { return skip_levels_ > 0; }
+
+  const size_t max_vector_size_;
+  flatbuffers::ToStringVisitor to_string_;
+  int skip_levels_ = 0;
+};
+
+}  // namespace
 
 ::std::string TableFlatbufferToJson(const flatbuffers::Table *t,
                                     const ::flatbuffers::TypeTable *typetable,
-                                    bool multi_line) {
+                                    bool multi_line, size_t max_vector_size) {
   // It is pretty common to get passed in a nullptr when a test fails.  Rather
   // than CHECK, return a more user friendly result.
   if (t == nullptr) {
     return "null";
   }
-  ::flatbuffers::ToStringVisitor tostring_visitor(
-      multi_line ? "\n" : " ", true, multi_line ? " " : "", multi_line);
+  TruncatingStringVisitor tostring_visitor(max_vector_size,
+                                           multi_line ? "\n" : " ", true,
+                                           multi_line ? " " : "", multi_line);
   flatbuffers::IterateObject(reinterpret_cast<const uint8_t *>(t), typetable,
                              &tostring_visitor);
-  return tostring_visitor.s;
+  return tostring_visitor.string();
 }
 
 }  // namespace aos

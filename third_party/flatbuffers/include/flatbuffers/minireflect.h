@@ -61,7 +61,7 @@ struct IterationVisitor {
   virtual void String(const String *) {}
   virtual void Unknown(const uint8_t *) {}  // From a future version.
   // These mark the scope of a vector.
-  virtual void StartVector() {}
+  virtual void StartVector(size_t /*size*/) {}
   virtual void EndVector() {}
   virtual void Element(size_t /*i*/, ElementaryType /*type*/,
                        const TypeTable * /*type_table*/,
@@ -254,7 +254,7 @@ inline void IterateObject(const uint8_t *obj, const TypeTable *type_table,
       if (is_vector) {
         val += ReadScalar<uoffset_t>(val);
         auto vec = reinterpret_cast<const Vector<uint8_t> *>(val);
-        visitor->StartVector();
+        visitor->StartVector(vec->size());
         auto elem_ptr = vec->Data();
         for (size_t j = 0; j < vec->size(); j++) {
           visitor->Element(j, type, ref, elem_ptr);
@@ -358,7 +358,7 @@ struct ToStringVisitor : public IterationVisitor {
     EscapeString(str->c_str(), str->size(), &s, true, false);
   }
   void Unknown(const uint8_t *) { s += "(?)"; }
-  void StartVector() {
+  void StartVector(size_t /*size*/) {
     s += "[";
     if (vector_delimited) {
       s += d;
