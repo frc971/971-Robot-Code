@@ -13,6 +13,11 @@ import frc971.vision.sift.TrainingData as TrainingData
 import frc971.vision.sift.TrainingImage as TrainingImage
 import frc971.vision.sift.TransformationMatrix as TransformationMatrix
 
+import gflags
+import glog
+
+FLAGS = gflags.FLAGS
+
 
 # Takes a 3x3 rotation matrix and 3x1 translation vector, and outputs 12
 # element list, suitable for outputing to flatbuffer
@@ -65,7 +70,7 @@ def main():
         target_data_list = target_definition.compute_target_definition()
         camera_calib_list = camera_definition.load_camera_definitions()
 
-    glog.info("Writing file to ", output_path)
+    glog.info("Writing file to %s", output_path)
 
     fbb = flatbuffers.Builder(0)
 
@@ -242,4 +247,6 @@ def main():
 
 
 if __name__ == '__main__':
+    argv = FLAGS(sys.argv)
+    glog.init()
     main()

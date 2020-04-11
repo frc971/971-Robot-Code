@@ -31,6 +31,7 @@ class CameraParameters:
         self.turret_ext = None
         self.node_name = ""
         self.team_number = -1
+        self.timestamp = 0
 
 
 def load_camera_definitions():
@@ -91,25 +92,36 @@ def load_camera_definitions():
 
     dir_name = dtd.bazel_name_fix('calib_files')
     for filename in os.listdir(dir_name):
-        if "cam-calib-int" in filename and filename.endswith(".json"):
+        glog.debug("Inspecting %s", filename)
+        if ("cam-calib-int" in filename or 'calibration' in filename) and filename.endswith(".json"):
             # Extract intrinsics from file
-            fn_split = filename.split("_")
-            hostname_split = fn_split[1].split("-")
-            if hostname_split[0] == "pi":
-                team_number = int(hostname_split[1])
-                node_name = hostname_split[0] + hostname_split[2]
-
             calib_file = open(dir_name + "/" + filename, 'r')
             calib_dict = json.loads(calib_file.read())
-            hostname = np.asarray(calib_dict["hostname"])
-            camera_matrix = np.asarray(calib_dict["camera_matrix"])
-            dist_coeffs = np.asarray(calib_dict["dist_coeffs"])
+
+            # We have 2 json formats.
+            #  1) is Jim's custom format.
+            #  2) is the flatbuffer definition of the intrinsics converted to
+            #     JSON.
+            # See which one we have and parse accordingly.
+            if 'hostname' in calib_dict:
+                hostname_split = calib_dict["hostname"].split("-")
+                team_number = int(hostname_split[1])
+                node_name = hostname_split[0] + hostname_split[2]
+                camera_matrix = np.asarray(calib_dict["camera_matrix"])
+                dist_coeffs = np.asarray(calib_dict["dist_coeffs"])
+            else:
+                team_number = calib_dict["team_number"]
+                node_name = calib_dict["node_name"]
+                camera_matrix = np.asarray(calib_dict["intrinsics"]).reshape(
+                    (3, 3))
+                dist_coeffs = np.asarray(calib_dict["dist_coeffs"]).reshape(
+                    (1, 5))
 
             # Look for match, and replace camera_intrinsics
             for camera_calib in camera_list:
                 if camera_calib.node_name == node_name and camera_calib.team_number == team_number:
-                    glog.info("Found calib for %s, team #%d" %
-                              (node_name, team_number))
+                    glog.info("Found calib for %s, team #%d" % (node_name,
+                                                                team_number))
                     camera_calib.camera_int.camera_matrix = copy.copy(
                         camera_matrix)
                     camera_calib.camera_int.dist_coeffs = copy.copy(

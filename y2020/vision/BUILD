@@ -83,6 +83,33 @@ cc_binary(
 )
 
 cc_binary(
+    name = "calibration",
+    srcs = [
+        "calibration.cc",
+    ],
+    data = [
+        "//y2020:config.json",
+    ],
+    restricted_to = [
+        "//tools:k8",
+        "//tools:armhf-debian",
+    ],
+    visibility = ["//y2020:__subpackages__"],
+    deps = [
+        ":vision_fbs",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//frc971/control_loops/drivetrain:improved_down_estimator",
+        "//third_party:opencv",
+        "//y2020/vision/sift:sift_fbs",
+        "//y2020/vision/sift:sift_training_fbs",
+        "//y2020/vision/tools/python_code:sift_training_data",
+        "@com_google_absl//absl/strings:str_format",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_binary(
     name = "viewer_replay",
     srcs = [
         "viewer_replay.cc",

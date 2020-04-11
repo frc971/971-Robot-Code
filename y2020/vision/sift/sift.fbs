@@ -101,6 +101,9 @@ table CameraCalibration {
 
   // This is the standard OpenCV 5 parameter distortion coefficients
   dist_coeffs:[float];
+
+  // Timestamp for when the calibration was taken on the realtime clock.
+  calibration_timestamp:int64;
 }
 
 // Contains the information the EKF wants from an image matched against a single
