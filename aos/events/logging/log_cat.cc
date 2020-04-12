@@ -15,6 +15,8 @@ DEFINE_string(type, "",
               "type filter.");
 DEFINE_bool(raw, false,
             "If true, just print the data out unsorted and unparsed");
+DEFINE_int32(max_vector_size, 100,
+             "If positive, vectors longer than this will not be printed");
 
 int main(int argc, char **argv) {
   gflags::SetUsageMessage(
@@ -44,7 +46,8 @@ int main(int argc, char **argv) {
         break;
       }
 
-      std::cout << aos::FlatbufferToJson(message.value()) << std::endl;
+      std::cout << aos::FlatbufferToJson(message.value(), FLAGS_max_vector_size)
+                << std::endl;
     }
     return 0;
   }
@@ -107,7 +110,8 @@ int main(int argc, char **argv) {
                           << channel->type()->c_str() << ": "
                           << aos::FlatbufferToJson(
                                  channel->schema(),
-                                 static_cast<const uint8_t *>(message))
+                                 static_cast<const uint8_t *>(message),
+                                 FLAGS_max_vector_size)
                           << std::endl;
               } else {
                 std::cout << node_name << context.realtime_event_time << " ("
@@ -116,7 +120,8 @@ int main(int argc, char **argv) {
                           << channel->type()->c_str() << ": "
                           << aos::FlatbufferToJson(
                                  channel->schema(),
-                                 static_cast<const uint8_t *>(message))
+                                 static_cast<const uint8_t *>(message),
+                                 FLAGS_max_vector_size)
                           << std::endl;
               }
             });
