@@ -21,7 +21,7 @@
 #include "frc971/control_loops/drivetrain/splinedrivetrain.h"
 #include "frc971/control_loops/drivetrain/ssdrivetrain.h"
 #include "frc971/queues/gyro_generated.h"
-#include "frc971/wpilib/imu_generated.h"
+#include "frc971/wpilib/imu_batch_generated.h"
 #include "frc971/zeroing/imu_zeroer.h"
 
 namespace frc971 {
@@ -59,7 +59,7 @@ class DrivetrainLoop
   const DrivetrainConfig<double> dt_config_;
 
   ::aos::Fetcher<LocalizerControl> localizer_control_fetcher_;
-  ::aos::Fetcher<::frc971::IMUValues> imu_values_fetcher_;
+  ::aos::Fetcher<::frc971::IMUValuesBatch> imu_values_fetcher_;
   ::aos::Fetcher<::frc971::sensors::GyroReading> gyro_reading_fetcher_;
 
   zeroing::ImuZeroer imu_zeroer_;

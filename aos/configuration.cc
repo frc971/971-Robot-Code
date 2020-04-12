@@ -1,11 +1,11 @@
 #include "aos/configuration.h"
 
-#include <string.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
+#include <netinet/in.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include <set>
@@ -80,8 +80,7 @@ namespace configuration {
 namespace {
 
 // Extracts the folder part of a path.  Returns ./ if there is no path.
-std::string_view ExtractFolder(
-    const std::string_view filename) {
+std::string_view ExtractFolder(const std::string_view filename) {
   auto last_slash_pos = filename.find_last_of("/\\");
 
   return last_slash_pos == std::string_view::npos
@@ -178,7 +177,7 @@ bool CompareChannels(const Channel *c,
 
 // Compares for equality (c == p) a channel, and a name, type tuple.
 bool EqualsChannels(const Channel *c,
-                     ::std::pair<std::string_view, std::string_view> p) {
+                    ::std::pair<std::string_view, std::string_view> p) {
   return c->name()->string_view() == p.first &&
          c->type()->string_view() == p.second;
 }
@@ -195,8 +194,7 @@ bool EqualsApplications(const Application *a, std::string_view name) {
 
 // Maps name for the provided maps.  Modifies name.
 void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
-                std::string_view *name, std::string_view type,
-                const Node *node) {
+                std::string *name, std::string_view type, const Node *node) {
   // For the same reason we merge configs in reverse order, we want to process
   // maps in reverse order.  That lets the outer config overwrite channels from
   // the inner configs.
@@ -210,8 +208,16 @@ void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
 
     // Handle normal maps (now that we know that match and rename are filled
     // out).
-    if (i->match()->name()->string_view() != *name) {
-      continue;
+    const std::string_view match_name = i->match()->name()->string_view();
+    if (match_name != *name) {
+      if (match_name.back() == '*' &&
+          std::string_view(*name).substr(
+              0, std::min(name->size(), match_name.size() - 1)) ==
+              match_name.substr(0, match_name.size() - 1)) {
+        CHECK_EQ(match_name.find('*'), match_name.size() - 1);
+      } else {
+        continue;
+      }
     }
 
     // Handle type specific maps.
@@ -219,15 +225,19 @@ void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
       continue;
     }
 
+    // Now handle node specific maps.
     if (node != nullptr && i->match()->has_source_node() &&
         i->match()->source_node()->string_view() !=
             node->name()->string_view()) {
       continue;
     }
 
-    VLOG(1) << "Renamed \"" << *name << "\" to \""
-            << i->rename()->name()->string_view() << "\"";
-    *name = i->rename()->name()->string_view();
+    std::string new_name(i->rename()->name()->string_view());
+    if (match_name.back() == '*') {
+      new_name += std::string(name->substr(match_name.size() - 1));
+    }
+    VLOG(1) << "Renamed \"" << *name << "\" to \"" << new_name << "\"";
+    *name = std::move(new_name);
   }
 }
 
@@ -298,8 +308,7 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   {
     ::std::vector<flatbuffers::Offset<Channel>> channel_offsets;
     for (const FlatbufferDetachedBuffer<Channel> &c : channels) {
-      channel_offsets.emplace_back(
-          CopyFlatBuffer<Channel>(&c.message(), &fbb));
+      channel_offsets.emplace_back(CopyFlatBuffer<Channel>(&c.message(), &fbb));
     }
     channels_offset = fbb.CreateVector(channel_offsets);
   }
@@ -362,8 +371,36 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   // Check that if there is a node list, all the source nodes are filled out and
   // valid, and all the destination nodes are valid (and not the source).  This
   // is a basic consistency check.
-  if (result.message().has_nodes() && config.message().has_channels()) {
-    for (const Channel *c : *config.message().channels()) {
+  if (result.message().has_channels()) {
+    for (const Channel *c : *result.message().channels()) {
+      if (c->name()->string_view().back() == '/') {
+        LOG(FATAL) << "Channel names can't end with '/'";
+      }
+      if(c->name()->string_view().find("//")!= std::string_view::npos) {
+        LOG(FATAL) << ": Invalid channel name " << c->name()->string_view()
+                   << ", can't use //.";
+      }
+      for (const char data : c->name()->string_view()) {
+        if (data >= '0' && data <= '9') {
+          continue;
+        }
+        if (data >= 'a' && data <= 'z') {
+          continue;
+        }
+        if (data >= 'A' && data <= 'Z') {
+          continue;
+        }
+        if (data == '-' || data == '_' || data == '/') {
+          continue;
+        }
+        LOG(FATAL) << "Invalid channel name " << c->name()->string_view()
+                   << ", can only use [-a-zA-Z0-9_/]";
+      }
+    }
+  }
+
+  if (result.message().has_nodes() && result.message().has_channels()) {
+    for (const Channel *c : *result.message().channels()) {
       CHECK(c->has_source_node()) << ": Channel " << FlatbufferToJson(c)
                                   << " is missing \"source_node\"";
       CHECK(GetNode(&result.message(), c->source_node()->string_view()) !=
@@ -383,18 +420,20 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
           switch (connection->timestamp_logger()) {
             case LoggerConfig::LOCAL_LOGGER:
             case LoggerConfig::NOT_LOGGED:
-              CHECK(!connection->has_timestamp_logger_node());
+              CHECK(!connection->has_timestamp_logger_nodes());
               break;
             case LoggerConfig::REMOTE_LOGGER:
             case LoggerConfig::LOCAL_AND_REMOTE_LOGGER:
-              CHECK(connection->has_timestamp_logger_node());
-              CHECK(
-                  GetNode(&result.message(),
-                          connection->timestamp_logger_node()->string_view()) !=
-                  nullptr)
-                  << ": Channel " << FlatbufferToJson(c)
-                  << " has an unknown \"timestamp_logger_node\""
-                  << connection->name()->string_view();
+              CHECK(connection->has_timestamp_logger_nodes());
+              CHECK_GT(connection->timestamp_logger_nodes()->size(), 0u);
+              for (const flatbuffers::String *timestamp_logger_node :
+                   *connection->timestamp_logger_nodes()) {
+                CHECK(GetNode(&result.message(),
+                              timestamp_logger_node->string_view()) != nullptr)
+                    << ": Channel " << FlatbufferToJson(c)
+                    << " has an unknown \"timestamp_logger_node\""
+                    << connection->name()->string_view();
+              }
               break;
           }
 
@@ -429,6 +468,7 @@ const Channel *GetChannel(const Configuration *config, std::string_view name,
                           std::string_view type,
                           std::string_view application_name, const Node *node) {
   const std::string_view original_name = name;
+  std::string mutable_name;
   VLOG(1) << "Looking up { \"name\": \"" << name << "\", \"type\": \"" << type
           << "\" }";
 
@@ -441,14 +481,18 @@ const Channel *GetChannel(const Configuration *config, std::string_view name,
     if (application_iterator != config->applications()->cend() &&
         EqualsApplications(*application_iterator, application_name)) {
       if (application_iterator->has_maps()) {
-        HandleMaps(application_iterator->maps(), &name, type, node);
+        mutable_name = std::string(name);
+        HandleMaps(application_iterator->maps(), &mutable_name, type, node);
+        name = std::string_view(mutable_name);
       }
     }
   }
 
   // Now do global maps.
   if (config->has_maps()) {
-    HandleMaps(config->maps(), &name, type, node);
+    mutable_name = std::string(name);
+    HandleMaps(config->maps(), &mutable_name, type, node);
+    name = std::string_view(mutable_name);
   }
 
   if (original_name != name) {
@@ -458,8 +502,7 @@ const Channel *GetChannel(const Configuration *config, std::string_view name,
 
   // Then look for the channel.
   auto channel_iterator =
-      std::lower_bound(config->channels()->cbegin(),
-                       config->channels()->cend(),
+      std::lower_bound(config->channels()->cbegin(), config->channels()->cend(),
                        std::make_pair(name, type), CompareChannels);
 
   // Make sure we actually found it, and it matches.
@@ -512,7 +555,7 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
 
       // Search for a schema with a matching type.
       const aos::FlatbufferString<reflection::Schema> *found_schema = nullptr;
-      for (const aos::FlatbufferString<reflection::Schema> &schema: schemas) {
+      for (const aos::FlatbufferString<reflection::Schema> &schema : schemas) {
         if (schema.message().root_table() != nullptr) {
           if (schema.message().root_table()->name()->string_view() ==
               c->type()->string_view()) {
@@ -769,7 +812,7 @@ bool ChannelIsReadableOnNode(const Channel *channel, const Node *node) {
 }
 
 bool ChannelMessageIsLoggedOnNode(const Channel *channel, const Node *node) {
-  switch(channel->logger()) {
+  switch (channel->logger()) {
     case LoggerConfig::LOCAL_LOGGER:
       if (node == nullptr) {
         // Single node world.  If there is a local logger, then we want to use
@@ -778,20 +821,24 @@ bool ChannelMessageIsLoggedOnNode(const Channel *channel, const Node *node) {
       }
       return channel->source_node()->string_view() ==
              node->name()->string_view();
-    case LoggerConfig::REMOTE_LOGGER:
-      CHECK(channel->has_logger_node());
-
-      return channel->logger_node()->string_view() ==
-             CHECK_NOTNULL(node)->name()->string_view();
     case LoggerConfig::LOCAL_AND_REMOTE_LOGGER:
-      CHECK(channel->has_logger_node());
+      CHECK(channel->has_logger_nodes());
+      CHECK_GT(channel->logger_nodes()->size(), 0u);
 
       if (channel->source_node()->string_view() ==
           CHECK_NOTNULL(node)->name()->string_view()) {
         return true;
       }
-      if (channel->logger_node()->string_view() == node->name()->string_view()) {
-        return true;
+
+      [[fallthrough]];
+    case LoggerConfig::REMOTE_LOGGER:
+      CHECK(channel->has_logger_nodes());
+      CHECK_GT(channel->logger_nodes()->size(), 0u);
+      for (const flatbuffers::String *logger_node : *channel->logger_nodes()) {
+        if (logger_node->string_view() ==
+            CHECK_NOTNULL(node)->name()->string_view()) {
+          return true;
+        }
       }
 
       return false;
@@ -828,24 +875,27 @@ bool ConnectionDeliveryTimeIsLoggedOnNode(const Connection *connection,
                                           const Node *node) {
   switch (connection->timestamp_logger()) {
     case LoggerConfig::LOCAL_AND_REMOTE_LOGGER:
-      CHECK(connection->has_timestamp_logger_node());
+      CHECK(connection->has_timestamp_logger_nodes());
+      CHECK_GT(connection->timestamp_logger_nodes()->size(), 0u);
       if (connection->name()->string_view() == node->name()->string_view()) {
         return true;
       }
 
-      if (connection->timestamp_logger_node()->string_view() ==
-          node->name()->string_view()) {
-        return true;
+      [[fallthrough]];
+    case LoggerConfig::REMOTE_LOGGER:
+      CHECK(connection->has_timestamp_logger_nodes());
+      CHECK_GT(connection->timestamp_logger_nodes()->size(), 0u);
+      for (const flatbuffers::String *timestamp_logger_node :
+           *connection->timestamp_logger_nodes()) {
+        if (timestamp_logger_node->string_view() ==
+            node->name()->string_view()) {
+          return true;
+        }
       }
 
       return false;
     case LoggerConfig::LOCAL_LOGGER:
       return connection->name()->string_view() == node->name()->string_view();
-    case LoggerConfig::REMOTE_LOGGER:
-      CHECK(connection->has_timestamp_logger_node());
-
-      return connection->timestamp_logger_node()->string_view() ==
-             node->name()->string_view();
     case LoggerConfig::NOT_LOGGED:
       return false;
   }

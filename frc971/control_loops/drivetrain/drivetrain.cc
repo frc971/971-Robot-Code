@@ -18,7 +18,7 @@
 #include "frc971/control_loops/runge_kutta.h"
 #include "frc971/queues/gyro_generated.h"
 #include "frc971/shifter_hall_effect.h"
-#include "frc971/wpilib/imu_generated.h"
+#include "frc971/wpilib/imu_batch_generated.h"
 
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
@@ -37,7 +37,7 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
       localizer_control_fetcher_(
           event_loop->MakeFetcher<LocalizerControl>("/drivetrain")),
       imu_values_fetcher_(
-          event_loop->MakeFetcher<::frc971::IMUValues>("/drivetrain")),
+          event_loop->MakeFetcher<::frc971::IMUValuesBatch>("/drivetrain")),
       gyro_reading_fetcher_(
           event_loop->MakeFetcher<::frc971::sensors::GyroReading>(
               "/drivetrain")),
@@ -149,37 +149,44 @@ void DrivetrainLoop::RunIteration(
   }
 
   while (imu_values_fetcher_.FetchNext()) {
-    imu_zeroer_.InsertMeasurement(*imu_values_fetcher_);
+    CHECK(imu_values_fetcher_->has_readings());
     last_gyro_time_ = monotonic_now;
-    if (!imu_zeroer_.Zeroed()) {
-      continue;
-    }
-    aos::monotonic_clock::time_point reading_time(std::chrono::nanoseconds(
-        imu_values_fetcher_->monotonic_timestamp_ns()));
-    if (last_imu_update_ == aos::monotonic_clock::min_time) {
+    for (const IMUValues *value : *imu_values_fetcher_->readings()) {
+      imu_zeroer_.InsertMeasurement(*value);
+      if (!imu_zeroer_.Zeroed()) {
+        continue;
+      }
+      const aos::monotonic_clock::time_point reading_time(
+          std::chrono::nanoseconds(value->monotonic_timestamp_ns()));
+      if (last_imu_update_ == aos::monotonic_clock::min_time) {
+        last_imu_update_ = reading_time;
+      }
+      down_estimator_.Predict(imu_zeroer_.ZeroedGyro(),
+                              imu_zeroer_.ZeroedAccel(),
+                              reading_time - last_imu_update_);
       last_imu_update_ = reading_time;
     }
-    down_estimator_.Predict(imu_zeroer_.ZeroedGyro(), imu_zeroer_.ZeroedAccel(),
-                            reading_time - last_imu_update_);
-    last_imu_update_ = reading_time;
   }
 
   bool got_imu_reading = false;
   if (imu_values_fetcher_.get() != nullptr) {
     imu_zeroer_.ProcessMeasurements();
     got_imu_reading = true;
+    CHECK(imu_values_fetcher_->has_readings());
+    const IMUValues *value = imu_values_fetcher_->readings()->Get(
+        imu_values_fetcher_->readings()->size() - 1);
     switch (dt_config_.imu_type) {
       case IMUType::IMU_X:
-        last_accel_ = -imu_values_fetcher_->accelerometer_x();
+        last_accel_ = -value->accelerometer_x();
         break;
       case IMUType::IMU_FLIPPED_X:
-        last_accel_ = imu_values_fetcher_->accelerometer_x();
+        last_accel_ = value->accelerometer_x();
         break;
       case IMUType::IMU_Y:
-        last_accel_ = -imu_values_fetcher_->accelerometer_y();
+        last_accel_ = -value->accelerometer_y();
         break;
       case IMUType::IMU_Z:
-        last_accel_ = imu_values_fetcher_->accelerometer_z();
+        last_accel_ = value->accelerometer_z();
         break;
     }
   }

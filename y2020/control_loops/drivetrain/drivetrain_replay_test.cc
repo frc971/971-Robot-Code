@@ -23,7 +23,7 @@
 DEFINE_string(
     logfile, "external/drivetrain_replay/file/spinning_wheels_while_still.bfbs",
     "Name of the logfile to read from.");
-DEFINE_string(config, "y2020/config.json",
+DEFINE_string(config, "y2020/control_loops/drivetrain/replay_config.json",
               "Name of the config file to replay using.");
 
 namespace y2020 {
@@ -67,7 +67,27 @@ class DrivetrainReplayTest : public ::testing::Test {
             config, drivetrain_event_loop_.get(), localizer_.get());
 
     test_event_loop_ =
-        reader_.event_loop_factory()->MakeEventLoop("drivetrain", roborio_);
+        reader_.event_loop_factory()->MakeEventLoop("drivetrain_test", roborio_);
+
+    // IMU readings used to be published out one at a time, but we now expect
+    // batches.  Batch them up to upgrade the data.
+    imu_sender_ =
+        test_event_loop_->MakeSender<frc971::IMUValuesBatch>("/drivetrain");
+    test_event_loop_->MakeWatcher(
+        "/drivetrain", [this](const frc971::IMUValues &values) {
+          aos::Sender<frc971::IMUValuesBatch>::Builder builder =
+              imu_sender_.MakeBuilder();
+          flatbuffers::Offset<frc971::IMUValues> values_offsets =
+              aos::CopyFlatBuffer(&values, builder.fbb());
+          flatbuffers::Offset<
+              flatbuffers::Vector<flatbuffers::Offset<frc971::IMUValues>>>
+              values_offset = builder.fbb()->CreateVector(&values_offsets, 1);
+          frc971::IMUValuesBatch::Builder imu_values_batch_builder =
+              builder.MakeBuilder<frc971::IMUValuesBatch>();
+          imu_values_batch_builder.add_readings(values_offset);
+          builder.Send(imu_values_batch_builder.Finish());
+        });
+
     status_fetcher_ = test_event_loop_->MakeFetcher<
         frc971::control_loops::drivetrain::Status>("/drivetrain");
   }
@@ -81,6 +101,7 @@ class DrivetrainReplayTest : public ::testing::Test {
   std::unique_ptr<frc971::control_loops::drivetrain::DrivetrainLoop>
       drivetrain_;
   std::unique_ptr<aos::EventLoop> test_event_loop_;
+  aos::Sender<frc971::IMUValuesBatch> imu_sender_;
 
   aos::Fetcher<frc971::control_loops::drivetrain::Status> status_fetcher_;
 };

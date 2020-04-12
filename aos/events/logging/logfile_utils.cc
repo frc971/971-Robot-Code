@@ -432,10 +432,19 @@ bool SplitMessageReader::QueueMessages(
       const monotonic_clock::time_point timestamp = monotonic_clock::time_point(
           chrono::nanoseconds(header.monotonic_sent_time()));
 
-      VLOG(1) << "Queued " << this << " " << filename()
-              << " ttq: " << time_to_queue_ << " now "
-              << newest_timestamp() << " start time "
-              << monotonic_start_time() << " " << FlatbufferToJson(&header);
+      if (VLOG_IS_ON(2)) {
+        LOG(INFO) << "Queued " << this << " " << filename()
+                << " ttq: " << time_to_queue_ << " now " << newest_timestamp()
+                << " start time " << monotonic_start_time() << " "
+                << FlatbufferToJson(&header);
+      } else if (VLOG_IS_ON(1)) {
+        FlatbufferVector<MessageHeader> copy = msg.value();
+        copy.mutable_message()->clear_data();
+        LOG(INFO) << "Queued " << this << " " << filename()
+                << " ttq: " << time_to_queue_ << " now " << newest_timestamp()
+                << " start time " << monotonic_start_time() << " "
+                << FlatbufferToJson(copy);
+      }
 
       const int channel_index = header.channel_index();
       was_emplaced = channels_to_write_[channel_index]->emplace_back(

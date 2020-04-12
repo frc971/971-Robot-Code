@@ -29,7 +29,7 @@ table Connection {
   // remotely, which node should be responsible for logging the data.  Note:
   // for now, this can only be the source node.  Empty implies the node this
   // connection is connecting to (i.e. name).
-  timestamp_logger_node:string;
+  timestamp_logger_nodes:[string];
 
   // Priority to forward data with.
   priority:ushort = 100;
@@ -77,13 +77,15 @@ table Channel {
   // logging the data.  Note: this requires that the data is forwarded to the
   // node responsible for logging it.  Empty implies the node this connection
   // is connecting to (i.e. name).
-  logger_node:string;
+  logger_nodes:[string];
 }
 
 // Table to support renaming channel names.
 table Map {
   // Channel to match with.  If the name in here matches, the name is replaced
-  // with the name in rename.
+  // with the name in rename.  If the name ends in *, it will be treated like a
+  // wildcard.  Anything with the same prefix will match, and anything matching
+  // the * will get preserved on rename.  This supports moving subfolders.
   // Node specific matches are also supported.
   match:Channel;
   // The channel to merge in.

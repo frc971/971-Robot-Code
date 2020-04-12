@@ -7,6 +7,12 @@
       "source_node": "pi1"
     },
     {
+      "name": "/foo/subfolder",
+      "type": ".aos.bar",
+      "max_size": 5,
+      "source_node": "pi1"
+    },
+    {
       "name": "/batman",
       "type": ".aos.baz",
       "max_size": 5,
@@ -19,6 +25,14 @@
         "name": "/batman",
         "type": ".aos.bar",
         "source_node": "pi1"
+      },
+      "rename": {
+        "name": "/foo"
+      }
+    },
+    {
+      "match": {
+        "name": "/magic/string*"
       },
       "rename": {
         "name": "/foo"

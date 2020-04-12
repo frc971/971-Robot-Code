@@ -71,9 +71,9 @@ TEST_F(ConfigurationTest, UnsortedConfig) {
 
   LOG(INFO) << "Read: " << FlatbufferToJson(config, true);
 
-  EXPECT_EQ(FlatbufferToJson(GetChannel(config, ".aos.robot_state",
+  EXPECT_EQ(FlatbufferToJson(GetChannel(config, "/aos/robot_state",
                                         "aos.RobotState", "app1", nullptr)),
-            "{ \"name\": \".aos.robot_state\", \"type\": \"aos.RobotState\", "
+            "{ \"name\": \"/aos/robot_state\", \"type\": \"aos.RobotState\", "
             "\"max_size\": 5 }");
 }
 
@@ -85,6 +85,30 @@ TEST_F(ConfigurationDeathTest, DuplicateFile) {
             ReadConfig(kConfigPrefix + "config1_bad.json");
       },
       kConfigPrefix + "config1_bad.json");
+}
+
+// Tests that we reject invalid channel names.  This means any channels with //
+// in their name, a trailing /, or regex characters.
+TEST_F(ConfigurationDeathTest, InvalidChannelName) {
+  EXPECT_DEATH(
+      {
+        FlatbufferDetachedBuffer<Configuration> config =
+            ReadConfig(kConfigPrefix + "invalid_channel_name1.json");
+      },
+      "Channel names can't end with '/'");
+  EXPECT_DEATH(
+      {
+        FlatbufferDetachedBuffer<Configuration> config =
+            ReadConfig(kConfigPrefix + "invalid_channel_name2.json");
+      },
+      "Invalid channel name");
+  EXPECT_DEATH(
+      {
+        FlatbufferDetachedBuffer<Configuration> config =
+            ReadConfig(kConfigPrefix + "invalid_channel_name3.json");
+        LOG(FATAL) << "Foo";
+      },
+      "Invalid channel name");
 }
 
 // Tests that we can modify a config with a json snippet.
@@ -201,6 +225,30 @@ TEST_F(ConfigurationTest, GetChannelTypedMultinode) {
   EXPECT_EQ(
       FlatbufferToJson(GetChannel(config, "/batman", ".aos.baz", "app1", pi1)),
       kExpectedBazMultinodeLocation);
+}
+
+// Tests that we can lookup a location with a glob
+TEST_F(ConfigurationTest, GetChannelGlob) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig(kConfigPrefix + "good_multinode.json");
+  const Node *pi1 = GetNode(&config.message(), "pi1");
+
+  // Confirm that a glob with nothing after it matches.
+  const char *kExpectedMultinodeLocation =
+      "{ \"name\": \"/foo\", \"type\": \".aos.bar\", \"max_size\": 5, "
+      "\"source_node\": \"pi1\" }";
+  EXPECT_EQ(FlatbufferToJson(
+                GetChannel(config, "/magic/string", ".aos.bar", "app7", pi1)),
+            kExpectedMultinodeLocation);
+
+  // Now confirm that glob with something following it matches and renames
+  // correctly.
+  const char *kExpectedSubfolderMultinodeLocation =
+      "{ \"name\": \"/foo/subfolder\", \"type\": \".aos.bar\", \"max_size\": "
+      "5, \"source_node\": \"pi1\" }";
+  EXPECT_EQ(FlatbufferToJson(GetChannel(config, "/magic/string/subfolder",
+                                        ".aos.bar", "app7", pi1)),
+            kExpectedSubfolderMultinodeLocation);
 }
 
 // Tests that we reject a configuration which has a nodes list, but has channels
@@ -354,7 +402,7 @@ TEST_F(ConfigurationTest, ChannelMessageIsLoggedOnNode) {
   "type": "aos.examples.Ping",
   "source_node": "bar",
   "logger": "REMOTE_LOGGER",
-  "logger_node": "baz",
+  "logger_nodes": ["baz"],
   "destination_nodes": [
     {
       "name": "baz"
@@ -370,7 +418,7 @@ TEST_F(ConfigurationTest, ChannelMessageIsLoggedOnNode) {
   "type": "aos.examples.Ping",
   "source_node": "bar",
   "logger": "REMOTE_LOGGER",
-  "logger_node": "foo",
+  "logger_nodes": ["foo"],
   "destination_nodes": [
     {
       "name": "baz"
@@ -386,7 +434,7 @@ TEST_F(ConfigurationTest, ChannelMessageIsLoggedOnNode) {
   "type": "aos.examples.Ping",
   "source_node": "bar",
   "logger": "LOCAL_AND_REMOTE_LOGGER",
-  "logger_node": "baz",
+  "logger_nodes": ["baz"],
   "destination_nodes": [
     {
       "name": "baz"
@@ -462,7 +510,7 @@ TEST_F(ConfigurationTest, ConnectionDeliveryTimeIsLoggedOnNode) {
   "type": "aos.examples.Ping",
   "source_node": "bar",
   "logger": "REMOTE_LOGGER",
-  "logger_node": "baz",
+  "logger_nodes": ["baz"],
   "destination_nodes": [
     {
       "name": "baz"
@@ -495,7 +543,7 @@ TEST_F(ConfigurationTest, ConnectionDeliveryTimeIsLoggedOnNode) {
     {
       "name": "baz",
       "timestamp_logger": "REMOTE_LOGGER",
-      "timestamp_logger_node": "bar"
+      "timestamp_logger_nodes": ["bar"]
     }
   ]
 })channel",
@@ -508,12 +556,12 @@ TEST_F(ConfigurationTest, ConnectionDeliveryTimeIsLoggedOnNode) {
   "type": "aos.examples.Ping",
   "source_node": "bar",
   "logger": "REMOTE_LOGGER",
-  "logger_node": "foo",
+  "logger_nodes": ["foo"],
   "destination_nodes": [
     {
       "name": "baz",
       "timestamp_logger": "REMOTE_LOGGER",
-      "timestamp_logger_node": "foo"
+      "timestamp_logger_nodes": ["foo"]
     }
   ]
 })channel",
@@ -529,7 +577,7 @@ TEST_F(ConfigurationTest, ConnectionDeliveryTimeIsLoggedOnNode) {
     {
       "name": "baz",
       "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-      "timestamp_logger_node": "bar"
+      "timestamp_logger_nodes": ["bar"]
     }
   ]
 })channel",

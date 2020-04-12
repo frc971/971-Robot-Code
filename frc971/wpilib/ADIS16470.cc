@@ -4,6 +4,7 @@
 
 #include "glog/logging.h"
 
+#include "aos/containers/sized_array.h"
 #include "aos/time/time.h"
 #include "hal/HAL.h"
 
@@ -174,7 +175,7 @@ ADIS16470::ADIS16470(aos::EventLoop *event_loop, frc::SPI *spi,
                      frc::DigitalInput *data_ready, frc::DigitalOutput *reset)
     : event_loop_(event_loop),
       imu_values_sender_(
-          event_loop_->MakeSender<::frc971::IMUValues>("/drivetrain")),
+          event_loop_->MakeSender<::frc971::IMUValuesBatch>("/drivetrain")),
       initialize_timer_(
           event_loop_->AddTimer([this]() { DoInitializeStep(); })),
       spi_(spi),
@@ -209,8 +210,12 @@ void ADIS16470::DoReads() {
     return;
   }
 
+  auto builder = imu_values_sender_.MakeBuilder();
+
   int amount_to_read =
       spi_->ReadAutoReceivedData(to_read_.data(), 0, 0 /* don't block */);
+
+  aos::SizedArray<flatbuffers::Offset<IMUValues>, 50> readings_offsets;
   while (true) {
     if (amount_to_read == 0) break;
     CHECK(!to_read_.empty());
@@ -223,7 +228,9 @@ void ADIS16470::DoReads() {
     amount_to_read -= amount_read_now;
 
     if (to_read_.empty()) {
-      ProcessReading();
+      flatbuffers::Offset<IMUValues> reading_offset =
+          ProcessReading(builder.fbb());
+      readings_offsets.push_back(reading_offset);
 
       // Reset for the next reading.
       to_read_ = absl::MakeSpan(read_data_);
@@ -232,6 +239,15 @@ void ADIS16470::DoReads() {
       break;
     }
   }
+
+  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<IMUValues>>>
+      readings_offset = builder.fbb()->CreateVector(readings_offsets.data(),
+                                                    readings_offsets.size());
+
+  IMUValuesBatch::Builder imu_values_batch_builder =
+      builder.MakeBuilder<IMUValuesBatch>();
+  imu_values_batch_builder.add_readings(readings_offset);
+  builder.Send(imu_values_batch_builder.Finish());
 }
 
 void ADIS16470::DoInitializeStep() {
@@ -331,7 +347,17 @@ void ADIS16470::DoInitializeStep() {
       if (!self_test_diag_stat.IsNull()) {
         imu_builder.add_self_test_diag_stat(self_test_diag_stat);
       }
-      builder.Send(imu_builder.Finish());
+
+      const flatbuffers::Offset<IMUValues> readings_offsets =
+          imu_builder.Finish();
+      const flatbuffers::Offset<
+          flatbuffers::Vector<flatbuffers::Offset<IMUValues>>>
+          readings_offset = builder.fbb()->CreateVector(&readings_offsets, 1);
+
+      IMUValuesBatch::Builder imu_batch_builder =
+          builder.MakeBuilder<IMUValuesBatch>();
+      imu_batch_builder.add_readings(readings_offset);
+      builder.Send(imu_batch_builder.Finish());
       if (success) {
         state_ = State::kRunning;
       } else {
@@ -345,12 +371,11 @@ void ADIS16470::DoInitializeStep() {
   }
 }
 
-void ADIS16470::ProcessReading() {
+flatbuffers::Offset<IMUValues> ADIS16470::ProcessReading(
+    flatbuffers::FlatBufferBuilder *fbb) {
   // If we ever see this, we'll need to decide how to handle it. Probably reset
   // everything and try again.
   CHECK_EQ(0, spi_->GetAutoDroppedCount());
-
-  auto builder = imu_values_sender_.MakeBuilder();
 
   absl::Span<const uint32_t> to_process = read_data_;
   hal::fpga_clock::time_point fpga_time;
@@ -365,10 +390,10 @@ void ADIS16470::ProcessReading() {
 
   const uint16_t diag_stat_value = (static_cast<uint16_t>(to_process[0]) << 8) |
                                    static_cast<uint16_t>(to_process[1]);
-  const auto diag_stat = PackDiagStat(builder.fbb(), diag_stat_value);
+  const auto diag_stat = PackDiagStat(fbb, diag_stat_value);
   to_process = to_process.subspan(2);
 
-  IMUValues::Builder imu_builder = builder.MakeBuilder<IMUValues>();
+  IMUValues::Builder imu_builder(*fbb);
   imu_builder.add_fpga_timestamp(
       aos::time::DurationInSeconds(fpga_time.time_since_epoch()));
   imu_builder.add_monotonic_timestamp_ns(
@@ -397,7 +422,7 @@ void ADIS16470::ProcessReading() {
 
   CHECK(to_process.empty()) << "Have leftover bytes: " << to_process.size();
 
-  builder.Send(imu_builder.Finish());
+  return imu_builder.Finish();
 }
 
 double ADIS16470::ConvertValue32(absl::Span<const uint32_t> data,

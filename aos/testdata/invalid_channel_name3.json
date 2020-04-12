@@ -1,0 +1,9 @@
+{
+  "channels": [
+    {
+      "name": "/foo//bar",
+      "type": ".aos.bar",
+      "max_size": 5
+    }
+  ]
+}

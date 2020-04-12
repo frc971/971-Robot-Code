@@ -1,0 +1,9 @@
+include "frc971/wpilib/imu.fbs";
+
+namespace frc971;
+
+table IMUValuesBatch {
+  readings:[IMUValues];
+}
+
+root_type IMUValuesBatch;
