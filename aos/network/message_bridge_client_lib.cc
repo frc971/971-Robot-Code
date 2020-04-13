@@ -230,6 +230,7 @@ void SctpClientConnection::NodeConnected(sctp_assoc_t assoc_id) {
 
   remote_assoc_id_ = assoc_id;
   connection_->mutate_state(State::CONNECTED);
+  filter_.Reset();
 }
 
 void SctpClientConnection::NodeDisconnected() {
@@ -238,6 +239,8 @@ void SctpClientConnection::NodeDisconnected() {
       chrono::milliseconds(100));
   remote_assoc_id_ = 0;
   connection_->mutate_state(State::DISCONNECTED);
+  connection_->mutate_monotonic_offset(0);
+  filter_.Reset();
 }
 
 void SctpClientConnection::HandleData(const Message *message) {

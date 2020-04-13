@@ -177,14 +177,14 @@ void ChannelState::HandleFailure(
   // time out eventually.  Need to sort that out.
 }
 
-void ChannelState::AddPeer(const Connection *connection,
-                           ServerConnection *server_connection_statistics,
-                           bool logged_remotely) {
-  peers_.emplace_back(0, 0, connection, server_connection_statistics,
+void ChannelState::AddPeer(
+    const Connection *connection, int node_index,
+    ServerConnection *server_connection_statistics, bool logged_remotely) {
+  peers_.emplace_back(connection, node_index, server_connection_statistics,
                       logged_remotely);
 }
 
-void ChannelState::NodeDisconnected(sctp_assoc_t assoc_id) {
+int ChannelState::NodeDisconnected(sctp_assoc_t assoc_id) {
   for (ChannelState::Peer &peer : peers_) {
     if (peer.sac_assoc_id == assoc_id) {
       // TODO(austin): This will not handle multiple clients from
@@ -192,12 +192,13 @@ void ChannelState::NodeDisconnected(sctp_assoc_t assoc_id) {
       peer.server_connection_statistics->mutate_state(State::DISCONNECTED);
       peer.sac_assoc_id = 0;
       peer.stream = 0;
-      break;
+      return peer.node_index;
     }
   }
+  return -1;
 }
 
-void ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
+int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
                                  int stream, SctpServer *server) {
   for (ChannelState::Peer &peer : peers_) {
     if (peer.connection->name()->string_view() == node->name()->string_view()) {
@@ -205,10 +206,10 @@ void ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
       peer.stream = stream;
       peer.server_connection_statistics->mutate_state(State::CONNECTED);
       server->SetStreamPriority(assoc_id, stream, peer.connection->priority());
-
-      break;
+      return peer.node_index;
     }
   }
+  return -1;
 }
 
 MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
@@ -301,6 +302,8 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
             event_loop_->configuration(), connection->name()->string_view());
         state->AddPeer(
             connection,
+            configuration::GetNodeIndex(event_loop_->configuration(),
+                                        connection->name()->string_view()),
             FindServerConnection(statistics_.mutable_message(),
                                  connection->name()->string_view()),
             configuration::ChannelMessageIsLoggedOnNode(channel, other_node));
@@ -344,13 +347,30 @@ void MessageBridgeServer::NodeConnected(sctp_assoc_t assoc_id) {
 
 void MessageBridgeServer::NodeDisconnected(sctp_assoc_t assoc_id) {
   // Find any matching peers and remove them.
+  int node_index = -1;
   for (std::unique_ptr<ChannelState> &channel_state : channels_) {
     if (channel_state.get() == nullptr) {
       continue;
     }
 
-    channel_state->NodeDisconnected(assoc_id);
+    node_index = channel_state->NodeDisconnected(assoc_id);
+    CHECK_NE(node_index, -1);
   }
+
+  if (node_index != -1) {
+    VLOG(1) << "Resetting filters for " << node_index << " "
+            << event_loop_->configuration()
+                   ->nodes()
+                   ->Get(node_index)
+                   ->name()
+                   ->string_view();
+    ResetFilter(node_index);
+  }
+}
+
+void MessageBridgeServer::ResetFilter(int node_index) {
+  filters_[node_index].Reset();
+  server_connection_[node_index]->mutate_monotonic_offset(0);
 }
 
 void MessageBridgeServer::MessageReceived() {
@@ -399,6 +419,7 @@ void MessageBridgeServer::HandleData(const Message *message) {
 
     // Account for the control channel and delivery times channel.
     size_t channel_index = kControlStreams();
+    int node_index = -1;
     for (const Channel *channel : *connect->channels_to_transfer()) {
       bool matched = false;
       for (std::unique_ptr<ChannelState> &channel_state : channels_) {
@@ -406,9 +427,10 @@ void MessageBridgeServer::HandleData(const Message *message) {
           continue;
         }
         if (channel_state->Matches(channel)) {
-          channel_state->NodeConnected(connect->node(),
-                                       message->header.rcvinfo.rcv_assoc_id,
-                                       channel_index, &server_);
+          node_index = channel_state->NodeConnected(
+              connect->node(), message->header.rcvinfo.rcv_assoc_id,
+              channel_index, &server_);
+          CHECK_NE(node_index, -1);
 
           matched = true;
           break;
@@ -421,6 +443,13 @@ void MessageBridgeServer::HandleData(const Message *message) {
         ++channel_index;
       }
     }
+    ResetFilter(node_index);
+    VLOG(1) << "Resetting filters for " << node_index << " "
+              << event_loop_->configuration()
+                     ->nodes()
+                     ->Get(node_index)
+                     ->name()
+                     ->string_view();
   } else if (message->header.rcvinfo.rcv_sid == kTimestampStream()) {
     // Message delivery
     const logger::MessageHeader *message_header =
@@ -507,14 +536,22 @@ void MessageBridgeServer::Tick() {
     // Iterate through the connections this node has made.
     for (const ClientConnection *connection :
          *client_statistics_fetcher_->connections()) {
-      // Filter out the ones which aren't connected.
-      if (connection->state() != State::CONNECTED) continue;
-      // And the ones without monotonic offsets.
-      if (!connection->has_monotonic_offset()) continue;
-
       const int node_index = configuration::GetNodeIndex(
           event_loop_->configuration(),
           connection->node()->name()->string_view());
+
+      // Filter out the ones which aren't connected.
+      // And the ones without monotonic offsets.
+      if (connection->state() != State::CONNECTED ||
+          !connection->has_monotonic_offset() ||
+          client_statistics_fetcher_.context().monotonic_event_time +
+                  kClientStatisticsStaleTimeout <
+              event_loop_->context().monotonic_event_time) {
+        VLOG(1) << "Disconnected, no offset, or client message too old for "
+                << connection->node()->name()->string_view();
+        ResetFilter(node_index);
+        continue;
+      }
 
       timestamp_fetchers_[node_index].Fetch();
 
@@ -527,17 +564,28 @@ void MessageBridgeServer::Tick() {
              *timestamp_fetchers_[node_index]->offsets()) {
           if (client_offset->node()->name()->string_view() ==
               event_loop_->node()->name()->string_view()) {
+            // Make sure it has an offset and the message isn't stale.
             if (client_offset->has_monotonic_offset()) {
-              their_offset =
-                  std::chrono::nanoseconds(client_offset->monotonic_offset());
-              has_their_offset = true;
+              if (timestamp_fetchers_[node_index]
+                          .context()
+                          .monotonic_event_time +
+                      kTimestampStaleTimeout >
+                  event_loop_->context().monotonic_event_time) {
+                their_offset =
+                    std::chrono::nanoseconds(client_offset->monotonic_offset());
+                has_their_offset = true;
+              } else {
+                ResetFilter(node_index);
+                VLOG(1) << "Timestamp old, resetting.";
+              }
             }
             break;
           }
         }
       }
 
-      if (has_their_offset) {
+      if (has_their_offset &&
+          server_connection_[node_index]->state() == State::CONNECTED) {
         // Update the filters.
         if (filters_[node_index].MissingSamples()) {
           // Update the offset the first time.  This should be representative.
