@@ -24,9 +24,9 @@ def _aos_config_impl(ctx):
 
     all_files = flatbuffers_depset.to_list() + src_depset.to_list()
     ctx.actions.run(
-        outputs = [ctx.outputs.config],
+        outputs = [ctx.outputs.config, ctx.outputs.stripped_config],
         inputs = all_files,
-        arguments = [ctx.outputs.config.path, ctx.files.src[0].path] + [f.path for f in flatbuffers_depset.to_list()],
+        arguments = [ctx.outputs.config.path, ctx.outputs.stripped_config.path, ctx.files.src[0].path] + [f.path for f in flatbuffers_depset.to_list()],
         progress_message = "Flattening config",
         executable = ctx.executable._config_flattener,
     )
@@ -55,6 +55,7 @@ _aos_config = rule(
     },
     outputs = {
         "config": "%{name}.json",
+        "stripped_config": "%{name}.stripped.json",
     },
     implementation = _aos_config_impl,
 )

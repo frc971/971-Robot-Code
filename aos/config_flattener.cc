@@ -11,15 +11,19 @@
 namespace aos {
 
 int Main(int argc, char **argv) {
-  CHECK_GE(argc, 3) << ": Too few arguments";
+  CHECK_GE(argc, 4) << ": Too few arguments";
 
-  VLOG(1) << "Reading " << argv[2];
+  const char *full_output = argv[1];
+  const char *stripped_output = argv[2];
+  const char *config_path = argv[3];
+
+  VLOG(1) << "Reading " << config_path;
   FlatbufferDetachedBuffer<Configuration> config =
-      configuration::ReadConfig(argv[2]);
+      configuration::ReadConfig(config_path);
 
   std::vector<aos::FlatbufferString<reflection::Schema>> schemas;
 
-  for (int i = 3; i < argc; ++i) {
+  for (int i = 4; i < argc; ++i) {
     schemas.emplace_back(util::ReadFileToStringOrDie(argv[i]));
   }
 
@@ -29,7 +33,9 @@ int Main(int argc, char **argv) {
   // TODO(austin): Figure out how to squash the schemas onto 1 line so it is
   // easier to read?
   VLOG(1) << "Flattened config is " << merged_config;
-  util::WriteStringToFileOrDie(argv[1], merged_config);
+  util::WriteStringToFileOrDie(full_output, merged_config);
+  util::WriteStringToFileOrDie(stripped_output,
+                               FlatbufferToJson(&config.message(), true));
   return 0;
 }
 
