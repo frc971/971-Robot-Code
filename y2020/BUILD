@@ -37,8 +37,8 @@ robot_downloader(
     start_binaries = [
         "//aos/network:message_bridge_client",
         "//aos/network:message_bridge_server",
-        "//y2020/vision:camera_reader",
         "//aos/network:web_proxy_main",
+        "//y2020/vision:camera_reader",
     ],
     target_type = "pi",
 )

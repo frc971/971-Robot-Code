@@ -20,6 +20,8 @@
       "name": "/roborio/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "roborio",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["laptop"],
       "destination_nodes": [
         {
           "name": "laptop",
@@ -46,6 +48,8 @@
       "name": "/pi1/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "pi1",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["laptop"],
       "destination_nodes": [
         {
           "name": "laptop",
@@ -58,6 +62,8 @@
       "name": "/pi2/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "pi2",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["laptop"],
       "destination_nodes": [
         {
           "name": "laptop",
@@ -70,6 +76,8 @@
       "name": "/pi3/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "pi3",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["laptop"],
       "destination_nodes": [
         {
           "name": "laptop",
@@ -82,6 +90,8 @@
       "name": "/pi4/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "pi4",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["laptop"],
       "destination_nodes": [
         {
           "name": "laptop",
@@ -130,27 +140,37 @@
         {
           "name": "pi1",
           "priority": 1,
-          "time_to_live": 5000000
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["laptop"]
         },
         {
           "name": "pi2",
           "priority": 1,
-          "time_to_live": 5000000
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["laptop"]
         },
         {
           "name": "pi3",
           "priority": 1,
-          "time_to_live": 5000000
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["laptop"]
         },
         {
           "name": "pi4",
           "priority": 1,
-          "time_to_live": 5000000
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["laptop"]
         },
         {
           "name": "roborio",
           "priority": 1,
-          "time_to_live": 5000000
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["laptop"]
         }
       ]
     },
@@ -172,6 +192,8 @@
       "name": "/pi1/camera",
       "type": "frc971.vision.sift.ImageMatchResult",
       "source_node": "pi1",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["laptop"],
       "destination_nodes": [
         {
           "name": "laptop",
@@ -198,6 +220,8 @@
       "name": "/pi2/camera",
       "type": "frc971.vision.sift.ImageMatchResult",
       "source_node": "pi2",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["laptop"],
       "destination_nodes": [
         {
           "name": "laptop",
@@ -224,6 +248,8 @@
       "name": "/pi3/camera",
       "type": "frc971.vision.sift.ImageMatchResult",
       "source_node": "pi3",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["laptop"],
       "destination_nodes": [
         {
           "name": "laptop",
@@ -250,6 +276,8 @@
       "name": "/pi4/camera",
       "type": "frc971.vision.sift.ImageMatchResult",
       "source_node": "pi4",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["laptop"],
       "destination_nodes": [
         {
           "name": "laptop",
