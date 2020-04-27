@@ -133,7 +133,7 @@
   "maps": [
     {
       "match": {
-        "name": "/aos",
+        "name": "/aos*",
         "source_node": "pi1"
       },
       "rename": {
@@ -142,7 +142,7 @@
     },
     {
       "match": {
-        "name": "/aos",
+        "name": "/aos*",
         "source_node": "pi2"
       },
       "rename": {
@@ -161,7 +161,7 @@
     },
     {
       "match": {
-        "name": "/pi1/aos",
+        "name": "/pi1/aos*",
         "source_node": "pi2"
       },
       "rename": {
@@ -170,7 +170,7 @@
     },
     {
       "match": {
-        "name": "/pi2/aos",
+        "name": "/pi2/aos*",
         "source_node": "pi1"
       },
       "rename": {

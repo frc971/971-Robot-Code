@@ -22,42 +22,42 @@ namespace message_bridge {
 // Class to encapsulate all the state per channel.  This is the dispatcher for a
 // new message from the event loop.
 class ChannelState {
-  public:
-   ChannelState(const Channel *channel, int channel_index)
-       : channel_index_(channel_index), channel_(channel) {}
+ public:
+  ChannelState(const Channel *channel, int channel_index)
+      : channel_index_(channel_index), channel_(channel) {}
 
-   // Class to encapsulate all the state per client on a channel.  A client may
-   // be subscribed to multiple channels.
-   struct Peer {
-     Peer(sctp_assoc_t new_sac_assoc_id, size_t new_stream,
-          const Connection *new_connection,
-          ServerConnection *new_server_connection_statistics,
-          bool new_logged_remotely)
-         : sac_assoc_id(new_sac_assoc_id),
-           stream(new_stream),
-           connection(new_connection),
-           server_connection_statistics(new_server_connection_statistics),
-           logged_remotely(new_logged_remotely) {}
+  // Class to encapsulate all the state per client on a channel.  A client may
+  // be subscribed to multiple channels.
+  struct Peer {
+    Peer(const Connection *new_connection, int new_node_index,
+         ServerConnection *new_server_connection_statistics,
+         bool new_logged_remotely)
+        : connection(new_connection),
+          node_index(new_node_index),
+          server_connection_statistics(new_server_connection_statistics),
+          logged_remotely(new_logged_remotely) {}
 
-     // Valid if != 0.
-     sctp_assoc_t sac_assoc_id = 0;
+    // Valid if != 0.
+    sctp_assoc_t sac_assoc_id = 0;
 
-     size_t stream;
-     const aos::Connection *connection;
-     ServerConnection *server_connection_statistics;
+    size_t stream = 0;
+    const aos::Connection *connection;
+    const int node_index;
+    ServerConnection *server_connection_statistics;
 
-     // If true, this message will be logged on a receiving node.  We need to
-     // keep it around to log it locally if that fails.
-     bool logged_remotely = false;
+    // If true, this message will be logged on a receiving node.  We need to
+    // keep it around to log it locally if that fails.
+    bool logged_remotely = false;
   };
 
   // Needs to be called when a node (might have) disconnected.
-  void NodeDisconnected(sctp_assoc_t assoc_id);
-  void NodeConnected(const Node *node, sctp_assoc_t assoc_id, int stream,
-                     SctpServer *server);
+  // Returns the node index which [dis]connected, or -1 if it didn't match.
+  int NodeDisconnected(sctp_assoc_t assoc_id);
+  int NodeConnected(const Node *node, sctp_assoc_t assoc_id, int stream,
+                    SctpServer *server);
 
   // Adds a new peer.
-  void AddPeer(const Connection *connection,
+  void AddPeer(const Connection *connection, int node_index,
                ServerConnection *server_connection_statistics,
                bool logged_remotely);
 
@@ -94,6 +94,12 @@ class MessageBridgeServer {
 
   ~MessageBridgeServer() { event_loop_->epoll()->DeleteFd(server_.fd()); }
 
+  // Time after which we consider the client statistics message stale, and reset
+  // the filter.
+  static constexpr std::chrono::seconds kClientStatisticsStaleTimeout{1};
+  // Time after which we consider the timestamp stale, and reset the filter.
+  static constexpr std::chrono::milliseconds kTimestampStaleTimeout{250};
+
  private:
   // Reads a message from the socket.  Could be a notification.
   void MessageReceived();
@@ -102,6 +108,9 @@ class MessageBridgeServer {
   void NodeConnected(sctp_assoc_t assoc_id);
   // Called when the server connection disconnects.
   void NodeDisconnected(sctp_assoc_t assoc_id);
+
+  // Resets the filter and clears the entry from the server statistics.
+  void ResetFilter(int node_index);
 
   // Called when data (either a connection request or delivery timestamps) is
   // received.

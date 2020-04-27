@@ -120,6 +120,13 @@ class TimestampFilter {
     return last_time_ != aos::monotonic_clock::min_time;
   }
 
+  void Reset() {
+    offset_ = 0;
+
+    last_time_ = aos::monotonic_clock::min_time;
+    base_offset_ = std::chrono::nanoseconds(0);
+  }
+
  private:
   double offset_ = 0;
 
@@ -245,6 +252,19 @@ struct ClippedAverageFilter {
            (last_rev_time_ == aos::monotonic_clock::min_time);
   }
 
+  void Reset() {
+    base_offset_ = std::chrono::nanoseconds(0);
+    offset_ = 0;
+
+    last_fwd_time_ = aos::monotonic_clock::min_time;
+    last_rev_time_ = aos::monotonic_clock::min_time;
+    first_fwd_time_ = aos::monotonic_clock::min_time;
+    first_rev_time_ = aos::monotonic_clock::min_time;
+
+    fwd_.Reset();
+    rev_.Reset();
+  }
+
  private:
   // Updates the offset estimate given the current time, and a pointer to the
   // variable holding the last time.
@@ -283,7 +303,14 @@ struct ClippedAverageFilter {
     *last_time = monotonic_now;
 
     if (sample_pointer_ != nullptr) {
-      *sample_pointer_ = offset_;
+      // TODO(austin): Probably shouldn't do the update if we don't have fwd and
+      // reverse samples.
+      if (!MissingSamples()) {
+        *sample_pointer_ = offset_;
+        VLOG(1) << "Updating sample to " << offset_;
+      } else {
+        LOG(WARNING) << "Don't have both samples.";
+      }
     }
   }
 

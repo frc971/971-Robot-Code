@@ -258,6 +258,7 @@ cc_test(
         ":message_bridge_test_client_config.json",
         ":message_bridge_test_server_config.json",
     ],
+    shard_count = 3,
     deps = [
         ":message_bridge_client_lib",
         ":message_bridge_server_lib",
