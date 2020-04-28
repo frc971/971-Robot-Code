@@ -62,6 +62,7 @@ void DetachedBufferWriter::WriteSizedFlatbuffer(
 
   PCHECK(written == static_cast<ssize_t>(n.iov_len))
       << ": Wrote " << written << " expected " << n.iov_len;
+  written_size_ += written;
 }
 
 void DetachedBufferWriter::QueueSizedFlatbuffer(
@@ -96,6 +97,7 @@ void DetachedBufferWriter::Flush() {
 
   PCHECK(written == static_cast<ssize_t>(queued_size_))
       << ": Wrote " << written << " expected " << queued_size_;
+  written_size_ += written;
 
   queued_size_ = 0;
   queue_.clear();
@@ -417,8 +419,7 @@ bool SplitMessageReader::QueueMessages(
   bool was_emplaced = false;
   while (true) {
     // Stop if we have enough.
-    if (newest_timestamp() >
-            time_to_queue_ + max_out_of_order_duration() &&
+    if (newest_timestamp() > time_to_queue_ + max_out_of_order_duration() &&
         was_emplaced) {
       VLOG(1) << "Done queueing on " << this << ", queued to "
               << newest_timestamp() << " with requeue time " << time_to_queue_;

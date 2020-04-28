@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <vector>
 
 #include "absl/types/span.h"
@@ -38,6 +39,9 @@ class DetachedBufferWriter {
   DetachedBufferWriter(std::string_view filename);
   ~DetachedBufferWriter();
 
+  DetachedBufferWriter(const DetachedBufferWriter &) = delete;
+  DetachedBufferWriter &operator=(const DetachedBufferWriter &) = delete;
+
   std::string_view filename() const { return filename_; }
 
   // TODO(austin): Snappy compress the log file if it ends with .snappy!
@@ -53,6 +57,12 @@ class DetachedBufferWriter {
   // Triggers data to be provided to the kernel and written.
   void Flush();
 
+  // Returns the number of bytes written.
+  size_t written_size() const { return written_size_; }
+
+  // Returns the number of bytes written or currently queued.
+  size_t total_size() const { return written_size_ + queued_size_; }
+
  private:
   const std::string filename_;
 
@@ -60,6 +70,7 @@ class DetachedBufferWriter {
 
   // Size of all the data in the queue.
   size_t queued_size_ = 0;
+  size_t written_size_ = 0;
 
   // List of buffers to flush.
   std::vector<flatbuffers::DetachedBuffer> queue_;
