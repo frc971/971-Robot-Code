@@ -44,7 +44,8 @@ inline flatbuffers::Offset<T> JsonToFlatbuffer(
 
 ::std::string TableFlatbufferToJson(const flatbuffers::Table *t,
                                     const ::flatbuffers::TypeTable *typetable,
-                                    bool multi_line, size_t max_vector_size = SIZE_MAX);
+                                    bool multi_line,
+                                    size_t max_vector_size = SIZE_MAX);
 
 // Converts a DetachedBuffer holding a flatbuffer to JSON.
 inline ::std::string FlatbufferToJson(const flatbuffers::DetachedBuffer &buffer,
