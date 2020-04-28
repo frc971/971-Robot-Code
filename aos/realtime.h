@@ -1,6 +1,7 @@
 #ifndef AOS_REALTIME_H_
 #define AOS_REALTIME_H_
 
+#include <sched.h>
 #include <string_view>
 
 namespace aos {
@@ -20,6 +21,9 @@ void SetCurrentThreadName(const std::string_view name);
 
 // Sets the current thread's realtime priority.
 void SetCurrentThreadRealtimePriority(int priority);
+
+// Sets the current thread's scheduling affinity.
+void SetCurrentThreadAffinity(const cpu_set_t &cpuset);
 
 // Sets up this process to write core dump files.
 // This is called by Init*, but it's here for other files that want this
