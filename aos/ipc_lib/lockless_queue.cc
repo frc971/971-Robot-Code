@@ -276,6 +276,50 @@ LocklessQueueMemory *InitializeLocklessQueueMemory(
   // Everything should be zero initialized already.  So we just need to fill
   // everything out properly.
 
+  // This is the UID we will use for checking signal-sending permission
+  // compatibility.
+  //
+  // The manpage says:
+  //   For a process to have permission to send a signal, it must either be
+  //   privileged [...], or the real or effective user ID of the sending process
+  //   must equal the real or saved set-user-ID of the target process.
+  //
+  // Processes typically initialize a queue in random order as they start up.
+  // This means we need an algorithm for verifying all processes have
+  // permissions to send each other signals which gives the same answer no
+  // matter what order they attach in. We would also like to avoid maintaining a
+  // shared list of the UIDs of all processes.
+  //
+  // To do this while still giving sufficient flexibility for all current use
+  // cases, we track a single UID for the queue. All processes with a matching
+  // euid+suid must have this UID. Any processes with distinct euid/suid must
+  // instead have a matching ruid.  This guarantees signals can be sent between
+  // all processes attached to the queue.
+  //
+  // In particular, this allows a process to change only its euid (to interact
+  // with a queue) while still maintaining privileges via its ruid. However, it
+  // can only use privileges in ways that do not require changing the euid back,
+  // because while the euid is different it will not be able to receive signals.
+  // We can't actually verify that, but we can sanity check that things are
+  // valid when the queue is initialized.
+
+  uid_t uid;
+  {
+    uid_t ruid, euid, suid;
+    PCHECK(getresuid(&ruid, &euid, &suid) == 0);
+    // If these are equal, then use them, even if that's different from the real
+    // UID. This allows processes to keep a real UID of 0 (to have permissions
+    // to perform system-level changes) while still being able to communicate
+    // with processes running unprivileged as a distinct user.
+    if (euid == suid) {
+      uid = euid;
+      VLOG(1) << "Using euid==suid " << uid;
+    } else {
+      uid = ruid;
+      VLOG(1) << "Using ruid " << ruid;
+    }
+  }
+
   // Grab the mutex.  We don't care if the previous reader died.  We are going
   // to check everything anyways.
   GrabQueueSetupLockOrDie grab_queue_setup_lock(memory);
@@ -306,7 +350,7 @@ LocklessQueueMemory *InitializeLocklessQueueMemory(
     }
 
     memory->next_queue_index.Invalidate();
-    memory->uid = getuid();
+    memory->uid = uid;
 
     for (size_t i = 0; i < memory->num_senders(); ++i) {
       ::aos::ipc_lib::Sender *s = memory->GetSender(i);
@@ -321,7 +365,7 @@ LocklessQueueMemory *InitializeLocklessQueueMemory(
     // redo initialization.
     memory->initialized = true;
   } else {
-    CHECK_EQ(getuid(), memory->uid) << ": UIDs must match for all processes";
+    CHECK_EQ(uid, memory->uid) << ": UIDs must match for all processes";
   }
 
   return memory;
