@@ -62,6 +62,20 @@ TEST_F(FlatbufferIntrospectionTest, FloatTest) {
             "{\"foo_double\": 0.555555555555556, \"foo_float\": 0.333333}");
 }
 
+TEST_F(FlatbufferIntrospectionTest, NanFloatTest) {
+  flatbuffers::FlatBufferBuilder builder;
+  ConfigurationBuilder config_builder(builder);
+
+  config_builder.add_foo_float(std::numeric_limits<float>::quiet_NaN());
+  config_builder.add_foo_double(std::numeric_limits<double>::quiet_NaN());
+
+  builder.Finish(config_builder.Finish());
+
+  std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
+
+  EXPECT_EQ(out, "{\"foo_double\": null, \"foo_float\": null}");
+}
+
 TEST_F(FlatbufferIntrospectionTest, VectorScalarTest) {
   flatbuffers::FlatBufferBuilder builder;
 
@@ -152,6 +166,21 @@ TEST_F(FlatbufferIntrospectionTest, EnumTest) {
   std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
 
   EXPECT_EQ(out, "{\"foo_enum\": \"UShort\"}");
+}
+
+TEST_F(FlatbufferIntrospectionTest, EnumWithUnknownValueTest) {
+  flatbuffers::FlatBufferBuilder builder;
+
+  ConfigurationBuilder config_builder(builder);
+  // 123 is not part of the enum.  We expect it to be represented by null in
+  // the json.
+  config_builder.fbb_.AddElement<uint8_t>(Configuration::VT_FOO_ENUM, 123, 0);
+
+  builder.Finish(config_builder.Finish());
+
+  std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
+
+  EXPECT_EQ(out, "{\"foo_enum\": 123}");
 }
 
 TEST_F(FlatbufferIntrospectionTest, VectorStringTest) {
