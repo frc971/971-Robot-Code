@@ -219,12 +219,18 @@ class Fetcher {
                : nullptr;
   }
 
+  // Returns the channel this fetcher uses
+  const Channel *channel() const { return fetcher_->channel(); }
+
   // Returns the context holding timestamps and other metadata about the
   // message.
   const Context &context() const { return fetcher_->context(); }
 
   const T &operator*() const { return *get(); }
   const T *operator->() const { return get(); }
+
+  // Returns true if this fetcher is valid and connected to a channel.
+  operator bool() const { return static_cast<bool>(fetcher_); }
 
  private:
   friend class EventLoop;
@@ -413,6 +419,14 @@ class EventLoop {
   // Current time.
   virtual monotonic_clock::time_point monotonic_now() = 0;
   virtual realtime_clock::time_point realtime_now() = 0;
+
+  // Returns true if the channel exists in the configuration.
+  template <typename T>
+  bool HasChannel(const std::string_view channel_name) {
+    return configuration::GetChannel(configuration_, channel_name,
+                                     T::GetFullyQualifiedName(), name(),
+                                     node()) != nullptr;
+  }
 
   // Note, it is supported to create:
   //   multiple fetchers, and (one sender or one watcher) per <name, type>

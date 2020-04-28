@@ -340,17 +340,24 @@ class LogReader {
     RemapLoggedChannel(name, T::GetFullyQualifiedName(), add_prefix);
   }
 
+  template <typename T>
+  bool HasChannel(std::string_view name) {
+    return configuration::GetChannel(log_file_header()->configuration(), name,
+                                     T::GetFullyQualifiedName(), "",
+                                     nullptr) != nullptr;
+  }
+
   SimulatedEventLoopFactory *event_loop_factory() {
     return event_loop_factory_;
+  }
+
+  const LogFileHeader *log_file_header() const {
+    return &log_file_header_.message();
   }
 
  private:
   const Channel *RemapChannel(const EventLoop *event_loop,
                               const Channel *channel);
-
-  const LogFileHeader *log_file_header() const {
-    return &log_file_header_.message();
-  }
 
   // Queues at least max_out_of_order_duration_ messages into channels_.
   void QueueMessages();
