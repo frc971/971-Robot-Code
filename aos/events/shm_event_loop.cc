@@ -61,6 +61,31 @@ std::string ShmPath(const Channel *channel) {
   return ShmFolder(channel) + channel->type()->str() + ".v2";
 }
 
+void PageFaultData(char *data, size_t size) {
+  // This just has to divide the actual page size. Being smaller will make this
+  // a bit slower than necessary, but not much. 1024 is a pretty conservative
+  // choice (most pages are probably 4096).
+  static constexpr size_t kPageSize = 1024;
+  const size_t pages = (size + kPageSize - 1) / kPageSize;
+  for (size_t i = 0; i < pages; ++i) {
+    char zero = 0;
+    // We need to ensure there's a writable pagetable entry, but avoid modifying
+    // the data.
+    //
+    // Even if you lock the data into memory, some kernels still seem to lazily
+    // create the actual pagetable entries. This means we need to somehow
+    // "write" to the page.
+    //
+    // Also, this takes place while other processes may be concurrently
+    // opening/initializing the memory, so we need to avoid corrupting that.
+    //
+    // This is the simplest operation I could think of which achieves that:
+    // "store 0 if it's already 0".
+    __atomic_compare_exchange_n(&data[i * kPageSize], &zero, 0, true,
+                                __ATOMIC_RELAXED, __ATOMIC_RELAXED);
+  }
+}
+
 class MMapedQueue {
  public:
   MMapedQueue(const Channel *channel,
@@ -112,6 +137,7 @@ class MMapedQueue {
     data_ = mmap(NULL, size_, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     PCHECK(data_ != MAP_FAILED);
     PCHECK(close(fd) == 0);
+    PageFaultData(static_cast<char *>(data_), size_);
 
     ipc_lib::InitializeLocklessQueueMemory(memory(), config_);
   }
