@@ -87,7 +87,9 @@ class SimulatedEventLoopFactory {
   std::chrono::nanoseconds send_delay() const { return send_delay_; }
 
   // Sets the simulated network delay for messages forwarded between nodes.
-  void set_network_delay(std::chrono::nanoseconds network_delay);
+  void set_network_delay(std::chrono::nanoseconds network_delay) {
+    network_delay_ = network_delay;
+  }
   std::chrono::nanoseconds network_delay() const { return network_delay_; }
 
   // Returns the clock used to synchronize the nodes.
