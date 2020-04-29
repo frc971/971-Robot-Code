@@ -211,14 +211,12 @@ void FieldToString(
                     flatbuffers::GetAnyVectorElemAddressOf<
                         const flatbuffers::Struct>(
                         vector, i, objects->Get(type->index())->bytesize()),
-                        max_vector_size,
-                    out);
+                    max_vector_size, out);
               } else {
                 ObjectToString(objects->Get(type->index()), objects, enums,
                                flatbuffers::GetAnyVectorElemPointer<
                                    const flatbuffers::Table>(vector, i),
-                                   max_vector_size,
-                               out);
+                               max_vector_size, out);
               }
             }
           }
@@ -232,10 +230,12 @@ void FieldToString(
       if (type->index() > -1 && type->index() < (int32_t)objects->size()) {
         if (objects->Get(type->index())->is_struct()) {
           ObjectToString(objects->Get(type->index()), objects, enums,
-                         flatbuffers::GetFieldStruct(*table, *field), max_vector_size, out);
+                         flatbuffers::GetFieldStruct(*table, *field),
+                         max_vector_size, out);
         } else if constexpr (std::is_same<flatbuffers::Table, ObjT>()) {
           ObjectToString(objects->Get(type->index()), objects, enums,
-                         flatbuffers::GetFieldT(*table, *field),  max_vector_size,out);
+                         flatbuffers::GetFieldT(*table, *field),
+                         max_vector_size, out);
         }
       } else {
         *out << "null";

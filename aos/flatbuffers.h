@@ -125,7 +125,8 @@ class FlatbufferString : public Flatbuffer<T> {
   FlatbufferString(const std::string_view data) : data_(data) {}
   // Builds a Flatbuffer by copying the data from the other flatbuffer.
   FlatbufferString(const Flatbuffer<T> &other) {
-    data_ = std::string(other.data(), other.size());
+    data_ =
+        std::string(reinterpret_cast<const char *>(other.data()), other.size());
   }
 
   // Coppies the data from the other flatbuffer.
