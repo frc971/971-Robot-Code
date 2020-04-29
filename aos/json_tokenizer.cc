@@ -146,6 +146,12 @@ bool Tokenizer::ConsumeNumber(::std::string *s) {
     return true;
   }
 
+  // People tend to use null instead of nan.  Accept that too.
+  if (Consume("null")) {
+    *s = ::std::string("nan");
+    return true;
+  }
+
   // Then, we either get a 0, or we get a nonzero.  Only nonzero can be followed
   // by a second number.
   if (!Consume("0")) {
