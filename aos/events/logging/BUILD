@@ -12,28 +12,47 @@ flatbuffer_cc_library(
 )
 
 cc_library(
-    name = "logger",
+    name = "logfile_utils",
     srcs = [
         "logfile_utils.cc",
-        "logger.cc",
-        "logger_math.cc",
     ],
     hdrs = [
         "logfile_utils.h",
-        "logger.h",
     ],
     visibility = ["//visibility:public"],
     deps = [
         ":logger_fbs",
+        "//aos:configuration",
         "//aos:flatbuffer_merge",
+        "//aos/events:event_loop",
+        "//aos/util:file",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_flatbuffers//:flatbuffers",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "logger",
+    srcs = [
+        "logger.cc",
+        "logger_math.cc",
+    ],
+    hdrs = [
+        "logger.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":logfile_utils",
+        ":logger_fbs",
         "//aos/events:event_loop",
         "//aos/events:simulated_event_loop",
         "//aos/network:team_number",
         "//aos/network:timestamp_filter",
         "//aos/time",
         "@com_github_google_flatbuffers//:flatbuffers",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
