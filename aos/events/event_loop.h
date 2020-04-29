@@ -1,6 +1,8 @@
 #ifndef AOS_EVENTS_EVENT_LOOP_H_
 #define AOS_EVENTS_EVENT_LOOP_H_
 
+#include <sched.h>
+
 #include <atomic>
 #include <string>
 #include <string_view>
@@ -404,6 +406,15 @@ class PhasedLoopHandler {
   internal::TimerTiming timing_;
 };
 
+inline cpu_set_t MakeCpusetFromCpus(std::initializer_list<int> cpus) {
+  cpu_set_t result;
+  CPU_ZERO(&result);
+  for (int cpu : cpus) {
+    CPU_SET(cpu, &result);
+  }
+  return result;
+}
+
 class EventLoop {
  public:
   EventLoop(const Configuration *configuration);
@@ -523,6 +534,10 @@ class EventLoop {
   // called after we go into "real-time-mode".
   virtual void SetRuntimeRealtimePriority(int priority) = 0;
   virtual int priority() const = 0;
+
+  // Sets the scheduler affinity to run the event loop with. This may only be
+  // called before Run().
+  virtual void SetRuntimeAffinity(const cpu_set_t &cpuset) = 0;
 
   // Fetches new messages from the provided channel (path, type).
   //

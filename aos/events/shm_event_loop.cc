@@ -811,6 +811,10 @@ void ShmEventLoop::Run() {
     }
 
     aos::SetCurrentThreadName(name_.substr(0, 16));
+    const cpu_set_t default_affinity = DefaultAffinity();
+    if (!CPU_EQUAL(&affinity_, &default_affinity)) {
+      ::aos::SetCurrentThreadAffinity(affinity_);
+    }
     // Now, all the callbacks are setup.  Lock everything into memory and go RT.
     if (priority_ != 0) {
       ::aos::InitRT();
@@ -878,6 +882,13 @@ void ShmEventLoop::SetRuntimeRealtimePriority(int priority) {
     LOG(FATAL) << "Cannot set realtime priority while running.";
   }
   priority_ = priority;
+}
+
+void ShmEventLoop::SetRuntimeAffinity(const cpu_set_t &cpuset) {
+  if (is_running()) {
+    LOG(FATAL) << "Cannot set affinity while running.";
+  }
+  affinity_ = cpuset;
 }
 
 void ShmEventLoop::set_name(const std::string_view name) {

@@ -414,6 +414,10 @@ class SimulatedEventLoop : public EventLoop {
 
   int priority() const override { return priority_; }
 
+  void SetRuntimeAffinity(const cpu_set_t & /*cpuset*/) override {
+    CHECK(!is_running()) << ": Cannot set affinity while running.";
+  }
+
   void Setup() {
     MaybeScheduleTimingReports();
     if (!skip_logger_) {

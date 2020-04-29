@@ -50,8 +50,7 @@ void SetSoftRLimit(
   if (set_for_root == SetLimitForRoot::kYes || !am_root) {
     struct rlimit64 rlim;
     PCHECK(getrlimit64(resource, &rlim) == 0)
-        << ": " << program_invocation_short_name << "-init: getrlimit64("
-        << resource << ") failed";
+        << ": getting limit for " << resource;
 
     if (allow_decrease == AllowSoftLimitDecrease::kYes) {
       rlim.rlim_cur = soft;
@@ -61,9 +60,8 @@ void SetSoftRLimit(
     rlim.rlim_max = ::std::max(rlim.rlim_max, soft);
 
     PCHECK(setrlimit64(resource, &rlim) == 0)
-        << ": " << program_invocation_short_name << "-init: setrlimit64("
-        << resource << ", {cur=" << (uintmax_t)rlim.rlim_cur
-        << ",max=" << (uintmax_t)rlim.rlim_max << "}) failed";
+        << ": changing limit for " << resource << " to " << rlim.rlim_cur
+        << " with max of " << rlim.rlim_max;
   }
 }
 
@@ -74,8 +72,7 @@ void LockAllMemory() {
   SetSoftRLimit(RLIMIT_MEMLOCK, RLIM_INFINITY, SetLimitForRoot::kNo);
 
   WriteCoreDumps();
-  PCHECK(mlockall(MCL_CURRENT | MCL_FUTURE) == 0)
-      << ": " << program_invocation_short_name << "-init: mlockall failed";
+  PCHECK(mlockall(MCL_CURRENT | MCL_FUTURE) == 0);
 
   // Don't give freed memory back to the OS.
   CHECK_EQ(1, mallopt(M_TRIM_THRESHOLD, -1));
@@ -114,15 +111,19 @@ void InitRT() {
 void UnsetCurrentThreadRealtimePriority() {
   struct sched_param param;
   param.sched_priority = 0;
-  PCHECK(sched_setscheduler(0, SCHED_OTHER, &param) == 0)
-      << ": sched_setscheduler(0, SCHED_OTHER, 0) failed";
+  PCHECK(sched_setscheduler(0, SCHED_OTHER, &param) == 0);
+}
+
+void SetCurrentThreadAffinity(const cpu_set_t &cpuset) {
+  PCHECK(sched_setaffinity(0, sizeof(cpuset), &cpuset) == 0);
 }
 
 void SetCurrentThreadName(const std::string_view name) {
   CHECK_LE(name.size(), 16u) << ": thread name '" << name << "' too long";
   VLOG(1) << "This thread is changing to '" << name << "'";
   std::string string_name(name);
-  PCHECK(prctl(PR_SET_NAME, string_name.c_str()) == 0);
+  PCHECK(prctl(PR_SET_NAME, string_name.c_str()) == 0)
+      << ": changing name to " << string_name;
   if (&logging::internal::ReloadThreadName != nullptr) {
     logging::internal::ReloadThreadName();
   }
@@ -135,7 +136,7 @@ void SetCurrentThreadRealtimePriority(int priority) {
   struct sched_param param;
   param.sched_priority = priority;
   PCHECK(sched_setscheduler(0, SCHED_FIFO, &param) == 0)
-      << ": sched_setscheduler(0, SCHED_FIFO, " << priority << ") failed";
+      << ": changing to SCHED_FIFO with " << priority;
 }
 
 void WriteCoreDumps() {

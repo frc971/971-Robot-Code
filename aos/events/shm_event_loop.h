@@ -66,6 +66,7 @@ class ShmEventLoop : public EventLoop {
   void OnRun(std::function<void()> on_run) override;
 
   void SetRuntimeRealtimePriority(int priority) override;
+  void SetRuntimeAffinity(const cpu_set_t &cpuset) override;
 
   void set_name(const std::string_view name) override;
   const std::string_view name() const override { return name_; }
@@ -94,6 +95,14 @@ class ShmEventLoop : public EventLoop {
   friend class internal::ShmSender;
   friend class internal::ShmFetcher;
 
+  static cpu_set_t DefaultAffinity() {
+    cpu_set_t result;
+    for (int i = 0; i < CPU_SETSIZE; ++i) {
+      CPU_SET(i, &result);
+    }
+    return result;
+  }
+
   void HandleEvent();
 
   // Returns the TID of the event loop.
@@ -104,6 +113,7 @@ class ShmEventLoop : public EventLoop {
 
   std::vector<std::function<void()>> on_run_;
   int priority_ = 0;
+  cpu_set_t affinity_ = DefaultAffinity();
   std::string name_;
   const Node *const node_;
 

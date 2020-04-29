@@ -585,6 +585,17 @@ TEST_P(AbstractEventLoopDeathTest, SetRuntimeRealtimePriority) {
   EXPECT_DEATH(Run(), "realtime");
 }
 
+// Verify that SetRuntimeAffinity fails while running.
+TEST_P(AbstractEventLoopDeathTest, SetRuntimeAffinity) {
+  auto loop = MakePrimary();
+  // Confirm that runtime priority calls work when not running.
+  loop->SetRuntimeAffinity(MakeCpusetFromCpus({0}));
+
+  loop->OnRun([&]() { loop->SetRuntimeAffinity(MakeCpusetFromCpus({1})); });
+
+  EXPECT_DEATH(Run(), "Cannot set affinity while running");
+}
+
 // Verify that registering a watcher and a sender for "/test" fails.
 TEST_P(AbstractEventLoopDeathTest, WatcherAndSender) {
   auto loop = Make();
