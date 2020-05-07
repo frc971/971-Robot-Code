@@ -767,7 +767,7 @@ TEST_P(AbstractEventLoopTest, TimerIntervalAndDuration) {
 
   // Confirm that we have the right number of reports, and the contents are
   // sane.
-  VLOG(1) << FlatbufferToJson(report, true);
+  VLOG(1) << FlatbufferToJson(report, {.multi_line = true});
 
   EXPECT_EQ(report.message().name()->string_view(), "primary");
 
@@ -1181,7 +1181,7 @@ TEST_P(AbstractEventLoopTest, PhasedLoopTest) {
     }
   }
 
-  VLOG(1) << FlatbufferToJson(report, true);
+  VLOG(1) << FlatbufferToJson(report, {.multi_line = true});
 
   EXPECT_EQ(report.message().name()->string_view(), "primary");
 
@@ -1245,7 +1245,7 @@ TEST_P(AbstractEventLoopTest, SenderTimingReport) {
     }
   }
 
-  LOG(INFO) << FlatbufferToJson(primary_report, true);
+  LOG(INFO) << FlatbufferToJson(primary_report, {.multi_line = true});
 
   EXPECT_EQ(primary_report.message().name()->string_view(), "primary");
 
@@ -1327,7 +1327,7 @@ TEST_P(AbstractEventLoopTest, WatcherTimingReport) {
   }
 
   // Check the watcher report.
-  VLOG(1) << FlatbufferToJson(primary_report, true);
+  VLOG(1) << FlatbufferToJson(primary_report, {.multi_line = true});
 
   EXPECT_EQ(primary_report.message().name()->string_view(), "primary");
 
@@ -1397,7 +1397,7 @@ TEST_P(AbstractEventLoopTest, FetcherTimingReport) {
     }
   }
 
-  VLOG(1) << FlatbufferToJson(primary_report, true);
+  VLOG(1) << FlatbufferToJson(primary_report, {.multi_line = true});
 
   EXPECT_EQ(primary_report.message().name()->string_view(), "primary");
 

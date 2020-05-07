@@ -28,7 +28,7 @@ void PrintMessage(const aos::Channel *channel, const aos::Context &context) {
               << aos::FlatbufferToJson(
                      channel->schema(),
                      static_cast<const uint8_t *>(context.data),
-                     FLAGS_max_vector_size)
+                     {false, static_cast<size_t>(FLAGS_max_vector_size)})
               << '\n';
   } else {
     std::cout << context.realtime_event_time << " ("
@@ -36,7 +36,7 @@ void PrintMessage(const aos::Channel *channel, const aos::Context &context) {
               << aos::FlatbufferToJson(
                      channel->schema(),
                      static_cast<const uint8_t *>(context.data),
-                     FLAGS_max_vector_size)
+                     {false, static_cast<size_t>(FLAGS_max_vector_size)})
               << '\n';
   }
 }

@@ -790,7 +790,7 @@ flatbuffers::DetachedBuffer JsonToFlatbuffer(
 
 ::std::string BufferFlatbufferToJson(const uint8_t *buffer,
                                      const ::flatbuffers::TypeTable *typetable,
-                                     bool multi_line, size_t max_vector_size) {
+                                     JsonOptions json_options) {
   // It is pretty common to get passed in a nullptr when a test fails.  Rather
   // than CHECK, return a more user friendly result.
   if (buffer == nullptr) {
@@ -798,7 +798,7 @@ flatbuffers::DetachedBuffer JsonToFlatbuffer(
   }
   return TableFlatbufferToJson(reinterpret_cast<const flatbuffers::Table *>(
                                    flatbuffers::GetRoot<uint8_t>(buffer)),
-                               typetable, multi_line, max_vector_size);
+                               typetable, json_options);
 }
 
 namespace {
@@ -925,15 +925,15 @@ class TruncatingStringVisitor : public flatbuffers::IterationVisitor {
 
 ::std::string TableFlatbufferToJson(const flatbuffers::Table *t,
                                     const ::flatbuffers::TypeTable *typetable,
-                                    bool multi_line, size_t max_vector_size) {
+                                    JsonOptions json_options) {
   // It is pretty common to get passed in a nullptr when a test fails.  Rather
   // than CHECK, return a more user friendly result.
   if (t == nullptr) {
     return "null";
   }
-  TruncatingStringVisitor tostring_visitor(max_vector_size,
-                                           multi_line ? "\n" : " ", true,
-                                           multi_line ? " " : "", multi_line);
+  TruncatingStringVisitor tostring_visitor(
+      json_options.max_vector_size, json_options.multi_line ? "\n" : " ", true,
+      json_options.multi_line ? " " : "", json_options.multi_line);
   flatbuffers::IterateObject(reinterpret_cast<const uint8_t *>(t), typetable,
                              &tostring_visitor);
   return tostring_visitor.string();

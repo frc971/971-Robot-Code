@@ -27,18 +27,19 @@ const char *kExpectedLocation =
     "{ \"name\": \"/foo\", \"type\": \".aos.bar\", \"max_size\": 5 }";
 // And for multinode setups
 const char *kExpectedMultinodeLocation =
-    "{ \"name\": \"/foo\", \"type\": \".aos.bar\", \"max_size\": 5, \"source_node\": \"pi1\" }";
+    "{ \"name\": \"/foo\", \"type\": \".aos.bar\", \"max_size\": 5, "
+    "\"source_node\": \"pi1\" }";
 
 // Tests that we can read and merge a configuration.
 TEST_F(ConfigurationTest, ConfigMerge) {
   FlatbufferDetachedBuffer<Configuration> config =
       ReadConfig(kConfigPrefix + "config1.json");
-  LOG(INFO) << "Read: " << FlatbufferToJson(config, true);
+  LOG(INFO) << "Read: " << FlatbufferToJson(config, {.multi_line = true});
 
   EXPECT_EQ(
       absl::StripSuffix(
           util::ReadFileToStringOrDie(kConfigPrefix + "expected.json"), "\n"),
-      FlatbufferToJson(config, true));
+      FlatbufferToJson(config, {.multi_line = true}));
 }
 
 // Tests that we can get back a ChannelIndex.
@@ -55,13 +56,13 @@ TEST_F(ConfigurationTest, ChannelIndex) {
 TEST_F(ConfigurationTest, ConfigMergeMultinode) {
   FlatbufferDetachedBuffer<Configuration> config =
       ReadConfig(kConfigPrefix + "config1_multinode.json");
-  LOG(INFO) << "Read: " << FlatbufferToJson(config, true);
+  LOG(INFO) << "Read: " << FlatbufferToJson(config, {.multi_line = true});
 
-  EXPECT_EQ(
-      std::string(absl::StripSuffix(
-          util::ReadFileToStringOrDie(kConfigPrefix + "expected_multinode.json"),
-          "\n")),
-      FlatbufferToJson(config, true));
+  EXPECT_EQ(std::string(absl::StripSuffix(
+                util::ReadFileToStringOrDie(kConfigPrefix +
+                                            "expected_multinode.json"),
+                "\n")),
+            FlatbufferToJson(config, {.multi_line = true}));
 }
 
 // Tests that we sort the entries in a config so we can look entries up.
@@ -69,7 +70,7 @@ TEST_F(ConfigurationTest, UnsortedConfig) {
   FlatbufferDetachedBuffer<Configuration> config =
       ReadConfig(kConfigPrefix + "backwards.json");
 
-  LOG(INFO) << "Read: " << FlatbufferToJson(config, true);
+  LOG(INFO) << "Read: " << FlatbufferToJson(config, {.multi_line = true});
 
   EXPECT_EQ(FlatbufferToJson(GetChannel(config, "/aos/robot_state",
                                         "aos.RobotState", "app1", nullptr)),
@@ -115,7 +116,7 @@ TEST_F(ConfigurationDeathTest, InvalidChannelName) {
 TEST_F(ConfigurationTest, MergeWithConfig) {
   FlatbufferDetachedBuffer<Configuration> config =
       ReadConfig(kConfigPrefix + "config1.json");
-  LOG(INFO) << "Read: " << FlatbufferToJson(config, true);
+  LOG(INFO) << "Read: " << FlatbufferToJson(config, {.multi_line = true});
 
   FlatbufferDetachedBuffer<Configuration> updated_config =
       MergeWithConfig(&config.message(),
@@ -129,11 +130,10 @@ TEST_F(ConfigurationTest, MergeWithConfig) {
   ]
 })channel");
 
-  EXPECT_EQ(
-      absl::StripSuffix(util::ReadFileToStringOrDie(
-                            kConfigPrefix + "expected_merge_with.json"),
-                        "\n"),
-      FlatbufferToJson(updated_config, true));
+  EXPECT_EQ(absl::StripSuffix(util::ReadFileToStringOrDie(
+                                  kConfigPrefix + "expected_merge_with.json"),
+                              "\n"),
+            FlatbufferToJson(updated_config, {.multi_line = true}));
 }
 
 // Tests that we can lookup a location, complete with maps, from a merged
@@ -187,9 +187,9 @@ TEST_F(ConfigurationTest, GetChannelMultinode) {
       kExpectedMultinodeLocation);
 
   // Tests that a root map/rename works with a node specific map.
-  EXPECT_EQ(FlatbufferToJson(
-                GetChannel(config, "/batman", ".aos.bar", "app1", pi1)),
-            kExpectedMultinodeLocation);
+  EXPECT_EQ(
+      FlatbufferToJson(GetChannel(config, "/batman", ".aos.bar", "app1", pi1)),
+      kExpectedMultinodeLocation);
 
   // Tests that a root map/rename fails with a node specific map for the wrong
   // node.
@@ -427,9 +427,8 @@ TEST_F(ConfigurationTest, ChannelMessageIsLoggedOnNode) {
 })channel",
           Channel::MiniReflectTypeTable()));
 
-  FlatbufferDetachedBuffer<Channel> logged_on_both_channel (
-      JsonToFlatbuffer(
-          R"channel({
+  FlatbufferDetachedBuffer<Channel> logged_on_both_channel(JsonToFlatbuffer(
+      R"channel({
   "name": "/test",
   "type": "aos.examples.Ping",
   "source_node": "bar",
@@ -441,7 +440,7 @@ TEST_F(ConfigurationTest, ChannelMessageIsLoggedOnNode) {
     }
   ]
 })channel",
-          Channel::MiniReflectTypeTable()));
+      Channel::MiniReflectTypeTable()));
 
   FlatbufferDetachedBuffer<Node> foo_node(JsonToFlatbuffer(
       R"node({
@@ -473,7 +472,7 @@ TEST_F(ConfigurationTest, ChannelMessageIsLoggedOnNode) {
   EXPECT_FALSE(ChannelMessageIsLoggedOnNode(&not_logged_channel.message(),
                                             &foo_node.message()));
   EXPECT_FALSE(ChannelMessageIsLoggedOnNode(&not_logged_channel.message(),
-                                           &bar_node.message()));
+                                            &bar_node.message()));
   EXPECT_FALSE(ChannelMessageIsLoggedOnNode(&not_logged_channel.message(),
                                             &baz_node.message()));
 
@@ -567,9 +566,8 @@ TEST_F(ConfigurationTest, ConnectionDeliveryTimeIsLoggedOnNode) {
 })channel",
           Channel::MiniReflectTypeTable()));
 
-  FlatbufferDetachedBuffer<Channel> logged_on_both_channel (
-      JsonToFlatbuffer(
-          R"channel({
+  FlatbufferDetachedBuffer<Channel> logged_on_both_channel(JsonToFlatbuffer(
+      R"channel({
   "name": "/test",
   "type": "aos.examples.Ping",
   "source_node": "bar",
@@ -581,7 +579,7 @@ TEST_F(ConfigurationTest, ConnectionDeliveryTimeIsLoggedOnNode) {
     }
   ]
 })channel",
-          Channel::MiniReflectTypeTable()));
+      Channel::MiniReflectTypeTable()));
 
   FlatbufferDetachedBuffer<Node> foo_node(JsonToFlatbuffer(
       R"node({
@@ -783,10 +781,10 @@ TEST_F(ConfigurationTest, GetNodeFromHostnames) {
                        GetNodeFromHostname(&config.message(), "raspberrypi3"))
                        ->name()
                        ->string_view());
-  EXPECT_EQ("pi2", CHECK_NOTNULL(
-                       GetNodeFromHostname(&config.message(), "other"))
-                       ->name()
-                       ->string_view());
+  EXPECT_EQ("pi2",
+            CHECK_NOTNULL(GetNodeFromHostname(&config.message(), "other"))
+                ->name()
+                ->string_view());
   EXPECT_EQ(nullptr, GetNodeFromHostname(&config.message(), "raspberrypi4"));
   EXPECT_EQ(nullptr, GetNodeFromHostname(&config.message(), "localhost"));
   EXPECT_EQ(nullptr, GetNodeFromHostname(&config.message(), "3"));

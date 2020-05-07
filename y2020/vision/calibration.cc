@@ -96,7 +96,6 @@ class CameraCalibration {
 
 namespace {
 
-
 void ViewerMain() {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(FLAGS_config);
@@ -139,107 +138,104 @@ void ViewerMain() {
       absl::StrCat("/pi", std::to_string(pi_number.value()), "/camera");
   LOG(INFO) << "Connecting to channel " << channel;
 
-  event_loop.MakeWatcher(
-      channel, [&event_loop, &board, &all_charuco_ids, &all_charuco_corners,
-                camera_matrix, dist_coeffs,
-                eigen_camera_matrix](const CameraImage &image) {
-        const aos::monotonic_clock::duration age =
-            event_loop.monotonic_now() -
-            event_loop.context().monotonic_event_time;
-        const double age_double =
-            std::chrono::duration_cast<std::chrono::duration<double>>(age)
-                .count();
-        if (age > std::chrono::milliseconds(100)) {
-          LOG(INFO) << "Age: " << age_double << ", getting behind, skipping";
-          return;
-        }
-        // Create color image:
-        cv::Mat image_color_mat(cv::Size(image.cols(), image.rows()), CV_8UC2,
-                                (void *)image.data()->data());
-        const cv::Size image_size(image.cols(), image.rows());
-        cv::Mat rgb_image(image_size, CV_8UC3);
-        cv::cvtColor(image_color_mat, rgb_image, CV_YUV2BGR_YUYV);
+  event_loop.MakeWatcher(channel, [&event_loop, &board, &all_charuco_ids,
+                                   &all_charuco_corners, camera_matrix,
+                                   dist_coeffs, eigen_camera_matrix](
+                                      const CameraImage &image) {
+    const aos::monotonic_clock::duration age =
+        event_loop.monotonic_now() - event_loop.context().monotonic_event_time;
+    const double age_double =
+        std::chrono::duration_cast<std::chrono::duration<double>>(age).count();
+    if (age > std::chrono::milliseconds(100)) {
+      LOG(INFO) << "Age: " << age_double << ", getting behind, skipping";
+      return;
+    }
+    // Create color image:
+    cv::Mat image_color_mat(cv::Size(image.cols(), image.rows()), CV_8UC2,
+                            (void *)image.data()->data());
+    const cv::Size image_size(image.cols(), image.rows());
+    cv::Mat rgb_image(image_size, CV_8UC3);
+    cv::cvtColor(image_color_mat, rgb_image, CV_YUV2BGR_YUYV);
 
-        std::vector<int> marker_ids;
-        std::vector<std::vector<cv::Point2f>> marker_corners;
+    std::vector<int> marker_ids;
+    std::vector<std::vector<cv::Point2f>> marker_corners;
 
-        cv::aruco::detectMarkers(rgb_image, board->dictionary, marker_corners,
-                                 marker_ids);
+    cv::aruco::detectMarkers(rgb_image, board->dictionary, marker_corners,
+                             marker_ids);
 
-        std::vector<cv::Point2f> charuco_corners;
-        std::vector<int> charuco_ids;
-        // If at least one marker detected
-        if (marker_ids.size() >= FLAGS_min_targets) {
-          // Run everything twice, once with the calibration, and once without.
-          // This lets us both calibrate, and also print out the pose real time
-          // with the previous calibration.
-          cv::aruco::interpolateCornersCharuco(marker_corners, marker_ids,
-                                               rgb_image, board,
-                                               charuco_corners, charuco_ids);
+    std::vector<cv::Point2f> charuco_corners;
+    std::vector<int> charuco_ids;
+    // If at least one marker detected
+    if (marker_ids.size() >= FLAGS_min_targets) {
+      // Run everything twice, once with the calibration, and once without.
+      // This lets us both calibrate, and also print out the pose real time
+      // with the previous calibration.
+      cv::aruco::interpolateCornersCharuco(marker_corners, marker_ids,
+                                           rgb_image, board, charuco_corners,
+                                           charuco_ids);
 
-          std::vector<cv::Point2f> charuco_corners_with_calibration;
-          std::vector<int> charuco_ids_with_calibration;
+      std::vector<cv::Point2f> charuco_corners_with_calibration;
+      std::vector<int> charuco_ids_with_calibration;
 
-          cv::aruco::interpolateCornersCharuco(
-              marker_corners, marker_ids, rgb_image, board,
-              charuco_corners_with_calibration, charuco_ids_with_calibration,
-              camera_matrix, dist_coeffs);
+      cv::aruco::interpolateCornersCharuco(
+          marker_corners, marker_ids, rgb_image, board,
+          charuco_corners_with_calibration, charuco_ids_with_calibration,
+          camera_matrix, dist_coeffs);
 
-          cv::aruco::drawDetectedMarkers(rgb_image, marker_corners, marker_ids);
+      cv::aruco::drawDetectedMarkers(rgb_image, marker_corners, marker_ids);
 
-          if (charuco_ids.size() >= FLAGS_min_targets) {
-            cv::aruco::drawDetectedCornersCharuco(
-                rgb_image, charuco_corners, charuco_ids, cv::Scalar(255, 0, 0));
+      if (charuco_ids.size() >= FLAGS_min_targets) {
+        cv::aruco::drawDetectedCornersCharuco(
+            rgb_image, charuco_corners, charuco_ids, cv::Scalar(255, 0, 0));
 
-            cv::Vec3d rvec, tvec;
-            bool valid = cv::aruco::estimatePoseCharucoBoard(
-                charuco_corners_with_calibration, charuco_ids_with_calibration,
-                board, camera_matrix, dist_coeffs, rvec, tvec);
+        cv::Vec3d rvec, tvec;
+        bool valid = cv::aruco::estimatePoseCharucoBoard(
+            charuco_corners_with_calibration, charuco_ids_with_calibration,
+            board, camera_matrix, dist_coeffs, rvec, tvec);
 
-
-            // if charuco pose is valid
-            if (valid) {
-              LOG(INFO) << std::fixed << std::setprecision(6)
-                        << "Age: " << age_double << ", Pose is R:" << rvec
-                        << " T:" << tvec;
-              cv::aruco::drawAxis(rgb_image, camera_matrix,
-                                  dist_coeffs, rvec, tvec, 0.1);
-            } else {
-              LOG(INFO) << "Age: " << age_double << ", invalid pose";
-            }
-          } else {
-            LOG(INFO) << "Age: " << age_double << ", no charuco IDs.";
-          }
+        // if charuco pose is valid
+        if (valid) {
+          LOG(INFO) << std::fixed << std::setprecision(6)
+                    << "Age: " << age_double << ", Pose is R:" << rvec
+                    << " T:" << tvec;
+          cv::aruco::drawAxis(rgb_image, camera_matrix, dist_coeffs, rvec, tvec,
+                              0.1);
         } else {
-          LOG(INFO) << "Age: " << age_double << ", no marker IDs";
+          LOG(INFO) << "Age: " << age_double << ", invalid pose";
         }
+      } else {
+        LOG(INFO) << "Age: " << age_double << ", no charuco IDs.";
+      }
+    } else {
+      LOG(INFO) << "Age: " << age_double << ", no marker IDs";
+    }
 
-        cv::imshow("Display", rgb_image);
+    cv::imshow("Display", rgb_image);
 
-        if (FLAGS_display_undistorted) {
-          cv::Mat undistorted_rgb_image(image_size, CV_8UC3);
-          cv::undistort(rgb_image, undistorted_rgb_image, camera_matrix,
-                        dist_coeffs);
+    if (FLAGS_display_undistorted) {
+      cv::Mat undistorted_rgb_image(image_size, CV_8UC3);
+      cv::undistort(rgb_image, undistorted_rgb_image, camera_matrix,
+                    dist_coeffs);
 
-          cv::imshow("Display undist", undistorted_rgb_image);
-        }
+      cv::imshow("Display undist", undistorted_rgb_image);
+    }
 
-        int keystroke = cv::waitKey(1);
-        if ((keystroke & 0xFF) == static_cast<int>('c')) {
-          if (charuco_ids.size() >= FLAGS_min_targets) {
-            all_charuco_ids.emplace_back(std::move(charuco_ids));
-            all_charuco_corners.emplace_back(std::move(charuco_corners));
-            LOG(INFO) << "Image " << all_charuco_corners.size();
-          }
+    int keystroke = cv::waitKey(1);
+    if ((keystroke & 0xFF) == static_cast<int>('c')) {
+      if (charuco_ids.size() >= FLAGS_min_targets) {
+        all_charuco_ids.emplace_back(std::move(charuco_ids));
+        all_charuco_corners.emplace_back(std::move(charuco_corners));
+        LOG(INFO) << "Image " << all_charuco_corners.size();
+      }
 
-          if (all_charuco_ids.size() >= 50) {
-            LOG(INFO) << "Got enough images to calibrate";
-            event_loop.Exit();
-          }
-        } else if ((keystroke & 0xFF) == static_cast<int>('q')) {
-          event_loop.Exit();
-        }
-      });
+      if (all_charuco_ids.size() >= 50) {
+        LOG(INFO) << "Got enough images to calibrate";
+        event_loop.Exit();
+      }
+    } else if ((keystroke & 0xFF) == static_cast<int>('q')) {
+      event_loop.Exit();
+    }
+  });
 
   event_loop.Run();
 
@@ -302,10 +298,12 @@ void ViewerMain() {
                         pi_number.value(), time_ss.str());
 
     LOG(INFO) << calibration_filename << " -> "
-              << aos::FlatbufferToJson(camera_calibration, true);
+              << aos::FlatbufferToJson(camera_calibration,
+                                       {.multi_line = true});
 
     aos::util::WriteStringToFileOrDie(
-        calibration_filename, aos::FlatbufferToJson(camera_calibration, true));
+        calibration_filename,
+        aos::FlatbufferToJson(camera_calibration, {.multi_line = true}));
   } else {
     LOG(INFO) << "Skipping calibration due to not enough images.";
   }

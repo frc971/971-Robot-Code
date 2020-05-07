@@ -28,14 +28,16 @@ int Main(int argc, char **argv) {
   }
 
   const std::string merged_config = FlatbufferToJson(
-      &configuration::MergeConfiguration(config, schemas).message(), true);
+      &configuration::MergeConfiguration(config, schemas).message(),
+      {.multi_line = true});
 
   // TODO(austin): Figure out how to squash the schemas onto 1 line so it is
   // easier to read?
   VLOG(1) << "Flattened config is " << merged_config;
   util::WriteStringToFileOrDie(full_output, merged_config);
-  util::WriteStringToFileOrDie(stripped_output,
-                               FlatbufferToJson(&config.message(), true));
+  util::WriteStringToFileOrDie(
+      stripped_output,
+      FlatbufferToJson(&config.message(), {.multi_line = true}));
   return 0;
 }
 

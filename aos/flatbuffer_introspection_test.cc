@@ -358,7 +358,8 @@ TEST_F(FlatbufferIntrospectionTest, TrimmedVector) {
   builder.Finish(config_builder.Finish());
 
   std::string out =
-      FlatbufferToJson(schema_, builder.GetBufferPointer(), false, 100);
+      FlatbufferToJson(schema_, builder.GetBufferPointer(),
+                       {.multi_line = false, .max_vector_size = 100});
   EXPECT_EQ(out, "{\"vector_foo_int\": [ ... 101 elements ... ]}");
 }
 
@@ -371,7 +372,8 @@ TEST_F(FlatbufferIntrospectionTest, MultilineTest) {
 
   builder.Finish(config_builder.Finish());
 
-  std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer(), true);
+  std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer(),
+                                     {.multi_line = true});
 
   EXPECT_EQ(out,
             "{\n"
@@ -391,7 +393,8 @@ TEST_F(FlatbufferIntrospectionTest, MultilineStructTest) {
 
   builder.Finish(config_builder.Finish());
 
-  std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer(), true);
+  std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer(),
+                                     {.multi_line = true});
 
   EXPECT_EQ(out,
             "{\n"
@@ -415,7 +418,8 @@ TEST_F(FlatbufferIntrospectionTest, MultilineVectorStructTest) {
 
   builder.Finish(config_builder.Finish());
 
-  std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer(), true);
+  std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer(),
+                                     {.multi_line = true});
 
   EXPECT_EQ(out,
             "{\n"
@@ -453,7 +457,8 @@ TEST_F(FlatbufferIntrospectionTest, MultilineVectorScalarTest) {
 
   builder.Finish(config_builder.Finish());
 
-  std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer(), true);
+  std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer(),
+                                     {.multi_line = true});
 
   EXPECT_EQ(out,
             "{\n"

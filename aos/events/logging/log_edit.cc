@@ -18,8 +18,7 @@ DEFINE_string(
     "If provided, this is the path to the JSON with the log file header.");
 
 int main(int argc, char **argv) {
-  gflags::SetUsageMessage(
-      R"(This tool lets us manipulate log files.)");
+  gflags::SetUsageMessage(R"(This tool lets us manipulate log files.)");
   aos::InitGoogle(&argc, &argv);
 
   if (!FLAGS_header.empty()) {
@@ -53,7 +52,8 @@ int main(int argc, char **argv) {
     } else {
       aos::logger::MessageReader reader(FLAGS_logfile);
       aos::util::WriteStringToFileOrDie(
-          FLAGS_header, aos::FlatbufferToJson(reader.log_file_header(), true));
+          FLAGS_header, aos::FlatbufferToJson(reader.log_file_header(),
+                                              {.multi_line = true}));
     }
   }
 

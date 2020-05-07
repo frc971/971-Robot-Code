@@ -72,9 +72,8 @@ TEST(EventSchedulerTest, ScheduleEvent) {
                      [&counter]() { counter += 1; });
   scheduler_scheduler.Run();
   EXPECT_EQ(counter, 1);
-  auto token =
-      scheduler.Schedule(monotonic_clock::epoch() + chrono::seconds(2),
-                         [&counter]() { counter += 1; });
+  auto token = scheduler.Schedule(monotonic_clock::epoch() + chrono::seconds(2),
+                                  [&counter]() { counter += 1; });
   scheduler.Deschedule(token);
   scheduler_scheduler.Run();
   EXPECT_EQ(counter, 1);
@@ -189,7 +188,7 @@ TEST(SimulatedEventLoopTest, WatcherTimingReport) {
   }
 
   // Check the watcher report.
-  VLOG(1) << FlatbufferToJson(primary_report, true);
+  VLOG(1) << FlatbufferToJson(primary_report, {.multi_line = true});
 
   EXPECT_EQ(primary_report.message().name()->string_view(), "primary");
 

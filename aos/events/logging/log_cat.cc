@@ -45,7 +45,7 @@ void PrintMessage(const std::string_view node_name, const aos::Channel *channel,
               << aos::FlatbufferToJson(
                      channel->schema(),
                      static_cast<const uint8_t *>(context.data),
-                     FLAGS_max_vector_size)
+                     {false, static_cast<size_t>(FLAGS_max_vector_size)})
               << std::endl;
   } else {
     std::cout << node_name << context.realtime_event_time << " ("
@@ -55,7 +55,7 @@ void PrintMessage(const std::string_view node_name, const aos::Channel *channel,
               << aos::FlatbufferToJson(
                      channel->schema(),
                      static_cast<const uint8_t *>(context.data),
-                     FLAGS_max_vector_size)
+                     {false, static_cast<size_t>(FLAGS_max_vector_size)})
               << std::endl;
   }
 }
@@ -93,16 +93,20 @@ int main(int argc, char **argv) {
 
       if (FLAGS_format_raw && message.value().message().data() != nullptr) {
         std::cout << aos::configuration::StrippedChannelToString(channel) << " "
-                  << aos::FlatbufferToJson(message.value(), false, 4) << ": "
+                  << aos::FlatbufferToJson(
+                         message.value(),
+                         {.multi_line = false, .max_vector_size = 4})
+                  << ": "
                   << aos::FlatbufferToJson(
                          channel->schema(),
                          message.value().message().data()->data(),
-                         FLAGS_max_vector_size)
+                         {false, static_cast<size_t>(FLAGS_max_vector_size)})
                   << std::endl;
       } else {
         std::cout << aos::configuration::StrippedChannelToString(channel) << " "
-                  << aos::FlatbufferToJson(message.value(), false,
-                                           FLAGS_max_vector_size)
+                  << aos::FlatbufferToJson(
+                         message.value(),
+                         {false, static_cast<size_t>(FLAGS_max_vector_size)})
                   << std::endl;
       }
     }

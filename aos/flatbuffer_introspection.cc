@@ -70,8 +70,8 @@ void ObjectToString(
     const reflection::Object *obj,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Object>> *objects,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Enum>> *enums,
-    const ObjT *object, size_t max_vector_size, std::stringstream *out,
-    bool multi_line = false, int tree_depth = 0);
+    const ObjT *object, std::stringstream *out, JsonOptions json_options,
+    int tree_depth = 0);
 
 // Get enum value name
 const char *EnumToString(
@@ -141,8 +141,7 @@ void FieldToString(
     const ObjT *table, const reflection::Field *field,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Object>> *objects,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Enum>> *enums,
-    size_t max_vector_size, std::stringstream *out, bool multi_line,
-    int tree_depth) {
+    std::stringstream *out, JsonOptions json_options, int tree_depth) {
   const reflection::Type *type = field->type();
 
   switch (type->base_type()) {
@@ -205,7 +204,7 @@ void FieldToString(
             flatbuffers::GetFieldAnyV(*table, *field);
         reflection::BaseType elem_type = type->element();
 
-        if (vector->size() > max_vector_size) {
+        if (vector->size() > json_options.max_vector_size) {
           *out << "[ ... " << vector->size() << " elements ... ]";
           break;
         }
@@ -213,7 +212,7 @@ void FieldToString(
         bool wrap = false;
         const int child_tree_depth = tree_depth + 1;
 
-        if (multi_line) {
+        if (json_options.multi_line) {
           wrap = ShouldCauseWrapping(elem_type);
         }
 
@@ -248,13 +247,12 @@ void FieldToString(
                     flatbuffers::GetAnyVectorElemAddressOf<
                         const flatbuffers::Struct>(
                         vector, i, objects->Get(type->index())->bytesize()),
-                    max_vector_size, out, multi_line, child_tree_depth);
+                    out, json_options, child_tree_depth);
               } else {
                 ObjectToString(objects->Get(type->index()), objects, enums,
                                flatbuffers::GetAnyVectorElemPointer<
                                    const flatbuffers::Table>(vector, i),
-                               max_vector_size, out, multi_line,
-                               child_tree_depth);
+                               out, json_options, child_tree_depth);
               }
             }
           }
@@ -271,12 +269,12 @@ void FieldToString(
       if (type->index() > -1 && type->index() < (int32_t)objects->size()) {
         if (objects->Get(type->index())->is_struct()) {
           ObjectToString(objects->Get(type->index()), objects, enums,
-                         flatbuffers::GetFieldStruct(*table, *field),
-                         max_vector_size, out, multi_line, tree_depth);
+                         flatbuffers::GetFieldStruct(*table, *field), out,
+                         json_options, tree_depth);
         } else if constexpr (std::is_same<flatbuffers::Table, ObjT>()) {
           ObjectToString(objects->Get(type->index()), objects, enums,
-                         flatbuffers::GetFieldT(*table, *field),
-                         max_vector_size, out, multi_line, tree_depth);
+                         flatbuffers::GetFieldT(*table, *field), out,
+                         json_options, tree_depth);
         }
       } else {
         *out << "null";
@@ -294,8 +292,8 @@ void ObjectToString(
     const reflection::Object *obj,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Object>> *objects,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Enum>> *enums,
-    const ObjT *object, size_t max_vector_size, std::stringstream *out,
-    bool multi_line, int tree_depth) {
+    const ObjT *object, std::stringstream *out, JsonOptions json_options,
+    int tree_depth) {
   static_assert(std::is_same<flatbuffers::Table, ObjT>() ||
                     std::is_same<flatbuffers::Struct, ObjT>(),
                 "Type must be either flatbuffer table or struct");
@@ -304,7 +302,7 @@ void ObjectToString(
   const int child_tree_depth = tree_depth + 1;
 
   bool wrap = false;
-  if (multi_line) {
+  if (json_options.multi_line) {
     // Check whether this object has objects, vectors, or floats inside of it
     for (const reflection::Field *field : *obj->fields()) {
       if (ShouldCauseWrapping(field->type()->base_type())) {
@@ -334,8 +332,8 @@ void ObjectToString(
       }
 
       *out << '"' << field->name()->c_str() << "\": ";
-      FieldToString(object, field, objects, enums, max_vector_size, out,
-                    multi_line, child_tree_depth);
+      FieldToString(object, field, objects, enums, out, json_options,
+                    child_tree_depth);
     }
   }
 
@@ -349,8 +347,7 @@ void ObjectToString(
 }  // namespace
 
 std::string FlatbufferToJson(const reflection::Schema *schema,
-                             const uint8_t *data, bool multi_line,
-                             size_t max_vector_size) {
+                             const uint8_t *data, JsonOptions json_options) {
   CHECK(schema != nullptr) << ": Need to provide a schema";
 
   // It is pretty common to get passed in a nullptr when a test fails.  Rather
@@ -365,8 +362,8 @@ std::string FlatbufferToJson(const reflection::Schema *schema,
 
   std::stringstream out;
 
-  ObjectToString(obj, schema->objects(), schema->enums(), table,
-                 max_vector_size, &out, multi_line);
+  ObjectToString(obj, schema->objects(), schema->enums(), table, &out,
+                 json_options);
 
   return out.str();
 }

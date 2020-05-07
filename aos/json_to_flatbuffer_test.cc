@@ -78,7 +78,6 @@ TEST_F(JsonToFlatbufferTest, DecimalPoint) {
   EXPECT_TRUE(JsonAndBack("{ \"foo_double\": 5.1 }"));
 }
 
-
 // Test what happens if you pass a field name that we don't know.
 TEST_F(JsonToFlatbufferTest, InvalidFieldName) {
   EXPECT_FALSE(JsonAndBack("{ \"foo\": 5 }"));
@@ -156,7 +155,8 @@ TEST_F(JsonToFlatbufferTest, Array) {
 
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_string\": [ \"bar\", \"baz\" ] }"));
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_string\": [  ] }"));
-  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_enum\": [ \"None\", \"UType\", \"Bool\" ] }"));
+  EXPECT_TRUE(JsonAndBack(
+      "{ \"vector_foo_enum\": [ \"None\", \"UType\", \"Bool\" ] }"));
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_enum\": [  ] }"));
 }
 
@@ -170,8 +170,7 @@ TEST_F(JsonToFlatbufferTest, NestedStruct) {
   EXPECT_TRUE(JsonAndBack(
       "{ \"apps\": [ { \"name\": \"woot\" }, { \"name\": \"wow\" } ] }"));
 
-  EXPECT_TRUE(JsonAndBack(
-      "{ \"apps\": [ {  }, {  } ] }"));
+  EXPECT_TRUE(JsonAndBack("{ \"apps\": [ {  }, {  } ] }"));
 }
 
 // Test that we can parse an empty message.
@@ -198,7 +197,8 @@ TEST_F(JsonToFlatbufferTest, MultipleArrays) {
 // Tests that multiple arrays get properly handled.
 TEST_F(JsonToFlatbufferTest, NestedArrays) {
   EXPECT_TRUE(
-      JsonAndBack("{ \"vov\": { \"v\": [ { \"str\": [ \"a\", \"b\" ] }, { \"str\": [ \"c\", \"d\" ] } ] } }"));
+      JsonAndBack("{ \"vov\": { \"v\": [ { \"str\": [ \"a\", \"b\" ] }, { "
+                  "\"str\": [ \"c\", \"d\" ] } ] } }"));
 }
 
 // TODO(austin): Missmatched values.
@@ -222,10 +222,10 @@ TEST_F(JsonToFlatbufferTest, TrimmedVector) {
       JsonToFlatbuffer(json_long.data(), ConfigurationTypeTable());
   ASSERT_GT(fb_long.size(), 0);
 
-  const std::string back_json_short =
-      FlatbufferToJson(fb_short, ConfigurationTypeTable(), false, 100);
-  const std::string back_json_long =
-      FlatbufferToJson(fb_long, ConfigurationTypeTable(), false, 100);
+  const std::string back_json_short = FlatbufferToJson(
+      fb_short, ConfigurationTypeTable(), {.multi_line = false, .max_vector_size = 100});
+  const std::string back_json_long = FlatbufferToJson(
+      fb_long, ConfigurationTypeTable(), {.multi_line = false, .max_vector_size = 100});
 
   EXPECT_EQ(json_short, back_json_short);
   EXPECT_EQ("{ \"vector_foo_int\": [ ... 101 elements ... ] }", back_json_long);
@@ -234,7 +234,7 @@ TEST_F(JsonToFlatbufferTest, TrimmedVector) {
 // Tests that a nullptr buffer prints nullptr.
 TEST_F(JsonToFlatbufferTest, NullptrData) {
   EXPECT_EQ("null", TableFlatbufferToJson((const flatbuffers::Table *)(nullptr),
-                                          ConfigurationTypeTable(), false));
+                                          ConfigurationTypeTable()));
 }
 
 }  // namespace testing
