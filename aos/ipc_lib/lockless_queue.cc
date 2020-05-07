@@ -518,7 +518,8 @@ LocklessQueue::Sender::Sender(LocklessQueueMemory *memory) : memory_(memory) {
   }
 
   if (sender_index_ == -1) {
-    LOG(FATAL) << "Too many senders";
+    VLOG(1) << "Too many senders, starting to bail.";
+    return;
   }
 
   ::aos::ipc_lib::Sender *s = memory_->GetSender(sender_index_);
@@ -529,13 +530,18 @@ LocklessQueue::Sender::Sender(LocklessQueueMemory *memory) : memory_(memory) {
 }
 
 LocklessQueue::Sender::~Sender() {
-  if (memory_ != nullptr) {
+  if (valid()) {
     death_notification_release(&(memory_->GetSender(sender_index_)->tid));
   }
 }
 
-LocklessQueue::Sender LocklessQueue::MakeSender() {
-  return LocklessQueue::Sender(memory_);
+std::optional<LocklessQueue::Sender> LocklessQueue::MakeSender() {
+  LocklessQueue::Sender result = LocklessQueue::Sender(memory_);
+  if (result.valid()) {
+    return std::move(result);
+  } else {
+    return std::nullopt;
+  }
 }
 
 QueueIndex ZeroOrValid(QueueIndex index) {

@@ -194,17 +194,15 @@ TEST_F(LocklessQueueTest, TooManyWatchers) {
 }
 
 // Tests that too many watchers dies like expected.
-TEST_F(LocklessQueueDeathTest, TooManySenders) {
-  EXPECT_DEATH(
-      {
-        ::std::vector<::std::unique_ptr<LocklessQueue>> queues;
-        ::std::vector<LocklessQueue::Sender> senders;
-        for (size_t i = 0; i < config_.num_senders + 1; ++i) {
-          queues.emplace_back(new LocklessQueue(get_memory(), config_));
-          senders.emplace_back(queues.back()->MakeSender());
-        }
-      },
-      "Too many senders");
+TEST_F(LocklessQueueTest, TooManySenders) {
+  ::std::vector<::std::unique_ptr<LocklessQueue>> queues;
+  ::std::vector<LocklessQueue::Sender> senders;
+  for (size_t i = 0; i < config_.num_senders; ++i) {
+    queues.emplace_back(new LocklessQueue(get_memory(), config_));
+    senders.emplace_back(queues.back()->MakeSender().value());
+  }
+  queues.emplace_back(new LocklessQueue(get_memory(), config_));
+  EXPECT_FALSE(queues.back()->MakeSender());
 }
 
 // Now, start 2 threads and have them receive the signals.
@@ -240,7 +238,7 @@ TEST_F(LocklessQueueTest, WakeUpThreads) {
 TEST_F(LocklessQueueTest, Send) {
   LocklessQueue queue(get_memory(), config_);
 
-  LocklessQueue::Sender sender = queue.MakeSender();
+  LocklessQueue::Sender sender = queue.MakeSender().value();
 
   // Send enough messages to wrap.
   for (int i = 0; i < 20000; ++i) {

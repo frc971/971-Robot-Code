@@ -521,7 +521,7 @@ TEST(LocklessQueueTest, Death) {
         LocklessQueue queue(
             reinterpret_cast<aos::ipc_lib::LocklessQueueMemory *>(memory),
             config);
-        LocklessQueue::Sender sender = queue.MakeSender();
+        LocklessQueue::Sender sender = queue.MakeSender().value();
         for (int i = 0; i < 2; ++i) {
           char data[100];
           size_t s = snprintf(data, sizeof(data), "foobar%d", i + 1);
@@ -555,7 +555,7 @@ TEST(LocklessQueueTest, Death) {
 
         LocklessQueue queue(memory, config);
         // Building and destroying a sender will clean up the queue.
-        { LocklessQueue::Sender sender = queue.MakeSender(); }
+        { LocklessQueue::Sender sender = queue.MakeSender().value(); }
 
         if (print) {
           printf("Cleaned up version:\n");
@@ -563,12 +563,12 @@ TEST(LocklessQueueTest, Death) {
         }
 
         {
-          LocklessQueue::Sender sender = queue.MakeSender();
+          LocklessQueue::Sender sender = queue.MakeSender().value();
           {
             // Make a second sender to confirm that the slot was freed.
             // If the sender doesn't get cleaned up, this will fail.
             LocklessQueue queue2(memory, config);
-            queue2.MakeSender();
+            queue2.MakeSender().value();
           }
 
           // Send a message to make sure that the queue still works.

@@ -374,9 +374,21 @@ class ShmSender : public RawSender {
                 event_loop->configuration()->channel_storage_duration()))),
         lockless_queue_(lockless_queue_memory_.memory(),
                         lockless_queue_memory_.config()),
-        lockless_queue_sender_(lockless_queue_.MakeSender()) {}
+        lockless_queue_sender_(
+            VerifySender(lockless_queue_.MakeSender(), channel)) {}
 
   ~ShmSender() override {}
+
+  static ipc_lib::LocklessQueue::Sender VerifySender(
+      std::optional<ipc_lib::LocklessQueue::Sender> &&sender,
+      const Channel *channel) {
+    if (sender) {
+      return std::move(sender.value());
+    }
+    LOG(FATAL) << "Failed to create sender on "
+               << configuration::CleanedChannelToString(channel)
+               << ", too many senders.";
+  }
 
   void *data() override { return lockless_queue_sender_.Data(); }
   size_t size() override { return lockless_queue_sender_.size(); }
