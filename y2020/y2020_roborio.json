@@ -263,6 +263,7 @@
       "hostname": "roborio",
       "hostnames": [
         "roboRIO-971-FRC",
+        "roboRIO-6971-FRC",
         "roboRIO-7971-FRC",
         "roboRIO-8971-FRC",
         "roboRIO-9971-FRC"
