@@ -312,9 +312,16 @@ LogReader::LogReader(const std::vector<std::vector<std::string>> &filenames,
     state->channel_merger = std::make_unique<ChannelMerger>(filenames);
   } else {
     if (replay_configuration) {
-      CHECK_EQ(configuration()->nodes()->size(),
+      CHECK_EQ(logged_configuration()->nodes()->size(),
                replay_configuration->nodes()->size())
           << ": Log file and replay config need to have matching nodes lists.";
+      for (const Node *node : *logged_configuration()->nodes()) {
+        if (configuration::GetNode(replay_configuration, node) == nullptr) {
+          LOG(FATAL)
+              << "Found node " << FlatbufferToJson(node)
+              << " in logged config that is not present in the replay config.";
+        }
+      }
     }
     states_.resize(configuration()->nodes()->size());
   }
@@ -386,6 +393,11 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
         event_loop_factory->MakeEventLoop("log_reader", node);
 
     Register(state->event_loop_unique_ptr.get());
+  }
+  if (live_nodes_ == 0) {
+    LOG(FATAL)
+        << "Don't have logs from any of the nodes in the replay config--are "
+           "you sure that the replay config matches the original config?";
   }
 
   // We need to now seed our per-node time offsets and get everything set up to

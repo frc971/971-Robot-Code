@@ -505,6 +505,77 @@ TEST_F(MultinodeLoggerTest, SimpleMultiNode) {
   reader.Deregister();
 }
 
+typedef MultinodeLoggerTest MultinodeLoggerDeathTest;
+
+// Test that if we feed the replay with a mismatched node list that we die on
+// the LogReader constructor.
+TEST_F(MultinodeLoggerDeathTest, MultiNodeBadReplayConfig) {
+  const ::std::string tmpdir(getenv("TEST_TMPDIR"));
+  const ::std::string logfile_base = tmpdir + "/multi_logfile";
+  const ::std::string logfile1 = logfile_base + "_pi1_data.bfbs";
+  const ::std::string logfile2 =
+      logfile_base + "_pi2_data/test/aos.examples.Pong.bfbs";
+  const ::std::string logfile3 = logfile_base + "_pi2_data.bfbs";
+
+  // Remove them.
+  unlink(logfile1.c_str());
+  unlink(logfile2.c_str());
+  unlink(logfile3.c_str());
+
+  LOG(INFO) << "Logging data to " << logfile1 << ", " << logfile2 << " and "
+            << logfile3;
+
+  {
+    std::unique_ptr<EventLoop> ping_event_loop =
+        event_loop_factory_.MakeEventLoop("ping", pi1_);
+    Ping ping(ping_event_loop.get());
+    std::unique_ptr<EventLoop> pong_event_loop =
+        event_loop_factory_.MakeEventLoop("pong", pi2_);
+    Pong pong(pong_event_loop.get());
+
+    std::unique_ptr<EventLoop> pi1_logger_event_loop =
+        event_loop_factory_.MakeEventLoop("logger", pi1_);
+    std::unique_ptr<LogNamer> pi1_log_namer =
+        std::make_unique<MultiNodeLogNamer>(
+            logfile_base, pi1_logger_event_loop->configuration(),
+            pi1_logger_event_loop->node());
+
+    std::unique_ptr<EventLoop> pi2_logger_event_loop =
+        event_loop_factory_.MakeEventLoop("logger", pi2_);
+    std::unique_ptr<LogNamer> pi2_log_namer =
+        std::make_unique<MultiNodeLogNamer>(
+            logfile_base, pi2_logger_event_loop->configuration(),
+            pi2_logger_event_loop->node());
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    Logger pi1_logger(std::move(pi1_log_namer), pi1_logger_event_loop.get(),
+                      chrono::milliseconds(100));
+
+    Logger pi2_logger(std::move(pi2_log_namer), pi2_logger_event_loop.get(),
+                      chrono::milliseconds(100));
+    event_loop_factory_.RunFor(chrono::milliseconds(20000));
+  }
+
+  // Test that, if we add an additional node to the replay config that the
+  // logger complains about the mismatch in number of nodes.
+  FlatbufferDetachedBuffer<Configuration> extra_nodes_config =
+      configuration::MergeWithConfig(&config_.message(), R"({
+          "nodes": [
+            {
+              "name": "extra-node"
+            }
+          ]
+        }
+      )");
+
+  EXPECT_DEATH(LogReader({std::vector<std::string>{logfile1},
+                          std::vector<std::string>{logfile3}},
+                         &extra_nodes_config.message()),
+               "Log file and replay config need to have matching nodes lists.");
+  ;
+}
+
 // Tests that we can read log files where they don't start at the same monotonic
 // time.
 TEST_F(MultinodeLoggerTest, StaggeredStart) {

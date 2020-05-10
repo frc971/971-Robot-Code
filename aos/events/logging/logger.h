@@ -424,6 +424,8 @@ class LogReader {
   // Returns the offset from the monotonic clock for a node to the distributed
   // clock.  distributed = monotonic + offset;
   std::chrono::nanoseconds offset(int node_index) const {
+    CHECK_LT(node_index, offset_matrix_.rows())
+        << ": Got too high of a node index.";
     return -std::chrono::duration_cast<std::chrono::nanoseconds>(
                std::chrono::duration<double>(offset_matrix_(node_index))) -
            base_offset_matrix_(node_index);
