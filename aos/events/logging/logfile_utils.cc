@@ -1008,7 +1008,21 @@ bool ChannelMerger::SetNode(const Node *target_node) {
 
     for (const std::unique_ptr<SplitMessageReader> &reader :
          split_message_readers_) {
-      if (CompareFlatBuffer(reader->node(), target_node)) {
+      // In order to identify which logfile(s) map to the target node, do a
+      // logical comparison of the nodes, by confirming that we are either in a
+      // single-node setup (where the nodes will both be nullptr) or that the
+      // node names match (but the other node fields--e.g., hostname lists--may
+      // not).
+      const bool both_null =
+          reader->node() == nullptr && target_node == nullptr;
+      const bool both_have_name =
+          (reader->node() != nullptr) && (target_node != nullptr) &&
+          (reader->node()->has_name() && target_node->has_name());
+      const bool node_names_identical =
+          both_have_name &&
+          (reader->node()->name()->string_view() ==
+           target_node->name()->string_view());
+      if (both_null || node_names_identical) {
         if (!found_node) {
           found_node = true;
           log_file_header_ = CopyFlatBuffer(reader->log_file_header());
