@@ -60,11 +60,11 @@ load(
 )
 load(
     "//debian:gstreamer_amd64.bzl",
-    gstreamer_amd64_debs = "files"
+    gstreamer_amd64_debs = "files",
 )
 load(
     "//debian:gstreamer_armhf.bzl",
-    gstreamer_armhf_debs = "files"
+    gstreamer_armhf_debs = "files",
 )
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
@@ -717,4 +717,24 @@ http_archive(
     build_file = "@//debian:gstreamer.BUILD",
     sha256 = "c5ac4c604952c274a50636e244f0d091bd1de302032446f24f0e9e03ae9c76f7",
     url = "http://www.frc971.org/Build-Dependencies/gstreamer_armhf.tar.gz",
+)
+
+# Downloaded from:
+# https://files.pythonhosted.org/packages/64/a7/45e11eebf2f15bf987c3bc11d37dcc838d9dc81250e67e4c5968f6008b6c/Jinja2-2.11.2.tar.gz
+http_archive(
+    name = "python_jinja2",
+    build_file = "@//debian:python_jinja2.BUILD",
+    sha256 = "89aab215427ef59c34ad58735269eb58b1a5808103067f7bb9d5836c651b3bb0",
+    strip_prefix = "Jinja2-2.11.2",
+    url = "http://www.frc971.org/Build-Dependencies/Jinja2-2.11.2.tar.gz",
+)
+
+# Downloaded from:
+# https://files.pythonhosted.org/packages/b9/2e/64db92e53b86efccfaea71321f597fa2e1b2bd3853d8ce658568f7a13094/MarkupSafe-1.1.1.tar.gz
+http_archive(
+    name = "python_markupsafe",
+    build_file = "@//debian:python_markupsafe.BUILD",
+    sha256 = "29872e92839765e546828bb7754a68c418d927cd064fd4708fab9fe9c8bb116b",
+    strip_prefix = "MarkupSafe-1.1.1",
+    url = "http://www.frc971.org/Build-Dependencies/MarkupSafe-1.1.1.tar.gz",
 )

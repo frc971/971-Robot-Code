@@ -124,3 +124,10 @@ py_test(
     srcs_version = "PY2AND3",
     deps = ["@opencv_contrib_nonfree_amd64//:python_opencv"],
 )
+
+py_test(
+    name = "python_jinja2",
+    srcs = ["python_jinja2.py"],
+    srcs_version = "PY2AND3",
+    deps = ["@python_jinja2"],
+)
