@@ -357,8 +357,111 @@ TEST_F(FlatbufferIntrospectionTest, TrimmedVector) {
 
   builder.Finish(config_builder.Finish());
 
-  std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer(), 100);
+  std::string out =
+      FlatbufferToJson(schema_, builder.GetBufferPointer(), false, 100);
   EXPECT_EQ(out, "{\"vector_foo_int\": [ ... 101 elements ... ]}");
+}
+
+TEST_F(FlatbufferIntrospectionTest, MultilineTest) {
+  flatbuffers::FlatBufferBuilder builder;
+  ConfigurationBuilder config_builder(builder);
+
+  config_builder.add_foo_bool(true);
+  config_builder.add_foo_int(-20);
+
+  builder.Finish(config_builder.Finish());
+
+  std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer(), true);
+
+  EXPECT_EQ(out,
+            "{\n"
+            "  \"foo_bool\": true,\n"
+            "  \"foo_int\": -20\n"
+            "}");
+}
+
+TEST_F(FlatbufferIntrospectionTest, MultilineStructTest) {
+  flatbuffers::FlatBufferBuilder builder;
+  ConfigurationBuilder config_builder(builder);
+
+  FooStructNested foo_struct2(10);
+  FooStruct foo_struct(5, foo_struct2);
+
+  config_builder.add_foo_struct(&foo_struct);
+
+  builder.Finish(config_builder.Finish());
+
+  std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer(), true);
+
+  EXPECT_EQ(out,
+            "{\n"
+            "  \"foo_struct\": {\n"
+            "    \"foo_byte\": 5,\n"
+            "    \"nested_struct\": {\"foo_byte\": 10}\n"
+            "  }\n"
+            "}");
+}
+
+TEST_F(FlatbufferIntrospectionTest, MultilineVectorStructTest) {
+  flatbuffers::FlatBufferBuilder builder;
+
+  FooStructNested foo_struct2(1);
+
+  auto structs = builder.CreateVectorOfStructs(
+      std::vector<FooStruct>({{5, foo_struct2}, {10, foo_struct2}}));
+
+  ConfigurationBuilder config_builder(builder);
+  config_builder.add_vector_foo_struct(structs);
+
+  builder.Finish(config_builder.Finish());
+
+  std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer(), true);
+
+  EXPECT_EQ(out,
+            "{\n"
+            "  \"vector_foo_struct\": [\n"
+            "    {\n"
+            "      \"foo_byte\": 5,\n"
+            "      \"nested_struct\": {\"foo_byte\": 1}\n"
+            "    },\n"
+            "    {\n"
+            "      \"foo_byte\": 10,\n"
+            "      \"nested_struct\": {\"foo_byte\": 1}\n"
+            "    }\n"
+            "  ]\n"
+            "}");
+}
+
+TEST_F(FlatbufferIntrospectionTest, MultilineVectorScalarTest) {
+  flatbuffers::FlatBufferBuilder builder;
+
+  // Flatbuffers don't like creating vectors simultaneously with table, so do
+  // first.
+  auto foo_ints =
+      builder.CreateVector<int32_t>({-300, -200, -100, 0, 100, 200, 300});
+
+  auto foo_floats =
+      builder.CreateVector<float>({0.0, 1.0 / 9.0, 2.0 / 9.0, 3.0 / 9.0});
+  auto foo_doubles =
+      builder.CreateVector<double>({0, 1.0 / 9.0, 2.0 / 9.0, 3.0 / 9.0});
+
+  ConfigurationBuilder config_builder(builder);
+
+  config_builder.add_vector_foo_int(foo_ints);
+  config_builder.add_vector_foo_float(foo_floats);
+  config_builder.add_vector_foo_double(foo_doubles);
+
+  builder.Finish(config_builder.Finish());
+
+  std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer(), true);
+
+  EXPECT_EQ(out,
+            "{\n"
+            "  \"vector_foo_double\": [0, 0.111111111111111, "
+            "0.222222222222222, 0.333333333333333],\n"
+            "  \"vector_foo_float\": [0, 0.111111, 0.222222, 0.333333],\n"
+            "  \"vector_foo_int\": [-300, -200, -100, 0, 100, 200, 300]\n"
+            "}");
 }
 
 }  // namespace testing

@@ -79,7 +79,7 @@ typename std::enable_if<std::is_base_of<flatbuffers::Table, T>::value,
 
 std::string FlatbufferToJson(const reflection::Schema *const schema,
                              const uint8_t *const data,
-                             size_t max_vector_size = SIZE_MAX);
+                             bool multi_line = false, size_t max_vector_size = SIZE_MAX);
 
 }  // namespace aos
 
