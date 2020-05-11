@@ -43,8 +43,5 @@
       "type": "frc971.control_loops.drivetrain.LocalizerControl",
       "frequency": 200
     }
-  ],
-  "imports": [
-    "../../../aos/robot_state/robot_state_config.json"
   ]
 }
