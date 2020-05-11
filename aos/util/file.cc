@@ -66,5 +66,10 @@ void MkdirP(std::string_view path, mode_t mode) {
   PCHECK(result == 0) << ": Error creating " << folder;
 }
 
+bool PathExists(std::string_view path) {
+  struct stat buffer;
+  return stat(path.data(), &buffer) == 0;
+}
+
 }  // namespace util
 }  // namespace aos

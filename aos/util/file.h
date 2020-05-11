@@ -17,6 +17,8 @@ void WriteStringToFileOrDie(const std::string_view filename,
 
 void MkdirP(std::string_view path, mode_t mode);
 
+bool PathExists(std::string_view path);
+
 }  // namespace util
 }  // namespace aos
 

@@ -26,6 +26,19 @@ TEST(FileTest, ReadSpecialFile) {
   EXPECT_EQ(my_pid, stat.substr(0, my_pid.size()));
 }
 
+// Tests that the PathExists function works under normal conditions.
+TEST(FileTest, PathExistsTest) {
+  const std::string tmpdir(getenv("TEST_TMPDIR"));
+  const std::string test_file = tmpdir + "/test_file";
+  // Make sure the test_file doesn't exist.
+  unlink(test_file.c_str());
+  EXPECT_FALSE(PathExists(test_file));
+
+  WriteStringToFileOrDie(test_file, "abc");
+
+  EXPECT_TRUE(PathExists(test_file));
+}
+
 }  // namespace testing
 }  // namespace util
 }  // namespace aos
