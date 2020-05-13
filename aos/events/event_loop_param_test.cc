@@ -604,6 +604,18 @@ TEST_P(AbstractEventLoopDeathTest, WatcherAndSender) {
                "/test");
 }
 
+// Verify that creating too many senders fails.
+TEST_P(AbstractEventLoopDeathTest, TooManySenders) {
+  auto loop = Make();
+  std::vector<aos::Sender<TestMessage>> senders;
+  for (int i = 0; i < 10; ++i) {
+    senders.emplace_back(loop->MakeSender<TestMessage>("/test"));
+  }
+  EXPECT_DEATH({ loop->MakeSender<TestMessage>("/test"); },
+               "Failed to create sender on \\{ \"name\": \"/test\", \"type\": "
+               "\"aos.TestMessage\" \\}, too many senders.");
+}
+
 // Verify that we can't create a sender inside OnRun.
 TEST_P(AbstractEventLoopDeathTest, SenderInOnRun) {
   auto loop1 = MakePrimary();

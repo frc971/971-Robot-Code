@@ -143,7 +143,7 @@ void QueueRacer::RunIteration(bool race_reads, int write_wrap_count) {
         ::std::thread([this, &t, thread_index, &run, write_wrap_count]() {
           // Build up a sender.
           LocklessQueue queue(memory_, config_);
-          LocklessQueue::Sender sender = queue.MakeSender();
+          LocklessQueue::Sender sender = queue.MakeSender().value();
 
           // Signal that we are ready to start sending.
           t.ready.Set();

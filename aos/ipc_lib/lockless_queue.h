@@ -5,6 +5,7 @@
 #include <sys/signalfd.h>
 #include <sys/types.h>
 #include <vector>
+#include <optional>
 
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/data_alignment.h"
@@ -245,6 +246,11 @@ class LocklessQueue {
 
     Sender(LocklessQueueMemory *memory);
 
+    // Returns true if this sender is valid.  If it isn't valid, any of the
+    // other methods won't work.  This is here to allow the lockless queue to
+    // only build a sender if there was one available.
+    bool valid() const { return sender_index_ != -1 && memory_ != nullptr; }
+
     // Pointer to the backing memory.
     LocklessQueueMemory *memory_ = nullptr;
 
@@ -252,8 +258,9 @@ class LocklessQueue {
     int sender_index_ = -1;
   };
 
-  // Creates a sender.
-  Sender MakeSender();
+  // Creates a sender.  If we couldn't allocate a sender, returns nullopt.
+  // TODO(austin): Change the API if we find ourselves with more errors.
+  std::optional<Sender> MakeSender();
 
  private:
   LocklessQueueMemory *memory_ = nullptr;

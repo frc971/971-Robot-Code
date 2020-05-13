@@ -102,6 +102,19 @@ class SimulatedChannel {
 
   const Channel *channel() const { return channel_; }
 
+  void CountSenderCreated() {
+    if (sender_count_ >= channel()->num_senders()) {
+      LOG(FATAL) << "Failed to create sender on "
+                 << configuration::CleanedChannelToString(channel())
+                 << ", too many senders.";
+    }
+    ++sender_count_;
+  }
+  void CountSenderDestroyed() {
+    --sender_count_;
+    CHECK_GE(sender_count_, 0);
+  }
+
  private:
   const Channel *channel_;
 
@@ -114,6 +127,8 @@ class SimulatedChannel {
   EventScheduler *scheduler_;
 
   ipc_lib::QueueIndex next_queue_index_;
+
+  int sender_count_ = 0;
 };
 
 namespace {
@@ -134,8 +149,10 @@ class SimulatedSender : public RawSender {
   SimulatedSender(SimulatedChannel *simulated_channel, EventLoop *event_loop)
       : RawSender(event_loop, simulated_channel->channel()),
         simulated_channel_(simulated_channel),
-        event_loop_(event_loop) {}
-  ~SimulatedSender() {}
+        event_loop_(event_loop) {
+    simulated_channel_->CountSenderCreated();
+  }
+  ~SimulatedSender() { simulated_channel_->CountSenderDestroyed(); }
 
   void *data() override {
     if (!message_) {
