@@ -13,10 +13,47 @@ DEFINE_string(
 DEFINE_string(type, "",
               "Channel type to match for printing out channels. Empty means no "
               "type filter.");
+DEFINE_bool(fetch, false,
+            "If true, also print out the messages from before the start of the "
+            "log file");
 DEFINE_bool(raw, false,
             "If true, just print the data out unsorted and unparsed");
+DEFINE_bool(format_raw, true,
+            "If true and --raw is specified, print out raw data, but use the "
+            "schema to format the data.");
 DEFINE_int32(max_vector_size, 100,
              "If positive, vectors longer than this will not be printed");
+
+void LogContext(const aos::Channel *channel, std::string node_name,
+                const aos::Context &context) {
+  // Print the flatbuffer out to stdout, both to remove the
+  // unnecessary cruft from glog and to allow the user to readily
+  // redirect just the logged output independent of any debugging
+  // information on stderr.
+  if (context.monotonic_remote_time != context.monotonic_event_time) {
+    std::cout << node_name << context.realtime_event_time << " ("
+              << context.monotonic_event_time << ") sent "
+              << context.realtime_remote_time << " ("
+              << context.monotonic_remote_time << ") "
+              << channel->name()->c_str() << ' ' << channel->type()->c_str()
+              << ": "
+              << aos::FlatbufferToJson(
+                     channel->schema(),
+                     static_cast<const uint8_t *>(context.data),
+                     FLAGS_max_vector_size)
+              << std::endl;
+  } else {
+    std::cout << node_name << context.realtime_event_time << " ("
+              << context.monotonic_event_time << ") "
+              << channel->name()->c_str() << ' ' << channel->type()->c_str()
+              << ": "
+              << aos::FlatbufferToJson(
+                     channel->schema(),
+                     static_cast<const uint8_t *>(context.data),
+                     FLAGS_max_vector_size)
+              << std::endl;
+  }
+}
 
 int main(int argc, char **argv) {
   gflags::SetUsageMessage(
@@ -45,9 +82,24 @@ int main(int argc, char **argv) {
       if (!message) {
         break;
       }
+      const aos::Channel *channel =
+          reader.log_file_header()->configuration()->channels()->Get(
+              message.value().message().channel_index());
 
-      std::cout << aos::FlatbufferToJson(message.value(), FLAGS_max_vector_size)
-                << std::endl;
+      if (FLAGS_format_raw && message.value().message().data() != nullptr) {
+        std::cout << aos::configuration::StrippedChannelToString(channel) << " "
+                  << aos::FlatbufferToJson(message.value(), false, 4) << ": "
+                  << aos::FlatbufferToJson(
+                         channel->schema(),
+                         message.value().message().data()->data(),
+                         FLAGS_max_vector_size)
+                  << std::endl;
+      } else {
+        std::cout << aos::configuration::StrippedChannelToString(channel) << " "
+                  << aos::FlatbufferToJson(message.value(), false,
+                                           FLAGS_max_vector_size)
+                  << std::endl;
+      }
     }
     return 0;
   }
@@ -63,15 +115,21 @@ int main(int argc, char **argv) {
   }
 
   aos::logger::LogReader reader(logfiles);
-  reader.Register();
+
+  aos::SimulatedEventLoopFactory event_loop_factory(reader.configuration());
+  reader.Register(&event_loop_factory);
 
   std::vector<std::unique_ptr<aos::EventLoop>> printer_event_loops;
 
   for (const aos::Node *node : reader.Nodes()) {
     std::unique_ptr<aos::EventLoop> printer_event_loop =
-        reader.event_loop_factory()->MakeEventLoop("printer", node);
+        event_loop_factory.MakeEventLoop("printer", node);
     printer_event_loop->SkipTimingReport();
     printer_event_loop->SkipAosLog();
+
+    std::vector<std::tuple<aos::monotonic_clock::time_point, std::string,
+                           std::unique_ptr<aos::RawFetcher>>>
+        messages;
 
     bool found_channel = false;
     const flatbuffers::Vector<flatbuffers::Offset<aos::Channel>> *channels =
@@ -93,37 +151,43 @@ int main(int argc, char **argv) {
                             : std::string(node->name()->string_view()) + " ";
 
         CHECK_NOTNULL(channel->schema());
+
+        if (FLAGS_fetch) {
+          // Grab the last message on each channel.
+          std::unique_ptr<aos::RawFetcher> fetcher =
+              printer_event_loop->MakeRawFetcher(channel);
+          if (fetcher->Fetch()) {
+            auto message =
+                std::make_tuple(fetcher->context().monotonic_event_time,
+                                node_name, std::move(fetcher));
+
+            // Insert it sorted into the vector so we can print in time order
+            // instead of channel order at the start.
+            auto it = std::lower_bound(
+                messages.begin(), messages.end(), message,
+                [](const std::tuple<aos::monotonic_clock::time_point,
+                                    std::string,
+                                    std::unique_ptr<aos::RawFetcher>> &a,
+                   const std::tuple<aos::monotonic_clock::time_point,
+                                    std::string,
+                                    std::unique_ptr<aos::RawFetcher>> &b) {
+                  if (std::get<0>(a) < std::get<0>(b)) {
+                    return true;
+                  }
+                  if (std::get<0>(a) > std::get<0>(b)) {
+                    return false;
+                  }
+
+                  return std::get<2>(a)->channel() < std::get<2>(b)->channel();
+                });
+            messages.insert(it, std::move(message));
+          }
+        }
+
         printer_event_loop->MakeRawWatcher(
             channel, [channel, node_name](const aos::Context &context,
-                                          const void *message) {
-              // Print the flatbuffer out to stdout, both to remove the
-              // unnecessary cruft from glog and to allow the user to readily
-              // redirect just the logged output independent of any debugging
-              // information on stderr.
-              if (context.monotonic_remote_time !=
-                  context.monotonic_event_time) {
-                std::cout << node_name << context.realtime_event_time << " ("
-                          << context.monotonic_event_time << ") sent "
-                          << context.realtime_remote_time << " ("
-                          << context.monotonic_remote_time << ") "
-                          << channel->name()->c_str() << ' '
-                          << channel->type()->c_str() << ": "
-                          << aos::FlatbufferToJson(
-                                 channel->schema(),
-                                 static_cast<const uint8_t *>(message),
-                                 FLAGS_max_vector_size)
-                          << std::endl;
-              } else {
-                std::cout << node_name << context.realtime_event_time << " ("
-                          << context.monotonic_event_time << ") "
-                          << channel->name()->c_str() << ' '
-                          << channel->type()->c_str() << ": "
-                          << aos::FlatbufferToJson(
-                                 channel->schema(),
-                                 static_cast<const uint8_t *>(message),
-                                 FLAGS_max_vector_size)
-                          << std::endl;
-              }
+                                          const void * /*message*/) {
+              LogContext(channel, node_name, context);
             });
         found_channel = true;
       }
@@ -132,10 +196,22 @@ int main(int argc, char **argv) {
     if (!found_channel) {
       LOG(FATAL) << "Could not find any channels";
     }
+    // TODO(austin): Sort between nodes too when it becomes annoying enough.
+    for (const std::tuple<aos::monotonic_clock::time_point, std::string,
+                          std::unique_ptr<aos::RawFetcher>> &message :
+         messages) {
+      LogContext(std::get<2>(message)->channel(), std::get<1>(message),
+                 std::get<2>(message)->context());
+    }
     printer_event_loops.emplace_back(std::move(printer_event_loop));
   }
 
-  reader.event_loop_factory()->Run();
+  if (FLAGS_fetch) {
+    // New line to separate fetched messages from non-fetched messages.
+    std::cout << std::endl;
+  }
+
+  event_loop_factory.Run();
 
   aos::Cleanup();
   return 0;

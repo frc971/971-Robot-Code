@@ -12,6 +12,7 @@
 #include <string_view>
 
 #include "absl/container/btree_set.h"
+#include "absl/strings/str_cat.h"
 #include "aos/configuration_generated.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/json_to_flatbuffer.h"
@@ -537,6 +538,12 @@ std::string CleanedChannelToString(const Channel *channel) {
   FlatbufferDetachedBuffer<Channel> cleaned_channel = CopyFlatBuffer(channel);
   cleaned_channel.mutable_message()->clear_schema();
   return FlatbufferToJson(cleaned_channel);
+}
+
+std::string StrippedChannelToString(const Channel *channel) {
+  return absl::StrCat("{ \"name\": \"", channel->name()->string_view(),
+                      "\", \"type\": \"", channel->type()->string_view(),
+                      "\" }");
 }
 
 FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
