@@ -113,6 +113,8 @@ bool ConnectionDeliveryTimeIsLoggedOnNode(const Connection *connection,
 
 // Prints a channel to json, but without the schema.
 std::string CleanedChannelToString(const Channel *channel);
+// Prints out a channel to json, but only with the name and type.
+std::string StrippedChannelToString(const Channel *channel);
 
 // Returns the node names that this node should be forwarding to.
 std::vector<std::string_view> DestinationNodeNames(const Configuration *config,
