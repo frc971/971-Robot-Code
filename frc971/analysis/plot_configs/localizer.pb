@@ -67,6 +67,12 @@ figure {
     }
     line {
       y_signal {
+        channel: "DrivetrainStatus"
+        field: "trajectory_logging.theta"
+      }
+    }
+    line {
+      y_signal {
         channel: "DrivetrainTruthStatus"
         field: "theta"
       }
@@ -102,6 +108,18 @@ figure {
       y_signal {
         channel: "DrivetrainStatus"
         field: "down_estimator.position_y"
+      }
+    }
+    line {
+      y_signal {
+        channel: "DrivetrainStatus"
+        field: "trajectory_logging.x"
+      }
+    }
+    line {
+      y_signal {
+        channel: "DrivetrainStatus"
+        field: "trajectory_logging.y"
       }
     }
     line {

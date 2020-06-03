@@ -41,6 +41,7 @@ class DistanceSpline {
   }
 
   // Returns the angular velocity as a function of distance.
+  // This is also equivalent to the curvature at the given point.
   double DTheta(double distance) const {
     // TODO(austin): We are re-computing DPoint here!
     const AlphaAndIndex a = DistanceToAlpha(distance);
@@ -48,6 +49,8 @@ class DistanceSpline {
     return spline.DTheta(a.alpha) / spline.DPoint(a.alpha).norm();
   }
 
+  // Returns the derivative of heading with respect to time at a given
+  // distance along the spline, if we are travelling at the provided velocity.
   double DThetaDt(double distance, double velocity) const {
     return DTheta(distance) * velocity;
   }

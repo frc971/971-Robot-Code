@@ -36,7 +36,8 @@ class SplineDrivetrain {
 
   void SetGoal(const ::frc971::control_loops::drivetrain::Goal *goal);
 
-  void Update(bool enabled, const ::Eigen::Matrix<double, 5, 1> &state);
+  void Update(bool enabled, const ::Eigen::Matrix<double, 5, 1> &state,
+              const ::Eigen::Matrix<double, 2, 1> &voltage_error);
 
   void SetOutput(::frc971::control_loops::drivetrain::OutputT *output);
 
@@ -132,22 +133,6 @@ class SplineDrivetrain {
   bool future_drive_spline_backwards_ = false;
   int32_t future_spline_idx_ = 0;  // Current spline being computed.
   ::std::atomic<int32_t> planning_spline_idx_{-1};
-
-  // TODO(alex): pull this out of dt_config.
-  const ::Eigen::DiagonalMatrix<double, 5> Q =
-      0.2 *
-      (::Eigen::DiagonalMatrix<double, 5>().diagonal()
-           << 1.0 / ::std::pow(0.12, 2),
-       1.0 / ::std::pow(0.12, 2), 1.0 / ::std::pow(0.1, 2),
-       1.0 / ::std::pow(1.0, 2), 1.0 / ::std::pow(1.0, 2))
-          .finished()
-          .asDiagonal();
-  const ::Eigen::DiagonalMatrix<double, 2> R =
-      (::Eigen::DiagonalMatrix<double, 2>().diagonal()
-           << 1.0 / ::std::pow(12.0, 2),
-       1.0 / ::std::pow(12.0, 2))
-          .finished()
-          .asDiagonal();
 };
 
 }  // namespace drivetrain

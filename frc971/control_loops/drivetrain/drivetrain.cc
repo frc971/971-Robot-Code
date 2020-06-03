@@ -299,7 +299,7 @@ void DrivetrainLoop::RunIteration(
 
   dt_spline_.Update(
       output != nullptr && controller_type == ControllerType::SPLINE_FOLLOWER,
-      trajectory_state);
+      trajectory_state, kf_.X_hat().block<2, 1>(4, 0));
 
   dt_line_follow_.Update(monotonic_now, trajectory_state);
 

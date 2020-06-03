@@ -124,6 +124,7 @@ class Trajectory {
     LateralAccelPass();
     ForwardPass();
     BackwardPass();
+    CalculatePathGains();
   }
 
   // Returns the feed forwards position, velocity, acceleration for an explicit
@@ -190,7 +191,9 @@ class Trajectory {
           ::Eigen::Matrix<double, 5, 2> *B) const;
 
   // Returns the lqr controller for the current state, timestep, and Q and R
-  // gains.
+  // gains. This controller is currently not used--we instead are experimenting
+  // with the path-relative LQR (and potentially MPC, in the future) controller,
+  // which uses the methods defined below.
   // TODO(austin): This feels like it should live somewhere else, but I'm not
   // sure where.  So, throw it here...
   ::Eigen::Matrix<double, 2, 5> KForState(
@@ -232,6 +235,51 @@ class Trajectory {
         .finished();
   }
 
+  // The controller represented by these functions uses a discrete-time,
+  // finite-horizon LQR with states that are relative to the predicted path
+  // of the robot to produce a gain to be used on the error.
+  // The controller does not currently account for saturation, but is defined
+  // in a way that would make accounting for saturation feasible.
+  // This controller uses a state of:
+  // distance along path
+  // distance lateral to path (positive when robot is to the left of the path).
+  // heading relative to path (positive if robot pointed to left).
+  // v_left (speed of left side of robot)
+  // v_right (speed of right side of robot).
+
+  // Retrieve the continuous-time A/B matrices for the path-relative system
+  // at the given distance along the path. Performs all linearizations about
+  // the nominal velocity that the robot should be following at that point
+  // along the path.
+  void PathRelativeContinuousSystem(double distance,
+                                    Eigen::Matrix<double, 5, 5> *A,
+                                    Eigen::Matrix<double, 5, 2> *B);
+  // Retrieve the continuous-time A/B matrices for the path-relative system
+  // given the current path-relative state, as defined above.
+  void PathRelativeContinuousSystem(const Eigen::Matrix<double, 5, 1> &X,
+                                    Eigen::Matrix<double, 5, 5> *A,
+                                    Eigen::Matrix<double, 5, 2> *B);
+
+  // Takes the 5-element state that is [x, y, theta, v_left, v_right] and
+  // converts it to a path-relative state, using distance as a linearization
+  // point (i.e., distance should be roughly equal to the actual distance along
+  // the path).
+  Eigen::Matrix<double, 5, 1> StateToPathRelativeState(
+      double distance, const Eigen::Matrix<double, 5, 1> &state);
+
+  // Estimates the current distance along the path, given the current expected
+  // distance and the [x, y, theta, v_left, v_right] state.
+  double EstimateDistanceAlongPath(double nominal_distance,
+                                   const Eigen::Matrix<double, 5, 1> &state);
+
+  // Calculates all the gains for each point along the planned trajectory.
+  // Only called directly in tests; this is normally a part of the planning
+  // phase, and is a relatively expensive operation.
+  void CalculatePathGains();
+
+  // Retrieves the gain matrix K for a given distance along the path.
+  Eigen::Matrix<double, 2, 5> GainForDistance(double distance);
+
  private:
   // Computes alpha for a distance.
   size_t DistanceToSegment(double distance) const {
@@ -271,6 +319,8 @@ class Trajectory {
                         HybridKalman<2, 2, 2>>>
       velocity_drivetrain_;
 
+  const DrivetrainConfig<double> config_;
+
   // Robot radiuses.
   const double robot_radius_l_;
   const double robot_radius_r_;
@@ -281,9 +331,15 @@ class Trajectory {
   const ::Eigen::Matrix<double, 2, 2> Tlr_to_la_;
   // Transformation matrix from linear, angular to left, right
   const ::Eigen::Matrix<double, 2, 2> Tla_to_lr_;
-  // Velocities in the plan (distance for each index is defined by distance())
-  ::std::vector<double> plan_;
-  ::std::vector<SegmentType> plan_segment_type_;
+  // Velocities in the plan (distance for each index is defined by Distance())
+  std::vector<double> plan_;
+  // Gain matrices to use for the path-relative state error at each stage in the
+  // plan Individual elements of the plan_gains_ vector are separated by
+  // config_.dt in time.
+  // The first value in the pair is the distance along the path corresponding to
+  // the gain matrix; the second value is the gain itself.
+  std::vector<std::pair<double, Eigen::Matrix<double, 2, 5>>> plan_gains_;
+  std::vector<SegmentType> plan_segment_type_;
   // Plan voltage limit.
   double voltage_limit_ = 12.0;
 };

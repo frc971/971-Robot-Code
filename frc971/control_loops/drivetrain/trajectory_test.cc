@@ -19,6 +19,9 @@
 
 DECLARE_bool(plot);
 
+DEFINE_string(output_file, "",
+              "If set, logs all channels to the provided logfile.");
+
 namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
@@ -46,6 +49,11 @@ struct SplineTestParams {
   double velocity_limit;
   double voltage_limit;
   ::std::function<void(Trajectory *)> trajectory_modification_fn;
+  // Number of iterations to attempt to use the path-relative state on--because
+  // of the number of numerical approximations involved, we generally aren't
+  // actually able to use a large number of iterations before the errors
+  // accumulate too much (or I am doing something wrong).
+  size_t valid_path_relative_iterations;
 };
 
 void NullTrajectoryModificationFunction(Trajectory *) {}
@@ -89,6 +97,8 @@ class ParameterizedSplineTest
     forward_plan_ = trajectory_->plan();
     trajectory_->BackwardPass();
     backward_plan_ = trajectory_->plan();
+
+    trajectory_->CalculatePathGains();
 
     length_plan_xva_ = trajectory_->PlanXVA(dt_config_.dt);
   }
@@ -418,6 +428,111 @@ TEST_P(ParameterizedSplineTest, IterativeXVA) {
   }
 }
 
+TEST_P(ParameterizedSplineTest, PathRelativeMathTest) {
+  Eigen::Matrix<double, 5, 1> absolute_state =
+      Eigen::Matrix<double, 5, 1>::Zero();
+  Eigen::Matrix<double, 5, 1> relative_state =
+      Eigen::Matrix<double, 5, 1>::Zero();
+  std::vector<Eigen::Matrix<double, 5, 5>> A_discretes;
+  std::vector<Eigen::Matrix<double, 5, 2>> B_discretes;
+  // Test that the path relative coordinate conversion is mathematically
+  // consistent with the absolute coordinate system.
+  for (size_t i = 0; i < length_plan_xva_.size(); ++i) {
+    std::stringstream msg;
+    msg << i << " of " << length_plan_xva_.size();
+    SCOPED_TRACE(msg.str());
+    const double distance = length_plan_xva_[i](0);
+    const double velocity = length_plan_xva_[i](1);
+    Eigen::Matrix<double, 5, 5> A_continuous;
+    Eigen::Matrix<double, 5, 2> B_continuous;
+    trajectory_->PathRelativeContinuousSystem(distance, &A_continuous,
+                                             &B_continuous);
+    Eigen::Matrix<double, 5, 5> A_discrete;
+    Eigen::Matrix<double, 5, 2> B_discrete;
+    controls::C2D(A_continuous, B_continuous, dt_config_.dt, &A_discrete,
+                  &B_discrete);
+
+    // The below code exists to check that the transform to path-relative
+    // coordinates doesn't result in significantly different results from the
+    // normal math. However, numerical differences can explode after enough
+    // iterations of integration, so stop checking after a certain number of
+    // iterations.
+    if (i >= GetParam().valid_path_relative_iterations) {
+      continue;
+    }
+
+    const Eigen::Matrix<double, 2, 1> U_ff = trajectory_->FFVoltage(distance);
+    const Eigen::Matrix<double, 2, 1> U = U_ff;
+
+    absolute_state = RungeKuttaU(
+        [this](const Eigen::Matrix<double, 5, 1> &X,
+               const Eigen::Matrix<double, 2, 1> &U) {
+          return ContinuousDynamics(trajectory_->velocity_drivetrain().plant(),
+                                    trajectory_->Tlr_to_la(), X, U);
+        },
+        absolute_state, U, aos::time::DurationInSeconds(dt_config_.dt));
+    const Eigen::Matrix<double, 5, 1> goal_absolute_state =
+        trajectory_->GoalState(distance, velocity);
+    const Eigen::Matrix<double, 5, 1> goal_relative_state =
+        trajectory_->StateToPathRelativeState(distance, goal_absolute_state);
+    ASSERT_EQ(distance, goal_relative_state(0));
+    ASSERT_EQ(0.0, goal_relative_state(1));
+    ASSERT_NEAR(goal_absolute_state(2), goal_relative_state(2), 1e-2);
+    ASSERT_EQ(goal_absolute_state(3), goal_relative_state(3));
+    ASSERT_EQ(goal_absolute_state(4), goal_relative_state(4));
+
+    relative_state = A_discrete * relative_state + B_discrete * U;
+
+    ASSERT_LT((relative_state - goal_relative_state).norm(), 1e-2)
+        << ": Goal\n"
+        << goal_relative_state << " Integrated\n"
+        << relative_state;
+  }
+
+  const size_t path_length = length_plan_xva_.size();
+
+  // Test that if we run path-relative feedback controller then we end up
+  // tracking with reasonably low error.
+  absolute_state = Eigen::Matrix<double, 5, 1>::Zero();
+  double initial_error = 0;
+  for (size_t i = 0; i < path_length; ++i) {
+    std::stringstream msg;
+    msg << i << " of " << length_plan_xva_.size();
+    SCOPED_TRACE(msg.str());
+    const double distance = length_plan_xva_[i](0);
+    const double velocity = length_plan_xva_[i](1);
+
+    const Eigen::Matrix<double, 5, 1> goal_absolute_state =
+        trajectory_->GoalState(distance, velocity);
+    const Eigen::Matrix<double, 5, 1> goal_relative_state =
+        trajectory_->StateToPathRelativeState(distance, goal_absolute_state);
+    const Eigen::Matrix<double, 5, 1> current_relative_state =
+        trajectory_->StateToPathRelativeState(distance, absolute_state);
+
+    const Eigen::Matrix<double, 2, 1> U_ff = trajectory_->FFVoltage(distance);
+    Eigen::Matrix<double, 2, 1> U_fb =
+        trajectory_->GainForDistance(distance) *
+        (goal_relative_state - current_relative_state);
+    if (i == 0) {
+      initial_error = (goal_relative_state - current_relative_state).norm();
+    }
+    const Eigen::Matrix<double, 2, 1> U = U_ff + U_fb;
+
+    absolute_state = RungeKuttaU(
+        [this](const Eigen::Matrix<double, 5, 1> &X,
+               const Eigen::Matrix<double, 2, 1> &U) {
+          return ContinuousDynamics(trajectory_->velocity_drivetrain().plant(),
+                                    trajectory_->Tlr_to_la(), X, U);
+        },
+        absolute_state, U, aos::time::DurationInSeconds(dt_config_.dt));
+  }
+
+  EXPECT_LT(
+      (absolute_state - trajectory_->GoalState(trajectory_->length(), 0.0))
+          .norm(),
+      4e-2 + initial_error * 0.5);
+}
+
 SplineTestParams MakeSplineTestParams(struct SplineTestParams params) {
   return params;
 }
@@ -439,7 +554,7 @@ INSTANTIATE_TEST_CASE_P(
                             .finished()),
              2.0 /*lateral acceleration*/, 1.0 /*longitudinal acceleration*/,
              10.0 /* velocity limit */, 12.0 /* volts */,
-             NullTrajectoryModificationFunction}),
+             NullTrajectoryModificationFunction, 40}),
         // Be velocity limited.
         MakeSplineTestParams(
             {Spline4To6((::Eigen::Matrix<double, 2, 4>() << 0.0, 6.0, -1.0, 5.0,
@@ -447,7 +562,7 @@ INSTANTIATE_TEST_CASE_P(
                             .finished()),
              2.0 /*lateral acceleration*/, 1.0 /*longitudinal acceleration*/,
              0.5 /* velocity limit */, 12.0 /* volts */,
-             NullTrajectoryModificationFunction}),
+             NullTrajectoryModificationFunction, 40}),
         // Hit the voltage limit.
         MakeSplineTestParams(
             {Spline4To6((::Eigen::Matrix<double, 2, 4>() << 0.0, 6.0, -1.0, 5.0,
@@ -455,7 +570,7 @@ INSTANTIATE_TEST_CASE_P(
                             .finished()),
              2.0 /*lateral acceleration*/, 3.0 /*longitudinal acceleration*/,
              10.0 /* velocity limit */, 5.0 /* volts */,
-             NullTrajectoryModificationFunction}),
+             NullTrajectoryModificationFunction, 0}),
         // Hit the curvature limit.
         MakeSplineTestParams(
             {Spline4To6((::Eigen::Matrix<double, 2, 4>() << 0.0, 1.2, -0.2, 1.0,
@@ -463,7 +578,7 @@ INSTANTIATE_TEST_CASE_P(
                             .finished()),
              1.0 /*lateral acceleration*/, 3.0 /*longitudinal acceleration*/,
              10.0 /* velocity limit */, 12.0 /* volts */,
-             NullTrajectoryModificationFunction}),
+             NullTrajectoryModificationFunction, 0}),
         // Add an artifical velocity limit in the middle.
         MakeSplineTestParams(
             {Spline4To6((::Eigen::Matrix<double, 2, 4>() << 0.0, 6.0, -1.0, 5.0,
@@ -471,7 +586,7 @@ INSTANTIATE_TEST_CASE_P(
                             .finished()),
              2.0 /*lateral acceleration*/, 3.0 /*longitudinal acceleration*/,
              10.0 /* velocity limit */, 12.0 /* volts */,
-             LimitMiddleOfPathTrajectoryModificationFunction}),
+             LimitMiddleOfPathTrajectoryModificationFunction, 0}),
         // Add a really short artifical velocity limit in the middle.
         MakeSplineTestParams(
             {Spline4To6((::Eigen::Matrix<double, 2, 4>() << 0.0, 6.0, -1.0, 5.0,
@@ -479,7 +594,7 @@ INSTANTIATE_TEST_CASE_P(
                             .finished()),
              2.0 /*lateral acceleration*/, 3.0 /*longitudinal acceleration*/,
              10.0 /* velocity limit */, 12.0 /* volts */,
-             ShortLimitMiddleOfPathTrajectoryModificationFunction}),
+             ShortLimitMiddleOfPathTrajectoryModificationFunction, 0}),
         // Spline known to have caused issues in the past.
         MakeSplineTestParams(
             {(::Eigen::Matrix<double, 2, 6>() << 0.5f, 3.5f, 4.0f, 8.0f, 10.0f,
@@ -487,7 +602,7 @@ INSTANTIATE_TEST_CASE_P(
                  .finished(),
              2.0 /*lateral acceleration*/, 3.0 /*longitudinal acceleration*/,
              200.0 /* velocity limit */, 12.0 /* volts */,
-             NullTrajectoryModificationFunction}),
+             NullTrajectoryModificationFunction, 0}),
         // Perfectly straight line (to check corner cases).
         MakeSplineTestParams(
             {Spline4To6((::Eigen::Matrix<double, 2, 4>() << 0.0, 1.0, 2.0, 3.0,
@@ -495,7 +610,7 @@ INSTANTIATE_TEST_CASE_P(
                             .finished()),
              2.0 /*lateral acceleration*/, 3.0 /*longitudinal acceleration*/,
              200.0 /* velocity limit */, 12.0 /* volts */,
-             NullTrajectoryModificationFunction})));
+             NullTrajectoryModificationFunction, 0})));
 
 // TODO(austin): Handle saturation.  254 does this by just not going that
 // fast...  We want to maybe replan when we get behind, or something.  Maybe

@@ -716,7 +716,6 @@ void HybridEkf<Scalar>::InitializeMatrices() {
   A_continuous_(kLateralVelocity, kLateralVelocity) =
       -1.0 / kLateralVelocityTimeConstant;
 
-  // We currently ignore all voltage-related modelling terms.
   // TODO(james): Decide what to do about these terms. They don't really matter
   // too much when we have accelerometer readings available.
   B_continuous_.setZero();

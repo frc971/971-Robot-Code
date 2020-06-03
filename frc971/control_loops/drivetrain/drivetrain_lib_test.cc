@@ -97,9 +97,13 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
         CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->x();
     const double expected_y =
         CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->y();
+    const double estimated_x = drivetrain_status_fetcher_->x();
+    const double estimated_y = drivetrain_status_fetcher_->y();
     const ::Eigen::Vector2d actual = drivetrain_plant_.GetPosition();
-    EXPECT_NEAR(actual(0), expected_x, 4e-2);
-    EXPECT_NEAR(actual(1), expected_y, 4e-2);
+    EXPECT_NEAR(estimated_x, expected_x, spline_control_tolerance_);
+    EXPECT_NEAR(estimated_y, expected_y, spline_control_tolerance_);
+    EXPECT_NEAR(actual(0), estimated_x, spline_estimate_tolerance_);
+    EXPECT_NEAR(actual(1), estimated_y, spline_estimate_tolerance_);
   }
 
   void WaitForTrajectoryPlan() {
@@ -166,6 +170,9 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
   std::unique_ptr<aos::EventLoop> logger_event_loop_;
   std::unique_ptr<aos::logger::DetachedBufferWriter> log_buffer_writer_;
   std::unique_ptr<aos::logger::Logger> logger_;
+
+  double spline_estimate_tolerance_ = 0.05;
+  double spline_control_tolerance_ = 0.05;
 };
 
 // Tests that the drivetrain converges on a goal.
@@ -836,7 +843,7 @@ TEST_F(DrivetrainTest, SplineOffset) {
   }
   WaitForTrajectoryPlan();
 
-  RunFor(chrono::milliseconds(2000));
+  RunFor(chrono::milliseconds(5000));
   VerifyNearSplineGoal();
 }
 
@@ -885,7 +892,61 @@ TEST_F(DrivetrainTest, SplineSideOffset) {
   }
   WaitForTrajectoryPlan();
 
-  RunFor(chrono::milliseconds(2000));
+  RunFor(chrono::milliseconds(5000));
+
+  spline_control_tolerance_ = 0.1;
+  spline_estimate_tolerance_ = 0.1;
+  VerifyNearSplineGoal();
+}
+
+// Tests that simple spline converges when we introduce a straight voltage
+// error.
+TEST_F(DrivetrainTest, SplineVoltageError) {
+  SetEnabled(true);
+  drivetrain_plant_.set_left_voltage_offset(1.0);
+  drivetrain_plant_.set_right_voltage_offset(0.5);
+  {
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.25, 0.5, 0.5, 0.75, 1.0});
+    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+        builder.fbb()->CreateVector<float>({0.0, 0.0, 0.25, 0.75, 1.0, 1.0});
+
+    MultiSpline::Builder multispline_builder =
+        builder.MakeBuilder<MultiSpline>();
+
+    multispline_builder.add_spline_count(1);
+    multispline_builder.add_spline_x(spline_x_offset);
+    multispline_builder.add_spline_y(spline_y_offset);
+
+    flatbuffers::Offset<MultiSpline> multispline_offset =
+        multispline_builder.Finish();
+
+    SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
+    spline_goal_builder.add_spline_idx(1);
+    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_spline(multispline_offset);
+    flatbuffers::Offset<SplineGoal> spline_goal_offset =
+        spline_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
+    goal_builder.add_spline(spline_goal_offset);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+  }
+  RunFor(dt());
+
+  {
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
+    goal_builder.add_spline_handle(1);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+  }
+  WaitForTrajectoryPlan();
+
+  RunFor(chrono::milliseconds(5000));
   VerifyNearSplineGoal();
 }
 
@@ -1116,6 +1177,8 @@ TEST_F(DrivetrainTest, SplineStopFirst) {
   WaitForTrajectoryPlan();
 
   WaitForTrajectoryExecution();
+  spline_control_tolerance_ = 0.1;
+  spline_estimate_tolerance_ = 0.15;
   VerifyNearSplineGoal();
 }
 
