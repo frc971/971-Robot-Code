@@ -47,6 +47,8 @@ DEFINE_string(application_name, Filename(program_invocation_name),
 
 namespace aos {
 
+using namespace shm_event_loop_internal;
+
 void SetShmBase(const std::string_view base) {
   FLAGS_shm_base = std::string(base) + "/dev/shm/aos";
 }
@@ -82,7 +84,7 @@ class MMapedQueue {
     // that fails, the file has already been created and we can open it
     // normally..  Once the file has been created it wil never be deleted.
     int fd = open(path.c_str(), O_RDWR | O_CREAT | O_EXCL,
-               O_CLOEXEC | FLAGS_permissions);
+                  O_CLOEXEC | FLAGS_permissions);
     if (fd == -1 && errno == EEXIST) {
       VLOG(1) << path << " already created.";
       // File already exists.
@@ -116,9 +118,7 @@ class MMapedQueue {
     ipc_lib::InitializeLocklessQueueMemory(memory(), config_);
   }
 
-  ~MMapedQueue() {
-    PCHECK(munmap(data_, size_) == 0);
-  }
+  ~MMapedQueue() { PCHECK(munmap(data_, size_) == 0); }
 
   ipc_lib::LocklessQueueMemory *memory() const {
     return reinterpret_cast<ipc_lib::LocklessQueueMemory *>(data_);
@@ -160,7 +160,7 @@ ShmEventLoop::ShmEventLoop(const Configuration *configuration)
   }
 }
 
-namespace internal {
+namespace shm_event_loop_internal {
 
 class SimpleShmFetcher {
  public:
@@ -433,18 +433,18 @@ class ShmSender : public RawSender {
 };
 
 // Class to manage the state for a Watcher.
-class WatcherState : public aos::WatcherState {
+class ShmWatcherState : public WatcherState {
  public:
-  WatcherState(
+  ShmWatcherState(
       ShmEventLoop *event_loop, const Channel *channel,
       std::function<void(const Context &context, const void *message)> fn,
       bool copy_data)
-      : aos::WatcherState(event_loop, channel, std::move(fn)),
+      : WatcherState(event_loop, channel, std::move(fn)),
         event_loop_(event_loop),
         event_(this),
         simple_shm_fetcher_(event_loop, channel, copy_data) {}
 
-  ~WatcherState() override { event_loop_->RemoveEvent(&event_); }
+  ~ShmWatcherState() override { event_loop_->RemoveEvent(&event_); }
 
   void Startup(EventLoop *event_loop) override {
     simple_shm_fetcher_.PointAtNextQueueIndex();
@@ -489,14 +489,14 @@ class WatcherState : public aos::WatcherState {
   bool has_new_data_ = false;
 
   ShmEventLoop *event_loop_;
-  EventHandler<WatcherState> event_;
+  EventHandler<ShmWatcherState> event_;
   SimpleShmFetcher simple_shm_fetcher_;
 };
 
 // Adapter class to adapt a timerfd to a TimerHandler.
-class TimerHandlerState final : public TimerHandler {
+class ShmTimerHandler final : public TimerHandler {
  public:
-  TimerHandlerState(ShmEventLoop *shm_event_loop, ::std::function<void()> fn)
+  ShmTimerHandler(ShmEventLoop *shm_event_loop, ::std::function<void()> fn)
       : TimerHandler(shm_event_loop, std::move(fn)),
         shm_event_loop_(shm_event_loop),
         event_(this) {
@@ -510,7 +510,7 @@ class TimerHandlerState final : public TimerHandler {
     });
   }
 
-  ~TimerHandlerState() {
+  ~ShmTimerHandler() {
     Disable();
     shm_event_loop_->epoll_.DeleteFd(timerfd_.fd());
   }
@@ -562,21 +562,22 @@ class TimerHandlerState final : public TimerHandler {
 
  private:
   ShmEventLoop *shm_event_loop_;
-  EventHandler<TimerHandlerState> event_;
+  EventHandler<ShmTimerHandler> event_;
 
-  TimerFd timerfd_;
+  internal::TimerFd timerfd_;
 
   monotonic_clock::time_point base_;
   monotonic_clock::duration repeat_offset_;
 };
 
 // Adapter class to the timerfd and PhasedLoop.
-class PhasedLoopHandler final : public ::aos::PhasedLoopHandler {
+class ShmPhasedLoopHandler final : public PhasedLoopHandler {
  public:
-  PhasedLoopHandler(ShmEventLoop *shm_event_loop, ::std::function<void(int)> fn,
-                    const monotonic_clock::duration interval,
-                    const monotonic_clock::duration offset)
-      : aos::PhasedLoopHandler(shm_event_loop, std::move(fn), interval, offset),
+  ShmPhasedLoopHandler(ShmEventLoop *shm_event_loop,
+                       ::std::function<void(int)> fn,
+                       const monotonic_clock::duration interval,
+                       const monotonic_clock::duration offset)
+      : PhasedLoopHandler(shm_event_loop, std::move(fn), interval, offset),
         shm_event_loop_(shm_event_loop),
         event_(this) {
     shm_event_loop_->epoll_.OnReadable(
@@ -598,7 +599,7 @@ class PhasedLoopHandler final : public ::aos::PhasedLoopHandler {
     });
   }
 
-  ~PhasedLoopHandler() override {
+  ~ShmPhasedLoopHandler() override {
     shm_event_loop_->epoll_.DeleteFd(timerfd_.fd());
     shm_event_loop_->RemoveEvent(&event_);
   }
@@ -616,11 +617,12 @@ class PhasedLoopHandler final : public ::aos::PhasedLoopHandler {
   }
 
   ShmEventLoop *shm_event_loop_;
-  EventHandler<PhasedLoopHandler> event_;
+  EventHandler<ShmPhasedLoopHandler> event_;
 
-  TimerFd timerfd_;
+  internal::TimerFd timerfd_;
 };
-}  // namespace internal
+
+}  // namespace shm_event_loop_internal
 
 ::std::unique_ptr<RawFetcher> ShmEventLoop::MakeRawFetcher(
     const Channel *channel) {
@@ -631,14 +633,14 @@ class PhasedLoopHandler final : public ::aos::PhasedLoopHandler {
                   "configuration.";
   }
 
-  return ::std::unique_ptr<RawFetcher>(new internal::ShmFetcher(this, channel));
+  return ::std::unique_ptr<RawFetcher>(new ShmFetcher(this, channel));
 }
 
 ::std::unique_ptr<RawSender> ShmEventLoop::MakeRawSender(
     const Channel *channel) {
   TakeSender(channel);
 
-  return ::std::unique_ptr<RawSender>(new internal::ShmSender(this, channel));
+  return ::std::unique_ptr<RawSender>(new ShmSender(this, channel));
 }
 
 void ShmEventLoop::MakeRawWatcher(
@@ -647,7 +649,7 @@ void ShmEventLoop::MakeRawWatcher(
   TakeWatcher(channel);
 
   NewWatcher(::std::unique_ptr<WatcherState>(
-      new internal::WatcherState(this, channel, std::move(watcher), true)));
+      new ShmWatcherState(this, channel, std::move(watcher), true)));
 }
 
 void ShmEventLoop::MakeRawNoArgWatcher(
@@ -655,7 +657,7 @@ void ShmEventLoop::MakeRawNoArgWatcher(
     std::function<void(const Context &context)> watcher) {
   TakeWatcher(channel);
 
-  NewWatcher(::std::unique_ptr<WatcherState>(new internal::WatcherState(
+  NewWatcher(::std::unique_ptr<WatcherState>(new ShmWatcherState(
       this, channel,
       [watcher](const Context &context, const void *) { watcher(context); },
       false)));
@@ -663,16 +665,15 @@ void ShmEventLoop::MakeRawNoArgWatcher(
 
 TimerHandler *ShmEventLoop::AddTimer(::std::function<void()> callback) {
   return NewTimer(::std::unique_ptr<TimerHandler>(
-      new internal::TimerHandlerState(this, ::std::move(callback))));
+      new ShmTimerHandler(this, ::std::move(callback))));
 }
 
 PhasedLoopHandler *ShmEventLoop::AddPhasedLoop(
     ::std::function<void(int)> callback,
     const monotonic_clock::duration interval,
     const monotonic_clock::duration offset) {
-  return NewPhasedLoop(
-      ::std::unique_ptr<PhasedLoopHandler>(new internal::PhasedLoopHandler(
-          this, ::std::move(callback), interval, offset)));
+  return NewPhasedLoop(::std::unique_ptr<PhasedLoopHandler>(
+      new ShmPhasedLoopHandler(this, ::std::move(callback), interval, offset)));
 }
 
 void ShmEventLoop::OnRun(::std::function<void()> on_run) {
@@ -682,8 +683,8 @@ void ShmEventLoop::OnRun(::std::function<void()> on_run) {
 void ShmEventLoop::HandleEvent() {
   // Update all the times for handlers.
   for (::std::unique_ptr<WatcherState> &base_watcher : watchers_) {
-    internal::WatcherState *watcher =
-        reinterpret_cast<internal::WatcherState *>(base_watcher.get());
+    ShmWatcherState *watcher =
+        reinterpret_cast<ShmWatcherState *>(base_watcher.get());
 
     watcher->CheckForNewData();
   }
@@ -860,8 +861,8 @@ void ShmEventLoop::Run() {
   }
 
   for (::std::unique_ptr<WatcherState> &base_watcher : watchers_) {
-    internal::WatcherState *watcher =
-        reinterpret_cast<internal::WatcherState *>(base_watcher.get());
+    ShmWatcherState *watcher =
+        reinterpret_cast<ShmWatcherState *>(base_watcher.get());
     watcher->UnregisterWakeup();
   }
 
@@ -909,14 +910,14 @@ void ShmEventLoop::set_name(const std::string_view name) {
 }
 
 absl::Span<char> ShmEventLoop::GetWatcherSharedMemory(const Channel *channel) {
-  internal::WatcherState *const watcher_state =
-      static_cast<internal::WatcherState *>(GetWatcherState(channel));
+  ShmWatcherState *const watcher_state =
+      static_cast<ShmWatcherState *>(GetWatcherState(channel));
   return watcher_state->GetSharedMemory();
 }
 
 absl::Span<char> ShmEventLoop::GetShmSenderSharedMemory(
     const aos::RawSender *sender) const {
-  return static_cast<const internal::ShmSender *>(sender)->GetSharedMemory();
+  return static_cast<const ShmSender *>(sender)->GetSharedMemory();
 }
 
 pid_t ShmEventLoop::GetTid() { return syscall(SYS_gettid); }

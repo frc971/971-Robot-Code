@@ -10,15 +10,15 @@
 #include "aos/events/event_loop_generated.h"
 
 namespace aos {
-namespace internal {
+namespace shm_event_loop_internal {
 
-class WatcherState;
-class TimerHandlerState;
-class PhasedLoopHandler;
+class ShmWatcherState;
+class ShmTimerHandler;
+class ShmPhasedLoopHandler;
 class ShmSender;
 class ShmFetcher;
 
-}  // namespace internal
+}  // namespace shm_event_loop_internal
 
 // Specialization of EventLoop that is built from queues running out of shared
 // memory.
@@ -57,11 +57,10 @@ class ShmEventLoop : public EventLoop {
       std::function<void(const Context &context)> watcher) override;
 
   TimerHandler *AddTimer(std::function<void()> callback) override;
-  aos::PhasedLoopHandler *AddPhasedLoop(
-      std::function<void(int)> callback,
-      const monotonic_clock::duration interval,
-      const monotonic_clock::duration offset =
-          std::chrono::seconds(0)) override;
+  PhasedLoopHandler *AddPhasedLoop(std::function<void(int)> callback,
+                                   const monotonic_clock::duration interval,
+                                   const monotonic_clock::duration offset =
+                                       std::chrono::seconds(0)) override;
 
   void OnRun(std::function<void()> on_run) override;
 
@@ -89,11 +88,11 @@ class ShmEventLoop : public EventLoop {
   }
 
  private:
-  friend class internal::WatcherState;
-  friend class internal::TimerHandlerState;
-  friend class internal::PhasedLoopHandler;
-  friend class internal::ShmSender;
-  friend class internal::ShmFetcher;
+  friend class shm_event_loop_internal::ShmWatcherState;
+  friend class shm_event_loop_internal::ShmTimerHandler;
+  friend class shm_event_loop_internal::ShmPhasedLoopHandler;
+  friend class shm_event_loop_internal::ShmSender;
+  friend class shm_event_loop_internal::ShmFetcher;
 
   static cpu_set_t DefaultAffinity() {
     cpu_set_t result;
