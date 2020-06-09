@@ -26,7 +26,8 @@ We use [Bazel](http://bazel.io) to build the code. Bazel has [extensive](https:/
   1. Install the required packages:
 ```console
 apt-get update
-apt-get install bazel python
+# TODO(james): Ideally, we shouldn't need to be installing libtinfo5...
+apt-get install bazel python libtinfo5
 ```
   2. Allow Bazel's sandboxing to work:
      Follow the direction in `doc/frc971.conf`.
