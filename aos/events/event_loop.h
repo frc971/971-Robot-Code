@@ -14,6 +14,7 @@
 #include "aos/events/event_loop_generated.h"
 #include "aos/events/timing_statistics.h"
 #include "aos/flatbuffers.h"
+#include "aos/ftrace.h"
 #include "aos/ipc_lib/data_alignment.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/time/time.h"
@@ -92,10 +93,12 @@ class RawFetcher {
   virtual std::pair<bool, monotonic_clock::time_point> DoFetchNext() = 0;
   virtual std::pair<bool, monotonic_clock::time_point> DoFetch() = 0;
 
-  EventLoop *event_loop_;
-  const Channel *channel_;
+  EventLoop *const event_loop_;
+  const Channel *const channel_;
+  const std::string ftrace_prefix_;
 
   internal::RawFetcherTiming timing_;
+  Ftrace ftrace_;
 };
 
 // Raw version of sender.  Sends a block of data.  This is used for reflection
@@ -174,10 +177,12 @@ class RawSender {
                       aos::realtime_clock::time_point realtime_remote_time,
                       uint32_t remote_queue_index) = 0;
 
-  EventLoop *event_loop_;
-  const Channel *channel_;
+  EventLoop *const event_loop_;
+  const Channel *const channel_;
+  const std::string ftrace_prefix_;
 
   internal::RawSenderTiming timing_;
+  Ftrace ftrace_;
 
   ChannelPreallocatedAllocator fbb_allocator_{nullptr, 0, nullptr};
 };
@@ -358,6 +363,7 @@ class TimerHandler {
   std::string name_;
 
   internal::TimerTiming timing_;
+  Ftrace ftrace_;
 };
 
 // Interface for phased loops.  They are built on timers.
@@ -404,6 +410,7 @@ class PhasedLoopHandler {
   int cycles_elapsed_ = 0;
 
   internal::TimerTiming timing_;
+  Ftrace ftrace_;
 };
 
 inline cpu_set_t MakeCpusetFromCpus(std::initializer_list<int> cpus) {

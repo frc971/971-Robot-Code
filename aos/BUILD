@@ -526,3 +526,17 @@ cc_binary(
         "@com_github_google_glog//:glog",
     ],
 )
+
+cc_library(
+    name = "ftrace",
+    srcs = [
+        "ftrace.cc",
+    ],
+    hdrs = [
+        "ftrace.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_google_glog//:glog",
+    ],
+)

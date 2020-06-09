@@ -14,6 +14,7 @@ namespace aos {
 RawSender::RawSender(EventLoop *event_loop, const Channel *channel)
     : event_loop_(event_loop),
       channel_(channel),
+      ftrace_prefix_(configuration::StrippedChannelToString(channel)),
       timing_(event_loop_->ChannelIndex(channel)) {
   event_loop_->NewSender(this);
 }
@@ -23,6 +24,7 @@ RawSender::~RawSender() { event_loop_->DeleteSender(this); }
 RawFetcher::RawFetcher(EventLoop *event_loop, const Channel *channel)
     : event_loop_(event_loop),
       channel_(channel),
+      ftrace_prefix_(configuration::StrippedChannelToString(channel)),
       timing_(event_loop_->ChannelIndex(channel)) {
   context_.monotonic_event_time = monotonic_clock::min_time;
   context_.monotonic_remote_time = monotonic_clock::min_time;
