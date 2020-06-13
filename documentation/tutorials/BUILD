@@ -6,10 +6,8 @@ articles = [
     "create-a-simple-program-for-running-a-motor",
     "download-code-to-the-robot",
     "make-a-drivebase-move",
-    "send-and-receive-messages-on-queues",
     "submitting-code-for-a-review",
     "tune-an-autonomous",
-    "generated-queue-code",
     "using-bazel",
 ]
 
