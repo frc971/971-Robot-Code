@@ -122,7 +122,7 @@ Localizer::TurretData Localizer::GetTurretDataForTime(
   return best_data_match;
 }
 
-void Localizer::Update(const ::Eigen::Matrix<double, 2, 1> &U,
+void Localizer::Update(const Eigen::Matrix<double, 2, 1> &U,
                        aos::monotonic_clock::time_point now,
                        double left_encoder, double right_encoder,
                        double gyro_rate, const Eigen::Vector3d &accel) {
@@ -251,24 +251,36 @@ void Localizer::HandleImageMatch(
       AOS_LOG(WARNING, "Dropped image match due to heading mismatch.\n");
       continue;
     }
+    // In order to do the EKF correction, we determine the expected state based
+    // on the state at the time the image was captured; however, we insert the
+    // correction update itself at the current time. This is technically not
+    // quite correct, but saves substantial CPU usage by making it so that we
+    // don't have to constantly rewind the entire EKF history.
+    const std::optional<State> state_at_capture =
+        ekf_.LastStateBeforeTime(capture_time);
+    if (!state_at_capture.has_value()) {
+      AOS_LOG(WARNING, "Dropped image match due to age of image.\n");
+      continue;
+    }
+    const Input U = ekf_.MostRecentInput();
     // For the correction step, instead of passing in the measurement directly,
     // we pass in (0, 0, 0) as the measurement and then for the expected
     // measurement (Zhat) we calculate the error between the implied and actual
     // poses. This doesn't affect any of the math, it just makes the code a bit
     // more convenient to write given the Correct() interface we already have.
     ekf_.Correct(
-        Eigen::Vector3f::Zero(), nullptr, {},
-        [H, H_field_target, pose_robot_target](
-            const State &X, const Input &) -> Eigen::Vector3f {
-          const Eigen::Vector3f Z =
-              CalculateImpliedPose(X, H_field_target, pose_robot_target);
+        Eigen::Vector3f::Zero(), &U, {},
+        [H, H_field_target, pose_robot_target, state_at_capture](
+            const State &, const Input &) -> Eigen::Vector3f {
+          const Eigen::Vector3f Z = CalculateImpliedPose(
+              state_at_capture.value(), H_field_target, pose_robot_target);
           // Just in case we ever do encounter any, drop measurements if they
           // have non-finite numbers.
           if (!Z.allFinite()) {
             AOS_LOG(WARNING, "Got measurement with infinites or NaNs.\n");
             return Eigen::Vector3f::Zero();
           }
-          Eigen::Vector3f Zhat = H * X - Z;
+          Eigen::Vector3f Zhat = H * state_at_capture.value() - Z;
           // Rewrap angle difference to put it back in range. Note that this
           // component of the error is currently ignored (see definition of H
           // above).
@@ -283,7 +295,7 @@ void Localizer::HandleImageMatch(
           }
           return Zhat;
         },
-        [H](const State &) { return H; }, R, capture_time);
+        [H](const State &) { return H; }, R, now);
   }
 }
 

@@ -138,6 +138,18 @@ class HybridEkf {
   static constexpr int kNInputs = 4;
   // Number of previous samples to save.
   static constexpr int kSaveSamples = 50;
+  // Whether we should completely rerun the entire stored history of
+  // kSaveSamples on every correction. Enabling this will increase overall CPU
+  // usage substantially; however, leaving it disabled makes it so that we are
+  // less likely to notice if processing camera frames is causing delays in the
+  // drivetrain.
+  // If we are having CPU issues, we have three easy avenues to improve things:
+  // (1) Reduce kSaveSamples (e.g., if all camera frames arive within
+  //     100 ms, then we can reduce kSaveSamples to be 25 (125 ms of samples)).
+  // (2) Don't actually rely on the ability to insert corrections into the
+  //     timeline.
+  // (3) Set this to false.
+  static constexpr bool kFullRewindOnEverySample = false;
   // Assume that all correction steps will have kNOutputs
   // dimensions.
   // TODO(james): Relax this assumption; relaxing it requires
@@ -182,19 +194,24 @@ class HybridEkf {
     X_hat_ = state;
     have_zeroed_encoders_ = true;
     P_ = P;
-    observations_.PushFromBottom(
-        {t,
-         t,
-         X_hat_,
-         P_,
-         Input::Zero(),
-         Output::Zero(),
-         {},
-         [](const State &, const Input &) { return Output::Zero(); },
-         [](const State &) {
-           return Eigen::Matrix<Scalar, kNOutputs, kNStates>::Zero();
-         },
-         Eigen::Matrix<Scalar, kNOutputs, kNOutputs>::Identity()});
+    observations_.PushFromBottom({
+        t,
+        t,
+        X_hat_,
+        P_,
+        Input::Zero(),
+        Output::Zero(),
+        {},
+        [](const State &, const Input &) { return Output::Zero(); },
+        [](const State &) {
+          return Eigen::Matrix<Scalar, kNOutputs, kNStates>::Zero();
+        },
+        Eigen::Matrix<Scalar, kNOutputs, kNOutputs>::Identity(),
+        StateSquare::Identity(),
+        StateSquare::Zero(),
+        std::chrono::seconds(0),
+        State::Zero(),
+    });
   }
 
   // Correct with:
@@ -292,6 +309,29 @@ class HybridEkf {
            dt_config_.robot_radius;
   }
 
+  // Returns the last state before the specified time.
+  // Returns nullopt if time is older than the oldest measurement.
+  std::optional<State> LastStateBeforeTime(
+      aos::monotonic_clock::time_point time) {
+    if (observations_.empty() || observations_.begin()->t > time) {
+      return std::nullopt;
+    }
+    for (const auto &observation : observations_) {
+      if (observation.t > time) {
+        // Note that observation.X_hat actually references the _previous_ X_hat.
+        return observation.X_hat;
+      }
+    }
+    return X_hat();
+  }
+
+  // Returns the most recent input vector.
+  Input MostRecentInput() {
+    CHECK(!observations_.empty());
+    Input U = observations_.top().U;
+    return U;
+  }
+
  private:
   struct Observation {
     // Time when the observation was taken.
@@ -330,6 +370,16 @@ class HybridEkf {
         dhdx;
     // The measurement noise matrix.
     Eigen::Matrix<Scalar, kNOutputs, kNOutputs> R;
+
+    // Discretized A and Q to use on this update step. These will only be
+    // recalculated if the timestep changes.
+    StateSquare A_d;
+    StateSquare Q_d;
+    aos::monotonic_clock::duration discretization_time;
+
+    // A cached value indicating how much we change X_hat in the prediction step
+    // of this Observation.
+    State predict_update;
 
     // In order to sort the observations in the PriorityQueue object, we
     // need a comparison function.
@@ -453,45 +503,56 @@ class HybridEkf {
     return Xdot;
   }
 
-  void PredictImpl(const Input &U, std::chrono::nanoseconds dt, State *state,
+  void PredictImpl(Observation *obs, std::chrono::nanoseconds dt, State *state,
                    StateSquare *P) {
-    StateSquare A_c = AForState(*state);
-    StateSquare A_d;
-    StateSquare Q_d;
-    // TODO(james): By far the biggest CPU sink in the localization appears to
-    // be this discretization--it's possible the spline code spikes higher,
-    // but it doesn't create anywhere near the same sustained load. There
-    // are a few potential options for optimizing this code, but none of
-    // them are entirely trivial, e.g. we could:
-    // -Reduce the number of states (this function grows at O(kNStates^3))
-    // -Adjust the discretization function itself (there're a few things we
-    //  can tune there).
-    // -Try to come up with some sort of lookup table or other way of
-    //  pre-calculating A_d and Q_d.
-    // I also have to figure out how much we care about the precision of
-    // some of these values--I don't think we care much, but we probably
-    // do want to maintain some of the structure of the matrices.
-    controls::DiscretizeQAFast(Q_continuous_, A_c, dt, &Q_d, &A_d);
+    // Only recalculate the discretization if the timestep has changed.
+    // Technically, this isn't quite correct, since the discretization will
+    // change depending on the current state. However, the slight loss of
+    // precision seems acceptable for the sake of significantly reducing CPU
+    // usage.
+    if (obs->discretization_time != dt) {
+      // TODO(james): By far the biggest CPU sink in the localization appears to
+      // be this discretization--it's possible the spline code spikes higher,
+      // but it doesn't create anywhere near the same sustained load. There
+      // are a few potential options for optimizing this code, but none of
+      // them are entirely trivial, e.g. we could:
+      // -Reduce the number of states (this function grows at O(kNStates^3))
+      // -Adjust the discretization function itself (there're a few things we
+      //  can tune there).
+      // -Try to come up with some sort of lookup table or other way of
+      //  pre-calculating A_d and Q_d.
+      // I also have to figure out how much we care about the precision of
+      // some of these values--I don't think we care much, but we probably
+      // do want to maintain some of the structure of the matrices.
+      const StateSquare A_c = AForState(*state);
+      controls::DiscretizeQAFast(Q_continuous_, A_c, dt, &obs->Q_d, &obs->A_d);
+      obs->discretization_time = dt;
 
-    *state = RungeKuttaU(
-        [this](const State &X, const Input &U) { return DiffEq(X, U); }, *state,
-        U, aos::time::DurationInSeconds(dt));
+      obs->predict_update =
+          RungeKuttaU(
+              [this](const State &X, const Input &U) { return DiffEq(X, U); },
+              *state, obs->U, aos::time::DurationInSeconds(dt)) -
+          *state;
+    }
 
-    StateSquare Ptemp = A_d * *P * A_d.transpose() + Q_d;
+    *state += obs->predict_update;
+
+    StateSquare Ptemp = obs->A_d * *P * obs->A_d.transpose() + obs->Q_d;
     *P = Ptemp;
   }
 
-  void CorrectImpl(const Eigen::Matrix<Scalar, kNOutputs, kNOutputs> &R,
-                   const Output &Z, const Output &expected_Z,
-                   const Eigen::Matrix<Scalar, kNOutputs, kNStates> &H,
-                   State *state, StateSquare *P) {
-    Output err = Z - expected_Z;
-    Eigen::Matrix<Scalar, kNStates, kNOutputs> PH = *P * H.transpose();
-    Eigen::Matrix<Scalar, kNOutputs, kNOutputs> S = H * PH + R;
-    Eigen::Matrix<Scalar, kNStates, kNOutputs> K = PH * S.inverse();
-    *state += K * err;
-    StateSquare Ptemp = (StateSquare::Identity() - K * H) * *P;
+  void CorrectImpl(Observation *obs, State *state, StateSquare *P) {
+    const Eigen::Matrix<Scalar, kNOutputs, kNStates> H = obs->dhdx(*state);
+    // Note: Technically, this does calculate P * H.transpose() twice. However,
+    // when I was mucking around with some things, I found that in practice
+    // putting everything into one expression and letting Eigen optimize it
+    // directly actually improved performance relative to precalculating P *
+    // H.transpose().
+    const Eigen::Matrix<Scalar, kNStates, kNOutputs> K =
+        *P * H.transpose() * (H * *P * H.transpose() + obs->R).inverse();
+    const StateSquare Ptemp = (StateSquare::Identity() - K * H) * *P;
     *P = Ptemp;
+    *state += K * (obs->z - obs->h(*state, obs->U));
   }
 
   void ProcessObservation(Observation *obs, const std::chrono::nanoseconds dt,
@@ -499,14 +560,13 @@ class HybridEkf {
     *state = obs->X_hat;
     *P = obs->P;
     if (dt.count() != 0) {
-      PredictImpl(obs->U, dt, state, P);
+      PredictImpl(obs, dt, state, P);
     }
     if (!(obs->h && obs->dhdx)) {
       CHECK(obs->make_h);
       obs->make_h(*state, *P, &obs->h, &obs->dhdx);
     }
-    CorrectImpl(obs->R, obs->z, obs->h(*state, obs->U), obs->dhdx(*state),
-                state, P);
+    CorrectImpl(obs, state, P);
   }
 
   DrivetrainConfig<double> dt_config_;
@@ -547,9 +607,10 @@ void HybridEkf<Scalar>::Correct(
                   "initialized.\n";
     return;
   }
-  auto cur_it =
-      observations_.PushFromBottom({t, t, State::Zero(), StateSquare::Zero(),
-                                    Input::Zero(), z, make_h, h, dhdx, R});
+  auto cur_it = observations_.PushFromBottom(
+      {t, t, State::Zero(), StateSquare::Zero(), Input::Zero(), z, make_h, h,
+       dhdx, R, StateSquare::Identity(), StateSquare::Zero(),
+       std::chrono::seconds(0), State::Zero()});
   if (cur_it == observations_.end()) {
     VLOG(1) << "Camera dropped off of end with time of "
             << aos::time::DurationInSeconds(t.time_since_epoch())
@@ -560,7 +621,6 @@ void HybridEkf<Scalar>::Correct(
             << "s.\n";
     return;
   }
-
   // Now we populate any state information that depends on where the
   // observation was inserted into the queue. X_hat and P must be populated
   // from the values present in the observation *following* this one in
@@ -594,6 +654,12 @@ void HybridEkf<Scalar>::Correct(
     next_it->prev_t = cur_it->t;
     cur_it->U = (U == nullptr) ? next_it->U : *U;
   }
+
+  if (kFullRewindOnEverySample) {
+    next_it = observations_.begin();
+    cur_it = next_it++;
+  }
+
   // Now we need to rerun the predict step from the previous to the new
   // observation as well as every following correct/predict up to the current
   // time.

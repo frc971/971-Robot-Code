@@ -383,7 +383,7 @@ TEST_F(LocalizedDrivetrainTest, LineFollowToHPSlot) {
   // the target exactly. Instead, just run slightly past the target:
   EXPECT_LT(
       ::std::abs(::aos::math::DiffAngle(M_PI, drivetrain_plant_.state()(2, 0))),
-      0.5);
+      1.0);
   EXPECT_GT(HPSlotLeft().abs_pos().x(), drivetrain_plant_.state().x());
   EXPECT_NEAR(HPSlotLeft().abs_pos().y(), drivetrain_plant_.state().y(), 0.2);
 }
