@@ -351,6 +351,14 @@ void ObjectToString(
 std::string FlatbufferToJson(const reflection::Schema *schema,
                              const uint8_t *data, bool multi_line,
                              size_t max_vector_size) {
+  CHECK(schema != nullptr) << ": Need to provide a schema";
+
+  // It is pretty common to get passed in a nullptr when a test fails.  Rather
+  // than CHECK, return a more user friendly result.
+  if (data == nullptr) {
+    return "null";
+  }
+
   const flatbuffers::Table *table = flatbuffers::GetAnyRoot(data);
 
   const reflection::Object *obj = schema->root_table();

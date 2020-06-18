@@ -464,5 +464,20 @@ TEST_F(FlatbufferIntrospectionTest, MultilineVectorScalarTest) {
             "}");
 }
 
+// Tests that a nullptr buffer prints nullptr.
+TEST_F(FlatbufferIntrospectionTest, NullptrData) {
+  EXPECT_EQ("null", FlatbufferToJson(schema_, nullptr));
+}
+
+// Tests that a null schema gets caught.
+TEST(FlatbufferIntrospectionDeathTest, NullSchema) {
+  EXPECT_DEATH(
+      {
+        FlatbufferToJson(static_cast<const reflection::Schema *>(nullptr),
+                         nullptr);
+      },
+      "Need to provide a schema");
+}
+
 }  // namespace testing
 }  // namespace aos

@@ -231,5 +231,11 @@ TEST_F(JsonToFlatbufferTest, TrimmedVector) {
   EXPECT_EQ("{ \"vector_foo_int\": [ ... 101 elements ... ] }", back_json_long);
 }
 
+// Tests that a nullptr buffer prints nullptr.
+TEST_F(JsonToFlatbufferTest, NullptrData) {
+  EXPECT_EQ("null", TableFlatbufferToJson((const flatbuffers::Table *)(nullptr),
+                                          ConfigurationTypeTable(), false));
+}
+
 }  // namespace testing
 }  // namespace aos
