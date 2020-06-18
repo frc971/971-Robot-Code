@@ -2,6 +2,7 @@
 #define AOS_EVENTS_SIMULATED_EVENT_LOOP_H_
 
 #include <algorithm>
+#include <functional>
 #include <map>
 #include <memory>
 #include <string_view>
