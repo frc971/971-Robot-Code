@@ -207,9 +207,19 @@ TEST(ShmEventLoopTest, GetSenderSharedMemory) {
   auto generic_loop1 = factory.MakePrimary("primary");
   ShmEventLoop *const loop1 = static_cast<ShmEventLoop *>(generic_loop1.get());
 
-  // check that GetSenderSharedMemory returns non-null/non-empty memory span
+  // check that GetSenderSharedMemory returns non-null/non-empty memory span.
   auto sender = loop1->MakeSender<TestMessage>("/test");
   EXPECT_FALSE(loop1->GetSenderSharedMemory(&sender).empty());
+}
+
+TEST(ShmEventLoopTest, GetFetcherPrivateMemory) {
+  ShmEventLoopTestFactory factory;
+  auto generic_loop1 = factory.MakePrimary("primary");
+  ShmEventLoop *const loop1 = static_cast<ShmEventLoop *>(generic_loop1.get());
+
+  // check that GetFetcherPrivateMemory returns non-null/non-empty memory span.
+  auto fetcher = loop1->MakeFetcher<TestMessage>("/test");
+  EXPECT_FALSE(loop1->GetFetcherPrivateMemory(&fetcher).empty());
 }
 
 // TODO(austin): Test that missing a deadline with a timer recovers as expected.
