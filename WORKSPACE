@@ -681,6 +681,7 @@ http_archive(
 http_archive(
     name = "halide_k8",
     build_file = "@//debian:halide.BUILD",
+    sha256 = "c67185d50a99adba86f6b2cc43c7e2cf11bcdfba9052d05e764a89b456a50446",
     strip_prefix = "halide/",
     url = "http://www.frc971.org/Build-Dependencies/halide-linux-64-gcc53-800-65c26cba6a3eca2d08a0bccf113ca28746012cc3.tgz",
 )
@@ -691,6 +692,7 @@ http_archive(
 http_archive(
     name = "halide_armhf",
     build_file = "@//debian:halide.BUILD",
+    sha256 = "10564c559c9e04a173823413916d05fadd6e697d91bab21ddc5041190fa8f0f0",
     strip_prefix = "halide/",
     url = "http://www.frc971.org/Build-Dependencies/halide-arm32-linux-32-trunk-65c26cba6a3eca2d08a0bccf113ca28746012cc3.tgz",
 )
