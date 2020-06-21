@@ -601,10 +601,16 @@ class EventLoop {
   // watcher must exist before calling this.
   WatcherState *GetWatcherState(const Channel *channel);
 
-  // Returns a Sender's protected RawSender
+  // Returns a Sender's protected RawSender.
   template <typename T>
   static RawSender *GetRawSender(aos::Sender<T> *sender) {
     return sender->sender_.get();
+  }
+
+  // Returns a Fetcher's protected RawFetcher.
+  template <typename T>
+  static RawFetcher *GetRawFetcher(aos::Fetcher<T> *fetcher) {
+    return fetcher->fetcher_.get();
   }
 
   // Context available for watchers, timers, and phased loops.

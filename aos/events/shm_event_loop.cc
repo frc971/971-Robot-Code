@@ -316,6 +316,13 @@ class SimpleShmFetcher {
     return lockless_queue_memory_.GetSharedMemory();
   }
 
+  absl::Span<char> GetPrivateMemory() const {
+    CHECK(copy_data());
+    return absl::Span<char>(
+        const_cast<SimpleShmFetcher *>(this)->data_storage_start(),
+        lockless_queue_.message_data_size());
+  }
+
  private:
   char *data_storage_start() {
     if (!copy_data()) return nullptr;
@@ -358,6 +365,10 @@ class ShmFetcher : public RawFetcher {
       return std::make_pair(true, monotonic_clock::now());
     }
     return std::make_pair(false, monotonic_clock::min_time);
+  }
+
+  absl::Span<char> GetPrivateMemory() const {
+    return simple_shm_fetcher_.GetPrivateMemory();
   }
 
  private:
@@ -918,6 +929,11 @@ absl::Span<char> ShmEventLoop::GetWatcherSharedMemory(const Channel *channel) {
 absl::Span<char> ShmEventLoop::GetShmSenderSharedMemory(
     const aos::RawSender *sender) const {
   return static_cast<const ShmSender *>(sender)->GetSharedMemory();
+}
+
+absl::Span<char> ShmEventLoop::GetShmFetcherPrivateMemory(
+    const aos::RawFetcher *fetcher) const {
+  return static_cast<const ShmFetcher *>(fetcher)->GetPrivateMemory();
 }
 
 pid_t ShmEventLoop::GetTid() { return syscall(SYS_gettid); }
