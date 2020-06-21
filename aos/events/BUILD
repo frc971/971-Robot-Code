@@ -74,6 +74,7 @@ cc_library(
         "//aos:configuration",
         "//aos:configuration_fbs",
         "//aos:flatbuffers",
+        "//aos:ftrace",
         "//aos/ipc_lib:data_alignment",
         "//aos/logging:implementations",
         "//aos/time",
