@@ -5,6 +5,7 @@ import numpy as np
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gdk, Gtk, GLib
 import cairo
+import basic_window
 
 class GridWindow(Gtk.Window):
     def method_connect(self, event, cb):
@@ -79,6 +80,7 @@ class GridWindow(Gtk.Window):
         self.drawing_area = GTK_Widget()
         self.eventBox.add(self.drawing_area)
 
+        self.method_connect("delete-event", basic_window.quit_main_loop)
         self.method_connect("key-release-event", self.key_press)
         self.method_connect("button-release-event", self.button_press)
         self.method_connect("configure-event", self.configure)
