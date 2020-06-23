@@ -43,6 +43,35 @@ TEST_P(AbstractEventLoopTest, Basic) {
   EXPECT_TRUE(happened);
 }
 
+// Tests that watcher can receive messages from a sender, sent via SendDetached.
+TEST_P(AbstractEventLoopTest, BasicSendDetached) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+
+  aos::Sender<TestMessage> sender = loop1->MakeSender<TestMessage>("/test");
+
+  FlatbufferDetachedBuffer<TestMessage> detached =
+      flatbuffers::DetachedBuffer();
+  {
+    aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
+    TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
+    builder.add_value(100);
+    detached = msg.Detach(builder.Finish());
+  }
+  detached = flatbuffers::DetachedBuffer();
+  {
+    aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
+    TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
+    builder.add_value(200);
+    detached = msg.Detach(builder.Finish());
+  }
+  ASSERT_TRUE(sender.SendDetached(std::move(detached)));
+
+  auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
+  ASSERT_TRUE(fetcher.Fetch());
+  EXPECT_EQ(fetcher->value(), 200);
+}
+
 // Verifies that a no-arg watcher will not have a data pointer.
 TEST_P(AbstractEventLoopTest, NoArgNoData) {
   auto loop1 = Make();
@@ -1643,6 +1672,64 @@ TEST_P(AbstractEventLoopDeathTest, NodeSender) {
 
   // Note: Creating raw senders is always supported.  Right now, this lets us
   // use them to create message_gateway.
+}
+
+// Tests creating multiple Builders from a single Sender at the same time.
+TEST_P(AbstractEventLoopDeathTest, MultipleBuilders) {
+  auto loop1 = Make();
+  aos::Sender<TestMessage> sender = loop1->MakeSender<TestMessage>("/test");
+
+  { auto builder = sender.MakeBuilder(); }
+  {
+    auto builder = sender.MakeBuilder();
+    builder.MakeBuilder<TestMessage>().Finish();
+  }
+  {
+    // Creating this after the first one was destroyed should be fine.
+    auto builder = sender.MakeBuilder();
+    builder.MakeBuilder<TestMessage>().Finish();
+    // But not a second one.
+    EXPECT_DEATH(sender.MakeBuilder().MakeBuilder<TestMessage>().Finish(),
+                 "May not overwrite in-use allocator");
+  }
+
+  FlatbufferDetachedBuffer<TestMessage> detached =
+      flatbuffers::DetachedBuffer();
+  {
+    auto builder = sender.MakeBuilder();
+    detached = builder.Detach(builder.MakeBuilder<TestMessage>().Finish());
+  }
+  {
+    // This is the second one, after the detached one, so it should fail.
+    EXPECT_DEATH(sender.MakeBuilder().MakeBuilder<TestMessage>().Finish(),
+                 "May not overwrite in-use allocator");
+  }
+
+  // Clear the detached one, and then we should be able to create another.
+  detached = flatbuffers::DetachedBuffer();
+  {
+    auto builder = sender.MakeBuilder();
+    builder.MakeBuilder<TestMessage>().Finish();
+  }
+
+  // And then detach another one.
+  {
+    auto builder = sender.MakeBuilder();
+    detached = builder.Detach(builder.MakeBuilder<TestMessage>().Finish());
+  }
+}
+
+// Tests sending a buffer detached from a different builder.
+TEST_P(AbstractEventLoopDeathTest, WrongDetachedBuffer) {
+  auto loop1 = Make();
+  aos::Sender<TestMessage> sender1 = loop1->MakeSender<TestMessage>("/test");
+  aos::Sender<TestMessage> sender2 = loop1->MakeSender<TestMessage>("/test");
+
+  auto builder = sender1.MakeBuilder();
+  FlatbufferDetachedBuffer<TestMessage> detached =
+      builder.Detach(builder.MakeBuilder<TestMessage>().Finish());
+  EXPECT_DEATH(sender2.SendDetached(std::move(detached)),
+               "May only send the buffer detached from this Sender");
 }
 
 }  // namespace testing

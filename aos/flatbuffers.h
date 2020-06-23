@@ -61,13 +61,13 @@ class PreallocatedAllocator : public FixedAllocatorBase {
   PreallocatedAllocator(const PreallocatedAllocator &) = delete;
   PreallocatedAllocator(PreallocatedAllocator &&other)
       : data_(other.data_), size_(other.size_) {
-    CHECK(!is_allocated());
+    CHECK(!is_allocated()) << ": May not overwrite in-use allocator";
     CHECK(!other.is_allocated());
   }
 
   PreallocatedAllocator &operator=(const PreallocatedAllocator &) = delete;
   PreallocatedAllocator &operator=(PreallocatedAllocator &&other) {
-    CHECK(!is_allocated());
+    CHECK(!is_allocated()) << ": May not overwrite in-use allocator";
     CHECK(!other.is_allocated());
     data_ = other.data_;
     size_ = other.size_;
@@ -238,6 +238,12 @@ template <typename T, size_t Size>
 class FlatbufferFixedAllocatorArray final : public Flatbuffer<T> {
  public:
   FlatbufferFixedAllocatorArray() : buffer_(), allocator_(&buffer_[0], Size) {
+    builder_ = flatbuffers::FlatBufferBuilder(Size, &allocator_);
+    builder_.ForceDefaults(true);
+  }
+
+  void Reset() {
+    allocator_.Reset();
     builder_ = flatbuffers::FlatBufferBuilder(Size, &allocator_);
     builder_.ForceDefaults(true);
   }
