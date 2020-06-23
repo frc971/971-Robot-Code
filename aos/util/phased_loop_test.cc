@@ -2,13 +2,14 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/testing/test_logging.h"
+#include "aos/time/time.h"
 
 namespace aos {
 namespace time {
 namespace testing {
 
 using ::std::chrono::milliseconds;
+using ::std::chrono::nanoseconds;
 
 typedef ::testing::Test PhasedLoopTest;
 typedef PhasedLoopTest PhasedLoopDeathTest;
@@ -189,6 +190,31 @@ TEST_F(PhasedLoopDeathTest, InvalidValues) {
   EXPECT_DEATH(
       PhasedLoop(milliseconds(0), monotonic_clock::epoch(), milliseconds(0)),
       ".*interval > monotonic_clock::duration\\(0\\).*");
+}
+
+// Tests that every single value within two intervals of 0 works.
+// This is good at finding edge cases in the rounding.
+TEST_F(PhasedLoopTest, SweepingZero) {
+  for (int i = -30; i < -20; ++i) {
+    PhasedLoop loop(nanoseconds(20),
+                    monotonic_clock::epoch() - nanoseconds(30));
+    EXPECT_EQ(1, loop.Iterate(monotonic_clock::epoch() + nanoseconds(i)));
+  }
+  for (int i = -20; i < 0; ++i) {
+    PhasedLoop loop(nanoseconds(20),
+                    monotonic_clock::epoch() - nanoseconds(30));
+    EXPECT_EQ(2, loop.Iterate(monotonic_clock::epoch() + nanoseconds(i)));
+  }
+  for (int i = 0; i < 20; ++i) {
+    PhasedLoop loop(nanoseconds(20),
+                    monotonic_clock::epoch() - nanoseconds(30));
+    EXPECT_EQ(3, loop.Iterate(monotonic_clock::epoch() + nanoseconds(i)));
+  }
+  for (int i = 20; i < 30; ++i) {
+    PhasedLoop loop(nanoseconds(20),
+                    monotonic_clock::epoch() - nanoseconds(30));
+    EXPECT_EQ(4, loop.Iterate(monotonic_clock::epoch() + nanoseconds(i)));
+  }
 }
 
 }  // namespace testing

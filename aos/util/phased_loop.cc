@@ -37,20 +37,28 @@ monotonic_clock::duration PhasedLoop::OffsetFromIntervalAndTime(
 }
 
 int PhasedLoop::Iterate(const monotonic_clock::time_point now) {
-  const monotonic_clock::time_point next_time =
-      monotonic_clock::time_point(
-          (((now - offset_).time_since_epoch() + monotonic_clock::duration(1)) /
-           interval_) *
-          interval_) +
-      ((now.time_since_epoch() < offset_) ? monotonic_clock::zero()
-                                          : interval_) +
-      offset_;
+  auto next_time = monotonic_clock::epoch();
+  // Round up to the next whole interval, ignoring offset_.
+  {
+    const auto offset_now = (now - offset_).time_since_epoch();
+    monotonic_clock::duration prerounding;
+    if (now.time_since_epoch() >= offset_) {
+      // We're above 0, so rounding up means away from 0.
+      prerounding = offset_now + interval_;
+    } else {
+      // We're below 0, so rounding up means towards 0.
+      prerounding = offset_now + monotonic_clock::duration(1);
+    }
+    next_time += (prerounding / interval_) * interval_;
+  }
+  // Add offset_ back in.
+  next_time += offset_;
 
   const monotonic_clock::duration difference = next_time - last_time_;
   const int result = difference / interval_;
   CHECK_EQ(
       0, (next_time - offset_).time_since_epoch().count() % interval_.count());
-  CHECK(next_time >= now);
+  CHECK(next_time > now);
   CHECK(next_time - now <= interval_);
   last_time_ = next_time;
   return result;
