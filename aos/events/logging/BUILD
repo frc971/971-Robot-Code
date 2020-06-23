@@ -62,6 +62,7 @@ cc_binary(
     srcs = [
         "log_cat.cc",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":logger",
         "//aos:configuration",
