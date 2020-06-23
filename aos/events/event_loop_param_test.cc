@@ -830,6 +830,48 @@ TEST_P(AbstractEventLoopTest, TimerDisable) {
   EXPECT_EQ(iteration_list.size(), 3);
 }
 
+// Verify that we can disable a timer during execution of another timer
+// scheduled for the same time, with one ordering of creation for the timers.
+//
+// Also schedule some more events to reshuffle the heap in EventLoop used for
+// tracking events to change up the order. This used to segfault
+// SimulatedEventLoop.
+TEST_P(AbstractEventLoopTest, TimerDisableOther) {
+  for (bool creation_order : {true, false}) {
+    for (bool setup_order : {true, false}) {
+      for (int shuffle_events = 0; shuffle_events < 5; ++shuffle_events) {
+        auto loop = MakePrimary();
+        aos::TimerHandler *test_timer, *ender_timer;
+        if (creation_order) {
+          test_timer = loop->AddTimer([]() {});
+          ender_timer =
+              loop->AddTimer([&test_timer]() { test_timer->Disable(); });
+        } else {
+          ender_timer =
+              loop->AddTimer([&test_timer]() { test_timer->Disable(); });
+          test_timer = loop->AddTimer([]() {});
+        }
+
+        const auto start = loop->monotonic_now();
+
+        for (int i = 0; i < shuffle_events; ++i) {
+          loop->AddTimer([]() {})->Setup(start + std::chrono::milliseconds(10));
+        }
+
+        if (setup_order) {
+          test_timer->Setup(start + ::std::chrono::milliseconds(20));
+          ender_timer->Setup(start + ::std::chrono::milliseconds(20));
+        } else {
+          ender_timer->Setup(start + ::std::chrono::milliseconds(20));
+          test_timer->Setup(start + ::std::chrono::milliseconds(20));
+        }
+        EndEventLoop(loop.get(), ::std::chrono::milliseconds(40));
+        Run();
+      }
+    }
+  }
+}
+
 // Verifies that the event loop implementations detect when Channel is not a
 // pointer into confguration()
 TEST_P(AbstractEventLoopDeathTest, InvalidChannel) {

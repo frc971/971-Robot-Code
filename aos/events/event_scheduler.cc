@@ -14,6 +14,22 @@ EventScheduler::Token EventScheduler::Schedule(
 }
 
 void EventScheduler::Deschedule(EventScheduler::Token token) {
+  // We basically want to DCHECK some nontrivial logic. Guard it with NDEBUG to ensure the compiler
+  // realizes it's all unnecessary when not doing debug checks.
+#ifndef NDEBUG
+  {
+    bool found = false;
+    auto i = events_list_.begin();
+    while (i != events_list_.end()) {
+      if (i == token) {
+        CHECK(!found) << ": The same iterator is in the multimap twice??";
+        found = true;
+      }
+      ++i;
+    }
+    CHECK(found) << ": Trying to deschedule an event which is not scheduled";
+  }
+#endif
   events_list_.erase(token);
 }
 
