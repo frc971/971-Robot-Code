@@ -60,15 +60,15 @@ TEST(SignalFdTest, BlockSignal) {
 // its signals.
 TEST(SignalFdDeathTest, ExternalUnblockSignal) {
   ::aos::testing::EnableTestLogging();
-  EXPECT_DEATH(
-      {
-        SignalFd signalfd({SIGUSR1});
-        sigset_t test_mask;
-        CHECK_EQ(0, sigemptyset(&test_mask));
-        CHECK_EQ(0, sigaddset(&test_mask, SIGUSR1));
-        PCHECK(sigprocmask(SIG_UNBLOCK, &test_mask, nullptr) == 0);
-      },
-      "Some other code unblocked one or more of our signals");
+  auto t = []() {
+    SignalFd signalfd({SIGUSR1});
+    sigset_t test_mask;
+    CHECK_EQ(0, sigemptyset(&test_mask));
+    CHECK_EQ(0, sigaddset(&test_mask, SIGUSR1));
+    PCHECK(sigprocmask(SIG_UNBLOCK, &test_mask, nullptr) == 0);
+  };
+  EXPECT_DEATH({ t(); },
+               "Some other code unblocked one or more of our signals");
 }
 
 }  // namespace testing
