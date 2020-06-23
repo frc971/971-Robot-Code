@@ -72,33 +72,46 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  int found_channels = 0;
+  std::vector<const aos::Channel *> found_channels;
   const flatbuffers::Vector<flatbuffers::Offset<aos::Channel>> *channels =
       config_msg->channels();
+  bool found_exact = false;
   for (const aos::Channel *channel : *channels) {
-    if (channel->name()->c_str() == channel_name &&
-        channel->type()->str().find(message_type) != std::string::npos) {
-      if (FLAGS_fetch) {
-        const std::unique_ptr<aos::RawFetcher> fetcher =
-            event_loop.MakeRawFetcher(channel);
-        if (fetcher->Fetch()) {
-          PrintMessage(channel, fetcher->context());
-        }
-      }
-
-      event_loop.MakeRawWatcher(channel, [channel](const aos::Context &context,
-                                                   const void * /*message*/) {
-        PrintMessage(channel, context);
-      });
-
-      found_channels++;
+    if (channel->name()->c_str() != channel_name) {
+      continue;
     }
+    if (channel->type()->string_view() == message_type) {
+      if (!found_exact) {
+        found_channels.clear();
+        found_exact = true;
+      }
+    } else if (!found_exact && channel->type()->string_view().find(
+                                   message_type) != std::string_view::npos) {
+    } else {
+      continue;
+    }
+    found_channels.push_back(channel);
   }
 
-  if (found_channels == 0) {
+  if (found_channels.empty()) {
     LOG(FATAL) << "Could not find any channels with the given name and type.";
-  } else if (found_channels > 1 && message_type.size() != 0) {
+  } else if (found_channels.size() > 1 && !message_type.empty()) {
     LOG(FATAL) << "Multiple channels found with same type";
+  }
+
+  for (const aos::Channel *channel : found_channels) {
+    if (FLAGS_fetch) {
+      const std::unique_ptr<aos::RawFetcher> fetcher =
+          event_loop.MakeRawFetcher(channel);
+      if (fetcher->Fetch()) {
+        PrintMessage(channel, fetcher->context());
+      }
+    }
+
+    event_loop.MakeRawWatcher(channel, [channel](const aos::Context &context,
+                                                 const void * /*message*/) {
+      PrintMessage(channel, context);
+    });
   }
 
   event_loop.Run();
