@@ -10,6 +10,38 @@
 DEFINE_string(config, "./config.json", "File path of aos configuration");
 DEFINE_int32(max_vector_size, 100,
              "If positive, vectors longer than this will not be printed");
+DEFINE_bool(fetch, false,
+            "If true, fetch the current message on the channel first");
+
+namespace {
+
+void PrintMessage(const aos::Channel *channel, const aos::Context &context) {
+  // Print the flatbuffer out to stdout, both to remove the
+  // unnecessary cruft from glog and to allow the user to readily
+  // redirect just the logged output independent of any debugging
+  // information on stderr.
+  if (context.monotonic_remote_time != context.monotonic_event_time) {
+    std::cout << context.realtime_remote_time << " ("
+              << context.monotonic_remote_time << ") delivered "
+              << context.realtime_event_time << " ("
+              << context.monotonic_event_time << "): "
+              << aos::FlatbufferToJson(
+                     channel->schema(),
+                     static_cast<const uint8_t *>(context.data),
+                     FLAGS_max_vector_size)
+              << '\n';
+  } else {
+    std::cout << context.realtime_event_time << " ("
+              << context.monotonic_event_time << "): "
+              << aos::FlatbufferToJson(
+                     channel->schema(),
+                     static_cast<const uint8_t *>(context.data),
+                     FLAGS_max_vector_size)
+              << '\n';
+  }
+}
+
+}  // namespace
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
@@ -46,32 +78,19 @@ int main(int argc, char **argv) {
   for (const aos::Channel *channel : *channels) {
     if (channel->name()->c_str() == channel_name &&
         channel->type()->str().find(message_type) != std::string::npos) {
-      event_loop.MakeRawWatcher(
-          channel, [channel](const aos::Context &context, const void *message) {
-            // Print the flatbuffer out to stdout, both to remove the
-            // unnecessary cruft from glog and to allow the user to readily
-            // redirect just the logged output independent of any debugging
-            // information on stderr.
-            if (context.monotonic_remote_time != context.monotonic_event_time) {
-              std::cout << context.realtime_remote_time << " ("
-                        << context.monotonic_remote_time << ") delivered "
-                        << context.realtime_event_time << " ("
-                        << context.monotonic_event_time << "): "
-                        << aos::FlatbufferToJson(
-                               channel->schema(),
-                               static_cast<const uint8_t *>(message),
-                               FLAGS_max_vector_size)
-                        << '\n';
-            } else {
-              std::cout << context.realtime_event_time << " ("
-                        << context.monotonic_event_time << "): "
-                        << aos::FlatbufferToJson(
-                               channel->schema(),
-                               static_cast<const uint8_t *>(message),
-                               FLAGS_max_vector_size)
-                        << '\n';
-            }
-          });
+      if (FLAGS_fetch) {
+        const std::unique_ptr<aos::RawFetcher> fetcher =
+            event_loop.MakeRawFetcher(channel);
+        if (fetcher->Fetch()) {
+          PrintMessage(channel, fetcher->context());
+        }
+      }
+
+      event_loop.MakeRawWatcher(channel, [channel](const aos::Context &context,
+                                                   const void * /*message*/) {
+        PrintMessage(channel, context);
+      });
+
       found_channels++;
     }
   }
