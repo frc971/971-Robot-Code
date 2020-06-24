@@ -702,6 +702,7 @@ cc_library(
     deps = [
         ":drivetrain_config",
         ":drivetrain_status_fbs",
+        "//aos/controls:quaternion_utils",
         "//aos/events:event_loop",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:runge_kutta",
@@ -718,6 +719,7 @@ cc_test(
     ],
     deps = [
         ":drivetrain_test_lib",
+        "//aos/controls:quaternion_utils",
         "//aos/testing:googletest",
         "//aos/testing:random_seed",
         "//frc971/control_loops/drivetrain:improved_down_estimator",

@@ -87,3 +87,31 @@ cc_library(
         "//aos/util:log_interval",
     ],
 )
+
+cc_library(
+    name = "quaternion_utils",
+    srcs = [
+        "quaternion_utils.cc",
+    ],
+    hdrs = [
+        "quaternion_utils.h",
+    ],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_test(
+    name = "quarternion_utils_test",
+    srcs = [
+        "quaternion_utils_test.cc",
+    ],
+    deps = [
+        ":quaternion_utils",
+        "//aos/testing:googletest",
+        "//aos/testing:random_seed",
+        "@com_github_google_glog//:glog",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
