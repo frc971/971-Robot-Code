@@ -267,7 +267,7 @@ cc_test(
     deps = [
         ":phased_loop",
         "//aos/testing:googletest",
-        "//aos/testing:test_logging",
+        "//aos/time",
     ],
 )
 
