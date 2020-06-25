@@ -22,11 +22,6 @@
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
-DEFINE_string(
-    override_hostname, "",
-    "If set, this forces the hostname of this node to be the provided "
-    "hostname.");
-
 namespace aos {
 
 // Define the compare and equal operators for Channel and Application so we can

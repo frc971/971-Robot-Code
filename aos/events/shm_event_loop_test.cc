@@ -7,9 +7,7 @@
 #include "gtest/gtest.h"
 
 #include "aos/events/test_message_generated.h"
-
-DECLARE_string(shm_base);
-DECLARE_string(override_hostname);
+#include "aos/network/team_number.h"
 
 namespace aos {
 namespace testing {

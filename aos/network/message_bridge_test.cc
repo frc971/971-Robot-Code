@@ -7,9 +7,7 @@
 #include "aos/events/pong_generated.h"
 #include "aos/network/message_bridge_client_lib.h"
 #include "aos/network/message_bridge_server_lib.h"
-
-DECLARE_string(override_hostname);
-DECLARE_string(application_name);
+#include "aos/network/team_number.h"
 
 namespace aos {
 namespace message_bridge {

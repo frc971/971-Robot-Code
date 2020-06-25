@@ -5,11 +5,11 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include "glog/logging.h"
-
 #include "aos/util/string_to_num.h"
 
-DECLARE_string(override_hostname);
+DEFINE_string(override_hostname, "",
+    "If set, this forces the hostname of this node to be the provided "
+    "hostname.");
 
 namespace aos {
 namespace network {

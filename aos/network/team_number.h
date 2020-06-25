@@ -6,6 +6,10 @@
 #include <optional>
 #include <string>
 
+#include "glog/logging.h"
+
+DECLARE_string(override_hostname);
+
 namespace aos {
 namespace network {
 

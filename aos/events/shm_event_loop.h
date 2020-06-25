@@ -9,6 +9,9 @@
 #include "aos/events/event_loop.h"
 #include "aos/events/event_loop_generated.h"
 
+DECLARE_string(application_name);
+DECLARE_string(shm_base);
+
 namespace aos {
 namespace shm_event_loop_internal {
 
