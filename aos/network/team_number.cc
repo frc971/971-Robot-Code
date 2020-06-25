@@ -1,13 +1,14 @@
 #include "aos/network/team_number.h"
 
-#include <netinet/in.h>
 #include <inttypes.h>
-#include <unistd.h>
+#include <netinet/in.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "aos/util/string_to_num.h"
 
-DEFINE_string(override_hostname, "",
+DEFINE_string(
+    override_hostname, "",
     "If set, this forces the hostname of this node to be the provided "
     "hostname.");
 
@@ -68,7 +69,7 @@ uint16_t override_team;
 
 uint16_t DoGetTeamNumber() {
   if (override_team != 0) {
-      return override_team;
+    return override_team;
   }
 
   const char *override_number = getenv("AOS_TEAM_NUMBER");
@@ -134,8 +135,8 @@ std::optional<uint16_t> ParsePiNumber(const std::string &hostname) {
   if (second_separator == hostname.npos) {
     return std::nullopt;
   }
-  const std::string number_string =
-      hostname.substr(second_separator + 1, hostname.size() - second_separator - 1);
+  const std::string number_string = hostname.substr(
+      second_separator + 1, hostname.size() - second_separator - 1);
   if (number_string.size() == 0) {
     return std::nullopt;
   }

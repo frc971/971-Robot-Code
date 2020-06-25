@@ -177,9 +177,9 @@ void ChannelState::HandleFailure(
   // time out eventually.  Need to sort that out.
 }
 
-void ChannelState::AddPeer(
-    const Connection *connection, int node_index,
-    ServerConnection *server_connection_statistics, bool logged_remotely) {
+void ChannelState::AddPeer(const Connection *connection, int node_index,
+                           ServerConnection *server_connection_statistics,
+                           bool logged_remotely) {
   peers_.emplace_back(connection, node_index, server_connection_statistics,
                       logged_remotely);
 }
@@ -199,7 +199,7 @@ int ChannelState::NodeDisconnected(sctp_assoc_t assoc_id) {
 }
 
 int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
-                                 int stream, SctpServer *server) {
+                                int stream, SctpServer *server) {
   for (ChannelState::Peer &peer : peers_) {
     if (peer.connection->name()->string_view() == node->name()->string_view()) {
       peer.sac_assoc_id = assoc_id;
@@ -445,11 +445,11 @@ void MessageBridgeServer::HandleData(const Message *message) {
     }
     ResetFilter(node_index);
     VLOG(1) << "Resetting filters for " << node_index << " "
-              << event_loop_->configuration()
-                     ->nodes()
-                     ->Get(node_index)
-                     ->name()
-                     ->string_view();
+            << event_loop_->configuration()
+                   ->nodes()
+                   ->Get(node_index)
+                   ->name()
+                   ->string_view();
   } else if (message->header.rcvinfo.rcv_sid == kTimestampStream()) {
     // Message delivery
     const logger::MessageHeader *message_header =
