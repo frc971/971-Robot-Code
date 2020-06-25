@@ -5,8 +5,8 @@ load("//frc971/downloader:downloader.bzl", "aos_downloader_dir")
 ts_library(
     name = "camera_main",
     srcs = [
-        "image_handler.ts",
         "camera_main.ts",
+        "image_handler.ts",
     ],
     visibility = ["//y2020:__subpackages__"],
     deps = [
@@ -19,14 +19,14 @@ ts_library(
 ts_library(
     name = "field_main",
     srcs = [
-        "field_main.ts",
-        "field_handler.ts",
         "constants.ts",
+        "field_handler.ts",
+        "field_main.ts",
     ],
     deps = [
         "//aos/network/www:proxy",
-        "//y2020/vision/sift:sift_ts_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_ts_fbs",
+        "//y2020/vision/sift:sift_ts_fbs",
     ],
 )
 
@@ -42,10 +42,10 @@ rollup_bundle(
 rollup_bundle(
     name = "field_main_bundle",
     entry_point = "y2020/www/field_main",
+    visibility = ["//y2020:__subpackages__"],
     deps = [
         "field_main",
     ],
-    visibility = ["//y2020:__subpackages__"],
 )
 
 filegroup(
