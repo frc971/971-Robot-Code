@@ -2,6 +2,7 @@
 #define AOS_JSON_TO_FLATBUFFER_H_
 
 #include <cstddef>
+#include <fstream>
 #include <string>
 #include <string_view>
 
@@ -78,8 +79,28 @@ typename std::enable_if<std::is_base_of<flatbuffers::Table, T>::value,
 }
 
 std::string FlatbufferToJson(const reflection::Schema *const schema,
-                             const uint8_t *const data,
-                             bool multi_line = false, size_t max_vector_size = SIZE_MAX);
+                             const uint8_t *const data, bool multi_line = false,
+                             size_t max_vector_size = SIZE_MAX);
+
+// Writes a Flatbuffer to a file, or dies.
+template <typename T>
+inline void WriteFlatbufferToJson(const std::string_view filename,
+                                  const Flatbuffer<T> &msg) {
+  std::ofstream json_file(std::string(filename), std::ios::out);
+  CHECK(json_file) << ": Couldn't open " << filename;
+  json_file << FlatbufferToJson(msg);
+  json_file.close();
+}
+
+// Parses a file as JSON and returns the corresponding Flatbuffer, or dies.
+template <typename T>
+inline FlatbufferDetachedBuffer<T> JsonFileToFlatbuffer(
+    const std::string_view path) {
+  std::ifstream t{std::string(path)};
+  std::istream_iterator<char> start(t), end;
+  std::string result(start, end);
+  return FlatbufferDetachedBuffer<T>(JsonToFlatbuffer<T>(result));
+}
 
 }  // namespace aos
 
