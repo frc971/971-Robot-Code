@@ -36,6 +36,8 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
 // returns the modified config.
 FlatbufferDetachedBuffer<Configuration> MergeWithConfig(
     const Configuration *config, std::string_view json);
+FlatbufferDetachedBuffer<Configuration> MergeWithConfig(
+    const Configuration *config, const Flatbuffer<Configuration> &addition);
 
 // Returns the resolved location for a name, type, and application name. Returns
 // nullptr if none is found.

@@ -453,11 +453,16 @@ FlatbufferDetachedBuffer<Configuration> ReadConfig(
 }
 
 FlatbufferDetachedBuffer<Configuration> MergeWithConfig(
+    const Configuration *config, const Flatbuffer<Configuration> &addition) {
+  return MergeConfiguration(MergeFlatBuffers(config, &addition.message()));
+}
+
+FlatbufferDetachedBuffer<Configuration> MergeWithConfig(
     const Configuration *config, std::string_view json) {
   FlatbufferDetachedBuffer<Configuration> addition =
       JsonToFlatbuffer(json, Configuration::MiniReflectTypeTable());
 
-  return MergeConfiguration(MergeFlatBuffers(config, &addition.message()));
+  return MergeWithConfig(config, addition);
 }
 
 const Channel *GetChannel(const Configuration *config, std::string_view name,
