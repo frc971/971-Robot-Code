@@ -19,6 +19,7 @@ class ShmWatcherState;
 class ShmTimerHandler;
 class ShmPhasedLoopHandler;
 class ShmSender;
+class SimpleShmFetcher;
 class ShmFetcher;
 
 }  // namespace shm_event_loop_internal
@@ -102,7 +103,10 @@ class ShmEventLoop : public EventLoop {
   friend class shm_event_loop_internal::ShmTimerHandler;
   friend class shm_event_loop_internal::ShmPhasedLoopHandler;
   friend class shm_event_loop_internal::ShmSender;
+  friend class shm_event_loop_internal::SimpleShmFetcher;
   friend class shm_event_loop_internal::ShmFetcher;
+
+  using EventLoop::SendTimingReport;
 
   static cpu_set_t DefaultAffinity() {
     cpu_set_t result;

@@ -190,9 +190,10 @@ namespace shm_event_loop_internal {
 
 class SimpleShmFetcher {
  public:
-  explicit SimpleShmFetcher(EventLoop *event_loop, const Channel *channel,
+  explicit SimpleShmFetcher(ShmEventLoop *event_loop, const Channel *channel,
                             bool copy_data)
-      : channel_(channel),
+      : event_loop_(event_loop),
+        channel_(channel),
         lockless_queue_memory_(
             channel,
             chrono::ceil<chrono::seconds>(chrono::nanoseconds(
@@ -263,9 +264,12 @@ class SimpleShmFetcher {
            "behind.  "
         << configuration::CleanedChannelToString(channel_);
 
-    CHECK(read_result != ipc_lib::LocklessQueue::ReadResult::TOO_OLD)
-        << ": The next message is no longer available.  "
-        << configuration::CleanedChannelToString(channel_);
+    if (read_result == ipc_lib::LocklessQueue::ReadResult::TOO_OLD) {
+      event_loop_->SendTimingReport();
+      LOG(FATAL) << "The next message is no longer available.  "
+                 << configuration::CleanedChannelToString(channel_);
+    }
+
     return read_result == ipc_lib::LocklessQueue::ReadResult::GOOD;
   }
 
@@ -324,9 +328,12 @@ class SimpleShmFetcher {
     // We fell behind between when we read the index and read the value.
     // This isn't worth recovering from since this means we went to sleep
     // for a long time in the middle of this function.
-    CHECK(read_result != ipc_lib::LocklessQueue::ReadResult::TOO_OLD)
-        << ": The next message is no longer available.  "
-        << configuration::CleanedChannelToString(channel_);
+    if (read_result == ipc_lib::LocklessQueue::ReadResult::TOO_OLD) {
+      event_loop_->SendTimingReport();
+      LOG(FATAL) << "The next message is no longer available.  "
+                 << configuration::CleanedChannelToString(channel_);
+    }
+
     return read_result == ipc_lib::LocklessQueue::ReadResult::GOOD;
   }
 
@@ -356,6 +363,7 @@ class SimpleShmFetcher {
   }
   bool copy_data() const { return static_cast<bool>(data_storage_); }
 
+  aos::ShmEventLoop *event_loop_;
   const Channel *const channel_;
   MMapedQueue lockless_queue_memory_;
   ipc_lib::LocklessQueue lockless_queue_;
@@ -371,7 +379,7 @@ class SimpleShmFetcher {
 
 class ShmFetcher : public RawFetcher {
  public:
-  explicit ShmFetcher(EventLoop *event_loop, const Channel *channel)
+  explicit ShmFetcher(ShmEventLoop *event_loop, const Channel *channel)
       : RawFetcher(event_loop, channel),
         simple_shm_fetcher_(event_loop, channel, true) {}
 
