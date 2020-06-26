@@ -442,12 +442,20 @@ void EventLoop::ReserveEvents() {
 
 namespace {
 bool CompareEvents(const EventLoopEvent *first, const EventLoopEvent *second) {
-  return first->event_time() > second->event_time();
+  if (first->event_time() > second->event_time()) {
+    return true;
+  }
+  if (first->event_time() < second->event_time()) {
+    return false;
+  }
+  return first->generation() > second->generation();
 }
 }  // namespace
 
 void EventLoop::AddEvent(EventLoopEvent *event) {
   DCHECK(std::find(events_.begin(), events_.end(), event) == events_.end());
+  DCHECK(event->generation() == 0);
+  event->set_generation(++event_generation_);
   events_.push_back(event);
   std::push_heap(events_.begin(), events_.end(), CompareEvents);
 }
@@ -455,6 +463,7 @@ void EventLoop::AddEvent(EventLoopEvent *event) {
 void EventLoop::RemoveEvent(EventLoopEvent *event) {
   auto e = std::find(events_.begin(), events_.end(), event);
   if (e != events_.end()) {
+    DCHECK(event->generation() != 0);
     events_.erase(e);
     std::make_heap(events_.begin(), events_.end(), CompareEvents);
     event->Invalidate();

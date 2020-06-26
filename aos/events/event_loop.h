@@ -676,6 +676,7 @@ class EventLoop {
   void ReserveEvents();
 
   std::vector<EventLoopEvent *> events_;
+  size_t event_generation_ = 1;
 
   // If true, don't send AOS_LOG to /aos
   bool skip_logger_ = false;
