@@ -1,22 +1,41 @@
-examples: minimal basic modern animation nonblock xkcd
+# Use C++11, dont warn on long-to-float conversion
+CXXFLAGS += -std=c++11 -Wno-conversion
 
-minimal: examples/minimal.cpp matplotlibcpp.h
-	cd examples && g++ -DWITHOUT_NUMPY minimal.cpp -I/usr/include/python2.7 -lpython2.7 -o minimal -std=c++11
+# Default to using system's default version of python
+PYTHON_BIN     ?= python3
+PYTHON_CONFIG  := $(PYTHON_BIN)-config
+PYTHON_INCLUDE ?= $(shell $(PYTHON_CONFIG) --includes)
+EXTRA_FLAGS    := $(PYTHON_INCLUDE)
+# NOTE: Since python3.8, the correct invocation is `python3-config --libs --embed`.
+# So of course the proper way to get python libs for embedding now is to
+# invoke that, check if it crashes, and fall back to just `--libs` if it does.
+LDFLAGS        += $(shell if $(PYTHON_CONFIG) --ldflags --embed >/dev/null; then $(PYTHON_CONFIG) --ldflags --embed; else $(PYTHON_CONFIG) --ldflags; fi)
 
-basic: examples/basic.cpp matplotlibcpp.h
-	cd examples && g++ basic.cpp -I/usr/include/python2.7 -lpython2.7 -o basic
+# Either finds numpy or set -DWITHOUT_NUMPY
+EXTRA_FLAGS     += $(shell $(PYTHON_BIN) $(CURDIR)/numpy_flags.py)
+WITHOUT_NUMPY   := $(findstring $(EXTRA_FLAGS), WITHOUT_NUMPY)
 
-modern: examples/modern.cpp matplotlibcpp.h
-	cd examples && g++ modern.cpp -I/usr/include/python2.7 -lpython2.7 -o modern -std=c++11
+# Examples requiring numpy support to compile
+EXAMPLES_NUMPY  := surface colorbar
+EXAMPLES        := minimal basic modern animation nonblock xkcd quiver bar \
+	           fill_inbetween fill update subplot2grid lines3d \
+                   $(if $(WITHOUT_NUMPY),,$(EXAMPLES_NUMPY))
 
-animation: examples/animation.cpp matplotlibcpp.h
-	cd examples && g++ animation.cpp -I/usr/include/python2.7 -lpython2.7 -o animation -std=c++11
+# Prefix every example with 'examples/build/'
+EXAMPLE_TARGETS := $(patsubst %,examples/build/%,$(EXAMPLES))
 
-nonblock: examples/nonblock.cpp matplotlibcpp.h
-	cd examples && g++ nonblock.cpp -I/usr/include/python2.7 -lpython2.7 -o nonblock -std=c++11
+.PHONY: examples
 
-xkcd: examples/xkcd.cpp matplotlibcpp.h
-	cd examples && g++ xkcd.cpp -I/usr/include/python2.7 -lpython2.7 -o xkcd -std=c++11
+examples: $(EXAMPLE_TARGETS)
+
+docs:
+	doxygen
+	moxygen doc/xml --noindex -o doc/api.md
+
+# Assume every *.cpp file is a separate example
+$(EXAMPLE_TARGETS): examples/build/%: examples/%.cpp matplotlibcpp.h
+	mkdir -p examples/build
+	$(CXX) -o $@ $< $(EXTRA_FLAGS) $(CXXFLAGS) $(LDFLAGS)
 
 clean:
-	rm -f examples/{minimal,basic,modern,animation,nonblock,xkcd}
+	rm -f ${EXAMPLE_TARGETS}

@@ -5,10 +5,14 @@ cc_library(
     hdrs = [
         "matplotlibcpp.h",
     ],
+    data = [
+        "@matplotlib_repo//:matplotlib3",
+        "@python_repo//:all_files",
+    ],
     restricted_to = ["//tools:k8"],
     visibility = ["//visibility:public"],
     deps = [
-        "@python_repo//:python2.7_lib",
+        "@python_repo//:python3.5_lib",
     ],
 )
 

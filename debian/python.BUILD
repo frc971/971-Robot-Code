@@ -3,7 +3,7 @@ package(default_visibility = ["@//debian:__pkg__"])
 cc_library(
     name = "python3.5_lib",
     srcs = [
-        "usr/lib/x86_64-linux-gnu/libpython3.5m.so",
+        "usr/lib/x86_64-linux-gnu/libpython3.5m.so.1.0",
     ],
     hdrs = glob(["usr/include/**/*.h"]),
     includes = [
