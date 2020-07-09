@@ -113,8 +113,8 @@ flatbuffers::Offset<MessageHeader> PackMessage(
     case LogType::kLogMessage:
     case LogType::kLogMessageAndDeliveryTime:
     case LogType::kLogRemoteMessage:
-      data_offset =
-          fbb->CreateVector(static_cast<uint8_t *>(context.data), context.size);
+      data_offset = fbb->CreateVector(
+          static_cast<const uint8_t *>(context.data), context.size);
       break;
 
     case LogType::kLogDeliveryTimeOnly:

@@ -57,7 +57,7 @@ struct Context {
   // Size of the data sent.
   size_t size;
   // Pointer to the data.
-  void *data;
+  const void *data;
 };
 
 // Raw version of fetcher. Contains a local variable that the fetcher will

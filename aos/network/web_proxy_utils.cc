@@ -19,13 +19,13 @@ flatbuffers::Offset<MessageHeader> PackMessage(
   flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data_offset;
   if (kPacketSize * (packet_index + 1) < context.size) {
     data_offset = fbb->CreateVector(
-        static_cast<uint8_t *>(context.data) + kPacketSize * packet_index,
+        static_cast<const uint8_t *>(context.data) + kPacketSize * packet_index,
         kPacketSize);
   } else {
     int prefix_size = kPacketSize * packet_index;
-    data_offset =
-        fbb->CreateVector(static_cast<uint8_t *>(context.data) + prefix_size,
-                          context.size - prefix_size);
+    data_offset = fbb->CreateVector(
+        static_cast<const uint8_t *>(context.data) + prefix_size,
+        context.size - prefix_size);
   }
 
   MessageHeader::Builder message_header_builder(*fbb);

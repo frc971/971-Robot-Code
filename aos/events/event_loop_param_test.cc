@@ -933,8 +933,8 @@ TEST_P(AbstractEventLoopTest, MessageSendTime) {
     EXPECT_GE(loop1->context().realtime_event_time + chrono::milliseconds(500),
               realtime_now);
 
-    EXPECT_LT(&msg, reinterpret_cast<void *>(
-                        reinterpret_cast<char *>(loop1->context().data) +
+    EXPECT_LT(&msg, reinterpret_cast<const void *>(
+                        reinterpret_cast<const char *>(loop1->context().data) +
                         loop1->context().size));
     triggered = true;
   });
@@ -967,8 +967,8 @@ TEST_P(AbstractEventLoopTest, MessageSendTime) {
   // Confirm that the data pointer makes sense.
   EXPECT_GT(fetcher.get(), fetcher.context().data);
   EXPECT_LT(fetcher.get(),
-            reinterpret_cast<void *>(
-                reinterpret_cast<char *>(fetcher.context().data) +
+            reinterpret_cast<const void *>(
+                reinterpret_cast<const char *>(fetcher.context().data) +
                 fetcher.context().size));
   EXPECT_TRUE(monotonic_time_offset < ::std::chrono::milliseconds(500))
       << ": Got "
@@ -1052,8 +1052,8 @@ TEST_P(AbstractEventLoopTest, MessageSendTimeNoArg) {
   // Confirm that the data pointer makes sense.
   EXPECT_GT(fetcher.get(), fetcher.context().data);
   EXPECT_LT(fetcher.get(),
-            reinterpret_cast<void *>(
-                reinterpret_cast<char *>(fetcher.context().data) +
+            reinterpret_cast<const void *>(
+                reinterpret_cast<const char *>(fetcher.context().data) +
                 fetcher.context().size));
   EXPECT_TRUE(monotonic_time_offset < ::std::chrono::milliseconds(500))
       << ": Got "
