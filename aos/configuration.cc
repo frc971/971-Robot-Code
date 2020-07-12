@@ -84,14 +84,44 @@ std::string_view ExtractFolder(const std::string_view filename) {
              : filename.substr(0, last_slash_pos + 1);
 }
 
+std::string AbsolutePath(const std::string_view filename) {
+  // Uses an std::string so that we know the input will be null-terminated.
+  const std::string terminated_file(filename);
+  char buffer[PATH_MAX];
+  PCHECK(NULL != realpath(terminated_file.c_str(), buffer));
+  return buffer;
+}
+
 FlatbufferDetachedBuffer<Configuration> ReadConfig(
-    const std::string_view path, absl::btree_set<std::string> *visited_paths) {
+    const std::string_view path, absl::btree_set<std::string> *visited_paths,
+    const std::vector<std::string_view> &extra_import_paths) {
+  std::string raw_path(path);
+  if (!util::PathExists(path)) {
+    const bool path_is_absolute = path.size() > 0 && path[0] == '/';
+    if (path_is_absolute) {
+      CHECK(extra_import_paths.empty())
+          << "Can't specify extra import paths if attempting to read a config "
+             "file from an absolute path (path is "
+          << path << ").";
+    }
+
+    bool found_path = false;
+    for (const auto &import_path : extra_import_paths) {
+      raw_path = std::string(import_path) + "/" + std::string(path);
+      if (util::PathExists(raw_path)) {
+        found_path = true;
+        break;
+      }
+    }
+    CHECK(found_path) << ": Failed to find file " << path << ".";
+  }
   flatbuffers::DetachedBuffer buffer = JsonToFlatbuffer(
-      util::ReadFileToStringOrDie(path), ConfigurationTypeTable());
+      util::ReadFileToStringOrDie(raw_path), ConfigurationTypeTable());
 
   CHECK_GT(buffer.size(), 0u) << ": Failed to parse JSON file";
 
   FlatbufferDetachedBuffer<Configuration> config(std::move(buffer));
+
   // Depth first.  Take the following example:
   //
   // config1.json:
@@ -123,8 +153,16 @@ FlatbufferDetachedBuffer<Configuration> ReadConfig(
   // config.  That means that it needs to be merged into the imported configs,
   // not the other way around.
 
+  const std::string absolute_path = AbsolutePath(raw_path);
   // Track that we have seen this file before recursing.
-  visited_paths->insert(::std::string(path));
+  if (!visited_paths->insert(absolute_path).second) {
+    for (const auto &visited_path : *visited_paths) {
+      LOG(INFO) << "Already visited: " << visited_path;
+    }
+    LOG(FATAL)
+        << "Already imported " << path << " (i.e. " << absolute_path
+        << "). See above for the files that have already been processed.";
+  }
 
   if (config.message().has_imports()) {
     // Capture the imports.
@@ -138,18 +176,15 @@ FlatbufferDetachedBuffer<Configuration> ReadConfig(
     FlatbufferDetachedBuffer<Configuration> merged_config =
         FlatbufferDetachedBuffer<Configuration>::Empty();
 
-    const ::std::string folder(ExtractFolder(path));
-
+    const std::string path_folder(ExtractFolder(path));
     for (const flatbuffers::String *str : *v) {
-      const ::std::string included_config = folder + str->c_str();
-      // Abort on any paths we have already seen.
-      CHECK(visited_paths->find(included_config) == visited_paths->end())
-          << ": Found duplicate file " << included_config << " while reading "
-          << path;
+      const std::string included_config =
+          path_folder + "/" + std::string(str->string_view());
 
       // And them merge everything in.
       merged_config = MergeFlatBuffers(
-          merged_config, ReadConfig(included_config, visited_paths));
+          merged_config,
+          ReadConfig(included_config, visited_paths, extra_import_paths));
     }
 
     // Finally, merge this file in.
@@ -446,10 +481,11 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
 }
 
 FlatbufferDetachedBuffer<Configuration> ReadConfig(
-    const std::string_view path) {
+    const std::string_view path,
+    const std::vector<std::string_view> &import_paths) {
   // We only want to read a file once.  So track the visited files in a set.
   absl::btree_set<std::string> visited_paths;
-  return MergeConfiguration(ReadConfig(path, &visited_paths));
+  return MergeConfiguration(ReadConfig(path, &visited_paths, import_paths));
 }
 
 FlatbufferDetachedBuffer<Configuration> MergeWithConfig(

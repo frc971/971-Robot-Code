@@ -11,19 +11,23 @@
 namespace aos {
 
 int Main(int argc, char **argv) {
-  CHECK_GE(argc, 4) << ": Too few arguments";
+  CHECK_GE(argc, 5) << ": Too few arguments";
 
   const char *full_output = argv[1];
   const char *stripped_output = argv[2];
   const char *config_path = argv[3];
+  // In order to support not only importing things by absolute path, but also
+  // importing the outputs of genrules (rather than just manually written
+  // files), we need to tell ReadConfig where the generated files directory is.
+  const char *bazel_outs_directory = argv[4];
 
   VLOG(1) << "Reading " << config_path;
   FlatbufferDetachedBuffer<Configuration> config =
-      configuration::ReadConfig(config_path);
+      configuration::ReadConfig(config_path, {bazel_outs_directory});
 
   std::vector<aos::FlatbufferString<reflection::Schema>> schemas;
 
-  for (int i = 4; i < argc; ++i) {
+  for (int i = 5; i < argc; ++i) {
     schemas.emplace_back(util::ReadFileToStringOrDie(argv[i]));
   }
 

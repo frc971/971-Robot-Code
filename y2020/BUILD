@@ -2,6 +2,7 @@ load("//frc971:downloader.bzl", "robot_downloader")
 load("//aos:config.bzl", "aos_config")
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//y2020:config_gen.bzl", "generate_pi_config")
 
 robot_downloader(
     binaries = [
@@ -245,3 +246,11 @@ cc_binary(
         "//aos/events:shm_event_loop",
     ],
 )
+
+py_binary(
+    name = "generate_pi_config",
+    srcs = ["generate_pi_config.py"],
+    deps = ["@python_jinja2"],
+)
+
+[generate_pi_config(num) for num in range(1, 5)]

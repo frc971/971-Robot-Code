@@ -20,7 +20,8 @@ namespace configuration {
 // Reads a json configuration.  This includes all imports and merges.  Note:
 // duplicate imports will result in a CHECK.
 FlatbufferDetachedBuffer<Configuration> ReadConfig(
-    const std::string_view path);
+    const std::string_view path,
+    const std::vector<std::string_view> &extra_import_paths = {});
 
 // Sorts and merges entries in a config.
 FlatbufferDetachedBuffer<Configuration> MergeConfiguration(

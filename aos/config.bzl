@@ -1,6 +1,9 @@
 load("//tools/build_rules:label.bzl", "expand_label")
 
-AosConfigInfo = provider(fields = ["transitive_flatbuffers", "transitive_src"])
+AosConfigInfo = provider(fields = [
+    "transitive_flatbuffers",
+    "transitive_src",
+])
 
 def aos_config(name, src, flatbuffers = [], deps = [], visibility = None):
     _aos_config(
@@ -26,7 +29,7 @@ def _aos_config_impl(ctx):
     ctx.actions.run(
         outputs = [ctx.outputs.config, ctx.outputs.stripped_config],
         inputs = all_files,
-        arguments = [ctx.outputs.config.path, ctx.outputs.stripped_config.path, ctx.files.src[0].path] + [f.path for f in flatbuffers_depset.to_list()],
+        arguments = [ctx.outputs.config.path, ctx.outputs.stripped_config.path, ctx.files.src[0].short_path, ctx.bin_dir.path] + [f.path for f in flatbuffers_depset.to_list()],
         progress_message = "Flattening config",
         executable = ctx.executable._config_flattener,
     )
