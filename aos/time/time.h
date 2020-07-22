@@ -6,6 +6,7 @@
 #include <time.h>
 
 #include <chrono>
+#include <optional>
 #include <ostream>
 #include <thread>
 #include <type_traits>
@@ -26,6 +27,11 @@ class monotonic_clock {
   // This clock is still subject to rate adjustments based on adjtime, so it is
   // not steady.
   static constexpr bool is_steady = false;
+
+  // Converts the time string to a time_point if it is well formatted.  This is
+  // designed to reverse operator <<.
+  static std::optional<monotonic_clock::time_point> FromString(
+      const std::string_view now);
 
   // Returns the epoch (0).
   static constexpr monotonic_clock::time_point epoch() {
@@ -51,6 +57,11 @@ class realtime_clock {
   static realtime_clock::time_point now() noexcept;
 #endif  // __linux__
   static constexpr bool is_steady = false;
+
+  // Converts the time string to a time_point if it is well formatted.  This is
+  // designed to reverse operator <<.
+  static std::optional<realtime_clock::time_point> FromString(
+      const std::string_view now);
 
   // Returns the epoch (0).
   static constexpr realtime_clock::time_point epoch() {
