@@ -15,29 +15,26 @@ DEFINE_bool(fetch, false,
 
 namespace {
 
-void PrintMessage(const aos::Channel *channel, const aos::Context &context) {
+void PrintMessage(const aos::Channel *channel, const aos::Context &context,
+                  aos::FastStringBuilder *builder) {
   // Print the flatbuffer out to stdout, both to remove the
   // unnecessary cruft from glog and to allow the user to readily
   // redirect just the logged output independent of any debugging
   // information on stderr.
+
+  builder->Reset();
+  aos::FlatbufferToJson(builder, channel->schema(),
+                        static_cast<const uint8_t *>(context.data),
+                        {false, static_cast<size_t>(FLAGS_max_vector_size)});
+
   if (context.monotonic_remote_time != context.monotonic_event_time) {
     std::cout << context.realtime_remote_time << " ("
               << context.monotonic_remote_time << ") delivered "
               << context.realtime_event_time << " ("
-              << context.monotonic_event_time << "): "
-              << aos::FlatbufferToJson(
-                     channel->schema(),
-                     static_cast<const uint8_t *>(context.data),
-                     {false, static_cast<size_t>(FLAGS_max_vector_size)})
-              << '\n';
+              << context.monotonic_event_time << "): " << *builder << '\n';
   } else {
     std::cout << context.realtime_event_time << " ("
-              << context.monotonic_event_time << "): "
-              << aos::FlatbufferToJson(
-                     channel->schema(),
-                     static_cast<const uint8_t *>(context.data),
-                     {false, static_cast<size_t>(FLAGS_max_vector_size)})
-              << '\n';
+              << context.monotonic_event_time << "): " << *builder << '\n';
   }
 }
 
@@ -99,19 +96,22 @@ int main(int argc, char **argv) {
     LOG(FATAL) << "Multiple channels found with same type";
   }
 
+  aos::FastStringBuilder str_builder;
+
   for (const aos::Channel *channel : found_channels) {
     if (FLAGS_fetch) {
       const std::unique_ptr<aos::RawFetcher> fetcher =
           event_loop.MakeRawFetcher(channel);
       if (fetcher->Fetch()) {
-        PrintMessage(channel, fetcher->context());
+        PrintMessage(channel, fetcher->context(), &str_builder);
       }
     }
 
-    event_loop.MakeRawWatcher(channel, [channel](const aos::Context &context,
-                                                 const void * /*message*/) {
-      PrintMessage(channel, context);
-    });
+    event_loop.MakeRawWatcher(
+        channel, [channel, &str_builder](const aos::Context &context,
+                                         const void * /*message*/) {
+          PrintMessage(channel, context, &str_builder);
+        });
   }
 
   event_loop.Run();

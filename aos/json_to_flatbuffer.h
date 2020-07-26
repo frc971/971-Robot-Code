@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 
+#include "aos/fast_string_builder.h"
 #include "aos/flatbuffers.h"
 #include "flatbuffers/flatbuffers.h"
 #include "flatbuffers/reflection.h"
@@ -81,6 +82,10 @@ typename std::enable_if<
 std::string FlatbufferToJson(const reflection::Schema *const schema,
                              const uint8_t *const data,
                              JsonOptions json_options = {});
+
+void FlatbufferToJson(FastStringBuilder *builder,
+                      const reflection::Schema *const schema,
+                      const uint8_t *const data, JsonOptions json_options = {});
 
 // Writes a Flatbuffer to a file, or dies.
 template <typename T>

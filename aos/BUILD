@@ -381,6 +381,7 @@ cc_library(
     hdrs = ["json_to_flatbuffer.h"],
     visibility = ["//visibility:public"],
     deps = [
+        ":fast_string_builder",
         ":flatbuffer_utils",
         ":flatbuffers",
         ":json_tokenizer",
@@ -520,5 +521,20 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_library(
+    name = "fast_string_builder",
+    srcs = [
+        "fast_string_builder.cc",
+    ],
+    hdrs = [
+        "fast_string_builder.h",
+    ],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
     ],
 )

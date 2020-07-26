@@ -11,57 +11,55 @@ namespace {
 using reflection::BaseType;
 
 void IntToString(int64_t val, reflection::BaseType type,
-                 std::stringstream *out) {
+                 FastStringBuilder *out) {
   switch (type) {
     case BaseType::Bool:
-      *out << (val ? "true" : "false");
+      out->AppendBool(static_cast<bool>(val));
       break;
     case BaseType::UByte:
-      *out << std::to_string(static_cast<uint8_t>(val));
+      out->AppendInt(static_cast<uint8_t>(val));
       break;
     case BaseType::Byte:
-      *out << std::to_string(static_cast<int8_t>(val));
+      out->AppendInt(static_cast<int8_t>(val));
       break;
     case BaseType::Short:
-      *out << static_cast<int16_t>(val);
+      out->AppendInt(static_cast<int16_t>(val));
       break;
     case BaseType::UShort:
-      *out << static_cast<uint16_t>(val);
+      out->AppendInt(static_cast<uint16_t>(val));
       break;
     case BaseType::Int:
-      *out << static_cast<int32_t>(val);
+      out->AppendInt(static_cast<int32_t>(val));
       break;
     case BaseType::UInt:
-      *out << static_cast<uint32_t>(val);
+      out->AppendInt(static_cast<uint32_t>(val));
       break;
     case BaseType::Long:
-      *out << static_cast<int64_t>(val);
+      out->AppendInt(static_cast<int64_t>(val));
       break;
     case BaseType::ULong:
-      *out << static_cast<uint64_t>(val);
+      out->AppendInt(static_cast<uint64_t>(val));
       break;
     default:
-      *out << "null";
+      out->Append("null");
   }
 }
 
 void FloatToString(double val, reflection::BaseType type,
-                   std::stringstream *out) {
+                   FastStringBuilder *out) {
   if (std::isnan(val)) {
-    *out << "null";
+    out->Append("null");
     return;
   }
   switch (type) {
     case BaseType::Float:
-      out->precision(std::numeric_limits<float>::digits10);
-      *out << static_cast<float>(val);
+      out->Append(static_cast<float>(val));
       break;
     case BaseType::Double:
-      out->precision(std::numeric_limits<double>::digits10);
-      *out << val;
+      out->Append(val);
       break;
     default:
-      *out << "null";
+      out->Append("null");
   }
 }
 
@@ -70,39 +68,41 @@ void ObjectToString(
     const reflection::Object *obj,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Object>> *objects,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Enum>> *enums,
-    const ObjT *object, std::stringstream *out, JsonOptions json_options,
+    const ObjT *object, FastStringBuilder *out, JsonOptions json_options,
     int tree_depth = 0);
 
 // Get enum value name
-const char *EnumToString(
+std::string_view EnumToString(
     int64_t enum_value,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::EnumVal>>
         *values) {
-  // Replace with binary search? Enum values are pre-sorted.
-  for (auto iter = values->begin(); iter != values->end(); iter++) {
-    if (enum_value == iter->value()) {
-      return iter->name()->c_str();
-    }
-  }
-  return nullptr;
+  auto result = std::find_if(values->begin(), values->end(),
+                             [enum_value](const reflection::EnumVal *a) {
+                               return a->value() == enum_value;
+                             });
+  return result != values->end() ? result->name()->string_view()
+                                 : std::string_view();
 }
 
 // Convert integer to string, checking if it is an enum.
 void IntOrEnumToString(
     int64_t val, const reflection::Type *type,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Enum>> *enums,
-    std::stringstream *out) {
+    FastStringBuilder *out) {
   // Check if integer is an enum and print string, otherwise fallback to
   // printing as int.
   if (type->index() > -1 && type->index() < (int32_t)enums->size()) {
     const reflection::Enum *enum_props = enums->Get(type->index());
     if (!enum_props->is_union()) {
-      const char *value_string = EnumToString(val, enum_props->values());
+      const std::string_view value_string =
+          EnumToString(val, enum_props->values());
 
-      if (value_string != nullptr) {
-        *out << '"' << value_string << '"';
+      if (value_string.data() != nullptr) {
+        out->AppendChar('"');
+        out->Append(value_string);
+        out->AppendChar('"');
       } else {
-        *out << val;
+        out->AppendInt(val);
       }
     }
   } else {
@@ -117,10 +117,10 @@ void IntOrEnumToString(
 
 // Adds a newline and indents
 // Every increment in tree depth is two spaces
-void AddWrapping(std::stringstream *out, int tree_depth) {
-  *out << "\n";
+void AddWrapping(FastStringBuilder *out, int tree_depth) {
+  out->Append("\n");
   for (int i = 0; i < tree_depth; i++) {
-    *out << "  ";
+    out->Append("  ");
   }
 }
 
@@ -141,7 +141,7 @@ void FieldToString(
     const ObjT *table, const reflection::Field *field,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Object>> *objects,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Enum>> *enums,
-    std::stringstream *out, JsonOptions json_options, int tree_depth) {
+    FastStringBuilder *out, JsonOptions json_options, int tree_depth) {
   const reflection::Type *type = field->type();
 
   switch (type->base_type()) {
@@ -162,40 +162,39 @@ void FieldToString(
       break;
     case BaseType::String:
       if constexpr (std::is_same<flatbuffers::Table, ObjT>()) {
-        std::string str = flatbuffers::GetFieldS(*table, *field)->str();
-        std::string out_str;
-        out_str.reserve(str.size());
+        flatbuffers::string_view str =
+            flatbuffers::GetFieldS(*table, *field)->string_view();
+        out->AppendChar('"');
         for (char c : str) {
-          // out_str += c;
           switch (c) {
             case '"':
-              out_str += "\\\"";
+              out->Append("\\\"");
               break;
             case '\\':
-              out_str += "\\\\";
+              out->Append("\\\\");
               break;
             case '\b':
-              out_str += "\\b";
+              out->Append("\\b");
               break;
             case '\f':
-              out_str += "\\f";
+              out->Append("\\f");
               break;
             case '\n':
-              out_str += "\\n";
+              out->Append("\\n");
               break;
             case '\r':
-              out_str += "\\r";
+              out->Append("\\r");
               break;
             case '\t':
-              out_str += "\\t";
+              out->Append("\\t");
               break;
             default:
-              out_str += c;
+              out->AppendChar(c);
           }
         }
-        *out << '"' << out_str << '"';
+        out->AppendChar('"');
       } else {
-        *out << "null";
+        out->Append("null");
       }
       break;
     case BaseType::Vector: {
@@ -205,7 +204,9 @@ void FieldToString(
         reflection::BaseType elem_type = type->element();
 
         if (vector->size() > json_options.max_vector_size) {
-          *out << "[ ... " << vector->size() << " elements ... ]";
+          out->Append("[ ... ");
+          out->AppendInt(vector->size());
+          out->Append(" elements ... ]");
           break;
         }
 
@@ -216,13 +217,13 @@ void FieldToString(
           wrap = ShouldCauseWrapping(elem_type);
         }
 
-        *out << '[';
+        out->AppendChar('[');
         for (flatbuffers::uoffset_t i = 0; i < vector->size(); ++i) {
           if (i != 0) {
             if (wrap) {
-              *out << ",";
+              out->Append(",");
             } else {
-              *out << ", ";
+              out->Append(", ");
             }
           }
           if (wrap) {
@@ -236,8 +237,9 @@ void FieldToString(
             FloatToString(flatbuffers::GetAnyVectorElemF(vector, elem_type, i),
                           elem_type, out);
           } else if (elem_type == BaseType::String) {
-            *out << '"' << flatbuffers::GetAnyVectorElemS(vector, elem_type, i)
-                 << '"';
+            out->AppendChar('"');
+            out->Append(flatbuffers::GetAnyVectorElemS(vector, elem_type, i));
+            out->AppendChar('"');
           } else if (elem_type == BaseType::Obj) {
             if (type->index() > -1 &&
                 type->index() < (int32_t)objects->size()) {
@@ -260,9 +262,9 @@ void FieldToString(
         if (wrap) {
           AddWrapping(out, tree_depth);
         }
-        *out << ']';
+        out->AppendChar(']');
       } else {
-        *out << "null";
+        out->Append("null");
       }
     } break;
     case BaseType::Obj: {
@@ -277,11 +279,11 @@ void FieldToString(
                          json_options, tree_depth);
         }
       } else {
-        *out << "null";
+        out->Append("null");
       }
     } break;
     default:
-      *out << "null";
+      out->Append("null");
   }
 }
 
@@ -292,7 +294,7 @@ void ObjectToString(
     const reflection::Object *obj,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Object>> *objects,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Enum>> *enums,
-    const ObjT *object, std::stringstream *out, JsonOptions json_options,
+    const ObjT *object, FastStringBuilder *out, JsonOptions json_options,
     int tree_depth) {
   static_assert(std::is_same<flatbuffers::Table, ObjT>() ||
                     std::is_same<flatbuffers::Struct, ObjT>(),
@@ -312,16 +314,16 @@ void ObjectToString(
     }
   }
 
-  *out << '{';
+  out->AppendChar('{');
   for (const reflection::Field *field : *obj->fields()) {
     // Check whether this object has the field populated (even for structs,
     // which should have all fields populated)
     if (object->GetAddressOf(field->offset())) {
       if (print_sep) {
         if (wrap) {
-          *out << ",";
+          out->Append(",");
         } else {
-          *out << ", ";
+          out->Append(", ");
         }
       } else {
         print_sep = true;
@@ -331,7 +333,9 @@ void ObjectToString(
         AddWrapping(out, child_tree_depth);
       }
 
-      *out << '"' << field->name()->c_str() << "\": ";
+      out->AppendChar('"');
+      out->Append(field->name()->string_view());
+      out->Append("\": ");
       FieldToString(object, field, objects, enums, out, json_options,
                     child_tree_depth);
     }
@@ -341,30 +345,37 @@ void ObjectToString(
     AddWrapping(out, tree_depth);
   }
 
-  *out << '}';
+  out->AppendChar('}');
 }
 
 }  // namespace
 
 std::string FlatbufferToJson(const reflection::Schema *schema,
                              const uint8_t *data, JsonOptions json_options) {
+  FastStringBuilder builder;
+  FlatbufferToJson(&builder, schema, data, json_options);
+  return builder.MoveResult();
+}
+
+void FlatbufferToJson(FastStringBuilder *builder,
+                      const reflection::Schema *schema, const uint8_t *data,
+                      JsonOptions json_options) {
   CHECK(schema != nullptr) << ": Need to provide a schema";
+  CHECK(builder != nullptr) << ": Need to provide an output builder";
 
   // It is pretty common to get passed in a nullptr when a test fails.  Rather
   // than CHECK, return a more user friendly result.
   if (data == nullptr) {
-    return "null";
+    builder->Append("null");
+    return;
   }
 
   const flatbuffers::Table *table = flatbuffers::GetAnyRoot(data);
 
   const reflection::Object *obj = schema->root_table();
 
-  std::stringstream out;
-
-  ObjectToString(obj, schema->objects(), schema->enums(), table, &out,
+  ObjectToString(obj, schema->objects(), schema->enums(), table, builder,
                  json_options);
-
-  return out.str();
 }
+
 }  // namespace aos
