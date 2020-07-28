@@ -276,11 +276,20 @@ void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
 
 FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
     const Flatbuffer<Configuration> &config) {
+  // auto_merge_config will contain all the fields of the Configuration that are
+  // to be passed through unmodified to the result of MergeConfiguration().
+  // In the processing below, we mutate auto_merge_config to remove any fields
+  // which we do need to alter (hence why we can't use the input config
+  // directly), and then merge auto_merge_config back in at the end.
+  aos::FlatbufferDetachedBuffer<aos::Configuration> auto_merge_config =
+      aos::CopyFlatBuffer(&config.message());
+
   // Store all the channels in a sorted set.  This lets us track channels we
   // have seen before and merge the updates in.
   absl::btree_set<FlatbufferDetachedBuffer<Channel>> channels;
 
   if (config.message().has_channels()) {
+    auto_merge_config.mutable_message()->clear_channels();
     for (const Channel *c : *config.message().channels()) {
       // Ignore malformed entries.
       if (!c->has_name()) {
@@ -302,6 +311,7 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   // Now repeat this for the application list.
   absl::btree_set<FlatbufferDetachedBuffer<Application>> applications;
   if (config.message().has_applications()) {
+    auto_merge_config.mutable_message()->clear_applications();
     for (const Application *a : *config.message().applications()) {
       if (!a->has_name()) {
         continue;
@@ -317,6 +327,7 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   // Now repeat this for the node list.
   absl::btree_set<FlatbufferDetachedBuffer<Node>> nodes;
   if (config.message().has_nodes()) {
+    auto_merge_config.mutable_message()->clear_nodes();
     for (const Node *n : *config.message().nodes()) {
       if (!n->has_name()) {
         continue;
@@ -356,19 +367,6 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
     applications_offset = fbb.CreateVector(applications_offsets);
   }
 
-  // Just copy the maps
-  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Map>>>
-      maps_offset;
-  {
-    ::std::vector<flatbuffers::Offset<Map>> map_offsets;
-    if (config.message().has_maps()) {
-      for (const Map *m : *config.message().maps()) {
-        map_offsets.emplace_back(CopyFlatBuffer<Map>(m, &fbb));
-      }
-      maps_offset = fbb.CreateVector(map_offsets);
-    }
-  }
-
   // Nodes
   flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Node>>>
       nodes_offset;
@@ -383,9 +381,6 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   // And then build a Configuration with them all.
   ConfigurationBuilder configuration_builder(fbb);
   configuration_builder.add_channels(channels_offset);
-  if (config.message().has_maps()) {
-    configuration_builder.add_maps(maps_offset);
-  }
   if (config.message().has_applications()) {
     configuration_builder.add_applications(applications_offset);
   }
@@ -395,9 +390,13 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
 
   fbb.Finish(configuration_builder.Finish());
 
+  aos::FlatbufferDetachedBuffer<aos::Configuration> modified_config(
+      fbb.Release());
+
   // Now, validate that if there is a node list, every channel has a source
   // node.
-  FlatbufferDetachedBuffer<Configuration> result(fbb.Release());
+  FlatbufferDetachedBuffer<Configuration> result =
+      MergeFlatBuffers(modified_config, auto_merge_config);
 
   // Check that if there is a node list, all the source nodes are filled out and
   // valid, and all the destination nodes are valid (and not the source).  This
@@ -588,9 +587,18 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
 
+  // auto_merge_config will contain all the fields of the Configuration that are
+  // to be passed through unmodified to the result of MergeConfiguration().
+  // In the processing below, we mutate auto_merge_config to remove any fields
+  // which we do need to alter (hence why we can't use the input config
+  // directly), and then merge auto_merge_config back in at the end.
+  aos::FlatbufferDetachedBuffer<aos::Configuration> auto_merge_config =
+      aos::CopyFlatBuffer(&config.message());
+
   flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Channel>>>
       channels_offset;
   if (config.message().has_channels()) {
+    auto_merge_config.mutable_message()->clear_channels();
     std::vector<flatbuffers::Offset<Channel>> channel_offsets;
     for (const Channel *c : *config.message().channels()) {
       flatbuffers::FlatBufferBuilder channel_fbb;
@@ -632,60 +640,17 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
     channels_offset = fbb.CreateVector(channel_offsets);
   }
 
-  // Copy the applications and maps unmodified.
-  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Application>>>
-      applications_offset;
-  {
-    ::std::vector<flatbuffers::Offset<Application>> applications_offsets;
-    if (config.message().has_applications()) {
-      for (const Application *a : *config.message().applications()) {
-        applications_offsets.emplace_back(CopyFlatBuffer<Application>(a, &fbb));
-      }
-    }
-    applications_offset = fbb.CreateVector(applications_offsets);
-  }
-
-  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Map>>>
-      maps_offset;
-  {
-    ::std::vector<flatbuffers::Offset<Map>> map_offsets;
-    if (config.message().has_maps()) {
-      for (const Map *m : *config.message().maps()) {
-        map_offsets.emplace_back(CopyFlatBuffer<Map>(m, &fbb));
-      }
-      maps_offset = fbb.CreateVector(map_offsets);
-    }
-  }
-
-  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Node>>>
-      nodes_offset;
-  {
-    ::std::vector<flatbuffers::Offset<Node>> node_offsets;
-    if (config.message().has_nodes()) {
-      for (const Node *n : *config.message().nodes()) {
-        node_offsets.emplace_back(CopyFlatBuffer<Node>(n, &fbb));
-      }
-      nodes_offset = fbb.CreateVector(node_offsets);
-    }
-  }
 
   // Now insert everything else in unmodified.
   ConfigurationBuilder configuration_builder(fbb);
   if (config.message().has_channels()) {
     configuration_builder.add_channels(channels_offset);
   }
-  if (config.message().has_maps()) {
-    configuration_builder.add_maps(maps_offset);
-  }
-  if (config.message().has_applications()) {
-    configuration_builder.add_applications(applications_offset);
-  }
-  if (config.message().has_nodes()) {
-    configuration_builder.add_nodes(nodes_offset);
-  }
-
   fbb.Finish(configuration_builder.Finish());
-  return fbb.Release();
+  aos::FlatbufferDetachedBuffer<aos::Configuration> modified_config(
+      fbb.Release());
+
+  return MergeFlatBuffers(modified_config, auto_merge_config);
 }
 
 const Node *GetNodeFromHostname(const Configuration *config,

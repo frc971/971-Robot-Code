@@ -60,5 +60,6 @@
     }
    ]
   }
- ]
+ ],
+ "channel_storage_duration": 971
 }
