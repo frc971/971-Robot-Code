@@ -1,0 +1,11 @@
+namespace frc971.codelab;
+
+table Status {
+  // Lets consumers of Status know if the requested intake is finished. Should
+  // be set to true by the intake subsystem when the Goal message is requesting
+  // the intake to be on and the limit sensor from the position message has
+  // been enabled.
+  intake_complete:bool;
+}
+
+root_type Status;

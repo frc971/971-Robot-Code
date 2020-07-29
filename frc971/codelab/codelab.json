@@ -1,0 +1,23 @@
+{
+  "channels": [
+    {
+      "name": "/codelab",
+      "type": "frc971.codelab.Goal"
+    },
+    {
+      "name": "/codelab",
+      "type": "frc971.codelab.Output"
+    },
+    {
+      "name": "/codelab",
+      "type": "frc971.codelab.Status"
+    },
+    {
+      "name": "/codelab",
+      "type": "frc971.codelab.Position"
+    }
+  ],
+  "imports": [
+     "../../aos/robot_state/robot_state_config.json"
+  ]
+}

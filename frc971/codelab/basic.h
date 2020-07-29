@@ -4,7 +4,10 @@
 #include "aos/controls/control_loop.h"
 #include "aos/time/time.h"
 
-#include "frc971/codelab/basic_generated.h"
+#include "frc971/codelab/basic_goal_generated.h"
+#include "frc971/codelab/basic_output_generated.h"
+#include "frc971/codelab/basic_position_generated.h"
+#include "frc971/codelab/basic_status_generated.h"
 
 namespace frc971 {
 namespace codelab {
@@ -18,29 +21,33 @@ namespace codelab {
 //  $ bazel run //frc971/codelab:basic_test -- --gtest_color=yes
 //
 // Control loops all follow the same convention:
-//  There are 4 queues (goal, position, status, output).
+//  There are 4 channels (goal, position, status, output).
 //
-//  2 queues are input queues: goal, position.
-//  2 queues are output queues: output, status.
+//  2 channels are input channels: goal, position.
+//  2 channels are output channels: output, status.
 //
 // ::aos::controls::ControlLoop is a helper class that takes
-// a queue_group type from a .h file, and organizes to call
-// RunIteration() at a consistent interval. It will fetch from
-// goal and position messages from the goal and position queue,
-// and publish an output and status result to the output and status
-// queues.
+// all the channel types as template parameters and then calls
+// RunIteration() whenever a Position message is received.
+// It will pass in the Position message and most recent Goal message
+// and provide Builders that the RunIteration method should use to
+// construct and send output/status messages.
 //
-// The basic.q file will construct boilerplate c++ code for the
-// Goal, Position, Status, Message
-// types, and construct static variables for fetching these named queues.
-// Inquisitive souls can check out:
-//  $ bazel build //frc971/codelab:basic_queue
-//  $ vim bazel-genfiles/frc971/codelab/basic.q.{cc,h} -o
-//  from the 971-Robot-Code directory.
+// The various basic_*.fbs files define the  Goal, Position, Status, and Output
+// messages.
 //
-// Order of approaching this should be:
-// - Read the BUILD file and learn about what code is being generated.
-// - Read basic.q, and familiarize yourself on the inputs and types involved.
+// In order to get the tests to pass, you'll need to fill out the RunIteration()
+// implementation in basic.cc so that it uses the input goal/position to
+// meaningfully populate the output/status messages. You can find descriptions
+// of exactly what the fields of the messages mean by reading all the *.fbs
+// files, and the tests below can be reviewed to help understand exactly what
+// behavior is expected.
+//
+// Once you can get the tests to pass, follow the directions in the
+// documentation/tutorials/submitting-code-for-a-review.md file for creating a
+// code review of this change. We will not actually *submit* the change (since
+// that  would remove the challenge for future students), but we will go through
+// the code review process.
 class Basic
     : public ::aos::controls::ControlLoop<Goal, Position, Status, Output> {
  public:

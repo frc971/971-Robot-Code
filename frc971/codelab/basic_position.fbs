@@ -1,0 +1,12 @@
+namespace frc971.codelab;
+
+table Position {
+  // The limit sensor being set to true indicates that we should stop turning on
+  // the intake motors--in a real robot, we might have an intake that pulls a
+  // ball in, and the ball then hits a limit sensor when it is fully contained.
+  // We would then want to stop running the intake to avoid spinning the intake
+  // against the ball.
+  limit_sensor: bool;
+}
+
+root_type Position;

@@ -1,0 +1,11 @@
+namespace frc971.codelab;
+
+table Output {
+  // This would be set up to drive a hypothetical motor that would
+  // hope to intake something. Voltages on our robots generally range from
+  // -12.0 V to +12.0V. In this case, the intake should be commanded to actually
+  // intake by setting the voltage to 12 V.
+  intake_voltage:double;
+}
+
+root_type Output;
