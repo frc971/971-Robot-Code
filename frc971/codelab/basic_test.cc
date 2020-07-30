@@ -7,7 +7,10 @@
 
 #include "aos/controls/control_loop_test.h"
 #include "aos/events/shm_event_loop.h"
-#include "frc971/codelab/basic_generated.h"
+#include "frc971/codelab/basic_goal_generated.h"
+#include "frc971/codelab/basic_output_generated.h"
+#include "frc971/codelab/basic_position_generated.h"
+#include "frc971/codelab/basic_status_generated.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
 
@@ -82,38 +85,7 @@ class BasicControlLoopTest : public ::aos::testing::ControlLoopTest {
  public:
   BasicControlLoopTest()
       : ::aos::testing::ControlLoopTest(
-            "{\n"
-            "  \"channels\": [ \n"
-            "    {\n"
-            "      \"name\": \"/aos\",\n"
-            "      \"type\": \"aos.JoystickState\"\n"
-            "    },\n"
-            "    {\n"
-            "      \"name\": \"/aos\",\n"
-            "      \"type\": \"aos.LogMessageFbs\"\n"
-            "    },\n"
-            "    {\n"
-            "      \"name\": \"/aos\",\n"
-            "      \"type\": \"aos.RobotState\"\n"
-            "    },\n"
-            "    {\n"
-            "      \"name\": \"/codelab\",\n"
-            "      \"type\": \"frc971.codelab.Goal\"\n"
-            "    },\n"
-            "    {\n"
-            "      \"name\": \"/codelab\",\n"
-            "      \"type\": \"frc971.codelab.Output\"\n"
-            "    },\n"
-            "    {\n"
-            "      \"name\": \"/codelab\",\n"
-            "      \"type\": \"frc971.codelab.Status\"\n"
-            "    },\n"
-            "    {\n"
-            "      \"name\": \"/codelab\",\n"
-            "      \"type\": \"frc971.codelab.Position\"\n"
-            "    }\n"
-            "  ]\n"
-            "}\n",
+            aos::configuration::ReadConfig("frc971/codelab/config.json"),
             chrono::microseconds(5050)),
         test_event_loop_(MakeEventLoop("test")),
         goal_sender_(test_event_loop_->MakeSender<Goal>("/codelab")),
@@ -124,6 +96,7 @@ class BasicControlLoopTest : public ::aos::testing::ControlLoopTest {
         basic_simulation_event_loop_(MakeEventLoop("simulation")),
         basic_simulation_(basic_simulation_event_loop_.get(), dt()) {
     set_team_id(control_loops::testing::kTeamNumber);
+    SetEnabled(true);
   }
 
   ::std::unique_ptr<::aos::EventLoop> test_event_loop_;

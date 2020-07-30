@@ -1,0 +1,11 @@
+namespace frc971.codelab;
+
+// This is the goal message for the subsystem--it will be sent irregularly and
+// is used to specify what the subsystem should be doing.
+table Goal {
+  // If set to true, the intake should turn on the motor and run until the
+  // limit sensor in the Position message turns on.
+  intake:bool;
+}
+
+root_type Goal;
