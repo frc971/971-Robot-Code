@@ -339,6 +339,15 @@ bool Sender<T>::Send(const Flatbuffer<T> &flatbuffer) {
   return sender_->Send(flatbuffer.data(), flatbuffer.size());
 }
 
+template <typename T>
+bool Sender<T>::SendDetached(FlatbufferDetachedBuffer<T> detached) {
+  CHECK_EQ(
+      static_cast<void *>(detached.data() + detached.size() - sender_->size()),
+      sender_->data())
+      << ": May only send the buffer detached from this Sender";
+  return sender_->Send(detached.size());
+}
+
 }  // namespace aos
 
 #endif  // AOS_EVENTS_EVENT_LOOP_TMPL_H

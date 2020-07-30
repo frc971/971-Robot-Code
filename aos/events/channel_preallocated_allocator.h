@@ -16,7 +16,7 @@ class ChannelPreallocatedAllocator : public flatbuffers::Allocator {
   ChannelPreallocatedAllocator(const ChannelPreallocatedAllocator &) = delete;
   ChannelPreallocatedAllocator(ChannelPreallocatedAllocator &&other)
       : data_(other.data_), size_(other.size_), channel_(other.channel_) {
-    CHECK(!is_allocated());
+    CHECK(!is_allocated()) << ": May not overwrite in-use allocator";
     CHECK(!other.is_allocated());
   }
 
@@ -24,7 +24,7 @@ class ChannelPreallocatedAllocator : public flatbuffers::Allocator {
       const ChannelPreallocatedAllocator &) = delete;
   ChannelPreallocatedAllocator &operator=(
       ChannelPreallocatedAllocator &&other) {
-    CHECK(!is_allocated());
+    CHECK(!is_allocated()) << ": May not overwrite in-use allocator";
     CHECK(!other.is_allocated());
     data_ = other.data_;
     size_ = other.size_;

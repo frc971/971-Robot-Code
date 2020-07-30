@@ -295,6 +295,15 @@ class Sender {
       CHECK(!allocator_->is_allocated()) << ": Message was not sent yet";
     }
 
+    // Detaches a buffer, for later use calling Sender::Send directly.
+    //
+    // Note that the underlying memory remains with the Sender, so creating
+    // another Builder before destroying the FlatbufferDetachedBuffer will fail.
+    FlatbufferDetachedBuffer<T> Detach(flatbuffers::Offset<T> offset) {
+      fbb_.Finish(offset);
+      return fbb_.Release();
+    }
+
    private:
     flatbuffers::FlatBufferBuilder fbb_;
     ChannelPreallocatedAllocator *allocator_;
@@ -312,6 +321,10 @@ class Sender {
 
   // Sends a prebuilt flatbuffer.
   bool Send(const Flatbuffer<T> &flatbuffer);
+
+  // Sends a prebuilt flatbuffer which was detached from a Builder created via
+  // MakeBuilder() on this object.
+  bool SendDetached(FlatbufferDetachedBuffer<T> detached);
 
   // Returns the name of the underlying queue.
   const Channel *channel() const { return sender_->channel(); }
