@@ -89,6 +89,7 @@ TEST(TimeTest, OperatorStreamNegative) {
     s << t;
 
     EXPECT_EQ(s.str(), "-13.085000000sec");
+    EXPECT_EQ(monotonic_clock::FromString(s.str()).value(), t);
   }
   {
     const monotonic_clock::time_point t =
@@ -98,6 +99,7 @@ TEST(TimeTest, OperatorStreamNegative) {
     s << t;
 
     EXPECT_EQ(s.str(), "-0.000000001sec");
+    EXPECT_EQ(monotonic_clock::FromString(s.str()).value(), t);
   }
   {
     const monotonic_clock::time_point t =
@@ -107,6 +109,7 @@ TEST(TimeTest, OperatorStreamNegative) {
     s << t;
 
     EXPECT_EQ(s.str(), "-1.000000001sec");
+    EXPECT_EQ(monotonic_clock::FromString(s.str()).value(), t);
   }
   {
     const monotonic_clock::time_point t =
@@ -116,6 +119,7 @@ TEST(TimeTest, OperatorStreamNegative) {
     s << t;
 
     EXPECT_EQ(s.str(), "-2.000000001sec");
+    EXPECT_EQ(monotonic_clock::FromString(s.str()).value(), t);
   }
 }
 
@@ -127,6 +131,7 @@ TEST(TimeTest, OperatorStreamMinTime) {
   s << t;
 
   EXPECT_EQ(s.str(), "-9223372036.854775808sec");
+  EXPECT_EQ(monotonic_clock::FromString(s.str()).value(), t);
 }
 
 // Test that << works with the epoch on the realtime clock.
@@ -137,6 +142,7 @@ TEST(TimeTest, OperatorStreamRealtimeEpoch) {
   s << t;
 
   EXPECT_EQ(s.str(), "1970-01-01_00-00-00.000000000");
+  EXPECT_EQ(realtime_clock::FromString(s.str()).value(), t);
 }
 
 // Test that << works with positive time on the realtime clock.
@@ -149,6 +155,7 @@ TEST(TimeTest, OperatorStreamRealtimePositive) {
   s << t;
 
   EXPECT_EQ(s.str(), "1970-01-06_00-00-11.005000000");
+  EXPECT_EQ(realtime_clock::FromString(s.str()).value(), t);
 }
 
 // Test that << works with negative time on the realtime clock.
@@ -161,6 +168,7 @@ TEST(TimeTest, OperatorStreamRealtimeNegative) {
     s << t;
 
     EXPECT_EQ(s.str(), "1969-12-31_23-59-59.999999999");
+    EXPECT_EQ(realtime_clock::FromString(s.str()).value(), t);
   }
   {
     const realtime_clock::time_point t =
@@ -170,6 +178,7 @@ TEST(TimeTest, OperatorStreamRealtimeNegative) {
     s << t;
 
     EXPECT_EQ(s.str(), "1969-12-31_23-59-59.000000001");
+    EXPECT_EQ(realtime_clock::FromString(s.str()).value(), t);
   }
   {
     const realtime_clock::time_point t = realtime_clock::epoch() -
@@ -180,6 +189,7 @@ TEST(TimeTest, OperatorStreamRealtimeNegative) {
     s << t;
 
     EXPECT_EQ(s.str(), "1969-12-31_23-59-58.000000001");
+    EXPECT_EQ(realtime_clock::FromString(s.str()).value(), t);
   }
   {
     const realtime_clock::time_point t =
@@ -190,6 +200,7 @@ TEST(TimeTest, OperatorStreamRealtimeNegative) {
     s << t;
 
     EXPECT_EQ(s.str(), "1969-12-27_00-00-10.995000000");
+    EXPECT_EQ(realtime_clock::FromString(s.str()).value(), t);
   }
 }
 

@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <string.h>
 
+#include <algorithm>
 #include <chrono>
 #include <ctime>
 #include <iomanip>
@@ -78,6 +79,67 @@ std::ostream &operator<<(std::ostream &stream,
            << "sec";
   }
   return stream;
+}
+
+std::optional<monotonic_clock::time_point> monotonic_clock::FromString(
+    const std::string_view now) {
+  // This should undo the operator << above.
+  if (now.size() < 14) {
+    return std::nullopt;
+  }
+
+  if (now.substr(now.size() - 3, now.size()) != "sec") {
+    return std::nullopt;
+  }
+
+  if (now.substr(now.size() - 13, 1) != ".") {
+    return std::nullopt;
+  }
+
+  bool negative = now.substr(0, 1) == "-";
+
+  std::string sec(
+      now.substr(negative ? 1 : 0, now.size() - (negative ? 14 : 13)));
+  std::string nsec(now.substr(now.size() - 12, 9));
+
+  if (!std::all_of(sec.begin(), sec.end(), ::isdigit) ||
+      !std::all_of(nsec.begin(), nsec.end(), ::isdigit)) {
+    return std::nullopt;
+  }
+
+  return monotonic_clock::time_point(
+      std::chrono::seconds((negative ? -1 : 1) * atoll(sec.c_str())) +
+      std::chrono::nanoseconds((negative ? -1 : 1) * atoll(nsec.c_str())));
+}
+
+std::optional<realtime_clock::time_point> realtime_clock::FromString(
+    const std::string_view now) {
+  // This should undo the operator << above.
+
+  if (now.size() < 25) {
+    return std::nullopt;
+  }
+
+  if (now.substr(now.size() - 10, 1) != ".") {
+    return std::nullopt;
+  }
+
+  std::string nsec(now.substr(now.size() - 9, 9));
+
+  if (!std::all_of(nsec.begin(), nsec.end(), ::isdigit)) {
+    return std::nullopt;
+  }
+
+  struct tm tm;
+  std::istringstream ss(std::string(now.substr(0, now.size() - 10)));
+  ss >> std::get_time(&tm, "%Y-%m-%d_%H-%M-%S");
+  tm.tm_isdst = -1;
+
+  time_t seconds = mktime(&tm);
+
+  return realtime_clock::time_point(
+      std::chrono::seconds(seconds) +
+      std::chrono::nanoseconds(atoll(nsec.c_str())));
 }
 
 std::ostream &operator<<(std::ostream &stream,
