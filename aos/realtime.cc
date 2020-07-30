@@ -133,6 +133,10 @@ void SetCurrentThreadRealtimePriority(int priority) {
   // Make sure we will only be allowed to run for 3 seconds straight.
   SetSoftRLimit(RLIMIT_RTTIME, 3000000, SetLimitForRoot::kYes);
 
+  // Raise our soft rlimit if necessary.
+  SetSoftRLimit(RLIMIT_RTPRIO, priority, SetLimitForRoot::kNo,
+                AllowSoftLimitDecrease::kNo);
+
   struct sched_param param;
   param.sched_priority = priority;
   PCHECK(sched_setscheduler(0, SCHED_FIFO, &param) == 0)
