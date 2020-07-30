@@ -17,7 +17,7 @@ commands from the 971-Robot-Code directory, replacing `<username>` with your
 gerrit username.
 
 ```console
-scp -p -P 29418 <username>@robotics.mvla.net:hooks/commit-msg .git/hooks/
+scp -p -P 29418 <username>@software.frc971.org:hooks/commit-msg .git/hooks/
 ```
 
 ## Submitting code for review
@@ -82,7 +82,7 @@ remote: Processing changes: refs: 1, done
 remote: ERROR: [bf965b4] missing Change-Id in commit message footer
 remote:
 remote: Hint: To automatically insert Change-Id, install the hook:
-remote:   gitdir=$(git rev-parse --git-dir); scp -p -P 29418 adrian@robotics.mvla.net:hooks/commit-msg ${gitdir}/hooks/
+remote:   gitdir=$(git rev-parse --git-dir); scp -p -P 29418 adrian@software.frc971.org:hooks/commit-msg ${gitdir}/hooks/
 remote: And then amend the commit:
 remote:   git commit --amend
 remote:

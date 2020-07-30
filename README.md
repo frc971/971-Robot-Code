@@ -2,17 +2,17 @@
 This is FRC Team 971's main code repository. There are `README*` files throughout the source tree documenting specifics for their respective folders.
 
 ## Access to the code
-The main central location for our code is our [Gerrit](https://www.gerritcodereview.com/) server at https://robotics.mvla.net/gerrit. To get a copy of the code on your computer to work with, follow these steps:
+The main central location for our code is our [Gerrit](https://www.gerritcodereview.com/) server at https://software.frc971.org/gerrit. To get a copy of the code on your computer to work with, follow these steps:
   1. Contact Michael Schuh to get an SVN account.
   2. Go to Gerrit and create an account.
   3. Contact Brian Silverman with your SVN username to get access to the code in Gerrit.
-  4. Go to [the 971-Robot-Code project in Gerrit](https://robotics.mvla.net/gerrit/#/admin/projects/971-Robot-Code) and run the command.
+  4. Go to [the 971-Robot-Code project in Gerrit](https://software.frc971.org/gerrit/#/admin/projects/971-Robot-Code) and run the command.
      Running the `clone with commit-msg hook` command will save you trouble later.
 
 To learn more about git, see git(1) (`man git` or [git(1)](http://manpages.debian.net/cgi-bin/man.cgi?query=git>) (especially the NOTES section).
 
 ## Code reviews
-We want all code to at least have a second person look over it before it gets merged into the `master` branch. Gerrit has [extensive documentation on starting reviews](https://robotics.mvla.net/gerrit/Documentation/user-upload.html). TL;DR: `git push origin HEAD:refs/for/master` and then click on the link to add reviewers.
+We want all code to at least have a second person look over it before it gets merged into the `master` branch. Gerrit has [extensive documentation on starting reviews](https://software.frc971.org/gerrit/Documentation/user-upload.html). TL;DR: `git push origin HEAD:refs/for/master` and then click on the link to add reviewers.
 If you just upload a change without adding any reviewers, it might sit around for a long time before anybody else notices it.
 [git-review](http://manpages.debian.org/cgi-bin/man.cgi?query=git-review) can make the upload process simpler.
 
