@@ -181,8 +181,14 @@ void Cleanup(LocklessQueueMemory *memory, const GrabQueueSetupLockOrDie &) {
         const Index to_replace = sender->to_replace.RelaxedLoad();
 
         // Candidate.
-        CHECK_LE(to_replace.message_index(), accounted_for.size());
-        if (accounted_for[to_replace.message_index()]) {
+        if (to_replace.valid()) {
+          CHECK_LE(to_replace.message_index(), accounted_for.size());
+        }
+        if (scratch_index.valid()) {
+          CHECK_LE(scratch_index.message_index(), accounted_for.size());
+        }
+        if (!to_replace.valid() || accounted_for[to_replace.message_index()]) {
+          CHECK(scratch_index.valid());
           VLOG(3) << "Sender " << i
                   << " died, to_replace is already accounted for";
           // If both are accounted for, we are corrupt...
@@ -200,7 +206,8 @@ void Cleanup(LocklessQueueMemory *memory, const GrabQueueSetupLockOrDie &) {
           accounted_for[scratch_index.message_index()] = true;
           --num_missing;
           ++num_accounted_for;
-        } else if (accounted_for[scratch_index.message_index()]) {
+        } else if (!scratch_index.valid() ||
+                   accounted_for[scratch_index.message_index()]) {
           VLOG(3) << "Sender " << i
                   << " died, scratch_index is already accounted for";
           // scratch_index is accounted for.  That means we did the insert,
