@@ -90,8 +90,8 @@ export class Connection {
 
   // Handle messages on the DataChannel. Handles the Configuration message as
   // all other messages are sent on specific DataChannels.
-  onDataChannelMessage(e: MessageEvent): void {
-    const fbBuffer = new flatbuffers.ByteBuffer(new Uint8Array(e.data));
+  onConfigMessage(data: Uint8Array): void {
+    const fbBuffer = new flatbuffers.ByteBuffer(data);
     this.configInternal = Configuration.getRootAsConfiguration(fbBuffer);
     for (const handler of Array.from(this.configHandlers)) {
       handler(this.configInternal);
@@ -146,8 +146,8 @@ export class Connection {
     this.rtcPeerConnection.addEventListener(
         'datachannel', (e) => this.onDataChannel(e));
     this.dataChannel = this.rtcPeerConnection.createDataChannel('signalling');
-    this.dataChannel.addEventListener(
-        'message', (e) => this.onDataChannelMessage(e));
+    this.handlers.add(
+        new Handler((data) => this.onConfigMessage(data), this.dataChannel));
     window.dc = this.dataChannel;
     this.rtcPeerConnection.addEventListener(
         'icecandidate', (e) => this.onIceCandidate(e));

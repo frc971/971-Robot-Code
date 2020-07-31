@@ -27,7 +27,7 @@ export class ConfigHandler {
   }
 
   printConfig() {
-    for (const i = 0; i < this.config.channelsLength(); i++) {
+    for (let i = 0; i < this.config.channelsLength(); i++) {
       const channel_div = document.createElement('div');
       channel_div.classList.add('channel');
       this.tree_div.appendChild(channel_div);

@@ -90,7 +90,7 @@ Connection::Connection(
     : sock_(sock),
       server_(server),
       subscribers_(subscribers),
-      config_(config) {}
+      config_headers_(PackBuffer(config.span())) {}
 
 // Function called for web socket data. Parses the flatbuffer and handles it
 // appropriately.
@@ -211,7 +211,9 @@ void Connection::OnSuccess(webrtc::SessionDescriptionInterface *desc) {
 void Connection::OnStateChange() {
   if (peer_connection_.get() != nullptr &&
       data_channel_->state() == webrtc::DataChannelInterface::kOpen) {
-    Send(config_.buffer());
+    for (const auto &header: config_headers_) {
+      Send(header.buffer());
+    }
   }
 }
 

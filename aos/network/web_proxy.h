@@ -105,7 +105,9 @@ class Connection : public webrtc::PeerConnectionObserver,
   ~Connection() {
     // DataChannel may call OnStateChange after this is destroyed, so make sure
     // it doesn't.
-    data_channel_->UnregisterObserver();
+    if (data_channel_) {
+      data_channel_->UnregisterObserver();
+    }
   }
 
   void HandleWebSocketData(const uint8_t *data, size_t size);
@@ -148,7 +150,7 @@ class Connection : public webrtc::PeerConnectionObserver,
   ::seasocks::WebSocket *sock_;
   ::seasocks::Server *server_;
   const std::vector<std::unique_ptr<Subscriber>> &subscribers_;
-  const aos::FlatbufferDetachedBuffer<aos::Configuration> &config_;
+  const std::vector<FlatbufferDetachedBuffer<MessageHeader>> config_headers_;
   std::map<int, rtc::scoped_refptr<webrtc::DataChannelInterface>> channels_;
 
   rtc::scoped_refptr<webrtc::PeerConnectionInterface> peer_connection_;

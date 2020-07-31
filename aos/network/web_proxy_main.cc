@@ -62,14 +62,6 @@ int main(int argc, char **argv) {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(FLAGS_config);
 
-  for (size_t i = 0; i < config.message().channels()->size(); ++i) {
-    aos::Channel *channel =
-        config.mutable_message()->mutable_channels()->GetMutableObject(i);
-    channel->clear_schema();
-  }
-
-  config = aos::CopyFlatBuffer(&config.message());
-
   std::vector<std::unique_ptr<aos::web_proxy::Subscriber>> subscribers;
 
   std::thread data_thread{
