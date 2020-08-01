@@ -307,6 +307,5 @@ int main(int, char *[]) {
 
   socket_handler.Quit();
 
-  ::aos::Cleanup();
   return 0;
 }

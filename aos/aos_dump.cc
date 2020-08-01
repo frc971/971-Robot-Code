@@ -115,6 +115,6 @@ int main(int argc, char **argv) {
   }
 
   event_loop.Run();
-  ::aos::Cleanup();
+
   return 0;
 }

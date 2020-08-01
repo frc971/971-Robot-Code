@@ -183,6 +183,6 @@ int main(int argc, char **argv) {
 
   // Cleanup the created processes
   reader.Deregister();
-  aos::Cleanup();
+
   return 0;
 }

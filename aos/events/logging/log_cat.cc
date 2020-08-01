@@ -225,6 +225,5 @@ int main(int argc, char **argv) {
 
   event_loop_factory.Run();
 
-  aos::Cleanup();
   return 0;
 }

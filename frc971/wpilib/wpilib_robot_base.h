@@ -29,9 +29,7 @@ class WPILibRobotBase {
       thread.join();
     }
 
-    AOS_LOG(ERROR, "Exiting WPILibRobot\n");
-
-    ::aos::Cleanup();
+    LOG(ERROR) << "Exiting WPILibRobot";
   }
 
  protected:

@@ -260,7 +260,6 @@ cc_library(
     deps = [
         ":realtime",
         "//aos:die",
-        "//aos/ipc_lib:shared_mem",
         "//aos/logging:implementations",
     ],
 )

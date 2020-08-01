@@ -117,6 +117,8 @@ constexpr chrono::milliseconds MotorWriter::kOldLogInterval;
 int main() {
   ::aos::Init();
   ::bot3::output::MotorWriter writer;
+
   writer.Run();
-  ::aos::Cleanup();
+
+  return 0;
 }

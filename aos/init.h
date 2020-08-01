@@ -23,9 +23,6 @@ void Init(int relative_priority = 0);
 // Same as InitNRT, except will remove an existing shared memory file and create
 // a new one.
 void InitCreate();
-// Cleans up (probably not going to get called very often because few things can
-// exit gracefully).
-void Cleanup();
 
 // Performs the realtime parts of initialization after InitNRT() has been called.
 void GoRT(int relative_priority = 0);

@@ -14,6 +14,5 @@ int main(int /*argc*/, char * /*argv*/ []) {
   ::y2018::actors::AutonomousActor autonomous(&event_loop);
   event_loop.Run();
 
-  ::aos::Cleanup();
   return 0;
 }

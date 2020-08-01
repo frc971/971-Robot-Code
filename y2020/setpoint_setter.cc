@@ -30,5 +30,5 @@ int main(int argc, char ** argv) {
   setpoint_builder.add_hood(FLAGS_hood);
   builder.Send(setpoint_builder.Finish());
 
-  aos::Cleanup();
+  return 0;
 }

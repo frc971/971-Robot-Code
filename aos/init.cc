@@ -14,7 +14,6 @@
 #include <malloc.h>
 
 #include "aos/die.h"
-#include "aos/ipc_lib/shared_mem.h"
 #include "aos/logging/implementations.h"
 #include "aos/realtime.h"
 
@@ -96,10 +95,6 @@ void GoRT(int relative_priority) {
   }
 
   AOS_LOG(INFO, "%s initialized realtime\n", program_invocation_short_name);
-}
-
-void Cleanup() {
-  aos_core_free_shared_mem();
 }
 
 void PinCurrentThreadToCPU(int number) {
