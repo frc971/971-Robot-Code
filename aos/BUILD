@@ -328,17 +328,6 @@ cc_library(
     ],
 )
 
-cc_binary(
-    name = "core",
-    srcs = [
-        "core.cc",
-    ],
-    deps = [
-        ":init",
-        "//aos/util:run_command",
-    ],
-)
-
 cc_library(
     name = "make_unique",
     hdrs = [
