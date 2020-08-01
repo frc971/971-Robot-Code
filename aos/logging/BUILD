@@ -34,69 +34,6 @@ cc_library(
     ],
 )
 
-cc_binary(
-    name = "binary_log_writer",
-    srcs = [
-        "binary_log_writer.cc",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":binary_log_file",
-        ":implementations",
-        ":log_namer",
-        ":logging",
-        "//aos:configuration",
-        "//aos:die",
-        "//aos:init",
-        "//aos/ipc_lib:queue",
-        "//aos/time",
-    ],
-)
-
-cc_binary(
-    name = "log_streamer",
-    srcs = [
-        "log_streamer.cc",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":implementations",
-        ":logging",
-        "//aos:init",
-        "//aos/ipc_lib:queue",
-        "//aos/time",
-    ],
-)
-
-cc_binary(
-    name = "log_displayer",
-    srcs = [
-        "log_displayer.cc",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":binary_log_file",
-        ":implementations",
-        ":logging",
-        "//aos:configuration",
-        "//aos:init",
-        "//aos/util:string_to_num",
-    ],
-)
-
-cc_library(
-    name = "binary_log_file",
-    srcs = [
-        "binary_log_file.cc",
-    ],
-    hdrs = [
-        "binary_log_file.h",
-    ],
-    deps = [
-        ":implementations",
-    ],
-)
-
 cc_library(
     name = "sizes",
     hdrs = [
