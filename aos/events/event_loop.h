@@ -58,6 +58,16 @@ struct Context {
   size_t size;
   // Pointer to the data.
   const void *data;
+
+  // Efficiently coppies the flatbuffer into a FlatbufferVector, allocating
+  // memory in the process.  It is vital that T matches the type of the
+  // underlying flatbuffer.
+  template <typename T>
+  FlatbufferVector<T> CopyFlatBuffer() const {
+    return FlatbufferVector<T>(
+        std::vector<uint8_t>(reinterpret_cast<const uint8_t *>(data),
+                             reinterpret_cast<const uint8_t *>(data) + size));
+  }
 };
 
 // Raw version of fetcher. Contains a local variable that the fetcher will
