@@ -115,6 +115,10 @@ class Flatbuffer {
   absl::Span<const uint8_t> span() const {
     return absl::Span<const uint8_t>(data(), size());
   }
+
+  // Wipes out the data buffer. This is handy to mark an instance as freed, and
+  // make attempts to use it fail more obviously.
+  void Wipe() { memset(data(), 0, size()); }
 };
 
 // String backed flatbuffer.

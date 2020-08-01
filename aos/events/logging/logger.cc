@@ -328,10 +328,21 @@ LogReader::LogReader(const std::vector<std::vector<std::string>> &filenames,
 }
 
 LogReader::~LogReader() {
-  Deregister();
+  if (event_loop_factory_unique_ptr_) {
+    Deregister();
+  } else if (event_loop_factory_ != nullptr) {
+    LOG(FATAL) << "Must call Deregister before the SimulatedEventLoopFactory "
+                  "is destroyed";
+  }
   if (offset_fp_ != nullptr) {
     fclose(offset_fp_);
   }
+  // Zero out some buffers. It's easy to do use-after-frees on these, so make it
+  // more obvious.
+  if (remapped_configuration_buffer_) {
+    remapped_configuration_buffer_->Wipe();
+  }
+  log_file_header_.Wipe();
 }
 
 const Configuration *LogReader::logged_configuration() const {
