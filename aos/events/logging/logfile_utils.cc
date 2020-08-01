@@ -944,7 +944,7 @@ TimestampMerger::PopOldest() {
           << " data "
           << FlatbufferToJson(&std::get<2>(oldest_message).message());
 
-      return std::make_tuple(timestamp, std::get<2>(oldest_message));
+      return std::make_tuple(timestamp, std::move(std::get<2>(oldest_message)));
     }
   } else {
     std::tuple<monotonic_clock::time_point, uint32_t,
@@ -964,7 +964,7 @@ TimestampMerger::PopOldest() {
     CHECK_EQ(std::get<1>(oldest_message),
              std::get<2>(oldest_message).message().queue_index());
 
-    return std::make_tuple(timestamp, std::get<2>(oldest_message));
+    return std::make_tuple(timestamp, std::move(std::get<2>(oldest_message)));
   }
 }
 
