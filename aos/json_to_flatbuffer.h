@@ -97,6 +97,17 @@ inline void WriteFlatbufferToJson(const std::string_view filename,
   json_file.close();
 }
 
+// Writes a Flatbuffer to a binary file, or dies.
+template <typename T>
+inline void WriteFlatbufferToFile(const std::string_view filename,
+                                  const Flatbuffer<T> &msg) {
+  std::ofstream file(std::string(filename),
+                     std::ios::out | std::ofstream::binary);
+  CHECK(file) << ": Couldn't open " << filename;
+  std::copy(msg.span().begin(), msg.span().end(),
+            std::ostreambuf_iterator<char>(file));
+}
+
 // Parses a file as JSON and returns the corresponding Flatbuffer, or dies.
 template <typename T>
 inline FlatbufferDetachedBuffer<T> JsonFileToFlatbuffer(
@@ -105,6 +116,15 @@ inline FlatbufferDetachedBuffer<T> JsonFileToFlatbuffer(
   std::istream_iterator<char> start(t), end;
   std::string result(start, end);
   return FlatbufferDetachedBuffer<T>(JsonToFlatbuffer<T>(result));
+}
+
+// Parses a file as a binary flatbuffer or dies.
+template <typename T>
+inline FlatbufferVector<T> FileToFlatbuffer(const std::string_view path) {
+  std::ifstream instream(std::string(path), std::ios::in | std::ios::binary);
+  std::vector<uint8_t> data((std::istreambuf_iterator<char>(instream)),
+                            std::istreambuf_iterator<char>());
+  return FlatbufferVector<T>(std::move(data));
 }
 
 }  // namespace aos
