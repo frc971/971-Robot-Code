@@ -264,7 +264,8 @@ FlatbufferVector<LogFileHeader> ReadHeader(std::string_view filename) {
   absl::Span<const uint8_t> config_data = span_reader.ReadMessage();
 
   // Make sure something was read.
-  CHECK(config_data != absl::Span<const uint8_t>());
+  CHECK(config_data != absl::Span<const uint8_t>())
+      << ": Failed to read header from: " << filename;
 
   // And copy the config so we have it forever.
   std::vector<uint8_t> data(
@@ -273,15 +274,20 @@ FlatbufferVector<LogFileHeader> ReadHeader(std::string_view filename) {
 }
 
 MessageReader::MessageReader(std::string_view filename)
-    : span_reader_(filename) {
+    : span_reader_(filename),
+      raw_log_file_header_(FlatbufferVector<LogFileHeader>::Empty()) {
   // Make sure we have enough to read the size.
-  absl::Span<const uint8_t> config_data = span_reader_.ReadMessage();
+  absl::Span<const uint8_t> header_data = span_reader_.ReadMessage();
 
   // Make sure something was read.
-  CHECK(config_data != absl::Span<const uint8_t>());
+  CHECK(header_data != absl::Span<const uint8_t>())
+      << ": Failed to read header from: " << filename;
 
-  // And copy the config so we have it forever.
-  configuration_ = std::vector<uint8_t>(config_data.begin(), config_data.end());
+  // And copy the header data so we have it forever.
+  std::vector<uint8_t> header_data_copy(
+      header_data.begin() + sizeof(flatbuffers::uoffset_t), header_data.end());
+  raw_log_file_header_ =
+      FlatbufferVector<LogFileHeader>(std::move(header_data_copy));
 
   max_out_of_order_duration_ =
       std::chrono::nanoseconds(log_file_header()->max_out_of_order_duration());
@@ -310,12 +316,12 @@ std::optional<FlatbufferVector<MessageHeader>> MessageReader::ReadMessage() {
 SplitMessageReader::SplitMessageReader(
     const std::vector<std::string> &filenames)
     : filenames_(filenames),
-      log_file_header_(FlatbufferDetachedBuffer<LogFileHeader>::Empty()) {
+      log_file_header_(FlatbufferVector<LogFileHeader>::Empty()) {
   CHECK(NextLogFile()) << ": filenames is empty.  Need files to read.";
 
   // Grab any log file header.  They should all match (and we will check as we
   // open more of them).
-  log_file_header_ = CopyFlatBuffer(message_reader_->log_file_header());
+  log_file_header_ = message_reader_->raw_log_file_header();
 
   // Setup per channel state.
   channels_.resize(configuration()->channels()->size());
@@ -362,8 +368,8 @@ bool SplitMessageReader::NextLogFile() {
   // We can't support the config diverging between two log file headers.  See if
   // they are the same.
   if (next_filename_index_ != 0) {
-    CHECK(CompareFlatBuffer(&log_file_header_.message(),
-                            message_reader_->log_file_header()))
+    CHECK(CompareFlatBuffer(message_reader_->raw_log_file_header(),
+                            log_file_header_))
         << ": Header is different between log file chunks "
         << filenames_[next_filename_index_] << " and "
         << filenames_[next_filename_index_ - 1] << ", this is not supported.";
@@ -980,8 +986,7 @@ std::vector<std::unique_ptr<SplitMessageReader>> MakeSplitMessageReaders(
 ChannelMerger::ChannelMerger(
     const std::vector<std::vector<std::string>> &filenames)
     : split_message_readers_(MakeSplitMessageReaders(filenames)),
-      log_file_header_(
-          CopyFlatBuffer(split_message_readers_[0]->log_file_header())) {
+      log_file_header_(split_message_readers_[0]->raw_log_file_header()) {
   // Now, confirm that the configuration matches for each and pick a start time.
   // Also return the list of possible nodes.
   for (const std::unique_ptr<SplitMessageReader> &reader :

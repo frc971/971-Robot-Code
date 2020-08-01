@@ -3,11 +3,15 @@
 
 #include <sys/uio.h>
 
+#include <chrono>
 #include <deque>
+#include <limits>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include "absl/types/span.h"
@@ -164,8 +168,12 @@ class MessageReader {
 
   // Returns the header from the log file.
   const LogFileHeader *log_file_header() const {
-    return flatbuffers::GetSizePrefixedRoot<LogFileHeader>(
-        configuration_.data());
+    return &raw_log_file_header_.message();
+  }
+
+  // Returns the raw data of the header from the log file.
+  const FlatbufferVector<LogFileHeader> &raw_log_file_header() const {
+    return raw_log_file_header_;
   }
 
   // Returns the minimum maount of data needed to queue up for sorting before
@@ -191,8 +199,8 @@ class MessageReader {
   // Log chunk reader.
   SpanReader span_reader_;
 
-  // Vector holding the data for the configuration.
-  std::vector<uint8_t> configuration_;
+  // Vector holding the raw data for the log file header.
+  FlatbufferVector<LogFileHeader> raw_log_file_header_;
 
   // Minimum amount of data to queue up for sorting before we are guarenteed
   // to not see data out of order.
@@ -257,6 +265,10 @@ class SplitMessageReader {
   // Returns the header for the log files.
   const LogFileHeader *log_file_header() const {
     return &log_file_header_.message();
+  }
+
+  const FlatbufferVector<LogFileHeader> &raw_log_file_header() const {
+    return log_file_header_;
   }
 
   // Returns the starting time for this set of log files.
@@ -331,7 +343,7 @@ class SplitMessageReader {
   size_t next_filename_index_ = 0;
 
   // Log file header to report.  This is a copy.
-  FlatbufferDetachedBuffer<LogFileHeader> log_file_header_;
+  FlatbufferVector<LogFileHeader> log_file_header_;
   // Current log file being read.
   std::unique_ptr<MessageReader> message_reader_;
 
@@ -617,7 +629,7 @@ class ChannelMerger {
   std::vector<std::unique_ptr<SplitMessageReader>> split_message_readers_;
 
   // The log header we are claiming to be.
-  FlatbufferDetachedBuffer<LogFileHeader> log_file_header_;
+  FlatbufferVector<LogFileHeader> log_file_header_;
 
   // The timestamp mergers which combine data from the split message readers.
   std::vector<TimestampMerger> timestamp_mergers_;

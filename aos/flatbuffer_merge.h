@@ -89,6 +89,12 @@ inline bool CompareFlatBuffer(const T *t1, const T *t2) {
                            reinterpret_cast<const flatbuffers::Table *>(t2));
 }
 
+template <class T>
+inline bool CompareFlatBuffer(const aos::Flatbuffer<T> &t1,
+                              const aos::Flatbuffer<T> &t2) {
+  return t1.span() == t2.span();
+}
+
 }  // namespace aos
 
 #endif  // AOS_FLATBUFFER_MERGE_H_
