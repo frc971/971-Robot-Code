@@ -82,7 +82,6 @@ cc_library(
         ":sizes",
         "//aos:die",
         "//aos:macros",
-        "//aos/ipc_lib:queue",
         "//aos/mutex",
         "//aos/time",
         "//aos/type_traits",

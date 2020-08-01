@@ -65,45 +65,6 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "queue",
-    srcs = [
-        "queue.cc",
-    ],
-    hdrs = [
-        "queue.h",
-    ],
-    linkopts = [
-        "-lrt",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":core_lib",
-        ":shared_mem",
-        "//aos:condition",
-        "//aos/mutex",
-        "//aos/util:options",
-    ],
-)
-
-cc_test(
-    name = "raw_queue_test",
-    srcs = [
-        "raw_queue_test.cc",
-    ],
-    deps = [
-        ":core_lib",
-        ":queue",
-        "//aos:die",
-        "//aos/logging",
-        "//aos/testing:googletest",
-        "//aos/testing:prevent_exit",
-        "//aos/testing:test_shm",
-        "//aos/time",
-        "//aos/util:death_test_log_implementation",
-    ],
-)
-
 cc_test(
     name = "ipc_stress_test",
     srcs = [
@@ -125,20 +86,12 @@ cc_test(
     ],
 )
 
-cc_library(
-    name = "scoped_message_ptr",
-    deps = [
-        ":queue",
-    ],
-)
-
 cc_binary(
     name = "ipc_comparison",
     srcs = [
         "ipc_comparison.cc",
     ],
     deps = [
-        ":queue",
         "//aos:condition",
         "//aos:event",
         "//aos:init",
