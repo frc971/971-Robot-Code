@@ -23,13 +23,6 @@
 #include "aos/time/time.h"
 #include "aos/type_traits/type_traits.h"
 
-namespace aos {
-
-struct MessageType;
-class RawQueue;
-
-}  // namespace aos
-
 // This file has various concrete LogImplementations.
 
 namespace aos {
@@ -155,16 +148,6 @@ void Load();
 // NOTE: This is not the opposite of Init(). The state that this deletes is
 // lazily created when needed. It is actually the opposite of Load().
 void Cleanup();
-
-// Returns a queue which deals with LogMessage-sized messages.
-// The caller takes ownership.
-RawQueue *GetLoggingQueue();
-
-// Calls SetImplementation to register the standard linux logging implementation
-// which sends the messages through a queue. This implementation relies on
-// another process(es) to read the log messages that it puts into the queue.
-// This function is usually called by aos::Init*.
-void RegisterQueueImplementation();
 
 void RegisterCallbackImplementation(
     const ::std::function<void(const LogMessage &)> &callback,

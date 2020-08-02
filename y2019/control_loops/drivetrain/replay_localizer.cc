@@ -403,5 +403,5 @@ int main(int argc, char *argv[]) {
   ::y2019::control_loops::drivetrain::LocalizerReplayer replay;
   replay.ProcessFile(FLAGS_logfile.c_str());
 
-  ::aos::Cleanup();
+  return 0;
 }

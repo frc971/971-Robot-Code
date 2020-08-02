@@ -34,29 +34,25 @@ DEFINE_int32(max_vector_size, 100,
 // glog and to allow the user to readily redirect just the logged output
 // independent of any debugging information on stderr.
 void PrintMessage(const std::string_view node_name, const aos::Channel *channel,
-                  const aos::Context &context) {
+                  const aos::Context &context,
+                  aos::FastStringBuilder *builder) {
+  builder->Reset();
+  aos::FlatbufferToJson(builder, channel->schema(),
+                        static_cast<const uint8_t *>(context.data),
+                        {false, static_cast<size_t>(FLAGS_max_vector_size)});
+
   if (context.monotonic_remote_time != context.monotonic_event_time) {
     std::cout << node_name << context.realtime_event_time << " ("
               << context.monotonic_event_time << ") sent "
               << context.realtime_remote_time << " ("
               << context.monotonic_remote_time << ") "
               << channel->name()->c_str() << ' ' << channel->type()->c_str()
-              << ": "
-              << aos::FlatbufferToJson(
-                     channel->schema(),
-                     static_cast<const uint8_t *>(context.data),
-                     {false, static_cast<size_t>(FLAGS_max_vector_size)})
-              << std::endl;
+              << ": " << *builder << std::endl;
   } else {
     std::cout << node_name << context.realtime_event_time << " ("
               << context.monotonic_event_time << ") "
               << channel->name()->c_str() << ' ' << channel->type()->c_str()
-              << ": "
-              << aos::FlatbufferToJson(
-                     channel->schema(),
-                     static_cast<const uint8_t *>(context.data),
-                     {false, static_cast<size_t>(FLAGS_max_vector_size)})
-              << std::endl;
+              << ": " << *builder << std::endl;
   }
 }
 
@@ -125,6 +121,8 @@ int main(int argc, char **argv) {
 
   aos::logger::LogReader reader(logfiles);
 
+  aos::FastStringBuilder builder;
+
   aos::SimulatedEventLoopFactory event_loop_factory(reader.configuration());
   reader.Register(&event_loop_factory);
 
@@ -192,9 +190,10 @@ int main(int argc, char **argv) {
         }
 
         printer_event_loop->MakeRawWatcher(
-            channel, [channel, node_name](const aos::Context &context,
-                                          const void * /*message*/) {
-              PrintMessage(node_name, channel, context);
+            channel,
+            [channel, node_name, &builder](const aos::Context &context,
+                                               const void * /*message*/) {
+              PrintMessage(node_name, channel, context, &builder);
             });
         found_channel = true;
       }
@@ -208,7 +207,7 @@ int main(int argc, char **argv) {
     // TODO(austin): Sort between nodes too when it becomes annoying enough.
     for (const MessageInfo &message : messages_before_start) {
       PrintMessage(message.node_name, message.fetcher->channel(),
-                   message.fetcher->context());
+                   message.fetcher->context(), &builder);
     }
     printer_event_loops.emplace_back(std::move(printer_event_loop));
 
@@ -225,6 +224,5 @@ int main(int argc, char **argv) {
 
   event_loop_factory.Run();
 
-  aos::Cleanup();
   return 0;
 }

@@ -14,6 +14,5 @@ int main(int /*argc*/, char* /*argv*/ []) {
   ::y2016::actors::SuperstructureActor superstructure(&event_loop);
   event_loop.Run();
 
-  ::aos::Cleanup();
   return 0;
 }

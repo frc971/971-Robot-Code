@@ -260,7 +260,6 @@ cc_library(
     deps = [
         ":realtime",
         "//aos:die",
-        "//aos/ipc_lib:shared_mem",
         "//aos/logging:implementations",
     ],
 )
@@ -325,17 +324,6 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_binary(
-    name = "core",
-    srcs = [
-        "core.cc",
-    ],
-    deps = [
-        ":init",
-        "//aos/util:run_command",
     ],
 )
 

@@ -223,6 +223,7 @@ cc_library(
         ":drivetrain_status_fbs",
         ":spline",
         ":trajectory",
+        "//aos:condition",
         "//aos:init",
         "//aos/util:math",
         "//frc971/control_loops:control_loops_fbs",

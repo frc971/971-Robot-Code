@@ -8,7 +8,6 @@
 
 #include "absl/base/call_once.h"
 #include "aos/die.h"
-#include "aos/ipc_lib/queue.h"
 #include "aos/logging/printf_formats.h"
 #include "aos/time/time.h"
 
@@ -161,78 +160,6 @@ void Cleanup() { internal::Context::Delete(); }
 
 namespace {
 
-RawQueue *queue = NULL;
-
-int dropped_messages = 0;
-monotonic_clock::time_point dropped_start, backoff_start;
-// Wait this long after dropping a message before even trying to write any more.
-constexpr chrono::milliseconds kDropBackoff = chrono::milliseconds(100);
-
-LogMessage *GetMessageOrDie() {
-  LogMessage *message = static_cast<LogMessage *>(queue->GetMessage());
-  if (message == NULL) {
-    AOS_LOG(FATAL, "%p->GetMessage() failed\n", queue);
-  } else {
-    return message;
-  }
-}
-
-void Write(LogMessage *msg) {
-  if (__builtin_expect(dropped_messages > 0, false)) {
-    monotonic_clock::time_point message_time(
-        chrono::seconds(msg->seconds) + chrono::nanoseconds(msg->nseconds));
-    if (message_time - backoff_start < kDropBackoff) {
-      ++dropped_messages;
-      queue->FreeMessage(msg);
-      return;
-    }
-
-    LogMessage *dropped_message = GetMessageOrDie();
-    chrono::seconds dropped_start_sec = chrono::duration_cast<chrono::seconds>(
-        dropped_start.time_since_epoch());
-    chrono::nanoseconds dropped_start_nsec =
-        chrono::duration_cast<chrono::nanoseconds>(
-            dropped_start.time_since_epoch() - dropped_start_sec);
-    internal::FillInMessageVarargs(
-        ERROR, message_time, dropped_message,
-        "%d logs starting at %" PRId32 ".%" PRId32 " dropped\n",
-        dropped_messages, static_cast<int32_t>(dropped_start_sec.count()),
-        static_cast<int32_t>(dropped_start_nsec.count()));
-    if (queue->WriteMessage(dropped_message, RawQueue::kNonBlock)) {
-      dropped_messages = 0;
-    } else {
-      // Don't even bother trying to write this message because it's not likely
-      // to work and it would be confusing to have one log in the middle of a
-      // string of failures get through.
-      ++dropped_messages;
-      backoff_start = message_time;
-      queue->FreeMessage(msg);
-      return;
-    }
-  }
-  if (!queue->WriteMessage(msg, RawQueue::kNonBlock)) {
-    if (dropped_messages == 0) {
-      monotonic_clock::time_point message_time(
-          chrono::seconds(msg->seconds) + chrono::nanoseconds(msg->nseconds));
-      dropped_start = backoff_start = message_time;
-    }
-    ++dropped_messages;
-  }
-}
-
-class LinuxQueueLogImplementation : public LogImplementation {
-  virtual ::aos::monotonic_clock::time_point monotonic_now() const {
-    return ::aos::monotonic_clock::now();
-  }
-
-  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0))) void DoLog(
-      log_level level, const char *format, va_list ap) override {
-    LogMessage *message = GetMessageOrDie();
-    internal::FillInMessage(level, monotonic_now(), format, ap, message);
-    Write(message);
-  }
-};
-
 class CallbackLogImplementation : public HandleMessageLogImplementation {
  public:
   CallbackLogImplementation(
@@ -246,21 +173,6 @@ class CallbackLogImplementation : public HandleMessageLogImplementation {
 };
 
 }  // namespace
-
-RawQueue *GetLoggingQueue() {
-  return RawQueue::Fetch("LoggingQueue", sizeof(LogMessage), 1323, 10000);
-}
-
-void RegisterQueueImplementation() {
-  Init();
-
-  queue = GetLoggingQueue();
-  if (queue == NULL) {
-    Die("logging: couldn't fetch queue\n");
-  }
-
-  SetImplementation(new LinuxQueueLogImplementation());
-}
 
 void RegisterCallbackImplementation(
     const ::std::function<void(const LogMessage &)> &callback,

@@ -20,6 +20,5 @@ int main() {
 
   event_loop.Run();
 
-  ::aos::Cleanup();
   return 0;
 }

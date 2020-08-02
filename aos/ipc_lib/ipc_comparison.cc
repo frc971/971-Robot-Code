@@ -24,7 +24,6 @@
 #include "aos/condition.h"
 #include "aos/event.h"
 #include "aos/init.h"
-#include "aos/ipc_lib/queue.h"
 #include "aos/logging/implementations.h"
 #include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"
@@ -756,55 +755,6 @@ class PosixNamedSemaphorePingPonger : public PosixSemaphorePingPonger {
   sem_t *ping_sem_, *pong_sem_;
 };
 
-class AOSQueuePingPonger : public PingPongerInterface {
- public:
-  AOSQueuePingPonger()
-      : ping_queue_(RawQueue::Fetch("ping", sizeof(Data), 0, 1)),
-        pong_queue_(RawQueue::Fetch("pong", sizeof(Data), 0, 1)) {}
-
-  Data *PingData() override {
-    AOS_CHECK_EQ(nullptr, ping_to_send_);
-    ping_to_send_ = static_cast<Data *>(ping_queue_->GetMessage());
-    return ping_to_send_;
-  }
-
-  const Data *Ping() override {
-    AOS_CHECK_NE(nullptr, ping_to_send_);
-    AOS_CHECK(ping_queue_->WriteMessage(ping_to_send_, RawQueue::kBlock));
-    ping_to_send_ = nullptr;
-    pong_queue_->FreeMessage(pong_received_);
-    pong_received_ =
-        static_cast<const Data *>(pong_queue_->ReadMessage(RawQueue::kBlock));
-    return pong_received_;
-  }
-
-  const Data *Wait() override {
-    ping_queue_->FreeMessage(ping_received_);
-    ping_received_ =
-        static_cast<const Data *>(ping_queue_->ReadMessage(RawQueue::kBlock));
-    return ping_received_;
-  }
-
-  Data *PongData() override {
-    AOS_CHECK_EQ(nullptr, pong_to_send_);
-    pong_to_send_ = static_cast<Data *>(pong_queue_->GetMessage());
-    return pong_to_send_;
-  }
-
-  void Pong() override {
-    AOS_CHECK_NE(nullptr, pong_to_send_);
-    AOS_CHECK(pong_queue_->WriteMessage(pong_to_send_, RawQueue::kBlock));
-    pong_to_send_ = nullptr;
-  }
-
- private:
-  RawQueue *const ping_queue_;
-  RawQueue *const pong_queue_;
-
-  Data *ping_to_send_ = nullptr, *pong_to_send_ = nullptr;
-  const Data *ping_received_ = nullptr, *pong_received_ = nullptr;
-};
-
 int Main(int /*argc*/, char **argv) {
   ::std::unique_ptr<PingPongerInterface> ping_ponger;
   if (FLAGS_method == "pipe") {
@@ -823,8 +773,6 @@ int Main(int /*argc*/, char **argv) {
     ping_ponger.reset(new PthreadMutexPingPonger(true, true));
   } else if (FLAGS_method == "pthread_mutex_pi") {
     ping_ponger.reset(new PthreadMutexPingPonger(false, true));
-  } else if (FLAGS_method == "aos_queue") {
-    ping_ponger.reset(new AOSQueuePingPonger());
   } else if (FLAGS_method == "eventfd") {
     ping_ponger.reset(new EventFDPingPonger());
   } else if (FLAGS_method == "sysv_semaphore") {
@@ -938,7 +886,6 @@ int main(int argc, char **argv) {
       "\tpthread_mutex_pshared\n"
       "\tpthread_mutex_pshared_pi\n"
       "\tpthread_mutex_pi\n"
-      "\taos_queue\n"
       "\teventfd\n"
       "\tsysv_semaphore\n"
       "\tsysv_queue\n"
