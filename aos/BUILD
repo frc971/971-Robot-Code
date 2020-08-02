@@ -281,6 +281,7 @@ cc_library(
 flatbuffer_cc_library(
     name = "configuration_fbs",
     srcs = ["configuration.fbs"],
+    gen_reflections = 1,
     visibility = ["//visibility:public"],
 )
 
@@ -335,10 +336,17 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
+flatbuffer_ts_library(
+    name = "json_to_flatbuffer_flatbuffer_ts",
+    srcs = ["json_to_flatbuffer.fbs"],
+    visibility = ["//aos:__subpackages__"],
+)
+
 flatbuffer_cc_library(
     name = "json_to_flatbuffer_flatbuffer",
     srcs = ["json_to_flatbuffer.fbs"],
     gen_reflections = 1,
+    visibility = ["//aos:__subpackages__"],
 )
 
 cc_library(
