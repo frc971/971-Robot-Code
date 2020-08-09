@@ -224,5 +224,7 @@ int main(int argc, char **argv) {
 
   event_loop_factory.Run();
 
+  reader.Deregister();
+
   return 0;
 }
