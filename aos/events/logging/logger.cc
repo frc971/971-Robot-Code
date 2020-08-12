@@ -599,7 +599,9 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
   // to timestamps on log files where the timestamp log file starts before the
   // data.  In this case, it is reasonable to expect missing data.
   ignore_missing_data_ = true;
+  VLOG(1) << "Running until start time: " << start_time;
   event_loop_factory_->RunFor(start_time.time_since_epoch());
+  VLOG(1) << "At start time";
   // Now that we are running for real, missing data means that the log file is
   // corrupted or went wrong.
   ignore_missing_data_ = false;
