@@ -258,6 +258,8 @@ class LocklessQueue {
               aos::realtime_clock::time_point *realtime_sent_time = nullptr,
               uint32_t *queue_index = nullptr);
 
+    int buffer_index() const;
+
    private:
     friend class LocklessQueue;
 
@@ -298,9 +300,9 @@ class LocklessQueue {
 
     // Attempts to pin the message at queue_index.
     // Un-pins the previous message.
-    // Returns true if it succeeds.
-    // Returns false if that message is no longer in the queue.
-    bool PinIndex(uint32_t queue_index);
+    // Returns the buffer index (non-negative) if it succeeds.
+    // Returns -1 if that message is no longer in the queue.
+    int PinIndex(uint32_t queue_index);
 
     // Read at most size() bytes of data into the memory pointed to by Data().
     // Note: calls to Data() are expensive enough that you should cache it.

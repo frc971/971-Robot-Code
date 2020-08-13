@@ -53,6 +53,8 @@ void SetShmBase(const std::string_view base) {
   FLAGS_shm_base = std::string(base) + "/dev/shm/aos";
 }
 
+namespace {
+
 std::string ShmFolder(const Channel *channel) {
   CHECK(channel->has_name());
   CHECK_EQ(channel->name()->string_view()[0], '/');
@@ -88,20 +90,27 @@ void PageFaultData(char *data, size_t size) {
   }
 }
 
+ipc_lib::LocklessQueueConfiguration MakeQueueConfiguration(
+    const Channel *channel, std::chrono::seconds channel_storage_duration) {
+  ipc_lib::LocklessQueueConfiguration config;
+
+  config.num_watchers = channel->num_watchers();
+  config.num_senders = channel->num_senders();
+  // The value in the channel will default to 0 if readers are configured to
+  // copy.
+  config.num_pinners = channel->num_readers();
+  config.queue_size = channel_storage_duration.count() * channel->frequency();
+  config.message_data_size = channel->max_size();
+
+  return config;
+}
+
 class MMapedQueue {
  public:
   MMapedQueue(const Channel *channel,
-              const std::chrono::seconds channel_storage_duration) {
+              std::chrono::seconds channel_storage_duration)
+      : config_(MakeQueueConfiguration(channel, channel_storage_duration)) {
     std::string path = ShmPath(channel);
-
-    config_.num_watchers = channel->num_watchers();
-    config_.num_senders = channel->num_senders();
-    // The value in the channel will default to 0 if readers are configured to
-    // copy.
-    config_.num_pinners = channel->num_readers();
-    config_.queue_size =
-        channel_storage_duration.count() * channel->frequency();
-    config_.message_data_size = channel->max_size();
 
     size_ = ipc_lib::LocklessQueueMemorySize(config_);
 
@@ -110,7 +119,7 @@ class MMapedQueue {
     // There are 2 cases.  Either the file already exists, or it does not
     // already exist and we need to create it.  Start by trying to create it. If
     // that fails, the file has already been created and we can open it
-    // normally..  Once the file has been created it wil never be deleted.
+    // normally..  Once the file has been created it will never be deleted.
     int fd = open(path.c_str(), O_RDWR | O_CREAT | O_EXCL,
                   O_CLOEXEC | FLAGS_permissions);
     if (fd == -1 && errno == EEXIST) {
@@ -160,13 +169,11 @@ class MMapedQueue {
   }
 
  private:
-  ipc_lib::LocklessQueueConfiguration config_;
+  const ipc_lib::LocklessQueueConfiguration config_;
 
   size_t size_;
   void *data_;
 };
-
-namespace {
 
 const Node *MaybeMyNode(const Configuration *configuration) {
   if (!configuration->has_nodes()) {
@@ -320,11 +327,15 @@ class SimpleShmFetcher {
 
     if (read_result == ipc_lib::LocklessQueue::ReadResult::GOOD) {
       if (pin_data()) {
-        CHECK(pinner_->PinIndex(queue_index.index()))
+        const int pin_result = pinner_->PinIndex(queue_index.index());
+        CHECK(pin_result >= 0)
             << ": Got behind while reading and the last message was modified "
                "out from under us while we tried to pin it. Don't get so far "
                "behind on: "
             << configuration::CleanedChannelToString(channel_);
+        context_.buffer_index = pin_result;
+      } else {
+        context_.buffer_index = -1;
       }
 
       context_.queue_index = queue_index.index();
@@ -500,6 +511,8 @@ class ShmSender : public RawSender {
   absl::Span<char> GetSharedMemory() const {
     return lockless_queue_memory_.GetSharedMemory();
   }
+
+  int buffer_index() override { return lockless_queue_sender_.buffer_index(); }
 
  private:
   MMapedQueue lockless_queue_memory_;
@@ -992,6 +1005,13 @@ absl::Span<char> ShmEventLoop::GetWatcherSharedMemory(const Channel *channel) {
   ShmWatcherState *const watcher_state =
       static_cast<ShmWatcherState *>(GetWatcherState(channel));
   return watcher_state->GetSharedMemory();
+}
+
+int ShmEventLoop::NumberBuffers(const Channel *channel) {
+  return MakeQueueConfiguration(
+             channel, chrono::ceil<chrono::seconds>(chrono::nanoseconds(
+                          configuration()->channel_storage_duration())))
+      .num_messages();
 }
 
 absl::Span<char> ShmEventLoop::GetShmSenderSharedMemory(

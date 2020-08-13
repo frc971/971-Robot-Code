@@ -1,10 +1,12 @@
 #ifndef _AOS_EVENTS_EVENT_LOOP_PARAM_TEST_H_
 #define _AOS_EVENTS_EVENT_LOOP_PARAM_TEST_H_
 
+#include <initializer_list>
 #include <string_view>
 #include <vector>
 
 #include "aos/events/event_loop.h"
+#include "aos/events/test_message_generated.h"
 #include "aos/flatbuffers.h"
 #include "aos/json_to_flatbuffer.h"
 #include "gtest/gtest.h"
@@ -181,11 +183,11 @@ class EventLoopTestFactory {
   const Node *my_node_ = nullptr;
 };
 
-class AbstractEventLoopTestBase
+class AbstractEventLoopTest
     : public ::testing::TestWithParam<
           std::tuple<std::function<EventLoopTestFactory *()>, ReadMethod>> {
  public:
-  AbstractEventLoopTestBase() : factory_(std::get<0>(GetParam())()) {
+  AbstractEventLoopTest() : factory_(std::get<0>(GetParam())()) {
     if (read_method() == ReadMethod::PIN) {
       factory_->PinReads();
     }
@@ -193,15 +195,8 @@ class AbstractEventLoopTestBase
 
   ReadMethod read_method() const { return std::get<1>(GetParam()); }
 
-  ::std::unique_ptr<EventLoop> Make(std::string_view name = "") {
-    std::string name_copy(name);
-    if (name == "") {
-      name_copy = "loop";
-      name_copy += std::to_string(event_loop_count_);
-    }
-    ++event_loop_count_;
-    return factory_->Make(name_copy);
-  }
+  ::std::unique_ptr<EventLoop> Make(std::string_view name = "");
+
   ::std::unique_ptr<EventLoop> MakePrimary(std::string_view name = "primary") {
     ++event_loop_count_;
     return factory_->MakePrimary(name);
@@ -228,14 +223,20 @@ class AbstractEventLoopTestBase
     end_timer->set_name("end");
   }
 
+  // Verifies that the buffer_index values for all of the given objects are
+  // consistent.
+  void VerifyBuffers(
+      int number_buffers,
+      std::vector<std::reference_wrapper<const Fetcher<TestMessage>>> fetchers,
+      std::vector<std::reference_wrapper<const Sender<TestMessage>>> senders);
+
  private:
   const ::std::unique_ptr<EventLoopTestFactory> factory_;
 
   int event_loop_count_ = 0;
 };
 
-typedef AbstractEventLoopTestBase AbstractEventLoopDeathTest;
-typedef AbstractEventLoopTestBase AbstractEventLoopTest;
+using AbstractEventLoopDeathTest = AbstractEventLoopTest;
 
 }  // namespace testing
 }  // namespace aos

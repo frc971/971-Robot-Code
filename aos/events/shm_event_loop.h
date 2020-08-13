@@ -24,8 +24,8 @@ class ShmFetcher;
 
 }  // namespace shm_event_loop_internal
 
-// Specialization of EventLoop that is built from queues running out of shared
-// memory.
+// Concrete implementation of EventLoop that is built from queues running out of
+// shared memory.
 //
 // TODO(austin): Timing reports break multiple threads.  Need to add back in a
 // mutex.
@@ -97,6 +97,8 @@ class ShmEventLoop : public EventLoop {
   absl::Span<char> GetFetcherPrivateMemory(aos::Fetcher<T> *fetcher) const {
     return GetShmFetcherPrivateMemory(GetRawFetcher(fetcher));
   }
+
+  int NumberBuffers(const Channel *channel) override;
 
  private:
   friend class shm_event_loop_internal::ShmWatcherState;

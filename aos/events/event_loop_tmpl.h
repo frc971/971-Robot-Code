@@ -177,6 +177,7 @@ inline monotonic_clock::time_point TimerHandler::Call(
   event_loop_->context_.queue_index = 0xffffffffu;
   event_loop_->context_.size = 0;
   event_loop_->context_.data = nullptr;
+  event_loop_->context_.buffer_index = -1;
 
   ftrace_.FormatMessage(
       "timer: %.*s: start now=%" PRId64 " event=%" PRId64,
@@ -221,6 +222,7 @@ inline void PhasedLoopHandler::Call(
   event_loop_->context_.queue_index = 0xffffffffu;
   event_loop_->context_.size = 0;
   event_loop_->context_.data = nullptr;
+  event_loop_->context_.buffer_index = -1;
 
   // Compute how many cycles elapsed and schedule the next wakeup.
   Reschedule(schedule, monotonic_start_time);

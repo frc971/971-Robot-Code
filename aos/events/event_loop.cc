@@ -33,6 +33,7 @@ RawFetcher::RawFetcher(EventLoop *event_loop, const Channel *channel)
   context_.queue_index = 0xffffffff;
   context_.size = 0;
   context_.data = nullptr;
+  context_.buffer_index = -1;
   event_loop_->NewFetcher(this);
 }
 

@@ -33,7 +33,6 @@ struct SimulatedMessage final {
   Context context;
 
   SimulatedChannel *const channel = nullptr;
-  int buffer_index;
 
   // The data.
   char *data(size_t buffer_size) {
@@ -82,9 +81,10 @@ class SimulatedWatcher : public WatcherState {
 
   ::std::deque<std::shared_ptr<SimulatedMessage>> msgs_;
 
-  SimulatedEventLoop *simulated_event_loop_;
+  SimulatedEventLoop *const simulated_event_loop_;
+  const Channel *const channel_;
+  EventScheduler *const scheduler_;
   EventHandler<SimulatedWatcher> event_;
-  EventScheduler *scheduler_;
   EventScheduler::Token token_;
   SimulatedChannel *simulated_channel_ = nullptr;
 };
@@ -247,11 +247,11 @@ std::shared_ptr<SimulatedMessage> SimulatedMessage::Make(
 
 SimulatedMessage::SimulatedMessage(SimulatedChannel *channel_in)
     : channel(channel_in) {
-  buffer_index = channel->GetBufferIndex();
+  context.buffer_index = channel->GetBufferIndex();
 }
 
 SimulatedMessage::~SimulatedMessage() {
-  channel->FreeBufferIndex(buffer_index);
+  channel->FreeBufferIndex(context.buffer_index);
 }
 
 class SimulatedSender : public RawSender {
@@ -319,6 +319,12 @@ class SimulatedSender : public RawSender {
                   remote_queue_index);
   }
 
+  int buffer_index() override {
+    // First, ensure message_ is allocated.
+    data();
+    return message_->context.buffer_index;
+  }
+
  private:
   SimulatedChannel *simulated_channel_;
   EventLoop *event_loop_;
@@ -374,6 +380,9 @@ class SimulatedFetcher : public RawFetcher {
   void SetMsg(std::shared_ptr<SimulatedMessage> msg) {
     msg_ = msg;
     context_ = msg_->context;
+    if (channel()->read_method() != ReadMethod::PIN) {
+      context_.buffer_index = -1;
+    }
     if (context_.remote_queue_index == 0xffffffffu) {
       context_.remote_queue_index = context_.queue_index;
     }
@@ -567,6 +576,8 @@ class SimulatedEventLoop : public EventLoop {
     }
   }
 
+  int NumberBuffers(const Channel *channel) override;
+
  private:
   friend class SimulatedTimerHandler;
   friend class SimulatedPhasedLoopHandler;
@@ -664,14 +675,19 @@ SimulatedChannel *SimulatedEventLoop::GetSimulatedChannel(
   return it->second.get();
 }
 
+int SimulatedEventLoop::NumberBuffers(const Channel *channel) {
+  return GetSimulatedChannel(channel)->number_buffers();
+}
+
 SimulatedWatcher::SimulatedWatcher(
     SimulatedEventLoop *simulated_event_loop, EventScheduler *scheduler,
     const Channel *channel,
     std::function<void(const Context &context, const void *message)> fn)
     : WatcherState(simulated_event_loop, channel, std::move(fn)),
       simulated_event_loop_(simulated_event_loop),
-      event_(this),
+      channel_(channel),
       scheduler_(scheduler),
+      event_(this),
       token_(scheduler_->InvalidToken()) {}
 
 SimulatedWatcher::~SimulatedWatcher() {
@@ -679,7 +695,7 @@ SimulatedWatcher::~SimulatedWatcher() {
   if (token_ != scheduler_->InvalidToken()) {
     scheduler_->Deschedule(token_);
   }
-  simulated_channel_->RemoveWatcher(this);
+  CHECK_NOTNULL(simulated_channel_)->RemoveWatcher(this);
 }
 
 void SimulatedWatcher::Schedule(std::shared_ptr<SimulatedMessage> message) {
@@ -709,6 +725,9 @@ void SimulatedWatcher::HandleEvent() {
   }
   Context context = msgs_.front()->context;
 
+  if (channel_->read_method() != ReadMethod::PIN) {
+    context.buffer_index = -1;
+  }
   if (context.remote_queue_index == 0xffffffffu) {
     context.remote_queue_index = context.queue_index;
   }

@@ -48,6 +48,7 @@ struct Context {
   realtime_clock::time_point realtime_remote_time;
 
   // The rest are only valid for Watchers and Fetchers.
+
   // Index in the queue.
   uint32_t queue_index;
   // Index into the remote queue.  Useful to determine if data was lost.  In a
@@ -58,6 +59,20 @@ struct Context {
   size_t size;
   // Pointer to the data.
   const void *data;
+
+  // Index of the message buffer. This will be in [0, NumberBuffers) on
+  // read_method=PIN channels, and -1 for other channels.
+  //
+  // This only tells you about the underlying storage for this message, not
+  // anything about its position in the queue. This is only useful for advanced
+  // zero-copy use cases, on read_method=PIN channels.
+  //
+  // This will uniquely identify a message on this channel at a point in time.
+  // For senders, this point in time is while the sender has the message. With
+  // read_method==PIN, this point in time includes while the caller has access
+  // to this context. For other read_methods, this point in time may be before
+  // the caller has access to this context, which makes this pretty useless.
+  int buffer_index;
 
   // Efficiently coppies the flatbuffer into a FlatbufferVector, allocating
   // memory in the process.  It is vital that T matches the type of the
@@ -165,6 +180,10 @@ class RawSender {
         reinterpret_cast<uint8_t *>(data()), size(), channel());
     return &fbb_allocator_;
   }
+
+  // Index of the buffer which is currently exposed by data() and the various
+  // other accessors. This is the message the caller should be filling out.
+  virtual int buffer_index() = 0;
 
  protected:
   EventLoop *event_loop() { return event_loop_; }
@@ -351,13 +370,17 @@ class Sender {
   // Returns the queue index that this was sent with.
   uint32_t sent_queue_index() const { return sender_->sent_queue_index(); }
 
+  // Returns the buffer index which MakeBuilder() will expose access to. This is
+  // the buffer the caller can fill out.
+  int buffer_index() const { return sender_->buffer_index(); }
+
  private:
   friend class EventLoop;
   Sender(std::unique_ptr<RawSender> sender) : sender_(std::move(sender)) {}
   std::unique_ptr<RawSender> sender_;
 };
 
-// Interface for timers
+// Interface for timers.
 class TimerHandler {
  public:
   virtual ~TimerHandler();
@@ -604,6 +627,7 @@ class EventLoop {
     MakeRawWatcher(channel, [watcher](const Context &context, const void *) {
       Context new_context = context;
       new_context.data = nullptr;
+      new_context.buffer_index = -1;
       watcher(new_context);
     });
   }
@@ -622,8 +646,12 @@ class EventLoop {
   // Prevents the event loop from sending a timing report.
   void SkipTimingReport() { skip_timing_report_ = true; }
 
-  // Prevents AOS_LOG being sent to message on /aos
+  // Prevents AOS_LOG being sent to message on /aos.
   void SkipAosLog() { skip_logger_ = true; }
+
+  // Returns the number of buffers for this channel. This corresponds with the
+  // range of Context::buffer_index values for this channel.
+  virtual int NumberBuffers(const Channel *channel) = 0;
 
  protected:
   // Sets the name of the event loop.  This is the application name.

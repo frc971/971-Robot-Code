@@ -859,7 +859,7 @@ LocklessQueue::Pinner::~Pinner() {
 
 // This method doesn't mess with any scratch_index, so it doesn't have to worry
 // about message ownership.
-bool LocklessQueue::Pinner::PinIndex(uint32_t uint32_queue_index) {
+int LocklessQueue::Pinner::PinIndex(uint32_t uint32_queue_index) {
   const size_t queue_size = memory_->queue_size();
   const QueueIndex queue_index =
       QueueIndex::Zero(queue_size).IncrementBy(uint32_queue_index);
@@ -880,7 +880,7 @@ bool LocklessQueue::Pinner::PinIndex(uint32_t uint32_queue_index) {
     if (message_queue_index == queue_index) {
       VLOG(3) << "Eq: " << std::hex << message_queue_index.index();
       aos_compiler_memory_barrier();
-      return true;
+      return message_index.message_index();
     }
     VLOG(3) << "Message reused: " << std::hex << message_queue_index.index()
             << ", " << queue_index.index();
@@ -890,7 +890,7 @@ bool LocklessQueue::Pinner::PinIndex(uint32_t uint32_queue_index) {
   // longer in the queue, so back that out now.
   pinner->pinned.Invalidate();
   VLOG(3) << "Unpinned: " << std::hex << queue_index.index();
-  return false;
+  return -1;
 }
 
 size_t LocklessQueue::Pinner::size() const {
@@ -1092,6 +1092,14 @@ void LocklessQueue::Sender::Send(
   // If anybody is looking at this message (they shouldn't be), then try telling
   // them about it (best-effort).
   memory_->GetMessage(new_scratch)->header.queue_index.RelaxedInvalidate();
+}
+
+int LocklessQueue::Sender::buffer_index() const {
+  ::aos::ipc_lib::Sender *const sender = memory_->GetSender(sender_index_);
+  // We can do a relaxed load on our sender because we're the only person
+  // modifying it right now.
+  const Index scratch_index = sender->scratch_index.RelaxedLoad();
+  return scratch_index.message_index();
 }
 
 LocklessQueue::ReadResult LocklessQueue::Read(
