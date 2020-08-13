@@ -133,12 +133,12 @@ class QueueIndex {
 struct AtomicQueueIndex {
  public:
   // Atomically reads the index without any ordering constraints.
-  QueueIndex RelaxedLoad(uint32_t count) {
+  QueueIndex RelaxedLoad(uint32_t count) const {
     return QueueIndex(index_.load(::std::memory_order_relaxed), count);
   }
 
   // Full bidirectional barriers here.
-  QueueIndex Load(uint32_t count) {
+  QueueIndex Load(uint32_t count) const {
     return QueueIndex(index_.load(::std::memory_order_acquire), count);
   }
   inline void Store(QueueIndex value) {
@@ -222,7 +222,7 @@ class Index {
 class AtomicIndex {
  public:
   // Stores and loads atomically without ordering constraints.
-  Index RelaxedLoad() {
+  Index RelaxedLoad() const {
     return Index(index_.load(::std::memory_order_relaxed));
   }
   void RelaxedStore(Index index) {
@@ -237,7 +237,7 @@ class AtomicIndex {
   void Store(Index index) {
     index_.store(index.index_, ::std::memory_order_release);
   }
-  Index Load() { return Index(index_.load(::std::memory_order_acquire)); }
+  Index Load() const { return Index(index_.load(::std::memory_order_acquire)); }
 
   // Swaps expected for index atomically.  Returns true on success, false
   // otherwise.

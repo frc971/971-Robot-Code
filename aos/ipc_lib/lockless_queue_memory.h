@@ -75,27 +75,27 @@ struct LocklessQueueMemory {
   alignas(kDataAlignment) char data[];
 
   // Memory size functions for all 4 lists.
-  size_t SizeOfQueue() { return SizeOfQueue(config); }
+  size_t SizeOfQueue() const { return SizeOfQueue(config); }
   static size_t SizeOfQueue(LocklessQueueConfiguration config) {
     return AlignmentRoundUp(sizeof(AtomicIndex) * config.queue_size);
   }
 
-  size_t SizeOfMessages() { return SizeOfMessages(config); }
+  size_t SizeOfMessages() const { return SizeOfMessages(config); }
   static size_t SizeOfMessages(LocklessQueueConfiguration config) {
     return AlignmentRoundUp(config.message_size() * config.num_messages());
   }
 
-  size_t SizeOfWatchers() { return SizeOfWatchers(config); }
+  size_t SizeOfWatchers() const { return SizeOfWatchers(config); }
   static size_t SizeOfWatchers(LocklessQueueConfiguration config) {
     return AlignmentRoundUp(sizeof(Watcher) * config.num_watchers);
   }
 
-  size_t SizeOfSenders() { return SizeOfSenders(config); }
+  size_t SizeOfSenders() const { return SizeOfSenders(config); }
   static size_t SizeOfSenders(LocklessQueueConfiguration config) {
     return AlignmentRoundUp(sizeof(Sender) * config.num_senders);
   }
 
-  size_t SizeOfPinners() { return SizeOfPinners(config); }
+  size_t SizeOfPinners() const { return SizeOfPinners(config); }
   static size_t SizeOfPinners(LocklessQueueConfiguration config) {
     return AlignmentRoundUp(sizeof(Pinner) * config.num_pinners);
   }
@@ -106,6 +106,14 @@ struct LocklessQueueMemory {
     static_assert(alignof(Pinner) <= kDataAlignment,
                   "kDataAlignment is too small");
     return reinterpret_cast<Pinner *>(
+        &data[0] + SizeOfQueue() + SizeOfMessages() + SizeOfWatchers() +
+        SizeOfSenders() + pinner_index * sizeof(Pinner));
+  }
+
+  const Pinner *GetPinner(size_t pinner_index) const {
+    static_assert(alignof(const Pinner) <= kDataAlignment,
+                  "kDataAlignment is too small");
+    return reinterpret_cast<const Pinner *>(
         &data[0] + SizeOfQueue() + SizeOfMessages() + SizeOfWatchers() +
         SizeOfSenders() + pinner_index * sizeof(Pinner));
   }
@@ -126,11 +134,25 @@ struct LocklessQueueMemory {
                                        watcher_index * sizeof(Watcher));
   }
 
+  const Watcher *GetWatcher(size_t watcher_index) const {
+    static_assert(alignof(const Watcher) <= kDataAlignment,
+                  "kDataAlignment is too small");
+    return reinterpret_cast<const Watcher *>(&data[0] + SizeOfQueue() +
+                                             SizeOfMessages() +
+                                             watcher_index * sizeof(Watcher));
+  }
+
   AtomicIndex *GetQueue(uint32_t index) {
     static_assert(alignof(AtomicIndex) <= kDataAlignment,
                   "kDataAlignment is too small");
     return reinterpret_cast<AtomicIndex *>(&data[0] +
                                            sizeof(AtomicIndex) * index);
+  }
+  const AtomicIndex *GetQueue(uint32_t index) const {
+    static_assert(alignof(const AtomicIndex) <= kDataAlignment,
+                  "kDataAlignment is too small");
+    return reinterpret_cast<const AtomicIndex *>(&data[0] +
+                                                 sizeof(AtomicIndex) * index);
   }
 
   // There are num_messages() messages.  The free list is really the
@@ -142,12 +164,19 @@ struct LocklessQueueMemory {
     return reinterpret_cast<Message *>(&data[0] + SizeOfQueue() +
                                        index.message_index() * message_size());
   }
+  const Message *GetMessage(Index index) const {
+    static_assert(alignof(const Message) <= kDataAlignment,
+                  "kDataAlignment is too small");
+    return reinterpret_cast<const Message *>(
+        &data[0] + SizeOfQueue() + index.message_index() * message_size());
+  }
 
   // Helpers to fetch messages from the queue.
-  Index LoadIndex(QueueIndex index) {
+  Index LoadIndex(QueueIndex index) const {
     return GetQueue(index.Wrapped())->Load();
   }
-  Message *GetMessage(QueueIndex index) {
+  Message *GetMessage(QueueIndex index) { return GetMessage(LoadIndex(index)); }
+  const Message *GetMessage(QueueIndex index) const {
     return GetMessage(LoadIndex(index));
   }
 

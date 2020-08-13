@@ -511,18 +511,21 @@ TEST(LocklessQueueTest, Death) {
       config,
       [config, tid](void *memory) {
         // Initialize the queue and grab the tid.
-        LocklessQueue queue(
+        LocklessQueue(
             reinterpret_cast<aos::ipc_lib::LocklessQueueMemory *>(memory),
-            config);
+            reinterpret_cast<aos::ipc_lib::LocklessQueueMemory *>(memory),
+            config)
+            .Initialize();
         *tid = gettid();
       },
       [config](void *memory) {
-        // Now try to write 2 messages.  We will get killed a bunch as this
-        // tries to happen.
         LocklessQueue queue(
             reinterpret_cast<aos::ipc_lib::LocklessQueueMemory *>(memory),
+            reinterpret_cast<aos::ipc_lib::LocklessQueueMemory *>(memory),
             config);
-        LocklessQueue::Sender sender = queue.MakeSender().value();
+        // Now try to write 2 messages.  We will get killed a bunch as this
+        // tries to happen.
+        LocklessQueueSender sender = LocklessQueueSender::Make(queue).value();
         for (int i = 0; i < 2; ++i) {
           char data[100];
           size_t s = snprintf(data, sizeof(data), "foobar%d", i + 1);
@@ -530,10 +533,11 @@ TEST(LocklessQueueTest, Death) {
         }
       },
       [config, tid](void *raw_memory) {
+        ::aos::ipc_lib::LocklessQueueMemory *const memory =
+            reinterpret_cast<::aos::ipc_lib::LocklessQueueMemory *>(raw_memory);
         // Confirm that we can create 2 senders (the number in the queue), and
         // send a message.  And that all the messages in the queue are valid.
-        ::aos::ipc_lib::LocklessQueueMemory *memory =
-            reinterpret_cast<::aos::ipc_lib::LocklessQueueMemory *>(raw_memory);
+        LocklessQueue queue(memory, memory, config);
 
         bool print = false;
 
@@ -555,9 +559,10 @@ TEST(LocklessQueueTest, Death) {
           PrintLocklessQueueMemory(memory);
         }
 
-        LocklessQueue queue(memory, config);
         // Building and destroying a sender will clean up the queue.
-        { LocklessQueue::Sender sender = queue.MakeSender().value(); }
+        {
+          LocklessQueueSender sender = LocklessQueueSender::Make(queue).value();
+        }
 
         if (print) {
           printf("Cleaned up version:\n");
@@ -565,12 +570,11 @@ TEST(LocklessQueueTest, Death) {
         }
 
         {
-          LocklessQueue::Sender sender = queue.MakeSender().value();
+          LocklessQueueSender sender = LocklessQueueSender::Make(queue).value();
           {
             // Make a second sender to confirm that the slot was freed.
             // If the sender doesn't get cleaned up, this will fail.
-            LocklessQueue queue2(memory, config);
-            queue2.MakeSender().value();
+            LocklessQueueSender::Make(queue).value();
           }
 
           // Send a message to make sure that the queue still works.
@@ -578,6 +582,8 @@ TEST(LocklessQueueTest, Death) {
           size_t s = snprintf(data, sizeof(data), "foobar%d", 971);
           sender.Send(data, s + 1);
         }
+
+        LocklessQueueReader reader(queue);
 
         // Now loop through the queue and make sure the number in the snprintf
         // increments.
@@ -592,19 +598,21 @@ TEST(LocklessQueueTest, Death) {
           char read_data[1024];
           size_t length;
 
-          LocklessQueue::ReadResult read_result =
-              queue.Read(i, &monotonic_sent_time, &realtime_sent_time,
-                         &monotonic_remote_time, &realtime_remote_time,
-                         &remote_queue_index, &length, &(read_data[0]));
+          LocklessQueueReader::Result read_result =
+              reader.Read(i, &monotonic_sent_time, &realtime_sent_time,
+                          &monotonic_remote_time, &realtime_remote_time,
+                          &remote_queue_index, &length, &(read_data[0]));
 
-          if (read_result != LocklessQueue::ReadResult::GOOD) {
+          if (read_result != LocklessQueueReader::Result::GOOD) {
             break;
           }
 
-          EXPECT_GT(read_data[queue.message_data_size() - length + 6],
-                    last_data)
+          EXPECT_GT(
+              read_data[LocklessQueueMessageDataSize(memory) - length + 6],
+              last_data)
               << ": Got " << read_data;
-          last_data = read_data[queue.message_data_size() - length + 6];
+          last_data =
+              read_data[LocklessQueueMessageDataSize(memory) - length + 6];
 
           ++i;
         }

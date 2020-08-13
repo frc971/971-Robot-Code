@@ -14,8 +14,7 @@ struct ThreadState;
 // them together to all write at once.
 class QueueRacer {
  public:
-  QueueRacer(LocklessQueueMemory *memory, int num_threads,
-             uint64_t num_messages, LocklessQueueConfiguration config);
+  QueueRacer(LocklessQueue queue, int num_threads, uint64_t num_messages);
 
   // Runs an iteration of the race.
   //
@@ -35,13 +34,14 @@ class QueueRacer {
   void RunIteration(bool race_reads, int write_wrap_count);
 
   size_t CurrentIndex() {
-    LocklessQueue queue(memory_, config_);
-    return queue.LatestQueueIndex().index();
+    return LocklessQueueReader(queue_).LatestIndex().index();
   }
 
  private:
   // Wipes the queue memory out so we get a clean start.
-  void Reset() { memset(memory_, 0, LocklessQueueMemorySize(config_)); }
+  void Reset() {
+    memset(queue_.memory(), 0, LocklessQueueMemorySize(queue_.config()));
+  }
 
   // This is a separate method so that when all the ASSERT_* methods, we still
   // clean up all the threads.  Otherwise we get an assert on the way out of
@@ -49,7 +49,7 @@ class QueueRacer {
   void CheckReads(bool race_reads, int write_wrap_count,
                   ::std::vector<ThreadState> *threads);
 
-  LocklessQueueMemory *memory_;
+  LocklessQueue queue_;
   const uint64_t num_threads_;
   const uint64_t num_messages_;
 
@@ -60,8 +60,6 @@ class QueueRacer {
   ::std::atomic<uint64_t> started_writes_;
   // Number of writes completed.
   ::std::atomic<uint64_t> finished_writes_;
-
-  const LocklessQueueConfiguration config_;
 };
 
 }  // namespace ipc_lib
