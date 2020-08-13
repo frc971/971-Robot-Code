@@ -134,6 +134,9 @@ cc_library(
     srcs = ["index.cc"],
     hdrs = ["index.h"],
     visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_google_glog//:glog",
+    ],
 )
 
 cc_test(

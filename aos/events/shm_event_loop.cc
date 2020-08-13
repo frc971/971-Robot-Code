@@ -60,7 +60,7 @@ std::string ShmFolder(const Channel *channel) {
 }
 std::string ShmPath(const Channel *channel) {
   CHECK(channel->has_type());
-  return ShmFolder(channel) + channel->type()->str() + ".v2";
+  return ShmFolder(channel) + channel->type()->str() + ".v3";
 }
 
 void PageFaultData(char *data, size_t size) {
@@ -96,6 +96,7 @@ class MMapedQueue {
 
     config_.num_watchers = channel->num_watchers();
     config_.num_senders = channel->num_senders();
+    config_.num_pinners = 0;
     config_.queue_size =
         channel_storage_duration.count() * channel->frequency();
     config_.message_data_size = channel->max_size();

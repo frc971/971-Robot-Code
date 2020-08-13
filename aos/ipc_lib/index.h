@@ -5,6 +5,8 @@
 #include <atomic>
 #include <string>
 
+#include "glog/logging.h"
+
 namespace aos {
 namespace ipc_lib {
 
@@ -52,9 +54,7 @@ class QueueIndex {
   }
 
   // Gets the next index.
-  QueueIndex Increment() const {
-    return IncrementBy(1u);
-  }
+  QueueIndex Increment() const { return IncrementBy(1u); }
 
   // Gets the nth next element.
   QueueIndex IncrementBy(uint32_t amount) const {
@@ -148,6 +148,10 @@ struct AtomicQueueIndex {
   // Invalidates the element unconditionally.
   inline void Invalidate() { Store(QueueIndex::Invalid()); }
 
+  inline void RelaxedInvalidate() {
+    index_.store(QueueIndex::Invalid().index_, ::std::memory_order_relaxed);
+  }
+
   // Swaps expected for index atomically.  Returns true on success, false
   // otherwise.
   inline bool CompareAndExchangeStrong(QueueIndex expected, QueueIndex index) {
@@ -168,7 +172,9 @@ class Index {
       : Index(queue_index.index_, message_index) {}
   Index(uint32_t queue_index, uint16_t message_index)
       : index_((queue_index & 0xffff) |
-               (static_cast<uint32_t>(message_index) << 16)) {}
+               (static_cast<uint32_t>(message_index) << 16)) {
+    CHECK_LE(message_index, MaxMessages());
+  }
 
   // Index of this message in the message array.
   uint16_t message_index() const { return (index_ >> 16) & 0xffff; }
@@ -193,13 +199,13 @@ class Index {
   static constexpr uint16_t MaxMessages() { return 0xfffe; }
 
   bool operator==(const Index other) const { return other.index_ == index_; }
+  bool operator!=(const Index other) const { return other.index_ != index_; }
 
   // Returns a string representing the index.
   ::std::string DebugString() const;
 
  private:
-  Index(uint32_t index)
-      : index_(index) {}
+  Index(uint32_t index) : index_(index) {}
 
   friend class AtomicIndex;
 
@@ -235,9 +241,14 @@ class AtomicIndex {
 
   // Swaps expected for index atomically.  Returns true on success, false
   // otherwise.
-  inline bool CompareAndExchangeStrong(Index expected, Index index) {
+  bool CompareAndExchangeStrong(Index expected, Index index) {
     return index_.compare_exchange_strong(expected.index_, index.index_,
                                           ::std::memory_order_acq_rel);
+  }
+
+  bool CompareAndExchangeWeak(Index *expected, Index index) {
+    return index_.compare_exchange_weak(expected->index_, index.index_,
+                                        ::std::memory_order_acq_rel);
   }
 
  private:

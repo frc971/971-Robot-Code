@@ -503,6 +503,7 @@ TEST(LocklessQueueTest, Death) {
   LocklessQueueConfiguration config;
   config.num_watchers = 2;
   config.num_senders = 2;
+  config.num_pinners = 1;
   config.queue_size = 4;
   config.message_data_size = 32;
 
@@ -550,6 +551,7 @@ TEST(LocklessQueueTest, Death) {
         }
 
         if (print) {
+          printf("Bad version:\n");
           PrintLocklessQueueMemory(memory);
         }
 

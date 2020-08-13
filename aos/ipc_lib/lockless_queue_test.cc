@@ -44,6 +44,7 @@ class LocklessQueueTest : public ::testing::Test {
   LocklessQueueTest() {
     config_.num_watchers = 10;
     config_.num_senders = 100;
+    config_.num_pinners = 5;
     config_.queue_size = 10000;
     // Exercise the alignment code.  This would throw off alignment.
     config_.message_data_size = 101;

@@ -31,6 +31,8 @@ struct LocklessQueueMemory {
   size_t num_watchers() const { return config.num_watchers; }
   // Size of the sender list.
   size_t num_senders() const { return config.num_senders; }
+  // Size of the pinner list.
+  size_t num_pinners() const { return config.num_pinners; }
 
   // Number of messages logically in the queue at a time.
   // List of pointers into the messages list.
@@ -60,9 +62,10 @@ struct LocklessQueueMemory {
   // writing:
   //
   // AtomicIndex queue[config.queue_size];
-  // Message messages[config.queue_size + config.num_senders];
+  // Message messages[config.num_messages()];
   // Watcher watchers[config.num_watchers];
   // Sender senders[config.num_senders];
+  // Pinner pinners[config.num_pinners];
 
   static constexpr size_t kDataAlignment = alignof(std::max_align_t);
 
@@ -92,7 +95,21 @@ struct LocklessQueueMemory {
     return AlignmentRoundUp(sizeof(Sender) * config.num_senders);
   }
 
-  // Getters for each of the 4 lists.
+  size_t SizeOfPinners() { return SizeOfPinners(config); }
+  static size_t SizeOfPinners(LocklessQueueConfiguration config) {
+    return AlignmentRoundUp(sizeof(Pinner) * config.num_pinners);
+  }
+
+  // Getters for each of the lists.
+
+  Pinner *GetPinner(size_t pinner_index) {
+    static_assert(alignof(Pinner) <= kDataAlignment,
+                  "kDataAlignment is too small");
+    return reinterpret_cast<Pinner *>(
+        &data[0] + SizeOfQueue() + SizeOfMessages() + SizeOfWatchers() +
+        SizeOfSenders() + pinner_index * sizeof(Pinner));
+  }
+
   Sender *GetSender(size_t sender_index) {
     static_assert(alignof(Sender) <= kDataAlignment,
                   "kDataAlignment is too small");
@@ -116,8 +133,8 @@ struct LocklessQueueMemory {
                                            sizeof(AtomicIndex) * index);
   }
 
-  // There are num_senders + queue_size messages.  The free list is really the
-  // sender list, since those are messages available to be filled in and sent.
+  // There are num_messages() messages.  The free list is really the
+  // sender+pinner list, since those are messages available to be filled in.
   // This removes the need to find lost messages when a sender dies.
   Message *GetMessage(Index index) {
     static_assert(alignof(Message) <= kDataAlignment,
