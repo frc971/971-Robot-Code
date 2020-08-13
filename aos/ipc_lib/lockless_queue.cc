@@ -12,7 +12,11 @@
 #include "aos/ipc_lib/lockless_queue_memory.h"
 #include "aos/realtime.h"
 #include "aos/util/compiler_memory_barrier.h"
+#include "gflags/gflags.h"
 #include "glog/logging.h"
+
+DEFINE_bool(dump_lockless_queue_data, false,
+            "If true, print the data out when dumping the queue.");
 
 namespace aos {
 namespace ipc_lib {
@@ -946,28 +950,51 @@ void PrintLocklessQueueMemory(LocklessQueueMemory *memory) {
               << ::std::endl;
   for (size_t i = 0; i < memory->num_messages(); ++i) {
     Message *m = memory->GetMessage(Index(i, i));
-    ::std::cout << "    [" << i << "] -> Message {" << ::std::endl;
+    ::std::cout << "    [" << i << "] -> Message 0x" << std::hex
+                << (reinterpret_cast<uintptr_t>(
+                        memory->GetMessage(Index(i, i))) -
+                    reinterpret_cast<uintptr_t>(memory))
+                << std::dec << " {" << ::std::endl;
     ::std::cout << "      Header {" << ::std::endl;
     ::std::cout << "        AtomicQueueIndex queue_index = "
                 << m->header.queue_index.Load(queue_size).DebugString()
                 << ::std::endl;
+    ::std::cout << "        monotonic_clock::time_point monotonic_sent_time = "
+                << m->header.monotonic_sent_time << " 0x" << std::hex
+                << m->header.monotonic_sent_time.time_since_epoch().count()
+                << std::dec << ::std::endl;
+    ::std::cout << "        realtime_clock::time_point realtime_sent_time = "
+                << m->header.realtime_sent_time << " 0x" << std::hex
+                << m->header.realtime_sent_time.time_since_epoch().count()
+                << std::dec << ::std::endl;
+    ::std::cout
+        << "        monotonic_clock::time_point monotonic_remote_time = "
+        << m->header.monotonic_remote_time << " 0x" << std::hex
+        << m->header.monotonic_remote_time.time_since_epoch().count()
+        << std::dec << ::std::endl;
+    ::std::cout << "        realtime_clock::time_point realtime_remote_time = "
+                << m->header.realtime_remote_time << " 0x" << std::hex
+                << m->header.realtime_remote_time.time_since_epoch().count()
+                << std::dec << ::std::endl;
     ::std::cout << "        size_t length = " << m->header.length
                 << ::std::endl;
     ::std::cout << "      }" << ::std::endl;
     ::std::cout << "      data: {";
 
-    const char *const m_data = m->data(memory->message_data_size());
-    for (size_t j = 0; j < m->header.length; ++j) {
-      char data = m_data[j];
-      if (j != 0) {
-        ::std::cout << " ";
-      }
-      if (::std::isprint(data)) {
-        ::std::cout << ::std::setfill(' ') << ::std::setw(2) << ::std::hex
-                    << data;
-      } else {
-        ::std::cout << "0x" << ::std::setfill('0') << ::std::setw(2)
-                    << ::std::hex << (static_cast<unsigned>(data) & 0xff);
+    if (FLAGS_dump_lockless_queue_data) {
+      const char *const m_data = m->data(memory->message_data_size());
+      for (size_t j = 0; j < m->header.length; ++j) {
+        char data = m_data[j];
+        if (j != 0) {
+          ::std::cout << " ";
+        }
+        if (::std::isprint(data)) {
+          ::std::cout << ::std::setfill(' ') << ::std::setw(2) << ::std::hex
+                      << data;
+        } else {
+          ::std::cout << "0x" << ::std::setfill('0') << ::std::setw(2)
+                      << ::std::hex << (static_cast<unsigned>(data) & 0xff);
+        }
       }
     }
     ::std::cout << ::std::setfill(' ') << ::std::dec << "}" << ::std::endl;

@@ -288,3 +288,14 @@ cc_binary(
         "@com_github_gflags_gflags//:gflags",
     ],
 )
+
+cc_binary(
+    name = "print_lockless_queue_memory",
+    visibility = ["//visibility:public"],
+    srcs = [
+        "print_lockless_queue_memory.cc",
+    ],
+    deps = [
+        ":lockless_queue",
+    ],
+)
