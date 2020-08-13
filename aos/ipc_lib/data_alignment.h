@@ -36,6 +36,10 @@ inline char *RoundChannelData(char *data, size_t size) {
   return reinterpret_cast<char *>(rounded_data);
 }
 
+// The size of the redzone we maintain outside each message's data to help
+// detect out-of-bounds writes.
+static constexpr size_t kChannelDataRedzone = 32;
+
 }  // namespace aos
 
 #endif  // AOS_IPC_LIB_DATA_ALIGNMENT_H_

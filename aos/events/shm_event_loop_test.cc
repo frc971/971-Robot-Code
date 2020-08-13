@@ -288,6 +288,29 @@ TEST_P(ShmEventLoopTest, GetFetcherPrivateMemory) {
   EXPECT_LT(fetcher.context().data, private_memory.end());
 }
 
+// Tests that corrupting the bytes around the data buffer results in a crash.
+TEST_P(ShmEventLoopDeathTest, OutOfBoundsWrite) {
+  auto loop1 = factory()->Make("loop1");
+  std::unique_ptr<aos::RawSender> sender =
+      loop1->MakeRawSender(configuration::GetChannel(
+          loop1->configuration(), "/test", "aos.TestMessage", "", nullptr));
+  for (size_t i = 0; i < kChannelDataRedzone; ++i) {
+    SCOPED_TRACE(std::to_string(i));
+    EXPECT_DEATH(
+        {
+          ++static_cast<char *>(sender->data())[-1 - i];
+          sender->Send(0);
+        },
+        "Somebody wrote outside the buffer of their message");
+    EXPECT_DEATH(
+        {
+          ++static_cast<char *>(sender->data())[sender->size() + i];
+          sender->Send(0);
+        },
+        "Somebody wrote outside the buffer of their message");
+  }
+}
+
 // TODO(austin): Test that missing a deadline with a timer recovers as expected.
 
 INSTANTIATE_TEST_CASE_P(ShmEventLoopCopyTest, ShmEventLoopTest,
