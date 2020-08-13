@@ -83,7 +83,7 @@ class ShmEventLoop : public EventLoop {
   // Returns the local mapping of the shared memory used by the watcher on the
   // specified channel. A watcher must be created on this channel before calling
   // this.
-  absl::Span<char> GetWatcherSharedMemory(const Channel *channel);
+  absl::Span<const char> GetWatcherSharedMemory(const Channel *channel);
 
   // Returns the local mapping of the shared memory used by the provided Sender.
   template <typename T>
@@ -93,8 +93,12 @@ class ShmEventLoop : public EventLoop {
 
   // Returns the local mapping of the private memory used by the provided
   // Fetcher to hold messages.
+  //
+  // Note that this may be the entire shared memory region held by this fetcher,
+  // depending on its channel's read_method.
   template <typename T>
-  absl::Span<char> GetFetcherPrivateMemory(aos::Fetcher<T> *fetcher) const {
+  absl::Span<const char> GetFetcherPrivateMemory(
+      aos::Fetcher<T> *fetcher) const {
     return GetShmFetcherPrivateMemory(GetRawFetcher(fetcher));
   }
 
@@ -127,7 +131,7 @@ class ShmEventLoop : public EventLoop {
   absl::Span<char> GetShmSenderSharedMemory(const aos::RawSender *sender) const;
 
   // Private method to access the private memory mapping of a ShmFetcher.
-  absl::Span<char> GetShmFetcherPrivateMemory(
+  absl::Span<const char> GetShmFetcherPrivateMemory(
       const aos::RawFetcher *fetcher) const;
 
   std::vector<std::function<void()>> on_run_;

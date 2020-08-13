@@ -99,12 +99,27 @@ bool IsRealtime() {
   return scheduler == SCHED_FIFO || scheduler == SCHED_RR;
 }
 
+class ShmEventLoopTest : public ::testing::TestWithParam<ReadMethod> {
+ public:
+  ShmEventLoopTest() {
+    if (GetParam() == ReadMethod::PIN) {
+      factory_.PinReads();
+    }
+  }
+
+  ShmEventLoopTestFactory *factory() { return &factory_; }
+
+ private:
+  ShmEventLoopTestFactory factory_;
+};
+
+using ShmEventLoopDeathTest = ShmEventLoopTest;
+
 // Tests that every handler type is realtime and runs.  There are threads
 // involved and it's easy to miss one.
-TEST(ShmEventLoopTest, AllHandlersAreRealtime) {
-  ShmEventLoopTestFactory factory;
-  auto loop = factory.MakePrimary("primary");
-  auto loop2 = factory.Make("loop2");
+TEST_P(ShmEventLoopTest, AllHandlersAreRealtime) {
+  auto loop = factory()->MakePrimary("primary");
+  auto loop2 = factory()->Make("loop2");
 
   loop->SetRuntimeRealtimePriority(1);
 
@@ -114,10 +129,10 @@ TEST(ShmEventLoopTest, AllHandlersAreRealtime) {
   bool did_timer = false;
   bool did_watcher = false;
 
-  auto timer = loop->AddTimer([&did_timer, &factory]() {
+  auto timer = loop->AddTimer([this, &did_timer]() {
     EXPECT_TRUE(IsRealtime());
     did_timer = true;
-    factory.Exit();
+    factory()->Exit();
   });
 
   loop->MakeWatcher("/test", [&did_watcher](const TestMessage &) {
@@ -136,7 +151,7 @@ TEST(ShmEventLoopTest, AllHandlersAreRealtime) {
     msg.Send(builder.Finish());
   });
 
-  factory.Run();
+  factory()->Run();
 
   EXPECT_TRUE(did_onrun);
   EXPECT_TRUE(did_timer);
@@ -145,16 +160,15 @@ TEST(ShmEventLoopTest, AllHandlersAreRealtime) {
 
 // Tests that missing a deadline inside the function still results in PhasedLoop
 // running at the right offset.
-TEST(ShmEventLoopTest, DelayedPhasedLoop) {
-  ShmEventLoopTestFactory factory;
-  auto loop1 = factory.MakePrimary("primary");
+TEST_P(ShmEventLoopTest, DelayedPhasedLoop) {
+  auto loop1 = factory()->MakePrimary("primary");
 
   ::std::vector<::aos::monotonic_clock::time_point> times;
 
   constexpr chrono::milliseconds kOffset = chrono::milliseconds(400);
 
   loop1->AddPhasedLoop(
-      [&times, &loop1, &kOffset, &factory](int count) {
+      [this, &times, &loop1, &kOffset](int count) {
         const ::aos::monotonic_clock::time_point monotonic_now =
             loop1->monotonic_now();
 
@@ -179,7 +193,7 @@ TEST(ShmEventLoopTest, DelayedPhasedLoop) {
 
         times.push_back(loop1->monotonic_now());
         if (times.size() == 2) {
-          factory.Exit();
+          factory()->Exit();
         }
 
         // Now, add a large delay.  This should push us up to 3 cycles.
@@ -187,15 +201,14 @@ TEST(ShmEventLoopTest, DelayedPhasedLoop) {
       },
       chrono::seconds(1), kOffset);
 
-  factory.Run();
+  factory()->Run();
 
   EXPECT_EQ(times.size(), 2u);
 }
 
 // Test GetWatcherSharedMemory in a few basic scenarios.
-TEST(ShmEventLoopDeathTest, GetWatcherSharedMemory) {
-  ShmEventLoopTestFactory factory;
-  auto generic_loop1 = factory.MakePrimary("primary");
+TEST_P(ShmEventLoopDeathTest, GetWatcherSharedMemory) {
+  auto generic_loop1 = factory()->MakePrimary("primary");
   ShmEventLoop *const loop1 = static_cast<ShmEventLoop *>(generic_loop1.get());
   const auto channel = configuration::GetChannel(
       loop1->configuration(), "/test", TestMessage::GetFullyQualifiedName(),
@@ -206,31 +219,85 @@ TEST(ShmEventLoopDeathTest, GetWatcherSharedMemory) {
                "No watcher found for channel");
 
   // Then, actually create a watcher, and verify it returns something sane.
-  loop1->MakeWatcher("/test", [](const TestMessage &) {});
-  EXPECT_FALSE(loop1->GetWatcherSharedMemory(channel).empty());
+  absl::Span<const char> shared_memory;
+  bool ran = false;
+  loop1->MakeWatcher("/test", [this, &shared_memory,
+                               &ran](const TestMessage &message) {
+    EXPECT_FALSE(ran);
+    ran = true;
+    // If we're using pinning, then we can verify that the message is actually
+    // in the specified region.
+    if (GetParam() == ReadMethod::PIN) {
+      EXPECT_GE(reinterpret_cast<const char *>(&message),
+                shared_memory.begin());
+      EXPECT_LT(reinterpret_cast<const char *>(&message), shared_memory.end());
+    }
+    factory()->Exit();
+  });
+  shared_memory = loop1->GetWatcherSharedMemory(channel);
+  EXPECT_FALSE(shared_memory.empty());
+
+  auto loop2 = factory()->Make("sender");
+  auto sender = loop2->MakeSender<TestMessage>("/test");
+  generic_loop1->OnRun([&sender]() {
+    auto builder = sender.MakeBuilder();
+    TestMessage::Builder test_builder(*builder.fbb());
+    test_builder.add_value(1);
+    CHECK(builder.Send(test_builder.Finish()));
+  });
+  factory()->Run();
+  EXPECT_TRUE(ran);
 }
 
-TEST(ShmEventLoopTest, GetSenderSharedMemory) {
-  ShmEventLoopTestFactory factory;
-  auto generic_loop1 = factory.MakePrimary("primary");
+TEST_P(ShmEventLoopTest, GetSenderSharedMemory) {
+  auto generic_loop1 = factory()->MakePrimary("primary");
   ShmEventLoop *const loop1 = static_cast<ShmEventLoop *>(generic_loop1.get());
 
-  // check that GetSenderSharedMemory returns non-null/non-empty memory span.
+  // Check that GetSenderSharedMemory returns non-null/non-empty memory span.
   auto sender = loop1->MakeSender<TestMessage>("/test");
-  EXPECT_FALSE(loop1->GetSenderSharedMemory(&sender).empty());
+  const absl::Span<char> shared_memory = loop1->GetSenderSharedMemory(&sender);
+  EXPECT_FALSE(shared_memory.empty());
+
+  auto builder = sender.MakeBuilder();
+  uint8_t *buffer;
+  builder.fbb()->CreateUninitializedVector(5, 1, &buffer);
+  EXPECT_GE(reinterpret_cast<char *>(buffer), shared_memory.begin());
+  EXPECT_LT(reinterpret_cast<char *>(buffer), shared_memory.end());
 }
 
-TEST(ShmEventLoopTest, GetFetcherPrivateMemory) {
-  ShmEventLoopTestFactory factory;
-  auto generic_loop1 = factory.MakePrimary("primary");
+TEST_P(ShmEventLoopTest, GetFetcherPrivateMemory) {
+  auto generic_loop1 = factory()->MakePrimary("primary");
   ShmEventLoop *const loop1 = static_cast<ShmEventLoop *>(generic_loop1.get());
 
-  // check that GetFetcherPrivateMemory returns non-null/non-empty memory span.
+  // Check that GetFetcherPrivateMemory returns non-null/non-empty memory span.
   auto fetcher = loop1->MakeFetcher<TestMessage>("/test");
-  EXPECT_FALSE(loop1->GetFetcherPrivateMemory(&fetcher).empty());
+  const auto private_memory = loop1->GetFetcherPrivateMemory(&fetcher);
+  EXPECT_FALSE(private_memory.empty());
+
+  auto loop2 = factory()->Make("sender");
+  auto sender = loop2->MakeSender<TestMessage>("/test");
+  {
+    auto builder = sender.MakeBuilder();
+    TestMessage::Builder test_builder(*builder.fbb());
+    test_builder.add_value(1);
+    CHECK(builder.Send(test_builder.Finish()));
+  }
+
+  ASSERT_TRUE(fetcher.Fetch());
+  EXPECT_GE(fetcher.context().data, private_memory.begin());
+  EXPECT_LT(fetcher.context().data, private_memory.end());
 }
 
 // TODO(austin): Test that missing a deadline with a timer recovers as expected.
+
+INSTANTIATE_TEST_CASE_P(ShmEventLoopCopyTest, ShmEventLoopTest,
+                        ::testing::Values(ReadMethod::COPY));
+INSTANTIATE_TEST_CASE_P(ShmEventLoopPinTest, ShmEventLoopTest,
+                        ::testing::Values(ReadMethod::PIN));
+INSTANTIATE_TEST_CASE_P(ShmEventLoopCopyDeathTest, ShmEventLoopDeathTest,
+                        ::testing::Values(ReadMethod::COPY));
+INSTANTIATE_TEST_CASE_P(ShmEventLoopPinDeathTest, ShmEventLoopDeathTest,
+                        ::testing::Values(ReadMethod::PIN));
 
 }  // namespace testing
 }  // namespace aos

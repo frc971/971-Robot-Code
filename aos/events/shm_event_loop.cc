@@ -65,7 +65,7 @@ std::string ShmPath(const Channel *channel) {
   return ShmFolder(channel) + channel->type()->str() + ".v3";
 }
 
-void PageFaultData(char *data, size_t size) {
+void PageFaultDataWrite(char *data, size_t size) {
   // This just has to divide the actual page size. Being smaller will make this
   // a bit slower than necessary, but not much. 1024 is a pretty conservative
   // choice (most pages are probably 4096).
@@ -87,6 +87,18 @@ void PageFaultData(char *data, size_t size) {
     // "store 0 if it's already 0".
     __atomic_compare_exchange_n(&data[i * kPageSize], &zero, 0, true,
                                 __ATOMIC_RELAXED, __ATOMIC_RELAXED);
+  }
+}
+
+void PageFaultDataRead(const char *data, size_t size) {
+  // This just has to divide the actual page size. Being smaller will make this
+  // a bit slower than necessary, but not much. 1024 is a pretty conservative
+  // choice (most pages are probably 4096).
+  static constexpr size_t kPageSize = 1024;
+  const size_t pages = (size + kPageSize - 1) / kPageSize;
+  for (size_t i = 0; i < pages; ++i) {
+    // We need to ensure there's a readable pagetable entry.
+    __atomic_load_n(&data[i * kPageSize], __ATOMIC_RELAXED);
   }
 }
 
@@ -150,26 +162,41 @@ class MMapedQueue {
 
     data_ = mmap(NULL, size_, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     PCHECK(data_ != MAP_FAILED);
+    const_data_ = mmap(NULL, size_, PROT_READ, MAP_SHARED, fd, 0);
+    PCHECK(const_data_ != MAP_FAILED);
     PCHECK(close(fd) == 0);
-    PageFaultData(static_cast<char *>(data_), size_);
+    PageFaultDataWrite(static_cast<char *>(data_), size_);
+    PageFaultDataRead(static_cast<const char *>(const_data_), size_);
 
     ipc_lib::InitializeLocklessQueueMemory(memory(), config_);
   }
 
-  ~MMapedQueue() { PCHECK(munmap(data_, size_) == 0); }
+  ~MMapedQueue() {
+    PCHECK(munmap(data_, size_) == 0);
+    PCHECK(munmap(const_cast<void *>(const_data_), size_) == 0);
+  }
 
   ipc_lib::LocklessQueueMemory *memory() const {
     return reinterpret_cast<ipc_lib::LocklessQueueMemory *>(data_);
   }
 
+  const ipc_lib::LocklessQueueMemory *const_memory() const {
+    return reinterpret_cast<const ipc_lib::LocklessQueueMemory *>(const_data_);
+  }
+
   const ipc_lib::LocklessQueueConfiguration &config() const { return config_; }
 
   ipc_lib::LocklessQueue queue() const {
-    return ipc_lib::LocklessQueue(memory(), memory(), config());
+    return ipc_lib::LocklessQueue(const_memory(), memory(), config());
   }
 
-  absl::Span<char> GetSharedMemory() const {
+  absl::Span<char> GetMutableSharedMemory() const {
     return absl::Span<char>(static_cast<char *>(data_), size_);
+  }
+
+  absl::Span<const char> GetConstSharedMemory() const {
+    return absl::Span<const char>(static_cast<const char *>(const_data_),
+                                  size_);
   }
 
  private:
@@ -177,6 +204,7 @@ class MMapedQueue {
 
   size_t size_;
   void *data_;
+  const void *const_data_;
 };
 
 const Node *MaybeMyNode(const Configuration *configuration) {
@@ -310,14 +338,18 @@ class SimpleShmFetcher {
     watcher_ = std::nullopt;
   }
 
-  absl::Span<char> GetSharedMemory() const {
-    return lockless_queue_memory_.GetSharedMemory();
+  absl::Span<char> GetMutableSharedMemory() {
+    return lockless_queue_memory_.GetMutableSharedMemory();
   }
 
-  absl::Span<char> GetPrivateMemory() const {
-    // Can't usefully expose this for pinning, because the buffer changes
-    // address for each message. Callers who want to work with that should just
-    // grab the whole shared memory buffer instead.
+  absl::Span<const char> GetConstSharedMemory() const {
+    return lockless_queue_memory_.GetConstSharedMemory();
+  }
+
+  absl::Span<const char> GetPrivateMemory() const {
+    if (pin_data()) {
+      return lockless_queue_memory_.GetConstSharedMemory();
+    }
     return absl::Span<char>(
         const_cast<SimpleShmFetcher *>(this)->data_storage_start(),
         LocklessQueueMessageDataSize(lockless_queue_memory_.memory()));
@@ -457,7 +489,7 @@ class ShmFetcher : public RawFetcher {
     return std::make_pair(false, monotonic_clock::min_time);
   }
 
-  absl::Span<char> GetPrivateMemory() const {
+  absl::Span<const char> GetPrivateMemory() const {
     return simple_shm_fetcher_.GetPrivateMemory();
   }
 
@@ -524,7 +556,7 @@ class ShmSender : public RawSender {
   }
 
   absl::Span<char> GetSharedMemory() const {
-    return lockless_queue_memory_.GetSharedMemory();
+    return lockless_queue_memory_.GetMutableSharedMemory();
   }
 
   int buffer_index() override { return lockless_queue_sender_.buffer_index(); }
@@ -588,8 +620,8 @@ class ShmWatcherState : public WatcherState {
 
   void UnregisterWakeup() { return simple_shm_fetcher_.UnregisterWakeup(); }
 
-  absl::Span<char> GetSharedMemory() const {
-    return simple_shm_fetcher_.GetSharedMemory();
+  absl::Span<const char> GetSharedMemory() const {
+    return simple_shm_fetcher_.GetConstSharedMemory();
   }
 
  private:
@@ -1016,7 +1048,8 @@ void ShmEventLoop::set_name(const std::string_view name) {
   UpdateTimingReport();
 }
 
-absl::Span<char> ShmEventLoop::GetWatcherSharedMemory(const Channel *channel) {
+absl::Span<const char> ShmEventLoop::GetWatcherSharedMemory(
+    const Channel *channel) {
   ShmWatcherState *const watcher_state =
       static_cast<ShmWatcherState *>(GetWatcherState(channel));
   return watcher_state->GetSharedMemory();
@@ -1034,7 +1067,7 @@ absl::Span<char> ShmEventLoop::GetShmSenderSharedMemory(
   return static_cast<const ShmSender *>(sender)->GetSharedMemory();
 }
 
-absl::Span<char> ShmEventLoop::GetShmFetcherPrivateMemory(
+absl::Span<const char> ShmEventLoop::GetShmFetcherPrivateMemory(
     const aos::RawFetcher *fetcher) const {
   return static_cast<const ShmFetcher *>(fetcher)->GetPrivateMemory();
 }
