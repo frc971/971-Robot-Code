@@ -13,6 +13,18 @@
       "type": "aos.logging.LogMessageFbs",
       "frequency": 200,
       "num_senders": 20
+    },
+    {
+      "name": "/aos",
+      "type": "aos.starter.Status",
+      "frequency": 50,
+      "num_senders": 20
+    },
+    {
+      "name": "/aos",
+      "type": "aos.starter.StarterRpc",
+      "frequency": 10,
+      "num_senders": 2
     }
   ]
 }

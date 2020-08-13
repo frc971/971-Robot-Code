@@ -111,6 +111,11 @@ table Map {
 table Application {
   // Name of the application.
   name:string (id: 0);
+
+  // Path of the executable relative to starter. If this field is unset, use
+  // name as the path. Not permitted to change while starter is running.
+  executable_name:string (id: 5);
+
   // List of maps to apply for this specific application.  Application specific
   // maps are applied in reverse order, and before the global maps.
   // For example
@@ -135,6 +140,9 @@ table Application {
   // The user to run this application as. If this field is unset, run it as
   // the current user of the application starter.
   user:string (id: 3);
+
+  // List of arguments to be passed to application
+  args:[string] (id: 4);
 }
 
 // Per node data and connection information.

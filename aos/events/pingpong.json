@@ -1,4 +1,12 @@
 {
+  "applications": [
+    {
+      "name": "ping"
+    },
+    {
+      "name": "pong"
+    }
+  ],
   "channels": [
     {
       "name": "/test",
