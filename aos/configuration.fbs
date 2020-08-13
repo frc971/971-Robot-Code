@@ -42,6 +42,13 @@ table Connection {
   time_to_live:uint = 0;
 }
 
+enum ReadMethod : ubyte {
+  // Copy all the data out of shared memory into a local buffer for each reader.
+  COPY,
+  // Pin the data in shared memory and read directly from there.
+  PIN,
+}
+
 // Table representing a channel.  Channels are where data is published and
 // subscribed from.  The tuple of name, type is the identifying information.
 table Channel {
@@ -78,6 +85,14 @@ table Channel {
   // node responsible for logging it.  Empty implies the node this connection
   // is connecting to (i.e. name).
   logger_nodes:[string];
+
+  // The way messages are read from shared memory for this channel.
+  read_method:ReadMethod = COPY;
+
+  // Sets the maximum number of senders on a channel.
+  //
+  // Currently, this must be set if and only if read_method is PIN.
+  num_readers:int;
 }
 
 // Table to support renaming channel names.

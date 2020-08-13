@@ -69,15 +69,25 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
   ::aos::ShmEventLoop *primary_event_loop_;
 };
 
-INSTANTIATE_TEST_CASE_P(ShmEventLoopTest, AbstractEventLoopTest,
-                        ::testing::Values([]() {
-                          return new ShmEventLoopTestFactory();
-                        }));
+INSTANTIATE_TEST_CASE_P(ShmEventLoopCopyTest, AbstractEventLoopTest,
+                        ::testing::Values(std::make_pair(
+                            []() { return new ShmEventLoopTestFactory(); },
+                            ReadMethod::COPY)));
 
-INSTANTIATE_TEST_CASE_P(ShmEventLoopDeathTest, AbstractEventLoopDeathTest,
-                        ::testing::Values([]() {
-                          return new ShmEventLoopTestFactory();
-                        }));
+INSTANTIATE_TEST_CASE_P(ShmEventLoopCopyDeathTest, AbstractEventLoopDeathTest,
+                        ::testing::Values(std::make_pair(
+                            []() { return new ShmEventLoopTestFactory(); },
+                            ReadMethod::COPY)));
+
+INSTANTIATE_TEST_CASE_P(ShmEventLoopPinTest, AbstractEventLoopTest,
+                        ::testing::Values(std::make_pair(
+                            []() { return new ShmEventLoopTestFactory(); },
+                            ReadMethod::PIN)));
+
+INSTANTIATE_TEST_CASE_P(ShmEventLoopPinDeathTest, AbstractEventLoopDeathTest,
+                        ::testing::Values(std::make_pair(
+                            []() { return new ShmEventLoopTestFactory(); },
+                            ReadMethod::PIN)));
 
 }  // namespace
 

@@ -51,15 +51,31 @@ class SimulatedEventLoopTestFactory : public EventLoopTestFactory {
   std::unique_ptr<SimulatedEventLoopFactory> event_loop_factory_;
 };
 
-INSTANTIATE_TEST_CASE_P(SimulatedEventLoopDeathTest, AbstractEventLoopDeathTest,
-                        ::testing::Values([]() {
-                          return new SimulatedEventLoopTestFactory();
-                        }));
+INSTANTIATE_TEST_CASE_P(SimulatedEventLoopCopyTest, AbstractEventLoopTest,
+                        ::testing::Values(std::make_tuple(
+                            []() {
+                              return new SimulatedEventLoopTestFactory();
+                            },
+                            ReadMethod::COPY)));
 
-INSTANTIATE_TEST_CASE_P(SimulatedEventLoopTest, AbstractEventLoopTest,
-                        ::testing::Values([]() {
-                          return new SimulatedEventLoopTestFactory();
-                        }));
+INSTANTIATE_TEST_CASE_P(
+    SimulatedEventLoopCopyDeathTest, AbstractEventLoopDeathTest,
+    ::testing::Values(
+        std::make_tuple([]() { return new SimulatedEventLoopTestFactory(); },
+                        ReadMethod::COPY)));
+
+INSTANTIATE_TEST_CASE_P(SimulatedEventLoopPinTest, AbstractEventLoopTest,
+                        ::testing::Values(std::make_tuple(
+                            []() {
+                              return new SimulatedEventLoopTestFactory();
+                            },
+                            ReadMethod::PIN)));
+
+INSTANTIATE_TEST_CASE_P(
+    SimulatedEventLoopPinDeathTest, AbstractEventLoopDeathTest,
+    ::testing::Values(
+        std::make_tuple([]() { return new SimulatedEventLoopTestFactory(); },
+                        ReadMethod::PIN)));
 
 // Test that creating an event and running the scheduler runs the event.
 TEST(EventSchedulerTest, ScheduleEvent) {

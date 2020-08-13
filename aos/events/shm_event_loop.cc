@@ -96,7 +96,9 @@ class MMapedQueue {
 
     config_.num_watchers = channel->num_watchers();
     config_.num_senders = channel->num_senders();
-    config_.num_pinners = 0;
+    // The value in the channel will default to 0 if readers are configured to
+    // copy.
+    config_.num_pinners = channel->num_readers();
     config_.queue_size =
         channel_storage_duration.count() * channel->frequency();
     config_.message_data_size = channel->max_size();
@@ -209,11 +211,33 @@ class SimpleShmFetcher {
 
   ~SimpleShmFetcher() {}
 
+  // Sets this object to pin or copy data, as configured in the channel.
+  void RetrieveData() {
+    if (channel_->read_method() == ReadMethod::PIN) {
+      PinDataOnFetch();
+    } else {
+      CopyDataOnFetch();
+    }
+  }
+
   // Sets this object to copy data out of the shared memory into a private
   // buffer when fetching.
   void CopyDataOnFetch() {
+    CHECK(!pin_data());
     data_storage_.reset(static_cast<char *>(
         malloc(channel_->max_size() + kChannelDataAlignment - 1)));
+  }
+
+  // Sets this object to pin data in shared memory when fetching.
+  void PinDataOnFetch() {
+    CHECK(!copy_data());
+    auto maybe_pinner = lockless_queue_.MakePinner();
+    if (!maybe_pinner) {
+      LOG(FATAL) << "Failed to create reader on "
+                 << configuration::CleanedChannelToString(channel_)
+                 << ", too many readers.";
+    }
+    pinner_ = std::move(maybe_pinner.value());
   }
 
   // Points the next message to fetch at the queue index which will be
@@ -295,6 +319,14 @@ class SimpleShmFetcher {
         &context_.size, copy_buffer);
 
     if (read_result == ipc_lib::LocklessQueue::ReadResult::GOOD) {
+      if (pin_data()) {
+        CHECK(pinner_->PinIndex(queue_index.index()))
+            << ": Got behind while reading and the last message was modified "
+               "out from under us while we tried to pin it. Don't get so far "
+               "behind on: "
+            << configuration::CleanedChannelToString(channel_);
+      }
+
       context_.queue_index = queue_index.index();
       if (context_.remote_queue_index == 0xffffffffu) {
         context_.remote_queue_index = context_.queue_index;
@@ -347,10 +379,14 @@ class SimpleShmFetcher {
     if (copy_data()) {
       return data_storage_start();
     }
+    if (pin_data()) {
+      return static_cast<const char *>(pinner_->Data());
+    }
     return nullptr;
   }
 
   bool copy_data() const { return static_cast<bool>(data_storage_); }
+  bool pin_data() const { return static_cast<bool>(pinner_); }
 
   aos::ShmEventLoop *event_loop_;
   const Channel *const channel_;
@@ -363,6 +399,9 @@ class SimpleShmFetcher {
   // This being empty indicates we're not going to copy data.
   std::unique_ptr<char, decltype(&free)> data_storage_{nullptr, &free};
 
+  // This being nullopt indicates we're not going to pin messages.
+  std::optional<ipc_lib::LocklessQueue::Pinner> pinner_;
+
   Context context_;
 };
 
@@ -371,7 +410,7 @@ class ShmFetcher : public RawFetcher {
   explicit ShmFetcher(ShmEventLoop *event_loop, const Channel *channel)
       : RawFetcher(event_loop, channel),
         simple_shm_fetcher_(event_loop, channel) {
-    simple_shm_fetcher_.CopyDataOnFetch();
+    simple_shm_fetcher_.RetrieveData();
   }
 
   ~ShmFetcher() { context_.data = nullptr; }
@@ -480,7 +519,7 @@ class ShmWatcherState : public WatcherState {
         event_(this),
         simple_shm_fetcher_(event_loop, channel) {
     if (copy_data) {
-      simple_shm_fetcher_.CopyDataOnFetch();
+      simple_shm_fetcher_.RetrieveData();
     }
   }
 

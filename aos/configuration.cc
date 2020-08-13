@@ -299,6 +299,11 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
         continue;
       }
 
+      CHECK_EQ(c->read_method() == ReadMethod::PIN, c->num_readers() != 0)
+          << ": num_readers may be set if and only if read_method is PIN,"
+             " if you want 0 readers do not set PIN: "
+          << CleanedChannelToString(c);
+
       // Attempt to insert the channel.
       auto result = channels.insert(CopyFlatBuffer(c));
       if (!result.second) {

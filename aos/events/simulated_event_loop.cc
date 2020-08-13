@@ -184,13 +184,33 @@ class SimulatedChannel {
     }
     ++sender_count_;
   }
+
   void CountSenderDestroyed() {
     --sender_count_;
     CHECK_GE(sender_count_, 0);
   }
 
  private:
-  void CheckBufferCount() { CHECK_LT(sender_count_, number_scratch_buffers()); }
+  void CheckBufferCount() {
+    int reader_count = 0;
+    if (channel()->read_method() == ReadMethod::PIN) {
+      reader_count = watchers_.size() + fetchers_.size();
+    }
+    CHECK_LT(reader_count + sender_count_, number_scratch_buffers());
+  }
+
+  void CheckReaderCount() {
+    if (channel()->read_method() != ReadMethod::PIN) {
+      return;
+    }
+    CheckBufferCount();
+    const int reader_count = watchers_.size() + fetchers_.size();
+    if (reader_count >= channel()->num_readers()) {
+      LOG(FATAL) << "Failed to create reader on "
+                 << configuration::CleanedChannelToString(channel())
+                 << ", too many readers.";
+    }
+  }
 
   const Channel *const channel_;
   EventScheduler *const scheduler_;
@@ -719,6 +739,7 @@ void SimulatedWatcher::DoSchedule(monotonic_clock::time_point event_time) {
 }
 
 void SimulatedChannel::MakeRawWatcher(SimulatedWatcher *watcher) {
+  CheckReaderCount();
   watcher->SetSimulatedChannel(this);
   watchers_.emplace_back(watcher);
 }
@@ -730,6 +751,7 @@ void SimulatedChannel::MakeRawWatcher(SimulatedWatcher *watcher) {
 
 ::std::unique_ptr<RawFetcher> SimulatedChannel::MakeRawFetcher(
     EventLoop *event_loop) {
+  CheckReaderCount();
   ::std::unique_ptr<SimulatedFetcher> fetcher(
       new SimulatedFetcher(event_loop, this));
   fetchers_.push_back(fetcher.get());

@@ -243,7 +243,7 @@ cc_library(
 cc_test(
     name = "shm_event_loop_test",
     srcs = ["shm_event_loop_test.cc"],
-    shard_count = 5,
+    shard_count = 16,
     deps = [
         ":event_loop_param_test",
         ":shm_event_loop",
@@ -267,6 +267,7 @@ cc_test(
     name = "simulated_event_loop_test",
     srcs = ["simulated_event_loop_test.cc"],
     data = ["multinode_pingpong_config.json"],
+    shard_count = 4,
     deps = [
         ":event_loop_param_test",
         ":ping_lib",

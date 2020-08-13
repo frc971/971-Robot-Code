@@ -15,31 +15,30 @@ namespace testing {
 class EventLoopTestFactory {
  public:
   EventLoopTestFactory()
-      : flatbuffer_(JsonToFlatbuffer("{\n"
-                                     "  \"channels\": [ \n"
-                                     "    {\n"
-                                     "      \"name\": \"/aos\",\n"
-                                     "      \"type\": \"aos.logging.LogMessageFbs\"\n"
-                                     "    },\n"
-                                     "    {\n"
-                                     "      \"name\": \"/aos\",\n"
-                                     "      \"type\": \"aos.timing.Report\"\n"
-                                     "    },\n"
-                                     "    {\n"
-                                     "      \"name\": \"/test\",\n"
-                                     "      \"type\": \"aos.TestMessage\"\n"
-                                     "    },\n"
-                                     "    {\n"
-                                     "      \"name\": \"/test1\",\n"
-                                     "      \"type\": \"aos.TestMessage\"\n"
-                                     "    },\n"
-                                     "    {\n"
-                                     "      \"name\": \"/test2\",\n"
-                                     "      \"type\": \"aos.TestMessage\"\n"
-                                     "    }\n"
-                                     "  ]\n"
-                                     "}\n",
-                                     Configuration::MiniReflectTypeTable())) {}
+      : flatbuffer_(JsonToFlatbuffer<Configuration>(R"config({
+  "channels": [
+    {
+      "name": "/aos",
+      "type": "aos.logging.LogMessageFbs"
+    },
+    {
+      "name": "/aos",
+      "type": "aos.timing.Report"
+    },
+    {
+      "name": "/test",
+      "type": "aos.TestMessage"
+    },
+    {
+      "name": "/test1",
+      "type": "aos.TestMessage"
+    },
+    {
+      "name": "/test2",
+      "type": "aos.TestMessage"
+    }
+  ]
+})config")) {}
 
   virtual ~EventLoopTestFactory() {}
 
@@ -58,8 +57,48 @@ class EventLoopTestFactory {
   // Advances time by sleeping.  Can't be called from inside a loop.
   virtual void SleepFor(::std::chrono::nanoseconds duration) = 0;
 
+  void PinReads() {
+    static const std::string kJson = R"config({
+  "channels": [
+    {
+      "name": "/aos",
+      "type": "aos.logging.LogMessageFbs",
+      "read_method": "PIN",
+      "num_readers": 10
+    },
+    {
+      "name": "/aos",
+      "type": "aos.timing.Report",
+      "read_method": "PIN",
+      "num_readers": 10
+    },
+    {
+      "name": "/test",
+      "type": "aos.TestMessage",
+      "read_method": "PIN",
+      "num_readers": 10
+    },
+    {
+      "name": "/test1",
+      "type": "aos.TestMessage",
+      "read_method": "PIN",
+      "num_readers": 10
+    },
+    {
+      "name": "/test2",
+      "type": "aos.TestMessage",
+      "read_method": "PIN",
+      "num_readers": 10
+    }
+  ]
+})config";
+
+    flatbuffer_ = FlatbufferDetachedBuffer<Configuration>(
+        JsonToFlatbuffer(kJson, Configuration::MiniReflectTypeTable()));
+  }
+
   void EnableNodes(std::string_view my_node) {
-    std::string json = R"config({
+    static const std::string kJson = R"config({
   "channels": [
     {
       "name": "/aos/me",
@@ -127,7 +166,7 @@ class EventLoopTestFactory {
 })config";
 
     flatbuffer_ = FlatbufferDetachedBuffer<Configuration>(
-        JsonToFlatbuffer(json, Configuration::MiniReflectTypeTable()));
+        JsonToFlatbuffer(kJson, Configuration::MiniReflectTypeTable()));
 
     my_node_ = configuration::GetNode(&flatbuffer_.message(), my_node);
   }
@@ -143,9 +182,16 @@ class EventLoopTestFactory {
 };
 
 class AbstractEventLoopTestBase
-    : public ::testing::TestWithParam<std::function<EventLoopTestFactory *()>> {
+    : public ::testing::TestWithParam<
+          std::tuple<std::function<EventLoopTestFactory *()>, ReadMethod>> {
  public:
-  AbstractEventLoopTestBase() { factory_.reset(GetParam()()); }
+  AbstractEventLoopTestBase() : factory_(std::get<0>(GetParam())()) {
+    if (read_method() == ReadMethod::PIN) {
+      factory_->PinReads();
+    }
+  }
+
+  ReadMethod read_method() const { return std::get<1>(GetParam()); }
 
   ::std::unique_ptr<EventLoop> Make(std::string_view name = "") {
     std::string name_copy(name);
@@ -182,11 +228,8 @@ class AbstractEventLoopTestBase
     end_timer->set_name("end");
   }
 
-  // You can implement all the usual fixture class members here.
-  // To access the test parameter, call GetParam() from class
-  // TestWithParam<T>.
  private:
-  ::std::unique_ptr<EventLoopTestFactory> factory_;
+  const ::std::unique_ptr<EventLoopTestFactory> factory_;
 
   int event_loop_count_ = 0;
 };
