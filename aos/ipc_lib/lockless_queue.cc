@@ -34,7 +34,9 @@ class GrabQueueSetupLockOrDie {
   LocklessQueueMemory *const memory_;
 };
 
-void Cleanup(LocklessQueueMemory *memory, const GrabQueueSetupLockOrDie &) {
+// Returns true if it succeeded. Returns false if another sender died in the
+// middle.
+bool DoCleanup(LocklessQueueMemory *memory, const GrabQueueSetupLockOrDie &) {
   // Make sure we start looking at shared memory fresh right now. We'll handle
   // people dying partway through by either cleaning up after them or not, but
   // we want to ensure we clean up after anybody who has already died when we
@@ -62,6 +64,8 @@ void Cleanup(LocklessQueueMemory *memory, const GrabQueueSetupLockOrDie &) {
   // queue is active while we do this, it may take a couple of go arounds to see
   // everything.
 
+  ::std::vector<bool> need_recovery(num_senders, false);
+
   // Do the easy case.  Find all senders who have died.  See if they are either
   // consistent already, or if they have copied over to_replace to the scratch
   // index, but haven't cleared to_replace.  Count them.
@@ -70,65 +74,71 @@ void Cleanup(LocklessQueueMemory *memory, const GrabQueueSetupLockOrDie &) {
     Sender *sender = memory->GetSender(i);
     const uint32_t tid =
         __atomic_load_n(&(sender->tid.futex), __ATOMIC_ACQUIRE);
-    if (tid & FUTEX_OWNER_DIED) {
-      VLOG(3) << "Found an easy death for sender " << i;
-      // We can do a relaxed load here because we're the only person touching
-      // this sender at this point.
-      const Index to_replace = sender->to_replace.RelaxedLoad();
-      const Index scratch_index = sender->scratch_index.Load();
-
-      // I find it easiest to think about this in terms of the set of observable
-      // states.  The main code progresses through the following states:
-
-      // 1) scratch_index = xxx
-      //    to_replace = invalid
-      // This is unambiguous.  Already good.
-
-      // 2) scratch_index = xxx
-      //    to_replace = yyy
-      // Very ambiguous.  Is xxx or yyy the correct one?  Need to either roll
-      // this forwards or backwards.
-
-      // 3) scratch_index = yyy
-      //    to_replace = yyy
-      // We are in the act of moving to_replace to scratch_index, but didn't
-      // finish.  Easy.
-
-      // 4) scratch_index = yyy
-      //    to_replace = invalid
-      // Finished, but died.  Looks like 1)
-
-      // Any cleanup code needs to follow the same set of states to be robust to
-      // death, so death can be restarted.
-
-      // Could be 2) or 3).
-      if (to_replace.valid()) {
-        // 3)
-        if (to_replace == scratch_index) {
-          // Just need to invalidate to_replace to finish.
-          sender->to_replace.Invalidate();
-
-          // And mark that we succeeded.
-          __atomic_store_n(&(sender->tid.futex), 0, __ATOMIC_RELEASE);
-          ++valid_senders;
-        }
-      } else {
-        // 1) or 4).  Make sure we aren't corrupted and declare victory.
-        CHECK(scratch_index.valid());
-
-        __atomic_store_n(&(sender->tid.futex), 0, __ATOMIC_RELEASE);
-        ++valid_senders;
-      }
-    } else {
+    if (!(tid & FUTEX_OWNER_DIED)) {
       // Not dead.
       ++valid_senders;
+      continue;
     }
+    VLOG(3) << "Found an easy death for sender " << i;
+    // We can do a relaxed load here because we're the only person touching
+    // this sender at this point.
+    const Index to_replace = sender->to_replace.RelaxedLoad();
+    const Index scratch_index = sender->scratch_index.Load();
+
+    // I find it easiest to think about this in terms of the set of observable
+    // states.  The main code progresses through the following states:
+
+    // 1) scratch_index = xxx
+    //    to_replace = invalid
+    // This is unambiguous.  Already good.
+
+    // 2) scratch_index = xxx
+    //    to_replace = yyy
+    // Very ambiguous.  Is xxx or yyy the correct one?  Need to either roll
+    // this forwards or backwards.
+
+    // 3) scratch_index = yyy
+    //    to_replace = yyy
+    // We are in the act of moving to_replace to scratch_index, but didn't
+    // finish.  Easy.
+
+    // 4) scratch_index = yyy
+    //    to_replace = invalid
+    // Finished, but died.  Looks like 1)
+
+    // Any cleanup code needs to follow the same set of states to be robust to
+    // death, so death can be restarted.
+
+    if (!to_replace.valid()) {
+      // 1) or 4).  Make sure we aren't corrupted and declare victory.
+      CHECK(scratch_index.valid());
+
+      __atomic_store_n(&(sender->tid.futex), 0, __ATOMIC_RELEASE);
+      ++valid_senders;
+      continue;
+    }
+
+    // Could be 2) or 3) at this point.
+
+    if (to_replace == scratch_index) {
+      // 3) for sure.
+      // Just need to invalidate to_replace to finish.
+      sender->to_replace.Invalidate();
+
+      // And mark that we succeeded.
+      __atomic_store_n(&(sender->tid.futex), 0, __ATOMIC_RELEASE);
+      ++valid_senders;
+      continue;
+    }
+
+    // Must be 2). Mark it for later.
+    need_recovery[i] = true;
   }
 
   // If all the senders are (or were made) good, there is no need to do the hard
   // case.
   if (valid_senders == num_senders) {
-    return;
+    return true;
   }
 
   VLOG(3) << "Starting hard cleanup";
@@ -144,8 +154,12 @@ void Cleanup(LocklessQueueMemory *memory, const GrabQueueSetupLockOrDie &) {
       const uint32_t tid =
           __atomic_load_n(&(sender->tid.futex), __ATOMIC_ACQUIRE);
       if (tid & FUTEX_OWNER_DIED) {
+        if (!need_recovery[i]) {
+          return false;
+        }
         ++num_missing;
       } else {
+        CHECK(!need_recovery[i]) << ": Somebody else recovered a sender: " << i;
         // We can do a relaxed load here because we're the only person touching
         // this sender at this point, if it matters. If it's not a dead sender,
         // then any message it every has will already be accounted for, so this
@@ -166,6 +180,8 @@ void Cleanup(LocklessQueueMemory *memory, const GrabQueueSetupLockOrDie &) {
       }
       accounted_for[index.message_index()] = true;
     }
+
+    CHECK_LE(num_accounted_for + num_missing, num_messages);
   }
 
   while (num_missing != 0) {
@@ -174,66 +190,82 @@ void Cleanup(LocklessQueueMemory *memory, const GrabQueueSetupLockOrDie &) {
       Sender *sender = memory->GetSender(i);
       const uint32_t tid =
           __atomic_load_n(&(sender->tid.futex), __ATOMIC_ACQUIRE);
-      if (tid & FUTEX_OWNER_DIED) {
-        // We can do relaxed loads here because we're the only person touching
-        // this sender at this point.
-        const Index scratch_index = sender->scratch_index.RelaxedLoad();
-        const Index to_replace = sender->to_replace.RelaxedLoad();
+      if (!(tid & FUTEX_OWNER_DIED)) {
+        CHECK(!need_recovery[i]) << ": Somebody else recovered a sender: " << i;
+        continue;
+      }
+      if (!need_recovery[i]) {
+        return false;
+      }
+      // We can do relaxed loads here because we're the only person touching
+      // this sender at this point.
+      const Index scratch_index = sender->scratch_index.RelaxedLoad();
+      const Index to_replace = sender->to_replace.RelaxedLoad();
 
-        // Candidate.
-        if (to_replace.valid()) {
-          CHECK_LE(to_replace.message_index(), accounted_for.size());
-        }
-        if (scratch_index.valid()) {
-          CHECK_LE(scratch_index.message_index(), accounted_for.size());
-        }
-        if (!to_replace.valid() || accounted_for[to_replace.message_index()]) {
-          CHECK(scratch_index.valid());
-          VLOG(3) << "Sender " << i
-                  << " died, to_replace is already accounted for";
-          // If both are accounted for, we are corrupt...
-          CHECK(!accounted_for[scratch_index.message_index()]);
+      // Candidate.
+      if (to_replace.valid()) {
+        CHECK_LE(to_replace.message_index(), accounted_for.size());
+      }
+      if (scratch_index.valid()) {
+        CHECK_LE(scratch_index.message_index(), accounted_for.size());
+      }
+      if (!to_replace.valid() || accounted_for[to_replace.message_index()]) {
+        CHECK(scratch_index.valid());
+        VLOG(3) << "Sender " << i
+                << " died, to_replace is already accounted for";
+        // If both are accounted for, we are corrupt...
+        CHECK(!accounted_for[scratch_index.message_index()]);
 
-          // to_replace is already accounted for.  This means that we didn't
-          // atomically insert scratch_index into the queue yet.  So
-          // invalidate to_replace.
-          sender->to_replace.Invalidate();
+        // to_replace is already accounted for.  This means that we didn't
+        // atomically insert scratch_index into the queue yet.  So
+        // invalidate to_replace.
+        sender->to_replace.Invalidate();
 
-          // And then mark this sender clean.
-          __atomic_store_n(&(sender->tid.futex), 0, __ATOMIC_RELEASE);
+        // And then mark this sender clean.
+        __atomic_store_n(&(sender->tid.futex), 0, __ATOMIC_RELEASE);
+        need_recovery[i] = false;
 
-          // And account for scratch_index.
-          accounted_for[scratch_index.message_index()] = true;
-          --num_missing;
-          ++num_accounted_for;
-        } else if (!scratch_index.valid() ||
-                   accounted_for[scratch_index.message_index()]) {
-          VLOG(3) << "Sender " << i
-                  << " died, scratch_index is already accounted for";
-          // scratch_index is accounted for.  That means we did the insert,
-          // but didn't record it.
-          CHECK(to_replace.valid());
-          // Finish the transaction.  Copy to_replace, then clear it.
+        // And account for scratch_index.
+        accounted_for[scratch_index.message_index()] = true;
+        --num_missing;
+        ++num_accounted_for;
+      } else if (!scratch_index.valid() ||
+                 accounted_for[scratch_index.message_index()]) {
+        VLOG(3) << "Sender " << i
+                << " died, scratch_index is already accounted for";
+        // scratch_index is accounted for.  That means we did the insert,
+        // but didn't record it.
+        CHECK(to_replace.valid());
+        // Finish the transaction.  Copy to_replace, then clear it.
 
-          sender->scratch_index.Store(to_replace);
-          sender->to_replace.Invalidate();
+        sender->scratch_index.Store(to_replace);
+        sender->to_replace.Invalidate();
 
-          // And then mark this sender clean.
-          __atomic_store_n(&(sender->tid.futex), 0, __ATOMIC_RELEASE);
+        // And then mark this sender clean.
+        __atomic_store_n(&(sender->tid.futex), 0, __ATOMIC_RELEASE);
+        need_recovery[i] = false;
 
-          // And account for to_replace.
-          accounted_for[to_replace.message_index()] = true;
-          --num_missing;
-          ++num_accounted_for;
-        } else {
-          VLOG(3) << "Sender " << i << " died, neither is accounted for";
-          // Ambiguous.  There will be an unambiguous one somewhere that we
-          // can do first.
-        }
+        // And account for to_replace.
+        accounted_for[to_replace.message_index()] = true;
+        --num_missing;
+        ++num_accounted_for;
+      } else {
+        VLOG(3) << "Sender " << i << " died, neither is accounted for";
+        // Ambiguous.  There will be an unambiguous one somewhere that we
+        // can do first.
       }
     }
     // CHECK that we are making progress.
     CHECK_NE(num_missing, starting_num_missing);
+  }
+  return true;
+}
+
+void Cleanup(LocklessQueueMemory *memory, const GrabQueueSetupLockOrDie &lock) {
+  // The number of iterations is bounded here because there are only a finite
+  // number of senders in existence which could die, and no new ones can be
+  // created while we're in here holding the lock.
+  while (!DoCleanup(memory, lock)) {
   }
 }
 
