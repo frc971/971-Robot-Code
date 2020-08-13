@@ -2,11 +2,13 @@
   "channels": [
     {
       "name": "/test",
-      "type": "aos.examples.Ping"
+      "type": "aos.examples.Ping",
+      "frequency": 2000
     },
     {
       "name": "/test",
-      "type": "aos.examples.Pong"
+      "type": "aos.examples.Pong",
+      "frequency": 2000
     }
   ],
   "imports": [
