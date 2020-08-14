@@ -190,8 +190,7 @@ namespace shm_event_loop_internal {
 
 class SimpleShmFetcher {
  public:
-  explicit SimpleShmFetcher(ShmEventLoop *event_loop, const Channel *channel,
-                            bool copy_data)
+  explicit SimpleShmFetcher(ShmEventLoop *event_loop, const Channel *channel)
       : event_loop_(event_loop),
         channel_(channel),
         lockless_queue_memory_(
@@ -200,10 +199,6 @@ class SimpleShmFetcher {
                 event_loop->configuration()->channel_storage_duration()))),
         lockless_queue_(lockless_queue_memory_.memory(),
                         lockless_queue_memory_.config()) {
-    if (copy_data) {
-      data_storage_.reset(static_cast<char *>(
-          malloc(channel->max_size() + kChannelDataAlignment - 1)));
-    }
     context_.data = nullptr;
     // Point the queue index at the next index to read starting now.  This
     // makes it such that FetchNext will read the next message sent after
@@ -212,6 +207,13 @@ class SimpleShmFetcher {
   }
 
   ~SimpleShmFetcher() {}
+
+  // Sets this object to copy data out of the shared memory into a private
+  // buffer when fetching.
+  void CopyDataOnFetch() {
+    data_storage_.reset(static_cast<char *>(
+        malloc(channel_->max_size() + kChannelDataAlignment - 1)));
+  }
 
   // Points the next message to fetch at the queue index which will be
   // populated next.
@@ -228,47 +230,8 @@ class SimpleShmFetcher {
   }
 
   bool FetchNext() {
-    // TODO(austin): Get behind and make sure it dies both here and with
-    // Fetch.
-    ipc_lib::LocklessQueue::ReadResult read_result = lockless_queue_.Read(
-        actual_queue_index_.index(), &context_.monotonic_event_time,
-        &context_.realtime_event_time, &context_.monotonic_remote_time,
-        &context_.realtime_remote_time, &context_.remote_queue_index,
-        &context_.size, data_storage_start());
-    if (read_result == ipc_lib::LocklessQueue::ReadResult::GOOD) {
-      context_.queue_index = actual_queue_index_.index();
-      if (context_.remote_queue_index == 0xffffffffu) {
-        context_.remote_queue_index = context_.queue_index;
-      }
-      if (context_.monotonic_remote_time == aos::monotonic_clock::min_time) {
-        context_.monotonic_remote_time = context_.monotonic_event_time;
-      }
-      if (context_.realtime_remote_time == aos::realtime_clock::min_time) {
-        context_.realtime_remote_time = context_.realtime_event_time;
-      }
-      if (copy_data()) {
-        context_.data = data_storage_start() +
-                        lockless_queue_.message_data_size() - context_.size;
-      } else {
-        context_.data = nullptr;
-      }
-      actual_queue_index_ = actual_queue_index_.Increment();
-    }
-
-    // Make sure the data wasn't modified while we were reading it.  This
-    // can only happen if you are reading the last message *while* it is
-    // being written to, which means you are pretty far behind.
-    CHECK(read_result != ipc_lib::LocklessQueue::ReadResult::OVERWROTE)
-        << ": Got behind while reading and the last message was modified "
-           "out from under us while we were reading it.  Don't get so far "
-           "behind.  "
-        << configuration::CleanedChannelToString(channel_);
-
-    if (read_result == ipc_lib::LocklessQueue::ReadResult::TOO_OLD) {
-      event_loop_->SendTimingReport();
-      LOG(FATAL) << "The next message is no longer available.  "
-                 << configuration::CleanedChannelToString(channel_);
-    }
+    const ipc_lib::LocklessQueue::ReadResult read_result =
+        DoFetch(actual_queue_index_);
 
     return read_result == ipc_lib::LocklessQueue::ReadResult::GOOD;
   }
@@ -287,52 +250,11 @@ class SimpleShmFetcher {
       return false;
     }
 
-    ipc_lib::LocklessQueue::ReadResult read_result = lockless_queue_.Read(
-        queue_index.index(), &context_.monotonic_event_time,
-        &context_.realtime_event_time, &context_.monotonic_remote_time,
-        &context_.realtime_remote_time, &context_.remote_queue_index,
-        &context_.size, data_storage_start());
-    if (read_result == ipc_lib::LocklessQueue::ReadResult::GOOD) {
-      context_.queue_index = queue_index.index();
-      if (context_.remote_queue_index == 0xffffffffu) {
-        context_.remote_queue_index = context_.queue_index;
-      }
-      if (context_.monotonic_remote_time == aos::monotonic_clock::min_time) {
-        context_.monotonic_remote_time = context_.monotonic_event_time;
-      }
-      if (context_.realtime_remote_time == aos::realtime_clock::min_time) {
-        context_.realtime_remote_time = context_.realtime_event_time;
-      }
-      if (copy_data()) {
-        context_.data = data_storage_start() +
-                        lockless_queue_.message_data_size() - context_.size;
-      } else {
-        context_.data = nullptr;
-      }
-      actual_queue_index_ = queue_index.Increment();
-    }
-
-    // Make sure the data wasn't modified while we were reading it.  This
-    // can only happen if you are reading the last message *while* it is
-    // being written to, which means you are pretty far behind.
-    CHECK(read_result != ipc_lib::LocklessQueue::ReadResult::OVERWROTE)
-        << ": Got behind while reading and the last message was modified "
-           "out from under us while we were reading it.  Don't get so far "
-           "behind."
-        << configuration::CleanedChannelToString(channel_);
+    const ipc_lib::LocklessQueue::ReadResult read_result = DoFetch(queue_index);
 
     CHECK(read_result != ipc_lib::LocklessQueue::ReadResult::NOTHING_NEW)
         << ": Queue index went backwards.  This should never happen.  "
         << configuration::CleanedChannelToString(channel_);
-
-    // We fell behind between when we read the index and read the value.
-    // This isn't worth recovering from since this means we went to sleep
-    // for a long time in the middle of this function.
-    if (read_result == ipc_lib::LocklessQueue::ReadResult::TOO_OLD) {
-      event_loop_->SendTimingReport();
-      LOG(FATAL) << "The next message is no longer available.  "
-                 << configuration::CleanedChannelToString(channel_);
-    }
 
     return read_result == ipc_lib::LocklessQueue::ReadResult::GOOD;
   }
@@ -350,17 +272,83 @@ class SimpleShmFetcher {
   }
 
   absl::Span<char> GetPrivateMemory() const {
-    CHECK(copy_data());
+    // Can't usefully expose this for pinning, because the buffer changes
+    // address for each message. Callers who want to work with that should just
+    // grab the whole shared memory buffer instead.
     return absl::Span<char>(
         const_cast<SimpleShmFetcher *>(this)->data_storage_start(),
         lockless_queue_.message_data_size());
   }
 
  private:
-  char *data_storage_start() {
-    if (!copy_data()) return nullptr;
+  ipc_lib::LocklessQueue::ReadResult DoFetch(ipc_lib::QueueIndex queue_index) {
+    // TODO(austin): Get behind and make sure it dies.
+    char *copy_buffer = nullptr;
+    if (copy_data()) {
+      copy_buffer = data_storage_start();
+    }
+    ipc_lib::LocklessQueue::ReadResult read_result = lockless_queue_.Read(
+        queue_index.index(), &context_.monotonic_event_time,
+        &context_.realtime_event_time, &context_.monotonic_remote_time,
+        &context_.realtime_remote_time, &context_.remote_queue_index,
+        &context_.size, copy_buffer);
+
+    if (read_result == ipc_lib::LocklessQueue::ReadResult::GOOD) {
+      context_.queue_index = queue_index.index();
+      if (context_.remote_queue_index == 0xffffffffu) {
+        context_.remote_queue_index = context_.queue_index;
+      }
+      if (context_.monotonic_remote_time == aos::monotonic_clock::min_time) {
+        context_.monotonic_remote_time = context_.monotonic_event_time;
+      }
+      if (context_.realtime_remote_time == aos::realtime_clock::min_time) {
+        context_.realtime_remote_time = context_.realtime_event_time;
+      }
+      const char *const data = DataBuffer();
+      if (data) {
+        context_.data =
+            data + lockless_queue_.message_data_size() - context_.size;
+      } else {
+        context_.data = nullptr;
+      }
+      actual_queue_index_ = queue_index.Increment();
+    }
+
+    // Make sure the data wasn't modified while we were reading it.  This
+    // can only happen if you are reading the last message *while* it is
+    // being written to, which means you are pretty far behind.
+    CHECK(read_result != ipc_lib::LocklessQueue::ReadResult::OVERWROTE)
+        << ": Got behind while reading and the last message was modified "
+           "out from under us while we were reading it.  Don't get so far "
+           "behind on: "
+        << configuration::CleanedChannelToString(channel_);
+
+    // We fell behind between when we read the index and read the value.
+    // This isn't worth recovering from since this means we went to sleep
+    // for a long time in the middle of this function.
+    if (read_result == ipc_lib::LocklessQueue::ReadResult::TOO_OLD) {
+      event_loop_->SendTimingReport();
+      LOG(FATAL) << "The next message is no longer available.  "
+                 << configuration::CleanedChannelToString(channel_);
+    }
+
+    return read_result;
+  }
+
+  char *data_storage_start() const {
+    CHECK(copy_data());
     return RoundChannelData(data_storage_.get(), channel_->max_size());
   }
+
+  // Note that for some modes the return value will change as new messages are
+  // read.
+  const char *DataBuffer() const {
+    if (copy_data()) {
+      return data_storage_start();
+    }
+    return nullptr;
+  }
+
   bool copy_data() const { return static_cast<bool>(data_storage_); }
 
   aos::ShmEventLoop *event_loop_;
@@ -381,7 +369,9 @@ class ShmFetcher : public RawFetcher {
  public:
   explicit ShmFetcher(ShmEventLoop *event_loop, const Channel *channel)
       : RawFetcher(event_loop, channel),
-        simple_shm_fetcher_(event_loop, channel, true) {}
+        simple_shm_fetcher_(event_loop, channel) {
+    simple_shm_fetcher_.CopyDataOnFetch();
+  }
 
   ~ShmFetcher() { context_.data = nullptr; }
 
@@ -487,7 +477,11 @@ class ShmWatcherState : public WatcherState {
       : WatcherState(event_loop, channel, std::move(fn)),
         event_loop_(event_loop),
         event_(this),
-        simple_shm_fetcher_(event_loop, channel, copy_data) {}
+        simple_shm_fetcher_(event_loop, channel) {
+    if (copy_data) {
+      simple_shm_fetcher_.CopyDataOnFetch();
+    }
+  }
 
   ~ShmWatcherState() override { event_loop_->RemoveEvent(&event_); }
 
