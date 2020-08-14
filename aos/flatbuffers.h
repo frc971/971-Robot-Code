@@ -19,7 +19,12 @@ class FixedAllocatorBase : public flatbuffers::Allocator {
   // TODO(austin): Read the contract for these.
   uint8_t *allocate(size_t) override;
 
-  void deallocate(uint8_t *, size_t) override { is_allocated_ = false; }
+  void deallocate(uint8_t *allocated_data, size_t allocated_size) override {
+    DCHECK_LE(allocated_size, size());
+    DCHECK_EQ(allocated_data, data());
+    CHECK(is_allocated_);
+    is_allocated_ = false;
+  }
 
   uint8_t *reallocate_downward(uint8_t *, size_t, size_t, size_t,
                                size_t) override;
@@ -28,7 +33,10 @@ class FixedAllocatorBase : public flatbuffers::Allocator {
   virtual uint8_t *data() = 0;
   virtual size_t size() const = 0;
 
-  void Reset() { is_allocated_ = false; }
+  void Reset() {
+    CHECK(!is_allocated_);
+    is_allocated_ = false;
+  }
   bool is_allocated() const { return is_allocated_; }
 
   bool allocated() { return is_allocated_; }
@@ -241,31 +249,38 @@ class FlatbufferDetachedBuffer final : public Flatbuffer<T> {
 template <typename T, size_t Size>
 class FlatbufferFixedAllocatorArray final : public Flatbuffer<T> {
  public:
-  FlatbufferFixedAllocatorArray() : buffer_(), allocator_(&buffer_[0], Size) {
-    builder_ = flatbuffers::FlatBufferBuilder(Size, &allocator_);
-    builder_.ForceDefaults(true);
+  FlatbufferFixedAllocatorArray() : buffer_(), allocator_(&buffer_[0], Size) {}
+
+  FlatbufferFixedAllocatorArray(const FlatbufferFixedAllocatorArray &) = delete;
+  void operator=(const Flatbuffer<T> &) = delete;
+
+  void CopyFrom(const Flatbuffer<T> &other) {
+    CHECK(!allocator_.is_allocated()) << ": May not overwrite while building";
+    memcpy(buffer_.begin(), other.data(), other.size());
+    data_ = buffer_.begin();
+    size_ = other.size();
   }
 
   void Reset() {
-    allocator_.Reset();
+    CHECK(!allocator_.is_allocated()) << ": May not reset while building";
     builder_ = flatbuffers::FlatBufferBuilder(Size, &allocator_);
     builder_.ForceDefaults(true);
   }
 
   flatbuffers::FlatBufferBuilder *Builder() {
-    if (allocator_.allocated()) {
-      LOG(FATAL) << "Array backed flatbuffer can only be built once";
-    }
+    CHECK(!allocator_.allocated())
+        << ": Array backed flatbuffer can only be built once";
+    builder_ = flatbuffers::FlatBufferBuilder(Size, &allocator_);
+    builder_.ForceDefaults(true);
     return &builder_;
   }
 
   void Finish(flatbuffers::Offset<T> root) {
-    if (!allocator_.allocated()) {
-      LOG(FATAL) << "Cannot finish if never building";
-    }
+    CHECK(allocator_.allocated()) << ": Cannot finish if not building";
     builder_.Finish(root);
     data_ = builder_.GetBufferPointer();
     size_ = builder_.GetSize();
+    DCHECK_LE(size_, Size);
   }
 
   const uint8_t *data() const override {
@@ -284,8 +299,6 @@ class FlatbufferFixedAllocatorArray final : public Flatbuffer<T> {
   flatbuffers::FlatBufferBuilder builder_;
   uint8_t *data_ = nullptr;
   size_t size_ = 0;
-
-  DISALLOW_COPY_AND_ASSIGN(FlatbufferFixedAllocatorArray);
 };
 
 // This object associates the message type with the memory storing the
