@@ -1,30 +1,31 @@
-import argparse
+from gi.repository import Gtk
 
-arg_parser = argparse.ArgumentParser(description='spline_editor')
-arg_parser.add_argument('size',
-                        metavar='N',
-                        default=800,
-                        type=int,
-                        nargs='?',
-                        help="size of the screen")
-args = arg_parser.parse_args()
-SCREEN_SIZE = args.size
+window = Gtk.Window()
+screen = window.get_screen()
+
+#Set screen size for rest of program.
+SCREEN_SIZE = screen.get_height() / 3
 
 WIDTH_OF_ROBOT = 0.65
 LENGTH_OF_ROBOT = 0.8
 
-ROBOT_SIDE_TO_BALL_CENTER = 0.15  # Placeholder value
+# Placeholder value
+ROBOT_SIDE_TO_BALL_CENTER = 0.15
 BALL_RADIUS = 0.165
-ROBOT_SIDE_TO_HATCH_PANEL = 0.1  # Placeholder value
+
+# Placeholder value
+ROBOT_SIDE_TO_HATCH_PANEL = 0.1
 HATCH_PANEL_WIDTH = 0.4826
 
 FIELD = 2020
 
 if FIELD == 2019:
-    WIDTH_OF_FIELD_IN_METERS = 8.258302  # Half Field
+    # Half Field
+    WIDTH_OF_FIELD_IN_METERS = 8.258302
 elif FIELD == 2020:
-    WIDTH_OF_FIELD_IN_METERS = 15.98295  # Full Field
-    LENGTH_OF_FIELD_IN_METERS = 8.21055  # Full Field
+    # Full Field
+    WIDTH_OF_FIELD_IN_METERS = 15.98295
+    LENGTH_OF_FIELD_IN_METERS = 8.21055
 
 
 def pxToM(p):
