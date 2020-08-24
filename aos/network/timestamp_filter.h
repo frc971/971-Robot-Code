@@ -12,6 +12,9 @@
 namespace aos {
 namespace message_bridge {
 
+// Max velocity to clamp the filter to in seconds/second.
+inline constexpr double kMaxVelocity() { return 0.001; }
+
 // This class handles filtering differences between clocks across a network.
 //
 // The basic concept is that network latencies are highly asymmetric.  They will
@@ -29,6 +32,11 @@ class TimestampFilter {
   void Set(aos::monotonic_clock::time_point monotonic_now,
            std::chrono::nanoseconds sample_ns);
 
+  double velocity_contribution() const { return velocity_contribution_; }
+  double sample_contribution() const { return sample_contribution_; }
+  double time_contribution() const { return time_contribution_; }
+  double clamp() const { return clamp_; }
+
   // Updates with a new sample.  monotonic_now is the timestamp of the sample on
   // the destination node, and sample_ns is destination_time - source_time.
   void Sample(aos::monotonic_clock::time_point monotonic_now,
@@ -37,7 +45,10 @@ class TimestampFilter {
   // Updates the base_offset, and compensates offset while we are here.
   void set_base_offset(std::chrono::nanoseconds base_offset);
 
-  double offset() const { return offset_; }
+  double offset() const {
+    VLOG(1) << " " << this << " offset " << offset_;
+    return offset_;
+  }
 
   std::chrono::nanoseconds base_offset() const { return base_offset_; }
 
@@ -51,29 +62,53 @@ class TimestampFilter {
     return last_time_ != aos::monotonic_clock::min_time;
   }
 
+  double velocity() const { return state_velocity_; }
+  double filtered_velocity() const { return filtered_velocity_; }
+  double last_velocity_sample() const {
+    return std::chrono::duration_cast<std::chrono::duration<double>>(
+               last_velocity_sample_ns_)
+        .count();
+  }
+
+  aos::monotonic_clock::time_point last_time() const { return last_time_; }
+
   void Reset();
 
  private:
+  void VelocitySample(aos::monotonic_clock::time_point monotonic_now,
+                      std::chrono::nanoseconds sample_ns);
+
   double offset_ = 0;
+  double state_velocity_ = 0.0;
+  double velocity_ = 0;
+  double filtered_velocity_ = 0;
+  double filtered_velocity_time_ = 0;
+
+  double velocity_contribution_ = 0.0;
+  double clamp_ = 0.0;
+  double sample_contribution_ = 0.0;
+  double time_contribution_ = 0.0;
+
+  std::chrono::nanoseconds last_sample_ns_;
 
   aos::monotonic_clock::time_point last_time_ = aos::monotonic_clock::min_time;
   std::chrono::nanoseconds base_offset_{0};
+
+  aos::monotonic_clock::time_point last_velocity_sample_time_ =
+      aos::monotonic_clock::min_time;
+  std::chrono::nanoseconds last_velocity_sample_ns_{0};
 };
 
 // This class combines the a -> b offsets with the b -> a offsets and
 // aggressively filters the results.
-struct ClippedAverageFilter {
-  // If not nullptr, timestamps will get written to these two files for
-  // debugging.
-  FILE *fwd_fp = nullptr;
-  FILE *rev_fp = nullptr;
-
+class ClippedAverageFilter {
+ public:
   ~ClippedAverageFilter() {
-    if (fwd_fp != nullptr) {
-      fclose(fwd_fp);
+    if (fwd_fp_ != nullptr) {
+      fclose(fwd_fp_);
     }
-    if (rev_fp != nullptr) {
-      fclose(rev_fp);
+    if (rev_fp_ != nullptr) {
+      fclose(rev_fp_);
     }
   }
 
@@ -127,6 +162,21 @@ struct ClippedAverageFilter {
 
   void Reset();
 
+  aos::monotonic_clock::time_point fwd_last_time() const {
+    return fwd_.last_time();
+  }
+  aos::monotonic_clock::time_point rev_last_time() const {
+    return rev_.last_time();
+  }
+
+  // If not nullptr, timestamps will get written to these two files for
+  // debugging.
+  void SetFwdCsvFileName(std::string_view name);
+  void SetRevCsvFileName(std::string_view name);
+
+  void set_first_fwd_time(aos::monotonic_clock::time_point time);
+  void set_first_rev_time(aos::monotonic_clock::time_point time);
+
  private:
   // Updates the offset estimate given the current time, and a pointer to the
   // variable holding the last time.
@@ -142,6 +192,7 @@ struct ClippedAverageFilter {
   std::chrono::nanoseconds base_offset_ = std::chrono::nanoseconds(0);
   // Dynamic part of the offset.
   double offset_ = 0;
+  double offset_velocity_ = 0;
 
   // Last time we had a sample for a direction.
   aos::monotonic_clock::time_point last_fwd_time_ =
@@ -157,6 +208,11 @@ struct ClippedAverageFilter {
 
   // Pointer to copy the sample to when it is updated.
   double *sample_pointer_ = nullptr;
+
+  std::string rev_csv_file_name_;
+  std::string fwd_csv_file_name_;
+  FILE *fwd_fp_ = nullptr;
+  FILE *rev_fp_ = nullptr;
 };
 
 }  // namespace message_bridge

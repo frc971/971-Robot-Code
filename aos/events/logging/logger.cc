@@ -641,12 +641,12 @@ std::tuple<message_bridge::ClippedAverageFilter *, bool> LogReader::GetFilter(
     if (FLAGS_timestamps_to_csv) {
       std::string fwd_name =
           absl::StrCat("/tmp/timestamp_", node_a->name()->string_view(), "_",
-                       node_b->name()->string_view(), ".csv");
-      x.fwd_fp = fopen(fwd_name.c_str(), "w");
+                       node_b->name()->string_view());
+      x.SetFwdCsvFileName(fwd_name);
       std::string rev_name =
           absl::StrCat("/tmp/timestamp_", node_b->name()->string_view(), "_",
-                       node_a->name()->string_view(), ".csv");
-      x.rev_fp = fopen(rev_name.c_str(), "w");
+                       node_a->name()->string_view());
+      x.SetRevCsvFileName(rev_name);
     }
 
     return std::make_tuple(&x, true);

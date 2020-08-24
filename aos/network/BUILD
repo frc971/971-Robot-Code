@@ -361,6 +361,7 @@ cc_library(
     hdrs = ["timestamp_filter.h"],
     deps = [
         "//aos/time",
+        "@com_google_absl//absl/strings",
     ],
 )
 

@@ -39,8 +39,9 @@ TEST(TimestampFilterTest, Sample) {
   filter.Sample(aos::monotonic_clock::epoch() + chrono::seconds(3),
                 chrono::milliseconds(0));
 
-  EXPECT_GT(filter.offset(), -0.9999);
-  EXPECT_LT(filter.offset(), -0.999);
+  // We have velocity now, so we will continue.
+  EXPECT_GT(filter.offset(), -1.001);
+  EXPECT_LT(filter.offset(), -1.0001);
   EXPECT_EQ(filter.base_offset(), chrono::seconds(0));
   EXPECT_TRUE(filter.has_sample());
 }
