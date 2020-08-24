@@ -357,6 +357,7 @@ cc_binary(
 
 cc_library(
     name = "timestamp_filter",
+    srcs = ["timestamp_filter.cc"],
     hdrs = ["timestamp_filter.h"],
     deps = [
         "//aos/time",
