@@ -399,8 +399,9 @@ bool SplitMessageReader::QueueMessages(
 
     // Bail if there is enough data already queued.
     if (last_dequeued_time < time_to_queue_) {
-      VLOG(1) << "All up to date on " << this << ", dequeued "
-              << last_dequeued_time << " queue time " << time_to_queue_;
+      VLOG(1) << MaybeNodeName(target_node_) << "All up to date on " << this
+              << ", dequeued " << last_dequeued_time << " queue time "
+              << time_to_queue_;
       return true;
     }
   } else {
@@ -420,15 +421,17 @@ bool SplitMessageReader::QueueMessages(
   // from each channel at the start of the log file.  So always force the start
   // of the log file to just be read.
   time_to_queue_ = std::max(time_to_queue_, newest_timestamp());
-  VLOG(1) << "Queueing, going until " << time_to_queue_ << " " << filename();
+  VLOG(1) << MaybeNodeName(target_node_) << "Queueing, going until "
+          << time_to_queue_ << " " << filename();
 
   bool was_emplaced = false;
   while (true) {
     // Stop if we have enough.
     if (newest_timestamp() > time_to_queue_ + max_out_of_order_duration() &&
         was_emplaced) {
-      VLOG(1) << "Done queueing on " << this << ", queued to "
-              << newest_timestamp() << " with requeue time " << time_to_queue_;
+      VLOG(1) << MaybeNodeName(target_node_) << "Done queueing on " << this
+              << ", queued to " << newest_timestamp() << " with requeue time "
+              << time_to_queue_;
       return true;
     }
 
@@ -440,17 +443,17 @@ bool SplitMessageReader::QueueMessages(
           chrono::nanoseconds(header.monotonic_sent_time()));
 
       if (VLOG_IS_ON(2)) {
-        LOG(INFO) << "Queued " << this << " " << filename()
-                << " ttq: " << time_to_queue_ << " now " << newest_timestamp()
-                << " start time " << monotonic_start_time() << " "
-                << FlatbufferToJson(&header);
+        LOG(INFO) << MaybeNodeName(target_node_) << "Queued " << this
+                  << " " << filename() << " ttq: " << time_to_queue_ << " now "
+                  << newest_timestamp() << " start time "
+                  << monotonic_start_time() << " " << FlatbufferToJson(&header);
       } else if (VLOG_IS_ON(1)) {
         FlatbufferVector<MessageHeader> copy = msg.value();
         copy.mutable_message()->clear_data();
-        LOG(INFO) << "Queued " << this << " " << filename()
-                << " ttq: " << time_to_queue_ << " now " << newest_timestamp()
-                << " start time " << monotonic_start_time() << " "
-                << FlatbufferToJson(copy);
+        LOG(INFO) << MaybeNodeName(target_node_) << "Queued " << this << " "
+                  << filename() << " ttq: " << time_to_queue_ << " now "
+                  << newest_timestamp() << " start time "
+                  << monotonic_start_time() << " " << FlatbufferToJson(copy);
       }
 
       const int channel_index = header.channel_index();
@@ -461,7 +464,8 @@ bool SplitMessageReader::QueueMessages(
       }
     } else {
       if (!NextLogFile()) {
-        VLOG(1) << "No more files, last was " << filenames_.back();
+        VLOG(1) << MaybeNodeName(target_node_) << "No more files, last was "
+                << filenames_.back();
         at_end_ = true;
         for (MessageHeaderQueue *queue : channels_to_write_) {
           if (queue == nullptr || queue->timestamp_merger == nullptr) {
@@ -480,6 +484,8 @@ void SplitMessageReader::SetTimestampMerger(TimestampMerger *timestamp_merger,
                                             const Node *target_node) {
   const Node *reinterpreted_target_node =
       configuration::GetNodeOrDie(configuration(), target_node);
+  target_node_ = reinterpreted_target_node;
+
   const Channel *const channel =
       configuration()->channels()->Get(channel_index);
 
@@ -541,8 +547,8 @@ SplitMessageReader::PopOldest(int channel_index) {
       std::move(channels_[channel_index].data.front());
   channels_[channel_index].data.pop_front();
 
-  VLOG(1) << "Popped " << this << " " << std::get<0>(timestamp) << " for "
-          << channel_index;
+  VLOG(1) << MaybeNodeName(target_node_) << "Popped " << this << " "
+          << std::get<0>(timestamp) << " for " << channel_index;
 
   QueueMessages(std::get<0>(timestamp));
 
@@ -560,8 +566,11 @@ SplitMessageReader::PopOldest(int channel, int node_index) {
       std::move(channels_[channel].timestamps[node_index].front());
   channels_[channel].timestamps[node_index].pop_front();
 
-  VLOG(1) << "Popped " << this << " " << std::get<0>(timestamp) << " for "
-          << channel << " on " << node_index;
+  VLOG(1) << MaybeNodeName(target_node_) << "Popped " << this << " "
+          << std::get<0>(timestamp) << " for "
+          << configuration::StrippedChannelToString(
+                 configuration()->channels()->Get(channel))
+          << " on " << node_index;
 
   QueueMessages(std::get<0>(timestamp));
 
@@ -891,9 +900,11 @@ TimestampMerger::PopOldest() {
 
     // See if we have any data.  If not, pass the problem up the chain.
     if (message_heap_.empty()) {
-      VLOG(1) << "No data to match timestamp on "
-              << configuration::CleanedChannelToString(
-                     configuration_->channels()->Get(channel_index_));
+      LOG(WARNING) << MaybeNodeName(configuration_->nodes()->Get(node_index_))
+                   << "No data to match timestamp on "
+                   << configuration::CleanedChannelToString(
+                          configuration_->channels()->Get(channel_index_))
+                   << " (" << channel_index_ << ")";
       return std::make_tuple(timestamp,
                              std::move(std::get<2>(oldest_timestamp)));
     }
@@ -910,16 +921,30 @@ TimestampMerger::PopOldest() {
             std::get<2>(oldest_message_ref)->monotonic_sent_time()));
 
         if (remote_monotonic_time < remote_timestamp_monotonic_time) {
-          VLOG(1) << "Undelivered message, skipping.  Remote time is "
-                  << remote_monotonic_time << " timestamp is "
-                  << remote_timestamp_monotonic_time << " on channel "
-                  << channel_index_;
+          LOG(WARNING) << configuration_->nodes()
+                              ->Get(node_index_)
+                              ->name()
+                              ->string_view()
+                       << " Undelivered message, skipping.  Remote time is "
+                       << remote_monotonic_time << " timestamp is "
+                       << remote_timestamp_monotonic_time << " on channel "
+                       << configuration::StrippedChannelToString(
+                              configuration_->channels()->Get(channel_index_))
+                       << " (" << channel_index_ << ")";
           PopMessageHeap();
           continue;
         } else if (remote_monotonic_time > remote_timestamp_monotonic_time) {
-          VLOG(1) << "Data not found.  Remote time should be "
-                  << remote_timestamp_monotonic_time << " on channel "
-                  << channel_index_;
+          LOG(WARNING) << configuration_->nodes()
+                              ->Get(node_index_)
+                              ->name()
+                              ->string_view()
+                       << " Data not found.  Remote time should be "
+                       << remote_timestamp_monotonic_time
+                       << ", message time is " << remote_monotonic_time
+                       << " on channel "
+                       << configuration::StrippedChannelToString(
+                              configuration_->channels()->Get(channel_index_))
+                       << " (" << channel_index_ << ")";
           return std::make_tuple(timestamp,
                                  std::move(std::get<2>(oldest_timestamp)));
         }
@@ -1312,6 +1337,13 @@ std::string ChannelMerger::DebugString() const {
   ss << "}";
 
   return ss.str();
+}
+
+std::string MaybeNodeName(const Node *node) {
+  if (node != nullptr) {
+    return node->name()->str() + " ";
+  }
+  return "";
 }
 
 }  // namespace logger

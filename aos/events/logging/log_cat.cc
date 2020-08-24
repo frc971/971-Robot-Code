@@ -212,8 +212,9 @@ int main(int argc, char **argv) {
     printer_event_loops.emplace_back(std::move(printer_event_loop));
 
     std::cout << std::endl;
-    std::cout << "Log starting at " << reader.realtime_start_time() << " ("
-              << reader.monotonic_start_time() << ")";
+    std::cout << (node != nullptr ? (node->name()->str() + " ") : "")
+              << "Log starting at " << reader.realtime_start_time(node) << " ("
+              << reader.monotonic_start_time(node) << ")";
     std::cout << std::endl << std::endl;
   }
 
