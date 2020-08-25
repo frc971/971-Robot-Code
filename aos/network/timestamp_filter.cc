@@ -5,6 +5,7 @@
 
 #include "absl/strings/str_cat.h"
 #include "aos/time/time.h"
+#include "third_party/gmp/gmpxx.h"
 
 namespace aos {
 namespace message_bridge {
@@ -421,6 +422,62 @@ void ClippedAverageFilter::Update(
       }
     }
   }
+}
+
+Line Line::Fit(
+    const std::tuple<monotonic_clock::time_point, chrono::nanoseconds> a,
+    const std::tuple<monotonic_clock::time_point, chrono::nanoseconds> b) {
+  mpq_class slope =
+      FromInt64((std::get<1>(b) - std::get<1>(a)).count()) /
+      FromInt64((std::get<0>(b) - std::get<0>(a)).count());
+  slope.canonicalize();
+  mpq_class offset =
+      FromInt64(std::get<1>(a).count()) -
+      FromInt64(std::get<0>(a).time_since_epoch().count()) * slope;
+  offset.canonicalize();
+  Line f(offset, slope);
+  return f;
+}
+
+Line AverageFits(Line fa, Line fb) {
+  // tb = Oa(ta) + ta
+  // ta = Ob(tb) + tb
+  // tb - ta = Oa(ta)
+  // tb - ta = -Ob(tb)
+  // Oa(ta) = ma * ta + ba
+  // Ob(tb) = mb * tb + bb
+  //
+  // ta + O(ta, tb) = tb
+  // tb - ta = O(ta, tb)
+  // O(ta, tb) = (Oa(ta) - Ob(tb)) / 2.0
+  // ta + (ma * ta + ba - mb * tb - bb) / 2 = tb
+  // (2 + ma) / 2 * ta + (ba - bb) / 2 = (2 + mb) / 2 * tb
+  // (2 + ma) * ta + (ba - bb) = (2 + mb) * tb
+  // tb = (2 + ma) / (2 + mb) * ta + (ba - bb) / (2 + mb)
+  // ta = (2 + mb) / (2 + ma) * tb + (bb - ba) / (2 + ma)
+  //
+  // ta - tb = (mb - ma) / (2 + ma) * tb + (bb - ba) / (2 + ma)
+  // mb = (mb - ma) / (2 + ma)
+  // bb = (bb - ba) / (2 + ma)
+  //
+  // tb - ta = (ma - mb) / (2 + mb) * tb + (ba - bb) / (2 + mb)
+  // ma = (ma - mb) / (2 + mb)
+  // ba = (ba - bb) / (2 + mb)
+  //
+  // O(ta) = ma * ta + ba
+  // tb = O(ta) + ta
+  // ta = O(tb) + tb
+
+  mpq_class m =
+      (fa.mpq_slope() - fb.mpq_slope()) / (mpq_class(2) + fb.mpq_slope());
+  m.canonicalize();
+
+  mpq_class b =
+      (fa.mpq_offset() - fb.mpq_offset()) / (mpq_class(2) + fb.mpq_slope());
+  b.canonicalize();
+
+  Line f(b, m);
+  return f;
 }
 
 }  // namespace message_bridge

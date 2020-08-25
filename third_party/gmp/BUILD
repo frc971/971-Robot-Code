@@ -82,6 +82,7 @@ copts_common = [
     "arm": [
         "-Wno-old-style-declaration",
         "-Wno-maybe-uninitialized",
+        "-Wno-empty-body",
         "-Wno-unused-but-set-variable",
     ],
     "amd64": [],
@@ -909,6 +910,7 @@ cc_library(
 
 cc_library(
     name = "gmp",
+    includes = ["."],
     visibility = ["//visibility:public"],
     deps = [
         ":cxx",

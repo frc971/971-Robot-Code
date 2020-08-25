@@ -8,6 +8,7 @@
 
 #include "aos/time/time.h"
 #include "glog/logging.h"
+#include "third_party/gmp/gmpxx.h"
 
 namespace aos {
 namespace message_bridge {
@@ -214,6 +215,94 @@ class ClippedAverageFilter {
   FILE *fwd_fp_ = nullptr;
   FILE *rev_fp_ = nullptr;
 };
+
+// Converts a int64_t into a mpq_class.  This only uses 32 bit precision
+// internally, so it will work on ARM.  This should only be used on 64 bit
+// platforms to test out the 32 bit implementation.
+inline mpq_class FromInt64(int64_t i) {
+  uint64_t absi = std::abs(i);
+  mpq_class bits(static_cast<uint32_t>((absi >> 32) & 0xffffffffu));
+  bits *= mpq_class(0x10000);
+  bits *= mpq_class(0x10000);
+  bits += mpq_class(static_cast<uint32_t>(absi & 0xffffffffu));
+
+  if (i < 0) {
+    return -bits;
+  } else {
+    return bits;
+  }
+}
+
+// Class to hold an affine function for the time offset.
+// O(t) = slope * t + offset
+//
+// This is stored using mpq_class, which stores everything as full rational
+// fractions.
+class Line {
+ public:
+  Line() {}
+
+  // Constructs a line given the offset and slope.
+  Line(mpq_class offset, mpq_class slope) : offset_(offset), slope_(slope) {}
+
+  // TODO(austin): Remove this one.
+  Line(std::chrono::nanoseconds offset, double slope)
+      : offset_(DoFromInt64(offset.count())), slope_(slope) {}
+
+  // Fits a line to 2 points and returns the associated line.
+  static Line Fit(
+      const std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> a,
+      const std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>
+          b);
+
+  // Returns the full precision slopes and offsets.
+  mpq_class mpq_offset() const { return offset_; }
+  mpq_class mpq_slope() const { return slope_; }
+
+  // Returns the rounded offsets and slopes.
+  std::chrono::nanoseconds offset() const {
+    double o = offset_.get_d();
+    return std::chrono::nanoseconds(static_cast<int64_t>(o));
+  }
+  double slope() const { return slope_.get_d(); }
+
+  void Debug() const {
+    LOG(INFO) << "Offset " << mpq_offset() << " slope " << mpq_slope();
+  }
+
+  // Returns the offset at a given time.
+  // TODO(austin): get_d() ie double -> int64 can't be accurate...
+  std::chrono::nanoseconds Eval(monotonic_clock::time_point pt) const {
+    mpq_class result =
+        mpq_class(FromInt64(pt.time_since_epoch().count())) * slope_ + offset_;
+    return std::chrono::nanoseconds(static_cast<int64_t>(result.get_d()));
+  }
+
+ private:
+  static mpq_class DoFromInt64(int64_t i) {
+#if GMP_NUMB_BITS == 32
+    return message_bridge::FromInt64(i);
+#else
+    return i;
+#endif
+  }
+
+  mpq_class offset_;
+  mpq_class slope_;
+};
+
+// Averages 2 fits per the equations below
+//
+// Oa(ta) = fa.slope * ta + fa.offset;
+// tb = Oa(ta) + ta;
+// Ob(tb) = fb.slope * tb + fb.offset;
+// ta = Ob(tb) + tb;
+//
+// This splits the difference between Oa and Ob and solves:
+// tb - ta = (Oa(ta) - Ob(tb)) / 2.0
+// and returns O(ta) such that
+// tb = O(ta) + ta
+Line AverageFits(Line fa, Line fb);
 
 }  // namespace message_bridge
 }  // namespace aos
