@@ -160,6 +160,156 @@ TEST(LineTest, AverageFits) {
   }
 }
 
+// Tests that 2 samples results in the correct line between them, and the
+// correct intermediate as it is being built.
+TEST(NoncausalTimestampFilterTest, SingleSample) {
+  const monotonic_clock::time_point ta(chrono::nanoseconds(100000));
+  const monotonic_clock::time_point tb(chrono::nanoseconds(200000));
+
+  NoncausalTimestampFilter filter;
+
+  filter.Sample(ta, chrono::nanoseconds(1000));
+  EXPECT_EQ(filter.timestamps().size(), 1u);
+
+  {
+    Line l1 = filter.FitLine();
+
+    EXPECT_EQ(l1.mpq_offset(), mpq_class(1000));
+    EXPECT_EQ(l1.mpq_slope(), mpq_class(0));
+  }
+
+  filter.Sample(tb, chrono::nanoseconds(1100));
+  EXPECT_EQ(filter.timestamps().size(), 2u);
+
+  {
+    Line l2 = filter.FitLine();
+    EXPECT_EQ(l2.mpq_offset(), mpq_class(900));
+    EXPECT_EQ(l2.mpq_slope(), mpq_class(1, 1000));
+  }
+}
+
+// Tests that invalid samples get clipped as expected.
+TEST(NoncausalTimestampFilterTest, ClippedSample) {
+  const monotonic_clock::time_point ta(chrono::milliseconds(0));
+  const monotonic_clock::time_point tb(chrono::milliseconds(1));
+  const monotonic_clock::time_point tc(chrono::milliseconds(2));
+
+  {
+    // A positive slope of 1 ms/second is properly applied.
+    NoncausalTimestampFilter filter;
+
+    filter.Sample(ta, chrono::microseconds(1));
+    filter.Debug();
+    filter.Sample(tb, chrono::microseconds(2));
+    filter.Debug();
+    ASSERT_EQ(filter.timestamps().size(), 2u);
+
+    {
+      Line l2 = filter.FitLine();
+      EXPECT_EQ(l2.mpq_offset(), mpq_class(1000));
+      EXPECT_EQ(l2.mpq_slope(), mpq_class(1, 1000));
+    }
+  }
+
+  {
+    // A negative slope of 1 ms/second is properly applied.
+    NoncausalTimestampFilter filter;
+
+    filter.Sample(ta, chrono::microseconds(1));
+    filter.Debug();
+    filter.Sample(tb, chrono::microseconds(0));
+    filter.Debug();
+    ASSERT_EQ(filter.timestamps().size(), 2u);
+
+    {
+      Line l2 = filter.FitLine();
+      EXPECT_EQ(l2.mpq_offset(), mpq_class(1000));
+      EXPECT_EQ(l2.mpq_slope(), -mpq_class(1, 1000));
+    }
+  }
+
+  {
+    // Too much negative is ignored.
+    NoncausalTimestampFilter filter;
+
+    filter.Sample(ta, chrono::microseconds(1));
+    filter.Debug();
+    filter.Sample(tb, -chrono::microseconds(1));
+    filter.Debug();
+    ASSERT_EQ(filter.timestamps().size(), 1u);
+  }
+
+  {
+    // Too much positive pulls up the first point.
+    NoncausalTimestampFilter filter;
+
+    filter.Sample(ta, chrono::microseconds(1));
+    filter.Debug();
+    filter.Sample(tb, chrono::microseconds(3));
+    filter.Debug();
+    ASSERT_EQ(filter.timestamps().size(), 2u);
+
+    EXPECT_EQ(std::get<1>(filter.timestamps()[0]), chrono::microseconds(2));
+    EXPECT_EQ(std::get<1>(filter.timestamps()[1]), chrono::microseconds(3));
+  }
+
+  {
+    // Too much positive slope removes points.
+    NoncausalTimestampFilter filter;
+
+    filter.Sample(ta, chrono::microseconds(1));
+    filter.Debug();
+    filter.Sample(tb, chrono::microseconds(1));
+    filter.Debug();
+    ASSERT_EQ(filter.timestamps().size(), 2u);
+
+    // Now add a sample with a slope of 0.002.  This should back propagate and
+    // remove the middle point since it violates our constraints.
+    filter.Sample(tc, chrono::microseconds(3));
+    filter.Debug();
+    ASSERT_EQ(filter.timestamps().size(), 2u);
+
+    EXPECT_EQ(std::get<1>(filter.timestamps()[0]), chrono::microseconds(1));
+    EXPECT_EQ(std::get<1>(filter.timestamps()[1]), chrono::microseconds(3));
+  }
+}
+
+// Tests that removing points from the filter works as expected.
+TEST(NoncausalTimestampFilterTest, PointRemoval) {
+  const monotonic_clock::time_point t_before(-chrono::milliseconds(1));
+  const monotonic_clock::time_point ta(chrono::milliseconds(0));
+  const monotonic_clock::time_point tb(chrono::milliseconds(1));
+  const monotonic_clock::time_point tc(chrono::milliseconds(2));
+
+  // A positive slope of 1 ms/second is properly applied.
+  NoncausalTimestampFilter filter;
+
+  filter.Sample(ta, chrono::microseconds(1));
+  filter.Debug();
+  filter.Sample(tb, chrono::microseconds(2));
+  filter.Debug();
+  filter.Sample(tc, chrono::microseconds(1));
+  filter.Debug();
+  ASSERT_EQ(filter.timestamps().size(), 3u);
+
+  // Before or in the middle of the first line segment shouldn't change the
+  // number of points.
+  EXPECT_FALSE(filter.Pop(t_before));
+  ASSERT_EQ(filter.timestamps().size(), 3u);
+
+  EXPECT_FALSE(filter.Pop(ta));
+  ASSERT_EQ(filter.timestamps().size(), 3u);
+
+  EXPECT_FALSE(filter.Pop(ta + chrono::microseconds(100)));
+  ASSERT_EQ(filter.timestamps().size(), 3u);
+
+  // The second point should trigger a pop, since the offset computed using the
+  // points won't change when it is used, and any times after (even 1-2 ns
+  // later) would be wrong.
+  EXPECT_TRUE(filter.Pop(tb));
+  ASSERT_EQ(filter.timestamps().size(), 2u);
+}
+
 }  // namespace testing
 }  // namespace message_bridge
 }  // namespace aos

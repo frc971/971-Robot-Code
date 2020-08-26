@@ -1,6 +1,7 @@
 #include "aos/network/timestamp_filter.h"
 
 #include <chrono>
+#include <iomanip>
 #include <tuple>
 
 #include "absl/strings/str_cat.h"
@@ -18,6 +19,17 @@ void ClippedAverageFilterPrintHeader(FILE *fp) {
           "# time_since_start, sample_ns, filtered_offset, offset, "
           "velocity, filtered_velocity, velocity_contribution, "
           "sample_contribution, time_contribution\n");
+}
+
+void PrintNoncausalTimestampFilterHeader(FILE *fp) {
+  fprintf(fp,
+          "# time_since_start, sample_ns, filtered_offset, offset, "
+          "velocity, filtered_velocity, velocity_contribution, "
+          "sample_contribution, time_contribution\n");
+}
+
+void PrintNoncausalTimestampFilterSamplesHeader(FILE *fp) {
+  fprintf(fp, "# time_since_start, sample_ns, offset\n");
 }
 
 }  // namespace
@@ -427,9 +439,8 @@ void ClippedAverageFilter::Update(
 Line Line::Fit(
     const std::tuple<monotonic_clock::time_point, chrono::nanoseconds> a,
     const std::tuple<monotonic_clock::time_point, chrono::nanoseconds> b) {
-  mpq_class slope =
-      FromInt64((std::get<1>(b) - std::get<1>(a)).count()) /
-      FromInt64((std::get<0>(b) - std::get<0>(a)).count());
+  mpq_class slope = FromInt64((std::get<1>(b) - std::get<1>(a)).count()) /
+                    FromInt64((std::get<0>(b) - std::get<0>(a)).count());
   slope.canonicalize();
   mpq_class offset =
       FromInt64(std::get<1>(a).count()) -
@@ -478,6 +489,168 @@ Line AverageFits(Line fa, Line fb) {
 
   Line f(b, m);
   return f;
+}
+
+NoncausalTimestampFilter::~NoncausalTimestampFilter() {
+  // Destroy the filter by popping until empty.  This will trigger any
+  // timestamps to be written to the files.
+  while (timestamps_.size() != 0u) {
+    PopFront();
+  }
+  if (fp_) {
+    fclose(fp_);
+  }
+
+  if (samples_fp_) {
+    fclose(samples_fp_);
+  }
+}
+
+Line NoncausalTimestampFilter::FitLine() {
+  DCHECK_GE(timestamps_.size(), 1u);
+  if (timestamps_.size() == 1) {
+    Line fit(std::get<1>(timestamps_[0]), 0.0);
+    return fit;
+  } else {
+    return Line::Fit(timestamps_[0], timestamps_[1]);
+  }
+}
+
+bool NoncausalTimestampFilter::Sample(
+    aos::monotonic_clock::time_point monotonic_now,
+    chrono::nanoseconds sample_ns) {
+  if (samples_fp_ && first_time_ != aos::monotonic_clock::min_time) {
+    fprintf(samples_fp_, "%.9f, %.9f\n",
+            chrono::duration_cast<chrono::duration<double>>(monotonic_now -
+                                                            first_time_)
+                .count(),
+            chrono::duration_cast<chrono::duration<double>>(sample_ns).count());
+  }
+
+  // The first sample is easy.  Just do it!
+  if (timestamps_.size() == 0) {
+    timestamps_.emplace_back(std::make_pair(monotonic_now, sample_ns));
+    return true;
+  } else {
+    // Future samples get quite a bit harder.  We want the line to track the
+    // highest point without volating the slope constraint.
+    std::tuple<aos::monotonic_clock::time_point, chrono::nanoseconds> back =
+        timestamps_.back();
+
+    aos::monotonic_clock::duration dt = monotonic_now - std::get<0>(back);
+    aos::monotonic_clock::duration doffset = sample_ns - std::get<1>(back);
+
+    // If the point is higher than the max negative slope, the slope will either
+    // adhere to our constraint, or will be too positive.  If it is too
+    // positive, we need to back propagate and remove offending points which
+    // were too low rather than reject this new point.  We never want a point to
+    // be higher than the line.
+    if (-dt * kMaxVelocity() <= doffset) {
+      // Back propagate the max velocity and remove any elements violating the
+      // velocity constraint.
+      while (dt * kMaxVelocity() < doffset && timestamps_.size() > 1u) {
+        timestamps_.pop_back();
+
+        back = timestamps_.back();
+        dt = monotonic_now - std::get<0>(back);
+        doffset = sample_ns - std::get<1>(back);
+      }
+
+      // TODO(austin): Refuse to modify the 0th element after we have used it.
+      timestamps_.emplace_back(std::make_pair(monotonic_now, sample_ns));
+
+      // If we are early in the log file, the filter hasn't had time to get
+      // started.  We might only have 2 samples, and the first sample was
+      // incredibly delayed, violating our velocity constraint.  In that case,
+      // modify the first sample (rather than remove it) to retain the knowledge
+      // of the velocity, but adhere to the constraints.
+      if (dt * kMaxVelocity() < doffset) {
+        CHECK_EQ(timestamps_.size(), 2u);
+        const aos::monotonic_clock::duration adjusted_initial_time =
+            sample_ns - aos::monotonic_clock::duration(
+                            static_cast<aos::monotonic_clock::duration::rep>(
+                                dt.count() * kMaxVelocity()));
+
+        VLOG(1) << csv_file_name_ << " slope " << std::setprecision(20)
+                << FitLine().slope() << " offset " << FitLine().offset().count()
+                << " a [(" << std::get<0>(timestamps()[0]) << " -> "
+                << std::get<1>(timestamps()[0]).count() << "ns), ("
+                << std::get<0>(timestamps()[1]) << " -> "
+                << std::get<1>(timestamps()[1]).count()
+                << "ns) => {dt: " << std::fixed << std::setprecision(6)
+                << chrono::duration<double, std::milli>(
+                       std::get<0>(timestamps()[1]) -
+                       std::get<0>(timestamps()[0]))
+                       .count()
+                << "ms, do: " << std::fixed << std::setprecision(6)
+                << chrono::duration<double, std::milli>(
+                       std::get<1>(timestamps()[1]) -
+                       std::get<1>(timestamps()[0]))
+                       .count()
+                << "ms}]";
+        VLOG(1) << "Back is out of range, clipping from "
+                << std::get<1>(timestamps_[0]).count() << " to "
+                << adjusted_initial_time.count();
+
+        std::get<1>(timestamps_[0]) = adjusted_initial_time;
+      }
+      if (timestamps_.size() == 2) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+bool NoncausalTimestampFilter::Pop(
+    aos::monotonic_clock::time_point time) {
+  bool removed = false;
+  // When the timestamp which is the end of the line is popped, we want to
+  // drop it off the list.  Hence the >=
+  while (timestamps_.size() >= 2 && time >= std::get<0>(timestamps_[1])) {
+    PopFront();
+    removed = true;
+  }
+  return removed;
+}
+
+void NoncausalTimestampFilter::SetFirstTime(
+    aos::monotonic_clock::time_point time) {
+  first_time_ = time;
+  if (fp_) {
+    fp_ = freopen(NULL, "wb", fp_);
+    PrintNoncausalTimestampFilterHeader(fp_);
+  }
+  if (samples_fp_) {
+    samples_fp_ = freopen(NULL, "wb", samples_fp_);
+    PrintNoncausalTimestampFilterSamplesHeader(samples_fp_);
+  }
+}
+
+void NoncausalTimestampFilter::SetCsvFileName(std::string_view name) {
+  csv_file_name_ = name;
+  fp_ = fopen(absl::StrCat(csv_file_name_, ".csv").c_str(), "w");
+  samples_fp_ =
+      fopen(absl::StrCat(csv_file_name_, "_samples.csv").c_str(), "w");
+  PrintNoncausalTimestampFilterHeader(fp_);
+  PrintNoncausalTimestampFilterSamplesHeader(samples_fp_);
+}
+
+void NoncausalTimestampFilter::MaybeWriteTimestamp(
+    std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
+        timestamp) {
+  if (fp_ && first_time_ != aos::monotonic_clock::min_time) {
+    fprintf(fp_, "%.9f, %.9f, %.9f\n",
+            std::chrono::duration_cast<std::chrono::duration<double>>(
+                std::get<0>(timestamp) - first_time_)
+                .count(),
+            std::chrono::duration_cast<std::chrono::duration<double>>(
+                std::get<0>(timestamp).time_since_epoch())
+                .count(),
+            std::chrono::duration_cast<std::chrono::duration<double>>(
+                std::get<1>(timestamp))
+                .count());
+  }
 }
 
 }  // namespace message_bridge

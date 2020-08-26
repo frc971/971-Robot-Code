@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <deque>
 
 #include "aos/time/time.h"
 #include "glog/logging.h"
@@ -303,6 +304,80 @@ class Line {
 // and returns O(ta) such that
 // tb = O(ta) + ta
 Line AverageFits(Line fa, Line fb);
+
+// This class implements a noncausal timestamp filter.  It tracks the maximum
+// points while enforcing both a maximum positive and negative slope constraint.
+// It does this by building up a buffer of samples, and removing any samples
+// which would create segments where the slope is invalid.  As long as the
+// filter is seeded with enough future samples, the start won't change.
+//
+// We want the offset to be defined as tb = O(ta) + ta.  For this to work, the
+// offset is (tb - ta).  If we assume tb = O(ta) + ta + network_delay, then
+// O(ta) = tb - ta - network_delay.  This means that the fastest time a message
+// can be delivered is going to be when the offset is the most positive.
+//
+// TODO(austin): Figure out how to track when we have used something from this
+// filter, and when we do that, enforce that it can't change anymore.  That will
+// help us find when we haven't buffered far enough in the future.
+class NoncausalTimestampFilter {
+ public:
+  ~NoncausalTimestampFilter();
+
+  // Returns a line fit to the oldest 2 points in the timestamp list if
+  // available, or the only point (assuming 0 slope) if not available.
+  Line FitLine();
+
+  // Adds a new sample to our filtered timestamp list.
+  // Returns true if adding the sample changed the output from FitLine().
+  bool Sample(aos::monotonic_clock::time_point monotonic_now,
+              std::chrono::nanoseconds sample_ns);
+
+  // Removes any old timestamps from our timestamps list.
+  // Returns true if adding the sample changed the output from FitLine().
+  bool Pop(aos::monotonic_clock::time_point time);
+
+  // Returns the current list of timestamps in our list.
+  const std::deque<
+      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
+      &timestamps() {
+    return timestamps_;
+  }
+
+  void Debug() {
+    for (std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
+             timestamp : timestamps_) {
+      LOG(INFO) << std::get<0>(timestamp) << " offset "
+                << std::get<1>(timestamp).count();
+    }
+  }
+
+  // Sets the starting point and filename to log samples to.  These functions
+  // are only used when doing CSV file logging to debug the filter.
+  void SetFirstTime(aos::monotonic_clock::time_point time);
+  void SetCsvFileName(std::string_view name);
+
+ private:
+  // Removes the oldest timestamp.
+  void PopFront() {
+    MaybeWriteTimestamp(timestamps_.front());
+    timestamps_.pop_front();
+  }
+
+  // Writes a timestamp to the file if it is reasonable.
+  void MaybeWriteTimestamp(
+      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
+          timestamp);
+
+  std::deque<
+      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
+      timestamps_;
+
+  std::string csv_file_name_;
+  FILE *fp_ = nullptr;
+  FILE *samples_fp_ = nullptr;
+
+  aos::monotonic_clock::time_point first_time_ = aos::monotonic_clock::min_time;
+};
 
 }  // namespace message_bridge
 }  // namespace aos
