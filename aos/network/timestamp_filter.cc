@@ -5,6 +5,7 @@
 #include <tuple>
 
 #include "absl/strings/str_cat.h"
+#include "aos/configuration.h"
 #include "aos/time/time.h"
 #include "third_party/gmp/gmpxx.h"
 
@@ -650,6 +651,103 @@ void NoncausalTimestampFilter::MaybeWriteTimestamp(
             std::chrono::duration_cast<std::chrono::duration<double>>(
                 std::get<1>(timestamp))
                 .count());
+  }
+}
+
+void NoncausalOffsetEstimator::Sample(
+    const Node *node, aos::monotonic_clock::time_point node_delivered_time,
+    aos::monotonic_clock::time_point other_node_sent_time) {
+  if (node == node_a_) {
+    if (a_.Sample(node_delivered_time,
+                  other_node_sent_time - node_delivered_time)) {
+      Refit();
+    }
+  } else if (node == node_b_) {
+    if (b_.Sample(node_delivered_time,
+                  other_node_sent_time - node_delivered_time)) {
+      Refit();
+    }
+  } else {
+    LOG(FATAL) << "Unknown node " << node->name()->string_view();
+  }
+}
+
+bool NoncausalOffsetEstimator::Pop(
+    const Node *node, aos::monotonic_clock::time_point node_monotonic_now) {
+  if (node == node_a_) {
+    if (a_.Pop(node_monotonic_now)) {
+      VLOG(1) << "Popping forward sample to " << node_a_->name()->string_view()
+              << " from " << node_b_->name()->string_view() << " at "
+              << node_monotonic_now;
+      Refit();
+      return true;
+    }
+  } else if (node == node_b_) {
+    if (b_.Pop(node_monotonic_now)) {
+      VLOG(1) << "Popping reverse sample to " << node_b_->name()->string_view()
+              << " from " << node_a_->name()->string_view() << " at "
+              << node_monotonic_now;
+      Refit();
+      return true;
+    }
+  } else {
+    LOG(FATAL) << "Unknown node " << node->name()->string_view();
+  }
+  return false;
+}
+
+void NoncausalOffsetEstimator::LogFit(std::string_view prefix) {
+  LOG(INFO)
+      << prefix << " " << node_a_->name()->string_view() << " from "
+      << node_b_->name()->string_view() << " slope " << std::setprecision(20)
+      << fit_.slope() << " offset " << fit_.offset().count() << " a [("
+      << std::get<0>(a_.timestamps()[0]) << " -> "
+      << std::get<1>(a_.timestamps()[0]).count() << "ns), ("
+      << std::get<0>(a_.timestamps()[1]) << " -> "
+      << std::get<1>(a_.timestamps()[1]).count() << "ns) => {dt: " << std::fixed
+      << std::setprecision(6)
+      << std::chrono::duration<double, std::milli>(
+             std::get<0>(a_.timestamps()[1]) - std::get<0>(a_.timestamps()[0]))
+             .count()
+      << "ms, do: " << std::fixed << std::setprecision(6)
+      << std::chrono::duration<double, std::milli>(
+             std::get<1>(a_.timestamps()[1]) - std::get<1>(a_.timestamps()[0]))
+             .count()
+      << "ms}]";
+  LOG(INFO)
+      << prefix << " " << node_a_->name()->string_view() << " from "
+      << node_b_->name()->string_view() << " slope " << std::setprecision(20)
+      << fit_.slope() << " offset " << fit_.offset().count() << " b [("
+      << std::get<0>(b_.timestamps()[0]) << " -> "
+      << std::get<1>(b_.timestamps()[0]).count() << "ns), ("
+      << std::get<0>(b_.timestamps()[1]) << " -> "
+      << std::get<1>(b_.timestamps()[1]).count() << "ns) => {dt: " << std::fixed
+      << std::setprecision(6)
+      << std::chrono::duration<double, std::milli>(
+             std::get<0>(b_.timestamps()[1]) - std::get<0>(b_.timestamps()[0]))
+             .count()
+      << "ms, do: " << std::fixed << std::setprecision(6)
+      << std::chrono::duration<double, std::milli>(
+             std::get<1>(b_.timestamps()[1]) - std::get<1>(b_.timestamps()[0]))
+             .count()
+      << "ms}]";
+}
+
+void NoncausalOffsetEstimator::Refit() {
+  if (a_.timestamps().size() == 0 || b_.timestamps().size() == 0) {
+    VLOG(1) << "Not fitting because there is no data";
+    return;
+  }
+  fit_ = AverageFits(a_.FitLine(), b_.FitLine());
+  if (offset_pointer_) {
+    *offset_pointer_ = fit_.mpq_offset();
+  }
+  if (slope_pointer_) {
+    *slope_pointer_ = -fit_.mpq_slope();
+  }
+
+  if (VLOG_IS_ON(1)) {
+    LogFit("Refitting to");
   }
 }
 

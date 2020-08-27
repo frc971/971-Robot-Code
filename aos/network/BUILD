@@ -360,6 +360,7 @@ cc_library(
     srcs = ["timestamp_filter.cc"],
     hdrs = ["timestamp_filter.h"],
     deps = [
+        "//aos:configuration",
         "//aos/time",
         "//third_party/gmp",
         "@com_google_absl//absl/strings",
@@ -373,6 +374,7 @@ cc_test(
     ],
     deps = [
         ":timestamp_filter",
+        "//aos:json_to_flatbuffer",
         "//aos/testing:googletest",
     ],
 )

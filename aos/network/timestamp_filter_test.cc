@@ -2,6 +2,8 @@
 
 #include <chrono>
 
+#include "aos/configuration.h"
+#include "aos/json_to_flatbuffer.h"
 #include "aos/macros.h"
 #include "gtest/gtest.h"
 
@@ -308,6 +310,68 @@ TEST(NoncausalTimestampFilterTest, PointRemoval) {
   // later) would be wrong.
   EXPECT_TRUE(filter.Pop(tb));
   ASSERT_EQ(filter.timestamps().size(), 2u);
+}
+
+// Run a couple of points through the estimator and confirm it works.
+TEST(NoncausalOffsetEstimatorTest, FullEstimator) {
+  const aos::FlatbufferDetachedBuffer<Node> node_a_buffer =
+      JsonToFlatbuffer<Node>("{\"name\": \"a\"}");
+  const aos::FlatbufferDetachedBuffer<Node> node_b_buffer =
+      JsonToFlatbuffer<Node>("{\"name\": \"b\"}");
+
+  const Node *node_a = &node_a_buffer.message();
+  const Node *node_b = &node_b_buffer.message();
+
+  const monotonic_clock::time_point ta1(chrono::milliseconds(1000));
+  const monotonic_clock::time_point ta2 = ta1 + chrono::milliseconds(10);
+  const monotonic_clock::time_point ta3 = ta1 + chrono::milliseconds(20);
+
+  const monotonic_clock::time_point tb1(chrono::milliseconds(4000));
+  const monotonic_clock::time_point tb2 =
+      tb1 + chrono::milliseconds(10) + chrono::nanoseconds(100);
+  const monotonic_clock::time_point tb3 = tb1 + chrono::milliseconds(20);
+
+  NoncausalOffsetEstimator estimator(node_a, node_b);
+
+  // Add 3 timestamps in and confirm that the slopes come out reasonably.
+  estimator.Sample(node_a, ta1, tb1);
+  estimator.Sample(node_b, tb1, ta1);
+  EXPECT_EQ(estimator.a_timestamps().size(), 1u);
+  EXPECT_EQ(estimator.b_timestamps().size(), 1u);
+
+  // 1 point -> a line.
+  EXPECT_EQ(estimator.fit().mpq_slope(), mpq_class(0));
+
+  estimator.Sample(node_a, ta2, tb2);
+  estimator.Sample(node_b, tb2, ta2);
+  EXPECT_EQ(estimator.a_timestamps().size(), 2u);
+  EXPECT_EQ(estimator.b_timestamps().size(), 2u);
+
+  // Adding the second point should slope up.
+  EXPECT_EQ(estimator.fit().mpq_slope(), mpq_class(1, 100000));
+
+  estimator.Sample(node_a, ta3, tb3);
+  estimator.Sample(node_b, tb3, ta3);
+  EXPECT_EQ(estimator.a_timestamps().size(), 3u);
+  EXPECT_EQ(estimator.b_timestamps().size(), 3u);
+
+  // And the third point shouldn't change anything.
+  EXPECT_EQ(estimator.fit().mpq_slope(), mpq_class(1, 100000));
+
+  estimator.Pop(node_a, ta2);
+  estimator.Pop(node_b, tb2);
+  EXPECT_EQ(estimator.a_timestamps().size(), 2u);
+  EXPECT_EQ(estimator.b_timestamps().size(), 2u);
+
+  // Dropping the first point should have the slope point back down.
+  EXPECT_EQ(estimator.fit().mpq_slope(), mpq_class(-1, 100000));
+
+  // And dropping down to 1 point means 0 slope.
+  estimator.Pop(node_a, ta3);
+  estimator.Pop(node_b, tb3);
+  EXPECT_EQ(estimator.a_timestamps().size(), 1u);
+  EXPECT_EQ(estimator.b_timestamps().size(), 1u);
+  EXPECT_EQ(estimator.fit().mpq_slope(), mpq_class(0));
 }
 
 }  // namespace testing

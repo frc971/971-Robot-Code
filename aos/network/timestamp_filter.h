@@ -7,6 +7,7 @@
 #include <cmath>
 #include <deque>
 
+#include "aos/configuration.h"
 #include "aos/time/time.h"
 #include "glog/logging.h"
 #include "third_party/gmp/gmpxx.h"
@@ -377,6 +378,74 @@ class NoncausalTimestampFilter {
   FILE *samples_fp_ = nullptr;
 
   aos::monotonic_clock::time_point first_time_ = aos::monotonic_clock::min_time;
+};
+
+// This class holds 2 NoncausalTimestampFilter's and handles averaging the
+// offsets and reporting them.
+class NoncausalOffsetEstimator {
+ public:
+  NoncausalOffsetEstimator(const Node *node_a, const Node *node_b)
+      : node_a_(node_a), node_b_(node_b) {}
+
+  // Updates the filter based on a sample from the provided node to the other
+  // node.
+  void Sample(const Node *node,
+              aos::monotonic_clock::time_point node_delivered_time,
+              aos::monotonic_clock::time_point other_node_sent_time);
+
+  // Removes old data points from a node before the provided time.
+  // Returns true if the line fit changes.
+  bool Pop(const Node *node,
+           aos::monotonic_clock::time_point node_monotonic_now);
+
+  // Returns a line for the oldest segment.
+  Line fit() const { return fit_; }
+
+  // Sets the locations to update when the fit changes.
+  void set_offset_pointer(mpq_class *offset_pointer) {
+    offset_pointer_ = offset_pointer;
+  }
+  void set_slope_pointer(mpq_class *slope_pointer) {
+    slope_pointer_ = slope_pointer;
+  }
+
+  // Returns the data points from each filter.
+  const std::deque<
+      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
+      &a_timestamps() {
+    return a_.timestamps();
+  }
+  const std::deque<
+      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
+      &b_timestamps() {
+    return b_.timestamps();
+  }
+
+  void SetFirstFwdTime(monotonic_clock::time_point time) {
+    a_.SetFirstTime(time);
+  }
+  void SetFwdCsvFileName(std::string_view name) { a_.SetCsvFileName(name); }
+  void SetFirstRevTime(monotonic_clock::time_point time) {
+    b_.SetFirstTime(time);
+  }
+  void SetRevCsvFileName(std::string_view name) { b_.SetCsvFileName(name); }
+
+  // Logs the fits and timestamps for all the filters.
+  void LogFit(std::string_view prefix);
+
+ private:
+  void Refit();
+
+  NoncausalTimestampFilter a_;
+  NoncausalTimestampFilter b_;
+
+  mpq_class *offset_pointer_ = nullptr;
+  mpq_class *slope_pointer_ = nullptr;
+
+  Line fit_{std::chrono::nanoseconds(0), 0.0};
+
+  const Node *const node_a_;
+  const Node *const node_b_;
 };
 
 }  // namespace message_bridge
