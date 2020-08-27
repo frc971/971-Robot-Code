@@ -2,6 +2,9 @@
 set -e
 set -x
 
+# No need to pass this through.  It hurts caching.
+unset SSH_AUTH_SOCK
+
 readonly TARGETS='//... @com_github_google_glog//... @com_google_ceres_solver//...'
 readonly M4F_TARGETS='//...'
 readonly COMMON='-c opt --stamp=no --curses=no --color=no --symlink_prefix=/'

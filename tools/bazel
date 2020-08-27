@@ -108,6 +108,10 @@ if [[ ! -z "${DISPLAY+x}" ]]; then
   ENVIRONMENT_VARIABLES+=(DISPLAY="${DISPLAY}")
 fi
 
+if [[ ! -z "${SSH_AUTH_SOCK+x}" ]]; then
+  ENVIRONMENT_VARIABLES+=(SSH_AUTH_SOCK="${SSH_AUTH_SOCK}")
+fi
+
 if [[ ! -z "${LOGNAME+x}" ]]; then
     ENVIRONMENT_VARIABLES+=(LOGNAME="${LOGNAME}")
 fi
