@@ -263,23 +263,23 @@ class FlatbufferFixedAllocatorArray final : public Flatbuffer<T> {
 
   void Reset() {
     CHECK(!allocator_.is_allocated()) << ": May not reset while building";
-    builder_ = flatbuffers::FlatBufferBuilder(Size, &allocator_);
-    builder_.ForceDefaults(true);
+    fbb_ = flatbuffers::FlatBufferBuilder(Size, &allocator_);
+    fbb_.ForceDefaults(true);
   }
 
-  flatbuffers::FlatBufferBuilder *Builder() {
+  flatbuffers::FlatBufferBuilder *fbb() {
     CHECK(!allocator_.allocated())
         << ": Array backed flatbuffer can only be built once";
-    builder_ = flatbuffers::FlatBufferBuilder(Size, &allocator_);
-    builder_.ForceDefaults(true);
-    return &builder_;
+    fbb_ = flatbuffers::FlatBufferBuilder(Size, &allocator_);
+    fbb_.ForceDefaults(true);
+    return &fbb_;
   }
 
   void Finish(flatbuffers::Offset<T> root) {
     CHECK(allocator_.allocated()) << ": Cannot finish if not building";
-    builder_.Finish(root);
-    data_ = builder_.GetBufferPointer();
-    size_ = builder_.GetSize();
+    fbb_.Finish(root);
+    data_ = fbb_.GetBufferPointer();
+    size_ = fbb_.GetSize();
     DCHECK_LE(size_, Size);
   }
 
@@ -296,7 +296,7 @@ class FlatbufferFixedAllocatorArray final : public Flatbuffer<T> {
  private:
   std::array<uint8_t, Size> buffer_;
   PreallocatedAllocator allocator_;
-  flatbuffers::FlatBufferBuilder builder_;
+  flatbuffers::FlatBufferBuilder fbb_;
   uint8_t *data_ = nullptr;
   size_t size_ = 0;
 };
@@ -343,8 +343,6 @@ class SizePrefixedFlatbufferDetachedBuffer final : public Flatbuffer<T> {
  private:
   flatbuffers::DetachedBuffer buffer_;
 };
-// TODO(austin): Need a way to get our hands on the max size.  Can start with
-// "large" for now.
 
 }  // namespace aos
 
