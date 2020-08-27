@@ -27,84 +27,15 @@ class TimestampFilter {
   // Forces the offset and time to the provided sample without filtering.  Used
   // for syncing with a remote filter calculation.
   void Set(aos::monotonic_clock::time_point monotonic_now,
-           std::chrono::nanoseconds sample_ns) {
-    const double sample =
-        std::chrono::duration_cast<std::chrono::duration<double>>(sample_ns -
-                                                                  base_offset_)
-            .count();
-    offset_ = sample;
-    last_time_ = monotonic_now;
-  }
+           std::chrono::nanoseconds sample_ns);
 
   // Updates with a new sample.  monotonic_now is the timestamp of the sample on
   // the destination node, and sample_ns is destination_time - source_time.
   void Sample(aos::monotonic_clock::time_point monotonic_now,
-              std::chrono::nanoseconds sample_ns) {
-    // Compute the sample offset as a double (seconds), taking into account the
-    // base offset.
-    const double sample =
-        std::chrono::duration_cast<std::chrono::duration<double>>(sample_ns -
-                                                                  base_offset_)
-            .count();
-
-    // This is our first sample.  Just use it.
-    if (last_time_ == aos::monotonic_clock::min_time) {
-      offset_ = sample;
-    } else {
-      // Took less time to transmit, so clamp to it.
-      if (sample < offset_) {
-        offset_ = sample;
-      } else {
-        // We split things up into 2 portions.
-        //  1) Each sample has information.  Correct some using it.
-        //  2) We want to keep a decent time constant if the sample rate slows.
-        //     Take time since the last sample into account.
-
-        // Time constant for the low pass filter in seconds.
-        constexpr double kTau = 0.5;
-
-        constexpr double kClampNegative = -0.0003;
-
-        {
-          // 1)
-          constexpr double kAlpha = 0.005;
-          // This formulation is more numerically precise.
-          // Clamp to kClampNegative ms to reduce the effect of wildly large
-          // samples.
-          offset_ =
-              offset_ - kAlpha * std::max(offset_ - sample, kClampNegative);
-        }
-
-        {
-          // 2)
-          //
-          // 1-e^(t/tau) -> alpha
-          const double alpha = -std::expm1(
-              -std::chrono::duration_cast<std::chrono::duration<double>>(
-                   monotonic_now - last_time_)
-                   .count() /
-              kTau);
-
-          // Clamp to kClampNegative ms to reduce the effect of wildly large
-          // samples.
-          offset_ =
-              offset_ - alpha * std::max(offset_ - sample, kClampNegative);
-        }
-      }
-    }
-
-    last_time_ = monotonic_now;
-  }
+              std::chrono::nanoseconds sample_ns);
 
   // Updates the base_offset, and compensates offset while we are here.
-  void set_base_offset(std::chrono::nanoseconds base_offset) {
-    offset_ -= std::chrono::duration_cast<std::chrono::duration<double>>(
-                   base_offset - base_offset_)
-                   .count();
-    base_offset_ = base_offset;
-    // Clear everything out to avoid any numerical precision problems.
-    last_time_ = aos::monotonic_clock::min_time;
-  }
+  void set_base_offset(std::chrono::nanoseconds base_offset);
 
   double offset() const { return offset_; }
 
@@ -120,12 +51,7 @@ class TimestampFilter {
     return last_time_ != aos::monotonic_clock::min_time;
   }
 
-  void Reset() {
-    offset_ = 0;
-
-    last_time_ = aos::monotonic_clock::min_time;
-    base_offset_ = std::chrono::nanoseconds(0);
-  }
+  void Reset();
 
  private:
   double offset_ = 0;
@@ -153,65 +79,21 @@ struct ClippedAverageFilter {
 
   // Sets the forward sample without filtering.  See FwdSample for more details.
   void FwdSet(aos::monotonic_clock::time_point monotonic_now,
-              std::chrono::nanoseconds sample_ns) {
-    fwd_.Set(monotonic_now, sample_ns);
-    Update(monotonic_now, &last_fwd_time_);
-  }
+              std::chrono::nanoseconds sample_ns);
 
   // Adds a forward sample.  sample_ns = destination - source;  Forward samples
   // are from A -> B.
   void FwdSample(aos::monotonic_clock::time_point monotonic_now,
-                 std::chrono::nanoseconds sample_ns) {
-    fwd_.Sample(monotonic_now, sample_ns);
-    Update(monotonic_now, &last_fwd_time_);
-
-    if (fwd_fp != nullptr) {
-      if (first_fwd_time_ == aos::monotonic_clock::min_time) {
-        first_fwd_time_ = monotonic_now;
-      }
-      fprintf(
-          fwd_fp, "%f, %f, %f, %f\n",
-          std::chrono::duration_cast<std::chrono::duration<double>>(
-              monotonic_now - first_fwd_time_)
-              .count(),
-          std::chrono::duration_cast<std::chrono::duration<double>>(sample_ns)
-              .count(),
-          fwd_.offset() + fwd_.base_offset_double(),
-          std::chrono::duration_cast<std::chrono::duration<double>>(offset())
-              .count());
-    }
-  }
+                 std::chrono::nanoseconds sample_ns);
 
   // Sets the forward sample without filtering.  See FwdSample for more details.
   void RevSet(aos::monotonic_clock::time_point monotonic_now,
-              std::chrono::nanoseconds sample_ns) {
-    rev_.Set(monotonic_now, sample_ns);
-    Update(monotonic_now, &last_rev_time_);
-  }
+              std::chrono::nanoseconds sample_ns);
 
   // Adds a reverse sample.  sample_ns = destination - source;  Reverse samples
   // are B -> A.
   void RevSample(aos::monotonic_clock::time_point monotonic_now,
-                 std::chrono::nanoseconds sample_ns) {
-    rev_.Sample(monotonic_now, sample_ns);
-    Update(monotonic_now, &last_rev_time_);
-
-    if (rev_fp != nullptr) {
-      if (first_rev_time_ == aos::monotonic_clock::min_time) {
-        first_rev_time_ = monotonic_now;
-      }
-      fprintf(
-          rev_fp, "%f, %f, %f, %f\n",
-          std::chrono::duration_cast<std::chrono::duration<double>>(
-              monotonic_now - first_rev_time_)
-              .count(),
-          std::chrono::duration_cast<std::chrono::duration<double>>(sample_ns)
-              .count(),
-          rev_.offset() + rev_.base_offset_double(),
-          std::chrono::duration_cast<std::chrono::duration<double>>(offset())
-              .count());
-    }
-  }
+                 std::chrono::nanoseconds sample_ns);
 
   // Returns the overall filtered offset, offseta - offsetb.
   std::chrono::nanoseconds offset() const {
@@ -236,83 +118,20 @@ struct ClippedAverageFilter {
 
   // Sets the base offset.  This is used to reduce the dynamic range needed from
   // the double to something manageable.  It is subtracted from offset_.
-  void set_base_offset(std::chrono::nanoseconds base_offset) {
-    offset_ -= std::chrono::duration_cast<std::chrono::duration<double>>(
-                   base_offset - base_offset_)
-                   .count();
-    fwd_.set_base_offset(base_offset);
-    rev_.set_base_offset(-base_offset);
-    base_offset_ = base_offset;
-    last_fwd_time_ = aos::monotonic_clock::min_time;
-    last_rev_time_ = aos::monotonic_clock::min_time;
-  }
+  void set_base_offset(std::chrono::nanoseconds base_offset);
 
   bool MissingSamples() {
     return (last_fwd_time_ == aos::monotonic_clock::min_time) ||
            (last_rev_time_ == aos::monotonic_clock::min_time);
   }
 
-  void Reset() {
-    base_offset_ = std::chrono::nanoseconds(0);
-    offset_ = 0;
-
-    last_fwd_time_ = aos::monotonic_clock::min_time;
-    last_rev_time_ = aos::monotonic_clock::min_time;
-    first_fwd_time_ = aos::monotonic_clock::min_time;
-    first_rev_time_ = aos::monotonic_clock::min_time;
-
-    fwd_.Reset();
-    rev_.Reset();
-  }
+  void Reset();
 
  private:
   // Updates the offset estimate given the current time, and a pointer to the
   // variable holding the last time.
   void Update(aos::monotonic_clock::time_point monotonic_now,
-              aos::monotonic_clock::time_point *last_time) {
-    // ta = t + offseta
-    // tb = t + offsetb
-    // fwd sample => ta - tb + network -> offseta - offsetb + network
-    // rev sample => tb - ta + network -> offsetb - offseta + network
-    const double hard_max = fwd_.offset();
-    const double hard_min = -rev_.offset();
-    const double average = (hard_max + hard_min) / 2.0;
-    // We don't want to clip the offset to the hard min/max.  We really want to
-    // keep it within a band around the middle.  ratio of 0.5 means stay within
-    // +- 0.25 of the middle of the hard min and max.
-    constexpr double kBand = 0.5;
-    const double max = average + kBand / 2.0 * (hard_max - hard_min);
-    const double min = average - kBand / 2.0 * (hard_max - hard_min);
-
-    // Update regardless for the first sample from both the min and max.
-    if (*last_time == aos::monotonic_clock::min_time) {
-      offset_ = average;
-    } else {
-      // Do just a time constant based update.  We can afford to be slow here
-      // for smoothness.
-      constexpr double kTau = 10.0;
-      const double alpha = -std::expm1(
-          -std::chrono::duration_cast<std::chrono::duration<double>>(
-               monotonic_now - *last_time)
-               .count() /
-          kTau);
-
-      // Clamp it such that it remains in the min/max bounds.
-      offset_ = std::clamp(offset_ - alpha * (offset_ - average), min, max);
-    }
-    *last_time = monotonic_now;
-
-    if (sample_pointer_ != nullptr) {
-      // TODO(austin): Probably shouldn't do the update if we don't have fwd and
-      // reverse samples.
-      if (!MissingSamples()) {
-        *sample_pointer_ = offset_;
-        VLOG(1) << "Updating sample to " << offset_;
-      } else {
-        LOG(WARNING) << "Don't have both samples.";
-      }
-    }
-  }
+              aos::monotonic_clock::time_point *last_time);
 
   // Filters for both the forward and reverse directions.
   TimestampFilter fwd_;

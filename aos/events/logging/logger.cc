@@ -999,12 +999,12 @@ const Channel *LogReader::RemapChannel(const EventLoop *event_loop,
       configuration::ChannelIndex(logged_configuration(), channel);
   // If the channel is remapped, find the correct channel name to use.
   if (remapped_channels_.count(channel_index) > 0) {
-    VLOG(2) << "Got remapped channel on "
+    VLOG(3) << "Got remapped channel on "
             << configuration::CleanedChannelToString(channel);
     channel_name = remapped_channels_[channel_index];
   }
 
-  VLOG(1) << "Going to remap channel " << channel_name << " " << channel_type;
+  VLOG(2) << "Going to remap channel " << channel_name << " " << channel_type;
   const Channel *remapped_channel = configuration::GetChannel(
       event_loop->configuration(), channel_name, channel_type,
       event_loop->name(), event_loop->node());

@@ -66,6 +66,10 @@ load(
     "//debian:gstreamer_armhf.bzl",
     gstreamer_armhf_debs = "files",
 )
+load(
+    "//debian:m4.bzl",
+    m4_debs = "files",
+)
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
 generate_repositories_for_debs(python_debs)
@@ -99,6 +103,8 @@ generate_repositories_for_debs(opencv_amd64_debs)
 generate_repositories_for_debs(gstreamer_amd64_debs)
 
 generate_repositories_for_debs(gstreamer_armhf_debs)
+
+generate_repositories_for_debs(m4_debs)
 
 http_archive(
     name = "python_repo",
@@ -739,4 +745,11 @@ http_archive(
     sha256 = "29872e92839765e546828bb7754a68c418d927cd064fd4708fab9fe9c8bb116b",
     strip_prefix = "MarkupSafe-1.1.1",
     url = "http://www.frc971.org/Build-Dependencies/MarkupSafe-1.1.1.tar.gz",
+)
+
+http_archive(
+    name = "m4_v1.4.18",
+    build_file = "@//debian:m4.BUILD",
+    sha256 = "ee8dfe664ac8c1d066bab64f71bd076a021875581b3cc47dac4a14a475f50b15",
+    url = "http://www.frc971.org/Build-Dependencies/m4.tar.gz",
 )

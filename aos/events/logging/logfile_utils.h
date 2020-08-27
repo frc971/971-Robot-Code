@@ -342,6 +342,9 @@ class SplitMessageReader {
   // And the index of the next file to open.
   size_t next_filename_index_ = 0;
 
+  // Node we are reading as.
+  const Node *target_node_ = nullptr;
+
   // Log file header to report.  This is a copy.
   FlatbufferVector<LogFileHeader> log_file_header_;
   // Current log file being read.
@@ -648,6 +651,10 @@ class ChannelMerger {
   // Cached copy of the list of nodes.
   std::vector<const Node *> nodes_;
 };
+
+// Returns the node name with a trailing space, or an empty string if we are on
+// a single node.
+std::string MaybeNodeName(const Node *);
 
 }  // namespace logger
 }  // namespace aos

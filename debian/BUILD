@@ -64,6 +64,11 @@ load(
     ":gstreamer_armhf.bzl",
     gstreamer_armhf_debs = "files",
 )
+load(
+    "//debian:m4.bzl",
+    m4_debs = "files",
+)
+
 load("//debian:packages.bzl", "download_packages", "generate_deb_tarball")
 
 filegroup(
@@ -241,6 +246,13 @@ download_packages(
     ],
 )
 
+download_packages(
+    name = "download_m4",
+    packages = [
+        "m4",
+    ],
+)
+
 generate_deb_tarball(
     name = "python",
     files = python_debs,
@@ -322,6 +334,11 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "gstreamer_armhf",
     files = gstreamer_armhf_debs,
+)
+
+generate_deb_tarball(
+    name = "m4",
+    files = m4_debs,
 )
 
 exports_files([
