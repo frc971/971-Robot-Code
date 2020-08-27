@@ -312,6 +312,16 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "event_scheduler_test",
+    srcs = ["event_scheduler_test.cc"],
+    deps = [
+        ":simulated_event_loop",
+        "//aos/testing:googletest",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
 cc_library(
     name = "aos_logging",
     srcs = [

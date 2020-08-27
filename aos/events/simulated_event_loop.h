@@ -158,11 +158,14 @@ class NodeEventLoopFactory {
   // measurement.
   inline distributed_clock::time_point ToDistributedClock(
       monotonic_clock::time_point time) const;
+  inline monotonic_clock::time_point FromDistributedClock(
+      distributed_clock::time_point time) const;
 
   // Sets the offset between the monotonic clock and the central distributed
   // clock.  distributed_clock = monotonic_clock + offset.
-  void SetDistributedOffset(std::chrono::nanoseconds monotonic_offset) {
-    scheduler_.SetDistributedOffset(monotonic_offset);
+  void SetDistributedOffset(std::chrono::nanoseconds monotonic_offset,
+                            double monotonic_slope) {
+    scheduler_.SetDistributedOffset(monotonic_offset, monotonic_slope);
   }
 
  private:
@@ -192,12 +195,17 @@ class NodeEventLoopFactory {
 
 inline monotonic_clock::time_point NodeEventLoopFactory::monotonic_now() const {
   // TODO(austin): Confirm that time never goes backwards?
-  return scheduler_.FromDistributedClock(factory_->distributed_now());
+  return scheduler_.monotonic_now();
 }
 
 inline realtime_clock::time_point NodeEventLoopFactory::realtime_now() const {
   return realtime_clock::time_point(monotonic_now().time_since_epoch() +
                                     realtime_offset_);
+}
+
+inline monotonic_clock::time_point NodeEventLoopFactory::FromDistributedClock(
+    distributed_clock::time_point time) const {
+  return scheduler_.FromDistributedClock(time);
 }
 
 inline distributed_clock::time_point NodeEventLoopFactory::ToDistributedClock(

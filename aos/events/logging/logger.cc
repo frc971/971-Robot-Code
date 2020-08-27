@@ -614,7 +614,8 @@ void LogReader::UpdateOffsets() {
 
   size_t node_index = 0;
   for (std::unique_ptr<State> &state : states_) {
-    state->node_event_loop_factory->SetDistributedOffset(offset(node_index));
+    state->node_event_loop_factory->SetDistributedOffset(-offset(node_index),
+                                                         1.0);
     ++node_index;
   }
 }

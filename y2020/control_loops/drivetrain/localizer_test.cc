@@ -86,7 +86,7 @@ std::vector<Eigen::Matrix<double, 4, 4>> TargetLocations() {
   return locations;
 }
 
-constexpr std::chrono::seconds kPiTimeOffset(10);
+constexpr std::chrono::seconds kPiTimeOffset(-10);
 }  // namespace
 
 namespace chrono = std::chrono;
@@ -129,7 +129,7 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
         drivetrain_plant_(drivetrain_plant_event_loop_.get(), dt_config_),
         last_frame_(monotonic_now()) {
     event_loop_factory()->GetNodeEventLoopFactory(pi1_)->SetDistributedOffset(
-        kPiTimeOffset);
+        kPiTimeOffset, 1.0);
 
     set_team_id(frc971::control_loops::testing::kTeamNumber);
     set_battery_voltage(12.0);
@@ -167,7 +167,7 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
               builder.MakeBuilder<aos::message_bridge::ServerConnection>();
           connection_builder.add_node(node_offset);
           connection_builder.add_monotonic_offset(
-              chrono::duration_cast<chrono::nanoseconds>(-kPiTimeOffset)
+              chrono::duration_cast<chrono::nanoseconds>(kPiTimeOffset)
                   .count());
           auto connection_offset = connection_builder.Finish();
           auto connections_offset =
