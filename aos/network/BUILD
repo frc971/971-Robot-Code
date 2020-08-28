@@ -130,6 +130,26 @@ cc_library(
 )
 
 cc_library(
+    name = "message_bridge_server_status",
+    srcs = [
+        "message_bridge_server_status.cc",
+    ],
+    hdrs = [
+        "message_bridge_server_status.h",
+    ],
+    deps = [
+        ":message_bridge_client_fbs",
+        ":message_bridge_server_fbs",
+        ":timestamp_fbs",
+        ":timestamp_filter",
+        "//aos:flatbuffer_merge",
+        "//aos:flatbuffers",
+        "//aos/events:event_loop",
+        "//aos/time",
+    ],
+)
+
+cc_library(
     name = "message_bridge_server_lib",
     srcs = [
         "message_bridge_server_lib.cc",
@@ -145,6 +165,7 @@ cc_library(
         ":message_bridge_client_fbs",
         ":message_bridge_protocol",
         ":message_bridge_server_fbs",
+        ":message_bridge_server_status",
         ":sctp_lib",
         ":sctp_server",
         ":timestamp_fbs",
