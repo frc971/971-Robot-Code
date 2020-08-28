@@ -86,46 +86,14 @@ MakeMessageHeaderReply() {
   return fbb.Release();
 }
 
-FlatbufferDetachedBuffer<ClientStatistics> MakeClientStatistics(
-    const std::vector<std::string_view> &source_node_names) {
-  flatbuffers::FlatBufferBuilder fbb;
-  fbb.ForceDefaults(true);
-
-  std::vector<flatbuffers::Offset<ClientConnection>> connection_offsets;
-  for (const std::string_view node_name : source_node_names) {
-    flatbuffers::Offset<flatbuffers::String> node_name_offset =
-        fbb.CreateString(node_name);
-
-    Node::Builder node_builder(fbb);
-    node_builder.add_name(node_name_offset);
-    flatbuffers::Offset<Node> node_offset = node_builder.Finish();
-
-    ClientConnection::Builder connection_builder(fbb);
-    connection_builder.add_node(node_offset);
-    connection_builder.add_state(State::DISCONNECTED);
-    // TODO(austin): Track dropped packets.
-    connection_builder.add_received_packets(0);
-    connection_builder.add_monotonic_offset(0);
-    connection_offsets.emplace_back(connection_builder.Finish());
-  }
-  flatbuffers::Offset<
-      flatbuffers::Vector<flatbuffers::Offset<ClientConnection>>>
-      connections_offset = fbb.CreateVector(connection_offsets);
-
-  ClientStatistics::Builder client_statistics_builder(fbb);
-  client_statistics_builder.add_connections(connections_offset);
-  fbb.Finish(client_statistics_builder.Finish());
-
-  return fbb.Release();
-}
 
 }  // namespace
 
 SctpClientConnection::SctpClientConnection(
     aos::ShmEventLoop *const event_loop, std::string_view remote_name,
     const Node *my_node, std::string_view local_host,
-    std::vector<std::unique_ptr<aos::RawSender>> *channels,
-    ClientConnection *connection)
+    std::vector<std::unique_ptr<aos::RawSender>> *channels, int client_index,
+    MessageBridgeClientStatus *client_status)
     : event_loop_(event_loop),
       connect_message_(MakeConnectMessage(event_loop->configuration(), my_node,
                                           remote_name)),
@@ -141,7 +109,9 @@ SctpClientConnection::SctpClientConnection(
           StreamToChannel(event_loop->configuration(), my_node, remote_node_)),
       stream_reply_with_timestamp_(StreamReplyWithTimestamp(
           event_loop->configuration(), my_node, remote_node_)),
-      connection_(connection) {
+      client_status_(client_status),
+      client_index_(client_index),
+      connection_(client_status_->GetClientConnection(client_index_)) {
   VLOG(1) << "Connect request for " << remote_node_->name()->string_view()
           << ": " << FlatbufferToJson(connect_message_);
 
@@ -230,7 +200,7 @@ void SctpClientConnection::NodeConnected(sctp_assoc_t assoc_id) {
 
   remote_assoc_id_ = assoc_id;
   connection_->mutate_state(State::CONNECTED);
-  filter_.Reset();
+  client_status_->SampleReset(client_index_);
 }
 
 void SctpClientConnection::NodeDisconnected() {
@@ -240,7 +210,7 @@ void SctpClientConnection::NodeDisconnected() {
   remote_assoc_id_ = 0;
   connection_->mutate_state(State::DISCONNECTED);
   connection_->mutate_monotonic_offset(0);
-  filter_.Reset();
+  client_status_->SampleReset(client_index_);
 }
 
 void SctpClientConnection::HandleData(const Message *message) {
@@ -264,25 +234,11 @@ void SctpClientConnection::HandleData(const Message *message) {
                    chrono::nanoseconds(message_header->realtime_sent_time())),
                message_header->queue_index());
 
-  const std::chrono::nanoseconds offset =
-      sender->monotonic_sent_time() -
+  client_status_->SampleFilter(
+      client_index_,
       aos::monotonic_clock::time_point(
-          chrono::nanoseconds(message_header->monotonic_sent_time()));
-
-  // If this is our first observation, use that to seed the base offset.  That
-  // gets us in the ballpark.
-  if (!filter_.has_sample()) {
-    filter_.set_base_offset(offset);
-  }
-
-  // We can now measure the latency!
-  filter_.Sample(sender->monotonic_sent_time(), offset);
-
-  connection_->mutate_monotonic_offset(
-      (chrono::duration_cast<chrono::nanoseconds>(
-           chrono::duration<double>(filter_.offset())) +
-       filter_.base_offset())
-          .count());
+          chrono::nanoseconds(message_header->monotonic_sent_time())),
+      sender->monotonic_sent_time());
 
   if (stream_reply_with_timestamp_[stream]) {
     // TODO(austin): Send back less if we are only acking.  Maybe only a
@@ -330,13 +286,7 @@ void SctpClientConnection::HandleData(const Message *message) {
 }
 
 MessageBridgeClient::MessageBridgeClient(aos::ShmEventLoop *event_loop)
-    : event_loop_(event_loop),
-      sender_(event_loop_->MakeSender<ClientStatistics>("/aos")),
-      source_node_names_(configuration::SourceNodeNames(
-          event_loop->configuration(), event_loop->node())),
-      statistics_(MakeClientStatistics(source_node_names_)) {
-  client_connection_offsets_.reserve(
-      statistics_.message().connections()->size());
+    : event_loop_(event_loop), client_status_(event_loop_) {
   std::string_view node_name = event_loop->node()->name()->string_view();
 
   // Find all the channels which are supposed to be delivered to us.
@@ -361,67 +311,13 @@ MessageBridgeClient::MessageBridgeClient(aos::ShmEventLoop *event_loop)
   }
 
   // Now, for each source node, build a connection.
-  int node_index = 0;
-  for (const std::string_view source_node : source_node_names_) {
+  for (const std::string_view source_node : configuration::SourceNodeNames(
+           event_loop->configuration(), event_loop->node())) {
     // Open an unspecified connection (:: in ipv6 terminology)
     connections_.emplace_back(new SctpClientConnection(
         event_loop, source_node, event_loop->node(), "::", &channels_,
-        statistics_.mutable_message()->mutable_connections()->GetMutableObject(
-            node_index)));
-    ++node_index;
+        client_status_.FindClientIndex(source_node), &client_status_));
   }
-
-  // And kick it all off.
-  statistics_timer_ = event_loop_->AddTimer([this]() { SendStatistics(); });
-  statistics_timer_->set_name("statistics");
-  event_loop_->OnRun([this]() {
-    statistics_timer_->Setup(
-        event_loop_->monotonic_now() + chrono::milliseconds(100),
-        chrono::milliseconds(100));
-  });
-}
-
-void MessageBridgeClient::SendStatistics() {
-  // Copy from statistics_ and drop monotonic_offset if it isn't populated yet.
-  // There doesn't exist a good way to drop fields otherwise.
-  aos::Sender<ClientStatistics>::Builder builder = sender_.MakeBuilder();
-  client_connection_offsets_.clear();
-
-  for (const ClientConnection *connection :
-       *statistics_.message().connections()) {
-    flatbuffers::Offset<flatbuffers::String> node_name_offset =
-        builder.fbb()->CreateString(connection->node()->name()->string_view());
-    Node::Builder node_builder = builder.MakeBuilder<Node>();
-    node_builder.add_name(node_name_offset);
-    flatbuffers::Offset<Node> node_offset = node_builder.Finish();
-
-    ClientConnection::Builder client_connection_builder =
-        builder.MakeBuilder<ClientConnection>();
-
-    client_connection_builder.add_node(node_offset);
-    client_connection_builder.add_state(connection->state());
-    client_connection_builder.add_received_packets(
-        connection->received_packets());
-
-    // Strip out the monotonic offset if it isn't populated.
-    if (connection->monotonic_offset() != 0) {
-      client_connection_builder.add_monotonic_offset(
-          connection->monotonic_offset());
-    }
-
-    client_connection_offsets_.emplace_back(client_connection_builder.Finish());
-  }
-
-  flatbuffers::Offset<
-      flatbuffers::Vector<flatbuffers::Offset<ClientConnection>>>
-      client_connections_offset =
-          builder.fbb()->CreateVector(client_connection_offsets_);
-
-  ClientStatistics::Builder client_statistics_builder =
-      builder.MakeBuilder<ClientStatistics>();
-  client_statistics_builder.add_connections(client_connections_offset);
-
-  builder.Send(client_statistics_builder.Finish());
 }
 
 }  // namespace message_bridge
