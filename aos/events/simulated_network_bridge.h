@@ -3,6 +3,8 @@
 
 #include "aos/events/event_loop.h"
 #include "aos/events/simulated_event_loop.h"
+#include "aos/network/message_bridge_client_status.h"
+#include "aos/network/message_bridge_server_status.h"
 
 namespace aos {
 namespace message_bridge {
@@ -23,10 +25,27 @@ class SimulatedMessageBridge {
   // for things like the logger.
   void DisableForwarding(const Channel *channel);
 
+  // Disables generating and sending the messages which message_gateway sends.
+  // The messages are the ClientStatistics, ServerStatistics and Timestamp
+  // messages.
+  void DisableStatistics();
+
  private:
+  struct State {
+    State(std::unique_ptr<aos::EventLoop> &&new_event_loop)
+        : event_loop(std::move(new_event_loop)),
+          server_status(event_loop.get()),
+          client_status(event_loop.get()) {}
+
+    State(const State &state) = delete;
+
+    std::unique_ptr<aos::EventLoop> event_loop;
+    MessageBridgeServerStatus server_status;
+    MessageBridgeClientStatus client_status;
+  };
   // Map of nodes to event loops.  This is a member variable so that the
   // lifetime of the event loops matches the lifetime of the bridge.
-  std::map<const Node *, std::unique_ptr<aos::EventLoop>> event_loop_map_;
+  std::map<const Node *, State> event_loop_map_;
 
   // List of delayers used to resend the messages.
   using DelayersVector = std::vector<std::unique_ptr<RawMessageDelayer>>;

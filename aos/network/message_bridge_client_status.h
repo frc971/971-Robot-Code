@@ -42,6 +42,9 @@ class MessageBridgeClientStatus {
   // Clears out the filter state.
   void SampleReset(int client_index) { filters_[client_index].Reset(); }
 
+  // Disables sending out any statistics messages.
+  void DisableStatistics();
+
  private:
   // Sends out the statistics that are continually updated by the
   // SctpClientConnections.
@@ -62,6 +65,9 @@ class MessageBridgeClientStatus {
   std::vector<flatbuffers::Offset<ClientConnection>> client_connection_offsets_;
 
   std::vector<TimestampFilter> filters_;
+
+  // If true, send out the messages.
+  bool send_ = true;
 };
 
 }  // namespace message_bridge

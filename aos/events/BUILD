@@ -307,6 +307,8 @@ cc_library(
         ":event_loop",
         ":simple_channel",
         "//aos/ipc_lib:index",
+        "//aos/network:message_bridge_client_status",
+        "//aos/network:message_bridge_server_status",
         "//aos/util:phased_loop",
         "@com_google_absl//absl/container:btree",
     ],

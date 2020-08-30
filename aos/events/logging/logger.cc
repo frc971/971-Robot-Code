@@ -593,6 +593,10 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
 
       event_loop_factory_->DisableForwarding(remapped_channel);
     }
+
+    // If we are replaying a log, we don't want a bunch of redundant messages
+    // from both the real message bridge and simulated message bridge.
+    event_loop_factory_->DisableStatistics();
   }
 
   // While we are starting the system up, we might be relying on matching data

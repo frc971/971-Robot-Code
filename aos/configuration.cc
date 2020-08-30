@@ -510,8 +510,13 @@ const Channel *GetChannel(const Configuration *config, std::string_view name,
                           std::string_view application_name, const Node *node) {
   const std::string_view original_name = name;
   std::string mutable_name;
-  VLOG(1) << "Looking up { \"name\": \"" << name << "\", \"type\": \"" << type
-          << "\" }";
+  if (node != nullptr) {
+    VLOG(1) << "Looking up { \"name\": \"" << name << "\", \"type\": \"" << type
+            << "\" } on " << aos::FlatbufferToJson(node);
+  } else {
+    VLOG(1) << "Looking up { \"name\": \"" << name << "\", \"type\": \"" << type
+            << "\" }";
+  }
 
   // First handle application specific maps.  Only do this if we have a matching
   // application name, and it has maps.

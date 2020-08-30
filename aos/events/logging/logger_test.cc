@@ -171,6 +171,7 @@ TEST_F(LoggerTest, ManyMessages) {
   unlink(logfile.c_str());
 
   LOG(INFO) << "Logging data to " << logfile;
+  ping_.set_quiet(true);
 
   {
     DetachedBufferWriter writer(logfile);
@@ -352,25 +353,25 @@ TEST_F(MultinodeLoggerTest, SimpleMultiNode) {
 
     // Timing reports, pings
     EXPECT_THAT(CountChannelsData(logfiles_[0]),
-                ::testing::ElementsAre(::testing::Pair(1, 40),
-                                       ::testing::Pair(4, 2001)));
+                ::testing::ElementsAre(::testing::Pair(4, 40),
+                                       ::testing::Pair(10, 2001)));
     // Timestamps for pong
     EXPECT_THAT(CountChannelsTimestamp(logfiles_[0]),
-                ::testing::ElementsAre(::testing::Pair(5, 2001)));
+                ::testing::ElementsAre(::testing::Pair(11, 2001)));
 
     // Pong data.
     EXPECT_THAT(CountChannelsData(logfiles_[1]),
-                ::testing::ElementsAre(::testing::Pair(5, 2001)));
+                ::testing::ElementsAre(::testing::Pair(11, 2001)));
     // No timestamps
     EXPECT_THAT(CountChannelsTimestamp(logfiles_[1]), ::testing::ElementsAre());
 
     // Timing reports and pongs.
     EXPECT_THAT(CountChannelsData(logfiles_[2]),
-                ::testing::ElementsAre(::testing::Pair(3, 40),
-                                       ::testing::Pair(5, 2001)));
+                ::testing::ElementsAre(::testing::Pair(9, 40),
+                                       ::testing::Pair(11, 2001)));
     // And ping timestamps.
     EXPECT_THAT(CountChannelsTimestamp(logfiles_[2]),
-                ::testing::ElementsAre(::testing::Pair(4, 2001)));
+                ::testing::ElementsAre(::testing::Pair(10, 2001)));
   }
 
   LogReader reader({std::vector<std::string>{logfiles_[0]},

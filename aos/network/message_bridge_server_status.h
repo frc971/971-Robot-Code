@@ -28,11 +28,28 @@ class MessageBridgeServerStatus {
                             std::function<void(const Context &)> send_data =
                                 std::function<void(const Context &)>());
 
+  MessageBridgeServerStatus(const MessageBridgeServerStatus &) = delete;
+  MessageBridgeServerStatus(MessageBridgeServerStatus &&) = delete;
+  MessageBridgeServerStatus &operator=(const MessageBridgeServerStatus &) =
+      delete;
+  MessageBridgeServerStatus &operator=(MessageBridgeServerStatus &&) = delete;
+
+  void set_send_data(std::function<void(const Context &)> send_data) {
+    send_data_ = send_data;
+  }
+
   // Resets the filter and clears the entry from the server statistics.
   void ResetFilter(int node_index);
 
   // Returns the ServerConnection message which is updated by the server.
   ServerConnection *FindServerConnection(std::string_view node_name);
+
+  std::vector<ServerConnection *> server_connection() {
+    return server_connection_;
+  }
+
+  // Disables sending out any statistics messages.
+  void DisableStatistics();
 
  private:
   static constexpr std::chrono::nanoseconds kStatisticsPeriod =
@@ -73,6 +90,8 @@ class MessageBridgeServerStatus {
       aos::monotonic_clock::min_time;
 
   std::function<void(const Context &)> send_data_;
+
+  bool send_ = true;
 };
 
 

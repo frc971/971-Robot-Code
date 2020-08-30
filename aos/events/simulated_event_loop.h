@@ -105,6 +105,9 @@ class SimulatedEventLoopFactory {
   // for things like the logger.
   void DisableForwarding(const Channel *channel);
 
+  // Disables the messages sent by the simulated message gateway.
+  void DisableStatistics();
+
  private:
   const Configuration *const configuration_;
   EventSchedulerScheduler scheduler_scheduler_;

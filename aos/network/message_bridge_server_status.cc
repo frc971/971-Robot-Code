@@ -135,6 +135,7 @@ void MessageBridgeServerStatus::ResetFilter(int node_index) {
 }
 
 void MessageBridgeServerStatus::SendStatistics() {
+  if (!send_) return;
   aos::Sender<ServerStatistics>::Builder builder = sender_.MakeBuilder();
 
   server_connection_offsets_.clear();
@@ -142,6 +143,10 @@ void MessageBridgeServerStatus::SendStatistics() {
   // Copy the statistics over, but only add monotonic_offset if it is valid.
   for (const ServerConnection *connection :
        *statistics_.message().connections()) {
+    const int node_index =
+        configuration::GetNodeIndex(event_loop_->configuration(),
+                                    connection->node()->name()->string_view());
+
     flatbuffers::Offset<flatbuffers::String> node_name_offset =
         builder.fbb()->CreateString(connection->node()->name()->string_view());
     Node::Builder node_builder = builder.MakeBuilder<Node>();
@@ -157,7 +162,7 @@ void MessageBridgeServerStatus::SendStatistics() {
     server_connection_builder.add_sent_packets(connection->sent_packets());
 
     // TODO(austin): If it gets stale, drop it too.
-    if (connection->monotonic_offset() != 0) {
+    if (!filters_[node_index].MissingSamples()) {
       server_connection_builder.add_monotonic_offset(
           connection->monotonic_offset());
     }
@@ -307,6 +312,7 @@ void MessageBridgeServerStatus::Tick() {
 
   // Send it out over shm, and using that timestamp, then send it out over sctp.
   // This avoid some context switches.
+  if (!send_) return;
   timestamp_sender_.Send(timestamp_copy);
 
   Context context;
@@ -321,6 +327,10 @@ void MessageBridgeServerStatus::Tick() {
   if (send_data_) {
     send_data_(context);
   }
+}
+
+void MessageBridgeServerStatus::DisableStatistics() {
+  send_ = false;
 }
 
 }  // namespace message_bridge

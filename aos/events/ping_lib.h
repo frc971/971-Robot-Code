@@ -14,6 +14,8 @@ class Ping {
  public:
   Ping(EventLoop *event_loop);
 
+  void set_quiet(bool quiet) { quiet_ = quiet; }
+
  private:
   // Sends out the ping message with an incrementing count.
   void SendPing();
@@ -29,6 +31,8 @@ class Ping {
   int count_ = 0;
   // Last pong value received so we can detect missed pongs.
   int last_pong_value_ = 0;
+
+  bool quiet_ = false;
 };
 
 }  // namespace aos

@@ -33,6 +33,54 @@
       "num_senders": 20,
       "max_size": 2048
     },
+    {
+      "name": "/pi1/aos",
+      "type": "aos.message_bridge.ServerStatistics",
+      "logger": "NOT_LOGGED",
+      "source_node": "pi1"
+    },
+    {
+      "name": "/pi2/aos",
+      "type": "aos.message_bridge.ServerStatistics",
+      "logger": "NOT_LOGGED",
+      "source_node": "pi2"
+    },
+    {
+      "name": "/pi1/aos",
+      "type": "aos.message_bridge.ClientStatistics",
+      "logger": "NOT_LOGGED",
+      "source_node": "pi1"
+    },
+    {
+      "name": "/pi2/aos",
+      "type": "aos.message_bridge.ClientStatistics",
+      "logger": "NOT_LOGGED",
+      "source_node": "pi2"
+    },
+    {
+      "name": "/pi1/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "logger": "NOT_LOGGED",
+      "source_node": "pi1",
+      "destination_nodes": [
+        {
+          "name": "pi2",
+          "timestamp_logger": "NOT_LOGGED"
+        }
+      ]
+    },
+    {
+      "name": "/pi2/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "logger": "NOT_LOGGED",
+      "source_node": "pi2",
+      "destination_nodes": [
+        {
+          "name": "pi1",
+          "timestamp_logger": "NOT_LOGGED"
+        }
+      ]
+    },
     /* Forwarded to pi2 */
     {
       "name": "/test",

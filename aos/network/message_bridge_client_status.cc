@@ -67,6 +67,9 @@ MessageBridgeClientStatus::MessageBridgeClientStatus(aos::EventLoop *event_loop)
 }
 
 void MessageBridgeClientStatus::SendStatistics() {
+  if (!send_) {
+    return;
+  }
   // Copy from statistics_ and drop monotonic_offset if it isn't populated yet.
   // There doesn't exist a good way to drop fields otherwise.
   aos::Sender<ClientStatistics>::Builder builder = sender_.MakeBuilder();
@@ -149,6 +152,8 @@ void MessageBridgeClientStatus::SampleFilter(
   // We can now measure the latency!
   filter->Sample(monotonic_delivered_time, offset);
 }
+
+void MessageBridgeClientStatus::DisableStatistics() { send_ = false; }
 
 }  // namespace message_bridge
 }  // namespace aos
