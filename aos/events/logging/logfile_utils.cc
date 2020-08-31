@@ -1098,7 +1098,7 @@ bool ChannelMerger::SetNode(const Node *target_node) {
   return true;
 }
 
-monotonic_clock::time_point ChannelMerger::OldestMessage() const {
+monotonic_clock::time_point ChannelMerger::OldestMessageTime() const {
   if (channel_heap_.empty()) {
     return monotonic_clock::max_time;
   }
