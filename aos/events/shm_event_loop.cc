@@ -12,6 +12,7 @@
 #include <iterator>
 #include <stdexcept>
 
+#include "absl/strings/str_cat.h"
 #include "aos/events/aos_logging.h"
 #include "aos/events/epoll.h"
 #include "aos/events/event_loop_generated.h"
@@ -50,19 +51,19 @@ namespace aos {
 using namespace shm_event_loop_internal;
 
 void SetShmBase(const std::string_view base) {
-  FLAGS_shm_base = std::string(base) + "/dev/shm/aos";
+  FLAGS_shm_base = std::string(base) + "/aos";
 }
 
 namespace {
 
-std::string ShmFolder(const Channel *channel) {
+std::string ShmFolder(std::string_view shm_base, const Channel *channel) {
   CHECK(channel->has_name());
   CHECK_EQ(channel->name()->string_view()[0], '/');
-  return FLAGS_shm_base + channel->name()->str() + "/";
+  return absl::StrCat(shm_base, channel->name()->string_view(), "/");
 }
-std::string ShmPath(const Channel *channel) {
+std::string ShmPath(std::string_view shm_base, const Channel *channel) {
   CHECK(channel->has_type());
-  return ShmFolder(channel) + channel->type()->str() + ".v3";
+  return ShmFolder(shm_base, channel) + channel->type()->str() + ".v3";
 }
 
 void PageFaultDataWrite(char *data, size_t size) {
@@ -119,10 +120,10 @@ ipc_lib::LocklessQueueConfiguration MakeQueueConfiguration(
 
 class MMapedQueue {
  public:
-  MMapedQueue(const Channel *channel,
+  MMapedQueue(std::string_view shm_base, const Channel *channel,
               std::chrono::seconds channel_storage_duration)
       : config_(MakeQueueConfiguration(channel, channel_storage_duration)) {
-    std::string path = ShmPath(channel);
+    std::string path = ShmPath(shm_base, channel);
 
     size_ = ipc_lib::LocklessQueueMemorySize(config_);
 
@@ -221,6 +222,7 @@ namespace chrono = ::std::chrono;
 
 ShmEventLoop::ShmEventLoop(const Configuration *configuration)
     : EventLoop(configuration),
+      shm_base_(FLAGS_shm_base),
       name_(FLAGS_application_name),
       node_(MaybeMyNode(configuration)) {
   if (configuration->has_nodes()) {
@@ -232,11 +234,12 @@ namespace shm_event_loop_internal {
 
 class SimpleShmFetcher {
  public:
-  explicit SimpleShmFetcher(ShmEventLoop *event_loop, const Channel *channel)
+  explicit SimpleShmFetcher(std::string_view shm_base, ShmEventLoop *event_loop,
+                            const Channel *channel)
       : event_loop_(event_loop),
         channel_(channel),
         lockless_queue_memory_(
-            channel,
+            shm_base, channel,
             chrono::ceil<chrono::seconds>(chrono::nanoseconds(
                 event_loop->configuration()->channel_storage_duration()))),
         reader_(lockless_queue_memory_.queue()) {
@@ -465,9 +468,10 @@ class SimpleShmFetcher {
 
 class ShmFetcher : public RawFetcher {
  public:
-  explicit ShmFetcher(ShmEventLoop *event_loop, const Channel *channel)
+  explicit ShmFetcher(std::string_view shm_base, ShmEventLoop *event_loop,
+                      const Channel *channel)
       : RawFetcher(event_loop, channel),
-        simple_shm_fetcher_(event_loop, channel) {
+        simple_shm_fetcher_(shm_base, event_loop, channel) {
     simple_shm_fetcher_.RetrieveData();
   }
 
@@ -499,10 +503,11 @@ class ShmFetcher : public RawFetcher {
 
 class ShmSender : public RawSender {
  public:
-  explicit ShmSender(EventLoop *event_loop, const Channel *channel)
+  explicit ShmSender(std::string_view shm_base, EventLoop *event_loop,
+                     const Channel *channel)
       : RawSender(event_loop, channel),
         lockless_queue_memory_(
-            channel,
+            shm_base, channel,
             chrono::ceil<chrono::seconds>(chrono::nanoseconds(
                 event_loop->configuration()->channel_storage_duration()))),
         lockless_queue_sender_(VerifySender(
@@ -571,13 +576,14 @@ class ShmSender : public RawSender {
 class ShmWatcherState : public WatcherState {
  public:
   ShmWatcherState(
-      ShmEventLoop *event_loop, const Channel *channel,
+      std::string_view shm_base, ShmEventLoop *event_loop,
+      const Channel *channel,
       std::function<void(const Context &context, const void *message)> fn,
       bool copy_data)
       : WatcherState(event_loop, channel, std::move(fn)),
         event_loop_(event_loop),
         event_(this),
-        simple_shm_fetcher_(event_loop, channel) {
+        simple_shm_fetcher_(shm_base, event_loop, channel) {
     if (copy_data) {
       simple_shm_fetcher_.RetrieveData();
     }
@@ -772,14 +778,15 @@ class ShmPhasedLoopHandler final : public PhasedLoopHandler {
                   "configuration.";
   }
 
-  return ::std::unique_ptr<RawFetcher>(new ShmFetcher(this, channel));
+  return ::std::unique_ptr<RawFetcher>(
+      new ShmFetcher(shm_base_, this, channel));
 }
 
 ::std::unique_ptr<RawSender> ShmEventLoop::MakeRawSender(
     const Channel *channel) {
   TakeSender(channel);
 
-  return ::std::unique_ptr<RawSender>(new ShmSender(this, channel));
+  return ::std::unique_ptr<RawSender>(new ShmSender(shm_base_, this, channel));
 }
 
 void ShmEventLoop::MakeRawWatcher(
@@ -788,7 +795,7 @@ void ShmEventLoop::MakeRawWatcher(
   TakeWatcher(channel);
 
   NewWatcher(::std::unique_ptr<WatcherState>(
-      new ShmWatcherState(this, channel, std::move(watcher), true)));
+      new ShmWatcherState(shm_base_, this, channel, std::move(watcher), true)));
 }
 
 void ShmEventLoop::MakeRawNoArgWatcher(
@@ -797,7 +804,7 @@ void ShmEventLoop::MakeRawNoArgWatcher(
   TakeWatcher(channel);
 
   NewWatcher(::std::unique_ptr<WatcherState>(new ShmWatcherState(
-      this, channel,
+      shm_base_, this, channel,
       [watcher](const Context &context, const void *) { watcher(context); },
       false)));
 }

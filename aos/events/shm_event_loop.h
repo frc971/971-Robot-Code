@@ -134,6 +134,11 @@ class ShmEventLoop : public EventLoop {
   absl::Span<const char> GetShmFetcherPrivateMemory(
       const aos::RawFetcher *fetcher) const;
 
+  // Capture the --shm_base flag at construction time.  This makes it much
+  // easier to make different shared memory regions for doing things like
+  // multi-node tests.
+  std::string shm_base_;
+
   std::vector<std::function<void()>> on_run_;
   int priority_ = 0;
   cpu_set_t affinity_ = DefaultAffinity();
