@@ -527,7 +527,7 @@ void MessageBridgeServer::Tick() {
   // Build up the timestamp message.  Do it here so that we don't have invalid
   // data in it.
   FlatbufferFixedAllocatorArray<Timestamp, 1000> timestamp_copy;
-  flatbuffers::FlatBufferBuilder *fbb = timestamp_copy.Builder();
+  flatbuffers::FlatBufferBuilder *fbb = timestamp_copy.fbb();
 
   if (client_statistics_fetcher_.get()) {
     // Build up the list of client offsets.
