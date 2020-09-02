@@ -9,7 +9,8 @@ export class Handler {
   private dataBuffer: Uint8Array|null = null;
   private receivedMessageLength: number = 0;
   constructor(
-      private readonly handlerFunc: (data: Uint8Array) => void,
+      private readonly handlerFunc:
+          (data: Uint8Array, sentTime: number) => void,
       private readonly channel: RTCPeerConnection) {
     channel.addEventListener('message', (e) => this.handleMessage(e));
   }
@@ -18,9 +19,10 @@ export class Handler {
     const fbBuffer = new flatbuffers.ByteBuffer(new Uint8Array(e.data));
     const messageHeader =
         WebProxy.MessageHeader.getRootAsMessageHeader(fbBuffer);
+    const time = messageHeader.monotonicSentTime().toFloat64() * 1e-9;
     // Short circuit if only one packet
     if (messageHeader.packetCount() === 1) {
-      this.handlerFunc(messageHeader.dataArray());
+      this.handlerFunc(messageHeader.dataArray(), time);
       return;
     }
 
@@ -37,7 +39,7 @@ export class Handler {
     this.receivedMessageLength += messageHeader.dataLength();
 
     if (messageHeader.packetIndex() === messageHeader.packetCount() - 1) {
-      this.handlerFunc(this.dataBuffer);
+      this.handlerFunc(this.dataBuffer, time);
     }
   }
 }
@@ -54,7 +56,8 @@ export class Connection {
   // A set of functions that accept the config to handle.
   private readonly configHandlers = new Set<(config: Configuration) => void>();
 
-  private readonly handlerFuncs = new Map<string, (data: Uint8Array) => void>();
+  private readonly handlerFuncs =
+      new Map<string, (data: Uint8Array, sentTime: number) => void>();
   private readonly handlers = new Set<Handler>();
 
   constructor() {

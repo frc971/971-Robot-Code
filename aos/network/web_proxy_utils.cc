@@ -53,6 +53,8 @@ flatbuffers::Offset<MessageHeader> PackMessage(
   message_header_builder.add_packet_index(packet_index);
   message_header_builder.add_data(data_offset);
   message_header_builder.add_length(context.size);
+  message_header_builder.add_monotonic_sent_time(
+      context.monotonic_event_time.time_since_epoch().count());
 
   return message_header_builder.Finish();
 }

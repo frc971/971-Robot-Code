@@ -57,4 +57,7 @@ table MessageHeader {
   queue_index:uint;
 
   data:[ubyte];
+
+  // Time at which the message was sent, in nanoseconds.
+  monotonic_sent_time:long;
 }
