@@ -12,49 +12,9 @@
 DEFINE_string(config, "./config.json", "File path of aos configuration");
 DEFINE_string(data_dir, "www", "Directory to serve data files from");
 
-void RunDataThread(
-    std::vector<std::unique_ptr<aos::web_proxy::Subscriber>> *subscribers,
-    const aos::FlatbufferDetachedBuffer<aos::Configuration> &config) {
-  aos::ShmEventLoop event_loop(&config.message());
-  const bool is_multi_node =
-      aos::configuration::MultiNode(event_loop.configuration());
-  const aos::Node *self =
-      is_multi_node ? aos::configuration::GetMyNode(event_loop.configuration())
-                    : nullptr;
-
-  LOG(INFO) << "My node is " << aos::FlatbufferToJson(self);
-
-  for (uint i = 0; i < config.message().channels()->size(); ++i) {
-    auto channel = config.message().channels()->Get(i);
-    if (aos::configuration::ChannelIsReadableOnNode(channel, self)) {
-      auto fetcher = event_loop.MakeRawFetcher(channel);
-      subscribers->emplace_back(
-          std::make_unique<aos::web_proxy::Subscriber>(std::move(fetcher), i));
-    } else {
-      subscribers->emplace_back(nullptr);
-    }
-  }
-
-  flatbuffers::FlatBufferBuilder fbb(1024);
-
-  auto timer = event_loop.AddTimer([&]() {
-    for (auto &subscriber : *subscribers) {
-      if (subscriber != nullptr) {
-        subscriber->RunIteration();
-      }
-    }
-  });
-
-  event_loop.OnRun([&]() {
-    timer->Setup(event_loop.monotonic_now(), std::chrono::milliseconds(100));
-  });
-
-  event_loop.Run();
-}
-
 int main(int argc, char **argv) {
-  // Make sure to reference this to force the linker to include it.
   aos::InitGoogle(&argc, &argv);
+  // Make sure to reference this to force the linker to include it.
   findEmbeddedContent("");
 
   aos::InitNRT();
@@ -62,17 +22,16 @@ int main(int argc, char **argv) {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(FLAGS_config);
 
-  std::vector<std::unique_ptr<aos::web_proxy::Subscriber>> subscribers;
-
-  std::thread data_thread{
-      [&subscribers, &config]() { RunDataThread(&subscribers, config); }};
+  aos::ShmEventLoop event_loop(&config.message());
 
   seasocks::Server server(std::shared_ptr<seasocks::Logger>(
       new aos::seasocks::SeasocksLogger(seasocks::Logger::Level::Info)));
 
-  auto websocket_handler = std::make_shared<aos::web_proxy::WebsocketHandler>(
-      &server, subscribers, config);
+  auto websocket_handler =
+      std::make_shared<aos::web_proxy::WebsocketHandler>(&server, &event_loop);
   server.addWebSocketHandler("/ws", websocket_handler);
+
+  std::thread data_thread{[&event_loop]() { event_loop.Run(); }};
 
   server.serve(FLAGS_data_dir.c_str(), 8080);
 }
