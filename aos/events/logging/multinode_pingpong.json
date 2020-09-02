@@ -60,26 +60,42 @@
     {
       "name": "/pi1/aos",
       "type": "aos.message_bridge.Timestamp",
-      "logger": "NOT_LOGGED",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["pi2"],
       "source_node": "pi1",
       "destination_nodes": [
         {
           "name": "pi2",
-          "timestamp_logger": "NOT_LOGGED"
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["pi1"]
         }
       ]
     },
     {
       "name": "/pi2/aos",
       "type": "aos.message_bridge.Timestamp",
-      "logger": "NOT_LOGGED",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["pi1"],
       "source_node": "pi2",
       "destination_nodes": [
         {
           "name": "pi1",
-          "timestamp_logger": "NOT_LOGGED"
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["pi2"]
         }
       ]
+    },
+    {
+      "name": "/pi1/aos/remote_timestamps/pi2",
+      "type": "aos.logger.MessageHeader",
+      "logger": "NOT_LOGGED",
+      "source_node": "pi1"
+    },
+    {
+      "name": "/pi2/aos/remote_timestamps/pi1",
+      "type": "aos.logger.MessageHeader",
+      "logger": "NOT_LOGGED",
+      "source_node": "pi2"
     },
     /* Forwarded to pi2 */
     {

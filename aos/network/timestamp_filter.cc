@@ -49,7 +49,7 @@ void TimestampFilter::Sample(aos::monotonic_clock::time_point monotonic_now,
   VLOG(1) << "  " << this << " Sample at " << monotonic_now << " is "
           << sample_ns.count() << "ns, Base is " << base_offset_.count();
   CHECK_GE(monotonic_now, last_time_)
-      << ": Being asked to filter backwards in time!";
+      << ": " << this << " Being asked to filter backwards in time!";
   // Compute the sample offset as a double (seconds), taking into account the
   // base offset.
   const double sample =
@@ -380,7 +380,7 @@ void ClippedAverageFilter::Update(
   const double hard_max = fwd_.offset();
   const double hard_min = -rev_.offset();
   const double average = (hard_max + hard_min) / 2.0;
-  VLOG(1) << "  Max(fwd) " << hard_max << " min(rev) " << hard_min;
+  VLOG(1) << this << "  Max(fwd) " << hard_max << " min(rev) " << hard_min;
   // We don't want to clip the offset to the hard min/max.  We really want to
   // keep it within a band around the middle.  ratio of 0.3 means stay within
   // +- 0.15 of the middle of the hard min and max.
@@ -390,7 +390,7 @@ void ClippedAverageFilter::Update(
 
   // Update regardless for the first sample from both the min and max.
   if (*last_time == aos::monotonic_clock::min_time) {
-    VLOG(1) << "  No last time " << average;
+    VLOG(1) << this << "  No last time " << average;
     offset_ = average;
     offset_velocity_ = 0.0;
   } else {
@@ -415,7 +415,7 @@ void ClippedAverageFilter::Update(
             (offset_velocity_ -
              (fwd_.filtered_velocity() - rev_.filtered_velocity()) / 2.0);
 
-    VLOG(1) << "  last time " << offset_;
+    VLOG(1) << this << "  last time " << offset_;
   }
   *last_time = monotonic_now;
 
@@ -424,14 +424,14 @@ void ClippedAverageFilter::Update(
     // reverse samples.
     if (!MissingSamples()) {
       *sample_pointer_ = offset_;
-      VLOG(1) << "Updating sample to " << offset_;
+      VLOG(1) << this << " Updating sample to " << offset_;
     } else {
-      VLOG(1) << "Don't have both samples.";
+      VLOG(1) << this << " Don't have both samples.";
       if (last_fwd_time_ == aos::monotonic_clock::min_time) {
-        VLOG(1) << " Missing forward";
+        VLOG(1) << this << " Missing forward";
       }
       if (last_rev_time_ == aos::monotonic_clock::min_time) {
-        VLOG(1) << " Missing reverse";
+        VLOG(1) << this << " Missing reverse";
       }
     }
   }
@@ -657,6 +657,8 @@ void NoncausalTimestampFilter::MaybeWriteTimestamp(
 void NoncausalOffsetEstimator::Sample(
     const Node *node, aos::monotonic_clock::time_point node_delivered_time,
     aos::monotonic_clock::time_point other_node_sent_time) {
+  VLOG(1) << "Sample delivered " << node_delivered_time << " sent "
+          << other_node_sent_time << " to " << node->name()->string_view();
   if (node == node_a_) {
     if (a_.Sample(node_delivered_time,
                   other_node_sent_time - node_delivered_time)) {
@@ -740,10 +742,15 @@ void NoncausalOffsetEstimator::Refit() {
   }
   fit_ = AverageFits(a_.FitLine(), b_.FitLine());
   if (offset_pointer_) {
+    VLOG(1) << "Setting offset to " << fit_.mpq_offset();
     *offset_pointer_ = fit_.mpq_offset();
   }
   if (slope_pointer_) {
+    VLOG(1) << "Setting slope to " << fit_.mpq_slope();
     *slope_pointer_ = -fit_.mpq_slope();
+  }
+  if (valid_pointer_) {
+    *valid_pointer_ = true;
   }
 
   if (VLOG_IS_ON(1)) {

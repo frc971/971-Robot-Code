@@ -3,6 +3,7 @@
 #include <string_view>
 
 #include "aos/events/event_loop_param_test.h"
+#include "aos/events/logging/logger_generated.h"
 #include "aos/events/ping_lib.h"
 #include "aos/events/pong_lib.h"
 #include "aos/events/test_message_generated.h"
@@ -290,6 +291,11 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
       simulated_event_loop_factory.MakeEventLoop("pi2_pong_counter", pi2);
   MessageCounter<examples::Pong> pi2_pong_counter(
       pi2_pong_counter_event_loop.get(), "/test");
+  aos::Fetcher<message_bridge::Timestamp> pi1_on_pi2_timestamp_fetcher =
+      pi2_pong_counter_event_loop->MakeFetcher<message_bridge::Timestamp>(
+          "/pi1/aos");
+  aos::Fetcher<examples::Ping> ping_on_pi2_fetcher =
+      pi2_pong_counter_event_loop->MakeFetcher<examples::Ping>("/test");
 
   std::unique_ptr<EventLoop> pi3_pong_counter_event_loop =
       simulated_event_loop_factory.MakeEventLoop("pi3_pong_counter", pi3);
@@ -298,6 +304,14 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
       simulated_event_loop_factory.MakeEventLoop("pi1_pong_counter", pi1);
   MessageCounter<examples::Pong> pi1_pong_counter(
       pi1_pong_counter_event_loop.get(), "/test");
+  aos::Fetcher<examples::Ping> ping_on_pi1_fetcher =
+      pi1_pong_counter_event_loop->MakeFetcher<examples::Ping>("/test");
+  aos::Fetcher<message_bridge::Timestamp> pi1_on_pi1_timestamp_fetcher =
+      pi1_pong_counter_event_loop->MakeFetcher<message_bridge::Timestamp>(
+          "/aos");
+
+  std::unique_ptr<EventLoop> pi1_remote_timestamp =
+      simulated_event_loop_factory.MakeEventLoop("pi1_remote_timestamp", pi1);
 
   // Count timestamps.
   MessageCounter<message_bridge::Timestamp> pi1_on_pi1_timestamp_counter(
@@ -314,6 +328,12 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
       pi1_pong_counter_event_loop.get(), "/pi3/aos");
   MessageCounter<message_bridge::Timestamp> pi3_on_pi3_timestamp_counter(
       pi3_pong_counter_event_loop.get(), "/pi3/aos");
+
+  // Count remote timestamps
+  MessageCounter<logger::MessageHeader> remote_timestamps_pi2_on_pi1(
+      pi1_pong_counter_event_loop.get(), "/aos/remote_timestamps/pi2");
+  MessageCounter<logger::MessageHeader> remote_timestamps_pi1_on_pi2(
+      pi2_pong_counter_event_loop.get(), "/aos/remote_timestamps/pi1");
 
   // Wait to let timestamp estimation start up before looking for the results.
   simulated_event_loop_factory.RunFor(chrono::milliseconds(500));
@@ -429,6 +449,98 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
         ++pi3_client_statistics_count;
       });
 
+  // Find the channel index for both the /pi1/aos Timestamp channel and Ping
+  // channel.
+  const size_t pi1_timestamp_channel =
+      configuration::ChannelIndex(pi1_pong_counter_event_loop->configuration(),
+                                  pi1_on_pi2_timestamp_fetcher.channel());
+  const size_t ping_timestamp_channel =
+      configuration::ChannelIndex(pi1_pong_counter_event_loop->configuration(),
+                                  ping_on_pi2_fetcher.channel());
+
+  for (const Channel *channel :
+       *pi1_pong_counter_event_loop->configuration()->channels()) {
+    VLOG(1) << "Channel "
+            << configuration::ChannelIndex(
+                   pi1_pong_counter_event_loop->configuration(), channel)
+            << " " << configuration::CleanedChannelToString(channel);
+  }
+
+  // For each remote timestamp we get back, confirm that it is either a ping
+  // message, or a timestamp we sent out.  Also confirm that the timestamps are
+  // correct.
+  pi1_remote_timestamp->MakeWatcher(
+      "/pi1/aos/remote_timestamps/pi2",
+      [pi1_timestamp_channel, ping_timestamp_channel, &ping_on_pi2_fetcher,
+       &ping_on_pi1_fetcher, &pi1_on_pi2_timestamp_fetcher,
+       &pi1_on_pi1_timestamp_fetcher](const logger::MessageHeader &header) {
+        VLOG(1) << aos::FlatbufferToJson(&header);
+
+        const aos::monotonic_clock::time_point header_monotonic_sent_time(
+            chrono::nanoseconds(header.monotonic_sent_time()));
+        const aos::realtime_clock::time_point header_realtime_sent_time(
+            chrono::nanoseconds(header.realtime_sent_time()));
+        const aos::monotonic_clock::time_point header_monotonic_remote_time(
+            chrono::nanoseconds(header.monotonic_remote_time()));
+        const aos::realtime_clock::time_point header_realtime_remote_time(
+            chrono::nanoseconds(header.realtime_remote_time()));
+
+        const Context *pi1_context = nullptr;
+        const Context *pi2_context = nullptr;
+
+        if (header.channel_index() == pi1_timestamp_channel) {
+          // Find the forwarded message.
+          while (pi1_on_pi2_timestamp_fetcher.context().monotonic_event_time <
+                 header_monotonic_sent_time) {
+            ASSERT_TRUE(pi1_on_pi2_timestamp_fetcher.FetchNext());
+          }
+
+          // And the source message.
+          while (pi1_on_pi1_timestamp_fetcher.context().monotonic_event_time <
+                 header_monotonic_remote_time) {
+            ASSERT_TRUE(pi1_on_pi1_timestamp_fetcher.FetchNext());
+          }
+
+          pi1_context = &pi1_on_pi1_timestamp_fetcher.context();
+          pi2_context = &pi1_on_pi2_timestamp_fetcher.context();
+        } else if (header.channel_index() == ping_timestamp_channel) {
+          // Find the forwarded message.
+          while (ping_on_pi2_fetcher.context().monotonic_event_time <
+                 header_monotonic_sent_time) {
+            ASSERT_TRUE(ping_on_pi2_fetcher.FetchNext());
+          }
+
+          // And the source message.
+          while (ping_on_pi1_fetcher.context().monotonic_event_time <
+                 header_monotonic_remote_time) {
+            ASSERT_TRUE(ping_on_pi1_fetcher.FetchNext());
+          }
+
+          pi1_context = &ping_on_pi1_fetcher.context();
+          pi2_context = &ping_on_pi2_fetcher.context();
+        } else {
+          LOG(FATAL) << "Unknown channel";
+        }
+
+        // Confirm the forwarded message has matching timestamps to the
+        // timestamps we got back.
+        EXPECT_EQ(pi2_context->queue_index, header.queue_index());
+        EXPECT_EQ(pi2_context->monotonic_event_time,
+                  header_monotonic_sent_time);
+        EXPECT_EQ(pi2_context->realtime_event_time, header_realtime_sent_time);
+        EXPECT_EQ(pi2_context->realtime_remote_time,
+                  header_realtime_remote_time);
+        EXPECT_EQ(pi2_context->monotonic_remote_time,
+                  header_monotonic_remote_time);
+
+        // Confirm the forwarded message also matches the source message.
+        EXPECT_EQ(pi1_context->queue_index, header.queue_index());
+        EXPECT_EQ(pi1_context->monotonic_event_time,
+                  header_monotonic_remote_time);
+        EXPECT_EQ(pi1_context->realtime_event_time,
+                  header_realtime_remote_time);
+      });
+
   simulated_event_loop_factory.RunFor(chrono::seconds(10) -
                                       chrono::milliseconds(500) +
                                       chrono::milliseconds(5));
@@ -451,6 +563,10 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
   EXPECT_EQ(pi1_client_statistics_count, 95);
   EXPECT_EQ(pi2_client_statistics_count, 95);
   EXPECT_EQ(pi3_client_statistics_count, 95);
+
+  // Also confirm that remote timestamps are being forwarded correctly.
+  EXPECT_EQ(remote_timestamps_pi2_on_pi1.count(), 1101);
+  EXPECT_EQ(remote_timestamps_pi1_on_pi2.count(), 1101);
 }
 
 // Tests that an offset between nodes can be recovered and shows up in
@@ -605,6 +721,12 @@ TEST(SimulatedEventLoopTest, MultinodeWithoutStatistics) {
   MessageCounter<message_bridge::Timestamp> pi3_on_pi3_timestamp_counter(
       pi3_pong_counter_event_loop.get(), "/pi3/aos");
 
+  // Count remote timestamps
+  MessageCounter<logger::MessageHeader> remote_timestamps_pi2_on_pi1(
+      pi1_pong_counter_event_loop.get(), "/aos/remote_timestamps/pi2");
+  MessageCounter<logger::MessageHeader> remote_timestamps_pi1_on_pi2(
+      pi2_pong_counter_event_loop.get(), "/aos/remote_timestamps/pi1");
+
   MessageCounter<message_bridge::ServerStatistics>
       pi1_server_statistics_counter(pi1_pong_counter_event_loop.get(),
                                     "/pi1/aos");
@@ -646,6 +768,10 @@ TEST(SimulatedEventLoopTest, MultinodeWithoutStatistics) {
   EXPECT_EQ(pi1_client_statistics_counter.count(), 0u);
   EXPECT_EQ(pi2_client_statistics_counter.count(), 0u);
   EXPECT_EQ(pi3_client_statistics_counter.count(), 0u);
+
+  // Also confirm that remote timestamps are being forwarded correctly.
+  EXPECT_EQ(remote_timestamps_pi2_on_pi1.count(), 1001);
+  EXPECT_EQ(remote_timestamps_pi1_on_pi2.count(), 1001);
 }
 
 }  // namespace testing

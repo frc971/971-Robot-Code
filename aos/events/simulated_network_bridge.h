@@ -2,6 +2,7 @@
 #define AOS_EVENTS_SIMULATED_NETWORK_BRIDGE_H_
 
 #include "aos/events/event_loop.h"
+#include "aos/events/logging/logger_generated.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/message_bridge_client_status.h"
 #include "aos/network/message_bridge_server_status.h"
@@ -32,16 +33,15 @@ class SimulatedMessageBridge {
 
  private:
   struct State {
-    State(std::unique_ptr<aos::EventLoop> &&new_event_loop)
-        : event_loop(std::move(new_event_loop)),
-          server_status(event_loop.get()),
-          client_status(event_loop.get()) {}
+    State(std::unique_ptr<aos::EventLoop> &&new_event_loop);
 
     State(const State &state) = delete;
 
     std::unique_ptr<aos::EventLoop> event_loop;
     MessageBridgeServerStatus server_status;
     MessageBridgeClientStatus client_status;
+
+    std::vector<aos::Sender<logger::MessageHeader>> timestamp_loggers;
   };
   // Map of nodes to event loops.  This is a member variable so that the
   // lifetime of the event loops matches the lifetime of the bridge.

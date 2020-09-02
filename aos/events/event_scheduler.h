@@ -196,9 +196,16 @@ class EventSchedulerScheduler {
 inline monotonic_clock::time_point EventScheduler::monotonic_now() const {
   // Make sure we stay in sync.
   if (monotonic_now_valid_) {
+    // We want time to be smooth, so confirm that it doesn't change too much
+    // while handling an event.
+    //
+    // There are 2 sources of error.  There are numerical precision and interger
+    // rounding problems going from the monotonic clock to the distributed clock
+    // and back again.  When we update the time function as well to transition
+    // line segments, we have a slight jump as well.
     CHECK_NEAR(monotonic_now_,
                FromDistributedClock(scheduler_scheduler_->distributed_now()),
-               std::chrono::nanoseconds(1));
+               std::chrono::nanoseconds(2));
     return monotonic_now_;
   } else {
     return FromDistributedClock(scheduler_scheduler_->distributed_now());

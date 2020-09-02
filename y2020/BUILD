@@ -168,6 +168,7 @@ aos_config(
             "//y2020/vision/sift:sift_fbs",
             "//y2020/vision/sift:sift_training_fbs",
             "//y2020/vision:vision_fbs",
+            "//aos/events/logging:logger_fbs",
         ],
         visibility = ["//visibility:public"],
         deps = [

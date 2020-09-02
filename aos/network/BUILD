@@ -268,6 +268,7 @@ aos_config(
     name = "message_bridge_test_common_config",
     src = "message_bridge_test_common.json",
     flatbuffers = [
+        "//aos/events/logging:logger_fbs",
         "//aos/events:ping_fbs",
         "//aos/events:pong_fbs",
         "//aos/network:message_bridge_client_fbs",

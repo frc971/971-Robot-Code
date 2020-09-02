@@ -78,6 +78,11 @@ int main(int argc, char **argv) {
       LOG(FATAL) << "Expected 1 logfile as an argument.";
     }
     aos::logger::MessageReader reader(argv[1]);
+    std::cout << aos::FlatbufferToJson(reader.log_file_header(),
+                                       {.multi_line = FLAGS_pretty,
+                                        .max_vector_size = static_cast<size_t>(
+                                            FLAGS_max_vector_size)})
+              << std::endl;
 
     while (true) {
       std::optional<aos::FlatbufferVector<aos::logger::MessageHeader>> message =

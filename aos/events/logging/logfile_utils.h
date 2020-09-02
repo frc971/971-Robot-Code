@@ -41,12 +41,19 @@ enum class LogType : uint8_t {
 class DetachedBufferWriter {
  public:
   DetachedBufferWriter(std::string_view filename);
+  DetachedBufferWriter(DetachedBufferWriter &&other);
+  DetachedBufferWriter(const DetachedBufferWriter &) = delete;
+
   ~DetachedBufferWriter();
 
-  DetachedBufferWriter(const DetachedBufferWriter &) = delete;
+  DetachedBufferWriter &operator=(DetachedBufferWriter &&other);
   DetachedBufferWriter &operator=(const DetachedBufferWriter &) = delete;
 
   std::string_view filename() const { return filename_; }
+
+  // Rewrites a location in a file (relative to the start) to have new data in
+  // it.  The main use case is updating start times after a log file starts.
+  void RewriteLocation(off64_t offset, absl::Span<const uint8_t> data);
 
   // TODO(austin): Snappy compress the log file if it ends with .snappy!
 
@@ -68,7 +75,7 @@ class DetachedBufferWriter {
   size_t total_size() const { return written_size_ + queued_size_; }
 
  private:
-  const std::string filename_;
+  std::string filename_;
 
   int fd_ = -1;
 
@@ -236,15 +243,15 @@ class SplitMessageReader {
   void SetTimestampMerger(TimestampMerger *timestamp_merger, int channel,
                           const Node *target_node);
 
-  // Returns the (timestamp, queue_idex) for the oldest message in a channel, or
-  // max_time if there is nothing in the channel.
+  // Returns the (timestamp, queue_index, message_header) for the oldest message
+  // in a channel, or max_time if there is nothing in the channel.
   std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
   oldest_message(int channel) {
     return channels_[channel].data.front_timestamp();
   }
 
-  // Returns the (timestamp, queue_index) for the oldest delivery time in a
-  // channel, or max_time if there is nothing in the channel.
+  // Returns the (timestamp, queue_index, message_header) for the oldest
+  // delivery time in a channel, or max_time if there is nothing in the channel.
   std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
   oldest_message(int channel, int destination_node) {
     return channels_[channel].timestamps[destination_node].front_timestamp();
@@ -260,7 +267,7 @@ class SplitMessageReader {
   // a channel delivered to a node.  Requeues data as needed.
   std::tuple<monotonic_clock::time_point, uint32_t,
              FlatbufferVector<MessageHeader>>
-  PopOldest(int channel, int node_index);
+  PopOldestTimestamp(int channel, int node_index);
 
   // Returns the header for the log files.
   const LogFileHeader *log_file_header() const {
@@ -367,7 +374,7 @@ class SplitMessageReader {
     bool emplace_back(FlatbufferVector<MessageHeader> &&msg);
 
     // Drops the front message.  Invalidates the front() reference.
-    void pop_front();
+    void PopFront();
 
     // The size of the queue.
     size_t size() { return data_.size(); }
@@ -375,15 +382,16 @@ class SplitMessageReader {
     // Returns a debug string with info about each message in the queue.
     std::string DebugString() const;
 
-    // Returns the (timestamp, queue_index) for the oldest message.
+    // Returns the (timestamp, queue_index, message_header) for the oldest
+    // message.
     const std::tuple<monotonic_clock::time_point, uint32_t,
                      const MessageHeader *>
     front_timestamp() {
-      CHECK_GT(data_.size(), 0u);
+      const MessageHeader &message = front().message();
       return std::make_tuple(
-          monotonic_clock::time_point(std::chrono::nanoseconds(
-              front().message().monotonic_sent_time())),
-          front().message().queue_index(), &front().message());
+          monotonic_clock::time_point(
+              std::chrono::nanoseconds(message.monotonic_sent_time())),
+          message.queue_index(), &message);
     }
 
     // Pointer to the timestamp merger for this queue if available.
@@ -471,9 +479,6 @@ class TimestampMerger {
   // The caller can determine what the appropriate action is to recover.
   std::tuple<DeliveryTimestamp, FlatbufferVector<MessageHeader>> PopOldest();
 
-  // Returns the oldest forwarding timestamp.
-  DeliveryTimestamp OldestTimestamp() const;
-
   // Tracks if the channel merger has pushed this onto it's heap or not.
   bool pushed() { return pushed_; }
   // Sets if this has been pushed to the channel merger heap.  Should only be
@@ -489,6 +494,14 @@ class TimestampMerger {
   // Records that one of the log files ran out of data.  This should only be
   // called by a SplitMessageReader.
   void NoticeAtEnd();
+
+  aos::monotonic_clock::time_point channel_merger_time() {
+    if (has_timestamps_) {
+      return std::get<0>(timestamp_heap_[0]);
+    } else {
+      return std::get<0>(message_heap_[0]);
+    }
+  }
 
  private:
   // Pushes messages and timestamps to the corresponding heaps.
@@ -576,12 +589,6 @@ class ChannelMerger {
              FlatbufferVector<MessageHeader>>
   PopOldest();
 
-  // Returns the oldest timestamp in the timestamp heap.
-  TimestampMerger::DeliveryTimestamp OldestTimestamp() const;
-  // Returns the oldest timestamp in the timestamp heap for a specific channel.
-  TimestampMerger::DeliveryTimestamp OldestTimestampForChannel(
-      int channel) const;
-
   // Returns the config for this set of log files.
   const Configuration *configuration() const {
     return log_file_header()->configuration();
@@ -628,6 +635,9 @@ class ChannelMerger {
   void PushChannelHeap(monotonic_clock::time_point timestamp,
                        int channel_index);
 
+  // CHECKs that channel_heap_ and timestamp_heap_ are valid heaps.
+  void VerifyHeaps();
+
   // All the message readers.
   std::vector<std::unique_ptr<SplitMessageReader>> split_message_readers_;
 
@@ -641,6 +651,7 @@ class ChannelMerger {
   std::vector<std::pair<monotonic_clock::time_point, int>> channel_heap_;
   // A heap of just the timestamp channel readers and timestamps for the oldest
   // data in each.
+  // TODO(austin): I think this is no longer used and can be removed (!)
   std::vector<std::pair<monotonic_clock::time_point, int>> timestamp_heap_;
 
   // Configured node.
@@ -650,6 +661,9 @@ class ChannelMerger {
 
   // Cached copy of the list of nodes.
   std::vector<const Node *> nodes_;
+
+  // Last time popped.  Used to detect events being returned out of order.
+  monotonic_clock::time_point last_popped_time_ = monotonic_clock::min_time;
 };
 
 // Returns the node name with a trailing space, or an empty string if we are on
