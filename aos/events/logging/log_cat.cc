@@ -29,6 +29,8 @@ DEFINE_bool(format_raw, true,
             "schema to format the data.");
 DEFINE_int32(max_vector_size, 100,
              "If positive, vectors longer than this will not be printed");
+DEFINE_bool(pretty, false,
+            "If true, pretty print the messages on multiple lines");
 
 // Print the flatbuffer out to stdout, both to remove the unnecessary cruft from
 // glog and to allow the user to readily redirect just the logged output
@@ -37,9 +39,9 @@ void PrintMessage(const std::string_view node_name, const aos::Channel *channel,
                   const aos::Context &context,
                   aos::FastStringBuilder *builder) {
   builder->Reset();
-  aos::FlatbufferToJson(builder, channel->schema(),
-                        static_cast<const uint8_t *>(context.data),
-                        {false, static_cast<size_t>(FLAGS_max_vector_size)});
+  aos::FlatbufferToJson(
+      builder, channel->schema(), static_cast<const uint8_t *>(context.data),
+      {FLAGS_pretty, static_cast<size_t>(FLAGS_max_vector_size)});
 
   if (context.monotonic_remote_time != context.monotonic_event_time) {
     std::cout << node_name << context.realtime_event_time << " ("
@@ -91,18 +93,20 @@ int main(int argc, char **argv) {
         std::cout << aos::configuration::StrippedChannelToString(channel) << " "
                   << aos::FlatbufferToJson(
                          message.value(),
-                         {.multi_line = false, .max_vector_size = 4})
+                         {.multi_line = FLAGS_pretty, .max_vector_size = 4})
                   << ": "
                   << aos::FlatbufferToJson(
                          channel->schema(),
                          message.value().message().data()->data(),
-                         {false, static_cast<size_t>(FLAGS_max_vector_size)})
+                         {FLAGS_pretty,
+                          static_cast<size_t>(FLAGS_max_vector_size)})
                   << std::endl;
       } else {
         std::cout << aos::configuration::StrippedChannelToString(channel) << " "
                   << aos::FlatbufferToJson(
                          message.value(),
-                         {false, static_cast<size_t>(FLAGS_max_vector_size)})
+                         {FLAGS_pretty,
+                          static_cast<size_t>(FLAGS_max_vector_size)})
                   << std::endl;
       }
     }
@@ -190,9 +194,8 @@ int main(int argc, char **argv) {
         }
 
         printer_event_loop->MakeRawWatcher(
-            channel,
-            [channel, node_name, &builder](const aos::Context &context,
-                                               const void * /*message*/) {
+            channel, [channel, node_name, &builder](const aos::Context &context,
+                                                    const void * /*message*/) {
               PrintMessage(node_name, channel, context, &builder);
             });
         found_channel = true;
