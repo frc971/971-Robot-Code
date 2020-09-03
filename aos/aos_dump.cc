@@ -12,6 +12,8 @@ DEFINE_int32(max_vector_size, 100,
              "If positive, vectors longer than this will not be printed");
 DEFINE_bool(fetch, false,
             "If true, fetch the current message on the channel first");
+DEFINE_bool(pretty, false,
+            "If true, pretty print the messages on multiple lines");
 
 namespace {
 
@@ -23,9 +25,9 @@ void PrintMessage(const aos::Channel *channel, const aos::Context &context,
   // information on stderr.
 
   builder->Reset();
-  aos::FlatbufferToJson(builder, channel->schema(),
-                        static_cast<const uint8_t *>(context.data),
-                        {false, static_cast<size_t>(FLAGS_max_vector_size)});
+  aos::FlatbufferToJson(
+      builder, channel->schema(), static_cast<const uint8_t *>(context.data),
+      {FLAGS_pretty, static_cast<size_t>(FLAGS_max_vector_size)});
 
   if (context.monotonic_remote_time != context.monotonic_event_time) {
     std::cout << context.realtime_remote_time << " ("
