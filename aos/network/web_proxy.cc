@@ -26,11 +26,35 @@ class DummySetSessionDescriptionObserver
 
 }  // namespace
 
-WebsocketHandler::WebsocketHandler(
-    ::seasocks::Server *server,
-    const std::vector<std::unique_ptr<Subscriber>> &subscribers,
-    const aos::FlatbufferDetachedBuffer<aos::Configuration> &config)
-    : server_(server), subscribers_(subscribers), config_(config) {}
+WebsocketHandler::WebsocketHandler(::seasocks::Server *server,
+                                   aos::EventLoop *event_loop)
+    : server_(server),
+      config_(aos::CopyFlatBuffer(event_loop->configuration())) {
+  const bool is_multi_node =
+      aos::configuration::MultiNode(event_loop->configuration());
+  const aos::Node *self =
+      is_multi_node ? aos::configuration::GetMyNode(event_loop->configuration())
+                    : nullptr;
+
+  for (uint i = 0; i < event_loop->configuration()->channels()->size(); ++i) {
+    auto channel = event_loop->configuration()->channels()->Get(i);
+    if (aos::configuration::ChannelIsReadableOnNode(channel, self)) {
+      auto fetcher = event_loop->MakeRawFetcher(channel);
+      subscribers_.emplace_back(
+          std::make_unique<aos::web_proxy::Subscriber>(std::move(fetcher), i));
+    }
+  }
+
+  TimerHandler *const timer = event_loop->AddTimer([this]() {
+    for (auto &subscriber : subscribers_) {
+      subscriber->RunIteration();
+    }
+  });
+
+  event_loop->OnRun([timer, event_loop]() {
+    timer->Setup(event_loop->monotonic_now(), std::chrono::milliseconds(100));
+  });
+}
 
 void WebsocketHandler::onConnect(::seasocks::WebSocket *sock) {
   std::unique_ptr<Connection> conn =
@@ -224,11 +248,6 @@ void Connection::OnMessage(const webrtc::DataBuffer &buffer) {
       flatbuffers::GetRoot<message_bridge::Connect>(buffer.data.data());
   VLOG(2) << "Got a connect message " << aos::FlatbufferToJson(message);
   for (auto &subscriber : subscribers_) {
-    // Make sure the subscriber is for a channel on this node.
-    if (subscriber.get() == nullptr) {
-      VLOG(2) << ": Null subscriber";
-      continue;
-    }
     bool found_match = false;
     for (auto channel : *message->channels_to_transfer()) {
       if (subscriber->Compare(channel)) {

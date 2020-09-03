@@ -2,7 +2,7 @@
 #define AOS_NETWORK_WEB_PROXY_H_
 #include <map>
 #include <set>
-#include "aos/events/shm_event_loop.h"
+#include "aos/events/event_loop.h"
 #include "aos/network/connect_generated.h"
 #include "aos/network/web_proxy_generated.h"
 #include "aos/seasocks/seasocks_logger.h"
@@ -24,10 +24,7 @@ class Subscriber;
 // websocket closes, it deletes the Connection.
 class WebsocketHandler : public ::seasocks::WebSocket::Handler {
  public:
-  WebsocketHandler(
-      ::seasocks::Server *server,
-      const std::vector<std::unique_ptr<Subscriber>> &subscribers,
-      const aos::FlatbufferDetachedBuffer<aos::Configuration> &config);
+  WebsocketHandler(::seasocks::Server *server, aos::EventLoop *event_loop);
   void onConnect(::seasocks::WebSocket *sock) override;
   void onData(::seasocks::WebSocket *sock, const uint8_t *data,
               size_t size) override;
@@ -36,8 +33,8 @@ class WebsocketHandler : public ::seasocks::WebSocket::Handler {
  private:
   std::map<::seasocks::WebSocket *, std::unique_ptr<Connection>> connections_;
   ::seasocks::Server *server_;
-  const std::vector<std::unique_ptr<Subscriber>> &subscribers_;
-  const aos::FlatbufferDetachedBuffer<aos::Configuration> &config_;
+  std::vector<std::unique_ptr<Subscriber>> subscribers_;
+  const aos::FlatbufferDetachedBuffer<aos::Configuration> config_;
 };
 
 // Seasocks requires that sends happen on the correct thread. This class takes a
@@ -62,6 +59,8 @@ class UpdateData : public ::seasocks::Server::Runnable {
 // Represents a fetcher and all the Connections that care about it.
 // Handles building the message and telling each connection to send it.
 // indexed by location of the channel it handles in the config.
+// TODO(james): Make it so that Subscriber can optionally maintain an infinite
+// backlog of messages.
 class Subscriber {
  public:
   Subscriber(std::unique_ptr<RawFetcher> fetcher, int channel_index)

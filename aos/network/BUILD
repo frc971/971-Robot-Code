@@ -338,7 +338,6 @@ cc_binary(
         "-Wno-unused-parameter",
     ],
     data = [
-        "//aos/events:pingpong_config.json",
         "//aos/network/www:files",
         "//aos/network/www:flatbuffers",
         "//aos/network/www:main_bundle",
