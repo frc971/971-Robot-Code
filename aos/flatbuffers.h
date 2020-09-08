@@ -141,7 +141,7 @@ class FlatbufferString : public Flatbuffer<T> {
         std::string(reinterpret_cast<const char *>(other.data()), other.size());
   }
 
-  // Coppies the data from the other flatbuffer.
+  // Copies the data from the other flatbuffer.
   FlatbufferString &operator=(const Flatbuffer<T> &other) {
     data_ = std::string(other.data(), other.size());
     return *this;
