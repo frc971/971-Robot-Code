@@ -667,7 +667,7 @@ TEST_F(MultinodeLoggerTest, MismatchedClocks) {
     const chrono::nanoseconds initial_pi2_offset = -chrono::seconds(1000);
     chrono::nanoseconds pi2_offset = initial_pi2_offset;
 
-    pi2->SetDistributedOffset(pi2_offset);
+    pi2->SetDistributedOffset(-pi2_offset, 1.0);
     LOG(INFO) << "pi2 times: " << pi2->monotonic_now() << " "
               << pi2->realtime_now() << " distributed "
               << pi2->ToDistributedClock(pi2->monotonic_now());
@@ -675,7 +675,7 @@ TEST_F(MultinodeLoggerTest, MismatchedClocks) {
 
     for (int i = 0; i < 95; ++i) {
       pi2_offset += chrono::nanoseconds(200);
-      pi2->SetDistributedOffset(pi2_offset);
+      pi2->SetDistributedOffset(-pi2_offset, 1.0);
       event_loop_factory_.RunFor(chrono::milliseconds(1));
     }
 
@@ -692,7 +692,7 @@ TEST_F(MultinodeLoggerTest, MismatchedClocks) {
 
       for (int i = 0; i < 20000; ++i) {
         pi2_offset += chrono::nanoseconds(200);
-        pi2->SetDistributedOffset(pi2_offset);
+        pi2->SetDistributedOffset(-pi2_offset, 1.0);
         event_loop_factory_.RunFor(chrono::milliseconds(1));
       }
 
@@ -702,7 +702,7 @@ TEST_F(MultinodeLoggerTest, MismatchedClocks) {
 
       for (int i = 0; i < 40000; ++i) {
         pi2_offset -= chrono::nanoseconds(200);
-        pi2->SetDistributedOffset(pi2_offset);
+        pi2->SetDistributedOffset(-pi2_offset, 1.0);
         event_loop_factory_.RunFor(chrono::milliseconds(1));
       }
     }

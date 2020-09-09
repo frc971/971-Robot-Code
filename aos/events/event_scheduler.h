@@ -81,16 +81,20 @@ class EventScheduler {
   // measurement.
   distributed_clock::time_point ToDistributedClock(
       monotonic_clock::time_point time) const {
-    return distributed_clock::epoch() + time.time_since_epoch() +
-           monotonic_offset_;
+    return distributed_clock::epoch() +
+           std::chrono::duration_cast<std::chrono::nanoseconds>(
+               (time.time_since_epoch() - distributed_offset_) /
+               distributed_slope_);
   }
 
   // Takes the distributed time and converts it to the monotonic clock for this
   // node.
   monotonic_clock::time_point FromDistributedClock(
       distributed_clock::time_point time) const {
-    return monotonic_clock::epoch() + time.time_since_epoch() -
-           monotonic_offset_;
+    return monotonic_clock::epoch() +
+           std::chrono::duration_cast<std::chrono::nanoseconds>(
+               time.time_since_epoch() * distributed_slope_) +
+           distributed_offset_;
   }
 
   // Returns the current monotonic time on this node calculated from the
@@ -98,24 +102,31 @@ class EventScheduler {
   inline monotonic_clock::time_point monotonic_now() const;
 
   // Sets the offset between the distributed and monotonic clock.
-  //   distributed = monotonic + offset;
-  void SetDistributedOffset(std::chrono::nanoseconds monotonic_offset) {
-    monotonic_offset_ = monotonic_offset;
-  }
+  //   monotonic = distributed * slope + offset;
+  void SetDistributedOffset(std::chrono::nanoseconds distributed_offset,
+                            double distributed_slope) {
+    // TODO(austin): Use a starting point to improve precision.
+    // TODO(austin): Make slope be the slope of the offset, not the input,
+    // throught the calculation process.
+    distributed_offset_ = distributed_offset;
+    distributed_slope_ = distributed_slope;
 
-  // Returns the offset used to convert to and from the distributed clock.
-  std::chrono::nanoseconds monotonic_offset() const {
-    return monotonic_offset_;
+    // Once we update the offset, now isn't going to be valid anymore.
+    // TODO(austin): Probably should instead use the piecewise linear function
+    // and evaluate it correctly.
+    monotonic_now_valid_ = false;
   }
 
  private:
   friend class EventSchedulerScheduler;
   // Current execution time.
-  monotonic_clock::time_point now_ = monotonic_clock::epoch();
+  bool monotonic_now_valid_ = false;
+  monotonic_clock::time_point monotonic_now_ = monotonic_clock::epoch();
 
   // Offset to the distributed clock.
   //   distributed = monotonic + offset;
-  std::chrono::nanoseconds monotonic_offset_ = std::chrono::seconds(0);
+  std::chrono::nanoseconds distributed_offset_ = std::chrono::seconds(0);
+  double distributed_slope_ = 1.0;
 
   // List of functions to run (once) when running.
   std::vector<std::function<void()>> on_run_;
@@ -184,8 +195,14 @@ class EventSchedulerScheduler {
 
 inline monotonic_clock::time_point EventScheduler::monotonic_now() const {
   // Make sure we stay in sync.
-  CHECK_EQ(now_, FromDistributedClock(scheduler_scheduler_->distributed_now()));
-  return now_;
+  if (monotonic_now_valid_) {
+    CHECK_NEAR(monotonic_now_,
+               FromDistributedClock(scheduler_scheduler_->distributed_now()),
+               std::chrono::nanoseconds(1));
+    return monotonic_now_;
+  } else {
+    return FromDistributedClock(scheduler_scheduler_->distributed_now());
+  }
 }
 
 inline bool EventScheduler::is_running() const {

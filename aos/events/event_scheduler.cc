@@ -44,11 +44,13 @@ aos::monotonic_clock::time_point EventScheduler::OldestEvent() {
 void EventScheduler::CallOldestEvent() {
   CHECK_GT(events_list_.size(), 0u);
   auto iter = events_list_.begin();
-  now_ = iter->first;
+  monotonic_now_ = iter->first;
+  monotonic_now_valid_ = true;
 
   ::std::function<void()> callback = ::std::move(iter->second);
   events_list_.erase(iter);
   callback();
+  monotonic_now_valid_ = false;
 }
 
 void EventScheduler::RunOnRun() {
