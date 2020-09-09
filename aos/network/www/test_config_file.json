@@ -1,0 +1,21 @@
+{
+  "channels": [
+    {
+      "name": "/test",
+      "type": "aos.testing.Configuration",
+      "source_node": "roborio",
+      "frequency": 200
+    },
+    {
+      "name": "/test",
+      "type": "aos.Configuration",
+      "source_node": "roborio",
+      "max_size": 1678,
+      "frequency": 200
+    }
+  ],
+  "channel_storage_duration": 31415,
+  "imports": [
+    "../../../aos/events/aos.json"
+  ]
+}

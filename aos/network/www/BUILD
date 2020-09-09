@@ -1,5 +1,6 @@
 load("@build_bazel_rules_typescript//:defs.bzl", "ts_library")
-load("@build_bazel_rules_nodejs//:defs.bzl", "rollup_bundle")
+load("@build_bazel_rules_nodejs//:defs.bzl", "rollup_bundle", "nodejs_binary")
+load("//aos:config.bzl", "aos_config")
 
 filegroup(
     name = "files",
@@ -55,4 +56,58 @@ genrule(
     ],
     cmd = "cp $(location @com_github_google_flatbuffers//:flatjs) $@",
     visibility = ["//aos:__subpackages__"],
+)
+
+ts_library(
+    name = "reflection_test_main",
+    srcs = [
+        "reflection_test_main.ts",
+    ],
+    deps = [
+        ":reflection_ts",
+        "//aos/network/www:proxy",
+    ],
+)
+
+ts_library(
+    name = "reflection_ts",
+    srcs = ["reflection.ts"],
+    deps =
+        [
+            "//aos:configuration_ts_fbs",
+            "//aos:json_to_flatbuffer_flatbuffer_ts",
+        ],
+)
+
+aos_config(
+    name = "test_config",
+    src = "test_config_file.json",
+    flatbuffers = [
+        "//aos:configuration_fbs",
+        "//aos:json_to_flatbuffer_flatbuffer",
+    ],
+    deps = [
+        "//aos/events:config",
+    ],
+)
+
+rollup_bundle(
+    name = "reflection_test_bundle",
+    entry_point = "aos/network/www/reflection_test_main",
+    deps = [
+        ":reflection_test_main",
+    ],
+)
+
+sh_binary(
+    name = "web_proxy_demo",
+    srcs = ["web_proxy_demo.sh"],
+    data = [
+        ":flatbuffers",
+        ":reflection_test.html",
+        ":reflection_test_bundle",
+        ":test_config.json",
+        "//aos/network:web_proxy_main",
+        "//y2020:config.json",
+    ],
 )
