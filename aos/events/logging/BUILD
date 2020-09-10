@@ -36,11 +36,13 @@ cc_library(
 cc_library(
     name = "logger",
     srcs = [
+        "log_namer.cc",
         "logger.cc",
         "logger_math.cc",
     ],
     hdrs = [
         "eigen_mpq.h",
+        "log_namer.h",
         "logger.h",
     ],
     visibility = ["//visibility:public"],
