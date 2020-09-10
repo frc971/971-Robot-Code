@@ -31,6 +31,42 @@ apt-get install bazel python libtinfo5
 ```
   2. Allow Bazel's sandboxing to work:
      Follow the direction in `doc/frc971.conf`.
+### Setting up access to a workspace on the build server
+  1. Use ssh-keygen to create a public and private key.
+```console
+# IMPORTANT These are the windows instructions.
+cd ~
+ssh-keygen -f .\.ssh\id_971_rsa
+```
+  2. Send the contents of id_971_rsa.pub to Stephan along with the password that you want to use. WAIT for feedback, as he needs to setup the account.
+```console
+cat .\.ssh\id_971_rsa.pub
+# Then send the stuff that gets printed to Stephan via slack.
+```
+  3. Once you hear back from Stephan, test SSH.
+```console
+ssh [user]@build.frc971.org -p 2222 -i ./ssh/id_971_rsa -L 9971:127.0.0.1:3389
+```
+  4. If that doesnt work, then send the error msg to #coding However, if it does then use the `exit` command and then SSH tunnel.
+```console
+ssh [user]@build.frc971.org -p 2222 -i ./ssh/id_971_rsa -L 971:127.0.0.1:3389
+```
+  5. So at this point you run the Remote Desktop app in windows.
+Once you get there, all you need to do is put `127.0.0.1:9971` for the computer name, and use your SVN usrname.
+Once you get connected accept the server certificate, and then enter your password that you gave Stephan. (Its either something unique or your SVN pwd)
+Then select the Default panel config.
+You can exit the Remote Desktop if you are good w/ the raw cmd line interface.
+And for future logins all you have to do is tunnel and then login using the app.
+Now if you have a graphical application that you are developing (ie spline UI), then you have to run the build command in the Remote Desktop application.
+ 
+# ONE VERY IMPORTANT LAST STEP
+In order for you to be able to commit, you need to run this command, replacing <YOUR EMAIL> w/ your email that is in gerrit.
+```console
+git config --global user.email "<YOUR EMAIL>"
+```
+One thing that also needs to be said is that you DO NOT need to do any of the installation steps, or the step w/ `frc971.conf`.
+If there are any questions, use #coding so that other people who may reach the same issue can refer back to that.
+Some people that you can @ would be Het <--Insert your name here if you are pingable-->
 
 ### Some useful Bazel commands:
   * Build and test everything (on the host system):
