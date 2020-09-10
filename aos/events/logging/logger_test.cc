@@ -958,6 +958,31 @@ TEST_F(MultinodeLoggerTest, MismatchedClocks) {
   reader.Deregister();
 }
 
+// Tests that we can sort a bunch of parts into the pre-determined sorted parts.
+TEST_F(MultinodeLoggerTest, SortParts) {
+  // Make a bunch of parts.
+  {
+    LoggerState pi1_logger = MakeLogger(pi1_);
+    LoggerState pi2_logger = MakeLogger(pi2_);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    StartLogger(&pi1_logger);
+    StartLogger(&pi2_logger);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(2000));
+  }
+
+  const std::vector<std::vector<std::string>> sorted_parts =
+      SortParts(logfiles_);
+
+  // Test that each list of parts is in order.  Don't worry about the ordering
+  // between part file lists though.
+  // (inner vectors all need to be in order, but outer one doesn't matter).
+  EXPECT_THAT(sorted_parts,
+              ::testing::UnorderedElementsAreArray(structured_logfiles_));
+}
+
 // TODO(austin): We can write a test which recreates a logfile and confirms that
 // we get it back.  That is the ultimate test.
 

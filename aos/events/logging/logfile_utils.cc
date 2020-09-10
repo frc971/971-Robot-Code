@@ -278,17 +278,34 @@ bool SpanReader::ReadBlock() {
 
 FlatbufferVector<LogFileHeader> ReadHeader(std::string_view filename) {
   SpanReader span_reader(filename);
-  // Make sure we have enough to read the size.
   absl::Span<const uint8_t> config_data = span_reader.ReadMessage();
 
   // Make sure something was read.
   CHECK(config_data != absl::Span<const uint8_t>())
       << ": Failed to read header from: " << filename;
 
-  // And copy the config so we have it forever.
+  // And copy the config so we have it forever, removing the size prefix.
   std::vector<uint8_t> data(
       config_data.begin() + sizeof(flatbuffers::uoffset_t), config_data.end());
   return FlatbufferVector<LogFileHeader>(std::move(data));
+}
+
+FlatbufferVector<MessageHeader> ReadNthMessage(std::string_view filename,
+                                               size_t n) {
+  SpanReader span_reader(filename);
+  absl::Span<const uint8_t> data_span = span_reader.ReadMessage();
+  for (size_t i = 0; i < n + 1; ++i) {
+    data_span = span_reader.ReadMessage();
+
+    // Make sure something was read.
+    CHECK(data_span != absl::Span<const uint8_t>())
+        << ": Failed to read data from: " << filename;
+  }
+
+  // And copy the data so we have it forever.
+  std::vector<uint8_t> data(data_span.begin() + sizeof(flatbuffers::uoffset_t),
+                            data_span.end());
+  return FlatbufferVector<MessageHeader>(std::move(data));
 }
 
 MessageReader::MessageReader(std::string_view filename)

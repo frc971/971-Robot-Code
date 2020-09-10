@@ -375,6 +375,10 @@ class Logger {
   std::vector<NodeState> node_state_;
 };
 
+// Takes a bunch of parts and sorts them based on part_uuid and part_index.
+std::vector<std::vector<std::string>> SortParts(
+    const std::vector<std::string> &parts);
+
 // We end up with one of the following 3 log file types.
 //
 // Single node logged as the source node.

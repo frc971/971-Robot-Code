@@ -568,6 +568,99 @@ void Logger::DoLogData() {
   } while (last_synchronized_time_ + polling_period_ < monotonic_now);
 }
 
+std::vector<std::vector<std::string>> SortParts(
+    const std::vector<std::string> &parts) {
+  // Start by grouping all parts by UUID, and extracting the part index.
+  std::map<std::string, std::vector<std::pair<std::string, int>>> parts_list;
+
+  // Sort part files without UUIDs and part indexes as well.  Extract everything
+  // useful from the log in the first pass, then sort later.
+  struct LogPart {
+    std::string filename;
+    monotonic_clock::time_point start_time;
+    monotonic_clock::time_point first_message_time;
+  };
+
+  std::vector<LogPart> old_parts;
+
+  for (const std::string &part : parts) {
+    FlatbufferVector<LogFileHeader> log_header = ReadHeader(part);
+
+    // Looks like an old log.  No UUID, index, and also single node.  We have
+    // little to no multi-node log files in the wild without part UUIDs and
+    // indexes which we care much about.
+    if (!log_header.message().has_parts_uuid() &&
+        !log_header.message().has_parts_index() &&
+        !log_header.message().has_node()) {
+      LogPart log_part;
+      log_part.filename = part;
+      log_part.start_time = monotonic_clock::time_point(
+          chrono::nanoseconds(log_header.message().monotonic_start_time()));
+      FlatbufferVector<MessageHeader> first_message = ReadNthMessage(part, 0);
+      log_part.first_message_time = monotonic_clock::time_point(
+          chrono::nanoseconds(first_message.message().monotonic_sent_time()));
+      old_parts.emplace_back(std::move(log_part));
+      continue;
+    }
+
+    CHECK(log_header.message().has_parts_uuid());
+    CHECK(log_header.message().has_parts_index());
+
+    const std::string parts_uuid = log_header.message().parts_uuid()->str();
+    auto it = parts_list.find(parts_uuid);
+    if (it == parts_list.end()) {
+      it = parts_list
+               .insert(std::make_pair(
+                   parts_uuid, std::vector<std::pair<std::string, int>>{}))
+               .first;
+    }
+    it->second.emplace_back(
+        std::make_pair(part, log_header.message().parts_index()));
+  }
+
+  CHECK_NE(old_parts.empty(), parts_list.empty())
+      << ": Can't have a mix of old and new parts.";
+
+  if (!old_parts.empty()) {
+    // Confirm they all have the same start time.  Old loggers always used the
+    // same start time.
+    for (const LogPart &p : old_parts) {
+      CHECK_EQ(old_parts[0].start_time, p.start_time);
+    }
+    // Sort by the oldest message in each file.
+    std::sort(old_parts.begin(), old_parts.end(),
+              [](const LogPart &a, const LogPart &b) {
+                return a.first_message_time < b.first_message_time;
+              });
+
+    // Produce the final form.
+    std::vector<std::string> sorted_old_parts;
+    sorted_old_parts.reserve(old_parts.size());
+    for (LogPart &p : old_parts) {
+      sorted_old_parts.emplace_back(std::move(p.filename));
+    }
+    return std::vector<std::vector<std::string>>{std::move(sorted_old_parts)};
+  }
+
+  // Now, sort them and produce the final vector form.
+  std::vector<std::vector<std::string>> result;
+  result.reserve(parts_list.size());
+  for (auto &part : parts_list) {
+    std::sort(part.second.begin(), part.second.end(),
+              [](const std::pair<std::string, int> &a,
+                 const std::pair<std::string, int> &b) {
+                return a.second < b.second;
+              });
+    std::vector<std::string> result_line;
+    result_line.reserve(part.second.size());
+    for (std::pair<std::string, int> &p : part.second) {
+      result_line.emplace_back(std::move(p.first));
+    }
+    result.emplace_back(std::move(result_line));
+  }
+  return result;
+}
+
 LogReader::LogReader(std::string_view filename,
                      const Configuration *replay_configuration)
     : LogReader(std::vector<std::string>{std::string(filename)},
