@@ -171,6 +171,7 @@ TEST_F(LoggerTest, ManyMessages) {
   unlink(logfile.c_str());
 
   LOG(INFO) << "Logging data to " << logfile;
+  ping_.set_quiet(true);
 
   {
     DetachedBufferWriter writer(logfile);
@@ -266,10 +267,9 @@ class MultinodeLoggerTest : public ::testing::Test {
   Pong pong_;
 };
 
-
-// Counts the number of messages on a channel (returns channel, count) for every
-// message matching matcher()
-std::vector<std::pair<int, int>> CountChannelsMatching(
+// Counts the number of messages on a channel.  Returns (channel name, channel
+// type, count) for every message matching matcher()
+std::vector<std::tuple<std::string, std::string, int>> CountChannelsMatching(
     std::string_view filename,
     std::function<bool(const MessageHeader *)> matcher) {
   MessageReader message_reader(filename);
@@ -288,11 +288,14 @@ std::vector<std::pair<int, int>> CountChannelsMatching(
     }
   }
 
-  std::vector<std::pair<int, int>> result;
+  std::vector<std::tuple<std::string, std::string, int>> result;
   int channel = 0;
   for (size_t i = 0; i < counts.size(); ++i) {
     if (counts[i] != 0) {
-      result.push_back(std::make_pair(channel, counts[i]));
+      const Channel *channel =
+          message_reader.log_file_header()->configuration()->channels()->Get(i);
+      result.push_back(std::make_tuple(channel->name()->str(),
+                                       channel->type()->str(), counts[i]));
     }
     ++channel;
   }
@@ -301,7 +304,8 @@ std::vector<std::pair<int, int>> CountChannelsMatching(
 }
 
 // Counts the number of messages (channel, count) for all data messages.
-std::vector<std::pair<int, int>> CountChannelsData(std::string_view filename) {
+std::vector<std::tuple<std::string, std::string, int>> CountChannelsData(
+    std::string_view filename) {
   return CountChannelsMatching(filename, [](const MessageHeader *msg) {
     if (msg->has_data()) {
       CHECK(!msg->has_monotonic_remote_time());
@@ -314,7 +318,7 @@ std::vector<std::pair<int, int>> CountChannelsData(std::string_view filename) {
 }
 
 // Counts the number of messages (channel, count) for all timestamp messages.
-std::vector<std::pair<int, int>> CountChannelsTimestamp(
+std::vector<std::tuple<std::string, std::string, int>> CountChannelsTimestamp(
     std::string_view filename) {
   return CountChannelsMatching(filename, [](const MessageHeader *msg) {
     if (!msg->has_data()) {
@@ -350,27 +354,35 @@ TEST_F(MultinodeLoggerTest, SimpleMultiNode) {
     FlatbufferVector<LogFileHeader> logheader3 = ReadHeader(logfiles_[2]);
     EXPECT_EQ(logheader3.message().node()->name()->string_view(), "pi2");
 
+    using ::testing::UnorderedElementsAre;
+
     // Timing reports, pings
     EXPECT_THAT(CountChannelsData(logfiles_[0]),
-                ::testing::ElementsAre(::testing::Pair(1, 40),
-                                       ::testing::Pair(4, 2001)));
+                UnorderedElementsAre(
+                    std::make_tuple("/pi1/aos", "aos.timing.Report", 40),
+                    std::make_tuple("/test", "aos.examples.Ping", 2001)));
     // Timestamps for pong
     EXPECT_THAT(CountChannelsTimestamp(logfiles_[0]),
-                ::testing::ElementsAre(::testing::Pair(5, 2001)));
+                UnorderedElementsAre(
+                    std::make_tuple("/test", "aos.examples.Pong", 2001)));
 
     // Pong data.
     EXPECT_THAT(CountChannelsData(logfiles_[1]),
-                ::testing::ElementsAre(::testing::Pair(5, 2001)));
+                UnorderedElementsAre(
+                    std::make_tuple("/test", "aos.examples.Pong", 2001)));
+
     // No timestamps
-    EXPECT_THAT(CountChannelsTimestamp(logfiles_[1]), ::testing::ElementsAre());
+    EXPECT_THAT(CountChannelsTimestamp(logfiles_[1]), UnorderedElementsAre());
 
     // Timing reports and pongs.
     EXPECT_THAT(CountChannelsData(logfiles_[2]),
-                ::testing::ElementsAre(::testing::Pair(3, 40),
-                                       ::testing::Pair(5, 2001)));
+                UnorderedElementsAre(
+                    std::make_tuple("/pi2/aos", "aos.timing.Report", 40),
+                    std::make_tuple("/test", "aos.examples.Pong", 2001)));
     // And ping timestamps.
     EXPECT_THAT(CountChannelsTimestamp(logfiles_[2]),
-                ::testing::ElementsAre(::testing::Pair(4, 2001)));
+                UnorderedElementsAre(
+                    std::make_tuple("/test", "aos.examples.Ping", 2001)));
   }
 
   LogReader reader({std::vector<std::string>{logfiles_[0]},
@@ -672,13 +684,11 @@ TEST_F(MultinodeLoggerTest, MismatchedClocks) {
               << pi2->realtime_now() << " distributed "
               << pi2->ToDistributedClock(pi2->monotonic_now());
 
-
     for (int i = 0; i < 95; ++i) {
       pi2_offset += chrono::nanoseconds(200);
       pi2->SetDistributedOffset(-pi2_offset, 1.0);
       event_loop_factory_.RunFor(chrono::milliseconds(1));
     }
-
 
     StartLogger(&pi2_logger);
 
@@ -721,17 +731,18 @@ TEST_F(MultinodeLoggerTest, MismatchedClocks) {
   // log file.
   reader.Register(&log_reader_factory);
 
-
   const Node *pi1 =
       configuration::GetNode(log_reader_factory.configuration(), "pi1");
   const Node *pi2 =
       configuration::GetNode(log_reader_factory.configuration(), "pi2");
 
   LOG(INFO) << "Done registering (pi1) "
-            << log_reader_factory.GetNodeEventLoopFactory(pi1)->monotonic_now() << " "
+            << log_reader_factory.GetNodeEventLoopFactory(pi1)->monotonic_now()
+            << " "
             << log_reader_factory.GetNodeEventLoopFactory(pi1)->realtime_now();
   LOG(INFO) << "Done registering (pi2) "
-            << log_reader_factory.GetNodeEventLoopFactory(pi2)->monotonic_now() << " "
+            << log_reader_factory.GetNodeEventLoopFactory(pi2)->monotonic_now()
+            << " "
             << log_reader_factory.GetNodeEventLoopFactory(pi2)->realtime_now();
 
   EXPECT_THAT(reader.Nodes(), ::testing::ElementsAre(pi1, pi2));

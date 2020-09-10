@@ -374,19 +374,23 @@ class LogReader {
   Eigen::Matrix<double, Eigen::Dynamic, 1> SolveOffsets();
 
   // State per node.
-  struct State {
-    // Log file.
-    std::unique_ptr<ChannelMerger> channel_merger;
-    // Senders.
-    std::vector<std::unique_ptr<RawSender>> channels;
+  class State {
+   public:
+    State(std::unique_ptr<ChannelMerger> channel_merger);
 
-    // Factory (if we are in sim) that this loop was created on.
-    NodeEventLoopFactory *node_event_loop_factory = nullptr;
-    std::unique_ptr<EventLoop> event_loop_unique_ptr;
-    // Event loop.
-    EventLoop *event_loop = nullptr;
-    // And timer used to send messages.
-    TimerHandler *timer_handler;
+    // Returns the timestamps, channel_index, and message from a channel.
+    // update_time (will be) set to true when popping this message causes the
+    // filter to change the time offset estimation function.
+    std::tuple<TimestampMerger::DeliveryTimestamp, int,
+               FlatbufferVector<MessageHeader>>
+    PopOldest(bool *update_time);
+
+    // Returns the monotonic time of the oldest message.
+    monotonic_clock::time_point OldestMessageTime() const;
+
+    // Primes the queues inside State.  Should be called before calling
+    // OldestMessageTime.
+    void SeedSortedMessages();
 
     // Updates the timestamp filter with the timestamp.  Returns true if the
     // provided timestamp was actually a forwarding timestamp and used, and
@@ -395,16 +399,131 @@ class LogReader {
         const TimestampMerger::DeliveryTimestamp &channel_timestamp,
         int channel_index);
 
+    // Returns the starting time for this node.
+    monotonic_clock::time_point monotonic_start_time() const {
+      return channel_merger_->monotonic_start_time();
+    }
+    realtime_clock::time_point realtime_start_time() const {
+      return channel_merger_->realtime_start_time();
+    }
+
+    // Sets the node event loop factory for replaying into a
+    // SimulatedEventLoopFactory.  Returns the EventLoop to use.
+    EventLoop *SetNodeEventLoopFactory(
+        NodeEventLoopFactory *node_event_loop_factory);
+
+    // Sets and gets the event loop to use.
+    void set_event_loop(EventLoop *event_loop) { event_loop_ = event_loop; }
+    EventLoop *event_loop() { return event_loop_; }
+
+    // Returns the oldest timestamp for the provided channel.  This should only
+    // be called before SeedSortedMessages();
+    TimestampMerger::DeliveryTimestamp OldestTimestampForChannel(
+        size_t channel) {
+      return channel_merger_->OldestTimestampForChannel(channel);
+    }
+
+    // Sets the current realtime offset from the monotonic clock for this node
+    // (if we are on a simulated event loop).
+    void SetRealtimeOffset(monotonic_clock::time_point monotonic_time,
+                           realtime_clock::time_point realtime_time) {
+      if (node_event_loop_factory_ != nullptr) {
+        node_event_loop_factory_->SetRealtimeOffset(monotonic_time,
+                                                    realtime_time);
+      }
+    }
+
+    // Converts a timestamp from the monotonic clock on this node to the
+    // distributed clock.
+    distributed_clock::time_point ToDistributedClock(
+        monotonic_clock::time_point time) {
+      return node_event_loop_factory_->ToDistributedClock(time);
+    }
+
+    // Sets the offset (and slope) from the distributed clock.
+    void SetDistributedOffset(std::chrono::nanoseconds distributed_offset,
+                              double distributed_slope) {
+      node_event_loop_factory_->SetDistributedOffset(distributed_offset,
+                                                     distributed_slope);
+    }
+
+    // Returns the current time on the remote node which sends messages on
+    // channel_index.
+    monotonic_clock::time_point monotonic_remote_now(size_t channel_index) {
+      return channel_target_event_loop_factory_[channel_index]->monotonic_now();
+    }
+
+    // Sets the node we will be merging as, and returns true if there is any
+    // data on it.
+    bool SetNode() { return channel_merger_->SetNode(event_loop_->node()); }
+
+    // Sets the number of channels.
+    void SetChannelCount(size_t count);
+
+    // Sets the sender, filter, and target factory for a channel.
+    void SetChannel(
+        size_t channel, std::unique_ptr<RawSender> sender,
+        std::tuple<message_bridge::ClippedAverageFilter *, bool> filter,
+        NodeEventLoopFactory *channel_target_event_loop_factory);
+
+    // Returns if we have read all the messages from all the logs.
+    bool at_end() const { return channel_merger_->at_end(); }
+
+    // Unregisters everything so we can destory the event loop.
+    void Deregister();
+
+    // Sets the current TimerHandle for the replay callback.
+    void set_timer_handler(TimerHandler *timer_handler) {
+      timer_handler_ = timer_handler;
+    }
+
+    // Sets the next wakeup time on the replay callback.
+    void Setup(monotonic_clock::time_point next_time) {
+      timer_handler_->Setup(next_time);
+    }
+
+    // Sends a buffer on the provided channel index.
+    bool Send(size_t channel_index, const void *data, size_t size,
+              aos::monotonic_clock::time_point monotonic_remote_time,
+              aos::realtime_clock::time_point realtime_remote_time,
+              uint32_t remote_queue_index) {
+      return channels_[channel_index]->Send(data, size, monotonic_remote_time,
+                                            realtime_remote_time,
+                                            remote_queue_index);
+    }
+
+    // Returns a debug string for the channel merger.
+    std::string DebugString() const { return channel_merger_->DebugString(); }
+
+   private:
+    // Log file.
+    std::unique_ptr<ChannelMerger> channel_merger_;
+
+    std::deque<std::tuple<TimestampMerger::DeliveryTimestamp, int,
+                          FlatbufferVector<MessageHeader>>>
+        sorted_messages_;
+
+    // Senders.
+    std::vector<std::unique_ptr<RawSender>> channels_;
+
+    // Factory (if we are in sim) that this loop was created on.
+    NodeEventLoopFactory *node_event_loop_factory_ = nullptr;
+    std::unique_ptr<EventLoop> event_loop_unique_ptr_;
+    // Event loop.
+    EventLoop *event_loop_ = nullptr;
+    // And timer used to send messages.
+    TimerHandler *timer_handler_;
+
     // Filters (or nullptr if it isn't a forwarded channel) for each channel.
     // This corresponds to the object which is shared among all the channels
     // going between 2 nodes.  The second element in the tuple indicates if this
     // is the primary direction or not.
     std::vector<std::tuple<message_bridge::ClippedAverageFilter *, bool>>
-        filters;
+        filters_;
 
     // List of NodeEventLoopFactorys (or nullptr if it isn't a forwarded
     // channel) which correspond to the originating node.
-    std::vector<NodeEventLoopFactory *> channel_target_event_loop_factory;
+    std::vector<NodeEventLoopFactory *> channel_target_event_loop_factory_;
   };
 
   // Node index -> State.

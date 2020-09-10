@@ -131,6 +131,9 @@ aos_config(
     flatbuffers = [
         "//aos/events:ping_fbs",
         "//aos/events:pong_fbs",
+        "//aos/network:message_bridge_client_fbs",
+        "//aos/network:message_bridge_server_fbs",
+        "//aos/network:timestamp_fbs",
     ],
     deps = ["//aos/events:config"],
 )

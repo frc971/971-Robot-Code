@@ -570,7 +570,7 @@ class ChannelMerger {
   // Everything else needs the node set before it works.
 
   // Returns a timestamp for the oldest message in this group of logfiles.
-  monotonic_clock::time_point OldestMessage() const;
+  monotonic_clock::time_point OldestMessageTime() const;
   // Pops the oldest message.
   std::tuple<TimestampMerger::DeliveryTimestamp, int,
              FlatbufferVector<MessageHeader>>

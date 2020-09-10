@@ -7,8 +7,8 @@
 #include "aos/events/logging/logger_generated.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/network/connect_generated.h"
-#include "aos/network/timestamp_filter.h"
 #include "aos/network/message_bridge_client_generated.h"
+#include "aos/network/message_bridge_client_status.h"
 #include "aos/network/sctp_client.h"
 #include "aos/network/sctp_lib.h"
 
@@ -25,7 +25,8 @@ class SctpClientConnection {
                        std::string_view remote_name, const Node *my_node,
                        std::string_view local_host,
                        std::vector<std::unique_ptr<aos::RawSender>> *channels,
-                       ClientConnection *connection);
+                       int client_index,
+                       MessageBridgeClientStatus *client_status);
 
   ~SctpClientConnection() { event_loop_->epoll()->DeleteFd(client_.fd()); }
 
@@ -70,16 +71,15 @@ class SctpClientConnection {
   // Timer which fires to handle reconnections.
   aos::TimerHandler *connect_timer_;
 
-  // ClientConnection statistics message to modify.  This will be published
-  // periodicially.
-  ClientConnection *connection_;
-
   // id of the server once known.  This is only valid if connection_ says
   // connected.
   sctp_assoc_t remote_assoc_id_ = 0;
 
-  // Filter for the timestamp offset for this connection.
-  TimestampFilter filter_;
+  // ClientConnection statistics message to modify.  This will be published
+  // periodicially.
+  MessageBridgeClientStatus *client_status_;
+  int client_index_;
+  ClientConnection *connection_;
 };
 
 // This encapsulates the state required to talk to *all* the servers from this
@@ -91,24 +91,10 @@ class MessageBridgeClient {
   ~MessageBridgeClient() {}
 
  private:
-  // Sends out the statistics that are continually updated by the
-  // SctpClientConnections.
-  void SendStatistics();
-
   // Event loop to schedule everything on.
   aos::ShmEventLoop *event_loop_;
-  // Sender to publish statistics on.
-  aos::Sender<ClientStatistics> sender_;
-  aos::TimerHandler *statistics_timer_;
 
-  // Nodes to receive data from.
-  const std::vector<std::string_view> source_node_names_;
-
-  // Data to publish.
-  FlatbufferDetachedBuffer<ClientStatistics> statistics_;
-  // Reserved memory for the client connection offsets to reduce heap
-  // allocations.
-  std::vector<flatbuffers::Offset<ClientConnection>> client_connection_offsets_;
+  MessageBridgeClientStatus client_status_;
 
   // Channels to send data over.
   std::vector<std::unique_ptr<aos::RawSender>> channels_;

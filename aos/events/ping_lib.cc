@@ -49,14 +49,14 @@ void Ping::HandlePong(const examples::Pong &pong) {
   const chrono::nanoseconds round_trip_time =
       monotonic_now - monotonic_send_time;
 
-  if (last_pong_value_ + 1 != pong.value()) {
+  if (last_pong_value_ + 1 != pong.value() && (!quiet_ || VLOG_IS_ON(1))) {
     LOG(WARNING) << "Pong message lost";
   }
 
   if (pong.value() == count_) {
     VLOG(1) << "Elapsed time " << round_trip_time.count() << " ns "
             << FlatbufferToJson(&pong);
-  } else {
+  } else if (!quiet_ || VLOG_IS_ON(1)) {
     LOG(WARNING) << "Missmatched pong message, got " << FlatbufferToJson(&pong)
                  << " expected " << count_;
   }

@@ -986,7 +986,13 @@ void SimulatedEventLoopFactory::Run() {
 }
 
 void SimulatedEventLoopFactory::DisableForwarding(const Channel *channel) {
+  CHECK(bridge_) << ": Can't disable forwarding without a message bridge.";
   bridge_->DisableForwarding(channel);
+}
+
+void SimulatedEventLoopFactory::DisableStatistics() {
+  CHECK(bridge_) << ": Can't disable statistics without a message bridge.";
+  bridge_->DisableStatistics();
 }
 
 }  // namespace aos

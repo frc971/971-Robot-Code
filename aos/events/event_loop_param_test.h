@@ -103,14 +103,58 @@ class EventLoopTestFactory {
     static const std::string kJson = R"config({
   "channels": [
     {
-      "name": "/aos/me",
+      "name": "/me/aos",
       "type": "aos.logging.LogMessageFbs",
       "source_node": "me"
     },
     {
-      "name": "/aos/them",
+      "name": "/them/aos",
       "type": "aos.logging.LogMessageFbs",
       "source_node": "them"
+    },
+    {
+      "name": "/me/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "me",
+      "destination_nodes": [
+        {
+          "name": "them"
+        }
+      ]
+    },
+    {
+      "name": "/them/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "them",
+      "destination_nodes": [
+        {
+          "name": "me"
+        }
+      ]
+    },
+    {
+      "name": "/me/aos",
+      "type": "aos.message_bridge.ServerStatistics",
+      "source_node": "me",
+      "frequency": 2
+    },
+    {
+      "name": "/them/aos",
+      "type": "aos.message_bridge.ServerStatistics",
+      "source_node": "them",
+      "frequency": 2
+    },
+    {
+      "name": "/me/aos",
+      "type": "aos.message_bridge.ClientStatistics",
+      "source_node": "me",
+      "frequency": 2
+    },
+    {
+      "name": "/them/aos",
+      "type": "aos.message_bridge.ClientStatistics",
+      "source_node": "them",
+      "frequency": 2
     },
     {
       "name": "/aos",
@@ -146,29 +190,28 @@ class EventLoopTestFactory {
   "maps": [
     {
       "match": {
-        "name": "/aos",
-        "type": "aos.logging.LogMessageFbs",
+        "name": "/aos*",
         "source_node": "me"
       },
       "rename": {
-        "name": "/aos/me"
+        "name": "/me/aos"
       }
     },
     {
       "match": {
-        "name": "/aos",
-        "type": "aos.logging.LogMessageFbs",
+        "name": "/aos*",
         "source_node": "them"
       },
       "rename": {
-        "name": "/aos/them"
+        "name": "/them/aos"
       }
     }
   ]
 })config";
 
-    flatbuffer_ = FlatbufferDetachedBuffer<Configuration>(
-        JsonToFlatbuffer(kJson, Configuration::MiniReflectTypeTable()));
+    flatbuffer_ = configuration::MergeConfiguration(
+        FlatbufferDetachedBuffer<Configuration>(
+            JsonToFlatbuffer(kJson, Configuration::MiniReflectTypeTable())));
 
     my_node_ = configuration::GetNode(&flatbuffer_.message(), my_node);
   }
