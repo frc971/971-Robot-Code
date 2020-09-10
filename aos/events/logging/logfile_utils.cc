@@ -377,12 +377,44 @@ SplitMessageReader::SplitMessageReader(
       }
     }
 
+    // We don't have a good way to set the realtime start time on remote nodes.
+    // Confirm it remains consistent.
+    CHECK_EQ(log_file_header_.mutable_message()->has_realtime_start_time(),
+             message_reader.log_file_header()->has_realtime_start_time());
+
+    // Parts index will *not* match unless we set them to match.  We only want
+    // to accept the start time and parts mismatching, so set them.
+    log_file_header_.mutable_message()->mutate_parts_index(
+        message_reader.log_file_header()->parts_index());
+
     // Now compare that the headers match.
-    CHECK(CompareFlatBuffer(message_reader.raw_log_file_header(),
-                            log_file_header_))
-        << ": Header is different between log file chunks " << filenames_[0]
-        << " and " << filenames_[i] << ", this is not supported.";
+    if (!CompareFlatBuffer(message_reader.raw_log_file_header(),
+                           log_file_header_)) {
+      if (message_reader.log_file_header()->has_logger_uuid() &&
+          log_file_header_.message().has_logger_uuid() &&
+          message_reader.log_file_header()->logger_uuid()->string_view() !=
+              log_file_header_.message().logger_uuid()->string_view()) {
+        LOG(FATAL) << "Logger UUIDs don't match between log file chunks "
+                   << filenames_[0] << " and " << filenames_[i]
+                   << ", this is not supported.";
+      }
+      if (message_reader.log_file_header()->has_parts_uuid() &&
+          log_file_header_.message().has_parts_uuid() &&
+          message_reader.log_file_header()->parts_uuid()->string_view() !=
+              log_file_header_.message().parts_uuid()->string_view()) {
+        LOG(FATAL) << "Parts UUIDs don't match between log file chunks "
+                   << filenames_[0] << " and " << filenames_[i]
+                   << ", this is not supported.";
+      }
+
+      LOG(FATAL) << "Header is different between log file chunks "
+                 << filenames_[0] << " and " << filenames_[i]
+                 << ", this is not supported.";
+    }
   }
+  // Put the parts index back to the first log file chunk.
+  log_file_header_.mutable_message()->mutate_parts_index(
+      message_reader_->log_file_header()->parts_index());
 
   // Setup per channel state.
   channels_.resize(configuration()->channels()->size());
@@ -429,11 +461,22 @@ bool SplitMessageReader::NextLogFile() {
   // We can't support the config diverging between two log file headers.  See if
   // they are the same.
   if (next_filename_index_ != 0) {
+    // In order for the headers to identically compare, they need to have the
+    // same parts_index.  Rewrite the saved header with the new parts_index,
+    // compare, and then restore.
+    const int32_t original_parts_index =
+        log_file_header_.message().parts_index();
+    log_file_header_.mutable_message()->mutate_parts_index(
+        message_reader_->log_file_header()->parts_index());
+
     CHECK(CompareFlatBuffer(message_reader_->raw_log_file_header(),
                             log_file_header_))
         << ": Header is different between log file chunks "
         << filenames_[next_filename_index_] << " and "
         << filenames_[next_filename_index_ - 1] << ", this is not supported.";
+
+    log_file_header_.mutable_message()->mutate_parts_index(
+        original_parts_index);
   }
 
   ++next_filename_index_;

@@ -47,6 +47,7 @@ cc_library(
     deps = [
         ":logfile_utils",
         ":logger_fbs",
+        ":uuid",
         "//aos/events:event_loop",
         "//aos/events:simulated_event_loop",
         "//aos/network:message_bridge_server_fbs",
@@ -155,6 +156,21 @@ cc_test(
         "//aos/events:ping_lib",
         "//aos/events:pong_lib",
         "//aos/events:simulated_event_loop",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
+    name = "uuid",
+    srcs = ["uuid.cc"],
+    hdrs = ["uuid.h"],
+)
+
+cc_test(
+    name = "uuid_test",
+    srcs = ["uuid_test.cc"],
+    deps = [
+        ":uuid",
         "//aos/testing:googletest",
     ],
 )

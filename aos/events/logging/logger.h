@@ -14,6 +14,7 @@
 #include "aos/events/logging/eigen_mpq.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
+#include "aos/events/logging/uuid.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/timestamp_filter.h"
@@ -30,7 +31,7 @@ class LogNamer {
   virtual ~LogNamer() {}
 
   virtual void WriteHeader(
-      const aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> &header,
+      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
       const Node *node) = 0;
   virtual DetachedBufferWriter *MakeWriter(const Channel *channel) = 0;
 
@@ -39,13 +40,16 @@ class LogNamer {
       const Channel *channel, const Node *node) = 0;
   virtual void Rotate(
       const Node *node,
-      const aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader>
-          &header) = 0;
+      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header) = 0;
   const std::vector<const Node *> &nodes() const { return nodes_; }
 
   const Node *node() const { return node_; }
 
  protected:
+  void UpdateHeader(
+      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
+      const UUID &uuid, int part_id);
+
   const Node *const node_;
   std::vector<const Node *> nodes_;
 };
@@ -53,13 +57,17 @@ class LogNamer {
 class LocalLogNamer : public LogNamer {
  public:
   LocalLogNamer(std::string_view base_name, const Node *node)
-      : LogNamer(node), base_name_(base_name), data_writer_(OpenDataWriter()) {}
+      : LogNamer(node),
+        base_name_(base_name),
+        uuid_(UUID::Random()),
+        data_writer_(OpenDataWriter()) {}
 
   void WriteHeader(
-      const aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> &header,
+      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
       const Node *node) override {
     CHECK_EQ(node, this->node());
-    data_writer_->WriteSizedFlatbuffer(header.full_span());
+    UpdateHeader(header, uuid_, part_number_);
+    data_writer_->WriteSizedFlatbuffer(header->full_span());
   }
 
   DetachedBufferWriter *MakeWriter(const Channel *channel) override {
@@ -68,12 +76,13 @@ class LocalLogNamer : public LogNamer {
   }
 
   void Rotate(const Node *node,
-              const aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader>
-                  &header) override {
+              aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header)
+      override {
     CHECK(node == this->node());
     ++part_number_;
     *data_writer_ = std::move(*OpenDataWriter());
-    data_writer_->WriteSizedFlatbuffer(header.full_span());
+    UpdateHeader(header, uuid_, part_number_);
+    data_writer_->WriteSizedFlatbuffer(header->full_span());
   }
 
   DetachedBufferWriter *MakeTimestampWriter(const Channel *channel) override {
@@ -98,6 +107,7 @@ class LocalLogNamer : public LogNamer {
         absl::StrCat(base_name_, ".part", part_number_, ".bfbs"));
   }
   const std::string base_name_;
+  const UUID uuid_;
   size_t part_number_ = 0;
   std::unique_ptr<DetachedBufferWriter> data_writer_;
 };
@@ -111,17 +121,18 @@ class MultiNodeLogNamer : public LogNamer {
       : LogNamer(node),
         base_name_(base_name),
         configuration_(configuration),
+        uuid_(UUID::Random()),
         data_writer_(OpenDataWriter()) {}
 
   // Writes the header to all log files for a specific node.  This function
   // needs to be called after all the writers are created.
   void WriteHeader(
-      const aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> &header,
+      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
       const Node *node) override;
 
   void Rotate(const Node *node,
-              const aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader>
-                  &header) override;
+              aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header)
+      override;
 
   // Makes a data logger for a specific channel.
   DetachedBufferWriter *MakeWriter(const Channel *channel) override {
@@ -221,6 +232,7 @@ class MultiNodeLogNamer : public LogNamer {
     std::unique_ptr<DetachedBufferWriter> writer = nullptr;
     const Node *node;
     size_t part_number = 0;
+    UUID uuid = UUID::Random();
     std::function<void(const Channel *, DataWriter *)> rotate;
   };
 
@@ -258,6 +270,7 @@ class MultiNodeLogNamer : public LogNamer {
 
   const std::string base_name_;
   const Configuration *const configuration_;
+  const UUID uuid_;
 
   size_t part_number_ = 0;
 
@@ -303,6 +316,7 @@ class Logger {
   void LogUntil(monotonic_clock::time_point t);
 
   EventLoop *event_loop_;
+  const UUID uuid_;
   std::unique_ptr<LogNamer> log_namer_;
 
   // Structure to track both a fetcher, and if the data fetched has been

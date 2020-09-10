@@ -125,6 +125,23 @@ TEST_F(LoggerTest, RotatedLogFile) {
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
   }
 
+  {
+    // Confirm that the UUIDs match for both the parts and the logger, and the
+    // parts_index increments.
+    std::vector<FlatbufferVector<LogFileHeader>> log_header;
+    for (std::string_view f : {logfile0, logfile1}) {
+      log_header.emplace_back(ReadHeader(f));
+    }
+
+    EXPECT_EQ(log_header[0].message().logger_uuid()->string_view(),
+              log_header[1].message().logger_uuid()->string_view());
+    EXPECT_EQ(log_header[0].message().parts_uuid()->string_view(),
+              log_header[1].message().parts_uuid()->string_view());
+
+    EXPECT_EQ(log_header[0].message().parts_index(), 0);
+    EXPECT_EQ(log_header[1].message().parts_index(), 1);
+  }
+
   // Even though it doesn't make any difference here, exercise the logic for
   // passing in a separate config.
   LogReader reader(std::vector<std::string>{logfile0, logfile1},
@@ -375,16 +392,50 @@ TEST_F(MultinodeLoggerTest, SimpleMultiNode) {
   }
 
   {
-    // Confirm that the headers are all for the correct nodes.
-    FlatbufferVector<LogFileHeader> logheader1 = ReadHeader(logfiles_[0]);
-    EXPECT_EQ(logheader1.message().node()->name()->string_view(), "pi1");
-    FlatbufferVector<LogFileHeader> logheader2 = ReadHeader(logfiles_[1]);
-    EXPECT_EQ(logheader2.message().node()->name()->string_view(), "pi2");
-    FlatbufferVector<LogFileHeader> logheader3 = ReadHeader(logfiles_[2]);
-    EXPECT_EQ(logheader3.message().node()->name()->string_view(), "pi2");
-    FlatbufferVector<LogFileHeader> logheader4 = ReadHeader(logfiles_[3]);
-    EXPECT_EQ(logheader4.message().node()->name()->string_view(), "pi2");
+    std::set<std::string> logfile_uuids;
+    std::set<std::string> parts_uuids;
+    // Confirm that we have the expected number of UUIDs for both the logfile
+    // UUIDs and parts UUIDs.
+    std::vector<FlatbufferVector<LogFileHeader>> log_header;
+    for (std::string_view f : logfiles_) {
+      log_header.emplace_back(ReadHeader(f));
+      logfile_uuids.insert(log_header.back().message().logger_uuid()->str());
+      parts_uuids.insert(log_header.back().message().parts_uuid()->str());
+    }
 
+    EXPECT_EQ(logfile_uuids.size(), 2u);
+    EXPECT_EQ(parts_uuids.size(), 7u);
+
+    // And confirm everything is on the correct node.
+    EXPECT_EQ(log_header[0].message().node()->name()->string_view(), "pi1");
+    EXPECT_EQ(log_header[1].message().node()->name()->string_view(), "pi2");
+    EXPECT_EQ(log_header[2].message().node()->name()->string_view(), "pi2");
+    EXPECT_EQ(log_header[3].message().node()->name()->string_view(), "pi2");
+    EXPECT_EQ(log_header[4].message().node()->name()->string_view(), "pi2");
+    EXPECT_EQ(log_header[5].message().node()->name()->string_view(), "pi2");
+    EXPECT_EQ(log_header[6].message().node()->name()->string_view(), "pi1");
+    EXPECT_EQ(log_header[7].message().node()->name()->string_view(), "pi1");
+    EXPECT_EQ(log_header[8].message().node()->name()->string_view(), "pi1");
+    EXPECT_EQ(log_header[9].message().node()->name()->string_view(), "pi1");
+    EXPECT_EQ(log_header[10].message().node()->name()->string_view(), "pi2");
+    EXPECT_EQ(log_header[11].message().node()->name()->string_view(), "pi2");
+
+    // And the parts index matches.
+    EXPECT_EQ(log_header[0].message().parts_index(), 0);
+    EXPECT_EQ(log_header[1].message().parts_index(), 0);
+    EXPECT_EQ(log_header[2].message().parts_index(), 1);
+    EXPECT_EQ(log_header[3].message().parts_index(), 0);
+    EXPECT_EQ(log_header[4].message().parts_index(), 0);
+    EXPECT_EQ(log_header[5].message().parts_index(), 1);
+    EXPECT_EQ(log_header[6].message().parts_index(), 0);
+    EXPECT_EQ(log_header[7].message().parts_index(), 1);
+    EXPECT_EQ(log_header[8].message().parts_index(), 0);
+    EXPECT_EQ(log_header[9].message().parts_index(), 1);
+    EXPECT_EQ(log_header[10].message().parts_index(), 0);
+    EXPECT_EQ(log_header[11].message().parts_index(), 1);
+  }
+
+  {
     using ::testing::UnorderedElementsAre;
 
     // Timing reports, pings

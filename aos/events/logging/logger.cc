@@ -12,6 +12,7 @@
 #include "absl/types/span.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/logger_generated.h"
+#include "aos/events/logging/uuid.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/network/team_number.h"
 #include "aos/time/time.h"
@@ -34,16 +35,30 @@ namespace aos {
 namespace logger {
 namespace chrono = std::chrono;
 
+void LogNamer::UpdateHeader(
+    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
+    const UUID &uuid, int parts_index) {
+  header->mutable_message()->mutate_parts_index(parts_index);
+  CHECK_EQ(uuid.string_view().size(),
+           header->mutable_message()->mutable_parts_uuid()->size());
+  std::copy(uuid.string_view().begin(), uuid.string_view().end(),
+            reinterpret_cast<char *>(
+                header->mutable_message()->mutable_parts_uuid()->Data()));
+}
+
 void MultiNodeLogNamer::WriteHeader(
-    const aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> &header,
+    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
     const Node *node) {
   if (node == this->node()) {
-    data_writer_->WriteSizedFlatbuffer(header.full_span());
+    UpdateHeader(header, uuid_, part_number_);
+    data_writer_->WriteSizedFlatbuffer(header->full_span());
   } else {
     for (std::pair<const Channel *const, DataWriter> &data_writer :
          data_writers_) {
       if (node == data_writer.second.node) {
-        data_writer.second.writer->WriteSizedFlatbuffer(header.full_span());
+        UpdateHeader(header, data_writer.second.uuid,
+                     data_writer.second.part_number);
+        data_writer.second.writer->WriteSizedFlatbuffer(header->full_span());
       }
     }
   }
@@ -51,18 +66,21 @@ void MultiNodeLogNamer::WriteHeader(
 
 void MultiNodeLogNamer::Rotate(
     const Node *node,
-    const aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> &header) {
+    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header) {
   if (node == this->node()) {
     ++part_number_;
     *data_writer_ = std::move(*OpenDataWriter());
-    data_writer_->WriteSizedFlatbuffer(header.full_span());
+    UpdateHeader(header, uuid_, part_number_);
+    data_writer_->WriteSizedFlatbuffer(header->full_span());
   } else {
     for (std::pair<const Channel *const, DataWriter> &data_writer :
          data_writers_) {
       if (node == data_writer.second.node) {
         ++data_writer.second.part_number;
         data_writer.second.rotate(data_writer.first, &data_writer.second);
-        data_writer.second.writer->WriteSizedFlatbuffer(header.full_span());
+        UpdateHeader(header, data_writer.second.uuid,
+                     data_writer.second.part_number);
+        data_writer.second.writer->WriteSizedFlatbuffer(header->full_span());
       }
     }
   }
@@ -76,6 +94,7 @@ Logger::Logger(std::string_view base_name, EventLoop *event_loop,
 Logger::Logger(std::unique_ptr<LogNamer> log_namer, EventLoop *event_loop,
                std::chrono::milliseconds polling_period)
     : event_loop_(event_loop),
+      uuid_(UUID::Random()),
       log_namer_(std::move(log_namer)),
       timer_handler_(event_loop_->AddTimer([this]() { DoLogData(); })),
       polling_period_(polling_period),
@@ -246,7 +265,7 @@ void Logger::WriteHeader() {
         configuration::GetNodeIndex(event_loop_->configuration(), node);
     MaybeUpdateTimestamp(node, node_index, monotonic_start_time,
                          realtime_start_time);
-    log_namer_->WriteHeader(node_state_[node_index].log_file_header, node);
+    log_namer_->WriteHeader(&node_state_[node_index].log_file_header, node);
   }
 }
 
@@ -268,7 +287,7 @@ void Logger::WriteMissingTimestamps() {
             node, node_index,
             server_statistics_fetcher_.context().monotonic_event_time,
             server_statistics_fetcher_.context().realtime_event_time)) {
-      log_namer_->Rotate(node, node_state_[node_index].log_file_header);
+      log_namer_->Rotate(node, &node_state_[node_index].log_file_header);
     }
   }
 }
@@ -361,8 +380,14 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
   flatbuffers::Offset<aos::Configuration> configuration_offset =
       CopyFlatBuffer(event_loop_->configuration(), &fbb);
 
-  flatbuffers::Offset<flatbuffers::String> string_offset =
+  flatbuffers::Offset<flatbuffers::String> name_offset =
       fbb.CreateString(network::GetHostname());
+
+  flatbuffers::Offset<flatbuffers::String> logger_uuid_offset =
+      fbb.CreateString(uuid_.string_view());
+
+  flatbuffers::Offset<flatbuffers::String> parts_uuid_offset =
+      fbb.CreateString("00000000-0000-4000-8000-000000000000");
 
   flatbuffers::Offset<Node> node_offset;
 
@@ -372,7 +397,7 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
 
   aos::logger::LogFileHeader::Builder log_file_header_builder(fbb);
 
-  log_file_header_builder.add_name(string_offset);
+  log_file_header_builder.add_name(name_offset);
 
   // Only add the node if we are running in a multinode configuration.
   if (node != nullptr) {
@@ -400,6 +425,11 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
             .count());
   }
 
+  log_file_header_builder.add_logger_uuid(logger_uuid_offset);
+
+  log_file_header_builder.add_parts_uuid(parts_uuid_offset);
+  log_file_header_builder.add_parts_index(0);
+
   fbb.FinishSizePrefixed(log_file_header_builder.Finish());
   return fbb.Release();
 }
@@ -408,7 +438,7 @@ void Logger::Rotate() {
   for (const Node *node : log_namer_->nodes()) {
     const int node_index =
         configuration::GetNodeIndex(event_loop_->configuration(), node);
-    log_namer_->Rotate(node, node_state_[node_index].log_file_header);
+    log_namer_->Rotate(node, &node_state_[node_index].log_file_header);
   }
 }
 

@@ -15,9 +15,11 @@ namespace aos.logger;
 
 table LogFileHeader {
   // Time this log file started on the monotonic clock in nanoseconds.
-  monotonic_start_time:long = -9223372036854775808;
+  // If this isn't known (the log file is being recorded from another node
+  // where we don't know the time offset), both timestamps will be min_time.
+  monotonic_start_time:int64 = -9223372036854775808;
   // Time this log file started on the realtime clock in nanoseconds.
-  realtime_start_time:long = -9223372036854775808;
+  realtime_start_time:int64 = -9223372036854775808;
 
   // Messages are not written in order to disk.  They will be out of order by
   // at most this duration (in nanoseconds).  If the log reader buffers until
@@ -33,6 +35,36 @@ table LogFileHeader {
 
   // The current node, if known and running in a multi-node configuration.
   node:Node;
+
+  // All UUIDs are uuid4.
+
+  // A log file is made up of a bunch of log files and parts.  These build up
+  // a tree.  Every .bfbs file has a LogFileHeader at the start.
+  //
+  //  /-- basename_pi1_data.part0.bfbs, basename_pi1_data.part1.bfbs, etc.
+  // ---- basename_timestamps/pi1/aos/remote_timestamps/pi2/aos.logger.MessageHeader.part0.bfbs, etc.
+  //  \-- basename_pi2_data/pi2/aos/aos.message_bridge.Timestamp.part0.bfbs, etc.
+
+  // All log files and parts from a single run of a logger executable will have
+  // the same uuid.  This should be all the files generated on a single node.
+  // Used to correlate files recorded together.
+  logger_uuid:string;
+
+  // Part files which go together all have headers.  When creating a log file
+  // with multiple parts, the logger should stop writing to part n-1 as soon
+  // as it starts writing to part n, and write messages as though there was
+  // just 1 big file.  Therefore, part files won't be self standing, since
+  // they won't have data fetched at the beginning.
+
+  // If data is logged before the time offset can be established to the other
+  // node, the start time will be monotonic_clock::min_time, and a new part file
+  // will be created when the start time is known.
+
+  // All the parts which go together have the same uuid.
+  parts_uuid:string;
+  // And the parts_index corresponds to which part this is in the sequence.  The
+  // index should start at 0.
+  parts_index:int32;
 }
 
 // Table holding a message.
@@ -58,12 +90,12 @@ table MessageHeader {
 
   // Time this message was sent on the monotonic clock of the remote node in
   // nanoseconds.
-  monotonic_remote_time:long = -9223372036854775808;
+  monotonic_remote_time:int64 = -9223372036854775808;
   // Time this message was sent on the realtime clock of the remote node in
   // nanoseconds.
-  realtime_remote_time:long = -9223372036854775808;
+  realtime_remote_time:int64 = -9223372036854775808;
   // Queue index of this message on the remote node.
-  remote_queue_index:uint = 4294967295;
+  remote_queue_index:uint32 = 4294967295;
 }
 
 root_type MessageHeader;
