@@ -122,7 +122,7 @@ aos_config(
 cc_test(
     name = "localizer_test",
     srcs = ["localizer_test.cc"],
-    data = [":simulation_config.json"],
+    data = [":simulation_config"],
     deps = [
         ":drivetrain_base",
         ":localizer",
@@ -140,7 +140,7 @@ cc_test(
     name = "drivetrain_replay_test",
     srcs = ["drivetrain_replay_test.cc"],
     data = [
-        ":replay_config.json",
+        ":replay_config",
         "@drivetrain_replay//file:spinning_wheels_while_still.bfbs",
     ],
     deps = [
@@ -160,7 +160,7 @@ cc_test(
 cc_binary(
     name = "drivetrain_replay",
     srcs = ["drivetrain_replay.cc"],
-    data = ["//y2020:config.json"],
+    data = ["//y2020:config"],
     deps = [
         ":drivetrain_base",
         ":localizer",

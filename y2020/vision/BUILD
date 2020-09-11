@@ -32,7 +32,7 @@ cc_binary(
         "camera_reader.cc",
     ],
     data = [
-        "//y2020:config.json",
+        "//y2020:config",
     ],
     restricted_to = [
         "//tools:k8",
@@ -66,7 +66,7 @@ cc_binary(
         "viewer.cc",
     ],
     data = [
-        "//y2020:config.json",
+        "//y2020:config",
     ],
     restricted_to = [
         "//tools:k8",
@@ -88,7 +88,7 @@ cc_binary(
         "calibration.cc",
     ],
     data = [
-        "//y2020:config.json",
+        "//y2020:config",
     ],
     restricted_to = [
         "//tools:k8",
@@ -115,7 +115,7 @@ cc_binary(
         "viewer_replay.cc",
     ],
     data = [
-        "//y2020:config.json",
+        "//y2020:config",
     ],
     restricted_to = [
         "//tools:k8",

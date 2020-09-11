@@ -142,8 +142,8 @@ cc_test(
     name = "logger_test",
     srcs = ["logger_test.cc"],
     data = [
-        ":multinode_pingpong_config.json",
-        "//aos/events:pingpong_config.json",
+        ":multinode_pingpong_config",
+        "//aos/events:pingpong_config",
     ],
     deps = [
         ":logger",

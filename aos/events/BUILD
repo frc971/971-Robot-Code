@@ -106,7 +106,7 @@ cc_binary(
     srcs = [
         "ping.cc",
     ],
-    data = ["pingpong_config.json"],
+    data = [":pingpong_config"],
     deps = [
         ":ping_lib",
         ":shm_event_loop",
@@ -170,7 +170,7 @@ cc_binary(
     srcs = [
         "pong.cc",
     ],
-    data = ["pingpong_config.json"],
+    data = [":pingpong_config"],
     deps = [
         ":ping_fbs",
         ":pong_fbs",
@@ -186,7 +186,7 @@ cc_binary(
 cc_test(
     name = "pingpong_test",
     srcs = ["pingpong_test.cc"],
-    data = [":pingpong_config.json"],
+    data = [":pingpong_config"],
     deps = [
         ":ping_lib",
         ":pong_lib",
@@ -266,7 +266,7 @@ cc_library(
 cc_test(
     name = "simulated_event_loop_test",
     srcs = ["simulated_event_loop_test.cc"],
-    data = ["multinode_pingpong_config.json"],
+    data = [":multinode_pingpong_config"],
     shard_count = 4,
     deps = [
         ":event_loop_param_test",

@@ -83,7 +83,7 @@ cc_test(
     srcs = [
         "claw_lib_test.cc",
     ],
-    data = ["//y2014:config.json"],
+    data = ["//y2014:config"],
     deps = [
         ":claw_goal_fbs",
         ":claw_lib",

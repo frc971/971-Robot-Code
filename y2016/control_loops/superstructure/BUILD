@@ -122,7 +122,7 @@ cc_test(
     srcs = [
         "superstructure_lib_test.cc",
     ],
-    data = ["//y2016:config.json"],
+    data = ["//y2016:config"],
     deps = [
         ":superstructure_goal_fbs",
         ":superstructure_lib",

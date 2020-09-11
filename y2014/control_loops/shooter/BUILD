@@ -84,7 +84,7 @@ cc_test(
     srcs = [
         "shooter_lib_test.cc",
     ],
-    data = ["//y2014:config.json"],
+    data = ["//y2014:config"],
     deps = [
         ":shooter_goal_fbs",
         ":shooter_lib",

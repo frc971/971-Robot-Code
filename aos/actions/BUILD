@@ -58,7 +58,7 @@ cc_test(
     srcs = [
         "action_test.cc",
     ],
-    data = ["action_test_config.json"],
+    data = [":action_test_config"],
     deps = [
         ":action_lib",
         ":actions_fbs",

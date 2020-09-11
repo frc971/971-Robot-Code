@@ -73,7 +73,7 @@ cc_test(
     srcs = [
         "superstructure_lib_test.cc",
     ],
-    data = ["//y2017:config.json"],
+    data = ["//y2017:config"],
     deps = [
         ":superstructure_goal_fbs",
         ":superstructure_lib",
@@ -128,7 +128,7 @@ cc_test(
     srcs = [
         "vision_time_adjuster_test.cc",
     ],
-    data = ["//y2017:config.json"],
+    data = ["//y2017:config"],
     deps = [
         ":vision_time_adjuster",
         "//aos/events:simulated_event_loop",

@@ -52,7 +52,7 @@ cc_binary(
 
 robot_downloader(
     data = [
-        ":config.json",
+        ":config",
     ],
     dirs = [
         "//y2016/dashboard:www_files",

@@ -88,7 +88,7 @@ cc_test(
         "superstructure_lib_test.cc",
     ],
     data = [
-        "//y2020:config.json",
+        "//y2020:config",
     ],
     deps = [
         ":superstructure_goal_fbs",

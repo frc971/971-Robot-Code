@@ -74,7 +74,7 @@ cc_test(
     srcs = [
         "superstructure_lib_test.cc",
     ],
-    data = ["//y2018:config.json"],
+    data = ["//y2018:config"],
     shard_count = 5,
     deps = [
         ":superstructure_goal_fbs",

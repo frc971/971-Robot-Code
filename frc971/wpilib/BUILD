@@ -175,7 +175,7 @@ cc_test(
         "loop_output_handler_test.cc",
     ],
     data = [
-        "loop_output_handler_test_config.json",
+        ":loop_output_handler_test_config",
     ],
     deps = [
         ":loop_output_handler",

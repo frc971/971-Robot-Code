@@ -127,7 +127,7 @@ cc_library(
 cc_test(
     name = "target_selector_test",
     srcs = ["target_selector_test.cc"],
-    data = ["//y2019:config.json"],
+    data = ["//y2019:config"],
     deps = [
         ":target_selector",
         "//aos/events:simulated_event_loop",
@@ -192,7 +192,7 @@ aos_config(
 cc_test(
     name = "localized_drivetrain_test",
     srcs = ["localized_drivetrain_test.cc"],
-    data = [":simulation_config.json"],
+    data = [":simulation_config"],
     deps = [
         ":camera_fbs",
         ":drivetrain_base",
@@ -210,7 +210,7 @@ cc_test(
 cc_binary(
     name = "drivetrain_replay",
     srcs = ["drivetrain_replay.cc"],
-    data = ["//y2019:config.json"],
+    data = ["//y2019:config"],
     deps = [
         ":drivetrain_base",
         ":event_loop_localizer",

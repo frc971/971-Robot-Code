@@ -5,16 +5,20 @@ AosConfigInfo = provider(fields = [
     "transitive_src",
 ])
 
-def aos_config(name, src, flatbuffers = [], deps = [], visibility = None):
+def aos_config(name, src, flatbuffers = [], deps = [], visibility = None, testonly = False):
     _aos_config(
         name = name,
         src = src,
         deps = deps,
         flatbuffers = [expand_label(flatbuffer) + "_reflection_out" for flatbuffer in flatbuffers],
         visibility = visibility,
+        testonly = testonly,
     )
 
 def _aos_config_impl(ctx):
+    config = ctx.actions.declare_file(ctx.label.name + ".json")
+    stripped_config = ctx.actions.declare_file(ctx.label.name + ".stripped.json")
+
     flatbuffers_depset = depset(
         ctx.files.flatbuffers,
         transitive = [dep[AosConfigInfo].transitive_flatbuffers for dep in ctx.attr.deps],
@@ -27,16 +31,23 @@ def _aos_config_impl(ctx):
 
     all_files = flatbuffers_depset.to_list() + src_depset.to_list()
     ctx.actions.run(
-        outputs = [ctx.outputs.config, ctx.outputs.stripped_config],
+        outputs = [config, stripped_config],
         inputs = all_files,
-        arguments = [ctx.outputs.config.path, ctx.outputs.stripped_config.path, ctx.files.src[0].short_path, ctx.bin_dir.path] + [f.path for f in flatbuffers_depset.to_list()],
+        arguments = [config.path, stripped_config.path, ctx.files.src[0].short_path, ctx.bin_dir.path] + [f.path for f in flatbuffers_depset.to_list()],
         progress_message = "Flattening config",
         executable = ctx.executable._config_flattener,
     )
-    return AosConfigInfo(
-        transitive_flatbuffers = flatbuffers_depset,
-        transitive_src = src_depset,
-    )
+    runfiles = ctx.runfiles(files = [config, stripped_config])
+    return [
+        DefaultInfo(
+            files = depset([config, stripped_config]),
+            runfiles = runfiles,
+        ),
+        AosConfigInfo(
+            transitive_flatbuffers = flatbuffers_depset,
+            transitive_src = src_depset,
+        ),
+    ]
 
 _aos_config = rule(
     attrs = {
@@ -55,10 +66,6 @@ _aos_config = rule(
         "flatbuffers": attr.label_list(
             mandatory = False,
         ),
-    },
-    outputs = {
-        "config": "%{name}.json",
-        "stripped_config": "%{name}.stripped.json",
     },
     implementation = _aos_config_impl,
 )

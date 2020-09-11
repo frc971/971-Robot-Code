@@ -106,8 +106,8 @@ sh_binary(
         ":flatbuffers",
         ":reflection_test.html",
         ":reflection_test_bundle",
-        ":test_config.json",
+        ":test_config",
         "//aos/network:web_proxy_main",
-        "//y2020:config.json",
+        "//y2020:config",
     ],
 )

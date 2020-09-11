@@ -7,7 +7,7 @@ cc_binary(
     name = "basic_test",
     testonly = 1,
     srcs = ["basic_test.cc"],
-    data = [":config.json"],
+    data = [":config"],
     deps = [
         ":basic",
         ":basic_goal_fbs",

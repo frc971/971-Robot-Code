@@ -295,8 +295,8 @@ cc_test(
         "message_bridge_test.cc",
     ],
     data = [
-        ":message_bridge_test_client_config.json",
-        ":message_bridge_test_server_config.json",
+        ":message_bridge_test_client_config",
+        ":message_bridge_test_server_config",
     ],
     shard_count = 3,
     deps = [

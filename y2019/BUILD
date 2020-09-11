@@ -5,7 +5,7 @@ load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 robot_downloader(
     data = [
-        ":config.json",
+        ":config",
     ],
     dirs = [
         "//y2019/vision/server:www_files",

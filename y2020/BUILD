@@ -9,7 +9,7 @@ robot_downloader(
         ":setpoint_setter",
     ],
     data = [
-        ":config.json",
+        ":config",
     ],
     start_binaries = [
         "//aos/events/logging:logger_main",
@@ -29,7 +29,7 @@ robot_downloader(
         "//y2020/vision:viewer",
     ],
     data = [
-        ":config.json",
+        ":config",
     ],
     dirs = [
         "//y2020/www:www_files",
@@ -218,7 +218,7 @@ sh_binary(
     name = "web_proxy",
     srcs = ["web_proxy.sh"],
     data = [
-        ":config.json",
+        ":config",
         "//aos/network:web_proxy_main",
         "//y2020/www:camera_main_bundle",
         "//y2020/www:field_main_bundle",

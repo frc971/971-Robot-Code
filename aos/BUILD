@@ -466,7 +466,7 @@ cc_test(
         "configuration_test.cc",
     ],
     data = [
-        "//aos/events:pingpong_config.json",
+        "//aos/events:pingpong_config",
         "//aos/events:pong.bfbs",
         "//aos/testdata:test_configs",
     ],

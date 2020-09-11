@@ -462,7 +462,7 @@ cc_test(
     srcs = [
         "drivetrain_lib_test.cc",
     ],
-    data = ["simulation_config.json"],
+    data = [":simulation_config"],
     defines =
         cpu_select({
             "amd64": [
