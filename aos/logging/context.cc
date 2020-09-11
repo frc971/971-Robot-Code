@@ -4,6 +4,9 @@
 #define _GNU_SOURCE /* See feature_test_macros(7) */
 #endif
 
+#if __has_feature(memory_sanitizer)
+#include <sanitizer/msan_interface.h>
+#endif
 #include <string.h>
 #include <sys/prctl.h>
 #include <sys/types.h>
@@ -16,8 +19,8 @@
 extern char *program_invocation_name;
 extern char *program_invocation_short_name;
 
-#include "aos/die.h"
 #include "aos/complex_thread_local.h"
+#include "aos/die.h"
 
 namespace aos {
 namespace logging {
@@ -39,6 +42,10 @@ namespace {
   if (prctl(PR_GET_NAME, thread_name_array) != 0) {
     PDie("prctl(PR_GET_NAME, %p) failed", thread_name_array);
   }
+#if __has_feature(memory_sanitizer)
+  // msan doesn't understand PR_GET_NAME, so help it along.
+  __msan_unpoison(thread_name_array, sizeof(thread_name_array));
+#endif
   thread_name_array[sizeof(thread_name_array) - 1] = '\0';
   ::std::string thread_name(thread_name_array);
 
@@ -67,8 +74,7 @@ thread_local bool delete_current_context(false);
 ::std::atomic<LogImplementation *> global_top_implementation(NULL);
 
 Context::Context()
-    : implementation(global_top_implementation.load()),
-      sequence(0) {
+    : implementation(global_top_implementation.load()), sequence(0) {
   cork_data.Reset();
 }
 
@@ -77,8 +83,7 @@ void ReloadThreadName() {
   if (my_context.created()) {
     ::std::string my_name = GetMyName();
     if (my_name.size() + 1 > sizeof(Context::name)) {
-      Die("logging: process/thread name '%s' is too long\n",
-          my_name.c_str());
+      Die("logging: process/thread name '%s' is too long\n", my_name.c_str());
     }
     strcpy(my_context->name, my_name.c_str());
     my_context->name_size = my_name.size();
@@ -98,9 +103,7 @@ Context *Context::Get() {
   return my_context.get();
 }
 
-void Context::Delete() {
-  delete_current_context = true;
-}
+void Context::Delete() { delete_current_context = true; }
 
 }  // namespace internal
 }  // namespace logging
