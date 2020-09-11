@@ -14,6 +14,9 @@ DEFINE_bool(fetch, false,
             "If true, fetch the current message on the channel first");
 DEFINE_bool(pretty, false,
             "If true, pretty print the messages on multiple lines");
+DEFINE_bool(print_timestamps, true, "If true, timestamps are printed.");
+DEFINE_uint64(count, 0,
+              "If >0, aos_dump will exit after printing this many messages.");
 
 namespace {
 
@@ -29,14 +32,18 @@ void PrintMessage(const aos::Channel *channel, const aos::Context &context,
       builder, channel->schema(), static_cast<const uint8_t *>(context.data),
       {FLAGS_pretty, static_cast<size_t>(FLAGS_max_vector_size)});
 
-  if (context.monotonic_remote_time != context.monotonic_event_time) {
-    std::cout << context.realtime_remote_time << " ("
-              << context.monotonic_remote_time << ") delivered "
-              << context.realtime_event_time << " ("
-              << context.monotonic_event_time << "): " << *builder << '\n';
+  if (FLAGS_print_timestamps) {
+    if (context.monotonic_remote_time != context.monotonic_event_time) {
+      std::cout << context.realtime_remote_time << " ("
+                << context.monotonic_remote_time << ") delivered "
+                << context.realtime_event_time << " ("
+                << context.monotonic_event_time << "): " << *builder << '\n';
+    } else {
+      std::cout << context.realtime_event_time << " ("
+                << context.monotonic_event_time << "): " << *builder << '\n';
+    }
   } else {
-    std::cout << context.realtime_event_time << " ("
-              << context.monotonic_event_time << "): " << *builder << '\n';
+    std::cout << *builder << '\n';
   }
 }
 
@@ -58,7 +65,7 @@ int main(int argc, char **argv) {
       aos::configuration::ReadConfig(FLAGS_config);
 
   const aos::Configuration *config_msg = &config.message();
-  ::aos::ShmEventLoop event_loop(config_msg);
+  aos::ShmEventLoop event_loop(config_msg);
   event_loop.SkipTimingReport();
   event_loop.SkipAosLog();
 
@@ -98,6 +105,8 @@ int main(int argc, char **argv) {
     LOG(FATAL) << "Multiple channels found with same type";
   }
 
+  uint64_t message_count = 0;
+
   aos::FastStringBuilder str_builder;
 
   for (const aos::Channel *channel : found_channels) {
@@ -106,13 +115,22 @@ int main(int argc, char **argv) {
           event_loop.MakeRawFetcher(channel);
       if (fetcher->Fetch()) {
         PrintMessage(channel, fetcher->context(), &str_builder);
+        ++message_count;
       }
     }
 
+    if (FLAGS_count > 0 && message_count >= FLAGS_count) {
+      return 0;
+    }
+
     event_loop.MakeRawWatcher(
-        channel, [channel, &str_builder](const aos::Context &context,
-                                         const void * /*message*/) {
+        channel, [channel, &str_builder, &event_loop, &message_count](
+                     const aos::Context &context, const void * /*message*/) {
           PrintMessage(channel, context, &str_builder);
+          ++message_count;
+          if (FLAGS_count > 0 && message_count >= FLAGS_count) {
+            event_loop.Exit();
+          }
         });
   }
 
