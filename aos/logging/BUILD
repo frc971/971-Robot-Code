@@ -5,20 +5,28 @@ cc_library(
     name = "logging",
     srcs = [
         "context.cc",
+        "implementations.cc",
         "interface.cc",
     ],
     hdrs = [
         "context.h",
+        "implementations.h",
         "interface.h",
         "logging.h",
     ],
     visibility = ["//visibility:public"],
     deps = [
+        ":printf_formats",
         ":sizes",
         "//aos:complex_thread_local",
         "//aos:die",
         "//aos:macros",
         "//aos/libc:aos_strerror",
+        "//aos/mutex",
+        "//aos/stl_mutex",
+        "//aos/time",
+        "//aos/type_traits",
+        "@com_google_absl//absl/base",
     ],
 )
 
@@ -66,26 +74,9 @@ cc_library(
 
 cc_library(
     name = "implementations",
-    srcs = [
-        "implementations.cc",
-    ],
-    hdrs = [
-        "implementations.h",
-    ],
-    linkopts = [
-        "-lpthread",
-    ],
     visibility = ["//visibility:public"],
     deps = [
         ":logging",
-        ":printf_formats",
-        ":sizes",
-        "//aos:die",
-        "//aos:macros",
-        "//aos/mutex",
-        "//aos/time",
-        "//aos/type_traits",
-        "@com_google_absl//absl/base",
     ],
 )
 

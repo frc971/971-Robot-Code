@@ -11,13 +11,14 @@ class AosLogToFbs {
  public:
   AosLogToFbs() {}
 
-  // TODO(Tyler): Deregister logger on destruction to avoid memory leaks
-
   void Initialize(Sender<logging::LogMessageFbs> log_sender);
+  std::shared_ptr<logging::LogImplementation> implementation() const {
+    return implementation_;
+  }
 
  private:
   Sender<logging::LogMessageFbs> log_sender_;
-  logging::ScopedLogRestorer prev_logger_;
+  std::shared_ptr<logging::LogImplementation> implementation_;
 };
 
 }  // namespace aos

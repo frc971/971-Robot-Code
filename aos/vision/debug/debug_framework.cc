@@ -62,9 +62,8 @@ class DebugFramework : public DebugFrameworkInterface {
     }
 
     // Pass along the set exposure so that users can acceess it.
-    filter->InstallSetExposure([this](uint32_t abs_exp) {
-        this->SetExposure(abs_exp);
-    });
+    filter->InstallSetExposure(
+        [this](uint32_t abs_exp) { this->SetExposure(abs_exp); });
   }
 
   // This the first stage in the pipeline that takes
@@ -151,8 +150,6 @@ parameter. A single command line argument help will print this message.
 void DebugFrameworkMain(int argc, char **argv, FilterHarness *filter,
                         CameraParams camera_params) {
   ::aos::logging::Init();
-  ::aos::logging::SetImplementation(
-      new ::aos::logging::StreamLogImplementation(stdout));
 
   gtk_init(&argc, &argv);
 

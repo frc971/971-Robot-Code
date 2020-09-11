@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include "aos/init.h"
+#include "aos/logging/logging.h"
 #include "aos/util/compiler_memory_barrier.h"
 #include "aos/util/phased_loop.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"

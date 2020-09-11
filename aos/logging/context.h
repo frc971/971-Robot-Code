@@ -2,9 +2,10 @@
 #define AOS_LOGGING_CONTEXT_H_
 
 #include <inttypes.h>
+#include <limits.h>
 #include <stddef.h>
 #include <sys/types.h>
-#include <limits.h>
+#include <memory>
 
 #include <atomic>
 
@@ -18,8 +19,6 @@ class LogImplementation;
 // This is where all of the code that is only used by actual LogImplementations
 // goes.
 namespace internal {
-
-extern ::std::atomic<LogImplementation *> global_top_implementation;
 
 // An separate instance of this class is accessible from each task/thread.
 // NOTE: It will get deleted in the child of a fork.
@@ -43,9 +42,11 @@ struct Context {
   // still work to clean up any state.
   static void Delete();
 
+  static void DeleteNow();
+
   // Which one to log to right now.
   // Will be NULL if there is no logging implementation to use right now.
-  LogImplementation *implementation;
+  std::shared_ptr<LogImplementation> implementation;
 
   // A name representing this task/(process and thread).
   char name[LOG_MESSAGE_NAME_LEN];

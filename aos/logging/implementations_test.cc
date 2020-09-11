@@ -41,11 +41,8 @@ class TestLogImplementation : public LogImplementation {
  public:
   const LogMessage &message() { return message_; }
   bool used() { return used_; }
-  void reset_used() { used_ = false; }
 
-  TestLogImplementation() : used_(false) {}
-
-  bool used_;
+  bool used_ = false;
 };
 class LoggingTest : public ::testing::Test {
  protected:
@@ -90,21 +87,19 @@ class LoggingTest : public ::testing::Test {
 
  private:
   void SetUp() override {
-    static bool first = true;
-    if (first) {
-      first = false;
-
-      Init();
-      SetImplementation(log_implementation = new TestLogImplementation());
-    }
-
-    log_implementation->reset_used();
+    log_implementation = std::make_shared<TestLogImplementation>();
+    SetImplementation(log_implementation);
   }
-  void TearDown() override { Cleanup(); }
+  void TearDown() override {
+    SetImplementation(nullptr);
+    Cleanup();
+    internal::Context::DeleteNow();
+    CHECK_EQ(log_implementation.use_count(), 1);
+    log_implementation.reset();
+  }
 
-  static TestLogImplementation *log_implementation;
+  std::shared_ptr<TestLogImplementation> log_implementation;
 };
-TestLogImplementation *LoggingTest::log_implementation(NULL);
 typedef LoggingTest LoggingDeathTest;
 
 // Tests both basic logging functionality and that the test setup works
@@ -245,16 +240,18 @@ TEST(LoggingPrintFormatTest, Base) {
 }
 
 TEST(ScopedLogRestorerTest, RestoreTest) {
-  LogImplementation *curr_impl = GetImplementation();
+  SetImplementation(std::make_shared<StreamLogImplementation>(stdout));
+  LogImplementation *curr_impl = GetImplementation().get();
 
   {
     ScopedLogRestorer log_restorer;
 
-    logging::RegisterCallbackImplementation([] (const LogMessage&) {});
-    ASSERT_NE(curr_impl, GetImplementation());
+    log_restorer.Swap(
+        std::make_shared<CallbackLogImplementation>([](const LogMessage &) {}));
+    ASSERT_NE(curr_impl, GetImplementation().get());
   }
 
-  ASSERT_EQ(curr_impl, GetImplementation());
+  ASSERT_EQ(curr_impl, GetImplementation().get());
 }
 
 }  // namespace testing

@@ -358,7 +358,7 @@ class Sender {
   // Returns the name of the underlying queue.
   const Channel *channel() const { return sender_->channel(); }
 
-  operator bool() { return sender_ ? true : false; }
+  operator bool() const { return sender_ ? true : false; }
 
   // Returns the time_points that the last message was sent at.
   aos::monotonic_clock::time_point monotonic_sent_time() const {

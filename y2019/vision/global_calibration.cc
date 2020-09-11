@@ -104,7 +104,7 @@ void main(int argc, char **argv) {
 
   ::aos::logging::Init();
   ::aos::logging::SetImplementation(
-      new ::aos::logging::StreamLogImplementation(stderr));
+      std::make_shared<::aos::logging::StreamLogImplementation>(stderr));
 
   TargetFinder target_finder;
 

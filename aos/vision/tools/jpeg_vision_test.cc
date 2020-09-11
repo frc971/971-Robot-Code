@@ -107,13 +107,11 @@ class ChannelImageStream : public ImageStreamEvent {
   int dx = 0;
   int dy = 0;
 };
-}  // namespace aos
 }  // namespace vision
+}  // namespace aos
 
 int main(int argc, char *argv[]) {
   ::aos::logging::Init();
-  ::aos::logging::SetImplementation(
-      new ::aos::logging::StreamLogImplementation(stdout));
   aos::events::EpollLoop loop;
   gtk_init(&argc, &argv);
 

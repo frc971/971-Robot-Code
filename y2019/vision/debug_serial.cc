@@ -25,7 +25,7 @@ void main(int argc, char **argv) {
   // gflags::ParseCommandLineFlags(&argc, &argv, false);
   ::aos::logging::Init();
   ::aos::logging::SetImplementation(
-      new ::aos::logging::StreamLogImplementation(stderr));
+      std::make_shared<::aos::logging::StreamLogImplementation>(stderr));
 
   int flags = fcntl(0, F_GETFL, 0);
   fcntl(0, F_SETFL, flags | O_NONBLOCK);

@@ -21,6 +21,7 @@ extern char *program_invocation_short_name;
 
 #include "aos/complex_thread_local.h"
 #include "aos/die.h"
+#include "aos/logging/implementations.h"
 
 namespace aos {
 namespace logging {
@@ -71,10 +72,7 @@ thread_local bool delete_current_context(false);
 
 }  // namespace
 
-::std::atomic<LogImplementation *> global_top_implementation(NULL);
-
-Context::Context()
-    : implementation(global_top_implementation.load()), sequence(0) {
+Context::Context() : implementation(GetImplementation()), sequence(0) {
   cork_data.Reset();
 }
 
@@ -104,6 +102,11 @@ Context *Context::Get() {
 }
 
 void Context::Delete() { delete_current_context = true; }
+
+void Context::DeleteNow() {
+  my_context.Clear();
+  delete_current_context = false;
+}
 
 }  // namespace internal
 }  // namespace logging

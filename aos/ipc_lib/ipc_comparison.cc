@@ -902,8 +902,7 @@ int main(int argc, char **argv) {
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   ::aos::InitNRT();
-  ::aos::logging::SetImplementation(
-      new ::aos::logging::StreamLogImplementation(stdout));
+  ::aos::logging::Init();
 
   return ::aos::Main(argc, argv);
 }
