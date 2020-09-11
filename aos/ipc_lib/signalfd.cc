@@ -2,6 +2,9 @@
 
 #include <signal.h>
 #include <sys/types.h>
+#if __has_feature(memory_sanitizer)
+#include <sanitizer/msan_interface.h>
+#endif
 #include <unistd.h>
 #include <initializer_list>
 
@@ -9,6 +12,50 @@
 
 namespace aos {
 namespace ipc_lib {
+namespace {
+
+// Wrapper which propagates msan information.
+// TODO(Brian): Drop this once we have <https://reviews.llvm.org/D82411> to
+// intercept this function natively.
+int wrapped_sigandset(sigset_t *dest, const sigset_t *left,
+                      const sigset_t *right) {
+#if __has_feature(memory_sanitizer)
+  if (left) {
+    __msan_check_mem_is_initialized(left, sizeof(*left));
+  }
+  if (right) {
+    __msan_check_mem_is_initialized(right, sizeof(*right));
+  }
+#endif
+  const int r = sigandset(dest, left, right);
+#if __has_feature(memory_sanitizer)
+  if (!r && dest) {
+    __msan_unpoison(dest, sizeof(*dest));
+  }
+#endif
+  return r;
+}
+
+// Wrapper which propagates msan information.
+// TODO(Brian): Drop this once we have
+// <https://reviews.llvm.org/rG89ae290b58e20fc5f56b7bfae4b34e7fef06e1b1> to
+// intercept this function natively.
+int wrapped_pthread_sigmask(int how, const sigset_t *set, sigset_t *oldset) {
+#if __has_feature(memory_sanitizer)
+  if (set) {
+    __msan_check_mem_is_initialized(set, sizeof(*set));
+  }
+#endif
+  const int r = pthread_sigmask(how, set, oldset);
+#if __has_feature(memory_sanitizer)
+  if (!r && oldset) {
+    __msan_unpoison(oldset, sizeof(*oldset));
+  }
+#endif
+  return r;
+}
+
+}  // namespace
 
 SignalFd::SignalFd(::std::initializer_list<unsigned int> signals) {
   // Build up the mask with the provided signals.
@@ -23,7 +70,7 @@ SignalFd::SignalFd(::std::initializer_list<unsigned int> signals) {
   // signalfd gets them. Record which ones we actually blocked, so we can
   // unblock just those later.
   sigset_t old_mask;
-  CHECK_EQ(0, pthread_sigmask(SIG_BLOCK, &blocked_mask_, &old_mask));
+  CHECK_EQ(0, wrapped_pthread_sigmask(SIG_BLOCK, &blocked_mask_, &old_mask));
   for (int signal : signals) {
     if (sigismember(&old_mask, signal)) {
       CHECK_EQ(0, sigdelset(&blocked_mask_, signal));
@@ -35,9 +82,9 @@ SignalFd::~SignalFd() {
   // Unwind the constructor. Unblock the signals and close the fd. Verify nobody
   // else unblocked the signals we're supposed to unblock in the meantime.
   sigset_t old_mask;
-  CHECK_EQ(0, pthread_sigmask(SIG_UNBLOCK, &blocked_mask_, &old_mask));
+  CHECK_EQ(0, wrapped_pthread_sigmask(SIG_UNBLOCK, &blocked_mask_, &old_mask));
   sigset_t unblocked_mask;
-  CHECK_EQ(0, sigandset(&unblocked_mask, &blocked_mask_, &old_mask));
+  CHECK_EQ(0, wrapped_sigandset(&unblocked_mask, &blocked_mask_, &old_mask));
   if (memcmp(&unblocked_mask, &blocked_mask_, sizeof(unblocked_mask)) != 0) {
     LOG(FATAL) << "Some other code unblocked one or more of our signals";
   }
