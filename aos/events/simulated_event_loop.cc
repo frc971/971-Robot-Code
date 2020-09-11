@@ -741,20 +741,27 @@ void SimulatedWatcher::HandleEvent() {
   DoCallCallback([monotonic_now]() { return monotonic_now; }, context);
 
   msgs_.pop_front();
+  if (token_ != scheduler_->InvalidToken()) {
+    scheduler_->Deschedule(token_);
+    token_ = scheduler_->InvalidToken();
+  }
   if (msgs_.size() != 0) {
     event_.set_event_time(msgs_.front()->context.monotonic_event_time);
     simulated_event_loop_->AddEvent(&event_);
 
     DoSchedule(event_.event_time());
-  } else {
-    token_ = scheduler_->InvalidToken();
   }
 }
 
 void SimulatedWatcher::DoSchedule(monotonic_clock::time_point event_time) {
-  token_ =
-      scheduler_->Schedule(event_time + simulated_event_loop_->send_delay(),
-                           [this]() { simulated_event_loop_->HandleEvent(); });
+  CHECK(token_ == scheduler_->InvalidToken())
+      << ": May not schedule multiple times";
+  token_ = scheduler_->Schedule(
+      event_time + simulated_event_loop_->send_delay(), [this]() {
+        DCHECK(token_ != scheduler_->InvalidToken());
+        token_ = scheduler_->InvalidToken();
+        simulated_event_loop_->HandleEvent();
+      });
 }
 
 void SimulatedChannel::MakeRawWatcher(SimulatedWatcher *watcher) {
@@ -817,13 +824,11 @@ void SimulatedTimerHandler::Setup(monotonic_clock::time_point base,
       simulated_event_loop_->monotonic_now();
   base_ = base;
   repeat_offset_ = repeat_offset;
-  if (base < monotonic_now) {
-    token_ = scheduler_->Schedule(
-        monotonic_now, [this]() { simulated_event_loop_->HandleEvent(); });
-  } else {
-    token_ = scheduler_->Schedule(
-        base, [this]() { simulated_event_loop_->HandleEvent(); });
-  }
+  token_ = scheduler_->Schedule(std::max(base, monotonic_now), [this]() {
+    DCHECK(token_ != scheduler_->InvalidToken());
+    token_ = scheduler_->InvalidToken();
+    simulated_event_loop_->HandleEvent();
+  });
   event_.set_event_time(base_);
   simulated_event_loop_->AddEvent(&event_);
 }
@@ -835,15 +840,20 @@ void SimulatedTimerHandler::HandleEvent() {
   if (simulated_event_loop_->log_impl_ != nullptr) {
     logging::SetImplementation(simulated_event_loop_->log_impl_);
   }
+  if (token_ != scheduler_->InvalidToken()) {
+    scheduler_->Deschedule(token_);
+    token_ = scheduler_->InvalidToken();
+  }
   if (repeat_offset_ != ::aos::monotonic_clock::zero()) {
     // Reschedule.
     while (base_ <= monotonic_now) base_ += repeat_offset_;
-    token_ = scheduler_->Schedule(
-        base_, [this]() { simulated_event_loop_->HandleEvent(); });
+    token_ = scheduler_->Schedule(base_, [this]() {
+      DCHECK(token_ != scheduler_->InvalidToken());
+      token_ = scheduler_->InvalidToken();
+      simulated_event_loop_->HandleEvent();
+    });
     event_.set_event_time(base_);
     simulated_event_loop_->AddEvent(&event_);
-  } else {
-    token_ = scheduler_->InvalidToken();
   }
 
   Call([monotonic_now]() { return monotonic_now; }, monotonic_now);
@@ -889,8 +899,15 @@ void SimulatedPhasedLoopHandler::HandleEvent() {
 
 void SimulatedPhasedLoopHandler::Schedule(
     monotonic_clock::time_point sleep_time) {
-  token_ = scheduler_->Schedule(
-      sleep_time, [this]() { simulated_event_loop_->HandleEvent(); });
+  if (token_ != scheduler_->InvalidToken()) {
+    scheduler_->Deschedule(token_);
+    token_ = scheduler_->InvalidToken();
+  }
+  token_ = scheduler_->Schedule(sleep_time, [this]() {
+    DCHECK(token_ != scheduler_->InvalidToken());
+    token_ = scheduler_->InvalidToken();
+    simulated_event_loop_->HandleEvent();
+  });
   event_.set_event_time(sleep_time);
   simulated_event_loop_->AddEvent(&event_);
 }
