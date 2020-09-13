@@ -18,7 +18,7 @@ table LogMessageFbs {
   level:Level (id: 1);
 
   // Pid of the process creating the log message
-  source:int (id:2);
+  source_pid:int (id:2);
 
   // Application name
   name:string (id:3);

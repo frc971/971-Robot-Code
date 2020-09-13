@@ -19,7 +19,7 @@ void AosLogToFbs::Initialize(Sender<logging::LogMessageFbs> log_sender) {
           builder.add_message(message_str);
           builder.add_level(
               static_cast<::aos::logging::Level>(message_data.level));
-          builder.add_source(message_data.source);
+          builder.add_source_pid(message_data.source);
           builder.add_name(name_str);
 
           message.Send(builder.Finish());
