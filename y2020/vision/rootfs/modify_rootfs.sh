@@ -3,9 +3,8 @@
 set -xe
 
 IMAGE="2020-02-13-raspbian-buster-lite.img"
-BOOT_PARTITION="2020-02-13-raspbian-buster-lite.img.boot_partition"
-PARTITION="2020-02-13-raspbian-buster-lite.img.partition"
-HOSTNAME="pi-8971-1"
+BOOT_PARTITION="${IMAGE}.boot_partition"
+PARTITION="${IMAGE}.partition"
 
 function target() {
   HOME=/root/ USER=root sudo proot -0 -q qemu-arm-static -w / -r "${PARTITION}" "$@"
@@ -44,9 +43,9 @@ then
 else
   OFFSET="$(fdisk -lu "${IMAGE}" | grep "${IMAGE}2" | awk '{print 512*$2}')"
 
-  if [[ "$(stat -c %s "${IMAGE}")" == 1849688064 ]]; then
+  if [[ "$(stat -c %s "${IMAGE}")" < 2000000000 ]]; then
     echo "Growing image"
-    dd if=/dev/zero bs=1M count=1024 >> "${IMAGE}"
+    dd if=/dev/zero bs=1G count=1 >> "${IMAGE}"
     START="$(fdisk -lu "${IMAGE}" | grep "${IMAGE}2" | awk '{print $2}')"
 
     sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | fdisk "${IMAGE}"
