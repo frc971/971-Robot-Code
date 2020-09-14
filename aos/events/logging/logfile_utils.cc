@@ -1301,23 +1301,6 @@ void ChannelMerger::PushChannelHeap(monotonic_clock::time_point timestamp,
     channel_heap_.erase(channel_iterator);
     std::make_heap(channel_heap_.begin(), channel_heap_.end(),
                    ChannelHeapCompare);
-
-    if (timestamp_mergers_[channel_index].has_timestamps()) {
-      const auto timestamp_iterator = std::find_if(
-          timestamp_heap_.begin(), timestamp_heap_.end(),
-          [channel_index](const std::pair<monotonic_clock::time_point, int> x) {
-            return x.second == channel_index;
-          });
-      DCHECK(timestamp_iterator != timestamp_heap_.end());
-      if (std::get<0>(*timestamp_iterator) == timestamp) {
-        // It's already in the heap, in the correct spot, so nothing
-        // more for us to do here.
-        return;
-      }
-      timestamp_heap_.erase(timestamp_iterator);
-      std::make_heap(timestamp_heap_.begin(), timestamp_heap_.end(),
-                     ChannelHeapCompare);
-    }
   }
 
   if (timestamp == monotonic_clock::min_time) {
@@ -1331,37 +1314,18 @@ void ChannelMerger::PushChannelHeap(monotonic_clock::time_point timestamp,
   // put the oldest message first.
   std::push_heap(channel_heap_.begin(), channel_heap_.end(),
                  ChannelHeapCompare);
-
-  if (timestamp_mergers_[channel_index].has_timestamps()) {
-    timestamp_heap_.push_back(std::make_pair(timestamp, channel_index));
-    std::push_heap(timestamp_heap_.begin(), timestamp_heap_.end(),
-                   ChannelHeapCompare);
-  }
 }
 
 void ChannelMerger::VerifyHeaps() {
-  {
-    std::vector<std::pair<monotonic_clock::time_point, int>> channel_heap =
-        channel_heap_;
-    std::make_heap(channel_heap.begin(), channel_heap.end(),
-                   &ChannelHeapCompare);
+  std::vector<std::pair<monotonic_clock::time_point, int>> channel_heap =
+      channel_heap_;
+  std::make_heap(channel_heap.begin(), channel_heap.end(), &ChannelHeapCompare);
 
-    for (size_t i = 0; i < channel_heap_.size(); ++i) {
-      CHECK(channel_heap_[i] == channel_heap[i]) << ": Heaps diverged...";
-      CHECK_EQ(std::get<0>(channel_heap[i]),
-               timestamp_mergers_[std::get<1>(channel_heap[i])]
-                   .channel_merger_time());
-    }
-  }
-  {
-    std::vector<std::pair<monotonic_clock::time_point, int>> timestamp_heap =
-        timestamp_heap_;
-    std::make_heap(timestamp_heap.begin(), timestamp_heap.end(),
-                   &ChannelHeapCompare);
-
-    for (size_t i = 0; i < timestamp_heap_.size(); ++i) {
-      CHECK(timestamp_heap_[i] == timestamp_heap[i]) << ": Heaps diverged...";
-    }
+  for (size_t i = 0; i < channel_heap_.size(); ++i) {
+    CHECK(channel_heap_[i] == channel_heap[i]) << ": Heaps diverged...";
+    CHECK_EQ(
+        std::get<0>(channel_heap[i]),
+        timestamp_mergers_[std::get<1>(channel_heap[i])].channel_merger_time());
   }
 }
 
@@ -1379,17 +1343,6 @@ ChannelMerger::PopOldest() {
   timestamp_mergers_[channel_index].set_pushed(false);
 
   TimestampMerger *merger = &timestamp_mergers_[channel_index];
-
-  if (merger->has_timestamps()) {
-    CHECK_GT(timestamp_heap_.size(), 0u);
-    std::pair<monotonic_clock::time_point, int> oldest_timestamp_data =
-        timestamp_heap_.front();
-    CHECK(oldest_timestamp_data == oldest_channel_data)
-        << ": Timestamp heap out of sync.";
-    std::pop_heap(timestamp_heap_.begin(), timestamp_heap_.end(),
-                  &ChannelHeapCompare);
-    timestamp_heap_.pop_back();
-  }
 
   // Merger handles any queueing needed from here.
   std::tuple<TimestampMerger::DeliveryTimestamp,

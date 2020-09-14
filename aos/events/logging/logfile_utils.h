@@ -649,10 +649,6 @@ class ChannelMerger {
 
   // A heap of the channel readers and timestamps for the oldest data in each.
   std::vector<std::pair<monotonic_clock::time_point, int>> channel_heap_;
-  // A heap of just the timestamp channel readers and timestamps for the oldest
-  // data in each.
-  // TODO(austin): I think this is no longer used and can be removed (!)
-  std::vector<std::pair<monotonic_clock::time_point, int>> timestamp_heap_;
 
   // Configured node.
   const Node *node_;
