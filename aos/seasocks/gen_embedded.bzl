@@ -16,7 +16,7 @@ _do_gen_embedded = rule(
     attrs = {
         "srcs": attr.label_list(
             mandatory = True,
-            non_empty = True,
+            allow_empty = False,
             allow_files = True,
         ),
         "_gen_embedded": attr.label(
