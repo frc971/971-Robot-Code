@@ -297,6 +297,8 @@ cc_library(
             "-Wno-self-assign",
         ],
         "gcc": [
+            "-Wno-implicit-fallthrough",
+            "-Wno-array-bounds",
             "-Wno-discarded-qualifiers",
             "-Wno-maybe-uninitialized",
             "-Wno-unused-but-set-variable",
